@@ -5,12 +5,13 @@ import Truth.Core
 
 fileObject :: FilePath -> Object ByteStringEdit
 fileObject path = let
-    objRun :: IOFunction (ReaderT Handle IO)
-    objRun rt = do
-        h <- openBinaryFile path ReadWriteMode
-        r <- runReaderT rt h
-        hClose h
-        return r
+    objRun :: TransStackRunner '[ ReaderT Handle]
+    objRun =
+        MkTransStackRunner $ \rt -> do
+            h <- liftIO $ openBinaryFile path ReadWriteMode
+            r <- runReaderT rt h
+            liftIO $ hClose h
+            return r
     objRead :: MutableRead (ReaderT Handle IO) ByteStringReader
     objRead ReadByteStringLength = do
         h <- ask
@@ -34,4 +35,4 @@ fileObject path = let
         lift $ hPut h bs
     objEdit :: [ByteStringEdit] -> ReaderT Handle IO (Maybe (EditSource -> ReaderT Handle IO ()))
     objEdit = singleAlwaysEdit objOneEdit
-    in MkRunnableIO objRun MkAnObject {..}
+    in MkRunnable1 objRun MkAnObject {..}

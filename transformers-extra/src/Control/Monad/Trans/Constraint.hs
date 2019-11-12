@@ -1,20 +1,6 @@
 module Control.Monad.Trans.Constraint where
 
-import Control.Monad
-import Control.Monad.Fail
-import Control.Monad.Fix
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Writer
-import Data.Constraint
-import Data.Kind
-import Data.Monoid
+import Import
 
 class MonadTrans t => MonadTransConstraint (c :: (Type -> Type) -> Constraint) t where
     hasTransConstraint ::

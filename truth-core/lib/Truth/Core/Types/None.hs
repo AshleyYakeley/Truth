@@ -59,10 +59,10 @@ type NoUpdate reader = EditUpdate (NoEdit reader)
 readFunctionNoUpdateFunction ::
        forall ra updateB. ReadFunction ra (UpdateReader updateB) -> UpdateFunction (NoUpdate ra) updateB
 readFunctionNoUpdateFunction rf = let
-    ufGet :: forall . ReadFunctionT IdentityT ra (UpdateReader updateB)
-    ufGet mra rb = lift $ rf mra rb
+    ufGet :: forall . ReadFunction ra (UpdateReader updateB)
+    ufGet mra rb = rf mra rb
     ufUpdate edit _ = never edit
-    in MkRunnableT2 identityUntrans MkAnUpdateFunction {..}
+    in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
 
 readFunctionNoEditLens :: forall ra updateB. ReadFunction ra (UpdateReader updateB) -> EditLens (NoUpdate ra) updateB
 readFunctionNoEditLens rf = readOnlyEditLens $ readFunctionNoUpdateFunction rf

@@ -51,12 +51,12 @@ sumRightUpdateFunction ::
        forall updateA updateB. (UpdateReader updateA ~ UpdateReader updateB)
     => UpdateFunction updateB (SumUpdate updateA updateB)
 sumRightUpdateFunction = let
-    ufGet :: ReadFunctionT IdentityT (UpdateReader updateB) (UpdateReader updateB)
-    ufGet mr = remonadMutableRead lift mr
+    ufGet :: ReadFunction (UpdateReader updateB) (UpdateReader updateB)
+    ufGet mr = mr
     ufUpdate ::
            forall m. MonadIO m
         => updateB
         -> MutableRead m (UpdateReader updateB)
-        -> IdentityT m [SumUpdate updateA updateB]
+        -> m [SumUpdate updateA updateB]
     ufUpdate update _ = return [SumUpdateRight update]
-    in MkRunnableT2 identityUntrans MkAnUpdateFunction {..}
+    in MkRunnable2 cmEmpty MkAnUpdateFunction {..}

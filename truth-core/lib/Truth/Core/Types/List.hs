@@ -177,9 +177,9 @@ listItemLens ::
        , ApplicableEdit (UpdateEdit update)
        , UpdateSubject update ~ Element seq
        )
-    => Untrans (StateT (SequencePoint seq))
+    => TransStackRunner '[ StateT (SequencePoint seq)]
     -> EditLens (ListUpdate seq update) (MaybeUpdate update)
-listItemLens unlift = let
+listItemLens run = let
     ufGet ::
            ReadFunctionT (StateT (SequencePoint seq)) (ListReader seq (UpdateReader update)) (OneReader Maybe (UpdateReader update))
     ufGet mr (ReadOne rt) = do
@@ -223,7 +223,7 @@ listItemLens unlift = let
     ufUpdate ListUpdateClear _ = do
         put 0
         return [SumUpdateLeft $ MkWholeReaderUpdate Nothing]
-    elFunction :: AnUpdateFunction (StateT (SequencePoint seq)) (ListUpdate seq update) (MaybeUpdate update)
+    elFunction :: AnUpdateFunction '[ StateT (SequencePoint seq)] (ListUpdate seq update) (MaybeUpdate update)
     elFunction = MkAnUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
@@ -244,5 +244,5 @@ listItemLens unlift = let
         => [MaybeEdit (UpdateEdit update)]
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
-    elPutEdits = elPutEditsFromPutEdit elPutEdit
-    in MkRunnableT2 unlift MkAnEditLens {..}
+    elPutEdits = elPutEditsFromPutEdit @'[ StateT (SequencePoint seq)] elPutEdit
+    in MkRunnable2 run MkAnEditLens {..}

@@ -1,17 +1,8 @@
 module Control.Monad.Trans.Tunnel where
 
-import Control.Category
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
-import Control.Monad.Trans.Except
 import Control.Monad.Trans.Function
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Writer
-import Prelude hiding ((.), id)
+import Import
 
 class (MonadTrans t, MonadTransConstraint Monad t) => MonadTransSemiTunnel t where
     semitunnel ::

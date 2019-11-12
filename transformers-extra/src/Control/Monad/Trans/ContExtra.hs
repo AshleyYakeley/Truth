@@ -1,11 +1,6 @@
 module Control.Monad.Trans.ContExtra where
 
-import Control.Category
-import Control.Monad
-import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State
-import Prelude hiding ((.), id)
+import Import
 
 updateContT :: (m r -> m r) -> ContT r m ()
 updateContT m = ContT $ \umr -> m $ umr ()

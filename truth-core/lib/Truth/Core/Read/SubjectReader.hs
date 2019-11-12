@@ -15,5 +15,8 @@ class SubjectReader (reader :: Type -> Type) where
     subjectToRead :: ReaderSubject reader -> (forall t. reader t -> t)
     subjectToRead subj reader = runIdentity (mSubjectToMutableRead (Identity subj) reader)
 
-subjectToMutableRead :: (SubjectReader reader, Monad m) => ReaderSubject reader -> MutableRead m reader
+subjectToMutableRead ::
+       forall m reader. (SubjectReader reader, Monad m)
+    => ReaderSubject reader
+    -> MutableRead m reader
 subjectToMutableRead subj = mSubjectToMutableRead $ return subj

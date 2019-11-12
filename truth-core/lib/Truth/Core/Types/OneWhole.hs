@@ -26,15 +26,15 @@ oneWholeLiftUpdateFunction = sumWholeLiftUpdateFunction . oneLiftUpdateFunction
 
 -- | suitable for Results; trying to put a failure code will be rejected
 oneWholeLiftAnEditLens ::
-       forall t f updateA updateB.
-       ( MonadTransUntrans t
+       forall tt f updateA updateB.
+       ( MonadTransStackUnliftAll tt
        , MonadOne f
        , FullSubjectReader (UpdateReader updateA)
        , ApplicableEdit (UpdateEdit updateA)
        , FullEdit (UpdateEdit updateB)
        )
-    => AnEditLens t updateA updateB
-    -> AnEditLens t (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
+    => AnEditLens tt updateA updateB
+    -> AnEditLens tt (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
 oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLens alens
   where
     reshuffle :: forall a. f (Maybe a) -> Maybe (f a)
@@ -47,18 +47,21 @@ oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLe
            forall m. MonadIO m
         => f (UpdateSubject updateB)
         -> MutableRead m (OneReader f (UpdateReader updateA))
-        -> t m (Maybe (f (UpdateSubject updateA)))
+        -> ApplyStack tt m (Maybe (f (UpdateSubject updateA)))
     pushback fb mr =
-        withTransConstraintTM @MonadIO $
-        case retrieveOne fb of
-            FailureResult (MkLimit fx) -> return $ Just fx
-            SuccessResult b ->
-                fmap reshuffle $
-                transComposeOne $
-                withTransConstraintTM @MonadIO $ do
-                    editbs <- getReplaceEditsFromSubject b
-                    meditas <- elPutEdits alens editbs $ oneReadFunctionF mr
-                    for meditas $ \editas -> lift $ mutableReadToSubject $ applyEdits editas $ oneReadFunctionF mr
+        case transStackUnliftMonadIO @tt @m of
+            Dict ->
+                case retrieveOne fb of
+                    FailureResult (MkLimit fx) -> return $ Just fx
+                    SuccessResult b ->
+                        fmap reshuffle $
+                        transStackComposeOne @tt @f @m $
+                        case transStackUnliftMonadIO @tt @(ComposeM f m) of
+                            Dict -> do
+                                editbs <- getReplaceEditsFromSubject b
+                                meditas <- elPutEdits alens editbs $ oneReadFunctionF mr
+                                for meditas $ \editas ->
+                                    stackLift @tt $ mutableReadToSubject $ applyEdits editas $ oneReadFunctionF mr
 
 -- | suitable for Results; trying to put a failure code will be rejected
 oneWholeLiftEditLens ::
@@ -70,16 +73,16 @@ oneWholeLiftEditLens ::
        )
     => EditLens updateA updateB
     -> EditLens (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
-oneWholeLiftEditLens (MkRunnableT2 unlift lens) = MkRunnableT2 unlift $ oneWholeLiftAnEditLens lens
+oneWholeLiftEditLens (MkRunnable2 run@(MkTransStackRunner _) lens) = MkRunnable2 run $ oneWholeLiftAnEditLens lens
 
 mustExistOneEditLens ::
        forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))
     => String
     -> EditLens (OneWholeUpdate f update) update
 mustExistOneEditLens err = let
-    ufGet :: ReadFunctionT IdentityT (OneReader f (UpdateReader update)) (UpdateReader update)
+    ufGet :: ReadFunction (OneReader f (UpdateReader update)) (UpdateReader update)
     ufGet mr rt = do
-        ft <- lift $ mr $ ReadOne rt
+        ft <- mr $ ReadOne rt
         case retrieveOne ft of
             SuccessResult t -> return t
             FailureResult _ -> liftIO $ fail $ err ++ ": not found"
@@ -87,7 +90,7 @@ mustExistOneEditLens err = let
            forall m. MonadIO m
         => OneWholeUpdate f update
         -> MutableRead m (OneReader f (UpdateReader update))
-        -> IdentityT m [update]
+        -> m [update]
     ufUpdate (SumUpdateLeft (MkWholeReaderUpdate ft)) _ =
         case retrieveOne ft of
             SuccessResult t -> do
@@ -95,12 +98,12 @@ mustExistOneEditLens err = let
                 return $ fmap editUpdate edits
             FailureResult _ -> liftIO $ fail $ err ++ ": deleted"
     ufUpdate (SumUpdateRight (MkOneUpdate update)) _ = return [update]
-    elFunction :: AnUpdateFunction IdentityT (OneWholeUpdate f update) update
+    elFunction :: AnUpdateFunction '[] (OneWholeUpdate f update) update
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
         -> MutableRead m (OneReader f (UpdateReader update))
-        -> IdentityT m (Maybe [OneWholeEdit f (UpdateEdit update)])
+        -> m (Maybe [OneWholeEdit f (UpdateEdit update)])
     elPutEdits edits _ = return $ Just $ fmap (SumEditRight . MkOneEdit) edits
-    in MkRunnableT2 identityUntrans MkAnEditLens {..}
+    in MkRunnable2 cmEmpty MkAnEditLens {..}

@@ -80,8 +80,6 @@ createFile path bs = do
 
 fileSystemObject :: Object FSEdit
 fileSystemObject = let
-    objRun :: IOFunction IO
-    objRun = id
     objRead :: MutableRead IO FSReader
     objRead (FSReadDirectory path) = do
         isDir <- doesDirectoryExist path
@@ -131,49 +129,63 @@ fileSystemObject = let
                 FSEditRenameItem fromPath toPath ->
                     testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $ \_ ->
                         renamePath fromPath toPath
-    in MkRunnableIO objRun MkAnObject {..}
+    in MkRunnable1 cmEmpty MkAnObject {..}
 
 subdirectoryObject :: Bool -> FilePath -> Object FSEdit -> Object FSEdit
-subdirectoryObject create dir (MkRunnableIO (run :: IOFunction m) (MkAnObject rd push)) = let
-    run' :: IOFunction m
-    run' ma =
-        run $ do
-            if create
-                then pushOrFail ("couldn't create directory " <> show dir) noEditSource $
-                     push [FSEditCreateDirectory dir]
-                else return ()
-            ma
-    insideToOutside :: FilePath -> FilePath
-    insideToOutside path = let
-        relpath = makeRelative "/" path
-        in dir </> relpath
-    outsideToInside :: FilePath -> Maybe FilePath
-    outsideToInside path = let
-        relpath = makeRelative dir $ "/" </> path
-        in if isRelative relpath
-               then Just relpath
-               else Nothing
-    rd' :: MutableRead m FSReader
-    rd' (FSReadDirectory path) = rd $ FSReadDirectory $ insideToOutside path
-    rd' (FSReadItem path) = rd $ FSReadItem $ insideToOutside path
-    rd' (FSReadSymbolicLink path) = do
-        mspath <- rd $ FSReadSymbolicLink $ insideToOutside path
-        return $
-            case mspath of
-                Nothing -> Nothing
-                Just spath ->
-                    Just $
-                    case outsideToInside spath of
-                        Just ipath -> ipath
-                        Nothing -> ""
-    mapPath :: FSEdit -> FSEdit
-    mapPath (FSEditCreateDirectory path) = FSEditCreateDirectory $ insideToOutside path
-    mapPath (FSEditCreateFile path bs) = FSEditCreateFile (insideToOutside path) bs
-    mapPath (FSEditCreateSymbolicLink path1 path2) =
-        FSEditCreateSymbolicLink (insideToOutside path1) (insideToOutside path2)
-    mapPath (FSEditDeleteNonDirectory path) = FSEditDeleteNonDirectory $ insideToOutside path
-    mapPath (FSEditDeleteEmptyDirectory path) = FSEditDeleteEmptyDirectory $ insideToOutside path
-    mapPath (FSEditRenameItem path1 path2) = FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
-    push' :: [FSEdit] -> m (Maybe (EditSource -> m ()))
-    push' edits = push $ fmap mapPath edits
-    in MkRunnableIO run' (MkAnObject rd' push')
+subdirectoryObject create dir (MkRunnable1 (trun :: TransStackRunner tt) (MkAnObject rd push)) =
+    runTransStackRunner trun $ \run -> let
+        trun' :: TransStackRunner tt
+        trun' = let
+            action ::
+                   forall m a. MonadUnliftIO m
+                => ApplyStack tt m a
+                -> m a
+            action ma =
+                case transStackDict @MonadUnliftIO @tt @IO of
+                    Dict ->
+                        run $
+                        case transStackDict @Monad @tt @m of
+                            Dict -> do
+                                stackUnderliftIO @tt @m $
+                                    if create
+                                        then pushOrFail ("couldn't create directory " <> show dir) noEditSource $
+                                             push [FSEditCreateDirectory dir]
+                                        else return ()
+                                ma
+            in MkTransStackRunner action
+        insideToOutside :: FilePath -> FilePath
+        insideToOutside path = let
+            relpath = makeRelative "/" path
+            in dir </> relpath
+        outsideToInside :: FilePath -> Maybe FilePath
+        outsideToInside path = let
+            relpath = makeRelative dir $ "/" </> path
+            in if isRelative relpath
+                   then Just relpath
+                   else Nothing
+        rd' :: MutableRead (ApplyStack tt IO) FSReader
+        rd' (FSReadDirectory path) = rd $ FSReadDirectory $ insideToOutside path
+        rd' (FSReadItem path) = rd $ FSReadItem $ insideToOutside path
+        rd' (FSReadSymbolicLink path) =
+            case transStackDict @MonadIO @tt @IO of
+                Dict -> do
+                    mspath <- rd $ FSReadSymbolicLink $ insideToOutside path
+                    return $
+                        case mspath of
+                            Nothing -> Nothing
+                            Just spath ->
+                                Just $
+                                case outsideToInside spath of
+                                    Just ipath -> ipath
+                                    Nothing -> ""
+        mapPath :: FSEdit -> FSEdit
+        mapPath (FSEditCreateDirectory path) = FSEditCreateDirectory $ insideToOutside path
+        mapPath (FSEditCreateFile path bs) = FSEditCreateFile (insideToOutside path) bs
+        mapPath (FSEditCreateSymbolicLink path1 path2) =
+            FSEditCreateSymbolicLink (insideToOutside path1) (insideToOutside path2)
+        mapPath (FSEditDeleteNonDirectory path) = FSEditDeleteNonDirectory $ insideToOutside path
+        mapPath (FSEditDeleteEmptyDirectory path) = FSEditDeleteEmptyDirectory $ insideToOutside path
+        mapPath (FSEditRenameItem path1 path2) = FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
+        push' :: [FSEdit] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+        push' edits = push $ fmap mapPath edits
+        in MkRunnable1 trun' (MkAnObject rd' push')

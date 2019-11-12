@@ -3,20 +3,34 @@ module Truth.Core.Object.Object where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
-import Truth.Core.Object.Run
 import Truth.Core.Read
 import Truth.Core.Types.None
 import Truth.Core.Types.Whole
 
-data AnObject m edit = MkAnObject
-    { objRead :: MutableRead m (EditReader edit)
-    , objEdit :: [edit] -> m (Maybe (EditSource -> m ()))
+data AnObject (tt :: [TransKind]) edit = MkAnObject
+    { objRead :: MutableRead (ApplyStack tt IO) (EditReader edit)
+    , objEdit :: [edit] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
     }
 
-type Object = RunnableIO AnObject
+type Object = Runnable1 AnObject
+
+instance RunnableMap AnObject where
+    mapRunnable ::
+           forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+        => TransListFunction tt1 tt2
+        -> NestedMorphism (->) (AnObject tt1) (AnObject tt2)
+    mapRunnable MkTransListFunction {..} =
+        MkNestedMorphism $ \(MkAnObject r e) -> let
+            r' :: MutableRead (ApplyStack tt2 IO) _
+            r' rd = tlfFunction (Proxy @IO) $ r rd
+            e' :: [_] -> ApplyStack tt2 IO (Maybe (EditSource -> ApplyStack tt2 IO ()))
+            e' edits =
+                case transStackUnliftMonadIO @tt2 @IO of
+                    Dict -> (fmap $ fmap $ fmap $ tlfFunction (Proxy @IO)) $ tlfFunction (Proxy @IO) $ e edits
+            in MkAnObject r' e'
 
 instance Show (Object edit) where
-    show (MkRunnableIO _ _) = "object"
+    show (MkRunnable1 _ _) = "object"
 
 noneObject :: Object (NoEdit (NoReader t))
 noneObject = let
@@ -25,7 +39,7 @@ noneObject = let
     objEdit :: [NoEdit (NoReader t)] -> IO (Maybe (EditSource -> IO ()))
     objEdit [] = return $ Just $ \_ -> return ()
     objEdit (e:_) = never e
-    in MkRunnableIO id $ MkAnObject {..}
+    in MkRunnable1 cmEmpty $ MkAnObject {..}
 
 mvarObject :: forall a. MVar a -> (a -> Bool) -> Object (WholeEdit a)
 mvarObject var allowed = let
@@ -38,7 +52,9 @@ mvarObject var allowed = let
             if allowed na
                 then Just $ \_ -> put na
                 else Nothing
-    in MkRunnableIO (mVarRun var) $ MkAnObject {..}
+    anobj :: AnObject '[ StateT a] (WholeEdit a)
+    anobj = MkAnObject {..}
+    in MkRunnable1 (MkTransStackRunner $ mVarRun var) anobj
 
 freeIOObject :: forall a. a -> (a -> Bool) -> IO (Object (WholeEdit a))
 freeIOObject firsta allowed = do
@@ -66,25 +82,60 @@ mapObject ::
 mapObject = lensObject False
 
 lensAnObject ::
-       forall t m updateA updateB. (MonadTrans t, Monad (t m), MonadIO m)
-    => AnEditLens t updateA updateB
-    -> AnObject m (UpdateEdit updateA)
-    -> AnObject (t m) (UpdateEdit updateB)
-lensAnObject MkAnEditLens {..} (MkAnObject objReadA objEditA) = let
-    MkAnUpdateFunction {..} = elFunction
-    objReadB :: MutableRead (t m) (UpdateReader updateB)
-    objReadB = ufGet objReadA
-    objEditB :: [UpdateEdit updateB] -> t m (Maybe (EditSource -> t m ()))
-    objEditB editbs = do
-        meditas <- elPutEdits editbs objReadA
-        case meditas of
-            Nothing -> return Nothing
-            Just editas -> do
-                mmu <- lift $ objEditA editas
-                case mmu of
-                    Nothing -> return Nothing
-                    Just mu -> return $ Just $ \esrc -> lift $ mu esrc
-    in MkAnObject objReadB objEditB
+       forall ttl tto updateA updateB. (MonadTransStackUnliftAll ttl, MonadTransStackUnliftAll tto)
+    => AnEditLens ttl updateA updateB
+    -> AnObject tto (UpdateEdit updateA)
+    -> AnObject (Concat ttl tto) (UpdateEdit updateB)
+lensAnObject MkAnEditLens {..} (MkAnObject objReadA objEditA) =
+    case transStackConcatRefl @ttl @tto @IO of
+        Refl ->
+            case transStackUnliftMonadIO @tto @IO of
+                Dict ->
+                    case transStackUnliftMonadIO @ttl @(ApplyStack tto IO) of
+                        Dict -> let
+                            MkAnUpdateFunction {..} = elFunction
+                            objReadB :: MutableRead (ApplyStack (Concat ttl tto) IO) (UpdateReader updateB)
+                            objReadB = ufGet objReadA
+                            objEditB ::
+                                   [UpdateEdit updateB]
+                                -> ApplyStack (Concat ttl tto) IO (Maybe (EditSource -> ApplyStack (Concat ttl tto) IO ()))
+                            objEditB editbs = do
+                                meditas <- elPutEdits editbs objReadA
+                                case meditas of
+                                    Nothing -> return Nothing
+                                    Just editas -> do
+                                        mmu <- stackLift @ttl $ objEditA editas
+                                        case mmu of
+                                            Nothing -> return Nothing
+                                            Just mu -> return $ Just $ \esrc -> stackLift @ttl $ mu esrc
+                            in MkAnObject objReadB objEditB
+
+lensObjectUnliftFull ::
+       forall ttl tto. TransStackRunner ttl -> TransStackRunner tto -> TransStackRunner (Concat ttl tto)
+lensObjectUnliftFull lensRun objRun = cmAppend lensRun objRun
+
+lensObjectUnliftDiscard ::
+       forall ttl tto. TransStackRunner ttl -> TransStackRunner tto -> TransStackRunner (Concat ttl tto)
+lensObjectUnliftDiscard (MkTransStackRunner lensRun) (MkTransStackRunner objRun) = let
+    lensObjRun ::
+           forall m. MonadUnliftIO m
+        => MFunction (ApplyStack (Concat ttl tto) m) m
+    lensObjRun tmr =
+        case transStackConcatRefl @ttl @tto @m of
+            Refl ->
+                case transStackDict @MonadUnliftIO @tto @m of
+                    Dict ->
+                        objRun $
+                        unStackT @tto @m $ do
+                            MkWUnliftAll du <- lift $ lensRun $ unStackT @ttl @m getDiscardingUnliftAll
+                            MkStackT $ du $ MkStackT tmr -- discard lens effects: all these effects will be replayed by the update
+    in case concatMonadTransStackUnliftAllDict @ttl @tto of
+           Dict -> MkTransStackRunner lensObjRun
+
+lensObjectUnlift ::
+       forall ttl tto. Bool -> TransStackRunner ttl -> TransStackRunner tto -> TransStackRunner (Concat ttl tto)
+lensObjectUnlift False = lensObjectUnliftFull
+lensObjectUnlift True = lensObjectUnliftDiscard
 
 lensObject ::
        forall updateA updateB.
@@ -92,22 +143,26 @@ lensObject ::
     -> EditLens updateA updateB
     -> Object (UpdateEdit updateA)
     -> Object (UpdateEdit updateB)
-lensObject discard (MkRunnableT2 (lensUnlift :: Untrans t) alens) (MkRunnableIO (objUnlift :: IOFunction m) aobj)
-    | Dict <- hasTransConstraint @MonadUnliftIO @t @m = let
-        objRunB :: IOFunction (t m)
-        objRunB = lensObjectUnlift discard lensUnlift objUnlift
-        in MkRunnableIO objRunB $ lensAnObject alens aobj
+lensObject discard (MkRunnable2 (lensRun@(MkTransStackRunner _) :: TransStackRunner ttl) alens) (MkRunnable1 (objRun@(MkTransStackRunner _) :: TransStackRunner tto) aobj) = let
+    objRunB :: TransStackRunner (Concat ttl tto)
+    objRunB = lensObjectUnlift discard lensRun objRun
+    in MkRunnable1 objRunB $ lensAnObject alens aobj
 
-immutableAnObject :: Monad m => MutableRead m (EditReader edit) -> AnObject m edit
+immutableAnObject ::
+       forall tt edit. MonadTransStackUnliftAll tt
+    => MutableRead (ApplyStack tt IO) (EditReader edit)
+    -> AnObject tt edit
 immutableAnObject mr =
-    MkAnObject mr $ 
-    -- must allow empty edit list
-    \case
-        [] -> return $ Just $ \_ -> return ()
-        _ -> return Nothing
+    case transStackDict @Monad @tt @IO of
+        Dict ->
+            MkAnObject mr $ 
+        -- must allow empty edit list
+            \case
+                [] -> return $ Just $ \_ -> return ()
+                _ -> return Nothing
 
 readConstantObject :: MutableRead IO (EditReader edit) -> Object edit
-readConstantObject mr = MkRunnableIO id $ immutableAnObject mr
+readConstantObject mr = MkRunnable1 cmEmpty $ immutableAnObject mr
 
 constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
 constantObject subj = readConstantObject $ subjectToMutableRead subj
@@ -136,46 +191,61 @@ convertObject ::
        forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, SubjectMapEdit editb)
     => Object edita
     -> Object editb
-convertObject (MkRunnableIO (objRun :: IOFunction m) (MkAnObject mra pe)) = let
-    objRead :: MutableRead m (EditReader editb)
-    objRead = mSubjectToMutableRead $ mutableReadToSubject mra
-    objEdit :: [editb] -> m (Maybe (EditSource -> m ()))
-    objEdit ebs = do
-        oldsubj <- mutableReadToSubject mra
-        newsubj <- mapSubjectEdits ebs oldsubj
-        eas <- getReplaceEditsFromSubject newsubj
-        pe eas
-    in MkRunnableIO objRun MkAnObject {..}
+convertObject (MkRunnable1 (objRun@(MkTransStackRunner _) :: TransStackRunner tt) (MkAnObject mra pe)) =
+    case transStackUnliftMonadIO @tt @IO of
+        Dict -> let
+            objRead :: MutableRead (ApplyStack tt IO) (EditReader editb)
+            objRead = mSubjectToMutableRead $ mutableReadToSubject mra
+            objEdit :: [editb] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+            objEdit ebs = do
+                oldsubj <- mutableReadToSubject mra
+                newsubj <- mapSubjectEdits ebs oldsubj
+                eas <- getReplaceEditsFromSubject newsubj
+                pe eas
+            in MkRunnable1 objRun MkAnObject {..}
 
 -- | Combines all the edits made in each call to the object.
 cacheWholeObject ::
-       forall t. Eq t
-    => Object (WholeEdit t)
-    -> Object (WholeEdit t)
-cacheWholeObject (MkRunnableIO (run :: IOFunction m) (MkAnObject rd push)) = let
-    run' :: IOFunction (StateT (t, Maybe EditSource) m)
-    run' ma =
-        run $ do
-            oldval :: t <- rd ReadWhole
-            (r, (newval, mesrc)) <- runStateT ma (oldval, Nothing)
-            case mesrc of
-                Just esrc ->
-                    if oldval == newval
-                        then return ()
-                        else do
-                            maction <- push [MkWholeReaderEdit newval]
-                            case maction of
-                                Just action -> action esrc
-                                Nothing -> liftIO $ fail "disallowed cached edit"
-                Nothing -> return ()
-            return r
-    rd' :: MutableRead (StateT (t, Maybe EditSource) m) (WholeReader t)
-    rd' ReadWhole = do
-        (t, _) <- get
-        return t
-    push' :: [WholeEdit t] -> StateT (t, Maybe EditSource) m (Maybe (EditSource -> StateT (t, Maybe EditSource) m ()))
-    push' = singleAlwaysEdit $ \(MkWholeReaderEdit t) esrc -> put (t, Just esrc)
-    in MkRunnableIO run' $ MkAnObject rd' push'
+       forall a. Eq a
+    => Object (WholeEdit a)
+    -> Object (WholeEdit a)
+cacheWholeObject (MkRunnable1 (MkTransStackRunner run :: TransStackRunner tt) (MkAnObject rd push)) =
+    case transStackUnliftMonadIO @tt @IO of
+        Dict -> let
+            run' ::
+                   forall m r. MonadUnliftIO m
+                => StateT (a, Maybe EditSource) (ApplyStack tt m) r
+                -> m r
+            run' sma =
+                case transStackDict @MonadUnliftIO @tt @m of
+                    Dict -> let
+                        sma' :: ApplyStack tt m r
+                        sma' = do
+                            oldval <- stackUnderliftIO @tt @m $ rd ReadWhole
+                            (r, (newval, mesrc)) <- runStateT sma (oldval, Nothing)
+                            stackUnderliftIO @tt @m $
+                                case mesrc of
+                                    Just esrc ->
+                                        if oldval == newval
+                                            then return ()
+                                            else do
+                                                maction <- push [MkWholeReaderEdit newval]
+                                                case maction of
+                                                    Just action -> action esrc
+                                                    Nothing -> liftIO $ fail "disallowed cached edit"
+                                    Nothing -> return ()
+                            return r
+                        in run sma'
+            rd' :: MutableRead (StateT (a, Maybe EditSource) (ApplyStack tt IO)) (WholeReader a)
+            rd' ReadWhole = do
+                (a, _) <- get
+                return a
+            push' ::
+                   [WholeEdit a]
+                -> StateT (a, Maybe EditSource) (ApplyStack tt IO) (Maybe (EditSource -> StateT (a, Maybe EditSource) (ApplyStack tt IO) ()))
+            push' = singleAlwaysEdit $ \(MkWholeReaderEdit a) esrc -> put (a, Just esrc)
+            in MkRunnable1 (MkTransStackRunner run' :: TransStackRunner (StateT (a, Maybe EditSource) ': tt)) $
+               MkAnObject rd' push'
 
 copyObject ::
        forall edit. FullEdit edit
@@ -183,16 +253,20 @@ copyObject ::
     -> Object edit
     -> Object edit
     -> IO ()
-copyObject esrc (MkRunnableIO (runSrc :: IOFunction ms) (MkAnObject readSrc _)) (MkRunnableIO (runDest :: IOFunction md) (MkAnObject _ pushDest)) =
-    case isCombineMonadUnliftIOStack @ms @md of
-        Dict ->
-            combineUnliftIOFunctions @ms @md runSrc runDest $
-            replaceEdit @edit (remonadMutableRead (combineUnliftFstMFunction @ms @md) readSrc) $ \edit ->
-                combineUnliftSndMFunction @ms @md $ pushOrFail "failed to copy object" esrc $ pushDest [edit]
+copyObject esrc =
+    joinRunnable1Maps_ $ \(MkAnObject readSrc _) (MkAnObject _ pushDest) (MkTransStackRunner run :: TransStackRunner tt) ->
+        case transStackDict @MonadFail @tt @IO of
+            Dict ->
+                case transStackDict @MonadIO @tt @IO of
+                    Dict ->
+                        run $
+                        replaceEdit @edit readSrc $ \edit -> pushOrFail "failed to copy object" esrc $ pushDest [edit]
 
 exclusiveObject :: forall edit. Object edit -> With IO (Object edit)
-exclusiveObject (MkRunnableIO (run :: IOFunction m) (MkAnObject rd push)) call =
-    run $ liftIOWithUnlift $ \unlift -> call $ MkRunnableIO unlift $ MkAnObject rd push
+exclusiveObject (MkRunnable1 (MkTransStackRunner run :: TransStackRunner tt) anobj) call =
+    run $ unStackT $ liftWithUnliftAll $ \unlift -> call $ MkRunnable1 (unliftStackTransStackRunner unlift) anobj
 
 getObjectSubject :: FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
-getObjectSubject (MkRunnableIO unlift (MkAnObject rd _)) = unlift $ mutableReadToSubject rd
+getObjectSubject (MkRunnable1 (MkTransStackRunner run :: TransStackRunner tt) (MkAnObject rd _)) =
+    case transStackUnliftMonadIO @tt @IO of
+        Dict -> run $ mutableReadToSubject rd

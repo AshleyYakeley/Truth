@@ -4,13 +4,7 @@ module Main
     ( main
     ) where
 
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Constraint
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Unlift
-import Data.Sequences
-import Data.Type.Equality
-import Prelude
+import Shapes
 import Subscribe
 import Test.SimpleString
 import Test.Tasty
@@ -138,16 +132,16 @@ testStringEdit =
 
 testLensGet :: TestTree
 testLensGet =
-    testProperty "get" $ \run (base :: String) ->
+    testProperty "get" $ \srun (base :: String) ->
         ioProperty $ do
-            MkRunnableT2 unlift MkAnEditLens {..} <- stringSectionLens run
-            let MkAnUpdateFunction {..} = elFunction
-            unlift $
-                withTransConstraintTM @MonadIO $ do
+            MkRunnable2 trun MkAnEditLens {..} <- stringSectionLens srun
+            runMonoTransStackRunner @IO trun $ \run -> do
+                let MkAnUpdateFunction {..} = elFunction
+                run $ do
                     let
                         expected :: String
-                        expected = subjectToRead base $ StringReadSection run
-                    found <- mutableReadToSubject $ ufGet $ subjectToMutableRead base
+                        expected = subjectToRead base $ StringReadSection srun
+                    found <- mutableReadToSubject $ ufGet $ subjectToMutableRead @IO base
                     return $ found === expected
 
 showVar :: Show a => String -> a -> String
@@ -181,31 +175,33 @@ lensUpdateGetProperty ::
     -> Property
 lensUpdateGetProperty getlens oldA editA =
     ioProperty @Property $ do
-        MkRunnableT2 (unlift :: Untrans t) (MkAnEditLens {..}) <- getlens
-        case unsafeRefl @t @(StateT state) of
-            Refl ->
-                unlift $ do
-                    let MkAnUpdateFunction {..} = elFunction
-                    editFirst <- get
-                    newA <- mutableReadToSubject $ applyEdit editA $ subjectToMutableRead oldA
-                    oldB <- mutableReadToSubject $ ufGet $ subjectToMutableRead oldA
-                    updateBs <- ufUpdate (editUpdate editA) $ subjectToMutableRead newA
-                    newState <- get
-                    newB1 <- mutableReadToSubject $ applyEdits (fmap updateEdit updateBs) $ subjectToMutableRead oldB
-                    newB2 <- mutableReadToSubject $ ufGet $ subjectToMutableRead newA
-                    let
-                        vars =
-                            [ showVar "oldA" oldA
-                            , showVar "oldState" editFirst
-                            , showVar "oldB" oldB
-                            , showVar "editA" editA
-                            , showVar "updateBs" updateBs
-                            , showVar "newA" newA
-                            , showVar "newState" newState
-                            , showVar "newB (edits)" newB1
-                            , showVar "newB (lens )" newB2
-                            ]
-                    return $ counterexamples vars $ newB1 === newB2
+        MkRunnable2 (trun :: TransStackRunner tt) (MkAnEditLens {..}) <- getlens
+        runMonoTransStackRunner @IO trun $ \run ->
+            case unsafeRefl @tt @'[ StateT state] of
+                Refl ->
+                    run $ do
+                        let MkAnUpdateFunction {..} = elFunction
+                        editFirst <- get
+                        newA <- mutableReadToSubject $ applyEdit editA $ subjectToMutableRead oldA
+                        oldB <- mutableReadToSubject $ ufGet $ subjectToMutableRead oldA
+                        updateBs <- ufUpdate (editUpdate editA) $ subjectToMutableRead newA
+                        newState <- get
+                        newB1 <-
+                            mutableReadToSubject $ applyEdits (fmap updateEdit updateBs) $ subjectToMutableRead oldB
+                        newB2 <- mutableReadToSubject $ ufGet $ subjectToMutableRead newA
+                        let
+                            vars =
+                                [ showVar "oldA" oldA
+                                , showVar "oldState" editFirst
+                                , showVar "oldB" oldB
+                                , showVar "editA" editA
+                                , showVar "updateBs" updateBs
+                                , showVar "newA" newA
+                                , showVar "newState" newState
+                                , showVar "newB (edits)" newB1
+                                , showVar "newB (lens )" newB2
+                                ]
+                        return $ counterexamples vars $ newB1 === newB2
 
 testLensUpdate :: TestTree
 testLensUpdate =

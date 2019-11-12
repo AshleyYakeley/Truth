@@ -72,14 +72,14 @@ lastWholeUpdate updates = do
     return subj
 
 wholePutEdits ::
-       (MonadTrans t, Monad m)
-    => (ReaderSubject reader -> MutableRead m (EditReader edita) -> t m (Maybe [edita]))
+       (Monad mm, Monad m)
+    => (ReaderSubject reader -> MutableRead m (EditReader edita) -> mm (Maybe [edita]))
     -> [WholeReaderEdit reader]
     -> MutableRead m (EditReader edita)
-    -> t m (Maybe [edita])
+    -> mm (Maybe [edita])
 wholePutEdits pe edits mr =
     case lastWholeEdit edits of
-        Nothing -> lift $ return $ Just []
+        Nothing -> return $ Just []
         (Just subj) -> pe subj mr
 
 type WholeEdit a = WholeReaderEdit (WholeReader a)
@@ -104,21 +104,20 @@ pattern MkWholeUpdate a = MkWholeReaderUpdate a
 
 wholeUpdateFunction :: forall a b. (a -> b) -> UpdateFunction (WholeUpdate a) (WholeUpdate b)
 wholeUpdateFunction ab =
-    MkRunnableT2 identityUntrans $
+    MkRunnable2 cmEmpty $
     MkAnUpdateFunction
-        { ufGet = \mr ReadWhole -> lift $ fmap ab $ mr ReadWhole
+        { ufGet = \mr ReadWhole -> fmap ab $ mr ReadWhole
         , ufUpdate = \(MkWholeUpdate a) _ -> return [MkWholeUpdate $ ab a]
         }
 
 ioWholeUpdateFunction :: forall a b. (a -> IO b) -> UpdateFunction (WholeUpdate a) (WholeUpdate b)
 ioWholeUpdateFunction aiob =
-    MkRunnableT2 identityUntrans $
+    MkRunnable2 cmEmpty $
     MkAnUpdateFunction
         { ufGet =
-              \mr ReadWhole ->
-                  lift $ do
-                      a <- mr ReadWhole
-                      liftIO $ aiob a
+              \mr ReadWhole -> do
+                  a <- mr ReadWhole
+                  liftIO $ aiob a
         , ufUpdate =
               \(MkWholeUpdate a) _ -> do
                   b <- liftIO $ aiob a
@@ -153,30 +152,28 @@ changeOnlyUpdateFunction = do
                 _ -> do
                     put $ Just newa
                     return [MkWholeUpdate newa]
-    return $ MkRunnableT2 (mVarRun var) $ MkAnUpdateFunction {..}
+    return $ MkRunnable2 (MkTransStackRunner @'[ StateT (Maybe a)] $ mVarRun var) $ MkAnUpdateFunction {..}
 
 ioWholeEditLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> EditLens (WholeUpdate a) (WholeUpdate b)
 ioWholeEditLens ioget ioput =
-    MkRunnableT2 identityUntrans $
+    MkRunnable2 cmEmpty $
     MkAnEditLens
         { elFunction =
               MkAnUpdateFunction
                   { ufGet =
-                        \mr ReadWhole ->
-                            lift $ do
-                                a <- mr ReadWhole
-                                liftIO $ ioget a
+                        \mr ReadWhole -> do
+                            a <- mr ReadWhole
+                            liftIO $ ioget a
                   , ufUpdate =
                         \(MkWholeUpdate a) _ -> do
                             b <- liftIO $ ioget a
                             return [MkWholeUpdate b]
                   }
         , elPutEdits =
-              elPutEditsFromPutEdit $ \(MkWholeReaderEdit b) mr ->
-                  lift $ do
-                      olda <- mr ReadWhole
-                      mnewa <- liftIO $ ioput b olda
-                      return $ fmap (\newa -> [MkWholeReaderEdit newa]) mnewa
+              elPutEditsFromPutEdit @'[] $ \(MkWholeReaderEdit b) mr -> do
+                  olda <- mr ReadWhole
+                  mnewa <- liftIO $ ioput b olda
+                  return $ fmap (\newa -> [MkWholeReaderEdit newa]) mnewa
         }
 
 wholeEditLens ::
@@ -217,34 +214,34 @@ pairWholeUpdateFunction ::
        UpdateFunction update (WholeUpdate a)
     -> UpdateFunction update (WholeUpdate b)
     -> UpdateFunction update (WholeUpdate (a, b))
-pairWholeUpdateFunction (MkRunnableT2 (ula :: Untrans ta) (MkAnUpdateFunction ga ua)) (MkRunnableT2 (ulb :: Untrans tb) (MkAnUpdateFunction gb ub)) = let
-    gab :: ReadFunctionT (ComposeT ta tb) (UpdateReader update) (WholeReader (a, b))
-    gab mr ReadWhole =
-        withTransConstraintTM @MonadIO $ do
-            a <- lift1ComposeT $ ga mr ReadWhole
-            b <- lift2ComposeT'' $ gb mr ReadWhole
-            return (a, b)
-    uab :: forall m. MonadIO m
-        => update
-        -> MutableRead m (UpdateReader update)
-        -> ComposeT ta tb m [WholeUpdate (a, b)]
-    uab update mr =
-        case hasTransConstraint @MonadIO @tb @m of
-            Dict ->
-                case hasTransConstraint @MonadIO @ta @(tb m) of
-                    Dict -> do
-                        weas <- lift1ComposeT $ ua update mr
-                        webs <- lift2ComposeT $ ub update mr
-                        case (lastWholeUpdate weas, lastWholeUpdate webs) of
-                            (Nothing, Nothing) -> return []
-                            (ma, mb) -> do
-                                a <-
-                                    case ma of
-                                        Just a -> return a
-                                        Nothing -> lift1ComposeT $ ga mr ReadWhole
-                                b <-
-                                    case mb of
-                                        Just b -> return b
-                                        Nothing -> lift2ComposeT $ gb mr ReadWhole
-                                return [MkWholeUpdate (a, b)]
-    in MkRunnableT2 (composeUntrans ula ulb) $ MkAnUpdateFunction gab uab
+pairWholeUpdateFunction =
+    joinRunnable2Maps $ \(MkAnUpdateFunction ga ua :: AnUpdateFunction tt _ _) (MkAnUpdateFunction gb ub) -> let
+        gab :: ReadFunctionTT tt (UpdateReader update) (WholeReader (a, b))
+        gab (mr :: MutableRead m _) ReadWhole =
+            case transStackUnliftMonadIO @tt @m of
+                Dict -> do
+                    a <- ga mr ReadWhole
+                    b <- gb mr ReadWhole
+                    return (a, b)
+        uab :: forall m. MonadIO m
+            => update
+            -> MutableRead m (UpdateReader update)
+            -> ApplyStack tt m [WholeUpdate (a, b)]
+        uab update mr =
+            case transStackUnliftMonadIO @tt @m of
+                Dict -> do
+                    weas <- ua update mr
+                    webs <- ub update mr
+                    case (lastWholeUpdate weas, lastWholeUpdate webs) of
+                        (Nothing, Nothing) -> return []
+                        (ma, mb) -> do
+                            a <-
+                                case ma of
+                                    Just a -> return a
+                                    Nothing -> ga mr ReadWhole
+                            b <-
+                                case mb of
+                                    Just b -> return b
+                                    Nothing -> gb mr ReadWhole
+                            return [MkWholeUpdate (a, b)]
+        in MkAnUpdateFunction gab uab

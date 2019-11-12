@@ -118,8 +118,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
             kk <- seqStoreToList store
             return $ lookup @[(ContainerKey cont, Int)] key $ zip (fmap fst kk) [0 ..]
     cvReceiveUpdates Nothing $ \_ mr edits ->
-        mapUpdates (editLensFunction tableLens) mr edits $ \_ edits' ->
-            withTransConstraintTM @MonadIO $
+        mapUpdates (editLensFunction tableLens) mr edits $ \(_ :: _ tt) _ edits' ->
             for_ edits' $ \case
                 KeyUpdateDelete key -> do
                     mindex <- findInStore key
@@ -133,7 +132,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
                            case mindex of
                                Just _index -> return ()
                                Nothing -> do
-                                   storeItem <- lift $ getStoreItem mr key
+                                   storeItem <- stackLift @tt $ getStoreItem mr key
                                    _ <- seqStoreAppend store storeItem
                                    return ()
                 KeyUpdateClear -> seqStoreClear store
@@ -143,8 +142,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
         changeText :: Change m (ContainerKey cont, StoreEntry updateT o rowtext rowprops)
         changeText =
             MkChange $ \(key, oldcol) ->
-                mapUpdates (editLensFunction $ entryTextLens oldcol) mr tupdates $ \_ updates ->
-                    withTransConstraintTM @MonadIO $
+                mapUpdates (editLensFunction $ entryTextLens oldcol) mr tupdates $ \_ _ updates ->
                     case updates of
                         [] -> return Nothing
                         _ -> do
@@ -155,8 +153,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
         changeProp :: Change m (ContainerKey cont, StoreEntry updateT o rowtext rowprops)
         changeProp =
             MkChange $ \(key, oldcol) ->
-                mapUpdates (entryPropFunc oldcol) mr tupdates $ \_ updates ->
-                    withTransConstraintTM @MonadIO $
+                mapUpdates (entryPropFunc oldcol) mr tupdates $ \_ _ updates ->
                     case updates of
                         [] -> return Nothing
                         _ -> do

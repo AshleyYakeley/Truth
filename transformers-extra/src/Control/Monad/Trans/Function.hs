@@ -1,10 +1,6 @@
 module Control.Monad.Trans.Function where
 
-import Control.Category
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
-import Data.Kind
-import Prelude hiding ((.), id)
+import Import
 
 type MFunction (p :: k -> Type) (q :: k -> Type) = forall (a :: k). p a -> q a
 

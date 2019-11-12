@@ -8,7 +8,6 @@ import Truth.Core.Import
 
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.Run
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
 
@@ -48,7 +47,9 @@ undoQueueSubscriber ::
     -> IO (Subscriber update, UndoActions)
 undoQueueSubscriber sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
-    MkRunnableIO (runP :: IOFunction ma) (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub
+    MkRunnable1 (MkTransStackRunner runP :: TransStackRunner tt) (MkASubscriber (MkAnObject readP pushP) subscribeP) <-
+        return sub
+    Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     let
         undoActions = let
             uaUndo :: EditSource -> IO Bool
@@ -103,5 +104,7 @@ undoQueueSubscriber sub = do
                             mVarRun queueVar $ updateUndoQueue readP edits
                             action esrc
                     Nothing -> Nothing
-        subC = MkRunnableIO runP $ MkASubscriber (MkAnObject readP pushC) subscribeP
+        subC =
+            MkRunnable1 (MkTransStackRunner runP :: TransStackRunner tt) $
+            MkASubscriber (MkAnObject readP pushC) subscribeP
     return (subC, undoActions)

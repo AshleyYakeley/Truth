@@ -93,88 +93,101 @@ fstLiftEditLens ::
        forall updateX updateA updateB.
        EditLens updateA updateB
     -> EditLens (PairUpdate updateA updateX) (PairUpdate updateB updateX)
-fstLiftEditLens (MkRunnableT2 (unlift :: Untrans t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
-    ufGet :: ReadFunctionT t (PairUpdateReader updateA updateX) (PairUpdateReader updateB updateX)
+fstLiftEditLens (MkRunnable2 (run@(MkTransStackRunner _) :: TransStackRunner tt) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
+    ufGet :: ReadFunctionTT tt (PairUpdateReader updateA updateX) (PairUpdateReader updateB updateX)
     ufGet mr (MkTupleUpdateReader SelectFirst rt) = g (firstReadFunction mr) rt
-    ufGet mr (MkTupleUpdateReader SelectSecond rt) = lift $ mr (MkTupleUpdateReader SelectSecond rt)
+    ufGet mr (MkTupleUpdateReader SelectSecond rt) = stackLift @tt $ mr (MkTupleUpdateReader SelectSecond rt)
     ufUpdate ::
            forall m. MonadIO m
         => PairUpdate updateA updateX
         -> MutableRead m (PairUpdateReader updateA updateX)
-        -> t m [PairUpdate updateB updateX]
+        -> ApplyStack tt m [PairUpdate updateB updateX]
     ufUpdate (MkTupleUpdate SelectFirst updateA) mr =
-        withTransConstraintTM @MonadIO $ do
-            ebs <- u updateA $ firstReadFunction mr
-            return $ fmap (MkTupleUpdate SelectFirst) ebs
-    ufUpdate (MkTupleUpdate SelectSecond ex) _ = withTransConstraintTM @MonadIO $ return [MkTupleUpdate SelectSecond ex]
-    elFunction :: AnUpdateFunction t (PairUpdate updateA updateX) (PairUpdate updateB updateX)
+        case transStackUnliftMonadIO @tt @m of
+            Dict -> do
+                ebs <- u updateA $ firstReadFunction mr
+                return $ fmap (MkTupleUpdate SelectFirst) ebs
+    ufUpdate (MkTupleUpdate SelectSecond ex) _ =
+        case transStackUnliftMonadIO @tt @m of
+            Dict -> return [MkTupleUpdate SelectSecond ex]
+    elFunction :: AnUpdateFunction tt (PairUpdate updateA updateX) (PairUpdate updateB updateX)
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [PairUpdateEdit updateB updateX]
         -> MutableRead m (PairUpdateReader updateA updateX)
-        -> t m (Maybe [PairUpdateEdit updateA updateX])
+        -> ApplyStack tt m (Maybe [PairUpdateEdit updateA updateX])
     elPutEdits edits mr =
-        case partitionPairEdits edits of
-            (ebs, exs) ->
-                withTransConstraintTM @MonadIO $
-                getComposeM $ do
-                    eas <- MkComposeM $ pe ebs $ firstReadFunction mr
-                    return $ (fmap (MkTupleUpdateEdit SelectFirst) eas) ++ (fmap (MkTupleUpdateEdit SelectSecond) exs)
-    in MkRunnableT2 unlift $ MkAnEditLens {..}
+        case transStackUnliftMonadIO @tt @m of
+            Dict ->
+                case partitionPairEdits edits of
+                    (ebs, exs) ->
+                        getComposeM $ do
+                            eas <- MkComposeM $ pe ebs $ firstReadFunction mr
+                            return $
+                                (fmap (MkTupleUpdateEdit SelectFirst) eas) ++
+                                (fmap (MkTupleUpdateEdit SelectSecond) exs)
+    in MkRunnable2 run $ MkAnEditLens {..}
 
 sndLiftEditLens ::
        forall updateX updateA updateB.
        EditLens updateA updateB
     -> EditLens (PairUpdate updateX updateA) (PairUpdate updateX updateB)
-sndLiftEditLens (MkRunnableT2 (unlift :: Untrans t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
-    ufGet :: ReadFunctionT t (PairUpdateReader updateX updateA) (PairUpdateReader updateX updateB)
-    ufGet mr (MkTupleUpdateReader SelectFirst rt) = lift $ mr (MkTupleUpdateReader SelectFirst rt)
+sndLiftEditLens (MkRunnable2 (run@(MkTransStackRunner _) :: TransStackRunner tt) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
+    ufGet :: ReadFunctionTT tt (PairUpdateReader updateX updateA) (PairUpdateReader updateX updateB)
+    ufGet mr (MkTupleUpdateReader SelectFirst rt) = stackLift @tt $ mr (MkTupleUpdateReader SelectFirst rt)
     ufGet mr (MkTupleUpdateReader SelectSecond rt) = g (secondReadFunction mr) rt
     ufUpdate ::
            forall m. MonadIO m
         => PairUpdate updateX updateA
         -> MutableRead m (PairUpdateReader updateX updateA)
-        -> t m [PairUpdate updateX updateB]
-    ufUpdate (MkTupleUpdate SelectFirst ex) _ = withTransConstraintTM @MonadIO $ return [MkTupleUpdate SelectFirst ex]
+        -> ApplyStack tt m [PairUpdate updateX updateB]
+    ufUpdate (MkTupleUpdate SelectFirst ex) _ =
+        case transStackUnliftMonadIO @tt @m of
+            Dict -> return [MkTupleUpdate SelectFirst ex]
     ufUpdate (MkTupleUpdate SelectSecond updateA) mr =
-        withTransConstraintTM @MonadIO $ do
-            ebs <- u updateA $ secondReadFunction mr
-            return $ fmap (MkTupleUpdate SelectSecond) ebs
-    elFunction :: AnUpdateFunction t (PairUpdate updateX updateA) (PairUpdate updateX updateB)
+        case transStackUnliftMonadIO @tt @m of
+            Dict -> do
+                ebs <- u updateA $ secondReadFunction mr
+                return $ fmap (MkTupleUpdate SelectSecond) ebs
+    elFunction :: AnUpdateFunction tt (PairUpdate updateX updateA) (PairUpdate updateX updateB)
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [PairUpdateEdit updateX updateB]
         -> MutableRead m (PairUpdateReader updateX updateA)
-        -> t m (Maybe [PairUpdateEdit updateX updateA])
+        -> ApplyStack tt m (Maybe [PairUpdateEdit updateX updateA])
     elPutEdits edits mr =
-        case partitionPairEdits edits of
-            (exs, ebs) ->
-                withTransConstraintTM @MonadIO $
-                getComposeM $ do
-                    eas <- MkComposeM $ pe ebs $ secondReadFunction mr
-                    return $ (fmap (MkTupleUpdateEdit SelectFirst) exs) ++ (fmap (MkTupleUpdateEdit SelectSecond) eas)
-    in MkRunnableT2 unlift $ MkAnEditLens {..}
+        case transStackUnliftMonadIO @tt @m of
+            Dict ->
+                case partitionPairEdits edits of
+                    (exs, ebs) ->
+                        getComposeM $ do
+                            eas <- MkComposeM $ pe ebs $ secondReadFunction mr
+                            return $
+                                (fmap (MkTupleUpdateEdit SelectFirst) exs) ++
+                                (fmap (MkTupleUpdateEdit SelectSecond) eas)
+    in MkRunnable2 run $ MkAnEditLens {..}
 
 pairCombineAnUpdateFunctions ::
-       forall t updateA updateB1 updateB2. MonadTransUntrans t
-    => AnUpdateFunction t updateA updateB1
-    -> AnUpdateFunction t updateA updateB2
-    -> AnUpdateFunction t updateA (PairUpdate updateB1 updateB2)
+       forall tt updateA updateB1 updateB2. MonadTransStackUnliftAll tt
+    => AnUpdateFunction tt updateA updateB1
+    -> AnUpdateFunction tt updateA updateB2
+    -> AnUpdateFunction tt updateA (PairUpdate updateB1 updateB2)
 pairCombineAnUpdateFunctions (MkAnUpdateFunction g1 u1) (MkAnUpdateFunction g2 u2) = let
-    g12 :: ReadFunctionT t (UpdateReader updateA) (PairUpdateReader updateB1 updateB2)
+    g12 :: ReadFunctionTT tt (UpdateReader updateA) (PairUpdateReader updateB1 updateB2)
     g12 mr (MkTupleUpdateReader SelectFirst rt) = g1 mr rt
     g12 mr (MkTupleUpdateReader SelectSecond rt) = g2 mr rt
     u12 :: forall m. MonadIO m
         => updateA
         -> MutableRead m (UpdateReader updateA)
-        -> t m [PairUpdate updateB1 updateB2]
+        -> ApplyStack tt m [PairUpdate updateB1 updateB2]
     u12 updateA mr =
-        withTransConstraintTM @MonadIO $ do
-            eb1s <- u1 updateA mr
-            eb2s <- u2 updateA mr
-            return $ fmap (MkTupleUpdate SelectFirst) eb1s ++ fmap (MkTupleUpdate SelectSecond) eb2s
+        case transStackUnliftMonadIO @tt @m of
+            Dict -> do
+                eb1s <- u1 updateA mr
+                eb2s <- u2 updateA mr
+                return $ fmap (MkTupleUpdate SelectFirst) eb1s ++ fmap (MkTupleUpdate SelectSecond) eb2s
     in MkAnUpdateFunction g12 u12
 
 pairCombineUpdateFunctions ::
@@ -182,7 +195,7 @@ pairCombineUpdateFunctions ::
        UpdateFunction updateA updateB1
     -> UpdateFunction updateA updateB2
     -> UpdateFunction updateA (PairUpdate updateB1 updateB2)
-pairCombineUpdateFunctions = joinUnliftables pairCombineAnUpdateFunctions
+pairCombineUpdateFunctions = joinRunnable2Maps pairCombineAnUpdateFunctions
 
 pairCombineEditLenses ::
        forall updateA updateB1 updateB2.
@@ -190,21 +203,22 @@ pairCombineEditLenses ::
     -> EditLens updateA updateB2
     -> EditLens updateA (PairUpdate updateB1 updateB2)
 pairCombineEditLenses =
-    joinUnliftables $ \(MkAnEditLens af1 pe1 :: AnEditLens t updateA updateB1) (MkAnEditLens af2 pe2) -> let
+    joinRunnable2Maps $ \(MkAnEditLens af1 pe1 :: AnEditLens tt updateA updateB1) (MkAnEditLens af2 pe2) -> let
         af12 = pairCombineAnUpdateFunctions af1 af2
         pe12 ::
                forall m. MonadIO m
             => [PairUpdateEdit updateB1 updateB2]
             -> MutableRead m (UpdateReader updateA)
-            -> t m (Maybe [UpdateEdit updateA])
+            -> ApplyStack tt m (Maybe [UpdateEdit updateA])
         pe12 edits mr =
-            case partitionPairEdits edits of
-                (eb1, eb2) ->
-                    withTransConstraintTM @MonadIO $
-                    getComposeM $ do
-                        ea1 <- MkComposeM $ pe1 eb1 mr
-                        ea2 <- MkComposeM $ pe2 eb2 mr
-                        return $ ea1 ++ ea2
+            case transStackUnliftMonadIO @tt @m of
+                Dict ->
+                    case partitionPairEdits edits of
+                        (eb1, eb2) ->
+                            getComposeM $ do
+                                ea1 <- MkComposeM $ pe1 eb1 mr
+                                ea2 <- MkComposeM $ pe2 eb2 mr
+                                return $ ea1 ++ ea2
         in MkAnEditLens af12 pe12
 
 partialPairEditLens ::
@@ -215,14 +229,14 @@ partialPairEditLens = let
            forall m t. MonadIO m
         => MutableRead m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
         -> PairUpdateReader updateA updateB t
-        -> IdentityT m t
-    ufGet mr (MkTupleUpdateReader SelectFirst rt) = lift $ mr $ MkTupleUpdateReader SelectFirst rt
-    ufGet mr (MkTupleUpdateReader SelectSecond rt) = lift $ mr $ MkTupleUpdateReader SelectSecond rt
+        -> m t
+    ufGet mr (MkTupleUpdateReader SelectFirst rt) = mr $ MkTupleUpdateReader SelectFirst rt
+    ufGet mr (MkTupleUpdateReader SelectSecond rt) = mr $ MkTupleUpdateReader SelectSecond rt
     ufUpdate ::
            forall m. MonadIO m
         => PairUpdate (PartialUpdate updateA) (PartialUpdate updateB)
         -> MutableRead m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
-        -> IdentityT m [PartialUpdate (PairUpdate updateA updateB)]
+        -> m [PartialUpdate (PairUpdate updateA updateB)]
     ufUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate update)) _ =
         return [KnownPartialUpdate $ MkTupleUpdate SelectFirst update]
     ufUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate selset)) _ =
@@ -242,15 +256,15 @@ partialPairEditLens = let
                 SelectFirst -> False
                 SelectSecond -> selset rt
     elFunction ::
-           AnUpdateFunction IdentityT (PairUpdate (PartialUpdate updateA) (PartialUpdate updateB)) (PartialUpdate (PairUpdate updateA updateB))
+           AnUpdateFunction '[] (PairUpdate (PartialUpdate updateA) (PartialUpdate updateB)) (PartialUpdate (PairUpdate updateA updateB))
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [PairUpdateEdit updateA updateB]
         -> MutableRead m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
-        -> IdentityT m (Maybe [PairUpdateEdit (PartialUpdate updateA) (PartialUpdate updateB)])
+        -> m (Maybe [PairUpdateEdit (PartialUpdate updateA) (PartialUpdate updateB)])
     elPutEdits =
-        elPutEditsFromSimplePutEdit $ \case
+        elPutEditsFromSimplePutEdit @'[] $ \case
             MkTupleUpdateEdit SelectFirst edit -> return $ Just [MkTupleUpdateEdit SelectFirst edit]
             MkTupleUpdateEdit SelectSecond edit -> return $ Just [MkTupleUpdateEdit SelectSecond edit]
-    in MkRunnableT2 identityUntrans MkAnEditLens {..}
+    in MkRunnable2 cmEmpty MkAnEditLens {..}

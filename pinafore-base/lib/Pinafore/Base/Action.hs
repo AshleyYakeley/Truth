@@ -54,18 +54,19 @@ unPinaforeAction acUIToolkit acSubscriber acUndoActions (MkPinaforeAction action
 
 pinaforeFunctionValueGet :: PinaforeFunctionValue baseupdate t -> PinaforeAction baseupdate t
 pinaforeFunctionValueGet fval = do
-    MkRunnableIO objRun MkAnObject {..} <- pinaforeActionObject
-    liftIO $ objRun $ updateFunctionRead fval objRead ReadWhole
+    MkRunnable1 trun MkAnObject {..} <- pinaforeActionObject
+    runMonoTransStackRunner @IO trun $ \run -> liftIO $ run $ updateFunctionRead fval objRead ReadWhole
 
 pinaforeLensPush :: PinaforeLensValue baseupdate update -> [UpdateEdit update] -> PinaforeAction baseupdate ()
 pinaforeLensPush lens edits = do
     obj <- pinaforeActionObject
     case mapObject lens obj of
-        MkRunnableIO objRun MkAnObject {..} -> do
-            ok <- liftIO $ objRun $ pushEdit noEditSource $ objEdit edits
-            if ok
-                then return ()
-                else empty
+        MkRunnable1 trun MkAnObject {..} ->
+            runMonoTransStackRunner @IO trun $ \run -> do
+                ok <- liftIO $ run $ pushEdit noEditSource $ objEdit edits
+                if ok
+                    then return ()
+                    else empty
 
 data PinaforeWindow = MkPinaforeWindow
     { pwClose :: IO ()

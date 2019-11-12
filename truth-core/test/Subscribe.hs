@@ -29,19 +29,19 @@ testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
     => UpdateFunction (WholeUpdate a) (WholeUpdate a)
 testUpdateFunction = let
-    ufGet :: ReadFunctionT IdentityT (WholeReader a) (WholeReader a)
-    ufGet mr ReadWhole = lift $ mr ReadWhole
+    ufGet :: ReadFunction (WholeReader a) (WholeReader a)
+    ufGet mr = mr
     ufUpdate ::
            forall m. MonadIO m
         => WholeUpdate a
         -> MutableRead m (WholeReader a)
-        -> IdentityT m [WholeUpdate a]
+        -> m [WholeUpdate a]
     ufUpdate (MkWholeReaderUpdate s) mr = do
-        s' <- lift $ mr ReadWhole
+        s' <- mr ReadWhole
         liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
         liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
         return [MkWholeReaderUpdate s]
-    in MkRunnableT2 identityUntrans MkAnUpdateFunction {..}
+    in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
 
 testUpdateObject :: TestTree
 testUpdateObject =
@@ -58,9 +58,10 @@ testUpdateObject =
             recv' ee _ = for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv' update edit: " <> show s
         runLifeCycle $ do
             om' <- shareObjectMaker om
-            (MkRunnableIO run MkAnObject {..}, ()) <- om' recv
+            (MkRunnable1 trun MkAnObject {..}, ()) <- om' recv
             (_obj', ()) <- mapObjectMaker lens om' recv'
-            liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit [MkWholeReaderEdit "new"]
+            runMonoTransStackRunner @IO trun $ \run ->
+                liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit [MkWholeReaderEdit "new"]
             return ()
 
 testOutputEditor ::
@@ -78,43 +79,46 @@ testOutputEditor name call = let
     outputLn :: MonadIO m => String -> m ()
     outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
     editorInit :: Object (UpdateEdit update) -> LifeCycleIO ()
-    editorInit (MkRunnableIO run (MkAnObject r _)) =
-        liftIO $ do
-            val <- run $ mutableReadToSubject r
-            outputLn $ "init: " ++ show val
-            return ()
+    editorInit (MkRunnable1 trun (MkAnObject r _)) =
+        runMonoTransStackRunner @IO trun $ \run ->
+            liftIO $ do
+                val <- run $ mutableReadToSubject r
+                outputLn $ "init: " ++ show val
+                return ()
     editorUpdate :: () -> Object (UpdateEdit update) -> [update] -> EditContext -> IO ()
-    editorUpdate () (MkRunnableIO run (MkAnObject mr _)) edits _ = do
-        outputLn $ "receive " ++ show edits
-        val <- run $ mutableReadToSubject mr
-        outputLn $ "receive " ++ show val
+    editorUpdate () (MkRunnable1 trun (MkAnObject mr _)) edits _ =
+        runMonoTransStackRunner @IO trun $ \run -> do
+            outputLn $ "receive " ++ show edits
+            val <- run $ mutableReadToSubject mr
+            outputLn $ "receive " ++ show val
     editorDo :: () -> Object (UpdateEdit update) -> LifeCycleIO ()
-    editorDo () (MkRunnableIO run (MkAnObject _ push)) = let
-        subDontEdits :: [[UpdateEdit update]] -> LifeCycleIO ()
-        subDontEdits editss =
-            liftIO $ do
-                outputLn "runObject"
-                run $
-                    for_ editss $ \edits -> do
-                        outputLn $ "push " ++ show edits
-                        maction <- push edits
-                        case maction of
-                            Nothing -> outputLn "push disallowed"
-                            Just _action -> outputLn "push ignored"
-        subDoEdits :: [[UpdateEdit update]] -> LifeCycleIO ()
-        subDoEdits editss =
-            liftIO $ do
-                outputLn "runObject"
-                run $
-                    for_ editss $ \edits -> do
-                        outputLn $ "push " ++ show edits
-                        maction <- push edits
-                        case maction of
-                            Nothing -> outputLn "push disallowed"
-                            Just action -> do
-                                action noEditSource
-                                outputLn $ "push succeeded"
-        in call MkSubscribeContext {..}
+    editorDo () (MkRunnable1 trun (MkAnObject _ push)) =
+        runMonoTransStackRunner @IO trun $ \run -> let
+            subDontEdits :: [[UpdateEdit update]] -> LifeCycleIO ()
+            subDontEdits editss =
+                liftIO $ do
+                    outputLn "runObject"
+                    run $
+                        for_ editss $ \edits -> do
+                            outputLn $ "push " ++ show edits
+                            maction <- push edits
+                            case maction of
+                                Nothing -> outputLn "push disallowed"
+                                Just _action -> outputLn "push ignored"
+            subDoEdits :: [[UpdateEdit update]] -> LifeCycleIO ()
+            subDoEdits editss =
+                liftIO $ do
+                    outputLn "runObject"
+                    run $
+                        for_ editss $ \edits -> do
+                            outputLn $ "push " ++ show edits
+                            maction <- push edits
+                            case maction of
+                                Nothing -> outputLn "push disallowed"
+                                Just action -> do
+                                    action noEditSource
+                                    outputLn $ "push succeeded"
+            in call MkSubscribeContext {..}
     in MkEditor {..}
 
 testSubscription ::

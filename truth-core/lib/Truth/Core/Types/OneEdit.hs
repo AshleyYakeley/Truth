@@ -40,47 +40,50 @@ instance IsEditUpdate update => IsEditUpdate (OneUpdate f update) where
     updateEdit (MkOneUpdate update) = MkOneEdit $ updateEdit update
 
 oneLiftAnUpdateFunction ::
-       forall t f updateA updateB. (MonadTransTunnel t, MonadOne f)
-    => AnUpdateFunction t updateA updateB
-    -> AnUpdateFunction t (OneUpdate f updateA) (OneUpdate f updateB)
+       forall tt f updateA updateB. (MonadTransStackUnliftAll tt, MonadOne f)
+    => AnUpdateFunction tt updateA updateB
+    -> AnUpdateFunction tt (OneUpdate f updateA) (OneUpdate f updateB)
 oneLiftAnUpdateFunction (MkAnUpdateFunction g u) = let
-    ufGet :: ReadFunctionT t (UpdateReader (OneUpdate f updateA)) (UpdateReader (OneUpdate f updateB))
-    ufGet = liftMaybeReadFunction g
+    ufGet :: ReadFunctionTT tt (UpdateReader (OneUpdate f updateA)) (UpdateReader (OneUpdate f updateB))
+    ufGet = liftMaybeReadFunction @tt g
     ufUpdate ::
            forall m. MonadIO m
         => OneUpdate f updateA
         -> MutableRead m (UpdateReader (OneUpdate f updateA))
-        -> t m [OneUpdate f updateB]
+        -> ApplyStack tt m [OneUpdate f updateB]
     ufUpdate (MkOneUpdate ea) mr =
-        withTransConstraintTM @Monad $
-        fmap (fmap MkOneUpdate . fromMaybe [] . getMaybeOne) $ transComposeOne $ u ea $ oneReadFunctionF mr
+        case transStackUnliftMonadIO @tt @m of
+            Dict ->
+                fmap (fmap MkOneUpdate . fromMaybe [] . getMaybeOne) $
+                transStackComposeOne @tt @f @m $ u ea $ oneReadFunctionF mr
     in MkAnUpdateFunction {..}
 
 oneLiftUpdateFunction ::
        forall f updateA updateB. MonadOne f
     => UpdateFunction updateA updateB
     -> UpdateFunction (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftUpdateFunction (MkRunnableT2 unlift ef) = MkRunnableT2 unlift $ oneLiftAnUpdateFunction ef
+oneLiftUpdateFunction (MkRunnable2 run@(MkTransStackRunner _) ef) = MkRunnable2 run $ oneLiftAnUpdateFunction ef
 
 oneLiftAnEditLens ::
-       forall t f updateA updateB. (MonadOne f, MonadTransTunnel t)
-    => AnEditLens t updateA updateB
-    -> AnEditLens t (OneUpdate f updateA) (OneUpdate f updateB)
+       forall tt f updateA updateB. (MonadTransStackUnliftAll tt, MonadOne f)
+    => AnEditLens tt updateA updateB
+    -> AnEditLens tt (OneUpdate f updateA) (OneUpdate f updateB)
 oneLiftAnEditLens (MkAnEditLens ef pe) = let
     elFunction = oneLiftAnUpdateFunction ef
     elPutEdits ::
            forall m. MonadIO m
         => [OneEdit f (UpdateEdit updateB)]
         -> MutableRead m (EditReader (OneEdit f (UpdateEdit updateA)))
-        -> t m (Maybe [OneEdit f (UpdateEdit updateA)])
+        -> ApplyStack tt m (Maybe [OneEdit f (UpdateEdit updateA)])
     elPutEdits ebs mr =
-        withTransConstraintTM @Monad $
-        fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $
-        transComposeOne $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
+        case transStackUnliftMonadIO @tt @m of
+            Dict ->
+                fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $
+                transStackComposeOne @tt @f @m $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
     in MkAnEditLens {..}
 
 oneLiftEditLens ::
        forall f updateA updateB. MonadOne f
     => EditLens updateA updateB
     -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftEditLens (MkRunnableT2 unlift lens) = MkRunnableT2 unlift $ oneLiftAnEditLens lens
+oneLiftEditLens (MkRunnable2 run@(MkTransStackRunner _) lens) = MkRunnable2 run $ oneLiftAnEditLens lens

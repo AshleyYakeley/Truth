@@ -4,7 +4,6 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.Run
 import Truth.Core.Object.Subscriber
 
 data Editor (update :: Type) r = forall editor. MkEditor
@@ -39,10 +38,10 @@ instance Applicative (Editor update) where
         in MkEditor {..}
 
 subscribeEditor :: Subscriber update -> Editor update r -> LifeCycleIO r
-subscribeEditor (MkRunnableIO run (MkASubscriber anobject sub)) editor = let
-    object = MkRunnableIO run anobject
+subscribeEditor (MkRunnable1 trun (MkASubscriber anobject sub)) editor = let
+    object = MkRunnable1 trun anobject
     in case editor of
            MkEditor initr update f -> do
                e <- initr object
-               remonad run $ sub $ update e object
+               runMonoTransStackRunner @IO trun $ \run -> remonad run $ sub $ update e object
                f e object

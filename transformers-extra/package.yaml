@@ -11,15 +11,19 @@ library:
       - base >= 4.12
       - constraints
       - transformers
+      - witness
     exposed-modules:
       - Control.Monad.Trans.Constraint
       - Control.Monad.Trans.Tunnel
+      - Control.Monad.Trans.Coerce
       - Control.Monad.Trans.Function
       - Control.Monad.Trans.Unlift
       - Control.Monad.Trans.AskUnlift
       - Control.Monad.Trans.Compose
       - Control.Monad.Trans.Free
-      - Control.Monad.Trans.IOStack
+      - Control.Monad.Trans.Stack
       - Control.Monad.Trans.UnliftIOStack
       - Control.Monad.Trans.ContExtra
       - Control.Monad.Trans.ReaderState
+    other-modules:
+      - Import

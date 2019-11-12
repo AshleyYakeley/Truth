@@ -1,11 +1,7 @@
 module Control.Monad.Trans.ReaderState where
 
-import Control.Category
-import Control.Monad
-import Control.Monad.Trans.Class
 import Control.Monad.Trans.Function
-import Control.Monad.Trans.State
-import Prelude hiding ((.), id)
+import Import
 
 type ReaderStateT f m = StateT (WMFunction f m) m
 
@@ -16,7 +12,7 @@ liftRS :: (Monad f, Monad m) => f a -> ReaderStateT f m a
 liftRS fa = do
     MkWMFunction fm <- get
     a <- lift $ fm fa
-    put $ MkWMFunction $ \cont -> fm $ fa >> cont
+    put $ MkWMFunction $ \c -> fm $ fa >> c
     return a
 
 updateRS :: Monad m => (forall a. f a -> f a) -> ReaderStateT f m ()

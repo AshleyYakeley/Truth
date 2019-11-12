@@ -13,13 +13,14 @@ createButton ::
     => UpdateSubject update
     -> Object (UpdateEdit update)
     -> CreateView sel update Button
-createButton subj (MkRunnableIO objRun MkAnObject {..}) =
+createButton subj (MkRunnable1 trun MkAnObject {..}) =
     cvMakeButton "Create" $
-    liftIO $
-    objRun $ do
-        edits <- getReplaceEditsFromSubject subj
-        _ <- pushEdit noEditSource $ objEdit edits
-        return ()
+    runMonoTransStackRunner @IO trun $ \run ->
+        liftIO $
+        run $ do
+            edits <- getReplaceEditsFromSubject subj
+            _ <- pushEdit noEditSource $ objEdit edits
+            return ()
 
 data OneWholeViews sel f
     = MissingOVS (Limit f)
@@ -74,16 +75,17 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
             firstfu <- viewObjectRead $ \_ mr -> mr ReadHasOne
             getWidgets firstfu
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic firstdvs $ \(MkRunnableIO unliftIO (MkAnObject mr _)) _ -> do
+    cvDynamic firstdvs $ \(MkRunnable1 trun (MkAnObject mr _)) _ -> do
         olddvs <- get
-        newfu <- lift $ unliftIO $ mr ReadHasOne
-        case (olddvs, retrieveOne newfu) of
-            (PresentOVS _, SuccessResult ()) -> return ()
-            (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs
-            _ -> do
-                liftIO $ closeDynamicView olddvs
-                newdvs <- liftIO $ runWMFunction unliftView $ getWidgets newfu
-                put newdvs
+        runMonoTransStackRunner @IO trun $ \run -> do
+            newfu <- lift $ run $ mr ReadHasOne
+            case (olddvs, retrieveOne newfu) of
+                (PresentOVS _, SuccessResult ()) -> return ()
+                (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs
+                _ -> do
+                    liftIO $ closeDynamicView olddvs
+                    newdvs <- liftIO $ runWMFunction unliftView $ getWidgets newfu
+                    put newdvs
     toWidget box
 
 placeholderLabel :: CreateView sel update Label

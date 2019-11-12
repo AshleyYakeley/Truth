@@ -5,7 +5,6 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.Run
 import Truth.Core.Read
 import Truth.Core.Types
 
@@ -15,15 +14,15 @@ makeMemoryCellObject :: IO (Object (UpdateEdit MemoryCellUpdate))
 makeMemoryCellObject = do
     var <- newMVar ()
     let
-        objRun :: IOFunction (StateT () IO)
-        objRun = mVarRun var
+        objRun :: TransStackRunner '[ StateT ()]
+        objRun = mVarTransStackRunner var
         objRead :: MutableRead (StateT () IO) (UpdateReader MemoryCellUpdate)
         objRead (MkTupleUpdateReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef $ unWitnessed ioref
         objEdit :: [UpdateEdit MemoryCellUpdate] -> StateT () IO (Maybe (EditSource -> StateT () IO ()))
         objEdit =
             singleAlwaysEdit $ \(MkTupleUpdateEdit (MkDependentSelector ioref) (MkWholeReaderEdit a)) _ ->
                 liftIO $ writeIORef (unWitnessed ioref) a
-    return $ MkRunnableIO objRun $ MkAnObject {..}
+    return $ MkRunnable1 objRun $ MkAnObject {..}
 
 makeMemoryCellEditLens :: a -> IO (EditLens MemoryCellUpdate (WholeUpdate a))
 makeMemoryCellEditLens a = do

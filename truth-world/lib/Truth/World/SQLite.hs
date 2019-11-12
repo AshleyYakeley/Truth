@@ -191,14 +191,16 @@ sqliteObject ::
     -> SQLite.DatabaseSchema tablesel
     -> Object (SQLiteEdit tablesel)
 sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
-    objRun :: IOFunction (ReaderT Connection IO)
-    objRun call = do
-        exists <- doesFileExist path
-        withConnection path $ \conn -> do
-            if exists
-                then return ()
-                else for_ (SQLite.toSchema schema) $ execute_ conn -- create the database if we're creating the file
-            runReaderT call conn
+    objRun :: TransStackRunner '[ ReaderT Connection]
+    objRun =
+        MkTransStackRunner $ \call -> do
+            exists <- liftIO $ doesFileExist path
+            liftIOWithUnlift $ \unlift ->
+                withConnection path $ \conn -> do
+                    if exists
+                        then return ()
+                        else for_ (SQLite.toSchema schema) $ execute_ conn -- create the database if we're creating the file
+                    runReaderT (remonad unlift call) conn
     wherePart :: Schema (TupleWhereClause SQLiteDatabase row) -> TupleWhereClause SQLiteDatabase row -> QueryString
     wherePart rowSchema wc =
         case wc of
@@ -265,4 +267,4 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
                 MkQueryString s v -> do
                     conn <- ask
                     lift $ execute conn s v
-    in MkRunnableIO objRun MkAnObject {..}
+    in MkRunnable1 objRun MkAnObject {..}

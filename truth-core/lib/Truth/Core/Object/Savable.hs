@@ -9,7 +9,6 @@ import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
-import Truth.Core.Object.Run
 import Truth.Core.Read
 import Truth.Core.Types.Whole
 
@@ -25,13 +24,16 @@ saveBufferObject ::
        forall update. (IsUpdate update, FullEdit (UpdateEdit update))
     => Object (WholeEdit (UpdateSubject update))
     -> ObjectMaker update SaveActions
-saveBufferObject (MkRunnableIO (unliftP :: IOFunction mp) (MkAnObject readP pushP)) update = do
+saveBufferObject (MkRunnable1 (MkTransStackRunner unliftP :: TransStackRunner tt) (MkAnObject readP pushP)) update = do
+    Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     firstVal <- liftIO $ unliftP $ readP ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
     let
         objC = let
-            runC :: IOFunction (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO))
-            runC = composeUntransFunction (mVarRun sbVar) $ composeUntransFunction runDeferActionT id
+            runC ::
+                   forall m. MonadUnliftIO m
+                => MFunction (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT m)) m
+            runC = composeUnliftAllFunction (mVarRun sbVar) $ composeUnliftAllFunction runDeferActionT id
             readC :: MutableRead (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
             readC = mSubjectToMutableRead $ fmap saveBuffer get
             pushC ::
@@ -48,7 +50,8 @@ saveBufferObject (MkRunnableIO (unliftP :: IOFunction mp) (MkAnObject readP push
                             return oldbuf
                     put (MkSaveBuffer newbuf True)
                     lift $ deferAction $ update (fmap editUpdate edits) $ editSourceContext esrc
-            in MkRunnableIO runC $ MkAnObject readC pushC
+            in MkRunnable1 (MkTransStackRunner @'[ StateT (SaveBuffer (UpdateSubject update)), DeferActionT] runC) $
+               MkAnObject readC pushC
         saveAction :: EditSource -> IO Bool
         saveAction esrc =
             unliftP $ do

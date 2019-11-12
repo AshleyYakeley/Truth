@@ -15,57 +15,65 @@ type SumWholeReaderUpdate reader update = SumUpdate (WholeReaderUpdate reader) u
 type SumWholeUpdate update = SumWholeReaderUpdate (UpdateReader update) update
 
 sumWholeLiftAnUpdateFunction ::
-       forall t updateA updateB.
-       (MonadTransConstraint MonadIO t, SubjectReader (UpdateReader updateA), FullSubjectReader (UpdateReader updateB))
-    => AnUpdateFunction t updateA updateB
-    -> AnUpdateFunction t (SumWholeUpdate updateA) (SumWholeUpdate updateB)
-sumWholeLiftAnUpdateFunction fef =
-    MkAnUpdateFunction
-        { ufGet = ufGet fef
-        , ufUpdate =
-              \pupdatea mr ->
-                  withTransConstraintTM @MonadIO $
-                  case pupdatea of
-                      SumUpdateLeft (MkWholeReaderUpdate a) -> do
-                          b <- mutableReadToSubject $ ufGet fef $ subjectToMutableRead a
-                          return [SumUpdateLeft $ MkWholeReaderUpdate b]
-                      SumUpdateRight edita -> do
-                          editbs <- ufUpdate fef edita mr
-                          return $ fmap SumUpdateRight editbs
-        }
+       forall tt updateA updateB.
+       (MonadTransStackUnliftAll tt, SubjectReader (UpdateReader updateA), FullSubjectReader (UpdateReader updateB))
+    => AnUpdateFunction tt updateA updateB
+    -> AnUpdateFunction tt (SumWholeUpdate updateA) (SumWholeUpdate updateB)
+sumWholeLiftAnUpdateFunction (MkAnUpdateFunction g u) = let
+    ufGet :: ReadFunctionTT tt _ _
+    ufGet = g
+    ufUpdate ::
+           forall m. MonadIO m
+        => SumWholeUpdate updateA
+        -> MutableRead m (UpdateReader updateA)
+        -> ApplyStack tt m [SumWholeUpdate updateB]
+    ufUpdate pupdatea mr =
+        case transStackUnliftMonadIO @tt @m of
+            Dict ->
+                case pupdatea of
+                    SumUpdateLeft (MkWholeReaderUpdate a) -> do
+                        b <- mutableReadToSubject $ g $ subjectToMutableRead @m a
+                        return [SumUpdateLeft $ MkWholeReaderUpdate b]
+                    SumUpdateRight edita -> do
+                        editbs <- u edita mr
+                        return $ fmap SumUpdateRight editbs
+    in MkAnUpdateFunction {..}
 
 sumWholeLiftUpdateFunction ::
        forall updateA updateB. (SubjectReader (UpdateReader updateA), FullSubjectReader (UpdateReader updateB))
     => UpdateFunction updateA updateB
     -> UpdateFunction (SumWholeUpdate updateA) (SumWholeUpdate updateB)
-sumWholeLiftUpdateFunction (MkRunnableT2 unlift f) = MkRunnableT2 unlift $ sumWholeLiftAnUpdateFunction f
+sumWholeLiftUpdateFunction (MkRunnable2 run@(MkTransStackRunner _) f) = MkRunnable2 run $ sumWholeLiftAnUpdateFunction f
 
 sumWholeLiftAnEditLens ::
-       forall t updateA updateB.
-       ( MonadTransConstraint MonadIO t
+       forall tt updateA updateB.
+       ( MonadTransStackUnliftAll tt
        , ApplicableEdit (UpdateEdit updateA)
        , FullSubjectReader (UpdateReader updateA)
        , FullSubjectReader (UpdateReader updateB)
        )
     => (forall m.
             MonadIO m =>
-                    UpdateSubject updateB -> MutableRead m (UpdateReader updateA) -> t m (Maybe (UpdateSubject updateA)))
-    -> AnEditLens t updateA updateB
-    -> AnEditLens t (SumWholeUpdate updateA) (SumWholeUpdate updateB)
+                    UpdateSubject updateB -> MutableRead m (UpdateReader updateA) -> ApplyStack tt m (Maybe (UpdateSubject updateA)))
+    -> AnEditLens tt updateA updateB
+    -> AnEditLens tt (SumWholeUpdate updateA) (SumWholeUpdate updateB)
 sumWholeLiftAnEditLens pushback lens = let
     elPutEdit ::
            forall m. MonadIO m
         => SumEdit (WholeReaderEdit (UpdateReader updateB)) (UpdateEdit updateB)
         -> MutableRead m (UpdateReader updateA)
-        -> t m (Maybe [SumEdit (WholeReaderEdit (UpdateReader updateA)) (UpdateEdit updateA)])
+        -> ApplyStack tt m (Maybe [SumEdit (WholeReaderEdit (UpdateReader updateA)) (UpdateEdit updateA)])
     elPutEdit peditb mr =
-        withTransConstraintTM @MonadIO $
-        case peditb of
-            SumEditLeft (MkWholeReaderEdit b) -> do
-                ma <- pushback b mr
-                return $ fmap (pure . SumEditLeft . MkWholeReaderEdit) ma
-            SumEditRight editb -> do
-                mstateedita <- elPutEdits lens [editb] mr
-                return $ fmap (fmap SumEditRight) mstateedita
+        case transStackUnliftMonadIO @tt @m of
+            Dict ->
+                case peditb of
+                    SumEditLeft (MkWholeReaderEdit b) -> do
+                        ma <- pushback b mr
+                        return $ fmap (pure . SumEditLeft . MkWholeReaderEdit) ma
+                    SumEditRight editb -> do
+                        mstateedita <- elPutEdits lens [editb] mr
+                        return $ fmap (fmap SumEditRight) mstateedita
     in MkAnEditLens
-           {elFunction = sumWholeLiftAnUpdateFunction (elFunction lens), elPutEdits = elPutEditsFromPutEdit elPutEdit}
+           { elFunction = sumWholeLiftAnUpdateFunction (elFunction lens)
+           , elPutEdits = elPutEditsFromPutEdit @tt elPutEdit
+           }

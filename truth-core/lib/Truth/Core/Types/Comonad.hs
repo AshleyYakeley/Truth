@@ -42,24 +42,24 @@ instance IsEditUpdate update => IsEditUpdate (ComonadUpdate w update) where
 
 comonadEditLens :: forall w update. EditLens (ComonadUpdate w update) update
 comonadEditLens =
-    MkRunnableT2 identityUntrans $ let
+    MkRunnable2 cmEmpty $ let
         ufGet ::
                forall m. MonadIO m
             => MutableRead m (ComonadReader w (UpdateReader update))
-            -> MutableRead (IdentityT m) (UpdateReader update)
-        ufGet mr = remonadMutableRead IdentityT $ comonadReadFunction mr
+            -> MutableRead m (UpdateReader update)
+        ufGet mr = comonadReadFunction mr
         ufUpdate ::
                forall m. MonadIO m
             => ComonadUpdate w update
             -> MutableRead m (ComonadReader w (UpdateReader update))
-            -> IdentityT m [update]
+            -> m [update]
         ufUpdate (MkComonadUpdate update) _ = return [update]
         elFunction = MkAnUpdateFunction {..}
         elPutEdits ::
                forall m. MonadIO m
             => [UpdateEdit update]
             -> MutableRead m (ComonadReader w (UpdateReader update))
-            -> IdentityT m (Maybe [ComonadEdit w (UpdateEdit update)])
+            -> m (Maybe [ComonadEdit w (UpdateEdit update)])
         elPutEdits edits _ = return $ Just $ fmap MkComonadEdit edits
         in MkAnEditLens {..}
 
@@ -70,23 +70,23 @@ comonadLiftEditLens ::
        forall w updateA updateB.
        EditLens updateA updateB
     -> EditLens (ComonadUpdate w updateA) (ComonadUpdate w updateB)
-comonadLiftEditLens (MkRunnableT2 (unlift :: Untrans t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
-    g' :: ReadFunctionT t (ComonadReader w (UpdateReader updateA)) (ComonadReader w (UpdateReader updateB))
+comonadLiftEditLens (MkRunnable2 run@(MkTransStackRunner _ :: TransStackRunner tt) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
+    g' :: ReadFunctionTT tt (ComonadReader w (UpdateReader updateA)) (ComonadReader w (UpdateReader updateB))
     g' mr (ReadExtract rt) = g (comonadReadFunction mr) rt
     u' :: forall m. MonadIO m
        => ComonadUpdate w updateA
        -> MutableRead m (ComonadReader w (UpdateReader updateA))
-       -> t m [ComonadUpdate w updateB]
+       -> ApplyStack tt m [ComonadUpdate w updateB]
     u' (MkComonadUpdate edita) mr =
-        case hasTransConstraint @MonadIO @t @m of
+        case transStackUnliftMonadIO @tt @m of
             Dict -> fmap (fmap MkComonadUpdate) $ u edita $ comonadReadFunction mr
     pe' :: forall m. MonadIO m
         => [ComonadEdit w (UpdateEdit updateB)]
         -> MutableRead m (ComonadReader w (UpdateReader updateA))
-        -> t m (Maybe [ComonadEdit w (UpdateEdit updateA)])
+        -> ApplyStack tt m (Maybe [ComonadEdit w (UpdateEdit updateA)])
     pe' editbs mr =
-        case hasTransConstraint @MonadIO @t @m of
+        case transStackUnliftMonadIO @tt @m of
             Dict ->
                 fmap (fmap $ fmap MkComonadEdit) $
                 pe (fmap (\(MkComonadEdit editb) -> editb) editbs) $ comonadReadFunction mr
-    in MkRunnableT2 unlift $ MkAnEditLens (MkAnUpdateFunction g' u') pe'
+    in MkRunnable2 run $ MkAnEditLens (MkAnUpdateFunction g' u') pe'

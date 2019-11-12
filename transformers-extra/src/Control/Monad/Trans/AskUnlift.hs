@@ -1,23 +1,15 @@
 module Control.Monad.Trans.AskUnlift where
 
-import Control.Monad
-import Control.Monad.Fail
-import Control.Monad.Fix
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Function
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Unlift
-import Data.Constraint
-import Prelude
+import Import
 
 -- | A transformer that has no effects (such as state change or output)
-class MonadTransUntrans t => MonadTransAskUnlift t where
+class MonadTransUnliftAll t => MonadTransAskUnlift t where
     askUnlift ::
            forall m. Monad m
-        => t m (WUntrans t)
+        => t m (WUnliftAll t)
 
 -- | A monad that has no effects over IO (such as state change or output)
 class MonadUnliftIO m => MonadAskUnliftIO m where
@@ -29,7 +21,7 @@ instance MonadAskUnliftIO IO where
 instance (MonadTransAskUnlift t, MonadAskUnliftIO m, MonadFail (t m), MonadIO (t m), MonadFix (t m)) =>
              MonadAskUnliftIO (t m) where
     askUnliftIO = do
-        MkWUntrans unlift <- askUnlift
+        MkWUnliftAll unlift <- askUnlift
         MkWMFunction unliftIO <- lift askUnliftIO
         return $ MkWMFunction $ unliftIO . unlift
 
@@ -38,9 +30,9 @@ instance MonadTransAskUnlift t => MonadTransConstraint MonadAskUnliftIO t where
         withTransConstraintDict @MonadFail $ withTransConstraintDict @MonadIO $ withTransConstraintDict @MonadFix $ Dict
 
 instance MonadTransAskUnlift IdentityT where
-    askUnlift = return identityWUntrans
+    askUnlift = return identityWRunner
 
 instance MonadTransAskUnlift (ReaderT s) where
     askUnlift = do
         s <- ask
-        return $ MkWUntrans $ \mr -> runReaderT mr s
+        return $ MkWUnliftAll $ \mr -> runReaderT mr s

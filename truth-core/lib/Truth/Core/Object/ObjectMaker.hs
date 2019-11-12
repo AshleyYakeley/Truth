@@ -9,7 +9,6 @@ import Truth.Core.Import
 import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.Run
 import Truth.Core.Read
 
 type ObjectMaker update a = ([update] -> EditContext -> IO ()) -> LifeCycleIO (Object (UpdateEdit update), a)
@@ -18,28 +17,38 @@ reflectingObjectMaker ::
        forall update. IsUpdate update
     => Object (UpdateEdit update)
     -> ObjectMaker update ()
-reflectingObjectMaker (MkRunnableIO (run :: IOFunction m) (MkAnObject r e)) recv =
-    return $ let
-        run' :: IOFunction (DeferActionT m)
-        run' = composeUntransFunctionCommute runDeferActionT run
-        r' :: MutableRead (DeferActionT m) (UpdateReader update)
-        r' = liftMutableRead r
-        e' :: [UpdateEdit update] -> DeferActionT m (Maybe (EditSource -> DeferActionT m ()))
-        e' edits = do
-            maction <- lift $ e edits
-            case maction of
-                Nothing -> return Nothing
-                Just action ->
-                    return $
-                    Just $ \esrc -> do
-                        lift $ action esrc
-                        deferAction $ recv (fmap editUpdate edits) $ editSourceContext esrc
-        in (MkRunnableIO run' $ MkAnObject r' e', ())
+reflectingObjectMaker (MkRunnable1 (MkTransStackRunner run :: TransStackRunner tt) (MkAnObject r e)) recv =
+    return $
+    case transStackDict @MonadUnliftIO @tt @IO of
+        Dict -> let
+            run' ::
+                   forall m. MonadUnliftIO m
+                => MFunction (DeferActionT (ApplyStack tt m)) m
+            run' =
+                case transStackDict @MonadUnliftIO @tt @m of
+                    Dict -> composeUnliftAllFunctionCommute runDeferActionT run
+            r' :: MutableRead (DeferActionT (ApplyStack tt IO)) (UpdateReader update)
+            r' = liftMutableRead r
+            e' :: [UpdateEdit update]
+               -> DeferActionT (ApplyStack tt IO) (Maybe (EditSource -> DeferActionT (ApplyStack tt IO) ()))
+            e' edits = do
+                maction <- lift $ e edits
+                case maction of
+                    Nothing -> return Nothing
+                    Just action ->
+                        return $
+                        Just $ \esrc -> do
+                            lift $ action esrc
+                            deferAction $ recv (fmap editUpdate edits) $ editSourceContext esrc
+            in (MkRunnable1 (MkTransStackRunner @(DeferActionT ': tt) run') $ MkAnObject r' e', ())
 
 mapUpdates ::
        forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> [updateA] -> IO [updateB]
-mapUpdates (MkRunnableT2 unlift (MkAnEditLens (MkAnUpdateFunction _ update) _)) (MkRunnableIO unliftIO (MkAnObject mr _)) eas =
-    unliftIO $ unlift $ withTransConstraintTM @MonadIO $ fmap mconcat $ for eas $ \ea -> update ea mr
+mapUpdates (MkRunnable2 (MkTransStackRunner runLens :: TransStackRunner ttl) (MkAnEditLens (MkAnUpdateFunction _ update) _)) (MkRunnable1 (MkTransStackRunner runObj :: TransStackRunner tto) (MkAnObject mr _)) eas =
+    case transStackDict @MonadUnliftIO @tto @IO of
+        Dict ->
+            case transStackDict @MonadUnliftIO @ttl @(ApplyStack tto IO) of
+                Dict -> runObj $ runLens $ fmap mconcat $ for eas $ \ea -> update ea mr
 
 mapObjectMaker :: EditLens updateA updateB -> ObjectMaker updateA a -> ObjectMaker updateB a
 mapObjectMaker lens uobja recvb = do

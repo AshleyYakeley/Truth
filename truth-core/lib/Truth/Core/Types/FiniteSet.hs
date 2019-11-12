@@ -53,13 +53,13 @@ finiteSetEditLens ::
     => subj
     -> EditLens (FiniteSetUpdate subj) (WholeUpdate Bool)
 finiteSetEditLens subj = let
-    ufGet :: ReadFunctionT IdentityT (FiniteSetReader subj) (WholeReader Bool)
-    ufGet mr ReadWhole = lift $ fmap isJust $ mr $ KeyReadItem subj ReadWhole
+    ufGet :: ReadFunction (FiniteSetReader subj) (WholeReader Bool)
+    ufGet mr ReadWhole = fmap isJust $ mr $ KeyReadItem subj ReadWhole
     ufUpdate ::
            forall m. MonadIO m
         => FiniteSetUpdate subj
         -> MutableRead m (FiniteSetReader subj)
-        -> IdentityT m [WholeUpdate Bool]
+        -> m [WholeUpdate Bool]
     ufUpdate (KeyUpdateItem _ update) _ = never update
     ufUpdate (KeyUpdateDelete key) _
         | key == subj = return [MkWholeReaderUpdate False]
@@ -68,33 +68,32 @@ finiteSetEditLens subj = let
         | key == subj = return [MkWholeReaderUpdate True]
     ufUpdate (KeyUpdateInsertReplace _) _ = return []
     ufUpdate KeyUpdateClear _ = return [MkWholeReaderUpdate False]
-    elFunction :: AnUpdateFunction IdentityT (FiniteSetUpdate subj) (WholeUpdate Bool)
+    elFunction :: AnUpdateFunction '[] (FiniteSetUpdate subj) (WholeUpdate Bool)
     elFunction = MkAnUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => WholeEdit Bool
-        -> IdentityT m (Maybe [FiniteSetEdit subj])
+        -> m (Maybe [FiniteSetEdit subj])
     elPutEdit (MkWholeReaderEdit False) = return $ Just [KeyEditDelete subj]
     elPutEdit (MkWholeReaderEdit True) = return $ Just [KeyEditInsertReplace subj]
     elPutEdits ::
            forall m. MonadIO m
         => [WholeEdit Bool]
         -> MutableRead m (FiniteSetReader subj)
-        -> IdentityT m (Maybe [FiniteSetEdit subj])
-    elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
-    in MkRunnableT2 identityUntrans MkAnEditLens {..}
+        -> m (Maybe [FiniteSetEdit subj])
+    elPutEdits = elPutEditsFromSimplePutEdit @'[] elPutEdit
+    in MkRunnable2 cmEmpty MkAnEditLens {..}
 
 instance Eq subj => JoinSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
     joinUpdateFunction = let
-        ufGet ::
-               ReadFunctionT IdentityT (PairUpdateReader (FiniteSetUpdate subj) (FiniteSetUpdate subj)) (FiniteSetReader subj)
+        ufGet :: ReadFunction (PairUpdateReader (FiniteSetUpdate subj) (FiniteSetUpdate subj)) (FiniteSetReader subj)
         ufGet mr KeyReadKeys = do
-            keys1 <- lift $ mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
-            keys2 <- lift $ mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
+            keys1 <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
+            keys2 <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
             return $ keys1 \/ keys2
         ufGet mr (KeyReadItem item ReadWhole) = do
-            (isJust -> r1) <- lift $ mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
-            (isJust -> r2) <- lift $ mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
+            (isJust -> r1) <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
+            (isJust -> r2) <- mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r1 \/ r2
                     then Just item
@@ -103,23 +102,23 @@ instance Eq subj => JoinSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
                forall m. MonadIO m
             => PairUpdate (FiniteSetUpdate subj) (FiniteSetUpdate subj)
             -> MutableRead m (PairUpdateReader (FiniteSetUpdate subj) (FiniteSetUpdate subj))
-            -> IdentityT m [FiniteSetUpdate subj]
+            -> m [FiniteSetUpdate subj]
         ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateItem _ edit)) _ = never edit
         ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateDelete item)) mr = do
-            (isJust -> r2) <- lift $ mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
+            (isJust -> r2) <- mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r2
                     then []
                     else [KeyUpdateDelete item]
         ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateInsertReplace item)) mr = do
-            (isJust -> r2) <- lift $ mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
+            (isJust -> r2) <- mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r2
                     then []
                     else [KeyUpdateInsertReplace item]
         ufUpdate (MkTupleUpdate SelectFirst KeyUpdateClear) mr = do
-            keys1 <- lift $ mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
-            keys2 <- lift $ mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
+            keys1 <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
+            keys2 <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
             return $
                 case (null keys1, null keys2) of
                     (True, _) -> []
@@ -127,38 +126,37 @@ instance Eq subj => JoinSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
                     (False, False) -> fmap KeyUpdateDelete $ toList $ difference keys1 keys2
         ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateItem _ edit)) _ = never edit
         ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateDelete item)) mr = do
-            (isJust -> r1) <- lift $ mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
+            (isJust -> r1) <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
             return $
                 if r1
                     then []
                     else [KeyUpdateDelete item]
         ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateInsertReplace item)) mr = do
-            (isJust -> r1) <- lift $ mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
+            (isJust -> r1) <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
             return $
                 if r1
                     then []
                     else [KeyUpdateInsertReplace item]
         ufUpdate (MkTupleUpdate SelectSecond KeyUpdateClear) mr = do
-            keys2 <- lift $ mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
-            keys1 <- lift $ mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
+            keys2 <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
+            keys1 <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
             return $
                 case (null keys2, null keys1) of
                     (True, _) -> []
                     (False, True) -> [KeyUpdateClear]
                     (False, False) -> fmap KeyUpdateDelete $ toList $ difference keys2 keys1
-        in MkRunnableT2 identityUntrans MkAnUpdateFunction {..}
+        in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
 
 instance Eq subj => MeetSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
     meetUpdateFunction = let
-        ufGet ::
-               ReadFunctionT IdentityT (PairUpdateReader (FiniteSetUpdate subj) (FiniteSetUpdate subj)) (FiniteSetReader subj)
+        ufGet :: ReadFunction (PairUpdateReader (FiniteSetUpdate subj) (FiniteSetUpdate subj)) (FiniteSetReader subj)
         ufGet mr KeyReadKeys = do
-            keys1 <- lift $ mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
-            keys2 <- lift $ mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
+            keys1 <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
+            keys2 <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
             return $ keys1 /\ keys2
         ufGet mr (KeyReadItem item ReadWhole) = do
-            (isJust -> r1) <- lift $ mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
-            (isJust -> r2) <- lift $ mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
+            (isJust -> r1) <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
+            (isJust -> r2) <- mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r1 /\ r2
                     then Just item
@@ -167,48 +165,48 @@ instance Eq subj => MeetSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
                forall m. MonadIO m
             => PairUpdate (FiniteSetUpdate subj) (FiniteSetUpdate subj)
             -> MutableRead m (PairUpdateReader (FiniteSetUpdate subj) (FiniteSetUpdate subj))
-            -> IdentityT m [FiniteSetUpdate subj]
+            -> m [FiniteSetUpdate subj]
         ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateItem _ edit)) _ = never edit
         ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateDelete item)) mr = do
-            (isJust -> r2) <- lift $ mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
+            (isJust -> r2) <- mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r2
                     then [KeyUpdateDelete item]
                     else []
         ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateInsertReplace item)) mr = do
-            (isJust -> r2) <- lift $ mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
+            (isJust -> r2) <- mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r2
                     then [KeyUpdateInsertReplace item]
                     else []
         ufUpdate (MkTupleUpdate SelectFirst KeyUpdateClear) mr = do
-            keys1 <- lift $ mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
-            keys2 <- lift $ mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
+            keys1 <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
+            keys2 <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
             return $
                 if null $ keys1 /\ keys2
                     then []
                     else [KeyUpdateClear]
         ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateItem _ edit)) _ = never edit
         ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateDelete item)) mr = do
-            (isJust -> r1) <- lift $ mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
+            (isJust -> r1) <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
             return $
                 if r1
                     then [KeyUpdateDelete item]
                     else []
         ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateInsertReplace item)) mr = do
-            (isJust -> r1) <- lift $ mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
+            (isJust -> r1) <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
             return $
                 if r1
                     then [KeyUpdateInsertReplace item]
                     else []
         ufUpdate (MkTupleUpdate SelectSecond KeyUpdateClear) mr = do
-            keys2 <- lift $ mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
-            keys1 <- lift $ mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
+            keys2 <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
+            keys1 <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
             return $
                 if null $ keys2 /\ keys1
                     then []
                     else [KeyUpdateClear]
-        in MkRunnableT2 identityUntrans MkAnUpdateFunction {..}
+        in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
 
 bijectionFiniteSetEditLens :: forall a b. Bijection a b -> EditLens (FiniteSetUpdate a) (FiniteSetUpdate b)
 bijectionFiniteSetEditLens (MkIsomorphism ab ba) = let
@@ -226,74 +224,68 @@ bijectionFiniteSetEditLens (MkIsomorphism ab ba) = let
            forall m t. MonadIO m
         => MutableRead m (FiniteSetReader a)
         -> FiniteSetReader b t
-        -> IdentityT m t
-    ufGet mra KeyReadKeys = lift $ fmap (fmap ab) $ mra KeyReadKeys
-    ufGet mra (KeyReadItem b ReadWhole) = lift $ fmap (fmap ab) $ mra $ KeyReadItem (ba b) ReadWhole
+        -> m t
+    ufGet mra KeyReadKeys = fmap (fmap ab) $ mra KeyReadKeys
+    ufGet mra (KeyReadItem b ReadWhole) = fmap (fmap ab) $ mra $ KeyReadItem (ba b) ReadWhole
     ufUpdate ::
            forall m. MonadIO m
         => FiniteSetUpdate a
         -> MutableRead m (FiniteSetReader a)
-        -> IdentityT m [FiniteSetUpdate b]
+        -> m [FiniteSetUpdate b]
     ufUpdate ea _ = return $ pure $ mapFiniteSetUpdate ab ea
-    elFunction :: AnUpdateFunction IdentityT (FiniteSetUpdate a) (FiniteSetUpdate b)
+    elFunction :: AnUpdateFunction '[] (FiniteSetUpdate a) (FiniteSetUpdate b)
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [FiniteSetEdit b]
         -> MutableRead m (FiniteSetReader a)
-        -> IdentityT m (Maybe [FiniteSetEdit a])
+        -> m (Maybe [FiniteSetEdit a])
     elPutEdits ebs _ = return $ Just $ fmap (mapFiniteSetEdit ba) ebs
-    in MkRunnableT2 identityUntrans MkAnEditLens {..}
+    in MkRunnable2 cmEmpty MkAnEditLens {..}
 
 finiteSetCartesianSumEditLens ::
        forall a b. (Eq a, Eq b)
     => EditLens (PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetUpdate (Either a b))
 finiteSetCartesianSumEditLens = let
-    ufGet ::
-           ReadFunctionT IdentityT (PairUpdateReader (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetReader (Either a b))
-    ufGet mr KeyReadKeys =
-        lift $ do
-            aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
-            bb <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
-            return $ fmap Left aa <> fmap Right bb
-    ufGet mr (KeyReadItem (Left a) ReadWhole) =
-        lift $ do
-            ma' <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem a ReadWhole
-            return $ fmap Left ma'
-    ufGet mr (KeyReadItem (Right b) ReadWhole) =
-        lift $ do
-            mb' <- mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem b ReadWhole
-            return $ fmap Right mb'
+    ufGet :: ReadFunction (PairUpdateReader (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetReader (Either a b))
+    ufGet mr KeyReadKeys = do
+        aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
+        bb <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
+        return $ fmap Left aa <> fmap Right bb
+    ufGet mr (KeyReadItem (Left a) ReadWhole) = do
+        ma' <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem a ReadWhole
+        return $ fmap Left ma'
+    ufGet mr (KeyReadItem (Right b) ReadWhole) = do
+        mb' <- mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem b ReadWhole
+        return $ fmap Right mb'
     ufUpdate ::
            forall m. MonadIO m
         => PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)
         -> MutableRead m (PairUpdateReader (FiniteSetUpdate a) (FiniteSetUpdate b))
-        -> IdentityT m [FiniteSetUpdate (Either a b)]
+        -> m [FiniteSetUpdate (Either a b)]
     ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateItem _ edit)) _ = never edit
     ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateDelete v)) _ = return $ pure $ KeyUpdateDelete $ Left v
     ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateInsertReplace v)) _ = return $ pure $ KeyUpdateInsertReplace $ Left v
-    ufUpdate (MkTupleUpdate SelectFirst KeyUpdateClear) mr =
-        lift $ do
-            vv <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
-            for (toList vv) $ \v -> return $ KeyUpdateDelete $ Left v
+    ufUpdate (MkTupleUpdate SelectFirst KeyUpdateClear) mr = do
+        vv <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
+        for (toList vv) $ \v -> return $ KeyUpdateDelete $ Left v
     ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateItem _ edit)) _ = never edit
     ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateDelete v)) _ = return $ pure $ KeyUpdateDelete $ Right v
     ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateInsertReplace v)) _ =
         return $ pure $ KeyUpdateInsertReplace $ Right v
-    ufUpdate (MkTupleUpdate SelectSecond KeyUpdateClear) mr =
-        lift $ do
-            vv <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
-            for (toList vv) $ \v -> return $ KeyUpdateDelete $ Right v
+    ufUpdate (MkTupleUpdate SelectSecond KeyUpdateClear) mr = do
+        vv <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
+        for (toList vv) $ \v -> return $ KeyUpdateDelete $ Right v
     elFunction ::
-           AnUpdateFunction IdentityT (PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetUpdate (Either a b))
+           AnUpdateFunction '[] (PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetUpdate (Either a b))
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [FiniteSetEdit (Either a b)]
         -> MutableRead m (PairUpdateReader (FiniteSetUpdate a) (FiniteSetUpdate b))
-        -> IdentityT m (Maybe [PairUpdateEdit (FiniteSetUpdate a) (FiniteSetUpdate b)])
+        -> m (Maybe [PairUpdateEdit (FiniteSetUpdate a) (FiniteSetUpdate b)])
     elPutEdits =
-        elPutEditsFromSimplePutEdit $ \case
+        elPutEditsFromSimplePutEdit @'[] $ \case
             KeyEditItem _ e -> never e
             KeyEditDelete (Left v) -> return $ Just $ pure $ MkTupleUpdateEdit SelectFirst $ KeyEditDelete v
             KeyEditDelete (Right v) -> return $ Just $ pure $ MkTupleUpdateEdit SelectSecond $ KeyEditDelete v
@@ -304,19 +296,17 @@ finiteSetCartesianSumEditLens = let
             KeyEditClear ->
                 return $
                 Just $ [MkTupleUpdateEdit SelectFirst KeyEditClear, MkTupleUpdateEdit SelectSecond KeyEditClear]
-    in MkRunnableT2 identityUntrans MkAnEditLens {..}
+    in MkRunnable2 cmEmpty MkAnEditLens {..}
 
 finiteSetCartesianProductUpdateFunction ::
        forall a b. UpdateFunction (PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetUpdate (a, b))
 finiteSetCartesianProductUpdateFunction = let
-    ufGet :: ReadFunctionT IdentityT (PairUpdateReader (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetReader (a, b))
-    ufGet mr KeyReadKeys =
-        lift $ do
-            aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
-            bb <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
-            return $ liftA2 (,) aa bb
+    ufGet :: ReadFunction (PairUpdateReader (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetReader (a, b))
+    ufGet mr KeyReadKeys = do
+        aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
+        bb <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
+        return $ liftA2 (,) aa bb
     ufGet mr (KeyReadItem (a, b) ReadWhole) =
-        lift $
         getComposeM $ do
             a' <- MkComposeM $ mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem a ReadWhole
             b' <- MkComposeM $ mr $ MkTupleUpdateReader SelectSecond $ KeyReadItem b ReadWhole
@@ -325,28 +315,24 @@ finiteSetCartesianProductUpdateFunction = let
            forall m. MonadIO m
         => PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)
         -> MutableRead m (PairUpdateReader (FiniteSetUpdate a) (FiniteSetUpdate b))
-        -> IdentityT m [FiniteSetUpdate (a, b)]
+        -> m [FiniteSetUpdate (a, b)]
     ufUpdate (MkTupleUpdate SelectFirst KeyUpdateClear) _ = return [KeyUpdateClear]
     ufUpdate (MkTupleUpdate SelectSecond KeyUpdateClear) _ = return [KeyUpdateClear]
     ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateItem _ update)) _ = never update
     ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateItem _ update)) _ = never update
-    ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateDelete a)) mr =
-        lift $ do
-            bb <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
-            return $ fmap (\b -> KeyUpdateDelete (a, b)) $ toList bb
-    ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateDelete b)) mr =
-        lift $ do
-            aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
-            return $ fmap (\a -> KeyUpdateDelete (a, b)) $ toList aa
-    ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateInsertReplace a)) mr =
-        lift $ do
-            bb <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
-            return $ fmap (\b -> KeyUpdateInsertReplace (a, b)) $ toList bb
-    ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateInsertReplace b)) mr =
-        lift $ do
-            aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
-            return $ fmap (\a -> KeyUpdateInsertReplace (a, b)) $ toList aa
-    in MkRunnableT2 identityUntrans MkAnUpdateFunction {..}
+    ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateDelete a)) mr = do
+        bb <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
+        return $ fmap (\b -> KeyUpdateDelete (a, b)) $ toList bb
+    ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateDelete b)) mr = do
+        aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
+        return $ fmap (\a -> KeyUpdateDelete (a, b)) $ toList aa
+    ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateInsertReplace a)) mr = do
+        bb <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
+        return $ fmap (\b -> KeyUpdateInsertReplace (a, b)) $ toList bb
+    ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateInsertReplace b)) mr = do
+        aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
+        return $ fmap (\a -> KeyUpdateInsertReplace (a, b)) $ toList aa
+    in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
 
 finiteSetFunctionEditLens :: forall a. EditLens (FiniteSetUpdate a) (PartialSetUpdate a)
 finiteSetFunctionEditLens = let
@@ -354,28 +340,27 @@ finiteSetFunctionEditLens = let
            forall m t. MonadIO m
         => MutableRead m (FiniteSetReader a)
         -> FunctionUpdateReader a (WholeUpdate Bool) t
-        -> IdentityT m t
-    ufGet mr (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) =
-        lift $ do
-            mu <- mr $ KeyReadItem a ReadWhole
-            return $ isJust mu
+        -> m t
+    ufGet mr (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) = do
+        mu <- mr $ KeyReadItem a ReadWhole
+        return $ isJust mu
     ufUpdate ::
            forall m. MonadIO m
         => FiniteSetUpdate a
         -> MutableRead m (FiniteSetReader a)
-        -> IdentityT m [PartialUpdate (FunctionUpdate a (WholeUpdate Bool))]
+        -> m [PartialUpdate (FunctionUpdate a (WholeUpdate Bool))]
     ufUpdate (KeyUpdateItem _ update) _ = never update
     ufUpdate (KeyUpdateDelete p) _ =
         return [KnownPartialUpdate $ MkTupleUpdate (MkFunctionSelector p) (MkWholeReaderUpdate False)]
     ufUpdate (KeyUpdateInsertReplace p) _ =
         return [KnownPartialUpdate $ MkTupleUpdate (MkFunctionSelector p) (MkWholeReaderUpdate True)]
     ufUpdate KeyUpdateClear _ = return [UnknownPartialUpdate $ \_ -> True]
-    elFunction :: AnUpdateFunction IdentityT (FiniteSetUpdate a) (PartialUpdate (FunctionUpdate a (WholeUpdate Bool)))
+    elFunction :: AnUpdateFunction '[] (FiniteSetUpdate a) (PartialUpdate (FunctionUpdate a (WholeUpdate Bool)))
     elFunction = MkAnUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => FunctionUpdateEdit a (WholeUpdate Bool)
-        -> IdentityT m (Maybe [FiniteSetEdit a])
+        -> m (Maybe [FiniteSetEdit a])
     elPutEdit (MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit b)) =
         return $
         Just
@@ -387,9 +372,9 @@ finiteSetFunctionEditLens = let
            forall m. MonadIO m
         => [FunctionUpdateEdit a (WholeUpdate Bool)]
         -> MutableRead m (FiniteSetReader a)
-        -> IdentityT m (Maybe [FiniteSetEdit a])
-    elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
-    in MkRunnableT2 identityUntrans MkAnEditLens {..}
+        -> m (Maybe [FiniteSetEdit a])
+    elPutEdits = elPutEditsFromSimplePutEdit @'[] elPutEdit
+    in MkRunnable2 cmEmpty MkAnEditLens {..}
 
 filterFiniteSetUpdateFunction ::
        forall a. Eq a
@@ -415,52 +400,46 @@ filterFiniteSetUpdateFunction = let
     ufGet ::
            forall m. MonadIO m
         => MutableRead m (PairUpdateReader (FiniteSetUpdate a) (PartialSetUpdate a))
-        -> MutableRead (IdentityT m) (FiniteSetReader a)
-    ufGet mr (KeyReadItem a ReadWhole) =
-        lift $ do
-            mu <- testItem1 mr a
-            case mu of
-                Nothing -> return Nothing
-                Just _ -> testItem2 mr a
-    ufGet mr KeyReadKeys =
-        lift $ do
-            aa <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadKeys
-            aa' <- for aa $ testItem2 mr
-            return $ catMaybes aa'
+        -> MutableRead m (FiniteSetReader a)
+    ufGet mr (KeyReadItem a ReadWhole) = do
+        mu <- testItem1 mr a
+        case mu of
+            Nothing -> return Nothing
+            Just _ -> testItem2 mr a
+    ufGet mr KeyReadKeys = do
+        aa <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadKeys
+        aa' <- for aa $ testItem2 mr
+        return $ catMaybes aa'
     ufUpdate ::
            forall m. MonadIO m
         => PairUpdate (FiniteSetUpdate a) (PartialSetUpdate a)
         -> MutableRead m (PairUpdateReader (FiniteSetUpdate a) (PartialSetUpdate a))
-        -> IdentityT m [FiniteSetUpdate a]
+        -> m [FiniteSetUpdate a]
     ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateItem _ update)) _mr = never update
     ufUpdate (MkTupleUpdate SelectFirst KeyUpdateClear) _mr = return $ pure $ KeyUpdateClear
-    ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateInsertReplace a)) mr =
-        lift $ do
-            mu <- testItem2 mr a
-            return $
-                case mu of
-                    Nothing -> []
-                    Just _ -> [KeyUpdateInsertReplace a]
-    ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateDelete a)) mr =
-        lift $ do
-            mu <- testItem2 mr a
-            return $
-                case mu of
-                    Nothing -> []
-                    Just _ -> [KeyUpdateDelete a]
-    ufUpdate (MkTupleUpdate SelectSecond (KnownPartialUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeReaderUpdate t)))) mr =
-        lift $ do
-            mu <- testItem1 mr a
-            return $
-                pure $
-                case mu of
-                    Nothing -> KeyUpdateDelete a
-                    Just _ ->
-                        if t
-                            then KeyUpdateInsertReplace a
-                            else KeyUpdateDelete a
-    ufUpdate (MkTupleUpdate SelectSecond (UnknownPartialUpdate _)) mr =
-        lift $ do
-            edits <- getReplaceEdits $ firstReadFunction mr
-            return $ fmap editUpdate edits
-    in MkRunnableT2 identityUntrans MkAnUpdateFunction {..}
+    ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateInsertReplace a)) mr = do
+        mu <- testItem2 mr a
+        return $
+            case mu of
+                Nothing -> []
+                Just _ -> [KeyUpdateInsertReplace a]
+    ufUpdate (MkTupleUpdate SelectFirst (KeyUpdateDelete a)) mr = do
+        mu <- testItem2 mr a
+        return $
+            case mu of
+                Nothing -> []
+                Just _ -> [KeyUpdateDelete a]
+    ufUpdate (MkTupleUpdate SelectSecond (KnownPartialUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeReaderUpdate t)))) mr = do
+        mu <- testItem1 mr a
+        return $
+            pure $
+            case mu of
+                Nothing -> KeyUpdateDelete a
+                Just _ ->
+                    if t
+                        then KeyUpdateInsertReplace a
+                        else KeyUpdateDelete a
+    ufUpdate (MkTupleUpdate SelectSecond (UnknownPartialUpdate _)) mr = do
+        edits <- getReplaceEdits $ firstReadFunction mr
+        return $ fmap editUpdate edits
+    in MkRunnable2 cmEmpty MkAnUpdateFunction {..}

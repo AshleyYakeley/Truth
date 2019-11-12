@@ -195,7 +195,7 @@ stringSectionLens initial =
                                         case (runLength runb, onull sb) of
                                             (0, True) -> Nothing
                                             _ -> return $ MkEditUpdate $ StringReplaceSection runb sb
-            elFunction :: AnUpdateFunction (StateT (SequenceRun seq)) (StringUpdate seq) (StringUpdate seq)
+            elFunction :: AnUpdateFunction ('[ StateT (SequenceRun seq)]) (StringUpdate seq) (StringUpdate seq)
             elFunction = MkAnUpdateFunction {..}
             elPutEdit ::
                    forall m. MonadIO m
@@ -219,5 +219,5 @@ stringSectionLens initial =
                 => [StringEdit seq]
                 -> MutableRead m (StringRead seq)
                 -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
-            elPutEdits = elPutEditsFromPutEdit elPutEdit
-            in MkRunnableT2 (mVarRun var) MkAnEditLens {..}
+            elPutEdits = elPutEditsFromPutEdit @'[ StateT (SequenceRun seq)] elPutEdit
+            in MkRunnable2 (MkTransStackRunner $ mVarRun var) MkAnEditLens {..}

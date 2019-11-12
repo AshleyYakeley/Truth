@@ -211,13 +211,13 @@ instance (TupleUpdateWitness Show sel, AllWitnessConstraint Show sel) => Show (T
 tupleEditLens_ ::
        forall sel update. (forall a. sel a -> Maybe (update :~: a)) -> sel update -> EditLens (TupleUpdate sel) update
 tupleEditLens_ tester sel = let
-    ufGet :: ReadFunctionT IdentityT (TupleUpdateReader sel) (UpdateReader update)
-    ufGet mr = remonadMutableRead IdentityT $ tupleReadFunction sel mr
+    ufGet :: ReadFunction (TupleUpdateReader sel) (UpdateReader update)
+    ufGet mr = tupleReadFunction sel mr
     ufUpdate ::
            forall m. MonadIO m
         => TupleUpdate sel
         -> MutableRead m (TupleUpdateReader sel)
-        -> IdentityT m [update]
+        -> m [update]
     ufUpdate (MkTupleUpdate sel' update) _ =
         case tester sel' of
             Just Refl -> return [update]
@@ -227,9 +227,9 @@ tupleEditLens_ tester sel = let
            forall m. MonadIO m
         => [UpdateEdit update]
         -> MutableRead m (TupleUpdateReader sel)
-        -> IdentityT m (Maybe [TupleUpdateEdit sel])
+        -> m (Maybe [TupleUpdateEdit sel])
     elPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit sel) edits
-    in MkRunnableT2 identityUntrans $ MkAnEditLens {..}
+    in MkRunnable2 cmEmpty $ MkAnEditLens {..}
 
 tupleEditLens ::
        forall sel update. (TestEquality sel)
@@ -243,20 +243,20 @@ tupleIsoLens ::
     -> (forall update. selb update -> sela update)
     -> EditLens (TupleUpdate sela) (TupleUpdate selb)
 tupleIsoLens ab ba = let
-    ufGet :: ReadFunctionT IdentityT (TupleUpdateReader sela) (TupleUpdateReader selb)
-    ufGet mr (MkTupleUpdateReader sel rt) = lift $ mr $ MkTupleUpdateReader (ba sel) rt
+    ufGet :: ReadFunction (TupleUpdateReader sela) (TupleUpdateReader selb)
+    ufGet mr (MkTupleUpdateReader sel rt) = mr $ MkTupleUpdateReader (ba sel) rt
     ufUpdate ::
            forall m. MonadIO m
         => TupleUpdate sela
         -> MutableRead m (TupleUpdateReader sela)
-        -> IdentityT m [TupleUpdate selb]
+        -> m [TupleUpdate selb]
     ufUpdate (MkTupleUpdate sel update) _ = return [MkTupleUpdate (ab sel) update]
-    elFunction :: AnUpdateFunction IdentityT (TupleUpdate sela) (TupleUpdate selb)
+    elFunction :: AnUpdateFunction '[] (TupleUpdate sela) (TupleUpdate selb)
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit selb]
         -> MutableRead m (TupleUpdateReader sela)
-        -> IdentityT m (Maybe [TupleUpdateEdit sela])
+        -> m (Maybe [TupleUpdateEdit sela])
     elPutEdits edits _ = return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (ba sel) edit) edits
-    in MkRunnableT2 identityUntrans MkAnEditLens {..}
+    in MkRunnable2 cmEmpty MkAnEditLens {..}

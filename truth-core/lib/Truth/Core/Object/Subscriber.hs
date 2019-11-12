@@ -14,17 +14,16 @@ import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
-import Truth.Core.Object.Run
 
-data ASubscriber m update = MkASubscriber
-    { subAnObject :: AnObject m (UpdateEdit update)
-    , subscribe :: ([update] -> EditContext -> IO ()) -> LifeCycleT m ()
+data ASubscriber tt update = MkASubscriber
+    { subAnObject :: AnObject tt (UpdateEdit update)
+    , subscribe :: ([update] -> EditContext -> IO ()) -> LifeCycleT (ApplyStack tt IO) ()
     }
 
-type Subscriber = RunnableIO ASubscriber
+type Subscriber = Runnable1 ASubscriber
 
 subscriberObject :: Subscriber update -> Object (UpdateEdit update)
-subscriberObject (MkRunnableIO run sub) = MkRunnableIO run $ subAnObject sub
+subscriberObject (MkRunnable1 run sub) = MkRunnable1 run $ subAnObject sub
 
 type UpdateStoreEntry update = [update] -> EditContext -> IO ()
 
@@ -59,9 +58,10 @@ getRunner AsynchronousUpdateTiming recv = do
     return $ \edits ec -> runAsync $ singleUpdateQueue edits ec
 
 subscriberObjectMaker :: Subscriber update -> a -> ObjectMaker update a
-subscriberObjectMaker (MkRunnableIO run MkASubscriber {..}) a update = do
+subscriberObjectMaker (MkRunnable1 trun@(MkTransStackRunner run :: TransStackRunner tt) MkASubscriber {..}) a update = do
+    Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     remonad run $ subscribe update
-    return (MkRunnableIO run subAnObject, a)
+    return (MkRunnable1 trun subAnObject, a)
 
 makeSharedSubscriber :: forall update a. UpdateTiming -> ObjectMaker update a -> LifeCycleIO (Subscriber update, a)
 makeSharedSubscriber ut uobj = do
@@ -72,11 +72,12 @@ makeSharedSubscriber ut uobj = do
             store <- mVarRun var get
             for_ store $ \entry -> entry edits ectxt
     runAsync <- getRunner ut $ utReceiveUpdates ut updateP
-    (MkRunnableIO unliftC anObjectC, a) <- uobj runAsync
+    (MkRunnable1 (unliftC@(MkTransStackRunner _) :: TransStackRunner tt) anObjectC, a) <- uobj runAsync
+    Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     let
         child :: Subscriber update
         child =
-            MkRunnableIO unliftC $
+            MkRunnable1 unliftC $
             MkASubscriber anObjectC $ \updateC -> do
                 key <- liftIO $ mVarRun var $ addStoreStateT updateC
                 lifeCycleClose $ mVarRun var $ deleteStoreStateT key

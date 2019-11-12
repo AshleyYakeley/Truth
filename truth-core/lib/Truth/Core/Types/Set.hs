@@ -57,22 +57,21 @@ setCartesianProductUpdateFunction aeq beq = let
            forall m t. MonadIO m
         => MutableRead m (PairUpdateReader (SetUpdate a) (SetUpdate b))
         -> SetReader (a, b) t
-        -> IdentityT m t
-    ufGet mr (MkTupleUpdateReader (MkFunctionSelector (a, b)) ReadWhole) =
-        lift $ do
-            hasA <- mr $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
-            hasB <- mr $ MkTupleUpdateReader SelectSecond $ MkTupleUpdateReader (MkFunctionSelector b) ReadWhole
-            return $ hasA && hasB
+        -> m t
+    ufGet mr (MkTupleUpdateReader (MkFunctionSelector (a, b)) ReadWhole) = do
+        hasA <- mr $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
+        hasB <- mr $ MkTupleUpdateReader SelectSecond $ MkTupleUpdateReader (MkFunctionSelector b) ReadWhole
+        return $ hasA && hasB
     ufUpdate ::
            forall m. MonadIO m
         => PairUpdate (SetUpdate a) (SetUpdate b)
         -> MutableRead m (PairUpdateReader (SetUpdate a) (SetUpdate b))
-        -> IdentityT m [PartialSetUpdate (a, b)]
+        -> m [PartialSetUpdate (a, b)]
     ufUpdate (MkTupleUpdate SelectFirst (MkTupleUpdate (MkFunctionSelector a) _)) _ =
         return $ pure $ UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector (a', _)) ReadWhole) -> aeq a a'
     ufUpdate (MkTupleUpdate SelectSecond (MkTupleUpdate (MkFunctionSelector b) _)) _ =
         return $ pure $ UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector (_, b')) ReadWhole) -> beq b b'
-    in MkRunnableT2 identityUntrans MkAnUpdateFunction {..}
+    in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
 
 setCartesianProductPartialUpdateFunction ::
        forall a b.

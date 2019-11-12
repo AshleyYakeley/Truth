@@ -94,25 +94,27 @@ mapContextEdit _ (MkTupleUpdateEdit SelectContext edit) = MkTupleUpdateEdit Sele
 mapContextEdit f (MkTupleUpdateEdit SelectContent edit) = MkTupleUpdateEdit SelectContent $ f edit
 
 contextualiseAnUpdateFunction ::
-       forall t updateX updateN. MonadTransUntrans t
-    => AnUpdateFunction t updateX updateN
-    -> AnUpdateFunction t updateX (ContextUpdate updateX updateN)
+       forall tt updateX updateN. MonadTransStackUnliftAll tt
+    => AnUpdateFunction tt updateX updateN
+    -> AnUpdateFunction tt updateX (ContextUpdate updateX updateN)
 contextualiseAnUpdateFunction (MkAnUpdateFunction g u) = let
-    g' :: ReadFunctionT t (UpdateReader updateX) (ContextUpdateReader updateX updateN)
-    g' mr (MkTupleUpdateReader SelectContext rt) = lift $ mr rt
+    g' :: ReadFunctionTT tt (UpdateReader updateX) (ContextUpdateReader updateX updateN)
+    g' mr (MkTupleUpdateReader SelectContext rt) = stackLift @tt $ mr rt
     g' mr (MkTupleUpdateReader SelectContent rt) = g mr rt
     u' :: forall m. MonadIO m
        => updateX
        -> MutableRead m (UpdateReader updateX)
-       -> t m [ContextUpdate updateX updateN]
+       -> ApplyStack tt m [ContextUpdate updateX updateN]
     u' ea mr =
-        withTransConstraintTM @MonadIO $ do
-            ebs <- u ea mr
-            return $ (MkTupleUpdate SelectContext ea) : (fmap (MkTupleUpdate SelectContent) ebs)
+        case transStackUnliftMonadIO @tt @m of
+            Dict -> do
+                ebs <- u ea mr
+                return $ (MkTupleUpdate SelectContext ea) : (fmap (MkTupleUpdate SelectContent) ebs)
     in MkAnUpdateFunction g' u'
 
 contextualiseUpdateFunction :: UpdateFunction edita editb -> UpdateFunction edita (ContextUpdate edita editb)
-contextualiseUpdateFunction (MkRunnableT2 unlift f) = MkRunnableT2 unlift $ contextualiseAnUpdateFunction f
+contextualiseUpdateFunction (MkRunnable2 run@(MkTransStackRunner _) f) =
+    MkRunnable2 run $ contextualiseAnUpdateFunction f
 
 partitionContextEdits ::
        forall updateX updateN. [ContextUpdateEdit updateX updateN] -> ([UpdateEdit updateX], [UpdateEdit updateN])
@@ -123,52 +125,55 @@ partitionContextEdits pes = let
     in partitionEithers $ fmap toEither pes
 
 contextualiseAnEditLens ::
-       forall t updateX updateN. MonadTransUntrans t
-    => AnEditLens t updateX updateN
-    -> AnEditLens t updateX (ContextUpdate updateX updateN)
+       forall tt updateX updateN. MonadTransStackUnliftAll tt
+    => AnEditLens tt updateX updateN
+    -> AnEditLens tt updateX (ContextUpdate updateX updateN)
 contextualiseAnEditLens (MkAnEditLens f pe) = let
     f' = contextualiseAnUpdateFunction f
     pe' :: forall m. MonadIO m
         => [ContextUpdateEdit updateX updateN]
         -> MutableRead m (UpdateReader updateX)
-        -> t m (Maybe [UpdateEdit updateX])
+        -> ApplyStack tt m (Maybe [UpdateEdit updateX])
     pe' edits mr =
-        case partitionContextEdits edits of
-            (eas, ebs) ->
-                withTransConstraintTM @MonadIO $
-                getComposeM $ do
-                    eas' <- MkComposeM $ pe ebs mr
-                    return $ eas ++ eas'
+        case transStackUnliftMonadIO @tt @m of
+            Dict ->
+                case partitionContextEdits edits of
+                    (eas, ebs) ->
+                        getComposeM $ do
+                            eas' <- MkComposeM $ pe ebs mr
+                            return $ eas ++ eas'
     in MkAnEditLens f' pe'
 
 contextualiseEditLens :: EditLens updateX updateN -> EditLens updateX (ContextUpdate updateX updateN)
-contextualiseEditLens (MkRunnableT2 unlift lens) = MkRunnableT2 unlift $ contextualiseAnEditLens lens
+contextualiseEditLens (MkRunnable2 run@(MkTransStackRunner _) lens) = MkRunnable2 run $ contextualiseAnEditLens lens
 
 liftContentAnUpdateFunction ::
-       forall t updateA updateB updateN. MonadTransUntrans t
-    => AnUpdateFunction t updateA updateB
-    -> AnUpdateFunction t (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
+       forall tt updateA updateB updateN. MonadTransStackUnliftAll tt
+    => AnUpdateFunction tt updateA updateB
+    -> AnUpdateFunction tt (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
 liftContentAnUpdateFunction (MkAnUpdateFunction g u) = let
-    g' :: ReadFunctionT t (ContextUpdateReader updateA updateN) (ContextUpdateReader updateB updateN)
-    g' mr (MkTupleUpdateReader SelectContent rt) = lift $ mr $ MkTupleUpdateReader SelectContent rt
+    g' :: ReadFunctionTT tt (ContextUpdateReader updateA updateN) (ContextUpdateReader updateB updateN)
+    g' mr (MkTupleUpdateReader SelectContent rt) = stackLift @tt $ mr $ MkTupleUpdateReader SelectContent rt
     g' mr (MkTupleUpdateReader SelectContext rt) = g (mr . MkTupleUpdateReader SelectContext) rt
     u' :: forall m. MonadIO m
        => ContextUpdate updateA updateN
        -> MutableRead m (ContextUpdateReader updateA updateN)
-       -> t m [ContextUpdate updateB updateN]
+       -> ApplyStack tt m [ContextUpdate updateB updateN]
     u' (MkTupleUpdate SelectContent update) _ =
-        withTransConstraintTM @MonadIO $ return [MkTupleUpdate SelectContent update]
+        case transStackUnliftMonadIO @tt @m of
+            Dict -> return [MkTupleUpdate SelectContent update]
     u' (MkTupleUpdate SelectContext update) mr =
-        withTransConstraintTM @MonadIO $ do
-            updates <- u update (mr . MkTupleUpdateReader SelectContext)
-            return $ fmap (MkTupleUpdate SelectContext) updates
+        case transStackUnliftMonadIO @tt @m of
+            Dict -> do
+                updates <- u update (mr . MkTupleUpdateReader SelectContext)
+                return $ fmap (MkTupleUpdate SelectContext) updates
     in MkAnUpdateFunction g' u'
 
 liftContentUpdateFunction ::
        forall updateA updateB updateN.
        UpdateFunction updateA updateB
     -> UpdateFunction (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
-liftContentUpdateFunction (MkRunnableT2 unlift f) = MkRunnableT2 unlift $ liftContentAnUpdateFunction f
+liftContentUpdateFunction (MkRunnable2 run@(MkTransStackRunner _) f) = MkRunnable2 run $ liftContentAnUpdateFunction f
 
 carryContextUpdateFunction ::
        UpdateFunction (ContextUpdate updateX updateA) updateB
@@ -177,30 +182,32 @@ carryContextUpdateFunction func =
     liftContentUpdateFunction (editLensFunction $ tupleEditLens SelectContext) . contextualiseUpdateFunction func
 
 liftContentAnEditLens ::
-       forall t updateA updateB updateN. MonadTransUntrans t
-    => AnEditLens t updateA updateB
-    -> AnEditLens t (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
+       forall tt updateA updateB updateN. MonadTransStackUnliftAll tt
+    => AnEditLens tt updateA updateB
+    -> AnEditLens tt (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
 liftContentAnEditLens (MkAnEditLens f pe) = let
     f' = liftContentAnUpdateFunction f
     pe' :: forall m. MonadIO m
         => [ContextUpdateEdit updateB updateN]
         -> MutableRead m (ContextUpdateReader updateA updateN)
-        -> t m (Maybe [ContextUpdateEdit updateA updateN])
+        -> ApplyStack tt m (Maybe [ContextUpdateEdit updateA updateN])
     pe' edits mr =
-        case partitionContextEdits edits of
-            (exs, ens) ->
-                withTransConstraintTM @MonadIO $
-                getComposeM $ do
-                    es1 <- MkComposeM $ pe exs (mr . MkTupleUpdateReader SelectContext)
-                    return $
-                        (fmap (MkTupleUpdateEdit SelectContext) es1) ++ (fmap (MkTupleUpdateEdit SelectContent) ens)
+        case transStackUnliftMonadIO @tt @m of
+            Dict ->
+                case partitionContextEdits edits of
+                    (exs, ens) ->
+                        getComposeM $ do
+                            es1 <- MkComposeM $ pe exs (mr . MkTupleUpdateReader SelectContext)
+                            return $
+                                (fmap (MkTupleUpdateEdit SelectContext) es1) ++
+                                (fmap (MkTupleUpdateEdit SelectContent) ens)
     in MkAnEditLens f' pe'
 
 liftContentEditLens ::
        forall updateA updateB updateN.
        EditLens updateA updateB
     -> EditLens (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
-liftContentEditLens (MkRunnableT2 unlift alens) = MkRunnableT2 unlift $ liftContentAnEditLens alens
+liftContentEditLens (MkRunnable2 run@(MkTransStackRunner _) alens) = MkRunnable2 run $ liftContentAnEditLens alens
 
 carryContextEditLens ::
        EditLens (ContextUpdate updateX updateA) updateB
