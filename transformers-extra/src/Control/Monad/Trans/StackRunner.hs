@@ -1,56 +1,9 @@
 module Control.Monad.Trans.StackRunner where
 
-import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Function
 import Control.Monad.Trans.Stack
-import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
 import Import
-
-transStackConcatRefl ::
-       forall (tt1 :: [TransKind]) (tt2 :: [TransKind]) m. MonadTransStackUnliftAll tt1
-    => (ApplyStack (Concat tt1 tt2) m) :~: (ApplyStack tt1 (ApplyStack tt2 m))
-transStackConcatRefl = applyConcatRefl @_ @tt1 @tt2 @m @(Compose Dict MonadTransUnliftAll)
-
-concatMonadTransStackUnliftAllDict ::
-       forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
-    => Dict (MonadTransStackUnliftAll (Concat tt1 tt2))
-concatMonadTransStackUnliftAllDict =
-    case concatIsDict @((Compose Dict MonadTransUnliftAll)) @tt1 @tt2 of
-        Dict ->
-            case concatIsDict @((Compose Dict (MonadTransConstraint MonadPlus))) @tt1 @tt2 of
-                Dict ->
-                    case concatIsDict @((Compose Dict (MonadTransConstraint MonadFail))) @tt1 @tt2 of
-                        Dict ->
-                            case concatIsDict @((Compose Dict (MonadTransConstraint MonadIO))) @tt1 @tt2 of
-                                Dict ->
-                                    case concatIsDict @((Compose Dict (MonadTransConstraint MonadFix))) @tt1 @tt2 of
-                                        Dict ->
-                                            case concatIsDict
-                                                     @((Compose Dict (MonadTransConstraint MonadUnliftIO)))
-                                                     @tt1
-                                                     @tt2 of
-                                                Dict ->
-                                                    case concatIsDict
-                                                             @((Compose Dict (MonadTransConstraint Monad)))
-                                                             @tt1
-                                                             @tt2 of
-                                                        Dict ->
-                                                            case concatIsDict
-                                                                     @((Compose Dict MonadTransTunnel))
-                                                                     @tt1
-                                                                     @tt2 of
-                                                                Dict ->
-                                                                    case concatIsDict
-                                                                             @((Compose Dict MonadTransSemiTunnel))
-                                                                             @tt1
-                                                                             @tt2 of
-                                                                        Dict ->
-                                                                            case concatIsDict
-                                                                                     @((Compose Dict MonadTransUnlift))
-                                                                                     @tt1
-                                                                                     @tt2 of
-                                                                                Dict -> Dict
 
 data TransStackRunner (tt :: [TransKind]) where
     MkTransStackRunner

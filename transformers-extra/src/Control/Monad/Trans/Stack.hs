@@ -5,6 +5,7 @@ module Control.Monad.Trans.Stack
     , transStackDict
     , StackT(..)
     , MonadTransStackSemiTunnel
+    , concatMonadTransStackSemiTunnelDict
     , stackLift
     , stackRemonad
     , MonadTransStackTunnel
@@ -13,13 +14,16 @@ module Control.Monad.Trans.Stack
     , combineIOFunctions
     , stackLiftMBackFunction
     , MonadTransStackUnlift
+    , concatMonadTransStackUnliftDict
     , stackLiftWithUnlift
     , MonadTransStackUnliftAll
+    , concatMonadTransStackUnliftAllDict
     , stackCommute
+    , transStackConcatRefl
     ) where
 
 import Control.Monad.Trans.Constraint
-import Control.Monad.Trans.Function as I
+import Control.Monad.Trans.Function
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
 import Import
@@ -140,6 +144,15 @@ newtype SemiTunnel t = MkSemiTunnel
     }
 
 type MonadTransStackSemiTunnel tt = (IsStack (MonadTransConstraint Monad) tt, IsStack MonadTransSemiTunnel tt)
+
+concatMonadTransStackSemiTunnelDict ::
+       forall tt1 tt2. (MonadTransStackSemiTunnel tt1, MonadTransStackSemiTunnel tt2)
+    => Dict (MonadTransStackSemiTunnel (Concat tt1 tt2))
+concatMonadTransStackSemiTunnelDict =
+    case concatIsDict @((Compose Dict (MonadTransConstraint Monad))) @tt1 @tt2 of
+        Dict ->
+            case concatIsDict @((Compose Dict MonadTransSemiTunnel)) @tt1 @tt2 of
+                Dict -> Dict
 
 instance MonadTransStackSemiTunnel tt => MonadTransSemiTunnel (StackT tt) where
     semitunnel ::
@@ -266,6 +279,23 @@ type MonadTransStackUnlift tt
        , MonadTransStackSemiTunnel tt
        , IsStack MonadTransUnlift tt)
 
+concatMonadTransStackUnliftDict ::
+       forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)
+    => Dict (MonadTransStackUnlift (Concat tt1 tt2))
+concatMonadTransStackUnliftDict =
+    case concatIsDict @((Compose Dict (MonadTransConstraint MonadFail))) @tt1 @tt2 of
+        Dict ->
+            case concatIsDict @((Compose Dict (MonadTransConstraint MonadIO))) @tt1 @tt2 of
+                Dict ->
+                    case concatIsDict @((Compose Dict (MonadTransConstraint MonadFix))) @tt1 @tt2 of
+                        Dict ->
+                            case concatIsDict @((Compose Dict (MonadTransConstraint MonadUnliftIO))) @tt1 @tt2 of
+                                Dict ->
+                                    case concatMonadTransStackSemiTunnelDict @tt1 @tt2 of
+                                        Dict ->
+                                            case concatIsDict @((Compose Dict MonadTransUnlift)) @tt1 @tt2 of
+                                                Dict -> Dict
+
 newtype LiftWithUnlift t = MkLiftWithUnlift
     { unLiftWithUnlift :: forall m. MonadUnliftIO m => MBackFunction m (t m)
     }
@@ -330,6 +360,19 @@ type MonadTransStackUnliftAll tt
        , IsStack MonadTransTunnel tt
        , MonadTransStackUnlift tt
        , IsStack MonadTransUnliftAll tt)
+
+concatMonadTransStackUnliftAllDict ::
+       forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+    => Dict (MonadTransStackUnliftAll (Concat tt1 tt2))
+concatMonadTransStackUnliftAllDict =
+    case concatMonadTransStackUnliftDict @tt1 @tt2 of
+        Dict ->
+            case concatIsDict @((Compose Dict MonadTransUnliftAll)) @tt1 @tt2 of
+                Dict ->
+                    case concatIsDict @((Compose Dict (MonadTransConstraint MonadPlus))) @tt1 @tt2 of
+                        Dict ->
+                            case concatIsDict @((Compose Dict MonadTransTunnel)) @tt1 @tt2 of
+                                Dict -> Dict
 
 newtype LiftWithUnliftAll t = MkLiftWithUnliftAll
     { unLiftWithUnliftAll :: forall m r. MonadUnliftIO m => (UnliftAll t -> m r) -> t m r
@@ -405,3 +448,8 @@ stackCommute aar =
             ssr :: StackT tta (StackT ttb m) r
             ssr = MkStackT $ stackRemonad @tta @(ApplyStack ttb m) @(StackT ttb m) MkStackT aar
             in stackRemonad @ttb @(StackT tta m) @(ApplyStack tta m) unStackT $ unStackT $ commuteT ssr
+
+transStackConcatRefl ::
+       forall (tt1 :: [TransKind]) (tt2 :: [TransKind]) m. MonadTransStackUnliftAll tt1
+    => (ApplyStack (Concat tt1 tt2) m) :~: (ApplyStack tt1 (ApplyStack tt2 m))
+transStackConcatRefl = applyConcatRefl @_ @tt1 @tt2 @m @(Compose Dict MonadTransUnliftAll)
