@@ -5,6 +5,7 @@ import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Read
+import Truth.Core.Resource
 
 cacheObject ::
        forall edit. CacheableEdit edit

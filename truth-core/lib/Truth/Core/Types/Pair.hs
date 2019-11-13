@@ -3,6 +3,7 @@ module Truth.Core.Types.Pair where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Core.Types.Tuple
 
 data PairSelector (updateA :: Type) (updateB :: Type) (update :: Type) where

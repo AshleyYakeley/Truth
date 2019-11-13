@@ -99,7 +99,6 @@ import Control.Monad.Trans.ContExtra as I
 import Control.Monad.Trans.Function as I
 import Control.Monad.Trans.ReaderState as I
 import Control.Monad.Trans.Stack as I
-import Control.Monad.Trans.StackRunner as I
 import Control.Monad.Trans.Tunnel as I
 import Control.Monad.Trans.Unlift as I
 

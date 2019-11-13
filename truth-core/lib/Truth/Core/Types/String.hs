@@ -8,6 +8,7 @@ module Truth.Core.Types.String
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Core.Sequence
 
 data StringRead seq t where

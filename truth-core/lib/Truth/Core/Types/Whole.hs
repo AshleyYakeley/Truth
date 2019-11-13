@@ -5,6 +5,7 @@ module Truth.Core.Types.Whole where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 
 data WholeReader (a :: Type) (t :: Type) where
     ReadWhole :: forall t. WholeReader t t

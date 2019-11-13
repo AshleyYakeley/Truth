@@ -3,6 +3,7 @@ module Truth.Core.Types.SumWhole where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Core.Types.Sum
 import Truth.Core.Types.Whole
 

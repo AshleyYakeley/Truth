@@ -16,6 +16,9 @@ library:
     other-modules:
       - Truth.Core.Import
       - Truth.Core.Sequence
+      - Truth.Core.Resource.Runnable
+      - Truth.Core.Resource.Runner
+      - Truth.Core.Resource
       - Truth.Core.Read.MutableRead
       - Truth.Core.Read.SubjectReader
       - Truth.Core.Read.FullSubjectReader
@@ -24,7 +27,6 @@ library:
       - Truth.Core.Edit.Update
       - Truth.Core.Edit.FullEdit
       - Truth.Core.Edit.Cache
-      - Truth.Core.Edit.Run
       - Truth.Core.Edit.Function
       - Truth.Core.Edit.Lens
       - Truth.Core.Edit.Partial

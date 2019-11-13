@@ -1,9 +1,6 @@
-module Control.Monad.Trans.StackRunner where
+module Truth.Core.Resource.Runner where
 
-import Control.Monad.Trans.Function
-import Control.Monad.Trans.Stack
-import Control.Monad.Trans.Unlift
-import Import
+import Truth.Core.Import
 
 data TransStackRunner (tt :: [TransKind]) where
     MkTransStackRunner

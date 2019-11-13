@@ -3,10 +3,10 @@ module Truth.Core.Edit.Lens where
 import Truth.Core.Edit.Edit
 import Truth.Core.Edit.FullEdit
 import Truth.Core.Edit.Function
-import Truth.Core.Edit.Run
 import Truth.Core.Edit.Update
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 
 data AnEditLens tt updateA updateB = MkAnEditLens
     { elFunction :: AnUpdateFunction tt updateA updateB

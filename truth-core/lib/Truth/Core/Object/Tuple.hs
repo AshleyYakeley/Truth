@@ -10,6 +10,7 @@ import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Core.Types
 
 noneTupleObject :: Object (TupleUpdateEdit (ListElementType '[]))

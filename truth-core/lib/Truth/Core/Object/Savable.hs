@@ -10,7 +10,8 @@ import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
 import Truth.Core.Read
-import Truth.Core.Types.Whole
+import Truth.Core.Resource
+import Truth.Core.Types
 
 data SaveBuffer a = MkSaveBuffer
     { saveBuffer :: a

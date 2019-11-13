@@ -3,6 +3,7 @@ module Truth.Core.Types.Context where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Core.Types.Tuple
 
 data WithContext context content =

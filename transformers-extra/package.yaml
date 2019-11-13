@@ -22,7 +22,6 @@ library:
       - Control.Monad.Trans.Compose
       - Control.Monad.Trans.Free
       - Control.Monad.Trans.Stack
-      - Control.Monad.Trans.StackRunner
       - Control.Monad.Trans.ContExtra
       - Control.Monad.Trans.ReaderState
     other-modules:

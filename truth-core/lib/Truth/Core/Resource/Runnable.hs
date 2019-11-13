@@ -1,6 +1,7 @@
-module Truth.Core.Edit.Run where
+module Truth.Core.Resource.Runnable where
 
 import Truth.Core.Import
+import Truth.Core.Resource.Runner
 
 data Runnable1 f (a :: k) =
     forall (tt :: [TransKind]). MkRunnable1 (TransStackRunner tt)

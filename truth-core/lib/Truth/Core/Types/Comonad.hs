@@ -3,6 +3,7 @@ module Truth.Core.Types.Comonad where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 
 newtype ComonadReader (w :: Type -> Type) (reader :: Type -> Type) (t :: Type) where
     ReadExtract :: forall w reader t. reader t -> ComonadReader w reader t

@@ -14,6 +14,7 @@ import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
+import Truth.Core.Resource
 
 data ASubscriber tt update = MkASubscriber
     { subAnObject :: AnObject tt (UpdateEdit update)

@@ -4,6 +4,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Read
+import Truth.Core.Resource
 
 objectMapUpdates ::
        forall updateA updateB.

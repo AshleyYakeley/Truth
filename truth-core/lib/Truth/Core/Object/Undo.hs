@@ -5,11 +5,11 @@ module Truth.Core.Object.Undo
 
 import Truth.Core.Edit
 import Truth.Core.Import
-
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
+import Truth.Core.Resource
 
 -- fst is original edits, snd is undoing edits
 type UndoEntry edit = ([edit], [edit])

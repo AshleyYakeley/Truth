@@ -10,6 +10,7 @@ import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Read
+import Truth.Core.Resource
 
 type ObjectMaker update a = ([update] -> EditContext -> IO ()) -> LifeCycleIO (Object (UpdateEdit update), a)
 

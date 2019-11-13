@@ -3,6 +3,7 @@ module Truth.Core.Types.Key where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Core.Sequence
 import Truth.Core.Types.List
 import Truth.Core.Types.OneEdit
