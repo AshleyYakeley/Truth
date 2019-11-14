@@ -3,6 +3,7 @@ module Truth.Core.Types.Tuple where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 
 class TupleUpdateWitness (c :: Type -> Constraint) (sel :: Type -> Type) where
     tupleUpdateWitness :: forall update. sel update -> Dict (c update)

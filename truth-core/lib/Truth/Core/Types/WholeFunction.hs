@@ -3,6 +3,7 @@ module Truth.Core.Types.WholeFunction where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Core.Types.Function
 import Truth.Core.Types.Pair
 import Truth.Core.Types.Tuple

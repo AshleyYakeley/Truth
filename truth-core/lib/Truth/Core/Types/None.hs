@@ -3,6 +3,7 @@ module Truth.Core.Types.None where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 
 newtype NoReader (a :: Type) (t :: Type) =
     MkNoReader None

@@ -5,6 +5,7 @@ module Truth.Core.Types.FiniteSet where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Core.Types.Function
 import Truth.Core.Types.Key
 import Truth.Core.Types.Lattice

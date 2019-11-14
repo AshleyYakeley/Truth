@@ -37,20 +37,21 @@ unliftTransStackRunner = MkTransStackRunner
 mVarTransStackRunner :: MVar s -> TransStackRunner '[ StateT s]
 mVarTransStackRunner var = unliftTransStackRunner $ mVarRun var
 
-instance ConcatMonoid TransStackRunner where
-    cmEmpty = MkTransStackRunner id
-    cmAppend :: forall tt1 tt2. TransStackRunner tt1 -> TransStackRunner tt2 -> TransStackRunner (Concat tt1 tt2)
-    cmAppend (MkTransStackRunner mf1) (MkTransStackRunner mf2) = let
-        mf12 ::
-               forall m. MonadUnliftIO m
-            => MFunction (ApplyStack (Concat tt1 tt2) m) m
-        mf12 =
-            case transStackConcatRefl @tt1 @tt2 @m of
-                Refl ->
-                    case transStackDict @MonadUnliftIO @tt2 @m of
-                        Dict -> mf2 . mf1
-        in case concatMonadTransStackUnliftAllDict @tt1 @tt2 of
-               Dict -> MkTransStackRunner mf12
+cmEmpty :: TransStackRunner '[]
+cmEmpty = MkTransStackRunner id
+
+cmAppend :: forall tt1 tt2. TransStackRunner tt1 -> TransStackRunner tt2 -> TransStackRunner (Concat tt1 tt2)
+cmAppend (MkTransStackRunner mf1) (MkTransStackRunner mf2) = let
+    mf12 ::
+           forall m. MonadUnliftIO m
+        => MFunction (ApplyStack (Concat tt1 tt2) m) m
+    mf12 =
+        case transStackConcatRefl @tt1 @tt2 @m of
+            Refl ->
+                case transStackDict @MonadUnliftIO @tt2 @m of
+                    Dict -> mf2 . mf1
+    in case concatMonadTransStackUnliftAllDict @tt1 @tt2 of
+           Dict -> MkTransStackRunner mf12
 
 data TransListFunction (tt1 :: [TransKind]) (tt2 :: [TransKind]) = MkTransListFunction
     { tlfFunction :: forall m. Monad m => Proxy m -> MFunction (ApplyStack tt1 m) (ApplyStack tt2 m)

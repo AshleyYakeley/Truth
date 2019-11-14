@@ -16,8 +16,9 @@ library:
     other-modules:
       - Truth.Core.Import
       - Truth.Core.Sequence
-      - Truth.Core.Resource.Runnable
+      - Truth.Core.Resource.SingleRunner
       - Truth.Core.Resource.Runner
+      - Truth.Core.Resource.Runnable
       - Truth.Core.Resource
       - Truth.Core.Read.MutableRead
       - Truth.Core.Read.SubjectReader
