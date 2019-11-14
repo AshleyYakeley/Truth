@@ -58,7 +58,7 @@ instance MonadTransUnliftAll DeferActionT where
 deferAction :: Monad m => IO () -> DeferActionT m ()
 deferAction action = MkDeferActionT $ tell [action]
 
-runDeferActionT :: UnliftAll DeferActionT
+runDeferActionT :: UnliftAll MonadUnliftIO DeferActionT
 runDeferActionT (MkDeferActionT (WriterT wma)) = do
     (a, actions) <- wma
     for_ actions liftIO

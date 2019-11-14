@@ -4,7 +4,7 @@ import Truth.Core.Import
 
 type AutoCloseT key t = StateT (StrictMap key (t, IO ()))
 
-runAutoClose :: Ord key => UnliftAll (AutoCloseT key t)
+runAutoClose :: Ord key => UnliftAll MonadUnliftIO (AutoCloseT key t)
 runAutoClose ac = do
     (a, mp) <- runStateT ac mempty
     liftIO $ for_ (toList mp) snd

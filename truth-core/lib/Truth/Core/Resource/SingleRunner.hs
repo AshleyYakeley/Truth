@@ -4,13 +4,13 @@ import Truth.Core.Import
 
 data SingleRunner (t :: TransKind) where
     StaticSingleRunner
-        :: forall (t :: TransKind). MonadTransUnliftAll t
+        :: forall (t :: TransKind). MonadTransAskUnlift t
         => IOWitness t
-        -> UnliftAll t
+        -> UnliftAll MonadUnliftIO t
         -> SingleRunner t
     DynamicSingleRunner
         :: forall (t :: TransKind). MonadTransUnliftAll t
-        => IO (WUnliftAll t)
+        => IO (WUnliftAll MonadUnliftIO t)
         -> SingleRunner t
 
 instance TestEquality SingleRunner where
@@ -22,7 +22,7 @@ instance TestOrder SingleRunner where
     testOrder (StaticSingleRunner _ _) (DynamicSingleRunner _) = WLT
     testOrder (DynamicSingleRunner _) _ = WGT
 
-runSingleRunner :: forall t r. SingleRunner t -> (MonadTransUnliftAll t => UnliftAll t -> r) -> r
+runSingleRunner :: forall t r. SingleRunner t -> (MonadTransUnliftAll t => UnliftAll MonadUnliftIO t -> r) -> r
 runSingleRunner (StaticSingleRunner _ run) call = call run
 runSingleRunner (DynamicSingleRunner iorun) call =
     call $ \tma -> do

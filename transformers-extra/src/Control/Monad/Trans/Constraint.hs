@@ -2,6 +2,8 @@ module Control.Monad.Trans.Constraint where
 
 import Import
 
+type TransKind = (Type -> Type) -> (Type -> Type)
+
 class MonadTrans t => MonadTransConstraint (c :: (Type -> Type) -> Constraint) t where
     hasTransConstraint ::
            forall (m :: Type -> Type). c m

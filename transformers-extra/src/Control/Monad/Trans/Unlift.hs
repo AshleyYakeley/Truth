@@ -30,25 +30,22 @@ liftWithUnliftW ::
     => WMBackFunction m (t m)
 liftWithUnliftW = MkWMBackFunction liftWithUnlift
 
-type UnliftAll t = forall (m :: Type -> Type). MonadUnliftIO m => MFunction (t m) m
+type UnliftAll c (t :: TransKind) = forall (m :: Type -> Type). c m => MFunction (t m) m
 
-newtype WUnliftAll (t :: (Type -> Type) -> Type -> Type) = MkWUnliftAll
-    { runWUnliftAll :: UnliftAll t
+newtype WUnliftAll c (t :: TransKind) = MkWUnliftAll
+    { runWUnliftAll :: UnliftAll c t
     }
 
-wUnliftAllWMFunction :: MonadUnliftIO m => WUnliftAll t -> WMFunction (t m) m
+wUnliftAllWMFunction :: c m => WUnliftAll c t -> WMFunction (t m) m
 wUnliftAllWMFunction (MkWUnliftAll unlift) = MkWMFunction unlift
 
-identityRunner :: UnliftAll IdentityT
-identityRunner = runIdentityT
+identityWUnliftAll :: WUnliftAll c IdentityT
+identityWUnliftAll = MkWUnliftAll runIdentityT
 
-identityWRunner :: WUnliftAll IdentityT
-identityWRunner = MkWUnliftAll runIdentityT
-
-mVarRun :: MVar s -> UnliftAll (StateT s)
+mVarRun :: MVar s -> UnliftAll MonadUnliftIO (StateT s)
 mVarRun var (StateT smr) = liftIOWithUnlift $ \unlift -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds
 
-wMVarRun :: MVar s -> WUnliftAll (StateT s)
+wMVarRun :: MVar s -> WUnliftAll MonadUnliftIO (StateT s)
 wMVarRun var = MkWUnliftAll $ mVarRun var
 
 liftStateT :: (Traversable f, Applicative m) => StateT s m a -> StateT (f s) m (f a)
@@ -63,10 +60,11 @@ liftWithMVarStateT vma = do
     put finalstate
     return r
 
-readerTUnliftAllToT :: (MonadTransUnliftAll t, MonadUnliftIO m) => MFunction (ReaderT (WUnliftAll t) m) (t m)
+readerTUnliftAllToT ::
+       (MonadTransUnliftAll t, MonadUnliftIO m) => MFunction (ReaderT (WUnliftAll MonadUnliftIO t) m) (t m)
 readerTUnliftAllToT rma = liftWithUnliftAll $ \tr -> runReaderT rma $ MkWUnliftAll tr
 
-tToReaderTUnliftAll :: MonadUnliftIO m => MFunction (t m) (ReaderT (WUnliftAll t) m)
+tToReaderTUnliftAll :: MonadUnliftIO m => MFunction (t m) (ReaderT (WUnliftAll MonadUnliftIO t) m)
 tToReaderTUnliftAll tma = do
     MkWUnliftAll unlift <- ask
     lift $ unlift tma
@@ -74,13 +72,13 @@ tToReaderTUnliftAll tma = do
 class (MonadTransConstraint MonadPlus t, MonadTransTunnel t, MonadTransUnlift t) => MonadTransUnliftAll t where
     liftWithUnliftAll ::
            forall m r. MonadUnliftIO m
-        => (UnliftAll t -> m r)
+        => (UnliftAll MonadUnliftIO t -> m r)
         -> t m r
-    -- ^ lift with a 'WUnliftAll' that accounts for the transformer's effects (using MVars where necessary)
+    -- ^ lift with a 'WUnliftAll Monad that accounts for the transformer's effects (using MVars where necessary)
     getDiscardingUnliftAll ::
            forall m. Monad m
-        => t m (WUnliftAll t)
-    -- ^ return a 'WUnliftAll' that discards the transformer's effects (such as state change or output)
+        => t m (WUnliftAll MonadUnliftIO t)
+    -- ^ return a 'WUnliftAll Monad that discards the transformer's effects (such as state change or output)
 
 -- | Swap two transformers in a transformer stack
 commuteT ::
@@ -98,11 +96,14 @@ mVarWIORun :: MVar s -> WIOFunction (StateT s IO)
 mVarWIORun var = MkWMFunction $ mVarRun var
 
 composeUnliftAllFunction ::
-       (MonadTransUnliftAll t, MonadUnliftIO m) => UnliftAll t -> MFunction m n -> MFunction (t m) n
+       (MonadTransUnliftAll t, MonadUnliftIO m) => UnliftAll MonadUnliftIO t -> MFunction m n -> MFunction (t m) n
 composeUnliftAllFunction rt rm tma = rm $ rt tma
 
 composeUnliftAllFunctionCommute ::
-       (MonadTransUnliftAll t, MonadUnliftIO m, MonadUnliftIO n) => UnliftAll t -> MFunction m n -> MFunction (t m) n
+       (MonadTransUnliftAll t, MonadUnliftIO m, MonadUnliftIO n)
+    => UnliftAll MonadUnliftIO t
+    -> MFunction m n
+    -> MFunction (t m) n
 composeUnliftAllFunctionCommute rt rm tma = rt $ remonad rm tma
 
 class (MonadFail m, MonadTunnelIO m, MonadFix m) => MonadUnliftIO m where
@@ -133,7 +134,7 @@ instance MonadTransUnlift IdentityT
 
 instance MonadTransUnliftAll IdentityT where
     liftWithUnliftAll call = IdentityT $ call runIdentityT
-    getDiscardingUnliftAll = return identityWRunner
+    getDiscardingUnliftAll = return identityWUnliftAll
 
 instance MonadTransUnlift (ReaderT s)
 
@@ -145,7 +146,7 @@ instance MonadTransUnliftAll (ReaderT s) where
 
 instance Monoid s => MonadTransUnlift (WriterT s)
 
-writerDiscardingUntrans :: UnliftAll (WriterT s)
+writerDiscardingUntrans :: UnliftAll MonadUnliftIO (WriterT s)
 writerDiscardingUntrans mr = do
     (r, _discarded) <- runWriterT mr
     return r
@@ -166,7 +167,7 @@ instance Monoid s => MonadTransUnliftAll (WriterT s) where
 
 instance MonadTransUnlift (StateT s)
 
-stateDiscardingUntrans :: s -> UnliftAll (StateT s)
+stateDiscardingUntrans :: s -> UnliftAll MonadUnliftIO (StateT s)
 stateDiscardingUntrans s mr = do
     (r, _discarded) <- runStateT mr s
     return r

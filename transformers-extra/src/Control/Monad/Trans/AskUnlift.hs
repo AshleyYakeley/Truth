@@ -9,7 +9,7 @@ import Import
 class MonadTransUnliftAll t => MonadTransAskUnlift t where
     askUnlift ::
            forall m. Monad m
-        => t m (WUnliftAll t)
+        => t m (WUnliftAll Monad t)
 
 -- | A monad that has no effects over IO (such as state change or output)
 class MonadUnliftIO m => MonadAskUnliftIO m where
@@ -30,9 +30,18 @@ instance MonadTransAskUnlift t => MonadTransConstraint MonadAskUnliftIO t where
         withTransConstraintDict @MonadFail $ withTransConstraintDict @MonadIO $ withTransConstraintDict @MonadFix $ Dict
 
 instance MonadTransAskUnlift IdentityT where
-    askUnlift = return identityWRunner
+    askUnlift = return identityWUnliftAll
 
 instance MonadTransAskUnlift (ReaderT s) where
     askUnlift = do
         s <- ask
         return $ MkWUnliftAll $ \mr -> runReaderT mr s
+
+contractT ::
+       forall (t :: TransKind) m. (MonadTransAskUnlift t, Monad m)
+    => MFunction (t (t m)) (t m)
+contractT ttma =
+    case hasTransConstraint @Monad @t @m of
+        Dict -> do
+            MkWUnliftAll unlift <- askUnlift
+            unlift ttma

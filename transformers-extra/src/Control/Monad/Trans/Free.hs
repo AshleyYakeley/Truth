@@ -71,5 +71,5 @@ instance MonadTransUnliftAll FreeT where
             MkWUnliftAll unlift <- getDiscardingUnliftAll
             return $ MkWUnliftAll $ \(FreeT tma) -> unlift tma
 
-unliftFreeT :: WUnliftAll FreeT
-unliftFreeT = MkWUnliftAll $ \ft -> identityRunner $ runFreeT ft
+unliftFreeT :: WUnliftAll MonadUnliftIO FreeT
+unliftFreeT = MkWUnliftAll $ \ft -> runIdentityT $ runFreeT ft

@@ -28,10 +28,10 @@ runMonoTransStackRunner tr call =
     case transStackDict @MonadUnliftIO @tt @m of
         Dict -> call
 
-unliftStackTransStackRunner :: MonadTransStackUnliftAll tt => UnliftAll (StackT tt) -> TransStackRunner tt
+unliftStackTransStackRunner :: MonadTransStackUnliftAll tt => UnliftAll MonadUnliftIO (StackT tt) -> TransStackRunner tt
 unliftStackTransStackRunner ua = MkTransStackRunner $ \ama -> ua $ MkStackT ama
 
-unliftTransStackRunner :: MonadTransUnliftAll t => UnliftAll t -> TransStackRunner '[ t]
+unliftTransStackRunner :: MonadTransUnliftAll t => UnliftAll MonadUnliftIO t -> TransStackRunner '[ t]
 unliftTransStackRunner = MkTransStackRunner
 
 mVarTransStackRunner :: MVar s -> TransStackRunner '[ StateT s]
