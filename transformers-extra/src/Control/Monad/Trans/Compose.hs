@@ -195,12 +195,25 @@ instance (MonadTransUnlift t1, MonadTransUnlift t2) => MonadTransUnlift (Compose
                                     return $ MkWMFunction $ \(MkComposeT t1t2ma) -> unlift2 $ unlift1 t1t2ma
 
 instance (MonadTransUnliftAll t1, MonadTransUnliftAll t2) => MonadTransUnliftAll (ComposeT t1 t2) where
+    insideOut ::
+           forall m r. Monad m
+        => (forall b. (forall mm a. Monad mm => ComposeT t1 t2 mm a -> mm (a, b)) -> m (r, b))
+        -> ComposeT t1 t2 m r
+    insideOut call =
+        case hasTransConstraint @Monad @t2 @m of
+            Dict ->
+                MkComposeT $
+                insideOut $ \unlift1 ->
+                    insideOut $ \unlift2 ->
+                        fmap (\(r, (b, c)) -> ((r, b), c)) $
+                        call $ \(MkComposeT ctma) ->
+                            fmap (\((a, b), c) -> (a, (b, c))) $ unlift2 $ withTransConstraintTM @Monad $ unlift1 ctma
     liftWithUnliftAll ::
-           forall m r. MonadUnliftIO m
+           forall m r. MonadIO m
         => (UnliftAll MonadUnliftIO (ComposeT t1 t2) -> m r)
         -> ComposeT t1 t2 m r
     liftWithUnliftAll call =
-        case hasTransConstraint @MonadUnliftIO @t2 @m of
+        case hasTransConstraint @MonadIO @t2 @m of
             Dict ->
                 MkComposeT $
                 liftWithUnliftAll $ \unlift1 ->

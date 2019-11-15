@@ -64,6 +64,7 @@ instance MonadTransTunnel FreeT where
 instance MonadTransUnlift FreeT
 
 instance MonadTransUnliftAll FreeT where
+    insideOut call = FreeT $ insideOut $ \unlift -> call $ unlift . runFreeT
     liftWithUnliftAll call = FreeT $ liftWithUnliftAll $ \unlift -> call $ \(FreeT tma) -> unlift tma
     getDiscardingUnliftAll =
         FreeT $

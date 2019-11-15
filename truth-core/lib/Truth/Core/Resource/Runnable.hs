@@ -1,6 +1,7 @@
 module Truth.Core.Resource.Runnable where
 
 import Truth.Core.Import
+import Truth.Core.Resource.Function
 import Truth.Core.Resource.Runner
 
 data Runnable1 f (a :: k) =

@@ -1,6 +1,8 @@
 module Truth.Core.Resource.Runner where
 
 import Truth.Core.Import
+import Truth.Core.Resource.Function
+import Truth.Core.Resource.SingleRunner
 
 data TransStackRunner (tt :: [TransKind]) where
     MkTransStackRunner
@@ -53,76 +55,6 @@ cmAppend (MkTransStackRunner mf1) (MkTransStackRunner mf2) = let
     in case concatMonadTransStackUnliftAllDict @tt1 @tt2 of
            Dict -> MkTransStackRunner mf12
 
-data TransListFunction (tt1 :: [TransKind]) (tt2 :: [TransKind]) = MkTransListFunction
-    { tlfFunction :: forall m. Monad m => Proxy m -> MFunction (ApplyStack tt1 m) (ApplyStack tt2 m)
-    , tlfBackFunction :: forall m. MonadUnliftIO m => Proxy m -> MBackFunction (ApplyStack tt1 m) (ApplyStack tt2 m)
-    }
-
-instance Category TransListFunction where
-    id = MkTransListFunction (\_ -> runWMFunction id) (\_ -> runWMBackFunction id)
-    MkTransListFunction fbc bfbc . MkTransListFunction fab bfab =
-        MkTransListFunction
-            (\p -> runWMFunction $ MkWMFunction (fbc p) . MkWMFunction (fab p))
-            (\p -> runWMBackFunction $ MkWMBackFunction (bfbc p) . MkWMBackFunction (bfab p))
-
-concatFstMFunction ::
-       forall tt1 tt2 m. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2, Monad m)
-    => MFunction (ApplyStack tt1 m) (ApplyStack (Concat tt1 tt2) m)
-concatFstMFunction =
-    case transStackConcatRefl @tt1 @tt2 @m of
-        Refl ->
-            case transStackDict @Monad @tt2 @m of
-                Dict -> stackRemonad @tt1 $ stackLift @tt2 @m
-
-concatSndMFunction ::
-       forall tt1 tt2 m. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2, Monad m)
-    => MFunction (ApplyStack tt2 m) (ApplyStack (Concat tt1 tt2) m)
-concatSndMFunction =
-    case transStackConcatRefl @tt1 @tt2 @m of
-        Refl ->
-            case transStackDict @Monad @tt2 @m of
-                Dict -> stackLift @tt1
-
-fstTransListFunction ::
-       forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
-    => TransListFunction tt1 (Concat tt1 tt2)
-fstTransListFunction = let
-    tlfFunction ::
-           forall m. Monad m
-        => Proxy m
-        -> MFunction (ApplyStack tt1 m) (ApplyStack (Concat tt1 tt2) m)
-    tlfFunction _ = concatFstMFunction @tt1 @tt2 @m
-    tlfBackFunction ::
-           forall m. MonadUnliftIO m
-        => Proxy m
-        -> MBackFunction (ApplyStack tt1 m) (ApplyStack (Concat tt1 tt2) m)
-    tlfBackFunction _ =
-        case transStackConcatRefl @tt1 @tt2 @m of
-            Refl ->
-                case transStackDict @MonadUnliftIO @tt2 @m of
-                    Dict -> stackLiftMBackFunction @tt1 $ stackLiftWithUnlift @tt2 @m
-    in MkTransListFunction {..}
-
-sndTransListFunction ::
-       forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
-    => TransListFunction tt2 (Concat tt1 tt2)
-sndTransListFunction = let
-    tlfFunction ::
-           forall m. Monad m
-        => Proxy m
-        -> MFunction (ApplyStack tt2 m) (ApplyStack (Concat tt1 tt2) m)
-    tlfFunction _ = concatSndMFunction @tt1 @tt2 @m
-    tlfBackFunction ::
-           forall m. MonadUnliftIO m
-        => Proxy m
-        -> MBackFunction (ApplyStack tt2 m) (ApplyStack (Concat tt1 tt2) m)
-    tlfBackFunction _ =
-        case transStackConcatRefl @tt1 @tt2 @m of
-            Refl ->
-                case transStackDict @MonadUnliftIO @tt2 @m of
-                    Dict -> stackLiftWithUnlift @tt1
-    in MkTransListFunction {..}
-
 combineUnliftFstMFunction ::
        forall tt (m :: Type -> Type). (MonadTransStackUnliftAll tt, MonadIO m)
     => MFunction (ApplyStack tt IO) (ApplyStack tt m)
@@ -134,3 +66,54 @@ combineUnliftIOFunctions ::
     -> IOFunction m
     -> IOFunction (ApplyStack tt m)
 combineUnliftIOFunctions = combineIOFunctions @tt @m
+
+type ResourceRunner = ListType SingleRunner
+
+mapResourceRunner ::
+       forall (ct :: TransKind -> Constraint) (tt :: [TransKind]). (forall t. MonadTransUnliftAll t => ct t)
+    => ResourceRunner tt
+    -> ListType (Compose Dict ct) tt
+mapResourceRunner =
+    mapListType $ \sr ->
+        case singleRunnerUnliftAllDict sr of
+            Dict -> Compose Dict
+
+combineResourceRunners ::
+       ResourceRunner tta
+    -> ResourceRunner ttb
+    -> (forall ttab. ResourceRunner ttab -> TransListFunction (Concat tta ttb) ttab -> r)
+    -> r
+combineResourceRunners NilListType rb f = f rb id
+combineResourceRunners ra NilListType f =
+    case concatEmptyRefl ra of
+        Refl -> f ra id
+combineResourceRunners au1@(ConsListType u1 uu1) au2@(ConsListType u2 uu2) f =
+    case singleRunnerUnliftAllDict u1 of
+        Dict ->
+            case singleRunnerUnliftAllDict u2 of
+                Dict ->
+                    case singleRunnerOrder u1 u2 of
+                        SREQ ->
+                            combineResourceRunners uu1 uu2 $ \uu12 tf ->
+                                f (ConsListType u1 uu12) $
+                                consTransListFunction
+                                    (mapResourceRunner $ concatListType uu1 uu2)
+                                    (mapResourceRunner uu12)
+                                    tf .
+                                contractTransListFunction (mapResourceRunner $ concatListType uu1 uu2) .
+                                reorderTransListFunction (mapResourceRunner au1) (mapResourceRunner uu2)
+                        SRLT ->
+                            combineResourceRunners uu1 au2 $ \uu12 tf ->
+                                f (ConsListType u1 uu12) $
+                                consTransListFunction
+                                    (mapResourceRunner $ concatListType uu1 au2)
+                                    (mapResourceRunner uu12)
+                                    tf
+                        SRGT ->
+                            combineResourceRunners au1 uu2 $ \uu12 tf ->
+                                f (ConsListType u2 uu12) $
+                                consTransListFunction
+                                    (mapResourceRunner $ concatListType au1 uu2)
+                                    (mapResourceRunner uu12)
+                                    tf .
+                                reorderTransListFunction (mapResourceRunner au1) (mapResourceRunner uu2)

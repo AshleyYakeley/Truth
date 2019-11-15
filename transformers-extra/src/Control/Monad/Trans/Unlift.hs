@@ -70,8 +70,12 @@ tToReaderTUnliftAll tma = do
     lift $ unlift tma
 
 class (MonadTransConstraint MonadPlus t, MonadTransTunnel t, MonadTransUnlift t) => MonadTransUnliftAll t where
+    insideOut ::
+           forall m r. Monad m
+        => (forall b. (forall mm a. Monad mm => t mm a -> mm (a, b)) -> m (r, b))
+        -> t m r
     liftWithUnliftAll ::
-           forall m r. MonadUnliftIO m
+           forall m r. MonadIO m
         => (UnliftAll MonadUnliftIO t -> m r)
         -> t m r
     -- ^ lift with a 'WUnliftAll Monad that accounts for the transformer's effects (using MVars where necessary)
@@ -80,12 +84,33 @@ class (MonadTransConstraint MonadPlus t, MonadTransTunnel t, MonadTransUnlift t)
         => t m (WUnliftAll MonadUnliftIO t)
     -- ^ return a 'WUnliftAll Monad that discards the transformer's effects (such as state change or output)
 
+outsideIn ::
+       forall t m r. (MonadTransUnliftAll t, Monad m)
+    => (forall a. (forall mm b. Monad mm => t mm (r, b) -> mm (a, b)) -> m a)
+    -> t m r
+outsideIn call = insideOut $ \unlift -> call $ \tmmrb -> fmap (\((r, b1), b) -> ((r, b), b1)) $ unlift tmmrb
+
 -- | Swap two transformers in a transformer stack
 commuteT ::
-       forall ta tb m. (MonadTransUnliftAll ta, MonadTransUnliftAll tb, MonadUnliftIO m)
+       forall ta tb m. (MonadTransUnliftAll ta, MonadTransUnliftAll tb, Monad m)
     => MFunction (ta (tb m)) (tb (ta m))
-commuteT tatbmr =
-    case hasTransConstraint @MonadUnliftIO @ta @m of
+commuteT abmr =
+    case hasTransConstraint @Monad @ta @m of
+        Dict ->
+            case hasTransConstraint @Monad @tb @m of
+                Dict -> outsideIn $ \untb -> insideOut $ \unta -> untb $ unta abmr
+
+commuteTBack ::
+       forall ta tb m. (MonadTransUnliftAll ta, MonadTransUnliftAll tb, Monad m)
+    => MBackFunction (ta (tb m)) (tb (ta m))
+commuteTBack call = commuteT $ call commuteT
+
+-- | Swap two transformers in a transformer stack (different generality)
+commuteTUnliftIO ::
+       forall ta tb m. (MonadTransTunnel ta, MonadTransConstraint MonadIO ta, MonadTransUnliftAll tb, MonadUnliftIO m)
+    => MFunction (ta (tb m)) (tb (ta m))
+commuteTUnliftIO tatbmr =
+    case hasTransConstraint @MonadIO @ta @m of
         Dict -> liftWithUnliftAll $ \unlift -> remonad' unlift tatbmr
 
 type IOFunction m = MFunction m IO
@@ -133,12 +158,14 @@ instance MonadTransUnlift t => MonadTransConstraint MonadUnliftIO t where
 instance MonadTransUnlift IdentityT
 
 instance MonadTransUnliftAll IdentityT where
+    insideOut call = IdentityT $ fmap fst $ call $ fmap (\a -> (a, ())) . runIdentityT
     liftWithUnliftAll call = IdentityT $ call runIdentityT
     getDiscardingUnliftAll = return identityWUnliftAll
 
 instance MonadTransUnlift (ReaderT s)
 
 instance MonadTransUnliftAll (ReaderT s) where
+    insideOut call = ReaderT $ \s -> fmap fst $ call $ \(ReaderT smr) -> fmap (\a -> (a, ())) $ smr s
     liftWithUnliftAll call = ReaderT $ \s -> call $ \(ReaderT smr) -> smr s
     getDiscardingUnliftAll = do
         s <- ask
@@ -152,6 +179,7 @@ writerDiscardingUntrans mr = do
     return r
 
 instance Monoid s => MonadTransUnliftAll (WriterT s) where
+    insideOut call = WriterT $ call runWriterT
     liftWithUnliftAll call = do
         var <- liftIO $ newMVar mempty
         r <-
@@ -173,6 +201,7 @@ stateDiscardingUntrans s mr = do
     return r
 
 instance MonadTransUnliftAll (StateT s) where
+    insideOut call = StateT $ \olds -> call $ \(StateT smas) -> smas olds
     liftWithUnliftAll call = liftWithMVarStateT $ \var -> call $ mVarRun var
     getDiscardingUnliftAll = do
         s <- get

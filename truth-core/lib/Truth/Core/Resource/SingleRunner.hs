@@ -22,6 +22,22 @@ instance TestOrder SingleRunner where
     testOrder (StaticSingleRunner _ _) (DynamicSingleRunner _) = WLT
     testOrder (DynamicSingleRunner _) _ = WGT
 
+data SingleRunnerOrder (a :: TransKind) (b :: TransKind) where
+    SRLT :: forall a b. SingleRunnerOrder a b
+    SREQ
+        :: forall a. MonadTransAskUnlift a
+        => SingleRunnerOrder a a
+    SRGT :: forall a b. SingleRunnerOrder a b
+
+singleRunnerOrder :: SingleRunner a -> SingleRunner b -> SingleRunnerOrder a b
+singleRunnerOrder (StaticSingleRunner wa _) (StaticSingleRunner wb _) =
+    case testOrder wa wb of
+        WLT -> SRLT
+        WEQ -> SREQ
+        WGT -> SRGT
+singleRunnerOrder (StaticSingleRunner _ _) (DynamicSingleRunner _) = SRLT
+singleRunnerOrder (DynamicSingleRunner _) _ = SRGT
+
 runSingleRunner :: forall t r. SingleRunner t -> (MonadTransUnliftAll t => UnliftAll MonadUnliftIO t -> r) -> r
 runSingleRunner (StaticSingleRunner _ run) call = call run
 runSingleRunner (DynamicSingleRunner iorun) call =

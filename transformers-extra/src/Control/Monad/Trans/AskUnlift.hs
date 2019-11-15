@@ -45,3 +45,10 @@ contractT ttma =
         Dict -> do
             MkWUnliftAll unlift <- askUnlift
             unlift ttma
+
+contractTBack ::
+       forall (t :: TransKind) m. (MonadTransAskUnlift t, Monad m)
+    => MBackFunction (t (t m)) (t m)
+contractTBack call =
+    case hasTransConstraint @Monad @t @m of
+        Dict -> contractT $ call lift

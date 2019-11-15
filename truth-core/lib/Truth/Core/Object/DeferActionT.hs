@@ -49,6 +49,7 @@ deriving instance MonadTransTunnel DeferActionT
 instance MonadTransUnlift DeferActionT
 
 instance MonadTransUnliftAll DeferActionT where
+    insideOut call = MkDeferActionT $ insideOut $ \unlift -> call $ \(MkDeferActionT wma) -> unlift wma
     liftWithUnliftAll utmr = MkDeferActionT $ liftWithUnliftAll $ \unlift -> utmr $ \(MkDeferActionT wma) -> unlift wma
     getDiscardingUnliftAll =
         MkDeferActionT $ do
