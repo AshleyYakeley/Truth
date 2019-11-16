@@ -56,9 +56,3 @@ singleRunnerComposeDict ::
 singleRunnerComposeDict sr =
     case singleRunnerUnliftAllDict sr of
         Dict -> Compose Dict
-
-stateSingleRunner :: s -> SingleRunner (StateT s)
-stateSingleRunner s =
-    DynamicSingleRunner $ do
-        var <- newMVar s
-        return $ wMVarRun var

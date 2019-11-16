@@ -4,6 +4,10 @@ module Truth.Core.Resource.ResourceRunner
     , combineResourceRunners
     , resourceRunnerUnliftAllDict
     , runResourceRunner
+    , runMonoResourceRunner
+    , staticResourceRunner
+    , dynamicResourceRunner
+    , stateResourceRunner
     ) where
 
 import Truth.Core.Import
@@ -98,3 +102,35 @@ runResourceRunner (MkResourceRunner lsr) = let
                 case f1d of
                     (f1, dm@Dict) -> (f1 . MkWMFunction fr, transConstraintDict @MonadUnliftIO dm)
     in \call -> build lsr $ \mfd -> call $ runWMFunction $ fst mfd
+
+runMonoResourceRunner ::
+       forall m tt r. MonadUnliftIO m
+    => ResourceRunner tt
+    -> ((MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) => (MFunction (ApplyStack tt m) m) -> r)
+    -> r
+runMonoResourceRunner rr call =
+    runResourceRunner rr $
+    case transStackDict @MonadUnliftIO @tt @m of
+        Dict -> call
+
+singleResourceRunner :: SingleRunner t -> ResourceRunner '[ t]
+singleResourceRunner sr = MkResourceRunner $ ConsListType sr NilListType
+
+staticResourceRunner ::
+       forall t. MonadTransAskUnlift t
+    => IOWitness t
+    -> UnliftAll MonadUnliftIO t
+    -> ResourceRunner '[ t]
+staticResourceRunner iow run = singleResourceRunner $ StaticSingleRunner iow run
+
+dynamicResourceRunner ::
+       forall t. MonadTransUnliftAll t
+    => IO (WUnliftAll MonadUnliftIO t)
+    -> ResourceRunner '[ t]
+dynamicResourceRunner iorun = singleResourceRunner $ DynamicSingleRunner iorun
+
+stateResourceRunner :: s -> ResourceRunner '[ StateT s]
+stateResourceRunner s =
+    dynamicResourceRunner $ do
+        var <- newMVar s
+        return $ wMVarRun var

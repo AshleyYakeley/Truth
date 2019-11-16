@@ -31,11 +31,8 @@ runMonoTransStackRunner tr call =
 unliftStackTransStackRunner :: MonadTransStackUnliftAll tt => UnliftAll MonadUnliftIO (StackT tt) -> TransStackRunner tt
 unliftStackTransStackRunner ua = MkTransStackRunner $ \ama -> ua $ MkStackT ama
 
-unliftTransStackRunner :: MonadTransUnliftAll t => UnliftAll MonadUnliftIO t -> TransStackRunner '[ t]
-unliftTransStackRunner = MkTransStackRunner
-
 mVarTransStackRunner :: MVar s -> TransStackRunner '[ StateT s]
-mVarTransStackRunner var = unliftTransStackRunner $ mVarRun var
+mVarTransStackRunner var = MkTransStackRunner $ mVarRun var
 
 cmEmpty :: TransStackRunner '[]
 cmEmpty = MkTransStackRunner id
@@ -52,15 +49,3 @@ cmAppend (MkTransStackRunner mf1) (MkTransStackRunner mf2) = let
                     Dict -> mf2 . mf1
     in case concatMonadTransStackUnliftAllDict @tt1 @tt2 of
            Dict -> MkTransStackRunner mf12
-
-combineUnliftFstMFunction ::
-       forall tt (m :: Type -> Type). (MonadTransStackUnliftAll tt, MonadIO m)
-    => MFunction (ApplyStack tt IO) (ApplyStack tt m)
-combineUnliftFstMFunction = stackUnderliftIO @tt @m
-
-combineUnliftIOFunctions ::
-       forall tt m. (MonadTransStackUnliftAll tt, Monad m)
-    => IOFunction (ApplyStack tt IO)
-    -> IOFunction m
-    -> IOFunction (ApplyStack tt m)
-combineUnliftIOFunctions = combineIOFunctions @tt @m
