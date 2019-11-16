@@ -153,7 +153,7 @@ changeOnlyUpdateFunction = do
                 _ -> do
                     put $ Just newa
                     return [MkWholeUpdate newa]
-    return $ MkRunnable2 (MkTransStackRunner @'[ StateT (Maybe a)] $ mVarRun var) $ MkAnUpdateFunction {..}
+    return $ MkRunnable2 (singleTransStackRunner @(StateT (Maybe a)) $ mVarRun var) $ MkAnUpdateFunction {..}
 
 ioWholeEditLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> EditLens (WholeUpdate a) (WholeUpdate b)
 ioWholeEditLens ioget ioput =

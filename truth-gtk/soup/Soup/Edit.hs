@@ -44,7 +44,7 @@ type ObjectSoupUpdate = SoupUpdate (ObjectUpdate ByteStringUpdate)
 type AutoCloseFileT = AutoCloseT FilePath (Object ByteStringEdit)
 
 trunAutoClose :: TransStackRunner '[ AutoCloseFileT]
-trunAutoClose = MkTransStackRunner runAutoClose
+trunAutoClose = singleTransStackRunner runAutoClose
 
 directorySoup :: Object FSEdit -> FilePath -> Object (UpdateEdit ObjectSoupUpdate)
 directorySoup (MkRunnable1 (trunFS :: TransStackRunner tt) (MkAnObject readFS pushFS)) dirpath =

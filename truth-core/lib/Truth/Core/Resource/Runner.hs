@@ -31,8 +31,14 @@ runMonoTransStackRunner tr call =
 unliftStackTransStackRunner :: MonadTransStackUnliftAll tt => UnliftAll MonadUnliftIO (StackT tt) -> TransStackRunner tt
 unliftStackTransStackRunner ua = MkTransStackRunner $ \ama -> ua $ MkStackT ama
 
+singleTransStackRunner ::
+       forall t. MonadTransUnliftAll t
+    => UnliftAll MonadUnliftIO t
+    -> TransStackRunner '[ t]
+singleTransStackRunner = MkTransStackRunner
+
 mVarTransStackRunner :: MVar s -> TransStackRunner '[ StateT s]
-mVarTransStackRunner var = MkTransStackRunner $ mVarRun var
+mVarTransStackRunner var = singleTransStackRunner $ mVarRun var
 
 cmEmpty :: TransStackRunner '[]
 cmEmpty = MkTransStackRunner id

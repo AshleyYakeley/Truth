@@ -313,7 +313,7 @@ getKeyElementEditLens ::
     -> IO (EditLens (KeyUpdate cont update) (MaybeUpdate update))
 getKeyElementEditLens initial = do
     var <- newMVar initial
-    return $ unliftKeyElementEditLens updateKey $ MkTransStackRunner $ mVarRun var
+    return $ unliftKeyElementEditLens updateKey $ mVarTransStackRunner var
 
 stableKeyElementEditLens ::
        forall cont update.

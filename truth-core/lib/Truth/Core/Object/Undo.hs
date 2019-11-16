@@ -47,10 +47,10 @@ undoQueueSubscriber ::
     -> IO (Subscriber update, UndoActions)
 undoQueueSubscriber sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
-    MkRunnable1 (MkTransStackRunner runP :: TransStackRunner tt) (MkASubscriber (MkAnObject readP pushP) subscribeP) <-
-        return sub
+    MkRunnable1 (trunP :: TransStackRunner tt) (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub
+    Dict <- return $ transStackRunnerUnliftAllDict trunP
     Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
-    let
+    runTransStackRunner trunP $ \runP -> let
         undoActions = let
             uaUndo :: EditSource -> IO Bool
             uaUndo esrc =
@@ -104,7 +104,5 @@ undoQueueSubscriber sub = do
                             mVarRun queueVar $ updateUndoQueue readP edits
                             action esrc
                     Nothing -> Nothing
-        subC =
-            MkRunnable1 (MkTransStackRunner runP :: TransStackRunner tt) $
-            MkASubscriber (MkAnObject readP pushC) subscribeP
-    return (subC, undoActions)
+        subC = MkRunnable1 trunP $ MkASubscriber (MkAnObject readP pushC) subscribeP
+        in return (subC, undoActions)

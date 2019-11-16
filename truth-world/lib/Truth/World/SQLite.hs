@@ -193,7 +193,7 @@ sqliteObject ::
 sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
     objRun :: TransStackRunner '[ ReaderT Connection]
     objRun =
-        MkTransStackRunner $ \call -> do
+        singleTransStackRunner $ \call -> do
             exists <- liftIO $ doesFileExist path
             liftIOWithUnlift $ \unlift ->
                 withConnection path $ \conn -> do

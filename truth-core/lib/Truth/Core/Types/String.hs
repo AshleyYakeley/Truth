@@ -221,4 +221,4 @@ stringSectionLens initial =
                 -> MutableRead m (StringRead seq)
                 -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
             elPutEdits = elPutEditsFromPutEdit @'[ StateT (SequenceRun seq)] elPutEdit
-            in MkRunnable2 (MkTransStackRunner $ mVarRun var) MkAnEditLens {..}
+            in MkRunnable2 (mVarTransStackRunner var) MkAnEditLens {..}

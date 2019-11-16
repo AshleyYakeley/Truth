@@ -55,7 +55,7 @@ mvarObject var allowed = let
                 else Nothing
     anobj :: AnObject '[ StateT a] (WholeEdit a)
     anobj = MkAnObject {..}
-    in MkRunnable1 (MkTransStackRunner $ mVarRun var) anobj
+    in MkRunnable1 (mVarTransStackRunner var) anobj
 
 freeIOObject :: forall a. a -> (a -> Bool) -> IO (Object (WholeEdit a))
 freeIOObject firsta allowed = do

@@ -7,7 +7,7 @@ fileObject :: FilePath -> Object ByteStringEdit
 fileObject path = let
     objRun :: TransStackRunner '[ ReaderT Handle]
     objRun =
-        MkTransStackRunner $ \rt -> do
+        singleTransStackRunner $ \rt -> do
             h <- liftIO $ openBinaryFile path ReadWriteMode
             r <- runReaderT rt h
             liftIO $ hClose h
