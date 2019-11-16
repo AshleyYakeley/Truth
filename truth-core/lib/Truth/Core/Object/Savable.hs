@@ -32,10 +32,8 @@ saveBufferObject (MkRunnable1 (trunP :: TransStackRunner tt) (MkAnObject readP p
         sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
         let
             objC = let
-                runC ::
-                       forall m. MonadUnliftIO m
-                    => MFunction (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT m)) m
-                runC = composeUnliftAllFunction (mVarRun sbVar) $ composeUnliftAllFunction runDeferActionT id
+                trunC :: TransStackRunner '[ StateT (SaveBuffer (UpdateSubject update)), DeferActionT]
+                trunC = cmAppend (mVarTransStackRunner sbVar) (singleTransStackRunner runDeferActionT)
                 readC ::
                        MutableRead (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
                 readC = mSubjectToMutableRead $ fmap saveBuffer get
@@ -53,8 +51,7 @@ saveBufferObject (MkRunnable1 (trunP :: TransStackRunner tt) (MkAnObject readP p
                                 return oldbuf
                         put (MkSaveBuffer newbuf True)
                         lift $ deferAction $ update (fmap editUpdate edits) $ editSourceContext esrc
-                in MkRunnable1 (MkTransStackRunner @'[ StateT (SaveBuffer (UpdateSubject update)), DeferActionT] runC) $
-                   MkAnObject readC pushC
+                in MkRunnable1 trunC $ MkAnObject readC pushC
             saveAction :: EditSource -> IO Bool
             saveAction esrc =
                 runP $ do

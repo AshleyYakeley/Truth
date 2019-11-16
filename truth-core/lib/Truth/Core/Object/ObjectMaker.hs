@@ -18,30 +18,31 @@ reflectingObjectMaker ::
        forall update. IsUpdate update
     => Object (UpdateEdit update)
     -> ObjectMaker update ()
-reflectingObjectMaker (MkRunnable1 (MkTransStackRunner run :: TransStackRunner tt) (MkAnObject r e)) recv =
+reflectingObjectMaker (MkRunnable1 (trun :: TransStackRunner tt) (MkAnObject r e)) recv =
     return $
-    case transStackDict @MonadUnliftIO @tt @IO of
-        Dict -> let
-            run' ::
-                   forall m. MonadUnliftIO m
-                => MFunction (DeferActionT (ApplyStack tt m)) m
-            run' =
-                case transStackDict @MonadUnliftIO @tt @m of
-                    Dict -> composeUnliftAllFunctionCommute runDeferActionT run
-            r' :: MutableRead (DeferActionT (ApplyStack tt IO)) (UpdateReader update)
-            r' = liftMutableRead r
-            e' :: [UpdateEdit update]
-               -> DeferActionT (ApplyStack tt IO) (Maybe (EditSource -> DeferActionT (ApplyStack tt IO) ()))
-            e' edits = do
-                maction <- lift $ e edits
-                case maction of
-                    Nothing -> return Nothing
-                    Just action ->
-                        return $
-                        Just $ \esrc -> do
-                            lift $ action esrc
-                            deferAction $ recv (fmap editUpdate edits) $ editSourceContext esrc
-            in (MkRunnable1 (MkTransStackRunner @(DeferActionT ': tt) run') $ MkAnObject r' e', ())
+    case transStackRunnerUnliftAllDict trun of
+        Dict ->
+            case transStackDict @MonadUnliftIO @tt @(DeferActionT IO) of
+                Dict ->
+                    case transStackConcatRefl @tt @'[ DeferActionT] @IO of
+                        Refl -> let
+                            trun' :: TransStackRunner (Concat tt '[ DeferActionT])
+                            trun' = cmAppend trun (singleTransStackRunner runDeferActionT)
+                            r' :: MutableRead (ApplyStack tt (DeferActionT IO)) (UpdateReader update)
+                            r' rt = stackUnderliftIO @tt @(DeferActionT IO) $ r rt
+                            e' :: [UpdateEdit update]
+                               -> ApplyStack tt (DeferActionT IO) (Maybe (EditSource -> ApplyStack tt (DeferActionT IO) ()))
+                            e' edits = do
+                                maction <- stackUnderliftIO @tt @(DeferActionT IO) $ e edits
+                                case maction of
+                                    Nothing -> return Nothing
+                                    Just action ->
+                                        return $
+                                        Just $ \esrc -> do
+                                            stackUnderliftIO @tt @(DeferActionT IO) $ action esrc
+                                            stackLift @tt $
+                                                deferAction @IO $ recv (fmap editUpdate edits) $ editSourceContext esrc
+                            in (MkRunnable1 trun' $ MkAnObject r' e', ())
 
 mapUpdates ::
        forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> [updateA] -> IO [updateB]

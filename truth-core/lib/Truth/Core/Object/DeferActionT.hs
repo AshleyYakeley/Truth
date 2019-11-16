@@ -56,7 +56,10 @@ instance MonadTransUnliftAll DeferActionT where
             MkWUnliftAll du <- getDiscardingUnliftAll
             return $ MkWUnliftAll $ \(MkDeferActionT wma) -> du wma
 
-deferAction :: Monad m => IO () -> DeferActionT m ()
+deferAction ::
+       forall m. Monad m
+    => IO ()
+    -> DeferActionT m ()
 deferAction action = MkDeferActionT $ tell [action]
 
 runDeferActionT :: UnliftAll MonadUnliftIO DeferActionT
