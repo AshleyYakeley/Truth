@@ -19,6 +19,7 @@ library:
       - Truth.Core.Resource.Function
       - Truth.Core.Resource.SingleRunner
       - Truth.Core.Resource.Runner
+      - Truth.Core.Resource.ResourceRunner
       - Truth.Core.Resource.Runnable
       - Truth.Core.Resource
       - Truth.Core.Read.MutableRead

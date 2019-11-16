@@ -1,8 +1,6 @@
 module Truth.Core.Resource.Runner where
 
 import Truth.Core.Import
-import Truth.Core.Resource.Function
-import Truth.Core.Resource.SingleRunner
 
 data TransStackRunner (tt :: [TransKind]) where
     MkTransStackRunner
@@ -66,54 +64,3 @@ combineUnliftIOFunctions ::
     -> IOFunction m
     -> IOFunction (ApplyStack tt m)
 combineUnliftIOFunctions = combineIOFunctions @tt @m
-
-type ResourceRunner = ListType SingleRunner
-
-mapResourceRunner ::
-       forall (ct :: TransKind -> Constraint) (tt :: [TransKind]). (forall t. MonadTransUnliftAll t => ct t)
-    => ResourceRunner tt
-    -> ListType (Compose Dict ct) tt
-mapResourceRunner =
-    mapListType $ \sr ->
-        case singleRunnerUnliftAllDict sr of
-            Dict -> Compose Dict
-
-combineResourceRunners ::
-       ResourceRunner tta
-    -> ResourceRunner ttb
-    -> (forall ttab. ResourceRunner ttab -> TransListFunction (Concat tta ttb) ttab -> r)
-    -> r
-combineResourceRunners NilListType rb f = f rb id
-combineResourceRunners ra NilListType f =
-    case concatEmptyRefl ra of
-        Refl -> f ra id
-combineResourceRunners au1@(ConsListType u1 uu1) au2@(ConsListType u2 uu2) f =
-    case singleRunnerUnliftAllDict u1 of
-        Dict ->
-            case singleRunnerUnliftAllDict u2 of
-                Dict ->
-                    case singleRunnerOrder u1 u2 of
-                        SREQ ->
-                            combineResourceRunners uu1 uu2 $ \uu12 tf ->
-                                f (ConsListType u1 uu12) $
-                                consTransListFunction
-                                    (mapResourceRunner $ concatListType uu1 uu2)
-                                    (mapResourceRunner uu12)
-                                    tf .
-                                contractTransListFunction (mapResourceRunner $ concatListType uu1 uu2) .
-                                reorderTransListFunction (mapResourceRunner au1) (mapResourceRunner uu2)
-                        SRLT ->
-                            combineResourceRunners uu1 au2 $ \uu12 tf ->
-                                f (ConsListType u1 uu12) $
-                                consTransListFunction
-                                    (mapResourceRunner $ concatListType uu1 au2)
-                                    (mapResourceRunner uu12)
-                                    tf
-                        SRGT ->
-                            combineResourceRunners au1 uu2 $ \uu12 tf ->
-                                f (ConsListType u2 uu12) $
-                                consTransListFunction
-                                    (mapResourceRunner $ concatListType au1 uu2)
-                                    (mapResourceRunner uu12)
-                                    tf .
-                                reorderTransListFunction (mapResourceRunner au1) (mapResourceRunner uu2)

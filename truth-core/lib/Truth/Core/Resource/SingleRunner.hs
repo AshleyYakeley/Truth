@@ -49,6 +49,14 @@ singleRunnerUnliftAllDict :: SingleRunner t -> Dict (MonadTransUnliftAll t)
 singleRunnerUnliftAllDict (StaticSingleRunner _ _) = Dict
 singleRunnerUnliftAllDict (DynamicSingleRunner _) = Dict
 
+singleRunnerComposeDict ::
+       forall (ct :: TransKind -> Constraint) (t :: TransKind). (forall t'. MonadTransUnliftAll t' => ct t')
+    => SingleRunner t
+    -> Compose Dict ct t
+singleRunnerComposeDict sr =
+    case singleRunnerUnliftAllDict sr of
+        Dict -> Compose Dict
+
 stateSingleRunner :: s -> SingleRunner (StateT s)
 stateSingleRunner s =
     DynamicSingleRunner $ do

@@ -3,6 +3,7 @@ module Truth.Core.Resource
     ) where
 
 import Truth.Core.Resource.Function as I
+import Truth.Core.Resource.ResourceRunner as I
 import Truth.Core.Resource.Runnable as I
 import Truth.Core.Resource.Runner as I
 import Truth.Core.Resource.SingleRunner as I
