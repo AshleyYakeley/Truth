@@ -84,6 +84,20 @@ class (MonadTransConstraint MonadPlus t, MonadTransTunnel t, MonadTransUnlift t)
         => t m (WUnliftAll MonadUnliftIO t)
     -- ^ return a 'WUnliftAll Monad that discards the transformer's effects (such as state change or output)
 
+discardingRunner ::
+       forall t. MonadTransUnliftAll t
+    => UnliftAll MonadUnliftIO t
+    -> UnliftAll MonadUnliftIO t
+discardingRunner run tmr = do
+    MkWUnliftAll du <- run getDiscardingUnliftAll
+    du tmr
+
+discardingWRunner ::
+       forall t. MonadTransUnliftAll t
+    => WUnliftAll MonadUnliftIO t
+    -> WUnliftAll MonadUnliftIO t
+discardingWRunner (MkWUnliftAll u) = MkWUnliftAll $ discardingRunner u
+
 outsideIn ::
        forall t m r. (MonadTransUnliftAll t, Monad m)
     => (forall a. (forall mm b. Monad mm => t mm (r, b) -> mm (a, b)) -> m a)

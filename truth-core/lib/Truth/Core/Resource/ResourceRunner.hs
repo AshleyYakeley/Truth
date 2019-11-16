@@ -8,6 +8,7 @@ module Truth.Core.Resource.ResourceRunner
     , staticResourceRunner
     , dynamicResourceRunner
     , stateResourceRunner
+    , discardingResourceRunner
     ) where
 
 import Truth.Core.Import
@@ -134,3 +135,6 @@ stateResourceRunner s =
     dynamicResourceRunner $ do
         var <- newMVar s
         return $ wMVarRun var
+
+discardingResourceRunner :: forall tt. ResourceRunner tt -> ResourceRunner tt
+discardingResourceRunner (MkResourceRunner run) = MkResourceRunner $ mapListType discardingSingleRunner run

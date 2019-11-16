@@ -56,3 +56,7 @@ singleRunnerComposeDict ::
 singleRunnerComposeDict sr =
     case singleRunnerUnliftAllDict sr of
         Dict -> Compose Dict
+
+discardingSingleRunner :: forall t. SingleRunner t -> SingleRunner t
+discardingSingleRunner (StaticSingleRunner w u) = StaticSingleRunner w $ discardingRunner u
+discardingSingleRunner (DynamicSingleRunner ior) = DynamicSingleRunner $ fmap discardingWRunner ior
