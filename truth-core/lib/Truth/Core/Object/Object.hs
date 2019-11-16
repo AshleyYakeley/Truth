@@ -111,33 +111,6 @@ lensAnObject MkAnEditLens {..} (MkAnObject objReadA objEditA) =
                                             Just mu -> return $ Just $ \esrc -> stackLift @ttl $ mu esrc
                             in MkAnObject objReadB objEditB
 
-lensObjectUnliftFull ::
-       forall ttl tto. TransStackRunner ttl -> TransStackRunner tto -> TransStackRunner (Concat ttl tto)
-lensObjectUnliftFull lensRun objRun = cmAppend lensRun objRun
-
-lensObjectUnliftDiscard ::
-       forall ttl tto. TransStackRunner ttl -> TransStackRunner tto -> TransStackRunner (Concat ttl tto)
-lensObjectUnliftDiscard (MkTransStackRunner lensRun) (MkTransStackRunner objRun) = let
-    lensObjRun ::
-           forall m. MonadUnliftIO m
-        => MFunction (ApplyStack (Concat ttl tto) m) m
-    lensObjRun tmr =
-        case transStackConcatRefl @ttl @tto @m of
-            Refl ->
-                case transStackDict @MonadUnliftIO @tto @m of
-                    Dict ->
-                        objRun $
-                        unStackT @tto @m $ do
-                            MkWUnliftAll du <- lift $ lensRun $ unStackT @ttl @m getDiscardingUnliftAll
-                            MkStackT $ du $ MkStackT tmr -- discard lens effects: all these effects will be replayed by the update
-    in case concatMonadTransStackUnliftAllDict @ttl @tto of
-           Dict -> MkTransStackRunner lensObjRun
-
-lensObjectUnlift ::
-       forall ttl tto. Bool -> TransStackRunner ttl -> TransStackRunner tto -> TransStackRunner (Concat ttl tto)
-lensObjectUnlift False = lensObjectUnliftFull
-lensObjectUnlift True = lensObjectUnliftDiscard
-
 lensObject ::
        forall updateA updateB.
        Bool
@@ -149,8 +122,12 @@ lensObject discard (MkRunnable2 (lensRun :: TransStackRunner ttl) alens) (MkRunn
         Dict ->
             case transStackRunnerUnliftAllDict lensRun of
                 Dict -> let
+                    lensRun' =
+                        if discard
+                            then discardingTransStackRunner lensRun
+                            else lensRun
                     objRunB :: TransStackRunner (Concat ttl tto)
-                    objRunB = lensObjectUnlift discard lensRun objRun
+                    objRunB = cmAppend lensRun' objRun
                     in MkRunnable1 objRunB $ lensAnObject alens aobj
 
 immutableAnObject ::

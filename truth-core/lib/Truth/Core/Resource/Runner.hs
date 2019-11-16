@@ -31,6 +31,16 @@ runMonoTransStackRunner tr call =
 unliftStackTransStackRunner :: MonadTransStackUnliftAll tt => UnliftAll MonadUnliftIO (StackT tt) -> TransStackRunner tt
 unliftStackTransStackRunner ua = MkTransStackRunner $ \ama -> ua $ MkStackT ama
 
+discardingTransStackRunner :: forall tt. TransStackRunner tt -> TransStackRunner tt
+discardingTransStackRunner (MkTransStackRunner run) = let
+    run' ::
+           forall m. MonadUnliftIO m
+        => MFunction (ApplyStack tt m) m
+    run' tmr = do
+        MkWUnliftAll du <- run $ unStackT @tt @m getDiscardingUnliftAll
+        du $ MkStackT tmr
+    in MkTransStackRunner run'
+
 singleTransStackRunner ::
        forall t. MonadTransUnliftAll t
     => UnliftAll MonadUnliftIO t
