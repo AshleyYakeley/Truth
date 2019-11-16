@@ -45,11 +45,19 @@ reflectingObjectMaker (MkRunnable1 (MkTransStackRunner run :: TransStackRunner t
 
 mapUpdates ::
        forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> [updateA] -> IO [updateB]
-mapUpdates (MkRunnable2 (MkTransStackRunner runLens :: TransStackRunner ttl) (MkAnEditLens (MkAnUpdateFunction _ update) _)) (MkRunnable1 (MkTransStackRunner runObj :: TransStackRunner tto) (MkAnObject mr _)) eas =
-    case transStackDict @MonadUnliftIO @tto @IO of
+mapUpdates (MkRunnable2 (trunLens :: TransStackRunner ttl) (MkAnEditLens (MkAnUpdateFunction _ update) _)) (MkRunnable1 (trunObj :: TransStackRunner tto) (MkAnObject mr _)) eas =
+    case transStackRunnerUnliftAllDict trunLens of
         Dict ->
-            case transStackDict @MonadUnliftIO @ttl @(ApplyStack tto IO) of
-                Dict -> runObj $ runLens $ fmap mconcat $ for eas $ \ea -> update ea mr
+            case transStackRunnerUnliftAllDict trunObj of
+                Dict ->
+                    case transStackConcatRefl @ttl @tto @IO of
+                        Refl ->
+                            case transStackDict @MonadUnliftIO @tto @IO of
+                                Dict ->
+                                    case transStackDict @MonadUnliftIO @ttl @(ApplyStack tto IO) of
+                                        Dict ->
+                                            runMonoTransStackRunner @IO (cmAppend trunLens trunObj) $ \run ->
+                                                run $ fmap mconcat $ for eas $ \ea -> update ea mr
 
 mapObjectMaker :: EditLens updateA updateB -> ObjectMaker updateA a -> ObjectMaker updateB a
 mapObjectMaker lens uobja recvb = do
