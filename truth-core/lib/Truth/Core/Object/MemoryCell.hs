@@ -13,10 +13,8 @@ type MemoryCellUpdate = DependentUpdate WitnessedIORef
 
 makeMemoryCellObject :: IO (Object (UpdateEdit MemoryCellUpdate))
 makeMemoryCellObject = do
-    var <- newMVar ()
+    objRun :: TransStackRunner '[ StateT ()] <- stateTransStackRunner ()
     let
-        objRun :: TransStackRunner '[ StateT ()]
-        objRun = mVarTransStackRunner var
         objRead :: MutableRead (StateT () IO) (UpdateReader MemoryCellUpdate)
         objRead (MkTupleUpdateReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef $ unWitnessed ioref
         objEdit :: [UpdateEdit MemoryCellUpdate] -> StateT () IO (Maybe (EditSource -> StateT () IO ()))

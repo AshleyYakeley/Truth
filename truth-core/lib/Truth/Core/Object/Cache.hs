@@ -15,10 +15,8 @@ cacheObject ::
 cacheObject mus (MkRunnable1 trun (MkAnObject read push)) =
     runMonoTransStackRunner @IO trun $ \run -> do
         runAction <- asyncWaitRunner mus $ \editsnl -> run $ pushOrFail "cached object" noEditSource $ push editsnl
-        cacheVar <- liftIO $ newMVar $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
+        objRun <- liftIO $ stateTransStackRunner $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
         return $ let
-            objRun :: TransStackRunner '[ StateT (ListCache (EditCacheKey ListCache edit))]
-            objRun = mVarTransStackRunner cacheVar
             objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
             objRead rt = do
                 oldcache <- get

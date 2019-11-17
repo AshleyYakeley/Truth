@@ -312,8 +312,8 @@ getKeyElementEditLens ::
     => ContainerKey cont
     -> IO (EditLens (KeyUpdate cont update) (MaybeUpdate update))
 getKeyElementEditLens initial = do
-    var <- newMVar initial
-    return $ unliftKeyElementEditLens updateKey $ mVarTransStackRunner var
+    trun <- stateTransStackRunner initial
+    return $ unliftKeyElementEditLens updateKey trun
 
 stableKeyElementEditLens ::
        forall cont update.
@@ -324,7 +324,7 @@ stableKeyElementEditLens ::
        )
     => ContainerKey cont
     -> EditLens (KeyUpdate cont update) (MaybeUpdate update)
-stableKeyElementEditLens key = unliftKeyElementEditLens useOldKey $ MkTransStackRunner $ stateDiscardingUntrans key
+stableKeyElementEditLens key = unliftKeyElementEditLens useOldKey $ discardingStateTransStackRunner key
 
 getKeyValueEditLens ::
        forall cont keyupdate valueupdate.

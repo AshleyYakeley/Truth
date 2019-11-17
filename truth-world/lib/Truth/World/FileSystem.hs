@@ -133,26 +133,17 @@ fileSystemObject = let
 
 subdirectoryObject :: Bool -> FilePath -> Object FSEdit -> Object FSEdit
 subdirectoryObject create dir (MkRunnable1 (trun :: TransStackRunner tt) (MkAnObject rd push)) =
-    runTransStackRunner trun $ \run -> let
-        trun' :: TransStackRunner tt
-        trun' = let
-            action ::
-                   forall m a. MonadUnliftIO m
-                => ApplyStack tt m a
-                -> m a
-            action ma =
-                case transStackDict @MonadUnliftIO @tt @IO of
-                    Dict ->
-                        run $
-                        case transStackDict @Monad @tt @m of
-                            Dict -> do
-                                stackUnderliftIO @tt @m $
-                                    if create
-                                        then pushOrFail ("couldn't create directory " <> show dir) noEditSource $
-                                             push [FSEditCreateDirectory dir]
-                                        else return ()
-                                ma
-            in MkTransStackRunner action
+    runMonoTransStackRunner @IO trun $ \_ -> let
+        pushFirst :: StateT Bool (ApplyStack tt IO) ()
+        pushFirst = do
+            c <- get
+            case c of
+                False -> return ()
+                True -> do
+                    lift $
+                        pushOrFail ("couldn't create directory " <> show dir) noEditSource $
+                        push [FSEditCreateDirectory dir]
+                    put False
         insideToOutside :: FilePath -> FilePath
         insideToOutside path = let
             relpath = makeRelative "/" path
@@ -163,13 +154,18 @@ subdirectoryObject create dir (MkRunnable1 (trun :: TransStackRunner tt) (MkAnOb
             in if isRelative relpath
                    then Just relpath
                    else Nothing
-        rd' :: MutableRead (ApplyStack tt IO) FSReader
-        rd' (FSReadDirectory path) = rd $ FSReadDirectory $ insideToOutside path
-        rd' (FSReadItem path) = rd $ FSReadItem $ insideToOutside path
+        rd' :: MutableRead (StateT Bool (ApplyStack tt IO)) FSReader
+        rd' (FSReadDirectory path) = do
+            pushFirst
+            lift $ rd $ FSReadDirectory $ insideToOutside path
+        rd' (FSReadItem path) = do
+            pushFirst
+            lift $ rd $ FSReadItem $ insideToOutside path
         rd' (FSReadSymbolicLink path) =
             case transStackDict @MonadIO @tt @IO of
                 Dict -> do
-                    mspath <- rd $ FSReadSymbolicLink $ insideToOutside path
+                    pushFirst
+                    mspath <- lift $ rd $ FSReadSymbolicLink $ insideToOutside path
                     return $
                         case mspath of
                             Nothing -> Nothing
@@ -186,6 +182,9 @@ subdirectoryObject create dir (MkRunnable1 (trun :: TransStackRunner tt) (MkAnOb
         mapPath (FSEditDeleteNonDirectory path) = FSEditDeleteNonDirectory $ insideToOutside path
         mapPath (FSEditDeleteEmptyDirectory path) = FSEditDeleteEmptyDirectory $ insideToOutside path
         mapPath (FSEditRenameItem path1 path2) = FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
-        push' :: [FSEdit] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-        push' edits = push $ fmap mapPath edits
-        in MkRunnable1 trun' (MkAnObject rd' push')
+        push' :: [FSEdit] -> StateT Bool (ApplyStack tt IO) (Maybe (EditSource -> StateT Bool (ApplyStack tt IO) ()))
+        push' edits = do
+            pushFirst
+            maction <- lift $ push $ fmap mapPath edits
+            return $ fmap (fmap lift) maction
+        in MkRunnable1 (cmAppend (discardingStateTransStackRunner create) trun) (MkAnObject rd' push')

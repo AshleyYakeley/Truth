@@ -146,79 +146,79 @@ stringSectionLens ::
        forall seq. IsSequence seq
     => SequenceRun seq
     -> IO (EditLens (StringUpdate seq) (StringUpdate seq))
-stringSectionLens initial =
-    newMVar initial >>= \var ->
-        return $ let
-            getState ::
-                   forall m. MonadIO m
-                => MutableRead m (StringRead seq)
-                -> StateT (SequenceRun seq) m (SequenceRun seq)
-            getState mr = do
-                len <- lift $ mr StringReadLength
-                stateRaw <- get
-                return $ clipRunBounds len stateRaw
-            ufGet :: ReadFunctionT (StateT (SequenceRun seq)) (StringRead seq) (StringRead seq)
-            ufGet mr rt = do
-                st <- getState mr
-                case rt of
-                    StringReadLength -> return $ runLength st
-                    StringReadSection run ->
-                        lift $ mr $ StringReadSection $ clipWithin st $ relativeRun (negate $ runStart st) run
-            ufUpdate ::
-                   forall m. MonadIO m
-                => StringUpdate seq
-                -> MutableRead m (StringRead seq)
-                -> StateT (SequenceRun seq) m [StringUpdate seq]
-            ufUpdate (MkEditUpdate edita) mr = do
-                oldstate <- get
-                newlen <- lift $ mr StringReadLength
-                let
-                    rawnewstate = floatingUpdate edita oldstate
-                    newstate = clipRunBounds newlen rawnewstate
-                case edita of
-                    StringReplaceWhole s -> do
-                        put newstate
-                        return $ return $ MkEditUpdate $ StringReplaceWhole $ seqSection newstate s
-                    StringReplaceSection runa sa ->
-                        case goodRun runa of
-                            False -> return []
-                            True -> do
-                                put newstate
-                                return $
-                                    maybeToList $ do
-                                        runb' <- seqIntersectInside oldstate runa
-                                        let
-                                            runb = relativeRun (runStart oldstate) runb'
-                                            sb =
-                                                seqSection
-                                                    (clipRunBounds (seqLength sa) $ relativeRun (runStart runa) newstate)
-                                                    sa
-                                        case (runLength runb, onull sb) of
-                                            (0, True) -> Nothing
-                                            _ -> return $ MkEditUpdate $ StringReplaceSection runb sb
-            elFunction :: AnUpdateFunction ('[ StateT (SequenceRun seq)]) (StringUpdate seq) (StringUpdate seq)
-            elFunction = MkAnUpdateFunction {..}
-            elPutEdit ::
-                   forall m. MonadIO m
-                => StringEdit seq
-                -> MutableRead m (StringRead seq)
-                -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
-            elPutEdit editb mr = do
-                oldstate <- getState mr
-                case editb of
-                    StringReplaceWhole sb -> do
-                        put oldstate {runLength = seqLength sb}
-                        return $ Just [StringReplaceSection oldstate sb]
-                    StringReplaceSection runb sb -> do
-                        let
-                            newlength = runLength oldstate + seqLength sb - runLength runb
-                            runa = relativeRun (negate $ runStart oldstate) runb
-                        put oldstate {runLength = newlength}
-                        return $ Just [StringReplaceSection runa sb]
-            elPutEdits ::
-                   forall m. MonadIO m
-                => [StringEdit seq]
-                -> MutableRead m (StringRead seq)
-                -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
-            elPutEdits = elPutEditsFromPutEdit @'[ StateT (SequenceRun seq)] elPutEdit
-            in MkRunnable2 (mVarTransStackRunner var) MkAnEditLens {..}
+stringSectionLens initial = do
+    trun <- stateTransStackRunner initial
+    return $ let
+        getState ::
+               forall m. MonadIO m
+            => MutableRead m (StringRead seq)
+            -> StateT (SequenceRun seq) m (SequenceRun seq)
+        getState mr = do
+            len <- lift $ mr StringReadLength
+            stateRaw <- get
+            return $ clipRunBounds len stateRaw
+        ufGet :: ReadFunctionT (StateT (SequenceRun seq)) (StringRead seq) (StringRead seq)
+        ufGet mr rt = do
+            st <- getState mr
+            case rt of
+                StringReadLength -> return $ runLength st
+                StringReadSection run ->
+                    lift $ mr $ StringReadSection $ clipWithin st $ relativeRun (negate $ runStart st) run
+        ufUpdate ::
+               forall m. MonadIO m
+            => StringUpdate seq
+            -> MutableRead m (StringRead seq)
+            -> StateT (SequenceRun seq) m [StringUpdate seq]
+        ufUpdate (MkEditUpdate edita) mr = do
+            oldstate <- get
+            newlen <- lift $ mr StringReadLength
+            let
+                rawnewstate = floatingUpdate edita oldstate
+                newstate = clipRunBounds newlen rawnewstate
+            case edita of
+                StringReplaceWhole s -> do
+                    put newstate
+                    return $ return $ MkEditUpdate $ StringReplaceWhole $ seqSection newstate s
+                StringReplaceSection runa sa ->
+                    case goodRun runa of
+                        False -> return []
+                        True -> do
+                            put newstate
+                            return $
+                                maybeToList $ do
+                                    runb' <- seqIntersectInside oldstate runa
+                                    let
+                                        runb = relativeRun (runStart oldstate) runb'
+                                        sb =
+                                            seqSection
+                                                (clipRunBounds (seqLength sa) $ relativeRun (runStart runa) newstate)
+                                                sa
+                                    case (runLength runb, onull sb) of
+                                        (0, True) -> Nothing
+                                        _ -> return $ MkEditUpdate $ StringReplaceSection runb sb
+        elFunction :: AnUpdateFunction ('[ StateT (SequenceRun seq)]) (StringUpdate seq) (StringUpdate seq)
+        elFunction = MkAnUpdateFunction {..}
+        elPutEdit ::
+               forall m. MonadIO m
+            => StringEdit seq
+            -> MutableRead m (StringRead seq)
+            -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
+        elPutEdit editb mr = do
+            oldstate <- getState mr
+            case editb of
+                StringReplaceWhole sb -> do
+                    put oldstate {runLength = seqLength sb}
+                    return $ Just [StringReplaceSection oldstate sb]
+                StringReplaceSection runb sb -> do
+                    let
+                        newlength = runLength oldstate + seqLength sb - runLength runb
+                        runa = relativeRun (negate $ runStart oldstate) runb
+                    put oldstate {runLength = newlength}
+                    return $ Just [StringReplaceSection runa sb]
+        elPutEdits ::
+               forall m. MonadIO m
+            => [StringEdit seq]
+            -> MutableRead m (StringRead seq)
+            -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
+        elPutEdits = elPutEditsFromPutEdit @'[ StateT (SequenceRun seq)] elPutEdit
+        in MkRunnable2 trun MkAnEditLens {..}

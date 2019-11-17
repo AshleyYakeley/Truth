@@ -50,6 +50,16 @@ singleTransStackRunner = MkTransStackRunner
 mVarTransStackRunner :: MVar s -> TransStackRunner '[ StateT s]
 mVarTransStackRunner var = singleTransStackRunner $ mVarRun var
 
+-- | maintains state (in an MVar) between runs, also enforcing thread mutual exclusion
+stateTransStackRunner :: s -> IO (TransStackRunner '[ StateT s])
+stateTransStackRunner s = do
+    var <- newMVar s
+    return $ mVarTransStackRunner var
+
+-- | uses the same initial state for each run, final state is discarded at the end of the run
+discardingStateTransStackRunner :: s -> TransStackRunner '[ StateT s]
+discardingStateTransStackRunner s = MkTransStackRunner $ stateDiscardingUntrans s
+
 cmEmpty :: TransStackRunner '[]
 cmEmpty = MkTransStackRunner id
 
