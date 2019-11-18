@@ -106,3 +106,8 @@ joinRunnable211Maps ff (MkRunnable2 (trun1 :: TransStackRunner tt1) fma1) (MkRun
                                 ((unNestedMorphism $ unNestedMorphism $ mapRunnable $ fstTransListFunction @tt1 @tt2)
                                      fma1)
                                 ((unNestedMorphism $ mapRunnable $ sndTransListFunction @tt1 @tt2) fma2)
+
+exclusiveRunnable1 :: Runnable1 f a -> LifeCycleIO (Runnable1 f a)
+exclusiveRunnable1 (MkRunnable1 trun f) = do
+    trun' <- exclusiveTransStackRunner trun
+    return $ MkRunnable1 trun' f

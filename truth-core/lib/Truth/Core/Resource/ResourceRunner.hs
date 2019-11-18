@@ -8,6 +8,8 @@ module Truth.Core.Resource.ResourceRunner
     , staticResourceRunner
     , dynamicResourceRunner
     , stateResourceRunner
+    , discardingStateResourceRunner
+    , exclusiveResourceRunner
     , discardingResourceRunner
     ) where
 
@@ -135,6 +137,15 @@ stateResourceRunner s =
     dynamicResourceRunner $ do
         var <- newMVar s
         return $ wMVarRun var
+
+discardingStateResourceRunner :: s -> ResourceRunner '[ StateT s]
+discardingStateResourceRunner s = dynamicResourceRunner $ return $ MkWUnliftAll $ stateDiscardingUntrans s
+
+exclusiveResourceRunner :: forall tt. ResourceRunner tt -> LifeCycleIO (ResourceRunner '[ StackT tt])
+exclusiveResourceRunner tr =
+    lifeCycleWith $ \call ->
+        runMonoResourceRunner tr $ \run ->
+            run $ unStackT $ liftWithUnliftAll $ \unlift -> call $ dynamicResourceRunner $ return $ MkWUnliftAll unlift
 
 discardingResourceRunner :: forall tt. ResourceRunner tt -> ResourceRunner tt
 discardingResourceRunner (MkResourceRunner run) = MkResourceRunner $ mapListType discardingSingleRunner run

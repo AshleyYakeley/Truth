@@ -129,7 +129,7 @@ changeOnlyUpdateFunction ::
        forall a. Eq a
     => IO (UpdateFunction (WholeUpdate a) (WholeUpdate a))
 changeOnlyUpdateFunction = do
-    var <- newMVar Nothing
+    trun <- stateTransStackRunner Nothing
     let
         ufGet :: ReadFunctionT (StateT (Maybe a)) (WholeReader a) (WholeReader a)
         ufGet mr ReadWhole = do
@@ -153,7 +153,7 @@ changeOnlyUpdateFunction = do
                 _ -> do
                     put $ Just newa
                     return [MkWholeUpdate newa]
-    return $ MkRunnable2 (singleTransStackRunner @(StateT (Maybe a)) $ mVarRun var) $ MkAnUpdateFunction {..}
+    return $ MkRunnable2 trun $ MkAnUpdateFunction {..}
 
 ioWholeEditLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> EditLens (WholeUpdate a) (WholeUpdate b)
 ioWholeEditLens ioget ioput =

@@ -1,4 +1,17 @@
-module Truth.Core.Resource.Runner where
+module Truth.Core.Resource.Runner
+    ( TransStackRunner
+    , cmEmpty
+    , cmAppend
+    , transStackRunnerUnliftAllDict
+    , runTransStackRunner
+    , runMonoTransStackRunner
+    , singleTransStackRunner
+    , mVarTransStackRunner
+    , stateTransStackRunner
+    , discardingStateTransStackRunner
+    , exclusiveTransStackRunner
+    , discardingTransStackRunner
+    ) where
 
 import Truth.Core.Import
 
@@ -28,8 +41,13 @@ runMonoTransStackRunner tr call =
     case transStackDict @MonadUnliftIO @tt @m of
         Dict -> call
 
-unliftStackTransStackRunner :: MonadTransStackUnliftAll tt => UnliftAll MonadUnliftIO (StackT tt) -> TransStackRunner tt
-unliftStackTransStackRunner ua = MkTransStackRunner $ \ama -> ua $ MkStackT ama
+-- | Opens up the runner and keeps it open until the LifeCycle closes.
+exclusiveTransStackRunner :: forall tt. TransStackRunner tt -> LifeCycleIO (TransStackRunner tt)
+exclusiveTransStackRunner tr =
+    lifeCycleWith $ \call ->
+        runMonoTransStackRunner tr $ \run ->
+            run $
+            unStackT $ liftWithUnliftAll $ \unlift -> call $ MkTransStackRunner $ \ama -> unlift $ MkStackT @tt ama
 
 discardingTransStackRunner :: forall tt. TransStackRunner tt -> TransStackRunner tt
 discardingTransStackRunner (MkTransStackRunner run) = let
@@ -57,7 +75,7 @@ stateTransStackRunner s = do
     return $ mVarTransStackRunner var
 
 -- | uses the same initial state for each run, final state is discarded at the end of the run
-discardingStateTransStackRunner :: s -> TransStackRunner '[ StateT s]
+discardingStateTransStackRunner :: forall s. s -> TransStackRunner '[ StateT s]
 discardingStateTransStackRunner s = MkTransStackRunner $ stateDiscardingUntrans s
 
 cmEmpty :: TransStackRunner '[]

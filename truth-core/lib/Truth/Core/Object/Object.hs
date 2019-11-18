@@ -188,49 +188,6 @@ convertObject (MkRunnable1 (trun :: TransStackRunner tt) (MkAnObject mra pe)) =
                         pe eas
                     in MkRunnable1 trun MkAnObject {..}
 
--- | Combines all the edits made in each call to the object.
-cacheWholeObject ::
-       forall a. Eq a
-    => Object (WholeEdit a)
-    -> Object (WholeEdit a)
-cacheWholeObject (MkRunnable1 (MkTransStackRunner run :: TransStackRunner tt) (MkAnObject rd push)) =
-    case transStackDict @MonadIO @tt @IO of
-        Dict -> let
-            run' ::
-                   forall m r. MonadUnliftIO m
-                => StateT (a, Maybe EditSource) (ApplyStack tt m) r
-                -> m r
-            run' sma =
-                case transStackDict @MonadUnliftIO @tt @m of
-                    Dict -> let
-                        sma' :: ApplyStack tt m r
-                        sma' = do
-                            oldval <- stackUnderliftIO @tt @m $ rd ReadWhole
-                            (r, (newval, mesrc)) <- runStateT sma (oldval, Nothing)
-                            stackUnderliftIO @tt @m $
-                                case mesrc of
-                                    Just esrc ->
-                                        if oldval == newval
-                                            then return ()
-                                            else do
-                                                maction <- push [MkWholeReaderEdit newval]
-                                                case maction of
-                                                    Just action -> action esrc
-                                                    Nothing -> liftIO $ fail "disallowed cached edit"
-                                    Nothing -> return ()
-                            return r
-                        in run sma'
-            rd' :: MutableRead (StateT (a, Maybe EditSource) (ApplyStack tt IO)) (WholeReader a)
-            rd' ReadWhole = do
-                (a, _) <- get
-                return a
-            push' ::
-                   [WholeEdit a]
-                -> StateT (a, Maybe EditSource) (ApplyStack tt IO) (Maybe (EditSource -> StateT (a, Maybe EditSource) (ApplyStack tt IO) ()))
-            push' = singleAlwaysEdit $ \(MkWholeReaderEdit a) esrc -> put (a, Just esrc)
-            in MkRunnable1 (MkTransStackRunner run' :: TransStackRunner (StateT (a, Maybe EditSource) ': tt)) $
-               MkAnObject rd' push'
-
 copyObject ::
        forall edit. FullEdit edit
     => EditSource
@@ -247,11 +204,6 @@ copyObject esrc =
                             run $
                             replaceEdit @edit readSrc $ \edit ->
                                 pushOrFail "failed to copy object" esrc $ pushDest [edit]
-
-exclusiveObject :: forall edit. Object edit -> With IO (Object edit)
-exclusiveObject (MkRunnable1 (trun :: TransStackRunner tt) anobj) call =
-    runMonoTransStackRunner trun $ \run ->
-        run $ unStackT $ liftWithUnliftAll $ \unlift -> call $ MkRunnable1 (unliftStackTransStackRunner unlift) anobj
 
 getObjectSubject :: FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
 getObjectSubject (MkRunnable1 (trun :: TransStackRunner tt) (MkAnObject rd _)) =

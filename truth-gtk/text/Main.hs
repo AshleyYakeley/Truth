@@ -32,7 +32,7 @@ main = do
                 bsObj :: Object ByteStringEdit
                 bsObj = fileObject path
                 wholeTextObj :: Object (WholeEdit ((Result Text) Text))
-                wholeTextObj = cacheWholeObject $ mapObject textLens bsObj
+                wholeTextObj = mapObject textLens bsObj
                 ui :: Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text))
                    -> (forall sel update. IO () -> UIWindow -> UISpec sel update -> (MenuBar update, UISpec sel update))
                    -> UISpec (EditLens (StringUpdate Text) (StringUpdate Text)) (OneWholeUpdate (Result Text) (StringUpdate Text))
