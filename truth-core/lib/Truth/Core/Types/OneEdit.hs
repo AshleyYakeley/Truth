@@ -3,7 +3,6 @@ module Truth.Core.Types.OneEdit where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
-import Truth.Core.Resource
 import Truth.Core.Types.OneReader
 
 newtype OneEdit (f :: Type -> Type) edit =
@@ -41,54 +40,45 @@ instance IsEditUpdate update => IsEditUpdate (OneUpdate f update) where
     updateEdit (MkOneUpdate update) = MkOneEdit $ updateEdit update
 
 oneLiftAnUpdateFunction ::
-       forall tt f updateA updateB. (MonadTransStackUnliftAll tt, MonadOne f)
-    => AnUpdateFunction tt updateA updateB
-    -> AnUpdateFunction tt (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftAnUpdateFunction (MkAnUpdateFunction g u) = let
-    ufGet :: ReadFunctionTT tt (UpdateReader (OneUpdate f updateA)) (UpdateReader (OneUpdate f updateB))
-    ufGet = liftMaybeReadFunction @tt g
+       forall f updateA updateB. MonadOne f
+    => UpdateFunction updateA updateB
+    -> UpdateFunction (OneUpdate f updateA) (OneUpdate f updateB)
+oneLiftAnUpdateFunction (MkUpdateFunction g u) = let
+    ufGet :: ReadFunction (UpdateReader (OneUpdate f updateA)) (UpdateReader (OneUpdate f updateB))
+    ufGet = liftMaybeReadFunction g
     ufUpdate ::
            forall m. MonadIO m
         => OneUpdate f updateA
         -> MutableRead m (UpdateReader (OneUpdate f updateA))
-        -> ApplyStack tt m [OneUpdate f updateB]
+        -> m [OneUpdate f updateB]
     ufUpdate (MkOneUpdate ea) mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict ->
-                fmap (fmap MkOneUpdate . fromMaybe [] . getMaybeOne) $
-                transStackComposeOne @tt @f @m $ u ea $ oneReadFunctionF mr
-    in MkAnUpdateFunction {..}
+        fmap (fmap MkOneUpdate . fromMaybe [] . getMaybeOne) $ getComposeM $ u ea $ oneReadFunctionF mr
+    in MkUpdateFunction {..}
 
 oneLiftUpdateFunction ::
        forall f updateA updateB. MonadOne f
     => UpdateFunction updateA updateB
     -> UpdateFunction (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftUpdateFunction (MkRunnable2 trun ef) =
-    case transStackRunnerUnliftAllDict trun of
-        Dict -> MkRunnable2 trun $ oneLiftAnUpdateFunction ef
+oneLiftUpdateFunction = oneLiftAnUpdateFunction
 
 oneLiftAnEditLens ::
-       forall tt f updateA updateB. (MonadTransStackUnliftAll tt, MonadOne f)
-    => AnEditLens tt updateA updateB
-    -> AnEditLens tt (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftAnEditLens (MkAnEditLens ef pe) = let
+       forall f updateA updateB. MonadOne f
+    => EditLens updateA updateB
+    -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
+oneLiftAnEditLens (MkEditLens ef pe) = let
     elFunction = oneLiftAnUpdateFunction ef
     elPutEdits ::
            forall m. MonadIO m
         => [OneEdit f (UpdateEdit updateB)]
         -> MutableRead m (EditReader (OneEdit f (UpdateEdit updateA)))
-        -> ApplyStack tt m (Maybe [OneEdit f (UpdateEdit updateA)])
+        -> m (Maybe [OneEdit f (UpdateEdit updateA)])
     elPutEdits ebs mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict ->
-                fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $
-                transStackComposeOne @tt @f @m $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
-    in MkAnEditLens {..}
+        fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $
+        getComposeM $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
+    in MkEditLens {..}
 
 oneLiftEditLens ::
        forall f updateA updateB. MonadOne f
     => EditLens updateA updateB
     -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftEditLens (MkRunnable2 trun lens) =
-    case transStackRunnerUnliftAllDict trun of
-        Dict -> MkRunnable2 trun $ oneLiftAnEditLens lens
+oneLiftEditLens = oneLiftAnEditLens

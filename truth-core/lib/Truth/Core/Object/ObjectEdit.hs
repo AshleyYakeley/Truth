@@ -32,8 +32,8 @@ instance SubjectReader (EditReader edit) => SubjectReader (ObjectReader edit) wh
 
 instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader edit) where
     mutableReadToSubject mr = do
-        MkRunnable1 trun (MkAnObject mro _) <- mr ReadObject
-        runMonoTransStackRunner @IO trun $ \run -> liftIO $ run $ mutableReadToSubject mro
+        MkResource1 rr (MkAnObject mro _) <- mr ReadObject
+        runResourceRunnerWith rr $ \run -> liftIO $ run $ mutableReadToSubject mro
 
 type ObjectEdit edit = NoEdit (ObjectReader edit)
 
@@ -43,24 +43,24 @@ objectEditLens :: forall update. EditLens (ObjectUpdate update) update
 objectEditLens = let
     ufGet :: ReadFunction (ObjectReader (UpdateEdit update)) (UpdateReader update)
     ufGet mr rt = do
-        (MkRunnable1 trun (MkAnObject r _)) <- mr ReadObject
-        runMonoTransStackRunner @IO trun $ \run -> liftIO $ run $ r rt
+        (MkResource1 rr (MkAnObject r _)) <- mr ReadObject
+        liftIO $ runResourceRunner rr $ r rt
     ufUpdate ::
            forall m. MonadIO m
         => ObjectUpdate update
         -> MutableRead m (ObjectReader (UpdateEdit update))
         -> m [update]
     ufUpdate update _ = never update
-    elFunction :: AnUpdateFunction '[] (ObjectUpdate update) update
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (ObjectUpdate update) update
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
         -> MutableRead m (EditReader (ObjectEdit (UpdateEdit update)))
         -> m (Maybe [ObjectEdit (UpdateEdit update)])
     elPutEdits edits mr = do
-        (MkRunnable1 trun (MkAnObject _ e)) <- mr ReadObject
-        runMonoTransStackRunner @IO trun $ \run ->
+        (MkResource1 rr (MkAnObject _ e)) <- mr ReadObject
+        runResourceRunnerWith rr $ \run ->
             liftIO $
             run $ do
                 maction <- e edits
@@ -68,7 +68,7 @@ objectEditLens = let
                     Just action -> action noEditSource
                     Nothing -> liftIO $ fail "objectEditLens: failed"
         return $ Just []
-    in MkRunnable2 cmEmpty $ MkAnEditLens {..}
+    in MkEditLens {..}
 
 objectLiftEditLens ::
        forall updateA updateB. ApplicableEdit (UpdateEdit updateA)
@@ -84,9 +84,9 @@ objectLiftEditLens lens = let
         => ObjectUpdate updateA
         -> MutableRead m (ObjectReader (UpdateEdit updateA))
         -> m [ObjectUpdate updateB]
-    ufUpdate edit _ = never edit
-    elFunction :: AnUpdateFunction '[] (ObjectUpdate updateA) (ObjectUpdate updateB)
-    elFunction = MkAnUpdateFunction {..}
+    ufUpdate update _ = never update
+    elFunction :: UpdateFunction (ObjectUpdate updateA) (ObjectUpdate updateB)
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [ObjectEdit (UpdateEdit updateB)]
@@ -94,4 +94,4 @@ objectLiftEditLens lens = let
         -> m (Maybe [ObjectEdit (UpdateEdit updateA)])
     elPutEdits [] _ = return $ Just []
     elPutEdits (edit:_) _ = never edit
-    in MkRunnable2 cmEmpty $ MkAnEditLens {..}
+    in MkEditLens {..}

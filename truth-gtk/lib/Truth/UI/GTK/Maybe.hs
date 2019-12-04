@@ -13,9 +13,9 @@ createButton ::
     => UpdateSubject update
     -> Object (UpdateEdit update)
     -> CreateView sel update Button
-createButton subj (MkRunnable1 trun MkAnObject {..}) =
+createButton subj (MkResource1 trun MkAnObject {..}) =
     cvMakeButton "Create" $
-    runMonoTransStackRunner @IO trun $ \run ->
+    runResourceRunnerWith trun $ \run ->
         liftIO $
         run $ do
             edits <- getReplaceEditsFromSubject subj
@@ -63,7 +63,7 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
                 SuccessResult () -> do
                     vs <-
                         viewCreateView $ do
-                            widget <- cvMapEdit (mustExistOneEditLens "object") baseView
+                            widget <- cvMapEdit (return $ mustExistOneEditLens "object") baseView
                             for_ mDeleteButton $ \button -> do
                                 lcContainPackStart False box button
                                 #show button
@@ -75,9 +75,9 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
             firstfu <- viewObjectRead $ \_ mr -> mr ReadHasOne
             getWidgets firstfu
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic firstdvs $ \(MkRunnable1 trun (MkAnObject mr _)) _ -> do
+    cvDynamic firstdvs $ \(MkResource1 trun (MkAnObject mr _)) _ -> do
         olddvs <- get
-        runMonoTransStackRunner @IO trun $ \run -> do
+        runResourceRunnerWith trun $ \run -> do
             newfu <- lift $ run $ mr ReadHasOne
             case (olddvs, retrieveOne newfu) of
                 (PresentOVS _, SuccessResult ()) -> return ()

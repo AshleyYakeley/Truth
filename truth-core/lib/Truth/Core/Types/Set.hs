@@ -3,7 +3,6 @@ module Truth.Core.Types.Set where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
-import Truth.Core.Resource
 import Truth.Core.Types.Function
 import Truth.Core.Types.Pair
 import Truth.Core.Types.Tuple
@@ -72,7 +71,7 @@ setCartesianProductUpdateFunction aeq beq = let
         return $ pure $ UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector (a', _)) ReadWhole) -> aeq a a'
     ufUpdate (MkTupleUpdate SelectSecond (MkTupleUpdate (MkFunctionSelector b) _)) _ =
         return $ pure $ UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector (_, b')) ReadWhole) -> beq b b'
-    in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
+    in MkUpdateFunction {..}
 
 setCartesianProductPartialUpdateFunction ::
        forall a b.

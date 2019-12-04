@@ -5,7 +5,6 @@ module Truth.Core.Types.ConsTuple where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
-import Truth.Core.Resource
 import Truth.Core.Types.Tuple
 
 instance TupleUpdateWitness c EmptyType where
@@ -32,7 +31,7 @@ emptyTupleLens = let
         -> MutableRead m (UpdateReader updateA)
         -> m [TupleUpdate EmptyType]
     ufUpdate _ _ = return []
-    elFunction = MkAnUpdateFunction {..}
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit EmptyType]
@@ -40,7 +39,7 @@ emptyTupleLens = let
         -> m (Maybe [UpdateEdit updateA])
     elPutEdits [] _ = return $ Just []
     elPutEdits ((MkTupleUpdateEdit sel _):_) _ = never sel
-    in MkRunnable2 cmEmpty MkAnEditLens {..}
+    in MkEditLens {..}
 
 instance (c a, TupleUpdateWitness c r) => TupleUpdateWitness c (ConsType a r) where
     tupleUpdateWitness FirstType = Dict
@@ -74,15 +73,15 @@ firstEditLens = let
         -> m [update1]
     ufUpdate (MkTupleUpdate FirstType update) _ = return [update]
     ufUpdate (MkTupleUpdate (RestType _) _) _ = return []
-    elFunction :: AnUpdateFunction '[] (TupleUpdate (ConsType update1 sel)) update1
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (TupleUpdate (ConsType update1 sel)) update1
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update1]
         -> MutableRead m (TupleUpdateReader (ConsType update1 sel))
         -> m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
     elPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit FirstType) edits
-    in MkRunnable2 cmEmpty MkAnEditLens {..}
+    in MkEditLens {..}
 
 restEditLens :: forall sel update1. EditLens (TupleUpdate (ConsType update1 sel)) (TupleUpdate sel)
 restEditLens = let
@@ -95,8 +94,8 @@ restEditLens = let
         -> m [TupleUpdate sel]
     ufUpdate (MkTupleUpdate FirstType _) _ = return []
     ufUpdate (MkTupleUpdate (RestType sel) edit) _ = return [MkTupleUpdate sel edit]
-    elFunction :: AnUpdateFunction '[] (TupleUpdate (ConsType update1 sel)) (TupleUpdate sel)
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (TupleUpdate (ConsType update1 sel)) (TupleUpdate sel)
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit sel]
@@ -104,7 +103,7 @@ restEditLens = let
         -> m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
     elPutEdits edits _ =
         return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (RestType sel) edit) edits
-    in MkRunnable2 cmEmpty MkAnEditLens {..}
+    in MkEditLens {..}
 
 consTuple :: UpdateSubject a -> Tuple r -> Tuple (ConsType a r)
 consTuple a (MkTuple tup) =

@@ -45,8 +45,13 @@ identityWUnliftAll = MkWUnliftAll runIdentityT
 mVarRun :: MVar s -> UnliftAll MonadUnliftIO (StateT s)
 mVarRun var (StateT smr) = liftIOWithUnlift $ \unlift -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds
 
-wMVarRun :: MVar s -> WUnliftAll MonadUnliftIO (StateT s)
-wMVarRun var = MkWUnliftAll $ mVarRun var
+-- | Dangerous, because the MVar won't be released on exception.
+dangerousMVarRun :: MVar s -> UnliftAll MonadIO (StateT s)
+dangerousMVarRun var (StateT smr) = do
+    olds <- liftIO $ takeMVar var
+    (a, news) <- smr olds
+    liftIO $ putMVar var news
+    return a
 
 liftStateT :: (Traversable f, Applicative m) => StateT s m a -> StateT (f s) m (f a)
 liftStateT (StateT smas) = StateT $ \fs -> fmap (\fas -> (fmap fst fas, fmap snd fas)) $ traverse smas fs
@@ -209,7 +214,7 @@ instance Monoid s => MonadTransUnliftAll (WriterT s) where
 
 instance MonadTransUnlift (StateT s)
 
-stateDiscardingUntrans :: s -> UnliftAll MonadUnliftIO (StateT s)
+stateDiscardingUntrans :: s -> UnliftAll MonadIO (StateT s)
 stateDiscardingUntrans s mr = do
     (r, _discarded) <- runStateT mr s
     return r

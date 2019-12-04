@@ -67,12 +67,7 @@ qOrderSet (MkPinaforeOrder (ofunc :: PinaforeFunctionMorphism baseupdate (Know a
     upairs = applyPinaforeFunction (cfmap ofuncpair) pset
     sortpoints :: FiniteSet (a, t) -> [a]
     sortpoints (MkFiniteSet pairs) = fmap fst $ sortBy cmp pairs
-    in case upairs of
-           MkRunnable2 trun upairs' ->
-               case transStackRunnerUnliftAllDict trun of
-                   Dict ->
-                       MkRunnable2 trun $
-                       unWholeAnUpdateFunction $ fmap (Known . sortpoints) $ MkWholeAnUpdateFunction upairs'
+    in unWholeUpdateFunction $ fmap (Known . sortpoints) $ MkWholeUpdateFunction upairs
 
 pinaforeOrderCompare ::
        forall baseupdate a b.

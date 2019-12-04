@@ -39,13 +39,13 @@ main = do
                 ui sub extraui =
                     withAspectUISpec $ \aspect -> let
                         openSelection :: IO ()
-                        openSelection = do
-                            mlens <- aspect
-                            case mlens of
-                                Nothing -> return ()
-                                Just lens ->
-                                    uitUnliftLifeCycle $ do
-                                        subLens <- mapSubscriber (oneWholeLiftEditLens lens) sub
+                        openSelection =
+                            uitUnliftLifeCycle $ do
+                                mlens <- aspect
+                                case mlens of
+                                    Nothing -> return ()
+                                    Just lens -> do
+                                        subLens <- mapSubscriber (return $ oneWholeLiftEditLens lens) sub
                                         makeWindow "section" subLens extraui
                         in verticalUISpec
                                [ (simpleButtonUISpec (constUpdateFunction "View") openSelection, False)

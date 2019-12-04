@@ -1,11 +1,13 @@
 main: init: "ABCD"
-lens: init: "BC"
+sect: init: "BC"
 var: "ABCD"
 main: runObject
 main: push [section 3+1 ""]
 main: push succeeded
 main: receive [section 3+1 ""]
 main: receive "ABC"
-lens: receive []
-lens: receive "BC"
+lens: +update: section 3+1 ""
+lens: -update: []
+sect: receive []
+sect: receive "BC"
 var: "ABC"

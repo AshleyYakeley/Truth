@@ -185,15 +185,18 @@ joinTableSchema schema (JoinTables OuterTupleJoinClause j1 j2) = do
     (t2, s2) <- joinTableSchema schema j2
     return $ (t1 ++ t2, eitherSubmapWitness s1 s2)
 
+sqliteFilePathWitness :: IOWitness (ReaderT Connection)
+sqliteFilePathWitness = $(iowitness [t|ReaderT Connection|])
+
 sqliteObject ::
        forall tablesel. WitnessConstraint IsSQLiteTable tablesel
     => FilePath
     -> SQLite.DatabaseSchema tablesel
     -> Object (SQLiteEdit tablesel)
 sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
-    objRun :: TransStackRunner '[ ReaderT Connection]
+    objRun :: ResourceRunner '[ ReaderT Connection]
     objRun =
-        singleTransStackRunner $ \call -> do
+        mkResourceRunner (hashOpenWitness sqliteFilePathWitness path) $ \call -> do
             exists <- liftIO $ doesFileExist path
             liftIOWithUnlift $ \unlift ->
                 withConnection path $ \conn -> do
@@ -267,4 +270,4 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
                 MkQueryString s v -> do
                     conn <- ask
                     lift $ execute conn s v
-    in MkRunnable1 objRun MkAnObject {..}
+    in MkResource1 objRun MkAnObject {..}

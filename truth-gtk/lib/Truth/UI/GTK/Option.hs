@@ -93,6 +93,6 @@ optionView ::
 optionView itemsFunction whichLens = do
     esrc <- newEditSource
     rec
-        store <- cvMapEdit (readOnlyEditLens itemsFunction) $ listStoreView blockSignal esrc
-        (blockSignal, w) <- cvMapEdit whichLens $ optionFromStore esrc store
+        store <- cvMapEdit (return $ readOnlyEditLens itemsFunction) $ listStoreView blockSignal esrc
+        (blockSignal, w) <- cvMapEdit (return $ whichLens) $ optionFromStore esrc store
     return w

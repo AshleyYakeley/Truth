@@ -14,17 +14,17 @@ clockObjectMaker basetime interval update = do
             clock basetime interval $ \t -> do
                 writeIORef ref t
                 update [MkWholeReaderUpdate t] noEditContext
+    run <-
+        liftIO $
+        newResourceRunner $ \rt -> do
+            t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while object is open
+            runReaderT rt t
     let
         object :: Object (WholeEdit UTCTime)
-        run :: TransStackRunner '[ ReaderT UTCTime]
-        run =
-            singleTransStackRunner $ \rt -> do
-                t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while object is open
-                runReaderT rt t
-        object = MkRunnable1 run $ immutableAnObject $ \ReadWhole -> ask
+        object = MkResource1 run $ immutableAnObject $ \ReadWhole -> ask
     return (object, ())
 
-makeClockTimeZoneEF :: IO (UpdateFunction (WholeUpdate UTCTime) (WholeUpdate TimeZone))
+makeClockTimeZoneEF :: LifeCycleIO (UpdateFunction (WholeUpdate UTCTime) (WholeUpdate TimeZone))
 makeClockTimeZoneEF = do
     minuteChanges <- changeOnlyUpdateFunction @UTCTime
     tzChanges <- changeOnlyUpdateFunction @TimeZone

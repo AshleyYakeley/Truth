@@ -3,7 +3,6 @@ module Truth.Core.Types.None where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
-import Truth.Core.Resource
 
 newtype NoReader (a :: Type) (t :: Type) =
     MkNoReader None
@@ -63,7 +62,7 @@ readFunctionNoUpdateFunction rf = let
     ufGet :: forall . ReadFunction ra (UpdateReader updateB)
     ufGet mra rb = rf mra rb
     ufUpdate edit _ = never edit
-    in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
+    in MkUpdateFunction {..}
 
 readFunctionNoEditLens :: forall ra updateB. ReadFunction ra (UpdateReader updateB) -> EditLens (NoUpdate ra) updateB
 readFunctionNoEditLens rf = readOnlyEditLens $ readFunctionNoUpdateFunction rf

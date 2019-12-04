@@ -5,7 +5,6 @@ module Truth.Core.Types.Whole where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
-import Truth.Core.Resource
 
 data WholeReader (a :: Type) (t :: Type) where
     ReadWhole :: forall t. WholeReader t t
@@ -105,16 +104,14 @@ pattern MkWholeUpdate a = MkWholeReaderUpdate a
 
 wholeUpdateFunction :: forall a b. (a -> b) -> UpdateFunction (WholeUpdate a) (WholeUpdate b)
 wholeUpdateFunction ab =
-    MkRunnable2 cmEmpty $
-    MkAnUpdateFunction
+    MkUpdateFunction
         { ufGet = \mr ReadWhole -> fmap ab $ mr ReadWhole
         , ufUpdate = \(MkWholeUpdate a) _ -> return [MkWholeUpdate $ ab a]
         }
 
 ioWholeUpdateFunction :: forall a b. (a -> IO b) -> UpdateFunction (WholeUpdate a) (WholeUpdate b)
 ioWholeUpdateFunction aiob =
-    MkRunnable2 cmEmpty $
-    MkAnUpdateFunction
+    MkUpdateFunction
         { ufGet =
               \mr ReadWhole -> do
                   a <- mr ReadWhole
@@ -127,40 +124,41 @@ ioWholeUpdateFunction aiob =
 
 changeOnlyUpdateFunction ::
        forall a. Eq a
-    => IO (UpdateFunction (WholeUpdate a) (WholeUpdate a))
+    => LifeCycleIO (UpdateFunction (WholeUpdate a) (WholeUpdate a))
 changeOnlyUpdateFunction = do
-    trun <- stateTransStackRunner Nothing
+    var <- liftIO $ newMVar Nothing
     let
-        ufGet :: ReadFunctionT (StateT (Maybe a)) (WholeReader a) (WholeReader a)
-        ufGet mr ReadWhole = do
-            ma <- get
-            case ma of
-                Just a -> return a
-                Nothing -> do
-                    a <- lift $ mr ReadWhole
-                    put $ Just a
-                    return a
+        ufGet :: ReadFunction (WholeReader a) (WholeReader a)
+        ufGet mr ReadWhole =
+            dangerousMVarRun var $ do
+                ma <- get
+                case ma of
+                    Just a -> return a
+                    Nothing -> do
+                        a <- lift $ mr ReadWhole
+                        put $ Just a
+                        return a
         ufUpdate ::
                forall m. MonadIO m
             => WholeUpdate a
             -> MutableRead m (WholeReader a)
-            -> StateT (Maybe a) m [WholeUpdate a]
-        ufUpdate (MkWholeUpdate newa) _ = do
-            molda <- get
-            case molda of
-                Just olda
-                    | olda == newa -> return []
-                _ -> do
-                    put $ Just newa
-                    return [MkWholeUpdate newa]
-    return $ MkRunnable2 trun $ MkAnUpdateFunction {..}
+            -> m [WholeUpdate a]
+        ufUpdate (MkWholeUpdate newa) _ =
+            dangerousMVarRun var $ do
+                molda <- get
+                case molda of
+                    Just olda
+                        | olda == newa -> return []
+                    _ -> do
+                        put $ Just newa
+                        return [MkWholeUpdate newa]
+    return MkUpdateFunction {..}
 
 ioWholeEditLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> EditLens (WholeUpdate a) (WholeUpdate b)
 ioWholeEditLens ioget ioput =
-    MkRunnable2 cmEmpty $
-    MkAnEditLens
+    MkEditLens
         { elFunction =
-              MkAnUpdateFunction
+              MkUpdateFunction
                   { ufGet =
                         \mr ReadWhole -> do
                             a <- mr ReadWhole
@@ -171,7 +169,7 @@ ioWholeEditLens ioget ioput =
                             return [MkWholeUpdate b]
                   }
         , elPutEdits =
-              elPutEditsFromPutEdit @'[] $ \(MkWholeReaderEdit b) mr -> do
+              elPutEditsFromPutEdit $ \(MkWholeReaderEdit b) mr -> do
                   olda <- mr ReadWhole
                   mnewa <- liftIO $ ioput b olda
                   return $ fmap (\newa -> [MkWholeReaderEdit newa]) mnewa
@@ -215,34 +213,29 @@ pairWholeUpdateFunction ::
        UpdateFunction update (WholeUpdate a)
     -> UpdateFunction update (WholeUpdate b)
     -> UpdateFunction update (WholeUpdate (a, b))
-pairWholeUpdateFunction =
-    joinRunnable2Maps $ \(MkAnUpdateFunction ga ua :: AnUpdateFunction tt _ _) (MkAnUpdateFunction gb ub) -> let
-        gab :: ReadFunctionTT tt (UpdateReader update) (WholeReader (a, b))
-        gab (mr :: MutableRead m _) ReadWhole =
-            case transStackDict @MonadIO @tt @m of
-                Dict -> do
-                    a <- ga mr ReadWhole
-                    b <- gb mr ReadWhole
-                    return (a, b)
-        uab :: forall m. MonadIO m
-            => update
-            -> MutableRead m (UpdateReader update)
-            -> ApplyStack tt m [WholeUpdate (a, b)]
-        uab update mr =
-            case transStackDict @MonadIO @tt @m of
-                Dict -> do
-                    weas <- ua update mr
-                    webs <- ub update mr
-                    case (lastWholeUpdate weas, lastWholeUpdate webs) of
-                        (Nothing, Nothing) -> return []
-                        (ma, mb) -> do
-                            a <-
-                                case ma of
-                                    Just a -> return a
-                                    Nothing -> ga mr ReadWhole
-                            b <-
-                                case mb of
-                                    Just b -> return b
-                                    Nothing -> gb mr ReadWhole
-                            return [MkWholeUpdate (a, b)]
-        in MkAnUpdateFunction gab uab
+pairWholeUpdateFunction (MkUpdateFunction ga ua) (MkUpdateFunction gb ub) = let
+    gab :: ReadFunction (UpdateReader update) (WholeReader (a, b))
+    gab (mr :: MutableRead m _) ReadWhole = do
+        a <- ga mr ReadWhole
+        b <- gb mr ReadWhole
+        return (a, b)
+    uab :: forall m. MonadIO m
+        => update
+        -> MutableRead m (UpdateReader update)
+        -> m [WholeUpdate (a, b)]
+    uab update mr = do
+        weas <- ua update mr
+        webs <- ub update mr
+        case (lastWholeUpdate weas, lastWholeUpdate webs) of
+            (Nothing, Nothing) -> return []
+            (ma, mb) -> do
+                a <-
+                    case ma of
+                        Just a -> return a
+                        Nothing -> ga mr ReadWhole
+                b <-
+                    case mb of
+                        Just b -> return b
+                        Nothing -> gb mr ReadWhole
+                return [MkWholeUpdate (a, b)]
+    in MkUpdateFunction gab uab

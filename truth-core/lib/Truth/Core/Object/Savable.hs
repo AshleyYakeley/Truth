@@ -25,15 +25,16 @@ saveBufferObject ::
        forall update. (IsUpdate update, FullEdit (UpdateEdit update))
     => Object (WholeEdit (UpdateSubject update))
     -> ObjectMaker update SaveActions
-saveBufferObject (MkRunnable1 (trunP :: TransStackRunner tt) (MkAnObject readP pushP)) update =
-    runTransStackRunner trunP $ \runP -> do
-        Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
+saveBufferObject (MkResource1 rrP (MkAnObject readP pushP)) update =
+    runResourceRunnerWith rrP $ \runP -> do
         firstVal <- liftIO $ runP $ readP ReadWhole
         sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
+        iow <- liftIO $ newIOWitness
+        deferRunner <- deferActionResourceRunner
+        let rrC = combineIndependentResourceRunners (mvarResourceRunner iow sbVar) deferRunner
+        Dict <- return $ resourceRunnerUnliftAllDict rrC
         let
             objC = let
-                trunC :: TransStackRunner '[ StateT (SaveBuffer (UpdateSubject update)), DeferActionT]
-                trunC = cmAppend (mVarTransStackRunner sbVar) (singleTransStackRunner runDeferActionT)
                 readC ::
                        MutableRead (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
                 readC = mSubjectToMutableRead $ fmap saveBuffer get
@@ -51,7 +52,7 @@ saveBufferObject (MkRunnable1 (trunP :: TransStackRunner tt) (MkAnObject readP p
                                 return oldbuf
                         put (MkSaveBuffer newbuf True)
                         lift $ deferAction $ update (fmap editUpdate edits) $ editSourceContext esrc
-                in MkRunnable1 trunC $ MkAnObject readC pushC
+                in MkResource1 rrC $ MkAnObject readC pushC
             saveAction :: EditSource -> IO Bool
             saveAction esrc =
                 runP $ do

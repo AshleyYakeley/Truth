@@ -90,4 +90,4 @@ unknownValueEditLens :: a -> EditLens (WholeUpdate (Know a)) (WholeUpdate a)
 unknownValueEditLens def = toEditLens $ unknownValueBijection def
 
 uiUnknownValue :: a -> UISpec sel (WholeUpdate a) -> UISpec sel (WholeUpdate (Know a))
-uiUnknownValue def ui = mapUpdateUISpec (unknownValueEditLens def) ui
+uiUnknownValue def ui = mapUpdateUISpec (return $ unknownValueEditLens def) ui

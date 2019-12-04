@@ -2,9 +2,11 @@ module Truth.Core.Object.DeferActionT
     ( DeferActionT
     , deferAction
     , runDeferActionT
+    , deferActionResourceRunner
     ) where
 
 import Truth.Core.Import
+import Truth.Core.Resource
 
 newtype DeferActionT m a =
     MkDeferActionT (WriterT [IO ()] m a)
@@ -67,3 +69,6 @@ runDeferActionT (MkDeferActionT (WriterT wma)) = do
     (a, actions) <- wma
     for_ actions liftIO
     return a
+
+deferActionResourceRunner :: LifeCycleIO (ResourceRunner '[ DeferActionT])
+deferActionResourceRunner = liftIO $ newResourceRunner runDeferActionT

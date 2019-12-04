@@ -33,20 +33,20 @@ soupEditSpec = let
     nameColumn :: KeyColumn (SoupUpdate PossibleNoteUpdate) UUID
     nameColumn =
         readOnlyKeyColumn (constUpdateFunction "Name") $ \key -> do
-            lens <- getKeyElementEditLens key
             let
                 valLens =
                     oneWholeLiftEditLens (tupleEditLens NoteTitle) .
-                    mustExistOneEditLens "name" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
+                    mustExistOneEditLens "name" .
+                    oneWholeLiftEditLens (tupleEditLens SelectSecond) . stableKeyElementEditLens key
             return $ funcUpdateFunction fromResult . editLensFunction valLens
     pastColumn :: KeyColumn (SoupUpdate PossibleNoteUpdate) UUID
     pastColumn =
         readOnlyKeyColumn (constUpdateFunction "Past") $ \key -> do
-            lens <- getKeyElementEditLens key
             let
                 valLens =
                     oneWholeLiftEditLens (tupleEditLens NotePast) .
-                    mustExistOneEditLens "past" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
+                    mustExistOneEditLens "past" .
+                    oneWholeLiftEditLens (tupleEditLens SelectSecond) . stableKeyElementEditLens key
             return $ funcUpdateFunction pastResult . editLensFunction valLens
     in tableUISpec [nameColumn, pastColumn] (\a b -> compare (resultToMaybe a) (resultToMaybe b)) nameFunction id $ \_ ->
            return ()
@@ -85,22 +85,21 @@ soupWindow ut MkUIToolkit {..} dirpath = do
                     ]
             wsTitle = constUpdateFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
             openItem :: Aspect UUID -> IO ()
-            openItem aspkey = do
-                mkey <- aspkey
-                case mkey of
-                    Just key -> do
-                        lens <- getKeyElementEditLens key
-                        uitUnliftLifeCycle $ do
+            openItem aspkey =
+                uitUnliftLifeCycle $ do
+                    mkey <- aspkey
+                    case mkey of
+                        Just key -> do
                             rec
                                 ~(subwin, subcloser) <-
                                     lifeCycleEarlyCloser $ do
-                                        subLens <- mapSubscriber lens sub
+                                        subLens <- mapSubscriber (getKeyElementEditLens key) sub
                                         uitCreateWindow subLens $
                                             MkWindowSpec subcloser (constUpdateFunction "item") (mbar subcloser subwin) $
-                                            mapUpdateUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                                            mapUpdateUISpec (return $ oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
                                             oneWholeUISpec $ oneWholeUISpec noteEditSpec
                             return ()
-                    Nothing -> return ()
+                        Nothing -> return ()
             wsMenuBar = mbar closer window
             wsContent =
                 withAspectUISpec $ \aspect ->

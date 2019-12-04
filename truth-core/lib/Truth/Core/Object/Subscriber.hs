@@ -21,10 +21,10 @@ data ASubscriber tt update = MkASubscriber
     , subscribe :: ([update] -> EditContext -> IO ()) -> LifeCycleT (ApplyStack tt IO) ()
     }
 
-type Subscriber = Runnable1 ASubscriber
+type Subscriber = Resource1 ASubscriber
 
 subscriberObject :: Subscriber update -> Object (UpdateEdit update)
-subscriberObject (MkRunnable1 run sub) = MkRunnable1 run $ subAnObject sub
+subscriberObject (MkResource1 run sub) = MkResource1 run $ subAnObject sub
 
 type UpdateStoreEntry update = [update] -> EditContext -> IO ()
 
@@ -59,11 +59,10 @@ getRunner AsynchronousUpdateTiming recv = do
     return $ \edits ec -> runAsync $ singleUpdateQueue edits ec
 
 subscriberObjectMaker :: Subscriber update -> a -> ObjectMaker update a
-subscriberObjectMaker (MkRunnable1 (trun :: TransStackRunner tt) MkASubscriber {..}) a update =
-    runMonoTransStackRunner trun $ \run -> do
-        Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
+subscriberObjectMaker (MkResource1 rr MkASubscriber {..}) a update =
+    runResourceRunnerWith rr $ \run -> do
         remonad run $ subscribe update
-        return (MkRunnable1 trun subAnObject, a)
+        return (MkResource1 rr subAnObject, a)
 
 makeSharedSubscriber :: forall update a. UpdateTiming -> ObjectMaker update a -> LifeCycleIO (Subscriber update, a)
 makeSharedSubscriber ut uobj = do
@@ -74,13 +73,13 @@ makeSharedSubscriber ut uobj = do
             store <- mVarRun var get
             for_ store $ \entry -> entry edits ectxt
     runAsync <- getRunner ut $ utReceiveUpdates ut updateP
-    (MkRunnable1 (trunC :: TransStackRunner tt) anObjectC, a) <- uobj runAsync
-    Dict <- return $ transStackRunnerUnliftAllDict trunC
+    (MkResource1 (trunC :: ResourceRunner tt) anObjectC, a) <- uobj runAsync
+    Dict <- return $ resourceRunnerUnliftAllDict trunC
     Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     let
         child :: Subscriber update
         child =
-            MkRunnable1 trunC $
+            MkResource1 trunC $
             MkASubscriber anObjectC $ \updateC -> do
                 key <- liftIO $ mVarRun var $ addStoreStateT updateC
                 lifeCycleClose $ mVarRun var $ deleteStoreStateT key
@@ -98,7 +97,11 @@ makeReflectingSubscriber ut object = do
     return sub
 
 mapSubscriber ::
-       forall updateA updateB. EditLens updateA updateB -> Subscriber updateA -> LifeCycleIO (Subscriber updateB)
-mapSubscriber lens subA = do
+       forall updateA updateB.
+       LifeCycleIO (EditLens updateA updateB)
+    -> Subscriber updateA
+    -> LifeCycleIO (Subscriber updateB)
+mapSubscriber getlens subA = do
+    lens <- getlens
     (subB, ()) <- makeSharedSubscriber mempty $ mapObjectMaker lens $ subscriberObjectMaker subA ()
     return subB

@@ -16,7 +16,7 @@ predicatePinaforeMap ::
        EntityAdapter a
     -> EntityAdapter b
     -> Predicate
-    -> AnEditLens '[] (ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeUpdate (Know b))
+    -> EditLens (ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeUpdate (Know b))
 predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) prd = let
     rfp :: ReadFunction (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a))) PinaforeEntityRead
     rfp = tupleReadFunction SelectContext
@@ -52,9 +52,8 @@ predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) 
                 kb <- bget valp $ rfp mra
                 return [MkWholeReaderUpdate kb]
             Unknown -> return [MkWholeReaderUpdate Unknown]
-    elFunction ::
-           AnUpdateFunction '[] (ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeUpdate (Know b))
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeUpdate (Know b))
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [WholeEdit (Know b)]
@@ -79,14 +78,14 @@ predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) 
                         case kvalb of
                             Known _ -> Nothing
                             Unknown -> Just []
-    in MkAnEditLens {..}
+    in MkEditLens {..}
 
 predicateInverseFunction ::
        forall a b.
        EntityAdapter a
     -> EntityAdapter b
     -> Predicate
-    -> APinaforeFunctionMorphism PinaforeEntityUpdate '[] b [a]
+    -> PinaforeFunctionMorphism PinaforeEntityUpdate b [a]
 predicateInverseFunction (MkEntityAdapter _ aget _) (MkEntityAdapter bp _ _) prd = let
     pfFuncRead ::
            forall m. MonadIO m
@@ -105,12 +104,12 @@ predicateInverseFunction (MkEntityAdapter _ aget _) (MkEntityAdapter bp _ _) prd
     pfUpdate (MkEditUpdate (PinaforeEntityEditSetPredicate p _ _)) _
         | p == prd = return True
     pfUpdate _ _ = return False
-    in MkAPinaforeFunctionMorphism {..}
+    in MkPinaforeFunctionMorphism {..}
 
 predicatePinaforeTableLensMorphism ::
        EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeEntityUpdate a b
 predicatePinaforeTableLensMorphism pa pb prd =
-    MkRunnable2 cmEmpty $ MkAPinaforeLensMorphism (predicatePinaforeMap pa pb prd) (predicateInverseFunction pa pb prd)
+    MkPinaforeLensMorphism (predicatePinaforeMap pa pb prd) (predicateInverseFunction pa pb prd)
 
 propertyMorphism ::
        HasPinaforeEntityUpdate baseupdate

@@ -12,10 +12,10 @@ cacheObject ::
     => Int
     -> Object edit
     -> LifeCycleIO (Object edit)
-cacheObject mus (MkRunnable1 trun (MkAnObject read push)) =
-    runMonoTransStackRunner @IO trun $ \run -> do
+cacheObject mus (MkResource1 rr (MkAnObject read push)) =
+    runResourceRunnerWith rr $ \run -> do
         runAction <- asyncWaitRunner mus $ \editsnl -> run $ pushOrFail "cached object" noEditSource $ push editsnl
-        objRun <- liftIO $ stateTransStackRunner $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
+        objRun <- liftIO $ stateResourceRunner $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
         return $ let
             objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
             objRead rt = do
@@ -32,4 +32,4 @@ cacheObject mus (MkRunnable1 trun (MkAnObject read push)) =
                 Just $ \_ -> do
                     editCacheUpdates edits
                     liftIO $ runAction $ Just edits
-            in MkRunnable1 objRun MkAnObject {..}
+            in MkResource1 objRun MkAnObject {..}

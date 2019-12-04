@@ -22,6 +22,10 @@ module Control.Monad.Trans.Stack
     , concatSndMFunction
     , stackCommute
     , transStackConcatRefl
+    , StackUnliftAll
+    , WStackUnliftAll(..)
+    , consWStackUnliftAll
+    , stackLiftWithUnliftAll
     ) where
 
 import Control.Monad.Trans.Constraint
@@ -513,3 +517,29 @@ transStackConcatRefl ::
        forall (tt1 :: [TransKind]) (tt2 :: [TransKind]) m. MonadTransStackUnliftAll tt1
     => (ApplyStack (Concat tt1 tt2) m) :~: (ApplyStack tt1 (ApplyStack tt2 m))
 transStackConcatRefl = applyConcatRefl @_ @tt1 @tt2 @m @(Compose Dict MonadTransUnliftAll)
+
+type StackUnliftAll (tt :: [TransKind]) = forall m. MonadUnliftIO m => MFunction (ApplyStack tt m) m
+
+newtype WStackUnliftAll (tt :: [TransKind]) = MkWStackUnliftAll
+    { runWStackUnliftAll :: StackUnliftAll tt
+    }
+
+consWStackUnliftAll ::
+       forall t tt. IsStack (MonadTransConstraint MonadUnliftIO) tt
+    => WUnliftAll MonadUnliftIO t
+    -> WStackUnliftAll tt
+    -> WStackUnliftAll (t ': tt)
+consWStackUnliftAll (MkWUnliftAll unlift1) (MkWStackUnliftAll unliftr) = let
+    unlift ::
+           forall m. MonadUnliftIO m
+        => MFunction (t (ApplyStack tt m)) m
+    unlift =
+        case transStackDict @MonadUnliftIO @tt @m of
+            Dict -> unliftr . unlift1
+    in MkWStackUnliftAll unlift
+
+stackLiftWithUnliftAll ::
+       forall tt m r. (MonadTransStackUnliftAll tt, MonadIO m)
+    => (StackUnliftAll tt -> m r)
+    -> ApplyStack tt m r
+stackLiftWithUnliftAll call = unStackT @tt $ liftWithUnliftAll $ \unlift -> call $ \astm -> unlift $ MkStackT astm

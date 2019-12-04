@@ -39,10 +39,11 @@ instance Applicative (Editor update) where
         in MkEditor {..}
 
 subscribeEditor :: Subscriber update -> Editor update r -> LifeCycleIO r
-subscribeEditor (MkRunnable1 trun (MkASubscriber anobject sub)) editor = let
-    object = MkRunnable1 trun anobject
+subscribeEditor (MkResource1 (rr :: _ tt) (MkASubscriber anobject sub)) editor = let
+    object = MkResource1 rr anobject
     in case editor of
-           MkEditor initr update f -> do
-               e <- initr object
-               runMonoTransStackRunner @IO trun $ \run -> remonad run $ sub $ update e object
-               f e object
+           MkEditor initr update f ->
+               runResourceRunnerWith rr $ \run -> do
+                   e <- initr object
+                   remonad run $ sub $ update e object
+                   f e object

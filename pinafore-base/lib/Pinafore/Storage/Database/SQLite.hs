@@ -152,8 +152,8 @@ sqlitePinaforeLens = let
         -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
         -> m [PinaforeTableUpdate]
     ufUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
-    elFunction :: AnUpdateFunction '[] (SQLiteUpdate PinaforeSchema) PinaforeTableUpdate
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (SQLiteUpdate PinaforeSchema) PinaforeTableUpdate
+    elFunction = MkUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => PinaforeTableEdit
@@ -195,8 +195,8 @@ sqlitePinaforeLens = let
         => [PinaforeTableEdit]
         -> MutableRead m (SQLiteReader PinaforeSchema)
         -> m (Maybe [SQLiteEdit PinaforeSchema])
-    elPutEdits = elPutEditsFromSimplePutEdit @'[] elPutEdit
-    in MkRunnable2 cmEmpty $ MkAnEditLens {..}
+    elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
+    in MkEditLens {..}
 
 instance WitnessConstraint FiniteWitness PinaforeSchema where
     witnessConstraint PinaforeTriple = Dict

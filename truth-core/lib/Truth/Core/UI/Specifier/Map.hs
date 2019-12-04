@@ -25,8 +25,9 @@ mapViewUISpec mv spec = MkUISpec $ MkMapUISpec mv spec
 shimViewUISpec :: CreateView sel update () -> UISpec sel update -> UISpec sel update
 shimViewUISpec cvshim = mapViewUISpec $ \cvw -> cvshim >> cvw
 
-mapUpdateUISpec :: forall sel updateA updateB. EditLens updateA updateB -> UISpec sel updateB -> UISpec sel updateA
-mapUpdateUISpec lens = mapViewUISpec $ cvMapEdit lens
+mapUpdateUISpec ::
+       forall sel updateA updateB. LifeCycleIO (EditLens updateA updateB) -> UISpec sel updateB -> UISpec sel updateA
+mapUpdateUISpec getlens = mapViewUISpec $ cvMapEdit getlens
 
 convertEditUISpec ::
        forall sel updateA updateB.
@@ -38,7 +39,7 @@ convertEditUISpec ::
        )
     => UISpec sel updateB
     -> UISpec sel updateA
-convertEditUISpec = mapUpdateUISpec convertEditLens
+convertEditUISpec = mapUpdateUISpec $ return convertEditLens
 
 tupleEditUISpecs ::
        (TupleEditWitness FullEdit s, FiniteTupleSelector s)
@@ -50,5 +51,5 @@ tupleEditUISpecs getSpec =
              case tupleEditWitness @FullEdit se of
                  Dict ->
                      case getSpec se of
-                         (spec, t) -> (mapUpdateUISpec (tupleEditLens se) spec, t))
+                         (spec, t) -> (mapUpdateUISpec (return $ tupleEditLens se) spec, t))
         tupleAllSelectors

@@ -3,51 +3,23 @@ module Truth.Core.Resource.SingleRunner where
 import Truth.Core.Import
 
 data SingleRunner (t :: TransKind) where
-    StaticSingleRunner
-        :: forall (t :: TransKind). MonadTransAskUnlift t
+    MkSingleRunner
+        :: forall (t :: TransKind). MonadTransUnliftAll t
         => IOWitness t
         -> UnliftAll MonadUnliftIO t
         -> SingleRunner t
-    DynamicSingleRunner
-        :: forall (t :: TransKind). MonadTransUnliftAll t
-        => IO (WUnliftAll MonadUnliftIO t)
-        -> SingleRunner t
 
 instance TestEquality SingleRunner where
-    testEquality (StaticSingleRunner wa _) (StaticSingleRunner wb _) = testEquality wa wb
-    testEquality _ _ = Nothing
+    testEquality (MkSingleRunner wa _) (MkSingleRunner wb _) = testEquality wa wb
 
 instance TestOrder SingleRunner where
-    testOrder (StaticSingleRunner wa _) (StaticSingleRunner wb _) = testOrder wa wb
-    testOrder (StaticSingleRunner _ _) (DynamicSingleRunner _) = WLT
-    testOrder (DynamicSingleRunner _) _ = WGT
+    testOrder (MkSingleRunner wa _) (MkSingleRunner wb _) = testOrder wa wb
 
-data SingleRunnerOrder (a :: TransKind) (b :: TransKind) where
-    SRLT :: forall a b. SingleRunnerOrder a b
-    SREQ
-        :: forall a. MonadTransAskUnlift a
-        => SingleRunnerOrder a a
-    SRGT :: forall a b. SingleRunnerOrder a b
-
-singleRunnerOrder :: SingleRunner a -> SingleRunner b -> SingleRunnerOrder a b
-singleRunnerOrder (StaticSingleRunner wa _) (StaticSingleRunner wb _) =
-    case testOrder wa wb of
-        WLT -> SRLT
-        WEQ -> SREQ
-        WGT -> SRGT
-singleRunnerOrder (StaticSingleRunner _ _) (DynamicSingleRunner _) = SRLT
-singleRunnerOrder (DynamicSingleRunner _) _ = SRGT
-
-runSingleRunner :: forall t r. SingleRunner t -> (MonadTransUnliftAll t => UnliftAll MonadUnliftIO t -> r) -> r
-runSingleRunner (StaticSingleRunner _ run) call = call run
-runSingleRunner (DynamicSingleRunner iorun) call =
-    call $ \tma -> do
-        MkWUnliftAll run <- liftIO iorun
-        run tma
+runSingleRunner :: SingleRunner t -> UnliftAll MonadUnliftIO t
+runSingleRunner (MkSingleRunner _ run) = run
 
 singleRunnerUnliftAllDict :: SingleRunner t -> Dict (MonadTransUnliftAll t)
-singleRunnerUnliftAllDict (StaticSingleRunner _ _) = Dict
-singleRunnerUnliftAllDict (DynamicSingleRunner _) = Dict
+singleRunnerUnliftAllDict (MkSingleRunner _ _) = Dict
 
 singleRunnerComposeDict ::
        forall (ct :: TransKind -> Constraint) (t :: TransKind). (forall t'. MonadTransUnliftAll t' => ct t')
@@ -57,6 +29,5 @@ singleRunnerComposeDict sr =
     case singleRunnerUnliftAllDict sr of
         Dict -> Compose Dict
 
-discardingSingleRunner :: forall t. SingleRunner t -> SingleRunner t
-discardingSingleRunner (StaticSingleRunner w u) = StaticSingleRunner w $ discardingRunner u
-discardingSingleRunner (DynamicSingleRunner ior) = DynamicSingleRunner $ fmap discardingWRunner ior
+discardingSingleRunner :: SingleRunner t -> SingleRunner t
+discardingSingleRunner (MkSingleRunner w run) = MkSingleRunner w $ discardingRunner run

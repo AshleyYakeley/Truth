@@ -16,7 +16,7 @@ valSpecText ::
        UISpec sel (WholeUpdate (Know Text))
     -> PinaforeLensValue baseupdate (WholeUpdate (Know Text))
     -> UISpec sel baseupdate
-valSpecText spec val = mapUpdateUISpec val spec
+valSpecText spec val = mapUpdateUISpec (return val) spec
 
 clearText :: UpdateFunction (WholeUpdate (Know Text)) (WholeUpdate Text)
 clearText = funcUpdateFunction (fromKnow mempty)
@@ -98,14 +98,14 @@ uiButton ::
 uiButton text raction = buttonUISpec (clearText . immutableReferenceToFunction text) $ actionReference raction
 
 uiLabel :: forall baseupdate. PinaforeImmutableReference baseupdate Text -> UISpec BottomType baseupdate
-uiLabel text = mapUpdateUISpec (immutableReferenceToLens text) $ uiUnknownValue mempty $ labelUISpec
+uiLabel text = mapUpdateUISpec (return $ immutableReferenceToLens text) $ uiUnknownValue mempty $ labelUISpec
 
 uiDynamic :: forall baseupdate. PinaforeImmutableReference baseupdate (UISpec A baseupdate) -> UISpec A baseupdate
 uiDynamic uiref = switchUISpec $ pinaforeImmutableReferenceValue nullUISpec uiref
 
 aspectToAction :: Aspect a -> PinaforeAction baseupdate a
 aspectToAction aspect = do
-    ma <- liftIO aspect
+    ma <- pinaforeLiftLifeCycleIO aspect
     pinaforeActionKnow $ maybeToKnow ma
 
 openWindow ::
@@ -131,7 +131,7 @@ uiTextArea :: forall baseupdate. PinaforeLensValue baseupdate (WholeUpdate (Know
 uiTextArea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertEditUISpec textAreaUISpec
 
 uiCalendar :: forall baseupdate. PinaforeLensValue baseupdate (WholeUpdate (Know Day)) -> UISpec BottomType baseupdate
-uiCalendar day = mapUpdateUISpec day $ uiUnknownValue (fromGregorian 1970 01 01) calendarUISpec
+uiCalendar day = mapUpdateUISpec (return day) $ uiUnknownValue (fromGregorian 1970 01 01) calendarUISpec
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c

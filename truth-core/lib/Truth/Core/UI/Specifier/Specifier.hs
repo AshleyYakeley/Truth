@@ -22,7 +22,7 @@ isUISpec (MkUISpec (tedit :: t' sel update)) = do
     Refl <- testEquality (uiWitness @t) (uiWitness @t')
     return tedit
 
-type Aspect sel = IO (Maybe sel)
+type Aspect sel = LifeCycleIO (Maybe sel)
 
 noAspect :: Aspect sel
 noAspect = return Nothing

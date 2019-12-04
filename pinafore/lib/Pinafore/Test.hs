@@ -42,7 +42,7 @@ makeTestPinaforeContext ut uitoolkit = do
         getTableState = getObjectSubject tableStateObject
     memoryObject <- liftIO makeMemoryCellObject
     clockOM <- shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
-    clockTimeEF <- liftIO makeClockTimeZoneEF
+    clockTimeEF <- makeClockTimeZoneEF
     let
         picker :: forall update. PinaforeSelector update -> ObjectMaker update ()
         picker PinaforeSelectPoint = reflectingObjectMaker $ pinaforeTableEntityObject tableObject

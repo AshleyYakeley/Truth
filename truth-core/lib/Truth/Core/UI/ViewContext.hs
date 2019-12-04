@@ -5,7 +5,7 @@ import Truth.Core.Import
 import Truth.Core.Object
 import Truth.Core.UI.Specifier.Specifier
 
-ioMapSelectionAspect :: IO (sela -> selb) -> Aspect sela -> Aspect selb
+ioMapSelectionAspect :: LifeCycleIO (sela -> selb) -> Aspect sela -> Aspect selb
 ioMapSelectionAspect iof aspect = do
     f <- iof
     msel <- aspect
@@ -25,11 +25,11 @@ data ViewContext sel update = MkViewContext
 
 vcMapEdit ::
        forall sel edita editb. ()
-    => EditLens edita editb
+    => LifeCycleIO (EditLens edita editb)
     -> ViewContext sel edita
     -> LifeCycleIO (ViewContext sel editb)
-vcMapEdit lens (MkViewContext subA setSelect oG tb) = do
-    subB <- mapSubscriber lens subA
+vcMapEdit getlens (MkViewContext subA setSelect oG tb) = do
+    subB <- mapSubscriber getlens subA
     return $ MkViewContext subB setSelect oG tb
 
 vcMapSetSelection ::

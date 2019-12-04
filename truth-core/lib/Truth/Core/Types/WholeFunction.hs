@@ -3,7 +3,6 @@ module Truth.Core.Types.WholeFunction where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
-import Truth.Core.Resource
 import Truth.Core.Types.Function
 import Truth.Core.Types.Pair
 import Truth.Core.Types.Tuple
@@ -29,19 +28,19 @@ wholeFunctionMapEditLens pq qmp = let
         -> m [WholeFunctionUpdate a q]
     ufUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeUpdate p)) _mr =
         return [MkTupleUpdate (MkFunctionSelector a) $ MkWholeUpdate $ pq p]
-    elFunction :: AnUpdateFunction '[] (WholeFunctionUpdate a p) (WholeFunctionUpdate a q)
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (WholeFunctionUpdate a p) (WholeFunctionUpdate a q)
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [WholeFunctionEdit a q]
         -> MutableRead m (WholeFunctionReader a p)
         -> m (Maybe [WholeFunctionEdit a p])
     elPutEdits =
-        elPutEditsFromSimplePutEdit @'[] $ \(MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit q)) ->
+        elPutEditsFromSimplePutEdit $ \(MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit q)) ->
             return $ do
                 p <- qmp q
                 return [MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit p)]
-    in MkRunnable2 cmEmpty MkAnEditLens {..}
+    in MkEditLens {..}
 
 wholeFunctionPairEditLens ::
        forall a p q r.
@@ -67,19 +66,19 @@ wholeFunctionPairEditLens pqr rmpq = let
         p <- mr $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
         return [MkTupleUpdate (MkFunctionSelector a) $ MkWholeUpdate $ pqr p q]
     elFunction ::
-           AnUpdateFunction '[] (PairUpdate (WholeFunctionUpdate a p) (WholeFunctionUpdate a q)) (WholeFunctionUpdate a r)
-    elFunction = MkAnUpdateFunction {..}
+           UpdateFunction (PairUpdate (WholeFunctionUpdate a p) (WholeFunctionUpdate a q)) (WholeFunctionUpdate a r)
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [WholeFunctionEdit a r]
         -> MutableRead m (PairUpdateReader (WholeFunctionUpdate a p) (WholeFunctionUpdate a q))
         -> m (Maybe [PairUpdateEdit (WholeFunctionUpdate a p) (WholeFunctionUpdate a q)])
     elPutEdits =
-        elPutEditsFromSimplePutEdit @'[] $ \(MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit r)) ->
+        elPutEditsFromSimplePutEdit $ \(MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit r)) ->
             return $ do
                 (p, q) <- rmpq r
                 return
                     [ MkTupleUpdateEdit SelectFirst $ MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit p)
                     , MkTupleUpdateEdit SelectSecond $ MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit q)
                     ]
-    in MkRunnable2 cmEmpty MkAnEditLens {..}
+    in MkEditLens {..}

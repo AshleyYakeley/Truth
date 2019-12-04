@@ -131,8 +131,7 @@ pinaforeSetRefMember (MkPinaforeSetRef eq lens) aref = let
             => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> m (Know a)
         getArg mr = mr $ MkTupleUpdateReader SelectSecond ReadWhole
-        elFunction ::
-               AnUpdateFunction '[] (PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))) (WholeUpdate (Know Bool))
+        elFunction :: UpdateFunction (PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))) (WholeUpdate (Know Bool))
         ufGet ::
                forall m. MonadIO m
             => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
@@ -166,7 +165,7 @@ pinaforeSetRefMember (MkPinaforeSetRef eq lens) aref = let
                     b <- getFunc mr a
                     return $ pure $ MkWholeUpdate $ Known b
                 Unknown -> return $ pure $ MkWholeUpdate Unknown
-        elFunction = MkAnUpdateFunction {..}
+        elFunction = MkUpdateFunction {..}
         elPutEdits ::
                forall m. MonadIO m
             => [WholeEdit (Know Bool)]
@@ -186,7 +185,7 @@ pinaforeSetRefMember (MkPinaforeSetRef eq lens) aref = let
                                 MkTupleUpdateEdit SelectFirst $
                                 MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit b
                             _ -> Nothing
-        in MkRunnable2 cmEmpty MkAnEditLens {..}
+        in MkEditLens {..}
     in pinaforeLensToRef $ knowApplySetLens . pairCombineEditLenses lens (readOnlyEditLens afval)
 
 pinaforePredicateToSetRef :: forall baseupdate a. (a -> Bool) -> PinaforeSetRef baseupdate (MeetType Entity a)

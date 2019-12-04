@@ -3,7 +3,6 @@ module Truth.Core.Types.List where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
-import Truth.Core.Resource
 import Truth.Core.Sequence
 import Truth.Core.Types.OneEdit
 import Truth.Core.Types.OneReader
@@ -178,15 +177,15 @@ listItemLens ::
        , ApplicableEdit (UpdateEdit update)
        , UpdateSubject update ~ Element seq
        )
-    => TransStackRunner '[ StateT (SequencePoint seq)]
-    -> EditLens (ListUpdate seq update) (MaybeUpdate update)
-listItemLens run = let
-    ufGet ::
+    => SequencePoint seq
+    -> LifeCycleIO (EditLens (ListUpdate seq update) (MaybeUpdate update))
+listItemLens = let
+    sGet ::
            ReadFunctionT (StateT (SequencePoint seq)) (ListReader seq (UpdateReader update)) (OneReader Maybe (UpdateReader update))
-    ufGet mr (ReadOne rt) = do
+    sGet mr (ReadOne rt) = do
         i <- get
         lift $ mr $ ListReadItem i rt
-    ufGet mr ReadHasOne = do
+    sGet mr ReadHasOne = do
         i <- get
         if i < 0
             then return Nothing
@@ -196,18 +195,18 @@ listItemLens run = let
                     if i >= len
                         then Nothing
                         else Just ()
-    ufUpdate ::
+    sUpdate ::
            forall m. MonadIO m
         => ListUpdate seq update
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m [MaybeUpdate update]
-    ufUpdate (ListUpdateItem ie update) _ = do
+    sUpdate (ListUpdateItem ie update) _ = do
         i <- get
         return $
             if i == ie
                 then [SumUpdateRight $ MkOneUpdate update]
                 else []
-    ufUpdate (ListUpdateDelete ie) _ = do
+    sUpdate (ListUpdateDelete ie) _ = do
         i <- get
         case compare ie i of
             LT -> do
@@ -215,35 +214,33 @@ listItemLens run = let
                 return []
             EQ -> return [SumUpdateLeft $ MkWholeReaderUpdate Nothing]
             GT -> return []
-    ufUpdate (ListUpdateInsert ie _) _ = do
+    sUpdate (ListUpdateInsert ie _) _ = do
         i <- get
         if ie <= i
             then put $ i + 1
             else return ()
         return []
-    ufUpdate ListUpdateClear _ = do
+    sUpdate ListUpdateClear _ = do
         put 0
         return [SumUpdateLeft $ MkWholeReaderUpdate Nothing]
-    elFunction :: AnUpdateFunction '[ StateT (SequencePoint seq)] (ListUpdate seq update) (MaybeUpdate update)
-    elFunction = MkAnUpdateFunction {..}
-    elPutEdit ::
+    sPutEdit ::
            forall m. MonadIO m
         => MaybeEdit (UpdateEdit update)
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
-    elPutEdit (SumEditRight (MkOneEdit edit)) _ = do
+    sPutEdit (SumEditRight (MkOneEdit edit)) _ = do
         i <- get
         return $ Just [ListEditItem i edit]
-    elPutEdit (SumEditLeft (MkWholeReaderEdit Nothing)) _ = do
+    sPutEdit (SumEditLeft (MkWholeReaderEdit Nothing)) _ = do
         i <- get
         return $ Just [ListEditDelete i]
-    elPutEdit (SumEditLeft (MkWholeReaderEdit (Just subj))) _ = do
+    sPutEdit (SumEditLeft (MkWholeReaderEdit (Just subj))) _ = do
         i <- get
         return $ Just [ListEditInsert i subj]
-    elPutEdits ::
+    sPutEdits ::
            forall m. MonadIO m
         => [MaybeEdit (UpdateEdit update)]
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
-    elPutEdits = elPutEditsFromPutEdit @'[ StateT (SequencePoint seq)] elPutEdit
-    in MkRunnable2 run MkAnEditLens {..}
+    sPutEdits = elPutEditsFromPutEdit sPutEdit
+    in makeStateLens MkStateEditLens {..}

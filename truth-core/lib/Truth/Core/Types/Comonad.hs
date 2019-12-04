@@ -3,7 +3,6 @@ module Truth.Core.Types.Comonad where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
-import Truth.Core.Resource
 
 newtype ComonadReader (w :: Type -> Type) (reader :: Type -> Type) (t :: Type) where
     ReadExtract :: forall w reader t. reader t -> ComonadReader w reader t
@@ -42,27 +41,26 @@ instance IsEditUpdate update => IsEditUpdate (ComonadUpdate w update) where
     updateEdit (MkComonadUpdate update) = MkComonadEdit $ updateEdit update
 
 comonadEditLens :: forall w update. EditLens (ComonadUpdate w update) update
-comonadEditLens =
-    MkRunnable2 cmEmpty $ let
-        ufGet ::
-               forall m. MonadIO m
-            => MutableRead m (ComonadReader w (UpdateReader update))
-            -> MutableRead m (UpdateReader update)
-        ufGet mr = comonadReadFunction mr
-        ufUpdate ::
-               forall m. MonadIO m
-            => ComonadUpdate w update
-            -> MutableRead m (ComonadReader w (UpdateReader update))
-            -> m [update]
-        ufUpdate (MkComonadUpdate update) _ = return [update]
-        elFunction = MkAnUpdateFunction {..}
-        elPutEdits ::
-               forall m. MonadIO m
-            => [UpdateEdit update]
-            -> MutableRead m (ComonadReader w (UpdateReader update))
-            -> m (Maybe [ComonadEdit w (UpdateEdit update)])
-        elPutEdits edits _ = return $ Just $ fmap MkComonadEdit edits
-        in MkAnEditLens {..}
+comonadEditLens = let
+    ufGet ::
+           forall m. MonadIO m
+        => MutableRead m (ComonadReader w (UpdateReader update))
+        -> MutableRead m (UpdateReader update)
+    ufGet mr = comonadReadFunction mr
+    ufUpdate ::
+           forall m. MonadIO m
+        => ComonadUpdate w update
+        -> MutableRead m (ComonadReader w (UpdateReader update))
+        -> m [update]
+    ufUpdate (MkComonadUpdate update) _ = return [update]
+    elFunction = MkUpdateFunction {..}
+    elPutEdits ::
+           forall m. MonadIO m
+        => [UpdateEdit update]
+        -> MutableRead m (ComonadReader w (UpdateReader update))
+        -> m (Maybe [ComonadEdit w (UpdateEdit update)])
+    elPutEdits edits _ = return $ Just $ fmap MkComonadEdit edits
+    in MkEditLens {..}
 
 comonadLiftReadFunction :: ReadFunction ra rb -> ReadFunction (ComonadReader w ra) (ComonadReader w rb)
 comonadLiftReadFunction rf mr (ReadExtract rbt) = rf (comonadReadFunction mr) rbt
@@ -71,25 +69,18 @@ comonadLiftEditLens ::
        forall w updateA updateB.
        EditLens updateA updateB
     -> EditLens (ComonadUpdate w updateA) (ComonadUpdate w updateB)
-comonadLiftEditLens (MkRunnable2 (trun :: TransStackRunner tt) (MkAnEditLens (MkAnUpdateFunction g u) pe)) =
-    case transStackRunnerUnliftAllDict trun of
-        Dict -> let
-            g' :: ReadFunctionTT tt (ComonadReader w (UpdateReader updateA)) (ComonadReader w (UpdateReader updateB))
-            g' mr (ReadExtract rt) = g (comonadReadFunction mr) rt
-            u' :: forall m. MonadIO m
-               => ComonadUpdate w updateA
-               -> MutableRead m (ComonadReader w (UpdateReader updateA))
-               -> ApplyStack tt m [ComonadUpdate w updateB]
-            u' (MkComonadUpdate edita) mr =
-                case transStackDict @MonadIO @tt @m of
-                    Dict -> fmap (fmap MkComonadUpdate) $ u edita $ comonadReadFunction mr
-            pe' :: forall m. MonadIO m
-                => [ComonadEdit w (UpdateEdit updateB)]
-                -> MutableRead m (ComonadReader w (UpdateReader updateA))
-                -> ApplyStack tt m (Maybe [ComonadEdit w (UpdateEdit updateA)])
-            pe' editbs mr =
-                case transStackDict @MonadIO @tt @m of
-                    Dict ->
-                        fmap (fmap $ fmap MkComonadEdit) $
-                        pe (fmap (\(MkComonadEdit editb) -> editb) editbs) $ comonadReadFunction mr
-            in MkRunnable2 trun $ MkAnEditLens (MkAnUpdateFunction g' u') pe'
+comonadLiftEditLens (MkEditLens (MkUpdateFunction g u) pe) = let
+    g' :: ReadFunction (ComonadReader w (UpdateReader updateA)) (ComonadReader w (UpdateReader updateB))
+    g' mr (ReadExtract rt) = g (comonadReadFunction mr) rt
+    u' :: forall m. MonadIO m
+       => ComonadUpdate w updateA
+       -> MutableRead m (ComonadReader w (UpdateReader updateA))
+       -> m [ComonadUpdate w updateB]
+    u' (MkComonadUpdate edita) mr = fmap (fmap MkComonadUpdate) $ u edita $ comonadReadFunction mr
+    pe' :: forall m. MonadIO m
+        => [ComonadEdit w (UpdateEdit updateB)]
+        -> MutableRead m (ComonadReader w (UpdateReader updateA))
+        -> m (Maybe [ComonadEdit w (UpdateEdit updateA)])
+    pe' editbs mr =
+        fmap (fmap $ fmap MkComonadEdit) $ pe (fmap (\(MkComonadEdit editb) -> editb) editbs) $ comonadReadFunction mr
+    in MkEditLens (MkUpdateFunction g' u') pe'

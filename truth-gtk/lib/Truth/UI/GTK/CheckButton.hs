@@ -12,10 +12,10 @@ import Truth.UI.GTK.Useful
 createWidget :: CheckboxUISpec sel edit -> CreateView sel edit Widget
 createWidget (MkCheckboxUISpec label lens) = do
     esrc <- newEditSource
-    initial <- cvMapEdit lens $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
+    initial <- cvMapEdit (return lens) $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial]
     cvBindUpdateFunction Nothing label $ \val -> set widget [#label := val]
-    cvMapEdit lens $ do
+    cvMapEdit (return lens) $ do
         changedSignal <-
             cvLiftView $
             viewOn widget #clicked $
@@ -27,10 +27,10 @@ createWidget (MkCheckboxUISpec label lens) = do
             liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
 createWidget (MkMaybeCheckboxUISpec label lens) = do
-    initial <- cvMapEdit lens $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
+    initial <- cvMapEdit (return lens) $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
     cvBindUpdateFunction Nothing label $ \val -> set widget [#label := val]
-    cvMapEdit lens $ do
+    cvMapEdit (return lens) $ do
         let
             getWidgetState ::
                    forall m. MonadIO m

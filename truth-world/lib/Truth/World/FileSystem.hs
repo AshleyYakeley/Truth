@@ -129,62 +129,74 @@ fileSystemObject = let
                 FSEditRenameItem fromPath toPath ->
                     testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $ \_ ->
                         renamePath fromPath toPath
-    in MkRunnable1 cmEmpty MkAnObject {..}
+    in MkResource1 nilResourceRunner MkAnObject {..}
+
+subdirCreateWitness :: IOWitness (StateT Bool)
+subdirCreateWitness = $(iowitness [t|StateT Bool|])
 
 subdirectoryObject :: Bool -> FilePath -> Object FSEdit -> Object FSEdit
-subdirectoryObject create dir (MkRunnable1 (trun :: TransStackRunner tt) (MkAnObject rd push)) =
-    runMonoTransStackRunner @IO trun $ \_ -> let
-        pushFirst :: StateT Bool (ApplyStack tt IO) ()
-        pushFirst = do
-            c <- get
-            case c of
-                False -> return ()
-                True -> do
-                    lift $
-                        pushOrFail ("couldn't create directory " <> show dir) noEditSource $
-                        push [FSEditCreateDirectory dir]
-                    put False
-        insideToOutside :: FilePath -> FilePath
-        insideToOutside path = let
-            relpath = makeRelative "/" path
-            in dir </> relpath
-        outsideToInside :: FilePath -> Maybe FilePath
-        outsideToInside path = let
-            relpath = makeRelative dir $ "/" </> path
-            in if isRelative relpath
-                   then Just relpath
-                   else Nothing
-        rd' :: MutableRead (StateT Bool (ApplyStack tt IO)) FSReader
-        rd' (FSReadDirectory path) = do
-            pushFirst
-            lift $ rd $ FSReadDirectory $ insideToOutside path
-        rd' (FSReadItem path) = do
-            pushFirst
-            lift $ rd $ FSReadItem $ insideToOutside path
-        rd' (FSReadSymbolicLink path) =
-            case transStackDict @MonadIO @tt @IO of
-                Dict -> do
+subdirectoryObject create dir (MkResource1 (rr :: ResourceRunner tt) (MkAnObject rd push)) =
+    runResourceRunnerWith rr $ \_ ->
+        case transStackConcatRefl @'[ StateT Bool] @tt @IO of
+            Refl -> let
+                pushFirst :: StateT Bool (ApplyStack tt IO) ()
+                pushFirst = do
+                    c <- get
+                    case c of
+                        False -> return ()
+                        True -> do
+                            lift $
+                                pushOrFail ("couldn't create directory " <> show dir) noEditSource $
+                                push [FSEditCreateDirectory dir]
+                            put False
+                insideToOutside :: FilePath -> FilePath
+                insideToOutside path = let
+                    relpath = makeRelative "/" path
+                    in dir </> relpath
+                outsideToInside :: FilePath -> Maybe FilePath
+                outsideToInside path = let
+                    relpath = makeRelative dir $ "/" </> path
+                    in if isRelative relpath
+                           then Just relpath
+                           else Nothing
+                rd' :: MutableRead (StateT Bool (ApplyStack tt IO)) FSReader
+                rd' (FSReadDirectory path) = do
                     pushFirst
-                    mspath <- lift $ rd $ FSReadSymbolicLink $ insideToOutside path
-                    return $
-                        case mspath of
-                            Nothing -> Nothing
-                            Just spath ->
-                                Just $
-                                case outsideToInside spath of
-                                    Just ipath -> ipath
-                                    Nothing -> ""
-        mapPath :: FSEdit -> FSEdit
-        mapPath (FSEditCreateDirectory path) = FSEditCreateDirectory $ insideToOutside path
-        mapPath (FSEditCreateFile path bs) = FSEditCreateFile (insideToOutside path) bs
-        mapPath (FSEditCreateSymbolicLink path1 path2) =
-            FSEditCreateSymbolicLink (insideToOutside path1) (insideToOutside path2)
-        mapPath (FSEditDeleteNonDirectory path) = FSEditDeleteNonDirectory $ insideToOutside path
-        mapPath (FSEditDeleteEmptyDirectory path) = FSEditDeleteEmptyDirectory $ insideToOutside path
-        mapPath (FSEditRenameItem path1 path2) = FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
-        push' :: [FSEdit] -> StateT Bool (ApplyStack tt IO) (Maybe (EditSource -> StateT Bool (ApplyStack tt IO) ()))
-        push' edits = do
-            pushFirst
-            maction <- lift $ push $ fmap mapPath edits
-            return $ fmap (fmap lift) maction
-        in MkRunnable1 (cmAppend (discardingStateTransStackRunner create) trun) (MkAnObject rd' push')
+                    lift $ rd $ FSReadDirectory $ insideToOutside path
+                rd' (FSReadItem path) = do
+                    pushFirst
+                    lift $ rd $ FSReadItem $ insideToOutside path
+                rd' (FSReadSymbolicLink path) =
+                    case transStackDict @MonadIO @tt @IO of
+                        Dict -> do
+                            pushFirst
+                            mspath <- lift $ rd $ FSReadSymbolicLink $ insideToOutside path
+                            return $
+                                case mspath of
+                                    Nothing -> Nothing
+                                    Just spath ->
+                                        Just $
+                                        case outsideToInside spath of
+                                            Just ipath -> ipath
+                                            Nothing -> ""
+                mapPath :: FSEdit -> FSEdit
+                mapPath (FSEditCreateDirectory path) = FSEditCreateDirectory $ insideToOutside path
+                mapPath (FSEditCreateFile path bs) = FSEditCreateFile (insideToOutside path) bs
+                mapPath (FSEditCreateSymbolicLink path1 path2) =
+                    FSEditCreateSymbolicLink (insideToOutside path1) (insideToOutside path2)
+                mapPath (FSEditDeleteNonDirectory path) = FSEditDeleteNonDirectory $ insideToOutside path
+                mapPath (FSEditDeleteEmptyDirectory path) = FSEditDeleteEmptyDirectory $ insideToOutside path
+                mapPath (FSEditRenameItem path1 path2) =
+                    FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
+                push' ::
+                       [FSEdit]
+                    -> StateT Bool (ApplyStack tt IO) (Maybe (EditSource -> StateT Bool (ApplyStack tt IO) ()))
+                push' edits = do
+                    pushFirst
+                    maction <- lift $ push $ fmap mapPath edits
+                    return $ fmap (fmap lift) maction
+                in MkResource1
+                       (combineIndependentResourceRunners
+                            (discardingStateResourceRunner (hashOpenWitness subdirCreateWitness dir) create)
+                            rr) $
+                   MkAnObject rd' push'

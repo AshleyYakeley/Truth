@@ -1,19 +1,23 @@
 main: init: "ABC"
-lens: init: "B"
+sect: init: "B"
 var: "ABC"
 main: runObject
 main: push [section 1+0 "P"]
 main: push succeeded
 main: receive [section 1+0 "P"]
 main: receive "APBC"
-lens: receive [section 0+0 "P"]
-lens: receive "PB"
+lens: +update: section 1+0 "P"
+lens: -update: [section 0+0 "P"]
+sect: receive [section 0+0 "P"]
+sect: receive "PB"
 var: "APBC"
 main: runObject
 main: push [section 2+0 "Q"]
 main: push succeeded
 main: receive [section 2+0 "Q"]
 main: receive "APQBC"
-lens: receive [section 1+0 "Q"]
-lens: receive "PQB"
+lens: +update: section 2+0 "Q"
+lens: -update: [section 1+0 "Q"]
+sect: receive [section 1+0 "Q"]
+sect: receive "PQB"
 var: "APQBC"

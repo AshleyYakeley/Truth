@@ -21,7 +21,7 @@ mapWindowSpec lens (MkWindowSpec cba title mmbar content) = let
            cba
            (title . ef)
            ((fmap $ fmap $ \efmar -> funcUpdateFunction (fmap $ mapMenuEntry ef) . efmar . ef) mmbar)
-           (mapUpdateUISpec lens content)
+           (mapUpdateUISpec (return lens) content)
 
 data UIWindow = MkUIWindow
     { uiWindowHide :: IO ()

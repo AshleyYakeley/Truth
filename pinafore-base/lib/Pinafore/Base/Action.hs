@@ -11,6 +11,7 @@ module Pinafore.Base.Action
     , pinaforeUndoActions
     , pinaforeActionKnow
     , knowPinaforeAction
+    , pinaforeLiftLifeCycleIO
     ) where
 
 import Pinafore.Base.Know
@@ -54,15 +55,15 @@ unPinaforeAction acUIToolkit acSubscriber acUndoActions (MkPinaforeAction action
 
 pinaforeFunctionValueGet :: PinaforeFunctionValue baseupdate t -> PinaforeAction baseupdate t
 pinaforeFunctionValueGet fval = do
-    MkRunnable1 trun MkAnObject {..} <- pinaforeActionObject
-    runMonoTransStackRunner @IO trun $ \run -> liftIO $ run $ updateFunctionRead fval objRead ReadWhole
+    MkResource1 rr MkAnObject {..} <- pinaforeActionObject
+    runResourceRunnerWith rr $ \run -> liftIO $ run $ ufGet fval objRead ReadWhole
 
 pinaforeLensPush :: PinaforeLensValue baseupdate update -> [UpdateEdit update] -> PinaforeAction baseupdate ()
 pinaforeLensPush lens edits = do
     obj <- pinaforeActionObject
     case mapObject lens obj of
-        MkRunnable1 trun MkAnObject {..} ->
-            runMonoTransStackRunner @IO trun $ \run -> do
+        MkResource1 rr' MkAnObject {..} ->
+            runResourceRunnerWith rr' $ \run -> do
                 ok <- liftIO $ run $ pushEdit noEditSource $ objEdit edits
                 if ok
                     then return ()
@@ -73,11 +74,18 @@ data PinaforeWindow = MkPinaforeWindow
     , pwWindow :: UIWindow
     }
 
+-- | Closing will be done at end of session.
+pinaforeLiftLifeCycleIO :: LifeCycleIO a -> PinaforeAction baseupdate a
+pinaforeLiftLifeCycleIO la = do
+    MkActionContext {..} <- MkPinaforeAction ask
+    let MkUIToolkit {..} = acUIToolkit
+    liftIO $ uitUnliftLifeCycle la
+
 pinaforeNewWindow :: WindowSpec baseupdate -> PinaforeAction baseupdate PinaforeWindow
 pinaforeNewWindow uiw = do
     MkActionContext {..} <- MkPinaforeAction ask
     let MkUIToolkit {..} = acUIToolkit
-    (pwWindow, pwClose) <- liftIO $ uitUnliftLifeCycle $ lifeCycleEarlyCloser $ uitCreateWindow acSubscriber uiw
+    (pwWindow, pwClose) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ uitCreateWindow acSubscriber uiw
     return $ MkPinaforeWindow {..}
 
 pinaforeExit :: PinaforeAction baseupdate ()

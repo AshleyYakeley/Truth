@@ -14,23 +14,27 @@ import Truth.Core.Resource
 import Truth.Core.Types
 
 noneTupleObject :: Object (TupleUpdateEdit (ListElementType '[]))
-noneTupleObject = MkRunnable1 cmEmpty noneTupleAObject
+noneTupleObject = MkResource1 nilResourceRunner noneTupleAObject
 
 consTupleObjects ::
        forall update updates.
        Object (UpdateEdit update)
     -> Object (TupleUpdateEdit (ListElementType updates))
     -> Object (TupleUpdateEdit (ListElementType (update : updates)))
-consTupleObjects (MkRunnable1 (runA :: TransStackRunner tta) anobjA) (MkRunnable1 (runB :: TransStackRunner ttb) anobjB) =
-    case transStackRunnerUnliftAllDict runA of
-        Dict ->
-            case transStackRunnerUnliftAllDict runB of
-                Dict ->
-                    case concatMonadTransStackUnliftAllDict @tta @ttb of
-                        Dict -> let
-                            runAB :: TransStackRunner (Concat tta ttb)
-                            runAB = cmAppend runA runB
-                            in MkRunnable1 runAB $ consTupleAObjects anobjA anobjB
+consTupleObjects =
+    joinResource1 $ \(MkAnObject readA editA :: AnObject tt _) (MkAnObject readB editB) ->
+        case transStackDict @MonadIO @tt @IO of
+            Dict -> let
+                readAB :: MutableRead (ApplyStack tt IO) (TupleUpdateReader (ListElementType (update : updates)))
+                readAB (MkTupleUpdateReader FirstElementType r) = readA r
+                readAB (MkTupleUpdateReader (RestElementType sel) r) = readB $ MkTupleUpdateReader sel r
+                editAB ::
+                       [TupleUpdateEdit (ListElementType (update : updates))]
+                    -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+                editAB edits = let
+                    (eas, ebs) = partitionListTupleUpdateEdits edits
+                    in (liftA2 $ liftA2 $ liftA2 (>>)) (editA eas) (editB ebs)
+                in MkAnObject readAB editAB
 
 partitionListTupleUpdateEdits ::
        forall update updates.
@@ -52,34 +56,6 @@ noneTupleAObject = let
     objEdit [] = return $ Just $ \_ -> return ()
     objEdit (MkTupleUpdateEdit sel _:_) = case sel of {}
     in MkAnObject {..}
-
-consTupleAObjects ::
-       forall tta ttb update updates. (MonadTransStackUnliftAll tta, MonadTransStackUnliftAll ttb)
-    => AnObject tta (UpdateEdit update)
-    -> AnObject ttb (TupleUpdateEdit (ListElementType updates))
-    -> AnObject (Concat tta ttb) (TupleUpdateEdit (ListElementType (update : updates)))
-consTupleAObjects (MkAnObject readA editA) (MkAnObject readB editB) =
-    case concatMonadTransStackUnliftAllDict @tta @ttb of
-        Dict ->
-            case transStackDict @MonadIO @(Concat tta ttb) @IO of
-                Dict -> let
-                    readAB ::
-                           MutableRead (ApplyStack (Concat tta ttb) IO) (TupleUpdateReader (ListElementType (update : updates)))
-                    readAB (MkTupleUpdateReader FirstElementType r) = concatFstMFunction @tta @ttb @IO $ readA r
-                    readAB (MkTupleUpdateReader (RestElementType sel) r) =
-                        concatSndMFunction @tta @ttb @IO $ readB $ MkTupleUpdateReader sel r
-                    editAB ::
-                           [TupleUpdateEdit (ListElementType (update : updates))]
-                        -> ApplyStack (Concat tta ttb) IO (Maybe (EditSource -> ApplyStack (Concat tta ttb) IO ()))
-                    editAB edits = let
-                        (eas, ebs) = partitionListTupleUpdateEdits edits
-                        in liftA2
-                               (liftA2 $
-                                liftA2 $ \mau mbu ->
-                                    (>>) (concatFstMFunction @tta @ttb @IO mau) (concatSndMFunction @tta @ttb @IO mbu))
-                               (concatFstMFunction @tta @ttb @IO $ editA eas)
-                               (concatSndMFunction @tta @ttb @IO $ editB ebs)
-                    in MkAnObject readAB editAB
 
 tupleListObjectM ::
        forall m updates. Applicative m

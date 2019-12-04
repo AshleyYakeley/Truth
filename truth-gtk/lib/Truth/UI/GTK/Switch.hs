@@ -20,11 +20,12 @@ switchView specfunc = do
                 lcContainPackStart True box widget
                 #show widget
     firstvs <- do
-        firstspec <- cvMapEdit (readOnlyEditLens specfunc) $ cvLiftView $ viewObjectRead $ \_ mr -> mr ReadWhole
+        firstspec <-
+            cvMapEdit (return $ readOnlyEditLens specfunc) $ cvLiftView $ viewObjectRead $ \_ mr -> mr ReadWhole
         cvLiftView $ getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic @(ViewState sel) firstvs $ \object edits -> do
-        whupdates <- liftIO $ objectMapUpdates specfunc object edits
+    cvDynamic @(ViewState sel) firstvs $ \object updates -> do
+        whupdates <- liftIO $ objectMapUpdates specfunc object updates
         for_ (lastWholeUpdate whupdates) $ \spec -> do
             oldvs <- get
             liftIO $ closeDynamicView oldvs

@@ -3,7 +3,6 @@ module Truth.Core.Types.OneWhole where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
-import Truth.Core.Resource
 import Truth.Core.Types.OneEdit
 import Truth.Core.Types.OneReader
 import Truth.Core.Types.Sum
@@ -27,15 +26,14 @@ oneWholeLiftUpdateFunction = sumWholeLiftUpdateFunction . oneLiftUpdateFunction
 
 -- | suitable for Results; trying to put a failure code will be rejected
 oneWholeLiftAnEditLens ::
-       forall tt f updateA updateB.
-       ( MonadTransStackUnliftAll tt
-       , MonadOne f
+       forall f updateA updateB.
+       ( MonadOne f
        , FullSubjectReader (UpdateReader updateA)
        , ApplicableEdit (UpdateEdit updateA)
        , FullEdit (UpdateEdit updateB)
        )
-    => AnEditLens tt updateA updateB
-    -> AnEditLens tt (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
+    => EditLens updateA updateB
+    -> EditLens (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
 oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLens alens
   where
     reshuffle :: forall a. f (Maybe a) -> Maybe (f a)
@@ -48,21 +46,16 @@ oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLe
            forall m. MonadIO m
         => f (UpdateSubject updateB)
         -> MutableRead m (OneReader f (UpdateReader updateA))
-        -> ApplyStack tt m (Maybe (f (UpdateSubject updateA)))
+        -> m (Maybe (f (UpdateSubject updateA)))
     pushback fb mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict ->
-                case retrieveOne fb of
-                    FailureResult (MkLimit fx) -> return $ Just fx
-                    SuccessResult b ->
-                        fmap reshuffle $
-                        transStackComposeOne @tt @f @m $
-                        case transStackDict @MonadIO @tt @(ComposeM f m) of
-                            Dict -> do
-                                editbs <- getReplaceEditsFromSubject b
-                                meditas <- elPutEdits alens editbs $ oneReadFunctionF mr
-                                for meditas $ \editas ->
-                                    stackLift @tt $ mutableReadToSubject $ applyEdits editas $ oneReadFunctionF mr
+        case retrieveOne fb of
+            FailureResult (MkLimit fx) -> return $ Just fx
+            SuccessResult b ->
+                fmap reshuffle $
+                getComposeM $ do
+                    editbs <- getReplaceEditsFromSubject b
+                    meditas <- elPutEdits alens editbs $ oneReadFunctionF mr
+                    for meditas $ \editas -> mutableReadToSubject $ applyEdits editas $ oneReadFunctionF mr
 
 -- | suitable for Results; trying to put a failure code will be rejected
 oneWholeLiftEditLens ::
@@ -74,9 +67,7 @@ oneWholeLiftEditLens ::
        )
     => EditLens updateA updateB
     -> EditLens (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
-oneWholeLiftEditLens (MkRunnable2 trun lens) =
-    case transStackRunnerUnliftAllDict trun of
-        Dict -> MkRunnable2 trun $ oneWholeLiftAnEditLens lens
+oneWholeLiftEditLens = oneWholeLiftAnEditLens
 
 mustExistOneEditLens ::
        forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))
@@ -101,12 +92,12 @@ mustExistOneEditLens err = let
                 return $ fmap editUpdate edits
             FailureResult _ -> liftIO $ fail $ err ++ ": deleted"
     ufUpdate (SumUpdateRight (MkOneUpdate update)) _ = return [update]
-    elFunction :: AnUpdateFunction '[] (OneWholeUpdate f update) update
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (OneWholeUpdate f update) update
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
         -> MutableRead m (OneReader f (UpdateReader update))
         -> m (Maybe [OneWholeEdit f (UpdateEdit update)])
     elPutEdits edits _ = return $ Just $ fmap (SumEditRight . MkOneEdit) edits
-    in MkRunnable2 cmEmpty MkAnEditLens {..}
+    in MkEditLens {..}

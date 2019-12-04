@@ -10,6 +10,33 @@ import Test.Tasty
 import Test.Tasty.Golden
 import Truth.Core
 
+debugLens ::
+       forall updateA updateB.
+       (Show updateA, Show updateB, Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle)
+    => String
+    -> EditLens updateA updateB
+    -> EditLens updateA updateB
+debugLens name (MkEditLens (MkUpdateFunction g u) pe) = let
+    u' :: forall m. MonadIO m
+       => updateA
+       -> MutableRead m (UpdateReader updateA)
+       -> m [updateB]
+    u' ua mr = do
+        liftIO $ hPutStrLn ?handle $ name ++ ": +update: " ++ show ua
+        ubs <- u ua mr
+        liftIO $ hPutStrLn ?handle $ name ++ ": -update: " ++ show ubs
+        return ubs
+    pe' :: forall m. MonadIO m
+        => [UpdateEdit updateB]
+        -> MutableRead m (UpdateReader updateA)
+        -> m (Maybe [UpdateEdit updateA])
+    pe' ebs mr = do
+        liftIO $ hPutStrLn ?handle $ name ++ ": +put: " ++ show ebs
+        meas <- pe ebs mr
+        liftIO $ hPutStrLn ?handle $ name ++ ": -put: " ++ show meas
+        return meas
+    in MkEditLens (MkUpdateFunction g u') pe'
+
 goldenTest :: TestName -> FilePath -> FilePath -> ((?handle :: Handle) => IO ()) -> TestTree
 goldenTest name refPath outPath call =
     goldenVsFile name refPath outPath $
@@ -21,7 +48,8 @@ goldenTest' :: TestName -> ((?handle :: Handle) => IO ()) -> TestTree
 goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("test/golden/" ++ name ++ ".out") call
 
 data SubscribeContext edit = MkSubscribeContext
-    { subDoEdits :: [[edit]] -> LifeCycleIO ()
+    { subGet :: LifeCycleIO (EditSubject edit)
+    , subDoEdits :: [[edit]] -> LifeCycleIO ()
     , subDontEdits :: [[edit]] -> LifeCycleIO ()
     }
 
@@ -41,7 +69,7 @@ testUpdateFunction = let
         liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
         liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
         return [MkWholeReaderUpdate s]
-    in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
+    in MkUpdateFunction {..}
 
 testUpdateObject :: TestTree
 testUpdateObject =
@@ -58,9 +86,9 @@ testUpdateObject =
             recv' ee _ = for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv' update edit: " <> show s
         runLifeCycle $ do
             om' <- shareObjectMaker om
-            (MkRunnable1 trun MkAnObject {..}, ()) <- om' recv
+            (MkResource1 trun MkAnObject {..}, ()) <- om' recv
             (_obj', ()) <- mapObjectMaker lens om' recv'
-            runMonoTransStackRunner @IO trun $ \run ->
+            runResourceRunnerWith trun $ \run ->
                 liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit [MkWholeReaderEdit "new"]
             return ()
 
@@ -79,21 +107,29 @@ testOutputEditor name call = let
     outputLn :: MonadIO m => String -> m ()
     outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
     editorInit :: Object (UpdateEdit update) -> LifeCycleIO ()
-    editorInit (MkRunnable1 trun (MkAnObject r _)) =
-        runMonoTransStackRunner @IO trun $ \run ->
+    editorInit (MkResource1 trun (MkAnObject r _)) =
+        runResourceRunnerWith trun $ \run ->
             liftIO $ do
                 val <- run $ mutableReadToSubject r
                 outputLn $ "init: " ++ show val
                 return ()
     editorUpdate :: () -> Object (UpdateEdit update) -> [update] -> EditContext -> IO ()
-    editorUpdate () (MkRunnable1 trun (MkAnObject mr _)) edits _ =
-        runMonoTransStackRunner @IO trun $ \run -> do
+    editorUpdate () (MkResource1 trun (MkAnObject mr _)) edits _ =
+        runResourceRunnerWith trun $ \run -> do
             outputLn $ "receive " ++ show edits
             val <- run $ mutableReadToSubject mr
             outputLn $ "receive " ++ show val
     editorDo :: () -> Object (UpdateEdit update) -> LifeCycleIO ()
-    editorDo () (MkRunnable1 trun (MkAnObject _ push)) =
-        runMonoTransStackRunner @IO trun $ \run -> let
+    editorDo () (MkResource1 trun (MkAnObject mr push)) =
+        runResourceRunnerWith trun $ \run -> let
+            subGet :: LifeCycleIO (UpdateSubject update)
+            subGet =
+                liftIO $ do
+                    outputLn "runObject"
+                    run $ do
+                        val <- mutableReadToSubject mr
+                        outputLn $ "get " ++ show val
+                        return val
             subDontEdits :: [[UpdateEdit update]] -> LifeCycleIO ()
             subDontEdits editss =
                 liftIO $ do
@@ -131,10 +167,11 @@ testSubscription ::
 testSubscription name initial call =
     goldenTest' name $
     runLifeCycle $ do
+        iow <- liftIO $ newIOWitness
         var <- liftIO $ newMVar initial
         let
             varObj :: Object (WholeEdit (UpdateSubject update))
-            varObj = mvarObject var $ \_ -> True
+            varObj = mvarObject iow var $ \_ -> True
             editObj :: Object (UpdateEdit update)
             editObj = convertObject varObj
         sub <- makeReflectingSubscriber SynchronousUpdateTiming editObj
@@ -204,119 +241,112 @@ testString2 =
 
 testSharedString1 :: TestTree
 testSharedString1 =
-    testSubscription @(StringUpdate String) "SharedString1" "ABCDE" $ \mainSub -> do
-        testLens <- liftIO $ stringSectionLens (startEndRun 1 4)
+    testSubscription @(StringUpdate String) "SharedString1" "ABCDE" $ \mainSub ->
         subscribeEditor mainSub $
-            testOutputEditor "main" $ \MkSubscribeContext {..} -> do
-                lensSub <- mapSubscriber testLens mainSub
-                subscribeEditor lensSub $
-                    testOutputEditor "lens" $ \_ -> do
-                        ?showVar
-                        subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]]
-                        ?showVar
-                        subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"]]
-                        ?showVar
-                        subDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]]
-                        ?showVar
+        testOutputEditor "main" $ \MkSubscribeContext {..} -> do
+            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 4)) mainSub
+            subscribeEditor lensSub $
+                testOutputEditor "sect" $ \_ -> do
+                    ?showVar
+                    subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]]
+                    ?showVar
+                    subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"]]
+                    ?showVar
+                    subDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]]
+                    ?showVar
 
 testSharedString2 :: TestTree
 testSharedString2 =
-    testSubscription @(StringUpdate String) "SharedString2" "ABC" $ \mainSub -> do
-        testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
+    testSubscription @(StringUpdate String) "SharedString2" "ABC" $ \mainSub ->
         subscribeEditor mainSub $
-            testOutputEditor "main" $ \_ -> do
-                lensSub <- mapSubscriber testLens mainSub
-                subscribeEditor lensSub $
-                    testOutputEditor "lens" $ \MkSubscribeContext {..} -> do
-                        ?showVar
-                        subDoEdits [[StringReplaceSection (startEndRun 0 0) "P"]]
-                        ?showVar
-                        subDoEdits [[StringReplaceSection (startEndRun 0 0) "Q"]]
-                        ?showVar
+        testOutputEditor "main" $ \_ -> do
+            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+            subscribeEditor lensSub $
+                testOutputEditor "sect" $ \MkSubscribeContext {..} -> do
+                    ?showVar
+                    subDoEdits [[StringReplaceSection (startEndRun 0 0) "P"]]
+                    ?showVar
+                    subDoEdits [[StringReplaceSection (startEndRun 0 0) "Q"]]
+                    ?showVar
 
 testSharedString3 :: TestTree
 testSharedString3 =
-    testSubscription @(StringUpdate String) "SharedString3" "ABC" $ \mainSub -> do
-        testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
+    testSubscription @(StringUpdate String) "SharedString3" "ABC" $ \mainSub ->
         subscribeEditor mainSub $
-            testOutputEditor "main" $ \MkSubscribeContext {..} -> do
-                lensSub <- mapSubscriber testLens mainSub
-                subscribeEditor lensSub $ pure ()
-                subscribeEditor lensSub $
-                    testOutputEditor "lens" $ \_ -> do
-                        ?showVar
-                        subDoEdits [[StringReplaceSection (startEndRun 1 1) "P"]]
-                        ?showVar
-                        subDoEdits [[StringReplaceSection (startEndRun 2 2) "Q"]]
-                        ?showVar
+        testOutputEditor "main" $ \MkSubscribeContext {..} -> do
+            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+            subscribeEditor lensSub $ pure ()
+            subscribeEditor lensSub $
+                testOutputEditor "sect" $ \_ -> do
+                    ?showVar
+                    subDoEdits [[StringReplaceSection (startEndRun 1 1) "P"]]
+                    ?showVar
+                    subDoEdits [[StringReplaceSection (startEndRun 2 2) "Q"]]
+                    ?showVar
 
 testSharedString4 :: TestTree
 testSharedString4 =
-    testSubscription @(StringUpdate String) "SharedString4" "ABC" $ \mainSub -> do
-        testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
+    testSubscription @(StringUpdate String) "SharedString4" "ABC" $ \mainSub ->
         subscribeEditor mainSub $
-            testOutputEditor "main" $ \main -> do
-                lensSub <- mapSubscriber testLens mainSub
-                subscribeEditor lensSub $ pure ()
-                subscribeEditor lensSub $
-                    testOutputEditor "lens" $ \sect -> do
-                        ?showVar
-                        subDoEdits main [[StringReplaceSection (startEndRun 0 0) "P"]]
-                        ?showVar
-                        subDoEdits sect [[StringReplaceSection (startEndRun 0 0) "Q"]]
-                        ?showVar
+        testOutputEditor "main" $ \main -> do
+            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+            subscribeEditor lensSub $ pure ()
+            subscribeEditor lensSub $
+                testOutputEditor "sect" $ \sect -> do
+                    ?showVar
+                    subDoEdits main [[StringReplaceSection (startEndRun 0 0) "P"]]
+                    _ <- subGet sect
+                    ?showVar
+                    subDoEdits sect [[StringReplaceSection (startEndRun 0 0) "Q"]]
+                    ?showVar
 
 testSharedString5 :: TestTree
 testSharedString5 =
-    testSubscription @(StringUpdate String) "SharedString5" "ABCD" $ \mainSub -> do
-        testLens <- liftIO $ stringSectionLens (startEndRun 1 3)
+    testSubscription @(StringUpdate String) "SharedString5" "ABCD" $ \mainSub ->
         subscribeEditor mainSub $
-            testOutputEditor "main" $ \main -> do
-                lensSub <- mapSubscriber testLens mainSub
-                subscribeEditor lensSub $
-                    testOutputEditor "lens" $ \_sect -> do
-                        ?showVar
-                        subDoEdits main [[StringReplaceSection (startEndRun 2 4) ""]]
-                        ?showVar
+        testOutputEditor "main" $ \main -> do
+            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+            subscribeEditor lensSub $
+                testOutputEditor "sect" $ \_sect -> do
+                    ?showVar
+                    subDoEdits main [[StringReplaceSection (startEndRun 2 4) ""]]
+                    ?showVar
 
 testSharedString6 :: TestTree
 testSharedString6 =
-    testSubscription @(StringUpdate String) "SharedString6" "ABCD" $ \mainSub -> do
-        testLens <- liftIO $ stringSectionLens (startEndRun 1 3)
+    testSubscription @(StringUpdate String) "SharedString6" "ABCD" $ \mainSub ->
         subscribeEditor mainSub $
-            testOutputEditor "main" $ \main -> do
-                lensSub <- mapSubscriber testLens mainSub
-                subscribeEditor lensSub $
-                    testOutputEditor "lens" $ \_sect -> do
-                        ?showVar
-                        subDoEdits main [[StringReplaceSection (startEndRun 3 4) ""]]
-                        ?showVar
+        testOutputEditor "main" $ \main -> do
+            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+            subscribeEditor lensSub $
+                testOutputEditor "sect" $ \_sect -> do
+                    ?showVar
+                    subDoEdits main [[StringReplaceSection (startEndRun 3 4) ""]]
+                    ?showVar
 
 testSharedString7 :: TestTree
 testSharedString7 =
-    testSubscription @(StringUpdate String) "SharedString7" "ABCD" $ \mainSub -> do
-        testLens <- liftIO $ stringSectionLens (startEndRun 1 3)
+    testSubscription @(StringUpdate String) "SharedString7" "ABCD" $ \mainSub ->
         subscribeEditor mainSub $
-            testOutputEditor "main" $ \main -> do
-                lensSub <- mapSubscriber testLens mainSub
-                subscribeEditor lensSub $
-                    testOutputEditor "lens" $ \_sect -> do
-                        ?showVar
-                        subDoEdits main [[StringReplaceSection (startEndRun 2 4) "PQR"]]
-                        ?showVar
+        testOutputEditor "main" $ \main -> do
+            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+            subscribeEditor lensSub $
+                testOutputEditor "sect" $ \_sect -> do
+                    ?showVar
+                    subDoEdits main [[StringReplaceSection (startEndRun 2 4) "PQR"]]
+                    ?showVar
 
 testSharedString7a :: TestTree
 testSharedString7a =
-    testSubscription @(StringUpdate String) "SharedString7a" "AB" $ \mainSub -> do
-        testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
+    testSubscription @(StringUpdate String) "SharedString7a" "AB" $ \mainSub ->
         subscribeEditor mainSub $
-            testOutputEditor "main" $ \main -> do
-                lensSub <- mapSubscriber testLens mainSub
-                subscribeEditor lensSub $
-                    testOutputEditor "lens" $ \_sect -> do
-                        ?showVar
-                        subDoEdits main [[StringReplaceSection (startEndRun 2 2) "PQR"]]
-                        ?showVar
+        testOutputEditor "main" $ \main -> do
+            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+            subscribeEditor lensSub $
+                testOutputEditor "sect" $ \_sect -> do
+                    ?showVar
+                    subDoEdits main [[StringReplaceSection (startEndRun 2 2) "PQR"]]
+                    ?showVar
 
 testSubscribe :: TestTree
 testSubscribe =

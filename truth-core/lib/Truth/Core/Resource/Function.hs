@@ -54,6 +54,42 @@ sndTransListFunction = let
                     Dict -> stackLiftWithUnlift @tt1
     in MkTransListFunction {..}
 
+liftTransListFunction ::
+       forall t tt. (MonadTransUnliftAll t, MonadTransStackUnliftAll tt)
+    => TransListFunction tt (t ': tt)
+liftTransListFunction = let
+    tlfFunction ::
+           forall m. Monad m
+        => Proxy m
+        -> MFunction (ApplyStack tt m) (ApplyStack (t ': tt) m)
+    tlfFunction _ =
+        case transStackDict @Monad @tt @m of
+            Dict -> lift
+    tlfBackFunction ::
+           forall m. MonadUnliftIO m
+        => Proxy m
+        -> MBackFunction (ApplyStack tt m) (ApplyStack (t ': tt) m)
+    tlfBackFunction _ =
+        case transStackDict @MonadUnliftIO @tt @m of
+            Dict -> liftWithUnlift
+    in MkTransListFunction {..}
+
+emptyTransListFunction ::
+       forall tt. MonadTransStackUnliftAll tt
+    => TransListFunction '[] tt
+emptyTransListFunction = let
+    tlfFunction ::
+           forall m. Monad m
+        => Proxy m
+        -> MFunction m (ApplyStack tt m)
+    tlfFunction _ = stackLift @tt @m
+    tlfBackFunction ::
+           forall m. MonadUnliftIO m
+        => Proxy m
+        -> MBackFunction m (ApplyStack tt m)
+    tlfBackFunction _ = stackLiftWithUnlift @tt @m
+    in MkTransListFunction {..}
+
 consTransListFunction ::
        forall tta ttb t. MonadTransSemiTunnel t
     => ListType (Compose Dict (MonadTransConstraint Monad)) tta
@@ -163,4 +199,18 @@ contractTransListFunction wtt = let
     tlfBackFunction _ =
         case witTransStackDict @Monad @tt @m wtt of
             Dict -> contractTBack
+    in MkTransListFunction {..}
+
+stackTransListFunction :: forall tt. TransListFunction tt '[ StackT tt]
+stackTransListFunction = let
+    tlfFunction ::
+           forall m. Monad m
+        => Proxy m
+        -> MFunction (ApplyStack tt m) (StackT tt m)
+    tlfFunction _ = MkStackT
+    tlfBackFunction ::
+           forall m. MonadUnliftIO m
+        => Proxy m
+        -> MBackFunction (ApplyStack tt m) (StackT tt m)
+    tlfBackFunction _ call = MkStackT $ call unStackT
     in MkTransListFunction {..}

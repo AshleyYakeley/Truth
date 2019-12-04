@@ -1,13 +1,20 @@
-module Truth.World.File where
+module Truth.World.File
+    ( fileObject
+    ) where
 
 import Shapes
 import Truth.Core
 
+fileWitness :: IOWitness (ReaderT Handle)
+fileWitness = $(iowitness [t|ReaderT Handle|])
+
 fileObject :: FilePath -> Object ByteStringEdit
 fileObject path = let
-    objRun :: TransStackRunner '[ ReaderT Handle]
+    iow :: IOWitness (ReaderT Handle)
+    iow = hashOpenWitness fileWitness path
+    objRun :: ResourceRunner '[ ReaderT Handle]
     objRun =
-        singleTransStackRunner $ \rt -> do
+        mkResourceRunner iow $ \rt -> do
             h <- liftIO $ openBinaryFile path ReadWriteMode
             r <- runReaderT rt h
             liftIO $ hClose h
@@ -35,4 +42,4 @@ fileObject path = let
         lift $ hPut h bs
     objEdit :: [ByteStringEdit] -> ReaderT Handle IO (Maybe (EditSource -> ReaderT Handle IO ()))
     objEdit = singleAlwaysEdit objOneEdit
-    in MkRunnable1 objRun MkAnObject {..}
+    in MkResource1 objRun MkAnObject {..}

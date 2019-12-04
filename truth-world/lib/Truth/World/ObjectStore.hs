@@ -62,12 +62,12 @@ singleObjectUpdateFunction = let
     ufUpdate _ mr = do
         mo <- mr ReadSingleObjectStore
         return [MkWholeReaderUpdate mo]
-    in MkRunnable2 cmEmpty $ MkAnUpdateFunction {..}
+    in MkUpdateFunction {..}
 
 directoryObjectStore ::
        forall name. Object FSEdit -> (name -> String) -> Object (UpdateEdit (ObjectStoreUpdate name ByteStringEdit))
-directoryObjectStore (MkRunnable1 (trun :: TransStackRunner tt) (MkAnObject rd push)) nameStr =
-    runMonoTransStackRunner @IO trun $ \_ -> let
+directoryObjectStore (MkResource1 (trun :: ResourceRunner tt) (MkAnObject rd push)) nameStr =
+    runResourceRunnerWith trun $ \_ -> let
         undoName :: String -> Int -> FilePath
         undoName name i = "undo/" ++ name ++ show i
         findUndoCode :: String -> Int -> ApplyStack tt IO Int
@@ -126,4 +126,4 @@ directoryObjectStore (MkRunnable1 (trun :: TransStackRunner tt) (MkAnObject rd p
                             SingleObjectRecover code ->
                                 pushOrFail ("couldn't rename FS item " <> show name) esrc $
                                 push [FSEditRenameItem (undoName name code) name]
-        in MkRunnable1 trun MkAnObject {..}
+        in MkResource1 trun MkAnObject {..}

@@ -18,7 +18,6 @@ library:
       - Truth.Core.Sequence
       - Truth.Core.Resource.Function
       - Truth.Core.Resource.SingleRunner
-      - Truth.Core.Resource.Runner
       - Truth.Core.Resource.ResourceRunner
       - Truth.Core.Resource.Runnable
       - Truth.Core.Resource
@@ -37,7 +36,7 @@ library:
       - Truth.Core.Edit
       - Truth.Core.Types.None
       - Truth.Core.Types.Whole
-      - Truth.Core.Types.WholeAnUpdateFunction
+      - Truth.Core.Types.WholeUpdateFunction
       - Truth.Core.Types.Unit
       - Truth.Core.Types.Sum
       - Truth.Core.Types.SumWhole

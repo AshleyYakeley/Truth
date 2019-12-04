@@ -151,7 +151,7 @@ interactLoop inh outh echo = do
             if echo
                 then liftIO $ hPutStr outh inputstr
                 else return ()
-            liftIOWithUnlift $ \unlift ->
+            liftIOWithUnlift $ \unlift -> do
                 catches
                     (unlift $ do
                          p <- interactParse $ pack inputstr

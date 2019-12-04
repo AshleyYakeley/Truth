@@ -4,6 +4,7 @@ module Truth.Core.UI.CreateView
     , vsFirstAspect
     , viewCreateView
     , cvLiftView
+    , cvReceiveSubscriberUpdates
     , cvReceiveIOUpdates
     , cvReceiveUpdates
     , cvReceiveUpdate
@@ -17,6 +18,8 @@ module Truth.Core.UI.CreateView
     , AnyCreateView(..)
     , subscribeView
     , tupleCreateView
+    , cvSubscriber
+    , cvMapSubscriber
     ) where
 
 import Data.IORef
@@ -55,9 +58,9 @@ voMapSelection f (MkViewOutput asp) = MkViewOutput $ mapSelectionAspect f asp
 voNoAspect :: ViewOutput sela -> ViewOutput selb
 voNoAspect (MkViewOutput _) = MkViewOutput noAspect
 
-newtype CreateView sel update a =
-    MkCreateView (ReaderT (ViewContext sel update) (WriterT (ViewOutput sel) LifeCycleIO) a)
-    deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO)
+newtype CreateView sel update a = MkCreateView
+    { unCreateView :: ReaderT (ViewContext sel update) (WriterT (ViewOutput sel) LifeCycleIO) a
+    } deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO)
 
 type ViewState sel = LifeState IO (ViewOutput sel)
 
@@ -76,30 +79,54 @@ cvViewOutput vo = MkCreateView $ lift $ tell vo
 instance MonadLifeCycleIO (CreateView sel update) where
     liftLifeCycleIO lc = MkCreateView $ lift $ lift lc
 
-cvReceiveIOUpdates :: (Object (UpdateEdit update) -> [update] -> EditSource -> IO ()) -> CreateView sel update ()
-cvReceiveIOUpdates recv = do
+instance MonadUnliftLifeCycleIO (CreateView sel update) where
+    liftLifeCycleIOWithUnlift call =
+        MkCreateView $ liftWithUnlift $ \unliftR -> liftWithUnlift $ \unliftW -> call $ unliftW . unliftR . unCreateView
+
+cvSubscriber :: CreateView sel update (Subscriber update)
+cvSubscriber = MkCreateView $ asks vcSubscriber
+
+cvMapSubscriber :: LifeCycleIO (EditLens updateA updateB) -> CreateView sel updateA (Subscriber updateB)
+cvMapSubscriber getlens = do
+    sub <- cvSubscriber
+    liftLifeCycleIO $ mapSubscriber getlens sub
+
+cvReceiveSubscriberUpdates ::
+       Subscriber update
+    -> (forall m. MonadIO m => MFunction (CreateView sel update') m -> MutableRead m (UpdateReader update) -> m a)
+    -> (a -> Object (UpdateEdit update) -> [update] -> EditSource -> IO ())
+    -> CreateView sel update' a
+cvReceiveSubscriberUpdates (MkResource1 (rr :: _ tt) asub) fstCall recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycleIO lifeCycleMonitor
     withUILock <- MkCreateView $ asks vcWithUILock
-    MkRunnable1 trun asub <- MkCreateView $ asks vcSubscriber
-    liftLifeCycleIO $
-        runMonoTransStackRunner @IO trun $ \run ->
-            remonad run $
-            subscribe asub $ \edits MkEditContext {..} ->
-                withUILock editContextTiming $ do
-                    alive <- monitor
-                    if alive
-                        then recv (MkRunnable1 trun $ subAnObject asub) edits editContextSource
-                        else return ()
+    runResourceRunnerWith rr $ \run ->
+        liftLifeCycleIOWithUnlift $ \unlift ->
+            remonad run $ do
+                a <-
+                    fstCall @(LifeCycleT (ApplyStack tt IO)) (remonad (stackLift @tt) . unlift) $
+                    remonadMutableRead lift $ objRead $ subAnObject asub
+                subscribe asub $ \edits MkEditContext {..} ->
+                    withUILock editContextTiming $ do
+                        alive <- monitor
+                        if alive
+                            then recv a (MkResource1 rr $ subAnObject asub) edits editContextSource
+                            else return ()
+                return a
+
+cvReceiveIOUpdates :: (Object (UpdateEdit update) -> [update] -> EditSource -> IO ()) -> CreateView sel update ()
+cvReceiveIOUpdates recv = do
+    sub <- cvSubscriber
+    cvReceiveSubscriberUpdates sub (\_ _ -> return ()) $ \_ -> recv
 
 cvReceiveUpdates ::
        Maybe EditSource -> (WIOFunction (View sel update) -> ReceiveUpdates update) -> CreateView sel update ()
 cvReceiveUpdates mesrc recv = do
     unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkWMFunction unlift
-    cvReceiveIOUpdates $ \(MkRunnable1 trun (MkAnObject mr _)) edits esrc ->
+    cvReceiveIOUpdates $ \(MkResource1 rr (MkAnObject mr _)) edits esrc ->
         if mesrc == Just esrc
             then return ()
-            else runMonoTransStackRunner @IO trun $ \run -> run $ recv unliftIO mr edits
+            else runResourceRunnerWith rr $ \run -> run $ recv unliftIO mr edits
 
 cvReceiveUpdate ::
        Maybe EditSource
@@ -113,11 +140,11 @@ cvBindUpdateFunction ::
     -> UpdateFunction update (WholeUpdate t)
     -> (t -> View sel update ())
     -> CreateView sel update ()
-cvBindUpdateFunction mesrc ef setf = do
-    initial <- cvLiftView $ viewObjectRead $ \_ mr -> updateFunctionRead ef mr ReadWhole
+cvBindUpdateFunction mesrc auf setf = do
+    initial <- cvLiftView $ viewObjectRead $ \_ mr -> ufGet auf mr ReadWhole
     cvLiftView $ setf initial
     cvReceiveUpdates mesrc $ \(MkWMFunction unlift) ->
-        mapReceiveUpdates ef $ \_ wupdates ->
+        mapReceiveUpdates auf $ \_ wupdates ->
             case lastWholeUpdate wupdates of
                 Just newval -> liftIO $ unlift $ setf newval
                 Nothing -> return ()
@@ -133,13 +160,13 @@ mapWriterOutput f (WriterT maw) = WriterT $ fmap (\(a, w) -> (a, f w)) maw
 
 cvMapEdit ::
        forall sel edita editb a. ()
-    => EditLens edita editb
+    => LifeCycleIO (EditLens edita editb)
     -> CreateView sel editb a
     -> CreateView sel edita a
-cvMapEdit lens (MkCreateView (ReaderT ma)) =
+cvMapEdit getlens (MkCreateView (ReaderT ma)) =
     MkCreateView $
     ReaderT $ \vca -> do
-        vcb <- lift $ vcMapEdit lens vca
+        vcb <- lift $ vcMapEdit getlens vca
         ma vcb
 
 cvAccessAspect ::
@@ -167,7 +194,7 @@ cvWithAspect f = do
     let
         getsel :: Aspect _
         getsel = do
-            asp <- readIORef selref
+            asp <- liftIO $ readIORef selref
             asp
         updatesetsel :: (Aspect _ -> IO ()) -> (Aspect _ -> IO ())
         updatesetsel setsel asp = do
@@ -199,4 +226,5 @@ tupleCreateView ::
     => (forall update. s update -> m (CreateView sel update w))
     -> m (CreateView sel (TupleUpdate s) [w])
 tupleCreateView pickview =
-    fmap sequence $ for tupleAllSelectors $ \(MkAnyW sel) -> fmap (cvMapEdit (tupleEditLens sel)) (pickview sel)
+    fmap sequence $
+    for tupleAllSelectors $ \(MkAnyW sel) -> fmap (cvMapEdit (return $ tupleEditLens sel)) (pickview sel)

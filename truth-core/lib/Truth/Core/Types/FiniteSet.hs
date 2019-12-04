@@ -5,7 +5,6 @@ module Truth.Core.Types.FiniteSet where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
-import Truth.Core.Resource
 import Truth.Core.Types.Function
 import Truth.Core.Types.Key
 import Truth.Core.Types.Lattice
@@ -69,8 +68,8 @@ finiteSetEditLens subj = let
         | key == subj = return [MkWholeReaderUpdate True]
     ufUpdate (KeyUpdateInsertReplace _) _ = return []
     ufUpdate KeyUpdateClear _ = return [MkWholeReaderUpdate False]
-    elFunction :: AnUpdateFunction '[] (FiniteSetUpdate subj) (WholeUpdate Bool)
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (FiniteSetUpdate subj) (WholeUpdate Bool)
+    elFunction = MkUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => WholeEdit Bool
@@ -82,8 +81,8 @@ finiteSetEditLens subj = let
         => [WholeEdit Bool]
         -> MutableRead m (FiniteSetReader subj)
         -> m (Maybe [FiniteSetEdit subj])
-    elPutEdits = elPutEditsFromSimplePutEdit @'[] elPutEdit
-    in MkRunnable2 cmEmpty MkAnEditLens {..}
+    elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
+    in MkEditLens {..}
 
 instance Eq subj => JoinSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
     joinUpdateFunction = let
@@ -146,7 +145,7 @@ instance Eq subj => JoinSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
                     (True, _) -> []
                     (False, True) -> [KeyUpdateClear]
                     (False, False) -> fmap KeyUpdateDelete $ toList $ difference keys2 keys1
-        in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
+        in MkUpdateFunction {..}
 
 instance Eq subj => MeetSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
     meetUpdateFunction = let
@@ -207,7 +206,7 @@ instance Eq subj => MeetSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
                 if null $ keys2 /\ keys1
                     then []
                     else [KeyUpdateClear]
-        in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
+        in MkUpdateFunction {..}
 
 bijectionFiniteSetEditLens :: forall a b. Bijection a b -> EditLens (FiniteSetUpdate a) (FiniteSetUpdate b)
 bijectionFiniteSetEditLens (MkIsomorphism ab ba) = let
@@ -234,15 +233,15 @@ bijectionFiniteSetEditLens (MkIsomorphism ab ba) = let
         -> MutableRead m (FiniteSetReader a)
         -> m [FiniteSetUpdate b]
     ufUpdate ea _ = return $ pure $ mapFiniteSetUpdate ab ea
-    elFunction :: AnUpdateFunction '[] (FiniteSetUpdate a) (FiniteSetUpdate b)
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (FiniteSetUpdate a) (FiniteSetUpdate b)
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [FiniteSetEdit b]
         -> MutableRead m (FiniteSetReader a)
         -> m (Maybe [FiniteSetEdit a])
     elPutEdits ebs _ = return $ Just $ fmap (mapFiniteSetEdit ba) ebs
-    in MkRunnable2 cmEmpty MkAnEditLens {..}
+    in MkEditLens {..}
 
 finiteSetCartesianSumEditLens ::
        forall a b. (Eq a, Eq b)
@@ -277,16 +276,15 @@ finiteSetCartesianSumEditLens = let
     ufUpdate (MkTupleUpdate SelectSecond KeyUpdateClear) mr = do
         vv <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
         for (toList vv) $ \v -> return $ KeyUpdateDelete $ Right v
-    elFunction ::
-           AnUpdateFunction '[] (PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetUpdate (Either a b))
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetUpdate (Either a b))
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [FiniteSetEdit (Either a b)]
         -> MutableRead m (PairUpdateReader (FiniteSetUpdate a) (FiniteSetUpdate b))
         -> m (Maybe [PairUpdateEdit (FiniteSetUpdate a) (FiniteSetUpdate b)])
     elPutEdits =
-        elPutEditsFromSimplePutEdit @'[] $ \case
+        elPutEditsFromSimplePutEdit $ \case
             KeyEditItem _ e -> never e
             KeyEditDelete (Left v) -> return $ Just $ pure $ MkTupleUpdateEdit SelectFirst $ KeyEditDelete v
             KeyEditDelete (Right v) -> return $ Just $ pure $ MkTupleUpdateEdit SelectSecond $ KeyEditDelete v
@@ -297,7 +295,7 @@ finiteSetCartesianSumEditLens = let
             KeyEditClear ->
                 return $
                 Just $ [MkTupleUpdateEdit SelectFirst KeyEditClear, MkTupleUpdateEdit SelectSecond KeyEditClear]
-    in MkRunnable2 cmEmpty MkAnEditLens {..}
+    in MkEditLens {..}
 
 finiteSetCartesianProductUpdateFunction ::
        forall a b. UpdateFunction (PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetUpdate (a, b))
@@ -333,7 +331,7 @@ finiteSetCartesianProductUpdateFunction = let
     ufUpdate (MkTupleUpdate SelectSecond (KeyUpdateInsertReplace b)) mr = do
         aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
         return $ fmap (\a -> KeyUpdateInsertReplace (a, b)) $ toList aa
-    in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
+    in MkUpdateFunction {..}
 
 finiteSetFunctionEditLens :: forall a. EditLens (FiniteSetUpdate a) (PartialSetUpdate a)
 finiteSetFunctionEditLens = let
@@ -356,8 +354,8 @@ finiteSetFunctionEditLens = let
     ufUpdate (KeyUpdateInsertReplace p) _ =
         return [KnownPartialUpdate $ MkTupleUpdate (MkFunctionSelector p) (MkWholeReaderUpdate True)]
     ufUpdate KeyUpdateClear _ = return [UnknownPartialUpdate $ \_ -> True]
-    elFunction :: AnUpdateFunction '[] (FiniteSetUpdate a) (PartialUpdate (FunctionUpdate a (WholeUpdate Bool)))
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (FiniteSetUpdate a) (PartialUpdate (FunctionUpdate a (WholeUpdate Bool)))
+    elFunction = MkUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => FunctionUpdateEdit a (WholeUpdate Bool)
@@ -374,8 +372,8 @@ finiteSetFunctionEditLens = let
         => [FunctionUpdateEdit a (WholeUpdate Bool)]
         -> MutableRead m (FiniteSetReader a)
         -> m (Maybe [FiniteSetEdit a])
-    elPutEdits = elPutEditsFromSimplePutEdit @'[] elPutEdit
-    in MkRunnable2 cmEmpty MkAnEditLens {..}
+    elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
+    in MkEditLens {..}
 
 filterFiniteSetUpdateFunction ::
        forall a. Eq a
@@ -443,4 +441,4 @@ filterFiniteSetUpdateFunction = let
     ufUpdate (MkTupleUpdate SelectSecond (UnknownPartialUpdate _)) mr = do
         edits <- getReplaceEdits $ firstReadFunction mr
         return $ fmap editUpdate edits
-    in MkRunnable2 cmEmpty MkAnUpdateFunction {..}
+    in MkUpdateFunction {..}

@@ -41,46 +41,36 @@ uuidToName = Data.UUID.toString
 
 type ObjectSoupUpdate = SoupUpdate (ObjectUpdate ByteStringUpdate)
 
-type AutoCloseFileT = AutoCloseT FilePath (Object ByteStringEdit)
-
-trunAutoClose :: TransStackRunner '[ AutoCloseFileT]
-trunAutoClose = singleTransStackRunner runAutoClose
-
 directorySoup :: Object FSEdit -> FilePath -> Object (UpdateEdit ObjectSoupUpdate)
-directorySoup (MkRunnable1 (trunFS :: TransStackRunner tt) (MkAnObject readFS pushFS)) dirpath =
-    case transStackRunnerUnliftAllDict trunFS of
+directorySoup (MkResource1 (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS)) dirpath =
+    case resourceRunnerUnliftAllDict runFS of
         Dict ->
             case transStackDict @MonadUnliftIO @tt @IO of
                 Dict -> let
-                    runSoup :: TransStackRunner (AutoCloseFileT ': tt)
-                    runSoup = cmAppend trunAutoClose trunFS
-                    readSoup :: MutableRead (AutoCloseFileT (ApplyStack tt IO)) (UpdateReader ObjectSoupUpdate)
+                    readSoup :: MutableRead (ApplyStack tt IO) (UpdateReader ObjectSoupUpdate)
                     readSoup KeyReadKeys = do
-                        mnames <- lift $ readFS $ FSReadDirectory dirpath
+                        mnames <- readFS $ FSReadDirectory dirpath
                         return $
                             case mnames of
                                 Just names -> mapMaybe nameToUUID $ MkFiniteSet names
                                 Nothing -> mempty
                     readSoup (KeyReadItem uuid (MkTupleUpdateReader SelectFirst ReadWhole)) = do
-                        mitem <- lift $ readFS $ FSReadItem $ dirpath </> uuidToName uuid
-                        case mitem of
-                            Just (FSFileItem _) -> return $ Just uuid
-                            _ -> return Nothing
+                        mitem <- readFS $ FSReadItem $ dirpath </> uuidToName uuid
+                        return $
+                            case mitem of
+                                Just (FSFileItem _) -> Just uuid
+                                _ -> Nothing
                     readSoup (KeyReadItem uuid (MkTupleUpdateReader SelectSecond ReadObject)) = do
                         let path = dirpath </> uuidToName uuid
-                        mitem <- lift $ readFS $ FSReadItem path
-                        case mitem of
-                            Just (FSFileItem object) -> do
-                                muted <- remonad (stackLift @tt) $ acOpenObject path $ \call -> call object -- pointless
-                                return $ Just muted
-                            _ -> return Nothing
+                        mitem <- readFS $ FSReadItem path
+                        return $
+                            case mitem of
+                                Just (FSFileItem object) -> Just object
+                                _ -> Nothing
                     pushSoup ::
-                           [UpdateEdit ObjectSoupUpdate]
-                        -> AutoCloseFileT (ApplyStack tt IO) (Maybe (EditSource -> AutoCloseFileT (ApplyStack tt IO) ()))
+                           [UpdateEdit ObjectSoupUpdate] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
                     pushSoup =
                         singleEdit $ \edit ->
-                            fmap (fmap (fmap lift)) $
-                            lift $
                             case edit of
                                 KeyEditItem _uuid (MkTupleUpdateEdit SelectFirst iedit) -> never iedit
                                 KeyEditItem _uuid (MkTupleUpdateEdit SelectSecond iedit) -> never iedit
@@ -96,4 +86,4 @@ directorySoup (MkRunnable1 (trunFS :: TransStackRunner tt) (MkAnObject readFS pu
                                                     for_ names $ \name ->
                                                         pushFS [FSEditDeleteNonDirectory $ dirpath </> name]
                                             Nothing -> Nothing
-                    in MkRunnable1 runSoup $ MkAnObject readSoup pushSoup
+                    in MkResource1 runFS $ MkAnObject readSoup pushSoup

@@ -73,12 +73,14 @@ instance Monoid (KeyColumns updateT key) where
     mempty = MkKeyColumns (\_ -> return (constEditLens (), constUpdateFunction ())) []
     mappend = (<>)
 
+type PureUpdateFunction = UpdateFunction
+
 keyContainerView ::
        forall cont o updateT updateI.
        (KeyContainer cont, FullSubjectReader (UpdateReader updateI), HasKeyReader cont (UpdateReader updateI))
     => KeyColumns updateT (ContainerKey cont)
     -> (o -> o -> Ordering)
-    -> (ContainerKey cont -> UpdateFunction updateT (WholeUpdate o))
+    -> (ContainerKey cont -> PureUpdateFunction updateT (WholeUpdate o))
     -> EditLens updateT (KeyUpdate cont updateI)
     -> (ContainerKey cont -> IO ())
     -> GCreateView (ContainerKey cont) updateT
@@ -93,16 +95,16 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
         getStoreItem mr key = do
             let entryOrderFunction = geto key
             (entryTextLens, entryPropFunc) <- liftIO $ colfunc key
-            entryRowText <- updateFunctionRead (editLensFunction entryTextLens) mr ReadWhole
-            entryRowProps <- updateFunctionRead entryPropFunc mr ReadWhole
+            entryRowText <- ufGet (editLensFunction entryTextLens) mr ReadWhole
+            entryRowProps <- ufGet entryPropFunc mr ReadWhole
             return (key, MkStoreEntry {..})
     initialRows <-
         cvLiftView $ do
             viewObjectRead $ \_ mr -> do
-                MkFiniteSet initialKeys <- updateFunctionRead (editLensFunction tableLens) mr KeyReadKeys
+                MkFiniteSet initialKeys <- ufGet (editLensFunction tableLens) mr KeyReadKeys
                 ords <-
                     for initialKeys $ \key -> do
-                        o <- updateFunctionRead (geto key) mr ReadWhole
+                        o <- ufGet (geto key) mr ReadWhole
                         return (key, o)
                 let initialKeys' = fmap fst $ sortBy (\(_, a) (_, b) -> order a b) ords
                 for initialKeys' $ getStoreItem mr
@@ -117,9 +119,9 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
         findInStore key = do
             kk <- seqStoreToList store
             return $ lookup @[(ContainerKey cont, Int)] key $ zip (fmap fst kk) [0 ..]
-    cvReceiveUpdates Nothing $ \_ mr edits ->
-        mapUpdates (editLensFunction tableLens) mr edits $ \(_ :: _ tt) _ edits' ->
-            for_ edits' $ \case
+    cvReceiveUpdates Nothing $ \_ mr updates ->
+        mapUpdates (editLensFunction tableLens) mr updates $ \_ updates' ->
+            for_ updates' $ \case
                 KeyUpdateDelete key -> do
                     mindex <- findInStore key
                     case mindex of
@@ -132,7 +134,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
                            case mindex of
                                Just _index -> return ()
                                Nothing -> do
-                                   storeItem <- stackLift @tt $ getStoreItem mr key
+                                   storeItem <- getStoreItem mr key
                                    _ <- seqStoreAppend store storeItem
                                    return ()
                 KeyUpdateClear -> seqStoreClear store
@@ -142,7 +144,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
         changeText :: Change m (ContainerKey cont, StoreEntry updateT o rowtext rowprops)
         changeText =
             MkChange $ \(key, oldcol) ->
-                mapUpdates (editLensFunction $ entryTextLens oldcol) mr tupdates $ \_ _ updates ->
+                mapUpdates (editLensFunction $ entryTextLens oldcol) mr tupdates $ \_ updates ->
                     case updates of
                         [] -> return Nothing
                         _ -> do
@@ -153,7 +155,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
         changeProp :: Change m (ContainerKey cont, StoreEntry updateT o rowtext rowprops)
         changeProp =
             MkChange $ \(key, oldcol) ->
-                mapUpdates (entryPropFunc oldcol) mr tupdates $ \_ _ updates ->
+                mapUpdates (entryPropFunc oldcol) mr tupdates $ \_ updates ->
                     case updates of
                         [] -> return Nothing
                         _ -> do
@@ -163,8 +165,8 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
                             return $ Just (key, oldcol {entryRowProps = newprops})
         in seqStoreTraverse_ store $ changeText <> changeProp
     let
-        aspect :: Aspect (ContainerKey cont)
-        aspect = do
+        getSelectedKey :: IO (Maybe (ContainerKey cont))
+        getSelectedKey = do
             tsel <- #getSelection tview
             (ltpath, _) <- #getSelectedRows tsel
             case ltpath of
@@ -176,6 +178,8 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
                             return $ Just key
                         _ -> return Nothing
                 _ -> return Nothing
+        aspect :: Aspect (ContainerKey cont)
+        aspect = liftIO getSelectedKey
     cvAddAspect aspect
     _ <-
         cvLiftView $
@@ -191,11 +195,10 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
             click <- Gtk.get event #type
             case click of
                 EventType2buttonPress -> do
-                    liftIO $ do
-                        mkey <- aspect
-                        case mkey of
-                            Just key -> onDoubleClick key
-                            Nothing -> return ()
+                    mkey <- getSelectedKey
+                    case mkey of
+                        Just key -> onDoubleClick key
+                        Nothing -> return ()
                     return True
                 _ -> return False
     toWidget tview

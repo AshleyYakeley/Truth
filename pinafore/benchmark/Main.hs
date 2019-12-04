@@ -90,7 +90,7 @@ interpretUpdater text = do
     sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
     (sendUpdate, ref) <- unliftPinaforeActionOrFail action
     runLifeCycle $ do
-        lensSub <- mapSubscriber (immutableReferenceToLens ref) sub
+        lensSub <- mapSubscriber (return $ immutableReferenceToLens ref) sub
         subscribeEditor lensSub $ checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark

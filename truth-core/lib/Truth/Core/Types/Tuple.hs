@@ -3,7 +3,6 @@ module Truth.Core.Types.Tuple where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
-import Truth.Core.Resource
 
 class TupleUpdateWitness (c :: Type -> Constraint) (sel :: Type -> Type) where
     tupleUpdateWitness :: forall update. sel update -> Dict (c update)
@@ -223,14 +222,14 @@ tupleEditLens_ tester sel = let
         case tester sel' of
             Just Refl -> return [update]
             Nothing -> return []
-    elFunction = MkAnUpdateFunction {..}
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
         -> MutableRead m (TupleUpdateReader sel)
         -> m (Maybe [TupleUpdateEdit sel])
     elPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit sel) edits
-    in MkRunnable2 cmEmpty $ MkAnEditLens {..}
+    in MkEditLens {..}
 
 tupleEditLens ::
        forall sel update. (TestEquality sel)
@@ -252,12 +251,12 @@ tupleIsoLens ab ba = let
         -> MutableRead m (TupleUpdateReader sela)
         -> m [TupleUpdate selb]
     ufUpdate (MkTupleUpdate sel update) _ = return [MkTupleUpdate (ab sel) update]
-    elFunction :: AnUpdateFunction '[] (TupleUpdate sela) (TupleUpdate selb)
-    elFunction = MkAnUpdateFunction {..}
+    elFunction :: UpdateFunction (TupleUpdate sela) (TupleUpdate selb)
+    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit selb]
         -> MutableRead m (TupleUpdateReader sela)
         -> m (Maybe [TupleUpdateEdit sela])
     elPutEdits edits _ = return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (ba sel) edit) edits
-    in MkRunnable2 cmEmpty MkAnEditLens {..}
+    in MkEditLens {..}
