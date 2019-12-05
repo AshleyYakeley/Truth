@@ -145,8 +145,7 @@ reorderTransListFunction wtta wttb = let
         => Proxy m
         -> MFunction (ApplyStack (Concat tta (t ': ttb)) m) (ApplyStack (t ': Concat tta ttb) m)
     tlfFunction pm =
-        case tlff pm wtta -- $ representative @_ @(ListType (Compose Dict MonadTransUnliftAll)) @tta of
-              of
+        case tlff pm wtta of
             (MkWMFunction mf, _, _, _, _) -> mf
     tlfbf ::
            forall tt m. (Monad m)
@@ -175,8 +174,7 @@ reorderTransListFunction wtta wttb = let
         => Proxy m
         -> MBackFunction (ApplyStack (Concat tta (t ': ttb)) m) (ApplyStack (t ': Concat tta ttb) m)
     tlfBackFunction pm =
-        case tlfbf pm wtta -- $ representative @_ @(ListType (Compose Dict MonadTransUnliftAll)) @tta of
-              of
+        case tlfbf pm wtta of
             (MkWMBackFunction mbf, _, _, _, _) -> mbf
     in MkTransListFunction {..}
 
