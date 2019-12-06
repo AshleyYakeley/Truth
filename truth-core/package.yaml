@@ -35,6 +35,7 @@ library:
       - Truth.Core.Edit.Opaque
       - Truth.Core.Edit
       - Truth.Core.Types.None
+      - Truth.Core.Types.ReadOnly
       - Truth.Core.Types.Whole
       - Truth.Core.Types.WholeUpdateFunction
       - Truth.Core.Types.Unit
