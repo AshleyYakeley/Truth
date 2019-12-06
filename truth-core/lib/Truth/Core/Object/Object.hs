@@ -8,30 +8,30 @@ import Truth.Core.Resource
 import Truth.Core.Types.None
 import Truth.Core.Types.Whole
 
-data AnObject (tt :: [TransKind]) edit = MkAnObject
+data AnObject edit (tt :: [TransKind]) = MkAnObject
     { objRead :: MutableRead (ApplyStack tt IO) (EditReader edit)
     , objEdit :: [edit] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
     }
 
-type Object = Resource1 AnObject
+type Object edit = Resource (AnObject edit)
 
-instance MapResource AnObject where
+instance MapResource (AnObject edit) where
     mapResource ::
            forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
         => TransListFunction tt1 tt2
-        -> NestedMorphism (->) (AnObject tt1) (AnObject tt2)
-    mapResource MkTransListFunction {..} =
-        MkNestedMorphism $ \(MkAnObject r e) -> let
-            r' :: MutableRead (ApplyStack tt2 IO) _
-            r' rd = tlfFunction (Proxy @IO) $ r rd
-            e' :: [_] -> ApplyStack tt2 IO (Maybe (EditSource -> ApplyStack tt2 IO ()))
-            e' edits =
-                case transStackDict @MonadIO @tt2 @IO of
-                    Dict -> (fmap $ fmap $ fmap $ tlfFunction (Proxy @IO)) $ tlfFunction (Proxy @IO) $ e edits
-            in MkAnObject r' e'
+        -> AnObject edit tt1
+        -> AnObject edit tt2
+    mapResource MkTransListFunction {..} (MkAnObject r e) = let
+        r' :: MutableRead (ApplyStack tt2 IO) _
+        r' rd = tlfFunction (Proxy @IO) $ r rd
+        e' :: [_] -> ApplyStack tt2 IO (Maybe (EditSource -> ApplyStack tt2 IO ()))
+        e' edits =
+            case transStackDict @MonadIO @tt2 @IO of
+                Dict -> (fmap $ fmap $ fmap $ tlfFunction (Proxy @IO)) $ tlfFunction (Proxy @IO) $ e edits
+        in MkAnObject r' e'
 
 instance Show (Object edit) where
-    show (MkResource1 _ _) = "object"
+    show (MkResource _ _) = "object"
 
 noneObject :: Object (NoEdit (NoReader t))
 noneObject = let
@@ -40,7 +40,7 @@ noneObject = let
     objEdit :: [NoEdit (NoReader t)] -> IO (Maybe (EditSource -> IO ()))
     objEdit [] = return $ Just $ \_ -> return ()
     objEdit (e:_) = never e
-    in MkResource1 nilResourceRunner $ MkAnObject {..}
+    in MkResource nilResourceRunner $ MkAnObject {..}
 
 mvarObject :: forall a. IOWitness (StateT a) -> MVar a -> (a -> Bool) -> Object (WholeEdit a)
 mvarObject iow var allowed = let
@@ -53,9 +53,9 @@ mvarObject iow var allowed = let
             if allowed na
                 then Just $ \_ -> put na
                 else Nothing
-    anobj :: AnObject '[ StateT a] (WholeEdit a)
+    anobj :: AnObject (WholeEdit a) '[ StateT a]
     anobj = MkAnObject {..}
-    in MkResource1 (mvarResourceRunner iow var) anobj
+    in MkResource (mvarResourceRunner iow var) anobj
 
 freeIOObject :: forall a. a -> (a -> Bool) -> IO (Object (WholeEdit a))
 freeIOObject firsta allowed = do
@@ -83,12 +83,12 @@ mapObject ::
        forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> Object (UpdateEdit updateB)
 mapObject = lensObject
 
-lensAnObject ::
+mapAnObject ::
        forall tt updateA updateB. MonadTransStackUnliftAll tt
     => EditLens updateA updateB
-    -> AnObject tt (UpdateEdit updateA)
-    -> AnObject tt (UpdateEdit updateB)
-lensAnObject MkEditLens {..} (MkAnObject objReadA objEditA) =
+    -> AnObject (UpdateEdit updateA) tt
+    -> AnObject (UpdateEdit updateB) tt
+mapAnObject MkEditLens {..} (MkAnObject objReadA objEditA) =
     case transStackDict @MonadIO @tt @IO of
         Dict -> let
             MkUpdateFunction {..} = elFunction
@@ -108,14 +108,14 @@ lensAnObject MkEditLens {..} (MkAnObject objReadA objEditA) =
 
 lensObject ::
        forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> Object (UpdateEdit updateB)
-lensObject alens (MkResource1 rr aobj) =
+lensObject alens (MkResource rr aobj) =
     case resourceRunnerUnliftAllDict rr of
-        Dict -> MkResource1 rr $ lensAnObject alens aobj
+        Dict -> MkResource rr $ mapAnObject alens aobj
 
 immutableAnObject ::
        forall tt edit. MonadTransStackUnliftAll tt
     => MutableRead (ApplyStack tt IO) (EditReader edit)
-    -> AnObject tt edit
+    -> AnObject edit tt
 immutableAnObject mr =
     case transStackDict @Monad @tt @IO of
         Dict ->
@@ -126,7 +126,7 @@ immutableAnObject mr =
                 _ -> return Nothing
 
 readConstantObject :: MutableRead IO (EditReader edit) -> Object edit
-readConstantObject mr = MkResource1 nilResourceRunner $ immutableAnObject mr
+readConstantObject mr = MkResource nilResourceRunner $ immutableAnObject mr
 
 constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
 constantObject subj = readConstantObject $ subjectToMutableRead subj
@@ -155,7 +155,7 @@ convertObject ::
        forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, SubjectMapEdit editb)
     => Object edita
     -> Object editb
-convertObject (MkResource1 (trun :: ResourceRunner tt) (MkAnObject mra pe)) =
+convertObject (MkResource (trun :: ResourceRunner tt) (MkAnObject mra pe)) =
     case resourceRunnerUnliftAllDict trun of
         Dict ->
             case transStackDict @MonadIO @tt @IO of
@@ -168,7 +168,7 @@ convertObject (MkResource1 (trun :: ResourceRunner tt) (MkAnObject mra pe)) =
                         newsubj <- mapSubjectEdits ebs oldsubj
                         eas <- getReplaceEditsFromSubject newsubj
                         pe eas
-                    in MkResource1 trun MkAnObject {..}
+                    in MkResource trun MkAnObject {..}
 
 copyObject ::
        forall edit. FullEdit edit
@@ -177,12 +177,12 @@ copyObject ::
     -> Object edit
     -> IO ()
 copyObject esrc =
-    joinResource1_ $ \rr (MkAnObject readSrc _) (MkAnObject _ pushDest) ->
+    joinResource_ $ \rr (MkAnObject readSrc _) (MkAnObject _ pushDest) ->
         runResourceRunnerWith rr $ \run ->
             runLifeCycle $ do
                 liftIO $
                     run $ replaceEdit @edit readSrc $ \edit -> pushOrFail "failed to copy object" esrc $ pushDest [edit]
 
 getObjectSubject :: FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
-getObjectSubject (MkResource1 rr (MkAnObject rd _)) =
+getObjectSubject (MkResource rr (MkAnObject rd _)) =
     runResourceRunnerWith rr $ \run -> runLifeCycle $ liftIO $ run $ mutableReadToSubject rd

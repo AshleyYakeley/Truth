@@ -12,7 +12,7 @@ objectMapUpdates ::
     -> Object (UpdateEdit updateA)
     -> [updateA]
     -> IO [updateB]
-objectMapUpdates ef (MkResource1 rr MkAnObject {..}) updateAs =
+objectMapUpdates ef (MkResource rr MkAnObject {..}) updateAs =
     runResourceRunnerWith rr $ \run -> run $ ufUpdates ef updateAs objRead
 
 mapUpdates ::

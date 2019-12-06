@@ -86,7 +86,7 @@ testUpdateObject =
             recv' ee _ = for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv' update edit: " <> show s
         runLifeCycle $ do
             om' <- shareObjectMaker om
-            (MkResource1 trun MkAnObject {..}, ()) <- om' recv
+            (MkResource trun MkAnObject {..}, ()) <- om' recv
             (_obj', ()) <- mapObjectMaker lens om' recv'
             runResourceRunnerWith trun $ \run ->
                 liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit [MkWholeReaderEdit "new"]
@@ -107,20 +107,20 @@ testOutputEditor name call = let
     outputLn :: MonadIO m => String -> m ()
     outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
     editorInit :: Object (UpdateEdit update) -> LifeCycleIO ()
-    editorInit (MkResource1 trun (MkAnObject r _)) =
+    editorInit (MkResource trun (MkAnObject r _)) =
         runResourceRunnerWith trun $ \run ->
             liftIO $ do
                 val <- run $ mutableReadToSubject r
                 outputLn $ "init: " ++ show val
                 return ()
     editorUpdate :: () -> Object (UpdateEdit update) -> [update] -> EditContext -> IO ()
-    editorUpdate () (MkResource1 trun (MkAnObject mr _)) edits _ =
+    editorUpdate () (MkResource trun (MkAnObject mr _)) edits _ =
         runResourceRunnerWith trun $ \run -> do
             outputLn $ "receive " ++ show edits
             val <- run $ mutableReadToSubject mr
             outputLn $ "receive " ++ show val
     editorDo :: () -> Object (UpdateEdit update) -> LifeCycleIO ()
-    editorDo () (MkResource1 trun (MkAnObject mr push)) =
+    editorDo () (MkResource trun (MkAnObject mr push)) =
         runResourceRunnerWith trun $ \run -> let
             subGet :: LifeCycleIO (UpdateSubject update)
             subGet =

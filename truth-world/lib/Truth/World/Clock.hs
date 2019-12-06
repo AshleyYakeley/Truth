@@ -21,7 +21,7 @@ clockObjectMaker basetime interval update = do
             runReaderT rt t
     let
         object :: Object (WholeEdit UTCTime)
-        object = MkResource1 run $ immutableAnObject $ \ReadWhole -> ask
+        object = MkResource run $ immutableAnObject $ \ReadWhole -> ask
     return (object, ())
 
 makeClockTimeZoneEF :: LifeCycleIO (UpdateFunction (WholeUpdate UTCTime) (WholeUpdate TimeZone))

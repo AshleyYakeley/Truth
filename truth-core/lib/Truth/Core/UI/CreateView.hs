@@ -96,7 +96,7 @@ cvReceiveSubscriberUpdates ::
     -> (forall m. MonadIO m => MFunction (CreateView sel update') m -> MutableRead m (UpdateReader update) -> m a)
     -> (a -> Object (UpdateEdit update) -> [update] -> EditSource -> IO ())
     -> CreateView sel update' a
-cvReceiveSubscriberUpdates (MkResource1 (rr :: _ tt) asub) fstCall recv = do
+cvReceiveSubscriberUpdates (MkResource (rr :: _ tt) asub) fstCall recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycleIO lifeCycleMonitor
     withUILock <- MkCreateView $ asks vcWithUILock
@@ -110,7 +110,7 @@ cvReceiveSubscriberUpdates (MkResource1 (rr :: _ tt) asub) fstCall recv = do
                     withUILock editContextTiming $ do
                         alive <- monitor
                         if alive
-                            then recv a (MkResource1 rr $ subAnObject asub) edits editContextSource
+                            then recv a (MkResource rr $ subAnObject asub) edits editContextSource
                             else return ()
                 return a
 
@@ -123,7 +123,7 @@ cvReceiveUpdates ::
        Maybe EditSource -> (WIOFunction (View sel update) -> ReceiveUpdates update) -> CreateView sel update ()
 cvReceiveUpdates mesrc recv = do
     unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkWMFunction unlift
-    cvReceiveIOUpdates $ \(MkResource1 rr (MkAnObject mr _)) edits esrc ->
+    cvReceiveIOUpdates $ \(MkResource rr (MkAnObject mr _)) edits esrc ->
         if mesrc == Just esrc
             then return ()
             else runResourceRunnerWith rr $ \run -> run $ recv unliftIO mr edits

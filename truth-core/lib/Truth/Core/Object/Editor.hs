@@ -39,8 +39,8 @@ instance Applicative (Editor update) where
         in MkEditor {..}
 
 subscribeEditor :: Subscriber update -> Editor update r -> LifeCycleIO r
-subscribeEditor (MkResource1 (rr :: _ tt) (MkASubscriber anobject sub)) editor = let
-    object = MkResource1 rr anobject
+subscribeEditor (MkResource (rr :: _ tt) (MkASubscriber anobject sub)) editor = let
+    object = MkResource rr anobject
     in case editor of
            MkEditor initr update f ->
                runResourceRunnerWith rr $ \run -> do

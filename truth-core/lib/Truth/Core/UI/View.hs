@@ -34,7 +34,7 @@ viewObjectRead ::
     -> View sel update r
 viewObjectRead call = do
     unliftIO <- askUnliftIO
-    MkResource1 rr MkAnObject {..} <- viewObject
+    MkResource rr MkAnObject {..} <- viewObject
     runResourceRunnerWith rr $ \run -> liftIO $ run $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
@@ -44,7 +44,7 @@ viewObjectMaybeEdit ::
     -> View sel update r
 viewObjectMaybeEdit call = do
     unliftIO <- askUnliftIO
-    MkResource1 rr MkAnObject {..} <- viewObject
+    MkResource rr MkAnObject {..} <- viewObject
     runResourceRunnerWith rr $ \run -> liftIO $ run $ call unliftIO $ objEdit
 
 viewObjectPushEdit ::

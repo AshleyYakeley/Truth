@@ -270,4 +270,4 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
                 MkQueryString s v -> do
                     conn <- ask
                     lift $ execute conn s v
-    in MkResource1 objRun MkAnObject {..}
+    in MkResource objRun MkAnObject {..}

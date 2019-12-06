@@ -129,13 +129,13 @@ fileSystemObject = let
                 FSEditRenameItem fromPath toPath ->
                     testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $ \_ ->
                         renamePath fromPath toPath
-    in MkResource1 nilResourceRunner MkAnObject {..}
+    in MkResource nilResourceRunner MkAnObject {..}
 
 subdirCreateWitness :: IOWitness (StateT Bool)
 subdirCreateWitness = $(iowitness [t|StateT Bool|])
 
 subdirectoryObject :: Bool -> FilePath -> Object FSEdit -> Object FSEdit
-subdirectoryObject create dir (MkResource1 (rr :: ResourceRunner tt) (MkAnObject rd push)) =
+subdirectoryObject create dir (MkResource (rr :: ResourceRunner tt) (MkAnObject rd push)) =
     runResourceRunnerWith rr $ \_ ->
         case transStackConcatRefl @'[ StateT Bool] @tt @IO of
             Refl -> let
@@ -195,7 +195,7 @@ subdirectoryObject create dir (MkResource1 (rr :: ResourceRunner tt) (MkAnObject
                     pushFirst
                     maction <- lift $ push $ fmap mapPath edits
                     return $ fmap (fmap lift) maction
-                in MkResource1
+                in MkResource
                        (combineIndependentResourceRunners
                             (discardingStateResourceRunner (hashOpenWitness subdirCreateWitness dir) create)
                             rr) $

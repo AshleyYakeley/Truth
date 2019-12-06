@@ -66,7 +66,7 @@ singleObjectUpdateFunction = let
 
 directoryObjectStore ::
        forall name. Object FSEdit -> (name -> String) -> Object (UpdateEdit (ObjectStoreUpdate name ByteStringEdit))
-directoryObjectStore (MkResource1 (trun :: ResourceRunner tt) (MkAnObject rd push)) nameStr =
+directoryObjectStore (MkResource (trun :: ResourceRunner tt) (MkAnObject rd push)) nameStr =
     runResourceRunnerWith trun $ \_ -> let
         undoName :: String -> Int -> FilePath
         undoName name i = "undo/" ++ name ++ show i
@@ -126,4 +126,4 @@ directoryObjectStore (MkResource1 (trun :: ResourceRunner tt) (MkAnObject rd pus
                             SingleObjectRecover code ->
                                 pushOrFail ("couldn't rename FS item " <> show name) esrc $
                                 push [FSEditRenameItem (undoName name code) name]
-        in MkResource1 trun MkAnObject {..}
+        in MkResource trun MkAnObject {..}

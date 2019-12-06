@@ -47,7 +47,7 @@ undoQueueSubscriber ::
     -> IO (Subscriber update, UndoActions)
 undoQueueSubscriber sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
-    MkResource1 rrP (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub
+    MkResource rrP (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub
     runResourceRunnerWith rrP $ \runP -> let
         undoActions = let
             uaUndo :: EditSource -> IO Bool
@@ -102,5 +102,5 @@ undoQueueSubscriber sub = do
                             mVarRun queueVar $ updateUndoQueue readP edits
                             action esrc
                     Nothing -> Nothing
-        subC = MkResource1 rrP $ MkASubscriber (MkAnObject readP pushC) subscribeP
+        subC = MkResource rrP $ MkASubscriber (MkAnObject readP pushC) subscribeP
         in return (subC, undoActions)

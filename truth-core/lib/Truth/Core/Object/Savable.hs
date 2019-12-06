@@ -25,7 +25,7 @@ saveBufferObject ::
        forall update. (IsUpdate update, FullEdit (UpdateEdit update))
     => Object (WholeEdit (UpdateSubject update))
     -> ObjectMaker update SaveActions
-saveBufferObject (MkResource1 rrP (MkAnObject readP pushP)) update =
+saveBufferObject (MkResource rrP (MkAnObject readP pushP)) update =
     runResourceRunnerWith rrP $ \runP -> do
         firstVal <- liftIO $ runP $ readP ReadWhole
         sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
@@ -52,7 +52,7 @@ saveBufferObject (MkResource1 rrP (MkAnObject readP pushP)) update =
                                 return oldbuf
                         put (MkSaveBuffer newbuf True)
                         lift $ deferAction $ update (fmap editUpdate edits) $ editSourceContext esrc
-                in MkResource1 rrC $ MkAnObject readC pushC
+                in MkResource rrC $ MkAnObject readC pushC
             saveAction :: EditSource -> IO Bool
             saveAction esrc =
                 runP $ do

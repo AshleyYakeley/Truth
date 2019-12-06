@@ -19,7 +19,7 @@ reflectingObjectMaker ::
        forall update. IsUpdate update
     => Object (UpdateEdit update)
     -> ObjectMaker update ()
-reflectingObjectMaker (MkResource1 (trun :: ResourceRunner tt) (MkAnObject r e)) recv = do
+reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e)) recv = do
     Dict <- return $ resourceRunnerUnliftAllDict trun
     Dict <- return $ transStackDict @MonadUnliftIO @tt @(DeferActionT IO)
     Refl <- return $ transStackConcatRefl @tt @'[ DeferActionT] @IO
@@ -41,9 +41,9 @@ reflectingObjectMaker (MkResource1 (trun :: ResourceRunner tt) (MkAnObject r e))
                     Just $ \esrc -> do
                         stackUnderliftIO @tt @(DeferActionT IO) $ action esrc
                         stackLift @tt $ deferAction @IO $ recv (fmap editUpdate edits) $ editSourceContext esrc
-        anobj :: AnObject (Concat tt '[ DeferActionT]) (UpdateEdit update)
+        anobj :: AnObject (UpdateEdit update) (Concat tt '[ DeferActionT])
         anobj = MkAnObject r' e'
-    return $ (MkResource1 trun' anobj, ())
+    return $ (MkResource trun' anobj, ())
 
 mapObjectMaker :: EditLens updateA updateB -> ObjectMaker updateA a -> ObjectMaker updateB a
 mapObjectMaker lens uobja recvb = do

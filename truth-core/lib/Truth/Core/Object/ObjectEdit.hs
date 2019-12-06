@@ -32,7 +32,7 @@ instance SubjectReader (EditReader edit) => SubjectReader (ObjectReader edit) wh
 
 instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader edit) where
     mutableReadToSubject mr = do
-        MkResource1 rr (MkAnObject mro _) <- mr ReadObject
+        MkResource rr (MkAnObject mro _) <- mr ReadObject
         runResourceRunnerWith rr $ \run -> liftIO $ run $ mutableReadToSubject mro
 
 type ObjectEdit edit = NoEdit (ObjectReader edit)
@@ -43,7 +43,7 @@ objectEditLens :: forall update. EditLens (ObjectUpdate update) update
 objectEditLens = let
     ufGet :: ReadFunction (ObjectReader (UpdateEdit update)) (UpdateReader update)
     ufGet mr rt = do
-        (MkResource1 rr (MkAnObject r _)) <- mr ReadObject
+        (MkResource rr (MkAnObject r _)) <- mr ReadObject
         liftIO $ runResourceRunner rr $ r rt
     ufUpdate ::
            forall m. MonadIO m
@@ -59,7 +59,7 @@ objectEditLens = let
         -> MutableRead m (EditReader (ObjectEdit (UpdateEdit update)))
         -> m (Maybe [ObjectEdit (UpdateEdit update)])
     elPutEdits edits mr = do
-        (MkResource1 rr (MkAnObject _ e)) <- mr ReadObject
+        (MkResource rr (MkAnObject _ e)) <- mr ReadObject
         runResourceRunnerWith rr $ \run ->
             liftIO $
             run $ do

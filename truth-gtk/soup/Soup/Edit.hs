@@ -42,7 +42,7 @@ uuidToName = Data.UUID.toString
 type ObjectSoupUpdate = SoupUpdate (ObjectUpdate ByteStringUpdate)
 
 directorySoup :: Object FSEdit -> FilePath -> Object (UpdateEdit ObjectSoupUpdate)
-directorySoup (MkResource1 (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS)) dirpath =
+directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS)) dirpath =
     case resourceRunnerUnliftAllDict runFS of
         Dict ->
             case transStackDict @MonadUnliftIO @tt @IO of
@@ -86,4 +86,4 @@ directorySoup (MkResource1 (runFS :: ResourceRunner tt) (MkAnObject readFS pushF
                                                     for_ names $ \name ->
                                                         pushFS [FSEditDeleteNonDirectory $ dirpath </> name]
                                             Nothing -> Nothing
-                    in MkResource1 runFS $ MkAnObject readSoup pushSoup
+                    in MkResource runFS $ MkAnObject readSoup pushSoup

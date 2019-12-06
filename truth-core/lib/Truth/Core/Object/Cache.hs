@@ -12,7 +12,7 @@ cacheObject ::
     => Int
     -> Object edit
     -> LifeCycleIO (Object edit)
-cacheObject mus (MkResource1 rr (MkAnObject read push)) =
+cacheObject mus (MkResource rr (MkAnObject read push)) =
     runResourceRunnerWith rr $ \run -> do
         runAction <- asyncWaitRunner mus $ \editsnl -> run $ pushOrFail "cached object" noEditSource $ push editsnl
         objRun <- liftIO $ stateResourceRunner $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
@@ -32,4 +32,4 @@ cacheObject mus (MkResource1 rr (MkAnObject read push)) =
                 Just $ \_ -> do
                     editCacheUpdates edits
                     liftIO $ runAction $ Just edits
-            in MkResource1 objRun MkAnObject {..}
+            in MkResource objRun MkAnObject {..}

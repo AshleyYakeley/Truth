@@ -7,6 +7,7 @@ module Truth.Core.Object.Subscriber
     , subscriberObjectMaker
     , shareObjectMaker
     , mapSubscriber
+    , mapPureSubscriber
     ) where
 
 import Truth.Core.Edit
@@ -16,15 +17,30 @@ import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
 import Truth.Core.Resource
 
-data ASubscriber tt update = MkASubscriber
-    { subAnObject :: AnObject tt (UpdateEdit update)
+data ASubscriber update tt = MkASubscriber
+    { subAnObject :: AnObject (UpdateEdit update) tt
     , subscribe :: ([update] -> EditContext -> IO ()) -> LifeCycleT (ApplyStack tt IO) ()
     }
 
-type Subscriber = Resource1 ASubscriber
+instance MapResource (ASubscriber update) where
+    mapResource ::
+           forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+        => TransListFunction tt1 tt2
+        -> ASubscriber update tt1
+        -> ASubscriber update tt2
+    mapResource tlf (MkASubscriber obj1 sub1) =
+        case transStackDict @Monad @tt1 @IO of
+            Dict ->
+                case transStackDict @Monad @tt2 @IO of
+                    Dict -> let
+                        obj2 = mapResource tlf obj1
+                        sub2 recv = remonad (tlfFunction tlf $ Proxy @IO) $ sub1 recv
+                        in MkASubscriber obj2 sub2
+
+type Subscriber update = Resource (ASubscriber update)
 
 subscriberObject :: Subscriber update -> Object (UpdateEdit update)
-subscriberObject (MkResource1 run sub) = MkResource1 run $ subAnObject sub
+subscriberObject (MkResource run sub) = MkResource run $ subAnObject sub
 
 type UpdateStoreEntry update = [update] -> EditContext -> IO ()
 
@@ -59,10 +75,10 @@ getRunner AsynchronousUpdateTiming recv = do
     return $ \edits ec -> runAsync $ singleUpdateQueue edits ec
 
 subscriberObjectMaker :: Subscriber update -> a -> ObjectMaker update a
-subscriberObjectMaker (MkResource1 rr MkASubscriber {..}) a update =
+subscriberObjectMaker (MkResource rr MkASubscriber {..}) a update =
     runResourceRunnerWith rr $ \run -> do
         remonad run $ subscribe update
-        return (MkResource1 rr subAnObject, a)
+        return (MkResource rr subAnObject, a)
 
 makeSharedSubscriber :: forall update a. UpdateTiming -> ObjectMaker update a -> LifeCycleIO (Subscriber update, a)
 makeSharedSubscriber ut uobj = do
@@ -73,13 +89,13 @@ makeSharedSubscriber ut uobj = do
             store <- mVarRun var get
             for_ store $ \entry -> entry edits ectxt
     runAsync <- getRunner ut $ utReceiveUpdates ut updateP
-    (MkResource1 (trunC :: ResourceRunner tt) anObjectC, a) <- uobj runAsync
+    (MkResource (trunC :: ResourceRunner tt) anObjectC, a) <- uobj runAsync
     Dict <- return $ resourceRunnerUnliftAllDict trunC
     Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     let
         child :: Subscriber update
         child =
-            MkResource1 trunC $
+            MkResource trunC $
             MkASubscriber anObjectC $ \updateC -> do
                 key <- liftIO $ mVarRun var $ addStoreStateT updateC
                 lifeCycleClose $ mVarRun var $ deleteStoreStateT key
@@ -105,3 +121,14 @@ mapSubscriber getlens subA = do
     lens <- getlens
     (subB, ()) <- makeSharedSubscriber mempty $ mapObjectMaker lens $ subscriberObjectMaker subA ()
     return subB
+
+mapPureSubscriber :: forall updateA updateB. EditLens updateA updateB -> Subscriber updateA -> Subscriber updateB
+mapPureSubscriber lens (MkResource rr (MkASubscriber objA subA)) =
+    runResourceRunnerWith rr $ \run -> let
+        objB = mapAnObject lens objA
+        subB recvB = let
+            recvA updatesA ec = do
+                updatesB <- run $ ufUpdates (elFunction lens) updatesA (objRead objA)
+                recvB updatesB ec
+            in subA recvA
+        in MkResource rr $ MkASubscriber objB subB

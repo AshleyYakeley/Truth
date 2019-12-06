@@ -42,4 +42,4 @@ fileObject path = let
         lift $ hPut h bs
     objEdit :: [ByteStringEdit] -> ReaderT Handle IO (Maybe (EditSource -> ReaderT Handle IO ()))
     objEdit = singleAlwaysEdit objOneEdit
-    in MkResource1 objRun MkAnObject {..}
+    in MkResource objRun MkAnObject {..}
