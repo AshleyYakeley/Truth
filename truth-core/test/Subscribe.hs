@@ -7,6 +7,7 @@ module Subscribe
 
 import Shapes
 import Test.Tasty
+import Test.Tasty.ExpectedFailure
 import Test.Tasty.Golden
 import Truth.Core
 
@@ -42,16 +43,12 @@ goldenTest name refPath outPath call =
     goldenVsFile name refPath outPath $
     withBinaryFile outPath WriteMode $ \h -> let
         ?handle = h
-        in call
+        in do
+               hSetBuffering ?handle NoBuffering
+               call
 
 goldenTest' :: TestName -> ((?handle :: Handle) => IO ()) -> TestTree
 goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("test/golden/" ++ name ++ ".out") call
-
-data SubscribeContext edit = MkSubscribeContext
-    { subGet :: LifeCycleIO (EditSubject edit)
-    , subDoEdits :: [[edit]] -> LifeCycleIO ()
-    , subDontEdits :: [[edit]] -> LifeCycleIO ()
-    }
 
 testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
@@ -92,8 +89,10 @@ testUpdateObject =
                 liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit [MkWholeReaderEdit "new"]
             return ()
 
-testOutputEditor ::
-       forall update.
+outputNameLn :: (?handle :: Handle, MonadIO m) => String -> String -> m ()
+outputNameLn name s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
+
+subscribeShowUpdates ::
        ( Show update
        , Show (UpdateEdit update)
        , Show (UpdateSubject update)
@@ -101,252 +100,377 @@ testOutputEditor ::
        , ?handle :: Handle
        )
     => String
-    -> (SubscribeContext (UpdateEdit update) -> LifeCycleIO ())
-    -> Editor update ()
-testOutputEditor name call = let
-    outputLn :: MonadIO m => String -> m ()
-    outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
-    editorInit :: Object (UpdateEdit update) -> LifeCycleIO ()
-    editorInit (MkResource trun (MkAnObject r _)) =
-        runResourceRunnerWith trun $ \run ->
-            liftIO $ do
-                val <- run $ mutableReadToSubject r
-                outputLn $ "init: " ++ show val
-                return ()
-    editorUpdate :: () -> Object (UpdateEdit update) -> [update] -> EditContext -> IO ()
-    editorUpdate () (MkResource trun (MkAnObject mr _)) edits _ =
-        runResourceRunnerWith trun $ \run -> do
-            outputLn $ "receive " ++ show edits
+    -> Subscriber update
+    -> LifeCycleIO ()
+subscribeShowUpdates name (MkResource trun (MkASubscriber (MkAnObject mr _) subrecv)) =
+    runResourceRunnerWith trun $ \run ->
+        remonad run $
+        subrecv $ \edits _ -> do
+            outputNameLn name $ "receive " ++ show edits
             val <- run $ mutableReadToSubject mr
-            outputLn $ "receive " ++ show val
-    editorDo :: () -> Object (UpdateEdit update) -> LifeCycleIO ()
-    editorDo () (MkResource trun (MkAnObject mr push)) =
-        runResourceRunnerWith trun $ \run -> let
-            subGet :: LifeCycleIO (UpdateSubject update)
-            subGet =
-                liftIO $ do
-                    outputLn "runObject"
-                    run $ do
-                        val <- mutableReadToSubject mr
-                        outputLn $ "get " ++ show val
-                        return val
-            subDontEdits :: [[UpdateEdit update]] -> LifeCycleIO ()
-            subDontEdits editss =
-                liftIO $ do
-                    outputLn "runObject"
-                    run $
-                        for_ editss $ \edits -> do
-                            outputLn $ "push " ++ show edits
-                            maction <- push edits
-                            case maction of
-                                Nothing -> outputLn "push disallowed"
-                                Just _action -> outputLn "push ignored"
-            subDoEdits :: [[UpdateEdit update]] -> LifeCycleIO ()
-            subDoEdits editss =
-                liftIO $ do
-                    outputLn "runObject"
-                    run $
-                        for_ editss $ \edits -> do
-                            outputLn $ "push " ++ show edits
-                            maction <- push edits
-                            case maction of
-                                Nothing -> outputLn "push disallowed"
-                                Just action -> do
-                                    action noEditSource
-                                    outputLn $ "push succeeded"
-            in call MkSubscribeContext {..}
-    in MkEditor {..}
+            outputNameLn name $ "receive " ++ show val
+
+showSubscriberSubject ::
+       (Show (UpdateSubject update), FullSubjectReader (UpdateReader update), ?handle :: Handle)
+    => String
+    -> Subscriber update
+    -> LifeCycleIO ()
+showSubscriberSubject name (MkResource trun (MkASubscriber (MkAnObject mr _) _)) =
+    liftIO $
+    runResourceRunnerWith trun $ \run ->
+        run $ do
+            val <- mutableReadToSubject mr
+            outputNameLn name $ "get " ++ show val
+
+subscriberPushEdits ::
+       (Show (UpdateEdit update), ?handle :: Handle)
+    => String
+    -> Subscriber update
+    -> [[UpdateEdit update]]
+    -> LifeCycleIO ()
+subscriberPushEdits name (MkResource trun (MkASubscriber (MkAnObject _ push) _)) editss =
+    runResourceRunnerWith trun $ \run ->
+        liftIO $
+        run $
+        for_ editss $ \edits -> do
+            outputNameLn name $ "push " ++ show edits
+            maction <- push edits
+            case maction of
+                Nothing -> outputNameLn name "push disallowed"
+                Just action -> do
+                    action noEditSource
+                    outputNameLn name $ "push succeeded"
+
+subscriberDontPushEdits ::
+       (Show (UpdateEdit update), ?handle :: Handle)
+    => String
+    -> Subscriber update
+    -> [[UpdateEdit update]]
+    -> LifeCycleIO ()
+subscriberDontPushEdits name (MkResource trun (MkASubscriber (MkAnObject _ push) _)) editss =
+    runResourceRunnerWith trun $ \run ->
+        liftIO $
+        run $
+        for_ editss $ \edits -> do
+            outputNameLn name $ "push " ++ show edits
+            maction <- push edits
+            case maction of
+                Nothing -> outputNameLn name "push disallowed"
+                Just _action -> outputNameLn name "push ignored"
 
 testSubscription ::
-       forall update. (IsUpdate update, FullEdit (UpdateEdit update), Show (UpdateSubject update))
-    => TestName
-    -> UpdateSubject update
-    -> ((?handle :: Handle, ?showVar :: LifeCycleIO (), ?showExpected :: [UpdateEdit update] -> LifeCycleIO ()) =>
-                Subscriber update -> LifeCycleIO ())
-    -> TestTree
-testSubscription name initial call =
-    goldenTest' name $
-    runLifeCycle $ do
-        iow <- liftIO $ newIOWitness
-        var <- liftIO $ newMVar initial
-        let
-            varObj :: Object (WholeEdit (UpdateSubject update))
-            varObj = mvarObject iow var $ \_ -> True
-            editObj :: Object (UpdateEdit update)
-            editObj = convertObject varObj
-        sub <- makeReflectingSubscriber SynchronousUpdateTiming editObj
-        let
-            ?showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
-            ?showExpected = \edits ->
+       forall update. (?handle :: Handle, IsUpdate update, FullEdit (UpdateEdit update), Show (UpdateSubject update))
+    => UpdateSubject update
+    -> LifeCycleIO (Subscriber update, LifeCycleIO (), [UpdateEdit update] -> LifeCycleIO ())
+testSubscription initial = do
+    iow <- liftIO $ newIOWitness
+    var <- liftIO $ newMVar initial
+    let
+        varObj :: Object (WholeEdit (UpdateSubject update))
+        varObj = mvarObject iow var $ \_ -> True
+        editObj :: Object (UpdateEdit update)
+        editObj = convertObject varObj
+    sub <- makeReflectingSubscriber SynchronousUpdateTiming editObj
+    let
+        showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
+        showExpected =
+            \edits ->
                 liftIO $
                 withMVar var $ \s -> do
                     news <- mutableReadToSubject $ applyEdits edits $ subjectToMutableRead s
                     hPutStrLn ?handle $ "expected: " ++ show news
-        call sub
+    return (sub, showVar, showExpected)
+
+doSubscriberTest :: TestName -> ((?handle :: Handle) => LifeCycleIO ()) -> TestTree
+doSubscriberTest name call = goldenTest' name $ runLifeCycle $ call
 
 testPair :: TestTree
 testPair =
-    testSubscription @(PairUpdate (WholeUpdate Bool) (WholeUpdate Bool)) "Pair" (False, False) $ \sub ->
-        subscribeEditor sub $
-        testOutputEditor "main" $ \MkSubscribeContext {..} -> do
-            ?showVar
-            ?showExpected
-                [ MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True
-                , MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True
-                ]
-            subDoEdits
-                [ [ MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True
-                  , MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True
-                  ]
-                ]
-            ?showVar
+    doSubscriberTest "Pair" $ do
+        (mainSub, mainShow, mainShowExpected) <-
+            testSubscription @(PairUpdate (WholeUpdate Bool) (WholeUpdate Bool)) (False, False)
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        mainShow
+        mainShowExpected
+            [ MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True
+            , MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True
+            ]
+        subscriberPushEdits
+            "main"
+            mainSub
+            [ [ MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True
+              , MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True
+              ]
+            ]
+        mainShow
 
 testString :: TestTree
 testString =
-    testSubscription @(StringUpdate String) "String" "ABCDE" $ \sub ->
-        subscribeEditor sub $
-        testOutputEditor "main" $ \MkSubscribeContext {..} -> do
-            ?showVar
-            subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]]
-            ?showVar
-            subDontEdits [[StringReplaceSection (startEndRun 2 3) ""]]
-            ?showVar
-            subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"]]
-            ?showVar
-            subDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]]
-            ?showVar
+    doSubscriberTest "String" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCDE"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        mainShow
+        subscriberDontPushEdits "main" mainSub [[StringReplaceSection (startEndRun 3 5) "PQR"]]
+        mainShow
+        subscriberDontPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 3) ""]]
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 1 2) "xy"]]
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 4) "1"]]
+        mainShow
 
 testString1 :: TestTree
 testString1 =
-    testSubscription @(StringUpdate String) "String1" "ABCDE" $ \sub ->
-        subscribeEditor sub $
-        testOutputEditor "main" $ \MkSubscribeContext {..} -> do
-            ?showVar
-            subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"], [StringReplaceSection (startEndRun 2 3) ""]]
-            ?showVar
-            subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"], [StringReplaceSection (startEndRun 2 4) "1"]]
-            ?showVar
+    doSubscriberTest "String1" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCDE"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        mainShow
+        subscriberDontPushEdits
+            "main"
+            mainSub
+            [[StringReplaceSection (startEndRun 3 5) "PQR"], [StringReplaceSection (startEndRun 2 3) ""]]
+        mainShow
+        subscriberPushEdits
+            "main"
+            mainSub
+            [[StringReplaceSection (startEndRun 1 2) "xy"], [StringReplaceSection (startEndRun 2 4) "1"]]
+        mainShow
 
 testString2 :: TestTree
 testString2 =
-    testSubscription @(StringUpdate String) "String2" "ABCDE" $ \sub ->
-        subscribeEditor sub $
-        testOutputEditor "main" $ \MkSubscribeContext {..} -> do
-            ?showVar
-            subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR", StringReplaceSection (startEndRun 2 3) ""]]
-            ?showVar
-            ?showExpected [StringReplaceSection (startEndRun 1 2) "xy", StringReplaceSection (startEndRun 2 4) "1"]
-            subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy", StringReplaceSection (startEndRun 2 4) "1"]]
-            ?showVar
+    doSubscriberTest "String2" $ do
+        (mainSub, mainShow, mainShowExpected) <- testSubscription @(StringUpdate String) "ABCDE"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        mainShow
+        subscriberDontPushEdits
+            "main"
+            mainSub
+            [[StringReplaceSection (startEndRun 3 5) "PQR", StringReplaceSection (startEndRun 2 3) ""]]
+        mainShow
+        mainShowExpected [StringReplaceSection (startEndRun 1 2) "xy", StringReplaceSection (startEndRun 2 4) "1"]
+        subscriberPushEdits
+            "main"
+            mainSub
+            [[StringReplaceSection (startEndRun 1 2) "xy", StringReplaceSection (startEndRun 2 4) "1"]]
+        mainShow
 
 testSharedString1 :: TestTree
 testSharedString1 =
-    testSubscription @(StringUpdate String) "SharedString1" "ABCDE" $ \mainSub ->
-        subscribeEditor mainSub $
-        testOutputEditor "main" $ \MkSubscribeContext {..} -> do
-            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 4)) mainSub
-            subscribeEditor lensSub $
-                testOutputEditor "sect" $ \_ -> do
-                    ?showVar
-                    subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]]
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"]]
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]]
-                    ?showVar
+    doSubscriberTest "SharedString1" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCDE"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 4)) mainSub
+        showSubscriberSubject "sect" sectSub
+        subscribeShowUpdates "sect" sectSub
+        mainShow
+        subscriberDontPushEdits "main" mainSub [[StringReplaceSection (startEndRun 3 5) "PQR"]]
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 1 2) "xy"]]
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 4) "1"]]
+        mainShow
 
 testSharedString2 :: TestTree
 testSharedString2 =
-    testSubscription @(StringUpdate String) "SharedString2" "ABC" $ \mainSub ->
-        subscribeEditor mainSub $
-        testOutputEditor "main" $ \_ -> do
-            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
-            subscribeEditor lensSub $
-                testOutputEditor "sect" $ \MkSubscribeContext {..} -> do
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 0 0) "P"]]
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 0 0) "Q"]]
-                    ?showVar
+    doSubscriberTest "SharedString2" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        showSubscriberSubject "sect" sectSub
+        subscribeShowUpdates "sect" sectSub
+        mainShow
+        subscriberPushEdits "sect" sectSub [[StringReplaceSection (startEndRun 0 0) "P"]]
+        mainShow
+        subscriberPushEdits "sect" sectSub [[StringReplaceSection (startEndRun 0 0) "Q"]]
+        mainShow
 
 testSharedString3 :: TestTree
 testSharedString3 =
-    testSubscription @(StringUpdate String) "SharedString3" "ABC" $ \mainSub ->
-        subscribeEditor mainSub $
-        testOutputEditor "main" $ \MkSubscribeContext {..} -> do
-            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
-            subscribeEditor lensSub $ pure ()
-            subscribeEditor lensSub $
-                testOutputEditor "sect" $ \_ -> do
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 1 1) "P"]]
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 2 2) "Q"]]
-                    ?showVar
+    doSubscriberTest "SharedString3" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        subscribeEditor sectSub $ pure ()
+        showSubscriberSubject "sect" sectSub
+        subscribeShowUpdates "sect" sectSub
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 1 1) "P"]]
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 2) "Q"]]
+        mainShow
 
 testSharedString4 :: TestTree
 testSharedString4 =
-    testSubscription @(StringUpdate String) "SharedString4" "ABC" $ \mainSub ->
-        subscribeEditor mainSub $
-        testOutputEditor "main" $ \main -> do
-            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
-            subscribeEditor lensSub $ pure ()
-            subscribeEditor lensSub $
-                testOutputEditor "sect" $ \sect -> do
-                    ?showVar
-                    subDoEdits main [[StringReplaceSection (startEndRun 0 0) "P"]]
-                    _ <- subGet sect
-                    ?showVar
-                    subDoEdits sect [[StringReplaceSection (startEndRun 0 0) "Q"]]
-                    ?showVar
+    doSubscriberTest "SharedString4" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        subscribeEditor sectSub $ pure ()
+        showSubscriberSubject "sect" sectSub
+        subscribeShowUpdates "sect" sectSub
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 0 0) "P"]]
+        showSubscriberSubject "sect" sectSub
+        mainShow
+        subscriberPushEdits "sect" sectSub [[StringReplaceSection (startEndRun 0 0) "Q"]]
+        mainShow
 
 testSharedString5 :: TestTree
 testSharedString5 =
-    testSubscription @(StringUpdate String) "SharedString5" "ABCD" $ \mainSub ->
-        subscribeEditor mainSub $
-        testOutputEditor "main" $ \main -> do
-            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
-            subscribeEditor lensSub $
-                testOutputEditor "sect" $ \_sect -> do
-                    ?showVar
-                    subDoEdits main [[StringReplaceSection (startEndRun 2 4) ""]]
-                    ?showVar
+    doSubscriberTest "SharedString5" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+        showSubscriberSubject "sect" sectSub
+        subscribeShowUpdates "sect" sectSub
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 4) ""]]
+        mainShow
 
 testSharedString6 :: TestTree
 testSharedString6 =
-    testSubscription @(StringUpdate String) "SharedString6" "ABCD" $ \mainSub ->
-        subscribeEditor mainSub $
-        testOutputEditor "main" $ \main -> do
-            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
-            subscribeEditor lensSub $
-                testOutputEditor "sect" $ \_sect -> do
-                    ?showVar
-                    subDoEdits main [[StringReplaceSection (startEndRun 3 4) ""]]
-                    ?showVar
+    doSubscriberTest "SharedString6" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+        showSubscriberSubject "sect" sectSub
+        subscribeShowUpdates "sect" sectSub
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 3 4) ""]]
+        mainShow
 
 testSharedString7 :: TestTree
 testSharedString7 =
-    testSubscription @(StringUpdate String) "SharedString7" "ABCD" $ \mainSub ->
-        subscribeEditor mainSub $
-        testOutputEditor "main" $ \main -> do
-            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
-            subscribeEditor lensSub $
-                testOutputEditor "sect" $ \_sect -> do
-                    ?showVar
-                    subDoEdits main [[StringReplaceSection (startEndRun 2 4) "PQR"]]
-                    ?showVar
+    doSubscriberTest "SharedString7" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+        showSubscriberSubject "sect" sectSub
+        subscribeShowUpdates "sect" sectSub
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 4) "PQR"]]
+        mainShow
 
 testSharedString7a :: TestTree
 testSharedString7a =
-    testSubscription @(StringUpdate String) "SharedString7a" "AB" $ \mainSub ->
-        subscribeEditor mainSub $
-        testOutputEditor "main" $ \main -> do
-            lensSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
-            subscribeEditor lensSub $
-                testOutputEditor "sect" $ \_sect -> do
-                    ?showVar
-                    subDoEdits main [[StringReplaceSection (startEndRun 2 2) "PQR"]]
-                    ?showVar
+    doSubscriberTest "SharedString7a" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "AB"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        showSubscriberSubject "sect" sectSub
+        subscribeShowUpdates "sect" sectSub
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 2) "PQR"]]
+        mainShow
+
+testPairedStrings1 :: TestTree
+testPairedStrings1 =
+    doSubscriberTest "PairedStrings1" $ do
+        (sub1, showVar1, _) <- testSubscription @(StringUpdate String) "ABC"
+        (sub2, showVar2, _) <- testSubscription @(StringUpdate String) "XYZ"
+        showSubscriberSubject "sub1" sub1
+        subscribeShowUpdates "sub1" sub1
+        showSubscriberSubject "sub2" sub2
+        subscribeShowUpdates "sub2" sub2
+        let pairSub = pairSubscribers sub1 sub2
+        showSubscriberSubject "pair" pairSub
+        subscribeShowUpdates "pair" pairSub
+        showVar1
+        showVar2
+        subscriberPushEdits
+            "pair"
+            pairSub
+            [[MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]]
+        showVar1
+        showVar2
+        subscriberPushEdits
+            "pair"
+            pairSub
+            [[MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]]
+        showVar1
+        showVar2
+
+testPairedString1 :: TestTree
+testPairedString1 =
+    doSubscriberTest "PairedString1" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
+        let pairSub = pairSubscribers mainSub mainSub
+        showSubscriberSubject "pair" pairSub
+        subscribeShowUpdates "pair" pairSub
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        mainShow
+        subscriberPushEdits
+            "pair"
+            pairSub
+            [[MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]]
+        mainShow
+        subscriberPushEdits
+            "pair"
+            pairSub
+            [[MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]]
+        mainShow
+
+testPairedSharedString1 :: TestTree
+testPairedSharedString1 =
+    doSubscriberTest "PairedSharedString1" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "PABCQ"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 4)) mainSub
+        showSubscriberSubject "sect" sectSub
+        subscribeShowUpdates "sect" sectSub
+        let pairSub = pairSubscribers sectSub sectSub
+        showSubscriberSubject "pair" pairSub
+        subscribeShowUpdates "pair" pairSub
+        mainShow
+        subscriberPushEdits
+            "pair"
+            pairSub
+            [[MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]]
+        mainShow
+        subscriberPushEdits
+            "pair"
+            pairSub
+            [[MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]]
+        mainShow
+
+testPairedSharedString2 :: TestTree
+testPairedSharedString2 =
+    doSubscriberTest "PairedSharedString2" $ do
+        (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
+        showSubscriberSubject "main" mainSub
+        subscribeShowUpdates "main" mainSub
+        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        showSubscriberSubject "sect" sectSub
+        subscribeShowUpdates "sect" sectSub
+        let pairSub = pairSubscribers sectSub sectSub
+        showSubscriberSubject "pair" pairSub
+        subscribeShowUpdates "pair" pairSub
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 1 1) "P"]]
+        mainShow
+        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 2) "Q"]]
+        mainShow
+        subscriberPushEdits "sect" sectSub [[StringReplaceSection (startEndRun 1 1) "x"]]
+        mainShow
+        subscriberPushEdits
+            "pair"
+            pairSub
+            [[MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 3 3) "y"]]
+        mainShow
 
 testSubscribe :: TestTree
 testSubscribe =
@@ -365,4 +489,8 @@ testSubscribe =
         , testSharedString6
         , testSharedString7
         , testSharedString7a
+        , ignoreTest testPairedStrings1
+        , ignoreTest testPairedString1
+        , ignoreTest testPairedSharedString1
+        , ignoreTest testPairedSharedString2
         ]

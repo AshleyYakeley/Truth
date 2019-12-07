@@ -133,6 +133,7 @@ tests:
       - truth-core
       - QuickCheck
       - tasty
+      - tasty-expected-failure
       - tasty-hunit
       - tasty-quickcheck
       - tasty-golden

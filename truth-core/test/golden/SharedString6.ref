@@ -1,7 +1,6 @@
-main: init: "ABCD"
-sect: init: "BC"
+main: get "ABCD"
+sect: get "BC"
 var: "ABCD"
-main: runObject
 main: push [section 3+1 ""]
 main: push succeeded
 main: receive [section 3+1 ""]

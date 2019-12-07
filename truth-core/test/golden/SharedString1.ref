@@ -1,11 +1,9 @@
-main: init: "ABCDE"
-sect: init: "BCD"
+main: get "ABCDE"
+sect: get "BCD"
 var: "ABCDE"
-main: runObject
 main: push [section 3+2 "PQR"]
 main: push ignored
 var: "ABCDE"
-main: runObject
 main: push [section 1+1 "xy"]
 main: push succeeded
 main: receive [section 1+1 "xy"]
@@ -15,7 +13,6 @@ lens: -update: [section 0+1 "xy"]
 sect: receive [section 0+1 "xy"]
 sect: receive "xyCD"
 var: "AxyCDE"
-main: runObject
 main: push [section 2+2 "1"]
 main: push succeeded
 main: receive [section 2+2 "1"]

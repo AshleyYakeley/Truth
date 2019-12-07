@@ -1,7 +1,6 @@
-main: init: "ABC"
-sect: init: "B"
+main: get "ABC"
+sect: get "B"
 var: "ABC"
-sect: runObject
 sect: push [section 0+0 "P"]
 lens: +put: [section 0+0 "P"]
 lens: -put: Just [section 1+0 "P"]
@@ -13,7 +12,6 @@ lens: -update: [section 0+0 "P"]
 sect: receive [section 0+0 "P"]
 sect: receive "PB"
 var: "APBC"
-sect: runObject
 sect: push [section 0+0 "Q"]
 lens: +put: [section 0+0 "Q"]
 lens: -put: Just [section 1+0 "Q"]
