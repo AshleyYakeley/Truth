@@ -1,0 +1,19 @@
+sub1: get "ABC"
+sub2: get "PQR"
+pair: get ("ABC","PQR")
+var: "ABC"
+var: "PQR"
+pair: push tuple first section 1+0 "x" :| []
+pair: push succeeded
+sub1: receive section 1+0 "x" :| []
+sub1: receive "AxBC"
+pair: receive tuple first section 1+0 "x" :| []
+var: "AxBC"
+var: "PQR"
+pair: push tuple second section 2+0 "y" :| []
+pair: push succeeded
+sub2: receive section 2+0 "y" :| []
+sub2: receive "PQyR"
+pair: receive tuple second section 2+0 "y" :| []
+var: "AxBC"
+var: "PQyR"

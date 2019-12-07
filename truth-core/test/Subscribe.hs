@@ -393,6 +393,18 @@ testSharedString7a =
 testPairedStrings1 :: TestTree
 testPairedStrings1 =
     doSubscriberTest "PairedStrings1" $ do
+        (sub1, _, _) <- testSubscription @(StringUpdate String) "ABC"
+        (sub2, _, _) <- testSubscription @(StringUpdate String) "PQR"
+        let pairSub = pairSubscribers sub1 sub2
+        subscribeShowUpdates' "pair" pairSub
+        subscriberPushEdits
+            "pair"
+            pairSub
+            [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]
+
+testPairedStrings2 :: TestTree
+testPairedStrings2 =
+    doSubscriberTest "PairedStrings2" $ do
         (sub1, showVar1, _) <- testSubscription @(StringUpdate String) "ABC"
         (sub2, showVar2, _) <- testSubscription @(StringUpdate String) "PQR"
         showSubscriberSubject "sub1" sub1
@@ -505,6 +517,7 @@ testSubscribe =
         , testSharedString7
         , testSharedString7a
         , ignoreTest testPairedStrings1
+        , ignoreTest testPairedStrings2
         , ignoreTest testPairedString1
         , ignoreTest testPairedSharedString1
         , ignoreTest testPairedSharedString2
