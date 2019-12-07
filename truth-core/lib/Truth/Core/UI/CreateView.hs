@@ -94,7 +94,7 @@ cvMapSubscriber getlens = do
 cvReceiveSubscriberUpdates ::
        Subscriber update
     -> (forall m. MonadIO m => MFunction (CreateView sel update') m -> MutableRead m (UpdateReader update) -> m a)
-    -> (a -> Object (UpdateEdit update) -> [update] -> EditSource -> IO ())
+    -> (a -> Object (UpdateEdit update) -> NonEmpty update -> EditSource -> IO ())
     -> CreateView sel update' a
 cvReceiveSubscriberUpdates (MkResource (rr :: _ tt) asub) fstCall recv = do
     -- monitor makes sure updates are ignored after the view has been closed
@@ -114,7 +114,7 @@ cvReceiveSubscriberUpdates (MkResource (rr :: _ tt) asub) fstCall recv = do
                             else return ()
                 return a
 
-cvReceiveIOUpdates :: (Object (UpdateEdit update) -> [update] -> EditSource -> IO ()) -> CreateView sel update ()
+cvReceiveIOUpdates :: (Object (UpdateEdit update) -> NonEmpty update -> EditSource -> IO ()) -> CreateView sel update ()
 cvReceiveIOUpdates recv = do
     sub <- cvSubscriber
     cvReceiveSubscriberUpdates sub (\_ _ -> return ()) $ \_ -> recv
@@ -145,9 +145,8 @@ cvBindUpdateFunction mesrc auf setf = do
     cvLiftView $ setf initial
     cvReceiveUpdates mesrc $ \(MkWMFunction unlift) ->
         mapReceiveUpdates auf $ \_ wupdates ->
-            case lastWholeUpdate wupdates of
-                Just newval -> liftIO $ unlift $ setf newval
-                Nothing -> return ()
+            case last wupdates of
+                MkWholeUpdate newval -> liftIO $ unlift $ setf newval
 
 cvAddAspect :: Aspect sel -> CreateView sel update ()
 cvAddAspect aspect = cvViewOutput $ mempty {voFirstAspect = aspect}

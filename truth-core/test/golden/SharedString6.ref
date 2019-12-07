@@ -1,12 +1,10 @@
 main: get "ABCD"
 sect: get "BC"
 var: "ABCD"
-main: push [section 3+1 ""]
+main: push section 3+1 "" :| []
 main: push succeeded
-main: receive [section 3+1 ""]
+main: receive section 3+1 "" :| []
 main: receive "ABC"
 lens: +update: section 3+1 ""
 lens: -update: []
-sect: receive []
-sect: receive "BC"
 var: "ABC"

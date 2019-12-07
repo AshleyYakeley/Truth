@@ -1,8 +1,8 @@
 main: get (False,False)
 var: (False,False)
 expected: (True,True)
-main: push [tuple first whole True,tuple second whole True]
+main: push tuple first whole True :| [tuple second whole True]
 main: push succeeded
-main: receive [tuple first whole True,tuple second whole True]
+main: receive tuple first whole True :| [tuple second whole True]
 main: receive (True,True)
 var: (True,True)

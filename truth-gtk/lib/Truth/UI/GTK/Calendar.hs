@@ -36,7 +36,7 @@ calendarGetView =
                      onChanged =
                          viewObjectPushEdit $ \_ push -> do
                              st <- getDay
-                             _ <- push esrc [MkWholeReaderEdit st]
+                             _ <- push esrc $ pure $ MkWholeReaderEdit st
                              return ()
                  putDay initial
                  _ <- cvLiftView $ viewOn widget #daySelected onChanged

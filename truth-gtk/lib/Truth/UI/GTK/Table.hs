@@ -120,6 +120,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
             kk <- seqStoreToList store
             return $ lookup @[(ContainerKey cont, Int)] key $ zip (fmap fst kk) [0 ..]
     cvReceiveUpdates Nothing $ \_ mr updates ->
+        void $
         mapUpdates (editLensFunction tableLens) mr updates $ \_ updates' ->
             for_ updates' $ \case
                 KeyUpdateDelete key -> do
@@ -144,25 +145,19 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens up
         changeText :: Change m (ContainerKey cont, StoreEntry updateT o rowtext rowprops)
         changeText =
             MkChange $ \(key, oldcol) ->
-                mapUpdates (editLensFunction $ entryTextLens oldcol) mr tupdates $ \_ updates ->
-                    case updates of
-                        [] -> return Nothing
-                        _ -> do
-                            newrow <-
-                                mutableReadToSubject $
-                                applyEdits (fmap updateEdit updates) $ subjectToMutableRead $ entryRowText oldcol
-                            return $ Just (key, oldcol {entryRowText = newrow})
+                mapUpdates (editLensFunction $ entryTextLens oldcol) mr tupdates $ \_ updates -> do
+                    newrow <-
+                        mutableReadToSubject $
+                        applyEdits (toList $ fmap updateEdit updates) $ subjectToMutableRead $ entryRowText oldcol
+                    return (key, oldcol {entryRowText = newrow})
         changeProp :: Change m (ContainerKey cont, StoreEntry updateT o rowtext rowprops)
         changeProp =
             MkChange $ \(key, oldcol) ->
-                mapUpdates (entryPropFunc oldcol) mr tupdates $ \_ updates ->
-                    case updates of
-                        [] -> return Nothing
-                        _ -> do
-                            newprops <-
-                                mutableReadToSubject $
-                                applyEdits (fmap updateEdit updates) $ subjectToMutableRead $ entryRowProps oldcol
-                            return $ Just (key, oldcol {entryRowProps = newprops})
+                mapUpdates (entryPropFunc oldcol) mr tupdates $ \_ updates -> do
+                    newprops <-
+                        mutableReadToSubject $
+                        applyEdits (toList $ fmap updateEdit updates) $ subjectToMutableRead $ entryRowProps oldcol
+                    return (key, oldcol {entryRowProps = newprops})
         in seqStoreTraverse_ store $ changeText <> changeProp
     let
         getSelectedKey :: IO (Maybe (ContainerKey cont))

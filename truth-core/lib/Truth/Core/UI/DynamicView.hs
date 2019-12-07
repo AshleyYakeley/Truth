@@ -37,6 +37,6 @@ cvDynamic firstdvs updateCV = do
         mVarRun stateVar $ do
             dvs <- get
             lift $ vsFirstAspect $ dynamicViewFocus dvs
-    cvReceiveIOUpdates update
+    cvReceiveIOUpdates $ \obj uu -> update obj $ toList uu
     obj <- cvLiftView viewObject
     liftIO $ update obj [] noEditSource

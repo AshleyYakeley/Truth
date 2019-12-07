@@ -40,7 +40,7 @@ viewObjectRead call = do
 viewObjectMaybeEdit ::
        (WIOFunction (View sel update) -> forall m.
                                              MonadUnliftIO m =>
-                                                     ([UpdateEdit update] -> m (Maybe (EditSource -> m ()))) -> m r)
+                                                     (NonEmpty (UpdateEdit update) -> m (Maybe (EditSource -> m ()))) -> m r)
     -> View sel update r
 viewObjectMaybeEdit call = do
     unliftIO <- askUnliftIO
@@ -49,7 +49,8 @@ viewObjectMaybeEdit call = do
 
 viewObjectPushEdit ::
        (WIOFunction (View sel update) -> forall m.
-                                             MonadUnliftIO m => (EditSource -> [UpdateEdit update] -> m Bool) -> m r)
+                                             MonadUnliftIO m =>
+                                                     (EditSource -> NonEmpty (UpdateEdit update) -> m Bool) -> m r)
     -> View sel update r
 viewObjectPushEdit call = viewObjectMaybeEdit $ \unlift push -> call unlift $ \esrc edits -> pushEdit esrc $ push edits
 

@@ -59,7 +59,7 @@ optionFromStore esrc store = do
                 (True, iter) -> do
                     i <- seqStoreIterToIndex iter
                     (t, _) <- seqStoreGetValue store i
-                    _ <- push esrc [MkWholeReaderEdit t]
+                    _ <- push esrc $ pure $ MkWholeReaderEdit t
                     return ()
                 (False, _) -> return ()
     let

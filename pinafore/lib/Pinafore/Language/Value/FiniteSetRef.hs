@@ -67,7 +67,7 @@ pinaforeFiniteSetRefJoin seta setb =
 
 pinaforeFiniteSetRefAdd :: PinaforeFiniteSetRef baseupdate '( p, q) -> p -> PinaforeAction baseupdate ()
 pinaforeFiniteSetRefAdd (MkPinaforeFiniteSetRef tr set) p =
-    pinaforeLensPush set [KeyEditInsertReplace $ fromEnhanced (rangeContra tr) p]
+    pinaforeLensPush set $ pure $ KeyEditInsertReplace $ fromEnhanced (rangeContra tr) p
 
 pinaforeFiniteSetRefAddNew ::
        PinaforeFiniteSetRef baseupdate '( NewEntity, TopType) -> PinaforeAction baseupdate NewEntity
@@ -78,10 +78,10 @@ pinaforeFiniteSetRefAddNew set = do
 
 pinaforeFiniteSetRefRemove :: PinaforeFiniteSetRef baseupdate '( p, q) -> p -> PinaforeAction baseupdate ()
 pinaforeFiniteSetRefRemove (MkPinaforeFiniteSetRef tr set) p =
-    pinaforeLensPush set [KeyEditDelete $ fromEnhanced (rangeContra tr) p]
+    pinaforeLensPush set $ pure $ KeyEditDelete $ fromEnhanced (rangeContra tr) p
 
 pinaforeFiniteSetRefRemoveAll :: PinaforeFiniteSetRef baseupdate '( BottomType, TopType) -> PinaforeAction baseupdate ()
-pinaforeFiniteSetRefRemoveAll (MkPinaforeFiniteSetRef _ set) = pinaforeLensPush set [KeyEditClear]
+pinaforeFiniteSetRefRemoveAll (MkPinaforeFiniteSetRef _ set) = pinaforeLensPush set $ pure KeyEditClear
 
 pinaforeFiniteSetRefFunctionValue ::
        PinaforeFiniteSetRef baseupdate '( t, a) -> PinaforeFunctionValue baseupdate (FiniteSet a)

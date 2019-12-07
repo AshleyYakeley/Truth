@@ -19,7 +19,7 @@ import Truth.Core.Resource
 
 data ASubscriber update tt = MkASubscriber
     { subAnObject :: AnObject (UpdateEdit update) tt
-    , subscribe :: ([update] -> EditContext -> IO ()) -> LifeCycleT (ApplyStack tt IO) ()
+    , subscribe :: (NonEmpty update -> EditContext -> IO ()) -> LifeCycleT (ApplyStack tt IO) ()
     }
 
 instance MapResource (ASubscriber update) where
@@ -42,19 +42,19 @@ type Subscriber update = Resource (ASubscriber update)
 subscriberObject :: Subscriber update -> Object (UpdateEdit update)
 subscriberObject (MkResource run sub) = MkResource run $ subAnObject sub
 
-type UpdateStoreEntry update = [update] -> EditContext -> IO ()
+type UpdateStoreEntry update = NonEmpty update -> EditContext -> IO ()
 
 type UpdateStore update = Store (UpdateStoreEntry update)
 
 newtype UpdateQueue update =
-    MkUpdateQueue [(EditContext, [update])]
+    MkUpdateQueue [(EditContext, NonEmpty update)]
 
-collapse1 :: (EditContext, [update]) -> [(EditContext, [update])] -> [(EditContext, [update])]
+collapse1 :: (EditContext, NonEmpty update) -> [(EditContext, NonEmpty update)] -> [(EditContext, NonEmpty update)]
 collapse1 (esa, ea) ((esb, eb):bb)
     | esa == esb = (esb, ea <> eb) : bb
 collapse1 a bb = a : bb
 
-collapse :: [(EditContext, [update])] -> [(EditContext, [update])] -> [(EditContext, [update])]
+collapse :: [(EditContext, NonEmpty update)] -> [(EditContext, NonEmpty update)] -> [(EditContext, NonEmpty update)]
 collapse [] bb = bb
 collapse [a] bb = collapse1 a bb
 collapse (a:aa) bb = a : collapse aa bb
@@ -62,13 +62,16 @@ collapse (a:aa) bb = a : collapse aa bb
 instance Semigroup (UpdateQueue update) where
     MkUpdateQueue aa <> MkUpdateQueue bb = MkUpdateQueue $ collapse aa bb
 
-singleUpdateQueue :: [update] -> EditContext -> UpdateQueue update
+singleUpdateQueue :: NonEmpty update -> EditContext -> UpdateQueue update
 singleUpdateQueue edits ec = MkUpdateQueue $ pure (ec, edits)
 
-utReceiveUpdates :: UpdateTiming -> ([update] -> EditContext -> IO ()) -> [update] -> EditContext -> IO ()
+utReceiveUpdates :: UpdateTiming -> (NonEmpty update -> EditContext -> IO ()) -> NonEmpty update -> EditContext -> IO ()
 utReceiveUpdates ut recv edits ec = recv edits $ timingEditContext ut ec
 
-getRunner :: UpdateTiming -> ([update] -> EditContext -> IO ()) -> LifeCycleIO ([update] -> EditContext -> IO ())
+getRunner ::
+       UpdateTiming
+    -> (NonEmpty update -> EditContext -> IO ())
+    -> LifeCycleIO (NonEmpty update -> EditContext -> IO ())
 getRunner SynchronousUpdateTiming recv = return recv
 getRunner AsynchronousUpdateTiming recv = do
     runAsync <- asyncRunner $ \(MkUpdateQueue sourcededits) -> for_ sourcededits $ \(ec, edits) -> recv edits ec
@@ -81,15 +84,15 @@ subscriberObjectMaker (MkResource rr MkASubscriber {..}) a update =
         return (MkResource rr subAnObject, a)
 
 makeSharedSubscriber :: forall update a. UpdateTiming -> ObjectMaker update a -> LifeCycleIO (Subscriber update, a)
-makeSharedSubscriber ut uobj = do
+makeSharedSubscriber ut om = do
     var :: MVar (UpdateStore update) <- liftIO $ newMVar emptyStore
     let
-        updateP :: [update] -> EditContext -> IO ()
+        updateP :: NonEmpty update -> EditContext -> IO ()
         updateP edits ectxt = do
             store <- mVarRun var get
             for_ store $ \entry -> entry edits ectxt
     runAsync <- getRunner ut $ utReceiveUpdates ut updateP
-    (MkResource (trunC :: ResourceRunner tt) anObjectC, a) <- uobj runAsync
+    (MkResource (trunC :: ResourceRunner tt) anObjectC, a) <- om runAsync
     Dict <- return $ resourceRunnerUnliftAllDict trunC
     Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     let
@@ -128,7 +131,9 @@ mapPureSubscriber lens (MkResource rr (MkASubscriber objA subA)) =
         objB = mapAnObject lens objA
         subB recvB = let
             recvA updatesA ec = do
-                updatesB <- run $ ufUpdates (elFunction lens) updatesA (objRead objA)
-                recvB updatesB ec
+                updatesB <- run $ ufUpdates (elFunction lens) (toList updatesA) (objRead objA)
+                case nonEmpty updatesB of
+                    Nothing -> return ()
+                    Just updatesB' -> recvB updatesB' ec
             in subA recvA
         in MkResource rr $ MkASubscriber objB subB

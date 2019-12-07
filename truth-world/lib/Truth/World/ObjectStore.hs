@@ -93,14 +93,13 @@ directoryObjectStore (MkResource (trun :: ResourceRunner tt) (MkAnObject rd push
                             return $ Just code
                         _ -> return $ Nothing
         objEdit ::
-               [UpdateEdit (ObjectStoreUpdate name ByteStringEdit)]
+               NonEmpty (UpdateEdit (ObjectStoreUpdate name ByteStringEdit))
             -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
         objEdit edits =
             return $
             Just $ \esrc ->
-                case lastM edits of
-                    Nothing -> return ()
-                    Just (MkTupleUpdateEdit (MkFunctionSelector (nameStr -> name)) edit) ->
+                case last edits of
+                    MkTupleUpdateEdit (MkFunctionSelector (nameStr -> name)) edit ->
                         case edit of
                             SingleObjectDelete -> do
                                 mitem <- rd $ FSReadItem name
@@ -108,7 +107,7 @@ directoryObjectStore (MkResource (trun :: ResourceRunner tt) (MkAnObject rd push
                                     Just (FSFileItem _) -> do
                                         code <- findUndoCode name 0
                                         pushOrFail ("couldn't rename FS item " <> show name) esrc $
-                                            push [FSEditRenameItem name (undoName name code)]
+                                            push $ pure $ FSEditRenameItem name (undoName name code)
                                     _ -> return ()
                             SingleObjectDeleteCreate -> do
                                 mitem <- rd $ FSReadItem name
@@ -116,14 +115,13 @@ directoryObjectStore (MkResource (trun :: ResourceRunner tt) (MkAnObject rd push
                                     Just (FSFileItem _) -> do
                                         code <- findUndoCode name 0
                                         pushOrFail ("couldn't rename FS item " <> show name) esrc $
-                                            push
-                                                [ FSEditRenameItem name (undoName name code)
-                                                , FSEditCreateFile name mempty
-                                                ]
+                                            push $
+                                            (FSEditRenameItem name (undoName name code)) :|
+                                            [FSEditCreateFile name mempty]
                                     _ ->
                                         pushOrFail ("couldn't create FS item " <> show name) esrc $
-                                        push [FSEditCreateFile name mempty]
+                                        push $ pure $ FSEditCreateFile name mempty
                             SingleObjectRecover code ->
                                 pushOrFail ("couldn't rename FS item " <> show name) esrc $
-                                push [FSEditRenameItem (undoName name code) name]
+                                push $ pure $ FSEditRenameItem (undoName name code) name
         in MkResource trun MkAnObject {..}

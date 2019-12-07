@@ -39,14 +39,14 @@ saveBufferObject (MkResource rrP (MkAnObject readP pushP)) update =
                        MutableRead (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
                 readC = mSubjectToMutableRead $ fmap saveBuffer get
                 pushC ::
-                       [UpdateEdit update]
+                       NonEmpty (UpdateEdit update)
                     -> StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) (Maybe (EditSource -> StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) ()))
                 pushC edits =
                     return $
                     Just $ \esrc -> do
                         newbuf <-
                             mutableReadToSubject $
-                            applyEdits edits $
+                            applyEdits (toList edits) $
                             mSubjectToMutableRead $ do
                                 MkSaveBuffer oldbuf _ <- get
                                 return oldbuf
@@ -57,7 +57,7 @@ saveBufferObject (MkResource rrP (MkAnObject readP pushP)) update =
             saveAction esrc =
                 runP $ do
                     MkSaveBuffer buf _ <- mVarRun sbVar get
-                    maction <- pushP [MkWholeReaderEdit buf]
+                    maction <- pushP $ pure $ MkWholeReaderEdit buf
                     case maction of
                         Nothing -> return False
                         Just action -> do
@@ -71,7 +71,9 @@ saveBufferObject (MkResource rrP (MkAnObject readP pushP)) update =
                         buf <- readP ReadWhole
                         mVarRun sbVar $ put $ MkSaveBuffer buf False
                         getReplaceEditsFromSubject buf
-                liftIO $ update (fmap editUpdate edits) $ editSourceContext esrc
+                case nonEmpty edits of
+                    Nothing -> return ()
+                    Just edits' -> liftIO $ update (fmap editUpdate edits') $ editSourceContext esrc
                 return False
             saveActions :: SaveActions
             saveActions =

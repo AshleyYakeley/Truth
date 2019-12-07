@@ -106,7 +106,7 @@ fileSystemObject = let
         if isSymLink
             then fmap Just $ getSymbolicLinkTarget path
             else return Nothing
-    objEdit :: [FSEdit] -> IO (Maybe (EditSource -> IO ()))
+    objEdit :: NonEmpty FSEdit -> IO (Maybe (EditSource -> IO ()))
     objEdit =
         singleEdit $ \edit ->
             case edit of
@@ -147,7 +147,7 @@ subdirectoryObject create dir (MkResource (rr :: ResourceRunner tt) (MkAnObject 
                         True -> do
                             lift $
                                 pushOrFail ("couldn't create directory " <> show dir) noEditSource $
-                                push [FSEditCreateDirectory dir]
+                                push $ pure $ FSEditCreateDirectory dir
                             put False
                 insideToOutside :: FilePath -> FilePath
                 insideToOutside path = let
@@ -189,7 +189,7 @@ subdirectoryObject create dir (MkResource (rr :: ResourceRunner tt) (MkAnObject 
                 mapPath (FSEditRenameItem path1 path2) =
                     FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
                 push' ::
-                       [FSEdit]
+                       NonEmpty FSEdit
                     -> StateT Bool (ApplyStack tt IO) (Maybe (EditSource -> StateT Bool (ApplyStack tt IO) ()))
                 push' edits = do
                     pushFirst

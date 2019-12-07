@@ -80,17 +80,18 @@ checkUpdateEditor ::
     -> IO ()
     -> Editor (WholeUpdate a) ()
 checkUpdateEditor val push = let
-    editorInit :: Object (WholeEdit a) -> LifeCycleIO (MVar [WholeUpdate a])
+    editorInit :: Object (WholeEdit a) -> LifeCycleIO (MVar (NonEmpty (WholeUpdate a)))
     editorInit _ = liftIO newEmptyMVar
-    editorUpdate :: MVar [WholeUpdate a] -> Object (WholeEdit a) -> [WholeUpdate a] -> EditContext -> IO ()
+    editorUpdate ::
+           MVar (NonEmpty (WholeUpdate a)) -> Object (WholeEdit a) -> NonEmpty (WholeUpdate a) -> EditContext -> IO ()
     editorUpdate var _ edits _ = do putMVar var edits
-    editorDo :: MVar [WholeUpdate a] -> Object (WholeEdit a) -> LifeCycleIO ()
+    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Object (WholeEdit a) -> LifeCycleIO ()
     editorDo var _ =
         liftIO $ do
             push
             edits <- takeMVar var
             case edits of
-                [MkWholeReaderUpdate v]
+                MkWholeReaderUpdate v :| []
                     | v == val -> return ()
                 _ -> fail "unexpected push"
     in MkEditor {..}

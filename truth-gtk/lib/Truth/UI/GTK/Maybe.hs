@@ -19,8 +19,11 @@ createButton subj (MkResource trun MkAnObject {..}) =
         liftIO $
         run $ do
             edits <- getReplaceEditsFromSubject subj
-            _ <- pushEdit noEditSource $ objEdit edits
-            return ()
+            case nonEmpty edits of
+                Nothing -> return ()
+                Just edits' -> do
+                    _ <- pushEdit noEditSource $ objEdit edits'
+                    return ()
 
 data OneWholeViews sel f
     = MissingOVS (Limit f)
@@ -46,7 +49,7 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
         for mDeleteValue $ \(MkLimit deleteValue) -> do
             cvMakeButton "Delete" $
                 viewObjectPushEdit $ \_ push -> do
-                    _ <- push noEditSource [SumEditLeft $ MkWholeReaderEdit deleteValue]
+                    _ <- push noEditSource $ pure $ SumEditLeft $ MkWholeReaderEdit deleteValue
                     return ()
     let
         getWidgets :: f () -> View sel (OneWholeUpdate f update) (OneWholeViews sel f)

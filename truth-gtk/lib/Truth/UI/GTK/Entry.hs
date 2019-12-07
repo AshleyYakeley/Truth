@@ -30,7 +30,7 @@ textEntryGetView =
                      viewOn widget #changed $
                      viewObjectPushEdit $ \_ push -> do
                          st <- get widget #text
-                         succeeded <- push esrc [MkWholeReaderEdit st]
+                         succeeded <- push esrc $ pure $ MkWholeReaderEdit st
                          setValidState succeeded
                  cvReceiveUpdate (Just esrc) $ \_ _ (MkWholeReaderUpdate newtext) ->
                      liftIO $

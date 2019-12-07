@@ -25,7 +25,7 @@ import Data.Functor.Identity as I
 import Data.Int as I
 import Data.Kind as I
 import Data.List as I ((++), intercalate, length, nub, zip)
-import Data.List.NonEmpty as I (NonEmpty(..))
+import Data.List.NonEmpty as I (NonEmpty(..), last, nonEmpty)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
 import Data.Ord as I

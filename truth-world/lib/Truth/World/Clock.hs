@@ -13,7 +13,7 @@ clockObjectMaker basetime interval update = do
         first <-
             clock basetime interval $ \t -> do
                 writeIORef ref t
-                update [MkWholeReaderUpdate t] noEditContext
+                update (pure $ MkWholeReaderUpdate t) noEditContext
     run <-
         liftIO $
         newResourceRunner $ \rt -> do

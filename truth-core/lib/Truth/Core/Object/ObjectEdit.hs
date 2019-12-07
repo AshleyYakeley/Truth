@@ -58,16 +58,19 @@ objectEditLens = let
         => [UpdateEdit update]
         -> MutableRead m (EditReader (ObjectEdit (UpdateEdit update)))
         -> m (Maybe [ObjectEdit (UpdateEdit update)])
-    elPutEdits edits mr = do
-        (MkResource rr (MkAnObject _ e)) <- mr ReadObject
-        runResourceRunnerWith rr $ \run ->
-            liftIO $
-            run $ do
-                maction <- e edits
-                case maction of
-                    Just action -> action noEditSource
-                    Nothing -> liftIO $ fail "objectEditLens: failed"
-        return $ Just []
+    elPutEdits edits mr =
+        case nonEmpty edits of
+            Nothing -> return $ Just []
+            Just edits' -> do
+                (MkResource rr (MkAnObject _ e)) <- mr ReadObject
+                runResourceRunnerWith rr $ \run ->
+                    liftIO $
+                    run $ do
+                        maction <- e edits'
+                        case maction of
+                            Just action -> action noEditSource
+                            Nothing -> liftIO $ fail "objectEditLens: failed"
+                return $ Just []
     in MkEditLens {..}
 
 objectLiftEditLens ::

@@ -77,20 +77,37 @@ testUpdateObject =
             om = reflectingObjectMaker obj
             lens :: EditLens (WholeUpdate String) (WholeUpdate String)
             lens = readOnlyEditLens testUpdateFunction
-            recv :: [WholeUpdate String] -> EditContext -> IO ()
+            recv :: NonEmpty (WholeUpdate String) -> EditContext -> IO ()
             recv ee _ = for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv update edit: " <> show s
-            recv' :: [WholeUpdate String] -> EditContext -> IO ()
+            recv' :: NonEmpty (WholeUpdate String) -> EditContext -> IO ()
             recv' ee _ = for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv' update edit: " <> show s
         runLifeCycle $ do
             om' <- shareObjectMaker om
             (MkResource trun MkAnObject {..}, ()) <- om' recv
             (_obj', ()) <- mapObjectMaker lens om' recv'
             runResourceRunnerWith trun $ \run ->
-                liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit [MkWholeReaderEdit "new"]
+                liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit $ pure $ MkWholeReaderEdit "new"
             return ()
 
+outputLn :: (?handle :: Handle, MonadIO m) => String -> m ()
+outputLn s = liftIO $ hPutStrLn ?handle s
+
 outputNameLn :: (?handle :: Handle, MonadIO m) => String -> String -> m ()
-outputNameLn name s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
+outputNameLn name s = outputLn $ name ++ ": " ++ s
+
+subscribeShowUpdates' ::
+       ( Show update
+       , Show (UpdateEdit update)
+       , Show (UpdateSubject update)
+       , FullSubjectReader (UpdateReader update)
+       , ?handle :: Handle
+       )
+    => String
+    -> Subscriber update
+    -> LifeCycleIO ()
+subscribeShowUpdates' name (MkResource trun (MkASubscriber _ subrecv)) =
+    runResourceRunnerWith trun $ \run ->
+        remonad run $ subrecv $ \edits _ -> outputNameLn name $ "receive " ++ show edits
 
 subscribeShowUpdates ::
        ( Show update
@@ -126,7 +143,7 @@ subscriberPushEdits ::
        (Show (UpdateEdit update), ?handle :: Handle)
     => String
     -> Subscriber update
-    -> [[UpdateEdit update]]
+    -> [NonEmpty (UpdateEdit update)]
     -> LifeCycleIO ()
 subscriberPushEdits name (MkResource trun (MkASubscriber (MkAnObject _ push) _)) editss =
     runResourceRunnerWith trun $ \run ->
@@ -145,7 +162,7 @@ subscriberDontPushEdits ::
        (Show (UpdateEdit update), ?handle :: Handle)
     => String
     -> Subscriber update
-    -> [[UpdateEdit update]]
+    -> [NonEmpty (UpdateEdit update)]
     -> LifeCycleIO ()
 subscriberDontPushEdits name (MkResource trun (MkASubscriber (MkAnObject _ push) _)) editss =
     runResourceRunnerWith trun $ \run ->
@@ -161,7 +178,7 @@ subscriberDontPushEdits name (MkResource trun (MkASubscriber (MkAnObject _ push)
 testSubscription ::
        forall update. (?handle :: Handle, IsUpdate update, FullEdit (UpdateEdit update), Show (UpdateSubject update))
     => UpdateSubject update
-    -> LifeCycleIO (Subscriber update, LifeCycleIO (), [UpdateEdit update] -> LifeCycleIO ())
+    -> LifeCycleIO (Subscriber update, LifeCycleIO (), NonEmpty (UpdateEdit update) -> LifeCycleIO ())
 testSubscription initial = do
     iow <- liftIO $ newIOWitness
     var <- liftIO $ newMVar initial
@@ -177,7 +194,7 @@ testSubscription initial = do
             \edits ->
                 liftIO $
                 withMVar var $ \s -> do
-                    news <- mutableReadToSubject $ applyEdits edits $ subjectToMutableRead s
+                    news <- mutableReadToSubject $ applyEdits (toList edits) $ subjectToMutableRead s
                     hPutStrLn ?handle $ "expected: " ++ show news
     return (sub, showVar, showExpected)
 
@@ -192,16 +209,14 @@ testPair =
         showSubscriberSubject "main" mainSub
         subscribeShowUpdates "main" mainSub
         mainShow
-        mainShowExpected
-            [ MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True
-            , MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True
-            ]
+        mainShowExpected $
+            (MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True) :|
+            [MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True]
         subscriberPushEdits
             "main"
             mainSub
-            [ [ MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True
-              , MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True
-              ]
+            [ (MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True) :|
+              [MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True]
             ]
         mainShow
 
@@ -212,13 +227,13 @@ testString =
         showSubscriberSubject "main" mainSub
         subscribeShowUpdates "main" mainSub
         mainShow
-        subscriberDontPushEdits "main" mainSub [[StringReplaceSection (startEndRun 3 5) "PQR"]]
+        subscriberDontPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 3 5) "PQR"]
         mainShow
-        subscriberDontPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 3) ""]]
+        subscriberDontPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 3) ""]
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 1 2) "xy"]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 2) "xy"]
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 4) "1"]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) "1"]
         mainShow
 
 testString1 :: TestTree
@@ -231,12 +246,12 @@ testString1 =
         subscriberDontPushEdits
             "main"
             mainSub
-            [[StringReplaceSection (startEndRun 3 5) "PQR"], [StringReplaceSection (startEndRun 2 3) ""]]
+            [pure $ StringReplaceSection (startEndRun 3 5) "PQR", pure $ StringReplaceSection (startEndRun 2 3) ""]
         mainShow
         subscriberPushEdits
             "main"
             mainSub
-            [[StringReplaceSection (startEndRun 1 2) "xy"], [StringReplaceSection (startEndRun 2 4) "1"]]
+            [pure $ StringReplaceSection (startEndRun 1 2) "xy", pure $ StringReplaceSection (startEndRun 2 4) "1"]
         mainShow
 
 testString2 :: TestTree
@@ -249,13 +264,13 @@ testString2 =
         subscriberDontPushEdits
             "main"
             mainSub
-            [[StringReplaceSection (startEndRun 3 5) "PQR", StringReplaceSection (startEndRun 2 3) ""]]
+            [(StringReplaceSection (startEndRun 3 5) "PQR") :| [StringReplaceSection (startEndRun 2 3) ""]]
         mainShow
-        mainShowExpected [StringReplaceSection (startEndRun 1 2) "xy", StringReplaceSection (startEndRun 2 4) "1"]
+        mainShowExpected $ (StringReplaceSection (startEndRun 1 2) "xy") :| [StringReplaceSection (startEndRun 2 4) "1"]
         subscriberPushEdits
             "main"
             mainSub
-            [[StringReplaceSection (startEndRun 1 2) "xy", StringReplaceSection (startEndRun 2 4) "1"]]
+            [(StringReplaceSection (startEndRun 1 2) "xy") :| [StringReplaceSection (startEndRun 2 4) "1"]]
         mainShow
 
 testSharedString1 :: TestTree
@@ -268,11 +283,11 @@ testSharedString1 =
         showSubscriberSubject "sect" sectSub
         subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberDontPushEdits "main" mainSub [[StringReplaceSection (startEndRun 3 5) "PQR"]]
+        subscriberDontPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 3 5) "PQR"]
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 1 2) "xy"]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 2) "xy"]
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 4) "1"]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) "1"]
         mainShow
 
 testSharedString2 :: TestTree
@@ -285,9 +300,9 @@ testSharedString2 =
         showSubscriberSubject "sect" sectSub
         subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "sect" sectSub [[StringReplaceSection (startEndRun 0 0) "P"]]
+        subscriberPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 0 0) "P"]
         mainShow
-        subscriberPushEdits "sect" sectSub [[StringReplaceSection (startEndRun 0 0) "Q"]]
+        subscriberPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 0 0) "Q"]
         mainShow
 
 testSharedString3 :: TestTree
@@ -301,9 +316,9 @@ testSharedString3 =
         showSubscriberSubject "sect" sectSub
         subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 1 1) "P"]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 1) "P"]
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 2) "Q"]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 2) "Q"]
         mainShow
 
 testSharedString4 :: TestTree
@@ -317,10 +332,10 @@ testSharedString4 =
         showSubscriberSubject "sect" sectSub
         subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 0 0) "P"]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 0 0) "P"]
         showSubscriberSubject "sect" sectSub
         mainShow
-        subscriberPushEdits "sect" sectSub [[StringReplaceSection (startEndRun 0 0) "Q"]]
+        subscriberPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 0 0) "Q"]
         mainShow
 
 testSharedString5 :: TestTree
@@ -333,7 +348,7 @@ testSharedString5 =
         showSubscriberSubject "sect" sectSub
         subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 4) ""]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) ""]
         mainShow
 
 testSharedString6 :: TestTree
@@ -346,7 +361,7 @@ testSharedString6 =
         showSubscriberSubject "sect" sectSub
         subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 3 4) ""]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 3 4) ""]
         mainShow
 
 testSharedString7 :: TestTree
@@ -359,7 +374,7 @@ testSharedString7 =
         showSubscriberSubject "sect" sectSub
         subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 4) "PQR"]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) "PQR"]
         mainShow
 
 testSharedString7a :: TestTree
@@ -372,33 +387,33 @@ testSharedString7a =
         showSubscriberSubject "sect" sectSub
         subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 2) "PQR"]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 2) "PQR"]
         mainShow
 
 testPairedStrings1 :: TestTree
 testPairedStrings1 =
     doSubscriberTest "PairedStrings1" $ do
         (sub1, showVar1, _) <- testSubscription @(StringUpdate String) "ABC"
-        (sub2, showVar2, _) <- testSubscription @(StringUpdate String) "XYZ"
+        (sub2, showVar2, _) <- testSubscription @(StringUpdate String) "PQR"
         showSubscriberSubject "sub1" sub1
         subscribeShowUpdates "sub1" sub1
         showSubscriberSubject "sub2" sub2
         subscribeShowUpdates "sub2" sub2
         let pairSub = pairSubscribers sub1 sub2
         showSubscriberSubject "pair" pairSub
-        subscribeShowUpdates "pair" pairSub
+        subscribeShowUpdates' "pair" pairSub
         showVar1
         showVar2
         subscriberPushEdits
             "pair"
             pairSub
-            [[MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]]
+            [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]
         showVar1
         showVar2
         subscriberPushEdits
             "pair"
             pairSub
-            [[MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]]
+            [pure $ MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 2 2) "y"]
         showVar1
         showVar2
 
@@ -415,12 +430,12 @@ testPairedString1 =
         subscriberPushEdits
             "pair"
             pairSub
-            [[MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]]
+            [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]
         mainShow
         subscriberPushEdits
             "pair"
             pairSub
-            [[MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]]
+            [pure $ MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]
         mainShow
 
 testPairedSharedString1 :: TestTree
@@ -439,12 +454,12 @@ testPairedSharedString1 =
         subscriberPushEdits
             "pair"
             pairSub
-            [[MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]]
+            [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]
         mainShow
         subscriberPushEdits
             "pair"
             pairSub
-            [[MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]]
+            [pure $ MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]
         mainShow
 
 testPairedSharedString2 :: TestTree
@@ -460,16 +475,16 @@ testPairedSharedString2 =
         showSubscriberSubject "pair" pairSub
         subscribeShowUpdates "pair" pairSub
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 1 1) "P"]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 1) "P"]
         mainShow
-        subscriberPushEdits "main" mainSub [[StringReplaceSection (startEndRun 2 2) "Q"]]
+        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 2) "Q"]
         mainShow
-        subscriberPushEdits "sect" sectSub [[StringReplaceSection (startEndRun 1 1) "x"]]
+        subscriberPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 1 1) "x"]
         mainShow
         subscriberPushEdits
             "pair"
             pairSub
-            [[MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 3 3) "y"]]
+            [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 3 3) "y"]
         mainShow
 
 testSubscribe :: TestTree

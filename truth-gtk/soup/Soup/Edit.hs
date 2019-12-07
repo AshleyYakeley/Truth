@@ -68,15 +68,17 @@ directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS
                                 Just (FSFileItem object) -> Just object
                                 _ -> Nothing
                     pushSoup ::
-                           [UpdateEdit ObjectSoupUpdate] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+                           NonEmpty (UpdateEdit ObjectSoupUpdate)
+                        -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
                     pushSoup =
                         singleEdit $ \edit ->
                             case edit of
                                 KeyEditItem _uuid (MkTupleUpdateEdit SelectFirst iedit) -> never iedit
                                 KeyEditItem _uuid (MkTupleUpdateEdit SelectSecond iedit) -> never iedit
-                                KeyEditDelete uuid -> pushFS [FSEditDeleteNonDirectory $ dirpath </> uuidToName uuid]
+                                KeyEditDelete uuid ->
+                                    pushFS $ pure $ FSEditDeleteNonDirectory $ dirpath </> uuidToName uuid
                                 KeyEditInsertReplace (uuid, bs) ->
-                                    pushFS [FSEditCreateFile (dirpath </> uuidToName uuid) bs]
+                                    pushFS $ pure $ FSEditCreateFile (dirpath </> uuidToName uuid) bs
                                 KeyEditClear -> do
                                     mnames <- readFS $ FSReadDirectory dirpath
                                     return $
@@ -84,6 +86,6 @@ directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS
                                             Just names ->
                                                 Just $ \_ ->
                                                     for_ names $ \name ->
-                                                        pushFS [FSEditDeleteNonDirectory $ dirpath </> name]
+                                                        pushFS $ pure $ FSEditDeleteNonDirectory $ dirpath </> name
                                             Nothing -> Nothing
                     in MkResource runFS $ MkAnObject readSoup pushSoup

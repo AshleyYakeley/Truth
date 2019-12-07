@@ -24,13 +24,16 @@ switchView specfunc = do
             cvMapEdit (return $ readOnlyEditLens specfunc) $ cvLiftView $ viewObjectRead $ \_ mr -> mr ReadWhole
         cvLiftView $ getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic @(ViewState sel) firstvs $ \object updates -> do
-        whupdates <- liftIO $ objectMapUpdates specfunc object updates
-        for_ (lastWholeUpdate whupdates) $ \spec -> do
-            oldvs <- get
-            liftIO $ closeDynamicView oldvs
-            newvs <- liftIO $ runWMFunction unliftView $ getViewState spec
-            put newvs
+    cvDynamic @(ViewState sel) firstvs $ \object updates ->
+        case nonEmpty updates of
+            Nothing -> return ()
+            Just updates' -> do
+                whupdates <- liftIO $ objectMapUpdates specfunc object updates'
+                for_ (lastWholeUpdate whupdates) $ \spec -> do
+                    oldvs <- get
+                    liftIO $ closeDynamicView oldvs
+                    newvs <- liftIO $ runWMFunction unliftView $ getViewState spec
+                    put newvs
     toWidget box
 
 switchGetView :: GetGView

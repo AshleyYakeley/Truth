@@ -12,14 +12,18 @@ import Truth.Core.Read
 import Truth.Core.Resource
 
 -- fst is original edits, snd is undoing edits
-type UndoEntry edit = ([edit], [edit])
+type UndoEntry edit = (NonEmpty edit, NonEmpty edit)
 
 makeUndoEntry ::
-       (MonadIO m, InvertibleEdit edit) => MutableRead m (EditReader edit) -> [edit] -> m (Maybe (UndoEntry edit))
-makeUndoEntry _ [] = return Nothing
+       (MonadIO m, InvertibleEdit edit)
+    => MutableRead m (EditReader edit)
+    -> NonEmpty edit
+    -> m (Maybe (UndoEntry edit))
 makeUndoEntry mr edits = do
-    unedits <- invertEdits edits mr
-    return $ Just (edits, unedits)
+    unedits <- invertEdits (toList edits) mr
+    case nonEmpty unedits of
+        Nothing -> return Nothing
+        Just unedits' -> return $ Just (edits, unedits')
 
 data UndoQueue edit = MkUndoQueue
     { _uqUndoEdits :: [UndoEntry edit]
@@ -27,7 +31,10 @@ data UndoQueue edit = MkUndoQueue
     }
 
 updateUndoQueue ::
-       (MonadIO m, InvertibleEdit edit) => MutableRead m (EditReader edit) -> [edit] -> StateT (UndoQueue edit) m ()
+       (MonadIO m, InvertibleEdit edit)
+    => MutableRead m (EditReader edit)
+    -> NonEmpty edit
+    -> StateT (UndoQueue edit) m ()
 updateUndoQueue mr edits = do
     mue <- lift $ makeUndoEntry mr edits
     case mue of

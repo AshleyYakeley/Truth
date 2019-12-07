@@ -40,6 +40,6 @@ fileObject path = let
             else return ()
         lift $ hSeek h AbsoluteSeek $ toInteger start
         lift $ hPut h bs
-    objEdit :: [ByteStringEdit] -> ReaderT Handle IO (Maybe (EditSource -> ReaderT Handle IO ()))
+    objEdit :: NonEmpty ByteStringEdit -> ReaderT Handle IO (Maybe (EditSource -> ReaderT Handle IO ()))
     objEdit = singleAlwaysEdit objOneEdit
     in MkResource objRun MkAnObject {..}

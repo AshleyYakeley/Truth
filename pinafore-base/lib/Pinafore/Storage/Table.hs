@@ -186,7 +186,7 @@ pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject ta
                 Dict ->
                     case transStackDict @MonadFail @tt @IO of
                         Dict -> let
-                            tablePush :: [PinaforeTableEdit] -> EditSource -> ApplyStack tt IO ()
+                            tablePush :: NonEmpty PinaforeTableEdit -> EditSource -> ApplyStack tt IO ()
                             tablePush edits esrc = pushOrFail "can't push table edit" esrc $ tableMPush edits
                             objRead :: MutableRead (ApplyStack tt IO) PinaforeEntityRead
                             objRead (PinaforeEntityReadGetPredicate prd subj) =
@@ -197,7 +197,9 @@ pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject ta
                                     Just val -> return val
                                     Nothing -> do
                                         val <- newEntity
-                                        tablePush [PinaforeTableEditSetPredicate prd subj $ Just val] noEditSource
+                                        tablePush
+                                            (pure $ PinaforeTableEditSetPredicate prd subj $ Just val)
+                                            noEditSource
                                         return val
                             objRead (PinaforeEntityReadLookupPredicate prd val) =
                                 tableRead $ PinaforeTableReadLookupPredicate prd val
@@ -205,13 +207,14 @@ pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject ta
                                 ml <- tableRead $ PinaforeTableReadGetLiteral p
                                 return $ maybeToKnow ml
                             objEdit ::
-                                   [PinaforeEntityEdit] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+                                   NonEmpty PinaforeEntityEdit
+                                -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
                             objEdit =
                                 singleAlwaysEdit $ \case
                                     PinaforeEntityEditSetPredicate p s kv ->
-                                        tablePush [PinaforeTableEditSetPredicate p s $ knowToMaybe kv]
+                                        tablePush $ pure $ PinaforeTableEditSetPredicate p s $ knowToMaybe kv
                                     PinaforeEntityEditSetLiteral p kl ->
-                                        tablePush [PinaforeTableEditSetLiteral p $ knowToMaybe kl]
+                                        tablePush $ pure $ PinaforeTableEditSetLiteral p $ knowToMaybe kl
                             in MkResource trun MkAnObject {..}
 
 type PinaforeTableUpdate = EditUpdate PinaforeTableEdit

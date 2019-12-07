@@ -9,7 +9,7 @@ import Truth.Core.Resource
 
 data Editor (update :: Type) r = forall editor. MkEditor
     { editorInit :: Object (UpdateEdit update) -> LifeCycleIO editor
-    , editorUpdate :: editor -> Object (UpdateEdit update) -> [update] -> EditContext -> IO ()
+    , editorUpdate :: editor -> Object (UpdateEdit update) -> NonEmpty update -> EditContext -> IO ()
     , editorDo :: editor -> Object (UpdateEdit update) -> LifeCycleIO r
     }
 
@@ -28,7 +28,7 @@ instance Applicative (Editor update) where
             e1 <- ei1 object
             e2 <- ei2 object
             return (e1, e2)
-        editorUpdate :: (editor1, editor2) -> Object (UpdateEdit update) -> [update] -> EditContext -> IO ()
+        editorUpdate :: (editor1, editor2) -> Object (UpdateEdit update) -> NonEmpty update -> EditContext -> IO ()
         editorUpdate (e1, e2) obj edits ectxt = do
             eu1 e1 obj edits ectxt
             eu2 e2 obj edits ectxt

@@ -107,9 +107,8 @@ instance TupleResource UAnObject where
     noneTupleAResource = let
         objRead :: forall t. TupleUpdateReader (ListElementType '[]) t -> IO t
         objRead (MkTupleUpdateReader sel _) = case sel of {}
-        objEdit :: [TupleUpdateEdit (ListElementType '[])] -> IO (Maybe (EditSource -> IO ()))
-        objEdit [] = return $ Just $ \_ -> return ()
-        objEdit (MkTupleUpdateEdit sel _:_) = case sel of {}
+        objEdit :: NonEmpty (TupleUpdateEdit (ListElementType '[])) -> IO (Maybe (EditSource -> IO ()))
+        objEdit (MkTupleUpdateEdit sel _ :| _) = case sel of {}
         in MkUAnObject $ MkAnObject {..}
     consTupleAResource ::
            forall tt update updates. MonadTransStackUnliftAll tt
@@ -123,11 +122,15 @@ instance TupleResource UAnObject where
                 readAB (MkTupleUpdateReader FirstElementType r) = readA r
                 readAB (MkTupleUpdateReader (RestElementType sel) r) = readB $ MkTupleUpdateReader sel r
                 editAB ::
-                       [TupleUpdateEdit (ListElementType (update : updates))]
+                       NonEmpty (TupleUpdateEdit (ListElementType (update : updates)))
                     -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
                 editAB edits = let
-                    (eas, ebs) = partitionListTupleUpdateEdits edits
-                    in (liftA2 $ liftA2 $ liftA2 (>>)) (editA eas) (editB ebs)
+                    (eas, ebs) = partitionListTupleUpdateEdits (toList edits)
+                    in case (nonEmpty eas, nonEmpty ebs) of
+                           (Nothing, Nothing) -> return $ Just $ \_ -> return ()
+                           (Just eas', Nothing) -> editA eas'
+                           (Nothing, Just ebs') -> editB ebs'
+                           (Just eas', Just ebs') -> (liftA2 $ liftA2 $ liftA2 (>>)) (editA eas') (editB ebs')
                 in MkUAnObject $ MkAnObject readAB editAB
     mapResourceUpdate lens uobj = objToUObj $ mapObject lens $ uObjToObj uobj
 

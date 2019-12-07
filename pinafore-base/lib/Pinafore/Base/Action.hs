@@ -58,7 +58,7 @@ pinaforeFunctionValueGet fval = do
     MkResource rr MkAnObject {..} <- pinaforeActionObject
     runResourceRunnerWith rr $ \run -> liftIO $ run $ ufGet fval objRead ReadWhole
 
-pinaforeLensPush :: PinaforeLensValue baseupdate update -> [UpdateEdit update] -> PinaforeAction baseupdate ()
+pinaforeLensPush :: PinaforeLensValue baseupdate update -> NonEmpty (UpdateEdit update) -> PinaforeAction baseupdate ()
 pinaforeLensPush lens edits = do
     obj <- pinaforeActionObject
     case mapObject lens obj of

@@ -10,7 +10,7 @@ import Truth.Core.Types.Whole
 
 data AnObject edit (tt :: [TransKind]) = MkAnObject
     { objRead :: MutableRead (ApplyStack tt IO) (EditReader edit)
-    , objEdit :: [edit] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+    , objEdit :: NonEmpty edit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
     }
 
 type Object edit = Resource (AnObject edit)
@@ -24,7 +24,7 @@ instance MapResource (AnObject edit) where
     mapResource MkTransListFunction {..} (MkAnObject r e) = let
         r' :: MutableRead (ApplyStack tt2 IO) _
         r' rd = tlfFunction (Proxy @IO) $ r rd
-        e' :: [_] -> ApplyStack tt2 IO (Maybe (EditSource -> ApplyStack tt2 IO ()))
+        e' :: _ -> ApplyStack tt2 IO (Maybe (EditSource -> ApplyStack tt2 IO ()))
         e' edits =
             case transStackDict @MonadIO @tt2 @IO of
                 Dict -> (fmap $ fmap $ fmap $ tlfFunction (Proxy @IO)) $ tlfFunction (Proxy @IO) $ e edits
@@ -37,18 +37,17 @@ noneObject :: Object (NoEdit (NoReader t))
 noneObject = let
     objRead :: MutableRead IO (NoReader t)
     objRead = never
-    objEdit :: [NoEdit (NoReader t)] -> IO (Maybe (EditSource -> IO ()))
-    objEdit [] = return $ Just $ \_ -> return ()
-    objEdit (e:_) = never e
+    objEdit :: NonEmpty (NoEdit (NoReader t)) -> IO (Maybe (EditSource -> IO ()))
+    objEdit = never
     in MkResource nilResourceRunner $ MkAnObject {..}
 
 mvarObject :: forall a. IOWitness (StateT a) -> MVar a -> (a -> Bool) -> Object (WholeEdit a)
 mvarObject iow var allowed = let
     objRead :: MutableRead (StateT a IO) (WholeReader a)
     objRead ReadWhole = get
-    objEdit :: [WholeEdit a] -> StateT a IO (Maybe (EditSource -> StateT a IO ()))
+    objEdit :: NonEmpty (WholeEdit a) -> StateT a IO (Maybe (EditSource -> StateT a IO ()))
     objEdit edits = do
-        na <- applyEdits edits (mSubjectToMutableRead get) ReadWhole
+        na <- applyEdits (toList edits) (mSubjectToMutableRead get) ReadWhole
         return $
             if allowed na
                 then Just $ \_ -> put na
@@ -94,13 +93,14 @@ mapAnObject MkEditLens {..} (MkAnObject objReadA objEditA) =
             MkUpdateFunction {..} = elFunction
             objReadB :: MutableRead (ApplyStack tt IO) (UpdateReader updateB)
             objReadB = ufGet objReadA
-            objEditB :: [UpdateEdit updateB] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+            objEditB :: NonEmpty (UpdateEdit updateB) -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
             objEditB editbs = do
-                meditas <- elPutEdits editbs objReadA
+                meditas <- elPutEdits (toList editbs) objReadA
                 case meditas of
                     Nothing -> return Nothing
-                    Just editas -> do
-                        mmu <- objEditA editas
+                    Just [] -> return $ Just $ \_ -> return ()
+                    Just (ea:editas) -> do
+                        mmu <- objEditA $ ea :| editas
                         case mmu of
                             Nothing -> return Nothing
                             Just mu -> return $ Just $ \esrc -> mu esrc
@@ -118,12 +118,7 @@ immutableAnObject ::
     -> AnObject edit tt
 immutableAnObject mr =
     case transStackDict @Monad @tt @IO of
-        Dict ->
-            MkAnObject mr $ 
-        -- must allow empty edit list
-            \case
-                [] -> return $ Just $ \_ -> return ()
-                _ -> return Nothing
+        Dict -> MkAnObject mr $ \_ -> return Nothing
 
 readConstantObject :: MutableRead IO (EditReader edit) -> Object edit
 readConstantObject mr = MkResource nilResourceRunner $ immutableAnObject mr
@@ -131,10 +126,10 @@ readConstantObject mr = MkResource nilResourceRunner $ immutableAnObject mr
 constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
 constantObject subj = readConstantObject $ subjectToMutableRead subj
 
-alwaysEdit :: Monad m => ([edit] -> EditSource -> m ()) -> [edit] -> m (Maybe (EditSource -> m ()))
+alwaysEdit :: Monad m => (NonEmpty edit -> EditSource -> m ()) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))
 alwaysEdit em edits = return $ Just $ em edits
 
-singleAlwaysEdit :: Monad m => (edit -> EditSource -> m ()) -> [edit] -> m (Maybe (EditSource -> m ()))
+singleAlwaysEdit :: Monad m => (edit -> EditSource -> m ()) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))
 singleAlwaysEdit em = alwaysEdit $ \edits esrc -> for_ edits $ \edit -> em edit esrc
 
 testEditAction :: IO Bool -> (EditSource -> IO ()) -> IO (Maybe (EditSource -> IO ()))
@@ -145,7 +140,7 @@ testEditAction test action = do
             then Just action
             else Nothing
 
-singleEdit :: Monad m => (edit -> m (Maybe (EditSource -> m ()))) -> [edit] -> m (Maybe (EditSource -> m ()))
+singleEdit :: Monad m => (edit -> m (Maybe (EditSource -> m ()))) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))
 singleEdit call edits =
     getComposeM $ do
         actions <- for edits $ \edit -> MkComposeM $ call edit
@@ -162,12 +157,14 @@ convertObject (MkResource (trun :: ResourceRunner tt) (MkAnObject mra pe)) =
                 Dict -> let
                     objRead :: MutableRead (ApplyStack tt IO) (EditReader editb)
                     objRead = mSubjectToMutableRead $ mutableReadToSubject mra
-                    objEdit :: [editb] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+                    objEdit :: NonEmpty editb -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
                     objEdit ebs = do
                         oldsubj <- mutableReadToSubject mra
-                        newsubj <- mapSubjectEdits ebs oldsubj
+                        newsubj <- mapSubjectEdits (toList ebs) oldsubj
                         eas <- getReplaceEditsFromSubject newsubj
-                        pe eas
+                        case nonEmpty eas of
+                            Nothing -> return $ Just $ \_ -> return ()
+                            Just eaa -> pe eaa
                     in MkResource trun MkAnObject {..}
 
 copyObject ::
@@ -181,7 +178,8 @@ copyObject esrc =
         runResourceRunnerWith rr $ \run ->
             runLifeCycle $ do
                 liftIO $
-                    run $ replaceEdit @edit readSrc $ \edit -> pushOrFail "failed to copy object" esrc $ pushDest [edit]
+                    run $
+                    replaceEdit @edit readSrc $ \edit -> pushOrFail "failed to copy object" esrc $ pushDest $ pure edit
 
 getObjectSubject :: FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
 getObjectSubject (MkResource rr (MkAnObject rd _)) =

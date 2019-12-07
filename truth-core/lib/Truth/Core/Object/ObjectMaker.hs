@@ -13,7 +13,7 @@ import Truth.Core.Object.Update
 import Truth.Core.Read
 import Truth.Core.Resource
 
-type ObjectMaker update a = ([update] -> EditContext -> IO ()) -> LifeCycleIO (Object (UpdateEdit update), a)
+type ObjectMaker update a = (NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (Object (UpdateEdit update), a)
 
 reflectingObjectMaker ::
        forall update. IsUpdate update
@@ -30,7 +30,7 @@ reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e)) 
     let
         r' :: MutableRead (ApplyStack tt (DeferActionT IO)) (UpdateReader update)
         r' rt = stackUnderliftIO @tt @(DeferActionT IO) $ r rt
-        e' :: [UpdateEdit update]
+        e' :: NonEmpty (UpdateEdit update)
            -> ApplyStack tt (DeferActionT IO) (Maybe (EditSource -> ApplyStack tt (DeferActionT IO) ()))
         e' edits = do
             maction <- stackUnderliftIO @tt @(DeferActionT IO) $ e edits
@@ -49,10 +49,11 @@ mapObjectMaker :: EditLens updateA updateB -> ObjectMaker updateA a -> ObjectMak
 mapObjectMaker lens uobja recvb = do
     rec
         let
-            recva [] _esrc = return ()
             recva eas esrc = do
                 ebs <- objectMapUpdates (editLensFunction lens) obja eas
-                recvb ebs esrc
+                case nonEmpty ebs of
+                    Nothing -> return ()
+                    Just ebb -> recvb ebb esrc
         (obja, a) <- uobja recva
     let objb = lensObject lens obja
     return (objb, a)

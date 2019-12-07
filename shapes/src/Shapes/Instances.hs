@@ -3,4 +3,19 @@
 module Shapes.Instances
     (
     ) where
--- placeholder for orphan instances for imported packages
+
+-- orphan instances for imported packages
+import Shapes.Import
+
+instance Empty a => Countable (NonEmpty a) where
+    countPrevious = finiteCountPrevious
+    countMaybeNext = finiteCountMaybeNext
+
+instance Empty a => Searchable (NonEmpty a) where
+    search = finiteSearch
+
+instance Empty a => Finite (NonEmpty a) where
+    allValues = []
+
+instance Empty a => Empty (NonEmpty a) where
+    never (a :| _) = never a
