@@ -67,8 +67,8 @@ deferAction action = traceBracket "deferAction" $ MkDeferActionT $ tell [action]
 
 runDeferActionT :: UnliftAll MonadUnliftIO DeferActionT
 runDeferActionT (MkDeferActionT (WriterT wma)) = traceBracket "runDeferActionT" $ do
-    (a, actions) <- wma
-    for_ actions liftIO
+    (a, actions) <- traceBracket "runDeferActionT.body" $ wma
+    traceBracket "runDeferActionT.deferred" $ for_ actions liftIO
     return a
 
 deferActionResourceRunner :: LifeCycleIO (ResourceRunner '[ DeferActionT])

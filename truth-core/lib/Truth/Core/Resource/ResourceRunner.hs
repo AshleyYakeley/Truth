@@ -18,6 +18,7 @@ module Truth.Core.Resource.ResourceRunner
 import Truth.Core.Import
 import Truth.Core.Resource.Function
 import Truth.Core.Resource.SingleRunner
+import Debug.ThreadTrace
 
 newtype ResourceRunner (tt :: [TransKind]) =
     MkResourceRunner (ListType SingleRunner tt)
@@ -95,8 +96,12 @@ runLSR (ConsListType sr w) =
     case (singleRunnerUnliftAllDict sr, runLSR w) of
         (Dict, (runR, Dict)) -> (consWStackUnliftAll (MkWUnliftAll $ runSingleRunner sr) runR, Dict)
 
-runResourceRunner :: ResourceRunner tt -> StackUnliftAll tt
-runResourceRunner (MkResourceRunner lsr) = runWStackUnliftAll $ fst $ runLSR lsr
+runResourceRunner :: forall tt m. MonadUnliftIO m => ResourceRunner tt -> MFunction (ApplyStack tt m) m
+runResourceRunner rr@(MkResourceRunner lsr) =
+    case resourceRunnerUnliftAllDict rr of
+        Dict ->
+            case transStackDict @MonadUnliftIO @tt @m of
+                Dict -> traceBarrier "runResourceRunner" $ runWStackUnliftAll $ fst $ runLSR lsr
 
 runResourceRunnerWith ::
        forall tt r.
@@ -130,10 +135,10 @@ newResourceRunner run = do
 stateResourceRunner :: s -> IO (ResourceRunner '[ StateT s])
 stateResourceRunner s = do
     var <- newMVar s
-    newResourceRunner $ mVarRun var
+    newResourceRunner $ traceBarrier "stateResourceRunner.mVar" $ mVarRun var
 
 mvarResourceRunner :: IOWitness (StateT s) -> MVar s -> ResourceRunner '[ StateT s]
-mvarResourceRunner iow var = mkResourceRunner iow $ mVarRun var
+mvarResourceRunner iow var = mkResourceRunner iow $ traceBarrier "mvarResourceRunner.mVar" $ mVarRun var
 
 discardingStateResourceRunner :: IOWitness (StateT s) -> s -> ResourceRunner '[ StateT s]
 discardingStateResourceRunner iow s = mkResourceRunner iow $ stateDiscardingUntrans s
