@@ -1,23 +1,24 @@
-main: init: "ABCDE"
-lens: init: "BCD"
+main: get "ABCDE"
+sect: get "BCD"
 var: "ABCDE"
-main: runObject
-main: push [section 3+2 "PQR"]
+main: push section 3+2 "PQR" :| []
 main: push ignored
 var: "ABCDE"
-main: runObject
-main: push [section 1+1 "xy"]
+main: push section 1+1 "xy" :| []
 main: push succeeded
-main: receive [section 1+1 "xy"]
+main: receive section 1+1 "xy" :| []
 main: receive "AxyCDE"
-lens: receive [section 0+1 "xy"]
-lens: receive "xyCD"
+lens: +update: section 1+1 "xy"
+lens: -update: [section 0+1 "xy"]
+sect: receive section 0+1 "xy" :| []
+sect: receive "xyCD"
 var: "AxyCDE"
-main: runObject
-main: push [section 2+2 "1"]
+main: push section 2+2 "1" :| []
 main: push succeeded
-main: receive [section 2+2 "1"]
+main: receive section 2+2 "1" :| []
 main: receive "Ax1DE"
-lens: receive [section 1+2 "1"]
-lens: receive "x1D"
+lens: +update: section 2+2 "1"
+lens: -update: [section 1+2 "1"]
+sect: receive section 1+2 "1" :| []
+sect: receive "x1D"
 var: "Ax1DE"

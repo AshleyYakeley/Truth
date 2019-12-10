@@ -56,10 +56,10 @@ relativeRun :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> S
 relativeRun n (MkSequenceRun start len) = MkSequenceRun (start - n) len
 
 goodRun :: Integral (Index seq) => SequenceRun seq -> Bool
-goodRun (MkSequenceRun _ len) = len >= 0
+goodRun run = runStart run >= 0 && runLength run >= 0
 
 positiveRun :: Integral (Index seq) => SequenceRun seq -> Bool
-positiveRun (MkSequenceRun _ len) = len > 0
+positiveRun run = runStart run >= 0 && runLength run > 0
 
 clipPoint :: Integral (Index seq) => SequencePoint seq -> SequencePoint seq -> SequencePoint seq
 clipPoint len p =

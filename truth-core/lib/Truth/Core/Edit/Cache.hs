@@ -90,7 +90,7 @@ class CacheableEdit (edit :: Type) where
 
 editCacheUpdates ::
        forall edit cache. (CacheableEdit edit, IsCache cache)
-    => [edit]
+    => NonEmpty edit
     -> StateT (cache (EditCacheKey cache edit)) IO ()
 editCacheUpdates ee = for_ ee $ editCacheUpdate
 

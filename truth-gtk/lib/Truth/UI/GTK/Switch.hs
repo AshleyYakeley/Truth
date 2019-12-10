@@ -10,7 +10,7 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 import Truth.Debug.Object
 
-switchView :: forall sel edit. EditFunction edit (WholeEdit (GCreateView sel edit)) -> GCreateView sel edit
+switchView :: forall sel edit. UpdateFunction edit (WholeUpdate (GCreateView sel edit)) -> GCreateView sel edit
 switchView specfunc = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
@@ -21,16 +21,20 @@ switchView specfunc = do
                 lcContainPackStart True box widget
                 #show widget
     firstvs <- do
-        firstspec <- cvMapEdit (readOnlyEditLens specfunc) $ cvLiftView $ viewObjectRead $ \_ mr -> mr ReadWhole
+        firstspec <-
+            cvMapEdit (return $ readOnlyEditLens specfunc) $ cvLiftView $ viewObjectRead $ \_ mr -> mr ReadWhole
         cvLiftView $ getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic @(ViewState sel) firstvs $ \object edits -> traceBracket "GTK.Switch:update" $ do
-        whedits <- liftIO $ objectMapUpdates specfunc object edits
-        for_ (lastWholeEdit whedits) $ \spec -> do
-            oldvs <- get
-            liftIO $ closeDynamicView oldvs
-            newvs <- liftIO $ runTransform (traceThing "GTK.Switch:update.getViewState" unliftView) $ getViewState spec
-            put newvs
+    cvDynamic @(ViewState sel) firstvs $ \object updates -> traceBracket "GTK.Switch:update" $
+        case nonEmpty updates of
+            Nothing -> return ()
+            Just updates' -> do
+                whupdates <- liftIO $ objectMapUpdates specfunc object updates'
+                for_ (lastWholeUpdate whupdates) $ \spec -> do
+                    oldvs <- get
+                    liftIO $ closeDynamicView oldvs
+                    newvs <- liftIO $ runWMFunction (traceThing "GTK.Switch:update.getViewState" unliftView) $ getViewState spec
+                    put newvs
     toWidget box
 
 switchGetView :: GetGView
@@ -39,4 +43,4 @@ switchGetView =
         spec <- isUISpec uispec
         return $
             case spec of
-                MkSwitchUISpec specfunc -> switchView $ funcEditFunction getview . specfunc
+                MkSwitchUISpec specfunc -> switchView $ funcUpdateFunction getview . specfunc

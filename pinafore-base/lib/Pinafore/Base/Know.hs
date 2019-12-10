@@ -10,6 +10,7 @@ module Pinafore.Base.Know
     , knowMaybe
     , knowMaybeLens
     , catKnowns
+    , unknownValueEditLens
     , uiUnknownValue
     ) where
 
@@ -77,5 +78,16 @@ knowMaybeLens = MkLens Known $ \ka _ -> knowToMaybe ka
 catKnowns :: Filterable f => f (Know a) -> f a
 catKnowns = catMaybes . fmap knowToMaybe
 
-uiUnknownValue :: Eq a => a -> UISpec sel (WholeEdit a) -> UISpec sel (WholeEdit (Know a))
-uiUnknownValue def ui = mapEditUISpec (bijectionWholeEditLens knowMaybe) $ mapMaybeNothingUISpec def ui
+-- | not really a bijection
+unknownValueBijection :: a -> Bijection (Know a) a
+unknownValueBijection def = let
+    isoForwards (Known a) = a
+    isoForwards Unknown = def
+    isoBackwards = Known
+    in MkIsomorphism {..}
+
+unknownValueEditLens :: a -> EditLens (WholeUpdate (Know a)) (WholeUpdate a)
+unknownValueEditLens def = toEditLens $ unknownValueBijection def
+
+uiUnknownValue :: a -> UISpec sel (WholeUpdate a) -> UISpec sel (WholeUpdate (Know a))
+uiUnknownValue def ui = mapUpdateUISpec (return $ unknownValueEditLens def) ui

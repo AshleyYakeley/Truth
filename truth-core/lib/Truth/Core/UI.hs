@@ -28,6 +28,7 @@ import Truth.Core.UI.Specifier.Table as I
 import Truth.Core.UI.Specifier.TextEditor as I
 import Truth.Core.UI.Specifier.TextEntry as I
 import Truth.Core.UI.Specifier.WithAspect as I
+import Truth.Core.UI.TextStyle as I
 import Truth.Core.UI.Toolkit as I
 import Truth.Core.UI.View as I
 import Truth.Core.UI.Window as I

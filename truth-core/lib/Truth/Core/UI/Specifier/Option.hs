@@ -4,26 +4,37 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
+import Truth.Core.UI.TextStyle
 
-data OptionUISpec sel edit where
+data OptionUICell = MkOptionUICell
+    { optionCellText :: Text
+    , optionCellStyle :: TextStyle
+    } deriving (Eq)
+
+plainOptionUICell :: Text -> OptionUICell
+plainOptionUICell optionCellText = let
+    optionCellStyle = plainTextStyle
+    in MkOptionUICell {..}
+
+data OptionUISpec sel update where
     MkOptionUISpec
         :: Eq t
-        => EditFunction tedit (ListEdit [(t, Text)] (WholeEdit (t, Text)))
-        -> EditLens tedit (WholeEdit t)
-        -> OptionUISpec sel tedit
+        => UpdateFunction updateT (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
+        -> EditLens updateT (WholeUpdate t)
+        -> OptionUISpec sel updateT
 
-instance Show (OptionUISpec sel edit) where
+instance Show (OptionUISpec sel update) where
     show _ = "option"
 
 instance UIType OptionUISpec where
     uiWitness = $(iowitness [t|OptionUISpec|])
 
 optionUISpec ::
-       forall tedit t sel. Eq t
-    => EditFunction tedit (ListEdit [(t, Text)] (WholeEdit (t, Text)))
-    -> EditLens tedit (WholeEdit t)
-    -> UISpec sel tedit
+       forall updateT t sel. Eq t
+    => UpdateFunction updateT (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
+    -> EditLens updateT (WholeUpdate t)
+    -> UISpec sel updateT
 optionUISpec optlens sellens = MkUISpec $ MkOptionUISpec optlens sellens
 
-simpleOptionUISpec :: Eq t => [(t, Text)] -> UISpec sel (WholeEdit t)
-simpleOptionUISpec opts = optionUISpec (constEditFunction opts) id
+simpleOptionUISpec :: Eq t => [(t, OptionUICell)] -> UISpec sel (WholeUpdate t)
+simpleOptionUISpec opts = optionUISpec (constUpdateFunction opts) id

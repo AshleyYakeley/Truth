@@ -4,21 +4,18 @@ module Shapes.Instances
     (
     ) where
 
-import Data.IORef
+-- orphan instances for imported packages
 import Shapes.Import
-import Unsafe.Coerce
 
-unsafeRefl :: forall a b. a :~: b
-unsafeRefl = unsafeCoerce Refl
+instance Empty a => Countable (NonEmpty a) where
+    countPrevious = finiteCountPrevious
+    countMaybeNext = finiteCountMaybeNext
 
-instance TestEquality IORef where
-    testEquality ta tb =
-        if ta == unsafeCoerce tb
-            then Just unsafeRefl
-            else Nothing
+instance Empty a => Searchable (NonEmpty a) where
+    search = finiteSearch
 
-instance TestEquality TVar where
-    testEquality ta tb =
-        if ta == unsafeCoerce tb
-            then Just unsafeRefl
-            else Nothing
+instance Empty a => Finite (NonEmpty a) where
+    allValues = []
+
+instance Empty a => Empty (NonEmpty a) where
+    never (a :| _) = never a

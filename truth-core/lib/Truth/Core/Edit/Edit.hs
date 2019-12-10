@@ -13,12 +13,12 @@ instance Floating edit t => Floating [edit] t where
 
 type family EditReader (edit :: Type) :: Type -> Type
 
-class (Floating edit edit) => ApplicableEdit (edit :: Type) where
+class Floating edit edit => ApplicableEdit (edit :: Type) where
     applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit)
 
 type EditSubject edit = ReaderSubject (EditReader edit)
 
-applyEdits :: (ApplicableEdit edit) => [edit] -> ReadFunction (EditReader edit) (EditReader edit)
+applyEdits :: ApplicableEdit edit => [edit] -> ReadFunction (EditReader edit) (EditReader edit)
 applyEdits [] mr = mr
 applyEdits (e:es) mr = applyEdits es $ applyEdit e mr
 

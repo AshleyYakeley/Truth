@@ -136,28 +136,47 @@ instance Show (AnyValue Token) where
 readWS :: Parser ()
 readWS = do
     spaces
-    _ <-
+    void $
         optional
             (do
-                 readComment
+                 comment
                  readWS)
     return ()
     <?> "white space"
   where
+    char1 :: Char -> Parser ()
+    char1 c = do
+        void $ char c
+        return ()
     isLineBreak :: Char -> Bool
     isLineBreak '\n' = True
     isLineBreak '\r' = True
     isLineBreak _ = False
-    readComment :: Parser ()
-    readComment = do
-        _ <- char '#'
-        _ <- many (satisfy (\c -> not (isLineBreak c)))
-        _ <- satisfy isLineBreak
-        return ()
+    blockCommentOpen :: Parser ()
+    blockCommentOpen =
+        try $ do
+            char1 '{'
+            char1 '#'
+    blockCommentClose :: Parser ()
+    blockCommentClose =
+        try $ do
+            char1 '#'
+            char1 '}'
+    lineComment :: Parser ()
+    lineComment = do
+        char1 '#'
+        void $ many (satisfy (\c -> not (isLineBreak c)))
+        void endOfLine
+    blockComment :: Parser ()
+    blockComment = do
+        blockCommentOpen
+        void $ manyTill (blockComment <|> void endOfLine <|> void anyToken) blockCommentClose
+    comment :: Parser ()
+    comment = blockComment <|> lineComment
 
 readEscapedChar :: Parser Char
 readEscapedChar = do
-    _ <- char '\\'
+    void $ char '\\'
     c <- anyToken
     case c of
         'n' -> return '\n'
@@ -168,9 +187,9 @@ readEscapedChar = do
 
 readQuotedString :: Parser Text
 readQuotedString = do
-    _ <- char '"'
+    void $ char '"'
     s <- many readQuotedChar
-    _ <- char '"'
+    void $ char '"'
     return $ pack s
   where
     readQuotedChar :: Parser Char
@@ -189,13 +208,13 @@ readNumber :: Parser (AnyValue Token)
 readNumber =
     fmap (MkAnyValue TokNumber) $
     (try $ do
-         _ <- string "NaN"
+         void $ string "NaN"
          return $ InexactNumber $ 0 / 0) <|>
     (try $ do
-         _ <- string "~Infinity"
+         void $ string "~Infinity"
          return $ InexactNumber $ 1 / 0) <|>
     (try $ do
-         _ <- string "~-Infinity"
+         void $ string "~-Infinity"
          return $ InexactNumber $ -1 / 0) <|>
     (try $ do
          text <- many1 $ satisfy $ \c -> elem c ("0123456789-.e_~" :: String)
@@ -267,7 +286,7 @@ readOpToken = do
 
 readChar :: Char -> Token () -> Parser (AnyValue Token)
 readChar c tok = do
-    _ <- char c
+    void $ char c
     return $ MkAnyValue tok ()
 
 readToken :: Parser ((SourcePos, AnyValue Token))

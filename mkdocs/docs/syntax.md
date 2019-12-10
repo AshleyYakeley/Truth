@@ -4,7 +4,7 @@ The syntax of the language is based on Haskell.
 These are the main differences:
 
 * Line comments start with `#`, not `--`.
-There are no block comments.
+* Block comments start with `{#` and end with `#}` (and may be nested).
 * Layout is not significant.
 Instead, declarations within a `let` block, lines within a `do` statement, and cases within a `case` statement, are separated by `;`.
 Also, `case` and `do` statements are terminated with `end`.
@@ -42,7 +42,8 @@ In interactive mode, each line has syntax `<interactive>`.
     "Either" <type-3> <type-3> |
     "Order" <type-3> |
     "Ref" <type-range-3> |
-    "SetRef" <type-range-3> |
+    "SetRef" <type-3> |
+    "FiniteSetRef" <type-range-3> |
     <type-3>
 
 <type-3> ::=

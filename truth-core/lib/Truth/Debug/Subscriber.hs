@@ -7,12 +7,12 @@ module Truth.Debug.Subscriber
     ) where
 
 import Truth.Core.Import
-import Truth.Core.Object.UnliftIO
+import Truth.Core.Resource
 import Truth.Core.Object.Subscriber
 import Truth.Debug
 import Truth.Debug.Edit
 import Truth.Debug.Object
 
 instance TraceThing (Subscriber edit) where
-    traceThing prefix (MkCloseUnliftIO run (MkASubscriber anobj sub)) =
-        MkCloseUnliftIO (traceThing (contextStr prefix "run") run) $ MkASubscriber (traceAnObject prefix blankEditShower anobj) $ traceThing (contextStr prefix "update") sub
+    traceThing prefix (MkResource rr (MkASubscriber anobj sub)) = runResourceRunnerWith rr $ \_ ->
+        MkResource rr $ MkASubscriber (traceAnObject prefix blankEditShower anobj) $ traceThing (contextStr prefix "update") sub

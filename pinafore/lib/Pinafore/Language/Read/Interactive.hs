@@ -14,30 +14,30 @@ import Pinafore.Language.Read.Expression
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
 import Shapes hiding (try)
 
-data InteractiveCommand baseedit
-    = LetInteractiveCommand (PinaforeScoped baseedit (Transform (PinaforeScoped baseedit) (PinaforeScoped baseedit)))
-    | ExpressionInteractiveCommand (PinaforeScoped baseedit (QExpr baseedit))
+data InteractiveCommand baseupdate
+    = LetInteractiveCommand (PinaforeScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)))
+    | ExpressionInteractiveCommand (PinaforeScoped baseupdate (QExpr baseupdate))
     | ShowTypeInteractiveCommand Bool
-                                 (PinaforeScoped baseedit (QExpr baseedit))
+                                 (PinaforeScoped baseupdate (QExpr baseupdate))
     | forall polarity. SimplifyTypeInteractiveCommand (PolarityType polarity)
-                                                      (PinaforeScoped baseedit (AnyW (PinaforeType baseedit polarity)))
+                                                      (PinaforeScoped baseupdate (AnyW (PinaforeType baseupdate polarity)))
     | ErrorInteractiveCommand Text
 
 showTypeInteractiveCommand ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
     => Bool
-    -> Parser (InteractiveCommand baseedit)
+    -> Parser (InteractiveCommand baseupdate)
 showTypeInteractiveCommand showinfo = do
     expr <- readTopExpression
     return $ ShowTypeInteractiveCommand showinfo $ interpretTopExpression expr
 
 simplifyPolarTypeInteractiveCommand ::
-       forall baseedit polarity. HasPinaforeEntityEdit baseedit
+       forall baseupdate polarity. HasPinaforeEntityUpdate baseupdate
     => PolarityType polarity
-    -> Parser (InteractiveCommand baseedit)
+    -> Parser (InteractiveCommand baseupdate)
 simplifyPolarTypeInteractiveCommand polarity =
     case getRepWitness polarity of
         Dict -> do
@@ -50,11 +50,11 @@ readPolarity cont =
     (readExactlyThis TokOperator "+" >> cont PositiveType) <|> (readExactlyThis TokOperator "-" >> cont NegativeType)
 
 simplifyTypeInteractiveCommand ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (InteractiveCommand baseedit)
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+    => Parser (InteractiveCommand baseupdate)
 simplifyTypeInteractiveCommand = readPolarity simplifyPolarTypeInteractiveCommand
 
-readSpecialCommand :: HasPinaforeEntityEdit baseedit => Text -> Parser (InteractiveCommand baseedit)
+readSpecialCommand :: HasPinaforeEntityUpdate baseupdate => Text -> Parser (InteractiveCommand baseupdate)
 readSpecialCommand "t" = showTypeInteractiveCommand False
 readSpecialCommand "type" = showTypeInteractiveCommand False
 readSpecialCommand "info" = showTypeInteractiveCommand True
@@ -63,8 +63,8 @@ readSpecialCommand "simplify-" = simplifyPolarTypeInteractiveCommand NegativeTyp
 readSpecialCommand cmd = return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd
 
 readInteractiveCommand ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (InteractiveCommand baseedit)
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+    => Parser (InteractiveCommand baseupdate)
 readInteractiveCommand =
     (do
          readExactlyThis TokOperator ":"
@@ -79,5 +79,5 @@ readInteractiveCommand =
          return $ LetInteractiveCommand $ interpretTopDeclarations stdecls)
 
 parseInteractiveCommand ::
-       HasPinaforeEntityEdit baseedit => Text -> StateT SourcePos InterpretResult (InteractiveCommand baseedit)
+       HasPinaforeEntityUpdate baseupdate => Text -> StateT SourcePos InterpretResult (InteractiveCommand baseupdate)
 parseInteractiveCommand = parseReader readInteractiveCommand

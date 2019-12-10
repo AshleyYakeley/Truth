@@ -54,39 +54,42 @@ instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (NoEd
 
 instance TestEquality reader => CacheableEdit (NoEdit reader)
 
-readFunctionNoEditFunction :: forall ra editb. ReadFunction ra (EditReader editb) -> EditFunction (NoEdit ra) editb
-readFunctionNoEditFunction rf = let
-    efGet :: forall . ReadFunctionT IdentityT ra (EditReader editb)
-    efGet mra rb = lift $ rf mra rb
-    efUpdate edit _ = never edit
-    in MkCloseUnlift identityUnlift MkAnEditFunction {..}
+type NoUpdate reader = EditUpdate (NoEdit reader)
 
-readFunctionNoEditLens :: forall ra editb. ReadFunction ra (EditReader editb) -> EditLens (NoEdit ra) editb
-readFunctionNoEditLens rf = readOnlyEditLens $ readFunctionNoEditFunction rf
+readFunctionNoUpdateFunction ::
+       forall ra updateB. ReadFunction ra (UpdateReader updateB) -> UpdateFunction (NoUpdate ra) updateB
+readFunctionNoUpdateFunction rf = let
+    ufGet :: forall . ReadFunction ra (UpdateReader updateB)
+    ufGet mra rb = rf mra rb
+    ufUpdate edit _ = never edit
+    in MkUpdateFunction {..}
 
-noEditLens :: forall edit. EditLens (NoEdit (EditReader edit)) edit
+readFunctionNoEditLens :: forall ra updateB. ReadFunction ra (UpdateReader updateB) -> EditLens (NoUpdate ra) updateB
+readFunctionNoEditLens rf = readOnlyEditLens $ readFunctionNoUpdateFunction rf
+
+noEditLens :: forall update. EditLens (NoUpdate (UpdateReader update)) update
 noEditLens = readFunctionNoEditLens $ \rt -> rt
 
-ioFuncNoEditFunction ::
-       (FullSubjectReader ra, SubjectReader (EditReader editb))
-    => (ReaderSubject ra -> IO (EditSubject editb))
-    -> EditFunction (NoEdit ra) editb
-ioFuncNoEditFunction f = readFunctionNoEditFunction $ ioFuncReadFunction f
+ioFuncNoUpdateFunction ::
+       forall ra updateB. (FullSubjectReader ra, SubjectReader (UpdateReader updateB))
+    => (ReaderSubject ra -> IO (UpdateSubject updateB))
+    -> UpdateFunction (NoUpdate ra) updateB
+ioFuncNoUpdateFunction f = readFunctionNoUpdateFunction $ ioFuncReadFunction f
 
-funcNoEditFunction ::
-       (FullSubjectReader ra, SubjectReader (EditReader editb))
-    => (ReaderSubject ra -> EditSubject editb)
-    -> EditFunction (NoEdit ra) editb
-funcNoEditFunction f = ioFuncNoEditFunction $ return . f
+funcNoUpdateFunction ::
+       forall ra updateB. (FullSubjectReader ra, SubjectReader (UpdateReader updateB))
+    => (ReaderSubject ra -> UpdateSubject updateB)
+    -> UpdateFunction (NoUpdate ra) updateB
+funcNoUpdateFunction f = ioFuncNoUpdateFunction $ return . f
 
 ioFuncNoEditLens ::
-       (FullSubjectReader ra, SubjectReader (EditReader editb))
-    => (ReaderSubject ra -> IO (EditSubject editb))
-    -> EditLens (NoEdit ra) editb
-ioFuncNoEditLens f = readOnlyEditLens $ ioFuncNoEditFunction f
+       forall ra updateB. (FullSubjectReader ra, SubjectReader (UpdateReader updateB))
+    => (ReaderSubject ra -> IO (UpdateSubject updateB))
+    -> EditLens (NoUpdate ra) updateB
+ioFuncNoEditLens f = readOnlyEditLens $ ioFuncNoUpdateFunction f
 
 funcNoEditLens ::
-       (FullSubjectReader ra, SubjectReader (EditReader editb))
-    => (ReaderSubject ra -> EditSubject editb)
-    -> EditLens (NoEdit ra) editb
+       forall ra updateB. (FullSubjectReader ra, SubjectReader (UpdateReader updateB))
+    => (ReaderSubject ra -> UpdateSubject updateB)
+    -> EditLens (NoUpdate ra) updateB
 funcNoEditLens f = ioFuncNoEditLens $ return . f

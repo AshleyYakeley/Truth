@@ -2,9 +2,11 @@ module Truth.Core.Object.DeferActionT
     ( DeferActionT
     , deferAction
     , runDeferActionT
+    , deferActionResourceRunner
     ) where
 
 import Truth.Core.Import
+import Truth.Core.Resource
 import Truth.Debug.Object
 
 newtype DeferActionT m a =
@@ -47,22 +49,27 @@ instance MonadTransSemiTunnel DeferActionT
 
 deriving instance MonadTransTunnel DeferActionT
 
-instance MonadTransSemiUnlift DeferActionT
+instance MonadTransUnlift DeferActionT
 
-instance MonadTransUnlift DeferActionT where
-    liftWithUnlift utmr =
-        MkDeferActionT $ liftWithUnlift $ \(MkUnlift unlift) -> utmr $ MkUnlift $ \(MkDeferActionT wma) -> unlift wma
-    getDiscardingUnlift =
+instance MonadTransUnliftAll DeferActionT where
+    insideOut call = MkDeferActionT $ insideOut $ \unlift -> call $ \(MkDeferActionT wma) -> unlift wma
+    liftWithUnliftAll utmr = MkDeferActionT $ liftWithUnliftAll $ \unlift -> utmr $ \(MkDeferActionT wma) -> unlift wma
+    getDiscardingUnliftAll =
         MkDeferActionT $ tracePureBracket "DeferActionT.getDiscardingUnlift" $ do
-            MkUnlift du <- getDiscardingUnlift
-            return $ MkUnlift $ \(MkDeferActionT wma) -> du wma
+            MkWUnliftAll du <- getDiscardingUnliftAll
+            return $ MkWUnliftAll $ \(MkDeferActionT wma) -> du wma
 
-deferAction :: MonadIO m => IO () -> DeferActionT m ()
+deferAction ::
+       forall m. MonadIO m
+    => IO ()
+    -> DeferActionT m ()
 deferAction action = traceBracket "deferAction" $ MkDeferActionT $ tell [action]
 
-runDeferActionT :: Unlift DeferActionT
-runDeferActionT = traceThing "runDeferActionT" $
-    MkUnlift $ \(MkDeferActionT (WriterT wma)) -> do
-        (a, actions) <- traceBracket "runDeferActionT: main" $ wma
-        traceBracket "runDeferActionT: deferred actions" $ for_ actions liftIO
-        return a
+runDeferActionT :: UnliftAll MonadUnliftIO DeferActionT
+runDeferActionT (MkDeferActionT (WriterT wma)) = traceBracket "runDeferActionT" $ do
+    (a, actions) <- wma
+    for_ actions liftIO
+    return a
+
+deferActionResourceRunner :: LifeCycleIO (ResourceRunner '[ DeferActionT])
+deferActionResourceRunner = liftIO $ newResourceRunner runDeferActionT

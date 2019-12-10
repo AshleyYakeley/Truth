@@ -74,23 +74,22 @@ instance MonadTrans LifeCycleT where
 instance MonadTransSemiTunnel LifeCycleT where
     semitunnel call = MkLifeCycleT $ call $ \(MkLifeCycleT m1r) -> fmap (fmap $ \m1u -> call $ \_ -> m1u) m1r
 
-instance MonadTransSemiUnlift LifeCycleT where
-    liftWithSemiUnlift call = do
+instance MonadTransUnlift LifeCycleT where
+    liftWithUnlift call = do
         var <- liftIO $ newMVar $ return ()
         r <-
             lift $
-            call $
-            MkTransform $ \(MkLifeCycleT ma) -> do
+            call $ \(MkLifeCycleT ma) -> do
                 (a, closer) <- ma
                 liftIO $ modifyMVar_ var $ \oldcloser -> return $ closer >> oldcloser
                 return a
         totalcloser <- liftIO $ takeMVar var
         lifeCycleClose totalcloser
         return r
-    getDiscardingSemiUnlift ::
+    getDiscardingUnlift ::
            forall m. MonadUnliftIO m
-        => LifeCycleT m (Transform (LifeCycleT m) m)
-    getDiscardingSemiUnlift = return $ MkTransform $ \(MkLifeCycleT ms) -> fmap fst ms
+        => LifeCycleT m (WMFunction (LifeCycleT m) m)
+    getDiscardingUnlift = return $ MkWMFunction $ \(MkLifeCycleT ms) -> fmap fst ms
 
 lifeCycleClose :: Monad m => m () -> LifeCycleT m ()
 lifeCycleClose closer = MkLifeCycleT $ return ((), closer)
@@ -100,7 +99,7 @@ type With m t = forall r. (t -> m r) -> m r
 withLifeCycle :: MonadUnliftIO m => LifeCycleT m t -> With m t
 withLifeCycle (MkLifeCycleT oc) run = do
     (t, closer) <- oc
-    liftIOWithUnlift $ \(MkTransform unlift) -> finally (unlift $ run t) (unlift closer)
+    liftIOWithUnlift $ \unlift -> finally (unlift $ run t) (unlift closer)
 
 runLifeCycle :: MonadUnliftIO m => LifeCycleT m t -> m t
 runLifeCycle lc = withLifeCycle lc return
@@ -153,12 +152,12 @@ lifeCycleOnAllDone onzero = do
     let
         ondone = do
             liftIO $
-                mvarRun var $ do
+                mVarRun var $ do
                     olda <- get
                     put $ succ olda
             lifeCycleClose $ do
                 iszero <-
-                    mvarRun var $ do
+                    mVarRun var $ do
                         olda <- get
                         let newa = pred olda
                         put newa
@@ -168,7 +167,7 @@ lifeCycleOnAllDone onzero = do
                     else return ()
         checkdone = do
             iszero <-
-                mvarRun var $ do
+                mVarRun var $ do
                     a <- get
                     return $ a == 0
             if iszero

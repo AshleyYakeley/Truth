@@ -1,5 +1,5 @@
 module Soup.UI
-    ( PossibleNoteEdit
+    ( PossibleNoteUpdate
     , soupWindow
     ) where
 
@@ -12,60 +12,60 @@ import Truth.World.FileSystem
 import Truth.Debug.Object
 
 fromResult :: Result Text Text -> (Text, TableCellProps)
-fromResult (SuccessResult "") = ("unnamed", tableCellPlain {tcItalic = True})
-fromResult (SuccessResult s) = (s, tableCellPlain)
-fromResult (FailureResult s) = ("<" <> s <> ">", tableCellPlain {tcItalic = True})
+fromResult (SuccessResult "") = ("unnamed", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
+fromResult (SuccessResult s) = (s, plainTableCellProps)
+fromResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
 
 pastResult :: Result Text Bool -> (Text, TableCellProps)
-pastResult (SuccessResult False) = ("current", tableCellPlain)
-pastResult (SuccessResult True) = ("past", tableCellPlain)
-pastResult (FailureResult s) = ("<" <> s <> ">", tableCellPlain {tcItalic = True})
+pastResult (SuccessResult False) = ("current", plainTableCellProps)
+pastResult (SuccessResult True) = ("past", plainTableCellProps)
+pastResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
 
-type PossibleNoteEdit = OneWholeEdit (Result Text) NoteEdit
+type PossibleNoteUpdate = OneWholeUpdate (Result Text) NoteUpdate
 
-soupEditSpec :: UISpec UUID (SoupEdit PossibleNoteEdit)
+soupEditSpec :: UISpec UUID (SoupUpdate PossibleNoteUpdate)
 soupEditSpec = let
-    nameFunction :: UUID -> EditFunction (SoupEdit PossibleNoteEdit) (WholeEdit (Result Text Text))
+    nameFunction :: UUID -> UpdateFunction (SoupUpdate PossibleNoteUpdate) (WholeUpdate (Result Text Text))
     nameFunction key =
-        convertEditFunction .
+        convertUpdateFunction .
         (editLensFunction $
          oneWholeLiftEditLens (tupleEditLens NoteTitle) .
          mustExistOneEditLens "name" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . stableKeyElementEditLens key)
-    nameColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
+    nameColumn :: KeyColumn (SoupUpdate PossibleNoteUpdate) UUID
     nameColumn =
-        readOnlyKeyColumn (constEditFunction "Name") $ \key -> do
-            lens <- getKeyElementEditLens key
+        readOnlyKeyColumn (constUpdateFunction "Name") $ \key -> do
             let
                 valLens =
                     oneWholeLiftEditLens (tupleEditLens NoteTitle) .
-                    mustExistOneEditLens "name" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
-            return $ funcEditFunction fromResult . editLensFunction valLens
-    pastColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
+                    mustExistOneEditLens "name" .
+                    oneWholeLiftEditLens (tupleEditLens SelectSecond) . stableKeyElementEditLens key
+            return $ funcUpdateFunction fromResult . editLensFunction valLens
+    pastColumn :: KeyColumn (SoupUpdate PossibleNoteUpdate) UUID
     pastColumn =
-        readOnlyKeyColumn (constEditFunction "Past") $ \key -> do
-            lens <- getKeyElementEditLens key
+        readOnlyKeyColumn (constUpdateFunction "Past") $ \key -> do
             let
                 valLens =
                     oneWholeLiftEditLens (tupleEditLens NotePast) .
-                    mustExistOneEditLens "past" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
-            return $ funcEditFunction pastResult . editLensFunction valLens
+                    mustExistOneEditLens "past" .
+                    oneWholeLiftEditLens (tupleEditLens SelectSecond) . stableKeyElementEditLens key
+            return $ funcUpdateFunction pastResult . editLensFunction valLens
     in tableUISpec [nameColumn, pastColumn] (\a b -> compare (resultToMaybe a) (resultToMaybe b)) nameFunction id $ \_ ->
            return ()
 
-soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
+soupObject :: FilePath -> Object (UpdateEdit (SoupUpdate PossibleNoteUpdate))
 soupObject dirpath = let
-    rawSoupObject :: Object (SoupEdit (ObjectEdit ByteStringEdit))
+    rawSoupObject :: Object (UpdateEdit ObjectSoupUpdate)
     rawSoupObject = directorySoup fileSystemObject dirpath
-    soupItemInjection :: Injection' (Result Text) LazyByteString (EditSubject PossibleNoteEdit)
+    soupItemInjection :: Injection' (Result Text) LazyByteString (UpdateSubject PossibleNoteUpdate)
     soupItemInjection = codecInjection noteCodec
     paste ::
            forall m. MonadIO m
-        => EditSubject PossibleNoteEdit
+        => UpdateSubject PossibleNoteUpdate
         -> m (Maybe LazyByteString)
     paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
-    soupItemLens :: EditLens ByteStringEdit PossibleNoteEdit
+    soupItemLens :: EditLens ByteStringUpdate PossibleNoteUpdate
     soupItemLens = convertEditLens . (wholeEditLens $ injectionLens soupItemInjection) . convertEditLens
-    lens :: EditLens (SoupEdit (ObjectEdit ByteStringEdit)) (SoupEdit PossibleNoteEdit)
+    lens :: EditLens ObjectSoupUpdate (SoupUpdate PossibleNoteUpdate)
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
@@ -74,39 +74,40 @@ soupWindow ut MkUIToolkit {..} dirpath = do
     sub <- makeReflectingSubscriber ut $ traceArgThing "soup" $ soupObject dirpath
     rec
         let
-            mbar :: IO () -> UIWindow -> Maybe (Aspect sel -> EditFunction edit (WholeEdit [MenuEntry edit]))
+            mbar :: IO () -> UIWindow -> Maybe (Aspect sel -> UpdateFunction edit (WholeUpdate [MenuEntry edit]))
             mbar cc _ =
                 Just $ \_ ->
-                    constEditFunction $
+                    constUpdateFunction $
                     [ SubMenuEntry
                           "File"
                           [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ cc
                           , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitExit
                           ]
                     ]
-            wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
+            wsTitle = constUpdateFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
             openItem :: Aspect UUID -> IO ()
-            openItem aspkey = do
-                mkey <- aspkey
-                case mkey of
-                    Just key -> do
-                        lens <- getKeyElementEditLens key
-                        uitUnliftLifeCycle $ do
+            openItem aspkey =
+                uitUnliftLifeCycle $ do
+                    mkey <- aspkey
+                    case mkey of
+                        Just key -> do
                             rec
                                 ~(subwin, subcloser) <-
                                     lifeCycleEarlyCloser $ do
-                                        subLens <- mapSubscriber lens sub
+                                        subLens <- mapSubscriber (getKeyElementEditLens key) sub
                                         uitCreateWindow subLens $
-                                            MkWindowSpec subcloser (constEditFunction "item") (mbar subcloser subwin) $
-                                            mapEditUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                                            MkWindowSpec subcloser (constUpdateFunction "item") (mbar subcloser subwin) $
+                                            mapUpdateUISpec (return $ oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
                                             oneWholeUISpec $ oneWholeUISpec noteEditSpec
                             return ()
-                    Nothing -> return ()
+                        Nothing -> return ()
             wsMenuBar = mbar closer window
             wsContent =
                 withAspectUISpec $ \aspect ->
                     verticalUISpec
-                        [(simpleButtonUISpec (constEditFunction "View") (openItem aspect), False), (soupEditSpec, True)]
+                        [ (simpleButtonUISpec (constUpdateFunction "View") (openItem aspect), False)
+                        , (soupEditSpec, True)
+                        ]
             wsCloseBoxAction = closer
         (window, closer) <- lifeCycleEarlyCloser $ uitCreateWindow sub MkWindowSpec {..}
     return ()

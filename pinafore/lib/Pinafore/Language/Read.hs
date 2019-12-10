@@ -13,16 +13,16 @@ import Pinafore.Language.Read.Expression
 import Pinafore.Language.Read.Interactive
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Type
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
 import Shapes hiding (try)
 
-parseTopExpression :: HasPinaforeEntityEdit baseedit => Text -> PinaforeSourceScoped baseedit (QExpr baseedit)
+parseTopExpression :: HasPinaforeEntityUpdate baseupdate => Text -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
 parseTopExpression = parseScopedReader $ fmap interpretTopExpression readTopExpression
 
 parseType ::
-       forall baseedit polarity. Is PolarityType polarity
+       forall baseupdate polarity. Is PolarityType polarity
     => Text
-    -> PinaforeSourceScoped baseedit (AnyW (PinaforeType baseedit polarity))
+    -> PinaforeSourceScoped baseupdate (AnyW (PinaforeType baseupdate polarity))
 parseType text = do
     st <- parseScopedReader (fmap return readType) text
     interpretType st

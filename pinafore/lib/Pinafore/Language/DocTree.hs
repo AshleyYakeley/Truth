@@ -41,6 +41,7 @@ runDocTree showTitle showDesc showEntry level (MkDocTree title desc entries) = d
 data DefDoc = MkDefDoc
     { docName :: Name
     , docValueType :: Text
+    , docIsSupertype :: Bool
     , docIsPattern :: Bool
     , docDescription :: Text
     }

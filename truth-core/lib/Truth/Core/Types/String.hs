@@ -1,4 +1,9 @@
-module Truth.Core.Types.String where
+module Truth.Core.Types.String
+    ( StringUpdate
+    , StringRead(..)
+    , StringEdit(..)
+    , stringSectionLens
+    ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
@@ -48,8 +53,8 @@ floatingUpdateLeft (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
     slen = seqLength u
     in if i > uend
            then i + slen - ulen
-           else if i > ustart + slen
-                    then ustart + slen
+           else if i > ustart
+                    then ustart
                     else i
 floatingUpdateLeft _ i = i
 
@@ -59,7 +64,7 @@ floatingUpdateRight (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
     slen = seqLength u
     in if i >= uend
            then i + slen - ulen
-           else if i > ustart + slen
+           else if i >= ustart
                     then ustart + slen
                     else i
 floatingUpdateRight _ i = i
@@ -78,37 +83,49 @@ instance IsSequence seq => Floating (StringEdit seq) (StringEdit seq) where
 
 type instance EditReader (StringEdit seq) = StringRead seq
 
+cleanEdit :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> Maybe (SequenceRun seq)
+cleanEdit _len run
+    | not $ goodRun run = Nothing
+cleanEdit len run
+    | runStart run > len = Nothing
+cleanEdit len run
+    | runEnd run > len = Just $ startEndRun (runStart run) len
+cleanEdit _len run = Just run
+
 instance IsSequence seq => ApplicableEdit (StringEdit seq) where
     applyEdit (StringReplaceWhole s) _ reader = return $ subjectToRead s reader
     applyEdit (StringReplaceSection erunRaw s) mr StringReadLength = do
         oldlen <- mr StringReadLength
-        let
-            (MkSequenceRun _estart elen) = clipRunBounds oldlen erunRaw
-            slen = seqLength s
-        return $ oldlen + slen - elen
+        return $
+            case cleanEdit oldlen erunRaw of
+                Just erun -> oldlen + seqLength s - runLength erun
+                Nothing -> oldlen
     applyEdit (StringReplaceSection erunRaw s) mr (StringReadSection rrunRaw) = do
         oldlen <- mr StringReadLength
-        let
-            (MkSequenceRun estart elen) = clipRunBounds oldlen erunRaw
-            slen = seqLength s
-            newlen = oldlen + slen - elen
-            rrun = clipRunBounds newlen rrunRaw
-            beforeRun = clipRunEnd estart rrun
-            middleRelRun = clipRunBounds slen $ relativeRun estart rrun
-            afterRun = relativeRun (slen - elen) $ clipRunStart (estart + slen) rrun
-            middle =
-                if positiveRun middleRelRun
-                    then seqSection middleRelRun s
-                    else mempty
-        before <-
-            if positiveRun beforeRun
-                then mr $ StringReadSection beforeRun
-                else return mempty
-        after <-
-            if positiveRun afterRun
-                then mr $ StringReadSection afterRun
-                else return mempty
-        return $ mappend before $ mappend middle after
+        case cleanEdit oldlen erunRaw of
+            Just erun -> do
+                let
+                    (MkSequenceRun estart elen) = erun
+                    slen = seqLength s
+                    newlen = oldlen + slen - elen
+                    rrun = clipRunBounds newlen rrunRaw
+                    beforeRun = clipRunEnd estart rrun
+                    middleRelRun = clipRunBounds slen $ relativeRun estart rrun
+                    afterRun = relativeRun (slen - elen) $ clipRunStart (estart + slen) rrun
+                    middle =
+                        if positiveRun middleRelRun
+                            then seqSection middleRelRun s
+                            else mempty
+                before <-
+                    if positiveRun beforeRun
+                        then mr $ StringReadSection beforeRun
+                        else return mempty
+                after <-
+                    if positiveRun afterRun
+                        then mr $ StringReadSection afterRun
+                        else return mempty
+                return $ mappend before $ mappend middle after
+            Nothing -> mr $ StringReadSection rrunRaw
 
 instance IsSequence seq => InvertibleEdit (StringEdit seq) where
     invertEdit (StringReplaceWhole _) mr = do
@@ -125,41 +142,48 @@ instance IsSequence seq => FullEdit (StringEdit seq) where
         a <- mutableReadToSubject mr
         writeEdit $ StringReplaceWhole a
 
+type StringUpdate seq = EditUpdate (StringEdit seq)
+
 stringSectionLens ::
        forall seq. IsSequence seq
     => SequenceRun seq
-    -> IO (EditLens (StringEdit seq) (StringEdit seq))
-stringSectionLens initial = traceBracket ("stringSectionLens.create: " <> show initial) $
-    newMVar initial >>= \var ->
-        return $ traceThing "stringSectionLens" $ let
-            getState ::
-                   forall m. MonadIO m
-                => MutableRead m (EditReader (StringEdit seq))
-                -> StateT (SequenceRun seq) m (SequenceRun seq)
-            getState mr = do
-                len <- lift $ mr StringReadLength
-                stateRaw <- get
-                return $ clipRunBounds len stateRaw
-            efGet :: ReadFunctionT (StateT (SequenceRun seq)) (StringRead seq) (StringRead seq)
-            efGet mr rt = do
-                st <- getState mr
-                case rt of
-                    StringReadLength -> return $ runLength st
-                    StringReadSection run ->
-                        lift $ mr $ StringReadSection $ clipWithin st $ relativeRun (negate $ runStart st) run
-            efUpdate ::
-                   forall m. MonadIO m
-                => StringEdit seq
-                -> MutableRead m (EditReader (StringEdit seq))
-                -> StateT (SequenceRun seq) m [StringEdit seq]
-            efUpdate edita mr = do
-                oldstate <- getState mr
-                let newstate = floatingUpdate edita oldstate
-                traceBracket ("stringSectionLens.efUpdate state change: " <> show (oldstate,newstate)) $ put newstate
-                case edita of
-                    StringReplaceWhole s -> return $ return $ StringReplaceWhole $ seqSection newstate s
-                    StringReplaceSection rawruna sa -> do
-                        let runa = rawruna {- clipRunBounds len -}
+    -> LifeCycleIO (EditLens (StringUpdate seq) (StringUpdate seq))
+stringSectionLens = traceThing "stringSectionLens" $ let
+    getState ::
+           forall m. MonadIO m
+        => MutableRead m (StringRead seq)
+        -> StateT (SequenceRun seq) m (SequenceRun seq)
+    getState mr = do
+        len <- lift $ mr StringReadLength
+        stateRaw <- get
+        return $ clipRunBounds len stateRaw
+    sGet :: ReadFunctionT (StateT (SequenceRun seq)) (StringRead seq) (StringRead seq)
+    sGet mr rt = do
+        st <- getState mr
+        case rt of
+            StringReadLength -> return $ runLength st
+            StringReadSection run ->
+                lift $ mr $ StringReadSection $ clipWithin st $ relativeRun (negate $ runStart st) run
+    sUpdate ::
+           forall m. MonadIO m
+        => StringUpdate seq
+        -> MutableRead m (StringRead seq)
+        -> StateT (SequenceRun seq) m [StringUpdate seq]
+    sUpdate (MkEditUpdate edita) mr = do
+        oldstate <- get
+        newlen <- lift $ mr StringReadLength
+        let
+            rawnewstate = floatingUpdate edita oldstate
+            newstate = clipRunBounds newlen rawnewstate
+        case edita of
+            StringReplaceWhole s -> do
+                put newstate
+                return $ return $ MkEditUpdate $ StringReplaceWhole $ seqSection newstate s
+            StringReplaceSection runa sa ->
+                case goodRun runa of
+                    False -> return []
+                    True -> do
+                        traceBracket ("stringSectionLens.ufUpdate state change: " <> show (oldstate,newstate)) $ put newstate
                         return $
                             maybeToList $ do
                                 runb' <- seqIntersectInside oldstate runa
@@ -169,32 +193,32 @@ stringSectionLens initial = traceBracket ("stringSectionLens.create: " <> show i
                                         seqSection
                                             (clipRunBounds (seqLength sa) $ relativeRun (runStart runa) newstate)
                                             sa
-                                return $ StringReplaceSection runb sb
-            elFunction :: AnEditFunction (StateT (SequenceRun seq)) (StringEdit seq) (StringEdit seq)
-            elFunction = MkAnEditFunction {..}
-            elPutEdit ::
-                   forall m. MonadIO m
-                => StringEdit seq
-                -> MutableRead m (EditReader (StringEdit seq))
-                -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
-            elPutEdit editb mr = do
-                oldstate <- getState mr
-                case editb of
-                    StringReplaceWhole sb -> do
-                        let newstate = oldstate {runLength = seqLength sb}
-                        traceBracket ("stringSectionLens.elPutEdit:whole state change: " <> show (oldstate,newstate)) $ put newstate
-                        return $ Just [StringReplaceSection oldstate sb]
-                    StringReplaceSection runb sb -> do
-                        let
-                            newlength = runLength oldstate + seqLength sb - runLength runb
-                            runa = relativeRun (negate $ runStart oldstate) runb
-                        let newstate = oldstate {runLength = newlength}
-                        traceBracket ("stringSectionLens.elPutEdit:section state change: " <> show (oldstate,newstate)) $ put newstate
-                        return $ Just [StringReplaceSection runa sb]
-            elPutEdits ::
-                   forall m. MonadIO m
-                => [StringEdit seq]
-                -> MutableRead m (EditReader (StringEdit seq))
-                -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
-            elPutEdits = elPutEditsFromPutEdit elPutEdit
-            in MkCloseUnlift (traceThing "stringSectionLens.mvarUnlift" $ mvarUnlift var) MkAnEditLens {..}
+                                case (runLength runb, onull sb) of
+                                    (0, True) -> Nothing
+                                    _ -> return $ MkEditUpdate $ StringReplaceSection runb sb
+    sPutEdit ::
+           forall m. MonadIO m
+        => StringEdit seq
+        -> MutableRead m (StringRead seq)
+        -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
+    sPutEdit editb mr = do
+        oldstate <- getState mr
+        case editb of
+            StringReplaceWhole sb -> do
+                let newstate = oldstate {runLength = seqLength sb}
+                traceBracket ("stringSectionLens.elPutEdit:whole state change: " <> show (oldstate,newstate)) $ put newstate
+                return $ Just [StringReplaceSection oldstate sb]
+            StringReplaceSection runb sb -> do
+                let
+                    newlength = runLength oldstate + seqLength sb - runLength runb
+                    runa = relativeRun (negate $ runStart oldstate) runb
+                let newstate = oldstate {runLength = newlength}
+                traceBracket ("stringSectionLens.elPutEdit:section state change: " <> show (oldstate,newstate)) $ put newstate
+                return $ Just [StringReplaceSection runa sb]
+    sPutEdits ::
+           forall m. MonadIO m
+        => [StringEdit seq]
+        -> MutableRead m (StringRead seq)
+        -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
+    sPutEdits = elPutEditsFromPutEdit sPutEdit
+    in makeStateLens MkStateEditLens {..}

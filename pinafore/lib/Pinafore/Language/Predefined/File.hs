@@ -10,10 +10,10 @@ import Pinafore.Storage
 --import Truth.World.File
 {-
 file_import ::
-       forall baseedit. HasPinaforeFileEdit baseedit
-    => PinaforeSetRef baseedit '( A, A)
-    -> (A -> PinaforeAction baseedit ())
-    -> PinaforeAction baseedit ()
+       forall baseupdate. HasPinaforeFileUpdate baseupdate
+    => PinaforeFiniteSetRef baseupdate '( A, A)
+    -> (A -> PinaforeAction baseupdate ())
+    -> PinaforeAction baseupdate ()
 file_import set continue = do
     chooseFile <- pinaforeActionRequest witChooseFile
     mpath <- liftIO chooseFile
@@ -21,13 +21,13 @@ file_import set continue = do
         Nothing -> return ()
         Just path -> do
             let sourceobject = fileObject path
-            newentity set $ \entity -> do
+            newEntity set $ \entity -> do
                 mdestobject <-
                     pinaforeLiftView $
                     viewMapEdit (pinaforeFileItemLens entity) $ do
                         MkObject {..} <- viewObject
                         liftIO $
-                            runTransform objRun $ do
+                            runWMFunction objRun $ do
                                 pushEdit $ objEdit [SingleObjectDeleteCreate]
                                 objRead ReadSingleObjectStore
                 destobject <-
@@ -38,17 +38,17 @@ file_import set continue = do
                 continue entity
 
 file_size :: Object ByteStringEdit -> IO Int64
-file_size MkObject {..} = runTransform objRun $ objRead ReadByteStringLength
+file_size MkObject {..} = runWMFunction objRun $ objRead ReadByteStringLength
 -}
 file_predefinitions ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => [DocTreeEntry (BindDoc baseedit)]
+       forall baseupdate. (HasPinaforeEntityUpdate baseupdate, HasPinaforeFileUpdate baseupdate)
+    => [DocTreeEntry (BindDoc baseupdate)]
 file_predefinitions =
     [ docTreeEntry
           "Files"
           "NYI"
                   {-
-                  mkValEntry "file_import" "Import a file into a set." $ file_import @baseedit
+                  mkValEntry "file_import" "Import a file into a set." $ file_import @baseupdate
               , mkValEntry "file_size" "The size of a file." file_size
               -}
           []

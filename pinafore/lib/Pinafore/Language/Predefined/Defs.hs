@@ -5,7 +5,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
 import Shapes
 
 type A = UVar "a"
@@ -26,19 +26,19 @@ type BQ = UVar "bq"
 
 type CQ = UVar "cq"
 
-data BindDoc baseedit = MkBindDoc
+data BindDoc baseupdate = MkBindDoc
     { bdName :: Name
-    , bdValue :: Maybe (PinaforeContext baseedit -> QValue baseedit)
-    , bdPattern :: Maybe (QPatternConstructor baseedit)
+    , bdValue :: Maybe (PinaforeContext baseupdate -> QValue baseupdate)
+    , bdPattern :: Maybe (QPatternConstructor baseupdate)
     , bdDoc :: DefDoc
     }
 
 mkValEntry ::
-       forall baseedit t. (HasPinaforeEntityEdit baseedit, ToPinaforeType baseedit t)
+       forall baseupdate t. (HasPinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
     => Name
     -> Text
-    -> ((?pinafore :: PinaforeContext baseedit) => t)
-    -> DocTreeEntry (BindDoc baseedit)
+    -> ((?pinafore :: PinaforeContext baseupdate) => t)
+    -> DocTreeEntry (BindDoc baseupdate)
 mkValEntry name docDescription val = let
     bdName = name
     bdValue =
@@ -47,23 +47,41 @@ mkValEntry name docDescription val = let
             in jmToValue val
     bdPattern = Nothing
     docName = name
-    docValueType = qTypeDescription @baseedit @t
+    docValueType = qTypeDescription @baseupdate @t
+    docIsSupertype = False
+    docIsPattern = False
+    bdDoc = MkDefDoc {..}
+    in EntryDocTreeEntry MkBindDoc {..}
+
+mkSupertypeEntry ::
+       forall baseupdate t. (HasPinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
+    => Name
+    -> Text
+    -> ((?pinafore :: PinaforeContext baseupdate) => t)
+    -> DocTreeEntry (BindDoc baseupdate)
+mkSupertypeEntry name docDescription _val = let
+    bdName = name
+    bdValue = Nothing
+    bdPattern = Nothing
+    docName = name
+    docValueType = qTypeDescription @baseupdate @t
+    docIsSupertype = True
     docIsPattern = False
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkValPatEntry ::
-       forall baseedit t v lt.
-       ( HasPinaforeEntityEdit baseedit
-       , ToPinaforeType baseedit t
-       , FromPinaforeType baseedit v
-       , ToListShimWit PinaforeShim (PinaforeType baseedit 'Positive) lt
+       forall baseupdate t v lt.
+       ( HasPinaforeEntityUpdate baseupdate
+       , ToPinaforeType baseupdate t
+       , FromPinaforeType baseupdate v
+       , ToListShimWit PinaforeShim (PinaforeType baseupdate 'Positive) lt
        )
     => Name
     -> Text
-    -> ((?pinafore :: PinaforeContext baseedit) => t)
+    -> ((?pinafore :: PinaforeContext baseupdate) => t)
     -> (v -> Maybe (HList lt))
-    -> DocTreeEntry (BindDoc baseedit)
+    -> DocTreeEntry (BindDoc baseupdate)
 mkValPatEntry name docDescription val pat = let
     bdName = name
     bdValue =
@@ -72,27 +90,29 @@ mkValPatEntry name docDescription val pat = let
             in jmToValue val
     bdPattern = Just $ qToPatternConstructor pat
     docName = name
-    docValueType = qTypeDescription @baseedit @t
+    docValueType = qTypeDescription @baseupdate @t
+    docIsSupertype = False
     docIsPattern = True
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkPatEntry ::
-       forall baseedit v lt.
-       ( HasPinaforeEntityEdit baseedit
-       , FromPinaforeType baseedit v
-       , ToListShimWit PinaforeShim (PinaforeType baseedit 'Positive) lt
+       forall baseupdate v lt.
+       ( HasPinaforeEntityUpdate baseupdate
+       , FromPinaforeType baseupdate v
+       , ToListShimWit PinaforeShim (PinaforeType baseupdate 'Positive) lt
        )
     => Name
     -> Text
     -> Text
     -> (v -> Maybe (HList lt))
-    -> DocTreeEntry (BindDoc baseedit)
+    -> DocTreeEntry (BindDoc baseupdate)
 mkPatEntry name docDescription docValueType pat = let
     bdName = name
     bdValue = Nothing
     bdPattern = Just $ qToPatternConstructor pat
     docName = name
+    docIsSupertype = False
     docIsPattern = True
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}

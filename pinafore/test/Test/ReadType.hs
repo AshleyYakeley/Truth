@@ -13,7 +13,7 @@ testReadType :: Text -> TestTree
 testReadType text =
     testCase (unpack text) $
     ioRunInterpretResult $ do
-        _ <- runTestPinaforeSourceScoped $ parseType @PinaforeEdit @'Positive text
+        _ <- runTestPinaforeSourceScoped $ parseType @PinaforeUpdate @'Positive text
         return ()
 
 testReadTypes :: TestTree
@@ -37,6 +37,7 @@ testReadTypes =
         , testReadType "Ref +a"
         , testReadType "Ref {+a,b,-NewEntity}"
         , testReadType "SetRef a"
-        , testReadType "SetRef +a"
-        , testReadType "SetRef {+a,b,-NewEntity}"
+        , testReadType "FiniteSetRef a"
+        , testReadType "FiniteSetRef +a"
+        , testReadType "FiniteSetRef {+a,b,-NewEntity}"
         ]

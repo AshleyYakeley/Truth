@@ -1,19 +1,15 @@
 module Truth.Core
-    ( module Truth.Core.Sequence
-    , module Truth.Core.Read
-    , module Truth.Core.Edit
-    , module Truth.Core.Types
-    , module Truth.Core.Object
-    , module Truth.Core.UI
+    ( module I
     , module Truth.Core
     ) where
 
-import Truth.Core.Edit
+import Truth.Core.Edit as I
 import Truth.Core.Import
-import Truth.Core.Object
-import Truth.Core.Read
-import Truth.Core.Sequence
-import Truth.Core.Types
-import Truth.Core.UI
+import Truth.Core.Object as I
+import Truth.Core.Read as I
+import Truth.Core.Resource as I
+import Truth.Core.Sequence as I
+import Truth.Core.Types as I
+import Truth.Core.UI as I
 
 type ReasonCodec = Codec' (Result Text)

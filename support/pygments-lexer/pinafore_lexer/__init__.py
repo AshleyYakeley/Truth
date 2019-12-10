@@ -18,12 +18,13 @@ class PinaforeLexer(RegexLexer):
             (r'\n', Text),
             (r'\s+', Text),
             (r'\#(.*?)\n', Comment.Single),
+            (r'{\#', Comment.Multiline, 'comment'),
             (r'"(\\\\|\\"|[^"])*"', String),
             (r'(opentype|subtype|closedtype|property|entity)\b', Keyword.Declaration),
             (words(('if', 'then', 'else', 'let', 'in', 'do', 'case', 'of', 'end'), suffix=r'\b'), Keyword),
             (words((
                 'Any', 'None', 'Literal', 'Text', 'Number', 'Rational', 'Integer', 'Boolean', 'Entity', 'NewEntity',
-                'Maybe', 'Either', 'Order', 'Action', 'Ref', 'SetRef', 'UI', 'Window', 'MenuItem'
+                'Maybe', 'Either', 'Order', 'Action', 'Ref', 'SetRef', 'FiniteSetRef', 'UI', 'Window', 'MenuItem'
                 ), suffix=r'\b'), Keyword.Type),
             (r'![-0-9A-Fa-f]+', Literal.Anchor),
             (r'!"(\\\\|\\"|[^"])*"', Literal.Anchor),
@@ -31,5 +32,11 @@ class PinaforeLexer(RegexLexer):
             (r'[^\W\d]\w*', Name.Other),
             (r'(=|;|\(|\)|\[|\]|\@|::|->|,|{|}|\\)', Punctuation),
             (r'[!@$%^&*-_+\\/|\.<>?]+', Operator),
+        ],
+        'comment': [
+            (r'[^#{]', Comment.Multiline),
+            (r'{\#', Comment.Multiline, '#push'),
+            (r'\#}', Comment.Multiline, '#pop'),
+            (r'[#{]', Comment.Multiline)
         ]
     }

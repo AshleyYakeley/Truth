@@ -15,3 +15,4 @@ import Pinafore.Base.Literal as I
 import Pinafore.Base.Morphism as I
 import Pinafore.Base.Number as I
 import Pinafore.Base.PredicateMorphism as I
+import Pinafore.Base.SafeRational as I

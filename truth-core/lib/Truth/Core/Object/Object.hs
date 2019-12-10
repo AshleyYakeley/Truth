@@ -3,48 +3,65 @@ module Truth.Core.Object.Object where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
-import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Core.Types.None
 import Truth.Core.Types.Whole
 import Truth.Debug
 
-data AnObject m edit = MkAnObject
-    { objRead :: MutableRead m (EditReader edit)
-    , objEdit :: [edit] -> m (Maybe (EditSource -> m ()))
+data AnObject edit (tt :: [TransKind]) = MkAnObject
+    { objRead :: MutableRead (ApplyStack tt IO) (EditReader edit)
+    , objEdit :: NonEmpty edit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
     }
 
-type Object = CloseUnliftIO AnObject
+type Object edit = Resource (AnObject edit)
+
+instance MapResource (AnObject edit) where
+    mapResource ::
+           forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+        => TransListFunction tt1 tt2
+        -> AnObject edit tt1
+        -> AnObject edit tt2
+    mapResource MkTransListFunction {..} (MkAnObject r e) = let
+        r' :: MutableRead (ApplyStack tt2 IO) _
+        r' rd = tlfFunction (Proxy @IO) $ r rd
+        e' :: _ -> ApplyStack tt2 IO (Maybe (EditSource -> ApplyStack tt2 IO ()))
+        e' edits =
+            case transStackDict @MonadIO @tt2 @IO of
+                Dict -> (fmap $ fmap $ fmap $ tlfFunction (Proxy @IO)) $ tlfFunction (Proxy @IO) $ e edits
+        in MkAnObject r' e'
 
 instance Show (Object edit) where
-    show (MkCloseUnliftIO _ _) = "object"
+    show (MkResource _ _) = "object"
 
 noneObject :: Object (NoEdit (NoReader t))
 noneObject = let
     objRead :: MutableRead IO (NoReader t)
     objRead = never
-    objEdit :: [NoEdit (NoReader t)] -> IO (Maybe (EditSource -> IO ()))
-    objEdit [] = return $ Just $ \_ -> return ()
-    objEdit (e:_) = never e
-    in MkCloseUnliftIO (MkTransform id) $ MkAnObject {..}
+    objEdit :: NonEmpty (NoEdit (NoReader t)) -> IO (Maybe (EditSource -> IO ()))
+    objEdit = never
+    in MkResource nilResourceRunner $ MkAnObject {..}
 
-mvarObject :: forall a. MVar a -> (a -> Bool) -> Object (WholeEdit a)
-mvarObject var allowed = let
+mvarObject :: forall a. IOWitness (StateT a) -> MVar a -> (a -> Bool) -> Object (WholeEdit a)
+mvarObject iow var allowed = let
     objRead :: MutableRead (StateT a IO) (WholeReader a)
     objRead ReadWhole = get
-    objEdit :: [WholeEdit a] -> StateT a IO (Maybe (EditSource -> StateT a IO ()))
+    objEdit :: NonEmpty (WholeEdit a) -> StateT a IO (Maybe (EditSource -> StateT a IO ()))
     objEdit edits = do
-        na <- applyEdits edits (mSubjectToMutableRead get) ReadWhole
+        na <- applyEdits (toList edits) (mSubjectToMutableRead get) ReadWhole
         return $
             if allowed na
                 then Just $ \_ -> put na
                 else Nothing
-    in MkCloseUnliftIO (traceThing "mvarObject.mvarUnliftIO" $ mvarUnliftIO var) $ MkAnObject {..}
+    anobj :: AnObject (WholeEdit a) '[ StateT a]
+    anobj = MkAnObject {..}
+    in MkResource (mvarResourceRunner iow var) anobj
 
 freeIOObject :: forall a. a -> (a -> Bool) -> IO (Object (WholeEdit a))
 freeIOObject firsta allowed = do
+    iow <- newIOWitness
     var <- newMVar firsta
-    return $ mvarObject var allowed
+    return $ mvarObject iow var allowed
 
 pushEdit :: MonadIO m => EditSource -> m (Maybe (EditSource -> m ())) -> m Bool
 pushEdit esrc mmmu = traceBracket "pushEdit.examine" $ do
@@ -62,56 +79,60 @@ pushOrFail s esrc mmmu = traceBracket "pushOrFail.examine" $ do
         Just mu -> traceBracket "pushOrFail.do" $ mu esrc
         Nothing -> traceBracket "pushOrFail.fail" $ fail s
 
-mapObject :: forall edita editb. EditLens edita editb -> Object edita -> Object editb
-mapObject = lensObject False
+mapObject ::
+       forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> Object (UpdateEdit updateB)
+mapObject = lensObject
 
-lensAnObject ::
-       forall t m edita editb. (MonadTrans t, MonadIO (t m), MonadIO m)
-    => AnEditLens t edita editb
-    -> AnObject m edita
-    -> AnObject (t m) editb
-lensAnObject MkAnEditLens {..} (MkAnObject objReadA objEditA) = let
-    MkAnEditFunction {..} = elFunction
-    objReadB :: MutableRead (t m) (EditReader editb)
-    objReadB = traceThing "lensObject.run.read" $ efGet objReadA
-    objEditB :: [editb] -> t m (Maybe (EditSource -> t m ()))
-    objEditB editbs = traceBracket "lensObject.edit" $ do
-        meditas <- traceBracket "lensObject.edit lens" $ elPutEdits editbs objReadA
-        case meditas of
-            Nothing -> do
-                traceIOM "lensObject.edit Nothing"
-                return Nothing
-            Just editas -> do
-                mmu <- traceBracket "lensObject.edit objEditA" $ lift $ objEditA editas
-                case mmu of
-                    Nothing -> traceBracket "lensObject.edit.examine: no action" $ return Nothing
-                    Just mu -> traceBracket "lensObject.edit.examine: action" $ return $ Just $ \esrc -> traceBracket "lensObject.edit.run" $ lift $ mu esrc
-    in MkAnObject objReadB objEditB
+mapAnObject ::
+       forall tt updateA updateB. MonadTransStackUnliftAll tt
+    => EditLens updateA updateB
+    -> AnObject (UpdateEdit updateA) tt
+    -> AnObject (UpdateEdit updateB) tt
+mapAnObject MkEditLens {..} (MkAnObject objReadA objEditA) =
+    case transStackDict @MonadIO @tt @IO of
+        Dict -> let
+            MkUpdateFunction {..} = elFunction
+            objReadB :: MutableRead (ApplyStack tt IO) (UpdateReader updateB)
+            objReadB mr = traceBracket "mapAnObject.run.read" $ ufGet objReadA mr
+            objEditB :: NonEmpty (UpdateEdit updateB) -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+            objEditB editbs = traceBracket "mapAnObject.edit" $ do
+                meditas <- traceBracket "mapAnObject.edit lens" $ elPutEdits (toList editbs) objReadA
+                case meditas of
+                    Nothing -> do
+                        traceIOM "lensObject.edit Nothing"
+                        return Nothing
+                    Just [] -> return $ Just $ \_ -> return ()
+                    Just (ea:editas) -> do
+                        mmu <- objEditA $ ea :| editas
+                        case mmu of
+                            Nothing -> traceBracket "mapAnObject.edit.examine: no action" $ return Nothing
+                            Just mu -> traceBracket "mapAnObject.edit.examine: action" $ return $ Just $ \esrc -> traceBracket "mapAnObject.edit.run" $ mu esrc
+            in MkAnObject objReadB objEditB
 
-lensObject :: forall edita editb. Bool -> EditLens edita editb -> Object edita -> Object editb
-lensObject discard (MkCloseUnlift (lensUnlift :: Unlift t) alens) (MkCloseUnliftIO (objUnlift :: UnliftIO m) aobj)
-    | Dict <- hasTransConstraint @MonadUnliftIO @t @m = let
-        objRunB = lensObjectUnlift discard lensUnlift objUnlift
-        in MkCloseUnliftIO objRunB $ lensAnObject alens aobj
+lensObject ::
+       forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> Object (UpdateEdit updateB)
+lensObject alens (MkResource rr aobj) =
+    case resourceRunnerUnliftAllDict rr of
+        Dict -> MkResource rr $ mapAnObject alens aobj
 
-immutableAnObject :: Monad m => MutableRead m (EditReader edit) -> AnObject m edit
+immutableAnObject ::
+       forall tt edit. MonadTransStackUnliftAll tt
+    => MutableRead (ApplyStack tt IO) (EditReader edit)
+    -> AnObject edit tt
 immutableAnObject mr =
-    MkAnObject mr $
-    -- must allow empty edit list
-    \case
-        [] -> return $ Just $ \_ -> return ()
-        _ -> return Nothing
+    case transStackDict @Monad @tt @IO of
+        Dict -> MkAnObject mr $ \_ -> return Nothing
 
 readConstantObject :: MutableRead IO (EditReader edit) -> Object edit
-readConstantObject mr = MkCloseUnliftIO (MkTransform id) $ immutableAnObject mr
+readConstantObject mr = MkResource nilResourceRunner $ immutableAnObject mr
 
 constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
 constantObject subj = readConstantObject $ subjectToMutableRead subj
 
-alwaysEdit :: Monad m => ([edit] -> EditSource -> m ()) -> [edit] -> m (Maybe (EditSource -> m ()))
+alwaysEdit :: Monad m => (NonEmpty edit -> EditSource -> m ()) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))
 alwaysEdit em edits = return $ Just $ em edits
 
-singleAlwaysEdit :: Monad m => (edit -> EditSource -> m ()) -> [edit] -> m (Maybe (EditSource -> m ()))
+singleAlwaysEdit :: Monad m => (edit -> EditSource -> m ()) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))
 singleAlwaysEdit em = alwaysEdit $ \edits esrc -> for_ edits $ \edit -> em edit esrc
 
 testEditAction :: IO Bool -> (EditSource -> IO ()) -> IO (Maybe (EditSource -> IO ()))
@@ -122,7 +143,7 @@ testEditAction test action = do
             then Just action
             else Nothing
 
-singleEdit :: Monad m => (edit -> m (Maybe (EditSource -> m ()))) -> [edit] -> m (Maybe (EditSource -> m ()))
+singleEdit :: Monad m => (edit -> m (Maybe (EditSource -> m ()))) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))
 singleEdit call edits =
     getComposeM $ do
         actions <- for edits $ \edit -> MkComposeM $ call edit
@@ -132,59 +153,37 @@ convertObject ::
        forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, SubjectMapEdit editb)
     => Object edita
     -> Object editb
-convertObject (MkCloseUnliftIO (objRun :: UnliftIO m) (MkAnObject mra pe)) = let
-    objRead :: MutableRead m (EditReader editb)
-    objRead = mSubjectToMutableRead $ mutableReadToSubject mra
-    objEdit :: [editb] -> m (Maybe (EditSource -> m ()))
-    objEdit ebs = do
-        oldsubj <- mutableReadToSubject mra
-        newsubj <- mapSubjectEdits ebs oldsubj
-        eas <- getReplaceEditsFromSubject newsubj
-        pe eas
-    in MkCloseUnliftIO objRun MkAnObject {..}
-
--- | Combines all the edits made in each call to the object.
-cacheWholeObject ::
-       forall t. Eq t
-    => Object (WholeEdit t)
-    -> Object (WholeEdit t)
-cacheWholeObject (MkCloseUnliftIO (MkTransform run :: UnliftIO m) (MkAnObject rd push)) = let
-    run' :: UnliftIO (StateT (t, Maybe EditSource) m)
-    run' =
-        MkTransform $ \ma ->
-            run $ do
-                oldval :: t <- rd ReadWhole
-                (r, (newval, mesrc)) <- runStateT ma (oldval, Nothing)
-                case mesrc of
-                    Just esrc ->
-                        if oldval == newval
-                            then return ()
-                            else do
-                                maction <- push [MkWholeEdit newval]
-                                case maction of
-                                    Just action -> action esrc
-                                    Nothing -> liftIO $ fail "disallowed cached edit"
-                    Nothing -> return ()
-                return r
-    rd' :: MutableRead (StateT (t, Maybe EditSource) m) (WholeReader t)
-    rd' ReadWhole = do
-        (t, _) <- get
-        return t
-    push' :: [WholeEdit t] -> StateT (t, Maybe EditSource) m (Maybe (EditSource -> StateT (t, Maybe EditSource) m ()))
-    push' = singleAlwaysEdit $ \(MkWholeEdit t) esrc -> put (t, Just esrc)
-    in MkCloseUnliftIO run' $ MkAnObject rd' push'
-
-copyObject :: FullEdit edit => EditSource -> Object edit -> Object edit -> IO ()
-copyObject esrc (MkCloseUnliftIO (runSrc :: UnliftIO ms) (MkAnObject readSrc _)) (MkCloseUnliftIO (runDest :: UnliftIO md) (MkAnObject _ pushDest)) =
-    case isCombineMonadIO @ms @md of
+convertObject (MkResource (trun :: ResourceRunner tt) (MkAnObject mra pe)) =
+    case resourceRunnerUnliftAllDict trun of
         Dict ->
-            runTransform (combineUnliftIOs runSrc runDest) $
-            replaceEdit (remonadMutableRead (combineLiftFst @ms @md) readSrc) $ \edit ->
-                combineLiftSnd @ms @md $ pushOrFail "failed to copy object" esrc $ pushDest [edit]
+            case transStackDict @MonadIO @tt @IO of
+                Dict -> let
+                    objRead :: MutableRead (ApplyStack tt IO) (EditReader editb)
+                    objRead = mSubjectToMutableRead $ mutableReadToSubject mra
+                    objEdit :: NonEmpty editb -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+                    objEdit ebs = do
+                        oldsubj <- mutableReadToSubject mra
+                        newsubj <- mapSubjectEdits (toList ebs) oldsubj
+                        eas <- getReplaceEditsFromSubject newsubj
+                        case nonEmpty eas of
+                            Nothing -> return $ Just $ \_ -> return ()
+                            Just eaa -> pe eaa
+                    in MkResource trun MkAnObject {..}
 
-exclusiveObject :: forall edit. Object edit -> With IO (Object edit)
-exclusiveObject (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject rd push)) call =
-    runTransform (traceThing "exclusiveObject:back" run) $ liftIOWithUnlift $ \unlift -> call $ MkCloseUnliftIO (traceThing "exclusiveObject:front" unlift) $ MkAnObject rd push
+copyObject ::
+       forall edit. FullEdit edit
+    => EditSource
+    -> Object edit
+    -> Object edit
+    -> IO ()
+copyObject esrc =
+    joinResource_ $ \rr (MkAnObject readSrc _) (MkAnObject _ pushDest) ->
+        runResourceRunnerWith rr $ \run ->
+            runLifeCycle $ do
+                liftIO $
+                    run $
+                    replaceEdit @edit readSrc $ \edit -> pushOrFail "failed to copy object" esrc $ pushDest $ pure edit
 
 getObjectSubject :: FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
-getObjectSubject (MkCloseUnliftIO unlift (MkAnObject rd _)) = runTransform unlift $ mutableReadToSubject rd
+getObjectSubject (MkResource rr (MkAnObject rd _)) =
+    runResourceRunnerWith rr $ \run -> runLifeCycle $ liftIO $ run $ mutableReadToSubject rd

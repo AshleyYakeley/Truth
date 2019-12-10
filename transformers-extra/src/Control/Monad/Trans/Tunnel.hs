@@ -1,16 +1,8 @@
 module Control.Monad.Trans.Tunnel where
 
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Transform
-import Control.Monad.Trans.Writer
-import Prelude
+import Control.Monad.Trans.Function
+import Import
 
 class (MonadTrans t, MonadTransConstraint Monad t) => MonadTransSemiTunnel t where
     semitunnel ::
@@ -21,21 +13,17 @@ class (MonadTrans t, MonadTransConstraint Monad t) => MonadTransSemiTunnel t whe
     semitunnel = tunnel
 
 remonad ::
-       forall t m1 m2 r. (MonadTransSemiTunnel t, Monad m1, Monad m2)
-    => (forall a. m1 a -> m2 a)
-    -> t m1 r
-    -> t m2 r
+       forall t m1 m2. (MonadTransSemiTunnel t, Monad m1, Monad m2)
+    => MFunction m1 m2
+    -> MFunction (t m1) (t m2)
 remonad mma sm1 = semitunnel $ \tun -> mma $ tun sm1
 
 remonadTransform ::
-       (MonadTransSemiTunnel t, Monad m1, Monad m2)
-    => (forall a. m1 a -> m2 a)
-    -> Transform (t m2) n
-    -> Transform (t m1) n
-remonadTransform ff (MkTransform r2) = MkTransform $ \m1a -> r2 $ remonad ff m1a
+       (MonadTransSemiTunnel t, Monad m1, Monad m2) => MFunction m1 m2 -> WMFunction (t m2) n -> WMFunction (t m1) n
+remonadTransform ff (MkWMFunction r2) = MkWMFunction $ \m1a -> r2 $ remonad ff m1a
 
-liftTransform :: (MonadTransSemiTunnel t, Monad m1, Monad m2) => Transform m1 m2 -> Transform (t m1) (t m2)
-liftTransform (MkTransform mm) = MkTransform $ remonad mm
+liftWMFunction :: (MonadTransSemiTunnel t, Monad m1, Monad m2) => WMFunction m1 m2 -> WMFunction (t m1) (t m2)
+liftWMFunction (MkWMFunction mm) = MkWMFunction $ remonad mm
 
 class MonadTransSemiTunnel t => MonadTransTunnel t where
     tunnel :: forall m2 r. (forall a. (forall m1. t m1 r -> m1 a) -> m2 a) -> t m2 r
@@ -44,8 +32,14 @@ class MonadTransSemiTunnel t => MonadTransTunnel t where
         => t (ExceptT e m) a
         -> t m (Either e a)
 
-remonad' :: MonadTransTunnel t => forall m1 m2 r. (forall a. m1 a -> m2 a) -> t m1 r -> t m2 r
+remonad' ::
+       forall t m1 m2. MonadTransTunnel t
+    => MFunction m1 m2
+    -> MFunction (t m1) (t m2)
 remonad' mma sm1 = tunnel $ \tun -> mma $ tun sm1
+
+liftWMFunction' :: MonadTransTunnel t => WMFunction m1 m2 -> WMFunction (t m1) (t m2)
+liftWMFunction' (MkWMFunction mm) = MkWMFunction $ remonad' mm
 
 instance MonadTransSemiTunnel IdentityT
 
@@ -120,3 +114,10 @@ instance MonadTunnelIO IO where
 
 instance (MonadTransSemiTunnel t, MonadTunnelIO m, MonadIO (t m)) => MonadTunnelIO (t m) where
     tunnelIO call = semitunnel $ \tun -> tunnelIO $ \maiob -> call $ \tmr -> maiob $ tun tmr
+
+liftMBackFunction :: (MonadTransSemiTunnel t, Monad ma, Monad mb) => MBackFunction ma mb -> MBackFunction (t ma) (t mb)
+liftMBackFunction wt tm = semitunnel $ \unlift -> wt $ \tba -> unlift $ tm $ remonad tba
+
+liftWMBackFunction ::
+       (MonadTransSemiTunnel t, Monad ma, Monad mb) => WMBackFunction ma mb -> WMBackFunction (t ma) (t mb)
+liftWMBackFunction (MkWMBackFunction f) = MkWMBackFunction $ liftMBackFunction f

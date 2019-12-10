@@ -1,107 +1,190 @@
 module Truth.Core.Object.Tuple
     ( tupleObject
-    , tupleObjectMaker
     , pairObjects
+    , tupleObjectMaker
+    , tupleSubscriber
+    , pairSubscribers
     ) where
 
+import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
-import Truth.Core.Object.UnliftIO
+import Truth.Core.Object.Subscriber
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Core.Types
 
-noneTupleObject :: Object (TupleEdit (ListElementType '[]))
-noneTupleObject = MkCloseUnliftIO id noneTupleAObject
+class (forall update. MapResource (f update)) => TupleResource (f :: Type -> [TransKind] -> Type) where
+    noneTupleAResource :: f (TupleUpdate (ListElementType '[])) '[]
+    consTupleAResource ::
+           forall tt update updates. MonadTransStackUnliftAll tt
+        => f update tt
+        -> f (TupleUpdate (ListElementType updates)) tt
+        -> f (TupleUpdate (ListElementType (update : updates))) tt
+    mapResourceUpdate :: EditLens updateA updateB -> Resource (f updateA) -> Resource (f updateB)
 
-consTupleObjects ::
-       forall edit edits.
-       Object edit
-    -> Object (TupleEdit (ListElementType edits))
-    -> Object (TupleEdit (ListElementType (edit : edits)))
-consTupleObjects (MkCloseUnliftIO (runA :: UnliftIO ma) anobjA) (MkCloseUnliftIO (runB :: UnliftIO mb) anobjB) =
-    case isCombineMonadIO @ma @mb of
-        Dict -> let
-            runAB :: UnliftIO (CombineMonadIO ma mb)
-            runAB = combineUnliftIOs runA runB
-            in MkCloseUnliftIO runAB $ consTupleAObjects anobjA anobjB
+newtype UAnObject (update :: Type) (tt :: [TransKind]) = MkUAnObject
+    { unUAnObject :: AnObject (UpdateEdit update) tt
+    }
 
-partitionListTupleEdits ::
-       forall edit edits. [TupleEdit (ListElementType (edit : edits))] -> ([edit], [TupleEdit (ListElementType edits)])
-partitionListTupleEdits pes = let
-    toEither :: TupleEdit (ListElementType (edit : edits)) -> Either edit (TupleEdit (ListElementType edits))
-    toEither (MkTupleEdit FirstElementType ea) = Left ea
-    toEither (MkTupleEdit (RestElementType sel) eb) = Right $ MkTupleEdit sel eb
+type UObject update = Resource (UAnObject update)
+
+uObjToObj :: UObject update -> Object (UpdateEdit update)
+uObjToObj (MkResource rr (MkUAnObject anobj)) = MkResource rr anobj
+
+objToUObj :: Object (UpdateEdit update) -> UObject update
+objToUObj (MkResource rr anobj) = MkResource rr $ MkUAnObject anobj
+
+instance MapResource (UAnObject update) where
+    mapResource ::
+           forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+        => TransListFunction tt1 tt2
+        -> UAnObject update tt1
+        -> UAnObject update tt2
+    mapResource f (MkUAnObject obj) = MkUAnObject $ mapResource f obj
+
+noneTupleResource :: TupleResource f => Resource (f (TupleUpdate (ListElementType '[])))
+noneTupleResource = MkResource nilResourceRunner noneTupleAResource
+
+consTupleResource ::
+       forall f update updates. TupleResource f
+    => Resource (f update)
+    -> Resource (f (TupleUpdate (ListElementType updates)))
+    -> Resource (f (TupleUpdate (ListElementType (update : updates))))
+consTupleResource = joinResource consTupleAResource
+
+tupleListResourceM ::
+       forall f m updates. (TupleResource f, Applicative m)
+    => ListType Proxy updates
+    -> (forall update. ListElementType updates update -> m (Resource (f update)))
+    -> m (Resource (f (TupleUpdate (ListElementType updates))))
+tupleListResourceM lt getObject =
+    case lt of
+        NilListType -> pure noneTupleResource
+        ConsListType Proxy lt' ->
+            consTupleResource <$> (getObject FirstElementType) <*>
+            (tupleListResourceM lt' $ \sel -> getObject $ RestElementType sel)
+
+tupleResourceM ::
+       forall f m sel. (TupleResource f, IsFiniteConsWitness sel, Applicative m)
+    => (forall update. sel update -> m (Resource (f update)))
+    -> m (Resource (f (TupleUpdate sel)))
+tupleResourceM pick =
+    fmap (mapResourceUpdate (tupleIsoLens fromLTW toLTW)) $
+    tupleListResourceM representative $ \sel -> pick $ fromLTW sel
+
+tupleResource ::
+       forall f sel. (TupleResource f, IsFiniteConsWitness sel)
+    => (forall update. sel update -> Resource (f update))
+    -> Resource (f (TupleUpdate sel))
+tupleResource pick = runIdentity $ tupleResourceM $ \sel -> Identity $ pick sel
+
+pairResource ::
+       forall f updatea updateb. TupleResource f
+    => Resource (f updatea)
+    -> Resource (f updateb)
+    -> Resource (f (PairUpdate updatea updateb))
+pairResource ra rb =
+    tupleResource $ \case
+        SelectFirst -> ra
+        SelectSecond -> rb
+
+partitionListTupleUpdateEdits ::
+       forall update updates.
+       [TupleUpdateEdit (ListElementType (update : updates))]
+    -> ([UpdateEdit update], [TupleUpdateEdit (ListElementType updates)])
+partitionListTupleUpdateEdits pes = let
+    toEither ::
+           TupleUpdateEdit (ListElementType (update : updates))
+        -> Either (UpdateEdit update) (TupleUpdateEdit (ListElementType updates))
+    toEither (MkTupleUpdateEdit FirstElementType ea) = Left ea
+    toEither (MkTupleUpdateEdit (RestElementType sel) eb) = Right $ MkTupleUpdateEdit sel eb
     in partitionEithers $ fmap toEither pes
 
-noneTupleAObject :: AnObject IO (TupleEdit (ListElementType '[]))
-noneTupleAObject = let
-    objRead :: forall t. TupleEditReader (ListElementType '[]) t -> IO t
-    objRead (MkTupleEditReader sel _) = case sel of {}
-    objEdit :: [TupleEdit (ListElementType '[])] -> IO (Maybe (EditSource -> IO ()))
-    objEdit [] = return $ Just $ \_ -> return ()
-    objEdit (MkTupleEdit sel _:_) = case sel of {}
-    in MkAnObject {..}
+instance TupleResource UAnObject where
+    noneTupleAResource = let
+        objRead :: forall t. TupleUpdateReader (ListElementType '[]) t -> IO t
+        objRead (MkTupleUpdateReader sel _) = case sel of {}
+        objEdit :: NonEmpty (TupleUpdateEdit (ListElementType '[])) -> IO (Maybe (EditSource -> IO ()))
+        objEdit (MkTupleUpdateEdit sel _ :| _) = case sel of {}
+        in MkUAnObject $ MkAnObject {..}
+    consTupleAResource ::
+           forall tt update updates. MonadTransStackUnliftAll tt
+        => UAnObject update tt
+        -> UAnObject (TupleUpdate (ListElementType updates)) tt
+        -> UAnObject (TupleUpdate (ListElementType (update : updates))) tt
+    consTupleAResource (MkUAnObject (MkAnObject readA editA)) (MkUAnObject (MkAnObject readB editB)) =
+        case transStackDict @MonadIO @tt @IO of
+            Dict -> let
+                readAB :: MutableRead (ApplyStack tt IO) (TupleUpdateReader (ListElementType (update : updates)))
+                readAB (MkTupleUpdateReader FirstElementType r) = readA r
+                readAB (MkTupleUpdateReader (RestElementType sel) r) = readB $ MkTupleUpdateReader sel r
+                editAB ::
+                       NonEmpty (TupleUpdateEdit (ListElementType (update : updates)))
+                    -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+                editAB edits = let
+                    (eas, ebs) = partitionListTupleUpdateEdits (toList edits)
+                    in case (nonEmpty eas, nonEmpty ebs) of
+                           (Nothing, Nothing) -> return $ Just $ \_ -> return ()
+                           (Just eas', Nothing) -> editA eas'
+                           (Nothing, Just ebs') -> editB ebs'
+                           (Just eas', Just ebs') -> (liftA2 $ liftA2 $ liftA2 (>>)) (editA eas') (editB ebs')
+                in MkUAnObject $ MkAnObject readAB editAB
+    mapResourceUpdate lens uobj = objToUObj $ mapObject lens $ uObjToObj uobj
 
-consTupleAObjects ::
-       forall ma mb edit edits. (MonadStackIO ma, MonadStackIO mb)
-    => AnObject ma edit
-    -> AnObject mb (TupleEdit (ListElementType edits))
-    -> AnObject (CombineMonadIO ma mb) (TupleEdit (ListElementType (edit : edits)))
-consTupleAObjects (MkAnObject readA editA) (MkAnObject readB editB) =
-    case isCombineMonadIO @ma @mb of
-        Dict -> let
-            readAB :: MutableRead (CombineMonadIO ma mb) (TupleEditReader (ListElementType (edit : edits)))
-            readAB (MkTupleEditReader FirstElementType r) = combineLiftFst @ma @mb $ readA r
-            readAB (MkTupleEditReader (RestElementType sel) r) =
-                combineLiftSnd @ma @mb $ readB $ MkTupleEditReader sel r
-            editAB ::
-                   [TupleEdit (ListElementType (edit : edits))]
-                -> CombineMonadIO ma mb (Maybe (EditSource -> CombineMonadIO ma mb ()))
-            editAB edits = let
-                (eas, ebs) = partitionListTupleEdits edits
-                in liftA2
-                       (liftA2 $ liftA2 $ \mau mbu -> (>>) (combineLiftFst @ma @mb mau) (combineLiftSnd @ma @mb mbu))
-                       (combineLiftFst @ma @mb $ editA eas)
-                       (combineLiftSnd @ma @mb $ editB ebs)
-            in MkAnObject readAB editAB
-
-tupleListObjectM ::
-       forall m edits. Applicative m
-    => ListType Proxy edits
-    -> (forall edit. ListElementType edits edit -> m (Object edit))
-    -> m (Object (TupleEdit (ListElementType edits)))
-tupleListObjectM lt getObject =
-    case lt of
-        NilListType -> pure noneTupleObject
-        ConsListType Proxy lt' ->
-            consTupleObjects <$> (getObject FirstElementType) <*>
-            (tupleListObjectM lt' $ \sel -> getObject $ RestElementType sel)
-
-tupleObjectM ::
-       forall m sel. (IsFiniteConsWitness sel, Applicative m)
-    => (forall edit. sel edit -> m (Object edit))
-    -> m (Object (TupleEdit sel))
-tupleObjectM pick =
-    fmap (mapObject (tupleIsoLens fromLTW toLTW)) $ tupleListObjectM representative $ \sel -> pick $ fromLTW sel
+instance TupleResource ASubscriber where
+    noneTupleAResource :: ASubscriber (TupleUpdate (ListElementType '[])) '[]
+    noneTupleAResource = MkASubscriber (unUAnObject noneTupleAResource) $ \_ -> return ()
+    consTupleAResource ::
+           forall tt update updates. MonadTransStackUnliftAll tt
+        => ASubscriber update tt
+        -> ASubscriber (TupleUpdate (ListElementType updates)) tt
+        -> ASubscriber (TupleUpdate (ListElementType (update : updates))) tt
+    consTupleAResource (MkASubscriber anobj1 sub1) (MkASubscriber anobj2 sub2) =
+        case transStackDict @MonadIO @tt @IO of
+            Dict -> let
+                anobj12 = unUAnObject $ consTupleAResource (MkUAnObject anobj1) (MkUAnObject anobj2)
+                sub12 recv12 = do
+                    let
+                        recv1 u1 ec = recv12 (fmap (\u -> MkTupleUpdate FirstElementType u) u1) ec
+                        recv2 u2 ec =
+                            recv12 (fmap (\(MkTupleUpdate sel u) -> MkTupleUpdate (RestElementType sel) u) u2) ec
+                    sub1 recv1
+                    sub2 recv2
+                in MkASubscriber anobj12 sub12
+    mapResourceUpdate :: EditLens updateA updateB -> Subscriber updateA -> Subscriber updateB
+    mapResourceUpdate = mapPureSubscriber
 
 tupleObject ::
        forall sel. IsFiniteConsWitness sel
-    => (forall edit. sel edit -> Object edit)
-    -> Object (TupleEdit sel)
-tupleObject pick = runIdentity $ tupleObjectM $ \sel -> Identity $ pick sel
+    => (forall update. sel update -> Object (UpdateEdit update))
+    -> Object (TupleUpdateEdit sel)
+tupleObject pick = uObjToObj $ tupleResource $ \selu -> objToUObj $ pick selu
 
 tupleObjectMaker ::
        forall sel. IsFiniteConsWitness sel
-    => (forall edit. sel edit -> ObjectMaker edit ())
-    -> ObjectMaker (TupleEdit sel) ()
-tupleObjectMaker pick update = do
-    obj <- tupleObjectM $ \sel -> fmap fst $ pick sel (\edits -> update $ fmap (MkTupleEdit sel) edits)
-    return (obj, ())
+    => (forall update. sel update -> ObjectMaker update ())
+    -> ObjectMaker (TupleUpdate sel) ()
+tupleObjectMaker pick recv = do
+    uobj <-
+        tupleResourceM $ \sel -> fmap (objToUObj . fst) $ pick sel $ \updates -> recv $ fmap (MkTupleUpdate sel) updates
+    return (uObjToObj uobj, ())
 
-pairObjects :: forall edita editb. Object edita -> Object editb -> Object (PairEdit edita editb)
-pairObjects obja objb =
-    tupleObject $ \case
-        SelectFirst -> obja
-        SelectSecond -> objb
+tupleSubscriber ::
+       forall sel. IsFiniteConsWitness sel
+    => (forall update. sel update -> Subscriber update)
+    -> Subscriber (TupleUpdate sel)
+tupleSubscriber = tupleResource
+
+pairObjects ::
+       forall updatea updateb.
+       Object (UpdateEdit updatea)
+    -> Object (UpdateEdit updateb)
+    -> Object (PairUpdateEdit updatea updateb)
+pairObjects obja objb = uObjToObj $ pairResource (objToUObj obja) (objToUObj objb)
+
+pairSubscribers ::
+       forall updatea updateb. Subscriber updatea -> Subscriber updateb -> Subscriber (PairUpdate updatea updateb)
+pairSubscribers = pairResource

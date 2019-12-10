@@ -1,8 +1,12 @@
 {
   "version": "2.0.0",
   "presentation": {
-    "reveal": "silent",
-    "panel": "new"
+    "echo": true,
+    "reveal": "always",
+    "focus": false,
+    "panel": "shared",
+    "showReuseMessage": false,
+    "clear": true
   },
   "tasks": [
     {
@@ -71,7 +75,7 @@
       },
       "label": "Quick Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make nodocker=1 build && echo OK",
+      "command": "cd ${workspaceRoot} && make nodocker=1 single=1 build && echo OK",
       "problemMatcher": [
         {
           "owner": "stack",

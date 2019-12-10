@@ -32,7 +32,7 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-textView :: GCreateView (EditLens (StringEdit Text) (StringEdit Text)) (StringEdit Text)
+textView :: GCreateView (EditLens (StringUpdate Text) (StringUpdate Text)) (StringUpdate Text)
 textView = do
     esrc <- newEditSource
     buffer <- new TextBuffer []
@@ -61,7 +61,7 @@ textView = do
                     _ <- traceBracket ("GTK.Text.delete: push " <> show edit) $ push esrc $ pure edit
                     return ()
     widget <- new TextView [#buffer := buffer]
-    cvReceiveUpdate (Just esrc) $ \_ _ edit ->
+    cvReceiveUpdate (Just esrc) $ \_ _ (MkEditUpdate edit) ->
         liftIO $
         withSignalBlocked buffer insertSignal $
         withSignalBlocked buffer deleteSignal $
@@ -70,7 +70,7 @@ textView = do
             StringReplaceWhole text -> #setText buffer text (-1)
             StringReplaceSection bounds text -> replaceText buffer bounds text
     let
-        aspect :: Aspect (EditLens (StringEdit Text) (StringEdit Text))
+        aspect :: Aspect (EditLens (StringUpdate Text) (StringUpdate Text))
         aspect = do
             (_, iter1, iter2) <- #getSelectionBounds buffer
             run <- getSequenceRun iter1 iter2

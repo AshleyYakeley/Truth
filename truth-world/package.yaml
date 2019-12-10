@@ -1,0 +1,30 @@
+name: truth-world
+version: "0.1"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - shapes
+      - base >= 4.12
+      - time
+      - filepath
+      - directory
+      - aeson
+      - sqlite-simple
+      - mime
+      - truth-core
+    exposed-modules:
+      - Truth.World.Clock
+      - Truth.World.Anything
+      - Truth.World.File
+      - Truth.World.FileSystem
+      - Truth.World.ObjectStore
+      - Truth.World.Charset
+      - Truth.World.MIME
+      - Truth.World.JSON
+      - Truth.World.SQLite
+      - Truth.World.SQLite.Schema

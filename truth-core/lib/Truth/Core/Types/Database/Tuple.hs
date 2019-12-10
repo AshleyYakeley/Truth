@@ -23,7 +23,7 @@ evalTupleExprIdentity ::
     -> t
 evalTupleExprIdentity expr tuple = runIdentity $ evalTupleExpr @dbType expr $ allValueToAllF tuple
 
-type TupleDatabaseRead dbType tablesel = DatabaseRead dbType (TupleTableSel tablesel)
+type TupleDatabaseReader dbType tablesel = DatabaseReader dbType (TupleTableSel tablesel)
 
 type TupleDatabaseEdit dbType tablesel = DatabaseEdit dbType (TupleTableSel tablesel)
 

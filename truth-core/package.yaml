@@ -8,18 +8,9 @@ _common: !include "../common.yaml"
 library:
     source-dirs: lib
     dependencies:
+      - shapes
       - base >= 4.12
       - time
-      - stm
-      - containers
-      - filepath
-      - directory
-      - cereal
-      - uuid
-      - aeson
-      - sqlite-simple
-      - mime
-      - shapes
       - thread-trace
     exposed-modules:
       - Truth.Core
@@ -27,39 +18,37 @@ library:
       - Truth.Debug.Edit
       - Truth.Debug.Object
       - Truth.Debug.Subscriber
-      - Truth.World.Clock
-      - Truth.World.Anything
-      - Truth.World.File
-      - Truth.World.FileSystem
-      - Truth.World.ObjectStore
-      - Truth.World.Charset
-      - Truth.World.MIME
-      - Truth.World.JSON
-      - Truth.World.SQLite
-      - Truth.World.SQLite.Schema
     other-modules:
       - Truth.Core.Import
       - Truth.Core.Sequence
+      - Truth.Core.Resource.Function
+      - Truth.Core.Resource.SingleRunner
+      - Truth.Core.Resource.ResourceRunner
+      - Truth.Core.Resource.Runnable
+      - Truth.Core.Resource
       - Truth.Core.Read.MutableRead
       - Truth.Core.Read.SubjectReader
       - Truth.Core.Read.FullSubjectReader
       - Truth.Core.Read
       - Truth.Core.Edit.Edit
+      - Truth.Core.Edit.Update
       - Truth.Core.Edit.FullEdit
       - Truth.Core.Edit.Cache
-      - Truth.Core.Edit.Unlift
       - Truth.Core.Edit.Function
       - Truth.Core.Edit.Lens
+      - Truth.Core.Edit.Partial
+      - Truth.Core.Edit.Opaque
       - Truth.Core.Edit
       - Truth.Core.Types.None
+      - Truth.Core.Types.ReadOnly
       - Truth.Core.Types.Whole
-      - Truth.Core.Types.WholeEditFunction
+      - Truth.Core.Types.WholeUpdateFunction
       - Truth.Core.Types.Unit
       - Truth.Core.Types.Sum
       - Truth.Core.Types.SumWhole
       - Truth.Core.Types.OneReader
       - Truth.Core.Types.OneEdit
-      - Truth.Core.Types.OneWholeEdit
+      - Truth.Core.Types.OneWhole
       - Truth.Core.Types.Either
       - Truth.Core.Types.Comonad
       - Truth.Core.Types.Tuple
@@ -68,6 +57,8 @@ library:
       - Truth.Core.Types.Pair
       - Truth.Core.Types.Lattice
       - Truth.Core.Types.Function
+      - Truth.Core.Types.WholeFunction
+      - Truth.Core.Types.Set
       - Truth.Core.Types.Dependent
       - Truth.Core.Types.Context
       - Truth.Core.Types.List
@@ -82,7 +73,6 @@ library:
       - Truth.Core.Types
       - Truth.Core.Object.DeferActionT
       - Truth.Core.Object.EditContext
-      - Truth.Core.Object.UnliftIO
       - Truth.Core.Object.Object
       - Truth.Core.Object.AutoClose
       - Truth.Core.Object.ObjectEdit
@@ -97,6 +87,7 @@ library:
       - Truth.Core.Object.Undo
       - Truth.Core.Object
       - Truth.Core.UI.Request
+      - Truth.Core.UI.TextStyle
       - Truth.Core.UI.Specifier.Specifier
       - Truth.Core.UI.Specifier.Null
       - Truth.Core.UI.Specifier.Map
@@ -147,10 +138,12 @@ tests:
       - truth-core
       - QuickCheck
       - tasty
+      - tasty-expected-failure
       - tasty-hunit
       - tasty-quickcheck
       - tasty-golden
     main: Main.hs
     other-modules:
+      - Test.SimpleString
       - Subscribe
     ghc-options: -threaded

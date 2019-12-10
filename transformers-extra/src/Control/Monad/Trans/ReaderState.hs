@@ -1,23 +1,19 @@
 module Control.Monad.Trans.ReaderState where
 
-import Control.Category
-import Control.Monad
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Transform
-import Prelude hiding ((.), id)
+import Control.Monad.Trans.Function
+import Import
 
-type ReaderStateT f m = StateT (Transform f m) m
+type ReaderStateT f m = StateT (WMFunction f m) m
 
 evalReaderStateT :: Monad m => ReaderStateT f m a -> (forall t. f t -> m t) -> m a
-evalReaderStateT rsa fm = evalStateT rsa (MkTransform fm)
+evalReaderStateT rsa fm = evalStateT rsa (MkWMFunction fm)
 
 liftRS :: (Monad f, Monad m) => f a -> ReaderStateT f m a
 liftRS fa = do
-    MkTransform fm <- get
+    MkWMFunction fm <- get
     a <- lift $ fm fa
-    put $ MkTransform $ \cont -> fm $ fa >> cont
+    put $ MkWMFunction $ \c -> fm $ fa >> c
     return a
 
 updateRS :: Monad m => (forall a. f a -> f a) -> ReaderStateT f m ()
-updateRS ff = modify (\fm -> fm . MkTransform ff)
+updateRS ff = modify (\fm -> fm . MkWMFunction ff)

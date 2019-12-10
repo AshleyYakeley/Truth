@@ -119,3 +119,5 @@ instance FullEdit ByteStringEdit where
         for_ (chunks 8192 len) $ \(start, size) -> do
             bs <- mr $ ReadByteStringSection start size
             write $ ByteStringWrite start bs
+
+type ByteStringUpdate = EditUpdate ByteStringEdit

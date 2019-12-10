@@ -58,9 +58,12 @@ getAllWidgets w = do
             ww <- for cc getAllWidgets
             return $ w : mconcat ww
 
-gobjectEmitClicked :: GObject t => t -> IO ()
+gobjectEmitClicked ::
+       forall t. GObject t
+    => t
+    -> IO ()
 gobjectEmitClicked obj = do
-    gtype <- gobjectType obj
+    gtype <- gobjectType @t
     (_, signalId, detail) <- signalParseName "clicked" gtype False
     withManagedPtr obj $ \entryPtr -> do
         gvalObj <- buildGValue gtype set_object entryPtr
@@ -87,7 +90,7 @@ testActions waitClick =
     , testUIAction waitClick "newpoint" $ \MkUIToolkit {..} -> uitExit
     , testUIAction waitClick "emptywindow" $ \MkUIToolkit {..} -> uitExit
     , testClickButton waitClick "buttonwindow $ return ()"
-    , testClickButton waitClick "buttonwindow $ newmemset"
+    , testClickButton waitClick "buttonwindow $ newMemFiniteSet"
     , testClickButton waitClick "buttonwindow $ newpoint"
     , testClickButton waitClick "buttonwindow $ emptywindow"
     , testClickButton waitClick "buttonwindow $ newpoint >> newpoint"
@@ -101,10 +104,10 @@ testUI =
     runContext $
     context
         [ "emptywindow :: Action ()"
-        , "emptywindow = do openwindow {\"Empty\"} (\\_ -> {[]}) ui_blank ;return (); end"
+        , "emptywindow = do openWindow {\"Empty\"} (\\_ -> {[]}) uiBlank ;return (); end"
         , "newpoint :: Action ()"
-        , "newpoint = do s <- newmemset; newentity s; return (); end"
+        , "newpoint = do s <- newMemFiniteSet; newEntity s; return (); end"
         , "buttonwindow :: Action Any -> Action ()"
-        , "buttonwindow action = do openwindow {\"Test\"} (\\_ -> {[]}) (ui_button {\"Button\"} {action}); return (); end"
+        , "buttonwindow action = do openWindow {\"Test\"} (\\_ -> {[]}) (uiButton {\"Button\"} {action}); return (); end"
         ] $
     tgroup "UI" [tgroup "immediate" $ testActions False, tgroup "wait" $ testActions True]

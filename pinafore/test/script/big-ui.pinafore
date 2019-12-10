@@ -2,7 +2,7 @@ let
 opentype T;
 me = entity @T !4527c8ac-580d-443c-8496-2b5a93021f98;
 
-func20 n a b c d e f = ui_label n;
+func20 n a b c d e f = uiLabel n;
 func19 n a b c d e f = func20 n a b c d e f;
 func18 n a b c d e f = func19 n a b c d e f;
 func17 n a b c d e f = func18 n a b c d e f;
@@ -25,16 +25,16 @@ func1 n a b c d e f = func2 n a b c d e f;
 func0 n a b c d e f = func1 n a b c d e f;
 
 w :: Action Window;
-w = openwindow {"Test"} (\_ -> {[]}) $ func0 (pureref "Text") False False False False False False;
+w = openWindow {"Test"} (\_ -> {[]}) $ func0 (pureRef "Text") False False False False False False;
 
 prop0 = property @T @Text !"000";
 
 act :: Action ();
 act = do
     debugmsg "ACTION: start";
-    tstart <- gettimems;
+    tstart <- getTimeMS;
     prop0 !$ {me} := "Example";
-    tend <- gettimems;
+    tend <- getTimeMS;
     outputln $ "Time: " <> totext (tend - tstart);
     debugmsg "ACTION: end";
     end
@@ -43,5 +43,5 @@ in do
     w1 <- w;
     act;
     act;
-    closewindow w1;
+    closeWindow w1;
     end

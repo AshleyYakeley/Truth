@@ -60,10 +60,10 @@ instance ShowableDatabase dbType tablesel => Show (TableJoin dbType tablesel row
         case (showableTableJoin t1, showableTableJoin t2) of
             (Dict, Dict) -> "(" ++ show t1 ++ " " ++ showJoinClause @dbType @tablesel j ++ " " ++ show t2 ++ ")"
 
-instance ShowableDatabase dbtype tablesel => AllWitnessConstraint Show (DatabaseRead dbtype tablesel) where
+instance ShowableDatabase dbtype tablesel => AllWitnessConstraint Show (DatabaseReader dbtype tablesel) where
     allWitnessConstraint = Dict
 
-instance ShowableDatabase dbtype tablesel => WitnessConstraint Show (DatabaseRead dbtype tablesel) where
+instance ShowableDatabase dbtype tablesel => WitnessConstraint Show (DatabaseReader dbtype tablesel) where
     witnessConstraint (DatabaseSelect tj _ _ (sc :: SelectClause dbtype tablesel row row')) =
         case showableTableJoin @dbtype @tablesel tj of
             Dict ->
@@ -72,7 +72,7 @@ instance ShowableDatabase dbtype tablesel => WitnessConstraint Show (DatabaseRea
                         case showableRow @dbtype @tablesel @row' of
                             Dict -> Dict
 
-instance ShowableDatabase dbType tablesel => Show (DatabaseRead dbType tablesel t) where
+instance ShowableDatabase dbType tablesel => Show (DatabaseReader dbType tablesel t) where
     show (DatabaseSelect (tjoin :: TableJoin dbType tablesel row) wc oc sc) =
         case showableTableJoin tjoin of
             Dict ->

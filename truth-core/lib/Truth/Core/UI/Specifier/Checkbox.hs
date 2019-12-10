@@ -5,12 +5,15 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data CheckboxUISpec sel edit where
-    MkCheckboxUISpec :: EditFunction edit (WholeEdit Text) -> EditLens edit (WholeEdit Bool) -> CheckboxUISpec sel edit
+data CheckboxUISpec sel update where
+    MkCheckboxUISpec
+        :: UpdateFunction update (WholeUpdate Text) -> EditLens update (WholeUpdate Bool) -> CheckboxUISpec sel update
     MkMaybeCheckboxUISpec
-        :: EditFunction edit (WholeEdit Text) -> EditLens edit (WholeEdit (Maybe Bool)) -> CheckboxUISpec sel edit
+        :: UpdateFunction update (WholeUpdate Text)
+        -> EditLens update (WholeUpdate (Maybe Bool))
+        -> CheckboxUISpec sel update
 
-instance Show (CheckboxUISpec sel edit) where
+instance Show (CheckboxUISpec sel update) where
     show (MkCheckboxUISpec _ _) = "checkbox"
     show (MkMaybeCheckboxUISpec _ _) = "maybe-checkbox"
 
@@ -18,9 +21,15 @@ instance UIType CheckboxUISpec where
     uiWitness = $(iowitness [t|CheckboxUISpec|])
 
 checkboxUISpec ::
-       forall edit sel. EditFunction edit (WholeEdit Text) -> EditLens edit (WholeEdit Bool) -> UISpec sel edit
+       forall update sel.
+       UpdateFunction update (WholeUpdate Text)
+    -> EditLens update (WholeUpdate Bool)
+    -> UISpec sel update
 checkboxUISpec label lens = MkUISpec $ MkCheckboxUISpec label lens
 
 maybeCheckboxUISpec ::
-       forall edit sel. EditFunction edit (WholeEdit Text) -> EditLens edit (WholeEdit (Maybe Bool)) -> UISpec sel edit
+       forall update sel.
+       UpdateFunction update (WholeUpdate Text)
+    -> EditLens update (WholeUpdate (Maybe Bool))
+    -> UISpec sel update
 maybeCheckboxUISpec label lens = MkUISpec $ MkMaybeCheckboxUISpec label lens

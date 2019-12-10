@@ -3,14 +3,14 @@ module Truth.Core.UI.Specifier.Scrolled where
 import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
-data ScrolledUISpec sel edit where
-    MkScrolledUISpec :: UISpec sel edit -> ScrolledUISpec sel edit
+data ScrolledUISpec sel update where
+    MkScrolledUISpec :: UISpec sel update -> ScrolledUISpec sel update
 
-instance Show (ScrolledUISpec sel edit) where
+instance Show (ScrolledUISpec sel update) where
     show (MkScrolledUISpec spec) = "scrolled " <> show spec
 
 instance UIType ScrolledUISpec where
     uiWitness = $(iowitness [t|ScrolledUISpec|])
 
-scrolledUISpec :: forall edit sel. UISpec sel edit -> UISpec sel edit
+scrolledUISpec :: forall update sel. UISpec sel update -> UISpec sel update
 scrolledUISpec spec = MkUISpec $ MkScrolledUISpec spec

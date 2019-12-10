@@ -7,7 +7,7 @@ module Truth.Debug.Edit
 
 import Truth.Core.Edit.Edit
 import Truth.Core.Edit.Function
-import Truth.Core.Edit.Unlift
+import Truth.Core.Edit.Update
 import Truth.Core.Import
 import Truth.Debug
 
@@ -17,45 +17,22 @@ class TraceArgThing t where
 type ShowableEdit edit
      = (Show edit, AllWitnessConstraint Show (EditReader edit), WitnessConstraint Show (EditReader edit))
 
-class TraceAThing f where
-    traceAThing ::
-           forall (t :: (Type -> Type) -> (Type -> Type)) (edita :: Type) (editb :: Type). MonadTransUnlift t
-        => String
-        -> f t edita editb
-        -> f t edita editb
-    traceArgAThing ::
-           forall (t :: (Type -> Type) -> (Type -> Type)) (edita :: Type) (editb :: Type).
-           (MonadTransUnlift t, ShowableEdit edita, ShowableEdit editb)
-        => String
-        -> f t edita editb
-        -> f t edita editb
+type ShowableUpdate update
+     = (Show update, ShowableEdit (UpdateEdit update))
 
-instance TraceAThing f => TraceThing (CloseUnlift f a b) where
-    traceThing prefix (MkCloseUnlift unlift athing) =
-        MkCloseUnlift (traceThing prefix unlift) (traceAThing prefix athing)
+instance TraceThing (UpdateFunction updateA updateB) where
+    traceThing prefix (MkUpdateFunction g u) =
+        MkUpdateFunction
+            (\mr rt -> traceBracket (contextStr prefix "get") $ g mr rt)
+            (\ee mr -> traceBracket (contextStr prefix "update") $ u ee mr)
 
-instance (TraceAThing f, ShowableEdit edita, ShowableEdit editb) => TraceArgThing (CloseUnlift f edita editb) where
-    traceArgThing prefix (MkCloseUnlift unlift athing) =
-        MkCloseUnlift (traceThing prefix unlift) (traceArgAThing prefix athing)
-
-instance TraceAThing AnEditFunction where
-    traceAThing prefix (MkAnEditFunction g u) =
-        MkAnEditFunction
-            (\mr rt -> withTransConstraintTM @MonadIO $ traceBracket (contextStr prefix "get") $ g mr rt)
-            (\ee mr -> withTransConstraintTM @MonadIO $ traceBracket (contextStr prefix "update") $ u ee mr)
-    traceArgAThing ::
-           forall t edita editb. (MonadTransUnlift t, ShowableEdit edita, ShowableEdit editb)
-        => String
-        -> AnEditFunction t edita editb
-        -> AnEditFunction t edita editb
-    traceArgAThing prefix (MkAnEditFunction g u) =
-        MkAnEditFunction
-            (\mr (rt :: EditReader editb r) ->
-                 case allWitnessConstraint @_ @_ @Show @(EditReader editb) @r of
+instance (ShowableUpdate updateA, ShowableUpdate updateB) => TraceArgThing (UpdateFunction updateA updateB) where
+    traceArgThing prefix (MkUpdateFunction g u) =
+        MkUpdateFunction
+            (\mr (rt :: UpdateReader updateB r) ->
+                 case allWitnessConstraint @_ @_ @Show @(UpdateReader updateB) @r of
                      Dict ->
                          case witnessConstraint @_ @Show rt of
                              Dict ->
-                                 withTransConstraintTM @MonadIO $
                                  traceBracketArgs (contextStr prefix "get") (show rt) show $ g mr rt)
-            (\ee mr ->
-                 withTransConstraintTM @MonadIO $ traceBracketArgs (contextStr prefix "update") (show ee) show $ u ee mr)
+            (\ee mr -> traceBracketArgs (contextStr prefix "update") (show ee) show $ u ee mr)

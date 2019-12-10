@@ -17,7 +17,7 @@ import Test.Tasty.HUnit
 
 testOp :: Name -> TestTree
 testOp n =
-    testCase (unpack n) $ do
+    testCase (show $ unpack n) $ do
         case unpack n of
             '(':_ -> assertFailure "parenthesis"
             _ -> return ()
@@ -27,7 +27,7 @@ testOp n =
 
 testInfix :: TestTree
 testInfix = let
-    names = filter nameIsInfix $ fmap docName $ toList $ predefinedDoc @PinaforeEdit
+    names = filter nameIsInfix $ fmap docName $ toList $ predefinedDoc @PinaforeUpdate
     in testGroup "infix" $ fmap testOp names
 
 newtype PreciseEq t =
@@ -127,8 +127,8 @@ testQueryValues = testGroup "query values" []
 
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
-    testCase (unpack query) $
-    case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeEdit query) of
+    testCase (show $ unpack query) $
+    case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeUpdate query) of
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ showPinaforeValue v
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ show e
@@ -139,6 +139,18 @@ testQueries =
     testGroup
         "queries"
         [ testGroup "trivial" [testQuery "" $ Nothing, testQuery "x" $ Nothing]
+        , testGroup
+              "comments"
+              [ testQuery "# comment\n1" $ Just "1"
+              , testQuery "1# comment\n" $ Just "1"
+              , testQuery "1 # comment\n" $ Just "1"
+              , testQuery "{# comment #} 1" $ Just "1"
+              , testQuery "{# comment #}\n1" $ Just "1"
+              , testQuery "{# comment\ncomment #}\n1" $ Just "1"
+              , testQuery "{# comment\ncomment\n#}\n1" $ Just "1"
+              , testQuery "{# A {# B #} C #} 1" $ Just "1"
+              , testQuery "{#\nA\n{#\nB\n#}\nC\n#}\n1" $ Just "1"
+              ]
         , testGroup
               "constants"
               [ testGroup
@@ -167,7 +179,7 @@ testQueries =
               , testQuery "True" $ Just "True"
               , testQuery "False" $ Just "False"
               , testQuery "\"1\"" $ Just "1"
-              , testQuery "ui_table" $ Just "<?>"
+              , testQuery "uiTable" $ Just "<?>"
               ]
         , testGroup
               "list construction"
@@ -317,8 +329,8 @@ testQueries =
         , testGroup
               "text"
               [ testQuery "\"pqrs\"" $ Just "pqrs"
-              , testQuery "textlength \"abd\"" $ Just "3"
-              , testQuery "textsection 4 3 \"ABCDEFGHIJKLMN\"" $ Just "EFG"
+              , testQuery "textLength \"abd\"" $ Just "3"
+              , testQuery "textSection 4 3 \"ABCDEFGHIJKLMN\"" $ Just "EFG"
               ]
         , testGroup
               "operator precedence"
@@ -426,12 +438,19 @@ testQueries =
                     , testQuery "case [3,4] of [a,b] -> (a,b) end" $ Just "(3, 4)"
                     ]
               ]
+        , testGroup
+              "subtype"
+              [ testQuery "let i :: Integer -> Number; i x = x in i 3" $ Just "3"
+              , testQuery "let a :: Integer; a = 3; b :: Number; b = a in b" $ Just "3"
+              , testQuery "let i :: FiniteSetRef -a -> SetRef a; i x = x in 3" $ Just "3"
+              , testQuery "let i :: FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ Just "3"
+              ]
         ]
 
 testShim :: Text -> String -> String -> TestTree
 testShim query expectedType expectedShim =
     testCase (unpack query) $
-    case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeEdit query of
+    case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeUpdate query of
         FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
         SuccessResult (MkAnyValue (MkShimWit t shim) _) -> do
             assertEqual "type" expectedType $ show t

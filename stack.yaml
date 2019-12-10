@@ -6,20 +6,20 @@ packages:
 - shapes
 - typed-expression
 - truth-core
+- truth-world
 - truth-gtk
 - pinafore-base
 - pinafore
 
-resolver: lts-13.25
+resolver: lts-14.14
 
 allow-newer: true
 
 extra-deps:
 - mime-0.4.0.2
-- git: https://github.com/AshleyYakeley/haskell-src-exts.git
-  commit: 31e1466e35cee9a91fa6678d73c938f0f44759eb
+- haskell-src-exts-1.22.0
 - git: https://github.com/AshleyYakeley/hindent.git
-  commit: d240eb7334cd08c7e377b59fcb1977bdf95527d6
+  commit: b0d6fbdb7010382b620b6a15ce23991883b8decf
 - git: https://github.com/fpco/ghc-prof-flamegraph.git
   commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
 

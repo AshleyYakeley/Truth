@@ -38,6 +38,9 @@ instance InGroupoid cat => InGroupoid (CatRange cat) where
 catRangeMap :: InCategory shim => CatRange shim a b -> Range shim t a -> Range shim t b
 catRangeMap (MkCatRange pp qq) (MkRange pt tq) = MkRange (pt <.> pp) (qq <.> tq)
 
+liftCatRangeParts :: Functor f => CatRange (->) '( pa, qa) '( pb, qb) -> CatRange (->) '( f pa, f qa) '( f pb, f qb)
+liftCatRangeParts (MkCatRange pp qq) = MkCatRange (cfmap pp) (cfmap qq)
+
 data RangeType (tw :: Polarity -> Type -> Type) (polarity :: Polarity) (pq :: (Type, Type)) where
     MkRangeType :: tw (InvertPolarity polarity) p -> tw polarity q -> RangeType tw polarity '( p, q)
 

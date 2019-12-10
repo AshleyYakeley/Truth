@@ -1,0 +1,64 @@
+main: get "ABC"
+sect: get "B"
+pair: get ("B","B")
+var: "ABC"
+main: push [section 1+0 "P"]
+main: push succeeded
+main: receive [section 1+0 "P"]
+main: receive "APBC"
+lens: +update: section 1+0 "P"
+lens: -update: [section 0+0 "P"]
+sect: receive [section 0+0 "P"]
+sect: receive "PB"
+pair: receive [tuple first section 0+0 "P"]
+pair: receive ("PB","PB")
+pair: receive [tuple second section 0+0 "P"]
+pair: receive ("PB","PB")
+var: "APBC"
+main: push [section 2+0 "Q"]
+main: push succeeded
+main: receive [section 2+0 "Q"]
+main: receive "APQBC"
+lens: +update: section 2+0 "Q"
+lens: -update: [section 1+0 "Q"]
+sect: receive [section 1+0 "Q"]
+sect: receive "PQB"
+pair: receive [tuple first section 1+0 "Q"]
+pair: receive ("PQB","PQB")
+pair: receive [tuple second section 1+0 "Q"]
+pair: receive ("PQB","PQB")
+var: "APQBC"
+sect: push [section 1+0 "x"]
+lens: +put: [section 1+0 "x"]
+lens: -put: Just [section 2+0 "x"]
+sect: push succeeded
+main: receive [section 2+0 "x"]
+main: receive "APxQBC"
+lens: +update: section 2+0 "x"
+lens: -update: [section 1+0 "x"]
+sect: receive [section 1+0 "x"]
+sect: receive "PxQB"
+pair: receive [tuple first section 1+0 "x"]
+pair: receive ("PxQB","PxQB")
+pair: receive [tuple second section 1+0 "x"]
+pair: receive ("PxQB","PxQB")
+var: "APxQBC"
+pair: push [tuple first section 3+0 "y"]
+lens: +put: [section 3+0 "y"]
+lens: -put: Just [section 4+0 "y"]
+lens: +put: []
+lens: -put: Just []
+pair: push succeeded
+main: receive [section 4+0 "y"]
+main: receive "APxQyBC"
+lens: +update: section 4+0 "y"
+lens: -update: [section 3+0 "y"]
+sect: receive [section 3+0 "y"]
+sect: receive "PxQyBC"
+pair: receive [tuple first section 3+0 "y"]
+pair: receive ("PxQyBC","PxQyBC")
+pair: receive [tuple second section 3+0 "y"]
+pair: receive ("PxQyBC","PxQyBC")
+main: receive []
+main: receive "APxQyBC"
+var: "APxQyBC"

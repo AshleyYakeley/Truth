@@ -29,48 +29,56 @@ instance (MonadOne f, InvertibleEdit edit) => InvertibleEdit (OneEdit f edit) wh
                  Just edits -> fmap MkOneEdit edits
                  _ -> [])
 
-oneLiftAnEditFunction ::
-       forall t f edita editb. (MonadTransTunnel t, MonadOne f)
-    => AnEditFunction t edita editb
-    -> AnEditFunction t (OneEdit f edita) (OneEdit f editb)
-oneLiftAnEditFunction (MkAnEditFunction g u) = let
-    efGet :: ReadFunctionT t (EditReader (OneEdit f edita)) (EditReader (OneEdit f editb))
-    efGet = liftMaybeReadFunction g
-    efUpdate ::
-           forall m. MonadIO m
-        => OneEdit f edita
-        -> MutableRead m (EditReader (OneEdit f edita))
-        -> t m [OneEdit f editb]
-    efUpdate (MkOneEdit ea) mr =
-        withTransConstraintTM @Monad $
-        fmap (fmap MkOneEdit . fromMaybe [] . getMaybeOne) $ transComposeOne $ u ea $ oneReadFunctionF mr
-    in MkAnEditFunction {..}
+newtype OneUpdate (f :: Type -> Type) update =
+    MkOneUpdate update
 
-oneLiftEditFunction ::
-       forall f edita editb. MonadOne f
-    => EditFunction edita editb
-    -> EditFunction (OneEdit f edita) (OneEdit f editb)
-oneLiftEditFunction (MkCloseUnlift unlift ef) = MkCloseUnlift unlift $ oneLiftAnEditFunction ef
+instance IsUpdate update => IsUpdate (OneUpdate f update) where
+    type UpdateEdit (OneUpdate f update) = OneEdit f (UpdateEdit update)
+    editUpdate (MkOneEdit edit) = MkOneUpdate $ editUpdate edit
+
+instance IsEditUpdate update => IsEditUpdate (OneUpdate f update) where
+    updateEdit (MkOneUpdate update) = MkOneEdit $ updateEdit update
+
+oneLiftAnUpdateFunction ::
+       forall f updateA updateB. MonadOne f
+    => UpdateFunction updateA updateB
+    -> UpdateFunction (OneUpdate f updateA) (OneUpdate f updateB)
+oneLiftAnUpdateFunction (MkUpdateFunction g u) = let
+    ufGet :: ReadFunction (UpdateReader (OneUpdate f updateA)) (UpdateReader (OneUpdate f updateB))
+    ufGet = liftMaybeReadFunction g
+    ufUpdate ::
+           forall m. MonadIO m
+        => OneUpdate f updateA
+        -> MutableRead m (UpdateReader (OneUpdate f updateA))
+        -> m [OneUpdate f updateB]
+    ufUpdate (MkOneUpdate ea) mr =
+        fmap (fmap MkOneUpdate . fromMaybe [] . getMaybeOne) $ getComposeM $ u ea $ oneReadFunctionF mr
+    in MkUpdateFunction {..}
+
+oneLiftUpdateFunction ::
+       forall f updateA updateB. MonadOne f
+    => UpdateFunction updateA updateB
+    -> UpdateFunction (OneUpdate f updateA) (OneUpdate f updateB)
+oneLiftUpdateFunction = oneLiftAnUpdateFunction
 
 oneLiftAnEditLens ::
-       forall t f edita editb. (MonadOne f, MonadTransTunnel t)
-    => AnEditLens t edita editb
-    -> AnEditLens t (OneEdit f edita) (OneEdit f editb)
-oneLiftAnEditLens (MkAnEditLens ef pe) = let
-    elFunction = oneLiftAnEditFunction ef
+       forall f updateA updateB. MonadOne f
+    => EditLens updateA updateB
+    -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
+oneLiftAnEditLens (MkEditLens ef pe) = let
+    elFunction = oneLiftAnUpdateFunction ef
     elPutEdits ::
            forall m. MonadIO m
-        => [OneEdit f editb]
-        -> MutableRead m (EditReader (OneEdit f edita))
-        -> t m (Maybe [OneEdit f edita])
+        => [OneEdit f (UpdateEdit updateB)]
+        -> MutableRead m (EditReader (OneEdit f (UpdateEdit updateA)))
+        -> m (Maybe [OneEdit f (UpdateEdit updateA)])
     elPutEdits ebs mr =
-        withTransConstraintTM @Monad $
         fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $
-        transComposeOne $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
-    in MkAnEditLens {..}
+        getComposeM $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
+    in MkEditLens {..}
 
 oneLiftEditLens ::
-       forall f edita editb. MonadOne f
-    => EditLens edita editb
-    -> EditLens (OneEdit f edita) (OneEdit f editb)
-oneLiftEditLens (MkCloseUnlift unlift lens) = MkCloseUnlift unlift $ oneLiftAnEditLens lens
+       forall f updateA updateB. MonadOne f
+    => EditLens updateA updateB
+    -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
+oneLiftEditLens = oneLiftAnEditLens

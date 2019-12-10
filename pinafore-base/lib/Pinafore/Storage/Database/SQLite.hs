@@ -113,55 +113,52 @@ instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstra
 instance TupleDatabase SQLiteDatabase PinaforeSchema where
     type TupleDatabaseRowWitness SQLiteDatabase PinaforeSchema = IsPinaforeRow
 
-sqlitePinaforeLens :: EditLens (SQLiteEdit PinaforeSchema) PinaforeTableEdit
+sqlitePinaforeLens :: EditLens (SQLiteUpdate PinaforeSchema) PinaforeTableUpdate
 sqlitePinaforeLens = let
-    efGet :: ReadFunctionT IdentityT (SQLiteRead PinaforeSchema) PinaforeTableRead
-    efGet mr (PinaforeTableReadGetPredicate p s) =
-        lift $ do
-            row <-
-                mr $
-                DatabaseSelect
-                    (SingleTable $ MkTupleTableSel PinaforeTriple)
-                    (MkTupleWhereClause $
-                     (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
-                    mempty
-                    (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
-            return $ fmap getSingleAll $ listToMaybe row
-    efGet mr (PinaforeTableReadLookupPredicate p v) =
-        lift $ do
-            row <-
-                mr $
-                DatabaseSelect
-                    (SingleTable $ MkTupleTableSel PinaforeTriple)
-                    (MkTupleWhereClause $
-                     (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleValue === ConstExpr v))
-                    mempty
-                    (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
-            return $ MkFiniteSet $ fmap getSingleAll row
-    efGet mr (PinaforeTableReadGetLiteral v) =
-        lift $ do
-            (row :: [AllValue ((:~:) Literal)]) <-
-                mr $
-                DatabaseSelect
-                    (SingleTable $ MkTupleTableSel PinaforeLiteral)
-                    (MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v)
-                    mempty
-                    (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralValue)
-            return $ do
-                sa <- listToMaybe row
-                return $ getSingleAll sa
-    efUpdate ::
+    ufGet :: ReadFunction (SQLiteReader PinaforeSchema) PinaforeTableRead
+    ufGet mr (PinaforeTableReadGetPredicate p s) = do
+        row <-
+            mr $
+            DatabaseSelect
+                (SingleTable $ MkTupleTableSel PinaforeTriple)
+                (MkTupleWhereClause $
+                 (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
+                mempty
+                (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
+        return $ fmap getSingleAll $ listToMaybe row
+    ufGet mr (PinaforeTableReadLookupPredicate p v) = do
+        row <-
+            mr $
+            DatabaseSelect
+                (SingleTable $ MkTupleTableSel PinaforeTriple)
+                (MkTupleWhereClause $
+                 (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleValue === ConstExpr v))
+                mempty
+                (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
+        return $ MkFiniteSet $ fmap getSingleAll row
+    ufGet mr (PinaforeTableReadGetLiteral v) = do
+        (row :: [AllValue ((:~:) Literal)]) <-
+            mr $
+            DatabaseSelect
+                (SingleTable $ MkTupleTableSel PinaforeLiteral)
+                (MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v)
+                mempty
+                (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralValue)
+        return $ do
+            sa <- listToMaybe row
+            return $ getSingleAll sa
+    ufUpdate ::
            forall m. MonadIO m
-        => SQLiteEdit PinaforeSchema
+        => SQLiteUpdate PinaforeSchema
         -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
-        -> IdentityT m [PinaforeTableEdit]
-    efUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
-    elFunction :: AnEditFunction IdentityT (SQLiteEdit PinaforeSchema) PinaforeTableEdit
-    elFunction = MkAnEditFunction {..}
+        -> m [PinaforeTableUpdate]
+    ufUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
+    elFunction :: UpdateFunction (SQLiteUpdate PinaforeSchema) PinaforeTableUpdate
+    elFunction = MkUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => PinaforeTableEdit
-        -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
+        -> m (Maybe [SQLiteEdit PinaforeSchema])
     elPutEdit (PinaforeTableEditSetPredicate p s (Just v)) =
         return $
         Just $
@@ -197,10 +194,10 @@ sqlitePinaforeLens = let
     elPutEdits ::
            forall m. MonadIO m
         => [PinaforeTableEdit]
-        -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
-        -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
+        -> MutableRead m (SQLiteReader PinaforeSchema)
+        -> m (Maybe [SQLiteEdit PinaforeSchema])
     elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
-    in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
+    in MkEditLens {..}
 
 instance WitnessConstraint FiniteWitness PinaforeSchema where
     witnessConstraint PinaforeTriple = Dict

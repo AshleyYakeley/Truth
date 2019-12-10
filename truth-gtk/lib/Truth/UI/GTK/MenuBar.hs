@@ -7,7 +7,6 @@ import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.Closure
 import Truth.Debug.Object
 
 toModifierType :: KeyboardModifier -> ModifierType
@@ -17,7 +16,10 @@ toModifierType KMAlt = ModifierTypeMod1Mask
 
 accelGroupConnection :: IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> IO () -> LifeCycleIO ()
 accelGroupConnection ag key mods flags action = do
-    closure <- makeClosure action
+    closure <-
+        genClosure_AccelGroupActivate $ \_ _ _ _ -> do
+            action
+            return True
     accelGroupConnect ag key mods flags closure
     lifeCycleClose $ do
         _ <- accelGroupDisconnect ag $ Just closure
@@ -50,7 +52,7 @@ attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
                         gmods = fmap toModifierType mods
                     accelLabelSetAccel l keyw gmods
                     liftLifeCycleIO $ accelGroupConnection ag keyw gmods [AccelFlagsVisible] meaction
-    cvBindEditFunction Nothing raction $ \maction ->
+    cvBindUpdateFunction Nothing raction $ \maction ->
         liftIO $ do
             writeIORef aref maction
             set item [#sensitive := isJust maction]

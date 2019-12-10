@@ -1,19 +1,12 @@
 module Control.Monad.Trans.Free where
 
-import Control.Applicative
-import Control.Monad hiding (fail)
-import Control.Monad.Fail
-import Control.Monad.Fix
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
-import Data.Constraint
-import Prelude hiding (fail)
+import Import
 
 newtype FreeT m a = FreeT
-    { runFreeT :: forall t. MonadTransUnlift t => t m a
+    { runFreeT :: forall t. MonadTransUnliftAll t => t m a
     }
 
 instance Monad m => Functor (FreeT m) where
@@ -68,15 +61,16 @@ instance MonadTransTunnel FreeT where
     tunnel call = FreeT $ tunnel $ \tun -> call $ \(FreeT tm1r) -> tun tm1r
     transExcept (FreeT txa) = FreeT $ transExcept txa
 
-instance MonadTransSemiUnlift FreeT
+instance MonadTransUnlift FreeT
 
-instance MonadTransUnlift FreeT where
-    liftWithUnlift call = FreeT $ liftWithUnlift $ \(MkUnlift unlift) -> call $ MkUnlift $ \(FreeT tma) -> unlift tma
-    getDiscardingUnlift =
+instance MonadTransUnliftAll FreeT where
+    insideOut call = FreeT $ insideOut $ \unlift -> call $ unlift . runFreeT
+    liftWithUnliftAll call = FreeT $ liftWithUnliftAll $ \unlift -> call $ \(FreeT tma) -> unlift tma
+    getDiscardingUnliftAll =
         FreeT $
         withTransConstraintTM @Monad $ do
-            MkUnlift unlift <- getDiscardingUnlift
-            return $ MkUnlift $ \(FreeT tma) -> unlift tma
+            MkWUnliftAll unlift <- getDiscardingUnliftAll
+            return $ MkWUnliftAll $ \(FreeT tma) -> unlift tma
 
-unliftFreeT :: Unlift FreeT
-unliftFreeT = MkUnlift $ \ft -> runUnlift identityUnlift $ runFreeT ft
+unliftFreeT :: WUnliftAll MonadUnliftIO FreeT
+unliftFreeT = MkWUnliftAll $ \ft -> runIdentityT $ runFreeT ft

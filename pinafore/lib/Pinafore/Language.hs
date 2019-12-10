@@ -22,51 +22,51 @@ import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
-import Pinafore.Language.Literal
 import Pinafore.Language.Predefined
 import Pinafore.Language.Read
 import Pinafore.Language.Read.Parser
-import Pinafore.Language.Type
-import Pinafore.Language.Type.Simplify
+import Pinafore.Language.Type.Literal
+import Pinafore.Language.TypeSystem
+import Pinafore.Language.TypeSystem.Simplify
 import Shapes
 import System.IO.Error
 
 runPinaforeScoped ::
-       (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
-    => PinaforeScoped baseedit a
+       (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
+    => PinaforeScoped baseupdate a
     -> InterpretResult a
 runPinaforeScoped scp =
     runScoped $
     withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
 
 runPinaforeSourceScoped ::
-       (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
+       (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
     => FilePath
-    -> PinaforeSourceScoped baseedit a
+    -> PinaforeSourceScoped baseupdate a
     -> InterpretResult a
 runPinaforeSourceScoped fpath scp = runPinaforeScoped $ runSourcePos (initialPos fpath) scp
 
 parseValue ::
-       forall baseedit. (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
+       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
     => Text
-    -> PinaforeSourceScoped baseedit (QValue baseedit)
+    -> PinaforeSourceScoped baseupdate (QValue baseupdate)
 parseValue text = do
-    rexpr <- parseTopExpression @baseedit text
+    rexpr <- parseTopExpression @baseupdate text
     qEvalExpr rexpr
 
 parseValueAtType ::
-       forall baseedit t.
-       (PinaforePredefinitions baseedit, FromPinaforeType baseedit t, ?pinafore :: PinaforeContext baseedit)
+       forall baseupdate t.
+       (PinaforePredefinitions baseupdate, FromPinaforeType baseupdate t, ?pinafore :: PinaforeContext baseupdate)
     => Text
-    -> PinaforeSourceScoped baseedit t
+    -> PinaforeSourceScoped baseupdate t
 parseValueAtType text = do
-    val <- parseValue @baseedit text
-    typedAnyToPinaforeVal @baseedit val
+    val <- parseValue @baseupdate text
+    typedAnyToPinaforeVal @baseupdate val
 
 entityTypedShowValue ::
        CovaryType dv
     -> EntityGroundType f
-    -> DolanArguments dv (PinaforeType baseedit) f 'Positive t
+    -> DolanArguments dv (PinaforeType baseupdate) f 'Positive t
     -> t
     -> Maybe String
 entityTypedShowValue NilListType (LiteralEntityGroundType t) NilDolanArguments v =
@@ -87,59 +87,59 @@ entityTypedShowValue (ConsListType Refl (ConsListType Refl NilListType)) EitherE
 entityTypedShowValue _ _ _ _ = Nothing
 
 groundTypedShowValue ::
-       PinaforeGroundType baseedit 'Positive dv t
-    -> DolanArguments dv (PinaforeType baseedit) t 'Positive ta
+       PinaforeGroundType baseupdate 'Positive dv t
+    -> DolanArguments dv (PinaforeType baseupdate) t 'Positive ta
     -> ta
     -> String
 groundTypedShowValue (EntityPinaforeGroundType ct t) args v
     | Just str <- entityTypedShowValue ct t args v = str
 groundTypedShowValue _ _ _ = "<?>"
 
-singularTypedShowValue :: PinaforeSingularType baseedit 'Positive t -> t -> String
+singularTypedShowValue :: PinaforeSingularType baseupdate 'Positive t -> t -> String
 singularTypedShowValue (VarPinaforeSingularType _) _ = "<?>"
 singularTypedShowValue (GroundPinaforeSingularType gt args) v = groundTypedShowValue gt args v
 
-typedShowValue :: PinaforeType baseedit 'Positive t -> t -> String
+typedShowValue :: PinaforeType baseupdate 'Positive t -> t -> String
 typedShowValue NilPinaforeType v = never v
 typedShowValue (ConsPinaforeType ts tt) v = joinf (singularTypedShowValue ts) (typedShowValue tt) v
 
-showPinaforeValue :: QValue baseedit -> String
+showPinaforeValue :: QValue baseupdate -> String
 showPinaforeValue (MkAnyValue (MkShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
 
-type Interact baseedit = StateT SourcePos (ReaderStateT (PinaforeScoped baseedit) IO)
+type Interact baseupdate = StateT SourcePos (ReaderStateT (PinaforeScoped baseupdate) IO)
 
-interactRunSourceScoped :: PinaforeSourceScoped baseedit a -> Interact baseedit a
+interactRunSourceScoped :: PinaforeSourceScoped baseupdate a -> Interact baseupdate a
 interactRunSourceScoped sa = do
     spos <- get
     lift $ liftRS $ runSourcePos spos sa
 
 interactEvalExpression ::
-       forall baseedit. (PinaforePredefinitions baseedit)
-    => PinaforeScoped baseedit (QExpr baseedit)
-    -> Interact baseedit (QValue baseedit)
+       forall baseupdate. (PinaforePredefinitions baseupdate)
+    => PinaforeScoped baseupdate (QExpr baseupdate)
+    -> Interact baseupdate (QValue baseupdate)
 interactEvalExpression texpr =
     interactRunSourceScoped $ do
         expr <- liftSourcePos texpr
         qEvalExpr expr
 
-runValue :: Handle -> QValue baseedit -> Interact baseedit (PinaforeAction baseedit ())
+runValue :: Handle -> QValue baseupdate -> Interact baseupdate (PinaforeAction baseupdate ())
 runValue outh val =
     interactRunSourceScoped $
-    (typedAnyToPinaforeVal val) <|> (fmap outputln $ typedAnyToPinaforeVal val) <|>
+    (typedAnyToPinaforeVal val) <|> (fmap outputLn $ typedAnyToPinaforeVal val) <|>
     (return $ liftIO $ hPutStrLn outh $ showPinaforeValue val)
 
 interactParse ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
     => Text
-    -> Interact baseedit (InteractiveCommand baseedit)
-interactParse t = remonad ioRunInterpretResult $ parseInteractiveCommand @baseedit t
+    -> Interact baseupdate (InteractiveCommand baseupdate)
+interactParse t = remonad ioRunInterpretResult $ parseInteractiveCommand @baseupdate t
 
 interactLoop ::
-       forall baseedit. (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
+       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
     => Handle
     -> Handle
     -> Bool
-    -> Interact baseedit ()
+    -> Interact baseupdate ()
 interactLoop inh outh echo = do
     liftIO $ hPutStr outh "pinafore> "
     eof <- liftIO $ hIsEOF inh
@@ -151,14 +151,14 @@ interactLoop inh outh echo = do
             if echo
                 then liftIO $ hPutStr outh inputstr
                 else return ()
-            liftIOWithUnlift $ \unlift ->
+            liftIOWithUnlift $ \unlift -> do
                 catches
-                    (runTransform unlift $ do
+                    (unlift $ do
                          p <- interactParse $ pack inputstr
                          case p of
                              LetInteractiveCommand fbind ->
                                  lift $ do
-                                     MkTransform bind <- liftRS fbind
+                                     MkWMFunction bind <- liftRS fbind
                                      liftRS $ bind $ return () -- check errors
                                      updateRS bind
                              ExpressionInteractiveCommand texpr -> do
@@ -179,8 +179,8 @@ interactLoop inh outh echo = do
                                  liftIO $
                                      hPutStrLn outh $
                                      case polarity of
-                                         PositiveType -> show $ pinaforeSimplifyTypes @baseedit $ MkAnyInKind t
-                                         NegativeType -> show $ pinaforeSimplifyTypes @baseedit $ MkAnyInKind t
+                                         PositiveType -> show $ pinaforeSimplifyTypes @baseupdate $ MkAnyInKind t
+                                         NegativeType -> show $ pinaforeSimplifyTypes @baseupdate $ MkAnyInKind t
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
                     [ Handler $ \(err :: PinaforeError) -> hPutStrLn outh $ show err
                     , Handler $ \err -> hPutStrLn outh $ "error: " <> ioeGetErrorString err
@@ -188,7 +188,7 @@ interactLoop inh outh echo = do
             interactLoop inh outh echo
 
 interact ::
-       forall baseedit. (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
+       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
     => Handle
     -> Handle
     -> Bool

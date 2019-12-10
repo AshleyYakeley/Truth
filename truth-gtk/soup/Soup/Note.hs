@@ -7,14 +7,9 @@ import Truth.Core
 import Truth.World.JSON
 
 data NoteSel t where
-    NoteTitle :: NoteSel (WholeEdit Text)
-    NotePast :: NoteSel (WholeEdit Bool)
-    NoteText :: NoteSel (StringEdit Text)
-
-instance (c (WholeEdit Text), c (WholeEdit Bool), c (StringEdit Text)) => WitnessConstraint c NoteSel where
-    witnessConstraint NoteTitle = Dict
-    witnessConstraint NotePast = Dict
-    witnessConstraint NoteText = Dict
+    NoteTitle :: NoteSel (WholeUpdate Text)
+    NotePast :: NoteSel (WholeUpdate Bool)
+    NoteText :: NoteSel (StringUpdate Text)
 
 instance Show (NoteSel t) where
     show NoteTitle = "title"
@@ -24,15 +19,25 @@ instance Show (NoteSel t) where
 instance AllWitnessConstraint Show NoteSel where
     allWitnessConstraint = Dict
 
+instance (c Text, c Bool, c Text) => TupleSubjectWitness c NoteSel where
+    tupleSubjectWitness NoteTitle = Dict
+    tupleSubjectWitness NotePast = Dict
+    tupleSubjectWitness NoteText = Dict
+
 instance (c (WholeReader Text), c (WholeReader Bool), c (StringRead Text)) => TupleReaderWitness c NoteSel where
     tupleReaderWitness NoteTitle = Dict
     tupleReaderWitness NotePast = Dict
     tupleReaderWitness NoteText = Dict
 
-instance (c Text, c Bool, c Text) => TupleSubjectWitness c NoteSel where
-    tupleSubjectWitness NoteTitle = Dict
-    tupleSubjectWitness NotePast = Dict
-    tupleSubjectWitness NoteText = Dict
+instance (c (WholeEdit Text), c (WholeEdit Bool), c (StringEdit Text)) => TupleEditWitness c NoteSel where
+    tupleEditWitness NoteTitle = Dict
+    tupleEditWitness NotePast = Dict
+    tupleEditWitness NoteText = Dict
+
+instance (c (WholeUpdate Text), c (WholeUpdate Bool), c (StringUpdate Text)) => TupleUpdateWitness c NoteSel where
+    tupleUpdateWitness NoteTitle = Dict
+    tupleUpdateWitness NotePast = Dict
+    tupleUpdateWitness NoteText = Dict
 
 instance FiniteWitness NoteSel where
     assembleWitnessF getw =
@@ -50,21 +55,6 @@ instance TestEquality NoteSel where
     testEquality NotePast NotePast = Just Refl
     testEquality NoteText NoteText = Just Refl
     testEquality _ _ = Nothing
-
-instance TupleWitness ApplicableEdit NoteSel where
-    tupleWitness NoteTitle = Dict
-    tupleWitness NotePast = Dict
-    tupleWitness NoteText = Dict
-
-instance TupleWitness SubjectMapEdit NoteSel where
-    tupleWitness NoteTitle = Dict
-    tupleWitness NotePast = Dict
-    tupleWitness NoteText = Dict
-
-instance TupleWitness FullEdit NoteSel where
-    tupleWitness NoteTitle = Dict
-    tupleWitness NotePast = Dict
-    tupleWitness NoteText = Dict
 
 instance SubjectTupleSelector NoteSel
 
@@ -86,14 +76,14 @@ instance HasNewValue (Tuple NoteSel) where
             NotePast -> False
             NoteText -> mempty
 
-type NoteEdit = TupleEdit NoteSel
+type NoteUpdate = TupleUpdate NoteSel
 
-noteEditSpec :: UISpec (EditLens (StringEdit Text) (StringEdit Text)) NoteEdit
+noteEditSpec :: UISpec (EditLens (StringUpdate Text) (StringUpdate Text)) NoteUpdate
 noteEditSpec =
     verticalUISpec $
     tupleEditUISpecs $ \case
         NoteTitle -> (textAreaUISpecEntry, False)
-        NotePast -> (checkboxUISpec (constEditFunction "past") id, False)
+        NotePast -> (checkboxUISpec (constUpdateFunction "past") id, False)
         NoteText -> (textAreaUISpec, True)
 
 type Note = Tuple NoteSel
@@ -129,5 +119,5 @@ instance JSON.FromJSON Note where
                     NotePast -> past
                     NoteText -> text
 
-noteCodec :: ReasonCodec LazyByteString (EditSubject NoteEdit)
+noteCodec :: ReasonCodec LazyByteString (UpdateSubject NoteUpdate)
 noteCodec = jsonValueCodec . jsonCodec

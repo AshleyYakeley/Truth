@@ -3,8 +3,8 @@ module Truth.Core.Types.Lattice where
 import Truth.Core.Edit
 import Truth.Core.Types.Pair
 
-class JoinSemiLatticeEdit edit where
-    joinEditFunction :: EditFunction (PairEdit edit edit) edit
+class JoinSemiLatticeUpdateFunction update where
+    joinUpdateFunction :: UpdateFunction (PairUpdate update update) update
 
-class MeetSemiLatticeEdit edit where
-    meetEditFunction :: EditFunction (PairEdit edit edit) edit
+class MeetSemiLatticeUpdateFunction update where
+    meetUpdateFunction :: UpdateFunction (PairUpdate update update) update

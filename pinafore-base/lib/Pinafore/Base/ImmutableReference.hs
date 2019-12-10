@@ -6,39 +6,40 @@ import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
 
-newtype PinaforeImmutableReference baseedit a =
-    MkPinaforeImmutableReference (PinaforeFunctionValue baseedit (Know a))
+newtype PinaforeImmutableReference baseupdate a =
+    MkPinaforeImmutableReference (PinaforeFunctionValue baseupdate (Know a))
 
-instance Functor (PinaforeImmutableReference baseedit) where
-    fmap ab (MkPinaforeImmutableReference a) = MkPinaforeImmutableReference $ funcEditFunction (fmap ab) . a
+instance Functor (PinaforeImmutableReference baseupdate) where
+    fmap ab (MkPinaforeImmutableReference a) = MkPinaforeImmutableReference $ funcUpdateFunction (fmap ab) . a
 
-instance Applicative (PinaforeImmutableReference baseedit) where
-    pure a = MkPinaforeImmutableReference $ constEditFunction $ Known a
+instance Applicative (PinaforeImmutableReference baseupdate) where
+    pure a = MkPinaforeImmutableReference $ constUpdateFunction $ Known a
     (MkPinaforeImmutableReference fab) <*> (MkPinaforeImmutableReference fa) =
-        MkPinaforeImmutableReference $ funcEditFunction (\(mab, ma) -> mab <*> ma) . pairWholeEditFunction fab fa
+        MkPinaforeImmutableReference $ funcUpdateFunction (\(mab, ma) -> mab <*> ma) . pairWholeUpdateFunction fab fa
 
-instance Alternative (PinaforeImmutableReference baseedit) where
-    empty = MkPinaforeImmutableReference $ constEditFunction Unknown
+instance Alternative (PinaforeImmutableReference baseupdate) where
+    empty = MkPinaforeImmutableReference $ constUpdateFunction Unknown
     (MkPinaforeImmutableReference fa) <|> (MkPinaforeImmutableReference fb) =
-        MkPinaforeImmutableReference $ funcEditFunction (\(ma, mb) -> ma <|> mb) . pairWholeEditFunction fa fb
+        MkPinaforeImmutableReference $ funcUpdateFunction (\(ma, mb) -> ma <|> mb) . pairWholeUpdateFunction fa fb
 
-immutableReferenceToFunction :: PinaforeImmutableReference baseedit a -> PinaforeFunctionValue baseedit (Know a)
+immutableReferenceToFunction :: PinaforeImmutableReference baseupdate a -> PinaforeFunctionValue baseupdate (Know a)
 immutableReferenceToFunction (MkPinaforeImmutableReference fv) = fv
 
-immutableReferenceToLens :: PinaforeImmutableReference baseedit a -> PinaforeLensValue baseedit (WholeEdit (Know a))
+immutableReferenceToLens ::
+       PinaforeImmutableReference baseupdate a -> PinaforeLensValue baseupdate (WholeUpdate (Know a))
 immutableReferenceToLens ref = readOnlyEditLens $ immutableReferenceToFunction ref
 
-getImmutableReference :: PinaforeImmutableReference baseedit a -> PinaforeAction baseedit (Know a)
+getImmutableReference :: PinaforeImmutableReference baseupdate a -> PinaforeAction baseupdate (Know a)
 getImmutableReference ref = pinaforeFunctionValueGet $ immutableReferenceToFunction ref
 
-functionImmutableReference :: PinaforeFunctionValue baseedit a -> PinaforeImmutableReference baseedit a
-functionImmutableReference fv = MkPinaforeImmutableReference $ funcEditFunction Known . fv
+functionImmutableReference :: PinaforeFunctionValue baseupdate a -> PinaforeImmutableReference baseupdate a
+functionImmutableReference fv = MkPinaforeImmutableReference $ funcUpdateFunction Known . fv
 
-pinaforeImmutableReferenceValue :: a -> PinaforeImmutableReference baseedit a -> PinaforeFunctionValue baseedit a
-pinaforeImmutableReferenceValue def ref = funcEditFunction (fromKnow def) . immutableReferenceToFunction ref
+pinaforeImmutableReferenceValue :: a -> PinaforeImmutableReference baseupdate a -> PinaforeFunctionValue baseupdate a
+pinaforeImmutableReferenceValue def ref = funcUpdateFunction (fromKnow def) . immutableReferenceToFunction ref
 
 applyImmutableReference ::
-       PinaforeFunctionMorphism baseedit (Know a) (Know b)
-    -> PinaforeImmutableReference baseedit a
-    -> PinaforeImmutableReference baseedit b
+       PinaforeFunctionMorphism baseupdate (Know a) (Know b)
+    -> PinaforeImmutableReference baseupdate a
+    -> PinaforeImmutableReference baseupdate b
 applyImmutableReference m (MkPinaforeImmutableReference v) = MkPinaforeImmutableReference $ applyPinaforeFunction m v

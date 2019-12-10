@@ -5,27 +5,28 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Core.Types
-import Truth.Debug
 
-type MemoryCellEdit = DependentEdit IORef
+type MemoryCellUpdate = DependentUpdate WitnessedIORef
 
-makeMemoryCellObject :: IO (Object MemoryCellEdit)
+makeMemoryCellObject :: IO (Object (UpdateEdit MemoryCellUpdate))
 makeMemoryCellObject = do
+    iow <- newIOWitness
     var <- newMVar ()
     let
-        objRun = traceThing "makeMemoryCellObject.mvarUnliftIO" $ mvarUnliftIO var
-        objRead :: MutableRead (StateT () IO) (EditReader MemoryCellEdit)
-        objRead (MkTupleEditReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef ioref
-        objEdit :: [MemoryCellEdit] -> StateT () IO (Maybe (EditSource -> StateT () IO ()))
+        objRun :: ResourceRunner '[ StateT ()]
+        objRun = mvarResourceRunner iow var
+        objRead :: MutableRead (StateT () IO) (UpdateReader MemoryCellUpdate)
+        objRead (MkTupleUpdateReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef $ unWitnessed ioref
+        objEdit :: NonEmpty (UpdateEdit MemoryCellUpdate) -> StateT () IO (Maybe (EditSource -> StateT () IO ()))
         objEdit =
-            singleAlwaysEdit $ \(MkTupleEdit (MkDependentSelector ioref) (MkWholeEdit a)) _ ->
-                liftIO $ writeIORef ioref a
-    return $ MkCloseUnliftIO objRun $ MkAnObject {..}
+            singleAlwaysEdit $ \(MkTupleUpdateEdit (MkDependentSelector ioref) (MkWholeReaderEdit a)) _ ->
+                liftIO $ writeIORef (unWitnessed ioref) a
+    return $ MkResource objRun $ MkAnObject {..}
 
-makeMemoryCellEditLens :: a -> IO (EditLens MemoryCellEdit (WholeEdit a))
+makeMemoryCellEditLens :: a -> IO (EditLens MemoryCellUpdate (WholeUpdate a))
 makeMemoryCellEditLens a = do
-    tvar <- newIORef a
+    tvar <- newWitnessedIORef a
     return $ dependentEditLens tvar

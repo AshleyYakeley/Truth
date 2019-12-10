@@ -5,36 +5,34 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data OneUISpec sel edit where
+data OneUISpec sel update where
     -- view can create object
     MaybeUISpec
-        :: forall sel edit. (FullEdit edit)
-        => Maybe (EditSubject edit)
-        -> UISpec sel edit
-        -> OneUISpec sel (MaybeEdit edit)
+        :: forall sel update. (IsUpdate update, FullEdit (UpdateEdit update))
+        => Maybe (UpdateSubject update)
+        -> UISpec sel update
+        -> OneUISpec sel (MaybeUpdate update)
     OneWholeUISpec
-        :: forall sel f edit. (MonadOne f, FullEdit edit)
-        => UISpec sel edit
-        -> OneUISpec sel (OneWholeEdit f edit)
-    --MkOneUISpec :: forall f edit. (MonadOne f,ApplicableEdit edit) => UISpec edit -> OneUISpec (OneEdit f edit);
+        :: forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
+        => UISpec sel update
+        -> OneUISpec sel (OneWholeUpdate f update)
 
-instance Show (OneUISpec sel edit) where
+instance Show (OneUISpec sel update) where
     show (MaybeUISpec _ uispec) = "maybe " ++ show uispec
     show (OneWholeUISpec uispec) = "one+whole " ++ show uispec
-    --show (MkOneUISpec uispec) = "one " ++ show uispec;
 
 instance UIType OneUISpec where
     uiWitness = $(iowitness [t|OneUISpec|])
 
 maybeUISpec ::
-       forall sel edit. (FullEdit edit)
-    => Maybe (EditSubject edit)
-    -> UISpec sel edit
-    -> UISpec sel (MaybeEdit edit)
+       forall sel update. (IsUpdate update, FullEdit (UpdateEdit update))
+    => Maybe (UpdateSubject update)
+    -> UISpec sel update
+    -> UISpec sel (MaybeUpdate update)
 maybeUISpec msubj spec = MkUISpec $ MaybeUISpec msubj spec
 
 oneWholeUISpec ::
-       forall sel f edit. (MonadOne f, FullEdit edit)
-    => UISpec sel edit
-    -> UISpec sel (OneWholeEdit f edit)
+       forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
+    => UISpec sel update
+    -> UISpec sel (OneWholeUpdate f update)
 oneWholeUISpec spec = MkUISpec $ OneWholeUISpec spec

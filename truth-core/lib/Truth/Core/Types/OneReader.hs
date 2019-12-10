@@ -35,9 +35,11 @@ oneReadFunctionF :: ReadFunctionF f (OneReader f reader) reader
 oneReadFunctionF mr rt = MkComposeM $ mr $ ReadOne rt
 
 liftMaybeReadFunction ::
-       (MonadOne f, MonadTransTunnel t) => ReadFunctionT t ra rb -> ReadFunctionT t (OneReader f ra) (OneReader f rb)
-liftMaybeReadFunction _rfrarb mr ReadHasOne = lift $ mr ReadHasOne
-liftMaybeReadFunction rfrarb mr (ReadOne rbt) = transComposeOne $ rfrarb (oneReadFunctionF mr) rbt
+       forall f ra rb. MonadOne f
+    => ReadFunction ra rb
+    -> ReadFunction (OneReader f ra) (OneReader f rb)
+liftMaybeReadFunction _rfrarb mr ReadHasOne = mr ReadHasOne
+liftMaybeReadFunction rfrarb (mr :: MutableRead m _) (ReadOne rbt) = getComposeM $ rfrarb (oneReadFunctionF mr) rbt
 
 instance (MonadOne f, FullSubjectReader reader) => FullSubjectReader (OneReader f reader) where
     mutableReadToSubject mr = getComposeM $ mutableReadToSubject $ oneReadFunctionF mr

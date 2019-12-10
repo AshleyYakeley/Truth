@@ -95,7 +95,7 @@ createWindowAndChild MkWindowSpec {..} =
     cvWithAspect $ \aspect -> do
         window <-
             lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
-        cvBindEditFunction Nothing wsTitle $ \title -> set window [#title := title]
+        cvBindUpdateFunction Nothing wsTitle $ \title -> set window [#title := title]
         content <- getTheView wsContent
         _ <-
             on window #deleteEvent $ \_ -> traceBracket "GTK.Window:close" $ do
@@ -107,7 +107,7 @@ createWindowAndChild MkWindowSpec {..} =
                 Just efmbar -> do
                     ag <- new AccelGroup []
                     #addAccelGroup window ag
-                    mb <- switchView $ funcEditFunction (\mbar -> createMenuBar ag mbar >>= toWidget) . efmbar aspect
+                    mb <- switchView $ funcUpdateFunction (\mbar -> createMenuBar ag mbar >>= toWidget) . efmbar aspect
                     vbox <- new Box [#orientation := OrientationVertical]
                     #packStart vbox mb False False 0
                     #packStart vbox content True True 0
@@ -120,15 +120,6 @@ createWindowAndChild MkWindowSpec {..} =
             uiWindowShow = #show window
         return $ MkUIWindow {..}
 
-{-
-forkTask :: IO a -> IO (IO a)
-forkTask action = do
-    var <- newEmptyMVar
-    _ <- forkIO $ do
-        a <- action
-        putMVar var a
-    return $ takeMVar var
--}
 data RunState
     = RSRun
     | RSStop
@@ -136,25 +127,25 @@ data RunState
 truthMainGTK :: TruthMain
 truthMainGTK appMain =
     runLifeCycle $
-    liftIOWithUnlift $ \(MkTransform unlift) -> traceBracket "truthMainGTK" $ do
+    liftIOWithUnlift $ \unlift -> traceBracket "truthMainGTK" $ do
         _ <- GI.init Nothing
         uiLockVar <- newMVar ()
         runVar <- newMVar RSRun
         let
             uitWithLock :: forall a. IO a -> IO a
-            uitWithLock action = traceBarrier "uitWithLock" (mvarRun uiLockVar) $ liftIO action
+            uitWithLock action = traceBarrier "uitWithLock" (mVarRun uiLockVar) $ liftIO action
             withUILock :: UpdateTiming -> IO a -> IO a
             withUILock AsynchronousUpdateTiming = uitWithLock
             withUILock SynchronousUpdateTiming = id
             uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow
             uitCreateWindow sub wspec = subscribeView withUILock (createWindowAndChild wspec) sub getRequest
             uitExit :: IO ()
-            uitExit = traceBarrier "truthMainGTK: uitQuit" (mvarRun runVar) $ put RSStop
+            uitExit = traceBarrier "truthMainGTK: uitQuit" (mVarRun runVar) $ put RSStop
             uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
             uitUnliftLifeCycle = unlift
             tcUIToolkit = MkUIToolkit {..}
         a <- unlift $ appMain MkTruthContext {..}
-        shouldRun <- liftIO $ mvarRun runVar Shapes.get
+        shouldRun <- liftIO $ mVarRun runVar Shapes.get
         case shouldRun of
             RSStop -> return ()
             RSRun -> do
@@ -164,11 +155,11 @@ truthMainGTK appMain =
                         putMVar uiLockVar ()
                         threadDelay 5000 -- 5ms delay
                         takeMVar uiLockVar
-                        sr <- mvarRun runVar Shapes.get
+                        sr <- mVarRun runVar Shapes.get
                         case sr of
                             RSRun -> return SOURCE_CONTINUE
                             RSStop -> do
                                 #quit mloop
                                 return SOURCE_REMOVE
-                traceBarrier "truthMainGTK: pcMainLoop" (mvarRun uiLockVar) $ liftIO $ #run mloop
+                traceBarrier "truthMainGTK: pcMainLoop" (mVarRun uiLockVar) $ liftIO $ #run mloop
         return a

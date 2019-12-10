@@ -58,7 +58,11 @@ readType2 =
     (do
          readExactlyThis TokUName "SetRef"
          t1 <- readType3
-         return $ SetSyntaxType t1) <|>
+         return $ SetRefSyntaxType t1) <|>
+    (do
+         readExactlyThis TokUName "FiniteSetRef"
+         t1 <- readType3
+         return $ FiniteSetRefSyntaxType t1) <|>
     (do
          readExactlyThis TokUName "Action"
          t1 <- readType3

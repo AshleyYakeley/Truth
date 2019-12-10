@@ -21,7 +21,14 @@ instance (MonadOne inner, Monad outer) => Applicative (ComposeM inner outer) whe
 
 instance (MonadOne inner, Monad outer, Alternative inner) => Alternative (ComposeM inner outer) where
     empty = MkComposeM $ pure empty
-    (MkComposeM oia) <|> (MkComposeM oib) = MkComposeM $ liftA2 (<|>) oia oib
+    (MkComposeM oia) <|> cb = do
+        ma <-
+            MkComposeM $ do
+                ia <- oia
+                return $ (fmap Just ia) <|> return Nothing
+        case ma of
+            Just a -> return a
+            Nothing -> cb
 
 instance (MonadOne inner, Monad outer) => Monad (ComposeM inner outer) where
     return = pure
@@ -64,6 +71,9 @@ instance MonadOne inner => MonadTransConstraint Monad (ComposeM inner) where
 instance MonadOne inner => MonadTransConstraint MonadIO (ComposeM inner) where
     hasTransConstraint = Dict
 
+instance MonadOne inner => MonadTransConstraint MonadFix (ComposeM inner) where
+    hasTransConstraint = Dict
+
 instance MonadOne inner => MonadTransSemiTunnel (ComposeM inner)
 
 instance MonadOne inner => MonadTransTunnel (ComposeM inner) where
@@ -75,3 +85,19 @@ transComposeOne tca =
     withTransConstraintTM @Monad $
     fmap (restoreOne . eitherToResult) $
     transExcept $ remonad (ExceptT . fmap (resultToEither . retrieveOne) . getComposeM) tca
+
+transStackComposeOne ::
+       forall tt f m a. (MonadTransStackTunnel tt, Monad m, MonadOne f)
+    => ApplyStack tt (ComposeM f m) a
+    -> ApplyStack tt m (f a)
+transStackComposeOne tca =
+    case transStackDict @Monad @tt @m of
+        Dict ->
+            fmap (restoreOne . eitherToResult) $
+            transStackExcept @tt @m @(Limit f) $
+            stackRemonad
+                @tt
+                @(ComposeM f m)
+                @(ExceptT (Limit f) _)
+                (ExceptT . fmap (resultToEither . retrieveOne) . getComposeM)
+                tca

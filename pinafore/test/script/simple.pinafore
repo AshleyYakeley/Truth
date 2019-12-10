@@ -12,10 +12,10 @@ me = entity @Person !4527c8ac-580d-443c-8496-2b5a93021f98;
 
 # UI
 ui_person :: Person -> UI None;
-ui_person p = ui_textentry $ name !$ {p};
+ui_person p = uiTextEntry $ name !$ {p};
 
 window_person :: Person -> Action Window;
-window_person p = openwindow {"Name"} (\_ -> {[]}) (ui_person p);
+window_person p = openWindow {"Name"} (\_ -> {[]}) (ui_person p);
 
 in do
     window_person me;

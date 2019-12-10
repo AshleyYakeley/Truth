@@ -12,25 +12,25 @@ import Truth.UI.GTK.Useful
 createWidget :: CheckboxUISpec sel edit -> CreateView sel edit Widget
 createWidget (MkCheckboxUISpec label lens) = do
     esrc <- newEditSource
-    initial <- cvMapEdit lens $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
+    initial <- cvMapEdit (return lens) $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial]
-    cvBindEditFunction Nothing label $ \val -> set widget [#label := val]
-    cvMapEdit lens $ do
+    cvBindUpdateFunction Nothing label $ \val -> set widget [#label := val]
+    cvMapEdit (return lens) $ do
         changedSignal <-
             cvLiftView $
             viewOn widget #clicked $
             viewObjectPushEdit $ \_ push -> do
                 st <- Gtk.get widget #active
-                _ <- push noEditSource [MkWholeEdit st]
+                _ <- push noEditSource $ pure $ MkWholeReaderEdit st
                 return ()
-        cvBindEditFunction (Just esrc) id $ \st ->
+        cvBindUpdateFunction (Just esrc) id $ \st ->
             liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
 createWidget (MkMaybeCheckboxUISpec label lens) = do
-    initial <- cvMapEdit lens $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
+    initial <- cvMapEdit (return lens) $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
-    cvBindEditFunction Nothing label $ \val -> set widget [#label := val]
-    cvMapEdit lens $ do
+    cvBindUpdateFunction Nothing label $ \val -> set widget [#label := val]
+    cvMapEdit (return lens) $ do
         let
             getWidgetState ::
                    forall m. MonadIO m
@@ -63,10 +63,10 @@ createWidget (MkMaybeCheckboxUISpec label lens) = do
                                         if elem ModifierTypeShiftMask modifiers
                                             then Nothing
                                             else Just (oldst /= Just True)
-                                _ <- push noEditSource [MkWholeEdit newst]
+                                _ <- push noEditSource $ pure $ MkWholeReaderEdit newst
                                 return True
                             _ -> return False
-        cvBindEditFunction Nothing id setWidgetState
+        cvBindUpdateFunction Nothing id setWidgetState
     toWidget widget
 
 checkButtonGetView :: GetGView

@@ -7,7 +7,7 @@ module Pinafore.Language.Predefined
     , predefinedBindings
     , predefinedPatternConstructors
     , predefinedDoc
-    , outputln
+    , outputLn
     ) where
 
 import Data.Time
@@ -19,31 +19,31 @@ import Pinafore.Language.Predefined.Base
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Predefined.File
 import Pinafore.Language.Predefined.UI
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
 import Pinafore.Storage
 import Shapes
 import Truth.Core
 
-type PinaforePredefinitions baseedit
-     = ( HasPinaforeEntityEdit baseedit
-       , HasPinaforeFileEdit baseedit
-       , BaseEditLens MemoryCellEdit baseedit
-       , BaseEditLens (WholeEdit UTCTime) baseedit
-       , BaseEditLens (WholeEdit TimeZone) baseedit)
+type PinaforePredefinitions baseupdate
+     = ( HasPinaforeEntityUpdate baseupdate
+       , HasPinaforeFileUpdate baseupdate
+       , BaseEditLens MemoryCellUpdate baseupdate
+       , BaseEditLens (WholeUpdate UTCTime) baseupdate
+       , BaseEditLens (WholeUpdate TimeZone) baseupdate)
 
 predefinitions ::
-       forall baseedit. PinaforePredefinitions baseedit
-    => DocTree (BindDoc baseedit)
+       forall baseupdate. PinaforePredefinitions baseupdate
+    => DocTree (BindDoc baseupdate)
 predefinitions = MkDocTree "" "" $ base_predefinitions <> ui_predefinitions <> file_predefinitions
 
 predefinedDoc ::
-       forall baseedit. PinaforePredefinitions baseedit
+       forall baseupdate. PinaforePredefinitions baseupdate
     => DocTree DefDoc
-predefinedDoc = fmap bdDoc $ predefinitions @baseedit
+predefinedDoc = fmap bdDoc $ predefinitions @baseupdate
 
 predefinedBindings ::
-       forall baseedit. (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
-    => StrictMap Name (QValue baseedit)
+       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
+    => StrictMap Name (QValue baseupdate)
 predefinedBindings =
     mapFromList $
     catMaybes $
@@ -52,11 +52,11 @@ predefinedBindings =
         (\doc -> do
              val <- bdValue doc
              return (bdName doc, val ?pinafore)) $
-    predefinitions @baseedit
+    predefinitions @baseupdate
 
 predefinedPatternConstructors ::
-       forall baseedit. PinaforePredefinitions baseedit
-    => StrictMap Name (PinaforePatternConstructor baseedit)
+       forall baseupdate. PinaforePredefinitions baseupdate
+    => StrictMap Name (PinaforePatternConstructor baseupdate)
 predefinedPatternConstructors =
     mapFromList $
     catMaybes $
@@ -65,4 +65,4 @@ predefinedPatternConstructors =
         (\doc -> do
              pat <- bdPattern doc
              return (bdName doc, pat)) $
-    predefinitions @baseedit
+    predefinitions @baseupdate

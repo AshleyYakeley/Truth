@@ -5,23 +5,26 @@ module Truth.Core.Object.Undo
 
 import Truth.Core.Edit
 import Truth.Core.Import
-
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
-import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Debug.Object
 
 -- fst is original edits, snd is undoing edits
-type UndoEntry edit = ([edit], [edit])
+type UndoEntry edit = (NonEmpty edit, NonEmpty edit)
 
 makeUndoEntry ::
-       (MonadIO m, InvertibleEdit edit) => MutableRead m (EditReader edit) -> [edit] -> m (Maybe (UndoEntry edit))
-makeUndoEntry _ [] = return Nothing
+       (MonadIO m, InvertibleEdit edit)
+    => MutableRead m (EditReader edit)
+    -> NonEmpty edit
+    -> m (Maybe (UndoEntry edit))
 makeUndoEntry mr edits = do
-    unedits <- invertEdits edits mr
-    return $ Just (edits, unedits)
+    unedits <- invertEdits (toList edits) mr
+    case nonEmpty unedits of
+        Nothing -> return Nothing
+        Just unedits' -> return $ Just (edits, unedits')
 
 data UndoQueue edit = MkUndoQueue
     { _uqUndoEdits :: [UndoEntry edit]
@@ -29,7 +32,10 @@ data UndoQueue edit = MkUndoQueue
     }
 
 updateUndoQueue ::
-       (MonadIO m, InvertibleEdit edit) => MutableRead m (EditReader edit) -> [edit] -> StateT (UndoQueue edit) m ()
+       (MonadIO m, InvertibleEdit edit)
+    => MutableRead m (EditReader edit)
+    -> NonEmpty edit
+    -> StateT (UndoQueue edit) m ()
 updateUndoQueue mr edits = traceBracket "updateUndoQueue" $ do
     mue <- lift $ makeUndoEntry mr edits
     case mue of
@@ -45,24 +51,24 @@ data UndoActions = MkUndoActions
     }
 
 undoQueueSubscriber ::
-       forall edit. InvertibleEdit edit
-    => Subscriber edit
-    -> IO (Subscriber edit, UndoActions)
+       forall update. InvertibleEdit (UpdateEdit update)
+    => Subscriber update
+    -> IO (Subscriber update, UndoActions)
 undoQueueSubscriber sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
-    MkCloseUnliftIO (runP :: UnliftIO ma) (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub
-    let
+    MkResource rrP (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub
+    runResourceRunnerWith rrP $ \runP -> let
         undoActions = let
             uaUndo :: EditSource -> IO Bool
             uaUndo esrc =
-                traceBarrier "undoQueueSubscriber.uaUndo" (mvarRun queueVar) $ do
+                traceBarrier "undoQueueSubscriber.uaUndo" (mVarRun queueVar) $ do
                     MkUndoQueue ues res <- get
                     case ues of
                         [] -> traceBracket "undoQueueSubscriber.uaUndo: no undoable" $ return False -- nothing to undo
                         (entry:ee) -> traceBracket "undoQueueSubscriber.uaUndo: undoable" $ do
                             did <-
                                 lift $
-                                runTransform runP $ do
+                                runP $ do
                                     maction <- pushP (snd entry)
                                     case maction of
                                         Just action -> traceBracket "undoQueueSubscriber.uaUndo: action" $ do
@@ -76,14 +82,14 @@ undoQueueSubscriber sub = do
                                 else return False
             uaRedo :: EditSource -> IO Bool
             uaRedo esrc =
-                mvarRun queueVar $ do
+                mVarRun queueVar $ do
                     MkUndoQueue ues res <- get
                     case res of
                         [] -> return False -- nothing to redo
                         (entry:ee) -> do
                             did <-
                                 lift $
-                                runTransform runP $ do
+                                runP $ do
                                     maction <- pushP (fst entry)
                                     case maction of
                                         Just action -> do
@@ -102,8 +108,8 @@ undoQueueSubscriber sub = do
                 case maction of
                     Just action ->
                         Just $ \esrc -> traceBracket "undoQueueSubscriber.push" $ do
-                            mvarRun queueVar $ updateUndoQueue readP edits
+                            mVarRun queueVar $ updateUndoQueue readP edits
                             action esrc
                     Nothing -> Nothing
-        subC = MkCloseUnliftIO runP $ MkASubscriber (MkAnObject readP pushC) subscribeP
-    return (subC, undoActions)
+        subC = MkResource rrP $ MkASubscriber (MkAnObject readP pushC) subscribeP
+        in return (subC, undoActions)

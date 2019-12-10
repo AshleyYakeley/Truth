@@ -51,16 +51,12 @@ instance Eq a => IsSet (FiniteSet a) where
 instance MonoPointed (FiniteSet a) where
     opoint = MkFiniteSet . pure
 
-instance Eq a => JoinSemiLattice (FiniteSet a) where
+instance Eq a => Lattice (FiniteSet a) where
+    (/\) = intersection
     (\/) = union
 
 instance Eq a => BoundedJoinSemiLattice (FiniteSet a) where
     bottom = mempty
-
-instance Eq a => MeetSemiLattice (FiniteSet a) where
-    (/\) = intersection
-
-instance Eq a => Lattice (FiniteSet a)
 
 instance Eq a => KeyContainer (FiniteSet a) where
     elementKey a = a

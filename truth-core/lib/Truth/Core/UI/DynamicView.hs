@@ -1,5 +1,6 @@
 module Truth.Core.UI.DynamicView where
 
+import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object
 import Truth.Core.UI.CreateView
@@ -20,10 +21,10 @@ closeDynamicView :: DynamicViewState dvs => dvs -> IO ()
 closeDynamicView dvs = for_ (dynamicViewStates dvs) closeLifeState
 
 cvDynamic ::
-       forall dvs sel edit. (DynamicViewState dvs, sel ~ DynamicViewSelEdit dvs)
+       forall dvs sel update. (DynamicViewState dvs, sel ~ DynamicViewSelEdit dvs)
     => dvs
-    -> (Object edit -> [edit] -> StateT dvs IO ())
-    -> CreateView sel edit ()
+    -> (Object (UpdateEdit update) -> [update] -> StateT dvs IO ())
+    -> CreateView sel update ()
 cvDynamic firstdvs updateCV = do
     stateVar :: MVar dvs <- liftIO $ newMVar firstdvs
     liftLifeCycleIO $
@@ -31,12 +32,12 @@ cvDynamic firstdvs updateCV = do
             lastdvs <- traceBracket "cvDynamic:close" $ takeMVar stateVar
             closeDynamicView lastdvs
     let
-        update :: Object edit -> [edit] -> EditSource -> IO ()
-        update obj edits _esrc = traceBarrier "cvDynamic:update" (mvarRun stateVar) $ updateCV obj edits
+        update :: Object (UpdateEdit update) -> [update] -> EditSource -> IO ()
+        update obj edits _esrc = traceBarrier "cvDynamic:update" (mVarRun stateVar) $ updateCV obj edits
     cvAddAspect $
-        traceBarrier "cvDynamic:addAspect" (mvarRun stateVar) $ do
+        traceBarrier "cvDynamic:addAspect" (mVarRun stateVar) $ do
             dvs <- get
-            liftIO $ vsFirstAspect $ dynamicViewFocus dvs
-    cvReceiveIOUpdates update
+            lift $ vsFirstAspect $ dynamicViewFocus dvs
+    cvReceiveIOUpdates $ \obj uu -> update obj $ toList uu
     obj <- cvLiftView viewObject
     liftIO $ update obj [] noEditSource

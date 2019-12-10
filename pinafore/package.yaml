@@ -17,6 +17,7 @@ library:
       - uuid
       - typed-expression
       - truth-core
+      - truth-world
       - pinafore-base
     exposed-modules:
       - Pinafore.Language
@@ -25,37 +26,41 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
-      - Pinafore.Language.Instances
+      - Pinafore.Language.Value.Instances
+      - Pinafore.Language.Value.OpenEntity
+      - Pinafore.Language.Value.Ref
+      - Pinafore.Language.Value.SetRef
+      - Pinafore.Language.Value.FiniteSetRef
+      - Pinafore.Language.Value.ListRef
+      - Pinafore.Language.Value.TextRef
+      - Pinafore.Language.Value.Morphism
+      - Pinafore.Language.Value.Order
+      - Pinafore.Language.Value.UI
+      - Pinafore.Language.Value
       - Pinafore.Language.Name
-      - Pinafore.Language.Literal
-      - Pinafore.Language.OpenEntity
-      - Pinafore.Language.Reference
-      - Pinafore.Language.SetRef
-      - Pinafore.Language.Morphism
+      - Pinafore.Language.Type.Literal
       - Pinafore.Language.If
-      - Pinafore.Language.Show
-      - Pinafore.Language.Order
-      - Pinafore.Language.UI
-      - Pinafore.Language.GroundType
-      - Pinafore.Language.TypeID
+      - Pinafore.Language.TypeSystem.Show
+      - Pinafore.Language.Type.Ground
+      - Pinafore.Language.Type.TypeID
       - Pinafore.Language.Error
       - Pinafore.Language.Scope
       - Pinafore.Language.Convert.Base
-      - Pinafore.Language.Type.Type
-      - Pinafore.Language.Type.Subtype
-      - Pinafore.Language.Type.Rename
-      - Pinafore.Language.Type.Bisubstitute
-      - Pinafore.Language.Type.Simplify.VarUses
-      - Pinafore.Language.Type.Simplify.OneSidedTypeVars
-      - Pinafore.Language.Type.Simplify.DuplicateGroundTypes
-      - Pinafore.Language.Type.Simplify.SharedTypeVars
-      - Pinafore.Language.Type.Simplify.DuplicateTypeVars
-      - Pinafore.Language.Type.Simplify
-      - Pinafore.Language.Type.Unify
-      - Pinafore.Language.Type.Inverted
-      - Pinafore.Language.Type.Subsume
-      - Pinafore.Language.Type
-      - Pinafore.Language.EntityType
+      - Pinafore.Language.TypeSystem.Type
+      - Pinafore.Language.TypeSystem.Subtype
+      - Pinafore.Language.TypeSystem.Rename
+      - Pinafore.Language.TypeSystem.Bisubstitute
+      - Pinafore.Language.TypeSystem.Simplify.VarUses
+      - Pinafore.Language.TypeSystem.Simplify.OneSidedTypeVars
+      - Pinafore.Language.TypeSystem.Simplify.DuplicateGroundTypes
+      - Pinafore.Language.TypeSystem.Simplify.SharedTypeVars
+      - Pinafore.Language.TypeSystem.Simplify.DuplicateTypeVars
+      - Pinafore.Language.TypeSystem.Simplify
+      - Pinafore.Language.TypeSystem.Unify
+      - Pinafore.Language.TypeSystem.Inverted
+      - Pinafore.Language.TypeSystem.Subsume
+      - Pinafore.Language.TypeSystem
+      - Pinafore.Language.Type.Entity
       - Pinafore.Language.Syntax
       - Pinafore.Language.Read.Token
       - Pinafore.Language.Read.RefNotation
@@ -138,4 +143,9 @@ executables:
           - pinafore
           - githash
         main: Main.hs
+        other-modules:
+          - Options
+          - Version
+          - Run
+          - Documentation
         ghc-options: -threaded

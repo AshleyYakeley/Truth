@@ -25,7 +25,7 @@ import Data.Functor.Identity as I
 import Data.Int as I
 import Data.Kind as I
 import Data.List as I ((++), intercalate, length, nub, zip)
-import Data.List.NonEmpty as I (NonEmpty(..))
+import Data.List.NonEmpty as I (NonEmpty(..), last, nonEmpty)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
 import Data.Ord as I
@@ -96,9 +96,9 @@ import Control.Monad.Trans.AskUnlift as I
 import Control.Monad.Trans.Compose as I
 import Control.Monad.Trans.Constraint as I
 import Control.Monad.Trans.ContExtra as I
+import Control.Monad.Trans.Function as I
 import Control.Monad.Trans.ReaderState as I
-import Control.Monad.Trans.StackIO as I
-import Control.Monad.Trans.Transform as I
+import Control.Monad.Trans.Stack as I
 import Control.Monad.Trans.Tunnel as I
 import Control.Monad.Trans.Unlift as I
 
@@ -141,6 +141,8 @@ import Data.Witness as I
 
 -- open-witness
 import Data.OpenWitness as I
+import Data.OpenWitness.Order as I
+import Data.OpenWitness.Witnessed as I
 import Data.Type.Heterogeneous as I
 
 type LazyByteString = Data.ByteString.Lazy.ByteString

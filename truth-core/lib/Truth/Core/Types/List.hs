@@ -6,7 +6,7 @@ import Truth.Core.Read
 import Truth.Core.Sequence
 import Truth.Core.Types.OneEdit
 import Truth.Core.Types.OneReader
-import Truth.Core.Types.OneWholeEdit
+import Truth.Core.Types.OneWhole
 import Truth.Core.Types.Sum
 import Truth.Core.Types.Whole
 
@@ -39,22 +39,22 @@ instance (IsSequence seq, FullSubjectReader reader, ReaderSubject reader ~ Eleme
 
 data ListEdit seq edit where
     ListEditItem :: SequencePoint seq -> edit -> ListEdit seq edit
-    ListDeleteItem :: SequencePoint seq -> ListEdit seq edit
-    ListInsertItem :: SequencePoint seq -> EditSubject edit -> ListEdit seq edit
-    ListClear :: ListEdit seq edit
+    ListEditDelete :: SequencePoint seq -> ListEdit seq edit
+    ListEditInsert :: SequencePoint seq -> EditSubject edit -> ListEdit seq edit
+    ListEditClear :: ListEdit seq edit
 
 instance (Enum (Index seq), Ord (Index seq)) => Floating (ListEdit seq edit) (SequencePoint seq) where
-    floatingUpdate (ListDeleteItem p) i
+    floatingUpdate (ListEditDelete p) i
         | p < i = pred i
-    floatingUpdate (ListInsertItem p _) i
+    floatingUpdate (ListEditInsert p _) i
         | p <= i = succ i
     floatingUpdate _ i = i
 
 instance (Enum (Index seq), Ord (Index seq)) => Floating (ListEdit seq edit) (ListEdit seq edit) where
     floatingUpdate edit (ListEditItem i e) = ListEditItem (floatingUpdate edit i) e
-    floatingUpdate edit (ListDeleteItem i) = ListDeleteItem (floatingUpdate edit i)
-    floatingUpdate edit (ListInsertItem i a) = ListInsertItem (floatingUpdate edit i) a
-    floatingUpdate _edit ListClear = ListClear
+    floatingUpdate edit (ListEditDelete i) = ListEditDelete (floatingUpdate edit i)
+    floatingUpdate edit (ListEditInsert i a) = ListEditInsert (floatingUpdate edit i) a
+    floatingUpdate _edit ListEditClear = ListEditClear
 
 type instance EditReader (ListEdit seq edit) =
      ListReader seq (EditReader edit)
@@ -64,32 +64,32 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit ed
     applyEdit (ListEditItem p edit) mr (ListReadItem i reader)
         | p == i = getComposeM $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
     applyEdit (ListEditItem _ _) mr reader = mr reader
-    applyEdit (ListDeleteItem p) mr ListReadLength = do
+    applyEdit (ListEditDelete p) mr ListReadLength = do
         len <- mr ListReadLength
         return $
             if p >= 0 && p < len
                 then len - 1
                 else len
-    applyEdit (ListDeleteItem p) mr (ListReadItem i reader)
+    applyEdit (ListEditDelete p) mr (ListReadItem i reader)
         | p >= 0 && p < i = mr $ ListReadItem (i + 1) reader
-    applyEdit (ListDeleteItem _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
-    applyEdit (ListInsertItem p _) mr ListReadLength = do
+    applyEdit (ListEditDelete _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
+    applyEdit (ListEditInsert p _) mr ListReadLength = do
         len <- mr ListReadLength
         return $
             if p >= 0 && p <= len
                 then len + 1
                 else len
-    applyEdit (ListInsertItem p a) mr (ListReadItem i reader)
+    applyEdit (ListEditInsert p a) mr (ListReadItem i reader)
         | p == i = do
             len <- mr ListReadLength
             return $
                 if p >= 0 && p <= len
                     then Just $ subjectToRead a reader
                     else Nothing
-    applyEdit (ListInsertItem p _) mr (ListReadItem i reader)
+    applyEdit (ListEditInsert p _) mr (ListReadItem i reader)
         | p >= 0 && p < i = mr $ ListReadItem (i - 1) reader
-    applyEdit (ListInsertItem _ _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
-    applyEdit ListClear _mr reader = subjectToMutableRead mempty reader
+    applyEdit (ListEditInsert _ _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
+    applyEdit ListEditClear _mr reader = subjectToMutableRead mempty reader
 
 instance ( IsSequence seq
          , FullSubjectReader (EditReader edit)
@@ -103,18 +103,18 @@ instance ( IsSequence seq
         case minvedits of
             Just invedits -> return $ fmap (ListEditItem p) invedits
             Nothing -> return []
-    invertEdit (ListInsertItem p _) mr = do
+    invertEdit (ListEditInsert p _) mr = do
         len <- mr ListReadLength
         return $
             if p >= 0 && p <= len
-                then [ListDeleteItem p]
+                then [ListEditDelete p]
                 else []
-    invertEdit (ListDeleteItem p) mr = do
+    invertEdit (ListEditDelete p) mr = do
         ma <- getComposeM $ mutableReadToSubject $ itemReadFunction p mr
         case ma of
-            Just a -> return [ListInsertItem p a]
+            Just a -> return [ListEditInsert p a]
             Nothing -> return []
-    invertEdit ListClear mr = getReplaceEdits mr
+    invertEdit ListEditClear mr = getReplaceEdits mr
 
 instance (IsSequence seq, SubjectReader (EditReader edit), SubjectMapEdit edit, EditSubject edit ~ Element seq) =>
              SubjectMapEdit (ListEdit seq edit) where
@@ -128,15 +128,15 @@ instance (IsSequence seq, SubjectReader (EditReader edit), SubjectMapEdit edit, 
                                newitem <- mapSubjectEdits [edit] olditem
                                return $ before `mappend` opoint newitem `mappend` rest
                            Nothing -> return $ subj
-                ListDeleteItem p -> let
+                ListEditDelete p -> let
                     (before, after) = seqSplitAt p subj
                     in case uncons after of
                            Just (_, rest) -> return $ mappend before rest
                            Nothing -> return $ subj
-                ListInsertItem p item -> let
+                ListEditInsert p item -> let
                     (before, after) = seqSplitAt p subj
                     in return $ before `mappend` opoint item `mappend` after
-                ListClear -> return mempty
+                ListEditClear -> return mempty
 
 instance ( IsSequence seq
          , FullSubjectReader (EditReader edit)
@@ -145,24 +145,47 @@ instance ( IsSequence seq
          , EditSubject edit ~ Element seq
          ) => FullEdit (ListEdit seq edit) where
     replaceEdit mr write = do
-        write ListClear
+        write ListEditClear
         len <- mr ListReadLength
         for_ [0 .. pred len] $ \i -> do
             item <- mutableReadToSubject $ knownItemReadFunction i mr
-            write $ ListInsertItem i item
+            write $ ListEditInsert i item
+
+data ListUpdate seq update where
+    ListUpdateItem :: SequencePoint seq -> update -> ListUpdate seq update
+    ListUpdateDelete :: SequencePoint seq -> ListUpdate seq update
+    ListUpdateInsert :: SequencePoint seq -> UpdateSubject update -> ListUpdate seq update
+    ListUpdateClear :: ListUpdate seq update
+
+instance IsUpdate update => IsUpdate (ListUpdate seq update) where
+    type UpdateEdit (ListUpdate seq update) = ListEdit seq (UpdateEdit update)
+    editUpdate (ListEditItem p edit) = ListUpdateItem p $ editUpdate edit
+    editUpdate (ListEditDelete p) = ListUpdateDelete p
+    editUpdate (ListEditInsert p subj) = ListUpdateInsert p subj
+    editUpdate ListEditClear = ListUpdateClear
+
+instance IsEditUpdate update => IsEditUpdate (ListUpdate seq update) where
+    updateEdit (ListUpdateItem p update) = ListEditItem p $ updateEdit update
+    updateEdit (ListUpdateDelete p) = ListEditDelete p
+    updateEdit (ListUpdateInsert p subj) = ListEditInsert p subj
+    updateEdit ListUpdateClear = ListEditClear
 
 listItemLens ::
-       forall seq edit.
-       (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit edit, EditSubject edit ~ Element seq)
-    => Unlift (StateT (SequencePoint seq))
-    -> EditLens (ListEdit seq edit) (MaybeEdit edit)
-listItemLens unlift = let
-    efGet ::
-           ReadFunctionT (StateT (SequencePoint seq)) (ListReader seq (EditReader edit)) (OneReader Maybe (EditReader edit))
-    efGet mr (ReadOne rt) = do
+       forall seq update.
+       ( IsSequence seq
+       , FullSubjectReader (UpdateReader update)
+       , ApplicableEdit (UpdateEdit update)
+       , UpdateSubject update ~ Element seq
+       )
+    => SequencePoint seq
+    -> LifeCycleIO (EditLens (ListUpdate seq update) (MaybeUpdate update))
+listItemLens = let
+    sGet ::
+           ReadFunctionT (StateT (SequencePoint seq)) (ListReader seq (UpdateReader update)) (OneReader Maybe (UpdateReader update))
+    sGet mr (ReadOne rt) = do
         i <- get
         lift $ mr $ ListReadItem i rt
-    efGet mr ReadHasOne = do
+    sGet mr ReadHasOne = do
         i <- get
         if i < 0
             then return Nothing
@@ -172,54 +195,52 @@ listItemLens unlift = let
                     if i >= len
                         then Nothing
                         else Just ()
-    efUpdate ::
+    sUpdate ::
            forall m. MonadIO m
-        => ListEdit seq edit
-        -> MutableRead m (EditReader (ListEdit seq edit))
-        -> StateT (SequencePoint seq) m [MaybeEdit edit]
-    efUpdate (ListEditItem ie edit) _ = do
+        => ListUpdate seq update
+        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> StateT (SequencePoint seq) m [MaybeUpdate update]
+    sUpdate (ListUpdateItem ie update) _ = do
         i <- get
         return $
             if i == ie
-                then [SumEditRight $ MkOneEdit edit]
+                then [SumUpdateRight $ MkOneUpdate update]
                 else []
-    efUpdate (ListDeleteItem ie) _ = do
+    sUpdate (ListUpdateDelete ie) _ = do
         i <- get
         case compare ie i of
             LT -> do
                 put $ i - 1
                 return []
-            EQ -> return [SumEditLeft $ MkWholeEdit Nothing]
+            EQ -> return [SumUpdateLeft $ MkWholeReaderUpdate Nothing]
             GT -> return []
-    efUpdate (ListInsertItem ie _) _ = do
+    sUpdate (ListUpdateInsert ie _) _ = do
         i <- get
         if ie <= i
             then put $ i + 1
             else return ()
         return []
-    efUpdate ListClear _ = do
+    sUpdate ListUpdateClear _ = do
         put 0
-        return [SumEditLeft $ MkWholeEdit Nothing]
-    elFunction :: AnEditFunction (StateT (SequencePoint seq)) (ListEdit seq edit) (MaybeEdit edit)
-    elFunction = MkAnEditFunction {..}
-    elPutEdit ::
+        return [SumUpdateLeft $ MkWholeReaderUpdate Nothing]
+    sPutEdit ::
            forall m. MonadIO m
-        => MaybeEdit edit
-        -> MutableRead m (EditReader (ListEdit seq edit))
-        -> StateT (SequencePoint seq) m (Maybe [ListEdit seq edit])
-    elPutEdit (SumEditRight (MkOneEdit edit)) _ = do
+        => MaybeEdit (UpdateEdit update)
+        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
+    sPutEdit (SumEditRight (MkOneEdit edit)) _ = do
         i <- get
         return $ Just [ListEditItem i edit]
-    elPutEdit (SumEditLeft (MkWholeEdit Nothing)) _ = do
+    sPutEdit (SumEditLeft (MkWholeReaderEdit Nothing)) _ = do
         i <- get
-        return $ Just [ListDeleteItem i]
-    elPutEdit (SumEditLeft (MkWholeEdit (Just subj))) _ = do
+        return $ Just [ListEditDelete i]
+    sPutEdit (SumEditLeft (MkWholeReaderEdit (Just subj))) _ = do
         i <- get
-        return $ Just [ListInsertItem i subj]
-    elPutEdits ::
+        return $ Just [ListEditInsert i subj]
+    sPutEdits ::
            forall m. MonadIO m
-        => [MaybeEdit edit]
-        -> MutableRead m (EditReader (ListEdit seq edit))
-        -> StateT (SequencePoint seq) m (Maybe [ListEdit seq edit])
-    elPutEdits = elPutEditsFromPutEdit elPutEdit
-    in MkCloseUnlift unlift MkAnEditLens {..}
+        => [MaybeEdit (UpdateEdit update)]
+        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
+    sPutEdits = elPutEditsFromPutEdit sPutEdit
+    in makeStateLens MkStateEditLens {..}

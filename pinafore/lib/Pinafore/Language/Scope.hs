@@ -27,8 +27,8 @@ module Pinafore.Language.Scope
 import Language.Expression.Error
 import Pinafore.Language.Error
 import Pinafore.Language.Name
-import Pinafore.Language.OpenEntity
-import Pinafore.Language.TypeID
+import Pinafore.Language.Type.TypeID
+import Pinafore.Language.Value
 import Shapes
 import Text.Parsec (SourcePos)
 
@@ -120,7 +120,7 @@ instance MonadError ErrorType (SourceScoped expr patc ct) where
             throwError $ MkErrorMessage spos err
 
 convertFailure :: String -> String -> SourceScoped expr patc ct a
-convertFailure sa sb = throwError $ TypeConvertError (pack $ show sa) (pack $ show sb)
+convertFailure sa sb = throwError $ TypeConvertError (pack sa) (pack sb)
 
 lookupBinding :: Name -> SourceScoped expr patc ct (Maybe expr)
 lookupBinding name = do
@@ -173,7 +173,9 @@ castNamedEntity :: Coercion (OpenEntity na) (OpenEntity nb)
 castNamedEntity = MkCoercion
 
 withNewTypeName ::
-       Name -> NamedType ct -> SourceScoped expr patc ct (TypeID, Transform (Scoped expr patc ct) (Scoped expr patc ct))
+       Name
+    -> NamedType ct
+    -> SourceScoped expr patc ct (TypeID, WMFunction (Scoped expr patc ct) (Scoped expr patc ct))
 withNewTypeName name t = do
     mnt <- lookupNamedTypeM name
     case mnt of
@@ -186,17 +188,18 @@ withNewTypeName name t = do
                     tid <- get
                     put $ succTypeID tid
                     return tid
-            return $ (tid, MkTransform $ pLocalScope (\tc -> tc {scopeTypes = insertMap name (tid, t) (scopeTypes tc)}))
+            return $
+                (tid, MkWMFunction $ pLocalScope (\tc -> tc {scopeTypes = insertMap name (tid, t) (scopeTypes tc)}))
 
 withNewPatternConstructor ::
-       Name -> patc -> SourceScoped expr patc ct (Transform (Scoped expr patc ct) (Scoped expr patc ct))
+       Name -> patc -> SourceScoped expr patc ct (WMFunction (Scoped expr patc ct) (Scoped expr patc ct))
 withNewPatternConstructor name pc = do
     ma <- lookupPatternConstructorM name
     case ma of
         Just _ -> throwError $ DeclareConstructorDuplicateError name
         Nothing ->
             return $
-            MkTransform $
+            MkWMFunction $
             pLocalScope (\tc -> tc {scopePatternConstructors = insertMap name pc $ scopePatternConstructors tc})
 
 withNewPatternConstructors :: StrictMap Name patc -> Scoped expr patc ct a -> Scoped expr patc ct a
@@ -209,11 +212,11 @@ lookupOpenType n = do
         OpenEntityNamedType -> return tid
         _ -> throwError $ LookupTypeNotOpenError n
 
-withEntitySubtype :: (Name, Name) -> SourceScoped expr patc ct (Transform (Scoped expr patc ct) (Scoped expr patc ct))
+withEntitySubtype :: (Name, Name) -> SourceScoped expr patc ct (WMFunction (Scoped expr patc ct) (Scoped expr patc ct))
 withEntitySubtype (a, b) = do
     ta <- lookupOpenType a
     tb <- lookupOpenType b
-    return $ MkTransform $ pLocalScope (\tc -> tc {scopeEntitySubtypes = (ta, tb) : (scopeEntitySubtypes tc)})
+    return $ MkWMFunction $ pLocalScope (\tc -> tc {scopeEntitySubtypes = (ta, tb) : (scopeEntitySubtypes tc)})
 
 getEntitySubtype ::
        Name

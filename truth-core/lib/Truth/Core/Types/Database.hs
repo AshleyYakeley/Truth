@@ -37,16 +37,16 @@ data TableJoin dbType tablesel row where
         -> TableJoin dbType tablesel rowB
         -> TableJoin dbType tablesel rowC
 
-data DatabaseRead dbType tablesel t where
+data DatabaseReader dbType tablesel t where
     DatabaseSelect
         :: TableJoin dbType tablesel row
         -> WhereClause dbType tablesel row
         -> OrderClause dbType tablesel row
         -> SelectClause dbType tablesel row row'
-        -> DatabaseRead dbType tablesel [row']
+        -> DatabaseReader dbType tablesel [row']
 
-instance Database dbType tablesel => SubjectReader (DatabaseRead dbType tablesel) where
-    type ReaderSubject (DatabaseRead dbType tablesel) = AllF tablesel []
+instance Database dbType tablesel => SubjectReader (DatabaseReader dbType tablesel) where
+    type ReaderSubject (DatabaseReader dbType tablesel) = AllF tablesel []
     subjectToRead (MkAllF tables) (DatabaseSelect j wc oc sc) = let
         doJoin :: TableJoin dbType tablesel row -> [row]
         doJoin (SingleTable tsel) = tables tsel
@@ -57,7 +57,7 @@ instance Database dbType tablesel => SubjectReader (DatabaseRead dbType tablesel
         in fmap (selectClause @dbType @tablesel sc) $
            sortBy (orderClause @dbType @tablesel oc) $ filter (whereClause @dbType @tablesel wc) $ doJoin j
 
-instance Database dbType tablesel => FullSubjectReader (DatabaseRead dbType tablesel) where
+instance Database dbType tablesel => FullSubjectReader (DatabaseReader dbType tablesel) where
     mutableReadToSubject mr =
         tableAssemble @dbType $ \(tsel :: tablesel row) -> do
             Dict <- return $ orderMonoid @dbType tsel
@@ -73,4 +73,4 @@ data DatabaseEdit dbType tablesel where
         -> DatabaseEdit dbType tablesel
 
 type instance EditReader (DatabaseEdit dbType tablesel) =
-     DatabaseRead dbType tablesel
+     DatabaseReader dbType tablesel

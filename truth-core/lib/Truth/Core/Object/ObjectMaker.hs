@@ -9,44 +9,52 @@ import Truth.Core.Import
 import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.UnliftIO
+import Truth.Core.Object.Update
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Debug.Object
 
-type ObjectMaker edit a = ([edit] -> EditContext -> IO ()) -> LifeCycleIO (Object edit, a)
+type ObjectMaker update a = (NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (Object (UpdateEdit update), a)
 
-reflectingObjectMaker :: forall edit. Object edit -> ObjectMaker edit ()
-reflectingObjectMaker (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) update =
-    return $ let
-        run' :: UnliftIO (DeferActionT m)
-        run' = composeUnliftTransformCommute runDeferActionT run
-        r' :: MutableRead (DeferActionT m) (EditReader edit)
-        r' = liftMutableRead r
-        e' :: [edit] -> DeferActionT m (Maybe (EditSource -> DeferActionT m ()))
+reflectingObjectMaker ::
+       forall update. IsUpdate update
+    => Object (UpdateEdit update)
+    -> ObjectMaker update ()
+reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e)) recv = do
+    Dict <- return $ resourceRunnerUnliftAllDict trun
+    Dict <- return $ transStackDict @MonadUnliftIO @tt @(DeferActionT IO)
+    Refl <- return $ transStackConcatRefl @tt @'[ DeferActionT] @IO
+    Dict <- return $ concatMonadTransStackUnliftAllDict @tt @'[ DeferActionT]
+    deferRR <- deferActionResourceRunner
+    let trun' = combineIndependentResourceRunners trun deferRR
+    Dict <- return $ resourceRunnerUnliftAllDict trun'
+    let
+        r' :: MutableRead (ApplyStack tt (DeferActionT IO)) (UpdateReader update)
+        r' rt = stackUnderliftIO @tt @(DeferActionT IO) $ r rt
+        e' :: NonEmpty (UpdateEdit update)
+           -> ApplyStack tt (DeferActionT IO) (Maybe (EditSource -> ApplyStack tt (DeferActionT IO) ()))
         e' edits = do
-            maction <- lift $ e edits
+            maction <- stackUnderliftIO @tt @(DeferActionT IO) $ e edits
             case maction of
                 Nothing -> return Nothing
                 Just action ->
                     return $
                     Just $ \esrc -> do
-                        lift $ traceBracket "reflectingObjectMaker: push" $ action esrc
-                        deferAction $ traceBracket "reflectingObjectMaker: reflecting update" $ update edits $ editSourceContext esrc
-        in (traceThing "reflectingObjectMaker" $ MkCloseUnliftIO run' $ MkAnObject r' e', ())
+                        stackUnderliftIO @tt @(DeferActionT IO) $ action esrc
+                        stackLift @tt $ deferAction @IO $ traceBracket "reflectingObjectMaker: reflecting update" $ recv (fmap editUpdate edits) $ editSourceContext esrc
+        anobj :: AnObject (UpdateEdit update) (Concat tt '[ DeferActionT])
+        anobj = MkAnObject r' e'
+    return $ (traceThing "reflectingObjectMaker" $ MkResource trun' anobj, ())
 
-mapUpdates :: forall edita editb. EditLens edita editb -> Object edita -> [edita] -> IO [editb]
-mapUpdates (MkCloseUnlift unlift (MkAnEditLens (MkAnEditFunction _ update) _)) (MkCloseUnliftIO unliftIO (MkAnObject mr _)) eas =
-    runTransform unliftIO $
-    runUnlift unlift $ withTransConstraintTM @MonadIO $ fmap mconcat $ for eas $ \ea -> update ea mr
-
-mapObjectMaker :: EditLens edita editb -> ObjectMaker edita a -> ObjectMaker editb a
+mapObjectMaker :: EditLens updateA updateB -> ObjectMaker updateA a -> ObjectMaker updateB a
 mapObjectMaker lens uobja recvb = do
     rec
         let
-            recva [] _esrc = return ()
             recva eas esrc = do
-                ebs <- mapUpdates lens obja eas
-                recvb ebs esrc
+                ebs <- objectMapUpdates (editLensFunction lens) obja eas
+                case nonEmpty ebs of
+                    Nothing -> return ()
+                    Just ebb -> recvb ebb esrc
         (obja, a) <- uobja recva
-    let objb = lensObject True lens obja
+    let objb = lensObject lens obja
     return (objb, a)

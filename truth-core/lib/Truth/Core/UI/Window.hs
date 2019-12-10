@@ -9,8 +9,8 @@ import Truth.Core.UI.Specifier.Specifier
 
 data WindowSpec edit = forall sel. MkWindowSpec
     { wsCloseBoxAction :: IO ()
-    , wsTitle :: EditFunction edit (WholeEdit Text)
-    , wsMenuBar :: Maybe (Aspect sel -> EditFunction edit (WholeEdit (MenuBar edit)))
+    , wsTitle :: UpdateFunction edit (WholeUpdate Text)
+    , wsMenuBar :: Maybe (Aspect sel -> UpdateFunction edit (WholeUpdate (MenuBar edit)))
     , wsContent :: UISpec sel edit
     }
 
@@ -20,8 +20,8 @@ mapWindowSpec lens (MkWindowSpec cba title mmbar content) = let
     in MkWindowSpec
            cba
            (title . ef)
-           ((fmap $ fmap $ \efmar -> funcEditFunction (fmap $ mapMenuEntry ef) . efmar . ef) mmbar)
-           (mapEditUISpec lens content)
+           ((fmap $ fmap $ \efmar -> funcUpdateFunction (fmap $ mapMenuEntry ef) . efmar . ef) mmbar)
+           (mapUpdateUISpec (return lens) content)
 
 data UIWindow = MkUIWindow
     { uiWindowHide :: IO ()

@@ -2,10 +2,12 @@ module Truth.UI.GTK.Option
     ( optionGetView
     ) where
 
+import Data.GI.Base.Attributes
 import Data.GI.Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
+import Truth.UI.GTK.TextStyle
 import Truth.UI.GTK.Useful
 import Truth.Debug.Object
 
@@ -16,35 +18,39 @@ optionGetView =
         return $ optionView itemsFunction whichLens
 
 listStoreView ::
-       (FullSubjectReader (EditReader edit), ApplicableEdit edit)
-    => UnliftIO IO
+       forall sel update.
+       (IsEditUpdate update, FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
+    => WIOFunction IO
     -> EditSource
-    -> CreateView sel (ListEdit [EditSubject edit] edit) (SeqStore (EditSubject edit))
-listStoreView (MkTransform blockSignal) esrc = do
+    -> CreateView sel (ListUpdate [UpdateSubject update] update) (SeqStore (UpdateSubject update))
+listStoreView (MkWMFunction blockSignal) esrc = do
     subjectList <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     store <- seqStoreNew subjectList
     cvReceiveUpdate (Just esrc) $ \_ _mr e -> traceBracket "GTK.Option:ListStore:receiveUpdate" $
         case e of
-            ListEditItem (MkSequencePoint (fromIntegral -> i)) edit -> do
+            ListUpdateItem (MkSequencePoint (fromIntegral -> i)) update -> do
                 oldval <- seqStoreGetValue store i
-                newval <- mutableReadToSubject $ applyEdit edit $ subjectToMutableRead oldval
+                newval <- mutableReadToSubject $ applyEdit (updateEdit update) $ subjectToMutableRead oldval
                 liftIO $ blockSignal $ seqStoreSetValue store i newval
-            ListDeleteItem (MkSequencePoint (fromIntegral -> i)) -> liftIO $ blockSignal $ seqStoreRemove store i
-            ListInsertItem (MkSequencePoint (fromIntegral -> i)) item ->
+            ListUpdateDelete (MkSequencePoint (fromIntegral -> i)) -> liftIO $ blockSignal $ seqStoreRemove store i
+            ListUpdateInsert (MkSequencePoint (fromIntegral -> i)) item ->
                 liftIO $ blockSignal $ seqStoreInsert store i item
-            ListClear -> liftIO $ blockSignal $ seqStoreClear store
+            ListUpdateClear -> liftIO $ blockSignal $ seqStoreClear store
     return store
+
+optionUICellAttributes :: OptionUICell -> [AttrOp CellRendererText 'AttrSet]
+optionUICellAttributes MkOptionUICell {..} = textCellAttributes optionCellText optionCellStyle
 
 optionFromStore ::
        forall sel t. Eq t
     => EditSource
-    -> SeqStore (t, Text)
-    -> CreateView sel (WholeEdit t) (UnliftIO IO, Widget)
+    -> SeqStore (t, OptionUICell)
+    -> CreateView sel (WholeUpdate t) (WIOFunction IO, Widget)
 optionFromStore esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
     #packStart widget renderer False
-    cellLayoutSetAttributes widget renderer store $ \(_, row) -> [#text := row]
+    cellLayoutSetAttributes widget renderer store $ \(_, cell) -> optionUICellAttributes cell
     changedSignal <-
         cvLiftView $
         viewOn widget #changed $
@@ -55,7 +61,7 @@ optionFromStore esrc store = do
                 (True, iter) -> do
                     i <- seqStoreIterToIndex iter
                     (t, _) <- seqStoreGetValue store i
-                    _ <- push esrc [MkWholeEdit t]
+                    _ <- push esrc $ pure $ MkWholeReaderEdit t
                     return ()
                 (False, _) -> return ()
     let
@@ -77,18 +83,18 @@ optionFromStore esrc store = do
         viewObjectRead $ \_ mr -> do
             t <- mr ReadWhole
             update t
-    cvReceiveUpdate (Just esrc) $ \_ _mr (MkWholeEdit t) -> traceBracket "GTK.Option:receiveUpdate" $ update t
+    cvReceiveUpdate (Just esrc) $ \_ _mr (MkWholeReaderUpdate t) -> traceBracket "GTK.Option:receiveUpdate" $ update t
     w <- toWidget widget
-    return (MkTransform blockSignal, w)
+    return (MkWMFunction blockSignal, w)
 
 optionView ::
        forall t tedit sel. (Eq t)
-    => EditFunction tedit (ListEdit [(t, Text)] (WholeEdit (t, Text)))
-    -> EditLens tedit (WholeEdit t)
+    => UpdateFunction tedit (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
+    -> EditLens tedit (WholeUpdate t)
     -> GCreateView sel tedit
 optionView itemsFunction whichLens = do
     esrc <- newEditSource
     rec
-        store <- cvMapEdit (readOnlyEditLens itemsFunction) $ listStoreView blockSignal esrc
-        (blockSignal, w) <- cvMapEdit whichLens $ optionFromStore esrc store
+        store <- cvMapEdit (return $ readOnlyEditLens itemsFunction) $ listStoreView blockSignal esrc
+        (blockSignal, w) <- cvMapEdit (return $ whichLens) $ optionFromStore esrc store
     return w

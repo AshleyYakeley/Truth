@@ -10,8 +10,8 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
+import Truth.Core.Resource
 import Truth.Debug
 import Truth.Debug.Edit
 
@@ -24,15 +24,15 @@ data EditShower edit = MkEditShower
 blankEditShower :: EditShower edit
 blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> "", showEdit = \_ -> "edit"}
 
-traceAnObject :: forall m edit. MonadIO m => String -> EditShower edit -> AnObject m edit -> AnObject m edit
+traceAnObject :: forall tt edit. (MonadIO (ApplyStack tt IO)) => String -> EditShower edit -> AnObject edit tt -> AnObject edit tt
 traceAnObject prefix MkEditShower {..} (MkAnObject r e) = let
-    r' :: MutableRead m (EditReader edit)
+    r' :: MutableRead (ApplyStack tt IO) (EditReader edit)
     r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
-    e' :: [edit] -> m (Maybe (EditSource -> m ()))
+    e' :: NonEmpty edit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
     e' edits =
         traceBracketArgs
             (contextStr prefix "edit.examine")
-            ("[" ++ intercalate "," (fmap showEdit edits) ++ "]")
+            ("[" ++ intercalate "," (toList $ fmap showEdit edits) ++ "]")
             (\mx ->
                  if isJust mx
                      then "action"
@@ -40,13 +40,13 @@ traceAnObject prefix MkEditShower {..} (MkAnObject r e) = let
         (fmap $
          fmap $
          fmap $
-         traceBracketArgs (contextStr prefix "edit.do") ("[" ++ intercalate "," (fmap showEdit edits) ++ "]") (\_ -> "")) $
+         traceBracketArgs (contextStr prefix "edit.do") ("[" ++ intercalate "," (toList $ fmap showEdit edits) ++ "]") (\_ -> "")) $
         e edits
     in MkAnObject r' e'
 
 traceObject :: forall edit. String -> EditShower edit -> Object edit -> Object edit
-traceObject prefix shower (MkCloseUnliftIO (run :: UnliftIO m) anobj) =
-    MkCloseUnliftIO (traceThing (contextStr prefix "run") run) $ traceAnObject prefix shower anobj
+traceObject prefix shower (MkResource rr anobj) = runResourceRunnerWith rr $ \_ ->
+    MkResource rr $ traceAnObject prefix shower anobj
 
 showEditShower ::
        forall edit. ShowableEdit edit
@@ -60,22 +60,24 @@ showEditShower = let
     showEdit = show
     in MkEditShower {..}
 
-instance TraceAThing AnEditLens where
-    traceAThing prefix (MkAnEditLens ef pe) =
-        MkAnEditLens
-            (traceAThing prefix ef)
-            (\ee mr -> withTransConstraintTM @MonadIO $ traceBracket (contextStr prefix "put") $ do
+instance TraceThing (EditLens updateA updateB) where
+    traceThing prefix (MkEditLens ef pe) =
+        MkEditLens
+            (traceThing prefix ef)
+            (\ee mr -> traceBracket (contextStr prefix "put") $ do
                 mee <- pe ee mr
                 case mee of
                     Just _ -> traceIOM (contextStr prefix "put: edits")
                     Nothing -> traceIOM (contextStr prefix "put: no edits")
                 return mee
                 )
-    traceArgAThing prefix (MkAnEditLens ef pe) =
-        MkAnEditLens
-            (traceArgAThing prefix ef)
+
+instance (ShowableUpdate updateA, ShowableUpdate updateB) => TraceArgThing (EditLens updateA updateB) where
+    traceArgThing prefix (MkEditLens ef pe) =
+        MkEditLens
+            (traceArgThing prefix ef)
             (\ee mr ->
-                 withTransConstraintTM @MonadIO $ traceBracketArgs (contextStr prefix "put") (show ee) show $ do
+                 traceBracketArgs (contextStr prefix "put") (show ee) show $ do
                 mee <- pe ee mr
                 case mee of
                     Just _ -> traceIOM (contextStr prefix "put: edits")
@@ -97,7 +99,7 @@ instance MonadIO m => TraceThing (LifeCycleT m a) where
             return (t, traceBracket (contextStr prefix "close") closer)
 
 slowObject :: Int -> Object edit -> Object edit
-slowObject mus (MkCloseUnliftIO run (MkAnObject rd push)) = let
+slowObject mus (MkResource rr (MkAnObject rd push)) = runResourceRunnerWith rr $ \_ -> let
     push' edits = do
         maction <- push edits
         return $
@@ -107,4 +109,4 @@ slowObject mus (MkCloseUnliftIO run (MkAnObject rd push)) = let
                     Just $ \esrc -> do
                         traceBracket "slow: delay" $ liftIO $ threadDelay mus
                         traceBracket "slow: action" $ action esrc
-    in MkCloseUnliftIO run $ MkAnObject rd push'
+    in MkResource rr $ MkAnObject rd push'

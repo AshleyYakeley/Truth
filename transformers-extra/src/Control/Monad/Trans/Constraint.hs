@@ -1,25 +1,19 @@
 module Control.Monad.Trans.Constraint where
 
-import Control.Monad
-import Control.Monad.Fail
-import Control.Monad.Fix
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Writer
-import Data.Constraint
-import Data.Kind
-import Data.Monoid
+import Import
+
+type TransKind = (Type -> Type) -> (Type -> Type)
 
 class MonadTrans t => MonadTransConstraint (c :: (Type -> Type) -> Constraint) t where
     hasTransConstraint ::
            forall (m :: Type -> Type). c m
         => Dict (c (t m))
+
+transConstraintDict ::
+       forall c t m. MonadTransConstraint c t
+    => Dict (c m)
+    -> Dict (c (t m))
+transConstraintDict Dict = hasTransConstraint @c @t @m
 
 withTransConstraintTM ::
        forall c t m a. (MonadTransConstraint c t, c m)
