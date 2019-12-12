@@ -38,6 +38,7 @@
       - RankNTypes
       - RecordWildCards
       - RecursiveDo
+      - RoleAnnotations
       - ScopedTypeVariables
       - StandaloneDeriving
       - NoStarIsType
