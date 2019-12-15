@@ -20,7 +20,7 @@ data ViewContext sel update = MkViewContext
     { vcSubscriber :: Subscriber update
     , vcSetSelection :: Aspect sel -> IO ()
     , vcRequest :: forall t. IOWitness t -> Maybe t
-    , vcWithUILock :: UpdateTiming -> IO () -> IO ()
+    , vcWithUILock :: IO () -> IO ()
     }
 
 vcMapEdit ::

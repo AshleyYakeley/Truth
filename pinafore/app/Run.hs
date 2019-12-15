@@ -8,11 +8,11 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK
 
-runFiles :: UpdateTiming -> Bool -> FilePath -> [FilePath] -> IO ()
-runFiles ut fNoRun dirpath fpaths =
+runFiles :: Bool -> FilePath -> [FilePath] -> IO ()
+runFiles fNoRun dirpath fpaths =
     truthMainGTK $ \MkTruthContext {..} -> do
         (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
-        context <- standardPinaforeContext ut dirpath toolkit
+        context <- standardPinaforeContext dirpath toolkit
         for_ fpaths $ \fpath ->
             liftIO $ do
                 ptext <- readFile fpath
@@ -25,10 +25,10 @@ runFiles ut fNoRun dirpath fpaths =
                     else action
         liftIO checkdone
 
-runInteractive :: UpdateTiming -> FilePath -> IO ()
-runInteractive ut dirpath =
+runInteractive :: FilePath -> IO ()
+runInteractive dirpath =
     truthMainGTK $ \MkTruthContext {..} -> do
-        context <- standardPinaforeContext ut dirpath tcUIToolkit
+        context <- standardPinaforeContext dirpath tcUIToolkit
         let
             ?pinafore = context
             in liftIO pinaforeInteract

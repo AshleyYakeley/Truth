@@ -6,15 +6,11 @@ main: push ignored
 var: "ABCDE"
 main: push [section 1+1 "xy"]
 main: push succeeded
-lens: +update: section 1+1 "xy"
-lens: -update: [section 0+1 "xy"]
 main: receive [section 1+1 "xy"]
 sect: receive [section 0+1 "xy"]
 var: "AxyCDE"
 main: push [section 2+2 "1"]
 main: push succeeded
-lens: +update: section 2+2 "1"
-lens: -update: [section 1+2 "1"]
 main: receive [section 2+2 "1"]
 sect: receive [section 1+2 "1"]
 var: "Ax1DE"

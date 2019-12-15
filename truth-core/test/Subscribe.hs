@@ -22,9 +22,10 @@ debugLens name (MkEditLens (MkUpdateFunction g u) pe) = let
        -> MutableRead m (UpdateReader updateA)
        -> m [updateB]
     u' ua mr = do
-        liftIO $ hPutStrLn ?handle $ name ++ ": +update: " ++ show ua
+        -- these are asynchronous, so commented out
+        --liftIO $ hPutStrLn ?handle $ name ++ ": +update: " ++ show ua
         ubs <- u ua mr
-        liftIO $ hPutStrLn ?handle $ name ++ ": -update: " ++ show ubs
+        --liftIO $ hPutStrLn ?handle $ name ++ ": -update: " ++ show ubs
         return ubs
     pe' :: forall m. MonadIO m
         => [UpdateEdit updateB]
@@ -71,22 +72,30 @@ testUpdateObject :: TestTree
 testUpdateObject =
     goldenTest' "updateObject" $ do
         obj <- freeIOObject "old" $ \_ -> True
+        var <- newEmptyMVar
         let
             om :: ObjectMaker (WholeUpdate String) ()
             om = reflectingObjectMaker obj
             lens :: EditLens (WholeUpdate String) (WholeUpdate String)
             lens = readOnlyEditLens testUpdateFunction
             recv :: NonEmpty (WholeUpdate String) -> EditContext -> IO ()
-            recv ee _ = for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv update edit: " <> show s
+            recv ee _ =
+                putMVar var $ for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv update edit: " <> show s
             recv' :: NonEmpty (WholeUpdate String) -> EditContext -> IO ()
-            recv' ee _ = for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv' update edit: " <> show s
+            recv' ee _ =
+                putMVar var $ for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv' update edit: " <> show s
+            showAction :: IO ()
+            showAction = do
+                action <- takeMVar var
+                action
         runLifeCycle $ do
             om' <- shareObjectMaker om
             (MkResource trun MkAnObject {..}, ()) <- om' recv
             (_obj', ()) <- mapObjectMaker lens om' recv'
             runResourceRunnerWith trun $ \run ->
                 liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit $ pure $ MkWholeReaderEdit "new"
-            return ()
+            liftIO showAction
+            liftIO showAction
 
 outputLn :: (?handle :: Handle, MonadIO m) => String -> m ()
 outputLn s = liftIO $ hPutStrLn ?handle s
@@ -173,7 +182,7 @@ testSubscription initial = do
         varObj = mvarObject iow var $ \_ -> True
         editObj :: Object (UpdateEdit update)
         editObj = convertObject varObj
-    sub <- makeReflectingSubscriber AsynchronousUpdateTiming editObj
+    sub <- makeReflectingSubscriber editObj
     let
         showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
         showExpected =

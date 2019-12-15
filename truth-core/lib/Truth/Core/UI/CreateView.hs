@@ -107,7 +107,7 @@ cvReceiveSubscriberUpdates (MkResource (rr :: _ tt) asub) fstCall recv = do
                     fstCall @(LifeCycleT (ApplyStack tt IO)) (remonad (stackLift @tt) . unlift) $
                     remonadMutableRead lift $ objRead $ subAnObject asub
                 subscribe asub $ \edits MkEditContext {..} ->
-                    withUILock editContextTiming $ do
+                    withUILock $ do
                         alive <- monitor
                         if alive
                             then recv a (MkResource rr $ subAnObject asub) edits editContextSource
@@ -208,7 +208,7 @@ data AnyCreateView update w =
 
 subscribeView ::
        forall update w.
-       (UpdateTiming -> IO () -> IO ())
+       (IO () -> IO ())
     -> AnyCreateView update w
     -> Subscriber update
     -> (forall t. IOWitness t -> Maybe t)

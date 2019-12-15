@@ -26,7 +26,7 @@ testUIAction waitClick text testaction =
     contextTestCase text text $ \t -> do
         donevar <- newEmptyMVar
         truthMainGTK $ \MkTruthContext {..} -> do
-            (pc, _) <- makeTestPinaforeContext AsynchronousUpdateTiming tcUIToolkit
+            (pc, _) <- makeTestPinaforeContext tcUIToolkit
             scriptaction <- let
                 ?pinafore = pc
                 in ioRunInterpretResult $ pinaforeInterpretFile "<test>" t

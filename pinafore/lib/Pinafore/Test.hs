@@ -30,9 +30,8 @@ import Truth.Core
 import Truth.World.Clock
 import Truth.World.ObjectStore
 
-makeTestPinaforeContext ::
-       UpdateTiming -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
-makeTestPinaforeContext ut uitoolkit = do
+makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
+makeTestPinaforeContext uitoolkit = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
         liftIO $ freeIOObject ([], []) $ \_ -> True
     let
@@ -51,17 +50,16 @@ makeTestPinaforeContext ut uitoolkit = do
         picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
         picker PinaforeSelectClock = clockOM
         picker PinaforeSelectTimeZone = mapObjectMaker (readOnlyEditLens clockTimeEF) clockOM
-    (sub, ()) <- makeSharedSubscriber ut $ tupleObjectMaker picker
+    (sub, ()) <- makeSharedSubscriber $ tupleObjectMaker picker
     pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       UpdateTiming
-    -> UIToolkit
+       UIToolkit
     -> ((?pinafore :: PinaforeContext PinaforeUpdate) => IO (EditSubject PinaforeTableEdit) -> IO r)
     -> IO r
-withTestPinaforeContext ut uitoolkit f =
-    withLifeCycle (makeTestPinaforeContext ut uitoolkit) $ \(pc, getTableState) -> let
+withTestPinaforeContext uitoolkit f =
+    withLifeCycle (makeTestPinaforeContext uitoolkit) $ \(pc, getTableState) -> let
         ?pinafore = pc
         in f getTableState
 
