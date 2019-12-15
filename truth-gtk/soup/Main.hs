@@ -12,7 +12,7 @@ optParser :: O.Parser ([FilePath], Bool)
 optParser = (,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2')
 
 ut :: UpdateTiming
-ut = SynchronousUpdateTiming
+ut = AsynchronousUpdateTiming
 
 main :: IO ()
 main = do

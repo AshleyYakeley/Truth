@@ -24,7 +24,7 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext SynchronousUpdateTiming nullUIToolkit) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestPinaforeContext AsynchronousUpdateTiming nullUIToolkit) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc

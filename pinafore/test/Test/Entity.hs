@@ -28,7 +28,7 @@ scriptTest ut name text checker =
             checker action
 
 pointTest :: Text -> ContextTestTree
-pointTest text = scriptTest SynchronousUpdateTiming text text runPinaforeAction
+pointTest text = scriptTest AsynchronousUpdateTiming text text runPinaforeAction
 
 assertThrows :: IO a -> IO ()
 assertThrows ma = do
@@ -38,18 +38,18 @@ assertThrows ma = do
         else return ()
 
 badPointTest :: Text -> ContextTestTree
-badPointTest text = scriptTest SynchronousUpdateTiming text text $ assertThrows . runPinaforeAction
+badPointTest text = scriptTest AsynchronousUpdateTiming text text $ assertThrows . runPinaforeAction
 
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
     testCase (unpack text) $
-    withTestPinaforeContext SynchronousUpdateTiming nullUIToolkit $ \_getTableState -> do
+    withTestPinaforeContext AsynchronousUpdateTiming nullUIToolkit $ \_getTableState -> do
         assertThrows $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
 
 exceptionTest :: Text -> ContextTestTree
 exceptionTest text c =
     testCase (unpack text) $
-    withTestPinaforeContext SynchronousUpdateTiming nullUIToolkit $ \_getTableState -> do
+    withTestPinaforeContext AsynchronousUpdateTiming nullUIToolkit $ \_getTableState -> do
         action <- ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
         assertThrows action
 
@@ -64,7 +64,7 @@ updateTest ut text =
 
 testUpdates :: TestTree
 testUpdates =
-    runContext $ tgroup "update" [tests AsynchronousUpdateTiming, fmap ignoreTest $ tests SynchronousUpdateTiming]
+    runContext $ tgroup "update" [tests AsynchronousUpdateTiming, fmap ignoreTest $ tests AsynchronousUpdateTiming]
   where
     tests :: UpdateTiming -> ContextTestTree
     tests ut = tgroup (show ut) $ [updateTest ut "do ref <- newMemRef; return (ref := 1, ref) end"]
