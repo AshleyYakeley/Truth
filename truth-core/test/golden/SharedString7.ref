@@ -1,12 +1,10 @@
 main: get "ABCD"
 sect: get "BC"
 var: "ABCD"
-main: push section 2+2 "PQR" :| []
+main: push [section 2+2 "PQR"]
 main: push succeeded
-main: receive section 2+2 "PQR" :| []
-main: receive "ABPQR"
 lens: +update: section 2+2 "PQR"
 lens: -update: [section 1+1 "PQR"]
-sect: receive section 1+1 "PQR" :| []
-sect: receive "BPQR"
+main: receive [section 2+2 "PQR"]
+sect: receive [section 1+1 "PQR"]
 var: "ABPQR"

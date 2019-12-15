@@ -205,7 +205,7 @@ instance Monoid s => MonadTransUnliftAll (WriterT s) where
             lift $
             call $ \(WriterT mrs) -> do
                 (r, output) <- mrs
-                liftIO $ modifyMVar var $ \oldoutput -> return (mappend oldoutput output, ())
+                liftIO $ modifyMVar_ var $ \oldoutput -> return $ mappend oldoutput output
                 return r
         totaloutput <- liftIO $ takeMVar var
         tell totaloutput

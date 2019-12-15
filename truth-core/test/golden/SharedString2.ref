@@ -1,25 +1,21 @@
 main: get "ABC"
 sect: get "B"
 var: "ABC"
-sect: push section 0+0 "P" :| []
+sect: push [section 0+0 "P"]
 lens: +put: [section 0+0 "P"]
 lens: -put: Just [section 1+0 "P"]
 sect: push succeeded
-main: receive section 1+0 "P" :| []
-main: receive "APBC"
 lens: +update: section 1+0 "P"
 lens: -update: [section 0+0 "P"]
-sect: receive section 0+0 "P" :| []
-sect: receive "PB"
+main: receive [section 1+0 "P"]
+sect: receive [section 0+0 "P"]
 var: "APBC"
-sect: push section 0+0 "Q" :| []
+sect: push [section 0+0 "Q"]
 lens: +put: [section 0+0 "Q"]
 lens: -put: Just [section 1+0 "Q"]
 sect: push succeeded
-main: receive section 1+0 "Q" :| []
-main: receive "AQPBC"
 lens: +update: section 1+0 "Q"
 lens: -update: [section 0+0 "Q"]
-sect: receive section 0+0 "Q" :| []
-sect: receive "QPB"
+main: receive [section 1+0 "Q"]
+sect: receive [section 0+0 "Q"]
 var: "AQPBC"
