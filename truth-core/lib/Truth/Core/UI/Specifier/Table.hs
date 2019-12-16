@@ -28,7 +28,7 @@ readOnlyKeyColumn ::
 readOnlyKeyColumn kcName getter = let
     kcContents key = do
         func <- getter key
-        return (readOnlyEditLens $ funcUpdateFunction fst . func, funcUpdateFunction snd . func)
+        return (updateFunctionToRejectingEditLens $ funcUpdateFunction fst . func, funcUpdateFunction snd . func)
     in MkKeyColumn {..}
 
 data TableUISpec sel updateT where

@@ -16,6 +16,3 @@ type UnitUpdate = ConstUpdate ()
 
 unitUpdateFunction :: UpdateFunction edit UnitUpdate
 unitUpdateFunction = constUpdateFunction ()
-
-unitLens :: EditLens edit UnitUpdate
-unitLens = readOnlyEditLens unitUpdateFunction

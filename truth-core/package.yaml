@@ -36,6 +36,7 @@ library:
       - Truth.Core.Edit
       - Truth.Core.Types.None
       - Truth.Core.Types.ReadOnly
+      - Truth.Core.Types.Reject
       - Truth.Core.Types.Whole
       - Truth.Core.Types.WholeUpdateFunction
       - Truth.Core.Types.Unit

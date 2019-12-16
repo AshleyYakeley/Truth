@@ -36,6 +36,7 @@ data FSReader t where
     FSReadItem :: FilePath -> FSReader (Maybe FSItem)
     FSReadSymbolicLink :: FilePath -> FSReader (Maybe FilePath)
 
+{-
 instance SubjectReader FSReader where
     type ReaderSubject FSReader = FileSystem
     subjectToRead fs (FSReadDirectory path) =
@@ -53,7 +54,7 @@ instance SubjectReader FSReader where
         case findInFileSystem fs path of
             Just (SymbolicLinkItem sympath) -> Just sympath
             _ -> Nothing
-
+-}
 data FSEdit
     = FSEditCreateDirectory FilePath
     | FSEditCreateFile FilePath

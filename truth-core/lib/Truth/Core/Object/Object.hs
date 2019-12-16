@@ -113,17 +113,17 @@ lensObject alens (MkResource rr aobj) =
         Dict -> MkResource rr $ mapAnObject alens aobj
 
 immutableAnObject ::
-       forall tt edit. MonadTransStackUnliftAll tt
-    => MutableRead (ApplyStack tt IO) (EditReader edit)
-    -> AnObject edit tt
+       forall tt reader. MonadTransStackUnliftAll tt
+    => MutableRead (ApplyStack tt IO) reader
+    -> AnObject (NoEdit reader) tt
 immutableAnObject mr =
     case transStackDict @Monad @tt @IO of
         Dict -> MkAnObject mr $ \_ -> return Nothing
 
-readConstantObject :: MutableRead IO (EditReader edit) -> Object edit
+readConstantObject :: MutableRead IO reader -> Object (NoEdit reader)
 readConstantObject mr = MkResource nilResourceRunner $ immutableAnObject mr
 
-constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
+constantObject :: SubjectReader reader => ReaderSubject reader -> Object (NoEdit reader)
 constantObject subj = readConstantObject $ subjectToMutableRead subj
 
 alwaysEdit :: Monad m => (NonEmpty edit -> EditSource -> m ()) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))

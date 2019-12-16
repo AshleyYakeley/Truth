@@ -67,38 +67,6 @@ elPutEditsFromSimplePutEdit putEdit editBs _ =
 editLensFunction :: EditLens updateA updateB -> UpdateFunction updateA updateB
 editLensFunction (MkEditLens func _) = func
 
-readOnlyEditLens :: forall updateA updateB. UpdateFunction updateA updateB -> EditLens updateA updateB
-readOnlyEditLens elFunction = let
-    elPutEdits ::
-           forall m. MonadIO m
-        => [UpdateEdit updateB]
-        -> MutableRead m (UpdateReader updateA)
-        -> m (Maybe [UpdateEdit updateA])
-    elPutEdits edits _ =
-        return $
-        case edits of
-            [] -> Just [] -- must allow empty update-lists so that composition works correctly
-            (_:_) -> Nothing
-    in MkEditLens {..}
-
-funcEditLens ::
-       forall updateA updateB.
-       ( IsEditUpdate updateA
-       , IsUpdate updateB
-       , FullSubjectReader (UpdateReader updateA)
-       , ApplicableEdit (UpdateEdit updateA)
-       , FullEdit (UpdateEdit updateB)
-       )
-    => (UpdateSubject updateA -> UpdateSubject updateB)
-    -> EditLens updateA updateB
-funcEditLens f = readOnlyEditLens $ funcUpdateFunction f
-
-constEditLens ::
-       forall updateA updateB. SubjectReader (UpdateReader updateB)
-    => UpdateSubject updateB
-    -> EditLens updateA updateB
-constEditLens b = readOnlyEditLens $ constUpdateFunction b
-
 convertAnUpdateFunction ::
        forall updateA updateB.
        ( IsUpdate updateB

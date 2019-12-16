@@ -77,7 +77,7 @@ testUpdateObject =
             om :: ObjectMaker (WholeUpdate String) ()
             om = reflectingObjectMaker obj
             lens :: EditLens (WholeUpdate String) (WholeUpdate String)
-            lens = readOnlyEditLens testUpdateFunction
+            lens = updateFunctionToRejectingEditLens testUpdateFunction
             recv :: NonEmpty (WholeUpdate String) -> EditContext -> IO ()
             recv ee _ =
                 putMVar var $ for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv update edit: " <> show s

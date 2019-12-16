@@ -46,10 +46,13 @@ makeTestPinaforeContext uitoolkit = do
         picker :: forall update. PinaforeSelector update -> ObjectMaker update ()
         picker PinaforeSelectPoint = reflectingObjectMaker $ pinaforeTableEntityObject tableObject
         picker PinaforeSelectFile =
-            reflectingObjectMaker $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
+            reflectingObjectMaker $
+            mapObject (fromReadOnlyRejectingEditLens @PinaforeFileUpdate) $
+            readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
         picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
         picker PinaforeSelectClock = clockOM
-        picker PinaforeSelectTimeZone = mapObjectMaker (readOnlyEditLens clockTimeEF) clockOM
+        picker PinaforeSelectTimeZone =
+            mapObjectMaker (updateFunctionToEditLens $ clockTimeEF . fromReadOnlyUpdateFunction) clockOM
     (sub, ()) <- makeSharedSubscriber $ tupleObjectMaker picker
     pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)
