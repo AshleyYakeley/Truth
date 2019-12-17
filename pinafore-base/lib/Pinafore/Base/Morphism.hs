@@ -346,7 +346,7 @@ mapPinaforeLensMorphismBase alens (MkPinaforeLensMorphism fwdA (MkPinaforeFuncti
     readFunc :: ReadFunction (UpdateReader baseB) (UpdateReader baseA)
     readFunc = ufGet $ elFunction alens
     fwdB :: EditLens (ContextUpdate baseB (WholeUpdate (Know a))) (WholeUpdate (Know b))
-    fwdB = fwdA . liftContentAnEditLens alens
+    fwdB = fwdA . liftContentEditLens alens
     frB :: forall m. MonadIO m
         => MutableRead m (UpdateReader baseB)
         -> b

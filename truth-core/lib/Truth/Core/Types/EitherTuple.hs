@@ -1,6 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Core.Types.EitherTuple where
+module Truth.Core.Types.EitherTuple
+    ( eitherTuple
+    ) where
 
 import Truth.Core.Import
 import Truth.Core.Read

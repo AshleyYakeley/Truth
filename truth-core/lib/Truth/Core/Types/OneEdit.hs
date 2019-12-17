@@ -39,11 +39,11 @@ instance IsUpdate update => IsUpdate (OneUpdate f update) where
 instance IsEditUpdate update => IsEditUpdate (OneUpdate f update) where
     updateEdit (MkOneUpdate update) = MkOneEdit $ updateEdit update
 
-oneLiftAnUpdateFunction ::
+oneLiftUpdateFunction ::
        forall f updateA updateB. MonadOne f
     => UpdateFunction updateA updateB
     -> UpdateFunction (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftAnUpdateFunction (MkUpdateFunction g u) = let
+oneLiftUpdateFunction (MkUpdateFunction g u) = let
     ufGet :: ReadFunction (UpdateReader (OneUpdate f updateA)) (UpdateReader (OneUpdate f updateB))
     ufGet = liftMaybeReadFunction g
     ufUpdate ::
@@ -55,18 +55,12 @@ oneLiftAnUpdateFunction (MkUpdateFunction g u) = let
         fmap (fmap MkOneUpdate . fromMaybe [] . getMaybeOne) $ getComposeM $ u ea $ oneReadFunctionF mr
     in MkUpdateFunction {..}
 
-oneLiftUpdateFunction ::
-       forall f updateA updateB. MonadOne f
-    => UpdateFunction updateA updateB
-    -> UpdateFunction (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftUpdateFunction = oneLiftAnUpdateFunction
-
-oneLiftAnEditLens ::
+oneLiftEditLens ::
        forall f updateA updateB. MonadOne f
     => EditLens updateA updateB
     -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftAnEditLens (MkEditLens ef pe) = let
-    elFunction = oneLiftAnUpdateFunction ef
+oneLiftEditLens (MkEditLens ef pe) = let
+    elFunction = oneLiftUpdateFunction ef
     elPutEdits ::
            forall m. MonadIO m
         => [OneEdit f (UpdateEdit updateB)]
@@ -76,9 +70,3 @@ oneLiftAnEditLens (MkEditLens ef pe) = let
         fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $
         getComposeM $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
     in MkEditLens {..}
-
-oneLiftEditLens ::
-       forall f updateA updateB. MonadOne f
-    => EditLens updateA updateB
-    -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftEditLens = oneLiftAnEditLens

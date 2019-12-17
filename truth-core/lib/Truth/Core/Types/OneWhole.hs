@@ -25,7 +25,7 @@ oneWholeLiftUpdateFunction ::
 oneWholeLiftUpdateFunction = sumWholeLiftUpdateFunction . oneLiftUpdateFunction
 
 -- | suitable for Results; trying to put a failure code will be rejected
-oneWholeLiftAnEditLens ::
+oneWholeLiftEditLens ::
        forall f updateA updateB.
        ( MonadOne f
        , FullSubjectReader (UpdateReader updateA)
@@ -34,7 +34,7 @@ oneWholeLiftAnEditLens ::
        )
     => EditLens updateA updateB
     -> EditLens (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
-oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLens alens
+oneWholeLiftEditLens alens = sumWholeLiftEditLens pushback $ oneLiftEditLens alens
   where
     reshuffle :: forall a. f (Maybe a) -> Maybe (f a)
     reshuffle fma =
@@ -56,18 +56,6 @@ oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLe
                     editbs <- getReplaceEditsFromSubject b
                     meditas <- elPutEdits alens editbs $ oneReadFunctionF mr
                     for meditas $ \editas -> mutableReadToSubject $ applyEdits editas $ oneReadFunctionF mr
-
--- | suitable for Results; trying to put a failure code will be rejected
-oneWholeLiftEditLens ::
-       forall f updateA updateB.
-       ( MonadOne f
-       , FullSubjectReader (UpdateReader updateA)
-       , ApplicableEdit (UpdateEdit updateA)
-       , FullEdit (UpdateEdit updateB)
-       )
-    => EditLens updateA updateB
-    -> EditLens (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
-oneWholeLiftEditLens = oneWholeLiftAnEditLens
 
 mustExistOneEditLens ::
        forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))

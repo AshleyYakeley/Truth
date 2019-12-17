@@ -1,4 +1,8 @@
-module Truth.Core.Types.Sum where
+module Truth.Core.Types.Sum
+    ( SumEdit(..)
+    , SumUpdate(..)
+    , sumRightUpdateFunction
+    ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
