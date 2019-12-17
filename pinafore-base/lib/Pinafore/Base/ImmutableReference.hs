@@ -3,6 +3,7 @@ module Pinafore.Base.ImmutableReference where
 import Pinafore.Base.Action
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
+import Pinafore.Base.Value
 import Shapes
 import Truth.Core
 
