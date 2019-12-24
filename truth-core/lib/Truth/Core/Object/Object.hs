@@ -182,5 +182,4 @@ copyObject esrc =
                     replaceEdit @edit readSrc $ \edit -> pushOrFail "failed to copy object" esrc $ pushDest $ pure edit
 
 getObjectSubject :: FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
-getObjectSubject (MkResource rr (MkAnObject rd _)) =
-    runResourceRunnerWith rr $ \run -> runLifeCycle $ liftIO $ run $ mutableReadToSubject rd
+getObjectSubject obj = runResource obj $ \run (MkAnObject rd _) -> runLifeCycle $ liftIO $ run $ mutableReadToSubject rd

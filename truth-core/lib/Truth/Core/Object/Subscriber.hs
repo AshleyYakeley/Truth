@@ -1,7 +1,8 @@
 module Truth.Core.Object.Subscriber
     ( ASubscriber(..)
+    , subRead
+    , subEdit
     , Subscriber
-    , subscriberObject
     , makeReflectingSubscriber
     , makeSharedSubscriber
     , subscriberObjectMaker
@@ -29,6 +30,15 @@ data ASubscriber update tt = MkASubscriber
     , subscribe :: (NonEmpty update -> EditContext -> IO ()) -> LifeCycleT (ApplyStack tt IO) ()
     }
 
+subRead :: ASubscriber update tt -> MutableRead (ApplyStack tt IO) (UpdateReader update)
+subRead = objRead . subAnObject
+
+subEdit ::
+       ASubscriber update tt
+    -> NonEmpty (UpdateEdit update)
+    -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+subEdit = objEdit . subAnObject
+
 instance MapResource (ASubscriber update) where
     mapResource ::
            forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
@@ -45,9 +55,6 @@ instance MapResource (ASubscriber update) where
                         in MkASubscriber obj2 sub2
 
 type Subscriber update = Resource (ASubscriber update)
-
-subscriberObject :: Subscriber update -> Object (UpdateEdit update)
-subscriberObject (MkResource run sub) = MkResource run $ subAnObject sub
 
 type UpdateStoreEntry update = NonEmpty update -> EditContext -> IO ()
 

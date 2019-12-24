@@ -4,7 +4,6 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Read
-import Truth.Core.Resource
 
 objectMapUpdates ::
        forall updateA updateB.
@@ -12,8 +11,8 @@ objectMapUpdates ::
     -> Object (UpdateEdit updateA)
     -> NonEmpty updateA
     -> IO [updateB]
-objectMapUpdates ef (MkResource rr MkAnObject {..}) updateAs =
-    runResourceRunnerWith rr $ \run -> run $ ufUpdates ef (toList updateAs) objRead
+objectMapUpdates ef obj updateAs =
+    runResource obj $ \run MkAnObject {..} -> run $ ufUpdates ef (toList updateAs) objRead
 
 mapUpdates ::
        forall updateA updateB m a. MonadUnliftIO m

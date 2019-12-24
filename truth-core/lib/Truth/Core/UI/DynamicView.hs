@@ -1,10 +1,8 @@
 module Truth.Core.UI.DynamicView where
 
-import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object
 import Truth.Core.UI.CreateView
-import Truth.Core.UI.View
 
 class DynamicViewState (dvs :: Type) where
     type DynamicViewSelEdit dvs :: Type
@@ -23,21 +21,20 @@ cvDynamic ::
        forall dvs sel update. (DynamicViewState dvs, sel ~ DynamicViewSelEdit dvs)
     => Subscriber update
     -> dvs
-    -> (Object (UpdateEdit update) -> [update] -> StateT dvs IO ())
+    -> ([update] -> StateT dvs IO ())
     -> CreateView sel ()
-cvDynamic sub firstdvs updateCV = do
+cvDynamic sub firstdvs recvCV = do
     stateVar :: MVar dvs <- liftIO $ newMVar firstdvs
     liftLifeCycleIO $
         lifeCycleClose $ do
             lastdvs <- takeMVar stateVar
             closeDynamicView lastdvs
     let
-        update :: Object (UpdateEdit update) -> [update] -> EditSource -> IO ()
-        update obj edits _esrc = mVarRun stateVar $ updateCV obj edits
+        recv :: [update] -> EditSource -> IO ()
+        recv updates _esrc = mVarRun stateVar $ recvCV updates
     cvAddAspect $
         mVarRun stateVar $ do
             dvs <- get
             lift $ vsFirstAspect $ dynamicViewFocus dvs
-    cvReceiveIOUpdates sub $ \obj uu -> update obj $ toList uu
-    obj <- cvLiftView $ viewObject sub
-    liftIO $ update obj [] noEditSource
+    cvReceiveIOUpdates sub $ \uu -> recv $ toList uu
+    liftIO $ recv [] noEditSource

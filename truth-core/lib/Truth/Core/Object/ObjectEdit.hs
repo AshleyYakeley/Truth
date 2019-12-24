@@ -32,8 +32,8 @@ instance SubjectReader (EditReader edit) => SubjectReader (ObjectReader edit) wh
 
 instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader edit) where
     mutableReadToSubject mr = do
-        MkResource rr (MkAnObject mro _) <- mr ReadObject
-        runResourceRunnerWith rr $ \run -> liftIO $ run $ mutableReadToSubject mro
+        obj <- mr ReadObject
+        runResource obj $ \run (MkAnObject mro _) -> liftIO $ run $ mutableReadToSubject mro
 
 type ObjectEdit edit = NoEdit (ObjectReader edit)
 
@@ -62,8 +62,8 @@ objectEditLens = let
         case nonEmpty edits of
             Nothing -> return $ Just []
             Just edits' -> do
-                (MkResource rr (MkAnObject _ e)) <- mr ReadObject
-                runResourceRunnerWith rr $ \run ->
+                obj <- mr ReadObject
+                runResource obj $ \run (MkAnObject _ e) ->
                     liftIO $
                     run $ do
                         maction <- e edits'

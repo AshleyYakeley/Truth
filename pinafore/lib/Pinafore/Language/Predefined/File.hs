@@ -25,11 +25,12 @@ file_import set continue = do
                 mdestobject <-
                     pinaforeLiftView $
                     viewMapEdit (pinaforeFileItemLens entity) $ do
-                        MkObject {..} <- viewObject
+                        let
+                            MkResource rr asub = sub
                         liftIO $
-                            runWMFunction objRun $ do
+                            runWMFunction rr $ do
                                 pushEdit $ objEdit [SingleObjectDeleteCreate]
-                                objRead ReadSingleObjectStore
+                                subRead asub ReadSingleObjectStore
                 destobject <-
                     case mdestobject of
                         Nothing -> fail "failed to create object " ++ show entity

@@ -43,14 +43,11 @@ joinResource ff =
             Dict -> ff f1 f2
 
 runResource ::
-       forall m f r. MonadUnliftIO m
-    => Resource f
-    -> (forall tt. (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) => f tt -> ApplyStack tt m r)
-    -> m r
-runResource (MkResource (rr :: _ tt) f) call =
-    runResourceRunnerWith rr $
-    case transStackDict @MonadUnliftIO @tt @m of
-        Dict -> \unlift -> unlift $ call @tt f
+       forall f r.
+       Resource f
+    -> (forall tt. (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt IO)) => StackUnliftAll tt -> f tt -> r)
+    -> r
+runResource (MkResource rr ftt) call = runResourceRunnerWith rr $ \run -> call run ftt
 
 exclusiveResource :: (MapResource f) => Resource f -> LifeCycleIO (Resource f)
 exclusiveResource (MkResource trun f) = do

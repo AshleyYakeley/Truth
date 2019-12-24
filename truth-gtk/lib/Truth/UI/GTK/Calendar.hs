@@ -13,39 +13,41 @@ calendarGetView :: GetGView
 calendarGetView =
     MkGetView $ \_ uispec ->
         fmap
-            (\(MkCalendarUISpec sub) -> do
-                 esrc <- newEditSource
-                 initial <- cvLiftView $ viewObjectRead sub $ \_ -> mutableReadToSubject
-                 widget <- new Calendar []
-                 let
-                     getDay ::
-                            forall m. MonadIO m
-                         => m Day
-                     getDay = do
-                         y <- get widget #year
-                         m <- get widget #month
-                         d <- get widget #day
-                         return $ fromGregorian (toInteger y) (fromIntegral m) (fromIntegral d)
-                     putDay ::
-                            forall m. MonadIO m
-                         => Day
-                         -> m ()
-                     putDay day = let
-                         (y, m, d) = toGregorian day
-                         in set widget [#year := fromInteger y, #month := fromIntegral m, #day := fromIntegral d]
-                     onChanged =
-                         viewObjectPushEdit sub $ \_ push -> do
-                             st <- getDay
-                             _ <- push esrc $ pure $ MkWholeReaderEdit st
-                             return ()
-                 putDay initial
-                 _ <- cvLiftView $ viewOn widget #daySelected onChanged
-                 _ <- cvLiftView $ viewOn widget #monthChanged onChanged
-                 cvReceiveUpdate sub (Just esrc) $ \_ _ (MkWholeReaderUpdate newval) ->
-                     liftIO $ do
-                         oldval <- getDay
-                         if oldval == newval
-                             then return ()
-                             else putDay newval
-                 toWidget widget) $
+            (\(MkCalendarUISpec sub) ->
+                 runResource sub $ \run asub -> do
+                     esrc <- newEditSource
+                     initial <- liftIO $ run $ subRead asub ReadWhole
+                     widget <- new Calendar []
+                     let
+                         getDay ::
+                                forall m. MonadIO m
+                             => m Day
+                         getDay = do
+                             y <- get widget #year
+                             m <- get widget #month
+                             d <- get widget #day
+                             return $ fromGregorian (toInteger y) (fromIntegral m) (fromIntegral d)
+                         putDay ::
+                                forall m. MonadIO m
+                             => Day
+                             -> m ()
+                         putDay day = let
+                             (y, m, d) = toGregorian day
+                             in set widget [#year := fromInteger y, #month := fromIntegral m, #day := fromIntegral d]
+                         onChanged =
+                             liftIO $
+                             run $ do
+                                 st <- getDay
+                                 _ <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
+                                 return ()
+                     putDay initial
+                     _ <- cvLiftView $ viewOn widget #daySelected onChanged
+                     _ <- cvLiftView $ viewOn widget #monthChanged onChanged
+                     cvReceiveUpdate sub (Just esrc) $ \_ _ (MkWholeReaderUpdate newval) ->
+                         liftIO $ do
+                             oldval <- getDay
+                             if oldval == newval
+                                 then return ()
+                                 else putDay newval
+                     toWidget widget) $
         isUISpec uispec

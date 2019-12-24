@@ -66,14 +66,11 @@ contextualisePinaforeValue basesub (MkPinaforeValue sv) = MkPinaforeValue $ cont
 type PinaforeReadOnlyValue t = ReadOnlyWhole PinaforeValue t
 
 pinaforeFunctionValueGet :: PinaforeReadOnlyValue t -> IO t
-pinaforeFunctionValueGet (MkPinaforeValue sv) =
-    case subscriberObject sv of
-        MkResource rr MkAnObject {..} -> runResourceRunnerWith rr $ \run -> run $ objRead ReadWhole
+pinaforeFunctionValueGet (MkPinaforeValue sub) = runResource sub $ \run asub -> run $ subRead asub ReadWhole
 
 pinaforeValuePush :: PinaforeValue update -> NonEmpty (UpdateEdit update) -> IO Bool
-pinaforeValuePush (MkPinaforeValue sv) edits =
-    case subscriberObject sv of
-        MkResource rr MkAnObject {..} -> runResourceRunnerWith rr $ \run -> run $ pushEdit noEditSource $ objEdit edits
+pinaforeValuePush (MkPinaforeValue sub) edits =
+    runResource sub $ \run asub -> run $ pushEdit noEditSource $ subEdit asub edits
 
 applyPinaforeFunction ::
        forall baseupdate a b.

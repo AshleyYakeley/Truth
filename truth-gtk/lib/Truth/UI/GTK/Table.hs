@@ -86,7 +86,7 @@ keyContainerView ::
     -> (ContainerKey cont -> IO ())
     -> GCreateView (ContainerKey cont)
 keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( Subscriber  (WholeUpdate rowtext)
-                                                                   , ReadOnlySubscriber (WholeUpdate rowprops))) cols) order geto tableSub onDoubleClick = do
+                                                                   , ReadOnlySubscriber (WholeUpdate rowprops))) cols) order geto tableSub onDoubleClick = runResource tableSub $ \run asub -> do
     let
         getStoreItem ::
                MonadUnliftIO m
@@ -98,13 +98,11 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( Subscriber 
             entryRowText <- ufGet (editLensFunction entryTextLens) mr ReadWhole
             entryRowProps <- ufGet entryPropFunc mr ReadWhole
             return (key, MkStoreEntry {..})
-    initialRows <-
-        cvLiftView $ do
-            viewObjectRead tableSub $ \_ mr -> do
-                MkFiniteSet initialKeys <- mr KeyReadKeys
+    initialRows <- liftIO $ run $ do
+                MkFiniteSet initialKeys <- subRead asub KeyReadKeys
                 ords <-
                     for initialKeys $ \key -> do
-                        o <- ufGet (geto key) mr ReadWhole
+                        o <- ufGet (geto key) (subRead asub) ReadWhole
                         return (key, o)
                 let initialKeys' = fmap fst $ sortBy (\(_, a) (_, b) -> order a b) ords
                 for initialKeys' $ getStoreItem

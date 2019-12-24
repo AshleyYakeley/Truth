@@ -90,9 +90,9 @@ testUpdateObject =
                 action
         runLifeCycle $ do
             om' <- shareObjectMaker om
-            (MkResource trun MkAnObject {..}, ()) <- om' recv
+            (obj', ()) <- om' recv
             (_obj', ()) <- mapObjectMaker lens om' recv'
-            runResourceRunnerWith trun $ \run ->
+            runResource obj' $ \run MkAnObject {..} ->
                 liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit $ pure $ MkWholeReaderEdit "new"
             liftIO showAction
             liftIO showAction
@@ -113,10 +113,11 @@ subscribeShowUpdates ::
     => String
     -> Subscriber update
     -> LifeCycleIO (LifeCycleIO ())
-subscribeShowUpdates name (MkResource trun (MkASubscriber _ subrecv)) = do
+subscribeShowUpdates name sub = do
     var <- liftIO newEmptyMVar
     lifeCycleClose $ putMVar var [] -- verify that update has been shown
-    runResourceRunnerWith trun $ \run -> remonad run $ subrecv $ \updates _ -> liftIO $ putMVar var $ toList updates
+    runResource sub $ \run (MkASubscriber _ subrecv) ->
+        remonad run $ subrecv $ \updates _ -> liftIO $ putMVar var $ toList updates
     return $ do
         --outputNameLn name "flush"
         updates <- liftIO $ takeMVar var
@@ -127,11 +128,11 @@ showSubscriberSubject ::
     => String
     -> Subscriber update
     -> LifeCycleIO ()
-showSubscriberSubject name (MkResource trun (MkASubscriber (MkAnObject mr _) _)) =
+showSubscriberSubject name sub =
     liftIO $
-    runResourceRunnerWith trun $ \run ->
+    runResource sub $ \run asub ->
         run $ do
-            val <- mutableReadToSubject mr
+            val <- mutableReadToSubject $ subRead asub
             outputNameLn name $ "get " ++ show val
 
 subscriberPushEdits ::
@@ -140,13 +141,13 @@ subscriberPushEdits ::
     -> Subscriber update
     -> [NonEmpty (UpdateEdit update)]
     -> LifeCycleIO ()
-subscriberPushEdits name (MkResource trun (MkASubscriber (MkAnObject _ push) _)) editss =
-    runResourceRunnerWith trun $ \run ->
+subscriberPushEdits name sub editss =
+    runResource sub $ \run asub ->
         liftIO $
         run $
         for_ editss $ \edits -> do
             outputNameLn name $ "push " ++ show (toList edits)
-            maction <- push edits
+            maction <- subEdit asub edits
             case maction of
                 Nothing -> outputNameLn name "push disallowed"
                 Just action -> do
@@ -159,13 +160,13 @@ subscriberDontPushEdits ::
     -> Subscriber update
     -> [NonEmpty (UpdateEdit update)]
     -> LifeCycleIO ()
-subscriberDontPushEdits name (MkResource trun (MkASubscriber (MkAnObject _ push) _)) editss =
-    runResourceRunnerWith trun $ \run ->
+subscriberDontPushEdits name sub editss =
+    runResource sub $ \run asub ->
         liftIO $
         run $
         for_ editss $ \edits -> do
             outputNameLn name $ "push " ++ show (toList edits)
-            maction <- push edits
+            maction <- subEdit asub edits
             case maction of
                 Nothing -> outputNameLn name "push disallowed"
                 Just _action -> outputNameLn name "push ignored"
