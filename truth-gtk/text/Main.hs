@@ -31,40 +31,39 @@ main = do
                 wholeTextObj :: Object (WholeEdit ((Result Text) Text))
                 wholeTextObj = mapObject textLens bsObj
                 ui :: Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text))
-                   -> (forall sel update. IO () -> UIWindow -> UISpec sel update -> (MenuBar update, UISpec sel update))
-                   -> UISpec (EditLens (StringUpdate Text) (StringUpdate Text)) (OneWholeUpdate (Result Text) (StringUpdate Text))
+                   -> (forall sel. IO () -> UIWindow -> UISpec sel -> (MenuBar, UISpec sel))
+                   -> UISpec TextSelection
                 ui sub extraui =
                     withAspectUISpec $ \aspect -> let
                         openSelection :: IO ()
                         openSelection =
                             uitUnliftLifeCycle $ do
-                                mlens <- aspect
-                                case mlens of
+                                mllens <- aspect
+                                case mllens of
                                     Nothing -> return ()
-                                    Just lens -> do
-                                        subLens <- mapSubscriber (return $ oneWholeLiftEditLens lens) sub
-                                        makeWindow "section" subLens extraui
+                                    Just llens -> do
+                                        subSub <- mapSubscriber (fmap oneWholeLiftEditLens llens) sub
+                                        makeWindow "section" subSub extraui
                         in verticalUISpec
-                               [ (simpleButtonUISpec (constUpdateFunction "View") openSelection, False)
-                               , (scrolledUISpec $ oneWholeUISpec textAreaUISpec, True)
+                               [ (simpleButtonUISpec (constantSubscriber "View") openSelection, False)
+                               , (scrolledUISpec $ oneWholeUISpec sub textAreaUISpec, True)
                                ]
                 makeWindow ::
                        Text
                     -> Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text))
-                    -> (forall sel update. IO () -> UIWindow -> UISpec sel update -> (MenuBar update, UISpec sel update))
+                    -> (forall sel. IO () -> UIWindow -> UISpec sel -> (MenuBar, UISpec sel))
                     -> LifeCycleIO ()
                 makeWindow title sub extraui = do
                     rec
                         let (mbar, uic) = extraui closer r $ ui sub extraui
                         (r, closer) <-
                             lifeCycleEarlyCloser $
-                            uitCreateWindow sub $
-                            MkWindowSpec closer (constUpdateFunction title) (Just $ \_ -> constUpdateFunction mbar) uic
+                            uitCreateWindow $
+                            MkWindowSpec closer (constantSubscriber title) (Just $ \_ -> constantSubscriber mbar) uic
                     return ()
-                simpleUI ::
-                       forall sel update. IO () -> UIWindow -> UISpec sel update -> (MenuBar update, UISpec sel update)
+                simpleUI :: forall sel. IO () -> UIWindow -> UISpec sel -> (MenuBar, UISpec sel)
                 simpleUI closer _ spec = let
-                    mbar :: MenuBar update
+                    mbar :: MenuBar
                     mbar =
                         [ SubMenuEntry
                               "File"
@@ -75,13 +74,13 @@ main = do
                         ]
                     in (mbar, spec)
                 extraUI ::
-                       forall sel update.
+                       forall sel.
                        SaveActions
                     -> UndoActions
                     -> IO ()
                     -> UIWindow
-                    -> UISpec sel update
-                    -> (MenuBar update, UISpec sel update)
+                    -> UISpec sel
+                    -> (MenuBar, UISpec sel)
                 extraUI (MkSaveActions saveActions) (MkUndoActions undo redo) closer _ spec = let
                     saveAction = do
                         mactions <- saveActions
@@ -97,7 +96,7 @@ main = do
                                 Just (_, action) -> action noEditSource
                                 _ -> return False
                         return ()
-                    mbar :: [MenuEntry edit]
+                    mbar :: [MenuEntry]
                     mbar =
                         [ SubMenuEntry
                               "File"

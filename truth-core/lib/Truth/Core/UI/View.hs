@@ -19,55 +19,58 @@ import Truth.Core.Resource
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.ViewContext
 
-newtype View sel update a =
-    MkView (ReaderT (ViewContext sel update) IO a)
+newtype View sel a =
+    MkView (ReaderT (ViewContext sel) IO a)
     deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO, MonadAskUnliftIO)
 
-liftIOView :: forall sel update a. ((forall r. View sel update r -> IO r) -> IO a) -> View sel update a
+liftIOView :: forall sel a. ((forall r. View sel r -> IO r) -> IO a) -> View sel a
 liftIOView = liftIOWithUnlift
 
-viewObject :: View sel update (Object (UpdateEdit update))
-viewObject = MkView $ asks $ subscriberObject . vcSubscriber
+viewObject :: Subscriber update -> View sel (Object (UpdateEdit update))
+viewObject sub = return $ subscriberObject sub
 
 viewObjectRead ::
-       (WIOFunction (View sel update) -> forall m. MonadUnliftIO m => MutableRead m (UpdateReader update) -> m r)
-    -> View sel update r
-viewObjectRead call = do
+       Subscriber update
+    -> (WIOFunction (View sel) -> forall m. MonadUnliftIO m => MutableRead m (UpdateReader update) -> m r)
+    -> View sel r
+viewObjectRead sub call = do
     unliftIO <- askUnliftIO
-    MkResource rr MkAnObject {..} <- viewObject
+    MkResource rr MkAnObject {..} <- viewObject sub
     runResourceRunnerWith rr $ \run -> liftIO $ run $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
-       (WIOFunction (View sel update) -> forall m.
-                                             MonadUnliftIO m =>
-                                                     (NonEmpty (UpdateEdit update) -> m (Maybe (EditSource -> m ()))) -> m r)
-    -> View sel update r
-viewObjectMaybeEdit call = do
+       Subscriber update
+    -> (WIOFunction (View sel) -> forall m.
+                                      MonadUnliftIO m =>
+                                              (NonEmpty (UpdateEdit update) -> m (Maybe (EditSource -> m ()))) -> m r)
+    -> View sel r
+viewObjectMaybeEdit sub call = do
     unliftIO <- askUnliftIO
-    MkResource rr MkAnObject {..} <- viewObject
+    MkResource rr MkAnObject {..} <- viewObject sub
     runResourceRunnerWith rr $ \run -> liftIO $ run $ call unliftIO $ objEdit
 
 viewObjectPushEdit ::
-       (WIOFunction (View sel update) -> forall m.
-                                             MonadUnliftIO m =>
-                                                     (EditSource -> NonEmpty (UpdateEdit update) -> m Bool) -> m r)
-    -> View sel update r
-viewObjectPushEdit call = viewObjectMaybeEdit $ \unlift push -> call unlift $ \esrc edits -> pushEdit esrc $ push edits
+       Subscriber update
+    -> (WIOFunction (View sel) -> forall m.
+                                      MonadUnliftIO m => (EditSource -> NonEmpty (UpdateEdit update) -> m Bool) -> m r)
+    -> View sel r
+viewObjectPushEdit sub call =
+    viewObjectMaybeEdit sub $ \unlift push -> call unlift $ \esrc edits -> pushEdit esrc $ push edits
 
-viewSetSelection :: Aspect sel -> View sel update ()
+viewSetSelection :: Aspect sel -> View sel ()
 viewSetSelection aspect = do
     setSelect <- MkView $ asks vcSetSelection
     liftIO $ setSelect aspect
 
-viewRequest :: IOWitness t -> View sel update (Maybe t)
+viewRequest :: IOWitness t -> View sel (Maybe t)
 viewRequest wit = MkView $ asks (\vc -> vcRequest vc wit)
 
 viewMapSetSelectionEdit ::
-       forall sela selb update a. ()
+       forall sela selb a. ()
     => (sela -> selb)
-    -> View sela update a
-    -> View selb update a
+    -> View sela a
+    -> View selb a
 viewMapSetSelectionEdit f (MkView view) = MkView $ withReaderT (vcMapSelection f) view
 
-viewNoAspect :: View sela update a -> View selb update a
+viewNoAspect :: View sela a -> View selb a
 viewNoAspect (MkView view) = MkView $ withReaderT vcNoAspect view

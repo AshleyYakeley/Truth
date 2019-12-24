@@ -3,7 +3,9 @@ module Truth.Core.Types.Pair where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Types.ReadOnly
 import Truth.Core.Types.Tuple
+import Truth.Core.Types.Whole
 
 data PairSelector (updateA :: Type) (updateB :: Type) (update :: Type) where
     SelectFirst :: PairSelector updateA updateB updateA
@@ -240,3 +242,46 @@ partialPairEditLens = let
             MkTupleUpdateEdit SelectFirst edit -> return $ Just [MkTupleUpdateEdit SelectFirst edit]
             MkTupleUpdateEdit SelectSecond edit -> return $ Just [MkTupleUpdateEdit SelectSecond edit]
     in MkEditLens {..}
+
+pairWholeUpdateFunction :: forall a b. UpdateFunction (PairUpdate (WholeUpdate a) (WholeUpdate b)) (WholeUpdate (a, b))
+pairWholeUpdateFunction = let
+    gab :: ReadFunction (PairUpdateReader (WholeUpdate a) (WholeUpdate b)) (WholeReader (a, b))
+    gab (mr :: MutableRead m _) ReadWhole = do
+        a <- mr $ MkTupleUpdateReader SelectFirst ReadWhole
+        b <- mr $ MkTupleUpdateReader SelectSecond ReadWhole
+        return (a, b)
+    uab :: forall m. MonadIO m
+        => PairUpdate (WholeUpdate a) (WholeUpdate b)
+        -> MutableRead m (PairUpdateReader (WholeUpdate a) (WholeUpdate b))
+        -> m [WholeUpdate (a, b)]
+    uab (MkTupleUpdate SelectFirst (MkWholeUpdate a)) mr = do
+        b <- mr $ MkTupleUpdateReader SelectSecond ReadWhole
+        return [MkWholeUpdate (a, b)]
+    uab (MkTupleUpdate SelectSecond (MkWholeUpdate b)) mr = do
+        a <- mr $ MkTupleUpdateReader SelectFirst ReadWhole
+        return [MkWholeUpdate (a, b)]
+    in MkUpdateFunction gab uab
+
+pairCombineWholeUpdateFunctions ::
+       forall update a b.
+       UpdateFunction update (WholeUpdate a)
+    -> UpdateFunction update (WholeUpdate b)
+    -> UpdateFunction update (WholeUpdate (a, b))
+pairCombineWholeUpdateFunctions ufa ufb = pairWholeUpdateFunction . pairCombineUpdateFunctions ufa ufb
+
+readOnlyPairUpdateFunction ::
+       forall updateA updateB.
+       UpdateFunction (PairUpdate (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB)) (PairUpdate updateA updateB)
+readOnlyPairUpdateFunction = let
+    ufGet ::
+           ReadFunction (PairUpdateReader (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB)) (PairUpdateReader updateA updateB)
+    ufGet mr (MkTupleUpdateReader SelectFirst rt) = mr $ MkTupleUpdateReader SelectFirst rt
+    ufGet mr (MkTupleUpdateReader SelectSecond rt) = mr $ MkTupleUpdateReader SelectSecond rt
+    ufUpdate ::
+           forall m. MonadIO m
+        => PairUpdate (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB)
+        -> MutableRead m (PairUpdateReader (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB))
+        -> m [PairUpdate updateA updateB]
+    ufUpdate (MkTupleUpdate SelectFirst (MkReadOnlyUpdate update)) _ = return [MkTupleUpdate SelectFirst update]
+    ufUpdate (MkTupleUpdate SelectSecond (MkReadOnlyUpdate update)) _ = return [MkTupleUpdate SelectSecond update]
+    in MkUpdateFunction {..}

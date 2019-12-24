@@ -38,8 +38,8 @@ viewOn ::
        (GObject widget, SignalInfo info, HaskellCallbackType info ~ IO a)
     => widget
     -> SignalProxy widget info
-    -> View sel edit a
-    -> View sel edit SignalHandlerId
+    -> View sel a
+    -> View sel SignalHandlerId
 viewOn widget signal v = liftIOView $ \unlift -> on widget signal $ unlift v
 
 newtype Change m a =
@@ -118,7 +118,7 @@ makeButton name action = do
     _ <- liftIO $ on button #clicked action
     return button
 
-cvMakeButton :: Text -> View sel edit () -> CreateView sel edit Button
+cvMakeButton :: Text -> View sel () -> CreateView sel Button
 cvMakeButton name action = do
     unlift <- cvLiftView $ askUnliftIO
     makeButton name $ runWMFunction unlift action

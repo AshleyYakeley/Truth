@@ -4,12 +4,12 @@ import Data.Shim
 import Shapes
 import Truth.Core
 
-newtype PinaforeUI baseupdate a = MkPinaforeUI
-    { unPinaforeUI :: UISpec a baseupdate
+newtype PinaforeUI a = MkPinaforeUI
+    { unPinaforeUI :: UISpec a
     }
 
-instance Functor (PinaforeUI baseupdate) where
+instance Functor PinaforeUI where
     fmap ab (MkPinaforeUI spec) = MkPinaforeUI $ mapSelectionUISpec ab spec
 
-instance HasVariance 'Covariance (PinaforeUI baseupdate) where
+instance HasVariance 'Covariance PinaforeUI where
     varianceRepresentational = Nothing

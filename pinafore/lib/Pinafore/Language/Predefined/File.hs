@@ -11,9 +11,9 @@ import Pinafore.Storage
 {-
 file_import ::
        forall baseupdate. HasPinaforeFileUpdate baseupdate
-    => PinaforeFiniteSetRef baseupdate '( A, A)
-    -> (A -> PinaforeAction baseupdate ())
-    -> PinaforeAction baseupdate ()
+    => PinaforeFiniteSetRef '( A, A)
+    -> (A -> PinaforeAction ())
+    -> PinaforeAction ()
 file_import set continue = do
     chooseFile <- pinaforeActionRequest witChooseFile
     mpath <- liftIO chooseFile

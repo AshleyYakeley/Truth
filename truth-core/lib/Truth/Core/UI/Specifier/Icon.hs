@@ -10,14 +10,14 @@ data StockSize
     = SizeDnD
     | SizeCustom Int
 
-data IconUISpec sel update where
-    MkIconUISpec :: IconName -> StockSize -> IconUISpec sel update
+data IconUISpec sel where
+    MkIconUISpec :: IconName -> StockSize -> IconUISpec sel
 
-instance Show (IconUISpec sel update) where
+instance Show (IconUISpec sel) where
     show (MkIconUISpec _ _) = "icon"
 
 instance UIType IconUISpec where
     uiWitness = $(iowitness [t|IconUISpec|])
 
-iconUISpec :: IconName -> StockSize -> UISpec sel update
+iconUISpec :: IconName -> StockSize -> UISpec sel
 iconUISpec icon size = MkUISpec $ MkIconUISpec icon size

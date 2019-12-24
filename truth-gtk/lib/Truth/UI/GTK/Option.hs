@@ -13,20 +13,21 @@ import Truth.UI.GTK.Useful
 optionGetView :: GetGView
 optionGetView =
     MkGetView $ \_ uispec -> do
-        MkOptionUISpec itemsFunction whichLens <- isUISpec uispec
-        return $ optionView itemsFunction whichLens
+        MkOptionUISpec itemsSub whichSub <- isUISpec uispec
+        return $ optionView itemsSub whichSub
 
 listStoreView ::
        forall sel update.
        (IsEditUpdate update, FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
     => WIOFunction IO
+    -> ReadOnlySubscriber (ListUpdate [UpdateSubject update] update)
     -> EditSource
-    -> CreateView sel (ListUpdate [UpdateSubject update] update) (SeqStore (UpdateSubject update))
-listStoreView (MkWMFunction blockSignal) esrc = do
-    subjectList <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
+    -> CreateView sel (SeqStore (UpdateSubject update))
+listStoreView (MkWMFunction blockSignal) sub esrc = do
+    subjectList <- cvLiftView $ viewObjectRead sub $ \_ -> mutableReadToSubject
     store <- seqStoreNew subjectList
-    cvReceiveUpdate (Just esrc) $ \_ _mr ->
-        \case
+    cvReceiveUpdate sub (Just esrc) $ \_ _mr (MkReadOnlyUpdate lupdate) ->
+        case lupdate of
             ListUpdateItem (MkSequencePoint (fromIntegral -> i)) update -> do
                 oldval <- seqStoreGetValue store i
                 newval <- mutableReadToSubject $ applyEdit (updateEdit update) $ subjectToMutableRead oldval
@@ -42,10 +43,11 @@ optionUICellAttributes MkOptionUICell {..} = textCellAttributes optionCellText o
 
 optionFromStore ::
        forall sel t. Eq t
-    => EditSource
+    => Subscriber (WholeUpdate t)
+    -> EditSource
     -> SeqStore (t, OptionUICell)
-    -> CreateView sel (WholeUpdate t) (WIOFunction IO, Widget)
-optionFromStore esrc store = do
+    -> CreateView sel (WIOFunction IO, Widget)
+optionFromStore sub esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
     #packStart widget renderer False
@@ -53,7 +55,7 @@ optionFromStore esrc store = do
     changedSignal <-
         cvLiftView $
         viewOn widget #changed $
-        viewObjectPushEdit $ \_ push -> do
+        viewObjectPushEdit sub $ \_ push -> do
             mi <- #getActiveIter widget
             case mi of
                 (True, iter) -> do
@@ -78,21 +80,21 @@ optionFromStore esrc store = do
                             Nothing -> return ()
                     Nothing -> return ()
     cvLiftView $
-        viewObjectRead $ \_ mr -> do
+        viewObjectRead sub $ \_ mr -> do
             t <- mr ReadWhole
             update t
-    cvReceiveUpdate (Just esrc) $ \_ _mr (MkWholeReaderUpdate t) -> update t
+    cvReceiveUpdate sub (Just esrc) $ \_ _mr (MkWholeReaderUpdate t) -> update t
     w <- toWidget widget
     return (MkWMFunction blockSignal, w)
 
 optionView ::
-       forall t tedit sel. (Eq t)
-    => UpdateFunction tedit (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
-    -> EditLens tedit (WholeUpdate t)
-    -> GCreateView sel tedit
-optionView itemsFunction whichLens = do
+       forall t sel. (Eq t)
+    => ReadOnlySubscriber (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
+    -> Subscriber (WholeUpdate t)
+    -> GCreateView sel
+optionView itemsSub whichSub = do
     esrc <- newEditSource
     rec
-        store <- cvMapEdit (return $ updateFunctionToRejectingEditLens itemsFunction) $ listStoreView blockSignal esrc
-        (blockSignal, w) <- cvMapEdit (return $ whichLens) $ optionFromStore esrc store
+        store <- listStoreView blockSignal itemsSub esrc
+        (blockSignal, w) <- optionFromStore whichSub esrc store
     return w

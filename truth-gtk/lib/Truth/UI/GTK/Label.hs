@@ -7,10 +7,10 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 
-createWidget :: LabelUISpec sel edit -> CreateView sel edit Widget
-createWidget MkLabelUISpec = do
+createWidget :: LabelUISpec sel -> CreateView sel Widget
+createWidget (MkLabelUISpec sub) = do
     widget <- new Label []
-    cvBindUpdateFunction Nothing id $ \label -> set widget [#label := label]
+    cvBindUpdateFunction Nothing sub $ \label -> set widget [#label := label]
     toWidget widget
 
 labelGetView :: GetGView

@@ -207,35 +207,3 @@ instance IsEditLens (Codec a b) where
 
 unitWholeUpdateFunction :: UpdateFunction edit (WholeUpdate ())
 unitWholeUpdateFunction = constUpdateFunction ()
-
-pairWholeUpdateFunction ::
-       forall update a b.
-       UpdateFunction update (WholeUpdate a)
-    -> UpdateFunction update (WholeUpdate b)
-    -> UpdateFunction update (WholeUpdate (a, b))
-pairWholeUpdateFunction (MkUpdateFunction ga ua) (MkUpdateFunction gb ub) = let
-    gab :: ReadFunction (UpdateReader update) (WholeReader (a, b))
-    gab (mr :: MutableRead m _) ReadWhole = do
-        a <- ga mr ReadWhole
-        b <- gb mr ReadWhole
-        return (a, b)
-    uab :: forall m. MonadIO m
-        => update
-        -> MutableRead m (UpdateReader update)
-        -> m [WholeUpdate (a, b)]
-    uab update mr = do
-        weas <- ua update mr
-        webs <- ub update mr
-        case (lastWholeUpdate weas, lastWholeUpdate webs) of
-            (Nothing, Nothing) -> return []
-            (ma, mb) -> do
-                a <-
-                    case ma of
-                        Just a -> return a
-                        Nothing -> ga mr ReadWhole
-                b <-
-                    case mb of
-                        Just b -> return b
-                        Nothing -> gb mr ReadWhole
-                return [MkWholeUpdate (a, b)]
-    in MkUpdateFunction gab uab

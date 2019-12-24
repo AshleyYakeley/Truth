@@ -122,7 +122,7 @@ interactEvalExpression texpr =
         expr <- liftSourcePos texpr
         qEvalExpr expr
 
-runValue :: Handle -> QValue baseupdate -> Interact baseupdate (PinaforeAction baseupdate ())
+runValue :: Handle -> QValue baseupdate -> Interact baseupdate (PinaforeAction ())
 runValue outh val =
     interactRunSourceScoped $
     (typedAnyToPinaforeVal val) <|> (fmap outputLn $ typedAnyToPinaforeVal val) <|>

@@ -2,6 +2,7 @@ module Truth.Core.UI.Specifier.Table where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Object
 import Truth.Core.Read
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
@@ -16,44 +17,50 @@ plainTableCellProps = let
     tcStyle = plainTextStyle
     in MkTableCellProps {..}
 
-data KeyColumn updateT key = MkKeyColumn
-    { kcName :: UpdateFunction updateT (WholeUpdate Text)
-    , kcContents :: key -> IO (EditLens updateT (WholeUpdate Text), UpdateFunction updateT (WholeUpdate TableCellProps))
+data KeyColumn key = MkKeyColumn
+    { kcName :: ReadOnlySubscriber (WholeUpdate Text)
+    , kcContents :: key -> IO (Subscriber (WholeUpdate Text), ReadOnlySubscriber (WholeUpdate TableCellProps))
     }
 
 readOnlyKeyColumn ::
-       UpdateFunction updateT (WholeUpdate Text)
-    -> (key -> IO (UpdateFunction updateT (WholeUpdate (Text, TableCellProps))))
-    -> KeyColumn updateT key
+       forall key.
+       ReadOnlySubscriber (WholeUpdate Text)
+    -> (key -> IO (ReadOnlySubscriber (WholeUpdate (Text, TableCellProps))))
+    -> KeyColumn key
 readOnlyKeyColumn kcName getter = let
+    kcContents :: key -> IO (Subscriber (WholeUpdate Text), ReadOnlySubscriber (WholeUpdate TableCellProps))
     kcContents key = do
         func <- getter key
-        return (updateFunctionToRejectingEditLens $ funcUpdateFunction fst . func, funcUpdateFunction snd . func)
+        return
+            ( mapPureSubscriber
+                  (updateFunctionToRejectingEditLens $ funcUpdateFunction fst . fromReadOnlyUpdateFunction)
+                  func
+            , mapReadOnlySubscriber (funcUpdateFunction snd) func)
     in MkKeyColumn {..}
 
-data TableUISpec sel updateT where
+data TableUISpec sel where
     MkTableUISpec
-        :: forall cont o updateT updateI.
+        :: forall cont o updateI.
            (KeyContainer cont, FullSubjectReader (UpdateReader updateI), HasKeyReader cont (UpdateReader updateI))
-        => [KeyColumn updateT (ContainerKey cont)]
+        => [KeyColumn (ContainerKey cont)]
         -> (o -> o -> Ordering)
-        -> (ContainerKey cont -> UpdateFunction updateT (WholeUpdate o))
-        -> EditLens updateT (KeyUpdate cont updateI)
+        -> (ContainerKey cont -> ReadOnlySubscriber (WholeUpdate o))
+        -> Subscriber (KeyUpdate cont updateI)
         -> (ContainerKey cont -> IO ())
-        -> TableUISpec (ContainerKey cont) updateT
+        -> TableUISpec (ContainerKey cont)
 
 tableUISpec ::
-       forall cont o updateT updateI.
+       forall cont o updateI.
        (KeyContainer cont, FullSubjectReader (UpdateReader updateI), HasKeyReader cont (UpdateReader updateI))
-    => [KeyColumn updateT (ContainerKey cont)]
+    => [KeyColumn (ContainerKey cont)]
     -> (o -> o -> Ordering)
-    -> (ContainerKey cont -> UpdateFunction updateT (WholeUpdate o))
-    -> EditLens updateT (KeyUpdate cont updateI)
+    -> (ContainerKey cont -> ReadOnlySubscriber (WholeUpdate o))
+    -> Subscriber (KeyUpdate cont updateI)
     -> (ContainerKey cont -> IO ())
-    -> UISpec (ContainerKey cont) updateT
+    -> UISpec (ContainerKey cont)
 tableUISpec cols order geto lens onDoubleClick = MkUISpec $ MkTableUISpec cols order geto lens onDoubleClick
 
-instance Show (TableUISpec sel edit) where
+instance Show (TableUISpec sel) where
     show (MkTableUISpec _ _ _ _ _) = "table"
 
 instance UIType TableUISpec where

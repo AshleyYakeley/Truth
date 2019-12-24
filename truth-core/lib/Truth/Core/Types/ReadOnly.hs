@@ -5,8 +5,9 @@ import Truth.Core.Import
 import Truth.Core.Read
 import Truth.Core.Types.None
 
-newtype ReadOnlyUpdate update =
-    MkReadOnlyUpdate update
+newtype ReadOnlyUpdate update = MkReadOnlyUpdate
+    { unReadOnlyUpdate :: update
+    }
 
 instance IsUpdate (ReadOnlyUpdate update) where
     type UpdateEdit (ReadOnlyUpdate update) = NoEdit (UpdateReader update)

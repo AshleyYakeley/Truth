@@ -54,11 +54,10 @@ exceptionTest text c =
 updateTest :: Text -> ContextTestTree
 updateTest text =
     scriptTest text text $ \action -> do
-        sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
         (sendUpdate, ref) <- unliftPinaforeActionOrFail action
-        runLifeCycle $ do
-            lensSub <- mapSubscriber (return $ immutableReferenceToLens ref) sub
-            subscribeEditor lensSub $ checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
+        runLifeCycle $
+            subscribeEditor (unPinaforeValue $ immutableReferenceToRejectingValue ref) $
+            checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
 testUpdates = runContext $ tgroup "update" [updateTest "do ref <- newMemRef; return (ref := 1, ref) end"]

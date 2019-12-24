@@ -74,28 +74,30 @@ eitherPinaforeMorphism (MkPinaforeMorphism ta1 tc1 m1) (MkPinaforeMorphism tb2 t
     eitherPinaforeLensMorphism m1 $ bijectionPinaforeLensMorphism (isoMapCat fromEnhanced $ bijectRanges tc2 tc1) . m2
 
 pinaforeApplyMorphismRef ::
-       forall baseupdate ap aq bp bq.
-       PinaforeMorphism baseupdate '( aq, ap) '( bp, bq)
-    -> PinaforeRef baseupdate '( ap, aq)
-    -> PinaforeRef baseupdate '( bp, bq)
-pinaforeApplyMorphismRef (MkPinaforeMorphism tra trb m) (LensPinaforeRef tra' lv) =
-    LensPinaforeRef trb $
-    applyPinaforeLens m $ bijectionWholeEditLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra) . lv
-pinaforeApplyMorphismRef (MkPinaforeMorphism (MkRange fa _) trb m) (ImmutPinaforeRef fv) =
-    LensPinaforeRef trb $ applyPinaforeLens m $ immutableReferenceToLens $ fmap (fromEnhanced fa) fv
+       forall baseupdate ap aq bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+    => PinaforeMorphism baseupdate '( aq, ap) '( bp, bq)
+    -> PinaforeRef '( ap, aq)
+    -> PinaforeRef '( bp, bq)
+pinaforeApplyMorphismRef (MkPinaforeMorphism tra trb m) (MutablePinaforeRef tra' lv) =
+    MutablePinaforeRef trb $
+    applyPinaforeLens pinaforeBase m $
+    eaMap (bijectionWholeEditLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra)) lv
+pinaforeApplyMorphismRef (MkPinaforeMorphism (MkRange fa _) trb m) (ImmutablePinaforeRef fv) =
+    MutablePinaforeRef trb $
+    applyPinaforeLens pinaforeBase m $ immutableReferenceToRejectingValue $ fmap (fromEnhanced fa) fv
 
 pinaforeApplyMorphismImmutRef ::
-       forall baseupdate a bp bq.
-       PinaforeMorphism baseupdate '( a, TopType) '( bp, bq)
-    -> PinaforeImmutableReference baseupdate a
-    -> PinaforeRef baseupdate '( bp, bq)
+       forall baseupdate a bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+    => PinaforeMorphism baseupdate '( a, TopType) '( bp, bq)
+    -> PinaforeImmutableReference a
+    -> PinaforeRef '( bp, bq)
 pinaforeApplyMorphismImmutRef m r = pinaforeApplyMorphismRef m $ pinaforeImmutableToRef r
 
 pinaforeApplyMorphismSet ::
-       forall baseupdate a bp bq.
-       PinaforeMorphism baseupdate '( a, TopType) '( bp, bq)
-    -> PinaforeFiniteSetRef baseupdate '( BottomType, a)
-    -> PinaforeFiniteSetRef baseupdate '( bp, bq)
+       forall baseupdate a bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+    => PinaforeMorphism baseupdate '( a, TopType) '( bp, bq)
+    -> PinaforeFiniteSetRef '( BottomType, a)
+    -> PinaforeFiniteSetRef '( bp, bq)
 pinaforeApplyMorphismSet (MkPinaforeMorphism tra trb m) (MkPinaforeFiniteSetRef tra' ss) = let
     setm =
         proc st -> do
@@ -104,34 +106,37 @@ pinaforeApplyMorphismSet (MkPinaforeMorphism tra trb m) (MkPinaforeFiniteSetRef 
                     fmap (Known . fromEnhanced (rangeContra tra) . fromEnhanced (rangeCo tra')) st
             returnA -< mapMaybe knowToMaybe skb
     in MkPinaforeFiniteSetRef trb $
-       updateFunctionToRejectingEditLens $ convertUpdateFunction . applyPinaforeFunction setm (lensFunctionValue ss)
+       eaMap (convertEditLens . fromReadOnlyRejectingEditLens) $
+       applyPinaforeFunction pinaforeBase setm (eaToReadOnlyWhole ss)
 
 pinaforeApplyInverseMorphismRef ::
-       forall baseupdate ap aq bp bq.
-       PinaforeMorphism baseupdate '( bp, bq) '( aq, ap)
-    -> PinaforeRef baseupdate '( ap, aq)
-    -> PinaforeFiniteSetRef baseupdate '( bp, bq)
-pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb tra m) (LensPinaforeRef tra' lv) =
+       forall baseupdate ap aq bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+    => PinaforeMorphism baseupdate '( bp, bq) '( aq, ap)
+    -> PinaforeRef '( ap, aq)
+    -> PinaforeFiniteSetRef '( bp, bq)
+pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb tra m) (MutablePinaforeRef tra' lv) =
     MkPinaforeFiniteSetRef trb $
-    applyInversePinaforeLens m $ bijectionWholeEditLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra) . lv
-pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb (MkRange fa _) m) (ImmutPinaforeRef fv) =
-    MkPinaforeFiniteSetRef trb $ applyInversePinaforeLens m $ immutableReferenceToLens $ fmap (fromEnhanced fa) fv
+    applyInversePinaforeLens pinaforeBase m $
+    eaMap (bijectionWholeEditLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra)) lv
+pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb (MkRange fa _) m) (ImmutablePinaforeRef fv) =
+    MkPinaforeFiniteSetRef trb $
+    applyInversePinaforeLens pinaforeBase m $ immutableReferenceToRejectingValue $ fmap (fromEnhanced fa) fv
 
 pinaforeApplyInverseMorphismImmutRef ::
-       forall baseupdate a bp bq.
-       PinaforeMorphism baseupdate '( bp, bq) '( a, TopType)
-    -> PinaforeImmutableReference baseupdate a
-    -> PinaforeFiniteSetRef baseupdate '( bp, bq)
+       forall baseupdate a bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+    => PinaforeMorphism baseupdate '( bp, bq) '( a, TopType)
+    -> PinaforeImmutableReference a
+    -> PinaforeFiniteSetRef '( bp, bq)
 pinaforeApplyInverseMorphismImmutRef m r = pinaforeApplyInverseMorphismRef m $ pinaforeImmutableToRef r
 
 pinaforeApplyInverseMorphismSet ::
-       forall baseupdate ap aq bp bq.
-       PinaforeMorphism baseupdate '( bp, bq) '( JoinType NewEntity aq, ap)
-    -> PinaforeFiniteSetRef baseupdate '( ap, aq)
-    -> PinaforeFiniteSetRef baseupdate '( bp, bq)
+       forall baseupdate ap aq bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+    => PinaforeMorphism baseupdate '( bp, bq) '( JoinType NewEntity aq, ap)
+    -> PinaforeFiniteSetRef '( ap, aq)
+    -> PinaforeFiniteSetRef '( bp, bq)
 pinaforeApplyInverseMorphismSet (MkPinaforeMorphism trb trpa m) (MkPinaforeFiniteSetRef tra' set) = let
     trp = contraMapRange join1 trpa
     tra = contraMapRange join2 trpa
     in MkPinaforeFiniteSetRef trb $
-       applyInversePinaforeLensSet (fmap (fromEnhanced (rangeContra trp) . MkNewEntity) newEntity) m $
-       (bijectionFiniteSetEditLens $ isoMapCat fromEnhanced $ bijectRanges tra' tra) . set
+       applyInversePinaforeLensSet pinaforeBase (fmap (fromEnhanced (rangeContra trp) . MkNewEntity) newEntity) m $
+       eaMap (bijectionFiniteSetEditLens $ isoMapCat fromEnhanced $ bijectRanges tra' tra) set

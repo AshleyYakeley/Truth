@@ -78,13 +78,13 @@ instance HasNewValue (Tuple NoteSel) where
 
 type NoteUpdate = TupleUpdate NoteSel
 
-noteEditSpec :: UISpec (EditLens (StringUpdate Text) (StringUpdate Text)) NoteUpdate
-noteEditSpec =
-    verticalUISpec $
-    tupleEditUISpecs $ \case
-        NoteTitle -> (textAreaUISpecEntry, False)
-        NotePast -> (checkboxUISpec (constUpdateFunction "past") id, False)
-        NoteText -> (textAreaUISpec, True)
+noteEditSpec :: Subscriber NoteUpdate -> UISpec TextSelection
+noteEditSpec sub =
+    verticalUISpec
+        [ (textEntryUISpec $ mapPureSubscriber (tupleEditLens NoteTitle) sub, False)
+        , (checkboxUISpec (constantSubscriber "past") $ mapPureSubscriber (tupleEditLens NotePast) sub, False)
+        , (textAreaUISpec $ mapPureSubscriber (tupleEditLens NoteText) sub, True)
+        ]
 
 type Note = Tuple NoteSel
 

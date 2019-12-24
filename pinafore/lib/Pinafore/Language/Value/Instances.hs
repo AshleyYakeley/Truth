@@ -9,5 +9,5 @@ import Shapes
 instance HasVariance 'Covariance Know where
     varianceRepresentational = Just Dict
 
-instance HasVariance 'Covariance (PinaforeAction baseupdate) where
+instance HasVariance 'Covariance PinaforeAction where
     varianceRepresentational = Just Dict

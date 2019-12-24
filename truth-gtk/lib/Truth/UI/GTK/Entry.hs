@@ -13,9 +13,9 @@ textEntryGetView :: GetGView
 textEntryGetView =
     MkGetView $ \_ uispec ->
         fmap
-            (\MkTextAreaUISpecEntry -> do
+            (\(MkTextEntryUISpec sub) -> do
                  esrc <- newEditSource
-                 initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
+                 initial <- cvLiftView $ viewObjectRead sub $ \_ -> mutableReadToSubject
                  widget <- new Entry [#text := initial]
                  invalidCol <- new RGBA [#red := 1, #green := 0, #blue := 0, #alpha := 1]
                  let
@@ -28,11 +28,11 @@ textEntryGetView =
                  changedSignal <-
                      cvLiftView $
                      viewOn widget #changed $
-                     viewObjectPushEdit $ \_ push -> do
+                     viewObjectPushEdit sub $ \_ push -> do
                          st <- get widget #text
                          succeeded <- push esrc $ pure $ MkWholeReaderEdit st
                          setValidState succeeded
-                 cvReceiveUpdate (Just esrc) $ \_ _ (MkWholeReaderUpdate newtext) ->
+                 cvReceiveUpdate sub (Just esrc) $ \_ _ (MkWholeReaderUpdate newtext) ->
                      liftIO $
                      withSignalBlocked widget changedSignal $ do
                          oldtext <- get widget #text

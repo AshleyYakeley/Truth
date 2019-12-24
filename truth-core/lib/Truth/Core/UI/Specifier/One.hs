@@ -2,24 +2,27 @@ module Truth.Core.UI.Specifier.One where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Object
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data OneUISpec sel update where
+data OneUISpec sel where
     -- view can create object
     MaybeUISpec
         :: forall sel update. (IsUpdate update, FullEdit (UpdateEdit update))
         => Maybe (UpdateSubject update)
-        -> UISpec sel update
-        -> OneUISpec sel (MaybeUpdate update)
+        -> Subscriber (MaybeUpdate update)
+        -> (Subscriber update -> UISpec sel)
+        -> OneUISpec sel
     OneWholeUISpec
         :: forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-        => UISpec sel update
-        -> OneUISpec sel (OneWholeUpdate f update)
+        => Subscriber (OneWholeUpdate f update)
+        -> (Subscriber update -> UISpec sel)
+        -> OneUISpec sel
 
-instance Show (OneUISpec sel update) where
-    show (MaybeUISpec _ uispec) = "maybe " ++ show uispec
-    show (OneWholeUISpec uispec) = "one+whole " ++ show uispec
+instance Show (OneUISpec sel) where
+    show (MaybeUISpec _ _ _) = "maybe"
+    show (OneWholeUISpec _ _) = "one+whole"
 
 instance UIType OneUISpec where
     uiWitness = $(iowitness [t|OneUISpec|])
@@ -27,12 +30,14 @@ instance UIType OneUISpec where
 maybeUISpec ::
        forall sel update. (IsUpdate update, FullEdit (UpdateEdit update))
     => Maybe (UpdateSubject update)
-    -> UISpec sel update
-    -> UISpec sel (MaybeUpdate update)
-maybeUISpec msubj spec = MkUISpec $ MaybeUISpec msubj spec
+    -> Subscriber (MaybeUpdate update)
+    -> (Subscriber update -> UISpec sel)
+    -> UISpec sel
+maybeUISpec msubj sub spec = MkUISpec $ MaybeUISpec msubj sub spec
 
 oneWholeUISpec ::
        forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-    => UISpec sel update
-    -> UISpec sel (OneWholeUpdate f update)
-oneWholeUISpec spec = MkUISpec $ OneWholeUISpec spec
+    => Subscriber (OneWholeUpdate f update)
+    -> (Subscriber update -> UISpec sel)
+    -> UISpec sel
+oneWholeUISpec sub spec = MkUISpec $ OneWholeUISpec sub spec

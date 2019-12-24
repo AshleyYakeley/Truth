@@ -8,145 +8,120 @@ import Pinafore.Language.Value.SetRef
 import Shapes
 import Truth.Core
 
-data PinaforeFiniteSetRef baseupdate pq where
-    MkPinaforeFiniteSetRef
-        :: Eq t
-        => Range JMShim t pq
-        -> PinaforeLensValue baseupdate (FiniteSetUpdate t)
-        -> PinaforeFiniteSetRef baseupdate pq
+data PinaforeFiniteSetRef pq where
+    MkPinaforeFiniteSetRef :: Eq t => Range JMShim t pq -> PinaforeValue (FiniteSetUpdate t) -> PinaforeFiniteSetRef pq
 
-unPinaforeFiniteSetRef :: PinaforeFiniteSetRef baseupdate '( p, p) -> PinaforeLensValue baseupdate (FiniteSetUpdate p)
+unPinaforeFiniteSetRef :: PinaforeFiniteSetRef '( p, p) -> PinaforeValue (FiniteSetUpdate p)
 unPinaforeFiniteSetRef (MkPinaforeFiniteSetRef tr lv) =
-    (bijectionFiniteSetEditLens $ isoMapCat fromEnhanced $ rangeBijection tr) . lv
+    eaMap (bijectionFiniteSetEditLens $ isoMapCat fromEnhanced $ rangeBijection tr) lv
 
-instance CatFunctor (CatRange (->)) (->) (PinaforeFiniteSetRef baseupdate) where
+instance CatFunctor (CatRange (->)) (->) PinaforeFiniteSetRef where
     cfmap f (MkPinaforeFiniteSetRef r v) = MkPinaforeFiniteSetRef (cfmap f r) v
 
-instance HasVariance 'Rangevariance (PinaforeFiniteSetRef baseupdate) where
+instance HasVariance 'Rangevariance PinaforeFiniteSetRef where
     varianceRepresentational = Nothing
 
-pinaforeFiniteSetRefValue ::
-       PinaforeFiniteSetRef baseupdate '( q, q) -> PinaforeLensValue baseupdate (FiniteSetUpdate q)
+pinaforeFiniteSetRefValue :: PinaforeFiniteSetRef '( q, q) -> PinaforeValue (FiniteSetUpdate q)
 pinaforeFiniteSetRefValue (MkPinaforeFiniteSetRef tr lv) =
-    bijectionFiniteSetEditLens (isoMapCat fromEnhanced $ rangeBijection tr) . lv
+    eaMap (bijectionFiniteSetEditLens (isoMapCat fromEnhanced $ rangeBijection tr)) lv
 
-valuePinaforeFiniteSetRef ::
-       Eq q => PinaforeLensValue baseupdate (FiniteSetUpdate q) -> PinaforeFiniteSetRef baseupdate '( q, q)
+valuePinaforeFiniteSetRef :: Eq q => PinaforeValue (FiniteSetUpdate q) -> PinaforeFiniteSetRef '( q, q)
 valuePinaforeFiniteSetRef lv = MkPinaforeFiniteSetRef identityRange lv
 
 pinaforeFiniteSetRefMeetValue ::
-       PinaforeFiniteSetRef baseupdate '( t, MeetType Entity t)
-    -> PinaforeLensValue baseupdate (FiniteSetUpdate (MeetType Entity t))
+       PinaforeFiniteSetRef '( t, MeetType Entity t) -> PinaforeValue (FiniteSetUpdate (MeetType Entity t))
 pinaforeFiniteSetRefMeetValue (MkPinaforeFiniteSetRef tr lv) =
     pinaforeFiniteSetRefValue $ MkPinaforeFiniteSetRef (contraMapRange meet2 tr) lv
 
 meetValuePinaforeFiniteSetRef ::
-       PinaforeLensValue baseupdate (FiniteSetUpdate (MeetType Entity t))
-    -> PinaforeFiniteSetRef baseupdate '( MeetType Entity t, t)
+       PinaforeValue (FiniteSetUpdate (MeetType Entity t)) -> PinaforeFiniteSetRef '( MeetType Entity t, t)
 meetValuePinaforeFiniteSetRef lv = MkPinaforeFiniteSetRef (coMapRange meet2 identityRange) lv
 
 pinaforeFiniteSetRefMeet ::
-       forall baseupdate t.
-       PinaforeFiniteSetRef baseupdate '( t, MeetType Entity t)
-    -> PinaforeFiniteSetRef baseupdate '( t, MeetType Entity t)
-    -> PinaforeFiniteSetRef baseupdate '( MeetType Entity t, t)
+       forall t.
+       PinaforeFiniteSetRef '( t, MeetType Entity t)
+    -> PinaforeFiniteSetRef '( t, MeetType Entity t)
+    -> PinaforeFiniteSetRef '( MeetType Entity t, t)
 pinaforeFiniteSetRefMeet seta setb =
     meetValuePinaforeFiniteSetRef $
-    updateFunctionToRejectingEditLens meetUpdateFunction .
-    pairCombineEditLenses (pinaforeFiniteSetRefMeetValue seta) (pinaforeFiniteSetRefMeetValue setb)
+    eaMap (updateFunctionToRejectingEditLens meetUpdateFunction) $
+    eaPair (pinaforeFiniteSetRefMeetValue seta) (pinaforeFiniteSetRefMeetValue setb)
 
 pinaforeFiniteSetRefJoin ::
-       forall baseupdate t.
-       PinaforeFiniteSetRef baseupdate '( t, MeetType Entity t)
-    -> PinaforeFiniteSetRef baseupdate '( t, MeetType Entity t)
-    -> PinaforeFiniteSetRef baseupdate '( MeetType Entity t, t)
+       forall t.
+       PinaforeFiniteSetRef '( t, MeetType Entity t)
+    -> PinaforeFiniteSetRef '( t, MeetType Entity t)
+    -> PinaforeFiniteSetRef '( MeetType Entity t, t)
 pinaforeFiniteSetRefJoin seta setb =
     meetValuePinaforeFiniteSetRef $
-    updateFunctionToRejectingEditLens joinUpdateFunction .
-    pairCombineEditLenses (pinaforeFiniteSetRefMeetValue seta) (pinaforeFiniteSetRefMeetValue setb)
+    eaMap (updateFunctionToRejectingEditLens joinUpdateFunction) $
+    eaPair (pinaforeFiniteSetRefMeetValue seta) (pinaforeFiniteSetRefMeetValue setb)
 
-pinaforeFiniteSetRefAdd :: PinaforeFiniteSetRef baseupdate '( p, q) -> p -> PinaforeAction baseupdate ()
+pinaforeFiniteSetRefAdd :: PinaforeFiniteSetRef '( p, q) -> p -> PinaforeAction ()
 pinaforeFiniteSetRefAdd (MkPinaforeFiniteSetRef tr set) p =
-    pinaforeLensPush set $ pure $ KeyEditInsertReplace $ fromEnhanced (rangeContra tr) p
+    pinaforeValuePushAction set $ pure $ KeyEditInsertReplace $ fromEnhanced (rangeContra tr) p
 
-pinaforeFiniteSetRefAddNew ::
-       PinaforeFiniteSetRef baseupdate '( NewEntity, TopType) -> PinaforeAction baseupdate NewEntity
+pinaforeFiniteSetRefAddNew :: PinaforeFiniteSetRef '( NewEntity, TopType) -> PinaforeAction NewEntity
 pinaforeFiniteSetRefAddNew set = do
     (MkNewEntity -> e) <- liftIO $ newKeyContainerItem @(FiniteSet Entity)
     pinaforeFiniteSetRefAdd set e
     return e
 
-pinaforeFiniteSetRefRemove :: PinaforeFiniteSetRef baseupdate '( p, q) -> p -> PinaforeAction baseupdate ()
+pinaforeFiniteSetRefRemove :: PinaforeFiniteSetRef '( p, q) -> p -> PinaforeAction ()
 pinaforeFiniteSetRefRemove (MkPinaforeFiniteSetRef tr set) p =
-    pinaforeLensPush set $ pure $ KeyEditDelete $ fromEnhanced (rangeContra tr) p
+    pinaforeValuePushAction set $ pure $ KeyEditDelete $ fromEnhanced (rangeContra tr) p
 
-pinaforeFiniteSetRefRemoveAll :: PinaforeFiniteSetRef baseupdate '( BottomType, TopType) -> PinaforeAction baseupdate ()
-pinaforeFiniteSetRefRemoveAll (MkPinaforeFiniteSetRef _ set) = pinaforeLensPush set $ pure KeyEditClear
+pinaforeFiniteSetRefRemoveAll :: PinaforeFiniteSetRef '( BottomType, TopType) -> PinaforeAction ()
+pinaforeFiniteSetRefRemoveAll (MkPinaforeFiniteSetRef _ set) = pinaforeValuePushAction set $ pure KeyEditClear
 
-pinaforeFiniteSetRefFunctionValue ::
-       PinaforeFiniteSetRef baseupdate '( t, a) -> PinaforeFunctionValue baseupdate (FiniteSet a)
+pinaforeFiniteSetRefFunctionValue :: PinaforeFiniteSetRef '( t, a) -> PinaforeReadOnlyValue (FiniteSet a)
 pinaforeFiniteSetRefFunctionValue (MkPinaforeFiniteSetRef tr set) =
-    funcUpdateFunction (fmap $ fromEnhanced $ rangeCo tr) . lensFunctionValue set
+    eaMapReadOnlyWhole (fmap $ fromEnhanced $ rangeCo tr) $ eaToReadOnlyWhole set
 
-pinaforeFiniteSetRefMember ::
-       forall baseupdate a. PinaforeFiniteSetRef baseupdate '( a, TopType) -> a -> PinaforeRef baseupdate '( Bool, Bool)
+pinaforeFiniteSetRefMember :: forall a. PinaforeFiniteSetRef '( a, TopType) -> a -> PinaforeRef '( Bool, Bool)
 pinaforeFiniteSetRefMember (MkPinaforeFiniteSetRef tr set) val = let
     tval = fromEnhanced (rangeContra tr) val
-    in LensPinaforeRef identityRange $ wholeEditLens knowMaybeLens . finiteSetEditLens tval . set
+    in MutablePinaforeRef identityRange $ eaMap (wholeEditLens knowMaybeLens . finiteSetEditLens tval) set
 
 pinaforeFiniteSetRefSingle ::
-       forall baseupdate a.
-       PinaforeFiniteSetRef baseupdate '( BottomType, MeetType Entity a)
-    -> PinaforeRef baseupdate '( TopType, a)
+       forall a. PinaforeFiniteSetRef '( BottomType, MeetType Entity a) -> PinaforeRef '( TopType, a)
 pinaforeFiniteSetRefSingle set =
-    pinaforeFunctionToRef $
-    funcUpdateFunction (fmap meet2 . maybeToKnow . getSingle) . pinaforeFiniteSetRefFunctionValue set
+    pinaforeReadOnlyValueToRef $
+    eaMapReadOnlyWhole (fmap meet2 . maybeToKnow . getSingle) $ pinaforeFiniteSetRefFunctionValue set
 
 pinaforeFiniteSetRefFunc ::
-       forall baseupdate a b.
-       (FiniteSet a -> b)
-    -> PinaforeFiniteSetRef baseupdate '( BottomType, a)
-    -> PinaforeRef baseupdate '( TopType, b)
+       forall a b. (FiniteSet a -> b) -> PinaforeFiniteSetRef '( BottomType, a) -> PinaforeRef '( TopType, b)
 pinaforeFiniteSetRefFunc f set =
-    pinaforeFunctionToRef $ funcUpdateFunction (Known . f) . pinaforeFiniteSetRefFunctionValue set
+    pinaforeReadOnlyValueToRef $ eaMapReadOnlyWhole (Known . f) $ pinaforeFiniteSetRefFunctionValue set
 
 pinaforeFiniteSetRefCartesianSum ::
-       forall baseupdate ap aq bp bq.
-       PinaforeFiniteSetRef baseupdate '( ap, aq)
-    -> PinaforeFiniteSetRef baseupdate '( bp, bq)
-    -> PinaforeFiniteSetRef baseupdate '( Either ap bp, Either aq bq)
+       forall ap aq bp bq.
+       PinaforeFiniteSetRef '( ap, aq)
+    -> PinaforeFiniteSetRef '( bp, bq)
+    -> PinaforeFiniteSetRef '( Either ap bp, Either aq bq)
 pinaforeFiniteSetRefCartesianSum (MkPinaforeFiniteSetRef tra vala) (MkPinaforeFiniteSetRef trb valb) =
-    MkPinaforeFiniteSetRef (eitherRange tra trb) $ finiteSetCartesianSumEditLens . pairCombineEditLenses vala valb
+    MkPinaforeFiniteSetRef (eitherRange tra trb) $ eaMap finiteSetCartesianSumEditLens $ eaPair vala valb
 
 pinaforeFiniteSetRefCartesianProduct ::
-       forall baseupdate ap aq bp bq.
-       PinaforeFiniteSetRef baseupdate '( ap, aq)
-    -> PinaforeFiniteSetRef baseupdate '( bp, bq)
-    -> PinaforeFiniteSetRef baseupdate '( (ap, bp), (aq, bq))
+       forall ap aq bp bq.
+       PinaforeFiniteSetRef '( ap, aq)
+    -> PinaforeFiniteSetRef '( bp, bq)
+    -> PinaforeFiniteSetRef '( (ap, bp), (aq, bq))
 pinaforeFiniteSetRefCartesianProduct (MkPinaforeFiniteSetRef tra vala) (MkPinaforeFiniteSetRef trb valb) =
     MkPinaforeFiniteSetRef (pairRange tra trb) $
-    updateFunctionToRejectingEditLens finiteSetCartesianProductUpdateFunction . pairCombineEditLenses vala valb
+    eaMap (updateFunctionToRejectingEditLens finiteSetCartesianProductUpdateFunction) $ eaPair vala valb
 
-pinaforeFiniteSetRefToSetRef ::
-       forall baseupdate p q. PinaforeFiniteSetRef baseupdate '( p, q) -> PinaforeSetRef baseupdate p
-pinaforeFiniteSetRefToSetRef (MkPinaforeFiniteSetRef tr lens) =
-    contramap (fromEnhanced $ rangeContra tr) $ MkPinaforeSetRef (==) $ finiteSetFunctionEditLens . lens
+pinaforeFiniteSetRefToSetRef :: forall p q. PinaforeFiniteSetRef '( p, q) -> PinaforeSetRef p
+pinaforeFiniteSetRefToSetRef (MkPinaforeFiniteSetRef tr sval) =
+    contramap (fromEnhanced $ rangeContra tr) $ MkPinaforeSetRef (==) $ eaMap finiteSetFunctionEditLens sval
 
 pinaforeFiniteSetRefSetIntersect ::
-       forall baseupdate p q.
-       PinaforeFiniteSetRef baseupdate '( p, q)
-    -> PinaforeSetRef baseupdate q
-    -> PinaforeFiniteSetRef baseupdate '( p, q)
-pinaforeFiniteSetRefSetIntersect (MkPinaforeFiniteSetRef tr fsetlens) fsetref = let
-    MkPinaforeSetRef _ setlens = contramap (fromEnhanced $ rangeCo tr) fsetref
-    fsetfunc = editLensFunction fsetlens
-    setfunc = editLensFunction setlens
+       forall p q. PinaforeFiniteSetRef '( p, q) -> PinaforeSetRef q -> PinaforeFiniteSetRef '( p, q)
+pinaforeFiniteSetRefSetIntersect (MkPinaforeFiniteSetRef tr fsetval) fsetref = let
+    MkPinaforeSetRef _ setval = contramap (fromEnhanced $ rangeCo tr) fsetref
     in MkPinaforeFiniteSetRef tr $
-       updateFunctionToRejectingEditLens $ filterFiniteSetUpdateFunction . pairCombineUpdateFunctions fsetfunc setfunc
+       eaMap (updateFunctionToRejectingEditLens filterFiniteSetUpdateFunction) $ eaPair fsetval setval
 
 pinaforeFiniteSetRefSetDifference ::
-       forall baseupdate p q.
-       PinaforeFiniteSetRef baseupdate '( p, q)
-    -> PinaforeSetRef baseupdate q
-    -> PinaforeFiniteSetRef baseupdate '( p, q)
+       forall p q. PinaforeFiniteSetRef '( p, q) -> PinaforeSetRef q -> PinaforeFiniteSetRef '( p, q)
 pinaforeFiniteSetRefSetDifference a b = pinaforeFiniteSetRefSetIntersect a $ pinaforeSetRefComplement b

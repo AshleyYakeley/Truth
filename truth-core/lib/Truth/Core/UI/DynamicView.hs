@@ -21,10 +21,11 @@ closeDynamicView dvs = for_ (dynamicViewStates dvs) closeLifeState
 
 cvDynamic ::
        forall dvs sel update. (DynamicViewState dvs, sel ~ DynamicViewSelEdit dvs)
-    => dvs
+    => Subscriber update
+    -> dvs
     -> (Object (UpdateEdit update) -> [update] -> StateT dvs IO ())
-    -> CreateView sel update ()
-cvDynamic firstdvs updateCV = do
+    -> CreateView sel ()
+cvDynamic sub firstdvs updateCV = do
     stateVar :: MVar dvs <- liftIO $ newMVar firstdvs
     liftLifeCycleIO $
         lifeCycleClose $ do
@@ -37,6 +38,6 @@ cvDynamic firstdvs updateCV = do
         mVarRun stateVar $ do
             dvs <- get
             lift $ vsFirstAspect $ dynamicViewFocus dvs
-    cvReceiveIOUpdates $ \obj uu -> update obj $ toList uu
-    obj <- cvLiftView viewObject
+    cvReceiveIOUpdates sub $ \obj uu -> update obj $ toList uu
+    obj <- cvLiftView $ viewObject sub
     liftIO $ update obj [] noEditSource

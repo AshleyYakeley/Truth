@@ -8,6 +8,11 @@ module Truth.Core.Object.Subscriber
     , shareObjectMaker
     , mapSubscriber
     , mapPureSubscriber
+    , unitSubscriber
+    , ReadOnlySubscriber
+    , mapReadOnlySubscriber
+    , constantSubscriber
+    , subscriberToReadOnly
     ) where
 
 import Truth.Core.Edit
@@ -15,7 +20,9 @@ import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
+import Truth.Core.Read
 import Truth.Core.Resource
+import Truth.Core.Types
 
 data ASubscriber update tt = MkASubscriber
     { subAnObject :: AnObject (UpdateEdit update) tt
@@ -129,3 +136,27 @@ mapPureSubscriber lens (MkResource rr (MkASubscriber objA subA)) =
                     Just updatesB' -> recvB updatesB' ec
             in subA recvA
         in MkResource rr $ MkASubscriber objB subB
+
+unitSubscriber :: Subscriber (WholeUpdate ())
+unitSubscriber =
+    MkResource nilResourceRunner $
+    MkASubscriber (MkAnObject (\ReadWhole -> return ()) $ \_ -> return Nothing) $ \_ -> return ()
+
+type ReadOnlySubscriber update = Subscriber (ReadOnlyUpdate update)
+
+constantSubscriber ::
+       forall update. SubjectReader (UpdateReader update)
+    => UpdateSubject update
+    -> ReadOnlySubscriber update
+constantSubscriber subj =
+    MkResource nilResourceRunner $ MkASubscriber (immutableAnObject $ subjectToMutableRead subj) $ \_ -> return ()
+
+mapReadOnlySubscriber ::
+       forall updateA updateB.
+       UpdateFunction updateA updateB
+    -> ReadOnlySubscriber updateA
+    -> ReadOnlySubscriber updateB
+mapReadOnlySubscriber uf = mapPureSubscriber $ updateFunctionToEditLens $ uf . fromReadOnlyUpdateFunction
+
+subscriberToReadOnly :: Subscriber update -> ReadOnlySubscriber update
+subscriberToReadOnly = mapPureSubscriber toReadOnlyEditLens

@@ -31,18 +31,18 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-textView :: GCreateView (EditLens (StringUpdate Text) (StringUpdate Text)) (StringUpdate Text)
-textView = do
+textView :: Subscriber (StringUpdate Text) -> GCreateView TextSelection
+textView sub = do
     esrc <- newEditSource
     buffer <- new TextBuffer []
-    initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
+    initial <- cvLiftView $ viewObjectRead sub $ \_ -> mutableReadToSubject
     #setText buffer initial (-1)
     insertSignal <-
         cvLiftView $
         liftIOView $ \unlift ->
             on buffer #insertText $ \iter text _ ->
                 unlift $
-                viewObjectPushEdit $ \_ push -> do
+                viewObjectPushEdit sub $ \_ push -> do
                     p <- getSequencePoint iter
                     _ <- push esrc $ pure $ StringReplaceSection (MkSequenceRun p 0) text
                     return ()
@@ -51,12 +51,12 @@ textView = do
         liftIOView $ \unlift ->
             on buffer #deleteRange $ \iter1 iter2 ->
                 unlift $
-                viewObjectPushEdit $ \_ push -> do
+                viewObjectPushEdit sub $ \_ push -> do
                     run <- getSequenceRun iter1 iter2
                     _ <- push esrc $ pure $ StringReplaceSection run mempty
                     return ()
     widget <- new TextView [#buffer := buffer]
-    cvReceiveUpdate (Just esrc) $ \_ _ (MkEditUpdate edit) ->
+    cvReceiveUpdate sub (Just esrc) $ \_ _ (MkEditUpdate edit) ->
         liftIO $
         withSignalBlocked buffer insertSignal $
         withSignalBlocked buffer deleteSignal $
@@ -64,13 +64,12 @@ textView = do
             StringReplaceWhole text -> #setText buffer text (-1)
             StringReplaceSection bounds text -> replaceText buffer bounds text
     let
-        aspect :: Aspect (EditLens (StringUpdate Text) (StringUpdate Text))
+        aspect :: Aspect TextSelection
         aspect = do
             (_, iter1, iter2) <- #getSelectionBounds buffer
-            run <- getSequenceRun iter1 iter2
             -- get selection...
-            lens <- stringSectionLens run
-            return $ Just lens
+            run <- getSequenceRun iter1 iter2
+            return $ Just $ stringSectionLens run
     cvAddAspect aspect
     _ <-
         cvLiftView $
@@ -82,4 +81,4 @@ textView = do
     toWidget widget
 
 textAreaGetView :: GetGView
-textAreaGetView = MkGetView $ \_ uispec -> fmap (\MkTextAreaUISpec -> textView) $ isUISpec uispec
+textAreaGetView = MkGetView $ \_ uispec -> fmap (\(MkTextAreaUISpec sub) -> textView sub) $ isUISpec uispec

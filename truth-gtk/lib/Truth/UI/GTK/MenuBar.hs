@@ -24,8 +24,7 @@ accelGroupConnection ag key mods flags action = do
         _ <- accelGroupDisconnect ag $ Just closure
         return ()
 
-attachMenuEntry ::
-       (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> MenuEntry edit -> CreateView sel edit ()
+attachMenuEntry :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> MenuEntry -> CreateView sel ()
 attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
     aref <- liftIO $ newIORef Nothing
     item <- menuItemNew
@@ -67,11 +66,10 @@ attachMenuEntry _ ms SeparatorMenuEntry = do
     item <- new SeparatorMenuItem []
     menuShellAppend ms item
 
-attachMenuEntries ::
-       (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> [MenuEntry edit] -> CreateView sel edit ()
+attachMenuEntries :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> [MenuEntry] -> CreateView sel ()
 attachMenuEntries ag menu mm = for_ mm $ attachMenuEntry ag menu
 
-createMenuBar :: IsAccelGroup ag => ag -> Truth.Core.MenuBar edit -> CreateView sel edit Gtk.MenuBar
+createMenuBar :: IsAccelGroup ag => ag -> Truth.Core.MenuBar -> CreateView sel Gtk.MenuBar
 createMenuBar ag menu = do
     mbar <- menuBarNew
     attachMenuEntries ag mbar menu

@@ -1,17 +1,18 @@
 module Truth.Core.UI.Specifier.TextEntry where
 
 import Truth.Core.Import
+import Truth.Core.Object
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data TextAreaUISpecEntry sel update where
-    MkTextAreaUISpecEntry :: TextAreaUISpecEntry sel (WholeUpdate Text)
+data TextEntryUISpec sel where
+    MkTextEntryUISpec :: Subscriber (WholeUpdate Text) -> TextEntryUISpec sel
 
-instance Show (TextAreaUISpecEntry sel update) where
-    show MkTextAreaUISpecEntry = "text entry"
+instance Show (TextEntryUISpec sel) where
+    show (MkTextEntryUISpec _) = "text entry"
 
-instance UIType TextAreaUISpecEntry where
-    uiWitness = $(iowitness [t|TextAreaUISpecEntry|])
+instance UIType TextEntryUISpec where
+    uiWitness = $(iowitness [t|TextEntryUISpec|])
 
-textAreaUISpecEntry :: forall sel. UISpec sel (WholeUpdate Text)
-textAreaUISpecEntry = MkUISpec MkTextAreaUISpecEntry
+textEntryUISpec :: forall sel. Subscriber (WholeUpdate Text) -> UISpec sel
+textEntryUISpec sub = MkUISpec $ MkTextEntryUISpec sub

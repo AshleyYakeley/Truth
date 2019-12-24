@@ -13,9 +13,9 @@ calendarGetView :: GetGView
 calendarGetView =
     MkGetView $ \_ uispec ->
         fmap
-            (\MkCalendarUISpec -> do
+            (\(MkCalendarUISpec sub) -> do
                  esrc <- newEditSource
-                 initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
+                 initial <- cvLiftView $ viewObjectRead sub $ \_ -> mutableReadToSubject
                  widget <- new Calendar []
                  let
                      getDay ::
@@ -34,14 +34,14 @@ calendarGetView =
                          (y, m, d) = toGregorian day
                          in set widget [#year := fromInteger y, #month := fromIntegral m, #day := fromIntegral d]
                      onChanged =
-                         viewObjectPushEdit $ \_ push -> do
+                         viewObjectPushEdit sub $ \_ push -> do
                              st <- getDay
                              _ <- push esrc $ pure $ MkWholeReaderEdit st
                              return ()
                  putDay initial
                  _ <- cvLiftView $ viewOn widget #daySelected onChanged
                  _ <- cvLiftView $ viewOn widget #monthChanged onChanged
-                 cvReceiveUpdate (Just esrc) $ \_ _ (MkWholeReaderUpdate newval) ->
+                 cvReceiveUpdate sub (Just esrc) $ \_ _ (MkWholeReaderUpdate newval) ->
                      liftIO $ do
                          oldval <- getDay
                          if oldval == newval

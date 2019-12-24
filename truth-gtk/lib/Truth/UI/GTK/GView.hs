@@ -3,6 +3,6 @@ module Truth.UI.GTK.GView where
 import GI.Gtk
 import Truth.Core
 
-type GCreateView sel update = CreateView sel update Widget
+type GCreateView sel = CreateView sel Widget
 
 type GetGView = GetView Widget

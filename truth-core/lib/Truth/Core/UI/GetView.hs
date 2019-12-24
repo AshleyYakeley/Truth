@@ -7,8 +7,7 @@ import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.Specifier.WithAspect
 
 newtype GetView w = MkGetView
-    { getUIView :: forall sel edit.
-                           (forall sel' edit'. UISpec sel' edit' -> CreateView sel' edit' w) -> UISpec sel edit -> Maybe (CreateView sel edit w)
+    { getUIView :: forall sel. (forall sel'. UISpec sel' -> CreateView sel' w) -> UISpec sel -> Maybe (CreateView sel w)
     }
 
 instance Semigroup (GetView w) where

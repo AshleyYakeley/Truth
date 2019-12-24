@@ -87,11 +87,10 @@ benchScripts =
 interpretUpdater :: (?pinafore :: PinaforeContext PinaforeUpdate) => Text -> IO ()
 interpretUpdater text = do
     action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" text
-    sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
     (sendUpdate, ref) <- unliftPinaforeActionOrFail action
-    runLifeCycle $ do
-        lensSub <- mapSubscriber (return $ immutableReferenceToLens ref) sub
-        subscribeEditor lensSub $ checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
+    runLifeCycle $
+        subscribeEditor (unPinaforeValue $ immutableReferenceToRejectingValue ref) $
+        checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =

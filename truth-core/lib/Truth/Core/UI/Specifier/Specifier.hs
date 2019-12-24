@@ -2,23 +2,23 @@ module Truth.Core.UI.Specifier.Specifier where
 
 import Truth.Core.Import
 
-data UISpec (sel :: Type) (update :: Type) where
+data UISpec (sel :: Type) where
     MkUISpec
-        :: forall (t :: Type -> Type -> Type) (sel :: Type) (update :: Type). (Show (t sel update), UIType t)
-        => t sel update
-        -> UISpec sel update
+        :: forall (t :: Type -> Type) (sel :: Type). (Show (t sel), UIType t)
+        => t sel
+        -> UISpec sel
 
-instance Show (UISpec sel update) where
+instance Show (UISpec sel) where
     show (MkUISpec tedit) = show tedit
 
-class UIType (t :: Type -> Type -> Type) where
+class UIType (t :: Type -> Type) where
     uiWitness :: IOWitness t
 
 isUISpec ::
-       forall t sel update. UIType t
-    => UISpec sel update
-    -> Maybe (t sel update)
-isUISpec (MkUISpec (tedit :: t' sel update)) = do
+       forall t sel. UIType t
+    => UISpec sel
+    -> Maybe (t sel)
+isUISpec (MkUISpec (tedit :: t' sel)) = do
     Refl <- testEquality (uiWitness @t) (uiWitness @t')
     return tedit
 

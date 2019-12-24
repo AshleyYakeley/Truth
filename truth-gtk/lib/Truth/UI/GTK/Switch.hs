@@ -9,32 +9,26 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-switchView :: forall sel edit. UpdateFunction edit (WholeUpdate (GCreateView sel edit)) -> GCreateView sel edit
-switchView specfunc = do
+switchView :: forall sel. ReadOnlySubscriber (WholeUpdate (GCreateView sel)) -> GCreateView sel
+switchView sub = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
-        getViewState :: GCreateView sel edit -> View sel edit (ViewState sel)
+        getViewState :: GCreateView sel -> View sel (ViewState sel)
         getViewState gview =
             viewCreateView $ do
                 widget <- gview
                 lcContainPackStart True box widget
                 #show widget
     firstvs <- do
-        firstspec <-
-            cvMapEdit (return $ updateFunctionToRejectingEditLens specfunc) $
-            cvLiftView $ viewObjectRead $ \_ mr -> mr ReadWhole
+        firstspec <- cvLiftView $ viewObjectRead sub $ \_ mr -> mr ReadWhole
         cvLiftView $ getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic @(ViewState sel) firstvs $ \object updates ->
-        case nonEmpty updates of
-            Nothing -> return ()
-            Just updates' -> do
-                whupdates <- liftIO $ objectMapUpdates specfunc object updates'
-                for_ (lastWholeUpdate whupdates) $ \spec -> do
-                    oldvs <- get
-                    liftIO $ closeDynamicView oldvs
-                    newvs <- liftIO $ runWMFunction unliftView $ getViewState spec
-                    put newvs
+    cvDynamic @(ViewState sel) sub firstvs $ \_ updates ->
+        for_ (lastWholeUpdate $ fmap unReadOnlyUpdate updates) $ \spec -> do
+            oldvs <- get
+            liftIO $ closeDynamicView oldvs
+            newvs <- liftIO $ runWMFunction unliftView $ getViewState spec
+            put newvs
     toWidget box
 
 switchGetView :: GetGView
@@ -43,4 +37,4 @@ switchGetView =
         spec <- isUISpec uispec
         return $
             case spec of
-                MkSwitchUISpec specfunc -> switchView $ funcUpdateFunction getview . specfunc
+                MkSwitchUISpec sub -> switchView $ mapReadOnlySubscriber (funcUpdateFunction getview) sub

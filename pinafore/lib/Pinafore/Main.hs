@@ -20,7 +20,7 @@ import System.FilePath
 import Truth.Core
 import Truth.World.Clock
 
-type FilePinaforeType = PinaforeAction PinaforeUpdate ()
+type FilePinaforeType = PinaforeAction ()
 
 filePinaforeType :: Text
 filePinaforeType = qTypeDescription @PinaforeUpdate @FilePinaforeType

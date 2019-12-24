@@ -28,7 +28,7 @@ import Truth.UI.GTK.Table
 import Truth.UI.GTK.Text
 import Truth.UI.GTK.Useful
 
-lastResortView :: UISpec sel edit -> GCreateView sel edit
+lastResortView :: UISpec sel -> GCreateView sel
 lastResortView spec = do
     w <- liftIO $ labelNew $ Just $ "missing viewer for " <> fromString (show spec)
     toWidget w
@@ -79,16 +79,16 @@ getRequest wit = do
         #destroy dialog
         return mpath
 
-getMaybeView :: UISpec sel edit -> Maybe (GCreateView sel edit)
+getMaybeView :: UISpec sel -> Maybe (GCreateView sel)
 getMaybeView = getUIView allGetView getTheView
 
-getTheView :: UISpec sel edit -> GCreateView sel edit
+getTheView :: UISpec sel -> GCreateView sel
 getTheView spec =
     case getMaybeView spec of
         Just view -> view
         Nothing -> lastResortView spec
 
-createWindowAndChild :: WindowSpec edit -> AnyCreateView edit UIWindow
+createWindowAndChild :: WindowSpec -> AnyCreateView UIWindow
 createWindowAndChild MkWindowSpec {..} =
     MkAnyCreateView $
     cvWithAspect $ \aspect -> do
@@ -106,7 +106,10 @@ createWindowAndChild MkWindowSpec {..} =
                 Just efmbar -> do
                     ag <- new AccelGroup []
                     #addAccelGroup window ag
-                    mb <- switchView $ funcUpdateFunction (\mbar -> createMenuBar ag mbar >>= toWidget) . efmbar aspect
+                    mb <-
+                        switchView $
+                        mapReadOnlySubscriber (funcUpdateFunction (\mbar -> createMenuBar ag mbar >>= toWidget)) $
+                        efmbar aspect
                     vbox <- new Box [#orientation := OrientationVertical]
                     #packStart vbox mb False False 0
                     #packStart vbox content True True 0
@@ -133,8 +136,8 @@ truthMainGTK appMain =
         let
             uitWithLock :: forall a. IO a -> IO a
             uitWithLock action = mVarRun uiLockVar $ liftIO action
-            uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow
-            uitCreateWindow sub wspec = subscribeView uitWithLock (createWindowAndChild wspec) sub getRequest
+            uitCreateWindow :: WindowSpec -> LifeCycleIO UIWindow
+            uitCreateWindow wspec = runCreateView uitWithLock (createWindowAndChild wspec) getRequest
             uitExit :: IO ()
             uitExit = mVarRun runVar $ put RSStop
             uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a

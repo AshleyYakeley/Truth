@@ -9,10 +9,10 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
 createButton ::
-       forall sel update. FullEdit (UpdateEdit update)
-    => UpdateSubject update
-    -> Object (UpdateEdit update)
-    -> CreateView sel update Button
+       forall sel edit. FullEdit edit
+    => EditSubject edit
+    -> Object edit
+    -> CreateView sel Button
 createButton subj (MkResource trun MkAnObject {..}) =
     cvMakeButton "Create" $
     runResourceRunnerWith trun $ \run ->
@@ -40,25 +40,26 @@ instance DynamicViewState (OneWholeViews sel f) where
 oneWholeView ::
        forall sel f update wd. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update), IsWidget wd)
     => Maybe (Limit f)
-    -> (Object (OneWholeEdit f (UpdateEdit update)) -> CreateView sel (OneWholeUpdate f update) wd)
-    -> GCreateView sel update
-    -> GCreateView sel (OneWholeUpdate f update)
-oneWholeView mDeleteValue makeEmptywidget baseView = do
+    -> Subscriber (OneWholeUpdate f update)
+    -> (Object (OneWholeEdit f (UpdateEdit update)) -> CreateView sel wd)
+    -> (Subscriber update -> GCreateView sel)
+    -> GCreateView sel
+oneWholeView mDeleteValue sub makeEmptywidget baseView = do
     box <- new Box [#orientation := OrientationVertical]
     mDeleteButton <-
         for mDeleteValue $ \(MkLimit deleteValue) -> do
             cvMakeButton "Delete" $
-                viewObjectPushEdit $ \_ push -> do
+                viewObjectPushEdit sub $ \_ push -> do
                     _ <- push noEditSource $ pure $ SumEditLeft $ MkWholeReaderEdit deleteValue
                     return ()
     let
-        getWidgets :: f () -> View sel (OneWholeUpdate f update) (OneWholeViews sel f)
+        getWidgets :: f () -> View sel (OneWholeViews sel f)
         getWidgets fu =
             case retrieveOne fu of
                 FailureResult lfx -> do
                     vs <-
                         viewCreateView $ do
-                            object <- cvLiftView viewObject
+                            object <- cvLiftView $ viewObject sub
                             w <- makeEmptywidget object
                             lcContainPackStart True box w
                             widgetShow w
@@ -66,7 +67,7 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
                 SuccessResult () -> do
                     vs <-
                         viewCreateView $ do
-                            widget <- cvMapEdit (return $ mustExistOneEditLens "object") baseView
+                            widget <- baseView $ mapPureSubscriber (mustExistOneEditLens "object") sub
                             for_ mDeleteButton $ \button -> do
                                 lcContainPackStart False box button
                                 #show button
@@ -75,10 +76,10 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
                     return $ PresentOVS vs
     firstdvs <-
         cvLiftView $ do
-            firstfu <- viewObjectRead $ \_ mr -> mr ReadHasOne
+            firstfu <- viewObjectRead sub $ \_ mr -> mr ReadHasOne
             getWidgets firstfu
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic firstdvs $ \(MkResource trun (MkAnObject mr _)) _ -> do
+    cvDynamic sub firstdvs $ \(MkResource trun (MkAnObject mr _)) _ -> do
         olddvs <- get
         runResourceRunnerWith trun $ \run -> do
             newfu <- lift $ run $ mr ReadHasOne
@@ -91,7 +92,7 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
                     put newdvs
     toWidget box
 
-placeholderLabel :: CreateView sel update Label
+placeholderLabel :: CreateView sel Label
 placeholderLabel = new Label [#label := "Placeholder"]
 
 oneGetView :: GetGView
@@ -100,6 +101,7 @@ oneGetView =
         uit <- isUISpec uispec
         return $
             case uit of
-                MaybeUISpec mnewval itemspec ->
-                    oneWholeView (Just $ MkLimit Nothing) (createButton mnewval) $ getview itemspec
-                OneWholeUISpec itemspec -> oneWholeView Nothing (\_ -> placeholderLabel) $ getview itemspec
+                MaybeUISpec mnewval sub itemspec ->
+                    oneWholeView (Just $ MkLimit Nothing) sub (createButton mnewval) $ \s -> getview $ itemspec s
+                OneWholeUISpec sub itemspec ->
+                    oneWholeView Nothing sub (\_ -> placeholderLabel) $ \s -> getview $ itemspec s

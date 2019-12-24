@@ -4,6 +4,7 @@ module Truth.Core.Object.Tuple
     , tupleObjectMaker
     , tupleSubscriber
     , pairSubscribers
+    , pairReadOnlySubscribers
     ) where
 
 import Truth.Core.Edit
@@ -188,3 +189,14 @@ pairObjects obja objb = uObjToObj $ pairResource (objToUObj obja) (objToUObj obj
 pairSubscribers ::
        forall updatea updateb. Subscriber updatea -> Subscriber updateb -> Subscriber (PairUpdate updatea updateb)
 pairSubscribers = pairResource
+
+pairReadOnlySubscribers ::
+       forall updateA updateB.
+       ReadOnlySubscriber updateA
+    -> ReadOnlySubscriber updateB
+    -> ReadOnlySubscriber (PairUpdate updateA updateB)
+pairReadOnlySubscribers sa sb =
+    mapPureSubscriber toReadOnlyEditLens $
+    pairSubscribers
+        (mapPureSubscriber fromReadOnlyRejectingEditLens sa)
+        (mapPureSubscriber fromReadOnlyRejectingEditLens sb)
