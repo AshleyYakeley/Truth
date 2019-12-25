@@ -72,12 +72,16 @@ oneWholeView mDeleteValue sub makeEmptywidget baseView =
                                 lcContainPackStart True box widget
                                 widgetShow widget
                         return $ PresentOVS vs
-        firstdvs <-
-            cvLiftView $ do
-                firstfu <- liftIO $ run $ subRead asub ReadHasOne
-                getWidgets firstfu
+            getFirstVS ::
+                   forall m. MonadIO m
+                => MFunction (CreateView sel) m
+                -> MutableRead m (OneReader f (UpdateReader update))
+                -> m (OneWholeViews sel f)
+            getFirstVS unlift mr = do
+                firstfu <- mr ReadHasOne
+                unlift $ cvLiftView $ getWidgets firstfu
         unliftView <- cvLiftView askUnliftIO
-        cvDynamic sub firstdvs $ \_ -> do
+        cvDynamic sub getFirstVS $ \_ -> do
             olddvs <- get
             newfu <- liftIO $ run $ subRead asub ReadHasOne
             case (olddvs, retrieveOne newfu) of

@@ -94,7 +94,7 @@ createWindowAndChild MkWindowSpec {..} =
     cvWithAspect $ \aspect -> do
         window <-
             lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
-        cvBindUpdateFunction Nothing wsTitle $ \title -> set window [#title := title]
+        cvBindReadOnlyWholeSubscriber wsTitle $ \title -> set window [#title := title]
         content <- getTheView wsContent
         _ <-
             on window #deleteEvent $ \_ -> do

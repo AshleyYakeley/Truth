@@ -46,7 +46,7 @@ addColumn ::
 addColumn tview store col = do
     renderer <- new CellRendererText []
     column <- new TreeViewColumn []
-    cvBindUpdateFunction Nothing (colName col) $ #setTitle column
+    cvBindReadOnlyWholeSubscriber (colName col) $ #setTitle column
     #packStart column renderer False
     cellLayoutSetAttributes column renderer store $ \(_, entry) -> cellAttributes col entry
     _ <- #appendColumn tview column
@@ -117,7 +117,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( Subscriber 
         findInStore key = do
             kk <- seqStoreToList store
             return $ lookup @[(ContainerKey cont, Int)] key $ zip (fmap fst kk) [0 ..]
-    cvReceiveUpdates tableSub Nothing $ \_ mr updates ->
+    cvReceiveUpdates tableSub Nothing $ \mr updates ->
             for_ updates $ \case
                 KeyUpdateDelete key -> do
                     mindex <- findInStore key
@@ -137,7 +137,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( Subscriber 
                 KeyUpdateClear -> seqStoreClear store
                 KeyUpdateItem _ _ -> return () -- no change to the table structure
     -- do updates to the cells
-    cvReceiveUpdates tableSub Nothing $ \_ (mr :: MutableRead m _) tupdates -> let
+    cvReceiveUpdates tableSub Nothing $ \(mr :: MutableRead m _) tupdates -> let
         changeText :: Change m (ContainerKey cont, StoreEntry  o rowtext rowprops)
         changeText =
             MkChange $ \(key, oldcol) ->

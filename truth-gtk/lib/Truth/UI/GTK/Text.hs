@@ -53,8 +53,7 @@ textView sub =
                     _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection srun mempty
                     return ()
         widget <- new TextView [#buffer := buffer]
-        cvReceiveUpdate sub (Just esrc) $ \_ _ (MkEditUpdate edit) ->
-            liftIO $
+        cvReceiveUpdate sub (Just esrc) $ \(MkEditUpdate edit) ->
             withSignalBlocked buffer insertSignal $
             withSignalBlocked buffer deleteSignal $
             case edit of

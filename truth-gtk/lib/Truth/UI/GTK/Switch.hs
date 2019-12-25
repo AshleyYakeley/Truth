@@ -10,27 +10,31 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
 switchView :: forall sel. ReadOnlySubscriber (WholeUpdate (GCreateView sel)) -> GCreateView sel
-switchView sub =
-    runResource sub $ \run asub -> do
-        box <- liftIO $ boxNew OrientationVertical 0
-        let
-            getViewState :: GCreateView sel -> View sel (ViewState sel)
-            getViewState gview =
-                viewCreateView $ do
-                    widget <- gview
-                    lcContainPackStart True box widget
-                    #show widget
-        firstvs <- do
-            firstspec <- liftIO $ run $ subRead asub ReadWhole
-            cvLiftView $ getViewState firstspec
-        unliftView <- cvLiftView askUnliftIO
-        cvDynamic @(ViewState sel) sub firstvs $ \updates ->
-            for_ (lastWholeUpdate $ fmap unReadOnlyUpdate updates) $ \spec -> do
-                oldvs <- get
-                liftIO $ closeDynamicView oldvs
-                newvs <- liftIO $ runWMFunction unliftView $ getViewState spec
-                put newvs
-        toWidget box
+switchView sub = do
+    box <- liftIO $ boxNew OrientationVertical 0
+    let
+        getViewState :: GCreateView sel -> View sel (ViewState sel)
+        getViewState gview =
+            viewCreateView $ do
+                widget <- gview
+                lcContainPackStart True box widget
+                #show widget
+        getFirstVS ::
+               forall m. MonadIO m
+            => MFunction (CreateView sel) m
+            -> MutableRead m (WholeReader (GCreateView sel))
+            -> m (ViewState sel)
+        getFirstVS unlift mr = do
+            firstspec <- mr ReadWhole
+            unlift $ cvLiftView $ getViewState firstspec
+    unliftView <- cvLiftView askUnliftIO
+    cvDynamic @(ViewState sel) sub getFirstVS $ \updates ->
+        for_ (lastWholeUpdate $ fmap unReadOnlyUpdate updates) $ \spec -> do
+            oldvs <- get
+            liftIO $ closeDynamicView oldvs
+            newvs <- liftIO $ runWMFunction unliftView $ getViewState spec
+            put newvs
+    toWidget box
 
 switchGetView :: GetGView
 switchGetView =

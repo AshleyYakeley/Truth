@@ -10,7 +10,7 @@ import Truth.UI.GTK.GView
 createWidget :: LabelUISpec sel -> CreateView sel Widget
 createWidget (MkLabelUISpec sub) = do
     widget <- new Label []
-    cvBindUpdateFunction Nothing sub $ \label -> set widget [#label := label]
+    cvBindReadOnlyWholeSubscriber sub $ \label -> set widget [#label := label]
     toWidget widget
 
 labelGetView :: GetGView

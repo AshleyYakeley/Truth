@@ -29,9 +29,3 @@ mapUpdates ef@MkUpdateFunction {..} (mrA :: MutableRead m (UpdateReader updateA)
             mrB :: MutableRead m (UpdateReader updateB)
             mrB = ufGet mrA
             in fmap Just $ call mrB editsB'
-
-type ReceiveUpdates update = forall m. MonadUnliftIO m => MutableRead m (UpdateReader update) -> NonEmpty update -> m ()
-
-mapReceiveUpdates ::
-       forall updateA updateB. UpdateFunction updateA updateB -> ReceiveUpdates updateB -> ReceiveUpdates updateA
-mapReceiveUpdates uf recvB mrA updatesA = void $ mapUpdates uf mrA updatesA recvB

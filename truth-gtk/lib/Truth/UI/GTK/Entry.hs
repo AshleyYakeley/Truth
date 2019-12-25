@@ -16,8 +16,7 @@ textEntryGetView =
             (\(MkTextEntryUISpec sub) ->
                  runResource sub $ \run asub -> do
                      esrc <- newEditSource
-                     initial <- liftIO $ run $ subRead asub ReadWhole
-                     widget <- new Entry [#text := initial]
+                     widget <- new Entry []
                      invalidCol <- new RGBA [#red := 1, #green := 0, #blue := 0, #alpha := 1]
                      let
                          setValidState ::
@@ -34,8 +33,7 @@ textEntryGetView =
                              st <- get widget #text
                              succeeded <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
                              setValidState succeeded
-                     cvReceiveUpdate sub (Just esrc) $ \_ _ (MkWholeReaderUpdate newtext) ->
-                         liftIO $
+                     cvBindWholeSubscriber sub (Just esrc) $ \newtext ->
                          withSignalBlocked widget changedSignal $ do
                              oldtext <- get widget #text
                              if oldtext == newtext

@@ -27,16 +27,15 @@ listStoreView (MkWMFunction blockSignal) sub esrc =
     runResource sub $ \run asub -> do
         subjectList <- liftIO $ run $ mutableReadToSubject $ subRead asub
         store <- seqStoreNew subjectList
-        cvReceiveUpdate sub (Just esrc) $ \_ _mr (MkReadOnlyUpdate lupdate) ->
+        cvReceiveUpdate sub (Just esrc) $ \(MkReadOnlyUpdate lupdate) ->
             case lupdate of
                 ListUpdateItem (MkSequencePoint (fromIntegral -> i)) update -> do
                     oldval <- seqStoreGetValue store i
                     newval <- mutableReadToSubject $ applyEdit (updateEdit update) $ subjectToMutableRead oldval
-                    liftIO $ blockSignal $ seqStoreSetValue store i newval
-                ListUpdateDelete (MkSequencePoint (fromIntegral -> i)) -> liftIO $ blockSignal $ seqStoreRemove store i
-                ListUpdateInsert (MkSequencePoint (fromIntegral -> i)) item ->
-                    liftIO $ blockSignal $ seqStoreInsert store i item
-                ListUpdateClear -> liftIO $ blockSignal $ seqStoreClear store
+                    blockSignal $ seqStoreSetValue store i newval
+                ListUpdateDelete (MkSequencePoint (fromIntegral -> i)) -> blockSignal $ seqStoreRemove store i
+                ListUpdateInsert (MkSequencePoint (fromIntegral -> i)) item -> blockSignal $ seqStoreInsert store i item
+                ListUpdateClear -> blockSignal $ seqStoreClear store
         return store
 
 optionUICellAttributes :: OptionUICell -> [AttrOp CellRendererText 'AttrSet]
@@ -70,21 +69,18 @@ optionFromStore sub esrc store =
         let
             blockSignal :: forall a. IO a -> IO a
             blockSignal = withSignalBlocked widget changedSignal
-            update :: MonadIO m => t -> m ()
-            update t =
-                liftIO $ do
-                    items <- seqStoreToList store
-                    case find (\(_, (t', _)) -> t == t') $ zip [(0 :: Int) ..] items of
-                        Just (i, _) -> do
-                            tp <- treePathNewFromIndices [fromIntegral i]
-                            mti <- treeModelGetIter store tp
-                            case mti of
-                                Just ti -> blockSignal $ #setActiveIter widget $ Just ti
-                                Nothing -> return ()
-                        Nothing -> return ()
-        firstVal <- liftIO $ run $ subRead asub ReadWhole
-        update firstVal
-        cvReceiveUpdate sub (Just esrc) $ \_ _mr (MkWholeReaderUpdate t) -> update t
+            update :: t -> IO ()
+            update t = do
+                items <- seqStoreToList store
+                case find (\(_, (t', _)) -> t == t') $ zip [(0 :: Int) ..] items of
+                    Just (i, _) -> do
+                        tp <- treePathNewFromIndices [fromIntegral i]
+                        mti <- treeModelGetIter store tp
+                        case mti of
+                            Just ti -> blockSignal $ #setActiveIter widget $ Just ti
+                            Nothing -> return ()
+                    Nothing -> return ()
+        cvBindWholeSubscriber sub (Just esrc) update
         w <- toWidget widget
         return (MkWMFunction blockSignal, w)
 

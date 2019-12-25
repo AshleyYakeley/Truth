@@ -16,11 +16,10 @@ createWidget ::
 createWidget rlabel raction = do
     aref <- liftIO $ newIORef Nothing
     widget <- new Button []
-    cvBindUpdateFunction Nothing rlabel $ \label -> set widget [#label := label]
-    cvBindUpdateFunction Nothing raction $ \maction ->
-        liftIO $ do
-            writeIORef aref maction
-            set widget [#sensitive := isJust maction]
+    cvBindReadOnlyWholeSubscriber rlabel $ \label -> set widget [#label := label]
+    cvBindReadOnlyWholeSubscriber raction $ \maction -> do
+        writeIORef aref maction
+        set widget [#sensitive := isJust maction]
     _ <-
         cvLiftView $
         viewOn widget #clicked $

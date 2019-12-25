@@ -1,7 +1,9 @@
 module Truth.Core.UI.DynamicView where
 
+import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object
+import Truth.Core.Read
 import Truth.Core.UI.CreateView
 
 class DynamicViewState (dvs :: Type) where
@@ -20,21 +22,30 @@ closeDynamicView dvs = for_ (dynamicViewStates dvs) closeLifeState
 cvDynamic ::
        forall dvs sel update. (DynamicViewState dvs, sel ~ DynamicViewSelEdit dvs)
     => Subscriber update
-    -> dvs
+    -> (forall m. MonadIO m => MFunction (CreateView sel) m -> MutableRead m (UpdateReader update) -> m dvs)
     -> ([update] -> StateT dvs IO ())
     -> CreateView sel ()
-cvDynamic sub firstdvs recvCV = do
-    stateVar :: MVar dvs <- liftIO $ newMVar firstdvs
-    liftLifeCycleIO $
-        lifeCycleClose $ do
-            lastdvs <- takeMVar stateVar
-            closeDynamicView lastdvs
+cvDynamic sub initCV recvCV = do
     let
-        recv :: [update] -> EditSource -> IO ()
-        recv updates _esrc = mVarRun stateVar $ recvCV updates
-    cvAddAspect $
-        mVarRun stateVar $ do
-            dvs <- get
-            lift $ vsFirstAspect $ dynamicViewFocus dvs
-    cvReceiveIOUpdates sub $ \uu -> recv $ toList uu
-    liftIO $ recv [] noEditSource
+        initBind ::
+               forall m. MonadIO m
+            => MFunction (CreateView sel) m
+            -> MutableRead m (UpdateReader update)
+            -> m (MVar dvs)
+        initBind unlift mr = do
+            firstdvs <- initCV unlift mr
+            stateVar <- liftIO $ newMVar firstdvs
+            unlift $ do
+                liftLifeCycleIO $
+                    lifeCycleClose $ do
+                        lastdvs <- takeMVar stateVar
+                        closeDynamicView lastdvs
+                cvAddAspect $
+                    mVarRun stateVar $ do
+                        dvs <- get
+                        lift $ vsFirstAspect $ dynamicViewFocus dvs
+            return stateVar
+        recvBind :: MVar dvs -> NonEmpty update -> IO ()
+        recvBind stateVar updates = mVarRun stateVar $ recvCV $ toList updates
+    stateVar <- cvBindSubscriber sub Nothing initBind recvBind
+    liftIO $ mVarRun stateVar $ recvCV []

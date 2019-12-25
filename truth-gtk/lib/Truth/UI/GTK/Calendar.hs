@@ -16,7 +16,6 @@ calendarGetView =
             (\(MkCalendarUISpec sub) ->
                  runResource sub $ \run asub -> do
                      esrc <- newEditSource
-                     initial <- liftIO $ run $ subRead asub ReadWhole
                      widget <- new Calendar []
                      let
                          getDay ::
@@ -40,14 +39,12 @@ calendarGetView =
                                  st <- getDay
                                  _ <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
                                  return ()
-                     putDay initial
                      _ <- cvLiftView $ viewOn widget #daySelected onChanged
                      _ <- cvLiftView $ viewOn widget #monthChanged onChanged
-                     cvReceiveUpdate sub (Just esrc) $ \_ _ (MkWholeReaderUpdate newval) ->
-                         liftIO $ do
-                             oldval <- getDay
-                             if oldval == newval
-                                 then return ()
-                                 else putDay newval
+                     cvBindWholeSubscriber sub (Just esrc) $ \newval -> do
+                         oldval <- getDay
+                         if oldval == newval
+                             then return ()
+                             else putDay newval
                      toWidget widget) $
         isUISpec uispec
