@@ -19,6 +19,13 @@ instance DynamicViewState (ViewState sel) where
 closeDynamicView :: DynamicViewState dvs => dvs -> IO ()
 closeDynamicView dvs = for_ (dynamicViewStates dvs) closeLifeState
 
+replaceDynamicView :: DynamicViewState dvs => IO dvs -> StateT dvs IO ()
+replaceDynamicView getNewDVS = do
+    oldvs <- get
+    liftIO $ closeDynamicView oldvs
+    newvs <- liftIO getNewDVS
+    put newvs
+
 cvDynamic ::
        forall dvs sel update. (DynamicViewState dvs, sel ~ DynamicViewSelEdit dvs)
     => Subscriber update

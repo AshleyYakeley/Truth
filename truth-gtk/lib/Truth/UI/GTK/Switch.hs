@@ -29,11 +29,8 @@ switchView sub = do
             unlift $ cvLiftView $ getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
     cvDynamic @(ViewState sel) sub getFirstVS $ \updates ->
-        for_ (lastWholeUpdate $ fmap unReadOnlyUpdate updates) $ \spec -> do
-            oldvs <- get
-            liftIO $ closeDynamicView oldvs
-            newvs <- liftIO $ runWMFunction unliftView $ getViewState spec
-            put newvs
+        for_ (lastWholeUpdate $ fmap unReadOnlyUpdate updates) $ \spec ->
+            replaceDynamicView $ runWMFunction unliftView $ getViewState spec
     toWidget box
 
 switchGetView :: GetGView

@@ -87,10 +87,7 @@ oneWholeView mDeleteValue sub makeEmptywidget baseView =
             case (olddvs, retrieveOne newfu) of
                 (PresentOVS _, SuccessResult ()) -> return ()
                 (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs
-                _ -> do
-                    liftIO $ closeDynamicView olddvs
-                    newdvs <- liftIO $ runWMFunction unliftView $ getWidgets newfu
-                    put newdvs
+                _ -> replaceDynamicView $ runWMFunction unliftView $ getWidgets newfu
         toWidget box
 
 placeholderLabel :: CreateView sel Label
