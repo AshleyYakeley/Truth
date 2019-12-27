@@ -16,12 +16,17 @@ textCodec = bijectionCodec packBijection . utf8Codec . bijectionCodec unpackBije
 textLens :: EditLens ByteStringUpdate (WholeUpdate ((Result Text) Text))
 textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) . convertEditLens
 
-optParser :: O.Parser ([FilePath], Bool, Bool)
-optParser = (,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') <*> O.switch (O.long "save")
+optParser :: O.Parser ([FilePath], Bool, Bool, Bool)
+optParser =
+    (,,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') <*> O.switch (O.long "seltest") <*>
+    O.switch (O.long "save")
+
+newtype AppUI =
+    MkAppUI (forall sel. IO () -> UIWindow -> UISpec sel -> (MenuBar, UISpec sel))
 
 main :: IO ()
 main = do
-    (paths, double, saveOpt) <- O.execParser (O.info optParser mempty)
+    (paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
     truthMainGTK $ \MkTruthContext {..} -> do
         (MkUIToolkit {..}, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
         for_ paths $ \path -> do
@@ -31,31 +36,38 @@ main = do
                 wholeTextObj :: Object (WholeEdit ((Result Text) Text))
                 wholeTextObj = mapObject textLens bsObj
                 ui :: Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text))
+                   -> Maybe (Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text)))
                    -> (forall sel. IO () -> UIWindow -> UISpec sel -> (MenuBar, UISpec sel))
                    -> UISpec TextSelection
-                ui sub extraui =
+                ui sub1 msub2 extraui =
                     withAspectUISpec $ \aspect -> let
-                        openSelection :: IO ()
-                        openSelection =
+                        openSelection :: Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text)) -> IO ()
+                        openSelection sub =
                             uitUnliftLifeCycle $ do
                                 mllens <- aspect
                                 case mllens of
                                     Nothing -> return ()
                                     Just llens -> do
                                         subSub <- mapSubscriber (fmap oneWholeLiftEditLens llens) sub
-                                        makeWindow "section" subSub extraui
-                        in verticalUISpec
-                               [ (simpleButtonUISpec (constantSubscriber "View") openSelection, False)
-                               , (scrolledUISpec $ oneWholeUISpec sub textAreaUISpec, True)
-                               ]
+                                        makeWindow "section" subSub Nothing extraui
+                        makeSpecs sub =
+                            [ (simpleButtonUISpec (constantSubscriber "View") $ openSelection sub, False)
+                            , (scrolledUISpec $ oneWholeUISpec sub textAreaUISpec, True)
+                            ]
+                        allSpecs =
+                            case msub2 of
+                                Nothing -> makeSpecs sub1
+                                Just sub2 -> makeSpecs sub1 <> makeSpecs sub2
+                        in verticalUISpec allSpecs
                 makeWindow ::
                        Text
                     -> Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text))
+                    -> Maybe (Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text)))
                     -> (forall sel. IO () -> UIWindow -> UISpec sel -> (MenuBar, UISpec sel))
                     -> LifeCycleIO ()
-                makeWindow title sub extraui = do
+                makeWindow title sub msub2 extraui = do
                     rec
-                        let (mbar, uic) = extraui closer r $ ui sub extraui
+                        let (mbar, uic) = extraui closer r $ ui sub msub2 extraui
                         (r, closer) <-
                             lifeCycleEarlyCloser $
                             uitCreateWindow $
@@ -115,18 +127,25 @@ main = do
                               ]
                         ]
                     in (mbar, spec)
-            action <-
-                if saveOpt
-                    then do
-                        (bufferSub, saveActions) <- makeSharedSubscriber $ saveBufferObject wholeTextObj
-                        (textSub, undoActions) <- liftIO $ undoQueueSubscriber bufferSub
-                        return $ makeWindow (fromString $ takeFileName path) textSub $ extraUI saveActions undoActions
-                    else do
-                        let
-                            textObj :: Object (OneWholeEdit (Result Text) (StringEdit Text))
-                            textObj = convertObject wholeTextObj
-                        textSub <- makeReflectingSubscriber textObj
-                        return $ makeWindow (fromString $ takeFileName path) textSub simpleUI
+            action <- do
+                (textSub, MkAppUI appUI) <-
+                    if saveOpt
+                        then do
+                            (bufferSub, saveActions) <- makeSharedSubscriber $ saveBufferObject wholeTextObj
+                            (textSub, undoActions) <- liftIO $ undoQueueSubscriber bufferSub
+                            return (textSub, MkAppUI $ extraUI saveActions undoActions)
+                        else do
+                            textSub <- makeReflectingSubscriber $ convertObject wholeTextObj
+                            return (textSub, MkAppUI simpleUI)
+                mTextSub2 <-
+                    case selTest of
+                        False -> return Nothing
+                        True -> do
+                            bsObj2 <- liftIO $ freeIOObject mempty $ \_ -> True
+                            textSub2 <-
+                                makeReflectingSubscriber $ convertObject $ mapObject textLens $ convertObject bsObj2
+                            return $ Just textSub2
+                return $ makeWindow (fromString $ takeFileName path) textSub mTextSub2 appUI
             action
             if double
                 then action
