@@ -48,6 +48,7 @@ oneWholeView mDeleteValue rmod@(MkOpenResource _ run asub) makeEmptywidget baseV
                 run $ do
                     _ <- pushEdit noEditSource $ subEdit asub $ pure $ SumEditLeft $ MkWholeReaderEdit deleteValue
                     return ()
+    unliftView <- cvLiftView askUnliftIO
     let
         getWidgets :: OpenSubscriber (OneWholeUpdate f update) -> f () -> View sel (OneWholeViews sel f)
         getWidgets rm fu =
@@ -71,18 +72,19 @@ oneWholeView mDeleteValue rmod@(MkOpenResource _ run asub) makeEmptywidget baseV
                             lcContainPackStart True box widget
                             widgetShow widget
                     return $ PresentOVS vs
-        getFirstVS :: OpenSubscriber (OneWholeUpdate f update) -> CreateView sel (OneWholeViews sel f)
-        getFirstVS rm = do
+        initVS :: OpenSubscriber (OneWholeUpdate f update) -> CreateView sel (OneWholeViews sel f)
+        initVS rm = do
             firstfu <- liftIO $ withOpenResource rm $ \am -> subRead am ReadHasOne
             cvLiftView $ getWidgets rm firstfu
-    unliftView <- cvLiftView askUnliftIO
-    cvDynamic rmod getFirstVS $ \_ -> do
-        olddvs <- get
-        newfu <- liftIO $ run $ subRead asub ReadHasOne
-        case (olddvs, retrieveOne newfu) of
-            (PresentOVS _, SuccessResult ()) -> return ()
-            (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs
-            _ -> replaceDynamicView $ runWMFunction unliftView $ getWidgets rmod newfu
+        recvVS :: [OneWholeUpdate f update] -> StateT (OneWholeViews sel f) IO ()
+        recvVS _ = do
+            olddvs <- get
+            newfu <- liftIO $ run $ subRead asub ReadHasOne
+            case (olddvs, retrieveOne newfu) of
+                (PresentOVS _, SuccessResult ()) -> return ()
+                (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs
+                _ -> replaceDynamicView $ runWMFunction unliftView $ getWidgets rmod newfu
+    cvDynamic rmod initVS recvVS
     toWidget box
 
 placeholderLabel :: CreateView sel Label

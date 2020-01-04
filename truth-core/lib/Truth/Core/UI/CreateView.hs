@@ -5,8 +5,6 @@ module Truth.Core.UI.CreateView
     , viewCreateView
     , cvLiftView
     , cvBindSubscriber
-    , cvReceiveUpdates
-    , cvReceiveUpdate
     , cvBindWholeSubscriber
     , cvBindReadOnlyWholeSubscriber
     , cvAddAspect
@@ -22,7 +20,6 @@ import Data.IORef
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object
-import Truth.Core.Read
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.View
@@ -130,18 +127,6 @@ cvBindReadOnlyWholeSubscriber sub setf = let
         MkReadOnlyUpdate (MkWholeUpdate val) = last updates
         in setf val
     in cvBindSubscriber sub Nothing init recv
-
-cvReceiveUpdates ::
-       OpenSubscriber update
-    -> Maybe EditSource
-    -> (forall m. MonadUnliftIO m => MutableRead m (UpdateReader update) -> NonEmpty update -> m ())
-    -> CreateView sel ()
-cvReceiveUpdates sub mesrc recv =
-    cvBindSubscriber sub mesrc (\_ -> return ()) $ \() updates ->
-        runResource (toResource sub) $ \run asub -> run $ recv (subRead asub) updates
-
-cvReceiveUpdate :: OpenSubscriber update -> Maybe EditSource -> (update -> IO ()) -> CreateView sel ()
-cvReceiveUpdate sub mesrc recv = cvBindSubscriber sub mesrc (\_ -> return ()) $ \() updates -> for_ updates recv
 
 cvAddAspect :: Aspect sel -> CreateView sel ()
 cvAddAspect aspect = cvViewOutput $ mempty {voFirstAspect = aspect}

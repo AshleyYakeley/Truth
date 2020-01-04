@@ -32,32 +32,37 @@ getSequenceRun iter1 iter2 = do
     return $ startEndRun p1 p2
 
 textView :: OpenSubscriber (StringUpdate Text) -> GCreateView TextSelection
-textView ores = do
+textView rmod = do
     esrc <- newEditSource
     buffer <- new TextBuffer []
-    initial <- liftIO $ withOpenResource ores $ \am -> mutableReadToSubject $ subRead am
-    #setText buffer initial (-1)
     insertSignal <-
         liftIO $
         on buffer #insertText $ \iter text _ -> do
             p <- getSequencePoint iter
-            withOpenResource (reopenResource ores) $ \asub -> do
+            withOpenResource (reopenResource rmod) $ \asub -> do
                 _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
                 return ()
     deleteSignal <-
         liftIO $
         on buffer #deleteRange $ \iter1 iter2 -> do
             srun <- getSequenceRun iter1 iter2
-            withOpenResource (reopenResource ores) $ \asub -> do
+            withOpenResource (reopenResource rmod) $ \asub -> do
                 _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection srun mempty
                 return ()
-    widget <- new TextView [#buffer := buffer]
-    cvReceiveUpdate ores (Just esrc) $ \(MkEditUpdate edit) ->
-        withSignalBlocked buffer insertSignal $
-        withSignalBlocked buffer deleteSignal $
-        case edit of
-            StringReplaceWhole text -> #setText buffer text (-1)
-            StringReplaceSection bounds text -> replaceText buffer bounds text
+    let
+        initV :: OpenSubscriber (StringUpdate Text) -> CreateView TextSelection ()
+        initV rm = do
+            initial <- liftIO $ withOpenResource rm $ \am -> mutableReadToSubject $ subRead am
+            #setText buffer initial (-1)
+        recvV :: () -> NonEmpty (StringUpdate Text) -> IO ()
+        recvV () updates =
+            for_ updates $ \(MkEditUpdate edit) ->
+                withSignalBlocked buffer insertSignal $
+                withSignalBlocked buffer deleteSignal $
+                case edit of
+                    StringReplaceWhole text -> #setText buffer text (-1)
+                    StringReplaceSection bounds text -> replaceText buffer bounds text
+    cvBindSubscriber rmod (Just esrc) initV recvV
     let
         aspect :: Aspect TextSelection
         aspect = do
@@ -65,6 +70,7 @@ textView ores = do
             -- get selection...
             srun <- getSequenceRun iter1 iter2
             return $ Just $ stringSectionLens srun
+    widget <- new TextView [#buffer := buffer]
     cvAddAspect aspect
     _ <-
         cvLiftView $

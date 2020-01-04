@@ -21,7 +21,7 @@ createWidget (MkCheckboxUISpec label rmod@(MkOpenResource _ run asub)) = do
         liftIO $
         run $ do
             st <- Gtk.get widget #active
-            _ <- pushEdit noEditSource $ subEdit asub $ pure $ MkWholeReaderEdit st
+            _ <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
             return ()
     cvBindWholeSubscriber rmod (Just esrc) $ \st -> withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
