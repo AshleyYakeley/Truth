@@ -54,6 +54,9 @@ newtype PinaforeValue update = MkPinaforeValue
     { unPinaforeValue :: Subscriber update
     }
 
+pinaforeValueOpenSubscriber :: PinaforeValue update -> OpenSubscriber update
+pinaforeValueOpenSubscriber = openResource . unPinaforeValue
+
 instance EditApplicative PinaforeValue where
     eaPure subj = MkPinaforeValue $ constantSubscriber subj
     eaMap lens (MkPinaforeValue sv) = MkPinaforeValue $ mapPureSubscriber lens sv

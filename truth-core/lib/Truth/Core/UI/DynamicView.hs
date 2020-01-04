@@ -1,9 +1,7 @@
 module Truth.Core.UI.DynamicView where
 
-import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object
-import Truth.Core.Read
 import Truth.Core.UI.CreateView
 
 class DynamicViewState (dvs :: Type) where
@@ -28,29 +26,24 @@ replaceDynamicView getNewDVS = do
 
 cvDynamic ::
        forall dvs sel update. (DynamicViewState dvs, sel ~ DynamicViewSelEdit dvs)
-    => Subscriber update
-    -> (forall m. MonadIO m => MFunction (CreateView sel) m -> MutableRead m (UpdateReader update) -> m dvs)
+    => OpenSubscriber update
+    -> (OpenSubscriber update -> CreateView sel dvs)
     -> ([update] -> StateT dvs IO ())
     -> CreateView sel ()
 cvDynamic sub initCV recvCV = do
     let
-        initBind ::
-               forall m. MonadIO m
-            => MFunction (CreateView sel) m
-            -> MutableRead m (UpdateReader update)
-            -> m (MVar dvs)
-        initBind unlift mr = do
-            firstdvs <- initCV unlift mr
+        initBind :: OpenSubscriber update -> CreateView sel (MVar dvs)
+        initBind rmod = do
+            firstdvs <- initCV rmod
             stateVar <- liftIO $ newMVar firstdvs
-            unlift $ do
-                liftLifeCycleIO $
-                    lifeCycleClose $ do
-                        lastdvs <- takeMVar stateVar
-                        closeDynamicView lastdvs
-                cvAddAspect $
-                    mVarRun stateVar $ do
-                        dvs <- get
-                        lift $ vsFirstAspect $ dynamicViewFocus dvs
+            liftLifeCycleIO $
+                lifeCycleClose $ do
+                    lastdvs <- takeMVar stateVar
+                    closeDynamicView lastdvs
+            cvAddAspect $
+                mVarRun stateVar $ do
+                    dvs <- get
+                    lift $ vsFirstAspect $ dynamicViewFocus dvs
             return stateVar
         recvBind :: MVar dvs -> NonEmpty update -> IO ()
         recvBind stateVar updates = mVarRun stateVar $ recvCV $ toList updates

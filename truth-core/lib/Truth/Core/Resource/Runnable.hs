@@ -49,8 +49,29 @@ runResource ::
     -> r
 runResource (MkResource rr ftt) call = runResourceRunnerWith rr $ \run -> call run ftt
 
-exclusiveResource :: (MapResource f) => Resource f -> LifeCycleIO (Resource f)
+exclusiveResource :: MapResource f => Resource f -> LifeCycleIO (Resource f)
 exclusiveResource (MkResource trun f) = do
     Dict <- return $ resourceRunnerUnliftAllDict trun
     trun' <- exclusiveResourceRunner trun
     return $ MkResource trun' $ mapResource stackTransListFunction f
+
+data OpenResource (f :: [TransKind] -> Type) =
+    forall (tt :: [TransKind]). (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt IO)) =>
+                                    MkOpenResource (ResourceRunner tt)
+                                                   (StackUnliftAll tt)
+                                                   (f tt)
+
+toResource :: OpenResource f -> Resource f
+toResource (MkOpenResource rr _ ftt) = MkResource rr ftt
+
+openResource :: Resource f -> OpenResource f
+openResource (MkResource rr ftt) = runResourceRunnerWith rr $ \run -> MkOpenResource rr run ftt
+
+reopenResource :: OpenResource f -> OpenResource f
+reopenResource = openResource . toResource
+
+withOpenResource ::
+       OpenResource f
+    -> (forall tt. (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt IO)) => f tt -> ApplyStack tt IO r)
+    -> IO r
+withOpenResource (MkOpenResource _ unlift (ftt :: _ tt)) call = unlift $ call @tt ftt

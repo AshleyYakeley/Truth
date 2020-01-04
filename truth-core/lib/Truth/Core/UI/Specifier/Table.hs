@@ -18,24 +18,24 @@ plainTableCellProps = let
     in MkTableCellProps {..}
 
 data KeyColumn key = MkKeyColumn
-    { kcName :: ReadOnlySubscriber (WholeUpdate Text)
-    , kcContents :: key -> IO (Subscriber (WholeUpdate Text), ReadOnlySubscriber (WholeUpdate TableCellProps))
+    { kcName :: ReadOnlyOpenSubscriber (WholeUpdate Text)
+    , kcContents :: key -> IO (OpenSubscriber (WholeUpdate Text), ReadOnlyOpenSubscriber (WholeUpdate TableCellProps))
     }
 
 readOnlyKeyColumn ::
        forall key.
-       ReadOnlySubscriber (WholeUpdate Text)
-    -> (key -> IO (ReadOnlySubscriber (WholeUpdate (Text, TableCellProps))))
+       ReadOnlyOpenSubscriber (WholeUpdate Text)
+    -> (key -> IO (ReadOnlyOpenSubscriber (WholeUpdate (Text, TableCellProps))))
     -> KeyColumn key
 readOnlyKeyColumn kcName getter = let
-    kcContents :: key -> IO (Subscriber (WholeUpdate Text), ReadOnlySubscriber (WholeUpdate TableCellProps))
+    kcContents :: key -> IO (OpenSubscriber (WholeUpdate Text), ReadOnlyOpenSubscriber (WholeUpdate TableCellProps))
     kcContents key = do
         func <- getter key
         return
-            ( mapPureSubscriber
+            ( mapOpenSubscriber
                   (updateFunctionToRejectingEditLens $ funcUpdateFunction fst . fromReadOnlyUpdateFunction)
                   func
-            , mapReadOnlySubscriber (funcUpdateFunction snd) func)
+            , mapReadOnlyWholeOpenSubscriber snd func)
     in MkKeyColumn {..}
 
 data TableUISpec sel where
@@ -44,8 +44,8 @@ data TableUISpec sel where
            (KeyContainer cont, FullSubjectReader (UpdateReader updateI), HasKeyReader cont (UpdateReader updateI))
         => [KeyColumn (ContainerKey cont)]
         -> (o -> o -> Ordering)
-        -> (ContainerKey cont -> ReadOnlySubscriber (WholeUpdate o))
-        -> Subscriber (KeyUpdate cont updateI)
+        -> (ContainerKey cont -> ReadOnlyOpenSubscriber (WholeUpdate o))
+        -> OpenSubscriber (KeyUpdate cont updateI)
         -> (ContainerKey cont -> IO ())
         -> TableUISpec (ContainerKey cont)
 
@@ -54,8 +54,8 @@ tableUISpec ::
        (KeyContainer cont, FullSubjectReader (UpdateReader updateI), HasKeyReader cont (UpdateReader updateI))
     => [KeyColumn (ContainerKey cont)]
     -> (o -> o -> Ordering)
-    -> (ContainerKey cont -> ReadOnlySubscriber (WholeUpdate o))
-    -> Subscriber (KeyUpdate cont updateI)
+    -> (ContainerKey cont -> ReadOnlyOpenSubscriber (WholeUpdate o))
+    -> OpenSubscriber (KeyUpdate cont updateI)
     -> (ContainerKey cont -> IO ())
     -> UISpec (ContainerKey cont)
 tableUISpec cols order geto lens onDoubleClick = MkUISpec $ MkTableUISpec cols order geto lens onDoubleClick

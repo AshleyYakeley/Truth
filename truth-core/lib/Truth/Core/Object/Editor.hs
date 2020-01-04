@@ -45,5 +45,5 @@ subscribeEditor (MkResource (rr :: _ tt) (MkASubscriber anobject sub)) editor = 
            MkEditor initr update f ->
                runResourceRunnerWith rr $ \run -> do
                    e <- initr object
-                   remonad run $ sub $ update e object
+                   run $ sub $ update e object
                    f e object

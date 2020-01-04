@@ -55,7 +55,7 @@ voNoAspect (MkViewOutput _) = MkViewOutput noAspect
 
 newtype CreateView sel a = MkCreateView
     { unCreateView :: ReaderT (ViewContext sel) (WriterT (ViewOutput sel) LifeCycleIO) a
-    } deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO)
+    } deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadFix, MonadUnliftIO)
 
 type ViewState sel = LifeState IO (ViewOutput sel)
 
@@ -79,21 +79,20 @@ instance MonadUnliftLifeCycleIO (CreateView sel) where
         MkCreateView $ liftWithUnlift $ \unliftR -> liftWithUnlift $ \unliftW -> call $ unliftW . unliftR . unCreateView
 
 cvBindSubscriber ::
-       Subscriber update
+       OpenSubscriber update
     -> Maybe EditSource
-    -> (forall m. MonadIO m => MFunction (CreateView sel) m -> MutableRead m (UpdateReader update) -> m a)
+    -> (OpenSubscriber update -> CreateView sel a)
     -> (a -> NonEmpty update -> IO ())
     -> CreateView sel a
-cvBindSubscriber sub mesrc fstCall recv = do
+cvBindSubscriber (MkOpenResource rr run (asub :: _ tt)) mesrc initv recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycleIO lifeCycleMonitor
     withUILock <- MkCreateView $ asks vcWithUILock
-    runResource sub $ \run (asub :: _ tt) ->
-        liftLifeCycleIOWithUnlift $ \unlift ->
-            remonad run $ do
-                a <-
-                    fstCall @(LifeCycleT (ApplyStack tt IO)) (remonad (stackLift @tt) . unlift) $
-                    remonadMutableRead lift $ subRead asub
+    run $
+        stackLiftWithUnliftAll @tt $ \unlift -> do
+            a <- initv $ MkOpenResource rr unlift asub
+            liftLifeCycleIO $
+                unlift $
                 subscribe asub $ \edits MkEditContext {..} ->
                     if mesrc == Just editContextSource
                         then return ()
@@ -102,35 +101,30 @@ cvBindSubscriber sub mesrc fstCall recv = do
                                  if alive
                                      then recv a edits
                                      else return ()
-                return a
+            return a
 
 cvBindWholeSubscriber ::
-       forall sel t. Subscriber (WholeUpdate t) -> Maybe EditSource -> (t -> IO ()) -> CreateView sel ()
+       forall sel t. OpenSubscriber (WholeUpdate t) -> Maybe EditSource -> (t -> IO ()) -> CreateView sel ()
 cvBindWholeSubscriber sub mesrc setf = let
-    init ::
-           forall m. MonadIO m
-        => MFunction (CreateView sel) m
-        -> MutableRead m (WholeReader t)
-        -> m ()
-    init _ mr = do
-        val <- mr ReadWhole
-        liftIO $ setf val
+    init :: OpenSubscriber (WholeUpdate t) -> CreateView sel ()
+    init (MkOpenResource _ unlift asub) =
+        liftIO $ do
+            val <- unlift $ subRead asub ReadWhole
+            setf val
     recv :: () -> NonEmpty (WholeUpdate t) -> IO ()
     recv () updates = let
         MkWholeUpdate val = last updates
         in setf val
     in cvBindSubscriber sub mesrc init recv
 
-cvBindReadOnlyWholeSubscriber :: forall sel t. ReadOnlySubscriber (WholeUpdate t) -> (t -> IO ()) -> CreateView sel ()
+cvBindReadOnlyWholeSubscriber ::
+       forall sel t. ReadOnlyOpenSubscriber (WholeUpdate t) -> (t -> IO ()) -> CreateView sel ()
 cvBindReadOnlyWholeSubscriber sub setf = let
-    init ::
-           forall m. MonadIO m
-        => MFunction (CreateView sel) m
-        -> MutableRead m (WholeReader t)
-        -> m ()
-    init _ mr = do
-        val <- mr ReadWhole
-        liftIO $ setf val
+    init :: ReadOnlyOpenSubscriber (WholeUpdate t) -> CreateView sel ()
+    init (MkOpenResource _ unlift asub) =
+        liftIO $ do
+            val <- unlift $ subRead asub ReadWhole
+            setf val
     recv :: () -> NonEmpty (ReadOnlyUpdate (WholeUpdate t)) -> IO ()
     recv () updates = let
         MkReadOnlyUpdate (MkWholeUpdate val) = last updates
@@ -138,16 +132,16 @@ cvBindReadOnlyWholeSubscriber sub setf = let
     in cvBindSubscriber sub Nothing init recv
 
 cvReceiveUpdates ::
-       Subscriber update
+       OpenSubscriber update
     -> Maybe EditSource
     -> (forall m. MonadUnliftIO m => MutableRead m (UpdateReader update) -> NonEmpty update -> m ())
     -> CreateView sel ()
 cvReceiveUpdates sub mesrc recv =
-    cvBindSubscriber sub mesrc (\_ _ -> return ()) $ \() updates ->
-        runResource sub $ \run asub -> run $ recv (subRead asub) updates
+    cvBindSubscriber sub mesrc (\_ -> return ()) $ \() updates ->
+        runResource (toResource sub) $ \run asub -> run $ recv (subRead asub) updates
 
-cvReceiveUpdate :: Subscriber update -> Maybe EditSource -> (update -> IO ()) -> CreateView sel ()
-cvReceiveUpdate sub mesrc recv = cvBindSubscriber sub mesrc (\_ _ -> return ()) $ \() updates -> for_ updates recv
+cvReceiveUpdate :: OpenSubscriber update -> Maybe EditSource -> (update -> IO ()) -> CreateView sel ()
+cvReceiveUpdate sub mesrc recv = cvBindSubscriber sub mesrc (\_ -> return ()) $ \() updates -> for_ updates recv
 
 cvAddAspect :: Aspect sel -> CreateView sel ()
 cvAddAspect aspect = cvViewOutput $ mempty {voFirstAspect = aspect}

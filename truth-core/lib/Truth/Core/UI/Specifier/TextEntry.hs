@@ -6,7 +6,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
 data TextEntryUISpec sel where
-    MkTextEntryUISpec :: Subscriber (WholeUpdate Text) -> TextEntryUISpec sel
+    MkTextEntryUISpec :: OpenSubscriber (WholeUpdate Text) -> TextEntryUISpec sel
 
 instance Show (TextEntryUISpec sel) where
     show (MkTextEntryUISpec _) = "text entry"
@@ -14,5 +14,5 @@ instance Show (TextEntryUISpec sel) where
 instance UIType TextEntryUISpec where
     uiWitness = $(iowitness [t|TextEntryUISpec|])
 
-textEntryUISpec :: forall sel. Subscriber (WholeUpdate Text) -> UISpec sel
+textEntryUISpec :: forall sel. OpenSubscriber (WholeUpdate Text) -> UISpec sel
 textEntryUISpec sub = MkUISpec $ MkTextEntryUISpec sub

@@ -2,6 +2,7 @@ module Truth.Core.UI.Specifier.MenuBar where
 
 import Truth.Core.Import
 import Truth.Core.Object
+import Truth.Core.Resource
 import Truth.Core.Types
 
 data KeyboardModifier
@@ -19,11 +20,12 @@ data MenuEntry
     = SeparatorMenuEntry
     | ActionMenuEntry Text
                       (Maybe MenuAccelerator)
-                      (ReadOnlySubscriber (WholeUpdate (Maybe (IO ()))))
+                      (ReadOnlyOpenSubscriber (WholeUpdate (Maybe (IO ()))))
     | SubMenuEntry Text
                    [MenuEntry]
 
 type MenuBar = [MenuEntry]
 
 simpleActionMenuItem :: Text -> Maybe MenuAccelerator -> IO () -> MenuEntry
-simpleActionMenuItem label maccel action = ActionMenuEntry label maccel $ constantSubscriber $ Just action
+simpleActionMenuItem label maccel action =
+    ActionMenuEntry label maccel $ openResource $ constantSubscriber $ Just action

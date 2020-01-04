@@ -35,60 +35,55 @@ instance DynamicViewState (OneWholeViews sel f) where
 oneWholeView ::
        forall sel f update wd. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update), IsWidget wd)
     => Maybe (Limit f)
-    -> Subscriber (OneWholeUpdate f update)
+    -> OpenSubscriber (OneWholeUpdate f update)
     -> ((NonEmpty (OneWholeEdit f (UpdateEdit update)) -> View sel ()) -> CreateView sel wd)
-    -> (Subscriber update -> GCreateView sel)
+    -> (OpenSubscriber update -> GCreateView sel)
     -> GCreateView sel
-oneWholeView mDeleteValue sub makeEmptywidget baseView =
-    runResource sub $ \run asub -> do
-        box <- new Box [#orientation := OrientationVertical]
-        mDeleteButton <-
-            for mDeleteValue $ \(MkLimit deleteValue) -> do
-                cvMakeButton "Delete" $
-                    liftIO $
-                    run $ do
-                        _ <- pushEdit noEditSource $ subEdit asub $ pure $ SumEditLeft $ MkWholeReaderEdit deleteValue
-                        return ()
-        let
-            getWidgets :: f () -> View sel (OneWholeViews sel f)
-            getWidgets fu =
-                case retrieveOne fu of
-                    FailureResult lfx -> do
-                        vs <-
-                            viewCreateView $ do
-                                w <-
-                                    makeEmptywidget $ \edits' ->
-                                        liftIO $ run $ void $ pushEdit noEditSource $ subEdit asub edits'
-                                lcContainPackStart True box w
-                                widgetShow w
-                        return $ MissingOVS lfx vs
-                    SuccessResult () -> do
-                        vs <-
-                            viewCreateView $ do
-                                widget <- baseView $ mapPureSubscriber (mustExistOneEditLens "object") sub
-                                for_ mDeleteButton $ \button -> do
-                                    lcContainPackStart False box button
-                                    #show button
-                                lcContainPackStart True box widget
-                                widgetShow widget
-                        return $ PresentOVS vs
-            getFirstVS ::
-                   forall m. MonadIO m
-                => MFunction (CreateView sel) m
-                -> MutableRead m (OneReader f (UpdateReader update))
-                -> m (OneWholeViews sel f)
-            getFirstVS unlift mr = do
-                firstfu <- mr ReadHasOne
-                unlift $ cvLiftView $ getWidgets firstfu
-        unliftView <- cvLiftView askUnliftIO
-        cvDynamic sub getFirstVS $ \_ -> do
-            olddvs <- get
-            newfu <- liftIO $ run $ subRead asub ReadHasOne
-            case (olddvs, retrieveOne newfu) of
-                (PresentOVS _, SuccessResult ()) -> return ()
-                (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs
-                _ -> replaceDynamicView $ runWMFunction unliftView $ getWidgets newfu
-        toWidget box
+oneWholeView mDeleteValue rmod@(MkOpenResource _ run asub) makeEmptywidget baseView = do
+    box <- new Box [#orientation := OrientationVertical]
+    mDeleteButton <-
+        for mDeleteValue $ \(MkLimit deleteValue) -> do
+            cvMakeButton "Delete" $
+                liftIO $
+                run $ do
+                    _ <- pushEdit noEditSource $ subEdit asub $ pure $ SumEditLeft $ MkWholeReaderEdit deleteValue
+                    return ()
+    let
+        getWidgets :: OpenSubscriber (OneWholeUpdate f update) -> f () -> View sel (OneWholeViews sel f)
+        getWidgets rm fu =
+            case retrieveOne fu of
+                FailureResult lfx -> do
+                    vs <-
+                        viewCreateView $ do
+                            w <-
+                                makeEmptywidget $ \edits' ->
+                                    liftIO $ run $ void $ pushEdit noEditSource $ subEdit asub edits'
+                            lcContainPackStart True box w
+                            widgetShow w
+                    return $ MissingOVS lfx vs
+                SuccessResult () -> do
+                    vs <-
+                        viewCreateView $ do
+                            widget <- baseView $ mapOpenSubscriber (mustExistOneEditLens "object") rm
+                            for_ mDeleteButton $ \button -> do
+                                lcContainPackStart False box button
+                                #show button
+                            lcContainPackStart True box widget
+                            widgetShow widget
+                    return $ PresentOVS vs
+        getFirstVS :: OpenSubscriber (OneWholeUpdate f update) -> CreateView sel (OneWholeViews sel f)
+        getFirstVS rm = do
+            firstfu <- liftIO $ withOpenResource rm $ \am -> subRead am ReadHasOne
+            cvLiftView $ getWidgets rm firstfu
+    unliftView <- cvLiftView askUnliftIO
+    cvDynamic rmod getFirstVS $ \_ -> do
+        olddvs <- get
+        newfu <- liftIO $ run $ subRead asub ReadHasOne
+        case (olddvs, retrieveOne newfu) of
+            (PresentOVS _, SuccessResult ()) -> return ()
+            (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs
+            _ -> replaceDynamicView $ runWMFunction unliftView $ getWidgets rmod newfu
+    toWidget box
 
 placeholderLabel :: CreateView sel Label
 placeholderLabel = new Label [#label := "Placeholder"]

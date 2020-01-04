@@ -2,6 +2,7 @@ module Truth.Core.UI.Specifier.Option where
 
 import Truth.Core.Import
 import Truth.Core.Object
+import Truth.Core.Resource
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.TextStyle
@@ -19,8 +20,8 @@ plainOptionUICell optionCellText = let
 data OptionUISpec sel where
     MkOptionUISpec
         :: Eq t
-        => ReadOnlySubscriber (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
-        -> Subscriber (WholeUpdate t)
+        => ReadOnlyOpenSubscriber (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
+        -> OpenSubscriber (WholeUpdate t)
         -> OptionUISpec sel
 
 instance Show (OptionUISpec sel) where
@@ -31,10 +32,10 @@ instance UIType OptionUISpec where
 
 optionUISpec ::
        forall t sel. Eq t
-    => ReadOnlySubscriber (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
-    -> Subscriber (WholeUpdate t)
+    => ReadOnlyOpenSubscriber (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
+    -> OpenSubscriber (WholeUpdate t)
     -> UISpec sel
 optionUISpec optlens sellens = MkUISpec $ MkOptionUISpec optlens sellens
 
-simpleOptionUISpec :: Eq t => [(t, OptionUICell)] -> Subscriber (WholeUpdate t) -> UISpec sel
-simpleOptionUISpec opts sub = optionUISpec (constantSubscriber opts) sub
+simpleOptionUISpec :: Eq t => [(t, OptionUICell)] -> OpenSubscriber (WholeUpdate t) -> UISpec sel
+simpleOptionUISpec opts sub = optionUISpec (openResource $ constantSubscriber opts) sub

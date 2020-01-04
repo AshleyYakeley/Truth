@@ -9,7 +9,7 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-switchView :: forall sel. ReadOnlySubscriber (WholeUpdate (GCreateView sel)) -> GCreateView sel
+switchView :: forall sel. OpenSubscriber (ReadOnlyUpdate (WholeUpdate (GCreateView sel))) -> GCreateView sel
 switchView sub = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
@@ -19,14 +19,10 @@ switchView sub = do
                 widget <- gview
                 lcContainPackStart True box widget
                 #show widget
-        getFirstVS ::
-               forall m. MonadIO m
-            => MFunction (CreateView sel) m
-            -> MutableRead m (WholeReader (GCreateView sel))
-            -> m (ViewState sel)
-        getFirstVS unlift mr = do
-            firstspec <- mr ReadWhole
-            unlift $ cvLiftView $ getViewState firstspec
+        getFirstVS :: OpenSubscriber (ReadOnlyUpdate (WholeUpdate (GCreateView sel))) -> CreateView sel (ViewState sel)
+        getFirstVS rm = do
+            firstspec <- liftIO $ withOpenResource rm $ \am -> subRead am ReadWhole
+            cvLiftView $ getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
     cvDynamic @(ViewState sel) sub getFirstVS $ \updates ->
         for_ (lastWholeUpdate $ fmap unReadOnlyUpdate updates) $ \spec ->
@@ -39,4 +35,4 @@ switchGetView =
         spec <- isUISpec uispec
         return $
             case spec of
-                MkSwitchUISpec sub -> switchView $ mapReadOnlySubscriber (funcUpdateFunction getview) sub
+                MkSwitchUISpec sub -> switchView $ mapReadOnlyWholeOpenSubscriber getview sub

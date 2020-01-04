@@ -144,7 +144,7 @@ instance TupleResource ASubscriber where
         -> ASubscriber (TupleUpdate (ListElementType updates)) tt
         -> ASubscriber (TupleUpdate (ListElementType (update : updates))) tt
     consTupleAResource (MkASubscriber anobj1 sub1) (MkASubscriber anobj2 sub2) =
-        case transStackDict @MonadIO @tt @IO of
+        case transStackDict @MonadIO @tt @LifeCycleIO of
             Dict -> let
                 anobj12 = unUAnObject $ consTupleAResource (MkUAnObject anobj1) (MkUAnObject anobj2)
                 sub12 recv12 = do

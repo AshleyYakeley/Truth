@@ -11,13 +11,13 @@ data OneUISpec sel where
     MaybeUISpec
         :: forall sel update. (IsUpdate update, FullEdit (UpdateEdit update))
         => Maybe (UpdateSubject update)
-        -> Subscriber (MaybeUpdate update)
-        -> (Subscriber update -> UISpec sel)
+        -> OpenSubscriber (MaybeUpdate update)
+        -> (OpenSubscriber update -> UISpec sel)
         -> OneUISpec sel
     OneWholeUISpec
         :: forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-        => Subscriber (OneWholeUpdate f update)
-        -> (Subscriber update -> UISpec sel)
+        => OpenSubscriber (OneWholeUpdate f update)
+        -> (OpenSubscriber update -> UISpec sel)
         -> OneUISpec sel
 
 instance Show (OneUISpec sel) where
@@ -30,14 +30,14 @@ instance UIType OneUISpec where
 maybeUISpec ::
        forall sel update. (IsUpdate update, FullEdit (UpdateEdit update))
     => Maybe (UpdateSubject update)
-    -> Subscriber (MaybeUpdate update)
-    -> (Subscriber update -> UISpec sel)
+    -> OpenSubscriber (MaybeUpdate update)
+    -> (OpenSubscriber update -> UISpec sel)
     -> UISpec sel
 maybeUISpec msubj sub spec = MkUISpec $ MaybeUISpec msubj sub spec
 
 oneWholeUISpec ::
        forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-    => Subscriber (OneWholeUpdate f update)
-    -> (Subscriber update -> UISpec sel)
+    => OpenSubscriber (OneWholeUpdate f update)
+    -> (OpenSubscriber update -> UISpec sel)
     -> UISpec sel
 oneWholeUISpec sub spec = MkUISpec $ OneWholeUISpec sub spec

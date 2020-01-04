@@ -51,8 +51,8 @@ main = do
                                         subSub <- mapSubscriber (fmap oneWholeLiftEditLens llens) sub
                                         makeWindow "section" subSub Nothing extraui
                         makeSpecs sub =
-                            [ (simpleButtonUISpec (constantSubscriber "View") $ openSelection sub, False)
-                            , (scrolledUISpec $ oneWholeUISpec sub textAreaUISpec, True)
+                            [ (simpleButtonUISpec (openResource $ constantSubscriber "View") $ openSelection sub, False)
+                            , (scrolledUISpec $ oneWholeUISpec (openResource sub) textAreaUISpec, True)
                             ]
                         allSpecs =
                             case msub2 of
@@ -71,7 +71,11 @@ main = do
                         (r, closer) <-
                             lifeCycleEarlyCloser $
                             uitCreateWindow $
-                            MkWindowSpec closer (constantSubscriber title) (Just $ \_ -> constantSubscriber mbar) uic
+                            MkWindowSpec
+                                closer
+                                (openResource $ constantSubscriber title)
+                                (Just $ \_ -> openResource $ constantSubscriber mbar)
+                                uic
                     return ()
                 simpleUI :: forall sel. IO () -> UIWindow -> UISpec sel -> (MenuBar, UISpec sel)
                 simpleUI closer _ spec = let

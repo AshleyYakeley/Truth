@@ -117,7 +117,7 @@ subscribeShowUpdates name sub = do
     var <- liftIO newEmptyMVar
     lifeCycleClose $ putMVar var [] -- verify that update has been shown
     runResource sub $ \run (MkASubscriber _ subrecv) ->
-        remonad run $ subrecv $ \updates _ -> liftIO $ putMVar var $ toList updates
+        run $ subrecv $ \updates _ -> liftIO $ putMVar var $ toList updates
     return $ do
         --outputNameLn name "flush"
         updates <- liftIO $ takeMVar var

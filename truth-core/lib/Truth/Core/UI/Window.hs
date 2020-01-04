@@ -8,8 +8,8 @@ import Truth.Core.UI.Specifier.Specifier
 
 data WindowSpec = forall sel. MkWindowSpec
     { wsCloseBoxAction :: IO ()
-    , wsTitle :: ReadOnlySubscriber (WholeUpdate Text)
-    , wsMenuBar :: Maybe (Aspect sel -> ReadOnlySubscriber (WholeUpdate MenuBar))
+    , wsTitle :: ReadOnlyOpenSubscriber (WholeUpdate Text)
+    , wsMenuBar :: Maybe (Aspect sel -> ReadOnlyOpenSubscriber (WholeUpdate MenuBar))
     , wsContent :: UISpec sel
     }
 

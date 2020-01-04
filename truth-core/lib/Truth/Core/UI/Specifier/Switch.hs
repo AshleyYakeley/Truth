@@ -6,7 +6,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
 data SwitchUISpec sel where
-    MkSwitchUISpec :: ReadOnlySubscriber (WholeUpdate (UISpec sel)) -> SwitchUISpec sel
+    MkSwitchUISpec :: ReadOnlyOpenSubscriber (WholeUpdate (UISpec sel)) -> SwitchUISpec sel
 
 instance Show (SwitchUISpec sel) where
     show _ = "switch"
@@ -14,5 +14,5 @@ instance Show (SwitchUISpec sel) where
 instance UIType SwitchUISpec where
     uiWitness = $(iowitness [t|SwitchUISpec|])
 
-switchUISpec :: ReadOnlySubscriber (WholeUpdate (UISpec sel)) -> UISpec sel
+switchUISpec :: ReadOnlyOpenSubscriber (WholeUpdate (UISpec sel)) -> UISpec sel
 switchUISpec func = MkUISpec $ MkSwitchUISpec func

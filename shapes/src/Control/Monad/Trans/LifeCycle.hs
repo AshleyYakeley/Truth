@@ -71,9 +71,6 @@ instance MonadTransConstraint MonadFix LifeCycleT where
 instance MonadTrans LifeCycleT where
     lift ma = MkLifeCycleT $ fmap (\a -> (a, return ())) ma
 
-instance MonadTransSemiTunnel LifeCycleT where
-    semitunnel call = MkLifeCycleT $ call $ \(MkLifeCycleT m1r) -> fmap (fmap $ \m1u -> call $ \_ -> m1u) m1r
-
 instance MonadTransUnlift LifeCycleT where
     liftWithUnlift call = do
         var <- liftIO $ newMVar $ return ()

@@ -18,17 +18,3 @@ mapViewUISpec mv spec = MkUISpec $ MkMapUISpec mv spec
 
 shimViewUISpec :: CreateView sel () -> UISpec sel -> UISpec sel
 shimViewUISpec cvshim = mapViewUISpec $ \cvw -> cvshim >> cvw
-{-
-tupleEditUISpecs ::
-       (TupleEditWitness FullEdit s, FiniteTupleSelector s)
-    => (forall . FullEdit (UpdateEdit ) => s  -> (UISpec sel , t))
-    -> [(UISpec sel (TupleUpdate s), t)]
-tupleEditUISpecs getSpec =
-    fmap
-        (\(MkAnyW se) ->
-             case tupleEditWitness @FullEdit se of
-                 Dict ->
-                     case getSpec se of
-                         (spec, t) -> (mapUpdateUISpec (return $ tupleEditLens se) spec, t))
-        tupleAllSelectors
--}

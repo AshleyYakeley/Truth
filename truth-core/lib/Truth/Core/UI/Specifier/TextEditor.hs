@@ -9,7 +9,7 @@ import Truth.Core.UI.Specifier.Specifier
 type TextSelection = LifeCycleIO (EditLens (StringUpdate Text) (StringUpdate Text))
 
 data TextAreaUISpec sel where
-    MkTextAreaUISpec :: Subscriber (StringUpdate Text) -> TextAreaUISpec TextSelection
+    MkTextAreaUISpec :: OpenSubscriber (StringUpdate Text) -> TextAreaUISpec TextSelection
 
 instance Show (TextAreaUISpec sel) where
     show (MkTextAreaUISpec _) = "text-area"
@@ -17,5 +17,5 @@ instance Show (TextAreaUISpec sel) where
 instance UIType TextAreaUISpec where
     uiWitness = $(iowitness [t|TextAreaUISpec|])
 
-textAreaUISpec :: Subscriber (StringUpdate Text) -> UISpec TextSelection
+textAreaUISpec :: OpenSubscriber (StringUpdate Text) -> UISpec TextSelection
 textAreaUISpec sub = MkUISpec $ MkTextAreaUISpec sub

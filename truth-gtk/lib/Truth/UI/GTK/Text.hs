@@ -31,50 +31,49 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-textView :: Subscriber (StringUpdate Text) -> GCreateView TextSelection
-textView sub =
-    runResource sub $ \run asub -> do
-        esrc <- newEditSource
-        buffer <- new TextBuffer []
-        initial <- liftIO $ run $ mutableReadToSubject $ subRead asub
-        #setText buffer initial (-1)
-        insertSignal <-
-            liftIO $
-            on buffer #insertText $ \iter text _ ->
-                run $ do
-                    p <- getSequencePoint iter
-                    _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
-                    return ()
-        deleteSignal <-
-            liftIO $
-            on buffer #deleteRange $ \iter1 iter2 ->
-                run $ do
-                    srun <- getSequenceRun iter1 iter2
-                    _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection srun mempty
-                    return ()
-        widget <- new TextView [#buffer := buffer]
-        cvReceiveUpdate sub (Just esrc) $ \(MkEditUpdate edit) ->
-            withSignalBlocked buffer insertSignal $
-            withSignalBlocked buffer deleteSignal $
-            case edit of
-                StringReplaceWhole text -> #setText buffer text (-1)
-                StringReplaceSection bounds text -> replaceText buffer bounds text
-        let
-            aspect :: Aspect TextSelection
-            aspect = do
-                (_, iter1, iter2) <- #getSelectionBounds buffer
+textView :: OpenSubscriber (StringUpdate Text) -> GCreateView TextSelection
+textView ores = do
+    esrc <- newEditSource
+    buffer <- new TextBuffer []
+    initial <- liftIO $ withOpenResource ores $ \am -> mutableReadToSubject $ subRead am
+    #setText buffer initial (-1)
+    insertSignal <-
+        liftIO $
+        on buffer #insertText $ \iter text _ -> do
+            p <- getSequencePoint iter
+            withOpenResource (reopenResource ores) $ \asub -> do
+                _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
+                return ()
+    deleteSignal <-
+        liftIO $
+        on buffer #deleteRange $ \iter1 iter2 -> do
+            srun <- getSequenceRun iter1 iter2
+            withOpenResource (reopenResource ores) $ \asub -> do
+                _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection srun mempty
+                return ()
+    widget <- new TextView [#buffer := buffer]
+    cvReceiveUpdate ores (Just esrc) $ \(MkEditUpdate edit) ->
+        withSignalBlocked buffer insertSignal $
+        withSignalBlocked buffer deleteSignal $
+        case edit of
+            StringReplaceWhole text -> #setText buffer text (-1)
+            StringReplaceSection bounds text -> replaceText buffer bounds text
+    let
+        aspect :: Aspect TextSelection
+        aspect = do
+            (_, iter1, iter2) <- #getSelectionBounds buffer
             -- get selection...
-                srun <- getSequenceRun iter1 iter2
-                return $ Just $ stringSectionLens srun
-        cvAddAspect aspect
-        _ <-
-            cvLiftView $
-            liftIOView $ \unlift ->
-                on widget #focus $ \_ ->
-                    unlift $ do
-                        viewSetSelection aspect
-                        return True
-        toWidget widget
+            srun <- getSequenceRun iter1 iter2
+            return $ Just $ stringSectionLens srun
+    cvAddAspect aspect
+    _ <-
+        cvLiftView $
+        liftIOView $ \unlift ->
+            on widget #focus $ \_ ->
+                unlift $ do
+                    viewSetSelection aspect
+                    return True
+    toWidget widget
 
 textAreaGetView :: GetGView
 textAreaGetView = MkGetView $ \_ uispec -> fmap (\(MkTextAreaUISpec sub) -> textView sub) $ isUISpec uispec
