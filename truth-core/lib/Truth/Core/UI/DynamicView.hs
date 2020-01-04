@@ -3,16 +3,17 @@ module Truth.Core.UI.DynamicView where
 import Truth.Core.Import
 import Truth.Core.Object
 import Truth.Core.UI.CreateView
+import Truth.Core.UI.Specifier.Specifier
 
 class DynamicViewState (dvs :: Type) where
     type DynamicViewSelEdit dvs :: Type
     dynamicViewStates :: dvs -> [ViewState (DynamicViewSelEdit dvs)]
-    dynamicViewFocus :: dvs -> ViewState (DynamicViewSelEdit dvs)
+    dynamicViewFocus :: dvs -> Maybe (ViewState (DynamicViewSelEdit dvs))
 
 instance DynamicViewState (ViewState sel) where
     type DynamicViewSelEdit (ViewState sel) = sel
     dynamicViewStates dvs = [dvs]
-    dynamicViewFocus dvs = dvs
+    dynamicViewFocus dvs = Just dvs
 
 closeDynamicView :: DynamicViewState dvs => dvs -> IO ()
 closeDynamicView dvs = for_ (dynamicViewStates dvs) closeLifeState
@@ -43,7 +44,10 @@ cvDynamic sub initCV recvCV = do
             cvAddAspect $
                 mVarRun stateVar $ do
                     dvs <- get
-                    lift $ vsFirstAspect $ dynamicViewFocus dvs
+                    lift $
+                        case dynamicViewFocus dvs of
+                            Just vs -> vsFirstAspect vs
+                            Nothing -> noAspect
             return stateVar
         recvBind :: MVar dvs -> NonEmpty update -> IO ()
         recvBind stateVar updates = mVarRun stateVar $ recvCV $ toList updates

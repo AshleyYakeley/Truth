@@ -29,8 +29,8 @@ instance DynamicViewState (OneWholeViews sel f) where
     type DynamicViewSelEdit (OneWholeViews sel f) = sel
     dynamicViewStates (MissingOVS _ vs) = [vs]
     dynamicViewStates (PresentOVS vs) = [vs]
-    dynamicViewFocus (MissingOVS _ vs) = vs
-    dynamicViewFocus (PresentOVS vs) = vs
+    dynamicViewFocus (MissingOVS _ vs) = Just vs
+    dynamicViewFocus (PresentOVS vs) = Just vs
 
 oneWholeView ::
        forall sel f update wd. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update), IsWidget wd)
