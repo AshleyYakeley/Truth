@@ -32,8 +32,10 @@ instance (MonadOne f, InvertibleEdit edit) => InvertibleEdit (OneEdit f edit) wh
 newtype OneUpdate (f :: Type -> Type) update =
     MkOneUpdate update
 
+type instance UpdateEdit (OneUpdate f update) =
+     OneEdit f (UpdateEdit update)
+
 instance IsUpdate update => IsUpdate (OneUpdate f update) where
-    type UpdateEdit (OneUpdate f update) = OneEdit f (UpdateEdit update)
     editUpdate (MkOneEdit edit) = MkOneUpdate $ editUpdate edit
 
 instance IsEditUpdate update => IsEditUpdate (OneUpdate f update) where

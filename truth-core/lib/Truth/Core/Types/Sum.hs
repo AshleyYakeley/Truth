@@ -42,8 +42,10 @@ data SumUpdate updateA updateB
     = SumUpdateLeft updateA
     | SumUpdateRight updateB
 
+type instance UpdateEdit (SumUpdate updateA updateB) =
+     SumEdit (UpdateEdit updateA) (UpdateEdit updateB)
+
 instance (IsUpdate updateA, IsUpdate updateB) => IsUpdate (SumUpdate updateA updateB) where
-    type UpdateEdit (SumUpdate updateA updateB) = SumEdit (UpdateEdit updateA) (UpdateEdit updateB)
     editUpdate (SumEditLeft edit) = SumUpdateLeft $ editUpdate edit
     editUpdate (SumEditRight edit) = SumUpdateRight $ editUpdate edit
 

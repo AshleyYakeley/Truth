@@ -97,8 +97,9 @@ data TupleUpdateEdit sel where
 data TupleUpdate sel where
     MkTupleUpdate :: sel update -> update -> TupleUpdate sel
 
+type instance UpdateEdit (TupleUpdate sel) = TupleUpdateEdit sel
+
 instance TupleUpdateWitness IsUpdate sel => IsUpdate (TupleUpdate sel) where
-    type UpdateEdit (TupleUpdate sel) = TupleUpdateEdit sel
     editUpdate (MkTupleUpdateEdit sel edit) =
         case tupleUpdateWitness @IsUpdate sel of
             Dict -> MkTupleUpdate sel $ editUpdate edit

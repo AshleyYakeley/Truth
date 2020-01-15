@@ -108,9 +108,9 @@ mapAnObject MkEditLens {..} (MkAnObject objReadA objEditA) =
 
 lensObject ::
        forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> Object (UpdateEdit updateB)
-lensObject alens (MkResource rr aobj) =
+lensObject lens (MkResource rr aobj) =
     case resourceRunnerUnliftAllDict rr of
-        Dict -> MkResource rr $ mapAnObject alens aobj
+        Dict -> MkResource rr $ mapAnObject lens aobj
 
 immutableAnObject ::
        forall tt reader. MonadTransStackUnliftAll tt

@@ -9,8 +9,10 @@ newtype ReadOnlyUpdate update = MkReadOnlyUpdate
     { unReadOnlyUpdate :: update
     }
 
+type instance UpdateEdit (ReadOnlyUpdate update) =
+     NoEdit (UpdateReader update)
+
 instance IsUpdate (ReadOnlyUpdate update) where
-    type UpdateEdit (ReadOnlyUpdate update) = NoEdit (UpdateReader update)
     editUpdate = never
 
 toReadOnlyUpdateFunction :: forall update. UpdateFunction update (ReadOnlyUpdate update)

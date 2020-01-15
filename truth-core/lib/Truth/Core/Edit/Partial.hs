@@ -27,8 +27,9 @@ data PartialUpdate update
     = KnownPartialUpdate update
     | UnknownPartialUpdate (ReaderSet (UpdateReader update))
 
+type instance UpdateEdit (PartialUpdate update) = UpdateEdit update
+
 instance IsUpdate update => IsUpdate (PartialUpdate update) where
-    type UpdateEdit (PartialUpdate update) = UpdateEdit update
     editUpdate edit = KnownPartialUpdate $ editUpdate edit
 
 partialFullEditLens ::

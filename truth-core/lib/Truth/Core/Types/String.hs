@@ -144,8 +144,13 @@ type StringUpdate seq = EditUpdate (StringEdit seq)
 stringSectionLens ::
        forall seq. IsSequence seq
     => SequenceRun seq
-    -> LifeCycleIO (EditLens (StringUpdate seq) (StringUpdate seq))
-stringSectionLens = let
+    -> StateEditLens (StringUpdate seq) (StringUpdate seq)
+stringSectionLens initRun = let
+    sInit ::
+           forall m. MonadIO m
+        => MutableRead m (StringRead seq)
+        -> m (SequenceRun seq)
+    sInit _ = return initRun
     getState ::
            forall m. MonadIO m
         => MutableRead m (StringRead seq)
@@ -216,4 +221,4 @@ stringSectionLens = let
         -> MutableRead m (StringRead seq)
         -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateEditLens {..}
+    in MkStateEditLens {..}

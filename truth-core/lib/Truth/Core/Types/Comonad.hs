@@ -33,8 +33,10 @@ instance InvertibleEdit edit => InvertibleEdit (ComonadEdit w edit) where
 newtype ComonadUpdate (w :: Type -> Type) (update :: Type) =
     MkComonadUpdate update
 
+type instance UpdateEdit (ComonadUpdate w update) =
+     ComonadEdit w (UpdateEdit update)
+
 instance IsUpdate update => IsUpdate (ComonadUpdate w update) where
-    type UpdateEdit (ComonadUpdate w update) = ComonadEdit w (UpdateEdit update)
     editUpdate (MkComonadEdit edit) = MkComonadUpdate $ editUpdate edit
 
 instance IsEditUpdate update => IsEditUpdate (ComonadUpdate w update) where

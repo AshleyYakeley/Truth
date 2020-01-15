@@ -4,8 +4,9 @@ import Truth.Core.Edit.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 
+type family UpdateEdit (update :: Type) :: Type
+
 class IsUpdate (update :: Type) where
-    type UpdateEdit update :: Type
     editUpdate :: UpdateEdit update -> update
 
 type UpdateReader update = EditReader (UpdateEdit update)
@@ -27,8 +28,9 @@ deriving instance Empty edit => Empty (EditUpdate edit)
 instance Show edit => Show (EditUpdate edit) where
     show (MkEditUpdate edit) = show edit
 
+type instance UpdateEdit (EditUpdate edit) = edit
+
 instance IsUpdate (EditUpdate edit) where
-    type UpdateEdit (EditUpdate edit) = edit
     editUpdate = MkEditUpdate
 
 instance IsEditUpdate (EditUpdate edit) where

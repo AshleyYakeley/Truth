@@ -48,6 +48,7 @@ library:
       - Data.CoerceFunction
       - Data.Codec
       - Data.Compose
+      - Data.KeyedOrder
       - Data.KeyContainer
       - Data.FiniteSet
       - Data.KindMorphism

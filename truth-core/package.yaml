@@ -31,6 +31,7 @@ library:
       - Truth.Core.Edit.Cache
       - Truth.Core.Edit.Function
       - Truth.Core.Edit.Lens
+      - Truth.Core.Edit.StateEditLens
       - Truth.Core.Edit.Partial
       - Truth.Core.Edit.Opaque
       - Truth.Core.Edit
@@ -57,6 +58,10 @@ library:
       - Truth.Core.Types.Set
       - Truth.Core.Types.Dependent
       - Truth.Core.Types.Context
+      - Truth.Core.Types.List.Read
+      - Truth.Core.Types.List.Edit
+      - Truth.Core.Types.List.Update
+      - Truth.Core.Types.List.Ordered
       - Truth.Core.Types.List
       - Truth.Core.Types.String
       - Truth.Core.Types.ByteString
