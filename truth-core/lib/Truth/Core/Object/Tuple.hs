@@ -9,6 +9,7 @@ module Truth.Core.Object.Tuple
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
@@ -133,7 +134,7 @@ instance TupleResource UAnObject where
                            (Nothing, Just ebs') -> editB ebs'
                            (Just eas', Just ebs') -> (liftA2 $ liftA2 $ liftA2 (>>)) (editA eas') (editB ebs')
                 in MkUAnObject $ MkAnObject readAB editAB
-    mapResourceUpdate lens uobj = objToUObj $ mapObject lens $ uObjToObj uobj
+    mapResourceUpdate plens uobj = objToUObj $ mapObject plens $ uObjToObj uobj
 
 instance TupleResource ASubscriber where
     noneTupleAResource :: ASubscriber (TupleUpdate (ListElementType '[])) '[]
@@ -156,7 +157,7 @@ instance TupleResource ASubscriber where
                     sub2 recv2
                 in MkASubscriber anobj12 sub12
     mapResourceUpdate :: EditLens updateA updateB -> Subscriber updateA -> Subscriber updateB
-    mapResourceUpdate = mapPureSubscriber
+    mapResourceUpdate = mapSubscriber
 
 tupleObject ::
        forall sel. IsFiniteConsWitness sel
@@ -196,7 +197,5 @@ pairReadOnlySubscribers ::
     -> ReadOnlySubscriber updateB
     -> ReadOnlySubscriber (PairUpdate updateA updateB)
 pairReadOnlySubscribers sa sb =
-    mapPureSubscriber toReadOnlyEditLens $
-    pairSubscribers
-        (mapPureSubscriber fromReadOnlyRejectingEditLens sa)
-        (mapPureSubscriber fromReadOnlyRejectingEditLens sb)
+    mapSubscriber toReadOnlyEditLens $
+    pairSubscribers (mapSubscriber fromReadOnlyRejectingEditLens sa) (mapSubscriber fromReadOnlyRejectingEditLens sb)

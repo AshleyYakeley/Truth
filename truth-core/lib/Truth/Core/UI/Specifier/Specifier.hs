@@ -22,6 +22,14 @@ isUISpec (MkUISpec (tedit :: t' sel)) = do
     Refl <- testEquality (uiWitness @t) (uiWitness @t')
     return tedit
 
+type LUISpec sel = LifeCycleIO (UISpec sel)
+
+mkLUISpec ::
+       forall (t :: Type -> Type) (sel :: Type). (Show (t sel), UIType t)
+    => t sel
+    -> LUISpec sel
+mkLUISpec tsel = return $ MkUISpec tsel
+
 type Aspect sel = LifeCycleIO (Maybe sel)
 
 noAspect :: Aspect sel

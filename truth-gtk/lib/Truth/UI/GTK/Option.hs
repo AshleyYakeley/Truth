@@ -17,33 +17,41 @@ optionGetView =
         return $ optionView itemsSub whichSub
 
 listStoreView ::
-       forall sel update.
-       (IsEditUpdate update, FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
+       forall sel update. (ApplicableUpdate update, FullSubjectReader (UpdateReader update))
     => WIOFunction IO
-    -> ReadOnlyOpenSubscriber (ListUpdate [UpdateSubject update] update)
+    -> ReadOnlyOpenSubscriber (OrderedListUpdate [UpdateSubject update] update)
     -> EditSource
     -> CreateView sel (SeqStore (UpdateSubject update))
 listStoreView (MkWMFunction blockSignal) oobj esrc = let
     initV ::
-           ReadOnlyOpenSubscriber (ListUpdate [UpdateSubject update] update)
+           ReadOnlyOpenSubscriber (OrderedListUpdate [UpdateSubject update] update)
         -> CreateView sel (SeqStore (UpdateSubject update))
     initV rm = do
         subjectList <- liftIO $ withOpenResource rm $ \am -> mutableReadToSubject $ subRead am
         seqStoreNew subjectList
     recv ::
            SeqStore (UpdateSubject update)
-        -> NonEmpty (ReadOnlyUpdate (ListUpdate [UpdateSubject update] update))
+        -> NonEmpty (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
         -> IO ()
     recv store updates =
         for_ updates $ \(MkReadOnlyUpdate lupdate) ->
             case lupdate of
-                ListUpdateItem (MkSequencePoint (fromIntegral -> i)) update -> do
-                    oldval <- seqStoreGetValue store i
-                    newval <- mutableReadToSubject $ applyEdit (updateEdit update) $ subjectToMutableRead oldval
-                    blockSignal $ seqStoreSetValue store i newval
-                ListUpdateDelete (MkSequencePoint (fromIntegral -> i)) -> blockSignal $ seqStoreRemove store i
-                ListUpdateInsert (MkSequencePoint (fromIntegral -> i)) item -> blockSignal $ seqStoreInsert store i item
-                ListUpdateClear -> blockSignal $ seqStoreClear store
+                OrderedListUpdateItem (MkSequencePoint (fromIntegral -> oldi)) (MkSequencePoint (fromIntegral -> newi)) update -> do
+                    oldval <- seqStoreGetValue store oldi
+                    newval <- mutableReadToSubject $ applyUpdate update $ subjectToMutableRead oldval
+                    blockSignal $
+                        case compare newi oldi of
+                            EQ -> seqStoreSetValue store newi newval
+                            LT -> do
+                                seqStoreRemove store oldi
+                                seqStoreInsert store newi newval
+                            GT -> do
+                                seqStoreInsert store newi newval
+                                seqStoreRemove store oldi
+                OrderedListUpdateDelete (MkSequencePoint (fromIntegral -> i)) -> blockSignal $ seqStoreRemove store i
+                OrderedListUpdateInsert (MkSequencePoint (fromIntegral -> i)) item ->
+                    blockSignal $ seqStoreInsert store i item
+                OrderedListUpdateClear -> blockSignal $ seqStoreClear store
     in cvBindSubscriber oobj (Just esrc) initV recv
 
 optionUICellAttributes :: OptionUICell -> [AttrOp CellRendererText 'AttrSet]
@@ -92,8 +100,13 @@ optionFromStore oobj@(MkOpenResource _ run asub) esrc store = do
     return (MkWMFunction blockSignal, w)
 
 optionView ::
-       forall t sel. (Eq t)
-    => ReadOnlyOpenSubscriber (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
+       forall update t sel.
+       ( Eq t
+       , FullSubjectReader (UpdateReader update)
+       , ApplicableUpdate update
+       , UpdateSubject update ~ (t, OptionUICell)
+       )
+    => ReadOnlyOpenSubscriber (OrderedListUpdate [UpdateSubject update] update)
     -> OpenSubscriber (WholeUpdate t)
     -> GCreateView sel
 optionView itemsSub whichSub = do

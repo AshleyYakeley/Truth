@@ -19,9 +19,9 @@ instance UIType CheckboxUISpec where
     uiWitness = $(iowitness [t|CheckboxUISpec|])
 
 checkboxUISpec ::
-       forall sel. ReadOnlyOpenSubscriber (WholeUpdate Text) -> OpenSubscriber (WholeUpdate Bool) -> UISpec sel
-checkboxUISpec label lens = MkUISpec $ MkCheckboxUISpec label lens
+       forall sel. ReadOnlyOpenSubscriber (WholeUpdate Text) -> OpenSubscriber (WholeUpdate Bool) -> LUISpec sel
+checkboxUISpec label lens = mkLUISpec $ MkCheckboxUISpec label lens
 
 maybeCheckboxUISpec ::
-       forall sel. ReadOnlyOpenSubscriber (WholeUpdate Text) -> OpenSubscriber (WholeUpdate (Maybe Bool)) -> UISpec sel
-maybeCheckboxUISpec label lens = MkUISpec $ MkMaybeCheckboxUISpec label lens
+       forall sel. ReadOnlyOpenSubscriber (WholeUpdate Text) -> OpenSubscriber (WholeUpdate (Maybe Bool)) -> LUISpec sel
+maybeCheckboxUISpec label lens = mkLUISpec $ MkMaybeCheckboxUISpec label lens

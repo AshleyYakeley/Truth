@@ -1,6 +1,5 @@
 module Truth.Core.Types.Unit where
 
-import Truth.Core.Edit
 import Truth.Core.Types.None
 import Truth.Core.Types.Whole
 
@@ -13,6 +12,3 @@ type UnitReader = WholeReader ()
 type UnitEdit = ConstEdit ()
 
 type UnitUpdate = ConstUpdate ()
-
-unitUpdateFunction :: UpdateFunction edit UnitUpdate
-unitUpdateFunction = constUpdateFunction ()

@@ -134,12 +134,12 @@ testLensGet =
     testProperty "get" $ \srun (base :: String) ->
         ioProperty $
         runLifeCycle $ do
-            MkEditLens {..} <- stringSectionLens srun
+            MkFloatingEditLens {..} <- return $ stringSectionLens srun
+            r <- runFloatInit felInit $ subjectToMutableRead base
             let
-                MkUpdateFunction {..} = elFunction
                 expected :: String
                 expected = subjectToRead base $ StringReadSection srun
-            found <- mutableReadToSubject $ ufGet $ subjectToMutableRead @LifeCycleIO base
+            found <- mutableReadToSubject $ elGet (felLens r) $ subjectToMutableRead @LifeCycleIO base
             return $ found === expected
 
 showVar :: Show a => String -> a -> String
@@ -164,22 +164,22 @@ lensUpdateGetProperty ::
        , Show (UpdateSubject updateB)
        , Show state
        )
-    => LifeCycleIO (EditLens updateA updateB)
+    => FloatingEditLens updateA updateB
     -> UpdateSubject updateA
     -> UpdateEdit updateA
     -> Property
-lensUpdateGetProperty mkLens oldA editA =
+lensUpdateGetProperty lens oldA editA =
     ioProperty @Property $
     runLifeCycle $ do
-        MkEditLens {..} <- mkLens
-        let MkUpdateFunction {..} = elFunction
+        MkFloatingEditLens {..} <- return lens
         --oldState <- get
+        r <- runFloatInit felInit $ subjectToMutableRead oldA
         newA <- mutableReadToSubject $ applyEdit editA $ subjectToMutableRead oldA
-        oldB <- mutableReadToSubject $ ufGet $ subjectToMutableRead oldA
-        updateBs <- ufUpdate (editUpdate editA) $ subjectToMutableRead newA
+        oldB <- mutableReadToSubject $ elGet (felLens r) $ subjectToMutableRead oldA
+        updateBs <- elUpdate (felLens r) (editUpdate editA) $ subjectToMutableRead newA
         --newState <- get
         newB1 <- mutableReadToSubject $ applyEdits (fmap updateEdit updateBs) $ subjectToMutableRead oldB
-        newB2 <- mutableReadToSubject $ ufGet $ subjectToMutableRead newA
+        newB2 <- mutableReadToSubject $ elGet (felLens r) $ subjectToMutableRead newA
         let
             vars =
                 [ showVar "oldA" oldA

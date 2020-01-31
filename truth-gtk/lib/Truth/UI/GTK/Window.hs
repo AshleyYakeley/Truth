@@ -82,8 +82,9 @@ getRequest wit = do
 getMaybeView :: UISpec sel -> Maybe (GCreateView sel)
 getMaybeView = getUIView allGetView getTheView
 
-getTheView :: UISpec sel -> GCreateView sel
-getTheView spec =
+getTheView :: LUISpec sel -> GCreateView sel
+getTheView lspec = do
+    spec <- liftLifeCycleIO lspec
     case getMaybeView spec of
         Just view -> view
         Nothing -> lastResortView spec

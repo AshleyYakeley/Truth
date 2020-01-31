@@ -35,3 +35,12 @@ instance IsUpdate (EditUpdate edit) where
 
 instance IsEditUpdate (EditUpdate edit) where
     updateEdit (MkEditUpdate edit) = edit
+
+class ApplicableUpdate (update :: Type) where
+    applyUpdate :: update -> ReadFunction (UpdateReader update) (UpdateReader update)
+    default applyUpdate ::
+        (IsEditUpdate update, ApplicableEdit (UpdateEdit update)) =>
+                update -> ReadFunction (UpdateReader update) (UpdateReader update)
+    applyUpdate update = applyEdit $ updateEdit update
+
+instance ApplicableEdit edit => ApplicableUpdate (EditUpdate edit)

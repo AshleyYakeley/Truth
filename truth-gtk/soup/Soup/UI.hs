@@ -20,33 +20,26 @@ pastResult (SuccessResult False) = ("current", plainTableCellProps)
 pastResult (SuccessResult True) = ("past", plainTableCellProps)
 pastResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
 
-type PossibleNoteUpdate = OneWholeUpdate (Result Text) NoteUpdate
+type PossibleNoteUpdate = FullResultOneUpdate (Result Text) NoteUpdate
 
-soupEditSpec :: OpenSubscriber (SoupUpdate PossibleNoteUpdate) -> UISpec UUID
+soupEditSpec :: OpenSubscriber (SoupUpdate PossibleNoteUpdate) -> LUISpec UUID
 soupEditSpec sub = let
     nameFunction :: UUID -> ReadOnlyOpenSubscriber (WholeUpdate (Result Text Text))
     nameFunction key = let
-        nameLens =
-            oneWholeLiftEditLens (tupleEditLens NoteTitle) .
-            mustExistOneEditLens "name" .
-            oneWholeLiftEditLens (tupleEditLens SelectSecond) . stableKeyElementEditLens key
-        in mapOpenSubscriber (updateFunctionToEditLens convertUpdateFunction . nameLens) sub
+        nameLens :: EditLens (SoupUpdate PossibleNoteUpdate) (ReadOnlyUpdate (WholeUpdate (Result Text Text)))
+        nameLens = convertReadOnlyEditLens . liftFullResultOneEditLens (tupleEditLens NoteTitle) . soupRowLens key
+        in mapOpenSubscriber nameLens sub
     nameColumn :: KeyColumn UUID
     nameColumn =
         readOnlyKeyColumn (openResource $ constantSubscriber "Name") $ \key -> let
-            valLens =
-                oneWholeLiftEditLens (tupleEditLens NoteTitle) .
-                mustExistOneEditLens "name" .
-                oneWholeLiftEditLens (tupleEditLens SelectSecond) . stableKeyElementEditLens key
-            in return $ mapOpenSubscriber (updateFunctionToEditLens (funcUpdateFunction fromResult) . valLens) sub
+            valLens :: EditLens (SoupUpdate PossibleNoteUpdate) (ReadOnlyUpdate (WholeUpdate (Text, TableCellProps)))
+            valLens = funcEditLens fromResult . liftFullResultOneEditLens (tupleEditLens NoteTitle) . soupRowLens key
+            in return $ mapOpenSubscriber valLens sub {-(updateFunctionToEditLens (funcEditLens fromResult) . valLens)-}
     pastColumn :: KeyColumn UUID
     pastColumn =
         readOnlyKeyColumn (openResource $ constantSubscriber "Past") $ \key -> let
-            valLens =
-                oneWholeLiftEditLens (tupleEditLens NotePast) .
-                mustExistOneEditLens "past" .
-                oneWholeLiftEditLens (tupleEditLens SelectSecond) . stableKeyElementEditLens key
-            in return $ mapOpenSubscriber (updateFunctionToEditLens (funcUpdateFunction pastResult) . valLens) sub
+            valLens = funcEditLens pastResult . liftFullResultOneEditLens (tupleEditLens NotePast) . soupRowLens key
+            in return $ mapOpenSubscriber valLens sub
     in tableUISpec [nameColumn, pastColumn] (\a b -> compare (resultToMaybe a) (resultToMaybe b)) nameFunction sub $ \_ ->
            return ()
 
@@ -94,7 +87,7 @@ soupWindow MkUIToolkit {..} dirpath = do
                             rec
                                 ~(subwin, subcloser) <-
                                     lifeCycleEarlyCloser $ do
-                                        subSub <- mapSubscriber (getKeyElementEditLens key) sub
+                                        subSub <- floatMapSubscriber (keyElementEditLens key) sub
                                         uitCreateWindow $
                                             MkWindowSpec
                                                 subcloser
@@ -102,14 +95,20 @@ soupWindow MkUIToolkit {..} dirpath = do
                                                 (mbar subcloser subwin) $
                                             oneWholeUISpec
                                                 (openResource $
-                                                 mapPureSubscriber
-                                                     (oneWholeLiftEditLens $ tupleEditLens SelectSecond)
-                                                     subSub) $ \s1 -> oneWholeUISpec s1 noteEditSpec
+                                                 mapSubscriber
+                                                     (liftFullResultOneEditLens $ tupleEditLens SelectSecond)
+                                                     subSub) $ \case
+                                                Just s1 ->
+                                                    oneWholeUISpec s1 $ \case
+                                                        SuccessResult s2 -> noteEditSpec s2
+                                                        FailureResult err ->
+                                                            labelUISpec $ openResource $ constantSubscriber err
+                                                Nothing -> nullUISpec
                             return ()
                         Nothing -> return ()
             wsMenuBar :: Maybe (Aspect UUID -> ReadOnlyOpenSubscriber (WholeUpdate MenuBar))
             wsMenuBar = mbar closer window
-            wsContent :: UISpec UUID
+            wsContent :: LUISpec UUID
             wsContent =
                 withAspectUISpec $ \aspect ->
                     verticalUISpec

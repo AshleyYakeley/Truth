@@ -74,12 +74,3 @@ olLookupByItem (MkOrderedList cmp items) k = let
                         (found, t) = findItem r
                         in (found, succ t)
     in findItem items
-{-
-koLookupByOrder :: o -> KeyedOrder key o -> (Int,Maybe key)
-koLookupByOrder
-
-insertReplaceKeyedOrder :: key -> o -> KeyedOrder key o -> KeyedOrder key o
-insertReplaceKeyedOrder k o
-
-koLookupByPos :: Int -> KeyedOrder key o -> Maybe (key,o)
--}

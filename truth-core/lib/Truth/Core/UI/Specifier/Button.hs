@@ -19,8 +19,8 @@ instance UIType ButtonUISpec where
     uiWitness = $(iowitness [t|ButtonUISpec|])
 
 buttonUISpec ::
-       ReadOnlyOpenSubscriber (WholeUpdate Text) -> ReadOnlyOpenSubscriber (WholeUpdate (Maybe (IO ()))) -> UISpec sel
-buttonUISpec label action = MkUISpec $ MkButtonUISpec label action
+       ReadOnlyOpenSubscriber (WholeUpdate Text) -> ReadOnlyOpenSubscriber (WholeUpdate (Maybe (IO ()))) -> LUISpec sel
+buttonUISpec label action = mkLUISpec $ MkButtonUISpec label action
 
-simpleButtonUISpec :: ReadOnlyOpenSubscriber (WholeUpdate Text) -> IO () -> UISpec sel
+simpleButtonUISpec :: ReadOnlyOpenSubscriber (WholeUpdate Text) -> IO () -> LUISpec sel
 simpleButtonUISpec label action = buttonUISpec label $ openResource $ constantSubscriber $ Just action

@@ -6,6 +6,7 @@ module Truth.Core.Types.Dependent
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
 import Truth.Core.Types.Tuple
 import Truth.Core.Types.Whole

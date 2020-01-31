@@ -67,7 +67,7 @@ instance Semigroup (KeyColumns  key) where
                  (lens1, func1) <- f1 k
                  (lens2, func2) <- f2 k
                  return $
-                     (mapPureSubscriber convertEditLens $ pairSubscribers lens1 lens2
+                     (mapSubscriber convertEditLens $ pairSubscribers lens1 lens2
                      , mapReadOnlySubscriber convertUpdateFunction $ pairReadOnlySubscribers func1 func2)) $
         fmap (mapColumn $ \(x, y) -> (fst x, fst y)) c1 <> fmap (mapColumn $ \(x, y) -> (snd x, snd y)) c2
 
@@ -78,7 +78,7 @@ instance Monoid (KeyColumns  key) where
 
 keyContainerView ::
        forall cont o  updateI.
-       (KeyContainer cont, FullSubjectReader (UpdateReader updateI), HasKeyReader cont (UpdateReader updateI))
+       (FullSubjectReader (UpdateReader updateI), HasKeyReader cont (UpdateReader updateI))
     => KeyColumns  (ContainerKey cont)
     -> (o -> o -> Ordering)
     -> (ContainerKey cont -> ReadOnlySubscriber  (WholeUpdate o))
@@ -95,14 +95,14 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( Subscriber 
         getStoreItem mr key = do
             let entryOrderFunction = geto key
             (subText, subProp) <- liftIO $ colfunc key
-            entryRowText <- ufGet (editLensFunction entryTextLens) mr ReadWhole
-            entryRowProps <- ufGet entryPropFunc mr ReadWhole
+            entryRowText <- elGet (editLensFunction entryTextLens) mr ReadWhole
+            entryRowProps <- elGet entryPropFunc mr ReadWhole
             return (key, MkStoreEntry {..})
     initialRows <- liftIO $ run $ do
                 MkFiniteSet initialKeys <- subRead asub KeyReadKeys
                 ords <-
                     for initialKeys $ \key -> do
-                        o <- ufGet (geto key) (subRead asub) ReadWhole
+                        o <- elGet (geto key) (subRead asub) ReadWhole
                         return (key, o)
                 let initialKeys' = fmap fst $ sortBy (\(_, a) (_, b) -> order a b) ords
                 for initialKeys' $ getStoreItem

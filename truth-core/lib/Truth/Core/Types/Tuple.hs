@@ -2,6 +2,7 @@ module Truth.Core.Types.Tuple where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
 
 class TupleUpdateWitness (c :: Type -> Constraint) (sel :: Type -> Type) where
@@ -126,6 +127,12 @@ instance (TestEquality sel, TupleEditWitness ApplicableEdit sel) => ApplicableEd
             (Dict, Just Refl) -> applyEdit edit (mr . MkTupleUpdateReader aggedite) reader
             _ -> mr aggreader
 
+instance (TestEquality sel, TupleUpdateWitness ApplicableUpdate sel) => ApplicableUpdate (TupleUpdate sel) where
+    applyUpdate (MkTupleUpdate selU update) mr aggreader@(MkTupleUpdateReader selR reader) =
+        case (tupleUpdateWitness @ApplicableUpdate selU, testEquality selU selR) of
+            (Dict, Just Refl) -> applyUpdate update (mr . MkTupleUpdateReader selU) reader
+            _ -> mr aggreader
+
 data TupleUpdateEditList sel where
     MkTupleUpdateEditList :: sel update -> [UpdateEdit update] -> TupleUpdateEditList sel
 
@@ -212,18 +219,17 @@ instance (TupleUpdateWitness Show sel, AllWitnessConstraint Show sel) => Show (T
 tupleEditLens_ ::
        forall sel update. (forall a. sel a -> Maybe (update :~: a)) -> sel update -> EditLens (TupleUpdate sel) update
 tupleEditLens_ tester sel = let
-    ufGet :: ReadFunction (TupleUpdateReader sel) (UpdateReader update)
-    ufGet mr = tupleReadFunction sel mr
-    ufUpdate ::
+    elGet :: ReadFunction (TupleUpdateReader sel) (UpdateReader update)
+    elGet mr = tupleReadFunction sel mr
+    elUpdate ::
            forall m. MonadIO m
         => TupleUpdate sel
         -> MutableRead m (TupleUpdateReader sel)
         -> m [update]
-    ufUpdate (MkTupleUpdate sel' update) _ =
+    elUpdate (MkTupleUpdate sel' update) _ =
         case tester sel' of
             Just Refl -> return [update]
             Nothing -> return []
-    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
@@ -244,16 +250,14 @@ tupleIsoLens ::
     -> (forall update. selb update -> sela update)
     -> EditLens (TupleUpdate sela) (TupleUpdate selb)
 tupleIsoLens ab ba = let
-    ufGet :: ReadFunction (TupleUpdateReader sela) (TupleUpdateReader selb)
-    ufGet mr (MkTupleUpdateReader sel rt) = mr $ MkTupleUpdateReader (ba sel) rt
-    ufUpdate ::
+    elGet :: ReadFunction (TupleUpdateReader sela) (TupleUpdateReader selb)
+    elGet mr (MkTupleUpdateReader sel rt) = mr $ MkTupleUpdateReader (ba sel) rt
+    elUpdate ::
            forall m. MonadIO m
         => TupleUpdate sela
         -> MutableRead m (TupleUpdateReader sela)
         -> m [TupleUpdate selb]
-    ufUpdate (MkTupleUpdate sel update) _ = return [MkTupleUpdate (ab sel) update]
-    elFunction :: UpdateFunction (TupleUpdate sela) (TupleUpdate selb)
-    elFunction = MkUpdateFunction {..}
+    elUpdate (MkTupleUpdate sel update) _ = return [MkTupleUpdate (ab sel) update]
     elPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit selb]

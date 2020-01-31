@@ -7,6 +7,7 @@ module Truth.Core.Types.String
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
 import Truth.Core.Sequence
 
@@ -144,7 +145,7 @@ type StringUpdate seq = EditUpdate (StringEdit seq)
 stringSectionLens ::
        forall seq. IsSequence seq
     => SequenceRun seq
-    -> StateEditLens (StringUpdate seq) (StringUpdate seq)
+    -> FloatingEditLens (StringUpdate seq) (StringUpdate seq)
 stringSectionLens initRun = let
     sInit ::
            forall m. MonadIO m
@@ -221,4 +222,4 @@ stringSectionLens initRun = let
         -> MutableRead m (StringRead seq)
         -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
-    in MkStateEditLens {..}
+    in makeStateLens MkStateEditLens {..}

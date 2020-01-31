@@ -8,11 +8,11 @@ module Truth.Core.Object.Subscriber
     , makeSharedSubscriber
     , subscriberObjectMaker
     , shareObjectMaker
+    , floatMapSubscriber
     , mapSubscriber
-    , mapPureSubscriber
     , unitSubscriber
     , ReadOnlySubscriber
-    , mapReadOnlySubscriber
+    --, mapReadOnlySubscriber
     , constantSubscriber
     , subscriberToReadOnly
     , mapOpenSubscriber
@@ -22,6 +22,7 @@ module Truth.Core.Object.Subscriber
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
@@ -128,24 +129,23 @@ makeReflectingSubscriber object = do
     (sub, ()) <- makeSharedSubscriber $ reflectingObjectMaker object
     return sub
 
-mapSubscriber ::
+floatMapSubscriber ::
        forall updateA updateB.
-       LifeCycleIO (EditLens updateA updateB)
+       FloatingEditLens updateA updateB
     -> Subscriber updateA
     -> LifeCycleIO (Subscriber updateB)
-mapSubscriber getlens subA = do
-    lens <- getlens
+floatMapSubscriber lens subA = do
     (subB, ()) <- makeSharedSubscriber $ mapObjectMaker lens $ subscriberObjectMaker subA ()
     return subB
 
-mapPureSubscriber :: forall updateA updateB. EditLens updateA updateB -> Subscriber updateA -> Subscriber updateB
-mapPureSubscriber lens (MkResource rr (MkASubscriber objA subA)) =
+mapSubscriber :: forall updateA updateB. EditLens updateA updateB -> Subscriber updateA -> Subscriber updateB
+mapSubscriber plens (MkResource rr (MkASubscriber objA subA)) =
     runResourceRunnerWith rr $ \run -> let
-        objB = mapAnObject lens objA
+        objB = mapAnObject plens objA
         subB recvB = let
             recvA updatesA ec = do
-                updatesB <- run $ ufUpdates (elFunction lens) (toList updatesA) (objRead objA)
-                case nonEmpty updatesB of
+                updatessB <- run $ for updatesA $ \updateA -> elUpdate plens updateA (objRead objA)
+                case nonEmpty $ mconcat $ toList updatessB of
                     Nothing -> return ()
                     Just updatesB' -> recvB updatesB' ec
             in subA recvA
@@ -158,14 +158,14 @@ unitSubscriber =
 
 mapOpenSubscriber ::
        forall updateA updateB. EditLens updateA updateB -> OpenSubscriber updateA -> OpenSubscriber updateB
-mapOpenSubscriber lens (MkOpenResource rr unlift (MkASubscriber objA subA)) =
+mapOpenSubscriber plens (MkOpenResource rr unlift (MkASubscriber objA subA)) =
     runResourceRunnerWith rr $ \run -> let
-        objB = mapAnObject lens objA
+        objB = mapAnObject plens objA
         subB recvB = let
             recvA updatesA ec = do
                 -- note: use run rather than unlift here, because unlift will be out of the run at this point
-                updatesB <- run $ ufUpdates (elFunction lens) (toList updatesA) (objRead objA)
-                case nonEmpty updatesB of
+                updatessB <- run $ for updatesA $ \updateA -> elUpdate plens updateA (objRead objA)
+                case nonEmpty $ mconcat $ toList updatessB of
                     Nothing -> return ()
                     Just updatesB' -> recvB updatesB' ec
             in subA recvA
@@ -180,15 +180,8 @@ constantSubscriber ::
 constantSubscriber subj =
     MkResource nilResourceRunner $ MkASubscriber (immutableAnObject $ subjectToMutableRead subj) $ \_ -> return ()
 
-mapReadOnlySubscriber ::
-       forall updateA updateB.
-       UpdateFunction updateA updateB
-    -> ReadOnlySubscriber updateA
-    -> ReadOnlySubscriber updateB
-mapReadOnlySubscriber uf = mapPureSubscriber $ updateFunctionToEditLens $ uf . fromReadOnlyUpdateFunction
-
 subscriberToReadOnly :: Subscriber update -> ReadOnlySubscriber update
-subscriberToReadOnly = mapPureSubscriber toReadOnlyEditLens
+subscriberToReadOnly = mapSubscriber toReadOnlyEditLens
 
 type ReadOnlyOpenSubscriber update = OpenSubscriber (ReadOnlyUpdate update)
 
@@ -196,7 +189,7 @@ mapReadOnlyWholeOpenSubscriber ::
        forall a b. (a -> b) -> ReadOnlyOpenSubscriber (WholeUpdate a) -> ReadOnlyOpenSubscriber (WholeUpdate b)
 mapReadOnlyWholeOpenSubscriber ab (MkOpenResource rr run (MkASubscriber objA subA)) = let
     lens :: EditLens (ReadOnlyUpdate (WholeUpdate a)) (ReadOnlyUpdate (WholeUpdate b))
-    lens = updateFunctionToEditLens $ funcUpdateFunction ab . fromReadOnlyUpdateFunction
+    lens = liftReadOnlyEditLens $ funcEditLens ab
     objB = mapAnObject lens objA
     subB recvB = let
         mapUpdate (MkReadOnlyUpdate (MkWholeUpdate a)) = MkReadOnlyUpdate $ MkWholeUpdate $ ab a

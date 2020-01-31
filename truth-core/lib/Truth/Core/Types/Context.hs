@@ -2,6 +2,7 @@ module Truth.Core.Types.Context where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
 import Truth.Core.Types.Tuple
 
@@ -93,21 +94,6 @@ mapContextEdit ::
 mapContextEdit _ (MkTupleUpdateEdit SelectContext edit) = MkTupleUpdateEdit SelectContext edit
 mapContextEdit f (MkTupleUpdateEdit SelectContent edit) = MkTupleUpdateEdit SelectContent $ f edit
 
-contextualiseUpdateFunction ::
-       forall updateX updateN. UpdateFunction updateX updateN -> UpdateFunction updateX (ContextUpdate updateX updateN)
-contextualiseUpdateFunction (MkUpdateFunction g u) = let
-    g' :: ReadFunction (UpdateReader updateX) (ContextUpdateReader updateX updateN)
-    g' mr (MkTupleUpdateReader SelectContext rt) = mr rt
-    g' mr (MkTupleUpdateReader SelectContent rt) = g mr rt
-    u' :: forall m. MonadIO m
-       => updateX
-       -> MutableRead m (UpdateReader updateX)
-       -> m [ContextUpdate updateX updateN]
-    u' ea mr = do
-        ebs <- u ea mr
-        return $ (MkTupleUpdate SelectContext ea) : (fmap (MkTupleUpdate SelectContent) ebs)
-    in MkUpdateFunction g' u'
-
 partitionContextEdits ::
        forall updateX updateN. [ContextUpdateEdit updateX updateN] -> ([UpdateEdit updateX], [UpdateEdit updateN])
 partitionContextEdits pes = let
@@ -118,8 +104,17 @@ partitionContextEdits pes = let
 
 contextualiseEditLens ::
        forall updateX updateN. EditLens updateX updateN -> EditLens updateX (ContextUpdate updateX updateN)
-contextualiseEditLens (MkEditLens f pe) = let
-    f' = contextualiseUpdateFunction f
+contextualiseEditLens (MkEditLens g u pe) = let
+    g' :: ReadFunction (UpdateReader updateX) (ContextUpdateReader updateX updateN)
+    g' mr (MkTupleUpdateReader SelectContext rt) = mr rt
+    g' mr (MkTupleUpdateReader SelectContent rt) = g mr rt
+    u' :: forall m. MonadIO m
+       => updateX
+       -> MutableRead m (UpdateReader updateX)
+       -> m [ContextUpdate updateX updateN]
+    u' ea mr = do
+        ebs <- u ea mr
+        return $ (MkTupleUpdate SelectContext ea) : (fmap (MkTupleUpdate SelectContent) ebs)
     pe' :: forall m. MonadIO m
         => [ContextUpdateEdit updateX updateN]
         -> MutableRead m (UpdateReader updateX)
@@ -130,13 +125,13 @@ contextualiseEditLens (MkEditLens f pe) = let
                 getComposeM $ do
                     eas' <- MkComposeM $ pe ebs mr
                     return $ eas ++ eas'
-    in MkEditLens f' pe'
+    in MkEditLens g' u' pe'
 
-liftContentUpdateFunction ::
+liftContentEditLens ::
        forall updateA updateB updateN.
-       UpdateFunction updateA updateB
-    -> UpdateFunction (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
-liftContentUpdateFunction (MkUpdateFunction g u) = let
+       EditLens updateA updateB
+    -> EditLens (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
+liftContentEditLens (MkEditLens g u pe) = let
     g' :: ReadFunction (ContextUpdateReader updateA updateN) (ContextUpdateReader updateB updateN)
     g' mr (MkTupleUpdateReader SelectContent rt) = mr $ MkTupleUpdateReader SelectContent rt
     g' mr (MkTupleUpdateReader SelectContext rt) = g (mr . MkTupleUpdateReader SelectContext) rt
@@ -148,20 +143,6 @@ liftContentUpdateFunction (MkUpdateFunction g u) = let
     u' (MkTupleUpdate SelectContext update) mr = do
         updates <- u update (mr . MkTupleUpdateReader SelectContext)
         return $ fmap (MkTupleUpdate SelectContext) updates
-    in MkUpdateFunction g' u'
-
-carryContextUpdateFunction ::
-       UpdateFunction (ContextUpdate updateX updateA) updateB
-    -> UpdateFunction (ContextUpdate updateX updateA) (ContextUpdate updateX updateB)
-carryContextUpdateFunction func =
-    liftContentUpdateFunction (editLensFunction $ tupleEditLens SelectContext) . contextualiseUpdateFunction func
-
-liftContentEditLens ::
-       forall updateA updateB updateN.
-       EditLens updateA updateB
-    -> EditLens (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
-liftContentEditLens (MkEditLens f pe) = let
-    f' = liftContentUpdateFunction f
     pe' :: forall m. MonadIO m
         => [ContextUpdateEdit updateB updateN]
         -> MutableRead m (ContextUpdateReader updateA updateN)
@@ -173,7 +154,7 @@ liftContentEditLens (MkEditLens f pe) = let
                     es1 <- MkComposeM $ pe exs (mr . MkTupleUpdateReader SelectContext)
                     return $
                         (fmap (MkTupleUpdateEdit SelectContext) es1) ++ (fmap (MkTupleUpdateEdit SelectContent) ens)
-    in MkEditLens f' pe'
+    in MkEditLens g' u' pe'
 
 carryContextEditLens ::
        EditLens (ContextUpdate updateX updateA) updateB

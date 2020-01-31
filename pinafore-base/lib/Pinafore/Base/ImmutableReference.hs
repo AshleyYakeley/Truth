@@ -33,9 +33,7 @@ getImmutableReference :: PinaforeImmutableReference a -> PinaforeAction (Know a)
 getImmutableReference ref = liftIO $ pinaforeFunctionValueGet $ immutableReferenceToReadOnlyValue ref
 
 functionImmutableReference :: PinaforeReadOnlyValue a -> PinaforeImmutableReference a
-functionImmutableReference fv =
-    MkPinaforeImmutableReference $
-    eaMap (updateFunctionToEditLens $ funcUpdateFunction Known . fromReadOnlyUpdateFunction) fv
+functionImmutableReference fv = MkPinaforeImmutableReference $ eaMap (liftReadOnlyEditLens $ funcEditLens Known) fv
 
 pinaforeImmutableReferenceValue :: a -> PinaforeImmutableReference a -> PinaforeReadOnlyValue a
 pinaforeImmutableReferenceValue def ref = eaMapReadOnlyWhole (fromKnow def) $ immutableReferenceToReadOnlyValue ref

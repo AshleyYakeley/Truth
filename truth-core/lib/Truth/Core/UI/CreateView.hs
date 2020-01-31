@@ -17,9 +17,9 @@ module Truth.Core.UI.CreateView
     ) where
 
 import Data.IORef
-import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object
+import Truth.Core.Resource
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.View

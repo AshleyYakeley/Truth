@@ -26,7 +26,7 @@ switchView sub = do
             cvLiftView $ getViewState firstspec
         recvVS :: [ReadOnlyUpdate (WholeUpdate (GCreateView sel))] -> StateT (ViewState sel) IO ()
         recvVS updates =
-            for_ (lastWholeUpdate $ fmap unReadOnlyUpdate updates) $ \spec ->
+            for_ (lastReadOnlyWholeUpdate updates) $ \spec ->
                 replaceDynamicView $ runWMFunction unliftView $ getViewState spec
     cvDynamic @(ViewState sel) sub initVS recvVS
     toWidget box

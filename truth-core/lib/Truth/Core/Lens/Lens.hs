@@ -1,14 +1,15 @@
-module Truth.Core.Edit.Lens where
+module Truth.Core.Lens.Lens where
 
 import Truth.Core.Edit.Edit
 import Truth.Core.Edit.FullEdit
-import Truth.Core.Edit.Function
 import Truth.Core.Edit.Update
 import Truth.Core.Import
 import Truth.Core.Read
 
 data EditLens updateA updateB = MkEditLens
-    { elFunction :: UpdateFunction updateA updateB
+    { elGet :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
+    , elUpdate :: forall m. MonadIO m => updateA -> MutableRead m (UpdateReader updateA) -> m [updateB]
+    -- ^ the MutableRead argument will reflect the new value
     , elPutEdits :: forall m.
                         MonadIO m =>
                                 [UpdateEdit updateB] -> MutableRead m (UpdateReader updateA) -> m (Maybe [UpdateEdit updateA])
@@ -17,17 +18,38 @@ data EditLens updateA updateB = MkEditLens
 instance Category EditLens where
     id :: forall update. EditLens update update
     id = let
-        pe :: forall m. MonadIO m
-           => [UpdateEdit update]
-           -> MutableRead m (UpdateReader update)
-           -> m (Maybe [UpdateEdit update])
-        pe edits _ = return $ Just edits
-        in MkEditLens id pe
+        elGet :: ReadFunction (UpdateReader update) (UpdateReader update)
+        elGet mr = mr
+        elUpdate ::
+               forall m. MonadIO m
+            => update
+            -> MutableRead m (UpdateReader update)
+            -> m [update]
+        elUpdate update _ = return [update]
+        elPutEdits ::
+               forall m. MonadIO m
+            => [UpdateEdit update]
+            -> MutableRead m (UpdateReader update)
+            -> m (Maybe [UpdateEdit update])
+        elPutEdits edits _ = return $ Just edits
+        in MkEditLens {..}
     (.) :: forall updateA updateB updateC.
            EditLens updateB updateC
         -> EditLens updateA updateB
         -> EditLens updateA updateC
-    MkEditLens efBC peBC . lensAB@(MkEditLens efAB _) = let
+    (MkEditLens gBC uBC peBC) . (MkEditLens gAB uAB peAB) = let
+        gAC :: forall m. MonadIO m
+            => MutableRead m (UpdateReader updateA)
+            -> MutableRead m (UpdateReader updateC)
+        gAC mra = gBC $ gAB mra
+        uAC :: forall m. MonadIO m
+            => updateA
+            -> MutableRead m (UpdateReader updateA)
+            -> m [updateC]
+        uAC updA mrA = do
+            updBs <- uAB updA mrA
+            updCss <- for updBs $ \updB -> uBC updB $ \rt -> id $ gAB mrA rt
+            return $ mconcat updCss
         peAC ::
                forall m. MonadIO m
             => [UpdateEdit updateC]
@@ -35,10 +57,9 @@ instance Category EditLens where
             -> m (Maybe [UpdateEdit updateA])
         peAC ec mra =
             getComposeM $ do
-                ebs <- MkComposeM $ peBC ec $ ufGet efAB mra
-                MkComposeM $ elPutEdits lensAB ebs mra
-        efAC = efBC . efAB
-        in MkEditLens efAC peAC
+                ebs <- MkComposeM $ peBC ec $ gAB mra
+                MkComposeM $ peAB ebs mra
+        in MkEditLens gAC uAC peAC
 
 elPutEditsFromPutEdit ::
        forall edita editb m m'. (Monad m', MonadIO m, ApplicableEdit edita)
@@ -64,43 +85,6 @@ elPutEditsFromSimplePutEdit putEdit editBs _ =
         editAss <- for editBs $ \update -> MkComposeM $ putEdit update
         return $ mconcat editAss
 
-editLensFunction :: EditLens updateA updateB -> UpdateFunction updateA updateB
-editLensFunction (MkEditLens func _) = func
-
-convertAnUpdateFunction ::
-       forall updateA updateB.
-       ( IsUpdate updateB
-       , UpdateSubject updateA ~ UpdateSubject updateB
-       , FullSubjectReader (UpdateReader updateA)
-       , ApplicableEdit (UpdateEdit updateA)
-       , FullEdit (UpdateEdit updateB)
-       )
-    => UpdateFunction updateA updateB
-convertAnUpdateFunction = let
-    ufGet :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
-    ufGet mr = mSubjectToMutableRead $ mutableReadToSubject mr
-    ufUpdate ::
-           forall m. MonadIO m
-        => updateA
-        -> MutableRead m (UpdateReader updateA)
-        -> m [updateB]
-    ufUpdate _updateA mr = do
-        newa <- mutableReadToSubject mr
-        edits <- getReplaceEditsFromSubject newa
-        return $ fmap editUpdate edits
-    in MkUpdateFunction {..}
-
-convertUpdateFunction ::
-       forall updateA updateB.
-       ( IsUpdate updateB
-       , UpdateSubject updateA ~ UpdateSubject updateB
-       , FullSubjectReader (UpdateReader updateA)
-       , ApplicableEdit (UpdateEdit updateA)
-       , FullEdit (UpdateEdit updateB)
-       )
-    => UpdateFunction updateA updateB
-convertUpdateFunction = convertAnUpdateFunction
-
 convertEditLens ::
        forall updateA updateB.
        ( IsUpdate updateB
@@ -110,8 +94,17 @@ convertEditLens ::
        )
     => EditLens updateA updateB
 convertEditLens = let
-    elFunction :: UpdateFunction updateA updateB
-    elFunction = convertAnUpdateFunction
+    elGet :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
+    elGet mr = mSubjectToMutableRead $ mutableReadToSubject mr
+    elUpdate ::
+           forall m. MonadIO m
+        => updateA
+        -> MutableRead m (UpdateReader updateA)
+        -> m [updateB]
+    elUpdate _updateA mr = do
+        newa <- mutableReadToSubject mr
+        edits <- getReplaceEditsFromSubject newa
+        return $ fmap editUpdate edits
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit updateB]

@@ -20,35 +20,56 @@ class EditApplicative (f :: Type -> Type) where
     eaPair :: forall updateA updateB. f updateA -> f updateB -> f (PairUpdate updateA updateB)
 
 instance EditApplicative (EditLens update) where
-    eaPure subj = updateFunctionToEditLens $ constUpdateFunction subj
-    eaMap lens v = lens . v
+    eaPure = constEditLens
+    eaMap = (.)
     eaPair = pairCombineEditLenses
 
-eaMapReadOnly ::
+instance EditApplicative (FloatingEditLens update) where
+    eaPure a = editLensToFloating $ constEditLens a
+    eaMap lens = (.) $ editLensToFloating lens
+    eaPair = pairCombineFloatingEditLenses
+
+eaMapSemiReadOnly ::
        forall f updateA updateB. EditApplicative f
-    => UpdateFunction updateA updateB
+    => EditLens updateA (ReadOnlyUpdate updateB)
     -> f (ReadOnlyUpdate updateA)
     -> f (ReadOnlyUpdate updateB)
-eaMapReadOnly uf = eaMap $ updateFunctionToEditLens $ uf . fromReadOnlyUpdateFunction
+eaMapSemiReadOnly lens = eaMap $ liftReadOnlyEditLens lens
+
+eaMapFullReadOnly ::
+       forall f updateA updateB. EditApplicative f
+    => EditLens updateA updateB
+    -> f (ReadOnlyUpdate updateA)
+    -> f (ReadOnlyUpdate updateB)
+eaMapFullReadOnly lens = eaMapSemiReadOnly $ toReadOnlyEditLens . lens
 
 type ReadOnlyWhole f a = f (ReadOnlyUpdate (WholeUpdate a))
 
 eaPairReadOnlyWhole :: EditApplicative f => ReadOnlyWhole f a -> ReadOnlyWhole f b -> ReadOnlyWhole f (a, b)
 eaPairReadOnlyWhole fa fb =
-    eaMap (updateFunctionToEditLens $ pairWholeUpdateFunction . readOnlyPairUpdateFunction) $ eaPair fa fb
+    eaMap (liftReadOnlyEditLens (toReadOnlyEditLens . pairWholeEditLens) . readOnlyPairEditLens) $ eaPair fa fb
 
 eaToReadOnlyWhole ::
-       ( EditApplicative f
-       , IsEditUpdate update
-       , FullSubjectReader (UpdateReader update)
-       , ApplicableEdit (UpdateEdit update)
-       )
+       (EditApplicative f, FullSubjectReader (UpdateReader update), ApplicableUpdate update)
     => f update
     -> ReadOnlyWhole f (UpdateSubject update)
-eaToReadOnlyWhole = eaMap (updateFunctionToEditLens convertUpdateFunction)
+eaToReadOnlyWhole = eaMap convertReadOnlyEditLens
 
 eaMapReadOnlyWhole :: EditApplicative f => (a -> b) -> ReadOnlyWhole f a -> ReadOnlyWhole f b
-eaMapReadOnlyWhole ab = eaMapReadOnly $ funcUpdateFunction ab
+eaMapReadOnlyWhole ab = eaMapSemiReadOnly $ funcEditLens ab
+
+class EditApplicative f => FloatingEditApplicative (f :: Type -> Type) where
+    eaFloatMap :: forall updateA updateB. FloatingEditLens updateA updateB -> f updateA -> LifeCycleIO (f updateB)
+
+eaFloatMapReadOnly ::
+       forall f updateA updateB. FloatingEditApplicative f
+    => FloatingEditLens updateA (ReadOnlyUpdate updateB)
+    -> f (ReadOnlyUpdate updateA)
+    -> LifeCycleIO (f (ReadOnlyUpdate updateB))
+eaFloatMapReadOnly flens = eaFloatMap $ liftReadOnlyFloatingEditLens flens
+
+instance FloatingEditApplicative (FloatingEditLens update) where
+    eaFloatMap ab ua = return $ ab . ua
 
 newtype PinaforeValue update = MkPinaforeValue
     { unPinaforeValue :: Subscriber update
@@ -59,8 +80,11 @@ pinaforeValueOpenSubscriber = openResource . unPinaforeValue
 
 instance EditApplicative PinaforeValue where
     eaPure subj = MkPinaforeValue $ constantSubscriber subj
-    eaMap lens (MkPinaforeValue sv) = MkPinaforeValue $ mapPureSubscriber lens sv
+    eaMap lens (MkPinaforeValue sv) = MkPinaforeValue $ mapSubscriber lens sv
     eaPair (MkPinaforeValue sva) (MkPinaforeValue svb) = MkPinaforeValue $ pairSubscribers sva svb
+
+instance FloatingEditApplicative PinaforeValue where
+    eaFloatMap flens (MkPinaforeValue sub) = fmap MkPinaforeValue $ floatMapSubscriber flens sub
 
 contextualisePinaforeValue ::
        Subscriber baseupdate -> PinaforeValue update -> PinaforeValue (ContextUpdate baseupdate update)
@@ -82,7 +106,7 @@ applyPinaforeFunction ::
     -> PinaforeReadOnlyValue a
     -> PinaforeReadOnlyValue b
 applyPinaforeFunction basesub m val =
-    eaMap (updateFunctionToEditLens $ pinaforeFunctionMorphismUpdateFunction m) $
+    eaMap (pinaforeFunctionMorphismUpdateFunction m) $
     contextualisePinaforeValue basesub $ eaMap fromReadOnlyRejectingEditLens val
 
 applyPinaforeLens ::

@@ -19,5 +19,5 @@ instance Show (IconUISpec sel) where
 instance UIType IconUISpec where
     uiWitness = $(iowitness [t|IconUISpec|])
 
-iconUISpec :: IconName -> StockSize -> UISpec sel
-iconUISpec icon size = MkUISpec $ MkIconUISpec icon size
+iconUISpec :: IconName -> StockSize -> LUISpec sel
+iconUISpec icon size = mkLUISpec $ MkIconUISpec icon size

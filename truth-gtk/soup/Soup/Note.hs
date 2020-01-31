@@ -78,7 +78,7 @@ instance HasNewValue (Tuple NoteSel) where
 
 type NoteUpdate = TupleUpdate NoteSel
 
-noteEditSpec :: OpenSubscriber NoteUpdate -> UISpec TextSelection
+noteEditSpec :: OpenSubscriber NoteUpdate -> LUISpec TextSelection
 noteEditSpec sub =
     verticalUISpec
         [ (textEntryUISpec $ mapOpenSubscriber (tupleEditLens NoteTitle) sub, False)

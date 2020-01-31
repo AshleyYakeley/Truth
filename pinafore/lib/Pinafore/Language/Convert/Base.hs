@@ -305,12 +305,12 @@ instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) PinaforeWindow w
 
 -- UISpec
 instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (UISpec a) where
+             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (LUISpec a) where
     toShimWit =
         mapShimWit (coerceEnhanced "subtype") (toJMShimWit :: PinaforeShimWit baseupdate 'Positive (PinaforeUI a))
 
 instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (UISpec a) where
+             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LUISpec a) where
     fromShimWit =
         mapShimWit (coerceEnhanced "subtype") (fromJMShimWit :: PinaforeShimWit baseupdate 'Negative (PinaforeUI a))
 

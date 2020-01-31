@@ -4,13 +4,13 @@ import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
 data PagesUISpec sel where
-    MkPagesUISpec :: [(UISpec sel', UISpec sel)] -> PagesUISpec sel
+    MkPagesUISpec :: [(LUISpec sel', LUISpec sel)] -> PagesUISpec sel
 
 instance Show (PagesUISpec sel) where
-    show (MkPagesUISpec specs) = "pages (" ++ intercalate ", " (fmap show specs) ++ ")"
+    show (MkPagesUISpec _) = "pages"
 
 instance UIType PagesUISpec where
     uiWitness = $(iowitness [t|PagesUISpec|])
 
-pagesUISpec :: forall sel sel'. [(UISpec sel', UISpec sel)] -> UISpec sel
-pagesUISpec pages = MkUISpec $ MkPagesUISpec pages
+pagesUISpec :: forall sel sel'. [(LUISpec sel', LUISpec sel)] -> LUISpec sel
+pagesUISpec pages = mkLUISpec $ MkPagesUISpec pages

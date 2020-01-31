@@ -5,7 +5,7 @@ import Shapes
 import Truth.Core
 
 newtype PinaforeUI a = MkPinaforeUI
-    { unPinaforeUI :: UISpec a
+    { unPinaforeUI :: LUISpec a
     }
 
 instance Functor PinaforeUI where

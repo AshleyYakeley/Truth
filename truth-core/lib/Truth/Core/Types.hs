@@ -19,10 +19,12 @@ import Truth.Core.Types.Key as I
 import Truth.Core.Types.Lattice as I
 import Truth.Core.Types.List as I
 import Truth.Core.Types.None as I
-import Truth.Core.Types.OneEdit as I
-import Truth.Core.Types.OneReader as I
-import Truth.Core.Types.OneWhole as I
+import Truth.Core.Types.One.Edit as I
+import Truth.Core.Types.One.FullResult as I
+import Truth.Core.Types.One.Read as I
+import Truth.Core.Types.One.Result as I
 import Truth.Core.Types.Pair as I
+import Truth.Core.Types.Partial as I
 import Truth.Core.Types.ReadOnly as I
 import Truth.Core.Types.Reject as I
 import Truth.Core.Types.Set as I

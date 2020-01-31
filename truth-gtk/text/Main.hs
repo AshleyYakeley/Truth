@@ -22,7 +22,7 @@ optParser =
     O.switch (O.long "save")
 
 newtype AppUI =
-    MkAppUI (forall sel. IO () -> UIWindow -> UISpec sel -> (MenuBar, UISpec sel))
+    MkAppUI (forall sel. IO () -> UIWindow -> LUISpec sel -> (MenuBar, LUISpec sel))
 
 main :: IO ()
 main = do
@@ -35,24 +35,28 @@ main = do
                 bsObj = fileObject path
                 wholeTextObj :: Object (WholeEdit ((Result Text) Text))
                 wholeTextObj = mapObject textLens bsObj
-                ui :: Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text))
-                   -> Maybe (Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text)))
-                   -> (forall sel. IO () -> UIWindow -> UISpec sel -> (MenuBar, UISpec sel))
-                   -> UISpec TextSelection
+                ui :: Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text))
+                   -> Maybe (Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text)))
+                   -> (forall sel. IO () -> UIWindow -> LUISpec sel -> (MenuBar, LUISpec sel))
+                   -> LUISpec TextSelection
                 ui sub1 msub2 extraui =
                     withAspectUISpec $ \aspect -> let
-                        openSelection :: Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text)) -> IO ()
+                        openSelection :: Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text)) -> IO ()
                         openSelection sub =
                             uitUnliftLifeCycle $ do
                                 mllens <- aspect
                                 case mllens of
                                     Nothing -> return ()
                                     Just llens -> do
-                                        subSub <- mapSubscriber (fmap oneWholeLiftEditLens llens) sub
+                                        tselLens <- llens
+                                        subSub <- floatMapSubscriber (liftFullResultOneFloatingEditLens tselLens) sub
                                         makeWindow "section" subSub Nothing extraui
+                        rTextSpec :: Result Text (OpenSubscriber (StringUpdate Text)) -> LUISpec TextSelection
+                        rTextSpec (SuccessResult sub) = textAreaUISpec sub
+                        rTextSpec (FailureResult err) = labelUISpec $ openResource $ constantSubscriber err
                         makeSpecs sub =
                             [ (simpleButtonUISpec (openResource $ constantSubscriber "View") $ openSelection sub, False)
-                            , (scrolledUISpec $ oneWholeUISpec (openResource sub) textAreaUISpec, True)
+                            , (scrolledUISpec $ oneWholeUISpec (openResource sub) rTextSpec, True)
                             ]
                         allSpecs =
                             case msub2 of
@@ -61,9 +65,9 @@ main = do
                         in verticalUISpec allSpecs
                 makeWindow ::
                        Text
-                    -> Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text))
-                    -> Maybe (Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text)))
-                    -> (forall sel. IO () -> UIWindow -> UISpec sel -> (MenuBar, UISpec sel))
+                    -> Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text))
+                    -> Maybe (Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text)))
+                    -> (forall sel. IO () -> UIWindow -> LUISpec sel -> (MenuBar, LUISpec sel))
                     -> LifeCycleIO ()
                 makeWindow title sub msub2 extraui = do
                     rec
@@ -77,7 +81,7 @@ main = do
                                 (Just $ \_ -> openResource $ constantSubscriber mbar)
                                 uic
                     return ()
-                simpleUI :: forall sel. IO () -> UIWindow -> UISpec sel -> (MenuBar, UISpec sel)
+                simpleUI :: forall sel. IO () -> UIWindow -> LUISpec sel -> (MenuBar, LUISpec sel)
                 simpleUI closer _ spec = let
                     mbar :: MenuBar
                     mbar =
@@ -95,8 +99,8 @@ main = do
                     -> UndoActions
                     -> IO ()
                     -> UIWindow
-                    -> UISpec sel
-                    -> (MenuBar, UISpec sel)
+                    -> LUISpec sel
+                    -> (MenuBar, LUISpec sel)
                 extraUI (MkSaveActions saveActions) (MkUndoActions undo redo) closer _ spec = let
                     saveAction = do
                         mactions <- saveActions

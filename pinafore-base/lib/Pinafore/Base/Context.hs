@@ -54,4 +54,4 @@ nullPinaforeContext = let
 pinaforeBaseSubscriber ::
        forall baseupdate update. (?pinafore :: PinaforeContext baseupdate, BaseEditLens update baseupdate)
     => Subscriber update
-pinaforeBaseSubscriber = mapPureSubscriber baseEditLens pinaforeBase
+pinaforeBaseSubscriber = mapSubscriber baseEditLens pinaforeBase

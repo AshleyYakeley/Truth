@@ -83,7 +83,7 @@ pinaforeSetRefCartesianProduct :: forall a b. PinaforeSetRef a -> PinaforeSetRef
 pinaforeSetRefCartesianProduct (MkPinaforeSetRef eqA svA) (MkPinaforeSetRef eqB svB) = let
     eqAB (a1, b1) (a2, b2) = eqA a1 a2 && eqB b1 b2
     in MkPinaforeSetRef eqAB $
-       eaMap (updateFunctionToRejectingEditLens (setCartesianProductPartialUpdateFunction eqA eqB)) $ eaPair svA svB
+       eaMap (fromReadOnlyRejectingEditLens . setCartesianProductPartialLens eqA eqB) $ eaPair svA svB
 
 pinaforeSetRefAdd :: forall a. PinaforeSetRef a -> a -> PinaforeAction ()
 pinaforeSetRefAdd (MkPinaforeSetRef _eq sv) a =
@@ -115,27 +115,26 @@ pinaforeSetRefMember (MkPinaforeSetRef eq sv) aref = let
             => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> m (Know a)
         getArg mr = mr $ MkTupleUpdateReader SelectSecond ReadWhole
-        elFunction :: UpdateFunction (PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))) (WholeUpdate (Know Bool))
-        ufGet ::
+        elGet ::
                forall m. MonadIO m
             => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> MutableRead m (WholeReader (Know Bool))
-        ufGet mr ReadWhole = do
+        elGet mr ReadWhole = do
             ka <- getArg mr
             for ka $ getFunc mr
-        ufUpdate ::
+        elUpdate ::
                forall m. MonadIO m
             => PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))
             -> MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> m [WholeUpdate (Know Bool)]
-        ufUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeUpdate b)))) mr = do
+        elUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeUpdate b)))) mr = do
             ka <- getArg mr
             return $
                 case ka of
                     Known a'
                         | eq a a' -> pure $ MkWholeUpdate $ Known b
                     _ -> []
-        ufUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate rset)) mr = do
+        elUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate rset)) mr = do
             ka <- getArg mr
             case ka of
                 Known a
@@ -143,13 +142,12 @@ pinaforeSetRefMember (MkPinaforeSetRef eq sv) aref = let
                         b <- getFunc mr a
                         return $ pure $ MkWholeUpdate $ Known b
                 _ -> return []
-        ufUpdate (MkTupleUpdate SelectSecond (MkWholeUpdate ka)) mr = do
+        elUpdate (MkTupleUpdate SelectSecond (MkWholeUpdate ka)) mr = do
             case ka of
                 Known a -> do
                     b <- getFunc mr a
                     return $ pure $ MkWholeUpdate $ Known b
                 Unknown -> return $ pure $ MkWholeUpdate Unknown
-        elFunction = MkUpdateFunction {..}
         elPutEdits ::
                forall m. MonadIO m
             => [WholeEdit (Know Bool)]

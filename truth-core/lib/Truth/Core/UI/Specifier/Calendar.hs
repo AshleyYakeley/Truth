@@ -15,5 +15,5 @@ instance Show (CalendarUISpec sel) where
 instance UIType CalendarUISpec where
     uiWitness = $(iowitness [t|CalendarUISpec|])
 
-calendarUISpec :: OpenSubscriber (WholeUpdate Day) -> UISpec sel
-calendarUISpec sub = MkUISpec $ MkCalendarUISpec sub
+calendarUISpec :: OpenSubscriber (WholeUpdate Day) -> LUISpec sel
+calendarUISpec sub = mkLUISpec $ MkCalendarUISpec sub

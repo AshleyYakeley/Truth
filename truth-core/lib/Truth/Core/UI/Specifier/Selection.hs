@@ -5,8 +5,8 @@ import Truth.Core.UI.CreateView
 import Truth.Core.UI.Specifier.Map
 import Truth.Core.UI.Specifier.Specifier
 
-mapSelectionUISpec :: forall sela selb. (sela -> selb) -> UISpec sela -> UISpec selb
+mapSelectionUISpec :: forall sela selb. (sela -> selb) -> LUISpec sela -> LUISpec selb
 mapSelectionUISpec f = mapViewUISpec $ cvMapSelection f
 
-noSelectionUISpec :: forall sela selb. UISpec sela -> UISpec selb
+noSelectionUISpec :: forall sela selb. LUISpec sela -> LUISpec selb
 noSelectionUISpec = mapViewUISpec cvNoAspect

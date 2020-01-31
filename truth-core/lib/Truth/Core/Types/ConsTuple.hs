@@ -4,6 +4,7 @@ module Truth.Core.Types.ConsTuple where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
 import Truth.Core.Types.Tuple
 
@@ -23,15 +24,14 @@ emptyTuple = MkTuple never
 
 emptyTupleLens :: forall updateA. EditLens updateA (TupleUpdate EmptyType)
 emptyTupleLens = let
-    ufGet :: ReadFunction (UpdateReader updateA) (TupleUpdateReader EmptyType)
-    ufGet _ (MkTupleUpdateReader sel _) = never sel
-    ufUpdate ::
+    elGet :: ReadFunction (UpdateReader updateA) (TupleUpdateReader EmptyType)
+    elGet _ (MkTupleUpdateReader sel _) = never sel
+    elUpdate ::
            forall m. MonadIO m
         => updateA
         -> MutableRead m (UpdateReader updateA)
         -> m [TupleUpdate EmptyType]
-    ufUpdate _ _ = return []
-    elFunction = MkUpdateFunction {..}
+    elUpdate _ _ = return []
     elPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit EmptyType]
@@ -64,17 +64,15 @@ instance (FiniteTupleSelector r, TupleSubject r ~ Tuple r) => FiniteTupleSelecto
 
 firstEditLens :: forall sel update1. EditLens (TupleUpdate (ConsType update1 sel)) update1
 firstEditLens = let
-    ufGet :: ReadFunction (TupleUpdateReader (ConsType update1 sel)) (UpdateReader update1)
-    ufGet mr rt = mr $ MkTupleUpdateReader FirstType rt
-    ufUpdate ::
+    elGet :: ReadFunction (TupleUpdateReader (ConsType update1 sel)) (UpdateReader update1)
+    elGet mr rt = mr $ MkTupleUpdateReader FirstType rt
+    elUpdate ::
            forall m. MonadIO m
         => TupleUpdate (ConsType update1 sel)
         -> MutableRead m (TupleUpdateReader (ConsType update1 sel))
         -> m [update1]
-    ufUpdate (MkTupleUpdate FirstType update) _ = return [update]
-    ufUpdate (MkTupleUpdate (RestType _) _) _ = return []
-    elFunction :: UpdateFunction (TupleUpdate (ConsType update1 sel)) update1
-    elFunction = MkUpdateFunction {..}
+    elUpdate (MkTupleUpdate FirstType update) _ = return [update]
+    elUpdate (MkTupleUpdate (RestType _) _) _ = return []
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update1]
@@ -85,17 +83,15 @@ firstEditLens = let
 
 restEditLens :: forall sel update1. EditLens (TupleUpdate (ConsType update1 sel)) (TupleUpdate sel)
 restEditLens = let
-    ufGet :: ReadFunction (TupleUpdateReader (ConsType update1 sel)) (TupleUpdateReader sel)
-    ufGet mr (MkTupleUpdateReader sel rt) = mr $ MkTupleUpdateReader (RestType sel) rt
-    ufUpdate ::
+    elGet :: ReadFunction (TupleUpdateReader (ConsType update1 sel)) (TupleUpdateReader sel)
+    elGet mr (MkTupleUpdateReader sel rt) = mr $ MkTupleUpdateReader (RestType sel) rt
+    elUpdate ::
            forall m. MonadIO m
         => TupleUpdate (ConsType update1 sel)
         -> MutableRead m (TupleUpdateReader (ConsType update1 sel))
         -> m [TupleUpdate sel]
-    ufUpdate (MkTupleUpdate FirstType _) _ = return []
-    ufUpdate (MkTupleUpdate (RestType sel) edit) _ = return [MkTupleUpdate sel edit]
-    elFunction :: UpdateFunction (TupleUpdate (ConsType update1 sel)) (TupleUpdate sel)
-    elFunction = MkUpdateFunction {..}
+    elUpdate (MkTupleUpdate FirstType _) _ = return []
+    elUpdate (MkTupleUpdate (RestType sel) edit) _ = return [MkTupleUpdate sel edit]
     elPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit sel]

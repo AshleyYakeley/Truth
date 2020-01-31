@@ -5,15 +5,14 @@ module Truth.Core.Types.List.Update
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
 import Truth.Core.Sequence
 import Truth.Core.Types.List.Edit
 import Truth.Core.Types.List.Read
-import Truth.Core.Types.OneEdit
-import Truth.Core.Types.OneReader
-import Truth.Core.Types.OneWhole
-import Truth.Core.Types.Sum
-import Truth.Core.Types.Whole
+import Truth.Core.Types.One.FullResult
+import Truth.Core.Types.One.Read
+import Truth.Core.Types.One.Result
 
 data ListUpdate seq update where
     ListUpdateItem :: SequencePoint seq -> update -> ListUpdate seq update
@@ -44,7 +43,7 @@ listItemLens ::
        , UpdateSubject update ~ Element seq
        )
     => SequencePoint seq
-    -> StateEditLens (ListUpdate seq update) (MaybeUpdate update)
+    -> FloatingEditLens (ListUpdate seq update) (MaybeUpdate update)
 listItemLens initpos = let
     sInit ::
            forall m. MonadIO m
@@ -75,7 +74,7 @@ listItemLens initpos = let
         i <- get
         return $
             if i == ie
-                then [SumUpdateRight $ MkOneUpdate update]
+                then [MkFullResultOneUpdate $ SuccessResultOneUpdate update]
                 else []
     sUpdate (ListUpdateDelete ie) _ = do
         i <- get
@@ -83,7 +82,7 @@ listItemLens initpos = let
             LT -> do
                 put $ i - 1
                 return []
-            EQ -> return [SumUpdateLeft $ MkWholeReaderUpdate Nothing]
+            EQ -> return [MkFullResultOneUpdate $ NewResultOneUpdate Nothing]
             GT -> return []
     sUpdate (ListUpdateInsert ie _) _ = do
         i <- get
@@ -93,19 +92,19 @@ listItemLens initpos = let
         return []
     sUpdate ListUpdateClear _ = do
         put 0
-        return [SumUpdateLeft $ MkWholeReaderUpdate Nothing]
+        return [MkFullResultOneUpdate $ NewResultOneUpdate Nothing]
     sPutEdit ::
            forall m. MonadIO m
         => MaybeEdit (UpdateEdit update)
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
-    sPutEdit (SumEditRight (MkOneEdit edit)) _ = do
+    sPutEdit (SuccessFullResultOneEdit edit) _ = do
         i <- get
         return $ Just [ListEditItem i edit]
-    sPutEdit (SumEditLeft (MkWholeReaderEdit Nothing)) _ = do
+    sPutEdit (NewFullResultOneEdit Nothing) _ = do
         i <- get
         return $ Just [ListEditDelete i]
-    sPutEdit (SumEditLeft (MkWholeReaderEdit (Just subj))) _ = do
+    sPutEdit (NewFullResultOneEdit (Just subj)) _ = do
         i <- get
         return $ Just [ListEditInsert i subj]
     sPutEdits ::
@@ -114,4 +113,4 @@ listItemLens initpos = let
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
-    in MkStateEditLens {..}
+    in makeStateLens MkStateEditLens {..}

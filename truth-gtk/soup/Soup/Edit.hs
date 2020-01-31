@@ -3,6 +3,7 @@ module Soup.Edit
     , SoupUpdate
     , ObjectSoupUpdate
     , directorySoup
+    , soupRowLens
     , liftSoupLens
     ) where
 
@@ -15,6 +16,13 @@ import Truth.World.FileSystem
 type UUIDElementUpdate update = PairUpdate (ConstUpdate UUID) update
 
 type SoupUpdate update = KeyUpdate [(UUID, UpdateSubject update)] (UUIDElementUpdate update)
+
+soupRowLens ::
+       forall update. (IsUpdate update, FullEdit (UpdateEdit update))
+    => UUID
+    -> EditLens (SoupUpdate update) update
+soupRowLens key =
+    mustExistOneEditLens "row" . liftFullResultOneEditLens (tupleEditLens SelectSecond) . fixedKeyElementEditLens key
 
 liftSoupLens ::
        forall updateA updateB.

@@ -56,22 +56,10 @@ instance TestEquality reader => CacheableEdit (NoEdit reader)
 
 type NoUpdate reader = EditUpdate (NoEdit reader)
 
-readFunctionNoUpdateFunction ::
-       forall ra updateB. ReadFunction ra (UpdateReader updateB) -> UpdateFunction (NoUpdate ra) updateB
-readFunctionNoUpdateFunction rf = let
-    ufGet :: forall . ReadFunction ra (UpdateReader updateB)
-    ufGet mra rb = rf mra rb
-    ufUpdate edit _ = never edit
-    in MkUpdateFunction {..}
-
-ioFuncNoUpdateFunction ::
-       forall ra updateB. (FullSubjectReader ra, SubjectReader (UpdateReader updateB))
-    => (ReaderSubject ra -> IO (UpdateSubject updateB))
-    -> UpdateFunction (NoUpdate ra) updateB
-ioFuncNoUpdateFunction f = readFunctionNoUpdateFunction $ ioFuncReadFunction f
-
-funcNoUpdateFunction ::
-       forall ra updateB. (FullSubjectReader ra, SubjectReader (UpdateReader updateB))
-    => (ReaderSubject ra -> UpdateSubject updateB)
-    -> UpdateFunction (NoUpdate ra) updateB
-funcNoUpdateFunction f = ioFuncNoUpdateFunction $ return . f
+elPutEditsNone ::
+       forall edita readerb m m'. (Monad m', MonadIO m)
+    => [NoEdit readerb]
+    -> MutableRead m (EditReader edita)
+    -> m' (Maybe [edita])
+elPutEditsNone [] _ = return $ Just []
+elPutEditsNone (e:_) _ = never e

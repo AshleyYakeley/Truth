@@ -10,7 +10,7 @@ data WindowSpec = forall sel. MkWindowSpec
     { wsCloseBoxAction :: IO ()
     , wsTitle :: ReadOnlyOpenSubscriber (WholeUpdate Text)
     , wsMenuBar :: Maybe (Aspect sel -> ReadOnlyOpenSubscriber (WholeUpdate MenuBar))
-    , wsContent :: UISpec sel
+    , wsContent :: LUISpec sel
     }
 
 data UIWindow = MkUIWindow

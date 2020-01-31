@@ -8,12 +8,14 @@ import Test.Tasty.HUnit
 import Truth.Core
 import Truth.UI.GTK
 
-testGView :: forall sel. UISpec sel -> TestTree
-testGView uispec =
-    testCase (show uispec) $
-    case getMaybeView uispec of
-        Just _ -> return ()
-        Nothing -> assertFailure "not matched"
+testGView :: forall sel. String -> LUISpec sel -> TestTree
+testGView name luispec =
+    testCase name $
+    runLifeCycle $ do
+        uispec <- luispec
+        case getMaybeView uispec of
+            Just _ -> return ()
+            Nothing -> liftIO $ assertFailure "not matched"
 
 data UIUnknown sel where
     MkUIUnknown :: UIUnknown sel
@@ -28,8 +30,8 @@ testGViews :: TestTree
 testGViews =
     testGroup
         "GView"
-        [ testGView $ (nullUISpec :: UISpec UnitEdit)
-        , testGView $ verticalUISpec [(MkUISpec MkUIUnknown :: UISpec UnitEdit, False)]
+        [ testGView "null" $ (nullUISpec :: LUISpec UnitEdit)
+        , testGView "vertical layout" $ verticalUISpec [(return $ MkUISpec MkUIUnknown :: LUISpec UnitEdit, False)]
         ]
 
 tests :: TestTree

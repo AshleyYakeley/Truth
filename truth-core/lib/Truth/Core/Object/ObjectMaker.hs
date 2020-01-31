@@ -6,10 +6,10 @@ module Truth.Core.Object.ObjectMaker
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.Update
 import Truth.Core.Read
 import Truth.Core.Resource
 
@@ -45,15 +45,22 @@ reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e)) 
         anobj = MkAnObject r' e'
     return $ (MkResource trun' anobj, ())
 
-mapObjectMaker :: EditLens updateA updateB -> ObjectMaker updateA a -> ObjectMaker updateB a
-mapObjectMaker lens uobja recvb = do
+mapObjectMaker ::
+       forall updateA updateB a. FloatingEditLens updateA updateB -> ObjectMaker updateA a -> ObjectMaker updateB a
+mapObjectMaker (MkFloatingEditLens init rlens) uobja recvb = do
     rec
-        let
-            recva eas esrc = do
-                ebs <- objectMapUpdates (editLensFunction lens) obja eas
-                case nonEmpty ebs of
-                    Nothing -> return ()
-                    Just ebb -> recvb ebb esrc
-        (obja, a) <- uobja recva
-    let objb = lensObject lens obja
-    return (objb, a)
+        (result, recva) <- do
+            (MkResource (rr :: _ tt) anobjA, a) <- uobja recva
+            runResourceRunnerWith rr $ \run -> do
+                r <- liftIO $ run $ runFloatInit init $ objRead anobjA
+                let
+                    lens = rlens r
+                    recva' eas esrc = do
+                        ebs <- run $ fmap mconcat $ for (toList eas) $ \ea -> elUpdate lens ea $ objRead anobjA
+                        case nonEmpty ebs of
+                            Nothing -> return ()
+                            Just ebb -> recvb ebb esrc
+                    objB :: Object (UpdateEdit updateB)
+                    objB = MkResource rr $ mapAnObject lens anobjA
+                return ((objB, a), recva')
+    return result

@@ -14,5 +14,5 @@ instance Show (TextEntryUISpec sel) where
 instance UIType TextEntryUISpec where
     uiWitness = $(iowitness [t|TextEntryUISpec|])
 
-textEntryUISpec :: forall sel. OpenSubscriber (WholeUpdate Text) -> UISpec sel
-textEntryUISpec sub = MkUISpec $ MkTextEntryUISpec sub
+textEntryUISpec :: forall sel. OpenSubscriber (WholeUpdate Text) -> LUISpec sel
+textEntryUISpec sub = mkLUISpec $ MkTextEntryUISpec sub

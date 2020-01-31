@@ -44,7 +44,7 @@ pinaforeFiniteSetRefMeet ::
     -> PinaforeFiniteSetRef '( MeetType Entity t, t)
 pinaforeFiniteSetRefMeet seta setb =
     meetValuePinaforeFiniteSetRef $
-    eaMap (updateFunctionToRejectingEditLens meetUpdateFunction) $
+    eaMap (fromReadOnlyRejectingEditLens . meetEditLens) $
     eaPair (pinaforeFiniteSetRefMeetValue seta) (pinaforeFiniteSetRefMeetValue setb)
 
 pinaforeFiniteSetRefJoin ::
@@ -54,7 +54,7 @@ pinaforeFiniteSetRefJoin ::
     -> PinaforeFiniteSetRef '( MeetType Entity t, t)
 pinaforeFiniteSetRefJoin seta setb =
     meetValuePinaforeFiniteSetRef $
-    eaMap (updateFunctionToRejectingEditLens joinUpdateFunction) $
+    eaMap (fromReadOnlyRejectingEditLens . joinEditLens) $
     eaPair (pinaforeFiniteSetRefMeetValue seta) (pinaforeFiniteSetRefMeetValue setb)
 
 pinaforeFiniteSetRefAdd :: PinaforeFiniteSetRef '( p, q) -> p -> PinaforeAction ()
@@ -109,7 +109,7 @@ pinaforeFiniteSetRefCartesianProduct ::
     -> PinaforeFiniteSetRef '( (ap, bp), (aq, bq))
 pinaforeFiniteSetRefCartesianProduct (MkPinaforeFiniteSetRef tra vala) (MkPinaforeFiniteSetRef trb valb) =
     MkPinaforeFiniteSetRef (pairRange tra trb) $
-    eaMap (updateFunctionToRejectingEditLens finiteSetCartesianProductUpdateFunction) $ eaPair vala valb
+    eaMap (fromReadOnlyRejectingEditLens . finiteSetCartesianProductUpdateFunction) $ eaPair vala valb
 
 pinaforeFiniteSetRefToSetRef :: forall p q. PinaforeFiniteSetRef '( p, q) -> PinaforeSetRef p
 pinaforeFiniteSetRefToSetRef (MkPinaforeFiniteSetRef tr sval) =
@@ -120,7 +120,7 @@ pinaforeFiniteSetRefSetIntersect ::
 pinaforeFiniteSetRefSetIntersect (MkPinaforeFiniteSetRef tr fsetval) fsetref = let
     MkPinaforeSetRef _ setval = contramap (fromEnhanced $ rangeCo tr) fsetref
     in MkPinaforeFiniteSetRef tr $
-       eaMap (updateFunctionToRejectingEditLens filterFiniteSetUpdateFunction) $ eaPair fsetval setval
+       eaMap (fromReadOnlyRejectingEditLens . filterFiniteSetUpdateFunction) $ eaPair fsetval setval
 
 pinaforeFiniteSetRefSetDifference ::
        forall p q. PinaforeFiniteSetRef '( p, q) -> PinaforeSetRef q -> PinaforeFiniteSetRef '( p, q)

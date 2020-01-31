@@ -1,15 +1,30 @@
-module Truth.Core.Types.Key where
+module Truth.Core.Types.Key
+    ( KeyReader(..)
+    , HasKeyReader(..)
+    , KeyEdit(..)
+    , KeyUpdate(..)
+    , HasKeyUpdate(..)
+    , keyElementEditLens
+    , fixedKeyElementEditLens
+    , liftKeyElementEditLens
+    , liftKeyElementFloatingEditLens
+    , UpdateOrder(..)
+    , orderedSetLens
+    ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
 import Truth.Core.Sequence
 import Truth.Core.Types.List
-import Truth.Core.Types.OneEdit
-import Truth.Core.Types.OneReader
-import Truth.Core.Types.OneWhole
+import Truth.Core.Types.None
+import Truth.Core.Types.One.FullResult
+import Truth.Core.Types.One.Read
+import Truth.Core.Types.One.Result
 import Truth.Core.Types.Pair
-import Truth.Core.Types.Sum
+import Truth.Core.Types.ReadOnly
+import Truth.Core.Types.Tuple
 import Truth.Core.Types.Whole
 
 --- reader
@@ -54,16 +69,17 @@ instance (KeyContainer cont, FullSubjectReader reader, ReaderSubject reader ~ El
         list <- for allkeys $ \key -> mutableReadToSubject $ knownKeyItemReadFunction key mr
         return $ fromElementList list
 
-class (SubjectReader reader, ReaderSubject reader ~ Element cont) => HasKeyReader cont reader where
+class (KeyContainer cont, SubjectReader reader, ReaderSubject reader ~ Element cont) => HasKeyReader cont reader where
     readKey ::
            forall m. MonadIO m
         => MutableRead m reader
         -> m (ContainerKey cont)
 
-instance HasKeyReader (FiniteSet t) (WholeReader t) where
+instance Eq t => HasKeyReader (FiniteSet t) (WholeReader t) where
     readKey mr = mr ReadWhole
 
-instance ( UpdateSubject keyupdate ~ key
+instance ( Eq key
+         , UpdateSubject keyupdate ~ key
          , UpdateSubject valupdate ~ val
          , SubjectReader (UpdateReader keyupdate)
          , FullSubjectReader (UpdateReader keyupdate)
@@ -95,11 +111,8 @@ replace old new (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ replace 
 type instance EditReader (KeyEdit cont edit) =
      KeyReader cont (EditReader edit)
 
-instance ( KeyContainer cont
-         , FullSubjectReader (EditReader edit)
-         , ApplicableEdit edit
-         , HasKeyReader cont (EditReader edit)
-         ) => ApplicableEdit (KeyEdit cont edit) where
+instance (FullSubjectReader (EditReader edit), ApplicableEdit edit, HasKeyReader cont (EditReader edit)) =>
+             ApplicableEdit (KeyEdit cont edit) where
     applyEdit (KeyEditItem oldkey edit) mr kreader@(KeyReadItem key rt) = do
         mnewkey <- getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
         case mnewkey of
@@ -134,8 +147,7 @@ instance ( KeyContainer cont
     applyEdit (KeyEditInsertReplace _) mr (KeyReadItem key reader) = mr $ KeyReadItem key reader
     applyEdit KeyEditClear _mr reader = mSubjectToMutableRead (return mempty) reader
 
-instance ( KeyContainer cont
-         , FullSubjectReader (EditReader edit)
+instance ( FullSubjectReader (EditReader edit)
          , ApplicableEdit edit
          , SubjectMapEdit edit
          , InvertibleEdit edit
@@ -173,8 +185,7 @@ instance (KeyContainer cont, EditSubject edit ~ Element cont, SubjectMapEdit edi
                 KeyEditInsertReplace item -> return $ insertElement item subj
                 KeyEditClear -> return mempty
 
-instance ( KeyContainer cont
-         , FullSubjectReader (EditReader edit)
+instance ( FullSubjectReader (EditReader edit)
          , ApplicableEdit edit
          , SubjectMapEdit edit
          , HasKeyReader cont (EditReader edit)
@@ -208,31 +219,39 @@ instance IsEditUpdate update => IsEditUpdate (KeyUpdate cont update) where
     updateEdit (KeyUpdateInsertReplace a) = KeyEditInsertReplace a
     updateEdit KeyUpdateClear = KeyEditClear
 
-type NewKeyGetter cont update
-     = forall m.
-           MonadIO m =>
-                   update -> ContainerKey cont -> MutableRead m (KeyReader cont (UpdateReader update)) -> m (Maybe (ContainerKey cont))
+instance ( IsEditUpdate update
+         , FullSubjectReader (UpdateReader update)
+         , ApplicableEdit (UpdateEdit update)
+         , HasKeyReader cont (UpdateReader update)
+         ) => ApplicableUpdate (KeyUpdate cont update)
 
-updateKey ::
+class HasKeyReader cont (UpdateReader update) => HasKeyUpdate cont update where
+    updatesKey :: update -> Maybe (ContainerKey cont -> IO (ContainerKey cont))
+
+instance HasKeyReader cont r => HasKeyUpdate cont (NoUpdate r) where
+    updatesKey = never
+
+instance Eq t => HasKeyUpdate (FiniteSet t) (WholeUpdate t) where
+    updatesKey (MkWholeReaderUpdate a) = Just $ \_ -> return a
+
+instance ( Eq key
+         , UpdateSubject keyupdate ~ key
+         , UpdateSubject valupdate ~ val
+         , SubjectReader (UpdateReader keyupdate)
+         , FullSubjectReader (UpdateReader keyupdate)
+         , SubjectReader (UpdateReader valupdate)
+         , ApplicableUpdate keyupdate
+         ) => HasKeyUpdate [(key, val)] (PairUpdate keyupdate valupdate) where
+    updatesKey (MkTupleUpdate SelectFirst update) =
+        Just $ \oldKey -> mutableReadToSubject $ applyUpdate update $ subjectToMutableRead oldKey
+    updatesKey _ = Nothing
+
+keyElementEditLens ::
        forall cont update.
-       (IsEditUpdate update, ApplicableEdit (UpdateEdit update), HasKeyReader cont (UpdateReader update))
-    => NewKeyGetter cont update
-updateKey update oldkey mr = getComposeM $ readKey @cont $ applyEdit (updateEdit update) $ keyItemReadFunction oldkey mr
-
-useOldKey :: NewKeyGetter cont update
-useOldKey _ oldkey _ = return $ Just oldkey
-
-unliftKeyElementEditLens ::
-       forall cont update.
-       ( KeyContainer cont
-       , HasKeyReader cont (UpdateReader update)
-       , ApplicableEdit (UpdateEdit update)
-       , FullSubjectReader (UpdateReader update)
-       )
-    => NewKeyGetter cont update
-    -> ContainerKey cont
-    -> StateEditLens (KeyUpdate cont update) (MaybeUpdate update)
-unliftKeyElementEditLens newKeyGetter initKey = let
+       (HasKeyUpdate cont update, ApplicableEdit (UpdateEdit update), FullSubjectReader (UpdateReader update))
+    => ContainerKey cont
+    -> FloatingEditLens (KeyUpdate cont update) (MaybeUpdate update)
+keyElementEditLens initKey = let
     sInit ::
            forall m. MonadIO m
         => MutableRead m (KeyReader cont (UpdateReader update))
@@ -255,40 +274,40 @@ unliftKeyElementEditLens newKeyGetter initKey = let
         => KeyUpdate cont update
         -> MutableRead m (KeyReader cont (UpdateReader update))
         -> StateT (ContainerKey cont) m [MaybeUpdate update]
-    sUpdate KeyUpdateClear _ = return [SumUpdateLeft (MkWholeReaderUpdate Nothing)]
+    sUpdate KeyUpdateClear _ = return [MkFullResultOneUpdate $ NewResultOneUpdate Nothing]
     sUpdate (KeyUpdateDelete k) _ = do
         key <- get
         return $
             if k == key
-                then [SumUpdateLeft (MkWholeReaderUpdate Nothing)]
+                then [MkFullResultOneUpdate $ NewResultOneUpdate Nothing]
                 else []
-    sUpdate (KeyUpdateItem k update) mr = do
+    sUpdate (KeyUpdateItem k update) _ = do
         oldkey <- get
         if k == oldkey
             then do
-                mnewkey <- lift $ newKeyGetter update oldkey mr
-                case mnewkey of
-                    Just newkey -> do
+                case updatesKey @cont update of
+                    Just mapkey -> do
+                        newkey <- liftIO $ mapkey oldkey
                         put newkey
-                        return [SumUpdateRight (MkOneUpdate update)]
-                    Nothing -> return []
+                    Nothing -> return ()
+                return [MkFullResultOneUpdate $ SuccessResultOneUpdate update]
             else return []
     sUpdate (KeyUpdateInsertReplace item) _ = do
         key <- get
         return $
             if elementKey @cont item == key
-                then [SumUpdateLeft (MkWholeReaderUpdate (Just item))]
+                then [MkFullResultOneUpdate $ NewResultOneUpdate $ Just ()]
                 else []
     sPutEdit ::
            forall m. MonadIO m
         => MaybeEdit (UpdateEdit update)
         -> MutableRead m (KeyReader cont (UpdateReader update))
         -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont (UpdateEdit update)])
-    sPutEdit (SumEditLeft (MkWholeReaderEdit (Just subj))) _ = return $ Just [KeyEditInsertReplace subj]
-    sPutEdit (SumEditLeft (MkWholeReaderEdit Nothing)) _ = do
+    sPutEdit (NewFullResultOneEdit (Just subj)) _ = return $ Just [KeyEditInsertReplace subj]
+    sPutEdit (NewFullResultOneEdit Nothing) _ = do
         key <- get
         return $ Just [KeyEditDelete key]
-    sPutEdit (SumEditRight (MkOneEdit edit)) mr = do
+    sPutEdit (SuccessFullResultOneEdit edit) mr = do
         oldkey <- get
         mnewkey <- lift $ getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr
         case mnewkey of
@@ -302,36 +321,19 @@ unliftKeyElementEditLens newKeyGetter initKey = let
         -> MutableRead m (KeyReader cont (UpdateReader update))
         -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont (UpdateEdit update)])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
-    in MkStateEditLens {..}
+    in makeStateLens MkStateEditLens {..}
 
-getKeyElementEditLens ::
+fixedKeyElementEditLens ::
        forall cont update.
-       ( KeyContainer cont
-       , IsEditUpdate update
-       , HasKeyReader cont (UpdateReader update)
-       , ApplicableEdit (UpdateEdit update)
-       , FullSubjectReader (UpdateReader update)
-       )
-    => ContainerKey cont
-    -> StateEditLens (KeyUpdate cont update) (MaybeUpdate update)
-getKeyElementEditLens key = unliftKeyElementEditLens updateKey key
-
-stableKeyElementEditLens ::
-       forall cont update.
-       ( KeyContainer cont
-       , HasKeyReader cont (UpdateReader update)
-       , ApplicableEdit (UpdateEdit update)
-       , FullSubjectReader (UpdateReader update)
-       )
+       (HasKeyUpdate cont update, ApplicableEdit (UpdateEdit update), FullSubjectReader (UpdateReader update))
     => ContainerKey cont
     -> EditLens (KeyUpdate cont update) (MaybeUpdate update)
-stableKeyElementEditLens key = discardingStateLens $ unliftKeyElementEditLens useOldKey key
+fixedKeyElementEditLens key = floatingToDiscardingEditLens $ keyElementEditLens key
 
 {-
 getKeyValueEditLens ::
        forall cont keyupdate valueupdate.
-       ( KeyContainer cont
-       , IsEditUpdate keyupdate
+       ( IsEditUpdate keyupdate
        , IsEditUpdate valueupdate
        , HasKeyReader cont (PairUpdateReader keyupdate valueupdate)
        , ApplicableEdit (UpdateEdit keyupdate)
@@ -340,55 +342,14 @@ getKeyValueEditLens ::
        )
     => ContainerKey cont
     -> StateEditLens (KeyUpdate cont (PairUpdate keyupdate valueupdate)) (MaybeUpdate valueupdate)
-getKeyValueEditLens key = (toStateEditLens $ oneWholeLiftEditLens $ tupleEditLens SelectSecond) . getKeyElementEditLens key
+getKeyValueEditLens key = (toStateEditLens $ oneWholeLiftEditLens $ tupleEditLens SelectSecond) . keyElementEditLens key
 -}
-liftKeyElementAnUpdateFunction ::
-       forall conta contb updateA updateB.
-       ( ContainerKey conta ~ ContainerKey contb
-       , UpdateSubject updateA ~ Element conta
-       , UpdateSubject updateB ~ Element contb
-       , SubjectReader (UpdateReader updateA)
-       , FullSubjectReader (UpdateReader updateB)
-       )
-    => UpdateFunction updateA updateB
-    -> UpdateFunction (KeyUpdate conta updateA) (KeyUpdate contb updateB)
-liftKeyElementAnUpdateFunction (MkUpdateFunction g u) = let
-    ufGet :: ReadFunction (KeyReader conta (UpdateReader updateA)) (KeyReader contb (UpdateReader updateB))
-    ufGet mr KeyReadKeys = mr KeyReadKeys
-    ufGet (mr :: MutableRead m _) (KeyReadItem key rt) = getComposeM $ g (keyItemReadFunction key mr) rt
-    ufUpdate ::
-           forall m. MonadIO m
-        => KeyUpdate conta updateA
-        -> MutableRead m (KeyReader conta (UpdateReader updateA))
-        -> m [KeyUpdate contb updateB]
-    ufUpdate KeyUpdateClear _ = return [KeyUpdateClear]
-    ufUpdate (KeyUpdateInsertReplace itema) _ = do
-        itemb <- mutableReadToSubject $ g $ subjectToMutableRead @m itema
-        return [KeyUpdateInsertReplace itemb]
-    ufUpdate (KeyUpdateDelete key) _ = return [KeyUpdateDelete key]
-    ufUpdate (KeyUpdateItem key ea) mr = do
-        mresult <- getComposeM $ u ea (keyItemReadFunction @conta key mr)
-        case mresult of
-            Just ebs -> return $ fmap (KeyUpdateItem key) ebs
-            Nothing -> return []
-    in MkUpdateFunction {..}
-
-liftKeyElementUpdateFunction ::
-       forall conta contb updateA updateB.
-       ( ContainerKey conta ~ ContainerKey contb
-       , UpdateSubject updateA ~ Element conta
-       , UpdateSubject updateB ~ Element contb
-       , SubjectReader (UpdateReader updateA)
-       , FullSubjectReader (UpdateReader updateB)
-       )
-    => UpdateFunction updateA updateB
-    -> UpdateFunction (KeyUpdate conta updateA) (KeyUpdate contb updateB)
-liftKeyElementUpdateFunction = liftKeyElementAnUpdateFunction
+type InternalKeyMap key r = [(key, r)]
 
 liftKeyElementEditLens ::
        forall conta contb updateA updateB.
        ( ContainerKey conta ~ ContainerKey contb
-       , KeyContainer conta
+       , Eq (ContainerKey conta)
        , HasKeyReader conta (UpdateReader updateA)
        , UpdateSubject updateA ~ Element conta
        , UpdateSubject updateB ~ Element contb
@@ -399,8 +360,25 @@ liftKeyElementEditLens ::
     => (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA)))
     -> EditLens updateA updateB
     -> EditLens (KeyUpdate conta updateA) (KeyUpdate contb updateB)
-liftKeyElementEditLens bma (MkEditLens ef pe) = let
-    elFunction = liftKeyElementAnUpdateFunction ef
+liftKeyElementEditLens bma (MkEditLens g u pe) = let
+    elGet :: ReadFunction (KeyReader conta (UpdateReader updateA)) (KeyReader contb (UpdateReader updateB))
+    elGet mr KeyReadKeys = mr KeyReadKeys
+    elGet (mr :: MutableRead m _) (KeyReadItem key rt) = getComposeM $ g (keyItemReadFunction key mr) rt
+    elUpdate ::
+           forall m. MonadIO m
+        => KeyUpdate conta updateA
+        -> MutableRead m (KeyReader conta (UpdateReader updateA))
+        -> m [KeyUpdate contb updateB]
+    elUpdate KeyUpdateClear _ = return [KeyUpdateClear]
+    elUpdate (KeyUpdateInsertReplace itema) _ = do
+        itemb <- mutableReadToSubject $ g $ subjectToMutableRead @m itema
+        return [KeyUpdateInsertReplace itemb]
+    elUpdate (KeyUpdateDelete key) _ = return [KeyUpdateDelete key]
+    elUpdate (KeyUpdateItem key ea) mr = do
+        mresult <- getComposeM $ u ea (keyItemReadFunction @conta key mr)
+        case mresult of
+            Just ebs -> return $ fmap (KeyUpdateItem key) ebs
+            Nothing -> return []
     elPutEdit ::
            forall m. MonadIO m
         => KeyEdit contb (UpdateEdit updateB)
@@ -413,9 +391,10 @@ liftKeyElementEditLens bma (MkEditLens ef pe) = let
     elPutEdit (KeyEditDelete key) _ = return $ Just [KeyEditDelete key]
     elPutEdit (KeyEditItem key eb) mr = do
         mfresult <- getComposeM $ pe [eb] (keyItemReadFunction @conta key mr)
-        case mfresult of
-            Just fsea -> return $ fmap (fmap $ KeyEditItem key) fsea
-            Nothing -> return $ Just []
+        return $
+            case mfresult of
+                Just fsea -> fmap (fmap $ KeyEditItem key) fsea
+                Nothing -> Just []
     elPutEdits ::
            forall m. MonadIO m
         => [KeyEdit contb (UpdateEdit updateB)]
@@ -424,105 +403,123 @@ liftKeyElementEditLens bma (MkEditLens ef pe) = let
     elPutEdits = elPutEditsFromPutEdit elPutEdit
     in MkEditLens {..}
 
-findBy :: (a -> a -> Ordering) -> [a] -> a -> (Int, Bool)
-findBy cmp items x = let
-    ords = fmap (cmp x) items
-    in (length $ filter ((==) GT) ords, any ((==) EQ) ords)
-
-orderedKeyList ::
-       forall cont seq update.
-       ( IsUpdate update
-       , Index seq ~ Int
-       , Element cont ~ UpdateSubject update
-       , KeyContainer cont
-       , FullEdit (UpdateEdit update)
+liftKeyElementFloatingEditLens ::
+       forall conta contb updateA updateB.
+       ( ContainerKey conta ~ ContainerKey contb
+       , Eq (ContainerKey conta)
+       , HasKeyReader conta (UpdateReader updateA)
+       , UpdateSubject updateA ~ Element conta
+       , UpdateSubject updateB ~ Element contb
+       , ApplicableEdit (UpdateEdit updateA)
+       , FullSubjectReader (UpdateReader updateA)
+       , FullSubjectReader (UpdateReader updateB)
        )
-    => (UpdateSubject update -> UpdateSubject update -> Ordering)
-    -> UpdateFunction (KeyUpdate cont update) (ListUpdate seq update)
-orderedKeyList cmp = let
-    getUnsortedPairs ::
+    => (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA)))
+    -> FloatingEditLens updateA updateB
+    -> FloatingEditLens (KeyUpdate conta updateA) (KeyUpdate contb updateB)
+liftKeyElementFloatingEditLens bma (MkFloatingEditLens NoFloatInit rlens) =
+    editLensToFloating $ liftKeyElementEditLens bma $ rlens ()
+liftKeyElementFloatingEditLens bma (MkFloatingEditLens (ReadFloatInit init :: FloatInit _ r) rlens) = let
+    sInit :: StateLensInit (KeyReader conta (UpdateReader updateA)) (InternalKeyMap (ContainerKey conta) r)
+    sInit _ = return mempty
+    getR ::
            forall m. MonadIO m
-        => MutableRead m (KeyReader cont (UpdateReader update))
-        -> m [(ContainerKey cont, UpdateSubject update)]
-    getUnsortedPairs mr = do
-        keyset <- mr KeyReadKeys
-        for (toList keyset) $ \key -> do
-            t <- mutableReadToSubject $ knownKeyItemReadFunction key mr
-            return (key, t)
-    getSortedKeys ::
+        => MutableRead m (KeyReader conta (UpdateReader updateA))
+        -> ContainerKey conta
+        -> StateT (InternalKeyMap (ContainerKey conta) r) m (Maybe r)
+    getR mr key = do
+        rmap <- get
+        case lookup key rmap of
+            Just r -> return $ Just r
+            Nothing -> do
+                mnewr <- lift $ getComposeM $ init $ \rt -> MkComposeM $ mr $ KeyReadItem key rt
+                case mnewr of
+                    Just newr -> put $ insertMap key newr rmap
+                    Nothing -> return ()
+                return mnewr
+    sGet ::
+           ReadFunctionT (StateT (InternalKeyMap (ContainerKey conta) r)) (KeyReader conta (UpdateReader updateA)) (KeyReader contb (UpdateReader updateB))
+    sGet mr KeyReadKeys = lift $ mr KeyReadKeys
+    sGet (mr :: MutableRead m _) (KeyReadItem key rt) = do
+        mrc <- getR mr key
+        lift $
+            getComposeM $ do
+                r <- MkComposeM $ return mrc
+                elGet (rlens r) (keyItemReadFunction key mr) rt
+    sUpdate ::
            forall m. MonadIO m
-        => MutableRead m (KeyReader cont (UpdateReader update))
-        -> m [ContainerKey cont]
-    getSortedKeys mr = do
-        pairs <- getUnsortedPairs mr
-        return $ fmap fst $ sortBy (\p q -> cmp (snd p) (snd q)) pairs
-    findKey ::
+        => KeyUpdate conta updateA
+        -> MutableRead m (KeyReader conta (UpdateReader updateA))
+        -> StateT (InternalKeyMap (ContainerKey conta) r) m [KeyUpdate contb updateB]
+    sUpdate KeyUpdateClear _ = return [KeyUpdateClear]
+    sUpdate (KeyUpdateInsertReplace itema) _ = do
+        let
+            imr :: MutableRead (StateT (InternalKeyMap (ContainerKey conta) r) m) (UpdateReader updateA)
+            imr = subjectToMutableRead itema
+        r <- init imr
+        itemb <- lift $ mutableReadToSubject $ elGet (rlens r) $ subjectToMutableRead @m itema
+        rmap <- get
+        key <- readKey @conta imr
+        put $ insertMap key r rmap
+        return [KeyUpdateInsertReplace itemb]
+    sUpdate (KeyUpdateDelete key) _ = return [KeyUpdateDelete key]
+    sUpdate (KeyUpdateItem key ea) mr = do
+        mrc <- getR mr key
+        mresult <-
+            lift $
+            getComposeM $ do
+                r <- MkComposeM $ return mrc
+                elUpdate (rlens r) ea (keyItemReadFunction @conta key mr)
+        case mresult of
+            Just ebs -> return $ fmap (KeyUpdateItem key) ebs
+            Nothing -> return []
+    sPutEdit ::
            forall m. MonadIO m
-        => ContainerKey cont
-        -> MutableRead m (KeyReader cont (UpdateReader update))
-        -> m (SequencePoint seq, Bool)
-    findKey key mr = do
-        pairs <- getUnsortedPairs mr
-        skey <- mutableReadToSubject $ knownKeyItemReadFunction key mr
-        return $ (\(i, found) -> (MkSequencePoint i, found)) $ findBy cmp (fmap snd pairs) skey
-    ufGet :: ReadFunction (KeyReader cont (UpdateReader update)) (ListReader seq (UpdateReader update))
-    ufGet mr ListReadLength = do
-        keyset <- mr KeyReadKeys
-        return $ MkSequencePoint $ length keyset
-    ufGet mr (ListReadItem (MkSequencePoint i) reader) = do
-        keylist <- getSortedKeys mr
-        case index keylist i of
-            Just key -> mr $ KeyReadItem key reader
-            Nothing -> return Nothing
-    ufUpdate ::
-           forall m. MonadIO m
-        => KeyUpdate cont update
-        -> MutableRead m (KeyReader cont (UpdateReader update))
-        -> m [ListUpdate seq update]
-    ufUpdate (KeyUpdateItem key update) mr = do
-        (i, found) <- findKey key mr
+        => KeyEdit contb (UpdateEdit updateB)
+        -> MutableRead m (KeyReader conta (UpdateReader updateA))
+        -> StateT (InternalKeyMap (ContainerKey conta) r) m (Maybe [KeyEdit conta (UpdateEdit updateA)])
+    sPutEdit KeyEditClear _ = return $ Just [KeyEditClear]
+    sPutEdit (KeyEditInsertReplace itemb) _ = do
+        fitema <- lift $ bma itemb
+        return $ fmap (\itema -> [KeyEditInsertReplace itema]) fitema
+    sPutEdit (KeyEditDelete key) _ = return $ Just [KeyEditDelete key]
+    sPutEdit (KeyEditItem key eb) mr = do
+        mrc <- getR mr key
+        mfresult <-
+            lift $
+            getComposeM $ do
+                r <- MkComposeM $ return mrc
+                elPutEdits (rlens r) [eb] (keyItemReadFunction @conta key mr)
         return $
-            if found
-                then [ListUpdateItem i update]
-                else []
-    ufUpdate (KeyUpdateDelete key) mr = do
-        (i, found) <- findKey key mr
-        return $
-            if found
-                then [ListUpdateDelete i]
-                else []
-    ufUpdate (KeyUpdateInsertReplace item) mr = do
-        (i, found) <- findKey (elementKey @cont item) mr
-        if found
-            then return [ListUpdateInsert i item]
-            else do
-                edits <- getReplaceEditsFromSubject item
-                return $ fmap (\edit -> ListUpdateItem i $ editUpdate edit) edits
-    ufUpdate KeyUpdateClear _ = return [ListUpdateClear]
-    in MkUpdateFunction {..}
-
-class HasKeyReader cont (UpdateReader update) => HasKeyUpdate cont update where
-    updatesKey :: update -> Maybe (ContainerKey cont -> ContainerKey cont)
+            case mfresult of
+                Just fsea -> fmap (fmap $ KeyEditItem key) fsea
+                Nothing -> Just []
+    sPutEdits ::
+           forall m. MonadIO m
+        => [KeyEdit contb (UpdateEdit updateB)]
+        -> MutableRead m (KeyReader conta (UpdateReader updateA))
+        -> StateT (InternalKeyMap (ContainerKey conta) r) m (Maybe [KeyEdit conta (UpdateEdit updateA)])
+    sPutEdits = elPutEditsFromPutEdit sPutEdit
+    in makeStateLens MkStateEditLens {..}
 
 data UpdateOrder update =
     forall o. MkUpdateOrder (o -> o -> Ordering)
-                            (UpdateFunction update (WholeUpdate o))
+                            (FloatingEditLens update (ReadOnlyUpdate (WholeUpdate o)))
 
 orderedSetLens ::
        forall update cont seq.
        ( Index seq ~ Int
        , Element cont ~ UpdateSubject update
-       , KeyContainer cont
        , HasKeyUpdate cont update
        , FullSubjectReader (UpdateReader update)
        , ApplicableEdit (UpdateEdit update)
        , IsUpdate update
        )
     => UpdateOrder update
-    -> StateEditLens (KeyUpdate cont update) (OrderedListUpdate seq update)
-orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkUpdateFunction ordGet ordUpdate)) = let
-    kcmp :: (o, ContainerKey cont) -> (o, ContainerKey cont) -> Ordering
-    kcmp (o1, k1) (o2, k2) =
+    -> FloatingEditLens (KeyUpdate cont update) (OrderedListUpdate seq update)
+orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingEditLens (ordInit :: FloatInit _ or) rOrdLens)) = let
+    kcmp :: (o, ContainerKey cont, or) -> (o, ContainerKey cont, or) -> Ordering
+    kcmp (o1, k1, _) (o2, k2, _) =
         case cmp o1 o2 of
             EQ ->
                 if k1 == k2
@@ -531,108 +528,114 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkUpdateFunction ordG
             c -> c
     getMaybeO ::
            forall m. MonadIO m
-        => MutableRead m (KeyReader cont (UpdateReader update))
+        => or
+        -> MutableRead m (KeyReader cont (UpdateReader update))
         -> ContainerKey cont
         -> m (Maybe o)
-    getMaybeO mr k = getComposeM $ ordGet (\rt -> MkComposeM $ mr $ KeyReadItem k rt) ReadWhole
+    getMaybeO ordr mr k = getComposeM $ elGet (rOrdLens ordr) (\rt -> MkComposeM $ mr $ KeyReadItem k rt) ReadWhole
     getO ::
            forall m. MonadIO m
-        => MutableRead m (KeyReader cont (UpdateReader update))
+        => or
+        -> MutableRead m (KeyReader cont (UpdateReader update))
         -> ContainerKey cont
         -> m o
-    getO mr k = do
-        mo <- getMaybeO mr k
+    getO ordr mr k = do
+        mo <- getMaybeO ordr mr k
         case mo of
             Just o -> return o
             Nothing -> liftIO $ fail "orderedSetLens: missing key"
     sInit ::
            forall m. MonadIO m
         => MutableRead m (KeyReader cont (UpdateReader update))
-        -> m (OrderedList (o, ContainerKey cont))
+        -> m (OrderedList (o, ContainerKey cont, or))
     sInit mr = do
         MkFiniteSet kk <- mr KeyReadKeys
         pairs <-
             for kk $ \k -> do
-                o <- getO mr k
-                return (o, k)
+                ordr <- runFloatInit ordInit $ knownKeyItemReadFunction k mr
+                o <- getO ordr mr k
+                return (o, k, ordr)
         return $ olFromList kcmp pairs
     sGet ::
-           ReadFunctionT (StateT (OrderedList (o, ContainerKey cont))) (KeyReader cont (UpdateReader update)) (ListReader seq (UpdateReader update))
+           ReadFunctionT (StateT (OrderedList (o, ContainerKey cont, or))) (KeyReader cont (UpdateReader update)) (ListReader seq (UpdateReader update))
     sGet _ ListReadLength = do
         ol <- get
         return $ MkSequencePoint $ olLength ol
     sGet mr (ListReadItem (MkSequencePoint i) rt) = do
         ol <- get
         case olGetByPos ol i of
-            Just (_, key) -> lift $ mr $ KeyReadItem key rt
+            Just (_, key, _) -> lift $ mr $ KeyReadItem key rt
             Nothing -> return Nothing
-    lookUpByKey :: OrderedList (o, ContainerKey cont) -> ContainerKey cont -> Maybe (o, Int)
+    lookUpByKey :: OrderedList (o, ContainerKey cont, or) -> ContainerKey cont -> Maybe (o, Int, or)
     lookUpByKey ol key = do
-        ((o, _), pos) <- olLookupByPredicate ol $ \(_, k) -> k == key
-        return (o, pos)
+        ((o, _, ordr), pos) <- olLookupByPredicate ol $ \(_, k, _) -> k == key
+        return (o, pos, ordr)
     sUpdate ::
            forall m. MonadIO m
         => KeyUpdate cont update
         -> MutableRead m (KeyReader cont (UpdateReader update))
-        -> StateT (OrderedList (o, ContainerKey cont)) m [OrderedListUpdate seq update]
+        -> StateT (OrderedList (o, ContainerKey cont, or)) m [OrderedListUpdate seq update]
     sUpdate (KeyUpdateItem oldkey update) newmr = do
         ol <- get
         case lookUpByKey ol oldkey of
             Nothing -> return [] -- key not found, no change
-            Just (oldO, oldPos) -> do
-                let
-                    mnewkey = do
-                        mapkey <- updatesKey @cont update
-                        let newkey = mapkey oldkey
-                        if newkey == oldkey
-                            then Nothing
-                            else return newkey
+            Just (oldO, oldPos, ordr) -> do
+                mnewkey <-
+                    case updatesKey @cont update of
+                        Just mapkey -> do
+                            newkey <- liftIO $ mapkey oldkey
+                            return $
+                                if newkey == oldkey
+                                    then Nothing
+                                    else Just newkey
+                        Nothing -> return Nothing
                 case mnewkey of
                         -- key hasn't changed
                     Nothing -> do
-                        ws <- lift $ ordUpdate update $ knownKeyItemReadFunction oldkey newmr
-                        case lastWholeUpdate ws of
+                        ws <- lift $ elUpdate (rOrdLens ordr) update $ knownKeyItemReadFunction oldkey newmr
+                        case lastReadOnlyWholeUpdate ws of
                                     -- order hasn't changed
                             Nothing ->
                                 return [OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint oldPos) update] -- key & order unchanged
                             Just newO -> do
-                                let (newPos, newOL) = olInsert (newO, oldkey) $ olDeleteByPos oldPos ol
+                                let (newPos, newOL) = olInsert (newO, oldkey, ordr) $ olDeleteByPos oldPos ol
                                 put newOL
                                 return [OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) update]
                         -- key changed
                     Just newkey -> do
-                        ws <- lift $ ordUpdate update $ knownKeyItemReadFunction newkey newmr
+                        ws <- lift $ elUpdate (rOrdLens ordr) update $ knownKeyItemReadFunction newkey newmr
                         let
                             newO =
-                                case lastWholeUpdate ws of
+                                case lastReadOnlyWholeUpdate ws of
                                     Just o -> o
                                     Nothing -> oldO
-                        let (newPos, newOL) = olInsert (newO, newkey) $ olDeleteByPos oldPos ol
+                        let (newPos, newOL) = olInsert (newO, newkey, ordr) $ olDeleteByPos oldPos ol
                         put newOL
                         return [OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) update]
     sUpdate (KeyUpdateDelete key) _mr = do
         ol <- get
         case lookUpByKey ol key of
-            Just (_, pos) -> do
+            Just (_, pos, _) -> do
                 put $ olDeleteByPos pos ol
                 return [OrderedListUpdateDelete $ MkSequencePoint pos]
             Nothing -> return []
     sUpdate (KeyUpdateInsertReplace newitem) _mr = do
         ol <- get
         let
-            imr :: MutableRead (StateT (OrderedList (o, ContainerKey cont)) m) (UpdateReader update)
+            imr :: MutableRead (StateT (OrderedList (o, ContainerKey cont, or)) m) (UpdateReader update)
             imr = subjectToMutableRead newitem
         key <- readKey @cont imr
-        o <- ordGet imr ReadWhole
-        let (found, MkSequencePoint -> pos) = olLookupByItem ol (o, key)
+        ordr <- runFloatInit ordInit imr
+        o <- elGet (rOrdLens ordr) imr ReadWhole
+        let (found, MkSequencePoint -> pos) = olLookupByItem ol (o, key, ordr)
         if found
             then return [OrderedListUpdateDelete pos, OrderedListUpdateInsert pos newitem]
             else case lookUpByKey ol key of
-                     Just (_, oldpos) -> do
-                         put $ snd $ olInsert (o, key) $ olDeleteByPos oldpos ol
+                     Just (_, oldpos, _) -> do
+                         put $ snd $ olInsert (o, key, ordr) $ olDeleteByPos oldpos ol
                          return [OrderedListUpdateDelete $ MkSequencePoint oldpos, OrderedListUpdateInsert pos newitem]
                      Nothing -> do
-                         put $ snd $ olInsert (o, key) ol
+                         put $ snd $ olInsert (o, key, ordr) ol
                          return [OrderedListUpdateInsert pos newitem]
     sUpdate KeyUpdateClear _ = do
         put $ olEmpty kcmp
@@ -641,7 +644,7 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkUpdateFunction ordG
            forall m. MonadIO m
         => OrderedListEdit seq (UpdateEdit update)
         -> MutableRead m (KeyReader cont (UpdateReader update))
-        -> StateT (OrderedList (o, ContainerKey cont)) m (Maybe [KeyEdit cont (UpdateEdit update)])
+        -> StateT (OrderedList (o, ContainerKey cont, or)) m (Maybe [KeyEdit cont (UpdateEdit update)])
     sPutEdit OrderedListEditClear _ = do
         put $ olEmpty kcmp
         return $ Just [KeyEditClear]
@@ -649,48 +652,50 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkUpdateFunction ordG
         ol <- get
         case olGetByPos ol pos of
             Nothing -> return $ Just []
-            Just (_, key) -> do
+            Just (_, key, _) -> do
                 put $ olDeleteByPos pos ol
                 return $ Just [KeyEditDelete key]
     sPutEdit (OrderedListEditItem (MkSequencePoint oldPos) edit) oldmr = do
         ol <- get
         case olGetByPos ol oldPos of
             Nothing -> return $ Just []
-            Just (oldO, oldkey) -> do
-                let
-                    update = editUpdate edit
-                    mnewkey = do
-                        mapkey <- updatesKey @cont update
-                        let newkey = mapkey oldkey
-                        if newkey == oldkey
-                            then Nothing
-                            else return newkey
+            Just (oldO, oldkey, ordr) -> do
+                let update = editUpdate edit
+                mnewkey <-
+                    case updatesKey @cont update of
+                        Just mapkey -> do
+                            newkey <- liftIO $ mapkey oldkey
+                            return $
+                                if newkey == oldkey
+                                    then Nothing
+                                    else Just newkey
+                        Nothing -> return Nothing
                 case mnewkey of
                         -- key hasn't changed
                     Nothing -> do
-                        ws <- lift $ ordUpdate update $ knownKeyItemReadFunction oldkey oldmr
-                        case lastWholeUpdate ws of
+                        ws <- lift $ elUpdate (rOrdLens ordr) update $ knownKeyItemReadFunction oldkey oldmr
+                        case lastReadOnlyWholeUpdate ws of
                                     -- order hasn't changed
                             Nothing -> return $ Just [KeyEditItem oldkey edit] -- key & order unchanged
                             Just newO -> do
-                                let (_, newOL) = olInsert (newO, oldkey) $ olDeleteByPos oldPos ol
+                                let (_, newOL) = olInsert (newO, oldkey, ordr) $ olDeleteByPos oldPos ol
                                 put newOL
                                 return $ Just [KeyEditItem oldkey edit]
                         -- key changed
                     Just newkey -> do
-                        ws <- lift $ ordUpdate update $ knownKeyItemReadFunction newkey oldmr
+                        ws <- lift $ elUpdate (rOrdLens ordr) update $ knownKeyItemReadFunction newkey oldmr
                         let
                             newO =
-                                case lastWholeUpdate ws of
+                                case lastReadOnlyWholeUpdate ws of
                                     Just o -> o
                                     Nothing -> oldO
-                        let (_, newOL) = olInsert (newO, newkey) $ olDeleteByPos oldPos ol
+                        let (_, newOL) = olInsert (newO, newkey, ordr) $ olDeleteByPos oldPos ol
                         put newOL
                         return $ Just [KeyEditItem oldkey edit]
     sPutEdits ::
            forall m. MonadIO m
         => [OrderedListEdit seq (UpdateEdit update)]
         -> MutableRead m (KeyReader cont (UpdateReader update))
-        -> StateT (OrderedList (o, ContainerKey cont)) m (Maybe [KeyEdit cont (UpdateEdit update)])
+        -> StateT (OrderedList (o, ContainerKey cont, or)) m (Maybe [KeyEdit cont (UpdateEdit update)])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
-    in MkStateEditLens {..}
+    in makeStateLens MkStateEditLens {..}

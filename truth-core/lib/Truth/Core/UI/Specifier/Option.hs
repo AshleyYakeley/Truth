@@ -1,7 +1,9 @@
 module Truth.Core.UI.Specifier.Option where
 
+import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object
+import Truth.Core.Read
 import Truth.Core.Resource
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
@@ -19,8 +21,12 @@ plainOptionUICell optionCellText = let
 
 data OptionUISpec sel where
     MkOptionUISpec
-        :: Eq t
-        => ReadOnlyOpenSubscriber (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
+        :: ( Eq t
+           , FullSubjectReader (UpdateReader update)
+           , ApplicableUpdate update
+           , UpdateSubject update ~ (t, OptionUICell)
+           )
+        => ReadOnlyOpenSubscriber (OrderedListUpdate [UpdateSubject update] update)
         -> OpenSubscriber (WholeUpdate t)
         -> OptionUISpec sel
 
@@ -31,11 +37,20 @@ instance UIType OptionUISpec where
     uiWitness = $(iowitness [t|OptionUISpec|])
 
 optionUISpec ::
-       forall t sel. Eq t
-    => ReadOnlyOpenSubscriber (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
+       forall update t sel.
+       ( Eq t
+       , FullSubjectReader (UpdateReader update)
+       , ApplicableUpdate update
+       , UpdateSubject update ~ (t, OptionUICell)
+       )
+    => ReadOnlyOpenSubscriber (OrderedListUpdate [UpdateSubject update] update)
     -> OpenSubscriber (WholeUpdate t)
-    -> UISpec sel
-optionUISpec optlens sellens = MkUISpec $ MkOptionUISpec optlens sellens
+    -> LUISpec sel
+optionUISpec optlens sellens = mkLUISpec $ MkOptionUISpec optlens sellens
 
-simpleOptionUISpec :: Eq t => [(t, OptionUICell)] -> OpenSubscriber (WholeUpdate t) -> UISpec sel
-simpleOptionUISpec opts sub = optionUISpec (openResource $ constantSubscriber opts) sub
+simpleOptionUISpec ::
+       forall t sel. Eq t
+    => [(t, OptionUICell)]
+    -> OpenSubscriber (WholeUpdate t)
+    -> LUISpec sel
+simpleOptionUISpec opts sub = optionUISpec @(WholeUpdate (t, OptionUICell)) (openResource $ constantSubscriber opts) sub

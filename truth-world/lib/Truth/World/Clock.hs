@@ -24,11 +24,12 @@ clockObjectMaker basetime interval update = do
         object = MkResource run $ immutableAnObject $ \ReadWhole -> ask
     return (object, ())
 
-makeClockTimeZoneEF :: LifeCycleIO (UpdateFunction (WholeUpdate UTCTime) (WholeUpdate TimeZone))
-makeClockTimeZoneEF = do
-    minuteChanges <- changeOnlyUpdateFunction @UTCTime
-    tzChanges <- changeOnlyUpdateFunction @TimeZone
-    let
-        wholeMinute :: UTCTime -> UTCTime
-        wholeMinute (UTCTime d t) = UTCTime d $ secondsToDiffTime $ (div' t 60) * 60
-    return $ tzChanges . ioFuncUpdateFunction getTimeZone . minuteChanges . funcUpdateFunction wholeMinute
+clockTimeZoneLens :: FloatingEditLens (WholeUpdate UTCTime) (ReadOnlyUpdate (WholeUpdate TimeZone))
+clockTimeZoneLens = let
+    minuteChanges = liftReadOnlyFloatingEditLens $ changeOnlyUpdateFunction @UTCTime
+    tzChanges = liftReadOnlyFloatingEditLens $ changeOnlyUpdateFunction @TimeZone
+    wholeMinute :: UTCTime -> UTCTime
+    wholeMinute (UTCTime d t) = UTCTime d $ secondsToDiffTime $ (div' t 60) * 60
+    in tzChanges .
+       (liftReadOnlyFloatingEditLens $ editLensToFloating $ ioFuncEditLens getTimeZone) .
+       minuteChanges . editLensToFloating (funcEditLens wholeMinute)

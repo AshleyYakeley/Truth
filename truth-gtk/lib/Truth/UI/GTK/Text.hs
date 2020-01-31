@@ -69,7 +69,7 @@ textView rmod = do
             (_, iter1, iter2) <- #getSelectionBounds buffer
             -- get selection...
             srun <- getSequenceRun iter1 iter2
-            return $ Just $ stringSectionLens srun
+            return $ Just $ return $ stringSectionLens srun
     widget <- new TextView [#buffer := buffer]
     cvAddAspect aspect
     _ <-

@@ -14,5 +14,5 @@ instance Show (LabelUISpec sel) where
 instance UIType LabelUISpec where
     uiWitness = $(iowitness [t|LabelUISpec|])
 
-labelUISpec :: ReadOnlyOpenSubscriber (WholeUpdate Text) -> UISpec sel
-labelUISpec sub = MkUISpec $ MkLabelUISpec sub
+labelUISpec :: ReadOnlyOpenSubscriber (WholeUpdate Text) -> LUISpec sel
+labelUISpec sub = mkLUISpec $ MkLabelUISpec sub

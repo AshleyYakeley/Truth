@@ -16,7 +16,7 @@ debugLens ::
     => String
     -> EditLens updateA updateB
     -> EditLens updateA updateB
-debugLens name (MkEditLens (MkUpdateFunction g u) pe) = let
+debugLens name (MkEditLens g u pe) = let
     u' :: forall m. MonadIO m
        => updateA
        -> MutableRead m (UpdateReader updateA)
@@ -36,7 +36,15 @@ debugLens name (MkEditLens (MkUpdateFunction g u) pe) = let
         meas <- pe ebs mr
         liftIO $ hPutStrLn ?handle $ name ++ ": -put: " ++ show meas
         return meas
-    in MkEditLens (MkUpdateFunction g u') pe'
+    in MkEditLens g u' pe'
+
+debugFloatingLens ::
+       forall updateA updateB.
+       (Show updateA, Show updateB, Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle)
+    => String
+    -> FloatingEditLens updateA updateB
+    -> FloatingEditLens updateA updateB
+debugFloatingLens name = floatLift (\mr -> mr) $ debugLens name
 
 goldenTest :: TestName -> FilePath -> FilePath -> ((?handle :: Handle) => IO ()) -> TestTree
 goldenTest name refPath outPath call =
@@ -52,21 +60,21 @@ goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("tes
 
 testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
-    => UpdateFunction (WholeUpdate a) (WholeUpdate a)
+    => EditLens (WholeUpdate a) (ReadOnlyUpdate (WholeUpdate a))
 testUpdateFunction = let
-    ufGet :: ReadFunction (WholeReader a) (WholeReader a)
-    ufGet mr = mr
-    ufUpdate ::
+    elGet :: ReadFunction (WholeReader a) (WholeReader a)
+    elGet mr = mr
+    elUpdate ::
            forall m. MonadIO m
         => WholeUpdate a
         -> MutableRead m (WholeReader a)
-        -> m [WholeUpdate a]
-    ufUpdate (MkWholeReaderUpdate s) mr = do
+        -> m [ReadOnlyUpdate (WholeUpdate a)]
+    elUpdate (MkWholeReaderUpdate s) mr = do
         s' <- mr ReadWhole
         liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
         liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
-        return [MkWholeReaderUpdate s]
-    in MkUpdateFunction {..}
+        return [MkReadOnlyUpdate $ MkWholeReaderUpdate s]
+    in MkEditLens {elPutEdits = elPutEditsNone, ..}
 
 testUpdateObject :: TestTree
 testUpdateObject =
@@ -76,8 +84,8 @@ testUpdateObject =
         let
             om :: ObjectMaker (WholeUpdate String) ()
             om = reflectingObjectMaker obj
-            lens :: EditLens (WholeUpdate String) (WholeUpdate String)
-            lens = updateFunctionToRejectingEditLens testUpdateFunction
+            lens :: FloatingEditLens (WholeUpdate String) (WholeUpdate String)
+            lens = editLensToFloating $ fromReadOnlyRejectingEditLens . testUpdateFunction
             recv :: NonEmpty (WholeUpdate String) -> EditContext -> IO ()
             recv ee _ =
                 putMVar var $ for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv update edit: " <> show s
@@ -280,7 +288,7 @@ testSharedString1 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCDE"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 4)) mainSub
+        sectSub <- floatMapSubscriber (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -301,7 +309,7 @@ testSharedString2 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        sectSub <- floatMapSubscriber (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -320,7 +328,7 @@ testSharedString3 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        sectSub <- floatMapSubscriber (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
         subscribeEditor sectSub $ pure ()
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
@@ -340,7 +348,7 @@ testSharedString4 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        sectSub <- floatMapSubscriber (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
         subscribeEditor sectSub $ pure ()
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
@@ -360,7 +368,7 @@ testSharedString5 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+        sectSub <- floatMapSubscriber (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -375,7 +383,7 @@ testSharedString6 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+        sectSub <- floatMapSubscriber (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
         showSubscriberSubject "sect" sectSub
         _sectFlush <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -389,7 +397,7 @@ testSharedString7 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+        sectSub <- floatMapSubscriber (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -404,7 +412,7 @@ testSharedString7a =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "AB"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        sectSub <- floatMapSubscriber (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -487,7 +495,7 @@ testPairedSharedString1 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "PABCQ"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 4)) mainSub
+        sectSub <- floatMapSubscriber (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         let pairSub = pairSubscribers sectSub sectSub
@@ -519,7 +527,7 @@ testPairedSharedString2 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        sectSub <- floatMapSubscriber (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         let pairSub = pairSubscribers sectSub sectSub

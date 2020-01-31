@@ -31,15 +31,13 @@ standardPinaforeContext dirpath uitoolkit = do
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     memoryObject <- liftIO makeMemoryCellObject
     clockOM <- shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
-    clockTimeEF <- makeClockTimeZoneEF
     let
         picker :: forall update. PinaforeSelector update -> ObjectMaker update ()
         picker PinaforeSelectPoint = reflectingObjectMaker $ pinaforeTableEntityObject tableObject
         picker PinaforeSelectFile = reflectingObjectMaker $ directoryPinaforeFileObject $ dirpath </> "files"
         picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
         picker PinaforeSelectClock = clockOM
-        picker PinaforeSelectTimeZone =
-            mapObjectMaker (updateFunctionToEditLens $ clockTimeEF . fromReadOnlyUpdateFunction) clockOM
+        picker PinaforeSelectTimeZone = mapObjectMaker (liftReadOnlyFloatingEditLens clockTimeZoneLens) clockOM
     (sub, ()) <- makeSharedSubscriber $ tupleObjectMaker picker
     makePinaforeContext sub uitoolkit
 

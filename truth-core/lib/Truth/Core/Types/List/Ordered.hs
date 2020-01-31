@@ -2,16 +2,15 @@ module Truth.Core.Types.List.Ordered where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
 import Truth.Core.Sequence
 import Truth.Core.Types.List.Edit
 import Truth.Core.Types.List.Read
 import Truth.Core.Types.List.Update
-import Truth.Core.Types.OneEdit
-import Truth.Core.Types.OneReader
-import Truth.Core.Types.OneWhole
-import Truth.Core.Types.Sum
-import Truth.Core.Types.Whole
+import Truth.Core.Types.One.FullResult
+import Truth.Core.Types.One.Read
+import Truth.Core.Types.One.Result
 
 -- | Like ListEdit, except without a way of adding new elements.
 -- This is what both lists and unordered sets presented in some order have in common.
@@ -88,7 +87,7 @@ orderedListItemLens ::
        , UpdateSubject update ~ Element seq
        )
     => SequencePoint seq
-    -> StateEditLens (OrderedListUpdate seq update) (MaybeUpdate update)
+    -> FloatingEditLens (OrderedListUpdate seq update) (MaybeUpdate update)
 orderedListItemLens initpos = let
     sInit ::
            forall m. MonadIO m
@@ -120,7 +119,7 @@ orderedListItemLens initpos = let
         if i == oldie
             then do
                 put newie
-                return [SumUpdateRight $ MkOneUpdate update]
+                return [MkFullResultOneUpdate $ SuccessResultOneUpdate update]
             else return []
     sUpdate (OrderedListUpdateDelete ie) _ = do
         i <- get
@@ -128,7 +127,7 @@ orderedListItemLens initpos = let
             LT -> do
                 put $ i - 1
                 return []
-            EQ -> return [SumUpdateLeft $ MkWholeReaderUpdate Nothing]
+            EQ -> return [MkFullResultOneUpdate $ NewResultOneUpdate Nothing]
             GT -> return []
     sUpdate (OrderedListUpdateInsert ie _) _ = do
         i <- get
@@ -138,26 +137,26 @@ orderedListItemLens initpos = let
         return []
     sUpdate OrderedListUpdateClear _ = do
         put 0
-        return [SumUpdateLeft $ MkWholeReaderUpdate Nothing]
+        return [MkFullResultOneUpdate $ NewResultOneUpdate Nothing]
     sPutEdit ::
            forall m. MonadIO m
         => MaybeEdit (UpdateEdit update)
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [OrderedListEdit seq (UpdateEdit update)])
-    sPutEdit (SumEditRight (MkOneEdit edit)) _ = do
+    sPutEdit (SuccessFullResultOneEdit edit) _ = do
         i <- get
         return $ Just [OrderedListEditItem i edit]
-    sPutEdit (SumEditLeft (MkWholeReaderEdit Nothing)) _ = do
+    sPutEdit (NewFullResultOneEdit Nothing) _ = do
         i <- get
         return $ Just [OrderedListEditDelete i]
-    sPutEdit (SumEditLeft (MkWholeReaderEdit (Just _))) _ = return Nothing
+    sPutEdit (NewFullResultOneEdit (Just _)) _ = return Nothing
     sPutEdits ::
            forall m. MonadIO m
         => [MaybeEdit (UpdateEdit update)]
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [OrderedListEdit seq (UpdateEdit update)])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
-    in MkStateEditLens {..}
+    in makeStateLens MkStateEditLens {..}
 
 listOrderedListEditLens ::
        forall seq update.
@@ -168,19 +167,17 @@ listOrderedListEditLens ::
        )
     => EditLens (ListUpdate seq update) (OrderedListUpdate seq update)
 listOrderedListEditLens = let
-    ufGet :: ReadFunction (ListReader seq (UpdateReader update)) (ListReader seq (UpdateReader update))
-    ufGet mr = mr
-    ufUpdate ::
+    elGet :: ReadFunction (ListReader seq (UpdateReader update)) (ListReader seq (UpdateReader update))
+    elGet mr = mr
+    elUpdate ::
            forall m. MonadIO m
         => ListUpdate seq update
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> m [OrderedListUpdate seq update]
-    ufUpdate (ListUpdateItem p update) _ = return $ pure $ OrderedListUpdateItem p p update
-    ufUpdate (ListUpdateDelete p) _ = return $ pure $ OrderedListUpdateDelete p
-    ufUpdate (ListUpdateInsert p subj) _ = return $ pure $ OrderedListUpdateInsert p subj
-    ufUpdate ListUpdateClear _ = return $ pure $ OrderedListUpdateClear
-    elFunction :: UpdateFunction (ListUpdate seq update) (OrderedListUpdate seq update)
-    elFunction = MkUpdateFunction {..}
+    elUpdate (ListUpdateItem p update) _ = return $ pure $ OrderedListUpdateItem p p update
+    elUpdate (ListUpdateDelete p) _ = return $ pure $ OrderedListUpdateDelete p
+    elUpdate (ListUpdateInsert p subj) _ = return $ pure $ OrderedListUpdateInsert p subj
+    elUpdate ListUpdateClear _ = return $ pure $ OrderedListUpdateClear
     elPutEdit ::
            forall m. MonadIO m
         => OrderedListEdit seq (UpdateEdit update)

@@ -12,5 +12,5 @@ instance Show (NullUISpec sel) where
 instance UIType NullUISpec where
     uiWitness = $(iowitness [t|NullUISpec|])
 
-nullUISpec :: forall sel. UISpec sel
-nullUISpec = MkUISpec MkNullUISpec
+nullUISpec :: forall sel. LUISpec sel
+nullUISpec = mkLUISpec MkNullUISpec

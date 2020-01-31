@@ -29,10 +29,11 @@ library:
       - Truth.Core.Edit.Update
       - Truth.Core.Edit.FullEdit
       - Truth.Core.Edit.Cache
-      - Truth.Core.Edit.Function
-      - Truth.Core.Edit.Lens
-      - Truth.Core.Edit.StateEditLens
-      - Truth.Core.Edit.Partial
+      - Truth.Core.Lens.Lens
+      - Truth.Core.Lens.Floating
+      - Truth.Core.Lens.State
+      - Truth.Core.Lens
+      - Truth.Core.Types.Partial
       - Truth.Core.Edit.Opaque
       - Truth.Core.Edit
       - Truth.Core.Types.None
@@ -43,9 +44,10 @@ library:
       - Truth.Core.Types.Unit
       - Truth.Core.Types.Sum
       - Truth.Core.Types.SumWhole
-      - Truth.Core.Types.OneReader
-      - Truth.Core.Types.OneEdit
-      - Truth.Core.Types.OneWhole
+      - Truth.Core.Types.One.Read
+      - Truth.Core.Types.One.Edit
+      - Truth.Core.Types.One.Result
+      - Truth.Core.Types.One.FullResult
       - Truth.Core.Types.Either
       - Truth.Core.Types.Comonad
       - Truth.Core.Types.Tuple
@@ -77,7 +79,6 @@ library:
       - Truth.Core.Object.Object
       - Truth.Core.Object.AutoClose
       - Truth.Core.Object.ObjectEdit
-      - Truth.Core.Object.Update
       - Truth.Core.Object.ObjectMaker
       - Truth.Core.Object.Subscriber
       - Truth.Core.Object.Tuple
