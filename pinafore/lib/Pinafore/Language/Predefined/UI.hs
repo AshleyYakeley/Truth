@@ -19,32 +19,62 @@ uiMap :: (A -> B) -> PinaforeUI A -> PinaforeUI B
 uiMap = fmap
 
 uiTable ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+       forall baseupdate.
+       ( ?pinafore :: PinaforeContext baseupdate
+       , HasPinaforeEntityUpdate baseupdate {-, ApplicableEdit (UpdateEdit baseupdate)-}
+       )
     => [(PinaforeRef '( BottomType, Text), A -> PinaforeRef '( BottomType, Text))]
     -> PinaforeOrder baseupdate A
-    -> PinaforeFiniteSetRef '( A, MeetType Entity A)
+    -> PinaforeFiniteSetRef '( A, EA)
     -> (A -> PinaforeAction TopType)
     -> LUISpec A
-uiTable cols (MkPinaforeOrder geto order) val onDoubleClick = let
-    showCell :: Know Text -> (Text, TableCellProps)
-    showCell (Known s) = (s, plainTableCellProps)
-    showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
-    mapLens :: PinaforeReadOnlyValue (Know Text) -> PinaforeReadOnlyValue (Text, TableCellProps)
-    mapLens ff = eaMapReadOnlyWhole showCell ff
-    getColumn ::
-           (PinaforeRef '( BottomType, Text), A -> PinaforeRef '( BottomType, Text)) -> KeyColumn (MeetType Entity A)
-    getColumn (name, f) =
-        readOnlyKeyColumn (pinaforeValueOpenSubscriber $ eaMapSemiReadOnly clearText $ pinaforeRefToReadOnlyValue name) $ \p ->
-            return $ pinaforeValueOpenSubscriber $ mapLens $ pinaforeRefToReadOnlyValue $ f $ meet2 p
-    in mapSelectionUISpec meet2 $
-       tableUISpec
-           (fmap getColumn cols)
-           order
-           (\mea -> pinaforeValueOpenSubscriber $ applyPinaforeFunction pinaforeBase geto $ eaPure $ Known $ meet2 mea)
-           (pinaforeValueOpenSubscriber $ unPinaforeFiniteSetRef $ contraRangeLift meet2 val)
-           (\a -> runPinaforeAction $ void $ onDoubleClick $ meet2 a)
+uiTable cols order val onDoubleClick = do
+    let
+        uo :: UpdateOrder (ContextUpdate baseupdate (ConstWholeUpdate EA))
+        uo =
+            mapUpdateOrder
+                (editLensToFloating $ liftContextEditLens $ fromReadOnlyRejectingEditLens . funcEditLens (Known . meet2)) $
+            pinaforeUpdateOrder order
+        rows :: Subscriber (FiniteSetUpdate EA)
+        rows = unPinaforeValue $ unPinaforeFiniteSetRef $ contraRangeLift meet2 val
+        pkSub :: Subscriber (ContextUpdate baseupdate (FiniteSetUpdate EA))
+        pkSub = contextSubscribers pinaforeBase rows
+        readOpenSub :: OpenSubscriber (ConstWholeUpdate EA) -> IO A
+        readOpenSub sub =
+            withOpenResource sub $ \asub -> do
+                ea <- subRead asub ReadWhole
+                return $ meet2 ea
+        onSelect :: OpenSubscriber (ConstWholeUpdate EA) -> IO ()
+        onSelect osub = do
+            a <- readOpenSub osub
+            runPinaforeAction $ void $ onDoubleClick a
+        getColumn ::
+               (PinaforeRef '( BottomType, Text), A -> PinaforeRef '( BottomType, Text))
+            -> KeyColumn (ConstWholeUpdate EA)
+        getColumn (nameRef, getCellRef) = let
+            showCell :: Know Text -> (Text, TableCellProps)
+            showCell (Known s) = (s, plainTableCellProps)
+            showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
+            nameOpenSub :: ReadOnlyOpenSubscriber (WholeUpdate Text)
+            nameOpenSub = pinaforeValueOpenSubscriber $ eaMapSemiReadOnly clearText $ pinaforeRefToReadOnlyValue nameRef
+            getCellSub ::
+                   OpenSubscriber (ConstWholeUpdate EA)
+                -> IO (ReadOnlyOpenSubscriber (WholeUpdate (Text, TableCellProps)))
+            getCellSub osub = do
+                a <- readOpenSub osub
+                return $
+                    pinaforeValueOpenSubscriber $
+                    eaMapSemiReadOnly (funcEditLens showCell) $ pinaforeRefToReadOnlyValue $ getCellRef a
+            in readOnlyKeyColumn nameOpenSub getCellSub
+    colSub :: Subscriber (ContextUpdate baseupdate (OrderedListUpdate [EA] (ConstWholeUpdate EA))) <-
+        floatMapSubscriber (contextOrderedSetLens uo) pkSub
+    let
+        olsub :: Subscriber (OrderedListUpdate [EA] (ConstWholeUpdate EA))
+        olsub = mapSubscriber (tupleEditLens SelectContent) colSub
+    mapSelectionUISpec (liftIO . readOpenSub . openResource) $
+        tableUISpec (fmap getColumn cols) (openResource olsub) onSelect
 
-type PickerType = Know (MeetType Entity A)
+type PickerType = Know EA
 
 type PickerPairType = (PickerType, OptionUICell)
 
@@ -55,33 +85,34 @@ makeCell (Known t) = plainOptionUICell t
 uiPick ::
        forall baseupdate. (?pinafore :: PinaforeContext baseupdate)
     => PinaforeMorphism baseupdate '( A, TopType) '( BottomType, Text)
-    -> PinaforeFiniteSetRef '( A, MeetType Entity A)
-    -> PinaforeRef '( A, MeetType Entity A)
+    -> PinaforeFiniteSetRef '( A, EA)
+    -> PinaforeRef '( A, EA)
     -> LUISpec BottomType
 uiPick nameMorphism fset ref = do
     let
-        getName :: PinaforeFunctionMorphism baseupdate (MeetType Entity A) PickerPairType
+        getName :: PinaforeFunctionMorphism baseupdate EA PickerPairType
         getName =
             proc p -> do
                 n <- pinaforeMorphismFunction nameMorphism -< Known $ meet2 p
                 returnA -< (Known p, makeCell n)
-        getNames :: PinaforeFunctionMorphism baseupdate (FiniteSet (MeetType Entity A)) (FiniteSet PickerPairType)
+        getNames :: PinaforeFunctionMorphism baseupdate (FiniteSet EA) (FiniteSet PickerPairType)
         getNames =
             proc fsp -> do
                 pairs <- cfmap getName -< fsp
                 returnA -< insertSet (Unknown, makeCell Unknown) pairs
-        updateOrder :: UpdateOrder (ConstUpdate PickerPairType)
+        updateOrder :: UpdateOrder (ConstWholeUpdate PickerPairType)
         updateOrder = MkUpdateOrder (comparing $ optionCellText . snd) $ editLensToFloating convertReadOnlyEditLens
         orderLens ::
-               FloatingEditLens (WholeUpdate (FiniteSet PickerPairType)) (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstUpdate PickerPairType)))
+               FloatingEditLens (WholeUpdate (FiniteSet PickerPairType)) (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
         --orderLens = (orderedKeyList {- @(FiniteSet PickerPairType) -} $ comparing $ optionCellText . snd) . convertEditLens
         orderLens =
             editLensToFloating toReadOnlyEditLens . orderedSetLens updateOrder . editLensToFloating convertEditLens
-    opts :: PinaforeValue (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstUpdate PickerPairType))) <-
+    opts :: PinaforeValue (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType))) <-
         eaFloatMapReadOnly orderLens $
         applyPinaforeFunction pinaforeBase getNames $ pinaforeFiniteSetRefFunctionValue fset
     let
-        subOpts :: OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstUpdate PickerPairType)))
+        subOpts ::
+               OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
         subOpts = pinaforeValueOpenSubscriber opts
         subVal :: OpenSubscriber (WholeUpdate PickerType)
         subVal = pinaforeValueOpenSubscriber $ pinaforeRefToValue $ contraRangeLift meet2 ref

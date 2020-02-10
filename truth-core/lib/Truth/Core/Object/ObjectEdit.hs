@@ -36,7 +36,7 @@ instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader 
         obj <- mr ReadObject
         runResource obj $ \run (MkAnObject mro _) -> liftIO $ run $ mutableReadToSubject mro
 
-type ObjectEdit edit = NoEdit (ObjectReader edit)
+type ObjectEdit edit = ConstEdit (ObjectReader edit)
 
 type ObjectUpdate update = EditUpdate (ObjectEdit (UpdateEdit update))
 

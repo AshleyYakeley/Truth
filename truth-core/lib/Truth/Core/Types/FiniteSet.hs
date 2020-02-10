@@ -27,21 +27,21 @@ type FiniteSetReader subj = KeyReader (FiniteSet subj) (WholeReader subj)
 
 {- equivalent to:
 data FiniteSetEdit subj where
-    KeyEditItem :: subj -> ConstEdit subj -> FiniteSetEdit subj
+    KeyEditItem :: subj -> ConstWholeEdit subj -> FiniteSetEdit subj
     KeyEditDelete :: subj -> FiniteSetEdit subj
     KeyEditInsertReplace :: subj -> FiniteSetEdit subj
     KeyEditClear :: FiniteSetEdit subj
 -}
-type FiniteSetEdit subj = KeyEdit (FiniteSet subj) (ConstEdit subj)
+type FiniteSetEdit subj = KeyEdit (FiniteSet subj) (ConstWholeEdit subj)
 
 {- equivalent to:
 data FiniteSetUpdate subj where
-    KeyUpdateItem :: subj -> ConstUpdate subj -> FiniteSetUpdate subj
+    KeyUpdateItem :: subj -> ConstWholeUpdate subj -> FiniteSetUpdate subj
     KeyUpdateDelete :: subj -> FiniteSetUpdate subj
     KeyUpdateInsertReplace :: subj -> FiniteSetUpdate subj
     KeyUpdateClear :: FiniteSetUpdate subj
 -}
-type FiniteSetUpdate subj = KeyUpdate (FiniteSet subj) (ConstUpdate subj)
+type FiniteSetUpdate subj = KeyUpdate (FiniteSet subj) (ConstWholeUpdate subj)
 
 wholeFiniteSetReadFunction :: Eq subj => ReadFunction (WholeReader (FiniteSet subj)) (FiniteSetReader subj)
 wholeFiniteSetReadFunction mr KeyReadKeys = mr ReadWhole

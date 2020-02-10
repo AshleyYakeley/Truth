@@ -20,7 +20,7 @@ clockObjectMaker basetime interval update = do
             t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while object is open
             runReaderT rt t
     let
-        object :: Object (NoEdit (WholeReader UTCTime))
+        object :: Object (ConstEdit (WholeReader UTCTime))
         object = MkResource run $ immutableAnObject $ \ReadWhole -> ask
     return (object, ())
 

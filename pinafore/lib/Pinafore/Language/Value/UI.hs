@@ -9,7 +9,7 @@ newtype PinaforeUI a = MkPinaforeUI
     }
 
 instance Functor PinaforeUI where
-    fmap ab (MkPinaforeUI spec) = MkPinaforeUI $ mapSelectionUISpec ab spec
+    fmap ab (MkPinaforeUI spec) = MkPinaforeUI $ mapSelectionUISpec (return . ab) spec
 
 instance HasVariance 'Covariance PinaforeUI where
     varianceRepresentational = Nothing

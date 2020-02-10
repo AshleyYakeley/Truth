@@ -135,7 +135,7 @@ changeOnlyUpdateFunction = let
                 return [MkReadOnlyUpdate $ MkWholeUpdate newa]
     sPutEdits ::
            forall m. MonadIO m
-        => [NoEdit _]
+        => [ConstEdit _]
         -> MutableRead m (WholeReader a)
         -> StateT a m (Maybe [WholeEdit a])
     sPutEdits = elPutEditsNone

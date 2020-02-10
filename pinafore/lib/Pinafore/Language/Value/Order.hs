@@ -6,6 +6,7 @@ import Pinafore.Language.Value.FiniteSetRef
 import Pinafore.Language.Value.Morphism
 import Pinafore.Language.Value.Ref
 import Shapes
+import Truth.Core
 
 data PinaforeOrder baseupdate a =
     forall t. MkPinaforeOrder (PinaforeFunctionMorphism baseupdate (Know a) t)
@@ -86,3 +87,7 @@ pinaforeSetGetOrdered ::
     -> PinaforeFiniteSetRef '( BottomType, a)
     -> PinaforeRef '( TopType, [a])
 pinaforeSetGetOrdered order set = pinaforeReadOnlyValueToRef $ qOrderSet order $ pinaforeFiniteSetRefFunctionValue set
+
+pinaforeUpdateOrder :: PinaforeOrder baseupdate a -> UpdateOrder (ContextUpdate baseupdate (WholeUpdate (Know a)))
+pinaforeUpdateOrder (MkPinaforeOrder m cmp) =
+    MkUpdateOrder cmp $ editLensToFloating $ pinaforeFunctionMorphismUpdateFunction m

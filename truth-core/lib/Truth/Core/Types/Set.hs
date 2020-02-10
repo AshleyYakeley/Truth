@@ -83,7 +83,7 @@ setCartesianProductLens aeq beq = let
         UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector (_, b')) ReadWhole) -> beq b b'
     elPutEdits ::
            forall m. MonadIO m
-        => [NoEdit (SetReader (a, b))]
+        => [ConstEdit (SetReader (a, b))]
         -> MutableRead m (PairUpdateReader (SetUpdate a) (SetUpdate b))
         -> m (Maybe [PairUpdateEdit (SetUpdate a) (SetUpdate b)])
     elPutEdits = elPutEditsNone

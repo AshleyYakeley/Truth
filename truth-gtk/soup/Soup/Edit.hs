@@ -1,9 +1,9 @@
 module Soup.Edit
     ( UUID
     , SoupUpdate
+    , UUIDElementUpdate
     , ObjectSoupUpdate
     , directorySoup
-    , soupRowLens
     , liftSoupLens
     ) where
 
@@ -13,16 +13,9 @@ import System.FilePath hiding ((<.>))
 import Truth.Core
 import Truth.World.FileSystem
 
-type UUIDElementUpdate update = PairUpdate (ConstUpdate UUID) update
+type UUIDElementUpdate update = PairUpdate (ConstWholeUpdate UUID) update
 
 type SoupUpdate update = KeyUpdate [(UUID, UpdateSubject update)] (UUIDElementUpdate update)
-
-soupRowLens ::
-       forall update. (IsUpdate update, FullEdit (UpdateEdit update))
-    => UUID
-    -> EditLens (SoupUpdate update) update
-soupRowLens key =
-    mustExistOneEditLens "row" . liftFullResultOneEditLens (tupleEditLens SelectSecond) . fixedKeyElementEditLens key
 
 liftSoupLens ::
        forall updateA updateB.

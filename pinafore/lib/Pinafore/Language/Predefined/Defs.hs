@@ -26,6 +26,8 @@ type BQ = UVar "bq"
 
 type CQ = UVar "cq"
 
+type EA = MeetType Entity A
+
 data BindDoc baseupdate = MkBindDoc
     { bdName :: Name
     , bdValue :: Maybe (PinaforeContext baseupdate -> QValue baseupdate)

@@ -28,7 +28,7 @@ viewRequest wit = MkView $ asks (\vc -> vcRequest vc wit)
 
 viewMapSetSelectionEdit ::
        forall sela selb a. ()
-    => (sela -> selb)
+    => (sela -> LifeCycleIO selb)
     -> View sela a
     -> View selb a
 viewMapSetSelectionEdit f (MkView view) = MkView $ withReaderT (vcMapSelection f) view

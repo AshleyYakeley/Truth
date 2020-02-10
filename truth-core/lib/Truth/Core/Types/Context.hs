@@ -63,6 +63,10 @@ instance (c (UpdateReader updateX), c (UpdateReader updateN)) =>
     tupleReaderWitness SelectContext = Dict
     tupleReaderWitness SelectContent = Dict
 
+instance (c (UpdateEdit updateX), c (UpdateEdit updateN)) => TupleEditWitness c (WithContextSelector updateX updateN) where
+    tupleEditWitness SelectContext = Dict
+    tupleEditWitness SelectContent = Dict
+
 instance (c updateX, c updateN) => TupleUpdateWitness c (WithContextSelector updateX updateN) where
     tupleUpdateWitness SelectContext = Dict
     tupleUpdateWitness SelectContent = Dict
@@ -125,6 +129,35 @@ contextualiseEditLens (MkEditLens g u pe) = let
                 getComposeM $ do
                     eas' <- MkComposeM $ pe ebs mr
                     return $ eas ++ eas'
+    in MkEditLens g' u' pe'
+
+liftContextEditLens ::
+       forall updateX updateA updateB.
+       EditLens updateA updateB
+    -> EditLens (ContextUpdate updateX updateA) (ContextUpdate updateX updateB)
+liftContextEditLens (MkEditLens g u pe) = let
+    g' :: ReadFunction (ContextUpdateReader updateX updateA) (ContextUpdateReader updateX updateB)
+    g' mr (MkTupleUpdateReader SelectContext rt) = mr $ MkTupleUpdateReader SelectContext rt
+    g' mr (MkTupleUpdateReader SelectContent rt) = g (mr . MkTupleUpdateReader SelectContent) rt
+    u' :: forall m. MonadIO m
+       => ContextUpdate updateX updateA
+       -> MutableRead m (ContextUpdateReader updateX updateA)
+       -> m [ContextUpdate updateX updateB]
+    u' (MkTupleUpdate SelectContext update) _ = return [MkTupleUpdate SelectContext update]
+    u' (MkTupleUpdate SelectContent update) mr = do
+        updates <- u update (mr . MkTupleUpdateReader SelectContent)
+        return $ fmap (MkTupleUpdate SelectContent) updates
+    pe' :: forall m. MonadIO m
+        => [ContextUpdateEdit updateX updateB]
+        -> MutableRead m (ContextUpdateReader updateX updateA)
+        -> m (Maybe [ContextUpdateEdit updateX updateA])
+    pe' edits mr =
+        case partitionContextEdits edits of
+            (exs, ens) ->
+                getComposeM $ do
+                    es1 <- MkComposeM $ pe ens (mr . MkTupleUpdateReader SelectContent)
+                    return $
+                        (fmap (MkTupleUpdateEdit SelectContent) es1) ++ (fmap (MkTupleUpdateEdit SelectContext) exs)
     in MkEditLens g' u' pe'
 
 liftContentEditLens ::

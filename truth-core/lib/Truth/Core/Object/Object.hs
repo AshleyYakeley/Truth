@@ -34,11 +34,11 @@ instance MapResource (AnObject edit) where
 instance Show (Object edit) where
     show (MkResource _ _) = "object"
 
-noneObject :: Object (NoEdit (NoReader t))
+noneObject :: Object (ConstEdit (NoReader t))
 noneObject = let
     objRead :: MutableRead IO (NoReader t)
     objRead = never
-    objEdit :: NonEmpty (NoEdit (NoReader t)) -> IO (Maybe (EditSource -> IO ()))
+    objEdit :: NonEmpty (ConstEdit (NoReader t)) -> IO (Maybe (EditSource -> IO ()))
     objEdit = never
     in MkResource nilResourceRunner $ MkAnObject {..}
 
@@ -132,15 +132,15 @@ floatMapObject lens (MkResource rr anobjA) =
 immutableAnObject ::
        forall tt reader. MonadTransStackUnliftAll tt
     => MutableRead (ApplyStack tt IO) reader
-    -> AnObject (NoEdit reader) tt
+    -> AnObject (ConstEdit reader) tt
 immutableAnObject mr =
     case transStackDict @Monad @tt @IO of
         Dict -> MkAnObject mr $ \_ -> return Nothing
 
-readConstantObject :: MutableRead IO reader -> Object (NoEdit reader)
+readConstantObject :: MutableRead IO reader -> Object (ConstEdit reader)
 readConstantObject mr = MkResource nilResourceRunner $ immutableAnObject mr
 
-constantObject :: SubjectReader reader => ReaderSubject reader -> Object (NoEdit reader)
+constantObject :: SubjectReader reader => ReaderSubject reader -> Object (ConstEdit reader)
 constantObject subj = readConstantObject $ subjectToMutableRead subj
 
 alwaysEdit :: Monad m => (NonEmpty edit -> EditSource -> m ()) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))

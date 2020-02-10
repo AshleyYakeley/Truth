@@ -44,7 +44,7 @@ instance Monoid (ViewOutput sel) where
         in MkViewOutput {..}
     mappend = (<>)
 
-voMapSelection :: forall sela selb. (sela -> selb) -> ViewOutput sela -> ViewOutput selb
+voMapSelection :: forall sela selb. (sela -> LifeCycleIO selb) -> ViewOutput sela -> ViewOutput selb
 voMapSelection f (MkViewOutput asp) = MkViewOutput $ mapSelectionAspect f asp
 
 voNoAspect :: ViewOutput sela -> ViewOutput selb
@@ -144,7 +144,7 @@ cvAccessAspect f (MkCreateView (ReaderT ma)) = do
 
 cvMapSelection ::
        forall sela selb a. ()
-    => (sela -> selb)
+    => (sela -> LifeCycleIO selb)
     -> CreateView sela a
     -> CreateView selb a
 cvMapSelection f (MkCreateView ma) =

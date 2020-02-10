@@ -5,6 +5,7 @@ module Truth.Core.Object.Tuple
     , tupleSubscriber
     , pairSubscribers
     , pairReadOnlySubscribers
+    , contextSubscribers
     ) where
 
 import Truth.Core.Edit
@@ -199,3 +200,9 @@ pairReadOnlySubscribers ::
 pairReadOnlySubscribers sa sb =
     mapSubscriber toReadOnlyEditLens $
     pairSubscribers (mapSubscriber fromReadOnlyRejectingEditLens sa) (mapSubscriber fromReadOnlyRejectingEditLens sb)
+
+contextSubscribers :: Subscriber updateX -> Subscriber updateN -> Subscriber (ContextUpdate updateX updateN)
+contextSubscribers sx sn =
+    tupleSubscriber $ \case
+        SelectContext -> sx
+        SelectContent -> sn

@@ -11,7 +11,7 @@ newtype ReadOnlyUpdate update = MkReadOnlyUpdate
     }
 
 type instance UpdateEdit (ReadOnlyUpdate update) =
-     NoEdit (UpdateReader update)
+     ConstEdit (UpdateReader update)
 
 instance IsUpdate (ReadOnlyUpdate update) where
     editUpdate = never
@@ -67,7 +67,7 @@ ioFuncEditLens amb = let
             liftIO $ amb a
     elPutEdits ::
            forall m. MonadIO m
-        => [NoEdit (UpdateReader updateB)]
+        => [ConstEdit (UpdateReader updateB)]
         -> MutableRead m (UpdateReader updateA)
         -> m (Maybe [UpdateEdit updateA])
     elPutEdits = elPutEditsNone
@@ -105,7 +105,7 @@ immutableEditLens mr = let
     elUpdate _ _ = return []
     elPutEdits ::
            forall m. MonadIO m
-        => [NoEdit (UpdateReader updateB)]
+        => [ConstEdit (UpdateReader updateB)]
         -> MutableRead m (UpdateReader updateA)
         -> m (Maybe [UpdateEdit updateA])
     elPutEdits = elPutEditsNone

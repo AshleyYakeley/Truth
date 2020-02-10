@@ -3,16 +3,10 @@ module Truth.Core.UI.ViewContext where
 import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
-ioMapSelectionAspect :: LifeCycleIO (sela -> selb) -> Aspect sela -> Aspect selb
-ioMapSelectionAspect iof aspect = do
-    f <- iof
+mapSelectionAspect :: (sela -> LifeCycleIO selb) -> Aspect sela -> Aspect selb
+mapSelectionAspect f aspect = do
     msel <- aspect
-    return $ do
-        sel <- msel
-        return $ f sel
-
-mapSelectionAspect :: (sela -> selb) -> Aspect sela -> Aspect selb
-mapSelectionAspect f = ioMapSelectionAspect $ return f
+    for msel f
 
 data ViewContext sel = MkViewContext
     { vcSetSelection :: Aspect sel -> IO ()
@@ -23,7 +17,7 @@ data ViewContext sel = MkViewContext
 vcMapSetSelection :: ((Aspect sela -> IO ()) -> (Aspect selb -> IO ())) -> ViewContext sela -> ViewContext selb
 vcMapSetSelection f (MkViewContext setSelectA oG tb) = MkViewContext (f setSelectA) oG tb
 
-vcMapSelection :: (sela -> selb) -> ViewContext selb -> ViewContext sela
+vcMapSelection :: (sela -> LifeCycleIO selb) -> ViewContext selb -> ViewContext sela
 vcMapSelection f = vcMapSetSelection $ \ss aspa -> ss $ mapSelectionAspect f aspa
 
 vcNoAspect :: ViewContext selb -> ViewContext sela

@@ -22,26 +22,38 @@ pastResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = 
 
 type PossibleNoteUpdate = FullResultOneUpdate (Result Text) NoteUpdate
 
-soupEditSpec :: OpenSubscriber (SoupUpdate PossibleNoteUpdate) -> LUISpec UUID
-soupEditSpec sub = let
-    nameFunction :: UUID -> ReadOnlyOpenSubscriber (WholeUpdate (Result Text Text))
-    nameFunction key = let
-        nameLens :: EditLens (SoupUpdate PossibleNoteUpdate) (ReadOnlyUpdate (WholeUpdate (Result Text Text)))
-        nameLens = convertReadOnlyEditLens . liftFullResultOneEditLens (tupleEditLens NoteTitle) . soupRowLens key
-        in mapOpenSubscriber nameLens sub
-    nameColumn :: KeyColumn UUID
-    nameColumn =
-        readOnlyKeyColumn (openResource $ constantSubscriber "Name") $ \key -> let
-            valLens :: EditLens (SoupUpdate PossibleNoteUpdate) (ReadOnlyUpdate (WholeUpdate (Text, TableCellProps)))
-            valLens = funcEditLens fromResult . liftFullResultOneEditLens (tupleEditLens NoteTitle) . soupRowLens key
-            in return $ mapOpenSubscriber valLens sub {-(updateFunctionToEditLens (funcEditLens fromResult) . valLens)-}
-    pastColumn :: KeyColumn UUID
-    pastColumn =
-        readOnlyKeyColumn (openResource $ constantSubscriber "Past") $ \key -> let
-            valLens = funcEditLens pastResult . liftFullResultOneEditLens (tupleEditLens NotePast) . soupRowLens key
-            in return $ mapOpenSubscriber valLens sub
-    in tableUISpec [nameColumn, pastColumn] (\a b -> compare (resultToMaybe a) (resultToMaybe b)) nameFunction sub $ \_ ->
-           return ()
+soupEditSpec :: Subscriber (SoupUpdate PossibleNoteUpdate) -> LUISpec (Subscriber PossibleNoteUpdate)
+soupEditSpec sub = do
+    let
+        nameLens :: EditLens (UUIDElementUpdate PossibleNoteUpdate) (ReadOnlyUpdate (WholeUpdate (Result Text Text)))
+        nameLens =
+            convertReadOnlyEditLens . liftFullResultOneEditLens (tupleEditLens NoteTitle) . tupleEditLens SelectSecond
+        cmp :: Result Text Text -> Result Text Text -> Ordering
+        cmp a b = compare (resultToMaybe a) (resultToMaybe b)
+        uo :: UpdateOrder (UUIDElementUpdate PossibleNoteUpdate)
+        uo = MkUpdateOrder cmp $ editLensToFloating nameLens
+    osub :: Subscriber (OrderedListUpdate [t] (UUIDElementUpdate PossibleNoteUpdate)) <-
+        floatMapSubscriber (orderedSetLens uo) sub
+    let
+        nameColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
+        nameColumn =
+            readOnlyKeyColumn (openResource $ constantSubscriber "Name") $ \cellsub -> let
+                valLens ::
+                       EditLens (UUIDElementUpdate PossibleNoteUpdate) (ReadOnlyUpdate (WholeUpdate ( Text
+                                                                                                    , TableCellProps)))
+                valLens =
+                    funcEditLens fromResult .
+                    liftFullResultOneEditLens (tupleEditLens NoteTitle) . tupleEditLens SelectSecond
+                in return $ mapOpenSubscriber valLens cellsub {-(updateFunctionToEditLens (funcEditLens fromResult) . valLens)-}
+        pastColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
+        pastColumn =
+            readOnlyKeyColumn (openResource $ constantSubscriber "Past") $ \cellsub -> let
+                valLens =
+                    funcEditLens pastResult .
+                    liftFullResultOneEditLens (tupleEditLens NotePast) . tupleEditLens SelectSecond
+                in return $ mapOpenSubscriber valLens cellsub
+    mapSelectionUISpec (\s -> return $ mapSubscriber (tupleEditLens SelectSecond) s) $
+        tableUISpec [nameColumn, pastColumn] (openResource osub) $ \_ -> return ()
 
 soupObject :: FilePath -> Object (UpdateEdit (SoupUpdate PossibleNoteUpdate))
 soupObject dirpath = let
@@ -78,42 +90,33 @@ soupWindow MkUIToolkit {..} dirpath = do
                     ]
             wsTitle :: ReadOnlyOpenSubscriber (WholeUpdate Text)
             wsTitle = openResource $ constantSubscriber $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
-            openItem :: Aspect UUID -> IO ()
+            openItem :: Aspect (Subscriber PossibleNoteUpdate) -> IO ()
             openItem aspkey =
                 uitUnliftLifeCycle $ do
                     mkey <- aspkey
                     case mkey of
-                        Just key -> do
+                        Just rowSub -> do
                             rec
                                 ~(subwin, subcloser) <-
-                                    lifeCycleEarlyCloser $ do
-                                        subSub <- floatMapSubscriber (keyElementEditLens key) sub
-                                        uitCreateWindow $
-                                            MkWindowSpec
-                                                subcloser
-                                                (openResource $ constantSubscriber "item")
-                                                (mbar subcloser subwin) $
-                                            oneWholeUISpec
-                                                (openResource $
-                                                 mapSubscriber
-                                                     (liftFullResultOneEditLens $ tupleEditLens SelectSecond)
-                                                     subSub) $ \case
-                                                Just s1 ->
-                                                    oneWholeUISpec s1 $ \case
-                                                        SuccessResult s2 -> noteEditSpec s2
-                                                        FailureResult err ->
-                                                            labelUISpec $ openResource $ constantSubscriber err
-                                                Nothing -> nullUISpec
+                                    lifeCycleEarlyCloser $
+                                    uitCreateWindow $
+                                    MkWindowSpec
+                                        subcloser
+                                        (openResource $ constantSubscriber "item")
+                                        (mbar subcloser subwin) $
+                                    oneWholeUISpec (openResource rowSub) $ \case
+                                        SuccessResult s2 -> noteEditSpec s2
+                                        FailureResult err -> labelUISpec $ openResource $ constantSubscriber err
                             return ()
                         Nothing -> return ()
-            wsMenuBar :: Maybe (Aspect UUID -> ReadOnlyOpenSubscriber (WholeUpdate MenuBar))
+            wsMenuBar :: Maybe (Aspect (Subscriber PossibleNoteUpdate) -> ReadOnlyOpenSubscriber (WholeUpdate MenuBar))
             wsMenuBar = mbar closer window
-            wsContent :: LUISpec UUID
+            wsContent :: LUISpec (Subscriber PossibleNoteUpdate)
             wsContent =
                 withAspectUISpec $ \aspect ->
                     verticalUISpec
                         [ (simpleButtonUISpec (openResource $ constantSubscriber "View") (openItem aspect), False)
-                        , (soupEditSpec $ openResource sub, True)
+                        , (soupEditSpec sub, True)
                         ]
             wsCloseBoxAction :: IO ()
             wsCloseBoxAction = closer
