@@ -36,9 +36,14 @@ listStoreView (MkWMFunction blockSignal) oobj esrc = let
     recv store updates =
         for_ updates $ \(MkReadOnlyUpdate lupdate) ->
             case lupdate of
-                OrderedListUpdateItem (MkSequencePoint (fromIntegral -> oldi)) (MkSequencePoint (fromIntegral -> newi)) update -> do
+                OrderedListUpdateItem oldi newi Nothing
+                    | oldi == newi -> return ()
+                OrderedListUpdateItem (fromIntegral -> oldi) (fromIntegral -> newi) mupdate -> do
                     oldval <- seqStoreGetValue store oldi
-                    newval <- mutableReadToSubject $ applyUpdate update $ subjectToMutableRead oldval
+                    newval <-
+                        case mupdate of
+                            Just update -> mutableReadToSubject $ applyUpdate update $ subjectToMutableRead oldval
+                            Nothing -> return oldval
                     blockSignal $
                         case compare newi oldi of
                             EQ -> seqStoreSetValue store newi newval
@@ -48,9 +53,8 @@ listStoreView (MkWMFunction blockSignal) oobj esrc = let
                             GT -> do
                                 seqStoreInsert store newi newval
                                 seqStoreRemove store oldi
-                OrderedListUpdateDelete (MkSequencePoint (fromIntegral -> i)) -> blockSignal $ seqStoreRemove store i
-                OrderedListUpdateInsert (MkSequencePoint (fromIntegral -> i)) item ->
-                    blockSignal $ seqStoreInsert store i item
+                OrderedListUpdateDelete (fromIntegral -> i) -> blockSignal $ seqStoreRemove store i
+                OrderedListUpdateInsert (fromIntegral -> i) item -> blockSignal $ seqStoreInsert store i item
                 OrderedListUpdateClear -> blockSignal $ seqStoreClear store
     in cvBindSubscriber oobj (Just esrc) initV recv
 

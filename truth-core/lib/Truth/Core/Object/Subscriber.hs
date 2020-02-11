@@ -124,7 +124,10 @@ shareObjectMaker uobj = do
     (sub, a) <- makeSharedSubscriber uobj
     return $ subscriberObjectMaker sub a
 
-makeReflectingSubscriber :: IsUpdate update => Object (UpdateEdit update) -> LifeCycleIO (Subscriber update)
+makeReflectingSubscriber ::
+       forall update. IsUpdate update
+    => Object (UpdateEdit update)
+    -> LifeCycleIO (Subscriber update)
 makeReflectingSubscriber object = do
     (sub, ()) <- makeSharedSubscriber $ reflectingObjectMaker object
     return sub

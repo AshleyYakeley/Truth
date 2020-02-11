@@ -566,11 +566,17 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingEditLens (o
                         case lastReadOnlyWholeUpdate ws of
                                     -- order hasn't changed
                             Nothing ->
-                                return [OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint oldPos) update] -- key & order unchanged
+                                return
+                                    [ OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint oldPos) $
+                                      Just update
+                                    ] -- key & order unchanged
                             Just newO -> do
                                 let (newPos, newOL) = olInsert (newO, oldkey, ordr) $ olDeleteByPos oldPos ol
                                 put newOL
-                                return [OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) update]
+                                return
+                                    [ OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) $
+                                      Just update
+                                    ]
                         -- key changed
                     Just newkey -> do
                         ws <- lift $ elUpdate (rOrdLens ordr) update $ knownKeyItemReadFunction newkey newmr
@@ -581,7 +587,7 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingEditLens (o
                                     Nothing -> oldO
                         let (newPos, newOL) = olInsert (newO, newkey, ordr) $ olDeleteByPos oldPos ol
                         put newOL
-                        return [OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) update]
+                        return [OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) $ Just update]
     sUpdate (KeyUpdateDelete key) _mr = do
         ol <- get
         case lookUpByKey ol key of
@@ -779,14 +785,16 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingEdit
                             Nothing ->
                                 return
                                     [ MkTupleUpdate SelectContent $
-                                      OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint oldPos) update
+                                      OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint oldPos) $
+                                      Just update
                                     ] -- key & order unchanged
                             Just newO -> do
                                 let (newPos, newOL) = olInsert (newO, oldkey, ordr) $ olDeleteByPos oldPos ol
                                 put newOL
                                 return
                                     [ MkTupleUpdate SelectContent $
-                                      OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) update
+                                      OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) $
+                                      Just update
                                     ]
                         -- key changed
                     Just newkey -> do
@@ -800,7 +808,7 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingEdit
                         put newOL
                         return
                             [ MkTupleUpdate SelectContent $
-                              OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) update
+                              OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) $ Just update
                             ]
     sUpdate (MkTupleUpdate SelectContent (KeyUpdateDelete key)) _mr = do
         ol <- get

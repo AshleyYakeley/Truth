@@ -68,7 +68,7 @@ instance (IsSequence seq, SubjectReader (EditReader edit), SubjectMapEdit edit, 
                 OrderedListEditClear -> return mempty
 
 data OrderedListUpdate seq update where
-    OrderedListUpdateItem :: SequencePoint seq -> SequencePoint seq -> update -> OrderedListUpdate seq update
+    OrderedListUpdateItem :: SequencePoint seq -> SequencePoint seq -> Maybe update -> OrderedListUpdate seq update
     OrderedListUpdateDelete :: SequencePoint seq -> OrderedListUpdate seq update
     OrderedListUpdateInsert :: SequencePoint seq -> UpdateSubject update -> OrderedListUpdate seq update
     OrderedListUpdateClear :: OrderedListUpdate seq update
@@ -114,13 +114,25 @@ orderedListItemLens initpos = let
         => OrderedListUpdate seq update
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m [MaybeUpdate update]
-    sUpdate (OrderedListUpdateItem oldie newie update) _ = do
+    sUpdate (OrderedListUpdateItem oldie newie mupdate) _ = do
         i <- get
-        if i == oldie
-            then do
+        case compare oldie i of
+            EQ -> do
                 put newie
-                return [MkFullResultOneUpdate $ SuccessResultOneUpdate update]
-            else return []
+                return $
+                    case mupdate of
+                        Just update -> [MkFullResultOneUpdate $ SuccessResultOneUpdate update]
+                        Nothing -> []
+            LT -> do
+                if newie >= i
+                    then put $ pred newie
+                    else return ()
+                return []
+            GT -> do
+                if newie <= i
+                    then put $ succ newie
+                    else return ()
+                return []
     sUpdate (OrderedListUpdateDelete ie) _ = do
         i <- get
         case compare ie i of
@@ -174,7 +186,7 @@ listOrderedListEditLens = let
         => ListUpdate seq update
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> m [OrderedListUpdate seq update]
-    elUpdate (ListUpdateItem p update) _ = return $ pure $ OrderedListUpdateItem p p update
+    elUpdate (ListUpdateItem p update) _ = return $ pure $ OrderedListUpdateItem p p $ Just update
     elUpdate (ListUpdateDelete p) _ = return $ pure $ OrderedListUpdateDelete p
     elUpdate (ListUpdateInsert p subj) _ = return $ pure $ OrderedListUpdateInsert p subj
     elUpdate ListUpdateClear _ = return $ pure $ OrderedListUpdateClear
