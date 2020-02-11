@@ -69,6 +69,7 @@ library:
       - Truth.Core.Types.ByteString
       - Truth.Core.Types.Key.HasKey
       - Truth.Core.Types.Key.Key
+      - Truth.Core.Types.Key.Order
       - Truth.Core.Types.Key.FiniteSet
       - Truth.Core.Types.Database
       - Truth.Core.Types.Database.Show

@@ -66,7 +66,6 @@ testContextOrderedSetLens =
                 olSub <- floatMapSubscriber flens bothSub
                 getUpdates <- collectSubscriberUpdates $ mapSubscriber (tupleEditLens SelectContent) olSub
                 let
-        -- do stuff
                     pushOneEdit :: Char -> Int -> LifeCycleIO ()
                     pushOneEdit c i =
                         liftIO $

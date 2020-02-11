@@ -12,6 +12,7 @@ import Truth.Core.Types.Either as I
 import Truth.Core.Types.Key.FiniteSet as I
 import Truth.Core.Types.Key.HasKey as I
 import Truth.Core.Types.Key.Key as I
+import Truth.Core.Types.Key.Order as I
 import Truth.Core.Types.Lattice as I
 import Truth.Core.Types.List as I
 import Truth.Core.Types.None as I
