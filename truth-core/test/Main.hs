@@ -4,6 +4,7 @@ module Main
     ( main
     ) where
 
+import Lens
 import Shapes
 import Subscribe
 import Test.SimpleString
@@ -246,7 +247,14 @@ tests :: TestTree
 tests =
     testGroup
         "truth-core"
-        [testApplyEditsPar, testApplyEditsSeq, testSequence, testStringEdit, testStringSectionLens, testSubscribe]
+        [ testApplyEditsPar
+        , testApplyEditsSeq
+        , testSequence
+        , testStringEdit
+        , testStringSectionLens
+        , testSubscribe
+        , testLens
+        ]
 
 main :: IO ()
 main = defaultMain tests

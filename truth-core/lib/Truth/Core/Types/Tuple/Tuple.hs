@@ -1,4 +1,4 @@
-module Truth.Core.Types.Tuple where
+module Truth.Core.Types.Tuple.Tuple where
 
 import Truth.Core.Edit
 import Truth.Core.Import

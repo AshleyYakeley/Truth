@@ -1,12 +1,12 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Core.Types.ConsTuple where
+module Truth.Core.Types.Tuple.Cons where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Lens
 import Truth.Core.Read
-import Truth.Core.Types.Tuple
+import Truth.Core.Types.Tuple.Tuple
 
 instance TupleUpdateWitness c EmptyType where
     tupleUpdateWitness = never

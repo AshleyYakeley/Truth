@@ -1,4 +1,4 @@
-module Truth.Core.Types.Function
+module Truth.Core.Types.Tuple.Function
     ( FunctionSelector(..)
     , FunctionUpdateReader
     , FunctionUpdateEdit
@@ -19,9 +19,9 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Lens
 import Truth.Core.Read
-import Truth.Core.Types.Pair
 import Truth.Core.Types.Partial
-import Truth.Core.Types.Tuple
+import Truth.Core.Types.Tuple.Pair
+import Truth.Core.Types.Tuple.Tuple
 
 data FunctionSelector a (eb :: Type) (et :: Type) where
     MkFunctionSelector :: a -> FunctionSelector a update update

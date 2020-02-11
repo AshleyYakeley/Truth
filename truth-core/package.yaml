@@ -50,16 +50,16 @@ library:
       - Truth.Core.Types.One.FullResult
       - Truth.Core.Types.Either
       - Truth.Core.Types.Comonad
-      - Truth.Core.Types.Tuple
-      - Truth.Core.Types.ConsTuple
-      - Truth.Core.Types.EitherTuple
-      - Truth.Core.Types.Pair
+      - Truth.Core.Types.Tuple.Tuple
+      - Truth.Core.Types.Tuple.Cons
+      - Truth.Core.Types.Tuple.Either
+      - Truth.Core.Types.Tuple.Pair
       - Truth.Core.Types.Lattice
-      - Truth.Core.Types.Function
+      - Truth.Core.Types.Tuple.Function
       - Truth.Core.Types.WholeFunction
       - Truth.Core.Types.Set
-      - Truth.Core.Types.Dependent
-      - Truth.Core.Types.Context
+      - Truth.Core.Types.Tuple.Dependent
+      - Truth.Core.Types.Tuple.Context
       - Truth.Core.Types.List.Read
       - Truth.Core.Types.List.Edit
       - Truth.Core.Types.List.Update
@@ -67,8 +67,9 @@ library:
       - Truth.Core.Types.List
       - Truth.Core.Types.String
       - Truth.Core.Types.ByteString
-      - Truth.Core.Types.Key
-      - Truth.Core.Types.FiniteSet
+      - Truth.Core.Types.Key.HasKey
+      - Truth.Core.Types.Key.Key
+      - Truth.Core.Types.Key.FiniteSet
       - Truth.Core.Types.Database
       - Truth.Core.Types.Database.Show
       - Truth.Core.Types.Database.Tuple
@@ -148,4 +149,5 @@ tests:
     other-modules:
       - Test.SimpleString
       - Subscribe
+      - Lens
     ghc-options: -threaded

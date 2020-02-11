@@ -125,7 +125,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( Subscriber 
                         Just i -> seqStoreRemove store $ fromIntegral i
                         Nothing -> return ()
                 KeyUpdateInsertReplace item -> let
-                    key = elementKey @cont item
+                    key = itemKey @cont item
                     in do
                            mindex <- findInStore key
                            case mindex of

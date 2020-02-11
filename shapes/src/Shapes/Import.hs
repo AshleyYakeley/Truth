@@ -107,7 +107,6 @@ import Data.Hashable as I (Hashable)
 
 -- containers
 import Data.IntMap as I (IntMap, Key, traverseWithKey)
-import qualified Data.Map.Lazy
 import qualified Data.Map.Strict
 
 -- unordered-containers
@@ -148,8 +147,6 @@ import Data.Type.Heterogeneous as I
 type LazyByteString = Data.ByteString.Lazy.ByteString
 
 type StrictByteString = Data.ByteString.ByteString
-
-type LazyMap = Data.Map.Lazy.Map
 
 type StrictMap = Data.Map.Strict.Map
 

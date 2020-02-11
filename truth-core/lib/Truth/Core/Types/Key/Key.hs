@@ -1,9 +1,7 @@
-module Truth.Core.Types.Key
+module Truth.Core.Types.Key.Key
     ( KeyReader(..)
-    , HasKeyReader(..)
     , KeyEdit(..)
     , KeyUpdate(..)
-    , HasKeyUpdate(..)
     , keyElementEditLens
     , fixedKeyElementEditLens
     , liftKeyElementEditLens
@@ -21,15 +19,14 @@ import Truth.Core.Import
 import Truth.Core.Lens
 import Truth.Core.Read
 import Truth.Core.Sequence
-import Truth.Core.Types.Context
+import Truth.Core.Types.Key.HasKey
 import Truth.Core.Types.List
-import Truth.Core.Types.None
 import Truth.Core.Types.One.FullResult
 import Truth.Core.Types.One.Read
 import Truth.Core.Types.One.Result
-import Truth.Core.Types.Pair
 import Truth.Core.Types.ReadOnly
-import Truth.Core.Types.Tuple
+import Truth.Core.Types.Tuple.Context
+import Truth.Core.Types.Tuple.Tuple
 import Truth.Core.Types.Whole
 
 --- reader
@@ -61,50 +58,27 @@ knownKeyItemReadFunction key mr rt = do
         Just t -> return t
         Nothing -> error $ "missing item in list"
 
-instance (KeyContainer cont, SubjectReader reader, ReaderSubject reader ~ Element cont) =>
+instance (KeyContainer cont, SubjectReader reader, ReaderSubject reader ~ Item cont) =>
              SubjectReader (KeyReader cont reader) where
     type ReaderSubject (KeyReader cont reader) = cont
     subjectToRead cont KeyReadKeys = MkFiniteSet $ keys cont
-    subjectToRead cont (KeyReadItem key reader) = fmap (\e -> subjectToRead e reader) $ lookupElement key cont
+    subjectToRead cont (KeyReadItem key reader) = fmap (\e -> subjectToRead e reader) $ lookupItem key cont
 
-instance (KeyContainer cont, FullSubjectReader reader, ReaderSubject reader ~ Element cont) =>
+instance (KeyContainer cont, FullSubjectReader reader, ReaderSubject reader ~ Item cont) =>
              FullSubjectReader (KeyReader cont reader) where
     mutableReadToSubject mr = do
         MkFiniteSet allkeys <- mr KeyReadKeys
         list <- for allkeys $ \key -> mutableReadToSubject $ knownKeyItemReadFunction key mr
-        return $ fromElementList list
-
-class (KeyContainer cont) => HasKeyReader cont reader {-, SubjectReader reader, ReaderSubject reader ~ Element cont -}
- where
-    readKey ::
-           forall m. MonadIO m
-        => MutableRead m reader
-        -> m (ContainerKey cont)
-
-instance (KeyContainer cont, HasKeyReader cont (UpdateReader updateN)) =>
-             HasKeyReader cont (ContextUpdateReader updateX updateN) where
-    readKey mr = readKey @cont $ tupleReadFunction SelectContent mr
-
-instance Eq t => HasKeyReader (FiniteSet t) (WholeReader t) where
-    readKey mr = mr ReadWhole
-
-instance ( Eq key
-         , UpdateSubject keyupdate ~ key
-         , UpdateSubject valupdate ~ val
-         , SubjectReader (UpdateReader keyupdate)
-         , FullSubjectReader (UpdateReader keyupdate)
-         , SubjectReader (UpdateReader valupdate)
-         ) => HasKeyReader [(key, val)] (PairUpdateReader keyupdate valupdate) where
-    readKey mr = mutableReadToSubject $ firstReadFunction mr
+        return $ fromItemList list
 
 --- edit
 data KeyEdit cont edit where
     KeyEditItem :: ContainerKey cont -> edit -> KeyEdit cont edit
     KeyEditDelete :: ContainerKey cont -> KeyEdit cont edit
-    KeyEditInsertReplace :: Element cont -> KeyEdit cont edit
+    KeyEditInsertReplace :: Item cont -> KeyEdit cont edit
     KeyEditClear :: KeyEdit cont edit
 
-instance (Show (ContainerKey cont), Show edit, Show (Element cont)) => Show (KeyEdit cont edit) where
+instance (Show (ContainerKey cont), Show edit, Show (Item cont)) => Show (KeyEdit cont edit) where
     show (KeyEditItem key edit) = "edit " ++ show key ++ " " ++ show edit
     show (KeyEditDelete key) = "delete " ++ show key
     show (KeyEditInsertReplace element) = "insert " ++ show element
@@ -124,7 +98,7 @@ type instance EditReader (KeyEdit cont edit) =
 instance ( FullSubjectReader (EditReader edit)
          , ApplicableEdit edit
          , HasKeyReader cont (EditReader edit)
-         , Element cont ~ EditSubject edit
+         , Item cont ~ EditSubject edit
          ) => ApplicableEdit (KeyEdit cont edit) where
     applyEdit (KeyEditItem oldkey edit) mr kreader@(KeyReadItem key rt) = do
         mnewkey <- getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
@@ -151,12 +125,12 @@ instance ( FullSubjectReader (EditReader edit)
     applyEdit (KeyEditDelete _) mr (KeyReadItem key reader) = mr $ KeyReadItem key reader
     applyEdit (KeyEditInsertReplace item) mr KeyReadKeys = do
         allkeys <- mr KeyReadKeys
-        let newkey = elementKey @cont item
+        let newkey = itemKey @cont item
         if elem newkey allkeys
             then return allkeys
             else return $ insertSet newkey allkeys
     applyEdit (KeyEditInsertReplace item) _mr (KeyReadItem key reader)
-        | elementKey @cont item == key = return $ Just $ subjectToRead item reader
+        | itemKey @cont item == key = return $ Just $ subjectToRead item reader
     applyEdit (KeyEditInsertReplace _) mr (KeyReadItem key reader) = mr $ KeyReadItem key reader
     applyEdit KeyEditClear _mr reader = mSubjectToMutableRead (return mempty) reader
 
@@ -165,7 +139,7 @@ instance ( FullSubjectReader (EditReader edit)
          , SubjectMapEdit edit
          , InvertibleEdit edit
          , HasKeyReader cont (EditReader edit)
-         , Element cont ~ EditSubject edit
+         , Item cont ~ EditSubject edit
          ) => InvertibleEdit (KeyEdit cont edit) where
     invertEdit (KeyEditItem key edit) mr = do
         minvedits <- getComposeM $ invertEdit edit $ keyItemReadFunction key mr
@@ -173,7 +147,7 @@ instance ( FullSubjectReader (EditReader edit)
             Just invedits -> return $ fmap (KeyEditItem key) invedits
             Nothing -> return []
     invertEdit (KeyEditInsertReplace item) mr = do
-        let newkey = elementKey @cont item
+        let newkey = itemKey @cont item
         molditem <- getComposeM $ mutableReadToSubject $ keyItemReadFunction newkey mr
         case molditem of
             Just olditem -> return [KeyEditInsertReplace olditem]
@@ -185,25 +159,25 @@ instance ( FullSubjectReader (EditReader edit)
             Nothing -> return []
     invertEdit KeyEditClear mr = getReplaceEdits mr
 
-instance (KeyContainer cont, EditSubject edit ~ Element cont, SubjectMapEdit edit) => SubjectMapEdit (KeyEdit cont edit) where
+instance (KeyContainer cont, EditSubject edit ~ Item cont, SubjectMapEdit edit) => SubjectMapEdit (KeyEdit cont edit) where
     mapSubjectEdits =
         mapEditToMapEdits $ \keyedit subj ->
             case keyedit of
                 KeyEditItem key edit ->
-                    case lookupElement key subj of
+                    case lookupItem key subj of
                         Nothing -> return subj
                         Just oldelem -> do
                             newelem <- mapSubjectEdits [edit] oldelem
-                            return $ insertElement newelem subj
-                KeyEditDelete key -> return $ deleteElement key subj
-                KeyEditInsertReplace item -> return $ insertElement item subj
+                            return $ insertItem newelem subj
+                KeyEditDelete key -> return $ deleteKey key subj
+                KeyEditInsertReplace item -> return $ insertItem item subj
                 KeyEditClear -> return mempty
 
 instance ( FullSubjectReader (EditReader edit)
          , ApplicableEdit edit
          , SubjectMapEdit edit
          , HasKeyReader cont (EditReader edit)
-         , Element cont ~ EditSubject edit
+         , Item cont ~ EditSubject edit
          ) => FullEdit (KeyEdit cont edit) where
     replaceEdit mr write = do
         write KeyEditClear
@@ -216,7 +190,7 @@ instance ( FullSubjectReader (EditReader edit)
 data KeyUpdate cont update where
     KeyUpdateItem :: ContainerKey cont -> update -> KeyUpdate cont update
     KeyUpdateDelete :: ContainerKey cont -> KeyUpdate cont update
-    KeyUpdateInsertReplace :: Element cont -> KeyUpdate cont update
+    KeyUpdateInsertReplace :: Item cont -> KeyUpdate cont update
     KeyUpdateClear :: KeyUpdate cont update
 
 type instance UpdateEdit (KeyUpdate cont update) =
@@ -238,36 +212,15 @@ instance ( IsEditUpdate update
          , FullSubjectReader (UpdateReader update)
          , ApplicableEdit (UpdateEdit update)
          , HasKeyReader cont (UpdateReader update)
-         , Element cont ~ UpdateSubject update
+         , Item cont ~ UpdateSubject update
          ) => ApplicableUpdate (KeyUpdate cont update)
-
-class HasKeyReader cont (UpdateReader update) => HasKeyUpdate cont update where
-    updatesKey :: update -> Maybe (ContainerKey cont -> IO (ContainerKey cont))
-
-instance HasKeyReader cont r => HasKeyUpdate cont (ConstUpdate r) where
-    updatesKey = never
-
-instance Eq t => HasKeyUpdate (FiniteSet t) (WholeUpdate t) where
-    updatesKey (MkWholeReaderUpdate a) = Just $ \_ -> return a
-
-instance ( Eq key
-         , UpdateSubject keyupdate ~ key
-         , UpdateSubject valupdate ~ val
-         , SubjectReader (UpdateReader keyupdate)
-         , FullSubjectReader (UpdateReader keyupdate)
-         , SubjectReader (UpdateReader valupdate)
-         , ApplicableUpdate keyupdate
-         ) => HasKeyUpdate [(key, val)] (PairUpdate keyupdate valupdate) where
-    updatesKey (MkTupleUpdate SelectFirst update) =
-        Just $ \oldKey -> mutableReadToSubject $ applyUpdate update $ subjectToMutableRead oldKey
-    updatesKey _ = Nothing
 
 keyElementEditLens ::
        forall cont update.
        ( HasKeyUpdate cont update
        , ApplicableEdit (UpdateEdit update)
        , FullSubjectReader (UpdateReader update)
-       , Element cont ~ UpdateSubject update
+       , Item cont ~ UpdateSubject update
        )
     => ContainerKey cont
     -> FloatingEditLens (KeyUpdate cont update) (MaybeUpdate update)
@@ -315,7 +268,7 @@ keyElementEditLens initKey = let
     sUpdate (KeyUpdateInsertReplace item) _ = do
         key <- get
         return $
-            if elementKey @cont item == key
+            if itemKey @cont item == key
                 then [MkFullResultOneUpdate $ NewResultOneUpdate $ Just ()]
                 else []
     sPutEdit ::
@@ -348,7 +301,7 @@ fixedKeyElementEditLens ::
        ( HasKeyUpdate cont update
        , ApplicableEdit (UpdateEdit update)
        , FullSubjectReader (UpdateReader update)
-       , Element cont ~ UpdateSubject update
+       , Item cont ~ UpdateSubject update
        )
     => ContainerKey cont
     -> EditLens (KeyUpdate cont update) (MaybeUpdate update)
@@ -361,8 +314,8 @@ liftKeyElementEditLens ::
        ( ContainerKey conta ~ ContainerKey contb
        , Eq (ContainerKey conta)
        , HasKeyReader conta (UpdateReader updateA)
-       , UpdateSubject updateA ~ Element conta
-       , UpdateSubject updateB ~ Element contb
+       , UpdateSubject updateA ~ Item conta
+       , UpdateSubject updateB ~ Item contb
        , ApplicableEdit (UpdateEdit updateA)
        , FullSubjectReader (UpdateReader updateA)
        , FullSubjectReader (UpdateReader updateB)
@@ -418,8 +371,8 @@ liftKeyElementFloatingEditLens ::
        ( ContainerKey conta ~ ContainerKey contb
        , Eq (ContainerKey conta)
        , HasKeyReader conta (UpdateReader updateA)
-       , UpdateSubject updateA ~ Element conta
-       , UpdateSubject updateB ~ Element contb
+       , UpdateSubject updateA ~ Item conta
+       , UpdateSubject updateB ~ Item contb
        , ApplicableEdit (UpdateEdit updateA)
        , FullSubjectReader (UpdateReader updateA)
        , FullSubjectReader (UpdateReader updateB)
@@ -528,7 +481,7 @@ orderedSetLens ::
        ( Index seq ~ Int
        , HasKeyUpdate cont update
        , FullSubjectReader (UpdateReader update)
-       , Element cont ~ UpdateSubject update
+       , Item cont ~ UpdateSubject update
        , ApplicableEdit (UpdateEdit update)
        , IsUpdate update
        )
@@ -722,7 +675,7 @@ contextOrderedSetLens ::
        ( Index seq ~ Int
        , HasKeyUpdate cont updateN
        , FullSubjectReader (UpdateReader updateN)
-       , Element cont ~ UpdateSubject updateN
+       , Item cont ~ UpdateSubject updateN
        --, ApplicableEdit (UpdateEdit updateX)
        , ApplicableEdit (UpdateEdit updateN)
        , IsUpdate updateN
@@ -800,7 +753,7 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingEdit
         -> MutableRead m (ContextUpdateReader updateX (KeyUpdate cont updateN))
         -> StateT (OrderedList (o, ContainerKey cont, or)) m [ContextUpdate updateX (OrderedListUpdate seq updateN)]
     sUpdate (MkTupleUpdate SelectContext update) _ = do
-        oldol <- get
+        -- oldol <- get
         -- NYI: update order
         return [MkTupleUpdate SelectContext update]
     sUpdate (MkTupleUpdate SelectContent (KeyUpdateItem oldkey (update :: updateN))) newmr = do
@@ -967,12 +920,12 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingEdit
 contextKeyEditLens ::
        forall cont1 cont2 ua ub.
        ( ContainerKey cont1 ~ ContainerKey cont2
-       , Element cont1 ~ Element cont2
+       , Item cont1 ~ Item cont2
        , ApplicableEdit (UpdateEdit ua)
        , ApplicableEdit (UpdateEdit ub)
        , HasKeyReader cont1 (UpdateReader ub)
        , FullSubjectReader (UpdateReader ub)
-       , Element cont1 ~ UpdateSubject ub
+       , Item cont1 ~ UpdateSubject ub
        )
     => EditLens (ContextUpdate ua (KeyUpdate cont1 ub)) (KeyUpdate cont2 (ContextUpdate ua ub))
 contextKeyEditLens = let

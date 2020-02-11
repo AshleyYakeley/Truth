@@ -1,20 +1,20 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Core.Types.FiniteSet where
+module Truth.Core.Types.Key.FiniteSet where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Lens
 import Truth.Core.Read
-import Truth.Core.Types.Function
-import Truth.Core.Types.Key
+import Truth.Core.Types.Key.Key
 import Truth.Core.Types.Lattice
 import Truth.Core.Types.None
-import Truth.Core.Types.Pair
 import Truth.Core.Types.Partial
 import Truth.Core.Types.ReadOnly
 import Truth.Core.Types.Set
-import Truth.Core.Types.Tuple
+import Truth.Core.Types.Tuple.Function
+import Truth.Core.Types.Tuple.Pair
+import Truth.Core.Types.Tuple.Tuple
 import Truth.Core.Types.Unit
 import Truth.Core.Types.Whole
 

@@ -4,9 +4,9 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Lens
 import Truth.Core.Read
-import Truth.Core.Types.Function
-import Truth.Core.Types.Pair
-import Truth.Core.Types.Tuple
+import Truth.Core.Types.Tuple.Function
+import Truth.Core.Types.Tuple.Pair
+import Truth.Core.Types.Tuple.Tuple
 import Truth.Core.Types.Whole
 
 type WholeFunctionUpdate a b = FunctionUpdate a (WholeUpdate b)
