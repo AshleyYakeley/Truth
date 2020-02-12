@@ -17,6 +17,9 @@ data OrderedList a =
     MkOrderedList (a -> a -> Ordering)
                   (Seq a)
 
+instance Foldable OrderedList where
+    foldMap am (MkOrderedList _ items) = foldMap am items
+
 olEmpty :: (a -> a -> Ordering) -> OrderedList a
 olEmpty cmp = MkOrderedList cmp mempty
 

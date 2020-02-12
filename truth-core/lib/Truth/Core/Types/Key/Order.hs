@@ -312,10 +312,33 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingEdit
         => ContextUpdate updateX (KeyUpdate cont updateN)
         -> MutableRead m (ContextUpdateReader updateX (KeyUpdate cont updateN))
         -> StateT (OrderedList (o, ContainerKey cont, or)) m [ContextUpdate updateX (OrderedListUpdate seq updateN)]
-    sUpdate (MkTupleUpdate SelectContext update) _ = do
-        -- oldol <- get
-        -- NYI: update order
-        return [MkTupleUpdate SelectContext update]
+    sUpdate (MkTupleUpdate SelectContext update) mr = do
+        firstOL <- get
+        moveUpdates <-
+            for (toList firstOL) $ \(_, key, ordr) -> do
+                oUpdates <- lift $ elUpdate (rOrdLens ordr) (MkTupleUpdate SelectContext update) $ keyRF key mr
+                case lastReadOnlyWholeUpdate oUpdates of
+                    Nothing -> return []
+                    Just newO -> do
+                        oldOL <- get
+                        case lookUpByKey oldOL key -- slow
+                              of
+                            Nothing -> liftIO $ fail "key not found in order"
+                            Just (_, oldPos, _) -> do
+                                let
+                                    midOL = olDeleteByPos oldPos oldOL
+                                    (newPos, newOL) = olInsert (newO, key, ordr) midOL
+                                put newOL
+                                return $
+                                    if oldPos == newPos
+                                        then []
+                                        else [ MkTupleUpdate SelectContent $
+                                               OrderedListUpdateItem
+                                                   (MkSequencePoint oldPos)
+                                                   (MkSequencePoint newPos)
+                                                   Nothing
+                                             ]
+        return $ mconcat moveUpdates <> [MkTupleUpdate SelectContext update]
     sUpdate (MkTupleUpdate SelectContent (KeyUpdateItem oldkey (update :: updateN))) newmr = do
         ol <- get
         case lookUpByKey ol oldkey of

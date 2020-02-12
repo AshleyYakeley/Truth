@@ -19,13 +19,14 @@ collectSubscriberUpdates (MkResource rr asub) =
         return $ takeMVar var
 
 subscriberPushEdits :: Subscriber update -> NonEmpty (UpdateEdit update) -> IO ()
-subscriberPushEdits (MkResource rr asub) edits =
+subscriberPushEdits (MkResource rr asub) edits = do
     runResourceRunnerWith rr $ \run ->
         run $ do
             mpush <- subEdit asub edits
             case mpush of
                 Nothing -> fail "can't push edits"
                 Just push -> push noEditSource
+    threadDelay 10000 -- FIXME
 
 type UpdateX = KeyUpdate [(Char, Int)] (PairUpdate (ConstWholeUpdate Char) (WholeUpdate Int))
 
@@ -38,18 +39,24 @@ updToString OrderedListUpdateClear = "clear"
 
 -- arrange a list of characters in an order
 -- the order is given in the context as a map from Char to Int
-testContextOrderedSetLens :: TestTree
-testContextOrderedSetLens =
-    testCase "contextOrderedSetLens" $ do
+testContextOrderedSetLensCase :: [(Char, Int)] -> [(SequencePoint String, SequencePoint String)] -> TestTree
+testContextOrderedSetLensCase assigns expected =
+    testCase (show assigns) $ do
         let
             uo :: UpdateOrder (ContextUpdate UpdateX (ConstWholeUpdate Char))
-            uo = MkUpdateOrder compare $ editLensToFloating $ funcEditLens $ \(MkWithContext lm c) -> lookupItem c lm
+            uo =
+                MkUpdateOrder (compare @Int) $
+                editLensToFloating $
+                funcEditLens $ \(MkWithContext lm c) ->
+                    case lookupItem c lm of
+                        Just (_, i) -> i
+                        Nothing -> 0
             flens ::
                    FloatingEditLens (ContextUpdate UpdateX (FiniteSetUpdate Char)) (ContextUpdate UpdateX (OrderedListUpdate String (ConstWholeUpdate Char)))
             flens = contextOrderedSetLens uo
         rawContextObj :: Object (WholeEdit [(Char, Int)]) <-
-            freeIOObject [('A', 10), ('B', 20), ('C', 30), ('D', 40)] $ \_ -> True
-        rawContentObj :: Object (WholeEdit (FiniteSet Char)) <- freeIOObject (setFromList "ABCD") $ \_ -> True
+            freeIOObject [('A', 10), ('B', 20), ('C', 30), ('D', 40), ('E', 50)] $ \_ -> True
+        rawContentObj :: Object (WholeEdit (FiniteSet Char)) <- freeIOObject (setFromList "ABCDE") $ \_ -> True
         let
             contextObj :: Object (UpdateEdit UpdateX)
             contextObj = mapObject (convertEditLens @(WholeUpdate [(Char, Int)]) @UpdateX) rawContextObj
@@ -66,18 +73,31 @@ testContextOrderedSetLens =
                 olSub <- floatMapSubscriber flens bothSub
                 getUpdates <- collectSubscriberUpdates $ mapSubscriber (tupleEditLens SelectContent) olSub
                 let
-                    pushOneEdit :: Char -> Int -> LifeCycleIO ()
-                    pushOneEdit c i =
+                    pushOneEdit :: (Char, Int) -> LifeCycleIO ()
+                    pushOneEdit (c, i) =
                         liftIO $
                         subscriberPushEdits contextSub $
                         pure $ KeyEditItem c $ MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit i
-                pushOneEdit 'A' 25
+                for_ assigns pushOneEdit
                 return getUpdates
         let
             expectedUpdates :: [OrderedListUpdate String (ConstWholeUpdate Char)]
-            expectedUpdates = [OrderedListUpdateItem 0 1 Nothing]
+            expectedUpdates = fmap (\(a, b) -> OrderedListUpdateItem a b Nothing) expected
         foundUpdates <- getUpdates
         assertEqual "updates" (fmap updToString expectedUpdates) (fmap updToString foundUpdates)
+
+testContextOrderedSetLens :: TestTree
+testContextOrderedSetLens =
+    testGroup
+        "contextOrderedSetLens"
+        [ testContextOrderedSetLensCase [('A', 25)] [(0, 1)]
+        , testContextOrderedSetLensCase [('A', 25), ('B', 20)] [(0, 1)]
+        , testContextOrderedSetLensCase [('A', 25), ('A', 10)] [(0, 1), (1, 0)]
+        , testContextOrderedSetLensCase [('A', 25), ('A', 11)] [(0, 1), (1, 0)]
+        , testContextOrderedSetLensCase [('A', 25), ('B', 27)] [(0, 1), (0, 1)]
+        , testContextOrderedSetLensCase [('B', 17)] []
+        , testContextOrderedSetLensCase [('B', 5)] [(1, 0)]
+        ]
 
 testLens :: TestTree
 testLens = testGroup "lens" [testContextOrderedSetLens]
