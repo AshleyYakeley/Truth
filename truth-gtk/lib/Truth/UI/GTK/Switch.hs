@@ -28,7 +28,7 @@ switchView sub = do
         recvVS updates =
             for_ (lastReadOnlyWholeUpdate updates) $ \spec ->
                 replaceDynamicView $ runWMFunction unliftView $ getViewState spec
-    cvDynamic @(ViewState sel) sub initVS recvVS
+    cvDynamic @(ViewState sel) sub initVS mempty recvVS
     toWidget box
 
 switchGetView :: GetGView

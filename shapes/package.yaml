@@ -59,6 +59,7 @@ library:
       - Control.Monad.Trans.LifeCycle
       - Control.Monad.LifeCycleIO
       - Control.Clock
+      - Control.Task
       - Control.AsyncRunner
       - Shapes
       - Shapes.Numeric

@@ -84,8 +84,8 @@ checkUpdateEditor val push = let
     editorUpdate ::
            MVar (NonEmpty (WholeUpdate a)) -> Object (WholeEdit a) -> NonEmpty (WholeUpdate a) -> EditContext -> IO ()
     editorUpdate var _ edits _ = do putMVar var edits
-    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Object (WholeEdit a) -> LifeCycleIO ()
-    editorDo var _ =
+    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Object (WholeEdit a) -> Task () -> LifeCycleIO ()
+    editorDo var _ _ =
         liftIO $ do
             push
             edits <- takeMVar var
@@ -93,4 +93,5 @@ checkUpdateEditor val push = let
                 MkWholeReaderUpdate v :| []
                     | v == val -> return ()
                 _ -> fail "unexpected push"
+    editorTask = mempty
     in MkEditor {..}

@@ -56,7 +56,7 @@ listStoreView (MkWMFunction blockSignal) oobj esrc = let
                 OrderedListUpdateDelete (fromIntegral -> i) -> blockSignal $ seqStoreRemove store i
                 OrderedListUpdateInsert (fromIntegral -> i) item -> blockSignal $ seqStoreInsert store i item
                 OrderedListUpdateClear -> blockSignal $ seqStoreClear store
-    in cvBindSubscriber oobj (Just esrc) initV recv
+    in cvBindSubscriber oobj (Just esrc) initV mempty recv
 
 optionUICellAttributes :: OptionUICell -> [AttrOp CellRendererText 'AttrSet]
 optionUICellAttributes MkOptionUICell {..} = textCellAttributes optionCellText optionCellStyle

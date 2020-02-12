@@ -139,24 +139,25 @@ instance TupleResource UAnObject where
 
 instance TupleResource ASubscriber where
     noneTupleAResource :: ASubscriber (TupleUpdate (ListElementType '[])) '[]
-    noneTupleAResource = MkASubscriber (unUAnObject noneTupleAResource) $ \_ -> return ()
+    noneTupleAResource = MkASubscriber (unUAnObject noneTupleAResource) (\_ _ -> return ()) mempty
     consTupleAResource ::
            forall tt update updates. MonadTransStackUnliftAll tt
         => ASubscriber update tt
         -> ASubscriber (TupleUpdate (ListElementType updates)) tt
         -> ASubscriber (TupleUpdate (ListElementType (update : updates))) tt
-    consTupleAResource (MkASubscriber anobj1 sub1) (MkASubscriber anobj2 sub2) =
+    consTupleAResource (MkASubscriber anobj1 sub1 utask1) (MkASubscriber anobj2 sub2 utask2) =
         case transStackDict @MonadIO @tt @LifeCycleIO of
             Dict -> let
                 anobj12 = unUAnObject $ consTupleAResource (MkUAnObject anobj1) (MkUAnObject anobj2)
-                sub12 recv12 = do
+                sub12 task recv12 = do
                     let
                         recv1 u1 ec = recv12 (fmap (\u -> MkTupleUpdate FirstElementType u) u1) ec
                         recv2 u2 ec =
                             recv12 (fmap (\(MkTupleUpdate sel u) -> MkTupleUpdate (RestElementType sel) u) u2) ec
-                    sub1 recv1
-                    sub2 recv2
-                in MkASubscriber anobj12 sub12
+                    sub1 task recv1
+                    sub2 task recv2
+                utask12 = utask1 <> utask2
+                in MkASubscriber anobj12 sub12 utask12
     mapResourceUpdate :: EditLens updateA updateB -> Subscriber updateA -> Subscriber updateB
     mapResourceUpdate = mapSubscriber
 
@@ -170,9 +171,10 @@ tupleObjectMaker ::
        forall sel. IsFiniteConsWitness sel
     => (forall update. sel update -> ObjectMaker update ())
     -> ObjectMaker (TupleUpdate sel) ()
-tupleObjectMaker pick recv = do
+tupleObjectMaker pick utask recv = do
     uobj <-
-        tupleResourceM $ \sel -> fmap (objToUObj . fst) $ pick sel $ \updates -> recv $ fmap (MkTupleUpdate sel) updates
+        tupleResourceM $ \sel ->
+            fmap (objToUObj . fst) $ pick sel utask $ \updates -> recv $ fmap (MkTupleUpdate sel) updates
     return (uObjToObj uobj, ())
 
 tupleSubscriber ::

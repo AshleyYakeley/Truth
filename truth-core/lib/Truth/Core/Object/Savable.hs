@@ -25,7 +25,7 @@ saveBufferObject ::
        forall update. (IsUpdate update, FullEdit (UpdateEdit update))
     => Object (WholeEdit (UpdateSubject update))
     -> ObjectMaker update SaveActions
-saveBufferObject objP update =
+saveBufferObject objP _utask update =
     runResource objP $ \runP (MkAnObject readP pushP) -> do
         firstVal <- liftIO $ runP $ readP ReadWhole
         sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False

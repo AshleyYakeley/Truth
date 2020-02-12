@@ -7,7 +7,7 @@ import Shapes
 import Truth.Core
 
 clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (ReadOnlyUpdate (WholeUpdate UTCTime)) ()
-clockObjectMaker basetime interval update = do
+clockObjectMaker basetime interval _ update = do
     rec
         ref <- liftIO $ newIORef first
         first <-

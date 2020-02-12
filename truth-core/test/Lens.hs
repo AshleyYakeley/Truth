@@ -12,7 +12,7 @@ collectSubscriberUpdates (MkResource rr asub) =
     runResourceRunnerWith rr $ \run -> do
         var <- liftIO $ newMVar []
         run $
-            subscribe asub $ \updates _ec ->
+            subscribe asub mempty $ \updates _ec ->
                 mVarRun var $ do
                     uu <- get
                     put $ uu <> toList updates
@@ -26,7 +26,7 @@ subscriberPushEdits (MkResource rr asub) edits = do
             case mpush of
                 Nothing -> fail "can't push edits"
                 Just push -> push noEditSource
-    threadDelay 10000 -- FIXME
+    taskWait $ subUpdatesTask asub
 
 type UpdateX = KeyUpdate [(Char, Int)] (PairUpdate (ConstWholeUpdate Char) (WholeUpdate Int))
 

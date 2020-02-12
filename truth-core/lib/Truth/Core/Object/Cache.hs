@@ -14,7 +14,7 @@ cacheObject ::
     -> LifeCycleIO (Object edit)
 cacheObject mus obj =
     runResource obj $ \run (MkAnObject read push) -> do
-        runAction <- asyncWaitRunner mus $ \editsnl -> run $ pushOrFail "cached object" noEditSource $ push editsnl
+        (runAction, _) <- asyncWaitRunner mus $ \editsnl -> run $ pushOrFail "cached object" noEditSource $ push editsnl
         objRun <- liftIO $ stateResourceRunner $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
         return $ let
             objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)

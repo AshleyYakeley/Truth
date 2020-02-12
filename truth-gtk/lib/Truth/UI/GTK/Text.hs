@@ -62,7 +62,7 @@ textView rmod = do
                 case edit of
                     StringReplaceWhole text -> #setText buffer text (-1)
                     StringReplaceSection bounds text -> replaceText buffer bounds text
-    cvBindSubscriber rmod (Just esrc) initV recvV
+    cvBindSubscriber rmod (Just esrc) initV mempty recvV
     let
         aspect :: Aspect TextSelection
         aspect = do

@@ -10,19 +10,21 @@ import Truth.Core.Resource
 data Editor (update :: Type) r = forall editor. MkEditor
     { editorInit :: Object (UpdateEdit update) -> LifeCycleIO editor
     , editorUpdate :: editor -> Object (UpdateEdit update) -> NonEmpty update -> EditContext -> IO ()
-    , editorDo :: editor -> Object (UpdateEdit update) -> LifeCycleIO r
+    , editorTask :: Task ()
+    , editorDo :: editor -> Object (UpdateEdit update) -> Task () -> LifeCycleIO r
     }
 
 instance Functor (Editor update) where
-    fmap ab (MkEditor ei eu ed) = MkEditor ei eu $ \e o -> fmap ab $ ed e o
+    fmap ab (MkEditor ei eu et ed) = MkEditor ei eu et $ \e o f -> fmap ab $ ed e o f
 
 instance Applicative (Editor update) where
     pure a = let
         editorInit _ = return ()
         editorUpdate () _ _ _ = return ()
-        editorDo () _ = return a
+        editorTask = mempty
+        editorDo () _ _ = return a
         in MkEditor {..}
-    (MkEditor (ei1 :: Object (UpdateEdit update) -> LifeCycleIO editor1) eu1 ed1) <*> (MkEditor (ei2 :: Object (UpdateEdit update) -> LifeCycleIO editor2) eu2 ed2) = let
+    (MkEditor (ei1 :: Object (UpdateEdit update) -> LifeCycleIO editor1) eu1 et1 ed1) <*> (MkEditor (ei2 :: Object (UpdateEdit update) -> LifeCycleIO editor2) eu2 et2 ed2) = let
         editorInit :: Object (UpdateEdit update) -> LifeCycleIO (editor1, editor2)
         editorInit object = do
             e1 <- ei1 object
@@ -32,18 +34,19 @@ instance Applicative (Editor update) where
         editorUpdate (e1, e2) obj edits ectxt = do
             eu1 e1 obj edits ectxt
             eu2 e2 obj edits ectxt
-        editorDo (e1, e2) obj = do
-            ab <- ed1 e1 obj
-            a <- ed2 e2 obj
+        editorTask = et1 <> et2
+        editorDo (e1, e2) obj utask = do
+            ab <- ed1 e1 obj utask
+            a <- ed2 e2 obj utask
             return $ ab a
         in MkEditor {..}
 
 subscribeEditor :: Subscriber update -> Editor update r -> LifeCycleIO r
-subscribeEditor (MkResource (rr :: _ tt) (MkASubscriber anobject sub)) editor = let
+subscribeEditor (MkResource (rr :: _ tt) (MkASubscriber anobject sub utask)) editor = let
     object = MkResource rr anobject
     in case editor of
-           MkEditor initr update f ->
+           MkEditor {..} ->
                runResourceRunnerWith rr $ \run -> do
-                   e <- initr object
-                   run $ sub $ update e object
-                   f e object
+                   e <- editorInit object
+                   run $ sub editorTask $ editorUpdate e object
+                   editorDo e object utask

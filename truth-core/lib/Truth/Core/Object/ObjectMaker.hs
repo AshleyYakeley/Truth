@@ -13,13 +13,14 @@ import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Core.Resource
 
-type ObjectMaker update a = (NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (Object (UpdateEdit update), a)
+type ObjectMaker update a
+     = Task () -> (NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (Object (UpdateEdit update), a)
 
 reflectingObjectMaker ::
        forall update. IsUpdate update
     => Object (UpdateEdit update)
     -> ObjectMaker update ()
-reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e)) recv = do
+reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e)) _ recv = do
     Dict <- return $ resourceRunnerUnliftAllDict trun
     Dict <- return $ transStackDict @MonadUnliftIO @tt @(DeferActionT IO)
     Refl <- return $ transStackConcatRefl @tt @'[ DeferActionT] @IO
@@ -47,10 +48,10 @@ reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e)) 
 
 mapObjectMaker ::
        forall updateA updateB a. FloatingEditLens updateA updateB -> ObjectMaker updateA a -> ObjectMaker updateB a
-mapObjectMaker (MkFloatingEditLens init rlens) uobja recvb = do
+mapObjectMaker (MkFloatingEditLens init rlens) uobja utask recvb = do
     rec
         (result, recva) <- do
-            (MkResource (rr :: _ tt) anobjA, a) <- uobja recva
+            (MkResource (rr :: _ tt) anobjA, a) <- uobja utask recva
             runResourceRunnerWith rr $ \run -> do
                 r <- liftIO $ run $ runFloatInit init $ objRead anobjA
                 let

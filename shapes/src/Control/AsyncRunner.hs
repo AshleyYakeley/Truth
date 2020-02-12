@@ -6,6 +6,7 @@ module Control.AsyncRunner
 
 import Control.Monad.LifeCycleIO
 import Control.Monad.Trans.LifeCycle
+import Control.Task
 import Shapes.Import
 
 data VarState t
@@ -18,7 +19,7 @@ asyncWaitRunner ::
        forall t. Semigroup t
     => Int
     -> (t -> IO ())
-    -> LifeCycleIO (Maybe t -> IO ())
+    -> LifeCycleIO (Maybe t -> IO (), Task ())
 asyncWaitRunner mus doit = do
     bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSEmpty
     let
@@ -64,19 +65,34 @@ asyncWaitRunner mus doit = do
                 case vs of
                     VSDo oldval False -> writeTVar bufferVar $ VSDo oldval True
                     _ -> return ()
+        utask :: Task ()
+        utask = let
+            taskWait = atomically waitForEmpty
+            taskIsDone =
+                atomically $ do
+                    vs <- readTVar bufferVar
+                    return $
+                        case vs of
+                            VSEmpty -> Just ()
+                            _ -> Nothing
+            in MkTask {..}
     _ <- liftIO $ forkIO threadDo
     lifeCycleClose $ do
         atomically $ do
             waitForEmpty
             writeTVar bufferVar $ VSDone
         atomically waitForEmpty
-    return pushVal
+    return (pushVal, utask)
 
 asyncRunner ::
        forall t. Semigroup t
     => (t -> IO ())
-    -> LifeCycleIO (t -> IO ())
-asyncRunner doit = fmap (\push -> push . Just) $ asyncWaitRunner 0 doit
+    -> LifeCycleIO (t -> IO (), Task ())
+asyncRunner doit = do
+    (asyncDoIt, utask) <- asyncWaitRunner 0 doit
+    return (\t -> asyncDoIt $ Just t, utask)
 
-asyncIORunner :: LifeCycleIO (IO () -> IO ())
-asyncIORunner = fmap (\pushVal io -> pushVal [io]) $ asyncRunner sequence_
+asyncIORunner :: LifeCycleIO (IO () -> IO (), Task ())
+asyncIORunner = do
+    (asyncDoIt, utask) <- asyncRunner sequence_
+    return (\io -> asyncDoIt [io], utask)

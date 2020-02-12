@@ -139,7 +139,7 @@ oneWholeView rmod@(MkOpenResource _ run asub) baseView = do
                 (PresentOVS _, SuccessResult ()) -> return ()
                 (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs
                 _ -> replaceDynamicView $ runWMFunction unliftView $ getWidgets rmod newfu
-    cvDynamic rmod initVS recvVS
+    cvDynamic rmod initVS mempty recvVS
     toWidget box
 
 oneGetView :: GetGView

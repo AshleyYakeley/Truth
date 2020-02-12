@@ -98,8 +98,8 @@ testUpdateObject =
                 action
         runLifeCycle $ do
             om' <- shareObjectMaker om
-            (obj', ()) <- om' recv
-            (_obj', ()) <- mapObjectMaker lens om' recv'
+            (obj', ()) <- om' mempty recv
+            (_obj', ()) <- mapObjectMaker lens om' mempty recv'
             runResource obj' $ \run MkAnObject {..} ->
                 liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit $ pure $ MkWholeReaderEdit "new"
             liftIO showAction
@@ -124,8 +124,8 @@ subscribeShowUpdates ::
 subscribeShowUpdates name sub = do
     var <- liftIO newEmptyMVar
     lifeCycleClose $ putMVar var [] -- verify that update has been shown
-    runResource sub $ \run (MkASubscriber _ subrecv) ->
-        run $ subrecv $ \updates _ -> liftIO $ putMVar var $ toList updates
+    runResource sub $ \run (MkASubscriber _ subrecv _) ->
+        run $ subrecv mempty $ \updates _ -> liftIO $ putMVar var $ toList updates
     return $ do
         --outputNameLn name "flush"
         updates <- liftIO $ takeMVar var

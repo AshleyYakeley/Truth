@@ -29,9 +29,10 @@ cvDynamic ::
        forall dvs sel update. (DynamicViewState dvs, sel ~ DynamicViewSelEdit dvs)
     => OpenSubscriber update
     -> (OpenSubscriber update -> CreateView sel dvs)
+    -> Task ()
     -> ([update] -> StateT dvs IO ())
     -> CreateView sel ()
-cvDynamic sub initCV recvCV = do
+cvDynamic sub initCV taskCV recvCV = do
     let
         initBind :: OpenSubscriber update -> CreateView sel (MVar dvs)
         initBind rmod = do
@@ -51,5 +52,5 @@ cvDynamic sub initCV recvCV = do
             return stateVar
         recvBind :: MVar dvs -> NonEmpty update -> IO ()
         recvBind stateVar updates = mVarRun stateVar $ recvCV $ toList updates
-    stateVar <- cvBindSubscriber sub Nothing initBind recvBind
+    stateVar <- cvBindSubscriber sub Nothing initBind taskCV recvBind
     liftIO $ mVarRun stateVar $ recvCV []

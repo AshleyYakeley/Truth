@@ -79,9 +79,10 @@ cvBindSubscriber ::
        OpenSubscriber update
     -> Maybe EditSource
     -> (OpenSubscriber update -> CreateView sel a)
+    -> Task ()
     -> (a -> NonEmpty update -> IO ())
     -> CreateView sel a
-cvBindSubscriber (MkOpenResource rr run (asub :: _ tt)) mesrc initv recv = do
+cvBindSubscriber (MkOpenResource rr run (asub :: _ tt)) mesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycleIO lifeCycleMonitor
     withUILock <- MkCreateView $ asks vcWithUILock
@@ -90,7 +91,7 @@ cvBindSubscriber (MkOpenResource rr run (asub :: _ tt)) mesrc initv recv = do
             a <- initv $ MkOpenResource rr unlift asub
             liftLifeCycleIO $
                 unlift $
-                subscribe asub $ \edits MkEditContext {..} ->
+                subscribe asub utask $ \edits MkEditContext {..} ->
                     if mesrc == Just editContextSource
                         then return ()
                         else withUILock $ do
@@ -112,7 +113,7 @@ cvBindWholeSubscriber sub mesrc setf = let
     recv () updates = let
         MkWholeUpdate val = last updates
         in setf val
-    in cvBindSubscriber sub mesrc init recv
+    in cvBindSubscriber sub mesrc init mempty recv
 
 cvBindReadOnlyWholeSubscriber ::
        forall sel t. ReadOnlyOpenSubscriber (WholeUpdate t) -> (t -> IO ()) -> CreateView sel ()
@@ -126,7 +127,7 @@ cvBindReadOnlyWholeSubscriber sub setf = let
     recv () updates = let
         MkReadOnlyUpdate (MkWholeUpdate val) = last updates
         in setf val
-    in cvBindSubscriber sub Nothing init recv
+    in cvBindSubscriber sub Nothing init mempty recv
 
 cvAddAspect :: Aspect sel -> CreateView sel ()
 cvAddAspect aspect = cvViewOutput $ mempty {voFirstAspect = aspect}
