@@ -49,8 +49,7 @@ type SingleObjectUpdate edit = EditUpdate (SingleObjectEdit edit)
 
 type ObjectStoreUpdate name edit = FunctionUpdate name (SingleObjectUpdate edit)
 
-singleObjectUpdateFunction ::
-       forall edit. EditLens (SingleObjectUpdate edit) (ReadOnlyUpdate (WholeUpdate (Maybe (Object edit))))
+singleObjectUpdateFunction :: forall edit. EditLens (SingleObjectUpdate edit) (ROWUpdate (Maybe (Object edit)))
 singleObjectUpdateFunction = let
     elGet :: ReadFunction (SingleObjectReader edit) (WholeReader (Maybe (Object edit)))
     elGet mr ReadWhole = mr ReadSingleObjectStore
@@ -58,7 +57,7 @@ singleObjectUpdateFunction = let
            forall m. MonadIO m
         => SingleObjectUpdate edit
         -> MutableRead m (SingleObjectReader edit)
-        -> m [ReadOnlyUpdate (WholeUpdate (Maybe (Object edit)))]
+        -> m [ROWUpdate (Maybe (Object edit))]
     elUpdate (MkEditUpdate SingleObjectDelete) _ = return [MkReadOnlyUpdate $ MkWholeReaderUpdate Nothing]
     elUpdate _ mr = do
         mo <- mr ReadSingleObjectStore

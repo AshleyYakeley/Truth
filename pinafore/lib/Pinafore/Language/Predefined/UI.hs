@@ -12,7 +12,7 @@ import Pinafore.Storage
 import Shapes
 import Truth.Core
 
-clearText :: EditLens (WholeUpdate (Know Text)) (ReadOnlyUpdate (WholeUpdate Text))
+clearText :: EditLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcEditLens (fromKnow mempty)
 
 uiMap :: (A -> B) -> PinaforeUI A -> PinaforeUI B
@@ -55,11 +55,9 @@ uiTable cols order val onDoubleClick = do
             showCell :: Know Text -> (Text, TableCellProps)
             showCell (Known s) = (s, plainTableCellProps)
             showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
-            nameOpenSub :: ReadOnlyOpenSubscriber (WholeUpdate Text)
+            nameOpenSub :: OpenSubscriber (ROWUpdate Text)
             nameOpenSub = pinaforeValueOpenSubscriber $ eaMapSemiReadOnly clearText $ pinaforeRefToReadOnlyValue nameRef
-            getCellSub ::
-                   OpenSubscriber (ConstWholeUpdate EA)
-                -> IO (ReadOnlyOpenSubscriber (WholeUpdate (Text, TableCellProps)))
+            getCellSub :: OpenSubscriber (ConstWholeUpdate EA) -> IO (OpenSubscriber (ROWUpdate (Text, TableCellProps)))
             getCellSub osub = do
                 a <- readOpenSub osub
                 return $
@@ -164,11 +162,11 @@ openWindow title getmbar wsContent =
         pinaforeNewWindow $ let
             wsCloseBoxAction :: IO ()
             wsCloseBoxAction = pwClose w
-            wsTitle :: ReadOnlyOpenSubscriber (WholeUpdate Text)
+            wsTitle :: OpenSubscriber (ROWUpdate Text)
             wsTitle =
                 pinaforeValueOpenSubscriber $
                 eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue title
-            wsMenuBar :: Maybe (Aspect A -> ReadOnlyOpenSubscriber (WholeUpdate MenuBar))
+            wsMenuBar :: Maybe (Aspect A -> OpenSubscriber (ROWUpdate MenuBar))
             wsMenuBar =
                 Just $ \aspect ->
                     pinaforeValueOpenSubscriber $

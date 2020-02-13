@@ -19,27 +19,26 @@ plainTableCellProps = let
     in MkTableCellProps {..}
 
 data KeyColumn update = MkKeyColumn
-    { kcName :: ReadOnlyOpenSubscriber (WholeUpdate Text)
+    { kcName :: OpenSubscriber (ROWUpdate Text)
     , kcContents :: OpenSubscriber update -> IO ( OpenSubscriber (WholeUpdate Text)
-                                                , ReadOnlyOpenSubscriber (WholeUpdate TableCellProps))
+                                                , OpenSubscriber (ROWUpdate TableCellProps))
     }
 
 readOnlyKeyColumn ::
        forall update.
-       ReadOnlyOpenSubscriber (WholeUpdate Text)
-    -> (OpenSubscriber update -> IO (ReadOnlyOpenSubscriber (WholeUpdate (Text, TableCellProps))))
+       OpenSubscriber (ROWUpdate Text)
+    -> (OpenSubscriber update -> IO (OpenSubscriber (ROWUpdate (Text, TableCellProps))))
     -> KeyColumn update
 readOnlyKeyColumn kcName getter = let
     kcContents ::
-           OpenSubscriber update
-        -> IO (OpenSubscriber (WholeUpdate Text), ReadOnlyOpenSubscriber (WholeUpdate TableCellProps))
+           OpenSubscriber update -> IO (OpenSubscriber (WholeUpdate Text), OpenSubscriber (ROWUpdate TableCellProps))
     kcContents rowSub = do
         cellSub <- getter rowSub
         let
             textSub :: OpenSubscriber (WholeUpdate Text)
             textSub =
                 mapOpenSubscriber (fromReadOnlyRejectingEditLens . liftReadOnlyEditLens (funcEditLens fst)) cellSub
-            propsSub :: ReadOnlyOpenSubscriber (WholeUpdate TableCellProps)
+            propsSub :: OpenSubscriber (ROWUpdate TableCellProps)
             propsSub = mapReadOnlyWholeOpenSubscriber snd cellSub
         return (textSub, propsSub)
     in MkKeyColumn {..}

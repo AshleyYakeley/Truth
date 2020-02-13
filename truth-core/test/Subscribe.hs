@@ -60,7 +60,7 @@ goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("tes
 
 testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
-    => EditLens (WholeUpdate a) (ReadOnlyUpdate (WholeUpdate a))
+    => EditLens (WholeUpdate a) (ROWUpdate a)
 testUpdateFunction = let
     elGet :: ReadFunction (WholeReader a) (WholeReader a)
     elGet mr = mr
@@ -68,7 +68,7 @@ testUpdateFunction = let
            forall m. MonadIO m
         => WholeUpdate a
         -> MutableRead m (WholeReader a)
-        -> m [ReadOnlyUpdate (WholeUpdate a)]
+        -> m [ROWUpdate a]
     elUpdate (MkWholeReaderUpdate s) mr = do
         s' <- mr ReadWhole
         liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s

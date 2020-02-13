@@ -43,7 +43,7 @@ eaMapFullReadOnly ::
     -> f (ReadOnlyUpdate updateB)
 eaMapFullReadOnly lens = eaMapSemiReadOnly $ toReadOnlyEditLens . lens
 
-type ReadOnlyWhole f a = f (ReadOnlyUpdate (WholeUpdate a))
+type ReadOnlyWhole f a = f (ROWUpdate a)
 
 eaPairReadOnlyWhole :: EditApplicative f => ReadOnlyWhole f a -> ReadOnlyWhole f b -> ReadOnlyWhole f (a, b)
 eaPairReadOnlyWhole fa fb =

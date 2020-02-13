@@ -115,15 +115,14 @@ cvBindWholeSubscriber sub mesrc setf = let
         in setf val
     in cvBindSubscriber sub mesrc init mempty recv
 
-cvBindReadOnlyWholeSubscriber ::
-       forall sel t. ReadOnlyOpenSubscriber (WholeUpdate t) -> (t -> IO ()) -> CreateView sel ()
+cvBindReadOnlyWholeSubscriber :: forall sel t. OpenSubscriber (ROWUpdate t) -> (t -> IO ()) -> CreateView sel ()
 cvBindReadOnlyWholeSubscriber sub setf = let
-    init :: ReadOnlyOpenSubscriber (WholeUpdate t) -> CreateView sel ()
+    init :: OpenSubscriber (ROWUpdate t) -> CreateView sel ()
     init (MkOpenResource _ unlift asub) =
         liftIO $ do
             val <- unlift $ subRead asub ReadWhole
             setf val
-    recv :: () -> NonEmpty (ReadOnlyUpdate (WholeUpdate t)) -> IO ()
+    recv :: () -> NonEmpty (ROWUpdate t) -> IO ()
     recv () updates = let
         MkReadOnlyUpdate (MkWholeUpdate val) = last updates
         in setf val

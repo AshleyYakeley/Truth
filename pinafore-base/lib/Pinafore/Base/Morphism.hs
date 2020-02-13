@@ -125,7 +125,7 @@ instance Traversable f => CatFunctor (PinaforeFunctionMorphism baseupdate) (Pina
 pinaforeFunctionMorphismUpdateFunction ::
        forall baseupdate a b.
        PinaforeFunctionMorphism baseupdate a b
-    -> EditLens (ContextUpdate baseupdate (WholeUpdate a)) (ReadOnlyUpdate (WholeUpdate b))
+    -> EditLens (ContextUpdate baseupdate (WholeUpdate a)) (ROWUpdate b)
 pinaforeFunctionMorphismUpdateFunction MkPinaforeFunctionMorphism {..} = let
     getB ::
            forall m. MonadIO m
@@ -140,7 +140,7 @@ pinaforeFunctionMorphismUpdateFunction MkPinaforeFunctionMorphism {..} = let
            forall m. MonadIO m
         => (ContextUpdate baseupdate (WholeUpdate a))
         -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate a))
-        -> m [ReadOnlyUpdate (WholeUpdate b)]
+        -> m [ROWUpdate b]
     elUpdate (MkTupleUpdate SelectContext pinupdate) mr = do
         ch <- pfUpdate pinupdate $ tupleReadFunction SelectContext mr
         if ch

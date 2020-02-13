@@ -6,7 +6,7 @@ import Data.Time
 import Shapes
 import Truth.Core
 
-clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (ReadOnlyUpdate (WholeUpdate UTCTime)) ()
+clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (ROWUpdate UTCTime) ()
 clockObjectMaker basetime interval _ update = do
     rec
         ref <- liftIO $ newIORef first
@@ -24,7 +24,7 @@ clockObjectMaker basetime interval _ update = do
         object = MkResource run $ immutableAnObject $ \ReadWhole -> ask
     return (object, ())
 
-clockTimeZoneLens :: FloatingEditLens (WholeUpdate UTCTime) (ReadOnlyUpdate (WholeUpdate TimeZone))
+clockTimeZoneLens :: FloatingEditLens (WholeUpdate UTCTime) (ROWUpdate TimeZone)
 clockTimeZoneLens = let
     minuteChanges = liftReadOnlyFloatingEditLens $ changeOnlyUpdateFunction @UTCTime
     tzChanges = liftReadOnlyFloatingEditLens $ changeOnlyUpdateFunction @TimeZone

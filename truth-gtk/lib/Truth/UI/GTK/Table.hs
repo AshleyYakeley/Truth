@@ -14,8 +14,20 @@ import Truth.Core
 import Truth.UI.GTK.TextStyle
 import Truth.UI.GTK.Useful
 
+
+{-
+data KeyColumn update = MkKeyColumn
+    { kcName :: OpenSubscriber (ROWUpdate Text)
+    , kcContents :: OpenSubscriber update -> IO ( OpenSubscriber (WholeUpdate Text)
+                                                , OpenSubscriber (ROWUpdate TableCellProps))
+    }
+
+-}
+
+
+
 data Column  row = MkColumn
-    { colName :: ReadOnlySubscriber (WholeUpdate Text)
+    { colName :: OpenSubscriber (ROWUpdate Text)
     , colText :: row -> Text
     , colProps :: row -> TableCellProps
     }
@@ -24,9 +36,9 @@ mapColumn :: (r2 -> r1) -> Column  r1 -> Column  r2
 mapColumn f (MkColumn n t p) = MkColumn n (t . f) (p . f)
 
 data StoreEntry  o rowtext rowprops = MkStoreEntry
-    { entryOrderFunction :: ReadOnlySubscriber (WholeUpdate o)
+    { entryOrderFunction :: Subscriber (ROWUpdate o)
     , entryTextLens :: Subscriber  (WholeUpdate rowtext)
-    , entryPropFunc :: ReadOnlySubscriber (WholeUpdate rowprops)
+    , entryPropFunc :: Subscriber (ROWUpdate rowprops)
     , entryRowText :: rowtext
     , entryRowProps :: rowprops
     }
@@ -52,15 +64,15 @@ addColumn tview store col = do
     _ <- #appendColumn tview column
     return ()
 
-data KeyColumns  key =
-    forall rowprops rowtext. MkKeyColumns (key -> IO ( Subscriber  (WholeUpdate rowtext)
-                                                     , ReadOnlySubscriber (WholeUpdate rowprops)))
+data KeyColumns  update =
+    forall rowprops rowtext. MkKeyColumns (OpenSubscriber update -> IO ( OpenSubscriber  (WholeUpdate rowtext)
+                                                     , OpenSubscriber (ROWUpdate rowprops)))
                                           [Column  (rowtext, rowprops)]
 
-oneKeyColumn :: KeyColumn  key -> KeyColumns  key
+oneKeyColumn :: KeyColumn  update -> KeyColumns  update
 oneKeyColumn (MkKeyColumn n f) = MkKeyColumns f [MkColumn n fst snd]
 
-instance Semigroup (KeyColumns  key) where
+instance Semigroup (KeyColumns  update) where
     MkKeyColumns f1 c1 <> MkKeyColumns f2 c2 =
         MkKeyColumns
             (\k -> do
@@ -68,25 +80,25 @@ instance Semigroup (KeyColumns  key) where
                  (lens2, func2) <- f2 k
                  return $
                      (mapSubscriber convertEditLens $ pairSubscribers lens1 lens2
-                     , mapReadOnlySubscriber convertUpdateFunction $ pairReadOnlySubscribers func1 func2)) $
+                     , mapReadOnlySubscriber_convertUpdateFunction $ pairReadOnlySubscribers func1 func2)) $
         fmap (mapColumn $ \(x, y) -> (fst x, fst y)) c1 <> fmap (mapColumn $ \(x, y) -> (snd x, snd y)) c2
 
-instance Monoid (KeyColumns  key) where
-    mempty = MkKeyColumns (\_ -> return (unitSubscriber, constantSubscriber ())) []
+instance Monoid (KeyColumns  update) where
+    mempty = MkKeyColumns (\_ -> return (openResource unitSubscriber, openResource $ constantSubscriber ())) []
     mappend = (<>)
 
-
+{-
 keyContainerView ::
        forall cont o  updateI.
        (FullSubjectReader (UpdateReader updateI), HasKeyReader cont (UpdateReader updateI))
     => KeyColumns  (ContainerKey cont)
     -> (o -> o -> Ordering)
-    -> (ContainerKey cont -> ReadOnlySubscriber  (WholeUpdate o))
+    -> (ContainerKey cont -> Subscriber  (ROWUpdate o))
     -> Subscriber  (KeyUpdate cont updateI)
     -> (ContainerKey cont -> IO ())
     -> GCreateView (ContainerKey cont)
 keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( Subscriber  (WholeUpdate rowtext)
-                                                                   , ReadOnlySubscriber (WholeUpdate rowprops))) cols) order geto tableSub onDoubleClick = runResource tableSub $ \run asub -> do
+                                                                   , Subscriber (ROWUpdate rowprops))) cols) order geto tableSub onDoubleClick = runResource tableSub $ \run asub -> do
     let
         getStoreItem ::
                MonadUnliftIO m
@@ -194,11 +206,12 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( Subscriber 
                 _ -> return False
     toWidget tview
 -}
+-}
 tableGetView :: GetGView
 tableGetView = mempty
 {-
 tableGetView =
     MkGetView $ \_getview uispec -> do
-        MkTableUISpec cols order geto lens onDoubleClick <- isUISpec uispec
-        return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) order geto lens onDoubleClick
+        MkTableUISpec cols sub onDoubleClick <- isUISpec uispec
+        return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) sub onDoubleClick
 -}

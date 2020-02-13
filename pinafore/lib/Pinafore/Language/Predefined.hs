@@ -28,8 +28,8 @@ type PinaforePredefinitions baseupdate
      = ( HasPinaforeEntityUpdate baseupdate
        , HasPinaforeFileUpdate baseupdate
        , BaseEditLens MemoryCellUpdate baseupdate
-       , BaseEditLens (ReadOnlyUpdate (WholeUpdate UTCTime)) baseupdate
-       , BaseEditLens (ReadOnlyUpdate (WholeUpdate TimeZone)) baseupdate)
+       , BaseEditLens (ROWUpdate UTCTime) baseupdate
+       , BaseEditLens (ROWUpdate TimeZone) baseupdate)
 
 predefinitions ::
        forall baseupdate. PinaforePredefinitions baseupdate

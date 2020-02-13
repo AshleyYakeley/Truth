@@ -6,7 +6,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
 data LabelUISpec sel where
-    MkLabelUISpec :: ReadOnlyOpenSubscriber (WholeUpdate Text) -> LabelUISpec sel
+    MkLabelUISpec :: OpenSubscriber (ROWUpdate Text) -> LabelUISpec sel
 
 instance Show (LabelUISpec sel) where
     show (MkLabelUISpec _) = "label"
@@ -14,5 +14,5 @@ instance Show (LabelUISpec sel) where
 instance UIType LabelUISpec where
     uiWitness = $(iowitness [t|LabelUISpec|])
 
-labelUISpec :: ReadOnlyOpenSubscriber (WholeUpdate Text) -> LUISpec sel
+labelUISpec :: OpenSubscriber (ROWUpdate Text) -> LUISpec sel
 labelUISpec sub = mkLUISpec $ MkLabelUISpec sub

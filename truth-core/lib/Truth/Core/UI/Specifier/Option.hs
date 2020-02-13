@@ -26,7 +26,7 @@ data OptionUISpec sel where
            , ApplicableUpdate update
            , UpdateSubject update ~ (t, OptionUICell)
            )
-        => ReadOnlyOpenSubscriber (OrderedListUpdate [UpdateSubject update] update)
+        => OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
         -> OpenSubscriber (WholeUpdate t)
         -> OptionUISpec sel
 
@@ -43,7 +43,7 @@ optionUISpec ::
        , ApplicableUpdate update
        , UpdateSubject update ~ (t, OptionUICell)
        )
-    => ReadOnlyOpenSubscriber (OrderedListUpdate [UpdateSubject update] update)
+    => OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
     -> OpenSubscriber (WholeUpdate t)
     -> LUISpec sel
 optionUISpec optlens sellens = mkLUISpec $ MkOptionUISpec optlens sellens

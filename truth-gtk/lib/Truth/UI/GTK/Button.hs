@@ -9,10 +9,7 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-createWidget ::
-       ReadOnlyOpenSubscriber (WholeUpdate Text)
-    -> ReadOnlyOpenSubscriber (WholeUpdate (Maybe (IO ())))
-    -> CreateView sel Widget
+createWidget :: OpenSubscriber (ROWUpdate Text) -> OpenSubscriber (ROWUpdate (Maybe (IO ()))) -> CreateView sel Widget
 createWidget rlabel raction = do
     aref <- liftIO $ newIORef Nothing
     widget <- new Button []

@@ -20,7 +20,7 @@ data MenuEntry
     = SeparatorMenuEntry
     | ActionMenuEntry Text
                       (Maybe MenuAccelerator)
-                      (ReadOnlyOpenSubscriber (WholeUpdate (Maybe (IO ()))))
+                      (OpenSubscriber (ROWUpdate (Maybe (IO ()))))
     | SubMenuEntry Text
                    [MenuEntry]
 

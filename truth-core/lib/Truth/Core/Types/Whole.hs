@@ -110,9 +110,11 @@ pattern MkWholeUpdate a = MkWholeReaderUpdate a
 
 {-# COMPLETE MkWholeUpdate #-}
 
+type ROWUpdate a = ReadOnlyUpdate (WholeUpdate a)
+
 changeOnlyUpdateFunction ::
        forall a. Eq a
-    => FloatingEditLens (WholeUpdate a) (ReadOnlyUpdate (WholeUpdate a))
+    => FloatingEditLens (WholeUpdate a) (ROWUpdate a)
 changeOnlyUpdateFunction = let
     sInit ::
            forall m. MonadIO m
@@ -125,7 +127,7 @@ changeOnlyUpdateFunction = let
            forall m. MonadIO m
         => WholeUpdate a
         -> MutableRead m (WholeReader a)
-        -> StateT a m [ReadOnlyUpdate (WholeUpdate a)]
+        -> StateT a m [ROWUpdate a]
     sUpdate (MkWholeUpdate newa) _ = do
         olda <- get
         if olda == newa

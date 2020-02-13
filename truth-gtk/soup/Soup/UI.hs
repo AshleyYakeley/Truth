@@ -25,7 +25,7 @@ type PossibleNoteUpdate = FullResultOneUpdate (Result Text) NoteUpdate
 soupEditSpec :: Subscriber (SoupUpdate PossibleNoteUpdate) -> LUISpec (Subscriber PossibleNoteUpdate)
 soupEditSpec sub = do
     let
-        nameLens :: EditLens (UUIDElementUpdate PossibleNoteUpdate) (ReadOnlyUpdate (WholeUpdate (Result Text Text)))
+        nameLens :: EditLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Result Text Text))
         nameLens =
             convertReadOnlyEditLens . liftFullResultOneEditLens (tupleEditLens NoteTitle) . tupleEditLens SelectSecond
         cmp :: Result Text Text -> Result Text Text -> Ordering
@@ -38,9 +38,7 @@ soupEditSpec sub = do
         nameColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
         nameColumn =
             readOnlyKeyColumn (openResource $ constantSubscriber "Name") $ \cellsub -> let
-                valLens ::
-                       EditLens (UUIDElementUpdate PossibleNoteUpdate) (ReadOnlyUpdate (WholeUpdate ( Text
-                                                                                                    , TableCellProps)))
+                valLens :: EditLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Text, TableCellProps))
                 valLens =
                     funcEditLens fromResult .
                     liftFullResultOneEditLens (tupleEditLens NoteTitle) . tupleEditLens SelectSecond
@@ -77,7 +75,7 @@ soupWindow MkUIToolkit {..} dirpath = do
     sub <- makeReflectingSubscriber $ soupObject dirpath
     rec
         let
-            mbar :: IO () -> UIWindow -> Maybe (Aspect sel -> ReadOnlyOpenSubscriber (WholeUpdate [MenuEntry]))
+            mbar :: IO () -> UIWindow -> Maybe (Aspect sel -> OpenSubscriber (ROWUpdate [MenuEntry]))
             mbar cc _ =
                 Just $ \_ ->
                     openResource $
@@ -88,7 +86,7 @@ soupWindow MkUIToolkit {..} dirpath = do
                           , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitExit
                           ]
                     ]
-            wsTitle :: ReadOnlyOpenSubscriber (WholeUpdate Text)
+            wsTitle :: OpenSubscriber (ROWUpdate Text)
             wsTitle = openResource $ constantSubscriber $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
             openItem :: Aspect (Subscriber PossibleNoteUpdate) -> IO ()
             openItem aspkey =
@@ -109,7 +107,7 @@ soupWindow MkUIToolkit {..} dirpath = do
                                         FailureResult err -> labelUISpec $ openResource $ constantSubscriber err
                             return ()
                         Nothing -> return ()
-            wsMenuBar :: Maybe (Aspect (Subscriber PossibleNoteUpdate) -> ReadOnlyOpenSubscriber (WholeUpdate MenuBar))
+            wsMenuBar :: Maybe (Aspect (Subscriber PossibleNoteUpdate) -> OpenSubscriber (ROWUpdate MenuBar))
             wsMenuBar = mbar closer window
             wsContent :: LUISpec (Subscriber PossibleNoteUpdate)
             wsContent =

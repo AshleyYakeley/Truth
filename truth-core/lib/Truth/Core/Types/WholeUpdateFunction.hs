@@ -10,7 +10,7 @@ import Truth.Core.Types.Tuple.Pair
 import Truth.Core.Types.Whole
 
 newtype WholeUpdateFunction update a = MkWholeUpdateFunction
-    { unWholeUpdateFunction :: EditLens update (ReadOnlyUpdate (WholeUpdate a))
+    { unWholeUpdateFunction :: EditLens update ((ROWUpdate a))
     }
 
 instance Functor (WholeUpdateFunction update) where
@@ -24,7 +24,7 @@ instance Functor (WholeUpdateFunction update) where
         u' :: forall m. MonadIO m
            => update
            -> MutableRead m (UpdateReader update)
-           -> m [ReadOnlyUpdate (WholeUpdate b)]
+           -> m [ROWUpdate b]
         u' update mr =
             fmap (fmap $ \(MkReadOnlyUpdate (MkWholeReaderUpdate a)) -> MkReadOnlyUpdate $ MkWholeReaderUpdate $ ab a) $
             u update mr
@@ -41,7 +41,7 @@ instance Applicative (WholeUpdateFunction update) where
         u' :: forall m. MonadIO m
            => update
            -> MutableRead m (UpdateReader update)
-           -> m [ReadOnlyUpdate (WholeUpdate a)]
+           -> m [ROWUpdate a]
         u' _update _mr = return []
         in MkWholeUpdateFunction $ MkEditLens g' u' elPutEditsNone
     MkWholeUpdateFunction p <*> MkWholeUpdateFunction q =

@@ -19,12 +19,12 @@ optionGetView =
 listStoreView ::
        forall sel update. (ApplicableUpdate update, FullSubjectReader (UpdateReader update))
     => WIOFunction IO
-    -> ReadOnlyOpenSubscriber (OrderedListUpdate [UpdateSubject update] update)
+    -> OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
     -> EditSource
     -> CreateView sel (SeqStore (UpdateSubject update))
 listStoreView (MkWMFunction blockSignal) oobj esrc = let
     initV ::
-           ReadOnlyOpenSubscriber (OrderedListUpdate [UpdateSubject update] update)
+           OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
         -> CreateView sel (SeqStore (UpdateSubject update))
     initV rm = do
         subjectList <- liftIO $ withOpenResource rm $ \am -> mutableReadToSubject $ subRead am
@@ -110,7 +110,7 @@ optionView ::
        , ApplicableUpdate update
        , UpdateSubject update ~ (t, OptionUICell)
        )
-    => ReadOnlyOpenSubscriber (OrderedListUpdate [UpdateSubject update] update)
+    => OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
     -> OpenSubscriber (WholeUpdate t)
     -> GCreateView sel
 optionView itemsSub whichSub = do

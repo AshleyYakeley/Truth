@@ -9,7 +9,7 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-switchView :: forall sel. ReadOnlyOpenSubscriber (WholeUpdate (GCreateView sel)) -> GCreateView sel
+switchView :: forall sel. OpenSubscriber (ROWUpdate (GCreateView sel)) -> GCreateView sel
 switchView sub = do
     box <- liftIO $ boxNew OrientationVertical 0
     unliftView <- cvLiftView askUnliftIO
@@ -20,11 +20,11 @@ switchView sub = do
                 widget <- gview
                 lcContainPackStart True box widget
                 #show widget
-        initVS :: ReadOnlyOpenSubscriber (WholeUpdate (GCreateView sel)) -> CreateView sel (ViewState sel)
+        initVS :: OpenSubscriber (ROWUpdate (GCreateView sel)) -> CreateView sel (ViewState sel)
         initVS rm = do
             firstspec <- liftIO $ withOpenResource rm $ \am -> subRead am ReadWhole
             cvLiftView $ getViewState firstspec
-        recvVS :: [ReadOnlyUpdate (WholeUpdate (GCreateView sel))] -> StateT (ViewState sel) IO ()
+        recvVS :: [ROWUpdate (GCreateView sel)] -> StateT (ViewState sel) IO ()
         recvVS updates =
             for_ (lastReadOnlyWholeUpdate updates) $ \spec ->
                 replaceDynamicView $ runWMFunction unliftView $ getViewState spec

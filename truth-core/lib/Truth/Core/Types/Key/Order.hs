@@ -21,7 +21,7 @@ import Truth.Core.Types.Whole
 
 data UpdateOrder update =
     forall o. MkUpdateOrder (o -> o -> Ordering)
-                            (FloatingEditLens update (ReadOnlyUpdate (WholeUpdate o)))
+                            (FloatingEditLens update (ROWUpdate o))
 
 mapUpdateOrder :: FloatingEditLens updateB updateA -> UpdateOrder updateA -> UpdateOrder updateB
 mapUpdateOrder lens (MkUpdateOrder cmp flens) = MkUpdateOrder cmp $ flens . lens

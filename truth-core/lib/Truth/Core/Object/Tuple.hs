@@ -196,9 +196,9 @@ pairSubscribers = pairResource
 
 pairReadOnlySubscribers ::
        forall updateA updateB.
-       ReadOnlySubscriber updateA
-    -> ReadOnlySubscriber updateB
-    -> ReadOnlySubscriber (PairUpdate updateA updateB)
+       Subscriber (ReadOnlyUpdate updateA)
+    -> Subscriber (ReadOnlyUpdate updateB)
+    -> Subscriber (ReadOnlyUpdate (PairUpdate updateA updateB))
 pairReadOnlySubscribers sa sb =
     mapSubscriber toReadOnlyEditLens $
     pairSubscribers (mapSubscriber fromReadOnlyRejectingEditLens sa) (mapSubscriber fromReadOnlyRejectingEditLens sb)

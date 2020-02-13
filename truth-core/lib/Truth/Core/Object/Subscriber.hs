@@ -12,12 +12,9 @@ module Truth.Core.Object.Subscriber
     , floatMapSubscriber
     , mapSubscriber
     , unitSubscriber
-    , ReadOnlySubscriber
-    --, mapReadOnlySubscriber
     , constantSubscriber
     , subscriberToReadOnly
     , mapOpenSubscriber
-    , ReadOnlyOpenSubscriber
     , mapReadOnlyWholeOpenSubscriber
     ) where
 
@@ -189,23 +186,18 @@ mapOpenSubscriber plens (MkOpenResource rr unlift (MkASubscriber objA subA utask
             in subA task recvA
         in MkOpenResource rr unlift $ MkASubscriber objB subB utaskA
 
-type ReadOnlySubscriber update = Subscriber (ReadOnlyUpdate update)
-
 constantSubscriber ::
        forall update. SubjectReader (UpdateReader update)
     => UpdateSubject update
-    -> ReadOnlySubscriber update
+    -> Subscriber (ReadOnlyUpdate update)
 constantSubscriber subj = anobjSubscriber $ immutableAnObject $ subjectToMutableRead subj
 
-subscriberToReadOnly :: Subscriber update -> ReadOnlySubscriber update
+subscriberToReadOnly :: Subscriber update -> Subscriber (ReadOnlyUpdate update)
 subscriberToReadOnly = mapSubscriber toReadOnlyEditLens
 
-type ReadOnlyOpenSubscriber update = OpenSubscriber (ReadOnlyUpdate update)
-
-mapReadOnlyWholeOpenSubscriber ::
-       forall a b. (a -> b) -> ReadOnlyOpenSubscriber (WholeUpdate a) -> ReadOnlyOpenSubscriber (WholeUpdate b)
+mapReadOnlyWholeOpenSubscriber :: forall a b. (a -> b) -> OpenSubscriber (ROWUpdate a) -> OpenSubscriber (ROWUpdate b)
 mapReadOnlyWholeOpenSubscriber ab (MkOpenResource rr run (MkASubscriber objA subA utaskA)) = let
-    lens :: EditLens (ReadOnlyUpdate (WholeUpdate a)) (ReadOnlyUpdate (WholeUpdate b))
+    lens :: EditLens (ROWUpdate a) (ROWUpdate b)
     lens = liftReadOnlyEditLens $ funcEditLens ab
     objB = mapAnObject lens objA
     subB task recvB = let
