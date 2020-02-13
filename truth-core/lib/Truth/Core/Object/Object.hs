@@ -57,8 +57,8 @@ mvarObject iow var allowed = let
     anobj = MkAnObject {..}
     in MkResource (mvarResourceRunner iow var) anobj
 
-freeIOObject :: forall a. a -> (a -> Bool) -> IO (Object (WholeEdit a))
-freeIOObject firsta allowed = do
+makeMemoryObject :: forall a. a -> (a -> Bool) -> IO (Object (WholeEdit a))
+makeMemoryObject firsta allowed = do
     iow <- newIOWitness
     var <- newMVar firsta
     return $ mvarObject iow var allowed

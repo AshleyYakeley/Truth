@@ -16,6 +16,7 @@ module Truth.Core.Object.Subscriber
     , subscriberToReadOnly
     , mapOpenSubscriber
     , mapReadOnlyWholeOpenSubscriber
+    , makeMemorySubscriber
     ) where
 
 import Truth.Core.Edit
@@ -205,3 +206,8 @@ mapReadOnlyWholeOpenSubscriber ab (MkOpenResource rr run (MkASubscriber objA sub
         recvA updatesA ec = recvB (fmap mapUpdate updatesA) ec
         in subA task recvA
     in MkOpenResource rr run $ MkASubscriber objB subB utaskA
+
+makeMemorySubscriber :: forall a. a -> LifeCycleIO (Subscriber (WholeUpdate a))
+makeMemorySubscriber initial = do
+    obj <- liftIO $ makeMemoryObject initial $ \_ -> True
+    makeReflectingSubscriber obj

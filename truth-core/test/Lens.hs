@@ -55,8 +55,8 @@ testContextOrderedSetLensCase assigns expected =
                    FloatingEditLens (ContextUpdate UpdateX (FiniteSetUpdate Char)) (ContextUpdate UpdateX (OrderedListUpdate String (ConstWholeUpdate Char)))
             flens = contextOrderedSetLens uo
         rawContextObj :: Object (WholeEdit [(Char, Int)]) <-
-            freeIOObject [('A', 10), ('B', 20), ('C', 30), ('D', 40), ('E', 50)] $ \_ -> True
-        rawContentObj :: Object (WholeEdit (FiniteSet Char)) <- freeIOObject (setFromList "ABCDE") $ \_ -> True
+            makeMemoryObject [('A', 10), ('B', 20), ('C', 30), ('D', 40), ('E', 50)] $ \_ -> True
+        rawContentObj :: Object (WholeEdit (FiniteSet Char)) <- makeMemoryObject (setFromList "ABCDE") $ \_ -> True
         let
             contextObj :: Object (UpdateEdit UpdateX)
             contextObj = mapObject (convertEditLens @(WholeUpdate [(Char, Int)]) @UpdateX) rawContextObj

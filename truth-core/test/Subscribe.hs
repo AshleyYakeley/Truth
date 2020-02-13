@@ -79,7 +79,7 @@ testUpdateFunction = let
 testUpdateObject :: TestTree
 testUpdateObject =
     goldenTest' "updateObject" $ do
-        obj <- freeIOObject "old" $ \_ -> True
+        obj <- makeMemoryObject "old" $ \_ -> True
         var <- newEmptyMVar
         let
             om :: ObjectMaker (WholeUpdate String) ()

@@ -149,7 +149,7 @@ main = do
                     case selTest of
                         False -> return Nothing
                         True -> do
-                            bsObj2 <- liftIO $ freeIOObject mempty $ \_ -> True
+                            bsObj2 <- liftIO $ makeMemoryObject mempty $ \_ -> True
                             textSub2 <-
                                 makeReflectingSubscriber $ convertObject $ mapObject textLens $ convertObject bsObj2
                             return $ Just textSub2

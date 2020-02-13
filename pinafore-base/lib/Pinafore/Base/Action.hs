@@ -23,7 +23,7 @@ data ActionContext = MkActionContext
     }
 
 newtype PinaforeAction a =
-    MkPinaforeAction (ReaderT (ActionContext) (ComposeM Know IO) a)
+    MkPinaforeAction (ReaderT ActionContext (ComposeM Know IO) a)
     deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadIO)
 
 instance MonadFail PinaforeAction where
