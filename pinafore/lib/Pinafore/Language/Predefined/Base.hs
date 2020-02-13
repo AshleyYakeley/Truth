@@ -14,7 +14,6 @@ import Pinafore.Language.If
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Value
-import Pinafore.Storage
 import Shapes
 import Shapes.Numeric
 import Truth.Core
@@ -45,47 +44,28 @@ entityUUID p = pack $ show p
 onStop :: PinaforeAction A -> PinaforeAction A -> PinaforeAction A
 onStop p q = p <|> q
 
-newMemRef ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens MemoryCellUpdate baseupdate)
-    => IO (PinaforeRef '( A, A))
-newMemRef = do
-    lens <- makeMemoryCellEditLens Unknown
-    return $ pinaforeValueToRef $ MkPinaforeValue $ mapSubscriber lens $ pinaforeBaseSubscriber @baseupdate
+newMemRef :: (?pinafore :: PinaforeContext) => PinaforeAction (PinaforeRef '( A, A))
+newMemRef =
+    pinaforeLiftLifeCycleIO $ do
+        cell <- makeMemorySubscriber Unknown
+        return $ pinaforeValueToRef $ MkPinaforeValue cell
 
-newMemFiniteSet ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens MemoryCellUpdate baseupdate)
-    => IO (PinaforeFiniteSetRef '( MeetType Entity A, A))
-newMemFiniteSet = do
-    lens <- makeMemoryCellEditLens mempty
-    return $
-        meetValuePinaforeFiniteSetRef $
-        MkPinaforeValue $ mapSubscriber (convertEditLens . lens) $ pinaforeBaseSubscriber @baseupdate
+newMemFiniteSet :: (?pinafore :: PinaforeContext) => PinaforeAction (PinaforeFiniteSetRef '( MeetType Entity A, A))
+newMemFiniteSet =
+    pinaforeLiftLifeCycleIO $ do
+        cell <- makeMemorySubscriber mempty
+        return $ meetValuePinaforeFiniteSetRef $ MkPinaforeValue $ mapSubscriber convertEditLens cell
 
-now :: forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens (ROWUpdate UTCTime) baseupdate)
-    => PinaforeImmutableReference UTCTime
-now = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseSubscriber @baseupdate
+now :: (?pinafore :: PinaforeContext) => PinaforeImmutableReference UTCTime
+now = functionImmutableReference $ MkPinaforeValue $ pconSubTime ?pinafore
 
-timeZone ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens (ROWUpdate TimeZone) baseupdate)
-    => PinaforeImmutableReference TimeZone
-timeZone = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseSubscriber @baseupdate
+timeZone :: (?pinafore :: PinaforeContext) => PinaforeImmutableReference TimeZone
+timeZone = functionImmutableReference $ MkPinaforeValue $ pconSubTimeZone ?pinafore
 
-localNow ::
-       forall baseupdate.
-       ( ?pinafore :: PinaforeContext baseupdate
-       , BaseEditLens (ROWUpdate UTCTime) baseupdate
-       , BaseEditLens (ROWUpdate TimeZone) baseupdate
-       )
-    => PinaforeImmutableReference LocalTime
+localNow :: (?pinafore :: PinaforeContext) => PinaforeImmutableReference LocalTime
 localNow = utcToLocalTime <$> timeZone <*> now
 
-today ::
-       forall baseupdate.
-       ( ?pinafore :: PinaforeContext baseupdate
-       , BaseEditLens (ROWUpdate UTCTime) baseupdate
-       , BaseEditLens (ROWUpdate TimeZone) baseupdate
-       )
-    => PinaforeImmutableReference Day
+today :: (?pinafore :: PinaforeContext) => PinaforeImmutableReference Day
 today = localDay <$> localNow
 
 interpretAsText ::
@@ -97,15 +77,7 @@ interpretAsText = pinaforeFLensRef (unLiteral . toLiteral) (\t _ -> parseLiteral
 parseLiteral :: AsLiteral t => Text -> Maybe t
 parseLiteral = knowToMaybe . fromLiteral . MkLiteral
 
-base_predefinitions ::
-       forall baseupdate.
-       ( HasPinaforeEntityUpdate baseupdate
-       , HasPinaforeFileUpdate baseupdate
-       , BaseEditLens MemoryCellUpdate baseupdate
-       , BaseEditLens (ROWUpdate UTCTime) baseupdate
-       , BaseEditLens (ROWUpdate TimeZone) baseupdate
-       )
-    => [DocTreeEntry (BindDoc baseupdate)]
+base_predefinitions :: [DocTreeEntry (BindDoc baseupdate)]
 base_predefinitions =
     [ docTreeEntry
           "Literals & Entities"
@@ -291,7 +263,7 @@ base_predefinitions =
                         interpretAsText @UTCTime
                       , mkValEntry "addTime" "Add duration to time." addUTCTime
                       , mkValEntry "diffTime" "Difference of times." diffUTCTime
-                      , mkValEntry "now" "The current time truncated to the second." $ now @baseupdate
+                      , mkValEntry "now" "The current time truncated to the second." now
                       ]
                 , docTreeEntry
                       "Calendar"
@@ -306,8 +278,8 @@ base_predefinitions =
                       , mkValEntry "modifiedJulianToDay" "Convert from MJD." ModifiedJulianDay
                       , mkValEntry "addDays" "Add count to days." addDays
                       , mkValEntry "diffDays" "Difference of days." diffDays
-                      , mkValEntry "utcDay" "The current UTC day." $ fmap utctDay $ now @baseupdate
-                      , mkValEntry "today" "The current local day." $ today @baseupdate
+                      , mkValEntry "utcDay" "The current UTC day." $ fmap utctDay now
+                      , mkValEntry "today" "The current local day." today
                       ]
                 , docTreeEntry
                       "Time of Day"
@@ -336,9 +308,8 @@ base_predefinitions =
                             localTimeToUTC $ minutesToTimeZone i
                       , mkValEntry "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
                             fmap timeZoneMinutes $ getTimeZone t
-                      , mkValEntry "timeZone" "The current time zone offset in minutes." $
-                        fmap timeZoneMinutes $ timeZone @baseupdate
-                      , mkValEntry "localNow" "The current local time." $ localNow @baseupdate
+                      , mkValEntry "timeZone" "The current time zone offset in minutes." $ fmap timeZoneMinutes timeZone
+                      , mkValEntry "localNow" "The current local time." localNow
                       ]
                 ]
           ]
@@ -510,7 +481,7 @@ base_predefinitions =
           , mkValEntry "runRef" "Run an action from a reference." $ runPinaforeRef
           , mkValEntry ":=" "Set a reference to a value. Stop if failed." setentity
           , mkValEntry "delete" "Delete an entity reference. Stop if failed." deleteentity
-          , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." $ newMemRef @baseupdate
+          , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." newMemRef
           ]
     , docTreeEntry
           "Set References"
@@ -578,7 +549,7 @@ base_predefinitions =
             pinaforeFiniteSetRefCartesianProduct @AP @AQ @BP @BQ
           , mkSupertypeEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
             pinaforeFiniteSetRefCartesianProduct @A @A @B @B
-          , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
+          , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @A
           , mkValEntry "single" "The member of a single-member finite set, or unknown." $ pinaforeFiniteSetRefSingle @A
           , mkValEntry "count" "Count of members in a finite set." $ pinaforeFiniteSetRefFunc @TopType @Int olength
           , mkValEntry
@@ -586,65 +557,61 @@ base_predefinitions =
                 "Remove all entities from a finite set."
                 (pinaforeFiniteSetRefRemoveAll :: PinaforeFiniteSetRef '( BottomType, TopType) -> PinaforeAction ())
           , mkValEntry "newMemFiniteSet" "Create a new finite set reference to memory, initially empty." $
-            newMemFiniteSet @baseupdate
+            newMemFiniteSet
           ]
     , docTreeEntry
           "Morphisms"
           "Morphisms relate entities."
-          [ mkValEntry "identity" "The identity morphism." $ identityPinaforeMorphism @baseupdate @A
-          , mkValEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
-          , mkSupertypeEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseupdate @A @A @B @B @C @C
+          [ mkValEntry "identity" "The identity morphism." $ identityPinaforeMorphism @A
+          , mkValEntry "!." "Compose morphisms." $ composePinaforeMorphism @AP @AQ @BP @BQ @CP @CQ
+          , mkSupertypeEntry "!." "Compose morphisms." $ composePinaforeMorphism @A @A @B @B @C @C
           , mkValEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
-            pairPinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+            pairPinaforeMorphism @AP @AQ @BP @BQ @CP @CQ
           , mkSupertypeEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
-            pairPinaforeMorphism @baseupdate @A @A @B @B @C @C
+            pairPinaforeMorphism @A @A @B @B @C @C
           , mkValEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
-            eitherPinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+            eitherPinaforeMorphism @AP @AQ @BP @BQ @CP @CQ
           , mkSupertypeEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
-            eitherPinaforeMorphism @baseupdate @A @A @B @B @C @C
-          , mkValEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseupdate @AP @AQ @BP @BQ
-          , mkSupertypeEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseupdate @A @A @B @B
+            eitherPinaforeMorphism @A @A @B @B @C @C
+          , mkValEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @AP @AQ @BP @BQ
+          , mkSupertypeEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @A @A @B @B
           , mkValEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutRef r`" $
-            pinaforeApplyMorphismImmutRef @baseupdate @A @BP @BQ
+            pinaforeApplyMorphismImmutRef @A @BP @BQ
           , mkSupertypeEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutRef r`" $
-            pinaforeApplyMorphismImmutRef @baseupdate @A @B @B
-          , mkValEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseupdate @A @BP @BQ
-          , mkSupertypeEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseupdate @A @B @B
-          , mkValEntry "!@" "Co-apply a morphism to a reference." $
-            pinaforeApplyInverseMorphismRef @baseupdate @AP @AQ @BP @BQ
-          , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $
-            pinaforeApplyInverseMorphismRef @baseupdate @A @A @B @B
+            pinaforeApplyMorphismImmutRef @A @B @B
+          , mkValEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @A @BP @BQ
+          , mkSupertypeEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @A @B @B
+          , mkValEntry "!@" "Co-apply a morphism to a reference." $ pinaforeApplyInverseMorphismRef @AP @AQ @BP @BQ
+          , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $ pinaforeApplyInverseMorphismRef @A @A @B @B
           , mkValEntry "!@%" "Co-apply a morphism to an immutable reference. `m !@% r = m !@ immutRef r`" $
-            pinaforeApplyInverseMorphismImmutRef @baseupdate @A @BP @BQ
+            pinaforeApplyInverseMorphismImmutRef @A @BP @BQ
           , mkSupertypeEntry "!@%" "Co-apply a morphism to a reference. `m !@% r = m !@ immutRef r`" $
-            pinaforeApplyInverseMorphismImmutRef @baseupdate @A @B @B
-          , mkValEntry "!@@" "Co-apply a morphism to a set." $
-            pinaforeApplyInverseMorphismSet @baseupdate @AP @AQ @BP @BQ
-          , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $
-            pinaforeApplyInverseMorphismSet @baseupdate @A @A @B @B
+            pinaforeApplyInverseMorphismImmutRef @A @B @B
+          , mkValEntry "!@@" "Co-apply a morphism to a set." $ pinaforeApplyInverseMorphismSet @AP @AQ @BP @BQ
+          , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ pinaforeApplyInverseMorphismSet @A @A @B @B
           ]
     , docTreeEntry
           "Orders"
           ""
-          [ mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @baseupdate @Text
-          , mkValEntry "numerical" "Numercal order." $ ordOrder @baseupdate @Number
-          , mkValEntry "chronological" "Chronological order." $ ordOrder @baseupdate @UTCTime
-          , mkValEntry "durational" "Durational order." $ ordOrder @baseupdate @NominalDiffTime
-          , mkValEntry "calendrical" "Day order." $ ordOrder @baseupdate @Day
-          , mkValEntry "horological" "Time of day order." $ ordOrder @baseupdate @TimeOfDay
-          , mkValEntry "localChronological" "Local time order." $ ordOrder @baseupdate @LocalTime
-          , mkValEntry "noOrder" "No order, same as `orders []`." $ noOrder @baseupdate
-          , mkValEntry "orders" "Join orders by priority." $ orders @baseupdate @A
+          [ mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @Text
+          , mkValEntry "numerical" "Numercal order." $ ordOrder @Number
+          , mkValEntry "chronological" "Chronological order." $ ordOrder @UTCTime
+          , mkValEntry "durational" "Durational order." $ ordOrder @NominalDiffTime
+          , mkValEntry "calendrical" "Day order." $ ordOrder @Day
+          , mkValEntry "horological" "Time of day order." $ ordOrder @TimeOfDay
+          , mkValEntry "localChronological" "Local time order." $ ordOrder @LocalTime
+          , mkValEntry "noOrder" "No order, same as `orders []`." $ noOrder
+          , mkValEntry "orders" "Join orders by priority." $ orders @A
           , mkValEntry
                 "mapOrder"
                 "Map a function on an order."
-                (contramap :: (B -> A) -> PinaforeOrder baseupdate A -> PinaforeOrder baseupdate B)
-          , mkValEntry "orderOn" "Order by an order on a particular morphism." $ orderOn @baseupdate @B @A
-          , mkValEntry "rev" "Reverse an order." $ rev @baseupdate @A
-          , mkValEntry "orderEQ" "Equal by an order." $ pinaforeOrderCompare @baseupdate @A $ (==) EQ
-          , mkValEntry "orderLT" "Less than by an order." $ pinaforeOrderCompare @baseupdate @A $ (==) LT
-          , mkValEntry "orderLE" "Less than or equal to by an order." $ pinaforeOrderCompare @baseupdate @A $ (/=) GT
-          , mkValEntry "orderGT" "Greater than by an order." $ pinaforeOrderCompare @baseupdate @A $ (==) GT
-          , mkValEntry "orderGE" "Greater than or equal to by an order." $ pinaforeOrderCompare @baseupdate @A $ (/=) LT
+                (contramap :: (B -> A) -> PinaforeOrder A -> PinaforeOrder B)
+          , mkValEntry "orderOn" "Order by an order on a particular morphism." $ orderOn @B @A
+          , mkValEntry "rev" "Reverse an order." $ rev @A
+          , mkValEntry "orderEQ" "Equal by an order." $ pinaforeOrderCompare @A $ (==) EQ
+          , mkValEntry "orderLT" "Less than by an order." $ pinaforeOrderCompare @A $ (==) LT
+          , mkValEntry "orderLE" "Less than or equal to by an order." $ pinaforeOrderCompare @A $ (/=) GT
+          , mkValEntry "orderGT" "Greater than by an order." $ pinaforeOrderCompare @A $ (==) GT
+          , mkValEntry "orderGE" "Greater than or equal to by an order." $ pinaforeOrderCompare @A $ (/=) LT
           ]
     ]

@@ -1,57 +1,55 @@
 module Pinafore.Base.Context
-    ( PinaforeContext
-    , pinaforeBase
+    ( PinaforeContext(..)
+    , pinaforeSubEntity
     , unliftPinaforeAction
     , unliftPinaforeActionOrFail
     , runPinaforeAction
-    , makePinaforeContext
     , nullPinaforeContext
-    , pinaforeBaseSubscriber
     ) where
 
+import Data.Time
 import Pinafore.Base.Action
+import Pinafore.Base.Edit
 import Pinafore.Base.Know
-import Pinafore.Base.Lens
 import Shapes
 import Truth.Core
 
-data PinaforeContext baseupdate = MkPinaforeContext
+data PinaforeContext = MkPinaforeContext
     { pconRun :: forall a. PinaforeAction a -> IO (Know a)
-    , pconBase :: Subscriber baseupdate
+    , pconSubEntity :: Subscriber PinaforeEntityUpdate
+    , pconSubTime :: Subscriber (ROWUpdate UTCTime)
+    , pconSubTimeZone :: Subscriber (ROWUpdate TimeZone)
     }
 
-unliftPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction a -> IO (Know a)
+unliftPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction a -> IO (Know a)
 unliftPinaforeAction = pconRun ?pinafore
 
-unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction a -> IO a
+unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext) => PinaforeAction a -> IO a
 unliftPinaforeActionOrFail action = do
     ka <- unliftPinaforeAction action
     case ka of
         Known a -> return a
         Unknown -> fail "action stopped"
 
-runPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction () -> IO ()
+runPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction () -> IO ()
 runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
 
-pinaforeBase :: (?pinafore :: PinaforeContext baseupdate) => Subscriber baseupdate
-pinaforeBase = pconBase ?pinafore
+pinaforeSubEntity :: (?pinafore :: PinaforeContext) => Subscriber PinaforeEntityUpdate
+pinaforeSubEntity = pconSubEntity ?pinafore
 
+{-
 makePinaforeContext ::
-       forall baseupdate. InvertibleEdit (UpdateEdit baseupdate)
-    => Subscriber baseupdate
+       Subscriber PinaforeEntityUpdate
     -> UIToolkit
-    -> LifeCycleIO (PinaforeContext baseupdate)
+    -> LifeCycleIO PinaforeContext
 makePinaforeContext rsub toolkit = do
     (sub, uactions) <- liftIO $ undoQueueSubscriber rsub
     return $ MkPinaforeContext (unPinaforeAction toolkit uactions) sub
-
-nullPinaforeContext :: PinaforeContext baseupdate
+-}
+nullPinaforeContext :: PinaforeContext
 nullPinaforeContext = let
     pconRun _ = fail "null Pinafore context"
-    pconBase = error "no pinafore base"
+    pconSubEntity = error "no pinafore base"
+    pconSubTime = error "no pinafore base"
+    pconSubTimeZone = error "no pinafore base"
     in MkPinaforeContext {..}
-
-pinaforeBaseSubscriber ::
-       forall baseupdate update. (?pinafore :: PinaforeContext baseupdate, BaseEditLens update baseupdate)
-    => Subscriber update
-pinaforeBaseSubscriber = mapSubscriber baseEditLens pinaforeBase

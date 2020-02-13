@@ -3,13 +3,11 @@ module Pinafore.Base.Edit
     , PinaforeEntityRead(..)
     , PinaforeEntityEdit(..)
     , PinaforeEntityUpdate
-    , HasPinaforeEntityUpdate
     ) where
 
 import Data.Aeson (FromJSON)
 import Pinafore.Base.Entity
 import Pinafore.Base.Know
-import Pinafore.Base.Lens
 import Pinafore.Base.Literal
 import Shapes
 import Truth.Core
@@ -90,8 +88,3 @@ instance Show PinaforeEntityEdit where
     show (PinaforeEntityEditSetLiteral p kl) = "set " ++ show p ++ " to " ++ show kl
 
 type PinaforeEntityUpdate = EditUpdate PinaforeEntityEdit
-
-type HasPinaforeEntityUpdate = BaseEditLens PinaforeEntityUpdate
-
-instance BaseEditLens PinaforeEntityUpdate PinaforeEntityUpdate where
-    baseEditLens = id

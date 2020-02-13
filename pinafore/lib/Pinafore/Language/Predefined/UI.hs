@@ -8,7 +8,6 @@ import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Value
-import Pinafore.Storage
 import Shapes
 import Truth.Core
 
@@ -19,26 +18,23 @@ uiMap :: (A -> B) -> PinaforeUI A -> PinaforeUI B
 uiMap = fmap
 
 uiTable ::
-       forall baseupdate.
-       ( ?pinafore :: PinaforeContext baseupdate
-       , HasPinaforeEntityUpdate baseupdate {-, ApplicableEdit (UpdateEdit baseupdate)-}
-       )
+       (?pinafore :: PinaforeContext)
     => [(PinaforeRef '( BottomType, Text), A -> PinaforeRef '( BottomType, Text))]
-    -> PinaforeOrder baseupdate A
+    -> PinaforeOrder A
     -> PinaforeFiniteSetRef '( A, EA)
     -> (A -> PinaforeAction TopType)
     -> LUISpec A
 uiTable cols order val onDoubleClick = do
     let
-        uo :: UpdateOrder (ContextUpdate baseupdate (ConstWholeUpdate EA))
+        uo :: UpdateOrder (ContextUpdate PinaforeEntityUpdate (ConstWholeUpdate EA))
         uo =
             mapUpdateOrder
                 (editLensToFloating $ liftContextEditLens $ fromReadOnlyRejectingEditLens . funcEditLens (Known . meet2)) $
             pinaforeUpdateOrder order
         rows :: Subscriber (FiniteSetUpdate EA)
         rows = unPinaforeValue $ unPinaforeFiniteSetRef $ contraRangeLift meet2 val
-        pkSub :: Subscriber (ContextUpdate baseupdate (FiniteSetUpdate EA))
-        pkSub = contextSubscribers pinaforeBase rows
+        pkSub :: Subscriber (ContextUpdate PinaforeEntityUpdate (FiniteSetUpdate EA))
+        pkSub = contextSubscribers pinaforeSubEntity rows
         readOpenSub :: OpenSubscriber (ConstWholeUpdate EA) -> IO A
         readOpenSub sub =
             withOpenResource sub $ \asub -> do
@@ -64,7 +60,7 @@ uiTable cols order val onDoubleClick = do
                     pinaforeValueOpenSubscriber $
                     eaMapSemiReadOnly (funcEditLens showCell) $ pinaforeRefToReadOnlyValue $ getCellRef a
             in readOnlyKeyColumn nameOpenSub getCellSub
-    colSub :: Subscriber (ContextUpdate baseupdate (OrderedListUpdate [EA] (ConstWholeUpdate EA))) <-
+    colSub :: Subscriber (ContextUpdate PinaforeEntityUpdate (OrderedListUpdate [EA] (ConstWholeUpdate EA))) <-
         floatMapSubscriber (contextOrderedSetLens uo) pkSub
     let
         olsub :: Subscriber (OrderedListUpdate [EA] (ConstWholeUpdate EA))
@@ -81,19 +77,19 @@ makeCell Unknown = (plainOptionUICell "unknown") {optionCellStyle = plainTextSty
 makeCell (Known t) = plainOptionUICell t
 
 uiPick ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate)
-    => PinaforeMorphism baseupdate '( A, TopType) '( BottomType, Text)
+       (?pinafore :: PinaforeContext)
+    => PinaforeMorphism '( A, TopType) '( BottomType, Text)
     -> PinaforeFiniteSetRef '( A, EA)
     -> PinaforeRef '( A, EA)
     -> LUISpec BottomType
 uiPick nameMorphism fset ref = do
     let
-        getName :: PinaforeFunctionMorphism baseupdate EA PickerPairType
+        getName :: PinaforeFunctionMorphism PinaforeEntityUpdate EA PickerPairType
         getName =
             proc p -> do
                 n <- pinaforeMorphismFunction nameMorphism -< Known $ meet2 p
                 returnA -< (Known p, makeCell n)
-        getNames :: PinaforeFunctionMorphism baseupdate (FiniteSet EA) (FiniteSet PickerPairType)
+        getNames :: PinaforeFunctionMorphism PinaforeEntityUpdate (FiniteSet EA) (FiniteSet PickerPairType)
         getNames =
             proc fsp -> do
                 pairs <- cfmap getName -< fsp
@@ -107,7 +103,7 @@ uiPick nameMorphism fset ref = do
             editLensToFloating toReadOnlyEditLens . orderedSetLens updateOrder . editLensToFloating convertEditLens
     opts :: PinaforeValue (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType))) <-
         eaFloatMapReadOnly orderLens $
-        applyPinaforeFunction pinaforeBase getNames $ pinaforeFiniteSetRefFunctionValue fset
+        applyPinaforeFunction pinaforeSubEntity getNames $ pinaforeFiniteSetRefFunctionValue fset
     let
         subOpts ::
                OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
@@ -117,7 +113,7 @@ uiPick nameMorphism fset ref = do
     optionUISpec subOpts subVal
 
 actionReference ::
-       (?pinafore :: PinaforeContext baseupdate)
+       (?pinafore :: PinaforeContext)
     => PinaforeImmutableReference (PinaforeAction TopType)
     -> PinaforeReadOnlyValue (Maybe (IO ()))
 actionReference raction =
@@ -125,7 +121,7 @@ actionReference raction =
     immutableReferenceToReadOnlyValue raction
 
 uiButton ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate)
+       (?pinafore :: PinaforeContext)
     => PinaforeImmutableReference Text
     -> PinaforeImmutableReference (PinaforeAction TopType)
     -> LUISpec BottomType
@@ -152,7 +148,7 @@ aspectToAction aspect = do
     pinaforeActionKnow $ maybeToKnow ma
 
 openWindow ::
-       (?pinafore :: PinaforeContext baseupdate)
+       (?pinafore :: PinaforeContext)
     => PinaforeImmutableReference Text
     -> (PinaforeAction A -> PinaforeImmutableReference MenuBar)
     -> LUISpec A
@@ -200,7 +196,7 @@ interpretAccelerator ('A':'l':'t':'+':s) = do
 interpretAccelerator _ = Nothing
 
 menuAction ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate)
+       (?pinafore :: PinaforeContext)
     => Text
     -> Maybe Text
     -> PinaforeImmutableReference (PinaforeAction TopType)
@@ -232,9 +228,7 @@ uiTextEntry val = textEntryUISpec $ pinaforeValueOpenSubscriber $ eaMap (unknown
 uiIgnore :: PinaforeUI TopType -> PinaforeUI BottomType
 uiIgnore (MkPinaforeUI lspec) = MkPinaforeUI $ noSelectionUISpec lspec
 
-ui_predefinitions ::
-       forall baseupdate. (HasPinaforeEntityUpdate baseupdate, HasPinaforeFileUpdate baseupdate)
-    => [DocTreeEntry (BindDoc baseupdate)]
+ui_predefinitions :: forall baseupdate. [DocTreeEntry (BindDoc baseupdate)]
 ui_predefinitions =
     [ docTreeEntry
           "UI"
@@ -271,11 +265,11 @@ ui_predefinitions =
                 "uiButton"
                 "A button with this text that does this action. Button will be disabled if the action reference is unknown." $
             uiButton
-          , mkValEntry "uiPick" "A drop-down menu." $ uiPick @baseupdate
+          , mkValEntry "uiPick" "A drop-down menu." $ uiPick
           , mkValEntry
                 "uiTable"
                 "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection." $
-            uiTable @baseupdate
+            uiTable
           , mkValEntry "uiCalendar" "A calendar." uiCalendar
           , mkValEntry "uiScrolled" "A scrollable container." uiScrolled
           , mkValEntry "uiDynamic" "A UI that can be updated to different UIs." uiDynamic
@@ -286,7 +280,7 @@ ui_predefinitions =
           [ mkValEntry "menuSeparator" "Separator menu item." SeparatorMenuEntry
           , mkValEntry "menuSubmenu" "Submenu menu item." SubMenuEntry
           , mkValEntry "menuAction" "Action menu item. Item will be disabled if the action reference is unknown." $
-            menuAction @baseupdate
+            menuAction
           ]
     , docTreeEntry
           "Window"

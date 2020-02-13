@@ -31,7 +31,6 @@ library:
       - Pinafore.Base.Morphism
       - Pinafore.Base.Value
       - Pinafore.Base.Entity
-      - Pinafore.Base.Lens
       - Pinafore.Base.Edit
       - Pinafore.Base.EntityAdapter
       - Pinafore.Base.PredicateMorphism

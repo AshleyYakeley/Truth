@@ -5,7 +5,6 @@ module Pinafore.Language.Read
     , parseInteractiveCommand
     ) where
 
-import Pinafore.Base
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret
 import Pinafore.Language.Interpret.Type
@@ -16,7 +15,7 @@ import Pinafore.Language.Read.Type
 import Pinafore.Language.TypeSystem
 import Shapes hiding (try)
 
-parseTopExpression :: HasPinaforeEntityUpdate baseupdate => Text -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
+parseTopExpression :: Text -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
 parseTopExpression = parseScopedReader $ fmap interpretTopExpression readTopExpression
 
 parseType ::

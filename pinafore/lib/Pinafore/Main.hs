@@ -22,10 +22,12 @@ import Truth.World.Clock
 
 type FilePinaforeType = PinaforeAction ()
 
+data PinaforeUpdate
+
 filePinaforeType :: Text
 filePinaforeType = qTypeDescription @PinaforeUpdate @FilePinaforeType
 
-standardPinaforeContext :: FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate)
+standardPinaforeContext :: FilePath -> UIToolkit -> LifeCycleIO PinaforeContext
 standardPinaforeContext dirpath uitoolkit = do
     tableObject1 <- exclusiveResource $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
@@ -38,8 +40,9 @@ standardPinaforeContext dirpath uitoolkit = do
         picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
         picker PinaforeSelectClock = clockOM
         picker PinaforeSelectTimeZone = mapObjectMaker (liftReadOnlyFloatingEditLens clockTimeZoneLens) clockOM
-    (sub, ()) <- makeSharedSubscriber $ tupleObjectMaker picker
-    makePinaforeContext sub uitoolkit
+    (rsub, ()) <- makeSharedSubscriber $ tupleObjectMaker picker
+    (sub, uactions) <- liftIO $ undoQueueSubscriber rsub
+    return $ MkPinaforeContext (unPinaforeAction uitoolkit uactions) sub
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
@@ -59,19 +62,16 @@ sqlitePinaforeDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 pinaforeInterpretFileAtType ::
-       (?pinafore :: PinaforeContext PinaforeUpdate, FromPinaforeType PinaforeUpdate t)
-    => FilePath
-    -> Text
-    -> InterpretResult t
+       (?pinafore :: PinaforeContext, FromPinaforeType PinaforeUpdate t) => FilePath -> Text -> InterpretResult t
 pinaforeInterpretFileAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeUpdate puitext
 
-pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeUpdate) => FilePath -> Text -> InterpretResult (IO ())
+pinaforeInterpretFile :: (?pinafore :: PinaforeContext) => FilePath -> Text -> InterpretResult (IO ())
 pinaforeInterpretFile puipath puitext = do
     action :: FilePinaforeType <- pinaforeInterpretFileAtType puipath puitext
     return $ runPinaforeAction action
 
-pinaforeInteractHandles :: (?pinafore :: PinaforeContext PinaforeUpdate) => Handle -> Handle -> Bool -> IO ()
+pinaforeInteractHandles :: (?pinafore :: PinaforeContext) => Handle -> Handle -> Bool -> IO ()
 pinaforeInteractHandles inh outh echo = interact inh outh echo
 
-pinaforeInteract :: (?pinafore :: PinaforeContext PinaforeUpdate) => IO ()
+pinaforeInteract :: (?pinafore :: PinaforeContext) => IO ()
 pinaforeInteract = pinaforeInteractHandles stdin stdout False

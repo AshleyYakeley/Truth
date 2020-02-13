@@ -1,12 +1,10 @@
 module Pinafore.Base.PredicateMorphism
-    ( HasPinaforeEntityUpdate
-    , propertyMorphism
+    ( propertyMorphism
     ) where
 
 import Pinafore.Base.Edit
 import Pinafore.Base.EntityAdapter
 import Pinafore.Base.Know
-import Pinafore.Base.Lens
 import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
@@ -104,16 +102,6 @@ predicateInverseFunction (MkEntityAdapter _ aget _) (MkEntityAdapter bp _ _) prd
     pfUpdate _ _ = return False
     in MkPinaforeFunctionMorphism {..}
 
-predicatePinaforeTableLensMorphism ::
-       EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeEntityUpdate a b
-predicatePinaforeTableLensMorphism pa pb prd =
-    MkPinaforeLensMorphism (predicatePinaforeMap pa pb prd) (predicateInverseFunction pa pb prd)
-
-propertyMorphism ::
-       HasPinaforeEntityUpdate baseupdate
-    => EntityAdapter a
-    -> EntityAdapter b
-    -> Predicate
-    -> PinaforeLensMorphism baseupdate a b
+propertyMorphism :: EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeEntityUpdate a b
 propertyMorphism pa pb prd =
-    mapPinaforeLensMorphismBase (baseEditLens @PinaforeEntityUpdate) $ predicatePinaforeTableLensMorphism pa pb prd
+    MkPinaforeLensMorphism (predicatePinaforeMap pa pb prd) (predicateInverseFunction pa pb prd)

@@ -1,5 +1,5 @@
 module Pinafore.Pinafore where
-
+{-
 import Data.Time
 import Pinafore.Base
 import Pinafore.Storage.File
@@ -45,18 +45,4 @@ instance TupleEditWitness InvertibleEdit PinaforeSelector where
     tupleEditWitness PinaforeSelectTimeZone = Dict
 
 type PinaforeUpdate = TupleUpdate PinaforeSelector
-
-instance BaseEditLens PinaforeEntityUpdate PinaforeUpdate where
-    baseEditLens = tupleEditLens PinaforeSelectPoint
-
-instance BaseEditLens PinaforeFileUpdate PinaforeUpdate where
-    baseEditLens = tupleEditLens PinaforeSelectFile
-
-instance BaseEditLens MemoryCellUpdate PinaforeUpdate where
-    baseEditLens = tupleEditLens PinaforeSelectMemory
-
-instance BaseEditLens (ROWUpdate UTCTime) PinaforeUpdate where
-    baseEditLens = tupleEditLens PinaforeSelectClock
-
-instance BaseEditLens (ROWUpdate TimeZone) PinaforeUpdate where
-    baseEditLens = tupleEditLens PinaforeSelectTimeZone
+-}

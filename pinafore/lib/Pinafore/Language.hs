@@ -32,7 +32,7 @@ import Shapes
 import System.IO.Error
 
 runPinaforeScoped ::
-       (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
+       (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext)
     => PinaforeScoped baseupdate a
     -> InterpretResult a
 runPinaforeScoped scp =
@@ -40,14 +40,14 @@ runPinaforeScoped scp =
     withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
 
 runPinaforeSourceScoped ::
-       (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
+       (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext)
     => FilePath
     -> PinaforeSourceScoped baseupdate a
     -> InterpretResult a
 runPinaforeSourceScoped fpath scp = runPinaforeScoped $ runSourcePos (initialPos fpath) scp
 
 parseValue ::
-       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
+       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext)
     => Text
     -> PinaforeSourceScoped baseupdate (QValue baseupdate)
 parseValue text = do
@@ -56,7 +56,7 @@ parseValue text = do
 
 parseValueAtType ::
        forall baseupdate t.
-       (PinaforePredefinitions baseupdate, FromPinaforeType baseupdate t, ?pinafore :: PinaforeContext baseupdate)
+       (PinaforePredefinitions baseupdate, FromPinaforeType baseupdate t, ?pinafore :: PinaforeContext)
     => Text
     -> PinaforeSourceScoped baseupdate t
 parseValueAtType text = do
@@ -128,14 +128,11 @@ runValue outh val =
     (typedAnyToPinaforeVal val) <|> (fmap outputLn $ typedAnyToPinaforeVal val) <|>
     (return $ liftIO $ hPutStrLn outh $ showPinaforeValue val)
 
-interactParse ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => Text
-    -> Interact baseupdate (InteractiveCommand baseupdate)
-interactParse t = remonad ioRunInterpretResult $ parseInteractiveCommand @baseupdate t
+interactParse :: Text -> Interact baseupdate (InteractiveCommand baseupdate)
+interactParse t = remonad ioRunInterpretResult $ parseInteractiveCommand t
 
 interactLoop ::
-       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
+       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext)
     => Handle
     -> Handle
     -> Bool
@@ -188,7 +185,7 @@ interactLoop inh outh echo = do
             interactLoop inh outh echo
 
 interact ::
-       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
+       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext)
     => Handle
     -> Handle
     -> Bool

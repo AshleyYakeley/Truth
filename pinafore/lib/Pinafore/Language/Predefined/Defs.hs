@@ -30,16 +30,16 @@ type EA = MeetType Entity A
 
 data BindDoc baseupdate = MkBindDoc
     { bdName :: Name
-    , bdValue :: Maybe (PinaforeContext baseupdate -> QValue baseupdate)
+    , bdValue :: Maybe (PinaforeContext -> QValue baseupdate)
     , bdPattern :: Maybe (QPatternConstructor baseupdate)
     , bdDoc :: DefDoc
     }
 
 mkValEntry ::
-       forall baseupdate t. (HasPinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
+       forall baseupdate t. (ToPinaforeType baseupdate t)
     => Name
     -> Text
-    -> ((?pinafore :: PinaforeContext baseupdate) => t)
+    -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry (BindDoc baseupdate)
 mkValEntry name docDescription val = let
     bdName = name
@@ -56,10 +56,10 @@ mkValEntry name docDescription val = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSupertypeEntry ::
-       forall baseupdate t. (HasPinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
+       forall baseupdate t. (ToPinaforeType baseupdate t)
     => Name
     -> Text
-    -> ((?pinafore :: PinaforeContext baseupdate) => t)
+    -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry (BindDoc baseupdate)
 mkSupertypeEntry name docDescription _val = let
     bdName = name
@@ -74,14 +74,13 @@ mkSupertypeEntry name docDescription _val = let
 
 mkValPatEntry ::
        forall baseupdate t v lt.
-       ( HasPinaforeEntityUpdate baseupdate
-       , ToPinaforeType baseupdate t
+       ( ToPinaforeType baseupdate t
        , FromPinaforeType baseupdate v
        , ToListShimWit PinaforeShim (PinaforeType baseupdate 'Positive) lt
        )
     => Name
     -> Text
-    -> ((?pinafore :: PinaforeContext baseupdate) => t)
+    -> ((?pinafore :: PinaforeContext) => t)
     -> (v -> Maybe (HList lt))
     -> DocTreeEntry (BindDoc baseupdate)
 mkValPatEntry name docDescription val pat = let
@@ -100,10 +99,7 @@ mkValPatEntry name docDescription val pat = let
 
 mkPatEntry ::
        forall baseupdate v lt.
-       ( HasPinaforeEntityUpdate baseupdate
-       , FromPinaforeType baseupdate v
-       , ToListShimWit PinaforeShim (PinaforeType baseupdate 'Positive) lt
-       )
+       (FromPinaforeType baseupdate v, ToListShimWit PinaforeShim (PinaforeType baseupdate 'Positive) lt)
     => Name
     -> Text
     -> Text
