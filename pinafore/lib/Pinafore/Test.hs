@@ -33,7 +33,7 @@ import Truth.World.ObjectStore
 makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
 makeTestPinaforeContext uitoolkit = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
-        liftIO $ freeIOObject ([], []) $ \_ -> True
+        liftIO $ makeMemoryObject ([], []) $ \_ -> True
     let
         tableObject :: Object PinaforeTableEdit
         tableObject = convertObject tableStateObject
