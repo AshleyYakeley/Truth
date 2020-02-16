@@ -20,12 +20,13 @@ switchView sub = do
                 widget <- gview
                 lcContainPackStart True box widget
                 #show widget
-        initVS :: OpenSubscriber (ROWUpdate (GCreateView sel)) -> CreateView sel (ViewState sel)
+        initVS :: OpenSubscriber (ROWUpdate (GCreateView sel)) -> CreateView sel (ViewState sel, ())
         initVS rm = do
             firstspec <- liftIO $ withOpenResource rm $ \am -> subRead am ReadWhole
-            cvLiftView $ getViewState firstspec
-        recvVS :: [ROWUpdate (GCreateView sel)] -> StateT (ViewState sel) IO ()
-        recvVS updates =
+            vs <- cvLiftView $ getViewState firstspec
+            return (vs, ())
+        recvVS :: () -> [ROWUpdate (GCreateView sel)] -> StateT (ViewState sel) IO ()
+        recvVS () updates =
             for_ (lastReadOnlyWholeUpdate updates) $ \spec ->
                 replaceDynamicView $ runWMFunction unliftView $ getViewState spec
     cvDynamic @(ViewState sel) sub initVS mempty recvVS

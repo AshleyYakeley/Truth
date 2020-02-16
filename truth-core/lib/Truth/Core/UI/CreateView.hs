@@ -82,24 +82,23 @@ cvBindSubscriber ::
     -> Task ()
     -> (a -> NonEmpty update -> IO ())
     -> CreateView sel a
-cvBindSubscriber (MkOpenResource rr run (asub :: _ tt)) mesrc initv utask recv = do
+cvBindSubscriber model mesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycleIO lifeCycleMonitor
     withUILock <- MkCreateView $ asks vcWithUILock
-    run $
-        stackLiftWithUnliftAll @tt $ \unlift -> do
-            a <- initv $ MkOpenResource rr unlift asub
-            liftLifeCycleIO $
-                unlift $
-                subscribe asub utask $ \edits MkEditContext {..} ->
-                    if mesrc == Just editContextSource
-                        then return ()
-                        else withUILock $ do
-                                 alive <- monitor
-                                 if alive
-                                     then recv a edits
-                                     else return ()
-            return a
+    subOpenResource model $ \submodel@(MkOpenResource _ unlift asub) -> do
+        a <- initv submodel
+        liftLifeCycleIO $
+            unlift $
+            subscribe asub utask $ \edits MkEditContext {..} ->
+                if mesrc == Just editContextSource
+                    then return ()
+                    else withUILock $ do
+                             alive <- monitor
+                             if alive
+                                 then recv a edits
+                                 else return ()
+        return a
 
 cvBindWholeSubscriber ::
        forall sel t. OpenSubscriber (WholeUpdate t) -> Maybe EditSource -> (t -> IO ()) -> CreateView sel ()

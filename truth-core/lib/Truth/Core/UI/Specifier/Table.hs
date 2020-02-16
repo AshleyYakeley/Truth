@@ -1,10 +1,9 @@
 module Truth.Core.UI.Specifier.Table where
 
---import Truth.Core.Edit
+import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object
-
---import Truth.Core.Read
+import Truth.Core.Read
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.TextStyle
@@ -45,14 +44,14 @@ readOnlyKeyColumn kcName getter = let
 
 data TableUISpec sel where
     MkTableUISpec
-        :: forall seq update. ()
+        :: forall seq update. (Integral (Index seq), SubjectReader (UpdateReader update))
         => [KeyColumn update]
         -> OpenSubscriber (OrderedListUpdate seq update)
         -> (OpenSubscriber update -> IO ())
         -> TableUISpec (Subscriber update)
 
 tableUISpec ::
-       forall seq update. ()
+       forall seq update. (Integral (Index seq), SubjectReader (UpdateReader update))
     => [KeyColumn update]
     -> OpenSubscriber (OrderedListUpdate seq update)
     -> (OpenSubscriber update -> IO ())

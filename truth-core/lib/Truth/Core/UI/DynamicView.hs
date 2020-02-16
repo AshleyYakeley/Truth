@@ -26,17 +26,17 @@ replaceDynamicView getNewDVS = do
     put newvs
 
 cvDynamic ::
-       forall dvs sel update. (DynamicViewState dvs, sel ~ DynamicViewSelEdit dvs)
+       forall dvs sel update a. (DynamicViewState dvs, sel ~ DynamicViewSelEdit dvs)
     => OpenSubscriber update
-    -> (OpenSubscriber update -> CreateView sel dvs)
+    -> (OpenSubscriber update -> CreateView sel (dvs, a))
     -> Task ()
-    -> ([update] -> StateT dvs IO ())
-    -> CreateView sel ()
+    -> (a -> [update] -> StateT dvs IO ())
+    -> CreateView sel a
 cvDynamic sub initCV taskCV recvCV = do
     let
-        initBind :: OpenSubscriber update -> CreateView sel (MVar dvs)
+        initBind :: OpenSubscriber update -> CreateView sel (MVar dvs, a)
         initBind rmod = do
-            firstdvs <- initCV rmod
+            (firstdvs, a) <- initCV rmod
             stateVar <- liftIO $ newMVar firstdvs
             liftLifeCycleIO $
                 lifeCycleClose $ do
@@ -49,8 +49,9 @@ cvDynamic sub initCV taskCV recvCV = do
                         case dynamicViewFocus dvs of
                             Just vs -> vsFirstAspect vs
                             Nothing -> noAspect
-            return stateVar
-        recvBind :: MVar dvs -> NonEmpty update -> IO ()
-        recvBind stateVar updates = mVarRun stateVar $ recvCV $ toList updates
-    stateVar <- cvBindSubscriber sub Nothing initBind taskCV recvBind
-    liftIO $ mVarRun stateVar $ recvCV []
+            return (stateVar, a)
+        recvBind :: (MVar dvs, a) -> NonEmpty update -> IO ()
+        recvBind (stateVar, a) updates = mVarRun stateVar $ recvCV a $ toList updates
+    (stateVar, a) <- cvBindSubscriber sub Nothing initBind taskCV recvBind
+    liftIO $ mVarRun stateVar $ recvCV a []
+    return a

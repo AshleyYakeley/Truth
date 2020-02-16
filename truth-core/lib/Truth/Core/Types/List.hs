@@ -1,5 +1,7 @@
 module Truth.Core.Types.List
     ( ListReader(..)
+    , itemReadFunction
+    , knownItemReadFunction
     , ListEdit(..)
     , ListUpdate(..)
     , listItemLens

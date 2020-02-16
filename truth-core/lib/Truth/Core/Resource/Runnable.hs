@@ -75,3 +75,7 @@ withOpenResource ::
     -> (forall tt. (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt IO)) => f tt -> ApplyStack tt IO r)
     -> IO r
 withOpenResource (MkOpenResource _ unlift (ftt :: _ tt)) call = unlift $ call @tt ftt
+
+subOpenResource :: MonadUnliftIO m => OpenResource f -> (OpenResource f -> m r) -> m r
+subOpenResource (MkOpenResource rr run (ftt :: _ tt)) call =
+    run $ stackLiftWithUnliftAll @tt $ \unlift -> call (MkOpenResource rr unlift ftt)
