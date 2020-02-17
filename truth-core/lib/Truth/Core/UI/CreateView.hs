@@ -86,27 +86,27 @@ cvBindSubscriber model mesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycleIO lifeCycleMonitor
     withUILock <- MkCreateView $ asks vcWithUILock
-    subOpenResource model $ \submodel@(MkOpenResource _ unlift asub) -> do
+    subOpenResource model $ \submodel -> do
         a <- initv submodel
         liftLifeCycleIO $
-            unlift $
-            subscribe asub utask $ \edits MkEditContext {..} ->
-                if mesrc == Just editContextSource
-                    then return ()
-                    else withUILock $ do
-                             alive <- monitor
-                             if alive
-                                 then recv a edits
-                                 else return ()
+            withOpenResource submodel $ \asub -> do
+                subscribe asub utask $ \updates MkEditContext {..} ->
+                    if mesrc == Just editContextSource
+                        then return ()
+                        else withUILock $ do
+                                 alive <- monitor
+                                 if alive
+                                     then recv a updates
+                                     else return ()
         return a
 
 cvBindWholeSubscriber ::
        forall sel t. OpenSubscriber (WholeUpdate t) -> Maybe EditSource -> (t -> IO ()) -> CreateView sel ()
 cvBindWholeSubscriber sub mesrc setf = let
     init :: OpenSubscriber (WholeUpdate t) -> CreateView sel ()
-    init (MkOpenResource _ unlift asub) =
+    init rmod =
         liftIO $ do
-            val <- unlift $ subRead asub ReadWhole
+            val <- withOpenResource rmod $ \asub -> subRead asub ReadWhole
             setf val
     recv :: () -> NonEmpty (WholeUpdate t) -> IO ()
     recv () updates = let
@@ -117,9 +117,9 @@ cvBindWholeSubscriber sub mesrc setf = let
 cvBindReadOnlyWholeSubscriber :: forall sel t. OpenSubscriber (ROWUpdate t) -> (t -> IO ()) -> CreateView sel ()
 cvBindReadOnlyWholeSubscriber sub setf = let
     init :: OpenSubscriber (ROWUpdate t) -> CreateView sel ()
-    init (MkOpenResource _ unlift asub) =
+    init rmod =
         liftIO $ do
-            val <- unlift $ subRead asub ReadWhole
+            val <- withOpenResource rmod $ \asub -> subRead asub ReadWhole
             setf val
     recv :: () -> NonEmpty (ROWUpdate t) -> IO ()
     recv () updates = let

@@ -13,7 +13,7 @@ calendarGetView :: GetGView
 calendarGetView =
     MkGetView $ \_ uispec ->
         fmap
-            (\(MkCalendarUISpec rmod@(MkOpenResource _ run asub)) -> do
+            (\(MkCalendarUISpec rmod) -> do
                  esrc <- newEditSource
                  widget <- new Calendar []
                  let
@@ -34,7 +34,7 @@ calendarGetView =
                          in set widget [#year := fromInteger y, #month := fromIntegral m, #day := fromIntegral d]
                      onChanged =
                          liftIO $
-                         run $ do
+                         withOpenResource rmod $ \asub -> do
                              st <- getDay
                              _ <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
                              return ()

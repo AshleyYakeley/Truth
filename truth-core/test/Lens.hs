@@ -8,8 +8,8 @@ import Test.Tasty.HUnit
 import Truth.Core
 
 collectSubscriberUpdates :: Subscriber update -> LifeCycleIO (IO [update])
-collectSubscriberUpdates (MkResource rr asub) =
-    runResourceRunnerWith rr $ \run -> do
+collectSubscriberUpdates sub =
+    runResource sub $ \run asub -> do
         var <- liftIO $ newMVar []
         run $
             subscribe asub mempty $ \updates _ec ->
@@ -19,14 +19,14 @@ collectSubscriberUpdates (MkResource rr asub) =
         return $ takeMVar var
 
 subscriberPushEdits :: Subscriber update -> NonEmpty (UpdateEdit update) -> IO ()
-subscriberPushEdits (MkResource rr asub) edits = do
-    runResourceRunnerWith rr $ \run ->
+subscriberPushEdits sub edits =
+    runResource sub $ \run asub -> do
         run $ do
             mpush <- subEdit asub edits
             case mpush of
                 Nothing -> fail "can't push edits"
                 Just push -> push noEditSource
-    taskWait $ subUpdatesTask asub
+        taskWait $ subUpdatesTask asub
 
 type UpdateX = KeyUpdate [(Char, Int)] (PairUpdate (ConstWholeUpdate Char) (WholeUpdate Int))
 

@@ -67,7 +67,7 @@ optionFromStore ::
     -> EditSource
     -> SeqStore (t, OptionUICell)
     -> CreateView sel (WIOFunction IO, Widget)
-optionFromStore oobj@(MkOpenResource _ run asub) esrc store = do
+optionFromStore oobj esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
     #packStart widget renderer False
@@ -76,7 +76,7 @@ optionFromStore oobj@(MkOpenResource _ run asub) esrc store = do
         cvLiftView $
         viewOn widget #changed $
         liftIO $
-        run $ do
+        withOpenResource oobj $ \asub -> do
             mi <- #getActiveIter widget
             case mi of
                 (True, iter) -> do

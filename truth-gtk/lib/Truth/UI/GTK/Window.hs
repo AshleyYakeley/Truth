@@ -135,7 +135,7 @@ truthMainGTK appMain =
         runVar <- newMVar RSRun
         let
             uitWithLock :: forall a. IO a -> IO a
-            uitWithLock action = mVarRun uiLockVar $ liftIO action
+            uitWithLock action = mVarUnitRun uiLockVar action
             uitCreateWindow :: WindowSpec -> LifeCycleIO UIWindow
             uitCreateWindow wspec = runCreateView uitWithLock (createWindowAndChild wspec) getRequest
             uitExit :: IO ()
@@ -160,5 +160,5 @@ truthMainGTK appMain =
                             RSStop -> do
                                 #quit mloop
                                 return SOURCE_REMOVE
-                mVarRun uiLockVar $ liftIO $ #run mloop
+                mVarUnitRun uiLockVar $ #run mloop
         return a

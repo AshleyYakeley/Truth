@@ -27,7 +27,8 @@ filePinaforeType = qTypeDescription @PinaforeUpdate @FilePinaforeType
 
 standardPinaforeContext :: FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate)
 standardPinaforeContext dirpath uitoolkit = do
-    tableObject1 <- exclusiveResource $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
+    sqlObject <- liftIO $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
+    tableObject1 <- exclusiveResource sqlObject
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     memoryObject <- liftIO makeMemoryCellObject
     clockOM <- shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)

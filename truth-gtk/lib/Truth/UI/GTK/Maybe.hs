@@ -25,7 +25,7 @@ oneWholeView ::
     => OpenSubscriber (FullResultOneUpdate f update)
     -> (f (OpenSubscriber update) -> GCreateView sel)
     -> GCreateView sel
-oneWholeView rmod@(MkOpenResource _ run asub) baseView = do
+oneWholeView rmod baseView = do
     unliftView <- cvLiftView askUnliftIO
     let
         getWidgets :: Box -> OpenSubscriber (FullResultOneUpdate f update) -> f () -> View sel (OneWholeViews sel f)
@@ -54,7 +54,7 @@ oneWholeView rmod@(MkOpenResource _ run asub) baseView = do
         recvVS :: Box -> [FullResultOneUpdate f update] -> StateT (OneWholeViews sel f) IO ()
         recvVS box _ = do
             olddvs <- get
-            newfu <- liftIO $ run $ subRead asub ReadHasOne
+            newfu <- liftIO $ withOpenResource rmod $ \asub -> subRead asub ReadHasOne
             case (olddvs, retrieveOne newfu) of
                 (PresentOVS _, SuccessResult ()) -> return ()
                 (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs

@@ -215,8 +215,12 @@ instance WitnessConstraint IsPinaforeRow PinaforeSchema where
 instance ShowableTupleDatabase SQLiteDatabase PinaforeSchema where
     witnessTupleRow = Dict
 
-sqlitePinaforeTableObject :: FilePath -> Object PinaforeTableEdit
-sqlitePinaforeTableObject path = mapObject sqlitePinaforeLens $ sqliteObject path sqlitePinaforeSchema
+sqlitePinaforeTableObject :: FilePath -> IO (Object PinaforeTableEdit)
+sqlitePinaforeTableObject path = do
+    obj <- sqliteObject path sqlitePinaforeSchema
+    return $ mapObject sqlitePinaforeLens obj
 
 sqlitePinaforeTableGetEntireDatabase :: FilePath -> IO (AllF (TupleTableSel PinaforeSchema) [])
-sqlitePinaforeTableGetEntireDatabase path = getObjectSubject $ sqliteObject path sqlitePinaforeSchema
+sqlitePinaforeTableGetEntireDatabase path = do
+    obj <- sqliteObject path sqlitePinaforeSchema
+    getObjectSubject obj

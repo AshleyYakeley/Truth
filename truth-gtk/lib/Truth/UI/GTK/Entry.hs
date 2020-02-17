@@ -13,7 +13,7 @@ textEntryGetView :: GetGView
 textEntryGetView =
     MkGetView $ \_ uispec ->
         fmap
-            (\(MkTextEntryUISpec rmod@(MkOpenResource _ run asub)) -> do
+            (\(MkTextEntryUISpec rmod) -> do
                  esrc <- newEditSource
                  widget <- new Entry []
                  invalidCol <- new RGBA [#red := 1, #green := 0, #blue := 0, #alpha := 1]
@@ -28,7 +28,7 @@ textEntryGetView =
                      cvLiftView $
                      viewOn widget #changed $
                      liftIO $
-                     run $ do
+                     withOpenResource rmod $ \asub -> do
                          st <- get widget #text
                          succeeded <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
                          setValidState succeeded

@@ -1,4 +1,18 @@
-module Truth.Core.Resource.Runnable where
+module Truth.Core.Resource.Runnable
+    ( Resource(..)
+    , MapResource(..)
+    , joinResource_
+    , joinResource
+    , runResource
+    , exclusiveResource
+    , OpenResource
+    , toResource
+    , openResource
+    , reopenResource
+    , mapOpenResource
+    , withOpenResource
+    , subOpenResource
+    ) where
 
 import Truth.Core.Import
 import Truth.Core.Resource.Function
@@ -65,15 +79,22 @@ toResource :: OpenResource f -> Resource f
 toResource (MkOpenResource rr _ ftt) = MkResource rr ftt
 
 openResource :: Resource f -> OpenResource f
-openResource (MkResource rr ftt) = runResourceRunnerWith rr $ \run -> MkOpenResource rr run ftt
+openResource (MkResource (rr :: _ tt) ftt) = runResourceRunnerWith rr $ \run -> MkOpenResource rr run ftt
 
 reopenResource :: OpenResource f -> OpenResource f
 reopenResource = openResource . toResource
 
+mapOpenResource ::
+       (forall tt. (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt IO)) => f tt -> g tt)
+    -> OpenResource f
+    -> OpenResource g
+mapOpenResource m (MkOpenResource rr unlift ftt) = MkOpenResource rr unlift $ m ftt
+
 withOpenResource ::
-       OpenResource f
-    -> (forall tt. (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt IO)) => f tt -> ApplyStack tt IO r)
-    -> IO r
+       MonadUnliftIO m
+    => OpenResource f
+    -> (forall tt. (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt IO)) => f tt -> ApplyStack tt m r)
+    -> m r
 withOpenResource (MkOpenResource _ unlift (ftt :: _ tt)) call = unlift $ call @tt ftt
 
 subOpenResource :: MonadUnliftIO m => OpenResource f -> (OpenResource f -> m r) -> m r

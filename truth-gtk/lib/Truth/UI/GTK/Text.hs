@@ -51,9 +51,11 @@ textView rmod = do
                 return ()
     let
         initV :: OpenSubscriber (StringUpdate Text) -> CreateView TextSelection ()
-        initV rm = do
-            initial <- liftIO $ withOpenResource rm $ \am -> mutableReadToSubject $ subRead am
-            #setText buffer initial (-1)
+        initV rm =
+            liftIO $ do
+                initial <- withOpenResource rm $ \am -> mutableReadToSubject $ subRead am
+                withSignalBlocked buffer insertSignal $
+                    withSignalBlocked buffer deleteSignal $ #setText buffer initial (-1)
         recvV :: () -> NonEmpty (StringUpdate Text) -> IO ()
         recvV () updates =
             for_ updates $ \(MkEditUpdate edit) ->

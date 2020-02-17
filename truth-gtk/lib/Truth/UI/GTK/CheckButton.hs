@@ -10,23 +10,23 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
 createWidget :: CheckboxUISpec sel -> CreateView sel Widget
-createWidget (MkCheckboxUISpec label rmod@(MkOpenResource _ run asub)) = do
+createWidget (MkCheckboxUISpec label rmod) = do
     esrc <- newEditSource
-    initial <- liftIO $ run $ subRead asub ReadWhole
+    initial <- liftIO $ withOpenResource rmod $ \asub -> subRead asub ReadWhole
     widget <- new CheckButton [#active := initial]
     cvBindReadOnlyWholeSubscriber label $ \val -> set widget [#label := val]
     changedSignal <-
         cvLiftView $
         viewOn widget #clicked $
         liftIO $
-        run $ do
+        withOpenResource rmod $ \asub -> do
             st <- Gtk.get widget #active
             _ <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
             return ()
     cvBindWholeSubscriber rmod (Just esrc) $ \st -> withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
-createWidget (MkMaybeCheckboxUISpec label rmod@(MkOpenResource _ run asub)) = do
-    initial <- liftIO $ run $ subRead asub ReadWhole
+createWidget (MkMaybeCheckboxUISpec label rmod) = do
+    initial <- liftIO $ withOpenResource rmod $ \asub -> subRead asub ReadWhole
     widget <- new CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
     cvBindReadOnlyWholeSubscriber label $ \val -> set widget [#label := val]
     let
@@ -53,7 +53,9 @@ createWidget (MkMaybeCheckboxUISpec label rmod@(MkOpenResource _ run asub)) = do
                             if elem ModifierTypeShiftMask modifiers
                                 then Nothing
                                 else Just (oldst /= Just True)
-                    _ <- run $ pushEdit noEditSource $ subEdit asub $ pure $ MkWholeReaderEdit newst
+                    _ <-
+                        withOpenResource rmod $ \asub ->
+                            pushEdit noEditSource $ subEdit asub $ pure $ MkWholeReaderEdit newst
                     return True
                 _ -> return False
     cvBindWholeSubscriber rmod Nothing setWidgetState

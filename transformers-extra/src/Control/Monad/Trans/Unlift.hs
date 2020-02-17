@@ -46,6 +46,9 @@ identityWUnliftAll = MkWUnliftAll runIdentityT
 mVarRun :: MVar s -> UnliftAll MonadUnliftIO (StateT s)
 mVarRun var (StateT smr) = liftIOWithUnlift $ \unlift -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds
 
+mVarUnitRun :: MonadUnliftIO m => MVar s -> MFunction m m
+mVarUnitRun var ma = mVarRun var $ lift ma
+
 -- | Dangerous, because the MVar won't be released on exception.
 dangerousMVarRun :: MVar s -> UnliftAll MonadIO (StateT s)
 dangerousMVarRun var (StateT smr) = do
