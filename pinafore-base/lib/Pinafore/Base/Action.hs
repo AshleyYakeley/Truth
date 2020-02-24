@@ -69,7 +69,7 @@ pinaforeNewWindow uiw = do
     MkActionContext {..} <- MkPinaforeAction ask
     let uit@MkUIToolkit {..} = acUIToolkit
     rc <- pinaforeResourceContext
-    (pwWindow, close) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ uitRunCreateView uit rc $ uitCreateWindow uiw
+    (pwWindow, close) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ uitRunView uit rc $ uitCreateWindow uiw
     let pwClose = liftIO close
     return $ MkPinaforeWindow {..}
 

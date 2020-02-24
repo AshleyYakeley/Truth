@@ -109,7 +109,7 @@ uiPick nameMorphism fset ref = do
         --orderLens = (orderedKeyList {- @(FiniteSet PickerPairType) -} $ comparing $ optionCellText . snd) . convertEditLens
         orderLens =
             editLensToFloating toReadOnlyEditLens . orderedSetLens updateOrder . editLensToFloating convertEditLens
-    rc <- cvGetResourceContext
+    rc <- viewGetResourceContext
     opts :: PinaforeValue (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType))) <-
         liftLifeCycleIO $
         eaFloatMapReadOnly rc orderLens $

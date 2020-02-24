@@ -12,7 +12,7 @@ testGView :: String -> CVUISpec -> TestTree
 testGView name luispec =
     testCase name $
     runLifeCycle $ do
-        uispec <- uitRunCreateView nullUIToolkit emptyResourceContext luispec
+        uispec <- uitRunView nullUIToolkit emptyResourceContext luispec
         case getMaybeView uispec of
             Just _ -> return ()
             Nothing -> liftIO $ assertFailure "not matched"

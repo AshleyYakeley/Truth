@@ -46,7 +46,7 @@ oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
         initVS :: Subscriber (FullResultOneUpdate f update) -> CreateView (OneWholeViews f, Box)
         initVS rm = do
             box <- new Box [#orientation := OrientationVertical]
-            firstfu <- cvRunResource rm $ \am -> subRead am ReadHasOne
+            firstfu <- viewRunResource rm $ \am -> subRead am ReadHasOne
             vs <- cvLiftView $ getWidgets box rm firstfu
             return (vs, box)
         recvVS :: Box -> [FullResultOneUpdate f update] -> StateT (OneWholeViews f) (View) ()

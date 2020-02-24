@@ -102,7 +102,7 @@ soupWindow uit@MkUIToolkit {..} dirpath = do
                             ~(subwin, subcloser) <-
                                 uitUnliftCreateView uit $
                                 cvEarlyCloser $
-                                    -- uitRunCreateView uit emptyResourceContext $
+                                    -- uitRunView uit emptyResourceContext $
                                 uitCreateWindow $
                                 MkWindowSpec (liftIO subcloser) (constantSubscriber "item") (mbar subcloser subwin) $
                                 oneWholeUISpec rowSub rspec

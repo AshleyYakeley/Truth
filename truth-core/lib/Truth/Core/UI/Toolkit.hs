@@ -16,13 +16,10 @@ data UIToolkit = MkUIToolkit
 
 -- | Closers will be run at the end of the session. (Lock doesn't matter.)
 uitUnliftCreateView :: UIToolkit -> CreateView a -> View a
-uitUnliftCreateView uit = cvUnliftView $ uitUnliftLifeCycle uit
+uitUnliftCreateView uit = remonad $ uitUnliftLifeCycle uit
 
-uitRunView :: UIToolkit -> ResourceContext -> View a -> IO a
+uitRunView :: UIToolkit -> ResourceContext -> ViewT m a -> m a
 uitRunView uit rc cv = runView rc (uitWithLock uit) cv (uitGetRequest uit)
-
-uitRunCreateView :: UIToolkit -> ResourceContext -> CreateView a -> LifeCycleIO a
-uitRunCreateView uit rc cv = runCreateView rc (uitWithLock uit) cv (uitGetRequest uit)
 
 nullUIToolkit :: UIToolkit
 nullUIToolkit = let

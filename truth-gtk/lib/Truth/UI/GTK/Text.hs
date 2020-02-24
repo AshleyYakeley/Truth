@@ -61,7 +61,7 @@ textView rmod (MkSelectNotify setsel) = do
     let
         initV :: Subscriber (StringUpdate Text) -> CreateView ()
         initV rm = do
-            initial <- cvRunResource rm $ \am -> mutableReadToSubject $ subRead am
+            initial <- viewRunResource rm $ \am -> mutableReadToSubject $ subRead am
             liftIO $
                 withSignalBlocked buffer insertSignal $
                 withSignalBlocked buffer deleteSignal $ #setText buffer initial (-1)

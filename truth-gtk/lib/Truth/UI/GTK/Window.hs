@@ -142,7 +142,7 @@ truthMainGTK appMain =
             uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
             uitUnliftLifeCycle = unlift
             tcUIToolkit = MkUIToolkit {..}
-        a <- unlift $ uitRunCreateView tcUIToolkit emptyResourceContext $ appMain MkTruthContext {..}
+        a <- unlift $ uitRunView tcUIToolkit emptyResourceContext $ appMain MkTruthContext {..}
         shouldRun <- liftIO $ mVarRun runVar Shapes.get
         case shouldRun of
             RSStop -> return ()

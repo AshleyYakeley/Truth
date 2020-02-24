@@ -21,7 +21,7 @@ switchView sub = do
                 #show widget
         initVS :: Subscriber (ROWUpdate GCreateView) -> CreateView (ViewState, ())
         initVS rm = do
-            firstspec <- cvRunResource rm $ \am -> subRead am ReadWhole
+            firstspec <- viewRunResource rm $ \am -> subRead am ReadWhole
             vs <- cvLiftView $ getViewState firstspec
             return (vs, ())
         recvVS :: () -> [ROWUpdate GCreateView] -> StateT ViewState View ()

@@ -12,7 +12,7 @@ import Truth.UI.GTK.Useful
 createWidget :: CheckboxUISpec -> CreateView Widget
 createWidget (MkCheckboxUISpec label rmod) = do
     esrc <- newEditSource
-    initial <- cvRunResource rmod $ \asub -> subRead asub ReadWhole
+    initial <- viewRunResource rmod $ \asub -> subRead asub ReadWhole
     widget <- new CheckButton [#active := initial]
     cvBindReadOnlyWholeSubscriber label $ \val -> set widget [#label := val]
     changedSignal <-
@@ -25,7 +25,7 @@ createWidget (MkCheckboxUISpec label rmod) = do
         liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
 createWidget (MkMaybeCheckboxUISpec label rmod) = do
-    initial <- cvRunResource rmod $ \asub -> subRead asub ReadWhole
+    initial <- viewRunResource rmod $ \asub -> subRead asub ReadWhole
     widget <- new CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
     cvBindReadOnlyWholeSubscriber label $ \val -> set widget [#label := val]
     let

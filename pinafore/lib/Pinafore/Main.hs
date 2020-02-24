@@ -27,7 +27,7 @@ filePinaforeType = qTypeDescription @PinaforeUpdate @FilePinaforeType
 
 standardPinaforeContext :: FilePath -> UIToolkit -> CreateView (PinaforeContext PinaforeUpdate)
 standardPinaforeContext dirpath uitoolkit = do
-    rc <- cvGetResourceContext
+    rc <- viewGetResourceContext
     sqlObject <- liftIO $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
     tableObject1 <- liftLifeCycleIO $ exclusiveResource rc sqlObject
     tableObject <- liftLifeCycleIO $ cacheObject rc 500000 tableObject1 -- half-second delay before writing

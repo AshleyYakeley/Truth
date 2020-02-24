@@ -27,7 +27,7 @@ listStoreView (MkWMFunction blockSignal) oobj esrc = let
            Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
         -> CreateView (SeqStore (UpdateSubject update))
     initV rm = do
-        subjectList <- cvRunResource rm $ \am -> mutableReadToSubject $ subRead am
+        subjectList <- viewRunResource rm $ \am -> mutableReadToSubject $ subRead am
         seqStoreNew subjectList
     recv ::
            SeqStore (UpdateSubject update)
