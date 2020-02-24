@@ -3,19 +3,19 @@ module Truth.Core.UI.Specifier.Layout where
 import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
-data LayoutUISpec sel where
-    HorizontalUISpec :: [(LUISpec sel, Bool)] -> LayoutUISpec sel
-    VerticalUISpec :: [(LUISpec sel, Bool)] -> LayoutUISpec sel
+data LayoutUISpec where
+    HorizontalUISpec :: [(CVUISpec, Bool)] -> LayoutUISpec
+    VerticalUISpec :: [(CVUISpec, Bool)] -> LayoutUISpec
 
-instance Show (LayoutUISpec sel) where
+instance Show LayoutUISpec where
     show (HorizontalUISpec _) = "horizontal layout"
     show (VerticalUISpec _) = "vertical layout"
 
 instance UIType LayoutUISpec where
     uiWitness = $(iowitness [t|LayoutUISpec|])
 
-horizontalUISpec :: forall sel. [(LUISpec sel, Bool)] -> LUISpec sel
-horizontalUISpec specs = mkLUISpec $ HorizontalUISpec specs
+horizontalUISpec :: [(CVUISpec, Bool)] -> CVUISpec
+horizontalUISpec specs = mkCVUISpec $ HorizontalUISpec specs
 
-verticalUISpec :: forall sel. [(LUISpec sel, Bool)] -> LUISpec sel
-verticalUISpec specs = mkLUISpec $ VerticalUISpec specs
+verticalUISpec :: [(CVUISpec, Bool)] -> CVUISpec
+verticalUISpec specs = mkCVUISpec $ VerticalUISpec specs

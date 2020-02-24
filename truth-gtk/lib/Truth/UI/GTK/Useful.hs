@@ -34,13 +34,25 @@ widgetGetTree full w = do
 withSignalBlocked :: IsObject obj => obj -> SignalHandlerId -> IO a -> IO a
 withSignalBlocked obj conn = bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
 
-viewOn ::
-       (GObject widget, SignalInfo info, HaskellCallbackType info ~ IO a)
+class GTKCallbackType t where
+    type CallbackViewLifted t :: Type
+    gCallbackUnlift :: MFunction View IO -> CallbackViewLifted t -> t
+
+instance GTKCallbackType (IO r) where
+    type CallbackViewLifted (IO r) = View r
+    gCallbackUnlift mf v = mf v
+
+instance GTKCallbackType r => GTKCallbackType (a -> r) where
+    type CallbackViewLifted (a -> r) = a -> CallbackViewLifted r
+    gCallbackUnlift mf av a = gCallbackUnlift mf $ av a
+
+cvOn ::
+       (GObject widget, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
     => widget
     -> SignalProxy widget info
-    -> View sel a
-    -> View sel SignalHandlerId
-viewOn widget signal v = liftIOView $ \unlift -> on widget signal $ unlift v
+    -> CallbackViewLifted (HaskellCallbackType info)
+    -> CreateView SignalHandlerId
+cvOn widget signal call = cvLiftView $ liftIOView $ \unlift -> on widget signal $ gCallbackUnlift unlift call
 
 newtype Change m a =
     MkChange (a -> m (Maybe a))
@@ -112,13 +124,8 @@ lcContainPackStart grow box w =
         boxPackStart box w grow grow 0
         lifeCycleClose $ containerRemove box w
 
-makeButton :: MonadIO m => Text -> IO () -> m Button
-makeButton name action = do
-    button <- new Button [#label := name]
-    _ <- liftIO $ on button #clicked action
-    return button
-
-cvMakeButton :: Text -> View sel () -> CreateView sel Button
+cvMakeButton :: Text -> View () -> CreateView Button
 cvMakeButton name action = do
-    unlift <- cvLiftView $ askUnliftIO
-    makeButton name $ runWMFunction unlift action
+    button <- new Button [#label := name]
+    _ <- cvOn button #clicked action
+    return button

@@ -1,14 +1,12 @@
 module Truth.Core.UI.GetView where
 
 import Truth.Core.Import
-import Truth.Core.UI.CreateView
 import Truth.Core.UI.Specifier.Map
 import Truth.Core.UI.Specifier.Specifier
-import Truth.Core.UI.Specifier.WithAspect
+import Truth.Core.UI.View.CreateView
 
 newtype GetView w = MkGetView
-    { getUIView :: forall sel.
-                           (forall sel'. LUISpec sel' -> CreateView sel' w) -> UISpec sel -> Maybe (CreateView sel w)
+    { getUIView :: (CVUISpec -> CreateView w) -> UISpec -> Maybe (CreateView w)
     }
 
 instance Semigroup (GetView w) where
@@ -27,7 +25,4 @@ lensGetView =
     MkGetView $ \getview speca ->
         (do
              MkMapUISpec cv specb <- isUISpec speca
-             return $ cv $ getview specb) <|>
-        (do
-             MkWithAspectUISpec specf <- isUISpec speca
-             return $ cvWithAspect (getview . specf))
+             return $ cv $ getview specb)

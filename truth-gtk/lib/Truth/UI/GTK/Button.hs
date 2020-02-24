@@ -9,19 +9,17 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-createWidget :: OpenSubscriber (ROWUpdate Text) -> OpenSubscriber (ROWUpdate (Maybe (IO ()))) -> CreateView sel Widget
+createWidget :: Subscriber (ROWUpdate Text) -> Subscriber (ROWUpdate (Maybe (View ()))) -> CreateView Widget
 createWidget rlabel raction = do
     aref <- liftIO $ newIORef Nothing
     widget <- new Button []
     cvBindReadOnlyWholeSubscriber rlabel $ \label -> set widget [#label := label]
     cvBindReadOnlyWholeSubscriber raction $ \maction -> do
-        writeIORef aref maction
+        liftIO $ writeIORef aref maction
         set widget [#sensitive := isJust maction]
     _ <-
-        cvLiftView $
-        viewOn widget #clicked $
-        liftIO $ do
-            maction <- readIORef aref
+        cvOn widget #clicked $ do
+            maction <- liftIO $ readIORef aref
             case maction of
                 Nothing -> return ()
                 Just action -> action

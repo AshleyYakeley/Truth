@@ -7,22 +7,23 @@ import Shapes
 import Truth.Core
 
 clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (ROWUpdate UTCTime) ()
-clockObjectMaker basetime interval _ update = do
+clockObjectMaker basetime interval omrUpdatesTask update = do
     rec
         ref <- liftIO $ newIORef first
         first <-
             clock basetime interval $ \t -> do
                 writeIORef ref t
-                update (pure $ MkReadOnlyUpdate $ MkWholeReaderUpdate t) noEditContext
+                update emptyResourceContext (pure $ MkReadOnlyUpdate $ MkWholeReaderUpdate t) noEditContext
     run <-
         liftIO $
         newResourceRunner $ \rt -> do
             t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while object is open
             runReaderT rt t
     let
-        object :: Object (ConstEdit (WholeReader UTCTime))
-        object = MkResource run $ immutableAnObject $ \ReadWhole -> ask
-    return (object, ())
+        omrObject :: Object (ConstEdit (WholeReader UTCTime))
+        omrObject = MkResource run $ immutableAnObject $ \ReadWhole -> ask
+        omrValue = ()
+    return MkObjectMakerResult {..}
 
 clockTimeZoneLens :: FloatingEditLens (WholeUpdate UTCTime) (ROWUpdate TimeZone)
 clockTimeZoneLens = let

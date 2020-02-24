@@ -42,4 +42,6 @@ fileObject path = let
         lift $ hPut h bs
     objEdit :: NonEmpty ByteStringEdit -> ReaderT Handle IO (Maybe (EditSource -> ReaderT Handle IO ()))
     objEdit = singleAlwaysEdit objOneEdit
+    objCommitTask :: Task ()
+    objCommitTask = mempty
     in MkResource objRun MkAnObject {..}

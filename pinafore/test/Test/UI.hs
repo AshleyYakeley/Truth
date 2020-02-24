@@ -14,6 +14,9 @@ import Test.Tasty
 import Truth.Core
 import Truth.UI.GTK
 
+nullViewIO :: View a -> IO a
+nullViewIO = uitRunView nullUIToolkit emptyResourceContext
+
 catchActionResult :: IO a -> IO (Result SomeException a)
 catchActionResult ioa = catch (fmap SuccessResult ioa) (return . FailureResult)
 
@@ -26,10 +29,10 @@ testUIAction waitClick text testaction =
     contextTestCase text text $ \t -> do
         donevar <- newEmptyMVar
         truthMainGTK $ \MkTruthContext {..} -> do
-            (pc, _) <- makeTestPinaforeContext tcUIToolkit
+            (pc, _) <- liftLifeCycleIO $ makeTestPinaforeContext tcUIToolkit
             scriptaction <- let
                 ?pinafore = pc
-                in ioRunInterpretResult $ pinaforeInterpretFile "<test>" t
+                in fmap nullViewIO $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" t
             liftIO scriptaction
             liftIO $
                 case waitClick of

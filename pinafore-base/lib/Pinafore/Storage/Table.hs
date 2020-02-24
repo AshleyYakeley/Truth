@@ -179,7 +179,7 @@ instance CacheableEdit PinaforeTableEdit where
                         vv'
 
 pinaforeTableEntityObject :: Object PinaforeTableEdit -> Object PinaforeEntityEdit
-pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject tableRead tableMPush)) =
+pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject tableRead tableMPush objCommitTask)) =
     case resourceRunnerUnliftAllDict trun of
         Dict ->
             case transStackDict @MonadIO @tt @IO of

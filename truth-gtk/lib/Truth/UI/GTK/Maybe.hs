@@ -8,28 +8,26 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-data OneWholeViews sel f
+data OneWholeViews f
     = MissingOVS (Limit f)
-                 (ViewState sel)
-    | PresentOVS (ViewState sel)
+                 ViewState
+    | PresentOVS ViewState
 
-instance DynamicViewState (OneWholeViews sel f) where
-    type DynamicViewSelEdit (OneWholeViews sel f) = sel
+instance DynamicViewState (OneWholeViews f) where
     dynamicViewStates (MissingOVS _ vs) = [vs]
     dynamicViewStates (PresentOVS vs) = [vs]
-    dynamicViewFocus (MissingOVS _ vs) = Just vs
-    dynamicViewFocus (PresentOVS vs) = Just vs
 
 oneWholeView ::
-       forall sel f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))
-    => OpenSubscriber (FullResultOneUpdate f update)
-    -> (f (OpenSubscriber update) -> GCreateView sel)
-    -> GCreateView sel
-oneWholeView rmod baseView = do
-    unliftView <- cvLiftView askUnliftIO
+       forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))
+    => Subscriber (FullResultOneUpdate f update)
+    -> (f (Subscriber update) -> GCreateView)
+    -> SelectNotify (f ())
+    -> GCreateView
+oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
     let
-        getWidgets :: Box -> OpenSubscriber (FullResultOneUpdate f update) -> f () -> View sel (OneWholeViews sel f)
-        getWidgets box rm fu =
+        getWidgets :: Box -> Subscriber (FullResultOneUpdate f update) -> f () -> View (OneWholeViews f)
+        getWidgets box rm fu = do
+            notifyChange $ return $ Just fu
             case retrieveOne fu of
                 FailureResult lfx@(MkLimit fx) -> do
                     vs <-
@@ -41,29 +39,29 @@ oneWholeView rmod baseView = do
                 SuccessResult () -> do
                     vs <-
                         viewCreateView $ do
-                            widget <- baseView $ pure $ mapOpenSubscriber (mustExistOneEditLens "object") rm
+                            widget <- baseView $ pure $ mapSubscriber (mustExistOneEditLens "object") rm
                             lcContainPackStart True box widget
                             widgetShow widget
                     return $ PresentOVS vs
-        initVS :: OpenSubscriber (FullResultOneUpdate f update) -> CreateView sel (OneWholeViews sel f, Box)
+        initVS :: Subscriber (FullResultOneUpdate f update) -> CreateView (OneWholeViews f, Box)
         initVS rm = do
             box <- new Box [#orientation := OrientationVertical]
-            firstfu <- liftIO $ withOpenResource rm $ \am -> subRead am ReadHasOne
+            firstfu <- cvRunResource rm $ \am -> subRead am ReadHasOne
             vs <- cvLiftView $ getWidgets box rm firstfu
             return (vs, box)
-        recvVS :: Box -> [FullResultOneUpdate f update] -> StateT (OneWholeViews sel f) IO ()
+        recvVS :: Box -> [FullResultOneUpdate f update] -> StateT (OneWholeViews f) (View) ()
         recvVS box _ = do
             olddvs <- get
-            newfu <- liftIO $ withOpenResource rmod $ \asub -> subRead asub ReadHasOne
+            newfu <- lift $ viewRunResource rmod $ \asub -> subRead asub ReadHasOne
             case (olddvs, retrieveOne newfu) of
                 (PresentOVS _, SuccessResult ()) -> return ()
                 (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs
-                _ -> replaceDynamicView $ runWMFunction unliftView $ getWidgets box rmod newfu
+                _ -> replaceDynamicView $ getWidgets box rmod newfu
     box <- cvDynamic rmod initVS mempty recvVS
     toWidget box
 
 oneGetView :: GetGView
 oneGetView =
     MkGetView $ \getview uispec -> do
-        OneWholeUISpec sub itemspec <- isUISpec uispec
-        return $ oneWholeView sub $ \fs -> getview $ itemspec fs
+        OneWholeUISpec sub itemspec notifyChange <- isUISpec uispec
+        return $ oneWholeView sub (\fs -> getview $ itemspec fs) notifyChange

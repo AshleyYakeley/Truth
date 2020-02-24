@@ -5,6 +5,7 @@ module Main
     ) where
 
 import Lens
+import Resource
 import Shapes
 import Subscribe
 import Test.SimpleString
@@ -247,7 +248,8 @@ tests :: TestTree
 tests =
     testGroup
         "truth-core"
-        [ testApplyEditsPar
+        [ testResource
+        , testApplyEditsPar
         , testApplyEditsSeq
         , testSequence
         , testStringEdit

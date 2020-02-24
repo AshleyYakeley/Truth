@@ -278,4 +278,5 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = do
                     MkQueryString s v -> do
                         conn <- ask
                         lift $ execute conn s v
+        objCommitTask = mempty
     return $ MkResource objRun MkAnObject {..}

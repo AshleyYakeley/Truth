@@ -112,13 +112,14 @@ instance TupleResource UAnObject where
         objRead (MkTupleUpdateReader sel _) = case sel of {}
         objEdit :: NonEmpty (TupleUpdateEdit (ListElementType '[])) -> IO (Maybe (EditSource -> IO ()))
         objEdit (MkTupleUpdateEdit sel _ :| _) = case sel of {}
+        objCommitTask = mempty
         in MkUAnObject $ MkAnObject {..}
     consTupleAResource ::
            forall tt update updates. MonadTransStackUnliftAll tt
         => UAnObject update tt
         -> UAnObject (TupleUpdate (ListElementType updates)) tt
         -> UAnObject (TupleUpdate (ListElementType (update : updates))) tt
-    consTupleAResource (MkUAnObject (MkAnObject readA editA)) (MkUAnObject (MkAnObject readB editB)) =
+    consTupleAResource (MkUAnObject (MkAnObject readA editA ctaskA)) (MkUAnObject (MkAnObject readB editB ctaskB)) =
         case transStackDict @MonadIO @tt @IO of
             Dict -> let
                 readAB :: MutableRead (ApplyStack tt IO) (TupleUpdateReader (ListElementType (update : updates)))
@@ -134,7 +135,8 @@ instance TupleResource UAnObject where
                            (Just eas', Nothing) -> editA eas'
                            (Nothing, Just ebs') -> editB ebs'
                            (Just eas', Just ebs') -> (liftA2 $ liftA2 $ liftA2 (>>)) (editA eas') (editB ebs')
-                in MkUAnObject $ MkAnObject readAB editAB
+                ctaskAB = ctaskA <> ctaskB
+                in MkUAnObject $ MkAnObject readAB editAB ctaskAB
     mapResourceUpdate plens uobj = objToUObj $ mapObject plens $ uObjToObj uobj
 
 instance TupleResource ASubscriber where
@@ -151,9 +153,9 @@ instance TupleResource ASubscriber where
                 anobj12 = unUAnObject $ consTupleAResource (MkUAnObject anobj1) (MkUAnObject anobj2)
                 sub12 task recv12 = do
                     let
-                        recv1 u1 ec = recv12 (fmap (\u -> MkTupleUpdate FirstElementType u) u1) ec
-                        recv2 u2 ec =
-                            recv12 (fmap (\(MkTupleUpdate sel u) -> MkTupleUpdate (RestElementType sel) u) u2) ec
+                        recv1 rc u1 ec = recv12 rc (fmap (\u -> MkTupleUpdate FirstElementType u) u1) ec
+                        recv2 rc u2 ec =
+                            recv12 rc (fmap (\(MkTupleUpdate sel u) -> MkTupleUpdate (RestElementType sel) u) u2) ec
                     sub1 task recv1
                     sub2 task recv2
                 utask12 = utask1 <> utask2
@@ -168,14 +170,18 @@ tupleObject ::
 tupleObject pick = uObjToObj $ tupleResource $ \selu -> objToUObj $ pick selu
 
 tupleObjectMaker ::
-       forall sel. IsFiniteConsWitness sel
-    => (forall update. sel update -> ObjectMaker update ())
-    -> ObjectMaker (TupleUpdate sel) ()
-tupleObjectMaker pick utask recv = do
-    uobj <-
-        tupleResourceM $ \sel ->
-            fmap (objToUObj . fst) $ pick sel utask $ \updates -> recv $ fmap (MkTupleUpdate sel) updates
-    return (uObjToObj uobj, ())
+       forall sel a. (IsFiniteConsWitness sel, Monoid a)
+    => (forall update. sel update -> ObjectMaker update a)
+    -> ObjectMaker (TupleUpdate sel) a
+tupleObjectMaker pick outask recv = do
+    (uobj, (utask, val)) <-
+        runWriterT $
+        tupleResourceM $ \sel -> do
+            (MkObjectMakerResult o utask val) <-
+                lift $ pick sel outask $ \rc updates -> recv rc $ fmap (MkTupleUpdate sel) updates
+            tell (utask, val)
+            return $ objToUObj o
+    return $ MkObjectMakerResult (uObjToObj uobj) utask val
 
 tupleSubscriber ::
        forall sel. IsFiniteConsWitness sel

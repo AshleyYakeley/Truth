@@ -5,11 +5,11 @@ import Shapes
 import Truth.Core
 
 newtype PinaforeUI a = MkPinaforeUI
-    { unPinaforeUI :: LUISpec a
+    { unPinaforeUI :: SelectNotify a -> CVUISpec
     }
 
 instance Functor PinaforeUI where
-    fmap ab (MkPinaforeUI spec) = MkPinaforeUI $ mapSelectionUISpec (return . ab) spec
+    fmap ab (MkPinaforeUI spec) = MkPinaforeUI $ \sn -> spec $ contramap ab sn
 
 instance HasVariance 'Covariance PinaforeUI where
     varianceRepresentational = Nothing

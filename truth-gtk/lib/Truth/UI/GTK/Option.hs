@@ -17,23 +17,24 @@ optionGetView =
         return $ optionView itemsSub whichSub
 
 listStoreView ::
-       forall sel update. (ApplicableUpdate update, FullSubjectReader (UpdateReader update))
+       forall update. (ApplicableUpdate update, FullSubjectReader (UpdateReader update))
     => WIOFunction IO
-    -> OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+    -> Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
     -> EditSource
-    -> CreateView sel (SeqStore (UpdateSubject update))
+    -> CreateView (SeqStore (UpdateSubject update))
 listStoreView (MkWMFunction blockSignal) oobj esrc = let
     initV ::
-           OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
-        -> CreateView sel (SeqStore (UpdateSubject update))
+           Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+        -> CreateView (SeqStore (UpdateSubject update))
     initV rm = do
-        subjectList <- liftIO $ withOpenResource rm $ \am -> mutableReadToSubject $ subRead am
+        subjectList <- cvRunResource rm $ \am -> mutableReadToSubject $ subRead am
         seqStoreNew subjectList
     recv ::
            SeqStore (UpdateSubject update)
         -> NonEmpty (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
-        -> IO ()
+        -> View ()
     recv store updates =
+        liftIO $
         for_ updates $ \(MkReadOnlyUpdate lupdate) ->
             case lupdate of
                 OrderedListUpdateItem oldi newi Nothing
@@ -62,21 +63,19 @@ optionUICellAttributes :: OptionUICell -> [AttrOp CellRendererText 'AttrSet]
 optionUICellAttributes MkOptionUICell {..} = textCellAttributes optionCellText optionCellStyle
 
 optionFromStore ::
-       forall sel t. Eq t
-    => OpenSubscriber (WholeUpdate t)
+       forall t. Eq t
+    => Subscriber (WholeUpdate t)
     -> EditSource
     -> SeqStore (t, OptionUICell)
-    -> CreateView sel (WIOFunction IO, Widget)
+    -> CreateView (WIOFunction IO, Widget)
 optionFromStore oobj esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
     #packStart widget renderer False
     cellLayoutSetAttributes widget renderer store $ \(_, cell) -> optionUICellAttributes cell
     changedSignal <-
-        cvLiftView $
-        viewOn widget #changed $
-        liftIO $
-        withOpenResource oobj $ \asub -> do
+        cvOn widget #changed $
+        viewRunResource oobj $ \asub -> do
             mi <- #getActiveIter widget
             case mi of
                 (True, iter) -> do
@@ -88,31 +87,32 @@ optionFromStore oobj esrc store = do
     let
         blockSignal :: forall a. IO a -> IO a
         blockSignal = withSignalBlocked widget changedSignal
-        update :: t -> IO ()
-        update t = do
-            items <- seqStoreToList store
-            case find (\(_, (t', _)) -> t == t') $ zip [(0 :: Int) ..] items of
-                Just (i, _) -> do
-                    tp <- treePathNewFromIndices [fromIntegral i]
-                    mti <- treeModelGetIter store tp
-                    case mti of
-                        Just ti -> blockSignal $ #setActiveIter widget $ Just ti
-                        Nothing -> return ()
-                Nothing -> return ()
+        update :: t -> View ()
+        update t =
+            liftIO $ do
+                items <- seqStoreToList store
+                case find (\(_, (t', _)) -> t == t') $ zip [(0 :: Int) ..] items of
+                    Just (i, _) -> do
+                        tp <- treePathNewFromIndices [fromIntegral i]
+                        mti <- treeModelGetIter store tp
+                        case mti of
+                            Just ti -> blockSignal $ #setActiveIter widget $ Just ti
+                            Nothing -> return ()
+                    Nothing -> return ()
     cvBindWholeSubscriber oobj (Just esrc) update
     w <- toWidget widget
     return (MkWMFunction blockSignal, w)
 
 optionView ::
-       forall update t sel.
+       forall update t.
        ( Eq t
        , FullSubjectReader (UpdateReader update)
        , ApplicableUpdate update
        , UpdateSubject update ~ (t, OptionUICell)
        )
-    => OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
-    -> OpenSubscriber (WholeUpdate t)
-    -> GCreateView sel
+    => Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+    -> Subscriber (WholeUpdate t)
+    -> GCreateView
 optionView itemsSub whichSub = do
     esrc <- newEditSource
     rec

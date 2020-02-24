@@ -16,21 +16,21 @@ import Shapes
 import Truth.Core
 
 data PinaforeContext baseupdate = MkPinaforeContext
-    { pconRun :: forall a. PinaforeAction a -> IO (Know a)
+    { pconRun :: forall a. PinaforeAction a -> View (Know a)
     , pconBase :: Subscriber baseupdate
     }
 
-unliftPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction a -> IO (Know a)
+unliftPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction a -> View (Know a)
 unliftPinaforeAction = pconRun ?pinafore
 
-unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction a -> IO a
+unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction a -> View a
 unliftPinaforeActionOrFail action = do
     ka <- unliftPinaforeAction action
     case ka of
         Known a -> return a
         Unknown -> fail "action stopped"
 
-runPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction () -> IO ()
+runPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction () -> View ()
 runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
 
 pinaforeBase :: (?pinafore :: PinaforeContext baseupdate) => Subscriber baseupdate

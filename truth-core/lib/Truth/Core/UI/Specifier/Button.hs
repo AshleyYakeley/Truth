@@ -2,21 +2,21 @@ module Truth.Core.UI.Specifier.Button where
 
 import Truth.Core.Import
 import Truth.Core.Object
-import Truth.Core.Resource
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
+import Truth.Core.UI.View.View
 
-data ButtonUISpec sel where
-    MkButtonUISpec :: OpenSubscriber (ROWUpdate Text) -> OpenSubscriber (ROWUpdate (Maybe (IO ()))) -> ButtonUISpec sel
+data ButtonUISpec where
+    MkButtonUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (ROWUpdate (Maybe (View ()))) -> ButtonUISpec
 
-instance Show (ButtonUISpec sel) where
+instance Show ButtonUISpec where
     show (MkButtonUISpec _ _) = "button"
 
 instance UIType ButtonUISpec where
     uiWitness = $(iowitness [t|ButtonUISpec|])
 
-buttonUISpec :: OpenSubscriber (ROWUpdate Text) -> OpenSubscriber (ROWUpdate (Maybe (IO ()))) -> LUISpec sel
-buttonUISpec label action = mkLUISpec $ MkButtonUISpec label action
+buttonUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (ROWUpdate (Maybe (View ()))) -> CVUISpec
+buttonUISpec label action = mkCVUISpec $ MkButtonUISpec label action
 
-simpleButtonUISpec :: OpenSubscriber (ROWUpdate Text) -> IO () -> LUISpec sel
-simpleButtonUISpec label action = buttonUISpec label $ openResource $ constantSubscriber $ Just action
+simpleButtonUISpec :: Subscriber (ROWUpdate Text) -> View () -> CVUISpec
+simpleButtonUISpec label action = buttonUISpec label $ constantSubscriber $ Just action

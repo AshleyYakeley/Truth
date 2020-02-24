@@ -9,27 +9,30 @@ import Truth.Core.Resource
 
 cacheObject ::
        forall edit. CacheableEdit edit
-    => Int
+    => ResourceContext
+    -> Int
     -> Object edit
-    -> LifeCycleIO (Object edit)
-cacheObject mus obj =
-    runResource obj $ \run (MkAnObject read push) -> do
-        (runAction, _) <- asyncWaitRunner mus $ \editsnl -> run $ pushOrFail "cached object" noEditSource $ push editsnl
-        objRun <- liftIO $ stateResourceRunner $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
-        return $ let
-            objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
-            objRead rt = do
-                oldcache <- get
-                case editCacheLookup @edit rt oldcache of
-                    Just t -> return t
-                    Nothing -> do
-                        t <- liftIO $ run $ read rt
-                        liftIO $ runAction Nothing -- still reading, don't push yet
-                        editCacheAdd @edit rt t
-                        return t
-            objEdit edits =
-                return $
-                Just $ \_ -> do
-                    editCacheUpdates edits
-                    liftIO $ runAction $ Just edits
-            in MkResource objRun MkAnObject {..}
+    -> LifeCycleIO (ResourceContext -> Object edit)
+cacheObject rc mus obj = do
+    (runAction, asyncTask) <-
+        asyncWaitRunner mus $ \editsnl ->
+            runResource rc obj $ \anobj -> pushOrFail "cached object" noEditSource $ objEdit anobj editsnl
+    objRun <- liftIO $ stateResourceRunner $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
+    return $ \rc' -> let
+        objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
+        objRead rt = do
+            oldcache <- get
+            case editCacheLookup @edit rt oldcache of
+                Just t -> return t
+                Nothing -> do
+                    t <- liftIO $ runResource rc' obj $ \(MkAnObject read _ _) -> read rt
+                    liftIO $ runAction Nothing -- still reading, don't push yet
+                    editCacheAdd @edit rt t
+                    return t
+        objEdit edits =
+            return $
+            Just $ \_ -> do
+                editCacheUpdates edits
+                liftIO $ runAction $ Just edits
+        objCommitTask = asyncTask <> objectCommitTask obj
+        in MkResource objRun MkAnObject {..}

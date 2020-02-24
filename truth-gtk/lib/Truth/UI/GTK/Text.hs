@@ -31,33 +31,43 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-textView :: OpenSubscriber (StringUpdate Text) -> GCreateView TextSelection
-textView rmod = do
+textView :: Subscriber (StringUpdate Text) -> SelectNotify TextSelection -> GCreateView
+textView rmod (MkSelectNotify setsel) = do
     esrc <- newEditSource
     buffer <- new TextBuffer []
     insertSignal <-
-        liftIO $
-        on buffer #insertText $ \iter text _ -> do
+        cvOn buffer #insertText $ \iter text _ -> do
             p <- getSequencePoint iter
-            withOpenResource (reopenResource rmod) $ \asub -> do
-                _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
-                return ()
+            liftIO $
+                runResource emptyResourceContext rmod $ \asub -> do
+                    _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
+                    return ()
     deleteSignal <-
-        liftIO $
-        on buffer #deleteRange $ \iter1 iter2 -> do
+        cvOn buffer #deleteRange $ \iter1 iter2 -> do
             srun <- getSequenceRun iter1 iter2
-            withOpenResource (reopenResource rmod) $ \asub -> do
-                _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection srun mempty
-                return ()
+            liftIO $
+                runResource emptyResourceContext rmod $ \asub -> do
+                    _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection srun mempty
+                    return ()
     let
-        initV :: OpenSubscriber (StringUpdate Text) -> CreateView TextSelection ()
-        initV rm =
-            liftIO $ do
-                initial <- withOpenResource rm $ \am -> mutableReadToSubject $ subRead am
+        aspect :: View (Maybe TextSelection)
+        aspect = do
+            (_, iter1, iter2) <- #getSelectionBounds buffer
+            -- get selection...
+            srun <- getSequenceRun iter1 iter2
+            return $ Just $ stringSectionLens srun
+    cvLiftView $ setsel aspect
+    _ <- cvOn buffer #changed $ setsel aspect
+    let
+        initV :: Subscriber (StringUpdate Text) -> CreateView ()
+        initV rm = do
+            initial <- cvRunResource rm $ \am -> mutableReadToSubject $ subRead am
+            liftIO $
                 withSignalBlocked buffer insertSignal $
-                    withSignalBlocked buffer deleteSignal $ #setText buffer initial (-1)
-        recvV :: () -> NonEmpty (StringUpdate Text) -> IO ()
+                withSignalBlocked buffer deleteSignal $ #setText buffer initial (-1)
+        recvV :: () -> NonEmpty (StringUpdate Text) -> View ()
         recvV () updates =
+            liftIO $
             for_ updates $ \(MkEditUpdate edit) ->
                 withSignalBlocked buffer insertSignal $
                 withSignalBlocked buffer deleteSignal $
@@ -65,23 +75,9 @@ textView rmod = do
                     StringReplaceWhole text -> #setText buffer text (-1)
                     StringReplaceSection bounds text -> replaceText buffer bounds text
     cvBindSubscriber rmod (Just esrc) initV mempty recvV
-    let
-        aspect :: Aspect TextSelection
-        aspect = do
-            (_, iter1, iter2) <- #getSelectionBounds buffer
-            -- get selection...
-            srun <- getSequenceRun iter1 iter2
-            return $ Just $ return $ stringSectionLens srun
     widget <- new TextView [#buffer := buffer]
-    cvAddAspect aspect
-    _ <-
-        cvLiftView $
-        liftIOView $ \unlift ->
-            on widget #focus $ \_ ->
-                unlift $ do
-                    viewSetSelection aspect
-                    return True
     toWidget widget
 
 textAreaGetView :: GetGView
-textAreaGetView = MkGetView $ \_ uispec -> fmap (\(MkTextAreaUISpec sub) -> textView sub) $ isUISpec uispec
+textAreaGetView =
+    MkGetView $ \_ uispec -> fmap (\(MkTextAreaUISpec sub setsel) -> textView sub setsel) $ isUISpec uispec

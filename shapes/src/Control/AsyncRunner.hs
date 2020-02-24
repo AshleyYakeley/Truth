@@ -10,10 +10,11 @@ import Control.Task
 import Shapes.Import
 
 data VarState t
-    = VSEmpty
-    | VSDo t
-           Bool
-    | VSDone
+    = VSIdle
+    | VSRunning
+    | VSPending t
+                Bool
+    | VSEnd
 
 asyncWaitRunner ::
        forall t. Semigroup t
@@ -21,7 +22,7 @@ asyncWaitRunner ::
     -> (t -> IO ())
     -> LifeCycleIO (Maybe t -> IO (), Task ())
 asyncWaitRunner mus doit = do
-    bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSEmpty
+    bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSIdle
     let
         threadDo :: IO ()
         threadDo = do
@@ -29,59 +30,63 @@ asyncWaitRunner mus doit = do
                 atomically $ do
                     vs <- readTVar bufferVar
                     case vs of
-                        VSDone -> do
-                            writeTVar bufferVar $ VSEmpty
+                        VSEnd -> do
+                            writeTVar bufferVar VSIdle
                             return Nothing
-                        VSEmpty -> mzero
-                        VSDo vals True
+                        VSIdle -> do mzero
+                        VSRunning -> do
+                            writeTVar bufferVar VSIdle
+                            return $ Just $ return ()
+                        VSPending vals True
                             | mus > 0 -> do
-                                writeTVar bufferVar $ VSDo vals False
+                                writeTVar bufferVar $ VSPending vals False
                                 return $ Just $ threadDelay mus
-                        VSDo vals _ -> do
-                            writeTVar bufferVar $ VSEmpty
+                        VSPending vals _ -> do
+                            writeTVar bufferVar VSRunning
                             return $ Just $ doit vals
             case maction of
                 Just action -> do
                     action
                     threadDo
                 Nothing -> return ()
-        waitForEmpty :: STM ()
-        waitForEmpty = do
+        waitForIdle :: STM ()
+        waitForIdle = do
             vs <- readTVar bufferVar
             case vs of
-                VSEmpty -> return ()
+                VSIdle -> return ()
                 _ -> mzero
         pushVal :: Maybe t -> IO ()
         pushVal (Just val) =
             atomically $ do
                 vs <- readTVar bufferVar
                 case vs of
-                    VSDone -> return ()
-                    VSEmpty -> writeTVar bufferVar $ VSDo val True
-                    VSDo oldval _ -> writeTVar bufferVar $ VSDo (oldval <> val) True
+                    VSEnd -> return ()
+                    VSIdle -> writeTVar bufferVar $ VSPending val True
+                    VSRunning -> writeTVar bufferVar $ VSPending val True
+                    VSPending oldval _ -> writeTVar bufferVar $ VSPending (oldval <> val) True
         pushVal Nothing =
             atomically $ do
                 vs <- readTVar bufferVar
                 case vs of
-                    VSDo oldval False -> writeTVar bufferVar $ VSDo oldval True
+                    VSPending oldval False -> writeTVar bufferVar $ VSPending oldval True
                     _ -> return ()
         utask :: Task ()
         utask = let
-            taskWait = atomically waitForEmpty
+            taskWait = atomically waitForIdle
             taskIsDone =
                 atomically $ do
                     vs <- readTVar bufferVar
                     return $
                         case vs of
-                            VSEmpty -> Just ()
+                            VSIdle -> Just ()
                             _ -> Nothing
             in MkTask {..}
     _ <- liftIO $ forkIO threadDo
     lifeCycleClose $ do
         atomically $ do
-            waitForEmpty
-            writeTVar bufferVar $ VSDone
-        atomically waitForEmpty
+            waitForIdle
+            writeTVar bufferVar $ VSEnd
+        atomically waitForIdle
     return (pushVal, utask)
 
 asyncRunner ::

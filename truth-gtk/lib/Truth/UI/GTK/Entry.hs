@@ -25,14 +25,13 @@ textEntryGetView =
                      setValidState True = #overrideColor widget [StateFlagsNormal] Nothing
                      setValidState False = #overrideColor widget [StateFlagsNormal] $ Just invalidCol
                  changedSignal <-
-                     cvLiftView $
-                     viewOn widget #changed $
-                     liftIO $
-                     withOpenResource rmod $ \asub -> do
+                     cvOn widget #changed $
+                     viewRunResource rmod $ \asub -> do
                          st <- get widget #text
                          succeeded <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
                          setValidState succeeded
                  cvBindWholeSubscriber rmod (Just esrc) $ \newtext ->
+                     liftIO $
                      withSignalBlocked widget changedSignal $ do
                          oldtext <- get widget #text
                          if oldtext == newtext

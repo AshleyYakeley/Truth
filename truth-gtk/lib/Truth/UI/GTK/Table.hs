@@ -16,14 +16,14 @@ import Truth.UI.GTK.Useful
 
 {-
 data KeyColumn update = MkKeyColumn
-    { kcName :: OpenSubscriber (ROWUpdate Text)
-    , kcContents :: OpenSubscriber update -> IO ( OpenSubscriber (WholeUpdate Text)
-                                                , OpenSubscriber (ROWUpdate TableCellProps))
+    { kcName :: Subscriber (ROWUpdate Text)
+    , kcContents :: Subscriber update -> IO ( Subscriber (WholeUpdate Text)
+                                                , Subscriber (ROWUpdate TableCellProps))
     }
 -}
 
 data Column  row = MkColumn
-    { colName :: OpenSubscriber (ROWUpdate Text)
+    { colName :: Subscriber (ROWUpdate Text)
     , colText :: row -> Text
     , colProps :: row -> TableCellProps
     }
@@ -32,8 +32,8 @@ mapColumn :: (r2 -> r1) -> Column  r1 -> Column  r2
 mapColumn f (MkColumn n t p) = MkColumn n (t . f) (p . f)
 
 data StoreEntry update rowtext rowprops = MkStoreEntry
-    { entryTextLens :: OpenSubscriber  (WholeUpdate rowtext)
-    , entryPropFunc :: OpenSubscriber (ROWUpdate rowprops)
+    { entryTextLens :: Subscriber  (WholeUpdate rowtext)
+    , entryPropFunc :: Subscriber (ROWUpdate rowprops)
     , entryRowText :: rowtext
     , entryRowProps :: rowprops
     , entryViewState :: ViewState (Subscriber update)
@@ -61,8 +61,8 @@ addColumn tview store col = do
     return ()
 
 data KeyColumns  update =
-    forall rowprops rowtext. MkKeyColumns (OpenSubscriber update -> IO ( OpenSubscriber  (WholeUpdate rowtext)
-                                                     , OpenSubscriber (ROWUpdate rowprops)))
+    forall rowprops rowtext. MkKeyColumns (Subscriber update -> IO ( Subscriber  (WholeUpdate rowtext)
+                                                     , Subscriber (ROWUpdate rowprops)))
                                           [Column  (rowtext, rowprops)]
 
 oneKeyColumn :: KeyColumn  update -> KeyColumns  update
@@ -80,11 +80,11 @@ instance Semigroup (KeyColumns  update) where
         fmap (mapColumn $ \(x, y) -> (fst x, fst y)) c1 <> fmap (mapColumn $ \(x, y) -> (snd x, snd y)) c2
 
 instance Monoid (KeyColumns  update) where
-    mempty = MkKeyColumns (\_ -> return (openResource unitSubscriber, openResource $ constantSubscriber ())) []
+    mempty = MkKeyColumns (\_ -> return (runResource unitSubscriber, runResource $ constantSubscriber ())) []
     mappend = (<>)
 
 keyContainerView :: forall seq update. (SubjectReader (UpdateReader update), Integral (Index seq)) =>
-    KeyColumns update -> OpenSubscriber (OrderedListUpdate seq update) -> (OpenSubscriber update -> IO ()) -> GCreateView (Subscriber update)
+    KeyColumns update -> Subscriber (OrderedListUpdate seq update) -> (Subscriber update -> IO ()) -> GCreateView (Subscriber update)
 {-
 keyContainerView ::
        forall cont o  updateI.
@@ -109,17 +109,17 @@ orderedListItemLens ::
     -> FloatingEditLens (OrderedListUpdate seq update) (MaybeUpdate update)
 -}
 
-keyContainerView (MkKeyColumns (colfunc :: OpenSubscriber update -> IO ( OpenSubscriber  (WholeUpdate rowtext)
-                                                                   , OpenSubscriber (ROWUpdate rowprops))) cols) tableSub onDoubleClick = do
+keyContainerView (MkKeyColumns (colfunc :: Subscriber update -> IO ( Subscriber  (WholeUpdate rowtext)
+                                                                   , Subscriber (ROWUpdate rowprops))) cols) tableSub onDoubleClick = do
     let
         makeStoreEntry :: SequencePoint seq -> IO (StoreEntry update rowtext rowprops)
         makeStoreEntry i = do
             usub <- floatMapOpenSubscriber (orderedListItemLens i) tableSub
             (textSub, propsub) <- colfunc usub
             return MkStoreEntry {..}
-        initTable :: OpenSubscriber (OrderedListUpdate seq update) -> CreateView sel (SeqStore (StoreEntry update rowtext rowprops), TreeView)
+        initTable :: Subscriber (OrderedListUpdate seq update) -> CreateView sel (SeqStore (StoreEntry update rowtext rowprops), TreeView)
         initTable osub = do
-            initialRows <- liftIO $ withOpenResource osub $ \asub -> do
+            initialRows <- liftIO $ runResource osub $ \asub -> do
                 n <- subRead asub ListReadLength
                 liftIO $ for [0 .. pred n] makeStoreEntry
             store <- seqStoreNew initialRows

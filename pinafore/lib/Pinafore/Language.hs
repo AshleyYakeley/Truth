@@ -30,6 +30,7 @@ import Pinafore.Language.TypeSystem
 import Pinafore.Language.TypeSystem.Simplify
 import Shapes
 import System.IO.Error
+import Truth.Core
 
 runPinaforeScoped ::
        (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
@@ -106,7 +107,7 @@ typedShowValue (ConsPinaforeType ts tt) v = joinf (singularTypedShowValue ts) (t
 showPinaforeValue :: QValue baseupdate -> String
 showPinaforeValue (MkAnyValue (MkShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
 
-type Interact baseupdate = StateT SourcePos (ReaderStateT (PinaforeScoped baseupdate) IO)
+type Interact baseupdate = StateT SourcePos (ReaderStateT (PinaforeScoped baseupdate) View)
 
 interactRunSourceScoped :: PinaforeSourceScoped baseupdate a -> Interact baseupdate a
 interactRunSourceScoped sa = do
@@ -192,8 +193,8 @@ interact ::
     => Handle
     -> Handle
     -> Bool
-    -> IO ()
+    -> View ()
 interact inh outh echo = do
-    hSetBuffering outh NoBuffering
+    liftIO $ hSetBuffering outh NoBuffering
     evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $
         ioRunInterpretResult . runPinaforeScoped

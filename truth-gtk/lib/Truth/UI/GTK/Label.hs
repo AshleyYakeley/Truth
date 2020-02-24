@@ -7,7 +7,7 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 
-createWidget :: LabelUISpec sel -> CreateView sel Widget
+createWidget :: LabelUISpec -> CreateView Widget
 createWidget (MkLabelUISpec sub) = do
     widget <- new Label []
     cvBindReadOnlyWholeSubscriber sub $ \label -> set widget [#label := label]

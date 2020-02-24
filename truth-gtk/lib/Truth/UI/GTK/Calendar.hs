@@ -33,13 +33,12 @@ calendarGetView =
                          (y, m, d) = toGregorian day
                          in set widget [#year := fromInteger y, #month := fromIntegral m, #day := fromIntegral d]
                      onChanged =
-                         liftIO $
-                         withOpenResource rmod $ \asub -> do
+                         viewRunResource rmod $ \asub -> do
                              st <- getDay
                              _ <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
                              return ()
-                 _ <- cvLiftView $ viewOn widget #daySelected onChanged
-                 _ <- cvLiftView $ viewOn widget #monthChanged onChanged
+                 _ <- cvOn widget #daySelected onChanged
+                 _ <- cvOn widget #monthChanged onChanged
                  cvBindWholeSubscriber rmod (Just esrc) $ \newval -> do
                      oldval <- getDay
                      if oldval == newval

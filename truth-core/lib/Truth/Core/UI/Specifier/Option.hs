@@ -4,7 +4,6 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object
 import Truth.Core.Read
-import Truth.Core.Resource
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.TextStyle
@@ -19,38 +18,38 @@ plainOptionUICell optionCellText = let
     optionCellStyle = plainTextStyle
     in MkOptionUICell {..}
 
-data OptionUISpec sel where
+data OptionUISpec where
     MkOptionUISpec
         :: ( Eq t
            , FullSubjectReader (UpdateReader update)
            , ApplicableUpdate update
            , UpdateSubject update ~ (t, OptionUICell)
            )
-        => OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
-        -> OpenSubscriber (WholeUpdate t)
-        -> OptionUISpec sel
+        => Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+        -> Subscriber (WholeUpdate t)
+        -> OptionUISpec
 
-instance Show (OptionUISpec sel) where
+instance Show OptionUISpec where
     show _ = "option"
 
 instance UIType OptionUISpec where
     uiWitness = $(iowitness [t|OptionUISpec|])
 
 optionUISpec ::
-       forall update t sel.
+       forall update t.
        ( Eq t
        , FullSubjectReader (UpdateReader update)
        , ApplicableUpdate update
        , UpdateSubject update ~ (t, OptionUICell)
        )
-    => OpenSubscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
-    -> OpenSubscriber (WholeUpdate t)
-    -> LUISpec sel
-optionUISpec optlens sellens = mkLUISpec $ MkOptionUISpec optlens sellens
+    => Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+    -> Subscriber (WholeUpdate t)
+    -> CVUISpec
+optionUISpec optlens sellens = mkCVUISpec $ MkOptionUISpec optlens sellens
 
 simpleOptionUISpec ::
-       forall t sel. Eq t
+       forall t. Eq t
     => [(t, OptionUICell)]
-    -> OpenSubscriber (WholeUpdate t)
-    -> LUISpec sel
-simpleOptionUISpec opts sub = optionUISpec @(WholeUpdate (t, OptionUICell)) (openResource $ constantSubscriber opts) sub
+    -> Subscriber (WholeUpdate t)
+    -> CVUISpec
+simpleOptionUISpec opts sub = optionUISpec @(WholeUpdate (t, OptionUICell)) (constantSubscriber opts) sub

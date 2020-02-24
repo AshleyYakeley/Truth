@@ -1,6 +1,8 @@
 module Pinafore.Base.Action
     ( PinaforeAction
     , unPinaforeAction
+    , viewPinaforeAction
+    , pinaforeResourceContext
     , pinaforeFunctionValueGet
     , pinaforeValuePushAction
     , PinaforeWindow(..)
@@ -23,7 +25,7 @@ data ActionContext = MkActionContext
     }
 
 newtype PinaforeAction a =
-    MkPinaforeAction (ReaderT ActionContext (ComposeM Know IO) a)
+    MkPinaforeAction (ReaderT ActionContext (ComposeM Know View) a)
     deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadIO)
 
 instance MonadFail PinaforeAction where
@@ -32,19 +34,26 @@ instance MonadFail PinaforeAction where
 instance RepresentationalRole PinaforeAction where
     representationalCoercion MkCoercion = MkCoercion
 
-unPinaforeAction :: forall a. UIToolkit -> UndoActions -> PinaforeAction a -> IO (Know a)
+unPinaforeAction :: forall a. UIToolkit -> UndoActions -> PinaforeAction a -> View (Know a)
 unPinaforeAction acUIToolkit acUndoActions (MkPinaforeAction action) =
     getComposeM $ runReaderT action MkActionContext {..}
 
+viewPinaforeAction :: View a -> PinaforeAction a
+viewPinaforeAction va = MkPinaforeAction $ lift $ lift va
+
+pinaforeResourceContext :: PinaforeAction ResourceContext
+pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
+
 pinaforeValuePushAction :: PinaforeValue update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
 pinaforeValuePushAction lv edits = do
-    ok <- liftIO $ pinaforeValuePush lv edits
+    rc <- pinaforeResourceContext
+    ok <- liftIO $ pinaforeValuePush rc lv edits
     if ok
         then return ()
         else empty
 
 data PinaforeWindow = MkPinaforeWindow
-    { pwClose :: IO ()
+    { pwClose :: View ()
     , pwWindow :: UIWindow
     }
 
@@ -58,8 +67,10 @@ pinaforeLiftLifeCycleIO la = do
 pinaforeNewWindow :: WindowSpec -> PinaforeAction PinaforeWindow
 pinaforeNewWindow uiw = do
     MkActionContext {..} <- MkPinaforeAction ask
-    let MkUIToolkit {..} = acUIToolkit
-    (pwWindow, pwClose) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ uitCreateWindow uiw
+    let uit@MkUIToolkit {..} = acUIToolkit
+    rc <- pinaforeResourceContext
+    (pwWindow, close) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ uitRunCreateView uit rc $ uitCreateWindow uiw
+    let pwClose = liftIO close
     return $ MkPinaforeWindow {..}
 
 pinaforeExit :: PinaforeAction ()

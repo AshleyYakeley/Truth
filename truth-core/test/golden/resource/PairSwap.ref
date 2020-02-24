@@ -1,0 +1,10 @@
+A: outside [
+A: inside [
+B: outside [
+B: inside [
+B: 1
+A: 1
+B: inside ]
+B: outside ]
+A: inside ]
+A: outside ]

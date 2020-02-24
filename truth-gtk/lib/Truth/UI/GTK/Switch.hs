@@ -9,27 +9,24 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-switchView :: forall sel. OpenSubscriber (ROWUpdate (GCreateView sel)) -> GCreateView sel
+switchView :: Subscriber (ROWUpdate GCreateView) -> GCreateView
 switchView sub = do
     box <- liftIO $ boxNew OrientationVertical 0
-    unliftView <- cvLiftView askUnliftIO
     let
-        getViewState :: GCreateView sel -> View sel (ViewState sel)
+        getViewState :: GCreateView -> View ViewState
         getViewState gview =
             viewCreateView $ do
                 widget <- gview
                 lcContainPackStart True box widget
                 #show widget
-        initVS :: OpenSubscriber (ROWUpdate (GCreateView sel)) -> CreateView sel (ViewState sel, ())
+        initVS :: Subscriber (ROWUpdate GCreateView) -> CreateView (ViewState, ())
         initVS rm = do
-            firstspec <- liftIO $ withOpenResource rm $ \am -> subRead am ReadWhole
+            firstspec <- cvRunResource rm $ \am -> subRead am ReadWhole
             vs <- cvLiftView $ getViewState firstspec
             return (vs, ())
-        recvVS :: () -> [ROWUpdate (GCreateView sel)] -> StateT (ViewState sel) IO ()
-        recvVS () updates =
-            for_ (lastReadOnlyWholeUpdate updates) $ \spec ->
-                replaceDynamicView $ runWMFunction unliftView $ getViewState spec
-    cvDynamic @(ViewState sel) sub initVS mempty recvVS
+        recvVS :: () -> [ROWUpdate GCreateView] -> StateT ViewState View ()
+        recvVS () updates = for_ (lastReadOnlyWholeUpdate updates) $ \spec -> replaceDynamicView $ getViewState spec
+    cvDynamic @(ViewState) sub initVS mempty recvVS
     toWidget box
 
 switchGetView :: GetGView
@@ -38,4 +35,4 @@ switchGetView =
         spec <- isUISpec uispec
         return $
             case spec of
-                MkSwitchUISpec sub -> switchView $ mapReadOnlyWholeOpenSubscriber getview sub
+                MkSwitchUISpec sub -> switchView $ mapSubscriber (liftReadOnlyEditLens $ funcEditLens getview) sub

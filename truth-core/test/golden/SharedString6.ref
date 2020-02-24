@@ -3,5 +3,5 @@ sect: get "BC"
 var: "ABCD"
 main: push [section 3+1 ""]
 main: push succeeded
-main: receive [section 3+1 ""]
+main: receive section 3+1 ""
 var: "ABC"

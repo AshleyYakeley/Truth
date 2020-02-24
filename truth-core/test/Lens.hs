@@ -7,26 +7,24 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Truth.Core
 
-collectSubscriberUpdates :: Subscriber update -> LifeCycleIO (IO [update])
-collectSubscriberUpdates sub =
-    runResource sub $ \run asub -> do
-        var <- liftIO $ newMVar []
-        run $
-            subscribe asub mempty $ \updates _ec ->
-                mVarRun var $ do
-                    uu <- get
-                    put $ uu <> toList updates
-        return $ takeMVar var
+collectSubscriberUpdates :: ResourceContext -> Subscriber update -> LifeCycleIO (IO [update])
+collectSubscriberUpdates rc sub = do
+    var <- liftIO $ newMVar []
+    runResource rc sub $ \asub ->
+        subscribe asub mempty $ \_ updates _ec -> do
+            mVarRun var $ do
+                uu <- get
+                put $ uu <> toList updates
+    return $ takeMVar var
 
-subscriberPushEdits :: Subscriber update -> NonEmpty (UpdateEdit update) -> IO ()
-subscriberPushEdits sub edits =
-    runResource sub $ \run asub -> do
-        run $ do
-            mpush <- subEdit asub edits
-            case mpush of
-                Nothing -> fail "can't push edits"
-                Just push -> push noEditSource
-        taskWait $ subUpdatesTask asub
+subscriberPushEdits :: ResourceContext -> Subscriber update -> NonEmpty (UpdateEdit update) -> IO ()
+subscriberPushEdits rc sub edits = do
+    runResource rc sub $ \asub -> do
+        mpush <- subEdit asub edits
+        case mpush of
+            Nothing -> fail "can't push edits"
+            Just push -> push noEditSource
+    taskWait $ subscriberUpdatesTask sub
 
 type UpdateX = KeyUpdate [(Char, Int)] (PairUpdate (ConstWholeUpdate Char) (WholeUpdate Int))
 
@@ -43,6 +41,8 @@ testContextOrderedSetLensCase :: [(Char, Int)] -> [(SequencePoint String, Sequen
 testContextOrderedSetLensCase assigns expected =
     testCase (show assigns) $ do
         let
+            rc :: ResourceContext
+            rc = emptyResourceContext
             uo :: UpdateOrder (ContextUpdate UpdateX (ConstWholeUpdate Char))
             uo =
                 MkUpdateOrder (compare @Int) $
@@ -70,13 +70,13 @@ testContextOrderedSetLensCase assigns expected =
                 let
                     bothSub :: Subscriber (ContextUpdate UpdateX (FiniteSetUpdate Char))
                     bothSub = contextSubscribers contextSub baseContentSub
-                olSub <- floatMapSubscriber flens bothSub
-                getUpdates <- collectSubscriberUpdates $ mapSubscriber (tupleEditLens SelectContent) olSub
+                olSub <- floatMapSubscriber rc flens bothSub
+                getUpdates <- collectSubscriberUpdates rc $ mapSubscriber (tupleEditLens SelectContent) olSub
                 let
                     pushOneEdit :: (Char, Int) -> LifeCycleIO ()
                     pushOneEdit (c, i) =
                         liftIO $
-                        subscriberPushEdits contextSub $
+                        subscriberPushEdits rc contextSub $
                         pure $ KeyEditItem c $ MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit i
                 for_ assigns pushOneEdit
                 return getUpdates

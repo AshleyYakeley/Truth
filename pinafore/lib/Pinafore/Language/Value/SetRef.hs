@@ -89,7 +89,7 @@ pinaforeSetRefAdd :: forall a. PinaforeSetRef a -> a -> PinaforeAction ()
 pinaforeSetRefAdd (MkPinaforeSetRef _eq sv) a =
     pinaforeValuePushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True
 
-pinaforeSetRefAddNew :: forall . PinaforeSetRef NewEntity -> PinaforeAction NewEntity
+pinaforeSetRefAddNew :: PinaforeSetRef NewEntity -> PinaforeAction NewEntity
 pinaforeSetRefAddNew set = do
     (MkNewEntity -> e) <- liftIO $ newKeyContainerItem @(FiniteSet Entity)
     pinaforeSetRefAdd set e

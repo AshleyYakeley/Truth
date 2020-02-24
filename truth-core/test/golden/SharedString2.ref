@@ -5,13 +5,13 @@ sect: push [section 0+0 "P"]
 lens: +put: [section 0+0 "P"]
 lens: -put: Just [section 1+0 "P"]
 sect: push succeeded
-main: receive [section 1+0 "P"]
-sect: receive [section 0+0 "P"]
+main: receive section 1+0 "P"
+sect: receive section 0+0 "P"
 var: "APBC"
 sect: push [section 0+0 "Q"]
 lens: +put: [section 0+0 "Q"]
 lens: -put: Just [section 1+0 "Q"]
 sect: push succeeded
-main: receive [section 1+0 "Q"]
-sect: receive [section 0+0 "Q"]
+main: receive section 1+0 "Q"
+sect: receive section 0+0 "Q"
 var: "AQPBC"

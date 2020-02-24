@@ -5,21 +5,19 @@ import Truth.Core.Object
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data CheckboxUISpec sel where
-    MkCheckboxUISpec :: OpenSubscriber (ROWUpdate Text) -> OpenSubscriber (WholeUpdate Bool) -> CheckboxUISpec sel
-    MkMaybeCheckboxUISpec
-        :: OpenSubscriber (ROWUpdate Text) -> OpenSubscriber (WholeUpdate (Maybe Bool)) -> CheckboxUISpec sel
+data CheckboxUISpec where
+    MkCheckboxUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (WholeUpdate Bool) -> CheckboxUISpec
+    MkMaybeCheckboxUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (WholeUpdate (Maybe Bool)) -> CheckboxUISpec
 
-instance Show (CheckboxUISpec sel) where
+instance Show CheckboxUISpec where
     show (MkCheckboxUISpec _ _) = "checkbox"
     show (MkMaybeCheckboxUISpec _ _) = "maybe-checkbox"
 
 instance UIType CheckboxUISpec where
     uiWitness = $(iowitness [t|CheckboxUISpec|])
 
-checkboxUISpec :: forall sel. OpenSubscriber (ROWUpdate Text) -> OpenSubscriber (WholeUpdate Bool) -> LUISpec sel
-checkboxUISpec label lens = mkLUISpec $ MkCheckboxUISpec label lens
+checkboxUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (WholeUpdate Bool) -> CVUISpec
+checkboxUISpec label lens = mkCVUISpec $ MkCheckboxUISpec label lens
 
-maybeCheckboxUISpec ::
-       forall sel. OpenSubscriber (ROWUpdate Text) -> OpenSubscriber (WholeUpdate (Maybe Bool)) -> LUISpec sel
-maybeCheckboxUISpec label lens = mkLUISpec $ MkMaybeCheckboxUISpec label lens
+maybeCheckboxUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (WholeUpdate (Maybe Bool)) -> CVUISpec
+maybeCheckboxUISpec label lens = mkCVUISpec $ MkMaybeCheckboxUISpec label lens

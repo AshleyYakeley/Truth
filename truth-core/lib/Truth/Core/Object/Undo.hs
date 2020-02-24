@@ -44,8 +44,8 @@ updateUndoQueue mr edits = do
             put $ MkUndoQueue (ue : uq) []
 
 data UndoActions = MkUndoActions
-    { uaUndo :: EditSource -> IO Bool
-    , uaRedo :: EditSource -> IO Bool
+    { uaUndo :: ResourceContext -> EditSource -> IO Bool
+    , uaRedo :: ResourceContext -> EditSource -> IO Bool
     }
 
 undoQueueSubscriber ::
@@ -54,11 +54,11 @@ undoQueueSubscriber ::
     -> IO (Subscriber update, UndoActions)
 undoQueueSubscriber sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
-    MkResource rrP (MkASubscriber (MkAnObject readP pushP) subscribeP flush) <- return sub
-    runResourceRunnerWith rrP $ \runP -> let
+    MkResource rrP (MkASubscriber (MkAnObject readP pushP ctaskP) subscribeP utaskP) <- return sub
+    let
         undoActions = let
-            uaUndo :: EditSource -> IO Bool
-            uaUndo esrc =
+            uaUndo :: ResourceContext -> EditSource -> IO Bool
+            uaUndo rc esrc =
                 mVarRun queueVar $ do
                     MkUndoQueue ues res <- get
                     case ues of
@@ -66,7 +66,7 @@ undoQueueSubscriber sub = do
                         (entry:ee) -> do
                             did <-
                                 lift $
-                                runP $ do
+                                runResourceRunner rc rrP $ do
                                     maction <- pushP (snd entry)
                                     case maction of
                                         Just action -> do
@@ -78,8 +78,8 @@ undoQueueSubscriber sub = do
                                     put $ MkUndoQueue ee (entry : res)
                                     return True
                                 else return False
-            uaRedo :: EditSource -> IO Bool
-            uaRedo esrc =
+            uaRedo :: ResourceContext -> EditSource -> IO Bool
+            uaRedo rc esrc =
                 mVarRun queueVar $ do
                     MkUndoQueue ues res <- get
                     case res of
@@ -87,7 +87,7 @@ undoQueueSubscriber sub = do
                         (entry:ee) -> do
                             did <-
                                 lift $
-                                runP $ do
+                                runResourceRunner rc rrP $ do
                                     maction <- pushP (fst entry)
                                     case maction of
                                         Just action -> do
@@ -100,14 +100,16 @@ undoQueueSubscriber sub = do
                                     return True
                                 else return False
             in MkUndoActions {..}
-        pushC edits = do
-            maction <- pushP edits
-            return $
-                case maction of
-                    Just action ->
-                        Just $ \esrc -> do
-                            mVarRun queueVar $ updateUndoQueue readP edits
-                            action esrc
-                    Nothing -> Nothing
-        subC = MkResource rrP $ MkASubscriber (MkAnObject readP pushC) subscribeP flush
+        pushC edits =
+            case resourceRunnerStackUnliftDict @IO rrP of
+                Dict -> do
+                    maction <- pushP edits
+                    return $
+                        case maction of
+                            Just action ->
+                                Just $ \esrc -> do
+                                    mVarRun queueVar $ updateUndoQueue readP edits
+                                    action esrc
+                            Nothing -> Nothing
+        subC = MkResource rrP $ MkASubscriber (MkAnObject readP pushC ctaskP) subscribeP utaskP
         in return (subC, undoActions)

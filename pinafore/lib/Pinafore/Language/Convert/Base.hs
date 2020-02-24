@@ -242,6 +242,11 @@ instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
              ToShimWit JMShim (PinaforeType baseupdate 'Positive) (IO a) where
     toShimWit = mapShimWit (toEnhanced "subtype" (liftIO :: IO a -> PinaforeAction a)) toJMShimWit
 
+-- View
+instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
+             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (View a) where
+    toShimWit = mapShimWit (toEnhanced "subtype" viewPinaforeAction) toJMShimWit
+
 -- PinaforeOrder
 instance (baseupdate ~ update, FromShimWit JMShim (PinaforeType update 'Negative) a) =>
              ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (PinaforeOrder update a) where
@@ -304,15 +309,17 @@ instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) PinaforeWindow w
     fromShimWit = singlePinaforeShimWit fromJMShimWit
 
 -- UISpec
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (LUISpec a) where
+instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) CVUISpec where
     toShimWit =
-        mapShimWit (coerceEnhanced "subtype") (toJMShimWit :: PinaforeShimWit baseupdate 'Positive (PinaforeUI a))
+        mapShimWit
+            (toEnhanced "subtype" $ \cspec -> MkPinaforeUI $ \_ -> cspec)
+            (toJMShimWit :: PinaforeShimWit baseupdate 'Positive (PinaforeUI BottomType))
 
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LUISpec a) where
+instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) CVUISpec where
     fromShimWit =
-        mapShimWit (coerceEnhanced "subtype") (fromJMShimWit :: PinaforeShimWit baseupdate 'Negative (PinaforeUI a))
+        mapShimWit
+            (toEnhanced "subtype" $ \(MkPinaforeUI pui) -> pui mempty)
+            (fromJMShimWit :: PinaforeShimWit baseupdate 'Negative (PinaforeUI TopType))
 
 -- MenuEntry
 instance ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) MenuEntry where

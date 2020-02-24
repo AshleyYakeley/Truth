@@ -28,7 +28,7 @@ import Truth.UI.GTK.Table
 import Truth.UI.GTK.Text
 import Truth.UI.GTK.Useful
 
-lastResortView :: UISpec sel -> GCreateView sel
+lastResortView :: UISpec -> GCreateView
 lastResortView spec = do
     w <- liftIO $ labelNew $ Just $ "missing viewer for " <> fromString (show spec)
     toWidget w
@@ -79,48 +79,46 @@ getRequest wit = do
         #destroy dialog
         return mpath
 
-getMaybeView :: UISpec sel -> Maybe (GCreateView sel)
+getMaybeView :: UISpec -> Maybe GCreateView
 getMaybeView = getUIView allGetView getTheView
 
-getTheView :: LUISpec sel -> GCreateView sel
+getTheView :: CVUISpec -> GCreateView
 getTheView lspec = do
-    spec <- liftLifeCycleIO lspec
+    spec <- lspec
     case getMaybeView spec of
         Just view -> view
         Nothing -> lastResortView spec
 
-createWindowAndChild :: WindowSpec -> AnyCreateView UIWindow
-createWindowAndChild MkWindowSpec {..} =
-    MkAnyCreateView $
-    cvWithAspect $ \aspect -> do
-        window <-
-            lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
-        cvBindReadOnlyWholeSubscriber wsTitle $ \title -> set window [#title := title]
-        content <- getTheView wsContent
-        _ <-
-            on window #deleteEvent $ \_ -> do
-                liftIO wsCloseBoxAction
-                return True -- don't run existing handler that closes the window
-        ui <-
-            case wsMenuBar of
-                Nothing -> return content
-                Just efmbar -> do
-                    ag <- new AccelGroup []
-                    #addAccelGroup window ag
-                    mb <-
-                        switchView $
-                        mapReadOnlyWholeOpenSubscriber (\mbar -> createMenuBar ag mbar >>= toWidget) $ efmbar aspect
-                    vbox <- new Box [#orientation := OrientationVertical]
-                    #packStart vbox mb False False 0
-                    #packStart vbox content True True 0
-                    toWidget vbox
-        #add window ui
-        #show ui
-        #showAll window
-        let
-            uiWindowHide = #hide window
-            uiWindowShow = #show window
-        return $ MkUIWindow {..}
+createWindowAndChild :: WindowSpec -> CreateView UIWindow
+createWindowAndChild MkWindowSpec {..} = do
+    window <- lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
+    cvBindReadOnlyWholeSubscriber wsTitle $ \title -> set window [#title := title]
+    content <- getTheView wsContent
+    _ <-
+        cvOn window #deleteEvent $ \_ -> do
+            wsCloseBoxAction
+            return True -- don't run existing handler that closes the window
+    ui <-
+        case wsMenuBar of
+            Nothing -> return content
+            Just efmbar -> do
+                ag <- new AccelGroup []
+                #addAccelGroup window ag
+                mb <-
+                    switchView $
+                    mapSubscriber (liftReadOnlyEditLens $ funcEditLens $ \mbar -> createMenuBar ag mbar >>= toWidget) $
+                    efmbar
+                vbox <- new Box [#orientation := OrientationVertical]
+                #packStart vbox mb False False 0
+                #packStart vbox content True True 0
+                toWidget vbox
+    #add window ui
+    #show ui
+    #showAll window
+    let
+        uiWindowHide = #hide window
+        uiWindowShow = #show window
+    return $ MkUIWindow {..}
 
 data RunState
     = RSRun
@@ -136,14 +134,15 @@ truthMainGTK appMain =
         let
             uitWithLock :: forall a. IO a -> IO a
             uitWithLock action = mVarUnitRun uiLockVar action
-            uitCreateWindow :: WindowSpec -> LifeCycleIO UIWindow
-            uitCreateWindow wspec = runCreateView uitWithLock (createWindowAndChild wspec) getRequest
+            uitCreateWindow :: WindowSpec -> CreateView UIWindow
+            uitCreateWindow wspec = createWindowAndChild wspec
+            uitGetRequest = getRequest
             uitExit :: IO ()
             uitExit = mVarRun runVar $ put RSStop
             uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
             uitUnliftLifeCycle = unlift
             tcUIToolkit = MkUIToolkit {..}
-        a <- unlift $ appMain MkTruthContext {..}
+        a <- unlift $ uitRunCreateView tcUIToolkit emptyResourceContext $ appMain MkTruthContext {..}
         shouldRun <- liftIO $ mVarRun runVar Shapes.get
         case shouldRun of
             RSStop -> return ()

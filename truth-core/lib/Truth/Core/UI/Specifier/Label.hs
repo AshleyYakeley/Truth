@@ -5,14 +5,14 @@ import Truth.Core.Object
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data LabelUISpec sel where
-    MkLabelUISpec :: OpenSubscriber (ROWUpdate Text) -> LabelUISpec sel
+data LabelUISpec where
+    MkLabelUISpec :: Subscriber (ROWUpdate Text) -> LabelUISpec
 
-instance Show (LabelUISpec sel) where
+instance Show LabelUISpec where
     show (MkLabelUISpec _) = "label"
 
 instance UIType LabelUISpec where
     uiWitness = $(iowitness [t|LabelUISpec|])
 
-labelUISpec :: OpenSubscriber (ROWUpdate Text) -> LUISpec sel
-labelUISpec sub = mkLUISpec $ MkLabelUISpec sub
+labelUISpec :: Subscriber (ROWUpdate Text) -> CVUISpec
+labelUISpec sub = mkCVUISpec $ MkLabelUISpec sub

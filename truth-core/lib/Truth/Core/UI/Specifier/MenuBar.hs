@@ -2,8 +2,8 @@ module Truth.Core.UI.Specifier.MenuBar where
 
 import Truth.Core.Import
 import Truth.Core.Object
-import Truth.Core.Resource
 import Truth.Core.Types
+import Truth.Core.UI.View.View
 
 data KeyboardModifier
     = KMShift
@@ -20,12 +20,11 @@ data MenuEntry
     = SeparatorMenuEntry
     | ActionMenuEntry Text
                       (Maybe MenuAccelerator)
-                      (OpenSubscriber (ROWUpdate (Maybe (IO ()))))
+                      (Subscriber (ROWUpdate (Maybe (View ()))))
     | SubMenuEntry Text
                    [MenuEntry]
 
 type MenuBar = [MenuEntry]
 
-simpleActionMenuItem :: Text -> Maybe MenuAccelerator -> IO () -> MenuEntry
-simpleActionMenuItem label maccel action =
-    ActionMenuEntry label maccel $ openResource $ constantSubscriber $ Just action
+simpleActionMenuItem :: Text -> Maybe MenuAccelerator -> View () -> MenuEntry
+simpleActionMenuItem label maccel action = ActionMenuEntry label maccel $ constantSubscriber $ Just action

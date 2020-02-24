@@ -114,12 +114,12 @@ library:
       - Truth.Core.UI.Specifier.MenuBar
       - Truth.Core.UI.Specifier.Scrolled
       - Truth.Core.UI.Specifier.Calendar
-      - Truth.Core.UI.ViewContext
-      - Truth.Core.UI.View
+      - Truth.Core.UI.View.Context
+      - Truth.Core.UI.View.View
       - Truth.Core.UI.Window
       - Truth.Core.UI.Toolkit
-      - Truth.Core.UI.CreateView
-      - Truth.Core.UI.DynamicView
+      - Truth.Core.UI.View.CreateView
+      - Truth.Core.UI.View.Dynamic
       - Truth.Core.UI.GetView
       - Truth.Core.UI
 
@@ -140,6 +140,8 @@ tests:
       - mono-traversable
       - shapes
       - truth-core
+      - filepath
+      - directory
       - QuickCheck
       - tasty
       - tasty-expected-failure
@@ -148,7 +150,9 @@ tests:
       - tasty-golden
     main: Main.hs
     other-modules:
+      - Test.Useful
       - Test.SimpleString
+      - Resource
       - Subscribe
       - Lens
     ghc-options: -threaded

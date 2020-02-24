@@ -30,7 +30,9 @@ immutableReferenceToRejectingValue :: PinaforeImmutableReference a -> PinaforeVa
 immutableReferenceToRejectingValue ref = eaMap fromReadOnlyRejectingEditLens $ immutableReferenceToReadOnlyValue ref
 
 getImmutableReference :: PinaforeImmutableReference a -> PinaforeAction (Know a)
-getImmutableReference ref = liftIO $ pinaforeFunctionValueGet $ immutableReferenceToReadOnlyValue ref
+getImmutableReference ref = do
+    rc <- pinaforeResourceContext
+    liftIO $ pinaforeFunctionValueGet rc $ immutableReferenceToReadOnlyValue ref
 
 functionImmutableReference :: PinaforeReadOnlyValue a -> PinaforeImmutableReference a
 functionImmutableReference fv = MkPinaforeImmutableReference $ eaMap (liftReadOnlyEditLens $ funcEditLens Known) fv

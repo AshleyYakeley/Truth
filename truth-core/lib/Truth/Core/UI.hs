@@ -2,8 +2,6 @@ module Truth.Core.UI
     ( module I
     ) where
 
-import Truth.Core.UI.CreateView as I
-import Truth.Core.UI.DynamicView as I
 import Truth.Core.UI.GetView as I
 import Truth.Core.UI.Request as I
 import Truth.Core.UI.Specifier.Button as I
@@ -27,8 +25,9 @@ import Truth.Core.UI.Specifier.Switch as I
 import Truth.Core.UI.Specifier.Table as I
 import Truth.Core.UI.Specifier.TextEditor as I
 import Truth.Core.UI.Specifier.TextEntry as I
-import Truth.Core.UI.Specifier.WithAspect as I
 import Truth.Core.UI.TextStyle as I
 import Truth.Core.UI.Toolkit as I
-import Truth.Core.UI.View as I
+import Truth.Core.UI.View.CreateView as I
+import Truth.Core.UI.View.Dynamic as I
+import Truth.Core.UI.View.View as I
 import Truth.Core.UI.Window as I

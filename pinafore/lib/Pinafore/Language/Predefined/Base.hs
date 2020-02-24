@@ -470,10 +470,12 @@ base_predefinitions =
           "Undo and redo changes."
           [ mkValEntry "queueUndo" "Undo an action." $ do
                 ua <- pinaforeUndoActions
-                liftIO $ uaUndo ua noEditSource
+                rc <- pinaforeResourceContext
+                liftIO $ uaUndo ua rc noEditSource
           , mkValEntry "queueRedo" "Redo an action." $ do
                 ua <- pinaforeUndoActions
-                liftIO $ uaRedo ua noEditSource
+                rc <- pinaforeResourceContext
+                liftIO $ uaRedo ua rc noEditSource
           ]
     , docTreeEntry
           "References"

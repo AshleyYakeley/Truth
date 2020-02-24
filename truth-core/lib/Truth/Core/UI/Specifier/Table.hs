@@ -5,8 +5,10 @@ import Truth.Core.Import
 import Truth.Core.Object
 import Truth.Core.Read
 import Truth.Core.Types
+import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.TextStyle
+import Truth.Core.UI.View.View
 
 data TableCellProps = MkTableCellProps
     { tcStyle :: TextStyle
@@ -18,48 +20,47 @@ plainTableCellProps = let
     in MkTableCellProps {..}
 
 data KeyColumn update = MkKeyColumn
-    { kcName :: OpenSubscriber (ROWUpdate Text)
-    , kcContents :: OpenSubscriber update -> IO ( OpenSubscriber (WholeUpdate Text)
-                                                , OpenSubscriber (ROWUpdate TableCellProps))
+    { kcName :: Subscriber (ROWUpdate Text)
+    , kcContents :: Subscriber update -> View (Subscriber (WholeUpdate Text), Subscriber (ROWUpdate TableCellProps))
     }
 
 readOnlyKeyColumn ::
        forall update.
-       OpenSubscriber (ROWUpdate Text)
-    -> (OpenSubscriber update -> IO (OpenSubscriber (ROWUpdate (Text, TableCellProps))))
+       Subscriber (ROWUpdate Text)
+    -> (Subscriber update -> View (Subscriber (ROWUpdate (Text, TableCellProps))))
     -> KeyColumn update
 readOnlyKeyColumn kcName getter = let
-    kcContents ::
-           OpenSubscriber update -> IO (OpenSubscriber (WholeUpdate Text), OpenSubscriber (ROWUpdate TableCellProps))
+    kcContents :: Subscriber update -> View (Subscriber (WholeUpdate Text), Subscriber (ROWUpdate TableCellProps))
     kcContents rowSub = do
         cellSub <- getter rowSub
         let
-            textSub :: OpenSubscriber (WholeUpdate Text)
-            textSub =
-                mapOpenSubscriber (fromReadOnlyRejectingEditLens . liftReadOnlyEditLens (funcEditLens fst)) cellSub
-            propsSub :: OpenSubscriber (ROWUpdate TableCellProps)
-            propsSub = mapReadOnlyWholeOpenSubscriber snd cellSub
+            textSub :: Subscriber (WholeUpdate Text)
+            textSub = mapSubscriber (fromReadOnlyRejectingEditLens . liftReadOnlyEditLens (funcEditLens fst)) cellSub
+            propsSub :: Subscriber (ROWUpdate TableCellProps)
+            propsSub = mapSubscriber (liftReadOnlyEditLens $ funcEditLens snd) cellSub
         return (textSub, propsSub)
     in MkKeyColumn {..}
 
-data TableUISpec sel where
+data TableUISpec where
     MkTableUISpec
         :: forall seq update. (Integral (Index seq), SubjectReader (UpdateReader update))
         => [KeyColumn update]
-        -> OpenSubscriber (OrderedListUpdate seq update)
-        -> (OpenSubscriber update -> IO ())
-        -> TableUISpec (Subscriber update)
+        -> Subscriber (OrderedListUpdate seq update)
+        -> (Subscriber update -> View ())
+        -> SelectNotify (Subscriber update)
+        -> TableUISpec
 
 tableUISpec ::
        forall seq update. (Integral (Index seq), SubjectReader (UpdateReader update))
     => [KeyColumn update]
-    -> OpenSubscriber (OrderedListUpdate seq update)
-    -> (OpenSubscriber update -> IO ())
-    -> LUISpec (Subscriber update)
-tableUISpec cols rows onDoubleClick = mkLUISpec $ MkTableUISpec cols rows onDoubleClick
+    -> Subscriber (OrderedListUpdate seq update)
+    -> (Subscriber update -> View ())
+    -> SelectNotify (Subscriber update)
+    -> CVUISpec
+tableUISpec cols rows onDoubleClick sel = mkCVUISpec $ MkTableUISpec cols rows onDoubleClick sel
 
-instance Show (TableUISpec sel) where
-    show (MkTableUISpec _ _ _) = "table"
+instance Show TableUISpec where
+    show (MkTableUISpec _ _ _ _) = "table"
 
 instance UIType TableUISpec where
     uiWitness = $(iowitness [t|TableUISpec|])

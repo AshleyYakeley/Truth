@@ -220,7 +220,7 @@ sqlitePinaforeTableObject path = do
     obj <- sqliteObject path sqlitePinaforeSchema
     return $ mapObject sqlitePinaforeLens obj
 
-sqlitePinaforeTableGetEntireDatabase :: FilePath -> IO (AllF (TupleTableSel PinaforeSchema) [])
-sqlitePinaforeTableGetEntireDatabase path = do
+sqlitePinaforeTableGetEntireDatabase :: ResourceContext -> FilePath -> IO (AllF (TupleTableSel PinaforeSchema) [])
+sqlitePinaforeTableGetEntireDatabase rc path = do
     obj <- sqliteObject path sqlitePinaforeSchema
-    getObjectSubject obj
+    getObjectSubject rc obj

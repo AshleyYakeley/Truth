@@ -16,25 +16,30 @@ import Truth.Core.Resource
 import Truth.Core.Types
 
 data ObjectReader edit t where
+    ReadObjectResourceContext :: ObjectReader edit ResourceContext
     ReadObject :: ObjectReader edit (Object edit)
 
 instance Show (ObjectReader edit t) where
+    show ReadObjectResourceContext = "object context"
     show ReadObject = "object"
 
 instance AllWitnessConstraint Show (ObjectReader edit) where
     allWitnessConstraint = Dict
 
-instance c (Object edit) => WitnessConstraint c (ObjectReader edit) where
+instance (c (Object edit), c ResourceContext) => WitnessConstraint c (ObjectReader edit) where
+    witnessConstraint ReadObjectResourceContext = Dict
     witnessConstraint ReadObject = Dict
 
 instance SubjectReader (EditReader edit) => SubjectReader (ObjectReader edit) where
     type ReaderSubject (ObjectReader edit) = EditSubject edit
+    subjectToRead _ ReadObjectResourceContext = emptyResourceContext
     subjectToRead subj ReadObject = mapObject (fromReadOnlyRejectingEditLens @(EditUpdate edit)) $ constantObject subj
 
 instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader edit) where
     mutableReadToSubject mr = do
+        rc <- mr ReadObjectResourceContext
         obj <- mr ReadObject
-        runResource obj $ \run (MkAnObject mro _) -> liftIO $ run $ mutableReadToSubject mro
+        liftIO $ runResource rc obj $ \anobj -> mutableReadToSubject $ objRead anobj
 
 type ObjectEdit edit = ConstEdit (ObjectReader edit)
 
@@ -44,8 +49,9 @@ objectEditLens :: forall update. EditLens (ObjectUpdate update) update
 objectEditLens = let
     elGet :: ReadFunction (ObjectReader (UpdateEdit update)) (UpdateReader update)
     elGet mr rt = do
-        (MkResource rr (MkAnObject r _)) <- mr ReadObject
-        liftIO $ runResourceRunner rr $ r rt
+        rc <- mr ReadObjectResourceContext
+        obj <- mr ReadObject
+        liftIO $ runResource rc obj $ \anobj -> objRead anobj rt
     elUpdate ::
            forall m. MonadIO m
         => ObjectUpdate update
@@ -61,11 +67,11 @@ objectEditLens = let
         case nonEmpty edits of
             Nothing -> return $ Just []
             Just edits' -> do
+                rc <- mr ReadObjectResourceContext
                 obj <- mr ReadObject
-                runResource obj $ \run (MkAnObject _ e) ->
-                    liftIO $
-                    run $ do
-                        maction <- e edits'
+                liftIO $
+                    runResource rc obj $ \anobj -> do
+                        maction <- objEdit anobj edits'
                         case maction of
                             Just action -> action noEditSource
                             Nothing -> liftIO $ fail "objectEditLens: failed"
@@ -78,6 +84,7 @@ objectLiftEditLens ::
     -> EditLens (ObjectUpdate updateA) (ObjectUpdate updateB)
 objectLiftEditLens lens = let
     elGet :: ReadFunction (ObjectReader (UpdateEdit updateA)) (ObjectReader (UpdateEdit updateB))
+    elGet mr ReadObjectResourceContext = mr ReadObjectResourceContext
     elGet mr ReadObject = do
         object <- mr ReadObject
         return $ mapObject lens object

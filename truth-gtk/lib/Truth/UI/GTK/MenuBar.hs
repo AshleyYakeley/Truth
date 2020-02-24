@@ -7,6 +7,7 @@ import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes
 import Truth.Core
+import Truth.UI.GTK.Useful
 
 toModifierType :: KeyboardModifier -> ModifierType
 toModifierType KMShift = ModifierTypeShiftMask
@@ -24,19 +25,21 @@ accelGroupConnection ag key mods flags action = do
         _ <- accelGroupDisconnect ag $ Just closure
         return ()
 
-attachMenuEntry :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> MenuEntry -> CreateView sel ()
+attachMenuEntry :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> MenuEntry -> CreateView ()
 attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
     aref <- liftIO $ newIORef Nothing
     item <- menuItemNew
     menuShellAppend ms item
     let
+        meaction :: View ()
         meaction = do
-            maction <- readIORef aref
+            maction <- liftIO $ readIORef aref
             case maction of
                 Nothing -> return ()
                 Just action -> action
     set item [#label := label] -- creates child if not present
     mc <- binGetChild item
+    unliftView <- cvLiftView askUnliftIO
     for_ mc $ \c -> do
         ml <- liftIO $ castTo AccelLabel c
         for_ ml $ \l -> do
@@ -49,11 +52,13 @@ attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
                         gmods :: [ModifierType]
                         gmods = fmap toModifierType mods
                     accelLabelSetAccel l keyw gmods
-                    liftLifeCycleIO $ accelGroupConnection ag keyw gmods [AccelFlagsVisible] meaction
-    cvBindReadOnlyWholeSubscriber raction $ \maction -> do
-        writeIORef aref maction
-        set item [#sensitive := isJust maction]
-    _ <- on item #activate meaction
+                    liftLifeCycleIO $
+                        accelGroupConnection ag keyw gmods [AccelFlagsVisible] $ runWMFunction unliftView meaction
+    cvBindReadOnlyWholeSubscriber raction $ \maction ->
+        liftIO $ do
+            writeIORef aref maction
+            set item [#sensitive := isJust maction]
+    _ <- cvOn item #activate meaction
     return ()
 attachMenuEntry ag ms (SubMenuEntry name entries) = do
     item <- menuItemNewWithLabel name
@@ -65,10 +70,10 @@ attachMenuEntry _ ms SeparatorMenuEntry = do
     item <- new SeparatorMenuItem []
     menuShellAppend ms item
 
-attachMenuEntries :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> [MenuEntry] -> CreateView sel ()
+attachMenuEntries :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> [MenuEntry] -> CreateView ()
 attachMenuEntries ag menu mm = for_ mm $ attachMenuEntry ag menu
 
-createMenuBar :: IsAccelGroup ag => ag -> Truth.Core.MenuBar -> CreateView sel Gtk.MenuBar
+createMenuBar :: IsAccelGroup ag => ag -> Truth.Core.MenuBar -> CreateView Gtk.MenuBar
 createMenuBar ag menu = do
     mbar <- menuBarNew
     attachMenuEntries ag mbar menu

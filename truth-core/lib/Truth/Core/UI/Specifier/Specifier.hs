@@ -1,36 +1,32 @@
 module Truth.Core.UI.Specifier.Specifier where
 
 import Truth.Core.Import
+import Truth.Core.UI.View.CreateView
 
-data UISpec (sel :: Type) where
+data UISpec where
     MkUISpec
-        :: forall (t :: Type -> Type) (sel :: Type). (Show (t sel), UIType t)
-        => t sel
-        -> UISpec sel
+        :: forall (t :: Type). (Show t, UIType t)
+        => t
+        -> UISpec
 
-instance Show (UISpec sel) where
-    show (MkUISpec tedit) = show tedit
+instance Show UISpec where
+    show (MkUISpec uit) = show uit
 
-class UIType (t :: Type -> Type) where
+class UIType (t :: Type) where
     uiWitness :: IOWitness t
 
 isUISpec ::
-       forall t sel. UIType t
-    => UISpec sel
-    -> Maybe (t sel)
-isUISpec (MkUISpec (tedit :: t' sel)) = do
+       forall t. UIType t
+    => UISpec
+    -> Maybe t
+isUISpec (MkUISpec (uit :: t')) = do
     Refl <- testEquality (uiWitness @t) (uiWitness @t')
-    return tedit
+    return uit
 
-type LUISpec sel = LifeCycleIO (UISpec sel)
+type CVUISpec = CreateView UISpec
 
-mkLUISpec ::
-       forall (t :: Type -> Type) (sel :: Type). (Show (t sel), UIType t)
-    => t sel
-    -> LUISpec sel
-mkLUISpec tsel = return $ MkUISpec tsel
-
-type Aspect sel = LifeCycleIO (Maybe sel)
-
-noAspect :: Aspect sel
-noAspect = return Nothing
+mkCVUISpec ::
+       forall (t :: Type). (Show t, UIType t)
+    => t
+    -> CVUISpec
+mkCVUISpec uit = return $ MkUISpec uit

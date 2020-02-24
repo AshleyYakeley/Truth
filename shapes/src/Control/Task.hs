@@ -58,3 +58,11 @@ taskNotify task call = do
             a <- taskWait task
             call a
     return ()
+
+quickTask :: IO a -> Task a
+quickTask ioa = let
+    taskWait = ioa
+    taskIsDone = do
+        a <- ioa
+        return $ Just a
+    in MkTask {..}

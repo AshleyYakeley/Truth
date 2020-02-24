@@ -1,5 +1,6 @@
 module Truth.Core.Object.ObjectMaker
-    ( ObjectMaker
+    ( ObjectMakerResult(..)
+    , ObjectMaker
     , reflectingObjectMaker
     , mapObjectMaker
     ) where
@@ -13,14 +14,20 @@ import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Core.Resource
 
+data ObjectMakerResult edit a = MkObjectMakerResult
+    { omrObject :: Object edit
+    , omrUpdatesTask :: Task ()
+    , omrValue :: a
+    }
+
 type ObjectMaker update a
-     = Task () -> (NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (Object (UpdateEdit update), a)
+     = Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (ObjectMakerResult (UpdateEdit update) a)
 
 reflectingObjectMaker ::
        forall update. IsUpdate update
     => Object (UpdateEdit update)
     -> ObjectMaker update ()
-reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e)) _ recv = do
+reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e ctask)) utask recv = do
     Dict <- return $ resourceRunnerUnliftAllDict trun
     Dict <- return $ transStackDict @MonadUnliftIO @tt @(DeferActionT IO)
     Refl <- return $ transStackConcatRefl @tt @'[ DeferActionT] @IO
@@ -41,27 +48,41 @@ reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e)) 
                     return $
                     Just $ \esrc -> do
                         stackUnderliftIO @tt @(DeferActionT IO) $ action esrc
-                        stackLift @tt $ deferAction @IO $ recv (fmap editUpdate edits) $ editSourceContext esrc
+                        stackLift @tt $
+                            deferAction @IO $ recv emptyResourceContext (fmap editUpdate edits) $ editSourceContext esrc
         anobj :: AnObject (UpdateEdit update) (Concat tt '[ DeferActionT])
-        anobj = MkAnObject r' e'
-    return $ (MkResource trun' anobj, ())
+        anobj = MkAnObject r' e' ctask
+        omrUpdatesTask :: Task ()
+        omrUpdatesTask = utask
+        omrValue = ()
+        omrObject :: Object (UpdateEdit update)
+        omrObject = MkResource trun' anobj
+    return MkObjectMakerResult {..}
 
 mapObjectMaker ::
-       forall updateA updateB a. FloatingEditLens updateA updateB -> ObjectMaker updateA a -> ObjectMaker updateB a
-mapObjectMaker (MkFloatingEditLens init rlens) uobja utask recvb = do
+       forall updateA updateB a.
+       ResourceContext
+    -> FloatingEditLens updateA updateB
+    -> ObjectMaker updateA a
+    -> ObjectMaker updateB a
+mapObjectMaker rc (MkFloatingEditLens init rlens) uobja utask recvb = do
     rec
         (result, recva) <- do
-            (MkResource (rr :: _ tt) anobjA, a) <- uobja utask recva
-            runResourceRunnerWith rr $ \run -> do
-                r <- liftIO $ run $ runFloatInit init $ objRead anobjA
+            MkObjectMakerResult (MkResource (rr :: _ tt) anobjA) updTask val <- uobja utask recva
+            liftIO $ do
+                r <- runResourceRunner rc rr $ runFloatInit init $ objRead anobjA
                 let
                     lens = rlens r
-                    recva' eas esrc = do
-                        ebs <- run $ fmap mconcat $ for (toList eas) $ \ea -> elUpdate lens ea $ objRead anobjA
+                    recva' urc eas esrc = do
+                        ebs <-
+                            runResourceRunner urc rr $
+                            fmap mconcat $ for (toList eas) $ \ea -> elUpdate lens ea $ objRead anobjA
                         case nonEmpty ebs of
                             Nothing -> return ()
-                            Just ebb -> recvb ebb esrc
+                            Just ebb -> recvb urc ebb esrc
                     objB :: Object (UpdateEdit updateB)
-                    objB = MkResource rr $ mapAnObject lens anobjA
-                return ((objB, a), recva')
+                    objB =
+                        case resourceRunnerUnliftAllDict rr of
+                            Dict -> MkResource rr $ mapAnObject lens anobjA
+                return (MkObjectMakerResult objB updTask val, recva')
     return result

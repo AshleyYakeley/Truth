@@ -1,0 +1,14 @@
+A: outside [
+A: inside [
+B: outside [
+B: inside [
+C: outside [
+C: inside [
+B: 1
+C: 1
+C: inside ]
+C: outside ]
+B: inside ]
+B: outside ]
+A: inside ]
+A: outside ]

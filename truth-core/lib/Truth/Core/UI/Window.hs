@@ -5,17 +5,18 @@ import Truth.Core.Object
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.MenuBar
 import Truth.Core.UI.Specifier.Specifier
+import Truth.Core.UI.View.View
 
-data WindowSpec = forall sel. MkWindowSpec
-    { wsCloseBoxAction :: IO ()
-    , wsTitle :: OpenSubscriber (ROWUpdate Text)
-    , wsMenuBar :: Maybe (Aspect sel -> OpenSubscriber (ROWUpdate MenuBar))
-    , wsContent :: LUISpec sel
+data WindowSpec = MkWindowSpec
+    { wsCloseBoxAction :: View ()
+    , wsTitle :: Subscriber (ROWUpdate Text)
+    , wsMenuBar :: Maybe (Subscriber (ROWUpdate MenuBar))
+    , wsContent :: CVUISpec
     }
 
 data UIWindow = MkUIWindow
-    { uiWindowHide :: IO ()
-    , uiWindowShow :: IO ()
+    { uiWindowHide :: View ()
+    , uiWindowShow :: View ()
     }
 
 nullUIWindow :: UIWindow

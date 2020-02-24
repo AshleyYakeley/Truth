@@ -5,13 +5,13 @@ var: "ABC"
 var: "PQR"
 pair: push [tuple first section 1+0 "x"]
 pair: push succeeded
-sub1: receive [section 1+0 "x"]
-pair: receive [tuple first section 1+0 "x"]
+sub1: receive section 1+0 "x"
+pair: receive tuple first section 1+0 "x"
 var: "AxBC"
 var: "PQR"
 pair: push [tuple second section 2+0 "y"]
 pair: push succeeded
-sub2: receive [section 2+0 "y"]
-pair: receive [tuple second section 2+0 "y"]
+sub2: receive section 2+0 "y"
+pair: receive tuple second section 2+0 "y"
 var: "AxBC"
 var: "PQyR"
