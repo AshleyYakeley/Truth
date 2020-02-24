@@ -96,7 +96,6 @@ library:
       - Truth.Core.UI.Specifier.Null
       - Truth.Core.UI.Specifier.Map
       - Truth.Core.UI.Specifier.Selection
-      - Truth.Core.UI.Specifier.WithAspect
       - Truth.Core.UI.Specifier.CSS
       - Truth.Core.UI.Specifier.Button
       - Truth.Core.UI.Specifier.One
