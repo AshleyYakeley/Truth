@@ -85,6 +85,8 @@ keyContainerView ::
 keyContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( Subscriber (WholeUpdate rowtext)
                                                                            , Subscriber (ROWUpdate rowprops))) cols) tableSub _onDoubleClick _sel = do
     let
+        defStoreEntry :: StoreEntry rowtext rowprops
+        defStoreEntry = MkStoreEntry (error "unset text") (error "unset props")
         makeStoreEntry ::
                SequencePoint seq
             -> ((StoreEntry rowtext rowprops -> StoreEntry rowtext rowprops) -> IO ())
@@ -105,7 +107,7 @@ keyContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( Sub
                 viewRunResourceContext osub $ \unlift amodel -> do
                     n <- liftIO $ unlift $ subRead amodel ListReadLength
                     return $ fmap makeStoreEntry [0 .. pred n]
-            store <- newDynamicStore initialRows
+            store <- newDynamicStore defStoreEntry initialRows
             tview <- treeViewNewWithModel $ getDynamicSeqStore store
             for_ cols $ addColumn tview store
             return (store, tview)
@@ -119,7 +121,7 @@ keyContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( Sub
                     | a == b -> return ()
                 OrderedListUpdateItem a b _ -> dynamicStoreMove a b store
                 OrderedListUpdateDelete i -> dynamicStoreDelete i store
-                OrderedListUpdateInsert i _ -> dynamicStoreInsert i (makeStoreEntry i) store
+                OrderedListUpdateInsert i _ -> dynamicStoreInsert i defStoreEntry (makeStoreEntry i) store
                 OrderedListUpdateClear -> dynamicStoreClear store
     (_store, tview) <- cvBindSubscriber tableSub Nothing initTable mempty recvTable
     toWidget tview

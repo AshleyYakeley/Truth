@@ -39,10 +39,14 @@ findInStore key store = do
     findit 0
 
 makeEntry ::
-       forall t. (((t -> t) -> IO ()) -> CreateView ()) -> SeqStore (DynamicStoreEntry t) -> View (DynamicStoreEntry t)
-makeEntry cvt store = do
+       forall t.
+       t
+    -> (((t -> t) -> IO ()) -> CreateView ())
+    -> SeqStore (DynamicStoreEntry t)
+    -> View (DynamicStoreEntry t)
+makeEntry tdef cvt store = do
     dynamicStoreEntryKey <- liftIO newUnique
-    initValRef <- liftIO $ newIORef $ error "unset store entry"
+    initValRef <- liftIO $ newIORef tdef
     let
         setValStore :: (t -> t) -> IO ()
         setValStore tt = do
@@ -69,17 +73,17 @@ makeEntry cvt store = do
     dynamicStoreEntryValue <- liftIO $ readIORef initValRef
     return MkDynamicStoreEntry {..}
 
-newDynamicStore :: [((t -> t) -> IO ()) -> CreateView ()] -> CreateView (DynamicStore t)
-newDynamicStore lcv = do
+newDynamicStore :: t -> [((t -> t) -> IO ()) -> CreateView ()] -> CreateView (DynamicStore t)
+newDynamicStore tdef lcv = do
     rec
-        entries <- for lcv $ \cvt -> cvLiftView $ makeEntry cvt store
+        entries <- for lcv $ \cvt -> cvLiftView $ makeEntry tdef cvt store
         store <- seqStoreNew entries
     liftLifeCycleIO $ lifeCycleClose $ dynamicStoreClear $ MkDynamicStore store
     return $ MkDynamicStore store
 
-dynamicStoreInsert :: Integral pos => pos -> (((t -> t) -> IO ()) -> CreateView ()) -> DynamicStore t -> View ()
-dynamicStoreInsert i cvt (MkDynamicStore store) = do
-    entry <- makeEntry cvt store
+dynamicStoreInsert :: Integral pos => pos -> t -> (((t -> t) -> IO ()) -> CreateView ()) -> DynamicStore t -> View ()
+dynamicStoreInsert i tdef cvt (MkDynamicStore store) = do
+    entry <- makeEntry tdef cvt store
     seqStoreInsert store (fromIntegral i) entry
 
 dynamicStoreClear :: MonadIO m => DynamicStore t -> m ()
