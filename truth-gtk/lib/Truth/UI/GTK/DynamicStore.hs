@@ -8,6 +8,7 @@ module Truth.UI.GTK.DynamicStore
     , dynamicStoreInsert
     , dynamicStoreDelete
     , dynamicStoreMove
+    , dynamicStoreGet
     ) where
 
 import Data.GI.Gtk hiding (get)
@@ -103,3 +104,8 @@ dynamicStoreMove a b (MkDynamicStore store) = do
     entry <- seqStoreGetValue store $ fromIntegral a
     seqStoreRemove store $ fromIntegral a
     seqStoreInsert store (fromIntegral b) entry
+
+dynamicStoreGet :: Integral pos => pos -> DynamicStore t -> View t
+dynamicStoreGet i (MkDynamicStore store) = do
+    entry <- seqStoreGetValue store $ fromIntegral i
+    return $ dynamicStoreEntryValue entry

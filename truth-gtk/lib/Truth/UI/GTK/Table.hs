@@ -4,16 +4,15 @@ module Truth.UI.GTK.Table
 
 import Data.GI.Base.Attributes hiding (get)
 import Data.GI.Gtk hiding (get)
-
---import GI.Gdk hiding (get)
---import GI.Gtk as Gtk hiding (get)
+import GI.Gdk hiding (get)
+import GI.Gtk as Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.DynamicStore
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.TextStyle
+import Truth.UI.GTK.Useful
 
---import Truth.UI.GTK.Useful
 data Column row = MkColumn
     { colName :: Subscriber (ROWUpdate Text)
     , colText :: row -> Text
@@ -23,18 +22,20 @@ data Column row = MkColumn
 mapColumn :: (r2 -> r1) -> Column r1 -> Column r2
 mapColumn f (MkColumn n t p) = MkColumn n (t . f) (p . f)
 
-data StoreEntry rowtext rowprops = MkStoreEntry
-    { entryRowText :: rowtext
+data StoreEntry update rowtext rowprops = MkStoreEntry
+    { entrySubscriber :: Subscriber update
+    , entryRowText :: rowtext
     , entryRowProps :: rowprops
     }
 
-cellAttributes :: Column (rowtext, rowprops) -> StoreEntry rowtext rowprops -> [AttrOp CellRendererText 'AttrSet]
+cellAttributes :: Column (rowtext, rowprops) -> StoreEntry update rowtext rowprops -> [AttrOp CellRendererText 'AttrSet]
 cellAttributes MkColumn {..} MkStoreEntry {..} = let
     entryRow = (entryRowText, entryRowProps)
     MkTableCellProps {..} = colProps entryRow
     in textCellAttributes (colText entryRow) tcStyle
 
-addColumn :: TreeView -> DynamicStore (StoreEntry rowtext rowprops) -> Column (rowtext, rowprops) -> CreateView ()
+addColumn ::
+       TreeView -> DynamicStore (StoreEntry update rowtext rowprops) -> Column (rowtext, rowprops) -> CreateView ()
 addColumn tview store col = do
     renderer <- new CellRendererText []
     column <- new TreeViewColumn []
@@ -83,25 +84,26 @@ keyContainerView ::
     -> SelectNotify (Subscriber update)
     -> GCreateView
 keyContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( Subscriber (WholeUpdate rowtext)
-                                                                           , Subscriber (ROWUpdate rowprops))) cols) tableSub _onDoubleClick _sel = do
+                                                                           , Subscriber (ROWUpdate rowprops))) cols) tableSub onDoubleClick sel = do
     let
-        defStoreEntry :: StoreEntry rowtext rowprops
-        defStoreEntry = MkStoreEntry (error "unset text") (error "unset props")
+        defStoreEntry :: StoreEntry update rowtext rowprops
+        defStoreEntry = MkStoreEntry (error "unset subscriber") (error "unset text") (error "unset props")
         makeStoreEntry ::
                SequencePoint seq
-            -> ((StoreEntry rowtext rowprops -> StoreEntry rowtext rowprops) -> IO ())
+            -> ((StoreEntry update rowtext rowprops -> StoreEntry update rowtext rowprops) -> IO ())
             -> CreateView ()
         makeStoreEntry i setval = do
             usub <-
                 cvFloatMapSubscriber
                     (editLensToFloating (mustExistOneEditLens "GTK table view") . orderedListItemLens i)
                     tableSub
+            liftIO $ setval $ \entry -> entry {entrySubscriber = usub}
             (textModel, propModel) <- colfunc usub
             cvBindWholeSubscriber textModel Nothing $ \t -> liftIO $ setval $ \entry -> entry {entryRowText = t}
             cvBindReadOnlyWholeSubscriber propModel $ \t -> liftIO $ setval $ \entry -> entry {entryRowProps = t}
         initTable ::
                Subscriber (OrderedListUpdate seq update)
-            -> CreateView (DynamicStore (StoreEntry rowtext rowprops), TreeView)
+            -> CreateView (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
         initTable osub = do
             initialRows <-
                 viewRunResourceContext osub $ \unlift amodel -> do
@@ -112,7 +114,7 @@ keyContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( Sub
             for_ cols $ addColumn tview store
             return (store, tview)
         recvTable ::
-               (DynamicStore (StoreEntry rowtext rowprops), TreeView)
+               (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
             -> NonEmpty (OrderedListUpdate seq update)
             -> View ()
         recvTable (store, _tview) updates =
@@ -123,81 +125,10 @@ keyContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( Sub
                 OrderedListUpdateDelete i -> dynamicStoreDelete i store
                 OrderedListUpdateInsert i _ -> dynamicStoreInsert i defStoreEntry (makeStoreEntry i) store
                 OrderedListUpdateClear -> dynamicStoreClear store
-    (_store, tview) <- cvBindSubscriber tableSub Nothing initTable mempty recvTable
-    toWidget tview
-
-{-
+    (store, tview) <- cvBindSubscriber tableSub Nothing initTable mempty recvTable
     let
-        getStoreItem ::
-               MonadUnliftIO m
-            => ContainerKey cont
-            -> m (ContainerKey cont, StoreEntry  o rowtext rowprops)
-        getStoreItem mr key = do
-            let entryOrderFunction = geto key
-            (subText, subProp) <- liftIO $ colfunc key
-            entryRowText <- elGet (editLensFunction entryTextModel) mr ReadWhole
-            entryRowProps <- elGet entryPropModel mr ReadWhole
-            return (key, MkStoreEntry {..})
-    initialRows <- liftIO $ run $ do
-                MkFiniteSet initialKeys <- subRead asub KeyReadKeys
-                ords <-
-                    for initialKeys $ \key -> do
-                        o <- elGet (geto key) (subRead asub) ReadWhole
-                        return (key, o)
-                let initialKeys' = fmap fst $ sortBy (\(_, a) (_, b) -> order a b) ords
-                for initialKeys' $ getStoreItem
-    store <- seqStoreNew initialRows
-    tview <- treeViewNewWithModel store
-    for_ cols $ addColumn tview store
-    let
-        findInStore ::
-               forall m. MonadIO m
-            => ContainerKey cont
-            -> m (Maybe Int)
-        findInStore key = do
-            kk <- seqStoreToList store
-            return $ lookup @[(ContainerKey cont, Int)] key $ zip (fmap fst kk) [0 ..]
-    cvReceiveUpdates tableSub Nothing $ \mr updates ->
-            for_ updates $ \case
-                KeyUpdateDelete key -> do
-                    mindex <- findInStore key
-                    case mindex of
-                        Just i -> seqStoreRemove store $ fromIntegral i
-                        Nothing -> return ()
-                KeyUpdateInsertReplace item -> let
-                    key = itemKey @cont item
-                    in do
-                           mindex <- findInStore key
-                           case mindex of
-                               Just _index -> return ()
-                               Nothing -> do
-                                   storeItem <- getStoreItem  key
-                                   _ <- seqStoreAppend store storeItem
-                                   return ()
-                KeyUpdateClear -> seqStoreClear store
-                KeyUpdateItem _ _ -> return () -- no change to the table structure
-    -- do updates to the cells
-    cvReceiveUpdates tableSub Nothing $ \(mr :: MutableRead m _) tupdates -> let
-        changeText :: Change m (ContainerKey cont, StoreEntry  o rowtext rowprops)
-        changeText =
-            MkChange $ \(key, oldcol) ->
-                mapUpdates (editLensFunction $ entryTextModel oldcol) mr tupdates $ \_ updates -> do
-                    newrow <-
-                        mutableReadToSubject $
-                        applyEdits (toList $ fmap updateEdit updates) $ subjectToMutableRead $ entryRowText oldcol
-                    return (key, oldcol {entryRowText = newrow})
-        changeProp :: Change m (ContainerKey cont, StoreEntry  o rowtext rowprops)
-        changeProp =
-            MkChange $ \(key, oldcol) ->
-                mapUpdates (entryPropModel oldcol) mr tupdates $ \_ updates -> do
-                    newprops <-
-                        mutableReadToSubject $
-                        applyEdits (toList $ fmap updateEdit updates) $ subjectToMutableRead $ entryRowProps oldcol
-                    return (key, oldcol {entryRowProps = newprops})
-        in seqStoreTraverse_ store $ changeText <> changeProp
-    let
-        getSelectedKey :: IO (Maybe (ContainerKey cont))
-        getSelectedKey = do
+        getSelection :: View (Maybe (Subscriber update))
+        getSelection = do
             tsel <- #getSelection tview
             (ltpath, _) <- #getSelectedRows tsel
             case ltpath of
@@ -205,35 +136,27 @@ keyContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( Sub
                     ii <- #getIndices tpath
                     case ii of
                         Just [i] -> do
-                            (key, _) <- seqStoreGetValue store i
-                            return $ Just key
+                            entry <- dynamicStoreGet i store
+                            return $ Just $ entrySubscriber entry
                         _ -> return Nothing
                 _ -> return Nothing
-        aspect :: Aspect (ContainerKey cont)
-        aspect = liftIO getSelectedKey
-    cvAddAspect aspect
     _ <-
-        cvLiftView $
-        liftIOView $ \unlift ->
-            on tview #focus $ \_ ->
-                unlift $ do
-                    viewSetSelection aspect
-                    return True
+        cvOn tview #focus $ \_ -> do
+            runSelectNotify sel getSelection
+            return True
     _ <-
-        cvLiftView $
-        liftIO $
-        on tview #buttonPressEvent $ \event -> do
+        cvOn tview #buttonPressEvent $ \event -> do
             click <- Gtk.get event #type
             case click of
                 EventType2buttonPress -> do
-                    mkey <- getSelectedKey
+                    mkey <- getSelection
                     case mkey of
                         Just key -> onDoubleClick key
                         Nothing -> return ()
                     return True
                 _ -> return False
     toWidget tview
--}
+
 tableGetView :: GetGView
 tableGetView =
     MkGetView $ \_getview uispec -> do

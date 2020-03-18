@@ -4,8 +4,9 @@ import Data.IORef
 import Truth.Core.Import
 import Truth.Core.UI.View.View
 
-newtype SelectNotify sel =
-    MkSelectNotify (View (Maybe sel) -> View ())
+newtype SelectNotify sel = MkSelectNotify
+    { runSelectNotify :: View (Maybe sel) -> View ()
+    }
 
 instance Semigroup (SelectNotify sel) where
     MkSelectNotify p <> MkSelectNotify q = MkSelectNotify $ \vms -> p vms >> q vms
