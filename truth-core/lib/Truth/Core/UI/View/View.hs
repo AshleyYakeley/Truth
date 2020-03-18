@@ -1,11 +1,12 @@
 module Truth.Core.UI.View.View
-    ( ViewT
+    ( ViewContext
+    , ViewT
     , View
     , liftIOView
     , viewRunResource
     , viewRunResourceContext
     , viewRequest
-    , viewWithContext
+    , viewLocalResourceContext
     , viewGetResourceContext
     , runView
     ) where
@@ -39,8 +40,7 @@ viewRunResourceContext ::
     -> ViewT m r
 viewRunResourceContext resource call = do
     rc <- viewGetResourceContext
-    runResourceContext rc resource $ \rc' unlift ftt ->
-        viewWithContext (\vc -> vc {vcResourceContext = rc'}) $ call unlift ftt
+    runResourceContext rc resource $ \rc' unlift ftt -> viewLocalResourceContext rc' $ call unlift ftt
 
 viewRequest :: Monad m => IOWitness t -> ViewT m (Maybe t)
 viewRequest wit = asks (\vc -> vcRequest vc wit)
@@ -50,6 +50,9 @@ viewWithContext f ma = withReaderT f ma
 
 viewGetResourceContext :: Monad m => ViewT m ResourceContext
 viewGetResourceContext = asks vcResourceContext
+
+viewLocalResourceContext :: ResourceContext -> ViewT m a -> ViewT m a
+viewLocalResourceContext rc = viewWithContext (\vc -> vc {vcResourceContext = rc})
 
 runView :: forall m w. ResourceContext -> (IO () -> IO ()) -> ViewT m w -> (forall t. IOWitness t -> Maybe t) -> m w
 runView vcResourceContext vcWithUILock (ReaderT view) vcRequest = view MkViewContext {..}

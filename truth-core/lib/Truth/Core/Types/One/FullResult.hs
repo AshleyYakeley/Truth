@@ -223,7 +223,7 @@ liftFullResultOneFloatingEditLens (MkFloatingEditLens (init :: FloatInit _ r) rl
     in makeStateLens MkStateEditLens {..}
 
 mustExistOneEditLens ::
-       forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))
+       forall f update. (MonadOne f, IsUpdate update)
     => String
     -> EditLens (FullResultOneUpdate f update) update
 mustExistOneEditLens err = let
@@ -238,15 +238,7 @@ mustExistOneEditLens err = let
         => FullResultOneUpdate f update
         -> MutableRead m (OneReader f (UpdateReader update))
         -> m [update]
-    elUpdate (MkFullResultOneUpdate (NewResultOneUpdate fu)) mr = do
-        fedits <-
-            getComposeM $ do
-                MkComposeM $ return fu
-                edits <- getReplaceEdits $ oneReadFunctionF mr
-                return $ fmap editUpdate edits
-        case retrieveOne fedits of
-            SuccessResult edits -> return edits
-            FailureResult _ -> liftIO $ fail $ err ++ ": deleted"
+    elUpdate (MkFullResultOneUpdate (NewResultOneUpdate _fu)) _mr = liftIO $ fail $ err ++ ": replaced"
     elUpdate (MkFullResultOneUpdate (SuccessResultOneUpdate update)) _ = return [update]
     elPutEdits ::
            forall m. MonadIO m

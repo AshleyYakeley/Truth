@@ -14,11 +14,13 @@ switchView sub = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
         getViewState :: GCreateView -> View ViewState
-        getViewState gview =
-            viewCreateView $ do
-                widget <- gview
-                lcContainPackStart True box widget
-                #show widget
+        getViewState gview = do
+            ((), vs) <-
+                viewCreateView $ do
+                    widget <- gview
+                    lcContainPackStart True box widget
+                    #show widget
+            return vs
         initVS :: Subscriber (ROWUpdate GCreateView) -> CreateView (ViewState, ())
         initVS rm = do
             firstspec <- viewRunResource rm $ \am -> subRead am ReadWhole

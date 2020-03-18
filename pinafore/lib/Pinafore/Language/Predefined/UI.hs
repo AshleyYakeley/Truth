@@ -60,9 +60,10 @@ uiTable cols order val onDoubleClick =
                 nameOpenSub :: Subscriber (ROWUpdate Text)
                 nameOpenSub =
                     pinaforeValueOpenSubscriber $ eaMapSemiReadOnly clearText $ pinaforeRefToReadOnlyValue nameRef
-                getCellSub :: Subscriber (ConstWholeUpdate EA) -> View (Subscriber (ROWUpdate (Text, TableCellProps)))
+                getCellSub ::
+                       Subscriber (ConstWholeUpdate EA) -> CreateView (Subscriber (ROWUpdate (Text, TableCellProps)))
                 getCellSub osub = do
-                    a <- readSub osub
+                    a <- cvLiftView $ readSub osub
                     return $
                         pinaforeValueOpenSubscriber $
                         eaMapSemiReadOnly (funcEditLens showCell) $ pinaforeRefToReadOnlyValue $ getCellRef a

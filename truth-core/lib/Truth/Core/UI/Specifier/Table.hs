@@ -8,6 +8,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.TextStyle
+import Truth.Core.UI.View.CreateView
 import Truth.Core.UI.View.View
 
 data TableCellProps = MkTableCellProps
@@ -21,16 +22,17 @@ plainTableCellProps = let
 
 data KeyColumn update = MkKeyColumn
     { kcName :: Subscriber (ROWUpdate Text)
-    , kcContents :: Subscriber update -> View (Subscriber (WholeUpdate Text), Subscriber (ROWUpdate TableCellProps))
+    , kcContents :: Subscriber update -> CreateView ( Subscriber (WholeUpdate Text)
+                                                    , Subscriber (ROWUpdate TableCellProps))
     }
 
 readOnlyKeyColumn ::
        forall update.
        Subscriber (ROWUpdate Text)
-    -> (Subscriber update -> View (Subscriber (ROWUpdate (Text, TableCellProps))))
+    -> (Subscriber update -> CreateView (Subscriber (ROWUpdate (Text, TableCellProps))))
     -> KeyColumn update
 readOnlyKeyColumn kcName getter = let
-    kcContents :: Subscriber update -> View (Subscriber (WholeUpdate Text), Subscriber (ROWUpdate TableCellProps))
+    kcContents :: Subscriber update -> CreateView (Subscriber (WholeUpdate Text), Subscriber (ROWUpdate TableCellProps))
     kcContents rowSub = do
         cellSub <- getter rowSub
         let
@@ -43,7 +45,14 @@ readOnlyKeyColumn kcName getter = let
 
 data TableUISpec where
     MkTableUISpec
-        :: forall seq update. (Integral (Index seq), SubjectReader (UpdateReader update))
+        :: forall seq update.
+           ( IsSequence seq
+           , Integral (Index seq)
+           , IsUpdate update
+           , ApplicableEdit (UpdateEdit update)
+           , FullSubjectReader (UpdateReader update)
+           , UpdateSubject update ~ Element seq
+           )
         => [KeyColumn update]
         -> Subscriber (OrderedListUpdate seq update)
         -> (Subscriber update -> View ())
@@ -51,7 +60,14 @@ data TableUISpec where
         -> TableUISpec
 
 tableUISpec ::
-       forall seq update. (Integral (Index seq), SubjectReader (UpdateReader update))
+       forall seq update.
+       ( IsSequence seq
+       , Integral (Index seq)
+       , IsUpdate update
+       , ApplicableEdit (UpdateEdit update)
+       , FullSubjectReader (UpdateReader update)
+       , UpdateSubject update ~ Element seq
+       )
     => [KeyColumn update]
     -> Subscriber (OrderedListUpdate seq update)
     -> (Subscriber update -> View ())

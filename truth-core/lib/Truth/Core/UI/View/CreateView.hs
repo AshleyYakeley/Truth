@@ -19,9 +19,9 @@ import Truth.Core.UI.View.View
 
 type CreateView = ViewT LifeCycleIO
 
-type ViewState = LifeState IO ()
+type ViewState = LifeState IO
 
-viewCreateView :: CreateView () -> View ViewState
+viewCreateView :: CreateView t -> View (t, ViewState)
 viewCreateView (ReaderT wff) = ReaderT $ \vc -> getLifeState $ wff vc
 
 cvEarlyCloser :: CreateView a -> CreateView (a, IO ())
@@ -54,8 +54,7 @@ cvBindSubscriber model mesrc initv utask recv = do
                              alive <- monitor
                              if alive
                                  then do
-                                     runWMFunction unliftView $
-                                         viewWithContext (\vc -> vc {vcResourceContext = urc}) $ recv a updates
+                                     runWMFunction unliftView $ viewLocalResourceContext urc $ recv a updates
                                  else return ()
         return a
 

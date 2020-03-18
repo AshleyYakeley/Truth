@@ -32,7 +32,7 @@ soupEditSpec sub selnotify = do
         cmp a b = compare (resultToMaybe a) (resultToMaybe b)
         uo :: UpdateOrder (UUIDElementUpdate PossibleNoteUpdate)
         uo = MkUpdateOrder cmp $ editLensToFloating nameLens
-    osub :: Subscriber (OrderedListUpdate [t] (UUIDElementUpdate PossibleNoteUpdate)) <-
+    osub :: Subscriber (OrderedListUpdate [(UUID, Result Text (Tuple NoteSel))] (UUIDElementUpdate PossibleNoteUpdate)) <-
         cvFloatMapSubscriber (orderedSetLens uo) sub
     let
         nameColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)

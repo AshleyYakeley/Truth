@@ -30,14 +30,14 @@ oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
             notifyChange $ return $ Just fu
             case retrieveOne fu of
                 FailureResult lfx@(MkLimit fx) -> do
-                    vs <-
+                    ((), vs) <-
                         viewCreateView $ do
                             widget <- baseView fx
                             lcContainPackStart True box widget
                             widgetShow widget
                     return $ MissingOVS lfx vs
                 SuccessResult () -> do
-                    vs <-
+                    ((), vs) <-
                         viewCreateView $ do
                             widget <- baseView $ pure $ mapSubscriber (mustExistOneEditLens "object") rm
                             lcContainPackStart True box widget
