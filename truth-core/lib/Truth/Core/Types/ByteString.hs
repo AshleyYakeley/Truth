@@ -1,4 +1,8 @@
-module Truth.Core.Types.ByteString where
+module Truth.Core.Types.ByteString
+    ( ByteStringReader(..)
+    , ByteStringEdit(..)
+    , ByteStringUpdate
+    ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import

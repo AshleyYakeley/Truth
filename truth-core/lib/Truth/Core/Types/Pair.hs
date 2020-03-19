@@ -153,12 +153,12 @@ sndLiftEditLens (MkEditLens (MkUpdateFunction g u) pe) = let
                     return $ (fmap (MkTupleUpdateEdit SelectFirst) exs) ++ (fmap (MkTupleUpdateEdit SelectSecond) eas)
     in MkEditLens {..}
 
-pairCombineAnUpdateFunctions ::
+pairCombineUpdateFunctions ::
        forall updateA updateB1 updateB2.
        UpdateFunction updateA updateB1
     -> UpdateFunction updateA updateB2
     -> UpdateFunction updateA (PairUpdate updateB1 updateB2)
-pairCombineAnUpdateFunctions (MkUpdateFunction g1 u1) (MkUpdateFunction g2 u2) = let
+pairCombineUpdateFunctions (MkUpdateFunction g1 u1) (MkUpdateFunction g2 u2) = let
     g12 :: ReadFunction (UpdateReader updateA) (PairUpdateReader updateB1 updateB2)
     g12 mr (MkTupleUpdateReader SelectFirst rt) = g1 mr rt
     g12 mr (MkTupleUpdateReader SelectSecond rt) = g2 mr rt
@@ -172,20 +172,13 @@ pairCombineAnUpdateFunctions (MkUpdateFunction g1 u1) (MkUpdateFunction g2 u2) =
         return $ fmap (MkTupleUpdate SelectFirst) eb1s ++ fmap (MkTupleUpdate SelectSecond) eb2s
     in MkUpdateFunction g12 u12
 
-pairCombineUpdateFunctions ::
-       forall updateA updateB1 updateB2.
-       UpdateFunction updateA updateB1
-    -> UpdateFunction updateA updateB2
-    -> UpdateFunction updateA (PairUpdate updateB1 updateB2)
-pairCombineUpdateFunctions = pairCombineAnUpdateFunctions
-
 pairCombineEditLenses ::
        forall updateA updateB1 updateB2.
        EditLens updateA updateB1
     -> EditLens updateA updateB2
     -> EditLens updateA (PairUpdate updateB1 updateB2)
 pairCombineEditLenses (MkEditLens af1 pe1) (MkEditLens af2 pe2) = let
-    af12 = pairCombineAnUpdateFunctions af1 af2
+    af12 = pairCombineUpdateFunctions af1 af2
     pe12 ::
            forall m. MonadIO m
         => [PairUpdateEdit updateB1 updateB2]

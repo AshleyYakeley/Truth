@@ -1,20 +1,16 @@
 module Pinafore.Base.Morphism
     ( PinaforeFunctionMorphism(..)
+    , pinaforeFunctionMorphismUpdateFunction
     , PinaforeLensMorphism(..)
-    , PinaforeFunctionValue
-    , applyPinaforeFunction
+    , pinaforeLensMorphismInverseEditLens
+    , pinaforeLensMorphismInverseEditLensSet
     , mapPinaforeFunctionMorphismBase
-    , PinaforeLensValue
-    , lensFunctionValue
     , mapPinaforeLensMorphismBase
     , funcPinaforeLensMorphism
     , nullPinaforeLensMorphism
     , bijectionPinaforeLensMorphism
     , pairPinaforeLensMorphism
     , eitherPinaforeLensMorphism
-    , applyPinaforeLens
-    , applyInversePinaforeLens
-    , applyInversePinaforeLensSet
     , lensFunctionMorphism
     , lensInverseFunctionMorphism
     ) where
@@ -23,8 +19,6 @@ import Pinafore.Base.Know
 import Shapes
 import Truth.Core
 import Truth.Debug.Object
-
-type PinaforeLensValue baseupdate = EditLens baseupdate
 
 data PinaforeFunctionMorphism baseupdate a b = MkPinaforeFunctionMorphism
     { pfFuncRead :: forall m. MonadIO m => MutableRead m (UpdateReader baseupdate) -> a -> m b
@@ -128,37 +122,36 @@ instance Traversable f => CatFunctor (PinaforeFunctionMorphism baseupdate) (Pina
         pfFuncRead mr fa = for fa $ f mr
         in MkPinaforeFunctionMorphism {..}
 
-type PinaforeFunctionValue baseupdate t = UpdateFunction baseupdate (WholeUpdate t)
-
-applyPinaforeFunction ::
+pinaforeFunctionMorphismUpdateFunction ::
        forall baseupdate a b.
        PinaforeFunctionMorphism baseupdate a b
-    -> PinaforeFunctionValue baseupdate a
-    -> PinaforeFunctionValue baseupdate b
-applyPinaforeFunction MkPinaforeFunctionMorphism {..} MkUpdateFunction {..} = let
+    -> UpdateFunction (ContextUpdate baseupdate (WholeUpdate a)) (WholeUpdate b)
+pinaforeFunctionMorphismUpdateFunction MkPinaforeFunctionMorphism {..} = let
     getB ::
            forall m. MonadIO m
-        => MutableRead m (UpdateReader baseupdate)
+        => MutableRead m (ContextUpdateReader baseupdate (WholeUpdate a))
         -> m b
     getB mr = do
-        a <- ufGet mr ReadWhole
-        pfFuncRead mr a
-    g :: ReadFunction (UpdateReader baseupdate) (WholeReader b)
-    g mr ReadWhole = getB mr
-    u :: forall m. MonadIO m
-      => baseupdate
-      -> MutableRead m (UpdateReader baseupdate)
-      -> m [WholeUpdate b]
-    u pinedit mr = do
-        ch <- pfUpdate pinedit mr
+        a <- mr $ MkTupleUpdateReader SelectContent ReadWhole
+        pfFuncRead (tupleReadFunction SelectContext mr) a
+    ufGet :: ReadFunction (ContextUpdateReader baseupdate (WholeUpdate a)) (WholeReader b)
+    ufGet mr ReadWhole = getB mr
+    ufUpdate ::
+           forall m. MonadIO m
+        => (ContextUpdate baseupdate (WholeUpdate a))
+        -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate a))
+        -> m [WholeUpdate b]
+    ufUpdate (MkTupleUpdate SelectContext pinupdate) mr = do
+        ch <- pfUpdate pinupdate $ tupleReadFunction SelectContext mr
         if ch
             then do
                 b <- getB mr
                 return [MkWholeReaderUpdate b]
-            else do
-                edits <- ufUpdate pinedit mr
-                for edits $ \(MkWholeReaderUpdate a) -> fmap MkWholeReaderUpdate $ pfFuncRead mr a
-    in MkUpdateFunction g u
+            else return []
+    ufUpdate (MkTupleUpdate SelectContent (MkWholeReaderUpdate a)) mr = do
+        b <- pfFuncRead (tupleReadFunction SelectContext mr) a
+        return [MkWholeReaderUpdate b]
+    in MkUpdateFunction {..}
 
 mapPinaforeFunctionMorphismBase ::
        forall baseA baseB a b.
@@ -183,12 +176,6 @@ mapPinaforeFunctionMorphismBase aef (MkPinaforeFunctionMorphism frA updateA) = l
         chs <- for beditAs $ \beditA -> updateA beditA $ readFunc mr
         return $ or chs
     in MkPinaforeFunctionMorphism frB updateB
-
-lensFunctionValue ::
-       (IsEditUpdate update, FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
-    => PinaforeLensValue baseupdate update
-    -> PinaforeFunctionValue baseupdate (UpdateSubject update)
-lensFunctionValue lens = convertUpdateFunction . editLensFunction lens
 
 data PinaforeLensMorphism baseupdate a b = MkPinaforeLensMorphism
     { pmForward :: EditLens (ContextUpdate baseupdate (WholeUpdate (Know a))) (WholeUpdate (Know b))
@@ -360,7 +347,7 @@ mapPinaforeLensMorphismBase alens (MkPinaforeLensMorphism fwdA (MkPinaforeFuncti
     readFunc :: ReadFunction (UpdateReader baseB) (UpdateReader baseA)
     readFunc = ufGet $ elFunction alens
     fwdB :: EditLens (ContextUpdate baseB (WholeUpdate (Know a))) (WholeUpdate (Know b))
-    fwdB = fwdA . liftContentAnEditLens alens
+    fwdB = fwdA . liftContentEditLens alens
     frB :: forall m. MonadIO m
         => MutableRead m (UpdateReader baseB)
         -> b
@@ -540,12 +527,6 @@ instance IsoVariant (PinaforeLensMorphism baseupdate t) where
 instance IsoVariant' (PinaforeLensMorphism baseupdate) where
     isoMap' ab ba m = m . bijectionPinaforeLensMorphism (MkIsomorphism ba ab)
 
-applyPinaforeLens ::
-       PinaforeLensMorphism baseupdate a b
-    -> PinaforeLensValue baseupdate (WholeUpdate (Know a))
-    -> PinaforeLensValue baseupdate (WholeUpdate (Know b))
-applyPinaforeLens pm val = traceThing "applyPinaforeLens" $ pmForward pm . contextualiseEditLens val
-
 lensFunctionMorphism ::
        forall baseupdate a b.
        PinaforeLensMorphism baseupdate a b
@@ -566,11 +547,11 @@ lensFunctionMorphism MkPinaforeLensMorphism {..} = let
 lensInverseFunctionMorphism :: PinaforeLensMorphism baseupdate a b -> PinaforeFunctionMorphism baseupdate b [a]
 lensInverseFunctionMorphism = pmInverse
 
-pmInverseEditLens ::
+pinaforeLensMorphismInverseEditLens ::
        forall baseupdate a b. Eq a
     => PinaforeLensMorphism baseupdate a b
     -> EditLens (ContextUpdate baseupdate (WholeUpdate (Know b))) (FiniteSetUpdate a)
-pmInverseEditLens MkPinaforeLensMorphism {..} = let
+pinaforeLensMorphismInverseEditLens MkPinaforeLensMorphism {..} = let
     getFiniteSet ::
            forall m update. (MonadIO m, MonadIO (m))
         => Know b
@@ -674,19 +655,12 @@ pmInverseEditLens MkPinaforeLensMorphism {..} = let
             return $ ea ++ eea
     in MkEditLens {..}
 
-applyInversePinaforeLens ::
-       forall baseupdate a b. (Eq a, Eq b)
-    => PinaforeLensMorphism baseupdate a b
-    -> PinaforeLensValue baseupdate (WholeUpdate (Know b))
-    -> PinaforeLensValue baseupdate (FiniteSetUpdate a)
-applyInversePinaforeLens pm val = pmInverseEditLens pm . contextualiseEditLens val
-
-pmInverseEditLensSet ::
+pinaforeLensMorphismInverseEditLensSet ::
        forall baseupdate a b. (Eq a, Eq b)
     => IO b
     -> PinaforeLensMorphism baseupdate a b
     -> EditLens (ContextUpdate baseupdate (FiniteSetUpdate b)) (FiniteSetUpdate a)
-pmInverseEditLensSet newb MkPinaforeLensMorphism {..} = let
+pinaforeLensMorphismInverseEditLensSet newb MkPinaforeLensMorphism {..} = let
     getPointPreimage ::
            forall m update. (MonadIO m, MonadIO (m))
         => b
@@ -821,11 +795,3 @@ pmInverseEditLensSet newb MkPinaforeLensMorphism {..} = let
             eea <- MkComposeM $ elPutEdits' ee $ applyEdits' ea mr
             return $ ea ++ eea
     in MkEditLens elFunction' elPutEdits'
-
-applyInversePinaforeLensSet ::
-       forall baseupdate a b. (Eq a, Eq b)
-    => IO b
-    -> PinaforeLensMorphism baseupdate a b
-    -> PinaforeLensValue baseupdate (FiniteSetUpdate b)
-    -> PinaforeLensValue baseupdate (FiniteSetUpdate a)
-applyInversePinaforeLensSet newb pm val = pmInverseEditLensSet newb pm . contextualiseEditLens val

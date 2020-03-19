@@ -30,7 +30,7 @@ instance c (Object edit) => WitnessConstraint c (ObjectReader edit) where
 
 instance SubjectReader (EditReader edit) => SubjectReader (ObjectReader edit) where
     type ReaderSubject (ObjectReader edit) = EditSubject edit
-    subjectToRead subj ReadObject = constantObject subj
+    subjectToRead subj ReadObject = mapObject (fromReadOnlyRejectingEditLens @(EditUpdate edit)) $ constantObject subj
 
 instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader edit) where
     mutableReadToSubject mr = do

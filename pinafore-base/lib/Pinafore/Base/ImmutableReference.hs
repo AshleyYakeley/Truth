@@ -3,6 +3,7 @@ module Pinafore.Base.ImmutableReference where
 import Pinafore.Base.Action
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
+import Pinafore.Base.Value
 import Shapes
 import Truth.Core
 
@@ -27,7 +28,7 @@ immutableReferenceToFunction (MkPinaforeImmutableReference fv) = fv
 
 immutableReferenceToLens ::
        PinaforeImmutableReference baseupdate a -> PinaforeLensValue baseupdate (WholeUpdate (Know a))
-immutableReferenceToLens ref = readOnlyEditLens $ immutableReferenceToFunction ref
+immutableReferenceToLens ref = updateFunctionToRejectingEditLens $ immutableReferenceToFunction ref
 
 getImmutableReference :: PinaforeImmutableReference baseupdate a -> PinaforeAction baseupdate (Know a)
 getImmutableReference ref = pinaforeFunctionValueGet $ immutableReferenceToFunction ref

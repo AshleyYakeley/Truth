@@ -64,12 +64,6 @@ readFunctionNoUpdateFunction rf = let
     ufUpdate edit _ = never edit
     in MkUpdateFunction {..}
 
-readFunctionNoEditLens :: forall ra updateB. ReadFunction ra (UpdateReader updateB) -> EditLens (NoUpdate ra) updateB
-readFunctionNoEditLens rf = readOnlyEditLens $ readFunctionNoUpdateFunction rf
-
-noEditLens :: forall update. EditLens (NoUpdate (UpdateReader update)) update
-noEditLens = readFunctionNoEditLens $ \rt -> rt
-
 ioFuncNoUpdateFunction ::
        forall ra updateB. (FullSubjectReader ra, SubjectReader (UpdateReader updateB))
     => (ReaderSubject ra -> IO (UpdateSubject updateB))
@@ -81,15 +75,3 @@ funcNoUpdateFunction ::
     => (ReaderSubject ra -> UpdateSubject updateB)
     -> UpdateFunction (NoUpdate ra) updateB
 funcNoUpdateFunction f = ioFuncNoUpdateFunction $ return . f
-
-ioFuncNoEditLens ::
-       forall ra updateB. (FullSubjectReader ra, SubjectReader (UpdateReader updateB))
-    => (ReaderSubject ra -> IO (UpdateSubject updateB))
-    -> EditLens (NoUpdate ra) updateB
-ioFuncNoEditLens f = readOnlyEditLens $ ioFuncNoUpdateFunction f
-
-funcNoEditLens ::
-       forall ra updateB. (FullSubjectReader ra, SubjectReader (UpdateReader updateB))
-    => (ReaderSubject ra -> UpdateSubject updateB)
-    -> EditLens (NoUpdate ra) updateB
-funcNoEditLens f = ioFuncNoEditLens $ return . f

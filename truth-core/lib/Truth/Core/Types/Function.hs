@@ -168,10 +168,10 @@ contramapPartialFunctionEditLens ba matchab = let
             return $ Just $ [MkTupleUpdateEdit (MkFunctionSelector $ ba b) edit]
     in MkEditLens {..}
 
-applyFunctionAnUpdateFunction ::
+applyFunctionUpdateFunction ::
        forall a update. (Eq a, IsUpdate update, FullEdit (UpdateEdit update))
     => UpdateFunction (PairUpdate (FunctionUpdate a update) (WholeUpdate a)) update
-applyFunctionAnUpdateFunction = let
+applyFunctionUpdateFunction = let
     ufGet :: ReadFunction (PairUpdateReader (FunctionUpdate a update) (WholeUpdate a)) (UpdateReader update)
     ufGet mr rt = do
         a <- mr $ MkTupleUpdateReader SelectSecond ReadWhole
@@ -194,11 +194,6 @@ applyFunctionAnUpdateFunction = let
         return $ fmap editUpdate edits
     in MkUpdateFunction {..}
 
-applyFunctionUpdateFunction ::
-       forall a update. (Eq a, IsUpdate update, FullEdit (UpdateEdit update))
-    => UpdateFunction (PairUpdate (FunctionUpdate a update) (WholeUpdate a)) update
-applyFunctionUpdateFunction = applyFunctionAnUpdateFunction
-
 functionEditApply ::
        (Eq p, IsUpdate updateB, FullEdit (UpdateEdit updateB))
     => UpdateFunction updateA (FunctionUpdate p updateB)
@@ -210,7 +205,7 @@ applyFunctionEditLens ::
        forall a update. (Eq a, IsUpdate update, FullEdit (UpdateEdit update))
     => EditLens (PairUpdate (FunctionUpdate a update) (WholeUpdate a)) update
 applyFunctionEditLens = let
-    elFunction = applyFunctionAnUpdateFunction
+    elFunction = applyFunctionUpdateFunction
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]

@@ -134,11 +134,8 @@ truthMainGTK appMain =
         let
             uitWithLock :: forall a. IO a -> IO a
             uitWithLock action = traceBarrier "uitWithLock" (mVarRun uiLockVar) $ liftIO action
-            withUILock :: UpdateTiming -> IO a -> IO a
-            withUILock AsynchronousUpdateTiming = uitWithLock
-            withUILock SynchronousUpdateTiming = id
             uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow
-            uitCreateWindow sub wspec = subscribeView withUILock (createWindowAndChild wspec) sub getRequest
+            uitCreateWindow sub wspec = subscribeView uitWithLock (createWindowAndChild wspec) sub getRequest
             uitExit :: IO ()
             uitExit = traceBarrier "truthMainGTK: uitQuit" (mVarRun runVar) $ put RSStop
             uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a

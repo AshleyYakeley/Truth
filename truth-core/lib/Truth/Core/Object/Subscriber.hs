@@ -66,15 +66,8 @@ instance Semigroup (UpdateQueue update) where
 singleUpdateQueue :: NonEmpty update -> EditContext -> UpdateQueue update
 singleUpdateQueue edits ec = MkUpdateQueue $ pure (ec, edits)
 
-utReceiveUpdates :: UpdateTiming -> (NonEmpty update -> EditContext -> IO ()) -> NonEmpty update -> EditContext -> IO ()
-utReceiveUpdates ut recv edits ec = recv edits $ timingEditContext ut ec
-
-getRunner ::
-       UpdateTiming
-    -> (NonEmpty update -> EditContext -> IO ())
-    -> LifeCycleIO (NonEmpty update -> EditContext -> IO ())
-getRunner SynchronousUpdateTiming recv = return recv
-getRunner AsynchronousUpdateTiming recv = do
+getRunner :: (NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (NonEmpty update -> EditContext -> IO ())
+getRunner recv = do
     runAsync <- asyncRunner $ \(MkUpdateQueue sourcededits) -> traceBracket "getRunner:action" $ for_ sourcededits $ \(ec, edits) -> recv edits ec
     return $ \edits ec -> runAsync $ singleUpdateQueue edits ec
 
@@ -84,15 +77,15 @@ subscriberObjectMaker (MkResource rr MkASubscriber {..}) a update =
         remonad run $ subscribe update
         return (MkResource rr subAnObject, a)
 
-makeSharedSubscriber :: forall update a. UpdateTiming -> ObjectMaker update a -> LifeCycleIO (Subscriber update, a)
-makeSharedSubscriber ut om = traceBracket "makeSharedSubscriber:run" $ do
+makeSharedSubscriber :: forall update a. ObjectMaker update a -> LifeCycleIO (Subscriber update, a)
+makeSharedSubscriber om = traceBracket "makeSharedSubscriber:run" $ do
     var :: MVar (UpdateStore update) <- liftIO $ newMVar emptyStore
     let
         updateP :: NonEmpty update -> EditContext -> IO ()
-        updateP edits ectxt = traceBracket ("makeSharedSubscriber:updateP (" ++ show ut ++ ")") $ do
+        updateP edits ectxt = traceBracket "makeSharedSubscriber:updateP" $ do
             store <- traceBarrier "makeSharedSubscriber:updateP.get.mVarRun" (mVarRun var) get
             for_ store $ \entry -> traceBracket "makeSharedSubscriber:updateP.entry" $ entry edits ectxt
-    runAsync <- getRunner ut $ utReceiveUpdates ut updateP
+    runAsync <- getRunner updateP
     (MkResource (trunC :: ResourceRunner tt) anObjectC, a) <- om runAsync
     Dict <- return $ resourceRunnerUnliftAllDict trunC
     Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
@@ -107,13 +100,12 @@ makeSharedSubscriber ut om = traceBracket "makeSharedSubscriber:run" $ do
 
 shareObjectMaker :: forall update a. ObjectMaker update a -> LifeCycleIO (ObjectMaker update a)
 shareObjectMaker uobj = do
-    (sub, a) <- makeSharedSubscriber mempty uobj
+    (sub, a) <- makeSharedSubscriber uobj
     return $ subscriberObjectMaker sub a
 
-makeReflectingSubscriber ::
-       IsUpdate update => UpdateTiming -> Object (UpdateEdit update) -> LifeCycleIO (Subscriber update)
-makeReflectingSubscriber ut object = do
-    (sub, ()) <- makeSharedSubscriber ut $ reflectingObjectMaker object
+makeReflectingSubscriber :: IsUpdate update => Object (UpdateEdit update) -> LifeCycleIO (Subscriber update)
+makeReflectingSubscriber object = do
+    (sub, ()) <- makeSharedSubscriber $ reflectingObjectMaker object
     return sub
 
 mapSubscriber ::
@@ -123,7 +115,7 @@ mapSubscriber ::
     -> LifeCycleIO (Subscriber updateB)
 mapSubscriber getlens subA = do
     lens <- getlens
-    (subB, ()) <- makeSharedSubscriber mempty $ mapObjectMaker lens $ subscriberObjectMaker subA ()
+    (subB, ()) <- makeSharedSubscriber $ mapObjectMaker lens $ subscriberObjectMaker subA ()
     return subB
 
 mapPureSubscriber :: forall updateA updateB. EditLens updateA updateB -> Subscriber updateA -> Subscriber updateB

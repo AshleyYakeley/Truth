@@ -14,11 +14,11 @@ type SumWholeReaderUpdate reader update = SumUpdate (WholeReaderUpdate reader) u
 
 type SumWholeUpdate update = SumWholeReaderUpdate (UpdateReader update) update
 
-sumWholeLiftAnUpdateFunction ::
+sumWholeLiftUpdateFunction ::
        forall updateA updateB. (SubjectReader (UpdateReader updateA), FullSubjectReader (UpdateReader updateB))
     => UpdateFunction updateA updateB
     -> UpdateFunction (SumWholeUpdate updateA) (SumWholeUpdate updateB)
-sumWholeLiftAnUpdateFunction (MkUpdateFunction ufGet u) = let
+sumWholeLiftUpdateFunction (MkUpdateFunction ufGet u) = let
     ufUpdate ::
            forall m. MonadIO m
         => SumWholeUpdate updateA
@@ -34,13 +34,7 @@ sumWholeLiftAnUpdateFunction (MkUpdateFunction ufGet u) = let
                 return $ fmap SumUpdateRight editbs
     in MkUpdateFunction {..}
 
-sumWholeLiftUpdateFunction ::
-       forall updateA updateB. (SubjectReader (UpdateReader updateA), FullSubjectReader (UpdateReader updateB))
-    => UpdateFunction updateA updateB
-    -> UpdateFunction (SumWholeUpdate updateA) (SumWholeUpdate updateB)
-sumWholeLiftUpdateFunction = sumWholeLiftAnUpdateFunction
-
-sumWholeLiftAnEditLens ::
+sumWholeLiftEditLens ::
        forall updateA updateB.
        ( ApplicableEdit (UpdateEdit updateA)
        , FullSubjectReader (UpdateReader updateA)
@@ -51,7 +45,7 @@ sumWholeLiftAnEditLens ::
                     UpdateSubject updateB -> MutableRead m (UpdateReader updateA) -> m (Maybe (UpdateSubject updateA)))
     -> EditLens updateA updateB
     -> EditLens (SumWholeUpdate updateA) (SumWholeUpdate updateB)
-sumWholeLiftAnEditLens pushback lens = let
+sumWholeLiftEditLens pushback lens = let
     elPutEdit ::
            forall m. MonadIO m
         => SumEdit (WholeReaderEdit (UpdateReader updateB)) (UpdateEdit updateB)
@@ -66,4 +60,4 @@ sumWholeLiftAnEditLens pushback lens = let
                 mstateedita <- elPutEdits lens [editb] mr
                 return $ fmap (fmap SumEditRight) mstateedita
     in MkEditLens
-           {elFunction = sumWholeLiftAnUpdateFunction (elFunction lens), elPutEdits = elPutEditsFromPutEdit elPutEdit}
+           {elFunction = sumWholeLiftUpdateFunction (elFunction lens), elPutEdits = elPutEditsFromPutEdit elPutEdit}

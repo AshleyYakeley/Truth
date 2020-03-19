@@ -1,4 +1,8 @@
-module Truth.Core.Types.Dependent where
+module Truth.Core.Types.Dependent
+    ( DependentSelector(..)
+    , DependentUpdate
+    , dependentEditLens
+    ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import

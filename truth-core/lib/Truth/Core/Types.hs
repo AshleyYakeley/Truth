@@ -24,6 +24,7 @@ import Truth.Core.Types.OneReader as I
 import Truth.Core.Types.OneWhole as I
 import Truth.Core.Types.Pair as I
 import Truth.Core.Types.ReadOnly as I
+import Truth.Core.Types.Reject as I
 import Truth.Core.Types.Set as I
 import Truth.Core.Types.String as I
 import Truth.Core.Types.Sum as I

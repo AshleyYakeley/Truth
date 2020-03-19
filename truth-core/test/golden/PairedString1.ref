@@ -3,31 +3,10 @@ pair: get ("ABC","ABC")
 var: "ABC"
 pair: push [tuple first section 1+0 "x"]
 pair: push succeeded
-main: receive [section 1+0 "x"]
-main: receive "AxBC"
 pair: receive [tuple first section 1+0 "x"]
-pair: receive ("AxBC","AxBC")
-pair: receive [tuple second section 1+0 "x"]
-pair: receive ("AxBC","AxBC")
-main: receive [section 1+0 "x"]
-main: receive "AxBC"
-pair: receive [tuple first section 1+0 "x"]
-pair: receive ("AxBC","AxBC")
-pair: receive [tuple second section 1+0 "x"]
-pair: receive ("AxBC","AxBC")
 var: "AxBC"
 pair: push [tuple second section 3+0 "y"]
 pair: push succeeded
-main: receive [section 3+0 "y"]
-main: receive "AxByC"
-pair: receive [tuple first section 3+0 "y"]
-pair: receive ("AxByC","AxByC")
-pair: receive [tuple second section 3+0 "y"]
-pair: receive ("AxByC","AxByC")
-main: receive [section 3+0 "y"]
-main: receive "AxByC"
-pair: receive [tuple first section 3+0 "y"]
-pair: receive ("AxByC","AxByC")
-pair: receive [tuple second section 3+0 "y"]
-pair: receive ("AxByC","AxByC")
+main: receive [section 1+0 "x"]
+pair: receive [tuple second section 1+0 "x"]
 var: "AxByC"

@@ -22,7 +22,8 @@ switchView specfunc = do
                 #show widget
     firstvs <- do
         firstspec <-
-            cvMapEdit (return $ readOnlyEditLens specfunc) $ cvLiftView $ viewObjectRead $ \_ mr -> mr ReadWhole
+            cvMapEdit (return $ updateFunctionToRejectingEditLens specfunc) $
+            cvLiftView $ viewObjectRead $ \_ mr -> mr ReadWhole
         cvLiftView $ getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
     cvDynamic @(ViewState sel) firstvs $ \object updates -> traceBracket "GTK.Switch:update" $

@@ -60,24 +60,32 @@ newMemFiniteSet = do
     lens <- makeMemoryCellEditLens mempty
     return $ meetValuePinaforeFiniteSetRef $ convertEditLens . lens . baseEditLens
 
-now :: forall baseupdate. (BaseEditLens (WholeUpdate UTCTime) baseupdate)
+now :: forall baseupdate. (BaseEditLens (ReadOnlyUpdate (WholeUpdate UTCTime)) baseupdate)
     => PinaforeImmutableReference baseupdate UTCTime
-now = functionImmutableReference $ editLensFunction $ baseEditLens @(WholeUpdate UTCTime) @baseupdate
+now =
+    functionImmutableReference $
+    editLensToUpdateFunction $ baseEditLens @(ReadOnlyUpdate (WholeUpdate UTCTime)) @baseupdate
 
 timeZone ::
-       forall baseupdate. (BaseEditLens (WholeUpdate TimeZone) baseupdate)
+       forall baseupdate. (BaseEditLens (ReadOnlyUpdate (WholeUpdate TimeZone)) baseupdate)
     => PinaforeImmutableReference baseupdate TimeZone
-timeZone = functionImmutableReference $ editLensFunction $ baseEditLens @(WholeUpdate TimeZone) @baseupdate
+timeZone =
+    functionImmutableReference $
+    editLensToUpdateFunction $ baseEditLens @(ReadOnlyUpdate (WholeUpdate TimeZone)) @baseupdate
 
 localNow ::
        forall baseupdate.
-       (BaseEditLens (WholeUpdate UTCTime) baseupdate, BaseEditLens (WholeUpdate TimeZone) baseupdate)
+       ( BaseEditLens (ReadOnlyUpdate (WholeUpdate UTCTime)) baseupdate
+       , BaseEditLens (ReadOnlyUpdate (WholeUpdate TimeZone)) baseupdate
+       )
     => PinaforeImmutableReference baseupdate LocalTime
 localNow = utcToLocalTime <$> timeZone <*> now
 
 today ::
        forall baseupdate.
-       (BaseEditLens (WholeUpdate UTCTime) baseupdate, BaseEditLens (WholeUpdate TimeZone) baseupdate)
+       ( BaseEditLens (ReadOnlyUpdate (WholeUpdate UTCTime)) baseupdate
+       , BaseEditLens (ReadOnlyUpdate (WholeUpdate TimeZone)) baseupdate
+       )
     => PinaforeImmutableReference baseupdate Day
 today = localDay <$> localNow
 
@@ -95,8 +103,8 @@ base_predefinitions ::
        ( HasPinaforeEntityUpdate baseupdate
        , HasPinaforeFileUpdate baseupdate
        , BaseEditLens MemoryCellUpdate baseupdate
-       , BaseEditLens (WholeUpdate UTCTime) baseupdate
-       , BaseEditLens (WholeUpdate TimeZone) baseupdate
+       , BaseEditLens (ReadOnlyUpdate (WholeUpdate UTCTime)) baseupdate
+       , BaseEditLens (ReadOnlyUpdate (WholeUpdate TimeZone)) baseupdate
        )
     => [DocTreeEntry (BindDoc baseupdate)]
 base_predefinitions =

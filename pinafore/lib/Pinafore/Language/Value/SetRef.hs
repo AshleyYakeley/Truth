@@ -31,7 +31,8 @@ instance HasVariance 'Contravariance (PinaforeSetRef baseupdate) where
     varianceRepresentational = Nothing
 
 pinaforeSetRefImmutable :: forall baseupdate a. PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a
-pinaforeSetRefImmutable (MkPinaforeSetRef eq lens) = MkPinaforeSetRef eq $ readOnlyEditLens $ editLensFunction lens
+pinaforeSetRefImmutable (MkPinaforeSetRef eq lens) =
+    MkPinaforeSetRef eq $ updateFunctionToRejectingEditLens $ editLensFunction lens
 
 pinaforeSetRefComplement :: forall baseupdate a. PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a
 pinaforeSetRefComplement (MkPinaforeSetRef eq lens) = let
@@ -95,7 +96,8 @@ pinaforeSetRefCartesianProduct ::
 pinaforeSetRefCartesianProduct (MkPinaforeSetRef eqA lensA) (MkPinaforeSetRef eqB lensB) = let
     eqAB (a1, b1) (a2, b2) = eqA a1 a2 && eqB b1 b2
     in MkPinaforeSetRef eqAB $
-       readOnlyEditLens (setCartesianProductPartialUpdateFunction eqA eqB) . pairCombineEditLenses lensA lensB
+       updateFunctionToRejectingEditLens (setCartesianProductPartialUpdateFunction eqA eqB) .
+       pairCombineEditLenses lensA lensB
 
 pinaforeSetRefAdd :: forall baseupdate a. PinaforeSetRef baseupdate a -> a -> PinaforeAction baseupdate ()
 pinaforeSetRefAdd (MkPinaforeSetRef _eq lens) a =
@@ -186,7 +188,7 @@ pinaforeSetRefMember (MkPinaforeSetRef eq lens) aref = let
                                 MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit b
                             _ -> Nothing
         in MkEditLens {..}
-    in pinaforeLensToRef $ knowApplySetLens . pairCombineEditLenses lens (readOnlyEditLens afval)
+    in pinaforeLensToRef $ knowApplySetLens . pairCombineEditLenses lens (updateFunctionToRejectingEditLens afval)
 
 pinaforePredicateToSetRef :: forall baseupdate a. (a -> Bool) -> PinaforeSetRef baseupdate (MeetType Entity a)
 pinaforePredicateToSetRef p = MkPinaforeSetRef (==) $ constEditLens $ \mea -> p $ meet2 mea

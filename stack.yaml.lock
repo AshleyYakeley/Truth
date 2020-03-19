@@ -27,11 +27,11 @@ packages:
     git: https://github.com/AshleyYakeley/hindent.git
     pantry-tree:
       size: 1961
-      sha256: 859dfa966ef9e05e1904984a28e8b8d200e9f24619cab791bf64aa4e06666102
-    commit: b0d6fbdb7010382b620b6a15ce23991883b8decf
+      sha256: 009ed962c49db11e68328f4e094c5d5d293ad1a39d89086415c80601ec34dfaa
+    commit: d07e0ab032f9766f2d92dc260497ebd1ffbe62d7
   original:
     git: https://github.com/AshleyYakeley/hindent.git
-    commit: b0d6fbdb7010382b620b6a15ce23991883b8decf
+    commit: d07e0ab032f9766f2d92dc260497ebd1ffbe62d7
 - completed:
     cabal-file:
       size: 1785

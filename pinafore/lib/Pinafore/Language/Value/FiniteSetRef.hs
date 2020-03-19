@@ -52,7 +52,7 @@ pinaforeFiniteSetRefMeet ::
     -> PinaforeFiniteSetRef baseupdate '( MeetType Entity t, t)
 pinaforeFiniteSetRefMeet seta setb =
     meetValuePinaforeFiniteSetRef $
-    readOnlyEditLens meetUpdateFunction .
+    updateFunctionToRejectingEditLens meetUpdateFunction .
     pairCombineEditLenses (pinaforeFiniteSetRefMeetValue seta) (pinaforeFiniteSetRefMeetValue setb)
 
 pinaforeFiniteSetRefJoin ::
@@ -62,7 +62,7 @@ pinaforeFiniteSetRefJoin ::
     -> PinaforeFiniteSetRef baseupdate '( MeetType Entity t, t)
 pinaforeFiniteSetRefJoin seta setb =
     meetValuePinaforeFiniteSetRef $
-    readOnlyEditLens joinUpdateFunction .
+    updateFunctionToRejectingEditLens joinUpdateFunction .
     pairCombineEditLenses (pinaforeFiniteSetRefMeetValue seta) (pinaforeFiniteSetRefMeetValue setb)
 
 pinaforeFiniteSetRefAdd :: PinaforeFiniteSetRef baseupdate '( p, q) -> p -> PinaforeAction baseupdate ()
@@ -125,7 +125,7 @@ pinaforeFiniteSetRefCartesianProduct ::
     -> PinaforeFiniteSetRef baseupdate '( (ap, bp), (aq, bq))
 pinaforeFiniteSetRefCartesianProduct (MkPinaforeFiniteSetRef tra vala) (MkPinaforeFiniteSetRef trb valb) =
     MkPinaforeFiniteSetRef (pairRange tra trb) $
-    readOnlyEditLens finiteSetCartesianProductUpdateFunction . pairCombineEditLenses vala valb
+    updateFunctionToRejectingEditLens finiteSetCartesianProductUpdateFunction . pairCombineEditLenses vala valb
 
 pinaforeFiniteSetRefToSetRef ::
        forall baseupdate p q. PinaforeFiniteSetRef baseupdate '( p, q) -> PinaforeSetRef baseupdate p
@@ -142,7 +142,7 @@ pinaforeFiniteSetRefSetIntersect (MkPinaforeFiniteSetRef tr fsetlens) fsetref = 
     fsetfunc = editLensFunction fsetlens
     setfunc = editLensFunction setlens
     in MkPinaforeFiniteSetRef tr $
-       readOnlyEditLens $ filterFiniteSetUpdateFunction . pairCombineUpdateFunctions fsetfunc setfunc
+       updateFunctionToRejectingEditLens $ filterFiniteSetUpdateFunction . pairCombineUpdateFunctions fsetfunc setfunc
 
 pinaforeFiniteSetRefSetDifference ::
        forall baseupdate p q.

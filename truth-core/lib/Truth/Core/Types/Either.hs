@@ -1,4 +1,7 @@
-module Truth.Core.Types.Either where
+module Truth.Core.Types.Either
+    ( EitherReader(..)
+    , EitherEdit(..)
+    ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import

@@ -31,9 +31,8 @@ import Truth.World.Clock
 import Truth.World.ObjectStore
 import Truth.Debug.Subscriber
 
-makeTestPinaforeContext ::
-       UpdateTiming -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
-makeTestPinaforeContext ut uitoolkit = do
+makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
+makeTestPinaforeContext uitoolkit = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
         fmap (traceThing "makeTestPinaforeContext.tableStateObject") $
         liftIO $ freeIOObject ([], []) $ \_ -> True
@@ -49,21 +48,23 @@ makeTestPinaforeContext ut uitoolkit = do
         picker :: forall update. PinaforeSelector update -> ObjectMaker update ()
         picker PinaforeSelectPoint = traceThing "testObject.PinaforeSelectPoint" $ reflectingObjectMaker $ pinaforeTableEntityObject tableObject
         picker PinaforeSelectFile = traceThing "testObject.PinaforeSelectFile" $
-            reflectingObjectMaker $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
+            reflectingObjectMaker $
+            mapObject (fromReadOnlyRejectingEditLens @PinaforeFileUpdate) $
+            readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
         picker PinaforeSelectMemory = traceThing "testObject.PinaforeSelectMemory" $ reflectingObjectMaker memoryObject
         picker PinaforeSelectClock = traceThing "testObject.PinaforeSelectClock" $ clockOM
-        picker PinaforeSelectTimeZone = traceThing "testObject.PinaforeSelectTimeZone" $ mapObjectMaker (readOnlyEditLens clockTimeEF) clockOM
-    (sub, ()) <- makeSharedSubscriber ut $ tupleObjectMaker picker
+        picker PinaforeSelectTimeZone = traceThing "testObject.PinaforeSelectTimeZone" $
+            mapObjectMaker (updateFunctionToEditLens $ clockTimeEF . fromReadOnlyUpdateFunction) clockOM
+    (sub, ()) <- makeSharedSubscriber $ tupleObjectMaker picker
     pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       UpdateTiming
-    -> UIToolkit
+       UIToolkit
     -> ((?pinafore :: PinaforeContext PinaforeUpdate) => IO (EditSubject PinaforeTableEdit) -> IO r)
     -> IO r
-withTestPinaforeContext ut uitoolkit f =
-    withLifeCycle (makeTestPinaforeContext ut uitoolkit) $ \(pc, getTableState) -> let
+withTestPinaforeContext uitoolkit f =
+    withLifeCycle (makeTestPinaforeContext uitoolkit) $ \(pc, getTableState) -> let
         ?pinafore = pc
         in f getTableState
 

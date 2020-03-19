@@ -15,7 +15,7 @@ module Pinafore.Base.Action
     ) where
 
 import Pinafore.Base.Know
-import Pinafore.Base.Morphism
+import Pinafore.Base.Value
 import Shapes
 import Truth.Core
 

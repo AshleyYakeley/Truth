@@ -25,8 +25,8 @@ type FilePinaforeType = PinaforeAction PinaforeUpdate ()
 filePinaforeType :: Text
 filePinaforeType = qTypeDescription @PinaforeUpdate @FilePinaforeType
 
-standardPinaforeContext :: UpdateTiming -> FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate)
-standardPinaforeContext ut dirpath uitoolkit = do
+standardPinaforeContext :: FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate)
+standardPinaforeContext dirpath uitoolkit = do
     tableObject1 <- exclusiveResource $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     memoryObject <- liftIO makeMemoryCellObject
@@ -38,8 +38,9 @@ standardPinaforeContext ut dirpath uitoolkit = do
         picker PinaforeSelectFile = reflectingObjectMaker $ directoryPinaforeFileObject $ dirpath </> "files"
         picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
         picker PinaforeSelectClock = clockOM
-        picker PinaforeSelectTimeZone = mapObjectMaker (readOnlyEditLens clockTimeEF) clockOM
-    (sub, ()) <- makeSharedSubscriber ut $ tupleObjectMaker picker
+        picker PinaforeSelectTimeZone =
+            mapObjectMaker (updateFunctionToEditLens $ clockTimeEF . fromReadOnlyUpdateFunction) clockOM
+    (sub, ()) <- makeSharedSubscriber $ tupleObjectMaker picker
     makePinaforeContext sub uitoolkit
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()

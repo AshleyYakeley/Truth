@@ -1,4 +1,9 @@
-module Truth.Core.Types.List where
+module Truth.Core.Types.List
+    ( ListReader(..)
+    , ListEdit(..)
+    , ListUpdate(..)
+    , listItemLens
+    ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
