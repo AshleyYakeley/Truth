@@ -74,7 +74,7 @@ soupObject dirpath = let
 
 soupWindow :: UIToolkit -> FilePath -> CreateView ()
 soupWindow uit@MkUIToolkit {..} dirpath = do
-    sub <- liftLifeCycleIO $ makeReflectingSubscriber $ traceArgThing "soup" $ soupObject dirpath
+    sub <- liftLifeCycleIO $ makeReflectingSubscriber $ traceThing "soup" $ soupObject dirpath
     (selnotify, getsel) <- liftIO $ makeRefSelectNotify
     rec
         let

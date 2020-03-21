@@ -139,6 +139,9 @@ discardingResourceRunner (MkResourceRunner run) = MkResourceRunner $ mapListType
 newtype ResourceContext =
     MkResourceContext [AnyW SingleRunner]
 
+instance Show ResourceContext where
+    show (MkResourceContext rc) = "{" <> show (length rc) <> "}"
+
 emptyResourceContext :: ResourceContext
 emptyResourceContext = MkResourceContext []
 
