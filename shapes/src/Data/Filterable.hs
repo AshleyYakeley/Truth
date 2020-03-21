@@ -22,3 +22,6 @@ instance Filterable [] where
 
 instance Filterable Maybe where
     mapMaybe amb ma = ma >>= amb
+
+forf :: (Applicative m, Filterable f, Traversable f) => f a -> (a -> m (Maybe b)) -> m (f b)
+forf fa ammb = fmap catMaybes $ for fa ammb

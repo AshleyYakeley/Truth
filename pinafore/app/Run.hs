@@ -13,9 +13,9 @@ runFiles fNoRun dirpath fpaths =
     truthMainGTK $ \MkTruthContext {..} -> do
         (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
         context <- standardPinaforeContext dirpath toolkit
-        for_ fpaths $ \fpath ->
-            liftIO $ do
-                ptext <- readFile fpath
+        cvLiftView $
+            for_ fpaths $ \fpath -> do
+                ptext <- liftIO $ readFile fpath
                 action <-
                     ioRunInterpretResult $ let
                         ?pinafore = context
@@ -31,5 +31,5 @@ runInteractive dirpath =
         context <- standardPinaforeContext dirpath tcUIToolkit
         let
             ?pinafore = context
-            in liftIO pinaforeInteract
+            in cvLiftView pinaforeInteract
         liftIO $ uitExit tcUIToolkit

@@ -42,8 +42,8 @@ instance Eq a => SetContainer (FiniteSet a) where
     keys (MkFiniteSet a) = a
 
 instance Eq a => IsSet (FiniteSet a) where
-    insertSet = insertElement
-    deleteSet = deleteElement
+    insertSet = insertItem
+    deleteSet = deleteKey
     singletonSet = MkFiniteSet . pure
     setFromList = MkFiniteSet . nub
     setToList = unFiniteSet
@@ -58,18 +58,20 @@ instance Eq a => Lattice (FiniteSet a) where
 instance Eq a => BoundedJoinSemiLattice (FiniteSet a) where
     bottom = mempty
 
+instance Eq a => ItemContainer (FiniteSet a)
+
 instance Eq a => KeyContainer (FiniteSet a) where
-    elementKey a = a
-    lookupElement key = List.find (\k -> k == key)
-    insertElement e (MkFiniteSet []) = MkFiniteSet [e]
-    insertElement e (MkFiniteSet (a:aa))
+    itemKey a = a
+    lookupItem key = List.find (\k -> k == key)
+    insertItem e (MkFiniteSet []) = MkFiniteSet [e]
+    insertItem e (MkFiniteSet (a:aa))
         | e == a = MkFiniteSet $ e : aa
-    insertElement e (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ insertElement e $ MkFiniteSet aa)
-    deleteElement _ (MkFiniteSet []) = MkFiniteSet []
-    deleteElement k (MkFiniteSet (k':aa))
+    insertItem e (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ insertItem e $ MkFiniteSet aa)
+    deleteKey _ (MkFiniteSet []) = MkFiniteSet []
+    deleteKey k (MkFiniteSet (k':aa))
         | k == k' = MkFiniteSet $ aa
-    deleteElement k (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ deleteElement k $ MkFiniteSet aa)
-    fromElementList = MkFiniteSet
+    deleteKey k (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ deleteKey k $ MkFiniteSet aa)
+    fromItemList = MkFiniteSet
 
 instance (Eq key, Random key) => IONewItemKeyContainer (FiniteSet key) where
     newKeyContainerItem = randomIO

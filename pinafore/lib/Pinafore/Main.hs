@@ -20,32 +20,34 @@ import System.FilePath
 import Truth.Core
 import Truth.World.Clock
 
-type FilePinaforeType = PinaforeAction PinaforeUpdate ()
+type FilePinaforeType = PinaforeAction ()
 
 filePinaforeType :: Text
 filePinaforeType = qTypeDescription @PinaforeUpdate @FilePinaforeType
 
-standardPinaforeContext :: FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate)
+standardPinaforeContext :: FilePath -> UIToolkit -> CreateView (PinaforeContext PinaforeUpdate)
 standardPinaforeContext dirpath uitoolkit = do
-    tableObject1 <- exclusiveResource $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
-    tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
+    rc <- viewGetResourceContext
+    sqlObject <- liftIO $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
+    tableObject1 <- liftLifeCycleIO $ exclusiveResource rc sqlObject
+    tableObject <- liftLifeCycleIO $ cacheObject rc 500000 tableObject1 -- half-second delay before writing
     memoryObject <- liftIO makeMemoryCellObject
-    clockOM <- shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
-    clockTimeEF <- makeClockTimeZoneEF
+    clockOM <-
+        liftLifeCycleIO $
+        shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     let
         picker :: forall update. PinaforeSelector update -> ObjectMaker update ()
-        picker PinaforeSelectPoint = reflectingObjectMaker $ pinaforeTableEntityObject tableObject
+        picker PinaforeSelectPoint = reflectingObjectMaker $ pinaforeTableEntityObject $ tableObject rc
         picker PinaforeSelectFile = reflectingObjectMaker $ directoryPinaforeFileObject $ dirpath </> "files"
         picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
-        picker PinaforeSelectClock = clockOM
-        picker PinaforeSelectTimeZone =
-            mapObjectMaker (updateFunctionToEditLens $ clockTimeEF . fromReadOnlyUpdateFunction) clockOM
-    (sub, ()) <- makeSharedSubscriber $ tupleObjectMaker picker
-    makePinaforeContext sub uitoolkit
+        picker PinaforeSelectClock = clockOM rc
+        picker PinaforeSelectTimeZone = mapObjectMaker rc (liftReadOnlyFloatingEditLens clockTimeZoneLens) $ clockOM rc
+    (sub, ()) <- liftLifeCycleIO $ makeSharedSubscriber $ tupleObjectMaker picker
+    liftLifeCycleIO $ makePinaforeContext sub uitoolkit
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
-    MkAllF tables <- sqlitePinaforeTableGetEntireDatabase $ dirpath </> "tables.sqlite3"
+    MkAllF tables <- sqlitePinaforeTableGetEntireDatabase emptyResourceContext $ dirpath </> "tables.sqlite3"
     let
         littable :: [(Entity, Literal)]
         littable =
@@ -67,13 +69,13 @@ pinaforeInterpretFileAtType ::
     -> InterpretResult t
 pinaforeInterpretFileAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeUpdate puitext
 
-pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeUpdate) => FilePath -> Text -> InterpretResult (IO ())
+pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeUpdate) => FilePath -> Text -> InterpretResult (View ())
 pinaforeInterpretFile puipath puitext = do
     action :: FilePinaforeType <- pinaforeInterpretFileAtType puipath puitext
     return $ runPinaforeAction action
 
-pinaforeInteractHandles :: (?pinafore :: PinaforeContext PinaforeUpdate) => Handle -> Handle -> Bool -> IO ()
+pinaforeInteractHandles :: (?pinafore :: PinaforeContext PinaforeUpdate) => Handle -> Handle -> Bool -> View ()
 pinaforeInteractHandles inh outh echo = interact inh outh echo
 
-pinaforeInteract :: (?pinafore :: PinaforeContext PinaforeUpdate) => IO ()
+pinaforeInteract :: (?pinafore :: PinaforeContext PinaforeUpdate) => View ()
 pinaforeInteract = pinaforeInteractHandles stdin stdout False

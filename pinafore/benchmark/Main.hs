@@ -8,6 +8,9 @@ import Pinafore.Test
 import Shapes
 import Truth.Core
 
+nullViewIO :: View a -> IO a
+nullViewIO = uitRunView nullUIToolkit emptyResourceContext
+
 benchHash :: Text -> Benchmark
 benchHash text = bench (show $ unpack text) $ nf literalToEntity text
 
@@ -32,7 +35,7 @@ benchScript text =
                       (show $ unpack text)
                       [ bench "check" $ nfIO $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" text >> return ()
                       , env (fmap const $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" text) $ \action ->
-                            bench "run" $ nfIO (action ())
+                            bench "run" $ nfIO (nullViewIO $ action ())
                       ]
 
 benchScripts :: Benchmark
@@ -87,11 +90,10 @@ benchScripts =
 interpretUpdater :: (?pinafore :: PinaforeContext PinaforeUpdate) => Text -> IO ()
 interpretUpdater text = do
     action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" text
-    sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
-    (sendUpdate, ref) <- unliftPinaforeActionOrFail action
-    runLifeCycle $ do
-        lensSub <- mapSubscriber (return $ immutableReferenceToLens ref) sub
-        subscribeEditor lensSub $ checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
+    (sendUpdate, ref) <- nullViewIO $ unliftPinaforeActionOrFail action
+    runLifeCycle $
+        subscribeEditor emptyResourceContext (unPinaforeValue $ immutableReferenceToRejectingValue ref) $
+        checkUpdateEditor (Known (1 :: Integer)) $ nullViewIO $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =

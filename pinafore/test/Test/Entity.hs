@@ -12,6 +12,9 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Truth.Core
 
+nullViewIO :: View a -> IO a
+nullViewIO = uitRunView nullUIToolkit emptyResourceContext
+
 scriptTest ::
        FromPinaforeType PinaforeUpdate a
     => Text
@@ -26,7 +29,7 @@ scriptTest name text checker =
             checker action
 
 pointTest :: Text -> ContextTestTree
-pointTest text = scriptTest text text runPinaforeAction
+pointTest text = scriptTest text text $ nullViewIO . runPinaforeAction
 
 assertThrows :: IO a -> IO ()
 assertThrows ma = do
@@ -36,7 +39,7 @@ assertThrows ma = do
         else return ()
 
 badPointTest :: Text -> ContextTestTree
-badPointTest text = scriptTest text text $ assertThrows . runPinaforeAction
+badPointTest text = scriptTest text text $ assertThrows . nullViewIO . runPinaforeAction
 
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
@@ -49,16 +52,15 @@ exceptionTest text c =
     testCase (unpack text) $
     withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
         action <- ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
-        assertThrows action
+        assertThrows $ nullViewIO action
 
 updateTest :: Text -> ContextTestTree
 updateTest text =
     scriptTest text text $ \action -> do
-        sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
-        (sendUpdate, ref) <- unliftPinaforeActionOrFail action
-        runLifeCycle $ do
-            lensSub <- mapSubscriber (return $ immutableReferenceToLens ref) sub
-            subscribeEditor lensSub $ checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
+        (sendUpdate, ref) <- nullViewIO $ unliftPinaforeActionOrFail action
+        runLifeCycle $
+            subscribeEditor emptyResourceContext (unPinaforeValue $ immutableReferenceToRejectingValue ref) $
+            checkUpdateEditor (Known (1 :: Integer)) $ nullViewIO $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
 testUpdates = runContext $ tgroup "update" [updateTest "do ref <- newMemRef; return (ref := 1, ref) end"]

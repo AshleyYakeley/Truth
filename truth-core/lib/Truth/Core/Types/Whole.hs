@@ -4,7 +4,10 @@ module Truth.Core.Types.Whole where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
+import Truth.Core.Types.None
+import Truth.Core.Types.ReadOnly
 
 data WholeReader (a :: Type) (t :: Type) where
     ReadWhole :: forall t. WholeReader t t
@@ -71,6 +74,11 @@ lastWholeUpdate updates = do
     MkWholeReaderUpdate subj <- lastM updates
     return subj
 
+lastReadOnlyWholeUpdate :: [ReadOnlyUpdate (WholeReaderUpdate reader)] -> Maybe (ReaderSubject reader)
+lastReadOnlyWholeUpdate updates = do
+    MkReadOnlyUpdate (MkWholeReaderUpdate subj) <- lastM updates
+    return subj
+
 wholePutEdits ::
        (Monad mm, Monad m)
     => (ReaderSubject reader -> MutableRead m (EditReader edita) -> mm (Maybe [edita]))
@@ -102,78 +110,64 @@ pattern MkWholeUpdate a = MkWholeReaderUpdate a
 
 {-# COMPLETE MkWholeUpdate #-}
 
-wholeUpdateFunction :: forall a b. (a -> b) -> UpdateFunction (WholeUpdate a) (WholeUpdate b)
-wholeUpdateFunction ab =
-    MkUpdateFunction
-        { ufGet = \mr ReadWhole -> fmap ab $ mr ReadWhole
-        , ufUpdate = \(MkWholeUpdate a) _ -> return [MkWholeUpdate $ ab a]
-        }
-
-ioWholeUpdateFunction :: forall a b. (a -> IO b) -> UpdateFunction (WholeUpdate a) (WholeUpdate b)
-ioWholeUpdateFunction aiob =
-    MkUpdateFunction
-        { ufGet =
-              \mr ReadWhole -> do
-                  a <- mr ReadWhole
-                  liftIO $ aiob a
-        , ufUpdate =
-              \(MkWholeUpdate a) _ -> do
-                  b <- liftIO $ aiob a
-                  return [MkWholeUpdate b]
-        }
+type ROWUpdate a = ReadOnlyUpdate (WholeUpdate a)
 
 changeOnlyUpdateFunction ::
        forall a. Eq a
-    => LifeCycleIO (UpdateFunction (WholeUpdate a) (WholeUpdate a))
-changeOnlyUpdateFunction = do
-    var <- liftIO $ newMVar Nothing
-    let
-        ufGet :: ReadFunction (WholeReader a) (WholeReader a)
-        ufGet mr ReadWhole =
-            dangerousMVarRun var $ do
-                ma <- get
-                case ma of
-                    Just a -> return a
-                    Nothing -> do
-                        a <- lift $ mr ReadWhole
-                        put $ Just a
-                        return a
-        ufUpdate ::
-               forall m. MonadIO m
-            => WholeUpdate a
-            -> MutableRead m (WholeReader a)
-            -> m [WholeUpdate a]
-        ufUpdate (MkWholeUpdate newa) _ =
-            dangerousMVarRun var $ do
-                molda <- get
-                case molda of
-                    Just olda
-                        | olda == newa -> return []
-                    _ -> do
-                        put $ Just newa
-                        return [MkWholeUpdate newa]
-    return MkUpdateFunction {..}
+    => FloatingEditLens (WholeUpdate a) (ROWUpdate a)
+changeOnlyUpdateFunction = let
+    sInit ::
+           forall m. MonadIO m
+        => MutableRead m (WholeReader a)
+        -> m a
+    sInit mr = mr ReadWhole
+    sGet :: ReadFunctionT (StateT a) (WholeReader a) (WholeReader a)
+    sGet _ ReadWhole = get
+    sUpdate ::
+           forall m. MonadIO m
+        => WholeUpdate a
+        -> MutableRead m (WholeReader a)
+        -> StateT a m [ROWUpdate a]
+    sUpdate (MkWholeUpdate newa) _ = do
+        olda <- get
+        if olda == newa
+            then return []
+            else do
+                put newa
+                return [MkReadOnlyUpdate $ MkWholeUpdate newa]
+    sPutEdits ::
+           forall m. MonadIO m
+        => [ConstEdit _]
+        -> MutableRead m (WholeReader a)
+        -> StateT a m (Maybe [WholeEdit a])
+    sPutEdits = elPutEditsNone
+    in makeStateLens MkStateEditLens {..}
 
 ioWholeEditLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> EditLens (WholeUpdate a) (WholeUpdate b)
-ioWholeEditLens ioget ioput =
-    MkEditLens
-        { elFunction =
-              MkUpdateFunction
-                  { ufGet =
-                        \mr ReadWhole -> do
-                            a <- mr ReadWhole
-                            liftIO $ ioget a
-                  , ufUpdate =
-                        \(MkWholeUpdate a) _ -> do
-                            b <- liftIO $ ioget a
-                            return [MkWholeUpdate b]
-                  }
-        , elPutEdits =
-              elPutEditsFromPutEdit $ \(MkWholeReaderEdit b) mr -> do
-                  olda <- mr ReadWhole
-                  mnewa <- liftIO $ ioput b olda
-                  return $ fmap (\newa -> [MkWholeReaderEdit newa]) mnewa
-        }
+ioWholeEditLens ioget ioput = let
+    elGet :: ReadFunction (WholeReader a) (WholeReader b)
+    elGet mr ReadWhole = do
+        a <- mr ReadWhole
+        liftIO $ ioget a
+    elUpdate ::
+           forall m. MonadIO m
+        => WholeUpdate a
+        -> MutableRead m (WholeReader a)
+        -> m [WholeUpdate b]
+    elUpdate (MkWholeUpdate a) _ = do
+        b <- liftIO $ ioget a
+        return [MkWholeUpdate b]
+    elPutEdits ::
+           forall m. MonadIO m
+        => [WholeEdit b]
+        -> MutableRead m (WholeReader a)
+        -> m (Maybe [WholeEdit a])
+    elPutEdits =
+        elPutEditsFromPutEdit $ \(MkWholeReaderEdit b) mr -> do
+            olda <- mr ReadWhole
+            mnewa <- liftIO $ ioput b olda
+            return $ fmap (\newa -> [MkWholeReaderEdit newa]) mnewa
+    in MkEditLens {..}
 
 wholeEditLens ::
        forall mf a b. (MonadOne mf)
@@ -204,38 +198,3 @@ instance IsEditLens (Codec a b) where
     type LensDomain (Codec a b) = WholeUpdate a
     type LensRange (Codec a b) = WholeUpdate (Maybe b)
     toEditLens = toEditLens . codecInjection
-
-unitWholeUpdateFunction :: UpdateFunction edit (WholeUpdate ())
-unitWholeUpdateFunction = constUpdateFunction ()
-
-pairWholeUpdateFunction ::
-       forall update a b.
-       UpdateFunction update (WholeUpdate a)
-    -> UpdateFunction update (WholeUpdate b)
-    -> UpdateFunction update (WholeUpdate (a, b))
-pairWholeUpdateFunction (MkUpdateFunction ga ua) (MkUpdateFunction gb ub) = let
-    gab :: ReadFunction (UpdateReader update) (WholeReader (a, b))
-    gab (mr :: MutableRead m _) ReadWhole = do
-        a <- ga mr ReadWhole
-        b <- gb mr ReadWhole
-        return (a, b)
-    uab :: forall m. MonadIO m
-        => update
-        -> MutableRead m (UpdateReader update)
-        -> m [WholeUpdate (a, b)]
-    uab update mr = do
-        weas <- ua update mr
-        webs <- ub update mr
-        case (lastWholeUpdate weas, lastWholeUpdate webs) of
-            (Nothing, Nothing) -> return []
-            (ma, mb) -> do
-                a <-
-                    case ma of
-                        Just a -> return a
-                        Nothing -> ga mr ReadWhole
-                b <-
-                    case mb of
-                        Just b -> return b
-                        Nothing -> gb mr ReadWhole
-                return [MkWholeUpdate (a, b)]
-    in MkUpdateFunction gab uab

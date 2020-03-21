@@ -3,38 +3,38 @@ module Truth.Core.UI.Specifier.CSS where
 import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
-data NameUISpec sel update where
-    MkNameUISpec :: Text -> UISpec sel update -> NameUISpec sel update
+data NameUISpec where
+    MkNameUISpec :: Text -> CVUISpec -> NameUISpec
 
-instance Show (NameUISpec sel update) where
-    show (MkNameUISpec name spec) = "name " ++ show name ++ ": " ++ show spec
+instance Show NameUISpec where
+    show (MkNameUISpec name _) = "name " ++ show name
 
 instance UIType NameUISpec where
     uiWitness = $(iowitness [t|NameUISpec|])
 
-nameUISpec :: Text -> UISpec sel update -> UISpec sel update
-nameUISpec name spec = MkUISpec $ MkNameUISpec name spec
+nameUISpec :: Text -> CVUISpec -> CVUISpec
+nameUISpec name spec = mkCVUISpec $ MkNameUISpec name spec
 
-data CSSClassUISpec sel update where
-    MkCSSClassUISpec :: Text -> UISpec sel update -> CSSClassUISpec sel update
+data CSSClassUISpec where
+    MkCSSClassUISpec :: Text -> CVUISpec -> CSSClassUISpec
 
-instance Show (CSSClassUISpec sel update) where
-    show (MkCSSClassUISpec cssclass spec) = "css-class " ++ show cssclass ++ ": " ++ show spec
+instance Show CSSClassUISpec where
+    show (MkCSSClassUISpec cssclass _) = "css-class " ++ show cssclass
 
 instance UIType CSSClassUISpec where
     uiWitness = $(iowitness [t|CSSClassUISpec|])
 
-cssClassUISpec :: Text -> UISpec sel update -> UISpec sel update
-cssClassUISpec cssclass spec = MkUISpec $ MkCSSClassUISpec cssclass spec
+cssClassUISpec :: Text -> CVUISpec -> CVUISpec
+cssClassUISpec cssclass spec = mkCVUISpec $ MkCSSClassUISpec cssclass spec
 
-data CSSStyleSheetUISpec sel update where
-    MkCSSStyleSheetUISpec :: Bool -> Word32 -> Text -> UISpec sel update -> CSSStyleSheetUISpec sel update
+data CSSStyleSheetUISpec where
+    MkCSSStyleSheetUISpec :: Bool -> Word32 -> Text -> CVUISpec -> CSSStyleSheetUISpec
 
-instance Show (CSSStyleSheetUISpec sel update) where
-    show (MkCSSStyleSheetUISpec _ priority _ spec) = "css-stylesheet (" ++ show priority ++ ")" ++ show spec
+instance Show CSSStyleSheetUISpec where
+    show (MkCSSStyleSheetUISpec _ priority _ _) = "css-stylesheet (" ++ show priority ++ ")"
 
 instance UIType CSSStyleSheetUISpec where
     uiWitness = $(iowitness [t|CSSStyleSheetUISpec|])
 
-cssStyleSheetUISpec :: Bool -> Word32 -> Text -> UISpec sel update -> UISpec sel update
-cssStyleSheetUISpec full priority css spec = MkUISpec $ MkCSSStyleSheetUISpec full priority css spec
+cssStyleSheetUISpec :: Bool -> Word32 -> Text -> CVUISpec -> CVUISpec
+cssStyleSheetUISpec full priority css spec = mkCVUISpec $ MkCSSStyleSheetUISpec full priority css spec

@@ -38,6 +38,7 @@ library:
       - Truth.UI.GTK.Useful
       - Truth.UI.GTK.TextStyle
       - Truth.UI.GTK.GView
+      - Truth.UI.GTK.DynamicStore
       - Truth.UI.GTK.Window
       - Truth.UI.GTK.CSS
       - Truth.UI.GTK.Button

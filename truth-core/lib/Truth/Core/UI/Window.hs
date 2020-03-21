@@ -1,31 +1,22 @@
 module Truth.Core.UI.Window where
 
-import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Object
 import Truth.Core.Types
-import Truth.Core.UI.Specifier.Map
 import Truth.Core.UI.Specifier.MenuBar
 import Truth.Core.UI.Specifier.Specifier
+import Truth.Core.UI.View.View
 
-data WindowSpec edit = forall sel. MkWindowSpec
-    { wsCloseBoxAction :: IO ()
-    , wsTitle :: UpdateFunction edit (WholeUpdate Text)
-    , wsMenuBar :: Maybe (Aspect sel -> UpdateFunction edit (WholeUpdate (MenuBar edit)))
-    , wsContent :: UISpec sel edit
+data WindowSpec = MkWindowSpec
+    { wsCloseBoxAction :: View ()
+    , wsTitle :: Subscriber (ROWUpdate Text)
+    , wsMenuBar :: Maybe (Subscriber (ROWUpdate MenuBar))
+    , wsContent :: CVUISpec
     }
 
-mapWindowSpec :: EditLens edita editb -> WindowSpec editb -> WindowSpec edita
-mapWindowSpec lens (MkWindowSpec cba title mmbar content) = let
-    ef = editLensFunction lens
-    in MkWindowSpec
-           cba
-           (title . ef)
-           ((fmap $ fmap $ \efmar -> funcUpdateFunction (fmap $ mapMenuEntry ef) . efmar . ef) mmbar)
-           (mapUpdateUISpec (return lens) content)
-
 data UIWindow = MkUIWindow
-    { uiWindowHide :: IO ()
-    , uiWindowShow :: IO ()
+    { uiWindowHide :: View ()
+    , uiWindowShow :: View ()
     }
 
 nullUIWindow :: UIWindow

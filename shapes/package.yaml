@@ -49,6 +49,7 @@ library:
       - Data.CoerceFunction
       - Data.Codec
       - Data.Compose
+      - Data.KeyedOrder
       - Data.KeyContainer
       - Data.FiniteSet
       - Data.KindMorphism
@@ -59,6 +60,7 @@ library:
       - Control.Monad.Trans.LifeCycle
       - Control.Monad.LifeCycleIO
       - Control.Clock
+      - Control.Task
       - Control.AsyncRunner
       - Shapes
       - Shapes.Numeric

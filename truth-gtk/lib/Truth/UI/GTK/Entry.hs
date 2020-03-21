@@ -14,10 +14,9 @@ textEntryGetView :: GetGView
 textEntryGetView =
     MkGetView $ \_ uispec ->
         fmap
-            (\MkTextAreaUISpecEntry -> do
+            (\(MkTextEntryUISpec rmod) -> do
                  esrc <- newEditSource
-                 initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
-                 widget <- new Entry [#text := initial]
+                 widget <- new Entry []
                  invalidCol <- new RGBA [#red := 1, #green := 0, #blue := 0, #alpha := 1]
                  let
                      setValidState ::
@@ -27,14 +26,13 @@ textEntryGetView =
                      setValidState True = #overrideColor widget [StateFlagsNormal] Nothing
                      setValidState False = #overrideColor widget [StateFlagsNormal] $ Just invalidCol
                  changedSignal <-
-                     cvLiftView $
-                     viewOn widget #changed $
+                     cvOn widget #changed $
                      traceBracket "GTK.TextEntry:changed" $
-                     viewObjectPushEdit $ \_ push -> do
+                     viewRunResource rmod $ \asub -> do
                          st <- get widget #text
-                         succeeded <- traceBracketArgs "GTK.TextEntry:push" (show st) show $ push esrc $ pure $ MkWholeReaderEdit st
+                         succeeded <- traceBracketArgs "GTK.TextEntry:push" (show st) show $ pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
                          setValidState succeeded
-                 cvReceiveUpdate (Just esrc) $ \_ _ (MkWholeReaderUpdate newtext) ->
+                 cvBindWholeSubscriber rmod (Just esrc) $ \newtext ->
                      traceBracketArgs "GTK.TextEntry:update" (show newtext) show $
                      liftIO $
                      withSignalBlocked widget changedSignal $ do

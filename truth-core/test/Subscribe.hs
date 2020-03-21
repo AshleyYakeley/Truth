@@ -7,7 +7,7 @@ module Subscribe
 
 import Shapes
 import Test.Tasty
-import Test.Tasty.Golden
+import Test.Useful
 import Truth.Core
 import Truth.Debug
 
@@ -17,7 +17,7 @@ debugLens ::
     => String
     -> EditLens updateA updateB
     -> EditLens updateA updateB
-debugLens name (MkEditLens (MkUpdateFunction g u) pe) = let
+debugLens name (MkEditLens g u pe) = let
     u' :: forall m. MonadIO m
        => updateA
        -> MutableRead m (UpdateReader updateA)
@@ -37,53 +37,55 @@ debugLens name (MkEditLens (MkUpdateFunction g u) pe) = let
         meas <- pe ebs mr
         liftIO $ hPutStrLn ?handle $ name ++ ": -put: " ++ show meas
         return meas
-    in MkEditLens (MkUpdateFunction g u') pe'
+    in MkEditLens g u' pe'
 
-goldenTest :: TestName -> FilePath -> FilePath -> ((?handle :: Handle) => IO ()) -> TestTree
-goldenTest name refPath outPath call =
-    goldenVsFile name refPath outPath $
-    withBinaryFile outPath WriteMode $ \h -> let
-        ?handle = h
-        in do
-               hSetBuffering ?handle NoBuffering
-               call
+debugFloatingLens ::
+       forall updateA updateB.
+       (Show updateA, Show updateB, Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle)
+    => String
+    -> FloatingEditLens updateA updateB
+    -> FloatingEditLens updateA updateB
+debugFloatingLens name = floatLift (\mr -> mr) $ debugLens name
 
-goldenTest' :: TestName -> ((?handle :: Handle) => IO ()) -> TestTree
-goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("test/golden/" ++ name ++ ".out") call
+goldenTest' :: TestName -> ((?handle :: Handle, ?rc :: ResourceContext) => IO ()) -> TestTree
+goldenTest' name call =
+    goldenTest "." name $ let
+        ?rc = emptyResourceContext
+        in call
 
 testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
-    => UpdateFunction (WholeUpdate a) (WholeUpdate a)
+    => EditLens (WholeUpdate a) (ROWUpdate a)
 testUpdateFunction = let
-    ufGet :: ReadFunction (WholeReader a) (WholeReader a)
-    ufGet mr = mr
-    ufUpdate ::
+    elGet :: ReadFunction (WholeReader a) (WholeReader a)
+    elGet mr = mr
+    elUpdate ::
            forall m. MonadIO m
         => WholeUpdate a
         -> MutableRead m (WholeReader a)
-        -> m [WholeUpdate a]
-    ufUpdate (MkWholeReaderUpdate s) mr = do
+        -> m [ROWUpdate a]
+    elUpdate (MkWholeReaderUpdate s) mr = do
         s' <- mr ReadWhole
         liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
         liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
-        return [MkWholeReaderUpdate s]
-    in MkUpdateFunction {..}
+        return [MkReadOnlyUpdate $ MkWholeReaderUpdate s]
+    in MkEditLens {elPutEdits = elPutEditsNone, ..}
 
 testUpdateObject :: TestTree
 testUpdateObject =
     goldenTest' "updateObject" $ do
-        obj <- freeIOObject "old" $ \_ -> True
+        obj <- makeMemoryObject "old" $ \_ -> True
         var <- newEmptyMVar
         let
             om :: ObjectMaker (WholeUpdate String) ()
             om = reflectingObjectMaker obj
-            lens :: EditLens (WholeUpdate String) (WholeUpdate String)
-            lens = updateFunctionToRejectingEditLens testUpdateFunction
-            recv :: NonEmpty (WholeUpdate String) -> EditContext -> IO ()
-            recv ee _ =
+            lens :: FloatingEditLens (WholeUpdate String) (WholeUpdate String)
+            lens = editLensToFloating $ fromReadOnlyRejectingEditLens . testUpdateFunction
+            recv :: ResourceContext -> NonEmpty (WholeUpdate String) -> EditContext -> IO ()
+            recv _ ee _ =
                 putMVar var $ for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv update edit: " <> show s
-            recv' :: NonEmpty (WholeUpdate String) -> EditContext -> IO ()
-            recv' ee _ =
+            recv' :: ResourceContext -> NonEmpty (WholeUpdate String) -> EditContext -> IO ()
+            recv' _ ee _ =
                 putMVar var $ for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv' update edit: " <> show s
             showAction :: IO ()
             showAction = do
@@ -91,12 +93,14 @@ testUpdateObject =
                 action
         runLifeCycle $ do
             om' <- shareObjectMaker om
-            (MkResource trun MkAnObject {..}, ()) <- om' recv
-            (_obj', ()) <- mapObjectMaker lens om' recv'
-            runResourceRunnerWith trun $ \run ->
-                liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit $ pure $ MkWholeReaderEdit "new"
+            omr' <- om' ?rc mempty recv
+            _ <- mapObjectMaker ?rc lens (om' ?rc) mempty recv'
+            liftIO $
+                runResource ?rc (omrObject omr') $ \MkAnObject {..} ->
+                    pushOrFail "failed" noEditSource $ objEdit $ pure $ MkWholeReaderEdit "new"
             liftIO showAction
             liftIO showAction
+            liftIO $ taskWait $ omrUpdatesTask omr'
 
 outputLn :: (?handle :: Handle, MonadIO m) => String -> m ()
 outputLn s = liftIO $ hPutStrLn ?handle s
@@ -110,44 +114,52 @@ subscribeShowUpdates ::
        , Show (UpdateSubject update)
        , FullSubjectReader (UpdateReader update)
        , ?handle :: Handle
+       , ?rc :: ResourceContext
        )
     => String
     -> Subscriber update
     -> LifeCycleIO (LifeCycleIO ())
-subscribeShowUpdates name (MkResource trun (MkASubscriber _ subrecv)) = do
-    var <- liftIO newEmptyMVar
-    lifeCycleClose $ putMVar var [] -- verify that update has been shown
-    runResourceRunnerWith trun $ \run -> remonad run $ subrecv $ \updates _ -> liftIO $ putMVar var $ toList updates
+subscribeShowUpdates name sub = do
+    chan <- liftIO newChan
+    lifeCycleClose $ do
+        writeChan chan Nothing
+        final <- readChan chan
+        -- verify that update has been shown
+        case final of
+            Nothing -> return ()
+            _ -> fail "updates left over"
+    runResource ?rc sub $ \asub ->
+        subscribe asub mempty $ \_ updates _ -> for_ updates $ \update -> writeChan chan $ Just update
     return $ do
-        --outputNameLn name "flush"
-        updates <- liftIO $ takeMVar var
-        outputNameLn name $ "receive " ++ show updates
+        mupdate <- liftIO $ readChan chan
+        case mupdate of
+            Just update -> outputNameLn name $ "receive " ++ show update
+            Nothing -> fail "premature end of updates"
 
 showSubscriberSubject ::
-       (Show (UpdateSubject update), FullSubjectReader (UpdateReader update), ?handle :: Handle)
+       (Show (UpdateSubject update), FullSubjectReader (UpdateReader update), ?handle :: Handle, ?rc :: ResourceContext)
     => String
     -> Subscriber update
     -> LifeCycleIO ()
-showSubscriberSubject name (MkResource trun (MkASubscriber (MkAnObject mr _) _)) =
-    liftIO $
-    runResourceRunnerWith trun $ \run ->
-        run $ do
-            val <- mutableReadToSubject mr
+showSubscriberSubject name sub =
+    liftIO $ do
+        taskWait $ subscriberUpdatesTask sub
+        runResource ?rc sub $ \asub -> do
+            val <- mutableReadToSubject $ subRead asub
             outputNameLn name $ "get " ++ show val
 
 subscriberPushEdits ::
-       (Show (UpdateEdit update), ?handle :: Handle)
+       (Show (UpdateEdit update), ?handle :: Handle, ?rc :: ResourceContext)
     => String
     -> Subscriber update
     -> [NonEmpty (UpdateEdit update)]
     -> LifeCycleIO ()
-subscriberPushEdits name (MkResource trun (MkASubscriber (MkAnObject _ push) _)) editss =
-    runResourceRunnerWith trun $ \run ->
-        liftIO $
-        run $
+subscriberPushEdits name sub editss =
+    liftIO $
+    runResource ?rc sub $ \asub ->
         for_ editss $ \edits -> do
             outputNameLn name $ "push " ++ show (toList edits)
-            maction <- push edits
+            maction <- subEdit asub edits
             case maction of
                 Nothing -> outputNameLn name "push disallowed"
                 Just action -> do
@@ -155,24 +167,29 @@ subscriberPushEdits name (MkResource trun (MkASubscriber (MkAnObject _ push) _))
                     outputNameLn name $ "push succeeded"
 
 subscriberDontPushEdits ::
-       (Show (UpdateEdit update), ?handle :: Handle)
+       (Show (UpdateEdit update), ?handle :: Handle, ?rc :: ResourceContext)
     => String
     -> Subscriber update
     -> [NonEmpty (UpdateEdit update)]
     -> LifeCycleIO ()
-subscriberDontPushEdits name (MkResource trun (MkASubscriber (MkAnObject _ push) _)) editss =
-    runResourceRunnerWith trun $ \run ->
-        liftIO $
-        run $
+subscriberDontPushEdits name sub editss =
+    liftIO $
+    runResource ?rc sub $ \asub ->
         for_ editss $ \edits -> do
             outputNameLn name $ "push " ++ show (toList edits)
-            maction <- push edits
+            maction <- subEdit asub edits
             case maction of
                 Nothing -> outputNameLn name "push disallowed"
                 Just _action -> outputNameLn name "push ignored"
 
 testSubscription ::
-       forall update. (?handle :: Handle, IsUpdate update, FullEdit (UpdateEdit update), Show (UpdateSubject update))
+       forall update.
+       ( ?handle :: Handle
+       , ?rc :: ResourceContext
+       , IsUpdate update
+       , FullEdit (UpdateEdit update)
+       , Show (UpdateSubject update)
+       )
     => UpdateSubject update
     -> LifeCycleIO (Subscriber update, LifeCycleIO (), NonEmpty (UpdateEdit update) -> LifeCycleIO ())
 testSubscription initial = do
@@ -194,8 +211,8 @@ testSubscription initial = do
                     hPutStrLn ?handle $ "expected: " ++ show news
     return (sub, showVar, showExpected)
 
-doSubscriberTest :: TestName -> ((?handle :: Handle) => LifeCycleIO ()) -> TestTree
-doSubscriberTest name call = goldenTest' name $ runLifeCycle $ call
+doSubscriberTest :: TestName -> ((?handle :: Handle, ?rc :: ResourceContext) => LifeCycleIO ()) -> TestTree
+doSubscriberTest name call = goldenTest' name $ runLifeCycle call
 
 testPair :: TestTree
 testPair =
@@ -214,6 +231,7 @@ testPair =
             [ (MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True) :|
               [MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True]
             ]
+        mainShowUpdate
         mainShowUpdate
         mainShow
 
@@ -252,6 +270,7 @@ testString1 =
             mainSub
             [pure $ StringReplaceSection (startEndRun 1 2) "xy", pure $ StringReplaceSection (startEndRun 2 4) "1"]
         mainShowUpdate
+        mainShowUpdate
         mainShow
 
 testString2 :: TestTree
@@ -272,6 +291,7 @@ testString2 =
             mainSub
             [(StringReplaceSection (startEndRun 1 2) "xy") :| [StringReplaceSection (startEndRun 2 4) "1"]]
         mainShowUpdate
+        mainShowUpdate
         mainShow
 
 testSharedString1 :: TestTree
@@ -280,7 +300,7 @@ testSharedString1 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCDE"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 4)) mainSub
+        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -301,7 +321,7 @@ testSharedString2 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -320,8 +340,8 @@ testSharedString3 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
-        subscribeEditor sectSub $ pure ()
+        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
+        subscribeEditor ?rc sectSub $ pure ()
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -340,8 +360,8 @@ testSharedString4 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
-        subscribeEditor sectSub $ pure ()
+        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
+        subscribeEditor ?rc sectSub $ pure ()
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -360,7 +380,7 @@ testSharedString5 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -375,7 +395,7 @@ testSharedString6 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
         showSubscriberSubject "sect" sectSub
         _sectFlush <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -389,7 +409,7 @@ testSharedString7 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 3)) mainSub
+        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -404,7 +424,7 @@ testSharedString7a =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "AB"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -487,7 +507,7 @@ testPairedSharedString1 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "PABCQ"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 4)) mainSub
+        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         let pairSub = pairSubscribers sectSub sectSub
@@ -519,7 +539,7 @@ testPairedSharedString2 =
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showSubscriberSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- mapSubscriber (fmap (debugLens "lens") $ stringSectionLens (startEndRun 1 2)) mainSub
+        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
         showSubscriberSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         let pairSub = pairSubscribers sectSub sectSub

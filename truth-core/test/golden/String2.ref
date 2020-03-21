@@ -6,5 +6,6 @@ var: "ABCDE"
 expected: "Ax1DE"
 main: push [section 1+1 "xy",section 2+2 "1"]
 main: push succeeded
-main: receive [section 1+1 "xy",section 2+2 "1"]
+main: receive section 1+1 "xy"
+main: receive section 2+2 "1"
 var: "Ax1DE"

@@ -17,8 +17,8 @@ qifthenelse :: Bool -> A -> A -> A
 qifthenelse True v _ = v
 qifthenelse False _ v = v
 
-qbind :: PinaforeAction baseupdate A -> (A -> PinaforeAction baseupdate B) -> PinaforeAction baseupdate B
+qbind :: PinaforeAction A -> (A -> PinaforeAction B) -> PinaforeAction B
 qbind = (>>=)
 
-qbind_ :: PinaforeAction baseupdate TopType -> PinaforeAction baseupdate A -> PinaforeAction baseupdate A
+qbind_ :: PinaforeAction TopType -> PinaforeAction A -> PinaforeAction A
 qbind_ = (>>)

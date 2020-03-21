@@ -25,53 +25,41 @@ instance FullSubjectReader (NoReader ()) where
     mutableReadToSubject _ = return ()
 
 -- | Can't touch this.
-newtype NoEdit (reader :: Type -> Type) =
-    MkNoEdit None
+newtype ConstEdit (reader :: Type -> Type) =
+    MkConstEdit None
     deriving (Eq, Countable, Searchable)
 
-instance Finite (NoEdit reader) where
+instance Finite (ConstEdit reader) where
     allValues = []
 
-deriving instance Empty (NoEdit reader)
+deriving instance Empty (ConstEdit reader)
 
-instance Show (NoEdit reader) where
+instance Show (ConstEdit reader) where
     show edit = never edit
 
-instance Floating (NoEdit reader) (NoEdit reader)
+instance Floating (ConstEdit reader) (ConstEdit reader)
 
-type instance EditReader (NoEdit reader) = reader
+type instance EditReader (ConstEdit reader) = reader
 
-instance ApplicableEdit (NoEdit reader) where
+instance ApplicableEdit (ConstEdit reader) where
     applyEdit edit _ = never edit
 
-instance InvertibleEdit (NoEdit reader) where
+instance InvertibleEdit (ConstEdit reader) where
     invertEdit edit _ = never edit
 
-instance FullSubjectReader reader => SubjectMapEdit (NoEdit reader)
+instance FullSubjectReader reader => SubjectMapEdit (ConstEdit reader)
 
-instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where
+instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (ConstEdit reader) where
     replaceEdit _ _ = return ()
 
-instance TestEquality reader => CacheableEdit (NoEdit reader)
+instance TestEquality reader => CacheableEdit (ConstEdit reader)
 
-type NoUpdate reader = EditUpdate (NoEdit reader)
+type ConstUpdate reader = EditUpdate (ConstEdit reader)
 
-readFunctionNoUpdateFunction ::
-       forall ra updateB. ReadFunction ra (UpdateReader updateB) -> UpdateFunction (NoUpdate ra) updateB
-readFunctionNoUpdateFunction rf = let
-    ufGet :: forall . ReadFunction ra (UpdateReader updateB)
-    ufGet mra rb = rf mra rb
-    ufUpdate edit _ = never edit
-    in MkUpdateFunction {..}
-
-ioFuncNoUpdateFunction ::
-       forall ra updateB. (FullSubjectReader ra, SubjectReader (UpdateReader updateB))
-    => (ReaderSubject ra -> IO (UpdateSubject updateB))
-    -> UpdateFunction (NoUpdate ra) updateB
-ioFuncNoUpdateFunction f = readFunctionNoUpdateFunction $ ioFuncReadFunction f
-
-funcNoUpdateFunction ::
-       forall ra updateB. (FullSubjectReader ra, SubjectReader (UpdateReader updateB))
-    => (ReaderSubject ra -> UpdateSubject updateB)
-    -> UpdateFunction (NoUpdate ra) updateB
-funcNoUpdateFunction f = ioFuncNoUpdateFunction $ return . f
+elPutEditsNone ::
+       forall edita readerb m m'. (Monad m', MonadIO m)
+    => [ConstEdit readerb]
+    -> MutableRead m (EditReader edita)
+    -> m' (Maybe [edita])
+elPutEditsNone [] _ = return $ Just []
+elPutEditsNone (e:_) _ = never e

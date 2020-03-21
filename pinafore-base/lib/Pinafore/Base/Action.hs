@@ -1,10 +1,10 @@
 module Pinafore.Base.Action
     ( PinaforeAction
     , unPinaforeAction
-    , pinaforeActionSubscriber
-    , pinaforeActionObject
+    , viewPinaforeAction
+    , pinaforeResourceContext
     , pinaforeFunctionValueGet
-    , pinaforeLensPush
+    , pinaforeValuePushAction
     , PinaforeWindow(..)
     , pinaforeNewWindow
     , pinaforeExit
@@ -19,90 +19,75 @@ import Pinafore.Base.Value
 import Shapes
 import Truth.Core
 
-data ActionContext baseupdate = MkActionContext
+data ActionContext = MkActionContext
     { acUIToolkit :: UIToolkit
-    , acSubscriber :: Subscriber baseupdate
     , acUndoActions :: UndoActions
     }
 
-newtype PinaforeAction baseupdate a =
-    MkPinaforeAction (ReaderT (ActionContext baseupdate) (ComposeM Know IO) a)
+newtype PinaforeAction a =
+    MkPinaforeAction (ReaderT ActionContext (ComposeM Know View) a)
     deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadIO)
 
-instance MonadFail (PinaforeAction baseupdate) where
+instance MonadFail PinaforeAction where
     fail s = liftIO $ fail s
 
-instance RepresentationalRole (PinaforeAction baseupdate) where
+instance RepresentationalRole PinaforeAction where
     representationalCoercion MkCoercion = MkCoercion
 
-pinaforeActionSubscriber :: PinaforeAction baseupdate (Subscriber baseupdate)
-pinaforeActionSubscriber = MkPinaforeAction $ asks acSubscriber
-
-pinaforeActionObject :: PinaforeAction baseupdate (Object (UpdateEdit baseupdate))
-pinaforeActionObject = do
-    sub <- pinaforeActionSubscriber
-    return $ subscriberObject sub
-
-unPinaforeAction ::
-       forall baseupdate a.
-       UIToolkit
-    -> Subscriber baseupdate
-    -> UndoActions
-    -> PinaforeAction baseupdate a
-    -> IO (Know a)
-unPinaforeAction acUIToolkit acSubscriber acUndoActions (MkPinaforeAction action) =
+unPinaforeAction :: forall a. UIToolkit -> UndoActions -> PinaforeAction a -> View (Know a)
+unPinaforeAction acUIToolkit acUndoActions (MkPinaforeAction action) =
     getComposeM $ runReaderT action MkActionContext {..}
 
-pinaforeFunctionValueGet :: PinaforeFunctionValue baseupdate t -> PinaforeAction baseupdate t
-pinaforeFunctionValueGet fval = do
-    MkResource rr MkAnObject {..} <- pinaforeActionObject
-    runResourceRunnerWith rr $ \run -> liftIO $ run $ ufGet fval objRead ReadWhole
+viewPinaforeAction :: View a -> PinaforeAction a
+viewPinaforeAction va = MkPinaforeAction $ lift $ lift va
 
-pinaforeLensPush :: PinaforeLensValue baseupdate update -> NonEmpty (UpdateEdit update) -> PinaforeAction baseupdate ()
-pinaforeLensPush lens edits = do
-    obj <- pinaforeActionObject
-    case mapObject lens obj of
-        MkResource rr' MkAnObject {..} ->
-            runResourceRunnerWith rr' $ \run -> do
-                ok <- liftIO $ run $ pushEdit noEditSource $ objEdit edits
-                if ok
-                    then return ()
-                    else empty
+pinaforeResourceContext :: PinaforeAction ResourceContext
+pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
+
+pinaforeValuePushAction :: PinaforeValue update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
+pinaforeValuePushAction lv edits = do
+    rc <- pinaforeResourceContext
+    ok <- liftIO $ pinaforeValuePush rc lv edits
+    if ok
+        then return ()
+        else empty
 
 data PinaforeWindow = MkPinaforeWindow
-    { pwClose :: IO ()
+    { pwClose :: View ()
     , pwWindow :: UIWindow
     }
 
 -- | Closing will be done at end of session.
-pinaforeLiftLifeCycleIO :: LifeCycleIO a -> PinaforeAction baseupdate a
+pinaforeLiftLifeCycleIO :: LifeCycleIO a -> PinaforeAction a
 pinaforeLiftLifeCycleIO la = do
     MkActionContext {..} <- MkPinaforeAction ask
     let MkUIToolkit {..} = acUIToolkit
     liftIO $ uitUnliftLifeCycle la
 
-pinaforeNewWindow :: WindowSpec baseupdate -> PinaforeAction baseupdate PinaforeWindow
+pinaforeNewWindow :: WindowSpec -> PinaforeAction PinaforeWindow
 pinaforeNewWindow uiw = do
     MkActionContext {..} <- MkPinaforeAction ask
-    let MkUIToolkit {..} = acUIToolkit
-    (pwWindow, pwClose) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ uitCreateWindow acSubscriber uiw
+    let uit@MkUIToolkit {..} = acUIToolkit
+    rc <- pinaforeResourceContext
+    (pwWindow, close) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ uitRunView uit rc $ uitCreateWindow uiw
+    let pwClose = liftIO close
     return $ MkPinaforeWindow {..}
 
-pinaforeExit :: PinaforeAction baseupdate ()
+pinaforeExit :: PinaforeAction ()
 pinaforeExit = do
     MkActionContext {..} <- MkPinaforeAction ask
     let MkUIToolkit {..} = acUIToolkit
     liftIO uitExit
 
-pinaforeUndoActions :: PinaforeAction baseupdate UndoActions
+pinaforeUndoActions :: PinaforeAction UndoActions
 pinaforeUndoActions = do
     MkActionContext {..} <- MkPinaforeAction ask
     return acUndoActions
 
-pinaforeActionKnow :: forall baseupdate a. Know a -> PinaforeAction baseupdate a
+pinaforeActionKnow :: forall a. Know a -> PinaforeAction a
 pinaforeActionKnow (Known a) = pure a
 pinaforeActionKnow Unknown = empty
 
-knowPinaforeAction :: forall baseupdate a. PinaforeAction baseupdate a -> PinaforeAction baseupdate (Know a)
+knowPinaforeAction :: forall a. PinaforeAction a -> PinaforeAction (Know a)
 knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =
     MkPinaforeAction $ ReaderT $ \r -> MkComposeM $ fmap Known $ getComposeM $ rka r

@@ -1,21 +1,32 @@
 module Truth.Core.UI.Toolkit where
 
 import Truth.Core.Import
-import Truth.Core.Object
+import Truth.Core.Resource
+import Truth.Core.UI.View.CreateView
+import Truth.Core.UI.View.View
 import Truth.Core.UI.Window
 
 data UIToolkit = MkUIToolkit
     { uitWithLock :: forall a. IO a -> IO a -- ^ run with lock, must not already have it
-    , uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow -- ^ must already have lock
+    , uitCreateWindow :: WindowSpec -> CreateView UIWindow -- ^ must already have lock
     , uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a -- ^ Closers will be run at the end of the session. (Lock doesn't matter.)
+    , uitGetRequest :: forall t. IOWitness t -> Maybe t
     , uitExit :: IO () -- ^ must already have the lock
     }
+
+-- | Closers will be run at the end of the session. (Lock doesn't matter.)
+uitUnliftCreateView :: UIToolkit -> CreateView a -> View a
+uitUnliftCreateView uit = remonad $ uitUnliftLifeCycle uit
+
+uitRunView :: UIToolkit -> ResourceContext -> ViewT m a -> m a
+uitRunView uit rc cv = runView rc (uitWithLock uit) cv (uitGetRequest uit)
 
 nullUIToolkit :: UIToolkit
 nullUIToolkit = let
     uitWithLock action = action
-    uitCreateWindow _ _ = return nullUIWindow
+    uitCreateWindow _ = return nullUIWindow
     uitUnliftLifeCycle = runLifeCycle
+    uitGetRequest _ = Nothing
     uitExit = return ()
     in MkUIToolkit {..}
 
@@ -23,14 +34,14 @@ quitOnWindowsClosed :: UIToolkit -> IO (UIToolkit, IO ())
 quitOnWindowsClosed uit = do
     (ondone, checkdone) <- lifeCycleOnAllDone $ uitExit uit
     let
-        newCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow
-        newCreateWindow sub wspec = do
-            ondone
-            uitCreateWindow uit sub wspec
+        newCreateWindow :: WindowSpec -> CreateView UIWindow
+        newCreateWindow wspec = do
+            liftLifeCycleIO ondone
+            uitCreateWindow uit wspec
     return (uit {uitCreateWindow = newCreateWindow}, checkdone)
 
 data TruthContext = MkTruthContext
     { tcUIToolkit :: UIToolkit
     }
 
-type TruthMain = forall a. (TruthContext -> LifeCycleIO a) -> IO a
+type TruthMain = forall a. (TruthContext -> CreateView a) -> IO a

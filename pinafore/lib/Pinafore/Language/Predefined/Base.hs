@@ -25,74 +25,74 @@ getTimeMS = do
     MkSystemTime s ns <- getSystemTime
     return $ (toInteger s) * 1000 + div (toInteger ns) 1000000
 
-output :: forall baseupdate. Text -> PinaforeAction baseupdate ()
+output :: Text -> PinaforeAction ()
 output text = liftIO $ putStr $ unpack text
 
-outputLn :: forall baseupdate. Text -> PinaforeAction baseupdate ()
+outputLn :: Text -> PinaforeAction ()
 outputLn text = liftIO $ putStrLn $ unpack text
 
-setentity :: forall baseupdate. PinaforeRef baseupdate '( A, TopType) -> A -> PinaforeAction baseupdate ()
+setentity :: PinaforeRef '( A, TopType) -> A -> PinaforeAction ()
 setentity ref val = pinaforeRefSet ref (Known val)
 
-deleteentity :: forall baseupdate. PinaforeRef baseupdate '( BottomType, TopType) -> PinaforeAction baseupdate ()
+deleteentity :: PinaforeRef '( BottomType, TopType) -> PinaforeAction ()
 deleteentity ref = pinaforeRefSet ref Unknown
 
-qfail :: forall baseupdate. Text -> PinaforeAction baseupdate BottomType
+qfail :: Text -> PinaforeAction BottomType
 qfail t = fail $ unpack t
 
 entityUUID :: Entity -> Text
 entityUUID p = pack $ show p
 
-onStop :: forall baseupdate. PinaforeAction baseupdate A -> PinaforeAction baseupdate A -> PinaforeAction baseupdate A
+onStop :: PinaforeAction A -> PinaforeAction A -> PinaforeAction A
 onStop p q = p <|> q
 
 newMemRef ::
-       forall baseupdate. BaseEditLens MemoryCellUpdate baseupdate
-    => IO (PinaforeRef baseupdate '( A, A))
+       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens MemoryCellUpdate baseupdate)
+    => IO (PinaforeRef '( A, A))
 newMemRef = do
     lens <- makeMemoryCellEditLens Unknown
-    return $ pinaforeLensToRef $ lens . baseEditLens
+    return $ pinaforeValueToRef $ MkPinaforeValue $ mapSubscriber lens $ pinaforeBaseSubscriber @baseupdate
 
 newMemFiniteSet ::
-       forall baseupdate. BaseEditLens MemoryCellUpdate baseupdate
-    => IO (PinaforeFiniteSetRef baseupdate '( MeetType Entity A, A))
+       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens MemoryCellUpdate baseupdate)
+    => IO (PinaforeFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
     lens <- makeMemoryCellEditLens mempty
-    return $ meetValuePinaforeFiniteSetRef $ convertEditLens . lens . baseEditLens
+    return $
+        meetValuePinaforeFiniteSetRef $
+        MkPinaforeValue $ mapSubscriber (convertEditLens . lens) $ pinaforeBaseSubscriber @baseupdate
 
-now :: forall baseupdate. (BaseEditLens (ReadOnlyUpdate (WholeUpdate UTCTime)) baseupdate)
-    => PinaforeImmutableReference baseupdate UTCTime
-now =
-    functionImmutableReference $
-    editLensToUpdateFunction $ baseEditLens @(ReadOnlyUpdate (WholeUpdate UTCTime)) @baseupdate
+now :: forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens (ROWUpdate UTCTime) baseupdate)
+    => PinaforeImmutableReference UTCTime
+now = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseSubscriber @baseupdate
 
 timeZone ::
-       forall baseupdate. (BaseEditLens (ReadOnlyUpdate (WholeUpdate TimeZone)) baseupdate)
-    => PinaforeImmutableReference baseupdate TimeZone
-timeZone =
-    functionImmutableReference $
-    editLensToUpdateFunction $ baseEditLens @(ReadOnlyUpdate (WholeUpdate TimeZone)) @baseupdate
+       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens (ROWUpdate TimeZone) baseupdate)
+    => PinaforeImmutableReference TimeZone
+timeZone = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseSubscriber @baseupdate
 
 localNow ::
        forall baseupdate.
-       ( BaseEditLens (ReadOnlyUpdate (WholeUpdate UTCTime)) baseupdate
-       , BaseEditLens (ReadOnlyUpdate (WholeUpdate TimeZone)) baseupdate
+       ( ?pinafore :: PinaforeContext baseupdate
+       , BaseEditLens (ROWUpdate UTCTime) baseupdate
+       , BaseEditLens (ROWUpdate TimeZone) baseupdate
        )
-    => PinaforeImmutableReference baseupdate LocalTime
+    => PinaforeImmutableReference LocalTime
 localNow = utcToLocalTime <$> timeZone <*> now
 
 today ::
        forall baseupdate.
-       ( BaseEditLens (ReadOnlyUpdate (WholeUpdate UTCTime)) baseupdate
-       , BaseEditLens (ReadOnlyUpdate (WholeUpdate TimeZone)) baseupdate
+       ( ?pinafore :: PinaforeContext baseupdate
+       , BaseEditLens (ROWUpdate UTCTime) baseupdate
+       , BaseEditLens (ROWUpdate TimeZone) baseupdate
        )
-    => PinaforeImmutableReference baseupdate Day
+    => PinaforeImmutableReference Day
 today = localDay <$> localNow
 
 interpretAsText ::
-       forall baseupdate a. AsLiteral a
-    => PinaforeRef baseupdate '( a, a)
-    -> PinaforeRef baseupdate '( Text, Text)
+       forall a. AsLiteral a
+    => PinaforeRef '( a, a)
+    -> PinaforeRef '( Text, Text)
 interpretAsText = pinaforeFLensRef (unLiteral . toLiteral) (\t _ -> parseLiteral t)
 
 parseLiteral :: AsLiteral t => Text -> Maybe t
@@ -103,8 +103,8 @@ base_predefinitions ::
        ( HasPinaforeEntityUpdate baseupdate
        , HasPinaforeFileUpdate baseupdate
        , BaseEditLens MemoryCellUpdate baseupdate
-       , BaseEditLens (ReadOnlyUpdate (WholeUpdate UTCTime)) baseupdate
-       , BaseEditLens (ReadOnlyUpdate (WholeUpdate TimeZone)) baseupdate
+       , BaseEditLens (ROWUpdate UTCTime) baseupdate
+       , BaseEditLens (ROWUpdate TimeZone) baseupdate
        )
     => [DocTreeEntry (BindDoc baseupdate)]
 base_predefinitions =
@@ -159,7 +159,7 @@ base_predefinitions =
                       [ mkSupertypeEntry "id" "Every integer is a rational." integerToSafeRational
                       , mkValEntry "parseInteger" "Parse text as an integer." $ parseLiteral @Integer
                       , mkValEntry "interpretIntegerAsText" "Interpret an integer reference as text." $
-                        interpretAsText @baseupdate @Integer
+                        interpretAsText @Integer
                       , mkValEntry "+" "Add." $ (+) @Integer
                       , mkValEntry "-" "Subtract." $ (-) @Integer
                       , mkValEntry "*" "Multiply." $ (*) @Integer
@@ -181,7 +181,7 @@ base_predefinitions =
                       [ mkSupertypeEntry "id" "Every rational is a number." safeRationalToNumber
                       , mkValEntry "parseRational" "Parse text as a rational." $ parseLiteral @SafeRational
                       , mkValEntry "interpretRationalAsText" "Interpret a rational reference as text." $
-                        interpretAsText @baseupdate @SafeRational
+                        interpretAsText @SafeRational
                       , mkValEntry ".+" "Add." $ (+) @SafeRational
                       , mkValEntry ".-" "Subtract." $ (-) @SafeRational
                       , mkValEntry ".*" "Multiply." $ (*) @SafeRational
@@ -202,7 +202,7 @@ base_predefinitions =
                       [ mkSupertypeEntry "id" "Every number is a literal." $ toLiteral @Number
                       , mkValEntry "parseNumber" "Parse text as a number." $ parseLiteral @Number
                       , mkValEntry "interpretNumberAsText" "Interpret a number reference as text." $
-                        interpretAsText @baseupdate @Number
+                        interpretAsText @Number
                       , mkValEntry "~+" "Add." $ (+) @Number
                       , mkValEntry "~-" "Subtract." $ (-) @Number
                       , mkValEntry "~*" "Multiply." $ (*) @Number
@@ -270,8 +270,8 @@ base_predefinitions =
                       [ mkSupertypeEntry "id" "Every duration is a literal." $ toLiteral @NominalDiffTime
                       , mkValEntry "parseDuration" "Parse text as a duration." $ parseLiteral @NominalDiffTime
                       , mkValEntry "interpretDurationAsText" "Interpret a duration reference as text." $
-                        interpretAsText @baseupdate @NominalDiffTime
-                      , mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
+                        interpretAsText @NominalDiffTime
+                      , mkValEntry "zeroDurtaion" "No duration." $ (0 :: NominalDiffTime)
                       , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
                       , mkValEntry "durationToSeconds" "Convert duration to seconds." nominalDiffTimeToSeconds
                       , mkValEntry "dayDuration" "One day duration." nominalDay
@@ -289,7 +289,7 @@ base_predefinitions =
                       [ mkSupertypeEntry "id" "Every time is a literal." $ toLiteral @UTCTime
                       , mkValEntry "parseTime" "Parse text as a time." $ parseLiteral @UTCTime
                       , mkValEntry "interpretTimeAsText" "Interpret a time reference as text." $
-                        interpretAsText @baseupdate @UTCTime
+                        interpretAsText @UTCTime
                       , mkValEntry "addTime" "Add duration to time." addUTCTime
                       , mkValEntry "diffTime" "Difference of times." diffUTCTime
                       , mkValEntry "now" "The current time truncated to the second." $ now @baseupdate
@@ -302,8 +302,7 @@ base_predefinitions =
                             in Just (y, (m, (d, ())))
                       , mkSupertypeEntry "id" "Every day is a literal." $ toLiteral @Day
                       , mkValEntry "parseDay" "Parse text as a day." $ parseLiteral @Day
-                      , mkValEntry "interpretDayAsText" "Interpret a day reference as text." $
-                        interpretAsText @baseupdate @Day
+                      , mkValEntry "interpretDayAsText" "Interpret a day reference as text." $ interpretAsText @Day
                       , mkValEntry "dayToModifiedJulian" "Convert to MJD." toModifiedJulianDay
                       , mkValEntry "modifiedJulianToDay" "Convert from MJD." ModifiedJulianDay
                       , mkValEntry "addDays" "Add count to days." addDays
@@ -319,7 +318,7 @@ base_predefinitions =
                       , mkSupertypeEntry "id" "Every time of day is a literal." $ toLiteral @TimeOfDay
                       , mkValEntry "parseTimeOfDay" "Parse text as a time of day." $ parseLiteral @TimeOfDay
                       , mkValEntry "interpretTimeOfDayAsText" "Interpret a time of day reference as text." $
-                        interpretAsText @baseupdate @TimeOfDay
+                        interpretAsText @TimeOfDay
                       , mkValEntry "midnight" "Midnight." midnight
                       , mkValEntry "midday" "Midday." midday
                       ]
@@ -331,7 +330,7 @@ base_predefinitions =
                       , mkSupertypeEntry "id" "Every local time is a literal." $ toLiteral @LocalTime
                       , mkValEntry "parseLocalTime" "Parse text as a local time." $ parseLiteral @LocalTime
                       , mkValEntry "interpretLocalTimeAsText" "Interpret a local time reference as text." $
-                        interpretAsText @baseupdate @LocalTime
+                        interpretAsText @LocalTime
                       , mkValEntry "timeToLocal" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
                             utcToLocalTime $ minutesToTimeZone i
                       , mkValEntry "localToTime" "Convert a local time to time, given a time zone offset in minutes" $ \i ->
@@ -438,34 +437,34 @@ base_predefinitions =
     , docTreeEntry
           "Actions"
           ""
-          [ mkValEntry "return" "A value as an Action." $ return @(PinaforeAction baseupdate) @A
-          , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind @baseupdate
-          , mkValEntry ">>" "Do actions in sequence." $ qbind_ @baseupdate
+          [ mkValEntry "return" "A value as an Action." $ return @PinaforeAction @A
+          , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind
+          , mkValEntry ">>" "Do actions in sequence." $ qbind_
           , mkValEntry
                 "mapAction"
                 "Map a function on an action."
-                (fmap :: (A -> B) -> PinaforeAction baseupdate A -> PinaforeAction baseupdate B)
-          , mkValEntry "fixAction" "The fixed point of an Action." $ mfix @(PinaforeAction baseupdate) @A
-          , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseupdate
+                (fmap :: (A -> B) -> PinaforeAction A -> PinaforeAction B)
+          , mkValEntry "fixAction" "The fixed point of an Action." $ mfix @PinaforeAction @A
+          , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail
           , mkValEntry
                 "stop"
                 "Stop. This is similar to an exception that can be caught with `onStop`. The default handler (for the main program, button presses, etc.), is to catch and ignore it."
-                (empty :: PinaforeAction baseupdate BottomType)
-          , mkValEntry "onStop" "`onStop p q` does `p` first, and if it stops, then does `q`." $ onStop @baseupdate
+                (empty :: PinaforeAction BottomType)
+          , mkValEntry "onStop" "`onStop p q` does `p` first, and if it stops, then does `q`." $ onStop
           , mkValEntry
                 "for_"
                 "Perform an action on each value of a list."
-                (for_ :: [A] -> (A -> PinaforeAction baseupdate ()) -> PinaforeAction baseupdate ())
+                (for_ :: [A] -> (A -> PinaforeAction ()) -> PinaforeAction ())
           , mkValEntry
                 "for"
                 "Perform an action on each value of a list, returning a list."
-                (for :: [A] -> (A -> PinaforeAction baseupdate B) -> PinaforeAction baseupdate [B])
-          , mkValEntry "output" "Output text to standard output." $ output @baseupdate
-          , mkValEntry "outputLn" "Output text and a newline to standard output." $ outputLn @baseupdate
+                (for :: [A] -> (A -> PinaforeAction B) -> PinaforeAction [B])
+          , mkValEntry "output" "Output text to standard output." $ output
+          , mkValEntry "outputLn" "Output text and a newline to standard output." $ outputLn
           , mkValEntry
                 "getTimeMS"
                 "Get the time as a whole number of milliseconds."
-                (liftIO getTimeMS :: PinaforeAction baseupdate Integer)
+                (liftIO getTimeMS :: PinaforeAction Integer)
           , mkValEntry "debugmsg" "Debug message (debug only)." (traceIOM . unpack :: Text -> PinaforeAction baseedit ())
           ]
     , docTreeEntry
@@ -473,50 +472,48 @@ base_predefinitions =
           "Undo and redo changes."
           [ mkValEntry "queueUndo" "Undo an action." $ do
                 ua <- pinaforeUndoActions
-                liftIO $ uaUndo ua noEditSource
+                rc <- pinaforeResourceContext
+                liftIO $ uaUndo ua rc noEditSource
           , mkValEntry "queueRedo" "Redo an action." $ do
                 ua <- pinaforeUndoActions
-                liftIO $ uaRedo ua noEditSource
+                rc <- pinaforeResourceContext
+                liftIO $ uaRedo ua rc noEditSource
           ]
     , docTreeEntry
           "References"
           "A reference of type `Ref {-p,+q}` has a setting type of `p` and a getting type of `q`. References keep track of updates, and will update user interfaces constructed from them when their value changes."
-          [ mkValEntry
-                "pureRef"
-                "A constant reference for a value."
-                (pure :: A -> PinaforeImmutableReference baseupdate A)
+          [ mkValEntry "pureRef" "A constant reference for a value." (pure :: A -> PinaforeImmutableReference A)
           , mkValEntry
                 "immutRef"
                 "Convert a reference to immutable.\n`immutRef r = {%r}`"
-                (id :: PinaforeImmutableReference baseupdate A -> PinaforeImmutableReference baseupdate A)
+                (id :: PinaforeImmutableReference A -> PinaforeImmutableReference A)
           , mkValEntry
                 "coMapRef"
                 "Map a function on getting a reference."
-                (coRangeLift :: (A -> B) -> PinaforeRef baseupdate '( C, A) -> PinaforeRef baseupdate '( C, B))
+                (coRangeLift :: (A -> B) -> PinaforeRef '( C, A) -> PinaforeRef '( C, B))
           , mkValEntry
                 "contraMapRef"
                 "Map a function on setting a reference."
-                (contraRangeLift :: (B -> A) -> PinaforeRef baseupdate '( A, C) -> PinaforeRef baseupdate '( B, C))
-          , mkValEntry "lensMapRef" "Map getter & pushback functions on a reference." $
-            pinaforeFLensRef @baseupdate @AP @AQ @B
+                (contraRangeLift :: (B -> A) -> PinaforeRef '( A, C) -> PinaforeRef '( B, C))
+          , mkValEntry "lensMapRef" "Map getter & pushback functions on a reference." $ pinaforeFLensRef @AP @AQ @B
           , mkValEntry
                 "applyRef"
                 "Combine references."
-                ((<*>) :: PinaforeImmutableReference baseupdate (A -> B) -> PinaforeImmutableReference baseupdate A -> PinaforeImmutableReference baseupdate B)
+                ((<*>) :: PinaforeImmutableReference (A -> B) -> PinaforeImmutableReference A -> PinaforeImmutableReference B)
           , mkValEntry
                 "unknown"
                 "The unknown reference, representing missing information."
-                (empty :: PinaforeImmutableReference baseupdate BottomType)
-          , mkValEntry "known" "True if the reference is known." $ \(val :: PinaforeFunctionValue baseupdate (Know TopType)) ->
-                (funcUpdateFunction (Known . isKnown) . val :: PinaforeFunctionValue baseupdate (Know Bool))
+                (empty :: PinaforeImmutableReference BottomType)
+          , mkValEntry "known" "True if the reference is known." $ \(val :: PinaforeReadOnlyValue (Know TopType)) ->
+                (eaMapReadOnlyWhole (Known . isKnown) val :: PinaforeReadOnlyValue (Know Bool))
           , mkValEntry
                 "??"
                 "`p ?? q` = `p` if it is known, else `q`."
-                ((<|>) :: PinaforeImmutableReference baseupdate A -> PinaforeImmutableReference baseupdate A -> PinaforeImmutableReference baseupdate A)
-          , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $ pinaforeRefGet @baseupdate @A
-          , mkValEntry "runRef" "Run an action from a reference." $ runPinaforeRef @baseupdate
-          , mkValEntry ":=" "Set a reference to a value. Stop if failed." $ setentity @baseupdate
-          , mkValEntry "delete" "Delete an entity reference. Stop if failed." $ deleteentity @baseupdate
+                ((<|>) :: PinaforeImmutableReference A -> PinaforeImmutableReference A -> PinaforeImmutableReference A)
+          , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $ pinaforeRefGet @A
+          , mkValEntry "runRef" "Run an action from a reference." $ runPinaforeRef
+          , mkValEntry ":=" "Set a reference to a value. Stop if failed." setentity
+          , mkValEntry "delete" "Delete an entity reference. Stop if failed." deleteentity
           , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." $ newMemRef @baseupdate
           ]
     , docTreeEntry
@@ -525,78 +522,73 @@ base_predefinitions =
           [ mkValEntry
                 "mapSet"
                 "Map a function on a set."
-                (contramap :: (A -> B) -> PinaforeSetRef baseupdate B -> PinaforeSetRef baseupdate A)
-          , mkValEntry "pureSet" "Convert a predicate to a set." $ pinaforePredicateToSetRef @baseupdate @A
-          , mkValEntry "refSet" "Convert a predicate reference to a set." $ pinaforePredicateRefToSetRef @baseupdate @A
-          , mkValEntry "immutSet" "Convert a set to immutable." $ pinaforeSetRefImmutable @baseupdate @A
-          , mkValEntry "+=" "Add an entity to a set." $ pinaforeSetRefAdd @baseupdate @A
-          , mkValEntry "-=" "Remove an entity from a set." $ pinaforeSetRefRemove @baseupdate @A
-          , mkValEntry "newEntity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew @baseupdate
-          , mkValEntry "member" "A reference to the membership of a value in a set." $
-            pinaforeSetRefMember @baseupdate @A
+                (contramap :: (A -> B) -> PinaforeSetRef B -> PinaforeSetRef A)
+          , mkValEntry "pureSet" "Convert a predicate to a set." $ pinaforePredicateToSetRef @A
+          , mkValEntry "refSet" "Convert a predicate reference to a set." $ pinaforePredicateRefToSetRef @A
+          , mkValEntry "immutSet" "Convert a set to immutable." $ pinaforeSetRefImmutable @A
+          , mkValEntry "+=" "Add an entity to a set." $ pinaforeSetRefAdd @A
+          , mkValEntry "-=" "Remove an entity from a set." $ pinaforeSetRefRemove @A
+          , mkValEntry "newEntity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew
+          , mkValEntry "member" "A reference to the membership of a value in a set." $ pinaforeSetRefMember @A
           , mkValEntry
                 "notSet"
                 "Complement of a set. The resulting set can be added to (deleting from the original set) and deleted from (adding to the original set)." $
-            pinaforeSetRefComplement @baseupdate @A
+            pinaforeSetRefComplement @A
           , mkValEntry
                 "<&>"
                 "Intersection of sets. The resulting set can be added to (adding to both sets), but not deleted from." $
-            pinaforeSetRefIntersect @baseupdate @A
+            pinaforeSetRefIntersect @A
           , mkValEntry
                 "<|>"
                 "Union of sets. The resulting set can be deleted from (deleting from both sets), but not added to." $
-            pinaforeSetRefUnion @baseupdate @A
+            pinaforeSetRefUnion @A
           , mkValEntry
                 "<\\>"
                 "Difference of sets, everything in the first set but not the second. The resulting set can be added to (adding to the first and deleting from the second), but not deleted from." $
-            pinaforeSetRefDifference @baseupdate @A
+            pinaforeSetRefDifference @A
           , mkValEntry
                 "<^>"
                 "Symmetric difference of sets, everything in exactly one of the sets. The resulting set will be read-only." $
-            pinaforeSetRefSymmetricDifference @baseupdate @A
-          , mkValEntry "<+>" "Cartesian sum of sets." $ pinaforeSetRefCartesianSum @baseupdate @A @B
+            pinaforeSetRefSymmetricDifference @A
+          , mkValEntry "<+>" "Cartesian sum of sets." $ pinaforeSetRefCartesianSum @A @B
           , mkValEntry "<*>" "Cartesian product of sets. The resulting set will be read-only." $
-            pinaforeSetRefCartesianProduct @baseupdate @A @B
+            pinaforeSetRefCartesianProduct @A @B
           ]
     , docTreeEntry
           "Finite Set References"
           ""
-          [ mkSupertypeEntry "id" "Every finite set is a set." $ pinaforeFiniteSetRefToSetRef @baseupdate @A @TopType
+          [ mkSupertypeEntry "id" "Every finite set is a set." $ pinaforeFiniteSetRefToSetRef @A @TopType
           , mkValEntry
                 "coMapFiniteSet"
                 "Map a function on getting from a finite set."
-                (coRangeLift :: (A -> B) -> PinaforeFiniteSetRef baseupdate '( C, A) -> PinaforeFiniteSetRef baseupdate '( C, B))
+                (coRangeLift :: (A -> B) -> PinaforeFiniteSetRef '( C, A) -> PinaforeFiniteSetRef '( C, B))
           , mkValEntry
                 "contraMapFiniteSet"
                 "Map a function on setting to and testing a finite set."
-                (contraRangeLift :: (B -> A) -> PinaforeFiniteSetRef baseupdate '( A, C) -> PinaforeFiniteSetRef baseupdate '( B, C))
+                (contraRangeLift :: (B -> A) -> PinaforeFiniteSetRef '( A, C) -> PinaforeFiniteSetRef '( B, C))
           , mkValEntry "<:&>" "Intersect a finite set with any set. The resulting finite set will be read-only." $
-            pinaforeFiniteSetRefSetIntersect @baseupdate @A @B
+            pinaforeFiniteSetRefSetIntersect @A @B
           , mkValEntry "<:\\>" "Difference of a finite set and any set. The resulting finite set will be read-only." $
-            pinaforeFiniteSetRefSetDifference @baseupdate @A @B
+            pinaforeFiniteSetRefSetDifference @A @B
           , mkValEntry
                 "<:&:>"
                 "Intersection of finite sets. The resulting finite set can be added to, but not deleted from." $
-            pinaforeFiniteSetRefMeet @baseupdate @A
+            pinaforeFiniteSetRefMeet @A
           , mkValEntry "<:|:>" "Union of finite sets. The resulting finite set can be deleted from, but not added to." $
-            pinaforeFiniteSetRefJoin @baseupdate @A
-          , mkValEntry "<:+:>" "Cartesian sum of finite sets." $
-            pinaforeFiniteSetRefCartesianSum @baseupdate @AP @AQ @BP @BQ
-          , mkSupertypeEntry "<:+:>" "Cartesian sum of finite sets." $
-            pinaforeFiniteSetRefCartesianSum @baseupdate @A @A @B @B
+            pinaforeFiniteSetRefJoin @A
+          , mkValEntry "<:+:>" "Cartesian sum of finite sets." $ pinaforeFiniteSetRefCartesianSum @AP @AQ @BP @BQ
+          , mkSupertypeEntry "<:+:>" "Cartesian sum of finite sets." $ pinaforeFiniteSetRefCartesianSum @A @A @B @B
           , mkValEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
-            pinaforeFiniteSetRefCartesianProduct @baseupdate @AP @AQ @BP @BQ
+            pinaforeFiniteSetRefCartesianProduct @AP @AQ @BP @BQ
           , mkSupertypeEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
-            pinaforeFiniteSetRefCartesianProduct @baseupdate @A @A @B @B
+            pinaforeFiniteSetRefCartesianProduct @A @A @B @B
           , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
-          , mkValEntry "single" "The member of a single-member finite set, or unknown." $
-            pinaforeFiniteSetRefSingle @baseupdate @A
-          , mkValEntry "count" "Count of members in a finite set." $
-            pinaforeFiniteSetRefFunc @baseupdate @TopType @Int olength
+          , mkValEntry "single" "The member of a single-member finite set, or unknown." $ pinaforeFiniteSetRefSingle @A
+          , mkValEntry "count" "Count of members in a finite set." $ pinaforeFiniteSetRefFunc @TopType @Int olength
           , mkValEntry
                 "removeAll"
                 "Remove all entities from a finite set."
-                (pinaforeFiniteSetRefRemoveAll :: PinaforeFiniteSetRef baseupdate '( BottomType, TopType) -> PinaforeAction baseupdate ())
+                (pinaforeFiniteSetRefRemoveAll :: PinaforeFiniteSetRef '( BottomType, TopType) -> PinaforeAction ())
           , mkValEntry "newMemFiniteSet" "Create a new finite set reference to memory, initially empty." $
             newMemFiniteSet @baseupdate
           ]

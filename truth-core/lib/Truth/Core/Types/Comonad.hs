@@ -2,6 +2,7 @@ module Truth.Core.Types.Comonad where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
 
 newtype ComonadReader (w :: Type -> Type) (reader :: Type -> Type) (t :: Type) where
@@ -33,8 +34,10 @@ instance InvertibleEdit edit => InvertibleEdit (ComonadEdit w edit) where
 newtype ComonadUpdate (w :: Type -> Type) (update :: Type) =
     MkComonadUpdate update
 
+type instance UpdateEdit (ComonadUpdate w update) =
+     ComonadEdit w (UpdateEdit update)
+
 instance IsUpdate update => IsUpdate (ComonadUpdate w update) where
-    type UpdateEdit (ComonadUpdate w update) = ComonadEdit w (UpdateEdit update)
     editUpdate (MkComonadEdit edit) = MkComonadUpdate $ editUpdate edit
 
 instance IsEditUpdate update => IsEditUpdate (ComonadUpdate w update) where
@@ -42,18 +45,17 @@ instance IsEditUpdate update => IsEditUpdate (ComonadUpdate w update) where
 
 comonadEditLens :: forall w update. EditLens (ComonadUpdate w update) update
 comonadEditLens = let
-    ufGet ::
+    elGet ::
            forall m. MonadIO m
         => MutableRead m (ComonadReader w (UpdateReader update))
         -> MutableRead m (UpdateReader update)
-    ufGet mr = comonadReadFunction mr
-    ufUpdate ::
+    elGet mr = comonadReadFunction mr
+    elUpdate ::
            forall m. MonadIO m
         => ComonadUpdate w update
         -> MutableRead m (ComonadReader w (UpdateReader update))
         -> m [update]
-    ufUpdate (MkComonadUpdate update) _ = return [update]
-    elFunction = MkUpdateFunction {..}
+    elUpdate (MkComonadUpdate update) _ = return [update]
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
@@ -69,7 +71,7 @@ comonadLiftEditLens ::
        forall w updateA updateB.
        EditLens updateA updateB
     -> EditLens (ComonadUpdate w updateA) (ComonadUpdate w updateB)
-comonadLiftEditLens (MkEditLens (MkUpdateFunction g u) pe) = let
+comonadLiftEditLens (MkEditLens g u pe) = let
     g' :: ReadFunction (ComonadReader w (UpdateReader updateA)) (ComonadReader w (UpdateReader updateB))
     g' mr (ReadExtract rt) = g (comonadReadFunction mr) rt
     u' :: forall m. MonadIO m
@@ -83,4 +85,10 @@ comonadLiftEditLens (MkEditLens (MkUpdateFunction g u) pe) = let
         -> m (Maybe [ComonadEdit w (UpdateEdit updateA)])
     pe' editbs mr =
         fmap (fmap $ fmap MkComonadEdit) $ pe (fmap (\(MkComonadEdit editb) -> editb) editbs) $ comonadReadFunction mr
-    in MkEditLens (MkUpdateFunction g' u') pe'
+    in MkEditLens g' u' pe'
+
+comonadLiftFloatingEditLens ::
+       forall w updateA updateB.
+       FloatingEditLens updateA updateB
+    -> FloatingEditLens (ComonadUpdate w updateA) (ComonadUpdate w updateB)
+comonadLiftFloatingEditLens = floatLift comonadReadFunction comonadLiftEditLens

@@ -51,10 +51,10 @@ rev :: forall baseupdate a. PinaforeOrder baseupdate a -> PinaforeOrder baseupda
 rev (MkPinaforeOrder ef o) = MkPinaforeOrder ef $ \a b -> o b a
 
 qOrderSet ::
-       forall baseupdate a.
-       PinaforeOrder baseupdate a
-    -> PinaforeFunctionValue baseupdate (FiniteSet a)
-    -> PinaforeFunctionValue baseupdate (Know [a])
+       forall baseupdate a. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+    => PinaforeOrder baseupdate a
+    -> PinaforeReadOnlyValue (FiniteSet a)
+    -> PinaforeReadOnlyValue (Know [a])
 qOrderSet (MkPinaforeOrder (ofunc :: PinaforeFunctionMorphism baseupdate (Know a) t) oord) pset = let
     cmp :: (a, t) -> (a, t) -> Ordering
     cmp (_, t1) (_, t2) = oord t1 t2
@@ -63,26 +63,31 @@ qOrderSet (MkPinaforeOrder (ofunc :: PinaforeFunctionMorphism baseupdate (Know a
         proc a -> do
             kt <- ofunc -< Known a
             returnA -< (a, kt)
-    upairs :: PinaforeFunctionValue baseupdate (FiniteSet (a, t))
-    upairs = applyPinaforeFunction (cfmap ofuncpair) pset
+    upairs :: PinaforeReadOnlyValue (FiniteSet (a, t))
+    upairs = applyPinaforeFunction pinaforeBase (cfmap ofuncpair) pset
     sortpoints :: FiniteSet (a, t) -> [a]
     sortpoints (MkFiniteSet pairs) = fmap fst $ sortBy cmp pairs
-    in unWholeUpdateFunction $ fmap (Known . sortpoints) $ MkWholeUpdateFunction upairs
+    --in unWholeUpdateFunction $ fmap (Known . sortpoints) $ MkWholeUpdateFunction upairs
+    in eaMapReadOnlyWhole (Known . sortpoints) upairs
 
 pinaforeOrderCompare ::
-       forall baseupdate a b.
-       (Ordering -> b)
+       forall baseupdate a b. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+    => (Ordering -> b)
     -> PinaforeOrder baseupdate a
-    -> PinaforeImmutableReference baseupdate a
-    -> PinaforeImmutableReference baseupdate a
-    -> PinaforeImmutableReference baseupdate b
+    -> PinaforeImmutableReference a
+    -> PinaforeImmutableReference a
+    -> PinaforeImmutableReference b
 pinaforeOrderCompare ob (MkPinaforeOrder ef o) fv1 fv2 =
-    (\v1 v2 -> ob $ o v1 v2) <$> (applyImmutableReference (fmap Known ef) fv1) <*>
-    (applyImmutableReference (fmap Known ef) fv2)
+    (\v1 v2 -> ob $ o v1 v2) <$> (applyImmutableReference pinaforeBase (fmap Known ef) fv1) <*>
+    (applyImmutableReference pinaforeBase (fmap Known ef) fv2)
 
 pinaforeSetGetOrdered ::
-       forall baseupdate a.
-       PinaforeOrder baseupdate a
-    -> PinaforeFiniteSetRef baseupdate '( BottomType, a)
-    -> PinaforeRef baseupdate '( TopType, [a])
-pinaforeSetGetOrdered order set = pinaforeFunctionToRef $ qOrderSet order $ pinaforeFiniteSetRefFunctionValue set
+       forall baseupdate a. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+    => PinaforeOrder baseupdate a
+    -> PinaforeFiniteSetRef '( BottomType, a)
+    -> PinaforeRef '( TopType, [a])
+pinaforeSetGetOrdered order set = pinaforeReadOnlyValueToRef $ qOrderSet order $ pinaforeFiniteSetRefFunctionValue set
+
+pinaforeUpdateOrder :: PinaforeOrder baseupdate a -> UpdateOrder (ContextUpdate baseupdate (WholeUpdate (Know a)))
+pinaforeUpdateOrder (MkPinaforeOrder m cmp) =
+    MkUpdateOrder cmp $ editLensToFloating $ pinaforeFunctionMorphismUpdateFunction m

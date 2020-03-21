@@ -5,9 +5,5 @@ module Truth.Core.Edit
 import Truth.Core.Edit.Cache as I
 import Truth.Core.Edit.Edit as I
 import Truth.Core.Edit.FullEdit as I
-import Truth.Core.Edit.Function as I
-import Truth.Core.Edit.Lens as I
 import Truth.Core.Edit.Opaque as I
-import Truth.Core.Edit.Partial as I
 import Truth.Core.Edit.Update as I
-import Truth.Core.Resource.Runnable as I

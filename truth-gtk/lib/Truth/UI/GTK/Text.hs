@@ -32,60 +32,56 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-textView :: GCreateView (EditLens (StringUpdate Text) (StringUpdate Text)) (StringUpdate Text)
-textView = do
+textView :: Subscriber (StringUpdate Text) -> SelectNotify TextSelection -> GCreateView
+textView rmod (MkSelectNotify setsel) = do
     esrc <- newEditSource
     buffer <- new TextBuffer []
-    initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
-    #setText buffer initial (-1)
     insertSignal <-
-        cvLiftView $
-        liftIOView $ \unlift ->
-            on buffer #insertText $ \iter text _ ->
-                unlift $
-                traceBracket "GTK.Text:insert" $
-                viewObjectPushEdit $ \_ push -> do
-                    p <- getSequencePoint iter
+        cvOn buffer #insertText $ \iter text _ -> traceBracket "GTK.Text:insert" $ do
+            p <- getSequencePoint iter
+            liftIO $
+                runResource emptyResourceContext rmod $ \asub -> do
                     let edit = StringReplaceSection (MkSequenceRun p 0) text
-                    _ <- traceBracket ("GTK.Text.insert: push " <> show edit) $ push esrc $ pure edit
+                    _ <- traceBracket ("GTK.Text.insert: push " <> show edit) $ pushEdit esrc $ subEdit asub $ pure edit
                     return ()
     deleteSignal <-
-        cvLiftView $
-        liftIOView $ \unlift ->
-            on buffer #deleteRange $ \iter1 iter2 ->
-                unlift $
-                traceBracket "GTK.Text:delete" $
-                viewObjectPushEdit $ \_ push -> do
-                    run <- getSequenceRun iter1 iter2
-                    let edit = StringReplaceSection run mempty
-                    _ <- traceBracket ("GTK.Text.delete: push " <> show edit) $ push esrc $ pure edit
+        cvOn buffer #deleteRange $ \iter1 iter2 -> traceBracket "GTK.Text:delete" $ do
+            srun <- getSequenceRun iter1 iter2
+            liftIO $
+                runResource emptyResourceContext rmod $ \asub -> do
+                    let edit = StringReplaceSection srun mempty
+                    _ <- traceBracket ("GTK.Text.delete: push " <> show edit) $ pushEdit esrc $ subEdit asub $ pure edit
                     return ()
-    widget <- new TextView [#buffer := buffer]
-    cvReceiveUpdate (Just esrc) $ \_ _ (MkEditUpdate edit) ->
-        liftIO $
-        withSignalBlocked buffer insertSignal $
-        withSignalBlocked buffer deleteSignal $
-        traceBracket ("GTK.Text.receive: " <> show edit) $
-        case edit of
-            StringReplaceWhole text -> #setText buffer text (-1)
-            StringReplaceSection bounds text -> replaceText buffer bounds text
     let
-        aspect :: Aspect (EditLens (StringUpdate Text) (StringUpdate Text))
+        aspect :: View (Maybe TextSelection)
         aspect = do
             (_, iter1, iter2) <- #getSelectionBounds buffer
-            run <- getSequenceRun iter1 iter2
             -- get selection...
-            lens <- stringSectionLens run
-            return $ Just lens
-    cvAddAspect aspect
-    _ <-
-        cvLiftView $
-        liftIOView $ \unlift ->
-            on widget #focus $ \_ ->
-                unlift $ do
-                    viewSetSelection aspect
-                    return True
+            srun <- getSequenceRun iter1 iter2
+            return $ Just $ stringSectionLens srun
+    cvLiftView $ setsel aspect
+    _ <- cvOn buffer #changed $ setsel aspect
+    let
+        initV :: Subscriber (StringUpdate Text) -> CreateView ()
+        initV rm = do
+            initial <- viewRunResource rm $ \am -> mutableReadToSubject $ subRead am
+            liftIO $
+                withSignalBlocked buffer insertSignal $
+                withSignalBlocked buffer deleteSignal $ #setText buffer initial (-1)
+        recvV :: () -> NonEmpty (StringUpdate Text) -> View ()
+        recvV () updates =
+            liftIO $
+            for_ updates $ \(MkEditUpdate edit) ->
+                withSignalBlocked buffer insertSignal $
+                withSignalBlocked buffer deleteSignal $
+                traceBracket ("GTK.Text.receive: " <> show edit) $
+                case edit of
+                    StringReplaceWhole text -> #setText buffer text (-1)
+                    StringReplaceSection bounds text -> replaceText buffer bounds text
+    cvBindSubscriber rmod (Just esrc) initV mempty recvV
+    widget <- new TextView [#buffer := buffer]
     toWidget widget
 
 textAreaGetView :: GetGView
-textAreaGetView = MkGetView $ \_ uispec -> fmap (\MkTextAreaUISpec -> textView) $ isUISpec uispec
+textAreaGetView =
+    MkGetView $ \_ uispec -> fmap (\(MkTextAreaUISpec sub setsel) -> textView sub setsel) $ isUISpec uispec

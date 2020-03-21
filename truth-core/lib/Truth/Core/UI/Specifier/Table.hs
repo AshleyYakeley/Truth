@@ -2,10 +2,14 @@ module Truth.Core.UI.Specifier.Table where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Object
 import Truth.Core.Read
 import Truth.Core.Types
+import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.TextStyle
+import Truth.Core.UI.View.CreateView
+import Truth.Core.UI.View.View
 
 data TableCellProps = MkTableCellProps
     { tcStyle :: TextStyle
@@ -16,45 +20,63 @@ plainTableCellProps = let
     tcStyle = plainTextStyle
     in MkTableCellProps {..}
 
-data KeyColumn updateT key = MkKeyColumn
-    { kcName :: UpdateFunction updateT (WholeUpdate Text)
-    , kcContents :: key -> IO (EditLens updateT (WholeUpdate Text), UpdateFunction updateT (WholeUpdate TableCellProps))
+data KeyColumn update = MkKeyColumn
+    { kcName :: Subscriber (ROWUpdate Text)
+    , kcContents :: Subscriber update -> CreateView ( Subscriber (WholeUpdate Text)
+                                                    , Subscriber (ROWUpdate TableCellProps))
     }
 
 readOnlyKeyColumn ::
-       UpdateFunction updateT (WholeUpdate Text)
-    -> (key -> IO (UpdateFunction updateT (WholeUpdate (Text, TableCellProps))))
-    -> KeyColumn updateT key
+       forall update.
+       Subscriber (ROWUpdate Text)
+    -> (Subscriber update -> CreateView (Subscriber (ROWUpdate (Text, TableCellProps))))
+    -> KeyColumn update
 readOnlyKeyColumn kcName getter = let
-    kcContents key = do
-        func <- getter key
-        return (updateFunctionToRejectingEditLens $ funcUpdateFunction fst . func, funcUpdateFunction snd . func)
+    kcContents :: Subscriber update -> CreateView (Subscriber (WholeUpdate Text), Subscriber (ROWUpdate TableCellProps))
+    kcContents rowSub = do
+        cellSub <- getter rowSub
+        let
+            textSub :: Subscriber (WholeUpdate Text)
+            textSub = mapSubscriber (fromReadOnlyRejectingEditLens . liftReadOnlyEditLens (funcEditLens fst)) cellSub
+            propsSub :: Subscriber (ROWUpdate TableCellProps)
+            propsSub = mapSubscriber (liftReadOnlyEditLens $ funcEditLens snd) cellSub
+        return (textSub, propsSub)
     in MkKeyColumn {..}
 
-data TableUISpec sel updateT where
+data TableUISpec where
     MkTableUISpec
-        :: forall cont o updateT updateI.
-           (KeyContainer cont, FullSubjectReader (UpdateReader updateI), HasKeyReader cont (UpdateReader updateI))
-        => [KeyColumn updateT (ContainerKey cont)]
-        -> (o -> o -> Ordering)
-        -> (ContainerKey cont -> UpdateFunction updateT (WholeUpdate o))
-        -> EditLens updateT (KeyUpdate cont updateI)
-        -> (ContainerKey cont -> IO ())
-        -> TableUISpec (ContainerKey cont) updateT
+        :: forall seq update.
+           ( IsSequence seq
+           , Integral (Index seq)
+           , IsUpdate update
+           , ApplicableEdit (UpdateEdit update)
+           , FullSubjectReader (UpdateReader update)
+           , UpdateSubject update ~ Element seq
+           )
+        => [KeyColumn update]
+        -> Subscriber (OrderedListUpdate seq update)
+        -> (Subscriber update -> View ())
+        -> SelectNotify (Subscriber update)
+        -> TableUISpec
 
 tableUISpec ::
-       forall cont o updateT updateI.
-       (KeyContainer cont, FullSubjectReader (UpdateReader updateI), HasKeyReader cont (UpdateReader updateI))
-    => [KeyColumn updateT (ContainerKey cont)]
-    -> (o -> o -> Ordering)
-    -> (ContainerKey cont -> UpdateFunction updateT (WholeUpdate o))
-    -> EditLens updateT (KeyUpdate cont updateI)
-    -> (ContainerKey cont -> IO ())
-    -> UISpec (ContainerKey cont) updateT
-tableUISpec cols order geto lens onDoubleClick = MkUISpec $ MkTableUISpec cols order geto lens onDoubleClick
+       forall seq update.
+       ( IsSequence seq
+       , Integral (Index seq)
+       , IsUpdate update
+       , ApplicableEdit (UpdateEdit update)
+       , FullSubjectReader (UpdateReader update)
+       , UpdateSubject update ~ Element seq
+       )
+    => [KeyColumn update]
+    -> Subscriber (OrderedListUpdate seq update)
+    -> (Subscriber update -> View ())
+    -> SelectNotify (Subscriber update)
+    -> CVUISpec
+tableUISpec cols rows onDoubleClick sel = mkCVUISpec $ MkTableUISpec cols rows onDoubleClick sel
 
-instance Show (TableUISpec sel edit) where
-    show (MkTableUISpec _ _ _ _ _) = "table"
+instance Show TableUISpec where
+    show (MkTableUISpec _ _ _ _) = "table"
 
 instance UIType TableUISpec where
     uiWitness = $(iowitness [t|TableUISpec|])

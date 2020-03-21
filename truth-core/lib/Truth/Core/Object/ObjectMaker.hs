@@ -1,26 +1,34 @@
 module Truth.Core.Object.ObjectMaker
-    ( ObjectMaker
+    ( ObjectMakerResult(..)
+    , ObjectMaker
     , reflectingObjectMaker
     , mapObjectMaker
     ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.Update
 import Truth.Core.Read
 import Truth.Core.Resource
 import Truth.Debug.Object
 
-type ObjectMaker update a = (NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (Object (UpdateEdit update), a)
+data ObjectMakerResult edit a = MkObjectMakerResult
+    { omrObject :: Object edit
+    , omrUpdatesTask :: Task ()
+    , omrValue :: a
+    }
+
+type ObjectMaker update a
+     = Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (ObjectMakerResult (UpdateEdit update) a)
 
 reflectingObjectMaker ::
        forall update. IsUpdate update
     => Object (UpdateEdit update)
     -> ObjectMaker update ()
-reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e)) recv = do
+reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e ctask)) utask recv = do
     Dict <- return $ resourceRunnerUnliftAllDict trun
     Dict <- return $ transStackDict @MonadUnliftIO @tt @(DeferActionT IO)
     Refl <- return $ transStackConcatRefl @tt @'[ DeferActionT] @IO
@@ -41,20 +49,41 @@ reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e)) 
                     return $
                     Just $ \esrc -> do
                         stackUnderliftIO @tt @(DeferActionT IO) $ action esrc
-                        stackLift @tt $ deferAction @IO $ traceBracket "reflectingObjectMaker: reflecting update" $ recv (fmap editUpdate edits) $ editSourceContext esrc
+                        stackLift @tt $
+                            deferAction @IO $ traceBracket "reflectingObjectMaker: reflecting update" $ recv emptyResourceContext (fmap editUpdate edits) $ editSourceContext esrc
         anobj :: AnObject (UpdateEdit update) (Concat tt '[ DeferActionT])
-        anobj = MkAnObject r' e'
-    return $ (traceThing "reflectingObjectMaker" $ MkResource trun' anobj, ())
+        anobj = MkAnObject r' e' ctask
+        omrUpdatesTask :: Task ()
+        omrUpdatesTask = utask
+        omrValue = ()
+        omrObject :: Object (UpdateEdit update)
+        omrObject = traceThing "reflectingObjectMaker" $ MkResource trun' anobj
+    return MkObjectMakerResult {..}
 
-mapObjectMaker :: EditLens updateA updateB -> ObjectMaker updateA a -> ObjectMaker updateB a
-mapObjectMaker lens uobja recvb = do
+mapObjectMaker ::
+       forall updateA updateB a.
+       ResourceContext
+    -> FloatingEditLens updateA updateB
+    -> ObjectMaker updateA a
+    -> ObjectMaker updateB a
+mapObjectMaker rc (MkFloatingEditLens init rlens) uobja utask recvb = do
     rec
-        let
-            recva eas esrc = do
-                ebs <- objectMapUpdates (editLensFunction lens) obja eas
-                case nonEmpty ebs of
-                    Nothing -> return ()
-                    Just ebb -> recvb ebb esrc
-        (obja, a) <- uobja recva
-    let objb = lensObject lens obja
-    return (objb, a)
+        (result, recva) <- do
+            MkObjectMakerResult (MkResource (rr :: _ tt) anobjA) updTask val <- uobja utask recva
+            liftIO $ do
+                r <- runResourceRunner rc rr $ runFloatInit init $ objRead anobjA
+                let
+                    lens = rlens r
+                    recva' urc eas esrc = do
+                        ebs <-
+                            runResourceRunner urc rr $
+                            fmap mconcat $ for (toList eas) $ \ea -> elUpdate lens ea $ objRead anobjA
+                        case nonEmpty ebs of
+                            Nothing -> return ()
+                            Just ebb -> recvb urc ebb esrc
+                    objB :: Object (UpdateEdit updateB)
+                    objB =
+                        case resourceRunnerUnliftAllDict rr of
+                            Dict -> MkResource rr $ mapAnObject lens anobjA
+                return (MkObjectMakerResult objB updTask val, recva')
+    return result

@@ -4,10 +4,13 @@ module Truth.Core.Object.Tuple
     , tupleObjectMaker
     , tupleSubscriber
     , pairSubscribers
+    , pairReadOnlySubscribers
+    , contextSubscribers
     ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
@@ -109,13 +112,14 @@ instance TupleResource UAnObject where
         objRead (MkTupleUpdateReader sel _) = case sel of {}
         objEdit :: NonEmpty (TupleUpdateEdit (ListElementType '[])) -> IO (Maybe (EditSource -> IO ()))
         objEdit (MkTupleUpdateEdit sel _ :| _) = case sel of {}
+        objCommitTask = mempty
         in MkUAnObject $ MkAnObject {..}
     consTupleAResource ::
            forall tt update updates. MonadTransStackUnliftAll tt
         => UAnObject update tt
         -> UAnObject (TupleUpdate (ListElementType updates)) tt
         -> UAnObject (TupleUpdate (ListElementType (update : updates))) tt
-    consTupleAResource (MkUAnObject (MkAnObject readA editA)) (MkUAnObject (MkAnObject readB editB)) =
+    consTupleAResource (MkUAnObject (MkAnObject readA editA ctaskA)) (MkUAnObject (MkAnObject readB editB ctaskB)) =
         case transStackDict @MonadIO @tt @IO of
             Dict -> let
                 readAB :: MutableRead (ApplyStack tt IO) (TupleUpdateReader (ListElementType (update : updates)))
@@ -131,31 +135,33 @@ instance TupleResource UAnObject where
                            (Just eas', Nothing) -> editA eas'
                            (Nothing, Just ebs') -> editB ebs'
                            (Just eas', Just ebs') -> (liftA2 $ liftA2 $ liftA2 (>>)) (editA eas') (editB ebs')
-                in MkUAnObject $ MkAnObject readAB editAB
-    mapResourceUpdate lens uobj = objToUObj $ mapObject lens $ uObjToObj uobj
+                ctaskAB = ctaskA <> ctaskB
+                in MkUAnObject $ MkAnObject readAB editAB ctaskAB
+    mapResourceUpdate plens uobj = objToUObj $ mapObject plens $ uObjToObj uobj
 
 instance TupleResource ASubscriber where
     noneTupleAResource :: ASubscriber (TupleUpdate (ListElementType '[])) '[]
-    noneTupleAResource = MkASubscriber (unUAnObject noneTupleAResource) $ \_ -> return ()
+    noneTupleAResource = MkASubscriber (unUAnObject noneTupleAResource) (\_ _ -> return ()) mempty
     consTupleAResource ::
            forall tt update updates. MonadTransStackUnliftAll tt
         => ASubscriber update tt
         -> ASubscriber (TupleUpdate (ListElementType updates)) tt
         -> ASubscriber (TupleUpdate (ListElementType (update : updates))) tt
-    consTupleAResource (MkASubscriber anobj1 sub1) (MkASubscriber anobj2 sub2) =
-        case transStackDict @MonadIO @tt @IO of
+    consTupleAResource (MkASubscriber anobj1 sub1 utask1) (MkASubscriber anobj2 sub2 utask2) =
+        case transStackDict @MonadIO @tt @LifeCycleIO of
             Dict -> let
                 anobj12 = unUAnObject $ consTupleAResource (MkUAnObject anobj1) (MkUAnObject anobj2)
-                sub12 recv12 = do
+                sub12 task recv12 = do
                     let
-                        recv1 u1 ec = recv12 (fmap (\u -> MkTupleUpdate FirstElementType u) u1) ec
-                        recv2 u2 ec =
-                            recv12 (fmap (\(MkTupleUpdate sel u) -> MkTupleUpdate (RestElementType sel) u) u2) ec
-                    sub1 recv1
-                    sub2 recv2
-                in MkASubscriber anobj12 sub12
+                        recv1 rc u1 ec = recv12 rc (fmap (\u -> MkTupleUpdate FirstElementType u) u1) ec
+                        recv2 rc u2 ec =
+                            recv12 rc (fmap (\(MkTupleUpdate sel u) -> MkTupleUpdate (RestElementType sel) u) u2) ec
+                    sub1 task recv1
+                    sub2 task recv2
+                utask12 = utask1 <> utask2
+                in MkASubscriber anobj12 sub12 utask12
     mapResourceUpdate :: EditLens updateA updateB -> Subscriber updateA -> Subscriber updateB
-    mapResourceUpdate = mapPureSubscriber
+    mapResourceUpdate = mapSubscriber
 
 tupleObject ::
        forall sel. IsFiniteConsWitness sel
@@ -164,13 +170,18 @@ tupleObject ::
 tupleObject pick = uObjToObj $ tupleResource $ \selu -> objToUObj $ pick selu
 
 tupleObjectMaker ::
-       forall sel. IsFiniteConsWitness sel
-    => (forall update. sel update -> ObjectMaker update ())
-    -> ObjectMaker (TupleUpdate sel) ()
-tupleObjectMaker pick recv = do
-    uobj <-
-        tupleResourceM $ \sel -> fmap (objToUObj . fst) $ pick sel $ \updates -> recv $ fmap (MkTupleUpdate sel) updates
-    return (uObjToObj uobj, ())
+       forall sel a. (IsFiniteConsWitness sel, Monoid a)
+    => (forall update. sel update -> ObjectMaker update a)
+    -> ObjectMaker (TupleUpdate sel) a
+tupleObjectMaker pick outask recv = do
+    (uobj, (utask, val)) <-
+        runWriterT $
+        tupleResourceM $ \sel -> do
+            (MkObjectMakerResult o utask val) <-
+                lift $ pick sel outask $ \rc updates -> recv rc $ fmap (MkTupleUpdate sel) updates
+            tell (utask, val)
+            return $ objToUObj o
+    return $ MkObjectMakerResult (uObjToObj uobj) utask val
 
 tupleSubscriber ::
        forall sel. IsFiniteConsWitness sel
@@ -188,3 +199,18 @@ pairObjects obja objb = uObjToObj $ pairResource (objToUObj obja) (objToUObj obj
 pairSubscribers ::
        forall updatea updateb. Subscriber updatea -> Subscriber updateb -> Subscriber (PairUpdate updatea updateb)
 pairSubscribers = pairResource
+
+pairReadOnlySubscribers ::
+       forall updateA updateB.
+       Subscriber (ReadOnlyUpdate updateA)
+    -> Subscriber (ReadOnlyUpdate updateB)
+    -> Subscriber (ReadOnlyUpdate (PairUpdate updateA updateB))
+pairReadOnlySubscribers sa sb =
+    mapSubscriber toReadOnlyEditLens $
+    pairSubscribers (mapSubscriber fromReadOnlyRejectingEditLens sa) (mapSubscriber fromReadOnlyRejectingEditLens sb)
+
+contextSubscribers :: Subscriber updateX -> Subscriber updateN -> Subscriber (ContextUpdate updateX updateN)
+contextSubscribers sx sn =
+    tupleSubscriber $ \case
+        SelectContext -> sx
+        SelectContent -> sn

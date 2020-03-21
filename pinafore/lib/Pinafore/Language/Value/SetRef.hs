@@ -7,76 +7,67 @@ import Pinafore.Language.Value.Ref
 import Shapes
 import Truth.Core
 
-data PinaforeSetRef baseupdate a =
+data PinaforeSetRef a =
     MkPinaforeSetRef (a -> a -> Bool)
-                     (PinaforeLensValue baseupdate (PartialSetUpdate a))
+                     (PinaforeValue (PartialSetUpdate a))
 
-mkPinaforeSetRef :: Eq a => PinaforeLensValue baseupdate (PartialSetUpdate a) -> PinaforeSetRef baseupdate a
-mkPinaforeSetRef lens = MkPinaforeSetRef (==) lens
+mkPinaforeSetRef :: Eq a => PinaforeValue (PartialSetUpdate a) -> PinaforeSetRef a
+mkPinaforeSetRef sv = MkPinaforeSetRef (==) sv
 
-unPinaforeSetRef :: PinaforeSetRef baseupdate a -> PinaforeLensValue baseupdate (PartialSetUpdate a)
-unPinaforeSetRef (MkPinaforeSetRef _ lens) = lens
+unPinaforeSetRef :: PinaforeSetRef a -> PinaforeValue (PartialSetUpdate a)
+unPinaforeSetRef (MkPinaforeSetRef _ sv) = sv
 
-instance Contravariant (PinaforeSetRef baseupdate) where
-    contramap :: forall a b. (a -> b) -> PinaforeSetRef baseupdate b -> PinaforeSetRef baseupdate a
-    contramap ab (MkPinaforeSetRef eqb lens) = let
+instance Contravariant PinaforeSetRef where
+    contramap :: forall a b. (a -> b) -> PinaforeSetRef b -> PinaforeSetRef a
+    contramap ab (MkPinaforeSetRef eqb sv) = let
         eqa a1 a2 = eqb (ab a1) (ab a2)
         matchba b a = eqb b (ab a)
         mapset :: ReaderSet (SetReader b) -> ReaderSet (SetReader a)
         mapset rset (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) =
             rset $ MkTupleUpdateReader (MkFunctionSelector $ ab a) ReadWhole
-        in MkPinaforeSetRef eqa $ partialiseEditLens mapset (contramapPartialFunctionEditLens ab matchba) . lens
+        in MkPinaforeSetRef eqa $ eaMap (partialiseEditLens mapset (contramapPartialFunctionEditLens ab matchba)) sv
 
-instance HasVariance 'Contravariance (PinaforeSetRef baseupdate) where
+instance HasVariance 'Contravariance PinaforeSetRef where
     varianceRepresentational = Nothing
 
-pinaforeSetRefImmutable :: forall baseupdate a. PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a
-pinaforeSetRefImmutable (MkPinaforeSetRef eq lens) =
-    MkPinaforeSetRef eq $ updateFunctionToRejectingEditLens $ editLensFunction lens
+pinaforeSetRefImmutable :: forall a. PinaforeSetRef a -> PinaforeSetRef a
+pinaforeSetRefImmutable (MkPinaforeSetRef eq sv) =
+    MkPinaforeSetRef eq $ eaMap (fromReadOnlyRejectingEditLens . toReadOnlyEditLens) sv
 
-pinaforeSetRefComplement :: forall baseupdate a. PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a
-pinaforeSetRefComplement (MkPinaforeSetRef eq lens) = let
+pinaforeSetRefComplement :: forall a. PinaforeSetRef a -> PinaforeSetRef a
+pinaforeSetRefComplement (MkPinaforeSetRef eq sv) = let
     mapset :: ReaderSet (UpdateReader (SetUpdate a)) -> ReaderSet (UpdateReader (SetUpdate a))
     mapset rset = rset
-    in MkPinaforeSetRef eq $ liftPartialEditLens mapset setUpdateComplement . lens
+    in MkPinaforeSetRef eq $ eaMap (liftPartialEditLens mapset setUpdateComplement) sv
 
 pinaforeSetRefCombine ::
-       forall baseupdate a.
+       forall a.
        EditLens (PairUpdate (SetUpdate a) (SetUpdate a)) (SetUpdate a)
-    -> PinaforeSetRef baseupdate a
-    -> PinaforeSetRef baseupdate a
-    -> PinaforeSetRef baseupdate a
-pinaforeSetRefCombine clens (MkPinaforeSetRef eq1 lens1) (MkPinaforeSetRef eq2 lens2) = let
+    -> PinaforeSetRef a
+    -> PinaforeSetRef a
+    -> PinaforeSetRef a
+pinaforeSetRefCombine clens (MkPinaforeSetRef eq1 sv1) (MkPinaforeSetRef eq2 sv2) = let
     eq12 a b = eq1 a b || eq2 a b -- a bit odd, but the safest thing
     mapset :: ReaderSet (PairUpdateReader (SetUpdate a) (SetUpdate a)) -> ReaderSet (SetReader a)
     mapset rset (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) =
         (rset $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) ||
         (rset $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole)
-    in MkPinaforeSetRef eq12 $
-       liftPartialEditLens mapset clens . partialPairEditLens . pairCombineEditLenses lens1 lens2
+    in MkPinaforeSetRef eq12 $ eaMap (liftPartialEditLens mapset clens . partialPairEditLens) $ eaPair sv1 sv2
 
-pinaforeSetRefIntersect ::
-       forall baseupdate a. PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a
+pinaforeSetRefIntersect :: forall a. PinaforeSetRef a -> PinaforeSetRef a -> PinaforeSetRef a
 pinaforeSetRefIntersect = pinaforeSetRefCombine setUpdateIntersection
 
-pinaforeSetRefUnion ::
-       forall baseupdate a. PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a
+pinaforeSetRefUnion :: forall a. PinaforeSetRef a -> PinaforeSetRef a -> PinaforeSetRef a
 pinaforeSetRefUnion = pinaforeSetRefCombine setUpdateUnion
 
-pinaforeSetRefDifference ::
-       forall baseupdate a. PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a
+pinaforeSetRefDifference :: forall a. PinaforeSetRef a -> PinaforeSetRef a -> PinaforeSetRef a
 pinaforeSetRefDifference = pinaforeSetRefCombine setUpdateDifference
 
-pinaforeSetRefSymmetricDifference ::
-       forall baseupdate a. PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a -> PinaforeSetRef baseupdate a
+pinaforeSetRefSymmetricDifference :: forall a. PinaforeSetRef a -> PinaforeSetRef a -> PinaforeSetRef a
 pinaforeSetRefSymmetricDifference = pinaforeSetRefCombine setUpdateSymmetricDifference
 
-pinaforeSetRefCartesianSum ::
-       forall baseupdate a b.
-       PinaforeSetRef baseupdate a
-    -> PinaforeSetRef baseupdate b
-    -> PinaforeSetRef baseupdate (Either a b)
-pinaforeSetRefCartesianSum (MkPinaforeSetRef eqA lensA) (MkPinaforeSetRef eqB lensB) = let
+pinaforeSetRefCartesianSum :: forall a b. PinaforeSetRef a -> PinaforeSetRef b -> PinaforeSetRef (Either a b)
+pinaforeSetRefCartesianSum (MkPinaforeSetRef eqA svA) (MkPinaforeSetRef eqB svB) = let
     eqAB (Left a1) (Left a2) = eqA a1 a2
     eqAB (Right b1) (Right b2) = eqB b1 b2
     eqAB _ _ = False
@@ -86,40 +77,31 @@ pinaforeSetRefCartesianSum (MkPinaforeSetRef eqA lensA) (MkPinaforeSetRef eqB le
             Left a -> rset $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
             Right b -> rset $ MkTupleUpdateReader SelectSecond $ MkTupleUpdateReader (MkFunctionSelector b) ReadWhole
     in MkPinaforeSetRef eqAB $
-       liftPartialEditLens mapset setCartesianSumEditLens . partialPairEditLens . pairCombineEditLenses lensA lensB
+       eaMap (liftPartialEditLens mapset setCartesianSumEditLens . partialPairEditLens) $ eaPair svA svB
 
-pinaforeSetRefCartesianProduct ::
-       forall baseupdate a b.
-       PinaforeSetRef baseupdate a
-    -> PinaforeSetRef baseupdate b
-    -> PinaforeSetRef baseupdate (a, b)
-pinaforeSetRefCartesianProduct (MkPinaforeSetRef eqA lensA) (MkPinaforeSetRef eqB lensB) = let
+pinaforeSetRefCartesianProduct :: forall a b. PinaforeSetRef a -> PinaforeSetRef b -> PinaforeSetRef (a, b)
+pinaforeSetRefCartesianProduct (MkPinaforeSetRef eqA svA) (MkPinaforeSetRef eqB svB) = let
     eqAB (a1, b1) (a2, b2) = eqA a1 a2 && eqB b1 b2
     in MkPinaforeSetRef eqAB $
-       updateFunctionToRejectingEditLens (setCartesianProductPartialUpdateFunction eqA eqB) .
-       pairCombineEditLenses lensA lensB
+       eaMap (fromReadOnlyRejectingEditLens . setCartesianProductPartialLens eqA eqB) $ eaPair svA svB
 
-pinaforeSetRefAdd :: forall baseupdate a. PinaforeSetRef baseupdate a -> a -> PinaforeAction baseupdate ()
-pinaforeSetRefAdd (MkPinaforeSetRef _eq lens) a =
-    pinaforeLensPush lens $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True
+pinaforeSetRefAdd :: forall a. PinaforeSetRef a -> a -> PinaforeAction ()
+pinaforeSetRefAdd (MkPinaforeSetRef _eq sv) a =
+    pinaforeValuePushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True
 
-pinaforeSetRefAddNew :: forall baseupdate. PinaforeSetRef baseupdate NewEntity -> PinaforeAction baseupdate NewEntity
+pinaforeSetRefAddNew :: PinaforeSetRef NewEntity -> PinaforeAction NewEntity
 pinaforeSetRefAddNew set = do
     (MkNewEntity -> e) <- liftIO $ newKeyContainerItem @(FiniteSet Entity)
     pinaforeSetRefAdd set e
     return e
 
-pinaforeSetRefRemove :: forall baseupdate a. PinaforeSetRef baseupdate a -> a -> PinaforeAction baseupdate ()
-pinaforeSetRefRemove (MkPinaforeSetRef _eq lens) a =
-    pinaforeLensPush lens $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit False
+pinaforeSetRefRemove :: forall a. PinaforeSetRef a -> a -> PinaforeAction ()
+pinaforeSetRefRemove (MkPinaforeSetRef _eq sv) a =
+    pinaforeValuePushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit False
 
-pinaforeSetRefMember ::
-       forall baseupdate a.
-       PinaforeSetRef baseupdate a
-    -> PinaforeRef baseupdate '( BottomType, a)
-    -> PinaforeRef baseupdate '( Bool, Bool)
-pinaforeSetRefMember (MkPinaforeSetRef eq lens) aref = let
-    afval = pinaforeRefToFunction aref
+pinaforeSetRefMember :: forall a. PinaforeSetRef a -> PinaforeRef '( BottomType, a) -> PinaforeRef '( Bool, Bool)
+pinaforeSetRefMember (MkPinaforeSetRef eq sv) aref = let
+    afval = pinaforeRefToReadOnlyValue aref
     knowApplySetLens :: EditLens (PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))) (WholeUpdate (Know Bool))
     knowApplySetLens = let
         getFunc ::
@@ -133,27 +115,26 @@ pinaforeSetRefMember (MkPinaforeSetRef eq lens) aref = let
             => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> m (Know a)
         getArg mr = mr $ MkTupleUpdateReader SelectSecond ReadWhole
-        elFunction :: UpdateFunction (PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))) (WholeUpdate (Know Bool))
-        ufGet ::
+        elGet ::
                forall m. MonadIO m
             => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> MutableRead m (WholeReader (Know Bool))
-        ufGet mr ReadWhole = do
+        elGet mr ReadWhole = do
             ka <- getArg mr
             for ka $ getFunc mr
-        ufUpdate ::
+        elUpdate ::
                forall m. MonadIO m
             => PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))
             -> MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> m [WholeUpdate (Know Bool)]
-        ufUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeUpdate b)))) mr = do
+        elUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeUpdate b)))) mr = do
             ka <- getArg mr
             return $
                 case ka of
                     Known a'
                         | eq a a' -> pure $ MkWholeUpdate $ Known b
                     _ -> []
-        ufUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate rset)) mr = do
+        elUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate rset)) mr = do
             ka <- getArg mr
             case ka of
                 Known a
@@ -161,13 +142,12 @@ pinaforeSetRefMember (MkPinaforeSetRef eq lens) aref = let
                         b <- getFunc mr a
                         return $ pure $ MkWholeUpdate $ Known b
                 _ -> return []
-        ufUpdate (MkTupleUpdate SelectSecond (MkWholeUpdate ka)) mr = do
+        elUpdate (MkTupleUpdate SelectSecond (MkWholeUpdate ka)) mr = do
             case ka of
                 Known a -> do
                     b <- getFunc mr a
                     return $ pure $ MkWholeUpdate $ Known b
                 Unknown -> return $ pure $ MkWholeUpdate Unknown
-        elFunction = MkUpdateFunction {..}
         elPutEdits ::
                forall m. MonadIO m
             => [WholeEdit (Know Bool)]
@@ -188,15 +168,14 @@ pinaforeSetRefMember (MkPinaforeSetRef eq lens) aref = let
                                 MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit b
                             _ -> Nothing
         in MkEditLens {..}
-    in pinaforeLensToRef $ knowApplySetLens . pairCombineEditLenses lens (updateFunctionToRejectingEditLens afval)
+    in pinaforeValueToRef $ eaMap knowApplySetLens $ eaPair sv $ eaMap fromReadOnlyRejectingEditLens afval
 
-pinaforePredicateToSetRef :: forall baseupdate a. (a -> Bool) -> PinaforeSetRef baseupdate (MeetType Entity a)
-pinaforePredicateToSetRef p = MkPinaforeSetRef (==) $ constEditLens $ \mea -> p $ meet2 mea
+pinaforePredicateToSetRef :: forall a. (a -> Bool) -> PinaforeSetRef (MeetType Entity a)
+pinaforePredicateToSetRef p =
+    MkPinaforeSetRef (==) $ eaMap fromReadOnlyRejectingEditLens $ eaPure $ \mea -> p $ meet2 mea
 
 pinaforePredicateRefToSetRef ::
-       forall baseupdate a.
-       PinaforeRef baseupdate '( MeetType Entity a -> Bool, a -> Bool)
-    -> PinaforeSetRef baseupdate (MeetType Entity a)
+       forall a. PinaforeRef '( MeetType Entity a -> Bool, a -> Bool) -> PinaforeSetRef (MeetType Entity a)
 pinaforePredicateRefToSetRef ref = let
-    lens = pinaforeRefToLens $ coRangeLift (\s ma -> s $ meet2 ma) ref
-    in MkPinaforeSetRef (==) $ partialConvertEditLens . unknownValueEditLens (\_ -> False) . lens
+    sv = pinaforeRefToValue $ coRangeLift (\s ma -> s $ meet2 ma) ref
+    in MkPinaforeSetRef (==) $ eaMap (partialConvertEditLens . unknownValueEditLens (\_ -> False)) sv

@@ -1,18 +1,22 @@
 module Truth.Core.UI.Specifier.TextEditor where
 
-import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
+import Truth.Core.Object
 import Truth.Core.Types
+import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 
-data TextAreaUISpec sel update where
-    MkTextAreaUISpec :: TextAreaUISpec (EditLens (StringUpdate Text) (StringUpdate Text)) (StringUpdate Text)
+type TextSelection = FloatingEditLens (StringUpdate Text) (StringUpdate Text)
 
-instance Show (TextAreaUISpec sel update) where
-    show MkTextAreaUISpec = "text-area"
+data TextAreaUISpec where
+    MkTextAreaUISpec :: Subscriber (StringUpdate Text) -> SelectNotify TextSelection -> TextAreaUISpec
+
+instance Show TextAreaUISpec where
+    show (MkTextAreaUISpec _ _) = "text-area"
 
 instance UIType TextAreaUISpec where
     uiWitness = $(iowitness [t|TextAreaUISpec|])
 
-textAreaUISpec :: UISpec (EditLens (StringUpdate Text) (StringUpdate Text)) (StringUpdate Text)
-textAreaUISpec = MkUISpec MkTextAreaUISpec
+textAreaUISpec :: Subscriber (StringUpdate Text) -> SelectNotify TextSelection -> CVUISpec
+textAreaUISpec sub sel = mkCVUISpec $ MkTextAreaUISpec sub sel

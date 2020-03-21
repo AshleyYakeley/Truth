@@ -2,6 +2,8 @@ module Truth.Core.UI.Specifier.Option where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Object
+import Truth.Core.Read
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.TextStyle
@@ -16,25 +18,38 @@ plainOptionUICell optionCellText = let
     optionCellStyle = plainTextStyle
     in MkOptionUICell {..}
 
-data OptionUISpec sel update where
+data OptionUISpec where
     MkOptionUISpec
-        :: Eq t
-        => UpdateFunction updateT (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
-        -> EditLens updateT (WholeUpdate t)
-        -> OptionUISpec sel updateT
+        :: ( Eq t
+           , FullSubjectReader (UpdateReader update)
+           , ApplicableUpdate update
+           , UpdateSubject update ~ (t, OptionUICell)
+           )
+        => Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+        -> Subscriber (WholeUpdate t)
+        -> OptionUISpec
 
-instance Show (OptionUISpec sel update) where
+instance Show OptionUISpec where
     show _ = "option"
 
 instance UIType OptionUISpec where
     uiWitness = $(iowitness [t|OptionUISpec|])
 
 optionUISpec ::
-       forall updateT t sel. Eq t
-    => UpdateFunction updateT (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
-    -> EditLens updateT (WholeUpdate t)
-    -> UISpec sel updateT
-optionUISpec optlens sellens = MkUISpec $ MkOptionUISpec optlens sellens
+       forall update t.
+       ( Eq t
+       , FullSubjectReader (UpdateReader update)
+       , ApplicableUpdate update
+       , UpdateSubject update ~ (t, OptionUICell)
+       )
+    => Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+    -> Subscriber (WholeUpdate t)
+    -> CVUISpec
+optionUISpec optlens sellens = mkCVUISpec $ MkOptionUISpec optlens sellens
 
-simpleOptionUISpec :: Eq t => [(t, OptionUICell)] -> UISpec sel (WholeUpdate t)
-simpleOptionUISpec opts = optionUISpec (constUpdateFunction opts) id
+simpleOptionUISpec ::
+       forall t. Eq t
+    => [(t, OptionUICell)]
+    -> Subscriber (WholeUpdate t)
+    -> CVUISpec
+simpleOptionUISpec opts sub = optionUISpec @(WholeUpdate (t, OptionUICell)) (constantSubscriber opts) sub

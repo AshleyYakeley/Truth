@@ -10,32 +10,26 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 import Truth.Debug.Object
 
-switchView :: forall sel edit. UpdateFunction edit (WholeUpdate (GCreateView sel edit)) -> GCreateView sel edit
-switchView specfunc = do
+switchView :: Subscriber (ROWUpdate GCreateView) -> GCreateView
+switchView sub = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
-        getViewState :: GCreateView sel edit -> View sel edit (ViewState sel)
-        getViewState gview =
-            viewCreateView $ do
-                widget <- traceBracket "GTK.Switch:getViewState.gview" $ gview
-                lcContainPackStart True box widget
-                #show widget
-    firstvs <- do
-        firstspec <-
-            cvMapEdit (return $ updateFunctionToRejectingEditLens specfunc) $
-            cvLiftView $ viewObjectRead $ \_ mr -> mr ReadWhole
-        cvLiftView $ getViewState firstspec
-    unliftView <- cvLiftView askUnliftIO
-    cvDynamic @(ViewState sel) firstvs $ \object updates -> traceBracket "GTK.Switch:update" $
-        case nonEmpty updates of
-            Nothing -> return ()
-            Just updates' -> do
-                whupdates <- liftIO $ objectMapUpdates specfunc object updates'
-                for_ (lastWholeUpdate whupdates) $ \spec -> do
-                    oldvs <- get
-                    liftIO $ closeDynamicView oldvs
-                    newvs <- liftIO $ runWMFunction (traceThing "GTK.Switch:update.getViewState" unliftView) $ getViewState spec
-                    put newvs
+        getViewState :: GCreateView -> View ViewState
+        getViewState gview = do
+            ((), vs) <-
+                viewCreateView $ do
+                    widget <- traceBracket "GTK.Switch:getViewState.gview" gview
+                    lcContainPackStart True box widget
+                    #show widget
+            return vs
+        initVS :: Subscriber (ROWUpdate GCreateView) -> CreateView (ViewState, ())
+        initVS rm = do
+            firstspec <- viewRunResource rm $ \am -> subRead am ReadWhole
+            vs <- cvLiftView $ getViewState firstspec
+            return (vs, ())
+        recvVS :: () -> [ROWUpdate GCreateView] -> StateT ViewState View ()
+        recvVS () updates = traceBracket "GTK.Switch:update" $ for_ (lastReadOnlyWholeUpdate updates) $ \spec -> replaceDynamicView $ getViewState spec
+    cvDynamic @(ViewState) sub initVS mempty recvVS
     toWidget box
 
 switchGetView :: GetGView
@@ -44,4 +38,4 @@ switchGetView =
         spec <- isUISpec uispec
         return $
             case spec of
-                MkSwitchUISpec specfunc -> switchView $ funcUpdateFunction getview . specfunc
+                MkSwitchUISpec sub -> switchView $ mapSubscriber (liftReadOnlyEditLens $ funcEditLens getview) sub

@@ -10,30 +10,33 @@ import Truth.Debug
 
 cacheObject ::
        forall edit. CacheableEdit edit
-    => Int
+    => ResourceContext
+    -> Int
     -> Object edit
-    -> LifeCycleIO (Object edit)
-cacheObject mus (MkResource rr (MkAnObject read push)) =
-    runResourceRunnerWith rr $ \run -> do
-        runAction <- asyncWaitRunner mus $ \editsnl -> traceBracket "cache update" $ traceThing "cacheObject:back.update" run $ pushOrFail "cached object" noEditSource $ push editsnl
-        objRun <- liftIO $ stateResourceRunner $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
-        return $ let
-            objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
-            objRead rt = traceBracket "cache read" $ do
-                oldcache <- get
-                case editCacheLookup @edit rt oldcache of
-                    Just t -> do
-                        traceIOM "cache hit"
-                        return t
-                    Nothing -> traceBracket "cache miss" $ do
-                        t <- liftIO $ traceThing "cacheObject:back.read" run $ read rt
-                        liftIO $ runAction Nothing -- still reading, don't push yet
-                        editCacheAdd @edit rt t
-                        return t
-            objEdit edits =
-                traceBracket "cache update request" $
-                return $
-                Just $ \_ -> traceBracket "cache update action" $ do
-                    editCacheUpdates edits
-                    liftIO $ runAction $ Just edits
-            in MkResource objRun MkAnObject {..}
+    -> LifeCycleIO (ResourceContext -> Object edit)
+cacheObject rc mus obj = do
+    (runAction, asyncTask) <-
+        asyncWaitRunner mus $ \editsnl ->
+            runResource rc obj $ \anobj -> pushOrFail "cached object" noEditSource $ objEdit anobj editsnl
+    objRun <- liftIO $ stateResourceRunner $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
+    return $ \rc' -> let
+        objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
+        objRead rt = traceBracket "cache read" $ do
+            oldcache <- get
+            case editCacheLookup @edit rt oldcache of
+                Just t -> do
+                    traceIOM "cache hit"
+                    return t
+                Nothing -> traceBracket "cache miss" $ do
+                    t <- liftIO $ runResource rc' obj $ \(MkAnObject read _ _) -> read rt
+                    liftIO $ runAction Nothing -- still reading, don't push yet
+                    editCacheAdd @edit rt t
+                    return t
+        objEdit edits =
+            traceBracket "cache update request" $
+            return $
+            Just $ \_ -> traceBracket "cache update action" $ do
+                editCacheUpdates edits
+                liftIO $ runAction $ Just edits
+        objCommitTask = asyncTask <> objectCommitTask obj
+        in MkResource objRun MkAnObject {..}

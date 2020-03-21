@@ -21,20 +21,20 @@ predicatePinaforeMap ::
 predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) prd = traceThing "predicatePinaforeMap" $ let
     rfp :: ReadFunction (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a))) PinaforeEntityRead
     rfp = tupleReadFunction SelectContext
-    ufGet :: ReadFunction (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeReader (Know b))
-    ufGet mra ReadWhole = do
+    elGet :: ReadFunction (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeReader (Know b))
+    elGet mra ReadWhole = do
         ksubja <- mra $ MkTupleUpdateReader SelectContent ReadWhole
         case ksubja of
             Known subja -> do
                 valp <- mra $ MkTupleUpdateReader SelectContext $ PinaforeEntityReadGetProperty prd $ ap subja
                 bget valp $ rfp mra
             Unknown -> return Unknown
-    ufUpdate ::
+    elUpdate ::
            forall m. MonadIO m
         => ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))
         -> MutableRead m (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a)))
         -> m [WholeUpdate (Know b)]
-    ufUpdate (MkTupleUpdate SelectContext (MkEditUpdate (PinaforeEntityEditSetPredicate p s kvalp))) mra
+    elUpdate (MkTupleUpdate SelectContext (MkEditUpdate (PinaforeEntityEditSetPredicate p s kvalp))) mra
         | p == prd = do
             ksubja <- mra $ MkTupleUpdateReader SelectContent ReadWhole
             if Known s == fmap ap ksubja
@@ -45,16 +45,14 @@ predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) 
                             return [MkWholeReaderUpdate kvalb]
                         Unknown -> return [MkWholeReaderUpdate Unknown]
                 else return []
-    ufUpdate (MkTupleUpdate SelectContext _) _ = return []
-    ufUpdate (MkTupleUpdate SelectContent (MkWholeReaderUpdate ksubja)) mra =
+    elUpdate (MkTupleUpdate SelectContext _) _ = return []
+    elUpdate (MkTupleUpdate SelectContent (MkWholeReaderUpdate ksubja)) mra =
         case ksubja of
             Known subja -> do
                 valp <- mra $ MkTupleUpdateReader SelectContext $ PinaforeEntityReadGetProperty prd $ ap subja
                 kb <- bget valp $ rfp mra
                 return [MkWholeReaderUpdate kb]
             Unknown -> return [MkWholeReaderUpdate Unknown]
-    elFunction :: UpdateFunction (ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeUpdate (Know b))
-    elFunction = MkUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [WholeEdit (Know b)]

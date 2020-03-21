@@ -2,37 +2,47 @@ module Truth.Core.UI.Specifier.One where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Object
 import Truth.Core.Types
+import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 
-data OneUISpec sel update where
+data OneUISpec where
     -- view can create object
-    MaybeUISpec
-        :: forall sel update. (IsUpdate update, FullEdit (UpdateEdit update))
-        => Maybe (UpdateSubject update)
-        -> UISpec sel update
-        -> OneUISpec sel (MaybeUpdate update)
     OneWholeUISpec
-        :: forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-        => UISpec sel update
-        -> OneUISpec sel (OneWholeUpdate f update)
+        :: forall f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
+        => Subscriber (FullResultOneUpdate f update)
+        -> (f (Subscriber update) -> CVUISpec)
+        -> SelectNotify (f ())
+        -> OneUISpec
 
-instance Show (OneUISpec sel update) where
-    show (MaybeUISpec _ uispec) = "maybe " ++ show uispec
-    show (OneWholeUISpec uispec) = "one+whole " ++ show uispec
+instance Show OneUISpec where
+    show (OneWholeUISpec _ _ _) = "one+whole"
 
 instance UIType OneUISpec where
     uiWitness = $(iowitness [t|OneUISpec|])
 
-maybeUISpec ::
-       forall sel update. (IsUpdate update, FullEdit (UpdateEdit update))
-    => Maybe (UpdateSubject update)
-    -> UISpec sel update
-    -> UISpec sel (MaybeUpdate update)
-maybeUISpec msubj spec = MkUISpec $ MaybeUISpec msubj spec
-
 oneWholeUISpec ::
+       forall f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
+    => Subscriber (FullResultOneUpdate f update)
+    -> (f (Subscriber update) -> CVUISpec)
+    -> CVUISpec
+oneWholeUISpec sub spec = mkCVUISpec $ OneWholeUISpec sub spec mempty
+
+oneWholeSelUISpec ::
        forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-    => UISpec sel update
-    -> UISpec sel (OneWholeUpdate f update)
-oneWholeUISpec spec = MkUISpec $ OneWholeUISpec spec
+    => Subscriber (FullResultOneUpdate f update)
+    -> (f (Subscriber update, SelectNotify sel) -> CVUISpec)
+    -> SelectNotify (f sel)
+    -> CVUISpec
+oneWholeSelUISpec subf specsel snfsel = let
+    spec :: f (Subscriber update) -> CVUISpec
+    spec fsub = specsel $ fmap (\sub -> (sub, contramap pure snfsel)) fsub
+    getf :: f () -> Maybe (f sel)
+    getf fu =
+        case retrieveOne fu of
+            SuccessResult _ -> Nothing
+            FailureResult (MkLimit fx) -> Just fx
+    snfu :: SelectNotify (f ())
+    snfu = mapMaybeSelectNotify getf snfsel
+    in mkCVUISpec $ OneWholeUISpec subf spec snfu

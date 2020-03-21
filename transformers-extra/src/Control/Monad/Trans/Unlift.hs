@@ -5,10 +5,11 @@ import Control.Monad.Trans.Function
 import Control.Monad.Trans.Tunnel
 import Import
 
-class ( MonadTransConstraint MonadFail t
+class ( MonadTrans t
+      , MonadTransConstraint MonadFail t
       , MonadTransConstraint MonadIO t
       , MonadTransConstraint MonadFix t
-      , MonadTransSemiTunnel t
+      , MonadTransConstraint Monad t
       ) => MonadTransUnlift t where
     liftWithUnlift ::
            forall m. MonadUnliftIO m
@@ -44,6 +45,9 @@ identityWUnliftAll = MkWUnliftAll runIdentityT
 
 mVarRun :: MVar s -> UnliftAll MonadUnliftIO (StateT s)
 mVarRun var (StateT smr) = liftIOWithUnlift $ \unlift -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds
+
+mVarUnitRun :: MonadUnliftIO m => MVar s -> MFunction m m
+mVarUnitRun var ma = mVarRun var $ lift ma
 
 -- | Dangerous, because the MVar won't be released on exception.
 dangerousMVarRun :: MVar s -> UnliftAll MonadIO (StateT s)
@@ -150,7 +154,7 @@ composeUnliftAllFunctionCommute ::
     -> MFunction (t m) n
 composeUnliftAllFunctionCommute rt rm tma = rt $ remonad rm tma
 
-class (MonadFail m, MonadTunnelIO m, MonadFix m) => MonadUnliftIO m where
+class (MonadFail m, MonadIO m, MonadFix m) => MonadUnliftIO m where
     liftIOWithUnlift :: forall r. (MFunction m IO -> IO r) -> m r
     -- ^ lift with an 'WIOFunction' that accounts for all transformer effects
     getDiscardingIOUnlift :: m (WIOFunction m)

@@ -7,6 +7,7 @@ module Truth.Core.Types.String
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
 import Truth.Core.Sequence
 
@@ -147,8 +148,13 @@ type StringUpdate seq = EditUpdate (StringEdit seq)
 stringSectionLens ::
        forall seq. IsSequence seq
     => SequenceRun seq
-    -> LifeCycleIO (EditLens (StringUpdate seq) (StringUpdate seq))
-stringSectionLens = traceThing "stringSectionLens" $ let
+    -> FloatingEditLens (StringUpdate seq) (StringUpdate seq)
+stringSectionLens initRun = traceThing "stringSectionLens" $ let
+    sInit ::
+           forall m. MonadIO m
+        => MutableRead m (StringRead seq)
+        -> m (SequenceRun seq)
+    sInit _ = return initRun
     getState ::
            forall m. MonadIO m
         => MutableRead m (StringRead seq)

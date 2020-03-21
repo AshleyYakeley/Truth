@@ -33,17 +33,17 @@ import Truth.Debug.Subscriber
 
 makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
 makeTestPinaforeContext uitoolkit = do
+    let rc = emptyResourceContext
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
         fmap (traceThing "makeTestPinaforeContext.tableStateObject") $
-        liftIO $ freeIOObject ([], []) $ \_ -> True
+        liftIO $ makeMemoryObject ([], []) $ \_ -> True
     let
         tableObject :: Object PinaforeTableEdit
         tableObject = convertObject tableStateObject
         getTableState :: IO (EditSubject PinaforeTableEdit)
-        getTableState = getObjectSubject tableStateObject
+        getTableState = getObjectSubject rc tableStateObject
     memoryObject <- liftIO makeMemoryCellObject
     clockOM <- shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
-    clockTimeEF <- makeClockTimeZoneEF
     let
         picker :: forall update. PinaforeSelector update -> ObjectMaker update ()
         picker PinaforeSelectPoint = traceThing "testObject.PinaforeSelectPoint" $ reflectingObjectMaker $ pinaforeTableEntityObject tableObject
@@ -52,9 +52,8 @@ makeTestPinaforeContext uitoolkit = do
             mapObject (fromReadOnlyRejectingEditLens @PinaforeFileUpdate) $
             readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
         picker PinaforeSelectMemory = traceThing "testObject.PinaforeSelectMemory" $ reflectingObjectMaker memoryObject
-        picker PinaforeSelectClock = traceThing "testObject.PinaforeSelectClock" $ clockOM
-        picker PinaforeSelectTimeZone = traceThing "testObject.PinaforeSelectTimeZone" $
-            mapObjectMaker (updateFunctionToEditLens $ clockTimeEF . fromReadOnlyUpdateFunction) clockOM
+        picker PinaforeSelectClock = traceThing "testObject.PinaforeSelectClock" $ clockOM rc
+        picker PinaforeSelectTimeZone = mapObjectMaker rc (liftReadOnlyFloatingEditLens clockTimeZoneLens) $ clockOM rc
     (sub, ()) <- makeSharedSubscriber $ tupleObjectMaker picker
     pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)
@@ -86,10 +85,15 @@ checkUpdateEditor val push = let
     editorInit :: Object (WholeEdit a) -> LifeCycleIO (MVar (NonEmpty (WholeUpdate a)))
     editorInit _ = liftIO newEmptyMVar
     editorUpdate ::
-           MVar (NonEmpty (WholeUpdate a)) -> Object (WholeEdit a) -> NonEmpty (WholeUpdate a) -> EditContext -> IO ()
-    editorUpdate var _ edits _ = do traceBracket "checkUpdateEditor.putMVar" $ putMVar var edits
-    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Object (WholeEdit a) -> LifeCycleIO ()
-    editorDo var _ =
+           MVar (NonEmpty (WholeUpdate a))
+        -> Object (WholeEdit a)
+        -> ResourceContext
+        -> NonEmpty (WholeUpdate a)
+        -> EditContext
+        -> IO ()
+    editorUpdate var _ _ edits _ = do putMVar var edits
+    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Object (WholeEdit a) -> Task () -> LifeCycleIO ()
+    editorDo var _ _ =
         traceBracket "checkUpdateEditor.do" $ liftIO $ do
             traceBracket "checkUpdateEditor.push" $ push
             edits <- traceBracket "checkUpdateEditor.takeMVar" $ takeMVar var
@@ -97,4 +101,5 @@ checkUpdateEditor val push = let
                 MkWholeReaderUpdate v :| []
                     | v == val -> return ()
                 _ -> fail "unexpected push"
+    editorTask = mempty
     in MkEditor {..}

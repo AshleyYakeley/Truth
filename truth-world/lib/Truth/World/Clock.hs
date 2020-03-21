@@ -6,29 +6,31 @@ import Data.Time
 import Shapes
 import Truth.Core
 
-clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (ReadOnlyUpdate (WholeUpdate UTCTime)) ()
-clockObjectMaker basetime interval update = do
+clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (ROWUpdate UTCTime) ()
+clockObjectMaker basetime interval omrUpdatesTask update = do
     rec
         ref <- liftIO $ newIORef first
         first <-
             clock basetime interval $ \t -> do
                 writeIORef ref t
-                update (pure $ MkReadOnlyUpdate $ MkWholeReaderUpdate t) noEditContext
+                update emptyResourceContext (pure $ MkReadOnlyUpdate $ MkWholeReaderUpdate t) noEditContext
     run <-
         liftIO $
         newResourceRunner $ \rt -> do
             t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while object is open
             runReaderT rt t
     let
-        object :: Object (NoEdit (WholeReader UTCTime))
-        object = MkResource run $ immutableAnObject $ \ReadWhole -> ask
-    return (object, ())
+        omrObject :: Object (ConstEdit (WholeReader UTCTime))
+        omrObject = MkResource run $ immutableAnObject $ \ReadWhole -> ask
+        omrValue = ()
+    return MkObjectMakerResult {..}
 
-makeClockTimeZoneEF :: LifeCycleIO (UpdateFunction (WholeUpdate UTCTime) (WholeUpdate TimeZone))
-makeClockTimeZoneEF = do
-    minuteChanges <- changeOnlyUpdateFunction @UTCTime
-    tzChanges <- changeOnlyUpdateFunction @TimeZone
-    let
-        wholeMinute :: UTCTime -> UTCTime
-        wholeMinute (UTCTime d t) = UTCTime d $ secondsToDiffTime $ (div' t 60) * 60
-    return $ tzChanges . ioFuncUpdateFunction getTimeZone . minuteChanges . funcUpdateFunction wholeMinute
+clockTimeZoneLens :: FloatingEditLens (WholeUpdate UTCTime) (ROWUpdate TimeZone)
+clockTimeZoneLens = let
+    minuteChanges = liftReadOnlyFloatingEditLens $ changeOnlyUpdateFunction @UTCTime
+    tzChanges = liftReadOnlyFloatingEditLens $ changeOnlyUpdateFunction @TimeZone
+    wholeMinute :: UTCTime -> UTCTime
+    wholeMinute (UTCTime d t) = UTCTime d $ secondsToDiffTime $ (div' t 60) * 60
+    in tzChanges .
+       (liftReadOnlyFloatingEditLens $ editLensToFloating $ ioFuncEditLens getTimeZone) .
+       minuteChanges . editLensToFloating (funcEditLens wholeMinute)

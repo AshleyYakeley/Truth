@@ -14,5 +14,6 @@ import Truth.Debug.Edit
 import Truth.Debug.Object
 
 instance TraceThing (Subscriber edit) where
-    traceThing prefix (MkResource rr (MkASubscriber anobj sub)) = runResourceRunnerWith rr $ \_ ->
-        MkResource rr $ MkASubscriber (traceAnObject prefix blankEditShower anobj) $ traceThing (contextStr prefix "update") sub
+    traceThing prefix (MkResource rr (MkASubscriber anobj sub utask)) = case resourceRunnerStackUnliftDict @IO rr of
+        Dict -> case resourceRunnerStackUnliftDict @LifeCycleIO rr of
+            Dict -> MkResource rr $ MkASubscriber (traceAnObject prefix blankEditShower anobj) (\task call -> traceBracket (contextStr prefix "update") $ sub task call) utask

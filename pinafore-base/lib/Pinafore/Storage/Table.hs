@@ -162,8 +162,8 @@ instance CacheableEdit PinaforeTableEdit where
                     return $
                     Just $
                     (if mv == Just v'
-                         then insertElement
-                         else deleteElement)
+                         then insertItem
+                         else deleteKey)
                         s
                         ss'
     editCacheUpdate (PinaforeTableEditSetLiteral v mt) =
@@ -174,13 +174,13 @@ instance CacheableEdit PinaforeTableEdit where
                     return $
                     Just $
                     (if mt == Just t'
-                         then insertElement
-                         else deleteElement)
+                         then insertItem
+                         else deleteKey)
                         v
                         vv'
 
 pinaforeTableEntityObject :: Object PinaforeTableEdit -> Object PinaforeEntityEdit
-pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject tableRead tableMPush)) =
+pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject tableRead tableMPush objCommitTask)) =
     case resourceRunnerUnliftAllDict trun of
         Dict ->
             case transStackDict @MonadIO @tt @IO of

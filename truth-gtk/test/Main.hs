@@ -8,20 +8,19 @@ import Test.Tasty.HUnit
 import Truth.Core
 import Truth.UI.GTK
 
-testGView ::
-       forall edit sel. ApplicableEdit edit
-    => UISpec sel edit
-    -> TestTree
-testGView uispec =
-    testCase (show uispec) $
-    case getMaybeView uispec of
-        Just _ -> return ()
-        Nothing -> assertFailure "not matched"
+testGView :: String -> CVUISpec -> TestTree
+testGView name luispec =
+    testCase name $
+    runLifeCycle $ do
+        uispec <- uitRunView nullUIToolkit emptyResourceContext luispec
+        case getMaybeView uispec of
+            Just _ -> return ()
+            Nothing -> liftIO $ assertFailure "not matched"
 
-data UIUnknown sel edit where
-    MkUIUnknown :: UIUnknown sel edit
+data UIUnknown where
+    MkUIUnknown :: UIUnknown
 
-instance Show (UIUnknown sel edit) where
+instance Show UIUnknown where
     show MkUIUnknown = "unknown"
 
 instance UIType UIUnknown where
@@ -31,8 +30,8 @@ testGViews :: TestTree
 testGViews =
     testGroup
         "GView"
-        [ testGView $ (nullUISpec :: UISpec UnitEdit (WholeEdit String))
-        , testGView $ verticalUISpec [(MkUISpec MkUIUnknown :: UISpec UnitEdit (WholeEdit String), False)]
+        [ testGView "null" $ (nullUISpec :: CVUISpec)
+        , testGView "vertical layout" $ verticalUISpec [(return $ MkUISpec MkUIUnknown :: CVUISpec, False)]
         ]
 
 tests :: TestTree

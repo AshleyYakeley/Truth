@@ -2,12 +2,12 @@ module Truth.Core.Object.AutoClose where
 
 import Truth.Core.Import
 
-type AutoCloseT key t = StateT (StrictMap key (t, IO ()))
+type AutoCloseT key t = StateT (StrictMap key (t, LifeState IO))
 
 runAutoClose :: Ord key => UnliftAll MonadUnliftIO (AutoCloseT key t)
 runAutoClose ac = do
     (a, mp) <- runStateT ac mempty
-    liftIO $ for_ (toList mp) snd
+    liftIO $ for_ (toList mp) $ closeLifeState . snd
     return a
 
 acOpenObject :: Ord key => key -> With IO t -> AutoCloseT key t IO t

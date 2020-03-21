@@ -10,8 +10,8 @@ data PinaforeSelector t where
     PinaforeSelectPoint :: PinaforeSelector PinaforeEntityUpdate
     PinaforeSelectFile :: PinaforeSelector PinaforeFileUpdate
     PinaforeSelectMemory :: PinaforeSelector MemoryCellUpdate
-    PinaforeSelectClock :: PinaforeSelector (ReadOnlyUpdate (WholeUpdate UTCTime))
-    PinaforeSelectTimeZone :: PinaforeSelector (ReadOnlyUpdate (WholeUpdate TimeZone))
+    PinaforeSelectClock :: PinaforeSelector (ROWUpdate UTCTime)
+    PinaforeSelectTimeZone :: PinaforeSelector (ROWUpdate TimeZone)
 
 instance TestEquality PinaforeSelector where
     testEquality PinaforeSelectPoint PinaforeSelectPoint = Just Refl
@@ -22,7 +22,7 @@ instance TestEquality PinaforeSelector where
     testEquality _ _ = Nothing
 
 instance IsFiniteConsWitness PinaforeSelector where
-    type FiniteConsWitness PinaforeSelector = '[ PinaforeEntityUpdate, PinaforeFileUpdate, MemoryCellUpdate, ReadOnlyUpdate (WholeUpdate UTCTime), ReadOnlyUpdate (WholeUpdate TimeZone)]
+    type FiniteConsWitness PinaforeSelector = '[ PinaforeEntityUpdate, PinaforeFileUpdate, MemoryCellUpdate, ROWUpdate UTCTime, ROWUpdate TimeZone]
     toLTW PinaforeSelectPoint = FirstElementType
     toLTW PinaforeSelectFile = RestElementType FirstElementType
     toLTW PinaforeSelectMemory = RestElementType $ RestElementType FirstElementType
@@ -55,8 +55,8 @@ instance BaseEditLens PinaforeFileUpdate PinaforeUpdate where
 instance BaseEditLens MemoryCellUpdate PinaforeUpdate where
     baseEditLens = tupleEditLens PinaforeSelectMemory
 
-instance BaseEditLens (ReadOnlyUpdate (WholeUpdate UTCTime)) PinaforeUpdate where
+instance BaseEditLens (ROWUpdate UTCTime) PinaforeUpdate where
     baseEditLens = tupleEditLens PinaforeSelectClock
 
-instance BaseEditLens (ReadOnlyUpdate (WholeUpdate TimeZone)) PinaforeUpdate where
+instance BaseEditLens (ROWUpdate TimeZone) PinaforeUpdate where
     baseEditLens = tupleEditLens PinaforeSelectTimeZone

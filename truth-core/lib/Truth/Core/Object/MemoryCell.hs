@@ -3,6 +3,7 @@ module Truth.Core.Object.MemoryCell where
 import Data.IORef
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Read
@@ -24,6 +25,7 @@ makeMemoryCellObject = do
         objEdit =
             singleAlwaysEdit $ \(MkTupleUpdateEdit (MkDependentSelector ioref) (MkWholeReaderEdit a)) _ ->
                 liftIO $ writeIORef (unWitnessed ioref) a
+        objCommitTask = mempty
     return $ MkResource objRun $ MkAnObject {..}
 
 makeMemoryCellEditLens :: a -> IO (EditLens MemoryCellUpdate (WholeUpdate a))

@@ -1,4 +1,12 @@
-module Truth.Core.Resource.Runnable where
+module Truth.Core.Resource.Runnable
+    ( Resource(..)
+    , MapResource(..)
+    , joinResource_
+    , joinResource
+    , runResource
+    , runResourceContext
+    , exclusiveResource
+    ) where
 
 import Truth.Core.Import
 import Truth.Core.Resource.Function
@@ -43,17 +51,25 @@ joinResource ff =
             Dict -> ff f1 f2
 
 runResource ::
-       forall m f r. MonadUnliftIO m
-    => Resource f
+       forall f m r. MonadUnliftIO m
+    => ResourceContext
+    -> Resource f
     -> (forall tt. (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) => f tt -> ApplyStack tt m r)
     -> m r
-runResource (MkResource (rr :: _ tt) f) call =
-    runResourceRunnerWith rr $
-    case transStackDict @MonadUnliftIO @tt @m of
-        Dict -> \unlift -> unlift $ call @tt f
+runResource rc (MkResource rr ftt) call = runResourceRunner rc rr $ call ftt
 
-exclusiveResource :: (MapResource f) => Resource f -> LifeCycleIO (Resource f)
-exclusiveResource (MkResource trun f) = do
+runResourceContext ::
+       forall f m r. MonadUnliftIO m
+    => ResourceContext
+    -> Resource f
+    -> (forall tt.
+            (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) =>
+                    ResourceContext -> StackUnliftAll tt -> f tt -> m r)
+    -> m r
+runResourceContext rc (MkResource rr ftt) call = runResourceRunnerContext rc rr $ \rc' run -> call rc' run ftt
+
+exclusiveResource :: MapResource f => ResourceContext -> Resource f -> LifeCycleIO (Resource f)
+exclusiveResource rc (MkResource trun f) = do
     Dict <- return $ resourceRunnerUnliftAllDict trun
-    trun' <- exclusiveResourceRunner trun
+    trun' <- exclusiveResourceRunner rc trun
     return $ MkResource trun' $ mapResource stackTransListFunction f

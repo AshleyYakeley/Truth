@@ -16,25 +16,30 @@ import Control.Monad.Coroutine
 import Data.IORef
 import Shapes.Import
 
-type LifeState m t = (t, m ())
-
-newtype LifeCycleT m t = MkLifeCycleT
-    { getLifeState :: m (LifeState m t)
+newtype LifeState m = MkLifeState
+    { closeLifeState :: m ()
     }
 
-closeLifeState :: LifeState m t -> m ()
-closeLifeState = snd
+instance Monad m => Semigroup (LifeState m) where
+    MkLifeState p <> MkLifeState q = MkLifeState $ p >> q
+
+instance Monad m => Monoid (LifeState m) where
+    mempty = MkLifeState $ return ()
+
+newtype LifeCycleT m t = MkLifeCycleT
+    { getLifeState :: m (t, LifeState m)
+    }
 
 instance Functor m => Functor (LifeCycleT m) where
     fmap ab (MkLifeCycleT oc) = MkLifeCycleT $ fmap (\(a, cl) -> (ab a, cl)) oc
 
 instance Monad m => Applicative (LifeCycleT m) where
-    pure t = MkLifeCycleT $ return (t, return ())
+    pure t = MkLifeCycleT $ return (t, mempty)
     (MkLifeCycleT ocab) <*> (MkLifeCycleT oca) =
         MkLifeCycleT $ do
             (ab, clab) <- ocab
             (a, cla) <- oca
-            return (ab a, cla >> clab)
+            return (ab a, cla <> clab)
 
 instance Monad m => Monad (LifeCycleT m) where
     return = pure
@@ -42,7 +47,7 @@ instance Monad m => Monad (LifeCycleT m) where
         MkLifeCycleT $ do
             (a, c1) <- ioac
             (b, c2) <- getLifeState $ f a
-            return (b, c2 >> c1)
+            return (b, c2 <> c1)
 
 instance MonadFail m => MonadFail (LifeCycleT m) where
     fail s = MkLifeCycleT $ fail s
@@ -54,7 +59,7 @@ instance MonadIO m => MonadIO (LifeCycleT m) where
     liftIO ma =
         MkLifeCycleT $ do
             a <- liftIO ma
-            return (a, return ())
+            return (a, mempty)
 
 instance MonadTransConstraint Monad LifeCycleT where
     hasTransConstraint = Dict
@@ -69,21 +74,18 @@ instance MonadTransConstraint MonadFix LifeCycleT where
     hasTransConstraint = Dict
 
 instance MonadTrans LifeCycleT where
-    lift ma = MkLifeCycleT $ fmap (\a -> (a, return ())) ma
-
-instance MonadTransSemiTunnel LifeCycleT where
-    semitunnel call = MkLifeCycleT $ call $ \(MkLifeCycleT m1r) -> fmap (fmap $ \m1u -> call $ \_ -> m1u) m1r
+    lift ma = MkLifeCycleT $ fmap (\a -> (a, mempty)) ma
 
 instance MonadTransUnlift LifeCycleT where
     liftWithUnlift call = do
-        var <- liftIO $ newMVar $ return ()
+        var <- liftIO $ newMVar mempty
         r <-
             lift $
             call $ \(MkLifeCycleT ma) -> do
                 (a, closer) <- ma
-                liftIO $ modifyMVar_ var $ \oldcloser -> return $ closer >> oldcloser
+                liftIO $ modifyMVar_ var $ \oldcloser -> return $ closer <> oldcloser
                 return a
-        totalcloser <- liftIO $ takeMVar var
+        MkLifeState totalcloser <- liftIO $ takeMVar var
         lifeCycleClose totalcloser
         return r
     getDiscardingUnlift ::
@@ -92,13 +94,13 @@ instance MonadTransUnlift LifeCycleT where
     getDiscardingUnlift = return $ MkWMFunction $ \(MkLifeCycleT ms) -> fmap fst ms
 
 lifeCycleClose :: Monad m => m () -> LifeCycleT m ()
-lifeCycleClose closer = MkLifeCycleT $ return ((), closer)
+lifeCycleClose closer = MkLifeCycleT $ return ((), MkLifeState closer)
 
 type With m t = forall r. (t -> m r) -> m r
 
 withLifeCycle :: MonadUnliftIO m => LifeCycleT m t -> With m t
 withLifeCycle (MkLifeCycleT oc) run = do
-    (t, closer) <- oc
+    (t, MkLifeState closer) <- oc
     liftIOWithUnlift $ \unlift -> finally (unlift $ run t) (unlift closer)
 
 runLifeCycle :: MonadUnliftIO m => LifeCycleT m t -> m t
@@ -113,7 +115,7 @@ lifeCycleWith withX =
             Right (t, as) ->
                 return
                     ( t
-                    , do
+                    , MkLifeState $ do
                           e2 <- resume $ as ()
                           case e2 of
                               Left () -> return ()
@@ -135,7 +137,7 @@ lifeCycleEarlyCloser ::
     -> LifeCycleT m (a, m ())
 lifeCycleEarlyCloser (MkLifeCycleT lc) =
     MkLifeCycleT $ do
-        (a, closer) <- lc
+        (a, MkLifeState closer) <- lc
         var <- liftIO $ newMVar ()
         let
             earlycloser :: m ()
@@ -144,7 +146,7 @@ lifeCycleEarlyCloser (MkLifeCycleT lc) =
                 case mu of
                     Just () -> closer
                     Nothing -> return ()
-        return ((a, earlycloser), earlycloser)
+        return ((a, earlycloser), MkLifeState earlycloser)
 
 lifeCycleOnAllDone :: MonadUnliftIO m => m () -> m (LifeCycleT m (), m ())
 lifeCycleOnAllDone onzero = do

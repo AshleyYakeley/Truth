@@ -1,7 +1,6 @@
 module Truth.Core.Types.Sum
     ( SumEdit(..)
     , SumUpdate(..)
-    , sumRightUpdateFunction
     ) where
 
 import Truth.Core.Edit
@@ -42,25 +41,13 @@ data SumUpdate updateA updateB
     = SumUpdateLeft updateA
     | SumUpdateRight updateB
 
+type instance UpdateEdit (SumUpdate updateA updateB) =
+     SumEdit (UpdateEdit updateA) (UpdateEdit updateB)
+
 instance (IsUpdate updateA, IsUpdate updateB) => IsUpdate (SumUpdate updateA updateB) where
-    type UpdateEdit (SumUpdate updateA updateB) = SumEdit (UpdateEdit updateA) (UpdateEdit updateB)
     editUpdate (SumEditLeft edit) = SumUpdateLeft $ editUpdate edit
     editUpdate (SumEditRight edit) = SumUpdateRight $ editUpdate edit
 
 instance (IsEditUpdate updateA, IsEditUpdate updateB) => IsEditUpdate (SumUpdate updateA updateB) where
     updateEdit (SumUpdateLeft update) = SumEditLeft $ updateEdit update
     updateEdit (SumUpdateRight update) = SumEditRight $ updateEdit update
-
-sumRightUpdateFunction ::
-       forall updateA updateB. (UpdateReader updateA ~ UpdateReader updateB)
-    => UpdateFunction updateB (SumUpdate updateA updateB)
-sumRightUpdateFunction = let
-    ufGet :: ReadFunction (UpdateReader updateB) (UpdateReader updateB)
-    ufGet mr = mr
-    ufUpdate ::
-           forall m. MonadIO m
-        => updateB
-        -> MutableRead m (UpdateReader updateB)
-        -> m [SumUpdate updateA updateB]
-    ufUpdate update _ = return [SumUpdateRight update]
-    in MkUpdateFunction {..}

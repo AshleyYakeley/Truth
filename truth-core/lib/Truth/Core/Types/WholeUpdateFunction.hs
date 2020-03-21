@@ -2,16 +2,20 @@ module Truth.Core.Types.WholeUpdateFunction where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Lens
 import Truth.Core.Read
+import Truth.Core.Types.None
+import Truth.Core.Types.ReadOnly
+import Truth.Core.Types.Tuple.Pair
 import Truth.Core.Types.Whole
 
 newtype WholeUpdateFunction update a = MkWholeUpdateFunction
-    { unWholeUpdateFunction :: UpdateFunction update (WholeUpdate a)
+    { unWholeUpdateFunction :: EditLens update ((ROWUpdate a))
     }
 
 instance Functor (WholeUpdateFunction update) where
     fmap :: forall a b. (a -> b) -> WholeUpdateFunction update a -> WholeUpdateFunction update b
-    fmap ab (MkWholeUpdateFunction (MkUpdateFunction g u)) = let
+    fmap ab (MkWholeUpdateFunction (MkEditLens g u _)) = let
         g' :: forall m t. MonadIO m
            => MutableRead m (UpdateReader update)
            -> WholeReader b t
@@ -20,9 +24,11 @@ instance Functor (WholeUpdateFunction update) where
         u' :: forall m. MonadIO m
            => update
            -> MutableRead m (UpdateReader update)
-           -> m [WholeUpdate b]
-        u' update mr = fmap (fmap $ \(MkWholeReaderUpdate a) -> MkWholeReaderUpdate $ ab a) $ u update mr
-        in MkWholeUpdateFunction $ MkUpdateFunction g' u'
+           -> m [ROWUpdate b]
+        u' update mr =
+            fmap (fmap $ \(MkReadOnlyUpdate (MkWholeReaderUpdate a)) -> MkReadOnlyUpdate $ MkWholeReaderUpdate $ ab a) $
+            u update mr
+        in MkWholeUpdateFunction $ MkEditLens g' u' elPutEditsNone
 
 instance Applicative (WholeUpdateFunction update) where
     pure :: forall a. a -> WholeUpdateFunction update a
@@ -35,49 +41,11 @@ instance Applicative (WholeUpdateFunction update) where
         u' :: forall m. MonadIO m
            => update
            -> MutableRead m (UpdateReader update)
-           -> m [WholeUpdate a]
+           -> m [ROWUpdate a]
         u' _update _mr = return []
-        in MkWholeUpdateFunction $ MkUpdateFunction g' u'
-    p <*> q = p >>= \ab -> q >>= \a -> pure (ab a)
+        in MkWholeUpdateFunction $ MkEditLens g' u' elPutEditsNone
+    MkWholeUpdateFunction p <*> MkWholeUpdateFunction q =
+        MkWholeUpdateFunction $
+        liftReadOnlyEditLens (funcEditLens $ \(ab, a) -> ab a) . readOnlyPairEditLens . pairCombineEditLenses p q
 
 instance IsoVariant (WholeUpdateFunction update)
-
-instance Monad (WholeUpdateFunction update) where
-    (>>=) ::
-           forall a b.
-           WholeUpdateFunction update a
-        -> (a -> WholeUpdateFunction update b)
-        -> WholeUpdateFunction update b
-    MkWholeUpdateFunction (MkUpdateFunction g u) >>= f = let
-        g' :: forall m t. MonadIO m
-           => MutableRead m (UpdateReader update)
-           -> WholeReader b t
-           -> m t
-        g' mr ReadWhole = do
-            a <- g mr ReadWhole
-            ufGet (unWholeUpdateFunction $ f a) mr ReadWhole
-        u' :: forall m. MonadIO m
-           => update
-           -> MutableRead m (UpdateReader update)
-           -> m [WholeUpdate b]
-        u' update mr = do
-            updates <- u update mr
-            case lastWholeUpdate updates of
-                Just a -> ufUpdate (unWholeUpdateFunction $ f a) update mr
-                Nothing -> return []
-        in MkWholeUpdateFunction $ MkUpdateFunction g' u'
-
-instance MonadIO (WholeUpdateFunction update) where
-    liftIO :: forall a. IO a -> WholeUpdateFunction update a
-    liftIO ioa = let
-        g' :: forall m t. MonadIO m
-           => MutableRead m (UpdateReader update)
-           -> WholeReader a t
-           -> m t
-        g' _mr ReadWhole = liftIO ioa
-        u' :: forall m. MonadIO m
-           => update
-           -> MutableRead m (UpdateReader update)
-           -> m [WholeUpdate a]
-        u' _update _mr = return []
-        in MkWholeUpdateFunction $ MkUpdateFunction g' u'

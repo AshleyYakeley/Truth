@@ -1,6 +1,7 @@
 module Soup.Edit
     ( UUID
     , SoupUpdate
+    , UUIDElementUpdate
     , ObjectSoupUpdate
     , directorySoup
     , liftSoupLens
@@ -13,7 +14,7 @@ import Truth.Core
 import Truth.World.FileSystem
 import Truth.Debug.Object
 
-type UUIDElementUpdate update = PairUpdate (ConstUpdate UUID) update
+type UUIDElementUpdate update = PairUpdate (ConstWholeUpdate UUID) update
 
 type SoupUpdate update = KeyUpdate [(UUID, UpdateSubject update)] (UUIDElementUpdate update)
 
@@ -43,7 +44,7 @@ uuidToName = Data.UUID.toString
 type ObjectSoupUpdate = SoupUpdate (ObjectUpdate ByteStringUpdate)
 
 directorySoup :: Object FSEdit -> FilePath -> Object (UpdateEdit ObjectSoupUpdate)
-directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS)) dirpath =
+directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS ctask)) dirpath =
     traceArgThing "soupdir" $
     case resourceRunnerUnliftAllDict runFS of
         Dict ->
@@ -62,6 +63,8 @@ directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS
                             case mitem of
                                 Just (FSFileItem _) -> Just uuid
                                 _ -> Nothing
+                    readSoup (KeyReadItem _uuid (MkTupleUpdateReader SelectSecond ReadObjectResourceContext)) =
+                        return $ Just emptyResourceContext
                     readSoup (KeyReadItem uuid (MkTupleUpdateReader SelectSecond ReadObject)) = do
                         let path = dirpath </> uuidToName uuid
                         mitem <- readFS $ FSReadItem path
@@ -90,4 +93,4 @@ directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS
                                                     for_ names $ \name ->
                                                         pushFS $ pure $ FSEditDeleteNonDirectory $ dirpath </> name
                                             Nothing -> Nothing
-                    in MkResource runFS $ MkAnObject readSoup pushSoup
+                    in MkResource runFS $ MkAnObject readSoup pushSoup ctask

@@ -193,89 +193,100 @@ sqliteObject ::
        forall tablesel. WitnessConstraint IsSQLiteTable tablesel
     => FilePath
     -> SQLite.DatabaseSchema tablesel
-    -> Object (SQLiteEdit tablesel)
-sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
-    objRun :: ResourceRunner '[ ReaderT Connection]
-    objRun =
-        mkResourceRunner (hashOpenWitness sqliteFilePathWitness path) $ \call -> do
-            exists <- liftIO $ doesFileExist path
-            liftIOWithUnlift $ \unlift ->
-                withConnection path $ \conn -> do
-                    if exists
-                        then return ()
-                        else for_ (SQLite.toSchema schema) $ execute_ conn -- create the database if we're creating the file
-                    runReaderT (remonad unlift call) conn
-    wherePart :: Schema (TupleWhereClause SQLiteDatabase row) -> TupleWhereClause SQLiteDatabase row -> QueryString
-    wherePart rowSchema wc =
-        case wc of
-            MkTupleWhereClause (ConstExpr True) -> ""
-            _ -> " WHERE " <> schemaString rowSchema wc
-    sqliteReadQuery :: SQLiteReader tablesel [AllValue colsel] -> QueryString
-    sqliteReadQuery (DatabaseSelect jc wc oc sc) =
-        case evalState (joinTableSchema databaseTables jc) 1 of
-            (tabRefs, rowSchema) -> let
-                fromPart :: QueryString
-                fromPart =
-                    case tabRefs of
-                        [] -> ""
-                        _ -> " FROM " <> intercalate' "," tabRefs
-                orderPart :: QueryString
-                orderPart =
-                    case oc of
-                        MkTupleOrderClause [] -> ""
-                        MkTupleOrderClause ocs -> " ORDER BY " <> (intercalate' "," $ fmap (schemaString rowSchema) ocs)
-                in "SELECT " <> schemaString rowSchema sc <> fromPart <> wherePart rowSchema wc <> orderPart
-    tableSchema ::
-           TupleTableSel tablesel row -> (SQLite.TableSchema (RowColSel row), Dict (IsSQLiteTable (RowColSel row)))
-    tableSchema (MkTupleTableSel tsel) =
-        case witnessConstraint @_ @IsSQLiteTable tsel of
-            Dict -> (subWitnessMap databaseTables tsel, Dict)
-    rowSchemaString ::
-           WitnessConstraint ToField colsel => SubmapWitness colsel ColumnRefSchema -> AllValue colsel -> QueryString
-    rowSchemaString MkSubmapWitness {..} (MkAllValue row) =
-        "(" <>
-        intercalate'
-            ","
-            (fmap
-                 (\(MkAnyW col) ->
-                      case witnessConstraint @_ @ToField col of
-                          Dict -> valQueryString $ row col)
-                 subWitnessDomain) <>
-        ")"
-    assignmentPart :: SubmapWitness colsel ColumnRefSchema -> TupleUpdateItem SQLiteDatabase colsel -> QueryString
-    assignmentPart scsh (MkTupleUpdateItem col expr) =
-        (fromString $ columnRefName $ subWitnessMap scsh col) <> "=" <> schemaString scsh expr
-    sqliteEditQuery :: SQLiteEdit tablesel -> QueryString
-    sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema {..}, Dict)) (MkTupleInsertClause ic)) = let
-        tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
-        in "INSERT OR REPLACE INTO " <>
-           fromString tableName <> " VALUES " <> intercalate' "," (fmap (rowSchemaString tableColumnRefs) ic)
-    sqliteEditQuery (DatabaseDelete (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc) = let
-        tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
-        in "DELETE FROM " <> fromString tableName <> wherePart tableColumnRefs wc
-    sqliteEditQuery (DatabaseUpdate (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc (MkTupleUpdateClause uis)) = let
-        tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
-        in "UPDATE " <>
-           fromString tableName <>
-           " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc
-    objRead :: MutableRead (ReaderT Connection IO) (SQLiteReader tablesel)
-    objRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
-        case sqliteReadQuery r of
-            MkQueryString s v -> do
-                conn <- ask
-                lift $ query conn s v
-    objEdit :: NonEmpty (SQLiteEdit tablesel) -> ReaderT Connection IO (Maybe (EditSource -> ReaderT Connection IO ()))
-    objEdit =
-        singleAlwaysEdit $ \edit _ ->
-            case sqliteEditQuery edit of
+    -> IO (Object (SQLiteEdit tablesel))
+sqliteObject path schema@SQLite.MkDatabaseSchema {..} = do
+    var <- newMVar ()
+    let
+        objRun :: ResourceRunner '[ ReaderT Connection]
+        objRun =
+            mkResourceRunner (hashOpenWitness sqliteFilePathWitness path) $ \call ->
+                mVarUnitRun var $ do
+                    exists <- liftIO $ doesFileExist path
+                    liftIOWithUnlift $ \unlift ->
+                        withConnection path $ \conn -> do
+                            if exists
+                                then return ()
+                                else for_ (SQLite.toSchema schema) $ execute_ conn -- create the database if we're creating the file
+                            runReaderT (remonad unlift call) conn
+        wherePart :: Schema (TupleWhereClause SQLiteDatabase row) -> TupleWhereClause SQLiteDatabase row -> QueryString
+        wherePart rowSchema wc =
+            case wc of
+                MkTupleWhereClause (ConstExpr True) -> ""
+                _ -> " WHERE " <> schemaString rowSchema wc
+        sqliteReadQuery :: SQLiteReader tablesel [AllValue colsel] -> QueryString
+        sqliteReadQuery (DatabaseSelect jc wc oc sc) =
+            case evalState (joinTableSchema databaseTables jc) 1 of
+                (tabRefs, rowSchema) -> let
+                    fromPart :: QueryString
+                    fromPart =
+                        case tabRefs of
+                            [] -> ""
+                            _ -> " FROM " <> intercalate' "," tabRefs
+                    orderPart :: QueryString
+                    orderPart =
+                        case oc of
+                            MkTupleOrderClause [] -> ""
+                            MkTupleOrderClause ocs ->
+                                " ORDER BY " <> (intercalate' "," $ fmap (schemaString rowSchema) ocs)
+                    in "SELECT " <> schemaString rowSchema sc <> fromPart <> wherePart rowSchema wc <> orderPart
+        tableSchema ::
+               TupleTableSel tablesel row -> (SQLite.TableSchema (RowColSel row), Dict (IsSQLiteTable (RowColSel row)))
+        tableSchema (MkTupleTableSel tsel) =
+            case witnessConstraint @_ @IsSQLiteTable tsel of
+                Dict -> (subWitnessMap databaseTables tsel, Dict)
+        rowSchemaString ::
+               WitnessConstraint ToField colsel
+            => SubmapWitness colsel ColumnRefSchema
+            -> AllValue colsel
+            -> QueryString
+        rowSchemaString MkSubmapWitness {..} (MkAllValue row) =
+            "(" <>
+            intercalate'
+                ","
+                (fmap
+                     (\(MkAnyW col) ->
+                          case witnessConstraint @_ @ToField col of
+                              Dict -> valQueryString $ row col)
+                     subWitnessDomain) <>
+            ")"
+        assignmentPart :: SubmapWitness colsel ColumnRefSchema -> TupleUpdateItem SQLiteDatabase colsel -> QueryString
+        assignmentPart scsh (MkTupleUpdateItem col expr) =
+            (fromString $ columnRefName $ subWitnessMap scsh col) <> "=" <> schemaString scsh expr
+        sqliteEditQuery :: SQLiteEdit tablesel -> QueryString
+        sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema {..}, Dict)) (MkTupleInsertClause ic)) = let
+            tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
+            in "INSERT OR REPLACE INTO " <>
+               fromString tableName <> " VALUES " <> intercalate' "," (fmap (rowSchemaString tableColumnRefs) ic)
+        sqliteEditQuery (DatabaseDelete (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc) = let
+            tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
+            in "DELETE FROM " <> fromString tableName <> wherePart tableColumnRefs wc
+        sqliteEditQuery (DatabaseUpdate (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc (MkTupleUpdateClause uis)) = let
+            tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
+            in "UPDATE " <>
+               fromString tableName <>
+               " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc
+        objRead :: MutableRead (ReaderT Connection IO) (SQLiteReader tablesel)
+        objRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
+            case sqliteReadQuery r of
                 MkQueryString s v -> do
                     conn <- ask
-                    lift $ execute conn s v
-    in MkResource objRun MkAnObject {..}
+                    lift $ query conn s v
+        objEdit ::
+               NonEmpty (SQLiteEdit tablesel) -> ReaderT Connection IO (Maybe (EditSource -> ReaderT Connection IO ()))
+        objEdit =
+            singleAlwaysEdit $ \edit _ ->
+                case sqliteEditQuery edit of
+                    MkQueryString s v -> do
+                        conn <- ask
+                        lift $ execute conn s v
+        objCommitTask = mempty
+    return $ MkResource objRun MkAnObject {..}
 
 sqliteObject' ::
        forall tablesel. (WitnessConstraint IsSQLiteTable tablesel, ShowableTupleDatabase SQLiteDatabase tablesel)
     => FilePath
     -> SQLite.DatabaseSchema tablesel
-    -> Object (SQLiteEdit tablesel)
-sqliteObject' path schema = traceArgThing "sqliteObject" $ sqliteObject path schema
+    -> IO (Object (SQLiteEdit tablesel))
+sqliteObject' path schema = do
+    obj <- sqliteObject path schema
+    return $ traceArgThing "sqliteObject" obj

@@ -1,34 +1,40 @@
 module Pinafore.Base.Context
     ( PinaforeContext
+    , pinaforeBase
     , unliftPinaforeAction
     , unliftPinaforeActionOrFail
     , runPinaforeAction
     , makePinaforeContext
     , nullPinaforeContext
+    , pinaforeBaseSubscriber
     ) where
 
 import Pinafore.Base.Action
 import Pinafore.Base.Know
+import Pinafore.Base.Lens
 import Shapes
 import Truth.Core
 
-newtype PinaforeContext baseupdate =
-    MkPinaforeContext (forall a. PinaforeAction baseupdate a -> IO (Know a))
+data PinaforeContext baseupdate = MkPinaforeContext
+    { pconRun :: forall a. PinaforeAction a -> View (Know a)
+    , pconBase :: Subscriber baseupdate
+    }
 
-unliftPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction baseupdate a -> IO (Know a)
-unliftPinaforeAction =
-    case ?pinafore of
-        MkPinaforeContext unlift -> unlift
+unliftPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction a -> View (Know a)
+unliftPinaforeAction = pconRun ?pinafore
 
-unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction baseupdate a -> IO a
+unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction a -> View a
 unliftPinaforeActionOrFail action = do
     ka <- unliftPinaforeAction action
     case ka of
         Known a -> return a
         Unknown -> fail "action stopped"
 
-runPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction baseupdate () -> IO ()
+runPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction () -> View ()
 runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
+
+pinaforeBase :: (?pinafore :: PinaforeContext baseupdate) => Subscriber baseupdate
+pinaforeBase = pconBase ?pinafore
 
 makePinaforeContext ::
        forall baseupdate. InvertibleEdit (UpdateEdit baseupdate)
@@ -37,7 +43,15 @@ makePinaforeContext ::
     -> LifeCycleIO (PinaforeContext baseupdate)
 makePinaforeContext rsub toolkit = do
     (sub, uactions) <- liftIO $ undoQueueSubscriber rsub
-    return $ MkPinaforeContext $ unPinaforeAction toolkit sub uactions
+    return $ MkPinaforeContext (unPinaforeAction toolkit uactions) sub
 
 nullPinaforeContext :: PinaforeContext baseupdate
-nullPinaforeContext = MkPinaforeContext $ \_ -> fail "null Pinafore context"
+nullPinaforeContext = let
+    pconRun _ = fail "null Pinafore context"
+    pconBase = error "no pinafore base"
+    in MkPinaforeContext {..}
+
+pinaforeBaseSubscriber ::
+       forall baseupdate update. (?pinafore :: PinaforeContext baseupdate, BaseEditLens update baseupdate)
+    => Subscriber update
+pinaforeBaseSubscriber = mapSubscriber baseEditLens pinaforeBase

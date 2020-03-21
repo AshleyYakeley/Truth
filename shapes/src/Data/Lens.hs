@@ -6,7 +6,6 @@ import Data.Codec
 import Data.Injection
 import Data.IsoVariant
 import Data.MonadOne
-import Data.Result
 import Shapes.Import
 
 data Lens' m a b = MkLens
@@ -58,16 +57,15 @@ instance IsBiMap Lens' where
                       return (ff ma)
             }
 
-instance MonadOne m => Category (Lens' m) where
+instance Monad m => Category (Lens' m) where
     id = MkLens {lensGet = id, lensPutback = \b _ -> pure b}
     bc . ab =
         MkLens
             { lensGet = (lensGet bc) . (lensGet ab)
             , lensPutback =
-                  \c a ->
-                      case retrieveOne (lensPutback bc c (lensGet ab a)) of
-                          SuccessResult b -> lensPutback ab b a
-                          FailureResult (MkLimit ff) -> ff
+                  \c a -> do
+                      b <- lensPutback bc c (lensGet ab a)
+                      lensPutback ab b a
             }
 
 instance (Traversable f, Applicative f, Applicative m) => CatFunctor (Lens' m) (Lens' m) f where
