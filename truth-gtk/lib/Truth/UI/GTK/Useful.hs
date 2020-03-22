@@ -40,7 +40,7 @@ class GTKCallbackType t where
 
 instance GTKCallbackType (IO r) where
     type CallbackViewLifted (IO r) = View r
-    gCallbackUnlift mf v = mf v
+    gCallbackUnlift mf v = mf $ viewLocalResourceContext emptyResourceContext v
 
 instance GTKCallbackType r => GTKCallbackType (a -> r) where
     type CallbackViewLifted (a -> r) = a -> CallbackViewLifted r
