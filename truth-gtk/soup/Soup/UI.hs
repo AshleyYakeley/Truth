@@ -22,8 +22,12 @@ pastResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = 
 
 type PossibleNoteUpdate = FullResultOneUpdate (Result Text) NoteUpdate
 
-soupEditSpec :: Subscriber (SoupUpdate PossibleNoteUpdate) -> SelectNotify (Subscriber PossibleNoteUpdate) -> CVUISpec
-soupEditSpec sub selnotify = do
+soupEditSpec ::
+       Subscriber (SoupUpdate PossibleNoteUpdate)
+    -> SelectNotify (Subscriber PossibleNoteUpdate)
+    -> (Subscriber PossibleNoteUpdate -> View ())
+    -> CVUISpec
+soupEditSpec sub selnotify openItem = do
     let
         nameLens :: EditLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Result Text Text))
         nameLens =
@@ -52,7 +56,9 @@ soupEditSpec sub selnotify = do
                 in return $ mapSubscriber valLens cellsub
         tselnotify :: SelectNotify (Subscriber (UUIDElementUpdate PossibleNoteUpdate))
         tselnotify = contramap (\s -> mapSubscriber (tupleEditLens SelectSecond) s) selnotify
-    tableUISpec [nameColumn, pastColumn] osub (\_ -> return ()) tselnotify
+        tOpenItem :: Subscriber (UUIDElementUpdate PossibleNoteUpdate) -> View ()
+        tOpenItem s = openItem $ mapSubscriber (tupleEditLens SelectSecond) s
+    tableUISpec [nameColumn, pastColumn] osub tOpenItem tselnotify
 
 soupObject :: FilePath -> Object (UpdateEdit (SoupUpdate PossibleNoteUpdate))
 soupObject dirpath = let
@@ -89,32 +95,33 @@ soupWindow uit@MkUIToolkit {..} dirpath = do
                 ]
             wsTitle :: Subscriber (ROWUpdate Text)
             wsTitle = constantSubscriber $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
-            openItem :: View ()
-            openItem = do
+            openItem :: Subscriber PossibleNoteUpdate -> View ()
+            openItem rowSub = do
+                let
+                    rspec :: Result Text (Subscriber NoteUpdate) -> CVUISpec
+                    rspec (SuccessResult s2) = noteEditSpec s2 mempty
+                    rspec (FailureResult err) = labelUISpec $ constantSubscriber err
+                rec
+                    ~(subwin, subcloser) <-
+                        uitUnliftCreateView uit $
+                        cvEarlyCloser $
+                        uitCreateWindow $
+                        MkWindowSpec (liftIO subcloser) (constantSubscriber "item") (mbar subcloser subwin) $
+                        oneWholeUISpec rowSub rspec
+                return ()
+            openSelection :: View ()
+            openSelection = do
                 mkey <- getsel
                 case mkey of
-                    Just rowSub -> do
-                        let
-                            rspec :: Result Text (Subscriber NoteUpdate) -> CVUISpec
-                            rspec (SuccessResult s2) = noteEditSpec s2 mempty
-                            rspec (FailureResult err) = labelUISpec $ constantSubscriber err
-                        rec
-                            ~(subwin, subcloser) <-
-                                uitUnliftCreateView uit $
-                                cvEarlyCloser $
-                                    -- uitRunView uit emptyResourceContext $
-                                uitCreateWindow $
-                                MkWindowSpec (liftIO subcloser) (constantSubscriber "item") (mbar subcloser subwin) $
-                                oneWholeUISpec rowSub rspec
-                        return ()
+                    Just rowSub -> openItem rowSub
                     Nothing -> return ()
             wsMenuBar :: Maybe (Subscriber (ROWUpdate MenuBar))
             wsMenuBar = mbar closer window
-            wsContent :: CVUISpec -- (Subscriber PossibleNoteUpdate)
+            wsContent :: CVUISpec
             wsContent =
                 verticalUISpec
-                    [ (simpleButtonUISpec (constantSubscriber "View") openItem, False)
-                    , (soupEditSpec sub selnotify, True)
+                    [ (simpleButtonUISpec (constantSubscriber "View") openSelection, False)
+                    , (soupEditSpec sub selnotify openItem, True)
                     ]
             wsCloseBoxAction :: View ()
             wsCloseBoxAction = liftIO closer
