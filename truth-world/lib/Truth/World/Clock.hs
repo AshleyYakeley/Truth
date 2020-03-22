@@ -5,6 +5,7 @@ import Data.IORef
 import Data.Time
 import Shapes
 import Truth.Core
+import Truth.Debug
 
 clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (ROWUpdate UTCTime) ()
 clockObjectMaker basetime interval omrUpdatesTask update = do
@@ -16,7 +17,7 @@ clockObjectMaker basetime interval omrUpdatesTask update = do
                 update emptyResourceContext (pure $ MkReadOnlyUpdate $ MkWholeReaderUpdate t) noEditContext
     run <-
         liftIO $
-        newResourceRunner $ \rt -> do
+        newResourceRunner $ traceBarrier "clockObjectMaker" $ \rt -> do
             t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while object is open
             runReaderT rt t
     let

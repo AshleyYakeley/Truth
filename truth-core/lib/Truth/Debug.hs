@@ -1,14 +1,17 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Debug(module Debug.ThreadTrace) where
+module Truth.Debug(module Debug.ThreadTrace, module Truth.Debug) where
 
 import Truth.Core.Import
 import Debug.ThreadTrace
 
+traceUnliftAll :: forall t m. (MonadTransConstraint MonadIO t, MonadIO m) => String -> MFunction (t m) m -> MFunction (t m) m
+traceUnliftAll prefix mf = case hasTransConstraint @MonadIO @t @m of
+    Dict -> traceBarrier prefix mf
+
 instance (forall m. c m => MonadIO m, MonadTransConstraint MonadIO t) => TraceThing (WUnliftAll c t) where
     traceThing prefix unlift =
-        MkWUnliftAll $ \(tma :: t m a) -> case hasTransConstraint @MonadIO @t @m of
-            Dict -> traceBarrier prefix (runWUnliftAll unlift)  tma
+        MkWUnliftAll $ traceUnliftAll prefix (runWUnliftAll unlift)
 
 instance MonadIO m => TraceThing (WIOFunction m) where
     traceThing prefix unlift =

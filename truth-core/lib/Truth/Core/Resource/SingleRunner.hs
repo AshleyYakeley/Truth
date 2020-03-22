@@ -8,6 +8,11 @@ module Truth.Core.Resource.SingleRunner
     ) where
 
 import Truth.Core.Import
+import Truth.Debug
+import Unsafe.Coerce
+
+iowInteger :: IOWitness t -> Integer
+iowInteger = unsafeCoerce
 
 data SingleRunner (t :: TransKind) where
     MkSingleRunner
@@ -53,8 +58,8 @@ fetchSingleRunner ::
     -> (WUnliftAll MonadUnliftIO t -> [AnyW SingleRunner], WUnliftAll MonadUnliftIO t, Bool)
 fetchSingleRunner rr sr@(MkSingleRunner swit srun) =
     case fetchInAnyWList rr sr of
-        Nothing -> (\unlift -> (MkAnyW $ mkAnySingleRunner swit unlift) : rr, MkWUnliftAll srun, True)
-        Just (MkSingleRunner cwit crun, f) -> (\unlift -> f (mkAnySingleRunner cwit unlift), MkWUnliftAll crun, False)
+        Nothing -> (\unlift -> (MkAnyW $ mkAnySingleRunner swit unlift) : rr, traceThing ("resourcelet {" <> show (iowInteger swit) <> "}: run") $ MkWUnliftAll srun, True)
+        Just (MkSingleRunner cwit crun, f) -> (\unlift -> f (mkAnySingleRunner cwit unlift), traceThing ("resourcelet {" <> show (iowInteger cwit) <> "}: unlift") $ MkWUnliftAll crun, False)
 
 runSingleRunner ::
        forall t m r. MonadUnliftIO m

@@ -28,10 +28,10 @@ textEntryGetView =
                  changedSignal <-
                      cvOn widget #changed $
                      traceBracket "GTK.TextEntry:changed" $
-                     viewRunResource rmod $ \asub -> do
-                         st <- get widget #text
+                     viewRunResource rmod $ \asub -> traceBracket "GTK.TextEntry:changed:run" $ do
+                         st <- traceBracket "GTK.TextEntry:changed:get" $ get widget #text
                          succeeded <- traceBracketArgs "GTK.TextEntry:push" (show st) show $ pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
-                         setValidState succeeded
+                         traceBracket "GTK.TextEntry:changed:setValidState" $ setValidState succeeded
                  cvBindWholeSubscriber rmod (Just esrc) $ \newtext ->
                      traceBracketArgs "GTK.TextEntry:update" (show newtext) show $
                      liftIO $
