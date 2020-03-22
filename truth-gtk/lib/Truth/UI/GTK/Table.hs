@@ -140,8 +140,7 @@ keyContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( Sub
                             return $ Just $ entrySubscriber entry
                         _ -> return Nothing
                 _ -> return Nothing
-    _ <-
-        cvOn tview #cursorChanged $ runSelectNotify sel getSelection
+    _ <- cvOn tview #cursorChanged $ runSelectNotify sel getSelection
     _ <-
         cvOn tview #buttonPressEvent $ \event -> do
             click <- Gtk.get event #type
