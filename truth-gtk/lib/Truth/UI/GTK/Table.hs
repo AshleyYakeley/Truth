@@ -69,7 +69,7 @@ instance Monoid (KeyColumns update) where
     mempty = MkKeyColumns (\_ -> return (unitSubscriber, constantSubscriber ())) []
     mappend = (<>)
 
-keyContainerView ::
+tableContainerView ::
        forall seq update.
        ( IsSequence seq
        , IsUpdate update
@@ -83,8 +83,8 @@ keyContainerView ::
     -> (Subscriber update -> View ())
     -> SelectNotify (Subscriber update)
     -> GCreateView
-keyContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( Subscriber (WholeUpdate rowtext)
-                                                                           , Subscriber (ROWUpdate rowprops))) cols) tableSub onDoubleClick sel = do
+tableContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( Subscriber (WholeUpdate rowtext)
+                                                                             , Subscriber (ROWUpdate rowprops))) cols) tableSub onDoubleClick sel = do
     let
         defStoreEntry :: StoreEntry update rowtext rowprops
         defStoreEntry = MkStoreEntry (error "unset subscriber") (error "unset text") (error "unset props")
@@ -158,4 +158,4 @@ tableGetView :: GetGView
 tableGetView =
     MkGetView $ \_getview uispec -> do
         MkTableUISpec cols sub onDoubleClick sel <- isUISpec uispec
-        return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) sub onDoubleClick sel
+        return $ tableContainerView (mconcat $ fmap oneKeyColumn cols) sub onDoubleClick sel

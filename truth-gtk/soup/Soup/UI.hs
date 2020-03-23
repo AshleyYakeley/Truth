@@ -24,8 +24,8 @@ type PossibleNoteUpdate = FullResultOneUpdate (Result Text) NoteUpdate
 
 soupEditSpec ::
        Subscriber (SoupUpdate PossibleNoteUpdate)
-    -> SelectNotify (Subscriber PossibleNoteUpdate)
-    -> (Subscriber PossibleNoteUpdate -> View ())
+    -> SelectNotify (Subscriber (UUIDElementUpdate PossibleNoteUpdate))
+    -> (Subscriber (UUIDElementUpdate PossibleNoteUpdate) -> View ())
     -> CVUISpec
 soupEditSpec sub selnotify openItem = do
     let
@@ -54,11 +54,7 @@ soupEditSpec sub selnotify openItem = do
                     funcEditLens pastResult .
                     liftFullResultOneEditLens (tupleEditLens NotePast) . tupleEditLens SelectSecond
                 in return $ mapSubscriber valLens cellsub
-        tselnotify :: SelectNotify (Subscriber (UUIDElementUpdate PossibleNoteUpdate))
-        tselnotify = contramap (\s -> mapSubscriber (tupleEditLens SelectSecond) s) selnotify
-        tOpenItem :: Subscriber (UUIDElementUpdate PossibleNoteUpdate) -> View ()
-        tOpenItem s = openItem $ mapSubscriber (tupleEditLens SelectSecond) s
-    tableUISpec [nameColumn, pastColumn] osub tOpenItem tselnotify
+    tableUISpec [nameColumn, pastColumn] osub openItem selnotify
 
 soupObject :: FilePath -> Object (UpdateEdit (SoupUpdate PossibleNoteUpdate))
 soupObject dirpath = let
@@ -79,10 +75,35 @@ soupObject dirpath = let
 
 soupWindow :: UIToolkit -> FilePath -> CreateView ()
 soupWindow uit@MkUIToolkit {..} dirpath = do
-    sub <- liftLifeCycleIO $ makeReflectingSubscriber $ soupObject dirpath
+    smodel <- liftLifeCycleIO $ makeReflectingSubscriber $ soupObject dirpath
     (selnotify, getsel) <- liftIO $ makeRefSelectNotify
     rec
         let
+            withSelection :: (Subscriber (UUIDElementUpdate PossibleNoteUpdate) -> View ()) -> View ()
+            withSelection call = do
+                msel <- getsel
+                case msel of
+                    Just sel -> call sel
+                    Nothing -> return ()
+            blankNote :: Tuple NoteSel
+            blankNote =
+                MkTuple $ \case
+                    NoteTitle -> "untitled"
+                    NotePast -> False
+                    NoteText -> ""
+            newItem :: View ()
+            newItem =
+                viewRunResource smodel $ \samodel -> do
+                    key <- liftIO randomIO
+                    _ <- pushEdit noEditSource $ subEdit samodel $ pure $ KeyEditInsertReplace (key, return blankNote)
+                    return ()
+            deleteItem :: Subscriber (UUIDElementUpdate PossibleNoteUpdate) -> View ()
+            deleteItem imodel =
+                viewRunResourceContext imodel $ \unlift iamodel -> do
+                    key <- liftIO $ unlift $ subRead iamodel $ MkTupleUpdateReader SelectFirst ReadWhole
+                    viewRunResource smodel $ \samodel -> do
+                        _ <- pushEdit noEditSource $ subEdit samodel $ pure $ KeyEditDelete key
+                        return ()
             mbar :: IO () -> UIWindow -> Maybe (Subscriber (ROWUpdate [MenuEntry]))
             mbar cc _ =
                 Just $
@@ -92,12 +113,19 @@ soupWindow uit@MkUIToolkit {..} dirpath = do
                       [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO cc
                       , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ liftIO uitExit
                       ]
+                , SubMenuEntry
+                      "Item"
+                      [ simpleActionMenuItem "New" (Just $ MkMenuAccelerator [KMCtrl] 'K') newItem
+                      , simpleActionMenuItem "Delete" Nothing $ withSelection deleteItem
+                      ]
                 ]
             wsTitle :: Subscriber (ROWUpdate Text)
             wsTitle = constantSubscriber $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
-            openItem :: Subscriber PossibleNoteUpdate -> View ()
-            openItem rowSub = do
+            openItem :: Subscriber (UUIDElementUpdate PossibleNoteUpdate) -> View ()
+            openItem imodel = do
                 let
+                    rowmodel :: Subscriber PossibleNoteUpdate
+                    rowmodel = mapSubscriber (tupleEditLens SelectSecond) imodel
                     rspec :: Result Text (Subscriber NoteUpdate) -> CVUISpec
                     rspec (SuccessResult s2) = noteEditSpec s2 mempty
                     rspec (FailureResult err) = labelUISpec $ constantSubscriber err
@@ -107,21 +135,15 @@ soupWindow uit@MkUIToolkit {..} dirpath = do
                         cvEarlyCloser $
                         uitCreateWindow $
                         MkWindowSpec (liftIO subcloser) (constantSubscriber "item") (mbar subcloser subwin) $
-                        oneWholeUISpec rowSub rspec
+                        oneWholeUISpec rowmodel rspec
                 return ()
-            openSelection :: View ()
-            openSelection = do
-                mkey <- getsel
-                case mkey of
-                    Just rowSub -> openItem rowSub
-                    Nothing -> return ()
             wsMenuBar :: Maybe (Subscriber (ROWUpdate MenuBar))
             wsMenuBar = mbar closer window
             wsContent :: CVUISpec
             wsContent =
                 verticalUISpec
-                    [ (simpleButtonUISpec (constantSubscriber "View") openSelection, False)
-                    , (soupEditSpec sub selnotify openItem, True)
+                    [ (simpleButtonUISpec (constantSubscriber "View") $ withSelection openItem, False)
+                    , (soupEditSpec smodel selnotify openItem, True)
                     ]
             wsCloseBoxAction :: View ()
             wsCloseBoxAction = liftIO closer

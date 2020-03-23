@@ -2,7 +2,7 @@ module Truth.Core.UI.View.View
     ( ViewContext
     , ViewT
     , View
-    , liftIOView
+    , liftIOViewAsync
     , viewRunResource
     , viewRunResourceContext
     , viewRequest
@@ -19,8 +19,9 @@ type ViewT = ReaderT ViewContext
 
 type View = ViewT IO
 
-liftIOView :: forall a. ((forall r. View r -> IO r) -> IO a) -> View a
-liftIOView = liftIOWithUnlift
+liftIOViewAsync :: forall a. ((forall r. View r -> IO r) -> IO a) -> View a
+liftIOViewAsync call =
+    liftIOWithUnlift $ \unlift -> call $ \vr -> unlift $ viewLocalResourceContext emptyResourceContext vr
 
 viewRunResource ::
        forall m f r. (MonadIO m)
