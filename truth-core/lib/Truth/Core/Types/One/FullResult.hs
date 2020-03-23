@@ -222,6 +222,7 @@ liftFullResultOneFloatingEditLens (MkFloatingEditLens (init :: FloatInit _ r) rl
     sPutEdits = elPutEditsFromPutEdit sPutEdit
     in makeStateLens MkStateEditLens {..}
 
+-- | for use in UIs where items can be deleted
 mustExistOneEditLens ::
        forall f update. (MonadOne f, IsUpdate update)
     => String
@@ -238,7 +239,7 @@ mustExistOneEditLens err = let
         => FullResultOneUpdate f update
         -> MutableRead m (OneReader f (UpdateReader update))
         -> m [update]
-    elUpdate (MkFullResultOneUpdate (NewResultOneUpdate _fu)) _mr = liftIO $ fail $ err ++ ": replaced"
+    elUpdate (MkFullResultOneUpdate (NewResultOneUpdate _fu)) _mr = return [] -- just do nothing; it's expected that the UI will delete the item or whatever
     elUpdate (MkFullResultOneUpdate (SuccessResultOneUpdate update)) _ = return [update]
     elPutEdits ::
            forall m. MonadIO m
