@@ -3,3 +3,4 @@ local/
 *.cabal
 *.prof
 *.prof.html
+benchmarks.json

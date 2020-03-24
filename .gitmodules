@@ -4,3 +4,6 @@
 [submodule "open-witness"]
 	path = open-witness
 	url = ../open-witness.git
+[submodule "benchgraph"]
+	path = benchgraph
+	url = git@github.com:novadiscovery/benchgraph.git
