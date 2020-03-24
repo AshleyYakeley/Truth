@@ -1,0 +1,3 @@
+#!/bin/bash -e
+docker pull benchgraph/benchgraph:master
+docker run -p 8123:8123 -v $PWD/benchmarks:/benchmarks benchgraph/benchgraph:master
