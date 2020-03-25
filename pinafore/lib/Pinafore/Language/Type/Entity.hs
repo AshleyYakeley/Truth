@@ -165,7 +165,7 @@ entityGroundTypeAdapter (LiteralEntityGroundType tl) NilArguments =
             entityAdapterGet ::
                    forall m. MonadIO m
                 => Entity
-                -> MutableRead m PinaforeEntityRead
+                -> Readable m PinaforeEntityRead
                 -> m (Know t)
             entityAdapterGet p mr = do
                 kl <- mr $ PinaforeEntityReadToLiteral p
@@ -173,7 +173,7 @@ entityGroundTypeAdapter (LiteralEntityGroundType tl) NilArguments =
             entityAdapterPut ::
                    forall m. MonadIO m
                 => t
-                -> MutableRead m PinaforeEntityRead
+                -> Readable m PinaforeEntityRead
                 -> m [PinaforeEntityEdit]
             entityAdapterPut t _mr = return [PinaforeEntityEditSetLiteral (literalToEntity t) (Known $ toLiteral t)]
             in MkEntityAdapter {..}

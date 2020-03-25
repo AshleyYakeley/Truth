@@ -264,7 +264,7 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = do
             in "UPDATE " <>
                fromString tableName <>
                " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc
-        objRead :: MutableRead (ReaderT Connection IO) (SQLiteReader tablesel)
+        objRead :: Readable (ReaderT Connection IO) (SQLiteReader tablesel)
         objRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
             case sqliteReadQuery r of
                 MkQueryString s v -> do

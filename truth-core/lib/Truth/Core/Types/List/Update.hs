@@ -47,7 +47,7 @@ listItemLens ::
 listItemLens initpos = let
     sInit ::
            forall m. MonadIO m
-        => MutableRead m (ListReader seq (UpdateReader update))
+        => Readable m (ListReader seq (UpdateReader update))
         -> m (SequencePoint seq)
     sInit _ = return initpos
     sGet ::
@@ -68,7 +68,7 @@ listItemLens initpos = let
     sUpdate ::
            forall m. MonadIO m
         => ListUpdate seq update
-        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> Readable m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m [MaybeUpdate update]
     sUpdate (ListUpdateItem ie update) _ = do
         i <- get
@@ -96,7 +96,7 @@ listItemLens initpos = let
     sPutEdit ::
            forall m. MonadIO m
         => MaybeEdit (UpdateEdit update)
-        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> Readable m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
     sPutEdit (SuccessFullResultOneEdit edit) _ = do
         i <- get
@@ -110,7 +110,7 @@ listItemLens initpos = let
     sPutEdits ::
            forall m. MonadIO m
         => [MaybeEdit (UpdateEdit update)]
-        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> Readable m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
     in makeStateLens MkStateEditLens {..}

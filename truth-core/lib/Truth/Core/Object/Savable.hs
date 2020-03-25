@@ -36,8 +36,8 @@ saveBufferObject rc objP omrUpdatesTask update = do
     let
         omrObject :: Object (UpdateEdit update)
         omrObject = let
-            readC :: MutableRead (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
-            readC = mSubjectToMutableRead $ fmap saveBuffer get
+            readC :: Readable (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
+            readC = mSubjectToReadable $ fmap saveBuffer get
             pushC ::
                    NonEmpty (UpdateEdit update)
                 -> StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) (Maybe (EditSource -> StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) ()))
@@ -45,9 +45,9 @@ saveBufferObject rc objP omrUpdatesTask update = do
                 return $
                 Just $ \esrc -> do
                     newbuf <-
-                        mutableReadToSubject $
+                        readableToSubject $
                         applyEdits (toList edits) $
-                        mSubjectToMutableRead $ do
+                        mSubjectToReadable $ do
                             MkSaveBuffer oldbuf _ <- get
                             return oldbuf
                     put (MkSaveBuffer newbuf True)

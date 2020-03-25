@@ -53,7 +53,7 @@ testApplyEditsPar =
         rf :: ReadFunction (TupleUpdateReader (PairSelector (WholeUpdate Bool) (WholeUpdate Bool))) (TupleUpdateReader (PairSelector (WholeUpdate Bool) (WholeUpdate Bool)))
         rf = applyEdits edits
         in do
-               found <- mutableReadToSubject $ rf $ subjectToMutableRead start
+               found <- readableToSubject $ rf $ subjectToReadable start
                assertEqual "" expected found
 
 testApplyEditsSeq :: TestTree
@@ -66,12 +66,12 @@ testApplyEditsSeq =
         rf :: ReadFunction (WholeReader Int) (WholeReader Int)
         rf = applyEdits edits
         in do
-               found <- mutableReadToSubject $ rf $ subjectToMutableRead start
+               found <- readableToSubject $ rf $ subjectToReadable start
                assertEqual "" expected found
 
 applyEditSubject ::
        (ApplicableEdit edit, FullSubjectReader (EditReader edit)) => edit -> EditSubject edit -> IO (EditSubject edit)
-applyEditSubject edit subj = mutableReadToSubject $ applyEdit edit $ subjectToMutableRead subj
+applyEditSubject edit subj = readableToSubject $ applyEdit edit $ subjectToReadable subj
 
 testEdit ::
        ( ApplicableEdit edit
@@ -107,7 +107,7 @@ testEditRead ::
 testEditRead edit original rt expected = let
     name = show edit ++ " " ++ show original ++ " " ++ show rt
     in testCase name $ do
-           found <- applyEdit edit (subjectToMutableRead original) rt
+           found <- applyEdit edit (subjectToReadable original) rt
            assertEqual "" expected found
 
 seqRun :: Int -> Int -> SequenceRun [a]
@@ -137,11 +137,11 @@ testLensGet =
         ioProperty $
         runLifeCycle $ do
             MkFloatingEditLens {..} <- return $ stringSectionLens srun
-            r <- runFloatInit felInit $ subjectToMutableRead base
+            r <- runFloatInit felInit $ subjectToReadable base
             let
                 expected :: String
                 expected = subjectToRead base $ StringReadSection srun
-            found <- mutableReadToSubject $ elGet (felLens r) $ subjectToMutableRead @LifeCycleIO base
+            found <- readableToSubject $ elGet (felLens r) $ subjectToReadable @LifeCycleIO base
             return $ found === expected
 
 showVar :: Show a => String -> a -> String
@@ -175,13 +175,13 @@ lensUpdateGetProperty lens oldA editA =
     runLifeCycle $ do
         MkFloatingEditLens {..} <- return lens
         --oldState <- get
-        r <- runFloatInit felInit $ subjectToMutableRead oldA
-        newA <- mutableReadToSubject $ applyEdit editA $ subjectToMutableRead oldA
-        oldB <- mutableReadToSubject $ elGet (felLens r) $ subjectToMutableRead oldA
-        updateBs <- elUpdate (felLens r) (editUpdate editA) $ subjectToMutableRead newA
+        r <- runFloatInit felInit $ subjectToReadable oldA
+        newA <- readableToSubject $ applyEdit editA $ subjectToReadable oldA
+        oldB <- readableToSubject $ elGet (felLens r) $ subjectToReadable oldA
+        updateBs <- elUpdate (felLens r) (editUpdate editA) $ subjectToReadable newA
         --newState <- get
-        newB1 <- mutableReadToSubject $ applyEdits (fmap updateEdit updateBs) $ subjectToMutableRead oldB
-        newB2 <- mutableReadToSubject $ elGet (felLens r) $ subjectToMutableRead newA
+        newB1 <- readableToSubject $ applyEdits (fmap updateEdit updateBs) $ subjectToReadable oldB
+        newB2 <- readableToSubject $ elGet (felLens r) $ subjectToReadable newA
         let
             vars =
                 [ showVar "oldA" oldA

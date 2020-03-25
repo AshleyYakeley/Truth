@@ -87,10 +87,10 @@ tupleAllSelectors = getConst $ tupleConstruct $ \sel -> Const [MkAnyW sel]
 
 instance (SubjectTupleSelector sel, FiniteTupleSelector sel, TupleReaderWitness FullSubjectReader sel) =>
              FullSubjectReader (TupleUpdateReader sel) where
-    mutableReadToSubject mr =
+    readableToSubject mr =
         tupleConstruct $ \(sel :: sel update) ->
             case tupleReaderWitness @FullSubjectReader sel of
-                Dict -> mutableReadToSubject $ mr . MkTupleUpdateReader sel
+                Dict -> readableToSubject $ mr . MkTupleUpdateReader sel
 
 data TupleUpdateEdit sel where
     MkTupleUpdateEdit :: sel update -> UpdateEdit update -> TupleUpdateEdit sel
@@ -224,7 +224,7 @@ tupleEditLens_ tester sel = let
     elUpdate ::
            forall m. MonadIO m
         => TupleUpdate sel
-        -> MutableRead m (TupleUpdateReader sel)
+        -> Readable m (TupleUpdateReader sel)
         -> m [update]
     elUpdate (MkTupleUpdate sel' update) _ =
         case tester sel' of
@@ -233,7 +233,7 @@ tupleEditLens_ tester sel = let
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
-        -> MutableRead m (TupleUpdateReader sel)
+        -> Readable m (TupleUpdateReader sel)
         -> m (Maybe [TupleUpdateEdit sel])
     elPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit sel) edits
     in MkEditLens {..}
@@ -255,13 +255,13 @@ tupleIsoLens ab ba = let
     elUpdate ::
            forall m. MonadIO m
         => TupleUpdate sela
-        -> MutableRead m (TupleUpdateReader sela)
+        -> Readable m (TupleUpdateReader sela)
         -> m [TupleUpdate selb]
     elUpdate (MkTupleUpdate sel update) _ = return [MkTupleUpdate (ab sel) update]
     elPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit selb]
-        -> MutableRead m (TupleUpdateReader sela)
+        -> Readable m (TupleUpdateReader sela)
         -> m (Maybe [TupleUpdateEdit sela])
     elPutEdits edits _ = return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (ba sel) edit) edits
     in MkEditLens {..}

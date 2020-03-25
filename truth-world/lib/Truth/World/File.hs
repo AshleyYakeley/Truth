@@ -19,7 +19,7 @@ fileObject path = let
             r <- runReaderT rt h
             liftIO $ hClose h
             return r
-    objRead :: MutableRead (ReaderT Handle IO) ByteStringReader
+    objRead :: Readable (ReaderT Handle IO) ByteStringReader
     objRead ReadByteStringLength = do
         h <- ask
         n <- lift $ hFileSize h

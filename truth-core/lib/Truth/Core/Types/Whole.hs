@@ -29,10 +29,10 @@ instance SubjectReader (WholeReader a) where
     subjectToRead msubj ReadWhole = msubj
 
 instance FullSubjectReader (WholeReader a) where
-    mutableReadToSubject mr = mr ReadWhole
+    readableToSubject mr = mr ReadWhole
 
-wholeMutableRead :: m a -> MutableRead m (WholeReader a)
-wholeMutableRead ma ReadWhole = ma
+wholeReadable :: m a -> Readable m (WholeReader a)
+wholeReadable ma ReadWhole = ma
 
 newtype WholeReaderEdit (reader :: Type -> Type) =
     MkWholeReaderEdit (ReaderSubject reader)
@@ -45,18 +45,18 @@ instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader)
 type instance EditReader (WholeReaderEdit reader) = reader
 
 instance (FullSubjectReader reader) => ApplicableEdit (WholeReaderEdit reader) where
-    applyEdit (MkWholeReaderEdit a) _ = subjectToMutableRead a
+    applyEdit (MkWholeReaderEdit a) _ = subjectToReadable a
 
 instance (FullSubjectReader reader) => InvertibleEdit (WholeReaderEdit reader) where
     invertEdit _ mr = do
-        a <- mutableReadToSubject mr
+        a <- readableToSubject mr
         return [MkWholeReaderEdit a]
 
 instance FullSubjectReader reader => SubjectMapEdit (WholeReaderEdit reader)
 
 instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
     replaceEdit mr write = do
-        a <- mutableReadToSubject mr
+        a <- readableToSubject mr
         write $ MkWholeReaderEdit a
 
 instance (FullSubjectReader reader, TestEquality reader) => CacheableEdit (WholeReaderEdit reader)
@@ -81,9 +81,9 @@ lastReadOnlyWholeUpdate updates = do
 
 wholePutEdits ::
        (Monad mm, Monad m)
-    => (ReaderSubject reader -> MutableRead m (EditReader edita) -> mm (Maybe [edita]))
+    => (ReaderSubject reader -> Readable m (EditReader edita) -> mm (Maybe [edita]))
     -> [WholeReaderEdit reader]
-    -> MutableRead m (EditReader edita)
+    -> Readable m (EditReader edita)
     -> mm (Maybe [edita])
 wholePutEdits pe edits mr =
     case lastWholeEdit edits of
@@ -118,7 +118,7 @@ changeOnlyUpdateFunction ::
 changeOnlyUpdateFunction = let
     sInit ::
            forall m. MonadIO m
-        => MutableRead m (WholeReader a)
+        => Readable m (WholeReader a)
         -> m a
     sInit mr = mr ReadWhole
     sGet :: ReadFunctionT (StateT a) (WholeReader a) (WholeReader a)
@@ -126,7 +126,7 @@ changeOnlyUpdateFunction = let
     sUpdate ::
            forall m. MonadIO m
         => WholeUpdate a
-        -> MutableRead m (WholeReader a)
+        -> Readable m (WholeReader a)
         -> StateT a m [ROWUpdate a]
     sUpdate (MkWholeUpdate newa) _ = do
         olda <- get
@@ -138,7 +138,7 @@ changeOnlyUpdateFunction = let
     sPutEdits ::
            forall m. MonadIO m
         => [ConstEdit _]
-        -> MutableRead m (WholeReader a)
+        -> Readable m (WholeReader a)
         -> StateT a m (Maybe [WholeEdit a])
     sPutEdits = elPutEditsNone
     in makeStateLens MkStateEditLens {..}
@@ -152,7 +152,7 @@ ioWholeEditLens ioget ioput = let
     elUpdate ::
            forall m. MonadIO m
         => WholeUpdate a
-        -> MutableRead m (WholeReader a)
+        -> Readable m (WholeReader a)
         -> m [WholeUpdate b]
     elUpdate (MkWholeUpdate a) _ = do
         b <- liftIO $ ioget a
@@ -160,7 +160,7 @@ ioWholeEditLens ioget ioput = let
     elPutEdits ::
            forall m. MonadIO m
         => [WholeEdit b]
-        -> MutableRead m (WholeReader a)
+        -> Readable m (WholeReader a)
         -> m (Maybe [WholeEdit a])
     elPutEdits =
         elPutEditsFromPutEdit $ \(MkWholeReaderEdit b) mr -> do

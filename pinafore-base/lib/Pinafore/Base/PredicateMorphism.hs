@@ -31,7 +31,7 @@ predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) 
     elUpdate ::
            forall m. MonadIO m
         => ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))
-        -> MutableRead m (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a)))
+        -> Readable m (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a)))
         -> m [WholeUpdate (Know b)]
     elUpdate (MkTupleUpdate SelectContext (MkEditUpdate (PinaforeEntityEditSetPredicate p s kvalp))) mra
         | p == prd = do
@@ -55,7 +55,7 @@ predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) 
     elPutEdits ::
            forall m. MonadIO m
         => [WholeEdit (Know b)]
-        -> MutableRead m (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a)))
+        -> Readable m (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a)))
         -> m (Maybe [ContextUpdateEdit PinaforeEntityUpdate (WholeUpdate (Know a))])
     elPutEdits editbs mra =
         case lastWholeEdit editbs of
@@ -87,7 +87,7 @@ predicateInverseFunction ::
 predicateInverseFunction (MkEntityAdapter _ aget _) (MkEntityAdapter bp _ _) prd = let
     pfFuncRead ::
            forall m. MonadIO m
-        => MutableRead m PinaforeEntityRead
+        => Readable m PinaforeEntityRead
         -> b
         -> m [a]
     pfFuncRead mr valb = do
@@ -97,7 +97,7 @@ predicateInverseFunction (MkEntityAdapter _ aget _) (MkEntityAdapter bp _ _) prd
     pfUpdate ::
            forall m. MonadIO m
         => PinaforeEntityUpdate
-        -> MutableRead m PinaforeEntityRead
+        -> Readable m PinaforeEntityRead
         -> m Bool
     pfUpdate (MkEditUpdate (PinaforeEntityEditSetPredicate p _ _)) _
         | p == prd = return True

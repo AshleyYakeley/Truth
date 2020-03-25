@@ -10,7 +10,7 @@ import Truth.Core.Types.None
 import Truth.Core.Types.Whole
 
 data AnObject edit (tt :: [TransKind]) = MkAnObject
-    { objRead :: MutableRead (ApplyStack tt IO) (EditReader edit)
+    { objRead :: Readable (ApplyStack tt IO) (EditReader edit)
     , objEdit :: NonEmpty edit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
     , objCommitTask :: Task ()
     }
@@ -27,7 +27,7 @@ instance MapResource (AnObject edit) where
         -> AnObject edit tt1
         -> AnObject edit tt2
     mapResource MkTransListFunction {..} (MkAnObject r e ct) = let
-        r' :: MutableRead (ApplyStack tt2 IO) _
+        r' :: Readable (ApplyStack tt2 IO) _
         r' rd = tlfFunction (Proxy @IO) $ r rd
         e' :: _ -> ApplyStack tt2 IO (Maybe (EditSource -> ApplyStack tt2 IO ()))
         e' edits =
@@ -40,7 +40,7 @@ instance Show (Object edit) where
 
 noneObject :: Object (ConstEdit (NoReader t))
 noneObject = let
-    objRead :: MutableRead IO (NoReader t)
+    objRead :: Readable IO (NoReader t)
     objRead = never
     objEdit :: NonEmpty (ConstEdit (NoReader t)) -> IO (Maybe (EditSource -> IO ()))
     objEdit = never
@@ -49,11 +49,11 @@ noneObject = let
 
 mvarObject :: forall a. IOWitness (StateT a) -> MVar a -> (a -> Bool) -> Object (WholeEdit a)
 mvarObject iow var allowed = let
-    objRead :: MutableRead (StateT a IO) (WholeReader a)
+    objRead :: Readable (StateT a IO) (WholeReader a)
     objRead ReadWhole = get
     objEdit :: NonEmpty (WholeEdit a) -> StateT a IO (Maybe (EditSource -> StateT a IO ()))
     objEdit edits = do
-        na <- applyEdits (toList edits) (mSubjectToMutableRead get) ReadWhole
+        na <- applyEdits (toList edits) (mSubjectToReadable get) ReadWhole
         return $
             if allowed na
                 then Just $ \_ -> put na
@@ -93,7 +93,7 @@ mapAnObject ::
 mapAnObject MkEditLens {..} (MkAnObject objReadA objEditA objCT) =
     case transStackDict @MonadIO @tt @IO of
         Dict -> let
-            objReadB :: MutableRead (ApplyStack tt IO) (UpdateReader updateB)
+            objReadB :: Readable (ApplyStack tt IO) (UpdateReader updateB)
             objReadB = elGet objReadA
             objEditB :: NonEmpty (UpdateEdit updateB) -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
             objEditB editbs = do
@@ -137,17 +137,17 @@ floatMapObject rc lens (MkResource rr anobjA) = do
 
 immutableAnObject ::
        forall tt reader. MonadTransStackUnliftAll tt
-    => MutableRead (ApplyStack tt IO) reader
+    => Readable (ApplyStack tt IO) reader
     -> AnObject (ConstEdit reader) tt
 immutableAnObject mr =
     case transStackDict @Monad @tt @IO of
         Dict -> MkAnObject mr (\_ -> return Nothing) mempty
 
-readConstantObject :: MutableRead IO reader -> Object (ConstEdit reader)
+readConstantObject :: Readable IO reader -> Object (ConstEdit reader)
 readConstantObject mr = MkResource nilResourceRunner $ immutableAnObject mr
 
 constantObject :: SubjectReader reader => ReaderSubject reader -> Object (ConstEdit reader)
-constantObject subj = readConstantObject $ subjectToMutableRead subj
+constantObject subj = readConstantObject $ subjectToReadable subj
 
 alwaysEdit :: Monad m => (NonEmpty edit -> EditSource -> m ()) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))
 alwaysEdit em edits = return $ Just $ em edits
@@ -178,11 +178,11 @@ convertObject (MkResource (trun :: ResourceRunner tt) (MkAnObject mra pe objComm
         Dict ->
             case transStackDict @MonadIO @tt @IO of
                 Dict -> let
-                    objRead :: MutableRead (ApplyStack tt IO) (EditReader editb)
-                    objRead = mSubjectToMutableRead $ mutableReadToSubject mra
+                    objRead :: Readable (ApplyStack tt IO) (EditReader editb)
+                    objRead = mSubjectToReadable $ readableToSubject mra
                     objEdit :: NonEmpty editb -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
                     objEdit ebs = do
-                        oldsubj <- mutableReadToSubject mra
+                        oldsubj <- readableToSubject mra
                         newsubj <- mapSubjectEdits (toList ebs) oldsubj
                         eas <- getReplaceEditsFromSubject newsubj
                         case nonEmpty eas of
@@ -206,4 +206,4 @@ copyObject rc esrc =
             return ctask
 
 getObjectSubject :: ResourceContext -> FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
-getObjectSubject rc obj = runResource rc obj $ \(MkAnObject rd _ _) -> mutableReadToSubject rd
+getObjectSubject rc obj = runResource rc obj $ \(MkAnObject rd _ _) -> readableToSubject rd

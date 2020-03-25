@@ -106,26 +106,26 @@ pinaforeSetRefMember (MkPinaforeSetRef eq sv) aref = let
     knowApplySetLens = let
         getFunc ::
                forall m. MonadIO m
-            => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
+            => Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> a
             -> m Bool
         getFunc mr a = mr $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
         getArg ::
                forall m. MonadIO m
-            => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
+            => Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> m (Know a)
         getArg mr = mr $ MkTupleUpdateReader SelectSecond ReadWhole
         elGet ::
                forall m. MonadIO m
-            => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
-            -> MutableRead m (WholeReader (Know Bool))
+            => Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
+            -> Readable m (WholeReader (Know Bool))
         elGet mr ReadWhole = do
             ka <- getArg mr
             for ka $ getFunc mr
         elUpdate ::
                forall m. MonadIO m
             => PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))
-            -> MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
+            -> Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> m [WholeUpdate (Know Bool)]
         elUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeUpdate b)))) mr = do
             ka <- getArg mr
@@ -151,7 +151,7 @@ pinaforeSetRefMember (MkPinaforeSetRef eq sv) aref = let
         elPutEdits ::
                forall m. MonadIO m
             => [WholeEdit (Know Bool)]
-            -> MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
+            -> Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> m (Maybe [PairUpdateEdit (PartialSetUpdate a) (WholeUpdate (Know a))])
         elPutEdits edits mr =
             case lastWholeEdit edits of

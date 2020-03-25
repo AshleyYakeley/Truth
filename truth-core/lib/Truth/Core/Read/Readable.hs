@@ -1,0 +1,37 @@
+module Truth.Core.Read.Readable where
+
+import Truth.Core.Import
+
+type Readable m reader = forall (t :: Type). reader t -> m t
+
+remonadReadable :: forall m1 m2 reader. (forall a. m1 a -> m2 a) -> Readable m1 reader -> Readable m2 reader
+remonadReadable mf mr rt = mf (mr rt)
+
+liftReadable ::
+       forall t m reader. (MonadTrans t, Monad m)
+    => Readable m reader
+    -> Readable (t m) reader
+liftReadable = remonadReadable lift
+
+stackLiftReadable ::
+       forall tt m reader. (MonadTransStackUnliftAll tt, Monad m)
+    => Readable m reader
+    -> Readable (ApplyStack tt m) reader
+stackLiftReadable = remonadReadable @m @(ApplyStack tt m) $ stackLift @tt
+
+newtype ReadableW m reader = MkReadableW
+    { unReadableW :: Readable m reader
+    }
+
+stateReadable :: Monad m => Readable (StateT (ReadableW m reader) m) reader
+stateReadable rt = do
+    MkReadableW mr <- get
+    lift $ mr rt
+
+type ReadFunction ra rb = forall m. MonadIO m => Readable m ra -> Readable m rb
+
+type ReadFunctionT t ra rb = forall m. MonadIO m => Readable m ra -> Readable (t m) rb
+
+type ReadFunctionTT (tt :: [TransKind]) ra rb = forall m. MonadIO m => Readable m ra -> Readable (ApplyStack tt m) rb
+
+type ReadFunctionF f ra rb = ReadFunctionT (ComposeM f) ra rb

@@ -60,7 +60,7 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit ed
     applyEdit (ListEditInsert p _) mr (ListReadItem i reader)
         | p >= 0 && p < i = mr $ ListReadItem (i - 1) reader
     applyEdit (ListEditInsert _ _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
-    applyEdit ListEditClear _mr reader = subjectToMutableRead mempty reader
+    applyEdit ListEditClear _mr reader = subjectToReadable mempty reader
 
 instance ( IsSequence seq
          , FullSubjectReader (EditReader edit)
@@ -81,7 +81,7 @@ instance ( IsSequence seq
                 then [ListEditDelete p]
                 else []
     invertEdit (ListEditDelete p) mr = do
-        ma <- getComposeM $ mutableReadToSubject $ itemReadFunction p mr
+        ma <- getComposeM $ readableToSubject $ itemReadFunction p mr
         case ma of
             Just a -> return [ListEditInsert p a]
             Nothing -> return []
@@ -119,5 +119,5 @@ instance ( IsSequence seq
         write ListEditClear
         len <- mr ListReadLength
         for_ [0 .. pred len] $ \i -> do
-            item <- mutableReadToSubject $ knownItemReadFunction i mr
+            item <- readableToSubject $ knownItemReadFunction i mr
             write $ ListEditInsert i item

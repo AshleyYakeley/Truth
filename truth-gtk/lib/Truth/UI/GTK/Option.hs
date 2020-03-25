@@ -27,7 +27,7 @@ listStoreView (MkWMFunction blockSignal) oobj esrc = let
            Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
         -> CreateView (SeqStore (UpdateSubject update))
     initV rm = do
-        subjectList <- viewRunResource rm $ \am -> mutableReadToSubject $ subRead am
+        subjectList <- viewRunResource rm $ \am -> readableToSubject $ subRead am
         seqStoreNew subjectList
     recv ::
            SeqStore (UpdateSubject update)
@@ -43,7 +43,7 @@ listStoreView (MkWMFunction blockSignal) oobj esrc = let
                     oldval <- seqStoreGetValue store oldi
                     newval <-
                         case mupdate of
-                            Just update -> mutableReadToSubject $ applyUpdate update $ subjectToMutableRead oldval
+                            Just update -> readableToSubject $ applyUpdate update $ subjectToReadable oldval
                             Nothing -> return oldval
                     blockSignal $
                         case compare newi oldi of

@@ -17,13 +17,13 @@ instance Functor (WholeUpdateFunction update) where
     fmap :: forall a b. (a -> b) -> WholeUpdateFunction update a -> WholeUpdateFunction update b
     fmap ab (MkWholeUpdateFunction (MkEditLens g u _)) = let
         g' :: forall m t. MonadIO m
-           => MutableRead m (UpdateReader update)
+           => Readable m (UpdateReader update)
            -> WholeReader b t
            -> m t
         g' mr ReadWhole = fmap ab $ g mr ReadWhole
         u' :: forall m. MonadIO m
            => update
-           -> MutableRead m (UpdateReader update)
+           -> Readable m (UpdateReader update)
            -> m [ROWUpdate b]
         u' update mr =
             fmap (fmap $ \(MkReadOnlyUpdate (MkWholeReaderUpdate a)) -> MkReadOnlyUpdate $ MkWholeReaderUpdate $ ab a) $
@@ -34,13 +34,13 @@ instance Applicative (WholeUpdateFunction update) where
     pure :: forall a. a -> WholeUpdateFunction update a
     pure a = let
         g' :: forall m t. MonadIO m
-           => MutableRead m (UpdateReader update)
+           => Readable m (UpdateReader update)
            -> WholeReader a t
            -> m t
         g' _mr ReadWhole = return a
         u' :: forall m. MonadIO m
            => update
-           -> MutableRead m (UpdateReader update)
+           -> Readable m (UpdateReader update)
            -> m [ROWUpdate a]
         u' _update _mr = return []
         in MkWholeUpdateFunction $ MkEditLens g' u' elPutEditsNone

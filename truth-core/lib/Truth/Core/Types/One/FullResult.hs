@@ -35,7 +35,7 @@ instance (MonadOne f, FullSubjectReader (EditReader edit), ApplicableEdit edit) 
 
 instance (MonadOne f, FullSubjectReader (EditReader edit), ApplicableEdit edit) => FullEdit (FullResultOneEdit f edit) where
     replaceEdit mr writer = do
-        fsubj <- mutableReadToSubject mr
+        fsubj <- readableToSubject mr
         writer $ NewFullResultOneEdit fsubj
 
 instance (MonadOne f, FullSubjectReader (EditReader edit), ApplicableEdit edit, InvertibleEdit edit) =>
@@ -77,7 +77,7 @@ liftFullResultOneEditLens (MkEditLens g u pe) = let
     elUpdate ::
            forall m. MonadIO m
         => FullResultOneUpdate f updateA
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> m [FullResultOneUpdate f updateB]
     elUpdate (MkFullResultOneUpdate (SuccessResultOneUpdate upda)) mr =
         fmap (fmap (MkFullResultOneUpdate . SuccessResultOneUpdate) . fromMaybe [] . getMaybeOne) $
@@ -93,7 +93,7 @@ liftFullResultOneEditLens (MkEditLens g u pe) = let
     elPutEdit ::
            forall m. MonadIO m
         => FullResultOneEdit f (UpdateEdit updateB)
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
     elPutEdit (SuccessFullResultOneEdit eb) mr = do
         fme <- getComposeM $ pe [eb] $ oneReadFunctionF mr
@@ -108,7 +108,7 @@ liftFullResultOneEditLens (MkEditLens g u pe) = let
                     getComposeM $ do
                         editbs <- getReplaceEditsFromSubject b
                         meditas <- pe editbs $ oneReadFunctionF mr
-                        for meditas $ \editas -> mutableReadToSubject $ applyEdits editas $ oneReadFunctionF mr
+                        for meditas $ \editas -> readableToSubject $ applyEdits editas $ oneReadFunctionF mr
                 return $ do
                     fa <- reshuffle fma
                     return [NewFullResultOneEdit fa]
@@ -116,7 +116,7 @@ liftFullResultOneEditLens (MkEditLens g u pe) = let
     elPutEdits ::
            forall m. MonadIO m
         => [FullResultOneEdit f (UpdateEdit updateB)]
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
     elPutEdits = elPutEditsFromPutEdit elPutEdit
     in MkEditLens {..}
@@ -136,7 +136,7 @@ liftFullResultOneFloatingEditLens (MkFloatingEditLens (init :: FloatInit _ r) rl
     sInit mr = getComposeM $ runFloatInit init $ oneReadFunctionF mr
     reInit ::
            forall m. MonadIO m
-        => MutableRead m (OneReader f (UpdateReader updateA))
+        => Readable m (OneReader f (UpdateReader updateA))
         -> StateT (f r) m r
     reInit mr = do
         r <-
@@ -160,7 +160,7 @@ liftFullResultOneFloatingEditLens (MkFloatingEditLens (init :: FloatInit _ r) rl
     sUpdate ::
            forall m. MonadIO m
         => FullResultOneUpdate f updateA
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> StateT (f r) m [FullResultOneUpdate f updateB]
     sUpdate (MkFullResultOneUpdate (SuccessResultOneUpdate upda)) mr = do
         fr <- get
@@ -186,7 +186,7 @@ liftFullResultOneFloatingEditLens (MkFloatingEditLens (init :: FloatInit _ r) rl
     sPutEdit ::
            forall m. MonadIO m
         => FullResultOneEdit f (UpdateEdit updateB)
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> StateT (f r) m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
     sPutEdit (SuccessFullResultOneEdit eb) mr = do
         fr <- get
@@ -207,7 +207,7 @@ liftFullResultOneFloatingEditLens (MkFloatingEditLens (init :: FloatInit _ r) rl
                     getComposeM $ do
                         editbs <- getReplaceEditsFromSubject b
                         meditas <- elPutEdits (rlens r) editbs $ oneReadFunctionF mr
-                        for meditas $ \editas -> mutableReadToSubject $ applyEdits editas $ oneReadFunctionF mr
+                        for meditas $ \editas -> readableToSubject $ applyEdits editas $ oneReadFunctionF mr
                 return $ do
                     fa <- reshuffle fma
                     return [NewFullResultOneEdit fa]
@@ -217,7 +217,7 @@ liftFullResultOneFloatingEditLens (MkFloatingEditLens (init :: FloatInit _ r) rl
     sPutEdits ::
            forall m. MonadIO m
         => [FullResultOneEdit f (UpdateEdit updateB)]
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> StateT (f r) m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
     in makeStateLens MkStateEditLens {..}
@@ -237,14 +237,14 @@ mustExistOneEditLens err = let
     elUpdate ::
            forall m. MonadIO m
         => FullResultOneUpdate f update
-        -> MutableRead m (OneReader f (UpdateReader update))
+        -> Readable m (OneReader f (UpdateReader update))
         -> m [update]
     elUpdate (MkFullResultOneUpdate (NewResultOneUpdate _fu)) _mr = return [] -- just do nothing; it's expected that the UI will delete the item or whatever
     elUpdate (MkFullResultOneUpdate (SuccessResultOneUpdate update)) _ = return [update]
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
-        -> MutableRead m (OneReader f (UpdateReader update))
+        -> Readable m (OneReader f (UpdateReader update))
         -> m (Maybe [FullResultOneEdit f (UpdateEdit update)])
     elPutEdits edits _ = return $ Just $ fmap SuccessFullResultOneEdit edits
     in MkEditLens {..}

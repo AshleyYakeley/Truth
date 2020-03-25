@@ -29,13 +29,13 @@ emptyTupleLens = let
     elUpdate ::
            forall m. MonadIO m
         => updateA
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m [TupleUpdate EmptyType]
     elUpdate _ _ = return []
     elPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit EmptyType]
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m (Maybe [UpdateEdit updateA])
     elPutEdits [] _ = return $ Just []
     elPutEdits ((MkTupleUpdateEdit sel _):_) _ = never sel
@@ -69,14 +69,14 @@ firstEditLens = let
     elUpdate ::
            forall m. MonadIO m
         => TupleUpdate (ConsType update1 sel)
-        -> MutableRead m (TupleUpdateReader (ConsType update1 sel))
+        -> Readable m (TupleUpdateReader (ConsType update1 sel))
         -> m [update1]
     elUpdate (MkTupleUpdate FirstType update) _ = return [update]
     elUpdate (MkTupleUpdate (RestType _) _) _ = return []
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update1]
-        -> MutableRead m (TupleUpdateReader (ConsType update1 sel))
+        -> Readable m (TupleUpdateReader (ConsType update1 sel))
         -> m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
     elPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit FirstType) edits
     in MkEditLens {..}
@@ -88,14 +88,14 @@ restEditLens = let
     elUpdate ::
            forall m. MonadIO m
         => TupleUpdate (ConsType update1 sel)
-        -> MutableRead m (TupleUpdateReader (ConsType update1 sel))
+        -> Readable m (TupleUpdateReader (ConsType update1 sel))
         -> m [TupleUpdate sel]
     elUpdate (MkTupleUpdate FirstType _) _ = return []
     elUpdate (MkTupleUpdate (RestType sel) edit) _ = return [MkTupleUpdate sel edit]
     elPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit sel]
-        -> MutableRead m (TupleUpdateReader (ConsType update1 sel))
+        -> Readable m (TupleUpdateReader (ConsType update1 sel))
         -> m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
     elPutEdits edits _ =
         return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (RestType sel) edit) edits

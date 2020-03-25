@@ -114,14 +114,14 @@ contextualiseEditLens (MkEditLens g u pe) = let
     g' mr (MkTupleUpdateReader SelectContent rt) = g mr rt
     u' :: forall m. MonadIO m
        => updateX
-       -> MutableRead m (UpdateReader updateX)
+       -> Readable m (UpdateReader updateX)
        -> m [ContextUpdate updateX updateN]
     u' ea mr = do
         ebs <- u ea mr
         return $ (MkTupleUpdate SelectContext ea) : (fmap (MkTupleUpdate SelectContent) ebs)
     pe' :: forall m. MonadIO m
         => [ContextUpdateEdit updateX updateN]
-        -> MutableRead m (UpdateReader updateX)
+        -> Readable m (UpdateReader updateX)
         -> m (Maybe [UpdateEdit updateX])
     pe' edits mr =
         case partitionContextEdits edits of
@@ -141,7 +141,7 @@ liftContextEditLens (MkEditLens g u pe) = let
     g' mr (MkTupleUpdateReader SelectContent rt) = g (mr . MkTupleUpdateReader SelectContent) rt
     u' :: forall m. MonadIO m
        => ContextUpdate updateX updateA
-       -> MutableRead m (ContextUpdateReader updateX updateA)
+       -> Readable m (ContextUpdateReader updateX updateA)
        -> m [ContextUpdate updateX updateB]
     u' (MkTupleUpdate SelectContext update) _ = return [MkTupleUpdate SelectContext update]
     u' (MkTupleUpdate SelectContent update) mr = do
@@ -149,7 +149,7 @@ liftContextEditLens (MkEditLens g u pe) = let
         return $ fmap (MkTupleUpdate SelectContent) updates
     pe' :: forall m. MonadIO m
         => [ContextUpdateEdit updateX updateB]
-        -> MutableRead m (ContextUpdateReader updateX updateA)
+        -> Readable m (ContextUpdateReader updateX updateA)
         -> m (Maybe [ContextUpdateEdit updateX updateA])
     pe' edits mr =
         case partitionContextEdits edits of
@@ -170,7 +170,7 @@ liftContentEditLens (MkEditLens g u pe) = let
     g' mr (MkTupleUpdateReader SelectContext rt) = g (mr . MkTupleUpdateReader SelectContext) rt
     u' :: forall m. MonadIO m
        => ContextUpdate updateA updateN
-       -> MutableRead m (ContextUpdateReader updateA updateN)
+       -> Readable m (ContextUpdateReader updateA updateN)
        -> m [ContextUpdate updateB updateN]
     u' (MkTupleUpdate SelectContent update) _ = return [MkTupleUpdate SelectContent update]
     u' (MkTupleUpdate SelectContext update) mr = do
@@ -178,7 +178,7 @@ liftContentEditLens (MkEditLens g u pe) = let
         return $ fmap (MkTupleUpdate SelectContext) updates
     pe' :: forall m. MonadIO m
         => [ContextUpdateEdit updateB updateN]
-        -> MutableRead m (ContextUpdateReader updateA updateN)
+        -> Readable m (ContextUpdateReader updateA updateN)
         -> m (Maybe [ContextUpdateEdit updateA updateN])
     pe' edits mr =
         case partitionContextEdits edits of

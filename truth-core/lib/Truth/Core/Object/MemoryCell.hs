@@ -19,7 +19,7 @@ makeMemoryCellObject = do
     let
         objRun :: ResourceRunner '[ StateT ()]
         objRun = mvarResourceRunner iow var
-        objRead :: MutableRead (StateT () IO) (UpdateReader MemoryCellUpdate)
+        objRead :: Readable (StateT () IO) (UpdateReader MemoryCellUpdate)
         objRead (MkTupleUpdateReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef $ unWitnessed ioref
         objEdit :: NonEmpty (UpdateEdit MemoryCellUpdate) -> StateT () IO (Maybe (EditSource -> StateT () IO ()))
         objEdit =

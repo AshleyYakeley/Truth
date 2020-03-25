@@ -36,10 +36,10 @@ instance SubjectReader (EditReader edit) => SubjectReader (ObjectReader edit) wh
     subjectToRead subj ReadObject = mapObject (fromReadOnlyRejectingEditLens @(EditUpdate edit)) $ constantObject subj
 
 instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader edit) where
-    mutableReadToSubject mr = do
+    readableToSubject mr = do
         rc <- mr ReadObjectResourceContext
         obj <- mr ReadObject
-        liftIO $ runResource rc obj $ \anobj -> mutableReadToSubject $ objRead anobj
+        liftIO $ runResource rc obj $ \anobj -> readableToSubject $ objRead anobj
 
 type ObjectEdit edit = ConstEdit (ObjectReader edit)
 
@@ -55,13 +55,13 @@ objectEditLens = let
     elUpdate ::
            forall m. MonadIO m
         => ObjectUpdate update
-        -> MutableRead m (ObjectReader (UpdateEdit update))
+        -> Readable m (ObjectReader (UpdateEdit update))
         -> m [update]
     elUpdate update _ = never update
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
-        -> MutableRead m (EditReader (ObjectEdit (UpdateEdit update)))
+        -> Readable m (EditReader (ObjectEdit (UpdateEdit update)))
         -> m (Maybe [ObjectEdit (UpdateEdit update)])
     elPutEdits edits mr =
         case nonEmpty edits of
@@ -91,13 +91,13 @@ objectLiftEditLens lens = let
     elUpdate ::
            forall m. MonadIO m
         => ObjectUpdate updateA
-        -> MutableRead m (ObjectReader (UpdateEdit updateA))
+        -> Readable m (ObjectReader (UpdateEdit updateA))
         -> m [ObjectUpdate updateB]
     elUpdate update _ = never update
     elPutEdits ::
            forall m. MonadIO m
         => [ObjectEdit (UpdateEdit updateB)]
-        -> MutableRead m (ObjectReader (UpdateEdit updateA))
+        -> Readable m (ObjectReader (UpdateEdit updateA))
         -> m (Maybe [ObjectEdit (UpdateEdit updateA)])
     elPutEdits [] _ = return $ Just []
     elPutEdits (edit:_) _ = never edit

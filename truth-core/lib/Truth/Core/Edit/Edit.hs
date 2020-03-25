@@ -32,7 +32,7 @@ class SubjectReader (EditReader edit) => SubjectMapEdit (edit :: Type) where
         forall m.
             (MonadIO m, ApplicableEdit edit, FullSubjectReader (EditReader edit)) =>
                     [edit] -> EditSubject edit -> m (EditSubject edit)
-    mapSubjectEdits edits subj = mutableReadToSubject $ applyEdits edits $ subjectToMutableRead subj
+    mapSubjectEdits edits subj = readableToSubject $ applyEdits edits $ subjectToReadable subj
 
 mapEditToMapEdits ::
        Monad m
@@ -49,16 +49,16 @@ class InvertibleEdit (edit :: Type) where
     invertEdit ::
            forall m. MonadIO m
         => edit
-        -> MutableRead m (EditReader edit)
+        -> Readable m (EditReader edit)
         -> m [edit]
     invertEdit edit = invertEdits [edit]
     invertEdits ::
            forall m. MonadIO m
         => [edit]
-        -> MutableRead m (EditReader edit)
+        -> Readable m (EditReader edit)
         -> m [edit]
     default invertEdits ::
-        (MonadIO m, ApplicableEdit edit, InvertibleEdit edit) => [edit] -> MutableRead m (EditReader edit) -> m [edit]
+        (MonadIO m, ApplicableEdit edit, InvertibleEdit edit) => [edit] -> Readable m (EditReader edit) -> m [edit]
     invertEdits [] _mr = return []
     invertEdits (e:ee) mr = do
         u <- invertEdit e mr

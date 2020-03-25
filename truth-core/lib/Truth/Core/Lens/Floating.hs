@@ -17,10 +17,10 @@ import Truth.Core.Lens.Lens
 import Truth.Core.Read
 
 data FloatInit reader r where
-    ReadFloatInit :: (forall m. MonadIO m => MutableRead m reader -> m r) -> FloatInit reader r
+    ReadFloatInit :: (forall m. MonadIO m => Readable m reader -> m r) -> FloatInit reader r
     NoFloatInit :: FloatInit reader ()
 
-runFloatInit :: FloatInit reader r -> forall m. MonadIO m => MutableRead m reader -> m r
+runFloatInit :: FloatInit reader r -> forall m. MonadIO m => Readable m reader -> m r
 runFloatInit (ReadFloatInit init) = init
 runFloatInit NoFloatInit = \_ -> return ()
 
@@ -52,14 +52,14 @@ floatingToDiscardingEditLens (MkFloatingEditLens (ReadFloatInit init) rlens) = l
         elGet (rlens r) mr rt
     u :: forall m. MonadIO m
       => updateA
-      -> MutableRead m (UpdateReader updateA)
+      -> Readable m (UpdateReader updateA)
       -> m [updateB]
     u upd mr = do
         r <- init mr
         elUpdate (rlens r) upd mr
     pe :: forall m. MonadIO m
        => [UpdateEdit updateB]
-       -> MutableRead m (UpdateReader updateA)
+       -> Readable m (UpdateReader updateA)
        -> m (Maybe [UpdateEdit updateA])
     pe edits mr = do
         r <- init mr

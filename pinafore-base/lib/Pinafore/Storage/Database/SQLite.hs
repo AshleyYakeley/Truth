@@ -149,7 +149,7 @@ sqlitePinaforeLens = let
     elUpdate ::
            forall m. MonadIO m
         => SQLiteUpdate PinaforeSchema
-        -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
+        -> Readable m (EditReader (SQLiteEdit PinaforeSchema))
         -> m [PinaforeTableUpdate]
     elUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
     elPutEdit ::
@@ -191,7 +191,7 @@ sqlitePinaforeLens = let
     elPutEdits ::
            forall m. MonadIO m
         => [PinaforeTableEdit]
-        -> MutableRead m (SQLiteReader PinaforeSchema)
+        -> Readable m (SQLiteReader PinaforeSchema)
         -> m (Maybe [SQLiteEdit PinaforeSchema])
     elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
     in MkEditLens {..}

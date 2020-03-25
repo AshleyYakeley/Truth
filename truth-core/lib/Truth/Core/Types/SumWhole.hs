@@ -22,20 +22,19 @@ sumWholeLiftEditLens ::
        , FullSubjectReader (UpdateReader updateB)
        )
     => (forall m.
-            MonadIO m =>
-                    UpdateSubject updateB -> MutableRead m (UpdateReader updateA) -> m (Maybe (UpdateSubject updateA)))
+            MonadIO m => UpdateSubject updateB -> Readable m (UpdateReader updateA) -> m (Maybe (UpdateSubject updateA)))
     -> EditLens updateA updateB
     -> EditLens (SumWholeUpdate updateA) (SumWholeUpdate updateB)
 sumWholeLiftEditLens pushback (MkEditLens g u pe) = let
     elUpdate ::
            forall m. MonadIO m
         => SumWholeUpdate updateA
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m [SumWholeUpdate updateB]
     elUpdate pupdatea mr =
         case pupdatea of
             SumUpdateLeft (MkWholeReaderUpdate a) -> do
-                b <- mutableReadToSubject $ g $ subjectToMutableRead @m a
+                b <- readableToSubject $ g $ subjectToReadable @m a
                 return [SumUpdateLeft $ MkWholeReaderUpdate b]
             SumUpdateRight edita -> do
                 editbs <- u edita mr
@@ -43,7 +42,7 @@ sumWholeLiftEditLens pushback (MkEditLens g u pe) = let
     elPutEdit ::
            forall m. MonadIO m
         => SumEdit (WholeReaderEdit (UpdateReader updateB)) (UpdateEdit updateB)
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m (Maybe [SumEdit (WholeReaderEdit (UpdateReader updateA)) (UpdateEdit updateA)])
     elPutEdit peditb mr =
         case peditb of

@@ -52,14 +52,14 @@ oneLiftEditLens (MkEditLens g u pe) = let
     elUpdate ::
            forall m. MonadIO m
         => OneUpdate f updateA
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> m [OneUpdate f updateB]
     elUpdate (MkOneUpdate ea) mr =
         fmap (fmap MkOneUpdate . fromMaybe [] . getMaybeOne) $ getComposeM $ u ea $ oneReadFunctionF mr
     elPutEdits ::
            forall m. MonadIO m
         => [OneEdit f (UpdateEdit updateB)]
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [OneEdit f (UpdateEdit updateA)])
     elPutEdits ebs mr =
         fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $
@@ -77,13 +77,13 @@ oneNullEditLens fu = let
     elUpdate ::
            forall m. MonadIO m
         => OneUpdate f updateA
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> m [OneUpdate f updateB]
     elUpdate _ _ = return []
     elPutEdits ::
            forall m. MonadIO m
         => [OneEdit f (UpdateEdit updateB)]
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [OneEdit f (UpdateEdit updateA)])
     elPutEdits _ _ = return $ Just []
     in MkEditLens {..}

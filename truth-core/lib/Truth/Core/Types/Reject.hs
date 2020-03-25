@@ -14,13 +14,13 @@ fromReadOnlyRejectingEditLens = let
     elUpdate ::
            forall m. MonadIO m
         => ReadOnlyUpdate update
-        -> MutableRead m (UpdateReader update)
+        -> Readable m (UpdateReader update)
         -> m [update]
     elUpdate (MkReadOnlyUpdate update) _ = return [update]
     elPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
-        -> MutableRead m (UpdateReader update)
+        -> Readable m (UpdateReader update)
         -> m (Maybe [ConstEdit (UpdateReader update)])
     elPutEdits [] _ = return $ Just [] -- must allow empty update-lists so that composition works correctly
     elPutEdits (_:_) _ = return Nothing

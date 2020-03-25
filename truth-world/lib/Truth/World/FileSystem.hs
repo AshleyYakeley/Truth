@@ -81,7 +81,7 @@ createFile path bs = do
 
 fileSystemObject :: Object FSEdit
 fileSystemObject = let
-    objRead :: MutableRead IO FSReader
+    objRead :: Readable IO FSReader
     objRead (FSReadDirectory path) = do
         isDir <- doesDirectoryExist path
         if isDir
@@ -163,7 +163,7 @@ subdirectoryObject create dir (MkResource (rr :: ResourceRunner tt) (MkAnObject 
                         in if isRelative relpath
                                then Just relpath
                                else Nothing
-                    rd' :: MutableRead (StateT Bool (ApplyStack tt IO)) FSReader
+                    rd' :: Readable (StateT Bool (ApplyStack tt IO)) FSReader
                     rd' (FSReadDirectory path) = do
                         pushFirst
                         lift $ rd $ FSReadDirectory $ insideToOutside path

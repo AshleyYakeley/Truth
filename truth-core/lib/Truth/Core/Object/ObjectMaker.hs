@@ -36,7 +36,7 @@ reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e ct
     let trun' = combineIndependentResourceRunners trun deferRR
     Dict <- return $ resourceRunnerUnliftAllDict trun'
     let
-        r' :: MutableRead (ApplyStack tt (DeferActionT IO)) (UpdateReader update)
+        r' :: Readable (ApplyStack tt (DeferActionT IO)) (UpdateReader update)
         r' rt = stackUnderliftIO @tt @(DeferActionT IO) $ r rt
         e' :: NonEmpty (UpdateEdit update)
            -> ApplyStack tt (DeferActionT IO) (Maybe (EditSource -> ApplyStack tt (DeferActionT IO) ()))

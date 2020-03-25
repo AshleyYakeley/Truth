@@ -58,9 +58,9 @@ instance (KeyContainer cont, SubjectReader reader, ReaderSubject reader ~ Item c
 
 instance (KeyContainer cont, FullSubjectReader reader, ReaderSubject reader ~ Item cont) =>
              FullSubjectReader (KeyReader cont reader) where
-    mutableReadToSubject mr = do
+    readableToSubject mr = do
         MkFiniteSet allkeys <- mr KeyReadKeys
-        list <- for allkeys $ \key -> mutableReadToSubject $ knownKeyItemReadFunction key mr
+        list <- for allkeys $ \key -> readableToSubject $ knownKeyItemReadFunction key mr
         return $ fromItemList list
 
 --- edit
@@ -124,7 +124,7 @@ instance ( FullSubjectReader (EditReader edit)
     applyEdit (KeyEditInsertReplace item) _mr (KeyReadItem key reader)
         | itemKey @cont item == key = return $ Just $ subjectToRead item reader
     applyEdit (KeyEditInsertReplace _) mr (KeyReadItem key reader) = mr $ KeyReadItem key reader
-    applyEdit KeyEditClear _mr reader = mSubjectToMutableRead (return mempty) reader
+    applyEdit KeyEditClear _mr reader = mSubjectToReadable (return mempty) reader
 
 instance ( FullSubjectReader (EditReader edit)
          , ApplicableEdit edit
@@ -140,12 +140,12 @@ instance ( FullSubjectReader (EditReader edit)
             Nothing -> return []
     invertEdit (KeyEditInsertReplace item) mr = do
         let newkey = itemKey @cont item
-        molditem <- getComposeM $ mutableReadToSubject $ keyItemReadFunction newkey mr
+        molditem <- getComposeM $ readableToSubject $ keyItemReadFunction newkey mr
         case molditem of
             Just olditem -> return [KeyEditInsertReplace olditem]
             Nothing -> return [KeyEditDelete newkey]
     invertEdit (KeyEditDelete key) mr = do
-        ma <- getComposeM $ mutableReadToSubject $ keyItemReadFunction key mr
+        ma <- getComposeM $ readableToSubject $ keyItemReadFunction key mr
         case ma of
             Just a -> return [KeyEditInsertReplace a]
             Nothing -> return []
@@ -175,7 +175,7 @@ instance ( FullSubjectReader (EditReader edit)
         write KeyEditClear
         allkeys <- mr KeyReadKeys
         for_ allkeys $ \key -> do
-            item <- mutableReadToSubject $ knownKeyItemReadFunction key mr
+            item <- readableToSubject $ knownKeyItemReadFunction key mr
             write $ KeyEditInsertReplace item
 
 --- update
@@ -219,7 +219,7 @@ keyElementEditLens ::
 keyElementEditLens initKey = let
     sInit ::
            forall m. MonadIO m
-        => MutableRead m (KeyReader cont (UpdateReader update))
+        => Readable m (KeyReader cont (UpdateReader update))
         -> m (ContainerKey cont)
     sInit _ = return initKey
     sGet ::
@@ -237,7 +237,7 @@ keyElementEditLens initKey = let
     sUpdate ::
            forall m. MonadIO m
         => KeyUpdate cont update
-        -> MutableRead m (KeyReader cont (UpdateReader update))
+        -> Readable m (KeyReader cont (UpdateReader update))
         -> StateT (ContainerKey cont) m [MaybeUpdate update]
     sUpdate KeyUpdateClear _ = return [MkFullResultOneUpdate $ NewResultOneUpdate Nothing]
     sUpdate (KeyUpdateDelete k) _ = do
@@ -266,7 +266,7 @@ keyElementEditLens initKey = let
     sPutEdit ::
            forall m. MonadIO m
         => MaybeEdit (UpdateEdit update)
-        -> MutableRead m (KeyReader cont (UpdateReader update))
+        -> Readable m (KeyReader cont (UpdateReader update))
         -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont (UpdateEdit update)])
     sPutEdit (NewFullResultOneEdit (Just subj)) _ = return $ Just [KeyEditInsertReplace subj]
     sPutEdit (NewFullResultOneEdit Nothing) _ = do
@@ -283,7 +283,7 @@ keyElementEditLens initKey = let
     sPutEdits ::
            forall m. MonadIO m
         => [MaybeEdit (UpdateEdit update)]
-        -> MutableRead m (KeyReader cont (UpdateReader update))
+        -> Readable m (KeyReader cont (UpdateReader update))
         -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont (UpdateEdit update)])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
     in makeStateLens MkStateEditLens {..}
@@ -318,15 +318,15 @@ liftKeyElementEditLens ::
 liftKeyElementEditLens bma (MkEditLens g u pe) = let
     elGet :: ReadFunction (KeyReader conta (UpdateReader updateA)) (KeyReader contb (UpdateReader updateB))
     elGet mr KeyReadKeys = mr KeyReadKeys
-    elGet (mr :: MutableRead m _) (KeyReadItem key rt) = getComposeM $ g (keyItemReadFunction key mr) rt
+    elGet (mr :: Readable m _) (KeyReadItem key rt) = getComposeM $ g (keyItemReadFunction key mr) rt
     elUpdate ::
            forall m. MonadIO m
         => KeyUpdate conta updateA
-        -> MutableRead m (KeyReader conta (UpdateReader updateA))
+        -> Readable m (KeyReader conta (UpdateReader updateA))
         -> m [KeyUpdate contb updateB]
     elUpdate KeyUpdateClear _ = return [KeyUpdateClear]
     elUpdate (KeyUpdateInsertReplace itema) _ = do
-        itemb <- mutableReadToSubject $ g $ subjectToMutableRead @m itema
+        itemb <- readableToSubject $ g $ subjectToReadable @m itema
         return [KeyUpdateInsertReplace itemb]
     elUpdate (KeyUpdateDelete key) _ = return [KeyUpdateDelete key]
     elUpdate (KeyUpdateItem key ea) mr = do
@@ -337,7 +337,7 @@ liftKeyElementEditLens bma (MkEditLens g u pe) = let
     elPutEdit ::
            forall m. MonadIO m
         => KeyEdit contb (UpdateEdit updateB)
-        -> MutableRead m (KeyReader conta (UpdateReader updateA))
+        -> Readable m (KeyReader conta (UpdateReader updateA))
         -> m (Maybe [KeyEdit conta (UpdateEdit updateA)])
     elPutEdit KeyEditClear _ = return $ Just [KeyEditClear]
     elPutEdit (KeyEditInsertReplace itemb) _ = do
@@ -353,7 +353,7 @@ liftKeyElementEditLens bma (MkEditLens g u pe) = let
     elPutEdits ::
            forall m. MonadIO m
         => [KeyEdit contb (UpdateEdit updateB)]
-        -> MutableRead m (KeyReader conta (UpdateReader updateA))
+        -> Readable m (KeyReader conta (UpdateReader updateA))
         -> m (Maybe [KeyEdit conta (UpdateEdit updateA)])
     elPutEdits = elPutEditsFromPutEdit elPutEdit
     in MkEditLens {..}
@@ -379,7 +379,7 @@ liftKeyElementFloatingEditLens bma (MkFloatingEditLens (ReadFloatInit init :: Fl
     sInit _ = return mempty
     getR ::
            forall m. MonadIO m
-        => MutableRead m (KeyReader conta (UpdateReader updateA))
+        => Readable m (KeyReader conta (UpdateReader updateA))
         -> ContainerKey conta
         -> StateT (InternalKeyMap (ContainerKey conta) r) m (Maybe r)
     getR mr key = do
@@ -395,7 +395,7 @@ liftKeyElementFloatingEditLens bma (MkFloatingEditLens (ReadFloatInit init :: Fl
     sGet ::
            ReadFunctionT (StateT (InternalKeyMap (ContainerKey conta) r)) (KeyReader conta (UpdateReader updateA)) (KeyReader contb (UpdateReader updateB))
     sGet mr KeyReadKeys = lift $ mr KeyReadKeys
-    sGet (mr :: MutableRead m _) (KeyReadItem key rt) = do
+    sGet (mr :: Readable m _) (KeyReadItem key rt) = do
         mrc <- getR mr key
         lift $
             getComposeM $ do
@@ -404,15 +404,15 @@ liftKeyElementFloatingEditLens bma (MkFloatingEditLens (ReadFloatInit init :: Fl
     sUpdate ::
            forall m. MonadIO m
         => KeyUpdate conta updateA
-        -> MutableRead m (KeyReader conta (UpdateReader updateA))
+        -> Readable m (KeyReader conta (UpdateReader updateA))
         -> StateT (InternalKeyMap (ContainerKey conta) r) m [KeyUpdate contb updateB]
     sUpdate KeyUpdateClear _ = return [KeyUpdateClear]
     sUpdate (KeyUpdateInsertReplace itema) _ = do
         let
-            imr :: MutableRead (StateT (InternalKeyMap (ContainerKey conta) r) m) (UpdateReader updateA)
-            imr = subjectToMutableRead itema
+            imr :: Readable (StateT (InternalKeyMap (ContainerKey conta) r) m) (UpdateReader updateA)
+            imr = subjectToReadable itema
         r <- init imr
-        itemb <- lift $ mutableReadToSubject $ elGet (rlens r) $ subjectToMutableRead @m itema
+        itemb <- lift $ readableToSubject $ elGet (rlens r) $ subjectToReadable @m itema
         rmap <- get
         key <- readKey @conta imr
         put $ insertMap key r rmap
@@ -431,7 +431,7 @@ liftKeyElementFloatingEditLens bma (MkFloatingEditLens (ReadFloatInit init :: Fl
     sPutEdit ::
            forall m. MonadIO m
         => KeyEdit contb (UpdateEdit updateB)
-        -> MutableRead m (KeyReader conta (UpdateReader updateA))
+        -> Readable m (KeyReader conta (UpdateReader updateA))
         -> StateT (InternalKeyMap (ContainerKey conta) r) m (Maybe [KeyEdit conta (UpdateEdit updateA)])
     sPutEdit KeyEditClear _ = return $ Just [KeyEditClear]
     sPutEdit (KeyEditInsertReplace itemb) _ = do
@@ -452,7 +452,7 @@ liftKeyElementFloatingEditLens bma (MkFloatingEditLens (ReadFloatInit init :: Fl
     sPutEdits ::
            forall m. MonadIO m
         => [KeyEdit contb (UpdateEdit updateB)]
-        -> MutableRead m (KeyReader conta (UpdateReader updateA))
+        -> Readable m (KeyReader conta (UpdateReader updateA))
         -> StateT (InternalKeyMap (ContainerKey conta) r) m (Maybe [KeyEdit conta (UpdateEdit updateA)])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
     in makeStateLens MkStateEditLens {..}
@@ -478,7 +478,7 @@ contextKeyEditLens = let
     elUpdate ::
            forall m. MonadIO m
         => ContextUpdate ua (KeyUpdate cont1 ub)
-        -> MutableRead m (ContextUpdateReader ua (KeyUpdate cont1 ub))
+        -> Readable m (ContextUpdateReader ua (KeyUpdate cont1 ub))
         -> m [KeyUpdate cont2 (ContextUpdate ua ub)]
     elUpdate (MkTupleUpdate SelectContext update) mr = do
         MkFiniteSet kk <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
@@ -491,7 +491,7 @@ contextKeyEditLens = let
     elPutEdit ::
            forall m. MonadIO m
         => KeyEdit cont2 (ContextUpdateEdit ua ub)
-        -> MutableRead m (ContextUpdateReader ua (KeyUpdate cont1 ub))
+        -> Readable m (ContextUpdateReader ua (KeyUpdate cont1 ub))
         -> m (Maybe [ContextUpdateEdit ua (KeyUpdate cont1 ub)])
     elPutEdit (KeyEditItem _ (MkTupleUpdateEdit SelectContext edit)) _ =
         return $ Just [MkTupleUpdateEdit SelectContext edit]
@@ -503,7 +503,7 @@ contextKeyEditLens = let
     elPutEdits ::
            forall m. MonadIO m
         => [KeyEdit cont2 (ContextUpdateEdit ua ub)]
-        -> MutableRead m (ContextUpdateReader ua (KeyUpdate cont1 ub))
+        -> Readable m (ContextUpdateReader ua (KeyUpdate cont1 ub))
         -> m (Maybe [ContextUpdateEdit ua (KeyUpdate cont1 ub)])
     elPutEdits = elPutEditsFromPutEdit elPutEdit
     in MkEditLens {..}

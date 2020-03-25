@@ -81,18 +81,18 @@ partitionPairEdits pes = let
     toEither (MkTupleUpdateEdit SelectSecond updateB) = Right updateB
     in partitionEithers $ fmap toEither pes
 
-pairMutableRead ::
-       MutableRead m (UpdateReader updateA)
-    -> MutableRead m (UpdateReader updateB)
-    -> MutableRead m (PairUpdateReader updateA updateB)
-pairMutableRead mra _mrb (MkTupleUpdateReader SelectFirst ra) = mra ra
-pairMutableRead _mra mrb (MkTupleUpdateReader SelectSecond rb) = mrb rb
+pairReadable ::
+       Readable m (UpdateReader updateA)
+    -> Readable m (UpdateReader updateB)
+    -> Readable m (PairUpdateReader updateA updateB)
+pairReadable mra _mrb (MkTupleUpdateReader SelectFirst ra) = mra ra
+pairReadable _mra mrb (MkTupleUpdateReader SelectSecond rb) = mrb rb
 
-fstMutableRead :: MutableRead m (PairUpdateReader updateA updateB) -> MutableRead m (UpdateReader updateA)
-fstMutableRead mr ra = mr $ MkTupleUpdateReader SelectFirst ra
+fstReadable :: Readable m (PairUpdateReader updateA updateB) -> Readable m (UpdateReader updateA)
+fstReadable mr ra = mr $ MkTupleUpdateReader SelectFirst ra
 
-sndMutableRead :: MutableRead m (PairUpdateReader updateA updateB) -> MutableRead m (UpdateReader updateB)
-sndMutableRead mr rb = mr $ MkTupleUpdateReader SelectSecond rb
+sndReadable :: Readable m (PairUpdateReader updateA updateB) -> Readable m (UpdateReader updateB)
+sndReadable mr rb = mr $ MkTupleUpdateReader SelectSecond rb
 
 fstLiftEditLens ::
        forall updateX updateA updateB.
@@ -105,7 +105,7 @@ fstLiftEditLens (MkEditLens g u pe) = let
     elUpdate ::
            forall m. MonadIO m
         => PairUpdate updateA updateX
-        -> MutableRead m (PairUpdateReader updateA updateX)
+        -> Readable m (PairUpdateReader updateA updateX)
         -> m [PairUpdate updateB updateX]
     elUpdate (MkTupleUpdate SelectFirst updateA) mr = do
         ebs <- u updateA $ firstReadFunction mr
@@ -114,7 +114,7 @@ fstLiftEditLens (MkEditLens g u pe) = let
     elPutEdits ::
            forall m. MonadIO m
         => [PairUpdateEdit updateB updateX]
-        -> MutableRead m (PairUpdateReader updateA updateX)
+        -> Readable m (PairUpdateReader updateA updateX)
         -> m (Maybe [PairUpdateEdit updateA updateX])
     elPutEdits edits mr =
         case partitionPairEdits edits of
@@ -135,7 +135,7 @@ sndLiftEditLens (MkEditLens g u pe) = let
     elUpdate ::
            forall m. MonadIO m
         => PairUpdate updateX updateA
-        -> MutableRead m (PairUpdateReader updateX updateA)
+        -> Readable m (PairUpdateReader updateX updateA)
         -> m [PairUpdate updateX updateB]
     elUpdate (MkTupleUpdate SelectFirst ex) _ = return [MkTupleUpdate SelectFirst ex]
     elUpdate (MkTupleUpdate SelectSecond updateA) mr = do
@@ -144,7 +144,7 @@ sndLiftEditLens (MkEditLens g u pe) = let
     elPutEdits ::
            forall m. MonadIO m
         => [PairUpdateEdit updateX updateB]
-        -> MutableRead m (PairUpdateReader updateX updateA)
+        -> Readable m (PairUpdateReader updateX updateA)
         -> m (Maybe [PairUpdateEdit updateX updateA])
     elPutEdits edits mr =
         case partitionPairEdits edits of
@@ -165,7 +165,7 @@ pairCombineEditLenses (MkEditLens g1 u1 pe1) (MkEditLens g2 u2 pe2) = let
     g12 mr (MkTupleUpdateReader SelectSecond rt) = g2 mr rt
     u12 :: forall m. MonadIO m
         => updateA
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m [PairUpdate updateB1 updateB2]
     u12 updateA mr = do
         eb1s <- u1 updateA mr
@@ -174,7 +174,7 @@ pairCombineEditLenses (MkEditLens g1 u1 pe1) (MkEditLens g2 u2 pe2) = let
     pe12 ::
            forall m. MonadIO m
         => [PairUpdateEdit updateB1 updateB2]
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m (Maybe [UpdateEdit updateA])
     pe12 edits mr =
         case partitionPairEdits edits of
@@ -209,7 +209,7 @@ partialPairEditLens ::
 partialPairEditLens = let
     elGet ::
            forall m t. MonadIO m
-        => MutableRead m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
+        => Readable m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
         -> PairUpdateReader updateA updateB t
         -> m t
     elGet mr (MkTupleUpdateReader SelectFirst rt) = mr $ MkTupleUpdateReader SelectFirst rt
@@ -217,7 +217,7 @@ partialPairEditLens = let
     elUpdate ::
            forall m. MonadIO m
         => PairUpdate (PartialUpdate updateA) (PartialUpdate updateB)
-        -> MutableRead m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
+        -> Readable m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
         -> m [PartialUpdate (PairUpdate updateA updateB)]
     elUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate update)) _ =
         return [KnownPartialUpdate $ MkTupleUpdate SelectFirst update]
@@ -240,7 +240,7 @@ partialPairEditLens = let
     elPutEdits ::
            forall m. MonadIO m
         => [PairUpdateEdit updateA updateB]
-        -> MutableRead m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
+        -> Readable m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
         -> m (Maybe [PairUpdateEdit (PartialUpdate updateA) (PartialUpdate updateB)])
     elPutEdits =
         elPutEditsFromSimplePutEdit $ \case
@@ -251,14 +251,14 @@ partialPairEditLens = let
 pairWholeEditLens :: forall a b. EditLens (PairUpdate (WholeUpdate a) (WholeUpdate b)) (WholeUpdate (a, b))
 pairWholeEditLens = let
     elGet :: ReadFunction (PairUpdateReader (WholeUpdate a) (WholeUpdate b)) (WholeReader (a, b))
-    elGet (mr :: MutableRead m _) ReadWhole = do
+    elGet (mr :: Readable m _) ReadWhole = do
         a <- mr $ MkTupleUpdateReader SelectFirst ReadWhole
         b <- mr $ MkTupleUpdateReader SelectSecond ReadWhole
         return (a, b)
     elUpdate ::
            forall m. MonadIO m
         => PairUpdate (WholeUpdate a) (WholeUpdate b)
-        -> MutableRead m (PairUpdateReader (WholeUpdate a) (WholeUpdate b))
+        -> Readable m (PairUpdateReader (WholeUpdate a) (WholeUpdate b))
         -> m [WholeUpdate (a, b)]
     elUpdate (MkTupleUpdate SelectFirst (MkWholeUpdate a)) mr = do
         b <- mr $ MkTupleUpdateReader SelectSecond ReadWhole
@@ -269,7 +269,7 @@ pairWholeEditLens = let
     elPutEdits ::
            forall m. MonadIO m
         => [WholeEdit (a, b)]
-        -> MutableRead m (PairUpdateReader (WholeUpdate a) (WholeUpdate b))
+        -> Readable m (PairUpdateReader (WholeUpdate a) (WholeUpdate b))
         -> m (Maybe [PairUpdateEdit (WholeUpdate a) (WholeUpdate b)])
     elPutEdits =
         elPutEditsFromSimplePutEdit $ \(MkWholeReaderEdit (a, b)) ->
@@ -289,7 +289,7 @@ readOnlyPairEditLens = let
     elUpdate ::
            forall m. MonadIO m
         => PairUpdate (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB)
-        -> MutableRead m (PairUpdateReader (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB))
+        -> Readable m (PairUpdateReader (ReadOnlyUpdate updateA) (ReadOnlyUpdate updateB))
         -> m [ReadOnlyUpdate (PairUpdate updateA updateB)]
     elUpdate (MkTupleUpdate SelectFirst (MkReadOnlyUpdate update)) _ =
         return [MkReadOnlyUpdate $ MkTupleUpdate SelectFirst update]

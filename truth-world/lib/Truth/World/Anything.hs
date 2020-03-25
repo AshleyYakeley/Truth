@@ -48,7 +48,6 @@ instance ApplicableEdit AnyEdit where
     applyEdit (MkAnyEdit _ _) mr ReadAnyTypes = mr ReadAnyTypes -- edit cannot change types
 
 instance InvertibleEdit AnyEdit where
-    -- invertEdit :: AnyEdit -> Readable AnyReader [AnyEdit];
     invertEdit (MkAnyEdit ie edit) mr = do
         MkAnyTypes oie <- mr ReadAnyTypes
         case testEquality oie ie of

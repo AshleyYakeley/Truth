@@ -12,8 +12,8 @@ import Truth.Core
 
 data EntityAdapter t = MkEntityAdapter
     { entityAdapterConvert :: t -> Entity
-    , entityAdapterGet :: forall m. MonadIO m => Entity -> MutableRead m PinaforeEntityRead -> m (Know t)
-    , entityAdapterPut :: forall m. MonadIO m => t -> MutableRead m PinaforeEntityRead -> m [PinaforeEntityEdit]
+    , entityAdapterGet :: forall m. MonadIO m => Entity -> Readable m PinaforeEntityRead -> m (Know t)
+    , entityAdapterPut :: forall m. MonadIO m => t -> Readable m PinaforeEntityRead -> m [PinaforeEntityEdit]
     }
 
 instance IsoVariant EntityAdapter where
@@ -37,7 +37,7 @@ instance Summish EntityAdapter where
         cab (Right b) = cb b
         gab :: forall m. MonadIO m
             => Entity
-            -> MutableRead m PinaforeEntityRead
+            -> Readable m PinaforeEntityRead
             -> m (Know (Either a b))
         gab e mr =
             getComposeM $
@@ -49,7 +49,7 @@ instance Summish EntityAdapter where
                  return $ Right b)
         pab :: forall m. MonadIO m
             => Either a b
-            -> MutableRead m PinaforeEntityRead
+            -> Readable m PinaforeEntityRead
             -> m [PinaforeEntityEdit]
         pab (Left a) = pa a
         pab (Right b) = pb b
@@ -61,7 +61,7 @@ entityEntityAdapter = let
     entityAdapterGet ::
            forall m. MonadIO m
         => Entity
-        -> MutableRead m PinaforeEntityRead
+        -> Readable m PinaforeEntityRead
         -> m (Know Entity)
     entityAdapterGet p _ = return $ Known p
     entityAdapterPut _ _ = return []
@@ -90,7 +90,7 @@ constructorGet ::
     -> Int
     -> ListType EntityAdapter tt
     -> Entity
-    -> MutableRead m PinaforeEntityRead
+    -> Readable m PinaforeEntityRead
     -> ComposeM Know m (HList tt)
 constructorGet _anchor _n _i NilListType _entity _mr = return ()
 constructorGet anchor n i (ConsListType (MkEntityAdapter _ ga _) ll) entity mr = do
@@ -117,7 +117,7 @@ constructorPut ::
     -> Entity
     -> ListType EntityAdapter lt
     -> HList lt
-    -> MutableRead m PinaforeEntityRead
+    -> Readable m PinaforeEntityRead
     -> WriterT [PinaforeEntityEdit] m ()
 constructorPut _anchor _n _i _entity NilListType () _mr = return ()
 constructorPut anchor n i entity (ConsListType (MkEntityAdapter ga _ pa) lt) (a, l) mr = do
@@ -134,13 +134,13 @@ constructorEntityAdapter anchor lt = let
     entityAdapterGet ::
            forall m. MonadIO m
         => Entity
-        -> MutableRead m PinaforeEntityRead
+        -> Readable m PinaforeEntityRead
         -> m (Know (HList lt))
     entityAdapterGet entity mr = getComposeM $ constructorGet anchor n 0 lt entity mr
     entityAdapterPut ::
            forall m. MonadIO m
         => HList lt
-        -> MutableRead m PinaforeEntityRead
+        -> Readable m PinaforeEntityRead
         -> m [PinaforeEntityEdit]
     entityAdapterPut l mr = getWriter $ constructorPut anchor n 0 (entityAdapterConvert l) lt l mr
     in MkEntityAdapter {..}

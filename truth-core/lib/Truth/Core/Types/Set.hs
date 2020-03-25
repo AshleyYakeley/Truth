@@ -59,7 +59,7 @@ setCartesianProductLens ::
 setCartesianProductLens aeq beq = let
     elGet ::
            forall m t. MonadIO m
-        => MutableRead m (PairUpdateReader (SetUpdate a) (SetUpdate b))
+        => Readable m (PairUpdateReader (SetUpdate a) (SetUpdate b))
         -> SetReader (a, b) t
         -> m t
     elGet mr (MkTupleUpdateReader (MkFunctionSelector (a, b)) ReadWhole) = do
@@ -69,7 +69,7 @@ setCartesianProductLens aeq beq = let
     elUpdate ::
            forall m. MonadIO m
         => PairUpdate (SetUpdate a) (SetUpdate b)
-        -> MutableRead m (PairUpdateReader (SetUpdate a) (SetUpdate b))
+        -> Readable m (PairUpdateReader (SetUpdate a) (SetUpdate b))
         -> m [ReadOnlyUpdate (PartialSetUpdate (a, b))]
     elUpdate (MkTupleUpdate SelectFirst (MkTupleUpdate (MkFunctionSelector a) _)) _ =
         return $
@@ -84,7 +84,7 @@ setCartesianProductLens aeq beq = let
     elPutEdits ::
            forall m. MonadIO m
         => [ConstEdit (SetReader (a, b))]
-        -> MutableRead m (PairUpdateReader (SetUpdate a) (SetUpdate b))
+        -> Readable m (PairUpdateReader (SetUpdate a) (SetUpdate b))
         -> m (Maybe [PairUpdateEdit (SetUpdate a) (SetUpdate b)])
     elPutEdits = elPutEditsNone
     in MkEditLens {..}

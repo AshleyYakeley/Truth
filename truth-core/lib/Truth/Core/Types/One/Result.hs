@@ -36,7 +36,7 @@ liftResultOneFloatingEditLens (MkFloatingEditLens (init :: FloatInit _ r) rlens)
     sUpdate ::
            forall m. MonadIO m
         => ResultOneUpdate f updateA
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> StateT (f r) m [ResultOneUpdate f updateB]
     sUpdate (SuccessResultOneUpdate upda) mr = do
         fr <- get
@@ -64,7 +64,7 @@ liftResultOneFloatingEditLens (MkFloatingEditLens (init :: FloatInit _ r) rlens)
     sPutEdits ::
            forall m. MonadIO m
         => [OneEdit f (UpdateEdit updateB)]
-        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> Readable m (OneReader f (UpdateReader updateA))
         -> StateT (f r) m (Maybe [OneEdit f (UpdateEdit updateA)])
     sPutEdits ebs mr = do
         fr <- get

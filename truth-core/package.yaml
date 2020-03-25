@@ -21,7 +21,7 @@ library:
       - Truth.Core.Resource.ResourceRunner
       - Truth.Core.Resource.Runnable
       - Truth.Core.Resource
-      - Truth.Core.Read.MutableRead
+      - Truth.Core.Read.Readable
       - Truth.Core.Read.SubjectReader
       - Truth.Core.Read.FullSubjectReader
       - Truth.Core.Read

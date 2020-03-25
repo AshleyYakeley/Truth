@@ -48,7 +48,7 @@ makeTestPinaforeContext uitoolkit = do
         picker PinaforeSelectFile =
             reflectingObjectMaker $
             mapObject (fromReadOnlyRejectingEditLens @PinaforeFileUpdate) $
-            readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
+            readConstantObject $ constFunctionReadFunction nullSingleObjectReadable
         picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
         picker PinaforeSelectClock = clockOM rc
         picker PinaforeSelectTimeZone = mapObjectMaker rc (liftReadOnlyFloatingEditLens clockTimeZoneLens) $ clockOM rc

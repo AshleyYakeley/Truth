@@ -48,7 +48,7 @@ directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS
         Dict ->
             case transStackDict @MonadUnliftIO @tt @IO of
                 Dict -> let
-                    readSoup :: MutableRead (ApplyStack tt IO) (UpdateReader ObjectSoupUpdate)
+                    readSoup :: Readable (ApplyStack tt IO) (UpdateReader ObjectSoupUpdate)
                     readSoup KeyReadKeys = do
                         mnames <- readFS $ FSReadDirectory dirpath
                         return $

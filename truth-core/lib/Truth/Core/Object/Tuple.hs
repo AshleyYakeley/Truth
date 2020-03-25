@@ -122,7 +122,7 @@ instance TupleResource UAnObject where
     consTupleAResource (MkUAnObject (MkAnObject readA editA ctaskA)) (MkUAnObject (MkAnObject readB editB ctaskB)) =
         case transStackDict @MonadIO @tt @IO of
             Dict -> let
-                readAB :: MutableRead (ApplyStack tt IO) (TupleUpdateReader (ListElementType (update : updates)))
+                readAB :: Readable (ApplyStack tt IO) (TupleUpdateReader (ListElementType (update : updates)))
                 readAB (MkTupleUpdateReader FirstElementType r) = readA r
                 readAB (MkTupleUpdateReader (RestElementType sel) r) = readB $ MkTupleUpdateReader sel r
                 editAB ::

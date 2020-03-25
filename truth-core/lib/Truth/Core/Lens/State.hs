@@ -11,15 +11,15 @@ import Truth.Core.Lens.Lens
 import Truth.Core.Read
 
 data StateEditLens updateA updateB = forall s. MkStateEditLens
-    { sInit :: forall m. MonadIO m => MutableRead m (UpdateReader updateA) -> m s
+    { sInit :: forall m. MonadIO m => Readable m (UpdateReader updateA) -> m s
     , sGet :: ReadFunctionT (StateT s) (UpdateReader updateA) (UpdateReader updateB)
-    , sUpdate :: forall m. MonadIO m => updateA -> MutableRead m (UpdateReader updateA) -> StateT s m [updateB]
+    , sUpdate :: forall m. MonadIO m => updateA -> Readable m (UpdateReader updateA) -> StateT s m [updateB]
     , sPutEdits :: forall m.
                        MonadIO m =>
-                               [UpdateEdit updateB] -> MutableRead m (UpdateReader updateA) -> StateT s m (Maybe [UpdateEdit updateA])
+                               [UpdateEdit updateB] -> Readable m (UpdateReader updateA) -> StateT s m (Maybe [UpdateEdit updateA])
     }
 
-type StateLensInit reader s = forall m. MonadIO m => MutableRead m reader -> m s
+type StateLensInit reader s = forall m. MonadIO m => Readable m reader -> m s
 
 makeStateLens :: forall updateA updateB. StateEditLens updateA updateB -> FloatingEditLens updateA updateB
 makeStateLens MkStateEditLens {sInit = sInit :: StateLensInit _ s, ..} = let
@@ -45,13 +45,13 @@ makeStateLens MkStateEditLens {sInit = sInit :: StateLensInit _ s, ..} = let
         elUpdate ::
                forall m. MonadIO m
             => updateA
-            -> MutableRead m (UpdateReader updateA)
+            -> Readable m (UpdateReader updateA)
             -> m [updateB]
         elUpdate update mr = dangerousMVarRun var $ lensStateT permLens $ sUpdate update mr
         elPutEdits ::
                forall m. MonadIO m
             => [UpdateEdit updateB]
-            -> MutableRead m (UpdateReader updateA)
+            -> Readable m (UpdateReader updateA)
             -> m (Maybe [UpdateEdit updateA])
         elPutEdits edits mr = dangerousMVarRun var $ lensStateT tempLens $ sPutEdits edits mr
         in MkEditLens {..}

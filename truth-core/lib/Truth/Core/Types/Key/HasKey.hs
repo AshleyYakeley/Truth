@@ -15,7 +15,7 @@ import Truth.Core.Types.Whole
 class KeyContainer cont => HasKeyReader cont reader where
     readKey ::
            forall m. MonadIO m
-        => MutableRead m reader
+        => Readable m reader
         -> m (ContainerKey cont)
 
 instance (KeyContainer cont, HasKeyReader cont (UpdateReader updateN)) =>
@@ -32,7 +32,7 @@ instance ( Eq key
          , FullSubjectReader (UpdateReader keyupdate)
          , SubjectReader (UpdateReader valupdate)
          ) => HasKeyReader [(key, val)] (PairUpdateReader keyupdate valupdate) where
-    readKey mr = mutableReadToSubject $ firstReadFunction mr
+    readKey mr = readableToSubject $ firstReadFunction mr
 
 class HasKeyReader cont (UpdateReader update) => HasKeyUpdate cont update where
     updatesKey :: update -> Maybe (ContainerKey cont -> IO (ContainerKey cont))
@@ -52,5 +52,5 @@ instance ( Eq key
          , ApplicableUpdate keyupdate
          ) => HasKeyUpdate [(key, val)] (PairUpdate keyupdate valupdate) where
     updatesKey (MkTupleUpdate SelectFirst update) =
-        Just $ \oldKey -> mutableReadToSubject $ applyUpdate update $ subjectToMutableRead oldKey
+        Just $ \oldKey -> readableToSubject $ applyUpdate update $ subjectToReadable oldKey
     updatesKey _ = Nothing

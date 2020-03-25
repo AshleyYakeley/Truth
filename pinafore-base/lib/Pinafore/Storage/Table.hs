@@ -188,7 +188,7 @@ pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject ta
                         Dict -> let
                             tablePush :: NonEmpty PinaforeTableEdit -> EditSource -> ApplyStack tt IO ()
                             tablePush edits esrc = pushOrFail "can't push table edit" esrc $ tableMPush edits
-                            objRead :: MutableRead (ApplyStack tt IO) PinaforeEntityRead
+                            objRead :: Readable (ApplyStack tt IO) PinaforeEntityRead
                             objRead (PinaforeEntityReadGetPredicate prd subj) =
                                 fmap maybeToKnow $ tableRead $ PinaforeTableReadGetPredicate prd subj
                             objRead (PinaforeEntityReadGetProperty prd subj) = do

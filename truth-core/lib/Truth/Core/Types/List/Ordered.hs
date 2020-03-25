@@ -46,7 +46,7 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit ed
     applyEdit (OrderedListEditDelete p) mr (ListReadItem i reader)
         | p >= 0 && p < i = mr $ ListReadItem (i + 1) reader
     applyEdit (OrderedListEditDelete _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
-    applyEdit OrderedListEditClear _mr reader = subjectToMutableRead mempty reader
+    applyEdit OrderedListEditClear _mr reader = subjectToReadable mempty reader
 
 instance (IsSequence seq, SubjectReader (EditReader edit), SubjectMapEdit edit, EditSubject edit ~ Element seq) =>
              SubjectMapEdit (OrderedListEdit seq edit) where
@@ -91,7 +91,7 @@ orderedListItemLens ::
 orderedListItemLens initpos = let
     sInit ::
            forall m. MonadIO m
-        => MutableRead m (ListReader seq (UpdateReader update))
+        => Readable m (ListReader seq (UpdateReader update))
         -> m (SequencePoint seq)
     sInit _ = return initpos
     sGet ::
@@ -112,7 +112,7 @@ orderedListItemLens initpos = let
     sUpdate ::
            forall m. MonadIO m
         => OrderedListUpdate seq update
-        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> Readable m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m [MaybeUpdate update]
     sUpdate (OrderedListUpdateItem oldie newie mupdate) _ = do
         i <- get
@@ -153,7 +153,7 @@ orderedListItemLens initpos = let
     sPutEdit ::
            forall m. MonadIO m
         => MaybeEdit (UpdateEdit update)
-        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> Readable m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [OrderedListEdit seq (UpdateEdit update)])
     sPutEdit (SuccessFullResultOneEdit edit) _ = do
         i <- get
@@ -165,7 +165,7 @@ orderedListItemLens initpos = let
     sPutEdits ::
            forall m. MonadIO m
         => [MaybeEdit (UpdateEdit update)]
-        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> Readable m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [OrderedListEdit seq (UpdateEdit update)])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
     in makeStateLens MkStateEditLens {..}
@@ -184,7 +184,7 @@ listOrderedListEditLens = let
     elUpdate ::
            forall m. MonadIO m
         => ListUpdate seq update
-        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> Readable m (ListReader seq (UpdateReader update))
         -> m [OrderedListUpdate seq update]
     elUpdate (ListUpdateItem p update) _ = return $ pure $ OrderedListUpdateItem p p $ Just update
     elUpdate (ListUpdateDelete p) _ = return $ pure $ OrderedListUpdateDelete p
@@ -193,7 +193,7 @@ listOrderedListEditLens = let
     elPutEdit ::
            forall m. MonadIO m
         => OrderedListEdit seq (UpdateEdit update)
-        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> Readable m (ListReader seq (UpdateReader update))
         -> m (Maybe [ListEdit seq (UpdateEdit update)])
     elPutEdit (OrderedListEditItem p edit) _ = return $ Just $ pure $ ListEditItem p edit
     elPutEdit (OrderedListEditDelete p) _ = return $ Just $ pure $ ListEditDelete p
@@ -201,7 +201,7 @@ listOrderedListEditLens = let
     elPutEdits ::
            forall m. MonadIO m
         => [OrderedListEdit seq (UpdateEdit update)]
-        -> MutableRead m (ListReader seq (UpdateReader update))
+        -> Readable m (ListReader seq (UpdateReader update))
         -> m (Maybe [ListEdit seq (UpdateEdit update)])
     elPutEdits = elPutEditsFromPutEdit elPutEdit
     in MkEditLens {..}

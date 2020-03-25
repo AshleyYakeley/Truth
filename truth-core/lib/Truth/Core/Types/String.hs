@@ -32,7 +32,7 @@ instance IsSequence seq => SubjectReader (StringRead seq) where
     subjectToRead s (StringReadSection run) = seqSection run s
 
 instance IsSequence seq => FullSubjectReader (StringRead seq) where
-    mutableReadToSubject mr = do
+    readableToSubject mr = do
         len <- mr StringReadLength
         mr $ StringReadSection $ MkSequenceRun 0 len
 
@@ -127,7 +127,7 @@ instance IsSequence seq => ApplicableEdit (StringEdit seq) where
 
 instance IsSequence seq => InvertibleEdit (StringEdit seq) where
     invertEdit (StringReplaceWhole _) mr = do
-        olds <- mutableReadToSubject mr
+        olds <- readableToSubject mr
         return [StringReplaceWhole olds]
     invertEdit (StringReplaceSection run@(MkSequenceRun start _) s) mr = do
         olds <- mr $ StringReadSection run
@@ -137,7 +137,7 @@ instance IsSequence seq => SubjectMapEdit (StringEdit seq)
 
 instance IsSequence seq => FullEdit (StringEdit seq) where
     replaceEdit mr writeEdit = do
-        a <- mutableReadToSubject mr
+        a <- readableToSubject mr
         writeEdit $ StringReplaceWhole a
 
 type StringUpdate seq = EditUpdate (StringEdit seq)
@@ -149,12 +149,12 @@ stringSectionLens ::
 stringSectionLens initRun = let
     sInit ::
            forall m. MonadIO m
-        => MutableRead m (StringRead seq)
+        => Readable m (StringRead seq)
         -> m (SequenceRun seq)
     sInit _ = return initRun
     getState ::
            forall m. MonadIO m
-        => MutableRead m (StringRead seq)
+        => Readable m (StringRead seq)
         -> StateT (SequenceRun seq) m (SequenceRun seq)
     getState mr = do
         len <- lift $ mr StringReadLength
@@ -170,7 +170,7 @@ stringSectionLens initRun = let
     sUpdate ::
            forall m. MonadIO m
         => StringUpdate seq
-        -> MutableRead m (StringRead seq)
+        -> Readable m (StringRead seq)
         -> StateT (SequenceRun seq) m [StringUpdate seq]
     sUpdate (MkEditUpdate edita) mr = do
         oldstate <- get
@@ -202,7 +202,7 @@ stringSectionLens initRun = let
     sPutEdit ::
            forall m. MonadIO m
         => StringEdit seq
-        -> MutableRead m (StringRead seq)
+        -> Readable m (StringRead seq)
         -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
     sPutEdit editb mr = do
         oldstate <- getState mr
@@ -219,7 +219,7 @@ stringSectionLens initRun = let
     sPutEdits ::
            forall m. MonadIO m
         => [StringEdit seq]
-        -> MutableRead m (StringRead seq)
+        -> Readable m (StringRead seq)
         -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
     sPutEdits = elPutEditsFromPutEdit sPutEdit
     in makeStateLens MkStateEditLens {..}

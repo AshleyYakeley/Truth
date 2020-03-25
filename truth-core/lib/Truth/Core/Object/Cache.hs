@@ -19,7 +19,7 @@ cacheObject rc mus obj = do
             runResource rc obj $ \anobj -> pushOrFail "cached object" noEditSource $ objEdit anobj editsnl
     objRun <- liftIO $ stateResourceRunner $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
     return $ \rc' -> let
-        objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
+        objRead :: Readable (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
         objRead rt = do
             oldcache <- get
             case editCacheLookup @edit rt oldcache of

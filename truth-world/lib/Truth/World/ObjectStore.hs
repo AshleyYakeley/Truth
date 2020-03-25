@@ -8,9 +8,9 @@ data SingleObjectReader edit t where
     ReadSingleObjectStore :: SingleObjectReader edit (Maybe (Object edit))
     GetSingleObjectRecoveryCode :: SingleObjectReader edit (Maybe Int)
 
-nullSingleObjectMutableRead :: Monad m => MutableRead m (SingleObjectReader edit)
-nullSingleObjectMutableRead ReadSingleObjectStore = return Nothing
-nullSingleObjectMutableRead GetSingleObjectRecoveryCode = return Nothing
+nullSingleObjectReadable :: Monad m => Readable m (SingleObjectReader edit)
+nullSingleObjectReadable ReadSingleObjectStore = return Nothing
+nullSingleObjectReadable GetSingleObjectRecoveryCode = return Nothing
 
 data SingleObjectEdit (edit :: Type)
     = SingleObjectDeleteCreate
@@ -56,7 +56,7 @@ singleObjectUpdateFunction = let
     elUpdate ::
            forall m. MonadIO m
         => SingleObjectUpdate edit
-        -> MutableRead m (SingleObjectReader edit)
+        -> Readable m (SingleObjectReader edit)
         -> m [ROWUpdate (Maybe (Object edit))]
     elUpdate (MkEditUpdate SingleObjectDelete) _ = return [MkReadOnlyUpdate $ MkWholeReaderUpdate Nothing]
     elUpdate _ mr = do
@@ -77,7 +77,7 @@ directoryObjectStore (MkResource (rr :: ResourceRunner tt) (MkAnObject rd push o
                 case mitem of
                     Nothing -> return i
                     Just _ -> findUndoCode name $ i + 1
-            objRead :: MutableRead (ApplyStack tt IO) (UpdateReader (ObjectStoreUpdate name ByteStringEdit))
+            objRead :: Readable (ApplyStack tt IO) (UpdateReader (ObjectStoreUpdate name ByteStringEdit))
             objRead (MkTupleUpdateReader (MkFunctionSelector (nameStr -> name)) edit) =
                 case edit of
                     ReadSingleObjectStore -> do

@@ -33,7 +33,7 @@ data ASubscriber update tt = MkASubscriber
     , subUpdatesTask :: Task ()
     }
 
-subRead :: ASubscriber update tt -> MutableRead (ApplyStack tt IO) (UpdateReader update)
+subRead :: ASubscriber update tt -> Readable (ApplyStack tt IO) (UpdateReader update)
 subRead = objRead . subAnObject
 
 subEdit ::
@@ -183,7 +183,7 @@ constantSubscriber ::
        forall update. SubjectReader (UpdateReader update)
     => UpdateSubject update
     -> Subscriber (ReadOnlyUpdate update)
-constantSubscriber subj = anobjSubscriber $ immutableAnObject $ subjectToMutableRead subj
+constantSubscriber subj = anobjSubscriber $ immutableAnObject $ subjectToReadable subj
 
 subscriberToReadOnly :: Subscriber update -> Subscriber (ReadOnlyUpdate update)
 subscriberToReadOnly = mapSubscriber toReadOnlyEditLens

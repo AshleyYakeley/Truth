@@ -23,7 +23,7 @@ toReadOnlyEditLens = let
     elUpdate ::
            forall m. MonadIO m
         => update
-        -> MutableRead m (UpdateReader update)
+        -> Readable m (UpdateReader update)
         -> m [ReadOnlyUpdate update]
     elUpdate update _ = return [MkReadOnlyUpdate update]
     in MkEditLens {elPutEdits = elPutEditsNone, ..}
@@ -35,7 +35,7 @@ liftReadOnlyEditLens ::
 liftReadOnlyEditLens (MkEditLens g u _) = let
     u' :: forall m. MonadIO m
        => ReadOnlyUpdate updateA
-       -> MutableRead m (UpdateReader updateA)
+       -> Readable m (UpdateReader updateA)
        -> m [ReadOnlyUpdate updateB]
     u' (MkReadOnlyUpdate updA) mr = u updA mr
     in MkEditLens g u' elPutEditsNone
@@ -53,22 +53,22 @@ ioFuncEditLens ::
     -> EditLens updateA (ReadOnlyUpdate updateB)
 ioFuncEditLens amb = let
     elGet :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
-    elGet mra rt = (mSubjectToMutableRead $ mutableReadToSubject mra >>= \a -> liftIO (amb a)) rt
+    elGet mra rt = (mSubjectToReadable $ readableToSubject mra >>= \a -> liftIO (amb a)) rt
     elUpdate ::
            forall m. MonadIO m
         => updateA
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m [ReadOnlyUpdate updateB]
     elUpdate _ mra =
         fmap (fmap (MkReadOnlyUpdate . editUpdate)) $
         getReplaceEdits $
-        mSubjectToMutableRead $ do
-            a <- mutableReadToSubject mra
+        mSubjectToReadable $ do
+            a <- readableToSubject mra
             liftIO $ amb a
     elPutEdits ::
            forall m. MonadIO m
         => [ConstEdit (UpdateReader updateB)]
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m (Maybe [UpdateEdit updateA])
     elPutEdits = elPutEditsNone
     in MkEditLens {..}
@@ -92,7 +92,7 @@ convertReadOnlyEditLens = funcEditLens id
 
 immutableEditLens ::
        forall updateA updateB.
-       (forall m. MonadIO m => MutableRead m (UpdateReader updateB))
+       (forall m. MonadIO m => Readable m (UpdateReader updateB))
     -> EditLens updateA (ReadOnlyUpdate updateB)
 immutableEditLens mr = let
     elGet :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
@@ -100,20 +100,20 @@ immutableEditLens mr = let
     elUpdate ::
            forall m. MonadIO m
         => updateA
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m [ReadOnlyUpdate updateB]
     elUpdate _ _ = return []
     elPutEdits ::
            forall m. MonadIO m
         => [ConstEdit (UpdateReader updateB)]
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m (Maybe [UpdateEdit updateA])
     elPutEdits = elPutEditsNone
     in MkEditLens {..}
 
 ioConstEditLens ::
        SubjectReader (UpdateReader updateB) => IO (UpdateSubject updateB) -> EditLens updateA (ReadOnlyUpdate updateB)
-ioConstEditLens iob = immutableEditLens $ mSubjectToMutableRead $ liftIO iob
+ioConstEditLens iob = immutableEditLens $ mSubjectToReadable $ liftIO iob
 
 constEditLens ::
        SubjectReader (UpdateReader updateB) => UpdateSubject updateB -> EditLens updateA (ReadOnlyUpdate updateB)

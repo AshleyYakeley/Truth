@@ -19,7 +19,7 @@ debugLens ::
 debugLens name (MkEditLens g u pe) = let
     u' :: forall m. MonadIO m
        => updateA
-       -> MutableRead m (UpdateReader updateA)
+       -> Readable m (UpdateReader updateA)
        -> m [updateB]
     u' ua mr = do
         -- these are asynchronous, so commented out
@@ -29,7 +29,7 @@ debugLens name (MkEditLens g u pe) = let
         return ubs
     pe' :: forall m. MonadIO m
         => [UpdateEdit updateB]
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m (Maybe [UpdateEdit updateA])
     pe' ebs mr = do
         liftIO $ hPutStrLn ?handle $ name ++ ": +put: " ++ show ebs
@@ -61,7 +61,7 @@ testUpdateFunction = let
     elUpdate ::
            forall m. MonadIO m
         => WholeUpdate a
-        -> MutableRead m (WholeReader a)
+        -> Readable m (WholeReader a)
         -> m [ROWUpdate a]
     elUpdate (MkWholeReaderUpdate s) mr = do
         s' <- mr ReadWhole
@@ -144,7 +144,7 @@ showSubscriberSubject name sub =
     liftIO $ do
         taskWait $ subscriberUpdatesTask sub
         runResource ?rc sub $ \asub -> do
-            val <- mutableReadToSubject $ subRead asub
+            val <- readableToSubject $ subRead asub
             outputNameLn name $ "get " ++ show val
 
 subscriberPushEdits ::
@@ -206,7 +206,7 @@ testSubscription initial = do
             \edits ->
                 liftIO $
                 withMVar var $ \s -> do
-                    news <- mutableReadToSubject $ applyEdits (toList edits) $ subjectToMutableRead s
+                    news <- readableToSubject $ applyEdits (toList edits) $ subjectToReadable s
                     hPutStrLn ?handle $ "expected: " ++ show news
     return (sub, showVar, showExpected)
 
