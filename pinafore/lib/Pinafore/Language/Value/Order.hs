@@ -90,4 +90,4 @@ pinaforeSetGetOrdered order set = pinaforeReadOnlyValueToRef $ qOrderSet order $
 
 pinaforeUpdateOrder :: PinaforeOrder baseupdate a -> UpdateOrder (ContextUpdate baseupdate (WholeUpdate (Know a)))
 pinaforeUpdateOrder (MkPinaforeOrder m cmp) =
-    MkUpdateOrder cmp $ editLensToFloating $ pinaforeFunctionMorphismUpdateFunction m
+    MkUpdateOrder cmp $ changeLensToFloating $ pinaforeFunctionMorphismUpdateFunction m

@@ -1,5 +1,5 @@
 module Truth.Core.Lens.State
-    ( StateEditLens(..)
+    ( StateChangeLens(..)
     , StateLensInit
     , makeStateLens
     ) where
@@ -10,19 +10,19 @@ import Truth.Core.Lens.Floating
 import Truth.Core.Lens.Lens
 import Truth.Core.Read
 
-data StateEditLens updateA updateB = forall s. MkStateEditLens
-    { sInit :: forall m. MonadIO m => Readable m (UpdateReader updateA) -> m s
-    , sGet :: ReadFunctionT (StateT s) (UpdateReader updateA) (UpdateReader updateB)
-    , sUpdate :: forall m. MonadIO m => updateA -> Readable m (UpdateReader updateA) -> StateT s m [updateB]
-    , sPutEdits :: forall m.
-                       MonadIO m =>
-                               [UpdateEdit updateB] -> Readable m (UpdateReader updateA) -> StateT s m (Maybe [UpdateEdit updateA])
+data StateChangeLens updateA updateB = forall s. MkStateChangeLens
+    { sclInit :: forall m. MonadIO m => Readable m (UpdateReader updateA) -> m s
+    , sclRead :: ReadFunctionT (StateT s) (UpdateReader updateA) (UpdateReader updateB)
+    , sclUpdate :: forall m. MonadIO m => updateA -> Readable m (UpdateReader updateA) -> StateT s m [updateB]
+    , sclPutEdits :: forall m.
+                         MonadIO m =>
+                                 [UpdateEdit updateB] -> Readable m (UpdateReader updateA) -> StateT s m (Maybe [UpdateEdit updateA])
     }
 
 type StateLensInit reader s = forall m. MonadIO m => Readable m reader -> m s
 
-makeStateLens :: forall updateA updateB. StateEditLens updateA updateB -> FloatingEditLens updateA updateB
-makeStateLens MkStateEditLens {sInit = sInit :: StateLensInit _ s, ..} = let
+makeStateLens :: forall updateA updateB. StateChangeLens updateA updateB -> FloatingChangeLens updateA updateB
+makeStateLens MkStateChangeLens {sclInit = sclInit :: StateLensInit _ s, ..} = let
     tempLens :: Lens' Identity (s, s) s
     tempLens = let
         lensGet (_, s) = s
@@ -33,26 +33,26 @@ makeStateLens MkStateEditLens {sInit = sInit :: StateLensInit _ s, ..} = let
         lensGet (s, _) = s
         lensPutback s _ = Identity (s, s)
         in MkLens {..}
-    felInit :: FloatInit (UpdateReader updateA) (MVar (s, s))
-    felInit =
+    fclInit :: FloatInit (UpdateReader updateA) (MVar (s, s))
+    fclInit =
         ReadFloatInit $ \mr -> do
-            initial <- sInit mr
+            initial <- sclInit mr
             liftIO $ newMVar (initial, initial)
-    felLens :: MVar (s, s) -> EditLens updateA updateB
-    felLens var = let
-        elGet :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
-        elGet mr rt = dangerousMVarRun var $ lensStateT tempLens $ sGet mr rt
-        elUpdate ::
+    fclLens :: MVar (s, s) -> ChangeLens updateA updateB
+    fclLens var = let
+        clRead :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
+        clRead mr rt = dangerousMVarRun var $ lensStateT tempLens $ sclRead mr rt
+        clUpdate ::
                forall m. MonadIO m
             => updateA
             -> Readable m (UpdateReader updateA)
             -> m [updateB]
-        elUpdate update mr = dangerousMVarRun var $ lensStateT permLens $ sUpdate update mr
-        elPutEdits ::
+        clUpdate update mr = dangerousMVarRun var $ lensStateT permLens $ sclUpdate update mr
+        clPutEdits ::
                forall m. MonadIO m
             => [UpdateEdit updateB]
             -> Readable m (UpdateReader updateA)
             -> m (Maybe [UpdateEdit updateA])
-        elPutEdits edits mr = dangerousMVarRun var $ lensStateT tempLens $ sPutEdits edits mr
-        in MkEditLens {..}
-    in MkFloatingEditLens {..}
+        clPutEdits edits mr = dangerousMVarRun var $ lensStateT tempLens $ sclPutEdits edits mr
+        in MkChangeLens {..}
+    in MkFloatingChangeLens {..}

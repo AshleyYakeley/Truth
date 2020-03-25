@@ -81,9 +81,9 @@ type NoteUpdate = TupleUpdate NoteSel
 noteEditSpec :: Model NoteUpdate -> SelectNotify TextSelection -> CVUISpec
 noteEditSpec sub sel =
     verticalUISpec
-        [ (textEntryUISpec $ mapModel (tupleEditLens NoteTitle) sub, False)
-        , (checkboxUISpec (constantModel "past") $ mapModel (tupleEditLens NotePast) sub, False)
-        , (textAreaUISpec (mapModel (tupleEditLens NoteText) sub) sel, True)
+        [ (textEntryUISpec $ mapModel (tupleChangeLens NoteTitle) sub, False)
+        , (checkboxUISpec (constantModel "past") $ mapModel (tupleChangeLens NotePast) sub, False)
+        , (textAreaUISpec (mapModel (tupleChangeLens NoteText) sub) sel, True)
         ]
 
 type Note = Tuple NoteSel

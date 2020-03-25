@@ -45,35 +45,35 @@ onStop :: PinaforeAction A -> PinaforeAction A -> PinaforeAction A
 onStop p q = p <|> q
 
 newMemRef ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens MemoryCellUpdate baseupdate)
+       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens MemoryCellUpdate baseupdate)
     => IO (PinaforeRef '( A, A))
 newMemRef = do
-    lens <- makeMemoryCellEditLens Unknown
+    lens <- makeMemoryCellChangeLens Unknown
     return $ pinaforeValueToRef $ MkPinaforeValue $ mapModel lens $ pinaforeBaseModel @baseupdate
 
 newMemFiniteSet ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens MemoryCellUpdate baseupdate)
+       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens MemoryCellUpdate baseupdate)
     => IO (PinaforeFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
-    lens <- makeMemoryCellEditLens mempty
+    lens <- makeMemoryCellChangeLens mempty
     return $
         meetValuePinaforeFiniteSetRef $
-        MkPinaforeValue $ mapModel (convertEditLens . lens) $ pinaforeBaseModel @baseupdate
+        MkPinaforeValue $ mapModel (convertChangeLens . lens) $ pinaforeBaseModel @baseupdate
 
-now :: forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens (ROWUpdate UTCTime) baseupdate)
+now :: forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens (ROWUpdate UTCTime) baseupdate)
     => PinaforeImmutableReference UTCTime
 now = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseModel @baseupdate
 
 timeZone ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens (ROWUpdate TimeZone) baseupdate)
+       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens (ROWUpdate TimeZone) baseupdate)
     => PinaforeImmutableReference TimeZone
 timeZone = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseModel @baseupdate
 
 localNow ::
        forall baseupdate.
        ( ?pinafore :: PinaforeContext baseupdate
-       , BaseEditLens (ROWUpdate UTCTime) baseupdate
-       , BaseEditLens (ROWUpdate TimeZone) baseupdate
+       , BaseChangeLens (ROWUpdate UTCTime) baseupdate
+       , BaseChangeLens (ROWUpdate TimeZone) baseupdate
        )
     => PinaforeImmutableReference LocalTime
 localNow = utcToLocalTime <$> timeZone <*> now
@@ -81,8 +81,8 @@ localNow = utcToLocalTime <$> timeZone <*> now
 today ::
        forall baseupdate.
        ( ?pinafore :: PinaforeContext baseupdate
-       , BaseEditLens (ROWUpdate UTCTime) baseupdate
-       , BaseEditLens (ROWUpdate TimeZone) baseupdate
+       , BaseChangeLens (ROWUpdate UTCTime) baseupdate
+       , BaseChangeLens (ROWUpdate TimeZone) baseupdate
        )
     => PinaforeImmutableReference Day
 today = localDay <$> localNow
@@ -100,9 +100,9 @@ base_predefinitions ::
        forall baseupdate.
        ( HasPinaforeEntityUpdate baseupdate
        , HasPinaforeFileUpdate baseupdate
-       , BaseEditLens MemoryCellUpdate baseupdate
-       , BaseEditLens (ROWUpdate UTCTime) baseupdate
-       , BaseEditLens (ROWUpdate TimeZone) baseupdate
+       , BaseChangeLens MemoryCellUpdate baseupdate
+       , BaseChangeLens (ROWUpdate UTCTime) baseupdate
+       , BaseChangeLens (ROWUpdate TimeZone) baseupdate
        )
     => [DocTreeEntry (BindDoc baseupdate)]
 base_predefinitions =

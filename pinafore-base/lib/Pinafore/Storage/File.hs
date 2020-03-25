@@ -10,14 +10,14 @@ import Truth.World.ObjectStore
 
 type PinaforeFileUpdate = ObjectStoreUpdate FileEntity ByteStringEdit
 
-type HasPinaforeFileUpdate = BaseEditLens PinaforeFileUpdate
+type HasPinaforeFileUpdate = BaseChangeLens PinaforeFileUpdate
 
-instance BaseEditLens PinaforeFileUpdate PinaforeFileUpdate where
-    baseEditLens = id
+instance BaseChangeLens PinaforeFileUpdate PinaforeFileUpdate where
+    baseChangeLens = id
 
 pinaforeFileItemLens ::
-       HasPinaforeFileUpdate baseupdate => FileEntity -> EditLens baseupdate (SingleObjectUpdate ByteStringEdit)
-pinaforeFileItemLens entity = tupleEditLens (MkFunctionSelector entity) . baseEditLens
+       HasPinaforeFileUpdate baseupdate => FileEntity -> ChangeLens baseupdate (SingleObjectUpdate ByteStringEdit)
+pinaforeFileItemLens entity = tupleChangeLens (MkFunctionSelector entity) . baseChangeLens
 
 directoryPinaforeFileObject :: FilePath -> Object (UpdateEdit PinaforeFileUpdate)
 directoryPinaforeFileObject path =

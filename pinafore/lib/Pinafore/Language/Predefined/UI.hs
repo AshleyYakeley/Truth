@@ -12,8 +12,8 @@ import Pinafore.Storage
 import Shapes
 import Truth.Core
 
-clearText :: EditLens (WholeUpdate (Know Text)) (ROWUpdate Text)
-clearText = funcEditLens (fromKnow mempty)
+clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
+clearText = funcChangeLens (fromKnow mempty)
 
 uiMap :: (A -> B) -> PinaforeUI A -> PinaforeUI B
 uiMap = fmap
@@ -34,8 +34,8 @@ uiTable cols order val onDoubleClick =
             uo :: UpdateOrder (ContextUpdate baseupdate (ConstWholeUpdate EA))
             uo =
                 mapUpdateOrder
-                    (editLensToFloating $
-                     liftContextEditLens $ fromReadOnlyRejectingEditLens . funcEditLens (Known . meet2)) $
+                    (changeLensToFloating $
+                     liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
                 pinaforeUpdateOrder order
             rows :: Model (FiniteSetUpdate EA)
             rows = unPinaforeValue $ unPinaforeFiniteSetRef $ contraRangeLift meet2 val
@@ -64,13 +64,13 @@ uiTable cols order val onDoubleClick =
                     a <- cvLiftView $ readSub osub
                     return $
                         pinaforeValueOpenModel $
-                        eaMapSemiReadOnly (funcEditLens showCell) $ pinaforeRefToReadOnlyValue $ getCellRef a
+                        eaMapSemiReadOnly (funcChangeLens showCell) $ pinaforeRefToReadOnlyValue $ getCellRef a
                 in readOnlyKeyColumn nameOpenSub getCellSub
         colSub :: Model (ContextUpdate baseupdate (OrderedListUpdate [EA] (ConstWholeUpdate EA))) <-
             cvFloatMapModel (contextOrderedSetLens uo) pkSub
         let
             olsub :: Model (OrderedListUpdate [EA] (ConstWholeUpdate EA))
-            olsub = mapModel (tupleEditLens SelectContent) colSub
+            olsub = mapModel (tupleChangeLens SelectContent) colSub
             tsn :: SelectNotify (Model (ConstWholeUpdate EA))
             tsn = contramap readSub $ viewLiftSelectNotify sn
         tableUISpec (fmap getColumn cols) olsub onSelect tsn
@@ -102,12 +102,13 @@ uiPick nameMorphism fset ref = do
                 pairs <- cfmap getName -< fsp
                 returnA -< insertSet (Unknown, makeCell Unknown) pairs
         updateOrder :: UpdateOrder (ConstWholeUpdate PickerPairType)
-        updateOrder = MkUpdateOrder (comparing $ optionCellText . snd) $ editLensToFloating convertReadOnlyEditLens
+        updateOrder = MkUpdateOrder (comparing $ optionCellText . snd) $ changeLensToFloating convertReadOnlyChangeLens
         orderLens ::
-               FloatingEditLens (WholeUpdate (FiniteSet PickerPairType)) (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
-        --orderLens = (orderedKeyList {- @(FiniteSet PickerPairType) -} $ comparing $ optionCellText . snd) . convertEditLens
+               FloatingChangeLens (WholeUpdate (FiniteSet PickerPairType)) (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
+        --orderLens = (orderedKeyList {- @(FiniteSet PickerPairType) -} $ comparing $ optionCellText . snd) . convertChangeLens
         orderLens =
-            editLensToFloating toReadOnlyEditLens . orderedSetLens updateOrder . editLensToFloating convertEditLens
+            changeLensToFloating toReadOnlyChangeLens .
+            orderedSetLens updateOrder . changeLensToFloating convertChangeLens
     rc <- viewGetResourceContext
     opts :: PinaforeValue (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType))) <-
         liftLifeCycleIO $
@@ -191,10 +192,10 @@ uiWithSelection f =
 
 uiTextArea :: PinaforeValue (WholeUpdate (Know Text)) -> CVUISpec
 uiTextArea val =
-    textAreaUISpec (pinaforeValueOpenModel $ eaMap (convertEditLens . unknownValueEditLens mempty) val) mempty
+    textAreaUISpec (pinaforeValueOpenModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) val) mempty
 
 uiCalendar :: PinaforeValue (WholeUpdate (Know Day)) -> CVUISpec
-uiCalendar day = calendarUISpec $ pinaforeValueOpenModel $ eaMap (unknownValueEditLens $ fromGregorian 1970 01 01) day
+uiCalendar day = calendarUISpec $ pinaforeValueOpenModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
@@ -228,16 +229,16 @@ uiUnitCheckBox :: PinaforeImmutableReference Text -> PinaforeValue (WholeUpdate 
 uiUnitCheckBox name val =
     checkboxUISpec
         (pinaforeValueOpenModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue name) $
-    pinaforeValueOpenModel $ eaMap (toEditLens knowBool) val
+    pinaforeValueOpenModel $ eaMap (toChangeLens knowBool) val
 
 uiCheckBox :: PinaforeImmutableReference Text -> PinaforeValue (WholeUpdate (Know Bool)) -> CVUISpec
 uiCheckBox name val =
     maybeCheckboxUISpec
         (pinaforeValueOpenModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue name) $
-    pinaforeValueOpenModel $ eaMap (toEditLens knowMaybe) val
+    pinaforeValueOpenModel $ eaMap (toChangeLens knowMaybe) val
 
 uiTextEntry :: PinaforeValue (WholeUpdate (Know Text)) -> CVUISpec
-uiTextEntry val = textEntryUISpec $ pinaforeValueOpenModel $ eaMap (unknownValueEditLens mempty) $ val
+uiTextEntry val = textEntryUISpec $ pinaforeValueOpenModel $ eaMap (unknownValueChangeLens mempty) $ val
 
 uiIgnore :: PinaforeUI TopType -> PinaforeUI BottomType
 uiIgnore (MkPinaforeUI lspec) = MkPinaforeUI $ \_ -> lspec mempty

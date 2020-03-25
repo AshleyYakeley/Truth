@@ -14,9 +14,9 @@ debugLens ::
        forall updateA updateB.
        (Show updateA, Show updateB, Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle)
     => String
-    -> EditLens updateA updateB
-    -> EditLens updateA updateB
-debugLens name (MkEditLens g u pe) = let
+    -> ChangeLens updateA updateB
+    -> ChangeLens updateA updateB
+debugLens name (MkChangeLens g u pe) = let
     u' :: forall m. MonadIO m
        => updateA
        -> Readable m (UpdateReader updateA)
@@ -36,14 +36,14 @@ debugLens name (MkEditLens g u pe) = let
         meas <- pe ebs mr
         liftIO $ hPutStrLn ?handle $ name ++ ": -put: " ++ show meas
         return meas
-    in MkEditLens g u' pe'
+    in MkChangeLens g u' pe'
 
 debugFloatingLens ::
        forall updateA updateB.
        (Show updateA, Show updateB, Show (UpdateEdit updateA), Show (UpdateEdit updateB), ?handle :: Handle)
     => String
-    -> FloatingEditLens updateA updateB
-    -> FloatingEditLens updateA updateB
+    -> FloatingChangeLens updateA updateB
+    -> FloatingChangeLens updateA updateB
 debugFloatingLens name = floatLift (\mr -> mr) $ debugLens name
 
 goldenTest' :: TestName -> ((?handle :: Handle, ?rc :: ResourceContext) => IO ()) -> TestTree
@@ -54,21 +54,21 @@ goldenTest' name call =
 
 testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
-    => EditLens (WholeUpdate a) (ROWUpdate a)
+    => ChangeLens (WholeUpdate a) (ROWUpdate a)
 testUpdateFunction = let
-    elGet :: ReadFunction (WholeReader a) (WholeReader a)
-    elGet mr = mr
-    elUpdate ::
+    clRead :: ReadFunction (WholeReader a) (WholeReader a)
+    clRead mr = mr
+    clUpdate ::
            forall m. MonadIO m
         => WholeUpdate a
         -> Readable m (WholeReader a)
         -> m [ROWUpdate a]
-    elUpdate (MkWholeReaderUpdate s) mr = do
+    clUpdate (MkWholeReaderUpdate s) mr = do
         s' <- mr ReadWhole
         liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
         liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
         return [MkReadOnlyUpdate $ MkWholeReaderUpdate s]
-    in MkEditLens {elPutEdits = elPutEditsNone, ..}
+    in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
 testUpdateObject :: TestTree
 testUpdateObject =
@@ -78,8 +78,8 @@ testUpdateObject =
         let
             om :: ObjectMaker (WholeUpdate String) ()
             om = reflectingObjectMaker obj
-            lens :: FloatingEditLens (WholeUpdate String) (WholeUpdate String)
-            lens = editLensToFloating $ fromReadOnlyRejectingEditLens . testUpdateFunction
+            lens :: FloatingChangeLens (WholeUpdate String) (WholeUpdate String)
+            lens = changeLensToFloating $ fromReadOnlyRejectingChangeLens . testUpdateFunction
             recv :: ResourceContext -> NonEmpty (WholeUpdate String) -> EditContext -> IO ()
             recv _ ee _ =
                 putMVar var $ for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv update edit: " <> show s

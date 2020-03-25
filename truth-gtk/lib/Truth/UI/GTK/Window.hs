@@ -106,7 +106,7 @@ createWindowAndChild MkWindowSpec {..} = do
                 #addAccelGroup window ag
                 mb <-
                     switchView $
-                    mapModel (liftReadOnlyEditLens $ funcEditLens $ \mbar -> createMenuBar ag mbar >>= toWidget) $
+                    mapModel (liftReadOnlyChangeLens $ funcChangeLens $ \mbar -> createMenuBar ag mbar >>= toWidget) $
                     efmbar
                 vbox <- new Box [#orientation := OrientationVertical]
                 #packStart vbox mb False False 0

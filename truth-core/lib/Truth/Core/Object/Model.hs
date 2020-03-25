@@ -149,14 +149,14 @@ makeReflectingModel object = do
 floatMapModel ::
        forall updateA updateB.
        ResourceContext
-    -> FloatingEditLens updateA updateB
+    -> FloatingChangeLens updateA updateB
     -> Model updateA
     -> LifeCycleIO (Model updateB)
 floatMapModel rc lens subA = do
     (subB, ()) <- makeSharedModel $ mapObjectMaker rc lens $ modelObjectMaker rc subA ()
     return subB
 
-mapModel :: forall updateA updateB. EditLens updateA updateB -> Model updateA -> Model updateB
+mapModel :: forall updateA updateB. ChangeLens updateA updateB -> Model updateA -> Model updateB
 mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
     case resourceRunnerUnliftAllDict rr of
         Dict -> let
@@ -164,7 +164,7 @@ mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
             subB utask recvB = let
                 recvA rc updatesA ec = do
                     updatessB <-
-                        runResourceRunner rc rr $ for updatesA $ \updateA -> elUpdate plens updateA (objRead objA)
+                        runResourceRunner rc rr $ for updatesA $ \updateA -> clUpdate plens updateA (objRead objA)
                     case nonEmpty $ mconcat $ toList updatessB of
                         Nothing -> return ()
                         Just updatesB' -> recvB rc updatesB' ec
@@ -184,7 +184,7 @@ constantModel ::
 constantModel subj = anObjectModel $ immutableAnObject $ subjectToReadable subj
 
 modelToReadOnly :: Model update -> Model (ReadOnlyUpdate update)
-modelToReadOnly = mapModel toReadOnlyEditLens
+modelToReadOnly = mapModel toReadOnlyChangeLens
 
 makeMemoryModel :: forall a. a -> LifeCycleIO (Model (WholeUpdate a))
 makeMemoryModel initial = do

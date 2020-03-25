@@ -114,87 +114,87 @@ type ROWUpdate a = ReadOnlyUpdate (WholeUpdate a)
 
 changeOnlyUpdateFunction ::
        forall a. Eq a
-    => FloatingEditLens (WholeUpdate a) (ROWUpdate a)
+    => FloatingChangeLens (WholeUpdate a) (ROWUpdate a)
 changeOnlyUpdateFunction = let
-    sInit ::
+    sclInit ::
            forall m. MonadIO m
         => Readable m (WholeReader a)
         -> m a
-    sInit mr = mr ReadWhole
-    sGet :: ReadFunctionT (StateT a) (WholeReader a) (WholeReader a)
-    sGet _ ReadWhole = get
-    sUpdate ::
+    sclInit mr = mr ReadWhole
+    sclRead :: ReadFunctionT (StateT a) (WholeReader a) (WholeReader a)
+    sclRead _ ReadWhole = get
+    sclUpdate ::
            forall m. MonadIO m
         => WholeUpdate a
         -> Readable m (WholeReader a)
         -> StateT a m [ROWUpdate a]
-    sUpdate (MkWholeUpdate newa) _ = do
+    sclUpdate (MkWholeUpdate newa) _ = do
         olda <- get
         if olda == newa
             then return []
             else do
                 put newa
                 return [MkReadOnlyUpdate $ MkWholeUpdate newa]
-    sPutEdits ::
+    sclPutEdits ::
            forall m. MonadIO m
         => [ConstEdit _]
         -> Readable m (WholeReader a)
         -> StateT a m (Maybe [WholeEdit a])
-    sPutEdits = elPutEditsNone
-    in makeStateLens MkStateEditLens {..}
+    sclPutEdits = clPutEditsNone
+    in makeStateLens MkStateChangeLens {..}
 
-ioWholeEditLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> EditLens (WholeUpdate a) (WholeUpdate b)
-ioWholeEditLens ioget ioput = let
-    elGet :: ReadFunction (WholeReader a) (WholeReader b)
-    elGet mr ReadWhole = do
+ioWholeChangeLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> ChangeLens (WholeUpdate a) (WholeUpdate b)
+ioWholeChangeLens ioget ioput = let
+    clRead :: ReadFunction (WholeReader a) (WholeReader b)
+    clRead mr ReadWhole = do
         a <- mr ReadWhole
         liftIO $ ioget a
-    elUpdate ::
+    clUpdate ::
            forall m. MonadIO m
         => WholeUpdate a
         -> Readable m (WholeReader a)
         -> m [WholeUpdate b]
-    elUpdate (MkWholeUpdate a) _ = do
+    clUpdate (MkWholeUpdate a) _ = do
         b <- liftIO $ ioget a
         return [MkWholeUpdate b]
-    elPutEdits ::
+    clPutEdits ::
            forall m. MonadIO m
         => [WholeEdit b]
         -> Readable m (WholeReader a)
         -> m (Maybe [WholeEdit a])
-    elPutEdits =
-        elPutEditsFromPutEdit $ \(MkWholeReaderEdit b) mr -> do
+    clPutEdits =
+        clPutEditsFromPutEdit $ \(MkWholeReaderEdit b) mr -> do
             olda <- mr ReadWhole
             mnewa <- liftIO $ ioput b olda
             return $ fmap (\newa -> [MkWholeReaderEdit newa]) mnewa
-    in MkEditLens {..}
+    in MkChangeLens {..}
 
-wholeEditLens ::
+wholeChangeLens ::
        forall mf a b. (MonadOne mf)
     => Lens' mf a b
-    -> EditLens (WholeUpdate a) (WholeUpdate b)
-wholeEditLens lens =
-    ioWholeEditLens (\a -> return $ lensGet lens a) (\b olda -> return $ getMaybeOne $ lensPutback lens b olda)
+    -> ChangeLens (WholeUpdate a) (WholeUpdate b)
+wholeChangeLens lens =
+    ioWholeChangeLens (\a -> return $ lensGet lens a) (\b olda -> return $ getMaybeOne $ lensPutback lens b olda)
 
-bijectionWholeEditLens :: Bijection a b -> EditLens (WholeUpdate a) (WholeUpdate b)
-bijectionWholeEditLens = wholeEditLens . bijectionLens
+bijectionWholeChangeLens :: Bijection a b -> ChangeLens (WholeUpdate a) (WholeUpdate b)
+bijectionWholeChangeLens = wholeChangeLens . bijectionLens
 
-instance MonadOne m => IsEditLens (Lens' m a b) where
+instance MonadOne m => IsChangeLens (Lens' m a b) where
     type LensDomain (Lens' m a b) = WholeUpdate a
     type LensRange (Lens' m a b) = WholeUpdate b
-    toEditLens = toEditLens . wholeEditLens
+    toChangeLens = toChangeLens . wholeChangeLens
 
-instance MonadOne m => IsEditLens (Injection' m a b) where
+instance MonadOne m => IsChangeLens (Injection' m a b) where
     type LensDomain (Injection' m a b) = WholeUpdate a
     type LensRange (Injection' m a b) = WholeUpdate b
-    toEditLens = toEditLens . injectionLens
+    toChangeLens = toChangeLens . injectionLens
 
-instance IsEditLens (Bijection a b) where
+instance IsChangeLens (Bijection a b) where
     type LensDomain (Bijection a b) = WholeUpdate a
     type LensRange (Bijection a b) = WholeUpdate b
-    toEditLens = toEditLens . bijectionInjection
+    toChangeLens = toChangeLens . bijectionInjection
 
-instance IsEditLens (Codec a b) where
+instance IsChangeLens (Codec a b) where
     type LensDomain (Codec a b) = WholeUpdate a
     type LensRange (Codec a b) = WholeUpdate (Maybe b)
-    toEditLens = toEditLens . codecInjection
+    toChangeLens = toChangeLens . codecInjection

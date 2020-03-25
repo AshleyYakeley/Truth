@@ -46,23 +46,23 @@ testContextOrderedSetLensCase assigns expected =
             uo :: UpdateOrder (ContextUpdate UpdateX (ConstWholeUpdate Char))
             uo =
                 MkUpdateOrder (compare @Int) $
-                editLensToFloating $
-                funcEditLens $ \(MkWithContext lm c) ->
+                changeLensToFloating $
+                funcChangeLens $ \(MkWithContext lm c) ->
                     case lookupItem c lm of
                         Just (_, i) -> i
                         Nothing -> 0
             flens ::
-                   FloatingEditLens (ContextUpdate UpdateX (FiniteSetUpdate Char)) (ContextUpdate UpdateX (OrderedListUpdate String (ConstWholeUpdate Char)))
+                   FloatingChangeLens (ContextUpdate UpdateX (FiniteSetUpdate Char)) (ContextUpdate UpdateX (OrderedListUpdate String (ConstWholeUpdate Char)))
             flens = contextOrderedSetLens uo
         rawContextObj :: Object (WholeEdit [(Char, Int)]) <-
             makeMemoryObject [('A', 10), ('B', 20), ('C', 30), ('D', 40), ('E', 50)] $ \_ -> True
         rawContentObj :: Object (WholeEdit (FiniteSet Char)) <- makeMemoryObject (setFromList "ABCDE") $ \_ -> True
         let
             contextObj :: Object (UpdateEdit UpdateX)
-            contextObj = mapObject (convertEditLens @(WholeUpdate [(Char, Int)]) @UpdateX) rawContextObj
+            contextObj = mapObject (convertChangeLens @(WholeUpdate [(Char, Int)]) @UpdateX) rawContextObj
             baseContentObj :: Object (FiniteSetEdit Char)
             baseContentObj =
-                mapObject (convertEditLens @(WholeUpdate (FiniteSet Char)) @(FiniteSetUpdate Char)) rawContentObj
+                mapObject (convertChangeLens @(WholeUpdate (FiniteSet Char)) @(FiniteSetUpdate Char)) rawContentObj
         getUpdates <-
             runLifeCycle $ do
                 contextSub <- makeReflectingModel @UpdateX contextObj
@@ -71,7 +71,7 @@ testContextOrderedSetLensCase assigns expected =
                     bothSub :: Model (ContextUpdate UpdateX (FiniteSetUpdate Char))
                     bothSub = contextModels contextSub baseContentSub
                 olSub <- floatMapModel rc flens bothSub
-                getUpdates <- collectModelUpdates rc $ mapModel (tupleEditLens SelectContent) olSub
+                getUpdates <- collectModelUpdates rc $ mapModel (tupleChangeLens SelectContent) olSub
                 let
                     pushOneEdit :: (Char, Int) -> LifeCycleIO ()
                     pushOneEdit (c, i) =

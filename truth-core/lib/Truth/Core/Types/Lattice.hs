@@ -4,8 +4,8 @@ import Truth.Core.Lens
 import Truth.Core.Types.ReadOnly
 import Truth.Core.Types.Tuple.Pair
 
-class JoinSemiLatticeReadOnlyEditLens update where
-    joinEditLens :: EditLens (PairUpdate update update) (ReadOnlyUpdate update)
+class JoinSemiLatticeReadOnlyChangeLens update where
+    joinChangeLens :: ChangeLens (PairUpdate update update) (ReadOnlyUpdate update)
 
-class MeetSemiLatticeReadOnlyEditLens update where
-    meetEditLens :: EditLens (PairUpdate update update) (ReadOnlyUpdate update)
+class MeetSemiLatticeReadOnlyChangeLens update where
+    meetChangeLens :: ChangeLens (PairUpdate update update) (ReadOnlyUpdate update)

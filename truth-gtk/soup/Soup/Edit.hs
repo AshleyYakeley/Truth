@@ -24,15 +24,15 @@ liftSoupLens ::
        , FullSubjectReader (UpdateReader updateB)
        )
     => (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA)))
-    -> EditLens updateA updateB
-    -> EditLens (SoupUpdate updateA) (SoupUpdate updateB)
+    -> ChangeLens updateA updateB
+    -> ChangeLens (SoupUpdate updateA) (SoupUpdate updateB)
 liftSoupLens bmfa = let
     conv ::
            forall m. MonadIO m
         => (UUID, UpdateSubject updateB)
         -> m (Maybe (UUID, UpdateSubject updateA))
     conv (uuid, b) = fmap (fmap $ \a -> (uuid, a)) $ bmfa b
-    in liftKeyElementEditLens conv . sndLiftEditLens
+    in liftKeyElementChangeLens conv . sndLiftChangeLens
 
 nameToUUID :: String -> Maybe UUID
 nameToUUID = Data.UUID.fromString

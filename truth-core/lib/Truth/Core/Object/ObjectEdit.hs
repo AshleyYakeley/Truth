@@ -2,8 +2,8 @@ module Truth.Core.Object.ObjectEdit
     ( ObjectReader(..)
     , ObjectEdit
     , ObjectUpdate
-    , objectEditLens
-    , objectLiftEditLens
+    , objectChangeLens
+    , objectLiftChangeLens
     ) where
 
 import Truth.Core.Edit
@@ -33,7 +33,7 @@ instance (c (Object edit), c ResourceContext) => WitnessConstraint c (ObjectRead
 instance SubjectReader (EditReader edit) => SubjectReader (ObjectReader edit) where
     type ReaderSubject (ObjectReader edit) = EditSubject edit
     subjectToRead _ ReadObjectResourceContext = emptyResourceContext
-    subjectToRead subj ReadObject = mapObject (fromReadOnlyRejectingEditLens @(EditUpdate edit)) $ constantObject subj
+    subjectToRead subj ReadObject = mapObject (fromReadOnlyRejectingChangeLens @(EditUpdate edit)) $ constantObject subj
 
 instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader edit) where
     readableToSubject mr = do
@@ -45,25 +45,25 @@ type ObjectEdit edit = ConstEdit (ObjectReader edit)
 
 type ObjectUpdate update = EditUpdate (ObjectEdit (UpdateEdit update))
 
-objectEditLens :: forall update. EditLens (ObjectUpdate update) update
-objectEditLens = let
-    elGet :: ReadFunction (ObjectReader (UpdateEdit update)) (UpdateReader update)
-    elGet mr rt = do
+objectChangeLens :: forall update. ChangeLens (ObjectUpdate update) update
+objectChangeLens = let
+    clRead :: ReadFunction (ObjectReader (UpdateEdit update)) (UpdateReader update)
+    clRead mr rt = do
         rc <- mr ReadObjectResourceContext
         obj <- mr ReadObject
         liftIO $ runResource rc obj $ \anobj -> objRead anobj rt
-    elUpdate ::
+    clUpdate ::
            forall m. MonadIO m
         => ObjectUpdate update
         -> Readable m (ObjectReader (UpdateEdit update))
         -> m [update]
-    elUpdate update _ = never update
-    elPutEdits ::
+    clUpdate update _ = never update
+    clPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
         -> Readable m (EditReader (ObjectEdit (UpdateEdit update)))
         -> m (Maybe [ObjectEdit (UpdateEdit update)])
-    elPutEdits edits mr =
+    clPutEdits edits mr =
         case nonEmpty edits of
             Nothing -> return $ Just []
             Just edits' -> do
@@ -74,31 +74,31 @@ objectEditLens = let
                         maction <- objEdit anobj edits'
                         case maction of
                             Just action -> action noEditSource
-                            Nothing -> liftIO $ fail "objectEditLens: failed"
+                            Nothing -> liftIO $ fail "objectChangeLens: failed"
                 return $ Just []
-    in MkEditLens {..}
+    in MkChangeLens {..}
 
-objectLiftEditLens ::
+objectLiftChangeLens ::
        forall updateA updateB. ApplicableEdit (UpdateEdit updateA)
-    => EditLens updateA updateB
-    -> EditLens (ObjectUpdate updateA) (ObjectUpdate updateB)
-objectLiftEditLens lens = let
-    elGet :: ReadFunction (ObjectReader (UpdateEdit updateA)) (ObjectReader (UpdateEdit updateB))
-    elGet mr ReadObjectResourceContext = mr ReadObjectResourceContext
-    elGet mr ReadObject = do
+    => ChangeLens updateA updateB
+    -> ChangeLens (ObjectUpdate updateA) (ObjectUpdate updateB)
+objectLiftChangeLens lens = let
+    clRead :: ReadFunction (ObjectReader (UpdateEdit updateA)) (ObjectReader (UpdateEdit updateB))
+    clRead mr ReadObjectResourceContext = mr ReadObjectResourceContext
+    clRead mr ReadObject = do
         object <- mr ReadObject
         return $ mapObject lens object
-    elUpdate ::
+    clUpdate ::
            forall m. MonadIO m
         => ObjectUpdate updateA
         -> Readable m (ObjectReader (UpdateEdit updateA))
         -> m [ObjectUpdate updateB]
-    elUpdate update _ = never update
-    elPutEdits ::
+    clUpdate update _ = never update
+    clPutEdits ::
            forall m. MonadIO m
         => [ObjectEdit (UpdateEdit updateB)]
         -> Readable m (ObjectReader (UpdateEdit updateA))
         -> m (Maybe [ObjectEdit (UpdateEdit updateA)])
-    elPutEdits [] _ = return $ Just []
-    elPutEdits (edit:_) _ = never edit
-    in MkEditLens {..}
+    clPutEdits [] _ = return $ Just []
+    clPutEdits (edit:_) _ = never edit
+    in MkChangeLens {..}

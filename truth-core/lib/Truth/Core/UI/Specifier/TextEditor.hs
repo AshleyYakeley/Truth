@@ -7,7 +7,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 
-type TextSelection = FloatingEditLens (StringUpdate Text) (StringUpdate Text)
+type TextSelection = FloatingChangeLens (StringUpdate Text) (StringUpdate Text)
 
 data TextAreaUISpec where
     MkTextAreaUISpec :: Model (StringUpdate Text) -> SelectNotify TextSelection -> TextAreaUISpec

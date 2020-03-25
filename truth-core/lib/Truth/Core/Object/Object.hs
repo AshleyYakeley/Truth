@@ -80,24 +80,24 @@ pushEdit esrc mmmu = do
 
 pushOrFail :: MonadFail m => String -> EditSource -> m (Maybe (EditSource -> m ())) -> m ()
 pushOrFail s esrc mmmu = do
-    mmu <- mmmu
-    case mmu of
-        Just mu -> mu esrc
-        Nothing -> fail s
+    success <- pushEdit esrc mmmu
+    if success
+        then return ()
+        else fail s
 
 mapAnObject ::
        forall tt updateA updateB. MonadTransStackUnliftAll tt
-    => EditLens updateA updateB
+    => ChangeLens updateA updateB
     -> AnObject (UpdateEdit updateA) tt
     -> AnObject (UpdateEdit updateB) tt
-mapAnObject MkEditLens {..} (MkAnObject objReadA objEditA objCT) =
+mapAnObject MkChangeLens {..} (MkAnObject objReadA objEditA objCT) =
     case transStackDict @MonadIO @tt @IO of
         Dict -> let
             objReadB :: Readable (ApplyStack tt IO) (UpdateReader updateB)
-            objReadB = elGet objReadA
+            objReadB = clRead objReadA
             objEditB :: NonEmpty (UpdateEdit updateB) -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
             objEditB editbs = do
-                meditas <- elPutEdits (toList editbs) objReadA
+                meditas <- clPutEdits (toList editbs) objReadA
                 case meditas of
                     Nothing -> return Nothing
                     Just [] -> return $ Just $ \_ -> return ()
@@ -109,17 +109,17 @@ mapAnObject MkEditLens {..} (MkAnObject objReadA objEditA objCT) =
             in MkAnObject objReadB objEditB objCT
 
 mapObject ::
-       forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> Object (UpdateEdit updateB)
+       forall updateA updateB. ChangeLens updateA updateB -> Object (UpdateEdit updateA) -> Object (UpdateEdit updateB)
 mapObject plens (MkResource rr anobjA) =
     case resourceRunnerUnliftAllDict rr of
         Dict -> MkResource rr $ mapAnObject plens anobjA
 
 floatMapAnObject ::
        forall tt updateA updateB. MonadTransStackUnliftAll tt
-    => FloatingEditLens updateA updateB
+    => FloatingChangeLens updateA updateB
     -> AnObject (UpdateEdit updateA) tt
     -> ApplyStack tt IO (AnObject (UpdateEdit updateB) tt)
-floatMapAnObject (MkFloatingEditLens init rlens) anobj =
+floatMapAnObject (MkFloatingChangeLens init rlens) anobj =
     case transStackDict @MonadIO @tt @IO of
         Dict -> do
             r <- runFloatInit init $ objRead anobj
@@ -128,7 +128,7 @@ floatMapAnObject (MkFloatingEditLens init rlens) anobj =
 floatMapObject ::
        forall updateA updateB.
        ResourceContext
-    -> FloatingEditLens updateA updateB
+    -> FloatingChangeLens updateA updateB
     -> Object (UpdateEdit updateA)
     -> IO (Object (UpdateEdit updateB))
 floatMapObject rc lens (MkResource rr anobjA) = do

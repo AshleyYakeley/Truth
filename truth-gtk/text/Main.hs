@@ -13,8 +13,8 @@ import Truth.World.File
 textCodec :: ReasonCodec LazyByteString Text
 textCodec = bijectionCodec packBijection . utf8Codec . bijectionCodec unpackBijection
 
-textLens :: EditLens ByteStringUpdate (WholeUpdate ((Result Text) Text))
-textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) . convertEditLens
+textLens :: ChangeLens ByteStringUpdate (WholeUpdate ((Result Text) Text))
+textLens = (wholeChangeLens $ injectionLens $ toInjection $ codecInjection textCodec) . convertChangeLens
 
 optParser :: O.Parser ([FilePath], Bool, Bool, Bool)
 optParser =
@@ -51,7 +51,7 @@ main = do
                                 Nothing -> return ()
                                 Just flens ->
                                     uitUnliftCreateView uit $ do
-                                        subSub <- cvFloatMapModel (liftFullResultOneFloatingEditLens flens) sub
+                                        subSub <- cvFloatMapModel (liftFullResultOneFloatingChangeLens flens) sub
                                         makeWindow "section" subSub Nothing extraui
                         rTextSpec :: Result Text (Model (StringUpdate Text)) -> CVUISpec
                         rTextSpec (SuccessResult sub) = textAreaUISpec sub setsel

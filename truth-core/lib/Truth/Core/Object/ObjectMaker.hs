@@ -62,10 +62,10 @@ reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e ct
 mapObjectMaker ::
        forall updateA updateB a.
        ResourceContext
-    -> FloatingEditLens updateA updateB
+    -> FloatingChangeLens updateA updateB
     -> ObjectMaker updateA a
     -> ObjectMaker updateB a
-mapObjectMaker rc (MkFloatingEditLens init rlens) uobja utask recvb = do
+mapObjectMaker rc (MkFloatingChangeLens init rlens) uobja utask recvb = do
     rec
         (result, recva) <- do
             MkObjectMakerResult (MkResource (rr :: _ tt) anobjA) updTask val <- uobja utask recva
@@ -76,7 +76,7 @@ mapObjectMaker rc (MkFloatingEditLens init rlens) uobja utask recvb = do
                     recva' urc eas esrc = do
                         ebs <-
                             runResourceRunner urc rr $
-                            fmap mconcat $ for (toList eas) $ \ea -> elUpdate lens ea $ objRead anobjA
+                            fmap mconcat $ for (toList eas) $ \ea -> clUpdate lens ea $ objRead anobjA
                         case nonEmpty ebs of
                             Nothing -> return ()
                             Just ebb -> recvb urc ebb esrc

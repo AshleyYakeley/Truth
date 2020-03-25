@@ -81,7 +81,7 @@ pinaforeApplyMorphismRef ::
 pinaforeApplyMorphismRef (MkPinaforeMorphism tra trb m) (MutablePinaforeRef tra' lv) =
     MutablePinaforeRef trb $
     applyPinaforeLens pinaforeBase m $
-    eaMap (bijectionWholeEditLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra)) lv
+    eaMap (bijectionWholeChangeLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra)) lv
 pinaforeApplyMorphismRef (MkPinaforeMorphism (MkRange fa _) trb m) (ImmutablePinaforeRef fv) =
     MutablePinaforeRef trb $
     applyPinaforeLens pinaforeBase m $ immutableReferenceToRejectingValue $ fmap (fromEnhanced fa) fv
@@ -106,7 +106,7 @@ pinaforeApplyMorphismSet (MkPinaforeMorphism tra trb m) (MkPinaforeFiniteSetRef 
                     fmap (Known . fromEnhanced (rangeContra tra) . fromEnhanced (rangeCo tra')) st
             returnA -< mapMaybe knowToMaybe skb
     in MkPinaforeFiniteSetRef trb $
-       eaMap (convertEditLens . fromReadOnlyRejectingEditLens) $
+       eaMap (convertChangeLens . fromReadOnlyRejectingChangeLens) $
        applyPinaforeFunction pinaforeBase setm (eaToReadOnlyWhole ss)
 
 pinaforeApplyInverseMorphismRef ::
@@ -117,7 +117,7 @@ pinaforeApplyInverseMorphismRef ::
 pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb tra m) (MutablePinaforeRef tra' lv) =
     MkPinaforeFiniteSetRef trb $
     applyInversePinaforeLens pinaforeBase m $
-    eaMap (bijectionWholeEditLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra)) lv
+    eaMap (bijectionWholeChangeLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra)) lv
 pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb (MkRange fa _) m) (ImmutablePinaforeRef fv) =
     MkPinaforeFiniteSetRef trb $
     applyInversePinaforeLens pinaforeBase m $ immutableReferenceToRejectingValue $ fmap (fromEnhanced fa) fv
@@ -139,4 +139,4 @@ pinaforeApplyInverseMorphismSet (MkPinaforeMorphism trb trpa m) (MkPinaforeFinit
     tra = contraMapRange join2 trpa
     in MkPinaforeFiniteSetRef trb $
        applyInversePinaforeLensSet pinaforeBase (fmap (fromEnhanced (rangeContra trp) . MkNewEntity) newEntity) m $
-       eaMap (bijectionFiniteSetEditLens $ isoMapCat fromEnhanced $ bijectRanges tra' tra) set
+       eaMap (bijectionFiniteSetChangeLens $ isoMapCat fromEnhanced $ bijectRanges tra' tra) set

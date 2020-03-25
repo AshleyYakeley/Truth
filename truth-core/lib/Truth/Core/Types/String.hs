@@ -145,13 +145,13 @@ type StringUpdate seq = EditUpdate (StringEdit seq)
 stringSectionLens ::
        forall seq. IsSequence seq
     => SequenceRun seq
-    -> FloatingEditLens (StringUpdate seq) (StringUpdate seq)
+    -> FloatingChangeLens (StringUpdate seq) (StringUpdate seq)
 stringSectionLens initRun = let
-    sInit ::
+    sclInit ::
            forall m. MonadIO m
         => Readable m (StringRead seq)
         -> m (SequenceRun seq)
-    sInit _ = return initRun
+    sclInit _ = return initRun
     getState ::
            forall m. MonadIO m
         => Readable m (StringRead seq)
@@ -160,19 +160,19 @@ stringSectionLens initRun = let
         len <- lift $ mr StringReadLength
         stateRaw <- get
         return $ clipRunBounds len stateRaw
-    sGet :: ReadFunctionT (StateT (SequenceRun seq)) (StringRead seq) (StringRead seq)
-    sGet mr rt = do
+    sclRead :: ReadFunctionT (StateT (SequenceRun seq)) (StringRead seq) (StringRead seq)
+    sclRead mr rt = do
         st <- getState mr
         case rt of
             StringReadLength -> return $ runLength st
             StringReadSection run ->
                 lift $ mr $ StringReadSection $ clipWithin st $ relativeRun (negate $ runStart st) run
-    sUpdate ::
+    sclUpdate ::
            forall m. MonadIO m
         => StringUpdate seq
         -> Readable m (StringRead seq)
         -> StateT (SequenceRun seq) m [StringUpdate seq]
-    sUpdate (MkEditUpdate edita) mr = do
+    sclUpdate (MkEditUpdate edita) mr = do
         oldstate <- get
         newlen <- lift $ mr StringReadLength
         let
@@ -216,10 +216,10 @@ stringSectionLens initRun = let
                     runa = relativeRun (negate $ runStart oldstate) runb
                 put oldstate {runLength = newlength}
                 return $ Just [StringReplaceSection runa sb]
-    sPutEdits ::
+    sclPutEdits ::
            forall m. MonadIO m
         => [StringEdit seq]
         -> Readable m (StringRead seq)
         -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
-    sPutEdits = elPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateEditLens {..}
+    sclPutEdits = clPutEditsFromPutEdit sPutEdit
+    in makeStateLens MkStateChangeLens {..}

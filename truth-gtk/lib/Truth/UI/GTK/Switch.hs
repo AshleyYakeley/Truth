@@ -37,4 +37,4 @@ switchGetView =
         spec <- isUISpec uispec
         return $
             case spec of
-                MkSwitchUISpec sub -> switchView $ mapModel (liftReadOnlyEditLens $ funcEditLens getview) sub
+                MkSwitchUISpec sub -> switchView $ mapModel (liftReadOnlyChangeLens $ funcChangeLens getview) sub

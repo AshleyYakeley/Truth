@@ -46,17 +46,17 @@ instance TupleEditWitness InvertibleEdit PinaforeSelector where
 
 type PinaforeUpdate = TupleUpdate PinaforeSelector
 
-instance BaseEditLens PinaforeEntityUpdate PinaforeUpdate where
-    baseEditLens = tupleEditLens PinaforeSelectPoint
+instance BaseChangeLens PinaforeEntityUpdate PinaforeUpdate where
+    baseChangeLens = tupleChangeLens PinaforeSelectPoint
 
-instance BaseEditLens PinaforeFileUpdate PinaforeUpdate where
-    baseEditLens = tupleEditLens PinaforeSelectFile
+instance BaseChangeLens PinaforeFileUpdate PinaforeUpdate where
+    baseChangeLens = tupleChangeLens PinaforeSelectFile
 
-instance BaseEditLens MemoryCellUpdate PinaforeUpdate where
-    baseEditLens = tupleEditLens PinaforeSelectMemory
+instance BaseChangeLens MemoryCellUpdate PinaforeUpdate where
+    baseChangeLens = tupleChangeLens PinaforeSelectMemory
 
-instance BaseEditLens (ROWUpdate UTCTime) PinaforeUpdate where
-    baseEditLens = tupleEditLens PinaforeSelectClock
+instance BaseChangeLens (ROWUpdate UTCTime) PinaforeUpdate where
+    baseChangeLens = tupleChangeLens PinaforeSelectClock
 
-instance BaseEditLens (ROWUpdate TimeZone) PinaforeUpdate where
-    baseEditLens = tupleEditLens PinaforeSelectTimeZone
+instance BaseChangeLens (ROWUpdate TimeZone) PinaforeUpdate where
+    baseChangeLens = tupleChangeLens PinaforeSelectTimeZone

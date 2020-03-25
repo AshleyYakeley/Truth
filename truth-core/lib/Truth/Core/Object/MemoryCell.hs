@@ -28,7 +28,7 @@ makeMemoryCellObject = do
         objCommitTask = mempty
     return $ MkResource objRun $ MkAnObject {..}
 
-makeMemoryCellEditLens :: a -> IO (EditLens MemoryCellUpdate (WholeUpdate a))
-makeMemoryCellEditLens a = do
+makeMemoryCellChangeLens :: a -> IO (ChangeLens MemoryCellUpdate (WholeUpdate a))
+makeMemoryCellChangeLens a = do
     tvar <- newWitnessedIORef a
-    return $ dependentEditLens tvar
+    return $ dependentChangeLens tvar

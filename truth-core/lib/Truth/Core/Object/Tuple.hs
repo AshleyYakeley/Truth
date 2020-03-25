@@ -26,7 +26,7 @@ class (forall update. MapResource (f update)) => TupleResource (f :: Type -> [Tr
         => f update tt
         -> f (TupleUpdate (ListElementType updates)) tt
         -> f (TupleUpdate (ListElementType (update : updates))) tt
-    mapResourceUpdate :: EditLens updateA updateB -> Resource (f updateA) -> Resource (f updateB)
+    mapResourceUpdate :: ChangeLens updateA updateB -> Resource (f updateA) -> Resource (f updateB)
 
 newtype UAnObject (update :: Type) (tt :: [TransKind]) = MkUAnObject
     { unUAnObject :: AnObject (UpdateEdit update) tt
@@ -160,7 +160,7 @@ instance TupleResource AModel where
                     sub2 task recv2
                 utask12 = utask1 <> utask2
                 in MkAModel anobj12 sub12 utask12
-    mapResourceUpdate :: EditLens updateA updateB -> Model updateA -> Model updateB
+    mapResourceUpdate :: ChangeLens updateA updateB -> Model updateA -> Model updateB
     mapResourceUpdate = mapModel
 
 tupleObject ::
@@ -205,8 +205,8 @@ pairReadOnlyModels ::
     -> Model (ReadOnlyUpdate updateB)
     -> Model (ReadOnlyUpdate (PairUpdate updateA updateB))
 pairReadOnlyModels sa sb =
-    mapModel toReadOnlyEditLens $
-    pairModels (mapModel fromReadOnlyRejectingEditLens sa) (mapModel fromReadOnlyRejectingEditLens sb)
+    mapModel toReadOnlyChangeLens $
+    pairModels (mapModel fromReadOnlyRejectingChangeLens sa) (mapModel fromReadOnlyRejectingChangeLens sb)
 
 contextModels :: Model updateX -> Model updateN -> Model (ContextUpdate updateX updateN)
 contextModels sx sn =

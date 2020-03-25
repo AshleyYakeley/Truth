@@ -59,7 +59,7 @@ cvBindModel model mesrc initv utask recv = do
         return a
 
 cvFloatMapModel ::
-       forall updateA updateB. FloatingEditLens updateA updateB -> Model updateA -> CreateView (Model updateB)
+       forall updateA updateB. FloatingChangeLens updateA updateB -> Model updateA -> CreateView (Model updateB)
 cvFloatMapModel flens model = do
     rc <- viewGetResourceContext
     liftLifeCycleIO $ floatMapModel rc flens model

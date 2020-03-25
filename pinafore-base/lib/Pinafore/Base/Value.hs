@@ -16,65 +16,65 @@ class EditApplicative (f :: Type -> Type) where
            forall update. SubjectReader (UpdateReader update)
         => UpdateSubject update
         -> f (ReadOnlyUpdate update)
-    eaMap :: forall updateA updateB. EditLens updateA updateB -> f updateA -> f updateB
+    eaMap :: forall updateA updateB. ChangeLens updateA updateB -> f updateA -> f updateB
     eaPair :: forall updateA updateB. f updateA -> f updateB -> f (PairUpdate updateA updateB)
 
-instance EditApplicative (EditLens update) where
-    eaPure = constEditLens
+instance EditApplicative (ChangeLens update) where
+    eaPure = constChangeLens
     eaMap = (.)
-    eaPair = pairCombineEditLenses
+    eaPair = pairCombineChangeLenses
 
-instance EditApplicative (FloatingEditLens update) where
-    eaPure a = editLensToFloating $ constEditLens a
-    eaMap lens = (.) $ editLensToFloating lens
-    eaPair = pairCombineFloatingEditLenses
+instance EditApplicative (FloatingChangeLens update) where
+    eaPure a = changeLensToFloating $ constChangeLens a
+    eaMap lens = (.) $ changeLensToFloating lens
+    eaPair = pairCombineFloatingChangeLenses
 
 eaMapSemiReadOnly ::
        forall f updateA updateB. EditApplicative f
-    => EditLens updateA (ReadOnlyUpdate updateB)
+    => ChangeLens updateA (ReadOnlyUpdate updateB)
     -> f (ReadOnlyUpdate updateA)
     -> f (ReadOnlyUpdate updateB)
-eaMapSemiReadOnly lens = eaMap $ liftReadOnlyEditLens lens
+eaMapSemiReadOnly lens = eaMap $ liftReadOnlyChangeLens lens
 
 eaMapFullReadOnly ::
        forall f updateA updateB. EditApplicative f
-    => EditLens updateA updateB
+    => ChangeLens updateA updateB
     -> f (ReadOnlyUpdate updateA)
     -> f (ReadOnlyUpdate updateB)
-eaMapFullReadOnly lens = eaMapSemiReadOnly $ toReadOnlyEditLens . lens
+eaMapFullReadOnly lens = eaMapSemiReadOnly $ toReadOnlyChangeLens . lens
 
 type ReadOnlyWhole f a = f (ROWUpdate a)
 
 eaPairReadOnlyWhole :: EditApplicative f => ReadOnlyWhole f a -> ReadOnlyWhole f b -> ReadOnlyWhole f (a, b)
 eaPairReadOnlyWhole fa fb =
-    eaMap (liftReadOnlyEditLens (toReadOnlyEditLens . pairWholeEditLens) . readOnlyPairEditLens) $ eaPair fa fb
+    eaMap (liftReadOnlyChangeLens (toReadOnlyChangeLens . pairWholeChangeLens) . readOnlyPairChangeLens) $ eaPair fa fb
 
 eaToReadOnlyWhole ::
        (EditApplicative f, FullSubjectReader (UpdateReader update), ApplicableUpdate update)
     => f update
     -> ReadOnlyWhole f (UpdateSubject update)
-eaToReadOnlyWhole = eaMap convertReadOnlyEditLens
+eaToReadOnlyWhole = eaMap convertReadOnlyChangeLens
 
 eaMapReadOnlyWhole :: EditApplicative f => (a -> b) -> ReadOnlyWhole f a -> ReadOnlyWhole f b
-eaMapReadOnlyWhole ab = eaMapSemiReadOnly $ funcEditLens ab
+eaMapReadOnlyWhole ab = eaMapSemiReadOnly $ funcChangeLens ab
 
 class EditApplicative f => FloatingEditApplicative (f :: Type -> Type) where
     eaFloatMap ::
            forall updateA updateB.
            ResourceContext
-        -> FloatingEditLens updateA updateB
+        -> FloatingChangeLens updateA updateB
         -> f updateA
         -> LifeCycleIO (f updateB)
 
 eaFloatMapReadOnly ::
        forall f updateA updateB. FloatingEditApplicative f
     => ResourceContext
-    -> FloatingEditLens updateA (ReadOnlyUpdate updateB)
+    -> FloatingChangeLens updateA (ReadOnlyUpdate updateB)
     -> f (ReadOnlyUpdate updateA)
     -> LifeCycleIO (f (ReadOnlyUpdate updateB))
-eaFloatMapReadOnly rc flens = eaFloatMap rc $ liftReadOnlyFloatingEditLens flens
+eaFloatMapReadOnly rc flens = eaFloatMap rc $ liftReadOnlyFloatingChangeLens flens
 
-instance FloatingEditApplicative (FloatingEditLens update) where
+instance FloatingEditApplicative (FloatingChangeLens update) where
     eaFloatMap _ ab ua = return $ ab . ua
 
 newtype PinaforeValue update = MkPinaforeValue
@@ -113,7 +113,7 @@ applyPinaforeFunction ::
     -> PinaforeReadOnlyValue b
 applyPinaforeFunction basesub m val =
     eaMap (pinaforeFunctionMorphismUpdateFunction m) $
-    contextualisePinaforeValue basesub $ eaMap fromReadOnlyRejectingEditLens val
+    contextualisePinaforeValue basesub $ eaMap fromReadOnlyRejectingChangeLens val
 
 applyPinaforeLens ::
        forall baseupdate a b.
@@ -130,7 +130,7 @@ applyInversePinaforeLens ::
     -> PinaforeValue (WholeUpdate (Know b))
     -> PinaforeValue (FiniteSetUpdate a)
 applyInversePinaforeLens basesub pm val =
-    eaMap (pinaforeLensMorphismInverseEditLens pm) $ contextualisePinaforeValue basesub val
+    eaMap (pinaforeLensMorphismInverseChangeLens pm) $ contextualisePinaforeValue basesub val
 
 applyInversePinaforeLensSet ::
        forall baseupdate a b. (Eq a, Eq b)
@@ -140,4 +140,4 @@ applyInversePinaforeLensSet ::
     -> PinaforeValue (FiniteSetUpdate b)
     -> PinaforeValue (FiniteSetUpdate a)
 applyInversePinaforeLensSet basesub newb pm val =
-    eaMap (pinaforeLensMorphismInverseEditLensSet newb pm) $ contextualisePinaforeValue basesub val
+    eaMap (pinaforeLensMorphismInverseChangeLensSet newb pm) $ contextualisePinaforeValue basesub val

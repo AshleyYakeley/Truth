@@ -42,62 +42,62 @@ instance IsUpdate update => IsUpdate (OneUpdate f update) where
 instance IsEditUpdate update => IsEditUpdate (OneUpdate f update) where
     updateEdit (MkOneUpdate update) = MkOneEdit $ updateEdit update
 
-oneLiftEditLens ::
+oneLiftChangeLens ::
        forall f updateA updateB. MonadOne f
-    => EditLens updateA updateB
-    -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftEditLens (MkEditLens g u pe) = let
-    elGet :: ReadFunction (OneReader f (UpdateReader updateA)) (OneReader f (UpdateReader updateB))
-    elGet = liftOneReadFunction g
-    elUpdate ::
+    => ChangeLens updateA updateB
+    -> ChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
+oneLiftChangeLens (MkChangeLens g u pe) = let
+    clRead :: ReadFunction (OneReader f (UpdateReader updateA)) (OneReader f (UpdateReader updateB))
+    clRead = liftOneReadFunction g
+    clUpdate ::
            forall m. MonadIO m
         => OneUpdate f updateA
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m [OneUpdate f updateB]
-    elUpdate (MkOneUpdate ea) mr =
+    clUpdate (MkOneUpdate ea) mr =
         fmap (fmap MkOneUpdate . fromMaybe [] . getMaybeOne) $ getComposeM $ u ea $ oneReadFunctionF mr
-    elPutEdits ::
+    clPutEdits ::
            forall m. MonadIO m
         => [OneEdit f (UpdateEdit updateB)]
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [OneEdit f (UpdateEdit updateA)])
-    elPutEdits ebs mr =
+    clPutEdits ebs mr =
         fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $
         getComposeM $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
-    in MkEditLens {..}
+    in MkChangeLens {..}
 
-oneNullEditLens ::
+oneNullChangeLens ::
        forall f updateA updateB. MonadOne f
     => (forall x. f x)
-    -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
-oneNullEditLens fu = let
-    elGet :: ReadFunction (OneReader f (UpdateReader updateA)) (OneReader f (UpdateReader updateB))
-    elGet _ ReadHasOne = return fu
-    elGet _ (ReadOne _) = return fu
-    elUpdate ::
+    -> ChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
+oneNullChangeLens fu = let
+    clRead :: ReadFunction (OneReader f (UpdateReader updateA)) (OneReader f (UpdateReader updateB))
+    clRead _ ReadHasOne = return fu
+    clRead _ (ReadOne _) = return fu
+    clUpdate ::
            forall m. MonadIO m
         => OneUpdate f updateA
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m [OneUpdate f updateB]
-    elUpdate _ _ = return []
-    elPutEdits ::
+    clUpdate _ _ = return []
+    clPutEdits ::
            forall m. MonadIO m
         => [OneEdit f (UpdateEdit updateB)]
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [OneEdit f (UpdateEdit updateA)])
-    elPutEdits _ _ = return $ Just []
-    in MkEditLens {..}
+    clPutEdits _ _ = return $ Just []
+    in MkChangeLens {..}
 
-oneLiftFloatingEditLens ::
+oneLiftFloatingChangeLens ::
        forall f updateA updateB. MonadOne f
-    => FloatingEditLens updateA updateB
-    -> FloatingEditLens (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftFloatingEditLens (MkFloatingEditLens (init :: FloatInit _ r) lens) = let
-    felInit :: FloatInit (OneReader f (UpdateReader updateA)) (f r)
-    felInit = mapFFloatInit oneReadFunctionF init
-    felLens :: f r -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
-    felLens fr =
+    => FloatingChangeLens updateA updateB
+    -> FloatingChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
+oneLiftFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) lens) = let
+    fclInit :: FloatInit (OneReader f (UpdateReader updateA)) (f r)
+    fclInit = mapFFloatInit oneReadFunctionF init
+    fclLens :: f r -> ChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
+    fclLens fr =
         case retrieveOne fr of
-            SuccessResult r -> oneLiftEditLens $ lens r
-            FailureResult (MkLimit fu) -> oneNullEditLens fu
-    in MkFloatingEditLens {..}
+            SuccessResult r -> oneLiftChangeLens $ lens r
+            FailureResult (MkLimit fu) -> oneNullChangeLens fu
+    in MkFloatingChangeLens {..}

@@ -29,30 +29,31 @@ soupEditSpec ::
     -> CVUISpec
 soupEditSpec sub selnotify openItem = do
     let
-        nameLens :: EditLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Result Text Text))
+        nameLens :: ChangeLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Result Text Text))
         nameLens =
-            convertReadOnlyEditLens . liftFullResultOneEditLens (tupleEditLens NoteTitle) . tupleEditLens SelectSecond
+            convertReadOnlyChangeLens .
+            liftFullResultOneChangeLens (tupleChangeLens NoteTitle) . tupleChangeLens SelectSecond
         cmp :: Result Text Text -> Result Text Text -> Ordering
         cmp a b = compare (resultToMaybe a) (resultToMaybe b)
         uo :: UpdateOrder (UUIDElementUpdate PossibleNoteUpdate)
-        uo = MkUpdateOrder cmp $ editLensToFloating nameLens
+        uo = MkUpdateOrder cmp $ changeLensToFloating nameLens
     osub :: Model (OrderedListUpdate [(UUID, Result Text (Tuple NoteSel))] (UUIDElementUpdate PossibleNoteUpdate)) <-
         cvFloatMapModel (orderedSetLens uo) sub
     let
         nameColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
         nameColumn =
             readOnlyKeyColumn (constantModel "Name") $ \cellsub -> let
-                valLens :: EditLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Text, TableCellProps))
+                valLens :: ChangeLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Text, TableCellProps))
                 valLens =
-                    funcEditLens fromResult .
-                    liftFullResultOneEditLens (tupleEditLens NoteTitle) . tupleEditLens SelectSecond
-                in return $ mapModel valLens cellsub {-(updateFunctionToEditLens (funcEditLens fromResult) . valLens)-}
+                    funcChangeLens fromResult .
+                    liftFullResultOneChangeLens (tupleChangeLens NoteTitle) . tupleChangeLens SelectSecond
+                in return $ mapModel valLens cellsub {-(updateFunctionToChangeLens (funcChangeLens fromResult) . valLens)-}
         pastColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
         pastColumn =
             readOnlyKeyColumn (constantModel "Past") $ \cellsub -> let
                 valLens =
-                    funcEditLens pastResult .
-                    liftFullResultOneEditLens (tupleEditLens NotePast) . tupleEditLens SelectSecond
+                    funcChangeLens pastResult .
+                    liftFullResultOneChangeLens (tupleChangeLens NotePast) . tupleChangeLens SelectSecond
                 in return $ mapModel valLens cellsub
     tableUISpec [nameColumn, pastColumn] osub openItem selnotify
 
@@ -67,10 +68,10 @@ soupObject dirpath = let
         => UpdateSubject PossibleNoteUpdate
         -> m (Maybe LazyByteString)
     paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
-    soupItemLens :: EditLens ByteStringUpdate PossibleNoteUpdate
-    soupItemLens = convertEditLens . (wholeEditLens $ injectionLens soupItemInjection) . convertEditLens
-    lens :: EditLens ObjectSoupUpdate (SoupUpdate PossibleNoteUpdate)
-    lens = liftSoupLens paste $ soupItemLens . objectEditLens
+    soupItemLens :: ChangeLens ByteStringUpdate PossibleNoteUpdate
+    soupItemLens = convertChangeLens . (wholeChangeLens $ injectionLens soupItemInjection) . convertChangeLens
+    lens :: ChangeLens ObjectSoupUpdate (SoupUpdate PossibleNoteUpdate)
+    lens = liftSoupLens paste $ soupItemLens . objectChangeLens
     in mapObject lens rawSoupObject
 
 soupWindow :: UIToolkit -> FilePath -> CreateView ()
@@ -126,7 +127,7 @@ soupWindow uit@MkUIToolkit {..} dirpath = do
             openItem imodel = do
                 let
                     rowmodel :: Model PossibleNoteUpdate
-                    rowmodel = mapModel (tupleEditLens SelectSecond) imodel
+                    rowmodel = mapModel (tupleChangeLens SelectSecond) imodel
                     rspec :: Result Text (Model NoteUpdate) -> CVUISpec
                     rspec (SuccessResult s2) = noteEditSpec s2 mempty
                     rspec (FailureResult err) = labelUISpec $ constantModel err

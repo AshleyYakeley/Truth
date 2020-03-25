@@ -27,7 +27,7 @@ immutableReferenceToReadOnlyValue :: PinaforeImmutableReference a -> PinaforeRea
 immutableReferenceToReadOnlyValue (MkPinaforeImmutableReference fv) = fv
 
 immutableReferenceToRejectingValue :: PinaforeImmutableReference a -> PinaforeValue (WholeUpdate (Know a))
-immutableReferenceToRejectingValue ref = eaMap fromReadOnlyRejectingEditLens $ immutableReferenceToReadOnlyValue ref
+immutableReferenceToRejectingValue ref = eaMap fromReadOnlyRejectingChangeLens $ immutableReferenceToReadOnlyValue ref
 
 getImmutableReference :: PinaforeImmutableReference a -> PinaforeAction (Know a)
 getImmutableReference ref = do
@@ -35,7 +35,7 @@ getImmutableReference ref = do
     liftIO $ pinaforeFunctionValueGet rc $ immutableReferenceToReadOnlyValue ref
 
 functionImmutableReference :: PinaforeReadOnlyValue a -> PinaforeImmutableReference a
-functionImmutableReference fv = MkPinaforeImmutableReference $ eaMap (liftReadOnlyEditLens $ funcEditLens Known) fv
+functionImmutableReference fv = MkPinaforeImmutableReference $ eaMap (liftReadOnlyChangeLens $ funcChangeLens Known) fv
 
 pinaforeImmutableReferenceValue :: a -> PinaforeImmutableReference a -> PinaforeReadOnlyValue a
 pinaforeImmutableReferenceValue def ref = eaMapReadOnlyWhole (fromKnow def) $ immutableReferenceToReadOnlyValue ref

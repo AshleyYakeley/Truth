@@ -61,8 +61,8 @@ instance Semigroup (KeyColumns update) where
                  (lens1, func1) <- f1 k
                  (lens2, func2) <- f2 k
                  return $
-                     ( mapModel convertEditLens $ pairModels lens1 lens2
-                     , mapModel convertReadOnlyEditLens $ pairReadOnlyModels func1 func2)) $
+                     ( mapModel convertChangeLens $ pairModels lens1 lens2
+                     , mapModel convertReadOnlyChangeLens $ pairReadOnlyModels func1 func2)) $
         fmap (mapColumn $ \(x, y) -> (fst x, fst y)) c1 <> fmap (mapColumn $ \(x, y) -> (snd x, snd y)) c2
 
 instance Monoid (KeyColumns update) where
@@ -95,7 +95,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
         makeStoreEntry i setval = do
             usub <-
                 cvFloatMapModel
-                    (editLensToFloating (mustExistOneEditLens "GTK table view") . orderedListItemLens i)
+                    (changeLensToFloating (mustExistOneChangeLens "GTK table view") . orderedListItemLens i)
                     tableSub
             liftIO $ setval $ \entry -> entry {entryModel = usub}
             (textModel, propModel) <- colfunc usub

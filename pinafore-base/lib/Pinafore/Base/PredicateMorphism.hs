@@ -16,24 +16,24 @@ predicatePinaforeMap ::
        EntityAdapter a
     -> EntityAdapter b
     -> Predicate
-    -> EditLens (ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeUpdate (Know b))
+    -> ChangeLens (ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeUpdate (Know b))
 predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) prd = let
     rfp :: ReadFunction (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a))) PinaforeEntityRead
     rfp = tupleReadFunction SelectContext
-    elGet :: ReadFunction (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeReader (Know b))
-    elGet mra ReadWhole = do
+    clRead :: ReadFunction (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeReader (Know b))
+    clRead mra ReadWhole = do
         ksubja <- mra $ MkTupleUpdateReader SelectContent ReadWhole
         case ksubja of
             Known subja -> do
                 valp <- mra $ MkTupleUpdateReader SelectContext $ PinaforeEntityReadGetProperty prd $ ap subja
                 bget valp $ rfp mra
             Unknown -> return Unknown
-    elUpdate ::
+    clUpdate ::
            forall m. MonadIO m
         => ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))
         -> Readable m (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a)))
         -> m [WholeUpdate (Know b)]
-    elUpdate (MkTupleUpdate SelectContext (MkEditUpdate (PinaforeEntityEditSetPredicate p s kvalp))) mra
+    clUpdate (MkTupleUpdate SelectContext (MkEditUpdate (PinaforeEntityEditSetPredicate p s kvalp))) mra
         | p == prd = do
             ksubja <- mra $ MkTupleUpdateReader SelectContent ReadWhole
             if Known s == fmap ap ksubja
@@ -44,20 +44,20 @@ predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) 
                             return [MkWholeReaderUpdate kvalb]
                         Unknown -> return [MkWholeReaderUpdate Unknown]
                 else return []
-    elUpdate (MkTupleUpdate SelectContext _) _ = return []
-    elUpdate (MkTupleUpdate SelectContent (MkWholeReaderUpdate ksubja)) mra =
+    clUpdate (MkTupleUpdate SelectContext _) _ = return []
+    clUpdate (MkTupleUpdate SelectContent (MkWholeReaderUpdate ksubja)) mra =
         case ksubja of
             Known subja -> do
                 valp <- mra $ MkTupleUpdateReader SelectContext $ PinaforeEntityReadGetProperty prd $ ap subja
                 kb <- bget valp $ rfp mra
                 return [MkWholeReaderUpdate kb]
             Unknown -> return [MkWholeReaderUpdate Unknown]
-    elPutEdits ::
+    clPutEdits ::
            forall m. MonadIO m
         => [WholeEdit (Know b)]
         -> Readable m (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a)))
         -> m (Maybe [ContextUpdateEdit PinaforeEntityUpdate (WholeUpdate (Know a))])
-    elPutEdits editbs mra =
+    clPutEdits editbs mra =
         case lastWholeEdit editbs of
             Nothing -> return $ Just []
             Just kvalb -> do
@@ -76,7 +76,7 @@ predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) 
                         case kvalb of
                             Known _ -> Nothing
                             Unknown -> Just []
-    in MkEditLens {..}
+    in MkChangeLens {..}
 
 predicateInverseFunction ::
        forall a b.
@@ -116,4 +116,4 @@ propertyMorphism ::
     -> Predicate
     -> PinaforeLensMorphism baseupdate a b
 propertyMorphism pa pb prd =
-    mapPinaforeLensMorphismBase (baseEditLens @PinaforeEntityUpdate) $ predicatePinaforeTableLensMorphism pa pb prd
+    mapPinaforeLensMorphismBase (baseChangeLens @PinaforeEntityUpdate) $ predicatePinaforeTableLensMorphism pa pb prd

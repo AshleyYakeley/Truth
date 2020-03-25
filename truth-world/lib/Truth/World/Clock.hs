@@ -25,12 +25,12 @@ clockObjectMaker basetime interval omrUpdatesTask update = do
         omrValue = ()
     return MkObjectMakerResult {..}
 
-clockTimeZoneLens :: FloatingEditLens (WholeUpdate UTCTime) (ROWUpdate TimeZone)
+clockTimeZoneLens :: FloatingChangeLens (WholeUpdate UTCTime) (ROWUpdate TimeZone)
 clockTimeZoneLens = let
-    minuteChanges = liftReadOnlyFloatingEditLens $ changeOnlyUpdateFunction @UTCTime
-    tzChanges = liftReadOnlyFloatingEditLens $ changeOnlyUpdateFunction @TimeZone
+    minuteChanges = liftReadOnlyFloatingChangeLens $ changeOnlyUpdateFunction @UTCTime
+    tzChanges = liftReadOnlyFloatingChangeLens $ changeOnlyUpdateFunction @TimeZone
     wholeMinute :: UTCTime -> UTCTime
     wholeMinute (UTCTime d t) = UTCTime d $ secondsToDiffTime $ (div' t 60) * 60
     in tzChanges .
-       (liftReadOnlyFloatingEditLens $ editLensToFloating $ ioFuncEditLens getTimeZone) .
-       minuteChanges . editLensToFloating (funcEditLens wholeMinute)
+       (liftReadOnlyFloatingChangeLens $ changeLensToFloating $ ioFuncChangeLens getTimeZone) .
+       minuteChanges . changeLensToFloating (funcChangeLens wholeMinute)

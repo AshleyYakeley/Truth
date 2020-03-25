@@ -36,9 +36,9 @@ readOnlyKeyColumn kcName getter = let
         cellSub <- getter rowSub
         let
             textSub :: Model (WholeUpdate Text)
-            textSub = mapModel (fromReadOnlyRejectingEditLens . liftReadOnlyEditLens (funcEditLens fst)) cellSub
+            textSub = mapModel (fromReadOnlyRejectingChangeLens . liftReadOnlyChangeLens (funcChangeLens fst)) cellSub
             propsSub :: Model (ROWUpdate TableCellProps)
-            propsSub = mapModel (liftReadOnlyEditLens $ funcEditLens snd) cellSub
+            propsSub = mapModel (liftReadOnlyChangeLens $ funcChangeLens snd) cellSub
         return (textSub, propsSub)
     in MkKeyColumn {..}
 

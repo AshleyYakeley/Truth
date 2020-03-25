@@ -216,52 +216,52 @@ instance (TupleUpdateWitness Show sel, AllWitnessConstraint Show sel) => Show (T
         case tupleUpdateWitness @Show sel of
             Dict -> show update
 
-tupleEditLens_ ::
-       forall sel update. (forall a. sel a -> Maybe (update :~: a)) -> sel update -> EditLens (TupleUpdate sel) update
-tupleEditLens_ tester sel = let
-    elGet :: ReadFunction (TupleUpdateReader sel) (UpdateReader update)
-    elGet mr = tupleReadFunction sel mr
-    elUpdate ::
+tupleChangeLens_ ::
+       forall sel update. (forall a. sel a -> Maybe (update :~: a)) -> sel update -> ChangeLens (TupleUpdate sel) update
+tupleChangeLens_ tester sel = let
+    clRead :: ReadFunction (TupleUpdateReader sel) (UpdateReader update)
+    clRead mr = tupleReadFunction sel mr
+    clUpdate ::
            forall m. MonadIO m
         => TupleUpdate sel
         -> Readable m (TupleUpdateReader sel)
         -> m [update]
-    elUpdate (MkTupleUpdate sel' update) _ =
+    clUpdate (MkTupleUpdate sel' update) _ =
         case tester sel' of
             Just Refl -> return [update]
             Nothing -> return []
-    elPutEdits ::
+    clPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
         -> Readable m (TupleUpdateReader sel)
         -> m (Maybe [TupleUpdateEdit sel])
-    elPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit sel) edits
-    in MkEditLens {..}
+    clPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit sel) edits
+    in MkChangeLens {..}
 
-tupleEditLens ::
+tupleChangeLens ::
        forall sel update. (TestEquality sel)
     => sel update
-    -> EditLens (TupleUpdate sel) update
-tupleEditLens sel = tupleEditLens_ (testEquality sel) sel
+    -> ChangeLens (TupleUpdate sel) update
+tupleChangeLens sel = tupleChangeLens_ (testEquality sel) sel
 
 tupleIsoLens ::
        forall sela selb.
        (forall update. sela update -> selb update)
     -> (forall update. selb update -> sela update)
-    -> EditLens (TupleUpdate sela) (TupleUpdate selb)
+    -> ChangeLens (TupleUpdate sela) (TupleUpdate selb)
 tupleIsoLens ab ba = let
-    elGet :: ReadFunction (TupleUpdateReader sela) (TupleUpdateReader selb)
-    elGet mr (MkTupleUpdateReader sel rt) = mr $ MkTupleUpdateReader (ba sel) rt
-    elUpdate ::
+    clRead :: ReadFunction (TupleUpdateReader sela) (TupleUpdateReader selb)
+    clRead mr (MkTupleUpdateReader sel rt) = mr $ MkTupleUpdateReader (ba sel) rt
+    clUpdate ::
            forall m. MonadIO m
         => TupleUpdate sela
         -> Readable m (TupleUpdateReader sela)
         -> m [TupleUpdate selb]
-    elUpdate (MkTupleUpdate sel update) _ = return [MkTupleUpdate (ab sel) update]
-    elPutEdits ::
+    clUpdate (MkTupleUpdate sel update) _ = return [MkTupleUpdate (ab sel) update]
+    clPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit selb]
         -> Readable m (TupleUpdateReader sela)
         -> m (Maybe [TupleUpdateEdit sela])
-    elPutEdits edits _ = return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (ba sel) edit) edits
-    in MkEditLens {..}
+    clPutEdits edits _ = return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (ba sel) edit) edits
+    in MkChangeLens {..}

@@ -52,6 +52,6 @@ nullPinaforeContext = let
     in MkPinaforeContext {..}
 
 pinaforeBaseModel ::
-       forall baseupdate update. (?pinafore :: PinaforeContext baseupdate, BaseEditLens update baseupdate)
+       forall baseupdate update. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens update baseupdate)
     => Model update
-pinaforeBaseModel = mapModel baseEditLens pinaforeBase
+pinaforeBaseModel = mapModel baseChangeLens pinaforeBase

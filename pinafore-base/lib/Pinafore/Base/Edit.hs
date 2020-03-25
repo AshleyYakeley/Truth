@@ -91,7 +91,7 @@ instance Show PinaforeEntityEdit where
 
 type PinaforeEntityUpdate = EditUpdate PinaforeEntityEdit
 
-type HasPinaforeEntityUpdate = BaseEditLens PinaforeEntityUpdate
+type HasPinaforeEntityUpdate = BaseChangeLens PinaforeEntityUpdate
 
-instance BaseEditLens PinaforeEntityUpdate PinaforeEntityUpdate where
-    baseEditLens = id
+instance BaseChangeLens PinaforeEntityUpdate PinaforeEntityUpdate where
+    baseChangeLens = id

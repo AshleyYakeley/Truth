@@ -39,7 +39,7 @@ oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
                 SuccessResult () -> do
                     ((), vs) <-
                         viewCreateView $ do
-                            widget <- baseView $ pure $ mapModel (mustExistOneEditLens "object") rm
+                            widget <- baseView $ pure $ mapModel (mustExistOneChangeLens "object") rm
                             lcContainPackStart True box widget
                             widgetShow widget
                     return $ PresentOVS vs

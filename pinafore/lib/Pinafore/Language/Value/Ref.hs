@@ -35,7 +35,7 @@ pinaforeImmutableToRef ir = ImmutablePinaforeRef ir
 
 pinaforeRefToValue :: PinaforeRef '( p, p) -> PinaforeValue (WholeUpdate (Know p))
 pinaforeRefToValue (MutablePinaforeRef tr lv) =
-    eaMap (bijectionWholeEditLens $ isoMapCat (fromEnhanced @_ @JMShim) $ cfmap $ rangeBijection tr) lv
+    eaMap (bijectionWholeChangeLens $ isoMapCat (fromEnhanced @_ @JMShim) $ cfmap $ rangeBijection tr) lv
 pinaforeRefToValue (ImmutablePinaforeRef ir) = immutableReferenceToRejectingValue ir
 
 pinaforeValueToRef :: (PinaforeValue (WholeUpdate (Know a))) -> PinaforeRef '( a, a)
@@ -66,5 +66,5 @@ pinaforeFLensRef g pb (MutablePinaforeRef (tr :: Range JMShim a _) lv) = let
             b <- liftInner kb
             a' <- liftOuter $ pb b $ knowToMaybe $ fmap trco ka
             return $ trcontra a'
-    in MutablePinaforeRef identityRange $ eaMap (wholeEditLens (MkLens lensG lensPB)) lv
+    in MutablePinaforeRef identityRange $ eaMap (wholeChangeLens (MkLens lensG lensPB)) lv
 pinaforeFLensRef g _ (ImmutablePinaforeRef ir) = ImmutablePinaforeRef $ fmap g ir

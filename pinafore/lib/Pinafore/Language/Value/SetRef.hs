@@ -25,24 +25,24 @@ instance Contravariant PinaforeSetRef where
         mapset :: ReaderSet (SetReader b) -> ReaderSet (SetReader a)
         mapset rset (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) =
             rset $ MkTupleUpdateReader (MkFunctionSelector $ ab a) ReadWhole
-        in MkPinaforeSetRef eqa $ eaMap (partialiseEditLens mapset (contramapPartialFunctionEditLens ab matchba)) sv
+        in MkPinaforeSetRef eqa $ eaMap (partialiseChangeLens mapset (contramapPartialFunctionChangeLens ab matchba)) sv
 
 instance HasVariance 'Contravariance PinaforeSetRef where
     varianceRepresentational = Nothing
 
 pinaforeSetRefImmutable :: forall a. PinaforeSetRef a -> PinaforeSetRef a
 pinaforeSetRefImmutable (MkPinaforeSetRef eq sv) =
-    MkPinaforeSetRef eq $ eaMap (fromReadOnlyRejectingEditLens . toReadOnlyEditLens) sv
+    MkPinaforeSetRef eq $ eaMap (fromReadOnlyRejectingChangeLens . toReadOnlyChangeLens) sv
 
 pinaforeSetRefComplement :: forall a. PinaforeSetRef a -> PinaforeSetRef a
 pinaforeSetRefComplement (MkPinaforeSetRef eq sv) = let
     mapset :: ReaderSet (UpdateReader (SetUpdate a)) -> ReaderSet (UpdateReader (SetUpdate a))
     mapset rset = rset
-    in MkPinaforeSetRef eq $ eaMap (liftPartialEditLens mapset setUpdateComplement) sv
+    in MkPinaforeSetRef eq $ eaMap (liftPartialChangeLens mapset setUpdateComplement) sv
 
 pinaforeSetRefCombine ::
        forall a.
-       EditLens (PairUpdate (SetUpdate a) (SetUpdate a)) (SetUpdate a)
+       ChangeLens (PairUpdate (SetUpdate a) (SetUpdate a)) (SetUpdate a)
     -> PinaforeSetRef a
     -> PinaforeSetRef a
     -> PinaforeSetRef a
@@ -52,7 +52,7 @@ pinaforeSetRefCombine clens (MkPinaforeSetRef eq1 sv1) (MkPinaforeSetRef eq2 sv2
     mapset rset (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) =
         (rset $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) ||
         (rset $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole)
-    in MkPinaforeSetRef eq12 $ eaMap (liftPartialEditLens mapset clens . partialPairEditLens) $ eaPair sv1 sv2
+    in MkPinaforeSetRef eq12 $ eaMap (liftPartialChangeLens mapset clens . partialPairChangeLens) $ eaPair sv1 sv2
 
 pinaforeSetRefIntersect :: forall a. PinaforeSetRef a -> PinaforeSetRef a -> PinaforeSetRef a
 pinaforeSetRefIntersect = pinaforeSetRefCombine setUpdateIntersection
@@ -77,13 +77,13 @@ pinaforeSetRefCartesianSum (MkPinaforeSetRef eqA svA) (MkPinaforeSetRef eqB svB)
             Left a -> rset $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
             Right b -> rset $ MkTupleUpdateReader SelectSecond $ MkTupleUpdateReader (MkFunctionSelector b) ReadWhole
     in MkPinaforeSetRef eqAB $
-       eaMap (liftPartialEditLens mapset setCartesianSumEditLens . partialPairEditLens) $ eaPair svA svB
+       eaMap (liftPartialChangeLens mapset setCartesianSumChangeLens . partialPairChangeLens) $ eaPair svA svB
 
 pinaforeSetRefCartesianProduct :: forall a b. PinaforeSetRef a -> PinaforeSetRef b -> PinaforeSetRef (a, b)
 pinaforeSetRefCartesianProduct (MkPinaforeSetRef eqA svA) (MkPinaforeSetRef eqB svB) = let
     eqAB (a1, b1) (a2, b2) = eqA a1 a2 && eqB b1 b2
     in MkPinaforeSetRef eqAB $
-       eaMap (fromReadOnlyRejectingEditLens . setCartesianProductPartialLens eqA eqB) $ eaPair svA svB
+       eaMap (fromReadOnlyRejectingChangeLens . setCartesianProductPartialLens eqA eqB) $ eaPair svA svB
 
 pinaforeSetRefAdd :: forall a. PinaforeSetRef a -> a -> PinaforeAction ()
 pinaforeSetRefAdd (MkPinaforeSetRef _eq sv) a =
@@ -102,7 +102,7 @@ pinaforeSetRefRemove (MkPinaforeSetRef _eq sv) a =
 pinaforeSetRefMember :: forall a. PinaforeSetRef a -> PinaforeRef '( BottomType, a) -> PinaforeRef '( Bool, Bool)
 pinaforeSetRefMember (MkPinaforeSetRef eq sv) aref = let
     afval = pinaforeRefToReadOnlyValue aref
-    knowApplySetLens :: EditLens (PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))) (WholeUpdate (Know Bool))
+    knowApplySetLens :: ChangeLens (PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))) (WholeUpdate (Know Bool))
     knowApplySetLens = let
         getFunc ::
                forall m. MonadIO m
@@ -115,26 +115,26 @@ pinaforeSetRefMember (MkPinaforeSetRef eq sv) aref = let
             => Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> m (Know a)
         getArg mr = mr $ MkTupleUpdateReader SelectSecond ReadWhole
-        elGet ::
+        clRead ::
                forall m. MonadIO m
             => Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> Readable m (WholeReader (Know Bool))
-        elGet mr ReadWhole = do
+        clRead mr ReadWhole = do
             ka <- getArg mr
             for ka $ getFunc mr
-        elUpdate ::
+        clUpdate ::
                forall m. MonadIO m
             => PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))
             -> Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> m [WholeUpdate (Know Bool)]
-        elUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeUpdate b)))) mr = do
+        clUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeUpdate b)))) mr = do
             ka <- getArg mr
             return $
                 case ka of
                     Known a'
                         | eq a a' -> pure $ MkWholeUpdate $ Known b
                     _ -> []
-        elUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate rset)) mr = do
+        clUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate rset)) mr = do
             ka <- getArg mr
             case ka of
                 Known a
@@ -142,18 +142,18 @@ pinaforeSetRefMember (MkPinaforeSetRef eq sv) aref = let
                         b <- getFunc mr a
                         return $ pure $ MkWholeUpdate $ Known b
                 _ -> return []
-        elUpdate (MkTupleUpdate SelectSecond (MkWholeUpdate ka)) mr = do
+        clUpdate (MkTupleUpdate SelectSecond (MkWholeUpdate ka)) mr = do
             case ka of
                 Known a -> do
                     b <- getFunc mr a
                     return $ pure $ MkWholeUpdate $ Known b
                 Unknown -> return $ pure $ MkWholeUpdate Unknown
-        elPutEdits ::
+        clPutEdits ::
                forall m. MonadIO m
             => [WholeEdit (Know Bool)]
             -> Readable m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
             -> m (Maybe [PairUpdateEdit (PartialSetUpdate a) (WholeUpdate (Know a))])
-        elPutEdits edits mr =
+        clPutEdits edits mr =
             case lastWholeEdit edits of
                 Nothing -> return $ Just []
                 Just kb -> do
@@ -167,15 +167,15 @@ pinaforeSetRefMember (MkPinaforeSetRef eq sv) aref = let
                                 MkTupleUpdateEdit SelectFirst $
                                 MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit b
                             _ -> Nothing
-        in MkEditLens {..}
-    in pinaforeValueToRef $ eaMap knowApplySetLens $ eaPair sv $ eaMap fromReadOnlyRejectingEditLens afval
+        in MkChangeLens {..}
+    in pinaforeValueToRef $ eaMap knowApplySetLens $ eaPair sv $ eaMap fromReadOnlyRejectingChangeLens afval
 
 pinaforePredicateToSetRef :: forall a. (a -> Bool) -> PinaforeSetRef (MeetType Entity a)
 pinaforePredicateToSetRef p =
-    MkPinaforeSetRef (==) $ eaMap fromReadOnlyRejectingEditLens $ eaPure $ \mea -> p $ meet2 mea
+    MkPinaforeSetRef (==) $ eaMap fromReadOnlyRejectingChangeLens $ eaPure $ \mea -> p $ meet2 mea
 
 pinaforePredicateRefToSetRef ::
        forall a. PinaforeRef '( MeetType Entity a -> Bool, a -> Bool) -> PinaforeSetRef (MeetType Entity a)
 pinaforePredicateRefToSetRef ref = let
     sv = pinaforeRefToValue $ coRangeLift (\s ma -> s $ meet2 ma) ref
-    in MkPinaforeSetRef (==) $ eaMap (partialConvertEditLens . unknownValueEditLens (\_ -> False)) sv
+    in MkPinaforeSetRef (==) $ eaMap (partialConvertChangeLens . unknownValueChangeLens (\_ -> False)) sv

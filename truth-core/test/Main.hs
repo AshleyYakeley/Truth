@@ -136,12 +136,12 @@ testLensGet =
     testProperty "get" $ \srun (base :: String) ->
         ioProperty $
         runLifeCycle $ do
-            MkFloatingEditLens {..} <- return $ stringSectionLens srun
-            r <- runFloatInit felInit $ subjectToReadable base
+            MkFloatingChangeLens {..} <- return $ stringSectionLens srun
+            r <- runFloatInit fclInit $ subjectToReadable base
             let
                 expected :: String
                 expected = subjectToRead base $ StringReadSection srun
-            found <- readableToSubject $ elGet (felLens r) $ subjectToReadable @LifeCycleIO base
+            found <- readableToSubject $ clRead (fclLens r) $ subjectToReadable @LifeCycleIO base
             return $ found === expected
 
 showVar :: Show a => String -> a -> String
@@ -166,22 +166,22 @@ lensUpdateGetProperty ::
        , Show (UpdateSubject updateB)
        , Show state
        )
-    => FloatingEditLens updateA updateB
+    => FloatingChangeLens updateA updateB
     -> UpdateSubject updateA
     -> UpdateEdit updateA
     -> Property
 lensUpdateGetProperty lens oldA editA =
     ioProperty @Property $
     runLifeCycle $ do
-        MkFloatingEditLens {..} <- return lens
+        MkFloatingChangeLens {..} <- return lens
         --oldState <- get
-        r <- runFloatInit felInit $ subjectToReadable oldA
+        r <- runFloatInit fclInit $ subjectToReadable oldA
         newA <- readableToSubject $ applyEdit editA $ subjectToReadable oldA
-        oldB <- readableToSubject $ elGet (felLens r) $ subjectToReadable oldA
-        updateBs <- elUpdate (felLens r) (editUpdate editA) $ subjectToReadable newA
+        oldB <- readableToSubject $ clRead (fclLens r) $ subjectToReadable oldA
+        updateBs <- clUpdate (fclLens r) (editUpdate editA) $ subjectToReadable newA
         --newState <- get
         newB1 <- readableToSubject $ applyEdits (fmap updateEdit updateBs) $ subjectToReadable oldB
-        newB2 <- readableToSubject $ elGet (felLens r) $ subjectToReadable newA
+        newB2 <- readableToSubject $ clRead (fclLens r) $ subjectToReadable newA
         let
             vars =
                 [ showVar "oldA" oldA
