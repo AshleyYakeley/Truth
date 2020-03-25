@@ -19,13 +19,13 @@ instance DynamicViewState (OneWholeViews f) where
 
 oneWholeView ::
        forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))
-    => Subscriber (FullResultOneUpdate f update)
-    -> (f (Subscriber update) -> GCreateView)
+    => Model (FullResultOneUpdate f update)
+    -> (f (Model update) -> GCreateView)
     -> SelectNotify (f ())
     -> GCreateView
 oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
     let
-        getWidgets :: Box -> Subscriber (FullResultOneUpdate f update) -> f () -> View (OneWholeViews f)
+        getWidgets :: Box -> Model (FullResultOneUpdate f update) -> f () -> View (OneWholeViews f)
         getWidgets box rm fu = do
             notifyChange $ return $ Just fu
             case retrieveOne fu of
@@ -39,20 +39,20 @@ oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
                 SuccessResult () -> do
                     ((), vs) <-
                         viewCreateView $ do
-                            widget <- baseView $ pure $ mapSubscriber (mustExistOneEditLens "object") rm
+                            widget <- baseView $ pure $ mapModel (mustExistOneEditLens "object") rm
                             lcContainPackStart True box widget
                             widgetShow widget
                     return $ PresentOVS vs
-        initVS :: Subscriber (FullResultOneUpdate f update) -> CreateView (OneWholeViews f, Box)
+        initVS :: Model (FullResultOneUpdate f update) -> CreateView (OneWholeViews f, Box)
         initVS rm = do
             box <- new Box [#orientation := OrientationVertical]
-            firstfu <- viewRunResource rm $ \am -> subRead am ReadHasOne
+            firstfu <- viewRunResource rm $ \am -> aModelRead am ReadHasOne
             vs <- cvLiftView $ getWidgets box rm firstfu
             return (vs, box)
         recvVS :: Box -> [FullResultOneUpdate f update] -> StateT (OneWholeViews f) (View) ()
         recvVS box _ = do
             olddvs <- get
-            newfu <- lift $ viewRunResource rmod $ \asub -> subRead asub ReadHasOne
+            newfu <- lift $ viewRunResource rmod $ \asub -> aModelRead asub ReadHasOne
             case (olddvs, retrieveOne newfu) of
                 (PresentOVS _, SuccessResult ()) -> return ()
                 (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs

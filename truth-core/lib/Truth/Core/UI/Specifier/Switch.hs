@@ -6,7 +6,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
 data SwitchUISpec where
-    MkSwitchUISpec :: Subscriber (ROWUpdate CVUISpec) -> SwitchUISpec
+    MkSwitchUISpec :: Model (ROWUpdate CVUISpec) -> SwitchUISpec
 
 instance Show SwitchUISpec where
     show _ = "switch"
@@ -14,5 +14,5 @@ instance Show SwitchUISpec where
 instance UIType SwitchUISpec where
     uiWitness = $(iowitness [t|SwitchUISpec|])
 
-switchUISpec :: Subscriber (ROWUpdate CVUISpec) -> CVUISpec
+switchUISpec :: Model (ROWUpdate CVUISpec) -> CVUISpec
 switchUISpec func = mkCVUISpec $ MkSwitchUISpec func

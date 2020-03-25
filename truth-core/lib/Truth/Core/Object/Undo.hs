@@ -1,13 +1,13 @@
 module Truth.Core.Object.Undo
     ( UndoActions(..)
-    , undoQueueSubscriber
+    , undoQueueModel
     ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
+import Truth.Core.Object.Model
 import Truth.Core.Object.Object
-import Truth.Core.Object.Subscriber
 import Truth.Core.Read
 import Truth.Core.Resource
 
@@ -42,13 +42,13 @@ data UndoActions = MkUndoActions
     , uaRedo :: ResourceContext -> EditSource -> IO Bool
     }
 
-undoQueueSubscriber ::
+undoQueueModel ::
        forall update. InvertibleEdit (UpdateEdit update)
-    => Subscriber update
-    -> IO (Subscriber update, UndoActions)
-undoQueueSubscriber sub = do
+    => Model update
+    -> IO (Model update, UndoActions)
+undoQueueModel sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
-    MkResource rrP (MkASubscriber (MkAnObject readP pushP ctaskP) subscribeP utaskP) <- return sub
+    MkResource rrP (MkAModel (MkAnObject readP pushP ctaskP) subscribeP utaskP) <- return sub
     let
         undoActions = let
             uaUndo :: ResourceContext -> EditSource -> IO Bool
@@ -105,5 +105,5 @@ undoQueueSubscriber sub = do
                                     mVarRun queueVar $ updateUndoQueue readP edits
                                     action esrc
                             Nothing -> Nothing
-        subC = MkResource rrP $ MkASubscriber (MkAnObject readP pushC ctaskP) subscribeP utaskP
+        subC = MkResource rrP $ MkAModel (MkAnObject readP pushC ctaskP) subscribeP utaskP
         in return (subC, undoActions)

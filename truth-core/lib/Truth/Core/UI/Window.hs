@@ -9,8 +9,8 @@ import Truth.Core.UI.View.View
 
 data WindowSpec = MkWindowSpec
     { wsCloseBoxAction :: View ()
-    , wsTitle :: Subscriber (ROWUpdate Text)
-    , wsMenuBar :: Maybe (Subscriber (ROWUpdate MenuBar))
+    , wsTitle :: Model (ROWUpdate Text)
+    , wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
     , wsContent :: CVUISpec
     }
 

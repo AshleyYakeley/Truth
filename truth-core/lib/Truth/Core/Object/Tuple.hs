@@ -2,19 +2,19 @@ module Truth.Core.Object.Tuple
     ( tupleObject
     , pairObjects
     , tupleObjectMaker
-    , tupleSubscriber
-    , pairSubscribers
-    , pairReadOnlySubscribers
-    , contextSubscribers
+    , tupleModel
+    , pairModels
+    , pairReadOnlyModels
+    , contextModels
     ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Lens
 import Truth.Core.Object.EditContext
+import Truth.Core.Object.Model
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
-import Truth.Core.Object.Subscriber
 import Truth.Core.Read
 import Truth.Core.Resource
 import Truth.Core.Types
@@ -139,15 +139,15 @@ instance TupleResource UAnObject where
                 in MkUAnObject $ MkAnObject readAB editAB ctaskAB
     mapResourceUpdate plens uobj = objToUObj $ mapObject plens $ uObjToObj uobj
 
-instance TupleResource ASubscriber where
-    noneTupleAResource :: ASubscriber (TupleUpdate (ListElementType '[])) '[]
-    noneTupleAResource = MkASubscriber (unUAnObject noneTupleAResource) (\_ _ -> return ()) mempty
+instance TupleResource AModel where
+    noneTupleAResource :: AModel (TupleUpdate (ListElementType '[])) '[]
+    noneTupleAResource = MkAModel (unUAnObject noneTupleAResource) (\_ _ -> return ()) mempty
     consTupleAResource ::
            forall tt update updates. MonadTransStackUnliftAll tt
-        => ASubscriber update tt
-        -> ASubscriber (TupleUpdate (ListElementType updates)) tt
-        -> ASubscriber (TupleUpdate (ListElementType (update : updates))) tt
-    consTupleAResource (MkASubscriber anobj1 sub1 utask1) (MkASubscriber anobj2 sub2 utask2) =
+        => AModel update tt
+        -> AModel (TupleUpdate (ListElementType updates)) tt
+        -> AModel (TupleUpdate (ListElementType (update : updates))) tt
+    consTupleAResource (MkAModel anobj1 sub1 utask1) (MkAModel anobj2 sub2 utask2) =
         case transStackDict @MonadIO @tt @LifeCycleIO of
             Dict -> let
                 anobj12 = unUAnObject $ consTupleAResource (MkUAnObject anobj1) (MkUAnObject anobj2)
@@ -159,9 +159,9 @@ instance TupleResource ASubscriber where
                     sub1 task recv1
                     sub2 task recv2
                 utask12 = utask1 <> utask2
-                in MkASubscriber anobj12 sub12 utask12
-    mapResourceUpdate :: EditLens updateA updateB -> Subscriber updateA -> Subscriber updateB
-    mapResourceUpdate = mapSubscriber
+                in MkAModel anobj12 sub12 utask12
+    mapResourceUpdate :: EditLens updateA updateB -> Model updateA -> Model updateB
+    mapResourceUpdate = mapModel
 
 tupleObject ::
        forall sel. IsFiniteConsWitness sel
@@ -183,11 +183,11 @@ tupleObjectMaker pick outask recv = do
             return $ objToUObj o
     return $ MkObjectMakerResult (uObjToObj uobj) utask val
 
-tupleSubscriber ::
+tupleModel ::
        forall sel. IsFiniteConsWitness sel
-    => (forall update. sel update -> Subscriber update)
-    -> Subscriber (TupleUpdate sel)
-tupleSubscriber = tupleResource
+    => (forall update. sel update -> Model update)
+    -> Model (TupleUpdate sel)
+tupleModel = tupleResource
 
 pairObjects ::
        forall updatea updateb.
@@ -196,21 +196,20 @@ pairObjects ::
     -> Object (PairUpdateEdit updatea updateb)
 pairObjects obja objb = uObjToObj $ pairResource (objToUObj obja) (objToUObj objb)
 
-pairSubscribers ::
-       forall updatea updateb. Subscriber updatea -> Subscriber updateb -> Subscriber (PairUpdate updatea updateb)
-pairSubscribers = pairResource
+pairModels :: forall updatea updateb. Model updatea -> Model updateb -> Model (PairUpdate updatea updateb)
+pairModels = pairResource
 
-pairReadOnlySubscribers ::
+pairReadOnlyModels ::
        forall updateA updateB.
-       Subscriber (ReadOnlyUpdate updateA)
-    -> Subscriber (ReadOnlyUpdate updateB)
-    -> Subscriber (ReadOnlyUpdate (PairUpdate updateA updateB))
-pairReadOnlySubscribers sa sb =
-    mapSubscriber toReadOnlyEditLens $
-    pairSubscribers (mapSubscriber fromReadOnlyRejectingEditLens sa) (mapSubscriber fromReadOnlyRejectingEditLens sb)
+       Model (ReadOnlyUpdate updateA)
+    -> Model (ReadOnlyUpdate updateB)
+    -> Model (ReadOnlyUpdate (PairUpdate updateA updateB))
+pairReadOnlyModels sa sb =
+    mapModel toReadOnlyEditLens $
+    pairModels (mapModel fromReadOnlyRejectingEditLens sa) (mapModel fromReadOnlyRejectingEditLens sb)
 
-contextSubscribers :: Subscriber updateX -> Subscriber updateN -> Subscriber (ContextUpdate updateX updateN)
-contextSubscribers sx sn =
-    tupleSubscriber $ \case
+contextModels :: Model updateX -> Model updateN -> Model (ContextUpdate updateX updateN)
+contextModels sx sn =
+    tupleModel $ \case
         SelectContext -> sx
         SelectContent -> sn

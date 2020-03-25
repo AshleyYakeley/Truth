@@ -30,7 +30,7 @@ file_import set continue = do
                         liftIO $
                             runWMFunction rr $ do
                                 pushEdit $ objEdit [SingleObjectDeleteCreate]
-                                subRead asub ReadSingleObjectStore
+                                aModelRead asub ReadSingleObjectStore
                 destobject <-
                     case mdestobject of
                         Nothing -> fail "failed to create object " ++ show entity

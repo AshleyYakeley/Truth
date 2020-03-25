@@ -37,16 +37,16 @@ uiTable cols order val onDoubleClick =
                     (editLensToFloating $
                      liftContextEditLens $ fromReadOnlyRejectingEditLens . funcEditLens (Known . meet2)) $
                 pinaforeUpdateOrder order
-            rows :: Subscriber (FiniteSetUpdate EA)
+            rows :: Model (FiniteSetUpdate EA)
             rows = unPinaforeValue $ unPinaforeFiniteSetRef $ contraRangeLift meet2 val
-            pkSub :: Subscriber (ContextUpdate baseupdate (FiniteSetUpdate EA))
-            pkSub = contextSubscribers pinaforeBase rows
-            readSub :: Subscriber (ConstWholeUpdate EA) -> View A
+            pkSub :: Model (ContextUpdate baseupdate (FiniteSetUpdate EA))
+            pkSub = contextModels pinaforeBase rows
+            readSub :: Model (ConstWholeUpdate EA) -> View A
             readSub sub =
                 viewRunResource sub $ \asub -> do
-                    ea <- subRead asub ReadWhole
+                    ea <- aModelRead asub ReadWhole
                     return $ meet2 ea
-            onSelect :: Subscriber (ConstWholeUpdate EA) -> View ()
+            onSelect :: Model (ConstWholeUpdate EA) -> View ()
             onSelect osub = do
                 a <- readSub osub
                 runPinaforeAction $ void $ onDoubleClick a
@@ -57,23 +57,21 @@ uiTable cols order val onDoubleClick =
                 showCell :: Know Text -> (Text, TableCellProps)
                 showCell (Known s) = (s, plainTableCellProps)
                 showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
-                nameOpenSub :: Subscriber (ROWUpdate Text)
-                nameOpenSub =
-                    pinaforeValueOpenSubscriber $ eaMapSemiReadOnly clearText $ pinaforeRefToReadOnlyValue nameRef
-                getCellSub ::
-                       Subscriber (ConstWholeUpdate EA) -> CreateView (Subscriber (ROWUpdate (Text, TableCellProps)))
+                nameOpenSub :: Model (ROWUpdate Text)
+                nameOpenSub = pinaforeValueOpenModel $ eaMapSemiReadOnly clearText $ pinaforeRefToReadOnlyValue nameRef
+                getCellSub :: Model (ConstWholeUpdate EA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
                 getCellSub osub = do
                     a <- cvLiftView $ readSub osub
                     return $
-                        pinaforeValueOpenSubscriber $
+                        pinaforeValueOpenModel $
                         eaMapSemiReadOnly (funcEditLens showCell) $ pinaforeRefToReadOnlyValue $ getCellRef a
                 in readOnlyKeyColumn nameOpenSub getCellSub
-        colSub :: Subscriber (ContextUpdate baseupdate (OrderedListUpdate [EA] (ConstWholeUpdate EA))) <-
-            cvFloatMapSubscriber (contextOrderedSetLens uo) pkSub
+        colSub :: Model (ContextUpdate baseupdate (OrderedListUpdate [EA] (ConstWholeUpdate EA))) <-
+            cvFloatMapModel (contextOrderedSetLens uo) pkSub
         let
-            olsub :: Subscriber (OrderedListUpdate [EA] (ConstWholeUpdate EA))
-            olsub = mapSubscriber (tupleEditLens SelectContent) colSub
-            tsn :: SelectNotify (Subscriber (ConstWholeUpdate EA))
+            olsub :: Model (OrderedListUpdate [EA] (ConstWholeUpdate EA))
+            olsub = mapModel (tupleEditLens SelectContent) colSub
+            tsn :: SelectNotify (Model (ConstWholeUpdate EA))
             tsn = contramap readSub $ viewLiftSelectNotify sn
         tableUISpec (fmap getColumn cols) olsub onSelect tsn
 
@@ -116,10 +114,10 @@ uiPick nameMorphism fset ref = do
         eaFloatMapReadOnly rc orderLens $
         applyPinaforeFunction pinaforeBase getNames $ pinaforeFiniteSetRefFunctionValue fset
     let
-        subOpts :: Subscriber (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
-        subOpts = pinaforeValueOpenSubscriber opts
-        subVal :: Subscriber (WholeUpdate PickerType)
-        subVal = pinaforeValueOpenSubscriber $ pinaforeRefToValue $ contraRangeLift meet2 ref
+        subOpts :: Model (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
+        subOpts = pinaforeValueOpenModel opts
+        subVal :: Model (WholeUpdate PickerType)
+        subVal = pinaforeValueOpenModel $ pinaforeRefToValue $ contraRangeLift meet2 ref
     optionUISpec subOpts subVal
 
 actionReference ::
@@ -137,13 +135,12 @@ uiButton ::
     -> CVUISpec
 uiButton text raction =
     buttonUISpec
-        (pinaforeValueOpenSubscriber $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue text)
-        (pinaforeValueOpenSubscriber $ actionReference raction)
+        (pinaforeValueOpenModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue text)
+        (pinaforeValueOpenModel $ actionReference raction)
 
 uiLabel :: PinaforeImmutableReference Text -> CVUISpec
 uiLabel text =
-    labelUISpec $
-    pinaforeValueOpenSubscriber $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue text
+    labelUISpec $ pinaforeValueOpenModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue text
 
 uiDynamic :: PinaforeImmutableReference (PinaforeUI A) -> PinaforeUI A
 uiDynamic uiref =
@@ -151,8 +148,7 @@ uiDynamic uiref =
         getSpec :: Know (PinaforeUI A) -> CVUISpec
         getSpec Unknown = nullUISpec
         getSpec (Known (MkPinaforeUI pui)) = pui sn
-        in switchUISpec $
-           pinaforeValueOpenSubscriber $ eaMapReadOnlyWhole getSpec $ immutableReferenceToReadOnlyValue uiref
+        in switchUISpec $ pinaforeValueOpenModel $ eaMapReadOnlyWhole getSpec $ immutableReferenceToReadOnlyValue uiref
 
 openWindow ::
        (?pinafore :: PinaforeContext baseupdate)
@@ -166,14 +162,13 @@ openWindow title getmbar (MkPinaforeUI pui) = do
         pinaforeNewWindow $ let
             wsCloseBoxAction :: View ()
             wsCloseBoxAction = pwClose w
-            wsTitle :: Subscriber (ROWUpdate Text)
+            wsTitle :: Model (ROWUpdate Text)
             wsTitle =
-                pinaforeValueOpenSubscriber $
-                eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue title
-            wsMenuBar :: Maybe (Subscriber (ROWUpdate MenuBar))
+                pinaforeValueOpenModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue title
+            wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
             wsMenuBar =
                 Just $
-                pinaforeValueOpenSubscriber $
+                pinaforeValueOpenModel $
                 eaMapReadOnlyWhole (fromKnow mempty) $
                 immutableReferenceToReadOnlyValue $
                 getmbar $ do
@@ -196,11 +191,10 @@ uiWithSelection f =
 
 uiTextArea :: PinaforeValue (WholeUpdate (Know Text)) -> CVUISpec
 uiTextArea val =
-    textAreaUISpec (pinaforeValueOpenSubscriber $ eaMap (convertEditLens . unknownValueEditLens mempty) val) mempty
+    textAreaUISpec (pinaforeValueOpenModel $ eaMap (convertEditLens . unknownValueEditLens mempty) val) mempty
 
 uiCalendar :: PinaforeValue (WholeUpdate (Know Day)) -> CVUISpec
-uiCalendar day =
-    calendarUISpec $ pinaforeValueOpenSubscriber $ eaMap (unknownValueEditLens $ fromGregorian 1970 01 01) day
+uiCalendar day = calendarUISpec $ pinaforeValueOpenModel $ eaMap (unknownValueEditLens $ fromGregorian 1970 01 01) day
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
@@ -225,7 +219,7 @@ menuAction label maccelStr raction = let
     maccel = do
         accelStr <- maccelStr
         interpretAccelerator $ unpack accelStr
-    in ActionMenuEntry label maccel $ pinaforeValueOpenSubscriber $ actionReference raction
+    in ActionMenuEntry label maccel $ pinaforeValueOpenModel $ actionReference raction
 
 uiScrolled :: PinaforeUI A -> PinaforeUI A
 uiScrolled (MkPinaforeUI lspec) = MkPinaforeUI $ \sn -> scrolledUISpec $ lspec sn
@@ -233,17 +227,17 @@ uiScrolled (MkPinaforeUI lspec) = MkPinaforeUI $ \sn -> scrolledUISpec $ lspec s
 uiUnitCheckBox :: PinaforeImmutableReference Text -> PinaforeValue (WholeUpdate (Know ())) -> CVUISpec
 uiUnitCheckBox name val =
     checkboxUISpec
-        (pinaforeValueOpenSubscriber $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue name) $
-    pinaforeValueOpenSubscriber $ eaMap (toEditLens knowBool) val
+        (pinaforeValueOpenModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue name) $
+    pinaforeValueOpenModel $ eaMap (toEditLens knowBool) val
 
 uiCheckBox :: PinaforeImmutableReference Text -> PinaforeValue (WholeUpdate (Know Bool)) -> CVUISpec
 uiCheckBox name val =
     maybeCheckboxUISpec
-        (pinaforeValueOpenSubscriber $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue name) $
-    pinaforeValueOpenSubscriber $ eaMap (toEditLens knowMaybe) val
+        (pinaforeValueOpenModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableReferenceToReadOnlyValue name) $
+    pinaforeValueOpenModel $ eaMap (toEditLens knowMaybe) val
 
 uiTextEntry :: PinaforeValue (WholeUpdate (Know Text)) -> CVUISpec
-uiTextEntry val = textEntryUISpec $ pinaforeValueOpenSubscriber $ eaMap (unknownValueEditLens mempty) $ val
+uiTextEntry val = textEntryUISpec $ pinaforeValueOpenModel $ eaMap (unknownValueEditLens mempty) $ val
 
 uiIgnore :: PinaforeUI TopType -> PinaforeUI BottomType
 uiIgnore (MkPinaforeUI lspec) = MkPinaforeUI $ \_ -> lspec mempty

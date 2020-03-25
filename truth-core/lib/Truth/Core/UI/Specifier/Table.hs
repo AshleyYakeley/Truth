@@ -21,25 +21,24 @@ plainTableCellProps = let
     in MkTableCellProps {..}
 
 data KeyColumn update = MkKeyColumn
-    { kcName :: Subscriber (ROWUpdate Text)
-    , kcContents :: Subscriber update -> CreateView ( Subscriber (WholeUpdate Text)
-                                                    , Subscriber (ROWUpdate TableCellProps))
+    { kcName :: Model (ROWUpdate Text)
+    , kcContents :: Model update -> CreateView (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
     }
 
 readOnlyKeyColumn ::
        forall update.
-       Subscriber (ROWUpdate Text)
-    -> (Subscriber update -> CreateView (Subscriber (ROWUpdate (Text, TableCellProps))))
+       Model (ROWUpdate Text)
+    -> (Model update -> CreateView (Model (ROWUpdate (Text, TableCellProps))))
     -> KeyColumn update
 readOnlyKeyColumn kcName getter = let
-    kcContents :: Subscriber update -> CreateView (Subscriber (WholeUpdate Text), Subscriber (ROWUpdate TableCellProps))
+    kcContents :: Model update -> CreateView (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
     kcContents rowSub = do
         cellSub <- getter rowSub
         let
-            textSub :: Subscriber (WholeUpdate Text)
-            textSub = mapSubscriber (fromReadOnlyRejectingEditLens . liftReadOnlyEditLens (funcEditLens fst)) cellSub
-            propsSub :: Subscriber (ROWUpdate TableCellProps)
-            propsSub = mapSubscriber (liftReadOnlyEditLens $ funcEditLens snd) cellSub
+            textSub :: Model (WholeUpdate Text)
+            textSub = mapModel (fromReadOnlyRejectingEditLens . liftReadOnlyEditLens (funcEditLens fst)) cellSub
+            propsSub :: Model (ROWUpdate TableCellProps)
+            propsSub = mapModel (liftReadOnlyEditLens $ funcEditLens snd) cellSub
         return (textSub, propsSub)
     in MkKeyColumn {..}
 
@@ -54,9 +53,9 @@ data TableUISpec where
            , UpdateSubject update ~ Element seq
            )
         => [KeyColumn update]
-        -> Subscriber (OrderedListUpdate seq update)
-        -> (Subscriber update -> View ())
-        -> SelectNotify (Subscriber update)
+        -> Model (OrderedListUpdate seq update)
+        -> (Model update -> View ())
+        -> SelectNotify (Model update)
         -> TableUISpec
 
 tableUISpec ::
@@ -69,9 +68,9 @@ tableUISpec ::
        , UpdateSubject update ~ Element seq
        )
     => [KeyColumn update]
-    -> Subscriber (OrderedListUpdate seq update)
-    -> (Subscriber update -> View ())
-    -> SelectNotify (Subscriber update)
+    -> Model (OrderedListUpdate seq update)
+    -> (Model update -> View ())
+    -> SelectNotify (Model update)
     -> CVUISpec
 tableUISpec cols rows onDoubleClick sel = mkCVUISpec $ MkTableUISpec cols rows onDoubleClick sel
 

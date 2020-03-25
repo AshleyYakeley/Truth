@@ -37,27 +37,27 @@ main = do
                 bsObj = fileObject path
                 wholeTextObj :: Object (WholeEdit ((Result Text) Text))
                 wholeTextObj = mapObject textLens bsObj
-                ui :: Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text))
-                   -> Maybe (Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text)))
+                ui :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
+                   -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
                    -> (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
                    -> CVUISpec
                 ui sub1 msub2 extraui = do
                     (setsel, getsel) <- liftIO $ makeRefSelectNotify
                     let
-                        openSelection :: Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text)) -> View ()
+                        openSelection :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text)) -> View ()
                         openSelection sub = do
                             mflens <- getsel
                             case mflens of
                                 Nothing -> return ()
                                 Just flens ->
                                     uitUnliftCreateView uit $ do
-                                        subSub <- cvFloatMapSubscriber (liftFullResultOneFloatingEditLens flens) sub
+                                        subSub <- cvFloatMapModel (liftFullResultOneFloatingEditLens flens) sub
                                         makeWindow "section" subSub Nothing extraui
-                        rTextSpec :: Result Text (Subscriber (StringUpdate Text)) -> CVUISpec
+                        rTextSpec :: Result Text (Model (StringUpdate Text)) -> CVUISpec
                         rTextSpec (SuccessResult sub) = textAreaUISpec sub setsel
-                        rTextSpec (FailureResult err) = labelUISpec $ constantSubscriber err
+                        rTextSpec (FailureResult err) = labelUISpec $ constantModel err
                         makeSpecs sub =
-                            [ (simpleButtonUISpec (constantSubscriber "View") $ openSelection sub, False)
+                            [ (simpleButtonUISpec (constantModel "View") $ openSelection sub, False)
                             , (scrolledUISpec $ oneWholeUISpec sub rTextSpec, True)
                             ]
                         allSpecs =
@@ -67,8 +67,8 @@ main = do
                     verticalUISpec allSpecs
                 makeWindow ::
                        Text
-                    -> Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text))
-                    -> Maybe (Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text)))
+                    -> Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
+                    -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
                     -> (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
                     -> CreateView ()
                 makeWindow title sub msub2 extraui = do
@@ -79,10 +79,10 @@ main = do
                             uitCreateWindow $ let
                                 wsCloseBoxAction :: View ()
                                 wsCloseBoxAction = liftIO closer
-                                wsTitle :: Subscriber (ROWUpdate Text)
-                                wsTitle = constantSubscriber title
-                                wsMenuBar :: Maybe (Subscriber (ROWUpdate MenuBar))
-                                wsMenuBar = Just $ constantSubscriber mbar
+                                wsTitle :: Model (ROWUpdate Text)
+                                wsTitle = constantModel title
+                                wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
+                                wsMenuBar = Just $ constantModel mbar
                                 wsContent :: CVUISpec
                                 wsContent = uic
                                 in MkWindowSpec {..}
@@ -139,12 +139,11 @@ main = do
                     if saveOpt
                         then do
                             (bufferSub, saveActions) <-
-                                liftLifeCycleIO $
-                                makeSharedSubscriber $ saveBufferObject emptyResourceContext wholeTextObj
-                            (textSub, undoActions) <- liftIO $ undoQueueSubscriber bufferSub
+                                liftLifeCycleIO $ makeSharedModel $ saveBufferObject emptyResourceContext wholeTextObj
+                            (textSub, undoActions) <- liftIO $ undoQueueModel bufferSub
                             return (textSub, MkAppUI $ extraUI saveActions undoActions)
                         else do
-                            textSub <- liftLifeCycleIO $ makeReflectingSubscriber $ convertObject wholeTextObj
+                            textSub <- liftLifeCycleIO $ makeReflectingModel $ convertObject wholeTextObj
                             return (textSub, MkAppUI simpleUI)
                 mTextSub2 <-
                     case selTest of
@@ -153,7 +152,7 @@ main = do
                             bsObj2 <- liftIO $ makeMemoryObject mempty $ \_ -> True
                             textSub2 <-
                                 liftLifeCycleIO $
-                                makeReflectingSubscriber $ convertObject $ mapObject textLens $ convertObject bsObj2
+                                makeReflectingModel $ convertObject $ mapObject textLens $ convertObject bsObj2
                             return $ Just textSub2
                 return $ makeWindow (fromString $ takeFileName path) textSub mTextSub2 appUI
             action

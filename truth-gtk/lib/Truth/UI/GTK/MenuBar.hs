@@ -54,7 +54,7 @@ attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
                     accelLabelSetAccel l keyw gmods
                     liftLifeCycleIO $
                         accelGroupConnection ag keyw gmods [AccelFlagsVisible] $ runWMFunction unliftView meaction
-    cvBindReadOnlyWholeSubscriber raction $ \maction ->
+    cvBindReadOnlyWholeModel raction $ \maction ->
         liftIO $ do
             writeIORef aref maction
             set item [#sensitive := isJust maction]

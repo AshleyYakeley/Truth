@@ -41,7 +41,7 @@ pinaforeImmutableReferenceValue :: a -> PinaforeImmutableReference a -> Pinafore
 pinaforeImmutableReferenceValue def ref = eaMapReadOnlyWhole (fromKnow def) $ immutableReferenceToReadOnlyValue ref
 
 applyImmutableReference ::
-       Subscriber baseupdate
+       Model baseupdate
     -> PinaforeFunctionMorphism baseupdate (Know a) (Know b)
     -> PinaforeImmutableReference a
     -> PinaforeImmutableReference b

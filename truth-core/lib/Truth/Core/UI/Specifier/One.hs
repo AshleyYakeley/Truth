@@ -11,8 +11,8 @@ data OneUISpec where
     -- view can create object
     OneWholeUISpec
         :: forall f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-        => Subscriber (FullResultOneUpdate f update)
-        -> (f (Subscriber update) -> CVUISpec)
+        => Model (FullResultOneUpdate f update)
+        -> (f (Model update) -> CVUISpec)
         -> SelectNotify (f ())
         -> OneUISpec
 
@@ -24,19 +24,19 @@ instance UIType OneUISpec where
 
 oneWholeUISpec ::
        forall f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-    => Subscriber (FullResultOneUpdate f update)
-    -> (f (Subscriber update) -> CVUISpec)
+    => Model (FullResultOneUpdate f update)
+    -> (f (Model update) -> CVUISpec)
     -> CVUISpec
 oneWholeUISpec sub spec = mkCVUISpec $ OneWholeUISpec sub spec mempty
 
 oneWholeSelUISpec ::
        forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-    => Subscriber (FullResultOneUpdate f update)
-    -> (f (Subscriber update, SelectNotify sel) -> CVUISpec)
+    => Model (FullResultOneUpdate f update)
+    -> (f (Model update, SelectNotify sel) -> CVUISpec)
     -> SelectNotify (f sel)
     -> CVUISpec
 oneWholeSelUISpec subf specsel snfsel = let
-    spec :: f (Subscriber update) -> CVUISpec
+    spec :: f (Model update) -> CVUISpec
     spec fsub = specsel $ fmap (\sub -> (sub, contramap pure snfsel)) fsub
     getf :: f () -> Maybe (f sel)
     getf fu =

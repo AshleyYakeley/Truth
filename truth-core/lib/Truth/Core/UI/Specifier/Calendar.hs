@@ -7,7 +7,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
 data CalendarUISpec where
-    MkCalendarUISpec :: Subscriber (WholeUpdate Day) -> CalendarUISpec
+    MkCalendarUISpec :: Model (WholeUpdate Day) -> CalendarUISpec
 
 instance Show CalendarUISpec where
     show (MkCalendarUISpec _) = "calendar"
@@ -15,5 +15,5 @@ instance Show CalendarUISpec where
 instance UIType CalendarUISpec where
     uiWitness = $(iowitness [t|CalendarUISpec|])
 
-calendarUISpec :: Subscriber (WholeUpdate Day) -> CVUISpec
+calendarUISpec :: Model (WholeUpdate Day) -> CVUISpec
 calendarUISpec sub = mkCVUISpec $ MkCalendarUISpec sub

@@ -5,9 +5,9 @@ import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
 
-contextualiseSubscribers :: Subscriber baseupdate -> Subscriber update -> Subscriber (ContextUpdate baseupdate update)
-contextualiseSubscribers subx subn =
-    tupleSubscriber $ \case
+contextualiseModels :: Model baseupdate -> Model update -> Model (ContextUpdate baseupdate update)
+contextualiseModels subx subn =
+    tupleModel $ \case
         SelectContext -> subx
         SelectContent -> subn
 
@@ -78,36 +78,36 @@ instance FloatingEditApplicative (FloatingEditLens update) where
     eaFloatMap _ ab ua = return $ ab . ua
 
 newtype PinaforeValue update = MkPinaforeValue
-    { unPinaforeValue :: Subscriber update
+    { unPinaforeValue :: Model update
     }
 
-pinaforeValueOpenSubscriber :: PinaforeValue update -> Subscriber update
-pinaforeValueOpenSubscriber = unPinaforeValue
+pinaforeValueOpenModel :: PinaforeValue update -> Model update
+pinaforeValueOpenModel = unPinaforeValue
 
 instance EditApplicative PinaforeValue where
-    eaPure subj = MkPinaforeValue $ constantSubscriber subj
-    eaMap lens (MkPinaforeValue sv) = MkPinaforeValue $ mapSubscriber lens sv
-    eaPair (MkPinaforeValue sva) (MkPinaforeValue svb) = MkPinaforeValue $ pairSubscribers sva svb
+    eaPure subj = MkPinaforeValue $ constantModel subj
+    eaMap lens (MkPinaforeValue sv) = MkPinaforeValue $ mapModel lens sv
+    eaPair (MkPinaforeValue sva) (MkPinaforeValue svb) = MkPinaforeValue $ pairModels sva svb
 
 instance FloatingEditApplicative PinaforeValue where
-    eaFloatMap rc flens (MkPinaforeValue sub) = fmap MkPinaforeValue $ floatMapSubscriber rc flens sub
+    eaFloatMap rc flens (MkPinaforeValue sub) = fmap MkPinaforeValue $ floatMapModel rc flens sub
 
 contextualisePinaforeValue ::
-       Subscriber baseupdate -> PinaforeValue update -> PinaforeValue (ContextUpdate baseupdate update)
-contextualisePinaforeValue basesub (MkPinaforeValue sv) = MkPinaforeValue $ contextualiseSubscribers basesub sv
+       Model baseupdate -> PinaforeValue update -> PinaforeValue (ContextUpdate baseupdate update)
+contextualisePinaforeValue basesub (MkPinaforeValue sv) = MkPinaforeValue $ contextualiseModels basesub sv
 
 type PinaforeReadOnlyValue t = ReadOnlyWhole PinaforeValue t
 
 pinaforeFunctionValueGet :: ResourceContext -> PinaforeReadOnlyValue t -> IO t
-pinaforeFunctionValueGet rc (MkPinaforeValue sub) = runResource rc sub $ \asub -> subRead asub ReadWhole
+pinaforeFunctionValueGet rc (MkPinaforeValue sub) = runResource rc sub $ \asub -> aModelRead asub ReadWhole
 
 pinaforeValuePush :: ResourceContext -> PinaforeValue update -> NonEmpty (UpdateEdit update) -> IO Bool
 pinaforeValuePush rc (MkPinaforeValue sub) edits =
-    runResource rc sub $ \asub -> pushEdit noEditSource $ subEdit asub edits
+    runResource rc sub $ \asub -> pushEdit noEditSource $ aModelEdit asub edits
 
 applyPinaforeFunction ::
        forall baseupdate a b.
-       Subscriber baseupdate
+       Model baseupdate
     -> PinaforeFunctionMorphism baseupdate a b
     -> PinaforeReadOnlyValue a
     -> PinaforeReadOnlyValue b
@@ -117,7 +117,7 @@ applyPinaforeFunction basesub m val =
 
 applyPinaforeLens ::
        forall baseupdate a b.
-       Subscriber baseupdate
+       Model baseupdate
     -> PinaforeLensMorphism baseupdate a b
     -> PinaforeValue (WholeUpdate (Know a))
     -> PinaforeValue (WholeUpdate (Know b))
@@ -125,7 +125,7 @@ applyPinaforeLens basesub pm val = eaMap (pmForward pm) $ contextualisePinaforeV
 
 applyInversePinaforeLens ::
        forall baseupdate a b. (Eq a, Eq b)
-    => Subscriber baseupdate
+    => Model baseupdate
     -> PinaforeLensMorphism baseupdate a b
     -> PinaforeValue (WholeUpdate (Know b))
     -> PinaforeValue (FiniteSetUpdate a)
@@ -134,7 +134,7 @@ applyInversePinaforeLens basesub pm val =
 
 applyInversePinaforeLensSet ::
        forall baseupdate a b. (Eq a, Eq b)
-    => Subscriber baseupdate
+    => Model baseupdate
     -> IO b
     -> PinaforeLensMorphism baseupdate a b
     -> PinaforeValue (FiniteSetUpdate b)

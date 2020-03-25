@@ -7,24 +7,24 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Truth.Core
 
-collectSubscriberUpdates :: ResourceContext -> Subscriber update -> LifeCycleIO (IO [update])
-collectSubscriberUpdates rc sub = do
+collectModelUpdates :: ResourceContext -> Model update -> LifeCycleIO (IO [update])
+collectModelUpdates rc sub = do
     var <- liftIO $ newMVar []
     runResource rc sub $ \asub ->
-        subscribe asub mempty $ \_ updates _ec -> do
+        aModelSubscribe asub mempty $ \_ updates _ec -> do
             mVarRun var $ do
                 uu <- get
                 put $ uu <> toList updates
     return $ takeMVar var
 
-subscriberPushEdits :: ResourceContext -> Subscriber update -> NonEmpty (UpdateEdit update) -> IO ()
-subscriberPushEdits rc sub edits = do
+modelPushEdits :: ResourceContext -> Model update -> NonEmpty (UpdateEdit update) -> IO ()
+modelPushEdits rc sub edits = do
     runResource rc sub $ \asub -> do
-        mpush <- subEdit asub edits
+        mpush <- aModelEdit asub edits
         case mpush of
             Nothing -> fail "can't push edits"
             Just push -> push noEditSource
-    taskWait $ subscriberUpdatesTask sub
+    taskWait $ modelUpdatesTask sub
 
 type UpdateX = KeyUpdate [(Char, Int)] (PairUpdate (ConstWholeUpdate Char) (WholeUpdate Int))
 
@@ -65,18 +65,18 @@ testContextOrderedSetLensCase assigns expected =
                 mapObject (convertEditLens @(WholeUpdate (FiniteSet Char)) @(FiniteSetUpdate Char)) rawContentObj
         getUpdates <-
             runLifeCycle $ do
-                contextSub <- makeReflectingSubscriber @UpdateX contextObj
-                baseContentSub <- makeReflectingSubscriber @(FiniteSetUpdate Char) baseContentObj
+                contextSub <- makeReflectingModel @UpdateX contextObj
+                baseContentSub <- makeReflectingModel @(FiniteSetUpdate Char) baseContentObj
                 let
-                    bothSub :: Subscriber (ContextUpdate UpdateX (FiniteSetUpdate Char))
-                    bothSub = contextSubscribers contextSub baseContentSub
-                olSub <- floatMapSubscriber rc flens bothSub
-                getUpdates <- collectSubscriberUpdates rc $ mapSubscriber (tupleEditLens SelectContent) olSub
+                    bothSub :: Model (ContextUpdate UpdateX (FiniteSetUpdate Char))
+                    bothSub = contextModels contextSub baseContentSub
+                olSub <- floatMapModel rc flens bothSub
+                getUpdates <- collectModelUpdates rc $ mapModel (tupleEditLens SelectContent) olSub
                 let
                     pushOneEdit :: (Char, Int) -> LifeCycleIO ()
                     pushOneEdit (c, i) =
                         liftIO $
-                        subscriberPushEdits rc contextSub $
+                        modelPushEdits rc contextSub $
                         pure $ KeyEditItem c $ MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit i
                 for_ assigns pushOneEdit
                 return getUpdates

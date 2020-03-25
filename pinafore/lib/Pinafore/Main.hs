@@ -42,7 +42,7 @@ standardPinaforeContext dirpath uitoolkit = do
         picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
         picker PinaforeSelectClock = clockOM rc
         picker PinaforeSelectTimeZone = mapObjectMaker rc (liftReadOnlyFloatingEditLens clockTimeZoneLens) $ clockOM rc
-    (sub, ()) <- liftLifeCycleIO $ makeSharedSubscriber $ tupleObjectMaker picker
+    (sub, ()) <- liftLifeCycleIO $ makeSharedModel $ tupleObjectMaker picker
     liftLifeCycleIO $ makePinaforeContext sub uitoolkit
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()

@@ -3,8 +3,8 @@ module Truth.Core.Object.Editor where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
+import Truth.Core.Object.Model
 import Truth.Core.Object.Object
-import Truth.Core.Object.Subscriber
 import Truth.Core.Resource
 
 data Editor (update :: Type) r = forall editor. MkEditor
@@ -47,8 +47,8 @@ instance Applicative (Editor update) where
             return $ ab a
         in MkEditor {..}
 
-subscribeEditor :: ResourceContext -> Subscriber update -> Editor update r -> LifeCycleIO r
-subscribeEditor rc (MkResource (rr :: _ tt) (MkASubscriber anobject sub utask)) MkEditor {..} = do
+subscribeEditor :: ResourceContext -> Model update -> Editor update r -> LifeCycleIO r
+subscribeEditor rc (MkResource (rr :: _ tt) (MkAModel anobject sub utask)) MkEditor {..} = do
     let object = MkResource rr anobject
     e <- editorInit object
     runResourceRunner rc rr $ sub editorTask $ editorUpdate e object

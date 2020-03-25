@@ -6,7 +6,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
 data DragSourceUISpec where
-    MkDragSourceUISpec :: Serialize t => String -> Subscriber (WholeUpdate t) -> CVUISpec -> DragSourceUISpec
+    MkDragSourceUISpec :: Serialize t => String -> Model (WholeUpdate t) -> CVUISpec -> DragSourceUISpec
 
 instance Show DragSourceUISpec where
     show (MkDragSourceUISpec typename _ _) = "drag-source " ++ typename
@@ -14,11 +14,11 @@ instance Show DragSourceUISpec where
 instance UIType DragSourceUISpec where
     uiWitness = $(iowitness [t|DragSourceUISpec|])
 
-dragSourceUISpec :: Serialize t => String -> Subscriber (WholeUpdate t) -> CVUISpec -> CVUISpec
+dragSourceUISpec :: Serialize t => String -> Model (WholeUpdate t) -> CVUISpec -> CVUISpec
 dragSourceUISpec datatype lens spec = mkCVUISpec $ MkDragSourceUISpec datatype lens spec
 
 data DragDestinationUISpec where
-    MkDragDestinationUISpec :: Serialize t => String -> Subscriber (WholeUpdate t) -> CVUISpec -> DragDestinationUISpec
+    MkDragDestinationUISpec :: Serialize t => String -> Model (WholeUpdate t) -> CVUISpec -> DragDestinationUISpec
 
 instance Show DragDestinationUISpec where
     show (MkDragDestinationUISpec typename _ _) = "drag-destination " ++ typename
@@ -26,5 +26,5 @@ instance Show DragDestinationUISpec where
 instance UIType DragDestinationUISpec where
     uiWitness = $(iowitness [t|DragDestinationUISpec|])
 
-dragDestinationUISpec :: Serialize t => String -> Subscriber (WholeUpdate t) -> CVUISpec -> CVUISpec
+dragDestinationUISpec :: Serialize t => String -> Model (WholeUpdate t) -> CVUISpec -> CVUISpec
 dragDestinationUISpec datatype lens spec = mkCVUISpec $ MkDragDestinationUISpec datatype lens spec

@@ -116,7 +116,7 @@ subscribeShowUpdates ::
        , ?rc :: ResourceContext
        )
     => String
-    -> Subscriber update
+    -> Model update
     -> LifeCycleIO (LifeCycleIO ())
 subscribeShowUpdates name sub = do
     chan <- liftIO newChan
@@ -128,55 +128,55 @@ subscribeShowUpdates name sub = do
             Nothing -> return ()
             _ -> fail "updates left over"
     runResource ?rc sub $ \asub ->
-        subscribe asub mempty $ \_ updates _ -> for_ updates $ \update -> writeChan chan $ Just update
+        aModelSubscribe asub mempty $ \_ updates _ -> for_ updates $ \update -> writeChan chan $ Just update
     return $ do
         mupdate <- liftIO $ readChan chan
         case mupdate of
             Just update -> outputNameLn name $ "receive " ++ show update
             Nothing -> fail "premature end of updates"
 
-showSubscriberSubject ::
+showModelSubject ::
        (Show (UpdateSubject update), FullSubjectReader (UpdateReader update), ?handle :: Handle, ?rc :: ResourceContext)
     => String
-    -> Subscriber update
+    -> Model update
     -> LifeCycleIO ()
-showSubscriberSubject name sub =
+showModelSubject name sub =
     liftIO $ do
-        taskWait $ subscriberUpdatesTask sub
+        taskWait $ modelUpdatesTask sub
         runResource ?rc sub $ \asub -> do
-            val <- readableToSubject $ subRead asub
+            val <- readableToSubject $ aModelRead asub
             outputNameLn name $ "get " ++ show val
 
-subscriberPushEdits ::
+modelPushEdits ::
        (Show (UpdateEdit update), ?handle :: Handle, ?rc :: ResourceContext)
     => String
-    -> Subscriber update
+    -> Model update
     -> [NonEmpty (UpdateEdit update)]
     -> LifeCycleIO ()
-subscriberPushEdits name sub editss =
+modelPushEdits name sub editss =
     liftIO $
     runResource ?rc sub $ \asub ->
         for_ editss $ \edits -> do
             outputNameLn name $ "push " ++ show (toList edits)
-            maction <- subEdit asub edits
+            maction <- aModelEdit asub edits
             case maction of
                 Nothing -> outputNameLn name "push disallowed"
                 Just action -> do
                     action noEditSource
                     outputNameLn name $ "push succeeded"
 
-subscriberDontPushEdits ::
+modelDontPushEdits ::
        (Show (UpdateEdit update), ?handle :: Handle, ?rc :: ResourceContext)
     => String
-    -> Subscriber update
+    -> Model update
     -> [NonEmpty (UpdateEdit update)]
     -> LifeCycleIO ()
-subscriberDontPushEdits name sub editss =
+modelDontPushEdits name sub editss =
     liftIO $
     runResource ?rc sub $ \asub ->
         for_ editss $ \edits -> do
             outputNameLn name $ "push " ++ show (toList edits)
-            maction <- subEdit asub edits
+            maction <- aModelEdit asub edits
             case maction of
                 Nothing -> outputNameLn name "push disallowed"
                 Just _action -> outputNameLn name "push ignored"
@@ -190,7 +190,7 @@ testSubscription ::
        , Show (UpdateSubject update)
        )
     => UpdateSubject update
-    -> LifeCycleIO (Subscriber update, LifeCycleIO (), NonEmpty (UpdateEdit update) -> LifeCycleIO ())
+    -> LifeCycleIO (Model update, LifeCycleIO (), NonEmpty (UpdateEdit update) -> LifeCycleIO ())
 testSubscription initial = do
     iow <- liftIO $ newIOWitness
     var <- liftIO $ newMVar initial
@@ -199,7 +199,7 @@ testSubscription initial = do
         varObj = mvarObject iow var $ \_ -> True
         editObj :: Object (UpdateEdit update)
         editObj = convertObject varObj
-    sub <- makeReflectingSubscriber editObj
+    sub <- makeReflectingModel editObj
     let
         showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
         showExpected =
@@ -210,21 +210,21 @@ testSubscription initial = do
                     hPutStrLn ?handle $ "expected: " ++ show news
     return (sub, showVar, showExpected)
 
-doSubscriberTest :: TestName -> ((?handle :: Handle, ?rc :: ResourceContext) => LifeCycleIO ()) -> TestTree
-doSubscriberTest name call = goldenTest' name $ runLifeCycle call
+doModelTest :: TestName -> ((?handle :: Handle, ?rc :: ResourceContext) => LifeCycleIO ()) -> TestTree
+doModelTest name call = goldenTest' name $ runLifeCycle call
 
 testPair :: TestTree
 testPair =
-    doSubscriberTest "Pair" $ do
+    doModelTest "Pair" $ do
         (mainSub, mainShow, mainShowExpected) <-
             testSubscription @(PairUpdate (WholeUpdate Bool) (WholeUpdate Bool)) (False, False)
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
         mainShow
         mainShowExpected $
             (MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True) :|
             [MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True]
-        subscriberPushEdits
+        modelPushEdits
             "main"
             mainSub
             [ (MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True) :|
@@ -236,35 +236,35 @@ testPair =
 
 testString :: TestTree
 testString =
-    doSubscriberTest "String" $ do
+    doModelTest "String" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCDE"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
         mainShow
-        subscriberDontPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 3 5) "PQR"]
+        modelDontPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 3 5) "PQR"]
         mainShow
-        subscriberDontPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 3) ""]
+        modelDontPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 3) ""]
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 2) "xy"]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 2) "xy"]
         mainShowUpdate
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) "1"]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) "1"]
         mainShowUpdate
         mainShow
 
 testString1 :: TestTree
 testString1 =
-    doSubscriberTest "String1" $ do
+    doModelTest "String1" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCDE"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
         mainShow
-        subscriberDontPushEdits
+        modelDontPushEdits
             "main"
             mainSub
             [pure $ StringReplaceSection (startEndRun 3 5) "PQR", pure $ StringReplaceSection (startEndRun 2 3) ""]
         mainShow
-        subscriberPushEdits
+        modelPushEdits
             "main"
             mainSub
             [pure $ StringReplaceSection (startEndRun 1 2) "xy", pure $ StringReplaceSection (startEndRun 2 4) "1"]
@@ -274,18 +274,18 @@ testString1 =
 
 testString2 :: TestTree
 testString2 =
-    doSubscriberTest "String2" $ do
+    doModelTest "String2" $ do
         (mainSub, mainShow, mainShowExpected) <- testSubscription @(StringUpdate String) "ABCDE"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
         mainShow
-        subscriberDontPushEdits
+        modelDontPushEdits
             "main"
             mainSub
             [(StringReplaceSection (startEndRun 3 5) "PQR") :| [StringReplaceSection (startEndRun 2 3) ""]]
         mainShow
         mainShowExpected $ (StringReplaceSection (startEndRun 1 2) "xy") :| [StringReplaceSection (startEndRun 2 4) "1"]
-        subscriberPushEdits
+        modelPushEdits
             "main"
             mainSub
             [(StringReplaceSection (startEndRun 1 2) "xy") :| [StringReplaceSection (startEndRun 2 4) "1"]]
@@ -295,151 +295,151 @@ testString2 =
 
 testSharedString1 :: TestTree
 testSharedString1 =
-    doSubscriberTest "SharedString1" $ do
+    doModelTest "SharedString1" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCDE"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainSub
-        showSubscriberSubject "sect" sectSub
+        sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainSub
+        showModelSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberDontPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 3 5) "PQR"]
+        modelDontPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 3 5) "PQR"]
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 2) "xy"]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 2) "xy"]
         mainShowUpdate
         sectShowUpdate
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) "1"]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) "1"]
         mainShowUpdate
         sectShowUpdate
         mainShow
 
 testSharedString2 :: TestTree
 testSharedString2 =
-    doSubscriberTest "SharedString2" $ do
+    doModelTest "SharedString2" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
-        showSubscriberSubject "sect" sectSub
+        sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
+        showModelSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 0 0) "P"]
+        modelPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 0 0) "P"]
         mainShowUpdate
         sectShowUpdate
         mainShow
-        subscriberPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 0 0) "Q"]
+        modelPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 0 0) "Q"]
         mainShowUpdate
         sectShowUpdate
         mainShow
 
 testSharedString3 :: TestTree
 testSharedString3 =
-    doSubscriberTest "SharedString3" $ do
+    doModelTest "SharedString3" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
+        sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
         subscribeEditor ?rc sectSub $ pure ()
-        showSubscriberSubject "sect" sectSub
+        showModelSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 1) "P"]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 1) "P"]
         mainShowUpdate
         sectShowUpdate
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 2) "Q"]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 2) "Q"]
         mainShowUpdate
         sectShowUpdate
         mainShow
 
 testSharedString4 :: TestTree
 testSharedString4 =
-    doSubscriberTest "SharedString4" $ do
+    doModelTest "SharedString4" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
+        sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
         subscribeEditor ?rc sectSub $ pure ()
-        showSubscriberSubject "sect" sectSub
+        showModelSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 0 0) "P"]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 0 0) "P"]
         mainShowUpdate
-        showSubscriberSubject "sect" sectSub
+        showModelSubject "sect" sectSub
         mainShow
-        subscriberPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 0 0) "Q"]
+        modelPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 0 0) "Q"]
         mainShowUpdate
         sectShowUpdate
         mainShow
 
 testSharedString5 :: TestTree
 testSharedString5 =
-    doSubscriberTest "SharedString5" $ do
+    doModelTest "SharedString5" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
-        showSubscriberSubject "sect" sectSub
+        sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
+        showModelSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) ""]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) ""]
         mainShowUpdate
         sectShowUpdate
         mainShow
 
 testSharedString6 :: TestTree
 testSharedString6 =
-    doSubscriberTest "SharedString6" $ do
+    doModelTest "SharedString6" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
-        showSubscriberSubject "sect" sectSub
+        sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
+        showModelSubject "sect" sectSub
         _sectFlush <- subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 3 4) ""]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 3 4) ""]
         mainShowUpdate
         mainShow
 
 testSharedString7 :: TestTree
 testSharedString7 =
-    doSubscriberTest "SharedString7" $ do
+    doModelTest "SharedString7" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
-        showSubscriberSubject "sect" sectSub
+        sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainSub
+        showModelSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) "PQR"]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 4) "PQR"]
         mainShowUpdate
         sectShowUpdate
         mainShow
 
 testSharedString7a :: TestTree
 testSharedString7a =
-    doSubscriberTest "SharedString7a" $ do
+    doModelTest "SharedString7a" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "AB"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
-        showSubscriberSubject "sect" sectSub
+        sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
+        showModelSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 2) "PQR"]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 2) "PQR"]
         mainShowUpdate
         sectShowUpdate
         mainShow
 
 testPairedStrings1 :: TestTree
 testPairedStrings1 =
-    doSubscriberTest "PairedStrings1" $ do
+    doModelTest "PairedStrings1" $ do
         (sub1, _, _) <- testSubscription @(StringUpdate String) "ABC"
         (sub2, _, _) <- testSubscription @(StringUpdate String) "PQR"
-        let pairSub = pairSubscribers sub1 sub2
+        let pairSub = pairModels sub1 sub2
         pairShowUpdate <- subscribeShowUpdates "pair" pairSub
-        subscriberPushEdits
+        modelPushEdits
             "pair"
             pairSub
             [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]
@@ -447,19 +447,19 @@ testPairedStrings1 =
 
 testPairedStrings2 :: TestTree
 testPairedStrings2 =
-    doSubscriberTest "PairedStrings2" $ do
+    doModelTest "PairedStrings2" $ do
         (sub1, showVar1, _) <- testSubscription @(StringUpdate String) "ABC"
         (sub2, showVar2, _) <- testSubscription @(StringUpdate String) "PQR"
-        showSubscriberSubject "sub1" sub1
+        showModelSubject "sub1" sub1
         sub1ShowUpdate <- subscribeShowUpdates "sub1" sub1
-        showSubscriberSubject "sub2" sub2
+        showModelSubject "sub2" sub2
         sub2ShowUpdate <- subscribeShowUpdates "sub2" sub2
-        let pairSub = pairSubscribers sub1 sub2
-        showSubscriberSubject "pair" pairSub
+        let pairSub = pairModels sub1 sub2
+        showModelSubject "pair" pairSub
         pairShowUpdate <- subscribeShowUpdates "pair" pairSub
         showVar1
         showVar2
-        subscriberPushEdits
+        modelPushEdits
             "pair"
             pairSub
             [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]
@@ -467,7 +467,7 @@ testPairedStrings2 =
         pairShowUpdate
         showVar1
         showVar2
-        subscriberPushEdits
+        modelPushEdits
             "pair"
             pairSub
             [pure $ MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 2 2) "y"]
@@ -478,21 +478,21 @@ testPairedStrings2 =
 
 testPairedString1 :: TestTree
 testPairedString1 =
-    doSubscriberTest "PairedString1" $ do
+    doModelTest "PairedString1" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        let pairSub = pairSubscribers mainSub mainSub
-        showSubscriberSubject "pair" pairSub
+        let pairSub = pairModels mainSub mainSub
+        showModelSubject "pair" pairSub
         pairShowUpdate <- subscribeShowUpdates "pair" pairSub
         mainShow
-        subscriberPushEdits
+        modelPushEdits
             "pair"
             pairSub
             [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]
         pairShowUpdate
         mainShow
-        subscriberPushEdits
+        modelPushEdits
             "pair"
             pairSub
             [pure $ MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]
@@ -502,18 +502,18 @@ testPairedString1 =
 
 testPairedSharedString1 :: TestTree
 testPairedSharedString1 =
-    doSubscriberTest "PairedSharedString1" $ do
+    doModelTest "PairedSharedString1" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "PABCQ"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainSub
-        showSubscriberSubject "sect" sectSub
+        sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainSub
+        showModelSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
-        let pairSub = pairSubscribers sectSub sectSub
-        showSubscriberSubject "pair" pairSub
+        let pairSub = pairModels sectSub sectSub
+        showModelSubject "pair" pairSub
         pairShowUpdate <- subscribeShowUpdates "pair" pairSub
         mainShow
-        subscriberPushEdits
+        modelPushEdits
             "pair"
             pairSub
             [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]
@@ -522,7 +522,7 @@ testPairedSharedString1 =
         pairShowUpdate
         pairShowUpdate
         mainShow
-        subscriberPushEdits
+        modelPushEdits
             "pair"
             pairSub
             [pure $ MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]
@@ -534,36 +534,36 @@ testPairedSharedString1 =
 
 testPairedSharedString2 :: TestTree
 testPairedSharedString2 =
-    doSubscriberTest "PairedSharedString2" $ do
+    doModelTest "PairedSharedString2" $ do
         (mainSub, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
-        showSubscriberSubject "main" mainSub
+        showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
-        sectSub <- floatMapSubscriber ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
-        showSubscriberSubject "sect" sectSub
+        sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
+        showModelSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
-        let pairSub = pairSubscribers sectSub sectSub
-        showSubscriberSubject "pair" pairSub
+        let pairSub = pairModels sectSub sectSub
+        showModelSubject "pair" pairSub
         pairShowUpdate <- subscribeShowUpdates "pair" pairSub
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 1) "P"]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 1 1) "P"]
         mainShowUpdate
         sectShowUpdate
         pairShowUpdate
         pairShowUpdate
         mainShow
-        subscriberPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 2) "Q"]
+        modelPushEdits "main" mainSub [pure $ StringReplaceSection (startEndRun 2 2) "Q"]
         mainShowUpdate
         sectShowUpdate
         pairShowUpdate
         pairShowUpdate
         mainShow
-        subscriberPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 1 1) "x"]
+        modelPushEdits "sect" sectSub [pure $ StringReplaceSection (startEndRun 1 1) "x"]
         mainShowUpdate
         sectShowUpdate
         pairShowUpdate
         pairShowUpdate
         mainShow
-        subscriberPushEdits
+        modelPushEdits
             "pair"
             pairSub
             [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 3 3) "y"]

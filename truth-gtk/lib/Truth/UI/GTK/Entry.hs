@@ -28,9 +28,9 @@ textEntryGetView =
                      cvOn widget #changed $
                      viewRunResource rmod $ \asub -> do
                          st <- get widget #text
-                         succeeded <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
+                         succeeded <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
                          setValidState succeeded
-                 cvBindWholeSubscriber rmod (Just esrc) $ \newtext ->
+                 cvBindWholeModel rmod (Just esrc) $ \newtext ->
                      liftIO $
                      withSignalBlocked widget changedSignal $ do
                          oldtext <- get widget #text

@@ -52,7 +52,7 @@ makeTestPinaforeContext uitoolkit = do
         picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
         picker PinaforeSelectClock = clockOM rc
         picker PinaforeSelectTimeZone = mapObjectMaker rc (liftReadOnlyFloatingEditLens clockTimeZoneLens) $ clockOM rc
-    (sub, ()) <- makeSharedSubscriber $ tupleObjectMaker picker
+    (sub, ()) <- makeSharedModel $ tupleObjectMaker picker
     pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)
 

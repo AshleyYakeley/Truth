@@ -49,7 +49,7 @@ newMemRef ::
     => IO (PinaforeRef '( A, A))
 newMemRef = do
     lens <- makeMemoryCellEditLens Unknown
-    return $ pinaforeValueToRef $ MkPinaforeValue $ mapSubscriber lens $ pinaforeBaseSubscriber @baseupdate
+    return $ pinaforeValueToRef $ MkPinaforeValue $ mapModel lens $ pinaforeBaseModel @baseupdate
 
 newMemFiniteSet ::
        forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens MemoryCellUpdate baseupdate)
@@ -58,16 +58,16 @@ newMemFiniteSet = do
     lens <- makeMemoryCellEditLens mempty
     return $
         meetValuePinaforeFiniteSetRef $
-        MkPinaforeValue $ mapSubscriber (convertEditLens . lens) $ pinaforeBaseSubscriber @baseupdate
+        MkPinaforeValue $ mapModel (convertEditLens . lens) $ pinaforeBaseModel @baseupdate
 
 now :: forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens (ROWUpdate UTCTime) baseupdate)
     => PinaforeImmutableReference UTCTime
-now = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseSubscriber @baseupdate
+now = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseModel @baseupdate
 
 timeZone ::
        forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseEditLens (ROWUpdate TimeZone) baseupdate)
     => PinaforeImmutableReference TimeZone
-timeZone = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseSubscriber @baseupdate
+timeZone = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseModel @baseupdate
 
 localNow ::
        forall baseupdate.

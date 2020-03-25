@@ -31,7 +31,7 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-textView :: Subscriber (StringUpdate Text) -> SelectNotify TextSelection -> GCreateView
+textView :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GCreateView
 textView rmod (MkSelectNotify setsel) = do
     esrc <- newEditSource
     buffer <- new TextBuffer []
@@ -40,14 +40,14 @@ textView rmod (MkSelectNotify setsel) = do
             p <- getSequencePoint iter
             liftIO $
                 runResource emptyResourceContext rmod $ \asub -> do
-                    _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
+                    _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
                     return ()
     deleteSignal <-
         cvOn buffer #deleteRange $ \iter1 iter2 -> do
             srun <- getSequenceRun iter1 iter2
             liftIO $
                 runResource emptyResourceContext rmod $ \asub -> do
-                    _ <- pushEdit esrc $ subEdit asub $ pure $ StringReplaceSection srun mempty
+                    _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection srun mempty
                     return ()
     let
         aspect :: View (Maybe TextSelection)
@@ -59,9 +59,9 @@ textView rmod (MkSelectNotify setsel) = do
     cvLiftView $ setsel aspect
     _ <- cvOn buffer #changed $ setsel aspect
     let
-        initV :: Subscriber (StringUpdate Text) -> CreateView ()
+        initV :: Model (StringUpdate Text) -> CreateView ()
         initV rm = do
-            initial <- viewRunResource rm $ \am -> readableToSubject $ subRead am
+            initial <- viewRunResource rm $ \am -> readableToSubject $ aModelRead am
             liftIO $
                 withSignalBlocked buffer insertSignal $
                 withSignalBlocked buffer deleteSignal $ #setText buffer initial (-1)
@@ -74,7 +74,7 @@ textView rmod (MkSelectNotify setsel) = do
                 case edit of
                     StringReplaceWhole text -> #setText buffer text (-1)
                     StringReplaceSection bounds text -> replaceText buffer bounds text
-    cvBindSubscriber rmod (Just esrc) initV mempty recvV
+    cvBindModel rmod (Just esrc) initV mempty recvV
     widget <- new TextView [#buffer := buffer]
     toWidget widget
 

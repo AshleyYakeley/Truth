@@ -82,7 +82,7 @@ library:
       - Truth.Core.Object.AutoClose
       - Truth.Core.Object.ObjectEdit
       - Truth.Core.Object.ObjectMaker
-      - Truth.Core.Object.Subscriber
+      - Truth.Core.Object.Model
       - Truth.Core.Object.Tuple
       - Truth.Core.Object.MemoryCell
       - Truth.Core.Object.Editor

@@ -12,22 +12,22 @@ import Truth.UI.GTK.Useful
 createWidget :: CheckboxUISpec -> CreateView Widget
 createWidget (MkCheckboxUISpec label rmod) = do
     esrc <- newEditSource
-    initial <- viewRunResource rmod $ \asub -> subRead asub ReadWhole
+    initial <- viewRunResource rmod $ \asub -> aModelRead asub ReadWhole
     widget <- new CheckButton [#active := initial]
-    cvBindReadOnlyWholeSubscriber label $ \val -> set widget [#label := val]
+    cvBindReadOnlyWholeModel label $ \val -> set widget [#label := val]
     changedSignal <-
         cvOn widget #clicked $
         viewRunResource rmod $ \asub -> do
             st <- Gtk.get widget #active
-            _ <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
+            _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
             return ()
-    cvBindWholeSubscriber rmod (Just esrc) $ \st ->
+    cvBindWholeModel rmod (Just esrc) $ \st ->
         liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
 createWidget (MkMaybeCheckboxUISpec label rmod) = do
-    initial <- viewRunResource rmod $ \asub -> subRead asub ReadWhole
+    initial <- viewRunResource rmod $ \asub -> aModelRead asub ReadWhole
     widget <- new CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
-    cvBindReadOnlyWholeSubscriber label $ \val -> set widget [#label := val]
+    cvBindReadOnlyWholeModel label $ \val -> set widget [#label := val]
     let
         getWidgetState :: View (Maybe Bool)
         getWidgetState = do
@@ -53,10 +53,10 @@ createWidget (MkMaybeCheckboxUISpec label rmod) = do
                                 else Just (oldst /= Just True)
                     _ <-
                         viewRunResource rmod $ \asub ->
-                            pushEdit noEditSource $ subEdit asub $ pure $ MkWholeReaderEdit newst
+                            pushEdit noEditSource $ aModelEdit asub $ pure $ MkWholeReaderEdit newst
                     return True
                 _ -> return False
-    cvBindWholeSubscriber rmod Nothing setWidgetState
+    cvBindWholeModel rmod Nothing setWidgetState
     toWidget widget
 
 checkButtonGetView :: GetGView

@@ -7,7 +7,7 @@ import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.View.View
 
 data ButtonUISpec where
-    MkButtonUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (ROWUpdate (Maybe (View ()))) -> ButtonUISpec
+    MkButtonUISpec :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (View ()))) -> ButtonUISpec
 
 instance Show ButtonUISpec where
     show (MkButtonUISpec _ _) = "button"
@@ -15,8 +15,8 @@ instance Show ButtonUISpec where
 instance UIType ButtonUISpec where
     uiWitness = $(iowitness [t|ButtonUISpec|])
 
-buttonUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (ROWUpdate (Maybe (View ()))) -> CVUISpec
+buttonUISpec :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (View ()))) -> CVUISpec
 buttonUISpec label action = mkCVUISpec $ MkButtonUISpec label action
 
-simpleButtonUISpec :: Subscriber (ROWUpdate Text) -> View () -> CVUISpec
-simpleButtonUISpec label action = buttonUISpec label $ constantSubscriber $ Just action
+simpleButtonUISpec :: Model (ROWUpdate Text) -> View () -> CVUISpec
+simpleButtonUISpec label action = buttonUISpec label $ constantModel $ Just action

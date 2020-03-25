@@ -1,20 +1,20 @@
-module Truth.Core.Object.Subscriber
-    ( ASubscriber(..)
-    , subRead
-    , subEdit
-    , Subscriber
-    , subscriberUpdatesTask
-    , subscriberCommitTask
-    , makeReflectingSubscriber
-    , makeSharedSubscriber
-    , subscriberObjectMaker
+module Truth.Core.Object.Model
+    ( AModel(..)
+    , aModelRead
+    , aModelEdit
+    , Model
+    , modelUpdatesTask
+    , modelCommitTask
+    , makeReflectingModel
+    , makeSharedModel
+    , modelObjectMaker
     , shareObjectMaker
-    , floatMapSubscriber
-    , mapSubscriber
-    , unitSubscriber
-    , constantSubscriber
-    , subscriberToReadOnly
-    , makeMemorySubscriber
+    , floatMapModel
+    , mapModel
+    , unitModel
+    , constantModel
+    , modelToReadOnly
+    , makeMemoryModel
     ) where
 
 import Truth.Core.Edit
@@ -27,47 +27,45 @@ import Truth.Core.Read
 import Truth.Core.Resource
 import Truth.Core.Types
 
-data ASubscriber update tt = MkASubscriber
-    { subAnObject :: AnObject (UpdateEdit update) tt
-    , subscribe :: Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt LifeCycleIO ()
-    , subUpdatesTask :: Task ()
+data AModel update tt = MkAModel
+    { aModelAnObject :: AnObject (UpdateEdit update) tt
+    , aModelSubscribe :: Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt LifeCycleIO ()
+    , aModelUpdatesTask :: Task ()
     }
 
-subRead :: ASubscriber update tt -> Readable (ApplyStack tt IO) (UpdateReader update)
-subRead = objRead . subAnObject
+aModelRead :: AModel update tt -> Readable (ApplyStack tt IO) (UpdateReader update)
+aModelRead = objRead . aModelAnObject
 
-subEdit ::
-       ASubscriber update tt
-    -> NonEmpty (UpdateEdit update)
-    -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-subEdit = objEdit . subAnObject
+aModelEdit ::
+       AModel update tt -> NonEmpty (UpdateEdit update) -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+aModelEdit = objEdit . aModelAnObject
 
-instance MapResource (ASubscriber update) where
+instance MapResource (AModel update) where
     mapResource ::
            forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
         => TransListFunction tt1 tt2
-        -> ASubscriber update tt1
-        -> ASubscriber update tt2
-    mapResource tlf (MkASubscriber obj1 sub1 utask) =
+        -> AModel update tt1
+        -> AModel update tt2
+    mapResource tlf (MkAModel obj1 sub1 utask) =
         case transStackDict @Monad @tt1 @IO of
             Dict ->
                 case transStackDict @Monad @tt2 @IO of
                     Dict -> let
                         obj2 = mapResource tlf obj1
                         sub2 recv task = tlfFunction tlf (Proxy @LifeCycleIO) $ sub1 recv task
-                        in MkASubscriber obj2 sub2 utask
+                        in MkAModel obj2 sub2 utask
 
-type Subscriber update = Resource (ASubscriber update)
+type Model update = Resource (AModel update)
 
 type UpdateStoreEntry update = (Task (), ResourceContext -> NonEmpty update -> EditContext -> IO ())
 
 type UpdateStore update = Store (UpdateStoreEntry update)
 
-subscriberUpdatesTask :: Subscriber update -> Task ()
-subscriberUpdatesTask (MkResource _ asub) = subUpdatesTask asub
+modelUpdatesTask :: Model update -> Task ()
+modelUpdatesTask (MkResource _ asub) = aModelUpdatesTask asub
 
-subscriberCommitTask :: Subscriber update -> Task ()
-subscriberCommitTask (MkResource _ asub) = objCommitTask $ subAnObject asub
+modelCommitTask :: Model update -> Task ()
+modelCommitTask (MkResource _ asub) = objCommitTask $ aModelAnObject asub
 
 newtype UpdateQueue update =
     MkUpdateQueue [(EditContext, NonEmpty update)]
@@ -98,13 +96,13 @@ getRunner recv = do
     let recvAsync _ updates ec = runAsync $ singleUpdateQueue updates ec
     return (utask, recvAsync)
 
-subscriberObjectMaker :: ResourceContext -> Subscriber update -> a -> ObjectMaker update a
-subscriberObjectMaker rc (MkResource rr MkASubscriber {..}) val update utask = do
-    runResourceRunner rc rr $ subscribe update utask
-    return $ MkObjectMakerResult (MkResource rr subAnObject) subUpdatesTask val
+modelObjectMaker :: ResourceContext -> Model update -> a -> ObjectMaker update a
+modelObjectMaker rc (MkResource rr MkAModel {..}) val update utask = do
+    runResourceRunner rc rr $ aModelSubscribe update utask
+    return $ MkObjectMakerResult (MkResource rr aModelAnObject) aModelUpdatesTask val
 
-makeSharedSubscriber :: forall update a. ObjectMaker update a -> LifeCycleIO (Subscriber update, a)
-makeSharedSubscriber om = do
+makeSharedModel :: forall update a. ObjectMaker update a -> LifeCycleIO (Model update, a)
+makeSharedModel om = do
     var :: MVar (UpdateStore update) <- liftIO $ newMVar emptyStore
     let
         updateP :: ResourceContext -> NonEmpty update -> EditContext -> IO ()
@@ -120,46 +118,46 @@ makeSharedSubscriber om = do
         utaskP :: Task ()
         utaskP = utaskRunner <> ioTask (fmap mconcat getTasks)
     MkObjectMakerResult {..} <- om utaskP updatePAsync
-    MkResource (trunC :: ResourceRunner tt) subAnObject <- return omrObject
+    MkResource (trunC :: ResourceRunner tt) aModelAnObject <- return omrObject
     Dict <- return $ resourceRunnerUnliftAllDict trunC
     Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     let
-        subscribe ::
+        aModelSubscribe ::
                Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt LifeCycleIO ()
-        subscribe taskC updateC =
+        aModelSubscribe taskC updateC =
             stackLift @tt $ do
                 key <- liftIO $ mVarRun var $ addStoreStateT (taskC, updateC)
                 lifeCycleClose @IO $ mVarRun var $ deleteStoreStateT key
-        subUpdatesTask = omrUpdatesTask
-        child :: Subscriber update
-        child = MkResource trunC $ MkASubscriber {..}
+        aModelUpdatesTask = omrUpdatesTask
+        child :: Model update
+        child = MkResource trunC $ MkAModel {..}
     return (child, omrValue)
 
 shareObjectMaker :: forall update a. ObjectMaker update a -> LifeCycleIO (ResourceContext -> ObjectMaker update a)
 shareObjectMaker uobj = do
-    (sub, a) <- makeSharedSubscriber uobj
-    return $ \rc -> subscriberObjectMaker rc sub a
+    (sub, a) <- makeSharedModel uobj
+    return $ \rc -> modelObjectMaker rc sub a
 
-makeReflectingSubscriber ::
+makeReflectingModel ::
        forall update. IsUpdate update
     => Object (UpdateEdit update)
-    -> LifeCycleIO (Subscriber update)
-makeReflectingSubscriber object = do
-    (sub, ()) <- makeSharedSubscriber $ reflectingObjectMaker object
+    -> LifeCycleIO (Model update)
+makeReflectingModel object = do
+    (sub, ()) <- makeSharedModel $ reflectingObjectMaker object
     return sub
 
-floatMapSubscriber ::
+floatMapModel ::
        forall updateA updateB.
        ResourceContext
     -> FloatingEditLens updateA updateB
-    -> Subscriber updateA
-    -> LifeCycleIO (Subscriber updateB)
-floatMapSubscriber rc lens subA = do
-    (subB, ()) <- makeSharedSubscriber $ mapObjectMaker rc lens $ subscriberObjectMaker rc subA ()
+    -> Model updateA
+    -> LifeCycleIO (Model updateB)
+floatMapModel rc lens subA = do
+    (subB, ()) <- makeSharedModel $ mapObjectMaker rc lens $ modelObjectMaker rc subA ()
     return subB
 
-mapSubscriber :: forall updateA updateB. EditLens updateA updateB -> Subscriber updateA -> Subscriber updateB
-mapSubscriber plens (MkResource rr (MkASubscriber objA subA utaskA)) =
+mapModel :: forall updateA updateB. EditLens updateA updateB -> Model updateA -> Model updateB
+mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
     case resourceRunnerUnliftAllDict rr of
         Dict -> let
             objB = mapAnObject plens objA
@@ -171,24 +169,24 @@ mapSubscriber plens (MkResource rr (MkASubscriber objA subA utaskA)) =
                         Nothing -> return ()
                         Just updatesB' -> recvB rc updatesB' ec
                 in subA utask recvA
-            in MkResource rr $ MkASubscriber objB subB utaskA
+            in MkResource rr $ MkAModel objB subB utaskA
 
-anobjSubscriber :: AnObject (UpdateEdit update) '[] -> Subscriber update
-anobjSubscriber anobj = MkResource nilResourceRunner $ MkASubscriber anobj (\_ _ -> return ()) mempty
+anObjectModel :: AnObject (UpdateEdit update) '[] -> Model update
+anObjectModel anobj = MkResource nilResourceRunner $ MkAModel anobj (\_ _ -> return ()) mempty
 
-unitSubscriber :: Subscriber (WholeUpdate ())
-unitSubscriber = anobjSubscriber $ MkAnObject (\ReadWhole -> return ()) (\_ -> return Nothing) mempty
+unitModel :: Model (WholeUpdate ())
+unitModel = anObjectModel $ MkAnObject (\ReadWhole -> return ()) (\_ -> return Nothing) mempty
 
-constantSubscriber ::
+constantModel ::
        forall update. SubjectReader (UpdateReader update)
     => UpdateSubject update
-    -> Subscriber (ReadOnlyUpdate update)
-constantSubscriber subj = anobjSubscriber $ immutableAnObject $ subjectToReadable subj
+    -> Model (ReadOnlyUpdate update)
+constantModel subj = anObjectModel $ immutableAnObject $ subjectToReadable subj
 
-subscriberToReadOnly :: Subscriber update -> Subscriber (ReadOnlyUpdate update)
-subscriberToReadOnly = mapSubscriber toReadOnlyEditLens
+modelToReadOnly :: Model update -> Model (ReadOnlyUpdate update)
+modelToReadOnly = mapModel toReadOnlyEditLens
 
-makeMemorySubscriber :: forall a. a -> LifeCycleIO (Subscriber (WholeUpdate a))
-makeMemorySubscriber initial = do
+makeMemoryModel :: forall a. a -> LifeCycleIO (Model (WholeUpdate a))
+makeMemoryModel initial = do
     obj <- liftIO $ makeMemoryObject initial $ \_ -> True
-    makeReflectingSubscriber obj
+    makeReflectingModel obj

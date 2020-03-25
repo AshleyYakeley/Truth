@@ -14,7 +14,7 @@ import Truth.UI.GTK.TextStyle
 import Truth.UI.GTK.Useful
 
 data Column row = MkColumn
-    { colName :: Subscriber (ROWUpdate Text)
+    { colName :: Model (ROWUpdate Text)
     , colText :: row -> Text
     , colProps :: row -> TableCellProps
     }
@@ -23,7 +23,7 @@ mapColumn :: (r2 -> r1) -> Column r1 -> Column r2
 mapColumn f (MkColumn n t p) = MkColumn n (t . f) (p . f)
 
 data StoreEntry update rowtext rowprops = MkStoreEntry
-    { entrySubscriber :: Subscriber update
+    { entryModel :: Model update
     , entryRowText :: rowtext
     , entryRowProps :: rowprops
     }
@@ -39,7 +39,7 @@ addColumn ::
 addColumn tview store col = do
     renderer <- new CellRendererText []
     column <- new TreeViewColumn []
-    cvBindReadOnlyWholeSubscriber (colName col) $ #setTitle column
+    cvBindReadOnlyWholeModel (colName col) $ #setTitle column
     #packStart column renderer False
     cellLayoutSetAttributes column renderer (getDynamicSeqStore store) $ \entry ->
         cellAttributes col $ dynamicStoreEntryValue entry
@@ -47,8 +47,8 @@ addColumn tview store col = do
     return ()
 
 data KeyColumns update =
-    forall rowprops rowtext. MkKeyColumns (Subscriber update -> CreateView ( Subscriber (WholeUpdate rowtext)
-                                                                           , Subscriber (ROWUpdate rowprops)))
+    forall rowprops rowtext. MkKeyColumns (Model update -> CreateView ( Model (WholeUpdate rowtext)
+                                                                      , Model (ROWUpdate rowprops)))
                                           [Column (rowtext, rowprops)]
 
 oneKeyColumn :: KeyColumn update -> KeyColumns update
@@ -61,12 +61,12 @@ instance Semigroup (KeyColumns update) where
                  (lens1, func1) <- f1 k
                  (lens2, func2) <- f2 k
                  return $
-                     ( mapSubscriber convertEditLens $ pairSubscribers lens1 lens2
-                     , mapSubscriber convertReadOnlyEditLens $ pairReadOnlySubscribers func1 func2)) $
+                     ( mapModel convertEditLens $ pairModels lens1 lens2
+                     , mapModel convertReadOnlyEditLens $ pairReadOnlyModels func1 func2)) $
         fmap (mapColumn $ \(x, y) -> (fst x, fst y)) c1 <> fmap (mapColumn $ \(x, y) -> (snd x, snd y)) c2
 
 instance Monoid (KeyColumns update) where
-    mempty = MkKeyColumns (\_ -> return (unitSubscriber, constantSubscriber ())) []
+    mempty = MkKeyColumns (\_ -> return (unitModel, constantModel ())) []
     mappend = (<>)
 
 tableContainerView ::
@@ -79,35 +79,35 @@ tableContainerView ::
        , Integral (Index seq)
        )
     => KeyColumns update
-    -> Subscriber (OrderedListUpdate seq update)
-    -> (Subscriber update -> View ())
-    -> SelectNotify (Subscriber update)
+    -> Model (OrderedListUpdate seq update)
+    -> (Model update -> View ())
+    -> SelectNotify (Model update)
     -> GCreateView
-tableContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( Subscriber (WholeUpdate rowtext)
-                                                                             , Subscriber (ROWUpdate rowprops))) cols) tableSub onDoubleClick sel = do
+tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model (WholeUpdate rowtext)
+                                                                        , Model (ROWUpdate rowprops))) cols) tableSub onDoubleClick sel = do
     let
         defStoreEntry :: StoreEntry update rowtext rowprops
-        defStoreEntry = MkStoreEntry (error "unset subscriber") (error "unset text") (error "unset props")
+        defStoreEntry = MkStoreEntry (error "unset model") (error "unset text") (error "unset props")
         makeStoreEntry ::
                SequencePoint seq
             -> ((StoreEntry update rowtext rowprops -> StoreEntry update rowtext rowprops) -> IO ())
             -> CreateView ()
         makeStoreEntry i setval = do
             usub <-
-                cvFloatMapSubscriber
+                cvFloatMapModel
                     (editLensToFloating (mustExistOneEditLens "GTK table view") . orderedListItemLens i)
                     tableSub
-            liftIO $ setval $ \entry -> entry {entrySubscriber = usub}
+            liftIO $ setval $ \entry -> entry {entryModel = usub}
             (textModel, propModel) <- colfunc usub
-            cvBindWholeSubscriber textModel Nothing $ \t -> liftIO $ setval $ \entry -> entry {entryRowText = t}
-            cvBindReadOnlyWholeSubscriber propModel $ \t -> liftIO $ setval $ \entry -> entry {entryRowProps = t}
+            cvBindWholeModel textModel Nothing $ \t -> liftIO $ setval $ \entry -> entry {entryRowText = t}
+            cvBindReadOnlyWholeModel propModel $ \t -> liftIO $ setval $ \entry -> entry {entryRowProps = t}
         initTable ::
-               Subscriber (OrderedListUpdate seq update)
+               Model (OrderedListUpdate seq update)
             -> CreateView (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
         initTable osub = do
             initialRows <-
                 viewRunResourceContext osub $ \unlift amodel -> do
-                    n <- liftIO $ unlift $ subRead amodel ListReadLength
+                    n <- liftIO $ unlift $ aModelRead amodel ListReadLength
                     return $ fmap makeStoreEntry [0 .. pred n]
             store <- newDynamicStore defStoreEntry initialRows
             tview <- treeViewNewWithModel $ getDynamicSeqStore store
@@ -125,9 +125,9 @@ tableContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( S
                 OrderedListUpdateDelete i -> dynamicStoreDelete i store
                 OrderedListUpdateInsert i _ -> dynamicStoreInsert i defStoreEntry (makeStoreEntry i) store
                 OrderedListUpdateClear -> dynamicStoreClear store
-    (store, tview) <- cvBindSubscriber tableSub Nothing initTable mempty recvTable
+    (store, tview) <- cvBindModel tableSub Nothing initTable mempty recvTable
     let
-        getSelection :: View (Maybe (Subscriber update))
+        getSelection :: View (Maybe (Model update))
         getSelection = do
             tsel <- #getSelection tview
             (ltpath, _) <- #getSelectedRows tsel
@@ -137,7 +137,7 @@ tableContainerView (MkKeyColumns (colfunc :: Subscriber update -> CreateView ( S
                     case ii of
                         Just [i] -> do
                             entry <- dynamicStoreGet i store
-                            return $ Just $ entrySubscriber entry
+                            return $ Just $ entryModel entry
                         _ -> return Nothing
                 _ -> return Nothing
     _ <- cvOn tview #cursorChanged $ runSelectNotify sel getSelection

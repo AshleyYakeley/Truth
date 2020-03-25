@@ -20,11 +20,11 @@ data MenuEntry
     = SeparatorMenuEntry
     | ActionMenuEntry Text
                       (Maybe MenuAccelerator)
-                      (Subscriber (ROWUpdate (Maybe (View ()))))
+                      (Model (ROWUpdate (Maybe (View ()))))
     | SubMenuEntry Text
                    [MenuEntry]
 
 type MenuBar = [MenuEntry]
 
 simpleActionMenuItem :: Text -> Maybe MenuAccelerator -> View () -> MenuEntry
-simpleActionMenuItem label maccel action = ActionMenuEntry label maccel $ constantSubscriber $ Just action
+simpleActionMenuItem label maccel action = ActionMenuEntry label maccel $ constantModel $ Just action

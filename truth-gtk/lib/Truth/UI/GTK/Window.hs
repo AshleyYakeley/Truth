@@ -92,7 +92,7 @@ getTheView lspec = do
 createWindowAndChild :: WindowSpec -> CreateView UIWindow
 createWindowAndChild MkWindowSpec {..} = do
     window <- lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
-    cvBindReadOnlyWholeSubscriber wsTitle $ \title -> set window [#title := title]
+    cvBindReadOnlyWholeModel wsTitle $ \title -> set window [#title := title]
     content <- getTheView wsContent
     _ <-
         cvOn window #deleteEvent $ \_ -> do
@@ -106,7 +106,7 @@ createWindowAndChild MkWindowSpec {..} = do
                 #addAccelGroup window ag
                 mb <-
                     switchView $
-                    mapSubscriber (liftReadOnlyEditLens $ funcEditLens $ \mbar -> createMenuBar ag mbar >>= toWidget) $
+                    mapModel (liftReadOnlyEditLens $ funcEditLens $ \mbar -> createMenuBar ag mbar >>= toWidget) $
                     efmbar
                 vbox <- new Box [#orientation := OrientationVertical]
                 #packStart vbox mb False False 0

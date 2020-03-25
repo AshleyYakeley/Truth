@@ -25,8 +25,8 @@ data OptionUISpec where
            , ApplicableUpdate update
            , UpdateSubject update ~ (t, OptionUICell)
            )
-        => Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
-        -> Subscriber (WholeUpdate t)
+        => Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+        -> Model (WholeUpdate t)
         -> OptionUISpec
 
 instance Show OptionUISpec where
@@ -42,14 +42,14 @@ optionUISpec ::
        , ApplicableUpdate update
        , UpdateSubject update ~ (t, OptionUICell)
        )
-    => Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
-    -> Subscriber (WholeUpdate t)
+    => Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+    -> Model (WholeUpdate t)
     -> CVUISpec
 optionUISpec optlens sellens = mkCVUISpec $ MkOptionUISpec optlens sellens
 
 simpleOptionUISpec ::
        forall t. Eq t
     => [(t, OptionUICell)]
-    -> Subscriber (WholeUpdate t)
+    -> Model (WholeUpdate t)
     -> CVUISpec
-simpleOptionUISpec opts sub = optionUISpec @(WholeUpdate (t, OptionUICell)) (constantSubscriber opts) sub
+simpleOptionUISpec opts sub = optionUISpec @(WholeUpdate (t, OptionUICell)) (constantModel opts) sub

@@ -6,8 +6,8 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
 data CheckboxUISpec where
-    MkCheckboxUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (WholeUpdate Bool) -> CheckboxUISpec
-    MkMaybeCheckboxUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (WholeUpdate (Maybe Bool)) -> CheckboxUISpec
+    MkCheckboxUISpec :: Model (ROWUpdate Text) -> Model (WholeUpdate Bool) -> CheckboxUISpec
+    MkMaybeCheckboxUISpec :: Model (ROWUpdate Text) -> Model (WholeUpdate (Maybe Bool)) -> CheckboxUISpec
 
 instance Show CheckboxUISpec where
     show (MkCheckboxUISpec _ _) = "checkbox"
@@ -16,8 +16,8 @@ instance Show CheckboxUISpec where
 instance UIType CheckboxUISpec where
     uiWitness = $(iowitness [t|CheckboxUISpec|])
 
-checkboxUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (WholeUpdate Bool) -> CVUISpec
+checkboxUISpec :: Model (ROWUpdate Text) -> Model (WholeUpdate Bool) -> CVUISpec
 checkboxUISpec label lens = mkCVUISpec $ MkCheckboxUISpec label lens
 
-maybeCheckboxUISpec :: Subscriber (ROWUpdate Text) -> Subscriber (WholeUpdate (Maybe Bool)) -> CVUISpec
+maybeCheckboxUISpec :: Model (ROWUpdate Text) -> Model (WholeUpdate (Maybe Bool)) -> CVUISpec
 maybeCheckboxUISpec label lens = mkCVUISpec $ MkMaybeCheckboxUISpec label lens
