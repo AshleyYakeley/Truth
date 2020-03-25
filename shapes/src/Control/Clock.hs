@@ -7,16 +7,12 @@ import Control.Monad.Trans.LifeCycle
 import Data.Fixed
 import Data.Time.Clock
 import Shapes.Import
-import Shapes.Numeric
 
 data Cancelled =
     MkCancelled
     deriving (Show)
 
 instance Exception Cancelled
-
-nominalDiffTimeToSeconds :: NominalDiffTime -> Pico
-nominalDiffTimeToSeconds = realToFrac
 
 clock :: UTCTime -> NominalDiffTime -> (UTCTime -> IO ()) -> LifeCycleIO UTCTime
 clock utcBase ndtInterval call = do

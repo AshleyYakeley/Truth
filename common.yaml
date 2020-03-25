@@ -26,7 +26,6 @@
       - InstanceSigs
       - KindSignatures
       - LambdaCase
-      - MonadFailDesugaring
       - MultiParamTypeClasses
       - OverloadedLabels
       - OverloadedStrings
@@ -58,5 +57,4 @@
       - -Wincomplete-record-updates
       - -Wcompat
       - -Wnoncanonical-monad-instances
-      - -Wnoncanonical-monadfail-instances
       - -Wno-partial-type-signatures

@@ -3,7 +3,6 @@ module Pinafore.Language.Predefined.Base
     , outputLn
     ) where
 
-import Data.Fixed (div', mod')
 import Data.Shim
 import Data.Time
 import Data.Time.Clock.System

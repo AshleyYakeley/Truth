@@ -1,4 +1,4 @@
-FROM fpco/stack-build:lts-14.14
+FROM fpco/stack-build:lts-15.5
 RUN pip3 install --upgrade pip
 RUN pip3 install mkdocs
 RUN pip3 install markdown-include
