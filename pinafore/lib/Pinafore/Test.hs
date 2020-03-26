@@ -41,19 +41,18 @@ makeTestPinaforeContext uitoolkit = do
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject rc tableStateObject
     memoryObject <- liftIO makeMemoryCellObject
-    clockOM <- shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
+    clockOM <- sharePremodel $ clockPremodel (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     let
-        picker :: forall update. PinaforeSelector update -> ObjectMaker update ()
-        picker PinaforeSelectPoint = reflectingObjectMaker $ pinaforeTableEntityObject tableObject
+        picker :: forall update. PinaforeSelector update -> Premodel update ()
+        picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityObject tableObject
         picker PinaforeSelectFile =
-            reflectingObjectMaker $
+            reflectingPremodel $
             mapObject (fromReadOnlyRejectingChangeLens @PinaforeFileUpdate) $
             readConstantObject $ constFunctionReadFunction nullSingleObjectReadable
-        picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
+        picker PinaforeSelectMemory = reflectingPremodel memoryObject
         picker PinaforeSelectClock = clockOM rc
-        picker PinaforeSelectTimeZone =
-            mapObjectMaker rc (liftReadOnlyFloatingChangeLens clockTimeZoneLens) $ clockOM rc
-    (sub, ()) <- makeSharedModel $ tupleObjectMaker picker
+        picker PinaforeSelectTimeZone = mapPremodel rc (liftReadOnlyFloatingChangeLens clockTimeZoneLens) $ clockOM rc
+    (sub, ()) <- makeSharedModel $ tuplePremodel picker
     pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)
 

@@ -34,16 +34,15 @@ standardPinaforeContext dirpath uitoolkit = do
     memoryObject <- liftIO makeMemoryCellObject
     clockOM <-
         liftLifeCycleIO $
-        shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
+        sharePremodel $ clockPremodel (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     let
-        picker :: forall update. PinaforeSelector update -> ObjectMaker update ()
-        picker PinaforeSelectPoint = reflectingObjectMaker $ pinaforeTableEntityObject $ tableObject rc
-        picker PinaforeSelectFile = reflectingObjectMaker $ directoryPinaforeFileObject $ dirpath </> "files"
-        picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
+        picker :: forall update. PinaforeSelector update -> Premodel update ()
+        picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityObject $ tableObject rc
+        picker PinaforeSelectFile = reflectingPremodel $ directoryPinaforeFileObject $ dirpath </> "files"
+        picker PinaforeSelectMemory = reflectingPremodel memoryObject
         picker PinaforeSelectClock = clockOM rc
-        picker PinaforeSelectTimeZone =
-            mapObjectMaker rc (liftReadOnlyFloatingChangeLens clockTimeZoneLens) $ clockOM rc
-    (sub, ()) <- liftLifeCycleIO $ makeSharedModel $ tupleObjectMaker picker
+        picker PinaforeSelectTimeZone = mapPremodel rc (liftReadOnlyFloatingChangeLens clockTimeZoneLens) $ clockOM rc
+    (sub, ()) <- liftLifeCycleIO $ makeSharedModel $ tuplePremodel picker
     liftLifeCycleIO $ makePinaforeContext sub uitoolkit
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()

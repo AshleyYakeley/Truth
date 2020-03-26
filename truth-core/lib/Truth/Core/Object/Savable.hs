@@ -8,7 +8,7 @@ import Truth.Core.Import
 import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.ObjectMaker
+import Truth.Core.Object.Premodel
 import Truth.Core.Read
 import Truth.Core.Resource
 import Truth.Core.Types
@@ -25,8 +25,8 @@ saveBufferObject ::
        forall update. (IsUpdate update, FullEdit (UpdateEdit update))
     => ResourceContext
     -> Object (WholeEdit (UpdateSubject update))
-    -> ObjectMaker update SaveActions
-saveBufferObject rc objP omrUpdatesTask update = do
+    -> Premodel update SaveActions
+saveBufferObject rc objP pmrUpdatesTask update = do
     firstVal <- liftIO $ runResource rc objP $ \anobj -> objRead anobj ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
     iow <- liftIO $ newIOWitness
@@ -34,8 +34,8 @@ saveBufferObject rc objP omrUpdatesTask update = do
     let rrC = combineIndependentResourceRunners (mvarResourceRunner iow sbVar) deferRunner
     Dict <- return $ resourceRunnerUnliftAllDict rrC
     let
-        omrObject :: Object (UpdateEdit update)
-        omrObject = let
+        pmrObject :: Object (UpdateEdit update)
+        pmrObject = let
             readC :: Readable (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
             readC = mSubjectToReadable $ fmap saveBuffer get
             pushC ::
@@ -75,12 +75,12 @@ saveBufferObject rc objP omrUpdatesTask update = do
                 Nothing -> return ()
                 Just edits' -> liftIO $ update urc (fmap editUpdate edits') $ editSourceContext esrc
             return False
-        omrValue :: SaveActions
-        omrValue =
+        pmrValue :: SaveActions
+        pmrValue =
             MkSaveActions $ do
                 MkSaveBuffer _ changed <- mVarRun sbVar get
                 return $
                     if changed
                         then Just (saveAction, revertAction)
                         else Nothing
-    return MkObjectMakerResult {..}
+    return MkPremodelResult {..}

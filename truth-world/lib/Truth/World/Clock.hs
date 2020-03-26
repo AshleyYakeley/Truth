@@ -6,8 +6,8 @@ import Data.Time
 import Shapes
 import Truth.Core
 
-clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (ROWUpdate UTCTime) ()
-clockObjectMaker basetime interval omrUpdatesTask update = do
+clockPremodel :: UTCTime -> NominalDiffTime -> Premodel (ROWUpdate UTCTime) ()
+clockPremodel basetime interval pmrUpdatesTask update = do
     rec
         ref <- liftIO $ newIORef first
         first <-
@@ -20,10 +20,10 @@ clockObjectMaker basetime interval omrUpdatesTask update = do
             t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while object is open
             runReaderT rt t
     let
-        omrObject :: Object (ConstEdit (WholeReader UTCTime))
-        omrObject = MkResource run $ immutableAnObject $ \ReadWhole -> ask
-        omrValue = ()
-    return MkObjectMakerResult {..}
+        pmrObject :: Object (ConstEdit (WholeReader UTCTime))
+        pmrObject = MkResource run $ immutableAnObject $ \ReadWhole -> ask
+        pmrValue = ()
+    return MkPremodelResult {..}
 
 clockTimeZoneLens :: FloatingChangeLens (WholeUpdate UTCTime) (ROWUpdate TimeZone)
 clockTimeZoneLens = let

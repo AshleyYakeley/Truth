@@ -7,8 +7,8 @@ module Truth.Core.Object.Model
     , modelCommitTask
     , makeReflectingModel
     , makeSharedModel
-    , modelObjectMaker
-    , shareObjectMaker
+    , modelPremodel
+    , sharePremodel
     , floatMapModel
     , mapModel
     , unitModel
@@ -22,7 +22,7 @@ import Truth.Core.Import
 import Truth.Core.Lens
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.ObjectMaker
+import Truth.Core.Object.Premodel
 import Truth.Core.Read
 import Truth.Core.Resource
 import Truth.Core.Types
@@ -96,12 +96,12 @@ getRunner recv = do
     let recvAsync _ updates ec = runAsync $ singleUpdateQueue updates ec
     return (utask, recvAsync)
 
-modelObjectMaker :: ResourceContext -> Model update -> a -> ObjectMaker update a
-modelObjectMaker rc (MkResource rr MkAModel {..}) val update utask = do
+modelPremodel :: ResourceContext -> Model update -> a -> Premodel update a
+modelPremodel rc (MkResource rr MkAModel {..}) val update utask = do
     runResourceRunner rc rr $ aModelSubscribe update utask
-    return $ MkObjectMakerResult (MkResource rr aModelAnObject) aModelUpdatesTask val
+    return $ MkPremodelResult (MkResource rr aModelAnObject) aModelUpdatesTask val
 
-makeSharedModel :: forall update a. ObjectMaker update a -> LifeCycleIO (Model update, a)
+makeSharedModel :: forall update a. Premodel update a -> LifeCycleIO (Model update, a)
 makeSharedModel om = do
     var :: MVar (UpdateStore update) <- liftIO $ newMVar emptyStore
     let
@@ -117,8 +117,8 @@ makeSharedModel om = do
             return $ fmap fst $ toList store
         utaskP :: Task ()
         utaskP = utaskRunner <> ioTask (fmap mconcat getTasks)
-    MkObjectMakerResult {..} <- om utaskP updatePAsync
-    MkResource (trunC :: ResourceRunner tt) aModelAnObject <- return omrObject
+    MkPremodelResult {..} <- om utaskP updatePAsync
+    MkResource (trunC :: ResourceRunner tt) aModelAnObject <- return pmrObject
     Dict <- return $ resourceRunnerUnliftAllDict trunC
     Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     let
@@ -128,22 +128,22 @@ makeSharedModel om = do
             stackLift @tt $ do
                 key <- liftIO $ mVarRun var $ addStoreStateT (taskC, updateC)
                 lifeCycleClose @IO $ mVarRun var $ deleteStoreStateT key
-        aModelUpdatesTask = omrUpdatesTask
+        aModelUpdatesTask = pmrUpdatesTask
         child :: Model update
         child = MkResource trunC $ MkAModel {..}
-    return (child, omrValue)
+    return (child, pmrValue)
 
-shareObjectMaker :: forall update a. ObjectMaker update a -> LifeCycleIO (ResourceContext -> ObjectMaker update a)
-shareObjectMaker uobj = do
+sharePremodel :: forall update a. Premodel update a -> LifeCycleIO (ResourceContext -> Premodel update a)
+sharePremodel uobj = do
     (sub, a) <- makeSharedModel uobj
-    return $ \rc -> modelObjectMaker rc sub a
+    return $ \rc -> modelPremodel rc sub a
 
 makeReflectingModel ::
        forall update. IsUpdate update
     => Object (UpdateEdit update)
     -> LifeCycleIO (Model update)
 makeReflectingModel object = do
-    (sub, ()) <- makeSharedModel $ reflectingObjectMaker object
+    (sub, ()) <- makeSharedModel $ reflectingPremodel object
     return sub
 
 floatMapModel ::
@@ -153,7 +153,7 @@ floatMapModel ::
     -> Model updateA
     -> LifeCycleIO (Model updateB)
 floatMapModel rc lens subA = do
-    (subB, ()) <- makeSharedModel $ mapObjectMaker rc lens $ modelObjectMaker rc subA ()
+    (subB, ()) <- makeSharedModel $ mapPremodel rc lens $ modelPremodel rc subA ()
     return subB
 
 mapModel :: forall updateA updateB. ChangeLens updateA updateB -> Model updateA -> Model updateB

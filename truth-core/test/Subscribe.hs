@@ -76,8 +76,8 @@ testUpdateObject =
         obj <- makeMemoryObject "old" $ \_ -> True
         var <- newEmptyMVar
         let
-            om :: ObjectMaker (WholeUpdate String) ()
-            om = reflectingObjectMaker obj
+            om :: Premodel (WholeUpdate String) ()
+            om = reflectingPremodel obj
             lens :: FloatingChangeLens (WholeUpdate String) (WholeUpdate String)
             lens = changeLensToFloating $ fromReadOnlyRejectingChangeLens . testUpdateFunction
             recv :: ResourceContext -> NonEmpty (WholeUpdate String) -> EditContext -> IO ()
@@ -91,15 +91,15 @@ testUpdateObject =
                 action <- takeMVar var
                 action
         runLifeCycle $ do
-            om' <- shareObjectMaker om
+            om' <- sharePremodel om
             omr' <- om' ?rc mempty recv
-            _ <- mapObjectMaker ?rc lens (om' ?rc) mempty recv'
+            _ <- mapPremodel ?rc lens (om' ?rc) mempty recv'
             liftIO $
-                runResource ?rc (omrObject omr') $ \MkAnObject {..} ->
+                runResource ?rc (pmrObject omr') $ \MkAnObject {..} ->
                     pushOrFail "failed" noEditSource $ objEdit $ pure $ MkWholeReaderEdit "new"
             liftIO showAction
             liftIO showAction
-            liftIO $ taskWait $ omrUpdatesTask omr'
+            liftIO $ taskWait $ pmrUpdatesTask omr'
 
 outputLn :: (?handle :: Handle, MonadIO m) => String -> m ()
 outputLn s = liftIO $ hPutStrLn ?handle s

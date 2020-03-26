@@ -1,8 +1,8 @@
-module Truth.Core.Object.ObjectMaker
-    ( ObjectMakerResult(..)
-    , ObjectMaker
-    , reflectingObjectMaker
-    , mapObjectMaker
+module Truth.Core.Object.Premodel
+    ( PremodelResult(..)
+    , Premodel
+    , reflectingPremodel
+    , mapPremodel
     ) where
 
 import Truth.Core.Edit
@@ -14,20 +14,20 @@ import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Core.Resource
 
-data ObjectMakerResult edit a = MkObjectMakerResult
-    { omrObject :: Object edit
-    , omrUpdatesTask :: Task ()
-    , omrValue :: a
+data PremodelResult edit a = MkPremodelResult
+    { pmrObject :: Object edit
+    , pmrUpdatesTask :: Task ()
+    , pmrValue :: a
     }
 
-type ObjectMaker update a
-     = Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (ObjectMakerResult (UpdateEdit update) a)
+type Premodel update a
+     = Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (PremodelResult (UpdateEdit update) a)
 
-reflectingObjectMaker ::
+reflectingPremodel ::
        forall update. IsUpdate update
     => Object (UpdateEdit update)
-    -> ObjectMaker update ()
-reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e ctask)) utask recv = do
+    -> Premodel update ()
+reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAnObject r e ctask)) utask recv = do
     Dict <- return $ resourceRunnerUnliftAllDict trun
     Dict <- return $ transStackDict @MonadUnliftIO @tt @(DeferActionT IO)
     Refl <- return $ transStackConcatRefl @tt @'[ DeferActionT] @IO
@@ -52,23 +52,23 @@ reflectingObjectMaker (MkResource (trun :: ResourceRunner tt) (MkAnObject r e ct
                             deferAction @IO $ recv emptyResourceContext (fmap editUpdate edits) $ editSourceContext esrc
         anobj :: AnObject (UpdateEdit update) (Concat tt '[ DeferActionT])
         anobj = MkAnObject r' e' ctask
-        omrUpdatesTask :: Task ()
-        omrUpdatesTask = utask
-        omrValue = ()
-        omrObject :: Object (UpdateEdit update)
-        omrObject = MkResource trun' anobj
-    return MkObjectMakerResult {..}
+        pmrUpdatesTask :: Task ()
+        pmrUpdatesTask = utask
+        pmrValue = ()
+        pmrObject :: Object (UpdateEdit update)
+        pmrObject = MkResource trun' anobj
+    return MkPremodelResult {..}
 
-mapObjectMaker ::
+mapPremodel ::
        forall updateA updateB a.
        ResourceContext
     -> FloatingChangeLens updateA updateB
-    -> ObjectMaker updateA a
-    -> ObjectMaker updateB a
-mapObjectMaker rc (MkFloatingChangeLens init rlens) uobja utask recvb = do
+    -> Premodel updateA a
+    -> Premodel updateB a
+mapPremodel rc (MkFloatingChangeLens init rlens) uobja utask recvb = do
     rec
         (result, recva) <- do
-            MkObjectMakerResult (MkResource (rr :: _ tt) anobjA) updTask val <- uobja utask recva
+            MkPremodelResult (MkResource (rr :: _ tt) anobjA) updTask val <- uobja utask recva
             liftIO $ do
                 r <- runResourceRunner rc rr $ runFloatInit init $ objRead anobjA
                 let
@@ -84,5 +84,5 @@ mapObjectMaker rc (MkFloatingChangeLens init rlens) uobja utask recvb = do
                     objB =
                         case resourceRunnerUnliftAllDict rr of
                             Dict -> MkResource rr $ mapAnObject lens anobjA
-                return (MkObjectMakerResult objB updTask val, recva')
+                return (MkPremodelResult objB updTask val, recva')
     return result

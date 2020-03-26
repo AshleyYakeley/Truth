@@ -81,7 +81,7 @@ library:
       - Truth.Core.Object.Object
       - Truth.Core.Object.AutoClose
       - Truth.Core.Object.ObjectEdit
-      - Truth.Core.Object.ObjectMaker
+      - Truth.Core.Object.Premodel
       - Truth.Core.Object.Model
       - Truth.Core.Object.Tuple
       - Truth.Core.Object.MemoryCell

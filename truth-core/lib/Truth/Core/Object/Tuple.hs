@@ -1,7 +1,7 @@
 module Truth.Core.Object.Tuple
     ( tupleObject
     , pairObjects
-    , tupleObjectMaker
+    , tuplePremodel
     , tupleModel
     , pairModels
     , pairReadOnlyModels
@@ -14,7 +14,7 @@ import Truth.Core.Lens
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Model
 import Truth.Core.Object.Object
-import Truth.Core.Object.ObjectMaker
+import Truth.Core.Object.Premodel
 import Truth.Core.Read
 import Truth.Core.Resource
 import Truth.Core.Types
@@ -169,19 +169,19 @@ tupleObject ::
     -> Object (TupleUpdateEdit sel)
 tupleObject pick = uObjToObj $ tupleResource $ \selu -> objToUObj $ pick selu
 
-tupleObjectMaker ::
+tuplePremodel ::
        forall sel a. (IsFiniteConsWitness sel, Monoid a)
-    => (forall update. sel update -> ObjectMaker update a)
-    -> ObjectMaker (TupleUpdate sel) a
-tupleObjectMaker pick outask recv = do
+    => (forall update. sel update -> Premodel update a)
+    -> Premodel (TupleUpdate sel) a
+tuplePremodel pick outask recv = do
     (uobj, (utask, val)) <-
         runWriterT $
         tupleResourceM $ \sel -> do
-            (MkObjectMakerResult o utask val) <-
+            (MkPremodelResult o utask val) <-
                 lift $ pick sel outask $ \rc updates -> recv rc $ fmap (MkTupleUpdate sel) updates
             tell (utask, val)
             return $ objToUObj o
-    return $ MkObjectMakerResult (uObjToObj uobj) utask val
+    return $ MkPremodelResult (uObjToObj uobj) utask val
 
 tupleModel ::
        forall sel. IsFiniteConsWitness sel
