@@ -279,4 +279,4 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
                         conn <- ask
                         lift $ execute conn s v
         refCommitTask = mempty
-    return $ MkResource objRun MkAnReference {..}
+    return $ MkResource objRun MkAReference {..}

@@ -28,25 +28,25 @@ class (forall update. MapResource (f update)) => TupleResource (f :: Type -> [Tr
         -> f (TupleUpdate (ListElementType (update : updates))) tt
     mapResourceUpdate :: ChangeLens updateA updateB -> Resource (f updateA) -> Resource (f updateB)
 
-newtype UAnReference (update :: Type) (tt :: [TransKind]) = MkUAnReference
-    { unUAnReference :: AnReference (UpdateEdit update) tt
+newtype UAReference (update :: Type) (tt :: [TransKind]) = MkUAReference
+    { unUAReference :: AReference (UpdateEdit update) tt
     }
 
-type UReference update = Resource (UAnReference update)
+type UReference update = Resource (UAReference update)
 
 uObjToObj :: UReference update -> Reference (UpdateEdit update)
-uObjToObj (MkResource rr (MkUAnReference anobj)) = MkResource rr anobj
+uObjToObj (MkResource rr (MkUAReference anobj)) = MkResource rr anobj
 
 objToUObj :: Reference (UpdateEdit update) -> UReference update
-objToUObj (MkResource rr anobj) = MkResource rr $ MkUAnReference anobj
+objToUObj (MkResource rr anobj) = MkResource rr $ MkUAReference anobj
 
-instance MapResource (UAnReference update) where
+instance MapResource (UAReference update) where
     mapResource ::
            forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
         => TransListFunction tt1 tt2
-        -> UAnReference update tt1
-        -> UAnReference update tt2
-    mapResource f (MkUAnReference obj) = MkUAnReference $ mapResource f obj
+        -> UAReference update tt1
+        -> UAReference update tt2
+    mapResource f (MkUAReference obj) = MkUAReference $ mapResource f obj
 
 noneTupleResource :: TupleResource f => Resource (f (TupleUpdate (ListElementType '[])))
 noneTupleResource = MkResource nilResourceRunner noneTupleAResource
@@ -106,20 +106,20 @@ partitionListTupleUpdateEdits pes = let
     toEither (MkTupleUpdateEdit (RestElementType sel) eb) = Right $ MkTupleUpdateEdit sel eb
     in partitionEithers $ fmap toEither pes
 
-instance TupleResource UAnReference where
+instance TupleResource UAReference where
     noneTupleAResource = let
         refRead :: forall t. TupleUpdateReader (ListElementType '[]) t -> IO t
         refRead (MkTupleUpdateReader sel _) = case sel of {}
         refEdit :: NonEmpty (TupleUpdateEdit (ListElementType '[])) -> IO (Maybe (EditSource -> IO ()))
         refEdit (MkTupleUpdateEdit sel _ :| _) = case sel of {}
         refCommitTask = mempty
-        in MkUAnReference $ MkAnReference {..}
+        in MkUAReference $ MkAReference {..}
     consTupleAResource ::
            forall tt update updates. MonadTransStackUnliftAll tt
-        => UAnReference update tt
-        -> UAnReference (TupleUpdate (ListElementType updates)) tt
-        -> UAnReference (TupleUpdate (ListElementType (update : updates))) tt
-    consTupleAResource (MkUAnReference (MkAnReference readA editA ctaskA)) (MkUAnReference (MkAnReference readB editB ctaskB)) =
+        => UAReference update tt
+        -> UAReference (TupleUpdate (ListElementType updates)) tt
+        -> UAReference (TupleUpdate (ListElementType (update : updates))) tt
+    consTupleAResource (MkUAReference (MkAReference readA editA ctaskA)) (MkUAReference (MkAReference readB editB ctaskB)) =
         case transStackDict @MonadIO @tt @IO of
             Dict -> let
                 readAB :: Readable (ApplyStack tt IO) (TupleUpdateReader (ListElementType (update : updates)))
@@ -136,12 +136,12 @@ instance TupleResource UAnReference where
                            (Nothing, Just ebs') -> editB ebs'
                            (Just eas', Just ebs') -> (liftA2 $ liftA2 $ liftA2 (>>)) (editA eas') (editB ebs')
                 ctaskAB = ctaskA <> ctaskB
-                in MkUAnReference $ MkAnReference readAB editAB ctaskAB
+                in MkUAReference $ MkAReference readAB editAB ctaskAB
     mapResourceUpdate plens uobj = objToUObj $ mapReference plens $ uObjToObj uobj
 
 instance TupleResource AModel where
     noneTupleAResource :: AModel (TupleUpdate (ListElementType '[])) '[]
-    noneTupleAResource = MkAModel (unUAnReference noneTupleAResource) (\_ _ -> return ()) mempty
+    noneTupleAResource = MkAModel (unUAReference noneTupleAResource) (\_ _ -> return ()) mempty
     consTupleAResource ::
            forall tt update updates. MonadTransStackUnliftAll tt
         => AModel update tt
@@ -150,7 +150,7 @@ instance TupleResource AModel where
     consTupleAResource (MkAModel anobj1 sub1 utask1) (MkAModel anobj2 sub2 utask2) =
         case transStackDict @MonadIO @tt @LifeCycleIO of
             Dict -> let
-                anobj12 = unUAnReference $ consTupleAResource (MkUAnReference anobj1) (MkUAnReference anobj2)
+                anobj12 = unUAReference $ consTupleAResource (MkUAReference anobj1) (MkUAReference anobj2)
                 sub12 task recv12 = do
                     let
                         recv1 rc u1 ec = recv12 rc (fmap (\u -> MkTupleUpdate FirstElementType u) u1) ec

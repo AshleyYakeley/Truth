@@ -70,7 +70,7 @@ directoryReferenceStore ::
        Reference FSEdit
     -> (name -> String)
     -> Reference (UpdateEdit (ReferenceStoreUpdate name ByteStringEdit))
-directoryReferenceStore (MkResource (rr :: ResourceRunner tt) (MkAnReference rd push refCommitTask)) nameStr =
+directoryReferenceStore (MkResource (rr :: ResourceRunner tt) (MkAReference rd push refCommitTask)) nameStr =
     case resourceRunnerStackUnliftDict @IO rr of
         Dict -> let
             undoName :: String -> Int -> FilePath
@@ -129,4 +129,4 @@ directoryReferenceStore (MkResource (rr :: ResourceRunner tt) (MkAnReference rd 
                                 SingleReferenceRecover code ->
                                     pushOrFail ("couldn't rename FS item " <> show name) esrc $
                                     push $ pure $ FSEditRenameItem (undoName name code) name
-            in MkResource rr MkAnReference {..}
+            in MkResource rr MkAReference {..}

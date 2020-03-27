@@ -95,7 +95,7 @@ testUpdateReference =
             omr' <- om' ?rc mempty recv
             _ <- mapPremodel ?rc lens (om' ?rc) mempty recv'
             liftIO $
-                runResource ?rc (pmrReference omr') $ \MkAnReference {..} ->
+                runResource ?rc (pmrReference omr') $ \MkAReference {..} ->
                     pushOrFail "failed" noEditSource $ refEdit $ pure $ MkWholeReaderEdit "new"
             liftIO showAction
             liftIO showAction

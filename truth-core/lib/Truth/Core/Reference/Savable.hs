@@ -52,7 +52,7 @@ saveBufferReference rc objP pmrUpdatesTask update = do
                             return oldbuf
                     put (MkSaveBuffer newbuf True)
                     lift $ deferAction $ update emptyResourceContext (fmap editUpdate edits) $ editSourceContext esrc
-            in MkResource rrC $ MkAnReference readC pushC mempty
+            in MkResource rrC $ MkAReference readC pushC mempty
         saveAction :: ResourceContext -> EditSource -> IO Bool
         saveAction urc esrc =
             runResource urc objP $ \anobj -> do

@@ -9,31 +9,31 @@ import Truth.Core.Resource
 import Truth.Core.Types.None
 import Truth.Core.Types.Whole
 
-data AnReference edit (tt :: [TransKind]) = MkAnReference
+data AReference edit (tt :: [TransKind]) = MkAReference
     { refRead :: Readable (ApplyStack tt IO) (EditReader edit)
     , refEdit :: NonEmpty edit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
     , refCommitTask :: Task ()
     }
 
-type Reference edit = Resource (AnReference edit)
+type Reference edit = Resource (AReference edit)
 
 referenceCommitTask :: Reference edit -> Task ()
 referenceCommitTask (MkResource _ anobj) = refCommitTask anobj
 
-instance MapResource (AnReference edit) where
+instance MapResource (AReference edit) where
     mapResource ::
            forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
         => TransListFunction tt1 tt2
-        -> AnReference edit tt1
-        -> AnReference edit tt2
-    mapResource MkTransListFunction {..} (MkAnReference r e ct) = let
+        -> AReference edit tt1
+        -> AReference edit tt2
+    mapResource MkTransListFunction {..} (MkAReference r e ct) = let
         r' :: Readable (ApplyStack tt2 IO) _
         r' rd = tlfFunction (Proxy @IO) $ r rd
         e' :: _ -> ApplyStack tt2 IO (Maybe (EditSource -> ApplyStack tt2 IO ()))
         e' edits =
             case transStackDict @MonadIO @tt2 @IO of
                 Dict -> (fmap $ fmap $ fmap $ tlfFunction (Proxy @IO)) $ tlfFunction (Proxy @IO) $ e edits
-        in MkAnReference r' e' ct
+        in MkAReference r' e' ct
 
 instance Show (Reference edit) where
     show (MkResource _ _) = "reference"
@@ -45,7 +45,7 @@ noneReference = let
     refEdit :: NonEmpty (ConstEdit (NoReader t)) -> IO (Maybe (EditSource -> IO ()))
     refEdit = never
     refCommitTask = mempty
-    in MkResource nilResourceRunner $ MkAnReference {..}
+    in MkResource nilResourceRunner $ MkAReference {..}
 
 mvarReference :: forall a. IOWitness (StateT a) -> MVar a -> (a -> Bool) -> Reference (WholeEdit a)
 mvarReference iow var allowed = let
@@ -59,8 +59,8 @@ mvarReference iow var allowed = let
                 then Just $ \_ -> put na
                 else Nothing
     refCommitTask = mempty
-    anobj :: AnReference (WholeEdit a) '[ StateT a]
-    anobj = MkAnReference {..}
+    anobj :: AReference (WholeEdit a) '[ StateT a]
+    anobj = MkAReference {..}
     in MkResource (mvarResourceRunner iow var) anobj
 
 makeMemoryReference :: forall a. a -> (a -> Bool) -> IO (Reference (WholeEdit a))
@@ -85,12 +85,12 @@ pushOrFail s esrc mmmu = do
         then return ()
         else fail s
 
-mapAnReference ::
+mapAReference ::
        forall tt updateA updateB. MonadTransStackUnliftAll tt
     => ChangeLens updateA updateB
-    -> AnReference (UpdateEdit updateA) tt
-    -> AnReference (UpdateEdit updateB) tt
-mapAnReference MkChangeLens {..} (MkAnReference refReadA refEditA objCT) =
+    -> AReference (UpdateEdit updateA) tt
+    -> AReference (UpdateEdit updateB) tt
+mapAReference MkChangeLens {..} (MkAReference refReadA refEditA objCT) =
     case transStackDict @MonadIO @tt @IO of
         Dict -> let
             refReadB :: Readable (ApplyStack tt IO) (UpdateReader updateB)
@@ -106,7 +106,7 @@ mapAnReference MkChangeLens {..} (MkAnReference refReadA refEditA objCT) =
                         case mmu of
                             Nothing -> return Nothing
                             Just mu -> return $ Just $ \esrc -> mu esrc
-            in MkAnReference refReadB refEditB objCT
+            in MkAReference refReadB refEditB objCT
 
 mapReference ::
        forall updateA updateB.
@@ -115,18 +115,18 @@ mapReference ::
     -> Reference (UpdateEdit updateB)
 mapReference plens (MkResource rr anobjA) =
     case resourceRunnerUnliftAllDict rr of
-        Dict -> MkResource rr $ mapAnReference plens anobjA
+        Dict -> MkResource rr $ mapAReference plens anobjA
 
-floatMapAnReference ::
+floatMapAReference ::
        forall tt updateA updateB. MonadTransStackUnliftAll tt
     => FloatingChangeLens updateA updateB
-    -> AnReference (UpdateEdit updateA) tt
-    -> ApplyStack tt IO (AnReference (UpdateEdit updateB) tt)
-floatMapAnReference (MkFloatingChangeLens init rlens) anobj =
+    -> AReference (UpdateEdit updateA) tt
+    -> ApplyStack tt IO (AReference (UpdateEdit updateB) tt)
+floatMapAReference (MkFloatingChangeLens init rlens) anobj =
     case transStackDict @MonadIO @tt @IO of
         Dict -> do
             r <- runFloatInit init $ refRead anobj
-            return $ mapAnReference (rlens r) anobj
+            return $ mapAReference (rlens r) anobj
 
 floatMapReference ::
        forall updateA updateB.
@@ -135,19 +135,19 @@ floatMapReference ::
     -> Reference (UpdateEdit updateA)
     -> IO (Reference (UpdateEdit updateB))
 floatMapReference rc lens (MkResource rr anobjA) = do
-    anobjB <- runResourceRunner rc rr $ floatMapAnReference lens anobjA
+    anobjB <- runResourceRunner rc rr $ floatMapAReference lens anobjA
     return $ MkResource rr anobjB
 
-immutableAnReference ::
+immutableAReference ::
        forall tt reader. MonadTransStackUnliftAll tt
     => Readable (ApplyStack tt IO) reader
-    -> AnReference (ConstEdit reader) tt
-immutableAnReference mr =
+    -> AReference (ConstEdit reader) tt
+immutableAReference mr =
     case transStackDict @Monad @tt @IO of
-        Dict -> MkAnReference mr (\_ -> return Nothing) mempty
+        Dict -> MkAReference mr (\_ -> return Nothing) mempty
 
 readConstantReference :: Readable IO reader -> Reference (ConstEdit reader)
-readConstantReference mr = MkResource nilResourceRunner $ immutableAnReference mr
+readConstantReference mr = MkResource nilResourceRunner $ immutableAReference mr
 
 constantReference :: SubjectReader reader => ReaderSubject reader -> Reference (ConstEdit reader)
 constantReference subj = readConstantReference $ subjectToReadable subj
@@ -176,7 +176,7 @@ convertReference ::
        forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, SubjectMapEdit editb)
     => Reference edita
     -> Reference editb
-convertReference (MkResource (trun :: ResourceRunner tt) (MkAnReference mra pe refCommitTask)) =
+convertReference (MkResource (trun :: ResourceRunner tt) (MkAReference mra pe refCommitTask)) =
     case resourceRunnerUnliftAllDict trun of
         Dict ->
             case transStackDict @MonadIO @tt @IO of
@@ -191,7 +191,7 @@ convertReference (MkResource (trun :: ResourceRunner tt) (MkAnReference mra pe r
                         case nonEmpty eas of
                             Nothing -> return $ Just $ \_ -> return ()
                             Just eaa -> pe eaa
-                    in MkResource trun MkAnReference {..}
+                    in MkResource trun MkAReference {..}
 
 copyReference ::
        forall edit. FullEdit edit
@@ -201,7 +201,7 @@ copyReference ::
     -> Reference edit
     -> IO (Task ())
 copyReference rc esrc =
-    joinResource_ $ \rr (MkAnReference readSrc _ _) (MkAnReference _ pushDest ctask) ->
+    joinResource_ $ \rr (MkAReference readSrc _ _) (MkAReference _ pushDest ctask) ->
         runLifeCycle $ do
             liftIO $
                 runResourceRunner rc rr $
@@ -209,4 +209,4 @@ copyReference rc esrc =
             return ctask
 
 getReferenceSubject :: ResourceContext -> FullSubjectReader (EditReader edit) => Reference edit -> IO (EditSubject edit)
-getReferenceSubject rc obj = runResource rc obj $ \(MkAnReference rd _ _) -> readableToSubject rd
+getReferenceSubject rc obj = runResource rc obj $ \(MkAReference rd _ _) -> readableToSubject rd

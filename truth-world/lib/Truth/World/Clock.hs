@@ -21,7 +21,7 @@ clockPremodel basetime interval pmrUpdatesTask update = do
             runReaderT rt t
     let
         pmrReference :: Reference (ConstEdit (WholeReader UTCTime))
-        pmrReference = MkResource run $ immutableAnReference $ \ReadWhole -> ask
+        pmrReference = MkResource run $ immutableAReference $ \ReadWhole -> ask
         pmrValue = ()
     return MkPremodelResult {..}
 

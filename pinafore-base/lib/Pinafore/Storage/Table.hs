@@ -179,7 +179,7 @@ instance CacheableEdit PinaforeTableEdit where
                         vv'
 
 pinaforeTableEntityReference :: Reference PinaforeTableEdit -> Reference PinaforeEntityEdit
-pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAnReference tableRead tableMPush refCommitTask)) =
+pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tableRead tableMPush refCommitTask)) =
     case resourceRunnerUnliftAllDict trun of
         Dict ->
             case transStackDict @MonadIO @tt @IO of
@@ -215,6 +215,6 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAnRefere
                                         tablePush $ pure $ PinaforeTableEditSetPredicate p s $ knowToMaybe kv
                                     PinaforeEntityEditSetLiteral p kl ->
                                         tablePush $ pure $ PinaforeTableEditSetLiteral p $ knowToMaybe kl
-                            in MkResource trun MkAnReference {..}
+                            in MkResource trun MkAReference {..}
 
 type PinaforeTableUpdate = EditUpdate PinaforeTableEdit

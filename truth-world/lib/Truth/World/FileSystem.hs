@@ -131,13 +131,13 @@ fileSystemReference = let
                     testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $ \_ ->
                         renamePath fromPath toPath
     refCommitTask = mempty
-    in MkResource nilResourceRunner MkAnReference {..}
+    in MkResource nilResourceRunner MkAReference {..}
 
 subdirCreateWitness :: IOWitness (StateT Bool)
 subdirCreateWitness = $(iowitness [t|StateT Bool|])
 
 subdirectoryReference :: Bool -> FilePath -> Reference FSEdit -> Reference FSEdit
-subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkAnReference rd push ctask)) =
+subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkAReference rd push ctask)) =
     -- runResourceRunnerWith rr $ \_ ->
     case transStackConcatRefl @'[ StateT Bool] @tt @IO of
         Refl ->
@@ -201,4 +201,4 @@ subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkAnRefe
                            (combineIndependentResourceRunners
                                 (discardingStateResourceRunner (hashOpenWitness subdirCreateWitness dir) create)
                                 rr) $
-                       MkAnReference rd' push' ctask
+                       MkAReference rd' push' ctask

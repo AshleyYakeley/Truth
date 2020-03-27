@@ -44,4 +44,4 @@ fileReference path = let
     refEdit = singleAlwaysEdit objOneEdit
     refCommitTask :: Task ()
     refCommitTask = mempty
-    in MkResource objRun MkAnReference {..}
+    in MkResource objRun MkAReference {..}

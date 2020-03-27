@@ -28,17 +28,17 @@ import Truth.Core.Resource
 import Truth.Core.Types
 
 data AModel update tt = MkAModel
-    { aModelAnReference :: AnReference (UpdateEdit update) tt
+    { aModelAReference :: AReference (UpdateEdit update) tt
     , aModelSubscribe :: Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt LifeCycleIO ()
     , aModelUpdatesTask :: Task ()
     }
 
 aModelRead :: AModel update tt -> Readable (ApplyStack tt IO) (UpdateReader update)
-aModelRead = refRead . aModelAnReference
+aModelRead = refRead . aModelAReference
 
 aModelEdit ::
        AModel update tt -> NonEmpty (UpdateEdit update) -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-aModelEdit = refEdit . aModelAnReference
+aModelEdit = refEdit . aModelAReference
 
 instance MapResource (AModel update) where
     mapResource ::
@@ -65,7 +65,7 @@ modelUpdatesTask :: Model update -> Task ()
 modelUpdatesTask (MkResource _ asub) = aModelUpdatesTask asub
 
 modelCommitTask :: Model update -> Task ()
-modelCommitTask (MkResource _ asub) = refCommitTask $ aModelAnReference asub
+modelCommitTask (MkResource _ asub) = refCommitTask $ aModelAReference asub
 
 newtype UpdateQueue update =
     MkUpdateQueue [(EditContext, NonEmpty update)]
@@ -99,7 +99,7 @@ getRunner recv = do
 modelPremodel :: ResourceContext -> Model update -> a -> Premodel update a
 modelPremodel rc (MkResource rr MkAModel {..}) val update utask = do
     runResourceRunner rc rr $ aModelSubscribe update utask
-    return $ MkPremodelResult (MkResource rr aModelAnReference) aModelUpdatesTask val
+    return $ MkPremodelResult (MkResource rr aModelAReference) aModelUpdatesTask val
 
 makeSharedModel :: forall update a. Premodel update a -> LifeCycleIO (Model update, a)
 makeSharedModel om = do
@@ -118,7 +118,7 @@ makeSharedModel om = do
         utaskP :: Task ()
         utaskP = utaskRunner <> ioTask (fmap mconcat getTasks)
     MkPremodelResult {..} <- om utaskP updatePAsync
-    MkResource (trunC :: ResourceRunner tt) aModelAnReference <- return pmrReference
+    MkResource (trunC :: ResourceRunner tt) aModelAReference <- return pmrReference
     Dict <- return $ resourceRunnerUnliftAllDict trunC
     Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     let
@@ -160,7 +160,7 @@ mapModel :: forall updateA updateB. ChangeLens updateA updateB -> Model updateA 
 mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
     case resourceRunnerUnliftAllDict rr of
         Dict -> let
-            objB = mapAnReference plens objA
+            objB = mapAReference plens objA
             subB utask recvB = let
                 recvA rc updatesA ec = do
                     updatessB <-
@@ -171,17 +171,17 @@ mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
                 in subA utask recvA
             in MkResource rr $ MkAModel objB subB utaskA
 
-anReferenceModel :: AnReference (UpdateEdit update) '[] -> Model update
-anReferenceModel anobj = MkResource nilResourceRunner $ MkAModel anobj (\_ _ -> return ()) mempty
+aReferenceModel :: AReference (UpdateEdit update) '[] -> Model update
+aReferenceModel anobj = MkResource nilResourceRunner $ MkAModel anobj (\_ _ -> return ()) mempty
 
 unitModel :: Model (WholeUpdate ())
-unitModel = anReferenceModel $ MkAnReference (\ReadWhole -> return ()) (\_ -> return Nothing) mempty
+unitModel = aReferenceModel $ MkAReference (\ReadWhole -> return ()) (\_ -> return Nothing) mempty
 
 constantModel ::
        forall update. SubjectReader (UpdateReader update)
     => UpdateSubject update
     -> Model (ReadOnlyUpdate update)
-constantModel subj = anReferenceModel $ immutableAnReference $ subjectToReadable subj
+constantModel subj = aReferenceModel $ immutableAReference $ subjectToReadable subj
 
 modelToReadOnly :: Model update -> Model (ReadOnlyUpdate update)
 modelToReadOnly = mapModel toReadOnlyChangeLens

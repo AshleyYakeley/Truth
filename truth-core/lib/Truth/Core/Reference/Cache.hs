@@ -25,7 +25,7 @@ cacheReference rc mus obj = do
             case editCacheLookup @edit rt oldcache of
                 Just t -> return t
                 Nothing -> do
-                    t <- liftIO $ runResource rc' obj $ \(MkAnReference read _ _) -> read rt
+                    t <- liftIO $ runResource rc' obj $ \(MkAReference read _ _) -> read rt
                     liftIO $ runAction Nothing -- still reading, don't push yet
                     editCacheAdd @edit rt t
                     return t
@@ -35,4 +35,4 @@ cacheReference rc mus obj = do
                 editCacheUpdates edits
                 liftIO $ runAction $ Just edits
         refCommitTask = asyncTask <> referenceCommitTask obj
-        in MkResource objRun MkAnReference {..}
+        in MkResource objRun MkAReference {..}

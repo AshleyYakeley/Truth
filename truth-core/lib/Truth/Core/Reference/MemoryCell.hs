@@ -26,7 +26,7 @@ makeMemoryCellReference = do
             singleAlwaysEdit $ \(MkTupleUpdateEdit (MkDependentSelector ioref) (MkWholeReaderEdit a)) _ ->
                 liftIO $ writeIORef (unWitnessed ioref) a
         refCommitTask = mempty
-    return $ MkResource objRun $ MkAnReference {..}
+    return $ MkResource objRun $ MkAReference {..}
 
 makeMemoryCellChangeLens :: a -> IO (ChangeLens MemoryCellUpdate (WholeUpdate a))
 makeMemoryCellChangeLens a = do

@@ -48,7 +48,7 @@ undoQueueModel ::
     -> IO (Model update, UndoActions)
 undoQueueModel sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
-    MkResource rrP (MkAModel (MkAnReference readP pushP ctaskP) subscribeP utaskP) <- return sub
+    MkResource rrP (MkAModel (MkAReference readP pushP ctaskP) subscribeP utaskP) <- return sub
     let
         undoActions = let
             uaUndo :: ResourceContext -> EditSource -> IO Bool
@@ -105,5 +105,5 @@ undoQueueModel sub = do
                                     mVarRun queueVar $ updateUndoQueue readP edits
                                     action esrc
                             Nothing -> Nothing
-        subC = MkResource rrP $ MkAModel (MkAnReference readP pushC ctaskP) subscribeP utaskP
+        subC = MkResource rrP $ MkAModel (MkAReference readP pushC ctaskP) subscribeP utaskP
         in return (subC, undoActions)
