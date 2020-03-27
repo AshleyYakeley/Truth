@@ -80,13 +80,12 @@ applyLangMorphismRef (MkLangMorphism tra trb m) (MutableLangRef tra' lv) =
     applyPinaforeLens pinaforeBase m $
     eaMap (bijectionWholeChangeLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra)) lv
 applyLangMorphismRef (MkLangMorphism (MkRange fa _) trb m) (ImmutableLangRef fv) =
-    MutableLangRef trb $
-    applyPinaforeLens pinaforeBase m $ immutableReferenceToRejectingValue $ fmap (fromEnhanced fa) fv
+    MutableLangRef trb $ applyPinaforeLens pinaforeBase m $ immutableRefToRejectingValue $ fmap (fromEnhanced fa) fv
 
 applyLangMorphismImmutRef ::
        forall baseupdate a bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
     => LangMorphism baseupdate '( a, TopType) '( bp, bq)
-    -> PinaforeImmutableReference a
+    -> PinaforeImmutableRef a
     -> LangRef '( bp, bq)
 applyLangMorphismImmutRef m r = applyLangMorphismRef m $ pinaforeImmutableToRef r
 
@@ -117,12 +116,12 @@ inverseApplyLangMorphismRef (MkLangMorphism trb tra m) (MutableLangRef tra' lv) 
     eaMap (bijectionWholeChangeLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra)) lv
 inverseApplyLangMorphismRef (MkLangMorphism trb (MkRange fa _) m) (ImmutableLangRef fv) =
     MkLangFiniteSetRef trb $
-    applyInversePinaforeLens pinaforeBase m $ immutableReferenceToRejectingValue $ fmap (fromEnhanced fa) fv
+    applyInversePinaforeLens pinaforeBase m $ immutableRefToRejectingValue $ fmap (fromEnhanced fa) fv
 
 inverseApplyLangMorphismImmutRef ::
        forall baseupdate a bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
     => LangMorphism baseupdate '( bp, bq) '( a, TopType)
-    -> PinaforeImmutableReference a
+    -> PinaforeImmutableRef a
     -> LangFiniteSetRef '( bp, bq)
 inverseApplyLangMorphismImmutRef m r = inverseApplyLangMorphismRef m $ pinaforeImmutableToRef r
 

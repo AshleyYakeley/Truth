@@ -130,9 +130,9 @@ testQuery query expected =
     testCase (show $ unpack query) $
     case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeUpdate query) of
         (Nothing, FailureResult _) -> return ()
-        (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ showPinaforeValue v
+        (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ showPinaforeRef v
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ show e
-        (Just s, SuccessResult v) -> assertEqual "result" s (showPinaforeValue v)
+        (Just s, SuccessResult v) -> assertEqual "result" s (showPinaforeRef v)
 
 testQueries :: TestTree
 testQueries =

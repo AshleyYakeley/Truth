@@ -92,7 +92,7 @@ interpretUpdater text = do
     action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" text
     (sendUpdate, ref) <- nullViewIO $ unliftPinaforeActionOrFail action
     runLifeCycle $
-        subscribeEditor emptyResourceContext (unPinaforeValue $ immutableReferenceToRejectingValue ref) $
+        subscribeEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingValue ref) $
         checkUpdateEditor (Known (1 :: Integer)) $ nullViewIO $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark

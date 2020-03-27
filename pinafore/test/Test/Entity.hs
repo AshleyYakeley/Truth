@@ -59,7 +59,7 @@ updateTest text =
     scriptTest text text $ \action -> do
         (sendUpdate, ref) <- nullViewIO $ unliftPinaforeActionOrFail action
         runLifeCycle $
-            subscribeEditor emptyResourceContext (unPinaforeValue $ immutableReferenceToRejectingValue ref) $
+            subscribeEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingValue ref) $
             checkUpdateEditor (Known (1 :: Integer)) $ nullViewIO $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree

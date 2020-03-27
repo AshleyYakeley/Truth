@@ -49,7 +49,7 @@ newMemRef ::
     => IO (LangRef '( A, A))
 newMemRef = do
     lens <- makeMemoryCellChangeLens Unknown
-    return $ pinaforeValueToRef $ MkPinaforeValue $ mapModel lens $ pinaforeBaseModel @baseupdate
+    return $ pinaforeRefToRef $ MkPinaforeRef $ mapModel lens $ pinaforeBaseModel @baseupdate
 
 newMemFiniteSet ::
        forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens MemoryCellUpdate baseupdate)
@@ -57,17 +57,16 @@ newMemFiniteSet ::
 newMemFiniteSet = do
     lens <- makeMemoryCellChangeLens mempty
     return $
-        meetValueLangFiniteSetRef $
-        MkPinaforeValue $ mapModel (convertChangeLens . lens) $ pinaforeBaseModel @baseupdate
+        meetValueLangFiniteSetRef $ MkPinaforeRef $ mapModel (convertChangeLens . lens) $ pinaforeBaseModel @baseupdate
 
 now :: forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens (ROWUpdate UTCTime) baseupdate)
-    => PinaforeImmutableReference UTCTime
-now = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseModel @baseupdate
+    => PinaforeImmutableRef UTCTime
+now = functionImmutableRef $ MkPinaforeRef $ pinaforeBaseModel @baseupdate
 
 timeZone ::
        forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens (ROWUpdate TimeZone) baseupdate)
-    => PinaforeImmutableReference TimeZone
-timeZone = functionImmutableReference $ MkPinaforeValue $ pinaforeBaseModel @baseupdate
+    => PinaforeImmutableRef TimeZone
+timeZone = functionImmutableRef $ MkPinaforeRef $ pinaforeBaseModel @baseupdate
 
 localNow ::
        forall baseupdate.
@@ -75,7 +74,7 @@ localNow ::
        , BaseChangeLens (ROWUpdate UTCTime) baseupdate
        , BaseChangeLens (ROWUpdate TimeZone) baseupdate
        )
-    => PinaforeImmutableReference LocalTime
+    => PinaforeImmutableRef LocalTime
 localNow = utcToLocalTime <$> timeZone <*> now
 
 today ::
@@ -84,7 +83,7 @@ today ::
        , BaseChangeLens (ROWUpdate UTCTime) baseupdate
        , BaseChangeLens (ROWUpdate TimeZone) baseupdate
        )
-    => PinaforeImmutableReference Day
+    => PinaforeImmutableRef Day
 today = localDay <$> localNow
 
 interpretAsText ::
@@ -479,11 +478,11 @@ base_predefinitions =
     , docTreeEntry
           "References"
           "A reference of type `Ref {-p,+q}` has a setting type of `p` and a getting type of `q`. References keep track of updates, and will update user interfaces constructed from them when their value changes."
-          [ mkValEntry "pureRef" "A constant reference for a value." (pure :: A -> PinaforeImmutableReference A)
+          [ mkValEntry "pureRef" "A constant reference for a value." (pure :: A -> PinaforeImmutableRef A)
           , mkValEntry
                 "immutRef"
                 "Convert a reference to immutable.\n`immutRef r = {%r}`"
-                (id :: PinaforeImmutableReference A -> PinaforeImmutableReference A)
+                (id :: PinaforeImmutableRef A -> PinaforeImmutableRef A)
           , mkValEntry
                 "coMapRef"
                 "Map a function on getting a reference."
@@ -496,17 +495,17 @@ base_predefinitions =
           , mkValEntry
                 "applyRef"
                 "Combine references."
-                ((<*>) :: PinaforeImmutableReference (A -> B) -> PinaforeImmutableReference A -> PinaforeImmutableReference B)
+                ((<*>) :: PinaforeImmutableRef (A -> B) -> PinaforeImmutableRef A -> PinaforeImmutableRef B)
           , mkValEntry
                 "unknown"
                 "The unknown reference, representing missing information."
-                (empty :: PinaforeImmutableReference BottomType)
-          , mkValEntry "known" "True if the reference is known." $ \(val :: PinaforeReadOnlyValue (Know TopType)) ->
-                (eaMapReadOnlyWhole (Known . isKnown) val :: PinaforeReadOnlyValue (Know Bool))
+                (empty :: PinaforeImmutableRef BottomType)
+          , mkValEntry "known" "True if the reference is known." $ \(val :: PinaforeROWRef (Know TopType)) ->
+                (eaMapReadOnlyWhole (Known . isKnown) val :: PinaforeROWRef (Know Bool))
           , mkValEntry
                 "??"
                 "`p ?? q` = `p` if it is known, else `q`."
-                ((<|>) :: PinaforeImmutableReference A -> PinaforeImmutableReference A -> PinaforeImmutableReference A)
+                ((<|>) :: PinaforeImmutableRef A -> PinaforeImmutableRef A -> PinaforeImmutableRef A)
           , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $ langRefGet @A
           , mkValEntry "runRef" "Run an action from a reference." $ runLangRef
           , mkValEntry ":=" "Set a reference to a value. Stop if failed." setentity

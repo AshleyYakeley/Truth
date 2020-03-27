@@ -361,34 +361,34 @@ instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) p
          ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LangRef '( p, q)) where
     fromShimWit = singlePinaforeShimWit fromJMShimWit
 
--- PinaforeValue
+-- PinaforeRef
 instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) t
          , ToShimWit JMShim (PinaforeType baseupdate 'Positive) t
-         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeValue (WholeUpdate (Know t))) where
-    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeValueToRef) toJMShimWit
+         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeRef (WholeUpdate (Know t))) where
+    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeRefToRef) toJMShimWit
 
 instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) t
          , ToShimWit JMShim (PinaforeType baseupdate 'Positive) t
-         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeValue (WholeUpdate (Know t))) where
+         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeRef (WholeUpdate (Know t))) where
     fromShimWit = mapShimWit (toEnhanced "subtype" langRefToValue) fromJMShimWit
 
--- PinaforeImmutableReference
+-- PinaforeImmutableRef
 instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeImmutableReference a) where
+             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeImmutableRef a) where
     fromShimWit = mapShimWit (toEnhanced "subtype" langRefToImmutable) fromJMShimWit
 
 instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeImmutableReference a) where
+             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeImmutableRef a) where
     toShimWit = mapShimWit (toEnhanced "subtype" pinaforeImmutableToRef) toJMShimWit
 
--- PinaforeReadOnlyValue
+-- PinaforeROWRef
 instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) t) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeReadOnlyValue (Know t)) where
+             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeROWRef (Know t)) where
     fromShimWit = mapShimWit (toEnhanced "subtype" langRefToReadOnlyValue) fromJMShimWit
 
 instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) t) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeReadOnlyValue (Know t)) where
-    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeReadOnlyValueToRef) toJMShimWit
+             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeROWRef (Know t)) where
+    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeROWRefToRef) toJMShimWit
 
 -- LangSetRef
 instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
@@ -442,16 +442,16 @@ instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) p
          ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LangFiniteSetRef '( p, q)) where
     fromShimWit = singlePinaforeShimWit fromJMShimWit
 
--- PinaforeValue FiniteSetUpdate
+-- PinaforeRef FiniteSetUpdate
 instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) t
          , FromShimWit JMShim (PinaforeType baseupdate 'Negative) t
-         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeValue (FiniteSetUpdate t)) where
+         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeRef (FiniteSetUpdate t)) where
     fromShimWit = mapShimWit (toEnhanced "subtype" unLangFiniteSetRef) fromJMShimWit
 
 instance ( Eq t
          , ToShimWit JMShim (PinaforeType baseupdate 'Positive) t
          , FromShimWit JMShim (PinaforeType baseupdate 'Negative) t
-         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeValue (FiniteSetUpdate t)) where
+         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeRef (FiniteSetUpdate t)) where
     toShimWit = mapShimWit (toEnhanced "subtype" $ MkLangFiniteSetRef identityRange) toJMShimWit
 
 -- LangMorphism

@@ -60,12 +60,10 @@ type A = UVar "a"
 type B = UVar "b"
 
 purerefExpr :: forall baseupdate. QExpr baseupdate
-purerefExpr = qConstExpr (pure :: A -> PinaforeImmutableReference A)
+purerefExpr = qConstExpr (pure :: A -> PinaforeImmutableRef A)
 
 aprefExpr :: forall baseupdate. QExpr baseupdate
-aprefExpr =
-    qConstExpr
-        ((<*>) :: PinaforeImmutableReference (A -> B) -> PinaforeImmutableReference A -> PinaforeImmutableReference B)
+aprefExpr = qConstExpr ((<*>) :: PinaforeImmutableRef (A -> B) -> PinaforeImmutableRef A -> PinaforeImmutableRef B)
 
 aplist :: QExpr baseupdate -> [QExpr baseupdate] -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
 aplist expr [] = return expr

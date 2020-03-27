@@ -12,7 +12,7 @@ module Pinafore.Language
     , parseValueAtType
     , interact
     , Entity
-    , showPinaforeValue
+    , showPinaforeRef
     , runPinaforeSourceScoped
     ) where
 
@@ -104,8 +104,8 @@ typedShowValue :: PinaforeType baseupdate 'Positive t -> t -> String
 typedShowValue NilPinaforeType v = never v
 typedShowValue (ConsPinaforeType ts tt) v = joinf (singularTypedShowValue ts) (typedShowValue tt) v
 
-showPinaforeValue :: QValue baseupdate -> String
-showPinaforeValue (MkAnyValue (MkShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
+showPinaforeRef :: QValue baseupdate -> String
+showPinaforeRef (MkAnyValue (MkShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
 
 type Interact baseupdate = StateT SourcePos (ReaderStateT (PinaforeScoped baseupdate) View)
 
@@ -127,7 +127,7 @@ runValue :: Handle -> QValue baseupdate -> Interact baseupdate (PinaforeAction (
 runValue outh val =
     interactRunSourceScoped $
     (typedAnyToPinaforeVal val) <|> (fmap outputLn $ typedAnyToPinaforeVal val) <|>
-    (return $ liftIO $ hPutStrLn outh $ showPinaforeValue val)
+    (return $ liftIO $ hPutStrLn outh $ showPinaforeRef val)
 
 interactParse ::
        forall baseupdate. HasPinaforeEntityUpdate baseupdate

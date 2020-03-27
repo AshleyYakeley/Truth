@@ -7,8 +7,8 @@ import Shapes
 import Truth.Core
 
 data LangRef (pq :: (Type, Type)) where
-    MutableLangRef :: Range JMShim t pq -> PinaforeValue (WholeUpdate (Know t)) -> LangRef pq
-    ImmutableLangRef :: PinaforeImmutableReference q -> LangRef '( p, q)
+    MutableLangRef :: Range JMShim t pq -> PinaforeRef (WholeUpdate (Know t)) -> LangRef pq
+    ImmutableLangRef :: PinaforeImmutableRef q -> LangRef '( p, q)
 
 instance CatFunctor (CatRange (->)) (->) LangRef where
     cfmap f (MutableLangRef r v) = MutableLangRef (cfmap f r) v
@@ -17,38 +17,38 @@ instance CatFunctor (CatRange (->)) (->) LangRef where
 instance HasVariance 'Rangevariance LangRef where
     varianceRepresentational = Nothing
 
-langRefToReadOnlyValue :: LangRef '( BottomType, a) -> PinaforeReadOnlyValue (Know a)
+langRefToReadOnlyValue :: LangRef '( BottomType, a) -> PinaforeROWRef (Know a)
 langRefToReadOnlyValue ref =
     case langRefToImmutable ref of
-        MkPinaforeImmutableReference fv -> fv
+        MkPinaforeImmutableRef fv -> fv
 
-pinaforeReadOnlyValueToRef :: PinaforeReadOnlyValue (Know a) -> LangRef '( TopType, a)
-pinaforeReadOnlyValueToRef ef = pinaforeImmutableToRef $ MkPinaforeImmutableReference ef
+pinaforeROWRefToRef :: PinaforeROWRef (Know a) -> LangRef '( TopType, a)
+pinaforeROWRefToRef ef = pinaforeImmutableToRef $ MkPinaforeImmutableRef ef
 
-langRefToImmutable :: LangRef '( BottomType, a) -> PinaforeImmutableReference a
+langRefToImmutable :: LangRef '( BottomType, a) -> PinaforeImmutableRef a
 langRefToImmutable (MutableLangRef (MkRange _ tq) sr) =
-    fmap (fromEnhanced tq) $ MkPinaforeImmutableReference $ eaToReadOnlyWhole sr
+    fmap (fromEnhanced tq) $ MkPinaforeImmutableRef $ eaToReadOnlyWhole sr
 langRefToImmutable (ImmutableLangRef ir) = ir
 
-pinaforeImmutableToRef :: PinaforeImmutableReference a -> LangRef '( TopType, a)
+pinaforeImmutableToRef :: PinaforeImmutableRef a -> LangRef '( TopType, a)
 pinaforeImmutableToRef ir = ImmutableLangRef ir
 
-langRefToValue :: LangRef '( p, p) -> PinaforeValue (WholeUpdate (Know p))
+langRefToValue :: LangRef '( p, p) -> PinaforeRef (WholeUpdate (Know p))
 langRefToValue (MutableLangRef tr lv) =
     eaMap (bijectionWholeChangeLens $ isoMapCat (fromEnhanced @_ @JMShim) $ cfmap $ rangeBijection tr) lv
-langRefToValue (ImmutableLangRef ir) = immutableReferenceToRejectingValue ir
+langRefToValue (ImmutableLangRef ir) = immutableRefToRejectingValue ir
 
-pinaforeValueToRef :: (PinaforeValue (WholeUpdate (Know a))) -> LangRef '( a, a)
-pinaforeValueToRef bsv = MutableLangRef identityRange bsv
+pinaforeRefToRef :: (PinaforeRef (WholeUpdate (Know a))) -> LangRef '( a, a)
+pinaforeRefToRef bsv = MutableLangRef identityRange bsv
 
 langRefGet :: forall q. LangRef '( BottomType, q) -> PinaforeAction q
 langRefGet ref = do
-    ka <- getImmutableReference $ langRefToImmutable ref
+    ka <- getImmutableRef $ langRefToImmutable ref
     pinaforeActionKnow ka
 
 langRefSet :: forall p. LangRef '( p, TopType) -> Know p -> PinaforeAction ()
 langRefSet (MutableLangRef (MkRange pt _) sr) mp =
-    pinaforeValuePushAction sr $ pure $ MkWholeReaderEdit $ fmap (fromEnhanced pt) mp
+    pinaforeRefPushAction sr $ pure $ MkWholeReaderEdit $ fmap (fromEnhanced pt) mp
 langRefSet (ImmutableLangRef _) _ = empty
 
 runLangRef :: LangRef '( BottomType, PinaforeAction ()) -> PinaforeAction ()

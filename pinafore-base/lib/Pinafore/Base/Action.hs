@@ -4,7 +4,7 @@ module Pinafore.Base.Action
     , viewPinaforeAction
     , pinaforeResourceContext
     , pinaforeFunctionValueGet
-    , pinaforeValuePushAction
+    , pinaforeRefPushAction
     , PinaforeWindow(..)
     , pinaforeNewWindow
     , pinaforeExit
@@ -15,7 +15,7 @@ module Pinafore.Base.Action
     ) where
 
 import Pinafore.Base.Know
-import Pinafore.Base.Value
+import Pinafore.Base.Ref
 import Shapes
 import Truth.Core
 
@@ -44,10 +44,10 @@ viewPinaforeAction va = MkPinaforeAction $ lift $ lift va
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
 
-pinaforeValuePushAction :: PinaforeValue update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
-pinaforeValuePushAction lv edits = do
+pinaforeRefPushAction :: PinaforeRef update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
+pinaforeRefPushAction lv edits = do
     rc <- pinaforeResourceContext
-    ok <- liftIO $ pinaforeValuePush rc lv edits
+    ok <- liftIO $ pinaforeRefPush rc lv edits
     if ok
         then return ()
         else empty

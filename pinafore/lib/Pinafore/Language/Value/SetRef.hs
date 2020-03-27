@@ -9,12 +9,12 @@ import Truth.Core
 
 data LangSetRef a =
     MkLangSetRef (a -> a -> Bool)
-                 (PinaforeValue (PartialSetUpdate a))
+                 (PinaforeRef (PartialSetUpdate a))
 
-mkLangSetRef :: Eq a => PinaforeValue (PartialSetUpdate a) -> LangSetRef a
+mkLangSetRef :: Eq a => PinaforeRef (PartialSetUpdate a) -> LangSetRef a
 mkLangSetRef sv = MkLangSetRef (==) sv
 
-unLangSetRef :: LangSetRef a -> PinaforeValue (PartialSetUpdate a)
+unLangSetRef :: LangSetRef a -> PinaforeRef (PartialSetUpdate a)
 unLangSetRef (MkLangSetRef _ sv) = sv
 
 instance Contravariant LangSetRef where
@@ -87,7 +87,7 @@ langSetRefCartesianProduct (MkLangSetRef eqA svA) (MkLangSetRef eqB svB) = let
 
 langSetRefAdd :: forall a. LangSetRef a -> a -> PinaforeAction ()
 langSetRefAdd (MkLangSetRef _eq sv) a =
-    pinaforeValuePushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True
+    pinaforeRefPushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True
 
 langSetRefAddNew :: LangSetRef NewEntity -> PinaforeAction NewEntity
 langSetRefAddNew set = do
@@ -97,7 +97,7 @@ langSetRefAddNew set = do
 
 langSetRefRemove :: forall a. LangSetRef a -> a -> PinaforeAction ()
 langSetRefRemove (MkLangSetRef _eq sv) a =
-    pinaforeValuePushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit False
+    pinaforeRefPushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit False
 
 langSetRefMember :: forall a. LangSetRef a -> LangRef '( BottomType, a) -> LangRef '( Bool, Bool)
 langSetRefMember (MkLangSetRef eq sv) aref = let
@@ -168,7 +168,7 @@ langSetRefMember (MkLangSetRef eq sv) aref = let
                                 MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit b
                             _ -> Nothing
         in MkChangeLens {..}
-    in pinaforeValueToRef $ eaMap knowApplySetLens $ eaPair sv $ eaMap fromReadOnlyRejectingChangeLens afval
+    in pinaforeRefToRef $ eaMap knowApplySetLens $ eaPair sv $ eaMap fromReadOnlyRejectingChangeLens afval
 
 predicateToLangSetRef :: forall a. (a -> Bool) -> LangSetRef (MeetType Entity a)
 predicateToLangSetRef p = MkLangSetRef (==) $ eaMap fromReadOnlyRejectingChangeLens $ eaPure $ \mea -> p $ meet2 mea

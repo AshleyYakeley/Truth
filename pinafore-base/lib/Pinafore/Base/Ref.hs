@@ -1,4 +1,4 @@
-module Pinafore.Base.Value where
+module Pinafore.Base.Ref where
 
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
@@ -43,19 +43,17 @@ eaMapFullReadOnly ::
     -> f (ReadOnlyUpdate updateB)
 eaMapFullReadOnly lens = eaMapSemiReadOnly $ toReadOnlyChangeLens . lens
 
-type ReadOnlyWhole f a = f (ROWUpdate a)
-
-eaPairReadOnlyWhole :: EditApplicative f => ReadOnlyWhole f a -> ReadOnlyWhole f b -> ReadOnlyWhole f (a, b)
+eaPairReadOnlyWhole :: EditApplicative f => f (ROWUpdate a) -> f (ROWUpdate b) -> f (ROWUpdate (a, b))
 eaPairReadOnlyWhole fa fb =
     eaMap (liftReadOnlyChangeLens (toReadOnlyChangeLens . pairWholeChangeLens) . readOnlyPairChangeLens) $ eaPair fa fb
 
 eaToReadOnlyWhole ::
        (EditApplicative f, FullSubjectReader (UpdateReader update), ApplicableUpdate update)
     => f update
-    -> ReadOnlyWhole f (UpdateSubject update)
+    -> f (ROWUpdate (UpdateSubject update))
 eaToReadOnlyWhole = eaMap convertReadOnlyChangeLens
 
-eaMapReadOnlyWhole :: EditApplicative f => (a -> b) -> ReadOnlyWhole f a -> ReadOnlyWhole f b
+eaMapReadOnlyWhole :: EditApplicative f => (a -> b) -> f (ROWUpdate a) -> f (ROWUpdate b)
 eaMapReadOnlyWhole ab = eaMapSemiReadOnly $ funcChangeLens ab
 
 class EditApplicative f => FloatingEditApplicative (f :: Type -> Type) where
@@ -77,67 +75,66 @@ eaFloatMapReadOnly rc flens = eaFloatMap rc $ liftReadOnlyFloatingChangeLens fle
 instance FloatingEditApplicative (FloatingChangeLens update) where
     eaFloatMap _ ab ua = return $ ab . ua
 
-newtype PinaforeValue update = MkPinaforeValue
-    { unPinaforeValue :: Model update
+newtype PinaforeRef update = MkPinaforeRef
+    { unPinaforeRef :: Model update
     }
 
-pinaforeValueOpenModel :: PinaforeValue update -> Model update
-pinaforeValueOpenModel = unPinaforeValue
+pinaforeRefOpenModel :: PinaforeRef update -> Model update
+pinaforeRefOpenModel = unPinaforeRef
 
-instance EditApplicative PinaforeValue where
-    eaPure subj = MkPinaforeValue $ constantModel subj
-    eaMap lens (MkPinaforeValue sv) = MkPinaforeValue $ mapModel lens sv
-    eaPair (MkPinaforeValue sva) (MkPinaforeValue svb) = MkPinaforeValue $ pairModels sva svb
+instance EditApplicative PinaforeRef where
+    eaPure subj = MkPinaforeRef $ constantModel subj
+    eaMap lens (MkPinaforeRef sv) = MkPinaforeRef $ mapModel lens sv
+    eaPair (MkPinaforeRef sva) (MkPinaforeRef svb) = MkPinaforeRef $ pairModels sva svb
 
-instance FloatingEditApplicative PinaforeValue where
-    eaFloatMap rc flens (MkPinaforeValue sub) = fmap MkPinaforeValue $ floatMapModel rc flens sub
+instance FloatingEditApplicative PinaforeRef where
+    eaFloatMap rc flens (MkPinaforeRef sub) = fmap MkPinaforeRef $ floatMapModel rc flens sub
 
-contextualisePinaforeValue ::
-       Model baseupdate -> PinaforeValue update -> PinaforeValue (ContextUpdate baseupdate update)
-contextualisePinaforeValue basesub (MkPinaforeValue sv) = MkPinaforeValue $ contextualiseModels basesub sv
+contextualisePinaforeRef :: Model baseupdate -> PinaforeRef update -> PinaforeRef (ContextUpdate baseupdate update)
+contextualisePinaforeRef basesub (MkPinaforeRef sv) = MkPinaforeRef $ contextualiseModels basesub sv
 
-type PinaforeReadOnlyValue t = ReadOnlyWhole PinaforeValue t
+type PinaforeROWRef a = PinaforeRef (ROWUpdate a)
 
-pinaforeFunctionValueGet :: ResourceContext -> PinaforeReadOnlyValue t -> IO t
-pinaforeFunctionValueGet rc (MkPinaforeValue sub) = runResource rc sub $ \asub -> aModelRead asub ReadWhole
+pinaforeFunctionValueGet :: ResourceContext -> PinaforeROWRef t -> IO t
+pinaforeFunctionValueGet rc (MkPinaforeRef sub) = runResource rc sub $ \asub -> aModelRead asub ReadWhole
 
-pinaforeValuePush :: ResourceContext -> PinaforeValue update -> NonEmpty (UpdateEdit update) -> IO Bool
-pinaforeValuePush rc (MkPinaforeValue sub) edits =
+pinaforeRefPush :: ResourceContext -> PinaforeRef update -> NonEmpty (UpdateEdit update) -> IO Bool
+pinaforeRefPush rc (MkPinaforeRef sub) edits =
     runResource rc sub $ \asub -> pushEdit noEditSource $ aModelEdit asub edits
 
 applyPinaforeFunction ::
        forall baseupdate a b.
        Model baseupdate
     -> PinaforeFunctionMorphism baseupdate a b
-    -> PinaforeReadOnlyValue a
-    -> PinaforeReadOnlyValue b
+    -> PinaforeROWRef a
+    -> PinaforeROWRef b
 applyPinaforeFunction basesub m val =
     eaMap (pinaforeFunctionMorphismUpdateFunction m) $
-    contextualisePinaforeValue basesub $ eaMap fromReadOnlyRejectingChangeLens val
+    contextualisePinaforeRef basesub $ eaMap fromReadOnlyRejectingChangeLens val
 
 applyPinaforeLens ::
        forall baseupdate a b.
        Model baseupdate
     -> PinaforeLensMorphism baseupdate a b
-    -> PinaforeValue (WholeUpdate (Know a))
-    -> PinaforeValue (WholeUpdate (Know b))
-applyPinaforeLens basesub pm val = eaMap (pmForward pm) $ contextualisePinaforeValue basesub val
+    -> PinaforeRef (WholeUpdate (Know a))
+    -> PinaforeRef (WholeUpdate (Know b))
+applyPinaforeLens basesub pm val = eaMap (pmForward pm) $ contextualisePinaforeRef basesub val
 
 applyInversePinaforeLens ::
        forall baseupdate a b. (Eq a, Eq b)
     => Model baseupdate
     -> PinaforeLensMorphism baseupdate a b
-    -> PinaforeValue (WholeUpdate (Know b))
-    -> PinaforeValue (FiniteSetUpdate a)
+    -> PinaforeRef (WholeUpdate (Know b))
+    -> PinaforeRef (FiniteSetUpdate a)
 applyInversePinaforeLens basesub pm val =
-    eaMap (pinaforeLensMorphismInverseChangeLens pm) $ contextualisePinaforeValue basesub val
+    eaMap (pinaforeLensMorphismInverseChangeLens pm) $ contextualisePinaforeRef basesub val
 
 applyInversePinaforeLensSet ::
        forall baseupdate a b. (Eq a, Eq b)
     => Model baseupdate
     -> IO b
     -> PinaforeLensMorphism baseupdate a b
-    -> PinaforeValue (FiniteSetUpdate b)
-    -> PinaforeValue (FiniteSetUpdate a)
+    -> PinaforeRef (FiniteSetUpdate b)
+    -> PinaforeRef (FiniteSetUpdate a)
 applyInversePinaforeLensSet basesub newb pm val =
-    eaMap (pinaforeLensMorphismInverseChangeLensSet newb pm) $ contextualisePinaforeValue basesub val
+    eaMap (pinaforeLensMorphismInverseChangeLensSet newb pm) $ contextualisePinaforeRef basesub val

@@ -53,8 +53,8 @@ rev (MkLangOrder ef o) = MkLangOrder ef $ \a b -> o b a
 qOrderSet ::
        forall baseupdate a. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
     => LangOrder baseupdate a
-    -> PinaforeReadOnlyValue (FiniteSet a)
-    -> PinaforeReadOnlyValue (Know [a])
+    -> PinaforeROWRef (FiniteSet a)
+    -> PinaforeROWRef (Know [a])
 qOrderSet (MkLangOrder (ofunc :: PinaforeFunctionMorphism baseupdate (Know a) t) oord) pset = let
     cmp :: (a, t) -> (a, t) -> Ordering
     cmp (_, t1) (_, t2) = oord t1 t2
@@ -63,7 +63,7 @@ qOrderSet (MkLangOrder (ofunc :: PinaforeFunctionMorphism baseupdate (Know a) t)
         proc a -> do
             kt <- ofunc -< Known a
             returnA -< (a, kt)
-    upairs :: PinaforeReadOnlyValue (FiniteSet (a, t))
+    upairs :: PinaforeROWRef (FiniteSet (a, t))
     upairs = applyPinaforeFunction pinaforeBase (cfmap ofuncpair) pset
     sortpoints :: FiniteSet (a, t) -> [a]
     sortpoints (MkFiniteSet pairs) = fmap fst $ sortBy cmp pairs
@@ -74,19 +74,19 @@ langOrderCompare ::
        forall baseupdate a b. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
     => (Ordering -> b)
     -> LangOrder baseupdate a
-    -> PinaforeImmutableReference a
-    -> PinaforeImmutableReference a
-    -> PinaforeImmutableReference b
+    -> PinaforeImmutableRef a
+    -> PinaforeImmutableRef a
+    -> PinaforeImmutableRef b
 langOrderCompare ob (MkLangOrder ef o) fv1 fv2 =
-    (\v1 v2 -> ob $ o v1 v2) <$> (applyImmutableReference pinaforeBase (fmap Known ef) fv1) <*>
-    (applyImmutableReference pinaforeBase (fmap Known ef) fv2)
+    (\v1 v2 -> ob $ o v1 v2) <$> (applyImmutableRef pinaforeBase (fmap Known ef) fv1) <*>
+    (applyImmutableRef pinaforeBase (fmap Known ef) fv2)
 
 pinaforeSetGetOrdered ::
        forall baseupdate a. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
     => LangOrder baseupdate a
     -> LangFiniteSetRef '( BottomType, a)
     -> LangRef '( TopType, [a])
-pinaforeSetGetOrdered order set = pinaforeReadOnlyValueToRef $ qOrderSet order $ langFiniteSetRefFunctionValue set
+pinaforeSetGetOrdered order set = pinaforeROWRefToRef $ qOrderSet order $ langFiniteSetRefFunctionValue set
 
 pinaforeUpdateOrder :: LangOrder baseupdate a -> UpdateOrder (ContextUpdate baseupdate (WholeUpdate (Know a)))
 pinaforeUpdateOrder (MkLangOrder m cmp) =

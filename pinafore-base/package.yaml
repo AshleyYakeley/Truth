@@ -29,7 +29,7 @@ library:
       - Pinafore.Base.Number
       - Pinafore.Base.Literal
       - Pinafore.Base.Morphism
-      - Pinafore.Base.Value
+      - Pinafore.Base.Ref
       - Pinafore.Base.Entity
       - Pinafore.Base.Lens
       - Pinafore.Base.Edit
@@ -37,7 +37,7 @@ library:
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
       - Pinafore.Base.Context
-      - Pinafore.Base.ImmutableReference
+      - Pinafore.Base.ImmutableRef
       - Pinafore.Base.File
       - Pinafore.Storage.Table
       - Pinafore.Storage.Database
