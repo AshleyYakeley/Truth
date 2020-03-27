@@ -70,10 +70,10 @@ testUpdateFunction = let
         return [MkReadOnlyUpdate $ MkWholeReaderUpdate s]
     in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
-testUpdateObject :: TestTree
-testUpdateObject =
-    goldenTest' "updateObject" $ do
-        obj <- makeMemoryObject "old" $ \_ -> True
+testUpdateReference :: TestTree
+testUpdateReference =
+    goldenTest' "updateReference" $ do
+        obj <- makeMemoryReference "old" $ \_ -> True
         var <- newEmptyMVar
         let
             om :: Premodel (WholeUpdate String) ()
@@ -95,8 +95,8 @@ testUpdateObject =
             omr' <- om' ?rc mempty recv
             _ <- mapPremodel ?rc lens (om' ?rc) mempty recv'
             liftIO $
-                runResource ?rc (pmrObject omr') $ \MkAnObject {..} ->
-                    pushOrFail "failed" noEditSource $ objEdit $ pure $ MkWholeReaderEdit "new"
+                runResource ?rc (pmrReference omr') $ \MkAnReference {..} ->
+                    pushOrFail "failed" noEditSource $ refEdit $ pure $ MkWholeReaderEdit "new"
             liftIO showAction
             liftIO showAction
             liftIO $ taskWait $ pmrUpdatesTask omr'
@@ -195,10 +195,10 @@ testSubscription initial = do
     iow <- liftIO $ newIOWitness
     var <- liftIO $ newMVar initial
     let
-        varObj :: Object (WholeEdit (UpdateSubject update))
-        varObj = mvarObject iow var $ \_ -> True
-        editObj :: Object (UpdateEdit update)
-        editObj = convertObject varObj
+        varObj :: Reference (WholeEdit (UpdateSubject update))
+        varObj = mvarReference iow var $ \_ -> True
+        editObj :: Reference (UpdateEdit update)
+        editObj = convertReference varObj
     sub <- makeReflectingModel editObj
     let
         showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
@@ -577,7 +577,7 @@ testSubscribe :: TestTree
 testSubscribe =
     testGroup
         "subscribe"
-        [ testUpdateObject
+        [ testUpdateReference
         , testPair
         , testString
         , testString1

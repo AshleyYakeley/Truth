@@ -2,7 +2,7 @@ module Truth.Core.UI.Specifier.TextEditor where
 
 import Truth.Core.Import
 import Truth.Core.Lens
-import Truth.Core.Object
+import Truth.Core.Reference
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier

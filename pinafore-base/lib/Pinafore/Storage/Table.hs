@@ -5,7 +5,7 @@ module Pinafore.Storage.Table
     , PinaforeTableRead(..)
     , PinaforeTableEdit(..)
     , PinaforeTableUpdate
-    , pinaforeTableEntityObject
+    , pinaforeTableEntityReference
     ) where
 
 import Pinafore.Base
@@ -178,8 +178,8 @@ instance CacheableEdit PinaforeTableEdit where
                         v
                         vv'
 
-pinaforeTableEntityObject :: Object PinaforeTableEdit -> Object PinaforeEntityEdit
-pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject tableRead tableMPush objCommitTask)) =
+pinaforeTableEntityReference :: Reference PinaforeTableEdit -> Reference PinaforeEntityEdit
+pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAnReference tableRead tableMPush refCommitTask)) =
     case resourceRunnerUnliftAllDict trun of
         Dict ->
             case transStackDict @MonadIO @tt @IO of
@@ -188,10 +188,10 @@ pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject ta
                         Dict -> let
                             tablePush :: NonEmpty PinaforeTableEdit -> EditSource -> ApplyStack tt IO ()
                             tablePush edits esrc = pushOrFail "can't push table edit" esrc $ tableMPush edits
-                            objRead :: Readable (ApplyStack tt IO) PinaforeEntityRead
-                            objRead (PinaforeEntityReadGetPredicate prd subj) =
+                            refRead :: Readable (ApplyStack tt IO) PinaforeEntityRead
+                            refRead (PinaforeEntityReadGetPredicate prd subj) =
                                 fmap maybeToKnow $ tableRead $ PinaforeTableReadGetPredicate prd subj
-                            objRead (PinaforeEntityReadGetProperty prd subj) = do
+                            refRead (PinaforeEntityReadGetProperty prd subj) = do
                                 mval <- tableRead $ PinaforeTableReadGetPredicate prd subj
                                 case mval of
                                     Just val -> return val
@@ -201,20 +201,20 @@ pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject ta
                                             (pure $ PinaforeTableEditSetPredicate prd subj $ Just val)
                                             noEditSource
                                         return val
-                            objRead (PinaforeEntityReadLookupPredicate prd val) =
+                            refRead (PinaforeEntityReadLookupPredicate prd val) =
                                 tableRead $ PinaforeTableReadLookupPredicate prd val
-                            objRead (PinaforeEntityReadToLiteral p) = do
+                            refRead (PinaforeEntityReadToLiteral p) = do
                                 ml <- tableRead $ PinaforeTableReadGetLiteral p
                                 return $ maybeToKnow ml
-                            objEdit ::
+                            refEdit ::
                                    NonEmpty PinaforeEntityEdit
                                 -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-                            objEdit =
+                            refEdit =
                                 singleAlwaysEdit $ \case
                                     PinaforeEntityEditSetPredicate p s kv ->
                                         tablePush $ pure $ PinaforeTableEditSetPredicate p s $ knowToMaybe kv
                                     PinaforeEntityEditSetLiteral p kl ->
                                         tablePush $ pure $ PinaforeTableEditSetLiteral p $ knowToMaybe kl
-                            in MkResource trun MkAnObject {..}
+                            in MkResource trun MkAnReference {..}
 
 type PinaforeTableUpdate = EditUpdate PinaforeTableEdit

@@ -1,7 +1,7 @@
 module Truth.Core.UI.Specifier.Button where
 
 import Truth.Core.Import
-import Truth.Core.Object
+import Truth.Core.Reference
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.View.View

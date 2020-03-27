@@ -17,11 +17,11 @@ clockPremodel basetime interval pmrUpdatesTask update = do
     run <-
         liftIO $
         newResourceRunner $ \rt -> do
-            t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while object is open
+            t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while reference is open
             runReaderT rt t
     let
-        pmrObject :: Object (ConstEdit (WholeReader UTCTime))
-        pmrObject = MkResource run $ immutableAnObject $ \ReadWhole -> ask
+        pmrReference :: Reference (ConstEdit (WholeReader UTCTime))
+        pmrReference = MkResource run $ immutableAnReference $ \ReadWhole -> ask
         pmrValue = ()
     return MkPremodelResult {..}
 

@@ -1,17 +1,17 @@
-module Truth.Core.Object.Editor where
+module Truth.Core.Reference.Editor where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.EditContext
-import Truth.Core.Object.Model
-import Truth.Core.Object.Object
+import Truth.Core.Reference.EditContext
+import Truth.Core.Reference.Model
+import Truth.Core.Reference.Reference
 import Truth.Core.Resource
 
 data Editor (update :: Type) r = forall editor. MkEditor
-    { editorInit :: Object (UpdateEdit update) -> LifeCycleIO editor
-    , editorUpdate :: editor -> Object (UpdateEdit update) -> ResourceContext -> NonEmpty update -> EditContext -> IO ()
+    { editorInit :: Reference (UpdateEdit update) -> LifeCycleIO editor
+    , editorUpdate :: editor -> Reference (UpdateEdit update) -> ResourceContext -> NonEmpty update -> EditContext -> IO ()
     , editorTask :: Task ()
-    , editorDo :: editor -> Object (UpdateEdit update) -> Task () -> LifeCycleIO r
+    , editorDo :: editor -> Reference (UpdateEdit update) -> Task () -> LifeCycleIO r
     }
 
 instance Functor (Editor update) where
@@ -24,15 +24,15 @@ instance Applicative (Editor update) where
         editorTask = mempty
         editorDo () _ _ = return a
         in MkEditor {..}
-    (MkEditor (ei1 :: Object (UpdateEdit update) -> LifeCycleIO editor1) eu1 et1 ed1) <*> (MkEditor (ei2 :: Object (UpdateEdit update) -> LifeCycleIO editor2) eu2 et2 ed2) = let
-        editorInit :: Object (UpdateEdit update) -> LifeCycleIO (editor1, editor2)
-        editorInit object = do
-            e1 <- ei1 object
-            e2 <- ei2 object
+    (MkEditor (ei1 :: Reference (UpdateEdit update) -> LifeCycleIO editor1) eu1 et1 ed1) <*> (MkEditor (ei2 :: Reference (UpdateEdit update) -> LifeCycleIO editor2) eu2 et2 ed2) = let
+        editorInit :: Reference (UpdateEdit update) -> LifeCycleIO (editor1, editor2)
+        editorInit reference = do
+            e1 <- ei1 reference
+            e2 <- ei2 reference
             return (e1, e2)
         editorUpdate ::
                (editor1, editor2)
-            -> Object (UpdateEdit update)
+            -> Reference (UpdateEdit update)
             -> ResourceContext
             -> NonEmpty update
             -> EditContext
@@ -48,8 +48,8 @@ instance Applicative (Editor update) where
         in MkEditor {..}
 
 subscribeEditor :: ResourceContext -> Model update -> Editor update r -> LifeCycleIO r
-subscribeEditor rc (MkResource (rr :: _ tt) (MkAModel anobject sub utask)) MkEditor {..} = do
-    let object = MkResource rr anobject
-    e <- editorInit object
-    runResourceRunner rc rr $ sub editorTask $ editorUpdate e object
-    editorDo e object utask
+subscribeEditor rc (MkResource (rr :: _ tt) (MkAModel anreference sub utask)) MkEditor {..} = do
+    let reference = MkResource rr anreference
+    e <- editorInit reference
+    runResourceRunner rc rr $ sub editorTask $ editorUpdate e reference
+    editorDo e reference utask

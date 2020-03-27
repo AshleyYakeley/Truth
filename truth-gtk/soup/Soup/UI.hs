@@ -57,10 +57,10 @@ soupEditSpec sub selnotify openItem = do
                 in return $ mapModel valLens cellsub
     tableUISpec [nameColumn, pastColumn] osub openItem selnotify
 
-soupObject :: FilePath -> Object (UpdateEdit (SoupUpdate PossibleNoteUpdate))
-soupObject dirpath = let
-    rawSoupObject :: Object (UpdateEdit ObjectSoupUpdate)
-    rawSoupObject = directorySoup fileSystemObject dirpath
+soupReference :: FilePath -> Reference (UpdateEdit (SoupUpdate PossibleNoteUpdate))
+soupReference dirpath = let
+    rawSoupReference :: Reference (UpdateEdit ReferenceSoupUpdate)
+    rawSoupReference = directorySoup fileSystemReference dirpath
     soupItemInjection :: Injection' (Result Text) LazyByteString (UpdateSubject PossibleNoteUpdate)
     soupItemInjection = codecInjection noteCodec
     paste ::
@@ -70,13 +70,13 @@ soupObject dirpath = let
     paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
     soupItemLens :: ChangeLens ByteStringUpdate PossibleNoteUpdate
     soupItemLens = convertChangeLens . (wholeChangeLens $ injectionLens soupItemInjection) . convertChangeLens
-    lens :: ChangeLens ObjectSoupUpdate (SoupUpdate PossibleNoteUpdate)
-    lens = liftSoupLens paste $ soupItemLens . objectChangeLens
-    in mapObject lens rawSoupObject
+    lens :: ChangeLens ReferenceSoupUpdate (SoupUpdate PossibleNoteUpdate)
+    lens = liftSoupLens paste $ soupItemLens . referenceChangeLens
+    in mapReference lens rawSoupReference
 
 soupWindow :: UIToolkit -> FilePath -> CreateView ()
 soupWindow uit@MkUIToolkit {..} dirpath = do
-    smodel <- liftLifeCycleIO $ makeReflectingModel $ soupObject dirpath
+    smodel <- liftLifeCycleIO $ makeReflectingModel $ soupReference dirpath
     (selnotify, getsel) <- liftIO $ makeRefSelectNotify
     rec
         let

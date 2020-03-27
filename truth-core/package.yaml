@@ -76,20 +76,20 @@ library:
       - Truth.Core.Types.Database.Tuple
       - Truth.Core.Types.Database.Tuple.Show
       - Truth.Core.Types
-      - Truth.Core.Object.DeferActionT
-      - Truth.Core.Object.EditContext
-      - Truth.Core.Object.Object
-      - Truth.Core.Object.AutoClose
-      - Truth.Core.Object.ObjectEdit
-      - Truth.Core.Object.Premodel
-      - Truth.Core.Object.Model
-      - Truth.Core.Object.Tuple
-      - Truth.Core.Object.MemoryCell
-      - Truth.Core.Object.Editor
-      - Truth.Core.Object.Cache
-      - Truth.Core.Object.Savable
-      - Truth.Core.Object.Undo
-      - Truth.Core.Object
+      - Truth.Core.Reference.DeferActionT
+      - Truth.Core.Reference.EditContext
+      - Truth.Core.Reference.Reference
+      - Truth.Core.Reference.AutoClose
+      - Truth.Core.Reference.ReferenceEdit
+      - Truth.Core.Reference.Premodel
+      - Truth.Core.Reference.Model
+      - Truth.Core.Reference.Tuple
+      - Truth.Core.Reference.MemoryCell
+      - Truth.Core.Reference.Editor
+      - Truth.Core.Reference.Cache
+      - Truth.Core.Reference.Savable
+      - Truth.Core.Reference.Undo
+      - Truth.Core.Reference
       - Truth.Core.UI.Request
       - Truth.Core.UI.TextStyle
       - Truth.Core.UI.Specifier.Specifier

@@ -1,4 +1,4 @@
-module Truth.Core.Object.AutoClose where
+module Truth.Core.Reference.AutoClose where
 
 import Truth.Core.Import
 
@@ -10,8 +10,8 @@ runAutoClose ac = do
     liftIO $ for_ (toList mp) $ closeLifeState . snd
     return a
 
-acOpenObject :: Ord key => key -> With IO t -> AutoCloseT key t IO t
-acOpenObject key withX = do
+acOpenReference :: Ord key => key -> With IO t -> AutoCloseT key t IO t
+acOpenReference key withX = do
     oldmap <- get
     case lookup key oldmap of
         Just mutedcloser -> return $ fst mutedcloser

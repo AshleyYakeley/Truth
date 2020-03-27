@@ -1,7 +1,7 @@
 module Truth.Core.UI.View.Dynamic where
 
 import Truth.Core.Import
-import Truth.Core.Object
+import Truth.Core.Reference
 import Truth.Core.UI.View.CreateView
 import Truth.Core.UI.View.View
 

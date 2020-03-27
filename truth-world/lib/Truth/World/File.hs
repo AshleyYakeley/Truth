@@ -1,5 +1,5 @@
 module Truth.World.File
-    ( fileObject
+    ( fileReference
     ) where
 
 import Shapes
@@ -8,8 +8,8 @@ import Truth.Core
 fileWitness :: IOWitness (ReaderT Handle)
 fileWitness = $(iowitness [t|ReaderT Handle|])
 
-fileObject :: FilePath -> Object ByteStringEdit
-fileObject path = let
+fileReference :: FilePath -> Reference ByteStringEdit
+fileReference path = let
     iow :: IOWitness (ReaderT Handle)
     iow = hashOpenWitness fileWitness path
     objRun :: ResourceRunner '[ ReaderT Handle]
@@ -19,12 +19,12 @@ fileObject path = let
             r <- runReaderT rt h
             liftIO $ hClose h
             return r
-    objRead :: Readable (ReaderT Handle IO) ByteStringReader
-    objRead ReadByteStringLength = do
+    refRead :: Readable (ReaderT Handle IO) ByteStringReader
+    refRead ReadByteStringLength = do
         h <- ask
         n <- lift $ hFileSize h
         return $ fromInteger n
-    objRead (ReadByteStringSection start len) = do
+    refRead (ReadByteStringSection start len) = do
         h <- ask
         lift $ hSeek h AbsoluteSeek $ toInteger start
         lift $ hGet h $ fromIntegral len
@@ -40,8 +40,8 @@ fileObject path = let
             else return ()
         lift $ hSeek h AbsoluteSeek $ toInteger start
         lift $ hPut h bs
-    objEdit :: NonEmpty ByteStringEdit -> ReaderT Handle IO (Maybe (EditSource -> ReaderT Handle IO ()))
-    objEdit = singleAlwaysEdit objOneEdit
-    objCommitTask :: Task ()
-    objCommitTask = mempty
-    in MkResource objRun MkAnObject {..}
+    refEdit :: NonEmpty ByteStringEdit -> ReaderT Handle IO (Maybe (EditSource -> ReaderT Handle IO ()))
+    refEdit = singleAlwaysEdit objOneEdit
+    refCommitTask :: Task ()
+    refCommitTask = mempty
+    in MkResource objRun MkAnReference {..}

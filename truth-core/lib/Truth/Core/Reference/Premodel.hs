@@ -1,4 +1,4 @@
-module Truth.Core.Object.Premodel
+module Truth.Core.Reference.Premodel
     ( PremodelResult(..)
     , Premodel
     , reflectingPremodel
@@ -8,14 +8,14 @@ module Truth.Core.Object.Premodel
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Lens
-import Truth.Core.Object.DeferActionT
-import Truth.Core.Object.EditContext
-import Truth.Core.Object.Object
 import Truth.Core.Read
+import Truth.Core.Reference.DeferActionT
+import Truth.Core.Reference.EditContext
+import Truth.Core.Reference.Reference
 import Truth.Core.Resource
 
 data PremodelResult edit a = MkPremodelResult
-    { pmrObject :: Object edit
+    { pmrReference :: Reference edit
     , pmrUpdatesTask :: Task ()
     , pmrValue :: a
     }
@@ -25,9 +25,9 @@ type Premodel update a
 
 reflectingPremodel ::
        forall update. IsUpdate update
-    => Object (UpdateEdit update)
+    => Reference (UpdateEdit update)
     -> Premodel update ()
-reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAnObject r e ctask)) utask recv = do
+reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAnReference r e ctask)) utask recv = do
     Dict <- return $ resourceRunnerUnliftAllDict trun
     Dict <- return $ transStackDict @MonadUnliftIO @tt @(DeferActionT IO)
     Refl <- return $ transStackConcatRefl @tt @'[ DeferActionT] @IO
@@ -50,13 +50,13 @@ reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAnObject r e ctask
                         stackUnderliftIO @tt @(DeferActionT IO) $ action esrc
                         stackLift @tt $
                             deferAction @IO $ recv emptyResourceContext (fmap editUpdate edits) $ editSourceContext esrc
-        anobj :: AnObject (UpdateEdit update) (Concat tt '[ DeferActionT])
-        anobj = MkAnObject r' e' ctask
+        anobj :: AnReference (UpdateEdit update) (Concat tt '[ DeferActionT])
+        anobj = MkAnReference r' e' ctask
         pmrUpdatesTask :: Task ()
         pmrUpdatesTask = utask
         pmrValue = ()
-        pmrObject :: Object (UpdateEdit update)
-        pmrObject = MkResource trun' anobj
+        pmrReference :: Reference (UpdateEdit update)
+        pmrReference = MkResource trun' anobj
     return MkPremodelResult {..}
 
 mapPremodel ::
@@ -70,19 +70,19 @@ mapPremodel rc (MkFloatingChangeLens init rlens) uobja utask recvb = do
         (result, recva) <- do
             MkPremodelResult (MkResource (rr :: _ tt) anobjA) updTask val <- uobja utask recva
             liftIO $ do
-                r <- runResourceRunner rc rr $ runFloatInit init $ objRead anobjA
+                r <- runResourceRunner rc rr $ runFloatInit init $ refRead anobjA
                 let
                     lens = rlens r
                     recva' urc eas esrc = do
                         ebs <-
                             runResourceRunner urc rr $
-                            fmap mconcat $ for (toList eas) $ \ea -> clUpdate lens ea $ objRead anobjA
+                            fmap mconcat $ for (toList eas) $ \ea -> clUpdate lens ea $ refRead anobjA
                         case nonEmpty ebs of
                             Nothing -> return ()
                             Just ebb -> recvb urc ebb esrc
-                    objB :: Object (UpdateEdit updateB)
+                    objB :: Reference (UpdateEdit updateB)
                     objB =
                         case resourceRunnerUnliftAllDict rr of
-                            Dict -> MkResource rr $ mapAnObject lens anobjA
+                            Dict -> MkResource rr $ mapAnReference lens anobjA
                 return (MkPremodelResult objB updTask val, recva')
     return result

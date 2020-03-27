@@ -1,15 +1,15 @@
-module Truth.Core.Object.Savable
+module Truth.Core.Reference.Savable
     ( SaveActions(..)
-    , saveBufferObject
+    , saveBufferReference
     ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.DeferActionT
-import Truth.Core.Object.EditContext
-import Truth.Core.Object.Object
-import Truth.Core.Object.Premodel
 import Truth.Core.Read
+import Truth.Core.Reference.DeferActionT
+import Truth.Core.Reference.EditContext
+import Truth.Core.Reference.Premodel
+import Truth.Core.Reference.Reference
 import Truth.Core.Resource
 import Truth.Core.Types
 
@@ -21,21 +21,21 @@ data SaveBuffer a = MkSaveBuffer
 newtype SaveActions =
     MkSaveActions (IO (Maybe (ResourceContext -> EditSource -> IO Bool, ResourceContext -> EditSource -> IO Bool)))
 
-saveBufferObject ::
+saveBufferReference ::
        forall update. (IsUpdate update, FullEdit (UpdateEdit update))
     => ResourceContext
-    -> Object (WholeEdit (UpdateSubject update))
+    -> Reference (WholeEdit (UpdateSubject update))
     -> Premodel update SaveActions
-saveBufferObject rc objP pmrUpdatesTask update = do
-    firstVal <- liftIO $ runResource rc objP $ \anobj -> objRead anobj ReadWhole
+saveBufferReference rc objP pmrUpdatesTask update = do
+    firstVal <- liftIO $ runResource rc objP $ \anobj -> refRead anobj ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
     iow <- liftIO $ newIOWitness
     deferRunner <- deferActionResourceRunner
     let rrC = combineIndependentResourceRunners (mvarResourceRunner iow sbVar) deferRunner
     Dict <- return $ resourceRunnerUnliftAllDict rrC
     let
-        pmrObject :: Object (UpdateEdit update)
-        pmrObject = let
+        pmrReference :: Reference (UpdateEdit update)
+        pmrReference = let
             readC :: Readable (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
             readC = mSubjectToReadable $ fmap saveBuffer get
             pushC ::
@@ -52,12 +52,12 @@ saveBufferObject rc objP pmrUpdatesTask update = do
                             return oldbuf
                     put (MkSaveBuffer newbuf True)
                     lift $ deferAction $ update emptyResourceContext (fmap editUpdate edits) $ editSourceContext esrc
-            in MkResource rrC $ MkAnObject readC pushC mempty
+            in MkResource rrC $ MkAnReference readC pushC mempty
         saveAction :: ResourceContext -> EditSource -> IO Bool
         saveAction urc esrc =
             runResource urc objP $ \anobj -> do
                 MkSaveBuffer buf _ <- mVarRun sbVar get
-                maction <- objEdit anobj $ pure $ MkWholeReaderEdit buf
+                maction <- refEdit anobj $ pure $ MkWholeReaderEdit buf
                 case maction of
                     Nothing -> return False
                     Just action -> do
@@ -68,7 +68,7 @@ saveBufferObject rc objP pmrUpdatesTask update = do
         revertAction urc esrc = do
             edits <-
                 runResource urc objP $ \anobj -> do
-                    buf <- objRead anobj ReadWhole
+                    buf <- refRead anobj ReadWhole
                     mVarRun sbVar $ put $ MkSaveBuffer buf False
                     getReplaceEditsFromSubject buf
             case nonEmpty edits of

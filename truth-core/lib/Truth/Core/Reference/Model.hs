@@ -1,4 +1,4 @@
-module Truth.Core.Object.Model
+module Truth.Core.Reference.Model
     ( AModel(..)
     , aModelRead
     , aModelEdit
@@ -20,25 +20,25 @@ module Truth.Core.Object.Model
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Lens
-import Truth.Core.Object.EditContext
-import Truth.Core.Object.Object
-import Truth.Core.Object.Premodel
 import Truth.Core.Read
+import Truth.Core.Reference.EditContext
+import Truth.Core.Reference.Premodel
+import Truth.Core.Reference.Reference
 import Truth.Core.Resource
 import Truth.Core.Types
 
 data AModel update tt = MkAModel
-    { aModelAnObject :: AnObject (UpdateEdit update) tt
+    { aModelAnReference :: AnReference (UpdateEdit update) tt
     , aModelSubscribe :: Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt LifeCycleIO ()
     , aModelUpdatesTask :: Task ()
     }
 
 aModelRead :: AModel update tt -> Readable (ApplyStack tt IO) (UpdateReader update)
-aModelRead = objRead . aModelAnObject
+aModelRead = refRead . aModelAnReference
 
 aModelEdit ::
        AModel update tt -> NonEmpty (UpdateEdit update) -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-aModelEdit = objEdit . aModelAnObject
+aModelEdit = refEdit . aModelAnReference
 
 instance MapResource (AModel update) where
     mapResource ::
@@ -65,7 +65,7 @@ modelUpdatesTask :: Model update -> Task ()
 modelUpdatesTask (MkResource _ asub) = aModelUpdatesTask asub
 
 modelCommitTask :: Model update -> Task ()
-modelCommitTask (MkResource _ asub) = objCommitTask $ aModelAnObject asub
+modelCommitTask (MkResource _ asub) = refCommitTask $ aModelAnReference asub
 
 newtype UpdateQueue update =
     MkUpdateQueue [(EditContext, NonEmpty update)]
@@ -99,7 +99,7 @@ getRunner recv = do
 modelPremodel :: ResourceContext -> Model update -> a -> Premodel update a
 modelPremodel rc (MkResource rr MkAModel {..}) val update utask = do
     runResourceRunner rc rr $ aModelSubscribe update utask
-    return $ MkPremodelResult (MkResource rr aModelAnObject) aModelUpdatesTask val
+    return $ MkPremodelResult (MkResource rr aModelAnReference) aModelUpdatesTask val
 
 makeSharedModel :: forall update a. Premodel update a -> LifeCycleIO (Model update, a)
 makeSharedModel om = do
@@ -118,7 +118,7 @@ makeSharedModel om = do
         utaskP :: Task ()
         utaskP = utaskRunner <> ioTask (fmap mconcat getTasks)
     MkPremodelResult {..} <- om utaskP updatePAsync
-    MkResource (trunC :: ResourceRunner tt) aModelAnObject <- return pmrObject
+    MkResource (trunC :: ResourceRunner tt) aModelAnReference <- return pmrReference
     Dict <- return $ resourceRunnerUnliftAllDict trunC
     Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     let
@@ -140,10 +140,10 @@ sharePremodel uobj = do
 
 makeReflectingModel ::
        forall update. IsUpdate update
-    => Object (UpdateEdit update)
+    => Reference (UpdateEdit update)
     -> LifeCycleIO (Model update)
-makeReflectingModel object = do
-    (sub, ()) <- makeSharedModel $ reflectingPremodel object
+makeReflectingModel reference = do
+    (sub, ()) <- makeSharedModel $ reflectingPremodel reference
     return sub
 
 floatMapModel ::
@@ -160,33 +160,33 @@ mapModel :: forall updateA updateB. ChangeLens updateA updateB -> Model updateA 
 mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
     case resourceRunnerUnliftAllDict rr of
         Dict -> let
-            objB = mapAnObject plens objA
+            objB = mapAnReference plens objA
             subB utask recvB = let
                 recvA rc updatesA ec = do
                     updatessB <-
-                        runResourceRunner rc rr $ for updatesA $ \updateA -> clUpdate plens updateA (objRead objA)
+                        runResourceRunner rc rr $ for updatesA $ \updateA -> clUpdate plens updateA (refRead objA)
                     case nonEmpty $ mconcat $ toList updatessB of
                         Nothing -> return ()
                         Just updatesB' -> recvB rc updatesB' ec
                 in subA utask recvA
             in MkResource rr $ MkAModel objB subB utaskA
 
-anObjectModel :: AnObject (UpdateEdit update) '[] -> Model update
-anObjectModel anobj = MkResource nilResourceRunner $ MkAModel anobj (\_ _ -> return ()) mempty
+anReferenceModel :: AnReference (UpdateEdit update) '[] -> Model update
+anReferenceModel anobj = MkResource nilResourceRunner $ MkAModel anobj (\_ _ -> return ()) mempty
 
 unitModel :: Model (WholeUpdate ())
-unitModel = anObjectModel $ MkAnObject (\ReadWhole -> return ()) (\_ -> return Nothing) mempty
+unitModel = anReferenceModel $ MkAnReference (\ReadWhole -> return ()) (\_ -> return Nothing) mempty
 
 constantModel ::
        forall update. SubjectReader (UpdateReader update)
     => UpdateSubject update
     -> Model (ReadOnlyUpdate update)
-constantModel subj = anObjectModel $ immutableAnObject $ subjectToReadable subj
+constantModel subj = anReferenceModel $ immutableAnReference $ subjectToReadable subj
 
 modelToReadOnly :: Model update -> Model (ReadOnlyUpdate update)
 modelToReadOnly = mapModel toReadOnlyChangeLens
 
 makeMemoryModel :: forall a. a -> LifeCycleIO (Model (WholeUpdate a))
 makeMemoryModel initial = do
-    obj <- liftIO $ makeMemoryObject initial $ \_ -> True
+    obj <- liftIO $ makeMemoryReference initial $ \_ -> True
     makeReflectingModel obj

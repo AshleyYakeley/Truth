@@ -12,7 +12,7 @@ module Truth.Core.UI.View.CreateView
 
 import Truth.Core.Import
 import Truth.Core.Lens
-import Truth.Core.Object
+import Truth.Core.Reference
 import Truth.Core.Types
 import Truth.Core.UI.View.Context
 import Truth.Core.UI.View.View

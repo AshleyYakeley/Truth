@@ -1,7 +1,7 @@
 module Truth.Core.UI.Window where
 
 import Truth.Core.Import
-import Truth.Core.Object
+import Truth.Core.Reference
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.MenuBar
 import Truth.Core.UI.Specifier.Specifier

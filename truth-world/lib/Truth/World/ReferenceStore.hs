@@ -1,72 +1,76 @@
-module Truth.World.ObjectStore where
+module Truth.World.ReferenceStore where
 
 import Shapes
 import Truth.Core
 import Truth.World.FileSystem
 
-data SingleObjectReader edit t where
-    ReadSingleObjectStore :: SingleObjectReader edit (Maybe (Object edit))
-    GetSingleObjectRecoveryCode :: SingleObjectReader edit (Maybe Int)
+data SingleReferenceReader edit t where
+    ReadSingleReferenceStore :: SingleReferenceReader edit (Maybe (Reference edit))
+    GetSingleReferenceRecoveryCode :: SingleReferenceReader edit (Maybe Int)
 
-nullSingleObjectReadable :: Monad m => Readable m (SingleObjectReader edit)
-nullSingleObjectReadable ReadSingleObjectStore = return Nothing
-nullSingleObjectReadable GetSingleObjectRecoveryCode = return Nothing
+nullSingleReferenceReadable :: Monad m => Readable m (SingleReferenceReader edit)
+nullSingleReferenceReadable ReadSingleReferenceStore = return Nothing
+nullSingleReferenceReadable GetSingleReferenceRecoveryCode = return Nothing
 
-data SingleObjectEdit (edit :: Type)
-    = SingleObjectDeleteCreate
-    | SingleObjectDelete
-    | SingleObjectRecover Int
+data SingleReferenceEdit (edit :: Type)
+    = SingleReferenceDeleteCreate
+    | SingleReferenceDelete
+    | SingleReferenceRecover Int
 
-type instance EditReader (SingleObjectEdit edit) =
-     SingleObjectReader edit
+type instance EditReader (SingleReferenceEdit edit) =
+     SingleReferenceReader edit
 
-instance InvertibleEdit (SingleObjectEdit edit) where
+instance InvertibleEdit (SingleReferenceEdit edit) where
     invertEdits edits mr =
         case lastM edits of
             Nothing -> return []
-            Just SingleObjectDeleteCreate -> do
-                mcode <- mr GetSingleObjectRecoveryCode
+            Just SingleReferenceDeleteCreate -> do
+                mcode <- mr GetSingleReferenceRecoveryCode
                 return $
                     case mcode of
-                        Nothing -> [SingleObjectDelete]
-                        Just code -> [SingleObjectRecover code]
-            Just SingleObjectDelete -> do
-                mcode <- mr GetSingleObjectRecoveryCode
+                        Nothing -> [SingleReferenceDelete]
+                        Just code -> [SingleReferenceRecover code]
+            Just SingleReferenceDelete -> do
+                mcode <- mr GetSingleReferenceRecoveryCode
                 return $
                     case mcode of
                         Nothing -> []
-                        Just code -> [SingleObjectRecover code]
-            Just (SingleObjectRecover newcode) -> do
-                mcode <- mr GetSingleObjectRecoveryCode
+                        Just code -> [SingleReferenceRecover code]
+            Just (SingleReferenceRecover newcode) -> do
+                mcode <- mr GetSingleReferenceRecoveryCode
                 return $
                     case mcode of
-                        Nothing -> [SingleObjectDelete]
+                        Nothing -> [SingleReferenceDelete]
                         Just code
                             | code == newcode -> []
-                        Just code -> [SingleObjectRecover code]
+                        Just code -> [SingleReferenceRecover code]
 
-type SingleObjectUpdate edit = EditUpdate (SingleObjectEdit edit)
+type SingleReferenceUpdate edit = EditUpdate (SingleReferenceEdit edit)
 
-type ObjectStoreUpdate name edit = FunctionUpdate name (SingleObjectUpdate edit)
+type ReferenceStoreUpdate name edit = FunctionUpdate name (SingleReferenceUpdate edit)
 
-singleObjectUpdateFunction :: forall edit. ChangeLens (SingleObjectUpdate edit) (ROWUpdate (Maybe (Object edit)))
-singleObjectUpdateFunction = let
-    clRead :: ReadFunction (SingleObjectReader edit) (WholeReader (Maybe (Object edit)))
-    clRead mr ReadWhole = mr ReadSingleObjectStore
+singleReferenceUpdateFunction ::
+       forall edit. ChangeLens (SingleReferenceUpdate edit) (ROWUpdate (Maybe (Reference edit)))
+singleReferenceUpdateFunction = let
+    clRead :: ReadFunction (SingleReferenceReader edit) (WholeReader (Maybe (Reference edit)))
+    clRead mr ReadWhole = mr ReadSingleReferenceStore
     clUpdate ::
            forall m. MonadIO m
-        => SingleObjectUpdate edit
-        -> Readable m (SingleObjectReader edit)
-        -> m [ROWUpdate (Maybe (Object edit))]
-    clUpdate (MkEditUpdate SingleObjectDelete) _ = return [MkReadOnlyUpdate $ MkWholeReaderUpdate Nothing]
+        => SingleReferenceUpdate edit
+        -> Readable m (SingleReferenceReader edit)
+        -> m [ROWUpdate (Maybe (Reference edit))]
+    clUpdate (MkEditUpdate SingleReferenceDelete) _ = return [MkReadOnlyUpdate $ MkWholeReaderUpdate Nothing]
     clUpdate _ mr = do
-        mo <- mr ReadSingleObjectStore
+        mo <- mr ReadSingleReferenceStore
         return [MkReadOnlyUpdate $ MkWholeReaderUpdate mo]
     in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
-directoryObjectStore ::
-       forall name. Object FSEdit -> (name -> String) -> Object (UpdateEdit (ObjectStoreUpdate name ByteStringEdit))
-directoryObjectStore (MkResource (rr :: ResourceRunner tt) (MkAnObject rd push objCommitTask)) nameStr =
+directoryReferenceStore ::
+       forall name.
+       Reference FSEdit
+    -> (name -> String)
+    -> Reference (UpdateEdit (ReferenceStoreUpdate name ByteStringEdit))
+directoryReferenceStore (MkResource (rr :: ResourceRunner tt) (MkAnReference rd push refCommitTask)) nameStr =
     case resourceRunnerStackUnliftDict @IO rr of
         Dict -> let
             undoName :: String -> Int -> FilePath
@@ -77,32 +81,32 @@ directoryObjectStore (MkResource (rr :: ResourceRunner tt) (MkAnObject rd push o
                 case mitem of
                     Nothing -> return i
                     Just _ -> findUndoCode name $ i + 1
-            objRead :: Readable (ApplyStack tt IO) (UpdateReader (ObjectStoreUpdate name ByteStringEdit))
-            objRead (MkTupleUpdateReader (MkFunctionSelector (nameStr -> name)) edit) =
+            refRead :: Readable (ApplyStack tt IO) (UpdateReader (ReferenceStoreUpdate name ByteStringEdit))
+            refRead (MkTupleUpdateReader (MkFunctionSelector (nameStr -> name)) edit) =
                 case edit of
-                    ReadSingleObjectStore -> do
+                    ReadSingleReferenceStore -> do
                         mitem <- rd $ FSReadItem name
                         return $
                             case mitem of
                                 Just (FSFileItem fileobj) -> Just fileobj
                                 _ -> Nothing
-                    GetSingleObjectRecoveryCode -> do
+                    GetSingleReferenceRecoveryCode -> do
                         mitem <- rd $ FSReadItem name
                         case mitem of
                             Just (FSFileItem _) -> do
                                 code <- findUndoCode name 0
                                 return $ Just code
                             _ -> return $ Nothing
-            objEdit ::
-                   NonEmpty (UpdateEdit (ObjectStoreUpdate name ByteStringEdit))
+            refEdit ::
+                   NonEmpty (UpdateEdit (ReferenceStoreUpdate name ByteStringEdit))
                 -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-            objEdit edits =
+            refEdit edits =
                 return $
                 Just $ \esrc ->
                     case last edits of
                         MkTupleUpdateEdit (MkFunctionSelector (nameStr -> name)) edit ->
                             case edit of
-                                SingleObjectDelete -> do
+                                SingleReferenceDelete -> do
                                     mitem <- rd $ FSReadItem name
                                     case mitem of
                                         Just (FSFileItem _) -> do
@@ -110,7 +114,7 @@ directoryObjectStore (MkResource (rr :: ResourceRunner tt) (MkAnObject rd push o
                                             pushOrFail ("couldn't rename FS item " <> show name) esrc $
                                                 push $ pure $ FSEditRenameItem name (undoName name code)
                                         _ -> return ()
-                                SingleObjectDeleteCreate -> do
+                                SingleReferenceDeleteCreate -> do
                                     mitem <- rd $ FSReadItem name
                                     case mitem of
                                         Just (FSFileItem _) -> do
@@ -122,7 +126,7 @@ directoryObjectStore (MkResource (rr :: ResourceRunner tt) (MkAnObject rd push o
                                         _ ->
                                             pushOrFail ("couldn't create FS item " <> show name) esrc $
                                             push $ pure $ FSEditCreateFile name mempty
-                                SingleObjectRecover code ->
+                                SingleReferenceRecover code ->
                                     pushOrFail ("couldn't rename FS item " <> show name) esrc $
                                     push $ pure $ FSEditRenameItem (undoName name code) name
-            in MkResource rr MkAnObject {..}
+            in MkResource rr MkAnReference {..}

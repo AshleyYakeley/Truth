@@ -33,10 +33,10 @@ main = do
         (uit@MkUIToolkit {..}, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
         for_ paths $ \path -> do
             let
-                bsObj :: Object ByteStringEdit
-                bsObj = fileObject path
-                wholeTextObj :: Object (WholeEdit ((Result Text) Text))
-                wholeTextObj = mapObject textLens bsObj
+                bsObj :: Reference ByteStringEdit
+                bsObj = fileReference path
+                wholeTextObj :: Reference (WholeEdit ((Result Text) Text))
+                wholeTextObj = mapReference textLens bsObj
                 ui :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
                    -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
                    -> (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
@@ -139,20 +139,21 @@ main = do
                     if saveOpt
                         then do
                             (bufferSub, saveActions) <-
-                                liftLifeCycleIO $ makeSharedModel $ saveBufferObject emptyResourceContext wholeTextObj
+                                liftLifeCycleIO $
+                                makeSharedModel $ saveBufferReference emptyResourceContext wholeTextObj
                             (textSub, undoActions) <- liftIO $ undoQueueModel bufferSub
                             return (textSub, MkAppUI $ extraUI saveActions undoActions)
                         else do
-                            textSub <- liftLifeCycleIO $ makeReflectingModel $ convertObject wholeTextObj
+                            textSub <- liftLifeCycleIO $ makeReflectingModel $ convertReference wholeTextObj
                             return (textSub, MkAppUI simpleUI)
                 mTextSub2 <-
                     case selTest of
                         False -> return Nothing
                         True -> do
-                            bsObj2 <- liftIO $ makeMemoryObject mempty $ \_ -> True
+                            bsObj2 <- liftIO $ makeMemoryReference mempty $ \_ -> True
                             textSub2 <-
                                 liftLifeCycleIO $
-                                makeReflectingModel $ convertObject $ mapObject textLens $ convertObject bsObj2
+                                makeReflectingModel $ convertReference $ mapReference textLens $ convertReference bsObj2
                             return $ Just textSub2
                 return $ makeWindow (fromString $ takeFileName path) textSub mTextSub2 appUI
             action

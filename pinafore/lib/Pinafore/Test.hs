@@ -28,28 +28,28 @@ import Pinafore.Storage
 import Shapes
 import Truth.Core
 import Truth.World.Clock
-import Truth.World.ObjectStore
+import Truth.World.ReferenceStore
 
 makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
 makeTestPinaforeContext uitoolkit = do
     let rc = emptyResourceContext
-    tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
-        liftIO $ makeMemoryObject ([], []) $ \_ -> True
+    tableStateReference :: Reference (WholeEdit (EditSubject PinaforeTableEdit)) <-
+        liftIO $ makeMemoryReference ([], []) $ \_ -> True
     let
-        tableObject :: Object PinaforeTableEdit
-        tableObject = convertObject tableStateObject
+        tableReference :: Reference PinaforeTableEdit
+        tableReference = convertReference tableStateReference
         getTableState :: IO (EditSubject PinaforeTableEdit)
-        getTableState = getObjectSubject rc tableStateObject
-    memoryObject <- liftIO makeMemoryCellObject
+        getTableState = getReferenceSubject rc tableStateReference
+    memoryReference <- liftIO makeMemoryCellReference
     clockOM <- sharePremodel $ clockPremodel (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     let
         picker :: forall update. PinaforeSelector update -> Premodel update ()
-        picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityObject tableObject
+        picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityReference tableReference
         picker PinaforeSelectFile =
             reflectingPremodel $
-            mapObject (fromReadOnlyRejectingChangeLens @PinaforeFileUpdate) $
-            readConstantObject $ constFunctionReadFunction nullSingleObjectReadable
-        picker PinaforeSelectMemory = reflectingPremodel memoryObject
+            mapReference (fromReadOnlyRejectingChangeLens @PinaforeFileUpdate) $
+            readConstantReference $ constFunctionReadFunction nullSingleReferenceReadable
+        picker PinaforeSelectMemory = reflectingPremodel memoryReference
         picker PinaforeSelectClock = clockOM rc
         picker PinaforeSelectTimeZone = mapPremodel rc (liftReadOnlyFloatingChangeLens clockTimeZoneLens) $ clockOM rc
     (sub, ()) <- makeSharedModel $ tuplePremodel picker
@@ -80,17 +80,17 @@ checkUpdateEditor ::
     -> IO ()
     -> Editor (WholeUpdate a) ()
 checkUpdateEditor val push = let
-    editorInit :: Object (WholeEdit a) -> LifeCycleIO (MVar (NonEmpty (WholeUpdate a)))
+    editorInit :: Reference (WholeEdit a) -> LifeCycleIO (MVar (NonEmpty (WholeUpdate a)))
     editorInit _ = liftIO newEmptyMVar
     editorUpdate ::
            MVar (NonEmpty (WholeUpdate a))
-        -> Object (WholeEdit a)
+        -> Reference (WholeEdit a)
         -> ResourceContext
         -> NonEmpty (WholeUpdate a)
         -> EditContext
         -> IO ()
     editorUpdate var _ _ edits _ = do putMVar var edits
-    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Object (WholeEdit a) -> Task () -> LifeCycleIO ()
+    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Reference (WholeEdit a) -> Task () -> LifeCycleIO ()
     editorDo var _ _ =
         liftIO $ do
             push

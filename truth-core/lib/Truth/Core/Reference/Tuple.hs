@@ -1,6 +1,6 @@
-module Truth.Core.Object.Tuple
-    ( tupleObject
-    , pairObjects
+module Truth.Core.Reference.Tuple
+    ( tupleReference
+    , pairReferences
     , tuplePremodel
     , tupleModel
     , pairModels
@@ -11,11 +11,11 @@ module Truth.Core.Object.Tuple
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Lens
-import Truth.Core.Object.EditContext
-import Truth.Core.Object.Model
-import Truth.Core.Object.Object
-import Truth.Core.Object.Premodel
 import Truth.Core.Read
+import Truth.Core.Reference.EditContext
+import Truth.Core.Reference.Model
+import Truth.Core.Reference.Premodel
+import Truth.Core.Reference.Reference
 import Truth.Core.Resource
 import Truth.Core.Types
 
@@ -28,25 +28,25 @@ class (forall update. MapResource (f update)) => TupleResource (f :: Type -> [Tr
         -> f (TupleUpdate (ListElementType (update : updates))) tt
     mapResourceUpdate :: ChangeLens updateA updateB -> Resource (f updateA) -> Resource (f updateB)
 
-newtype UAnObject (update :: Type) (tt :: [TransKind]) = MkUAnObject
-    { unUAnObject :: AnObject (UpdateEdit update) tt
+newtype UAnReference (update :: Type) (tt :: [TransKind]) = MkUAnReference
+    { unUAnReference :: AnReference (UpdateEdit update) tt
     }
 
-type UObject update = Resource (UAnObject update)
+type UReference update = Resource (UAnReference update)
 
-uObjToObj :: UObject update -> Object (UpdateEdit update)
-uObjToObj (MkResource rr (MkUAnObject anobj)) = MkResource rr anobj
+uObjToObj :: UReference update -> Reference (UpdateEdit update)
+uObjToObj (MkResource rr (MkUAnReference anobj)) = MkResource rr anobj
 
-objToUObj :: Object (UpdateEdit update) -> UObject update
-objToUObj (MkResource rr anobj) = MkResource rr $ MkUAnObject anobj
+objToUObj :: Reference (UpdateEdit update) -> UReference update
+objToUObj (MkResource rr anobj) = MkResource rr $ MkUAnReference anobj
 
-instance MapResource (UAnObject update) where
+instance MapResource (UAnReference update) where
     mapResource ::
            forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
         => TransListFunction tt1 tt2
-        -> UAnObject update tt1
-        -> UAnObject update tt2
-    mapResource f (MkUAnObject obj) = MkUAnObject $ mapResource f obj
+        -> UAnReference update tt1
+        -> UAnReference update tt2
+    mapResource f (MkUAnReference obj) = MkUAnReference $ mapResource f obj
 
 noneTupleResource :: TupleResource f => Resource (f (TupleUpdate (ListElementType '[])))
 noneTupleResource = MkResource nilResourceRunner noneTupleAResource
@@ -63,12 +63,12 @@ tupleListResourceM ::
     => ListType Proxy updates
     -> (forall update. ListElementType updates update -> m (Resource (f update)))
     -> m (Resource (f (TupleUpdate (ListElementType updates))))
-tupleListResourceM lt getObject =
+tupleListResourceM lt getReference =
     case lt of
         NilListType -> pure noneTupleResource
         ConsListType Proxy lt' ->
-            consTupleResource <$> (getObject FirstElementType) <*>
-            (tupleListResourceM lt' $ \sel -> getObject $ RestElementType sel)
+            consTupleResource <$> (getReference FirstElementType) <*>
+            (tupleListResourceM lt' $ \sel -> getReference $ RestElementType sel)
 
 tupleResourceM ::
        forall f m sel. (TupleResource f, IsFiniteConsWitness sel, Applicative m)
@@ -106,20 +106,20 @@ partitionListTupleUpdateEdits pes = let
     toEither (MkTupleUpdateEdit (RestElementType sel) eb) = Right $ MkTupleUpdateEdit sel eb
     in partitionEithers $ fmap toEither pes
 
-instance TupleResource UAnObject where
+instance TupleResource UAnReference where
     noneTupleAResource = let
-        objRead :: forall t. TupleUpdateReader (ListElementType '[]) t -> IO t
-        objRead (MkTupleUpdateReader sel _) = case sel of {}
-        objEdit :: NonEmpty (TupleUpdateEdit (ListElementType '[])) -> IO (Maybe (EditSource -> IO ()))
-        objEdit (MkTupleUpdateEdit sel _ :| _) = case sel of {}
-        objCommitTask = mempty
-        in MkUAnObject $ MkAnObject {..}
+        refRead :: forall t. TupleUpdateReader (ListElementType '[]) t -> IO t
+        refRead (MkTupleUpdateReader sel _) = case sel of {}
+        refEdit :: NonEmpty (TupleUpdateEdit (ListElementType '[])) -> IO (Maybe (EditSource -> IO ()))
+        refEdit (MkTupleUpdateEdit sel _ :| _) = case sel of {}
+        refCommitTask = mempty
+        in MkUAnReference $ MkAnReference {..}
     consTupleAResource ::
            forall tt update updates. MonadTransStackUnliftAll tt
-        => UAnObject update tt
-        -> UAnObject (TupleUpdate (ListElementType updates)) tt
-        -> UAnObject (TupleUpdate (ListElementType (update : updates))) tt
-    consTupleAResource (MkUAnObject (MkAnObject readA editA ctaskA)) (MkUAnObject (MkAnObject readB editB ctaskB)) =
+        => UAnReference update tt
+        -> UAnReference (TupleUpdate (ListElementType updates)) tt
+        -> UAnReference (TupleUpdate (ListElementType (update : updates))) tt
+    consTupleAResource (MkUAnReference (MkAnReference readA editA ctaskA)) (MkUAnReference (MkAnReference readB editB ctaskB)) =
         case transStackDict @MonadIO @tt @IO of
             Dict -> let
                 readAB :: Readable (ApplyStack tt IO) (TupleUpdateReader (ListElementType (update : updates)))
@@ -136,12 +136,12 @@ instance TupleResource UAnObject where
                            (Nothing, Just ebs') -> editB ebs'
                            (Just eas', Just ebs') -> (liftA2 $ liftA2 $ liftA2 (>>)) (editA eas') (editB ebs')
                 ctaskAB = ctaskA <> ctaskB
-                in MkUAnObject $ MkAnObject readAB editAB ctaskAB
-    mapResourceUpdate plens uobj = objToUObj $ mapObject plens $ uObjToObj uobj
+                in MkUAnReference $ MkAnReference readAB editAB ctaskAB
+    mapResourceUpdate plens uobj = objToUObj $ mapReference plens $ uObjToObj uobj
 
 instance TupleResource AModel where
     noneTupleAResource :: AModel (TupleUpdate (ListElementType '[])) '[]
-    noneTupleAResource = MkAModel (unUAnObject noneTupleAResource) (\_ _ -> return ()) mempty
+    noneTupleAResource = MkAModel (unUAnReference noneTupleAResource) (\_ _ -> return ()) mempty
     consTupleAResource ::
            forall tt update updates. MonadTransStackUnliftAll tt
         => AModel update tt
@@ -150,7 +150,7 @@ instance TupleResource AModel where
     consTupleAResource (MkAModel anobj1 sub1 utask1) (MkAModel anobj2 sub2 utask2) =
         case transStackDict @MonadIO @tt @LifeCycleIO of
             Dict -> let
-                anobj12 = unUAnObject $ consTupleAResource (MkUAnObject anobj1) (MkUAnObject anobj2)
+                anobj12 = unUAnReference $ consTupleAResource (MkUAnReference anobj1) (MkUAnReference anobj2)
                 sub12 task recv12 = do
                     let
                         recv1 rc u1 ec = recv12 rc (fmap (\u -> MkTupleUpdate FirstElementType u) u1) ec
@@ -163,11 +163,11 @@ instance TupleResource AModel where
     mapResourceUpdate :: ChangeLens updateA updateB -> Model updateA -> Model updateB
     mapResourceUpdate = mapModel
 
-tupleObject ::
+tupleReference ::
        forall sel. IsFiniteConsWitness sel
-    => (forall update. sel update -> Object (UpdateEdit update))
-    -> Object (TupleUpdateEdit sel)
-tupleObject pick = uObjToObj $ tupleResource $ \selu -> objToUObj $ pick selu
+    => (forall update. sel update -> Reference (UpdateEdit update))
+    -> Reference (TupleUpdateEdit sel)
+tupleReference pick = uObjToObj $ tupleResource $ \selu -> objToUObj $ pick selu
 
 tuplePremodel ::
        forall sel a. (IsFiniteConsWitness sel, Monoid a)
@@ -189,12 +189,12 @@ tupleModel ::
     -> Model (TupleUpdate sel)
 tupleModel = tupleResource
 
-pairObjects ::
+pairReferences ::
        forall updatea updateb.
-       Object (UpdateEdit updatea)
-    -> Object (UpdateEdit updateb)
-    -> Object (PairUpdateEdit updatea updateb)
-pairObjects obja objb = uObjToObj $ pairResource (objToUObj obja) (objToUObj objb)
+       Reference (UpdateEdit updatea)
+    -> Reference (UpdateEdit updateb)
+    -> Reference (PairUpdateEdit updatea updateb)
+pairReferences obja objb = uObjToObj $ pairResource (objToUObj obja) (objToUObj objb)
 
 pairModels :: forall updatea updateb. Model updatea -> Model updateb -> Model (PairUpdate updatea updateb)
 pairModels = pairResource

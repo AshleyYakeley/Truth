@@ -1,4 +1,4 @@
-module Truth.Core.Object.DeferActionT
+module Truth.Core.Reference.DeferActionT
     ( DeferActionT
     , deferAction
     , runDeferActionT

@@ -28,18 +28,18 @@ filePinaforeType = qTypeDescription @PinaforeUpdate @FilePinaforeType
 standardPinaforeContext :: FilePath -> UIToolkit -> CreateView (PinaforeContext PinaforeUpdate)
 standardPinaforeContext dirpath uitoolkit = do
     rc <- viewGetResourceContext
-    sqlObject <- liftIO $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
-    tableObject1 <- liftLifeCycleIO $ exclusiveResource rc sqlObject
-    tableObject <- liftLifeCycleIO $ cacheObject rc 500000 tableObject1 -- half-second delay before writing
-    memoryObject <- liftIO makeMemoryCellObject
+    sqlReference <- liftIO $ sqlitePinaforeTableReference $ dirpath </> "tables.sqlite3"
+    tableReference1 <- liftLifeCycleIO $ exclusiveResource rc sqlReference
+    tableReference <- liftLifeCycleIO $ cacheReference rc 500000 tableReference1 -- half-second delay before writing
+    memoryReference <- liftIO makeMemoryCellReference
     clockOM <-
         liftLifeCycleIO $
         sharePremodel $ clockPremodel (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     let
         picker :: forall update. PinaforeSelector update -> Premodel update ()
-        picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityObject $ tableObject rc
-        picker PinaforeSelectFile = reflectingPremodel $ directoryPinaforeFileObject $ dirpath </> "files"
-        picker PinaforeSelectMemory = reflectingPremodel memoryObject
+        picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityReference $ tableReference rc
+        picker PinaforeSelectFile = reflectingPremodel $ directoryPinaforeFileReference $ dirpath </> "files"
+        picker PinaforeSelectMemory = reflectingPremodel memoryReference
         picker PinaforeSelectClock = clockOM rc
         picker PinaforeSelectTimeZone = mapPremodel rc (liftReadOnlyFloatingChangeLens clockTimeZoneLens) $ clockOM rc
     (sub, ()) <- liftLifeCycleIO $ makeSharedModel $ tuplePremodel picker

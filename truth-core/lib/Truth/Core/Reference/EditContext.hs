@@ -1,4 +1,4 @@
-module Truth.Core.Object.EditContext
+module Truth.Core.Reference.EditContext
     ( EditSource
     , noEditSource
     , newEditSource

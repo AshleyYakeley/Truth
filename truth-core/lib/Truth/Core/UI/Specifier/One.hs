@@ -2,13 +2,13 @@ module Truth.Core.UI.Specifier.One where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object
+import Truth.Core.Reference
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 
 data OneUISpec where
-    -- view can create object
+    -- view can create reference
     OneWholeUISpec
         :: forall f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
         => Model (FullResultOneUpdate f update)

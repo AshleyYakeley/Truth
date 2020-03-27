@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Storage.Database.SQLite
-    ( sqlitePinaforeTableObject
+    ( sqlitePinaforeTableReference
     , sqlitePinaforeTableGetEntireDatabase
     ) where
 
@@ -215,12 +215,12 @@ instance WitnessConstraint IsPinaforeRow PinaforeSchema where
 instance ShowableTupleDatabase SQLiteDatabase PinaforeSchema where
     witnessTupleRow = Dict
 
-sqlitePinaforeTableObject :: FilePath -> IO (Object PinaforeTableEdit)
-sqlitePinaforeTableObject path = do
-    obj <- sqliteObject path sqlitePinaforeSchema
-    return $ mapObject sqlitePinaforeLens obj
+sqlitePinaforeTableReference :: FilePath -> IO (Reference PinaforeTableEdit)
+sqlitePinaforeTableReference path = do
+    obj <- sqliteReference path sqlitePinaforeSchema
+    return $ mapReference sqlitePinaforeLens obj
 
 sqlitePinaforeTableGetEntireDatabase :: ResourceContext -> FilePath -> IO (AllF (TupleTableSel PinaforeSchema) [])
 sqlitePinaforeTableGetEntireDatabase rc path = do
-    obj <- sqliteObject path sqlitePinaforeSchema
-    getObjectSubject rc obj
+    obj <- sqliteReference path sqlitePinaforeSchema
+    getReferenceSubject rc obj
