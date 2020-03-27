@@ -7,6 +7,7 @@ module Pinafore.Base.Edit
     ) where
 
 import Data.Aeson (FromJSON)
+import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
 import Pinafore.Base.Know
 import Pinafore.Base.Lens

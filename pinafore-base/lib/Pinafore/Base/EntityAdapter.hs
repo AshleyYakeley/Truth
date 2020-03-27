@@ -4,6 +4,7 @@ module Pinafore.Base.EntityAdapter
     , constructorEntityAdapter
     ) where
 
+import Pinafore.Base.Anchor
 import Pinafore.Base.Edit
 import Pinafore.Base.Entity
 import Pinafore.Base.Know

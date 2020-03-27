@@ -30,6 +30,7 @@ library:
       - Pinafore.Base.Literal
       - Pinafore.Base.Morphism
       - Pinafore.Base.Ref
+      - Pinafore.Base.Anchor
       - Pinafore.Base.Entity
       - Pinafore.Base.Lens
       - Pinafore.Base.Edit

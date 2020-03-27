@@ -3,6 +3,7 @@ module Pinafore.Base
     ) where
 
 import Pinafore.Base.Action as I
+import Pinafore.Base.Anchor as I
 import Pinafore.Base.Context as I
 import Pinafore.Base.Edit as I
 import Pinafore.Base.Entity as I
