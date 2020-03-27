@@ -199,7 +199,7 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                                        ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
                                    morphism =
                                        propertyMorphism (entityAdapter eta) (entityAdapter etb) (MkPredicate anchor)
-                                   pinamorphism = MkPinaforeMorphism pra prb morphism
+                                   pinamorphism = MkLangMorphism pra prb morphism
                                    anyval = MkAnyValue typef pinamorphism
                                    in return $ qConstExprAny anyval
 interpretExpression' spos (SEEntity st anchor) =

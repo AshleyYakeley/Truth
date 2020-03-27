@@ -4,12 +4,12 @@ import Data.Shim
 import Shapes
 import Truth.Core
 
-newtype PinaforeUI a = MkPinaforeUI
-    { unPinaforeUI :: SelectNotify a -> CVUISpec
+newtype LangUI a = MkLangUI
+    { unLangUI :: SelectNotify a -> CVUISpec
     }
 
-instance Functor PinaforeUI where
-    fmap ab (MkPinaforeUI spec) = MkPinaforeUI $ \sn -> spec $ contramap ab sn
+instance Functor LangUI where
+    fmap ab (MkLangUI spec) = MkLangUI $ \sn -> spec $ contramap ab sn
 
-instance HasVariance 'Covariance PinaforeUI where
+instance HasVariance 'Covariance LangUI where
     varianceRepresentational = Nothing

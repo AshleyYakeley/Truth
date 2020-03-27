@@ -13,18 +13,18 @@ import Truth.Core
 data PinaforeGroundType baseupdate (polarity :: Polarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv) where
     FuncPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Contravariance, 'Covariance] (->)
     EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType baseupdate polarity dv t
-    OrderPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Contravariance] (PinaforeOrder baseupdate)
+    OrderPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Contravariance] (LangOrder baseupdate)
     ActionPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Covariance] PinaforeAction
     -- Reference
-    RefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] PinaforeRef
-    ListRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] PinaforeListRef
-    TextRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[] (PinaforeTextRef)
-    SetRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Contravariance] PinaforeSetRef
-    FiniteSetRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] PinaforeFiniteSetRef
+    RefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] LangRef
+    ListRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] LangListRef
+    TextRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[] LangTextRef
+    SetRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Contravariance] LangSetRef
+    FiniteSetRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] LangFiniteSetRef
     MorphismPinaforeGroundType
-        :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseupdate)
+        :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance, 'Rangevariance] (LangMorphism baseupdate)
     -- UI
-    UserInterfacePinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Covariance] PinaforeUI
+    UserInterfacePinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Covariance] LangUI
     WindowPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[] PinaforeWindow
     MenuItemPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[] MenuEntry
 

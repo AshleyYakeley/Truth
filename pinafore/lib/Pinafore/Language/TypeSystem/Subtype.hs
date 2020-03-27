@@ -214,7 +214,7 @@ subtypeGroundTypes sc (EntityPinaforeGroundType cta ga) argsa (EntityPinaforeGro
 -- FiniteSetRef -a <= SetRef a
 subtypeGroundTypes sc FiniteSetRefPinaforeGroundType (ConsDolanArguments (MkRangeType t1 _) NilDolanArguments) SetRefPinaforeGroundType (ConsDolanArguments t2 NilDolanArguments) = do
     shim <- subtypeTypes (subtypeInverted sc) t2 t1
-    return $ toEnhanced "FiniteSetRef to SetRef" $ contramap (fromEnhanced shim) . pinaforeFiniteSetRefToSetRef
+    return $ toEnhanced "FiniteSetRef to SetRef" $ contramap (fromEnhanced shim) . langFiniteSetRefToSetRef
 -- a <= a
 subtypeGroundTypes sc ga argsa gb argsb
     | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality ga gb = pinaforeSubtypeArguments sc ga argsa argsb

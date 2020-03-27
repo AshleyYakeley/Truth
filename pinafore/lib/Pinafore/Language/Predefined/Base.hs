@@ -29,11 +29,11 @@ output text = liftIO $ putStr $ unpack text
 outputLn :: Text -> PinaforeAction ()
 outputLn text = liftIO $ putStrLn $ unpack text
 
-setentity :: PinaforeRef '( A, TopType) -> A -> PinaforeAction ()
-setentity ref val = pinaforeRefSet ref (Known val)
+setentity :: LangRef '( A, TopType) -> A -> PinaforeAction ()
+setentity ref val = langRefSet ref (Known val)
 
-deleteentity :: PinaforeRef '( BottomType, TopType) -> PinaforeAction ()
-deleteentity ref = pinaforeRefSet ref Unknown
+deleteentity :: LangRef '( BottomType, TopType) -> PinaforeAction ()
+deleteentity ref = langRefSet ref Unknown
 
 qfail :: Text -> PinaforeAction BottomType
 qfail t = fail $ unpack t
@@ -46,18 +46,18 @@ onStop p q = p <|> q
 
 newMemRef ::
        forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens MemoryCellUpdate baseupdate)
-    => IO (PinaforeRef '( A, A))
+    => IO (LangRef '( A, A))
 newMemRef = do
     lens <- makeMemoryCellChangeLens Unknown
     return $ pinaforeValueToRef $ MkPinaforeValue $ mapModel lens $ pinaforeBaseModel @baseupdate
 
 newMemFiniteSet ::
        forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens MemoryCellUpdate baseupdate)
-    => IO (PinaforeFiniteSetRef '( MeetType Entity A, A))
+    => IO (LangFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
     lens <- makeMemoryCellChangeLens mempty
     return $
-        meetValuePinaforeFiniteSetRef $
+        meetValueLangFiniteSetRef $
         MkPinaforeValue $ mapModel (convertChangeLens . lens) $ pinaforeBaseModel @baseupdate
 
 now :: forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens (ROWUpdate UTCTime) baseupdate)
@@ -89,9 +89,9 @@ today = localDay <$> localNow
 
 interpretAsText ::
        forall a. AsLiteral a
-    => PinaforeRef '( a, a)
-    -> PinaforeRef '( Text, Text)
-interpretAsText = pinaforeFLensRef (unLiteral . toLiteral) (\t _ -> parseLiteral t)
+    => LangRef '( a, a)
+    -> LangRef '( Text, Text)
+interpretAsText = fLensLangRef (unLiteral . toLiteral) (\t _ -> parseLiteral t)
 
 parseLiteral :: AsLiteral t => Text -> Maybe t
 parseLiteral = knowToMaybe . fromLiteral . MkLiteral
@@ -487,12 +487,12 @@ base_predefinitions =
           , mkValEntry
                 "coMapRef"
                 "Map a function on getting a reference."
-                (coRangeLift :: (A -> B) -> PinaforeRef '( C, A) -> PinaforeRef '( C, B))
+                (coRangeLift :: (A -> B) -> LangRef '( C, A) -> LangRef '( C, B))
           , mkValEntry
                 "contraMapRef"
                 "Map a function on setting a reference."
-                (contraRangeLift :: (B -> A) -> PinaforeRef '( A, C) -> PinaforeRef '( B, C))
-          , mkValEntry "lensMapRef" "Map getter & pushback functions on a reference." $ pinaforeFLensRef @AP @AQ @B
+                (contraRangeLift :: (B -> A) -> LangRef '( A, C) -> LangRef '( B, C))
+          , mkValEntry "lensMapRef" "Map getter & pushback functions on a reference." $ fLensLangRef @AP @AQ @B
           , mkValEntry
                 "applyRef"
                 "Combine references."
@@ -507,8 +507,8 @@ base_predefinitions =
                 "??"
                 "`p ?? q` = `p` if it is known, else `q`."
                 ((<|>) :: PinaforeImmutableReference A -> PinaforeImmutableReference A -> PinaforeImmutableReference A)
-          , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $ pinaforeRefGet @A
-          , mkValEntry "runRef" "Run an action from a reference." $ runPinaforeRef
+          , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $ langRefGet @A
+          , mkValEntry "runRef" "Run an action from a reference." $ runLangRef
           , mkValEntry ":=" "Set a reference to a value. Stop if failed." setentity
           , mkValEntry "delete" "Delete an entity reference. Stop if failed." deleteentity
           , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." $ newMemRef @baseupdate
@@ -516,113 +516,108 @@ base_predefinitions =
     , docTreeEntry
           "Set References"
           ""
-          [ mkValEntry
-                "mapSet"
-                "Map a function on a set."
-                (contramap :: (A -> B) -> PinaforeSetRef B -> PinaforeSetRef A)
-          , mkValEntry "pureSet" "Convert a predicate to a set." $ pinaforePredicateToSetRef @A
-          , mkValEntry "refSet" "Convert a predicate reference to a set." $ pinaforePredicateRefToSetRef @A
-          , mkValEntry "immutSet" "Convert a set to immutable." $ pinaforeSetRefImmutable @A
-          , mkValEntry "+=" "Add an entity to a set." $ pinaforeSetRefAdd @A
-          , mkValEntry "-=" "Remove an entity from a set." $ pinaforeSetRefRemove @A
-          , mkValEntry "newEntity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew
-          , mkValEntry "member" "A reference to the membership of a value in a set." $ pinaforeSetRefMember @A
+          [ mkValEntry "mapSet" "Map a function on a set." (contramap :: (A -> B) -> LangSetRef B -> LangSetRef A)
+          , mkValEntry "pureSet" "Convert a predicate to a set." $ predicateToLangSetRef @A
+          , mkValEntry "refSet" "Convert a predicate reference to a set." $ predicateRefToLangSetRef @A
+          , mkValEntry "immutSet" "Convert a set to immutable." $ langSetRefImmutable @A
+          , mkValEntry "+=" "Add an entity to a set." $ langSetRefAdd @A
+          , mkValEntry "-=" "Remove an entity from a set." $ langSetRefRemove @A
+          , mkValEntry "newEntity" "Create a new entity in a set and act on it." $ langSetRefAddNew
+          , mkValEntry "member" "A reference to the membership of a value in a set." $ langSetRefMember @A
           , mkValEntry
                 "notSet"
                 "Complement of a set. The resulting set can be added to (deleting from the original set) and deleted from (adding to the original set)." $
-            pinaforeSetRefComplement @A
+            langSetRefComplement @A
           , mkValEntry
                 "<&>"
                 "Intersection of sets. The resulting set can be added to (adding to both sets), but not deleted from." $
-            pinaforeSetRefIntersect @A
+            langSetRefIntersect @A
           , mkValEntry
                 "<|>"
                 "Union of sets. The resulting set can be deleted from (deleting from both sets), but not added to." $
-            pinaforeSetRefUnion @A
+            langSetRefUnion @A
           , mkValEntry
                 "<\\>"
                 "Difference of sets, everything in the first set but not the second. The resulting set can be added to (adding to the first and deleting from the second), but not deleted from." $
-            pinaforeSetRefDifference @A
+            langSetRefDifference @A
           , mkValEntry
                 "<^>"
                 "Symmetric difference of sets, everything in exactly one of the sets. The resulting set will be read-only." $
-            pinaforeSetRefSymmetricDifference @A
-          , mkValEntry "<+>" "Cartesian sum of sets." $ pinaforeSetRefCartesianSum @A @B
+            langSetRefSymmetricDifference @A
+          , mkValEntry "<+>" "Cartesian sum of sets." $ langSetRefCartesianSum @A @B
           , mkValEntry "<*>" "Cartesian product of sets. The resulting set will be read-only." $
-            pinaforeSetRefCartesianProduct @A @B
+            langSetRefCartesianProduct @A @B
           ]
     , docTreeEntry
           "Finite Set References"
           ""
-          [ mkSupertypeEntry "id" "Every finite set is a set." $ pinaforeFiniteSetRefToSetRef @A @TopType
+          [ mkSupertypeEntry "id" "Every finite set is a set." $ langFiniteSetRefToSetRef @A @TopType
           , mkValEntry
                 "coMapFiniteSet"
                 "Map a function on getting from a finite set."
-                (coRangeLift :: (A -> B) -> PinaforeFiniteSetRef '( C, A) -> PinaforeFiniteSetRef '( C, B))
+                (coRangeLift :: (A -> B) -> LangFiniteSetRef '( C, A) -> LangFiniteSetRef '( C, B))
           , mkValEntry
                 "contraMapFiniteSet"
                 "Map a function on setting to and testing a finite set."
-                (contraRangeLift :: (B -> A) -> PinaforeFiniteSetRef '( A, C) -> PinaforeFiniteSetRef '( B, C))
+                (contraRangeLift :: (B -> A) -> LangFiniteSetRef '( A, C) -> LangFiniteSetRef '( B, C))
           , mkValEntry "<:&>" "Intersect a finite set with any set. The resulting finite set will be read-only." $
-            pinaforeFiniteSetRefSetIntersect @A @B
+            langFiniteSetRefSetIntersect @A @B
           , mkValEntry "<:\\>" "Difference of a finite set and any set. The resulting finite set will be read-only." $
-            pinaforeFiniteSetRefSetDifference @A @B
+            langFiniteSetRefSetDifference @A @B
           , mkValEntry
                 "<:&:>"
                 "Intersection of finite sets. The resulting finite set can be added to, but not deleted from." $
-            pinaforeFiniteSetRefMeet @A
+            langFiniteSetRefMeet @A
           , mkValEntry "<:|:>" "Union of finite sets. The resulting finite set can be deleted from, but not added to." $
-            pinaforeFiniteSetRefJoin @A
-          , mkValEntry "<:+:>" "Cartesian sum of finite sets." $ pinaforeFiniteSetRefCartesianSum @AP @AQ @BP @BQ
-          , mkSupertypeEntry "<:+:>" "Cartesian sum of finite sets." $ pinaforeFiniteSetRefCartesianSum @A @A @B @B
+            langFiniteSetRefJoin @A
+          , mkValEntry "<:+:>" "Cartesian sum of finite sets." $ langFiniteSetRefCartesianSum @AP @AQ @BP @BQ
+          , mkSupertypeEntry "<:+:>" "Cartesian sum of finite sets." $ langFiniteSetRefCartesianSum @A @A @B @B
           , mkValEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
-            pinaforeFiniteSetRefCartesianProduct @AP @AQ @BP @BQ
+            langFiniteSetRefCartesianProduct @AP @AQ @BP @BQ
           , mkSupertypeEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
-            pinaforeFiniteSetRefCartesianProduct @A @A @B @B
+            langFiniteSetRefCartesianProduct @A @A @B @B
           , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
-          , mkValEntry "single" "The member of a single-member finite set, or unknown." $ pinaforeFiniteSetRefSingle @A
-          , mkValEntry "count" "Count of members in a finite set." $ pinaforeFiniteSetRefFunc @TopType @Int olength
+          , mkValEntry "single" "The member of a single-member finite set, or unknown." $ langFiniteSetRefSingle @A
+          , mkValEntry "count" "Count of members in a finite set." $ langFiniteSetRefFunc @TopType @Int olength
           , mkValEntry
                 "removeAll"
                 "Remove all entities from a finite set."
-                (pinaforeFiniteSetRefRemoveAll :: PinaforeFiniteSetRef '( BottomType, TopType) -> PinaforeAction ())
+                (langFiniteSetRefRemoveAll :: LangFiniteSetRef '( BottomType, TopType) -> PinaforeAction ())
           , mkValEntry "newMemFiniteSet" "Create a new finite set reference to memory, initially empty." $
             newMemFiniteSet @baseupdate
           ]
     , docTreeEntry
           "Morphisms"
           "Morphisms relate entities."
-          [ mkValEntry "identity" "The identity morphism." $ identityPinaforeMorphism @baseupdate @A
-          , mkValEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
-          , mkSupertypeEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseupdate @A @A @B @B @C @C
+          [ mkValEntry "identity" "The identity morphism." $ identityLangMorphism @baseupdate @A
+          , mkValEntry "!." "Compose morphisms." $ composeLangMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+          , mkSupertypeEntry "!." "Compose morphisms." $ composeLangMorphism @baseupdate @A @A @B @B @C @C
           , mkValEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
-            pairPinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+            pairLangMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
           , mkSupertypeEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
-            pairPinaforeMorphism @baseupdate @A @A @B @B @C @C
+            pairLangMorphism @baseupdate @A @A @B @B @C @C
           , mkValEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
-            eitherPinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+            eitherLangMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
           , mkSupertypeEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
-            eitherPinaforeMorphism @baseupdate @A @A @B @B @C @C
-          , mkValEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseupdate @AP @AQ @BP @BQ
-          , mkSupertypeEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseupdate @A @A @B @B
+            eitherLangMorphism @baseupdate @A @A @B @B @C @C
+          , mkValEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @baseupdate @AP @AQ @BP @BQ
+          , mkSupertypeEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @baseupdate @A @A @B @B
           , mkValEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutRef r`" $
-            pinaforeApplyMorphismImmutRef @baseupdate @A @BP @BQ
+            applyLangMorphismImmutRef @baseupdate @A @BP @BQ
           , mkSupertypeEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutRef r`" $
-            pinaforeApplyMorphismImmutRef @baseupdate @A @B @B
-          , mkValEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseupdate @A @BP @BQ
-          , mkSupertypeEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseupdate @A @B @B
+            applyLangMorphismImmutRef @baseupdate @A @B @B
+          , mkValEntry "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @baseupdate @A @BP @BQ
+          , mkSupertypeEntry "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @baseupdate @A @B @B
           , mkValEntry "!@" "Co-apply a morphism to a reference." $
-            pinaforeApplyInverseMorphismRef @baseupdate @AP @AQ @BP @BQ
+            inverseApplyLangMorphismRef @baseupdate @AP @AQ @BP @BQ
           , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $
-            pinaforeApplyInverseMorphismRef @baseupdate @A @A @B @B
+            inverseApplyLangMorphismRef @baseupdate @A @A @B @B
           , mkValEntry "!@%" "Co-apply a morphism to an immutable reference. `m !@% r = m !@ immutRef r`" $
-            pinaforeApplyInverseMorphismImmutRef @baseupdate @A @BP @BQ
+            inverseApplyLangMorphismImmutRef @baseupdate @A @BP @BQ
           , mkSupertypeEntry "!@%" "Co-apply a morphism to a reference. `m !@% r = m !@ immutRef r`" $
-            pinaforeApplyInverseMorphismImmutRef @baseupdate @A @B @B
-          , mkValEntry "!@@" "Co-apply a morphism to a set." $
-            pinaforeApplyInverseMorphismSet @baseupdate @AP @AQ @BP @BQ
-          , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $
-            pinaforeApplyInverseMorphismSet @baseupdate @A @A @B @B
+            inverseApplyLangMorphismImmutRef @baseupdate @A @B @B
+          , mkValEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @baseupdate @AP @AQ @BP @BQ
+          , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @baseupdate @A @A @B @B
           ]
     , docTreeEntry
           "Orders"
@@ -639,13 +634,13 @@ base_predefinitions =
           , mkValEntry
                 "mapOrder"
                 "Map a function on an order."
-                (contramap :: (B -> A) -> PinaforeOrder baseupdate A -> PinaforeOrder baseupdate B)
+                (contramap :: (B -> A) -> LangOrder baseupdate A -> LangOrder baseupdate B)
           , mkValEntry "orderOn" "Order by an order on a particular morphism." $ orderOn @baseupdate @B @A
           , mkValEntry "rev" "Reverse an order." $ rev @baseupdate @A
-          , mkValEntry "orderEQ" "Equal by an order." $ pinaforeOrderCompare @baseupdate @A $ (==) EQ
-          , mkValEntry "orderLT" "Less than by an order." $ pinaforeOrderCompare @baseupdate @A $ (==) LT
-          , mkValEntry "orderLE" "Less than or equal to by an order." $ pinaforeOrderCompare @baseupdate @A $ (/=) GT
-          , mkValEntry "orderGT" "Greater than by an order." $ pinaforeOrderCompare @baseupdate @A $ (==) GT
-          , mkValEntry "orderGE" "Greater than or equal to by an order." $ pinaforeOrderCompare @baseupdate @A $ (/=) LT
+          , mkValEntry "orderEQ" "Equal by an order." $ langOrderCompare @baseupdate @A $ (==) EQ
+          , mkValEntry "orderLT" "Less than by an order." $ langOrderCompare @baseupdate @A $ (==) LT
+          , mkValEntry "orderLE" "Less than or equal to by an order." $ langOrderCompare @baseupdate @A $ (/=) GT
+          , mkValEntry "orderGT" "Greater than by an order." $ langOrderCompare @baseupdate @A $ (==) GT
+          , mkValEntry "orderGE" "Greater than or equal to by an order." $ langOrderCompare @baseupdate @A $ (/=) LT
           ]
     ]
