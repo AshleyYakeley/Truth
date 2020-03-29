@@ -9,7 +9,6 @@ import Pinafore.Language.Type.TypeID
 import Pinafore.Language.TypeSystem.Show
 import Pinafore.Language.Value
 import Shapes
-import Text.Read (read)
 import Truth.Core
 
 data EntityGroundType (t :: k) where
@@ -178,9 +177,9 @@ entityGroundTypeAdapter (LiteralEntityGroundType tl) NilArguments =
             entityAdapterPut t _mr = return [PinaforeEntityEditSetLiteral (literalToEntity t) (Known $ toLiteral t)]
             in MkEntityAdapter {..}
 entityGroundTypeAdapter MaybeEntityGroundType (ConsArguments t NilArguments) = let
-    justAnchor = MkAnchor $ read "c0e3fe40-598b-4c38-a28c-5be0decb1d9c"
+    justAnchor = codeAnchor "pinafore-base:Just"
     justAdapter = constructorEntityAdapter justAnchor $ ConsListType (entityAdapter t) NilListType
-    nothingAnchor = MkAnchor $ read "0e16143d-6211-44d1-8b81-18d2700bf07f"
+    nothingAnchor = codeAnchor "pinafore-base:Nothing"
     nothingAdapter = constructorEntityAdapter nothingAnchor NilListType
     from :: Either (a, ()) () -> Maybe a
     from (Left (a, ())) = Just a
@@ -190,7 +189,7 @@ entityGroundTypeAdapter MaybeEntityGroundType (ConsArguments t NilArguments) = l
     to Nothing = Right ()
     in isoMap from to $ justAdapter <+++> nothingAdapter
 entityGroundTypeAdapter PairEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments)) = let
-    pairAnchor = MkAnchor $ read "d61fc4eb-8283-4be6-b3ff-a30930746ad9"
+    pairAnchor = codeAnchor "pinafore-base:Pair"
     pairAdapter =
         constructorEntityAdapter pairAnchor $
         ConsListType (entityAdapter ta) $ ConsListType (entityAdapter tb) NilListType
@@ -204,15 +203,15 @@ entityGroundTypeAdapter EitherEntityGroundType (ConsArguments ta (ConsArguments 
     from (a, ()) = a
     to :: a -> (a, ())
     to a = (a, ())
-    leftAnchor = MkAnchor $ read "cceee5b7-9b2e-459c-95c1-50f62c6cc479"
+    leftAnchor = codeAnchor "pinafore-base:Left"
     leftAdapter = isoMap from to $ constructorEntityAdapter leftAnchor $ ConsListType (entityAdapter ta) NilListType
-    rightAnchor = MkAnchor $ read "dcf983ba-e126-4303-afb2-ff1d092f2e48"
+    rightAnchor = codeAnchor "pinafore-base:Right"
     rightAdapter = isoMap from to $ constructorEntityAdapter rightAnchor $ ConsListType (entityAdapter tb) NilListType
     in leftAdapter <+++> rightAdapter
 entityGroundTypeAdapter ListEntityGroundType (ConsArguments t NilArguments) = let
-    nilAnchor = MkAnchor $ read "d8c742fe-7860-4961-9bfc-4be2f5a98490"
+    nilAnchor = codeAnchor "pinafore-base:Nil"
     nilAdapter = constructorEntityAdapter nilAnchor NilListType
-    consAnchor = MkAnchor $ read "ff02e403-7dd1-4e34-bb2b-92824f5cb343"
+    consAnchor = codeAnchor "pinafore-base:Cons"
     consAdapter =
         constructorEntityAdapter consAnchor $ ConsListType (entityAdapter t) $ ConsListType listAdapter NilListType
     listAdapter = isoMap from to $ nilAdapter <+++> consAdapter

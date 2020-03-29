@@ -97,13 +97,9 @@ instance JSON.ToJSON Note where
             , (fromString "", JSON.toJSON $ sel NoteText)
             ]
 
-parseMaybe :: Maybe a -> JSON.Parser a
-parseMaybe (Just a) = return a
-parseMaybe Nothing = empty
-
 parseField :: JSON.FromJSON a => Text -> JSON.Object -> JSON.Parser a
 parseField key obj = do
-    val <- parseMaybe $ lookup key obj
+    val <- mpure $ lookup key obj
     JSON.parseJSON val
 
 instance JSON.FromJSON Note where

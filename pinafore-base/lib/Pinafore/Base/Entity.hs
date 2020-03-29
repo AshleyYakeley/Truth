@@ -1,13 +1,12 @@
 module Pinafore.Base.Entity where
 
 import Control.DeepSeq
-import Data.Aeson (FromJSON)
 import Pinafore.Base.Anchor
 import Shapes
 
 newtype Entity =
     MkEntity Anchor
-    deriving (Eq, Ord, Random, FromJSON, Show, Serialize, NFData)
+    deriving (Eq, Ord, Random, Show, Serialize, NFData)
 
 newEntity :: MonadIO m => m Entity
 newEntity = liftIO randomIO

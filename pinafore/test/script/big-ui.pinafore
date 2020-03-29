@@ -1,6 +1,6 @@
 let
 opentype T;
-me = entity @T !4527c8ac-580d-443c-8496-2b5a93021f98;
+me = entity @T !"T";
 
 func20 n a b c d e f = uiLabel n;
 func19 n a b c d e f = func20 n a b c d e f;

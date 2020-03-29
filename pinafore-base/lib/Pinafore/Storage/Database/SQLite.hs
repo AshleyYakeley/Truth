@@ -5,7 +5,6 @@ module Pinafore.Storage.Database.SQLite
     , sqlitePinaforeTableGetEntireDatabase
     ) where
 
-import Data.UUID
 import Pinafore.Base
 import Pinafore.Storage.Database
 import Pinafore.Storage.Table
@@ -14,23 +13,16 @@ import Truth.Core
 import Truth.World.SQLite
 import Truth.World.SQLite.Schema
 
-instance FieldType UUID where
+instance FieldType Anchor where
     fieldTypeName = "BLOB"
 
-instance FromField UUID where
+instance FromField Anchor where
     fromField f = do
         bs <- fromField f
-        maybeToOk $ fromByteString bs
+        decode serializeStrictCodec bs
 
-instance ToField UUID where
-    toField = toField . toByteString
-
-instance FieldType Anchor where
-    fieldTypeName = fieldTypeName @UUID
-
-deriving instance FromField Anchor
-
-deriving instance ToField Anchor
+instance ToField Anchor where
+    toField = toField . encodeM serializeStrictCodec
 
 instance FieldType Entity where
     fieldTypeName = fieldTypeName @Anchor

@@ -6,7 +6,6 @@ module Pinafore.Base.Edit
     , HasPinaforeEntityUpdate
     ) where
 
-import Data.Aeson (FromJSON)
 import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
 import Pinafore.Base.Know
@@ -17,7 +16,7 @@ import Truth.Core
 
 newtype Predicate =
     MkPredicate Anchor
-    deriving (Eq, FromJSON, Show)
+    deriving (Eq, Show)
 
 -- | Some of these reads may add to the database, but will always give consistent results between changes.
 data PinaforeEntityRead t where

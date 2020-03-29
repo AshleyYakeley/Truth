@@ -74,7 +74,7 @@
 		"anchors": {
 			"patterns": [
 				{
-					"name": "constant.anchor.uuid.pinafore",
+					"name": "constant.anchor.hex.pinafore",
 					"match": "![-0-9A-Fa-f]+"
 				},
 				{

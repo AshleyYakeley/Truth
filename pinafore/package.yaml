@@ -14,7 +14,6 @@ library:
       - filepath
       - parsec
       - containers
-      - uuid
       - typed-expression
       - truth-core
       - truth-world

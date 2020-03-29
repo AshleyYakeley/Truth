@@ -13,10 +13,8 @@ library:
       - deepseq
       - time
       - cereal
-      - aeson
       - memory
       - cryptonite
-      - uuid
       - truth-core
       - truth-world
     exposed-modules:
@@ -57,4 +55,5 @@ tests:
         main: Main.hs
         other-modules:
           - Test.Numeric
+          - Test.Anchor
         ghc-options: -threaded

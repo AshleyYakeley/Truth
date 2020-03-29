@@ -1,5 +1,5 @@
 module Pinafore.Storage.Table
-    ( Anchor(..)
+    ( Anchor
     , Predicate(..)
     , Entity(..)
     , PinaforeTableRead(..)

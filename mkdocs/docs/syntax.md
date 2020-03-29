@@ -179,8 +179,7 @@ literal-number = (-?[0-9]+(.[0-9]*(_[0-9]*)?)?)|(~-?[0-9]+(.[0-9]*)?(e-?[0-9]+)?
 
 literal-text = "([^"\\]|\\.)*"
 
-uuid =
-    [[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}
+hex64 = [[:xdigit:]]{64}
 
-anchor = !(uuid|literal-text)
+anchor = !(literal-text|hex64)
 ```

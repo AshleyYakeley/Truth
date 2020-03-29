@@ -23,4 +23,4 @@ directoryPinaforeFileReference :: FilePath -> Reference (UpdateEdit PinaforeFile
 directoryPinaforeFileReference path =
     directoryReferenceStore
         (subdirectoryReference True path fileSystemReference)
-        (\(MkFileEntity (MkEntity (MkAnchor uuid))) -> show uuid)
+        (\(MkFileEntity (MkEntity anchor)) -> show anchor)

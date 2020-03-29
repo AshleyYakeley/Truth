@@ -48,8 +48,21 @@ bijectionCodec (MkIsomorphism p q) = MkCodec (pure . p) q
 instance (Traversable f, Applicative m) => CatFunctor (Codec' m) (Codec' m) f where
     cfmap codec = MkCodec {decode = traverse (decode codec), encode = fmap (encode codec)}
 
-serializeCodec :: Serialize t => Codec' (Result String) LazyByteString t
-serializeCodec = let
+serializeLazyCodec ::
+       forall m t. (MonadFail m, Serialize t)
+    => Codec' m LazyByteString t
+serializeLazyCodec = let
     encode = Serialize.encodeLazy
-    decode = eitherToResult . Serialize.decodeLazy
+    decode = resultToM . eitherToResult . Serialize.decodeLazy
     in MkCodec {..}
+
+serializeStrictCodec ::
+       forall m t. (MonadFail m, Serialize t)
+    => Codec' m StrictByteString t
+serializeStrictCodec = let
+    encode = Serialize.encode
+    decode = resultToM . eitherToResult . Serialize.decode
+    in MkCodec {..}
+
+encodeM :: Codec a b -> b -> a
+encodeM = encode

@@ -163,6 +163,10 @@ eitherRight :: Either a b -> Maybe b
 eitherRight (Left _) = Nothing
 eitherRight (Right x) = Just x
 
+mpure :: Alternative m => Maybe a -> m a
+mpure (Just a) = pure a
+mpure Nothing = empty
+
 compAll :: Category cat => [cat a a] -> cat a a
 compAll [] = id
 compAll (c:cc) = c . compAll cc
