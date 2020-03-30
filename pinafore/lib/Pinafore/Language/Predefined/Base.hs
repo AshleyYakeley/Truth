@@ -38,8 +38,8 @@ deleteentity ref = langRefSet ref Unknown
 qfail :: Text -> PinaforeAction BottomType
 qfail t = fail $ unpack t
 
-entityUUID :: Entity -> Text
-entityUUID p = pack $ show p
+entityAnchor :: Entity -> Text
+entityAnchor p = pack $ show p
 
 onStop :: PinaforeAction A -> PinaforeAction A -> PinaforeAction A
 onStop p q = p <|> q
@@ -110,7 +110,7 @@ base_predefinitions =
           ""
           [ mkValEntry "==" "Entity equality." $ (==) @Entity
           , mkValEntry "/=" "Entity non-equality." $ (/=) @Entity
-          , mkValEntry "entityUUID" "UUID of an entity." entityUUID
+          , mkValEntry "entityAnchor" "anchor of an entity." entityAnchor
           , mkSupertypeEntry "id" "Every literal is an entity." $ literalToEntity @Literal
           , mkValEntry "toText" "The text of a literal." unLiteral
           , docTreeEntry
