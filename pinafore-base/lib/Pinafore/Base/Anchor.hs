@@ -40,8 +40,25 @@ instance Random Anchor where
         (a3, g4) = random g3
         in (mkAnchor a0 a1 a2 a3, g4)
 
+showHexChar :: Word8 -> Char
+showHexChar w
+    | w < 10 = toEnum $ (fromEnum '0') + (fromEnum w)
+showHexChar w = toEnum $ (fromEnum 'A') + (fromEnum $ w - 10)
+
+showWord8Hex :: Word8 -> [Char]
+showWord8Hex w = [showHexChar $ div w 16, showHexChar $ mod w 16]
+
+groupList :: Int -> [a] -> [[a]]
+groupList _ [] = []
+groupList n aa = let
+    (p, q) = splitAt n aa
+    in p : groupList n q
+
+showBSHex :: StrictByteString -> [Char]
+showBSHex bs = mconcat $ fmap showWord8Hex $ otoList bs
+
 instance Show Anchor where
-    show (MkAnchor bs) = '!' : show bs
+    show (MkAnchor bs) = '!' : (intercalate "-" $ groupList 8 $ showBSHex bs)
 
 instance Serialize Anchor where
     put = Serialize.put . encodeM anchorCodec

@@ -16,7 +16,10 @@ import Truth.Core
 
 newtype Predicate =
     MkPredicate Anchor
-    deriving (Eq, Show)
+    deriving (Eq)
+
+instance Show Predicate where
+    show (MkPredicate anchor) = show anchor
 
 -- | Some of these reads may add to the database, but will always give consistent results between changes.
 data PinaforeEntityRead t where

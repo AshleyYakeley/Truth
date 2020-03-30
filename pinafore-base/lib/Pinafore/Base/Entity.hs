@@ -6,7 +6,10 @@ import Shapes
 
 newtype Entity =
     MkEntity Anchor
-    deriving (Eq, Ord, Random, Show, Serialize, NFData)
+    deriving (Eq, Ord, Random, Serialize, NFData)
+
+instance Show Entity where
+    show (MkEntity anchor) = show anchor
 
 newEntity :: MonadIO m => m Entity
 newEntity = liftIO randomIO

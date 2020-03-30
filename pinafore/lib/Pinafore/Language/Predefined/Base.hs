@@ -110,7 +110,7 @@ base_predefinitions =
           ""
           [ mkValEntry "==" "Entity equality." $ (==) @Entity
           , mkValEntry "/=" "Entity non-equality." $ (/=) @Entity
-          , mkValEntry "entityAnchor" "anchor of an entity." entityAnchor
+          , mkValEntry "entityAnchor" "The anchor of an entity, as text." entityAnchor
           , mkSupertypeEntry "id" "Every literal is an entity." $ literalToEntity @Literal
           , mkValEntry "toText" "The text of a literal." unLiteral
           , docTreeEntry
