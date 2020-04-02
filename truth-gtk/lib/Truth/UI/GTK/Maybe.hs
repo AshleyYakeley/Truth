@@ -9,7 +9,7 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
 data OneWholeViews f
-    = MissingOVS (Limit f)
+    = MissingOVS (f None)
                  ViewState
     | PresentOVS ViewState
 
@@ -29,13 +29,13 @@ oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
         getWidgets box rm fu = do
             notifyChange $ return $ Just fu
             case retrieveOne fu of
-                FailureResult lfx@(MkLimit fx) -> do
+                FailureResult fn -> do
                     ((), vs) <-
                         viewCreateView $ do
-                            widget <- baseView fx
+                            widget <- baseView $ fmap never fn
                             lcContainPackStart True box widget
                             widgetShow widget
-                    return $ MissingOVS lfx vs
+                    return $ MissingOVS fn vs
                 SuccessResult () -> do
                     ((), vs) <-
                         viewCreateView $ do

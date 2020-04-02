@@ -42,7 +42,7 @@ oneWholeSelUISpec subf specsel snfsel = let
     getf fu =
         case retrieveOne fu of
             SuccessResult _ -> Nothing
-            FailureResult (MkLimit fx) -> Just fx
+            FailureResult fn -> Just $ fmap never fn
     snfu :: SelectNotify (f ())
     snfu = mapMaybeSelectNotify getf snfsel
     in mkCVUISpec $ OneWholeUISpec subf spec snfu

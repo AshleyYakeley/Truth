@@ -99,5 +99,5 @@ oneLiftFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) lens) = 
     fclLens fr =
         case retrieveOne fr of
             SuccessResult r -> oneLiftChangeLens $ lens r
-            FailureResult (MkLimit fu) -> oneNullChangeLens fu
+            FailureResult fn -> oneNullChangeLens $ fmap never fn
     in MkFloatingChangeLens {..}

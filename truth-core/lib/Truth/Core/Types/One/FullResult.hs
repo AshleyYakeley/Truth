@@ -28,7 +28,7 @@ instance (MonadOne f, SubjectReader (EditReader edit), ApplicableEdit edit) => A
         return $
         case retrieveOne fa of
             SuccessResult a -> pure $ subjectToRead a reader
-            FailureResult (MkLimit fx) -> fx
+            FailureResult fn -> fmap never fn
 
 instance (MonadOne f, FullSubjectReader (EditReader edit), ApplicableEdit edit) =>
              SubjectMapEdit (FullResultOneEdit f edit)
@@ -89,7 +89,7 @@ liftFullResultOneChangeLens (MkChangeLens g u pe) = let
         case retrieveOne fma of
             SuccessResult (Just a) -> Just $ pure a
             SuccessResult Nothing -> Nothing
-            FailureResult (MkLimit fx) -> Just fx
+            FailureResult fn -> Just $ fmap never fn
     elPutEdit ::
            forall m. MonadIO m
         => FullResultOneEdit f (UpdateEdit updateB)
@@ -112,7 +112,7 @@ liftFullResultOneChangeLens (MkChangeLens g u pe) = let
                 return $ do
                     fa <- reshuffle fma
                     return [NewFullResultOneEdit fa]
-            FailureResult (MkLimit fx) -> do return $ Just [NewFullResultOneEdit fx]
+            FailureResult fn -> do return $ Just [NewFullResultOneEdit $ fmap never fn]
     clPutEdits ::
            forall m. MonadIO m
         => [FullResultOneEdit f (UpdateEdit updateB)]
@@ -153,10 +153,11 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
         fr <- get
         case retrieveOne fr of
             SuccessResult r -> lift $ liftOneReadFunction (clRead $ rlens r) mr rt
-            FailureResult (MkLimit fx) ->
+            FailureResult fn ->
+                return $
                 case rt of
-                    ReadHasOne -> return fx
-                    ReadOne _ -> return fx
+                    ReadHasOne -> fmap never fn
+                    ReadOne _ -> fmap never fn
     sclUpdate ::
            forall m. MonadIO m
         => FullResultOneUpdate f updateA
@@ -175,14 +176,14 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
             SuccessResult () -> do
                 _ <- reInit mr
                 return ()
-            FailureResult (MkLimit fx) -> put fx
+            FailureResult fn -> put $ fmap never fn
         return [MkFullResultOneUpdate $ NewResultOneUpdate fu]
     reshuffle :: forall a. f (Maybe a) -> Maybe (f a)
     reshuffle fma =
         case retrieveOne fma of
             SuccessResult (Just a) -> Just $ pure a
             SuccessResult Nothing -> Nothing
-            FailureResult (MkLimit fx) -> Just fx
+            FailureResult fn -> Just $ fmap never fn
     sPutEdit ::
            forall m. MonadIO m
         => FullResultOneEdit f (UpdateEdit updateB)
@@ -211,9 +212,9 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
                 return $ do
                     fa <- reshuffle fma
                     return [NewFullResultOneEdit fa]
-            FailureResult (MkLimit fx) -> do
-                put fx
-                return $ Just [NewFullResultOneEdit fx]
+            FailureResult fn -> do
+                put $ fmap never fn
+                return $ Just [NewFullResultOneEdit $ fmap never fn]
     sclPutEdits ::
            forall m. MonadIO m
         => [FullResultOneEdit f (UpdateEdit updateB)]
