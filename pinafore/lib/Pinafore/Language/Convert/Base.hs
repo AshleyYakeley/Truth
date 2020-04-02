@@ -270,29 +270,42 @@ instance (baseupdate ~ update, ToShimWit JMShim (PinaforeType update 'Positive) 
              FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LangOrder update a) where
     fromShimWit = singlePinaforeShimWit fromJMShimWit
 
--- LangUI
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (LangUI a) where
+-- LangNotifier
+instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
+             ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (LangNotifier a) where
     toShimWit =
-        unShimWit toJMShimWit $ \ta conva ->
-            mapShimWit (consShimFunc CovarianceType cid conva) $
+        unShimWit fromJMShimWit $ \ta conva ->
+            mapShimWit (consShimFunc ContravarianceType cid $ MkCatDual conva) $
             mkPJMShimWit $
-            GroundPinaforeSingularType UserInterfacePinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            GroundPinaforeSingularType NotifierPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (LangUI a) where
+instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
+             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (LangNotifier a) where
     toShimWit = singlePinaforeShimWit toJMShimWit
 
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (LangUI a) where
+instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
+             FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (LangNotifier a) where
     fromShimWit =
-        unShimWit fromJMShimWit $ \ta conva ->
-            mapShimWit (consShimFunc CovarianceType cid conva) $
+        unShimWit toJMShimWit $ \ta conva ->
+            mapShimWit (consShimFunc ContravarianceType cid $ MkCatDual conva) $
             mkPJMShimWit $
-            GroundPinaforeSingularType UserInterfacePinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            GroundPinaforeSingularType NotifierPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LangUI a) where
+instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
+             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LangNotifier a) where
+    fromShimWit = singlePinaforeShimWit fromJMShimWit
+
+-- LangUI
+instance ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) LangUI where
+    toShimWit = mkPJMShimWit $ GroundPinaforeSingularType UserInterfacePinaforeGroundType NilDolanArguments
+
+instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) LangUI where
+    toShimWit = singlePinaforeShimWit toJMShimWit
+
+instance FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) LangUI where
+    fromShimWit = mkPJMShimWit $ GroundPinaforeSingularType UserInterfacePinaforeGroundType NilDolanArguments
+
+instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) LangUI where
     fromShimWit = singlePinaforeShimWit fromJMShimWit
 
 -- PinaforeWindow
@@ -307,19 +320,6 @@ instance FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) Pinafore
 
 instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) PinaforeWindow where
     fromShimWit = singlePinaforeShimWit fromJMShimWit
-
--- UISpec
-instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) CVUISpec where
-    toShimWit =
-        mapShimWit
-            (toEnhanced "subtype" $ \cspec -> MkLangUI $ \_ -> cspec)
-            (toJMShimWit :: PinaforeShimWit baseupdate 'Positive (LangUI BottomType))
-
-instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) CVUISpec where
-    fromShimWit =
-        mapShimWit
-            (toEnhanced "subtype" $ \(MkLangUI pui) -> pui mempty)
-            (fromJMShimWit :: PinaforeShimWit baseupdate 'Negative (LangUI TopType))
 
 -- MenuEntry
 instance ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) MenuEntry where

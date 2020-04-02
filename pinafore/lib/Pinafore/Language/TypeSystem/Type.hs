@@ -11,7 +11,6 @@ import Pinafore.Language.Name
 import Pinafore.Language.Scope
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Ground
-import Pinafore.Language.Type.Literal
 import Pinafore.Language.TypeSystem.Show
 import Shapes
 
@@ -27,7 +26,7 @@ data PinaforeType (baseupdate :: Type) (polarity :: Polarity) (t :: Type) where
 -- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVar') for type variables.
 data PinaforeSingularType (baseupdate :: Type) (polarity :: Polarity) (t :: Type) where
     GroundPinaforeSingularType
-        :: PinaforeGroundType baseupdate polarity dv t
+        :: PinaforeGroundType baseupdate dv polarity t
         -> DolanArguments dv (PinaforeType baseupdate) t polarity ta
         -> PinaforeSingularType baseupdate polarity ta
     VarPinaforeSingularType :: SymbolType name -> PinaforeSingularType baseupdate polarity (UVar name)
@@ -49,11 +48,6 @@ singlePinaforeType ::
        PinaforeSingularType baseupdate polarity t
     -> PinaforeType baseupdate polarity (JoinMeetType polarity t (LimitType polarity))
 singlePinaforeType st = ConsPinaforeType st NilPinaforeType
-
-literalPinaforeType :: LiteralType t -> PinaforeType baseupdate polarity (JoinMeetType polarity t (LimitType polarity))
-literalPinaforeType t =
-    singlePinaforeType $
-    GroundPinaforeSingularType (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType t) NilDolanArguments
 
 joinPinaforeTypes ::
        forall baseupdate (a :: Type) (b :: Type) r.

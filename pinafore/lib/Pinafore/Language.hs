@@ -88,7 +88,7 @@ entityTypedShowValue (ConsListType Refl (ConsListType Refl NilListType)) EitherE
 entityTypedShowValue _ _ _ _ = Nothing
 
 groundTypedShowValue ::
-       PinaforeGroundType baseupdate 'Positive dv t
+       PinaforeGroundType baseupdate dv 'Positive t
     -> DolanArguments dv (PinaforeType baseupdate) t 'Positive ta
     -> ta
     -> String

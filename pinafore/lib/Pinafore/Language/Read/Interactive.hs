@@ -31,7 +31,7 @@ showTypeInteractiveCommand ::
     => Bool
     -> Parser (InteractiveCommand baseupdate)
 showTypeInteractiveCommand showinfo = do
-    expr <- readTopExpression
+    expr <- readExpression
     return $ ShowTypeInteractiveCommand showinfo $ interpretTopExpression expr
 
 simplifyPolarTypeInteractiveCommand ::
@@ -70,9 +70,9 @@ readInteractiveCommand =
          readExactlyThis TokOperator ":"
          MkName cmd <- readThis TokLName
          readSpecialCommand cmd) <|>
-    (parseEnd >> return (LetInteractiveCommand $ return id)) <|>
+    (readEnd >> return (LetInteractiveCommand $ return id)) <|>
     (try $ do
-         sexpr <- readTopExpression
+         sexpr <- readExpression
          return $ ExpressionInteractiveCommand $ interpretTopExpression sexpr) <|>
     (do
          stdecls <- readTopDeclarations

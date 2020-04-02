@@ -17,19 +17,24 @@ import Text.Parsec.Pos (initialPos)
 
 type Parser = Parsec [(SourcePos, AnyValue Token)] ()
 
-parseEnd :: Parser ()
-parseEnd = eof
+readEnd :: Parser ()
+readEnd = eof
 
 parseReader :: Parser a -> Text -> StateT SourcePos InterpretResult a
-parseReader parser text = do
-    spos <- get
-    toks <- parseTokens text
-    case parse parser (sourceName spos) toks of
-        Right a -> return a
-        Left e -> throwError [parseErrorMessage e]
+parseReader r text = let
+    r' = do
+        a <- r
+        readEnd
+        return a
+    in do
+           spos <- get
+           toks <- parseTokens text
+           case parse r' (sourceName spos) toks of
+               Right a -> return a
+               Left e -> throwError [parseErrorMessage e]
 
-parseScopedReader :: Parser (PinaforeScoped baseupdate t) -> Text -> PinaforeSourceScoped baseupdate t
-parseScopedReader parser text = do
+parseScopedReaderWhole :: Parser (PinaforeScoped baseupdate t) -> Text -> PinaforeSourceScoped baseupdate t
+parseScopedReaderWhole parser text = do
     spos <- askSourcePos
     case evalStateT (parseReader parser text) spos of
         SuccessResult a -> liftSourcePos a

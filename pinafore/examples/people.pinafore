@@ -6,7 +6,7 @@ let
 ui_page n ui = (uiLabel n,ui);
 ui_labelled n ui = uiHorizontal [(uiLabel n,False),(ui,True)];
 
-std_window :: Ref +Text -> (Action a -> [MenuItem]) -> UI a -> Action Window;
+std_window :: Ref +Text -> [MenuItem] -> UI -> Action Window;
 std_window title moremenus contents = fixAction $ \window -> let
     basemenus :: [MenuItem];
     basemenus =
@@ -23,12 +23,14 @@ std_window title moremenus contents = fixAction $ \window -> let
                 menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ];
-    menus getsel = {basemenus ++ moremenus getsel};
+    menus = {basemenus ++ moremenus};
     in openWindow title menus $ uiScrolled contents;
 
-selection_window :: (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> (set -> UI item) -> Action Window;
-selection_window (inames,inamep) iset iopen iui = let
-    moremenus getsel =
+selection_window :: (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> (set -> Notifier item -> UI) -> Action Window;
+selection_window (inames,inamep) iset iopen iui = do
+    (notifier,getsel) <- makeNotifier;
+    let
+    moremenus =
         [
             menuSubmenu "Selection"
             [
@@ -37,7 +39,8 @@ selection_window (inames,inamep) iset iopen iui = let
                 menuAction "Delete" Nothing {getsel >>= \p -> iset -= p}
             ]
         ];
-    in std_window {inamep} moremenus (iui iset);
+    in std_window {inamep} moremenus (iui iset notifier);
+    end;
 
 ### People
 
@@ -83,8 +86,8 @@ legalentities :: FiniteSetRef (Either Person Organisation);
 legalentities = people <:+:> organisations;
 
 # UI
-table_entities :: UI (Either Person Organisation);
-table_entities = let
+table_entities :: Notifier (Either Person Organisation) -> UI;
+table_entities notifier = let
     nameColumn :: (Ref +Text, Either Person Organisation -> Ref Text);
     nameColumn = ({"Name"},\i -> name !$ {either i});
     openItem :: Either Person Organisation -> Action Window;
@@ -92,22 +95,25 @@ table_entities = let
         Left p -> window_person p;
         Right o -> window_org o;
         end;
-    in uiTable [nameColumn] (orderOn (name !++ name) alphabetical) legalentities openItem;
+    in uiTable [nameColumn] (orderOn (name !++ name) alphabetical) legalentities openItem notifier;
 
-table_people :: FiniteSetRef Person -> UI Person;
-table_people people = uiTable [({"Name"},\p -> name !$ {p})] (orderOn name alphabetical) people window_person;
+table_people :: FiniteSetRef Person -> Notifier Person -> UI;
+table_people people notifier = uiTable [({"Name"},\p -> name !$ {p})] (orderOn name alphabetical) people window_person notifier;
 
-ui_people :: FiniteSetRef Person -> UI Person;
-ui_people people = uiWithSelection $ \getperson -> uiVertical
-[
-    (uiButton {"New Person"} {newEntity people >>= window_person},False),
-    (uiButton {"View Person"} {getperson >>= window_person},False),
-    (uiButton {"Remove Person"} {getperson >>= \p -> people -= p},False),
-    (table_people people,True)
-];
+ui_people :: FiniteSetRef Person -> UI;
+ui_people people = uiRun $ do
+    (notifier,getperson) <- makeNotifier;
+    return $ uiVertical
+    [
+        (uiButton {"New Person"} {newEntity people >>= window_person},False),
+        (uiButton {"View Person"} {getperson >>= window_person},False),
+        (uiButton {"Remove Person"} {getperson >>= \p -> people -= p},False),
+        (table_people people notifier,True)
+    ];
+    end;
 
-ui_person :: Ref {-LegalEntity,+Person} -> UI None;
-ui_person p = uiIgnore $ uiVertical
+ui_person :: Ref {-LegalEntity,+Person} -> UI;
+ui_person p = uiVertical
 [
     (ui_labelled {"Name: "} $ uiTextEntry $ name !$ p,False),
     (uiPages
@@ -143,10 +149,10 @@ ui_person p = uiIgnore $ uiVertical
 ];
 
 window_person :: Person -> Action Window;
-window_person p = std_window (name !$ {p}) (\_ -> []) (ui_person {p});
+window_person p = std_window (name !$ {p}) [] (ui_person {p});
 
 window_org :: Organisation -> Action Window;
-window_org o = std_window (name !$ {o}) (\_ -> []) (uiBlank);
+window_org o = std_window (name !$ {o}) [] uiBlank;
 
 window_people :: Action Window;
 window_people = selection_window ("Person","People") people window_person table_people;

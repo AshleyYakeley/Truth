@@ -2,6 +2,6 @@ let
 pday = property @() @Day !"calendar-test";
 rday = pday !$ {()};
 in do
-    openWindow {"Test Calendar"} (\_ -> {[]}) $ uiVertical [(uiCalendar rday,False),(uiLabel {toText %rday},True)];
+    openWindow {"Test Calendar"} {[]} $ uiVertical [(uiCalendar rday,False),(uiLabel {toText %rday},True)];
     return ();
     end

@@ -1,5 +1,5 @@
 module Pinafore.Language.Read.Expression
-    ( readTopExpression
+    ( readExpression
     , readTopDeclarations
     ) where
 
@@ -71,7 +71,6 @@ readTopDeclarations :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxTopDe
 readTopDeclarations = do
     spos <- getPosition
     sdecls <- readLetBindings
-    parseEnd
     return $ MkSyntaxTopDeclarations spos sdecls
 
 readSourcePos :: Parser (SyntaxExpression' baseupdate) -> Parser (SyntaxExpression baseupdate)
@@ -185,6 +184,11 @@ readExpression2 = do
     sargs <- many readExpression3
     return $ seApplys spos sfunc sargs
 
+readTypeAnnotation :: Parser SyntaxType
+readTypeAnnotation = do
+    readThis TokAt
+    readType3
+
 readExpression3 ::
        forall baseupdate. HasPinaforeEntityUpdate baseupdate
     => Parser (SyntaxExpression baseupdate)
@@ -200,10 +204,8 @@ readExpression3 =
     readSourcePos
         (do
              readThis TokProperty
-             readThis TokAt
-             sta <- readType3
-             readThis TokAt
-             stb <- readType3
+             sta <- readTypeAnnotation
+             stb <- readTypeAnnotation
              anchor <- readThis TokAnchor
              return $ SEProperty sta stb anchor) <|>
     readSourcePos
@@ -218,8 +220,7 @@ readExpression3 =
     readSourcePos
         (do
              readThis TokEntity
-             readThis TokAt
-             mt <- readType3
+             mt <- readTypeAnnotation
              anchor <- readThis TokAnchor
              return $ SEEntity mt anchor) <|>
     (readParen $
@@ -254,11 +255,3 @@ readExpression3 =
                  return []
              return $ SEList sexprs) <?>
     "expression"
-
-readTopExpression ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => Parser (SyntaxExpression baseupdate)
-readTopExpression = do
-    sexpr <- readExpression
-    parseEnd
-    return sexpr

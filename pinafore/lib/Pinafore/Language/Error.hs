@@ -31,7 +31,9 @@ data ErrorType
     | InterpretTypeNotEntityError Text
     | InterpretTypeNotOpenEntityError Text
     | InterpretTypeNoneNotNegativeEntityError
-    | InterpretTypeRangeInTypeError
+    | InterpretTypeUnderApplyError Text
+    | InterpretTypeOverApplyError Text
+    | InterpretTypeRangeApplyError Text
     | InterpretConstructorUnknownError Name
     | InterpretBindingsDuplicateError [Name]
 
@@ -93,7 +95,9 @@ instance Show ErrorType where
     show (InterpretTypeNotEntityError t) = unpack t <> " is not an entity type"
     show (InterpretTypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
     show InterpretTypeNoneNotNegativeEntityError = "\"None\" is not a negative entity type"
-    show InterpretTypeRangeInTypeError = "range in type"
+    show (InterpretTypeUnderApplyError t) = "underapplied type constuctor: " <> unpack t
+    show (InterpretTypeOverApplyError t) = "overapplied type constuctor: " <> unpack t
+    show (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> unpack t
     show (InterpretConstructorUnknownError n) = "unknown constructor: " <> show n
     show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show nn)
 

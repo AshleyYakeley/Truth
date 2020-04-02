@@ -23,65 +23,55 @@ readType = do
              return $ AndSyntaxType t1 t2) <|>
         return t1
 
-readType1 :: Parser SyntaxType
-readType1 = do
-    t1 <- readType2
+readInfix :: Parser SyntaxGroundType
+readInfix =
     (do
          readThis TokPropMap
-         t2 <- readType3
-         return $ MorphismSyntaxType t1 t2) <|>
-        (do
-             readThis TokMap
-             t2 <- readType
-             return $ FunctionSyntaxType t1 t2) <|>
-        return t1
+         return MorphismSyntaxGroundType) <|>
+    (do
+         readThis TokMap
+         return FunctionSyntaxGroundType)
+
+readType1 :: Parser SyntaxType
+readType1 = do
+    (try $ do
+         t1 <- readTypeArgument readType2
+         tc <- readInfix
+         t2 <- readTypeArgument readType1
+         return $ SingleSyntaxType tc [t1, t2]) <|>
+        readType2
+
+readTypeName :: Parser Name
+readTypeName = readThis TokUName
+
+readTypeConstant :: Parser SyntaxGroundType
+readTypeConstant = do
+    name <- readTypeName
+    return $ ConstSyntaxGroundType name
+
+readTypeArgument :: Parser SyntaxType -> Parser SyntaxTypeArgument
+readTypeArgument r = fmap SimpleSyntaxTypeArgument r <|> readTypeRange
 
 readType2 :: Parser SyntaxType
 readType2 =
-    (do
-         readExactlyThis TokUName "Maybe"
-         t1 <- readType3
-         return $ MaybeSyntaxType t1) <|>
-    (do
-         readExactlyThis TokUName "Either"
-         t1 <- readType3
-         t2 <- readType3
-         return $ EitherSyntaxType t1 t2) <|>
-    (do
-         readExactlyThis TokUName "Ref"
-         t1 <- readType3
-         return $ RefSyntaxType t1) <|>
-    (do
-         readExactlyThis TokUName "UI"
-         t1 <- readType3
-         return $ UISyntaxType t1) <|>
-    (do
-         readExactlyThis TokUName "SetRef"
-         t1 <- readType3
-         return $ SetRefSyntaxType t1) <|>
-    (do
-         readExactlyThis TokUName "FiniteSetRef"
-         t1 <- readType3
-         return $ FiniteSetRefSyntaxType t1) <|>
-    (do
-         readExactlyThis TokUName "Action"
-         t1 <- readType3
-         return $ ActionSyntaxType t1) <|>
-    (do
-         readExactlyThis TokUName "Order"
-         t1 <- readType3
-         return $ OrderSyntaxType t1) <|>
+    (try $ do
+         tc <- readTypeConstant
+         tt <- some $ readTypeArgument readType3
+         return $ SingleSyntaxType tc tt) <|>
     readType3
 
 readType3 :: Parser SyntaxType
 readType3 =
     (do
          t1 <- readBracket $ readType
-         return $ ListSyntaxType t1) <|>
+         return $ SingleSyntaxType ListSyntaxGroundType [SimpleSyntaxTypeArgument t1]) <|>
     (do
          name <- readTypeVar
          return $ VarSyntaxType name) <|>
-    readTypeConst <|>
+    readTypeLimit <|>
+    (do
+         tc <- readTypeConstant
+         return $ SingleSyntaxType tc []) <|>
     (readParen $ do
          mt1 <- optional $ readType
          case mt1 of
@@ -90,45 +80,49 @@ readType3 =
                  case comma of
                      Just () -> do
                          t2 <- readType
-                         return $ PairSyntaxType t1 t2
+                         return $
+                             SingleSyntaxType
+                                 PairSyntaxGroundType
+                                 [SimpleSyntaxTypeArgument t1, SimpleSyntaxTypeArgument t2]
                      Nothing -> return t1
-             Nothing -> return UnitSyntaxType) <|>
-    readTypeRange3
+             Nothing -> return $ SingleSyntaxType UnitSyntaxGroundType [])
 
-readTypeRange3 :: Parser SyntaxType
-readTypeRange3 =
-    fmap RangeSyntaxType $
-    (readBracketed TokOpenBrace TokCloseBrace $ readCommaList readTypeRangeItem) <|> readSignedType
+readTypeRange :: Parser SyntaxTypeArgument
+readTypeRange =
+    (readBracketed TokOpenBrace TokCloseBrace $ do
+         items <- readCommaList readTypeRangeItem
+         return $ RangeSyntaxTypeArgument items) <|> do
+        (sv, t) <- readSignedType
+        return $ RangeSyntaxTypeArgument [(Just sv, t)]
 
 readTypeRangeItem :: Parser [(Maybe SyntaxVariance, SyntaxType)]
 readTypeRangeItem =
-    readSignedType <|>
+    (do
+         (sv, t) <- readSignedType
+         return [(Just sv, t)]) <|>
     (do
          t1 <- readType3
          return [(Nothing, t1)])
 
-readSignedType :: Parser [(Maybe SyntaxVariance, SyntaxType)]
+readSignedType :: Parser (SyntaxVariance, SyntaxType)
 readSignedType =
-    fmap pure $
     (do
          readExactlyThis TokOperator "+"
          t1 <- readType3
-         return (Just CoSyntaxVariance, t1)) <|>
+         return (CoSyntaxVariance, t1)) <|>
     (do
          readExactlyThis TokOperator "-"
          t1 <- readType3
-         return (Just ContraSyntaxVariance, t1))
+         return (ContraSyntaxVariance, t1))
 
 readTypeVar :: Parser Name
 readTypeVar = readThis TokLName
 
-readTypeConst :: Parser SyntaxType
-readTypeConst = do
-    name <- readTypeName
-    case name of
-        "Any" -> return TopSyntaxType
-        "None" -> return BottomSyntaxType
-        _ -> return $ ConstSyntaxType name
-
-readTypeName :: Parser Name
-readTypeName = readThis TokUName
+readTypeLimit :: Parser SyntaxType
+readTypeLimit =
+    (do
+         readExactlyThis TokUName "Any"
+         return TopSyntaxType) <|>
+    (do
+         readExactlyThis TokUName "None"
+         return BottomSyntaxType)

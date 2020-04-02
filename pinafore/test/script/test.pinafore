@@ -6,7 +6,7 @@ let
 ui_page n ui = (uiLabel n,ui);
 ui_labelled n ui = uiHorizontal [(uiLabel n,False),(ui,True)];
 
-std_window :: Ref +Text -> UI a -> Action Window;
+std_window :: Ref +Text -> UI -> Action Window;
 std_window title contents = fixAction $ \window -> let
     menus :: [MenuItem];
     menus =
@@ -23,7 +23,7 @@ std_window title contents = fixAction $ \window -> let
                 menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ]
-    in openWindow title (\_ -> {menus}) $ uiScrolled contents;
+    in openWindow title {menus} $ uiScrolled contents;
 
 ### People
 
@@ -64,17 +64,20 @@ deathdate = property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb";
 married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 
 # UI
-ui_people :: FiniteSetRef Person -> UI Person;
-ui_people pp = uiWithSelection $ \getperson -> uiVertical
-[
-    (uiButton {"New Person"} {newEntity pp >>= window_person},False),
-    (uiButton {"View Person"} {getperson >>= window_person},False),
-    (uiButton {"Remove Person"} {getperson >>= \p -> pp -= p},False),
-    (uiTable [({"Name"},\p -> name !$ {p})] noOrder pp $ window_person,True)
-];
+ui_people :: FiniteSetRef Person -> UI;
+ui_people pp = uiRun $ do
+    (notifyperson,getperson) <- makeNotifier;
+    return $ uiVertical
+    [
+        (uiButton {"New Person"} {newEntity pp >>= window_person},False),
+        (uiButton {"View Person"} {getperson >>= window_person},False),
+        (uiButton {"Remove Person"} {getperson >>= \p -> pp -= p},False),
+        (uiTable [({"Name"},\p -> name !$ {p})] noOrder pp window_person notifyperson,True)
+    ];
+    end;
 
-ui_person :: Ref Person -> UI None;
-ui_person p = uiIgnore $uiVertical
+ui_person :: Ref Person -> UI;
+ui_person p = uiVertical
 [
     (ui_labelled {"Name: "} $ uiTextEntry $ name !$ p,False),
     (uiPages
@@ -104,7 +107,7 @@ ui_person p = uiIgnore $uiVertical
             (uiCheckBox {"Married"} $ married !$ p,False),
             (ui_labelled {"Mother: "} $ uiPick name people $ mother !$ p,False),
             (ui_labelled {"Father: "} $ uiPick name people $ father !$ p,False),
-            (ui_people $ children p,True)
+            (ui_people (children p),True)
         ]
     ],True)
 ];

@@ -107,7 +107,7 @@ subsumePositiveContext = let
 
 subsumePositiveGroundSingularType ::
        SubsumerConstraint baseupdate
-    => PinaforeGroundType baseupdate 'Positive dv ginf
+    => PinaforeGroundType baseupdate dv 'Positive ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Positive inf
     -> PinaforeSingularType baseupdate 'Positive decl
     -> PinaforeFullSubsumer baseupdate (JMShim inf decl)
@@ -117,7 +117,7 @@ subsumePositiveGroundSingularType gtinf targsinf (GroundPinaforeSingularType gtd
 
 subsumePositiveGroundType ::
        SubsumerConstraint baseupdate
-    => PinaforeGroundType baseupdate 'Positive dv ginf
+    => PinaforeGroundType baseupdate dv 'Positive ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Positive inf
     -> PinaforeType baseupdate 'Positive decl
     -> PinaforeFullSubsumer baseupdate (JMShim inf decl)
@@ -156,7 +156,7 @@ subsumeNegativeContext = let
 subsumeNegativeGroundSingularType ::
        SubsumerConstraint baseupdate
     => PinaforeSingularType baseupdate 'Negative decl
-    -> PinaforeGroundType baseupdate 'Negative dv ginf
+    -> PinaforeGroundType baseupdate dv 'Negative ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Negative inf
     -> PinaforeFullSubsumer baseupdate (JMShim decl inf)
 subsumeNegativeGroundSingularType (VarPinaforeSingularType _vdecl) _gtinf _targsinf = empty
@@ -166,7 +166,7 @@ subsumeNegativeGroundSingularType (GroundPinaforeSingularType gtdecl targsdecl) 
 subsumeNegativeGroundType ::
        SubsumerConstraint baseupdate
     => PinaforeType baseupdate 'Negative decl
-    -> PinaforeGroundType baseupdate 'Negative dv ginf
+    -> PinaforeGroundType baseupdate dv 'Negative ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Negative inf
     -> PinaforeFullSubsumer baseupdate (JMShim decl inf)
 subsumeNegativeGroundType NilPinaforeType _gtinf _targsinf = empty

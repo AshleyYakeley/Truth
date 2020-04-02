@@ -1,15 +1,14 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Pinafore.Language.Value.UI where
 
 import Data.Shim
 import Shapes
 import Truth.Core
 
-newtype LangUI a = MkLangUI
-    { unLangUI :: SelectNotify a -> CVUISpec
-    }
+type LangUI = CVUISpec
 
-instance Functor LangUI where
-    fmap ab (MkLangUI spec) = MkLangUI $ \sn -> spec $ contramap ab sn
+type LangNotifier = SelectNotify
 
-instance HasVariance 'Covariance LangUI where
+instance HasVariance 'Contravariance SelectNotify where
     varianceRepresentational = Nothing

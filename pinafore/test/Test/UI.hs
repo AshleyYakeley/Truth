@@ -106,10 +106,10 @@ testUI =
     runContext $
     context
         [ "emptywindow :: Action ()"
-        , "emptywindow = do openWindow {\"Empty\"} (\\_ -> {[]}) uiBlank ;return (); end"
+        , "emptywindow = do openWindow {\"Empty\"} {[]} uiBlank ;return (); end"
         , "newpoint :: Action ()"
         , "newpoint = do s <- newMemFiniteSet; newEntity s; return (); end"
         , "buttonwindow :: Action Any -> Action ()"
-        , "buttonwindow action = do openWindow {\"Test\"} (\\_ -> {[]}) (uiButton {\"Button\"} {action}); return (); end"
+        , "buttonwindow action = do openWindow {\"Test\"} {[]} (uiButton {\"Button\"} {action}); return (); end"
         ] $
     tgroup "UI" [tgroup "immediate" $ testActions False, tgroup "wait" $ testActions True]

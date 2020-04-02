@@ -15,9 +15,6 @@ import Truth.Core
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
 
-uiMap :: (A -> B) -> LangUI A -> LangUI B
-uiMap = fmap
-
 uiTable ::
        forall baseupdate.
        ( ?pinafore :: PinaforeContext baseupdate
@@ -27,52 +24,52 @@ uiTable ::
     -> LangOrder baseupdate A
     -> LangFiniteSetRef '( A, EA)
     -> (A -> PinaforeAction TopType)
-    -> LangUI A
-uiTable cols order val onDoubleClick =
-    MkLangUI $ \sn -> do
-        let
-            uo :: UpdateOrder (ContextUpdate baseupdate (ConstWholeUpdate EA))
-            uo =
-                mapUpdateOrder
-                    (changeLensToFloating $
-                     liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
-                pinaforeUpdateOrder order
-            rows :: Model (FiniteSetUpdate EA)
-            rows = unPinaforeRef $ unLangFiniteSetRef $ contraRangeLift meet2 val
-            pkSub :: Model (ContextUpdate baseupdate (FiniteSetUpdate EA))
-            pkSub = contextModels pinaforeBase rows
-            readSub :: Model (ConstWholeUpdate EA) -> View A
-            readSub sub =
-                viewRunResource sub $ \asub -> do
-                    ea <- aModelRead asub ReadWhole
-                    return $ meet2 ea
-            onSelect :: Model (ConstWholeUpdate EA) -> View ()
-            onSelect osub = do
-                a <- readSub osub
-                runPinaforeAction $ void $ onDoubleClick a
-            getColumn ::
-                   (LangRef '( BottomType, Text), A -> LangRef '( BottomType, Text)) -> KeyColumn (ConstWholeUpdate EA)
-            getColumn (nameRef, getCellRef) = let
-                showCell :: Know Text -> (Text, TableCellProps)
-                showCell (Known s) = (s, plainTableCellProps)
-                showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
-                nameOpenSub :: Model (ROWUpdate Text)
-                nameOpenSub = pinaforeRefOpenModel $ eaMapSemiReadOnly clearText $ langRefToReadOnlyValue nameRef
-                getCellSub :: Model (ConstWholeUpdate EA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
-                getCellSub osub = do
-                    a <- cvLiftView $ readSub osub
-                    return $
-                        pinaforeRefOpenModel $
-                        eaMapSemiReadOnly (funcChangeLens showCell) $ langRefToReadOnlyValue $ getCellRef a
-                in readOnlyKeyColumn nameOpenSub getCellSub
-        colSub :: Model (ContextUpdate baseupdate (OrderedListUpdate [EA] (ConstWholeUpdate EA))) <-
-            cvFloatMapModel (contextOrderedSetLens uo) pkSub
-        let
-            olsub :: Model (OrderedListUpdate [EA] (ConstWholeUpdate EA))
-            olsub = mapModel (tupleChangeLens SelectContent) colSub
-            tsn :: SelectNotify (Model (ConstWholeUpdate EA))
-            tsn = contramap readSub $ viewLiftSelectNotify sn
-        tableUISpec (fmap getColumn cols) olsub onSelect tsn
+    -> SelectNotify A
+    -> LangUI
+uiTable cols order val onDoubleClick sn = do
+    let
+        uo :: UpdateOrder (ContextUpdate baseupdate (ConstWholeUpdate EA))
+        uo =
+            mapUpdateOrder
+                (changeLensToFloating $
+                 liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
+            pinaforeUpdateOrder order
+        rows :: Model (FiniteSetUpdate EA)
+        rows = unPinaforeRef $ unLangFiniteSetRef $ contraRangeLift meet2 val
+        pkSub :: Model (ContextUpdate baseupdate (FiniteSetUpdate EA))
+        pkSub = contextModels pinaforeBase rows
+        readSub :: Model (ConstWholeUpdate EA) -> View A
+        readSub sub =
+            viewRunResource sub $ \asub -> do
+                ea <- aModelRead asub ReadWhole
+                return $ meet2 ea
+        onSelect :: Model (ConstWholeUpdate EA) -> View ()
+        onSelect osub = do
+            a <- readSub osub
+            runPinaforeAction $ void $ onDoubleClick a
+        getColumn ::
+               (LangRef '( BottomType, Text), A -> LangRef '( BottomType, Text)) -> KeyColumn (ConstWholeUpdate EA)
+        getColumn (nameRef, getCellRef) = let
+            showCell :: Know Text -> (Text, TableCellProps)
+            showCell (Known s) = (s, plainTableCellProps)
+            showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
+            nameOpenSub :: Model (ROWUpdate Text)
+            nameOpenSub = pinaforeRefOpenModel $ eaMapSemiReadOnly clearText $ langRefToReadOnlyValue nameRef
+            getCellSub :: Model (ConstWholeUpdate EA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
+            getCellSub osub = do
+                a <- cvLiftView $ readSub osub
+                return $
+                    pinaforeRefOpenModel $
+                    eaMapSemiReadOnly (funcChangeLens showCell) $ langRefToReadOnlyValue $ getCellRef a
+            in readOnlyKeyColumn nameOpenSub getCellSub
+    colSub :: Model (ContextUpdate baseupdate (OrderedListUpdate [EA] (ConstWholeUpdate EA))) <-
+        cvFloatMapModel (contextOrderedSetLens uo) pkSub
+    let
+        olsub :: Model (OrderedListUpdate [EA] (ConstWholeUpdate EA))
+        olsub = mapModel (tupleChangeLens SelectContent) colSub
+        tsn :: SelectNotify (Model (ConstWholeUpdate EA))
+        tsn = contramap readSub $ viewLiftSelectNotify sn
+    tableUISpec (fmap getColumn cols) olsub onSelect tsn
 
 type PickerType = Know EA
 
@@ -142,22 +139,20 @@ uiLabel :: PinaforeImmutableRef Text -> CVUISpec
 uiLabel text =
     labelUISpec $ pinaforeRefOpenModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyValue text
 
-uiDynamic :: PinaforeImmutableRef (LangUI A) -> LangUI A
-uiDynamic uiref =
-    MkLangUI $ \sn -> let
-        getSpec :: Know (LangUI A) -> CVUISpec
-        getSpec Unknown = nullUISpec
-        getSpec (Known (MkLangUI pui)) = pui sn
-        in switchUISpec $ pinaforeRefOpenModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyValue uiref
+uiDynamic :: PinaforeImmutableRef LangUI -> LangUI
+uiDynamic uiref = let
+    getSpec :: Know LangUI -> CVUISpec
+    getSpec Unknown = nullUISpec
+    getSpec (Known pui) = pui
+    in switchUISpec $ pinaforeRefOpenModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyValue uiref
 
 openWindow ::
        (?pinafore :: PinaforeContext baseupdate)
     => PinaforeImmutableRef Text
-    -> (PinaforeAction A -> PinaforeImmutableRef MenuBar)
-    -> LangUI A
+    -> PinaforeImmutableRef MenuBar
+    -> LangUI
     -> PinaforeAction PinaforeWindow
-openWindow title getmbar (MkLangUI pui) = do
-    (sn, getsel) <- liftIO makeRefSelectNotify
+openWindow title mbar wsContent = do
     mfix $ \w ->
         pinaforeNewWindow $ let
             wsCloseBoxAction :: View ()
@@ -166,27 +161,8 @@ openWindow title getmbar (MkLangUI pui) = do
             wsTitle = pinaforeRefOpenModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyValue title
             wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
             wsMenuBar =
-                Just $
-                pinaforeRefOpenModel $
-                eaMapReadOnlyWhole (fromKnow mempty) $
-                immutableRefToReadOnlyValue $
-                getmbar $ do
-                    ma <- viewPinaforeAction getsel
-                    pinaforeActionKnow $ maybeToKnow ma
-            wsContent :: CVUISpec
-            wsContent = pui sn
+                Just $ pinaforeRefOpenModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyValue mbar
             in MkWindowSpec {..}
-
-uiWithSelection :: (PinaforeAction A -> LangUI A) -> LangUI A
-uiWithSelection f =
-    MkLangUI $ \seln2 -> do
-        (seln1, getsel) <- liftIO makeRefSelectNotify
-        let
-            pa :: PinaforeAction A
-            pa = do
-                ma <- viewPinaforeAction getsel
-                pinaforeActionKnow $ maybeToKnow ma
-        unLangUI (f pa) (seln1 <> seln2)
 
 uiTextArea :: PinaforeRef (WholeUpdate (Know Text)) -> CVUISpec
 uiTextArea val =
@@ -220,8 +196,8 @@ menuAction label maccelStr raction = let
         interpretAccelerator $ unpack accelStr
     in ActionMenuEntry label maccel $ pinaforeRefOpenModel $ actionRef raction
 
-uiScrolled :: LangUI A -> LangUI A
-uiScrolled (MkLangUI lspec) = MkLangUI $ \sn -> scrolledUISpec $ lspec sn
+uiScrolled :: LangUI -> LangUI
+uiScrolled = scrolledUISpec
 
 uiUnitCheckBox :: PinaforeImmutableRef Text -> PinaforeRef (WholeUpdate (Know ())) -> CVUISpec
 uiUnitCheckBox name val =
@@ -236,28 +212,60 @@ uiCheckBox name val =
 uiTextEntry :: PinaforeRef (WholeUpdate (Know Text)) -> CVUISpec
 uiTextEntry val = textEntryUISpec $ pinaforeRefOpenModel $ eaMap (unknownValueChangeLens mempty) $ val
 
-uiIgnore :: LangUI TopType -> LangUI BottomType
-uiIgnore (MkLangUI lspec) = MkLangUI $ \_ -> lspec mempty
+uiHorizontal :: [(LangUI, Bool)] -> LangUI
+uiHorizontal = horizontalUISpec
 
-uiHorizontal :: [(LangUI A, Bool)] -> LangUI A
-uiHorizontal items = MkLangUI $ \sn -> horizontalUISpec $ fmap (\(MkLangUI pui, e) -> (pui sn, e)) items
+uiVertical :: [(LangUI, Bool)] -> LangUI
+uiVertical = verticalUISpec
 
-uiVertical :: [(LangUI A, Bool)] -> LangUI A
-uiVertical items = MkLangUI $ \sn -> verticalUISpec $ fmap (\(MkLangUI pui, e) -> (pui sn, e)) items
+uiPages :: [(LangUI, LangUI)] -> LangUI
+uiPages = pagesUISpec
 
-uiPages :: [(LangUI TopType, LangUI A)] -> LangUI A
-uiPages items = MkLangUI $ \sn -> pagesUISpec $ fmap (\(MkLangUI lpui, MkLangUI ppui) -> (lpui mempty, ppui sn)) items
+noNotifier :: LangNotifier TopType
+noNotifier = mempty
+
+notifiers :: [LangNotifier A] -> LangNotifier A
+notifiers = mconcat
+
+mapNotifier :: (B -> A) -> LangNotifier A -> LangNotifier B
+mapNotifier = contramap
+
+makeNotifier :: PinaforeAction (LangNotifier A, PinaforeAction A)
+makeNotifier = do
+    (sn, getsel) <- liftIO makeRefSelectNotify
+    let
+        action = do
+            ma <- viewPinaforeAction getsel
+            pinaforeActionKnow $ maybeToKnow ma
+    return (sn, action)
+
+notify :: LangNotifier A -> Maybe A -> PinaforeAction ()
+notify notifier ma = viewPinaforeAction $ runSelectNotify notifier $ return ma
+
+uiRun :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction LangUI -> LangUI
+uiRun pui = do
+    kui <- cvLiftView $ unliftPinaforeAction pui
+    case kui of
+        Known ui -> ui
+        Unknown -> nullUISpec
 
 ui_predefinitions ::
        forall baseupdate. (HasPinaforeEntityUpdate baseupdate, HasPinaforeFileUpdate baseupdate)
     => [DocTreeEntry (BindDoc baseupdate)]
 ui_predefinitions =
     [ docTreeEntry
+          "Notifiers"
+          "Notifiers are used to track selections in some UI elements."
+          [ mkValEntry "noNotifier" "No notifier, same as `notifiers []`." noNotifier
+          , mkValEntry "notifiers" "Join notifiers." notifiers
+          , mkValEntry "mapNotifier" "Map notifier." mapNotifier
+          , mkValEntry "makeNotifier" "Create a notifier." makeNotifier
+          , mkValEntry "notify" "Notify a notifier." notify
+          ]
+    , docTreeEntry
           "UI"
           "A user interface is something that goes inside a window."
-          [ mkValEntry "uiWithSelection" "User interface with selection." uiWithSelection
-          , mkValEntry "uiMap" "Map user interface selection" uiMap
-          , mkValEntry "uiIgnore" "Ignore user interface selection" uiIgnore
+          [ mkValEntry "uiRun" "UI that runs an Action first." uiRun
           , mkValEntry "uiBlank" "Blank user-interface" nullUISpec
           , mkValEntry "uiUnitCheckBox" "(TBD)" uiUnitCheckBox
           , mkValEntry "uiCheckBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox

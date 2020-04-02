@@ -38,27 +38,22 @@ data SyntaxVariance
     = CoSyntaxVariance
     | ContraSyntaxVariance
 
+data SyntaxGroundType
+    = ConstSyntaxGroundType Name
+    | FunctionSyntaxGroundType
+    | MorphismSyntaxGroundType
+    | ListSyntaxGroundType
+    | PairSyntaxGroundType
+    | UnitSyntaxGroundType
+
+data SyntaxTypeArgument
+    = SimpleSyntaxTypeArgument SyntaxType
+    | RangeSyntaxTypeArgument [(Maybe SyntaxVariance, SyntaxType)]
+
 data SyntaxType
-    = ConstSyntaxType Name
+    = SingleSyntaxType SyntaxGroundType
+                       [SyntaxTypeArgument]
     | VarSyntaxType Name
-    | UnitSyntaxType
-    | ActionSyntaxType SyntaxType
-    | OrderSyntaxType SyntaxType
-    | RefSyntaxType SyntaxType
-    | UISyntaxType SyntaxType
-    | SetRefSyntaxType SyntaxType
-    | FiniteSetRefSyntaxType SyntaxType
-    | ListSyntaxType SyntaxType
-    | MorphismSyntaxType SyntaxType
-                         SyntaxType
-    | FunctionSyntaxType SyntaxType
-                         SyntaxType
-    | MaybeSyntaxType SyntaxType
-    | EitherSyntaxType SyntaxType
-                       SyntaxType
-    | PairSyntaxType SyntaxType
-                     SyntaxType
-    | RangeSyntaxType [(Maybe SyntaxVariance, SyntaxType)]
     | OrSyntaxType SyntaxType
                    SyntaxType
     | AndSyntaxType SyntaxType

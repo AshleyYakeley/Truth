@@ -2,7 +2,7 @@ let
 
 emptywindow :: Action ();
 emptywindow = do
-    openWindow {"Empty"} (\_ -> {[]}) uiBlank;
+    openWindow {"Empty"} {[]} uiBlank;
     return ();
     end;
 
@@ -10,6 +10,6 @@ newpoint :: Action ();
 newpoint = do s <- newMemFiniteSet; newEntity s; return (); end;
 
 in do
-    openWindow {"Test"} (\_ -> {[]}) $ uiButton {"Button"} {newpoint >> emptywindow};
+    openWindow {"Test"} {[]} $ uiButton {"Button"} {newpoint >> emptywindow};
     return ();
     end

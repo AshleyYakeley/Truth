@@ -87,8 +87,8 @@ Each constructor has a name, a list of zero or more types (each a subtype of `En
 
 ```pinafore
 closedtype Patient =
-    LivingPatient Person Date !82572d41-1b36-477e-9252-41610df9d77b |
-    DeadPatient Person Date Date !2b678551-2e9d-403a-993e-b61804504809;
+    LivingPatient Person Date !"Patient.LivingPatient" |
+    DeadPatient Person Date Date !"Patient.DeadPatient";
 
 patientPerson :: Patient -> Person;
 patientPerson patient =
@@ -141,13 +141,19 @@ Runners of an action that stops, such as the main program, or the handler of a b
 
 An order on a type.
 
+## Notifiers
+
+`Notifier a`  
+(`a` is contravariant)
+
+Certain user interface elements have a concept of _selection_.
+When given a notifier, it will be notified every time the selection changes.
+
 ## User Interfaces
 
-`UI a`  
-(`a` is covariant)
+`UI`  
 
 The contents of a user interface window. Can be composed in various ways.
-The type parameter is the type of the selection.
 
 ## References
 

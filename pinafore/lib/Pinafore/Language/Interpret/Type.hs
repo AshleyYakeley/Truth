@@ -66,139 +66,14 @@ interpretTypeM (AndSyntaxType st1 st2) =
             t2 <- interpretTypeM st2
             return $ toMPolar (<>) t1 t2
         MBothType -> throwError $ InterpretTypeExprBadJoinMeetError Positive
-interpretTypeM (MorphismSyntaxType st1 st2) = do
-    at1 <- interpretTypeRange st1
-    at2 <- interpretTypeRange st2
-    return $
-        toMPolar
-            (\(MkAnyInKind t1) (MkAnyInKind t2) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType MorphismPinaforeGroundType $
-                 ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments)
-            at1
-            at2
-interpretTypeM (FunctionSyntaxType st1 st2) = do
-    at1 <- invertMPolarity @mpolarity $ interpretTypeM st1
-    at2 <- interpretTypeM st2
-    return $
-        toMPolar
-            (\(MkAnyW t1) (MkAnyW t2) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType FuncPinaforeGroundType $
-                 ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments)
-            (MkInvertMPolarW at1)
-            at2
-interpretTypeM (MaybeSyntaxType st1) = do
-    at1 <- interpretTypeM st1
-    return $
-        toMPolar
-            (\(MkAnyW t1) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType
-                     (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType) $
-                 ConsDolanArguments t1 NilDolanArguments)
-            at1
-interpretTypeM (ListSyntaxType st1) = do
-    at1 <- interpretTypeM st1
-    return $
-        toMPolar
-            (\(MkAnyW t1) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType
-                     (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType) $
-                 ConsDolanArguments t1 NilDolanArguments)
-            at1
-interpretTypeM (EitherSyntaxType st1 st2) = do
-    at1 <- interpretTypeM st1
-    at2 <- interpretTypeM st2
-    return $
-        toMPolar
-            (\(MkAnyW t1) (MkAnyW t2) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType
-                     (EntityPinaforeGroundType
-                          (ConsListType Refl $ ConsListType Refl NilListType)
-                          EitherEntityGroundType) $
-                 ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments)
-            at1
-            at2
-interpretTypeM (PairSyntaxType st1 st2) = do
-    at1 <- interpretTypeM st1
-    at2 <- interpretTypeM st2
-    return $
-        toMPolar
-            (\(MkAnyW t1) (MkAnyW t2) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType
-                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType) $
-                 ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments)
-            at1
-            at2
-interpretTypeM (ActionSyntaxType st1) = do
-    at1 <- interpretTypeM st1
-    return $
-        toMPolar
-            (\(MkAnyW t1) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType ActionPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
-            at1
-interpretTypeM (UISyntaxType st1) = do
-    at1 <- interpretTypeM st1
-    return $
-        toMPolar
-            (\(MkAnyW t1) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType UserInterfacePinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
-            at1
-interpretTypeM (RefSyntaxType st1) = do
-    at1 <- interpretTypeRange st1
-    return $
-        toMPolar
-            (\(MkAnyInKind t1) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType RefPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
-            at1
-interpretTypeM (SetRefSyntaxType st1) = do
-    at1 <- invertMPolarity @mpolarity $ interpretTypeM st1
-    return $
-        toMPolar
-            (\(MkAnyW t1) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType SetRefPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
-            (MkInvertMPolarW at1)
-interpretTypeM (FiniteSetRefSyntaxType st1) = do
-    at1 <- interpretTypeRange st1
-    return $
-        toMPolar
-            (\(MkAnyInKind t1) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType FiniteSetRefPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
-            at1
-interpretTypeM (OrderSyntaxType st1) = do
-    at1 <- invertMPolarity @mpolarity $ interpretTypeM st1
-    return $
-        toMPolar
-            (\(MkAnyW t1) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
-            (MkInvertMPolarW at1)
+interpretTypeM (SingleSyntaxType sgt sargs) = do
+    MkPinaforeGroundTypeM dvt pgt <- interpretGroundTypeConst @baseupdate @mpolarity sgt
+    forMPolarW pgt $ \(MkAnyW gt) -> do
+        aargs <- interpretArgs sgt dvt sargs
+        case aargs of
+            MkAnyW args -> return $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType gt args
 interpretTypeM (VarSyntaxType name) =
     nameToSymbolType name $ \t -> return $ toMPolar $ MkAnyW $ singlePinaforeType $ VarPinaforeSingularType t
-interpretTypeM UnitSyntaxType = return $ toMPolar $ MkAnyW $ literalPinaforeType UnitLiteralType
-interpretTypeM (ConstSyntaxType name) = interpretTypeConst name
-interpretTypeM (RangeSyntaxType _) = throwError InterpretTypeRangeInTypeError
 
 interpretTypeRangeFromType ::
        forall baseupdate mpolarity. Is MPolarityType mpolarity
@@ -215,14 +90,14 @@ interpretTypeRangeFromType st = do
                 (MkAnyW tp, MkAnyW tq) -> MkAnyInKind $ MkRangeType tp tq
     return $ toMPolar $ ff t
 
-interpretTypeRange ::
+interpretTypeArgument ::
        forall baseupdate mpolarity. Is MPolarityType mpolarity
-    => SyntaxType
+    => SyntaxTypeArgument
     -> PinaforeSourceScoped baseupdate (PinaforeRangeType3 baseupdate mpolarity)
-interpretTypeRange (RangeSyntaxType ss) = do
+interpretTypeArgument (SimpleSyntaxTypeArgument st) = interpretTypeRangeFromType st
+interpretTypeArgument (RangeSyntaxTypeArgument ss) = do
     tt <- for ss interpretTypeRangeItem
     return $ mconcat tt
-interpretTypeRange st = interpretTypeRangeFromType st
 
 interpretTypeRangeItem ::
        forall baseupdate mpolarity. Is MPolarityType mpolarity
@@ -236,48 +111,125 @@ interpretTypeRangeItem (Just ContraSyntaxVariance, st) = do
     return $ toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkRangeType tp NilPinaforeType) (MkInvertMPolarW atp)
 interpretTypeRangeItem (Nothing, st) = interpretTypeRangeFromType st
 
-interpretTypeConst ::
+groundTypeText :: SyntaxGroundType -> Text
+groundTypeText (ConstSyntaxGroundType n) = unName n
+groundTypeText FunctionSyntaxGroundType = "->"
+groundTypeText MorphismSyntaxGroundType = "~>"
+groundTypeText ListSyntaxGroundType = "[]"
+groundTypeText PairSyntaxGroundType = "(,)"
+groundTypeText UnitSyntaxGroundType = "()"
+
+data PinaforeGroundTypeM baseupdate mpolarity where
+    MkPinaforeGroundTypeM
+        :: DolanVarianceType dv
+        -> MPolarW (PinaforeGroundType baseupdate dv) mpolarity
+        -> PinaforeGroundTypeM baseupdate mpolarity
+
+interpretArgs ::
+       forall baseupdate polarity dv (gt :: DolanVarianceKind dv). Is PolarityType polarity
+    => SyntaxGroundType
+    -> DolanVarianceType dv
+    -> [SyntaxTypeArgument]
+    -> PinaforeSourceScoped baseupdate (AnyW (DolanArguments dv (PinaforeType baseupdate) gt polarity))
+interpretArgs _ NilListType [] = return $ MkAnyW NilDolanArguments
+interpretArgs sgt NilListType (_:_) = throwError $ InterpretTypeOverApplyError $ groundTypeText sgt
+interpretArgs sgt (ConsListType _ _) [] = throwError $ InterpretTypeUnderApplyError $ groundTypeText sgt
+interpretArgs sgt (ConsListType CovarianceType dv) (SimpleSyntaxTypeArgument st:stt) = do
+    at <- isMPolarity @polarity $ interpretTypeM st
+    case fromMPolarSingle at of
+        MkAnyW t -> do
+            aargs <- interpretArgs sgt dv stt
+            case aargs of
+                MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
+interpretArgs sgt (ConsListType CovarianceType _) (RangeSyntaxTypeArgument _:_) =
+    throwError $ InterpretTypeRangeApplyError $ groundTypeText sgt
+interpretArgs sgt (ConsListType ContravarianceType dv) (SimpleSyntaxTypeArgument st:stt) =
+    invertPolarity @polarity $ do
+        at <- isMPolarity @(InvertPolarity polarity) $ interpretTypeM st
+        case fromMPolarSingle at of
+            MkAnyW t -> do
+                aargs <- interpretArgs sgt dv stt
+                case aargs of
+                    MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
+interpretArgs sgt (ConsListType ContravarianceType _) (RangeSyntaxTypeArgument _:_) =
+    throwError $ InterpretTypeRangeApplyError $ groundTypeText sgt
+interpretArgs sgt (ConsListType RangevarianceType dv) (st:stt) = do
+    at <- isMPolarity @polarity $ interpretTypeArgument st
+    case fromMPolarSingle at of
+        MkAnyInKind t -> do
+            aargs <- interpretArgs sgt dv stt
+            case aargs of
+                MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
+
+interpretGroundTypeConst ::
        forall baseupdate mpolarity. Is MPolarityType mpolarity
-    => Name
-    -> PinaforeSourceScoped baseupdate (PinaforeTypeM baseupdate mpolarity)
-interpretTypeConst "Window" =
+    => SyntaxGroundType
+    -> PinaforeSourceScoped baseupdate (PinaforeGroundTypeM baseupdate mpolarity)
+interpretGroundTypeConst UnitSyntaxGroundType =
     return $
-    toMPolar $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
-interpretTypeConst "MenuItem" =
+    MkPinaforeGroundTypeM representative $
+    toMPolar $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType UnitLiteralType
+interpretGroundTypeConst FunctionSyntaxGroundType =
+    return $ MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW FuncPinaforeGroundType
+interpretGroundTypeConst MorphismSyntaxGroundType =
+    return $ MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW MorphismPinaforeGroundType
+interpretGroundTypeConst ListSyntaxGroundType =
     return $
-    toMPolar $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType MenuItemPinaforeGroundType NilDolanArguments
-interpretTypeConst "Entity" =
+    MkPinaforeGroundTypeM representative $
+    toMPolar $ MkAnyW $ EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType
+interpretGroundTypeConst PairSyntaxGroundType =
     return $
+    MkPinaforeGroundTypeM representative $
     toMPolar $
-    MkAnyW $
-    singlePinaforeType $
-    GroundPinaforeSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
-interpretTypeConst "NewEntity" =
+    MkAnyW $ EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "Maybe") =
     return $
+    MkPinaforeGroundTypeM representative $
+    toMPolar $ MkAnyW $ EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "Either") =
+    return $
+    MkPinaforeGroundTypeM representative $
     toMPolar $
-    MkAnyW $
-    singlePinaforeType $
-    GroundPinaforeSingularType (EntityPinaforeGroundType NilListType NewEntityGroundType) NilDolanArguments
-interpretTypeConst n
-    | Just (MkAnyW lt) <- nameToLiteralType n = return $ toMPolar $ MkAnyW $ literalPinaforeType lt
-interpretTypeConst n = do
+    MkAnyW $ EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "Ref") =
+    return $ MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW RefPinaforeGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "SetRef") =
+    return $ MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW SetRefPinaforeGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "FiniteSetRef") =
+    return $ MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW FiniteSetRefPinaforeGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "Action") =
+    return $ MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW ActionPinaforeGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "Order") =
+    return $ MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW OrderPinaforeGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "UI") =
+    return $ MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW UserInterfacePinaforeGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "Notifier") =
+    return $ MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW NotifierPinaforeGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "Window") =
+    return $ MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW WindowPinaforeGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "MenuItem") =
+    return $ MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW MenuItemPinaforeGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "Entity") =
+    return $
+    MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW $ EntityPinaforeGroundType NilListType TopEntityGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "NewEntity") =
+    return $
+    MkPinaforeGroundTypeM representative $ toMPolar $ MkAnyW $ EntityPinaforeGroundType NilListType NewEntityGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType n)
+    | Just (MkAnyW lt) <- nameToLiteralType n =
+        return $
+        MkPinaforeGroundTypeM representative $
+        toMPolar $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType lt
+interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     (tid, nt) <- lookupNamedType n
     case nt of
         OpenEntityNamedType ->
             valueToWitness tid $ \sw ->
                 return $
-                toMPolar $
-                MkAnyW $
-                singlePinaforeType $
-                GroundPinaforeSingularType
-                    (EntityPinaforeGroundType NilListType $ OpenEntityGroundType n sw)
-                    NilDolanArguments
+                MkPinaforeGroundTypeM representative $
+                toMPolar $ MkAnyW $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType n sw
         ClosedEntityNamedType (MkAnyW ct) ->
             valueToWitness tid $ \sw ->
                 return $
-                toMPolar $
-                MkAnyW $
-                singlePinaforeType $
-                GroundPinaforeSingularType
-                    (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n sw ct)
-                    NilDolanArguments
+                MkPinaforeGroundTypeM representative $
+                toMPolar $ MkAnyW $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n sw ct

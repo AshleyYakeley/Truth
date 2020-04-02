@@ -2,7 +2,7 @@
 
 let
 
-std_window :: Ref +Text -> (Action a -> [MenuItem]) -> UI a -> Action Window;
+std_window :: Ref +Text -> [MenuItem] -> UI -> Action Window;
 std_window title moremenus contents = fixAction $ \window -> let
     basemenus :: [MenuItem];
     basemenus =
@@ -19,21 +19,24 @@ std_window title moremenus contents = fixAction $ \window -> let
                 menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ];
-    menus getsel = {basemenus ++ moremenus getsel};
+    menus = {basemenus ++ moremenus};
     in openWindow title menus $ uiScrolled contents;
 
-selection_window :: (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> ((item | NewEntity) -> Action Any) -> (set -> UI item) -> Action Window;
-selection_window (inames,inamep) iset iopen inew iui = let
-    moremenus getsel =
+selection_window :: (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> ((item | NewEntity) -> Action Any) -> (set -> Notifier item -> UI) -> Action Window;
+selection_window (inames,inamep) iset iopen inew iui = do
+    (notifier,getsel) <- makeNotifier;
+    let
+    moremenus =
         [
             menuSubmenu "Selection"
             [
-                menuAction ("New " <> inames) (Just "Ctrl+K") {do i <- newEntity iset; inew i; iopen i; end},
+                menuAction ("New " <> inames) (Just "Ctrl+K") {newEntity iset >>= iopen},
                 menuAction "View" Nothing {getsel >>= iopen},
                 menuAction "Delete" Nothing {getsel >>= \p -> iset -= p}
             ]
         ];
-    in std_window {inamep} moremenus (iui iset);
+    in std_window {inamep} moremenus (iui iset notifier);
+    end;
 
 closedtype EventTime
     = EventTimeDay Day !"EventTimeDay" # all-day event
@@ -57,7 +60,7 @@ setEventTimeDay d et = Just $ case et of
     _ -> EventTimeDay d;
     end;
 
-ui_eventTime :: Ref EventTime -> UI None;
+ui_eventTime :: Ref EventTime -> UI;
 ui_eventTime r = uiCalendar $ lensMapRef eventTimeDay setEventTimeDay r;
 
 # for ordering
@@ -92,11 +95,11 @@ eventList = members eventDataOrder eventData;
 overviewRef :: Ref +Text;
 overviewRef = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %eventList};
 
-overviewPage :: (UI None,UI None);
+overviewPage :: (UI,UI);
 overviewPage = (uiLabel {"Overview"},uiLabel overviewRef);
 
-tablePage :: (UI None,UI None);
-tablePage = let
+tablePage :: Notifier Event -> (UI,UI);
+tablePage notifier = let
     columns :: [(Ref +Text, Event -> Ref Text)];
     columns = let
         timeColumn :: (Ref +Text, Event -> Ref Text);
@@ -104,10 +107,10 @@ tablePage = let
         nameColumn :: (Ref +Text, Event -> Ref Text);
         nameColumn = ({"Name"},\e -> eventName !$ {e});
         in [timeColumn,nameColumn];
-    in (uiLabel {"Events"},uiIgnore $ uiTable columns eventOrder events eventWindow);
+    in (uiLabel {"Events"}, uiTable columns eventOrder events eventWindow notifier);
 
 eventWindow :: Event -> Action Window;
-eventWindow evt = std_window (eventName !$ {evt}) (\_ -> []) $ uiVertical
+eventWindow evt = std_window (eventName !$ {evt}) [] $ uiVertical
     [
         (ui_eventTime $ eventTime !$ {evt},False),
         (uiTextEntry $ eventName !$ {evt},True)
@@ -127,7 +130,13 @@ getCurrentDay = do
     end;
 
 eventsWindow :: Action Window;
-eventsWindow = selection_window ("Event","Events") events eventWindow (\i -> do day <- getCurrentDay; eventTime !$ {i} := EventTimeDay day; end) $ \_ -> uiPages [overviewPage, tablePage];
+eventsWindow = let
+    inew i = do
+        day <- getCurrentDay;
+        eventTime !$ {i} := EventTimeDay day;
+        end;
+    iui _ notifier = uiPages [overviewPage, tablePage notifier];
+    in selection_window ("Event","Events") events eventWindow inew iui;
 
 in do
     _ <- eventsWindow;
