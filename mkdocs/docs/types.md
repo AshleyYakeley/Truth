@@ -25,7 +25,7 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 `Duration <= Literal`
 
-`Day <= Literal`
+`Date <= Literal`
 
 `TimeOfDay <= Literal`
 

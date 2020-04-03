@@ -528,6 +528,6 @@ testEntity =
         , tgroup
               "interpret"
               [ pointTest "do r <- newMemRef; interpretIntegerAsText r := \"37\"; testeq {37} r; end"
-              , pointTest "do r <- newMemRef; interpretDayAsText r := \"2015-08-12\"; testeq {Day 2015 08 12} r; end"
+              , pointTest "do r <- newMemRef; interpretDateAsText r := \"2015-08-12\"; testeq {Date 2015 08 12} r; end"
               ]
         ]

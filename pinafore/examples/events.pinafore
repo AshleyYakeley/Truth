@@ -39,34 +39,34 @@ selection_window (inames,inamep) iset iopen inew iui = do
     end;
 
 closedtype EventTime
-    = EventTimeDay Day !"EventTimeDay" # all-day event
+    = EventTimeDate Date !"EventTimeDate" # all-day event
     | EventTimeTime LocalTime !"EventTimeTime"; # event at a time
 
 showEventTime :: EventTime -> Text;
 showEventTime et = case et of
-    EventTimeDay d -> toText d;
+    EventTimeDate d -> toText d;
     EventTimeTime t -> toText t;
     end;
 
-eventTimeDay :: EventTime -> Day;
-eventTimeDay et = case et of
-    EventTimeDay d -> d;
+eventTimeDate :: EventTime -> Date;
+eventTimeDate et = case et of
+    EventTimeDate d -> d;
     EventTimeTime (LocalTime d _) -> d
     end;
 
-setEventTimeDay :: Day -> Maybe EventTime -> Maybe EventTime;
-setEventTimeDay d et = Just $ case et of
+setEventTimeDate :: Date -> Maybe EventTime -> Maybe EventTime;
+setEventTimeDate d et = Just $ case et of
     Just (EventTimeTime (LocalTime _ t)) -> EventTimeTime (LocalTime d t);
-    _ -> EventTimeDay d;
+    _ -> EventTimeDate d;
     end;
 
 ui_eventTime :: Ref EventTime -> UI;
-ui_eventTime r = uiCalendar $ lensMapRef eventTimeDay setEventTimeDay r;
+ui_eventTime r = uiCalendar $ lensMapRef eventTimeDate setEventTimeDate r;
 
 # for ordering
 eventTimeTime :: EventTime -> LocalTime;
 eventTimeTime et = case et of
-    EventTimeDay d -> LocalTime d midnight;
+    EventTimeDate d -> LocalTime d midnight;
     EventTimeTime t -> t
     end;
 
@@ -123,7 +123,7 @@ getLocalTime = do
     return $ timeToLocal tz t;
     end;
 
-getCurrentDay :: Action Day;
+getCurrentDay :: Action Date;
 getCurrentDay = do
     LocalTime d _ <- getLocalTime;
     return d;
@@ -133,7 +133,7 @@ eventsWindow :: Action Window;
 eventsWindow = let
     inew i = do
         day <- getCurrentDay;
-        eventTime !$ {i} := EventTimeDay day;
+        eventTime !$ {i} := EventTimeDate day;
         end;
     iui _ notifier = uiPages [overviewPage, tablePage notifier];
     in selection_window ("Event","Events") events eventWindow inew iui;

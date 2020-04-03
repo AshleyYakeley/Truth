@@ -6,8 +6,8 @@ openWindow {"Date"} {[]} $ uiVertical
     [
         (uiTextEntry tref, False),
         (uiTextEntry tref, False),
-        (uiTextEntry $ interpretDayAsText dref, False),
-        (uiTextEntry $ interpretDayAsText dref, False),
+        (uiTextEntry $ interpretDateAsText dref, False),
+        (uiTextEntry $ interpretDateAsText dref, False),
         (uiTextEntry $ interpretIntegerAsText iref, False),
         (uiTextEntry $ interpretIntegerAsText iref, False)
     ];

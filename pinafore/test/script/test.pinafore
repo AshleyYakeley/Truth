@@ -183,9 +183,9 @@ window_start :: Action Window;
 window_start = std_window {"Pinafore"} $ uiVertical
 [
     (uiLabel {"UTC time: " <> toText %now},False),
-    (uiLabel {"UTC day: " <> toText %utcDay},False),
+    (uiLabel {"UTC date: " <> toText %utcDate},False),
     (uiLabel {"Local time: " <> toText %localNow},False),
-    (uiLabel {"Local day: " <> toText %today},False),
+    (uiLabel {"Local date: " <> toText %today},False),
     (uiLabel {"Time zone offset minutes: " <> toText %timeZone},False),
     (uiButton {"People"} {window_people},False),
     (uiButton {"Calculated Form"} {window_calc},False),

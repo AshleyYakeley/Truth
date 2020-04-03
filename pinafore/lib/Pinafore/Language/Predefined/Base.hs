@@ -294,18 +294,18 @@ base_predefinitions =
                 , docTreeEntry
                       "Calendar"
                       ""
-                      [ mkValPatEntry "Day" "Construct a Day from year, month, day." fromGregorian $ \day -> let
+                      [ mkValPatEntry "Date" "Construct a Date from year, month, day." fromGregorian $ \day -> let
                             (y, m, d) = toGregorian day
                             in Just (y, (m, (d, ())))
                       , mkSupertypeEntry "id" "Every day is a literal." $ toLiteral @Day
-                      , mkValEntry "parseDay" "Parse text as a day." $ parseLiteral @Day
-                      , mkValEntry "interpretDayAsText" "Interpret a day reference as text." $ interpretAsText @Day
-                      , mkValEntry "dayToModifiedJulian" "Convert to MJD." toModifiedJulianDay
-                      , mkValEntry "modifiedJulianToDay" "Convert from MJD." ModifiedJulianDay
-                      , mkValEntry "addDays" "Add count to days." addDays
-                      , mkValEntry "diffDays" "Difference of days." diffDays
-                      , mkValEntry "utcDay" "The current UTC day." $ fmap utctDay $ now @baseupdate
-                      , mkValEntry "today" "The current local day." $ today @baseupdate
+                      , mkValEntry "parseDate" "Parse text as a day." $ parseLiteral @Day
+                      , mkValEntry "interpretDateAsText" "Interpret a date reference as text." $ interpretAsText @Day
+                      , mkValEntry "dateToModifiedJulian" "Convert to MJD." toModifiedJulianDay
+                      , mkValEntry "modifiedJulianToDate" "Convert from MJD." ModifiedJulianDay
+                      , mkValEntry "addDays" "Add count to days to date." addDays
+                      , mkValEntry "diffDays" "Difference of days between dates." diffDays
+                      , mkValEntry "utcDate" "The current UTC date." $ fmap utctDay $ now @baseupdate
+                      , mkValEntry "today" "The current local date." $ today @baseupdate
                       ]
                 , docTreeEntry
                       "Time of Day"
@@ -625,7 +625,7 @@ base_predefinitions =
           , mkValEntry "numerical" "Numercal order." $ ordOrder @baseupdate @Number
           , mkValEntry "chronological" "Chronological order." $ ordOrder @baseupdate @UTCTime
           , mkValEntry "durational" "Durational order." $ ordOrder @baseupdate @NominalDiffTime
-          , mkValEntry "calendrical" "Day order." $ ordOrder @baseupdate @Day
+          , mkValEntry "calendrical" "Date order." $ ordOrder @baseupdate @Day
           , mkValEntry "horological" "Time of day order." $ ordOrder @baseupdate @TimeOfDay
           , mkValEntry "localChronological" "Local time order." $ ordOrder @baseupdate @LocalTime
           , mkValEntry "noOrder" "No order, same as `orders []`." $ noOrder @baseupdate
