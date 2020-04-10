@@ -596,7 +596,7 @@ base_predefinitions =
           , mkSupertypeEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
             pairLangMorphism @baseupdate @A @A @B @B @C @C
           , mkValEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
-            eitherLangMorphism @baseupdate @AP @AQ @BP @BQ @C @C
+            eitherLangMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
           , mkSupertypeEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
             eitherLangMorphism @baseupdate @A @A @B @B @C @C
           , mkValEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @baseupdate @AP @AQ @BP @BQ
