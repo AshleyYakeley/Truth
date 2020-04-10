@@ -25,6 +25,9 @@ instance Eq a => Monoid (FiniteSet a) where
 instance Show a => Show (FiniteSet a) where
     show (MkFiniteSet aa) = show aa
 
+sumFiniteSet :: FiniteSet a -> FiniteSet b -> FiniteSet (Either a b)
+sumFiniteSet (MkFiniteSet aa) (MkFiniteSet bb) = MkFiniteSet $ fmap Left aa <> fmap Right bb
+
 type instance Element (FiniteSet a) = a
 
 instance Traversable FiniteSet where

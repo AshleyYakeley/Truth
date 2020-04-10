@@ -189,7 +189,7 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                     bta = biRangeAnyF (etan, entityToPositivePinaforeType eta)
                     btb = biRangeAnyF (etbn, entityToPositivePinaforeType etb)
                     in case (bta, btb, entityTypeEq eta, entityTypeEq etb) of
-                           (MkAnyF rta pra, MkAnyF rtb prb, Dict, Dict) ->
+                           (MkAnyF rta (MkRange praContra praCo), MkAnyF rtb (MkRange prbContra prbCo), Dict, Dict) ->
                                withSubrepresentative rangeTypeInKind rta $
                                withSubrepresentative rangeTypeInKind rtb $ let
                                    typef =
@@ -199,7 +199,11 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                                        ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
                                    morphism =
                                        propertyMorphism (entityAdapter eta) (entityAdapter etb) (MkPredicate anchor)
-                                   pinamorphism = MkLangMorphism pra prb morphism
+                                   pinamorphism =
+                                       MkLangMorphism $
+                                       cfmap3 (MkCatDual $ fromEnhanced praContra) $
+                                       cfmap2 (fromEnhanced praCo) $
+                                       cfmap1 (MkCatDual $ fromEnhanced prbContra) $ fmap (fromEnhanced prbCo) morphism
                                    anyval = MkAnyValue typef pinamorphism
                                    in return $ qConstExprAny anyval
 interpretExpression' spos (SEEntity st anchor) =

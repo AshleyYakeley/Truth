@@ -3,9 +3,16 @@ module Data.Shim.Range where
 import Data.Shim.JoinMeet
 import Shapes
 
+type family Contra (pq :: (Type, Type)) :: Type where
+    Contra '( p, q) = p
+
+type family Co (pq :: (Type, Type)) :: Type where
+    Co '( p, q) = q
+
 -- | For dealing with non-co/contravariance, see Dolan sec. 9.1
-data Range (shim :: Type -> Type -> Type) (t :: Type) (pq :: (Type, Type)) where
-    MkRange :: shim p t -> shim t q -> Range shim t '( p, q)
+data Range (shim :: Type -> Type -> Type) (t :: Type) (pq :: (Type, Type)) =
+    MkRange (shim (Contra pq) t)
+            (shim t (Co pq))
 
 rangeCo :: Range shim t '( p, q) -> shim t q
 rangeCo (MkRange _ tq) = tq

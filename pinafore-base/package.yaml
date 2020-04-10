@@ -26,6 +26,7 @@ library:
       - Pinafore.Base.SafeRational
       - Pinafore.Base.Number
       - Pinafore.Base.Literal
+      - Pinafore.Base.FunctionMorphism
       - Pinafore.Base.Morphism
       - Pinafore.Base.Ref
       - Pinafore.Base.Anchor

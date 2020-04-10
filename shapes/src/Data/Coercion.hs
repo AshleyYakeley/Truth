@@ -54,6 +54,9 @@ applyCoercion2 MkCoercion cab =
     case representationalCoercion @_ @_ @g cab of
         MkCoercion -> MkCoercion
 
+coerceCoercion :: (Coercible a1 a2, Coercible b1 b2) => Coercion a1 b1 -> Coercion a2 b2
+coerceCoercion c = MkCoercion . c . MkCoercion
+
 coerce' ::
        forall k (a :: k) (b :: k). (CoercibleKind k, InKind a, InKind b)
     => Coercible a b => KindFunction a b

@@ -81,7 +81,7 @@ langFiniteSetRefFunctionValue (MkLangFiniteSetRef tr set) =
 langFiniteSetRefMember :: forall a. LangFiniteSetRef '( a, TopType) -> a -> LangRef '( Bool, Bool)
 langFiniteSetRefMember (MkLangFiniteSetRef tr set) val = let
     tval = fromEnhanced (rangeContra tr) val
-    in MutableLangRef identityRange $ eaMap (wholeChangeLens knowMaybeLens . finiteSetChangeLens tval) set
+    in pinaforeRefToRef $ eaMap (wholeChangeLens knowMaybeLens . finiteSetChangeLens tval) set
 
 langFiniteSetRefSingle :: forall a. LangFiniteSetRef '( BottomType, MeetType Entity a) -> LangRef '( TopType, a)
 langFiniteSetRefSingle set =

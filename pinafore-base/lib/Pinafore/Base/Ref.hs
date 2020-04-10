@@ -1,5 +1,6 @@
 module Pinafore.Base.Ref where
 
+import Pinafore.Base.FunctionMorphism
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
@@ -79,8 +80,8 @@ newtype PinaforeRef update = MkPinaforeRef
     { unPinaforeRef :: Model update
     }
 
-pinaforeRefOpenModel :: PinaforeRef update -> Model update
-pinaforeRefOpenModel = unPinaforeRef
+pinaforeRefModel :: PinaforeRef update -> Model update
+pinaforeRefModel = unPinaforeRef
 
 instance EditApplicative PinaforeRef where
     eaPure subj = MkPinaforeRef $ constantModel subj
@@ -113,18 +114,18 @@ applyPinaforeFunction basesub m val =
     contextualisePinaforeRef basesub $ eaMap fromReadOnlyRejectingChangeLens val
 
 applyPinaforeLens ::
-       forall baseupdate a b.
+       forall baseupdate ap aq bp bq.
        Model baseupdate
-    -> PinaforeLensMorphism baseupdate a b
-    -> PinaforeRef (WholeUpdate (Know a))
-    -> PinaforeRef (WholeUpdate (Know b))
-applyPinaforeLens basesub pm val = eaMap (pmForward pm) $ contextualisePinaforeRef basesub val
+    -> PinaforeLensMorphism baseupdate ap aq bp bq
+    -> PinaforeRef (BiWholeUpdate (Know aq) (Know ap))
+    -> PinaforeRef (BiWholeUpdate (Know bp) (Know bq))
+applyPinaforeLens basesub pm val = eaMap (pinaforeLensMorphismChangeLens pm) $ contextualisePinaforeRef basesub val
 
 applyInversePinaforeLens ::
-       forall baseupdate a b. (Eq a, Eq b)
+       forall baseupdate a bp bq. (Eq a)
     => Model baseupdate
-    -> PinaforeLensMorphism baseupdate a b
-    -> PinaforeRef (WholeUpdate (Know b))
+    -> PinaforeLensMorphism baseupdate a a bq bp
+    -> PinaforeRef (BiWholeUpdate (Know bp) (Know bq))
     -> PinaforeRef (FiniteSetUpdate a)
 applyInversePinaforeLens basesub pm val =
     eaMap (pinaforeLensMorphismInverseChangeLens pm) $ contextualisePinaforeRef basesub val
@@ -133,7 +134,7 @@ applyInversePinaforeLensSet ::
        forall baseupdate a b. (Eq a, Eq b)
     => Model baseupdate
     -> IO b
-    -> PinaforeLensMorphism baseupdate a b
+    -> PinaforeLensMorphism baseupdate a a b b
     -> PinaforeRef (FiniteSetUpdate b)
     -> PinaforeRef (FiniteSetUpdate a)
 applyInversePinaforeLensSet basesub newb pm val =

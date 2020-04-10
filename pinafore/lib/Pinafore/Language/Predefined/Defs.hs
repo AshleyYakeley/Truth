@@ -14,6 +14,10 @@ type B = UVar "b"
 
 type C = UVar "c"
 
+type X = UVar "x"
+
+type Y = UVar "y"
+
 type AP = UVar "ap"
 
 type BP = UVar "bp"
@@ -26,7 +30,19 @@ type BQ = UVar "bq"
 
 type CQ = UVar "cq"
 
-type EA = MeetType Entity A
+type AX = UVar "ax"
+
+type BX = UVar "bx"
+
+type CX = UVar "cx"
+
+type AY = UVar "ay"
+
+type BY = UVar "by"
+
+type CY = UVar "cy"
+
+type EnA = MeetType Entity A
 
 data BindDoc baseupdate = MkBindDoc
     { bdName :: Name

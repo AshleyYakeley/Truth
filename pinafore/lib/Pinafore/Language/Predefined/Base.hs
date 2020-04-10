@@ -588,15 +588,15 @@ base_predefinitions =
     , docTreeEntry
           "Morphisms"
           "Morphisms relate entities."
-          [ mkValEntry "identity" "The identity morphism." $ identityLangMorphism @baseupdate @A
-          , mkValEntry "!." "Compose morphisms." $ composeLangMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+          [ mkValEntry "identity" "The identity morphism." $ identityLangMorphism @baseupdate @X @Y
+          , mkValEntry "!." "Compose morphisms." $ composeLangMorphism @baseupdate @AP @AQ @BX @BY @CP @CQ
           , mkSupertypeEntry "!." "Compose morphisms." $ composeLangMorphism @baseupdate @A @A @B @B @C @C
           , mkValEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
             pairLangMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
           , mkSupertypeEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
             pairLangMorphism @baseupdate @A @A @B @B @C @C
           , mkValEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
-            eitherLangMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+            eitherLangMorphism @baseupdate @AP @AQ @BP @BQ @C @C
           , mkSupertypeEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
             eitherLangMorphism @baseupdate @A @A @B @B @C @C
           , mkValEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @baseupdate @AP @AQ @BP @BQ
@@ -605,18 +605,14 @@ base_predefinitions =
             applyLangMorphismImmutRef @baseupdate @A @BP @BQ
           , mkSupertypeEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutRef r`" $
             applyLangMorphismImmutRef @baseupdate @A @B @B
-          , mkValEntry "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @baseupdate @A @BP @BQ
-          , mkSupertypeEntry "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @baseupdate @A @B @B
-          , mkValEntry "!@" "Co-apply a morphism to a reference." $
-            inverseApplyLangMorphismRef @baseupdate @AP @AQ @BP @BQ
+          , mkValEntry "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @baseupdate @A @B
+          , mkValEntry "!@" "Co-apply a morphism to a reference." $ inverseApplyLangMorphismRef @baseupdate @A @BX @BY
           , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $
-            inverseApplyLangMorphismRef @baseupdate @A @A @B @B
+            inverseApplyLangMorphismRef @baseupdate @A @B @B
           , mkValEntry "!@%" "Co-apply a morphism to an immutable reference. `m !@% r = m !@ immutRef r`" $
-            inverseApplyLangMorphismImmutRef @baseupdate @A @BP @BQ
-          , mkSupertypeEntry "!@%" "Co-apply a morphism to a reference. `m !@% r = m !@ immutRef r`" $
-            inverseApplyLangMorphismImmutRef @baseupdate @A @B @B
-          , mkValEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @baseupdate @AP @AQ @BP @BQ
-          , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @baseupdate @A @A @B @B
+            inverseApplyLangMorphismImmutRef @baseupdate @A @B
+          , mkValEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @baseupdate @A @BX @BY
+          , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @baseupdate @A @B @B
           ]
     , docTreeEntry
           "Orders"

@@ -59,7 +59,7 @@ updateTest text =
     scriptTest text text $ \action -> do
         (sendUpdate, ref) <- nullViewIO $ unliftPinaforeActionOrFail action
         runLifeCycle $
-            subscribeEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingValue ref) $
+            subscribeEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $ nullViewIO $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
@@ -331,6 +331,7 @@ testEntity =
                     "identity inverse morphism"
                     [ pointTest "(identity !@@ eta !@ {\"hello\"}) += e1 >> testisunknown (eta !$ {e1})"
                     , pointTest "(eea !@@ identity !@ {e2}) += e1 >> testneq {e2} (eea !$ {e1})"
+                    , pointTest "(eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
                     , pointTest "((identity !. eta) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
                     , pointTest "((eta !. identity) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
                     , pointTest "eta !@ {\"hello\"} += e1 >> eta !@ {\"hello\"} -= e1 >> testisunknown (eta !$ {e1})"

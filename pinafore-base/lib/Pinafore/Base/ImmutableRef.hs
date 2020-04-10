@@ -1,8 +1,8 @@
 module Pinafore.Base.ImmutableRef where
 
 import Pinafore.Base.Action
+import Pinafore.Base.FunctionMorphism
 import Pinafore.Base.Know
-import Pinafore.Base.Morphism
 import Pinafore.Base.Ref
 import Shapes
 import Truth.Core
@@ -23,22 +23,26 @@ instance Alternative PinaforeImmutableRef where
     (MkPinaforeImmutableRef sa) <|> (MkPinaforeImmutableRef sb) =
         MkPinaforeImmutableRef $ eaMapReadOnlyWhole (\(ma, mb) -> ma <|> mb) $ eaPairReadOnlyWhole sa sb
 
-immutableRefToReadOnlyValue :: PinaforeImmutableRef a -> PinaforeROWRef (Know a)
-immutableRefToReadOnlyValue (MkPinaforeImmutableRef fv) = fv
+immutableRefToReadOnlyRef :: PinaforeImmutableRef a -> PinaforeROWRef (Know a)
+immutableRefToReadOnlyRef (MkPinaforeImmutableRef fv) = fv
 
-immutableRefToRejectingValue :: PinaforeImmutableRef a -> PinaforeRef (WholeUpdate (Know a))
-immutableRefToRejectingValue ref = eaMap fromReadOnlyRejectingChangeLens $ immutableRefToReadOnlyValue ref
+immutableRefToRejectingRef :: PinaforeImmutableRef a -> PinaforeRef (WholeUpdate (Know a))
+immutableRefToRejectingRef ref = eaMap fromReadOnlyRejectingChangeLens $ immutableRefToReadOnlyRef ref
+
+immutableRefToRejectingBiRef :: PinaforeImmutableRef a -> PinaforeRef (BiUpdate pupdate (WholeUpdate (Know a)))
+immutableRefToRejectingBiRef ref =
+    eaMap (fromReadOnlyRejectingChangeLens . readOnlyBiChangeLens) $ immutableRefToReadOnlyRef ref
 
 getImmutableRef :: PinaforeImmutableRef a -> PinaforeAction (Know a)
 getImmutableRef ref = do
     rc <- pinaforeResourceContext
-    liftIO $ pinaforeFunctionValueGet rc $ immutableRefToReadOnlyValue ref
+    liftIO $ pinaforeFunctionValueGet rc $ immutableRefToReadOnlyRef ref
 
 functionImmutableRef :: PinaforeROWRef a -> PinaforeImmutableRef a
 functionImmutableRef fv = MkPinaforeImmutableRef $ eaMap (liftReadOnlyChangeLens $ funcChangeLens Known) fv
 
 pinaforeImmutableRefValue :: a -> PinaforeImmutableRef a -> PinaforeROWRef a
-pinaforeImmutableRefValue def ref = eaMapReadOnlyWhole (fromKnow def) $ immutableRefToReadOnlyValue ref
+pinaforeImmutableRefValue def ref = eaMapReadOnlyWhole (fromKnow def) $ immutableRefToReadOnlyRef ref
 
 applyImmutableRef ::
        Model baseupdate

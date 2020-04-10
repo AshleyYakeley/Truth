@@ -1,14 +1,13 @@
 module Truth.Core.Read
-    ( module Truth.Core.Read.Readable
-    , module Truth.Core.Read.SubjectReader
-    , module Truth.Core.Read.FullSubjectReader
+    ( module I
     , module Truth.Core.Read
     ) where
 
 import Truth.Core.Import
-import Truth.Core.Read.FullSubjectReader
-import Truth.Core.Read.Readable
-import Truth.Core.Read.SubjectReader
+import Truth.Core.Read.FullSubjectReader as I
+import Truth.Core.Read.ReadM as I
+import Truth.Core.Read.Readable as I
+import Truth.Core.Read.SubjectReader as I
 
 data ConstReader a t where
     MkConstReader :: a -> ConstReader a a

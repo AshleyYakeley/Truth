@@ -7,11 +7,11 @@ import Shapes
 import Truth.Core
 
 data LangRef (pq :: (Type, Type)) where
-    MutableLangRef :: Range JMShim t pq -> PinaforeRef (WholeUpdate (Know t)) -> LangRef pq
+    MutableLangRef :: PinaforeRef (BiWholeUpdate (Know p) (Know q)) -> LangRef '( p, q)
     ImmutableLangRef :: PinaforeImmutableRef q -> LangRef '( p, q)
 
 instance CatFunctor (CatRange (->)) (->) LangRef where
-    cfmap f (MutableLangRef r v) = MutableLangRef (cfmap f r) v
+    cfmap (MkCatRange pp qq) (MutableLangRef v) = MutableLangRef $ eaMap (mapBiWholeChangeLens (fmap pp) (fmap qq)) v
     cfmap (MkCatRange _ f) (ImmutableLangRef v) = ImmutableLangRef $ fmap f v
 
 instance HasVariance 'Rangevariance LangRef where
@@ -26,20 +26,18 @@ pinaforeROWRefToRef :: PinaforeROWRef (Know a) -> LangRef '( TopType, a)
 pinaforeROWRefToRef ef = pinaforeImmutableToRef $ MkPinaforeImmutableRef ef
 
 langRefToImmutable :: LangRef '( BottomType, a) -> PinaforeImmutableRef a
-langRefToImmutable (MutableLangRef (MkRange _ tq) sr) =
-    fmap (fromEnhanced tq) $ MkPinaforeImmutableRef $ eaToReadOnlyWhole sr
+langRefToImmutable (MutableLangRef sr) = MkPinaforeImmutableRef $ eaMap biReadOnlyChangeLens sr
 langRefToImmutable (ImmutableLangRef ir) = ir
 
 pinaforeImmutableToRef :: PinaforeImmutableRef a -> LangRef '( TopType, a)
 pinaforeImmutableToRef ir = ImmutableLangRef ir
 
 langRefToValue :: LangRef '( p, p) -> PinaforeRef (WholeUpdate (Know p))
-langRefToValue (MutableLangRef tr lv) =
-    eaMap (bijectionWholeChangeLens $ isoMapCat (fromEnhanced @_ @JMShim) $ cfmap $ rangeBijection tr) lv
-langRefToValue (ImmutableLangRef ir) = immutableRefToRejectingValue ir
+langRefToValue (MutableLangRef lv) = eaMap biSingleChangeLens lv
+langRefToValue (ImmutableLangRef ir) = immutableRefToRejectingRef ir
 
-pinaforeRefToRef :: (PinaforeRef (WholeUpdate (Know a))) -> LangRef '( a, a)
-pinaforeRefToRef bsv = MutableLangRef identityRange bsv
+pinaforeRefToRef :: PinaforeRef (WholeUpdate (Know a)) -> LangRef '( a, a)
+pinaforeRefToRef bsv = MutableLangRef $ eaMap singleBiChangeLens bsv
 
 langRefGet :: forall q. LangRef '( BottomType, q) -> PinaforeAction q
 langRefGet ref = do
@@ -47,23 +45,22 @@ langRefGet ref = do
     pinaforeActionKnow ka
 
 langRefSet :: forall p. LangRef '( p, TopType) -> Know p -> PinaforeAction ()
-langRefSet (MutableLangRef (MkRange pt _) sr) mp =
-    pinaforeRefPushAction sr $ pure $ MkWholeReaderEdit $ fmap (fromEnhanced pt) mp
+langRefSet (MutableLangRef sr) mp = pinaforeRefPushAction sr $ pure $ MkBiWholeEdit mp
 langRefSet (ImmutableLangRef _) _ = empty
 
 runLangRef :: LangRef '( BottomType, PinaforeAction ()) -> PinaforeAction ()
 runLangRef ref = langRefGet ref >>= id
 
 fLensLangRef :: forall ap aq b. (aq -> b) -> (b -> Maybe aq -> Maybe ap) -> LangRef '( ap, aq) -> LangRef '( b, b)
-fLensLangRef g pb (MutableLangRef (tr :: Range JMShim a _) lv) = let
-    trco = fromEnhanced $ rangeCo tr
-    trcontra = fromEnhanced $ rangeContra tr
-    lensG = fmap $ g . trco
-    lensPB :: Know b -> Know a -> Maybe (Know a)
+fLensLangRef g pb (MutableLangRef lv) = let
+    lensPB :: Know b -> Know aq -> Maybe (Know ap)
     lensPB kb ka =
         getComposeM $ do
             b <- liftInner kb
-            a' <- liftOuter $ pb b $ knowToMaybe $ fmap trco ka
-            return $ trcontra a'
-    in MutableLangRef identityRange $ eaMap (wholeChangeLens (MkLens lensG lensPB)) lv
+            liftOuter $ pb b $ knowToMaybe ka
+    in MutableLangRef $ eaMap (lensBiWholeChangeLens (fmap g) lensPB) lv
 fLensLangRef g _ (ImmutableLangRef ir) = ImmutableLangRef $ fmap g ir
+
+langRefToBiWholeRef :: LangRef '( p, q) -> PinaforeRef (BiWholeUpdate (Know p) (Know q))
+langRefToBiWholeRef (MutableLangRef r) = r
+langRefToBiWholeRef (ImmutableLangRef ir) = immutableRefToRejectingBiRef ir

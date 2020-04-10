@@ -76,6 +76,9 @@ ui_people pp = uiRun $ do
     ];
     end;
 
+peopleByName :: Ref +[(Person,Text)];
+peopleByName = members (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
+
 ui_person :: Ref Person -> UI;
 ui_person p = uiVertical
 [
@@ -105,8 +108,8 @@ ui_person p = uiVertical
             (ui_labelled {"Birth: "} $ uiTextEntry $ birthdate !$ p,False),
             (ui_labelled {"Death: "} $ uiTextEntry $ deathdate !$ p,False),
             (uiCheckBox {"Married"} $ married !$ p,False),
-            (ui_labelled {"Mother: "} $ uiPick name people $ mother !$ p,False),
-            (ui_labelled {"Father: "} $ uiPick name people $ father !$ p,False),
+            (ui_labelled {"Mother: "} $ uiPick peopleByName $ mother !$ p,False),
+            (ui_labelled {"Father: "} $ uiPick peopleByName $ father !$ p,False),
             (ui_people (children p),True)
         ]
     ],True)
