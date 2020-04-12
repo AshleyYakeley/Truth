@@ -1,11 +1,11 @@
 FROM fpco/stack-build:lts-15.5
+ENV DEBIAN_FRONTEND noninteractive
+RUN echo 2020-04-11
+RUN apt-get update
+RUN apt-get purge -y msodbcsql17
+RUN apt-get upgrade -y
+RUN apt-get install -y lintian
 RUN pip3 install --upgrade pip
-RUN pip3 install mkdocs
-RUN pip3 install markdown-include
-RUN pip3 install Pygments
-RUN R -e "install.packages('shiny',dependencies=TRUE, repos='http://cran.rstudio.com/')"
-RUN R -e "install.packages('ggplot2',dependencies=TRUE, repos='http://cran.rstudio.com/')"
-RUN R -e "install.packages('plotly',dependencies=TRUE, repos='http://cran.rstudio.com/')"
-RUN R -e "install.packages('optparse',dependencies=TRUE, repos='http://cran.rstudio.com/')"
-RUN R -e "install.packages('shinyWidgets',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN pip3 install mkdocs markdown-include Pygments
+RUN R -e "install.packages(c('shiny','ggplot2','plotly','optparse','shinyWidgets'),dependencies=TRUE, repos='http://cran.rstudio.com/')"
 #RUN echo "stack ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers

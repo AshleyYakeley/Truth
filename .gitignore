@@ -1,4 +1,5 @@
 local/
+out/
 .stack-work
 *.cabal
 *.prof

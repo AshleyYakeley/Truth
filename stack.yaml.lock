@@ -48,6 +48,20 @@ packages:
     commit: d07e0ab032f9766f2d92dc260497ebd1ffbe62d7
 - completed:
     cabal-file:
+      size: 1455
+      sha256: a9bec2ec42b30a94c584494c45e9d421375ca1eb383490c8b5349ffc78c2350a
+    name: licensor
+    version: 0.4.0
+    git: https://github.com/AshleyYakeley/licensor.git
+    pantry-tree:
+      size: 729
+      sha256: c037a42f539d085a28d79da36453275e7c6135df5c49d323762e2df77f0eafec
+    commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
+  original:
+    git: https://github.com/AshleyYakeley/licensor.git
+    commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
+- completed:
+    cabal-file:
       size: 1785
       sha256: 5d21b165ab6cc8c0c9fd4454ea779d42b03ff0dbd856f02c992412c33f8d6499
     name: ghc-prof-flamegraph
