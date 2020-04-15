@@ -95,6 +95,20 @@ interpretAsText = fLensLangRef (unLiteral . toLiteral) (\t _ -> parseLiteral t)
 parseLiteral :: AsLiteral t => Text -> Maybe t
 parseLiteral = knowToMaybe . fromLiteral . MkLiteral
 
+unixFormat ::
+       forall t. FormatTime t
+    => Text
+    -> t
+    -> Text
+unixFormat fmt t = pack $ formatTime defaultTimeLocale (unpack fmt) t
+
+unixParse ::
+       forall t. ParseTime t
+    => Text
+    -> Text
+    -> Maybe t
+unixParse fmt text = parseTimeM True defaultTimeLocale (unpack fmt) (unpack text)
+
 base_predefinitions ::
        forall baseupdate.
        ( HasPinaforeEntityUpdate baseupdate
@@ -265,7 +279,8 @@ base_predefinitions =
                       "Duration"
                       ""
                       [ mkSupertypeEntry "id" "Every duration is a literal." $ toLiteral @NominalDiffTime
-                      , mkValEntry "parseDuration" "Parse text as a duration." $ parseLiteral @NominalDiffTime
+                      , mkValEntry "parseDuration" "Parse text as a duration. Inverse of `toText`." $
+                        parseLiteral @NominalDiffTime
                       , mkValEntry "interpretDurationAsText" "Interpret a duration reference as text." $
                         interpretAsText @NominalDiffTime
                       , mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
@@ -284,11 +299,15 @@ base_predefinitions =
                       "Time"
                       "Absolute time as measured by UTC."
                       [ mkSupertypeEntry "id" "Every time is a literal." $ toLiteral @UTCTime
-                      , mkValEntry "parseTime" "Parse text as a time." $ parseLiteral @UTCTime
+                      , mkValEntry "parseTime" "Parse text as a time. Inverse of `toText`." $ parseLiteral @UTCTime
                       , mkValEntry "interpretTimeAsText" "Interpret a time reference as text." $
                         interpretAsText @UTCTime
                       , mkValEntry "addTime" "Add duration to time." addUTCTime
                       , mkValEntry "diffTime" "Difference of times." diffUTCTime
+                      , mkValEntry "unixFormatTime" "Format a time as text, using a UNIX-style formatting string." $
+                        unixFormat @UTCTime
+                      , mkValEntry "unixParseTime" "Parse text as a time, using a UNIX-style formatting string." $
+                        unixParse @UTCTime
                       , mkValEntry "now" "The current time truncated to the second." $ now @baseupdate
                       ]
                 , docTreeEntry
@@ -305,6 +324,10 @@ base_predefinitions =
                       , mkValEntry "addDays" "Add count to days to date." addDays
                       , mkValEntry "diffDays" "Difference of days between dates." diffDays
                       , mkValEntry "utcDate" "The current UTC date." $ fmap utctDay $ now @baseupdate
+                      , mkValEntry "unixFormatDate" "Format a date as text, using a UNIX-style formatting string." $
+                        unixFormat @Day
+                      , mkValEntry "unixParseDate" "Parse text as a date, using a UNIX-style formatting string." $
+                        unixParse @Day
                       , mkValEntry "today" "The current local date." $ today @baseupdate
                       ]
                 , docTreeEntry
@@ -318,6 +341,14 @@ base_predefinitions =
                         interpretAsText @TimeOfDay
                       , mkValEntry "midnight" "Midnight." midnight
                       , mkValEntry "midday" "Midday." midday
+                      , mkValEntry
+                            "unixFormatTimeOfDay"
+                            "Format a time of day as text, using a UNIX-style formatting string." $
+                        unixFormat @TimeOfDay
+                      , mkValEntry
+                            "unixParseTimeOfDay"
+                            "Parse text as a time of day, using a UNIX-style formatting string." $
+                        unixParse @TimeOfDay
                       ]
                 , docTreeEntry
                       "Local Time"
@@ -334,6 +365,14 @@ base_predefinitions =
                             localTimeToUTC $ minutesToTimeZone i
                       , mkValEntry "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
                             fmap timeZoneMinutes $ getTimeZone t
+                      , mkValEntry
+                            "unixFormatLocalTime"
+                            "Format a local time as text, using a UNIX-style formatting string." $
+                        unixFormat @LocalTime
+                      , mkValEntry
+                            "unixParseLocalTime"
+                            "Parse text as a local time, using a UNIX-style formatting string." $
+                        unixParse @LocalTime
                       , mkValEntry "timeZone" "The current time zone offset in minutes." $
                         fmap timeZoneMinutes $ timeZone @baseupdate
                       , mkValEntry "localNow" "The current local time." $ localNow @baseupdate
