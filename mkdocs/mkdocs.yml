@@ -16,6 +16,7 @@ nav:
 - Reference Notation: 'reference-notation.md'
 - Predefined Bindings: 'predefined.md'
 - Examples:
+  - Stopwatch: 'examples/stopwatch.md'
   - People: 'examples/people.md'
   - Events: 'examples/events.md'
 - Future Plans: 'future-plans.md'

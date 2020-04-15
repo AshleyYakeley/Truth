@@ -30,4 +30,5 @@ testScripts =
         , testExample "test/script/calendar.pinafore"
         , testExample "examples/people.pinafore"
         , testExample "examples/events.pinafore"
+        , testExample "examples/stopwatch.pinafore"
         ]
