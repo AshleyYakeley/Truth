@@ -1,7 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Convert.Base
-    ( qTypeDescription
+    ( qPositiveTypeDescription
+    , qNegativeTypeDescription
     , jmToValue
     , ToPinaforeType
     , FromPinaforeType
@@ -16,11 +17,18 @@ import Pinafore.Language.Value
 import Shapes
 import Truth.Core
 
-qTypeDescription ::
+qPositiveTypeDescription ::
        forall baseupdate t. ToPinaforeType baseupdate t
     => Text
-qTypeDescription =
+qPositiveTypeDescription =
     case toJMShimWit @(PinaforeType baseupdate 'Positive) @t of
+        MkShimWit w _ -> pack $ show w
+
+qNegativeTypeDescription ::
+       forall baseupdate t. FromPinaforeType baseupdate t
+    => Text
+qNegativeTypeDescription =
+    case fromJMShimWit @(PinaforeType baseupdate 'Negative) @t of
         MkShimWit w _ -> pack $ show w
 
 type ToPinaforeType baseupdate = ToShimWit JMShim (PinaforeType baseupdate 'Positive)

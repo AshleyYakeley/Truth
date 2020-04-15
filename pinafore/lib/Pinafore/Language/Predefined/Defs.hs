@@ -65,7 +65,7 @@ mkValEntry name docDescription val = let
             in jmToValue val
     bdPattern = Nothing
     docName = name
-    docValueType = qTypeDescription @baseupdate @t
+    docValueType = qPositiveTypeDescription @baseupdate @t
     docIsSupertype = False
     docIsPattern = False
     bdDoc = MkDefDoc {..}
@@ -82,7 +82,7 @@ mkSupertypeEntry name docDescription _val = let
     bdValue = Nothing
     bdPattern = Nothing
     docName = name
-    docValueType = qTypeDescription @baseupdate @t
+    docValueType = qPositiveTypeDescription @baseupdate @t
     docIsSupertype = True
     docIsPattern = False
     bdDoc = MkDefDoc {..}
@@ -108,7 +108,7 @@ mkValPatEntry name docDescription val pat = let
             in jmToValue val
     bdPattern = Just $ qToPatternConstructor pat
     docName = name
-    docValueType = qTypeDescription @baseupdate @t
+    docValueType = qPositiveTypeDescription @baseupdate @t
     docIsSupertype = False
     docIsPattern = True
     bdDoc = MkDefDoc {..}

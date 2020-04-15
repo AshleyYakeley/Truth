@@ -160,7 +160,4 @@ window_org o = std_window (name !$ {o}) [] uiBlank;
 window_people :: Action Window;
 window_people = selection_window ("Person","People") people window_person table_people;
 
-in do
-    window_people;
-    return ();
-    end
+in window_people

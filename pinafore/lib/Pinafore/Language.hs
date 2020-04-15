@@ -4,13 +4,15 @@ module Pinafore.Language
     , InterpretResult
     , ioRunInterpretResult
     , PinaforeAction
-    , qTypeDescription
+    , qPositiveTypeDescription
+    , qNegativeTypeDescription
     , FromPinaforeType
     , ToPinaforeType
     , parseTopExpression
     , parseValue
     , parseValueAtType
     , interact
+    , TopType(..)
     , Entity
     , showPinaforeRef
     , runPinaforeSourceScoped

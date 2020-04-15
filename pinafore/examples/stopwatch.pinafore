@@ -28,5 +28,4 @@ in do
     r <- newMemRef;
     r := StoppedState zeroDuration;
     openWindow {"Stopwatch"} {[]} $ ui r;
-    return ()
     end

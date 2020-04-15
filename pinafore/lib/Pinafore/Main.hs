@@ -20,10 +20,10 @@ import System.FilePath
 import Truth.Core
 import Truth.World.Clock
 
-type FilePinaforeType = PinaforeAction ()
+type FilePinaforeType = PinaforeAction TopType
 
 filePinaforeType :: Text
-filePinaforeType = qTypeDescription @PinaforeUpdate @FilePinaforeType
+filePinaforeType = qNegativeTypeDescription @PinaforeUpdate @FilePinaforeType
 
 standardPinaforeContext :: FilePath -> UIToolkit -> CreateView (PinaforeContext PinaforeUpdate)
 standardPinaforeContext dirpath uitoolkit = do
@@ -72,7 +72,7 @@ pinaforeInterpretFileAtType puipath puitext = runPinaforeSourceScoped puipath $ 
 pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeUpdate) => FilePath -> Text -> InterpretResult (View ())
 pinaforeInterpretFile puipath puitext = do
     action :: FilePinaforeType <- pinaforeInterpretFileAtType puipath puitext
-    return $ runPinaforeAction action
+    return $ runPinaforeAction $ fmap (\MkTopType -> ()) $ action
 
 pinaforeInteractHandles :: (?pinafore :: PinaforeContext PinaforeUpdate) => Handle -> Handle -> Bool -> View ()
 pinaforeInteractHandles inh outh echo = interact inh outh echo
