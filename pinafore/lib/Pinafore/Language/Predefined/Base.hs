@@ -268,7 +268,7 @@ base_predefinitions =
                       , mkValEntry "parseDuration" "Parse text as a duration." $ parseLiteral @NominalDiffTime
                       , mkValEntry "interpretDurationAsText" "Interpret a duration reference as text." $
                         interpretAsText @NominalDiffTime
-                      , mkValEntry "zeroDurtaion" "No duration." $ (0 :: NominalDiffTime)
+                      , mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
                       , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
                       , mkValEntry "durationToSeconds" "Convert duration to seconds." nominalDiffTimeToSeconds
                       , mkValEntry "dayDuration" "One day duration." nominalDay
