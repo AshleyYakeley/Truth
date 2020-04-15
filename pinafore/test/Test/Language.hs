@@ -448,6 +448,14 @@ testQueries =
               , testQuery "let i :: FiniteSetRef -a -> SetRef a; i x = x in 3" $ Just "3"
               , testQuery "let i :: FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ Just "3"
               ]
+        , testGroup
+              "subsume"
+              [ testQuery "let a :: [Integer|Text]; a = [] in a" $ Just "[]"
+              , testQuery "let a :: [Integer|Text]; a = []; b :: [Integer]|[Text]; b = a in b" $ Just "[]"
+              , testQuery "let a :: Integer|Text; a = 3; b :: [Integer]|[Text]; b = [a] in b" $ Just "[3]"
+              , testQuery "let a :: [Integer]|[Text]; a = [] in a" $ Just "[]"
+              , testQuery "let a :: [Integer]|[Text]; a = []; b :: [Integer|Text]; b = a in b" $ Just "[]"
+              ]
         ]
 
 testShim :: Text -> String -> String -> TestTree
