@@ -85,7 +85,7 @@ entityGroundTypeAdapter ListEntityGroundType (ConsArguments t NilArguments) = le
     to (a:aa) = Right (a, (aa, ()))
     in listAdapter
 entityGroundTypeAdapter (ClosedEntityGroundType _ _ ct) NilArguments =
-    isoMap MkClosedEntity unClosedEntity $ closedEntityTypeAdapter ct
+    isoMap MkIdentifiedValue unIdentifiedValue $ closedEntityTypeAdapter ct
 
 closedEntityTypeAdapter :: ClosedEntityType t -> EntityAdapter t
 closedEntityTypeAdapter NilClosedEntityType = pNone

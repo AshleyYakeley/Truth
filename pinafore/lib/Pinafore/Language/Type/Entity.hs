@@ -19,10 +19,10 @@ data EntityGroundType (t :: k) where
     ListEntityGroundType :: EntityGroundType []
     PairEntityGroundType :: EntityGroundType (,)
     EitherEntityGroundType :: EntityGroundType Either
-    ClosedEntityGroundType :: Name -> TypeIDType tid -> ClosedEntityType t -> EntityGroundType (ClosedEntity tid t)
+    ClosedEntityGroundType :: Name -> TypeIDType tid -> ClosedEntityType t -> EntityGroundType (IdentifiedValue tid t)
 
-newtype ClosedEntity (tid :: BigNat) (t :: Type) = MkClosedEntity
-    { unClosedEntity :: t
+newtype IdentifiedValue (tid :: BigNat) (t :: Type) = MkIdentifiedValue
+    { unIdentifiedValue :: t
     } deriving (Eq)
 
 data ClosedEntityType (t :: Type) where

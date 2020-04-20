@@ -83,17 +83,17 @@ assembleClosedEntityType ((n, a, MkAnyW el):cc) =
 
 makeConstructorPattern ::
        forall baseupdate s t lt.
-       PinaforeShimWit baseupdate 'Negative (ClosedEntity s t)
+       PinaforeShimWit baseupdate 'Negative (IdentifiedValue s t)
     -> ListType ConcreteEntityType lt
     -> (t -> Maybe (HList lt))
     -> PinaforePatternConstructor baseupdate
 makeConstructorPattern pct lt tma =
     case mapListType (concreteEntityToPositivePinaforeType @baseupdate) lt of
-        lt' -> toPatternConstructor pct lt' $ tma . unClosedEntity
+        lt' -> toPatternConstructor pct lt' $ tma . unIdentifiedValue
 
 makeConstructorValue ::
        forall baseupdate m s t a. MonadError ErrorType m
-    => PinaforeShimWit baseupdate 'Positive (ClosedEntity s t)
+    => PinaforeShimWit baseupdate 'Positive (IdentifiedValue s t)
     -> ListType ConcreteEntityType a
     -> m (PinaforeShimWit baseupdate 'Positive (HList a -> t))
 makeConstructorValue ctf lt = do
@@ -117,7 +117,7 @@ readClosedTypeDeclaration = do
             valueToWitness tid $ \tidsym -> do
                 let
                     ctf :: forall polarity. Is PolarityType polarity
-                        => PinaforeShimWit baseupdate polarity (ClosedEntity _ _)
+                        => PinaforeShimWit baseupdate polarity (IdentifiedValue _ _)
                     ctf =
                         singlePinaforeShimWit $
                         mkJMShimWit $
