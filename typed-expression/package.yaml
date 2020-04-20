@@ -28,6 +28,7 @@ library:
       - Language.Expression.Bindings
       - Language.Expression.TypeSystem
       - Language.Expression.Unitype
+      - Language.Expression.Arguments
       - Language.Expression.Dolan
     other-modules:
       - Data.Shim.Polarity

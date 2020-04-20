@@ -394,8 +394,8 @@ base_predefinitions =
           , mkSupertypeEntry "id" "Entity conversion." $
             entityAdapterConvert $
             concreteEntityAdapter $
-            MkConcreteEntityType MaybeEntityGroundType $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
+            MkConcreteType MaybeEntityGroundType $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
           ]
     , docTreeEntry
           "Pairs"
@@ -403,9 +403,9 @@ base_predefinitions =
           [ mkSupertypeEntry "id" "Entity conversion." $
             entityAdapterConvert $
             concreteEntityAdapter $
-            MkConcreteEntityType PairEntityGroundType $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
+            MkConcreteType PairEntityGroundType $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
           , mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
           , mkValEntry "toPair" "Construct a pair." $ (,) @A @B
@@ -425,9 +425,9 @@ base_predefinitions =
           , mkSupertypeEntry "id" "Entity conversion." $
             entityAdapterConvert $
             concreteEntityAdapter $
-            MkConcreteEntityType EitherEntityGroundType $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
+            MkConcreteType EitherEntityGroundType $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
           , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
           , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
                 case v of
@@ -448,8 +448,8 @@ base_predefinitions =
           , mkSupertypeEntry "id" "Entity conversion." $
             entityAdapterConvert $
             concreteEntityAdapter $
-            MkConcreteEntityType ListEntityGroundType $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
+            MkConcreteType ListEntityGroundType $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
           , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                 case l of
                     [] -> fnil

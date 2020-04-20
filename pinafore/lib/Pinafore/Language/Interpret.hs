@@ -221,9 +221,9 @@ interpretExpression' spos (SEEntity st anchor) =
                 return $ qConstExprAny anyval
 
 makeEntity :: MonadError ErrorType m => ConcreteEntityType t -> Entity -> m t
-makeEntity (MkConcreteEntityType TopEntityGroundType NilArguments) p = return p
-makeEntity (MkConcreteEntityType NewEntityGroundType NilArguments) p = return $ MkNewEntity p
-makeEntity (MkConcreteEntityType (OpenEntityGroundType _ _) NilArguments) p = return $ MkOpenEntity p
+makeEntity (MkConcreteType TopEntityGroundType NilArguments) p = return p
+makeEntity (MkConcreteType NewEntityGroundType NilArguments) p = return $ MkNewEntity p
+makeEntity (MkConcreteType (OpenEntityGroundType _ _) NilArguments) p = return $ MkOpenEntity p
 makeEntity t _ = throwError $ InterpretTypeNotOpenEntityError $ exprShow t
 
 interpretTypeSignature ::

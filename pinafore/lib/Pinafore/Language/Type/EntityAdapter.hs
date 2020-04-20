@@ -93,10 +93,10 @@ closedEntityTypeAdapter (ConsClosedEntityType a cc rest) =
     constructorEntityAdapter a (mapListType concreteEntityAdapter cc) <+++> closedEntityTypeAdapter rest
 
 concreteEntityAdapter :: forall t. ConcreteEntityType t -> EntityAdapter t
-concreteEntityAdapter (MkConcreteEntityType gt args) = entityGroundTypeAdapter gt args
+concreteEntityAdapter (MkConcreteType gt args) = entityGroundTypeAdapter gt args
 
 concreteToEntityShim :: ConcreteEntityType a -> JMShim a Entity
-concreteToEntityShim (MkConcreteEntityType TopEntityGroundType NilArguments) = id
-concreteToEntityShim (MkConcreteEntityType NewEntityGroundType NilArguments) = coerceEnhanced "subtype"
-concreteToEntityShim (MkConcreteEntityType (OpenEntityGroundType _ _) NilArguments) = coerceEnhanced "subtype"
+concreteToEntityShim (MkConcreteType TopEntityGroundType NilArguments) = id
+concreteToEntityShim (MkConcreteType NewEntityGroundType NilArguments) = coerceEnhanced "subtype"
+concreteToEntityShim (MkConcreteType (OpenEntityGroundType _ _) NilArguments) = coerceEnhanced "subtype"
 concreteToEntityShim t = toEnhanced "subtype" $ entityAdapterConvert $ concreteEntityAdapter t

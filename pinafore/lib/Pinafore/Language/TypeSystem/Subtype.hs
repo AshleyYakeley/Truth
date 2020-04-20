@@ -104,22 +104,22 @@ concreteEntitySubtype ::
     -> ConcreteEntityType b
     -> m (PinaforeShim a b)
 -- a <= Entity
-concreteEntitySubtype _ t (MkConcreteEntityType TopEntityGroundType NilArguments) = pure $ concreteToEntityShim t
+concreteEntitySubtype _ t (MkConcreteType TopEntityGroundType NilArguments) = pure $ concreteToEntityShim t
 -- (literal type) <= (literal type)
-concreteEntitySubtype _ (MkConcreteEntityType (LiteralEntityGroundType t1) NilArguments) (MkConcreteEntityType (LiteralEntityGroundType t2) NilArguments)
+concreteEntitySubtype _ (MkConcreteType (LiteralEntityGroundType t1) NilArguments) (MkConcreteType (LiteralEntityGroundType t2) NilArguments)
     | Just conv <- isSubtype t1 t2 = pure conv
 -- NewEntity <= NewEntity
-concreteEntitySubtype _ (MkConcreteEntityType NewEntityGroundType NilArguments) (MkConcreteEntityType NewEntityGroundType NilArguments) =
+concreteEntitySubtype _ (MkConcreteType NewEntityGroundType NilArguments) (MkConcreteType NewEntityGroundType NilArguments) =
     pure id
 -- NewEntity <= (open entity type)
-concreteEntitySubtype _ (MkConcreteEntityType NewEntityGroundType NilArguments) (MkConcreteEntityType (OpenEntityGroundType _ _) NilArguments) =
+concreteEntitySubtype _ (MkConcreteType NewEntityGroundType NilArguments) (MkConcreteType (OpenEntityGroundType _ _) NilArguments) =
     pure $ coerceEnhanced "subtype"
 -- (closed entity type) <= (closed entity type)
-concreteEntitySubtype _ (MkConcreteEntityType (ClosedEntityGroundType _ sa ta) NilArguments) (MkConcreteEntityType (ClosedEntityGroundType _ sb tb) NilArguments)
+concreteEntitySubtype _ (MkConcreteType (ClosedEntityGroundType _ sa ta) NilArguments) (MkConcreteType (ClosedEntityGroundType _ sb tb) NilArguments)
     | Just Refl <- testEquality sa sb
     , Just Refl <- testEquality ta tb = pure id
 -- a <= a; a x0 <= a x1; etc.
-concreteEntitySubtype sc (MkConcreteEntityType ga argsa) (MkConcreteEntityType gb argsb)
+concreteEntitySubtype sc (MkConcreteType ga argsa) (MkConcreteType gb argsb)
     | Just (HRefl, Dict) <- entityGroundTypeTestEquality ga gb =
         fmap (\mconv -> mconv cid) $
         concreteEntitySubtypeArguments sc (entityGroundTypeCovaryMap ga) (entityGroundTypeCovaryMap gb) argsa argsb
@@ -158,8 +158,8 @@ entityGroundSubtype sc (ConsListType Refl NilListType) MaybeEntityGroundType (Co
     let
         convE =
             concreteToEntityShim $
-            MkConcreteEntityType MaybeEntityGroundType $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
+            MkConcreteType MaybeEntityGroundType $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @baseupdate @polb
     pure $ convE . cfmap (jml1 @polb . conv)
 -- [Entity] <= Entity
@@ -167,8 +167,8 @@ entityGroundSubtype sc (ConsListType Refl NilListType) ListEntityGroundType (Con
     let
         convE =
             concreteToEntityShim $
-            MkConcreteEntityType ListEntityGroundType $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
+            MkConcreteType ListEntityGroundType $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @baseupdate @polb
     pure $ convE . cfmap (jml1 @polb . conv)
 -- (Entity, Entity) <= Entity
@@ -176,9 +176,9 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) PairE
     let
         convE =
             concreteToEntityShim $
-            MkConcreteEntityType PairEntityGroundType $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
+            MkConcreteType PairEntityGroundType $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @baseupdate @polb
     convB <- subtypeTypes sc tb $ topEntityType @baseupdate @polb
     pure $ convE . consShimFunc CovarianceType (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
@@ -187,9 +187,9 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) Eithe
     let
         convE =
             concreteToEntityShim $
-            MkConcreteEntityType EitherEntityGroundType $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) $
-            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
+            MkConcreteType EitherEntityGroundType $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) $
+            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @baseupdate @polb
     convB <- subtypeTypes sc tb $ topEntityType @baseupdate @polb
     pure $ convE . consShimFunc CovarianceType (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)

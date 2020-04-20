@@ -167,7 +167,7 @@ pinaforeEntityToConcreteEntityType ::
     -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
 pinaforeEntityToConcreteEntityType lc gt args = do
     MkShimWit eargs conv <- pinaforeToConcreteEntityArgs lc (bijectCovaryMap $ entityGroundTypeCovaryMap gt) args
-    return $ MkShimWit (MkConcreteEntityType gt eargs) conv
+    return $ MkShimWit (MkConcreteType gt eargs) conv
 
 pinaforeSingularToConcreteEntityType ::
        forall baseupdate polarity a. Is PolarityType polarity
@@ -192,7 +192,7 @@ pinaforeToConcreteEntityType _ = Nothing
 
 concreteEntityToMaybeNegativePinaforeType ::
        forall baseupdate t. ConcreteEntityType t -> Maybe (PinaforeShimWit baseupdate 'Negative t)
-concreteEntityToMaybeNegativePinaforeType (MkConcreteEntityType gt args) =
+concreteEntityToMaybeNegativePinaforeType (MkConcreteType gt args) =
     entityGroundTypeCovaryType gt $ \ct -> do
         MkShimWit dargs conv <-
             argumentsToDolanArgumentsM concreteEntityToMaybeNegativePinaforeType ct (entityGroundTypeCovaryMap gt) args
@@ -210,7 +210,7 @@ concreteEntityToNegativePinaforeType et =
 
 concreteEntityToPositivePinaforeType ::
        forall baseupdate t. ConcreteEntityType t -> PinaforeShimWit baseupdate 'Positive t
-concreteEntityToPositivePinaforeType (MkConcreteEntityType gt args) =
+concreteEntityToPositivePinaforeType (MkConcreteType gt args) =
     entityGroundTypeCovaryType gt $ \ct ->
         case argumentsToDolanArguments concreteEntityToPositivePinaforeType ct (entityGroundTypeCovaryMap gt) args of
             MkShimWit dargs conv ->

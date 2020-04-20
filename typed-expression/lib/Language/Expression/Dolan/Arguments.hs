@@ -13,23 +13,12 @@ module Language.Expression.Dolan.Arguments
     ) where
 
 import Data.Shim
+import Language.Expression.Arguments
 import Language.Expression.Dolan.Covariance
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Variance
 import Shapes
 
-data Arguments (w :: Type -> Type) (f :: k) (t :: Type) where
-    NilArguments :: Arguments w t t
-    ConsArguments :: w a -> Arguments w (f a) t -> Arguments w f t
-
-instance TestEquality w => TestEquality (Arguments w f) where
-    testEquality NilArguments NilArguments = Just Refl
-    testEquality (ConsArguments w1 args1) (ConsArguments w2 args2) = do
-        Refl <- testEquality w1 w2
-        Refl <- testEquality args1 args2
-        Just Refl
-
----
 type family SingleArgument (sv :: Variance) (ft :: Polarity -> Type -> Type) (polarity :: Polarity) :: VarianceKind sv -> Type where
     SingleArgument 'Covariance ft polarity = ft polarity
     SingleArgument 'Contravariance ft polarity = ft (InvertPolarity polarity)

@@ -46,25 +46,25 @@ closedEntityTypeEq (ConsClosedEntityType _ t1 tr) =
         (Dict, Dict) -> Dict
 
 concreteEntityTypeEq :: ConcreteEntityType t -> Dict (Eq t)
-concreteEntityTypeEq (MkConcreteEntityType TopEntityGroundType NilArguments) = Dict
-concreteEntityTypeEq (MkConcreteEntityType NewEntityGroundType NilArguments) = Dict
-concreteEntityTypeEq (MkConcreteEntityType (OpenEntityGroundType _ _) NilArguments) = Dict
-concreteEntityTypeEq (MkConcreteEntityType (LiteralEntityGroundType t) NilArguments) =
+concreteEntityTypeEq (MkConcreteType TopEntityGroundType NilArguments) = Dict
+concreteEntityTypeEq (MkConcreteType NewEntityGroundType NilArguments) = Dict
+concreteEntityTypeEq (MkConcreteType (OpenEntityGroundType _ _) NilArguments) = Dict
+concreteEntityTypeEq (MkConcreteType (LiteralEntityGroundType t) NilArguments) =
     case literalTypeAsLiteral t of
         Dict -> Dict
-concreteEntityTypeEq (MkConcreteEntityType MaybeEntityGroundType (ConsArguments t NilArguments)) =
+concreteEntityTypeEq (MkConcreteType MaybeEntityGroundType (ConsArguments t NilArguments)) =
     case concreteEntityTypeEq t of
         Dict -> Dict
-concreteEntityTypeEq (MkConcreteEntityType ListEntityGroundType (ConsArguments t NilArguments)) =
+concreteEntityTypeEq (MkConcreteType ListEntityGroundType (ConsArguments t NilArguments)) =
     case concreteEntityTypeEq t of
         Dict -> Dict
-concreteEntityTypeEq (MkConcreteEntityType PairEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
+concreteEntityTypeEq (MkConcreteType PairEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
     case (concreteEntityTypeEq ta, concreteEntityTypeEq tb) of
         (Dict, Dict) -> Dict
-concreteEntityTypeEq (MkConcreteEntityType EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
+concreteEntityTypeEq (MkConcreteType EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
     case (concreteEntityTypeEq ta, concreteEntityTypeEq tb) of
         (Dict, Dict) -> Dict
-concreteEntityTypeEq (MkConcreteEntityType (ClosedEntityGroundType _ _ t) NilArguments) =
+concreteEntityTypeEq (MkConcreteType (ClosedEntityGroundType _ _ t) NilArguments) =
     case closedEntityTypeEq t of
         Dict -> Dict
 
@@ -91,18 +91,10 @@ entityGroundTypeTestEquality (ClosedEntityGroundType _ sa ta) (ClosedEntityGroun
     Just (HRefl, Dict)
 entityGroundTypeTestEquality _ _ = Nothing
 
-data ConcreteEntityType (t :: Type) where
-    MkConcreteEntityType
-        :: forall (k :: Type) (f :: k) (t :: Type).
-           EntityGroundType f
-        -> Arguments ConcreteEntityType f t
-        -> ConcreteEntityType t
+instance TestHetEquality EntityGroundType where
+    testHetEquality eta etb = fmap fst $ entityGroundTypeTestEquality eta etb
 
-instance TestEquality ConcreteEntityType where
-    testEquality (MkConcreteEntityType gt1 args1) (MkConcreteEntityType gt2 args2) = do
-        (HRefl, _) <- entityGroundTypeTestEquality gt1 gt2
-        Refl <- testEquality args1 args2
-        return Refl
+type ConcreteEntityType = ConcreteType EntityGroundType
 
 entityGroundTypeCovaryType ::
        forall (k :: Type) (t :: k) r.
@@ -145,7 +137,7 @@ entityGroundTypeShowPrec es EitherEntityGroundType (ConsArguments ta (ConsArgume
 entityGroundTypeShowPrec _ (ClosedEntityGroundType n _ _) NilArguments = (pack $ show n, 0)
 
 instance ExprShow (ConcreteEntityType t) where
-    exprShowPrec (MkConcreteEntityType gt args) = entityGroundTypeShowPrec exprShowPrec gt args
+    exprShowPrec (MkConcreteType gt args) = entityGroundTypeShowPrec exprShowPrec gt args
 
 instance Show (ConcreteEntityType t) where
     show t = unpack $ exprShow t
