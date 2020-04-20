@@ -82,50 +82,6 @@ pinaforeSubtypeArguments sc gt argsa argsb = let
                case dolanVarianceInCategory @JMShim vkt of
                    Dict -> fmap (\f -> f cid) $ subtypeArguments sc vkt dvm dvm argsa argsb
 
-concreteEntitySubtypeArguments ::
-       forall baseupdate m pola polb f g a b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
-    => SubtypeContext baseupdate m pola polb
-    -> CovaryMap JMShim f
-    -> CovaryMap JMShim g
-    -> Arguments ConcreteEntityType f a
-    -> Arguments ConcreteEntityType g b
-    -> m (JMShim f g -> JMShim a b)
-concreteEntitySubtypeArguments _ NilCovaryMap NilCovaryMap NilArguments NilArguments = pure id
-concreteEntitySubtypeArguments sc (ConsCovaryMap cvf) (ConsCovaryMap cvg) (ConsArguments ta tta) (ConsArguments tb ttb) = do
-    s1 <- concreteEntitySubtype sc ta tb
-    msr <- concreteEntitySubtypeArguments sc cvf cvg tta ttb
-    return $ \s -> msr $ consShimFunc CovarianceType s s1
-
-concreteEntitySubtype ::
-       forall baseupdate m pola polb (a :: Type) (b :: Type).
-       (Applicative m, Is PolarityType pola, Is PolarityType polb)
-    => SubtypeContext baseupdate m pola polb
-    -> ConcreteEntityType a
-    -> ConcreteEntityType b
-    -> m (PinaforeShim a b)
--- a <= Entity
-concreteEntitySubtype _ t (MkConcreteType TopEntityGroundType NilArguments) = pure $ concreteToEntityShim t
--- (literal type) <= (literal type)
-concreteEntitySubtype _ (MkConcreteType (LiteralEntityGroundType t1) NilArguments) (MkConcreteType (LiteralEntityGroundType t2) NilArguments)
-    | Just conv <- isSubtype t1 t2 = pure conv
--- NewEntity <= NewEntity
-concreteEntitySubtype _ (MkConcreteType NewEntityGroundType NilArguments) (MkConcreteType NewEntityGroundType NilArguments) =
-    pure id
--- NewEntity <= (open entity type)
-concreteEntitySubtype _ (MkConcreteType NewEntityGroundType NilArguments) (MkConcreteType (OpenEntityGroundType _ _) NilArguments) =
-    pure $ coerceEnhanced "subtype"
--- (closed entity type) <= (closed entity type)
-concreteEntitySubtype _ (MkConcreteType (ClosedEntityGroundType _ sa ta) NilArguments) (MkConcreteType (ClosedEntityGroundType _ sb tb) NilArguments)
-    | Just Refl <- testEquality sa sb
-    , Just Refl <- testEquality ta tb = pure id
--- a <= a; a x0 <= a x1; etc.
-concreteEntitySubtype sc (MkConcreteType ga argsa) (MkConcreteType gb argsb)
-    | Just (HRefl, Dict) <- entityGroundTypeTestEquality ga gb =
-        fmap (\mconv -> mconv cid) $
-        concreteEntitySubtypeArguments sc (entityGroundTypeCovaryMap ga) (entityGroundTypeCovaryMap gb) argsa argsb
--- type conversion error
-concreteEntitySubtype sc eta etb = subtypeLift sc $ convertFailure (exprShow eta) (exprShow etb)
-
 topEntityType :: forall baseupdate pol. PinaforeType baseupdate pol (JoinMeetType pol Entity (LimitType pol))
 topEntityType =
     ConsPinaforeType
@@ -219,12 +175,6 @@ entityGroundSubtype sc NilListType (OpenEntityGroundType n1 t1) NilDolanArgument
 entityGroundSubtype _ NilListType (ClosedEntityGroundType _ sa ta) NilDolanArguments NilListType (ClosedEntityGroundType _ sb tb) NilDolanArguments
     | Just Refl <- testEquality sa sb
     , Just Refl <- testEquality ta tb = pure id
-{-
--- a <= a
-entityGroundSubtype sc cta ga argsa ctb gb argsb
-    | Just (HRefl,_) <- entityGroundTypeTestEquality ga gb
-    , Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta ga argsa argsb
--}
 -- type conversion error
 entityGroundSubtype sc cta ga argsa ctb gb argsb =
     subtypeLift sc $
@@ -246,12 +196,6 @@ subtypeGroundTypes sc ga argsa gb argsb
 -- (entity type) <= (entity type)
 subtypeGroundTypes sc (EntityPinaforeGroundType cta ga) argsa (EntityPinaforeGroundType ctb gb) argsb =
     entityGroundSubtype sc cta ga argsa ctb gb argsb
--- (entity type) <= (entity type)
-subtypeGroundTypes sc ga argsa gb argsb
-    | Just (MkShimWit eta conva) <- pinaforeSingularToConcreteEntityType (GroundPinaforeSingularType ga argsa)
-    , Just (MkShimWit etb convb) <- pinaforeSingularToConcreteEntityType (GroundPinaforeSingularType gb argsb) = do
-        conv <- concreteEntitySubtype sc eta etb
-        return $ jmIsoPolarBackwards @polb convb . conv . jmIsoPolarForwards @pola conva
 -- FiniteSetRef -a <= SetRef a
 subtypeGroundTypes sc FiniteSetRefPinaforeGroundType (ConsDolanArguments (MkRangeType t1 _) NilDolanArguments) SetRefPinaforeGroundType (ConsDolanArguments t2 NilDolanArguments) = do
     shim <- subtypeTypes (subtypeInverted sc) t2 t1
