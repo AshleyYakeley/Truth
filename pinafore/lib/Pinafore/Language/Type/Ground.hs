@@ -36,7 +36,7 @@ pinaforeGroundTypeTestEquality ::
 pinaforeGroundTypeTestEquality FuncPinaforeGroundType FuncPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality (EntityPinaforeGroundType la gta) (EntityPinaforeGroundType lb gtb) = do
     Refl <- testEquality la lb
-    HRefl <- entityGroundTypeTestEquality gta gtb
+    (HRefl, _) <- entityGroundTypeTestEquality gta gtb
     Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality OrderPinaforeGroundType OrderPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality ActionPinaforeGroundType ActionPinaforeGroundType = Just (Refl, HRefl)

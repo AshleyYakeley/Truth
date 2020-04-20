@@ -10,6 +10,7 @@ import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Scope
 import Pinafore.Language.Type.Entity
+import Pinafore.Language.Type.EntityAdapter
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Literal
 import Pinafore.Language.TypeSystem.Show
@@ -17,6 +18,7 @@ import Pinafore.Language.TypeSystem.Type
 import Pinafore.Language.Value
 import Shapes
 
+--import Pinafore.Language.Subtype
 data SubtypeContext baseupdate m pola polb = MkSubtypeContext
     { subtypeTypes :: forall ta tb.
                               PinaforeType baseupdate pola ta -> PinaforeType baseupdate polb tb -> m (JMShim ta tb)
@@ -80,21 +82,51 @@ pinaforeSubtypeArguments sc gt argsa argsb = let
                case dolanVarianceInCategory @JMShim vkt of
                    Dict -> fmap (\f -> f cid) $ subtypeArguments sc vkt dvm dvm argsa argsb
 
-entitySubtypeArguments ::
-       forall baseupdate m pola polb dv f a b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
+concreteEntitySubtypeArguments ::
+       forall baseupdate m pola polb f g a b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext baseupdate m pola polb
-    -> CovaryType dv
-    -> EntityGroundType f
-    -> DolanArguments dv (PinaforeType baseupdate) f pola a
-    -> DolanArguments dv (PinaforeType baseupdate) f polb b
-    -> m (JMShim a b)
-entitySubtypeArguments sc ct gt argsa argsb = let
-    dvt = mapListType (\Refl -> CovarianceType) ct
-    dvm = covaryToDolanVarianceMap ct $ entityGroundTypeCovaryMap gt
-    in case dolanVarianceMapInKind dvm of
-           Dict ->
-               case dolanVarianceInCategory @JMShim dvt of
-                   Dict -> fmap (\f -> f cid) $ subtypeArguments sc dvt dvm dvm argsa argsb
+    -> CovaryMap JMShim f
+    -> CovaryMap JMShim g
+    -> Arguments ConcreteEntityType f a
+    -> Arguments ConcreteEntityType g b
+    -> m (JMShim f g -> JMShim a b)
+concreteEntitySubtypeArguments _ NilCovaryMap NilCovaryMap NilArguments NilArguments = pure id
+concreteEntitySubtypeArguments sc (ConsCovaryMap cvf) (ConsCovaryMap cvg) (ConsArguments ta tta) (ConsArguments tb ttb) = do
+    s1 <- concreteEntitySubtype sc ta tb
+    msr <- concreteEntitySubtypeArguments sc cvf cvg tta ttb
+    return $ \s -> msr $ consShimFunc CovarianceType s s1
+
+concreteEntitySubtype ::
+       forall baseupdate m pola polb (a :: Type) (b :: Type).
+       (Applicative m, Is PolarityType pola, Is PolarityType polb)
+    => SubtypeContext baseupdate m pola polb
+    -> ConcreteEntityType a
+    -> ConcreteEntityType b
+    -> m (PinaforeShim a b)
+-- None <= a
+concreteEntitySubtype _ NoneConcreteEntityType _ = pure initf
+-- a <= Entity
+concreteEntitySubtype _ t (MkConcreteEntityType TopEntityGroundType NilArguments) = pure $ concreteToEntityShim t
+-- (literal type) <= (literal type)
+concreteEntitySubtype _ (MkConcreteEntityType (LiteralEntityGroundType t1) NilArguments) (MkConcreteEntityType (LiteralEntityGroundType t2) NilArguments)
+    | Just conv <- isSubtype t1 t2 = pure conv
+-- NewEntity <= NewEntity
+concreteEntitySubtype _ (MkConcreteEntityType NewEntityGroundType NilArguments) (MkConcreteEntityType NewEntityGroundType NilArguments) =
+    pure id
+-- NewEntity <= (open entity type)
+concreteEntitySubtype _ (MkConcreteEntityType NewEntityGroundType NilArguments) (MkConcreteEntityType (OpenEntityGroundType _ _) NilArguments) =
+    pure $ coerceEnhanced "subtype"
+-- (closed entity type) <= (closed entity type)
+concreteEntitySubtype _ (MkConcreteEntityType (ClosedEntityGroundType _ sa ta) NilArguments) (MkConcreteEntityType (ClosedEntityGroundType _ sb tb) NilArguments)
+    | Just Refl <- testEquality sa sb
+    , Just Refl <- testEquality ta tb = pure id
+-- a <= a; a x0 <= a x1; etc.
+concreteEntitySubtype sc (MkConcreteEntityType ga argsa) (MkConcreteEntityType gb argsb)
+    | Just (HRefl, Dict) <- entityGroundTypeTestEquality ga gb =
+        fmap (\mconv -> mconv cid) $
+        concreteEntitySubtypeArguments sc (entityGroundTypeCovaryMap ga) (entityGroundTypeCovaryMap gb) argsa argsb
+-- type conversion error
+concreteEntitySubtype sc eta etb = subtypeLift sc $ convertFailure (exprShow eta) (exprShow etb)
 
 topEntityType :: forall baseupdate pol. PinaforeType baseupdate pol (JoinMeetType pol Entity (LimitType pol))
 topEntityType =
@@ -127,49 +159,49 @@ entityGroundSubtype _ NilListType TopEntityGroundType NilDolanArguments NilListT
 entityGroundSubtype sc (ConsListType Refl NilListType) MaybeEntityGroundType (ConsDolanArguments t NilDolanArguments) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
-            entityAdapterConvert $
-            entityGroundTypeAdapter MaybeEntityGroundType $
-            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
+            concreteToEntityShim $
+            MkConcreteEntityType MaybeEntityGroundType $
+            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @baseupdate @polb
-    pure $ toEnhanced "subtype" convE . cfmap (jml1 @polb . conv)
+    pure $ convE . cfmap (jml1 @polb . conv)
 -- [Entity] <= Entity
 entityGroundSubtype sc (ConsListType Refl NilListType) ListEntityGroundType (ConsDolanArguments t NilDolanArguments) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
-            entityAdapterConvert $
-            entityGroundTypeAdapter ListEntityGroundType $
-            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
+            concreteToEntityShim $
+            MkConcreteEntityType ListEntityGroundType $
+            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @baseupdate @polb
-    pure $ toEnhanced "subtype" convE . cfmap (jml1 @polb . conv)
+    pure $ convE . cfmap (jml1 @polb . conv)
 -- (Entity, Entity) <= Entity
 entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
-            entityAdapterConvert $
-            entityGroundTypeAdapter PairEntityGroundType $
-            ConsArguments (MkEntityType TopEntityGroundType NilArguments) $
-            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
+            concreteToEntityShim $
+            MkConcreteEntityType PairEntityGroundType $
+            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) $
+            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @baseupdate @polb
     convB <- subtypeTypes sc tb $ topEntityType @baseupdate @polb
-    pure $ toEnhanced "subtype" convE . consShimFunc CovarianceType (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
+    pure $ convE . consShimFunc CovarianceType (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
 -- Either Entity Entity <= Entity
 entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
-            entityAdapterConvert $
-            entityGroundTypeAdapter EitherEntityGroundType $
-            ConsArguments (MkEntityType TopEntityGroundType NilArguments) $
-            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
+            concreteToEntityShim $
+            MkConcreteEntityType EitherEntityGroundType $
+            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) $
+            ConsArguments (MkConcreteEntityType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @baseupdate @polb
     convB <- subtypeTypes sc tb $ topEntityType @baseupdate @polb
-    pure $ toEnhanced "subtype" convE . consShimFunc CovarianceType (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
+    pure $ convE . consShimFunc CovarianceType (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
 -- (entity type) <= Entity
 entityGroundSubtype _ ct gt args NilListType TopEntityGroundType NilDolanArguments
-    | Just ebij <- pinaforeEntityToEntityType ct gt args =
+    | Just ebij <- pinaforeEntityToConcreteEntityType ct gt args =
         case ebij of
             MkShimWit et conv ->
                 pure $
-                toEnhanced "subtype" (entityAdapterConvert (entityAdapter et)) <.>
+                concreteToEntityShim et <.>
                 case representative @_ @_ @pola of
                     PositiveType -> isoForwards (unJMIsoShim conv)
                     NegativeType -> isoBackwards (unJMIsoShim conv)
@@ -184,21 +216,23 @@ entityGroundSubtype _ NilListType NewEntityGroundType NilDolanArguments NilListT
     pure $ coerceEnhanced "subtype"
 -- (open entity type) <= (open entity type)
 entityGroundSubtype sc NilListType (OpenEntityGroundType n1 t1) NilDolanArguments NilListType (OpenEntityGroundType n2 t2) NilDolanArguments =
-    subtypeLift sc $ fmap (coercionEnhanced "subtype") $ getEntitySubtype n1 t1 n2 t2
+    subtypeLift sc $ getOpenEntitySubtype n1 t1 n2 t2
 -- (closed entity type) <= (closed entity type)
 entityGroundSubtype _ NilListType (ClosedEntityGroundType _ sa ta) NilDolanArguments NilListType (ClosedEntityGroundType _ sb tb) NilDolanArguments
     | Just Refl <- testEquality sa sb
     , Just Refl <- testEquality ta tb = pure id
+{-
 -- a <= a
 entityGroundSubtype sc cta ga argsa ctb gb argsb
-    | Just HRefl <- entityGroundTypeTestEquality ga gb
+    | Just (HRefl,_) <- entityGroundTypeTestEquality ga gb
     , Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta ga argsa argsb
+-}
 -- type conversion error
 entityGroundSubtype sc cta ga argsa ctb gb argsb =
     subtypeLift sc $
     convertFailure
-        (unpack $ exprShow $ GroundPinaforeSingularType (EntityPinaforeGroundType cta ga) argsa)
-        (unpack $ exprShow $ GroundPinaforeSingularType (EntityPinaforeGroundType ctb gb) argsb)
+        (exprShow $ GroundPinaforeSingularType (EntityPinaforeGroundType cta ga) argsa)
+        (exprShow $ GroundPinaforeSingularType (EntityPinaforeGroundType ctb gb) argsb)
 
 subtypeGroundTypes ::
        forall baseupdate m pola polb dva gta a dvb gtb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
@@ -208,19 +242,23 @@ subtypeGroundTypes ::
     -> PinaforeGroundType baseupdate dvb polb gtb
     -> DolanArguments dvb (PinaforeType baseupdate) gtb polb b
     -> m (JMShim a b)
+-- f a0... <= f b0...
+subtypeGroundTypes sc ga argsa gb argsb
+    | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality ga gb = pinaforeSubtypeArguments sc ga argsa argsb
 -- (entity type) <= (entity type)
 subtypeGroundTypes sc (EntityPinaforeGroundType cta ga) argsa (EntityPinaforeGroundType ctb gb) argsb =
     entityGroundSubtype sc cta ga argsa ctb gb argsb
+-- (entity type) <= (entity type)
+subtypeGroundTypes sc ga argsa gb argsb
+    | Just (MkShimWit eta conva) <- pinaforeSingularToConcreteEntityType (GroundPinaforeSingularType ga argsa)
+    , Just (MkShimWit etb convb) <- pinaforeSingularToConcreteEntityType (GroundPinaforeSingularType gb argsb) = do
+        conv <- concreteEntitySubtype sc eta etb
+        return $ jmIsoPolarBackwards @polb convb . conv . jmIsoPolarForwards @pola conva
 -- FiniteSetRef -a <= SetRef a
 subtypeGroundTypes sc FiniteSetRefPinaforeGroundType (ConsDolanArguments (MkRangeType t1 _) NilDolanArguments) SetRefPinaforeGroundType (ConsDolanArguments t2 NilDolanArguments) = do
     shim <- subtypeTypes (subtypeInverted sc) t2 t1
     return $ toEnhanced "FiniteSetRef to SetRef" $ contramap (fromEnhanced shim) . langFiniteSetRefToSetRef
--- a <= a
-subtypeGroundTypes sc ga argsa gb argsb
-    | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality ga gb = pinaforeSubtypeArguments sc ga argsa argsb
 -- type conversion error
 subtypeGroundTypes sc ga argsa gb argsb =
     subtypeLift sc $
-    convertFailure
-        (unpack $ exprShow $ GroundPinaforeSingularType ga argsa)
-        (unpack $ exprShow $ GroundPinaforeSingularType gb argsb)
+    convertFailure (exprShow $ GroundPinaforeSingularType ga argsa) (exprShow $ GroundPinaforeSingularType gb argsb)

@@ -456,6 +456,7 @@ testEntity =
                     "1"
                     [ pointTest "pass"
                     , pointTest "let f :: P -> Q; f x = x in pass"
+                    , pointTest "let f :: [P] -> [Q]; f x = x in pass"
                     , badInterpretTest "let f :: Q -> P; f x = x in pass"
                     ]
               , context ["opentype P", "subtype P <= Q", "opentype Q"] $
@@ -463,6 +464,7 @@ testEntity =
                     "2"
                     [ pointTest "pass"
                     , pointTest "let f :: P -> Q; f x = x in pass"
+                    , pointTest "let f :: [P] -> [Q]; f x = x in pass"
                     , badInterpretTest "let f :: Q -> P; f x = x in pass"
                     ]
               , context ["subtype P <= Q", "opentype P", "opentype Q"] $
@@ -470,6 +472,7 @@ testEntity =
                     "3"
                     [ pointTest "pass"
                     , pointTest "let f :: P -> Q; f x = x in pass"
+                    , pointTest "let f :: [P] -> [Q]; f x = x in pass"
                     , badInterpretTest "let f :: Q -> P; f x = x in pass"
                     ]
               , context ["opentype P", "opentype Q"] $
@@ -492,6 +495,17 @@ testEntity =
                     [ pointTest "let opentype P; subtype P <= Q in pass"
                     , pointTest "let opentype P; subtype P <= Q; f :: P -> Q; f x = x in pass"
                     , badInterpretTest "let opentype P; subtype P <= Q; f :: Q -> P; f x = x in pass"
+                    ]
+              , context ["opentype Q", "subtype Maybe Number <= Q"] $
+                tgroup
+                    "closed-open" -- not allowed, per issue #28
+                    [badInterpretTest "pass"]
+              , tgroup
+                    "Entity"
+                    [ pointTest "let f :: Number -> Entity; f x = x in pass"
+                    , pointTest "let f :: (a & Number) -> (Entity,a); f x = (x,x) in pass"
+                    , pointTest "let f :: Maybe Number -> Entity; f x = x in pass"
+                    , pointTest "let f :: Maybe (a & Number) -> (Entity,Maybe a); f x = (x,x) in pass"
                     ]
               ]
         , tgroup

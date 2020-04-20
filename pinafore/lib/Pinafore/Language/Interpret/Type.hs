@@ -1,6 +1,7 @@
 module Pinafore.Language.Interpret.Type
     ( interpretType
     , interpretEntityType
+    , interpretSubtypeRelation
     ) where
 
 import Data.Shim
@@ -25,14 +26,14 @@ interpretType st = do
     case mpol of
         SingleMPolarW atw -> return atw
 
-interpretEntityType :: SyntaxType -> PinaforeSourceScoped baseupdate (AnyW EntityType)
+interpretEntityType :: SyntaxType -> PinaforeSourceScoped baseupdate (AnyW ConcreteEntityType)
 interpretEntityType st = do
     mpol <- interpretTypeM @_ @'Nothing st
     case mpol of
         BothMPolarW atm ->
             case atm @'Positive of
                 MkAnyW tm ->
-                    case pinaforeToEntityType tm of
+                    case pinaforeToConcreteEntityType tm of
                         Just (MkShimWit t _) -> return $ MkAnyW t
                         Nothing -> throwError $ InterpretTypeNotEntityError $ exprShow tm
 
@@ -233,3 +234,22 @@ interpretGroundTypeConst (ConstSyntaxGroundType n) = do
                 return $
                 MkPinaforeGroundTypeM representative $
                 toMPolar $ MkAnyW $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n sw ct
+
+interpretSubtypeRelation ::
+       SyntaxType
+    -> SyntaxType
+    -> PinaforeSourceScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate))
+interpretSubtypeRelation sta stb = do
+    ata <- interpretEntityType sta
+    atb <- interpretEntityType stb
+    case ata of
+        MkAnyW ta ->
+            case ta of
+                MkConcreteEntityType (OpenEntityGroundType _ tida) NilArguments ->
+                    case atb of
+                        MkAnyW tb ->
+                            case tb of
+                                MkConcreteEntityType (OpenEntityGroundType _ tidb) NilArguments ->
+                                    withEntitySubtype tida tidb
+                                _ -> throwError $ TypeNotOpenEntityError $ exprShow tb
+                _ -> throwError $ TypeNotOpenEntityError $ exprShow ta

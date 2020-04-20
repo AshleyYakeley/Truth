@@ -53,6 +53,7 @@ library:
       - Data.FiniteSet
       - Data.KindMorphism
       - Control.Category.Dual
+      - Control.Category.Lifted
       - Control.Monad.Compose
       - Control.Monad.Error
       - Control.Monad.Coroutine

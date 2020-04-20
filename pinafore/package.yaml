@@ -43,6 +43,7 @@ library:
       - Pinafore.Language.Type.Ground
       - Pinafore.Language.Type.TypeID
       - Pinafore.Language.Error
+      - Pinafore.Language.Subtype
       - Pinafore.Language.Scope
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.TypeSystem.Type
@@ -60,6 +61,7 @@ library:
       - Pinafore.Language.TypeSystem.Subsume
       - Pinafore.Language.TypeSystem
       - Pinafore.Language.Type.Entity
+      - Pinafore.Language.Type.EntityAdapter
       - Pinafore.Language.Syntax
       - Pinafore.Language.Read.Token
       - Pinafore.Language.Read.RefNotation

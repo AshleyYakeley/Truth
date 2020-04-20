@@ -1,10 +1,13 @@
 module Data.Shim.JMShim
     ( JMShim
     , JMIsoShim(..)
+    , jmIsoPolarForwards
+    , jmIsoPolarBackwards
     ) where
 
 import Data.Shim.CatRange
 import Data.Shim.JoinMeet
+import Data.Shim.Polarity
 import Data.Shim.PolyShim
 import Data.Shim.Variance
 import Shapes
@@ -88,6 +91,24 @@ instance ConPolyShim JMShim where
 newtype JMIsoShim (a :: k) (b :: k) = MkJMIsoShim
     { unJMIsoShim :: Isomorphism JMShim a b
     }
+
+jmIsoPolarForwards ::
+       forall polarity k (a :: k) (b :: k). Is PolarityType polarity
+    => PolarMapType JMIsoShim polarity a b
+    -> JMShim a b
+jmIsoPolarForwards conv =
+    case representative @_ @_ @polarity of
+        PositiveType -> isoForwards $ unJMIsoShim conv
+        NegativeType -> isoBackwards $ unJMIsoShim conv
+
+jmIsoPolarBackwards ::
+       forall polarity k (a :: k) (b :: k). Is PolarityType polarity
+    => PolarMapType JMIsoShim polarity a b
+    -> JMShim b a
+jmIsoPolarBackwards conv =
+    case representative @_ @_ @polarity of
+        PositiveType -> isoBackwards $ unJMIsoShim conv
+        NegativeType -> isoForwards $ unJMIsoShim conv
 
 instance CoercibleKind k => InCategory (JMIsoShim :: k -> k -> Type) where
     cid = MkJMIsoShim cid

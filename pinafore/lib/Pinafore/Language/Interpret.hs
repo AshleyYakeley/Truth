@@ -183,12 +183,12 @@ interpretExpression' spos (SEProperty sta stb anchor) =
         metb <- runSourcePos spos $ interpretEntityType stb
         case (meta, metb) of
             (MkAnyW eta, MkAnyW etb) -> do
-                etan <- runSourcePos spos $ entityToNegativePinaforeType eta
-                etbn <- runSourcePos spos $ entityToNegativePinaforeType etb
+                etan <- runSourcePos spos $ concreteEntityToNegativePinaforeType eta
+                etbn <- runSourcePos spos $ concreteEntityToNegativePinaforeType etb
                 let
-                    bta = biRangeAnyF (etan, entityToPositivePinaforeType eta)
-                    btb = biRangeAnyF (etbn, entityToPositivePinaforeType etb)
-                    in case (bta, btb, entityTypeEq eta, entityTypeEq etb) of
+                    bta = biRangeAnyF (etan, concreteEntityToPositivePinaforeType eta)
+                    btb = biRangeAnyF (etbn, concreteEntityToPositivePinaforeType etb)
+                    in case (bta, btb, concreteEntityTypeEq eta, concreteEntityTypeEq etb) of
                            (MkAnyF rta (MkRange praContra praCo), MkAnyF rtb (MkRange prbContra prbCo), Dict, Dict) ->
                                withSubrepresentative rangeTypeInKind rta $
                                withSubrepresentative rangeTypeInKind rtb $ let
@@ -198,7 +198,10 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                                        GroundPinaforeSingularType MorphismPinaforeGroundType $
                                        ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
                                    morphism =
-                                       propertyMorphism (entityAdapter eta) (entityAdapter etb) (MkPredicate anchor)
+                                       propertyMorphism
+                                           (concreteEntityAdapter eta)
+                                           (concreteEntityAdapter etb)
+                                           (MkPredicate anchor)
                                    pinamorphism =
                                        MkLangMorphism $
                                        cfmap3 (MkCatDual $ fromEnhanced praContra) $
@@ -213,14 +216,14 @@ interpretExpression' spos (SEEntity st anchor) =
             MkAnyW tp -> do
                 pt <- runSourcePos spos $ makeEntity tp $ MkEntity anchor
                 let
-                    typef = entityToPositivePinaforeType tp
+                    typef = concreteEntityToPositivePinaforeType tp
                     anyval = MkAnyValue typef pt
                 return $ qConstExprAny anyval
 
-makeEntity :: MonadError ErrorType m => EntityType t -> Entity -> m t
-makeEntity (MkEntityType TopEntityGroundType NilArguments) p = return p
-makeEntity (MkEntityType NewEntityGroundType NilArguments) p = return $ MkNewEntity p
-makeEntity (MkEntityType (OpenEntityGroundType _ _) NilArguments) p = return $ MkOpenEntity p
+makeEntity :: MonadError ErrorType m => ConcreteEntityType t -> Entity -> m t
+makeEntity (MkConcreteEntityType TopEntityGroundType NilArguments) p = return p
+makeEntity (MkConcreteEntityType NewEntityGroundType NilArguments) p = return $ MkNewEntity p
+makeEntity (MkConcreteEntityType (OpenEntityGroundType _ _) NilArguments) p = return $ MkOpenEntity p
 makeEntity t _ = throwError $ InterpretTypeNotOpenEntityError $ exprShow t
 
 interpretTypeSignature ::

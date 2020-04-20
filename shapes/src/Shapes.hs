@@ -9,6 +9,7 @@ import Shapes.Instances ()
 import Control.AsyncRunner as I
 import Control.Category.Dual as I
 import Control.Category.Groupoid as I
+import Control.Category.Lifted as I
 import Control.Clock as I
 import Control.Monad.Compose as I
 import Control.Monad.Coroutine as I

@@ -20,13 +20,15 @@ module Pinafore.Language.Scope
     , withNewPatternConstructor
     , withNewPatternConstructors
     , withEntitySubtype
-    , getEntitySubtype
+    , getOpenEntitySubtype
     , TypeCheckSubtype(..)
     ) where
 
+import Data.Shim
 import Language.Expression.Error
 import Pinafore.Language.Error
 import Pinafore.Language.Name
+import Pinafore.Language.Subtype
 import Pinafore.Language.Type.TypeID
 import Pinafore.Language.Value
 import Shapes
@@ -36,11 +38,13 @@ data NamedType ct
     = OpenEntityNamedType
     | ClosedEntityNamedType ct
 
+type OpenEntityShim = LiftedCategory JMShim OpenEntity
+
 data Scope expr patc ct = MkScope
     { scopeBindings :: StrictMap Name expr
     , scopePatternConstructors :: StrictMap Name patc
     , scopeTypes :: StrictMap Name (TypeID, NamedType ct)
-    , scopeEntitySubtypes :: [(TypeID, TypeID)]
+    , scopeOpenEntitySubtypes :: [SubtypeEntry OpenEntityShim TypeIDType]
     }
 
 newtype Scoped expr patc ct a =
@@ -119,8 +123,8 @@ instance MonadError ErrorType (SourceScoped expr patc ct) where
             spos <- ask
             throwError $ MkErrorMessage spos err
 
-convertFailure :: String -> String -> SourceScoped expr patc ct a
-convertFailure sa sb = throwError $ TypeConvertError (pack sa) (pack sb)
+convertFailure :: Text -> Text -> SourceScoped expr patc ct a
+convertFailure ta tb = throwError $ TypeConvertError ta tb
 
 lookupBinding :: Name -> SourceScoped expr patc ct (Maybe expr)
 lookupBinding name = do
@@ -153,24 +157,6 @@ lookupPatternConstructor name = do
     case ma of
         Just a -> return a
         Nothing -> throwError $ LookupConstructorUnknownError name
-
-getImmediateSupertypes :: Eq a => [(a, b)] -> a -> [b]
-getImmediateSupertypes st a0 = [(b) | (a, b) <- st, a == a0]
-
-expandSupertypes :: Eq a => [(a, a)] -> [a] -> [a]
-expandSupertypes st aa = nub $ mconcat $ aa : fmap (getImmediateSupertypes st) aa
-
-isSupertype :: Eq a => [(a, a)] -> [a] -> a -> Bool
-isSupertype _st aa a
-    | elem a aa = True
-isSupertype st aa a = let
-    aa' = expandSupertypes st aa
-    in if length aa' > length aa
-           then isSupertype st aa' a
-           else False
-
-castNamedEntity :: Coercion (OpenEntity na) (OpenEntity nb)
-castNamedEntity = MkCoercion
 
 withNewTypeName ::
        Name
@@ -205,30 +191,32 @@ withNewPatternConstructor name pc = do
 withNewPatternConstructors :: StrictMap Name patc -> Scoped expr patc ct a -> Scoped expr patc ct a
 withNewPatternConstructors pp = pLocalScope (\tc -> tc {scopePatternConstructors = pp <> scopePatternConstructors tc})
 
-lookupOpenType :: Name -> SourceScoped expr patc ct TypeID
-lookupOpenType n = do
-    (tid, nt) <- lookupNamedType n
-    case nt of
-        OpenEntityNamedType -> return tid
-        _ -> throwError $ LookupTypeNotOpenError n
+withEntitySubtype ::
+       TypeIDType tida
+    -> TypeIDType tidb
+    -> SourceScoped expr patc ct (WMFunction (Scoped expr patc ct) (Scoped expr patc ct))
+withEntitySubtype ta tb =
+    return $
+    MkWMFunction $
+    pLocalScope
+        (\tc ->
+             tc
+                 { scopeOpenEntitySubtypes =
+                       (MkSubtypeEntry ta tb $ MkLiftedCategory $ coerceEnhanced "open entity subtype") :
+                       (scopeOpenEntitySubtypes tc)
+                 })
 
-withEntitySubtype :: (Name, Name) -> SourceScoped expr patc ct (WMFunction (Scoped expr patc ct) (Scoped expr patc ct))
-withEntitySubtype (a, b) = do
-    ta <- lookupOpenType a
-    tb <- lookupOpenType b
-    return $ MkWMFunction $ pLocalScope (\tc -> tc {scopeEntitySubtypes = (ta, tb) : (scopeEntitySubtypes tc)})
-
-getEntitySubtype ::
+getOpenEntitySubtype ::
        Name
     -> TypeIDType tida
     -> Name
     -> TypeIDType tidb
-    -> SourceScoped expr patc ct (Coercion (OpenEntity tida) (OpenEntity tidb))
-getEntitySubtype na wa nb wb = do
-    (scopeEntitySubtypes -> subtypes) <- spScope
-    if isSupertype subtypes [witnessToValue wa] (witnessToValue wb)
-        then return castNamedEntity
-        else convertFailure (show na) (show nb)
+    -> SourceScoped expr patc ct (JMShim (OpenEntity tida) (OpenEntity tidb))
+getOpenEntitySubtype na wa nb wb = do
+    (scopeOpenEntitySubtypes -> subtypes) <- spScope
+    case unSubtypeMatch (getSubtypeShim subtypes equalSubtypeMatch) wa wb of
+        Just (MkLiftedCategory conv) -> return conv
+        Nothing -> convertFailure (pack $ show na) (pack $ show nb)
 
 class TypeCheckSubtype w where
     getSubtype :: forall expr patc ct a b. w a -> w b -> SourceScoped expr patc ct (a -> b)

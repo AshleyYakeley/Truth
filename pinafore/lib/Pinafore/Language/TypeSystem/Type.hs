@@ -151,59 +151,84 @@ instance Is PolarityType polarity => ExprShow (PinaforeRangeType baseupdate pola
                 _ -> "{" <> ointercalate "," pieces <> "}"
         in (text, 0)
 
-pinaforeToEntityArgs ::
+pinaforeToConcreteEntityArgs ::
        forall baseupdate dv f polarity t. Is PolarityType polarity
     => CovaryType dv
     -> CovaryMap JMIsoShim f
     -> DolanArguments dv (PinaforeType baseupdate) f polarity t
-    -> Maybe (ShimWit JMIsoShim (Arguments EntityType f) polarity t)
-pinaforeToEntityArgs = dolanArgumentsToArgumentsM pinaforeToEntityType
+    -> Maybe (ShimWit JMIsoShim (Arguments ConcreteEntityType f) polarity t)
+pinaforeToConcreteEntityArgs = dolanArgumentsToArgumentsM pinaforeToConcreteEntityType
 
-pinaforeEntityToEntityType ::
+pinaforeEntityToConcreteEntityType ::
        forall baseupdate dv f polarity a. Is PolarityType polarity
     => CovaryType dv
     -> EntityGroundType f
     -> DolanArguments dv (PinaforeType baseupdate) f polarity a
-    -> Maybe (ShimWit JMIsoShim EntityType polarity a)
-pinaforeEntityToEntityType lc gt args = do
-    MkShimWit eargs conv <- pinaforeToEntityArgs lc (bijectCovaryMap $ entityGroundTypeCovaryMap gt) args
-    return $ MkShimWit (MkEntityType gt eargs) conv
+    -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
+pinaforeEntityToConcreteEntityType lc gt args = do
+    MkShimWit eargs conv <- pinaforeToConcreteEntityArgs lc (bijectCovaryMap $ entityGroundTypeCovaryMap gt) args
+    return $ MkShimWit (MkConcreteEntityType gt eargs) conv
 
-pinaforeToEntityType ::
+pinaforeSingularToConcreteEntityType ::
+       forall baseupdate polarity a. Is PolarityType polarity
+    => PinaforeSingularType baseupdate polarity a
+    -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
+pinaforeSingularToConcreteEntityType (GroundPinaforeSingularType (EntityPinaforeGroundType lc gt) args) =
+    pinaforeEntityToConcreteEntityType lc gt args
+pinaforeSingularToConcreteEntityType _ = Nothing
+
+pinaforeToConcreteEntityType ::
        forall baseupdate polarity a. Is PolarityType polarity
     => PinaforeType baseupdate polarity a
-    -> Maybe (ShimWit JMIsoShim EntityType polarity a)
-pinaforeToEntityType (ConsPinaforeType (GroundPinaforeSingularType (EntityPinaforeGroundType lc gt) args) NilPinaforeType) = do
-    MkShimWit et conv <- pinaforeEntityToEntityType lc gt args
+    -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
+pinaforeToConcreteEntityType (ConsPinaforeType t NilPinaforeType) = do
+    MkShimWit et conv <- pinaforeSingularToConcreteEntityType t
     return $
         MkShimWit et $
         case representative @_ @_ @polarity of
             PositiveType -> conv <.> MkJMIsoShim bijoin1
             NegativeType -> MkJMIsoShim bimeet1 <.> conv
-pinaforeToEntityType NilPinaforeType
-    | PositiveType <- representative @_ @_ @polarity = Just $ MkShimWit NoneEntityType id
-pinaforeToEntityType _ = Nothing
+pinaforeToConcreteEntityType NilPinaforeType
+    | PositiveType <- representative @_ @_ @polarity = Just $ MkShimWit NoneConcreteEntityType id
+pinaforeToConcreteEntityType _ = Nothing
 
-entityToNegativePinaforeType ::
-       forall baseupdate m t. MonadError ErrorType m
-    => EntityType t
-    -> m (PinaforeShimWit baseupdate 'Negative t)
-entityToNegativePinaforeType (MkEntityType gt args) =
+concreteEntityToMaybeNegativePinaforeType ::
+       forall baseupdate t. ConcreteEntityType t -> Maybe (PinaforeShimWit baseupdate 'Negative t)
+concreteEntityToMaybeNegativePinaforeType (MkConcreteEntityType gt args) =
     entityGroundTypeCovaryType gt $ \ct -> do
         MkShimWit dargs conv <-
-            argumentsToDolanArgumentsM entityToNegativePinaforeType ct (entityGroundTypeCovaryMap gt) args
+            argumentsToDolanArgumentsM concreteEntityToMaybeNegativePinaforeType ct (entityGroundTypeCovaryMap gt) args
         return $
             singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
-entityToNegativePinaforeType NoneEntityType = throwError InterpretTypeNoneNotNegativeEntityError
+concreteEntityToMaybeNegativePinaforeType NoneConcreteEntityType = Nothing
 
-entityToPositivePinaforeType :: forall baseupdate t. EntityType t -> PinaforeShimWit baseupdate 'Positive t
-entityToPositivePinaforeType (MkEntityType gt args) =
+concreteEntityToNegativePinaforeType ::
+       forall baseupdate m t. MonadError ErrorType m
+    => ConcreteEntityType t
+    -> m (PinaforeShimWit baseupdate 'Negative t)
+concreteEntityToNegativePinaforeType et =
+    case concreteEntityToMaybeNegativePinaforeType et of
+        Just wit -> return wit
+        Nothing -> throwError InterpretTypeNoneNotNegativeEntityError
+
+concreteEntityToPositivePinaforeType ::
+       forall baseupdate t. ConcreteEntityType t -> PinaforeShimWit baseupdate 'Positive t
+concreteEntityToPositivePinaforeType (MkConcreteEntityType gt args) =
     entityGroundTypeCovaryType gt $ \ct ->
-        case argumentsToDolanArguments entityToPositivePinaforeType ct (entityGroundTypeCovaryMap gt) args of
+        case argumentsToDolanArguments concreteEntityToPositivePinaforeType ct (entityGroundTypeCovaryMap gt) args of
             MkShimWit dargs conv ->
                 singlePinaforeShimWit $
                 MkShimWit (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
-entityToPositivePinaforeType NoneEntityType = mkShimWit NilPinaforeType
+concreteEntityToPositivePinaforeType NoneConcreteEntityType = mkShimWit NilPinaforeType
+
+concreteEntityToPinaforeType ::
+       forall baseupdate polarity t. Is PolarityType polarity
+    => ConcreteEntityType t
+    -> Maybe (PinaforeShimWit baseupdate polarity t)
+concreteEntityToPinaforeType et =
+    case representative @_ @_ @polarity of
+        PositiveType -> return $ concreteEntityToPositivePinaforeType et
+        NegativeType -> concreteEntityToMaybeNegativePinaforeType et
 
 type PinaforeExpression baseupdate
      = SealedExpression Name (PinaforeShimWit baseupdate 'Negative) (PinaforeShimWit baseupdate 'Positive)

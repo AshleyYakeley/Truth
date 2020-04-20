@@ -36,19 +36,19 @@ readSubtypeDeclaration :: forall baseupdate. Parser (TypeDecls baseupdate)
 readSubtypeDeclaration = do
     spos <- getPosition
     readThis TokSubtype
-    na <- readTypeName
+    sta <- readType
     readExactlyThis TokOperator "<="
-    nb <- readTypeName
+    stb <- readType
     let
         tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
         tdTypes = id
         tdRelations :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
         tdRelations rn = do
-            smap <- liftRefNotation $ runSourcePos spos $ withEntitySubtype (na, nb)
+            smap <- liftRefNotation $ runSourcePos spos $ interpretSubtypeRelation sta stb
             remonadRefNotation smap rn
     return MkTypeDecls {..}
 
-readClosedTypeConstructor :: Parser (PinaforeScoped baseupdate (Name, Anchor, AnyW (ListType EntityType)))
+readClosedTypeConstructor :: Parser (PinaforeScoped baseupdate (Name, Anchor, AnyW (ListType ConcreteEntityType)))
 readClosedTypeConstructor = do
     consName <- readThis TokUName
     mtypes <-
@@ -63,7 +63,7 @@ readClosedTypeConstructor = do
 
 data Constructor t =
     forall a. MkConstructor Name
-                            (ListType EntityType a)
+                            (ListType ConcreteEntityType a)
                             (HList a -> t)
                             (t -> Maybe (HList a))
 
@@ -74,7 +74,7 @@ data Box =
     forall t. MkBox (ClosedEntityType t)
                     [Constructor t]
 
-assembleClosedEntityType :: [(Name, Anchor, AnyW (ListType EntityType))] -> Box
+assembleClosedEntityType :: [(Name, Anchor, AnyW (ListType ConcreteEntityType))] -> Box
 assembleClosedEntityType [] = MkBox NilClosedEntityType []
 assembleClosedEntityType ((n, a, MkAnyW el):cc) =
     case assembleClosedEntityType cc of
@@ -84,20 +84,20 @@ assembleClosedEntityType ((n, a, MkAnyW el):cc) =
 makeConstructorPattern ::
        forall baseupdate s t lt.
        PinaforeShimWit baseupdate 'Negative (ClosedEntity s t)
-    -> ListType EntityType lt
+    -> ListType ConcreteEntityType lt
     -> (t -> Maybe (HList lt))
     -> PinaforePatternConstructor baseupdate
 makeConstructorPattern pct lt tma =
-    case mapListType (entityToPositivePinaforeType @baseupdate) lt of
+    case mapListType (concreteEntityToPositivePinaforeType @baseupdate) lt of
         lt' -> toPatternConstructor pct lt' $ tma . unClosedEntity
 
 makeConstructorValue ::
        forall baseupdate m s t a. MonadError ErrorType m
     => PinaforeShimWit baseupdate 'Positive (ClosedEntity s t)
-    -> ListType EntityType a
+    -> ListType ConcreteEntityType a
     -> m (PinaforeShimWit baseupdate 'Positive (HList a -> t))
 makeConstructorValue ctf lt = do
-    lt' <- mapMListType entityToNegativePinaforeType lt
+    lt' <- mapMListType concreteEntityToNegativePinaforeType lt
     return $ qFunctionPosWitnesses lt' (mapShimWit (coerceEnhanced "consval") ctf)
 
 readClosedTypeDeclaration :: forall baseupdate. Parser (PinaforeScoped baseupdate (TypeDecls baseupdate))
