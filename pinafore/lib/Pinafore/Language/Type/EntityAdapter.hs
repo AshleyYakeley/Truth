@@ -94,7 +94,6 @@ closedEntityTypeAdapter (ConsClosedEntityType a cc rest) =
 
 concreteEntityAdapter :: forall t. ConcreteEntityType t -> EntityAdapter t
 concreteEntityAdapter (MkConcreteEntityType gt args) = entityGroundTypeAdapter gt args
-concreteEntityAdapter NoneConcreteEntityType = isoMap never never pNone
 
 concreteToEntityShim :: ConcreteEntityType a -> JMShim a Entity
 concreteToEntityShim (MkConcreteEntityType TopEntityGroundType NilArguments) = id

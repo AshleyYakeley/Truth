@@ -103,8 +103,6 @@ concreteEntitySubtype ::
     -> ConcreteEntityType a
     -> ConcreteEntityType b
     -> m (PinaforeShim a b)
--- None <= a
-concreteEntitySubtype _ NoneConcreteEntityType _ = pure initf
 -- a <= Entity
 concreteEntitySubtype _ t (MkConcreteEntityType TopEntityGroundType NilArguments) = pure $ concreteToEntityShim t
 -- (literal type) <= (literal type)

@@ -188,8 +188,6 @@ pinaforeToConcreteEntityType (ConsPinaforeType t NilPinaforeType) = do
         case representative @_ @_ @polarity of
             PositiveType -> conv <.> MkJMIsoShim bijoin1
             NegativeType -> MkJMIsoShim bimeet1 <.> conv
-pinaforeToConcreteEntityType NilPinaforeType
-    | PositiveType <- representative @_ @_ @polarity = Just $ MkShimWit NoneConcreteEntityType id
 pinaforeToConcreteEntityType _ = Nothing
 
 concreteEntityToMaybeNegativePinaforeType ::
@@ -200,7 +198,6 @@ concreteEntityToMaybeNegativePinaforeType (MkConcreteEntityType gt args) =
             argumentsToDolanArgumentsM concreteEntityToMaybeNegativePinaforeType ct (entityGroundTypeCovaryMap gt) args
         return $
             singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
-concreteEntityToMaybeNegativePinaforeType NoneConcreteEntityType = Nothing
 
 concreteEntityToNegativePinaforeType ::
        forall baseupdate m t. MonadError ErrorType m
@@ -219,7 +216,6 @@ concreteEntityToPositivePinaforeType (MkConcreteEntityType gt args) =
             MkShimWit dargs conv ->
                 singlePinaforeShimWit $
                 MkShimWit (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
-concreteEntityToPositivePinaforeType NoneConcreteEntityType = mkShimWit NilPinaforeType
 
 concreteEntityToPinaforeType ::
        forall baseupdate polarity t. Is PolarityType polarity

@@ -67,7 +67,6 @@ concreteEntityTypeEq (MkConcreteEntityType EitherEntityGroundType (ConsArguments
 concreteEntityTypeEq (MkConcreteEntityType (ClosedEntityGroundType _ _ t) NilArguments) =
     case closedEntityTypeEq t of
         Dict -> Dict
-concreteEntityTypeEq NoneConcreteEntityType = Dict
 
 entityGroundTypeTestEquality ::
        forall (ka :: Type) (ta :: ka) (kb :: Type) (tb :: kb).
@@ -98,15 +97,12 @@ data ConcreteEntityType (t :: Type) where
            EntityGroundType f
         -> Arguments ConcreteEntityType f t
         -> ConcreteEntityType t
-    NoneConcreteEntityType :: ConcreteEntityType BottomType
 
 instance TestEquality ConcreteEntityType where
     testEquality (MkConcreteEntityType gt1 args1) (MkConcreteEntityType gt2 args2) = do
         (HRefl, _) <- entityGroundTypeTestEquality gt1 gt2
         Refl <- testEquality args1 args2
         return Refl
-    testEquality NoneConcreteEntityType NoneConcreteEntityType = Just Refl
-    testEquality _ _ = Nothing
 
 entityGroundTypeCovaryType ::
        forall (k :: Type) (t :: k) r.
@@ -150,7 +146,6 @@ entityGroundTypeShowPrec _ (ClosedEntityGroundType n _ _) NilArguments = (pack $
 
 instance ExprShow (ConcreteEntityType t) where
     exprShowPrec (MkConcreteEntityType gt args) = entityGroundTypeShowPrec exprShowPrec gt args
-    exprShowPrec NoneConcreteEntityType = ("None", 0)
 
 instance Show (ConcreteEntityType t) where
     show t = unpack $ exprShow t

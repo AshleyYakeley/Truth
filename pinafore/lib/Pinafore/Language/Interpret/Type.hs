@@ -1,6 +1,6 @@
 module Pinafore.Language.Interpret.Type
     ( interpretType
-    , interpretEntityType
+    , interpretConcreteEntityType
     , interpretSubtypeRelation
     ) where
 
@@ -26,8 +26,8 @@ interpretType st = do
     case mpol of
         SingleMPolarW atw -> return atw
 
-interpretEntityType :: SyntaxType -> PinaforeSourceScoped baseupdate (AnyW ConcreteEntityType)
-interpretEntityType st = do
+interpretConcreteEntityType :: SyntaxType -> PinaforeSourceScoped baseupdate (AnyW ConcreteEntityType)
+interpretConcreteEntityType st = do
     mpol <- interpretTypeM @_ @'Nothing st
     case mpol of
         BothMPolarW atm ->
@@ -240,8 +240,8 @@ interpretSubtypeRelation ::
     -> SyntaxType
     -> PinaforeSourceScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate))
 interpretSubtypeRelation sta stb = do
-    ata <- interpretEntityType sta
-    atb <- interpretEntityType stb
+    ata <- interpretConcreteEntityType sta
+    atb <- interpretConcreteEntityType stb
     case ata of
         MkAnyW ta ->
             case ta of

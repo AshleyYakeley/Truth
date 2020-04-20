@@ -179,8 +179,8 @@ interpretExpression' spos (SEList sexprs) = do
     liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs
 interpretExpression' spos (SEProperty sta stb anchor) =
     liftRefNotation $ do
-        meta <- runSourcePos spos $ interpretEntityType sta
-        metb <- runSourcePos spos $ interpretEntityType stb
+        meta <- runSourcePos spos $ interpretConcreteEntityType sta
+        metb <- runSourcePos spos $ interpretConcreteEntityType stb
         case (meta, metb) of
             (MkAnyW eta, MkAnyW etb) -> do
                 etan <- runSourcePos spos $ concreteEntityToNegativePinaforeType eta
@@ -211,7 +211,7 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                                    in return $ qConstExprAny anyval
 interpretExpression' spos (SEEntity st anchor) =
     liftRefNotation $ do
-        mtp <- runSourcePos spos $ interpretEntityType st
+        mtp <- runSourcePos spos $ interpretConcreteEntityType st
         case mtp of
             MkAnyW tp -> do
                 pt <- runSourcePos spos $ makeEntity tp $ MkEntity anchor

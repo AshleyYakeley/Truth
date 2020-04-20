@@ -55,7 +55,7 @@ readClosedTypeConstructor = do
         many $ do
             spos <- getPosition
             st <- readType3
-            return $ runSourcePos spos $ interpretEntityType st
+            return $ runSourcePos spos $ interpretConcreteEntityType st
     anchor <- readThis TokAnchor
     return $ do
         etypes <- for mtypes id
