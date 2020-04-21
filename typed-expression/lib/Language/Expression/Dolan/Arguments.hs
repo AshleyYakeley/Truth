@@ -5,6 +5,7 @@ module Language.Expression.Dolan.Arguments
     , mapDolanArguments
     , mapInvertDolanArgumentsM
     , mergeDolanArguments
+    , dolanTestEquality
     , Arguments(..)
     , dolanArgumentsToArgumentsM
     , dolanArgumentsToArguments
@@ -530,3 +531,25 @@ argumentsToDolanArguments ::
     -> Arguments wa f t
     -> PShimWit cat (DolanArguments dv wb f) polarity t
 argumentsToDolanArguments f ct cm args = runIdentity $ argumentsToDolanArgumentsM (\wt -> Identity $ f wt) ct cm args
+
+singleArgumentTestEquality ::
+       forall sv f polarity a b. (TestEquality (f polarity), TestEquality (f (InvertPolarity polarity)))
+    => VarianceType sv
+    -> SingleArgument sv f polarity a
+    -> SingleArgument sv f polarity b
+    -> Maybe (a :~: b)
+singleArgumentTestEquality CovarianceType = testEquality
+singleArgumentTestEquality ContravarianceType = testEquality
+singleArgumentTestEquality RangevarianceType = testEquality
+
+dolanTestEquality ::
+       forall dv f gt polarity a b. (TestEquality (f polarity), TestEquality (f (InvertPolarity polarity)))
+    => DolanVarianceType dv
+    -> DolanArguments dv f gt polarity a
+    -> DolanArguments dv f gt polarity b
+    -> Maybe (a :~: b)
+dolanTestEquality NilListType NilDolanArguments NilDolanArguments = Just Refl
+dolanTestEquality (ConsListType sv dv) (ConsDolanArguments ta tta) (ConsDolanArguments tb ttb) = do
+    Refl <- singleArgumentTestEquality @_ @f @polarity sv ta tb
+    Refl <- dolanTestEquality dv tta ttb
+    return Refl

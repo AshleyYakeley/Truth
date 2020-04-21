@@ -1,5 +1,6 @@
 module Pinafore.Language.TypeSystem.Show where
 
+import Pinafore.Language.Name
 import Prelude (Bounded(..))
 import Shapes
 
@@ -16,3 +17,6 @@ exprPrecShow c t = precShow c $ exprShowPrec t
 
 exprShow :: ExprShow t => t -> Text
 exprShow = exprPrecShow maxBound
+
+instance ExprShow Name where
+    exprShowPrec (MkName n) = (n, 0)

@@ -50,6 +50,13 @@ liftCatRangeParts (MkCatRange pp qq) = MkCatRange (cfmap pp) (cfmap qq)
 data RangeType (tw :: Polarity -> Type -> Type) (polarity :: Polarity) (pq :: (Type, Type)) where
     MkRangeType :: tw (InvertPolarity polarity) p -> tw polarity q -> RangeType tw polarity '( p, q)
 
+instance (TestEquality (tw polarity), TestEquality (tw (InvertPolarity polarity))) =>
+             TestEquality (RangeType tw polarity) where
+    testEquality (MkRangeType pa qa) (MkRangeType pb qb) = do
+        Refl <- testEquality pa pb
+        Refl <- testEquality qa qb
+        return Refl
+
 rangeTypeInKind :: forall tw polarity. Subrepresentative (RangeType tw polarity) (KindWitness (Type, Type))
 rangeTypeInKind (MkRangeType _ _) = Dict
 

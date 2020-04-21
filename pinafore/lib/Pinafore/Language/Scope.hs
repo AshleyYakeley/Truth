@@ -30,6 +30,7 @@ import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.Subtype
 import Pinafore.Language.Type.TypeID
+import Pinafore.Language.TypeSystem.Show
 import Pinafore.Language.Value
 import Shapes
 import Text.Parsec (SourcePos)
@@ -216,7 +217,7 @@ getOpenEntitySubtype na wa nb wb = do
     (scopeOpenEntitySubtypes -> subtypes) <- spScope
     case unSubtypeMatch (getSubtypeShim subtypes equalSubtypeMatch) wa wb of
         Just (MkLiftedCategory conv) -> return conv
-        Nothing -> convertFailure (pack $ show na) (pack $ show nb)
+        Nothing -> convertFailure (exprShow na) (exprShow nb)
 
 class TypeCheckSubtype w where
     getSubtype :: forall expr patc ct a b. w a -> w b -> SourceScoped expr patc ct (a -> b)

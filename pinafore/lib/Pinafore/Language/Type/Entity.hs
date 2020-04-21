@@ -126,7 +126,7 @@ entityGroundTypeShowPrec ::
        forall w f t. (forall a. w a -> (Text, Int)) -> EntityGroundType f -> Arguments w f t -> (Text, Int)
 entityGroundTypeShowPrec _ TopEntityGroundType NilArguments = ("Entity", 0)
 entityGroundTypeShowPrec _ NewEntityGroundType NilArguments = ("NewEntity", 0)
-entityGroundTypeShowPrec _ (OpenEntityGroundType n _) NilArguments = (pack $ show n, 0)
+entityGroundTypeShowPrec _ (OpenEntityGroundType n _) NilArguments = exprShowPrec n
 entityGroundTypeShowPrec _ (LiteralEntityGroundType t) NilArguments = exprShowPrec t
 entityGroundTypeShowPrec es MaybeEntityGroundType (ConsArguments ta NilArguments) = ("Maybe " <> precShow 0 (es ta), 2)
 entityGroundTypeShowPrec es ListEntityGroundType (ConsArguments ta NilArguments) = ("[" <> fst (es ta) <> "]", 0)
@@ -134,7 +134,7 @@ entityGroundTypeShowPrec es PairEntityGroundType (ConsArguments ta (ConsArgument
     ("(" <> fst (es ta) <> ", " <> fst (es tb) <> ")", 0)
 entityGroundTypeShowPrec es EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments)) =
     ("Either " <> precShow 0 (es ta) <> " " <> precShow 0 (es tb), 2)
-entityGroundTypeShowPrec _ (ClosedEntityGroundType n _ _) NilArguments = (pack $ show n, 0)
+entityGroundTypeShowPrec _ (ClosedEntityGroundType n _ _) NilArguments = exprShowPrec n
 
 instance ExprShow (ConcreteEntityType t) where
     exprShowPrec (MkConcreteType gt args) = entityGroundTypeShowPrec exprShowPrec gt args
