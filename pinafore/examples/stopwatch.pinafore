@@ -2,7 +2,7 @@
 
 let
 
-closedtype StopwatchState = StoppedState Duration !"Stopped" | RunningState Time !"Running";
+datatype StopwatchState = StoppedState Duration | RunningState Time;
 
 toggleStopwatch :: Ref StopwatchState -> Action ();
 toggleStopwatch r = do

@@ -20,7 +20,7 @@ class PinaforeLexer(RegexLexer):
             (r'\#(.*?)\n', Comment.Single),
             (r'{\#', Comment.Multiline, 'comment'),
             (r'"(\\\\|\\"|[^"])*"', String),
-            (r'(opentype|subtype|closedtype|property|entity)\b', Keyword.Declaration),
+            (r'(datatype|opentype|subtype|closedtype|property|entity)\b', Keyword.Declaration),
             (words(('if', 'then', 'else', 'let', 'in', 'do', 'case', 'of', 'end'), suffix=r'\b'), Keyword),
             (words((
                 'Any', 'None', 'Literal', 'Text', 'Number', 'Rational', 'Integer', 'Boolean', 'Entity', 'NewEntity',

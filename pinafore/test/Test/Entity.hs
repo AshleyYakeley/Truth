@@ -508,6 +508,20 @@ testEntity =
                     , pointTest "let f :: Maybe (a & Number) -> (Entity,Maybe a); f x = (x,x) in pass"
                     ]
               ]
+        , context
+              [ "datatype T = T1 Text Number | T2 | T3 Boolean | T4 (Ref {-Bool,+Integer} -> Integer) | T5 Text (Bool -> Integer)"
+              ] $
+          tgroup
+              "datatype"
+              [ pointTest "pass"
+              , pointTest "let t1 = T1 \"hello\" 3 in pass"
+              , pointTest "let f (T1 x _) = x in pass"
+              , pointTest "case T1 \"hello\" 3 of T1 \"hello\" 3 -> pass end"
+              , pointTest
+                    "case T1 \"hello\" 3 of T2 -> fail \"T2\"; T1 \"hello\" 2 -> fail \"T1 2\"; T1 \"hell\" 3 -> fail \"T1 hell\"; T1 \"hello\" 3 -> pass end"
+              , pointTest
+                    "let f :: Bool -> Integer; f b = if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff -> if ff True ~= 1 then pass else fail \"ff\" end"
+              ]
         , context ["closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\""] $
           tgroup
               "closedtype"

@@ -142,10 +142,19 @@ In interactive mode, each line has syntax `<interactive>`.
 <declarations> ::=  | <declaration> ";" <declarations>
 
 <declaration> ::=
+    "datatype" <type-const> <datatype-body> |
     "opentype" <type-const> |
     "subtype" <type-const> "<=" <type-const> |
-    "closedtype" <type-const> <closedtype-body>
+    "closedtype" <type-const> <closedtype-body> |
     lname <patterns> "=" <expression>
+
+<datatype-body> ::=  | "=" <datatype-constructors>
+
+<datatype-constructors> ::=
+    <datatype-constructor> |
+    <datatype-constructor> "|" <datatype-constructors>
+
+<datatype-constructor> ::= uname <types>
 
 <closedtype-body> ::=  | "=" <closedtype-constructors>
 

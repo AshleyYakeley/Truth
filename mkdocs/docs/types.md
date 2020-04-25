@@ -2,6 +2,22 @@
 
 For all types `T`, `None <= T` and `T <= Any`.
 
+## Data Types
+
+Data types can be declared with the `datatype` keyword.
+The declaration specifies the constructors of the type.
+
+Each constructor has a name, and a list of zero or more ambipolar types.
+
+```pinafore
+datatype T =
+    T1 (Int -> [Int]) |
+    T2 Int;
+```
+
+Data types are not subtypes of `Entity` and are not storable.
+You can use closed entity types (below) for that.
+
 ## Entity types
 
 Entities are the things that can be represented as subjects and values in the triple-store.
@@ -82,6 +98,7 @@ There are no higher-arity tuples than pair.
 
 Closed entity types can be declared with the `closedtype` keyword.
 The declaration specifies the constructors of the type.
+They are similar to data types, but each constructor has an anchor, and field types are all subtypes of `Entity`.
 
 Each constructor has a name, a list of zero or more types (each a subtype of `Entity`), and an anchor.
 
