@@ -224,6 +224,8 @@ interpretGroundTypeConst (ConstSyntaxGroundType n)
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     (tid, nt) <- lookupNamedType n
     case nt of
+        SimpleNamedType dv dm es iot ->
+            return $ MkPinaforeGroundTypeM dv $ toMPolar $ MkAnyW $ SimpleGroundType dv dm es $ iot tid
         OpenEntityNamedType ->
             valueToWitness tid $ \sw ->
                 return $

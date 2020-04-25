@@ -25,6 +25,7 @@ module Pinafore.Language.Scope
     ) where
 
 import Data.Shim
+import Language.Expression.Dolan
 import Language.Expression.Error
 import Pinafore.Language.Error
 import Pinafore.Language.Name
@@ -36,7 +37,11 @@ import Shapes
 import Text.Parsec (SourcePos)
 
 data NamedType ct
-    = OpenEntityNamedType
+    = forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). SimpleNamedType (DolanVarianceType dv)
+                                                                                (DolanVarianceMap dv t)
+                                                                                (ListTypeExprShow dv)
+                                                                                (TypeID -> IOWitness t)
+    | OpenEntityNamedType
     | ClosedEntityNamedType ct
 
 type OpenEntityShim = LiftedCategory JMShim OpenEntity
