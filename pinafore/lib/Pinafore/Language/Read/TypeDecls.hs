@@ -96,6 +96,9 @@ makeConstructorValue ::
     -> PinaforeShimWit baseupdate 'Positive (HList a -> t)
 makeConstructorValue ctf lt = qFunctionPosWitnesses lt (mapShimWit (coerceEnhanced "consval") ctf)
 
+readDataTypeDeclaration :: forall baseupdate. Parser (PinaforeScoped baseupdate (TypeDecls baseupdate))
+readDataTypeDeclaration = empty
+
 readClosedTypeDeclaration :: forall baseupdate. Parser (PinaforeScoped baseupdate (TypeDecls baseupdate))
 readClosedTypeDeclaration = do
     spos <- getPosition
@@ -139,4 +142,6 @@ readClosedTypeDeclaration = do
                 return $ MkTypeDecls {..}
 
 readTypeDeclaration :: Parser (PinaforeScoped baseupdate (TypeDecls baseupdate))
-readTypeDeclaration = (fmap return $ readOpenTypeDeclaration <|> readSubtypeDeclaration) <|> readClosedTypeDeclaration
+readTypeDeclaration =
+    (fmap return $ readOpenTypeDeclaration <|> readSubtypeDeclaration) <|> readDataTypeDeclaration <|>
+    readClosedTypeDeclaration
