@@ -3,21 +3,22 @@ module Pinafore.Language.Type.Ground where
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.Name
 import Pinafore.Language.Type.Entity
-import Pinafore.Language.Type.TypeID
 import Pinafore.Language.TypeSystem.Show
 import Pinafore.Language.Value
 import Shapes
 import Truth.Core
 
 -- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
-data PinaforeGroundType baseupdate (dv :: DolanVariance) (polarity :: Polarity) (t :: DolanVarianceKind dv) where
-    DataGroundType
-        :: Name
-        -> TypeIDType tid
-        -> DataType baseupdate t
-        -> PinaforeGroundType baseupdate '[] polarity (IdentifiedValue tid t)
+data PinaforeGroundType (baseupdate :: Type) (dv :: DolanVariance) (polarity :: Polarity) (t :: DolanVarianceKind dv) where
+    -- a simple ground type is one with no special subtype relationships
+    SimpleGroundType
+        :: forall baseupdate (dv :: DolanVariance) (polarity :: Polarity) (t :: DolanVarianceKind dv).
+           DolanVarianceType dv
+        -> DolanVarianceMap dv t
+        -> ListTypeExprShow dv
+        -> IOWitness t
+        -> PinaforeGroundType baseupdate dv polarity t
     FuncPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Contravariance, 'Covariance] polarity (->)
     EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType baseupdate dv polarity t
     OrderPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Contravariance] polarity (LangOrder baseupdate)
@@ -50,40 +51,13 @@ instance TestEquality (f 'Positive) => TestEquality (AllPolarity f) where
         Refl <- testEquality (fpta @'Positive) (fptb @'Positive)
         return Refl
 
-data ConcretePinaforeType baseupdate t where
-    MkConcretePinaforeType
-        :: AllPolarity (PinaforeGroundType baseupdate dv) gt
-        -> AllPolarity (DolanArguments dv (AnyPolarity (ConcretePinaforeType baseupdate)) gt) t
-        -> ConcretePinaforeType baseupdate t
-
-instance TestEquality (ConcretePinaforeType baseupdate) where
-    testEquality (MkConcretePinaforeType (MkAllPolarity gta) (MkAllPolarity ta)) (MkConcretePinaforeType (MkAllPolarity gtb) (MkAllPolarity tb)) = do
-        (Refl, HRefl) <- pinaforeGroundTypeTestEquality (gta @'Positive) (gtb @'Positive)
-        Refl <- dolanTestEquality (pinaforeGroundTypeVarianceType (gta @'Positive)) (ta @'Positive) tb
-        return Refl
-
-data DataType baseupdate (t :: Type) where
-    NilDataType :: DataType baseupdate None
-    ConsDataType
-        :: ListType (ConcretePinaforeType baseupdate) tl
-        -> DataType baseupdate tt
-        -> DataType baseupdate (Either (HList tl) tt)
-
-instance TestEquality (DataType baseupdate) where
-    testEquality NilDataType NilDataType = Just Refl
-    testEquality (ConsDataType l1 t1) (ConsDataType l2 t2) = do
-        Refl <- testEquality l1 l2
-        Refl <- testEquality t1 t2
-        return Refl
-    testEquality _ _ = Nothing
-
 pinaforeGroundTypeTestEquality ::
        PinaforeGroundType baseupdate dka pola ta
     -> PinaforeGroundType baseupdate dkb polb tb
     -> Maybe (dka :~: dkb, ta :~~: tb)
-pinaforeGroundTypeTestEquality (DataGroundType _ ta dta) (DataGroundType _ tb dtb) = do
+pinaforeGroundTypeTestEquality (SimpleGroundType dva _ _ ta) (SimpleGroundType dvb _ _ tb) = do
+    Refl <- testEquality dva dvb
     Refl <- testEquality ta tb
-    Refl <- testEquality dta dtb
     Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality FuncPinaforeGroundType FuncPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality (EntityPinaforeGroundType la gta) (EntityPinaforeGroundType lb gtb) = do
@@ -107,8 +81,8 @@ pinaforeGroundTypeTestEquality _ _ = Nothing
 pinaforeGroundTypeVarianceMap ::
        forall baseupdate polarity (dv :: DolanVariance) (f :: DolanVarianceKind dv).
        PinaforeGroundType baseupdate dv polarity f
-    -> DolanVarianceMap JMShim dv f
-pinaforeGroundTypeVarianceMap (DataGroundType _ _ _) = dolanVary @dv
+    -> DolanVarianceMap dv f
+pinaforeGroundTypeVarianceMap (SimpleGroundType _ dvm _ _) = dvm
 pinaforeGroundTypeVarianceMap FuncPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap (EntityPinaforeGroundType dvcovary gt) =
     covaryToDolanVarianceMap dvcovary $ entityGroundTypeCovaryMap gt
@@ -126,7 +100,7 @@ pinaforeGroundTypeVarianceMap WindowPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap MenuItemPinaforeGroundType = dolanVary @dv
 
 pinaforeGroundTypeVarianceType :: PinaforeGroundType baseupdate dv polarity t -> DolanVarianceType dv
-pinaforeGroundTypeVarianceType (DataGroundType _ _ _) = representative
+pinaforeGroundTypeVarianceType (SimpleGroundType dvt _ _ _) = dvt
 pinaforeGroundTypeVarianceType FuncPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType (EntityPinaforeGroundType lt _) = mapListType (\Refl -> CovarianceType) lt
 pinaforeGroundTypeVarianceType OrderPinaforeGroundType = representative
@@ -145,7 +119,7 @@ pinaforeGroundTypeVarianceType MenuItemPinaforeGroundType = representative
 pinaforeGroundTypeInvertPolarity ::
        PinaforeGroundType baseupdate dv polarity t
     -> Maybe (PinaforeGroundType baseupdate dv (InvertPolarity polarity) t)
-pinaforeGroundTypeInvertPolarity (DataGroundType n tid w) = Just $ DataGroundType n tid w
+pinaforeGroundTypeInvertPolarity (SimpleGroundType dv dvm n w) = Just $ SimpleGroundType dv dvm n w
 pinaforeGroundTypeInvertPolarity FuncPinaforeGroundType = Just FuncPinaforeGroundType
 pinaforeGroundTypeInvertPolarity (EntityPinaforeGroundType lc t) = Just $ EntityPinaforeGroundType lc t
 pinaforeGroundTypeInvertPolarity OrderPinaforeGroundType = Just OrderPinaforeGroundType
@@ -161,6 +135,33 @@ pinaforeGroundTypeInvertPolarity NotifierPinaforeGroundType = Just NotifierPinaf
 pinaforeGroundTypeInvertPolarity WindowPinaforeGroundType = Just WindowPinaforeGroundType
 pinaforeGroundTypeInvertPolarity MenuItemPinaforeGroundType = Just MenuItemPinaforeGroundType
 
+showPrecVariance ::
+       forall w polarity sv t.
+       ( Is PolarityType polarity
+       , forall a polarity'. Is PolarityType polarity' => ExprShow (w polarity' a)
+       , forall a. ExprShow (RangeType w polarity a)
+       )
+    => VarianceType sv
+    -> SingleArgument sv w polarity t
+    -> (Text, Int)
+showPrecVariance CovarianceType t = exprShowPrec t
+showPrecVariance ContravarianceType t = invertPolarity @polarity $ exprShowPrec t
+showPrecVariance RangevarianceType t = exprShowPrec t
+
+showPrecDolanVariance ::
+       forall w polarity dv f t.
+       ( Is PolarityType polarity
+       , forall a polarity'. Is PolarityType polarity' => ExprShow (w polarity' a)
+       , forall a. ExprShow (RangeType w polarity a)
+       )
+    => ListTypeExprShow dv
+    -> DolanVarianceType dv
+    -> DolanArguments dv w f polarity t
+    -> (Text, Int)
+showPrecDolanVariance f NilListType NilDolanArguments = f
+showPrecDolanVariance f (ConsListType sv dv) (ConsDolanArguments t1 tr) =
+    showPrecDolanVariance (f (showPrecVariance @w @polarity sv t1)) dv tr
+
 pinaforeGroundTypeShowPrec ::
        forall baseupdate w polarity dv f t.
        ( Is PolarityType polarity
@@ -170,11 +171,11 @@ pinaforeGroundTypeShowPrec ::
     => PinaforeGroundType baseupdate dv polarity f
     -> DolanArguments dv w f polarity t
     -> (Text, Int)
-pinaforeGroundTypeShowPrec (DataGroundType n _ _) NilDolanArguments = exprShowPrec n
+pinaforeGroundTypeShowPrec (SimpleGroundType dv _ n _) args = showPrecDolanVariance n dv args
 pinaforeGroundTypeShowPrec FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
 pinaforeGroundTypeShowPrec (EntityPinaforeGroundType lt gt) dargs =
-    case dolanArgumentsToArguments mkPShimWit lt (entityGroundTypeCovaryMap gt) dargs of
+    case dolanArgumentsToArguments @JMShim mkPShimWit lt (entityGroundTypeCovaryMap gt) dargs of
         MkShimWit args _ -> entityGroundTypeShowPrec exprShowPrec gt args
 pinaforeGroundTypeShowPrec OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)

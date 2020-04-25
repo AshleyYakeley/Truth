@@ -46,8 +46,8 @@ subtypeArguments ::
        forall baseupdate m pola polb dv gta gtb ta tb. (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext baseupdate m pola polb
     -> DolanVarianceType dv
-    -> DolanVarianceMap JMShim dv gta
-    -> DolanVarianceMap JMShim dv gtb
+    -> DolanVarianceMap dv gta
+    -> DolanVarianceMap dv gtb
     -> DolanArguments dv (PinaforeType baseupdate) gta pola ta
     -> DolanArguments dv (PinaforeType baseupdate) gtb polb tb
     -> m (JMShim gta gtb -> JMShim ta tb)
@@ -88,14 +88,6 @@ topEntityType =
         (GroundPinaforeSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments)
         NilPinaforeType
 
-jml1 ::
-       forall pol cat t. (JoinMeetCategory cat, Is PolarityType pol)
-    => cat (JoinMeetType pol t (LimitType pol)) t
-jml1 =
-    case representative @_ @_ @pol of
-        PositiveType -> unjoin1
-        NegativeType -> meet1
-
 entityGroundSubtype ::
        forall baseupdate m pola polb dva fa a dvb fb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext baseupdate m pola polb
@@ -117,7 +109,7 @@ entityGroundSubtype sc (ConsListType Refl NilListType) MaybeEntityGroundType (Co
             MkConcreteType MaybeEntityGroundType $
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @baseupdate @polb
-    pure $ convE . cfmap (jml1 @polb . conv)
+    pure $ convE . cfmap (unjoinmeet1 @polb . conv)
 -- [Entity] <= Entity
 entityGroundSubtype sc (ConsListType Refl NilListType) ListEntityGroundType (ConsDolanArguments t NilDolanArguments) NilListType TopEntityGroundType NilDolanArguments = do
     let
@@ -126,7 +118,7 @@ entityGroundSubtype sc (ConsListType Refl NilListType) ListEntityGroundType (Con
             MkConcreteType ListEntityGroundType $
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @baseupdate @polb
-    pure $ convE . cfmap (jml1 @polb . conv)
+    pure $ convE . cfmap (unjoinmeet1 @polb . conv)
 -- (Entity, Entity) <= Entity
 entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
@@ -137,7 +129,7 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) PairE
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @baseupdate @polb
     convB <- subtypeTypes sc tb $ topEntityType @baseupdate @polb
-    pure $ convE . consShimFunc CovarianceType (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
+    pure $ convE . consShimFunc CovarianceType (cfmap (unjoinmeet1 @polb . convA)) (unjoinmeet1 @polb . convB)
 -- Either Entity Entity <= Entity
 entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
@@ -148,7 +140,7 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) Eithe
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @baseupdate @polb
     convB <- subtypeTypes sc tb $ topEntityType @baseupdate @polb
-    pure $ convE . consShimFunc CovarianceType (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
+    pure $ convE . consShimFunc CovarianceType (cfmap (unjoinmeet1 @polb . convA)) (unjoinmeet1 @polb . convB)
 -- (entity type) <= Entity
 entityGroundSubtype _ ct gt args NilListType TopEntityGroundType NilDolanArguments
     | Just ebij <- pinaforeEntityToConcreteEntityType ct gt args =

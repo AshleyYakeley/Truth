@@ -20,3 +20,7 @@ exprShow = exprPrecShow maxBound
 
 instance ExprShow Name where
     exprShowPrec (MkName n) = (n, 0)
+
+type family ListTypeExprShow (dv :: [k]) :: Type where
+    ListTypeExprShow '[] = (Text, Int)
+    ListTypeExprShow (t ': tt) = (Text, Int) -> ListTypeExprShow tt

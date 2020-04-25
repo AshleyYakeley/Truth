@@ -47,7 +47,7 @@ catRangeMap (MkCatRange pp qq) (MkRange pt tq) = MkRange (pt <.> pp) (qq <.> tq)
 liftCatRangeParts :: Functor f => CatRange (->) '( pa, qa) '( pb, qb) -> CatRange (->) '( f pa, f qa) '( f pb, f qb)
 liftCatRangeParts (MkCatRange pp qq) = MkCatRange (cfmap pp) (cfmap qq)
 
-data RangeType (tw :: Polarity -> Type -> Type) (polarity :: Polarity) (pq :: (Type, Type)) where
+data RangeType (tw :: Polarity -> k -> Type) (polarity :: Polarity) (pq :: (k, k)) where
     MkRangeType :: tw (InvertPolarity polarity) p -> tw polarity q -> RangeType tw polarity '( p, q)
 
 instance (TestEquality (tw polarity), TestEquality (tw (InvertPolarity polarity))) =>

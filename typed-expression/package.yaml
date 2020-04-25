@@ -39,6 +39,7 @@ library:
       - Data.Shim.JoinMeet
       - Data.Shim.PolyShim
       - Data.Shim.JMShim
+      - Data.Shim.JMIsoShim
       - Data.Shim.JMShimWit
       - Language.Expression.Dolan.PShimWit
       - Language.Expression.Dolan.Covariance

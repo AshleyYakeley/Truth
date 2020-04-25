@@ -5,7 +5,6 @@ module Pinafore.Language.Read.TypeDecls
 import Data.Shim
 import Language.Expression.Sealed
 import Pinafore.Base
-import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Name
@@ -61,44 +60,41 @@ readClosedTypeConstructor = do
         etypes <- for mtypes id
         return (consName, anchor, assembleListType etypes)
 
-data Constructor t =
+data Constructor w t =
     forall a. MkConstructor Name
-                            (ListType ConcreteEntityType a)
+                            (ListType w a)
                             (HList a -> t)
                             (t -> Maybe (HList a))
 
-extendConstructor :: Constructor t -> Constructor (Either a t)
+extendConstructor :: Constructor w t -> Constructor w (Either a t)
 extendConstructor (MkConstructor n lt at tma) = MkConstructor n lt (Right . at) (\t -> eitherRight t >>= tma)
 
-data Box =
-    forall t. MkBox (ClosedEntityType t)
-                    [Constructor t]
+data ClosedEntityBox =
+    forall t. MkClosedEntityBox (ClosedEntityType t)
+                                [Constructor ConcreteEntityType t]
 
-assembleClosedEntityType :: [(Name, Anchor, AnyW (ListType ConcreteEntityType))] -> Box
-assembleClosedEntityType [] = MkBox NilClosedEntityType []
+assembleClosedEntityType :: [(Name, Anchor, AnyW (ListType ConcreteEntityType))] -> ClosedEntityBox
+assembleClosedEntityType [] = MkClosedEntityBox NilClosedEntityType []
 assembleClosedEntityType ((n, a, MkAnyW el):cc) =
     case assembleClosedEntityType cc of
-        MkBox ct conss ->
-            MkBox (ConsClosedEntityType a el ct) $ (MkConstructor n el Left eitherLeft) : fmap extendConstructor conss
+        MkClosedEntityBox ct conss ->
+            MkClosedEntityBox (ConsClosedEntityType a el ct) $
+            (MkConstructor n el Left eitherLeft) : fmap extendConstructor conss
 
 makeConstructorPattern ::
        forall baseupdate s t lt.
        PinaforeShimWit baseupdate 'Negative (IdentifiedValue s t)
-    -> ListType ConcreteEntityType lt
+    -> ListType (PinaforeShimWit baseupdate 'Positive) lt
     -> (t -> Maybe (HList lt))
     -> PinaforePatternConstructor baseupdate
-makeConstructorPattern pct lt tma =
-    case mapListType (concreteEntityToPositivePinaforeType @baseupdate) lt of
-        lt' -> toPatternConstructor pct lt' $ tma . unIdentifiedValue
+makeConstructorPattern pct lt tma = toPatternConstructor pct lt $ tma . unIdentifiedValue
 
 makeConstructorValue ::
-       forall baseupdate m s t a. MonadError ErrorType m
-    => PinaforeShimWit baseupdate 'Positive (IdentifiedValue s t)
-    -> ListType ConcreteEntityType a
-    -> m (PinaforeShimWit baseupdate 'Positive (HList a -> t))
-makeConstructorValue ctf lt = do
-    lt' <- mapMListType concreteEntityToNegativePinaforeType lt
-    return $ qFunctionPosWitnesses lt' (mapShimWit (coerceEnhanced "consval") ctf)
+       forall baseupdate s t a.
+       PinaforeShimWit baseupdate 'Positive (IdentifiedValue s t)
+    -> ListType (PinaforeShimWit baseupdate 'Negative) a
+    -> PinaforeShimWit baseupdate 'Positive (HList a -> t)
+makeConstructorValue ctf lt = qFunctionPosWitnesses lt (mapShimWit (coerceEnhanced "consval") ctf)
 
 readClosedTypeDeclaration :: forall baseupdate. Parser (PinaforeScoped baseupdate (TypeDecls baseupdate))
 readClosedTypeDeclaration = do
@@ -111,7 +107,7 @@ readClosedTypeDeclaration = do
             readSeparated1 (readExactlyThis TokOperator "|") $ fmap pure readClosedTypeConstructor
     return $ do
         sconss <- sequence $ fromMaybe mempty mcons
-        MkBox ct conss <- return $ assembleClosedEntityType sconss
+        MkClosedEntityBox ct conss <- return $ assembleClosedEntityType sconss
         runSourcePos spos $ do
             (tid, withnt) <- withNewTypeName n $ ClosedEntityNamedType (MkAnyW ct)
             valueToWitness tid $ \tidsym -> do
@@ -126,11 +122,14 @@ readClosedTypeDeclaration = do
                             NilDolanArguments
                 patts <-
                     for conss $ \(MkConstructor cname lt at tma) -> do
-                        patt <- withNewPatternConstructor cname $ makeConstructorPattern ctf lt tma
-                        valt <- makeConstructorValue ctf lt
+                        ltp <- return $ mapListType (concreteEntityToPositivePinaforeType @baseupdate) lt
+                        patt <- withNewPatternConstructor cname $ makeConstructorPattern ctf ltp tma
+                        ltn <- mapMListType concreteEntityToNegativePinaforeType lt
                         bind <-
                             return $
-                            MkWMFunction $ withNewBindings $ singletonMap cname $ qConstExprAny $ MkAnyValue valt at
+                            MkWMFunction $
+                            withNewBindings $
+                            singletonMap cname $ qConstExprAny $ MkAnyValue (makeConstructorValue ctf ltn) at
                         return $ patt . bind
                 let
                     tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a

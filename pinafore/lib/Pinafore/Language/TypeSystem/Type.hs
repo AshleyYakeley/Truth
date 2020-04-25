@@ -154,7 +154,7 @@ instance Is PolarityType polarity => ExprShow (PinaforeRangeType baseupdate pola
 pinaforeToConcreteEntityArgs ::
        forall baseupdate dv f polarity t. Is PolarityType polarity
     => CovaryType dv
-    -> CovaryMap JMIsoShim f
+    -> CovaryMap f
     -> DolanArguments dv (PinaforeType baseupdate) f polarity t
     -> Maybe (ShimWit JMIsoShim (Arguments ConcreteEntityType f) polarity t)
 pinaforeToConcreteEntityArgs = dolanArgumentsToArgumentsM pinaforeToConcreteEntityType
@@ -166,7 +166,7 @@ pinaforeEntityToConcreteEntityType ::
     -> DolanArguments dv (PinaforeType baseupdate) f polarity a
     -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
 pinaforeEntityToConcreteEntityType lc gt args = do
-    MkShimWit eargs conv <- pinaforeToConcreteEntityArgs lc (bijectCovaryMap $ entityGroundTypeCovaryMap gt) args
+    MkShimWit eargs conv <- pinaforeToConcreteEntityArgs lc (entityGroundTypeCovaryMap gt) args
     return $ MkShimWit (MkConcreteType gt eargs) conv
 
 pinaforeSingularToConcreteEntityType ::

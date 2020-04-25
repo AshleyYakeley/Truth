@@ -4,25 +4,21 @@ import Data.Shim
 import Language.Expression.Dolan.Variance
 import Shapes
 
-data CovaryMap (cat :: forall kc. kc -> kc -> Type) (f :: k) where
-    NilCovaryMap :: forall (cat :: forall kc. kc -> kc -> Type) (f :: Type). CovaryMap cat f
+data CovaryMap (f :: k) where
+    NilCovaryMap :: forall (f :: Type). CovaryMap f
     ConsCovaryMap
-        :: forall (cat :: forall kc. kc -> kc -> Type) (k :: Type) (f :: Type -> k). HasVariance 'Covariance f
-        => (forall (a :: Type). CovaryMap cat (f a))
-        -> CovaryMap cat f
+        :: forall (k :: Type) (f :: Type -> k). HasVariance 'Covariance f
+        => (forall (a :: Type). CovaryMap (f a))
+        -> CovaryMap f
 
-covaryMapInKind :: forall (cat :: forall kc. kc -> kc -> Type) k (f :: k). CovaryMap cat f -> Dict (InKind f)
+covaryMapInKind :: forall k (f :: k). CovaryMap f -> Dict (InKind f)
 covaryMapInKind NilCovaryMap = Dict
 covaryMapInKind (ConsCovaryMap cvm) =
-    case covaryMapInKind @cat cvm of
+    case covaryMapInKind cvm of
         Dict -> Dict
 
-bijectCovaryMap :: forall k (f :: k). CovaryMap JMShim f -> CovaryMap JMIsoShim f
-bijectCovaryMap NilCovaryMap = NilCovaryMap
-bijectCovaryMap (ConsCovaryMap cv) = ConsCovaryMap $ bijectCovaryMap cv
-
 class HasCovaryMap (f :: k) where
-    covarymap :: CovaryMap JMShim f
+    covarymap :: CovaryMap f
 
 instance HasCovaryMap (f :: Type) where
     covarymap = NilCovaryMap
@@ -46,10 +42,7 @@ type family CovaryKindDolanVariance (k :: Type) :: DolanVariance where
     CovaryKindDolanVariance (Type -> k) = 'Covariance ': (CovaryKindDolanVariance k)
 
 covaryToDolanVarianceMap ::
-       forall (cat :: forall kc. kc -> kc -> Type) (dv :: DolanVariance) (f :: DolanVarianceKind dv).
-       CovaryType dv
-    -> CovaryMap cat f
-    -> DolanVarianceMap cat dv f
+       forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). CovaryType dv -> CovaryMap f -> DolanVarianceMap dv f
 covaryToDolanVarianceMap NilListType NilCovaryMap = NilDolanVarianceMap
 covaryToDolanVarianceMap (ConsListType Refl ml) (ConsCovaryMap vr) =
     ConsDolanVarianceMap $ covaryToDolanVarianceMap ml vr

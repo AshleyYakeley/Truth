@@ -81,8 +81,8 @@ mapArgsTypeF ::
        (Monad m, DolanVarianceInCategory cat, Is PolarityType polarity)
     => (forall polarity' t'. Is PolarityType polarity' => fta polarity' t' -> m (PShimWit cat ftb polarity' t'))
     -> DolanVarianceType dv
-    -> DolanVarianceMap cat dv gt
-    -> DolanVarianceMap cat dv gt'
+    -> DolanVarianceMap dv gt
+    -> DolanVarianceMap dv gt'
     -> DolanArguments dv fta gt polarity t
     -> PolarMapType cat polarity gt gt'
     -> m (PShimWit cat (DolanArguments dv ftb gt') polarity t)
@@ -110,7 +110,7 @@ mapDolanArgumentsM ::
        (Monad m, DolanVarianceInCategory cat, Is PolarityType polarity)
     => (forall polarity' t'. Is PolarityType polarity' => fta polarity' t' -> m (PShimWit cat ftb polarity' t'))
     -> DolanVarianceType dv
-    -> DolanVarianceMap cat dv gt
+    -> DolanVarianceMap dv gt
     -> DolanArguments dv fta gt polarity t
     -> m (PShimWit cat (DolanArguments dv ftb gt) polarity t)
 mapDolanArgumentsM f dvt dvm args =
@@ -127,7 +127,7 @@ mapDolanArguments ::
        (DolanVarianceInCategory cat, Is PolarityType polarity)
     => (forall polarity' t'. Is PolarityType polarity' => fta polarity' t' -> PShimWit cat ftb polarity' t')
     -> DolanVarianceType dv
-    -> DolanVarianceMap cat dv gt
+    -> DolanVarianceMap dv gt
     -> DolanArguments dv fta gt polarity t
     -> PShimWit cat (DolanArguments dv ftb gt) polarity t
 mapDolanArguments f dvt kv args = runIdentity $ mapDolanArgumentsM (\t -> return $ f t) dvt kv args
@@ -170,8 +170,8 @@ mapInvertArgsTypeF ::
     => (forall polarity' t'.
             Is PolarityType polarity' => fta polarity' t' -> m (PShimWit cat ftb (InvertPolarity polarity') t'))
     -> DolanVarianceType dv
-    -> DolanVarianceMap cat dv gt
-    -> DolanVarianceMap cat dv gt'
+    -> DolanVarianceMap dv gt
+    -> DolanVarianceMap dv gt'
     -> DolanArguments dv fta gt polarity t
     -> PolarMapType cat (InvertPolarity polarity) gt gt'
     -> m (PShimWit cat (DolanArguments dv ftb gt') (InvertPolarity polarity) t)
@@ -200,7 +200,7 @@ mapInvertDolanArgumentsM ::
     => (forall polarity' t'.
             Is PolarityType polarity' => fta polarity' t' -> m (PShimWit cat ftb (InvertPolarity polarity') t'))
     -> DolanVarianceType dv
-    -> DolanVarianceMap cat dv gt
+    -> DolanVarianceMap dv gt
     -> DolanArguments dv fta gt polarity t
     -> m (PShimWit cat (DolanArguments dv ftb gt) (InvertPolarity polarity) t)
 mapInvertDolanArgumentsM f dvt dvm args =
@@ -313,9 +313,9 @@ mergeArgsTypeF ::
             Is PolarityType polarity' =>
                     fta polarity' ta' -> ftb polarity' tb' -> PJMShimWit ftab polarity' (JoinMeetType polarity' ta' tb'))
     -> DolanVarianceType dv
-    -> DolanVarianceMap JMShim dv gta
-    -> DolanVarianceMap JMShim dv gtb
-    -> DolanVarianceMap JMShim dv gtab
+    -> DolanVarianceMap dv gta
+    -> DolanVarianceMap dv gtb
+    -> DolanVarianceMap dv gtab
     -> DolanArguments dv fta gta polarity ta
     -> DolanArguments dv ftb gtb polarity tb
     -> PolarMapType JMShim polarity gta gtab
@@ -395,7 +395,7 @@ mergeDolanArguments ::
             Is PolarityType polarity' =>
                     fta polarity' ta' -> ftb polarity' tb' -> PJMShimWit ftab polarity' (JoinMeetType polarity' ta' tb'))
     -> DolanVarianceType dv
-    -> DolanVarianceMap JMShim dv gt
+    -> DolanVarianceMap dv gt
     -> DolanArguments dv fta gt polarity ta
     -> DolanArguments dv ftb gt polarity tb
     -> PJMShimWit (DolanArguments dv ftab gt) polarity (JoinMeetType polarity ta tb)
@@ -413,8 +413,8 @@ dolanArgumentsToArgumentsM' ::
        (Monad m, DolanVarianceInCategory cat, Is PolarityType polarity)
     => (forall t'. wa polarity t' -> m (ShimWit cat wb polarity t'))
     -> CovaryType dv
-    -> DolanVarianceMap cat dv fa
-    -> DolanVarianceMap cat dv fb
+    -> DolanVarianceMap dv fa
+    -> DolanVarianceMap dv fb
     -> PolarMapType cat polarity fa fb
     -> DolanArguments dv wa fa polarity t
     -> m (ShimWit cat (Arguments wb fb) polarity t)
@@ -443,7 +443,7 @@ dolanArgumentsToArgumentsM ::
        (Monad m, DolanVarianceInCategory cat, Is PolarityType polarity)
     => (forall t'. wa polarity t' -> m (ShimWit cat wb polarity t'))
     -> CovaryType dv
-    -> CovaryMap cat f
+    -> CovaryMap f
     -> DolanArguments dv wa f polarity t
     -> m (ShimWit cat (Arguments wb f) polarity t)
 dolanArgumentsToArgumentsM f lc covary args =
@@ -463,7 +463,7 @@ dolanArgumentsToArguments ::
        (DolanVarianceInCategory cat, Is PolarityType polarity)
     => (forall t'. wa polarity t' -> ShimWit cat wb polarity t')
     -> CovaryType dv
-    -> CovaryMap cat f
+    -> CovaryMap f
     -> DolanArguments dv wa f polarity t
     -> ShimWit cat (Arguments wb f) polarity t
 dolanArgumentsToArguments f lc covary args =
@@ -474,8 +474,8 @@ argumentsToDolanArgumentsM' ::
        (Monad m, DolanVarianceInCategory cat, Is PolarityType polarity)
     => (forall t'. wa t' -> m (PShimWit cat wb polarity t'))
     -> CovaryType dv
-    -> CovaryMap cat fa
-    -> CovaryMap cat fb
+    -> CovaryMap fa
+    -> CovaryMap fb
     -> PolarMapType cat polarity fa fb
     -> Arguments wa fa t
     -> m (PShimWit cat (DolanArguments dv wb fb) polarity t)
@@ -504,7 +504,7 @@ argumentsToDolanArgumentsM ::
        (Monad m, DolanVarianceInCategory cat, Is PolarityType polarity)
     => (forall t'. wa t' -> m (PShimWit cat wb polarity t'))
     -> CovaryType dv
-    -> CovaryMap cat f
+    -> CovaryMap f
     -> Arguments wa f t
     -> m (PShimWit cat (DolanArguments dv wb f) polarity t)
 argumentsToDolanArgumentsM f ct cm args =
@@ -515,7 +515,7 @@ argumentsToDolanArgumentsM f ct cm args =
         cm
         (case covaryKMCategory @cat ct of
              Dict ->
-                 case covaryMapInKind @cat cm of
+                 case covaryMapInKind cm of
                      Dict ->
                          case representative @_ @_ @polarity of
                              PositiveType -> cid
@@ -527,7 +527,7 @@ argumentsToDolanArguments ::
        (DolanVarianceInCategory cat, Is PolarityType polarity)
     => (forall t'. wa t' -> PShimWit cat wb polarity t')
     -> CovaryType dv
-    -> CovaryMap cat f
+    -> CovaryMap f
     -> Arguments wa f t
     -> PShimWit cat (DolanArguments dv wb f) polarity t
 argumentsToDolanArguments f ct cm args = runIdentity $ argumentsToDolanArgumentsM (\wt -> Identity $ f wt) ct cm args

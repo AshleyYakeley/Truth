@@ -508,17 +508,15 @@ testEntity =
                     , pointTest "let f :: Maybe (a & Number) -> (Entity,Maybe a); f x = (x,x) in pass"
                     ]
               ]
-        , tgroup
+        , context ["closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\""] $
+          tgroup
               "closedtype"
-              [ pointTest "let closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\" in pass"
+              [ pointTest "pass"
+              , pointTest "let t1 = T1 \"hello\" 3 in pass"
+              , pointTest "let f (T1 x _) = x in pass"
+              , pointTest "case T1 \"hello\" 3 of T1 \"hello\" 3 -> pass end"
               , pointTest
-                    "let closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\"; t1 = T1 \"hello\" 3 in pass"
-              , pointTest
-                    "let closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\"; f (T1 x _) = x in pass"
-              , pointTest
-                    "let closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\" in case T1 \"hello\" 3 of T1 \"hello\" 3 -> pass end"
-              , pointTest
-                    "let closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\" in case T1 \"hello\" 3 of T2 -> fail \"T2\"; T1 \"hello\" 2 -> fail \"T1 2\"; T1 \"hell\" 3 -> fail \"T1 hell\"; T1 \"hello\" 3 -> pass end"
+                    "case T1 \"hello\" 3 of T2 -> fail \"T2\"; T1 \"hello\" 2 -> fail \"T1 2\"; T1 \"hell\" 3 -> fail \"T1 hell\"; T1 \"hello\" 3 -> pass end"
               ]
         , tgroup
               "type escape"
