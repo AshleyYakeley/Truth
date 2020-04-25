@@ -90,10 +90,7 @@ entityTypedShowValue (ConsListType Refl (ConsListType Refl NilListType)) EitherE
 entityTypedShowValue _ _ _ _ = Nothing
 
 groundTypedShowValue ::
-       PinaforeGroundType baseupdate dv 'Positive t
-    -> DolanArguments dv (PinaforeType baseupdate) t 'Positive ta
-    -> ta
-    -> String
+       PinaforeGroundType baseupdate dv t -> DolanArguments dv (PinaforeType baseupdate) t 'Positive ta -> ta -> String
 groundTypedShowValue (EntityPinaforeGroundType ct t) args v
     | Just str <- entityTypedShowValue ct t args v = str
 groundTypedShowValue _ _ _ = "<?>"

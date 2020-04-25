@@ -80,6 +80,23 @@ mapMPolarWM mf (BothMPolarW awpt) = do
     awprNeg <- mf awpt
     return $ bothMPolarW awptPos awprNeg
 
+toMPolarWM ::
+       forall m k (w :: Polarity -> k -> Type) (mpolarity :: Maybe Polarity). (Is MPolarityType mpolarity, Monad m)
+    => (forall polarity. Is PolarityType polarity => m (AnyW (w polarity)))
+    -> m (MPolarW w mpolarity)
+toMPolarWM mpt =
+    case representative @_ @MPolarityType @mpolarity of
+        MPositiveType -> do
+            pt <- mpt
+            return $ SingleMPolarW pt
+        MNegativeType -> do
+            pt <- mpt
+            return $ SingleMPolarW pt
+        MBothType -> do
+            ptpos <- mpt
+            ptneg <- mpt
+            return $ bothMPolarW ptpos ptneg
+
 forMPolarW ::
        forall m k1 k2 (w1 :: Polarity -> k1 -> Type) (w2 :: Polarity -> k2 -> Type) (mpolarity :: Maybe Polarity).
        Monad m

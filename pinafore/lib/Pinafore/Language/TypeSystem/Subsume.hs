@@ -26,14 +26,13 @@ minimalPositiveSupertypeSingular ::
 minimalPositiveSupertypeSingular (VarPinaforeSingularType v) =
     Just $ singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType v
 minimalPositiveSupertypeSingular (GroundPinaforeSingularType gt args) = do
-    gt' <- pinaforeGroundTypeInvertPolarity gt
     MkShimWit args' conv <-
         mapInvertDolanArgumentsM
             limitInvertType
             (pinaforeGroundTypeVarianceType gt)
             (pinaforeGroundTypeVarianceMap gt)
             args
-    return $ singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType gt' args') conv
+    return $ singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType gt args') conv
 
 minimalPositiveSupertype :: PinaforeType baseupdate 'Negative a -> Maybe (PinaforeShimWit baseupdate 'Positive a)
 minimalPositiveSupertype (ConsPinaforeType t NilPinaforeType) = do
@@ -48,14 +47,13 @@ maximalNegativeSubtypeSingular ::
 maximalNegativeSubtypeSingular (VarPinaforeSingularType v) =
     Just $ singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType v
 maximalNegativeSubtypeSingular (GroundPinaforeSingularType gt args) = do
-    gt' <- pinaforeGroundTypeInvertPolarity gt
     MkShimWit args' conv <-
         mapInvertDolanArgumentsM
             limitInvertType
             (pinaforeGroundTypeVarianceType gt)
             (pinaforeGroundTypeVarianceMap gt)
             args
-    return $ singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType gt' args') conv
+    return $ singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType gt args') conv
 
 maximalNegativeSubtype :: PinaforeType baseupdate 'Positive a -> Maybe (PinaforeShimWit baseupdate 'Negative a)
 maximalNegativeSubtype (ConsPinaforeType t NilPinaforeType) = do
@@ -107,7 +105,7 @@ subsumePositiveContext = let
 
 subsumePositiveGroundSingularType ::
        SubsumerConstraint baseupdate
-    => PinaforeGroundType baseupdate dv 'Positive ginf
+    => PinaforeGroundType baseupdate dv ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Positive inf
     -> PinaforeSingularType baseupdate 'Positive decl
     -> PinaforeFullSubsumer baseupdate (JMShim inf decl)
@@ -117,7 +115,7 @@ subsumePositiveGroundSingularType gtinf targsinf (GroundPinaforeSingularType gtd
 
 subsumePositiveGroundType ::
        SubsumerConstraint baseupdate
-    => PinaforeGroundType baseupdate dv 'Positive ginf
+    => PinaforeGroundType baseupdate dv ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Positive inf
     -> PinaforeType baseupdate 'Positive decl
     -> PinaforeFullSubsumer baseupdate (JMShim inf decl)
@@ -156,7 +154,7 @@ subsumeNegativeContext = let
 subsumeNegativeGroundSingularType ::
        SubsumerConstraint baseupdate
     => PinaforeSingularType baseupdate 'Negative decl
-    -> PinaforeGroundType baseupdate dv 'Negative ginf
+    -> PinaforeGroundType baseupdate dv ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Negative inf
     -> PinaforeFullSubsumer baseupdate (JMShim decl inf)
 subsumeNegativeGroundSingularType (VarPinaforeSingularType _vdecl) _gtinf _targsinf = empty
@@ -166,7 +164,7 @@ subsumeNegativeGroundSingularType (GroundPinaforeSingularType gtdecl targsdecl) 
 subsumeNegativeGroundType ::
        SubsumerConstraint baseupdate
     => PinaforeType baseupdate 'Negative decl
-    -> PinaforeGroundType baseupdate dv 'Negative ginf
+    -> PinaforeGroundType baseupdate dv ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Negative inf
     -> PinaforeFullSubsumer baseupdate (JMShim decl inf)
 subsumeNegativeGroundType NilPinaforeType _gtinf _targsinf = empty

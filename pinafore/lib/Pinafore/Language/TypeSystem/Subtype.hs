@@ -68,9 +68,9 @@ subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDola
                                             pure $ \conv -> f (consShimFunc svt conv sfunc)
 
 pinaforeSubtypeArguments ::
-       forall baseupdate m pola polb pol dv gt argsa argsb. (Applicative m, Is PolarityType pola, Is PolarityType polb)
+       forall baseupdate m pola polb dv gt argsa argsb. (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext baseupdate m pola polb
-    -> PinaforeGroundType baseupdate dv pol gt
+    -> PinaforeGroundType baseupdate dv gt
     -> DolanArguments dv (PinaforeType baseupdate) gt pola argsa
     -> DolanArguments dv (PinaforeType baseupdate) gt polb argsb
     -> m (JMShim argsa argsb)
@@ -177,9 +177,9 @@ entityGroundSubtype sc cta ga argsa ctb gb argsb =
 subtypeGroundTypes ::
        forall baseupdate m pola polb dva gta a dvb gtb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext baseupdate m pola polb
-    -> PinaforeGroundType baseupdate dva pola gta
+    -> PinaforeGroundType baseupdate dva gta
     -> DolanArguments dva (PinaforeType baseupdate) gta pola a
-    -> PinaforeGroundType baseupdate dvb polb gtb
+    -> PinaforeGroundType baseupdate dvb gtb
     -> DolanArguments dvb (PinaforeType baseupdate) gtb polb b
     -> m (JMShim a b)
 -- f a0... <= f b0...

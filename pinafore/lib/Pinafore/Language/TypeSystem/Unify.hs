@@ -75,9 +75,9 @@ unifySubtypeContext = let
 
 unifyPosNegGroundTypes ::
        UnifierConstraint baseupdate
-    => PinaforeGroundType baseupdate dva 'Positive gta
+    => PinaforeGroundType baseupdate dva gta
     -> DolanArguments dva (PinaforeType baseupdate) gta 'Positive ta
-    -> PinaforeGroundType baseupdate dvb 'Negative gtb
+    -> PinaforeGroundType baseupdate dvb gtb
     -> DolanArguments dvb (PinaforeType baseupdate) gtb 'Negative tb
     -> PinaforeFullUnifier baseupdate (JMShim ta tb)
 unifyPosNegGroundTypes = subtypeGroundTypes unifySubtypeContext

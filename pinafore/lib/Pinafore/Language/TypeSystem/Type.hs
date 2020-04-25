@@ -26,7 +26,7 @@ data PinaforeType (baseupdate :: Type) (polarity :: Polarity) (t :: Type) where
 -- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVar') for type variables.
 data PinaforeSingularType (baseupdate :: Type) (polarity :: Polarity) (t :: Type) where
     GroundPinaforeSingularType
-        :: PinaforeGroundType baseupdate dv polarity t
+        :: PinaforeGroundType baseupdate dv t
         -> DolanArguments dv (PinaforeType baseupdate) t polarity ta
         -> PinaforeSingularType baseupdate polarity ta
     VarPinaforeSingularType :: SymbolType name -> PinaforeSingularType baseupdate polarity (UVar name)
