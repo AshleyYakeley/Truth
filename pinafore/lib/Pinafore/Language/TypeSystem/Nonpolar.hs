@@ -2,6 +2,7 @@ module Pinafore.Language.TypeSystem.Nonpolar
     ( PinaforeNonpolarType
     , nonpolarToPinaforeType
     , pinaforeTypeToNonpolar
+    , nonPolarTypeFreeVariables
     ) where
 
 import Data.Shim
@@ -28,14 +29,32 @@ data PinaforeNonpolarType (baseupdate :: Type) (dv :: DolanVariance) (t :: Dolan
         -> PinaforeNonpolarType baseupdate dv (f a)
     VarPinaforeNonpolarType :: SymbolType name -> PinaforeNonpolarType baseupdate '[] (UVar name)
 
+argFreeVariables ::
+       forall baseupdate sv t.
+       VarianceType sv
+    -> NonpolarArgument (PinaforeNonpolarType baseupdate '[]) sv t
+    -> [AnyW SymbolType]
+argFreeVariables CovarianceType (MkAnyPolarity arg) = nonPolarTypeFreeVariables arg
+argFreeVariables ContravarianceType (MkAnyPolarity arg) = nonPolarTypeFreeVariables arg
+argFreeVariables RangevarianceType (MkRangeType (MkAnyPolarity argp) (MkAnyPolarity argq)) =
+    nonPolarTypeFreeVariables argp <> nonPolarTypeFreeVariables argq
+
+nonPolarTypeFreeVariables :: forall baseupdate dv t. PinaforeNonpolarType baseupdate dv t -> [AnyW SymbolType]
+nonPolarTypeFreeVariables (VarPinaforeNonpolarType n) = [MkAnyW n]
+nonPolarTypeFreeVariables (GroundPinaforeNonpolarType _) = []
+nonPolarTypeFreeVariables (ApplyPinaforeNonpolarType sv tf targ) =
+    nonPolarTypeFreeVariables tf <> argFreeVariables @baseupdate sv targ
+
 fromApply ::
+       forall baseupdate (polarity :: Polarity) (sv :: Variance) (dv :: DolanVariance) (f :: VarianceKind sv -> DolanVarianceKind dv) (a :: VarianceKind sv) (t :: Type).
        Is PolarityType polarity
     => VarianceType sv
     -> PinaforeNonpolarType baseupdate (sv ': dv) f
     -> NonpolarArgument (PinaforeNonpolarType baseupdate '[]) sv a
     -> DolanArguments dv (PinaforeType baseupdate) (f a) polarity t
     -> PJMShimWit (PinaforeSingularType baseupdate) polarity t
-fromApply = undefined
+-- fromApply CovarianceType tf (MkAnyPolarity ta) args = nonpolarToPinaforeSingularType tf (ConsDolanArguments (foof $ nonpolarToPinaforeType ta) args)
+fromApply = error "fromApply"
 
 nonpolarToPinaforeSingularType ::
        Is PolarityType polarity

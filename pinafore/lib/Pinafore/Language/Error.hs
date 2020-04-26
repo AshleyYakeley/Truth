@@ -37,6 +37,7 @@ data ErrorType
     | InterpretTypeRangeApplyError Text
     | InterpretConstructorUnknownError Name
     | InterpretBindingsDuplicateError [Name]
+    | InterpretUnboundTypeVariables (NonEmpty Name)
 
 instance Show ErrorType where
     show (ParserError msgs) = let
@@ -102,6 +103,7 @@ instance Show ErrorType where
     show (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> unpack t
     show (InterpretConstructorUnknownError n) = "unknown constructor: " <> show n
     show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show nn)
+    show (InterpretUnboundTypeVariables vv) = "unbound type variables: " <> (intercalate ", " $ fmap show $ toList vv)
 
 data ErrorMessage =
     MkErrorMessage SourcePos

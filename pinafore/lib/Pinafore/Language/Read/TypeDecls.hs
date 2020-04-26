@@ -2,9 +2,11 @@ module Pinafore.Language.Read.TypeDecls
     ( readTypeDeclaration
     ) where
 
+import qualified Data.List as List
 import Data.Shim
 import Language.Expression.Sealed
 import Pinafore.Base
+import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Name
@@ -111,6 +113,9 @@ assembleDataType ((n, MkAnyW el):cc) =
 datatypeIOWitness :: IOWitness ('MkWitKind PinaforeDataType)
 datatypeIOWitness = $(iowitness [t|'MkWitKind PinaforeDataType|])
 
+constructorFreeVariables :: Constructor (PinaforeNonpolarType baseupdate '[]) t -> [AnyW SymbolType]
+constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonPolarTypeFreeVariables lt
+
 readDataTypeDeclaration :: forall baseupdate. Parser (PinaforeScoped baseupdate (TypeDecls baseupdate))
 readDataTypeDeclaration = do
     spos <- getPosition
@@ -124,6 +129,16 @@ readDataTypeDeclaration = do
         sconss <- sequence $ fromMaybe mempty mcons
         MkDataBox dt conss <- return $ assembleDataType sconss
         runSourcePos spos $ do
+            let
+                freevars :: [AnyW SymbolType]
+                freevars = nub $ mconcat $ fmap constructorFreeVariables conss
+                declaredvars :: [AnyW SymbolType]
+                declaredvars = [] -- ISSUE #41
+                unboundvars :: [AnyW SymbolType]
+                unboundvars = freevars List.\\ declaredvars
+            case nonEmpty unboundvars of
+                Nothing -> return ()
+                Just vv -> throwError $ InterpretUnboundTypeVariables $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
             (_, withnt) <-
                 withNewTypeName n $ \_ ->
                     SimpleNamedType NilListType NilDolanVarianceMap (exprShowPrec n) $
