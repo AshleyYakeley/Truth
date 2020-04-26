@@ -41,6 +41,8 @@ library:
       - Pinafore.Language.If
       - Pinafore.Language.TypeSystem.Show
       - Pinafore.Language.Type.Ground
+      - Pinafore.Language.TypeSystem.Nonpolar
+      - Pinafore.Language.Type.Data
       - Pinafore.Language.Type.TypeID
       - Pinafore.Language.Error
       - Pinafore.Language.Subtype

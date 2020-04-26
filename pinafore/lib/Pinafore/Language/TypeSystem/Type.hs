@@ -238,9 +238,9 @@ type PinaforePattern baseupdate
 data PinaforeTypeSystem (baseupdate :: Type)
 
 type PinaforeScoped baseupdate
-     = Scoped (PinaforeExpression baseupdate) (PinaforePatternConstructor baseupdate) (AnyW ClosedEntityType)
+     = Scoped (PinaforeExpression baseupdate) (PinaforePatternConstructor baseupdate) (ProvidedType baseupdate) (AnyW ClosedEntityType)
 
 type PinaforeSourceScoped baseupdate
-     = SourceScoped (PinaforeExpression baseupdate) (PinaforePatternConstructor baseupdate) (AnyW ClosedEntityType)
+     = SourceScoped (PinaforeExpression baseupdate) (PinaforePatternConstructor baseupdate) (ProvidedType baseupdate) (AnyW ClosedEntityType)
 
 type PinaforeTypeCheck baseupdate = VarRenamerT (PinaforeTypeSystem baseupdate) (PinaforeSourceScoped baseupdate)

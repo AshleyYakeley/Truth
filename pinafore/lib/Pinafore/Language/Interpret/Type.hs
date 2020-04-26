@@ -1,6 +1,7 @@
 module Pinafore.Language.Interpret.Type
     ( interpretType
     , interpretConcreteEntityType
+    , interpretNonpolarType
     , interpretSubtypeRelation
     ) where
 
@@ -10,6 +11,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type.Literal
 import Pinafore.Language.TypeSystem
+import Pinafore.Language.TypeSystem.Nonpolar
 import Pinafore.Language.TypeSystem.Show
 import Shapes
 
@@ -36,6 +38,17 @@ interpretConcreteEntityType st = do
                     case pinaforeToConcreteEntityType tm of
                         Just (MkShimWit t _) -> return $ MkAnyW t
                         Nothing -> throwError $ InterpretTypeNotEntityError $ exprShow tm
+
+interpretNonpolarType :: SyntaxType -> PinaforeSourceScoped baseupdate (AnyW (PinaforeNonpolarType baseupdate '[]))
+interpretNonpolarType st = do
+    mpol <- interpretTypeM @_ @'Nothing st
+    case mpol of
+        BothMPolarW atm ->
+            case atm @'Positive of
+                MkAnyW tm ->
+                    case pinaforeTypeToNonpolar tm of
+                        Just t -> return t
+                        Nothing -> throwError $ InterpretTypeNotAmbipolarError $ exprShow tm
 
 interpretTypeM ::
        forall baseupdate mpolarity. Is MPolarityType mpolarity
@@ -216,15 +229,15 @@ interpretGroundTypeConst (ConstSyntaxGroundType n)
         MkPinaforeGroundTypeM representative $
         MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType lt
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
-    (tid, nt) <- lookupNamedType n
+    nt <- lookupNamedType n
     case nt of
-        SimpleNamedType dv dm es iot -> return $ MkPinaforeGroundTypeM dv $ MkAnyW $ SimpleGroundType dv dm es $ iot tid
-        OpenEntityNamedType ->
+        SimpleNamedType dv dm es wt -> return $ MkPinaforeGroundTypeM dv $ MkAnyW $ SimpleGroundType dv dm es wt
+        OpenEntityNamedType tid ->
             valueToWitness tid $ \sw ->
                 return $
                 MkPinaforeGroundTypeM representative $
                 MkAnyW $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType n sw
-        ClosedEntityNamedType (MkAnyW ct) ->
+        ClosedEntityNamedType tid (MkAnyW ct) ->
             valueToWitness tid $ \sw ->
                 return $
                 MkPinaforeGroundTypeM representative $

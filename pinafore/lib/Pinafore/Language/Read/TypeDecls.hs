@@ -14,7 +14,10 @@ import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
 import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
+import Pinafore.Language.Type.Data
 import Pinafore.Language.TypeSystem
+import Pinafore.Language.TypeSystem.Nonpolar
+import Pinafore.Language.TypeSystem.Show
 import Shapes hiding (try)
 
 readOpenTypeDeclaration :: forall baseupdate. Parser (TypeDecls baseupdate)
@@ -25,7 +28,7 @@ readOpenTypeDeclaration = do
     let
         tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
         tdTypes rn = do
-            (_, withnt) <- liftRefNotation $ runSourcePos spos $ withNewTypeName n $ OpenEntityNamedType
+            (_, withnt) <- liftRefNotation $ runSourcePos spos $ withNewTypeName n $ \tid -> OpenEntityNamedType tid
             remonadRefNotation withnt rn
         tdRelations :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
         tdRelations = id
@@ -46,6 +49,19 @@ readSubtypeDeclaration = do
             smap <- liftRefNotation $ runSourcePos spos $ interpretSubtypeRelation sta stb
             remonadRefNotation smap rn
     return MkTypeDecls {..}
+
+readDataTypeConstructor ::
+       Parser (PinaforeScoped baseupdate (Name, AnyW (ListType (PinaforeNonpolarType baseupdate '[]))))
+readDataTypeConstructor = do
+    consName <- readThis TokUName
+    mtypes <-
+        many $ do
+            spos <- getPosition
+            st <- readType3
+            return $ runSourcePos spos $ interpretNonpolarType st
+    return $ do
+        etypes <- for mtypes id
+        return (consName, assembleListType etypes)
 
 readClosedTypeConstructor :: Parser (PinaforeScoped baseupdate (Name, Anchor, AnyW (ListType ConcreteEntityType)))
 readClosedTypeConstructor = do
@@ -81,23 +97,64 @@ assembleClosedEntityType ((n, a, MkAnyW el):cc) =
             MkClosedEntityBox (ConsClosedEntityType a el ct) $
             (MkConstructor n el Left eitherLeft) : fmap extendConstructor conss
 
-makeConstructorPattern ::
-       forall baseupdate s t lt.
-       PinaforeShimWit baseupdate 'Negative (IdentifiedValue s t)
-    -> ListType (PinaforeShimWit baseupdate 'Positive) lt
-    -> (t -> Maybe (HList lt))
-    -> PinaforePatternConstructor baseupdate
-makeConstructorPattern pct lt tma = toPatternConstructor pct lt $ tma . unIdentifiedValue
+data DataBox baseupdate =
+    forall t. MkDataBox (PinaforeDataType baseupdate t)
+                        [Constructor (PinaforeNonpolarType baseupdate '[]) t]
 
-makeConstructorValue ::
-       forall baseupdate s t a.
-       PinaforeShimWit baseupdate 'Positive (IdentifiedValue s t)
-    -> ListType (PinaforeShimWit baseupdate 'Negative) a
-    -> PinaforeShimWit baseupdate 'Positive (HList a -> t)
-makeConstructorValue ctf lt = qFunctionPosWitnesses lt (mapShimWit (coerceEnhanced "consval") ctf)
+assembleDataType :: [(Name, AnyW (ListType (PinaforeNonpolarType baseupdate '[])))] -> DataBox baseupdate
+assembleDataType [] = MkDataBox NilDataType []
+assembleDataType ((n, MkAnyW el):cc) =
+    case assembleDataType cc of
+        MkDataBox ct conss ->
+            MkDataBox (ConsDataType el ct) $ (MkConstructor n el Left eitherLeft) : fmap extendConstructor conss
+
+datatypeIOWitness :: IOWitness ('MkWitKind PinaforeDataType)
+datatypeIOWitness = $(iowitness [t|'MkWitKind PinaforeDataType|])
 
 readDataTypeDeclaration :: forall baseupdate. Parser (PinaforeScoped baseupdate (TypeDecls baseupdate))
-readDataTypeDeclaration = empty
+readDataTypeDeclaration = do
+    spos <- getPosition
+    readThis TokDataType
+    n <- readTypeName
+    mcons <-
+        optional $ do
+            readThis TokAssign
+            readSeparated1 (readExactlyThis TokOperator "|") $ fmap pure readDataTypeConstructor
+    return $ do
+        sconss <- sequence $ fromMaybe mempty mcons
+        MkDataBox dt conss <- return $ assembleDataType sconss
+        runSourcePos spos $ do
+            (_, withnt) <-
+                withNewTypeName n $ \_ ->
+                    SimpleNamedType NilListType NilDolanVarianceMap (exprShowPrec n) $
+                    MkProvidedType datatypeIOWitness dt
+            let
+                ctf :: forall polarity. Is PolarityType polarity
+                    => PinaforeShimWit baseupdate polarity _
+                ctf =
+                    singlePinaforeShimWit $
+                    mkJMShimWit $
+                    GroundPinaforeSingularType
+                        (SimpleGroundType NilListType NilDolanVarianceMap (exprShowPrec n) $
+                         MkProvidedType datatypeIOWitness dt)
+                        NilDolanArguments
+            patts <-
+                for conss $ \(MkConstructor cname lt at tma) -> do
+                    ltp <- return $ mapListType nonpolarToPinaforeType lt
+                    patt <- withNewPatternConstructor cname $ toPatternConstructor ctf ltp tma
+                    ltn <- return $ mapListType nonpolarToPinaforeType lt
+                    bind <-
+                        return $
+                        MkWMFunction $
+                        withNewBindings $
+                        singletonMap cname $ qConstExprAny $ MkAnyValue (qFunctionPosWitnesses ltn ctf) at
+                    return $ patt . bind
+            let
+                tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
+                tdTypes = remonadRefNotation $ withnt . compAll patts
+                tdRelations :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
+                tdRelations = id
+            return $ MkTypeDecls {..}
 
 readClosedTypeDeclaration :: forall baseupdate. Parser (PinaforeScoped baseupdate (TypeDecls baseupdate))
 readClosedTypeDeclaration = do
@@ -112,7 +169,7 @@ readClosedTypeDeclaration = do
         sconss <- sequence $ fromMaybe mempty mcons
         MkClosedEntityBox ct conss <- return $ assembleClosedEntityType sconss
         runSourcePos spos $ do
-            (tid, withnt) <- withNewTypeName n $ ClosedEntityNamedType (MkAnyW ct)
+            (tid, withnt) <- withNewTypeName n $ \tid -> ClosedEntityNamedType tid (MkAnyW ct)
             valueToWitness tid $ \tidsym -> do
                 let
                     ctf :: forall polarity. Is PolarityType polarity
@@ -126,13 +183,15 @@ readClosedTypeDeclaration = do
                 patts <-
                     for conss $ \(MkConstructor cname lt at tma) -> do
                         ltp <- return $ mapListType (concreteEntityToPositivePinaforeType @baseupdate) lt
-                        patt <- withNewPatternConstructor cname $ makeConstructorPattern ctf ltp tma
+                        patt <- withNewPatternConstructor cname $ toPatternConstructor ctf ltp $ tma . unIdentifiedValue
                         ltn <- mapMListType concreteEntityToNegativePinaforeType lt
                         bind <-
                             return $
                             MkWMFunction $
                             withNewBindings $
-                            singletonMap cname $ qConstExprAny $ MkAnyValue (makeConstructorValue ctf ltn) at
+                            singletonMap cname $
+                            qConstExprAny $
+                            MkAnyValue (qFunctionPosWitnesses ltn (mapShimWit (coerceEnhanced "consval") ctf)) at
                         return $ patt . bind
                 let
                     tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a

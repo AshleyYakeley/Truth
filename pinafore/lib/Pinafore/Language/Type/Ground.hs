@@ -9,6 +9,23 @@ import Pinafore.Language.Value
 import Shapes
 import Truth.Core
 
+newtype WitKind =
+    MkWitKind (Type -> forall (k :: Type). k -> Type)
+
+data ProvidedType :: Type -> forall k. k -> Type where
+    MkProvidedType
+        :: forall (baseupdate :: Type) (w :: Type -> forall k. k -> Type) (k :: Type) (t :: k).
+           TestHetEquality (w baseupdate)
+        => IOWitness ('MkWitKind w)
+        -> w baseupdate t
+        -> ProvidedType baseupdate t
+
+instance TestHetEquality (ProvidedType baseupdate) where
+    testHetEquality (MkProvidedType wa ta) (MkProvidedType wb tb) = do
+        Refl <- testEquality wa wb
+        HRefl <- testHetEquality ta tb
+        return HRefl
+
 -- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
 data PinaforeGroundType (baseupdate :: Type) (dv :: DolanVariance) (t :: DolanVarianceKind dv) where
     -- a simple ground type is one with no special subtype relationships
@@ -17,7 +34,7 @@ data PinaforeGroundType (baseupdate :: Type) (dv :: DolanVariance) (t :: DolanVa
            DolanVarianceType dv
         -> DolanVarianceMap dv t
         -> ListTypeExprShow dv
-        -> IOWitness t
+        -> ProvidedType baseupdate t
         -> PinaforeGroundType baseupdate dv t
     FuncPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Contravariance, 'Covariance] (->)
     EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType baseupdate dv t
@@ -41,7 +58,7 @@ pinaforeGroundTypeTestEquality ::
        PinaforeGroundType baseupdate dka ta -> PinaforeGroundType baseupdate dkb tb -> Maybe (dka :~: dkb, ta :~~: tb)
 pinaforeGroundTypeTestEquality (SimpleGroundType dva _ _ ta) (SimpleGroundType dvb _ _ tb) = do
     Refl <- testEquality dva dvb
-    Refl <- testEquality ta tb
+    HRefl <- testHetEquality ta tb
     Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality FuncPinaforeGroundType FuncPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality (EntityPinaforeGroundType la gta) (EntityPinaforeGroundType lb gtb) = do

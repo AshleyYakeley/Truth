@@ -28,6 +28,7 @@ data ErrorType
     | NotationBareUnquoteError
     | InterpretTypeExprBadLimitError Polarity
     | InterpretTypeExprBadJoinMeetError Polarity
+    | InterpretTypeNotAmbipolarError Text
     | InterpretTypeNotEntityError Text
     | InterpretTypeNotOpenEntityError Text
     | InterpretTypeNoneNotNegativeEntityError
@@ -92,6 +93,7 @@ instance Show ErrorType where
     show (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"
     show (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"
     show (InterpretTypeExprBadJoinMeetError Negative) = "\"|\" in negative type"
+    show (InterpretTypeNotAmbipolarError t) = unpack t <> " is not an ambipolar type"
     show (InterpretTypeNotEntityError t) = unpack t <> " is not an entity type"
     show (InterpretTypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
     show InterpretTypeNoneNotNegativeEntityError = "\"None\" is not a negative entity type"
