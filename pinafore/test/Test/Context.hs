@@ -6,6 +6,9 @@ import Test.Tasty.HUnit
 
 type ContextTestTree = [String] -> TestTree
 
+tmodify :: (TestTree -> TestTree) -> ContextTestTree -> ContextTestTree
+tmodify f ct c = f $ ct c
+
 context :: [String] -> ContextTestTree -> ContextTestTree
 context defs tree c = tree $ defs <> c
 

@@ -28,11 +28,27 @@ data PinaforeNonpolarType (baseupdate :: Type) (dv :: DolanVariance) (t :: Dolan
         -> PinaforeNonpolarType baseupdate dv (f a)
     VarPinaforeNonpolarType :: SymbolType name -> PinaforeNonpolarType baseupdate '[] (UVar name)
 
+fromApply ::
+       Is PolarityType polarity
+    => VarianceType sv
+    -> PinaforeNonpolarType baseupdate (sv ': dv) f
+    -> NonpolarArgument (PinaforeNonpolarType baseupdate '[]) sv a
+    -> DolanArguments dv (PinaforeType baseupdate) (f a) polarity t
+    -> PJMShimWit (PinaforeSingularType baseupdate) polarity t
+fromApply = undefined
+
+nonpolarToPinaforeSingularType ::
+       Is PolarityType polarity
+    => PinaforeNonpolarType baseupdate dv f
+    -> DolanArguments dv (PinaforeType baseupdate) f polarity t
+    -> PJMShimWit (PinaforeSingularType baseupdate) polarity t
+nonpolarToPinaforeSingularType (VarPinaforeNonpolarType n) NilDolanArguments = mkShimWit $ VarPinaforeSingularType n
+nonpolarToPinaforeSingularType (GroundPinaforeNonpolarType gt) args = mkShimWit $ GroundPinaforeSingularType gt args
+nonpolarToPinaforeSingularType (ApplyPinaforeNonpolarType svt tf ta) args = fromApply svt tf ta args
+
 nonpolarToPinaforeType ::
        Is PolarityType polarity => PinaforeNonpolarType baseupdate '[] t -> PinaforeShimWit baseupdate polarity t
-nonpolarToPinaforeType (GroundPinaforeNonpolarType _gt) = undefined
-nonpolarToPinaforeType (ApplyPinaforeNonpolarType _svt _tf _ta) = undefined
-nonpolarToPinaforeType (VarPinaforeNonpolarType _n) = undefined
+nonpolarToPinaforeType t = singlePinaforeShimWit $ nonpolarToPinaforeSingularType t NilDolanArguments
 
 applyArg ::
        forall baseupdate polarity sv t.

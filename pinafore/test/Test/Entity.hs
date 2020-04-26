@@ -9,6 +9,7 @@ import Pinafore.Test
 import Shapes
 import Test.Context
 import Test.Tasty
+import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit
 import Truth.Core
 
@@ -509,7 +510,7 @@ testEntity =
                     ]
               ]
         , context
-              [ "datatype T = T1 Text Number | T2 | T3 Boolean | T4 (Ref {-Bool,+Integer} -> Integer) | T5 Text (Bool -> Integer)"
+              [ "datatype T = T1 Text Number | T2 | T3 Boolean | T4 (Ref {-Boolean,+Integer} -> Integer) | T5 Text (Boolean -> Integer)"
               ] $
           tgroup
               "datatype"
@@ -520,7 +521,9 @@ testEntity =
               , pointTest
                     "case T1 \"hello\" 3 of T2 -> fail \"T2\"; T1 \"hello\" 2 -> fail \"T1 2\"; T1 \"hell\" 3 -> fail \"T1 hell\"; T1 \"hello\" 3 -> pass end"
               , pointTest
-                    "let f :: Bool -> Integer; f b = if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff -> if ff True ~= 1 then pass else fail \"ff\" end"
+                    "let f :: Boolean -> Integer; f b = if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff -> if ff True ~= 1 then pass else fail \"ff\" end"
+              , badInterpretTest "let datatype B = MkB a in pass"
+              , tmodify ignoreTest $ pointTest "let datatype B a = MkB a in pass" {- ISSUE #41 -}
               ]
         , context ["closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\""] $
           tgroup
