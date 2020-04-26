@@ -31,11 +31,49 @@ data PinaforeNonpolarType (baseupdate :: Type) (dv :: DolanVariance) (t :: Dolan
 nonpolarToPinaforeType ::
        Is PolarityType polarity => PinaforeNonpolarType baseupdate '[] t -> PinaforeShimWit baseupdate polarity t
 nonpolarToPinaforeType (GroundPinaforeNonpolarType _gt) = undefined
-nonpolarToPinaforeType (ApplyPinaforeNonpolarType _svt _tf _ta) = undefined MkAnyPolarity
+nonpolarToPinaforeType (ApplyPinaforeNonpolarType _svt _tf _ta) = undefined
 nonpolarToPinaforeType (VarPinaforeNonpolarType _n) = undefined
 
+applyArg ::
+       forall baseupdate polarity sv t.
+       VarianceType sv
+    -> SingleArgument sv (PinaforeType baseupdate) polarity t
+    -> Maybe (AnyW (NonpolarArgument (PinaforeNonpolarType baseupdate '[]) sv))
+applyArg CovarianceType t = do
+    ana <- pinaforeTypeToNonpolar t
+    case ana of
+        MkAnyW na -> return $ MkAnyW $ MkAnyPolarity na
+applyArg ContravarianceType t = do
+    ana <- pinaforeTypeToNonpolar t
+    case ana of
+        MkAnyW na -> return $ MkAnyW $ MkAnyPolarity na
+applyArg RangevarianceType (MkRangeType p q) = do
+    anp <- pinaforeTypeToNonpolar p
+    anq <- pinaforeTypeToNonpolar q
+    case (anp, anq) of
+        (MkAnyW np, MkAnyW nq) -> return $ MkAnyW $ MkRangeType (MkAnyPolarity np) (MkAnyPolarity nq)
+
+applyArgs ::
+       forall baseupdate polarity dv gt gt' t.
+       DolanVarianceType dv
+    -> PinaforeNonpolarType baseupdate dv gt
+    -> DolanArguments dv (PinaforeType baseupdate) gt' polarity t
+    -> Maybe (AnyW (PinaforeNonpolarType baseupdate '[]))
+applyArgs NilListType ft NilDolanArguments = Just $ MkAnyW ft
+applyArgs (ConsListType sv dv) ft (ConsDolanArguments a1 ar) = do
+    ana1 <- applyArg @baseupdate @polarity sv a1
+    case ana1 of
+        MkAnyW na1 -> applyArgs dv (ApplyPinaforeNonpolarType sv ft na1) ar
+
+pinaforeSinglularTypeToNonpolar ::
+       PinaforeSingularType baseupdate polarity t -> Maybe (AnyW (PinaforeNonpolarType baseupdate '[]))
+pinaforeSinglularTypeToNonpolar (VarPinaforeSingularType n) = Just $ MkAnyW $ VarPinaforeNonpolarType n
+pinaforeSinglularTypeToNonpolar (GroundPinaforeSingularType gt args) =
+    applyArgs (pinaforeGroundTypeVarianceType gt) (GroundPinaforeNonpolarType gt) args
+
 pinaforeTypeToNonpolar :: PinaforeType baseupdate polarity t -> Maybe (AnyW (PinaforeNonpolarType baseupdate '[]))
-pinaforeTypeToNonpolar = undefined
+pinaforeTypeToNonpolar (ConsPinaforeType t NilPinaforeType) = pinaforeSinglularTypeToNonpolar t
+pinaforeTypeToNonpolar _ = Nothing
 
 pinaforeNonpolarArgTypeTestEquality ::
        forall baseupdate sv a b.
