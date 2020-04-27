@@ -45,29 +45,105 @@ nonPolarTypeFreeVariables (GroundPinaforeNonpolarType _) = []
 nonPolarTypeFreeVariables (ApplyPinaforeNonpolarType sv tf targ) =
     nonPolarTypeFreeVariables tf <> argFreeVariables @baseupdate sv targ
 
-fromApply ::
-       forall baseupdate (polarity :: Polarity) (sv :: Variance) (dv :: DolanVariance) (f :: VarianceKind sv -> DolanVarianceKind dv) (a :: VarianceKind sv) (t :: Type).
-       Is PolarityType polarity
+invertPolarMap ::
+       forall polarity a b. Is PolarityType polarity
+    => PolarMapType JMShim (InvertPolarity polarity) a b
+    -> PolarMapType (CatDual JMShim) polarity a b
+invertPolarMap =
+    case representative @_ @_ @polarity of
+        PositiveType -> MkCatDual
+        NegativeType -> MkCatDual
+
+rangePolarMap ::
+       forall (polarity :: Polarity) (a :: (Type, Type)) (b :: (Type, Type)). Is PolarityType polarity
+    => PolarMapType JMShim (InvertPolarity polarity) (Contra a) (Contra b)
+    -> PolarMapType JMShim polarity (Co a) (Co b)
+    -> PolarMapType (CatRange JMShim) polarity '( Contra a, Co a) '( Contra b, Co b)
+rangePolarMap =
+    case representative @_ @_ @polarity of
+        PositiveType -> MkCatRange
+        NegativeType -> MkCatRange
+
+liftConv ::
+       forall (polarity :: Polarity) (v :: Variance) k (f :: VarianceKind v -> k) (a :: VarianceKind v) (b :: VarianceKind v).
+       (CoercibleKind k, Is PolarityType polarity, HasVariance v f, InKind a, InKind b)
+    => VarianceType v
+    -> PolarMapType (VarianceCategory JMShim v) polarity a b
+    -> PolarMapType JMShim polarity (f a) (f b)
+liftConv svt conv =
+    case representative @_ @_ @polarity of
+        PositiveType -> consShimFunc @JMShim @v @k @f @f svt cid conv
+        NegativeType -> consShimFunc @JMShim @v @k @f @f svt cid conv
+
+fromApplyArg ::
+       forall baseupdate polarity sv dv f t a r. (Is PolarityType polarity, HasVariance sv f)
     => VarianceType sv
-    -> PinaforeNonpolarType baseupdate (sv ': dv) f
+    -> DolanVarianceType dv
+    -> (forall x. DolanVarianceMap dv (f x))
     -> NonpolarArgument (PinaforeNonpolarType baseupdate '[]) sv a
     -> DolanArguments dv (PinaforeType baseupdate) (f a) polarity t
-    -> PJMShimWit (PinaforeSingularType baseupdate) polarity t
--- fromApply CovarianceType tf (MkAnyPolarity ta) args = nonpolarToPinaforeSingularType tf (ConsDolanArguments (foof $ nonpolarToPinaforeType ta) args)
-fromApply = error "fromApply"
+    -> (forall b.
+            InKind b =>
+                    SingleArgument sv (PinaforeType baseupdate) polarity b -> PJMShimWit (DolanArguments dv (PinaforeType baseupdate) (f b)) polarity t -> r)
+    -> r
+fromApplyArg CovarianceType dvt dvm (MkAnyPolarity ta) args call =
+    case dolanVarianceInCategory @JMShim dvt of
+        Dict ->
+            case nonpolarToPinaforeType ta of
+                MkShimWit (arg :: _ b) aconv ->
+                    call arg $
+                    mapDolanArgumentsType dvt dvm dvm args $ liftConv @polarity @sv @_ @f @a @b CovarianceType aconv
+fromApplyArg ContravarianceType dvt dvm (MkAnyPolarity ta) args call =
+    case dolanVarianceInCategory @JMShim dvt of
+        Dict ->
+            invertPolarity @polarity $
+            case nonpolarToPinaforeType ta of
+                MkShimWit (arg :: _ b) aconv ->
+                    call arg $
+                    mapDolanArgumentsType dvt dvm dvm args $
+                    liftConv @polarity @sv @_ @f @a @b ContravarianceType $ invertPolarMap @polarity @a @b aconv
+fromApplyArg RangevarianceType dvt dvm (MkRangeType (MkAnyPolarity pa) (MkAnyPolarity qa)) args call =
+    case dolanVarianceInCategory @JMShim dvt of
+        Dict ->
+            invertPolarity @polarity $
+            case nonpolarToPinaforeType pa of
+                MkShimWit (parg :: _ pb) pconv ->
+                    case nonpolarToPinaforeType qa of
+                        MkShimWit (qarg :: _ qb) qconv ->
+                            call (MkRangeType parg qarg) $
+                            mapDolanArgumentsType dvt dvm dvm args $
+                            liftConv @polarity @sv @_ @f @a @'( pb, qb) RangevarianceType $
+                            rangePolarMap @polarity @a @'( pb, qb) pconv qconv
+
+newtype ArgWit baseupdate polarity dv f = MkArgWit
+    { unArgWit :: forall (t :: Type).
+                          DolanArguments dv (PinaforeType baseupdate) f polarity t -> PJMShimWit (PinaforeSingularType baseupdate) polarity t
+    }
 
 nonpolarToPinaforeSingularType ::
+       forall (baseupdate :: Type) (polarity :: Polarity) (dv :: DolanVariance) (f :: DolanVarianceKind dv).
        Is PolarityType polarity
     => PinaforeNonpolarType baseupdate dv f
-    -> DolanArguments dv (PinaforeType baseupdate) f polarity t
-    -> PJMShimWit (PinaforeSingularType baseupdate) polarity t
-nonpolarToPinaforeSingularType (VarPinaforeNonpolarType n) NilDolanArguments = mkShimWit $ VarPinaforeSingularType n
-nonpolarToPinaforeSingularType (GroundPinaforeNonpolarType gt) args = mkShimWit $ GroundPinaforeSingularType gt args
-nonpolarToPinaforeSingularType (ApplyPinaforeNonpolarType svt tf ta) args = fromApply svt tf ta args
+    -> DolanVarianceType dv
+    -> (DolanVarianceMap dv f, ArgWit baseupdate polarity dv f)
+nonpolarToPinaforeSingularType (VarPinaforeNonpolarType n) NilListType =
+    (NilDolanVarianceMap, MkArgWit $ \NilDolanArguments -> mkShimWit $ VarPinaforeSingularType n)
+nonpolarToPinaforeSingularType (GroundPinaforeNonpolarType gt) _ =
+    (pinaforeGroundTypeVarianceMap gt, MkArgWit $ \args -> mkShimWit $ GroundPinaforeSingularType gt args)
+nonpolarToPinaforeSingularType (ApplyPinaforeNonpolarType svt tf ta) dvt =
+    case nonpolarToPinaforeSingularType tf (ConsListType svt dvt) of
+        (ConsDolanVarianceMap dvm, MkArgWit swit) ->
+            ( dvm
+            , MkArgWit $ \args ->
+                  fromApplyArg svt dvt dvm ta args $ \arg (MkShimWit args' aaconv) ->
+                      mapShimWit aaconv $ swit $ ConsDolanArguments arg args')
 
 nonpolarToPinaforeType ::
-       Is PolarityType polarity => PinaforeNonpolarType baseupdate '[] t -> PinaforeShimWit baseupdate polarity t
-nonpolarToPinaforeType t = singlePinaforeShimWit $ nonpolarToPinaforeSingularType t NilDolanArguments
+       forall baseupdate polarity t. Is PolarityType polarity
+    => PinaforeNonpolarType baseupdate '[] t
+    -> PinaforeShimWit baseupdate polarity t
+nonpolarToPinaforeType t =
+    singlePinaforeShimWit $ unArgWit (snd (nonpolarToPinaforeSingularType t NilListType)) NilDolanArguments
 
 applyArg ::
        forall baseupdate polarity sv t.

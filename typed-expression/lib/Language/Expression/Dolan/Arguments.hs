@@ -1,6 +1,7 @@
 module Language.Expression.Dolan.Arguments
     ( SingleArgument
     , DolanArguments(..)
+    , mapDolanArgumentsType
     , mapDolanArgumentsM
     , mapDolanArguments
     , mapInvertDolanArgumentsM
@@ -104,6 +105,17 @@ mapArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvm) (ConsDolanVaria
             MkShimWit dta' conv' <-
                 mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (consShimFunc svt conv svf)
             return $ MkShimWit (ConsDolanArguments sta' dta') conv'
+
+mapDolanArgumentsType ::
+       forall (cat :: forall kc. kc -> kc -> Type) ft dv polarity (gt :: DolanVarianceKind dv) (gt' :: DolanVarianceKind dv) t.
+       (DolanVarianceInCategory cat, Is PolarityType polarity)
+    => DolanVarianceType dv
+    -> DolanVarianceMap dv gt
+    -> DolanVarianceMap dv gt'
+    -> DolanArguments dv ft gt polarity t
+    -> PolarMapType cat polarity gt gt'
+    -> PShimWit cat (DolanArguments dv ft gt') polarity t
+mapDolanArgumentsType dt dvma dvmb args f = runIdentity $ mapArgsTypeF (pure . mkShimWit) dt dvma dvmb args f
 
 mapDolanArgumentsM ::
        forall m (cat :: forall kc. kc -> kc -> Type) fta ftb dv polarity gt t.
