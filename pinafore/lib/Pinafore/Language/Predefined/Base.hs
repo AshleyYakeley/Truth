@@ -616,6 +616,10 @@ base_predefinitions =
           , mkSupertypeEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
             langFiniteSetRefCartesianProduct @A @A @B @B
           , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
+          , mkValEntry
+                "listFiniteSet"
+                "Represent a reference to a list as a finite set. Changing the set may scramble the order of the list." $
+            langListRefToFiniteSetRef @A
           , mkValEntry "single" "The member of a single-member finite set, or unknown." $ langFiniteSetRefSingle @A
           , mkValEntry "count" "Count of members in a finite set." $ langFiniteSetRefFunc @TopType @Int olength
           , mkValEntry

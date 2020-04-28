@@ -119,3 +119,14 @@ langFiniteSetRefSetIntersect (MkLangFiniteSetRef tr fsetval) fsetref = let
 
 langFiniteSetRefSetDifference :: forall p q. LangFiniteSetRef '( p, q) -> LangSetRef q -> LangFiniteSetRef '( p, q)
 langFiniteSetRefSetDifference a b = langFiniteSetRefSetIntersect a $ langSetRefComplement b
+
+wholeListFiniteSetChangeLens :: Eq a => ChangeLens (WholeUpdate [a]) (FiniteSetUpdate a)
+wholeListFiniteSetChangeLens = convertChangeLens . bijectionWholeChangeLens isoCoerce
+
+langListRefToFiniteSetRef :: forall a. LangRef '( [a], [MeetType Entity a]) -> LangFiniteSetRef '( MeetType Entity a, a)
+langListRefToFiniteSetRef ref =
+    meetValueLangFiniteSetRef $
+    eaMap
+        (wholeListFiniteSetChangeLens .
+         unknownValueChangeLens [] . biSingleChangeLens . mapBiWholeChangeLens (fmap $ fmap meet2) id) $
+    langRefToBiWholeRef ref

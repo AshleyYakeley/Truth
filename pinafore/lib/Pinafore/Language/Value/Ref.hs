@@ -64,3 +64,6 @@ fLensLangRef g _ (ImmutableLangRef ir) = ImmutableLangRef $ fmap g ir
 langRefToBiWholeRef :: LangRef '( p, q) -> PinaforeRef (BiWholeUpdate (Know p) (Know q))
 langRefToBiWholeRef (MutableLangRef r) = r
 langRefToBiWholeRef (ImmutableLangRef ir) = immutableRefToRejectingBiRef ir
+
+langRefToEntityRef :: LangRef '( a, MeetType Entity a) -> PinaforeRef (WholeUpdate (Know (MeetType Entity a)))
+langRefToEntityRef ref = eaMap (biSingleChangeLens . mapBiWholeChangeLens (fmap meet2) id) $ langRefToBiWholeRef ref

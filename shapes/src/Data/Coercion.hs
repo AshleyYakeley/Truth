@@ -62,6 +62,15 @@ coerce' ::
     => Coercible a b => KindFunction a b
 coerce' = coercionToFunction MkCoercion
 
+isoCoerce ::
+       forall k (cat :: k -> k -> Type) (a :: k) (b :: k).
+       (Category cat, InKind a, InKind b, RepresentationalRole (cat a), RepresentationalRole (cat b), Coercible a b)
+    => Isomorphism cat a b
+isoCoerce =
+    MkIsomorphism
+        (coercionToFunction (representationalCoercion MkCoercion) id)
+        (coercionToFunction (representationalCoercion MkCoercion) id)
+
 coerceUnsafeCoerce :: Coercible a b => a :~: b
 coerceUnsafeCoerce = unsafeCoerce Refl
 
