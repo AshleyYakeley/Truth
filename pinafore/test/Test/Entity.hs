@@ -522,6 +522,26 @@ testEntity =
                     "let f :: Boolean -> Integer; f b = if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff -> if ff True == 1 then pass else fail \"ff\" end"
               , badInterpretTest "let datatype B = MkB a in pass"
               , tmodify ignoreTest $ pointTest "let datatype B a = MkB a in pass" {- ISSUE #41 -}
+              , pointTest "let datatype P in pass"
+              , tmodify ignoreTest $
+                tgroup
+                    "nominal" {- ISSUE #48 -}
+                    [ badInterpretTest "let datatype P = P1; datatype Q; f :: P -> Q; f x = x in pass"
+                    , badInterpretTest "let datatype P; datatype Q = Q1; f :: P -> Q; f x = x in pass"
+                    , badInterpretTest "let datatype P; datatype Q; f :: P -> Q; f x = x in pass"
+                    , badInterpretTest "let datatype P = P1; datatype Q = Q1; f :: P -> Q; f x = x in pass"
+                    , badInterpretTest
+                          "let datatype P = P1 Integer; datatype Q = Q1 Integer; f :: P -> Q; f x = x in pass"
+                    ]
+              , tmodify ignoreTest $
+                tgroup
+                    "recursive" {- ISSUE #49 -}
+                    [ pointTest "let datatype P = P1 in let datatype Q = Q1 P in pass"
+                    , pointTest "let datatype P = P1; datatype Q = Q1 P in pass"
+                    , pointTest "let datatype P = P1 Q; datatype Q in pass"
+                    , pointTest "let datatype P = P1 Q; datatype Q = Q1 P in pass"
+                    , pointTest "let datatype P = P1 P in pass"
+                    ]
               ]
         , context ["closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\""] $
           tgroup
