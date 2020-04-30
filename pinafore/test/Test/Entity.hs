@@ -552,6 +552,26 @@ testEntity =
               , pointTest "case T1 \"hello\" 3 of T1 \"hello\" 3 -> pass end"
               , pointTest
                     "case T1 \"hello\" 3 of T2 -> fail \"T2\"; T1 \"hello\" 2 -> fail \"T1 2\"; T1 \"hell\" 3 -> fail \"T1 hell\"; T1 \"hello\" 3 -> pass end"
+              , pointTest "let closedtype P in pass"
+              , tgroup
+                    "nominal"
+                    [ badInterpretTest "let closedtype P = P1 !\"P1\"; closedtype Q; f :: P -> Q; f x = x in pass"
+                    , badInterpretTest "let closedtype P; closedtype Q = Q1 !\"Q1\"; f :: P -> Q; f x = x in pass"
+                    , badInterpretTest "let closedtype P; closedtype Q; f :: P -> Q; f x = x in pass"
+                    , badInterpretTest
+                          "let closedtype P = P1 !\"P1\"; closedtype Q = Q1 !\"Q1\"; f :: P -> Q; f x = x in pass"
+                    , badInterpretTest
+                          "let closedtype P = P1 Integer !\"P1\"; closedtype Q = Q1 Integer !\"Q1\"; f :: P -> Q; f x = x in pass"
+                    ]
+              , tmodify ignoreTest $
+                tgroup
+                    "recursive" {- ISSUE #49 -}
+                    [ pointTest "let closedtype P = P1 !\"P1\" in let closedtype Q = Q1 P !\"Q1\" in pass"
+                    , pointTest "let closedtype P = P1 !\"P1\"; closedtype Q = Q1 P !\"Q1\" in pass"
+                    , pointTest "let closedtype P = P1 Q !\"P1\"; closedtype Q in pass"
+                    , pointTest "let closedtype P = P1 Q !\"P1\"; closedtype Q = Q1 P !\"Q1\" in pass"
+                    , pointTest "let closedtype P = P1 P !\"P1\" in pass"
+                    ]
               ]
         , tgroup
               "type escape"
