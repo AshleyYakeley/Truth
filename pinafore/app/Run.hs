@@ -32,4 +32,4 @@ runInteractive dirpath =
         let
             ?pinafore = context
             in cvLiftView pinaforeInteract
-        cvLiftView $ uitViewExit tcUIToolkit
+        cvLiftView viewExit

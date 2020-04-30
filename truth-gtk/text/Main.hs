@@ -24,8 +24,6 @@ optParser =
 newtype AppUI =
     MkAppUI (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
 
---selRef :: IORef (Maybe (LifeCycleIO TextSelection))
---type SelectNotify sel = View (Maybe sel) -> View ()
 main :: IO ()
 main = do
     (paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
@@ -95,7 +93,7 @@ main = do
                               "File"
                               [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ uitViewExit uit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExit
                               ]
                         ]
                     in (mbar, spec)
@@ -123,7 +121,7 @@ main = do
                               , simpleActionMenuItem "Revert" Nothing $ liftIO revertAction
                               , simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ uitViewExit uit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExit
                               ]
                         , SubMenuEntry
                               "Edit"

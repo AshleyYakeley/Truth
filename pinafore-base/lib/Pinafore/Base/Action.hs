@@ -65,17 +65,14 @@ pinaforeLiftLifeCycleIO la = do
 
 pinaforeNewWindow :: WindowSpec -> PinaforeAction PinaforeWindow
 pinaforeNewWindow uiw = do
-    MkActionContext {..} <- MkPinaforeAction ask
-    rc <- pinaforeResourceContext
-    (pwWindow, close) <-
-        pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ uitRunView acUIToolkit rc $ uitCreateWindow acUIToolkit uiw
+    uit <- MkPinaforeAction $ asks acUIToolkit
+    unlift <- MkPinaforeAction $ lift $ MkComposeM $ fmap Known askUnlift
+    (pwWindow, close) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ runWUnliftAll unlift $ uitCreateWindow uit uiw
     let pwClose = liftIO close
     return $ MkPinaforeWindow {..}
 
 pinaforeExit :: PinaforeAction ()
-pinaforeExit = do
-    MkActionContext {..} <- MkPinaforeAction ask
-    viewPinaforeAction $ uitViewExit acUIToolkit
+pinaforeExit = viewPinaforeAction viewExit
 
 pinaforeUndoActions :: PinaforeAction UndoActions
 pinaforeUndoActions = do

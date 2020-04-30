@@ -9,6 +9,7 @@ module Truth.Core.UI.View.View
     , viewLocalResourceContext
     , viewGetResourceContext
     , runView
+    , viewExit
     ) where
 
 import Truth.Core.Import
@@ -55,5 +56,15 @@ viewGetResourceContext = asks vcResourceContext
 viewLocalResourceContext :: ResourceContext -> ViewT m a -> ViewT m a
 viewLocalResourceContext rc = viewWithContext (\vc -> vc {vcResourceContext = rc})
 
-runView :: forall m w. ResourceContext -> (IO () -> IO ()) -> ViewT m w -> (forall t. IOWitness t -> Maybe t) -> m w
-runView vcResourceContext vcWithUILock (ReaderT view) vcRequest = view MkViewContext {..}
+runView ::
+       forall m a. MonadUnliftIO m
+    => ViewContext
+    -> ViewT m a
+    -> m a
+runView vc (ReaderT view) = liftIOWithUnlift $ \unlift -> vcWithUILock vc $ unlift $ view vc
+
+-- | Stop the UI loop. This does not throw any kind of exception.
+viewExit :: MonadIO m => ViewT m ()
+viewExit = do
+    exit <- asks vcExit
+    liftIO exit

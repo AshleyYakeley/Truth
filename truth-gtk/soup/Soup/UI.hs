@@ -113,7 +113,7 @@ soupWindow uit dirpath = do
                 [ SubMenuEntry
                       "File"
                       [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO cc
-                      , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ uitViewExit uit
+                      , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExit
                       ]
                 , SubMenuEntry
                       "Item"

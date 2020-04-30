@@ -9,6 +9,7 @@ module Truth.Core.UI.Toolkit
 import Truth.Core.Import
 import Truth.Core.Resource
 import Truth.Core.UI.Toolkit.Internal
+import Truth.Core.UI.View.Context
 import Truth.Core.UI.View.CreateView
 import Truth.Core.UI.View.View
 import Truth.Core.UI.Window
@@ -17,11 +18,14 @@ import Truth.Core.UI.Window
 uitUnliftCreateView :: UIToolkit -> CreateView a -> View a
 uitUnliftCreateView uit = remonad $ uitUnliftLifeCycle uit
 
-uitRunView :: UIToolkit -> ResourceContext -> ViewT m a -> m a
-uitRunView uit rc cv = runView rc (uitWithLock uit) cv (uitGetRequest uit)
-
-uitViewExit :: MonadIO m => UIToolkit -> ViewT m ()
-uitViewExit uit = liftIO $ uitExit uit
+uitRunView :: MonadUnliftIO m => UIToolkit -> ResourceContext -> ViewT m a -> m a
+uitRunView MkUIToolkit {..} vcResourceContext vma = let
+    vcWithUILock :: forall a. IO a -> IO a
+    vcWithUILock = uitWithLock
+    vcRequest :: forall t. IOWitness t -> Maybe t
+    vcRequest = uitGetRequest
+    vcExit = uitExit
+    in runView MkViewContext {..} vma
 
 nullUIToolkit :: UIToolkit
 nullUIToolkit = let

@@ -7,7 +7,7 @@ import GI.GObject
 import GI.Gtk
 import Pinafore
 import Pinafore.Test
-import Shapes
+import Shapes hiding (get)
 import Test.Context
 import Test.Tasty
 import Truth.Core
@@ -34,7 +34,7 @@ runUIAction timing testaction t = do
             testView :: View (Result SomeException a)
             testView = do
                 ar <- catchResult $ testaction tcUIToolkit
-                uitViewExit tcUIToolkit
+                viewExit
                 return ar
         case timing of
             SyncTiming -> do
@@ -44,7 +44,6 @@ runUIAction timing testaction t = do
                 _ <-
                     liftIO $
                     forkIO $ do
-                        threadDelay 500000
                         ar <- uitRunView tcUIToolkit emptyResourceContext testView
                         putMVar donevar ar
                 return ()
@@ -76,14 +75,21 @@ gobjectEmitClicked obj = do
 runClickButton :: UIToolkit -> View ()
 runClickButton _ = do
     ww <- windowListToplevels
-    case ww of
+    visww <-
+        for ww $ \w -> do
+            v <- get w #visible
+            return $
+                if v
+                    then Just w
+                    else Nothing
+    case catMaybes visww of
         [w] -> do
             cc <- getAllWidgets w
             bb <- liftIO $ for cc $ castTo Button
             case catMaybes bb of
                 [b] -> liftIO $ gobjectEmitClicked b
-                _ -> fail "no single Button"
-        _ -> fail $ show (length ww) <> " windows"
+                _ -> fail $ show (length bb) <> " Buttons"
+        _ -> fail $ show (length ww) <> " visible windows"
 
 noTestAction :: UIToolkit -> View ()
 noTestAction _ = return ()
