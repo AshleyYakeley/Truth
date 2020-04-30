@@ -58,11 +58,11 @@ newtype Scoped expr patc (tw :: forall k. k -> Type) ct a =
     MkScoped (ReaderT (Scope expr patc tw ct) (StateT TypeID InterpretResult) a)
     deriving (Functor, Applicative, Alternative, Monad, MonadPlus)
 
-instance forall expr patc (tw :: forall k. k -> Type) ct. MonadError [ErrorMessage] (Scoped expr patc tw ct) where
-    throwError err = MkScoped $ throwError err
+instance forall expr patc (tw :: forall k. k -> Type) ct. MonadThrow PinaforeError (Scoped expr patc tw ct) where
+    throw err = MkScoped $ throw err
 
-instance forall expr patc (tw :: forall k. k -> Type) ct. MonadError ErrorMessage (Scoped expr patc tw ct) where
-    throwError err = throwError [err]
+instance forall expr patc (tw :: forall k. k -> Type) ct. MonadThrow ErrorMessage (Scoped expr patc tw ct) where
+    throw = throwErrorMessage
 
 instance forall expr patc (tw :: forall k. k -> Type) ct a. Semigroup a => Semigroup (Scoped expr patc tw ct a) where
     (<>) = liftA2 (<>)
@@ -130,23 +130,23 @@ runSourceScoped spos spa = runScoped $ runSourcePos spos spa
 spScope :: forall expr patc (tw :: forall k. k -> Type) ct. SourceScoped expr patc tw ct (Scope expr patc tw ct)
 spScope = MkSourceScoped $ lift pScope
 
-instance forall expr patc (tw :: forall k. k -> Type) ct. MonadError ExpressionError (SourceScoped expr patc tw ct) where
-    throwError err = throwError $ ExpressionErrorError err
+instance forall expr patc (tw :: forall k. k -> Type) ct. MonadThrow ExpressionError (SourceScoped expr patc tw ct) where
+    throw err = throw $ ExpressionErrorError err
 
-instance forall expr patc (tw :: forall k. k -> Type) ct. MonadError [ErrorMessage] (SourceScoped expr patc tw ct) where
-    throwError err = MkSourceScoped $ throwError err
+instance forall expr patc (tw :: forall k. k -> Type) ct. MonadThrow PinaforeError (SourceScoped expr patc tw ct) where
+    throw err = MkSourceScoped $ throw err
 
-instance forall expr patc (tw :: forall k. k -> Type) ct. MonadError ErrorMessage (SourceScoped expr patc tw ct) where
-    throwError err = MkSourceScoped $ throwError err
+instance forall expr patc (tw :: forall k. k -> Type) ct. MonadThrow ErrorMessage (SourceScoped expr patc tw ct) where
+    throw err = MkSourceScoped $ throw err
 
-instance forall expr patc (tw :: forall k. k -> Type) ct. MonadError ErrorType (SourceScoped expr patc tw ct) where
-    throwError err =
+instance forall expr patc (tw :: forall k. k -> Type) ct. MonadThrow ErrorType (SourceScoped expr patc tw ct) where
+    throw err =
         MkSourceScoped $ do
             spos <- ask
-            throwError $ MkErrorMessage spos err
+            throw $ MkErrorMessage spos err
 
 convertFailure :: forall expr patc (tw :: forall k. k -> Type) ct a. Text -> Text -> SourceScoped expr patc tw ct a
-convertFailure ta tb = throwError $ TypeConvertError ta tb
+convertFailure ta tb = throw $ TypeConvertError ta tb
 
 lookupBinding :: forall expr patc (tw :: forall k. k -> Type) ct. Name -> SourceScoped expr patc tw ct (Maybe expr)
 lookupBinding name = do
@@ -172,7 +172,7 @@ lookupNamedType name = do
     mnt <- lookupNamedTypeM name
     case mnt of
         Just nt -> return nt
-        Nothing -> throwError $ LookupTypeUnknownError name
+        Nothing -> throw $ LookupTypeUnknownError name
 
 lookupPatternConstructorM ::
        forall expr patc (tw :: forall k. k -> Type) ct. Name -> SourceScoped expr patc tw ct (Maybe patc)
@@ -185,7 +185,7 @@ lookupPatternConstructor name = do
     ma <- lookupPatternConstructorM name
     case ma of
         Just a -> return a
-        Nothing -> throwError $ LookupConstructorUnknownError name
+        Nothing -> throw $ LookupConstructorUnknownError name
 
 withNewTypeName ::
        forall expr patc (tw :: forall k. k -> Type) ct.
@@ -195,7 +195,7 @@ withNewTypeName ::
 withNewTypeName name t = do
     mnt <- lookupNamedTypeM name
     case mnt of
-        Just _ -> throwError $ DeclareTypeDuplicateError name
+        Just _ -> throw $ DeclareTypeDuplicateError name
         Nothing -> do
             tid <-
                 liftSourcePos $
@@ -214,7 +214,7 @@ withNewPatternConstructor ::
 withNewPatternConstructor name pc = do
     ma <- lookupPatternConstructorM name
     case ma of
-        Just _ -> throwError $ DeclareConstructorDuplicateError name
+        Just _ -> throw $ DeclareConstructorDuplicateError name
         Nothing ->
             return $
             MkWMFunction $

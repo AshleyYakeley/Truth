@@ -18,12 +18,12 @@ import Shapes
 
 type RefNotation baseupdate = WriterT [(Name, QExpr baseupdate)] (StateT Int (PinaforeScoped baseupdate))
 
-runRefWriterT :: MonadError ErrorMessage m => SourcePos -> WriterT [(Name, QExpr baseupdate)] m a -> m a
+runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> WriterT [(Name, QExpr baseupdate)] m a -> m a
 runRefWriterT spos wma = do
     (a, w) <- runWriterT wma
     case w of
         [] -> return a
-        _ -> throwError $ MkErrorMessage spos NotationBareUnquoteError
+        _ -> throw $ MkErrorMessage spos NotationBareUnquoteError
 
 liftRefNotation :: PinaforeScoped baseupdate a -> RefNotation baseupdate a
 liftRefNotation = lift . lift

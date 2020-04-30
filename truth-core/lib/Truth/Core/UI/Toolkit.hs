@@ -1,18 +1,17 @@
-module Truth.Core.UI.Toolkit where
+module Truth.Core.UI.Toolkit
+    ( UIToolkit
+    , uitCreateWindow
+    , uitGetRequest
+    , uitUnliftLifeCycle
+    , module Truth.Core.UI.Toolkit
+    ) where
 
 import Truth.Core.Import
 import Truth.Core.Resource
+import Truth.Core.UI.Toolkit.Internal
 import Truth.Core.UI.View.CreateView
 import Truth.Core.UI.View.View
 import Truth.Core.UI.Window
-
-data UIToolkit = MkUIToolkit
-    { uitWithLock :: forall a. IO a -> IO a -- ^ run with lock, must not already have it
-    , uitCreateWindow :: WindowSpec -> CreateView UIWindow -- ^ must already have lock
-    , uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a -- ^ Closers will be run at the end of the session. (Lock doesn't matter.)
-    , uitGetRequest :: forall t. IOWitness t -> Maybe t
-    , uitExit :: IO () -- ^ must already have the lock
-    }
 
 -- | Closers will be run at the end of the session. (Lock doesn't matter.)
 uitUnliftCreateView :: UIToolkit -> CreateView a -> View a
@@ -20,6 +19,9 @@ uitUnliftCreateView uit = remonad $ uitUnliftLifeCycle uit
 
 uitRunView :: UIToolkit -> ResourceContext -> ViewT m a -> m a
 uitRunView uit rc cv = runView rc (uitWithLock uit) cv (uitGetRequest uit)
+
+uitViewExit :: MonadIO m => UIToolkit -> ViewT m ()
+uitViewExit uit = liftIO $ uitExit uit
 
 nullUIToolkit :: UIToolkit
 nullUIToolkit = let

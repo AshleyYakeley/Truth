@@ -15,7 +15,7 @@ testExample fpath =
     testCase fpath $
     withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
         ptext <- readFile fpath
-        _ <- ioRunInterpretResult $ pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
+        _ <- throwResult $ pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
         return ()
 
 testScripts :: TestTree

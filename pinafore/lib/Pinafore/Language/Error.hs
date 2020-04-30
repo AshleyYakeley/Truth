@@ -118,14 +118,14 @@ parseErrorMessage err = MkErrorMessage (errorPos err) $ ParserError $ errorMessa
 
 newtype PinaforeError =
     MkPinaforeError [ErrorMessage]
+    deriving (Semigroup, Monoid)
 
 instance Show PinaforeError where
     show (MkPinaforeError msgs) = intercalate "\n" $ fmap show msgs
 
 instance Exception PinaforeError
 
-type InterpretResult = Result [ErrorMessage]
+type InterpretResult = Result PinaforeError
 
-ioRunInterpretResult :: MonadIO m => InterpretResult a -> m a
-ioRunInterpretResult (SuccessResult a) = return a
-ioRunInterpretResult (FailureResult err) = liftIO $ throw $ MkPinaforeError err
+throwErrorMessage :: MonadThrow PinaforeError m => ErrorMessage -> m a
+throwErrorMessage e = throw $ MkPinaforeError [e]

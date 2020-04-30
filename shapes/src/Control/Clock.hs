@@ -2,6 +2,7 @@ module Control.Clock
     ( clock
     ) where
 
+import Control.Monad.Exception
 import Control.Monad.LifeCycleIO
 import Control.Monad.Trans.LifeCycle
 import Data.Fixed

@@ -2,7 +2,7 @@ module Pinafore.Language
     ( PinaforePredefinitions
     , PinaforeError
     , InterpretResult
-    , ioRunInterpretResult
+    , throwResult
     , PinaforeAction
     , qPositiveTypeDescription
     , qNegativeTypeDescription
@@ -132,7 +132,7 @@ interactParse ::
        forall baseupdate. HasPinaforeEntityUpdate baseupdate
     => Text
     -> Interact baseupdate (InteractiveCommand baseupdate)
-interactParse t = remonad ioRunInterpretResult $ parseInteractiveCommand @baseupdate t
+interactParse t = remonad throwResult $ parseInteractiveCommand @baseupdate t
 
 interactLoop ::
        forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
@@ -195,5 +195,4 @@ interact ::
     -> View ()
 interact inh outh echo = do
     liftIO $ hSetBuffering outh NoBuffering
-    evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $
-        ioRunInterpretResult . runPinaforeScoped
+    evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $ throwResult . runPinaforeScoped

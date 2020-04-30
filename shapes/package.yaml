@@ -55,7 +55,7 @@ library:
       - Control.Category.Dual
       - Control.Category.Lifted
       - Control.Monad.Compose
-      - Control.Monad.Error
+      - Control.Monad.Exception
       - Control.Monad.Coroutine
       - Control.Monad.Trans.LifeCycle
       - Control.Monad.LifeCycleIO

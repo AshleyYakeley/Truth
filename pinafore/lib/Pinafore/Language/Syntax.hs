@@ -211,7 +211,7 @@ instance SyntaxBindingVariables (SyntaxBinding baseupdate) where
     syntaxBindingVariables (MkSyntaxBinding _ _ name _) = singletonSet name
 
 checkSyntaxBindingsDuplicates ::
-       forall baseupdate m. MonadError ErrorType m
+       forall baseupdate m. MonadThrow ErrorType m
     => [SyntaxBinding baseupdate]
     -> m ()
 checkSyntaxBindingsDuplicates = let
@@ -227,5 +227,5 @@ checkSyntaxBindingsDuplicates = let
     checkDuplicates nn =
         case nub $ duplicates nn of
             [] -> return ()
-            b -> throwError $ InterpretBindingsDuplicateError b
+            b -> throw $ InterpretBindingsDuplicateError b
     in checkDuplicates . fmap (\(MkSyntaxBinding _ _ name _) -> name)

@@ -116,7 +116,7 @@ interpretNamedConstructor spos n = do
     me <- liftRefNotation $ runSourcePos spos $ lookupBinding n
     case me of
         Just e -> return e
-        Nothing -> throwError $ MkErrorMessage spos $ InterpretConstructorUnknownError n
+        Nothing -> throw $ MkErrorMessage spos $ InterpretConstructorUnknownError n
 
 interpretConstructor :: SourcePos -> SyntaxConstructor -> RefExpression baseupdate
 interpretConstructor _ (SLNumber n) =
@@ -220,11 +220,11 @@ interpretExpression' spos (SEEntity st anchor) =
                     anyval = MkAnyValue typef pt
                 return $ qConstExprAny anyval
 
-makeEntity :: MonadError ErrorType m => ConcreteEntityType t -> Entity -> m t
+makeEntity :: MonadThrow ErrorType m => ConcreteEntityType t -> Entity -> m t
 makeEntity (MkConcreteType TopEntityGroundType NilArguments) p = return p
 makeEntity (MkConcreteType NewEntityGroundType NilArguments) p = return $ MkNewEntity p
 makeEntity (MkConcreteType (OpenEntityGroundType _ _) NilArguments) p = return $ MkOpenEntity p
-makeEntity t _ = throwError $ InterpretTypeNotOpenEntityError $ exprShow t
+makeEntity t _ = throw $ InterpretTypeNotOpenEntityError $ exprShow t
 
 interpretTypeSignature ::
        Maybe SyntaxType

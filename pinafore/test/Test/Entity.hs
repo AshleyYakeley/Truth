@@ -3,7 +3,6 @@ module Test.Entity
     , testUpdates
     ) where
 
-import Control.Exception
 import Pinafore
 import Pinafore.Test
 import Shapes
@@ -25,8 +24,7 @@ scriptTest ::
 scriptTest name text checker =
     contextTestCase name text $ \t ->
         withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
-            action <-
-                ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" $ "onStop (" <> t <> ") (fail \"stopped\")"
+            action <- throwResult $ pinaforeInterpretFileAtType "<test>" $ "onStop (" <> t <> ") (fail \"stopped\")"
             checker action
 
 pointTest :: Text -> ContextTestTree
@@ -46,13 +44,13 @@ badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
     testCase (unpack text) $
     withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
-        assertThrows $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
+        assertThrows $ throwResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
 
 exceptionTest :: Text -> ContextTestTree
 exceptionTest text c =
     testCase (unpack text) $
     withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
-        action <- ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
+        action <- throwResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
         assertThrows $ nullViewIO action
 
 updateTest :: Text -> ContextTestTree

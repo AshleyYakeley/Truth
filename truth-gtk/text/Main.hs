@@ -30,7 +30,7 @@ main :: IO ()
 main = do
     (paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
     truthMainGTK $ \MkTruthContext {..} -> do
-        (uit@MkUIToolkit {..}, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
+        (uit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
         for_ paths $ \path -> do
             let
                 bsObj :: Reference ByteStringEdit
@@ -76,7 +76,7 @@ main = do
                         let (mbar, uic) = extraui closer r $ ui sub msub2 extraui
                         (r, closer) <-
                             cvEarlyCloser $
-                            uitCreateWindow $ let
+                            uitCreateWindow uit $ let
                                 wsCloseBoxAction :: View ()
                                 wsCloseBoxAction = liftIO closer
                                 wsTitle :: Model (ROWUpdate Text)
@@ -95,7 +95,7 @@ main = do
                               "File"
                               [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ liftIO uitExit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ uitViewExit uit
                               ]
                         ]
                     in (mbar, spec)
@@ -123,7 +123,7 @@ main = do
                               , simpleActionMenuItem "Revert" Nothing $ liftIO revertAction
                               , simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ liftIO uitExit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ uitViewExit uit
                               ]
                         , SubMenuEntry
                               "Edit"

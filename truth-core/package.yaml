@@ -13,6 +13,7 @@ library:
       - time
     exposed-modules:
       - Truth.Core
+      - Truth.Core.UI.Toolkit.Internal
     other-modules:
       - Truth.Core.Import
       - Truth.Core.Sequence

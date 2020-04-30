@@ -107,6 +107,7 @@ tests:
           - tasty-expected-failure
           - tasty-hunit
           - tasty-golden
+          - tasty-quickcheck
         main: Main.hs
         other-modules:
           - Test.Context

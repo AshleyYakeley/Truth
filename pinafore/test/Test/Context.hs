@@ -3,6 +3,7 @@ module Test.Context where
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
+import Test.Tasty.QuickCheck
 
 type ContextTestTree = [String] -> TestTree
 
@@ -23,3 +24,9 @@ prefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
 
 contextTestCase :: Text -> Text -> (Text -> IO ()) -> ContextTestTree
 contextTestCase name text tester c = testCase (unpack name) $ tester $ prefix c <> text
+
+contextTestProperty :: Testable prop => Text -> Text -> (Text -> prop) -> ContextTestTree
+contextTestProperty name text prop c = testProperty (unpack name) $ prop $ prefix c <> text
+
+message :: MonadIO m => String -> m ()
+message s = liftIO $ hPutStrLn stderr s

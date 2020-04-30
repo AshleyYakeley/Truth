@@ -75,7 +75,7 @@ qApplyPatternConstructor ::
 qApplyPatternConstructor = tsApplyPatternConstructor @(PinaforeTypeSystem baseupdate)
 
 qSealPatternConstructor ::
-       forall baseupdate m. MonadError ExpressionError m
+       forall baseupdate m. MonadThrow ExpressionError m
     => QPatternConstructor baseupdate
     -> m (QPattern baseupdate)
 qSealPatternConstructor = tsSealPatternConstructor @(PinaforeTypeSystem baseupdate)
@@ -173,7 +173,7 @@ qValuesLetExpr :: forall baseupdate. StrictMap Name (QValue baseupdate) -> Stric
 qValuesLetExpr = tsValuesLet @(PinaforeTypeSystem baseupdate)
 
 qEvalExpr ::
-       forall baseupdate m. MonadError ExpressionError m
+       forall baseupdate m. MonadThrow ExpressionError m
     => QExpr baseupdate
     -> m (QValue baseupdate)
 qEvalExpr expr = tsEval @(PinaforeTypeSystem baseupdate) expr

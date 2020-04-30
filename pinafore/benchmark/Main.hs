@@ -33,8 +33,8 @@ benchScript text =
                ?pinafore = pc
                in bgroup
                       (show $ unpack text)
-                      [ bench "check" $ nfIO $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" text >> return ()
-                      , env (fmap const $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" text) $ \action ->
+                      [ bench "check" $ nfIO $ throwResult $ pinaforeInterpretFile "<test>" text >> return ()
+                      , env (fmap const $ throwResult $ pinaforeInterpretFile "<test>" text) $ \action ->
                             bench "run" $ nfIO (nullViewIO $ action ())
                       ]
 
@@ -89,7 +89,7 @@ benchScripts =
 
 interpretUpdater :: (?pinafore :: PinaforeContext PinaforeUpdate) => Text -> IO ()
 interpretUpdater text = do
-    action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" text
+    action <- throwResult $ pinaforeInterpretFileAtType "<test>" text
     (sendUpdate, ref) <- nullViewIO $ unliftPinaforeActionOrFail action
     runLifeCycle $
         subscribeEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $

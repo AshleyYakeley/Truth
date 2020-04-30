@@ -200,13 +200,13 @@ concreteEntityToMaybeNegativePinaforeType (MkConcreteType gt args) =
             singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
 
 concreteEntityToNegativePinaforeType ::
-       forall baseupdate m t. MonadError ErrorType m
+       forall baseupdate m t. MonadThrow ErrorType m
     => ConcreteEntityType t
     -> m (PinaforeShimWit baseupdate 'Negative t)
 concreteEntityToNegativePinaforeType et =
     case concreteEntityToMaybeNegativePinaforeType et of
         Just wit -> return wit
-        Nothing -> throwError InterpretTypeNoneNotNegativeEntityError
+        Nothing -> throw InterpretTypeNoneNotNegativeEntityError
 
 concreteEntityToPositivePinaforeType ::
        forall baseupdate t. ConcreteEntityType t -> PinaforeShimWit baseupdate 'Positive t

@@ -8,6 +8,7 @@ import GI.Gdk as GI (threadsAddIdle)
 import GI.Gtk as GI
 import Shapes
 import Truth.Core
+import Truth.Core.UI.Toolkit.Internal
 import Truth.UI.GTK.Button
 import Truth.UI.GTK.CSS
 import Truth.UI.GTK.Calendar

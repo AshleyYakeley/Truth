@@ -13,6 +13,7 @@ module Control.Monad.Trans.LifeCycle
     ) where
 
 import Control.Monad.Coroutine
+import Control.Monad.Exception
 import Data.IORef
 import Shapes.Import
 

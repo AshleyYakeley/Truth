@@ -2,7 +2,6 @@ module Test.UI
     ( testUI
     ) where
 
-import Control.Exception
 import Data.GI.Base.GValue
 import GI.GObject
 import GI.Gtk
@@ -14,45 +13,47 @@ import Test.Tasty
 import Truth.Core
 import Truth.UI.GTK
 
-nullViewIO :: View a -> IO a
-nullViewIO = uitRunView nullUIToolkit emptyResourceContext
+data Timing
+    = SyncTiming
+    | AsyncTiming
 
-catchActionResult :: IO a -> IO (Result SomeException a)
-catchActionResult ioa = catch (fmap SuccessResult ioa) (return . FailureResult)
+instance Show Timing where
+    show SyncTiming = "sync"
+    show AsyncTiming = "async"
 
-throwActionResult :: Result SomeException a -> IO a
-throwActionResult (SuccessResult a) = return a
-throwActionResult (FailureResult e) = throw e
-
-testUIAction :: Bool -> Text -> (UIToolkit -> IO ()) -> ContextTestTree
-testUIAction waitClick text testaction =
-    contextTestCase text text $ \t -> do
-        donevar <- newEmptyMVar
-        truthMainGTK $ \MkTruthContext {..} -> do
-            (pc, _) <- liftLifeCycleIO $ makeTestPinaforeContext tcUIToolkit
-            scriptaction <- let
-                ?pinafore = pc
-                in fmap nullViewIO $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" t
-            liftIO scriptaction
-            liftIO $
-                case waitClick of
-                    False -> do
-                        ar <- catchActionResult $ testaction tcUIToolkit
+runUIAction :: forall a. Timing -> (UIToolkit -> View a) -> Text -> IO a
+runUIAction timing testaction t = do
+    donevar <- newEmptyMVar
+    truthMainGTK $ \MkTruthContext {..} -> do
+        (pc, _) <- liftLifeCycleIO $ makeTestPinaforeContext tcUIToolkit
+        scriptaction <- let
+            ?pinafore = pc
+            in throwResult $ pinaforeInterpretFile "<test>" t
+        cvLiftView scriptaction
+        let
+            testView :: View (Result SomeException a)
+            testView = do
+                ar <- catchResult $ testaction tcUIToolkit
+                uitViewExit tcUIToolkit
+                return ar
+        case timing of
+            SyncTiming -> do
+                ar <- cvLiftView testView
+                liftIO $ putMVar donevar ar
+            AsyncTiming -> do
+                _ <-
+                    liftIO $
+                    forkIO $ do
+                        threadDelay 500000
+                        ar <- uitRunView tcUIToolkit emptyResourceContext testView
                         putMVar donevar ar
-                    True -> do
-                        _ <-
-                            forkIO $ do
-                                let ui@MkUIToolkit {..} = tcUIToolkit
-                                threadDelay 500000 -- .5s delay
-                                ar <- uitWithLock $ catchActionResult $ testaction ui
-                                putMVar donevar ar
-                        return ()
-        ar <- takeMVar donevar
-        throwActionResult ar
+                return ()
+    ar <- takeMVar donevar
+    throwResult ar
 
-getAllWidgets :: Widget -> IO [Widget]
+getAllWidgets :: Widget -> View [Widget]
 getAllWidgets w = do
-    mcont <- castTo Container w
+    mcont <- liftIO $ castTo Container w
     case mcont of
         Nothing -> return [w]
         Just cont -> do
@@ -72,33 +73,37 @@ gobjectEmitClicked obj = do
         _ <- signalEmitv [gvalObj] signalId detail
         return ()
 
-testClickButton :: Bool -> Text -> ContextTestTree
-testClickButton waitClick text =
-    testUIAction waitClick text $ \MkUIToolkit {..} -> do
-        ww <- windowListToplevels
-        case ww of
-            [w] -> do
-                cc <- getAllWidgets w
-                bb <- for cc $ castTo Button
-                case catMaybes bb of
-                    [b] -> gobjectEmitClicked b
-                    _ -> fail "no single Button"
-            _ -> fail "no single window"
-        uitExit
+runClickButton :: UIToolkit -> View ()
+runClickButton _ = do
+    ww <- windowListToplevels
+    case ww of
+        [w] -> do
+            cc <- getAllWidgets w
+            bb <- liftIO $ for cc $ castTo Button
+            case catMaybes bb of
+                [b] -> liftIO $ gobjectEmitClicked b
+                _ -> fail "no single Button"
+        _ -> fail $ show (length ww) <> " windows"
 
-testActions :: Bool -> [ContextTestTree]
-testActions waitClick =
-    [ testUIAction waitClick "return ()" $ \MkUIToolkit {..} -> uitExit
-    , testUIAction waitClick "newpoint" $ \MkUIToolkit {..} -> uitExit
-    , testUIAction waitClick "emptywindow" $ \MkUIToolkit {..} -> uitExit
-    , testClickButton waitClick "buttonwindow $ return ()"
-    , testClickButton waitClick "buttonwindow $ newMemFiniteSet"
-    , testClickButton waitClick "buttonwindow $ newpoint"
-    , testClickButton waitClick "buttonwindow $ emptywindow"
-    , testClickButton waitClick "buttonwindow $ newpoint >> newpoint"
-    , testClickButton waitClick "buttonwindow $ emptywindow >> emptywindow"
-    , testClickButton waitClick "buttonwindow $ newpoint >> emptywindow"
-    , testClickButton waitClick "buttonwindow $ emptywindow >> newpoint"
+noTestAction :: UIToolkit -> View ()
+noTestAction _ = return ()
+
+testUIAction :: Timing -> Text -> (UIToolkit -> View ()) -> ContextTestTree
+testUIAction timing text testaction = contextTestCase text text $ runUIAction timing testaction
+
+testActions :: Timing -> [ContextTestTree]
+testActions timing =
+    [ testUIAction timing "return ()" noTestAction
+    , testUIAction timing "newpoint" noTestAction
+    , testUIAction timing "emptywindow" noTestAction
+    , testUIAction timing "buttonwindow $ return ()" runClickButton
+    , testUIAction timing "buttonwindow $ newMemFiniteSet" runClickButton
+    , testUIAction timing "buttonwindow $ newpoint" runClickButton
+    , testUIAction timing "buttonwindow $ emptywindow" runClickButton
+    , testUIAction timing "buttonwindow $ newpoint >> newpoint" runClickButton
+    , testUIAction timing "buttonwindow $ emptywindow >> emptywindow" runClickButton
+    , testUIAction timing "buttonwindow $ newpoint >> emptywindow" runClickButton
+    , testUIAction timing "buttonwindow $ emptywindow >> newpoint" runClickButton
     ]
 
 testUI :: TestTree
@@ -112,4 +117,4 @@ testUI =
         , "buttonwindow :: Action Any -> Action ()"
         , "buttonwindow action = do openWindow {\"Test\"} {[]} (uiButton {\"Button\"} {action}); return (); end"
         ] $
-    tgroup "UI" [tgroup "immediate" $ testActions False, tgroup "wait" $ testActions True]
+    tgroup "UI" [tgroup "immediate" $ testActions SyncTiming, tgroup "wait" $ testActions AsyncTiming]

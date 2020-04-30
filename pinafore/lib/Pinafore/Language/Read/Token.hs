@@ -335,4 +335,4 @@ parseTokens text = do
         Right (newpos, a) -> do
             put newpos
             return a
-        Left e -> throwError [parseErrorMessage e]
+        Left e -> throwErrorMessage $ parseErrorMessage e

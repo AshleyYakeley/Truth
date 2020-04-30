@@ -37,7 +37,7 @@ interpretConcreteEntityType st = do
                 MkAnyW tm ->
                     case pinaforeToConcreteEntityType tm of
                         Just (MkShimWit t _) -> return $ MkAnyW t
-                        Nothing -> throwError $ InterpretTypeNotEntityError $ exprShow tm
+                        Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm
 
 interpretNonpolarType :: SyntaxType -> PinaforeSourceScoped baseupdate (AnyW (PinaforeNonpolarType baseupdate '[]))
 interpretNonpolarType st = do
@@ -48,7 +48,7 @@ interpretNonpolarType st = do
                 MkAnyW tm ->
                     case pinaforeTypeToNonpolar tm of
                         Just t -> return t
-                        Nothing -> throwError $ InterpretTypeNotAmbipolarError $ exprShow tm
+                        Nothing -> throw $ InterpretTypeNotAmbipolarError $ exprShow tm
 
 interpretTypeM ::
        forall baseupdate mpolarity. Is MPolarityType mpolarity
@@ -57,29 +57,29 @@ interpretTypeM ::
 interpretTypeM BottomSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> return $ toMPolar mempty
-        MNegativeType -> throwError $ InterpretTypeExprBadLimitError Negative
-        MBothType -> throwError $ InterpretTypeExprBadLimitError Negative
+        MNegativeType -> throw $ InterpretTypeExprBadLimitError Negative
+        MBothType -> throw $ InterpretTypeExprBadLimitError Negative
 interpretTypeM TopSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
-        MPositiveType -> throwError $ InterpretTypeExprBadLimitError Positive
+        MPositiveType -> throw $ InterpretTypeExprBadLimitError Positive
         MNegativeType -> return $ toMPolar mempty
-        MBothType -> throwError $ InterpretTypeExprBadLimitError Positive
+        MBothType -> throw $ InterpretTypeExprBadLimitError Positive
 interpretTypeM (OrSyntaxType st1 st2) =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> do
             t1 <- interpretTypeM st1
             t2 <- interpretTypeM st2
             return $ toMPolar (<>) t1 t2
-        MNegativeType -> throwError $ InterpretTypeExprBadJoinMeetError Negative
-        MBothType -> throwError $ InterpretTypeExprBadJoinMeetError Negative
+        MNegativeType -> throw $ InterpretTypeExprBadJoinMeetError Negative
+        MBothType -> throw $ InterpretTypeExprBadJoinMeetError Negative
 interpretTypeM (AndSyntaxType st1 st2) =
     case representative @_ @MPolarityType @mpolarity of
-        MPositiveType -> throwError $ InterpretTypeExprBadJoinMeetError Positive
+        MPositiveType -> throw $ InterpretTypeExprBadJoinMeetError Positive
         MNegativeType -> do
             t1 <- interpretTypeM st1
             t2 <- interpretTypeM st2
             return $ toMPolar (<>) t1 t2
-        MBothType -> throwError $ InterpretTypeExprBadJoinMeetError Positive
+        MBothType -> throw $ InterpretTypeExprBadJoinMeetError Positive
 interpretTypeM (SingleSyntaxType sgt sargs) = do
     MkPinaforeGroundTypeM dvt agt <- interpretGroundTypeConst @baseupdate sgt
     case agt of
@@ -146,8 +146,8 @@ interpretArgs ::
     -> [SyntaxTypeArgument]
     -> PinaforeSourceScoped baseupdate (AnyW (DolanArguments dv (PinaforeType baseupdate) gt polarity))
 interpretArgs _ NilListType [] = return $ MkAnyW NilDolanArguments
-interpretArgs sgt NilListType (_:_) = throwError $ InterpretTypeOverApplyError $ groundTypeText sgt
-interpretArgs sgt (ConsListType _ _) [] = throwError $ InterpretTypeUnderApplyError $ groundTypeText sgt
+interpretArgs sgt NilListType (_:_) = throw $ InterpretTypeOverApplyError $ groundTypeText sgt
+interpretArgs sgt (ConsListType _ _) [] = throw $ InterpretTypeUnderApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType CovarianceType dv) (SimpleSyntaxTypeArgument st:stt) = do
     at <- isMPolarity @polarity $ interpretTypeM st
     case fromMPolarSingle at of
@@ -156,7 +156,7 @@ interpretArgs sgt (ConsListType CovarianceType dv) (SimpleSyntaxTypeArgument st:
             case aargs of
                 MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
 interpretArgs sgt (ConsListType CovarianceType _) (RangeSyntaxTypeArgument _:_) =
-    throwError $ InterpretTypeRangeApplyError $ groundTypeText sgt
+    throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType ContravarianceType dv) (SimpleSyntaxTypeArgument st:stt) =
     invertPolarity @polarity $ do
         at <- isMPolarity @(InvertPolarity polarity) $ interpretTypeM st
@@ -166,7 +166,7 @@ interpretArgs sgt (ConsListType ContravarianceType dv) (SimpleSyntaxTypeArgument
                 case aargs of
                     MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
 interpretArgs sgt (ConsListType ContravarianceType _) (RangeSyntaxTypeArgument _:_) =
-    throwError $ InterpretTypeRangeApplyError $ groundTypeText sgt
+    throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType RangevarianceType dv) (st:stt) = do
     at <- isMPolarity @polarity $ interpretTypeArgument st
     case fromMPolarSingle at of
@@ -258,5 +258,5 @@ interpretSubtypeRelation sta stb = do
                         MkAnyW tb ->
                             case tb of
                                 MkConcreteType (OpenEntityGroundType _ tidb) NilArguments -> withEntitySubtype tida tidb
-                                _ -> throwError $ TypeNotOpenEntityError $ exprShow tb
-                _ -> throwError $ TypeNotOpenEntityError $ exprShow ta
+                                _ -> throw $ TypeNotOpenEntityError $ exprShow tb
+                _ -> throw $ TypeNotOpenEntityError $ exprShow ta

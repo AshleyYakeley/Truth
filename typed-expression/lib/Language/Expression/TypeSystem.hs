@@ -70,7 +70,7 @@ tsUnify ::
 tsUnify wa wb = runRenamer @(TSRenamer ts) $ solveUnifyPosNegShimWit @(TSUnifier ts) wa wb
 
 tsEval ::
-       forall ts m. (MonadError ExpressionError m, Show (TSName ts))
+       forall ts m. (MonadThrow ExpressionError m, Show (TSName ts))
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression
@@ -85,7 +85,7 @@ tsAnyToVal witn (MkAnyValue witp val) = do
     return $ fromEnhanced conv val
 
 tsEvalToType ::
-       forall ts t. (TypeSystem ts, MonadError ExpressionError (TSScoped ts), Show (TSName ts))
+       forall ts t. (TypeSystem ts, MonadThrow ExpressionError (TSScoped ts), Show (TSName ts))
     => TSNegShimWit ts t
     -> TSSealedExpression ts
     -> TSScoped ts t
@@ -210,13 +210,13 @@ tsBothPattern ::
 tsBothPattern = bothSealedPattern @(TSRenamer ts) @(TSUnifier ts)
 
 tsSealPatternConstructor ::
-       forall ts m. MonadError ExpressionError m
+       forall ts m. MonadThrow ExpressionError m
     => TSPatternConstructor ts
     -> m (TSSealedPattern ts)
 tsSealPatternConstructor = sealedPatternConstructor
 
 tsApplyPatternConstructor ::
-       forall ts. (TypeSystem ts, MonadError ExpressionError (TSScoped ts))
+       forall ts. (TypeSystem ts, MonadThrow ExpressionError (TSScoped ts))
     => TSPatternConstructor ts
     -> TSSealedPattern ts
     -> TSScoped ts (TSPatternConstructor ts)

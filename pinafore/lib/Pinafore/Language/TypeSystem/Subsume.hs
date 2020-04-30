@@ -77,7 +77,7 @@ limitInvertType' ::
 limitInvertType' t =
     case limitInvertType t of
         Just r -> return r
-        Nothing -> throwError $ TypeNoInverseLimitError $ exprShow t
+        Nothing -> throw $ TypeNoInverseLimitError $ exprShow t
 
 -- Kind of the dual of 'BisubstitutionWitness'.
 data SubsumeWitness baseupdate t where
@@ -133,7 +133,7 @@ subsumePositiveType1 (VarPinaforeSingularType vinf) tdecl =
     liftSubsumer $ varExpression $ PositiveSubsumeWitness vinf tdecl
 subsumePositiveType1 tinf@(GroundPinaforeSingularType ginf argsinf) tdecl =
     subsumePositiveGroundType ginf argsinf tdecl <|>
-    (subsumerLiftTypeCheck $ throwError $ TypeSubsumeError Positive (exprShow tinf) (exprShow tdecl))
+    (subsumerLiftTypeCheck $ throw $ TypeSubsumeError Positive (exprShow tinf) (exprShow tdecl))
 
 subsumePositiveType ::
        SubsumerConstraint baseupdate
@@ -181,7 +181,7 @@ subsumeNegativeType1 tdecl (VarPinaforeSingularType vinf) =
     liftSubsumer $ varExpression $ NegativeSubsumeWitness vinf tdecl
 subsumeNegativeType1 tdecl tinf@(GroundPinaforeSingularType ginf argsinf) =
     subsumeNegativeGroundType tdecl ginf argsinf <|>
-    (subsumerLiftTypeCheck $ throwError $ TypeSubsumeError Negative (exprShow tinf) (exprShow tdecl))
+    (subsumerLiftTypeCheck $ throw $ TypeSubsumeError Negative (exprShow tinf) (exprShow tdecl))
 
 subsumeNegativeType ::
        SubsumerConstraint baseupdate

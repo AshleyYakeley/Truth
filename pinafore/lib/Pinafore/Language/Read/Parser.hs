@@ -31,14 +31,14 @@ parseReader r text = let
            toks <- parseTokens text
            case parse r' (sourceName spos) toks of
                Right a -> return a
-               Left e -> throwError [parseErrorMessage e]
+               Left e -> throwErrorMessage $ parseErrorMessage e
 
 parseScopedReaderWhole :: Parser (PinaforeScoped baseupdate t) -> Text -> PinaforeSourceScoped baseupdate t
 parseScopedReaderWhole parser text = do
     spos <- askSourcePos
     case evalStateT (parseReader parser text) spos of
         SuccessResult a -> liftSourcePos a
-        FailureResult e -> throwError e
+        FailureResult e -> throw e
 
 readThis :: Token t -> Parser t
 readThis tok =

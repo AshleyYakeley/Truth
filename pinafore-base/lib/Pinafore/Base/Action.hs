@@ -61,23 +61,21 @@ data PinaforeWindow = MkPinaforeWindow
 pinaforeLiftLifeCycleIO :: LifeCycleIO a -> PinaforeAction a
 pinaforeLiftLifeCycleIO la = do
     MkActionContext {..} <- MkPinaforeAction ask
-    let MkUIToolkit {..} = acUIToolkit
-    liftIO $ uitUnliftLifeCycle la
+    liftIO $ uitUnliftLifeCycle acUIToolkit la
 
 pinaforeNewWindow :: WindowSpec -> PinaforeAction PinaforeWindow
 pinaforeNewWindow uiw = do
     MkActionContext {..} <- MkPinaforeAction ask
-    let uit@MkUIToolkit {..} = acUIToolkit
     rc <- pinaforeResourceContext
-    (pwWindow, close) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ uitRunView uit rc $ uitCreateWindow uiw
+    (pwWindow, close) <-
+        pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ uitRunView acUIToolkit rc $ uitCreateWindow acUIToolkit uiw
     let pwClose = liftIO close
     return $ MkPinaforeWindow {..}
 
 pinaforeExit :: PinaforeAction ()
 pinaforeExit = do
     MkActionContext {..} <- MkPinaforeAction ask
-    let MkUIToolkit {..} = acUIToolkit
-    liftIO uitExit
+    viewPinaforeAction $ uitViewExit acUIToolkit
 
 pinaforeUndoActions :: PinaforeAction UndoActions
 pinaforeUndoActions = do

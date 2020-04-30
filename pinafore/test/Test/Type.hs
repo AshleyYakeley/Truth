@@ -94,7 +94,7 @@ joinExpr exp1 exp2 = do
 textTypeTest :: Text -> String -> TestTree
 textTypeTest text r =
     testCase (unpack text) $ do
-        expr <- ioRunInterpretResult $ runTestPinaforeSourceScoped $ parseTopExpression @PinaforeUpdate text
+        expr <- throwResult $ runTestPinaforeSourceScoped $ parseTopExpression @PinaforeUpdate text
         assertEqual "" r $ showTypes expr
 
 badInterpretTest :: Text -> TestTree
@@ -108,7 +108,7 @@ simplifyTypeTest :: Text -> String -> TestTree
 simplifyTypeTest text e =
     testCase (unpack text) $ do
         simpexpr <-
-            ioRunInterpretResult $ do
+            throwResult $ do
                 mt <- runTestPinaforeSourceScoped $ parseType @PinaforeUpdate @'Positive text
                 case mt of
                     MkAnyW t ->

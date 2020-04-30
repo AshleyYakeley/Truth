@@ -75,7 +75,7 @@ soupReference dirpath = let
     in mapReference lens rawSoupReference
 
 soupWindow :: UIToolkit -> FilePath -> CreateView ()
-soupWindow uit@MkUIToolkit {..} dirpath = do
+soupWindow uit dirpath = do
     smodel <- liftLifeCycleIO $ makeReflectingModel $ soupReference dirpath
     (selnotify, getsel) <- liftIO $ makeRefSelectNotify
     rec
@@ -113,7 +113,7 @@ soupWindow uit@MkUIToolkit {..} dirpath = do
                 [ SubMenuEntry
                       "File"
                       [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO cc
-                      , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ liftIO uitExit
+                      , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ uitViewExit uit
                       ]
                 , SubMenuEntry
                       "Item"
@@ -135,7 +135,7 @@ soupWindow uit@MkUIToolkit {..} dirpath = do
                     ~(subwin, subcloser) <-
                         uitUnliftCreateView uit $
                         cvEarlyCloser $
-                        uitCreateWindow $
+                        uitCreateWindow uit $
                         MkWindowSpec (liftIO subcloser) (constantModel "item") (mbar subcloser subwin) $
                         oneWholeUISpec rowmodel rspec
                 return ()
@@ -149,5 +149,5 @@ soupWindow uit@MkUIToolkit {..} dirpath = do
                     ]
             wsCloseBoxAction :: View ()
             wsCloseBoxAction = liftIO closer
-        (window, closer) <- cvEarlyCloser $ uitCreateWindow MkWindowSpec {..}
+        (window, closer) <- cvEarlyCloser $ uitCreateWindow uit MkWindowSpec {..}
     return ()

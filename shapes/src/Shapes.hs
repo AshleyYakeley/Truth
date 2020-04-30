@@ -13,7 +13,7 @@ import Control.Category.Lifted as I
 import Control.Clock as I
 import Control.Monad.Compose as I
 import Control.Monad.Coroutine as I
-import Control.Monad.Error as I
+import Control.Monad.Exception as I
 import Control.Monad.LifeCycleIO as I
 import Control.Monad.Trans.LifeCycle as I
 import Control.Task as I

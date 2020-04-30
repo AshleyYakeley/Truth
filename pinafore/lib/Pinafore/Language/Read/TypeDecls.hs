@@ -138,7 +138,7 @@ readDataTypeDeclaration = do
                 unboundvars = freevars List.\\ declaredvars
             case nonEmpty unboundvars of
                 Nothing -> return ()
-                Just vv -> throwError $ InterpretUnboundTypeVariables $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
+                Just vv -> throw $ InterpretUnboundTypeVariables $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
             (_, withnt) <-
                 withNewTypeName n $ \_ ->
                     SimpleNamedType NilListType NilDolanVarianceMap (exprShowPrec n) $
