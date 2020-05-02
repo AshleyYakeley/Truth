@@ -8,6 +8,7 @@ import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Literal
+import Pinafore.Language.Type.TypeID
 import Pinafore.Language.Value
 import Shapes
 import Truth.Core

@@ -523,10 +523,10 @@ testEntity =
               , badInterpretTest "let datatype B = MkB a in pass"
               , tmodify ignoreTest $ pointTest "let datatype B a = MkB a in pass" {- ISSUE #41 -}
               , pointTest "let datatype P in pass"
-              , tmodify ignoreTest $
-                tgroup
-                    "nominal" {- ISSUE #48 -}
-                    [ badInterpretTest "let datatype P = P1; datatype Q; f :: P -> Q; f x = x in pass"
+              , tgroup
+                    "nominal"
+                    [ pointTest "let datatype P = P1; f :: P -> P; f x = x in pass"
+                    , badInterpretTest "let datatype P = P1; datatype Q; f :: P -> Q; f x = x in pass"
                     , badInterpretTest "let datatype P; datatype Q = Q1; f :: P -> Q; f x = x in pass"
                     , badInterpretTest "let datatype P; datatype Q; f :: P -> Q; f x = x in pass"
                     , badInterpretTest "let datatype P = P1; datatype Q = Q1; f :: P -> Q; f x = x in pass"
@@ -555,7 +555,8 @@ testEntity =
               , pointTest "let closedtype P in pass"
               , tgroup
                     "nominal"
-                    [ badInterpretTest "let closedtype P = P1 !\"P1\"; closedtype Q; f :: P -> Q; f x = x in pass"
+                    [ pointTest "let closedtype P = P1 !\"P1\"; f :: P -> P; f x = x in pass"
+                    , badInterpretTest "let closedtype P = P1 !\"P1\"; closedtype Q; f :: P -> Q; f x = x in pass"
                     , badInterpretTest "let closedtype P; closedtype Q = Q1 !\"Q1\"; f :: P -> Q; f x = x in pass"
                     , badInterpretTest "let closedtype P; closedtype Q; f :: P -> Q; f x = x in pass"
                     , badInterpretTest

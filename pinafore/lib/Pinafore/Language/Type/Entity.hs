@@ -20,10 +20,6 @@ data EntityGroundType (t :: k) where
     EitherEntityGroundType :: EntityGroundType Either
     ClosedEntityGroundType :: Name -> TypeIDType tid -> ClosedEntityType t -> EntityGroundType (IdentifiedValue tid t)
 
-newtype IdentifiedValue (tid :: BigNat) (t :: Type) = MkIdentifiedValue
-    { unIdentifiedValue :: t
-    } deriving (Eq)
-
 data ClosedEntityType (t :: Type) where
     NilClosedEntityType :: ClosedEntityType None
     ConsClosedEntityType

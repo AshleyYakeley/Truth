@@ -15,7 +15,8 @@ module Pinafore.Language.Scope
     , lookupBinding
     , withNewBindings
     , lookupNamedType
-    , withNewTypeName
+    , newTypeID
+    , registerTypeName
     , lookupPatternConstructor
     , withNewPatternConstructor
     , withNewPatternConstructors
@@ -187,24 +188,25 @@ lookupPatternConstructor name = do
         Just a -> return a
         Nothing -> throw $ LookupConstructorUnknownError name
 
-withNewTypeName ::
+newTypeID :: forall expr patc (tw :: forall k. k -> Type) ct. SourceScoped expr patc tw ct TypeID
+newTypeID =
+    liftSourcePos $
+    MkScoped $
+    lift $ do
+        tid <- get
+        put $ succTypeID tid
+        return tid
+
+registerTypeName ::
        forall expr patc (tw :: forall k. k -> Type) ct.
        Name
-    -> (TypeID -> NamedType tw ct)
-    -> SourceScoped expr patc tw ct (TypeID, WMFunction (Scoped expr patc tw ct) (Scoped expr patc tw ct))
-withNewTypeName name t = do
+    -> NamedType tw ct
+    -> SourceScoped expr patc tw ct (WMFunction (Scoped expr patc tw ct) (Scoped expr patc tw ct))
+registerTypeName name t = do
     mnt <- lookupNamedTypeM name
     case mnt of
         Just _ -> throw $ DeclareTypeDuplicateError name
-        Nothing -> do
-            tid <-
-                liftSourcePos $
-                MkScoped $
-                lift $ do
-                    tid <- get
-                    put $ succTypeID tid
-                    return tid
-            return $ (tid, MkWMFunction $ pLocalScope (\tc -> tc {scopeTypes = insertMap name (t tid) (scopeTypes tc)}))
+        Nothing -> return $ (MkWMFunction $ pLocalScope (\tc -> tc {scopeTypes = insertMap name t (scopeTypes tc)}))
 
 withNewPatternConstructor ::
        forall expr patc (tw :: forall k. k -> Type) ct.

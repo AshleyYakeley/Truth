@@ -17,6 +17,7 @@ import Pinafore.Language.Read.Type
 import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type.Data
+import Pinafore.Language.Type.TypeID
 import Pinafore.Language.TypeSystem
 import Pinafore.Language.TypeSystem.Nonpolar
 import Pinafore.Language.TypeSystem.Show
@@ -26,11 +27,15 @@ readOpenTypeDeclaration :: forall baseupdate. Parser (TypeDecls baseupdate)
 readOpenTypeDeclaration = do
     spos <- getPosition
     readThis TokOpenType
-    n <- readTypeName
+    name <- readTypeName
     let
         tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
         tdTypes rn = do
-            (_, withnt) <- liftRefNotation $ runSourcePos spos $ withNewTypeName n $ \tid -> OpenEntityNamedType tid
+            withnt <-
+                liftRefNotation $
+                runSourcePos spos $ do
+                    tid <- newTypeID
+                    registerTypeName name $ OpenEntityNamedType tid
             remonadRefNotation withnt rn
         tdRelations :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
         tdRelations = id
@@ -110,8 +115,26 @@ assembleDataType ((n, MkAnyW el):cc) =
         MkDataBox ct conss ->
             MkDataBox (ConsDataType el ct) $ (MkConstructor n el Left eitherLeft) : fmap extendConstructor conss
 
-datatypeIOWitness :: IOWitness ('MkWitKind PinaforeDataType)
-datatypeIOWitness = $(iowitness [t|'MkWitKind PinaforeDataType|])
+{-
+newtype IdentifiedValue (tid :: BigNat) (t :: Type) = MkIdentifiedValue
+    { unIdentifiedValue :: t
+    } deriving (Eq)
+PinaforeDataType :: Type -> forall (k :: Type). k -> Type
+PinaforeDataType baseupdate :: forall (k :: Type). k -> Type
+IdentifiedValue :: BigNat -> Type -> Type
+newtype WitKind = MkWitKind (Type -> forall (k :: Type). k -> Type)
+data ProvidedType :: Type -> forall k. k -> Type where
+    MkProvidedType
+        :: forall (baseupdate :: Type) (w :: Type -> forall k. k -> Type) (k :: Type) (t :: k).
+           TestHetEquality (w baseupdate)
+        => IOWitness ('MkWitKind w)
+        -> w baseupdate t
+        -> ProvidedType baseupdate t
+ClosedEntityGroundType :: Name -> TypeIDType tid -> ClosedEntityType t -> EntityGroundType (IdentifiedValue tid t)
+
+-}
+datatypeIOWitness :: IOWitness ('MkWitKind (IdentifiedType PinaforeDataType))
+datatypeIOWitness = $(iowitness [t|'MkWitKind (IdentifiedType PinaforeDataType)|])
 
 constructorFreeVariables :: Constructor (PinaforeNonpolarType baseupdate '[]) t -> [AnyW SymbolType]
 constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonPolarTypeFreeVariables lt
@@ -120,7 +143,7 @@ readDataTypeDeclaration :: forall baseupdate. Parser (PinaforeScoped baseupdate 
 readDataTypeDeclaration = do
     spos <- getPosition
     readThis TokDataType
-    n <- readTypeName
+    name <- readTypeName
     mcons <-
         optional $ do
             readThis TokAssign
@@ -139,43 +162,46 @@ readDataTypeDeclaration = do
             case nonEmpty unboundvars of
                 Nothing -> return ()
                 Just vv -> throw $ InterpretUnboundTypeVariables $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
-            (_, withnt) <-
-                withNewTypeName n $ \_ ->
-                    SimpleNamedType NilListType NilDolanVarianceMap (exprShowPrec n) $
-                    MkProvidedType datatypeIOWitness dt
-            let
-                ctf :: forall polarity. Is PolarityType polarity
-                    => PinaforeShimWit baseupdate polarity _
-                ctf =
-                    singlePinaforeShimWit $
-                    mkJMShimWit $
-                    GroundPinaforeSingularType
-                        (SimpleGroundType NilListType NilDolanVarianceMap (exprShowPrec n) $
-                         MkProvidedType datatypeIOWitness dt)
-                        NilDolanArguments
-            patts <-
-                for conss $ \(MkConstructor cname lt at tma) -> do
-                    ltp <- return $ mapListType nonpolarToPinaforeType lt
-                    patt <- withNewPatternConstructor cname $ toPatternConstructor ctf ltp tma
-                    ltn <- return $ mapListType nonpolarToPinaforeType lt
-                    bind <-
-                        return $
-                        MkWMFunction $
-                        withNewBindings $
-                        singletonMap cname $ qConstExprAny $ MkAnyValue (qFunctionPosWitnesses ltn ctf) at
-                    return $ patt . bind
-            let
-                tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
-                tdTypes = remonadRefNotation $ withnt . compAll patts
-                tdRelations :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
-                tdRelations = id
-            return $ MkTypeDecls {..}
+            tid <- newTypeID
+            valueToWitness tid $ \tidsym -> do
+                let pt = MkProvidedType datatypeIOWitness $ MkIdentifiedType tidsym dt
+                withnt <- registerTypeName name $ SimpleNamedType NilListType NilDolanVarianceMap (exprShowPrec name) pt
+                let
+                    ctf :: forall polarity. Is PolarityType polarity
+                        => PinaforeShimWit baseupdate polarity _
+                    ctf =
+                        singlePinaforeShimWit $
+                        mkJMShimWit $
+                        GroundPinaforeSingularType
+                            (SimpleGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt)
+                            NilDolanArguments
+                patts <-
+                    for conss $ \(MkConstructor cname lt at tma) -> do
+                        ltp <- return $ mapListType nonpolarToPinaforeType lt
+                        patt <-
+                            withNewPatternConstructor cname $
+                            toPatternConstructor ctf ltp $ \(MkIdentifiedValue t) -> tma t
+                        ltn <- return $ mapListType nonpolarToPinaforeType lt
+                        bind <-
+                            return $
+                            MkWMFunction $
+                            withNewBindings $
+                            singletonMap cname $
+                            qConstExprAny $
+                            MkAnyValue (qFunctionPosWitnesses ltn ctf) $ \hl -> MkIdentifiedValue $ at hl
+                        return $ patt . bind
+                let
+                    tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
+                    tdTypes = remonadRefNotation $ withnt . compAll patts
+                    tdRelations :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
+                    tdRelations = id
+                return $ MkTypeDecls {..}
 
 readClosedTypeDeclaration :: forall baseupdate. Parser (PinaforeScoped baseupdate (TypeDecls baseupdate))
 readClosedTypeDeclaration = do
     spos <- getPosition
     readThis TokClosedType
-    n <- readTypeName
+    name <- readTypeName
     mcons <-
         optional $ do
             readThis TokAssign
@@ -184,7 +210,8 @@ readClosedTypeDeclaration = do
         sconss <- sequence $ fromMaybe mempty mcons
         MkClosedEntityBox ct conss <- return $ assembleClosedEntityType sconss
         runSourcePos spos $ do
-            (tid, withnt) <- withNewTypeName n $ \tid -> ClosedEntityNamedType tid (MkAnyW ct)
+            tid <- newTypeID
+            withnt <- registerTypeName name $ ClosedEntityNamedType tid (MkAnyW ct)
             valueToWitness tid $ \tidsym -> do
                 let
                     ctf :: forall polarity. Is PolarityType polarity
@@ -193,7 +220,7 @@ readClosedTypeDeclaration = do
                         singlePinaforeShimWit $
                         mkJMShimWit $
                         GroundPinaforeSingularType
-                            (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n tidsym ct)
+                            (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym ct)
                             NilDolanArguments
                 patts <-
                     for conss $ \(MkConstructor cname lt at tma) -> do
