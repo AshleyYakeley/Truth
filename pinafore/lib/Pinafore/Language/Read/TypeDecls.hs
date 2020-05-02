@@ -11,7 +11,6 @@ import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Name
 import Pinafore.Language.Read.Parser
-import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
 import Pinafore.Language.Scope
@@ -28,18 +27,14 @@ readOpenTypeDeclaration = do
     spos <- getPosition
     readThis TokOpenType
     name <- readTypeName
-    let
-        tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
-        tdTypes rn = do
+    return $
+        typeTypeDecl $
+        MkWMFunction $ \rn -> do
             withnt <-
-                liftRefNotation $
                 runSourcePos spos $ do
                     tid <- newTypeID
                     registerTypeName name $ OpenEntityNamedType tid
-            remonadRefNotation withnt rn
-        tdRelations :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
-        tdRelations = id
-    return MkTypeDecls {..}
+            runWMFunction withnt rn
 
 readSubtypeDeclaration :: forall baseupdate. Parser (TypeDecls baseupdate)
 readSubtypeDeclaration = do
@@ -48,14 +43,11 @@ readSubtypeDeclaration = do
     sta <- readType
     readExactlyThis TokOperator "<="
     stb <- readType
-    let
-        tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
-        tdTypes = id
-        tdRelations :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
-        tdRelations rn = do
-            smap <- liftRefNotation $ runSourcePos spos $ interpretSubtypeRelation sta stb
-            remonadRefNotation smap rn
-    return MkTypeDecls {..}
+    return $
+        relationTypeDecl $
+        MkWMFunction $ \rn -> do
+            smap <- runSourcePos spos $ interpretSubtypeRelation sta stb
+            runWMFunction smap rn
 
 readDataTypeConstructor ::
        Parser (PinaforeScoped baseupdate (Name, AnyW (ListType (PinaforeNonpolarType baseupdate '[]))))
@@ -115,24 +107,6 @@ assembleDataType ((n, MkAnyW el):cc) =
         MkDataBox ct conss ->
             MkDataBox (ConsDataType el ct) $ (MkConstructor n el Left eitherLeft) : fmap extendConstructor conss
 
-{-
-newtype IdentifiedValue (tid :: BigNat) (t :: Type) = MkIdentifiedValue
-    { unIdentifiedValue :: t
-    } deriving (Eq)
-PinaforeDataType :: Type -> forall (k :: Type). k -> Type
-PinaforeDataType baseupdate :: forall (k :: Type). k -> Type
-IdentifiedValue :: BigNat -> Type -> Type
-newtype WitKind = MkWitKind (Type -> forall (k :: Type). k -> Type)
-data ProvidedType :: Type -> forall k. k -> Type where
-    MkProvidedType
-        :: forall (baseupdate :: Type) (w :: Type -> forall k. k -> Type) (k :: Type) (t :: k).
-           TestHetEquality (w baseupdate)
-        => IOWitness ('MkWitKind w)
-        -> w baseupdate t
-        -> ProvidedType baseupdate t
-ClosedEntityGroundType :: Name -> TypeIDType tid -> ClosedEntityType t -> EntityGroundType (IdentifiedValue tid t)
-
--}
 datatypeIOWitness :: IOWitness ('MkWitKind (IdentifiedType PinaforeDataType))
 datatypeIOWitness = $(iowitness [t|'MkWitKind (IdentifiedType PinaforeDataType)|])
 
@@ -190,12 +164,7 @@ readDataTypeDeclaration = do
                             qConstExprAny $
                             MkAnyValue (qFunctionPosWitnesses ltn ctf) $ \hl -> MkIdentifiedValue $ at hl
                         return $ patt . bind
-                let
-                    tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
-                    tdTypes = remonadRefNotation $ withnt . compAll patts
-                    tdRelations :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
-                    tdRelations = id
-                return $ MkTypeDecls {..}
+                return $ typeTypeDecl $ withnt . compAll patts
 
 readClosedTypeDeclaration :: forall baseupdate. Parser (PinaforeScoped baseupdate (TypeDecls baseupdate))
 readClosedTypeDeclaration = do
@@ -235,12 +204,7 @@ readClosedTypeDeclaration = do
                             qConstExprAny $
                             MkAnyValue (qFunctionPosWitnesses ltn (mapShimWit (coerceEnhanced "consval") ctf)) at
                         return $ patt . bind
-                let
-                    tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
-                    tdTypes = remonadRefNotation $ withnt . compAll patts
-                    tdRelations :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
-                    tdRelations = id
-                return $ MkTypeDecls {..}
+                return $ typeTypeDecl $ withnt . compAll patts
 
 readTypeDeclaration :: Parser (PinaforeScoped baseupdate (TypeDecls baseupdate))
 readTypeDeclaration =

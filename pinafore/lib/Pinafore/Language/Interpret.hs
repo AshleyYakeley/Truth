@@ -109,7 +109,7 @@ interpretDeclarations ::
     -> PinaforeScoped baseupdate (WMFunction (RefNotation baseupdate) (RefNotation baseupdate))
 interpretDeclarations spos (MkSyntaxDeclarations stypedecls sbinds) = do
     MkTypeDecls td tr <- stypedecls
-    return $ MkWMFunction $ \ra -> td $ tr $ interpretLetBindings spos sbinds ra
+    return $ MkWMFunction $ remonadRefNotation (td . tr) . interpretLetBindings spos sbinds
 
 interpretNamedConstructor :: SourcePos -> Name -> RefExpression baseupdate
 interpretNamedConstructor spos n = do

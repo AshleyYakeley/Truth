@@ -4,14 +4,19 @@ import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
-import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.TypeSystem
 import Shapes
 
 data TypeDecls baseupdate = MkTypeDecls
-    { tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
-    , tdRelations :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a
+    { tdTypes :: WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)
+    , tdRelations :: WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)
     }
+
+typeTypeDecl :: WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate) -> TypeDecls baseupdate
+typeTypeDecl t = mempty {tdTypes = t}
+
+relationTypeDecl :: WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate) -> TypeDecls baseupdate
+relationTypeDecl t = mempty {tdRelations = t}
 
 instance Semigroup (TypeDecls baseupdate) where
     (MkTypeDecls at ar) <> (MkTypeDecls bt br) = MkTypeDecls (at . bt) (ar . br)
