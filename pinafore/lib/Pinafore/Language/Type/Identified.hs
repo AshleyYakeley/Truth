@@ -1,14 +1,17 @@
-module Pinafore.Language.Type.TypeID
+module Pinafore.Language.Type.Identified
     ( TypeID
     , zeroTypeID
     , succTypeID
     , TypeIDType
     , IdentifiedValue(..)
     , IdentifiedType(..)
+    , unsafeGetIdentification
     ) where
 
+import GHC.Exts (Any)
 import Shapes
 import Shapes.Numeric
+import Shapes.Unsafe (unsafeGetRefl)
 
 newtype TypeID =
     MkTypeID Natural
@@ -29,20 +32,21 @@ instance WitnessValue TypeIDType where
     witnessToValue (MkTypeIDType bnt) = MkTypeID $ witnessToValue bnt
     valueToWitness (MkTypeID n) cont = valueToWitness n $ \bnt -> cont $ MkTypeIDType bnt
 
-newtype IdentifiedValue (tid :: BigNat) (t :: Type) = MkIdentifiedValue
-    { unIdentifiedValue :: t
-    } deriving (Eq)
+newtype IdentifiedValue (tid :: BigNat) =
+    MkIdentifiedValue Any
 
-data IdentifiedType :: (Type -> forall k. k -> Type) -> Type -> forall k. k -> Type where
+data IdentifiedType :: Type -> forall k. k -> Type where
     MkIdentifiedType
-        :: forall (w :: Type -> forall k. k -> Type) (baseupdate :: Type) (tid :: BigNat) (t :: Type).
+        :: forall (baseupdate :: Type) (tid :: BigNat).
            TypeIDType tid
-        -> w baseupdate t
-        -> IdentifiedType w baseupdate (IdentifiedValue tid t)
+        -> IdentifiedType baseupdate (IdentifiedValue tid)
 
-instance forall (w :: Type -> forall k. k -> Type) (baseupdate :: Type). TestHetEquality (w baseupdate) =>
-             TestHetEquality (IdentifiedType w baseupdate) where
-    testHetEquality (MkIdentifiedType ia wa) (MkIdentifiedType ib wb) = do
+instance TestHetEquality (IdentifiedType baseupdate) where
+    testHetEquality (MkIdentifiedType ia) (MkIdentifiedType ib) = do
         Refl <- testEquality ia ib
-        HRefl <- testHetEquality wa wb
         return HRefl
+
+unsafeGetIdentification ::
+       forall (tid :: BigNat) (t :: Type) m. Applicative m
+    => m (IdentifiedValue tid :~: t)
+unsafeGetIdentification = unsafeGetRefl

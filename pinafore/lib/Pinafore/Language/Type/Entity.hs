@@ -3,8 +3,8 @@ module Pinafore.Language.Type.Entity where
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Name
+import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Literal
-import Pinafore.Language.Type.TypeID
 import Pinafore.Language.TypeSystem.Show
 import Pinafore.Language.Value
 import Shapes
@@ -18,7 +18,8 @@ data EntityGroundType (t :: k) where
     ListEntityGroundType :: EntityGroundType []
     PairEntityGroundType :: EntityGroundType (,)
     EitherEntityGroundType :: EntityGroundType Either
-    ClosedEntityGroundType :: Name -> TypeIDType tid -> ClosedEntityType t -> EntityGroundType (IdentifiedValue tid t)
+    ClosedEntityGroundType
+        :: Name -> TypeIDType tid -> ClosedEntityType (IdentifiedValue tid) -> EntityGroundType (IdentifiedValue tid)
 
 data ClosedEntityType (t :: Type) where
     NilClosedEntityType :: ClosedEntityType None

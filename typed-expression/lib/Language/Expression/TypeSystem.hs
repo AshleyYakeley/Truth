@@ -157,13 +157,13 @@ tsSingleBinding = singleBinding
 tsUncheckedComponentLet ::
        forall ts. (Ord (TSName ts), TypeSystem ts)
     => TSBindings ts
-    -> TSScoped ts (StrictMap (TSName ts) (TSSealedExpression ts))
+    -> TSScoped ts (Map (TSName ts) (TSSealedExpression ts))
 tsUncheckedComponentLet = bindingsComponentLetSealedExpression @(TSRenamer ts) @(TSUnifier ts)
 
 tsValuesLet ::
        forall ts. (Ord (TSName ts), TypeSystem ts)
-    => StrictMap (TSName ts) (TSValue ts)
-    -> StrictMap (TSName ts) (TSSealedExpression ts)
+    => Map (TSName ts) (TSValue ts)
+    -> Map (TSName ts) (TSSealedExpression ts)
 tsValuesLet = valuesLetSealedExpression @(TSUnifier ts)
 
 tsSubsume ::

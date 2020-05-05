@@ -450,50 +450,59 @@ testEntity =
               ]
         , tgroup
               "subtype"
-              [ context ["opentype P", "opentype Q", "subtype P <= Q"] $
-                tgroup
-                    "1"
-                    [ pointTest "pass"
-                    , pointTest "let f :: P -> Q; f x = x in pass"
-                    , pointTest "let f :: [P] -> [Q]; f x = x in pass"
-                    , badInterpretTest "let f :: Q -> P; f x = x in pass"
+              [ tgroup
+                    "let"
+                    [ context ["opentype P", "opentype Q", "subtype P <= Q"] $
+                      tgroup
+                          "1"
+                          [ pointTest "pass"
+                          , pointTest "let f :: P -> Q; f x = x in pass"
+                          , pointTest "let f :: [P] -> [Q]; f x = x in pass"
+                          , badInterpretTest "let f :: Q -> P; f x = x in pass"
+                          ]
+                    , context ["opentype P", "subtype P <= Q", "opentype Q"] $
+                      tgroup
+                          "2"
+                          [ pointTest "pass"
+                          , pointTest "let f :: P -> Q; f x = x in pass"
+                          , pointTest "let f :: [P] -> [Q]; f x = x in pass"
+                          , badInterpretTest "let f :: Q -> P; f x = x in pass"
+                          ]
+                    , context ["subtype P <= Q", "opentype P", "opentype Q"] $
+                      tgroup
+                          "3"
+                          [ pointTest "pass"
+                          , pointTest "let f :: P -> Q; f x = x in pass"
+                          , pointTest "let f :: [P] -> [Q]; f x = x in pass"
+                          , badInterpretTest "let f :: Q -> P; f x = x in pass"
+                          ]
                     ]
-              , context ["opentype P", "subtype P <= Q", "opentype Q"] $
-                tgroup
-                    "2"
-                    [ pointTest "pass"
-                    , pointTest "let f :: P -> Q; f x = x in pass"
-                    , pointTest "let f :: [P] -> [Q]; f x = x in pass"
-                    , badInterpretTest "let f :: Q -> P; f x = x in pass"
-                    ]
-              , context ["subtype P <= Q", "opentype P", "opentype Q"] $
-                tgroup
-                    "3"
-                    [ pointTest "pass"
-                    , pointTest "let f :: P -> Q; f x = x in pass"
-                    , pointTest "let f :: [P] -> [Q]; f x = x in pass"
-                    , badInterpretTest "let f :: Q -> P; f x = x in pass"
-                    ]
-              , context ["opentype P", "opentype Q"] $
-                tgroup
-                    "local 1"
-                    [ pointTest "let subtype P <= Q in pass"
-                    , pointTest "let subtype P <= Q; f :: P -> Q; f x = x in pass"
-                    , badInterpretTest "let subtype P <= Q; f :: Q -> P; f x = x in pass"
-                    ]
-              , context ["opentype P"] $
-                tgroup
-                    "local 2"
-                    [ pointTest "let opentype Q; subtype P <= Q in pass"
-                    , pointTest "let opentype Q; subtype P <= Q; f :: P -> Q; f x = x in pass"
-                    , badInterpretTest "let opentype Q; subtype P <= Q; f :: Q -> P; f x = x in pass"
-                    ]
-              , context ["opentype Q"] $
-                tgroup
-                    "local 3"
-                    [ pointTest "let opentype P; subtype P <= Q in pass"
-                    , pointTest "let opentype P; subtype P <= Q; f :: P -> Q; f x = x in pass"
-                    , badInterpretTest "let opentype P; subtype P <= Q; f :: Q -> P; f x = x in pass"
+              , tgroup
+                    "local"
+                    [ context ["opentype P"] $
+                      tgroup
+                          "1"
+                          [ pointTest "pass"
+                          , pointTest "let opentype Q; subtype P <= Q in pass"
+                          , pointTest "let opentype Q; subtype P <= Q; f :: P -> Q; f x = x in pass"
+                          , badInterpretTest "let opentype Q; subtype P <= Q; f :: Q -> P; f x = x in pass"
+                          ]
+                    , context ["opentype Q"] $
+                      tgroup
+                          "2"
+                          [ pointTest "pass"
+                          , pointTest "let opentype P; subtype P <= Q in pass"
+                          , pointTest "let opentype P; subtype P <= Q; f :: P -> Q; f x = x in pass"
+                          , badInterpretTest "let opentype P; subtype P <= Q; f :: Q -> P; f x = x in pass"
+                          ]
+                    , context ["opentype P", "opentype Q"] $
+                      tgroup
+                          "3"
+                          [ pointTest "pass"
+                          , pointTest "let subtype P <= Q in pass"
+                          , pointTest "let subtype P <= Q; f :: P -> Q; f x = x in pass"
+                          , badInterpretTest "let subtype P <= Q; f :: Q -> P; f x = x in pass"
+                          ]
                     ]
               , context ["opentype Q", "subtype Maybe Number <= Q"] $
                 tgroup
@@ -533,14 +542,15 @@ testEntity =
                     , badInterpretTest
                           "let datatype P = P1 Integer; datatype Q = Q1 Integer; f :: P -> Q; f x = x in pass"
                     ]
-              , tmodify ignoreTest $
-                tgroup
-                    "recursive" {- ISSUE #49 -}
+              , tgroup
+                    "recursive"
                     [ pointTest "let datatype P = P1 in let datatype Q = Q1 P in pass"
                     , pointTest "let datatype P = P1; datatype Q = Q1 P in pass"
                     , pointTest "let datatype P = P1 Q; datatype Q in pass"
                     , pointTest "let datatype P = P1 Q; datatype Q = Q1 P in pass"
                     , pointTest "let datatype P = P1 P in pass"
+                    , pointTest
+                          "let datatype P = P1 Q; datatype Q = Q1 P; f :: P -> P; f p = case p of P1 q -> case q of Q1 p -> p end end in pass"
                     ]
               ]
         , context ["closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\""] $
@@ -564,9 +574,8 @@ testEntity =
                     , badInterpretTest
                           "let closedtype P = P1 Integer !\"P1\"; closedtype Q = Q1 Integer !\"Q1\"; f :: P -> Q; f x = x in pass"
                     ]
-              , tmodify ignoreTest $
-                tgroup
-                    "recursive" {- ISSUE #49 -}
+              , tgroup
+                    "recursive"
                     [ pointTest "let closedtype P = P1 !\"P1\" in let closedtype Q = Q1 P !\"Q1\" in pass"
                     , pointTest "let closedtype P = P1 !\"P1\"; closedtype Q = Q1 P !\"Q1\" in pass"
                     , pointTest "let closedtype P = P1 Q !\"P1\"; closedtype Q in pass"

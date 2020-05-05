@@ -8,7 +8,6 @@ import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Literal
-import Pinafore.Language.Type.TypeID
 import Pinafore.Language.Value
 import Shapes
 import Truth.Core
@@ -85,8 +84,7 @@ entityGroundTypeAdapter ListEntityGroundType (ConsArguments t NilArguments) = le
     to [] = Left ()
     to (a:aa) = Right (a, (aa, ()))
     in listAdapter
-entityGroundTypeAdapter (ClosedEntityGroundType _ _ ct) NilArguments =
-    isoMap MkIdentifiedValue unIdentifiedValue $ closedEntityTypeAdapter ct
+entityGroundTypeAdapter (ClosedEntityGroundType _ _ ct) NilArguments = closedEntityTypeAdapter ct
 
 closedEntityTypeAdapter :: ClosedEntityType t -> EntityAdapter t
 closedEntityTypeAdapter NilClosedEntityType = pNone

@@ -43,7 +43,7 @@ predefinedDoc = fmap bdDoc $ predefinitions @baseupdate
 
 predefinedBindings ::
        forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
-    => StrictMap Name (QValue baseupdate)
+    => Map Name (QValue baseupdate)
 predefinedBindings =
     mapFromList $
     catMaybes $
@@ -56,7 +56,7 @@ predefinedBindings =
 
 predefinedPatternConstructors ::
        forall baseupdate. PinaforePredefinitions baseupdate
-    => StrictMap Name (PinaforePatternConstructor baseupdate)
+    => Map Name (PinaforePatternConstructor baseupdate)
 predefinedPatternConstructors =
     mapFromList $
     catMaybes $

@@ -52,6 +52,7 @@ library:
       - Data.KeyContainer
       - Data.FiniteSet
       - Data.KindMorphism
+      - Data.FixBox
       - Control.Category.Dual
       - Control.Category.Lifted
       - Control.Monad.Compose
@@ -62,8 +63,10 @@ library:
       - Control.Clock
       - Control.Task
       - Control.AsyncRunner
+      - Unsafe.Type
       - Shapes
       - Shapes.Numeric
+      - Shapes.Unsafe
     other-modules:
       - Shapes.Import
       - Shapes.Instances

@@ -11,6 +11,7 @@ import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.If
 import Pinafore.Language.Interpret.Type
+import Pinafore.Language.Interpret.TypeDecl
 import Pinafore.Language.Name
 import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Syntax
@@ -41,38 +42,38 @@ interpretPatternConstructor SLUnit = return $ qToPatternConstructor $ \() -> Jus
 interpretPatternConstructor SLPair = return $ qToPatternConstructor $ \(a :: A, b :: B) -> Just $ (a, (b, ()))
 
 interpretPattern :: SyntaxPattern -> RefNotation baseupdate (QPattern baseupdate)
-interpretPattern (MkSyntaxPattern _ AnySyntaxPattern) = return qAnyPattern
-interpretPattern (MkSyntaxPattern _ (VarSyntaxPattern n)) = return $ qVarPattern n
-interpretPattern (MkSyntaxPattern spos (BothSyntaxPattern spat1 spat2)) = do
+interpretPattern (MkWithSourcePos _ AnySyntaxPattern) = return qAnyPattern
+interpretPattern (MkWithSourcePos _ (VarSyntaxPattern n)) = return $ qVarPattern n
+interpretPattern (MkWithSourcePos spos (BothSyntaxPattern spat1 spat2)) = do
     pat1 <- interpretPattern spat1
     pat2 <- interpretPattern spat2
     liftRefNotation $ runSourcePos spos $ qBothPattern pat1 pat2
-interpretPattern (MkSyntaxPattern spos (ConstructorSyntaxPattern scons spats)) = do
+interpretPattern (MkWithSourcePos spos (ConstructorSyntaxPattern scons spats)) = do
     pc <- liftRefNotation $ runSourcePos spos $ interpretPatternConstructor scons
     pats <- for spats interpretPattern
     liftRefNotation $ runSourcePos spos $ qConstructPattern pc pats
 
 interpretPatternOrName :: SyntaxPattern -> Either Name (RefNotation baseupdate (QPattern baseupdate))
-interpretPatternOrName (MkSyntaxPattern _ (VarSyntaxPattern n)) = Left n
+interpretPatternOrName (MkWithSourcePos _ (VarSyntaxPattern n)) = Left n
 interpretPatternOrName pat = Right $ interpretPattern pat
 
 interpretExpression ::
        forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => SyntaxExpression baseupdate
+    => SyntaxExpression
     -> RefExpression baseupdate
-interpretExpression (MkSyntaxExpression spos sexpr) = interpretExpression' spos sexpr
+interpretExpression (MkWithSourcePos spos sexpr) = interpretExpression' spos sexpr
 
-getBindingNode :: SyntaxBinding baseupdate -> (SyntaxBinding baseupdate, Name, [Name])
+getBindingNode :: SyntaxBinding -> (SyntaxBinding, Name, [Name])
 getBindingNode b@(MkSyntaxBinding _ _ n _) = (b, n, setToList $ syntaxFreeVariables b)
 
 -- | Group bindings into a topologically-sorted list of strongly-connected components
-clumpBindings :: [SyntaxBinding baseupdate] -> [[SyntaxBinding baseupdate]]
+clumpBindings :: [SyntaxBinding] -> [[SyntaxBinding]]
 clumpBindings bb = fmap flattenSCC $ stronglyConnComp $ fmap getBindingNode bb
 
 interpretLetBindingsClump ::
        HasPinaforeEntityUpdate baseupdate
     => SourcePos
-    -> [SyntaxBinding baseupdate]
+    -> [SyntaxBinding]
     -> RefNotation baseupdate a
     -> RefNotation baseupdate a
 interpretLetBindingsClump spos sbinds ra = do
@@ -86,7 +87,7 @@ interpretLetBindingsClump spos sbinds ra = do
 interpretLetBindingss ::
        HasPinaforeEntityUpdate baseupdate
     => SourcePos
-    -> [[SyntaxBinding baseupdate]]
+    -> [[SyntaxBinding]]
     -> RefNotation baseupdate a
     -> RefNotation baseupdate a
 interpretLetBindingss _ [] ra = ra
@@ -95,7 +96,7 @@ interpretLetBindingss spos (b:bb) ra = interpretLetBindingsClump spos b $ interp
 interpretLetBindings ::
        HasPinaforeEntityUpdate baseupdate
     => SourcePos
-    -> [SyntaxBinding baseupdate]
+    -> [SyntaxBinding]
     -> RefNotation baseupdate a
     -> RefNotation baseupdate a
 interpretLetBindings spos sbinds ra = do
@@ -104,12 +105,31 @@ interpretLetBindings spos sbinds ra = do
 
 interpretDeclarations ::
        HasPinaforeEntityUpdate baseupdate
-    => SourcePos
-    -> SyntaxDeclarations baseupdate
-    -> PinaforeScoped baseupdate (WMFunction (RefNotation baseupdate) (RefNotation baseupdate))
-interpretDeclarations spos (MkSyntaxDeclarations stypedecls sbinds) = do
-    MkTypeDecls td tr <- stypedecls
-    return $ MkWMFunction $ remonadRefNotation (td . tr) . interpretLetBindings spos sbinds
+    => [SyntaxDeclaration]
+    -> PinaforeSourceScoped baseupdate (WMFunction (RefNotation baseupdate) (RefNotation baseupdate))
+interpretDeclarations decls = do
+    let
+        typeDecls =
+            mapMaybe
+                (\case
+                     TypeSyntaxDeclaration spos name defn -> Just (spos, name, defn)
+                     _ -> Nothing)
+                decls
+        trs =
+            mapMaybe
+                (\case
+                     SubtypeDeclaration spos sta stb ->
+                         Just $ MkWMFunction $ mapSourcePos spos $ interpretSubtypeRelation sta stb
+                     _ -> Nothing)
+                decls
+        sbinds =
+            (mapMaybe $ \case
+                 BindingSyntaxDeclaration sbind -> Just sbind
+                 _ -> Nothing)
+                decls
+    td <- interpretTypeDeclarations typeDecls
+    spos <- askSourcePos
+    return $ MkWMFunction $ remonadRefNotation (td . compAll trs) . interpretLetBindings spos sbinds
 
 interpretNamedConstructor :: SourcePos -> Name -> RefExpression baseupdate
 interpretNamedConstructor spos n = do
@@ -140,7 +160,7 @@ interpretConstant spos (SCConstructor lit) = interpretConstructor spos lit
 
 interpretCase ::
        HasPinaforeEntityUpdate baseupdate
-    => SyntaxCase baseupdate
+    => SyntaxCase
     -> RefNotation baseupdate (QPattern baseupdate, QExpr baseupdate)
 interpretCase (MkSyntaxCase spat sexpr) = do
     pat <- interpretPattern spat
@@ -150,7 +170,7 @@ interpretCase (MkSyntaxCase spat sexpr) = do
 interpretExpression' ::
        forall baseupdate. HasPinaforeEntityUpdate baseupdate
     => SourcePos
-    -> SyntaxExpression' baseupdate
+    -> SyntaxExpression'
     -> RefExpression baseupdate
 interpretExpression' spos (SEAbstract spat sbody) = do
     val <- interpretExpression sbody
@@ -160,7 +180,7 @@ interpretExpression' spos (SEAbstract spat sbody) = do
             pat <- mpat
             liftRefNotation $ runSourcePos spos $ qCaseAbstract [(pat, val)]
 interpretExpression' spos (SELet decls sbody) = do
-    MkWMFunction bmap <- liftRefNotation $ interpretDeclarations spos decls
+    MkWMFunction bmap <- liftRefNotation $ runSourcePos spos $ interpretDeclarations decls
     bmap $ interpretExpression sbody
 interpretExpression' spos (SECase sbody scases) = do
     body <- interpretExpression sbody
@@ -235,27 +255,26 @@ interpretTypeSignature (Just st) expr = do
     at <- interpretType st
     qSubsumeExpr (mapAnyW mkShimWit at) expr
 
-interpretBinding ::
-       HasPinaforeEntityUpdate baseupdate => SyntaxBinding baseupdate -> RefNotation baseupdate (QBindings baseupdate)
+interpretBinding :: HasPinaforeEntityUpdate baseupdate => SyntaxBinding -> RefNotation baseupdate (QBindings baseupdate)
 interpretBinding (MkSyntaxBinding spos mtype name sexpr) = do
     rexpr <- interpretExpression sexpr
     expr <- liftRefNotation $ runSourcePos spos $ interpretTypeSignature mtype rexpr
     return $ qBindExpr name expr
 
 interpretBindings ::
-       HasPinaforeEntityUpdate baseupdate => [SyntaxBinding baseupdate] -> RefNotation baseupdate (QBindings baseupdate)
+       HasPinaforeEntityUpdate baseupdate => [SyntaxBinding] -> RefNotation baseupdate (QBindings baseupdate)
 interpretBindings sbinds = do
     qbinds <- for sbinds interpretBinding
     return $ mconcat qbinds
 
 interpretTopDeclarations ::
        HasPinaforeEntityUpdate baseupdate
-    => SyntaxTopDeclarations baseupdate
+    => SyntaxTopDeclarations
     -> PinaforeScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate))
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) = do
-    MkWMFunction f <- interpretDeclarations spos sdecls
+    MkWMFunction f <- runSourcePos spos $ interpretDeclarations sdecls
     return $ MkWMFunction $ \a -> runRefNotation spos $ f $ liftRefNotation a
 
 interpretTopExpression ::
-       HasPinaforeEntityUpdate baseupdate => SyntaxExpression baseupdate -> PinaforeScoped baseupdate (QExpr baseupdate)
-interpretTopExpression sexpr@(MkSyntaxExpression spos _) = runRefNotation spos $ interpretExpression sexpr
+       HasPinaforeEntityUpdate baseupdate => SyntaxExpression -> PinaforeScoped baseupdate (QExpr baseupdate)
+interpretTopExpression sexpr@(MkWithSourcePos spos _) = runRefNotation spos $ interpretExpression sexpr

@@ -2,42 +2,36 @@ module Pinafore.Language.Syntax where
 
 import Pinafore.Base
 import Pinafore.Language.Error
-import Pinafore.Language.Expression
 import Pinafore.Language.Name
 import Pinafore.Language.TypeSystem
 import Shapes
 
-data TypeDecls baseupdate = MkTypeDecls
-    { tdTypes :: WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)
-    , tdRelations :: WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)
-    }
+data SyntaxClosedEntityConstructor =
+    MkSyntaxClosedEntityConstructor Name
+                                    [SyntaxType]
+                                    Anchor
 
-typeTypeDecl :: WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate) -> TypeDecls baseupdate
-typeTypeDecl t = mempty {tdTypes = t}
+data SyntaxDatatypeConstructor =
+    MkSyntaxDatatypeConstructor Name
+                                [SyntaxType]
 
-relationTypeDecl :: WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate) -> TypeDecls baseupdate
-relationTypeDecl t = mempty {tdRelations = t}
+data SyntaxTypeDeclaration
+    = ClosedEntitySyntaxTypeDeclaration [SyntaxClosedEntityConstructor]
+    | DatatypeSyntaxTypeDeclaration [SyntaxDatatypeConstructor]
+    | OpenEntitySyntaxTypeDeclaration
 
-instance Semigroup (TypeDecls baseupdate) where
-    (MkTypeDecls at ar) <> (MkTypeDecls bt br) = MkTypeDecls (at . bt) (ar . br)
+data SyntaxDeclaration
+    = TypeSyntaxDeclaration SourcePos
+                            Name
+                            SyntaxTypeDeclaration
+    | SubtypeDeclaration SourcePos
+                         SyntaxType
+                         SyntaxType
+    | BindingSyntaxDeclaration SyntaxBinding
 
-instance Monoid (TypeDecls baseupdate) where
-    mempty = MkTypeDecls id id
-    mappend = (<>)
-
-data SyntaxDeclarations baseupdate =
-    MkSyntaxDeclarations (PinaforeScoped baseupdate (TypeDecls baseupdate))
-                         [SyntaxBinding baseupdate]
-
-instance Semigroup (SyntaxDeclarations baseupdate) where
-    (MkSyntaxDeclarations ta ba) <> (MkSyntaxDeclarations tb bb) = MkSyntaxDeclarations (ta <> tb) (ba <> bb)
-
-instance Monoid (SyntaxDeclarations baseupdate) where
-    mempty = MkSyntaxDeclarations mempty mempty
-    mappend = (<>)
-
-typeSyntaxDeclarations :: PinaforeScoped baseupdate (TypeDecls baseupdate) -> SyntaxDeclarations baseupdate
-typeSyntaxDeclarations td = MkSyntaxDeclarations td mempty
+data WithSourcePos t =
+    MkWithSourcePos SourcePos
+                    t
 
 data SyntaxVariance
     = CoSyntaxVariance
@@ -55,7 +49,7 @@ data SyntaxTypeArgument
     = SimpleSyntaxTypeArgument SyntaxType
     | RangeSyntaxTypeArgument [(Maybe SyntaxVariance, SyntaxType)]
 
-data SyntaxType
+data SyntaxType'
     = SingleSyntaxType SyntaxGroundType
                        [SyntaxTypeArgument]
     | VarSyntaxType Name
@@ -66,11 +60,13 @@ data SyntaxType
     | TopSyntaxType
     | BottomSyntaxType
 
-data SyntaxBinding baseupdate =
+type SyntaxType = WithSourcePos SyntaxType'
+
+data SyntaxBinding =
     MkSyntaxBinding SourcePos
                     (Maybe SyntaxType)
                     Name
-                    (SyntaxExpression baseupdate)
+                    SyntaxExpression
 
 data SyntaxConstructor
     = SLNumber Number
@@ -87,13 +83,11 @@ data SyntaxPattern'
     | ConstructorSyntaxPattern SyntaxConstructor
                                [SyntaxPattern]
 
-data SyntaxPattern =
-    MkSyntaxPattern SourcePos
-                    SyntaxPattern'
+type SyntaxPattern = WithSourcePos SyntaxPattern'
 
-data SyntaxCase baseupdate =
+data SyntaxCase =
     MkSyntaxCase SyntaxPattern
-                 (SyntaxExpression baseupdate)
+                 SyntaxExpression
 
 data SyntaxConstant
     = SCIfThenElse
@@ -101,65 +95,65 @@ data SyntaxConstant
     | SCBind_
     | SCConstructor SyntaxConstructor
 
-data SyntaxExpression' baseupdate
+data SyntaxExpression'
     = SEConst SyntaxConstant
     | SEVar Name
-    | SEApply (SyntaxExpression baseupdate)
-              (SyntaxExpression baseupdate)
+    | SEApply SyntaxExpression
+              SyntaxExpression
     | SEAbstract SyntaxPattern
-                 (SyntaxExpression baseupdate)
-    | SERef (SyntaxExpression baseupdate)
-    | SEUnref (SyntaxExpression baseupdate)
-    | SELet (SyntaxDeclarations baseupdate)
-            (SyntaxExpression baseupdate)
-    | SECase (SyntaxExpression baseupdate)
-             [SyntaxCase baseupdate]
-    | SEList [SyntaxExpression baseupdate]
+                 SyntaxExpression
+    | SERef SyntaxExpression
+    | SEUnref SyntaxExpression
+    | SELet [SyntaxDeclaration]
+            SyntaxExpression
+    | SECase SyntaxExpression
+             [SyntaxCase]
+    | SEList [SyntaxExpression]
     | SEProperty SyntaxType
                  SyntaxType
                  Anchor
     | SEEntity SyntaxType
                Anchor
 
-seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression baseupdate
-seConst spos sc = MkSyntaxExpression spos $ SEConst sc
+seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression
+seConst spos sc = MkWithSourcePos spos $ SEConst sc
 
-seAbstract :: SourcePos -> SyntaxPattern -> SyntaxExpression baseupdate -> SyntaxExpression baseupdate
-seAbstract spos pat expr = MkSyntaxExpression spos $ SEAbstract pat expr
+seAbstract :: SourcePos -> SyntaxPattern -> SyntaxExpression -> SyntaxExpression
+seAbstract spos pat expr = MkWithSourcePos spos $ SEAbstract pat expr
 
-seAbstracts :: SourcePos -> [SyntaxPattern] -> SyntaxExpression baseupdate -> SyntaxExpression baseupdate
+seAbstracts :: SourcePos -> [SyntaxPattern] -> SyntaxExpression -> SyntaxExpression
 seAbstracts _ [] expr = expr
 seAbstracts spos (p:pp) expr = seAbstract spos p $ seAbstracts spos pp expr
 
-seApply :: SourcePos -> SyntaxExpression baseupdate -> SyntaxExpression baseupdate -> SyntaxExpression baseupdate
-seApply spos f a = MkSyntaxExpression spos $ SEApply f a
+seApply :: SourcePos -> SyntaxExpression -> SyntaxExpression -> SyntaxExpression
+seApply spos f a = MkWithSourcePos spos $ SEApply f a
 
-seApplys :: SourcePos -> SyntaxExpression baseupdate -> [SyntaxExpression baseupdate] -> SyntaxExpression baseupdate
+seApplys :: SourcePos -> SyntaxExpression -> [SyntaxExpression] -> SyntaxExpression
 seApplys _ f [] = f
 seApplys spos f (a:aa) = seApplys spos (seApply spos f a) aa
 
-data SyntaxExpression baseupdate =
-    MkSyntaxExpression SourcePos
-                       (SyntaxExpression' baseupdate)
+type SyntaxExpression = WithSourcePos SyntaxExpression'
 
-data SyntaxTopDeclarations baseupdate =
+data SyntaxTopDeclarations =
     MkSyntaxTopDeclarations SourcePos
-                            (SyntaxDeclarations baseupdate)
+                            [SyntaxDeclaration]
 
 class HasSourcePos t where
     getSourcePos :: t -> SourcePos
 
-instance HasSourcePos SyntaxPattern where
-    getSourcePos (MkSyntaxPattern spos _) = spos
+instance HasSourcePos (WithSourcePos t) where
+    getSourcePos (MkWithSourcePos spos _) = spos
 
-instance HasSourcePos (SyntaxBinding baseupdate) where
+instance HasSourcePos SyntaxBinding where
     getSourcePos (MkSyntaxBinding spos _ _ _) = spos
 
-instance HasSourcePos (SyntaxExpression baseupdate) where
-    getSourcePos (MkSyntaxExpression spos _) = spos
-
-instance HasSourcePos (SyntaxTopDeclarations baseupdate) where
+instance HasSourcePos SyntaxTopDeclarations where
     getSourcePos (MkSyntaxTopDeclarations spos _) = spos
+
+instance HasSourcePos SyntaxDeclaration where
+    getSourcePos (BindingSyntaxDeclaration bind) = getSourcePos bind
+    getSourcePos (TypeSyntaxDeclaration spos _ _) = spos
+    getSourcePos (SubtypeDeclaration spos _ _) = spos
 
 class SyntaxFreeVariables t where
     syntaxFreeVariables :: t -> FiniteSet Name
@@ -167,13 +161,13 @@ class SyntaxFreeVariables t where
 instance SyntaxFreeVariables t => SyntaxFreeVariables [t] where
     syntaxFreeVariables tt = mconcat $ fmap syntaxFreeVariables tt
 
-instance SyntaxFreeVariables (SyntaxExpression baseupdate) where
-    syntaxFreeVariables (MkSyntaxExpression _ e) = syntaxFreeVariables e
+instance SyntaxFreeVariables st => SyntaxFreeVariables (WithSourcePos st) where
+    syntaxFreeVariables (MkWithSourcePos _ e) = syntaxFreeVariables e
 
-instance SyntaxFreeVariables (SyntaxCase baseupdate) where
+instance SyntaxFreeVariables SyntaxCase where
     syntaxFreeVariables (MkSyntaxCase pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
 
-instance SyntaxFreeVariables (SyntaxExpression' baseupdate) where
+instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEConst _) = mempty
     syntaxFreeVariables (SEVar name) = opoint name
     syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
@@ -187,11 +181,12 @@ instance SyntaxFreeVariables (SyntaxExpression' baseupdate) where
     syntaxFreeVariables (SEProperty _ _ _) = mempty
     syntaxFreeVariables (SEEntity _ _) = mempty
 
-instance SyntaxFreeVariables (SyntaxBinding baseupdate) where
+instance SyntaxFreeVariables SyntaxBinding where
     syntaxFreeVariables (MkSyntaxBinding _ _ _ expr) = syntaxFreeVariables expr
 
-instance SyntaxFreeVariables (SyntaxDeclarations baseupdate) where
-    syntaxFreeVariables (MkSyntaxDeclarations _ binds) = syntaxFreeVariables binds
+instance SyntaxFreeVariables SyntaxDeclaration where
+    syntaxFreeVariables (BindingSyntaxDeclaration bind) = syntaxFreeVariables bind
+    syntaxFreeVariables _ = mempty
 
 class SyntaxBindingVariables t where
     syntaxBindingVariables :: t -> FiniteSet Name
@@ -199,8 +194,8 @@ class SyntaxBindingVariables t where
 instance SyntaxBindingVariables t => SyntaxBindingVariables [t] where
     syntaxBindingVariables tt = mconcat $ fmap syntaxBindingVariables tt
 
-instance SyntaxBindingVariables SyntaxPattern where
-    syntaxBindingVariables (MkSyntaxPattern _ pat) = syntaxBindingVariables pat
+instance SyntaxBindingVariables st => SyntaxBindingVariables (WithSourcePos st) where
+    syntaxBindingVariables (MkWithSourcePos _ pat) = syntaxBindingVariables pat
 
 instance SyntaxBindingVariables SyntaxPattern' where
     syntaxBindingVariables AnySyntaxPattern = mempty
@@ -209,15 +204,16 @@ instance SyntaxBindingVariables SyntaxPattern' where
         union (syntaxBindingVariables pat1) (syntaxBindingVariables pat2)
     syntaxBindingVariables (ConstructorSyntaxPattern _ pats) = syntaxBindingVariables pats
 
-instance SyntaxBindingVariables (SyntaxDeclarations baseupdate) where
-    syntaxBindingVariables (MkSyntaxDeclarations _ binds) = syntaxBindingVariables binds
+instance SyntaxBindingVariables SyntaxDeclaration where
+    syntaxBindingVariables (BindingSyntaxDeclaration bind) = syntaxBindingVariables bind
+    syntaxBindingVariables _ = mempty
 
-instance SyntaxBindingVariables (SyntaxBinding baseupdate) where
+instance SyntaxBindingVariables SyntaxBinding where
     syntaxBindingVariables (MkSyntaxBinding _ _ name _) = singletonSet name
 
 checkSyntaxBindingsDuplicates ::
-       forall baseupdate m. MonadThrow ErrorType m
-    => [SyntaxBinding baseupdate]
+       forall m. MonadThrow ErrorType m
+    => [SyntaxBinding]
     -> m ()
 checkSyntaxBindingsDuplicates = let
     duplicates ::

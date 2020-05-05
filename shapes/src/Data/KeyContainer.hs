@@ -16,8 +16,8 @@ class (Monoid t, Semigroup t, MonoFoldable t, GrowingAppend t) => ItemContainer 
 
 instance ItemContainer [a]
 
-instance Ord k => ItemContainer (StrictMap k v) where
-    type Item (StrictMap k v) = (k, v)
+instance Ord k => ItemContainer (Map k v) where
+    type Item (Map k v) = (k, v)
     itemElement (_, v) = v
 
 class (ItemContainer t, SetContainer t) => KeyContainer t where
@@ -51,7 +51,7 @@ instance Eq key => KeyContainer [(key, value)] where
     deleteKey k (a:aa) = a : (deleteKey k aa)
     fromItemList = id
 
-instance Ord k => KeyContainer (StrictMap k v)
+instance Ord k => KeyContainer (Map k v)
 
 class KeyContainer t => IONewItemKeyContainer t where
     newKeyContainerItem :: IO (Element t)

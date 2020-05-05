@@ -54,17 +54,23 @@ interpretTypeM ::
        forall baseupdate mpolarity. Is MPolarityType mpolarity
     => SyntaxType
     -> PinaforeSourceScoped baseupdate (PinaforeTypeM baseupdate mpolarity)
-interpretTypeM BottomSyntaxType =
+interpretTypeM (MkWithSourcePos spos t) = localSourcePos spos $ interpretTypeM' t
+
+interpretTypeM' ::
+       forall baseupdate mpolarity. Is MPolarityType mpolarity
+    => SyntaxType'
+    -> PinaforeSourceScoped baseupdate (PinaforeTypeM baseupdate mpolarity)
+interpretTypeM' BottomSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> return $ toMPolar mempty
         MNegativeType -> throw $ InterpretTypeExprBadLimitError Negative
         MBothType -> throw $ InterpretTypeExprBadLimitError Negative
-interpretTypeM TopSyntaxType =
+interpretTypeM' TopSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> throw $ InterpretTypeExprBadLimitError Positive
         MNegativeType -> return $ toMPolar mempty
         MBothType -> throw $ InterpretTypeExprBadLimitError Positive
-interpretTypeM (OrSyntaxType st1 st2) =
+interpretTypeM' (OrSyntaxType st1 st2) =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> do
             t1 <- interpretTypeM st1
@@ -72,7 +78,7 @@ interpretTypeM (OrSyntaxType st1 st2) =
             return $ toMPolar (<>) t1 t2
         MNegativeType -> throw $ InterpretTypeExprBadJoinMeetError Negative
         MBothType -> throw $ InterpretTypeExprBadJoinMeetError Negative
-interpretTypeM (AndSyntaxType st1 st2) =
+interpretTypeM' (AndSyntaxType st1 st2) =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> throw $ InterpretTypeExprBadJoinMeetError Positive
         MNegativeType -> do
@@ -80,7 +86,7 @@ interpretTypeM (AndSyntaxType st1 st2) =
             t2 <- interpretTypeM st2
             return $ toMPolar (<>) t1 t2
         MBothType -> throw $ InterpretTypeExprBadJoinMeetError Positive
-interpretTypeM (SingleSyntaxType sgt sargs) = do
+interpretTypeM' (SingleSyntaxType sgt sargs) = do
     MkPinaforeGroundTypeM agt <- interpretGroundTypeConst @baseupdate sgt
     case agt of
         MkAnyW gt ->
@@ -88,7 +94,7 @@ interpretTypeM (SingleSyntaxType sgt sargs) = do
                 aargs <- interpretArgs sgt (pinaforeGroundTypeVarianceType gt) sargs
                 case aargs of
                     MkAnyW args -> return $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType gt args
-interpretTypeM (VarSyntaxType name) =
+interpretTypeM' (VarSyntaxType name) =
     nameToSymbolType name $ \t -> return $ toMPolar $ MkAnyW $ singlePinaforeType $ VarPinaforeSingularType t
 
 interpretTypeRangeFromType ::
@@ -224,19 +230,16 @@ interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     case nt of
         SimpleNamedType dv dm es wt -> return $ MkPinaforeGroundTypeM $ MkAnyW $ SimpleGroundType dv dm es wt
         OpenEntityNamedType tid ->
-            valueToWitness tid $ \sw ->
+            valueToWitness tid $ \tidsym ->
                 return $
-                MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType n sw
-        ClosedEntityNamedType tid (MkAnyW ct) ->
-            valueToWitness tid $ \sw ->
-                return $
-                MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n sw ct
+                MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType n tidsym
+        ClosedEntityNamedType tidsym ct ->
+            return $
+            MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n tidsym ct
 
 interpretSubtypeRelation ::
-       SyntaxType
-    -> SyntaxType
-    -> PinaforeSourceScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate))
-interpretSubtypeRelation sta stb = do
+       SyntaxType -> SyntaxType -> PinaforeSourceScoped baseupdate a -> PinaforeSourceScoped baseupdate a
+interpretSubtypeRelation sta stb ma = do
     ata <- interpretConcreteEntityType sta
     atb <- interpretConcreteEntityType stb
     case ata of
@@ -246,6 +249,7 @@ interpretSubtypeRelation sta stb = do
                     case atb of
                         MkAnyW tb ->
                             case tb of
-                                MkConcreteType (OpenEntityGroundType _ tidb) NilArguments -> withEntitySubtype tida tidb
+                                MkConcreteType (OpenEntityGroundType _ tidb) NilArguments ->
+                                    remonadSourcePos (withEntitySubtype tida tidb) ma
                                 _ -> throw $ TypeNotOpenEntityError $ exprShow tb
                 _ -> throw $ TypeNotOpenEntityError $ exprShow ta

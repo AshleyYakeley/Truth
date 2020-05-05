@@ -106,7 +106,8 @@ import Data.Hashable as I (Hashable)
 
 -- containers
 import Data.IntMap as I (IntMap, Key, traverseWithKey)
-import qualified Data.Map.Strict
+import Data.Map as I (Map)
+import qualified Data.Map.Lazy
 
 -- unordered-containers
 import Data.HashMap.Lazy as I (HashMap)
@@ -141,13 +142,13 @@ import Data.Witness as I
 import Data.OpenWitness as I
 import Data.OpenWitness.Order as I
 import Data.OpenWitness.Witnessed as I
-import Data.Type.Heterogeneous as I
 
 type LazyByteString = Data.ByteString.Lazy.ByteString
 
 type StrictByteString = Data.ByteString.ByteString
 
-type StrictMap = Data.Map.Strict.Map
+insertMapLazy :: Ord k => k -> v -> Map k v -> Map k v
+insertMapLazy = Data.Map.Lazy.insert
 
 lastM :: [t] -> Maybe t
 lastM [] = Nothing

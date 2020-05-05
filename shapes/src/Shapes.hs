@@ -25,6 +25,7 @@ import Data.Coercion as I
 import Data.Compose as I ()
 import Data.Filterable as I
 import Data.FiniteSet as I
+import Data.FixBox as I
 import Data.HasNewValue as I
 import Data.Injection as I
 import Data.IsoVariant as I

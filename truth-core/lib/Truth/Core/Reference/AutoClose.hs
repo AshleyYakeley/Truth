@@ -2,7 +2,7 @@ module Truth.Core.Reference.AutoClose where
 
 import Truth.Core.Import
 
-type AutoCloseT key t = StateT (StrictMap key (t, LifeState IO))
+type AutoCloseT key t = StateT (Map key (t, LifeState IO))
 
 runAutoClose :: Ord key => UnliftAll MonadUnliftIO (AutoCloseT key t)
 runAutoClose ac = do

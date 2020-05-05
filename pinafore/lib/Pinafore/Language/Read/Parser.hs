@@ -10,6 +10,7 @@ module Pinafore.Language.Read.Parser
 import Pinafore.Language.Error
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Scope
+import Pinafore.Language.Syntax
 import Pinafore.Language.TypeSystem
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
@@ -84,3 +85,9 @@ readSeparated sep p = readSeparated1 sep p <|> return mempty
 
 readCommaList :: Monoid t => Parser t -> Parser t
 readCommaList = readSeparated $ readThis TokComma
+
+readSourcePos :: Parser t -> Parser (WithSourcePos t)
+readSourcePos p = do
+    spos <- getPosition
+    t <- p
+    return $ MkWithSourcePos spos t

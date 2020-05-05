@@ -237,10 +237,25 @@ type PinaforePattern baseupdate
 
 data PinaforeTypeSystem (baseupdate :: Type)
 
-type PinaforeScoped baseupdate
-     = Scoped (PinaforeExpression baseupdate) (PinaforePatternConstructor baseupdate) (ProvidedType baseupdate) (AnyW ClosedEntityType)
+type instance ScopeExpression (PinaforeTypeSystem baseupdate) =
+     PinaforeExpression baseupdate
 
-type PinaforeSourceScoped baseupdate
-     = SourceScoped (PinaforeExpression baseupdate) (PinaforePatternConstructor baseupdate) (ProvidedType baseupdate) (AnyW ClosedEntityType)
+type instance
+     ScopePatternConstructor (PinaforeTypeSystem baseupdate) =
+     PinaforePatternConstructor baseupdate
+
+type instance ScopeProvidedType (PinaforeTypeSystem baseupdate) =
+     ProvidedType baseupdate
+
+type instance ScopeClosedEntityType (PinaforeTypeSystem baseupdate)
+     = ClosedEntityType
+
+type PinaforeNamedType baseupdate = NamedType (PinaforeTypeSystem baseupdate)
+
+type PinaforeTypeBox baseupdate = TypeBox (PinaforeTypeSystem baseupdate)
+
+type PinaforeScoped baseupdate = Scoped (PinaforeTypeSystem baseupdate)
+
+type PinaforeSourceScoped baseupdate = SourceScoped (PinaforeTypeSystem baseupdate)
 
 type PinaforeTypeCheck baseupdate = VarRenamerT (PinaforeTypeSystem baseupdate) (PinaforeSourceScoped baseupdate)

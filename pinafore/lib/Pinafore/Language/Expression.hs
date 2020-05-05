@@ -166,10 +166,10 @@ qLetExpr ::
 qLetExpr name exp body = tsLet @(PinaforeTypeSystem baseupdate) name exp body
 
 qUncheckedBindingsComponentLetExpr ::
-       forall baseupdate. QBindings baseupdate -> PinaforeSourceScoped baseupdate (StrictMap Name (QExpr baseupdate))
+       forall baseupdate. QBindings baseupdate -> PinaforeSourceScoped baseupdate (Map Name (QExpr baseupdate))
 qUncheckedBindingsComponentLetExpr = tsUncheckedComponentLet @(PinaforeTypeSystem baseupdate)
 
-qValuesLetExpr :: forall baseupdate. StrictMap Name (QValue baseupdate) -> StrictMap Name (QExpr baseupdate)
+qValuesLetExpr :: forall baseupdate. Map Name (QValue baseupdate) -> Map Name (QExpr baseupdate)
 qValuesLetExpr = tsValuesLet @(PinaforeTypeSystem baseupdate)
 
 qEvalExpr ::
