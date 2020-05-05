@@ -551,6 +551,10 @@ testEntity =
                     , pointTest "let datatype P = P1 P in pass"
                     , pointTest
                           "let datatype P = P1 Q; datatype Q = Q1 P; f :: P -> P; f p = case p of P1 q -> case q of Q1 p -> p end end in pass"
+                    , pointTest "let datatype P = P1 Q; closedtype Q = Q1 !\"Q1\" in pass"
+                    , badInterpretTest "let closedtype P = P1 Q; datatype Q = Q1 !\"Q1\" in pass"
+                    , pointTest
+                          "let datatype P = P1 Q; datatype Q = Q1 (Action ()); pqpass = P1 (Q1 pass) in case pqpass of P1 (Q1 p) -> p end"
                     ]
               ]
         , context ["closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\""] $
