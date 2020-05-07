@@ -1,6 +1,6 @@
-FROM fpco/stack-build:lts-15.5
+FROM fpco/stack-build:lts-15.11
 ENV DEBIAN_FRONTEND noninteractive
-RUN echo 2020-04-11
+RUN echo 2020-05-07
 RUN apt-get update
 RUN apt-get purge -y msodbcsql17
 RUN apt-get upgrade -y
