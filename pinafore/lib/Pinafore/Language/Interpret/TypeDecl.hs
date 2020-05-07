@@ -85,12 +85,12 @@ interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
         in MkTypeBox name mktype $ do
                tconss <- for sconss interpretClosedEntityTypeConstructor
                MkClosedEntityBox (ct :: ClosedEntityType t) conss <- return $ assembleClosedEntityType tconss
-               tident :: IdentifiedValue n :~: t <- unsafeGetIdentification
+               tident :: Identified n :~: t <- unsafeGetIdentification
                let
-                   cti :: ClosedEntityType (IdentifiedValue n)
+                   cti :: ClosedEntityType (Identified n)
                    cti = (reflId $ applyRefl id $ invert tident) ct
                    ctf :: forall polarity. Is PolarityType polarity
-                       => PinaforeShimWit baseupdate polarity (IdentifiedValue n)
+                       => PinaforeShimWit baseupdate polarity (Identified n)
                    ctf =
                        singlePinaforeShimWit $
                        mkJMShimWit $

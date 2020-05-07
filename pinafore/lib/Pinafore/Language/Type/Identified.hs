@@ -3,12 +3,11 @@ module Pinafore.Language.Type.Identified
     , zeroTypeID
     , succTypeID
     , TypeIDType
-    , IdentifiedValue(..)
+    , Identified
     , IdentifiedType(..)
     , unsafeGetIdentification
     ) where
 
-import GHC.Exts (Any)
 import Shapes
 import Shapes.Numeric
 import Shapes.Unsafe (unsafeGetRefl)
@@ -32,14 +31,11 @@ instance WitnessValue TypeIDType where
     witnessToValue (MkTypeIDType bnt) = MkTypeID $ witnessToValue bnt
     valueToWitness (MkTypeID n) cont = valueToWitness n $ \bnt -> cont $ MkTypeIDType bnt
 
-newtype IdentifiedValue (tid :: BigNat) =
-    MkIdentifiedValue Any
+type family Identified (tid :: BigNat) = (v :: Type) | v -> tid where
 
 data IdentifiedType :: Type -> forall k. k -> Type where
     MkIdentifiedType
-        :: forall (baseupdate :: Type) (tid :: BigNat).
-           TypeIDType tid
-        -> IdentifiedType baseupdate (IdentifiedValue tid)
+        :: forall (baseupdate :: Type) (tid :: BigNat). TypeIDType tid -> IdentifiedType baseupdate (Identified tid)
 
 instance TestHetEquality (IdentifiedType baseupdate) where
     testHetEquality (MkIdentifiedType ia) (MkIdentifiedType ib) = do
@@ -48,5 +44,5 @@ instance TestHetEquality (IdentifiedType baseupdate) where
 
 unsafeGetIdentification ::
        forall (tid :: BigNat) (t :: Type) m. Applicative m
-    => m (IdentifiedValue tid :~: t)
+    => m (Identified tid :~: t)
 unsafeGetIdentification = unsafeGetRefl

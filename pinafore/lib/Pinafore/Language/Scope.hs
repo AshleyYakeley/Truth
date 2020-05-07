@@ -61,10 +61,7 @@ data NamedType (p :: Type) where
         -> NamedType p
     OpenEntityNamedType :: TypeID -> NamedType p
     ClosedEntityNamedType
-        :: forall (p :: Type) (tid :: BigNat).
-           TypeIDType tid
-        -> ScopeClosedEntityType p (IdentifiedValue tid)
-        -> NamedType p
+        :: forall (p :: Type) (tid :: BigNat). TypeIDType tid -> ScopeClosedEntityType p (Identified tid) -> NamedType p
 
 type OpenEntityShim = LiftedCategory JMShim OpenEntity
 

@@ -19,7 +19,7 @@ data EntityGroundType (t :: k) where
     PairEntityGroundType :: EntityGroundType (,)
     EitherEntityGroundType :: EntityGroundType Either
     ClosedEntityGroundType
-        :: Name -> TypeIDType tid -> ClosedEntityType (IdentifiedValue tid) -> EntityGroundType (IdentifiedValue tid)
+        :: Name -> TypeIDType tid -> ClosedEntityType (Identified tid) -> EntityGroundType (Identified tid)
 
 data ClosedEntityType (t :: Type) where
     NilClosedEntityType :: ClosedEntityType None

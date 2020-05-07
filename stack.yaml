@@ -18,9 +18,10 @@ extra-deps:
 - mime-0.4.0.2
 - direct-sqlite-2.3.26
 - sqlite-simple-0.4.18.0
-- haskell-src-exts-1.22.0
+- git: https://github.com/AshleyYakeley/haskell-src-exts.git
+  commit: 8cb68def2563e2ebcbdcbec688b326b9f3fa1dd7
 - git: https://github.com/AshleyYakeley/hindent.git
-  commit: d07e0ab032f9766f2d92dc260497ebd1ffbe62d7
+  commit: 7c70abda1ae7e9ec0aa4742a23866a4ddb3094c1
 - git: https://github.com/AshleyYakeley/licensor.git
   commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
 - git: https://github.com/fpco/ghc-prof-flamegraph.git

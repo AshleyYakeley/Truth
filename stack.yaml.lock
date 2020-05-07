@@ -26,30 +26,28 @@ packages:
   original:
     hackage: sqlite-simple-0.4.18.0
 - completed:
-    hackage: haskell-src-exts-1.22.0@sha256:f558923a9c8f57402c33a8cc871b934027a5c65414404c87239f6cbd7357d54e,4541
+    name: haskell-src-exts
+    version: 1.23.0
+    git: https://github.com/AshleyYakeley/haskell-src-exts.git
     pantry-tree:
-      size: 96940
-      sha256: 597b6f48bd409a4d0da013c4e356945c42e0d098966035d3aa68cd4a3ccd66c9
+      size: 98738
+      sha256: 7a072171e66e87e3051fb4d9508b93c731e30c07d1e86aa77fb7fe103b5380bd
+    commit: 8cb68def2563e2ebcbdcbec688b326b9f3fa1dd7
   original:
-    hackage: haskell-src-exts-1.22.0
+    git: https://github.com/AshleyYakeley/haskell-src-exts.git
+    commit: 8cb68def2563e2ebcbdcbec688b326b9f3fa1dd7
 - completed:
-    cabal-file:
-      size: 3609
-      sha256: f264293c32b704c623d98df85f873e322124e2c0058b9062798f891472f48ad4
     name: hindent
-    version: 5.3.0
+    version: 5.3.1
     git: https://github.com/AshleyYakeley/hindent.git
     pantry-tree:
-      size: 1961
-      sha256: 009ed962c49db11e68328f4e094c5d5d293ad1a39d89086415c80601ec34dfaa
-    commit: d07e0ab032f9766f2d92dc260497ebd1ffbe62d7
+      size: 2019
+      sha256: a0653982a3645fdcde627ec40f228fd28d08744fd9f1cd170c8b200b96b844f0
+    commit: 7c70abda1ae7e9ec0aa4742a23866a4ddb3094c1
   original:
     git: https://github.com/AshleyYakeley/hindent.git
-    commit: d07e0ab032f9766f2d92dc260497ebd1ffbe62d7
+    commit: 7c70abda1ae7e9ec0aa4742a23866a4ddb3094c1
 - completed:
-    cabal-file:
-      size: 1455
-      sha256: a9bec2ec42b30a94c584494c45e9d421375ca1eb383490c8b5349ffc78c2350a
     name: licensor
     version: 0.4.0
     git: https://github.com/AshleyYakeley/licensor.git
@@ -61,9 +59,6 @@ packages:
     git: https://github.com/AshleyYakeley/licensor.git
     commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
 - completed:
-    cabal-file:
-      size: 1785
-      sha256: 5d21b165ab6cc8c0c9fd4454ea779d42b03ff0dbd856f02c992412c33f8d6499
     name: ghc-prof-flamegraph
     version: 0.2.0.0
     git: https://github.com/fpco/ghc-prof-flamegraph.git
