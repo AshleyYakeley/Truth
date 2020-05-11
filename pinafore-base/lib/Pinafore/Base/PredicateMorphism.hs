@@ -1,6 +1,5 @@
 module Pinafore.Base.PredicateMorphism
-    ( HasPinaforeEntityUpdate
-    , propertyMorphism
+    ( propertyMorphism
     ) where
 
 import Pinafore.Base.Edit
@@ -37,7 +36,7 @@ predicatePinaforeTableLensMorphism (MkEntityAdapter ap aget aput) (MkEntityAdapt
     in MkPinaforeLensMorphism {..}
 
 propertyMorphism ::
-       HasPinaforeEntityUpdate baseupdate
+       BaseChangeLens PinaforeEntityUpdate baseupdate
     => EntityAdapter a
     -> EntityAdapter b
     -> Predicate

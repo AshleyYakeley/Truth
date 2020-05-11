@@ -129,7 +129,7 @@ runValue outh val =
     (return $ liftIO $ hPutStrLn outh $ showPinaforeRef val)
 
 interactParse ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+       forall baseupdate. BaseChangeLens PinaforeEntityUpdate baseupdate
     => Text
     -> Interact baseupdate (InteractiveCommand baseupdate)
 interactParse t = remonad throwResult $ parseInteractiveCommand @baseupdate t

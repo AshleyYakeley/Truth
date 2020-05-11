@@ -10,7 +10,6 @@ module Pinafore.Language.Predefined
     , outputLn
     ) where
 
-import Data.Time
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Expression
@@ -25,11 +24,9 @@ import Shapes
 import Truth.Core
 
 type PinaforePredefinitions baseupdate
-     = ( HasPinaforeEntityUpdate baseupdate
-       , HasPinaforeFileUpdate baseupdate
-       , BaseChangeLens MemoryCellUpdate baseupdate
-       , BaseChangeLens (ROWUpdate UTCTime) baseupdate
-       , BaseChangeLens (ROWUpdate TimeZone) baseupdate)
+     = ( BaseChangeLens PinaforeEntityUpdate baseupdate
+       , BaseChangeLens PinaforeFileUpdate baseupdate
+       , BaseChangeLens MemoryCellUpdate baseupdate)
 
 predefinitions ::
        forall baseupdate. PinaforePredefinitions baseupdate

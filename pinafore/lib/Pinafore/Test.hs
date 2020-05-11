@@ -16,7 +16,6 @@ module Pinafore.Test
     ) where
 
 import Data.Shim
-import Data.Time
 import Pinafore.Base
 import Pinafore.Language
 import Pinafore.Language.Name
@@ -27,7 +26,6 @@ import Pinafore.Pinafore
 import Pinafore.Storage
 import Shapes
 import Truth.Core
-import Truth.World.Clock
 import Truth.World.ReferenceStore
 
 makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
@@ -41,7 +39,6 @@ makeTestPinaforeContext uitoolkit = do
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getReferenceSubject rc tableStateReference
     memoryReference <- liftIO makeMemoryCellReference
-    clockOM <- sharePremodel $ clockPremodel (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     let
         picker :: forall update. PinaforeSelector update -> Premodel update ()
         picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityReference tableReference
@@ -50,8 +47,6 @@ makeTestPinaforeContext uitoolkit = do
             mapReference (fromReadOnlyRejectingChangeLens @PinaforeFileUpdate) $
             readConstantReference $ constFunctionReadFunction nullSingleReferenceReadable
         picker PinaforeSelectMemory = reflectingPremodel memoryReference
-        picker PinaforeSelectClock = clockOM rc
-        picker PinaforeSelectTimeZone = mapPremodel rc (liftReadOnlyFloatingChangeLens clockTimeZoneLens) $ clockOM rc
     (sub, ()) <- makeSharedModel $ tuplePremodel picker
     pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)

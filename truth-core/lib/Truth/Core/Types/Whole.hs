@@ -143,6 +143,35 @@ changeOnlyUpdateFunction = let
     sclPutEdits = clPutEditsNone
     in makeStateLens MkStateChangeLens {..}
 
+liftROWChangeLens ::
+       forall f a b. Traversable f
+    => ChangeLens (WholeUpdate a) (ROWUpdate b)
+    -> ChangeLens (WholeUpdate (f a)) (ROWUpdate (f b))
+liftROWChangeLens (MkChangeLens r u _pe) = let
+    fr :: ReadFunction (WholeReader (f a)) (WholeReader (f b))
+    fr mr ReadWhole = do
+        fa <- mr ReadWhole
+        for fa $ \a -> r (\ReadWhole -> return a) ReadWhole
+    fu :: forall m. MonadIO m
+       => WholeUpdate (f a)
+       -> Readable m (WholeReader (f a))
+       -> m [ROWUpdate (f b)]
+    fu (MkWholeUpdate fa) _mr = do
+        fmb <-
+            for fa $ \a -> do
+                ubs <- u (MkWholeUpdate a) (\ReadWhole -> return a)
+                return $ lastReadOnlyWholeUpdate ubs
+        return $
+            case sequenceA fmb of
+                Just fb -> pure $ MkReadOnlyUpdate $ MkWholeUpdate fb
+                Nothing -> []
+    fpe :: forall m. MonadIO m
+        => [ConstEdit _]
+        -> Readable m (WholeReader (f a))
+        -> m (Maybe [WholeEdit (f a)])
+    fpe = clPutEditsNone
+    in MkChangeLens fr fu fpe
+
 ioWholeChangeLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> ChangeLens (WholeUpdate a) (WholeUpdate b)
 ioWholeChangeLens ioget ioput = let
     clRead :: ReadFunction (WholeReader a) (WholeReader b)

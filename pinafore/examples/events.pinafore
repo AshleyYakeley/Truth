@@ -116,23 +116,10 @@ eventWindow evt = std_window (eventName !$ {evt}) [] $ uiVertical
         (uiTextEntry $ eventName !$ {evt},True)
     ];
 
-getLocalTime :: Action LocalTime;
-getLocalTime = do
-    t <- get now;
-    tz <- getTimeZone t;
-    return $ timeToLocal tz t;
-    end;
-
-getCurrentDay :: Action Date;
-getCurrentDay = do
-    LocalTime d _ <- getLocalTime;
-    return d;
-    end;
-
 eventsWindow :: Action Window;
 eventsWindow = let
     inew i = do
-        day <- getCurrentDay;
+        day <- getDate;
         eventTime !$ {i} := EventTimeDate day;
         end;
     iui _ notifier = uiPages [overviewPage, tablePage notifier];

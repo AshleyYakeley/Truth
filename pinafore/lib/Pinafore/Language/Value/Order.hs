@@ -51,7 +51,7 @@ rev :: forall baseupdate a. LangOrder baseupdate a -> LangOrder baseupdate a
 rev (MkLangOrder ef o) = MkLangOrder ef $ \a b -> o b a
 
 qOrderSet ::
-       forall baseupdate a. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+       forall baseupdate a. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
     => LangOrder baseupdate a
     -> PinaforeROWRef (FiniteSet a)
     -> PinaforeROWRef (Know [a])
@@ -71,7 +71,7 @@ qOrderSet (MkLangOrder (ofunc :: PinaforeFunctionMorphism baseupdate (Know a) t)
     in eaMapReadOnlyWhole (Known . sortpoints) upairs
 
 langOrderCompare ::
-       forall baseupdate a b. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+       forall baseupdate a b. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
     => (Ordering -> b)
     -> LangOrder baseupdate a
     -> PinaforeImmutableRef a
@@ -82,7 +82,7 @@ langOrderCompare ob (MkLangOrder ef o) fv1 fv2 =
     (applyImmutableRef pinaforeBase (fmap Known ef) fv2)
 
 pinaforeSetGetOrdered ::
-       forall baseupdate a. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+       forall baseupdate a. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
     => LangOrder baseupdate a
     -> LangFiniteSetRef '( BottomType, a)
     -> LangRef '( TopType, [a])

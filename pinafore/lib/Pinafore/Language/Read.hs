@@ -16,7 +16,8 @@ import Pinafore.Language.Read.Type
 import Pinafore.Language.TypeSystem
 import Shapes hiding (try)
 
-parseTopExpression :: HasPinaforeEntityUpdate baseupdate => Text -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
+parseTopExpression ::
+       BaseChangeLens PinaforeEntityUpdate baseupdate => Text -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
 parseTopExpression = parseScopedReaderWhole $ fmap interpretTopExpression readExpression
 
 parseType ::

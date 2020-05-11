@@ -9,7 +9,4 @@ emptywindow = do
 newpoint :: Action ();
 newpoint = do s <- newMemFiniteSet; newEntity s; return (); end;
 
-in do
-    openWindow {"Test"} {[]} $ uiButton {"Button"} {newpoint >> emptywindow};
-    return ();
-    end
+in openWindow {"Test"} {[]} $ uiButton {"Button"} {newpoint >> emptywindow};

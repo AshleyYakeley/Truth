@@ -20,5 +20,4 @@ window_person p = openWindow {"Name"} {[]} (ui_person p);
 in do
     window_person me;
     window_person me;
-    return ();
     end

@@ -4,8 +4,8 @@ let
 
 datatype StopwatchState = StoppedState Duration | RunningState Time;
 
-toggleStopwatch :: Ref StopwatchState -> Action ();
-toggleStopwatch r = do
+toggleStopwatch :: Ref +Time -> Ref StopwatchState -> Action ();
+toggleStopwatch now r = do
     n <- get now;
     oldstate <- get r;
     newstate <- return $ case oldstate of
@@ -21,11 +21,12 @@ showStopwatch state n = case state of
     RunningState t -> toText $ diffTime n t
     end;
 
-ui :: Ref StopwatchState -> UI;
-ui r = uiButton {showStopwatch %r %now} {toggleStopwatch r};
+ui :: Ref +Time -> Ref StopwatchState -> UI;
+ui now r = uiButton {showStopwatch %r %now} {toggleStopwatch now r};
 
 in do
+    now <- newClock $ secondsToDuration 0.001;
     r <- newMemRef;
     r := StoppedState zeroDuration;
-    openWindow {"Stopwatch"} {[]} $ ui r;
+    openWindow {"Stopwatch"} {[]} $ ui now r;
     end

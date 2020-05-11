@@ -52,7 +52,7 @@ data BindDoc baseupdate = MkBindDoc
     }
 
 mkValEntry ::
-       forall baseupdate t. (HasPinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
+       forall baseupdate t. (BaseChangeLens PinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
     => Name
     -> Text
     -> ((?pinafore :: PinaforeContext baseupdate) => t)
@@ -72,7 +72,7 @@ mkValEntry name docDescription val = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSupertypeEntry ::
-       forall baseupdate t. (HasPinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
+       forall baseupdate t. (BaseChangeLens PinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
     => Name
     -> Text
     -> ((?pinafore :: PinaforeContext baseupdate) => t)
@@ -90,7 +90,7 @@ mkSupertypeEntry name docDescription _val = let
 
 mkValPatEntry ::
        forall baseupdate t v lt.
-       ( HasPinaforeEntityUpdate baseupdate
+       ( BaseChangeLens PinaforeEntityUpdate baseupdate
        , ToPinaforeType baseupdate t
        , FromPinaforeType baseupdate v
        , ToListShimWit PinaforeShim (PinaforeType baseupdate 'Positive) lt
@@ -116,7 +116,7 @@ mkValPatEntry name docDescription val pat = let
 
 mkPatEntry ::
        forall baseupdate v lt.
-       ( HasPinaforeEntityUpdate baseupdate
+       ( BaseChangeLens PinaforeEntityUpdate baseupdate
        , FromPinaforeType baseupdate v
        , ToListShimWit PinaforeShim (PinaforeType baseupdate 'Positive) lt
        )

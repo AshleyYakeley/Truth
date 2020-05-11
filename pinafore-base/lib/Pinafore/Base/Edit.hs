@@ -3,7 +3,6 @@ module Pinafore.Base.Edit
     , PinaforeEntityRead(..)
     , PinaforeEntityEdit(..)
     , PinaforeEntityUpdate
-    , HasPinaforeEntityUpdate
     ) where
 
 import Pinafore.Base.Anchor
@@ -93,8 +92,6 @@ instance Show PinaforeEntityEdit where
     show (PinaforeEntityEditSetLiteral p kl) = "set " ++ show p ++ " to " ++ show kl
 
 type PinaforeEntityUpdate = EditUpdate PinaforeEntityEdit
-
-type HasPinaforeEntityUpdate = BaseChangeLens PinaforeEntityUpdate
 
 instance BaseChangeLens PinaforeEntityUpdate PinaforeEntityUpdate where
     baseChangeLens = id

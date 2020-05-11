@@ -10,7 +10,6 @@ module Pinafore.Main
     , pinaforeInteract
     ) where
 
-import Data.Time
 import Pinafore.Base
 import Pinafore.Language
 import Pinafore.Pinafore
@@ -18,7 +17,6 @@ import Pinafore.Storage
 import Shapes
 import System.FilePath
 import Truth.Core
-import Truth.World.Clock
 
 type FilePinaforeType = PinaforeAction TopType
 
@@ -32,16 +30,11 @@ standardPinaforeContext dirpath uitoolkit = do
     tableReference1 <- liftLifeCycleIO $ exclusiveResource rc sqlReference
     tableReference <- liftLifeCycleIO $ cacheReference rc 500000 tableReference1 -- half-second delay before writing
     memoryReference <- liftIO makeMemoryCellReference
-    clockOM <-
-        liftLifeCycleIO $
-        sharePremodel $ clockPremodel (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     let
         picker :: forall update. PinaforeSelector update -> Premodel update ()
         picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityReference $ tableReference rc
         picker PinaforeSelectFile = reflectingPremodel $ directoryPinaforeFileReference $ dirpath </> "files"
         picker PinaforeSelectMemory = reflectingPremodel memoryReference
-        picker PinaforeSelectClock = clockOM rc
-        picker PinaforeSelectTimeZone = mapPremodel rc (liftReadOnlyFloatingChangeLens clockTimeZoneLens) $ clockOM rc
     (sub, ()) <- liftLifeCycleIO $ makeSharedModel $ tuplePremodel picker
     liftLifeCycleIO $ makePinaforeContext sub uitoolkit
 

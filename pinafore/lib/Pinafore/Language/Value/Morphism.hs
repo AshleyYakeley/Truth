@@ -63,7 +63,8 @@ eitherLangMorphism ::
 eitherLangMorphism (MkLangMorphism m1) (MkLangMorphism m2) = MkLangMorphism $ eitherPinaforeLensMorphism m1 m2
 
 applyLangMorphismRef ::
-       forall baseupdate ap aq bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+       forall baseupdate ap aq bp bq.
+       (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
     => LangMorphism baseupdate '( ap, aq) '( bp, bq)
     -> LangRef '( aq, ap)
     -> LangRef '( bp, bq)
@@ -71,14 +72,15 @@ applyLangMorphismRef (MkLangMorphism m) ref =
     MutableLangRef $ applyPinaforeLens pinaforeBase m $ langRefToBiWholeRef ref
 
 applyLangMorphismImmutRef ::
-       forall baseupdate a bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+       forall baseupdate a bp bq.
+       (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
     => LangMorphism baseupdate '( a, TopType) '( bp, bq)
     -> PinaforeImmutableRef a
     -> LangRef '( bp, bq)
 applyLangMorphismImmutRef m r = applyLangMorphismRef m $ pinaforeImmutableToRef r
 
 applyLangMorphismSet ::
-       forall baseupdate a b. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+       forall baseupdate a b. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
     => LangMorphism baseupdate '( a, TopType) '( BottomType, MeetType Entity b)
     -> LangFiniteSetRef '( BottomType, a)
     -> LangFiniteSetRef '( MeetType Entity b, b)
@@ -96,7 +98,8 @@ applyLangMorphismSet lm (MkLangFiniteSetRef (tr :: Range _ t _) ss) = let
     in MkLangFiniteSetRef (MkRange id meet2) $ eaMap (convertChangeLens . fromReadOnlyRejectingChangeLens) bsetref
 
 inverseApplyLangMorphismRef ::
-       forall baseupdate a bx by. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+       forall baseupdate a bx by.
+       (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
     => LangMorphism baseupdate '( a, MeetType Entity a) '( bx, by)
     -> LangRef '( by, bx)
     -> LangFiniteSetRef '( MeetType Entity a, a)
@@ -105,14 +108,15 @@ inverseApplyLangMorphismRef (MkLangMorphism m) ref =
     applyInversePinaforeLens pinaforeBase (cfmap3 (MkCatDual $ meet2 @(->)) m) $ langRefToBiWholeRef ref
 
 inverseApplyLangMorphismImmutRef ::
-       forall baseupdate a b. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+       forall baseupdate a b. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
     => LangMorphism baseupdate '( a, MeetType Entity a) '( b, TopType)
     -> PinaforeImmutableRef b
     -> LangFiniteSetRef '( MeetType Entity a, a)
 inverseApplyLangMorphismImmutRef m r = inverseApplyLangMorphismRef m $ pinaforeImmutableToRef r
 
 inverseApplyLangMorphismSet ::
-       forall baseupdate a bx by. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+       forall baseupdate a bx by.
+       (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
     => LangMorphism baseupdate '( a, MeetType Entity a) '( bx, by)
     -> LangFiniteSetRef '( JoinType NewEntity by, bx)
     -> LangFiniteSetRef '( MeetType Entity a, a)

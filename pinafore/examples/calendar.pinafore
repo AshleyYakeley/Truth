@@ -18,7 +18,7 @@ ui r = uiVertical
 
 in do
     r <- newMemRef;
-    d <- get today;
+    d <- getDate;
     r := d;
     openWindow {toText %r} {[]} $ ui r;
     end

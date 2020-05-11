@@ -18,7 +18,7 @@ clearText = funcChangeLens (fromKnow mempty)
 uiTable ::
        forall baseupdate.
        ( ?pinafore :: PinaforeContext baseupdate
-       , HasPinaforeEntityUpdate baseupdate {-, ApplicableEdit (UpdateEdit baseupdate)-}
+       , BaseChangeLens PinaforeEntityUpdate baseupdate {-, ApplicableEdit (UpdateEdit baseupdate)-}
        )
     => [(LangRef '( BottomType, Text), A -> LangRef '( BottomType, Text))]
     -> LangOrder baseupdate A
@@ -223,7 +223,7 @@ uiRun pui = do
         Unknown -> nullUISpec
 
 ui_predefinitions ::
-       forall baseupdate. (HasPinaforeEntityUpdate baseupdate, HasPinaforeFileUpdate baseupdate)
+       forall baseupdate. (BaseChangeLens PinaforeEntityUpdate baseupdate, BaseChangeLens PinaforeFileUpdate baseupdate)
     => [DocTreeEntry (BindDoc baseupdate)]
 ui_predefinitions =
     [ docTreeEntry

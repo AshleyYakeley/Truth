@@ -183,23 +183,30 @@ window_constant = std_window {"Constant"} $ uiVertical
 ### Start Window
 
 window_start :: Action Window;
-window_start = std_window {"Pinafore"} $ uiVertical
-[
-    (uiLabel {"UTC time: " <> toText %now},False),
-    (uiLabel {"UTC date: " <> toText %utcDate},False),
-    (uiLabel {"Local time: " <> toText %localNow},False),
-    (uiLabel {"Local date: " <> toText %today},False),
-    (uiLabel {"Time zone offset minutes: " <> toText %timeZone},False),
-    (uiButton {"People"} {window_people},False),
-    (uiButton {"Calculated Form"} {window_calc},False),
-    (uiButton {"Switch"} {window_switch},False),
-    (uiButton {"Files"} {window_files},False),
-    (uiButton {"Constant"} {window_constant},False),
-    (uiButton {"Disabled"} unknown,False),
-    (uiBlank,True)
-];
+window_start = do
+    now <- newClock $ secondsToDuration 1;
+    timeZone <- newTimeZoneRef now;
+    let
+        utcDate = {%now};
+        localNow = {timeToLocal %timeZone %now};
+        today = {case %localNow of LocalTime day _ -> day end};
+        in do
+        std_window {"Pinafore"} $ uiVertical
+        [
+            (uiLabel {"UTC time: " <> toText %now},False),
+            (uiLabel {"UTC date: " <> toText %utcDate},False),
+            (uiLabel {"Local time: " <> toText %localNow},False),
+            (uiLabel {"Local date: " <> toText %today},False),
+            (uiLabel {"Time zone offset minutes: " <> toText %timeZone},False),
+            (uiButton {"People"} {window_people},False),
+            (uiButton {"Calculated Form"} {window_calc},False),
+            (uiButton {"Switch"} {window_switch},False),
+            (uiButton {"Files"} {window_files},False),
+            (uiButton {"Constant"} {window_constant},False),
+            (uiButton {"Disabled"} unknown,False),
+            (uiBlank,True)
+        ];
+        end;
+    end;
 
-in do
-    window_start;
-    return ();
-    end
+in window_start

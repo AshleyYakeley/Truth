@@ -18,6 +18,7 @@ import Pinafore.Storage
 import Shapes
 import Shapes.Numeric
 import Truth.Core
+import Truth.World.Clock
 
 getTimeMS :: IO Integer
 getTimeMS = do
@@ -60,32 +61,27 @@ newMemFiniteSet = do
     return $
         meetValueLangFiniteSetRef $ MkPinaforeRef $ mapModel (convertChangeLens . lens) $ pinaforeBaseModel @baseupdate
 
-now :: forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens (ROWUpdate UTCTime) baseupdate)
-    => PinaforeImmutableRef UTCTime
-now = functionImmutableRef $ MkPinaforeRef $ pinaforeBaseModel @baseupdate
+zeroTime :: UTCTime
+zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
-timeZone ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens (ROWUpdate TimeZone) baseupdate)
-    => PinaforeImmutableRef TimeZone
-timeZone = functionImmutableRef $ MkPinaforeRef $ pinaforeBaseModel @baseupdate
+newClock ::
+       forall baseupdate. (?pinafore :: PinaforeContext baseupdate)
+    => NominalDiffTime
+    -> PinaforeAction (PinaforeImmutableRef UTCTime)
+newClock duration = do
+    (clockOM, ()) <- pinaforeLiftLifeCycleIO $ makeSharedModel $ clockPremodel zeroTime duration
+    return $ functionImmutableRef $ MkPinaforeRef $ clockOM
 
-localNow ::
-       forall baseupdate.
-       ( ?pinafore :: PinaforeContext baseupdate
-       , BaseChangeLens (ROWUpdate UTCTime) baseupdate
-       , BaseChangeLens (ROWUpdate TimeZone) baseupdate
-       )
-    => PinaforeImmutableRef LocalTime
-localNow = utcToLocalTime <$> timeZone <*> now
-
-today ::
-       forall baseupdate.
-       ( ?pinafore :: PinaforeContext baseupdate
-       , BaseChangeLens (ROWUpdate UTCTime) baseupdate
-       , BaseChangeLens (ROWUpdate TimeZone) baseupdate
-       )
-    => PinaforeImmutableRef Day
-today = localDay <$> localNow
+newTimeZoneRef :: PinaforeImmutableRef UTCTime -> PinaforeAction (PinaforeImmutableRef Int)
+newTimeZoneRef now = do
+    rc <- pinaforeResourceContext
+    ref <-
+        pinaforeLiftLifeCycleIO $
+        eaFloatMapReadOnly
+            rc
+            (floatLift (\mr ReadWhole -> fmap (fromKnow zeroTime) $ mr ReadWhole) liftROWChangeLens clockTimeZoneLens) $
+        immutableRefToReadOnlyRef now
+    return $ fmap timeZoneMinutes $ MkPinaforeImmutableRef ref
 
 interpretAsText ::
        forall a. AsLiteral a
@@ -110,13 +106,14 @@ unixParse ::
     -> Maybe t
 unixParse fmt text = parseTimeM True defaultTimeLocale (unpack fmt) (unpack text)
 
+getLocalTime :: IO LocalTime
+getLocalTime = fmap zonedTimeToLocalTime getZonedTime
+
 base_predefinitions ::
        forall baseupdate.
-       ( HasPinaforeEntityUpdate baseupdate
-       , HasPinaforeFileUpdate baseupdate
+       ( BaseChangeLens PinaforeEntityUpdate baseupdate
+       , BaseChangeLens PinaforeFileUpdate baseupdate
        , BaseChangeLens MemoryCellUpdate baseupdate
-       , BaseChangeLens (ROWUpdate UTCTime) baseupdate
-       , BaseChangeLens (ROWUpdate TimeZone) baseupdate
        )
     => [DocTreeEntry (BindDoc baseupdate)]
 base_predefinitions =
@@ -309,7 +306,11 @@ base_predefinitions =
                         unixFormat @UTCTime
                       , mkValEntry "unixParseTime" "Parse text as a time, using a UNIX-style formatting string." $
                         unixParse @UTCTime
-                      , mkValEntry "now" "The current time truncated to the second." $ now @baseupdate
+                      , mkValEntry "getTime" "Get the current time." $ getCurrentTime
+                      , mkValEntry
+                            "newClock"
+                            "Make a reference to the current time that updates per the given duration." $
+                        newClock @baseupdate
                       ]
                 , docTreeEntry
                       "Calendar"
@@ -324,12 +325,12 @@ base_predefinitions =
                       , mkValEntry "modifiedJulianToDate" "Convert from MJD." ModifiedJulianDay
                       , mkValEntry "addDays" "Add count to days to date." addDays
                       , mkValEntry "diffDays" "Difference of days between dates." diffDays
-                      , mkValEntry "utcDate" "The current UTC date." $ fmap utctDay $ now @baseupdate
                       , mkValEntry "unixFormatDate" "Format a date as text, using a UNIX-style formatting string." $
                         unixFormat @Day
                       , mkValEntry "unixParseDate" "Parse text as a date, using a UNIX-style formatting string." $
                         unixParse @Day
-                      , mkValEntry "today" "The current local date." $ today @baseupdate
+                      , mkValEntry "getUTCDate" "Get the current UTC date." $ fmap utctDay getCurrentTime
+                      , mkValEntry "getDate" "Get the current local date." $ fmap localDay getLocalTime
                       ]
                 , docTreeEntry
                       "Time of Day"
@@ -364,8 +365,6 @@ base_predefinitions =
                             utcToLocalTime $ minutesToTimeZone i
                       , mkValEntry "localToTime" "Convert a local time to time, given a time zone offset in minutes" $ \i ->
                             localTimeToUTC $ minutesToTimeZone i
-                      , mkValEntry "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
-                            fmap timeZoneMinutes $ getTimeZone t
                       , mkValEntry
                             "unixFormatLocalTime"
                             "Format a local time as text, using a UNIX-style formatting string." $
@@ -374,9 +373,12 @@ base_predefinitions =
                             "unixParseLocalTime"
                             "Parse text as a local time, using a UNIX-style formatting string." $
                         unixParse @LocalTime
-                      , mkValEntry "timeZone" "The current time zone offset in minutes." $
-                        fmap timeZoneMinutes $ timeZone @baseupdate
-                      , mkValEntry "localNow" "The current local time." $ localNow @baseupdate
+                      , mkValEntry "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
+                            fmap timeZoneMinutes $ getTimeZone t
+                      , mkValEntry "getCurrentTimeZone" "Get the current time zone offset in minutes." $
+                        fmap timeZoneMinutes getCurrentTimeZone
+                      , mkValEntry "getLocalTime" "Get the current local time." getLocalTime
+                      , mkValEntry "newTimeZoneRef" "The current time zone offset in minutes." newTimeZoneRef
                       ]
                 ]
           ]

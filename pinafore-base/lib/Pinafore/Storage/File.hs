@@ -10,13 +10,13 @@ import Truth.World.ReferenceStore
 
 type PinaforeFileUpdate = ReferenceStoreUpdate FileEntity ByteStringEdit
 
-type HasPinaforeFileUpdate = BaseChangeLens PinaforeFileUpdate
-
 instance BaseChangeLens PinaforeFileUpdate PinaforeFileUpdate where
     baseChangeLens = id
 
 pinaforeFileItemLens ::
-       HasPinaforeFileUpdate baseupdate => FileEntity -> ChangeLens baseupdate (SingleReferenceUpdate ByteStringEdit)
+       BaseChangeLens PinaforeFileUpdate baseupdate
+    => FileEntity
+    -> ChangeLens baseupdate (SingleReferenceUpdate ByteStringEdit)
 pinaforeFileItemLens entity = tupleChangeLens (MkFunctionSelector entity) . baseChangeLens
 
 directoryPinaforeFileReference :: FilePath -> Reference (UpdateEdit PinaforeFileUpdate)

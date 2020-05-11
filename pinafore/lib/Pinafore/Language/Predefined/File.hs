@@ -10,7 +10,7 @@ import Pinafore.Storage
 --import Truth.World.File
 {-
 file_import ::
-       forall baseupdate. HasPinaforeFileUpdate baseupdate
+       forall baseupdate. BaseChangeLens PinaforeFileUpdate baseupdate
     => LangFiniteSetRef '( A, A)
     -> (A -> PinaforeAction ())
     -> PinaforeAction ()
@@ -42,7 +42,7 @@ file_size :: Reference ByteStringEdit -> IO Int64
 file_size MkReference {..} = runWMFunction objRun $ refRead ReadByteStringLength
 -}
 file_predefinitions ::
-       forall baseupdate. (HasPinaforeEntityUpdate baseupdate, HasPinaforeFileUpdate baseupdate)
+       forall baseupdate. (BaseChangeLens PinaforeEntityUpdate baseupdate, BaseChangeLens PinaforeFileUpdate baseupdate)
     => [DocTreeEntry (BindDoc baseupdate)]
 file_predefinitions =
     [ docTreeEntry
