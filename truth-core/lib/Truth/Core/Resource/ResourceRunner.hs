@@ -179,8 +179,8 @@ runLSRContext ::
     -> m r
 runLSRContext rc NilListType call = call rc $ MkWStackUnliftAll id
 runLSRContext rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
-    runSingleRunnerContext rc sr $ \rc' unlift1 ->
-        runLSRContext rc' lsr $ \rc'' unliftr ->
+    runLSRContext rc lsr $ \rc' unliftr ->
+        runSingleRunnerContext rc' sr $ \rc'' unlift1 ->
             case hasTransConstraint @MonadUnliftIO @t @(ApplyStack tt0 m) of
                 Dict ->
                     case transStackDict @MonadUnliftIO @tt0 @m of

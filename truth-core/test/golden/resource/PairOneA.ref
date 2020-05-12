@@ -1,9 +1,9 @@
-A: outside [
-A: inside [
 B: outside [
 B: inside [
+A: outside [
+A: inside [
 A: 1
-B: inside ]
-B: outside ]
 A: inside ]
 A: outside ]
+B: inside ]
+B: outside ]
