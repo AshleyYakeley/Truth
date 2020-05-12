@@ -2,17 +2,19 @@ module Pinafore.Language
     ( PinaforePredefinitions
     , PinaforeError
     , InterpretResult
-    , ioRunInterpretResult
+    , throwResult
     , PinaforeAction
-    , qTypeDescription
+    , qPositiveTypeDescription
+    , qNegativeTypeDescription
     , FromPinaforeType
     , ToPinaforeType
     , parseTopExpression
     , parseValue
     , parseValueAtType
     , interact
+    , TopType(..)
     , Entity
-    , showPinaforeValue
+    , showPinaforeRef
     , runPinaforeSourceScoped
     ) where
 
@@ -88,10 +90,7 @@ entityTypedShowValue (ConsListType Refl (ConsListType Refl NilListType)) EitherE
 entityTypedShowValue _ _ _ _ = Nothing
 
 groundTypedShowValue ::
-       PinaforeGroundType baseupdate 'Positive dv t
-    -> DolanArguments dv (PinaforeType baseupdate) t 'Positive ta
-    -> ta
-    -> String
+       PinaforeGroundType baseupdate dv t -> DolanArguments dv (PinaforeType baseupdate) t 'Positive ta -> ta -> String
 groundTypedShowValue (EntityPinaforeGroundType ct t) args v
     | Just str <- entityTypedShowValue ct t args v = str
 groundTypedShowValue _ _ _ = "<?>"
@@ -104,8 +103,8 @@ typedShowValue :: PinaforeType baseupdate 'Positive t -> t -> String
 typedShowValue NilPinaforeType v = never v
 typedShowValue (ConsPinaforeType ts tt) v = joinf (singularTypedShowValue ts) (typedShowValue tt) v
 
-showPinaforeValue :: QValue baseupdate -> String
-showPinaforeValue (MkAnyValue (MkShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
+showPinaforeRef :: QValue baseupdate -> String
+showPinaforeRef (MkAnyValue (MkShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
 
 type Interact baseupdate = StateT SourcePos (ReaderStateT (PinaforeScoped baseupdate) View)
 
@@ -127,13 +126,13 @@ runValue :: Handle -> QValue baseupdate -> Interact baseupdate (PinaforeAction (
 runValue outh val =
     interactRunSourceScoped $
     (typedAnyToPinaforeVal val) <|> (fmap outputLn $ typedAnyToPinaforeVal val) <|>
-    (return $ liftIO $ hPutStrLn outh $ showPinaforeValue val)
+    (return $ liftIO $ hPutStrLn outh $ showPinaforeRef val)
 
 interactParse ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+       forall baseupdate. BaseChangeLens PinaforeEntityUpdate baseupdate
     => Text
     -> Interact baseupdate (InteractiveCommand baseupdate)
-interactParse t = remonad ioRunInterpretResult $ parseInteractiveCommand @baseupdate t
+interactParse t = remonad throwResult $ parseInteractiveCommand @baseupdate t
 
 interactLoop ::
        forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
@@ -196,5 +195,4 @@ interact ::
     -> View ()
 interact inh outh echo = do
     liftIO $ hSetBuffering outh NoBuffering
-    evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $
-        ioRunInterpretResult . runPinaforeScoped
+    evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $ throwResult . runPinaforeScoped

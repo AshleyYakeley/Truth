@@ -1,9 +1,8 @@
 module Pinafore.Language.Read.Expression
-    ( readTopExpression
+    ( readExpression
     , readTopDeclarations
     ) where
 
-import Pinafore.Base
 import Pinafore.Language.Read.Constructor
 import Pinafore.Language.Read.Infix
 import Pinafore.Language.Read.Parser
@@ -19,14 +18,14 @@ readTypeSignature = do
     readThis TokTypeJudge
     readType
 
-readBindingRest :: HasPinaforeEntityUpdate baseupdate => Parser ([SyntaxPattern], SyntaxExpression baseupdate)
+readBindingRest :: Parser ([SyntaxPattern], SyntaxExpression)
 readBindingRest = do
     args <- readPatterns
     readThis TokAssign
     rval <- readExpression
     return (args, rval)
 
-readBinding :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxBinding baseupdate)
+readBinding :: Parser SyntaxBinding
 readBinding = do
     spos <- getPosition
     name <- readThis TokLName
@@ -53,60 +52,42 @@ readLines p =
          return $ a : fromMaybe [] ma) <|>
     (return [])
 
-readDeclaration :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxDeclarations baseupdate)
-readDeclaration =
-    fmap typeSyntaxDeclarations readTypeDeclaration <|> fmap (MkSyntaxDeclarations mempty . pure) readBinding
+readDeclaration :: Parser SyntaxDeclaration
+readDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding
 
-readDeclarations :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxDeclarations baseupdate)
-readDeclarations = do
-    decls <- readLines readDeclaration
-    return $ mconcat decls
+readDeclarations :: Parser [SyntaxDeclaration]
+readDeclarations = readLines readDeclaration
 
-readLetBindings :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxDeclarations baseupdate)
+readLetBindings :: Parser [SyntaxDeclaration]
 readLetBindings = do
     readThis TokLet
     readDeclarations
 
-readTopDeclarations :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxTopDeclarations baseupdate)
+readTopDeclarations :: Parser SyntaxTopDeclarations
 readTopDeclarations = do
     spos <- getPosition
     sdecls <- readLetBindings
-    parseEnd
     return $ MkSyntaxTopDeclarations spos sdecls
 
-readSourcePos :: Parser (SyntaxExpression' baseupdate) -> Parser (SyntaxExpression baseupdate)
-readSourcePos p = do
-    spos <- getPosition
-    expr' <- p
-    return $ MkSyntaxExpression spos expr'
-
-readExpression ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => Parser (SyntaxExpression baseupdate)
+readExpression :: Parser SyntaxExpression
 readExpression = readExpressionInfixed readExpression1
 
-readCase ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => Parser (SyntaxCase baseupdate)
+readCase :: Parser SyntaxCase
 readCase = do
     pat <- readPattern1
     readThis TokMap
     e <- readExpression
     return $ MkSyntaxCase pat e
 
-readCases ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => Parser [SyntaxCase baseupdate]
+readCases :: Parser [SyntaxCase]
 readCases = readLines readCase
 
-data DoLine baseupdate
-    = ExpressionDoLine (SyntaxExpression baseupdate)
+data DoLine
+    = ExpressionDoLine SyntaxExpression
     | BindDoLine SyntaxPattern
-                 (SyntaxExpression baseupdate)
+                 SyntaxExpression
 
-readDoLine ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => Parser (DoLine baseupdate)
+readDoLine :: Parser DoLine
 readDoLine =
     (try $ do
          pat <- readPattern1
@@ -118,26 +99,24 @@ readDoLine =
          return $ ExpressionDoLine expr)
 
 doLines ::
-       forall baseupdate m. MonadFail m
-    => DoLine baseupdate
-    -> [DoLine baseupdate]
-    -> m (SyntaxExpression baseupdate)
+       forall m. MonadFail m
+    => DoLine
+    -> [DoLine]
+    -> m SyntaxExpression
 doLines (ExpressionDoLine expr) [] = return expr
 doLines (BindDoLine _ _) [] = fail "last line of do block not expression"
 doLines (ExpressionDoLine expra) (l:ll) = do
     exprb <- doLines l ll
-    return $ seApplys (getSourcePos expra) (MkSyntaxExpression (getSourcePos exprb) $ SEConst SCBind_) [expra, exprb]
+    return $ seApplys (getSourcePos expra) (MkWithSourcePos (getSourcePos exprb) $ SEConst SCBind_) [expra, exprb]
 doLines (BindDoLine pat expra) (l:ll) = do
     exprb <- doLines l ll
     return $
         seApplys
             (getSourcePos expra)
-            (MkSyntaxExpression (getSourcePos exprb) $ SEConst SCBind)
+            (MkWithSourcePos (getSourcePos exprb) $ SEConst SCBind)
             [expra, seAbstract (getSourcePos pat) pat exprb]
 
-readExpression1 ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => Parser (SyntaxExpression baseupdate)
+readExpression1 :: Parser SyntaxExpression
 readExpression1 =
     (do
          spos <- getPosition
@@ -178,16 +157,19 @@ readExpression1 =
          return $ seApplys spos (seConst spos SCIfThenElse) [metest, methen, meelse]) <|>
     readExpression2
 
-readExpression2 :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxExpression baseupdate)
+readExpression2 :: Parser SyntaxExpression
 readExpression2 = do
     spos <- getPosition
     sfunc <- readExpression3
     sargs <- many readExpression3
     return $ seApplys spos sfunc sargs
 
-readExpression3 ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => Parser (SyntaxExpression baseupdate)
+readTypeAnnotation :: Parser SyntaxType
+readTypeAnnotation = do
+    readThis TokAt
+    readType3
+
+readExpression3 :: Parser SyntaxExpression
 readExpression3 =
     readSourcePos
         (do
@@ -200,10 +182,8 @@ readExpression3 =
     readSourcePos
         (do
              readThis TokProperty
-             readThis TokAt
-             sta <- readType3
-             readThis TokAt
-             stb <- readType3
+             sta <- readTypeAnnotation
+             stb <- readTypeAnnotation
              anchor <- readThis TokAnchor
              return $ SEProperty sta stb anchor) <|>
     readSourcePos
@@ -218,8 +198,7 @@ readExpression3 =
     readSourcePos
         (do
              readThis TokEntity
-             readThis TokAt
-             mt <- readType3
+             mt <- readTypeAnnotation
              anchor <- readThis TokAnchor
              return $ SEEntity mt anchor) <|>
     (readParen $
@@ -254,11 +233,3 @@ readExpression3 =
                  return []
              return $ SEList sexprs) <?>
     "expression"
-
-readTopExpression ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => Parser (SyntaxExpression baseupdate)
-readTopExpression = do
-    sexpr <- readExpression
-    parseEnd
-    return sexpr

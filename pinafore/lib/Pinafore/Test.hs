@@ -16,7 +16,6 @@ module Pinafore.Test
     ) where
 
 import Data.Shim
-import Data.Time
 import Pinafore.Base
 import Pinafore.Language
 import Pinafore.Language.Name
@@ -27,34 +26,30 @@ import Pinafore.Pinafore
 import Pinafore.Storage
 import Shapes
 import Truth.Core
-import Truth.World.Clock
-import Truth.World.ObjectStore
+import Truth.World.ReferenceStore
 import Truth.Debug.Subscriber
 
 makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
 makeTestPinaforeContext uitoolkit = do
     let rc = emptyResourceContext
-    tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
+    tableStateReference :: Reference (WholeEdit (EditSubject PinaforeTableEdit)) <-
         fmap (traceThing "makeTestPinaforeContext.tableStateObject") $
-        liftIO $ makeMemoryObject ([], []) $ \_ -> True
+        liftIO $ makeMemoryReference ([], []) $ \_ -> True
     let
-        tableObject :: Object PinaforeTableEdit
-        tableObject = convertObject tableStateObject
+        tableReference :: Reference PinaforeTableEdit
+        tableReference = convertReference tableStateReference
         getTableState :: IO (EditSubject PinaforeTableEdit)
-        getTableState = getObjectSubject rc tableStateObject
-    memoryObject <- liftIO makeMemoryCellObject
-    clockOM <- shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
+        getTableState = getReferenceSubject rc tableStateReference
+    memoryReference <- liftIO makeMemoryCellReference
     let
-        picker :: forall update. PinaforeSelector update -> ObjectMaker update ()
-        picker PinaforeSelectPoint = traceThing "testObject.PinaforeSelectPoint" $ reflectingObjectMaker $ pinaforeTableEntityObject tableObject
+        picker :: forall update. PinaforeSelector update -> Premodel update ()
+        picker PinaforeSelectPoint = traceThing "testObject.PinaforeSelectPoint" $ reflectingPremodel $ pinaforeTableEntityReference tableReference
         picker PinaforeSelectFile = traceThing "testObject.PinaforeSelectFile" $
-            reflectingObjectMaker $
-            mapObject (fromReadOnlyRejectingEditLens @PinaforeFileUpdate) $
-            readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
-        picker PinaforeSelectMemory = traceThing "testObject.PinaforeSelectMemory" $ reflectingObjectMaker memoryObject
-        picker PinaforeSelectClock = traceThing "testObject.PinaforeSelectClock" $ clockOM rc
-        picker PinaforeSelectTimeZone = mapObjectMaker rc (liftReadOnlyFloatingEditLens clockTimeZoneLens) $ clockOM rc
-    (sub, ()) <- makeSharedSubscriber $ tupleObjectMaker picker
+            reflectingPremodel $
+            mapReference (fromReadOnlyRejectingChangeLens @PinaforeFileUpdate) $
+            readConstantReference $ constFunctionReadFunction nullSingleReferenceReadable
+        picker PinaforeSelectMemory = traceThing "testObject.PinaforeSelectMemory" $ reflectingPremodel memoryReference
+    (sub, ()) <- makeSharedModel $ tuplePremodel picker
     pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)
 
@@ -82,17 +77,17 @@ checkUpdateEditor ::
     -> IO ()
     -> Editor (WholeUpdate a) ()
 checkUpdateEditor val push = let
-    editorInit :: Object (WholeEdit a) -> LifeCycleIO (MVar (NonEmpty (WholeUpdate a)))
+    editorInit :: Reference (WholeEdit a) -> LifeCycleIO (MVar (NonEmpty (WholeUpdate a)))
     editorInit _ = liftIO newEmptyMVar
     editorUpdate ::
            MVar (NonEmpty (WholeUpdate a))
-        -> Object (WholeEdit a)
+        -> Reference (WholeEdit a)
         -> ResourceContext
         -> NonEmpty (WholeUpdate a)
         -> EditContext
         -> IO ()
     editorUpdate var _ _ edits _ = do putMVar var edits
-    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Object (WholeEdit a) -> Task () -> LifeCycleIO ()
+    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Reference (WholeEdit a) -> Task () -> LifeCycleIO ()
     editorDo var _ _ =
         traceBracket "checkUpdateEditor.do" $ liftIO $ do
             traceBracket "checkUpdateEditor.push" $ push

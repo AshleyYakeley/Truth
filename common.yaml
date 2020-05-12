@@ -1,6 +1,6 @@
 - &author
     author: Ashley Yakeley
-    copyright: (c) 2017-2019 Ashley Yakeley
+    copyright: (c) 2017-2020 Ashley Yakeley
     license: GPL-2
     license-file: LICENSE
     maintainer: <ashley@semantic.org>
@@ -26,7 +26,6 @@
       - InstanceSigs
       - KindSignatures
       - LambdaCase
-      - MonadFailDesugaring
       - MultiParamTypeClasses
       - OverloadedLabels
       - OverloadedStrings
@@ -58,5 +57,4 @@
       - -Wincomplete-record-updates
       - -Wcompat
       - -Wnoncanonical-monad-instances
-      - -Wnoncanonical-monadfail-instances
       - -Wno-partial-type-signatures

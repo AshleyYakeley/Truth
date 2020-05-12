@@ -8,135 +8,129 @@ import Pinafore.Language.Value.Ref
 import Shapes
 import Truth.Core
 
-data PinaforeMorphism baseupdate (pqa :: (Type, Type)) (pqb :: (Type, Type)) =
-    forall a b. (Eq a, Eq b) =>
-                    MkPinaforeMorphism (Range JMShim a pqa)
-                                       (Range JMShim b pqb)
-                                       (PinaforeLensMorphism baseupdate a b)
+newtype LangMorphism baseupdate (a :: (Type, Type)) (b :: (Type, Type)) =
+    -- forall a b. (Eq a, Eq b) =>
+    MkLangMorphism (PinaforeLensMorphism baseupdate (Contra a) (Co a) (Contra b) (Co b))
 
-instance CatFunctor (CatRange (->)) (->) (PinaforeMorphism edit a) where
-    cfmap f (MkPinaforeMorphism ra rb m) = MkPinaforeMorphism ra (cfmap f rb) m
+instance CatFunctor (CatRange (->)) (->) (LangMorphism edit a) where
+    cfmap (MkCatRange pp qq) (MkLangMorphism m) = MkLangMorphism $ cfmap1 (MkCatDual pp) $ fmap qq m
 
-instance CatFunctor (CatRange (->)) (NestedMorphism (->)) (PinaforeMorphism edit) where
-    cfmap f = MkNestedMorphism $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism (cfmap f ra) rb m
+instance CatFunctor (CatRange (->)) (NestedMorphism (->)) (LangMorphism edit) where
+    cfmap (MkCatRange pp qq) =
+        MkNestedMorphism $ \(MkLangMorphism m) ->
+            MkLangMorphism $
+            (unNestedMorphism $ unNestedMorphism $ (unNestedMorphism $ cfmap (MkCatDual pp)) . cfmap qq) m
 
-instance HasVariance 'Rangevariance (PinaforeMorphism baseupdate) where
+instance HasVariance 'Rangevariance (LangMorphism baseupdate) where
     varianceRepresentational = Nothing
 
-instance HasVariance 'Rangevariance (PinaforeMorphism baseupdate a) where
+instance HasVariance 'Rangevariance (LangMorphism baseupdate a) where
     varianceRepresentational = Nothing
 
-pinaforeMorphismLens :: PinaforeMorphism baseupdate '( a, a) '( b, b) -> PinaforeLensMorphism baseupdate a b
-pinaforeMorphismLens (MkPinaforeMorphism tra trb lm) =
-    (bijectionPinaforeLensMorphism $ isoMapCat fromEnhanced $ rangeBijection trb) .
-    lm . (bijectionPinaforeLensMorphism $ invert $ isoMapCat fromEnhanced $ rangeBijection tra)
+langMorphismLens :: LangMorphism baseupdate '( ap, aq) '( bp, bq) -> PinaforeLensMorphism baseupdate ap aq bp bq
+langMorphismLens (MkLangMorphism lm) = lm
 
-pinaforeLensMorphism ::
-       (Eq a, Eq b) => PinaforeLensMorphism baseupdate a b -> PinaforeMorphism baseupdate '( a, a) '( b, b)
-pinaforeLensMorphism = MkPinaforeMorphism identityRange identityRange
+pinaforeLensMorphism :: PinaforeLensMorphism baseupdate ap aq bp bq -> LangMorphism baseupdate '( ap, aq) '( bp, bq) {-(Eq a, Eq b) =>-}
+pinaforeLensMorphism = MkLangMorphism
 
-pinaforeMorphismFunction ::
-       PinaforeMorphism baseupdate '( a, TopType) '( BottomType, b)
-    -> PinaforeFunctionMorphism baseupdate (Know a) (Know b)
-pinaforeMorphismFunction (MkPinaforeMorphism tra trb pm) =
-    proc ka -> do
-        tb <- lensFunctionMorphism pm -< fmap (fromEnhanced $ rangeContra tra) ka
-        returnA -< fmap (fromEnhanced $ rangeCo trb) tb
+langMorphismFunction ::
+       LangMorphism baseupdate '( a, TopType) '( BottomType, b) -> PinaforeFunctionMorphism baseupdate (Know a) (Know b)
+langMorphismFunction (MkLangMorphism pm) = lensFunctionMorphism pm
 
-identityPinaforeMorphism ::
-       forall baseupdate t. PinaforeMorphism baseupdate '( MeetType Entity t, t) '( MeetType Entity t, t)
-identityPinaforeMorphism = MkPinaforeMorphism (coRange meet2) (coRange meet2) id
+identityLangMorphism :: forall baseupdate x y. LangMorphism baseupdate '( x, y) '( y, x)
+identityLangMorphism = MkLangMorphism identityPinaforeLensMorphism
 
-composePinaforeMorphism ::
+composeLangMorphism ::
+       forall baseupdate ap aq bx by cp cq.
+       LangMorphism baseupdate '( bx, by) '( cp, cq)
+    -> LangMorphism baseupdate '( ap, aq) '( by, bx)
+    -> LangMorphism baseupdate '( ap, aq) '( cp, cq)
+composeLangMorphism (MkLangMorphism m1) (MkLangMorphism m2) = MkLangMorphism $ composePinaforeLensMorphism m1 m2
+
+pairLangMorphism ::
        forall baseupdate ap aq bp bq cp cq.
-       PinaforeMorphism baseupdate '( bq, bp) '( cp, cq)
-    -> PinaforeMorphism baseupdate '( aq, ap) '( bp, bq)
-    -> PinaforeMorphism baseupdate '( aq, ap) '( cp, cq)
-composePinaforeMorphism (MkPinaforeMorphism tb1 tc1 m1) (MkPinaforeMorphism ta2 tb2 m2) =
-    MkPinaforeMorphism ta2 tc1 $ m1 . bijectionPinaforeLensMorphism (isoMapCat fromEnhanced $ bijectRanges tb2 tb1) . m2
+       LangMorphism baseupdate '( ap, MeetType Entity aq) '( bp, bq)
+    -> LangMorphism baseupdate '( ap, MeetType Entity aq) '( cp, cq)
+    -> LangMorphism baseupdate '( ap, aq) '( (bp, cp), (bq, cq))
+pairLangMorphism (MkLangMorphism m1) (MkLangMorphism m2) =
+    cfmap1 (MkCatRange (id @(->)) meet2) $ MkLangMorphism $ pairPinaforeLensMorphism m1 m2
 
-pairPinaforeMorphism ::
+eitherLangMorphism ::
        forall baseupdate ap aq bp bq cp cq.
-       PinaforeMorphism baseupdate '( ap, aq) '( bp, bq)
-    -> PinaforeMorphism baseupdate '( aq, ap) '( cp, cq)
-    -> PinaforeMorphism baseupdate '( ap, aq) '( (bp, cp), (bq, cq))
-pairPinaforeMorphism (MkPinaforeMorphism ta1 tb1 m1) (MkPinaforeMorphism ta2 tc2 m2) =
-    MkPinaforeMorphism ta1 (pairRange tb1 tc2) $
-    pairPinaforeLensMorphism m1 $ m2 . bijectionPinaforeLensMorphism (isoMapCat fromEnhanced $ bijectRanges ta1 ta2)
+       LangMorphism baseupdate '( ap, aq) '( cp, cq)
+    -> LangMorphism baseupdate '( bp, bq) '( cp, cq)
+    -> LangMorphism baseupdate '( Either ap bp, Either aq bq) '( cp, cq)
+eitherLangMorphism (MkLangMorphism m1) (MkLangMorphism m2) = MkLangMorphism $ eitherPinaforeLensMorphism m1 m2
 
-eitherPinaforeMorphism ::
-       forall baseupdate ap aq bp bq cp cq.
-       PinaforeMorphism baseupdate '( ap, aq) '( cp, cq)
-    -> PinaforeMorphism baseupdate '( bp, bq) '( cq, cp)
-    -> PinaforeMorphism baseupdate '( Either ap bp, Either aq bq) '( cp, cq)
-eitherPinaforeMorphism (MkPinaforeMorphism ta1 tc1 m1) (MkPinaforeMorphism tb2 tc2 m2) =
-    MkPinaforeMorphism (eitherRange ta1 tb2) tc1 $
-    eitherPinaforeLensMorphism m1 $ bijectionPinaforeLensMorphism (isoMapCat fromEnhanced $ bijectRanges tc2 tc1) . m2
+applyLangMorphismRef ::
+       forall baseupdate ap aq bp bq.
+       (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
+    => LangMorphism baseupdate '( ap, aq) '( bp, bq)
+    -> LangRef '( aq, ap)
+    -> LangRef '( bp, bq)
+applyLangMorphismRef (MkLangMorphism m) ref =
+    MutableLangRef $ applyPinaforeLens pinaforeBase m $ langRefToBiWholeRef ref
 
-pinaforeApplyMorphismRef ::
-       forall baseupdate ap aq bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
-    => PinaforeMorphism baseupdate '( aq, ap) '( bp, bq)
-    -> PinaforeRef '( ap, aq)
-    -> PinaforeRef '( bp, bq)
-pinaforeApplyMorphismRef (MkPinaforeMorphism tra trb m) (MutablePinaforeRef tra' lv) =
-    MutablePinaforeRef trb $
-    applyPinaforeLens pinaforeBase m $
-    eaMap (bijectionWholeEditLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra)) lv
-pinaforeApplyMorphismRef (MkPinaforeMorphism (MkRange fa _) trb m) (ImmutablePinaforeRef fv) =
-    MutablePinaforeRef trb $
-    applyPinaforeLens pinaforeBase m $ immutableReferenceToRejectingValue $ fmap (fromEnhanced fa) fv
+applyLangMorphismImmutRef ::
+       forall baseupdate a bp bq.
+       (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
+    => LangMorphism baseupdate '( a, TopType) '( bp, bq)
+    -> PinaforeImmutableRef a
+    -> LangRef '( bp, bq)
+applyLangMorphismImmutRef m r = applyLangMorphismRef m $ pinaforeImmutableToRef r
 
-pinaforeApplyMorphismImmutRef ::
-       forall baseupdate a bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
-    => PinaforeMorphism baseupdate '( a, TopType) '( bp, bq)
-    -> PinaforeImmutableReference a
-    -> PinaforeRef '( bp, bq)
-pinaforeApplyMorphismImmutRef m r = pinaforeApplyMorphismRef m $ pinaforeImmutableToRef r
+applyLangMorphismSet ::
+       forall baseupdate a b. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
+    => LangMorphism baseupdate '( a, TopType) '( BottomType, MeetType Entity b)
+    -> LangFiniteSetRef '( BottomType, a)
+    -> LangFiniteSetRef '( MeetType Entity b, b)
+applyLangMorphismSet lm (MkLangFiniteSetRef (tr :: Range _ t _) ss) = let
+    tbkm :: PinaforeFunctionMorphism baseupdate (Know t) (Know (MeetType Entity b))
+    tbkm = ccontramap1 (fmap $ fromEnhanced $ rangeCo tr) $ langMorphismFunction lm
+    tbskm :: PinaforeFunctionMorphism baseupdate (FiniteSet (Know t)) (FiniteSet (Know (MeetType Entity b)))
+    tbskm = cfmap tbkm
+    tbsm :: PinaforeFunctionMorphism baseupdate (FiniteSet t) (FiniteSet (MeetType Entity b))
+    tbsm = ccontramap1 (fmap Known) $ fmap (mapMaybe knowToMaybe) tbskm
+    tsetref :: PinaforeROWRef (FiniteSet t)
+    tsetref = eaToReadOnlyWhole ss
+    bsetref :: PinaforeROWRef (FiniteSet (MeetType Entity b))
+    bsetref = applyPinaforeFunction pinaforeBase tbsm tsetref
+    in MkLangFiniteSetRef (MkRange id meet2) $ eaMap (convertChangeLens . fromReadOnlyRejectingChangeLens) bsetref
 
-pinaforeApplyMorphismSet ::
-       forall baseupdate a bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
-    => PinaforeMorphism baseupdate '( a, TopType) '( bp, bq)
-    -> PinaforeFiniteSetRef '( BottomType, a)
-    -> PinaforeFiniteSetRef '( bp, bq)
-pinaforeApplyMorphismSet (MkPinaforeMorphism tra trb m) (MkPinaforeFiniteSetRef tra' ss) = let
-    setm =
-        proc st -> do
-            skb <-
-                cfmap $ lensFunctionMorphism m -<
-                    fmap (Known . fromEnhanced (rangeContra tra) . fromEnhanced (rangeCo tra')) st
-            returnA -< mapMaybe knowToMaybe skb
-    in MkPinaforeFiniteSetRef trb $
-       eaMap (convertEditLens . fromReadOnlyRejectingEditLens) $
-       applyPinaforeFunction pinaforeBase setm (eaToReadOnlyWhole ss)
+inverseApplyLangMorphismRef ::
+       forall baseupdate a bx by.
+       (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
+    => LangMorphism baseupdate '( a, MeetType Entity a) '( bx, by)
+    -> LangRef '( by, bx)
+    -> LangFiniteSetRef '( MeetType Entity a, a)
+inverseApplyLangMorphismRef (MkLangMorphism m) ref =
+    MkLangFiniteSetRef (MkRange id meet2) $
+    applyInversePinaforeLens pinaforeBase (cfmap3 (MkCatDual $ meet2 @(->)) m) $ langRefToBiWholeRef ref
 
-pinaforeApplyInverseMorphismRef ::
-       forall baseupdate ap aq bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
-    => PinaforeMorphism baseupdate '( bp, bq) '( aq, ap)
-    -> PinaforeRef '( ap, aq)
-    -> PinaforeFiniteSetRef '( bp, bq)
-pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb tra m) (MutablePinaforeRef tra' lv) =
-    MkPinaforeFiniteSetRef trb $
-    applyInversePinaforeLens pinaforeBase m $
-    eaMap (bijectionWholeEditLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra)) lv
-pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb (MkRange fa _) m) (ImmutablePinaforeRef fv) =
-    MkPinaforeFiniteSetRef trb $
-    applyInversePinaforeLens pinaforeBase m $ immutableReferenceToRejectingValue $ fmap (fromEnhanced fa) fv
+inverseApplyLangMorphismImmutRef ::
+       forall baseupdate a b. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
+    => LangMorphism baseupdate '( a, MeetType Entity a) '( b, TopType)
+    -> PinaforeImmutableRef b
+    -> LangFiniteSetRef '( MeetType Entity a, a)
+inverseApplyLangMorphismImmutRef m r = inverseApplyLangMorphismRef m $ pinaforeImmutableToRef r
 
-pinaforeApplyInverseMorphismImmutRef ::
-       forall baseupdate a bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
-    => PinaforeMorphism baseupdate '( bp, bq) '( a, TopType)
-    -> PinaforeImmutableReference a
-    -> PinaforeFiniteSetRef '( bp, bq)
-pinaforeApplyInverseMorphismImmutRef m r = pinaforeApplyInverseMorphismRef m $ pinaforeImmutableToRef r
-
-pinaforeApplyInverseMorphismSet ::
-       forall baseupdate ap aq bp bq. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
-    => PinaforeMorphism baseupdate '( bp, bq) '( JoinType NewEntity aq, ap)
-    -> PinaforeFiniteSetRef '( ap, aq)
-    -> PinaforeFiniteSetRef '( bp, bq)
-pinaforeApplyInverseMorphismSet (MkPinaforeMorphism trb trpa m) (MkPinaforeFiniteSetRef tra' set) = let
-    trp = contraMapRange join1 trpa
-    tra = contraMapRange join2 trpa
-    in MkPinaforeFiniteSetRef trb $
-       applyInversePinaforeLensSet pinaforeBase (fmap (fromEnhanced (rangeContra trp) . MkNewEntity) newEntity) m $
-       eaMap (bijectionFiniteSetEditLens $ isoMapCat fromEnhanced $ bijectRanges tra' tra) set
+inverseApplyLangMorphismSet ::
+       forall baseupdate a bx by.
+       (?pinafore :: PinaforeContext baseupdate, BaseChangeLens PinaforeEntityUpdate baseupdate)
+    => LangMorphism baseupdate '( a, MeetType Entity a) '( bx, by)
+    -> LangFiniteSetRef '( JoinType NewEntity by, bx)
+    -> LangFiniteSetRef '( MeetType Entity a, a)
+inverseApplyLangMorphismSet (MkLangMorphism m) (MkLangFiniteSetRef (tra :: Range _ t _) seta) = let
+    byt :: by -> t
+    byt = fromEnhanced $ rangeContra tra . join2
+    nt :: NewEntity -> t
+    nt = fromEnhanced $ rangeContra tra . join1
+    tbx :: t -> bx
+    tbx = fromEnhanced $ rangeCo tra
+    m' :: PinaforeLensMorphism baseupdate (MeetType Entity a) (MeetType Entity a) t t
+    m' = cfmap3 (MkCatDual $ meet2 @(->)) $ cfmap1 (MkCatDual tbx) $ fmap byt m
+    newVal :: IO t
+    newVal = fmap (nt . MkNewEntity) newEntity
+    setb :: PinaforeRef (FiniteSetUpdate (MeetType Entity a))
+    setb = applyInversePinaforeLensSet pinaforeBase newVal m' seta
+    in MkLangFiniteSetRef (MkRange id meet2) setb

@@ -36,13 +36,13 @@ data PairMorphism (cat :: Type -> Type -> Type) (a :: (kp, kq)) (b :: (kp, kq)) 
 
 instance (InCategory (KindMorphism cat :: kp -> kp -> Type), InCategory (KindMorphism cat :: kq -> kq -> Type)) =>
              InCategory (PairMorphism cat :: (kp, kq) -> (kp, kq) -> Type) where
-    cid :: forall a. InKind a
+    cid :: forall (a :: (kp, kq)). InKind a
         => PairMorphism cat a a
     cid =
         case inKind @_ @a of
             MkPairWitness -> MkPairMorphism cid cid
     (<.>) ::
-           forall a b c. (InKind a, InKind b, InKind c)
+           forall (a :: (kp, kq)) (b :: (kp, kq)) (c :: (kp, kq)). (InKind a, InKind b, InKind c)
         => PairMorphism cat b c
         -> PairMorphism cat a b
         -> PairMorphism cat a c
@@ -68,13 +68,13 @@ instance InCategory (:~~:)
 
 instance InCategory (KindMorphism cat :: kq -> kq -> Type) =>
              InCategory (NestedMorphism cat :: (kp -> kq) -> (kp -> kq) -> Type) where
-    cid :: forall a. InKind a
+    cid :: forall (a :: kp -> kq). InKind a
         => NestedMorphism cat a a
     cid =
         case inKind @_ @a of
             MkFunctionKindWitness -> MkNestedMorphism cid
     (<.>) ::
-           forall a b c. (InKind a, InKind b, InKind c)
+           forall (a :: kp -> kq) (b :: kp -> kq) (c :: kp -> kq). (InKind a, InKind b, InKind c)
         => NestedMorphism cat b c
         -> NestedMorphism cat a b
         -> NestedMorphism cat a c

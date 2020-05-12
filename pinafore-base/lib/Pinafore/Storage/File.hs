@@ -6,21 +6,21 @@ import Pinafore.Base
 import Shapes
 import Truth.Core
 import Truth.World.FileSystem
-import Truth.World.ObjectStore
+import Truth.World.ReferenceStore
 
-type PinaforeFileUpdate = ObjectStoreUpdate FileEntity ByteStringEdit
+type PinaforeFileUpdate = ReferenceStoreUpdate FileEntity ByteStringEdit
 
-type HasPinaforeFileUpdate = BaseEditLens PinaforeFileUpdate
-
-instance BaseEditLens PinaforeFileUpdate PinaforeFileUpdate where
-    baseEditLens = id
+instance BaseChangeLens PinaforeFileUpdate PinaforeFileUpdate where
+    baseChangeLens = id
 
 pinaforeFileItemLens ::
-       HasPinaforeFileUpdate baseupdate => FileEntity -> EditLens baseupdate (SingleObjectUpdate ByteStringEdit)
-pinaforeFileItemLens entity = tupleEditLens (MkFunctionSelector entity) . baseEditLens
+       BaseChangeLens PinaforeFileUpdate baseupdate
+    => FileEntity
+    -> ChangeLens baseupdate (SingleReferenceUpdate ByteStringEdit)
+pinaforeFileItemLens entity = tupleChangeLens (MkFunctionSelector entity) . baseChangeLens
 
-directoryPinaforeFileObject :: FilePath -> Object (UpdateEdit PinaforeFileUpdate)
-directoryPinaforeFileObject path =
-    directoryObjectStore
-        (subdirectoryObject True path fileSystemObject)
-        (\(MkFileEntity (MkEntity (MkAnchor uuid))) -> show uuid)
+directoryPinaforeFileReference :: FilePath -> Reference (UpdateEdit PinaforeFileUpdate)
+directoryPinaforeFileReference path =
+    directoryReferenceStore
+        (subdirectoryReference True path fileSystemReference)
+        (\(MkFileEntity (MkEntity anchor)) -> show anchor)

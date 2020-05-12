@@ -1,0 +1,2 @@
+#!/bin/bash -e
+stack exec -- Rscript benchgraph/server/server.R benchmarks

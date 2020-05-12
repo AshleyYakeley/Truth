@@ -2,6 +2,8 @@ module Truth.Core.Types
     ( module I
     ) where
 
+import Truth.Core.Types.Bi as I
+import Truth.Core.Types.BiWhole as I
 import Truth.Core.Types.ByteString as I
 import Truth.Core.Types.Comonad as I
 import Truth.Core.Types.Database as I

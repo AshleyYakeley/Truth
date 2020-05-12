@@ -37,21 +37,19 @@ dolanVarianceHasKM (ConsListType _ lt) =
     case dolanVarianceHasKM lt of
         Dict -> Dict
 
-data DolanVarianceMap (cat :: forall kc. kc -> kc -> Type) (dv :: DolanVariance) (gt :: DolanVarianceKind dv) where
-    NilDolanVarianceMap :: forall (cat :: forall kc. kc -> kc -> Type) (gt :: Type). DolanVarianceMap cat '[] gt
+data DolanVarianceMap (dv :: DolanVariance) (gt :: DolanVarianceKind dv) where
+    NilDolanVarianceMap :: forall (gt :: Type). DolanVarianceMap '[] gt
     ConsDolanVarianceMap
-        :: forall (cat :: forall kc. kc -> kc -> Type) (sv :: Variance) (dv :: DolanVariance) (gt :: VarianceKind sv -> DolanVarianceKind dv).
+        :: forall (sv :: Variance) (dv :: DolanVariance) (gt :: VarianceKind sv -> DolanVarianceKind dv).
            HasVariance sv gt
-        => (forall a. DolanVarianceMap cat dv (gt a))
-        -> DolanVarianceMap cat (sv ': dv) gt
+        => (forall a. DolanVarianceMap dv (gt a))
+        -> DolanVarianceMap (sv ': dv) gt
 
 dolanVarianceMapInKind ::
-       forall (cat :: forall kc. kc -> kc -> Type) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
-       DolanVarianceMap cat dv gt
-    -> Dict (InKind gt)
+       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv). DolanVarianceMap dv gt -> Dict (InKind gt)
 dolanVarianceMapInKind NilDolanVarianceMap = Dict
 dolanVarianceMapInKind (ConsDolanVarianceMap dvm) =
-    case dolanVarianceMapInKind @cat dvm of
+    case dolanVarianceMapInKind dvm of
         Dict -> Dict
 
 bijectSingleVarianceMap :: VarianceType sv -> VarianceMap JMShim sv gt -> VarianceMap JMIsoShim sv gt
@@ -62,12 +60,8 @@ bijectSingleVarianceMap ContravarianceType svm (MkCatDual (MkJMIsoShim (MkIsomor
 bijectSingleVarianceMap RangevarianceType svm (MkCatRange (MkJMIsoShim (MkIsomorphism pab pba)) (MkJMIsoShim (MkIsomorphism qab qba))) =
     MkJMIsoShim $ MkIsomorphism (svm $ MkCatRange pab qab) (svm $ MkCatRange pba qba)
 
-bijectDolanVarianceMap :: DolanVarianceMap JMShim dv gt -> DolanVarianceMap JMIsoShim dv gt
-bijectDolanVarianceMap NilDolanVarianceMap = NilDolanVarianceMap
-bijectDolanVarianceMap (ConsDolanVarianceMap dvm) = ConsDolanVarianceMap $ bijectDolanVarianceMap dvm
-
 class HasDolanVary (dv :: DolanVariance) (f :: DolanVarianceKind dv) | f -> dv where
-    dolanVary :: DolanVarianceMap JMShim dv f
+    dolanVary :: DolanVarianceMap dv f
 
 instance HasDolanVary '[] (f :: Type) where
     dolanVary = NilDolanVarianceMap

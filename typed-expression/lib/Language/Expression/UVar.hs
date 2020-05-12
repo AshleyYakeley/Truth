@@ -9,32 +9,16 @@ module Language.Expression.UVar
 import GHC.Exts (Any)
 import Language.Expression.Renamer
 import Shapes
-import Unsafe.Coerce
+import Shapes.Unsafe (unsafeIsomorphism)
 
 newtype UVar (name :: Symbol) =
     MkUVar GHC.Exts.Any
 
-unsafeRefl :: forall a b. a :~: b
-unsafeRefl = unsafeCoerce Refl
-
-unsafeCat ::
-       forall cat a b. Category cat
-    => cat a b
-unsafeCat =
-    case unsafeRefl @a @b of
-        Refl -> id
-
-unsafeToUVar :: Category cat => cat a (UVar name)
-unsafeToUVar =
+unsafeUVarIsomorphism :: Category cat => Isomorphism cat a (UVar name)
+unsafeUVarIsomorphism =
     case MkUVar -- hack for unused name warning
           of
-        _ -> unsafeCat
-
-unsafeFromUVar :: Category cat => cat (UVar name) a
-unsafeFromUVar = unsafeCat
-
-unsafeUVarIsomorphism :: Category cat => Isomorphism cat a (UVar name)
-unsafeUVarIsomorphism = MkIsomorphism unsafeToUVar unsafeFromUVar
+        _ -> unsafeIsomorphism
 
 renameUVar ::
        forall m cat name1 r. (Monad m, Category cat)
@@ -44,7 +28,7 @@ renameUVar ::
     -> m r
 renameUVar sf namewit1 cont = do
     newname <- sf $ witnessToValue namewit1
-    valueToWitness newname $ \namewit2 -> cont namewit2 (MkIsomorphism unsafeCat unsafeCat)
+    valueToWitness newname $ \namewit2 -> cont namewit2 unsafeIsomorphism
 
 varRenamerTGenerateSymbol ::
        Monad m => (forall (name :: Symbol). SymbolType name -> VarRenamerT ts m a) -> VarRenamerT ts m a

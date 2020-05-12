@@ -75,7 +75,7 @@ qApplyPatternConstructor ::
 qApplyPatternConstructor = tsApplyPatternConstructor @(PinaforeTypeSystem baseupdate)
 
 qSealPatternConstructor ::
-       forall baseupdate m. MonadError ExpressionError m
+       forall baseupdate m. MonadThrow ExpressionError m
     => QPatternConstructor baseupdate
     -> m (QPattern baseupdate)
 qSealPatternConstructor = tsSealPatternConstructor @(PinaforeTypeSystem baseupdate)
@@ -166,14 +166,14 @@ qLetExpr ::
 qLetExpr name exp body = tsLet @(PinaforeTypeSystem baseupdate) name exp body
 
 qUncheckedBindingsComponentLetExpr ::
-       forall baseupdate. QBindings baseupdate -> PinaforeSourceScoped baseupdate (StrictMap Name (QExpr baseupdate))
+       forall baseupdate. QBindings baseupdate -> PinaforeSourceScoped baseupdate (Map Name (QExpr baseupdate))
 qUncheckedBindingsComponentLetExpr = tsUncheckedComponentLet @(PinaforeTypeSystem baseupdate)
 
-qValuesLetExpr :: forall baseupdate. StrictMap Name (QValue baseupdate) -> StrictMap Name (QExpr baseupdate)
+qValuesLetExpr :: forall baseupdate. Map Name (QValue baseupdate) -> Map Name (QExpr baseupdate)
 qValuesLetExpr = tsValuesLet @(PinaforeTypeSystem baseupdate)
 
 qEvalExpr ::
-       forall baseupdate m. MonadError ExpressionError m
+       forall baseupdate m. MonadThrow ExpressionError m
     => QExpr baseupdate
     -> m (QValue baseupdate)
 qEvalExpr expr = tsEval @(PinaforeTypeSystem baseupdate) expr

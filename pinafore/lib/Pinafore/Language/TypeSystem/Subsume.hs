@@ -26,14 +26,13 @@ minimalPositiveSupertypeSingular ::
 minimalPositiveSupertypeSingular (VarPinaforeSingularType v) =
     Just $ singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType v
 minimalPositiveSupertypeSingular (GroundPinaforeSingularType gt args) = do
-    gt' <- pinaforeGroundTypeInvertPolarity gt
     MkShimWit args' conv <-
         mapInvertDolanArgumentsM
             limitInvertType
             (pinaforeGroundTypeVarianceType gt)
             (pinaforeGroundTypeVarianceMap gt)
             args
-    return $ singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType gt' args') conv
+    return $ singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType gt args') conv
 
 minimalPositiveSupertype :: PinaforeType baseupdate 'Negative a -> Maybe (PinaforeShimWit baseupdate 'Positive a)
 minimalPositiveSupertype (ConsPinaforeType t NilPinaforeType) = do
@@ -48,14 +47,13 @@ maximalNegativeSubtypeSingular ::
 maximalNegativeSubtypeSingular (VarPinaforeSingularType v) =
     Just $ singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType v
 maximalNegativeSubtypeSingular (GroundPinaforeSingularType gt args) = do
-    gt' <- pinaforeGroundTypeInvertPolarity gt
     MkShimWit args' conv <-
         mapInvertDolanArgumentsM
             limitInvertType
             (pinaforeGroundTypeVarianceType gt)
             (pinaforeGroundTypeVarianceMap gt)
             args
-    return $ singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType gt' args') conv
+    return $ singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType gt args') conv
 
 maximalNegativeSubtype :: PinaforeType baseupdate 'Positive a -> Maybe (PinaforeShimWit baseupdate 'Negative a)
 maximalNegativeSubtype (ConsPinaforeType t NilPinaforeType) = do
@@ -79,7 +77,7 @@ limitInvertType' ::
 limitInvertType' t =
     case limitInvertType t of
         Just r -> return r
-        Nothing -> throwError $ TypeNoInverseLimitError $ exprShow t
+        Nothing -> throw $ TypeNoInverseLimitError $ exprShow t
 
 -- Kind of the dual of 'BisubstitutionWitness'.
 data SubsumeWitness baseupdate t where
@@ -107,7 +105,7 @@ subsumePositiveContext = let
 
 subsumePositiveGroundSingularType ::
        SubsumerConstraint baseupdate
-    => PinaforeGroundType baseupdate 'Positive dv ginf
+    => PinaforeGroundType baseupdate dv ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Positive inf
     -> PinaforeSingularType baseupdate 'Positive decl
     -> PinaforeFullSubsumer baseupdate (JMShim inf decl)
@@ -117,7 +115,7 @@ subsumePositiveGroundSingularType gtinf targsinf (GroundPinaforeSingularType gtd
 
 subsumePositiveGroundType ::
        SubsumerConstraint baseupdate
-    => PinaforeGroundType baseupdate 'Positive dv ginf
+    => PinaforeGroundType baseupdate dv ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Positive inf
     -> PinaforeType baseupdate 'Positive decl
     -> PinaforeFullSubsumer baseupdate (JMShim inf decl)
@@ -135,7 +133,7 @@ subsumePositiveType1 (VarPinaforeSingularType vinf) tdecl =
     liftSubsumer $ varExpression $ PositiveSubsumeWitness vinf tdecl
 subsumePositiveType1 tinf@(GroundPinaforeSingularType ginf argsinf) tdecl =
     subsumePositiveGroundType ginf argsinf tdecl <|>
-    (subsumerLiftTypeCheck $ throwError $ TypeSubsumeError Positive (exprShow tinf) (exprShow tdecl))
+    (subsumerLiftTypeCheck $ throw $ TypeSubsumeError Positive (exprShow tinf) (exprShow tdecl))
 
 subsumePositiveType ::
        SubsumerConstraint baseupdate
@@ -156,7 +154,7 @@ subsumeNegativeContext = let
 subsumeNegativeGroundSingularType ::
        SubsumerConstraint baseupdate
     => PinaforeSingularType baseupdate 'Negative decl
-    -> PinaforeGroundType baseupdate 'Negative dv ginf
+    -> PinaforeGroundType baseupdate dv ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Negative inf
     -> PinaforeFullSubsumer baseupdate (JMShim decl inf)
 subsumeNegativeGroundSingularType (VarPinaforeSingularType _vdecl) _gtinf _targsinf = empty
@@ -166,7 +164,7 @@ subsumeNegativeGroundSingularType (GroundPinaforeSingularType gtdecl targsdecl) 
 subsumeNegativeGroundType ::
        SubsumerConstraint baseupdate
     => PinaforeType baseupdate 'Negative decl
-    -> PinaforeGroundType baseupdate 'Negative dv ginf
+    -> PinaforeGroundType baseupdate dv ginf
     -> DolanArguments dv (PinaforeType baseupdate) ginf 'Negative inf
     -> PinaforeFullSubsumer baseupdate (JMShim decl inf)
 subsumeNegativeGroundType NilPinaforeType _gtinf _targsinf = empty
@@ -183,7 +181,7 @@ subsumeNegativeType1 tdecl (VarPinaforeSingularType vinf) =
     liftSubsumer $ varExpression $ NegativeSubsumeWitness vinf tdecl
 subsumeNegativeType1 tdecl tinf@(GroundPinaforeSingularType ginf argsinf) =
     subsumeNegativeGroundType tdecl ginf argsinf <|>
-    (subsumerLiftTypeCheck $ throwError $ TypeSubsumeError Negative (exprShow tinf) (exprShow tdecl))
+    (subsumerLiftTypeCheck $ throw $ TypeSubsumeError Negative (exprShow tinf) (exprShow tdecl))
 
 subsumeNegativeType ::
        SubsumerConstraint baseupdate

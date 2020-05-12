@@ -8,12 +8,12 @@ module Truth.Debug.Subscriber
 
 import Truth.Core.Import
 import Truth.Core.Resource
-import Truth.Core.Object.Subscriber
+import Truth.Core.Reference.Model
 import Truth.Debug
 import Truth.Debug.Edit
 import Truth.Debug.Object
 
-instance TraceThing (Subscriber edit) where
-    traceThing prefix (MkResource rr (MkASubscriber anobj sub utask)) = case resourceRunnerStackUnliftDict @IO rr of
+instance TraceThing (Model edit) where
+    traceThing prefix (MkResource rr (MkAModel anobj sub utask)) = case resourceRunnerStackUnliftDict @IO rr of
         Dict -> case resourceRunnerStackUnliftDict @LifeCycleIO rr of
-            Dict -> MkResource rr $ MkASubscriber (traceAnObject prefix blankEditShower anobj) (\task call -> traceBracket (contextStr prefix "update") $ sub task call) utask
+            Dict -> MkResource rr $ MkAModel (traceAnObject prefix blankEditShower anobj) (\task call -> traceBracket (contextStr prefix "update") $ sub task call) utask

@@ -18,11 +18,11 @@ deriving instance Empty (NoReader a t)
 
 instance SubjectReader (NoReader a) where
     type ReaderSubject (NoReader a) = a
-    mSubjectToMutableRead _ = never
+    mSubjectToReadable _ = never
     subjectToRead _ = never
 
 instance FullSubjectReader (NoReader ()) where
-    mutableReadToSubject _ = return ()
+    readableToSubject _ = return ()
 
 -- | Can't touch this.
 newtype ConstEdit (reader :: Type -> Type) =
@@ -56,10 +56,10 @@ instance TestEquality reader => CacheableEdit (ConstEdit reader)
 
 type ConstUpdate reader = EditUpdate (ConstEdit reader)
 
-elPutEditsNone ::
+clPutEditsNone ::
        forall edita readerb m m'. (Monad m', MonadIO m)
     => [ConstEdit readerb]
-    -> MutableRead m (EditReader edita)
+    -> Readable m (EditReader edita)
     -> m' (Maybe [edita])
-elPutEditsNone [] _ = return $ Just []
-elPutEditsNone (e:_) _ = never e
+clPutEditsNone [] _ = return $ Just []
+clPutEditsNone (e:_) _ = never e

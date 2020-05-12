@@ -28,9 +28,9 @@ instance (SubjectReader ra, SubjectReader rb) => SubjectReader (EitherReader ra 
     subjectToRead (Right a) (EitherReadRight reader) = Just $ subjectToRead a reader
 
 instance (FullSubjectReader ra, FullSubjectReader rb) => FullSubjectReader (EitherReader ra rb) where
-    mutableReadToSubject mr = do
-        mleft <- getComposeM $ mutableReadToSubject $ mapEitherReadLeft mr
-        mright <- getComposeM $ mutableReadToSubject $ mapEitherReadRight mr
+    readableToSubject mr = do
+        mleft <- getComposeM $ readableToSubject $ mapEitherReadLeft mr
+        mright <- getComposeM $ readableToSubject $ mapEitherReadRight mr
         case (mleft, mright) of
             (Just a, Nothing) -> return $ Left a
             (Nothing, Just a) -> return $ Right a

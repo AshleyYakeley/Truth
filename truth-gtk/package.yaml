@@ -88,8 +88,6 @@ executables:
           - base >= 4.12
           - filepath
           - bytestring
-          - uuid
-          - aeson
           - shapes
           - truth-core
           - truth-gtk

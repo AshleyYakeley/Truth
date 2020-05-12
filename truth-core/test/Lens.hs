@@ -7,24 +7,24 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Truth.Core
 
-collectSubscriberUpdates :: ResourceContext -> Subscriber update -> LifeCycleIO (IO [update])
-collectSubscriberUpdates rc sub = do
+collectModelUpdates :: ResourceContext -> Model update -> LifeCycleIO (IO [update])
+collectModelUpdates rc sub = do
     var <- liftIO $ newMVar []
     runResource rc sub $ \asub ->
-        subscribe asub mempty $ \_ updates _ec -> do
+        aModelSubscribe asub mempty $ \_ updates _ec -> do
             mVarRun var $ do
                 uu <- get
                 put $ uu <> toList updates
     return $ takeMVar var
 
-subscriberPushEdits :: ResourceContext -> Subscriber update -> NonEmpty (UpdateEdit update) -> IO ()
-subscriberPushEdits rc sub edits = do
+modelPushEdits :: ResourceContext -> Model update -> NonEmpty (UpdateEdit update) -> IO ()
+modelPushEdits rc sub edits = do
     runResource rc sub $ \asub -> do
-        mpush <- subEdit asub edits
+        mpush <- aModelEdit asub edits
         case mpush of
             Nothing -> fail "can't push edits"
             Just push -> push noEditSource
-    taskWait $ subscriberUpdatesTask sub
+    taskWait $ modelUpdatesTask sub
 
 type UpdateX = KeyUpdate [(Char, Int)] (PairUpdate (ConstWholeUpdate Char) (WholeUpdate Int))
 
@@ -46,37 +46,38 @@ testContextOrderedSetLensCase assigns expected =
             uo :: UpdateOrder (ContextUpdate UpdateX (ConstWholeUpdate Char))
             uo =
                 MkUpdateOrder (compare @Int) $
-                editLensToFloating $
-                funcEditLens $ \(MkWithContext lm c) ->
+                changeLensToFloating $
+                funcChangeLens $ \(MkWithContext lm c) ->
                     case lookupItem c lm of
                         Just (_, i) -> i
                         Nothing -> 0
             flens ::
-                   FloatingEditLens (ContextUpdate UpdateX (FiniteSetUpdate Char)) (ContextUpdate UpdateX (OrderedListUpdate String (ConstWholeUpdate Char)))
+                   FloatingChangeLens (ContextUpdate UpdateX (FiniteSetUpdate Char)) (ContextUpdate UpdateX (OrderedListUpdate String (ConstWholeUpdate Char)))
             flens = contextOrderedSetLens uo
-        rawContextObj :: Object (WholeEdit [(Char, Int)]) <-
-            makeMemoryObject [('A', 10), ('B', 20), ('C', 30), ('D', 40), ('E', 50)] $ \_ -> True
-        rawContentObj :: Object (WholeEdit (FiniteSet Char)) <- makeMemoryObject (setFromList "ABCDE") $ \_ -> True
+        rawContextObj :: Reference (WholeEdit [(Char, Int)]) <-
+            makeMemoryReference [('A', 10), ('B', 20), ('C', 30), ('D', 40), ('E', 50)] $ \_ -> True
+        rawContentObj :: Reference (WholeEdit (FiniteSet Char)) <-
+            makeMemoryReference (setFromList "ABCDE") $ \_ -> True
         let
-            contextObj :: Object (UpdateEdit UpdateX)
-            contextObj = mapObject (convertEditLens @(WholeUpdate [(Char, Int)]) @UpdateX) rawContextObj
-            baseContentObj :: Object (FiniteSetEdit Char)
+            contextObj :: Reference (UpdateEdit UpdateX)
+            contextObj = mapReference (convertChangeLens @(WholeUpdate [(Char, Int)]) @UpdateX) rawContextObj
+            baseContentObj :: Reference (FiniteSetEdit Char)
             baseContentObj =
-                mapObject (convertEditLens @(WholeUpdate (FiniteSet Char)) @(FiniteSetUpdate Char)) rawContentObj
+                mapReference (convertChangeLens @(WholeUpdate (FiniteSet Char)) @(FiniteSetUpdate Char)) rawContentObj
         getUpdates <-
             runLifeCycle $ do
-                contextSub <- makeReflectingSubscriber @UpdateX contextObj
-                baseContentSub <- makeReflectingSubscriber @(FiniteSetUpdate Char) baseContentObj
+                contextSub <- makeReflectingModel @UpdateX contextObj
+                baseContentSub <- makeReflectingModel @(FiniteSetUpdate Char) baseContentObj
                 let
-                    bothSub :: Subscriber (ContextUpdate UpdateX (FiniteSetUpdate Char))
-                    bothSub = contextSubscribers contextSub baseContentSub
-                olSub <- floatMapSubscriber rc flens bothSub
-                getUpdates <- collectSubscriberUpdates rc $ mapSubscriber (tupleEditLens SelectContent) olSub
+                    bothSub :: Model (ContextUpdate UpdateX (FiniteSetUpdate Char))
+                    bothSub = contextModels contextSub baseContentSub
+                olSub <- floatMapModel rc flens bothSub
+                getUpdates <- collectModelUpdates rc $ mapModel (tupleChangeLens SelectContent) olSub
                 let
                     pushOneEdit :: (Char, Int) -> LifeCycleIO ()
                     pushOneEdit (c, i) =
                         liftIO $
-                        subscriberPushEdits rc contextSub $
+                        modelPushEdits rc contextSub $
                         pure $ KeyEditItem c $ MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit i
                 for_ assigns pushOneEdit
                 return getUpdates

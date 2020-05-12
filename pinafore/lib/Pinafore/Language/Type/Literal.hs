@@ -21,7 +21,7 @@ data LiteralType (t :: Type) where
     -- time
     TimeLiteralType :: LiteralType UTCTime
     DurationLiteralType :: LiteralType NominalDiffTime
-    DayLiteralType :: LiteralType Day
+    DateLiteralType :: LiteralType Day
     TimeOfDayLiteralType :: LiteralType TimeOfDay
     LocalTimeLiteralType :: LiteralType LocalTime
 
@@ -35,7 +35,7 @@ instance TestEquality LiteralType where
     testEquality BooleanLiteralType BooleanLiteralType = Just Refl
     testEquality TimeLiteralType TimeLiteralType = Just Refl
     testEquality DurationLiteralType DurationLiteralType = Just Refl
-    testEquality DayLiteralType DayLiteralType = Just Refl
+    testEquality DateLiteralType DateLiteralType = Just Refl
     testEquality TimeOfDayLiteralType TimeOfDayLiteralType = Just Refl
     testEquality LocalTimeLiteralType LocalTimeLiteralType = Just Refl
     testEquality _ _ = Nothing
@@ -50,7 +50,7 @@ instance ExprShow (LiteralType t) where
     exprShowPrec BooleanLiteralType = ("Boolean", 0)
     exprShowPrec TimeLiteralType = ("Time", 0)
     exprShowPrec DurationLiteralType = ("Duration", 0)
-    exprShowPrec DayLiteralType = ("Day", 0)
+    exprShowPrec DateLiteralType = ("Date", 0)
     exprShowPrec TimeOfDayLiteralType = ("TimeOfDay", 0)
     exprShowPrec LocalTimeLiteralType = ("LocalTime", 0)
 
@@ -63,7 +63,7 @@ nameToLiteralType "Integer" = Just $ MkAnyW IntegerLiteralType
 nameToLiteralType "Boolean" = Just $ MkAnyW BooleanLiteralType
 nameToLiteralType "Time" = Just $ MkAnyW TimeLiteralType
 nameToLiteralType "Duration" = Just $ MkAnyW DurationLiteralType
-nameToLiteralType "Day" = Just $ MkAnyW DayLiteralType
+nameToLiteralType "Date" = Just $ MkAnyW DateLiteralType
 nameToLiteralType "TimeOfDay" = Just $ MkAnyW TimeOfDayLiteralType
 nameToLiteralType "LocalTime" = Just $ MkAnyW LocalTimeLiteralType
 nameToLiteralType _ = Nothing
@@ -89,7 +89,7 @@ literalTypeAsLiteral IntegerLiteralType = Dict
 literalTypeAsLiteral BooleanLiteralType = Dict
 literalTypeAsLiteral TimeLiteralType = Dict
 literalTypeAsLiteral DurationLiteralType = Dict
-literalTypeAsLiteral DayLiteralType = Dict
+literalTypeAsLiteral DateLiteralType = Dict
 literalTypeAsLiteral TimeOfDayLiteralType = Dict
 literalTypeAsLiteral LocalTimeLiteralType = Dict
 
@@ -103,7 +103,7 @@ instance Representative LiteralType where
     getRepWitness BooleanLiteralType = Dict
     getRepWitness TimeLiteralType = Dict
     getRepWitness DurationLiteralType = Dict
-    getRepWitness DayLiteralType = Dict
+    getRepWitness DateLiteralType = Dict
     getRepWitness TimeOfDayLiteralType = Dict
     getRepWitness LocalTimeLiteralType = Dict
 
@@ -135,7 +135,7 @@ instance Is LiteralType NominalDiffTime where
     representative = DurationLiteralType
 
 instance Is LiteralType Day where
-    representative = DayLiteralType
+    representative = DateLiteralType
 
 instance Is LiteralType TimeOfDay where
     representative = TimeOfDayLiteralType

@@ -10,6 +10,7 @@ module Pinafore.Language.Read.Parser
 import Pinafore.Language.Error
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Scope
+import Pinafore.Language.Syntax
 import Pinafore.Language.TypeSystem
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
@@ -17,23 +18,28 @@ import Text.Parsec.Pos (initialPos)
 
 type Parser = Parsec [(SourcePos, AnyValue Token)] ()
 
-parseEnd :: Parser ()
-parseEnd = eof
+readEnd :: Parser ()
+readEnd = eof
 
 parseReader :: Parser a -> Text -> StateT SourcePos InterpretResult a
-parseReader parser text = do
-    spos <- get
-    toks <- parseTokens text
-    case parse parser (sourceName spos) toks of
-        Right a -> return a
-        Left e -> throwError [parseErrorMessage e]
+parseReader r text = let
+    r' = do
+        a <- r
+        readEnd
+        return a
+    in do
+           spos <- get
+           toks <- parseTokens text
+           case parse r' (sourceName spos) toks of
+               Right a -> return a
+               Left e -> throwErrorMessage $ parseErrorMessage e
 
-parseScopedReader :: Parser (PinaforeScoped baseupdate t) -> Text -> PinaforeSourceScoped baseupdate t
-parseScopedReader parser text = do
+parseScopedReaderWhole :: Parser (PinaforeScoped baseupdate t) -> Text -> PinaforeSourceScoped baseupdate t
+parseScopedReaderWhole parser text = do
     spos <- askSourcePos
     case evalStateT (parseReader parser text) spos of
         SuccessResult a -> liftSourcePos a
-        FailureResult e -> throwError e
+        FailureResult e -> throw e
 
 readThis :: Token t -> Parser t
 readThis tok =
@@ -79,3 +85,9 @@ readSeparated sep p = readSeparated1 sep p <|> return mempty
 
 readCommaList :: Monoid t => Parser t -> Parser t
 readCommaList = readSeparated $ readThis TokComma
+
+readSourcePos :: Parser t -> Parser (WithSourcePos t)
+readSourcePos p = do
+    spos <- getPosition
+    t <- p
+    return $ MkWithSourcePos spos t

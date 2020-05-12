@@ -11,7 +11,7 @@ import Truth.Debug.Object
 createWidget :: LabelUISpec -> CreateView Widget
 createWidget (MkLabelUISpec sub) = traceBracket "GTK.Label:create" $ do
     widget <- new Label []
-    traceBracket "GTK.Label:create.bind" $ cvBindReadOnlyWholeSubscriber sub $ \label -> traceBracket "GTK.Label:set" $ set widget [#label := label]
+    traceBracket "GTK.Label:create.bind" $ cvBindReadOnlyWholeModel sub $ \label -> traceBracket "GTK.Label:set" $ set widget [#label := label]
     toWidget widget
 
 labelGetView :: GetGView

@@ -1,14 +1,14 @@
 module Truth.Core.Types.Partial
     ( ReaderSet
     , PartialUpdate(..)
-    , partialFullEditLens
-    , convertUpdateEditLens
-    , partialEditLens
-    , comapUpdateEditLens
-    , partialiseEditLens
-    , partialiseReadOnlyEditLens
-    , liftPartialEditLens
-    , partialConvertEditLens
+    , partialFullChangeLens
+    , convertUpdateChangeLens
+    , partialChangeLens
+    , comapUpdateChangeLens
+    , partialiseChangeLens
+    , partialiseReadOnlyChangeLens
+    , liftPartialChangeLens
+    , partialConvertChangeLens
     ) where
 
 import Truth.Core.Edit
@@ -28,104 +28,104 @@ type instance UpdateEdit (PartialUpdate update) = UpdateEdit update
 instance IsUpdate update => IsUpdate (PartialUpdate update) where
     editUpdate edit = KnownPartialUpdate $ editUpdate edit
 
-partialFullEditLens ::
+partialFullChangeLens ::
        forall update. (IsUpdate update, FullEdit (UpdateEdit update))
-    => EditLens (PartialUpdate update) update
-partialFullEditLens = let
-    elGet ::
+    => ChangeLens (PartialUpdate update) update
+partialFullChangeLens = let
+    clRead ::
            forall m t. MonadIO m
-        => MutableRead m (UpdateReader update)
+        => Readable m (UpdateReader update)
         -> UpdateReader update t
         -> m t
-    elGet mr = mr
-    elUpdate ::
+    clRead mr = mr
+    clUpdate ::
            forall m. MonadIO m
         => PartialUpdate update
-        -> MutableRead m (UpdateReader update)
+        -> Readable m (UpdateReader update)
         -> m [update]
-    elUpdate (KnownPartialUpdate update) _ = return [update]
-    elUpdate (UnknownPartialUpdate _) mr = do
+    clUpdate (KnownPartialUpdate update) _ = return [update]
+    clUpdate (UnknownPartialUpdate _) mr = do
         edits <- getReplaceEdits mr
         return $ fmap editUpdate edits
-    elPutEdits ::
+    clPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update]
-        -> MutableRead m (UpdateReader update)
+        -> Readable m (UpdateReader update)
         -> m (Maybe [UpdateEdit update])
-    elPutEdits edits _ = return $ Just edits
-    in MkEditLens {..}
+    clPutEdits edits _ = return $ Just edits
+    in MkChangeLens {..}
 
-convertUpdateEditLens ::
+convertUpdateChangeLens ::
        forall updateA updateB. UpdateEdit updateA ~ UpdateEdit updateB
     => (updateA -> updateB)
-    -> EditLens updateA updateB
-convertUpdateEditLens ab = let
-    elGet ::
+    -> ChangeLens updateA updateB
+convertUpdateChangeLens ab = let
+    clRead ::
            forall m t. MonadIO m
-        => MutableRead m (UpdateReader updateA)
+        => Readable m (UpdateReader updateA)
         -> UpdateReader updateB t
         -> m t
-    elGet mr = mr
-    elUpdate ::
+    clRead mr = mr
+    clUpdate ::
            forall m. MonadIO m
         => updateA
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m [updateB]
-    elUpdate update _ = return [ab update]
-    elPutEdits ::
+    clUpdate update _ = return [ab update]
+    clPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit updateB]
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m (Maybe [UpdateEdit updateA])
-    elPutEdits edits _ = return $ Just edits
-    in MkEditLens {..}
+    clPutEdits edits _ = return $ Just edits
+    in MkChangeLens {..}
 
-partialEditLens :: forall update. EditLens update (PartialUpdate update)
-partialEditLens = convertUpdateEditLens KnownPartialUpdate
+partialChangeLens :: forall update. ChangeLens update (PartialUpdate update)
+partialChangeLens = convertUpdateChangeLens KnownPartialUpdate
 
-comapUpdateEditLens ::
+comapUpdateChangeLens ::
        forall updateA updateB updateC.
        (updateB -> Either updateC updateA)
-    -> UpdateEdit updateA ~ UpdateEdit updateB => EditLens updateA updateC -> EditLens updateB updateC
-comapUpdateEditLens bca (MkEditLens g u pe) = let
+    -> UpdateEdit updateA ~ UpdateEdit updateB => ChangeLens updateA updateC -> ChangeLens updateB updateC
+comapUpdateChangeLens bca (MkChangeLens g u pe) = let
     u' :: forall m. MonadIO m
        => updateB
-       -> MutableRead m (UpdateReader updateB)
+       -> Readable m (UpdateReader updateB)
        -> m [updateC]
     u' ub mr =
         case bca ub of
             Left uc -> return [uc]
             Right ua -> u ua mr
-    in MkEditLens g u' pe
+    in MkChangeLens g u' pe
 
-partialiseEditLens ::
+partialiseChangeLens ::
        forall updateA updateB.
        (ReaderSet (UpdateReader updateA) -> ReaderSet (UpdateReader updateB))
-    -> EditLens updateA (PartialUpdate updateB)
-    -> EditLens (PartialUpdate updateA) (PartialUpdate updateB)
-partialiseEditLens maprs =
-    comapUpdateEditLens $ \case
+    -> ChangeLens updateA (PartialUpdate updateB)
+    -> ChangeLens (PartialUpdate updateA) (PartialUpdate updateB)
+partialiseChangeLens maprs =
+    comapUpdateChangeLens $ \case
         UnknownPartialUpdate upd -> Left $ UnknownPartialUpdate $ maprs upd
         KnownPartialUpdate updateA -> Right updateA
 
-partialiseReadOnlyEditLens ::
+partialiseReadOnlyChangeLens ::
        forall updateA updateB.
        (ReaderSet (UpdateReader updateA) -> ReaderSet (UpdateReader updateB))
-    -> EditLens updateA (ReadOnlyUpdate (PartialUpdate updateB))
-    -> EditLens (PartialUpdate updateA) (ReadOnlyUpdate (PartialUpdate updateB))
-partialiseReadOnlyEditLens maprs =
-    comapUpdateEditLens $ \case
+    -> ChangeLens updateA (ReadOnlyUpdate (PartialUpdate updateB))
+    -> ChangeLens (PartialUpdate updateA) (ReadOnlyUpdate (PartialUpdate updateB))
+partialiseReadOnlyChangeLens maprs =
+    comapUpdateChangeLens $ \case
         UnknownPartialUpdate upd -> Left $ MkReadOnlyUpdate $ UnknownPartialUpdate $ maprs upd
         KnownPartialUpdate updateA -> Right updateA
 
-liftPartialEditLens ::
+liftPartialChangeLens ::
        forall updateA updateB.
        (ReaderSet (UpdateReader updateA) -> ReaderSet (UpdateReader updateB))
-    -> EditLens updateA updateB
-    -> EditLens (PartialUpdate updateA) (PartialUpdate updateB)
-liftPartialEditLens maprs lens = partialiseEditLens maprs $ partialEditLens . lens
+    -> ChangeLens updateA updateB
+    -> ChangeLens (PartialUpdate updateA) (PartialUpdate updateB)
+liftPartialChangeLens maprs lens = partialiseChangeLens maprs $ partialChangeLens . lens
 
-partialConvertEditLens ::
+partialConvertChangeLens ::
        forall updateA updateB.
        ( IsEditUpdate updateA
        , IsUpdate updateB
@@ -133,24 +133,24 @@ partialConvertEditLens ::
        , FullEdit (UpdateEdit updateA)
        , SubjectMapEdit (UpdateEdit updateB)
        )
-    => EditLens updateA (PartialUpdate updateB)
-partialConvertEditLens = let
-    elGet :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
-    elGet mr = mSubjectToMutableRead $ mutableReadToSubject mr
-    elUpdate ::
+    => ChangeLens updateA (PartialUpdate updateB)
+partialConvertChangeLens = let
+    clRead :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
+    clRead mr = mSubjectToReadable $ readableToSubject mr
+    clUpdate ::
            forall m. MonadIO m
         => updateA
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m [PartialUpdate updateB]
-    elUpdate _ _ = return [UnknownPartialUpdate $ \_ -> True]
-    elPutEdits ::
+    clUpdate _ _ = return [UnknownPartialUpdate $ \_ -> True]
+    clPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit updateB]
-        -> MutableRead m (UpdateReader updateA)
+        -> Readable m (UpdateReader updateA)
         -> m (Maybe [UpdateEdit updateA])
-    elPutEdits editbs mr = do
-        oldsubject <- mutableReadToSubject mr
+    clPutEdits editbs mr = do
+        oldsubject <- readableToSubject mr
         newsubject <- mapSubjectEdits editbs oldsubject
         editas <- getReplaceEditsFromSubject newsubject
         return $ Just editas
-    in MkEditLens {..}
+    in MkChangeLens {..}

@@ -9,8 +9,8 @@ module Truth.Debug.Object
 import Truth.Core.Edit
 import Truth.Core.Lens
 import Truth.Core.Import
-import Truth.Core.Object.EditContext
-import Truth.Core.Object.Object
+import Truth.Core.Reference.EditContext
+import Truth.Core.Reference.Reference
 import Truth.Core.Read
 import Truth.Core.Resource
 import Truth.Debug
@@ -25,9 +25,9 @@ data EditShower edit = MkEditShower
 blankEditShower :: EditShower edit
 blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> "", showEdit = \_ -> "edit"}
 
-traceAnObject :: forall tt edit. (MonadIO (ApplyStack tt IO)) => String -> EditShower edit -> AnObject edit tt -> AnObject edit tt
-traceAnObject prefix MkEditShower {..} (MkAnObject r e ct) = let
-    r' :: MutableRead (ApplyStack tt IO) (EditReader edit)
+traceAnObject :: forall tt edit. (MonadIO (ApplyStack tt IO)) => String -> EditShower edit -> AReference edit tt -> AReference edit tt
+traceAnObject prefix MkEditShower {..} (MkAReference r e ct) = let
+    r' :: Readable (ApplyStack tt IO) (EditReader edit)
     r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
     e' :: NonEmpty edit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
     e' edits =
@@ -43,9 +43,9 @@ traceAnObject prefix MkEditShower {..} (MkAnObject r e ct) = let
          fmap $
          traceBracketArgs (contextStr prefix "edit.do") ("[" ++ intercalate "," (toList $ fmap showEdit edits) ++ "]") (\_ -> "")) $
         e edits
-    in MkAnObject r' e' ct
+    in MkAReference r' e' ct
 
-traceObject :: forall edit. String -> EditShower edit -> Object edit -> Object edit
+traceObject :: forall edit. String -> EditShower edit -> Reference edit -> Reference edit
 traceObject prefix shower (MkResource rr anobj) = case resourceRunnerStackUnliftDict @IO rr of
     Dict -> MkResource rr $ traceAnObject prefix shower anobj
 
@@ -61,9 +61,9 @@ showEditShower = let
     showEdit = show
     in MkEditShower {..}
 
-instance TraceThing (EditLens updateA updateB) where
-    traceThing prefix (MkEditLens g u pe) =
-        MkEditLens
+instance TraceThing (ChangeLens updateA updateB) where
+    traceThing prefix (MkChangeLens g u pe) =
+        MkChangeLens
             (\mr rt -> traceBracket (contextStr prefix "get") $ g mr rt)
             (\ee mr -> traceBracket (contextStr prefix "update") $ u ee mr)
             (\ee mr -> traceBracket (contextStr prefix "put") $ do
@@ -74,9 +74,9 @@ instance TraceThing (EditLens updateA updateB) where
                 return mee
                 )
 
-instance (ShowableUpdate updateA, ShowableUpdate updateB) => TraceArgThing (EditLens updateA updateB) where
-    traceArgThing prefix (MkEditLens g u pe) =
-        MkEditLens
+instance (ShowableUpdate updateA, ShowableUpdate updateB) => TraceArgThing (ChangeLens updateA updateB) where
+    traceArgThing prefix (MkChangeLens g u pe) =
+        MkChangeLens
             (\mr (rt :: UpdateReader updateB r) ->
                  case allWitnessConstraint @_ @_ @Show @(UpdateReader updateB) @r of
                      Dict ->
@@ -93,10 +93,10 @@ instance (ShowableUpdate updateA, ShowableUpdate updateB) => TraceArgThing (Edit
                 return mee
                 )
 
-instance TraceThing (Object edit) where
+instance TraceThing (Reference edit) where
     traceThing prefix = traceObject prefix blankEditShower
 
-instance ShowableEdit edit => TraceArgThing (Object edit) where
+instance ShowableEdit edit => TraceArgThing (Reference edit) where
     traceArgThing prefix = traceObject prefix showEditShower
 
 instance TraceThing (LifeState m) where
@@ -109,8 +109,8 @@ instance MonadIO m => TraceThing (LifeCycleT m a) where
             (t, closer) <- oc
             return (t, traceThing (contextStr prefix "close") closer)
 
-slowObject :: Int -> Object edit -> Object edit
-slowObject mus (MkResource rr (MkAnObject rd push ct)) =  case resourceRunnerStackUnliftDict @IO rr of
+slowObject :: Int -> Reference edit -> Reference edit
+slowObject mus (MkResource rr (MkAReference rd push ct)) =  case resourceRunnerStackUnliftDict @IO rr of
     Dict -> let
         push' edits = do
             maction <- push edits
@@ -121,12 +121,12 @@ slowObject mus (MkResource rr (MkAnObject rd push ct)) =  case resourceRunnerSta
                         Just $ \esrc -> do
                             traceBracket "slow: delay" $ liftIO $ threadDelay mus
                             traceBracket "slow: action" $ action esrc
-        in MkResource rr $ MkAnObject rd push' ct
+        in MkResource rr $ MkAReference rd push' ct
 
-instance TraceThing (FloatingEditLens updateA updateB) where
-    traceThing prefix (MkFloatingEditLens init lens) = let
+instance TraceThing (FloatingChangeLens updateA updateB) where
+    traceThing prefix (MkFloatingChangeLens init lens) = let
         init' = case init of
             NoFloatInit -> NoFloatInit
             ReadFloatInit fi -> ReadFloatInit $ \mr -> traceBracket (contextStr prefix "init") $ fi mr
         lens' r = traceThing prefix $ lens r
-        in MkFloatingEditLens init' lens'
+        in MkFloatingChangeLens init' lens'

@@ -2,17 +2,17 @@ module Truth.Core.UI.Specifier.One where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object
+import Truth.Core.Reference
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 
 data OneUISpec where
-    -- view can create object
+    -- view can create reference
     OneWholeUISpec
         :: forall f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-        => Subscriber (FullResultOneUpdate f update)
-        -> (f (Subscriber update) -> CVUISpec)
+        => Model (FullResultOneUpdate f update)
+        -> (f (Model update) -> CVUISpec)
         -> SelectNotify (f ())
         -> OneUISpec
 
@@ -24,25 +24,25 @@ instance UIType OneUISpec where
 
 oneWholeUISpec ::
        forall f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-    => Subscriber (FullResultOneUpdate f update)
-    -> (f (Subscriber update) -> CVUISpec)
+    => Model (FullResultOneUpdate f update)
+    -> (f (Model update) -> CVUISpec)
     -> CVUISpec
 oneWholeUISpec sub spec = mkCVUISpec $ OneWholeUISpec sub spec mempty
 
 oneWholeSelUISpec ::
        forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
-    => Subscriber (FullResultOneUpdate f update)
-    -> (f (Subscriber update, SelectNotify sel) -> CVUISpec)
+    => Model (FullResultOneUpdate f update)
+    -> (f (Model update, SelectNotify sel) -> CVUISpec)
     -> SelectNotify (f sel)
     -> CVUISpec
 oneWholeSelUISpec subf specsel snfsel = let
-    spec :: f (Subscriber update) -> CVUISpec
+    spec :: f (Model update) -> CVUISpec
     spec fsub = specsel $ fmap (\sub -> (sub, contramap pure snfsel)) fsub
     getf :: f () -> Maybe (f sel)
     getf fu =
         case retrieveOne fu of
             SuccessResult _ -> Nothing
-            FailureResult (MkLimit fx) -> Just fx
+            FailureResult fn -> Just $ fmap never fn
     snfu :: SelectNotify (f ())
     snfu = mapMaybeSelectNotify getf snfsel
     in mkCVUISpec $ OneWholeUISpec subf spec snfu

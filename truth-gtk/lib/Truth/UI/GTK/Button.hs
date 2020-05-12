@@ -10,12 +10,12 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 import Truth.Debug.Object
 
-createWidget :: Subscriber (ROWUpdate Text) -> Subscriber (ROWUpdate (Maybe (View ()))) -> CreateView Widget
+createWidget :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (View ()))) -> CreateView Widget
 createWidget rlabel raction = do
     aref <- liftIO $ newIORef Nothing
     widget <- new Button []
-    cvBindReadOnlyWholeSubscriber rlabel $ \label -> set widget [#label := label]
-    cvBindReadOnlyWholeSubscriber raction $ \maction -> do
+    cvBindReadOnlyWholeModel rlabel $ \label -> set widget [#label := label]
+    cvBindReadOnlyWholeModel raction $ \maction -> do
         liftIO $ writeIORef aref maction
         set widget [#sensitive := isJust maction]
     _ <-

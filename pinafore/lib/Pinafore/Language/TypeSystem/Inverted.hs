@@ -42,4 +42,4 @@ invertedSubtype ::
        PinaforeType baseupdate 'Negative p
     -> PinaforeType baseupdate 'Positive q
     -> PinaforeTypeCheck baseupdate (JMShim p q)
-invertedSubtype tp tq = subtypeTT tp tq <|> throwError (TypeConvertInverseError (exprShow tp) (exprShow tq))
+invertedSubtype tp tq = subtypeTT tp tq <|> throw (TypeConvertInverseError (exprShow tp) (exprShow tq))

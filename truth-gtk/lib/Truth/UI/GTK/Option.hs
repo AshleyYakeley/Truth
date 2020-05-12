@@ -20,15 +20,15 @@ optionGetView =
 listStoreView ::
        forall update. (ApplicableUpdate update, FullSubjectReader (UpdateReader update))
     => WIOFunction IO
-    -> Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+    -> Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
     -> EditSource
     -> CreateView (SeqStore (UpdateSubject update))
 listStoreView (MkWMFunction blockSignal) oobj esrc = let
     initV ::
-           Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+           Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
         -> CreateView (SeqStore (UpdateSubject update))
     initV rm = do
-        subjectList <- viewRunResource rm $ \am -> mutableReadToSubject $ subRead am
+        subjectList <- viewRunResource rm $ \am -> readableToSubject $ aModelRead am
         seqStoreNew subjectList
     recv ::
            SeqStore (UpdateSubject update)
@@ -44,7 +44,7 @@ listStoreView (MkWMFunction blockSignal) oobj esrc = let
                     oldval <- seqStoreGetValue store oldi
                     newval <-
                         case mupdate of
-                            Just update -> mutableReadToSubject $ applyUpdate update $ subjectToMutableRead oldval
+                            Just update -> readableToSubject $ applyUpdate update $ subjectToReadable oldval
                             Nothing -> return oldval
                     blockSignal $
                         case compare newi oldi of
@@ -58,14 +58,14 @@ listStoreView (MkWMFunction blockSignal) oobj esrc = let
                 OrderedListUpdateDelete (fromIntegral -> i) -> blockSignal $ seqStoreRemove store i
                 OrderedListUpdateInsert (fromIntegral -> i) item -> blockSignal $ seqStoreInsert store i item
                 OrderedListUpdateClear -> blockSignal $ seqStoreClear store
-    in cvBindSubscriber oobj (Just esrc) initV mempty recv
+    in cvBindModel oobj (Just esrc) initV mempty recv
 
 optionUICellAttributes :: OptionUICell -> [AttrOp CellRendererText 'AttrSet]
 optionUICellAttributes MkOptionUICell {..} = textCellAttributes optionCellText optionCellStyle
 
 optionFromStore ::
        forall t. Eq t
-    => Subscriber (WholeUpdate t)
+    => Model (WholeUpdate t)
     -> EditSource
     -> SeqStore (t, OptionUICell)
     -> CreateView (WIOFunction IO, Widget)
@@ -83,7 +83,7 @@ optionFromStore oobj esrc store = do
                 (True, iter) -> do
                     i <- seqStoreIterToIndex iter
                     (t, _) <- seqStoreGetValue store i
-                    _ <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit t
+                    _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit t
                     return ()
                 (False, _) -> return ()
     let
@@ -101,7 +101,7 @@ optionFromStore oobj esrc store = do
                             Just ti -> blockSignal $ #setActiveIter widget $ Just ti
                             Nothing -> return ()
                     Nothing -> return ()
-    cvBindWholeSubscriber oobj (Just esrc) update
+    cvBindWholeModel oobj (Just esrc) update
     w <- toWidget widget
     return (MkWMFunction blockSignal, w)
 
@@ -112,8 +112,8 @@ optionView ::
        , ApplicableUpdate update
        , UpdateSubject update ~ (t, OptionUICell)
        )
-    => Subscriber (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
-    -> Subscriber (WholeUpdate t)
+    => Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+    -> Model (WholeUpdate t)
     -> GCreateView
 optionView itemsSub whichSub = do
     esrc <- newEditSource

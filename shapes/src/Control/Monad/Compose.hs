@@ -39,7 +39,7 @@ instance (MonadOne inner, Monad outer) => Monad (ComposeM inner outer) where
                 SuccessResult a -> do
                     ib <- getComposeM $ p a
                     return $ ia >> ib
-                FailureResult (MkLimit ix) -> return ix
+                FailureResult ix -> return $ fmap never ix
 
 instance (MonadOne inner, MonadFix outer) => MonadFix (ComposeM inner outer) where
     mfix ama =
@@ -94,10 +94,10 @@ transStackComposeOne tca =
     case transStackDict @Monad @tt @m of
         Dict ->
             fmap (restoreOne . eitherToResult) $
-            transStackExcept @tt @m @(Limit f) $
+            transStackExcept @tt @m @(f None) $
             stackRemonad
                 @tt
                 @(ComposeM f m)
-                @(ExceptT (Limit f) _)
+                @(ExceptT (f None) _)
                 (ExceptT . fmap (resultToEither . retrieveOne) . getComposeM)
                 tca

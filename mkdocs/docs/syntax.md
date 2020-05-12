@@ -32,19 +32,31 @@ In interactive mode, each line has syntax `<interactive>`.
     <type-1> "&" <type> |
     <type-1>
 
+<type-infix> ::= "->" | "~>"
+
+<type-argument-1> ::=
+    <type-1> |
+    <type-range>
+
 <type-1> ::=
-    <type-range-3> "~>" <type-range-3> |
-    <type-3> "->" <type-1> |
+    <type-argument-2> <type-infix> <type-argument-1> |
     <type-2>
 
+<type-argument-2> ::=
+    <type-2> |
+    <type-range>
+
 <type-2> ::=
-    "Maybe" <type-3> |
-    "Either" <type-3> <type-3> |
-    "Order" <type-3> |
-    "Ref" <type-range-3> |
-    "SetRef" <type-3> |
-    "FiniteSetRef" <type-range-3> |
+    <type-const> <type-arguments-3> |
     <type-3>
+
+<type-arguments-3> ::=
+    <type-argument-3> <type-arguments-3> |
+    <type-argument-3>
+
+<type-argument-3> ::=
+    <type-3> |
+    <type-range>
 
 <type-3> ::=
     "(" <type> ")" |
@@ -55,7 +67,7 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <type-range-3> ::=
     "{" <type-range-items> "}" |
-    <type-range-item>
+    <type-signed>
 
 <type-range-items> ::= | <type-range-items-1>
 
@@ -65,6 +77,9 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <type-range-item> ::=
     <type> |
+    <type-signed>
+
+<type-signed> ::=
     "-" <type> |
     "+" <type>
 
@@ -127,10 +142,19 @@ In interactive mode, each line has syntax `<interactive>`.
 <declarations> ::=  | <declaration> ";" <declarations>
 
 <declaration> ::=
+    "datatype" <type-const> <datatype-body> |
     "opentype" <type-const> |
     "subtype" <type-const> "<=" <type-const> |
-    "closedtype" <type-const> <closedtype-body>
+    "closedtype" <type-const> <closedtype-body> |
     lname <patterns> "=" <expression>
+
+<datatype-body> ::=  | "=" <datatype-constructors>
+
+<datatype-constructors> ::=
+    <datatype-constructor> |
+    <datatype-constructor> "|" <datatype-constructors>
+
+<datatype-constructor> ::= uname <types>
 
 <closedtype-body> ::=  | "=" <closedtype-constructors>
 
@@ -179,8 +203,7 @@ literal-number = (-?[0-9]+(.[0-9]*(_[0-9]*)?)?)|(~-?[0-9]+(.[0-9]*)?(e-?[0-9]+)?
 
 literal-text = "([^"\\]|\\.)*"
 
-uuid =
-    [[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}
+hex64 = [[:xdigit:]]{64}
 
-anchor = !(uuid|literal-text)
+anchor = !(literal-text|hex64)
 ```

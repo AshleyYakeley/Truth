@@ -30,9 +30,9 @@ textEntryGetView =
                      traceBracket "GTK.TextEntry:changed" $
                      viewRunResource rmod $ \asub -> traceBracket "GTK.TextEntry:changed:run" $ do
                          st <- traceBracket "GTK.TextEntry:changed:get" $ get widget #text
-                         succeeded <- traceBracketArgs "GTK.TextEntry:push" (show st) show $ pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
+                         succeeded <- traceBracketArgs "GTK.TextEntry:push" (show st) show $ pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
                          traceBracket "GTK.TextEntry:changed:setValidState" $ setValidState succeeded
-                 cvBindWholeSubscriber rmod (Just esrc) $ \newtext ->
+                 cvBindWholeModel rmod (Just esrc) $ \newtext ->
                      traceBracketArgs "GTK.TextEntry:update" (show newtext) show $
                      liftIO $
                      withSignalBlocked widget changedSignal $ do

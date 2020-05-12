@@ -26,7 +26,7 @@ instance (IsSequence seq, SubjectReader reader, ReaderSubject reader ~ Element s
 
 instance (IsSequence seq, FullSubjectReader reader, ReaderSubject reader ~ Element seq) =>
              FullSubjectReader (ListReader seq reader) where
-    mutableReadToSubject mr = do
+    readableToSubject mr = do
         len <- mr ListReadLength
-        list <- for [0 .. pred len] $ \i -> mutableReadToSubject $ knownItemReadFunction i mr
+        list <- for [0 .. pred len] $ \i -> readableToSubject $ knownItemReadFunction i mr
         return $ fromList list

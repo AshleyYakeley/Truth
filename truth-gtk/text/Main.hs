@@ -13,8 +13,8 @@ import Truth.World.File
 textCodec :: ReasonCodec LazyByteString Text
 textCodec = bijectionCodec packBijection . utf8Codec . bijectionCodec unpackBijection
 
-textLens :: EditLens ByteStringUpdate (WholeUpdate ((Result Text) Text))
-textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) . convertEditLens
+textLens :: ChangeLens ByteStringUpdate (WholeUpdate ((Result Text) Text))
+textLens = (wholeChangeLens $ injectionLens $ toInjection $ codecInjection textCodec) . convertChangeLens
 
 optParser :: O.Parser ([FilePath], Bool, Bool, Bool)
 optParser =
@@ -24,40 +24,38 @@ optParser =
 newtype AppUI =
     MkAppUI (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
 
---selRef :: IORef (Maybe (LifeCycleIO TextSelection))
---type SelectNotify sel = View (Maybe sel) -> View ()
 main :: IO ()
 main = do
     (paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
     truthMainGTK $ \MkTruthContext {..} -> do
-        (uit@MkUIToolkit {..}, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
+        (uit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
         for_ paths $ \path -> do
             let
-                bsObj :: Object ByteStringEdit
-                bsObj = fileObject path
-                wholeTextObj :: Object (WholeEdit ((Result Text) Text))
-                wholeTextObj = mapObject textLens bsObj
-                ui :: Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text))
-                   -> Maybe (Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text)))
+                bsObj :: Reference ByteStringEdit
+                bsObj = fileReference path
+                wholeTextObj :: Reference (WholeEdit ((Result Text) Text))
+                wholeTextObj = mapReference textLens bsObj
+                ui :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
+                   -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
                    -> (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
                    -> CVUISpec
                 ui sub1 msub2 extraui = do
                     (setsel, getsel) <- liftIO $ makeRefSelectNotify
                     let
-                        openSelection :: Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text)) -> View ()
+                        openSelection :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text)) -> View ()
                         openSelection sub = do
                             mflens <- getsel
                             case mflens of
                                 Nothing -> return ()
                                 Just flens ->
                                     uitUnliftCreateView uit $ do
-                                        subSub <- cvFloatMapSubscriber (liftFullResultOneFloatingEditLens flens) sub
+                                        subSub <- cvFloatMapModel (liftFullResultOneFloatingChangeLens flens) sub
                                         makeWindow "section" subSub Nothing extraui
-                        rTextSpec :: Result Text (Subscriber (StringUpdate Text)) -> CVUISpec
+                        rTextSpec :: Result Text (Model (StringUpdate Text)) -> CVUISpec
                         rTextSpec (SuccessResult sub) = textAreaUISpec sub setsel
-                        rTextSpec (FailureResult err) = labelUISpec $ constantSubscriber err
+                        rTextSpec (FailureResult err) = labelUISpec $ constantModel err
                         makeSpecs sub =
-                            [ (simpleButtonUISpec (constantSubscriber "View") $ openSelection sub, False)
+                            [ (simpleButtonUISpec (constantModel "View") $ openSelection sub, False)
                             , (scrolledUISpec $ oneWholeUISpec sub rTextSpec, True)
                             ]
                         allSpecs =
@@ -67,8 +65,8 @@ main = do
                     verticalUISpec allSpecs
                 makeWindow ::
                        Text
-                    -> Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text))
-                    -> Maybe (Subscriber (FullResultOneUpdate (Result Text) (StringUpdate Text)))
+                    -> Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
+                    -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
                     -> (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
                     -> CreateView ()
                 makeWindow title sub msub2 extraui = do
@@ -76,13 +74,13 @@ main = do
                         let (mbar, uic) = extraui closer r $ ui sub msub2 extraui
                         (r, closer) <-
                             cvEarlyCloser $
-                            uitCreateWindow $ let
+                            uitCreateWindow uit $ let
                                 wsCloseBoxAction :: View ()
                                 wsCloseBoxAction = liftIO closer
-                                wsTitle :: Subscriber (ROWUpdate Text)
-                                wsTitle = constantSubscriber title
-                                wsMenuBar :: Maybe (Subscriber (ROWUpdate MenuBar))
-                                wsMenuBar = Just $ constantSubscriber mbar
+                                wsTitle :: Model (ROWUpdate Text)
+                                wsTitle = constantModel title
+                                wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
+                                wsMenuBar = Just $ constantModel mbar
                                 wsContent :: CVUISpec
                                 wsContent = uic
                                 in MkWindowSpec {..}
@@ -95,7 +93,7 @@ main = do
                               "File"
                               [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ liftIO uitExit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExit
                               ]
                         ]
                     in (mbar, spec)
@@ -123,7 +121,7 @@ main = do
                               , simpleActionMenuItem "Revert" Nothing $ liftIO revertAction
                               , simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') $ liftIO uitExit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExit
                               ]
                         , SubMenuEntry
                               "Edit"
@@ -140,20 +138,20 @@ main = do
                         then do
                             (bufferSub, saveActions) <-
                                 liftLifeCycleIO $
-                                makeSharedSubscriber $ saveBufferObject emptyResourceContext wholeTextObj
-                            (textSub, undoActions) <- liftIO $ undoQueueSubscriber bufferSub
+                                makeSharedModel $ saveBufferReference emptyResourceContext wholeTextObj
+                            (textSub, undoActions) <- liftIO $ undoQueueModel bufferSub
                             return (textSub, MkAppUI $ extraUI saveActions undoActions)
                         else do
-                            textSub <- liftLifeCycleIO $ makeReflectingSubscriber $ convertObject wholeTextObj
+                            textSub <- liftLifeCycleIO $ makeReflectingModel $ convertReference wholeTextObj
                             return (textSub, MkAppUI simpleUI)
                 mTextSub2 <-
                     case selTest of
                         False -> return Nothing
                         True -> do
-                            bsObj2 <- liftIO $ makeMemoryObject mempty $ \_ -> True
+                            bsObj2 <- liftIO $ makeMemoryReference mempty $ \_ -> True
                             textSub2 <-
                                 liftLifeCycleIO $
-                                makeReflectingSubscriber $ convertObject $ mapObject textLens $ convertObject bsObj2
+                                makeReflectingModel $ convertReference $ mapReference textLens $ convertReference bsObj2
                             return $ Just textSub2
                 return $ makeWindow (fromString $ takeFileName path) textSub mTextSub2 appUI
             action

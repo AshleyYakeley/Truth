@@ -1,7 +1,7 @@
 module Truth.Core.UI.View.Dynamic where
 
 import Truth.Core.Import
-import Truth.Core.Object
+import Truth.Core.Reference
 import Truth.Core.UI.View.CreateView
 import Truth.Core.UI.View.View
 
@@ -23,14 +23,14 @@ replaceDynamicView getNewDVS = do
 
 cvDynamic ::
        forall dvs update a. (DynamicViewState dvs)
-    => Subscriber update
-    -> (Subscriber update -> CreateView (dvs, a))
+    => Model update
+    -> (Model update -> CreateView (dvs, a))
     -> Task ()
     -> (a -> [update] -> StateT dvs View ())
     -> CreateView a
 cvDynamic sub initCV taskCV recvCV = do
     let
-        initBind :: Subscriber update -> CreateView (MVar dvs, a)
+        initBind :: Model update -> CreateView (MVar dvs, a)
         initBind model = do
             (firstdvs, a) <- initCV model
             stateVar <- liftIO $ newMVar firstdvs
@@ -41,6 +41,6 @@ cvDynamic sub initCV taskCV recvCV = do
             return (stateVar, a)
         recvBind :: (MVar dvs, a) -> NonEmpty update -> View ()
         recvBind (stateVar, a) updates = mVarRun stateVar $ recvCV a $ toList updates
-    (stateVar, a) <- cvBindSubscriber sub Nothing initBind taskCV recvBind
+    (stateVar, a) <- cvBindModel sub Nothing initBind taskCV recvBind
     cvLiftView $ mVarRun stateVar $ recvCV a []
     return a

@@ -3,11 +3,11 @@ module Truth.Core.Lens.Floating
     , runFloatInit
     , mapFloatInit
     , mapFFloatInit
-    , FloatingEditLens(..)
-    , runFloatingEditLens
-    , editLensToFloating
-    , floatingToMaybeEditLens
-    , floatingToDiscardingEditLens
+    , FloatingChangeLens(..)
+    , runFloatingChangeLens
+    , changeLensToFloating
+    , floatingToMaybeChangeLens
+    , floatingToDiscardingChangeLens
     , floatLift
     ) where
 
@@ -17,10 +17,10 @@ import Truth.Core.Lens.Lens
 import Truth.Core.Read
 
 data FloatInit reader r where
-    ReadFloatInit :: (forall m. MonadIO m => MutableRead m reader -> m r) -> FloatInit reader r
+    ReadFloatInit :: (forall m. MonadIO m => Readable m reader -> m r) -> FloatInit reader r
     NoFloatInit :: FloatInit reader ()
 
-runFloatInit :: FloatInit reader r -> forall m. MonadIO m => MutableRead m reader -> m r
+runFloatInit :: FloatInit reader r -> forall m. MonadIO m => Readable m reader -> m r
 runFloatInit (ReadFloatInit init) = init
 runFloatInit NoFloatInit = \_ -> return ()
 
@@ -31,73 +31,76 @@ mapFloatInit rf (ReadFloatInit i) = ReadFloatInit $ \mr -> i $ rf mr
 mapFFloatInit :: MonadOne f => ReadFunctionF f readerB readerA -> FloatInit readerA r -> FloatInit readerB (f r)
 mapFFloatInit rf init = ReadFloatInit $ \mr -> getComposeM $ runFloatInit init $ rf mr
 
-data FloatingEditLens updateA updateB = forall r. MkFloatingEditLens
-    { felInit :: FloatInit (UpdateReader updateA) r
-    , felLens :: r -> EditLens updateA updateB
+data FloatingChangeLens updateA updateB = forall r. MkFloatingChangeLens
+    { fclInit :: FloatInit (UpdateReader updateA) r
+    , fclLens :: r -> ChangeLens updateA updateB
     }
 
-editLensToFloating :: EditLens updateA updateB -> FloatingEditLens updateA updateB
-editLensToFloating lens = MkFloatingEditLens NoFloatInit $ \_ -> lens
+changeLensToFloating :: ChangeLens updateA updateB -> FloatingChangeLens updateA updateB
+changeLensToFloating lens = MkFloatingChangeLens NoFloatInit $ \_ -> lens
 
-floatingToMaybeEditLens :: FloatingEditLens updateA updateB -> Maybe (EditLens updateA updateB)
-floatingToMaybeEditLens (MkFloatingEditLens NoFloatInit f) = Just $ f ()
-floatingToMaybeEditLens _ = Nothing
+floatingToMaybeChangeLens :: FloatingChangeLens updateA updateB -> Maybe (ChangeLens updateA updateB)
+floatingToMaybeChangeLens (MkFloatingChangeLens NoFloatInit f) = Just $ f ()
+floatingToMaybeChangeLens _ = Nothing
 
-floatingToDiscardingEditLens :: forall updateA updateB. FloatingEditLens updateA updateB -> EditLens updateA updateB
-floatingToDiscardingEditLens (MkFloatingEditLens NoFloatInit rlens) = rlens ()
-floatingToDiscardingEditLens (MkFloatingEditLens (ReadFloatInit init) rlens) = let
+floatingToDiscardingChangeLens ::
+       forall updateA updateB. FloatingChangeLens updateA updateB -> ChangeLens updateA updateB
+floatingToDiscardingChangeLens (MkFloatingChangeLens NoFloatInit rlens) = rlens ()
+floatingToDiscardingChangeLens (MkFloatingChangeLens (ReadFloatInit init) rlens) = let
     g :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
     g mr rt = do
         r <- init mr
-        elGet (rlens r) mr rt
+        clRead (rlens r) mr rt
     u :: forall m. MonadIO m
       => updateA
-      -> MutableRead m (UpdateReader updateA)
+      -> Readable m (UpdateReader updateA)
       -> m [updateB]
     u upd mr = do
         r <- init mr
-        elUpdate (rlens r) upd mr
+        clUpdate (rlens r) upd mr
     pe :: forall m. MonadIO m
        => [UpdateEdit updateB]
-       -> MutableRead m (UpdateReader updateA)
+       -> Readable m (UpdateReader updateA)
        -> m (Maybe [UpdateEdit updateA])
     pe edits mr = do
         r <- init mr
-        elPutEdits (rlens r) edits mr
-    in MkEditLens g u pe
+        clPutEdits (rlens r) edits mr
+    in MkChangeLens g u pe
 
-runFloatingEditLens :: forall updateA updateB. IO (FloatingEditLens updateA updateB) -> FloatingEditLens updateA updateB
-runFloatingEditLens iol = let
-    felInit :: FloatInit (UpdateReader updateA) (EditLens updateA updateB)
-    felInit =
+runFloatingChangeLens ::
+       forall updateA updateB. IO (FloatingChangeLens updateA updateB) -> FloatingChangeLens updateA updateB
+runFloatingChangeLens iol = let
+    fclInit :: FloatInit (UpdateReader updateA) (ChangeLens updateA updateB)
+    fclInit =
         ReadFloatInit $ \mr -> do
-            MkFloatingEditLens init rlens <- liftIO iol
+            MkFloatingChangeLens init rlens <- liftIO iol
             r <- runFloatInit init mr
             return $ rlens r
-    in MkFloatingEditLens felInit id
+    in MkFloatingChangeLens fclInit id
 
 floatLift ::
        ReadFunction (UpdateReader updateC) (UpdateReader updateA)
-    -> (EditLens updateA updateB -> EditLens updateC updateD)
-    -> FloatingEditLens updateA updateB
-    -> FloatingEditLens updateC updateD
-floatLift rf mappl (MkFloatingEditLens init rlens) = MkFloatingEditLens (mapFloatInit rf init) $ \r -> mappl $ rlens r
+    -> (ChangeLens updateA updateB -> ChangeLens updateC updateD)
+    -> FloatingChangeLens updateA updateB
+    -> FloatingChangeLens updateC updateD
+floatLift rf mappl (MkFloatingChangeLens init rlens) =
+    MkFloatingChangeLens (mapFloatInit rf init) $ \r -> mappl $ rlens r
 
-instance Category FloatingEditLens where
-    id :: forall update. FloatingEditLens update update
-    id = editLensToFloating id
+instance Category FloatingChangeLens where
+    id :: forall update. FloatingChangeLens update update
+    id = changeLensToFloating id
     (.) :: forall updateA updateB updateC.
-           FloatingEditLens updateB updateC
-        -> FloatingEditLens updateA updateB
-        -> FloatingEditLens updateA updateC
+           FloatingChangeLens updateB updateC
+        -> FloatingChangeLens updateA updateB
+        -> FloatingChangeLens updateA updateC
     lensBC . lensAB
-        | Just plensBC <- floatingToMaybeEditLens lensBC
-        , Just plensAB <- floatingToMaybeEditLens lensAB = editLensToFloating $ plensBC . plensAB
-    MkFloatingEditLens initBC rlensBC . MkFloatingEditLens initAB rlensAB = let
+        | Just plensBC <- floatingToMaybeChangeLens lensBC
+        , Just plensAB <- floatingToMaybeChangeLens lensAB = changeLensToFloating $ plensBC . plensAB
+    MkFloatingChangeLens initBC rlensBC . MkFloatingChangeLens initAB rlensAB = let
         initAC =
             ReadFloatInit $ \mr -> do
                 r1 <- runFloatInit initAB mr
-                r2 <- runFloatInit initBC $ elGet (rlensAB r1) mr
+                r2 <- runFloatInit initBC $ clRead (rlensAB r1) mr
                 return (r1, r2)
         rlensAC (r1, r2) = rlensBC r2 . rlensAB r1
-        in MkFloatingEditLens initAC rlensAC
+        in MkFloatingChangeLens initAC rlensAC

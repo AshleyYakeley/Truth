@@ -3,6 +3,7 @@ module Data.Shim
     ) where
 
 import Data.Shim.CatRange as I
+import Data.Shim.JMIsoShim as I
 import Data.Shim.JMShim as I
 import Data.Shim.JMShimWit as I
 import Data.Shim.JoinMeet as I

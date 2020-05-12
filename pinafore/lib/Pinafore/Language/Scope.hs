@@ -1,11 +1,16 @@
 module Pinafore.Language.Scope
-    ( NamedType(..)
+    ( ScopeExpression
+    , ScopePatternConstructor
+    , ScopeProvidedType
+    , ScopeClosedEntityType
+    , NamedType(..)
     , Scoped
     , runScoped
     , liftScoped
     , SourcePos
     , SourceScoped
     , askSourcePos
+    , localSourcePos
     , remonadSourcePos
     , runSourcePos
     , liftSourcePos
@@ -15,220 +20,228 @@ module Pinafore.Language.Scope
     , lookupBinding
     , withNewBindings
     , lookupNamedType
-    , withNewTypeName
+    , newTypeID
+    , TypeBox(..)
+    , registerTypeNames
     , lookupPatternConstructor
     , withNewPatternConstructor
     , withNewPatternConstructors
     , withEntitySubtype
-    , getEntitySubtype
+    , getOpenEntitySubtype
     , TypeCheckSubtype(..)
     ) where
 
+import Data.Shim
+import Language.Expression.Dolan
 import Language.Expression.Error
 import Pinafore.Language.Error
 import Pinafore.Language.Name
-import Pinafore.Language.Type.TypeID
+import Pinafore.Language.Subtype
+import Pinafore.Language.Type.Identified
+import Pinafore.Language.TypeSystem.Show
 import Pinafore.Language.Value
 import Shapes
 import Text.Parsec (SourcePos)
 
-data NamedType ct
-    = OpenEntityNamedType
-    | ClosedEntityNamedType ct
+type family ScopeExpression (p :: Type) :: Type
 
-data Scope expr patc ct = MkScope
-    { scopeBindings :: StrictMap Name expr
-    , scopePatternConstructors :: StrictMap Name patc
-    , scopeTypes :: StrictMap Name (TypeID, NamedType ct)
-    , scopeEntitySubtypes :: [(TypeID, TypeID)]
+type family ScopePatternConstructor (p :: Type) :: Type
+
+type family ScopeProvidedType (p :: Type) :: forall k. k -> Type
+
+type family ScopeClosedEntityType (p :: Type) :: Type -> Type
+
+data NamedType (p :: Type) where
+    SimpleNamedType
+        :: forall (p :: Type) (dv :: DolanVariance) (t :: DolanVarianceKind dv).
+           DolanVarianceType dv
+        -> DolanVarianceMap dv t
+        -> ListTypeExprShow dv
+        -> ScopeProvidedType p t
+        -> NamedType p
+    OpenEntityNamedType :: TypeID -> NamedType p
+    ClosedEntityNamedType
+        :: forall (p :: Type) (tid :: BigNat). TypeIDType tid -> ScopeClosedEntityType p (Identified tid) -> NamedType p
+
+type OpenEntityShim = LiftedCategory JMShim OpenEntity
+
+data Scope (p :: Type) = MkScope
+    { scopeBindings :: Map Name (ScopeExpression p)
+    , scopePatternConstructors :: Map Name (ScopePatternConstructor p)
+    , scopeTypes :: Map Name (NamedType p)
+    , scopeOpenEntitySubtypes :: [SubtypeEntry OpenEntityShim TypeIDType]
     }
 
-newtype Scoped expr patc ct a =
-    MkScoped (ReaderT (Scope expr patc ct) (StateT TypeID InterpretResult) a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadPlus)
+newtype Scoped (p :: Type) a =
+    MkScoped (ReaderT (Scope p) (StateT TypeID InterpretResult) a)
+    deriving (Functor, Applicative, Alternative, Monad, MonadPlus, MonadFix)
 
-instance MonadError [ErrorMessage] (Scoped expr patc ct) where
-    throwError err = MkScoped $ throwError err
+instance MonadThrow PinaforeError (Scoped p) where
+    throw err = MkScoped $ throw err
 
-instance MonadError ErrorMessage (Scoped expr patc ct) where
-    throwError err = throwError [err]
+instance MonadThrow ErrorMessage (Scoped p) where
+    throw = throwErrorMessage
 
-instance Semigroup a => Semigroup (Scoped expr patc ct a) where
+instance Semigroup a => Semigroup (Scoped p a) where
     (<>) = liftA2 (<>)
 
-instance Monoid a => Monoid (Scoped expr patc ct a) where
+instance Monoid a => Monoid (Scoped p a) where
     mappend = (<>)
     mempty = pure mempty
 
-runScoped :: Scoped expr patc ct a -> InterpretResult a
+runScoped :: Scoped p a -> InterpretResult a
 runScoped (MkScoped qa) = evalStateT (runReaderT qa $ MkScope mempty mempty mempty mempty) zeroTypeID
 
-liftScoped :: InterpretResult a -> Scoped expr patc ct a
+liftScoped :: InterpretResult a -> Scoped p a
 liftScoped ra = MkScoped $ lift $ lift ra
 
-pScope :: Scoped expr patc ct (Scope expr patc ct)
+pScope :: Scoped p (Scope p)
 pScope = MkScoped ask
 
-pLocalScope :: (Scope expr patc ct -> Scope expr patc ct) -> Scoped expr patc ct a -> Scoped expr patc ct a
+pLocalScope :: (Scope p -> Scope p) -> Scoped p a -> Scoped p a
 pLocalScope maptc (MkScoped ma) = MkScoped $ local maptc ma
 
-newtype SourceScoped expr patc ct a =
-    MkSourceScoped (ReaderT SourcePos (Scoped expr patc ct) a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadPlus)
+newtype SourceScoped p a =
+    MkSourceScoped (ReaderT SourcePos (Scoped p) a)
+    deriving (Functor, Applicative, Alternative, Monad, MonadPlus, MonadFix)
 
-askSourcePos :: SourceScoped expr patc ct SourcePos
+askSourcePos :: SourceScoped p SourcePos
 askSourcePos = MkSourceScoped ask
 
-runSourcePos :: SourcePos -> SourceScoped expr patc ct a -> Scoped expr patc ct a
+localSourcePos :: SourcePos -> SourceScoped p a -> SourceScoped p a
+localSourcePos spos (MkSourceScoped ma) = MkSourceScoped $ local (\_ -> spos) ma
+
+runSourcePos :: SourcePos -> SourceScoped p a -> Scoped p a
 runSourcePos spos (MkSourceScoped ma) = runReaderT ma spos
 
-liftSourcePos :: Scoped expr patc ct a -> SourceScoped expr patc ct a
+liftSourcePos :: Scoped p a -> SourceScoped p a
 liftSourcePos ma = MkSourceScoped $ lift ma
 
-remonadSourcePos ::
-       (forall a. Scoped expr1 patc1 ct1 a -> Scoped expr2 patc2 ct2 a)
-    -> SourceScoped expr1 patc1 ct1 b
-    -> SourceScoped expr2 patc2 ct2 b
+remonadSourcePos :: (forall a. Scoped p1 a -> Scoped p2 a) -> SourceScoped p1 b -> SourceScoped p2 b
 remonadSourcePos mm (MkSourceScoped mb) = MkSourceScoped $ remonad mm mb
 
-mapSourcePos ::
-       SourcePos
-    -> (SourceScoped expr patc ct a -> SourceScoped expr patc ct b)
-    -> Scoped expr patc ct a
-    -> Scoped expr patc ct b
+mapSourcePos :: forall p a b. SourcePos -> (SourceScoped p a -> SourceScoped p b) -> Scoped p a -> Scoped p b
 mapSourcePos spos f ca = runSourcePos spos $ f $ liftSourcePos ca
 
-runSourceScoped :: SourcePos -> SourceScoped expr patc ct a -> InterpretResult a
+runSourceScoped :: SourcePos -> SourceScoped p a -> InterpretResult a
 runSourceScoped spos spa = runScoped $ runSourcePos spos spa
 
-spScope :: SourceScoped expr patc ct (Scope expr patc ct)
+spScope :: SourceScoped p (Scope p)
 spScope = MkSourceScoped $ lift pScope
 
-instance MonadError ExpressionError (SourceScoped expr patc ct) where
-    throwError err = throwError $ ExpressionErrorError err
+instance MonadThrow ExpressionError (SourceScoped p) where
+    throw err = throw $ ExpressionErrorError err
 
-instance MonadError [ErrorMessage] (SourceScoped expr patc ct) where
-    throwError err = MkSourceScoped $ throwError err
+instance MonadThrow PinaforeError (SourceScoped p) where
+    throw err = MkSourceScoped $ throw err
 
-instance MonadError ErrorMessage (SourceScoped expr patc ct) where
-    throwError err = MkSourceScoped $ throwError err
+instance MonadThrow ErrorMessage (SourceScoped p) where
+    throw err = MkSourceScoped $ throw err
 
-instance MonadError ErrorType (SourceScoped expr patc ct) where
-    throwError err =
+instance MonadThrow ErrorType (SourceScoped p) where
+    throw err =
         MkSourceScoped $ do
             spos <- ask
-            throwError $ MkErrorMessage spos err
+            throw $ MkErrorMessage spos err
 
-convertFailure :: String -> String -> SourceScoped expr patc ct a
-convertFailure sa sb = throwError $ TypeConvertError (pack sa) (pack sb)
+convertFailure :: Text -> Text -> SourceScoped p a
+convertFailure ta tb = throw $ TypeConvertError ta tb
 
-lookupBinding :: Name -> SourceScoped expr patc ct (Maybe expr)
+lookupBinding :: Name -> SourceScoped p (Maybe (ScopeExpression p))
 lookupBinding name = do
     (scopeBindings -> names) <- spScope
     return $ lookup name names
 
-withNewBindings :: StrictMap Name expr -> Scoped expr patc ct a -> Scoped expr patc ct a
-withNewBindings bb ma = pLocalScope (\tc -> tc {scopeBindings = bb <> (scopeBindings tc)}) ma
+withNewBindings :: Map Name (ScopeExpression p) -> Scoped p a -> Scoped p a
+withNewBindings bb = pLocalScope $ \tc -> tc {scopeBindings = bb <> (scopeBindings tc)}
 
-lookupNamedTypeM :: Name -> SourceScoped expr patc ct (Maybe (TypeID, NamedType ct))
+lookupNamedTypeM :: Name -> SourceScoped p (Maybe (NamedType p))
 lookupNamedTypeM name = do
     (scopeTypes -> names) <- spScope
     return $ lookup name names
 
-lookupNamedType :: Name -> SourceScoped expr patc ct (TypeID, NamedType ct)
+lookupNamedType :: Name -> SourceScoped p (NamedType p)
 lookupNamedType name = do
     mnt <- lookupNamedTypeM name
     case mnt of
         Just nt -> return nt
-        Nothing -> throwError $ LookupTypeUnknownError name
+        Nothing -> throw $ LookupTypeUnknownError name
 
-lookupPatternConstructorM :: Name -> SourceScoped expr patc ct (Maybe patc)
+lookupPatternConstructorM :: Name -> SourceScoped p (Maybe (ScopePatternConstructor p))
 lookupPatternConstructorM name = do
     (scopePatternConstructors -> names) <- spScope
     return $ lookup name names
 
-lookupPatternConstructor :: Name -> SourceScoped expr patc ct patc
+lookupPatternConstructor :: Name -> SourceScoped p (ScopePatternConstructor p)
 lookupPatternConstructor name = do
     ma <- lookupPatternConstructorM name
     case ma of
         Just a -> return a
-        Nothing -> throwError $ LookupConstructorUnknownError name
+        Nothing -> throw $ LookupConstructorUnknownError name
 
-getImmediateSupertypes :: Eq a => [(a, b)] -> a -> [b]
-getImmediateSupertypes st a0 = [(b) | (a, b) <- st, a == a0]
+newTypeID :: Scoped p TypeID
+newTypeID =
+    MkScoped $
+    lift $ do
+        tid <- get
+        put $ succTypeID tid
+        return tid
 
-expandSupertypes :: Eq a => [(a, a)] -> [a] -> [a]
-expandSupertypes st aa = nub $ mconcat $ aa : fmap (getImmediateSupertypes st) aa
+registerType :: Name -> NamedType p -> WMFunction (SourceScoped p) (SourceScoped p)
+registerType name t =
+    MkWMFunction $ \mta -> do
+        mnt <- lookupNamedTypeM name
+        case mnt of
+            Just _ -> throw $ DeclareTypeDuplicateError name
+            Nothing ->
+                remonadSourcePos (pLocalScope $ \tc -> tc {scopeTypes = insertMapLazy name t (scopeTypes tc)}) mta
 
-isSupertype :: Eq a => [(a, a)] -> [a] -> a -> Bool
-isSupertype _st aa a
-    | elem a aa = True
-isSupertype st aa a = let
-    aa' = expandSupertypes st aa
-    in if length aa' > length aa
-           then isSupertype st aa' a
-           else False
+data TypeBox p x =
+    forall t. MkTypeBox Name
+                        (t -> NamedType p)
+                        (SourceScoped p (t, x))
 
-castNamedEntity :: Coercion (OpenEntity na) (OpenEntity nb)
-castNamedEntity = MkCoercion
+typeBoxToFixBox :: TypeBox p x -> FixBox (WriterT [x] (SourceScoped p))
+typeBoxToFixBox (MkTypeBox name ttype mtx) =
+    mkFixBox (\t -> liftWMFunction $ registerType name $ ttype t) $ do
+        (t, x) <- lift mtx
+        tell [x]
+        return t
 
-withNewTypeName ::
-       Name
-    -> NamedType ct
-    -> SourceScoped expr patc ct (TypeID, WMFunction (Scoped expr patc ct) (Scoped expr patc ct))
-withNewTypeName name t = do
-    mnt <- lookupNamedTypeM name
-    case mnt of
-        Just _ -> throwError $ DeclareTypeDuplicateError name
-        Nothing -> do
-            tid <-
-                liftSourcePos $
-                MkScoped $
-                lift $ do
-                    tid <- get
-                    put $ succTypeID tid
-                    return tid
-            return $
-                (tid, MkWMFunction $ pLocalScope (\tc -> tc {scopeTypes = insertMap name (tid, t) (scopeTypes tc)}))
+registerTypeNames :: [TypeBox p x] -> SourceScoped p (WMFunction (Scoped p) (Scoped p), [x])
+registerTypeNames tboxes = do
+    (sc, xx) <- runWriterT $ boxFix (fmap typeBoxToFixBox tboxes) $ lift spScope
+    return (MkWMFunction $ pLocalScope (\_ -> sc), xx)
 
-withNewPatternConstructor ::
-       Name -> patc -> SourceScoped expr patc ct (WMFunction (Scoped expr patc ct) (Scoped expr patc ct))
+withNewPatternConstructor :: Name -> ScopePatternConstructor p -> SourceScoped p (WMFunction (Scoped p) (Scoped p))
 withNewPatternConstructor name pc = do
     ma <- lookupPatternConstructorM name
     case ma of
-        Just _ -> throwError $ DeclareConstructorDuplicateError name
+        Just _ -> throw $ DeclareConstructorDuplicateError name
         Nothing ->
             return $
             MkWMFunction $
             pLocalScope (\tc -> tc {scopePatternConstructors = insertMap name pc $ scopePatternConstructors tc})
 
-withNewPatternConstructors :: StrictMap Name patc -> Scoped expr patc ct a -> Scoped expr patc ct a
+withNewPatternConstructors :: Map Name (ScopePatternConstructor p) -> Scoped p a -> Scoped p a
 withNewPatternConstructors pp = pLocalScope (\tc -> tc {scopePatternConstructors = pp <> scopePatternConstructors tc})
 
-lookupOpenType :: Name -> SourceScoped expr patc ct TypeID
-lookupOpenType n = do
-    (tid, nt) <- lookupNamedType n
-    case nt of
-        OpenEntityNamedType -> return tid
-        _ -> throwError $ LookupTypeNotOpenError n
+withEntitySubtype :: TypeIDType tida -> TypeIDType tidb -> Scoped p a -> Scoped p a
+withEntitySubtype ta tb =
+    pLocalScope $ \tc ->
+        tc
+            { scopeOpenEntitySubtypes =
+                  (MkSubtypeEntry ta tb $ MkLiftedCategory $ coerceEnhanced "open entity subtype") :
+                  (scopeOpenEntitySubtypes tc)
+            }
 
-withEntitySubtype :: (Name, Name) -> SourceScoped expr patc ct (WMFunction (Scoped expr patc ct) (Scoped expr patc ct))
-withEntitySubtype (a, b) = do
-    ta <- lookupOpenType a
-    tb <- lookupOpenType b
-    return $ MkWMFunction $ pLocalScope (\tc -> tc {scopeEntitySubtypes = (ta, tb) : (scopeEntitySubtypes tc)})
-
-getEntitySubtype ::
-       Name
-    -> TypeIDType tida
-    -> Name
-    -> TypeIDType tidb
-    -> SourceScoped expr patc ct (Coercion (OpenEntity tida) (OpenEntity tidb))
-getEntitySubtype na wa nb wb = do
-    (scopeEntitySubtypes -> subtypes) <- spScope
-    if isSupertype subtypes [witnessToValue wa] (witnessToValue wb)
-        then return castNamedEntity
-        else convertFailure (show na) (show nb)
+getOpenEntitySubtype ::
+       Name -> TypeIDType tida -> Name -> TypeIDType tidb -> SourceScoped p (JMShim (OpenEntity tida) (OpenEntity tidb))
+getOpenEntitySubtype na wa nb wb = do
+    (scopeOpenEntitySubtypes -> subtypes) <- spScope
+    case unSubtypeMatch (getSubtypeShim subtypes equalSubtypeMatch) wa wb of
+        Just (MkLiftedCategory conv) -> return conv
+        Nothing -> convertFailure (exprShow na) (exprShow nb)
 
 class TypeCheckSubtype w where
-    getSubtype :: forall expr patc ct a b. w a -> w b -> SourceScoped expr patc ct (a -> b)
+    getSubtype :: forall p a b. w a -> w b -> SourceScoped p (a -> b)

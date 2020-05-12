@@ -58,7 +58,7 @@ instance Database dbType tablesel => SubjectReader (DatabaseReader dbType tables
            sortBy (orderClause @dbType @tablesel oc) $ filter (whereClause @dbType @tablesel wc) $ doJoin j
 
 instance Database dbType tablesel => FullSubjectReader (DatabaseReader dbType tablesel) where
-    mutableReadToSubject mr =
+    readableToSubject mr =
         tableAssemble @dbType $ \(tsel :: tablesel row) -> do
             Dict <- return $ orderMonoid @dbType tsel
             mr $ DatabaseSelect (SingleTable tsel) (whereAlways @dbType tsel) mempty (selectRow @dbType tsel)

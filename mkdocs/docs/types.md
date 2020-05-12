@@ -2,6 +2,22 @@
 
 For all types `T`, `None <= T` and `T <= Any`.
 
+## Data Types
+
+Data types can be declared with the `datatype` keyword.
+The declaration specifies the constructors of the type.
+
+Each constructor has a name, and a list of zero or more ambipolar types.
+
+```pinafore
+datatype T =
+    T1 (Int -> [Int]) |
+    T2 Int;
+```
+
+Data types are not subtypes of `Entity` and are not storable.
+You can use closed entity types (below) for that.
+
 ## Entity types
 
 Entities are the things that can be represented as subjects and values in the triple-store.
@@ -25,7 +41,7 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 `Duration <= Literal`
 
-`Day <= Literal`
+`Date <= Literal`
 
 `TimeOfDay <= Literal`
 
@@ -82,13 +98,14 @@ There are no higher-arity tuples than pair.
 
 Closed entity types can be declared with the `closedtype` keyword.
 The declaration specifies the constructors of the type.
+They are similar to data types, but each constructor has an anchor, and field types are all subtypes of `Entity`.
 
 Each constructor has a name, a list of zero or more types (each a subtype of `Entity`), and an anchor.
 
 ```pinafore
 closedtype Patient =
-    LivingPatient Person Date !82572d41-1b36-477e-9252-41610df9d77b |
-    DeadPatient Person Date Date !2b678551-2e9d-403a-993e-b61804504809;
+    LivingPatient Person Date !"Patient.LivingPatient" |
+    DeadPatient Person Date Date !"Patient.DeadPatient";
 
 patientPerson :: Patient -> Person;
 patientPerson patient =
@@ -141,13 +158,19 @@ Runners of an action that stops, such as the main program, or the handler of a b
 
 An order on a type.
 
+## Notifiers
+
+`Notifier a`  
+(`a` is contravariant)
+
+Certain user interface elements have a concept of _selection_.
+When given a notifier, it will be notified every time the selection changes.
+
 ## User Interfaces
 
-`UI a`  
-(`a` is covariant)
+`UI`  
 
 The contents of a user interface window. Can be composed in various ways.
-The type parameter is the type of the selection.
 
 ## References
 

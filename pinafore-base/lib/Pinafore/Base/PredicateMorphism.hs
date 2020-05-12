@@ -1,6 +1,5 @@
 module Pinafore.Base.PredicateMorphism
-    ( HasPinaforeEntityUpdate
-    , propertyMorphism
+    ( propertyMorphism
     ) where
 
 import Pinafore.Base.Edit
@@ -10,111 +9,37 @@ import Pinafore.Base.Lens
 import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
-import Truth.Debug.Object
-
-predicatePinaforeMap ::
-       forall a b.
-       EntityAdapter a
-    -> EntityAdapter b
-    -> Predicate
-    -> EditLens (ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeUpdate (Know b))
-predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) prd = traceThing "predicatePinaforeMap" $ let
-    rfp :: ReadFunction (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a))) PinaforeEntityRead
-    rfp = tupleReadFunction SelectContext
-    elGet :: ReadFunction (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a))) (WholeReader (Know b))
-    elGet mra ReadWhole = do
-        ksubja <- mra $ MkTupleUpdateReader SelectContent ReadWhole
-        case ksubja of
-            Known subja -> do
-                valp <- mra $ MkTupleUpdateReader SelectContext $ PinaforeEntityReadGetProperty prd $ ap subja
-                bget valp $ rfp mra
-            Unknown -> return Unknown
-    elUpdate ::
-           forall m. MonadIO m
-        => ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a))
-        -> MutableRead m (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a)))
-        -> m [WholeUpdate (Know b)]
-    elUpdate (MkTupleUpdate SelectContext (MkEditUpdate (PinaforeEntityEditSetPredicate p s kvalp))) mra
-        | p == prd = do
-            ksubja <- mra $ MkTupleUpdateReader SelectContent ReadWhole
-            if Known s == fmap ap ksubja
-                then do
-                    case kvalp of
-                        Known valp -> do
-                            kvalb <- bget valp $ rfp mra
-                            return [MkWholeReaderUpdate kvalb]
-                        Unknown -> return [MkWholeReaderUpdate Unknown]
-                else return []
-    elUpdate (MkTupleUpdate SelectContext _) _ = return []
-    elUpdate (MkTupleUpdate SelectContent (MkWholeReaderUpdate ksubja)) mra =
-        case ksubja of
-            Known subja -> do
-                valp <- mra $ MkTupleUpdateReader SelectContext $ PinaforeEntityReadGetProperty prd $ ap subja
-                kb <- bget valp $ rfp mra
-                return [MkWholeReaderUpdate kb]
-            Unknown -> return [MkWholeReaderUpdate Unknown]
-    elPutEdits ::
-           forall m. MonadIO m
-        => [WholeEdit (Know b)]
-        -> MutableRead m (ContextUpdateReader PinaforeEntityUpdate (WholeUpdate (Know a)))
-        -> m (Maybe [ContextUpdateEdit PinaforeEntityUpdate (WholeUpdate (Know a))])
-    elPutEdits editbs mra =
-        case lastWholeEdit editbs of
-            Nothing -> return $ Just []
-            Just kvalb -> do
-                ksubja <- mra $ MkTupleUpdateReader SelectContent ReadWhole
-                case ksubja of
-                    Known subja -> do
-                        aedits <- aput subja (rfp mra)
-                        mbedits <- for kvalb $ \valb -> bput valb (rfp mra)
-                        let
-                            edits =
-                                aedits <>
-                                (fromKnow [] mbedits) <> [PinaforeEntityEditSetPredicate prd (ap subja) (fmap bp kvalb)]
-                        return $ Just $ fmap (MkTupleUpdateEdit SelectContext) edits
-                    Unknown ->
-                        return $
-                        case kvalb of
-                            Known _ -> Nothing
-                            Unknown -> Just []
-    in MkEditLens {..}
-
-predicateInverseFunction ::
-       forall a b.
-       EntityAdapter a
-    -> EntityAdapter b
-    -> Predicate
-    -> PinaforeFunctionMorphism PinaforeEntityUpdate b [a]
-predicateInverseFunction (MkEntityAdapter ap aget _) (MkEntityAdapter bp _ _) prd = let
-    pfFuncRead ::
-           forall m. MonadIO m
-        => MutableRead m PinaforeEntityRead
-        -> b
-        -> m [a]
-    pfFuncRead mr valb = traceBracketArgs "predicateInverseFunction.pfFuncRead" (show (prd,bp valb)) (show . fmap ap) $ do
-        setp <- mr $ PinaforeEntityReadLookupPredicate prd $ bp valb
-        setka <- for (setToList setp) $ \p -> aget p mr
-        return $ catKnowns setka
-    pfUpdate ::
-           forall m. MonadIO m
-        => PinaforeEntityUpdate
-        -> MutableRead m PinaforeEntityRead
-        -> m Bool
-    pfUpdate (MkEditUpdate (PinaforeEntityEditSetPredicate p _ _)) _
-        | p == prd = traceBracket "predicateInverseFunction.pfUpdate: True" $ return True
-    pfUpdate _ _ = traceBracket "predicateInverseFunction.pfUpdate: False" $ return False
-    in MkPinaforeFunctionMorphism {..}
 
 predicatePinaforeTableLensMorphism ::
-       EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeEntityUpdate a b
-predicatePinaforeTableLensMorphism pa pb prd =
-    MkPinaforeLensMorphism (predicatePinaforeMap pa pb prd) (predicateInverseFunction pa pb prd)
+       forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeEntityUpdate a a b b
+predicatePinaforeTableLensMorphism (MkEntityAdapter ap aget aput) (MkEntityAdapter bp bget bput) prd = let
+    pmGet :: a -> ReadM PinaforeEntityRead (Know b)
+    pmGet a = do
+        valp <- readM $ PinaforeEntityReadGetProperty prd $ ap a
+        bget valp readM
+    pmBaseUpdate :: PinaforeEntityUpdate -> ReadM PinaforeEntityRead Bool
+    pmBaseUpdate (MkEditUpdate (PinaforeEntityEditSetPredicate p _ _))
+        | p == prd = return True
+    pmBaseUpdate _ = return False
+    pmPut :: Know a -> Know b -> ReadM PinaforeEntityRead (Maybe ([PinaforeEntityEdit], Maybe (Know a)))
+    pmPut (Known subja) kvalb = do
+        aedits <- aput subja readM
+        mbedits <- for kvalb $ \valb -> bput valb readM
+        let edits = aedits <> (fromKnow [] mbedits) <> [PinaforeEntityEditSetPredicate prd (ap subja) (fmap bp kvalb)]
+        return $ Just (edits, Nothing)
+    pmPut Unknown _ = return Nothing
+    pmInv :: b -> ReadM PinaforeEntityRead [a]
+    pmInv valb = do
+        setp <- readM $ PinaforeEntityReadLookupPredicate prd $ bp valb
+        setka <- for (setToList setp) $ \p -> aget p readM
+        return $ catKnowns setka
+    in MkPinaforeLensMorphism {..}
 
 propertyMorphism ::
-       HasPinaforeEntityUpdate baseupdate
+       BaseChangeLens PinaforeEntityUpdate baseupdate
     => EntityAdapter a
     -> EntityAdapter b
     -> Predicate
-    -> PinaforeLensMorphism baseupdate a b
+    -> PinaforeLensMorphism baseupdate a a b b
 propertyMorphism pa pb prd =
-    mapPinaforeLensMorphismBase (baseEditLens @PinaforeEntityUpdate) $ predicatePinaforeTableLensMorphism pa pb prd
+    mapPinaforeLensMorphismBase (baseChangeLens @PinaforeEntityUpdate) $ predicatePinaforeTableLensMorphism pa pb prd

@@ -21,9 +21,9 @@ expressionFreeWitnesses :: (forall t. w t -> r) -> Expression w a -> [r]
 expressionFreeWitnesses _wr (ClosedExpression _) = []
 expressionFreeWitnesses wr (OpenExpression wt expr) = (wr wt) : expressionFreeWitnesses wr expr
 
-evalExpression :: (MonadError ExpressionError m, AllWitnessConstraint Show w) => Expression w a -> m a
+evalExpression :: (MonadThrow ExpressionError m, AllWitnessConstraint Show w) => Expression w a -> m a
 evalExpression (ClosedExpression a) = return a
-evalExpression expr = throwError $ UndefinedBindingsError $ nub $ expressionFreeWitnesses showAllWitness expr
+evalExpression expr = throw $ UndefinedBindingsError $ nub $ expressionFreeWitnesses showAllWitness expr
 
 varExpression :: w t -> Expression w t
 varExpression wt = OpenExpression wt $ ClosedExpression id

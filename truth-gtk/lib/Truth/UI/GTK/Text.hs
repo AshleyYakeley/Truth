@@ -32,7 +32,7 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-textView :: Subscriber (StringUpdate Text) -> SelectNotify TextSelection -> GCreateView
+textView :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GCreateView
 textView rmod (MkSelectNotify setsel) = do
     esrc <- newEditSource
     buffer <- new TextBuffer []
@@ -42,7 +42,7 @@ textView rmod (MkSelectNotify setsel) = do
             liftIO $
                 runResource emptyResourceContext rmod $ \asub -> do
                     let edit = StringReplaceSection (MkSequenceRun p 0) text
-                    _ <- traceBracket ("GTK.Text.insert: push " <> show edit) $ pushEdit esrc $ subEdit asub $ pure edit
+                    _ <- traceBracket ("GTK.Text.insert: push " <> show edit) $ pushEdit esrc $ aModelEdit asub $ pure edit
                     return ()
     deleteSignal <-
         cvOn buffer #deleteRange $ \iter1 iter2 -> traceBracket "GTK.Text:delete" $ do
@@ -50,7 +50,7 @@ textView rmod (MkSelectNotify setsel) = do
             liftIO $
                 runResource emptyResourceContext rmod $ \asub -> do
                     let edit = StringReplaceSection srun mempty
-                    _ <- traceBracket ("GTK.Text.delete: push " <> show edit) $ pushEdit esrc $ subEdit asub $ pure edit
+                    _ <- traceBracket ("GTK.Text.delete: push " <> show edit) $ pushEdit esrc $ aModelEdit asub $ pure edit
                     return ()
     let
         aspect :: View (Maybe TextSelection)
@@ -62,9 +62,9 @@ textView rmod (MkSelectNotify setsel) = do
     cvLiftView $ setsel aspect
     _ <- cvOn buffer #changed $ setsel aspect
     let
-        initV :: Subscriber (StringUpdate Text) -> CreateView ()
+        initV :: Model (StringUpdate Text) -> CreateView ()
         initV rm = do
-            initial <- viewRunResource rm $ \am -> mutableReadToSubject $ subRead am
+            initial <- viewRunResource rm $ \am -> readableToSubject $ aModelRead am
             liftIO $
                 withSignalBlocked buffer insertSignal $
                 withSignalBlocked buffer deleteSignal $ #setText buffer initial (-1)
@@ -78,7 +78,7 @@ textView rmod (MkSelectNotify setsel) = do
                 case edit of
                     StringReplaceWhole text -> #setText buffer text (-1)
                     StringReplaceSection bounds text -> replaceText buffer bounds text
-    cvBindSubscriber rmod (Just esrc) initV mempty recvV
+    cvBindModel rmod (Just esrc) initV mempty recvV
     widget <- new TextView [#buffer := buffer]
     toWidget widget
 

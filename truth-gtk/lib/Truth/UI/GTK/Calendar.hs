@@ -35,11 +35,11 @@ calendarGetView =
                      onChanged =
                          viewRunResource rmod $ \asub -> do
                              st <- getDay
-                             _ <- pushEdit esrc $ subEdit asub $ pure $ MkWholeReaderEdit st
+                             _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
                              return ()
                  _ <- cvOn widget #daySelected onChanged
                  _ <- cvOn widget #monthChanged onChanged
-                 cvBindWholeSubscriber rmod (Just esrc) $ \newval -> do
+                 cvBindWholeModel rmod (Just esrc) $ \newval -> do
                      oldval <- getDay
                      if oldval == newval
                          then return ()

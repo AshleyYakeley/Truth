@@ -26,9 +26,7 @@ singleBinding :: UnifierName unifier -> UnifierSealedExpression unifier -> Bindi
 singleBinding name expr = MkBindings $ pure $ MkBinding name expr
 
 bindingsMap ::
-       Ord (UnifierName unifier)
-    => Bindings unifier
-    -> StrictMap (UnifierName unifier) (UnifierSealedExpression unifier)
+       Ord (UnifierName unifier) => Bindings unifier -> Map (UnifierName unifier) (UnifierSealedExpression unifier)
 bindingsMap (MkBindings bb) = mapFromList $ fmap (\(MkBinding n e) -> (n, e)) bb
 
 data UnifyExpression unifier a =
@@ -97,7 +95,7 @@ boundToBindings (MkBound abstractNames exprs getbinds) = do
 bindingsComponentLetSealedExpression ::
        forall renamer unifier m. (Ord (UnifierName unifier), UnifierRenamerConstraint unifier renamer m)
     => Bindings unifier
-    -> m (StrictMap (UnifierName unifier) (UnifierSealedExpression unifier))
+    -> m (Map (UnifierName unifier) (UnifierSealedExpression unifier))
 bindingsComponentLetSealedExpression (MkBindings bindings) =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
@@ -107,8 +105,8 @@ bindingsComponentLetSealedExpression (MkBindings bindings) =
 
 valuesLetSealedExpression ::
        forall unifier. Unifier unifier
-    => StrictMap (UnifierName unifier) (AnyValue (UnifierPosShimWit unifier))
-    -> StrictMap (UnifierName unifier) (UnifierSealedExpression unifier)
+    => Map (UnifierName unifier) (AnyValue (UnifierPosShimWit unifier))
+    -> Map (UnifierName unifier) (UnifierSealedExpression unifier)
 valuesLetSealedExpression = fmap constSealedExpression
 
 bindingsNames :: Bindings unifier -> [UnifierName unifier]

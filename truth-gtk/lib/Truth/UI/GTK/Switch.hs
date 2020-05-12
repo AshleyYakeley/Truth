@@ -10,7 +10,7 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 import Truth.Debug.Object
 
-switchView :: Subscriber (ROWUpdate GCreateView) -> GCreateView
+switchView :: Model (ROWUpdate GCreateView) -> GCreateView
 switchView sub = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
@@ -22,9 +22,9 @@ switchView sub = do
                     lcContainPackStart True box widget
                     #show widget
             return vs
-        initVS :: Subscriber (ROWUpdate GCreateView) -> CreateView (ViewState, ())
+        initVS :: Model (ROWUpdate GCreateView) -> CreateView (ViewState, ())
         initVS rm = do
-            firstspec <- viewRunResource rm $ \am -> subRead am ReadWhole
+            firstspec <- viewRunResource rm $ \am -> aModelRead am ReadWhole
             vs <- cvLiftView $ getViewState firstspec
             return (vs, ())
         recvVS :: () -> [ROWUpdate GCreateView] -> StateT ViewState View ()
@@ -38,4 +38,4 @@ switchGetView =
         spec <- isUISpec uispec
         return $
             case spec of
-                MkSwitchUISpec sub -> switchView $ mapSubscriber (liftReadOnlyEditLens $ funcEditLens getview) sub
+                MkSwitchUISpec sub -> switchView $ mapModel (liftReadOnlyChangeLens $ funcChangeLens getview) sub

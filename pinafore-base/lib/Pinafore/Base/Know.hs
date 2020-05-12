@@ -10,7 +10,7 @@ module Pinafore.Base.Know
     , knowMaybe
     , knowMaybeLens
     , catKnowns
-    , unknownValueEditLens
+    , unknownValueChangeLens
     ) where
 
 import Shapes
@@ -85,5 +85,5 @@ unknownValueBijection def = let
     isoBackwards = Known
     in MkIsomorphism {..}
 
-unknownValueEditLens :: a -> EditLens (WholeUpdate (Know a)) (WholeUpdate a)
-unknownValueEditLens def = toEditLens $ unknownValueBijection def
+unknownValueChangeLens :: a -> ChangeLens (WholeUpdate (Know a)) (WholeUpdate a)
+unknownValueChangeLens def = toChangeLens $ unknownValueBijection def

@@ -12,30 +12,53 @@ packages:
   original:
     hackage: mime-0.4.0.2
 - completed:
-    hackage: haskell-src-exts-1.22.0@sha256:f558923a9c8f57402c33a8cc871b934027a5c65414404c87239f6cbd7357d54e,4541
+    hackage: direct-sqlite-2.3.26@sha256:04e835402f1508abca383182023e4e2b9b86297b8533afbd4e57d1a5652e0c23,3718
     pantry-tree:
-      size: 96940
-      sha256: 597b6f48bd409a4d0da013c4e356945c42e0d098966035d3aa68cd4a3ccd66c9
+      size: 770
+      sha256: 11874ab21e10c5b54cd1e02a037b677dc1e2ee9986f38c599612c56654dc01c3
   original:
-    hackage: haskell-src-exts-1.22.0
+    hackage: direct-sqlite-2.3.26
 - completed:
-    cabal-file:
-      size: 3609
-      sha256: f264293c32b704c623d98df85f873e322124e2c0058b9062798f891472f48ad4
+    hackage: sqlite-simple-0.4.18.0@sha256:3ceea56375c0a3590c814e411a4eb86943f8d31b93b110ca159c90689b6b39e5,3002
+    pantry-tree:
+      size: 1930
+      sha256: e58b9955e483d51ee0966f8ba4384305d871480e2a38b32ee0fcd4573d74cf95
+  original:
+    hackage: sqlite-simple-0.4.18.0
+- completed:
+    name: haskell-src-exts
+    version: 1.23.0
+    git: https://github.com/AshleyYakeley/haskell-src-exts.git
+    pantry-tree:
+      size: 98738
+      sha256: 7a072171e66e87e3051fb4d9508b93c731e30c07d1e86aa77fb7fe103b5380bd
+    commit: 8cb68def2563e2ebcbdcbec688b326b9f3fa1dd7
+  original:
+    git: https://github.com/AshleyYakeley/haskell-src-exts.git
+    commit: 8cb68def2563e2ebcbdcbec688b326b9f3fa1dd7
+- completed:
     name: hindent
-    version: 5.3.0
+    version: 5.3.1
     git: https://github.com/AshleyYakeley/hindent.git
     pantry-tree:
-      size: 1961
-      sha256: 009ed962c49db11e68328f4e094c5d5d293ad1a39d89086415c80601ec34dfaa
-    commit: d07e0ab032f9766f2d92dc260497ebd1ffbe62d7
+      size: 2019
+      sha256: a0653982a3645fdcde627ec40f228fd28d08744fd9f1cd170c8b200b96b844f0
+    commit: 7c70abda1ae7e9ec0aa4742a23866a4ddb3094c1
   original:
     git: https://github.com/AshleyYakeley/hindent.git
-    commit: d07e0ab032f9766f2d92dc260497ebd1ffbe62d7
+    commit: 7c70abda1ae7e9ec0aa4742a23866a4ddb3094c1
 - completed:
-    cabal-file:
-      size: 1785
-      sha256: 5d21b165ab6cc8c0c9fd4454ea779d42b03ff0dbd856f02c992412c33f8d6499
+    name: licensor
+    version: 0.4.0
+    git: https://github.com/AshleyYakeley/licensor.git
+    pantry-tree:
+      size: 729
+      sha256: c037a42f539d085a28d79da36453275e7c6135df5c49d323762e2df77f0eafec
+    commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
+  original:
+    git: https://github.com/AshleyYakeley/licensor.git
+    commit: cecb4e7a9be09f61ad748b837cf702bbd4a0c0c2
+- completed:
     name: ghc-prof-flamegraph
     version: 0.2.0.0
     git: https://github.com/fpco/ghc-prof-flamegraph.git
@@ -48,7 +71,7 @@ packages:
     commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
 snapshots:
 - completed:
-    size: 525663
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/14.yaml
-    sha256: 6edc48df46eb8bf7b861e98dd30d021a92c2e1820c9bb6528aac5d997b0e14ef
-  original: lts-14.14
+    size: 494638
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/15/11.yaml
+    sha256: 5747328cdcbb8fe9c96fc048b5566167c80dd176a41b52d3b363058e3cc1dc5d
+  original: lts-15.11

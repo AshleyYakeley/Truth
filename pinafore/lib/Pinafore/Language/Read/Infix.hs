@@ -5,7 +5,6 @@ module Pinafore.Language.Read.Infix
     , FixAssoc(..)
     ) where
 
-import Pinafore.Base
 import Pinafore.Language.Name
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Token
@@ -84,37 +83,25 @@ operatorFixity ">>" = MkFixity AssocLeft 1
 operatorFixity "$" = MkFixity AssocRight 0
 operatorFixity _ = MkFixity AssocLeft 10
 
-readInfix :: Int -> Parser (Name, FixAssoc, SyntaxExpression baseupdate)
+readInfix :: Int -> Parser (Name, FixAssoc, SyntaxExpression)
 readInfix prec =
     try $ do
         spos <- getPosition
         name <- readThis TokOperator
         let MkFixity assoc fprec = operatorFixity name
         if prec == fprec
-            then return (name, assoc, MkSyntaxExpression spos $ SEVar name)
+            then return (name, assoc, MkWithSourcePos spos $ SEVar name)
             else empty
 
-leftApply ::
-       HasPinaforeEntityUpdate baseupdate
-    => SyntaxExpression baseupdate
-    -> [(SourcePos, SyntaxExpression baseupdate, SyntaxExpression baseupdate)]
-    -> SyntaxExpression baseupdate
+leftApply :: SyntaxExpression -> [(SourcePos, SyntaxExpression, SyntaxExpression)] -> SyntaxExpression
 leftApply e1 [] = e1
 leftApply e1 ((spos, f, e2):rest) = leftApply (seApplys spos f [e1, e2]) rest
 
-rightApply ::
-       HasPinaforeEntityUpdate baseupdate
-    => SyntaxExpression baseupdate
-    -> [(SourcePos, SyntaxExpression baseupdate, SyntaxExpression baseupdate)]
-    -> SyntaxExpression baseupdate
+rightApply :: SyntaxExpression -> [(SourcePos, SyntaxExpression, SyntaxExpression)] -> SyntaxExpression
 rightApply e1 [] = e1
 rightApply e1 ((spos, f, e2):rest) = seApplys spos f [e1, rightApply e2 rest]
 
-readInfixedExpression ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => Parser (SyntaxExpression baseupdate)
-    -> Int
-    -> Parser (SyntaxExpression baseupdate)
+readInfixedExpression :: Parser SyntaxExpression -> Int -> Parser SyntaxExpression
 readInfixedExpression pe 11 = pe
 readInfixedExpression pe prec = do
     spos <- getPosition
@@ -135,8 +122,5 @@ readInfixedExpression pe prec = do
                 return $ rightApply se1 $ fmap (\(_, _, seop, se2) -> (spos, seop, se2)) rest
         _ -> fail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(name, _, _, _) -> show name) rest)
 
-readExpressionInfixed ::
-       forall baseupdate. HasPinaforeEntityUpdate baseupdate
-    => Parser (SyntaxExpression baseupdate)
-    -> Parser (SyntaxExpression baseupdate)
+readExpressionInfixed :: Parser SyntaxExpression -> Parser SyntaxExpression
 readExpressionInfixed pe = readInfixedExpression pe 0

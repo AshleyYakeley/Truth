@@ -1,7 +1,7 @@
 module Truth.Core.UI.Window where
 
 import Truth.Core.Import
-import Truth.Core.Object
+import Truth.Core.Reference
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.MenuBar
 import Truth.Core.UI.Specifier.Specifier
@@ -9,8 +9,8 @@ import Truth.Core.UI.View.View
 
 data WindowSpec = MkWindowSpec
     { wsCloseBoxAction :: View ()
-    , wsTitle :: Subscriber (ROWUpdate Text)
-    , wsMenuBar :: Maybe (Subscriber (ROWUpdate MenuBar))
+    , wsTitle :: Model (ROWUpdate Text)
+    , wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
     , wsContent :: CVUISpec
     }
 

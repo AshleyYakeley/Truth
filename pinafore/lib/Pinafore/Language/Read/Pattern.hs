@@ -13,7 +13,7 @@ readSourcePosPattern :: Parser SyntaxPattern' -> Parser SyntaxPattern
 readSourcePosPattern p = do
     spos <- getPosition
     expr' <- p
-    return $ MkSyntaxPattern spos expr'
+    return $ MkWithSourcePos spos expr'
 
 readPatterns :: Parser [SyntaxPattern]
 readPatterns = many readPattern2
@@ -26,15 +26,15 @@ readPattern1 = do
         [] -> return f
         _ ->
             case f of
-                MkSyntaxPattern spos (ConstructorSyntaxPattern c cargs) ->
-                    return $ MkSyntaxPattern spos $ ConstructorSyntaxPattern c $ cargs <> args
+                MkWithSourcePos spos (ConstructorSyntaxPattern c cargs) ->
+                    return $ MkWithSourcePos spos $ ConstructorSyntaxPattern c $ cargs <> args
                 _ -> fail "cannot apply pattern"
 
 nilPattern :: SourcePos -> SyntaxPattern
-nilPattern spos = MkSyntaxPattern spos $ ConstructorSyntaxPattern (SLNamedConstructor "[]") []
+nilPattern spos = MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor "[]") []
 
 consPattern :: SourcePos -> SyntaxPattern -> SyntaxPattern -> SyntaxPattern
-consPattern spos pat1 pat2 = MkSyntaxPattern spos $ ConstructorSyntaxPattern (SLNamedConstructor ":") [pat1, pat2]
+consPattern spos pat1 pat2 = MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor ":") [pat1, pat2]
 
 readPattern2 :: Parser SyntaxPattern
 readPattern2 = do
@@ -58,7 +58,7 @@ readPattern3 = do
             readPattern3
     case mpat2 of
         Nothing -> return pat1
-        Just pat2 -> return $ MkSyntaxPattern spos $ BothSyntaxPattern pat1 pat2
+        Just pat2 -> return $ MkWithSourcePos spos $ BothSyntaxPattern pat1 pat2
 
 listPattern :: SourcePos -> [SyntaxPattern] -> SyntaxPattern
 listPattern spos [] = nilPattern spos
@@ -87,7 +87,7 @@ readPattern4 =
              spos <- getPosition
              mpat1 <- optional readPattern1
              case mpat1 of
-                 Nothing -> return $ MkSyntaxPattern spos $ ConstructorSyntaxPattern SLUnit []
+                 Nothing -> return $ MkWithSourcePos spos $ ConstructorSyntaxPattern SLUnit []
                  Just pat1 -> do
                      mpat2 <-
                          optional $ do
@@ -95,5 +95,5 @@ readPattern4 =
                              readPattern1
                      case mpat2 of
                          Nothing -> return pat1
-                         Just pat2 -> return $ MkSyntaxPattern spos $ ConstructorSyntaxPattern SLPair [pat1, pat2]) <?>
+                         Just pat2 -> return $ MkWithSourcePos spos $ ConstructorSyntaxPattern SLPair [pat1, pat2]) <?>
     "pattern"

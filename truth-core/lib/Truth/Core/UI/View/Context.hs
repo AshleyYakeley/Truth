@@ -5,6 +5,7 @@ import Truth.Core.Resource
 
 data ViewContext = MkViewContext
     { vcRequest :: forall t. IOWitness t -> Maybe t
-    , vcWithUILock :: IO () -> IO ()
+    , vcWithUILock :: forall a. IO a -> IO a
     , vcResourceContext :: ResourceContext
+    , vcExit :: IO ()
     }

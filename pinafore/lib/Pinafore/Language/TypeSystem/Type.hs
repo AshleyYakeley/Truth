@@ -11,7 +11,6 @@ import Pinafore.Language.Name
 import Pinafore.Language.Scope
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Ground
-import Pinafore.Language.Type.Literal
 import Pinafore.Language.TypeSystem.Show
 import Shapes
 
@@ -27,7 +26,7 @@ data PinaforeType (baseupdate :: Type) (polarity :: Polarity) (t :: Type) where
 -- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVar') for type variables.
 data PinaforeSingularType (baseupdate :: Type) (polarity :: Polarity) (t :: Type) where
     GroundPinaforeSingularType
-        :: PinaforeGroundType baseupdate polarity dv t
+        :: PinaforeGroundType baseupdate dv t
         -> DolanArguments dv (PinaforeType baseupdate) t polarity ta
         -> PinaforeSingularType baseupdate polarity ta
     VarPinaforeSingularType :: SymbolType name -> PinaforeSingularType baseupdate polarity (UVar name)
@@ -49,11 +48,6 @@ singlePinaforeType ::
        PinaforeSingularType baseupdate polarity t
     -> PinaforeType baseupdate polarity (JoinMeetType polarity t (LimitType polarity))
 singlePinaforeType st = ConsPinaforeType st NilPinaforeType
-
-literalPinaforeType :: LiteralType t -> PinaforeType baseupdate polarity (JoinMeetType polarity t (LimitType polarity))
-literalPinaforeType t =
-    singlePinaforeType $
-    GroundPinaforeSingularType (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType t) NilDolanArguments
 
 joinPinaforeTypes ::
        forall baseupdate (a :: Type) (b :: Type) r.
@@ -157,59 +151,80 @@ instance Is PolarityType polarity => ExprShow (PinaforeRangeType baseupdate pola
                 _ -> "{" <> ointercalate "," pieces <> "}"
         in (text, 0)
 
-pinaforeToEntityArgs ::
+pinaforeToConcreteEntityArgs ::
        forall baseupdate dv f polarity t. Is PolarityType polarity
     => CovaryType dv
-    -> CovaryMap JMIsoShim f
+    -> CovaryMap f
     -> DolanArguments dv (PinaforeType baseupdate) f polarity t
-    -> Maybe (ShimWit JMIsoShim (Arguments EntityType f) polarity t)
-pinaforeToEntityArgs = dolanArgumentsToArgumentsM pinaforeToEntityType
+    -> Maybe (ShimWit JMIsoShim (Arguments ConcreteEntityType f) polarity t)
+pinaforeToConcreteEntityArgs = dolanArgumentsToArgumentsM pinaforeToConcreteEntityType
 
-pinaforeEntityToEntityType ::
+pinaforeEntityToConcreteEntityType ::
        forall baseupdate dv f polarity a. Is PolarityType polarity
     => CovaryType dv
     -> EntityGroundType f
     -> DolanArguments dv (PinaforeType baseupdate) f polarity a
-    -> Maybe (ShimWit JMIsoShim EntityType polarity a)
-pinaforeEntityToEntityType lc gt args = do
-    MkShimWit eargs conv <- pinaforeToEntityArgs lc (bijectCovaryMap $ entityGroundTypeCovaryMap gt) args
-    return $ MkShimWit (MkEntityType gt eargs) conv
+    -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
+pinaforeEntityToConcreteEntityType lc gt args = do
+    MkShimWit eargs conv <- pinaforeToConcreteEntityArgs lc (entityGroundTypeCovaryMap gt) args
+    return $ MkShimWit (MkConcreteType gt eargs) conv
 
-pinaforeToEntityType ::
+pinaforeSingularToConcreteEntityType ::
+       forall baseupdate polarity a. Is PolarityType polarity
+    => PinaforeSingularType baseupdate polarity a
+    -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
+pinaforeSingularToConcreteEntityType (GroundPinaforeSingularType (EntityPinaforeGroundType lc gt) args) =
+    pinaforeEntityToConcreteEntityType lc gt args
+pinaforeSingularToConcreteEntityType _ = Nothing
+
+pinaforeToConcreteEntityType ::
        forall baseupdate polarity a. Is PolarityType polarity
     => PinaforeType baseupdate polarity a
-    -> Maybe (ShimWit JMIsoShim EntityType polarity a)
-pinaforeToEntityType (ConsPinaforeType (GroundPinaforeSingularType (EntityPinaforeGroundType lc gt) args) NilPinaforeType) = do
-    MkShimWit et conv <- pinaforeEntityToEntityType lc gt args
+    -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
+pinaforeToConcreteEntityType (ConsPinaforeType t NilPinaforeType) = do
+    MkShimWit et conv <- pinaforeSingularToConcreteEntityType t
     return $
         MkShimWit et $
         case representative @_ @_ @polarity of
             PositiveType -> conv <.> MkJMIsoShim bijoin1
             NegativeType -> MkJMIsoShim bimeet1 <.> conv
-pinaforeToEntityType NilPinaforeType
-    | PositiveType <- representative @_ @_ @polarity = Just $ MkShimWit NoneEntityType id
-pinaforeToEntityType _ = Nothing
+pinaforeToConcreteEntityType _ = Nothing
 
-entityToNegativePinaforeType ::
-       forall baseupdate m t. MonadError ErrorType m
-    => EntityType t
-    -> m (PinaforeShimWit baseupdate 'Negative t)
-entityToNegativePinaforeType (MkEntityType gt args) =
+concreteEntityToMaybeNegativePinaforeType ::
+       forall baseupdate t. ConcreteEntityType t -> Maybe (PinaforeShimWit baseupdate 'Negative t)
+concreteEntityToMaybeNegativePinaforeType (MkConcreteType gt args) =
     entityGroundTypeCovaryType gt $ \ct -> do
         MkShimWit dargs conv <-
-            argumentsToDolanArgumentsM entityToNegativePinaforeType ct (entityGroundTypeCovaryMap gt) args
+            argumentsToDolanArgumentsM concreteEntityToMaybeNegativePinaforeType ct (entityGroundTypeCovaryMap gt) args
         return $
             singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
-entityToNegativePinaforeType NoneEntityType = throwError InterpretTypeNoneNotNegativeEntityError
 
-entityToPositivePinaforeType :: forall baseupdate t. EntityType t -> PinaforeShimWit baseupdate 'Positive t
-entityToPositivePinaforeType (MkEntityType gt args) =
+concreteEntityToNegativePinaforeType ::
+       forall baseupdate m t. MonadThrow ErrorType m
+    => ConcreteEntityType t
+    -> m (PinaforeShimWit baseupdate 'Negative t)
+concreteEntityToNegativePinaforeType et =
+    case concreteEntityToMaybeNegativePinaforeType et of
+        Just wit -> return wit
+        Nothing -> throw InterpretTypeNoneNotNegativeEntityError
+
+concreteEntityToPositivePinaforeType ::
+       forall baseupdate t. ConcreteEntityType t -> PinaforeShimWit baseupdate 'Positive t
+concreteEntityToPositivePinaforeType (MkConcreteType gt args) =
     entityGroundTypeCovaryType gt $ \ct ->
-        case argumentsToDolanArguments entityToPositivePinaforeType ct (entityGroundTypeCovaryMap gt) args of
+        case argumentsToDolanArguments concreteEntityToPositivePinaforeType ct (entityGroundTypeCovaryMap gt) args of
             MkShimWit dargs conv ->
                 singlePinaforeShimWit $
                 MkShimWit (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
-entityToPositivePinaforeType NoneEntityType = mkShimWit NilPinaforeType
+
+concreteEntityToPinaforeType ::
+       forall baseupdate polarity t. Is PolarityType polarity
+    => ConcreteEntityType t
+    -> Maybe (PinaforeShimWit baseupdate polarity t)
+concreteEntityToPinaforeType et =
+    case representative @_ @_ @polarity of
+        PositiveType -> return $ concreteEntityToPositivePinaforeType et
+        NegativeType -> concreteEntityToMaybeNegativePinaforeType et
 
 type PinaforeExpression baseupdate
      = SealedExpression Name (PinaforeShimWit baseupdate 'Negative) (PinaforeShimWit baseupdate 'Positive)
@@ -222,10 +237,25 @@ type PinaforePattern baseupdate
 
 data PinaforeTypeSystem (baseupdate :: Type)
 
-type PinaforeScoped baseupdate
-     = Scoped (PinaforeExpression baseupdate) (PinaforePatternConstructor baseupdate) (AnyW ClosedEntityType)
+type instance ScopeExpression (PinaforeTypeSystem baseupdate) =
+     PinaforeExpression baseupdate
 
-type PinaforeSourceScoped baseupdate
-     = SourceScoped (PinaforeExpression baseupdate) (PinaforePatternConstructor baseupdate) (AnyW ClosedEntityType)
+type instance
+     ScopePatternConstructor (PinaforeTypeSystem baseupdate) =
+     PinaforePatternConstructor baseupdate
+
+type instance ScopeProvidedType (PinaforeTypeSystem baseupdate) =
+     ProvidedType baseupdate
+
+type instance ScopeClosedEntityType (PinaforeTypeSystem baseupdate)
+     = ClosedEntityType
+
+type PinaforeNamedType baseupdate = NamedType (PinaforeTypeSystem baseupdate)
+
+type PinaforeTypeBox baseupdate = TypeBox (PinaforeTypeSystem baseupdate)
+
+type PinaforeScoped baseupdate = Scoped (PinaforeTypeSystem baseupdate)
+
+type PinaforeSourceScoped baseupdate = SourceScoped (PinaforeTypeSystem baseupdate)
 
 type PinaforeTypeCheck baseupdate = VarRenamerT (PinaforeTypeSystem baseupdate) (PinaforeSourceScoped baseupdate)

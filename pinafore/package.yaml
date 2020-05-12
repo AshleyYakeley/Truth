@@ -14,7 +14,6 @@ library:
       - filepath
       - parsec
       - containers
-      - uuid
       - typed-expression
       - truth-core
       - truth-world
@@ -42,8 +41,11 @@ library:
       - Pinafore.Language.If
       - Pinafore.Language.TypeSystem.Show
       - Pinafore.Language.Type.Ground
-      - Pinafore.Language.Type.TypeID
+      - Pinafore.Language.TypeSystem.Nonpolar
+      - Pinafore.Language.Type.Data
+      - Pinafore.Language.Type.Identified
       - Pinafore.Language.Error
+      - Pinafore.Language.Subtype
       - Pinafore.Language.Scope
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.TypeSystem.Type
@@ -61,6 +63,7 @@ library:
       - Pinafore.Language.TypeSystem.Subsume
       - Pinafore.Language.TypeSystem
       - Pinafore.Language.Type.Entity
+      - Pinafore.Language.Type.EntityAdapter
       - Pinafore.Language.Syntax
       - Pinafore.Language.Read.Token
       - Pinafore.Language.Read.RefNotation
@@ -74,6 +77,7 @@ library:
       - Pinafore.Language.Read.Interactive
       - Pinafore.Language.Read
       - Pinafore.Language.Interpret.Type
+      - Pinafore.Language.Interpret.TypeDecl
       - Pinafore.Language.Interpret
       - Pinafore.Language.Expression
       - Pinafore.Language.Convert
@@ -104,6 +108,7 @@ tests:
           - tasty-expected-failure
           - tasty-hunit
           - tasty-golden
+          - tasty-quickcheck
         main: Main.hs
         other-modules:
           - Test.Context

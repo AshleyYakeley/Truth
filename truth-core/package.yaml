@@ -14,6 +14,7 @@ library:
       - thread-trace
     exposed-modules:
       - Truth.Core
+      - Truth.Core.UI.Toolkit.Internal
       - Truth.Debug
       - Truth.Debug.Edit
       - Truth.Debug.Object
@@ -26,7 +27,8 @@ library:
       - Truth.Core.Resource.ResourceRunner
       - Truth.Core.Resource.Runnable
       - Truth.Core.Resource
-      - Truth.Core.Read.MutableRead
+      - Truth.Core.Read.Readable
+      - Truth.Core.Read.ReadM
       - Truth.Core.Read.SubjectReader
       - Truth.Core.Read.FullSubjectReader
       - Truth.Core.Read
@@ -80,21 +82,23 @@ library:
       - Truth.Core.Types.Database.Show
       - Truth.Core.Types.Database.Tuple
       - Truth.Core.Types.Database.Tuple.Show
+      - Truth.Core.Types.Bi
+      - Truth.Core.Types.BiWhole
       - Truth.Core.Types
-      - Truth.Core.Object.DeferActionT
-      - Truth.Core.Object.EditContext
-      - Truth.Core.Object.Object
-      - Truth.Core.Object.AutoClose
-      - Truth.Core.Object.ObjectEdit
-      - Truth.Core.Object.ObjectMaker
-      - Truth.Core.Object.Subscriber
-      - Truth.Core.Object.Tuple
-      - Truth.Core.Object.MemoryCell
-      - Truth.Core.Object.Editor
-      - Truth.Core.Object.Cache
-      - Truth.Core.Object.Savable
-      - Truth.Core.Object.Undo
-      - Truth.Core.Object
+      - Truth.Core.Reference.DeferActionT
+      - Truth.Core.Reference.EditContext
+      - Truth.Core.Reference.Reference
+      - Truth.Core.Reference.AutoClose
+      - Truth.Core.Reference.ReferenceEdit
+      - Truth.Core.Reference.Premodel
+      - Truth.Core.Reference.Model
+      - Truth.Core.Reference.Tuple
+      - Truth.Core.Reference.MemoryCell
+      - Truth.Core.Reference.Editor
+      - Truth.Core.Reference.Cache
+      - Truth.Core.Reference.Savable
+      - Truth.Core.Reference.Undo
+      - Truth.Core.Reference
       - Truth.Core.UI.Request
       - Truth.Core.UI.TextStyle
       - Truth.Core.UI.Specifier.Specifier

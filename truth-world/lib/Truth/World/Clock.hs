@@ -7,8 +7,8 @@ import Shapes
 import Truth.Core
 import Truth.Debug
 
-clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (ROWUpdate UTCTime) ()
-clockObjectMaker basetime interval omrUpdatesTask update = do
+clockPremodel :: UTCTime -> NominalDiffTime -> Premodel (ROWUpdate UTCTime) ()
+clockPremodel basetime interval pmrUpdatesTask update = do
     rec
         ref <- liftIO $ newIORef first
         first <-
@@ -18,20 +18,20 @@ clockObjectMaker basetime interval omrUpdatesTask update = do
     run <-
         liftIO $
         newResourceRunner $ traceBarrier "clockObjectMaker" $ \rt -> do
-            t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while object is open
+            t <- liftIO $ readIORef ref -- read once before opening, to keep value consistent while reference is open
             runReaderT rt t
     let
-        omrObject :: Object (ConstEdit (WholeReader UTCTime))
-        omrObject = MkResource run $ immutableAnObject $ \ReadWhole -> ask
-        omrValue = ()
-    return MkObjectMakerResult {..}
+        pmrReference :: Reference (ConstEdit (WholeReader UTCTime))
+        pmrReference = MkResource run $ immutableAReference $ \ReadWhole -> ask
+        pmrValue = ()
+    return MkPremodelResult {..}
 
-clockTimeZoneLens :: FloatingEditLens (WholeUpdate UTCTime) (ROWUpdate TimeZone)
+clockTimeZoneLens :: FloatingChangeLens (WholeUpdate UTCTime) (ROWUpdate TimeZone)
 clockTimeZoneLens = let
-    minuteChanges = liftReadOnlyFloatingEditLens $ changeOnlyUpdateFunction @UTCTime
-    tzChanges = liftReadOnlyFloatingEditLens $ changeOnlyUpdateFunction @TimeZone
+    minuteChanges = liftReadOnlyFloatingChangeLens $ changeOnlyUpdateFunction @UTCTime
+    tzChanges = liftReadOnlyFloatingChangeLens $ changeOnlyUpdateFunction @TimeZone
     wholeMinute :: UTCTime -> UTCTime
     wholeMinute (UTCTime d t) = UTCTime d $ secondsToDiffTime $ (div' t 60) * 60
     in tzChanges .
-       (liftReadOnlyFloatingEditLens $ editLensToFloating $ ioFuncEditLens getTimeZone) .
-       minuteChanges . editLensToFloating (funcEditLens wholeMinute)
+       (liftReadOnlyFloatingChangeLens $ changeLensToFloating $ ioFuncChangeLens getTimeZone) .
+       minuteChanges . changeLensToFloating (funcChangeLens wholeMinute)

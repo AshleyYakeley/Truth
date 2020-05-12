@@ -8,6 +8,12 @@ import Shapes
 data CatRange (shim :: Type -> Type -> Type) (pq1 :: (Type, Type)) (pq2 :: (Type, Type)) where
     MkCatRange :: shim p2 p1 -> shim q1 q2 -> CatRange shim '( p1, q1) '( p2, q2)
 
+catRangeContra :: CatRange shim pq1 pq2 -> shim (Contra pq2) (Contra pq1)
+catRangeContra (MkCatRange s _) = s
+
+catRangeCo :: CatRange shim pq1 pq2 -> shim (Co pq1) (Co pq2)
+catRangeCo (MkCatRange _ s) = s
+
 instance (forall a b. Show (shim a b)) => Show (CatRange shim a' b') where
     show (MkCatRange p q) = "(" <> show p <> "," <> show q <> ")"
 
@@ -41,8 +47,15 @@ catRangeMap (MkCatRange pp qq) (MkRange pt tq) = MkRange (pt <.> pp) (qq <.> tq)
 liftCatRangeParts :: Functor f => CatRange (->) '( pa, qa) '( pb, qb) -> CatRange (->) '( f pa, f qa) '( f pb, f qb)
 liftCatRangeParts (MkCatRange pp qq) = MkCatRange (cfmap pp) (cfmap qq)
 
-data RangeType (tw :: Polarity -> Type -> Type) (polarity :: Polarity) (pq :: (Type, Type)) where
+data RangeType (tw :: Polarity -> k -> Type) (polarity :: Polarity) (pq :: (k, k)) where
     MkRangeType :: tw (InvertPolarity polarity) p -> tw polarity q -> RangeType tw polarity '( p, q)
+
+instance (TestEquality (tw polarity), TestEquality (tw (InvertPolarity polarity))) =>
+             TestEquality (RangeType tw polarity) where
+    testEquality (MkRangeType pa qa) (MkRangeType pb qb) = do
+        Refl <- testEquality pa pb
+        Refl <- testEquality qa qb
+        return Refl
 
 rangeTypeInKind :: forall tw polarity. Subrepresentative (RangeType tw polarity) (KindWitness (Type, Type))
 rangeTypeInKind (MkRangeType _ _) = Dict

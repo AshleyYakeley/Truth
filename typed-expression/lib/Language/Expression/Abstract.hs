@@ -242,7 +242,7 @@ caseAbstractSealedExpression absw rawcases =
             pure $ MkSealedExpression (absw rvwt rtwt) $ fmap (\t1a t -> runIdentity $ t1a t) rexpr
 
 applyPatternConstructor ::
-       forall renamer unifier m. (UnifierRenamerConstraint unifier renamer m, MonadError ExpressionError m)
+       forall renamer unifier m. (UnifierRenamerConstraint unifier renamer m, MonadThrow ExpressionError m)
     => UnifierPatternConstructor unifier
     -> UnifierSealedPattern unifier
     -> m (UnifierPatternConstructor unifier)
@@ -251,7 +251,7 @@ applyPatternConstructor patcon patarg =
     withTransConstraintTM @Monad $ do
         MkPatternConstructor pct pclt pcpat <- rename patcon
         case pclt of
-            NilListType -> lift $ throwError PatternTooManyConsArgsError
+            NilListType -> lift $ throw PatternTooManyConsArgsError
             ConsListType pca pcla -> do
                 MkSealedPattern ta pata <- rename patarg
                 uconv <- unifyUUPosNegShimWit @unifier (uuLiftPosShimWit pca) (uuLiftNegShimWit ta)

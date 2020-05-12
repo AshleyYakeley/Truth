@@ -28,6 +28,7 @@ library:
       - Language.Expression.Bindings
       - Language.Expression.TypeSystem
       - Language.Expression.Unitype
+      - Language.Expression.Arguments
       - Language.Expression.Dolan
     other-modules:
       - Data.Shim.Polarity
@@ -38,6 +39,7 @@ library:
       - Data.Shim.JoinMeet
       - Data.Shim.PolyShim
       - Data.Shim.JMShim
+      - Data.Shim.JMIsoShim
       - Data.Shim.JMShimWit
       - Language.Expression.Dolan.PShimWit
       - Language.Expression.Dolan.Covariance

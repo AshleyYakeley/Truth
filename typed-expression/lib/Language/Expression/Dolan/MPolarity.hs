@@ -48,9 +48,62 @@ invertMPolarity v =
         MNegativeType -> v
         MBothType -> v
 
-data MPolarW w mpolarity where
-    SingleMPolarW :: Is PolarityType polarity => AnyW (w polarity) -> MPolarW w ('Just polarity)
-    BothMPolarW :: (forall polarity. Is PolarityType polarity => AnyW (w polarity)) -> MPolarW w 'Nothing
+data MPolarW (w :: Polarity -> k -> Type) (mpolarity :: Maybe Polarity) where
+    SingleMPolarW
+        :: forall k (w :: Polarity -> k -> Type) (polarity :: Polarity). Is PolarityType polarity
+        => AnyW (w polarity)
+        -> MPolarW w ('Just polarity)
+    BothMPolarW
+        :: forall k (w :: Polarity -> k -> Type).
+           (forall polarity. Is PolarityType polarity => AnyW (w polarity))
+        -> MPolarW w 'Nothing
+
+mapMPolarW ::
+       forall k1 k2 (w1 :: Polarity -> k1 -> Type) (w2 :: Polarity -> k2 -> Type) (mpolarity :: Maybe Polarity).
+       (forall polarity. Is PolarityType polarity => AnyW (w1 polarity) -> AnyW (w2 polarity))
+    -> MPolarW w1 mpolarity
+    -> MPolarW w2 mpolarity
+mapMPolarW f (SingleMPolarW awpt) = SingleMPolarW $ f awpt
+mapMPolarW f (BothMPolarW awpt) = BothMPolarW $ f awpt
+
+mapMPolarWM ::
+       forall m k1 k2 (w1 :: Polarity -> k1 -> Type) (w2 :: Polarity -> k2 -> Type) (mpolarity :: Maybe Polarity).
+       Monad m
+    => (forall polarity. Is PolarityType polarity => AnyW (w1 polarity) -> m (AnyW (w2 polarity)))
+    -> MPolarW w1 mpolarity
+    -> m (MPolarW w2 mpolarity)
+mapMPolarWM mf (SingleMPolarW awpt) = do
+    awpt' <- mf awpt
+    return $ SingleMPolarW awpt'
+mapMPolarWM mf (BothMPolarW awpt) = do
+    awptPos <- mf awpt
+    awprNeg <- mf awpt
+    return $ bothMPolarW awptPos awprNeg
+
+toMPolarWM ::
+       forall m k (w :: Polarity -> k -> Type) (mpolarity :: Maybe Polarity). (Is MPolarityType mpolarity, Monad m)
+    => (forall polarity. Is PolarityType polarity => m (AnyW (w polarity)))
+    -> m (MPolarW w mpolarity)
+toMPolarWM mpt =
+    case representative @_ @MPolarityType @mpolarity of
+        MPositiveType -> do
+            pt <- mpt
+            return $ SingleMPolarW pt
+        MNegativeType -> do
+            pt <- mpt
+            return $ SingleMPolarW pt
+        MBothType -> do
+            ptpos <- mpt
+            ptneg <- mpt
+            return $ bothMPolarW ptpos ptneg
+
+forMPolarW ::
+       forall m k1 k2 (w1 :: Polarity -> k1 -> Type) (w2 :: Polarity -> k2 -> Type) (mpolarity :: Maybe Polarity).
+       Monad m
+    => MPolarW w1 mpolarity
+    -> (forall polarity. Is PolarityType polarity => AnyW (w1 polarity) -> m (AnyW (w2 polarity)))
+    -> m (MPolarW w2 mpolarity)
+forMPolarW mpw mf = mapMPolarWM mf mpw
 
 bothMPolarW :: forall w. AnyW (w 'Positive) -> AnyW (w 'Negative) -> MPolarW w 'Nothing
 bothMPolarW posw negw = let

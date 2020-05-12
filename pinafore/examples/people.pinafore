@@ -1,4 +1,4 @@
-#!/usr/bin/env pinafore
+#!/usr/bin/pinafore
 
 let
 
@@ -6,7 +6,7 @@ let
 ui_page n ui = (uiLabel n,ui);
 ui_labelled n ui = uiHorizontal [(uiLabel n,False),(ui,True)];
 
-std_window :: Ref +Text -> (Action a -> [MenuItem]) -> UI a -> Action Window;
+std_window :: Ref +Text -> [MenuItem] -> UI -> Action Window;
 std_window title moremenus contents = fixAction $ \window -> let
     basemenus :: [MenuItem];
     basemenus =
@@ -23,12 +23,14 @@ std_window title moremenus contents = fixAction $ \window -> let
                 menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ];
-    menus getsel = {basemenus ++ moremenus getsel};
+    menus = {basemenus ++ moremenus};
     in openWindow title menus $ uiScrolled contents;
 
-selection_window :: (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> (set -> UI item) -> Action Window;
-selection_window (inames,inamep) iset iopen iui = let
-    moremenus getsel =
+selection_window :: (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> (set -> Notifier item -> UI) -> Action Window;
+selection_window (inames,inamep) iset iopen iui = do
+    (notifier,getsel) <- makeNotifier;
+    let
+    moremenus =
         [
             menuSubmenu "Selection"
             [
@@ -37,54 +39,55 @@ selection_window (inames,inamep) iset iopen iui = let
                 menuAction "Delete" Nothing {getsel >>= \p -> iset -= p}
             ]
         ];
-    in std_window {inamep} moremenus (iui iset);
+    in std_window {inamep} moremenus (iui iset notifier);
+    end;
 
 ### People
 
 # Ontology
 
 opentype LegalEntity;
-name = property @LegalEntity @Text !498260df-6a8a-44f0-b285-68a63565a33b;
-email = property @LegalEntity @Text !8649b74c-123e-4ece-be3b-b734b0db3ea7;
-phone = property @LegalEntity @Text !83dfc88b-7b5b-4262-a548-0af84d5e3b63;
+name = property @LegalEntity @Text !"498260df-6a8a-44f0-b285-68a63565a33b";
+email = property @LegalEntity @Text !"8649b74c-123e-4ece-be3b-b734b0db3ea7";
+phone = property @LegalEntity @Text !"83dfc88b-7b5b-4262-a548-0af84d5e3b63";
 
 opentype Person;
 people :: FiniteSetRef Person;
-people = property @Person @() !d52b4d16-babc-4c9b-9588-c66439ada088 !@ {()};
+people = property @Person @() !"d52b4d16-babc-4c9b-9588-c66439ada088" !@ {()};
 subtype Person <= LegalEntity;
 
-birthdate = property @Person @Text !b711b9b3-b43c-4ff6-be12-3291cc6b050a;
-deathdate = property @Person @Text !805a9e65-d69a-4261-9c94-a3249885b6bb;
+birthdate = property @Person @Text !"b711b9b3-b43c-4ff6-be12-3291cc6b050a";
+deathdate = property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb";
 
-mother = property @Person @Person !3afce58f-b7eb-4b11-8a75-2d66afd4d085;
-father = property @Person @Person !c005705f-9259-4d24-9713-db28a6e4f7d5;
+mother = property @Person @Person !"3afce58f-b7eb-4b11-8a75-2d66afd4d085";
+father = property @Person @Person !"c005705f-9259-4d24-9713-db28a6e4f7d5";
 children :: Ref Person -> FiniteSetRef Person;
 children p = mother !@ p <:|:> father !@ p;
-married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
+married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 
-employer = property @Person @LegalEntity !72f612af-ae47-4c18-b3df-6932ae914f62;
+employer = property @Person @LegalEntity !"72f612af-ae47-4c18-b3df-6932ae914f62";
 
 opentype Location;
-address = property @Location @Text !fd83bef7-145c-4e40-a2d6-938bb5fb6da1;
-locphone = property @Location @Text !83dfc88b-7b5b-4262-a548-0af84d5e3b63;
-city = property @Location @Text !55c84133-64f2-47a6-8b3c-e01256ec9779;
-postcode = property @Location @Text !80f99100-407b-4a6b-a4f0-a025c94132b3;
-province = property @Location @Text !dffae424-28d5-4543-b1b2-b8a744bbc0cd;
-country = property @Location @Text !1257c340-0ec1-4ff7-9fd8-d2eaa7822463;
+address = property @Location @Text !"fd83bef7-145c-4e40-a2d6-938bb5fb6da1";
+locphone = property @Location @Text !"0689535c-f220-47a2-8fcb-4782574e0749";
+city = property @Location @Text !"55c84133-64f2-47a6-8b3c-e01256ec9779";
+postcode = property @Location @Text !"80f99100-407b-4a6b-a4f0-a025c94132b3";
+province = property @Location @Text !"dffae424-28d5-4543-b1b2-b8a744bbc0cd";
+country = property @Location @Text !"1257c340-0ec1-4ff7-9fd8-d2eaa7822463";
 
-home = property @LegalEntity @Location !b1ff2354-13e5-4def-b5d0-fdf29c2274ff;
+home = property @LegalEntity @Location !"b1ff2354-13e5-4def-b5d0-fdf29c2274ff";
 
 opentype Organisation;
 organisations :: FiniteSetRef Organisation;
-organisations = property @Organisation @() !b655e2db-cf45-4696-8b89-8812406ba71b !@ {()};
+organisations = property @Organisation @() !"b655e2db-cf45-4696-8b89-8812406ba71b" !@ {()};
 subtype Organisation <= LegalEntity;
 
 legalentities :: FiniteSetRef (Either Person Organisation);
 legalentities = people <:+:> organisations;
 
 # UI
-table_entities :: UI (Either Person Organisation);
-table_entities = let
+table_entities :: Notifier (Either Person Organisation) -> UI;
+table_entities notifier = let
     nameColumn :: (Ref +Text, Either Person Organisation -> Ref Text);
     nameColumn = ({"Name"},\i -> name !$ {either i});
     openItem :: Either Person Organisation -> Action Window;
@@ -92,22 +95,28 @@ table_entities = let
         Left p -> window_person p;
         Right o -> window_org o;
         end;
-    in uiTable [nameColumn] (orderOn (name !++ name) alphabetical) legalentities openItem;
+    in uiTable [nameColumn] (orderOn (name !++ name) alphabetical) legalentities openItem notifier;
 
-table_people :: FiniteSetRef Person -> UI Person;
-table_people people = uiTable [({"Name"},\p -> name !$ {p})] (orderOn name alphabetical) people window_person;
+table_people :: FiniteSetRef Person -> Notifier Person -> UI;
+table_people people notifier = uiTable [({"Name"},\p -> name !$ {p})] (orderOn name alphabetical) people window_person notifier;
 
-ui_people :: FiniteSetRef Person -> UI Person;
-ui_people people = uiWithSelection $ \getperson -> uiVertical
-[
-    (uiButton {"New Person"} {newEntity people >>= window_person},False),
-    (uiButton {"View Person"} {getperson >>= window_person},False),
-    (uiButton {"Remove Person"} {getperson >>= \p -> people -= p},False),
-    (table_people people,True)
-];
+ui_people :: FiniteSetRef Person -> UI;
+ui_people people = uiRun $ do
+    (notifier,getperson) <- makeNotifier;
+    return $ uiVertical
+    [
+        (uiButton {"New Person"} {newEntity people >>= window_person},False),
+        (uiButton {"View Person"} {getperson >>= window_person},False),
+        (uiButton {"Remove Person"} {getperson >>= \p -> people -= p},False),
+        (table_people people notifier,True)
+    ];
+    end;
 
-ui_person :: Ref {-LegalEntity,+Person} -> UI None;
-ui_person p = uiIgnore $ uiVertical
+peopleByName :: Ref +[(Person,Text)];
+peopleByName = members (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
+
+ui_person :: Ref {-LegalEntity,+Person} -> UI;
+ui_person p = uiVertical
 [
     (ui_labelled {"Name: "} $ uiTextEntry $ name !$ p,False),
     (uiPages
@@ -135,23 +144,20 @@ ui_person p = uiIgnore $ uiVertical
             (ui_labelled {"Birth: "} $ uiTextEntry $ birthdate !$ p,False),
             (ui_labelled {"Death: "} $ uiTextEntry $ deathdate !$ p,False),
             (uiCheckBox {"Married"} $ married !$ p,False),
-            (ui_labelled {"Mother: "} $ uiPick name people $ mother !$ p,False),
-            (ui_labelled {"Father: "} $ uiPick name people $ father !$ p,False),
+            (ui_labelled {"Mother: "} $ uiPick peopleByName $ mother !$ p,False),
+            (ui_labelled {"Father: "} $ uiPick peopleByName $ father !$ p,False),
             (ui_people $ children p,True)
         ]
     ],True)
 ];
 
 window_person :: Person -> Action Window;
-window_person p = std_window (name !$ {p}) (\_ -> []) (ui_person {p});
+window_person p = std_window (name !$ {p}) [] (ui_person {p});
 
 window_org :: Organisation -> Action Window;
-window_org o = std_window (name !$ {o}) (\_ -> []) (uiBlank);
+window_org o = std_window (name !$ {o}) [] uiBlank;
 
 window_people :: Action Window;
 window_people = selection_window ("Person","People") people window_person table_people;
 
-in do
-    window_people;
-    return ();
-    end
+in window_people

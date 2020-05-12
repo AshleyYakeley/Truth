@@ -78,12 +78,12 @@ instance HasNewValue (Tuple NoteSel) where
 
 type NoteUpdate = TupleUpdate NoteSel
 
-noteEditSpec :: Subscriber NoteUpdate -> SelectNotify TextSelection -> CVUISpec
+noteEditSpec :: Model NoteUpdate -> SelectNotify TextSelection -> CVUISpec
 noteEditSpec sub sel =
     verticalUISpec
-        [ (textEntryUISpec $ mapSubscriber (tupleEditLens NoteTitle) sub, False)
-        , (checkboxUISpec (constantSubscriber "past") $ mapSubscriber (tupleEditLens NotePast) sub, False)
-        , (textAreaUISpec (mapSubscriber (tupleEditLens NoteText) sub) sel, True)
+        [ (textEntryUISpec $ mapModel (tupleChangeLens NoteTitle) sub, False)
+        , (checkboxUISpec (constantModel "past") $ mapModel (tupleChangeLens NotePast) sub, False)
+        , (textAreaUISpec (mapModel (tupleChangeLens NoteText) sub) sel, True)
         ]
 
 type Note = Tuple NoteSel
@@ -97,13 +97,9 @@ instance JSON.ToJSON Note where
             , (fromString "", JSON.toJSON $ sel NoteText)
             ]
 
-parseMaybe :: Maybe a -> JSON.Parser a
-parseMaybe (Just a) = return a
-parseMaybe Nothing = empty
-
 parseField :: JSON.FromJSON a => Text -> JSON.Object -> JSON.Parser a
 parseField key obj = do
-    val <- parseMaybe $ lookup key obj
+    val <- mpure $ lookup key obj
     JSON.parseJSON val
 
 instance JSON.FromJSON Note where

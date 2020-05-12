@@ -130,9 +130,9 @@ testQuery query expected =
     testCase (show $ unpack query) $
     case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeUpdate query) of
         (Nothing, FailureResult _) -> return ()
-        (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ showPinaforeValue v
+        (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ showPinaforeRef v
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ show e
-        (Just s, SuccessResult v) -> assertEqual "result" s (showPinaforeValue v)
+        (Just s, SuccessResult v) -> assertEqual "result" s (showPinaforeRef v)
 
 testQueries :: TestTree
 testQueries =
@@ -180,6 +180,9 @@ testQueries =
               , testQuery "False" $ Just "False"
               , testQuery "\"1\"" $ Just "1"
               , testQuery "uiTable" $ Just "<?>"
+              , testQuery "entity @Entity !\"example\"" $ Just "<?>"
+              , testQuery "entityAnchor $ entity @Entity !\"example\"" $
+                Just "!1AF8A5FD-24AAAF3E-3668C588-6C74D36A-70ED9618-CC874895-E4569C9F-FCD42CD3"
               ]
         , testGroup
               "list construction"
@@ -444,6 +447,14 @@ testQueries =
               , testQuery "let a :: Integer; a = 3; b :: Number; b = a in b" $ Just "3"
               , testQuery "let i :: FiniteSetRef -a -> SetRef a; i x = x in 3" $ Just "3"
               , testQuery "let i :: FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ Just "3"
+              ]
+        , testGroup
+              "subsume"
+              [ testQuery "let a :: [Integer|Text]; a = [] in a" $ Just "[]"
+              , testQuery "let a :: [Integer|Text]; a = []; b :: [Integer]|[Text]; b = a in b" $ Just "[]"
+              , testQuery "let a :: Integer|Text; a = 3; b :: [Integer]|[Text]; b = [a] in b" $ Just "[3]"
+              , testQuery "let a :: [Integer]|[Text]; a = [] in a" $ Just "[]"
+              , testQuery "let a :: [Integer]|[Text]; a = []; b :: [Integer|Text]; b = a in b" $ Just "[]"
               ]
         ]
 

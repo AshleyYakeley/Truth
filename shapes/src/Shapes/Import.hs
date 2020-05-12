@@ -8,8 +8,7 @@ import Control.Applicative as I
 import Control.Arrow as I hiding ((<<<), (>>>), (|||))
 import Control.Category as I
 import Control.Concurrent as I
-import Control.Exception as I hiding (catch)
-import Control.Monad as I (Functor(..), Monad((>>), (>>=), return), MonadPlus(..), forever, void)
+import Control.Monad as I (Monad((>>), (>>=), return), MonadPlus(..), forever, void)
 import Control.Monad.Fail as I
 import Control.Monad.Fix as I
 import Control.Monad.IO.Class as I
@@ -24,7 +23,7 @@ import Data.Functor.Compose as I
 import Data.Functor.Identity as I
 import Data.Int as I
 import Data.Kind as I
-import Data.List as I ((++), intercalate, length, nub, zip)
+import Data.List as I ((++), intercalate, nub, nubBy, zip)
 import Data.List.NonEmpty as I (NonEmpty(..), last, nonEmpty)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
@@ -107,7 +106,8 @@ import Data.Hashable as I (Hashable)
 
 -- containers
 import Data.IntMap as I (IntMap, Key, traverseWithKey)
-import qualified Data.Map.Strict
+import Data.Map as I (Map)
+import qualified Data.Map.Lazy
 
 -- unordered-containers
 import Data.HashMap.Lazy as I (HashMap)
@@ -142,13 +142,13 @@ import Data.Witness as I
 import Data.OpenWitness as I
 import Data.OpenWitness.Order as I
 import Data.OpenWitness.Witnessed as I
-import Data.Type.Heterogeneous as I
 
 type LazyByteString = Data.ByteString.Lazy.ByteString
 
 type StrictByteString = Data.ByteString.ByteString
 
-type StrictMap = Data.Map.Strict.Map
+insertMapLazy :: Ord k => k -> v -> Map k v -> Map k v
+insertMapLazy = Data.Map.Lazy.insert
 
 lastM :: [t] -> Maybe t
 lastM [] = Nothing
@@ -162,6 +162,10 @@ eitherLeft (Right _) = Nothing
 eitherRight :: Either a b -> Maybe b
 eitherRight (Left _) = Nothing
 eitherRight (Right x) = Just x
+
+mpure :: Alternative m => Maybe a -> m a
+mpure (Just a) = pure a
+mpure Nothing = empty
 
 compAll :: Category cat => [cat a a] -> cat a a
 compAll [] = id

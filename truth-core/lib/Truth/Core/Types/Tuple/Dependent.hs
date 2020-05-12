@@ -1,7 +1,7 @@
 module Truth.Core.Types.Tuple.Dependent
     ( DependentSelector(..)
     , DependentUpdate
-    , dependentEditLens
+    , dependentChangeLens
     ) where
 
 import Truth.Core.Edit
@@ -50,5 +50,5 @@ instance TupleUpdateWitness IsEditUpdate (DependentSelector wit) where
 
 type DependentUpdate wit = TupleUpdate (DependentSelector wit)
 
-dependentEditLens :: TestEquality wit => wit a -> EditLens (DependentUpdate wit) (WholeUpdate a)
-dependentEditLens a = tupleEditLens $ MkDependentSelector a
+dependentChangeLens :: TestEquality wit => wit a -> ChangeLens (DependentUpdate wit) (WholeUpdate a)
+dependentChangeLens a = tupleChangeLens $ MkDependentSelector a

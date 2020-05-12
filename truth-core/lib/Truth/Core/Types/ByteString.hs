@@ -15,15 +15,15 @@ data ByteStringReader t where
 instance SubjectReader ByteStringReader where
     type ReaderSubject ByteStringReader = LazyByteString
     -- | Make MutableEdit calls when you've actually got the subject
-    mSubjectToMutableRead msubj ReadByteStringLength = do
+    mSubjectToReadable msubj ReadByteStringLength = do
         subj <- msubj
         return $ fromIntegral $ olength subj
-    mSubjectToMutableRead msubj (ReadByteStringSection start len) = do
+    mSubjectToReadable msubj (ReadByteStringSection start len) = do
         subj <- msubj
         return $ take len $ drop start subj
 
 instance FullSubjectReader ByteStringReader where
-    mutableReadToSubject mr = do
+    readableToSubject mr = do
         len <- mr ReadByteStringLength
         mr $ ReadByteStringSection 0 len
 

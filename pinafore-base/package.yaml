@@ -13,10 +13,8 @@ library:
       - deepseq
       - time
       - cereal
-      - aeson
       - memory
       - cryptonite
-      - uuid
       - truth-core
       - truth-world
     exposed-modules:
@@ -28,8 +26,10 @@ library:
       - Pinafore.Base.SafeRational
       - Pinafore.Base.Number
       - Pinafore.Base.Literal
+      - Pinafore.Base.FunctionMorphism
       - Pinafore.Base.Morphism
-      - Pinafore.Base.Value
+      - Pinafore.Base.Ref
+      - Pinafore.Base.Anchor
       - Pinafore.Base.Entity
       - Pinafore.Base.Lens
       - Pinafore.Base.Edit
@@ -37,7 +37,7 @@ library:
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
       - Pinafore.Base.Context
-      - Pinafore.Base.ImmutableReference
+      - Pinafore.Base.ImmutableRef
       - Pinafore.Base.File
       - Pinafore.Storage.Table
       - Pinafore.Storage.Database
@@ -56,4 +56,5 @@ tests:
         main: Main.hs
         other-modules:
           - Test.Numeric
+          - Test.Anchor
         ghc-options: -threaded

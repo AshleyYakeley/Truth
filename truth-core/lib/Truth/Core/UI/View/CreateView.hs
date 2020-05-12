@@ -4,15 +4,15 @@ module Truth.Core.UI.View.CreateView
     , viewCreateView
     , cvEarlyCloser
     , cvLiftView
-    , cvBindSubscriber
-    , cvFloatMapSubscriber
-    , cvBindWholeSubscriber
-    , cvBindReadOnlyWholeSubscriber
+    , cvBindModel
+    , cvFloatMapModel
+    , cvBindWholeModel
+    , cvBindReadOnlyWholeModel
     ) where
 
 import Truth.Core.Import
 import Truth.Core.Lens
-import Truth.Core.Object
+import Truth.Core.Reference
 import Truth.Core.Types
 import Truth.Core.UI.View.Context
 import Truth.Core.UI.View.View
@@ -30,15 +30,15 @@ cvEarlyCloser ca = liftWithUnlift $ \unlift -> lifeCycleEarlyCloser $ unlift ca
 cvLiftView :: View a -> CreateView a
 cvLiftView = remonad liftIO
 
-cvBindSubscriber ::
+cvBindModel ::
        forall update a.
-       Subscriber update
+       Model update
     -> Maybe EditSource
-    -> (Subscriber update -> CreateView a)
+    -> (Model update -> CreateView a)
     -> Task ()
     -> (a -> NonEmpty update -> View ())
     -> CreateView a
-cvBindSubscriber model mesrc initv utask recv = do
+cvBindModel model mesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycleIO lifeCycleMonitor
     withUILock <- asks vcWithUILock
@@ -47,7 +47,7 @@ cvBindSubscriber model mesrc initv utask recv = do
         a <- initv model
         liftLifeCycleIO $
             unlift $
-            subscribe amodel utask $ \urc updates MkEditContext {..} ->
+            aModelSubscribe amodel utask $ \urc updates MkEditContext {..} ->
                 if mesrc == Just editContextSource
                     then return ()
                     else withUILock $ do
@@ -58,34 +58,34 @@ cvBindSubscriber model mesrc initv utask recv = do
                                  else return ()
         return a
 
-cvFloatMapSubscriber ::
-       forall updateA updateB. FloatingEditLens updateA updateB -> Subscriber updateA -> CreateView (Subscriber updateB)
-cvFloatMapSubscriber flens model = do
+cvFloatMapModel ::
+       forall updateA updateB. FloatingChangeLens updateA updateB -> Model updateA -> CreateView (Model updateB)
+cvFloatMapModel flens model = do
     rc <- viewGetResourceContext
-    liftLifeCycleIO $ floatMapSubscriber rc flens model
+    liftLifeCycleIO $ floatMapModel rc flens model
 
-cvBindWholeSubscriber :: forall t. Subscriber (WholeUpdate t) -> Maybe EditSource -> (t -> View ()) -> CreateView ()
-cvBindWholeSubscriber sub mesrc setf = let
-    init :: Subscriber (WholeUpdate t) -> CreateView ()
+cvBindWholeModel :: forall t. Model (WholeUpdate t) -> Maybe EditSource -> (t -> View ()) -> CreateView ()
+cvBindWholeModel sub mesrc setf = let
+    init :: Model (WholeUpdate t) -> CreateView ()
     init rmod =
         viewRunResourceContext rmod $ \unlift (amod :: _ tt) -> do
-            val <- liftIO $ unlift $ subRead amod ReadWhole
+            val <- liftIO $ unlift $ aModelRead amod ReadWhole
             cvLiftView $ setf val
     recv :: () -> NonEmpty (WholeUpdate t) -> View ()
     recv () updates = let
         MkWholeUpdate val = last updates
         in setf val
-    in cvBindSubscriber sub mesrc init mempty recv
+    in cvBindModel sub mesrc init mempty recv
 
-cvBindReadOnlyWholeSubscriber :: forall t. Subscriber (ROWUpdate t) -> (t -> View ()) -> CreateView ()
-cvBindReadOnlyWholeSubscriber sub setf = let
-    init :: Subscriber (ROWUpdate t) -> CreateView ()
+cvBindReadOnlyWholeModel :: forall t. Model (ROWUpdate t) -> (t -> View ()) -> CreateView ()
+cvBindReadOnlyWholeModel sub setf = let
+    init :: Model (ROWUpdate t) -> CreateView ()
     init rmod =
         viewRunResourceContext rmod $ \unlift (amod :: _ tt) -> do
-            val <- liftIO $ unlift $ subRead amod ReadWhole
+            val <- liftIO $ unlift $ aModelRead amod ReadWhole
             cvLiftView $ setf val
     recv :: () -> NonEmpty (ROWUpdate t) -> View ()
     recv () updates = let
         MkReadOnlyUpdate (MkWholeUpdate val) = last updates
         in setf val
-    in cvBindSubscriber sub Nothing init mempty recv
+    in cvBindModel sub Nothing init mempty recv

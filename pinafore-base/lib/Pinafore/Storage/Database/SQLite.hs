@@ -1,11 +1,10 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Storage.Database.SQLite
-    ( sqlitePinaforeTableObject
+    ( sqlitePinaforeTableReference
     , sqlitePinaforeTableGetEntireDatabase
     ) where
 
-import Data.UUID
 import Pinafore.Base
 import Pinafore.Storage.Database
 import Pinafore.Storage.Table
@@ -15,23 +14,16 @@ import Truth.World.SQLite
 import Truth.World.SQLite.Schema
 import Truth.Debug.Object
 
-instance FieldType UUID where
+instance FieldType Anchor where
     fieldTypeName = "BLOB"
 
-instance FromField UUID where
+instance FromField Anchor where
     fromField f = do
         bs <- fromField f
-        maybeToOk $ fromByteString bs
+        decode serializeStrictCodec bs
 
-instance ToField UUID where
-    toField = toField . toByteString
-
-instance FieldType Anchor where
-    fieldTypeName = fieldTypeName @UUID
-
-deriving instance FromField Anchor
-
-deriving instance ToField Anchor
+instance ToField Anchor where
+    toField = toField . encodeM serializeStrictCodec
 
 instance FieldType Entity where
     fieldTypeName = fieldTypeName @Anchor
@@ -113,10 +105,10 @@ instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstra
 instance TupleDatabase SQLiteDatabase PinaforeSchema where
     type TupleDatabaseRowWitness SQLiteDatabase PinaforeSchema = IsPinaforeRow
 
-sqlitePinaforeLens :: EditLens (SQLiteUpdate PinaforeSchema) PinaforeTableUpdate
+sqlitePinaforeLens :: ChangeLens (SQLiteUpdate PinaforeSchema) PinaforeTableUpdate
 sqlitePinaforeLens = let
-    elGet :: ReadFunction (SQLiteReader PinaforeSchema) PinaforeTableRead
-    elGet mr (PinaforeTableReadGetPredicate p s) = do
+    clRead :: ReadFunction (SQLiteReader PinaforeSchema) PinaforeTableRead
+    clRead mr (PinaforeTableReadGetPredicate p s) = do
         row <-
             mr $
             DatabaseSelect
@@ -126,7 +118,7 @@ sqlitePinaforeLens = let
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
         return $ fmap getSingleAll $ listToMaybe row
-    elGet mr (PinaforeTableReadLookupPredicate p v) = do
+    clRead mr (PinaforeTableReadLookupPredicate p v) = do
         row <-
             mr $
             DatabaseSelect
@@ -136,7 +128,7 @@ sqlitePinaforeLens = let
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
         return $ MkFiniteSet $ fmap getSingleAll row
-    elGet mr (PinaforeTableReadGetLiteral v) = do
+    clRead mr (PinaforeTableReadGetLiteral v) = do
         (row :: [AllValue ((:~:) Literal)]) <-
             mr $
             DatabaseSelect
@@ -147,12 +139,12 @@ sqlitePinaforeLens = let
         return $ do
             sa <- listToMaybe row
             return $ getSingleAll sa
-    elUpdate ::
+    clUpdate ::
            forall m. MonadIO m
         => SQLiteUpdate PinaforeSchema
-        -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
+        -> Readable m (EditReader (SQLiteEdit PinaforeSchema))
         -> m [PinaforeTableUpdate]
-    elUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
+    clUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
     elPutEdit ::
            forall m. MonadIO m
         => PinaforeTableEdit
@@ -189,13 +181,13 @@ sqlitePinaforeLens = let
         Just $
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v
-    elPutEdits ::
+    clPutEdits ::
            forall m. MonadIO m
         => [PinaforeTableEdit]
-        -> MutableRead m (SQLiteReader PinaforeSchema)
+        -> Readable m (SQLiteReader PinaforeSchema)
         -> m (Maybe [SQLiteEdit PinaforeSchema])
-    elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
-    in MkEditLens {..}
+    clPutEdits = clPutEditsFromSimplePutEdit elPutEdit
+    in MkChangeLens {..}
 
 instance WitnessConstraint FiniteWitness PinaforeSchema where
     witnessConstraint PinaforeTriple = Dict
@@ -216,12 +208,12 @@ instance WitnessConstraint IsPinaforeRow PinaforeSchema where
 instance ShowableTupleDatabase SQLiteDatabase PinaforeSchema where
     witnessTupleRow = Dict
 
-sqlitePinaforeTableObject :: FilePath -> IO (Object PinaforeTableEdit)
-sqlitePinaforeTableObject path = do
-    obj <- sqliteObject path sqlitePinaforeSchema
-    return $ mapObject (traceArgThing "pinafore-SQLite" sqlitePinaforeLens) obj
+sqlitePinaforeTableReference :: FilePath -> IO (Reference PinaforeTableEdit)
+sqlitePinaforeTableReference path = do
+    obj <- sqliteReference path sqlitePinaforeSchema
+    return $ mapReference (traceArgThing "pinafore-SQLite" sqlitePinaforeLens) obj
 
 sqlitePinaforeTableGetEntireDatabase :: ResourceContext -> FilePath -> IO (AllF (TupleTableSel PinaforeSchema) [])
 sqlitePinaforeTableGetEntireDatabase rc path = do
-    obj <- sqliteObject path sqlitePinaforeSchema
-    getObjectSubject rc obj
+    obj <- sqliteReference path sqlitePinaforeSchema
+    getReferenceSubject rc obj

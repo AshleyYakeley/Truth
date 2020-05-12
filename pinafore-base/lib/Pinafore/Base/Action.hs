@@ -4,7 +4,7 @@ module Pinafore.Base.Action
     , viewPinaforeAction
     , pinaforeResourceContext
     , pinaforeFunctionValueGet
-    , pinaforeValuePushAction
+    , pinaforeRefPushAction
     , PinaforeWindow(..)
     , pinaforeNewWindow
     , pinaforeExit
@@ -15,7 +15,7 @@ module Pinafore.Base.Action
     ) where
 
 import Pinafore.Base.Know
-import Pinafore.Base.Value
+import Pinafore.Base.Ref
 import Shapes
 import Truth.Core
 
@@ -44,10 +44,10 @@ viewPinaforeAction va = MkPinaforeAction $ lift $ lift va
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
 
-pinaforeValuePushAction :: PinaforeValue update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
-pinaforeValuePushAction lv edits = do
+pinaforeRefPushAction :: PinaforeRef update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
+pinaforeRefPushAction lv edits = do
     rc <- pinaforeResourceContext
-    ok <- liftIO $ pinaforeValuePush rc lv edits
+    ok <- liftIO $ pinaforeRefPush rc lv edits
     if ok
         then return ()
         else empty
@@ -61,23 +61,18 @@ data PinaforeWindow = MkPinaforeWindow
 pinaforeLiftLifeCycleIO :: LifeCycleIO a -> PinaforeAction a
 pinaforeLiftLifeCycleIO la = do
     MkActionContext {..} <- MkPinaforeAction ask
-    let MkUIToolkit {..} = acUIToolkit
-    liftIO $ uitUnliftLifeCycle la
+    liftIO $ uitUnliftLifeCycle acUIToolkit la
 
 pinaforeNewWindow :: WindowSpec -> PinaforeAction PinaforeWindow
 pinaforeNewWindow uiw = do
-    MkActionContext {..} <- MkPinaforeAction ask
-    let uit@MkUIToolkit {..} = acUIToolkit
-    rc <- pinaforeResourceContext
-    (pwWindow, close) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ uitRunView uit rc $ uitCreateWindow uiw
+    uit <- MkPinaforeAction $ asks acUIToolkit
+    unlift <- MkPinaforeAction $ lift $ MkComposeM $ fmap Known askUnlift
+    (pwWindow, close) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ runWUnliftAll unlift $ uitCreateWindow uit uiw
     let pwClose = liftIO close
     return $ MkPinaforeWindow {..}
 
 pinaforeExit :: PinaforeAction ()
-pinaforeExit = do
-    MkActionContext {..} <- MkPinaforeAction ask
-    let MkUIToolkit {..} = acUIToolkit
-    liftIO uitExit
+pinaforeExit = viewPinaforeAction viewExit
 
 pinaforeUndoActions :: PinaforeAction UndoActions
 pinaforeUndoActions = do

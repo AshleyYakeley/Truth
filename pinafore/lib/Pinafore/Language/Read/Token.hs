@@ -3,7 +3,6 @@ module Pinafore.Language.Read.Token
     , parseTokens
     ) where
 
-import Data.UUID
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Name
@@ -33,6 +32,7 @@ data Token t where
     TokIf :: Token ()
     TokThen :: Token ()
     TokElse :: Token ()
+    TokDataType :: Token ()
     TokOpenType :: Token ()
     TokSubtype :: Token ()
     TokClosedType :: Token ()
@@ -72,6 +72,7 @@ instance TestEquality Token where
     testEquality TokIf TokIf = Just Refl
     testEquality TokThen TokThen = Just Refl
     testEquality TokElse TokElse = Just Refl
+    testEquality TokDataType TokDataType = Just Refl
     testEquality TokOpenType TokOpenType = Just Refl
     testEquality TokSubtype TokSubtype = Just Refl
     testEquality TokClosedType TokClosedType = Just Refl
@@ -112,6 +113,7 @@ instance Show (Token t) where
     show TokIf = show ("if" :: String)
     show TokThen = show ("then" :: String)
     show TokElse = show ("else" :: String)
+    show TokDataType = show ("datatype" :: String)
     show TokOpenType = show ("opentype" :: String)
     show TokSubtype = show ("subtype" :: String)
     show TokClosedType = show ("closedtype" :: String)
@@ -218,9 +220,7 @@ readNumber =
          return $ InexactNumber $ -1 / 0) <|>
     (try $ do
          text <- many1 $ satisfy $ \c -> elem c ("0123456789-.e_~" :: String)
-         case readNumberLiteral text of
-             Just n -> return $ n
-             Nothing -> empty)
+         mpure $ readNumberLiteral text)
 
 readTextToken :: Parser (AnyValue Token)
 readTextToken = do
@@ -240,6 +240,7 @@ readTextToken = do
         "if" -> return $ MkAnyValue TokIf ()
         "then" -> return $ MkAnyValue TokThen ()
         "else" -> return $ MkAnyValue TokElse ()
+        "datatype" -> return $ MkAnyValue TokDataType ()
         "opentype" -> return $ MkAnyValue TokOpenType ()
         "subtype" -> return $ MkAnyValue TokSubtype ()
         "closedtype" -> return $ MkAnyValue TokClosedType ()
@@ -247,18 +248,31 @@ readTextToken = do
             | isUpper firstC -> return $ MkAnyValue TokUName $ MkName $ pack name
         name -> return $ MkAnyValue TokLName $ MkName $ pack name
 
-uuidChar :: Char -> Bool
-uuidChar '-' = True
-uuidChar c = isHexDigit c
+toHexDigit :: Char -> Maybe Word8
+toHexDigit c =
+    if isHexDigit c
+        then Just $ fromIntegral $ digitToInt c
+        else Nothing
 
-mpure :: Alternative m => Maybe a -> m a
-mpure (Just a) = pure a
-mpure Nothing = empty
+fromHex :: [Char] -> Maybe [Word8]
+fromHex [] = Just []
+fromHex (chi:clo:cc) = do
+    whi <- toHexDigit chi
+    wlo <- toHexDigit clo
+    ww <- fromHex cc
+    return $ (whi * 16 + wlo) : ww
+fromHex [_] = Nothing
 
-readUUID :: Parser UUID
-readUUID = do
-    uuid <- some $ satisfy uuidChar
-    mpure $ Data.UUID.fromString uuid
+hexAnchorChar :: Char -> Bool
+hexAnchorChar '-' = True
+hexAnchorChar c = isHexDigit c
+
+readHexAnchor :: Parser Anchor
+readHexAnchor = do
+    cs <- some $ satisfy hexAnchorChar
+    mpure $ do
+        octets <- fromHex $ filter isHexDigit cs
+        decode anchorCodec $ fromList octets
 
 readOpToken :: Parser (AnyValue Token)
 readOpToken = do
@@ -276,11 +290,11 @@ readOpToken = do
         "%" -> return $ MkAnyValue TokUnref ()
         "!" ->
             (do
-                 uuid <- readUUID
-                 return $ MkAnyValue TokAnchor $ MkAnchor uuid) <|>
+                 anchor <- readHexAnchor
+                 return $ MkAnyValue TokAnchor anchor) <|>
             (do
                  s <- readQuotedString
-                 return $ MkAnyValue TokAnchor $ hashToAnchor $ \call -> [call @Text "anchor:", call s])
+                 return $ MkAnyValue TokAnchor $ codeAnchor s)
         "@" -> return $ MkAnyValue TokAt ()
         _ -> return $ MkAnyValue TokOperator $ MkName $ pack name
 
@@ -321,4 +335,4 @@ parseTokens text = do
         Right (newpos, a) -> do
             put newpos
             return a
-        Left e -> throwError [parseErrorMessage e]
+        Left e -> throwErrorMessage $ parseErrorMessage e

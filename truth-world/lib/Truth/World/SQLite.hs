@@ -189,12 +189,12 @@ joinTableSchema schema (JoinTables OuterTupleJoinClause j1 j2) = do
 sqliteFilePathWitness :: IOWitness (ReaderT Connection)
 sqliteFilePathWitness = $(iowitness [t|ReaderT Connection|])
 
-sqliteObject ::
+sqliteReference ::
        forall tablesel. WitnessConstraint IsSQLiteTable tablesel
     => FilePath
     -> SQLite.DatabaseSchema tablesel
-    -> IO (Object (SQLiteEdit tablesel))
-sqliteObject path schema@SQLite.MkDatabaseSchema {..} = do
+    -> IO (Reference (SQLiteEdit tablesel))
+sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
     var <- newMVar ()
     let
         objRun :: ResourceRunner '[ ReaderT Connection]
@@ -265,28 +265,28 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = do
             in "UPDATE " <>
                fromString tableName <>
                " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc
-        objRead :: MutableRead (ReaderT Connection IO) (SQLiteReader tablesel)
-        objRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
+        refRead :: Readable (ReaderT Connection IO) (SQLiteReader tablesel)
+        refRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
             case sqliteReadQuery r of
                 MkQueryString s v -> do
                     conn <- ask
                     lift $ query conn s v
-        objEdit ::
+        refEdit ::
                NonEmpty (SQLiteEdit tablesel) -> ReaderT Connection IO (Maybe (EditSource -> ReaderT Connection IO ()))
-        objEdit =
+        refEdit =
             singleAlwaysEdit $ \edit _ ->
                 case sqliteEditQuery edit of
                     MkQueryString s v -> do
                         conn <- ask
                         lift $ execute conn s v
-        objCommitTask = mempty
-    return $ MkResource objRun MkAnObject {..}
+        refCommitTask = mempty
+    return $ MkResource objRun MkAReference {..}
 
-sqliteObject' ::
+sqliteReference' ::
        forall tablesel. (WitnessConstraint IsSQLiteTable tablesel, ShowableTupleDatabase SQLiteDatabase tablesel)
     => FilePath
     -> SQLite.DatabaseSchema tablesel
-    -> IO (Object (SQLiteEdit tablesel))
-sqliteObject' path schema = do
-    obj <- sqliteObject path schema
-    return $ traceArgThing "sqliteObject" obj
+    -> IO (Reference (SQLiteEdit tablesel))
+sqliteReference' path schema = do
+    obj <- sqliteReference path schema
+    return $ traceArgThing "sqliteReference" obj

@@ -35,7 +35,7 @@ instance IsSequence seq => SubjectReader (StringRead seq) where
     subjectToRead s (StringReadSection run) = seqSection run s
 
 instance IsSequence seq => FullSubjectReader (StringRead seq) where
-    mutableReadToSubject mr = do
+    readableToSubject mr = do
         len <- mr StringReadLength
         mr $ StringReadSection $ MkSequenceRun 0 len
 
@@ -130,7 +130,7 @@ instance IsSequence seq => ApplicableEdit (StringEdit seq) where
 
 instance IsSequence seq => InvertibleEdit (StringEdit seq) where
     invertEdit (StringReplaceWhole _) mr = do
-        olds <- mutableReadToSubject mr
+        olds <- readableToSubject mr
         return [StringReplaceWhole olds]
     invertEdit (StringReplaceSection run@(MkSequenceRun start _) s) mr = do
         olds <- mr $ StringReadSection run
@@ -140,7 +140,7 @@ instance IsSequence seq => SubjectMapEdit (StringEdit seq)
 
 instance IsSequence seq => FullEdit (StringEdit seq) where
     replaceEdit mr writeEdit = do
-        a <- mutableReadToSubject mr
+        a <- readableToSubject mr
         writeEdit $ StringReplaceWhole a
 
 type StringUpdate seq = EditUpdate (StringEdit seq)
@@ -148,34 +148,34 @@ type StringUpdate seq = EditUpdate (StringEdit seq)
 stringSectionLens ::
        forall seq. IsSequence seq
     => SequenceRun seq
-    -> FloatingEditLens (StringUpdate seq) (StringUpdate seq)
+    -> FloatingChangeLens (StringUpdate seq) (StringUpdate seq)
 stringSectionLens initRun = traceThing "stringSectionLens" $ let
-    sInit ::
+    sclInit ::
            forall m. MonadIO m
-        => MutableRead m (StringRead seq)
+        => Readable m (StringRead seq)
         -> m (SequenceRun seq)
-    sInit _ = return initRun
+    sclInit _ = return initRun
     getState ::
            forall m. MonadIO m
-        => MutableRead m (StringRead seq)
+        => Readable m (StringRead seq)
         -> StateT (SequenceRun seq) m (SequenceRun seq)
     getState mr = do
         len <- lift $ mr StringReadLength
         stateRaw <- get
         return $ clipRunBounds len stateRaw
-    sGet :: ReadFunctionT (StateT (SequenceRun seq)) (StringRead seq) (StringRead seq)
-    sGet mr rt = do
+    sclRead :: ReadFunctionT (StateT (SequenceRun seq)) (StringRead seq) (StringRead seq)
+    sclRead mr rt = do
         st <- getState mr
         case rt of
             StringReadLength -> return $ runLength st
             StringReadSection run ->
                 lift $ mr $ StringReadSection $ clipWithin st $ relativeRun (negate $ runStart st) run
-    sUpdate ::
+    sclUpdate ::
            forall m. MonadIO m
         => StringUpdate seq
-        -> MutableRead m (StringRead seq)
+        -> Readable m (StringRead seq)
         -> StateT (SequenceRun seq) m [StringUpdate seq]
-    sUpdate (MkEditUpdate edita) mr = do
+    sclUpdate (MkEditUpdate edita) mr = do
         oldstate <- get
         newlen <- lift $ mr StringReadLength
         let
@@ -205,7 +205,7 @@ stringSectionLens initRun = traceThing "stringSectionLens" $ let
     sPutEdit ::
            forall m. MonadIO m
         => StringEdit seq
-        -> MutableRead m (StringRead seq)
+        -> Readable m (StringRead seq)
         -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
     sPutEdit editb mr = do
         oldstate <- getState mr
@@ -221,10 +221,10 @@ stringSectionLens initRun = traceThing "stringSectionLens" $ let
                 let newstate = oldstate {runLength = newlength}
                 traceBracket ("stringSectionLens.elPutEdit:section state change: " <> show (oldstate,newstate)) $ put newstate
                 return $ Just [StringReplaceSection runa sb]
-    sPutEdits ::
+    sclPutEdits ::
            forall m. MonadIO m
         => [StringEdit seq]
-        -> MutableRead m (StringRead seq)
+        -> Readable m (StringRead seq)
         -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
-    sPutEdits = elPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateEditLens {..}
+    sclPutEdits = clPutEditsFromPutEdit sPutEdit
+    in makeStateLens MkStateChangeLens {..}

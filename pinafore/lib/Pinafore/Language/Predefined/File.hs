@@ -10,8 +10,8 @@ import Pinafore.Storage
 --import Truth.World.File
 {-
 file_import ::
-       forall baseupdate. HasPinaforeFileUpdate baseupdate
-    => PinaforeFiniteSetRef '( A, A)
+       forall baseupdate. BaseChangeLens PinaforeFileUpdate baseupdate
+    => LangFiniteSetRef '( A, A)
     -> (A -> PinaforeAction ())
     -> PinaforeAction ()
 file_import set continue = do
@@ -20,29 +20,29 @@ file_import set continue = do
     case mpath of
         Nothing -> return ()
         Just path -> do
-            let sourceobject = fileObject path
+            let sourcereference = fileReference path
             newEntity set $ \entity -> do
-                mdestobject <-
+                mdestreference <-
                     pinaforeLiftView $
                     viewMapEdit (pinaforeFileItemLens entity) $ do
                         let
                             MkResource rr asub = sub
                         liftIO $
                             runWMFunction rr $ do
-                                pushEdit $ objEdit [SingleObjectDeleteCreate]
-                                subRead asub ReadSingleObjectStore
-                destobject <-
-                    case mdestobject of
-                        Nothing -> fail "failed to create object " ++ show entity
-                        Just object -> return object
-                liftIO $ copyObject sourceobject destobject
+                                pushEdit $ refEdit [SingleReferenceDeleteCreate]
+                                aModelRead asub ReadSingleReferenceStore
+                destreference <-
+                    case mdestreference of
+                        Nothing -> fail "failed to create reference " ++ show entity
+                        Just reference -> return reference
+                liftIO $ copyReference sourcereference destreference
                 continue entity
 
-file_size :: Object ByteStringEdit -> IO Int64
-file_size MkObject {..} = runWMFunction objRun $ objRead ReadByteStringLength
+file_size :: Reference ByteStringEdit -> IO Int64
+file_size MkReference {..} = runWMFunction objRun $ refRead ReadByteStringLength
 -}
 file_predefinitions ::
-       forall baseupdate. (HasPinaforeEntityUpdate baseupdate, HasPinaforeFileUpdate baseupdate)
+       forall baseupdate. (BaseChangeLens PinaforeEntityUpdate baseupdate, BaseChangeLens PinaforeFileUpdate baseupdate)
     => [DocTreeEntry (BindDoc baseupdate)]
 file_predefinitions =
     [ docTreeEntry

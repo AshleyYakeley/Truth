@@ -3,6 +3,7 @@
 module Pinafore.Language.TypeSystem
     ( module Pinafore.Language.TypeSystem.Type
     , module Pinafore.Language.Type.Entity
+    , module Pinafore.Language.Type.EntityAdapter
     , module Pinafore.Language.Type.Ground
     , module Data.Shim
     , module Language.Expression.UVar
@@ -19,6 +20,7 @@ import Language.Expression.Unifier
 import Pinafore.Language.Name
 import Pinafore.Language.Scope
 import Pinafore.Language.Type.Entity
+import Pinafore.Language.Type.EntityAdapter
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.TypeSystem.Bisubstitute
 import Pinafore.Language.TypeSystem.Rename ()

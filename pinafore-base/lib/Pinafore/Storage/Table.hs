@@ -1,11 +1,11 @@
 module Pinafore.Storage.Table
-    ( Anchor(..)
+    ( Anchor
     , Predicate(..)
     , Entity(..)
     , PinaforeTableRead(..)
     , PinaforeTableEdit(..)
     , PinaforeTableUpdate
-    , pinaforeTableEntityObject
+    , pinaforeTableEntityReference
     ) where
 
 import Pinafore.Base
@@ -179,8 +179,8 @@ instance CacheableEdit PinaforeTableEdit where
                         v
                         vv'
 
-pinaforeTableEntityObject :: Object PinaforeTableEdit -> Object PinaforeEntityEdit
-pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject tableRead tableMPush objCommitTask)) =
+pinaforeTableEntityReference :: Reference PinaforeTableEdit -> Reference PinaforeEntityEdit
+pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tableRead tableMPush refCommitTask)) =
     case resourceRunnerUnliftAllDict trun of
         Dict ->
             case transStackDict @MonadIO @tt @IO of
@@ -188,11 +188,11 @@ pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject ta
                     case transStackDict @MonadFail @tt @IO of
                         Dict -> let
                             tablePush :: NonEmpty PinaforeTableEdit -> EditSource -> ApplyStack tt IO ()
-                            tablePush edits esrc = traceBracket "pinaforeTablePointObject.tablePush" $ pushOrFail "can't push table edit" esrc $ tableMPush edits
-                            objRead :: MutableRead (ApplyStack tt IO) PinaforeEntityRead
-                            objRead (PinaforeEntityReadGetPredicate prd subj) =
+                            tablePush edits esrc = traceBracket "pinaforeTableEntityReference.tablePush" $ pushOrFail "can't push table edit" esrc $ tableMPush edits
+                            refRead :: Readable (ApplyStack tt IO) PinaforeEntityRead
+                            refRead (PinaforeEntityReadGetPredicate prd subj) =
                                 fmap maybeToKnow $ tableRead $ PinaforeTableReadGetPredicate prd subj
-                            objRead (PinaforeEntityReadGetProperty prd subj) = do
+                            refRead (PinaforeEntityReadGetProperty prd subj) = do
                                 mval <- tableRead $ PinaforeTableReadGetPredicate prd subj
                                 case mval of
                                     Just val -> return val
@@ -202,20 +202,20 @@ pinaforeTableEntityObject (MkResource (trun :: ResourceRunner tt) (MkAnObject ta
                                             (pure $ PinaforeTableEditSetPredicate prd subj $ Just val)
                                             noEditSource
                                         return val
-                            objRead (PinaforeEntityReadLookupPredicate prd val) =
+                            refRead (PinaforeEntityReadLookupPredicate prd val) =
                                 tableRead $ PinaforeTableReadLookupPredicate prd val
-                            objRead (PinaforeEntityReadToLiteral p) = do
+                            refRead (PinaforeEntityReadToLiteral p) = do
                                 ml <- tableRead $ PinaforeTableReadGetLiteral p
                                 return $ maybeToKnow ml
-                            objEdit ::
+                            refEdit ::
                                    NonEmpty PinaforeEntityEdit
                                 -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-                            objEdit edits = traceBracket "pinaforeTablePointObject.objEdit.examine" $
+                            refEdit edits = traceBracket "pinaforeTableEntityReference.objEdit.examine" $
                                 singleAlwaysEdit (\case
                                     PinaforeEntityEditSetPredicate p s kv ->
-                                        \esrc -> traceBracket "pinaforeTablePointObject.objEdit.predicate" $ tablePush (pure $ PinaforeTableEditSetPredicate p s $ knowToMaybe kv) esrc
+                                        \esrc -> traceBracket "pinaforeTableEntityReference.objEdit.predicate" $ tablePush (pure $ PinaforeTableEditSetPredicate p s $ knowToMaybe kv) esrc
                                     PinaforeEntityEditSetLiteral p kl ->
-                                        \esrc -> traceBracket "pinaforeTablePointObject.objEdit.literal" $ tablePush (pure $ PinaforeTableEditSetLiteral p $ knowToMaybe kl) esrc) edits
-                            in MkResource trun MkAnObject {..}
+                                        \esrc -> traceBracket "pinaforeTableEntityReference.objEdit.literal" $ tablePush (pure $ PinaforeTableEditSetLiteral p $ knowToMaybe kl) esrc) edits
+                            in MkResource trun MkAReference {..}
 
 type PinaforeTableUpdate = EditUpdate PinaforeTableEdit

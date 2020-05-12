@@ -2,7 +2,7 @@ module Soup.Edit
     ( UUID
     , SoupUpdate
     , UUIDElementUpdate
-    , ObjectSoupUpdate
+    , ReferenceSoupUpdate
     , directorySoup
     , liftSoupLens
     ) where
@@ -25,15 +25,15 @@ liftSoupLens ::
        , FullSubjectReader (UpdateReader updateB)
        )
     => (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA)))
-    -> EditLens updateA updateB
-    -> EditLens (SoupUpdate updateA) (SoupUpdate updateB)
+    -> ChangeLens updateA updateB
+    -> ChangeLens (SoupUpdate updateA) (SoupUpdate updateB)
 liftSoupLens bmfa = let
     conv ::
            forall m. MonadIO m
         => (UUID, UpdateSubject updateB)
         -> m (Maybe (UUID, UpdateSubject updateA))
     conv (uuid, b) = fmap (fmap $ \a -> (uuid, a)) $ bmfa b
-    in liftKeyElementEditLens conv . sndLiftEditLens
+    in liftKeyElementChangeLens conv . sndLiftChangeLens
 
 nameToUUID :: String -> Maybe UUID
 nameToUUID = Data.UUID.fromString
@@ -41,16 +41,16 @@ nameToUUID = Data.UUID.fromString
 uuidToName :: UUID -> String
 uuidToName = Data.UUID.toString
 
-type ObjectSoupUpdate = SoupUpdate (ObjectUpdate ByteStringUpdate)
+type ReferenceSoupUpdate = SoupUpdate (ReferenceUpdate ByteStringUpdate)
 
-directorySoup :: Object FSEdit -> FilePath -> Object (UpdateEdit ObjectSoupUpdate)
-directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS ctask)) dirpath =
+directorySoup :: Reference FSEdit -> FilePath -> Reference (UpdateEdit ReferenceSoupUpdate)
+directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAReference readFS pushFS ctask)) dirpath =
     traceArgThing "soupdir" $
     case resourceRunnerUnliftAllDict runFS of
         Dict ->
             case transStackDict @MonadUnliftIO @tt @IO of
                 Dict -> let
-                    readSoup :: MutableRead (ApplyStack tt IO) (UpdateReader ObjectSoupUpdate)
+                    readSoup :: Readable (ApplyStack tt IO) (UpdateReader ReferenceSoupUpdate)
                     readSoup KeyReadKeys = do
                         mnames <- readFS $ FSReadDirectory dirpath
                         return $
@@ -63,17 +63,17 @@ directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS
                             case mitem of
                                 Just (FSFileItem _) -> Just uuid
                                 _ -> Nothing
-                    readSoup (KeyReadItem _uuid (MkTupleUpdateReader SelectSecond ReadObjectResourceContext)) =
+                    readSoup (KeyReadItem _uuid (MkTupleUpdateReader SelectSecond ReadReferenceResourceContext)) =
                         return $ Just emptyResourceContext
-                    readSoup (KeyReadItem uuid (MkTupleUpdateReader SelectSecond ReadObject)) = do
+                    readSoup (KeyReadItem uuid (MkTupleUpdateReader SelectSecond ReadReference)) = do
                         let path = dirpath </> uuidToName uuid
                         mitem <- readFS $ FSReadItem path
                         return $
                             case mitem of
-                                Just (FSFileItem object) -> Just object
+                                Just (FSFileItem reference) -> Just reference
                                 _ -> Nothing
                     pushSoup ::
-                           NonEmpty (UpdateEdit ObjectSoupUpdate)
+                           NonEmpty (UpdateEdit ReferenceSoupUpdate)
                         -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
                     pushSoup =
                         singleEdit $ \edit ->
@@ -93,4 +93,4 @@ directorySoup (MkResource (runFS :: ResourceRunner tt) (MkAnObject readFS pushFS
                                                     for_ names $ \name ->
                                                         pushFS $ pure $ FSEditDeleteNonDirectory $ dirpath </> name
                                             Nothing -> Nothing
-                    in MkResource runFS $ MkAnObject readSoup pushSoup ctask
+                    in MkResource runFS $ MkAReference readSoup pushSoup ctask

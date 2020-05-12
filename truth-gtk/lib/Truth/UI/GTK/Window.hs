@@ -8,6 +8,7 @@ import GI.Gdk as GI (threadsAddIdle)
 import GI.Gtk as GI
 import Shapes
 import Truth.Core
+import Truth.Core.UI.Toolkit.Internal
 import Truth.UI.GTK.Button
 import Truth.UI.GTK.CSS
 import Truth.UI.GTK.Calendar
@@ -93,7 +94,7 @@ getTheView lspec = do
 createWindowAndChild :: WindowSpec -> CreateView UIWindow
 createWindowAndChild MkWindowSpec {..} = do
     window <- lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
-    cvBindReadOnlyWholeSubscriber wsTitle $ \title -> set window [#title := title]
+    cvBindReadOnlyWholeModel wsTitle $ \title -> set window [#title := title]
     content <- getTheView wsContent
     _ <-
         cvOn window #deleteEvent $ \_ -> traceBracket "GTK.Window:close" $ do
@@ -107,7 +108,7 @@ createWindowAndChild MkWindowSpec {..} = do
                 #addAccelGroup window ag
                 mb <-
                     switchView $
-                    mapSubscriber (liftReadOnlyEditLens $ funcEditLens $ \mbar -> createMenuBar ag mbar >>= toWidget) $
+                    mapModel (liftReadOnlyChangeLens $ funcChangeLens $ \mbar -> createMenuBar ag mbar >>= toWidget) $
                     efmbar
                 vbox <- new Box [#orientation := OrientationVertical]
                 #packStart vbox mb False False 0

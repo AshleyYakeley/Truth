@@ -3,10 +3,9 @@ module Pinafore.Base.Edit
     , PinaforeEntityRead(..)
     , PinaforeEntityEdit(..)
     , PinaforeEntityUpdate
-    , HasPinaforeEntityUpdate
     ) where
 
-import Data.Aeson (FromJSON)
+import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
 import Pinafore.Base.Know
 import Pinafore.Base.Lens
@@ -16,7 +15,10 @@ import Truth.Core
 
 newtype Predicate =
     MkPredicate Anchor
-    deriving (Eq, FromJSON, Show)
+    deriving (Eq)
+
+instance Show Predicate where
+    show (MkPredicate anchor) = show anchor
 
 -- | Some of these reads may add to the database, but will always give consistent results between changes.
 data PinaforeEntityRead t where
@@ -91,7 +93,5 @@ instance Show PinaforeEntityEdit where
 
 type PinaforeEntityUpdate = EditUpdate PinaforeEntityEdit
 
-type HasPinaforeEntityUpdate = BaseEditLens PinaforeEntityUpdate
-
-instance BaseEditLens PinaforeEntityUpdate PinaforeEntityUpdate where
-    baseEditLens = id
+instance BaseChangeLens PinaforeEntityUpdate PinaforeEntityUpdate where
+    baseChangeLens = id

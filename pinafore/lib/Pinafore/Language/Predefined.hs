@@ -10,7 +10,6 @@ module Pinafore.Language.Predefined
     , outputLn
     ) where
 
-import Data.Time
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Expression
@@ -25,11 +24,9 @@ import Shapes
 import Truth.Core
 
 type PinaforePredefinitions baseupdate
-     = ( HasPinaforeEntityUpdate baseupdate
-       , HasPinaforeFileUpdate baseupdate
-       , BaseEditLens MemoryCellUpdate baseupdate
-       , BaseEditLens (ROWUpdate UTCTime) baseupdate
-       , BaseEditLens (ROWUpdate TimeZone) baseupdate)
+     = ( BaseChangeLens PinaforeEntityUpdate baseupdate
+       , BaseChangeLens PinaforeFileUpdate baseupdate
+       , BaseChangeLens MemoryCellUpdate baseupdate)
 
 predefinitions ::
        forall baseupdate. PinaforePredefinitions baseupdate
@@ -43,7 +40,7 @@ predefinedDoc = fmap bdDoc $ predefinitions @baseupdate
 
 predefinedBindings ::
        forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
-    => StrictMap Name (QValue baseupdate)
+    => Map Name (QValue baseupdate)
 predefinedBindings =
     mapFromList $
     catMaybes $
@@ -56,7 +53,7 @@ predefinedBindings =
 
 predefinedPatternConstructors ::
        forall baseupdate. PinaforePredefinitions baseupdate
-    => StrictMap Name (PinaforePatternConstructor baseupdate)
+    => Map Name (PinaforePatternConstructor baseupdate)
 predefinedPatternConstructors =
     mapFromList $
     catMaybes $

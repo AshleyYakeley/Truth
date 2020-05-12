@@ -75,9 +75,9 @@ unifySubtypeContext = let
 
 unifyPosNegGroundTypes ::
        UnifierConstraint baseupdate
-    => PinaforeGroundType baseupdate 'Positive dva gta
+    => PinaforeGroundType baseupdate dva gta
     -> DolanArguments dva (PinaforeType baseupdate) gta 'Positive ta
-    -> PinaforeGroundType baseupdate 'Negative dvb gtb
+    -> PinaforeGroundType baseupdate dvb gtb
     -> DolanArguments dvb (PinaforeType baseupdate) gtb 'Negative tb
     -> PinaforeFullUnifier baseupdate (JMShim ta tb)
 unifyPosNegGroundTypes = subtypeGroundTypes unifySubtypeContext
@@ -214,9 +214,9 @@ runUnifier ::
     -> PinaforeTypeCheck baseupdate (a, [PinaforeBisubstitution baseupdate])
 runUnifier (ClosedExpression a) = return (a, [])
 runUnifier (OpenExpression (PositiveBisubstitutionWitness vn tp) _)
-    | occursInSingularType vn tp = throwError $ TypeRecursiveError (symbolTypeToName vn) (exprShow tp)
+    | occursInSingularType vn tp = throw $ TypeRecursiveError (symbolTypeToName vn) (exprShow tp)
 runUnifier (OpenExpression (NegativeBisubstitutionWitness vn tp) _)
-    | occursInSingularType vn tp = throwError $ TypeRecursiveError (symbolTypeToName vn) (exprShow tp)
+    | occursInSingularType vn tp = throw $ TypeRecursiveError (symbolTypeToName vn) (exprShow tp)
 runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name) (tp :: PinaforeSingularType baseupdate 'Positive vw)) expr) = let
     varBij :: Isomorphism JMShim (JoinType (UVar name) vw) (UVar name)
     varBij = unsafeUVarIsomorphism

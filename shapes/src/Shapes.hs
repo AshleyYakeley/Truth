@@ -9,10 +9,11 @@ import Shapes.Instances ()
 import Control.AsyncRunner as I
 import Control.Category.Dual as I
 import Control.Category.Groupoid as I
+import Control.Category.Lifted as I
 import Control.Clock as I
 import Control.Monad.Compose as I
 import Control.Monad.Coroutine as I
-import Control.Monad.Error as I
+import Control.Monad.Exception as I
 import Control.Monad.LifeCycleIO as I
 import Control.Monad.Trans.LifeCycle as I
 import Control.Task as I
@@ -24,6 +25,7 @@ import Data.Coercion as I
 import Data.Compose as I ()
 import Data.Filterable as I
 import Data.FiniteSet as I
+import Data.FixBox as I
 import Data.HasNewValue as I
 import Data.Injection as I
 import Data.IsoVariant as I

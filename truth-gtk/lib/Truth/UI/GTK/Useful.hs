@@ -41,7 +41,7 @@ class GTKCallbackType t where
 
 instance GTKCallbackType (IO r) where
     type CallbackViewLifted (IO r) = View r
-    gCallbackUnlift mf v = mf $ viewLocalResourceContext emptyResourceContext v
+    gCallbackUnlift mf v = mf v
 
 instance GTKCallbackType r => GTKCallbackType (a -> r) where
     type CallbackViewLifted (a -> r) = a -> CallbackViewLifted r
@@ -53,7 +53,21 @@ cvOn ::
     -> SignalProxy widget info
     -> CallbackViewLifted (HaskellCallbackType info)
     -> CreateView SignalHandlerId
-cvOn widget signal call = cvLiftView $ liftIOView $ \unlift -> on widget signal $ gCallbackUnlift unlift call
+cvOn widget signal call = do
+    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> on widget signal $ gCallbackUnlift unlift call
+    liftLifeCycleIO $ lifeCycleClose $ disconnectSignalHandler widget shid
+    return shid
+
+cvAfter ::
+       (GObject widget, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
+    => widget
+    -> SignalProxy widget info
+    -> CallbackViewLifted (HaskellCallbackType info)
+    -> CreateView SignalHandlerId
+cvAfter widget signal call = do
+    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> after widget signal $ gCallbackUnlift unlift call
+    liftLifeCycleIO $ lifeCycleClose $ disconnectSignalHandler widget shid
+    return shid
 
 newtype Change m a =
     MkChange (a -> m (Maybe a))

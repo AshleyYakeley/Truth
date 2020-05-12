@@ -81,7 +81,7 @@ class CacheableEdit (edit :: Type) where
                 edit -> StateT (cache (EditCacheKey cache edit)) IO ()
     editCacheUpdate edit =
         cacheTraverse $ \rt val -> let
-            tmr :: MutableRead (ComposeM Maybe IO) (EditReader edit)
+            tmr :: Readable (ComposeM Maybe IO) (EditReader edit)
             tmr rt' =
                 liftInner $ do
                     Refl <- testEquality rt rt'

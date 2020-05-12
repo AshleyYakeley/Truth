@@ -17,7 +17,7 @@ runFiles fNoRun dirpath fpaths =
             for_ fpaths $ \fpath -> do
                 ptext <- liftIO $ readFile fpath
                 action <-
-                    ioRunInterpretResult $ let
+                    throwResult $ let
                         ?pinafore = context
                         in pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
                 if fNoRun
@@ -32,4 +32,4 @@ runInteractive dirpath =
         let
             ?pinafore = context
             in cvLiftView pinaforeInteract
-        liftIO $ uitExit tcUIToolkit
+        cvLiftView viewExit

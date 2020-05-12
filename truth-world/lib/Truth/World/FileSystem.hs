@@ -27,7 +27,7 @@ findInFileSystem fs path = let
     in finditem (DirectoryItem fs) $ splitDirectories path
 
 data FSItem
-    = FSFileItem (Object ByteStringEdit)
+    = FSFileItem (Reference ByteStringEdit)
     | FSDirectoryItem
     | FSOtherItem
 
@@ -46,7 +46,7 @@ instance SubjectReader FSReader where
     subjectToRead fs (FSReadItem path) =
         case findInFileSystem fs path of
             Just (DirectoryItem _) -> Just FSDirectoryItem
-            Just (FileItem bs) -> Just $ FSFileItem $ constantObject bs
+            Just (FileItem bs) -> Just $ FSFileItem $ constantReference bs
             Just (SymbolicLinkItem sympath) -> subjectToRead fs (FSReadItem sympath)
             Just OtherItem -> Just $ FSOtherItem
             Nothing -> Nothing
@@ -79,20 +79,20 @@ createFile path bs = do
     hPut h bs
     hClose h
 
-fileSystemObject :: Object FSEdit
-fileSystemObject = let
-    objRead :: MutableRead IO FSReader
-    objRead (FSReadDirectory path) = do
+fileSystemReference :: Reference FSEdit
+fileSystemReference = let
+    refRead :: Readable IO FSReader
+    refRead (FSReadDirectory path) = do
         isDir <- doesDirectoryExist path
         if isDir
             then do
                 names <- listDirectory path
                 return $ Just names
             else return Nothing
-    objRead (FSReadItem path) = do
+    refRead (FSReadItem path) = do
         isFile <- doesFileExist path
         if isFile
-            then return $ Just $ FSFileItem $ fileObject path
+            then return $ Just $ FSFileItem $ fileReference path
             else do
                 isDir <- doesDirectoryExist path
                 if isDir
@@ -102,13 +102,13 @@ fileSystemObject = let
                         if not exists
                             then return Nothing
                             else return $ Just FSOtherItem
-    objRead (FSReadSymbolicLink path) = do
+    refRead (FSReadSymbolicLink path) = do
         isSymLink <- pathIsSymbolicLink path
         if isSymLink
             then fmap Just $ getSymbolicLinkTarget path
             else return Nothing
-    objEdit :: NonEmpty FSEdit -> IO (Maybe (EditSource -> IO ()))
-    objEdit =
+    refEdit :: NonEmpty FSEdit -> IO (Maybe (EditSource -> IO ()))
+    refEdit =
         singleEdit $ \edit ->
             case edit of
                 FSEditCreateDirectory path -> do
@@ -130,14 +130,14 @@ fileSystemObject = let
                 FSEditRenameItem fromPath toPath ->
                     testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $ \_ ->
                         renamePath fromPath toPath
-    objCommitTask = mempty
-    in MkResource nilResourceRunner MkAnObject {..}
+    refCommitTask = mempty
+    in MkResource nilResourceRunner MkAReference {..}
 
 subdirCreateWitness :: IOWitness (StateT Bool)
 subdirCreateWitness = $(iowitness [t|StateT Bool|])
 
-subdirectoryObject :: Bool -> FilePath -> Object FSEdit -> Object FSEdit
-subdirectoryObject create dir (MkResource (rr :: ResourceRunner tt) (MkAnObject rd push ctask)) =
+subdirectoryReference :: Bool -> FilePath -> Reference FSEdit -> Reference FSEdit
+subdirectoryReference create dir (MkResource (rr :: ResourceRunner tt) (MkAReference rd push ctask)) =
     -- runResourceRunnerWith rr $ \_ ->
     case transStackConcatRefl @'[ StateT Bool] @tt @IO of
         Refl ->
@@ -163,7 +163,7 @@ subdirectoryObject create dir (MkResource (rr :: ResourceRunner tt) (MkAnObject 
                         in if isRelative relpath
                                then Just relpath
                                else Nothing
-                    rd' :: MutableRead (StateT Bool (ApplyStack tt IO)) FSReader
+                    rd' :: Readable (StateT Bool (ApplyStack tt IO)) FSReader
                     rd' (FSReadDirectory path) = do
                         pushFirst
                         lift $ rd $ FSReadDirectory $ insideToOutside path
@@ -201,4 +201,4 @@ subdirectoryObject create dir (MkResource (rr :: ResourceRunner tt) (MkAnObject 
                            (combineIndependentResourceRunners
                                 (discardingStateResourceRunner (hashOpenWitness subdirCreateWitness dir) create)
                                 rr) $
-                       MkAnObject rd' push' ctask
+                       MkAReference rd' push' ctask

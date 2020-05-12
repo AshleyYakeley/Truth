@@ -5,11 +5,11 @@ import Pinafore.Base
 import Shapes
 import Truth.Core
 
-data PinaforeListRef (pq :: (Type, Type)) where
-    MkPinaforeListRef :: Range JMShim t pq -> PinaforeValue (ListEdit [t] (WholeEdit t)) -> PinaforeListRef pq
+data LangListRef (pq :: (Type, Type)) where
+    MkLangListRef :: Range JMShim t pq -> PinaforeRef (ListEdit [t] (WholeEdit t)) -> LangListRef pq
 
-instance CatFunctor (CatRange (->)) (->) PinaforeListRef where
-    cfmap f (MkPinaforeListRef r v) = MkPinaforeListRef (cfmap f r) v
+instance CatFunctor (CatRange (->)) (->) LangListRef where
+    cfmap f (MkLangListRef r v) = MkLangListRef (cfmap f r) v
 
-instance HasVariance 'Rangevariance PinaforeListRef where
+instance HasVariance 'Rangevariance LangListRef where
     varianceRepresentational = Nothing

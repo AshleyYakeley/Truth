@@ -1,6 +1,5 @@
 module Data.Result where
 
-import Control.Monad.Error
 import Data.Bijection
 import Shapes.Import
 
@@ -71,9 +70,6 @@ instance MonadFix (Result e) where
         getSuccess (FailureResult _) = error "mfix FailureResult"
         ma = ama $ getSuccess ma
         in ma
-
-instance MonadError e (Result e) where
-    throwError = FailureResult
 
 instance (Show e, Show a) => Show (Result e a) where
     show (SuccessResult a) = "success: " ++ show a

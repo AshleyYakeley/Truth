@@ -11,7 +11,7 @@ data ErrorType
     = ParserError [Message]
     | ExpressionErrorError ExpressionError
     | LookupTypeUnknownError Name
-    | LookupTypeNotOpenError Name
+    | TypeNotOpenEntityError Text
     | LookupConstructorUnknownError Name
     | DeclareTypeDuplicateError Name
     | DeclareConstructorDuplicateError Name
@@ -28,12 +28,16 @@ data ErrorType
     | NotationBareUnquoteError
     | InterpretTypeExprBadLimitError Polarity
     | InterpretTypeExprBadJoinMeetError Polarity
+    | InterpretTypeNotAmbipolarError Text
     | InterpretTypeNotEntityError Text
     | InterpretTypeNotOpenEntityError Text
     | InterpretTypeNoneNotNegativeEntityError
-    | InterpretTypeRangeInTypeError
+    | InterpretTypeUnderApplyError Text
+    | InterpretTypeOverApplyError Text
+    | InterpretTypeRangeApplyError Text
     | InterpretConstructorUnknownError Name
     | InterpretBindingsDuplicateError [Name]
+    | InterpretUnboundTypeVariables (NonEmpty Name)
 
 instance Show ErrorType where
     show (ParserError msgs) = let
@@ -75,7 +79,7 @@ instance Show ErrorType where
         in strUnexpected `semicolon` strExpecting `semicolon` strMessage
     show (ExpressionErrorError e) = show e
     show (LookupTypeUnknownError n) = "unknown type: " <> show n
-    show (LookupTypeNotOpenError n) = show n <> " is not an open entity type"
+    show (TypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
     show (LookupConstructorUnknownError n) = "unknown constructor: " <> show n
     show (DeclareTypeDuplicateError n) = "duplicate type: " <> show n
     show (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> show n
@@ -90,12 +94,16 @@ instance Show ErrorType where
     show (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"
     show (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"
     show (InterpretTypeExprBadJoinMeetError Negative) = "\"|\" in negative type"
+    show (InterpretTypeNotAmbipolarError t) = unpack t <> " is not an ambipolar type"
     show (InterpretTypeNotEntityError t) = unpack t <> " is not an entity type"
     show (InterpretTypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
     show InterpretTypeNoneNotNegativeEntityError = "\"None\" is not a negative entity type"
-    show InterpretTypeRangeInTypeError = "range in type"
+    show (InterpretTypeUnderApplyError t) = "underapplied type constuctor: " <> unpack t
+    show (InterpretTypeOverApplyError t) = "overapplied type constuctor: " <> unpack t
+    show (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> unpack t
     show (InterpretConstructorUnknownError n) = "unknown constructor: " <> show n
     show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show nn)
+    show (InterpretUnboundTypeVariables vv) = "unbound type variables: " <> (intercalate ", " $ fmap show $ toList vv)
 
 data ErrorMessage =
     MkErrorMessage SourcePos
@@ -110,14 +118,14 @@ parseErrorMessage err = MkErrorMessage (errorPos err) $ ParserError $ errorMessa
 
 newtype PinaforeError =
     MkPinaforeError [ErrorMessage]
+    deriving (Semigroup, Monoid)
 
 instance Show PinaforeError where
     show (MkPinaforeError msgs) = intercalate "\n" $ fmap show msgs
 
 instance Exception PinaforeError
 
-type InterpretResult = Result [ErrorMessage]
+type InterpretResult = Result PinaforeError
 
-ioRunInterpretResult :: MonadIO m => InterpretResult a -> m a
-ioRunInterpretResult (SuccessResult a) = return a
-ioRunInterpretResult (FailureResult err) = liftIO $ throw $ MkPinaforeError err
+throwErrorMessage :: MonadThrow PinaforeError m => ErrorMessage -> m a
+throwErrorMessage e = throw $ MkPinaforeError [e]

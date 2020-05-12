@@ -14,6 +14,10 @@ type B = UVar "b"
 
 type C = UVar "c"
 
+type X = UVar "x"
+
+type Y = UVar "y"
+
 type AP = UVar "ap"
 
 type BP = UVar "bp"
@@ -26,7 +30,19 @@ type BQ = UVar "bq"
 
 type CQ = UVar "cq"
 
-type EA = MeetType Entity A
+type AX = UVar "ax"
+
+type BX = UVar "bx"
+
+type CX = UVar "cx"
+
+type AY = UVar "ay"
+
+type BY = UVar "by"
+
+type CY = UVar "cy"
+
+type EnA = MeetType Entity A
 
 data BindDoc baseupdate = MkBindDoc
     { bdName :: Name
@@ -36,7 +52,7 @@ data BindDoc baseupdate = MkBindDoc
     }
 
 mkValEntry ::
-       forall baseupdate t. (HasPinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
+       forall baseupdate t. (BaseChangeLens PinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
     => Name
     -> Text
     -> ((?pinafore :: PinaforeContext baseupdate) => t)
@@ -49,14 +65,14 @@ mkValEntry name docDescription val = let
             in jmToValue val
     bdPattern = Nothing
     docName = name
-    docValueType = qTypeDescription @baseupdate @t
+    docValueType = qPositiveTypeDescription @baseupdate @t
     docIsSupertype = False
     docIsPattern = False
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSupertypeEntry ::
-       forall baseupdate t. (HasPinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
+       forall baseupdate t. (BaseChangeLens PinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
     => Name
     -> Text
     -> ((?pinafore :: PinaforeContext baseupdate) => t)
@@ -66,7 +82,7 @@ mkSupertypeEntry name docDescription _val = let
     bdValue = Nothing
     bdPattern = Nothing
     docName = name
-    docValueType = qTypeDescription @baseupdate @t
+    docValueType = qPositiveTypeDescription @baseupdate @t
     docIsSupertype = True
     docIsPattern = False
     bdDoc = MkDefDoc {..}
@@ -74,7 +90,7 @@ mkSupertypeEntry name docDescription _val = let
 
 mkValPatEntry ::
        forall baseupdate t v lt.
-       ( HasPinaforeEntityUpdate baseupdate
+       ( BaseChangeLens PinaforeEntityUpdate baseupdate
        , ToPinaforeType baseupdate t
        , FromPinaforeType baseupdate v
        , ToListShimWit PinaforeShim (PinaforeType baseupdate 'Positive) lt
@@ -92,7 +108,7 @@ mkValPatEntry name docDescription val pat = let
             in jmToValue val
     bdPattern = Just $ qToPatternConstructor pat
     docName = name
-    docValueType = qTypeDescription @baseupdate @t
+    docValueType = qPositiveTypeDescription @baseupdate @t
     docIsSupertype = False
     docIsPattern = True
     bdDoc = MkDefDoc {..}
@@ -100,7 +116,7 @@ mkValPatEntry name docDescription val pat = let
 
 mkPatEntry ::
        forall baseupdate v lt.
-       ( HasPinaforeEntityUpdate baseupdate
+       ( BaseChangeLens PinaforeEntityUpdate baseupdate
        , FromPinaforeType baseupdate v
        , ToListShimWit PinaforeShim (PinaforeType baseupdate 'Positive) lt
        )
