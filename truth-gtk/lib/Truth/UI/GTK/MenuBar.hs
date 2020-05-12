@@ -8,7 +8,7 @@ import GI.Gtk as Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.Useful
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 toModifierType :: KeyboardModifier -> ModifierType
 toModifierType KMShift = ModifierTypeShiftMask

@@ -8,7 +8,7 @@ import Data.IORef
 import GI.GObject
 import Shapes
 import Truth.Core
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 containerGetAllChildren :: Container -> IO [Widget]
 containerGetAllChildren cont = do

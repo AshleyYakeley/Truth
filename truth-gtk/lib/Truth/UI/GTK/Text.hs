@@ -7,7 +7,7 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 replaceText :: Index s ~ Int => TextBuffer -> SequenceRun s -> Text -> IO ()
 replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)) text = do

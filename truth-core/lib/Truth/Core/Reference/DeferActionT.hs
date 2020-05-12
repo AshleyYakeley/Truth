@@ -7,7 +7,7 @@ module Truth.Core.Reference.DeferActionT
 
 import Truth.Core.Import
 import Truth.Core.Resource
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 newtype DeferActionT m a =
     MkDeferActionT (WriterT [IO ()] m a)

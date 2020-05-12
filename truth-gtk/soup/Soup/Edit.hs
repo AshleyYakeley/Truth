@@ -12,7 +12,7 @@ import Shapes
 import System.FilePath hiding ((<.>))
 import Truth.Core
 import Truth.World.FileSystem
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 type UUIDElementUpdate update = PairUpdate (ConstWholeUpdate UUID) update
 

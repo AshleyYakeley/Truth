@@ -11,7 +11,7 @@ module Pinafore.Storage.Table
 import Pinafore.Base
 import Shapes
 import Truth.Core
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 data PinaforeTableRead t where
     PinaforeTableReadGetPredicate :: Predicate -> Entity -> PinaforeTableRead (Maybe Entity)

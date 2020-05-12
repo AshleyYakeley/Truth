@@ -12,7 +12,7 @@ import Shapes
 import Truth.Core
 import Truth.World.SQLite
 import Truth.World.SQLite.Schema
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 instance FieldType Anchor where
     fieldTypeName = "BLOB"

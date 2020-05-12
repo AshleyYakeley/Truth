@@ -17,7 +17,7 @@ library:
       - Truth.Core.UI.Toolkit.Internal
       - Truth.Debug
       - Truth.Debug.Edit
-      - Truth.Debug.Object
+      - Truth.Debug.Reference
       - Truth.Debug.Subscriber
     other-modules:
       - Truth.Core.Import

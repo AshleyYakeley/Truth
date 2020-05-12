@@ -10,7 +10,7 @@ import Truth.Core.Reference.EditContext
 import Truth.Core.Reference.Model
 import Truth.Core.Reference.Reference
 import Truth.Core.Resource
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 -- fst is original edits, snd is undoing edits
 type UndoEntry edit = (NonEmpty edit, NonEmpty edit)

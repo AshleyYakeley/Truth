@@ -8,7 +8,7 @@ import Shapes hiding (get)
 import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 textEntryGetView :: GetGView
 textEntryGetView =

@@ -1,9 +1,9 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Debug.Object
+module Truth.Debug.Reference
     ( module Truth.Debug
     , module Truth.Debug.Edit
-    , module Truth.Debug.Object
+    , module Truth.Debug.Reference
     ) where
 
 import Truth.Core.Edit

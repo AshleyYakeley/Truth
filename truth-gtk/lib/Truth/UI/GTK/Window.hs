@@ -28,7 +28,7 @@ import Truth.UI.GTK.Switch
 import Truth.UI.GTK.Table
 import Truth.UI.GTK.Text
 import Truth.UI.GTK.Useful
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 lastResortView :: UISpec -> GCreateView
 lastResortView spec = do

@@ -8,7 +8,7 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 createWidget :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (View ()))) -> CreateView Widget
 createWidget rlabel raction = do

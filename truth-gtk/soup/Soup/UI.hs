@@ -9,7 +9,7 @@ import Soup.Note
 import System.FilePath hiding ((<.>))
 import Truth.Core
 import Truth.World.FileSystem
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 fromResult :: Result Text Text -> (Text, TableCellProps)
 fromResult (SuccessResult "") = ("unnamed", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})

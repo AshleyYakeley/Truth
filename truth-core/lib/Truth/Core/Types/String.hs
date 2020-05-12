@@ -12,7 +12,7 @@ import Truth.Core.Read
 import Truth.Core.Sequence
 
 import Truth.Debug
-import Truth.Debug.Object()
+import Truth.Debug.Reference()
 
 data StringRead seq t where
     StringReadLength :: StringRead seq (SequencePoint seq)

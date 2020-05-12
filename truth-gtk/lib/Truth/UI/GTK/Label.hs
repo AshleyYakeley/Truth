@@ -6,7 +6,7 @@ import GI.Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 createWidget :: LabelUISpec -> CreateView Widget
 createWidget (MkLabelUISpec sub) = traceBracket "GTK.Label:create" $ do

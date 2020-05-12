@@ -13,7 +13,7 @@ import Truth.Core.Reference.DeferActionT
 import Truth.Core.Reference.EditContext
 import Truth.Core.Reference.Reference
 import Truth.Core.Resource
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 data PremodelResult edit a = MkPremodelResult
     { pmrReference :: Reference edit

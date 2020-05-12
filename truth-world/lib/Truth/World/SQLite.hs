@@ -16,7 +16,7 @@ import Shapes
 import System.Directory
 import Truth.Core
 import qualified Truth.World.SQLite.Schema as SQLite
-import Truth.Debug.Object
+import Truth.Debug.Reference
 
 data QueryString =
     MkQueryString Query

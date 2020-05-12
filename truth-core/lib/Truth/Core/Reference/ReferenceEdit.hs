@@ -15,7 +15,7 @@ import Truth.Core.Reference.Reference
 import Truth.Core.Resource
 import Truth.Core.Types
 import Truth.Debug
-import Truth.Debug.Object()
+import Truth.Debug.Reference()
 
 data ReferenceReader edit t where
     ReadReferenceResourceContext :: ReferenceReader edit ResourceContext
