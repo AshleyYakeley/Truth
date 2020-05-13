@@ -30,7 +30,11 @@ selection_window (inames,inamep) iset iopen inew iui = do
         [
             menuSubmenu "Selection"
             [
-                menuAction ("New " <> inames) (Just "Ctrl+K") {newEntity iset >>= iopen},
+                menuAction ("New " <> inames) (Just "Ctrl+K") {do
+                    i <- newEntity iset;
+                    inew i;
+                    iopen i;
+                    end},
                 menuAction "View" Nothing {getsel >>= iopen},
                 menuAction "Delete" Nothing {getsel >>= \p -> iset -= p}
             ]
@@ -121,6 +125,7 @@ eventsWindow = let
     inew i = do
         day <- getDate;
         eventTime !$ {i} := EventTimeDate day;
+        eventName !$ {i} := "";
         end;
     iui _ notifier = uiPages [overviewPage, tablePage notifier];
     in selection_window ("Event","Events") events eventWindow inew iui;
