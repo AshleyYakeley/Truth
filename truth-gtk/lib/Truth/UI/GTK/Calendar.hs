@@ -37,12 +37,12 @@ calendarGetView =
                              st <- getDay
                              _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
                              return ()
-                 _ <- cvOn widget #daySelected onChanged
-                 _ <- cvOn widget #monthChanged onChanged
+                 sig1 <- cvOn widget #daySelected onChanged
+                 sig2 <- cvOn widget #monthChanged onChanged
                  cvBindWholeModel rmod (Just esrc) $ \newval -> do
                      oldval <- getDay
                      if oldval == newval
                          then return ()
-                         else putDay newval
+                         else liftIO $ withSignalBlocked widget sig1 $ withSignalBlocked widget sig2 $ putDay newval
                  toWidget widget) $
         isUISpec uispec
