@@ -8,6 +8,7 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
+import Truth.Debug.Reference
 
 createWidget :: CheckboxUISpec -> CreateView Widget
 createWidget (MkCheckboxUISpec label rmod) = do
@@ -17,6 +18,7 @@ createWidget (MkCheckboxUISpec label rmod) = do
     cvBindReadOnlyWholeModel label $ \val -> set widget [#label := val]
     changedSignal <-
         cvOn widget #clicked $
+        traceBracket "GTK.CheckButton:clicked" $
         viewRunResource rmod $ \asub -> do
             st <- Gtk.get widget #active
             _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
@@ -40,7 +42,7 @@ createWidget (MkMaybeCheckboxUISpec label rmod) = do
         setWidgetState :: Maybe Bool -> View ()
         setWidgetState st = set widget [#active := st == Just True, #inconsistent := st == Nothing]
     _ <-
-        cvOn widget #buttonPressEvent $ \event -> do
+        cvOn widget #buttonPressEvent $ \event -> traceBracket "GTK.CheckButton:buttonPressEvent" $ do
             click <- Gtk.get event #type
             case click of
                 EventTypeButtonPress -> do

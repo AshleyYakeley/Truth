@@ -8,12 +8,13 @@ import Shapes hiding (get)
 import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
+import Truth.Debug.Reference
 
 calendarGetView :: GetGView
 calendarGetView =
     MkGetView $ \_ uispec ->
         fmap
-            (\(MkCalendarUISpec rmod) -> do
+            (\(MkCalendarUISpec rmod) -> traceBracket "GTK.Calendar:create" $ do
                  esrc <- newEditSource
                  widget <- new Calendar []
                  let
@@ -31,15 +32,15 @@ calendarGetView =
                          -> m ()
                      putDay day = let
                          (y, m, d) = toGregorian day
-                         in set widget [#year := fromInteger y, #month := fromIntegral m, #day := fromIntegral d]
-                     onChanged =
+                         in traceBracket "GTK.Calendar:set" $ set widget [#year := fromInteger y, #month := fromIntegral m, #day := fromIntegral d]
+                     onChanged = traceBracket "GTK.Calendar:changed" $
                          viewRunResource rmod $ \asub -> do
                              st <- getDay
                              _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
                              return ()
                  _ <- cvOn widget #daySelected onChanged
                  _ <- cvOn widget #monthChanged onChanged
-                 cvBindWholeModel rmod (Just esrc) $ \newval -> do
+                 cvBindWholeModel rmod (Just esrc) $ \newval -> traceBracket "GTK.Calendar:update" $ do
                      oldval <- getDay
                      if oldval == newval
                          then return ()

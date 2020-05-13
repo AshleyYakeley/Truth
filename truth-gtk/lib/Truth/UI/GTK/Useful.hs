@@ -54,7 +54,7 @@ cvOn ::
     -> CallbackViewLifted (HaskellCallbackType info)
     -> CreateView SignalHandlerId
 cvOn widget signal call = do
-    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> on widget signal $ gCallbackUnlift unlift call
+    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> on widget signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK on" $ unlift ma) call
     liftLifeCycleIO $ lifeCycleClose $ disconnectSignalHandler widget shid
     return shid
 
@@ -65,7 +65,7 @@ cvAfter ::
     -> CallbackViewLifted (HaskellCallbackType info)
     -> CreateView SignalHandlerId
 cvAfter widget signal call = do
-    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> after widget signal $ gCallbackUnlift unlift call
+    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> after widget signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK after" $ unlift ma) call
     liftLifeCycleIO $ lifeCycleClose $ disconnectSignalHandler widget shid
     return shid
 
@@ -142,5 +142,5 @@ lcContainPackStart grow box w =
 cvMakeButton :: Text -> View () -> CreateView Button
 cvMakeButton name action = do
     button <- new Button [#label := name]
-    _ <- cvOn button #clicked action
+    _ <- cvOn button #clicked $ traceBracket "GTK.Button:clicked" action
     return button

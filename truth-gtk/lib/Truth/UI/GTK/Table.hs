@@ -12,6 +12,7 @@ import Truth.UI.GTK.DynamicStore
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.TextStyle
 import Truth.UI.GTK.Useful
+import Truth.Debug.Reference
 
 data Column row = MkColumn
     { colName :: Model (ROWUpdate Text)
@@ -140,9 +141,9 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
                             return $ Just $ entryModel entry
                         _ -> return Nothing
                 _ -> return Nothing
-    _ <- cvOn tview #cursorChanged $ runSelectNotify sel getSelection
+    _ <- cvOn tview #cursorChanged $ traceBracket "GTK.treeView:cursorChanged" $ runSelectNotify sel getSelection
     _ <-
-        cvOn tview #buttonPressEvent $ \event -> do
+        cvOn tview #buttonPressEvent $ \event -> traceBracket "GTK.treeView:buttonPressEvent" $ do
             click <- Gtk.get event #type
             case click of
                 EventType2buttonPress -> do

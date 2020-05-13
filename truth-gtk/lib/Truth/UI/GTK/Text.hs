@@ -60,7 +60,7 @@ textView rmod (MkSelectNotify setsel) = do
             srun <- getSequenceRun iter1 iter2
             return $ Just $ stringSectionLens srun
     cvLiftView $ setsel aspect
-    _ <- cvOn buffer #changed $ setsel aspect
+    _ <- cvOn buffer #changed $ traceBracket "GTK.TextBuffer:changed" $ setsel aspect
     let
         initV :: Model (StringUpdate Text) -> CreateView ()
         initV rm = do

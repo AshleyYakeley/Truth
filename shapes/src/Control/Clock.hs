@@ -8,6 +8,7 @@ import Control.Monad.Trans.LifeCycle
 import Data.Fixed
 import Data.Time.Clock
 import Shapes.Import
+import Debug.ThreadTrace
 
 data Cancelled =
     MkCancelled
@@ -28,7 +29,7 @@ clock utcBase ndtInterval call = do
     var <- liftIO newEmptyMVar
     thread <-
         liftIO $
-        forkIO $
+        forkIO $ traceBracketIO "THREAD: clock" $
         handle (\MkCancelled -> return ()) $
         forever $ do
             (ndtTime, ndtOffset) <- getDiffTimes

@@ -168,7 +168,7 @@ runResourceRunner ::
     -> ResourceRunner tt
     -> ((MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) => ApplyStack tt m r)
     -> m r
-runResourceRunner (MkResourceContext rc) (MkResourceRunner rr) call = traceBracket "runResourceRunner" $ runLSR rc rr call
+runResourceRunner (MkResourceContext rc) (MkResourceRunner rr) call = traceBracket "runResourceRunner: outside" $ runLSR rc rr $ traceBracket "runResourceRunner: inside" $ call
 
 runLSRContext ::
        forall tt m r. MonadUnliftIO m
@@ -192,8 +192,8 @@ runResourceRunnerContext ::
     -> ResourceRunner tt
     -> ((MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) => ResourceContext -> StackUnliftAll tt -> m r)
     -> m r
-runResourceRunnerContext (MkResourceContext rc) (MkResourceRunner rr) call = traceBracket "runResourceRunnerContext" $
-    runLSRContext rc rr $ \rc' (MkWStackUnliftAll unlift) -> call (MkResourceContext rc') $ unlift
+runResourceRunnerContext (MkResourceContext rc) (MkResourceRunner rr) call = traceBracket "runResourceRunnerContext: outside" $
+    runLSRContext rc rr $ \rc' (MkWStackUnliftAll unlift) -> traceBracket "runResourceRunnerContext: inside" $ call (MkResourceContext rc') $ unlift
 
 exclusiveResourceRunner :: ResourceContext -> ResourceRunner tt -> LifeCycleIO (ResourceRunner '[ StackT tt])
 exclusiveResourceRunner rc rr = do

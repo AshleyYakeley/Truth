@@ -8,6 +8,7 @@ import Control.Monad.LifeCycleIO
 import Control.Monad.Trans.LifeCycle
 import Control.Task
 import Shapes.Import
+import Debug.ThreadTrace
 
 data VarState t
     = VSIdle
@@ -81,7 +82,7 @@ asyncWaitRunner mus doit = do
                             VSIdle -> Just ()
                             _ -> Nothing
             in MkTask {..}
-    _ <- liftIO $ forkIO threadDo
+    _ <- liftIO $ forkIO $ traceBracketIO "THREAD: async runner" threadDo
     lifeCycleClose $ do
         atomically $ do
             waitForIdle

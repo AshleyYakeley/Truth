@@ -7,6 +7,7 @@ import Prelude
 import Data.Word
 import Control.Monad.IO.Class
 import Control.Concurrent
+import Control.Exception
 
 contextStr :: String -> String -> String
 contextStr "" b = b
@@ -43,6 +44,18 @@ traceBracketArgs s args showr ma = do
 
 traceBracket :: MonadIO m => String -> m r -> m r
 traceBracket s = traceBracketArgs s "" (\_ -> "")
+
+traceBracketIO :: String -> IO r -> IO r
+traceBracketIO s ma = do
+    traceIOM $ s ++ " ["
+    catch (do
+        a <- ma
+        traceIOM $ s ++ " ]"
+        return a
+        )
+        $ \(e :: SomeException) -> do
+            traceIOM $ s ++ " ! " ++ show e
+            throw e
 
 traceBarrier :: (MonadIO m1,MonadIO m2) => String -> (m1 a -> m2 b) -> m1 a -> m2 b
 traceBarrier s tr ma = traceBracket (contextStr s "outside") $ tr $ traceBracket (contextStr s  "inside") ma

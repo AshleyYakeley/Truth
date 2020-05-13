@@ -2,6 +2,7 @@ module Control.Task where
 
 import Control.Monad.Compose
 import Shapes.Import
+import Debug.ThreadTrace
 
 data Task a = MkTask
     { taskWait :: IO a
@@ -48,13 +49,13 @@ singleTask ioa = do
 forkSingleTask :: IO a -> IO (Task a)
 forkSingleTask ioa = do
     (action, task) <- singleTask ioa
-    _ <- forkIO action
+    _ <- forkIO $ traceBracketIO "THREAD: task" action
     return task
 
 taskNotify :: Task a -> (a -> IO ()) -> IO ()
 taskNotify task call = do
     _ <-
-        forkIO $ do
+        forkIO $ traceBracketIO "THREAD: notify" $ do
             a <- taskWait task
             call a
     return ()
