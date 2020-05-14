@@ -41,9 +41,9 @@ makePinaforeContext ::
     => Model baseupdate
     -> UIToolkit
     -> LifeCycleIO (PinaforeContext baseupdate)
-makePinaforeContext rsub toolkit = do
-    (sub, uactions) <- liftIO $ undoQueueModel rsub
-    return $ MkPinaforeContext (unPinaforeAction toolkit uactions) sub
+makePinaforeContext rmodel toolkit = do
+    uh <- liftIO newUndoHandler
+    return $ MkPinaforeContext (unPinaforeAction toolkit uh) $ undoHandlerModel uh rmodel
 
 nullPinaforeContext :: PinaforeContext baseupdate
 nullPinaforeContext = let

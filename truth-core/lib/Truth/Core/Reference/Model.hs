@@ -3,6 +3,7 @@ module Truth.Core.Reference.Model
     , aModelRead
     , aModelEdit
     , Model
+    , modelReference
     , modelUpdatesTask
     , modelCommitTask
     , makeReflectingModel
@@ -60,6 +61,9 @@ type Model update = Resource (AModel update)
 type UpdateStoreEntry update = (Task (), ResourceContext -> NonEmpty update -> EditContext -> IO ())
 
 type UpdateStore update = Store (UpdateStoreEntry update)
+
+modelReference :: Model update -> Reference (UpdateEdit update)
+modelReference (MkResource rr amodel) = MkResource rr $ aModelAReference amodel
 
 modelUpdatesTask :: Model update -> Task ()
 modelUpdatesTask (MkResource _ asub) = aModelUpdatesTask asub
