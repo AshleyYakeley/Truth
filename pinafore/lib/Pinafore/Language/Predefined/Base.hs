@@ -49,8 +49,8 @@ newMemRef :: PinaforeAction (LangRef '( A, A))
 newMemRef = do
     r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
     model <- pinaforeLiftLifeCycleIO $ makeReflectingModel r
-    _uh <- pinaforeUndoHandler
-    return $ pinaforeRefToRef $ MkPinaforeRef $ model {- undoHandlerModel uh -}
+    uh <- pinaforeUndoHandler
+    return $ pinaforeRefToRef $ MkPinaforeRef $ undoHandlerModel uh model
 
 newMemFiniteSet :: PinaforeAction (LangFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
