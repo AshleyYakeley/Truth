@@ -340,7 +340,7 @@ testSharedString3 =
         showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
         sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
-        subscribeEditor ?rc sectSub $ pure ()
+        runEditor ?rc sectSub $ pure ()
         showModelSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow
@@ -360,7 +360,7 @@ testSharedString4 =
         showModelSubject "main" mainSub
         mainShowUpdate <- subscribeShowUpdates "main" mainSub
         sectSub <- floatMapModel ?rc (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainSub
-        subscribeEditor ?rc sectSub $ pure ()
+        runEditor ?rc sectSub $ pure ()
         showModelSubject "sect" sectSub
         sectShowUpdate <- subscribeShowUpdates "sect" sectSub
         mainShow

@@ -12,23 +12,21 @@ import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit
 import Truth.Core
 
-nullViewIO :: View a -> IO a
-nullViewIO = uitRunView nullUIToolkit emptyResourceContext
-
 scriptTest ::
-       FromPinaforeType PinaforeUpdate a
+       forall a. FromPinaforeType PinaforeUpdate a
     => Text
     -> Text
-    -> ((?pinafore :: PinaforeContext PinaforeUpdate) => a -> IO ())
+    -> ((?pinafore :: PinaforeContext PinaforeUpdate) => UIToolkit -> MFunction LifeCycleIO IO -> a -> IO ())
     -> ContextTestTree
 scriptTest name text checker =
     contextTestCase name text $ \t ->
-        withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
-            action <- throwResult $ pinaforeInterpretFileAtType "<test>" $ "onStop (" <> t <> ") (fail \"stopped\")"
-            checker action
+        withTestPinaforeContext $ \uitoolkit unlift _getTableState -> do
+            a <- throwResult $ pinaforeInterpretFileAtType "<test>" $ "onStop (" <> t <> ") (fail \"stopped\")"
+            checker uitoolkit unlift a
 
 pointTest :: Text -> ContextTestTree
-pointTest text = scriptTest text text $ nullViewIO . runPinaforeAction
+pointTest text =
+    scriptTest text text $ \uitoolkit _ action -> uitRunView uitoolkit emptyResourceContext $ runPinaforeAction action
 
 assertThrows :: IO a -> IO ()
 assertThrows ma = do
@@ -38,28 +36,40 @@ assertThrows ma = do
         else return ()
 
 badPointTest :: Text -> ContextTestTree
-badPointTest text = scriptTest text text $ assertThrows . nullViewIO . runPinaforeAction
+badPointTest text =
+    scriptTest text text $ \uitoolkit _ action ->
+        assertThrows $ uitRunView uitoolkit emptyResourceContext $ runPinaforeAction action
 
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
     testCase (unpack text) $
-    withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
+    withTestPinaforeContext $ \_uitoolkit _unlift _getTableState -> do
         assertThrows $ throwResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
 
 exceptionTest :: Text -> ContextTestTree
 exceptionTest text c =
     testCase (unpack text) $
-    withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
+    withTestPinaforeContext $ \uitoolkit _unlift _getTableState -> do
         action <- throwResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
-        assertThrows $ nullViewIO action
+        assertThrows $ uitRunView uitoolkit emptyResourceContext action
 
 updateTest :: Text -> ContextTestTree
 updateTest text =
-    scriptTest text text $ \action -> do
-        (sendUpdate, ref) <- nullViewIO $ unliftPinaforeActionOrFail action
-        runLifeCycle $
-            subscribeEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
-            checkUpdateEditor (Known (1 :: Integer)) $ nullViewIO $ unliftPinaforeActionOrFail sendUpdate
+    scriptTest text text $ \uitoolkit unlift action -> do
+        (sendUpdate, ref) <- uitRunView uitoolkit emptyResourceContext $ unliftPinaforeActionOrFail action
+        unlift $
+            runEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
+            checkUpdateEditor (Known (1 :: Integer)) $ do
+                hPutStrLn stderr "UCA"
+                a <-
+                    uitRunView uitoolkit emptyResourceContext $
+                    unliftPinaforeActionOrFail $ do
+                        liftIO $ hPutStrLn stderr "UCUA"
+                        a <- sendUpdate
+                        liftIO $ hPutStrLn stderr "UCUB"
+                        return a
+                hPutStrLn stderr "UCB"
+                return a
 
 testUpdates :: TestTree
 testUpdates = runContext $ tgroup "update" [updateTest "do ref <- newMemRef; return (ref := 1, ref) end"]

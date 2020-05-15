@@ -29,12 +29,10 @@ standardPinaforeContext dirpath uitoolkit = do
     sqlReference <- liftIO $ sqlitePinaforeTableReference $ dirpath </> "tables.sqlite3"
     tableReference1 <- liftLifeCycleIO $ exclusiveResource rc sqlReference
     tableReference <- liftLifeCycleIO $ cacheReference rc 500000 tableReference1 -- half-second delay before writing
-    memoryReference <- liftIO makeMemoryCellReference
     let
         picker :: forall update. PinaforeSelector update -> Premodel update ()
         picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityReference $ tableReference rc
         picker PinaforeSelectFile = reflectingPremodel $ directoryPinaforeFileReference $ dirpath </> "files"
-        picker PinaforeSelectMemory = reflectingPremodel memoryReference
     (sub, ()) <- liftLifeCycleIO $ makeSharedModel $ tuplePremodel picker
     liftLifeCycleIO $ makePinaforeContext sub uitoolkit
 

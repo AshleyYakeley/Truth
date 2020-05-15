@@ -21,12 +21,9 @@ import Pinafore.Language.Predefined.UI
 import Pinafore.Language.TypeSystem
 import Pinafore.Storage
 import Shapes
-import Truth.Core
 
 type PinaforePredefinitions baseupdate
-     = ( BaseChangeLens PinaforeEntityUpdate baseupdate
-       , BaseChangeLens PinaforeFileUpdate baseupdate
-       , BaseChangeLens MemoryCellUpdate baseupdate)
+     = (BaseChangeLens PinaforeEntityUpdate baseupdate, BaseChangeLens PinaforeFileUpdate baseupdate)
 
 predefinitions ::
        forall baseupdate. PinaforePredefinitions baseupdate

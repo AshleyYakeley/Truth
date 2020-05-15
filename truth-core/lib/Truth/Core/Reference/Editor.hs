@@ -47,8 +47,8 @@ instance Applicative (Editor update) where
             return $ ab a
         in MkEditor {..}
 
-subscribeEditor :: ResourceContext -> Model update -> Editor update r -> LifeCycleIO r
-subscribeEditor rc (MkResource (rr :: _ tt) (MkAModel anreference sub utask)) MkEditor {..} = do
+runEditor :: ResourceContext -> Model update -> Editor update r -> LifeCycleIO r
+runEditor rc (MkResource (rr :: _ tt) (MkAModel anreference sub utask)) MkEditor {..} = do
     let reference = MkResource rr anreference
     e <- editorInit reference
     runResourceRunner rc rr $ sub editorTask $ editorUpdate e reference

@@ -38,7 +38,6 @@ makeTestPinaforeContext uitoolkit = do
         tableReference = convertReference tableStateReference
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getReferenceSubject rc tableStateReference
-    memoryReference <- liftIO makeMemoryCellReference
     let
         picker :: forall update. PinaforeSelector update -> Premodel update ()
         picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityReference tableReference
@@ -46,19 +45,22 @@ makeTestPinaforeContext uitoolkit = do
             reflectingPremodel $
             mapReference (fromReadOnlyRejectingChangeLens @PinaforeFileUpdate) $
             readConstantReference $ constFunctionReadFunction nullSingleReferenceReadable
-        picker PinaforeSelectMemory = reflectingPremodel memoryReference
     (sub, ()) <- makeSharedModel $ tuplePremodel picker
     pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       UIToolkit
-    -> ((?pinafore :: PinaforeContext PinaforeUpdate) => IO (EditSubject PinaforeTableEdit) -> IO r)
+       ((?pinafore :: PinaforeContext PinaforeUpdate) =>
+                UIToolkit -> MFunction LifeCycleIO IO -> IO (EditSubject PinaforeTableEdit) -> IO r)
     -> IO r
-withTestPinaforeContext uitoolkit f =
-    withLifeCycle (makeTestPinaforeContext uitoolkit) $ \(pc, getTableState) -> let
-        ?pinafore = pc
-        in f getTableState
+withTestPinaforeContext call =
+    runLifeCycle $
+    liftWithUnlift $ \unlift -> do
+        let uitoolkit = nullUIToolkit unlift
+        (pc, getTableState) <- unlift $ makeTestPinaforeContext uitoolkit
+        let
+            ?pinafore = pc
+            in call uitoolkit unlift getTableState
 
 withNullPinaforeContext :: ((?pinafore :: PinaforeContext baseupdate) => r) -> r
 withNullPinaforeContext f = let
@@ -84,12 +86,18 @@ checkUpdateEditor val push = let
         -> NonEmpty (WholeUpdate a)
         -> EditContext
         -> IO ()
-    editorUpdate var _ _ edits _ = do putMVar var edits
+    editorUpdate var _ _ edits _ = do
+        hPutStrLn stderr "X"
+        putMVar var edits
+        hPutStrLn stderr "Y"
     editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Reference (WholeEdit a) -> Task () -> LifeCycleIO ()
     editorDo var _ _ =
         liftIO $ do
+            hPutStrLn stderr "A"
             push
+            hPutStrLn stderr "B"
             edits <- takeMVar var
+            hPutStrLn stderr "C"
             case edits of
                 MkWholeReaderUpdate v :| []
                     | v == val -> return ()

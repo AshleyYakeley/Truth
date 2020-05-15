@@ -7,7 +7,7 @@ import Truth.Core.UI.Window
 data UIToolkit = MkUIToolkit
     { uitWithLock :: forall a. IO a -> IO a -- ^ run with lock, must not already have it
     , uitCreateWindow :: WindowSpec -> CreateView UIWindow -- ^ must already have lock
-    , uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a -- ^ Closers will be run at the end of the session. (Lock doesn't matter.)
+    , uitUnliftLifeCycle :: MFunction LifeCycleIO IO -- ^ Closers will be run at the end of the session. (Lock doesn't matter.)
     , uitGetRequest :: forall t. IOWitness t -> Maybe t
     , uitExit :: IO () -- ^ must already have the lock
     }

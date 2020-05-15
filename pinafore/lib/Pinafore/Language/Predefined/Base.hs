@@ -46,28 +46,24 @@ entityAnchor p = pack $ show p
 onStop :: PinaforeAction A -> PinaforeAction A -> PinaforeAction A
 onStop p q = p <|> q
 
-newMemRef ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens MemoryCellUpdate baseupdate)
-    => IO (LangRef '( A, A))
+newMemRef :: PinaforeAction (LangRef '( A, A))
 newMemRef = do
-    lens <- makeMemoryCellChangeLens Unknown
-    return $ pinaforeRefToRef $ MkPinaforeRef $ mapModel lens $ pinaforeBaseModel @baseupdate
+    r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
+    model <- pinaforeLiftLifeCycleIO $ makeReflectingModel r
+    _uh <- pinaforeUndoHandler
+    return $ pinaforeRefToRef $ MkPinaforeRef $ model {- undoHandlerModel uh -}
 
-newMemFiniteSet ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens MemoryCellUpdate baseupdate)
-    => IO (LangFiniteSetRef '( MeetType Entity A, A))
+newMemFiniteSet :: PinaforeAction (LangFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
-    lens <- makeMemoryCellChangeLens mempty
-    return $
-        meetValueLangFiniteSetRef $ MkPinaforeRef $ mapModel (convertChangeLens . lens) $ pinaforeBaseModel @baseupdate
+    r <- liftIO $ makeMemoryReference mempty $ \_ -> True
+    model <- pinaforeLiftLifeCycleIO $ makeReflectingModel $ convertReference r
+    uh <- pinaforeUndoHandler
+    return $ meetValueLangFiniteSetRef $ MkPinaforeRef $ undoHandlerModel uh model
 
 zeroTime :: UTCTime
 zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
-newClock ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate)
-    => NominalDiffTime
-    -> PinaforeAction (PinaforeImmutableRef UTCTime)
+newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableRef UTCTime)
 newClock duration = do
     (clockOM, ()) <- pinaforeLiftLifeCycleIO $ makeSharedModel $ clockPremodel zeroTime duration
     return $ functionImmutableRef $ MkPinaforeRef $ clockOM
@@ -110,11 +106,7 @@ getLocalTime :: IO LocalTime
 getLocalTime = fmap zonedTimeToLocalTime getZonedTime
 
 base_predefinitions ::
-       forall baseupdate.
-       ( BaseChangeLens PinaforeEntityUpdate baseupdate
-       , BaseChangeLens PinaforeFileUpdate baseupdate
-       , BaseChangeLens MemoryCellUpdate baseupdate
-       )
+       forall baseupdate. (BaseChangeLens PinaforeEntityUpdate baseupdate, BaseChangeLens PinaforeFileUpdate baseupdate)
     => [DocTreeEntry (BindDoc baseupdate)]
 base_predefinitions =
     [ docTreeEntry
@@ -309,8 +301,8 @@ base_predefinitions =
                       , mkValEntry "getTime" "Get the current time." $ getCurrentTime
                       , mkValEntry
                             "newClock"
-                            "Make a reference to the current time that updates per the given duration." $
-                        newClock @baseupdate
+                            "Make a reference to the current time that updates per the given duration."
+                            newClock
                       ]
                 , docTreeEntry
                       "Calendar"
@@ -552,7 +544,7 @@ base_predefinitions =
           , mkValEntry "runRef" "Run an action from a reference." $ runLangRef
           , mkValEntry ":=" "Set a reference to a value. Stop if failed." setentity
           , mkValEntry "delete" "Delete an entity reference. Stop if failed." deleteentity
-          , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." $ newMemRef @baseupdate
+          , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." newMemRef
           ]
     , docTreeEntry
           "Set References"
@@ -628,8 +620,7 @@ base_predefinitions =
                 "removeAll"
                 "Remove all entities from a finite set."
                 (langFiniteSetRefRemoveAll :: LangFiniteSetRef '( BottomType, TopType) -> PinaforeAction ())
-          , mkValEntry "newMemFiniteSet" "Create a new finite set reference to memory, initially empty." $
-            newMemFiniteSet @baseupdate
+          , mkValEntry "newMemFiniteSet" "Create a new finite set reference to memory, initially empty." newMemFiniteSet
           ]
     , docTreeEntry
           "Morphisms"

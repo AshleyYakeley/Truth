@@ -7,13 +7,12 @@ import Pinafore.Test
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
-import Truth.Core
 
 -- Just check, don't run
 testExample :: String -> TestTree
 testExample fpath =
     testCase fpath $
-    withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
+    withTestPinaforeContext $ \_ _ _getTableState -> do
         ptext <- readFile fpath
         _ <- throwResult $ pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
         return ()

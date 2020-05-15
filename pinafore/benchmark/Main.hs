@@ -9,7 +9,7 @@ import Shapes
 import Truth.Core
 
 nullViewIO :: View a -> IO a
-nullViewIO = uitRunView nullUIToolkit emptyResourceContext
+nullViewIO = uitRunView (nullUIToolkit runLifeCycle) emptyResourceContext
 
 benchHash :: Text -> Benchmark
 benchHash text = bench (show $ unpack text) $ nf literalToEntity text
@@ -27,7 +27,7 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext nullUIToolkit) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullUIToolkit runLifeCycle) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc
@@ -92,12 +92,12 @@ interpretUpdater text = do
     action <- throwResult $ pinaforeInterpretFileAtType "<test>" text
     (sendUpdate, ref) <- nullViewIO $ unliftPinaforeActionOrFail action
     runLifeCycle $
-        subscribeEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
+        runEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
         checkUpdateEditor (Known (1 :: Integer)) $ nullViewIO $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext nullUIToolkit) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullUIToolkit runLifeCycle) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc
