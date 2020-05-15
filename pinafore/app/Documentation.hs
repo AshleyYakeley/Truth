@@ -3,7 +3,6 @@ module Documentation
     , printInfixOperatorTable
     ) where
 
-import Pinafore
 import Pinafore.Language.Documentation
 import Shapes
 
@@ -45,7 +44,7 @@ showDefDesc _ desc = do
     putStrLn ""
 
 printPredefinedBindings :: IO ()
-printPredefinedBindings = runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeUpdate
+printPredefinedBindings = runDocTree showDefTitle showDefDesc showDefEntry 1 predefinedDoc
 
 printInfixOperatorTable :: IO ()
 printInfixOperatorTable = do
@@ -54,7 +53,7 @@ printInfixOperatorTable = do
             | not docIsSupertype
             , nameIsInfix docName = Just docName
         getDocName _ = Nothing
-        names = catMaybes $ fmap getDocName $ toList $ predefinedDoc @PinaforeUpdate
+        names = catMaybes $ fmap getDocName $ toList predefinedDoc
     putStrLn "| [n] | (A x B) x C | A x (B x C) | A x B only |"
     putStrLn "| --- | --- | --- | --- |"
     for_ [10,9 .. 0] $ \level -> do

@@ -13,10 +13,10 @@ import Test.Tasty.HUnit
 import Truth.Core
 
 scriptTest ::
-       forall a. FromPinaforeType PinaforeUpdate a
+       forall a. FromPinaforeType PinaforeEntityUpdate a
     => Text
     -> Text
-    -> ((?pinafore :: PinaforeContext PinaforeUpdate) => UIToolkit -> MFunction LifeCycleIO IO -> a -> IO ())
+    -> ((?pinafore :: PinaforeContext) => UIToolkit -> MFunction LifeCycleIO IO -> a -> IO ())
     -> ContextTestTree
 scriptTest name text checker =
     contextTestCase name text $ \t ->

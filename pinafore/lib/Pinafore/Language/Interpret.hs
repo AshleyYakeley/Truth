@@ -57,10 +57,7 @@ interpretPatternOrName :: SyntaxPattern -> Either Name (RefNotation baseupdate (
 interpretPatternOrName (MkWithSourcePos _ (VarSyntaxPattern n)) = Left n
 interpretPatternOrName pat = Right $ interpretPattern pat
 
-interpretExpression ::
-       forall baseupdate. BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SyntaxExpression
-    -> RefExpression baseupdate
+interpretExpression :: forall baseupdate. SyntaxExpression -> RefExpression baseupdate
 interpretExpression (MkWithSourcePos spos sexpr) = interpretExpression' spos sexpr
 
 getBindingNode :: SyntaxBinding -> (SyntaxBinding, Name, [Name])
@@ -70,12 +67,7 @@ getBindingNode b@(MkSyntaxBinding _ _ n _) = (b, n, setToList $ syntaxFreeVariab
 clumpBindings :: [SyntaxBinding] -> [[SyntaxBinding]]
 clumpBindings bb = fmap flattenSCC $ stronglyConnComp $ fmap getBindingNode bb
 
-interpretLetBindingsClump ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SourcePos
-    -> [SyntaxBinding]
-    -> RefNotation baseupdate a
-    -> RefNotation baseupdate a
+interpretLetBindingsClump :: SourcePos -> [SyntaxBinding] -> RefNotation baseupdate a -> RefNotation baseupdate a
 interpretLetBindingsClump spos sbinds ra = do
     bl <- interpretBindings sbinds
     remonadRefNotation
@@ -84,28 +76,17 @@ interpretLetBindingsClump spos sbinds ra = do
              withNewBindings bmap se) $
         ra
 
-interpretLetBindingss ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SourcePos
-    -> [[SyntaxBinding]]
-    -> RefNotation baseupdate a
-    -> RefNotation baseupdate a
+interpretLetBindingss :: SourcePos -> [[SyntaxBinding]] -> RefNotation baseupdate a -> RefNotation baseupdate a
 interpretLetBindingss _ [] ra = ra
 interpretLetBindingss spos (b:bb) ra = interpretLetBindingsClump spos b $ interpretLetBindingss spos bb ra
 
-interpretLetBindings ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SourcePos
-    -> [SyntaxBinding]
-    -> RefNotation baseupdate a
-    -> RefNotation baseupdate a
+interpretLetBindings :: SourcePos -> [SyntaxBinding] -> RefNotation baseupdate a -> RefNotation baseupdate a
 interpretLetBindings spos sbinds ra = do
     liftRefNotation $ runSourcePos spos $ checkSyntaxBindingsDuplicates sbinds
     interpretLetBindingss spos (clumpBindings sbinds) ra
 
 interpretDeclarations ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => [SyntaxDeclaration]
+       [SyntaxDeclaration]
     -> PinaforeSourceScoped baseupdate (WMFunction (RefNotation baseupdate) (RefNotation baseupdate))
 interpretDeclarations decls = do
     let
@@ -158,20 +139,13 @@ interpretConstant _ SCBind = return $ qConstExprAny $ jmToValue qbind
 interpretConstant _ SCBind_ = return $ qConstExprAny $ jmToValue qbind_
 interpretConstant spos (SCConstructor lit) = interpretConstructor spos lit
 
-interpretCase ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SyntaxCase
-    -> RefNotation baseupdate (QPattern baseupdate, QExpr baseupdate)
+interpretCase :: SyntaxCase -> RefNotation baseupdate (QPattern baseupdate, QExpr baseupdate)
 interpretCase (MkSyntaxCase spat sexpr) = do
     pat <- interpretPattern spat
     expr <- interpretExpression sexpr
     return (pat, expr)
 
-interpretExpression' ::
-       forall baseupdate. BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SourcePos
-    -> SyntaxExpression'
-    -> RefExpression baseupdate
+interpretExpression' :: forall baseupdate. SourcePos -> SyntaxExpression' -> RefExpression baseupdate
 interpretExpression' spos (SEAbstract spat sbody) = do
     val <- interpretExpression sbody
     case interpretPatternOrName spat of
@@ -255,31 +229,23 @@ interpretTypeSignature (Just st) expr = do
     at <- interpretType st
     qSubsumeExpr (mapAnyW mkShimWit at) expr
 
-interpretBinding ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate => SyntaxBinding -> RefNotation baseupdate (QBindings baseupdate)
+interpretBinding :: SyntaxBinding -> RefNotation baseupdate (QBindings baseupdate)
 interpretBinding (MkSyntaxBinding spos mtype name sexpr) = do
     rexpr <- interpretExpression sexpr
     expr <- liftRefNotation $ runSourcePos spos $ interpretTypeSignature mtype rexpr
     return $ qBindExpr name expr
 
-interpretBindings ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => [SyntaxBinding]
-    -> RefNotation baseupdate (QBindings baseupdate)
+interpretBindings :: [SyntaxBinding] -> RefNotation baseupdate (QBindings baseupdate)
 interpretBindings sbinds = do
     qbinds <- for sbinds interpretBinding
     return $ mconcat qbinds
 
 interpretTopDeclarations ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SyntaxTopDeclarations
+       SyntaxTopDeclarations
     -> PinaforeScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate))
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) = do
     MkWMFunction f <- runSourcePos spos $ interpretDeclarations sdecls
     return $ MkWMFunction $ \a -> runRefNotation spos $ f $ liftRefNotation a
 
-interpretTopExpression ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SyntaxExpression
-    -> PinaforeScoped baseupdate (QExpr baseupdate)
+interpretTopExpression :: SyntaxExpression -> PinaforeScoped baseupdate (QExpr baseupdate)
 interpretTopExpression sexpr@(MkWithSourcePos spos _) = runRefNotation spos $ interpretExpression sexpr

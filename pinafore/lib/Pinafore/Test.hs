@@ -22,13 +22,11 @@ import Pinafore.Language.Name
 import Pinafore.Language.Read
 import Pinafore.Language.TypeSystem
 import Pinafore.Language.TypeSystem.Simplify
-import Pinafore.Pinafore
 import Pinafore.Storage
 import Shapes
 import Truth.Core
-import Truth.World.ReferenceStore
 
-makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
+makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext, IO (EditSubject PinaforeTableEdit))
 makeTestPinaforeContext uitoolkit = do
     let rc = emptyResourceContext
     tableStateReference :: Reference (WholeEdit (EditSubject PinaforeTableEdit)) <-
@@ -38,19 +36,12 @@ makeTestPinaforeContext uitoolkit = do
         tableReference = convertReference tableStateReference
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getReferenceSubject rc tableStateReference
-    let
-        picker :: forall update. PinaforeSelector update -> Premodel update ()
-        picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityReference tableReference
-        picker PinaforeSelectFile =
-            reflectingPremodel $
-            mapReference (fromReadOnlyRejectingChangeLens @PinaforeFileUpdate) $
-            readConstantReference $ constFunctionReadFunction nullSingleReferenceReadable
-    (sub, ()) <- makeSharedModel $ tuplePremodel picker
-    pc <- makePinaforeContext sub uitoolkit
+    (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
+    pc <- makePinaforeContext model uitoolkit
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       ((?pinafore :: PinaforeContext PinaforeUpdate) =>
+       ((?pinafore :: PinaforeContext) =>
                 UIToolkit -> MFunction LifeCycleIO IO -> IO (EditSubject PinaforeTableEdit) -> IO r)
     -> IO r
 withTestPinaforeContext call =
@@ -62,13 +53,12 @@ withTestPinaforeContext call =
             ?pinafore = pc
             in call uitoolkit unlift getTableState
 
-withNullPinaforeContext :: ((?pinafore :: PinaforeContext baseupdate) => r) -> r
+withNullPinaforeContext :: ((?pinafore :: PinaforeContext) => r) -> r
 withNullPinaforeContext f = let
     ?pinafore = nullPinaforeContext
     in f
 
-runTestPinaforeSourceScoped ::
-       PinaforePredefinitions baseupdate => PinaforeSourceScoped baseupdate a -> InterpretResult a
+runTestPinaforeSourceScoped :: PinaforeSourceScoped baseupdate a -> InterpretResult a
 runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa
 
 checkUpdateEditor ::

@@ -14,7 +14,6 @@ import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.EntityAdapter
 import Pinafore.Language.Value
-import Pinafore.Storage
 import Shapes
 import Shapes.Numeric
 import Truth.Core
@@ -105,9 +104,7 @@ unixParse fmt text = parseTimeM True defaultTimeLocale (unpack fmt) (unpack text
 getLocalTime :: IO LocalTime
 getLocalTime = fmap zonedTimeToLocalTime getZonedTime
 
-base_predefinitions ::
-       forall baseupdate. (BaseChangeLens PinaforeEntityUpdate baseupdate, BaseChangeLens PinaforeFileUpdate baseupdate)
-    => [DocTreeEntry (BindDoc baseupdate)]
+base_predefinitions :: [DocTreeEntry (BindDoc baseupdate)]
 base_predefinitions =
     [ docTreeEntry
           "Literals & Entities"
@@ -609,7 +606,7 @@ base_predefinitions =
             langFiniteSetRefCartesianProduct @AP @AQ @BP @BQ
           , mkSupertypeEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
             langFiniteSetRefCartesianProduct @A @A @B @B
-          , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
+          , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @A
           , mkValEntry
                 "listFiniteSet"
                 "Represent a reference to a list as a finite set. Changing the set may scramble the order of the list." $
@@ -625,54 +622,50 @@ base_predefinitions =
     , docTreeEntry
           "Morphisms"
           "Morphisms relate entities."
-          [ mkValEntry "identity" "The identity morphism." $ identityLangMorphism @baseupdate @X @Y
-          , mkValEntry "!." "Compose morphisms." $ composeLangMorphism @baseupdate @AP @AQ @BX @BY @CP @CQ
-          , mkSupertypeEntry "!." "Compose morphisms." $ composeLangMorphism @baseupdate @A @A @B @B @C @C
+          [ mkValEntry "identity" "The identity morphism." $ identityLangMorphism @X @Y
+          , mkValEntry "!." "Compose morphisms." $ composeLangMorphism @AP @AQ @BX @BY @CP @CQ
+          , mkSupertypeEntry "!." "Compose morphisms." $ composeLangMorphism @A @A @B @B @C @C
           , mkValEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
-            pairLangMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+            pairLangMorphism @AP @AQ @BP @BQ @CP @CQ
           , mkSupertypeEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
-            pairLangMorphism @baseupdate @A @A @B @B @C @C
+            pairLangMorphism @A @A @B @B @C @C
           , mkValEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
-            eitherLangMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+            eitherLangMorphism @AP @AQ @BP @BQ @CP @CQ
           , mkSupertypeEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
-            eitherLangMorphism @baseupdate @A @A @B @B @C @C
-          , mkValEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @baseupdate @AP @AQ @BP @BQ
-          , mkSupertypeEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @baseupdate @A @A @B @B
+            eitherLangMorphism @A @A @B @B @C @C
+          , mkValEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @AP @AQ @BP @BQ
+          , mkSupertypeEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @A @A @B @B
           , mkValEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutRef r`" $
-            applyLangMorphismImmutRef @baseupdate @A @BP @BQ
+            applyLangMorphismImmutRef @A @BP @BQ
           , mkSupertypeEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutRef r`" $
-            applyLangMorphismImmutRef @baseupdate @A @B @B
-          , mkValEntry "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @baseupdate @A @B
-          , mkValEntry "!@" "Co-apply a morphism to a reference." $ inverseApplyLangMorphismRef @baseupdate @A @BX @BY
-          , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $
-            inverseApplyLangMorphismRef @baseupdate @A @B @B
+            applyLangMorphismImmutRef @A @B @B
+          , mkValEntry "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @A @B
+          , mkValEntry "!@" "Co-apply a morphism to a reference." $ inverseApplyLangMorphismRef @A @BX @BY
+          , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $ inverseApplyLangMorphismRef @A @B @B
           , mkValEntry "!@%" "Co-apply a morphism to an immutable reference. `m !@% r = m !@ immutRef r`" $
-            inverseApplyLangMorphismImmutRef @baseupdate @A @B
-          , mkValEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @baseupdate @A @BX @BY
-          , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @baseupdate @A @B @B
+            inverseApplyLangMorphismImmutRef @A @B
+          , mkValEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @BX @BY
+          , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @B @B
           ]
     , docTreeEntry
           "Orders"
           ""
-          [ mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @baseupdate @Text
-          , mkValEntry "numerical" "Numercal order." $ ordOrder @baseupdate @Number
-          , mkValEntry "chronological" "Chronological order." $ ordOrder @baseupdate @UTCTime
-          , mkValEntry "durational" "Durational order." $ ordOrder @baseupdate @NominalDiffTime
-          , mkValEntry "calendrical" "Date order." $ ordOrder @baseupdate @Day
-          , mkValEntry "horological" "Time of day order." $ ordOrder @baseupdate @TimeOfDay
-          , mkValEntry "localChronological" "Local time order." $ ordOrder @baseupdate @LocalTime
-          , mkValEntry "noOrder" "No order, same as `orders []`." $ noOrder @baseupdate
-          , mkValEntry "orders" "Join orders by priority." $ orders @baseupdate @A
-          , mkValEntry
-                "mapOrder"
-                "Map a function on an order."
-                (contramap :: (B -> A) -> LangOrder baseupdate A -> LangOrder baseupdate B)
-          , mkValEntry "orderOn" "Order by an order on a particular morphism." $ orderOn @baseupdate @B @A
-          , mkValEntry "rev" "Reverse an order." $ rev @baseupdate @A
-          , mkValEntry "orderEQ" "Equal by an order." $ langOrderCompare @baseupdate @A $ (==) EQ
-          , mkValEntry "orderLT" "Less than by an order." $ langOrderCompare @baseupdate @A $ (==) LT
-          , mkValEntry "orderLE" "Less than or equal to by an order." $ langOrderCompare @baseupdate @A $ (/=) GT
-          , mkValEntry "orderGT" "Greater than by an order." $ langOrderCompare @baseupdate @A $ (==) GT
-          , mkValEntry "orderGE" "Greater than or equal to by an order." $ langOrderCompare @baseupdate @A $ (/=) LT
+          [ mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @Text
+          , mkValEntry "numerical" "Numercal order." $ ordOrder @Number
+          , mkValEntry "chronological" "Chronological order." $ ordOrder @UTCTime
+          , mkValEntry "durational" "Durational order." $ ordOrder @NominalDiffTime
+          , mkValEntry "calendrical" "Date order." $ ordOrder @Day
+          , mkValEntry "horological" "Time of day order." $ ordOrder @TimeOfDay
+          , mkValEntry "localChronological" "Local time order." $ ordOrder @LocalTime
+          , mkValEntry "noOrder" "No order, same as `orders []`." $ noOrder
+          , mkValEntry "orders" "Join orders by priority." $ orders @A
+          , mkValEntry "mapOrder" "Map a function on an order." (contramap :: (B -> A) -> LangOrder A -> LangOrder B)
+          , mkValEntry "orderOn" "Order by an order on a particular morphism." $ orderOn @B @A
+          , mkValEntry "rev" "Reverse an order." $ rev @A
+          , mkValEntry "orderEQ" "Equal by an order." $ langOrderCompare @A $ (==) EQ
+          , mkValEntry "orderLT" "Less than by an order." $ langOrderCompare @A $ (==) LT
+          , mkValEntry "orderLE" "Less than or equal to by an order." $ langOrderCompare @A $ (/=) GT
+          , mkValEntry "orderGT" "Greater than by an order." $ langOrderCompare @A $ (==) GT
+          , mkValEntry "orderGE" "Greater than or equal to by an order." $ langOrderCompare @A $ (/=) LT
           ]
     ]

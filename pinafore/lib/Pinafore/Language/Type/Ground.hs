@@ -38,7 +38,7 @@ data PinaforeGroundType (baseupdate :: Type) (dv :: DolanVariance) (t :: DolanVa
         -> PinaforeGroundType baseupdate dv t
     FuncPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Contravariance, 'Covariance] (->)
     EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType baseupdate dv t
-    OrderPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Contravariance] (LangOrder baseupdate)
+    OrderPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Contravariance] (LangOrder)
     ActionPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Covariance] PinaforeAction
     -- Reference
     RefPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Rangevariance] LangRef
@@ -46,8 +46,7 @@ data PinaforeGroundType (baseupdate :: Type) (dv :: DolanVariance) (t :: DolanVa
     TextRefPinaforeGroundType :: PinaforeGroundType baseupdate '[] LangTextRef
     SetRefPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Contravariance] LangSetRef
     FiniteSetRefPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Rangevariance] LangFiniteSetRef
-    MorphismPinaforeGroundType
-        :: PinaforeGroundType baseupdate '[ 'Rangevariance, 'Rangevariance] (LangMorphism baseupdate)
+    MorphismPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Rangevariance, 'Rangevariance] LangMorphism
     -- UI
     UserInterfacePinaforeGroundType :: PinaforeGroundType baseupdate '[] LangUI
     NotifierPinaforeGroundType :: PinaforeGroundType baseupdate '[ 'Contravariance] LangNotifier

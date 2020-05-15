@@ -5,14 +5,13 @@ module Pinafore.Base.PredicateMorphism
 import Pinafore.Base.Edit
 import Pinafore.Base.EntityAdapter
 import Pinafore.Base.Know
-import Pinafore.Base.Lens
 import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
 
-predicatePinaforeTableLensMorphism ::
+propertyMorphism ::
        forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeEntityUpdate a a b b
-predicatePinaforeTableLensMorphism (MkEntityAdapter ap aget aput) (MkEntityAdapter bp bget bput) prd = let
+propertyMorphism (MkEntityAdapter ap aget aput) (MkEntityAdapter bp bget bput) prd = let
     pmGet :: a -> ReadM PinaforeEntityRead (Know b)
     pmGet a = do
         valp <- readM $ PinaforeEntityReadGetProperty prd $ ap a
@@ -34,12 +33,3 @@ predicatePinaforeTableLensMorphism (MkEntityAdapter ap aget aput) (MkEntityAdapt
         setka <- for (setToList setp) $ \p -> aget p readM
         return $ catKnowns setka
     in MkPinaforeLensMorphism {..}
-
-propertyMorphism ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => EntityAdapter a
-    -> EntityAdapter b
-    -> Predicate
-    -> PinaforeLensMorphism baseupdate a a b b
-propertyMorphism pa pb prd =
-    mapPinaforeLensMorphismBase (baseChangeLens @PinaforeEntityUpdate) $ predicatePinaforeTableLensMorphism pa pb prd

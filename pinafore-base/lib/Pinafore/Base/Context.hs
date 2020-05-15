@@ -1,57 +1,47 @@
 module Pinafore.Base.Context
     ( PinaforeContext
-    , pinaforeBase
     , unliftPinaforeAction
     , unliftPinaforeActionOrFail
     , runPinaforeAction
     , makePinaforeContext
     , nullPinaforeContext
-    , pinaforeBaseModel
+    , pinaforeEntityModel
     ) where
 
 import Pinafore.Base.Action
+import Pinafore.Base.Edit
 import Pinafore.Base.Know
-import Pinafore.Base.Lens
 import Shapes
 import Truth.Core
 
-data PinaforeContext baseupdate = MkPinaforeContext
+data PinaforeContext = MkPinaforeContext
     { pconRun :: forall a. PinaforeAction a -> View (Know a)
-    , pconBase :: Model baseupdate
+    , pconEntityModel :: Model PinaforeEntityUpdate
     }
 
-unliftPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction a -> View (Know a)
+unliftPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction a -> View (Know a)
 unliftPinaforeAction = pconRun ?pinafore
 
-unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction a -> View a
+unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext) => PinaforeAction a -> View a
 unliftPinaforeActionOrFail action = do
     ka <- unliftPinaforeAction action
     case ka of
         Known a -> return a
         Unknown -> fail "action stopped"
 
-runPinaforeAction :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction () -> View ()
+runPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction () -> View ()
 runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
 
-pinaforeBase :: (?pinafore :: PinaforeContext baseupdate) => Model baseupdate
-pinaforeBase = pconBase ?pinafore
+pinaforeEntityModel :: (?pinafore :: PinaforeContext) => Model PinaforeEntityUpdate
+pinaforeEntityModel = pconEntityModel ?pinafore
 
-makePinaforeContext ::
-       forall baseupdate. InvertibleEdit (UpdateEdit baseupdate)
-    => Model baseupdate
-    -> UIToolkit
-    -> LifeCycleIO (PinaforeContext baseupdate)
+makePinaforeContext :: Model PinaforeEntityUpdate -> UIToolkit -> LifeCycleIO PinaforeContext
 makePinaforeContext rmodel toolkit = do
     uh <- liftIO newUndoHandler
     return $ MkPinaforeContext (unPinaforeAction toolkit uh) $ undoHandlerModel uh rmodel
 
-nullPinaforeContext :: PinaforeContext baseupdate
+nullPinaforeContext :: PinaforeContext
 nullPinaforeContext = let
     pconRun _ = fail "null Pinafore context"
-    pconBase = error "no pinafore base"
+    pconEntityModel = error "no pinafore base"
     in MkPinaforeContext {..}
-
-pinaforeBaseModel ::
-       forall baseupdate update. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens update baseupdate)
-    => Model update
-pinaforeBaseModel = mapModel baseChangeLens pinaforeBase

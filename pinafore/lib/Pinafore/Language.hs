@@ -1,6 +1,5 @@
 module Pinafore.Language
-    ( PinaforePredefinitions
-    , PinaforeError
+    ( PinaforeError
     , InterpretResult
     , throwResult
     , PinaforeAction
@@ -34,23 +33,17 @@ import Shapes
 import System.IO.Error
 import Truth.Core
 
-runPinaforeScoped ::
-       (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
-    => PinaforeScoped baseupdate a
-    -> InterpretResult a
+runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeScoped baseupdate a -> InterpretResult a
 runPinaforeScoped scp =
     runScoped $
     withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
 
 runPinaforeSourceScoped ::
-       (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
-    => FilePath
-    -> PinaforeSourceScoped baseupdate a
-    -> InterpretResult a
+       (?pinafore :: PinaforeContext) => FilePath -> PinaforeSourceScoped baseupdate a -> InterpretResult a
 runPinaforeSourceScoped fpath scp = runPinaforeScoped $ runSourcePos (initialPos fpath) scp
 
 parseValue ::
-       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
+       forall baseupdate. (?pinafore :: PinaforeContext)
     => Text
     -> PinaforeSourceScoped baseupdate (QValue baseupdate)
 parseValue text = do
@@ -58,8 +51,7 @@ parseValue text = do
     qEvalExpr rexpr
 
 parseValueAtType ::
-       forall baseupdate t.
-       (PinaforePredefinitions baseupdate, FromPinaforeType baseupdate t, ?pinafore :: PinaforeContext baseupdate)
+       forall baseupdate t. (FromPinaforeType baseupdate t, ?pinafore :: PinaforeContext)
     => Text
     -> PinaforeSourceScoped baseupdate t
 parseValueAtType text = do
@@ -114,9 +106,7 @@ interactRunSourceScoped sa = do
     lift $ liftRS $ runSourcePos spos sa
 
 interactEvalExpression ::
-       forall baseupdate. (PinaforePredefinitions baseupdate)
-    => PinaforeScoped baseupdate (QExpr baseupdate)
-    -> Interact baseupdate (QValue baseupdate)
+       forall baseupdate. PinaforeScoped baseupdate (QExpr baseupdate) -> Interact baseupdate (QValue baseupdate)
 interactEvalExpression texpr =
     interactRunSourceScoped $ do
         expr <- liftSourcePos texpr
@@ -128,14 +118,11 @@ runValue outh val =
     (typedAnyToPinaforeVal val) <|> (fmap outputLn $ typedAnyToPinaforeVal val) <|>
     (return $ liftIO $ hPutStrLn outh $ showPinaforeRef val)
 
-interactParse ::
-       forall baseupdate. BaseChangeLens PinaforeEntityUpdate baseupdate
-    => Text
-    -> Interact baseupdate (InteractiveCommand baseupdate)
+interactParse :: forall baseupdate. Text -> Interact baseupdate (InteractiveCommand baseupdate)
 interactParse t = remonad throwResult $ parseInteractiveCommand @baseupdate t
 
 interactLoop ::
-       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
+       forall baseupdate. (?pinafore :: PinaforeContext)
     => Handle
     -> Handle
     -> Bool
@@ -187,12 +174,7 @@ interactLoop inh outh echo = do
                     ]
             interactLoop inh outh echo
 
-interact ::
-       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
-    => Handle
-    -> Handle
-    -> Bool
-    -> View ()
+interact :: (?pinafore :: PinaforeContext) => Handle -> Handle -> Bool -> View ()
 interact inh outh echo = do
     liftIO $ hSetBuffering outh NoBuffering
     evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $ throwResult . runPinaforeScoped

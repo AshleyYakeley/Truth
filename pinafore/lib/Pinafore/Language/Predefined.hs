@@ -1,6 +1,5 @@
 module Pinafore.Language.Predefined
-    ( PinaforePredefinitions
-    , PinaforeContext
+    ( PinaforeContext
     , DefDoc(..)
     , DocTree(..)
     , runDocTree
@@ -19,25 +18,15 @@ import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Predefined.File
 import Pinafore.Language.Predefined.UI
 import Pinafore.Language.TypeSystem
-import Pinafore.Storage
 import Shapes
 
-type PinaforePredefinitions baseupdate
-     = (BaseChangeLens PinaforeEntityUpdate baseupdate, BaseChangeLens PinaforeFileUpdate baseupdate)
-
-predefinitions ::
-       forall baseupdate. PinaforePredefinitions baseupdate
-    => DocTree (BindDoc baseupdate)
+predefinitions :: DocTree (BindDoc baseupdate)
 predefinitions = MkDocTree "" "" $ base_predefinitions <> ui_predefinitions <> file_predefinitions
 
-predefinedDoc ::
-       forall baseupdate. PinaforePredefinitions baseupdate
-    => DocTree DefDoc
-predefinedDoc = fmap bdDoc $ predefinitions @baseupdate
+predefinedDoc :: DocTree DefDoc
+predefinedDoc = fmap bdDoc $ predefinitions
 
-predefinedBindings ::
-       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
-    => Map Name (QValue baseupdate)
+predefinedBindings :: (?pinafore :: PinaforeContext) => Map Name (QValue baseupdate)
 predefinedBindings =
     mapFromList $
     catMaybes $
@@ -46,11 +35,9 @@ predefinedBindings =
         (\doc -> do
              val <- bdValue doc
              return (bdName doc, val ?pinafore)) $
-    predefinitions @baseupdate
+    predefinitions
 
-predefinedPatternConstructors ::
-       forall baseupdate. PinaforePredefinitions baseupdate
-    => Map Name (PinaforePatternConstructor baseupdate)
+predefinedPatternConstructors :: Map Name (PinaforePatternConstructor baseupdate)
 predefinedPatternConstructors =
     mapFromList $
     catMaybes $
@@ -59,4 +46,4 @@ predefinedPatternConstructors =
         (\doc -> do
              pat <- bdPattern doc
              return (bdName doc, pat)) $
-    predefinitions @baseupdate
+    predefinitions

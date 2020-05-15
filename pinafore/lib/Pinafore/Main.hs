@@ -12,7 +12,6 @@ module Pinafore.Main
 
 import Pinafore.Base
 import Pinafore.Language
-import Pinafore.Pinafore
 import Pinafore.Storage
 import Shapes
 import System.FilePath
@@ -21,20 +20,17 @@ import Truth.Core
 type FilePinaforeType = PinaforeAction TopType
 
 filePinaforeType :: Text
-filePinaforeType = qNegativeTypeDescription @PinaforeUpdate @FilePinaforeType
+filePinaforeType = qNegativeTypeDescription @PinaforeEntityUpdate @FilePinaforeType
 
-standardPinaforeContext :: FilePath -> UIToolkit -> CreateView (PinaforeContext PinaforeUpdate)
+standardPinaforeContext :: FilePath -> UIToolkit -> CreateView PinaforeContext
 standardPinaforeContext dirpath uitoolkit = do
     rc <- viewGetResourceContext
     sqlReference <- liftIO $ sqlitePinaforeTableReference $ dirpath </> "tables.sqlite3"
     tableReference1 <- liftLifeCycleIO $ exclusiveResource rc sqlReference
     tableReference <- liftLifeCycleIO $ cacheReference rc 500000 tableReference1 -- half-second delay before writing
-    let
-        picker :: forall update. PinaforeSelector update -> Premodel update ()
-        picker PinaforeSelectPoint = reflectingPremodel $ pinaforeTableEntityReference $ tableReference rc
-        picker PinaforeSelectFile = reflectingPremodel $ directoryPinaforeFileReference $ dirpath </> "files"
-    (sub, ()) <- liftLifeCycleIO $ makeSharedModel $ tuplePremodel picker
-    liftLifeCycleIO $ makePinaforeContext sub uitoolkit
+    (model, ()) <-
+        liftLifeCycleIO $ makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference $ tableReference rc
+    liftLifeCycleIO $ makePinaforeContext model uitoolkit
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
@@ -54,19 +50,17 @@ sqlitePinaforeDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 pinaforeInterpretFileAtType ::
-       (?pinafore :: PinaforeContext PinaforeUpdate, FromPinaforeType PinaforeUpdate t)
-    => FilePath
-    -> Text
-    -> InterpretResult t
-pinaforeInterpretFileAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeUpdate puitext
+       (?pinafore :: PinaforeContext, FromPinaforeType PinaforeEntityUpdate t) => FilePath -> Text -> InterpretResult t
+pinaforeInterpretFileAtType puipath puitext =
+    runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeEntityUpdate puitext
 
-pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeUpdate) => FilePath -> Text -> InterpretResult (View ())
+pinaforeInterpretFile :: (?pinafore :: PinaforeContext) => FilePath -> Text -> InterpretResult (View ())
 pinaforeInterpretFile puipath puitext = do
     action :: FilePinaforeType <- pinaforeInterpretFileAtType puipath puitext
     return $ runPinaforeAction $ fmap (\MkTopType -> ()) $ action
 
-pinaforeInteractHandles :: (?pinafore :: PinaforeContext PinaforeUpdate) => Handle -> Handle -> Bool -> View ()
+pinaforeInteractHandles :: (?pinafore :: PinaforeContext) => Handle -> Handle -> Bool -> View ()
 pinaforeInteractHandles inh outh echo = interact inh outh echo
 
-pinaforeInteract :: (?pinafore :: PinaforeContext PinaforeUpdate) => View ()
+pinaforeInteract :: (?pinafore :: PinaforeContext) => View ()
 pinaforeInteract = pinaforeInteractHandles stdin stdout False
