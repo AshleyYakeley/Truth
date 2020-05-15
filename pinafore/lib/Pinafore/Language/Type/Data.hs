@@ -4,15 +4,13 @@ import Pinafore.Language.TypeSystem.Nonpolar
 import Shapes
 
 -- | Structure of a datatype
-data PinaforeDataType :: Type -> forall (k :: Type). k -> Type where
-    NilDataType :: PinaforeDataType baseupdate None
+data PinaforeDataType :: forall (k :: Type). k -> Type where
+    NilDataType :: PinaforeDataType None
     ConsDataType
-        :: ListType (PinaforeNonpolarType baseupdate '[]) tl
-        -> PinaforeDataType baseupdate tt
-        -> PinaforeDataType baseupdate (Either (HList tl) tt)
+        :: ListType (PinaforeNonpolarType '[]) tl -> PinaforeDataType tt -> PinaforeDataType (Either (HList tl) tt)
 
 -- | Structural equality
-instance TestHetEquality (PinaforeDataType baseupdate) where
+instance TestHetEquality PinaforeDataType where
     testHetEquality NilDataType NilDataType = return HRefl
     testHetEquality (ConsDataType a1 ar) (ConsDataType b1 br) = do
         Refl <- testEquality a1 b1

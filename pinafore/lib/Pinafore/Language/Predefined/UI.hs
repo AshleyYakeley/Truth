@@ -15,7 +15,7 @@ clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
 
 uiTable ::
-       forall . (?pinafore :: PinaforeContext)
+       (?pinafore :: PinaforeContext)
     => [(LangRef '( BottomType, Text), A -> LangRef '( BottomType, Text))]
     -> LangOrder A
     -> LangFiniteSetRef '( A, EnA)
@@ -218,7 +218,7 @@ uiRun pui = do
         Known ui -> ui
         Unknown -> nullUISpec
 
-ui_predefinitions :: forall baseupdate. [DocTreeEntry (BindDoc baseupdate)]
+ui_predefinitions :: [DocTreeEntry BindDoc]
 ui_predefinitions =
     [ docTreeEntry
           "Notifiers"

@@ -8,7 +8,7 @@ import Pinafore.Language.Predefined.Defs
 --import Truth.World.File
 {-
 file_import ::
-       forall baseupdate. LangFiniteSetRef '( A, A)
+        LangFiniteSetRef '( A, A)
     -> (A -> PinaforeAction ())
     -> PinaforeAction ()
 file_import set continue = do
@@ -38,7 +38,7 @@ file_import set continue = do
 file_size :: Reference ByteStringEdit -> IO Int64
 file_size MkReference {..} = runWMFunction objRun $ refRead ReadByteStringLength
 -}
-file_predefinitions :: [DocTreeEntry (BindDoc baseupdate)]
+file_predefinitions :: [DocTreeEntry BindDoc]
 file_predefinitions =
     [ docTreeEntry
           "Files"

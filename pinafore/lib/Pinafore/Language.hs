@@ -33,37 +33,29 @@ import Shapes
 import System.IO.Error
 import Truth.Core
 
-runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeScoped baseupdate a -> InterpretResult a
+runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeScoped a -> InterpretResult a
 runPinaforeScoped scp =
     runScoped $
     withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
 
-runPinaforeSourceScoped ::
-       (?pinafore :: PinaforeContext) => FilePath -> PinaforeSourceScoped baseupdate a -> InterpretResult a
+runPinaforeSourceScoped :: (?pinafore :: PinaforeContext) => FilePath -> PinaforeSourceScoped a -> InterpretResult a
 runPinaforeSourceScoped fpath scp = runPinaforeScoped $ runSourcePos (initialPos fpath) scp
 
-parseValue ::
-       forall baseupdate. (?pinafore :: PinaforeContext)
-    => Text
-    -> PinaforeSourceScoped baseupdate (QValue baseupdate)
+parseValue :: (?pinafore :: PinaforeContext) => Text -> PinaforeSourceScoped QValue
 parseValue text = do
-    rexpr <- parseTopExpression @baseupdate text
+    rexpr <- parseTopExpression text
     qEvalExpr rexpr
 
 parseValueAtType ::
-       forall baseupdate t. (FromPinaforeType baseupdate t, ?pinafore :: PinaforeContext)
+       forall t. (FromPinaforeType t, ?pinafore :: PinaforeContext)
     => Text
-    -> PinaforeSourceScoped baseupdate t
+    -> PinaforeSourceScoped t
 parseValueAtType text = do
-    val <- parseValue @baseupdate text
-    typedAnyToPinaforeVal @baseupdate val
+    val <- parseValue text
+    typedAnyToPinaforeVal val
 
 entityTypedShowValue ::
-       CovaryType dv
-    -> EntityGroundType f
-    -> DolanArguments dv (PinaforeType baseupdate) f 'Positive t
-    -> t
-    -> Maybe String
+       CovaryType dv -> EntityGroundType f -> DolanArguments dv PinaforeType f 'Positive t -> t -> Maybe String
 entityTypedShowValue NilListType (LiteralEntityGroundType t) NilDolanArguments v =
     case literalTypeAsLiteral t of
         Dict -> Just $ unpack $ unLiteral $ toLiteral v
@@ -81,52 +73,45 @@ entityTypedShowValue (ConsListType Refl (ConsListType Refl NilListType)) EitherE
     Just $ "Right " <> typedShowValue tb x
 entityTypedShowValue _ _ _ _ = Nothing
 
-groundTypedShowValue ::
-       PinaforeGroundType baseupdate dv t -> DolanArguments dv (PinaforeType baseupdate) t 'Positive ta -> ta -> String
+groundTypedShowValue :: PinaforeGroundType dv t -> DolanArguments dv PinaforeType t 'Positive ta -> ta -> String
 groundTypedShowValue (EntityPinaforeGroundType ct t) args v
     | Just str <- entityTypedShowValue ct t args v = str
 groundTypedShowValue _ _ _ = "<?>"
 
-singularTypedShowValue :: PinaforeSingularType baseupdate 'Positive t -> t -> String
+singularTypedShowValue :: PinaforeSingularType 'Positive t -> t -> String
 singularTypedShowValue (VarPinaforeSingularType _) _ = "<?>"
 singularTypedShowValue (GroundPinaforeSingularType gt args) v = groundTypedShowValue gt args v
 
-typedShowValue :: PinaforeType baseupdate 'Positive t -> t -> String
+typedShowValue :: PinaforeType 'Positive t -> t -> String
 typedShowValue NilPinaforeType v = never v
 typedShowValue (ConsPinaforeType ts tt) v = joinf (singularTypedShowValue ts) (typedShowValue tt) v
 
-showPinaforeRef :: QValue baseupdate -> String
+showPinaforeRef :: QValue -> String
 showPinaforeRef (MkAnyValue (MkShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
 
-type Interact baseupdate = StateT SourcePos (ReaderStateT (PinaforeScoped baseupdate) View)
+type Interact = StateT SourcePos (ReaderStateT PinaforeScoped View)
 
-interactRunSourceScoped :: PinaforeSourceScoped baseupdate a -> Interact baseupdate a
+interactRunSourceScoped :: PinaforeSourceScoped a -> Interact a
 interactRunSourceScoped sa = do
     spos <- get
     lift $ liftRS $ runSourcePos spos sa
 
-interactEvalExpression ::
-       forall baseupdate. PinaforeScoped baseupdate (QExpr baseupdate) -> Interact baseupdate (QValue baseupdate)
+interactEvalExpression :: PinaforeScoped QExpr -> Interact QValue
 interactEvalExpression texpr =
     interactRunSourceScoped $ do
         expr <- liftSourcePos texpr
         qEvalExpr expr
 
-runValue :: Handle -> QValue baseupdate -> Interact baseupdate (PinaforeAction ())
+runValue :: Handle -> QValue -> Interact (PinaforeAction ())
 runValue outh val =
     interactRunSourceScoped $
     (typedAnyToPinaforeVal val) <|> (fmap outputLn $ typedAnyToPinaforeVal val) <|>
     (return $ liftIO $ hPutStrLn outh $ showPinaforeRef val)
 
-interactParse :: forall baseupdate. Text -> Interact baseupdate (InteractiveCommand baseupdate)
-interactParse t = remonad throwResult $ parseInteractiveCommand @baseupdate t
+interactParse :: Text -> Interact InteractiveCommand
+interactParse t = remonad throwResult $ parseInteractiveCommand t
 
-interactLoop ::
-       forall baseupdate. (?pinafore :: PinaforeContext)
-    => Handle
-    -> Handle
-    -> Bool
-    -> Interact baseupdate ()
+interactLoop :: (?pinafore :: PinaforeContext) => Handle -> Handle -> Bool -> Interact ()
 interactLoop inh outh echo = do
     liftIO $ hPutStr outh "pinafore> "
     eof <- liftIO $ hIsEOF inh
@@ -166,8 +151,8 @@ interactLoop inh outh echo = do
                                  liftIO $
                                      hPutStrLn outh $
                                      case polarity of
-                                         PositiveType -> show $ pinaforeSimplifyTypes @baseupdate $ MkAnyInKind t
-                                         NegativeType -> show $ pinaforeSimplifyTypes @baseupdate $ MkAnyInKind t
+                                         PositiveType -> show $ pinaforeSimplifyTypes $ MkAnyInKind t
+                                         NegativeType -> show $ pinaforeSimplifyTypes $ MkAnyInKind t
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
                     [ Handler $ \(err :: PinaforeError) -> hPutStrLn outh $ show err
                     , Handler $ \err -> hPutStrLn outh $ "error: " <> ioeGetErrorString err

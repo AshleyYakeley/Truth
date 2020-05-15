@@ -38,26 +38,26 @@ $(literalInstances [t|LocalTime|])
 $(literalInstances [t|()|])
 
 -- Double
-instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) Double where
+instance ToShimWit JMShim (PinaforeType 'Positive) Double where
     toShimWit = mapShimWit (toEnhanced "subtype" InexactNumber) toJMShimWit
 
 -- Int
-instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) Int where
+instance ToShimWit JMShim (PinaforeType 'Positive) Int where
     toShimWit = mapShimWit (toEnhanced "subtype" toInteger) toJMShimWit
 
-instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) Int where
+instance FromShimWit JMShim (PinaforeType 'Negative) Int where
     fromShimWit = mapShimWit (toEnhanced "subtype" fromInteger) fromJMShimWit
 
 -- Rational
-instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) Rational where
+instance ToShimWit JMShim (PinaforeType 'Positive) Rational where
     toShimWit = mapShimWit (toEnhanced "subtype" $ fromRational @SafeRational) toJMShimWit
 
-instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) Rational where
+instance FromShimWit JMShim (PinaforeType 'Negative) Rational where
     fromShimWit = mapShimWit (toEnhanced "subtype" $ toRational @SafeRational) fromJMShimWit
 
 -- Fixed
-instance HasResolution r => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (Fixed r) where
+instance HasResolution r => ToShimWit JMShim (PinaforeType 'Positive) (Fixed r) where
     toShimWit = mapShimWit (toEnhanced "subtype" toRational) toJMShimWit
 
-instance HasResolution r => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (Fixed r) where
+instance HasResolution r => FromShimWit JMShim (PinaforeType 'Negative) (Fixed r) where
     fromShimWit = mapShimWit (toEnhanced "subtype" fromRational) fromJMShimWit

@@ -104,7 +104,7 @@ unixParse fmt text = parseTimeM True defaultTimeLocale (unpack fmt) (unpack text
 getLocalTime :: IO LocalTime
 getLocalTime = fmap zonedTimeToLocalTime getZonedTime
 
-base_predefinitions :: [DocTreeEntry (BindDoc baseupdate)]
+base_predefinitions :: [DocTreeEntry BindDoc]
 base_predefinitions =
     [ docTreeEntry
           "Literals & Entities"

@@ -20,7 +20,7 @@ import Truth.Core
 type FilePinaforeType = PinaforeAction TopType
 
 filePinaforeType :: Text
-filePinaforeType = qNegativeTypeDescription @PinaforeEntityUpdate @FilePinaforeType
+filePinaforeType = qNegativeTypeDescription @FilePinaforeType
 
 standardPinaforeContext :: FilePath -> UIToolkit -> CreateView PinaforeContext
 standardPinaforeContext dirpath uitoolkit = do
@@ -50,9 +50,8 @@ sqlitePinaforeDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 pinaforeInterpretFileAtType ::
-       (?pinafore :: PinaforeContext, FromPinaforeType PinaforeEntityUpdate t) => FilePath -> Text -> InterpretResult t
-pinaforeInterpretFileAtType puipath puitext =
-    runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeEntityUpdate puitext
+       (?pinafore :: PinaforeContext, FromPinaforeType t) => FilePath -> Text -> InterpretResult t
+pinaforeInterpretFileAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueAtType puitext
 
 pinaforeInterpretFile :: (?pinafore :: PinaforeContext) => FilePath -> Text -> InterpretResult (View ())
 pinaforeInterpretFile puipath puitext = do

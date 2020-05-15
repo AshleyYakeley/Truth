@@ -16,177 +16,136 @@ import Pinafore.Language.TypeSystem
 import Pinafore.Language.TypeSystem.Subsume ()
 import Shapes
 
-type QExpr baseupdate = TSSealedExpression (PinaforeTypeSystem baseupdate)
+type QExpr = TSSealedExpression PinaforeTypeSystem
 
-type QPattern baseupdate = TSSealedPattern (PinaforeTypeSystem baseupdate)
+type QPattern = TSSealedPattern PinaforeTypeSystem
 
-type QPatternConstructor baseupdate = TSPatternConstructor (PinaforeTypeSystem baseupdate)
+type QPatternConstructor = TSPatternConstructor PinaforeTypeSystem
 
-type QValue baseupdate = TSValue (PinaforeTypeSystem baseupdate)
+type QValue = TSValue PinaforeTypeSystem
 
-qConstExprAny :: forall baseupdate. QValue baseupdate -> QExpr baseupdate
-qConstExprAny = tsConst @(PinaforeTypeSystem baseupdate)
+qConstExprAny :: QValue -> QExpr
+qConstExprAny = tsConst @PinaforeTypeSystem
 
 qConstExpr ::
-       forall baseupdate a. ToPinaforeType baseupdate a
+       forall a. ToPinaforeType a
     => a
-    -> QExpr baseupdate
+    -> QExpr
 qConstExpr a = qConstExprAny $ jmToValue a
 
-qVarExpr :: forall baseupdate. Name -> QExpr baseupdate
-qVarExpr name = tsVar @(PinaforeTypeSystem baseupdate) name
+qVarExpr :: Name -> QExpr
+qVarExpr name = tsVar @PinaforeTypeSystem name
 
-qAbstractExpr :: forall baseupdate. Name -> QExpr baseupdate -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
-qAbstractExpr name expr = tsAbstract @(PinaforeTypeSystem baseupdate) name expr
+qAbstractExpr :: Name -> QExpr -> PinaforeSourceScoped QExpr
+qAbstractExpr name expr = tsAbstract @PinaforeTypeSystem name expr
 
-qAbstractsExpr :: [Name] -> QExpr baseupdate -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
+qAbstractsExpr :: [Name] -> QExpr -> PinaforeSourceScoped QExpr
 qAbstractsExpr [] e = return e
 qAbstractsExpr (n:nn) e = do
     e' <- qAbstractsExpr nn e
     qAbstractExpr n e'
 
-qVarPattern :: forall baseupdate. Name -> QPattern baseupdate
-qVarPattern = tsVarPattern @(PinaforeTypeSystem baseupdate)
+qVarPattern :: Name -> QPattern
+qVarPattern = tsVarPattern @PinaforeTypeSystem
 
-qAnyPattern :: forall baseupdate. QPattern baseupdate
-qAnyPattern = tsAnyPattern @(PinaforeTypeSystem baseupdate)
+qAnyPattern :: QPattern
+qAnyPattern = tsAnyPattern @PinaforeTypeSystem
 
-qBothPattern ::
-       forall baseupdate.
-       QPattern baseupdate
-    -> QPattern baseupdate
-    -> PinaforeSourceScoped baseupdate (QPattern baseupdate)
-qBothPattern = tsBothPattern @(PinaforeTypeSystem baseupdate)
+qBothPattern :: QPattern -> QPattern -> PinaforeSourceScoped QPattern
+qBothPattern = tsBothPattern @PinaforeTypeSystem
 
 qToPatternConstructor ::
-       forall baseupdate t lt.
-       ( ToListShimWit PinaforeShim (PinaforeType baseupdate 'Positive) lt
-       , FromShimWit JMShim (PinaforeType baseupdate 'Negative) t
-       )
+       forall t lt.
+       (ToListShimWit PinaforeShim (PinaforeType 'Positive) lt, FromShimWit JMShim (PinaforeType 'Negative) t)
     => (t -> Maybe (HList lt))
-    -> QPatternConstructor baseupdate
-qToPatternConstructor = toPatternConstructor (fromJMShimWit @(PinaforeType baseupdate 'Negative)) toListShimWit
+    -> QPatternConstructor
+qToPatternConstructor = toPatternConstructor (fromJMShimWit @(PinaforeType 'Negative)) toListShimWit
 
-qApplyPatternConstructor ::
-       forall baseupdate.
-       QPatternConstructor baseupdate
-    -> QPattern baseupdate
-    -> PinaforeSourceScoped baseupdate (QPatternConstructor baseupdate)
-qApplyPatternConstructor = tsApplyPatternConstructor @(PinaforeTypeSystem baseupdate)
+qApplyPatternConstructor :: QPatternConstructor -> QPattern -> PinaforeSourceScoped (QPatternConstructor)
+qApplyPatternConstructor = tsApplyPatternConstructor @PinaforeTypeSystem
 
 qSealPatternConstructor ::
-       forall baseupdate m. MonadThrow ExpressionError m
-    => QPatternConstructor baseupdate
-    -> m (QPattern baseupdate)
-qSealPatternConstructor = tsSealPatternConstructor @(PinaforeTypeSystem baseupdate)
+       forall m. MonadThrow ExpressionError m
+    => QPatternConstructor
+    -> m QPattern
+qSealPatternConstructor = tsSealPatternConstructor @PinaforeTypeSystem
 
-qApplyAllPatternConstructor ::
-       forall baseupdate.
-       QPatternConstructor baseupdate
-    -> [QPattern baseupdate]
-    -> PinaforeSourceScoped baseupdate (QPatternConstructor baseupdate)
+qApplyAllPatternConstructor :: QPatternConstructor -> [QPattern] -> PinaforeSourceScoped (QPatternConstructor)
 qApplyAllPatternConstructor pc [] = return pc
 qApplyAllPatternConstructor pc (pat:pats) = do
     pc' <- qApplyPatternConstructor pc pat
     qApplyAllPatternConstructor pc' pats
 
-qConstructPattern ::
-       forall baseupdate.
-       QPatternConstructor baseupdate
-    -> [QPattern baseupdate]
-    -> PinaforeSourceScoped baseupdate (QPattern baseupdate)
+qConstructPattern :: QPatternConstructor -> [QPattern] -> PinaforeSourceScoped QPattern
 qConstructPattern pc pats = do
     pc' <- qApplyAllPatternConstructor pc pats
     qSealPatternConstructor pc'
 
-qCase ::
-       forall baseupdate.
-       QExpr baseupdate
-    -> [(QPattern baseupdate, QExpr baseupdate)]
-    -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
-qCase = tsCase @(PinaforeTypeSystem baseupdate)
+qCase :: QExpr -> [(QPattern, QExpr)] -> PinaforeSourceScoped QExpr
+qCase = tsCase @PinaforeTypeSystem
 
 qFunctionPosWitness ::
-       forall baseupdate a b.
-       PinaforeShimWit baseupdate 'Negative a
-    -> PinaforeShimWit baseupdate 'Positive b
-    -> PinaforeShimWit baseupdate 'Positive (a -> b)
-qFunctionPosWitness = tsFunctionPosShimWit @(PinaforeTypeSystem baseupdate)
+       forall a b. PinaforeShimWit 'Negative a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (a -> b)
+qFunctionPosWitness = tsFunctionPosShimWit @PinaforeTypeSystem
 
 qFunctionPosWitnesses ::
-       ListType (PinaforeShimWit baseupdate 'Negative) a
-    -> PinaforeShimWit baseupdate 'Positive b
-    -> PinaforeShimWit baseupdate 'Positive (HList a -> b)
+       ListType (PinaforeShimWit 'Negative) a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (HList a -> b)
 qFunctionPosWitnesses NilListType tb = mapShimWit (toEnhanced "poswitness" $ \ub -> ub ()) tb
 qFunctionPosWitnesses (ConsListType ta la) tb =
     mapShimWit (toEnhanced "poswitness" $ \f a l -> f (a, l)) $ qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
 
-qCaseAbstract ::
-       forall baseupdate.
-       [(QPattern baseupdate, QExpr baseupdate)]
-    -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
-qCaseAbstract = tsCaseAbstract @(PinaforeTypeSystem baseupdate)
+qCaseAbstract :: [(QPattern, QExpr)] -> PinaforeSourceScoped QExpr
+qCaseAbstract = tsCaseAbstract @PinaforeTypeSystem
 
-qApplyExpr ::
-       forall baseupdate. QExpr baseupdate -> QExpr baseupdate -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
-qApplyExpr exprf expra = tsApply @(PinaforeTypeSystem baseupdate) exprf expra
+qApplyExpr :: QExpr -> QExpr -> PinaforeSourceScoped QExpr
+qApplyExpr exprf expra = tsApply @PinaforeTypeSystem exprf expra
 
-qApplyAllExpr :: QExpr baseupdate -> [QExpr baseupdate] -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
+qApplyAllExpr :: QExpr -> [QExpr] -> PinaforeSourceScoped QExpr
 qApplyAllExpr e [] = return e
 qApplyAllExpr e (a:aa) = do
     e' <- qApplyExpr e a
     qApplyAllExpr e' aa
 
-qEmptyList :: QExpr baseupdate
+qEmptyList :: QExpr
 qEmptyList = qConstExpr ([] :: [BottomType])
 
-qConsList :: QExpr baseupdate
+qConsList :: QExpr
 qConsList = qConstExpr ((:) :: UVar "a" -> [UVar "a"] -> [UVar "a"])
 
-qSequenceExpr :: [QExpr baseupdate] -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
+qSequenceExpr :: [QExpr] -> PinaforeSourceScoped QExpr
 qSequenceExpr [] = return $ qEmptyList
 qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
     qApplyAllExpr qConsList [e, ee']
 
-type QBindings baseupdate = TSBindings (PinaforeTypeSystem baseupdate)
+type QBindings = TSBindings PinaforeTypeSystem
 
-qBindExpr :: forall baseupdate. Name -> QExpr baseupdate -> QBindings baseupdate
+qBindExpr :: Name -> QExpr -> QBindings
 qBindExpr = singleBinding
 
-qBindVal :: ToPinaforeType baseupdate t => Name -> t -> QBindings baseupdate
+qBindVal :: ToPinaforeType t => Name -> t -> QBindings
 qBindVal name val = qBindExpr name $ qConstExpr val
 
-qLetExpr ::
-       forall baseupdate.
-       Name
-    -> QExpr baseupdate
-    -> QExpr baseupdate
-    -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
-qLetExpr name exp body = tsLet @(PinaforeTypeSystem baseupdate) name exp body
+qLetExpr :: Name -> QExpr -> QExpr -> PinaforeSourceScoped QExpr
+qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
 
-qUncheckedBindingsComponentLetExpr ::
-       forall baseupdate. QBindings baseupdate -> PinaforeSourceScoped baseupdate (Map Name (QExpr baseupdate))
-qUncheckedBindingsComponentLetExpr = tsUncheckedComponentLet @(PinaforeTypeSystem baseupdate)
+qUncheckedBindingsComponentLetExpr :: QBindings -> PinaforeSourceScoped (Map Name QExpr)
+qUncheckedBindingsComponentLetExpr = tsUncheckedComponentLet @PinaforeTypeSystem
 
-qValuesLetExpr :: forall baseupdate. Map Name (QValue baseupdate) -> Map Name (QExpr baseupdate)
-qValuesLetExpr = tsValuesLet @(PinaforeTypeSystem baseupdate)
+qValuesLetExpr :: Map Name QValue -> Map Name QExpr
+qValuesLetExpr = tsValuesLet @PinaforeTypeSystem
 
 qEvalExpr ::
-       forall baseupdate m. MonadThrow ExpressionError m
-    => QExpr baseupdate
-    -> m (QValue baseupdate)
-qEvalExpr expr = tsEval @(PinaforeTypeSystem baseupdate) expr
+       forall m. MonadThrow ExpressionError m
+    => QExpr
+    -> m QValue
+qEvalExpr expr = tsEval @PinaforeTypeSystem expr
 
 typedAnyToPinaforeVal ::
-       forall baseupdate t. FromPinaforeType baseupdate t
-    => QValue baseupdate
-    -> PinaforeSourceScoped baseupdate t
-typedAnyToPinaforeVal = tsAnyToVal @(PinaforeTypeSystem baseupdate) fromJMShimWit
+       forall t. FromPinaforeType t
+    => QValue
+    -> PinaforeSourceScoped t
+typedAnyToPinaforeVal = tsAnyToVal @PinaforeTypeSystem fromJMShimWit
 
-qSubsumeExpr ::
-       forall baseupdate.
-       AnyW (PinaforeShimWit baseupdate 'Positive)
-    -> PinaforeExpression baseupdate
-    -> PinaforeSourceScoped baseupdate (PinaforeExpression baseupdate)
-qSubsumeExpr t expr = tsSubsume @(PinaforeTypeSystem baseupdate) t expr
+qSubsumeExpr :: AnyW (PinaforeShimWit 'Positive) -> PinaforeExpression -> PinaforeSourceScoped PinaforeExpression
+qSubsumeExpr t expr = tsSubsume @PinaforeTypeSystem t expr

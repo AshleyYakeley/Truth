@@ -10,16 +10,16 @@ import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 getEliminateBisubs ::
-       forall baseupdate t. (PShimWitMappable PinaforeShim (PinaforeType baseupdate) t)
+       forall t. (PShimWitMappable PinaforeShim PinaforeType t)
     => t
-    -> [PinaforeBisubstitutionM Identity baseupdate]
+    -> [PinaforeBisubstitutionM Identity]
 getEliminateBisubs expr = let
-    (setFromList -> posvars, setFromList -> negvars) = mappableGetVars @baseupdate expr
+    (setFromList -> posvars, setFromList -> negvars) = mappableGetVars expr
     posonlyvars :: FiniteSet _
     posonlyvars = difference posvars negvars
     negonlyvars :: FiniteSet _
     negonlyvars = difference negvars posvars
-    mkbisub :: AnyW SymbolType -> PinaforeBisubstitutionM Identity baseupdate
+    mkbisub :: AnyW SymbolType -> PinaforeBisubstitutionM Identity
     mkbisub (MkAnyW vn) =
         MkBisubstitution
             vn
@@ -32,7 +32,7 @@ getEliminateBisubs expr = let
     in toList $ fmap mkbisub $ posonlyvars <> negonlyvars
 
 eliminateOneSidedTypeVars ::
-       forall baseupdate a. PShimWitMappable PinaforeShim (PinaforeType baseupdate) a
+       forall a. PShimWitMappable PinaforeShim PinaforeType a
     => a
     -> a
-eliminateOneSidedTypeVars expr = runIdentity $ bisubstitutes @baseupdate (getEliminateBisubs expr) expr
+eliminateOneSidedTypeVars expr = runIdentity $ bisubstitutes (getEliminateBisubs expr) expr

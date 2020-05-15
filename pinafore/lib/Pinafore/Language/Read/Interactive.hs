@@ -16,22 +16,21 @@ import Pinafore.Language.Read.Type
 import Pinafore.Language.TypeSystem
 import Shapes hiding (try)
 
-data InteractiveCommand baseupdate
-    = LetInteractiveCommand (PinaforeScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)))
-    | ExpressionInteractiveCommand (PinaforeScoped baseupdate (QExpr baseupdate))
+data InteractiveCommand
+    = LetInteractiveCommand (PinaforeScoped (WMFunction PinaforeScoped PinaforeScoped))
+    | ExpressionInteractiveCommand (PinaforeScoped QExpr)
     | ShowTypeInteractiveCommand Bool
-                                 (PinaforeScoped baseupdate (QExpr baseupdate))
+                                 (PinaforeScoped QExpr)
     | forall polarity. SimplifyTypeInteractiveCommand (PolarityType polarity)
-                                                      (PinaforeScoped baseupdate (AnyW (PinaforeType baseupdate polarity)))
+                                                      (PinaforeScoped (AnyW (PinaforeType polarity)))
     | ErrorInteractiveCommand Text
 
-showTypeInteractiveCommand :: forall baseupdate. Bool -> Parser (InteractiveCommand baseupdate)
+showTypeInteractiveCommand :: Bool -> Parser InteractiveCommand
 showTypeInteractiveCommand showinfo = do
     expr <- readExpression
     return $ ShowTypeInteractiveCommand showinfo $ interpretTopExpression expr
 
-simplifyPolarTypeInteractiveCommand ::
-       forall baseupdate polarity. PolarityType polarity -> Parser (InteractiveCommand baseupdate)
+simplifyPolarTypeInteractiveCommand :: forall polarity. PolarityType polarity -> Parser InteractiveCommand
 simplifyPolarTypeInteractiveCommand polarity =
     case getRepWitness polarity of
         Dict -> do
@@ -43,10 +42,10 @@ readPolarity :: (forall polarity. PolarityType polarity -> Parser r) -> Parser r
 readPolarity cont =
     (readExactlyThis TokOperator "+" >> cont PositiveType) <|> (readExactlyThis TokOperator "-" >> cont NegativeType)
 
-simplifyTypeInteractiveCommand :: forall baseupdate. Parser (InteractiveCommand baseupdate)
+simplifyTypeInteractiveCommand :: Parser InteractiveCommand
 simplifyTypeInteractiveCommand = readPolarity simplifyPolarTypeInteractiveCommand
 
-readSpecialCommand :: Text -> Parser (InteractiveCommand baseupdate)
+readSpecialCommand :: Text -> Parser InteractiveCommand
 readSpecialCommand "t" = showTypeInteractiveCommand False
 readSpecialCommand "type" = showTypeInteractiveCommand False
 readSpecialCommand "info" = showTypeInteractiveCommand True
@@ -54,7 +53,7 @@ readSpecialCommand "simplify" = simplifyTypeInteractiveCommand
 readSpecialCommand "simplify-" = simplifyPolarTypeInteractiveCommand NegativeType
 readSpecialCommand cmd = return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd
 
-readInteractiveCommand :: forall baseupdate. Parser (InteractiveCommand baseupdate)
+readInteractiveCommand :: Parser InteractiveCommand
 readInteractiveCommand =
     (do
          readExactlyThis TokOperator ":"
@@ -68,5 +67,5 @@ readInteractiveCommand =
          stdecls <- readTopDeclarations
          return $ LetInteractiveCommand $ interpretTopDeclarations stdecls)
 
-parseInteractiveCommand :: Text -> StateT SourcePos InterpretResult (InteractiveCommand baseupdate)
+parseInteractiveCommand :: Text -> StateT SourcePos InterpretResult InteractiveCommand
 parseInteractiveCommand = parseReader readInteractiveCommand

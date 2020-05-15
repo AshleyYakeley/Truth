@@ -51,10 +51,10 @@ qOrderSet ::
     => LangOrder a
     -> PinaforeROWRef (FiniteSet a)
     -> PinaforeROWRef (Know [a])
-qOrderSet (MkLangOrder (ofunc :: PinaforeFunctionMorphism baseupdate (Know a) t) oord) pset = let
+qOrderSet (MkLangOrder (ofunc :: PinaforeFunctionMorphism PinaforeEntityUpdate (Know a) t) oord) pset = let
     cmp :: (a, t) -> (a, t) -> Ordering
     cmp (_, t1) (_, t2) = oord t1 t2
-    ofuncpair :: PinaforeFunctionMorphism baseupdate a (a, t)
+    ofuncpair :: PinaforeFunctionMorphism PinaforeEntityUpdate a (a, t)
     ofuncpair =
         proc a -> do
             kt <- ofunc -< Known a

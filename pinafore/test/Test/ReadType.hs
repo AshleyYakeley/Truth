@@ -13,7 +13,7 @@ testReadType :: Text -> TestTree
 testReadType text =
     testCase (unpack text) $
     throwResult $ do
-        _ <- runTestPinaforeSourceScoped $ parseType @PinaforeEntityUpdate @'Positive text
+        _ <- runTestPinaforeSourceScoped $ parseType @'Positive text
         return ()
 
 testReadTypes :: TestTree

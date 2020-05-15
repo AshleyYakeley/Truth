@@ -16,25 +16,25 @@ import Test.Tasty
 import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit
 
-type TS = PinaforeTypeSystem PinaforeEntityUpdate
+type TS = PinaforeTypeSystem
 
 type PExpression = TSSealedExpression TS
 
-showVars :: NamedExpression Name (PinaforeShimWit PinaforeEntityUpdate 'Negative) t -> [String]
+showVars :: NamedExpression Name (PinaforeShimWit 'Negative) t -> [String]
 showVars (ClosedExpression _) = []
 showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) = (show name <> " :: " <> show t) : showVars expr
 
 showTypes :: PExpression -> String
 showTypes (MkSealedExpression (MkShimWit t _) expr) = "{" <> intercalate ", " (showVars expr) <> "} -> " <> show t
 
-exprTypeTest :: String -> Maybe String -> PinaforeSourceScoped PinaforeEntityUpdate PExpression -> TestTree
+exprTypeTest :: String -> Maybe String -> PinaforeSourceScoped PExpression -> TestTree
 exprTypeTest name expected mexpr =
     testCase name $
     assertEqual "" expected $ do
         expr <- resultToMaybe $ runTestPinaforeSourceScoped mexpr
         return $ showTypes expr
 
-apExpr :: PExpression -> PExpression -> PinaforeSourceScoped PinaforeEntityUpdate PExpression
+apExpr :: PExpression -> PExpression -> PinaforeSourceScoped PExpression
 apExpr = tsApply @TS
 
 idExpr :: PExpression
@@ -85,7 +85,7 @@ listNumBoolFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Number]) -> [Tr
 listBoolNumFuncExpr :: PExpression
 listBoolNumFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Bool]) -> [2 :: Number]
 
-joinExpr :: PExpression -> PExpression -> PinaforeSourceScoped PinaforeEntityUpdate PExpression
+joinExpr :: PExpression -> PExpression -> PinaforeSourceScoped PExpression
 joinExpr exp1 exp2 = do
     je <- apExpr ifelseExpr boolExpr
     e <- apExpr je exp1
@@ -94,13 +94,13 @@ joinExpr exp1 exp2 = do
 textTypeTest :: Text -> String -> TestTree
 textTypeTest text r =
     testCase (unpack text) $ do
-        expr <- throwResult $ runTestPinaforeSourceScoped $ parseTopExpression @PinaforeEntityUpdate text
+        expr <- throwResult $ runTestPinaforeSourceScoped $ parseTopExpression text
         assertEqual "" r $ showTypes expr
 
 badInterpretTest :: Text -> TestTree
 badInterpretTest text =
     testCase (unpack text) $
-    case runTestPinaforeSourceScoped $ parseTopExpression @PinaforeEntityUpdate text of
+    case runTestPinaforeSourceScoped $ parseTopExpression text of
         FailureResult _ -> return ()
         SuccessResult _ -> assertFailure "no exception"
 
@@ -109,11 +109,11 @@ simplifyTypeTest text e =
     testCase (unpack text) $ do
         simpexpr <-
             throwResult $ do
-                mt <- runTestPinaforeSourceScoped $ parseType @PinaforeEntityUpdate @'Positive text
+                mt <- runTestPinaforeSourceScoped $ parseType @'Positive text
                 case mt of
                     MkAnyW t ->
                         return $
-                        pinaforeSimplifyTypes @PinaforeEntityUpdate @PExpression $
+                        pinaforeSimplifyTypes @PExpression $
                         MkSealedExpression (mkShimWit t) $ ClosedExpression undefined
         case simpexpr of
             MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ show t'

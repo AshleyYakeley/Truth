@@ -58,7 +58,7 @@ withNullPinaforeContext f = let
     ?pinafore = nullPinaforeContext
     in f
 
-runTestPinaforeSourceScoped :: PinaforeSourceScoped baseupdate a -> InterpretResult a
+runTestPinaforeSourceScoped :: PinaforeSourceScoped a -> InterpretResult a
 runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa
 
 checkUpdateEditor ::

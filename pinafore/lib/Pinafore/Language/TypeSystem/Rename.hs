@@ -15,22 +15,21 @@ import Shapes
 type TypeNamespace (cat :: forall kc. kc -> kc -> Type) (ts :: Type) (w :: Polarity -> k -> Type) (polarity :: Polarity)
      = forall t m. Monad m => w polarity t -> VarNamespaceT ts (VarRenamerT ts m) (PShimWit cat w polarity t)
 
-type PinaforeTypeNamespace baseupdate w polarity = TypeNamespace JMIsoShim (PinaforeTypeSystem baseupdate) w polarity
+type PinaforeTypeNamespace w polarity = TypeNamespace JMIsoShim PinaforeTypeSystem w polarity
 
 renameTypeArgs ::
-       forall baseupdate (polarity :: Polarity) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
-       Is PolarityType polarity
+       forall (polarity :: Polarity) (dv :: DolanVariance) (gt :: DolanVarianceKind dv). Is PolarityType polarity
     => DolanVarianceType dv
     -> DolanVarianceMap dv gt
-    -> PinaforeTypeNamespace baseupdate (DolanArguments dv (PinaforeType baseupdate) gt) polarity
+    -> PinaforeTypeNamespace (DolanArguments dv PinaforeType gt) polarity
 renameTypeArgs dvt dvm args = mapDolanArgumentsM renamePinaforeTypeVars dvt dvm args
 
 renamePinaforeSingularTypeVars ::
-       forall baseupdate polarity. Is PolarityType polarity
-    => PinaforeTypeNamespace baseupdate (PinaforeSingularType baseupdate) polarity
+       forall polarity. Is PolarityType polarity
+    => PinaforeTypeNamespace PinaforeSingularType polarity
 renamePinaforeSingularTypeVars (GroundPinaforeSingularType gt args) = do
     MkShimWit args' bij <-
-        renameTypeArgs @baseupdate @polarity (pinaforeGroundTypeVarianceType gt) (pinaforeGroundTypeVarianceMap gt) args
+        renameTypeArgs @polarity (pinaforeGroundTypeVarianceType gt) (pinaforeGroundTypeVarianceMap gt) args
     return $ MkShimWit (GroundPinaforeSingularType gt args') bij
 renamePinaforeSingularTypeVars (VarPinaforeSingularType namewit1) =
     renameUVar @_ @JMShim varNamespaceTRename namewit1 $ \namewit2 bij ->
@@ -41,8 +40,8 @@ renamePinaforeSingularTypeVars (VarPinaforeSingularType namewit1) =
             NegativeType -> MkJMIsoShim $ invert bij
 
 renamePinaforeTypeVars ::
-       forall baseupdate polarity. Is PolarityType polarity
-    => PinaforeTypeNamespace baseupdate (PinaforeType baseupdate) polarity
+       forall polarity. Is PolarityType polarity
+    => PinaforeTypeNamespace PinaforeType polarity
 renamePinaforeTypeVars NilPinaforeType =
     return $
     case representative @_ @_ @polarity of
@@ -57,11 +56,11 @@ renamePinaforeTypeVars (ConsPinaforeType ta tb) = do
             PositiveType -> MkJMIsoShim $ biJoinBimap (unJMIsoShim bija) (unJMIsoShim bijb)
             NegativeType -> MkJMIsoShim $ biMeetBimap (unJMIsoShim bija) (unJMIsoShim bijb)
 
-instance Renamer (VarRenamerT (PinaforeTypeSystem baseupdate)) where
-    type RenamerNamespaceT (VarRenamerT (PinaforeTypeSystem baseupdate)) = VarNamespaceT (PinaforeTypeSystem baseupdate)
-    type RenamerNegWitness (VarRenamerT (PinaforeTypeSystem baseupdate)) = PinaforeType baseupdate 'Negative
-    type RenamerPosWitness (VarRenamerT (PinaforeTypeSystem baseupdate)) = PinaforeType baseupdate 'Positive
-    type RenamerShim (VarRenamerT (PinaforeTypeSystem baseupdate)) = JMShim
+instance Renamer (VarRenamerT PinaforeTypeSystem) where
+    type RenamerNamespaceT (VarRenamerT PinaforeTypeSystem) = VarNamespaceT PinaforeTypeSystem
+    type RenamerNegWitness (VarRenamerT PinaforeTypeSystem) = PinaforeType 'Negative
+    type RenamerPosWitness (VarRenamerT PinaforeTypeSystem) = PinaforeType 'Positive
+    type RenamerShim (VarRenamerT PinaforeTypeSystem) = JMShim
     renameNegWitness t = do
         MkShimWit t' bij <- renamePinaforeTypeVars t
         return $ MkShimWit t' $ isoForwards $ unJMIsoShim bij

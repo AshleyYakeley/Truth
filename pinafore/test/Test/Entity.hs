@@ -13,7 +13,7 @@ import Test.Tasty.HUnit
 import Truth.Core
 
 scriptTest ::
-       forall a. FromPinaforeType PinaforeEntityUpdate a
+       forall a. FromPinaforeType a
     => Text
     -> Text
     -> ((?pinafore :: PinaforeContext) => UIToolkit -> MFunction LifeCycleIO IO -> a -> IO ())

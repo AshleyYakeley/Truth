@@ -19,19 +19,18 @@ import Pinafore.Language.Value
 import Shapes
 
 --import Pinafore.Language.Subtype
-data SubtypeContext baseupdate m pola polb = MkSubtypeContext
-    { subtypeTypes :: forall ta tb.
-                              PinaforeType baseupdate pola ta -> PinaforeType baseupdate polb tb -> m (JMShim ta tb)
-    , subtypeLift :: forall a. PinaforeSourceScoped baseupdate a -> m a
-    , subtypeInverted :: SubtypeContext baseupdate m (InvertPolarity polb) (InvertPolarity pola)
+data SubtypeContext m pola polb = MkSubtypeContext
+    { subtypeTypes :: forall ta tb. PinaforeType pola ta -> PinaforeType polb tb -> m (JMShim ta tb)
+    , subtypeLift :: forall a. PinaforeSourceScoped a -> m a
+    , subtypeInverted :: SubtypeContext m (InvertPolarity polb) (InvertPolarity pola)
     }
 
 subtypeVariance ::
        (Applicative m, Is PolarityType pola, Is PolarityType polb)
-    => SubtypeContext baseupdate m pola polb
+    => SubtypeContext m pola polb
     -> VarianceType sv
-    -> SingleArgument sv (PinaforeType baseupdate) pola a
-    -> SingleArgument sv (PinaforeType baseupdate) polb b
+    -> SingleArgument sv PinaforeType pola a
+    -> SingleArgument sv PinaforeType polb b
     -> m (VarianceCategory JMShim sv a b)
 subtypeVariance sc CovarianceType ta tb = subtypeTypes sc ta tb
 subtypeVariance sc ContravarianceType ta tb = do
@@ -43,13 +42,13 @@ subtypeVariance sc RangevarianceType (MkRangeType tpa tqa) (MkRangeType tpb tqb)
     return $ MkCatRange pba qab
 
 subtypeArguments ::
-       forall baseupdate m pola polb dv gta gtb ta tb. (Applicative m, Is PolarityType pola, Is PolarityType polb)
-    => SubtypeContext baseupdate m pola polb
+       forall m pola polb dv gta gtb ta tb. (Applicative m, Is PolarityType pola, Is PolarityType polb)
+    => SubtypeContext m pola polb
     -> DolanVarianceType dv
     -> DolanVarianceMap dv gta
     -> DolanVarianceMap dv gtb
-    -> DolanArguments dv (PinaforeType baseupdate) gta pola ta
-    -> DolanArguments dv (PinaforeType baseupdate) gtb polb tb
+    -> DolanArguments dv PinaforeType gta pola ta
+    -> DolanArguments dv PinaforeType gtb polb tb
     -> m (JMShim gta gtb -> JMShim ta tb)
 subtypeArguments _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments NilDolanArguments = pure id
 subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVarianceMap dvmb) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) =
@@ -68,11 +67,11 @@ subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDola
                                             pure $ \conv -> f (consShimFunc svt conv sfunc)
 
 pinaforeSubtypeArguments ::
-       forall baseupdate m pola polb dv gt argsa argsb. (Applicative m, Is PolarityType pola, Is PolarityType polb)
-    => SubtypeContext baseupdate m pola polb
-    -> PinaforeGroundType baseupdate dv gt
-    -> DolanArguments dv (PinaforeType baseupdate) gt pola argsa
-    -> DolanArguments dv (PinaforeType baseupdate) gt polb argsb
+       forall m pola polb dv gt argsa argsb. (Applicative m, Is PolarityType pola, Is PolarityType polb)
+    => SubtypeContext m pola polb
+    -> PinaforeGroundType dv gt
+    -> DolanArguments dv PinaforeType gt pola argsa
+    -> DolanArguments dv PinaforeType gt polb argsb
     -> m (JMShim argsa argsb)
 pinaforeSubtypeArguments sc gt argsa argsb = let
     vkt = pinaforeGroundTypeVarianceType gt
@@ -82,21 +81,21 @@ pinaforeSubtypeArguments sc gt argsa argsb = let
                case dolanVarianceInCategory @JMShim vkt of
                    Dict -> fmap (\f -> f cid) $ subtypeArguments sc vkt dvm dvm argsa argsb
 
-topEntityType :: forall baseupdate pol. PinaforeType baseupdate pol (JoinMeetType pol Entity (LimitType pol))
+topEntityType :: forall pol. PinaforeType pol (JoinMeetType pol Entity (LimitType pol))
 topEntityType =
     ConsPinaforeType
         (GroundPinaforeSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments)
         NilPinaforeType
 
 entityGroundSubtype ::
-       forall baseupdate m pola polb dva fa a dvb fb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
-    => SubtypeContext baseupdate m pola polb
+       forall m pola polb dva fa a dvb fb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
+    => SubtypeContext m pola polb
     -> CovaryType dva
     -> EntityGroundType fa
-    -> DolanArguments dva (PinaforeType baseupdate) fa pola a
+    -> DolanArguments dva PinaforeType fa pola a
     -> CovaryType dvb
     -> EntityGroundType fb
-    -> DolanArguments dvb (PinaforeType baseupdate) fb polb b
+    -> DolanArguments dvb PinaforeType fb polb b
     -> m (PinaforeShim a b)
 -- Entity <= Entity
 entityGroundSubtype _ NilListType TopEntityGroundType NilDolanArguments NilListType TopEntityGroundType NilDolanArguments =
@@ -108,7 +107,7 @@ entityGroundSubtype sc (ConsListType Refl NilListType) MaybeEntityGroundType (Co
             concreteToEntityShim $
             MkConcreteType MaybeEntityGroundType $
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
-    conv <- subtypeTypes sc t $ topEntityType @baseupdate @polb
+    conv <- subtypeTypes sc t $ topEntityType @polb
     pure $ convE . cfmap (unjoinmeet1 @polb . conv)
 -- [Entity] <= Entity
 entityGroundSubtype sc (ConsListType Refl NilListType) ListEntityGroundType (ConsDolanArguments t NilDolanArguments) NilListType TopEntityGroundType NilDolanArguments = do
@@ -117,7 +116,7 @@ entityGroundSubtype sc (ConsListType Refl NilListType) ListEntityGroundType (Con
             concreteToEntityShim $
             MkConcreteType ListEntityGroundType $
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
-    conv <- subtypeTypes sc t $ topEntityType @baseupdate @polb
+    conv <- subtypeTypes sc t $ topEntityType @polb
     pure $ convE . cfmap (unjoinmeet1 @polb . conv)
 -- (Entity, Entity) <= Entity
 entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
@@ -127,8 +126,8 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) PairE
             MkConcreteType PairEntityGroundType $
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) $
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
-    convA <- subtypeTypes sc ta $ topEntityType @baseupdate @polb
-    convB <- subtypeTypes sc tb $ topEntityType @baseupdate @polb
+    convA <- subtypeTypes sc ta $ topEntityType @polb
+    convB <- subtypeTypes sc tb $ topEntityType @polb
     pure $ convE . consShimFunc CovarianceType (cfmap (unjoinmeet1 @polb . convA)) (unjoinmeet1 @polb . convB)
 -- Either Entity Entity <= Entity
 entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
@@ -138,8 +137,8 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) Eithe
             MkConcreteType EitherEntityGroundType $
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) $
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
-    convA <- subtypeTypes sc ta $ topEntityType @baseupdate @polb
-    convB <- subtypeTypes sc tb $ topEntityType @baseupdate @polb
+    convA <- subtypeTypes sc ta $ topEntityType @polb
+    convB <- subtypeTypes sc tb $ topEntityType @polb
     pure $ convE . consShimFunc CovarianceType (cfmap (unjoinmeet1 @polb . convA)) (unjoinmeet1 @polb . convB)
 -- (entity type) <= Entity
 entityGroundSubtype _ ct gt args NilListType TopEntityGroundType NilDolanArguments
@@ -175,12 +174,12 @@ entityGroundSubtype sc cta ga argsa ctb gb argsb =
         (exprShow $ GroundPinaforeSingularType (EntityPinaforeGroundType ctb gb) argsb)
 
 subtypeGroundTypes ::
-       forall baseupdate m pola polb dva gta a dvb gtb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
-    => SubtypeContext baseupdate m pola polb
-    -> PinaforeGroundType baseupdate dva gta
-    -> DolanArguments dva (PinaforeType baseupdate) gta pola a
-    -> PinaforeGroundType baseupdate dvb gtb
-    -> DolanArguments dvb (PinaforeType baseupdate) gtb polb b
+       forall m pola polb dva gta a dvb gtb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
+    => SubtypeContext m pola polb
+    -> PinaforeGroundType dva gta
+    -> DolanArguments dva PinaforeType gta pola a
+    -> PinaforeGroundType dvb gtb
+    -> DolanArguments dvb PinaforeType gtb polb b
     -> m (JMShim a b)
 -- f a0... <= f b0...
 subtypeGroundTypes sc ga argsa gb argsb

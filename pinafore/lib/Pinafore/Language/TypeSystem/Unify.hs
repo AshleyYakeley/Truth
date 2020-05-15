@@ -16,57 +16,45 @@ import Pinafore.Language.TypeSystem.Subtype
 import Pinafore.Language.TypeSystem.Type
 import Shapes
 
-getRangeTypeVars :: PinaforeRangeType baseupdate polarity t -> [String]
+getRangeTypeVars :: PinaforeRangeType polarity t -> [String]
 getRangeTypeVars (MkRangeType tp tq) = getTypeVars tp <> getTypeVars tq
 
-getArgTypeVars ::
-       forall baseupdate polarity v a.
-       VarianceType v
-    -> SingleArgument v (PinaforeType baseupdate) polarity a
-    -> [String]
+getArgTypeVars :: forall polarity v a. VarianceType v -> SingleArgument v PinaforeType polarity a -> [String]
 getArgTypeVars CovarianceType ft = getTypeVars ft
 getArgTypeVars ContravarianceType ft = getTypeVars ft
 getArgTypeVars RangevarianceType (MkRangeType ta tb) = getTypeVars ta <> getTypeVars tb
 
 getArgsTypeVars ::
-       forall baseupdate polarity dv t ta.
-       DolanVarianceType dv
-    -> DolanArguments dv (PinaforeType baseupdate) t polarity ta
-    -> [String]
+       forall polarity dv t ta. DolanVarianceType dv -> DolanArguments dv PinaforeType t polarity ta -> [String]
 getArgsTypeVars NilListType NilDolanArguments = []
 getArgsTypeVars (ConsListType tv targs) (ConsDolanArguments arg args) =
-    getArgTypeVars @baseupdate @polarity tv arg <> getArgsTypeVars targs args
+    getArgTypeVars @polarity tv arg <> getArgsTypeVars targs args
 
-getTypeVars :: PinaforeType baseupdate polarity t -> [String]
+getTypeVars :: PinaforeType polarity t -> [String]
 getTypeVars NilPinaforeType = mempty
 getTypeVars (ConsPinaforeType (GroundPinaforeSingularType gt args) tr) =
     getArgsTypeVars (pinaforeGroundTypeVarianceType gt) args <> getTypeVars tr
 getTypeVars (ConsPinaforeType (VarPinaforeSingularType swit) tr) = witnessToValue swit : getTypeVars tr
 
-data BisubstitutionWitness baseupdate t where
+data BisubstitutionWitness t where
     PositiveBisubstitutionWitness
-        :: SymbolType name
-        -> PinaforeSingularType baseupdate 'Positive p
-        -> BisubstitutionWitness baseupdate (JMShim p (UVar name))
+        :: SymbolType name -> PinaforeSingularType 'Positive p -> BisubstitutionWitness (JMShim p (UVar name))
     NegativeBisubstitutionWitness
-        :: SymbolType name
-        -> PinaforeSingularType baseupdate 'Negative q
-        -> BisubstitutionWitness baseupdate (JMShim (UVar name) q)
+        :: SymbolType name -> PinaforeSingularType 'Negative q -> BisubstitutionWitness (JMShim (UVar name) q)
 
-type PinaforeUnifier baseupdate = Expression (BisubstitutionWitness baseupdate)
+type PinaforeUnifier = Expression (BisubstitutionWitness)
 
-type UnifierConstraint baseupdate = UnifierMonad (PinaforeUnifier baseupdate) ~ PinaforeTypeCheck baseupdate
+type UnifierConstraint = UnifierMonad PinaforeUnifier ~ PinaforeTypeCheck
 
-type PinaforeFullUnifier baseupdate = Compose (PinaforeTypeCheck baseupdate) (PinaforeUnifier baseupdate)
+type PinaforeFullUnifier = Compose (PinaforeTypeCheck) PinaforeUnifier
 
-fullUnifierLiftTypeCheck :: PinaforeTypeCheck baseupdate a -> PinaforeFullUnifier baseupdate a
+fullUnifierLiftTypeCheck :: PinaforeTypeCheck a -> PinaforeFullUnifier a
 fullUnifierLiftTypeCheck tca = Compose $ fmap pure tca
 
-fullUnifierLiftSourceScoped :: PinaforeSourceScoped baseupdate a -> PinaforeFullUnifier baseupdate a
+fullUnifierLiftSourceScoped :: PinaforeSourceScoped a -> PinaforeFullUnifier a
 fullUnifierLiftSourceScoped tca = fullUnifierLiftTypeCheck $ lift tca
 
-unifySubtypeContext ::
-       UnifierConstraint baseupdate => SubtypeContext baseupdate (PinaforeFullUnifier baseupdate) 'Positive 'Negative
+unifySubtypeContext :: UnifierConstraint => SubtypeContext (PinaforeFullUnifier) 'Positive 'Negative
 unifySubtypeContext = let
     subtypeTypes = unifyPosNegPinaforeTypes
     subtypeLift = fullUnifierLiftSourceScoped
@@ -74,19 +62,19 @@ unifySubtypeContext = let
     in MkSubtypeContext {..}
 
 unifyPosNegGroundTypes ::
-       UnifierConstraint baseupdate
-    => PinaforeGroundType baseupdate dva gta
-    -> DolanArguments dva (PinaforeType baseupdate) gta 'Positive ta
-    -> PinaforeGroundType baseupdate dvb gtb
-    -> DolanArguments dvb (PinaforeType baseupdate) gtb 'Negative tb
-    -> PinaforeFullUnifier baseupdate (JMShim ta tb)
+       UnifierConstraint
+    => PinaforeGroundType dva gta
+    -> DolanArguments dva PinaforeType gta 'Positive ta
+    -> PinaforeGroundType dvb gtb
+    -> DolanArguments dvb PinaforeType gtb 'Negative tb
+    -> PinaforeFullUnifier (JMShim ta tb)
 unifyPosNegGroundTypes = subtypeGroundTypes unifySubtypeContext
 
 unifyPosNegPinaforeSingularTypes ::
-       UnifierConstraint baseupdate
-    => PinaforeSingularType baseupdate 'Positive a
-    -> PinaforeSingularType baseupdate 'Negative b
-    -> PinaforeFullUnifier baseupdate (JMShim a b)
+       UnifierConstraint
+    => PinaforeSingularType 'Positive a
+    -> PinaforeSingularType 'Negative b
+    -> PinaforeFullUnifier (JMShim a b)
 unifyPosNegPinaforeSingularTypes (VarPinaforeSingularType na) (VarPinaforeSingularType nb)
     | Just Refl <- testEquality na nb = pure id
 unifyPosNegPinaforeSingularTypes (VarPinaforeSingularType na) tb =
@@ -97,10 +85,10 @@ unifyPosNegPinaforeSingularTypes (GroundPinaforeSingularType gta argsa) (GroundP
     unifyPosNegGroundTypes gta argsa gtb argsb
 
 unifyPosNegPinaforeTypes1 ::
-       UnifierConstraint baseupdate
-    => PinaforeSingularType baseupdate 'Positive a
-    -> PinaforeType baseupdate 'Negative b
-    -> PinaforeFullUnifier baseupdate (JMShim a b)
+       UnifierConstraint
+    => PinaforeSingularType 'Positive a
+    -> PinaforeType 'Negative b
+    -> PinaforeFullUnifier (JMShim a b)
 unifyPosNegPinaforeTypes1 _ NilPinaforeType = pure termf
 unifyPosNegPinaforeTypes1 ta (ConsPinaforeType t1 t2) = do
     f1 <- unifyPosNegPinaforeSingularTypes ta t1
@@ -108,10 +96,7 @@ unifyPosNegPinaforeTypes1 ta (ConsPinaforeType t1 t2) = do
     return $ meetf f1 f2
 
 unifyPosNegPinaforeTypes ::
-       UnifierConstraint baseupdate
-    => PinaforeType baseupdate 'Positive a
-    -> PinaforeType baseupdate 'Negative b
-    -> PinaforeFullUnifier baseupdate (JMShim a b)
+       UnifierConstraint => PinaforeType 'Positive a -> PinaforeType 'Negative b -> PinaforeFullUnifier (JMShim a b)
 unifyPosNegPinaforeTypes NilPinaforeType _ = pure initf
 unifyPosNegPinaforeTypes (ConsPinaforeType ta1 tar) tb = do
     f1 <- unifyPosNegPinaforeTypes1 ta1 tb
@@ -119,61 +104,51 @@ unifyPosNegPinaforeTypes (ConsPinaforeType ta1 tar) tb = do
     return $ joinf f1 f2
 
 unifyPosNegPinaforeShimWit ::
-       UnifierConstraint baseupdate
-    => PinaforeShimWit baseupdate 'Positive a
-    -> PinaforeShimWit baseupdate 'Negative b
-    -> PinaforeFullUnifier baseupdate (JMShim a b)
+       UnifierConstraint
+    => PinaforeShimWit 'Positive a
+    -> PinaforeShimWit 'Negative b
+    -> PinaforeFullUnifier (JMShim a b)
 unifyPosNegPinaforeShimWit (MkShimWit ta conva) (MkShimWit tb convb) = do
     conv <- unifyPosNegPinaforeTypes ta tb
     return $ convb . conv . conva
 
 occursInArg ::
-       forall baseupdate polarity n sv a.
-       VarianceType sv
-    -> SymbolType n
-    -> SingleArgument sv (PinaforeType baseupdate) polarity a
-    -> Bool
+       forall polarity n sv a. VarianceType sv -> SymbolType n -> SingleArgument sv PinaforeType polarity a -> Bool
 occursInArg CovarianceType n t = occursInType n t
 occursInArg ContravarianceType n t = occursInType n t
 occursInArg RangevarianceType n (MkRangeType tp tq) = occursInType n tp || occursInType n tq
 
 occursInArgs ::
-       forall baseupdate polarity n dv t a.
+       forall polarity n dv t a.
        DolanVarianceType dv
     -> SymbolType n
-    -> DolanArguments dv (PinaforeType baseupdate) t polarity a
+    -> DolanArguments dv PinaforeType t polarity a
     -> Bool
 occursInArgs NilListType _ NilDolanArguments = False
 occursInArgs (ConsListType svt dvt) n (ConsDolanArguments arg args) =
-    occursInArg @baseupdate @polarity svt n arg || occursInArgs dvt n args
+    occursInArg @polarity svt n arg || occursInArgs dvt n args
 
-occursInSingularType :: SymbolType n -> PinaforeSingularType baseupdate polarity a -> Bool
+occursInSingularType :: SymbolType n -> PinaforeSingularType polarity a -> Bool
 occursInSingularType n (VarPinaforeSingularType nt)
     | Just Refl <- testEquality n nt = True
 occursInSingularType _ (VarPinaforeSingularType _) = False
 occursInSingularType n (GroundPinaforeSingularType gt args) = occursInArgs (pinaforeGroundTypeVarianceType gt) n args
 
-occursInType :: SymbolType n -> PinaforeType baseupdate polarity a -> Bool
+occursInType :: SymbolType n -> PinaforeType polarity a -> Bool
 occursInType _ NilPinaforeType = False
 occursInType n (ConsPinaforeType t1 t2) = occursInSingularType n t1 || occursInType n t2
 
-bisubstitutePositiveVar ::
-       SymbolType name -> PinaforeType baseupdate 'Positive t -> PinaforeUnifier baseupdate (JMShim t (UVar name))
+bisubstitutePositiveVar :: SymbolType name -> PinaforeType 'Positive t -> PinaforeUnifier (JMShim t (UVar name))
 bisubstitutePositiveVar _ NilPinaforeType = pure initf
 bisubstitutePositiveVar vn (ConsPinaforeType t1 tr) =
     OpenExpression (PositiveBisubstitutionWitness vn t1) $ fmap (\fr f1 -> joinf f1 fr) $ bisubstitutePositiveVar vn tr
 
-bisubstituteNegativeVar ::
-       SymbolType name -> PinaforeType baseupdate 'Negative t -> PinaforeUnifier baseupdate (JMShim (UVar name) t)
+bisubstituteNegativeVar :: SymbolType name -> PinaforeType 'Negative t -> PinaforeUnifier (JMShim (UVar name) t)
 bisubstituteNegativeVar _ NilPinaforeType = pure termf
 bisubstituteNegativeVar vn (ConsPinaforeType t1 tr) =
     OpenExpression (NegativeBisubstitutionWitness vn t1) $ fmap (\fr f1 -> meetf f1 fr) $ bisubstituteNegativeVar vn tr
 
-bisubstituteUnifier ::
-       UnifierConstraint baseupdate
-    => PinaforeBisubstitution baseupdate
-    -> PinaforeUnifier baseupdate a
-    -> PinaforeFullUnifier baseupdate a
+bisubstituteUnifier :: UnifierConstraint => PinaforeBisubstitution -> PinaforeUnifier a -> PinaforeFullUnifier a
 bisubstituteUnifier _ (ClosedExpression a) = pure a
 bisubstituteUnifier bisub@(MkBisubstitution bn _ mtq) (OpenExpression (PositiveBisubstitutionWitness vn tp) uval)
     | Just Refl <- testEquality bn vn = do
@@ -209,15 +184,15 @@ bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) 
             pure $ val' $ conv . pv
 
 runUnifier ::
-       forall baseupdate a. UnifierConstraint baseupdate
-    => PinaforeUnifier baseupdate a
-    -> PinaforeTypeCheck baseupdate (a, [PinaforeBisubstitution baseupdate])
+       forall a. UnifierConstraint
+    => PinaforeUnifier a
+    -> PinaforeTypeCheck (a, [PinaforeBisubstitution])
 runUnifier (ClosedExpression a) = return (a, [])
 runUnifier (OpenExpression (PositiveBisubstitutionWitness vn tp) _)
     | occursInSingularType vn tp = throw $ TypeRecursiveError (symbolTypeToName vn) (exprShow tp)
 runUnifier (OpenExpression (NegativeBisubstitutionWitness vn tp) _)
     | occursInSingularType vn tp = throw $ TypeRecursiveError (symbolTypeToName vn) (exprShow tp)
-runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name) (tp :: PinaforeSingularType baseupdate 'Positive vw)) expr) = let
+runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name) (tp :: PinaforeSingularType 'Positive vw)) expr) = let
     varBij :: Isomorphism JMShim (JoinType (UVar name) vw) (UVar name)
     varBij = unsafeUVarIsomorphism
     bisub =
@@ -234,7 +209,7 @@ runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name
            expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
            return (ca $ isoForwards varBij . join2, bisub : subs)
-runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolType name) (tq :: PinaforeSingularType baseupdate 'Negative vw)) expr) = let
+runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolType name) (tq :: PinaforeSingularType 'Negative vw)) expr) = let
     varBij :: Isomorphism JMShim (MeetType (UVar name) vw) (UVar name)
     varBij = unsafeUVarIsomorphism
     bisub =

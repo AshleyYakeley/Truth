@@ -20,13 +20,13 @@ import Pinafore.Language.Predefined.UI
 import Pinafore.Language.TypeSystem
 import Shapes
 
-predefinitions :: DocTree (BindDoc baseupdate)
+predefinitions :: DocTree BindDoc
 predefinitions = MkDocTree "" "" $ base_predefinitions <> ui_predefinitions <> file_predefinitions
 
 predefinedDoc :: DocTree DefDoc
 predefinedDoc = fmap bdDoc $ predefinitions
 
-predefinedBindings :: (?pinafore :: PinaforeContext) => Map Name (QValue baseupdate)
+predefinedBindings :: (?pinafore :: PinaforeContext) => Map Name QValue
 predefinedBindings =
     mapFromList $
     catMaybes $
@@ -37,7 +37,7 @@ predefinedBindings =
              return (bdName doc, val ?pinafore)) $
     predefinitions
 
-predefinedPatternConstructors :: Map Name (PinaforePatternConstructor baseupdate)
+predefinedPatternConstructors :: Map Name PinaforePatternConstructor
 predefinedPatternConstructors =
     mapFromList $
     catMaybes $
