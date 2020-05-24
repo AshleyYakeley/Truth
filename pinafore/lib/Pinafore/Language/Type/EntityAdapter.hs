@@ -20,20 +20,12 @@ entityGroundTypeAdapter (LiteralEntityGroundType tl) NilArguments =
     case literalTypeAsLiteral tl of
         Dict -> let
             entityAdapterConvert = literalToEntity
-            entityAdapterGet ::
-                   forall m. MonadIO m
-                => Entity
-                -> Readable m PinaforeEntityRead
-                -> m (Know t)
-            entityAdapterGet p mr = do
-                kl <- mr $ PinaforeEntityReadToLiteral p
+            entityAdapterGet :: Entity -> ReadM PinaforeEntityRead (Know t)
+            entityAdapterGet p = do
+                kl <- readM $ PinaforeEntityReadToLiteral p
                 return $ kl >>= fromLiteral
-            entityAdapterPut ::
-                   forall m. MonadIO m
-                => t
-                -> Readable m PinaforeEntityRead
-                -> m [PinaforeEntityEdit]
-            entityAdapterPut t _mr = return [PinaforeEntityEditSetLiteral (literalToEntity t) (Known $ toLiteral t)]
+            entityAdapterPut :: t -> ReadM PinaforeEntityRead [PinaforeEntityEdit]
+            entityAdapterPut t = return [PinaforeEntityEditSetLiteral (literalToEntity t) (Known $ toLiteral t)]
             in MkEntityAdapter {..}
 entityGroundTypeAdapter MaybeEntityGroundType (ConsArguments t NilArguments) = let
     justAnchor = codeAnchor "pinafore-base:Just"

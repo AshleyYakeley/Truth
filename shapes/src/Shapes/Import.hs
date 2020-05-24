@@ -173,3 +173,19 @@ compAll (c:cc) = c . compAll cc
 
 exec :: Monad m => m (m a) -> m a
 exec mma = mma >>= id
+
+shortOr :: Monad m => (a -> m Bool) -> [a] -> m Bool
+shortOr _ [] = return False
+shortOr amb (a:aa) = do
+    b <- amb a
+    if b
+        then return True
+        else shortOr amb aa
+
+shortAnd :: Monad m => (a -> m Bool) -> [a] -> m Bool
+shortAnd _ [] = return True
+shortAnd amb (a:aa) = do
+    b <- amb a
+    if b
+        then shortAnd amb aa
+        else return False

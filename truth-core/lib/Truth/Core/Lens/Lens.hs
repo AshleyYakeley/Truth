@@ -15,6 +15,16 @@ data ChangeLens updateA updateB = MkChangeLens
                                 [UpdateEdit updateB] -> Readable m (UpdateReader updateA) -> m (Maybe [UpdateEdit updateA])
     }
 
+{-
+Cleaner version:
+
+data ChangeLens updateA updateB = MkChangeLens
+    { clRead :: Readable (ReadM (UpdateReader updateA)) (UpdateReader updateB)
+    , clUpdate :: updateA -> ReadM (UpdateReader updateA) [updateB]
+    -- ^ the Readable argument will reflect the new value
+    , clPutEdits :: [UpdateEdit updateB] -> ReadM (UpdateReader updateA) (Maybe [UpdateEdit updateA])
+    }
+-}
 instance Category ChangeLens where
     id :: forall update. ChangeLens update update
     id = let
