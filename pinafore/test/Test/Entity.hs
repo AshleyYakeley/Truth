@@ -60,16 +60,7 @@ updateTest text =
         unlift $
             runEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $ do
-                hPutStrLn stderr "UCA"
-                a <-
-                    uitRunView uitoolkit emptyResourceContext $
-                    unliftPinaforeActionOrFail $ do
-                        liftIO $ hPutStrLn stderr "UCUA"
-                        a <- sendUpdate
-                        liftIO $ hPutStrLn stderr "UCUB"
-                        return a
-                hPutStrLn stderr "UCB"
-                return a
+                uitRunView uitoolkit emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
 testUpdates = runContext $ tgroup "update" [updateTest "do ref <- newMemRef; return (ref := 1, ref) end"]

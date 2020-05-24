@@ -76,18 +76,12 @@ checkUpdateEditor val push = let
         -> NonEmpty (WholeUpdate a)
         -> EditContext
         -> IO ()
-    editorUpdate var _ _ edits _ = do
-        hPutStrLn stderr "X"
-        putMVar var edits
-        hPutStrLn stderr "Y"
+    editorUpdate var _ _ edits _ = putMVar var edits
     editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Reference (WholeEdit a) -> Task () -> LifeCycleIO ()
     editorDo var _ _ =
         liftIO $ do
-            hPutStrLn stderr "A"
             push
-            hPutStrLn stderr "B"
             edits <- takeMVar var
-            hPutStrLn stderr "C"
             case edits of
                 MkWholeReaderUpdate v :| []
                     | v == val -> return ()
