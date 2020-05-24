@@ -88,12 +88,14 @@ benchScripts =
         ]
 
 interpretUpdater :: (?pinafore :: PinaforeContext) => Text -> IO ()
-interpretUpdater text = do
-    action <- throwResult $ pinaforeInterpretFileAtType "<test>" text
-    (sendUpdate, ref) <- nullViewIO $ unliftPinaforeActionOrFail action
-    runLifeCycle $
-        runEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
-        checkUpdateEditor (Known (1 :: Integer)) $ nullViewIO $ unliftPinaforeActionOrFail sendUpdate
+interpretUpdater text =
+    withTestPinaforeContext $ \uitoolkit unlift _getTableState -> do
+        action <- throwResult $ pinaforeInterpretFileAtType "<test>" text
+        (sendUpdate, ref) <- uitRunView uitoolkit emptyResourceContext $ unliftPinaforeActionOrFail action
+        unlift $
+            runEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
+            checkUpdateEditor (Known (1 :: Integer)) $
+            uitRunView uitoolkit emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
