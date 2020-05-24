@@ -55,8 +55,8 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 `a <= Entity` implies `Maybe a <= Entity`.
 
 #### Constructors & Functions
-`Just :: a -> Maybe a`  
-`Nothing :: Maybe None`
+`Just : a -> Maybe a`  
+`Nothing : Maybe None`
 
 ### Lists
 
@@ -66,8 +66,8 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 `a <= Entity` implies `[a] <= Entity`.
 
 #### Constructors & Functions
-`[] :: [None]`  
-`\x y -> x:y :: a -> [a] -> [a]`
+`[] : [None]`  
+`\x y -> x::y : a -> [a] -> [a]`
 
 ### Pairs
 
@@ -79,9 +79,9 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 There are no higher-arity tuples than pair.
 
 #### Constructors & Functions
-`\x y -> (x, y) :: a -> b -> (a, b)`  
-`fst :: (a, Any) -> a`  
-`snd :: (Any, b) -> b`
+`\x y -> (x, y) : a -> b -> (a, b)`  
+`fst : (a, Any) -> a`  
+`snd : (Any, b) -> b`
 
 ### Either
 
@@ -91,8 +91,8 @@ There are no higher-arity tuples than pair.
 `a <= Entity` and `b <= Entity` implies `Either a b <= Entity`.
 
 #### Constructors & Functions
-`Left :: a -> Either a None`  
-`Right :: b -> Either None b`
+`Left : a -> Either a None`  
+`Right : b -> Either None b`
 
 ### Declared Closed Entity Types
 
@@ -107,7 +107,7 @@ closedtype Patient =
     LivingPatient Person Date !"Patient.LivingPatient" |
     DeadPatient Person Date Date !"Patient.DeadPatient";
 
-patientPerson :: Patient -> Person;
+patientPerson : Patient -> Person;
 patientPerson patient =
     case patient of
         LivingPatient p _ -> p;

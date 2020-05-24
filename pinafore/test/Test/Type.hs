@@ -22,7 +22,7 @@ type PExpression = TSSealedExpression TS
 
 showVars :: NamedExpression Name (PinaforeShimWit 'Negative) t -> [String]
 showVars (ClosedExpression _) = []
-showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) = (show name <> " :: " <> show t) : showVars expr
+showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) = (show name <> " : " <> show t) : showVars expr
 
 showTypes :: PExpression -> String
 showTypes (MkSealedExpression (MkShimWit t _) expr) = "{" <> intercalate ", " (showVars expr) <> "} -> " <> show t
@@ -128,12 +128,12 @@ testType =
               , exprTypeTest "boolean" (return "{} -> Boolean") $ return boolExpr
               , exprTypeTest "id" (return "{} -> x -> x") $ return idExpr
               , exprTypeTest "nb" (return "{} -> Number -> Boolean") $ return nbFuncExpr
-              , exprTypeTest "var" (return "{v :: a} -> a") $ return varExpr
+              , exprTypeTest "var" (return "{v : a} -> a") $ return varExpr
               , exprTypeTest "apply id number" (return "{} -> Number") $ apExpr idExpr numExpr
               , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
               , exprTypeTest "apply nb boolean" Nothing $ apExpr nbFuncExpr boolExpr
-              , exprTypeTest "apply id var" (return "{v :: c} -> c") $ apExpr idExpr varExpr
-              , exprTypeTest "apply nb var" (return "{v :: Number} -> Boolean") $ apExpr nbFuncExpr varExpr
+              , exprTypeTest "apply id var" (return "{v : c} -> c") $ apExpr idExpr varExpr
+              , exprTypeTest "apply nb var" (return "{v : Number} -> Boolean") $ apExpr nbFuncExpr varExpr
               , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
               , exprTypeTest "list1" (return "{} -> a -> [a]") $ return list1Expr
               , exprTypeTest "listNumBool" (return "{} -> [Boolean | Number]") $ do
@@ -202,61 +202,59 @@ testType =
               ]
         , testGroup
               "read"
-              [ textTypeTest "v" "{v :: a} -> a"
-              , textTypeTest "if t then v1 else v2" "{t :: Boolean, v1 :: c, v2 :: c} -> c"
+              [ textTypeTest "v" "{v : a} -> a"
+              , textTypeTest "if t then v1 else v2" "{t : Boolean, v1 : c, v2 : c} -> c"
               , textTypeTest "[]" "{} -> [None]"
               , textTypeTest "\\v -> 1" "{} -> Any -> Integer"
-              , textTypeTest "[v1,v2]" "{v1 :: a, v2 :: a} -> [a]"
-              , textTypeTest "[v,v,v]" "{v :: a, v :: a, v :: a} -> [a]"
-              , textTypeTest "[x,y,x,y]" "{x :: a, y :: a, x :: a, y :: a} -> [a]"
-              , textTypeTest "(v 3,v \"text\")" "{v :: Integer -> a, v :: Text -> b} -> (a, b)"
-              , textTypeTest "(v,v)" "{v :: a, v :: b} -> (a, b)"
-              , textTypeTest "(v 3,v 3)" "{v :: Integer -> a, v :: Integer -> b} -> (a, b)"
-              , textTypeTest "[v 3]" "{v :: Integer -> a} -> [a]"
-              , textTypeTest "(v 3,v False)" "{v :: Integer -> a, v :: Boolean -> b} -> (a, b)"
+              , textTypeTest "[v1,v2]" "{v1 : a, v2 : a} -> [a]"
+              , textTypeTest "[v,v,v]" "{v : a, v : a, v : a} -> [a]"
+              , textTypeTest "[x,y,x,y]" "{x : a, y : a, x : a, y : a} -> [a]"
+              , textTypeTest "(v 3,v \"text\")" "{v : Integer -> a, v : Text -> b} -> (a, b)"
+              , textTypeTest "(v,v)" "{v : a, v : b} -> (a, b)"
+              , textTypeTest "(v 3,v 3)" "{v : Integer -> a, v : Integer -> b} -> (a, b)"
+              , textTypeTest "[v 3]" "{v : Integer -> a} -> [a]"
+              , textTypeTest "(v 3,v False)" "{v : Integer -> a, v : Boolean -> b} -> (a, b)"
               , textTypeTest
                     "((v 3,v False),v 3)"
-                    "{v :: Integer -> a', v :: Boolean -> b', v :: Integer -> b} -> ((a', b'), b)"
-              , textTypeTest "let v = x in [v,v,v]" "{x :: a, x :: a, x :: a} -> [a]"
+                    "{v : Integer -> a', v : Boolean -> b', v : Integer -> b} -> ((a', b'), b)"
+              , textTypeTest "let v = x in [v,v,v]" "{x : a, x : a, x : a} -> [a]"
               , textTypeTest "\\x -> let v = x in [v,v,v]" "{} -> a -> [a]"
               , textTypeTest "\\v1 v2 -> [v1,v2]" "{} -> a -> a -> [a]"
               , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> a' -> (a & a') -> a -> ([a'], [a])"
               , textTypeTest
                     "\\v1 v2 v3 -> (([v1,v2],[v2,v3]),[v3,v1])"
                     "{} -> (a & a') -> (a'' & a') -> (a & a'') -> (([a'], [a'']), [a])"
-              , badInterpretTest "\\x -> let y :: Boolean | Number; y = x in y"
-              , badInterpretTest "\\x -> let y :: (a -> a, Boolean | Number); y = x in y"
-              , badInterpretTest "\\x -> let y :: (b -> b, Boolean | Number); y = x in y"
+              , badInterpretTest "\\x -> let y : Boolean | Number; y = x in y"
+              , badInterpretTest "\\x -> let y : (a -> a, Boolean | Number); y = x in y"
+              , badInterpretTest "\\x -> let y : (b -> b, Boolean | Number); y = x in y"
               , textTypeTest
-                    "\\x -> let y :: (Boolean, Number); y = (x,x) in y"
+                    "\\x -> let y : (Boolean, Number); y = (x,x) in y"
                     "{} -> (Number & Boolean) -> (Boolean, Number)"
               , textTypeTest
-                    "\\x1 -> \\x2 -> let y :: (Boolean, Number); y = (x1,x2) in y"
+                    "\\x1 -> \\x2 -> let y : (Boolean, Number); y = (x1,x2) in y"
                     "{} -> Boolean -> Number -> (Boolean, Number)"
               , textTypeTest
-                    "\\x1 -> \\x2 -> let y :: (a -> a, a -> (a,a)); y = (x1,x2) in y"
+                    "\\x1 -> \\x2 -> let y : (a -> a, a -> (a,a)); y = (x1,x2) in y"
                     "{} -> (a -> a) -> (a -> (a, a)) -> (a -> a, a -> (a, a))"
               , textTypeTest
-                    "\\x1 -> \\x2 -> let y :: (a -> a, b -> (b,b)); y = (x1,x2) in y"
+                    "\\x1 -> \\x2 -> let y : (a -> a, b -> (b,b)); y = (x1,x2) in y"
                     "{} -> (a -> a) -> (b -> (b, b)) -> (a -> a, b -> (b, b))"
               , textTypeTest
-                    "\\x1 -> \\x2 -> let y :: (b -> b, a -> (a,a)); y = (x1,x2) in y"
+                    "\\x1 -> \\x2 -> let y : (b -> b, a -> (a,a)); y = (x1,x2) in y"
                     "{} -> (b -> b) -> (a -> (a, a)) -> (b -> b, a -> (a, a))"
               , textTypeTest
-                    "\\x1 -> \\x2 -> let y :: (a -> b, b -> a); y = (x1,x2) in y"
+                    "\\x1 -> \\x2 -> let y : (a -> b, b -> a); y = (x1,x2) in y"
                     "{} -> (a -> b) -> (b -> a) -> (a -> b, b -> a)"
               , textTypeTest
-                    "\\x1 -> \\x2 -> let y :: (c -> d, d -> c); y = (x1,x2) in y"
+                    "\\x1 -> \\x2 -> let y : (c -> d, d -> c); y = (x1,x2) in y"
                     "{} -> (c -> d) -> (d -> c) -> (c -> d, d -> c)"
-              , textTypeTest "let f :: Entity; f = Nothing in f" "{} -> Entity"
-              , textTypeTest "let f :: Entity -> Entity; f = Just in f" "{} -> Entity -> Entity"
-              , textTypeTest "let f :: Entity; f = [] in f" "{} -> Entity"
-              , textTypeTest "let f :: Entity -> Entity; f x = [x] in f" "{} -> Entity -> Entity"
-              , textTypeTest
-                    "let f :: Entity -> Entity -> Entity; f a b = (a,b) in f"
-                    "{} -> Entity -> Entity -> Entity"
-              , textTypeTest "let f :: Entity -> Entity; f = Left in f" "{} -> Entity -> Entity"
-              , textTypeTest "let f :: Entity -> Entity; f = Right in f" "{} -> Entity -> Entity"
+              , textTypeTest "let f : Entity; f = Nothing in f" "{} -> Entity"
+              , textTypeTest "let f : Entity -> Entity; f = Just in f" "{} -> Entity -> Entity"
+              , textTypeTest "let f : Entity; f = [] in f" "{} -> Entity"
+              , textTypeTest "let f : Entity -> Entity; f x = [x] in f" "{} -> Entity -> Entity"
+              , textTypeTest "let f : Entity -> Entity -> Entity; f a b = (a,b) in f" "{} -> Entity -> Entity -> Entity"
+              , textTypeTest "let f : Entity -> Entity; f = Left in f" "{} -> Entity -> Entity"
+              , textTypeTest "let f : Entity -> Entity; f = Right in f" "{} -> Entity -> Entity"
               ]
         , testGroup
               "simplify"

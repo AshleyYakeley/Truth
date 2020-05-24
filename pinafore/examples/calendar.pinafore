@@ -1,10 +1,10 @@
 #!/usr/bin/pinafore
 let
 
-dateText :: Date ~> Text;
+dateText : Date ~> Text;
 dateText = property @Date @Text !"example.calendar:dateText";
 
-ui :: Ref Date -> UI;
+ui : Ref Date -> UI;
 ui r = uiVertical
     [
     (uiHorizontal

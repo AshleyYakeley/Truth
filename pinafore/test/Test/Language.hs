@@ -358,20 +358,20 @@ testQueries =
               ]
         , testGroup
               "type signature"
-              [ testQuery "let i :: a -> a; i x = x in i 3" $ Just "3"
-              , testQuery "let i :: Number -> Number; i x = x in i 3" $ Just "3"
-              , testQuery "let i :: Text -> Text; i x = x in i 3" $ Nothing
-              , testQuery "let i :: a -> a; i x = x in i \"t\"" $ Just "t"
-              , testQuery "let i :: Number -> Number; i x = x in i \"t\"" $ Nothing
-              , testQuery "let i :: Text -> Text; i x = x in i \"t\"" $ Just "t"
-              , testQuery "let i :: a -> a; i x = x in 0" $ Just "0"
-              , testQuery "let i :: a -> Number; i x = x in 0" $ Nothing
-              , testQuery "let i :: Number -> a; i x = x in 0" $ Nothing
-              , testQuery "let i :: Number -> Number; i x = x in 0" $ Just "0"
-              , testQuery "let i :: Either Number Boolean; i = Left 5 in i" $ Just "Left 5"
-              , testQuery "let i :: Either Number Boolean; i = Right False in i" $ Just "Right False"
-              , testQuery "let i :: Maybe Number; i = Just 5 in i" $ Just "Just 5"
-              , testQuery "let i :: Maybe Number; i = Nothing in i" $ Just "Nothing"
+              [ testQuery "let i : a -> a; i x = x in i 3" $ Just "3"
+              , testQuery "let i : Number -> Number; i x = x in i 3" $ Just "3"
+              , testQuery "let i : Text -> Text; i x = x in i 3" $ Nothing
+              , testQuery "let i : a -> a; i x = x in i \"t\"" $ Just "t"
+              , testQuery "let i : Number -> Number; i x = x in i \"t\"" $ Nothing
+              , testQuery "let i : Text -> Text; i x = x in i \"t\"" $ Just "t"
+              , testQuery "let i : a -> a; i x = x in 0" $ Just "0"
+              , testQuery "let i : a -> Number; i x = x in 0" $ Nothing
+              , testQuery "let i : Number -> a; i x = x in 0" $ Nothing
+              , testQuery "let i : Number -> Number; i x = x in 0" $ Just "0"
+              , testQuery "let i : Either Number Boolean; i = Left 5 in i" $ Just "Left 5"
+              , testQuery "let i : Either Number Boolean; i = Right False in i" $ Just "Right False"
+              , testQuery "let i : Maybe Number; i = Just 5 in i" $ Just "Just 5"
+              , testQuery "let i : Maybe Number; i = Nothing in i" $ Just "Nothing"
               ]
         , testGroup
               "patterns"
@@ -429,12 +429,12 @@ testQueries =
               , testGroup
                     "List"
                     [ testQuery "case [] of [] -> True; _ -> False end" $ Just "True"
-                    , testQuery "case [] of _:_ -> True; _ -> False end" $ Just "False"
+                    , testQuery "case [] of _::_ -> True; _ -> False end" $ Just "False"
                     , testQuery "case [1,2] of [] -> True; _ -> False end" $ Just "False"
-                    , testQuery "case [3,4] of _:_ -> True; _ -> False end" $ Just "True"
-                    , testQuery "case [3] of a:b -> (a,b) end" $ Just "(3, [])"
-                    , testQuery "case [3,4] of a:b -> (a,b) end" $ Just "(3, [4])"
-                    , testQuery "case [3,4,5] of a:b -> (a,b) end" $ Just "(3, [4, 5])"
+                    , testQuery "case [3,4] of _::_ -> True; _ -> False end" $ Just "True"
+                    , testQuery "case [3] of a::b -> (a,b) end" $ Just "(3, [])"
+                    , testQuery "case [3,4] of a::b -> (a,b) end" $ Just "(3, [4])"
+                    , testQuery "case [3,4,5] of a::b -> (a,b) end" $ Just "(3, [4, 5])"
                     , testQuery "case [3] of [a,b] -> 1; _ -> 2 end" $ Just "2"
                     , testQuery "case [3,4] of [a,b] -> 1; _ -> 2 end" $ Just "1"
                     , testQuery "case [3,4,5] of [a,b] -> 1; _ -> 2 end" $ Just "2"
@@ -443,18 +443,18 @@ testQueries =
               ]
         , testGroup
               "subtype"
-              [ testQuery "let i :: Integer -> Number; i x = x in i 3" $ Just "3"
-              , testQuery "let a :: Integer; a = 3; b :: Number; b = a in b" $ Just "3"
-              , testQuery "let i :: FiniteSetRef -a -> SetRef a; i x = x in 3" $ Just "3"
-              , testQuery "let i :: FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ Just "3"
+              [ testQuery "let i : Integer -> Number; i x = x in i 3" $ Just "3"
+              , testQuery "let a : Integer; a = 3; b : Number; b = a in b" $ Just "3"
+              , testQuery "let i : FiniteSetRef -a -> SetRef a; i x = x in 3" $ Just "3"
+              , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ Just "3"
               ]
         , testGroup
               "subsume"
-              [ testQuery "let a :: [Integer|Text]; a = [] in a" $ Just "[]"
-              , testQuery "let a :: [Integer|Text]; a = []; b :: [Integer]|[Text]; b = a in b" $ Just "[]"
-              , testQuery "let a :: Integer|Text; a = 3; b :: [Integer]|[Text]; b = [a] in b" $ Just "[3]"
-              , testQuery "let a :: [Integer]|[Text]; a = [] in a" $ Just "[]"
-              , testQuery "let a :: [Integer]|[Text]; a = []; b :: [Integer|Text]; b = a in b" $ Just "[]"
+              [ testQuery "let a : [Integer|Text]; a = [] in a" $ Just "[]"
+              , testQuery "let a : [Integer|Text]; a = []; b : [Integer]|[Text]; b = a in b" $ Just "[]"
+              , testQuery "let a : Integer|Text; a = 3; b : [Integer]|[Text]; b = [a] in b" $ Just "[3]"
+              , testQuery "let a : [Integer]|[Text]; a = [] in a" $ Just "[]"
+              , testQuery "let a : [Integer]|[Text]; a = []; b : [Integer|Text]; b = a in b" $ Just "[]"
               ]
         ]
 

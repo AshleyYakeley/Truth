@@ -6,9 +6,9 @@ let
 ui_page n ui = (uiLabel n,ui);
 ui_labelled n ui = uiHorizontal [(uiLabel n,False),(ui,True)];
 
-std_window :: Ref +Text -> UI -> Action Window;
+std_window : Ref +Text -> UI -> Action Window;
 std_window title contents = fixAction $ \window -> let
-    menus :: [MenuItem];
+    menus : [MenuItem];
     menus =
         [
             menuSubmenu "File"
@@ -39,9 +39,9 @@ people = type !@ {entity @Type !"78baed51-cb05-46b5-bcb4-49031532b890"};
 
 mother = property @Person @Person !"3afce58f-b7eb-4b11-8a75-2d66afd4d085";
 father = property @Person @Person !"c005705f-9259-4d24-9713-db28a6e4f7d5";
-# parents :: Ref Person -> FiniteSetRef Person;
+# parents : Ref Person -> FiniteSetRef Person;
 # parents p = (mother !$ p) <|> (father !$ p);
-children :: Ref Person -> FiniteSetRef Person;
+children : Ref Person -> FiniteSetRef Person;
 children p = mother !@ p <:|:> father !@ p;
 
 employer = property @Person @Person !"72f612af-ae47-4c18-b3df-6932ae914f62";
@@ -64,7 +64,7 @@ deathdate = property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb";
 married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 
 # UI
-ui_people :: FiniteSetRef Person -> UI;
+ui_people : FiniteSetRef Person -> UI;
 ui_people pp = uiRun $ do
     (notifyperson,getperson) <- makeNotifier;
     return $ uiVertical
@@ -76,10 +76,10 @@ ui_people pp = uiRun $ do
     ];
     end;
 
-peopleByName :: Ref +[(Person,Text)];
+peopleByName : Ref +[(Person,Text)];
 peopleByName = members (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
 
-ui_person :: Ref Person -> UI;
+ui_person : Ref Person -> UI;
 ui_person p = uiVertical
 [
     (ui_labelled {"Name: "} $ uiTextEntry $ name !$ p,False),
@@ -115,15 +115,15 @@ ui_person p = uiVertical
     ],True)
 ];
 
-window_person :: Person -> Action Window;
+window_person : Person -> Action Window;
 window_person p = std_window (name !$ {p}) (ui_person {p});
 
-window_people :: Action Window;
+window_people : Action Window;
 window_people = std_window {"People"} (ui_people people);
 
 ### Calculator
 
-window_calc :: Action Window;
+window_calc : Action Window;
 window_calc = let
 opentype P;
 pvalue = property @P @Number !"pvalue";
@@ -138,7 +138,7 @@ in std_window {"Calc"} $ uiVertical
 
 ### Switching Value
 
-window_switch :: Action Window;
+window_switch : Action Window;
 window_switch = let
 opentype P;
 pbool = property @P @Boolean !"pbool";
@@ -155,7 +155,7 @@ in std_window {"Switch"} $ uiVertical
 
 ### Imported Files
 
-window_files :: Action Window;
+window_files : Action Window;
 window_files = let
 #Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
 #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
@@ -171,7 +171,7 @@ in std_window {"Files"} $ uiVertical
 
 ### Constant Edit
 
-window_constant :: Action Window;
+window_constant : Action Window;
 window_constant = std_window {"Constant"} $ uiVertical
 [
     (uiCheckBox {"off"} {False},False),
@@ -182,7 +182,7 @@ window_constant = std_window {"Constant"} $ uiVertical
 
 ### Start Window
 
-window_start :: Action Window;
+window_start : Action Window;
 window_start = do
     now <- newClock $ secondsToDuration 1;
     timeZone <- newTimeZoneRef now;

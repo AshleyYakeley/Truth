@@ -3,8 +3,8 @@ let opentype Q
 let subtype P <= Q
 let p = entity @P !"p"
 let q = entity @Q !"q"
-let fp :: P -> Boolean; fp _ = True
-let fq :: Q -> Boolean; fq _ = True
+let fp : P -> Boolean; fp _ = True
+let fq : Q -> Boolean; fq _ = True
 fp p
 fp q
 fq p

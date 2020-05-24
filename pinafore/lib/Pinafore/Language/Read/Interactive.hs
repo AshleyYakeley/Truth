@@ -56,7 +56,7 @@ readSpecialCommand cmd = return $ ErrorInteractiveCommand $ "unknown interactive
 readInteractiveCommand :: Parser InteractiveCommand
 readInteractiveCommand =
     (do
-         readExactlyThis TokOperator ":"
+         readThis TokTypeJudge
          MkName cmd <- readThis TokLName
          readSpecialCommand cmd) <|>
     (readEnd >> return (LetInteractiveCommand $ return id)) <|>

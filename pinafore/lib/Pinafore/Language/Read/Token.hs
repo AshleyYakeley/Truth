@@ -95,7 +95,7 @@ instance TestEquality Token where
 instance Show (Token t) where
     show TokSemicolon = show (";" :: String)
     show TokComma = show ("," :: String)
-    show TokTypeJudge = show ("::" :: String)
+    show TokTypeJudge = show (":" :: String)
     show TokOpenParen = show ("(" :: String)
     show TokCloseParen = show (")" :: String)
     show TokOpenBracket = show ("[" :: String)
@@ -281,7 +281,7 @@ readOpToken = do
         satisfy $ \c ->
             elem c ("!$%&*+./<=>?@\\^|-~:" :: String) || (not (isAscii c) && (isSymbol c || isPunctuation c))
     case name of
-        "::" -> return $ MkAnyValue TokTypeJudge ()
+        ":" -> return $ MkAnyValue TokTypeJudge ()
         "\\" -> return $ MkAnyValue TokLambda ()
         "=" -> return $ MkAnyValue TokAssign ()
         "->" -> return $ MkAnyValue TokMap ()

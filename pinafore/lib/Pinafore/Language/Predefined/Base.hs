@@ -432,7 +432,7 @@ base_predefinitions =
                 case v of
                     [] -> Just ()
                     _ -> Nothing
-          , mkValPatEntry ":" "Construct a list" ((:) @A) $ \(v :: [A]) ->
+          , mkValPatEntry "::" "Construct a list" ((:) @A) $ \(v :: [A]) ->
                 case v of
                     a:b -> Just (a, (b, ()))
                     _ -> Nothing

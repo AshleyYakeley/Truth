@@ -141,7 +141,7 @@ interactLoop inh outh echo = do
                                  MkAnyValue (MkShimWit t shim) _ <- interactEvalExpression texpr
                                  liftIO $
                                      hPutStrLn outh $
-                                     ":: " <>
+                                     ": " <>
                                      show t <>
                                      if showinfo
                                          then " # " <> show shim

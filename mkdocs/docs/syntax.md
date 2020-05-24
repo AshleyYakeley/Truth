@@ -8,6 +8,7 @@ These are the main differences:
 * Layout is not significant.
 Instead, declarations within a `let` block, lines within a `do` statement, and cases within a `case` statement, are separated by `;`.
 Also, `case` and `do` statements are terminated with `end`.
+* `:` is used for type signatures, while `::` is used for list construction.
 * There's no "top level" for declarations.
 All declarations, including type declarations, are local to a `let` block.
 * Only one equation is allowed for a function definition. Use `case` to match argument patterns.
@@ -146,7 +147,15 @@ In interactive mode, each line has syntax `<interactive>`.
     "opentype" <type-const> |
     "subtype" <type-const> "<=" <type-const> |
     "closedtype" <type-const> <closedtype-body> |
-    lname <patterns> "=" <expression>
+    <binding>
+
+<binding> ::=
+    <type-signature> ";" <unsigned-binding> |
+    <unsigned-binding>
+
+<unsigned-binding> ::= lname <patterns> "=" <expression>
+
+<type-signature> ::= lname ":" <type>
 
 <datatype-body> ::=  | "=" <datatype-constructors>
 
@@ -170,7 +179,7 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <pattern-1> ::= <pattern-2> <patterns>
 
-<pattern-2> ::= <pattern-3> | <pattern-3> ":" <pattern-2>
+<pattern-2> ::= <pattern-3> | <pattern-3> "::" <pattern-2>
 
 <pattern-3> ::= <pattern-4> | <pattern-4> "@" <pattern-3>
 
