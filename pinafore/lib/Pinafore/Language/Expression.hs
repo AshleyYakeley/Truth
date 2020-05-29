@@ -90,9 +90,9 @@ qFunctionPosWitness = tsFunctionPosShimWit @PinaforeTypeSystem
 
 qFunctionPosWitnesses ::
        ListType (PinaforeShimWit 'Negative) a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (HList a -> b)
-qFunctionPosWitnesses NilListType tb = mapShimWit (toEnhanced "poswitness" $ \ub -> ub ()) tb
+qFunctionPosWitnesses NilListType tb = mapPosShimWit (toEnhanced "poswitness" $ \ub -> ub ()) tb
 qFunctionPosWitnesses (ConsListType ta la) tb =
-    mapShimWit (toEnhanced "poswitness" $ \f a l -> f (a, l)) $ qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
+    mapPosShimWit (toEnhanced "poswitness" $ \f a l -> f (a, l)) $ qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
 
 qCaseAbstract :: [(QPattern, QExpr)] -> PinaforeSourceScoped QExpr
 qCaseAbstract = tsCaseAbstract @PinaforeTypeSystem

@@ -58,7 +58,7 @@ instance Is PolarityType polarity => GetVarUses (PinaforeType polarity) where
     getVarUses t =
         case getJMTypeVars t of
             tv ->
-                (case representative @_ @_ @polarity of
+                (case polarityType @polarity of
                      PositiveType -> ([tv], [])
                      NegativeType -> ([], [tv])) <>
                 getVarUses' t
@@ -107,7 +107,7 @@ instance Is PolarityType polarity => GetExpressionVars (PinaforeSingularType pol
     getExpressionVars (GroundPinaforeSingularType gt args) =
         getArgsExpressionVars (pinaforeGroundTypeVarianceType gt) args
     getExpressionVars (VarPinaforeSingularType vn) =
-        case representative @_ @_ @polarity of
+        case polarityType @polarity of
             PositiveType -> ([MkAnyW vn], [])
             NegativeType -> ([], [MkAnyW vn])
 

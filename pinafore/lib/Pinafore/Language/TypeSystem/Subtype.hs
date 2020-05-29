@@ -144,12 +144,7 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) Eithe
 entityGroundSubtype _ ct gt args NilListType TopEntityGroundType NilDolanArguments
     | Just ebij <- pinaforeEntityToConcreteEntityType ct gt args =
         case ebij of
-            MkShimWit et conv ->
-                pure $
-                concreteToEntityShim et <.>
-                case representative @_ @_ @pola of
-                    PositiveType -> isoForwards (unJMIsoShim conv)
-                    NegativeType -> isoBackwards (unJMIsoShim conv)
+            MkShimWit et conv -> pure $ concreteToEntityShim et <.> jmIsoSingle conv
 -- (literal type) <= (literal type)
 entityGroundSubtype _ NilListType (LiteralEntityGroundType t1) NilDolanArguments NilListType (LiteralEntityGroundType t2) NilDolanArguments
     | Just conv <- isSubtype t1 t2 = pure conv

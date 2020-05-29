@@ -1,8 +1,6 @@
 module Language.Expression.Unifier where
 
-import Data.Shim.JoinMeet
-import Data.Shim.Polarity
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Named
 import Language.Expression.Sealed
 import Language.Expression.WitnessMappable
@@ -39,16 +37,16 @@ type UUNegShimWit unifier = ShimWit (UUShim unifier) (UnifierNegWitness unifier)
 type UUPosShimWit unifier = ShimWit (UUShim unifier) (UnifierPosWitness unifier) 'Positive
 
 uuLiftNegShimWit :: Unifier unifier => UnifierNegShimWit unifier t -> UUNegShimWit unifier t
-uuLiftNegShimWit (MkShimWit wt conv) = MkShimWit wt $ uuLiftShim conv
+uuLiftNegShimWit t = unNegShimWit t $ \wt conv -> mkNegShimWit wt $ uuLiftShim conv
 
 uuLiftPosShimWit :: Unifier unifier => UnifierPosShimWit unifier t -> UUPosShimWit unifier t
-uuLiftPosShimWit (MkShimWit wt conv) = MkShimWit wt $ uuLiftShim conv
+uuLiftPosShimWit t = unPosShimWit t $ \wt conv -> mkPosShimWit wt $ uuLiftShim conv
 
 uuGetNegShimWit :: Unifier unifier => UUNegShimWit unifier t -> unifier (UnifierNegShimWit unifier t)
-uuGetNegShimWit (MkShimWit wt (MkUUShim uconv)) = fmap (\conv -> MkShimWit wt conv) uconv
+uuGetNegShimWit t = unNegShimWit t $ \wt (MkUUShim uconv) -> fmap (\conv -> mkNegShimWit wt conv) uconv
 
 uuGetPosShimWit :: Unifier unifier => UUPosShimWit unifier t -> unifier (UnifierPosShimWit unifier t)
-uuGetPosShimWit (MkShimWit wt (MkUUShim uconv)) = fmap (\conv -> MkShimWit wt conv) uconv
+uuGetPosShimWit t = unPosShimWit t $ \wt (MkUUShim uconv) -> fmap (\conv -> mkPosShimWit wt conv) uconv
 
 class (Monad (UnifierMonad unifier), Applicative unifier, Eq (UnifierName unifier), Shim (UnifierShim unifier)) =>
           Unifier (unifier :: Type -> Type) where
@@ -89,7 +87,7 @@ unifyUUNegShimWit ::
     -> UnifierMonad unifier (UUNegShimWit unifier (MeetType a b))
 unifyUUNegShimWit (MkShimWit wa conva) (MkShimWit wb convb) = do
     uab <- unifyNegWitnesses @unifier wa wb
-    return $ mapShimWit (meetBimap conva convb) uab
+    return $ mapShimWit (polarBimap conva convb) uab
 
 unifyUUPosShimWit ::
        forall unifier a b. Unifier unifier
@@ -98,16 +96,18 @@ unifyUUPosShimWit ::
     -> UnifierMonad unifier (UUPosShimWit unifier (JoinType a b))
 unifyUUPosShimWit (MkShimWit wa conva) (MkShimWit wb convb) = do
     uab <- unifyPosWitnesses @unifier wa wb
-    return $ mapShimWit (joinBimap conva convb) uab
+    return $ mapShimWit (polarBimap conva convb) uab
 
 unifyUUPosNegShimWit ::
        forall unifier a b. Unifier unifier
     => UUPosShimWit unifier a
     -> UUNegShimWit unifier b
     -> UnifierMonad unifier (UUShim unifier a b)
-unifyUUPosNegShimWit (MkShimWit wa conva) (MkShimWit wb convb) = do
-    uab <- unifyPosNegWitnesses @unifier wa wb
-    return $ convb . uab . conva
+unifyUUPosNegShimWit ta tb =
+    unPosShimWit ta $ \wa conva ->
+        unNegShimWit tb $ \wb convb -> do
+            uab <- unifyPosNegWitnesses @unifier wa wb
+            return $ convb . uab . conva
 
 type UnifierNegShimWit unifier = ShimWit (UnifierShim unifier) (UnifierNegWitness unifier) 'Negative
 

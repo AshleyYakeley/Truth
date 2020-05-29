@@ -34,15 +34,11 @@ data DolanArguments (dv :: DolanVariance) (ft :: Polarity -> Type -> Type) (gt :
         -> DolanArguments dv ft (gt a) polarity ta
         -> DolanArguments (sv ': dv) ft gt polarity ta
 
-type family PolarSingleVarianceFunc (cat :: Type -> Type -> Type) (polarity :: Polarity) (sv :: Variance) (a :: VarianceKind sv) (b :: VarianceKind sv) :: Type where
-    PolarSingleVarianceFunc cat 'Positive sv a b = VarianceCategory cat sv a b
-    PolarSingleVarianceFunc cat 'Negative sv a b = VarianceCategory cat sv b a
-
 data ArgTypeF (cat :: Type -> Type -> Type) (sv :: Variance) (ft :: Polarity -> Type -> Type) (polarity :: Polarity) (t :: VarianceKind sv) :: Type where
     MkArgTypeF
         :: InVarianceKind sv t'
         => SingleArgument sv ft polarity t'
-        -> PolarSingleVarianceFunc cat polarity sv t t'
+        -> PolarVarianceMap cat polarity sv t t'
         -> ArgTypeF cat sv ft polarity t
 
 mapArgTypeF ::
@@ -54,28 +50,16 @@ mapArgTypeF ::
     -> m (ArgTypeF cat sv ftb polarity t)
 mapArgTypeF CovarianceType f arg = do
     tf <- f arg
-    return $
-        unShimWit tf $
-        case representative @_ @_ @polarity of
-            PositiveType -> MkArgTypeF
-            NegativeType -> MkArgTypeF
+    return $ unShimWit tf MkArgTypeF
 mapArgTypeF ContravarianceType f arg =
     invertPolarity @polarity $ do
         MkShimWit arg' conv <- f arg
-        return $
-            MkArgTypeF arg' $
-            case representative @_ @_ @polarity of
-                PositiveType -> MkCatDual conv
-                NegativeType -> MkCatDual conv
+        return $ MkArgTypeF arg' $ mkContravariantPolarMap conv
 mapArgTypeF RangevarianceType f (MkRangeType tp tq) =
     invertPolarity @polarity $ do
         MkShimWit tp' convp <- f tp
         MkShimWit tq' convq <- f tq
-        return $
-            MkArgTypeF (MkRangeType tp' tq') $
-            case representative @_ @_ @polarity of
-                PositiveType -> MkCatRange convp convq
-                NegativeType -> MkCatRange convp convq
+        return $ MkArgTypeF (MkRangeType tp' tq') $ mkRangevariantPolarMap convp convq
 
 mapArgsTypeF ::
        forall m (cat :: forall kc. kc -> kc -> Type) fta ftb dv polarity (gt :: DolanVarianceKind dv) (gt' :: DolanVarianceKind dv) t.
@@ -85,7 +69,7 @@ mapArgsTypeF ::
     -> DolanVarianceMap dv gt
     -> DolanVarianceMap dv gt'
     -> DolanArguments dv fta gt polarity t
-    -> PolarMapType cat polarity gt gt'
+    -> PolarMap cat polarity gt gt'
     -> m (PShimWit cat (DolanArguments dv ftb gt') polarity t)
 mapArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments conv =
     return $ MkShimWit NilDolanArguments conv
@@ -96,15 +80,9 @@ mapArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvm) (ConsDolanVaria
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt) sta
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt) sta'
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt') sta'
-    case representative @_ @_ @polarity of
-        PositiveType -> do
-            MkShimWit dta' conv' <-
-                mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (consShimFunc svt conv svf)
-            return $ MkShimWit (ConsDolanArguments sta' dta') conv'
-        NegativeType -> do
-            MkShimWit dta' conv' <-
-                mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (consShimFunc svt conv svf)
-            return $ MkShimWit (ConsDolanArguments sta' dta') conv'
+    MkShimWit dta' conv' <-
+        mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (consPolarVarianceMap svt conv svf)
+    return $ MkShimWit (ConsDolanArguments sta' dta') conv'
 
 mapDolanArgumentsType ::
        forall (cat :: forall kc. kc -> kc -> Type) ft dv polarity (gt :: DolanVarianceKind dv) (gt' :: DolanVarianceKind dv) t.
@@ -113,7 +91,7 @@ mapDolanArgumentsType ::
     -> DolanVarianceMap dv gt
     -> DolanVarianceMap dv gt'
     -> DolanArguments dv ft gt polarity t
-    -> PolarMapType cat polarity gt gt'
+    -> PolarMap cat polarity gt gt'
     -> PShimWit cat (DolanArguments dv ft gt') polarity t
 mapDolanArgumentsType dt dvma dvmb args f = runIdentity $ mapArgsTypeF (pure . mkShimWit) dt dvma dvmb args f
 
@@ -129,10 +107,7 @@ mapDolanArgumentsM f dvt dvm args =
     case dolanVarianceInCategory @cat dvt of
         Dict ->
             case dolanVarianceMapInKind dvm of
-                Dict ->
-                    case representative @_ @_ @polarity of
-                        PositiveType -> mapArgsTypeF f dvt dvm dvm args cid
-                        NegativeType -> mapArgsTypeF f dvt dvm dvm args cid
+                Dict -> mapArgsTypeF f dvt dvm dvm args cid
 
 mapDolanArguments ::
        forall (cat :: forall kc. kc -> kc -> Type) fta ftb dv polarity gt t.
@@ -153,28 +128,16 @@ mapInvertArgTypeF ::
     -> m (ArgTypeF cat sv ftb (InvertPolarity polarity) t)
 mapInvertArgTypeF CovarianceType f arg = do
     MkShimWit arg' conv <- f arg
-    return $
-        MkArgTypeF arg' $
-        case representative @_ @_ @polarity of
-            PositiveType -> conv
-            NegativeType -> conv
+    return $ MkArgTypeF arg' conv
 mapInvertArgTypeF ContravarianceType f arg =
     invertPolarity @polarity $ do
         MkShimWit arg' conv <- f arg
-        return $
-            MkArgTypeF arg' $
-            case representative @_ @_ @polarity of
-                PositiveType -> MkCatDual conv
-                NegativeType -> MkCatDual conv
+        return $ MkArgTypeF arg' $ mkContravariantPolarMap conv
 mapInvertArgTypeF RangevarianceType f (MkRangeType tp tq) =
     invertPolarity @polarity $ do
         MkShimWit tp' convp <- f tp
         MkShimWit tq' convq <- f tq
-        return $
-            MkArgTypeF (MkRangeType tp' tq') $
-            case representative @_ @_ @polarity of
-                PositiveType -> MkCatRange convp convq
-                NegativeType -> MkCatRange convp convq
+        return $ MkArgTypeF (MkRangeType tp' tq') $ mkRangevariantPolarMap convp convq
 
 mapInvertArgsTypeF ::
        forall m (cat :: forall kc. kc -> kc -> Type) fta ftb dv polarity gt gt' t.
@@ -185,7 +148,7 @@ mapInvertArgsTypeF ::
     -> DolanVarianceMap dv gt
     -> DolanVarianceMap dv gt'
     -> DolanArguments dv fta gt polarity t
-    -> PolarMapType cat (InvertPolarity polarity) gt gt'
+    -> PolarMap cat (InvertPolarity polarity) gt gt'
     -> m (PShimWit cat (DolanArguments dv ftb gt') (InvertPolarity polarity) t)
 mapInvertArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments conv =
     return $ MkShimWit NilDolanArguments conv
@@ -196,15 +159,10 @@ mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvm) (ConsDola
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt) sta
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt) sta'
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt') sta'
-    case representative @_ @_ @polarity of
-        PositiveType -> do
-            MkShimWit dta' conv' <-
-                mapInvertArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (consShimFunc svt conv svf)
-            return $ MkShimWit (ConsDolanArguments sta' dta') conv'
-        NegativeType -> do
-            MkShimWit dta' conv' <-
-                mapInvertArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (consShimFunc svt conv svf)
-            return $ MkShimWit (ConsDolanArguments sta' dta') conv'
+    MkShimWit dta' conv' <-
+        invertPolarity @polarity $
+        mapInvertArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (consPolarVarianceMap svt conv svf)
+    return $ MkShimWit (ConsDolanArguments sta' dta') conv'
 
 mapInvertDolanArgumentsM ::
        forall m (cat :: forall kc. kc -> kc -> Type) fta ftb dv polarity gt t.
@@ -219,24 +177,17 @@ mapInvertDolanArgumentsM f dvt dvm args =
     case dolanVarianceInCategory @cat dvt of
         Dict ->
             case dolanVarianceMapInKind dvm of
-                Dict ->
-                    case representative @_ @_ @polarity of
-                        PositiveType -> mapInvertArgsTypeF f dvt dvm dvm args cid
-                        NegativeType -> mapInvertArgsTypeF f dvt dvm dvm args cid
-
-type family PositiveSVJoinMeetType (sv :: Variance) (a :: VarianceKind sv) (b :: VarianceKind sv) = (r :: VarianceKind sv) | r -> sv a b where
-    PositiveSVJoinMeetType 'Covariance a b = JoinType a b
-    PositiveSVJoinMeetType 'Contravariance a b = MeetType a b
-    PositiveSVJoinMeetType 'Rangevariance ('( pa, qa)) ('( pb, qb)) = '( MeetType pa pb, JoinType qa qb)
-
-type family NegativeSVJoinMeetType (sv :: Variance) (a :: VarianceKind sv) (b :: VarianceKind sv) = (r :: VarianceKind sv) | r -> sv a b where
-    NegativeSVJoinMeetType 'Covariance a b = MeetType a b
-    NegativeSVJoinMeetType 'Contravariance a b = JoinType a b
-    NegativeSVJoinMeetType 'Rangevariance ('( pa, qa)) ('( pb, qb)) = '( JoinType pa pb, MeetType qa qb)
+                Dict -> invertPolarity @polarity $ mapInvertArgsTypeF f dvt dvm dvm args cid
 
 type family SVJoinMeetType (sv :: Variance) (polarity :: Polarity) (a :: VarianceKind sv) (b :: VarianceKind sv) = (r :: VarianceKind sv) where
-    SVJoinMeetType sv 'Positive a b = PositiveSVJoinMeetType sv a b
-    SVJoinMeetType sv 'Negative a b = NegativeSVJoinMeetType sv a b
+    SVJoinMeetType 'Covariance polarity a b = JoinMeetType polarity a b
+    SVJoinMeetType 'Contravariance polarity a b = JoinMeetType (InvertPolarity polarity) a b
+    SVJoinMeetType 'Rangevariance polarity a b = '( JoinMeetType (InvertPolarity polarity) (Contra a) (Contra b), JoinMeetType polarity (Co a) (Co b))
+
+svJoinMeetTypeInKind :: forall sv polarity a b. VarianceType sv -> Dict (InKind (SVJoinMeetType sv polarity a b))
+svJoinMeetTypeInKind CovarianceType = Dict
+svJoinMeetTypeInKind ContravarianceType = Dict
+svJoinMeetTypeInKind RangevarianceType = Dict
 
 mergeArgTypeF ::
        forall fta ftb ftab sv polarity ta tb. Is PolarityType polarity
@@ -249,74 +200,39 @@ mergeArgTypeF ::
     -> ArgTypeF JMShim sv ftab polarity (SVJoinMeetType sv polarity ta tb)
 mergeArgTypeF CovarianceType f arga argb =
     case f arga argb of
-        MkShimWit argab conv ->
-            case representative @_ @_ @polarity of
-                PositiveType -> MkArgTypeF argab conv
-                NegativeType -> MkArgTypeF argab conv
+        MkShimWit argab conv -> MkArgTypeF argab conv
 mergeArgTypeF ContravarianceType f arga argb =
     invertPolarity @polarity $
     case f arga argb of
-        MkShimWit argab conv ->
-            case representative @_ @_ @polarity of
-                PositiveType -> MkArgTypeF argab $ MkCatDual conv
-                NegativeType -> MkArgTypeF argab $ MkCatDual conv
+        MkShimWit argab conv -> MkArgTypeF argab $ mkContravariantPolarMap conv
 mergeArgTypeF RangevarianceType f (MkRangeType tpa tqa) (MkRangeType tpb tqb) =
     invertPolarity @polarity $
     case f tpa tpb of
         MkShimWit tpab convp ->
             case f tqa tqb of
-                MkShimWit tqab convq ->
-                    case representative @_ @_ @polarity of
-                        PositiveType -> MkArgTypeF (MkRangeType tpab tqab) $ MkCatRange convp convq
-                        NegativeType -> MkArgTypeF (MkRangeType tpab tqab) $ MkCatRange convp convq
+                MkShimWit tqab convq -> MkArgTypeF (MkRangeType tpab tqab) $ mkRangevariantPolarMap convp convq
 
-psvf1 ::
-       forall polarity sv a b c. (Is PolarityType polarity, InVarianceKind sv a, InVarianceKind sv b)
+varPolar1 ::
+       forall polarity sv a b. (Is PolarityType polarity, InVarianceKind sv a, InVarianceKind sv b)
     => VarianceType sv
-    -> PolarSingleVarianceFunc JMShim polarity sv (SVJoinMeetType sv polarity a b) c
-    -> PolarSingleVarianceFunc JMShim polarity sv a c
-psvf1 =
-    case representative @_ @_ @polarity of
-        PositiveType ->
-            \case
-                CovarianceType -> \conv -> conv . join1
-                ContravarianceType -> \(MkCatDual conv) -> MkCatDual $ meet1 . conv
-                RangevarianceType ->
-                    \(MkCatRange convp convq) ->
-                        case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness, MkPairWitness) -> MkCatRange (meet1 . convp) (convq . join1)
-        NegativeType ->
-            \case
-                CovarianceType -> \conv -> meet1 . conv
-                ContravarianceType -> \(MkCatDual conv) -> MkCatDual $ conv . join1
-                RangevarianceType ->
-                    \(MkCatRange convp convq) ->
-                        case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness, MkPairWitness) -> MkCatRange (convp . join1) (meet1 . convq)
+    -> PolarVarianceMap JMShim polarity sv a (SVJoinMeetType sv polarity a b)
+varPolar1 CovarianceType = polar1
+varPolar1 ContravarianceType = invertPolarity @polarity $ mkContravariantPolarMap polar1
+varPolar1 RangevarianceType =
+    invertPolarity @polarity $
+    case (inKind @_ @a, inKind @_ @b) of
+        (MkPairWitness, MkPairWitness) -> mkRangevariantPolarMap polar1 polar1
 
-psvf2 ::
-       forall polarity sv a b c. (Is PolarityType polarity, InVarianceKind sv a, InVarianceKind sv b)
+varPolar2 ::
+       forall polarity sv a b. (Is PolarityType polarity, InVarianceKind sv a, InVarianceKind sv b)
     => VarianceType sv
-    -> PolarSingleVarianceFunc JMShim polarity sv (SVJoinMeetType sv polarity a b) c
-    -> PolarSingleVarianceFunc JMShim polarity sv b c
-psvf2 =
-    case representative @_ @_ @polarity of
-        PositiveType ->
-            \case
-                CovarianceType -> \conv -> conv . join2
-                ContravarianceType -> \(MkCatDual conv) -> MkCatDual $ meet2 . conv
-                RangevarianceType ->
-                    \(MkCatRange convp convq) ->
-                        case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness, MkPairWitness) -> MkCatRange (meet2 . convp) (convq . join2)
-        NegativeType ->
-            \case
-                CovarianceType -> \conv -> meet2 . conv
-                ContravarianceType -> \(MkCatDual conv) -> MkCatDual $ conv . join2
-                RangevarianceType ->
-                    \(MkCatRange convp convq) ->
-                        case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness, MkPairWitness) -> MkCatRange (convp . join2) (meet2 . convq)
+    -> PolarVarianceMap JMShim polarity sv b (SVJoinMeetType sv polarity a b)
+varPolar2 CovarianceType = polar2
+varPolar2 ContravarianceType = invertPolarity @polarity $ mkContravariantPolarMap polar2
+varPolar2 RangevarianceType =
+    invertPolarity @polarity $
+    case (inKind @_ @a, inKind @_ @b) of
+        (MkPairWitness, MkPairWitness) -> mkRangevariantPolarMap polar2 polar2
 
 mergeArgsTypeF ::
        forall (fta :: Polarity -> Type -> Type) (ftb :: Polarity -> Type -> Type) (ftab :: Polarity -> Type -> Type) (dv :: DolanVariance) (polarity :: Polarity) (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) (gtab :: DolanVarianceKind dv) (ta :: Type) (tb :: Type).
@@ -330,15 +246,12 @@ mergeArgsTypeF ::
     -> DolanVarianceMap dv gtab
     -> DolanArguments dv fta gta polarity ta
     -> DolanArguments dv ftb gtb polarity tb
-    -> PolarMapType JMShim polarity gta gtab
-    -> PolarMapType JMShim polarity gtb gtab
+    -> PolarMap JMShim polarity gta gtab
+    -> PolarMap JMShim polarity gtb gtab
     -> PJMShimWit (DolanArguments dv ftab gtab) polarity (JoinMeetType polarity ta tb)
 mergeArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments NilDolanArguments conva convb =
-    MkShimWit NilDolanArguments $
-    case representative @_ @_ @polarity of
-        PositiveType -> joinf conva convb
-        NegativeType -> meetf conva convb
-mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVarianceMap dvmb) (ConsDolanVarianceMap dvmab) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) conva convb =
+    MkShimWit NilDolanArguments $ polarF conva convb
+mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVarianceMap dvmb) (ConsDolanVarianceMap dvmab) (ConsDolanArguments (sta :: _ ta0) dta) (ConsDolanArguments (stb :: _ tb0) dtb) conva convb =
     case varianceCoercibleKind svt of
         Dict ->
             case mergeArgTypeF @fta @ftb @ftab @_ @polarity svt f sta stb of
@@ -355,51 +268,56 @@ mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVa
                                                         Dict ->
                                                             case applyFunctionKindWitness (inKind @_ @gtab) stab of
                                                                 Dict ->
-                                                                    case representative @_ @_ @polarity of
-                                                                        PositiveType ->
-                                                                            case mergeArgsTypeF
-                                                                                     @fta
-                                                                                     @ftb
-                                                                                     @ftab
+                                                                    case varianceInCategory
+                                                                             @(PolarMap JMShim polarity)
+                                                                             svt of
+                                                                        Dict ->
+                                                                            case svJoinMeetTypeInKind
                                                                                      @_
                                                                                      @polarity
-                                                                                     f
-                                                                                     dvt
-                                                                                     dvma
-                                                                                     dvmb
-                                                                                     dvmab
-                                                                                     dta
-                                                                                     dtb
-                                                                                     (consShimFunc svt conva $
-                                                                                      psvf1 @polarity svt svf)
-                                                                                     (consShimFunc svt convb $
-                                                                                      psvf2 @polarity svt svf) of
-                                                                                MkShimWit dtab convab ->
-                                                                                    MkShimWit
-                                                                                        (ConsDolanArguments stab dtab)
-                                                                                        convab
-                                                                        NegativeType ->
-                                                                            case mergeArgsTypeF
-                                                                                     @fta
-                                                                                     @ftb
-                                                                                     @ftab
-                                                                                     @_
-                                                                                     @polarity
-                                                                                     f
-                                                                                     dvt
-                                                                                     dvma
-                                                                                     dvmb
-                                                                                     dvmab
-                                                                                     dta
-                                                                                     dtb
-                                                                                     (consShimFunc svt conva $
-                                                                                      psvf1 @polarity svt svf)
-                                                                                     (consShimFunc svt convb $
-                                                                                      psvf2 @polarity svt svf) of
-                                                                                MkShimWit dtab convab ->
-                                                                                    MkShimWit
-                                                                                        (ConsDolanArguments stab dtab)
-                                                                                        convab
+                                                                                     @ta0
+                                                                                     @tb0
+                                                                                     svt of
+                                                                                Dict ->
+                                                                                    case mergeArgsTypeF
+                                                                                             @fta
+                                                                                             @ftb
+                                                                                             @ftab
+                                                                                             @_
+                                                                                             @polarity
+                                                                                             f
+                                                                                             dvt
+                                                                                             dvma
+                                                                                             dvmb
+                                                                                             dvmab
+                                                                                             dta
+                                                                                             dtb
+                                                                                             (consPolarVarianceMap
+                                                                                                  svt
+                                                                                                  conva $
+                                                                                              svf <.>
+                                                                                              varPolar1
+                                                                                                  @polarity
+                                                                                                  @_
+                                                                                                  @ta0
+                                                                                                  @tb0
+                                                                                                  svt)
+                                                                                             (consPolarVarianceMap
+                                                                                                  svt
+                                                                                                  convb $
+                                                                                              svf <.>
+                                                                                              varPolar2
+                                                                                                  @polarity
+                                                                                                  @_
+                                                                                                  @ta0
+                                                                                                  @tb0
+                                                                                                  svt) of
+                                                                                        MkShimWit dtab convab ->
+                                                                                            MkShimWit
+                                                                                                (ConsDolanArguments
+                                                                                                     stab
+                                                                                                     dtab)
+                                                                                                convab
 
 mergeDolanArguments ::
        forall fta ftb ftab dv polarity gt ta tb. Is PolarityType polarity
@@ -415,10 +333,7 @@ mergeDolanArguments f dvt dvm argsa argsb =
     case dolanVarianceInCategory @JMShim dvt of
         Dict ->
             case dolanVarianceMapInKind dvm of
-                Dict ->
-                    case representative @_ @_ @polarity of
-                        PositiveType -> mergeArgsTypeF f dvt dvm dvm dvm argsa argsb cid cid
-                        NegativeType -> mergeArgsTypeF f dvt dvm dvm dvm argsa argsb cid cid
+                Dict -> mergeArgsTypeF f dvt dvm dvm dvm argsa argsb cid cid
 
 dolanArgumentsToArgumentsM' ::
        forall m (cat :: forall kc. kc -> kc -> Type) wa wb dv polarity fa fb t.
@@ -427,7 +342,7 @@ dolanArgumentsToArgumentsM' ::
     -> CovaryType dv
     -> DolanVarianceMap dv fa
     -> DolanVarianceMap dv fb
-    -> PolarMapType cat polarity fa fb
+    -> PolarMap cat polarity fa fb
     -> DolanArguments dv wa fa polarity t
     -> m (ShimWit cat (Arguments wb fb) polarity t)
 dolanArgumentsToArgumentsM' _ NilListType NilDolanVarianceMap NilDolanVarianceMap conv NilDolanArguments =
@@ -439,15 +354,7 @@ dolanArgumentsToArgumentsM' f (ConsListType Refl lc) (ConsDolanVarianceMap dvma)
     Dict <- return $ applyFunctionKindWitness (inKind @_ @fa) ta
     Dict <- return $ applyFunctionKindWitness (inKind @_ @fb) ta
     MkShimWit tfa convfa <-
-        dolanArgumentsToArgumentsM'
-            f
-            lc
-            dvma
-            dvmb
-            (case representative @_ @_ @polarity of
-                 PositiveType -> consShimFunc CovarianceType conv conva
-                 NegativeType -> consShimFunc CovarianceType conv conva)
-            dta
+        dolanArgumentsToArgumentsM' f lc dvma dvmb (consPolarVarianceMap CovarianceType conv conva) dta
     return $ MkShimWit (ConsArguments ta tfa) convfa
 
 dolanArgumentsToArgumentsM ::
@@ -464,10 +371,7 @@ dolanArgumentsToArgumentsM f lc covary args =
             dvm = covaryToDolanVarianceMap lc covary
             conv =
                 case covaryKMCategory @cat lc of
-                    Dict ->
-                        case representative @_ @_ @polarity of
-                            PositiveType -> cid
-                            NegativeType -> cid
+                    Dict -> cid
             in dolanArgumentsToArgumentsM' f lc dvm dvm conv args
 
 dolanArgumentsToArguments ::
@@ -488,7 +392,7 @@ argumentsToDolanArgumentsM' ::
     -> CovaryType dv
     -> CovaryMap fa
     -> CovaryMap fb
-    -> PolarMapType cat polarity fa fb
+    -> PolarMap cat polarity fa fb
     -> Arguments wa fa t
     -> m (PShimWit cat (DolanArguments dv wb fb) polarity t)
 argumentsToDolanArgumentsM' _ NilListType NilCovaryMap NilCovaryMap conv NilArguments =
@@ -500,15 +404,7 @@ argumentsToDolanArgumentsM' f (ConsListType Refl ct) (ConsCovaryMap mma) (ConsCo
     Dict <- return $ applyFunctionKindWitness (inKind @_ @fa) ta
     Dict <- return $ applyFunctionKindWitness (inKind @_ @fb) ta
     MkShimWit tfa convfa <-
-        argumentsToDolanArgumentsM'
-            f
-            ct
-            mma
-            mmb
-            (case representative @_ @_ @polarity of
-                 PositiveType -> consShimFunc CovarianceType conv conva
-                 NegativeType -> consShimFunc CovarianceType conv conva)
-            args
+        argumentsToDolanArgumentsM' f ct mma mmb (consPolarVarianceMap CovarianceType conv conva) args
     return $ MkShimWit (ConsDolanArguments ta tfa) convfa
 
 argumentsToDolanArgumentsM ::
@@ -528,10 +424,7 @@ argumentsToDolanArgumentsM f ct cm args =
         (case covaryKMCategory @cat ct of
              Dict ->
                  case covaryMapInKind cm of
-                     Dict ->
-                         case representative @_ @_ @polarity of
-                             PositiveType -> cid
-                             NegativeType -> cid)
+                     Dict -> cid)
         args
 
 argumentsToDolanArguments ::

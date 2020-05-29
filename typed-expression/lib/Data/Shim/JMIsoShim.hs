@@ -2,32 +2,38 @@ module Data.Shim.JMIsoShim where
 
 import Data.Shim.CatRange
 import Data.Shim.JMShim
+import Data.Shim.JoinMeet
+import Data.Shim.PolarJoinMeet
+import Data.Shim.PolarMap
 import Data.Shim.Polarity
 import Data.Shim.PolyShim
 import Data.Shim.Variance
 import Shapes
 
+-- | Necessary because we need a type of kind `forall k. k -> k -> Type`.
+-- FIXME: getting rid of this requires GHC 8.10, use kind "forall k -> k -> k -> Type" instead
 newtype JMIsoShim (a :: k) (b :: k) = MkJMIsoShim
     { unJMIsoShim :: Isomorphism JMShim a b
     }
 
-jmIsoPolarForwards ::
+jmIsoForwards ::
        forall polarity k (a :: k) (b :: k). Is PolarityType polarity
-    => PolarMapType JMIsoShim polarity a b
-    -> JMShim a b
-jmIsoPolarForwards conv =
-    case representative @_ @_ @polarity of
-        PositiveType -> isoForwards $ unJMIsoShim conv
-        NegativeType -> isoBackwards $ unJMIsoShim conv
+    => PolarMap JMIsoShim polarity a b
+    -> PolarMap JMShim polarity a b
+jmIsoForwards (MkPolarMap iab) =
+    MkPolarMap $
+    case polarityType @polarity of
+        PositiveType -> isoForwards $ unJMIsoShim iab
+        NegativeType -> isoForwards $ unJMIsoShim iab
 
-jmIsoPolarBackwards ::
+jmIsoSingle ::
        forall polarity k (a :: k) (b :: k). Is PolarityType polarity
-    => PolarMapType JMIsoShim polarity a b
-    -> JMShim b a
-jmIsoPolarBackwards conv =
-    case representative @_ @_ @polarity of
-        PositiveType -> isoBackwards $ unJMIsoShim conv
-        NegativeType -> isoForwards $ unJMIsoShim conv
+    => PolarMap JMIsoShim polarity a b
+    -> JMShim a b
+jmIsoSingle (MkPolarMap iab) =
+    case polarityType @polarity of
+        PositiveType -> isoForwards $ unJMIsoShim iab
+        NegativeType -> isoBackwards $ unJMIsoShim iab
 
 instance CoercibleKind k => InCategory (JMIsoShim :: k -> k -> Type) where
     cid = MkJMIsoShim cid
@@ -56,3 +62,24 @@ instance ConPolyShim JMIsoShim where
         MkIsomorphism
             (consShimFunc RangevarianceType fab (MkCatRange xab1 xab2))
             (consShimFunc RangevarianceType fba (MkCatRange xba1 xba2))
+
+jmIsoPolar1 ::
+       forall polarity a. Is PolarityType polarity
+    => PolarMap JMIsoShim polarity (JoinMeetType polarity a (LimitType polarity)) a
+jmIsoPolar1 =
+    MkPolarMap $
+    case polarityType @polarity of
+        PositiveType -> MkJMIsoShim bijoin1
+        NegativeType -> MkJMIsoShim bimeet1
+
+jmIsoBimap ::
+       forall polarity a1 a2 b1 b2. Is PolarityType polarity
+    => PolarMap JMIsoShim polarity a1 b1
+    -> PolarMap JMIsoShim polarity a2 b2
+    -> PolarMap JMIsoShim polarity (JoinMeetType polarity a1 a2) (JoinMeetType polarity b1 b2)
+jmIsoBimap =
+    case polarityType @polarity of
+        PositiveType ->
+            \(MkPolarMap (MkJMIsoShim m1)) (MkPolarMap (MkJMIsoShim m2)) -> MkPolarMap $ MkJMIsoShim $ biJoinBimap m1 m2
+        NegativeType ->
+            \(MkPolarMap (MkJMIsoShim m1)) (MkPolarMap (MkJMIsoShim m2)) -> MkPolarMap $ MkJMIsoShim $ biMeetBimap m1 m2

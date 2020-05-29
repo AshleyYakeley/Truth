@@ -1,6 +1,5 @@
 module Data.Shim.JoinMeet where
 
-import Data.Shim.Polarity
 import Shapes
 
 data TopType =
@@ -62,14 +61,6 @@ unmeet1 = meetf cid termf
 unmeet2 :: JoinMeetCategory cat => cat a (MeetType TopType a)
 unmeet2 = meetf termf cid
 
-unjoinmeet1 ::
-       forall pol cat t. (JoinMeetCategory cat, Is PolarityType pol)
-    => cat (JoinMeetType pol t (LimitType pol)) t
-unjoinmeet1 =
-    case representative @_ @_ @pol of
-        PositiveType -> unjoin1
-        NegativeType -> meet1
-
 meetBimap :: JoinMeetCategory cat => cat a1 a2 -> cat b1 b2 -> cat (MeetType a1 b1) (MeetType a2 b2)
 meetBimap aa bb = meetf (aa <.> meet1) (bb <.> meet2)
 
@@ -130,14 +121,6 @@ instance EnhancedFunction (->) where
 
 instance Eq a => Eq (MeetType a b) where
     BothMeetType a1 _ == BothMeetType a2 _ = a1 == a2
-
-type family LimitType polarity :: Type where
-    LimitType 'Positive = BottomType
-    LimitType 'Negative = TopType
-
-type family JoinMeetType polarity :: Type -> Type -> Type where
-    JoinMeetType 'Positive = JoinType
-    JoinMeetType 'Negative = MeetType
 
 class (InCategory shim, JoinMeetCategory shim, EnhancedFunction shim) => Shim (shim :: Type -> Type -> Type) where
     funcShim :: forall a b p q. shim a b -> shim p q -> shim (b -> p) (a -> q)

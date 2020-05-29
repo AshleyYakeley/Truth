@@ -1,8 +1,6 @@
 module Language.Expression.Unitype where
 
-import Data.Shim.JoinMeet
-import Data.Shim.Polarity
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Renamer
 import Language.Expression.Subsumer
 import Language.Expression.TypeSystem
@@ -56,8 +54,8 @@ instance (Monad m, Eq name) => Unifier (UnitypeUnifier m name val) where
     type UnifierPosWitness (UnitypeUnifier m name val) = ((:~:) val)
     type UnifierShim (UnitypeUnifier m name val) = (->)
     type UnifierSubstitutions (UnitypeUnifier m name val) = ()
-    unifyNegWitnesses Refl Refl = return $ uuLiftNegShimWit $ MkShimWit Refl $ meetf id id
-    unifyPosWitnesses Refl Refl = return $ uuLiftPosShimWit $ MkShimWit Refl $ joinf id id
+    unifyNegWitnesses Refl Refl = return $ uuLiftNegShimWit $ MkShimWit Refl $ polarF id id
+    unifyPosWitnesses Refl Refl = return $ uuLiftPosShimWit $ MkShimWit Refl $ polarF id id
     unifyPosNegWitnesses Refl Refl = return id
     solveUnifier (MkUnitypeUnifier ia) = pure $ (runIdentity ia, ())
     unifierPosSubstitute () Refl = return unitypeShimWit
@@ -90,5 +88,5 @@ instance (Monad m, Eq name, UnitypeValue val) => TypeSystem (Unitype m name val)
     type TSUnifier (Unitype m name val) = UnitypeUnifier (UnitypeRenamerT val m) name val
     type TSSubsumer (Unitype m name val) = UnitypeSubsumer (UnitypeRenamerT val m) val
     type TSScoped (Unitype m name val) = m
-    tsFunctionPosWitness Refl Refl = MkShimWit Refl abstractValue
-    tsFunctionNegWitness Refl Refl = MkShimWit Refl applyValue
+    tsFunctionPosWitness Refl Refl = mkPosShimWit Refl abstractValue
+    tsFunctionNegWitness Refl Refl = mkNegShimWit Refl applyValue

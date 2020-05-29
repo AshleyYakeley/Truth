@@ -37,57 +37,34 @@ singlePinaforeShimWit ::
        forall polarity t. Is PolarityType polarity
     => PJMShimWit PinaforeSingularType polarity t
     -> PinaforeShimWit polarity t
-singlePinaforeShimWit (MkShimWit st conv) =
-    case representative @_ @_ @polarity of
-        PositiveType -> ccontramap conv $ MkShimWit (singlePinaforeType st) join1
-        NegativeType -> cfmap conv $ MkShimWit (singlePinaforeType st) meet1
+singlePinaforeShimWit (MkShimWit st conv) = ccontramap conv $ MkShimWit (singlePinaforeType st) polar1
 
 singlePinaforeType ::
        PinaforeSingularType polarity t -> PinaforeType polarity (JoinMeetType polarity t (LimitType polarity))
 singlePinaforeType st = ConsPinaforeType st NilPinaforeType
 
-joinPinaforeTypes ::
-       forall (a :: Type) (b :: Type) r.
-       PinaforeType 'Positive a
-    -> PinaforeType 'Positive b
-    -> (forall ab. PinaforeType 'Positive ab -> JMShim a ab -> JMShim b ab -> r)
+joinMeetPinaforeTypes ::
+       forall polarity (a :: Type) (b :: Type) r. Is PolarityType polarity
+    => PinaforeType polarity a
+    -> PinaforeType polarity b
+    -> (forall ab. PinaforeType polarity ab -> PolarMap JMShim polarity a ab -> PolarMap JMShim polarity b ab -> r)
     -> r
-joinPinaforeTypes NilPinaforeType tb cont = cont tb initf id
-joinPinaforeTypes (ConsPinaforeType ta tr) tb cont =
-    joinPinaforeTypes tr tb $ \trb conva convb -> cont (ConsPinaforeType ta trb) (joinBimap id conva) (join2 . convb)
+joinMeetPinaforeTypes NilPinaforeType tb cont = cont tb polarLimit id
+joinMeetPinaforeTypes (ConsPinaforeType ta tr) tb cont =
+    joinMeetPinaforeTypes tr tb $ \trb conva convb ->
+        cont (ConsPinaforeType ta trb) (polarBimap id conva) (polar2 . convb)
 
-joinPinaforeShimWit ::
-       forall (a :: Type) (b :: Type).
-       PinaforeShimWit 'Positive a
-    -> PinaforeShimWit 'Positive b
-    -> PinaforeShimWit 'Positive (JoinType a b)
-joinPinaforeShimWit (MkShimWit ta conva) (MkShimWit tb convb) =
-    ccontramap (joinBimap conva convb) $
-    joinPinaforeTypes ta tb $ \tab conva' convb' -> MkShimWit tab $ joinf conva' convb'
-
-meetPinaforeTypes ::
-       forall (a :: Type) (b :: Type) r.
-       PinaforeType 'Negative a
-    -> PinaforeType 'Negative b
-    -> (forall ab. PinaforeType 'Negative ab -> JMShim ab a -> JMShim ab b -> r)
-    -> r
-meetPinaforeTypes NilPinaforeType tb cont = cont tb termf id
-meetPinaforeTypes (ConsPinaforeType ta tr) tb cont =
-    meetPinaforeTypes tr tb $ \trb conva convb -> cont (ConsPinaforeType ta trb) (meetBimap id conva) (convb . meet2)
-
-meetPinaforeShimWit ::
-       forall (a :: Type) (b :: Type).
-       PinaforeShimWit 'Negative a
-    -> PinaforeShimWit 'Negative b
-    -> PinaforeShimWit 'Negative (MeetType a b)
-meetPinaforeShimWit (MkShimWit ta conva) (MkShimWit tb convb) =
-    cfmap (meetBimap conva convb) $ meetPinaforeTypes ta tb $ \tab conva' convb' -> MkShimWit tab $ meetf conva' convb'
+joinMeetPinaforeShimWit ::
+       forall polarity (a :: Type) (b :: Type). Is PolarityType polarity
+    => PinaforeShimWit polarity a
+    -> PinaforeShimWit polarity b
+    -> PinaforeShimWit polarity (JoinMeetType polarity a b)
+joinMeetPinaforeShimWit (MkShimWit ta conva) (MkShimWit tb convb) =
+    ccontramap (polarBimap conva convb) $
+    joinMeetPinaforeTypes ta tb $ \tab conva' convb' -> MkShimWit tab $ polarF conva' convb'
 
 instance Is PolarityType polarity => Semigroup (AnyW (PinaforeType polarity)) where
-    MkAnyW ta <> MkAnyW tb =
-        case representative @_ @_ @polarity of
-            PositiveType -> joinPinaforeTypes ta tb $ \tab _ _ -> MkAnyW tab
-            NegativeType -> meetPinaforeTypes ta tb $ \tab _ _ -> MkAnyW tab
+    MkAnyW ta <> MkAnyW tb = joinMeetPinaforeTypes ta tb $ \tab _ _ -> MkAnyW tab
 
 instance Is PolarityType polarity => Monoid (AnyW (PinaforeType polarity)) where
     mappend = (<>)
@@ -109,13 +86,13 @@ instance Is PolarityType polarity => ExprShow (PinaforeSingularType polarity t) 
 
 instance Is PolarityType polarity => ExprShow (PinaforeType polarity t) where
     exprShowPrec NilPinaforeType =
-        case representative @_ @_ @polarity of
+        case polarityType @polarity of
             PositiveType -> ("None", 0)
             NegativeType -> ("Any", 0)
     exprShowPrec (ConsPinaforeType ta NilPinaforeType) = exprShowPrec ta
     exprShowPrec (ConsPinaforeType ta tb) = let
         jmConnector =
-            case representative @_ @_ @polarity of
+            case polarityType @polarity of
                 PositiveType -> " | "
                 NegativeType -> " & "
         in (exprPrecShow 2 ta <> jmConnector <> exprPrecShow 2 tb, 3)
@@ -180,11 +157,7 @@ pinaforeToConcreteEntityType ::
     -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
 pinaforeToConcreteEntityType (ConsPinaforeType t NilPinaforeType) = do
     MkShimWit et conv <- pinaforeSingularToConcreteEntityType t
-    return $
-        MkShimWit et $
-        case representative @_ @_ @polarity of
-            PositiveType -> conv <.> MkJMIsoShim bijoin1
-            NegativeType -> MkJMIsoShim bimeet1 <.> conv
+    return $ MkShimWit et $ conv <.> jmIsoPolar1
 pinaforeToConcreteEntityType _ = Nothing
 
 concreteEntityToMaybeNegativePinaforeType :: forall t. ConcreteEntityType t -> Maybe (PinaforeShimWit 'Negative t)
@@ -217,7 +190,7 @@ concreteEntityToPinaforeType ::
     => ConcreteEntityType t
     -> Maybe (PinaforeShimWit polarity t)
 concreteEntityToPinaforeType et =
-    case representative @_ @_ @polarity of
+    case polarityType @polarity of
         PositiveType -> return $ concreteEntityToPositivePinaforeType et
         NegativeType -> concreteEntityToMaybeNegativePinaforeType et
 
@@ -248,4 +221,4 @@ type PinaforeScoped = Scoped PinaforeTypeSystem
 
 type PinaforeSourceScoped = SourceScoped PinaforeTypeSystem
 
-type PinaforeTypeCheck = VarRenamerT PinaforeTypeSystem (PinaforeSourceScoped)
+type PinaforeTypeCheck = VarRenamerT PinaforeTypeSystem PinaforeSourceScoped

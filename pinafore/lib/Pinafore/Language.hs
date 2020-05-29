@@ -87,7 +87,7 @@ typedShowValue NilPinaforeType v = never v
 typedShowValue (ConsPinaforeType ts tt) v = joinf (singularTypedShowValue ts) (typedShowValue tt) v
 
 showPinaforeRef :: QValue -> String
-showPinaforeRef (MkAnyValue (MkShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
+showPinaforeRef (MkAnyValue (MkPosShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
 
 type Interact = StateT SourcePos (ReaderStateT PinaforeScoped View)
 
@@ -138,7 +138,7 @@ interactLoop inh outh echo = do
                                  action <- runValue outh val
                                  lift $ lift $ runPinaforeAction action
                              ShowTypeInteractiveCommand showinfo texpr -> do
-                                 MkAnyValue (MkShimWit t shim) _ <- interactEvalExpression texpr
+                                 MkAnyValue (MkPosShimWit t shim) _ <- interactEvalExpression texpr
                                  liftIO $
                                      hPutStrLn outh $
                                      ": " <>

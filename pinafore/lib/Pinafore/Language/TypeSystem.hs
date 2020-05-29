@@ -37,8 +37,8 @@ instance Unifier PinaforeUnifier where
     type UnifierPosWitness PinaforeUnifier = PinaforeType 'Positive
     type UnifierSubstitutions PinaforeUnifier = [PinaforeBisubstitution]
     type UnifierShim PinaforeUnifier = PinaforeShim
-    unifyNegWitnesses ta tb = return $ uuLiftNegShimWit $ meetPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
-    unifyPosWitnesses ta tb = return $ uuLiftPosShimWit $ joinPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
+    unifyNegWitnesses ta tb = return $ uuLiftNegShimWit $ joinMeetPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
+    unifyPosWitnesses ta tb = return $ uuLiftPosShimWit $ joinMeetPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
     unifyPosNegWitnesses tq tp = fmap MkUUShim $ getCompose $ unifyPosNegPinaforeTypes tq tp
     solveUnifier = runUnifier
     unifierPosSubstitute = bisubstitutesType

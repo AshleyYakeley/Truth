@@ -25,16 +25,19 @@ mergeInTypes ::
     -> PinaforeType polarity tb
     -> PinaforeShimWit polarity (JoinMeetType polarity ta tb)
 mergeInTypes ta tb =
-    case representative @_ @_ @polarity of
+    case polarityType @polarity of
         PositiveType ->
-            chainShimWit mergeDuplicateGroundTypesInType $ joinPinaforeShimWit (mkPJMShimWit ta) (mkPJMShimWit tb)
+            chainShimWit mergeDuplicateGroundTypesInType $ joinMeetPinaforeShimWit (mkPJMShimWit ta) (mkPJMShimWit tb)
         NegativeType ->
-            chainShimWit mergeDuplicateGroundTypesInType $ meetPinaforeShimWit (mkPJMShimWit ta) (mkPJMShimWit tb)
+            chainShimWit mergeDuplicateGroundTypesInType $ joinMeetPinaforeShimWit (mkPJMShimWit ta) (mkPJMShimWit tb)
 
-mergeInPositiveSingularType ::
-       PinaforeSingularType 'Positive t1 -> PinaforeType 'Positive tr -> PinaforeShimWit 'Positive (JoinType t1 tr)
-mergeInPositiveSingularType ts NilPinaforeType = mkPJMShimWit $ ConsPinaforeType ts NilPinaforeType
-mergeInPositiveSingularType (GroundPinaforeSingularType gt1 args1) (ConsPinaforeType (GroundPinaforeSingularType gt2 args2) tr)
+mergeIn1SingularType ::
+       forall polarity t1 tr. Is PolarityType polarity
+    => PinaforeSingularType polarity t1
+    -> PinaforeType polarity tr
+    -> PinaforeShimWit polarity (JoinMeetType polarity t1 tr)
+mergeIn1SingularType ts NilPinaforeType = mkPJMShimWit $ ConsPinaforeType ts NilPinaforeType
+mergeIn1SingularType (GroundPinaforeSingularType gt1 args1) (ConsPinaforeType (GroundPinaforeSingularType gt2 args2) tr)
     | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality gt1 gt2 =
         case mergeDolanArguments
                  mergeInTypes
@@ -43,31 +46,12 @@ mergeInPositiveSingularType (GroundPinaforeSingularType gt1 args1) (ConsPinafore
                  args1
                  args2 of
             MkShimWit args' convargs ->
-                ccontramap (joinBimap convargs id . swapJoinRight) $
-                mergeInPositiveSingularType (GroundPinaforeSingularType gt1 args') tr
-mergeInPositiveSingularType ts (ConsPinaforeType t1 tr) =
-    case mergeInPositiveSingularType ts tr of
+                ccontramap (polarBimap convargs id . polarSwapRight) $
+                mergeIn1SingularType (GroundPinaforeSingularType gt1 args') tr
+mergeIn1SingularType ts (ConsPinaforeType t1 tr) =
+    case mergeIn1SingularType ts tr of
         MkShimWit tsr conv ->
-            MkShimWit (ConsPinaforeType t1 tsr) $ joinf (join2 . conv . join1) (joinBimap id $ conv . join2)
-
-mergeInNegativeSingularType ::
-       PinaforeSingularType 'Negative t1 -> PinaforeType 'Negative tr -> PinaforeShimWit 'Negative (MeetType t1 tr)
-mergeInNegativeSingularType ts NilPinaforeType = mkPJMShimWit $ ConsPinaforeType ts NilPinaforeType
-mergeInNegativeSingularType (GroundPinaforeSingularType gt1 args1) (ConsPinaforeType (GroundPinaforeSingularType gt2 args2) tr)
-    | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality gt1 gt2 =
-        case mergeDolanArguments
-                 mergeInTypes
-                 (pinaforeGroundTypeVarianceType gt1)
-                 (pinaforeGroundTypeVarianceMap gt1)
-                 args1
-                 args2 of
-            MkShimWit args' convargs ->
-                cfmap (swapMeetRight . meetBimap convargs id) $
-                mergeInNegativeSingularType (GroundPinaforeSingularType gt1 args') tr
-mergeInNegativeSingularType ts (ConsPinaforeType t1 tr) =
-    case mergeInNegativeSingularType ts tr of
-        MkShimWit tsr conv ->
-            MkShimWit (ConsPinaforeType t1 tsr) $ meetf (meet1 . conv . meet2) (meetBimap id $ meet2 . conv)
+            MkShimWit (ConsPinaforeType t1 tsr) $ polarF (polar2 . conv . polar1) (polarBimap id $ conv . polar2)
 
 mergeDuplicateGroundTypesInType ::
        forall polarity t. Is PolarityType polarity
@@ -78,10 +62,7 @@ mergeDuplicateGroundTypesInType (ConsPinaforeType t1 tr) =
     case mergeInSingularType t1 of
         MkShimWit t1' conv1 ->
             case mergeDuplicateGroundTypesInType tr of
-                MkShimWit tr' convr ->
-                    case representative @_ @_ @polarity of
-                        PositiveType -> ccontramap (joinBimap conv1 convr) $ mergeInPositiveSingularType t1' tr'
-                        NegativeType -> cfmap (meetBimap conv1 convr) $ mergeInNegativeSingularType t1' tr'
+                MkShimWit tr' convr -> ccontramap (polarBimap conv1 convr) $ mergeIn1SingularType t1' tr'
 
 mergeDuplicateGroundTypes ::
        forall a. PShimWitMappable PinaforeShim PinaforeType a

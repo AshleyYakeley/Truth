@@ -60,7 +60,7 @@ limitInvertType ::
     => PinaforeType polarity a
     -> Maybe (PinaforeShimWit (InvertPolarity polarity) a)
 limitInvertType =
-    case representative @_ @_ @polarity of
+    case polarityType @polarity of
         PositiveType -> maximalNegativeSubtype
         NegativeType -> minimalPositiveSupertype
 
@@ -253,7 +253,9 @@ instance Subsumer (PinaforeSubsumer) where
                          tq <- limitInvertType' tp
                          return $
                              ccontramap (isoBackwards varBij) $
-                             joinPinaforeShimWit (singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn) tq)
+                             joinMeetPinaforeShimWit
+                                 (singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn)
+                                 tq)
                     (return $
                      cfmap (isoForwards varBij . join1) $
                      singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn)
@@ -275,7 +277,9 @@ instance Subsumer (PinaforeSubsumer) where
                          tq <- limitInvertType' tp
                          return $
                              cfmap (isoForwards varBij) $
-                             meetPinaforeShimWit (singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn) tq)
+                             joinMeetPinaforeShimWit
+                                 (singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn)
+                                 tq)
         expr' <- getCompose $ invertSubstitute (PosInvertSubstitution vn vn tp varBij) expr
         (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ meet2 . isoBackwards varBij) expr'
         return (expr'', bisub : bisubs)

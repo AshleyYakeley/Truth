@@ -42,36 +42,6 @@ nonPolarTypeFreeVariables (GroundPinaforeNonpolarType _) = []
 nonPolarTypeFreeVariables (ApplyPinaforeNonpolarType sv tf targ) =
     nonPolarTypeFreeVariables tf <> argFreeVariables sv targ
 
-invertPolarMap ::
-       forall polarity a b. Is PolarityType polarity
-    => PolarMapType JMShim (InvertPolarity polarity) a b
-    -> PolarMapType (CatDual JMShim) polarity a b
-invertPolarMap =
-    case representative @_ @_ @polarity of
-        PositiveType -> MkCatDual
-        NegativeType -> MkCatDual
-
-rangePolarMap ::
-       forall (polarity :: Polarity) (a :: (Type, Type)) (b :: (Type, Type)). Is PolarityType polarity
-    => PolarMapType JMShim (InvertPolarity polarity) (Contra a) (Contra b)
-    -> PolarMapType JMShim polarity (Co a) (Co b)
-    -> PolarMapType (CatRange JMShim) polarity '( Contra a, Co a) '( Contra b, Co b)
-rangePolarMap =
-    case representative @_ @_ @polarity of
-        PositiveType -> MkCatRange
-        NegativeType -> MkCatRange
-
-liftConv ::
-       forall (polarity :: Polarity) (v :: Variance) k (f :: VarianceKind v -> k) (a :: VarianceKind v) (b :: VarianceKind v).
-       (CoercibleKind k, Is PolarityType polarity, HasVariance v f, InKind a, InKind b)
-    => VarianceType v
-    -> PolarMapType (VarianceCategory JMShim v) polarity a b
-    -> PolarMapType JMShim polarity (f a) (f b)
-liftConv svt conv =
-    case representative @_ @_ @polarity of
-        PositiveType -> consShimFunc @JMShim @v @k @f @f svt cid conv
-        NegativeType -> consShimFunc @JMShim @v @k @f @f svt cid conv
-
 fromApplyArg ::
        forall polarity sv dv f t a r. (Is PolarityType polarity, HasVariance sv f)
     => VarianceType sv
@@ -88,8 +58,7 @@ fromApplyArg CovarianceType dvt dvm (MkAnyPolarity ta) args call =
         Dict ->
             case nonpolarToPinaforeType ta of
                 MkShimWit (arg :: _ b) aconv ->
-                    call arg $
-                    mapDolanArgumentsType dvt dvm dvm args $ liftConv @polarity @sv @_ @f @a @b CovarianceType aconv
+                    call arg $ mapDolanArgumentsType dvt dvm dvm args $ consPolarVarianceMap CovarianceType cid aconv
 fromApplyArg ContravarianceType dvt dvm (MkAnyPolarity ta) args call =
     case dolanVarianceInCategory @JMShim dvt of
         Dict ->
@@ -98,7 +67,7 @@ fromApplyArg ContravarianceType dvt dvm (MkAnyPolarity ta) args call =
                 MkShimWit (arg :: _ b) aconv ->
                     call arg $
                     mapDolanArgumentsType dvt dvm dvm args $
-                    liftConv @polarity @sv @_ @f @a @b ContravarianceType $ invertPolarMap @polarity @a @b aconv
+                    consPolarVarianceMap ContravarianceType cid $ MkCatDual $ uninvertPolarMap aconv
 fromApplyArg RangevarianceType dvt dvm (MkRangeType (MkAnyPolarity pa) (MkAnyPolarity qa)) args call =
     case dolanVarianceInCategory @JMShim dvt of
         Dict ->
@@ -109,8 +78,7 @@ fromApplyArg RangevarianceType dvt dvm (MkRangeType (MkAnyPolarity pa) (MkAnyPol
                         MkShimWit (qarg :: _ qb) qconv ->
                             call (MkRangeType parg qarg) $
                             mapDolanArgumentsType dvt dvm dvm args $
-                            liftConv @polarity @sv @_ @f @a @'( pb, qb) RangevarianceType $
-                            rangePolarMap @polarity @a @'( pb, qb) pconv qconv
+                            consPolarVarianceMap RangevarianceType cid $ MkCatRange (uninvertPolarMap pconv) qconv
 
 newtype ArgWit polarity dv f = MkArgWit
     { unArgWit :: forall (t :: Type).

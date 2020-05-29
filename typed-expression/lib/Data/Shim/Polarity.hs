@@ -29,11 +29,16 @@ type family InvertPolarity polarity = (inv :: Polarity) | inv -> polarity where
     InvertPolarity 'Positive = 'Negative
     InvertPolarity 'Negative = 'Positive
 
+polarityType ::
+       forall (polarity :: Polarity). Is PolarityType polarity
+    => PolarityType polarity
+polarityType = representative @_ @_ @polarity
+
 isInvertPolarity ::
        forall polarity. Is PolarityType polarity
     => Dict (Is PolarityType (InvertPolarity polarity))
 isInvertPolarity =
-    case representative @_ @_ @polarity of
+    case polarityType @polarity of
         PositiveType -> Dict
         NegativeType -> Dict
 
@@ -44,9 +49,3 @@ invertPolarity ::
 invertPolarity v =
     case isInvertPolarity @polarity of
         Dict -> v
-
-type family PolarMapType (cat :: k -> k -> Type) polarity (a :: k) (b :: k) :: Type where
-    PolarMapType (cat :: k -> k -> Type) 'Positive (a :: k) (b :: k) = cat a b
-    PolarMapType (cat :: k -> k -> Type) 'Negative (a :: k) (b :: k) = cat b a
-
-type ConvertType polarity (a :: k) (b :: k) = PolarMapType KindFunction polarity a b

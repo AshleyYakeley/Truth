@@ -1,7 +1,6 @@
 module Language.Expression.TypeSystem where
 
-import Data.Shim.JoinMeet
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Abstract
 import Language.Expression.Bindings
 import Language.Expression.Error
@@ -53,14 +52,16 @@ type TSPatternConstructor ts = UnifierPatternConstructor (TSUnifier ts)
 tsFunctionPosShimWit ::
        forall ts. TypeSystem ts
     => FunctionWitness (TSNegShimWit ts) (TSPosShimWit ts)
-tsFunctionPosShimWit (MkShimWit wa conva) (MkShimWit wb convb) =
-    mapShimWit (funcShim conva convb) $ tsFunctionPosWitness @ts wa wb
+tsFunctionPosShimWit ta tb =
+    unNegShimWit ta $ \wa conva ->
+        unPosShimWit tb $ \wb convb -> mapPosShimWit (funcShim conva convb) $ tsFunctionPosWitness @ts wa wb
 
 tsFunctionNegShimWit ::
        forall ts. TypeSystem ts
     => FunctionWitness (TSPosShimWit ts) (TSNegShimWit ts)
-tsFunctionNegShimWit (MkShimWit wa conva) (MkShimWit wb convb) =
-    mapShimWit (funcShim conva convb) $ tsFunctionNegWitness @ts wa wb
+tsFunctionNegShimWit ta tb =
+    unPosShimWit ta $ \wa conva ->
+        unNegShimWit tb $ \wb convb -> mapNegShimWit (funcShim conva convb) $ tsFunctionNegWitness @ts wa wb
 
 tsUnify ::
        forall ts a b. TypeSystem ts

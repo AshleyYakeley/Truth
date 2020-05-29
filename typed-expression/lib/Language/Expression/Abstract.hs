@@ -2,8 +2,7 @@
 
 module Language.Expression.Abstract where
 
-import Data.Shim.JoinMeet
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Error
 import Language.Expression.Expression
 import Language.Expression.Named
@@ -31,12 +30,12 @@ abstractNamedExpressionUnifier ::
                 UUNegShimWit unifier (MeetType t tu) -> UnifierOpenExpression unifier (tu -> a) -> UnifierMonad unifier r)
     -> UnifierMonad unifier r
 abstractNamedExpressionUnifier _name vwt (ClosedExpression a) cont =
-    cont (uuLiftNegShimWit $ mapShimWit (meetf cid termf) vwt) $ pure $ \_ -> a
+    cont (uuLiftNegShimWit $ mapShimWit polarUn1 vwt) $ pure $ \_ -> a
 abstractNamedExpressionUnifier name vwt (OpenExpression (MkNameWitness name' vwt') expr) cont
     | name == name' =
         abstractNamedExpressionUnifier @unifier name vwt expr $ \vwt1 expr' -> do
             vwtt <- unifyUUNegShimWit @unifier vwt1 (uuLiftNegShimWit vwt')
-            cont (mapShimWit swapMeetRight vwtt) $ fmap (\tta (BothMeetType ta tb) -> tta ta tb) expr'
+            cont (mapNegShimWit swapMeetRight vwtt) $ fmap (\tta (BothMeetType ta tb) -> tta ta tb) expr'
 abstractNamedExpressionUnifier name vwt (OpenExpression (MkNameWitness name' vwt') expr) cont =
     abstractNamedExpressionUnifier @unifier name vwt expr $ \vwt1 expr' ->
         cont vwt1 $ OpenExpression (MkNameWitness name' vwt') $ fmap (\vva v1 v2 -> vva v2 v1) expr'
@@ -66,7 +65,7 @@ abstractNamedExpression ::
 abstractNamedExpression name expr = do
     MkNewVar vwt0 _ <- renameNewVar
     abstractNamedExpressionUnifier @unifier name vwt0 expr $ \vwt expr' ->
-        return $ MkAbstractResult (mapShimWit meet2 vwt) expr'
+        return $ MkAbstractResult (mapShimWit polar2 vwt) expr'
 
 patternAbstractUnifyExpression ::
        forall unifier renamer m q a t r. UnifierRenamerConstraint unifier renamer m
@@ -120,7 +119,7 @@ patternAbstractSealedExpression ::
 patternAbstractSealedExpression (MkSealedPattern vwt pat) (MkSealedExpression twt expr) =
     patternAbstractUnifyExpression @unifier pat expr $ \uconv uexpr' ->
         return $
-        MkPatternResult (mapShimWit (applf cid uconv) $ uuLiftPosShimWit twt) $
+        MkPatternResult (mapPosShimWit (applf cid uconv) $ uuLiftPosShimWit twt) $
         (fmap $ fmap $ \(pa, ()) -> BothMeetType id pa) $ MkAbstractResult (uuLiftNegShimWit vwt) uexpr'
 
 type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)
@@ -162,7 +161,7 @@ applySealedExpression appw sexprf sexpra =
             conv <- uuGetShim uconv
             pure $
                 shimExtractFunction conv $ \fconv tconv ->
-                    MkSealedExpression (mapShimWit tconv tx) $ fromEnhanced fconv <$> exprf <*> expra
+                    MkSealedExpression (mapPosShimWit tconv tx) $ fromEnhanced fconv <$> exprf <*> expra
 
 -- | not recursive
 letSealedExpression ::

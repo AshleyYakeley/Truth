@@ -35,7 +35,8 @@ renamePinaforeSingularTypeVars (VarPinaforeSingularType namewit1) =
     renameUVar @_ @JMShim varNamespaceTRename namewit1 $ \namewit2 bij ->
         return $
         MkShimWit (VarPinaforeSingularType namewit2) $
-        case representative @_ @_ @polarity of
+        MkPolarMap $
+        case polarityType @polarity of
             PositiveType -> MkJMIsoShim bij
             NegativeType -> MkJMIsoShim $ invert bij
 
@@ -44,17 +45,13 @@ renamePinaforeTypeVars ::
     => PinaforeTypeNamespace PinaforeType polarity
 renamePinaforeTypeVars NilPinaforeType =
     return $
-    case representative @_ @_ @polarity of
+    case polarityType @polarity of
         PositiveType -> MkShimWit NilPinaforeType id
         NegativeType -> MkShimWit NilPinaforeType id
 renamePinaforeTypeVars (ConsPinaforeType ta tb) = do
     MkShimWit ta' bija <- renamePinaforeSingularTypeVars ta
     MkShimWit tb' bijb <- renamePinaforeTypeVars tb
-    return $
-        MkShimWit (ConsPinaforeType ta' tb') $
-        case representative @_ @_ @polarity of
-            PositiveType -> MkJMIsoShim $ biJoinBimap (unJMIsoShim bija) (unJMIsoShim bijb)
-            NegativeType -> MkJMIsoShim $ biMeetBimap (unJMIsoShim bija) (unJMIsoShim bijb)
+    return $ MkShimWit (ConsPinaforeType ta' tb') $ jmIsoBimap bija bijb
 
 instance Renamer (VarRenamerT PinaforeTypeSystem) where
     type RenamerNamespaceT (VarRenamerT PinaforeTypeSystem) = VarNamespaceT PinaforeTypeSystem
@@ -63,16 +60,16 @@ instance Renamer (VarRenamerT PinaforeTypeSystem) where
     type RenamerShim (VarRenamerT PinaforeTypeSystem) = JMShim
     renameNegWitness t = do
         MkShimWit t' bij <- renamePinaforeTypeVars t
-        return $ MkShimWit t' $ isoForwards $ unJMIsoShim bij
+        return $ MkShimWit t' $ jmIsoForwards bij
     renamePosWitness t = do
         MkShimWit t' bij <- renamePinaforeTypeVars t
-        return $ MkShimWit t' $ isoForwards $ unJMIsoShim bij
+        return $ MkShimWit t' $ jmIsoForwards bij
     renameNewVar = do
         n <- varRenamerTGenerate
         valueToWitness n $ \wit ->
             return $
             MkNewVar
-                (MkShimWit (singlePinaforeType $ VarPinaforeSingularType wit) meet1)
-                (MkShimWit (singlePinaforeType $ VarPinaforeSingularType wit) join1)
+                (singlePinaforeShimWit $ mkShimWit $ VarPinaforeSingularType wit)
+                (singlePinaforeShimWit $ mkShimWit $ VarPinaforeSingularType wit)
     namespace = runVarNamespaceT
     runRenamer = runVarRenamerT

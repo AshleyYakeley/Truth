@@ -24,11 +24,12 @@ getImmediateSupertypes ::
     -> [SubtypeEntry cat w]
     -> ShimWit cat w 'Positive t
     -> [ShimWit cat w 'Positive t]
-getImmediateSupertypes statmap st (MkShimWit ta0 conv0) = do
-    MkSubtypeEntry ta tb conv <- st
-    case unSubtypeMatch statmap ta0 ta of
-        Just sconv -> return $ MkShimWit tb $ conv <.> sconv <.> conv0
-        Nothing -> empty
+getImmediateSupertypes statmap st t0 =
+    unPosShimWit t0 $ \ta0 conv0 -> do
+        MkSubtypeEntry ta tb conv <- st
+        case unSubtypeMatch statmap ta0 ta of
+            Just sconv -> return $ mkPosShimWit tb $ conv <.> sconv <.> conv0
+            Nothing -> empty
 
 eqShimWit :: forall cat w t. SubtypeMatch cat w -> ShimWit cat w 'Positive t -> ShimWit cat w 'Positive t -> Bool
 eqShimWit statmap (MkShimWit ta _) (MkShimWit tb _) =
@@ -52,7 +53,7 @@ contains ::
     -> w b
     -> Maybe (cat a b)
 contains _ [] _ = Nothing
-contains statmap (MkShimWit ta conv:_) tb
+contains statmap (MkShimWit ta (MkPolarMap conv):_) tb
     | Just sconv <- unSubtypeMatch statmap ta tb = Just $ sconv <.> conv
 contains statmap (_:aa) tb = contains statmap aa tb
 

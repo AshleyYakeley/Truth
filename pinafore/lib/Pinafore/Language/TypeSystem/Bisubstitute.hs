@@ -40,7 +40,7 @@ bisubstitutePositiveType _ NilPinaforeType = return $ mkPJMShimWit NilPinaforeTy
 bisubstitutePositiveType bisub (ConsPinaforeType ta tb) = do
     tfa <- bisubstitutePositiveSingularType bisub ta
     tfb <- bisubstitutePositiveType bisub tb
-    return $ joinPinaforeShimWit tfa tfb
+    return $ joinMeetPinaforeShimWit tfa tfb
 
 bisubstituteNegativeType ::
        Monad m => PinaforeBisubstitutionM m -> PinaforeType 'Negative t -> m (PinaforeShimWit 'Negative t)
@@ -48,7 +48,7 @@ bisubstituteNegativeType _ NilPinaforeType = return $ mkPJMShimWit NilPinaforeTy
 bisubstituteNegativeType bisub (ConsPinaforeType ta tb) = do
     tfa <- bisubstituteNegativeSingularType bisub ta
     tfb <- bisubstituteNegativeType bisub tb
-    return $ meetPinaforeShimWit tfa tfb
+    return $ joinMeetPinaforeShimWit tfa tfb
 
 bisubstituteType ::
        forall m polarity t. (Monad m, Is PolarityType polarity)
@@ -56,7 +56,7 @@ bisubstituteType ::
     -> PinaforeType polarity t
     -> m (PinaforeShimWit polarity t)
 bisubstituteType =
-    case representative @_ @_ @polarity of
+    case polarityType @polarity of
         PositiveType -> bisubstitutePositiveType
         NegativeType -> bisubstituteNegativeType
 

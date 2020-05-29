@@ -6,8 +6,7 @@ module Language.Expression.Subsumer
     , subsumeExpression
     ) where
 
-import Data.Shim.Polarity
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Expression
 import Language.Expression.Named
 import Language.Expression.Sealed
@@ -70,4 +69,4 @@ subsumeExpression rawdecltype (MkSealedExpression (MkShimWit inftype infconv) ex
             uab <- subsumePosWitnesses @subsumer inftype decltype
             (conv, subs) <- solveSubsumer uab
             expr' <- subsumerExpressionSubstitute @subsumer subs expr
-            return $ MkSealedExpression (MkShimWit decltype $ conv . infconv) expr'
+            return $ MkSealedExpression (MkShimWit decltype $ MkPolarMap conv . infconv) expr'
