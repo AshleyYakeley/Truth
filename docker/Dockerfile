@@ -1,4 +1,4 @@
-FROM fpco/stack-build:lts-15.11
+FROM fpco/stack-build:lts-15.14
 ENV DEBIAN_FRONTEND noninteractive
 RUN echo 2020-05-07
 RUN apt-get update
