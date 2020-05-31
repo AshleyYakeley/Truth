@@ -11,6 +11,7 @@ packages:
 - pinafore
 
 resolver: lts-15.14
+compiler: ghc-8.10.1
 
 allow-newer: true
 
