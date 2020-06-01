@@ -35,7 +35,7 @@ pattern BothMeetType a b = MkMeetType (a, b)
 
 {-# COMPLETE BothMeetType #-}
 
-class InCategory cat => JoinMeetCategory cat where
+class InCategory cat => JoinMeetCategory (cat :: Type -> Type -> Type) where
     initf :: cat BottomType a
     termf :: cat a TopType
     join1 :: cat a (JoinType a b)

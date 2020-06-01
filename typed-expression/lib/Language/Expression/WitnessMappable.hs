@@ -51,13 +51,13 @@ instance WitnessMappable poswit negwit (AnyInKind negwit) where
         pa' <- mapNeg pa
         return $ MkAnyInKind pa'
 
-instance InCategory shim =>
+instance forall k (shim :: MapKind k) (poswit :: k -> Type) (negwit :: k -> Type). InCategory shim =>
              WitnessMappable (ShimWit shim poswit 'Positive) (ShimWit shim negwit 'Negative) (AnyInKind poswit) where
     mapWitnessesM mapPos _ (MkAnyInKind w) = do
         MkShimWit w' _ <- mapPos $ mkShimWit w
         return $ MkAnyInKind w'
 
-instance InCategory shim =>
+instance forall k (shim :: MapKind k) (poswit :: k -> Type) (negwit :: k -> Type). InCategory shim =>
              WitnessMappable (ShimWit shim poswit 'Positive) (ShimWit shim negwit 'Negative) (AnyInKind negwit) where
     mapWitnessesM _ mapNeg (MkAnyInKind w) = do
         MkShimWit w' _ <- mapNeg $ mkShimWit w

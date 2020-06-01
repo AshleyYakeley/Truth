@@ -8,6 +8,7 @@ module Pinafore.Language.TypeSystem.Nonpolar
 import Data.Shim
 import Language.Expression.Dolan
 import Language.Expression.UVar
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.TypeSystem.Type
 import Shapes
@@ -20,7 +21,8 @@ instance TestEquality w => TestEquality (AnyPolarity w polarity) where
 
 type NonpolarArgument (w :: Type -> Type) (sv :: Variance) = SingleArgument sv (AnyPolarity w) 'Positive
 
-data PinaforeNonpolarType (dv :: DolanVariance) (t :: DolanVarianceKind dv) where
+type PinaforeNonpolarType :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+data PinaforeNonpolarType dv t where
     GroundPinaforeNonpolarType :: PinaforeGroundType dv t -> PinaforeNonpolarType dv t
     ApplyPinaforeNonpolarType
         :: VarianceType sv
@@ -51,25 +53,25 @@ fromApplyArg ::
     -> DolanArguments dv PinaforeType (f a) polarity t
     -> (forall b.
             InKind b =>
-                    SingleArgument sv PinaforeType polarity b -> PJMShimWit (DolanArguments dv PinaforeType (f b)) polarity t -> r)
+                    SingleArgument sv PinaforeType polarity b -> PShimWit (PinaforeShim Type) (DolanArguments dv PinaforeType (f b)) polarity t -> r)
     -> r
 fromApplyArg CovarianceType dvt dvm (MkAnyPolarity ta) args call =
-    case dolanVarianceInCategory @JMShim dvt of
+    case dolanVarianceInCategory @PinaforeShim dvt of
         Dict ->
             case nonpolarToPinaforeType ta of
                 MkShimWit (arg :: _ b) aconv ->
-                    call arg $ mapDolanArgumentsType dvt dvm dvm args $ consPolarVarianceMap CovarianceType cid aconv
+                    call arg $ mapDolanArgumentsType dvt dvm dvm args $ polarMapTypeApply CovarianceType cid aconv
 fromApplyArg ContravarianceType dvt dvm (MkAnyPolarity ta) args call =
-    case dolanVarianceInCategory @JMShim dvt of
+    case dolanVarianceInCategory @PinaforeShim dvt of
         Dict ->
             invertPolarity @polarity $
             case nonpolarToPinaforeType ta of
                 MkShimWit (arg :: _ b) aconv ->
                     call arg $
                     mapDolanArgumentsType dvt dvm dvm args $
-                    consPolarVarianceMap ContravarianceType cid $ MkCatDual $ uninvertPolarMap aconv
+                    polarMapTypeApply ContravarianceType cid $ MkCatDual $ uninvertPolarMap aconv
 fromApplyArg RangevarianceType dvt dvm (MkRangeType (MkAnyPolarity pa) (MkAnyPolarity qa)) args call =
-    case dolanVarianceInCategory @JMShim dvt of
+    case dolanVarianceInCategory @PinaforeShim dvt of
         Dict ->
             invertPolarity @polarity $
             case nonpolarToPinaforeType pa of
@@ -78,11 +80,11 @@ fromApplyArg RangevarianceType dvt dvm (MkRangeType (MkAnyPolarity pa) (MkAnyPol
                         MkShimWit (qarg :: _ qb) qconv ->
                             call (MkRangeType parg qarg) $
                             mapDolanArgumentsType dvt dvm dvm args $
-                            consPolarVarianceMap RangevarianceType cid $ MkCatRange (uninvertPolarMap pconv) qconv
+                            polarMapTypeApply RangevarianceType cid $ MkCatRange (uninvertPolarMap pconv) qconv
 
 newtype ArgWit polarity dv f = MkArgWit
     { unArgWit :: forall (t :: Type).
-                          DolanArguments dv PinaforeType f polarity t -> PJMShimWit PinaforeSingularType polarity t
+                          DolanArguments dv PinaforeType f polarity t -> PShimWit (PinaforeShim Type) PinaforeSingularType polarity t
     }
 
 nonpolarToPinaforeSingularType ::
@@ -105,7 +107,7 @@ nonpolarToPinaforeSingularType (ApplyPinaforeNonpolarType svt tf ta) dvt =
 nonpolarToPinaforeType ::
        forall polarity t. Is PolarityType polarity
     => PinaforeNonpolarType '[] t
-    -> PinaforeShimWit polarity t
+    -> PinaforeTypeShimWit polarity t
 nonpolarToPinaforeType t =
     singlePinaforeShimWit $ unArgWit (snd (nonpolarToPinaforeSingularType t NilListType)) NilDolanArguments
 

@@ -2,7 +2,8 @@ module Language.Expression.Arguments where
 
 import Shapes
 
-data Arguments (w :: Type -> Type) (f :: k) (t :: Type) where
+type Arguments :: forall k. (Type -> Type) -> k -> Type -> Type
+data Arguments w f t where
     NilArguments :: Arguments w t t
     ConsArguments :: w a -> Arguments w (f a) t -> Arguments w f t
 

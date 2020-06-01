@@ -7,7 +7,7 @@ module Pinafore.Test
     , Name
     , UVar
     , PinaforeType
-    , PinaforeShimWit
+    , PinaforeTypeShimWit
     , PinaforeScoped
     , PinaforeSourceScoped
     , pinaforeSimplifyTypes

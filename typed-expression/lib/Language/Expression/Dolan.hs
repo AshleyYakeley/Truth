@@ -14,7 +14,7 @@ import Language.Expression.Dolan.Variance as I
 import Language.Expression.UVar
 import Shapes
 
-data Bisubstitution m (wit :: Polarity -> Type -> Type) =
+data Bisubstitution (shim :: MapKind Type) m (wit :: Polarity -> Type -> Type) =
     forall name. MkBisubstitution (SymbolType name)
-                                  (m (PJMShimWit wit 'Positive (UVar name)))
-                                  (m (PJMShimWit wit 'Negative (UVar name)))
+                                  (m (PShimWit shim wit 'Positive (UVar name)))
+                                  (m (PShimWit shim wit 'Negative (UVar name)))

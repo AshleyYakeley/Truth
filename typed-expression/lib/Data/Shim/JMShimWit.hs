@@ -7,27 +7,21 @@ import Data.Shim.Polarity
 import Data.Shim.ShimWit
 import Shapes
 
-type JMShimWit (wit :: k -> Type) = ShimWit JMShim wit
-
-mkJMShimWit ::
-       forall (k :: Type) polarity wit (t :: k).
-       (InKind t, CoercibleKind k, InCategory (KindFunction :: k -> k -> Type), Is PolarityType polarity)
-    => wit t
-    -> JMShimWit wit polarity t
-mkJMShimWit = mkShimWit
+type JMShimWit :: forall k. (k -> Type) -> Polarity -> k -> Type
+type JMShimWit (wit :: k -> Type) = ShimWit (JMShim k) wit
 
 toJMShimWit ::
-       forall wit t. ToShimWit JMShim wit t
+       forall k wit (t :: k). ToShimWit (JMShim k) wit t
     => JMShimWit wit 'Positive t
 toJMShimWit = toShimWit
 
 fromJMShimWit ::
-       forall wit t. FromShimWit JMShim wit t
+       forall k wit (t :: k). FromShimWit (JMShim k) wit t
     => JMShimWit wit 'Negative t
 fromJMShimWit = fromShimWit
 
 jmToValue ::
-       forall wit t. ToShimWit JMShim wit t
+       forall wit (t :: Type). ToShimWit (JMShim Type) wit t
     => t
     -> AnyValue (JMShimWit wit 'Positive)
-jmToValue = MkAnyValue $ toJMShimWit @wit @t
+jmToValue = MkAnyValue $ toJMShimWit @Type @wit @t

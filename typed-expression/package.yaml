@@ -31,6 +31,7 @@ library:
       - Language.Expression.Arguments
       - Language.Expression.Dolan
     other-modules:
+      - Data.Shim.PolyMap
       - Data.Shim.Polarity
       - Data.Shim.PolarMap
       - Data.Shim.Variance
@@ -42,7 +43,7 @@ library:
       - Data.Shim.PolarJoinMeet
       - Data.Shim.PolyShim
       - Data.Shim.JMShim
-      - Data.Shim.JMIsoShim
+      - Data.Shim.PolyIso
       - Data.Shim.JMShimWit
       - Language.Expression.Dolan.PShimWit
       - Language.Expression.Dolan.Covariance

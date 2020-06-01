@@ -1,20 +1,20 @@
 module Data.Shim.PolarMap where
 
 import Data.Shim.Polarity
+import Data.Shim.PolyMap
 import Shapes
 
-type family PolarMapType (shim :: k -> k -> Type) polarity (a :: k) (b :: k) :: Type where
-    PolarMapType (shim :: k -> k -> Type) 'Positive (a :: k) (b :: k) = shim a b
-    PolarMapType (shim :: k -> k -> Type) 'Negative (a :: k) (b :: k) = shim b a
+type family PolarMapType (map :: MapKind k) polarity (a :: k) (b :: k) :: Type where
+    PolarMapType (map :: k -> k -> Type) 'Positive (a :: k) (b :: k) = map a b
+    PolarMapType (map :: k -> k -> Type) 'Negative (a :: k) (b :: k) = map b a
 
-type ConvertType polarity (a :: k) (b :: k) = PolarMapType KindFunction polarity a b
-
-newtype PolarMap (shim :: k -> k -> Type) polarity (a :: k) (b :: k) = MkPolarMap
-    { unPolarMap :: PolarMapType shim polarity a b
+type PolarMap :: forall k. MapKind k -> Polarity -> MapKind k
+newtype PolarMap map polarity a b = MkPolarMap
+    { unPolarMap :: PolarMapType map polarity a b
     }
 
-instance forall polarity k (shim :: k -> k -> Type). (Is PolarityType polarity, Category shim) =>
-             Category (PolarMap shim polarity) where
+instance forall polarity k (map :: MapKind k). (Is PolarityType polarity, Category map) =>
+             Category (PolarMap map polarity) where
     id =
         case polarityType @polarity of
             PositiveType -> MkPolarMap id
@@ -24,8 +24,8 @@ instance forall polarity k (shim :: k -> k -> Type). (Is PolarityType polarity, 
             PositiveType -> \(MkPolarMap p) (MkPolarMap q) -> MkPolarMap $ p . q
             NegativeType -> \(MkPolarMap p) (MkPolarMap q) -> MkPolarMap $ q . p
 
-instance forall polarity k (shim :: k -> k -> Type). (Is PolarityType polarity, InCategory shim) =>
-             InCategory (PolarMap shim polarity) where
+instance forall polarity k (map :: MapKind k). (Is PolarityType polarity, InCategory map) =>
+             InCategory (PolarMap map polarity) where
     cid =
         case polarityType @polarity of
             PositiveType -> MkPolarMap cid
@@ -36,18 +36,18 @@ instance forall polarity k (shim :: k -> k -> Type). (Is PolarityType polarity, 
             NegativeType -> \(MkPolarMap p) (MkPolarMap q) -> MkPolarMap $ q <.> p
 
 invertPolarMap ::
-       forall polarity k (shim :: k -> k -> Type) (a :: k) (b :: k). Is PolarityType polarity
-    => PolarMap shim polarity a b
-    -> PolarMap shim (InvertPolarity polarity) b a
+       forall polarity k (map :: MapKind k) (a :: k) (b :: k). Is PolarityType polarity
+    => PolarMap map polarity a b
+    -> PolarMap map (InvertPolarity polarity) b a
 invertPolarMap =
     case polarityType @polarity of
         PositiveType -> \(MkPolarMap f) -> MkPolarMap f
         NegativeType -> \(MkPolarMap f) -> MkPolarMap f
 
 uninvertPolarMap ::
-       forall polarity k (shim :: k -> k -> Type) (a :: k) (b :: k). Is PolarityType polarity
-    => PolarMap shim (InvertPolarity polarity) a b
-    -> PolarMap shim polarity b a
+       forall polarity k (map :: MapKind k) (a :: k) (b :: k). Is PolarityType polarity
+    => PolarMap map (InvertPolarity polarity) a b
+    -> PolarMap map polarity b a
 uninvertPolarMap =
     case polarityType @polarity of
         PositiveType -> \(MkPolarMap f) -> MkPolarMap f

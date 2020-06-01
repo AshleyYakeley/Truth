@@ -8,6 +8,7 @@ import Data.Shim
 import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Convert.Base
+import Pinafore.Language.Shim
 import Pinafore.Language.TypeSystem
 import Shapes
 import Shapes.Numeric
@@ -38,26 +39,26 @@ $(literalInstances [t|LocalTime|])
 $(literalInstances [t|()|])
 
 -- Double
-instance ToShimWit JMShim (PinaforeType 'Positive) Double where
+instance ToShimWit (PinaforeShim Type) (PinaforeType 'Positive) Double where
     toShimWit = mapPosShimWit (toEnhanced "subtype" InexactNumber) toJMShimWit
 
 -- Int
-instance ToShimWit JMShim (PinaforeType 'Positive) Int where
+instance ToShimWit (PinaforeShim Type) (PinaforeType 'Positive) Int where
     toShimWit = mapPosShimWit (toEnhanced "subtype" toInteger) toJMShimWit
 
-instance FromShimWit JMShim (PinaforeType 'Negative) Int where
+instance FromShimWit (PinaforeShim Type) (PinaforeType 'Negative) Int where
     fromShimWit = mapNegShimWit (toEnhanced "subtype" fromInteger) fromJMShimWit
 
 -- Rational
-instance ToShimWit JMShim (PinaforeType 'Positive) Rational where
+instance ToShimWit (PinaforeShim Type) (PinaforeType 'Positive) Rational where
     toShimWit = mapPosShimWit (toEnhanced "subtype" $ fromRational @SafeRational) toJMShimWit
 
-instance FromShimWit JMShim (PinaforeType 'Negative) Rational where
+instance FromShimWit (PinaforeShim Type) (PinaforeType 'Negative) Rational where
     fromShimWit = mapNegShimWit (toEnhanced "subtype" $ toRational @SafeRational) fromJMShimWit
 
 -- Fixed
-instance HasResolution r => ToShimWit JMShim (PinaforeType 'Positive) (Fixed r) where
+instance HasResolution r => ToShimWit (PinaforeShim Type) (PinaforeType 'Positive) (Fixed r) where
     toShimWit = mapPosShimWit (toEnhanced "subtype" toRational) toJMShimWit
 
-instance HasResolution r => FromShimWit JMShim (PinaforeType 'Negative) (Fixed r) where
+instance HasResolution r => FromShimWit (PinaforeShim Type) (PinaforeType 'Negative) (Fixed r) where
     fromShimWit = mapNegShimWit (toEnhanced "subtype" fromRational) fromJMShimWit

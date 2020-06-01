@@ -4,12 +4,15 @@ module Pinafore.Language.TypeSystem.Simplify.DuplicateGroundTypes
 
 import Data.Shim
 import Language.Expression.Dolan
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 mergeInSingularType ::
-       Is PolarityType polarity => PinaforeSingularType polarity t -> PJMShimWit PinaforeSingularType polarity t
+       Is PolarityType polarity
+    => PinaforeSingularType polarity t
+    -> PShimWit (PinaforeShim Type) PinaforeSingularType polarity t
 mergeInSingularType (GroundPinaforeSingularType gt args) =
     case mapDolanArguments
              mergeDuplicateGroundTypesInType
@@ -17,26 +20,26 @@ mergeInSingularType (GroundPinaforeSingularType gt args) =
              (pinaforeGroundTypeVarianceMap gt)
              args of
         MkShimWit args' conv -> MkShimWit (GroundPinaforeSingularType gt args') conv
-mergeInSingularType t = mkPJMShimWit t
+mergeInSingularType t = mkShimWit t
 
 mergeInTypes ::
        forall polarity ta tb. Is PolarityType polarity
     => PinaforeType polarity ta
     -> PinaforeType polarity tb
-    -> PinaforeShimWit polarity (JoinMeetType polarity ta tb)
+    -> PinaforeTypeShimWit polarity (JoinMeetType polarity ta tb)
 mergeInTypes ta tb =
     case polarityType @polarity of
         PositiveType ->
-            chainShimWit mergeDuplicateGroundTypesInType $ joinMeetPinaforeShimWit (mkPJMShimWit ta) (mkPJMShimWit tb)
+            chainShimWit mergeDuplicateGroundTypesInType $ joinMeetPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
         NegativeType ->
-            chainShimWit mergeDuplicateGroundTypesInType $ joinMeetPinaforeShimWit (mkPJMShimWit ta) (mkPJMShimWit tb)
+            chainShimWit mergeDuplicateGroundTypesInType $ joinMeetPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
 
 mergeIn1SingularType ::
        forall polarity t1 tr. Is PolarityType polarity
     => PinaforeSingularType polarity t1
     -> PinaforeType polarity tr
-    -> PinaforeShimWit polarity (JoinMeetType polarity t1 tr)
-mergeIn1SingularType ts NilPinaforeType = mkPJMShimWit $ ConsPinaforeType ts NilPinaforeType
+    -> PinaforeTypeShimWit polarity (JoinMeetType polarity t1 tr)
+mergeIn1SingularType ts NilPinaforeType = mkShimWit $ ConsPinaforeType ts NilPinaforeType
 mergeIn1SingularType (GroundPinaforeSingularType gt1 args1) (ConsPinaforeType (GroundPinaforeSingularType gt2 args2) tr)
     | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality gt1 gt2 =
         case mergeDolanArguments
@@ -56,8 +59,8 @@ mergeIn1SingularType ts (ConsPinaforeType t1 tr) =
 mergeDuplicateGroundTypesInType ::
        forall polarity t. Is PolarityType polarity
     => PinaforeType polarity t
-    -> PinaforeShimWit polarity t
-mergeDuplicateGroundTypesInType NilPinaforeType = mkPJMShimWit NilPinaforeType
+    -> PinaforeTypeShimWit polarity t
+mergeDuplicateGroundTypesInType NilPinaforeType = mkShimWit NilPinaforeType
 mergeDuplicateGroundTypesInType (ConsPinaforeType t1 tr) =
     case mergeInSingularType t1 of
         MkShimWit t1' conv1 ->
@@ -65,7 +68,7 @@ mergeDuplicateGroundTypesInType (ConsPinaforeType t1 tr) =
                 MkShimWit tr' convr -> ccontramap (polarBimap conv1 convr) $ mergeIn1SingularType t1' tr'
 
 mergeDuplicateGroundTypes ::
-       forall a. PShimWitMappable PinaforeShim PinaforeType a
+       forall a. PShimWitMappable (PinaforeShim Type) PinaforeType a
     => a
     -> a
 mergeDuplicateGroundTypes =

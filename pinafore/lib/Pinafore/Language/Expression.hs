@@ -12,6 +12,7 @@ import Language.Expression.Sealed
 import Language.Expression.TypeSystem
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
+import Pinafore.Language.Shim
 import Pinafore.Language.TypeSystem
 import Pinafore.Language.TypeSystem.Subsume ()
 import Shapes
@@ -56,10 +57,13 @@ qBothPattern = tsBothPattern @PinaforeTypeSystem
 
 qToPatternConstructor ::
        forall t lt.
-       (ToListShimWit PinaforeShim (PinaforeType 'Positive) lt, FromShimWit JMShim (PinaforeType 'Negative) t)
+       ( ToListShimWit (PinaforeShim Type) (PinaforeType 'Positive) lt
+       , FromShimWit (PinaforeShim Type) (PinaforeType 'Negative) t
+       )
     => (t -> Maybe (HList lt))
     -> QPatternConstructor
-qToPatternConstructor = toPatternConstructor (fromJMShimWit @(PinaforeType 'Negative)) toListShimWit
+qToPatternConstructor =
+    toPatternConstructor (fromShimWit @Type @(PinaforeShim Type) @(PinaforeType 'Negative)) toListShimWit
 
 qApplyPatternConstructor :: QPatternConstructor -> QPattern -> PinaforeSourceScoped (QPatternConstructor)
 qApplyPatternConstructor = tsApplyPatternConstructor @PinaforeTypeSystem
@@ -85,11 +89,16 @@ qCase :: QExpr -> [(QPattern, QExpr)] -> PinaforeSourceScoped QExpr
 qCase = tsCase @PinaforeTypeSystem
 
 qFunctionPosWitness ::
-       forall a b. PinaforeShimWit 'Negative a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (a -> b)
+       forall a b.
+       PinaforeTypeShimWit 'Negative a
+    -> PinaforeTypeShimWit 'Positive b
+    -> PinaforeTypeShimWit 'Positive (a -> b)
 qFunctionPosWitness = tsFunctionPosShimWit @PinaforeTypeSystem
 
 qFunctionPosWitnesses ::
-       ListType (PinaforeShimWit 'Negative) a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (HList a -> b)
+       ListType (PinaforeTypeShimWit 'Negative) a
+    -> PinaforeTypeShimWit 'Positive b
+    -> PinaforeTypeShimWit 'Positive (HList a -> b)
 qFunctionPosWitnesses NilListType tb = mapPosShimWit (toEnhanced "poswitness" $ \ub -> ub ()) tb
 qFunctionPosWitnesses (ConsListType ta la) tb =
     mapPosShimWit (toEnhanced "poswitness" $ \f a l -> f (a, l)) $ qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
@@ -147,5 +156,5 @@ typedAnyToPinaforeVal ::
     -> PinaforeSourceScoped t
 typedAnyToPinaforeVal = tsAnyToVal @PinaforeTypeSystem fromJMShimWit
 
-qSubsumeExpr :: AnyW (PinaforeShimWit 'Positive) -> PinaforeExpression -> PinaforeSourceScoped PinaforeExpression
+qSubsumeExpr :: AnyW (PinaforeTypeShimWit 'Positive) -> PinaforeExpression -> PinaforeSourceScoped PinaforeExpression
 qSubsumeExpr t expr = tsSubsume @PinaforeTypeSystem t expr

@@ -5,6 +5,7 @@ module Pinafore.Language.TypeSystem.Simplify.SharedTypeVars
 import Data.Shim
 import Language.Expression.Dolan
 import Language.Expression.UVar
+import Pinafore.Language.Shim
 import Pinafore.Language.TypeSystem.Bisubstitute
 import Pinafore.Language.TypeSystem.Simplify.VarUses
 import Pinafore.Language.TypeSystem.Type
@@ -27,22 +28,22 @@ findShare uses = let
     in find goodpair pairs
 
 mergeSharedTypeVars ::
-       forall a. PShimWitMappable PinaforeShim PinaforeType a
+       forall a. PShimWitMappable (PinaforeShim Type) PinaforeType a
     => a
     -> a
 mergeSharedTypeVars expr = let
     (posuses, neguses) = mappableGetVarUses expr
     in case findShare posuses <|> findShare neguses of
            Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) -> let
-               varBij :: Isomorphism JMShim (UVar na) (UVar nb)
+               varBij :: Isomorphism (PinaforeShim Type) (UVar na) (UVar nb)
                varBij = unsafeUVarIsomorphism
                bisub =
                    MkBisubstitution
                        vb
                        (return $
                         ccontramap (isoBackwards varBij) $
-                        singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType va)
+                        singlePinaforeShimWit $ mkShimWit $ VarPinaforeSingularType va)
                        (return $
-                        cfmap (isoForwards varBij) $ singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType va)
+                        cfmap (isoForwards varBij) $ singlePinaforeShimWit $ mkShimWit $ VarPinaforeSingularType va)
                in mergeSharedTypeVars $ runIdentity $ bisubstitutes [bisub] expr
            Nothing -> expr

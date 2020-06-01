@@ -36,6 +36,7 @@ import Language.Expression.Dolan
 import Language.Expression.Error
 import Pinafore.Language.Error
 import Pinafore.Language.Name
+import Pinafore.Language.Shim
 import Pinafore.Language.Subtype
 import Pinafore.Language.Type.Identified
 import Pinafore.Language.TypeSystem.Show
@@ -63,7 +64,7 @@ data NamedType (p :: Type) where
     ClosedEntityNamedType
         :: forall (p :: Type) (tid :: BigNat). TypeIDType tid -> ScopeClosedEntityType p (Identified tid) -> NamedType p
 
-type OpenEntityShim = LiftedCategory JMShim OpenEntity
+type OpenEntityShim = LiftedCategory (PinaforeShim Type) OpenEntity
 
 data Scope (p :: Type) = MkScope
     { scopeBindings :: Map Name (ScopeExpression p)
@@ -236,7 +237,11 @@ withEntitySubtype ta tb =
             }
 
 getOpenEntitySubtype ::
-       Name -> TypeIDType tida -> Name -> TypeIDType tidb -> SourceScoped p (JMShim (OpenEntity tida) (OpenEntity tidb))
+       Name
+    -> TypeIDType tida
+    -> Name
+    -> TypeIDType tidb
+    -> SourceScoped p (PinaforeShim Type (OpenEntity tida) (OpenEntity tidb))
 getOpenEntitySubtype na wa nb wb = do
     (scopeOpenEntitySubtypes -> subtypes) <- spScope
     case unSubtypeMatch (getSubtypeShim subtypes equalSubtypeMatch) wa wb of

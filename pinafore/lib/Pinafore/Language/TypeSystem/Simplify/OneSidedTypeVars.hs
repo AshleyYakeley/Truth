@@ -4,13 +4,14 @@ module Pinafore.Language.TypeSystem.Simplify.OneSidedTypeVars
 
 import Data.Shim
 import Language.Expression.Dolan
+import Pinafore.Language.Shim
 import Pinafore.Language.TypeSystem.Bisubstitute
 import Pinafore.Language.TypeSystem.Simplify.VarUses
 import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 getEliminateBisubs ::
-       forall t. (PShimWitMappable PinaforeShim PinaforeType t)
+       forall t. (PShimWitMappable (PinaforeShim Type) PinaforeType t)
     => t
     -> [PinaforeBisubstitutionM Identity]
 getEliminateBisubs expr = let
@@ -24,15 +25,15 @@ getEliminateBisubs expr = let
         MkBisubstitution
             vn
             (return $
-             ccontramap (toEnhanced @_ @JMShim "eliminated" $ \_ -> error "bad bisubstitution") $
-             mkPJMShimWit NilPinaforeType)
+             ccontramap (toEnhanced @_ @(PinaforeShim Type) "eliminated" $ \_ -> error "bad bisubstitution") $
+             mkShimWit NilPinaforeType)
             (return $
-             cfmap (toEnhanced @_ @JMShim "eliminated" $ \_ -> error "bad bisubstitution") $
-             mkPJMShimWit NilPinaforeType)
+             cfmap (toEnhanced @_ @(PinaforeShim Type) "eliminated" $ \_ -> error "bad bisubstitution") $
+             mkShimWit NilPinaforeType)
     in toList $ fmap mkbisub $ posonlyvars <> negonlyvars
 
 eliminateOneSidedTypeVars ::
-       forall a. PShimWitMappable PinaforeShim PinaforeType a
+       forall a. PShimWitMappable (PinaforeShim Type) PinaforeType a
     => a
     -> a
 eliminateOneSidedTypeVars expr = runIdentity $ bisubstitutes (getEliminateBisubs expr) expr

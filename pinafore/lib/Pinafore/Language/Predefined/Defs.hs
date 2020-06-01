@@ -5,6 +5,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
+import Pinafore.Language.Shim
 import Pinafore.Language.TypeSystem
 import Shapes
 
@@ -89,7 +90,8 @@ mkSupertypeEntry name docDescription _val = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkValPatEntry ::
-       forall t v lt. (ToPinaforeType t, FromPinaforeType v, ToListShimWit PinaforeShim (PinaforeType 'Positive) lt)
+       forall t v lt.
+       (ToPinaforeType t, FromPinaforeType v, ToListShimWit (PinaforeShim Type) (PinaforeType 'Positive) lt)
     => Name
     -> Text
     -> ((?pinafore :: PinaforeContext) => t)
@@ -110,7 +112,7 @@ mkValPatEntry name docDescription val pat = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkPatEntry ::
-       forall v lt. (FromPinaforeType v, ToListShimWit PinaforeShim (PinaforeType 'Positive) lt)
+       forall v lt. (FromPinaforeType v, ToListShimWit (PinaforeShim Type) (PinaforeType 'Positive) lt)
     => Name
     -> Text
     -> Text

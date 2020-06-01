@@ -20,7 +20,7 @@ type TS = PinaforeTypeSystem
 
 type PExpression = TSSealedExpression TS
 
-showVars :: NamedExpression Name (PinaforeShimWit 'Negative) t -> [String]
+showVars :: NamedExpression Name (PinaforeTypeShimWit 'Negative) t -> [String]
 showVars (ClosedExpression _) = []
 showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) = (show name <> " : " <> show t) : showVars expr
 

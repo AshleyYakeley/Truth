@@ -1,29 +1,13 @@
 module Language.Expression.Dolan.PShimWit where
 
-import Data.Shim.JMShimWit
-import Data.Shim.Polarity
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.WitnessMappable
 import Shapes
 
-type PShimWit (cat :: k -> k -> Type) (wit :: Polarity -> k -> Type) (polarity :: Polarity)
-     = ShimWit cat (wit polarity) polarity
+type PShimWit :: forall k. MapKind k -> (Polarity -> k -> Type) -> Polarity -> k -> Type
+type PShimWit cat wit polarity = ShimWit cat (wit polarity) polarity
 
-type PJMShimWit (wit :: Polarity -> k -> Type) (polarity :: Polarity) = JMShimWit (wit polarity) polarity
-
-mkPShimWit ::
-       forall polarity (k :: Type) cat wit (t :: k). (InCategory cat, Is PolarityType polarity, InKind t)
-    => wit polarity t
-    -> PShimWit cat wit polarity t
-mkPShimWit = mkShimWit
-
-mkPJMShimWit ::
-       forall polarity (k :: Type) wit (t :: k). (CoercibleKind k, Is PolarityType polarity, InKind t)
-    => wit polarity t
-    -> PJMShimWit wit polarity t
-mkPJMShimWit = mkJMShimWit
-
-type PShimWitMappable (cat :: k -> k -> Type) (wit :: Polarity -> k -> Type)
+type PShimWitMappable (cat :: MapKind k) (wit :: Polarity -> k -> Type)
      = WitnessMappable (PShimWit cat wit 'Positive) (PShimWit cat wit 'Negative)
 
 mapPShimWitsM ::

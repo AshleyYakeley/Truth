@@ -2,6 +2,7 @@ module Pinafore.Language.Value.FiniteSetRef where
 
 import Data.Shim
 import Pinafore.Base
+import Pinafore.Language.Shim
 import Pinafore.Language.Value.OpenEntity
 import Pinafore.Language.Value.Ref
 import Pinafore.Language.Value.SetRef
@@ -9,7 +10,8 @@ import Shapes
 import Truth.Core
 
 data LangFiniteSetRef pq where
-    MkLangFiniteSetRef :: Eq t => Range JMShim t pq -> PinaforeRef (FiniteSetUpdate t) -> LangFiniteSetRef pq
+    MkLangFiniteSetRef
+        :: Eq t => Range (PinaforeShim Type) t pq -> PinaforeRef (FiniteSetUpdate t) -> LangFiniteSetRef pq
 
 unLangFiniteSetRef :: LangFiniteSetRef '( p, p) -> PinaforeRef (FiniteSetUpdate p)
 unLangFiniteSetRef (MkLangFiniteSetRef tr lv) =

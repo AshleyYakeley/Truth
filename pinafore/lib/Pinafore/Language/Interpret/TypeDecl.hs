@@ -84,10 +84,10 @@ interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
                    cti :: ClosedEntityType (Identified n)
                    cti = (reflId $ applyRefl id $ invert tident) ct
                    ctf :: forall polarity. Is PolarityType polarity
-                       => PinaforeShimWit polarity (Identified n)
+                       => PinaforeTypeShimWit polarity (Identified n)
                    ctf =
                        singlePinaforeShimWit $
-                       mkJMShimWit $
+                       mkShimWit $
                        GroundPinaforeSingularType
                            (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym cti)
                            NilDolanArguments
@@ -124,10 +124,10 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                    Just vv -> throw $ InterpretUnboundTypeVariables $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
                let
                    ctf :: forall polarity. Is PolarityType polarity
-                       => PinaforeShimWit polarity _
+                       => PinaforeTypeShimWit polarity _
                    ctf =
                        singlePinaforeShimWit $
-                       mkJMShimWit $
+                       mkShimWit $
                        GroundPinaforeSingularType
                            (SimpleGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt)
                            NilDolanArguments

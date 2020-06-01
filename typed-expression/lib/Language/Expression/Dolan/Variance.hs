@@ -12,12 +12,11 @@ type family DolanVarianceKind (dv :: DolanVariance) :: Type where
 
 type DolanVarianceType = ListType VarianceType
 
-class ConPolyShim cat => DolanVarianceInCategory (cat :: forall k. k -> k -> Type) where
+class ApplyPolyShim pmap => DolanVarianceInCategory (pmap :: PolyMapKind) where
     dolanVarianceInCategory ::
            forall dv.
            DolanVarianceType dv
-        -> Dict ( CoercibleKind (DolanVarianceKind dv)
-                , InCategory (cat :: DolanVarianceKind dv -> DolanVarianceKind dv -> Type))
+        -> Dict (CoercibleKind (DolanVarianceKind dv), InCategory (pmap (DolanVarianceKind dv)))
 
 instance DolanVarianceInCategory JMShim where
     dolanVarianceInCategory NilListType = Dict
@@ -25,10 +24,11 @@ instance DolanVarianceInCategory JMShim where
         case dolanVarianceInCategory @JMShim lt of
             Dict -> Dict
 
-instance DolanVarianceInCategory JMIsoShim where
+instance forall (pmap :: PolyMapKind). (ApplyPolyShim pmap, DolanVarianceInCategory pmap) =>
+             DolanVarianceInCategory (PolyIso pmap) where
     dolanVarianceInCategory NilListType = Dict
     dolanVarianceInCategory (ConsListType _ lt) =
-        case dolanVarianceInCategory @JMShim lt of
+        case dolanVarianceInCategory @pmap lt of
             Dict -> Dict
 
 dolanVarianceHasKM :: forall dv. DolanVarianceType dv -> Dict (HasKindMorphism (DolanVarianceKind dv))
@@ -37,7 +37,8 @@ dolanVarianceHasKM (ConsListType _ lt) =
     case dolanVarianceHasKM lt of
         Dict -> Dict
 
-data DolanVarianceMap (dv :: DolanVariance) (gt :: DolanVarianceKind dv) where
+type DolanVarianceMap :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+data DolanVarianceMap dv gt where
     NilDolanVarianceMap :: forall (gt :: Type). DolanVarianceMap '[] gt
     ConsDolanVarianceMap
         :: forall (sv :: Variance) (dv :: DolanVariance) (gt :: VarianceKind sv -> DolanVarianceKind dv).
@@ -52,13 +53,14 @@ dolanVarianceMapInKind (ConsDolanVarianceMap dvm) =
     case dolanVarianceMapInKind dvm of
         Dict -> Dict
 
-bijectSingleVarianceMap :: VarianceType sv -> VarianceMap JMShim sv gt -> VarianceMap JMIsoShim sv gt
-bijectSingleVarianceMap CovarianceType svm (MkJMIsoShim (MkIsomorphism ab ba)) =
-    MkJMIsoShim $ MkIsomorphism (svm ab) (svm ba)
-bijectSingleVarianceMap ContravarianceType svm (MkCatDual (MkJMIsoShim (MkIsomorphism ab ba))) =
-    MkJMIsoShim $ MkIsomorphism (svm $ MkCatDual ab) (svm $ MkCatDual ba)
-bijectSingleVarianceMap RangevarianceType svm (MkCatRange (MkJMIsoShim (MkIsomorphism pab pba)) (MkJMIsoShim (MkIsomorphism qab qba))) =
-    MkJMIsoShim $ MkIsomorphism (svm $ MkCatRange pab qab) (svm $ MkCatRange pba qba)
+bijectSingleVarianceMap ::
+       forall (pmap :: PolyMapKind) sv gt. VarianceType sv -> VarianceMap pmap sv gt -> VarianceMap (PolyIso pmap) sv gt
+bijectSingleVarianceMap CovarianceType svm (MkPolyMapT (MkIsomorphism ab ba)) =
+    MkPolyMapT $ MkIsomorphism (svm ab) (svm ba)
+bijectSingleVarianceMap ContravarianceType svm (MkCatDual (MkPolyMapT (MkIsomorphism ab ba))) =
+    MkPolyMapT $ MkIsomorphism (svm $ MkCatDual ab) (svm $ MkCatDual ba)
+bijectSingleVarianceMap RangevarianceType svm (MkCatRange (MkPolyMapT (MkIsomorphism pab pba)) (MkPolyMapT (MkIsomorphism qab qba))) =
+    MkPolyMapT $ MkIsomorphism (svm $ MkCatRange pab qab) (svm $ MkCatRange pba qba)
 
 class HasDolanVary (dv :: DolanVariance) (f :: DolanVarianceKind dv) | f -> dv where
     dolanVary :: DolanVarianceMap dv f

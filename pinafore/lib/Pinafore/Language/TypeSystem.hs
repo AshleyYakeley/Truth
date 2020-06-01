@@ -19,6 +19,7 @@ import Language.Expression.UVar
 import Language.Expression.Unifier
 import Pinafore.Language.Name
 import Pinafore.Language.Scope
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.EntityAdapter
 import Pinafore.Language.Type.Ground
@@ -36,7 +37,7 @@ instance Unifier PinaforeUnifier where
     type UnifierNegWitness PinaforeUnifier = PinaforeType 'Negative
     type UnifierPosWitness PinaforeUnifier = PinaforeType 'Positive
     type UnifierSubstitutions PinaforeUnifier = [PinaforeBisubstitution]
-    type UnifierShim PinaforeUnifier = PinaforeShim
+    type UnifierShim PinaforeUnifier = PinaforeShim Type
     unifyNegWitnesses ta tb = return $ uuLiftNegShimWit $ joinMeetPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
     unifyPosWitnesses ta tb = return $ uuLiftPosShimWit $ joinMeetPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
     unifyPosNegWitnesses tq tp = fmap MkUUShim $ getCompose $ unifyPosNegPinaforeTypes tq tp
@@ -52,11 +53,11 @@ instance TypeSystem PinaforeTypeSystem where
     type TSSubsumer PinaforeTypeSystem = PinaforeSubsumer
     tsFunctionPosWitness ta tb =
         singlePinaforeShimWit $
-        mkPJMShimWit $
+        mkShimWit $
         GroundPinaforeSingularType FuncPinaforeGroundType $
         ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
     tsFunctionNegWitness ta tb =
         singlePinaforeShimWit $
-        mkPJMShimWit $
+        mkShimWit $
         GroundPinaforeSingularType FuncPinaforeGroundType $
         ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments

@@ -186,7 +186,7 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                                withSubrepresentative rangeTypeInKind rtb $ let
                                    typef =
                                        singlePinaforeShimWit $
-                                       mkPJMShimWit $
+                                       mkShimWit $
                                        GroundPinaforeSingularType MorphismPinaforeGroundType $
                                        ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
                                    morphism =

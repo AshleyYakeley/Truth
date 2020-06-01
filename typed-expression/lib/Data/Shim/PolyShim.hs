@@ -1,15 +1,14 @@
 module Data.Shim.PolyShim where
 
+import Data.Shim.PolyMap
 import Data.Shim.Variance
 import Shapes
 
--- type PolyShim (shim :: forall kc. kc -> kc -> Type) = forall k. CoercibleKind k => InCategory (shim :: k -> k -> Type)
-class (forall k. CoercibleKind k => InCategory (shim :: k -> k -> Type)) =>
-          ConPolyShim (shim :: forall kc. kc -> kc -> Type) where
-    consShimFunc ::
-           forall (v :: Variance) k (f :: VarianceKind v -> k) (g :: VarianceKind v -> k) (a :: VarianceKind v) (b :: VarianceKind v).
+class (forall k. CoercibleKind k => InCategory (pmap k)) => ApplyPolyShim (pmap :: PolyMapKind) where
+    applyPolyShim ::
+           forall k (v :: Variance) (f :: VarianceKind v -> k) (g :: VarianceKind v -> k) (a :: VarianceKind v) (b :: VarianceKind v).
            (InKind a, InKind b, HasVariance v f, HasVariance v g)
         => VarianceType v
-        -> shim f g
-        -> VarianceCategory shim v a b
-        -> shim (f a) (g b)
+        -> pmap (VarianceKind v -> k) f g
+        -> VarianceCategory (pmap Type) v a b
+        -> pmap k (f a) (g b)

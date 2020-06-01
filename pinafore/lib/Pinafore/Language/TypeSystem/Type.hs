@@ -9,6 +9,7 @@ import Language.Expression.UVar
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.Scope
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.TypeSystem.Show
@@ -29,14 +30,12 @@ data PinaforeSingularType (polarity :: Polarity) (t :: Type) where
         :: PinaforeGroundType dv t -> DolanArguments dv PinaforeType t polarity ta -> PinaforeSingularType polarity ta
     VarPinaforeSingularType :: SymbolType name -> PinaforeSingularType polarity (UVar name)
 
-type PinaforeShim = JMShim
-
-type PinaforeShimWit polarity = PJMShimWit PinaforeType polarity
+type PinaforeTypeShimWit polarity = PinaforeShimWit PinaforeType polarity
 
 singlePinaforeShimWit ::
        forall polarity t. Is PolarityType polarity
-    => PJMShimWit PinaforeSingularType polarity t
-    -> PinaforeShimWit polarity t
+    => PShimWit (PinaforeShim Type) PinaforeSingularType polarity t
+    -> PinaforeTypeShimWit polarity t
 singlePinaforeShimWit (MkShimWit st conv) = ccontramap conv $ MkShimWit (singlePinaforeType st) polar1
 
 singlePinaforeType ::
@@ -47,7 +46,8 @@ joinMeetPinaforeTypes ::
        forall polarity (a :: Type) (b :: Type) r. Is PolarityType polarity
     => PinaforeType polarity a
     -> PinaforeType polarity b
-    -> (forall ab. PinaforeType polarity ab -> PolarMap JMShim polarity a ab -> PolarMap JMShim polarity b ab -> r)
+    -> (forall ab.
+                PinaforeType polarity ab -> PolarMap (PinaforeShim Type) polarity a ab -> PolarMap (PinaforeShim Type) polarity b ab -> r)
     -> r
 joinMeetPinaforeTypes NilPinaforeType tb cont = cont tb polarLimit id
 joinMeetPinaforeTypes (ConsPinaforeType ta tr) tb cont =
@@ -56,9 +56,9 @@ joinMeetPinaforeTypes (ConsPinaforeType ta tr) tb cont =
 
 joinMeetPinaforeShimWit ::
        forall polarity (a :: Type) (b :: Type). Is PolarityType polarity
-    => PinaforeShimWit polarity a
-    -> PinaforeShimWit polarity b
-    -> PinaforeShimWit polarity (JoinMeetType polarity a b)
+    => PinaforeTypeShimWit polarity a
+    -> PinaforeTypeShimWit polarity b
+    -> PinaforeTypeShimWit polarity (JoinMeetType polarity a b)
 joinMeetPinaforeShimWit (MkShimWit ta conva) (MkShimWit tb convb) =
     ccontramap (polarBimap conva convb) $
     joinMeetPinaforeTypes ta tb $ \tab conva' convb' -> MkShimWit tab $ polarF conva' convb'
@@ -130,7 +130,7 @@ pinaforeToConcreteEntityArgs ::
     => CovaryType dv
     -> CovaryMap f
     -> DolanArguments dv PinaforeType f polarity t
-    -> Maybe (ShimWit JMIsoShim (Arguments ConcreteEntityType f) polarity t)
+    -> Maybe (ShimWit (PolyIso PinaforeShim Type) (Arguments ConcreteEntityType f) polarity t)
 pinaforeToConcreteEntityArgs = dolanArgumentsToArgumentsM pinaforeToConcreteEntityType
 
 pinaforeEntityToConcreteEntityType ::
@@ -138,7 +138,7 @@ pinaforeEntityToConcreteEntityType ::
     => CovaryType dv
     -> EntityGroundType f
     -> DolanArguments dv PinaforeType f polarity a
-    -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
+    -> Maybe (ShimWit (PolyIso PinaforeShim Type) ConcreteEntityType polarity a)
 pinaforeEntityToConcreteEntityType lc gt args = do
     MkShimWit eargs conv <- pinaforeToConcreteEntityArgs lc (entityGroundTypeCovaryMap gt) args
     return $ MkShimWit (MkConcreteType gt eargs) conv
@@ -146,7 +146,7 @@ pinaforeEntityToConcreteEntityType lc gt args = do
 pinaforeSingularToConcreteEntityType ::
        forall polarity a. Is PolarityType polarity
     => PinaforeSingularType polarity a
-    -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
+    -> Maybe (ShimWit (PolyIso PinaforeShim Type) ConcreteEntityType polarity a)
 pinaforeSingularToConcreteEntityType (GroundPinaforeSingularType (EntityPinaforeGroundType lc gt) args) =
     pinaforeEntityToConcreteEntityType lc gt args
 pinaforeSingularToConcreteEntityType _ = Nothing
@@ -154,13 +154,13 @@ pinaforeSingularToConcreteEntityType _ = Nothing
 pinaforeToConcreteEntityType ::
        forall polarity a. Is PolarityType polarity
     => PinaforeType polarity a
-    -> Maybe (ShimWit JMIsoShim ConcreteEntityType polarity a)
+    -> Maybe (ShimWit (PolyIso PinaforeShim Type) ConcreteEntityType polarity a)
 pinaforeToConcreteEntityType (ConsPinaforeType t NilPinaforeType) = do
     MkShimWit et conv <- pinaforeSingularToConcreteEntityType t
-    return $ MkShimWit et $ conv <.> jmIsoPolar1
+    return $ MkShimWit et $ conv <.> polarPolyIsoPolar1
 pinaforeToConcreteEntityType _ = Nothing
 
-concreteEntityToMaybeNegativePinaforeType :: forall t. ConcreteEntityType t -> Maybe (PinaforeShimWit 'Negative t)
+concreteEntityToMaybeNegativePinaforeType :: forall t. ConcreteEntityType t -> Maybe (PinaforeTypeShimWit 'Negative t)
 concreteEntityToMaybeNegativePinaforeType (MkConcreteType gt args) =
     entityGroundTypeCovaryType gt $ \ct -> do
         MkShimWit dargs conv <-
@@ -171,13 +171,13 @@ concreteEntityToMaybeNegativePinaforeType (MkConcreteType gt args) =
 concreteEntityToNegativePinaforeType ::
        forall m t. MonadThrow ErrorType m
     => ConcreteEntityType t
-    -> m (PinaforeShimWit 'Negative t)
+    -> m (PinaforeTypeShimWit 'Negative t)
 concreteEntityToNegativePinaforeType et =
     case concreteEntityToMaybeNegativePinaforeType et of
         Just wit -> return wit
         Nothing -> throw InterpretTypeNoneNotNegativeEntityError
 
-concreteEntityToPositivePinaforeType :: forall t. ConcreteEntityType t -> PinaforeShimWit 'Positive t
+concreteEntityToPositivePinaforeType :: forall t. ConcreteEntityType t -> PinaforeTypeShimWit 'Positive t
 concreteEntityToPositivePinaforeType (MkConcreteType gt args) =
     entityGroundTypeCovaryType gt $ \ct ->
         case argumentsToDolanArguments concreteEntityToPositivePinaforeType ct (entityGroundTypeCovaryMap gt) args of
@@ -188,17 +188,18 @@ concreteEntityToPositivePinaforeType (MkConcreteType gt args) =
 concreteEntityToPinaforeType ::
        forall polarity t. Is PolarityType polarity
     => ConcreteEntityType t
-    -> Maybe (PinaforeShimWit polarity t)
+    -> Maybe (PinaforeTypeShimWit polarity t)
 concreteEntityToPinaforeType et =
     case polarityType @polarity of
         PositiveType -> return $ concreteEntityToPositivePinaforeType et
         NegativeType -> concreteEntityToMaybeNegativePinaforeType et
 
-type PinaforeExpression = SealedExpression Name (PinaforeShimWit 'Negative) (PinaforeShimWit 'Positive)
+type PinaforeExpression = SealedExpression Name (PinaforeTypeShimWit 'Negative) (PinaforeTypeShimWit 'Positive)
 
-type PinaforePatternConstructor = PatternConstructor Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
+type PinaforePatternConstructor
+     = PatternConstructor Name (PinaforeTypeShimWit 'Positive) (PinaforeTypeShimWit 'Negative)
 
-type PinaforePattern = SealedPattern Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
+type PinaforePattern = SealedPattern Name (PinaforeTypeShimWit 'Positive) (PinaforeTypeShimWit 'Negative)
 
 data PinaforeTypeSystem
 

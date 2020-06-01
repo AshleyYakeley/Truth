@@ -4,11 +4,12 @@ import Data.Shim
 import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Name
+import Pinafore.Language.Shim
 import Pinafore.Language.TypeSystem.Show
 import Shapes
 
 class IsSubtype w where
-    isSubtype :: w a -> w b -> Maybe (JMShim a b)
+    isSubtype :: w a -> w b -> Maybe (PinaforeShim Type a b)
 
 data LiteralType (t :: Type) where
     LiteralLiteralType :: LiteralType Literal

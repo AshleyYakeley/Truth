@@ -6,6 +6,7 @@ module Pinafore.Language.Type.EntityAdapter
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Literal
 import Pinafore.Language.Value
@@ -86,7 +87,7 @@ closedEntityTypeAdapter (ConsClosedEntityType a cc rest) =
 concreteEntityAdapter :: forall t. ConcreteEntityType t -> EntityAdapter t
 concreteEntityAdapter (MkConcreteType gt args) = entityGroundTypeAdapter gt args
 
-concreteToEntityShim :: ConcreteEntityType a -> JMShim a Entity
+concreteToEntityShim :: ConcreteEntityType a -> PinaforeShim Type a Entity
 concreteToEntityShim (MkConcreteType TopEntityGroundType NilArguments) = id
 concreteToEntityShim (MkConcreteType NewEntityGroundType NilArguments) = coerceEnhanced "subtype"
 concreteToEntityShim (MkConcreteType (OpenEntityGroundType _ _) NilArguments) = coerceEnhanced "subtype"

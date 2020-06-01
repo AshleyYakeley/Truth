@@ -9,7 +9,8 @@ import Pinafore.Language.TypeSystem.Show
 import Pinafore.Language.Value
 import Shapes
 
-data EntityGroundType (t :: k) where
+type EntityGroundType :: forall k. k -> Type
+data EntityGroundType t where
     TopEntityGroundType :: EntityGroundType Entity
     NewEntityGroundType :: EntityGroundType NewEntity
     OpenEntityGroundType :: Name -> TypeIDType tid -> EntityGroundType (OpenEntity tid)

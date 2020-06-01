@@ -37,6 +37,7 @@ library:
       - Pinafore.Language.Value.UI
       - Pinafore.Language.Value
       - Pinafore.Language.Name
+      - Pinafore.Language.Shim
       - Pinafore.Language.Type.Literal
       - Pinafore.Language.If
       - Pinafore.Language.TypeSystem.Show

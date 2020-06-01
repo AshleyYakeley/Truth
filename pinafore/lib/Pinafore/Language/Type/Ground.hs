@@ -3,6 +3,7 @@ module Pinafore.Language.Type.Ground where
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.TypeSystem.Show
 import Pinafore.Language.Value
@@ -25,8 +26,8 @@ instance TestHetEquality (ProvidedType) where
         HRefl <- testHetEquality ta tb
         return HRefl
 
--- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
-data PinaforeGroundType (dv :: DolanVariance) (t :: DolanVarianceKind dv) where
+type PinaforeGroundType :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+data PinaforeGroundType dv t where
     -- a simple ground type is one with no special subtype relationships
     SimpleGroundType
         :: forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
@@ -153,7 +154,7 @@ pinaforeGroundTypeShowPrec (SimpleGroundType dv _ n _) args = showPrecDolanVaria
 pinaforeGroundTypeShowPrec FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
 pinaforeGroundTypeShowPrec (EntityPinaforeGroundType lt gt) dargs =
-    case dolanArgumentsToArguments @JMShim mkPShimWit lt (entityGroundTypeCovaryMap gt) dargs of
+    case dolanArgumentsToArguments @PinaforeShim mkShimWit lt (entityGroundTypeCovaryMap gt) dargs of
         MkShimWit args _ -> entityGroundTypeShowPrec exprShowPrec gt args
 pinaforeGroundTypeShowPrec OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)

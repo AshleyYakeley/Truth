@@ -13,8 +13,7 @@ module Language.Expression.Renamer
     , varRenamerTGenerateSuggested
     ) where
 
-import Data.Shim.Polarity
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.WitnessMappable
 import Shapes
 
@@ -27,7 +26,7 @@ class (MonadTransConstraint Monad rn, MonadTransConstraint Monad (RenamerNamespa
     type RenamerNegWitness rn :: Type -> Type
     type RenamerPosWitness rn :: Type -> Type
     type RenamerNamespaceT rn :: (Type -> Type) -> (Type -> Type)
-    type RenamerShim rn :: Type -> Type -> Type
+    type RenamerShim rn :: MapKind Type
     renameNegWitness :: Monad m => RenamerNegWitness rn t -> RenamerNamespaceT rn (rn m) (RenamerNegShimWit rn t)
     renamePosWitness :: Monad m => RenamerPosWitness rn t -> RenamerNamespaceT rn (rn m) (RenamerPosShimWit rn t)
     renameNewVar :: Monad m => rn m (NewVar rn)

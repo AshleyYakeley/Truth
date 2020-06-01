@@ -3,6 +3,7 @@ module Pinafore.Language.TypeSystem.Simplify
     ) where
 
 import Language.Expression.Dolan
+import Pinafore.Language.Shim
 import Pinafore.Language.TypeSystem.Simplify.DuplicateGroundTypes
 import Pinafore.Language.TypeSystem.Simplify.DuplicateTypeVars
 import Pinafore.Language.TypeSystem.Simplify.OneSidedTypeVars
@@ -28,7 +29,7 @@ simplify = True
 -- 4. merge duplicate type vars in join/meet (on each type)
 -- e.g. "a|a" => "a"
 pinaforeSimplifyTypes ::
-       forall a. PShimWitMappable PinaforeShim PinaforeType a
+       forall a. PShimWitMappable (PinaforeShim Type) PinaforeType a
     => a
     -> a
 pinaforeSimplifyTypes =

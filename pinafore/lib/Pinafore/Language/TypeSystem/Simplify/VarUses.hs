@@ -6,6 +6,7 @@ module Pinafore.Language.TypeSystem.Simplify.VarUses
 import Data.Shim
 import Language.Expression.Dolan
 import Language.Expression.WitnessMappable
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.TypeSystem.Type
 import Shapes
@@ -64,7 +65,7 @@ instance Is PolarityType polarity => GetVarUses (PinaforeType polarity) where
                 getVarUses' t
 
 mappableGetVarUses ::
-       forall a. PShimWitMappable PinaforeShim PinaforeType a
+       forall a. PShimWitMappable (PinaforeShim Type) PinaforeType a
     => a
     -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
 mappableGetVarUses a =
@@ -73,7 +74,7 @@ mappableGetVarUses a =
         (\case
              Left (MkAnyW t) -> getVarUses t
              Right (MkAnyW t) -> getVarUses t) $
-    mappableGetWitnesses @_ @(PinaforeShimWit 'Positive) @(PinaforeShimWit 'Negative) a
+    mappableGetWitnesses @_ @(PinaforeTypeShimWit 'Positive) @(PinaforeTypeShimWit 'Negative) a
 
 class GetExpressionVars f where
     -- | (positive, negative)
@@ -116,7 +117,7 @@ instance Is PolarityType polarity => GetExpressionVars (PinaforeType polarity) w
     getExpressionVars (ConsPinaforeType t1 tr) = getExpressionVars t1 <> getExpressionVars tr
 
 mappableGetVars ::
-       forall a. PShimWitMappable PinaforeShim PinaforeType a
+       forall a. PShimWitMappable (PinaforeShim Type) PinaforeType a
     => a
     -> ([AnyW SymbolType], [AnyW SymbolType])
 mappableGetVars a =
@@ -125,4 +126,4 @@ mappableGetVars a =
         (\case
              Left (MkAnyW t) -> getExpressionVars t
              Right (MkAnyW t) -> getExpressionVars t) $
-    mappableGetWitnesses @_ @(PinaforeShimWit 'Positive) @(PinaforeShimWit 'Negative) a
+    mappableGetWitnesses @_ @(PinaforeTypeShimWit 'Positive) @(PinaforeTypeShimWit 'Negative) a

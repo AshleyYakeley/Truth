@@ -9,6 +9,7 @@ import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Scope
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.EntityAdapter
 import Pinafore.Language.Type.Ground
@@ -20,7 +21,7 @@ import Shapes
 
 --import Pinafore.Language.Subtype
 data SubtypeContext m pola polb = MkSubtypeContext
-    { subtypeTypes :: forall ta tb. PinaforeType pola ta -> PinaforeType polb tb -> m (JMShim ta tb)
+    { subtypeTypes :: forall ta tb. PinaforeType pola ta -> PinaforeType polb tb -> m (PinaforeShim Type ta tb)
     , subtypeLift :: forall a. PinaforeSourceScoped a -> m a
     , subtypeInverted :: SubtypeContext m (InvertPolarity polb) (InvertPolarity pola)
     }
@@ -31,7 +32,7 @@ subtypeVariance ::
     -> VarianceType sv
     -> SingleArgument sv PinaforeType pola a
     -> SingleArgument sv PinaforeType polb b
-    -> m (VarianceCategory JMShim sv a b)
+    -> m (VarianceCategory (PinaforeShim Type) sv a b)
 subtypeVariance sc CovarianceType ta tb = subtypeTypes sc ta tb
 subtypeVariance sc ContravarianceType ta tb = do
     ba <- subtypeTypes (subtypeInverted sc) tb ta
@@ -42,14 +43,15 @@ subtypeVariance sc RangevarianceType (MkRangeType tpa tqa) (MkRangeType tpb tqb)
     return $ MkCatRange pba qab
 
 subtypeArguments ::
-       forall m pola polb dv gta gtb ta tb. (Applicative m, Is PolarityType pola, Is PolarityType polb)
+       forall m pola polb dv (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) ta tb.
+       (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext m pola polb
     -> DolanVarianceType dv
     -> DolanVarianceMap dv gta
     -> DolanVarianceMap dv gtb
     -> DolanArguments dv PinaforeType gta pola ta
     -> DolanArguments dv PinaforeType gtb polb tb
-    -> m (JMShim gta gtb -> JMShim ta tb)
+    -> m (PinaforeShim (DolanVarianceKind dv) gta gtb -> PinaforeShim Type ta tb)
 subtypeArguments _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments NilDolanArguments = pure id
 subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVarianceMap dvmb) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) =
     case applyFunctionKindWitness (inKind @_ @gta) sta of
@@ -60,11 +62,11 @@ subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDola
                         Dict ->
                             case varianceCoercibleKind svt of
                                 Dict ->
-                                    case dolanVarianceInCategory @JMShim dvt of
+                                    case dolanVarianceInCategory @PinaforeShim dvt of
                                         Dict -> do
                                             sfunc <- subtypeVariance sc svt sta stb
                                             f <- subtypeArguments sc dvt dvma dvmb dta dtb
-                                            pure $ \conv -> f (consShimFunc svt conv sfunc)
+                                            pure $ \conv -> f (applyPolyShim svt conv sfunc)
 
 pinaforeSubtypeArguments ::
        forall m pola polb dv gt argsa argsb. (Applicative m, Is PolarityType pola, Is PolarityType polb)
@@ -72,13 +74,13 @@ pinaforeSubtypeArguments ::
     -> PinaforeGroundType dv gt
     -> DolanArguments dv PinaforeType gt pola argsa
     -> DolanArguments dv PinaforeType gt polb argsb
-    -> m (JMShim argsa argsb)
+    -> m (PinaforeShim Type argsa argsb)
 pinaforeSubtypeArguments sc gt argsa argsb = let
     vkt = pinaforeGroundTypeVarianceType gt
     dvm = pinaforeGroundTypeVarianceMap gt
     in case dolanVarianceMapInKind dvm of
            Dict ->
-               case dolanVarianceInCategory @JMShim vkt of
+               case dolanVarianceInCategory @PinaforeShim vkt of
                    Dict -> fmap (\f -> f cid) $ subtypeArguments sc vkt dvm dvm argsa argsb
 
 topEntityType :: forall pol. PinaforeType pol (JoinMeetType pol Entity (LimitType pol))
@@ -96,7 +98,7 @@ entityGroundSubtype ::
     -> CovaryType dvb
     -> EntityGroundType fb
     -> DolanArguments dvb PinaforeType fb polb b
-    -> m (PinaforeShim a b)
+    -> m (PinaforeShim Type a b)
 -- Entity <= Entity
 entityGroundSubtype _ NilListType TopEntityGroundType NilDolanArguments NilListType TopEntityGroundType NilDolanArguments =
     pure id
@@ -128,7 +130,7 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) PairE
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @polb
     convB <- subtypeTypes sc tb $ topEntityType @polb
-    pure $ convE . consShimFunc CovarianceType (cfmap (unjoinmeet1 @polb . convA)) (unjoinmeet1 @polb . convB)
+    pure $ convE . applyPolyShim CovarianceType (cfmap (unjoinmeet1 @polb . convA)) (unjoinmeet1 @polb . convB)
 -- Either Entity Entity <= Entity
 entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
@@ -139,12 +141,12 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) Eithe
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @polb
     convB <- subtypeTypes sc tb $ topEntityType @polb
-    pure $ convE . consShimFunc CovarianceType (cfmap (unjoinmeet1 @polb . convA)) (unjoinmeet1 @polb . convB)
+    pure $ convE . applyPolyShim CovarianceType (cfmap (unjoinmeet1 @polb . convA)) (unjoinmeet1 @polb . convB)
 -- (entity type) <= Entity
 entityGroundSubtype _ ct gt args NilListType TopEntityGroundType NilDolanArguments
     | Just ebij <- pinaforeEntityToConcreteEntityType ct gt args =
         case ebij of
-            MkShimWit et conv -> pure $ concreteToEntityShim et <.> jmIsoSingle conv
+            MkShimWit et conv -> pure $ concreteToEntityShim et <.> polarPolyIsoSingle conv
 -- (literal type) <= (literal type)
 entityGroundSubtype _ NilListType (LiteralEntityGroundType t1) NilDolanArguments NilListType (LiteralEntityGroundType t2) NilDolanArguments
     | Just conv <- isSubtype t1 t2 = pure conv
@@ -175,7 +177,7 @@ subtypeGroundTypes ::
     -> DolanArguments dva PinaforeType gta pola a
     -> PinaforeGroundType dvb gtb
     -> DolanArguments dvb PinaforeType gtb polb b
-    -> m (JMShim a b)
+    -> m (PinaforeShim Type a b)
 -- f a0... <= f b0...
 subtypeGroundTypes sc ga argsa gb argsb
     | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality ga gb = pinaforeSubtypeArguments sc ga argsa argsb
