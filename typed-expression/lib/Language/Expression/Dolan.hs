@@ -1,26 +1,68 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan
-    ( module I
-    , module Language.Expression.Dolan
+    ( PShimWit
+    , MPolarityType(..)
+    , MPolarW(..)
+    , MPolarRangeType(..)
+    , isMPolarity
+    , InvertMPolarW(..)
+    , invertMPolarity
+    , toMPolar
+    , toMPolarWM
+    , fromMPolarSingle
+    , GroundTypeKind
+    , DolanPolyShim
+    , DolanVariance
+    , DolanVarianceKind
+    , DolanVarianceType
+    , dolanVarianceInCategory
+    , DolanVarianceMap(..)
+    , dolanVary
+    , CovaryType
+    , CovaryMap
+    , covarymap
+    , covaryToDolanVarianceMap
+    , DolanSingularType(..)
+    , DolanType(..)
+    , singleDolanType
+    , singleDolanShimWit
+    , joinMeetDolanShimWit
+    , unToRangeShimWit
+    , unFromRangeShimWit
+    , biRangeAnyF
+    , SingleArgument
+    , DolanArguments(..)
+    , mapDolanArgumentsType
+    , dolanArgumentsToArguments
+    , argumentsToDolanArguments
+    , dolanArgumentsToArgumentsM
+    , argumentsToDolanArgumentsM
+    , SubtypeContext(..)
+    , subtypeDolanArguments
+    , DolanTypeSystem
+    , dolanSimplifyTypes
+    , DolanName
+    , IsDolanGroundType(..)
+    , IsDolanFunctionGroundType(..)
+    , IsDolanSubtypeGroundType(..)
     ) where
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Arguments as I
-import Language.Expression.Dolan.Bisubstitute as I
-import Language.Expression.Dolan.Covariance as I
-import Language.Expression.Dolan.MPolarity as I
-import Language.Expression.Dolan.PShimWit as I
-import Language.Expression.Dolan.RangeF as I
+import Language.Expression.Dolan.Arguments
+import Language.Expression.Dolan.Covariance
+import Language.Expression.Dolan.MPolarity
+import Language.Expression.Dolan.PShimWit
+import Language.Expression.Dolan.RangeF
 import Language.Expression.Dolan.Rename ()
-import Language.Expression.Dolan.Simplify as I
-import Language.Expression.Dolan.Subsume as I
-import Language.Expression.Dolan.Subtype as I
-import Language.Expression.Dolan.Type as I
-import Language.Expression.Dolan.TypeSystem as I
-import Language.Expression.Dolan.Unify as I
-import Language.Expression.Dolan.Variance as I
+import Language.Expression.Dolan.Simplify
+import Language.Expression.Dolan.Subsume
+import Language.Expression.Dolan.Subtype
+import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.Unify
+import Language.Expression.Dolan.Variance
 import Shapes
 
 class (Eq (DolanName ground), IsDolanSubtypeGroundType ground) => IsDolanFunctionGroundType (ground :: GroundTypeKind) where
