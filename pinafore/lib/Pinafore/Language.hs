@@ -15,6 +15,7 @@ module Pinafore.Language
     , Entity
     , showPinaforeRef
     , runPinaforeSourceScoped
+    , exprShow
     ) where
 
 import Control.Exception
@@ -28,7 +29,7 @@ import Pinafore.Language.Read
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Type.Literal
 import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Simplify
+import Pinafore.Language.TypeSystem.Show
 import Shapes
 import System.IO.Error
 import Truth.Core
@@ -79,12 +80,12 @@ groundTypedShowValue (EntityPinaforeGroundType ct t) args v
 groundTypedShowValue _ _ _ = "<?>"
 
 singularTypedShowValue :: PinaforeSingularType 'Positive t -> t -> String
-singularTypedShowValue (VarPinaforeSingularType _) _ = "<?>"
-singularTypedShowValue (GroundPinaforeSingularType gt args) v = groundTypedShowValue gt args v
+singularTypedShowValue (VarDolanSingularType _) _ = "<?>"
+singularTypedShowValue (GroundDolanSingularType gt args) v = groundTypedShowValue gt args v
 
 typedShowValue :: PinaforeType 'Positive t -> t -> String
-typedShowValue NilPinaforeType v = never v
-typedShowValue (ConsPinaforeType ts tt) v = joinf (singularTypedShowValue ts) (typedShowValue tt) v
+typedShowValue NilDolanType v = never v
+typedShowValue (ConsDolanType ts tt) v = joinf (singularTypedShowValue ts) (typedShowValue tt) v
 
 showPinaforeRef :: QValue -> String
 showPinaforeRef (MkAnyValue (MkPosShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
@@ -142,7 +143,7 @@ interactLoop inh outh echo = do
                                  liftIO $
                                      hPutStrLn outh $
                                      ": " <>
-                                     show t <>
+                                     unpack (exprShow t) <>
                                      if showinfo
                                          then " # " <> show shim
                                          else ""
@@ -151,8 +152,10 @@ interactLoop inh outh echo = do
                                  liftIO $
                                      hPutStrLn outh $
                                      case polarity of
-                                         PositiveType -> show $ pinaforeSimplifyTypes $ MkAnyInKind t
-                                         NegativeType -> show $ pinaforeSimplifyTypes $ MkAnyInKind t
+                                         PositiveType ->
+                                             unpack $ exprShow $ dolanSimplifyTypes @PinaforeGroundType $ MkAnyInKind t
+                                         NegativeType ->
+                                             unpack $ exprShow $ dolanSimplifyTypes @PinaforeGroundType $ MkAnyInKind t
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
                     [ Handler $ \(err :: PinaforeError) -> hPutStrLn outh $ show err
                     , Handler $ \err -> hPutStrLn outh $ "error: " <> ioeGetErrorString err

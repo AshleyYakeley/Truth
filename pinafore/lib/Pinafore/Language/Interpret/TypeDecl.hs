@@ -86,9 +86,9 @@ interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
                    ctf :: forall polarity. Is PolarityType polarity
                        => PinaforeTypeShimWit polarity (Identified n)
                    ctf =
-                       singlePinaforeShimWit $
+                       singleDolanShimWit $
                        mkShimWit $
-                       GroundPinaforeSingularType
+                       GroundDolanSingularType
                            (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym cti)
                            NilDolanArguments
                patts <-
@@ -126,9 +126,9 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                    ctf :: forall polarity. Is PolarityType polarity
                        => PinaforeTypeShimWit polarity _
                    ctf =
-                       singlePinaforeShimWit $
+                       singleDolanShimWit $
                        mkShimWit $
-                       GroundPinaforeSingularType
+                       GroundDolanSingularType
                            (SimpleGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt)
                            NilDolanArguments
                tident <- unsafeGetIdentification

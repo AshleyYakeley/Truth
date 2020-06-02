@@ -1,10 +1,6 @@
 module Language.Expression.Dolan.RangeF where
 
-import Data.Shim.CatRange
-import Data.Shim.Polarity
-import Data.Shim.PolyMap
-import Data.Shim.Range
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Dolan.PShimWit
 import Shapes
 

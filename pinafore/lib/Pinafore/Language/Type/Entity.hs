@@ -1,5 +1,6 @@
 module Pinafore.Language.Type.Entity where
 
+import Language.Expression.Arguments
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Name

@@ -26,7 +26,7 @@ instance TestHetEquality (ProvidedType) where
         HRefl <- testHetEquality ta tb
         return HRefl
 
-type PinaforeGroundType :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+type PinaforeGroundType :: GroundTypeKind
 data PinaforeGroundType dv t where
     -- a simple ground type is one with no special subtype relationships
     SimpleGroundType
@@ -53,66 +53,66 @@ data PinaforeGroundType dv t where
     WindowPinaforeGroundType :: PinaforeGroundType '[] PinaforeWindow
     MenuItemPinaforeGroundType :: PinaforeGroundType '[] MenuEntry
 
-pinaforeGroundTypeTestEquality ::
-       PinaforeGroundType dka ta -> PinaforeGroundType dkb tb -> Maybe (dka :~: dkb, ta :~~: tb)
-pinaforeGroundTypeTestEquality (SimpleGroundType dva _ _ ta) (SimpleGroundType dvb _ _ tb) = do
-    Refl <- testEquality dva dvb
-    HRefl <- testHetEquality ta tb
-    Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality FuncPinaforeGroundType FuncPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality (EntityPinaforeGroundType la gta) (EntityPinaforeGroundType lb gtb) = do
-    Refl <- testEquality la lb
-    (HRefl, _) <- entityGroundTypeTestEquality gta gtb
-    Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality OrderPinaforeGroundType OrderPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality ActionPinaforeGroundType ActionPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality RefPinaforeGroundType RefPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality ListRefPinaforeGroundType ListRefPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality TextRefPinaforeGroundType TextRefPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality SetRefPinaforeGroundType SetRefPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality FiniteSetRefPinaforeGroundType FiniteSetRefPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality MorphismPinaforeGroundType MorphismPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality UserInterfacePinaforeGroundType UserInterfacePinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality NotifierPinaforeGroundType NotifierPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality WindowPinaforeGroundType WindowPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality MenuItemPinaforeGroundType MenuItemPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality _ _ = Nothing
+type instance DolanPolyShim PinaforeGroundType = PinaforeShim
 
-pinaforeGroundTypeVarianceMap ::
-       forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). PinaforeGroundType dv f -> DolanVarianceMap dv f
-pinaforeGroundTypeVarianceMap (SimpleGroundType _ dvm _ _) = dvm
-pinaforeGroundTypeVarianceMap FuncPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap (EntityPinaforeGroundType dvcovary gt) =
-    covaryToDolanVarianceMap dvcovary $ entityGroundTypeCovaryMap gt
-pinaforeGroundTypeVarianceMap OrderPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap ActionPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap RefPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap ListRefPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap TextRefPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap SetRefPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap FiniteSetRefPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap MorphismPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap UserInterfacePinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap NotifierPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap WindowPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap MenuItemPinaforeGroundType = dolanVary @dv
-
-pinaforeGroundTypeVarianceType :: PinaforeGroundType dv t -> DolanVarianceType dv
-pinaforeGroundTypeVarianceType (SimpleGroundType dvt _ _ _) = dvt
-pinaforeGroundTypeVarianceType FuncPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType (EntityPinaforeGroundType lt _) = mapListType (\Refl -> CovarianceType) lt
-pinaforeGroundTypeVarianceType OrderPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType ActionPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType RefPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType ListRefPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType TextRefPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType SetRefPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType FiniteSetRefPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType MorphismPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType UserInterfacePinaforeGroundType = representative
-pinaforeGroundTypeVarianceType NotifierPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType WindowPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType MenuItemPinaforeGroundType = representative
+instance IsDolanGroundType PinaforeGroundType where
+    groundTypeVarianceMap ::
+           forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). PinaforeGroundType dv f -> DolanVarianceMap dv f
+    groundTypeVarianceMap (SimpleGroundType _ dvm _ _) = dvm
+    groundTypeVarianceMap FuncPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap (EntityPinaforeGroundType dvcovary gt) =
+        covaryToDolanVarianceMap dvcovary $ entityGroundTypeCovaryMap gt
+    groundTypeVarianceMap OrderPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap ActionPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap RefPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap ListRefPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap TextRefPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap SetRefPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap FiniteSetRefPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap MorphismPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap UserInterfacePinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap NotifierPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap WindowPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap MenuItemPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceType :: PinaforeGroundType dv t -> DolanVarianceType dv
+    groundTypeVarianceType (SimpleGroundType dvt _ _ _) = dvt
+    groundTypeVarianceType FuncPinaforeGroundType = representative
+    groundTypeVarianceType (EntityPinaforeGroundType lt _) = mapListType (\Refl -> CovarianceType) lt
+    groundTypeVarianceType OrderPinaforeGroundType = representative
+    groundTypeVarianceType ActionPinaforeGroundType = representative
+    groundTypeVarianceType RefPinaforeGroundType = representative
+    groundTypeVarianceType ListRefPinaforeGroundType = representative
+    groundTypeVarianceType TextRefPinaforeGroundType = representative
+    groundTypeVarianceType SetRefPinaforeGroundType = representative
+    groundTypeVarianceType FiniteSetRefPinaforeGroundType = representative
+    groundTypeVarianceType MorphismPinaforeGroundType = representative
+    groundTypeVarianceType UserInterfacePinaforeGroundType = representative
+    groundTypeVarianceType NotifierPinaforeGroundType = representative
+    groundTypeVarianceType WindowPinaforeGroundType = representative
+    groundTypeVarianceType MenuItemPinaforeGroundType = representative
+    groundTypeTestEquality :: PinaforeGroundType dka ta -> PinaforeGroundType dkb tb -> Maybe (dka :~: dkb, ta :~~: tb)
+    groundTypeTestEquality (SimpleGroundType dva _ _ ta) (SimpleGroundType dvb _ _ tb) = do
+        Refl <- testEquality dva dvb
+        HRefl <- testHetEquality ta tb
+        Just (Refl, HRefl)
+    groundTypeTestEquality FuncPinaforeGroundType FuncPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality (EntityPinaforeGroundType la gta) (EntityPinaforeGroundType lb gtb) = do
+        Refl <- testEquality la lb
+        (HRefl, _) <- entityGroundTypeTestEquality gta gtb
+        Just (Refl, HRefl)
+    groundTypeTestEquality OrderPinaforeGroundType OrderPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality ActionPinaforeGroundType ActionPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality RefPinaforeGroundType RefPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality ListRefPinaforeGroundType ListRefPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality TextRefPinaforeGroundType TextRefPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality SetRefPinaforeGroundType SetRefPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality FiniteSetRefPinaforeGroundType FiniteSetRefPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality MorphismPinaforeGroundType MorphismPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality UserInterfacePinaforeGroundType UserInterfacePinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality NotifierPinaforeGroundType NotifierPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality WindowPinaforeGroundType WindowPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality MenuItemPinaforeGroundType MenuItemPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality _ _ = Nothing
 
 showPrecVariance ::
        forall w polarity sv t.
@@ -141,38 +141,39 @@ showPrecDolanVariance f NilListType NilDolanArguments = f
 showPrecDolanVariance f (ConsListType sv dv) (ConsDolanArguments t1 tr) =
     showPrecDolanVariance (f (showPrecVariance @w @polarity sv t1)) dv tr
 
-pinaforeGroundTypeShowPrec ::
-       forall w polarity dv f t.
-       ( Is PolarityType polarity
-       , forall a polarity'. Is PolarityType polarity' => ExprShow (w polarity' a)
-       , forall a. ExprShow (RangeType w polarity a)
-       )
-    => PinaforeGroundType dv f
-    -> DolanArguments dv w f polarity t
-    -> (Text, Int)
-pinaforeGroundTypeShowPrec (SimpleGroundType dv _ n _) args = showPrecDolanVariance n dv args
-pinaforeGroundTypeShowPrec FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
-    invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
-pinaforeGroundTypeShowPrec (EntityPinaforeGroundType lt gt) dargs =
-    case dolanArgumentsToArguments @PinaforeShim mkShimWit lt (entityGroundTypeCovaryMap gt) dargs of
-        MkShimWit args _ -> entityGroundTypeShowPrec exprShowPrec gt args
-pinaforeGroundTypeShowPrec OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
-pinaforeGroundTypeShowPrec ActionPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("Action " <> exprPrecShow 0 ta, 2)
-pinaforeGroundTypeShowPrec RefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("Ref " <> exprPrecShow 0 ta, 2)
-pinaforeGroundTypeShowPrec ListRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("ListRef " <> exprPrecShow 0 ta, 2)
-pinaforeGroundTypeShowPrec TextRefPinaforeGroundType NilDolanArguments = ("TextRef", 0)
-pinaforeGroundTypeShowPrec SetRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    invertPolarity @polarity ("SetRef " <> exprPrecShow 0 ta, 2)
-pinaforeGroundTypeShowPrec FiniteSetRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("FiniteSetRef " <> exprPrecShow 0 ta, 2)
-pinaforeGroundTypeShowPrec MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
-    invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
-pinaforeGroundTypeShowPrec UserInterfacePinaforeGroundType NilDolanArguments = ("UI", 0)
-pinaforeGroundTypeShowPrec NotifierPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    invertPolarity @polarity ("Notifier " <> exprShow ta, 2)
-pinaforeGroundTypeShowPrec WindowPinaforeGroundType NilDolanArguments = ("Window", 0)
-pinaforeGroundTypeShowPrec MenuItemPinaforeGroundType NilDolanArguments = ("MenuItem", 0)
+instance GroundExprShow PinaforeGroundType where
+    groundTypeShowPrec ::
+           forall w polarity dv f t.
+           ( Is PolarityType polarity
+           , forall a polarity'. Is PolarityType polarity' => ExprShow (w polarity' a)
+           , forall a. ExprShow (RangeType w polarity a)
+           )
+        => PinaforeGroundType dv f
+        -> DolanArguments dv w f polarity t
+        -> (Text, Int)
+    groundTypeShowPrec (SimpleGroundType dv _ n _) args = showPrecDolanVariance n dv args
+    groundTypeShowPrec FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
+        invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
+    groundTypeShowPrec (EntityPinaforeGroundType lt gt) dargs =
+        case dolanArgumentsToArguments @PinaforeShim mkShimWit lt (entityGroundTypeCovaryMap gt) dargs of
+            MkShimWit args _ -> entityGroundTypeShowPrec exprShowPrec gt args
+    groundTypeShowPrec OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+        invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
+    groundTypeShowPrec ActionPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+        ("Action " <> exprPrecShow 0 ta, 2)
+    groundTypeShowPrec RefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+        ("Ref " <> exprPrecShow 0 ta, 2)
+    groundTypeShowPrec ListRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+        ("ListRef " <> exprPrecShow 0 ta, 2)
+    groundTypeShowPrec TextRefPinaforeGroundType NilDolanArguments = ("TextRef", 0)
+    groundTypeShowPrec SetRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+        invertPolarity @polarity ("SetRef " <> exprPrecShow 0 ta, 2)
+    groundTypeShowPrec FiniteSetRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+        ("FiniteSetRef " <> exprPrecShow 0 ta, 2)
+    groundTypeShowPrec MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
+        invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
+    groundTypeShowPrec UserInterfacePinaforeGroundType NilDolanArguments = ("UI", 0)
+    groundTypeShowPrec NotifierPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+        invertPolarity @polarity ("Notifier " <> exprShow ta, 2)
+    groundTypeShowPrec WindowPinaforeGroundType NilDolanArguments = ("Window", 0)
+    groundTypeShowPrec MenuItemPinaforeGroundType NilDolanArguments = ("MenuItem", 0)

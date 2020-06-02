@@ -51,3 +51,17 @@ library:
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.MPolarity
       - Language.Expression.Dolan.RangeF
+      - Language.Expression.Dolan.Type
+      - Language.Expression.Dolan.Subtype
+      - Language.Expression.Dolan.Bisubstitute
+      - Language.Expression.Dolan.TypeSystem
+      - Language.Expression.Dolan.Rename
+      - Language.Expression.Dolan.Simplify.VarUses
+      - Language.Expression.Dolan.Simplify.OneSidedTypeVars
+      - Language.Expression.Dolan.Simplify.DuplicateGroundTypes
+      - Language.Expression.Dolan.Simplify.SharedTypeVars
+      - Language.Expression.Dolan.Simplify.DuplicateTypeVars
+      - Language.Expression.Dolan.Simplify
+      - Language.Expression.Dolan.Unify
+      - Language.Expression.Dolan.Inverted
+      - Language.Expression.Dolan.Subsume

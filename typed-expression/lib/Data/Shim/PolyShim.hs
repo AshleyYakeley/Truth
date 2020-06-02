@@ -4,7 +4,10 @@ import Data.Shim.PolyMap
 import Data.Shim.Variance
 import Shapes
 
-class (forall k. CoercibleKind k => InCategory (pmap k)) => ApplyPolyShim (pmap :: PolyMapKind) where
+type AllInCategory :: PolyMapKind -> Constraint
+type AllInCategory pmap = forall k. CoercibleKind k => InCategory (pmap k)
+
+class AllInCategory pmap => ApplyPolyShim (pmap :: PolyMapKind) where
     applyPolyShim ::
            forall k (v :: Variance) (f :: VarianceKind v -> k) (g :: VarianceKind v -> k) (a :: VarianceKind v) (b :: VarianceKind v).
            (InKind a, InKind b, HasVariance v f, HasVariance v g)

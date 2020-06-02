@@ -5,6 +5,7 @@ module Pinafore.Language.Interpret
 
 import Data.Graph
 import Data.Shim
+import Language.Expression.Arguments
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
@@ -185,9 +186,9 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                                withSubrepresentative rangeTypeInKind rta $
                                withSubrepresentative rangeTypeInKind rtb $ let
                                    typef =
-                                       singlePinaforeShimWit $
+                                       singleDolanShimWit $
                                        mkShimWit $
-                                       GroundPinaforeSingularType MorphismPinaforeGroundType $
+                                       GroundDolanSingularType MorphismPinaforeGroundType $
                                        ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
                                    morphism =
                                        propertyMorphism

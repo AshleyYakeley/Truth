@@ -14,7 +14,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Subsume ()
+import Pinafore.Language.TypeSystem.Subtype ()
 import Shapes
 
 type QExpr = TSSealedExpression PinaforeTypeSystem

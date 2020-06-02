@@ -1,14 +1,14 @@
-module Pinafore.Language.TypeSystem.Simplify.SharedTypeVars
+module Language.Expression.Dolan.Simplify.SharedTypeVars
     ( mergeSharedTypeVars
     ) where
 
 import Data.Shim
-import Language.Expression.Dolan
+import Language.Expression.Dolan.Bisubstitute
+import Language.Expression.Dolan.PShimWit
+import Language.Expression.Dolan.Simplify.VarUses
+import Language.Expression.Dolan.Type
+import Language.Expression.Dolan.TypeSystem
 import Language.Expression.UVar
-import Pinafore.Language.Shim
-import Pinafore.Language.TypeSystem.Bisubstitute
-import Pinafore.Language.TypeSystem.Simplify.VarUses
-import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 findShare ::
@@ -28,22 +28,19 @@ findShare uses = let
     in find goodpair pairs
 
 mergeSharedTypeVars ::
-       forall a. PShimWitMappable (PinaforeShim Type) PinaforeType a
-    => a
-    -> a
+       forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
+    => PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a => a -> a
 mergeSharedTypeVars expr = let
-    (posuses, neguses) = mappableGetVarUses expr
+    (posuses, neguses) = mappableGetVarUses @ground expr
     in case findShare posuses <|> findShare neguses of
            Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) -> let
-               varBij :: Isomorphism (PinaforeShim Type) (UVar na) (UVar nb)
+               varBij :: Isomorphism (DolanPolyShim ground Type) (UVar na) (UVar nb)
                varBij = unsafeUVarIsomorphism
                bisub =
                    MkBisubstitution
                        vb
                        (return $
-                        ccontramap (isoBackwards varBij) $
-                        singlePinaforeShimWit $ mkShimWit $ VarPinaforeSingularType va)
-                       (return $
-                        cfmap (isoForwards varBij) $ singlePinaforeShimWit $ mkShimWit $ VarPinaforeSingularType va)
-               in mergeSharedTypeVars $ runIdentity $ bisubstitutes [bisub] expr
+                        ccontramap (isoBackwards varBij) $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType va)
+                       (return $ cfmap (isoForwards varBij) $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType va)
+               in mergeSharedTypeVars @ground $ runIdentity $ bisubstitutes @ground [bisub] expr
            Nothing -> expr

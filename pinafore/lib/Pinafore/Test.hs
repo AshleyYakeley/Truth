@@ -6,11 +6,12 @@ module Pinafore.Test
     , PinaforeTypeSystem
     , Name
     , UVar
+    , PinaforeGroundType
     , PinaforeType
     , PinaforeTypeShimWit
     , PinaforeScoped
     , PinaforeSourceScoped
-    , pinaforeSimplifyTypes
+    , dolanSimplifyTypes
     , toJMShimWit
     , module Pinafore.Test
     ) where
@@ -21,7 +22,6 @@ import Pinafore.Language
 import Pinafore.Language.Name
 import Pinafore.Language.Read
 import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Simplify
 import Pinafore.Storage
 import Shapes
 import Truth.Core

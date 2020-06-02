@@ -22,10 +22,12 @@ type PExpression = TSSealedExpression TS
 
 showVars :: NamedExpression Name (PinaforeTypeShimWit 'Negative) t -> [String]
 showVars (ClosedExpression _) = []
-showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) = (show name <> " : " <> show t) : showVars expr
+showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) =
+    (show name <> " : " <> unpack (exprShow t)) : showVars expr
 
 showTypes :: PExpression -> String
-showTypes (MkSealedExpression (MkShimWit t _) expr) = "{" <> intercalate ", " (showVars expr) <> "} -> " <> show t
+showTypes (MkSealedExpression (MkShimWit t _) expr) =
+    "{" <> intercalate ", " (showVars expr) <> "} -> " <> unpack (exprShow t)
 
 exprTypeTest :: String -> Maybe String -> PinaforeSourceScoped PExpression -> TestTree
 exprTypeTest name expected mexpr =
@@ -113,10 +115,10 @@ simplifyTypeTest text e =
                 case mt of
                     MkAnyW t ->
                         return $
-                        pinaforeSimplifyTypes @PExpression $
+                        dolanSimplifyTypes @PinaforeGroundType @PExpression $
                         MkSealedExpression (mkShimWit t) $ ClosedExpression undefined
         case simpexpr of
-            MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ show t'
+            MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ exprShow t'
 
 testType :: TestTree
 testType =

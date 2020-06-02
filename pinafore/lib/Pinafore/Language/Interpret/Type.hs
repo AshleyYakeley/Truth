@@ -6,6 +6,7 @@ module Pinafore.Language.Interpret.Type
     ) where
 
 import Data.Shim
+import Language.Expression.Arguments
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.Syntax
@@ -91,11 +92,11 @@ interpretTypeM' (SingleSyntaxType sgt sargs) = do
     case agt of
         MkAnyW gt ->
             toMPolarWM $ do
-                aargs <- interpretArgs sgt (pinaforeGroundTypeVarianceType gt) sargs
+                aargs <- interpretArgs sgt (groundTypeVarianceType gt) sargs
                 case aargs of
-                    MkAnyW args -> return $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType gt args
+                    MkAnyW args -> return $ MkAnyW $ singleDolanType $ GroundDolanSingularType gt args
 interpretTypeM' (VarSyntaxType name) =
-    nameToSymbolType name $ \t -> return $ toMPolar $ MkAnyW $ singlePinaforeType $ VarPinaforeSingularType t
+    nameToSymbolType name $ \t -> return $ toMPolar $ MkAnyW $ singleDolanType $ VarDolanSingularType t
 
 interpretTypeRangeFromType ::
        forall mpolarity. Is MPolarityType mpolarity
@@ -127,10 +128,10 @@ interpretTypeRangeItem ::
     -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
 interpretTypeRangeItem (Just CoSyntaxVariance, st) = do
     atq <- interpretTypeM st
-    return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType NilPinaforeType tq) atq
+    return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType NilDolanType tq) atq
 interpretTypeRangeItem (Just ContraSyntaxVariance, st) = do
     atp <- invertMPolarity @mpolarity $ interpretTypeM st
-    return $ toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkRangeType tp NilPinaforeType) (MkInvertMPolarW atp)
+    return $ toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkRangeType tp NilDolanType) (MkInvertMPolarW atp)
 interpretTypeRangeItem (Nothing, st) = interpretTypeRangeFromType st
 
 groundTypeText :: SyntaxGroundType -> Text

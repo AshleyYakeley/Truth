@@ -24,8 +24,7 @@ instance DolanVarianceInCategory JMShim where
         case dolanVarianceInCategory @JMShim lt of
             Dict -> Dict
 
-instance forall (pmap :: PolyMapKind). (ApplyPolyShim pmap, DolanVarianceInCategory pmap) =>
-             DolanVarianceInCategory (PolyIso pmap) where
+instance forall (pmap :: PolyMapKind). (DolanVarianceInCategory pmap) => DolanVarianceInCategory (PolyIso pmap) where
     dolanVarianceInCategory NilListType = Dict
     dolanVarianceInCategory (ConsListType _ lt) =
         case dolanVarianceInCategory @pmap lt of

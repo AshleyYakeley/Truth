@@ -93,9 +93,9 @@ nonpolarToPinaforeSingularType ::
     -> DolanVarianceType dv
     -> (DolanVarianceMap dv f, ArgWit polarity dv f)
 nonpolarToPinaforeSingularType (VarPinaforeNonpolarType n) NilListType =
-    (NilDolanVarianceMap, MkArgWit $ \NilDolanArguments -> mkShimWit $ VarPinaforeSingularType n)
+    (NilDolanVarianceMap, MkArgWit $ \NilDolanArguments -> mkShimWit $ VarDolanSingularType n)
 nonpolarToPinaforeSingularType (GroundPinaforeNonpolarType gt) _ =
-    (pinaforeGroundTypeVarianceMap gt, MkArgWit $ \args -> mkShimWit $ GroundPinaforeSingularType gt args)
+    (groundTypeVarianceMap gt, MkArgWit $ \args -> mkShimWit $ GroundDolanSingularType gt args)
 nonpolarToPinaforeSingularType (ApplyPinaforeNonpolarType svt tf ta) dvt =
     case nonpolarToPinaforeSingularType tf (ConsListType svt dvt) of
         (ConsDolanVarianceMap dvm, MkArgWit swit) ->
@@ -109,7 +109,7 @@ nonpolarToPinaforeType ::
     => PinaforeNonpolarType '[] t
     -> PinaforeTypeShimWit polarity t
 nonpolarToPinaforeType t =
-    singlePinaforeShimWit $ unArgWit (snd (nonpolarToPinaforeSingularType t NilListType)) NilDolanArguments
+    singleDolanShimWit $ unArgWit (snd (nonpolarToPinaforeSingularType t NilListType)) NilDolanArguments
 
 applyArg ::
        forall polarity sv t.
@@ -143,12 +143,12 @@ applyArgs (ConsListType sv dv) ft (ConsDolanArguments a1 ar) = do
         MkAnyW na1 -> applyArgs dv (ApplyPinaforeNonpolarType sv ft na1) ar
 
 pinaforeSinglularTypeToNonpolar :: PinaforeSingularType polarity t -> Maybe (AnyW (PinaforeNonpolarType '[]))
-pinaforeSinglularTypeToNonpolar (VarPinaforeSingularType n) = Just $ MkAnyW $ VarPinaforeNonpolarType n
-pinaforeSinglularTypeToNonpolar (GroundPinaforeSingularType gt args) =
-    applyArgs (pinaforeGroundTypeVarianceType gt) (GroundPinaforeNonpolarType gt) args
+pinaforeSinglularTypeToNonpolar (VarDolanSingularType n) = Just $ MkAnyW $ VarPinaforeNonpolarType n
+pinaforeSinglularTypeToNonpolar (GroundDolanSingularType gt args) =
+    applyArgs (groundTypeVarianceType gt) (GroundPinaforeNonpolarType gt) args
 
 pinaforeTypeToNonpolar :: PinaforeType polarity t -> Maybe (AnyW (PinaforeNonpolarType '[]))
-pinaforeTypeToNonpolar (ConsPinaforeType t NilPinaforeType) = pinaforeSinglularTypeToNonpolar t
+pinaforeTypeToNonpolar (ConsDolanType t NilDolanType) = pinaforeSinglularTypeToNonpolar t
 pinaforeTypeToNonpolar _ = Nothing
 
 pinaforeNonpolarArgTypeTestEquality ::
@@ -167,7 +167,7 @@ pinaforeNonpolarTypeTestEquality ::
     -> PinaforeNonpolarType dvb tb
     -> Maybe (dva :~: dvb, ta :~~: tb)
 pinaforeNonpolarTypeTestEquality (GroundPinaforeNonpolarType ta) (GroundPinaforeNonpolarType tb) = do
-    (Refl, HRefl) <- pinaforeGroundTypeTestEquality ta tb
+    (Refl, HRefl) <- groundTypeTestEquality ta tb
     return (Refl, HRefl)
 pinaforeNonpolarTypeTestEquality (ApplyPinaforeNonpolarType sva fa ta) (ApplyPinaforeNonpolarType svb fb tb) = do
     Refl <- testEquality sva svb
