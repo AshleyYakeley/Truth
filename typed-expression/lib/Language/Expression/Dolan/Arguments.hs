@@ -15,7 +15,7 @@ module Language.Expression.Dolan.Arguments
     ) where
 
 import Data.Shim
-import Language.Expression.Arguments
+import Language.Expression.Common
 import Language.Expression.Dolan.Covariance
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Variance

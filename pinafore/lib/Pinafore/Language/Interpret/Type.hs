@@ -6,7 +6,7 @@ module Pinafore.Language.Interpret.Type
     ) where
 
 import Data.Shim
-import Language.Expression.Arguments
+import Language.Expression.Common
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.Syntax

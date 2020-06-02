@@ -4,7 +4,7 @@ module Pinafore.Language.Type.EntityAdapter
     ) where
 
 import Data.Shim
-import Language.Expression.Arguments
+import Language.Expression.Common
 import Pinafore.Base
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity

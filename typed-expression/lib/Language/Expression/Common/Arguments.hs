@@ -1,4 +1,4 @@
-module Language.Expression.Arguments where
+module Language.Expression.Common.Arguments where
 
 import Shapes
 

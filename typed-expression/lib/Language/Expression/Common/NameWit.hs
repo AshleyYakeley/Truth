@@ -1,7 +1,7 @@
-module Language.Expression.NameWit where
+module Language.Expression.Common.NameWit where
 
-import Language.Expression.Expression
-import Language.Expression.Pattern
+import Language.Expression.Common.Expression
+import Language.Expression.Common.Pattern
 import Shapes
 
 data NameTypeWitness nw vw t =

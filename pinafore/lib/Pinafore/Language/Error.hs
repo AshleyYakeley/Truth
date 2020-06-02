@@ -1,7 +1,7 @@
 module Pinafore.Language.Error where
 
 import Data.Shim
-import Language.Expression.Error
+import Language.Expression.Common
 import Pinafore.Language.Name
 import Shapes
 import Text.Parsec.Error

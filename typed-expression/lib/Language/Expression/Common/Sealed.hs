@@ -1,10 +1,10 @@
-module Language.Expression.Sealed where
+module Language.Expression.Common.Sealed where
 
-import Language.Expression.Error
-import Language.Expression.Expression
-import Language.Expression.Named
-import Language.Expression.Pattern
-import Language.Expression.WitnessMappable
+import Language.Expression.Common.Error
+import Language.Expression.Common.Expression
+import Language.Expression.Common.Named
+import Language.Expression.Common.Pattern
+import Language.Expression.Common.WitnessMappable
 import Shapes
 
 data SealedExpression (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =

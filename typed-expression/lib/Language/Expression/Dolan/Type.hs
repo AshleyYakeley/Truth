@@ -5,7 +5,7 @@ import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
-import Language.Expression.UVar
+import Language.Expression.TypeVariable
 import Shapes
 
 type IsDolanPolyShim :: PolyMapKind -> Constraint

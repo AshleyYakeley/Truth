@@ -1,4 +1,4 @@
-module Language.Expression.WitnessMappable where
+module Language.Expression.Common.WitnessMappable where
 
 import Data.Shim
 import Shapes

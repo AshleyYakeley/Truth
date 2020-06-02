@@ -1,15 +1,15 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Language.Expression.Abstract where
+module Language.Expression.Common.Abstract where
 
 import Data.Shim
-import Language.Expression.Error
-import Language.Expression.Expression
-import Language.Expression.Named
-import Language.Expression.Pattern
-import Language.Expression.Renamer
-import Language.Expression.Sealed
-import Language.Expression.Unifier
+import Language.Expression.Common.Error
+import Language.Expression.Common.Expression
+import Language.Expression.Common.Named
+import Language.Expression.Common.Pattern
+import Language.Expression.Common.Renamer
+import Language.Expression.Common.Sealed
+import Language.Expression.Common.Unifier
 import Shapes
 
 type UnifierRenamerConstraint unifier renamer m

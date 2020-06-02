@@ -3,12 +3,7 @@ module Test.Type
     ) where
 
 import Data.Shim
-import Language.Expression.Expression
-import Language.Expression.Named
-import Language.Expression.Renamer
-import Language.Expression.Sealed
-import Language.Expression.TypeSystem
-import Language.Expression.Unifier
+import Language.Expression.Common
 import Pinafore
 import Pinafore.Test
 import Shapes

@@ -1,4 +1,4 @@
-module Language.Expression.Pattern where
+module Language.Expression.Common.Pattern where
 
 import Shapes
 

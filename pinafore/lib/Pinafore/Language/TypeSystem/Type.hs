@@ -1,10 +1,8 @@
 module Pinafore.Language.TypeSystem.Type where
 
 import Data.Shim
-import Language.Expression.Arguments
+import Language.Expression.Common
 import Language.Expression.Dolan
-import Language.Expression.Renamer
-import Language.Expression.Sealed
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.Scope

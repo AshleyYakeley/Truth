@@ -6,7 +6,7 @@ module Pinafore.Language.Predefined.Base
 import Data.Shim
 import Data.Time
 import Data.Time.Clock.System
-import Language.Expression.Arguments
+import Language.Expression.Common
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.If

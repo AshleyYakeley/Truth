@@ -1,6 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Language.Expression.Bindings
+module Language.Expression.Common.Bindings
     ( Bindings
     , singleBinding
     , bindingsNames
@@ -9,10 +9,10 @@ module Language.Expression.Bindings
     ) where
 
 import Data.Shim.JoinMeet
-import Language.Expression.Abstract
-import Language.Expression.Renamer
-import Language.Expression.Sealed
-import Language.Expression.Unifier
+import Language.Expression.Common.Abstract
+import Language.Expression.Common.Renamer
+import Language.Expression.Common.Sealed
+import Language.Expression.Common.Unifier
 import Shapes
 
 data Binding (unifier :: Type -> Type) where

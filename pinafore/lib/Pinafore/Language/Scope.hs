@@ -32,8 +32,8 @@ module Pinafore.Language.Scope
     ) where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan
-import Language.Expression.Error
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.Shim

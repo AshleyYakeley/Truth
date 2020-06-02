@@ -8,11 +8,11 @@ module Language.Expression.Dolan.Subtype
     ) where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
-import Language.Expression.Renamer
 import Shapes
 
 type SubtypeContext :: (Polarity -> Type -> Type) -> MapKind Type -> (Type -> Type) -> Polarity -> Polarity -> Type

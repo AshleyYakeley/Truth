@@ -1,13 +1,13 @@
-module Language.Expression.TypeSystem where
+module Language.Expression.Common.TypeSystem where
 
 import Data.Shim
-import Language.Expression.Abstract
-import Language.Expression.Bindings
-import Language.Expression.Error
-import Language.Expression.Renamer
-import Language.Expression.Sealed
-import Language.Expression.Subsumer
-import Language.Expression.Unifier
+import Language.Expression.Common.Abstract
+import Language.Expression.Common.Bindings
+import Language.Expression.Common.Error
+import Language.Expression.Common.Renamer
+import Language.Expression.Common.Sealed
+import Language.Expression.Common.Subsumer
+import Language.Expression.Common.Unifier
 import Shapes
 
 type SubsumerRenamerConstraint subsumer renamer m

@@ -4,8 +4,8 @@ module Pinafore.Language.Interpret.TypeDecl
 
 import qualified Data.List as List
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan
-import Language.Expression.Sealed
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression

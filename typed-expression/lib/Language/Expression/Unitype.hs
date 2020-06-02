@@ -1,10 +1,7 @@
 module Language.Expression.Unitype where
 
 import Data.Shim
-import Language.Expression.Renamer
-import Language.Expression.Subsumer
-import Language.Expression.TypeSystem
-import Language.Expression.Unifier
+import Language.Expression.Common
 import Shapes
 
 newtype UnitypeNamespaceT (val :: Type) m a =

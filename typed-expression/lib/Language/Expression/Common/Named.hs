@@ -1,10 +1,10 @@
-module Language.Expression.Named where
+module Language.Expression.Common.Named where
 
-import Language.Expression.Expression
-import Language.Expression.NameWit
-import Language.Expression.Pattern
-import Language.Expression.Witness
-import Language.Expression.WitnessMappable
+import Language.Expression.Common.Expression
+import Language.Expression.Common.NameWit
+import Language.Expression.Common.Pattern
+import Language.Expression.Common.Witness
+import Language.Expression.Common.WitnessMappable
 import Shapes
 
 data UnitType a b where

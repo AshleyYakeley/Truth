@@ -7,7 +7,7 @@ module Pinafore.Language.TypeSystem.Nonpolar
 
 import Data.Shim
 import Language.Expression.Dolan
-import Language.Expression.UVar
+import Language.Expression.TypeVariable
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.TypeSystem.Type

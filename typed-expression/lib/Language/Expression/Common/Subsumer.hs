@@ -1,4 +1,4 @@
-module Language.Expression.Subsumer
+module Language.Expression.Common.Subsumer
     ( Subsumer(..)
     , SubsumerOpenExpression
     , SubsumerSealedExpression
@@ -7,9 +7,9 @@ module Language.Expression.Subsumer
     ) where
 
 import Data.Shim
-import Language.Expression.Expression
-import Language.Expression.Named
-import Language.Expression.Sealed
+import Language.Expression.Common.Expression
+import Language.Expression.Common.Named
+import Language.Expression.Common.Sealed
 import Shapes
 
 class ( Monad (SubsumerMonad subsumer)

@@ -6,7 +6,7 @@ module Pinafore.Language.TypeSystem
 
 import Data.Shim as I
 import Language.Expression.Dolan as I
-import Language.Expression.UVar as I
+import Language.Expression.TypeVariable as I
 import Pinafore.Language.Scope as I
 import Pinafore.Language.Type.Entity as I
 import Pinafore.Language.Type.EntityAdapter as I

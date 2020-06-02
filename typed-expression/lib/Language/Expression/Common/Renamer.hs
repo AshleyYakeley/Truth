@@ -1,4 +1,4 @@
-module Language.Expression.Renamer
+module Language.Expression.Common.Renamer
     ( Renamer(..)
     , renameNegShimWit
     , renamePosShimWit
@@ -14,7 +14,7 @@ module Language.Expression.Renamer
     ) where
 
 import Data.Shim
-import Language.Expression.WitnessMappable
+import Language.Expression.Common.WitnessMappable
 import Shapes
 
 data NewVar rn =

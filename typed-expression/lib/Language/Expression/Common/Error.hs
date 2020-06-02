@@ -1,4 +1,4 @@
-module Language.Expression.Error where
+module Language.Expression.Common.Error where
 
 import Shapes
 

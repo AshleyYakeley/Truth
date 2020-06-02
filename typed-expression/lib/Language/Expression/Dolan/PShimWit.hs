@@ -1,7 +1,7 @@
 module Language.Expression.Dolan.PShimWit where
 
 import Data.Shim
-import Language.Expression.WitnessMappable
+import Language.Expression.Common
 import Shapes
 
 type PShimWit :: forall k. MapKind k -> (Polarity -> k -> Type) -> Polarity -> k -> Type

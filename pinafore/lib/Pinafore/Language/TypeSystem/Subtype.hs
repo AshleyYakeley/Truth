@@ -7,7 +7,7 @@ module Pinafore.Language.TypeSystem.Subtype
     ) where
 
 import Data.Shim
-import Language.Expression.Arguments
+import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error

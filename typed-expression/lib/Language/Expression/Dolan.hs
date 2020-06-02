@@ -6,6 +6,7 @@ module Language.Expression.Dolan
     ) where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Arguments as I
 import Language.Expression.Dolan.Bisubstitute as I
 import Language.Expression.Dolan.Covariance as I
@@ -20,8 +21,6 @@ import Language.Expression.Dolan.Type as I
 import Language.Expression.Dolan.TypeSystem as I
 import Language.Expression.Dolan.Unify as I
 import Language.Expression.Dolan.Variance as I
-import Language.Expression.Renamer
-import Language.Expression.TypeSystem
 import Shapes
 
 class (Eq (DolanName ground), IsDolanSubtypeGroundType ground) => IsDolanFunctionGroundType (ground :: GroundTypeKind) where

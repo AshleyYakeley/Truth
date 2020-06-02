@@ -1,9 +1,9 @@
-module Language.Expression.Unifier where
+module Language.Expression.Common.Unifier where
 
 import Data.Shim
-import Language.Expression.Named
-import Language.Expression.Sealed
-import Language.Expression.WitnessMappable
+import Language.Expression.Common.Named
+import Language.Expression.Common.Sealed
+import Language.Expression.Common.WitnessMappable
 import Shapes
 
 newtype UUShim (unifier :: Type -> Type) (a :: Type) (b :: Type) = MkUUShim

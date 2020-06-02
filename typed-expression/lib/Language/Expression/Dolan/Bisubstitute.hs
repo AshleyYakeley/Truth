@@ -12,7 +12,7 @@ import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.UVar
+import Language.Expression.TypeVariable
 import Shapes
 
 data Bisubstitution (shim :: MapKind Type) m (wit :: Polarity -> Type -> Type) =

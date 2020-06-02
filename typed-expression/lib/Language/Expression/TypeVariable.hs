@@ -1,4 +1,4 @@
-module Language.Expression.UVar
+module Language.Expression.TypeVariable
     ( UVar
     , unsafeUVarIsomorphism
     , renameUVar
@@ -7,7 +7,7 @@ module Language.Expression.UVar
     ) where
 
 import GHC.Exts (Any)
-import Language.Expression.Renamer
+import Language.Expression.Common
 import Shapes
 import Shapes.Unsafe (unsafeIsomorphism)
 

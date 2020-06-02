@@ -1,4 +1,4 @@
-module Language.Expression.Witness where
+module Language.Expression.Common.Witness where
 
 import Shapes
 

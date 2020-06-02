@@ -12,23 +12,9 @@ library:
       - shapes
     exposed-modules:
       - Data.Shim
-      - Language.Expression.Error
-      - Language.Expression.UVar
-      - Language.Expression.WitnessMappable
-      - Language.Expression.Witness
-      - Language.Expression.Expression
-      - Language.Expression.Pattern
-      - Language.Expression.NameWit
-      - Language.Expression.Named
-      - Language.Expression.Sealed
-      - Language.Expression.Renamer
-      - Language.Expression.Unifier
-      - Language.Expression.Subsumer
-      - Language.Expression.Abstract
-      - Language.Expression.Bindings
-      - Language.Expression.TypeSystem
+      - Language.Expression.Common
       - Language.Expression.Unitype
-      - Language.Expression.Arguments
+      - Language.Expression.TypeVariable
       - Language.Expression.Dolan
     other-modules:
       - Data.Shim.PolyMap
@@ -45,6 +31,21 @@ library:
       - Data.Shim.JMShim
       - Data.Shim.PolyIso
       - Data.Shim.JMShimWit
+      - Language.Expression.Common.Error
+      - Language.Expression.Common.WitnessMappable
+      - Language.Expression.Common.Witness
+      - Language.Expression.Common.Expression
+      - Language.Expression.Common.Pattern
+      - Language.Expression.Common.NameWit
+      - Language.Expression.Common.Named
+      - Language.Expression.Common.Sealed
+      - Language.Expression.Common.Renamer
+      - Language.Expression.Common.Unifier
+      - Language.Expression.Common.Subsumer
+      - Language.Expression.Common.Abstract
+      - Language.Expression.Common.Bindings
+      - Language.Expression.Common.TypeSystem
+      - Language.Expression.Common.Arguments
       - Language.Expression.Dolan.PShimWit
       - Language.Expression.Dolan.Covariance
       - Language.Expression.Dolan.Variance

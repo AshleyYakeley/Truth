@@ -5,6 +5,7 @@ module Language.Expression.Dolan.Subsume
     ) where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Inverted
@@ -13,9 +14,7 @@ import Language.Expression.Dolan.Simplify
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Expression
-import Language.Expression.Subsumer
-import Language.Expression.UVar
+import Language.Expression.TypeVariable
 import Shapes
 
 minimalPositiveSupertypeSingular ::

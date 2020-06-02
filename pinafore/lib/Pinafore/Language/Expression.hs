@@ -6,10 +6,7 @@ module Pinafore.Language.Expression
     ) where
 
 import Data.Shim
-import Language.Expression.Bindings
-import Language.Expression.Error
-import Language.Expression.Sealed
-import Language.Expression.TypeSystem
+import Language.Expression.Common
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Shim

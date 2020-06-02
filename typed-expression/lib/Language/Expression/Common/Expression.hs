@@ -1,6 +1,6 @@
-module Language.Expression.Expression where
+module Language.Expression.Common.Expression where
 
-import Language.Expression.Error
+import Language.Expression.Common.Error
 import Shapes
 
 data Expression w a
