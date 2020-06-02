@@ -40,18 +40,18 @@ library:
       - Pinafore.Language.Shim
       - Pinafore.Language.Type.Literal
       - Pinafore.Language.If
-      - Pinafore.Language.TypeSystem.Show
+      - Pinafore.Language.Type.Show
       - Pinafore.Language.Type.Ground
-      - Pinafore.Language.TypeSystem.Nonpolar
+      - Pinafore.Language.Type.Nonpolar
       - Pinafore.Language.Type.Data
       - Pinafore.Language.Type.Identified
       - Pinafore.Language.Error
       - Pinafore.Language.Subtype
       - Pinafore.Language.Scope
       - Pinafore.Language.Convert.Base
-      - Pinafore.Language.TypeSystem.Type
-      - Pinafore.Language.TypeSystem.Subtype
-      - Pinafore.Language.TypeSystem
+      - Pinafore.Language.Type.Type
+      - Pinafore.Language.Type.Subtype
+      - Pinafore.Language.Type
       - Pinafore.Language.Type.Entity
       - Pinafore.Language.Type.EntityAdapter
       - Pinafore.Language.Syntax

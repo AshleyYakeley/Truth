@@ -3,7 +3,6 @@ module Pinafore.Language.Read.Interactive
     , parseInteractiveCommand
     ) where
 
-import Data.Shim
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret
@@ -13,7 +12,8 @@ import Pinafore.Language.Read.Expression
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Scope
+import Pinafore.Language.Type
 import Shapes hiding (try)
 
 data InteractiveCommand

@@ -16,12 +16,12 @@ module Pinafore.Test
     , module Pinafore.Test
     ) where
 
-import Data.Shim
 import Pinafore.Base
 import Pinafore.Language
 import Pinafore.Language.Name
 import Pinafore.Language.Read
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Scope
+import Pinafore.Language.Type
 import Pinafore.Storage
 import Shapes
 import Truth.Core

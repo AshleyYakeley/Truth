@@ -5,7 +5,7 @@ import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Type.Show
 import Shapes
 
 class IsSubtype w where

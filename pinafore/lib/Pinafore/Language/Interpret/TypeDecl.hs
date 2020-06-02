@@ -3,20 +3,14 @@ module Pinafore.Language.Interpret.TypeDecl
     ) where
 
 import qualified Data.List as List
-import Data.Shim
-import Language.Expression.Common
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Name
+import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
-import Pinafore.Language.Type.Data
-import Pinafore.Language.Type.Identified
-import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Nonpolar
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Type
 import Shapes
 
 data Constructor w t =

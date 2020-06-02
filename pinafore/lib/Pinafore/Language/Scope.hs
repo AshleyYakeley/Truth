@@ -39,7 +39,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Subtype
 import Pinafore.Language.Type.Identified
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Type.Show
 import Pinafore.Language.Value
 import Shapes
 import Text.Parsec (SourcePos)

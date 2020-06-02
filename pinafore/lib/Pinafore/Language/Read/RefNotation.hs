@@ -13,7 +13,8 @@ import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Scope
+import Pinafore.Language.Type
 import Shapes
 
 type RefNotation = WriterT [(Name, QExpr)] (StateT Int PinaforeScoped)

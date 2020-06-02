@@ -1,9 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE ApplicativeDo #-}
 
-module Pinafore.Language.TypeSystem.Subtype
-    ( SubtypeContext(..)
-    , subtypeGroundTypes
+module Pinafore.Language.Type.Subtype
+    (
     ) where
 
 import Data.Shim
@@ -18,8 +17,8 @@ import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.EntityAdapter
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Literal
-import Pinafore.Language.TypeSystem.Show
-import Pinafore.Language.TypeSystem.Type
+import Pinafore.Language.Type.Show
+import Pinafore.Language.Type.Type
 import Pinafore.Language.Value
 import Shapes
 

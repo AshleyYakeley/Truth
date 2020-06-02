@@ -5,15 +5,11 @@ module Pinafore.Language.Interpret.Type
     , interpretSubtypeRelation
     ) where
 
-import Data.Shim
-import Language.Expression.Common
 import Pinafore.Language.Error
 import Pinafore.Language.Name
+import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
-import Pinafore.Language.Type.Literal
-import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Nonpolar
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Type
 import Shapes
 
 type PinaforeTypeM = MPolarW PinaforeType

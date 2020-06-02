@@ -1,4 +1,4 @@
-module Pinafore.Language.TypeSystem.Type where
+module Pinafore.Language.Type.Type where
 
 import Data.Shim
 import Language.Expression.Common

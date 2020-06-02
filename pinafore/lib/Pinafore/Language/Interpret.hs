@@ -4,9 +4,6 @@ module Pinafore.Language.Interpret
     ) where
 
 import Data.Graph
-import Data.Shim
-import Language.Expression.Common
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
@@ -15,9 +12,9 @@ import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Interpret.TypeDecl
 import Pinafore.Language.Name
 import Pinafore.Language.Read.RefNotation
+import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
-import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Shapes
 

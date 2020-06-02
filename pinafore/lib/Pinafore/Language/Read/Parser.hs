@@ -11,7 +11,7 @@ import Pinafore.Language.Error
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Type
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.Pos (initialPos)

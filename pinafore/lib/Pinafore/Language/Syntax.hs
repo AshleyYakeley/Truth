@@ -3,7 +3,7 @@ module Pinafore.Language.Syntax where
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Name
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Scope
 import Shapes
 
 data SyntaxClosedEntityConstructor =

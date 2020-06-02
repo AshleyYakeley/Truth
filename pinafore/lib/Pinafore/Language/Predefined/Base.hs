@@ -3,16 +3,13 @@ module Pinafore.Language.Predefined.Base
     , outputLn
     ) where
 
-import Data.Shim
 import Data.Time
 import Data.Time.Clock.System
-import Language.Expression.Common
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.If
 import Pinafore.Language.Predefined.Defs
-import Pinafore.Language.Type.Entity
-import Pinafore.Language.Type.EntityAdapter
+import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Shapes
 import Shapes.Numeric

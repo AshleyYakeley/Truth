@@ -19,7 +19,6 @@ module Pinafore.Language
     ) where
 
 import Control.Exception
-import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
@@ -27,9 +26,8 @@ import Pinafore.Language.Expression
 import Pinafore.Language.Predefined
 import Pinafore.Language.Read
 import Pinafore.Language.Read.Parser
-import Pinafore.Language.Type.Literal
-import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Scope
+import Pinafore.Language.Type
 import Shapes
 import System.IO.Error
 import Truth.Core

@@ -1,4 +1,4 @@
-module Pinafore.Language.TypeSystem.Nonpolar
+module Pinafore.Language.Type.Nonpolar
     ( PinaforeNonpolarType
     , nonpolarToPinaforeType
     , pinaforeTypeToNonpolar
@@ -10,7 +10,7 @@ import Language.Expression.Dolan
 import Language.Expression.TypeVariable
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Ground
-import Pinafore.Language.TypeSystem.Type
+import Pinafore.Language.Type.Type
 import Shapes
 
 newtype AnyPolarity (w :: k -> Type) (polarity :: Polarity) (a :: k) =

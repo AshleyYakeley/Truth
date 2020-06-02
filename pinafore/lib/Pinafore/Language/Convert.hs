@@ -4,12 +4,11 @@ module Pinafore.Language.Convert
     ( module Pinafore.Language.Convert.Base
     ) where
 
-import Data.Shim
 import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Convert.Base
 import Pinafore.Language.Shim
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Type
 import Shapes
 import Shapes.Numeric
 

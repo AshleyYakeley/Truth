@@ -6,7 +6,7 @@ import Pinafore.Base
 import Pinafore.Language.Name
 import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Literal
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Type.Show
 import Pinafore.Language.Value
 import Shapes
 

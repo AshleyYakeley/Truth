@@ -9,12 +9,9 @@ module Pinafore.Language.Convert.Base
     , literalInstances
     ) where
 
-import Data.Shim
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Shim
-import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Shapes
 import Truth.Core

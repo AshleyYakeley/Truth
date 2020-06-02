@@ -6,7 +6,7 @@ import Pinafore.Language.DocTree
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Type
 import Shapes
 
 type A = UVar "a"

@@ -12,7 +12,7 @@ import Pinafore.Language.Read.Expression
 import Pinafore.Language.Read.Interactive
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Type
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Type
 import Shapes hiding (try)
 
 parseTopExpression :: Text -> PinaforeSourceScoped QExpr

@@ -1,4 +1,4 @@
-module Pinafore.Language.TypeSystem.Show where
+module Pinafore.Language.Type.Show where
 
 import qualified Data.List as List
 import Data.Shim

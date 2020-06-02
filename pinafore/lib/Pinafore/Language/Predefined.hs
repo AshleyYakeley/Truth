@@ -17,7 +17,7 @@ import Pinafore.Language.Predefined.Base
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Predefined.File
 import Pinafore.Language.Predefined.UI
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Type
 import Shapes
 
 predefinitions :: DocTree BindDoc

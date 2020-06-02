@@ -5,13 +5,10 @@ module Pinafore.Language.Expression
     , PinaforeScoped
     ) where
 
-import Data.Shim
-import Language.Expression.Common
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
-import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Subtype ()
+import Pinafore.Language.Type
 import Shapes
 
 type QExpr = TSSealedExpression PinaforeTypeSystem

@@ -1,6 +1,6 @@
 module Pinafore.Language.Type.Data where
 
-import Pinafore.Language.TypeSystem.Nonpolar
+import Pinafore.Language.Type.Nonpolar
 import Shapes
 
 -- | Structure of a datatype

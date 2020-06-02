@@ -5,7 +5,7 @@ import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Type.Show
 import Pinafore.Language.Value
 import Shapes
 import Truth.Core

@@ -4,9 +4,8 @@ module Pinafore.Language.If
     , qbind_
     ) where
 
-import Data.Shim
 import Pinafore.Base
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Type
 import Shapes
 
 type A = UVar "a"
