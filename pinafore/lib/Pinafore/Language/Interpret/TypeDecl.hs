@@ -49,7 +49,7 @@ datatypeIOWitness :: IOWitness ('MkWitKind IdentifiedType)
 datatypeIOWitness = $(iowitness [t|'MkWitKind IdentifiedType|])
 
 constructorFreeVariables :: Constructor (PinaforeNonpolarType '[]) t -> [AnyW SymbolType]
-constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonPolarTypeFreeVariables lt
+constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonpolarTypeFreeVariables lt
 
 interpretClosedEntityTypeConstructor ::
        SyntaxClosedEntityConstructor -> PinaforeSourceScoped (Name, Anchor, AnyW (ListType ConcreteEntityType))
@@ -129,11 +129,11 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                let tiso = reflId tident
                patts <-
                    for conss $ \(MkConstructor cname lt at tma) -> do
-                       ltp <- return $ mapListType nonpolarToPinaforeType lt
+                       ltp <- return $ mapListType nonpolarToDolanType lt
                        patt <-
                            withNewPatternConstructor cname $
                            toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
-                       ltn <- return $ mapListType nonpolarToPinaforeType lt
+                       ltn <- return $ mapListType nonpolarToDolanType lt
                        bind <-
                            return $
                            MkWMFunction $

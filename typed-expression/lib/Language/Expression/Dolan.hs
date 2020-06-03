@@ -33,7 +33,6 @@ module Language.Expression.Dolan
     , biRangeAnyF
     , SingleArgument
     , DolanArguments(..)
-    , mapDolanArgumentsType
     , dolanArgumentsToArguments
     , argumentsToDolanArguments
     , dolanArgumentsToArgumentsM
@@ -46,6 +45,7 @@ module Language.Expression.Dolan
     , IsDolanGroundType(..)
     , IsDolanFunctionGroundType(..)
     , IsDolanSubtypeGroundType(..)
+    , module Language.Expression.Dolan.Nonpolar
     ) where
 
 import Data.Shim
@@ -53,6 +53,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Covariance
 import Language.Expression.Dolan.MPolarity
+import Language.Expression.Dolan.Nonpolar
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.RangeF
 import Language.Expression.Dolan.Rename ()

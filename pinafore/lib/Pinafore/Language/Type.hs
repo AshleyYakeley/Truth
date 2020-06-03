@@ -14,7 +14,6 @@ import Pinafore.Language.Type.EntityAdapter as I
 import Pinafore.Language.Type.Ground as I
 import Pinafore.Language.Type.Identified as I
 import Pinafore.Language.Type.Literal as I
-import Pinafore.Language.Type.Nonpolar as I
 import Pinafore.Language.Type.Show as I
 import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.Type.Type as I

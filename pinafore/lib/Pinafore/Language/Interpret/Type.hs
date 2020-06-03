@@ -43,7 +43,7 @@ interpretNonpolarType st = do
         BothMPolarW atm ->
             case atm @'Positive of
                 MkAnyW tm ->
-                    case pinaforeTypeToNonpolar tm of
+                    case dolanTypeToNonpolar tm of
                         Just t -> return t
                         Nothing -> throw $ InterpretTypeNotAmbipolarError $ exprShow tm
 

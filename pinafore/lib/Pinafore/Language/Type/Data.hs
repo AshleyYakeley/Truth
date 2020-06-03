@@ -1,7 +1,11 @@
 module Pinafore.Language.Type.Data where
 
-import Pinafore.Language.Type.Nonpolar
+import Language.Expression.Dolan
+import Pinafore.Language.Type.Ground
 import Shapes
+
+type PinaforeNonpolarType :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+type PinaforeNonpolarType = NonpolarDolanType PinaforeGroundType
 
 -- | Structure of a datatype
 data PinaforeDataType :: forall (k :: Type). k -> Type where

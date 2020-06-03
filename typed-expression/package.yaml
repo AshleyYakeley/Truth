@@ -66,3 +66,4 @@ library:
       - Language.Expression.Dolan.Unify
       - Language.Expression.Dolan.Inverted
       - Language.Expression.Dolan.Subsume
+      - Language.Expression.Dolan.Nonpolar
