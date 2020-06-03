@@ -91,7 +91,7 @@ mkSupertypeEntry name docDescription _val = let
 
 mkValPatEntry ::
        forall t v lt.
-       (ToPinaforeType t, FromPinaforeType v, ToListShimWit (PinaforeShim Type) (PinaforeType 'Positive) lt)
+       (ToPinaforeType t, FromPinaforeType v, ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt)
     => Name
     -> Text
     -> ((?pinafore :: PinaforeContext) => t)
@@ -112,7 +112,7 @@ mkValPatEntry name docDescription val pat = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkPatEntry ::
-       forall v lt. (FromPinaforeType v, ToListShimWit (PinaforeShim Type) (PinaforeType 'Positive) lt)
+       forall v lt. (FromPinaforeType v, ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt)
     => Name
     -> Text
     -> Text

@@ -31,14 +31,14 @@ topEntityType =
 entityGroundSubtype ::
        forall m pola polb dva fa a dvb fb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => MFunction PinaforeSourceScoped m
-    -> SubtypeContext PinaforeType (PinaforeShim Type) m pola polb
+    -> SubtypeContext PinaforeType (PinaforePolyShim Type) m pola polb
     -> CovaryType dva
     -> EntityGroundType fa
     -> DolanArguments dva PinaforeType fa pola a
     -> CovaryType dvb
     -> EntityGroundType fb
     -> DolanArguments dvb PinaforeType fb polb b
-    -> m (PinaforeShim Type a b)
+    -> m (PinaforePolyShim Type a b)
 -- Entity <= Entity
 entityGroundSubtype _ _ NilListType TopEntityGroundType NilDolanArguments NilListType TopEntityGroundType NilDolanArguments =
     pure id
@@ -84,7 +84,7 @@ entityGroundSubtype _ sc (ConsListType Refl (ConsListType Refl NilListType)) Eit
     pure $ convE . applyPolyShim CovarianceType (cfmap (unjoinmeet1 @polb . convA)) (unjoinmeet1 @polb . convB)
 -- (entity type) <= Entity
 entityGroundSubtype _ _ ct gt args NilListType TopEntityGroundType NilDolanArguments
-    | Just ebij <- pinaforeEntityToConcreteEntityType ct gt args =
+    | Just ebij <- dolanToConcreteSimpleType ct gt args =
         case ebij of
             MkShimWit et conv -> pure $ concreteToEntityShim et <.> polarPolyIsoSingle conv
 -- (literal type) <= (literal type)
@@ -115,12 +115,12 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
     subtypeGroundTypes ::
            forall m pola polb dva gta a dvb gtb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
         => MFunction PinaforeSourceScoped m
-        -> SubtypeContext PinaforeType (PinaforeShim Type) m pola polb
+        -> SubtypeContext PinaforeType (PinaforePolyShim Type) m pola polb
         -> PinaforeGroundType dva gta
         -> DolanArguments dva PinaforeType gta pola a
         -> PinaforeGroundType dvb gtb
         -> DolanArguments dvb PinaforeType gtb polb b
-        -> m (PinaforeShim Type a b)
+        -> m (PinaforePolyShim Type a b)
     -- f a0... <= f b0...
     subtypeGroundTypes _ sc ga argsa gb argsb
         | Just (Refl, HRefl) <- groundTypeTestEquality ga gb = subtypeDolanArguments sc ga argsa argsb

@@ -7,7 +7,7 @@ import Shapes
 import Truth.Core
 
 data LangListRef (pq :: (Type, Type)) where
-    MkLangListRef :: Range (PinaforeShim Type) t pq -> PinaforeRef (ListEdit [t] (WholeEdit t)) -> LangListRef pq
+    MkLangListRef :: Range (PinaforePolyShim Type) t pq -> PinaforeRef (ListEdit [t] (WholeEdit t)) -> LangListRef pq
 
 instance CatFunctor (CatRange (->)) (->) LangListRef where
     cfmap f (MkLangListRef r v) = MkLangListRef (cfmap f r) v

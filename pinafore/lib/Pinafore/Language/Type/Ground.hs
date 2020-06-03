@@ -53,7 +53,7 @@ data PinaforeGroundType dv t where
     WindowPinaforeGroundType :: PinaforeGroundType '[] PinaforeWindow
     MenuItemPinaforeGroundType :: PinaforeGroundType '[] MenuEntry
 
-type instance DolanPolyShim PinaforeGroundType = PinaforeShim
+type instance DolanPolyShim PinaforeGroundType = PinaforePolyShim
 
 instance IsDolanGroundType PinaforeGroundType where
     groundTypeVarianceMap ::
@@ -61,7 +61,7 @@ instance IsDolanGroundType PinaforeGroundType where
     groundTypeVarianceMap (SimpleGroundType _ dvm _ _) = dvm
     groundTypeVarianceMap FuncPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap (EntityPinaforeGroundType dvcovary gt) =
-        covaryToDolanVarianceMap dvcovary $ entityGroundTypeCovaryMap gt
+        covaryToDolanVarianceMap dvcovary $ groundTypeCovaryMap gt
     groundTypeVarianceMap OrderPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap ActionPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap RefPinaforeGroundType = dolanVary @dv
@@ -114,6 +114,13 @@ instance IsDolanGroundType PinaforeGroundType where
     groundTypeTestEquality MenuItemPinaforeGroundType MenuItemPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality _ _ = Nothing
 
+instance CovarySubtype PinaforeGroundType EntityGroundType where
+    dolanToConcreteGroundType :: forall dv t. PinaforeGroundType dv t -> Maybe (CovaryType dv, EntityGroundType t)
+    dolanToConcreteGroundType (EntityPinaforeGroundType lc et) = Just (lc, et)
+    dolanToConcreteGroundType _ = Nothing
+    concreteToDolanGroundType :: forall dv t. CovaryType dv -> EntityGroundType t -> PinaforeGroundType dv t
+    concreteToDolanGroundType = EntityPinaforeGroundType
+
 showPrecVariance ::
        forall w polarity sv t.
        ( Is PolarityType polarity
@@ -155,7 +162,7 @@ instance GroundExprShow PinaforeGroundType where
     groundTypeShowPrec FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
         invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
     groundTypeShowPrec (EntityPinaforeGroundType lt gt) dargs =
-        case dolanArgumentsToArguments @PinaforeShim mkShimWit lt (entityGroundTypeCovaryMap gt) dargs of
+        case dolanArgumentsToArguments @PinaforePolyShim mkShimWit lt (groundTypeCovaryMap gt) dargs of
             MkShimWit args _ -> entityGroundTypeShowPrec exprShowPrec gt args
     groundTypeShowPrec OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
         invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)

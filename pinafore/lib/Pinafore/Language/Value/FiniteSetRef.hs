@@ -11,7 +11,7 @@ import Truth.Core
 
 data LangFiniteSetRef pq where
     MkLangFiniteSetRef
-        :: Eq t => Range (PinaforeShim Type) t pq -> PinaforeRef (FiniteSetUpdate t) -> LangFiniteSetRef pq
+        :: Eq t => Range (PinaforePolyShim Type) t pq -> PinaforeRef (FiniteSetUpdate t) -> LangFiniteSetRef pq
 
 unLangFiniteSetRef :: LangFiniteSetRef '( p, p) -> PinaforeRef (FiniteSetUpdate p)
 unLangFiniteSetRef (MkLangFiniteSetRef tr lv) =

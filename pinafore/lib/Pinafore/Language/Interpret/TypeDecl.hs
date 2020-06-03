@@ -1,5 +1,6 @@
 module Pinafore.Language.Interpret.TypeDecl
-    ( interpretTypeDeclarations
+    ( concreteEntityToNegativePinaforeType
+    , interpretTypeDeclarations
     ) where
 
 import qualified Data.List as List
@@ -63,6 +64,15 @@ interpretDataTypeConstructor (MkSyntaxDatatypeConstructor consName stypes) = do
     etypes <- for stypes interpretNonpolarType
     return (consName, assembleListType etypes)
 
+concreteEntityToNegativePinaforeType ::
+       forall m t. MonadThrow ErrorType m
+    => ConcreteEntityType t
+    -> m (PinaforeTypeShimWit 'Negative t)
+concreteEntityToNegativePinaforeType et =
+    case concreteToMaybeNegativeDolanType et of
+        Just wit -> return wit
+        Nothing -> throw InterpretTypeNoneNotNegativeEntityError
+
 interpretTypeDeclaration ::
        Name -> TypeID -> SyntaxTypeDeclaration -> PinaforeTypeBox (WMFunction PinaforeScoped PinaforeScoped)
 interpretTypeDeclaration name tid OpenEntitySyntaxTypeDeclaration =
@@ -87,7 +97,7 @@ interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
                            NilDolanArguments
                patts <-
                    for conss $ \(MkConstructor cname lt at tma) -> do
-                       ltp <- return $ mapListType concreteEntityToPositivePinaforeType lt
+                       ltp <- return $ mapListType concreteToPositiveDolanType lt
                        patt <- withNewPatternConstructor cname $ toPatternConstructor ctf ltp $ tma . reflId tident
                        ltn <- mapMListType concreteEntityToNegativePinaforeType lt
                        bind <-

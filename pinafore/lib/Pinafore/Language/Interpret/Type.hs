@@ -32,7 +32,7 @@ interpretConcreteEntityType st = do
         BothMPolarW atm ->
             case atm @'Positive of
                 MkAnyW tm ->
-                    case pinaforeToConcreteEntityType tm of
+                    case dolanToConcreteType tm of
                         Just (MkShimWit t _) -> return $ MkAnyW t
                         Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm
 

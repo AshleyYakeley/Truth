@@ -64,7 +64,7 @@ data NamedType (p :: Type) where
     ClosedEntityNamedType
         :: forall (p :: Type) (tid :: BigNat). TypeIDType tid -> ScopeClosedEntityType p (Identified tid) -> NamedType p
 
-type OpenEntityShim = LiftedCategory (PinaforeShim Type) OpenEntity
+type OpenEntityShim = LiftedCategory (PinaforePolyShim Type) OpenEntity
 
 data Scope (p :: Type) = MkScope
     { scopeBindings :: Map Name (ScopeExpression p)
@@ -241,7 +241,7 @@ getOpenEntitySubtype ::
     -> TypeIDType tida
     -> Name
     -> TypeIDType tidb
-    -> SourceScoped p (PinaforeShim Type (OpenEntity tida) (OpenEntity tidb))
+    -> SourceScoped p (PinaforePolyShim Type (OpenEntity tida) (OpenEntity tidb))
 getOpenEntitySubtype na wa nb wb = do
     (scopeOpenEntitySubtypes -> subtypes) <- spScope
     case unSubtypeMatch (getSubtypeShim subtypes equalSubtypeMatch) wa wb of

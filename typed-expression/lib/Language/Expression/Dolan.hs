@@ -16,7 +16,6 @@ module Language.Expression.Dolan
     , DolanVariance
     , DolanVarianceKind
     , DolanVarianceType
-    , dolanVarianceInCategory
     , DolanVarianceMap(..)
     , dolanVary
     , CovaryType
@@ -34,9 +33,6 @@ module Language.Expression.Dolan
     , SingleArgument
     , DolanArguments(..)
     , dolanArgumentsToArguments
-    , argumentsToDolanArguments
-    , dolanArgumentsToArgumentsM
-    , argumentsToDolanArgumentsM
     , SubtypeContext(..)
     , subtypeDolanArguments
     , DolanTypeSystem
@@ -46,11 +42,13 @@ module Language.Expression.Dolan
     , IsDolanFunctionGroundType(..)
     , IsDolanSubtypeGroundType(..)
     , module Language.Expression.Dolan.Nonpolar
+    , module Language.Expression.Dolan.Concrete
     ) where
 
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
+import Language.Expression.Dolan.Concrete
 import Language.Expression.Dolan.Covariance
 import Language.Expression.Dolan.MPolarity
 import Language.Expression.Dolan.Nonpolar

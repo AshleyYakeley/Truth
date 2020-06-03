@@ -87,7 +87,7 @@ closedEntityTypeAdapter (ConsClosedEntityType a cc rest) =
 concreteEntityAdapter :: forall t. ConcreteEntityType t -> EntityAdapter t
 concreteEntityAdapter (MkConcreteType gt args) = entityGroundTypeAdapter gt args
 
-concreteToEntityShim :: ConcreteEntityType a -> PinaforeShim Type a Entity
+concreteToEntityShim :: ConcreteEntityType a -> PinaforePolyShim Type a Entity
 concreteToEntityShim (MkConcreteType TopEntityGroundType NilArguments) = id
 concreteToEntityShim (MkConcreteType NewEntityGroundType NilArguments) = coerceEnhanced "subtype"
 concreteToEntityShim (MkConcreteType (OpenEntityGroundType _ _) NilArguments) = coerceEnhanced "subtype"

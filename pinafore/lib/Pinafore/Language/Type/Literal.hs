@@ -9,7 +9,7 @@ import Pinafore.Language.Type.Show
 import Shapes
 
 class IsSubtype w where
-    isSubtype :: w a -> w b -> Maybe (PinaforeShim Type a b)
+    isSubtype :: w a -> w b -> Maybe (PinaforePolyShim Type a b)
 
 data LiteralType (t :: Type) where
     LiteralLiteralType :: LiteralType Literal

@@ -176,8 +176,8 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                 etan <- runSourcePos spos $ concreteEntityToNegativePinaforeType eta
                 etbn <- runSourcePos spos $ concreteEntityToNegativePinaforeType etb
                 let
-                    bta = biRangeAnyF (etan, concreteEntityToPositivePinaforeType eta)
-                    btb = biRangeAnyF (etbn, concreteEntityToPositivePinaforeType etb)
+                    bta = biRangeAnyF (etan, concreteToPositiveDolanType eta)
+                    btb = biRangeAnyF (etbn, concreteToPositiveDolanType etb)
                     in case (bta, btb, concreteEntityTypeEq eta, concreteEntityTypeEq etb) of
                            (MkAnyF rta (MkRange praContra praCo), MkAnyF rtb (MkRange prbContra prbCo), Dict, Dict) ->
                                withSubrepresentative rangeTypeInKind rta $
@@ -206,7 +206,7 @@ interpretExpression' spos (SEEntity st anchor) =
             MkAnyW tp -> do
                 pt <- runSourcePos spos $ makeEntity tp $ MkEntity anchor
                 let
-                    typef = concreteEntityToPositivePinaforeType tp
+                    typef = concreteToPositiveDolanType tp
                     anyval = MkAnyValue typef pt
                 return $ qConstExprAny anyval
 

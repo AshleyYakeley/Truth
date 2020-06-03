@@ -94,31 +94,31 @@ instance TestHetEquality EntityGroundType where
 
 type ConcreteEntityType = ConcreteType EntityGroundType
 
-entityGroundTypeCovaryType ::
-       forall (k :: Type) (t :: k) r.
-       EntityGroundType t
-    -> (forall (dv :: DolanVariance). k ~ DolanVarianceKind dv => CovaryType dv -> r)
-    -> r
-entityGroundTypeCovaryType TopEntityGroundType cont = cont NilListType
-entityGroundTypeCovaryType NewEntityGroundType cont = cont NilListType
-entityGroundTypeCovaryType (OpenEntityGroundType _ _) cont = cont NilListType
-entityGroundTypeCovaryType (LiteralEntityGroundType _) cont = cont NilListType
-entityGroundTypeCovaryType MaybeEntityGroundType cont = cont $ ConsListType Refl NilListType
-entityGroundTypeCovaryType ListEntityGroundType cont = cont $ ConsListType Refl NilListType
-entityGroundTypeCovaryType PairEntityGroundType cont = cont $ ConsListType Refl $ ConsListType Refl NilListType
-entityGroundTypeCovaryType EitherEntityGroundType cont = cont $ ConsListType Refl $ ConsListType Refl NilListType
-entityGroundTypeCovaryType (ClosedEntityGroundType _ _ _) cont = cont NilListType
-
-entityGroundTypeCovaryMap :: EntityGroundType f -> CovaryMap f
-entityGroundTypeCovaryMap TopEntityGroundType = covarymap
-entityGroundTypeCovaryMap NewEntityGroundType = covarymap
-entityGroundTypeCovaryMap (OpenEntityGroundType _ _) = covarymap
-entityGroundTypeCovaryMap (LiteralEntityGroundType _) = covarymap
-entityGroundTypeCovaryMap MaybeEntityGroundType = covarymap
-entityGroundTypeCovaryMap ListEntityGroundType = covarymap
-entityGroundTypeCovaryMap PairEntityGroundType = covarymap
-entityGroundTypeCovaryMap EitherEntityGroundType = covarymap
-entityGroundTypeCovaryMap (ClosedEntityGroundType _ _ _) = covarymap
+instance IsCovaryGroundType EntityGroundType where
+    groundTypeCovaryType ::
+           forall (k :: Type) (t :: k) r.
+           EntityGroundType t
+        -> (forall (dv :: DolanVariance). k ~ DolanVarianceKind dv => CovaryType dv -> r)
+        -> r
+    groundTypeCovaryType TopEntityGroundType cont = cont NilListType
+    groundTypeCovaryType NewEntityGroundType cont = cont NilListType
+    groundTypeCovaryType (OpenEntityGroundType _ _) cont = cont NilListType
+    groundTypeCovaryType (LiteralEntityGroundType _) cont = cont NilListType
+    groundTypeCovaryType MaybeEntityGroundType cont = cont $ ConsListType Refl NilListType
+    groundTypeCovaryType ListEntityGroundType cont = cont $ ConsListType Refl NilListType
+    groundTypeCovaryType PairEntityGroundType cont = cont $ ConsListType Refl $ ConsListType Refl NilListType
+    groundTypeCovaryType EitherEntityGroundType cont = cont $ ConsListType Refl $ ConsListType Refl NilListType
+    groundTypeCovaryType (ClosedEntityGroundType _ _ _) cont = cont NilListType
+    groundTypeCovaryMap :: forall k (t :: k). EntityGroundType t -> CovaryMap t
+    groundTypeCovaryMap TopEntityGroundType = covarymap
+    groundTypeCovaryMap NewEntityGroundType = covarymap
+    groundTypeCovaryMap (OpenEntityGroundType _ _) = covarymap
+    groundTypeCovaryMap (LiteralEntityGroundType _) = covarymap
+    groundTypeCovaryMap MaybeEntityGroundType = covarymap
+    groundTypeCovaryMap ListEntityGroundType = covarymap
+    groundTypeCovaryMap PairEntityGroundType = covarymap
+    groundTypeCovaryMap EitherEntityGroundType = covarymap
+    groundTypeCovaryMap (ClosedEntityGroundType _ _ _) = covarymap
 
 entityGroundTypeShowPrec ::
        forall w f t. (forall a. w a -> (Text, Int)) -> EntityGroundType f -> Arguments w f t -> (Text, Int)
