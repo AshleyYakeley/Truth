@@ -93,6 +93,9 @@ interpretTypeM' (SingleSyntaxType sgt sargs) = do
                     MkAnyW args -> return $ MkAnyW $ singleDolanType $ GroundDolanSingularType gt args
 interpretTypeM' (VarSyntaxType name) =
     nameToSymbolType name $ \t -> return $ toMPolar $ MkAnyW $ singleDolanType $ VarDolanSingularType t
+interpretTypeM' (RecursiveSyntaxType name st) = do
+    mt <- interpretTypeM st
+    nameToSymbolType name $ \n -> return $ mapMPolarW (\(MkAnyW t) -> shimWitToAnyW $ recursiveDolanType n t) mt
 
 interpretTypeRangeFromType ::
        forall mpolarity. Is MPolarityType mpolarity

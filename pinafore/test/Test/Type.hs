@@ -252,6 +252,12 @@ testType =
               , textTypeTest "let f : Entity -> Entity -> Entity; f a b = (a,b) in f" "{} -> Entity -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity; f = Left in f" "{} -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity; f = Right in f" "{} -> Entity -> Entity"
+              , testGroup
+                    "recursive"
+                    [ textTypeTest "let x : rec a. Maybe a; x = Nothing in x" "{} -> rec a. Maybe a"
+                    , textTypeTest "let x : rec a. Maybe a; x = Just x in x" "{} -> rec a. Maybe a"
+                    , textTypeTest "let x = Just x in x" "{} -> rec a. Maybe a"
+                    ]
               ]
         , testGroup
               "simplify"
@@ -262,5 +268,17 @@ testType =
               , simplifyTypeTest "(a,b)-> (a,a|b)" "(a, b) -> (a, a | b)"
               , simplifyTypeTest "(a,b)-> (b,a|b)" "(a, b) -> (b, a | b)"
               , simplifyTypeTest "(a&b)-> (a,b)" "a -> (a, a)"
+              , testGroup
+                    "recursive"
+                    [ simplifyTypeTest "rec a. a" "None"
+                    , simplifyTypeTest "rec a. Maybe a" "rec a. Maybe a"
+                    , simplifyTypeTest "rec a. Integer" "Integer"
+                    , simplifyTypeTest "Maybe (rec a. a)" "Maybe None"
+                    , simplifyTypeTest "Maybe (rec a. [a])" "Maybe (rec a. [a])"
+                    , simplifyTypeTest "Maybe (rec a. Integer)" "Maybe Integer"
+                    , simplifyTypeTest "rec a. rec b. (a, b)" "rec a. (a, a)"
+                    , simplifyTypeTest "(rec a. Maybe a) | (rec b. [b])" "rec a. Maybe a | [a]"
+                    , simplifyTypeTest "(rec a. Maybe a) | (rec a. [a])" "rec a. Maybe a | [a]"
+                    ]
               ]
         ]

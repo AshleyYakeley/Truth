@@ -2,6 +2,7 @@
 
 module Language.Expression.Dolan.Combine
     ( joinMeetDolanShimWit
+    , recursiveDolanType
     , recursiveDolanShimWit
     , dolanTypeToPlainRotate
     ) where
@@ -111,19 +112,26 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (IsDolanGroun
     mappend = (<>)
     mempty = MkAnyInKind (MkRangeType (PlainDolanType NilDolanPlainType) (PlainDolanType NilDolanPlainType))
 
+recursiveDolanType ::
+       forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => SymbolType name
+    -> DolanType ground polarity t
+    -> DolanShimWit ground polarity t
+recursiveDolanType n (PlainDolanType pt) = mkShimWit $ RecursiveDolanType n pt
+recursiveDolanType nb (RecursiveDolanType na pt) =
+    runIdentity $
+    runVarRenamerT $
+    runVarNamespaceT $ do
+        varNamespaceTAddUVars @_ @_ @(DolanPolyShim ground Type) (ConsListType nb $ ConsListType na NilListType) $ \nab _ -> do
+            pt' <- renameDolanPlainType pt
+            return $ plainRecursiveDolanShimWit nab pt'
+
 recursiveDolanShimWit ::
        forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)
     => SymbolType name
     -> DolanShimWit ground polarity t
     -> DolanShimWit ground polarity t
-recursiveDolanShimWit n (MkShimWit (PlainDolanType pt) tconv) = MkShimWit (RecursiveDolanType n pt) tconv
-recursiveDolanShimWit nb (MkShimWit (RecursiveDolanType na pt) tconv) =
-    runIdentity $
-    runVarRenamerT $
-    runVarNamespaceT $ do
-        varNamespaceTAddUVars @_ @_ @(DolanPolyShim ground Type) (ConsListType nb $ ConsListType na NilListType) $ \nab _ -> do
-            MkShimWit pt' pconv <- renameDolanPlainType pt
-            return $ MkShimWit (RecursiveDolanType nab pt') $ pconv <.> tconv
+recursiveDolanShimWit n = chainShimWit $ recursiveDolanType n
 
 type Sub :: GroundTypeKind -> Type
 data Sub ground =

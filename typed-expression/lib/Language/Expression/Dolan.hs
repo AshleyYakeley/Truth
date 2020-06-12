@@ -10,6 +10,8 @@ module Language.Expression.Dolan
     , invertMPolarity
     , toMPolar
     , toMPolarWM
+    , mapMPolarW
+    , forMPolarW
     , fromMPolarSingle
     , GroundTypeKind
     , DolanPolyShim
@@ -29,6 +31,8 @@ module Language.Expression.Dolan
     , singleDolanShimWit
     , plainDolanShimWit
     , joinMeetDolanShimWit
+    , recursiveDolanType
+    , recursiveDolanShimWit
     , unToRangeShimWit
     , unFromRangeShimWit
     , biRangeAnyF

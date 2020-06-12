@@ -59,6 +59,8 @@ data SyntaxType'
                     SyntaxType
     | TopSyntaxType
     | BottomSyntaxType
+    | RecursiveSyntaxType Name
+                          SyntaxType
 
 type SyntaxType = WithSourcePos SyntaxType'
 

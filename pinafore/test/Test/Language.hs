@@ -134,6 +134,13 @@ testQuery query expected =
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ show e
         (Just s, SuccessResult v) -> assertEqual "result" s (showPinaforeRef v)
 
+testSameType1 :: Text -> Text -> Text -> TestTree
+testSameType1 t1 t2 v =
+    testQuery ("let x : " <> t1 <> "; x = " <> v <> "; y : " <> t2 <> "; y = x in y") $ Just $ unpack v
+
+testSameType :: Text -> Text -> Text -> TestTree
+testSameType t1 t2 v = testGroup (unpack $ t1 <> " = " <> t2) [testSameType1 t1 t2 v, testSameType1 t2 t1 v]
+
 testQueries :: TestTree
 testQueries =
     testGroup
@@ -440,6 +447,16 @@ testQueries =
                     , testQuery "case [3,4,5] of [a,b] -> 1; _ -> 2 end" $ Just "2"
                     , testQuery "case [3,4] of [a,b] -> (a,b) end" $ Just "(3, 4)"
                     ]
+              ]
+        , testGroup
+              "recursive types"
+              [ testQuery "let x : rec a. [a]; x = [] in x" $ Just "[]"
+              , testSameType "Integer" "Integer" "0"
+              , testSameType "Integer" "rec a. Integer" "0"
+              , testSameType "rec a. [a]" "[rec a. [a]]" "[]"
+              , testSameType "rec a. [a]" "rec a. [[a]]" "[]"
+              , testSameType "rec a. Maybe a | [a]" "(rec a. Maybe a) | (rec b. [b])" "[]"
+              , testSameType "rec a. Maybe a | [a]" "(rec a. Maybe a) | (rec a. [a])" "[]"
               ]
         , testGroup
               "subtype"

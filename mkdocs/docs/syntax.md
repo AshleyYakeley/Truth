@@ -29,6 +29,10 @@ In interactive mode, each line has syntax `<interactive>`.
     "simplify" "-" <expression>
 
 <type> :: =
+    "rec" <type-var> "." <type>
+    <type-0>
+
+<type-0> :: =
     <type-1> "|" <type> |
     <type-1> "&" <type> |
     <type-1>
