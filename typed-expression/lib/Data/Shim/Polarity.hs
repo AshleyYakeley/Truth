@@ -49,3 +49,21 @@ invertPolarity ::
 invertPolarity v =
     case isInvertPolarity @polarity of
         Dict -> v
+
+isInvertInvertPolarity ::
+       forall polarity. Is PolarityType polarity
+    => InvertPolarity (InvertPolarity polarity) :~: polarity
+isInvertInvertPolarity =
+    case polarityType @polarity of
+        PositiveType -> Refl
+        NegativeType -> Refl
+
+samePolarity ::
+       forall (p1 :: Polarity) (p2 :: Polarity). (Is PolarityType p1, Is PolarityType p2)
+    => Either (p1 :~: p2) (p1 :~: InvertPolarity p2)
+samePolarity =
+    case (polarityType @p1, polarityType @p2) of
+        (PositiveType, PositiveType) -> Left Refl
+        (PositiveType, NegativeType) -> Right Refl
+        (NegativeType, PositiveType) -> Right Refl
+        (NegativeType, NegativeType) -> Left Refl

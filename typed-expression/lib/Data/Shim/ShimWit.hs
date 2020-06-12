@@ -103,6 +103,12 @@ mapNegShimWit ::
     -> ShimWit shim wit 'Negative b
 mapNegShimWit ab = mapShimWit $ MkPolarMap ab
 
+shimWitToAnyW ::
+       forall (k :: Type) (shim :: MapKind k) polarity (wit :: k -> Type) (a :: k).
+       ShimWit shim wit polarity a
+    -> AnyW wit
+shimWitToAnyW (MkShimWit t _) = MkAnyW t
+
 instance forall (shim :: MapKind Type) wit. InCategory shim =>
              CatFunctor (CatDual shim) (->) (ShimWit shim wit 'Positive) where
     cfmap (MkCatDual ab) = mapPosShimWit ab

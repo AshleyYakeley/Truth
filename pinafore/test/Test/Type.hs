@@ -15,7 +15,7 @@ type TS = PinaforeTypeSystem
 
 type PExpression = TSSealedExpression TS
 
-showVars :: NamedExpression Name (PinaforeTypeShimWit 'Negative) t -> [String]
+showVars :: NamedExpression Name (PinaforeShimWit 'Negative) t -> [String]
 showVars (ClosedExpression _) = []
 showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) =
     (show name <> " : " <> unpack (exprShow t)) : showVars expr
@@ -213,14 +213,14 @@ testType =
               , textTypeTest "(v 3,v False)" "{v : Integer -> a, v : Boolean -> b} -> (a, b)"
               , textTypeTest
                     "((v 3,v False),v 3)"
-                    "{v : Integer -> a', v : Boolean -> b', v : Integer -> b} -> ((a', b'), b)"
+                    "{v : Integer -> c, v : Boolean -> d, v : Integer -> b} -> ((c, d), b)"
               , textTypeTest "let v = x in [v,v,v]" "{x : a, x : a, x : a} -> [a]"
               , textTypeTest "\\x -> let v = x in [v,v,v]" "{} -> a -> [a]"
               , textTypeTest "\\v1 v2 -> [v1,v2]" "{} -> a -> a -> [a]"
-              , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> a' -> (a & a') -> a -> ([a'], [a])"
+              , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> c -> (a & c) -> a -> ([c], [a])"
               , textTypeTest
                     "\\v1 v2 v3 -> (([v1,v2],[v2,v3]),[v3,v1])"
-                    "{} -> (a & a') -> (a'' & a') -> (a & a'') -> (([a'], [a'']), [a])"
+                    "{} -> (a & c) -> (d & c) -> (a & d) -> (([c], [d]), [a])"
               , badInterpretTest "\\x -> let y : Boolean | Number; y = x in y"
               , badInterpretTest "\\x -> let y : (a -> a, Boolean | Number); y = x in y"
               , badInterpretTest "\\x -> let y : (b -> b, Boolean | Number); y = x in y"

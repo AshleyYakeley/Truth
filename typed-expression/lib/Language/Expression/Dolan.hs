@@ -23,9 +23,11 @@ module Language.Expression.Dolan
     , covarymap
     , covaryToDolanVarianceMap
     , DolanSingularType(..)
+    , DolanPlainType(..)
     , DolanType(..)
     , singleDolanType
     , singleDolanShimWit
+    , plainDolanShimWit
     , joinMeetDolanShimWit
     , unToRangeShimWit
     , unFromRangeShimWit
@@ -48,6 +50,7 @@ module Language.Expression.Dolan
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
+import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Concrete
 import Language.Expression.Dolan.Covariance
 import Language.Expression.Dolan.MPolarity

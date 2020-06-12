@@ -12,7 +12,6 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Covariance
-import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
@@ -60,20 +59,29 @@ dolanSingularToConcreteArgs (GroundDolanSingularType dgt args)
     | Just (lc, gt) <- dolanToConcreteGroundType dgt = dolanToConcreteSimpleType lc gt args
 dolanSingularToConcreteArgs _ = Nothing
 
+dolanPlainToConcreteType ::
+       forall (ground :: GroundTypeKind) (conc :: forall k. k -> Type) polarity a.
+       (CovarySubtype ground conc, Is PolarityType polarity)
+    => DolanPlainType ground polarity a
+    -> Maybe (ShimWit (PolyIso (DolanPolyShim ground) Type) (ConcreteType conc) polarity a)
+dolanPlainToConcreteType (ConsDolanPlainType t NilDolanPlainType) = do
+    MkShimWit et conv <- dolanSingularToConcreteArgs t
+    return $ MkShimWit et $ conv <.> polarPolyIsoPolar1
+dolanPlainToConcreteType _ = Nothing
+
 dolanToConcreteType ::
        forall (ground :: GroundTypeKind) (conc :: forall k. k -> Type) polarity a.
        (CovarySubtype ground conc, Is PolarityType polarity)
     => DolanType ground polarity a
     -> Maybe (ShimWit (PolyIso (DolanPolyShim ground) Type) (ConcreteType conc) polarity a)
-dolanToConcreteType (ConsDolanType t NilDolanType) = do
-    MkShimWit et conv <- dolanSingularToConcreteArgs t
-    return $ MkShimWit et $ conv <.> polarPolyIsoPolar1
-dolanToConcreteType _ = Nothing
+dolanToConcreteType t = do
+    pt <- dolanTypeToPlainNonrec t
+    dolanPlainToConcreteType pt
 
 concreteToMaybeNegativeDolanType ::
        forall (ground :: GroundTypeKind) (conc :: forall k. k -> Type) t. CovarySubtype ground conc
     => ConcreteType conc t
-    -> Maybe (PShimWit (DolanPolyShim ground Type) (DolanType ground) 'Negative t)
+    -> Maybe (DolanShimWit ground 'Negative t)
 concreteToMaybeNegativeDolanType (MkConcreteType gt args) =
     groundTypeCovaryType gt $ \ct -> do
         MkShimWit dargs conv <-
@@ -83,7 +91,7 @@ concreteToMaybeNegativeDolanType (MkConcreteType gt args) =
 concreteToPositiveDolanType ::
        forall (ground :: GroundTypeKind) (conc :: forall k. k -> Type) t. CovarySubtype ground conc
     => ConcreteType conc t
-    -> PShimWit (DolanPolyShim ground Type) (DolanType ground) 'Positive t
+    -> DolanShimWit ground 'Positive t
 concreteToPositiveDolanType (MkConcreteType gt args) =
     groundTypeCovaryType gt $ \ct ->
         case argumentsToDolanArguments concreteToPositiveDolanType ct (groundTypeCovaryMap gt) args of
@@ -94,7 +102,7 @@ concreteToDolanType ::
        forall (ground :: GroundTypeKind) (conc :: forall k. k -> Type) polarity t.
        (CovarySubtype ground conc, Is PolarityType polarity)
     => ConcreteType conc t
-    -> Maybe (PShimWit (DolanPolyShim ground Type) (DolanType ground) polarity t)
+    -> Maybe (DolanShimWit ground polarity t)
 concreteToDolanType et =
     case polarityType @polarity of
         PositiveType -> return $ concreteToPositiveDolanType et

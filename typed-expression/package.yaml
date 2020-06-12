@@ -57,6 +57,8 @@ library:
       - Language.Expression.Dolan.Bisubstitute
       - Language.Expression.Dolan.TypeSystem
       - Language.Expression.Dolan.Rename
+      - Language.Expression.Dolan.Combine
+      - Language.Expression.Dolan.Simplify.UnusedRecursion
       - Language.Expression.Dolan.Simplify.VarUses
       - Language.Expression.Dolan.Simplify.OneSidedTypeVars
       - Language.Expression.Dolan.Simplify.DuplicateGroundTypes

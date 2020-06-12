@@ -7,6 +7,7 @@ import Language.Expression.Dolan.Simplify.DuplicateGroundTypes
 import Language.Expression.Dolan.Simplify.DuplicateTypeVars
 import Language.Expression.Dolan.Simplify.OneSidedTypeVars
 import Language.Expression.Dolan.Simplify.SharedTypeVars
+import Language.Expression.Dolan.Simplify.UnusedRecursion
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
@@ -36,5 +37,6 @@ dolanSimplifyTypes ::
 dolanSimplifyTypes =
     if simplifyTypes
         then mergeDuplicateTypeVars @ground .
-             mergeSharedTypeVars @ground . eliminateOneSidedTypeVars @ground . mergeDuplicateGroundTypes @ground
+             mergeSharedTypeVars @ground .
+             eliminateOneSidedTypeVars @ground . mergeDuplicateGroundTypes @ground . eliminateUnusedRecursion @ground
         else id

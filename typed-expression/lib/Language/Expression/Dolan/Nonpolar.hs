@@ -92,7 +92,7 @@ fromApplyArg RangevarianceType dvt dvm (MkRangeType (MkAnyPolarity pa) (MkAnyPol
 type ArgWit :: GroundTypeKind -> Polarity -> forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
 newtype ArgWit ground polarity dv f = MkArgWit
     { unArgWit :: forall (t :: Type).
-                          DolanArguments dv (DolanType ground) f polarity t -> PShimWit (DolanPolyShim ground Type) (DolanSingularType ground) polarity t
+                          DolanArguments dv (DolanType ground) f polarity t -> DolanSingularShimWit ground polarity t
     }
 
 nonpolarToPinaforeSingularType ::
@@ -116,7 +116,7 @@ nonpolarToPinaforeSingularType (ApplyNonpolarType svt tf ta) dvt =
 nonpolarToDolanType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => NonpolarDolanType ground '[] t
-    -> PShimWit (DolanPolyShim ground Type) (DolanType ground) polarity t
+    -> DolanShimWit ground polarity t
 nonpolarToDolanType t =
     singleDolanShimWit $ unArgWit (snd (nonpolarToPinaforeSingularType t NilListType)) NilDolanArguments
 
@@ -159,12 +159,20 @@ pinaforeSinglularTypeToNonpolar (VarDolanSingularType n) = Just $ MkAnyW $ VarNo
 pinaforeSinglularTypeToNonpolar (GroundDolanSingularType ground args) =
     applyArgs @ground (groundTypeVarianceType ground) (GroundNonpolarType ground) args
 
+dolanPlainTypeToNonpolar ::
+       forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
+    => DolanPlainType ground polarity t
+    -> Maybe (AnyW (NonpolarDolanType ground '[]))
+dolanPlainTypeToNonpolar (ConsDolanPlainType t NilDolanPlainType) = pinaforeSinglularTypeToNonpolar t
+dolanPlainTypeToNonpolar _ = Nothing
+
 dolanTypeToNonpolar ::
        forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
     => DolanType ground polarity t
     -> Maybe (AnyW (NonpolarDolanType ground '[]))
-dolanTypeToNonpolar (ConsDolanType t NilDolanType) = pinaforeSinglularTypeToNonpolar t
-dolanTypeToNonpolar _ = Nothing
+dolanTypeToNonpolar t = do
+    pt <- dolanTypeToPlainNonrec t
+    dolanPlainTypeToNonpolar pt
 
 pinaforeNonpolarArgTypeTestEquality ::
        forall (ground :: GroundTypeKind) sv a b. IsDolanGroundType ground

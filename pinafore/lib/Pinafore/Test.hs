@@ -8,7 +8,7 @@ module Pinafore.Test
     , UVar
     , PinaforeGroundType
     , PinaforeType
-    , PinaforeTypeShimWit
+    , PinaforeShimWit
     , PinaforeScoped
     , PinaforeSourceScoped
     , dolanSimplifyTypes

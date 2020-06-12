@@ -124,10 +124,11 @@ interpretTypeRangeItem ::
     -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
 interpretTypeRangeItem (Just CoSyntaxVariance, st) = do
     atq <- interpretTypeM st
-    return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType NilDolanType tq) atq
+    return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType (PlainDolanType NilDolanPlainType) tq) atq
 interpretTypeRangeItem (Just ContraSyntaxVariance, st) = do
     atp <- invertMPolarity @mpolarity $ interpretTypeM st
-    return $ toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkRangeType tp NilDolanType) (MkInvertMPolarW atp)
+    return $
+        toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkRangeType tp $ PlainDolanType NilDolanPlainType) (MkInvertMPolarW atp)
 interpretTypeRangeItem (Nothing, st) = interpretTypeRangeFromType st
 
 groundTypeText :: SyntaxGroundType -> Text

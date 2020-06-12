@@ -7,10 +7,11 @@ module Language.Expression.Common.Renamer
     , VarNamespaceT
     , runVarNamespaceT
     , varNamespaceTRename
+    , varNamespaceTAddNames
+    , varNamespaceTLocal
     , VarRenamerT
     , runVarRenamerT
     , varRenamerTGenerate
-    , varRenamerTGenerateSuggested
     ) where
 
 import Data.Shim
@@ -80,15 +81,44 @@ runVarNamespaceT (MkVarNamespaceT ma) = do
     (a, _) <- runStateT ma []
     return a
 
+varNamespaceTAddNames :: Monad m => [String] -> VarNamespaceT ts (VarRenamerT ts m) String
+varNamespaceTAddNames oldnames = do
+    pairs <- MkVarNamespaceT get
+    newname <- lift $ varRenamerTGenerate oldnames
+    MkVarNamespaceT $ put $ fmap (\oldname -> (oldname, newname)) oldnames <> pairs
+    return newname
+
 varNamespaceTRename :: Monad m => String -> VarNamespaceT ts (VarRenamerT ts m) String
 varNamespaceTRename oldname = do
     pairs <- MkVarNamespaceT get
     case lookup oldname pairs of
         Just newname -> return newname
-        Nothing -> do
-            newname <- MkVarNamespaceT $ lift $ varRenamerTGenerateSuggested oldname
-            MkVarNamespaceT $ put $ (oldname, newname) : pairs
-            return newname
+        Nothing -> varNamespaceTAddNames [oldname]
+
+-- | add a new mapping, even if one already exists for the old name
+varNamespaceTAddMapping :: Monad m => String -> String -> VarNamespaceT ts m ()
+varNamespaceTAddMapping oldname newname = do
+    pairs <- MkVarNamespaceT get
+    MkVarNamespaceT $ put $ (oldname, newname) : pairs
+
+-- | remove a mapping (just one) for an old name
+varNamespaceTRemoveMapping :: Monad m => String -> VarNamespaceT ts m ()
+varNamespaceTRemoveMapping oldname =
+    MkVarNamespaceT $ do
+        oldmaps <- get
+        let newmaps = deleteFirstMatching (\(n, _) -> oldname == n) oldmaps
+        put newmaps
+
+-- | Use this for variable quantifiers (e.g. rec, forall)
+varNamespaceTLocal ::
+       Monad m => String -> (String -> VarNamespaceT ts (VarRenamerT ts m) a) -> VarNamespaceT ts (VarRenamerT ts m) a
+varNamespaceTLocal oldname call = do
+    newname <- lift $ varRenamerTGenerate [oldname]
+    varNamespaceTAddMapping oldname newname
+    a <- call newname
+    varNamespaceTRemoveMapping oldname
+    lift $ varRenamerTRemoveName newname
+    return a
 
 newtype VarRenamerT (ts :: Type) m a =
     MkVarRenamerT (StateT ([String], Int) m a)
@@ -100,6 +130,13 @@ instance MonadTransConstraint Monad (VarRenamerT ts) where
 instance MonadTransConstraint MonadFail (VarRenamerT ts) where
     hasTransConstraint = Dict
 
+varRenamerTRemoveName :: Monad m => String -> VarRenamerT ts m ()
+varRenamerTRemoveName name =
+    MkVarRenamerT $ do
+        (oldvars, i) <- get
+        let newvars = filter ((/=) name) oldvars
+        put (newvars, i)
+
 runVarRenamerT :: Monad m => VarRenamerT ts m a -> m a
 runVarRenamerT (MkVarRenamerT ma) = do
     (a, _) <- runStateT ma ([], 0)
@@ -110,23 +147,21 @@ varName i
     | i < 26 = pure $ toEnum $ i + fromEnum 'a'
 varName i = varName ((div i 26) - 1) <> (pure $ toEnum $ (mod i 26) + fromEnum 'a')
 
-varRenamerTGenerate :: Monad m => VarRenamerT ts m String
-varRenamerTGenerate = do
-    (vars, i) <- MkVarRenamerT get
+varRenamerTGenerate :: Monad m => [String] -> VarRenamerT ts m String
+varRenamerTGenerate [] = do
+    (vars, i) <- MkVarRenamerT $ get
     let newname = varName i
     if elem newname vars
         then do
             MkVarRenamerT $ put (vars, succ i)
-            varRenamerTGenerate
+            varRenamerTGenerate []
         else do
             MkVarRenamerT $ put (newname : vars, succ i)
             return newname
-
-varRenamerTGenerateSuggested :: Monad m => String -> VarRenamerT ts m String
-varRenamerTGenerateSuggested name = do
+varRenamerTGenerate (name:nn) = do
     (vars, i) <- MkVarRenamerT $ get
     if elem name vars
-        then varRenamerTGenerateSuggested (name <> "'")
+        then varRenamerTGenerate nn
         else do
             MkVarRenamerT $ put (name : vars, succ i)
             return name

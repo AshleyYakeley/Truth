@@ -13,18 +13,23 @@ import Shapes
 type PinaforeSingularType :: Polarity -> Type -> Type
 type PinaforeSingularType = DolanSingularType PinaforeGroundType
 
+type PinaforePlainType :: Polarity -> Type -> Type
+type PinaforePlainType = DolanPlainType PinaforeGroundType
+
+type PinaforePlainShimWit :: Polarity -> Type -> Type
+type PinaforePlainShimWit polarity = PShimWit (PinaforePolyShim Type) PinaforePlainType polarity
+
 type PinaforeType :: Polarity -> Type -> Type
 type PinaforeType = DolanType PinaforeGroundType
 
-type PinaforeTypeShimWit :: Polarity -> Type -> Type
-type PinaforeTypeShimWit polarity = PShimWit (PinaforePolyShim Type) PinaforeType polarity
+type PinaforeShimWit :: Polarity -> Type -> Type
+type PinaforeShimWit polarity = PShimWit (PinaforePolyShim Type) PinaforeType polarity
 
-type PinaforeExpression = SealedExpression Name (PinaforeTypeShimWit 'Negative) (PinaforeTypeShimWit 'Positive)
+type PinaforeExpression = SealedExpression Name (PinaforeShimWit 'Negative) (PinaforeShimWit 'Positive)
 
-type PinaforePatternConstructor
-     = PatternConstructor Name (PinaforeTypeShimWit 'Positive) (PinaforeTypeShimWit 'Negative)
+type PinaforePatternConstructor = PatternConstructor Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
 
-type PinaforePattern = SealedPattern Name (PinaforeTypeShimWit 'Positive) (PinaforeTypeShimWit 'Negative)
+type PinaforePattern = SealedPattern Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
 
 type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
 

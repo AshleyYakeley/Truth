@@ -81,9 +81,13 @@ singularTypedShowValue :: PinaforeSingularType 'Positive t -> t -> String
 singularTypedShowValue (VarDolanSingularType _) _ = "<?>"
 singularTypedShowValue (GroundDolanSingularType gt args) v = groundTypedShowValue gt args v
 
+plainTypedShowValue :: PinaforePlainType 'Positive t -> t -> String
+plainTypedShowValue NilDolanPlainType v = never v
+plainTypedShowValue (ConsDolanPlainType ts tt) v = joinf (singularTypedShowValue ts) (plainTypedShowValue tt) v
+
 typedShowValue :: PinaforeType 'Positive t -> t -> String
-typedShowValue NilDolanType v = never v
-typedShowValue (ConsDolanType ts tt) v = joinf (singularTypedShowValue ts) (typedShowValue tt) v
+typedShowValue (PlainDolanType pt) = plainTypedShowValue pt
+typedShowValue (RecursiveDolanType _ pt) = plainTypedShowValue pt
 
 showPinaforeRef :: QValue -> String
 showPinaforeRef (MkAnyValue (MkPosShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)

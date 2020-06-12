@@ -24,9 +24,10 @@ import Shapes
 
 topEntityType :: forall pol. PinaforeType pol (JoinMeetType pol Entity (LimitType pol))
 topEntityType =
-    ConsDolanType
+    PlainDolanType $
+    ConsDolanPlainType
         (GroundDolanSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments)
-        NilDolanType
+        NilDolanPlainType
 
 entityGroundSubtype ::
        forall m pola polb dva fa a dvb fb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
@@ -148,7 +149,7 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
                 PositiveType -> Positive
                 NegativeType -> Negative
         in throw $ TypeSubsumeError pol (exprShow tinf) (exprShow tdecl)
-    throwTypeNoInverseLimitError t = throw $ TypeNoInverseLimitError $ exprShow t
+    throwTypeNotInvertible t = throw $ TypeNotInvertibleError $ exprShow t
 
 type instance DolanName PinaforeGroundType = Name
 

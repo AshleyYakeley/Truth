@@ -83,16 +83,11 @@ qCase :: QExpr -> [(QPattern, QExpr)] -> PinaforeSourceScoped QExpr
 qCase = tsCase @PinaforeTypeSystem
 
 qFunctionPosWitness ::
-       forall a b.
-       PinaforeTypeShimWit 'Negative a
-    -> PinaforeTypeShimWit 'Positive b
-    -> PinaforeTypeShimWit 'Positive (a -> b)
+       forall a b. PinaforeShimWit 'Negative a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (a -> b)
 qFunctionPosWitness = tsFunctionPosShimWit @PinaforeTypeSystem
 
 qFunctionPosWitnesses ::
-       ListType (PinaforeTypeShimWit 'Negative) a
-    -> PinaforeTypeShimWit 'Positive b
-    -> PinaforeTypeShimWit 'Positive (HList a -> b)
+       ListType (PinaforeShimWit 'Negative) a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (HList a -> b)
 qFunctionPosWitnesses NilListType tb = mapPosShimWit (toEnhanced "poswitness" $ \ub -> ub ()) tb
 qFunctionPosWitnesses (ConsListType ta la) tb =
     mapPosShimWit (toEnhanced "poswitness" $ \f a l -> f (a, l)) $ qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
@@ -150,5 +145,5 @@ typedAnyToPinaforeVal ::
     -> PinaforeSourceScoped t
 typedAnyToPinaforeVal = tsAnyToVal @PinaforeTypeSystem fromJMShimWit
 
-qSubsumeExpr :: AnyW (PinaforeTypeShimWit 'Positive) -> PinaforeExpression -> PinaforeSourceScoped PinaforeExpression
+qSubsumeExpr :: AnyW (PinaforeShimWit 'Positive) -> PinaforeExpression -> PinaforeSourceScoped PinaforeExpression
 qSubsumeExpr t expr = tsSubsume @PinaforeTypeSystem t expr

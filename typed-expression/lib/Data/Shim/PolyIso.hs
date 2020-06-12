@@ -48,6 +48,16 @@ polarPolyIsoSingle (MkPolarMap iab) =
         PositiveType -> isoForwards $ unPolyMapT iab
         NegativeType -> isoBackwards $ unPolyMapT iab
 
+isoPolyIso ::
+       forall (pmap :: PolyMapKind) polarity k (a :: k) (b :: k).
+       (Is PolarityType polarity, InCategory (pmap k), InKind a, InKind b)
+    => Isomorphism (pmap k) a b
+    -> PolarMap (PolyIso pmap k) polarity a b
+isoPolyIso iso =
+    case polarityType @polarity of
+        PositiveType -> MkPolarMap $ MkPolyMapT iso
+        NegativeType -> MkPolarMap $ MkPolyMapT $ cinvert iso
+
 instance forall (pmap :: PolyMapKind). ApplyPolyShim pmap => ApplyPolyShim (PolyIso pmap) where
     applyPolyShim CovarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
         MkPolyMapT $ MkIsomorphism (applyPolyShim CovarianceType fab xab) (applyPolyShim CovarianceType fba xba)

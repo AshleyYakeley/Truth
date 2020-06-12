@@ -52,3 +52,21 @@ uninvertPolarMap =
     case polarityType @polarity of
         PositiveType -> \(MkPolarMap f) -> MkPolarMap f
         NegativeType -> \(MkPolarMap f) -> MkPolarMap f
+
+isoPolarForwards ::
+       forall polarity k (map :: MapKind k) (a :: k) (b :: k). Is PolarityType polarity
+    => Isomorphism map a b
+    -> PolarMap map polarity a b
+isoPolarForwards =
+    case polarityType @polarity of
+        PositiveType -> MkPolarMap . isoForwards
+        NegativeType -> MkPolarMap . isoBackwards
+
+isoPolarBackwards ::
+       forall polarity k (map :: MapKind k) (a :: k) (b :: k). Is PolarityType polarity
+    => Isomorphism map a b
+    -> PolarMap map polarity b a
+isoPolarBackwards =
+    case polarityType @polarity of
+        PositiveType -> MkPolarMap . isoBackwards
+        NegativeType -> MkPolarMap . isoForwards

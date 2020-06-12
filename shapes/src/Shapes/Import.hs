@@ -174,6 +174,12 @@ compAll (c:cc) = c . compAll cc
 exec :: Monad m => m (m a) -> m a
 exec mma = mma >>= id
 
+deleteFirstMatching :: (a -> Bool) -> [a] -> [a]
+deleteFirstMatching _ [] = []
+deleteFirstMatching t (a:aa)
+    | t a = aa
+deleteFirstMatching t (a:aa) = a : deleteFirstMatching t aa
+
 shortOr :: Monad m => (a -> m Bool) -> [a] -> m Bool
 shortOr _ [] = return False
 shortOr amb (a:aa) = do

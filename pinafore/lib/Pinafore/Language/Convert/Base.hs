@@ -36,10 +36,10 @@ type FromPinaforeType = FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negat
 
 -- top, bottom, join, meet
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) BottomType where
-    toShimWit = mkShimWit NilDolanType
+    toShimWit = plainDolanShimWit $ mkShimWit NilDolanPlainType
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) TopType where
-    fromShimWit = mkShimWit NilDolanType
+    fromShimWit = plainDolanShimWit $ mkShimWit NilDolanPlainType
 
 instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) b

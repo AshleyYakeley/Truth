@@ -67,7 +67,7 @@ interpretDataTypeConstructor (MkSyntaxDatatypeConstructor consName stypes) = do
 concreteEntityToNegativePinaforeType ::
        forall m t. MonadThrow ErrorType m
     => ConcreteEntityType t
-    -> m (PinaforeTypeShimWit 'Negative t)
+    -> m (PinaforeShimWit 'Negative t)
 concreteEntityToNegativePinaforeType et =
     case concreteToMaybeNegativeDolanType et of
         Just wit -> return wit
@@ -88,7 +88,7 @@ interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
                    cti :: ClosedEntityType (Identified n)
                    cti = (reflId $ applyRefl id $ invert tident) ct
                    ctf :: forall polarity. Is PolarityType polarity
-                       => PinaforeTypeShimWit polarity (Identified n)
+                       => PinaforeShimWit polarity (Identified n)
                    ctf =
                        singleDolanShimWit $
                        mkShimWit $
@@ -128,7 +128,7 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                    Just vv -> throw $ InterpretUnboundTypeVariables $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
                let
                    ctf :: forall polarity. Is PolarityType polarity
-                       => PinaforeTypeShimWit polarity _
+                       => PinaforeShimWit polarity _
                    ctf =
                        singleDolanShimWit $
                        mkShimWit $
