@@ -3,7 +3,6 @@ module Language.Expression.Dolan.Simplify.DuplicateTypeVars
     ) where
 
 import Data.Shim
-import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -13,10 +12,7 @@ mergeInSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity t
     -> DolanSingularShimWit ground polarity t
-mergeInSingularType (GroundDolanSingularType gt args) =
-    case mapDolanArguments mergeDuplicateTypeVarsInType (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args of
-        MkShimWit args' conv -> MkShimWit (GroundDolanSingularType gt args') conv
-mergeInSingularType t = mkShimWit t
+mergeInSingularType = mapDolanSingularType mergeDuplicateTypeVarsInType
 
 mergeIn1SingularType ::
        forall (ground :: GroundTypeKind) polarity t1 tr. (IsDolanGroundType ground, Is PolarityType polarity)

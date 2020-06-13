@@ -8,7 +8,6 @@ module Language.Expression.Dolan.Bisubstitute
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Rename
@@ -52,12 +51,9 @@ bisubstituteSingularType ::
     -> m (DolanShimWit ground polarity t)
 bisubstituteSingularType (MkBisubstitution n tp tq) (VarDolanSingularType n')
     | Just Refl <- testEquality n n' = getBisubstitution tp tq
-bisubstituteSingularType _ t@(VarDolanSingularType _) = return $ singleDolanShimWit $ mkShimWit t
-bisubstituteSingularType bisub (GroundDolanSingularType gt args) = let
-    dvt = groundTypeVarianceType gt
-    in do
-           MkShimWit args' conv <- mapDolanArgumentsM (bisubstituteType bisub) dvt (groundTypeVarianceMap gt) args
-           return $ singleDolanShimWit $ MkShimWit (GroundDolanSingularType gt args') conv
+bisubstituteSingularType bisub t = do
+    t' <- mapDolanSingularTypeM (bisubstituteType bisub) t
+    return $ singleDolanShimWit t'
 
 bisubstitutePlainType ::
        forall (ground :: GroundTypeKind) m polarity t. (IsDolanGroundType ground, MonadOne m, Is PolarityType polarity)

@@ -14,10 +14,7 @@ mergeInSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity t
     -> DolanSingularShimWit ground polarity t
-mergeInSingularType (GroundDolanSingularType gt args) =
-    case mapDolanArguments mergeDuplicateGroundTypesInType (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args of
-        MkShimWit args' conv -> MkShimWit (GroundDolanSingularType gt args') conv
-mergeInSingularType t = mkShimWit t
+mergeInSingularType = mapDolanSingularType mergeDuplicateGroundTypesInType
 
 mergeInTypes ::
        forall (ground :: GroundTypeKind) polarity ta tb. (IsDolanGroundType ground, Is PolarityType polarity)

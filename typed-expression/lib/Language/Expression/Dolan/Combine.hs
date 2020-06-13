@@ -9,7 +9,6 @@ module Language.Expression.Dolan.Combine
 
 import Data.Shim
 import Language.Expression.Common
-import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Rename
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -155,9 +154,7 @@ substituteInSingularType ::
     -> DolanSingularType ground polarity t
     -> DolanShimWit ground polarity t
 substituteInSingularType sub (VarDolanSingularType n) = substituteInVar sub n
-substituteInSingularType sub (GroundDolanSingularType gt args) =
-    case mapDolanArguments (substituteInType sub) (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args of
-        MkShimWit args' conv -> singleDolanShimWit $ MkShimWit (GroundDolanSingularType gt args') conv
+substituteInSingularType sub t = singleDolanShimWit $ mapDolanSingularType (substituteInType sub) t
 
 substituteInPlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -187,10 +184,7 @@ rotateSingularType (MkSub n (_ :: DolanShimWit ground polarity' _)) (VarDolanSin
     | Just Refl <- testEquality n n'
     , Just Refl <- testEquality (polarityType @polarity) (polarityType @polarity') =
         MkShimWit NilDolanPlainType $ isoPolarBackwards unsafeUVarIsomorphism
-rotateSingularType _ t@(VarDolanSingularType _) = singleDolanPlainShimWit $ mkShimWit t
-rotateSingularType sub (GroundDolanSingularType gt args) =
-    case mapDolanArguments (substituteInType sub) (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args of
-        MkShimWit args' conv -> singleDolanPlainShimWit $ MkShimWit (GroundDolanSingularType gt args') conv
+rotateSingularType sub t = singleDolanPlainShimWit $ mapDolanSingularType (substituteInType sub) t
 
 rotatePlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

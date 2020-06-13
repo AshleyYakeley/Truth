@@ -134,17 +134,27 @@ testQuery query expected =
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ show e
         (Just s, SuccessResult v) -> assertEqual "result" s (showPinaforeRef v)
 
-testSubtype1 :: Bool -> Text -> Text -> Text -> [TestTree]
+testSubsumeSubtype :: Text -> Text -> Maybe Text -> TestTree
+testSubsumeSubtype t1 t2 (Just v) =
+    testQuery ("let x : " <> t1 <> "; x = " <> v <> "; y : " <> t2 <> "; y = x in y") $ Just $ unpack v
+testSubsumeSubtype t1 t2 Nothing = testQuery ("let x : " <> t1 <> "; x = x; y : " <> t2 <> "; y = x in ()") $ Just "()"
+
+testFunctionSubtype :: Text -> Text -> Maybe Text -> TestTree
+testFunctionSubtype t1 t2 (Just v) =
+    testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f " <> v) $ Just $ unpack v
+testFunctionSubtype t1 t2 Nothing = testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ Just "?"
+
+testSubtype1 :: Bool -> Text -> Text -> Maybe Text -> [TestTree]
 testSubtype1 b t1 t2 v =
-    [testQuery ("let x : " <> t1 <> "; x = " <> v <> "; y : " <> t2 <> "; y = x in y") $ Just $ unpack v] <>
+    [testSubsumeSubtype t1 t2 v] <>
     if b
-        then [testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f " <> v) $ Just $ unpack v]
+        then [testFunctionSubtype t1 t2 v]
         else []
 
-testSubtype :: Bool -> Text -> Text -> Text -> TestTree
+testSubtype :: Bool -> Text -> Text -> Maybe Text -> TestTree
 testSubtype b t1 t2 v = testGroup (unpack $ t1 <> " <= " <> t2) $ testSubtype1 b t1 t2 v
 
-testSameType :: Bool -> Text -> Text -> Text -> TestTree
+testSameType :: Bool -> Text -> Text -> Maybe Text -> TestTree
 testSameType b t1 t2 v = testGroup (unpack $ t1 <> " = " <> t2) $ (testSubtype1 b t1 t2 v) <> (testSubtype1 b t2 t1 v)
 
 testQueries :: TestTree
@@ -457,16 +467,21 @@ testQueries =
         , testGroup
               "recursive types"
               [ testQuery "let x : rec a. [a]; x = [] in x" $ Just "[]"
-              , testSameType True "Integer" "Integer" "0"
-              , testSameType True "Integer" "rec a. Integer" "0"
-              , testSameType True "rec a. [a]" "[rec a. [a]]" "[]"
-              , testSameType True "rec a. [a]" "rec a. [[a]]" "[]"
-              , testSameType False "rec a. Maybe a | [a]" "(rec a. Maybe a) | (rec b. [b])" "[]"
-              , testSameType False "rec a. Maybe a | [a]" "(rec a. Maybe a) | (rec a. [a])" "[]"
-              , testSubtype True "rec a. [a]" "Entity" "[]"
-              , testSubtype True "[rec a. [a]]" "Entity" "[]"
-              , testSubtype True "rec a. [a]" "[Entity]" "[]"
-              , testSubtype True "[rec a. [a]]" "[Entity]" "[]"
+              , testSameType True "Integer" "Integer" $ Just "0"
+              , testSameType True "Integer" "rec a. Integer" $ Just "0"
+              , testSameType True "[Integer]" "[rec a. Integer]" $ Just "[0]"
+              , testSameType True "rec a. [a]" "[rec a. [a]]" $ Just "[]"
+              , testSameType True "rec a. [a]" "rec a. [[a]]" $ Just "[]"
+              , testSameType False "rec a. Maybe a | [a]" "(rec a. Maybe a) | (rec b. [b])" $ Just "[]"
+              , testSameType False "rec a. Maybe a | [a]" "(rec a. Maybe a) | (rec a. [a])" $ Just "[]"
+              , testSubtype True "rec a. [a]" "Entity" $ Nothing
+              , testSubtype True "[rec a. [a]]" "Entity" $ Nothing
+              , testSubtype True "rec a. [a]" "[Entity]" $ Just "[]"
+              , testSubtype True "[rec a. [a]]" "[Entity]" $ Just "[]"
+              , testSameType False "rec a. a" "None" $ Nothing
+              , testSameType False "[rec a. a]" "[None]" $ Just "[]"
+              , testSameType True "rec a. Integer" "Integer" $ Just "0"
+              , testSameType True "[rec a. Integer]" "[Integer]" $ Just "[0]"
               ]
         , testGroup
               "subtype"

@@ -159,3 +159,44 @@ class (IsDolanPolyShim (DolanPolyShim ground)) => IsDolanGroundType (ground :: G
            ground dva ta
         -> ground dvb tb
         -> Maybe (dva :~: dvb, ta :~~: tb)
+
+mapDolanGroundArguments ::
+       forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => (forall polarity' t'.
+            Is PolarityType polarity' => DolanType ground polarity' t' -> DolanShimWit ground polarity' t')
+    -> ground dv gt
+    -> DolanArguments dv (DolanType ground) gt polarity t
+    -> DolanSingularShimWit ground polarity t
+mapDolanGroundArguments ff g args =
+    case mapDolanArguments ff (groundTypeVarianceType g) (groundTypeVarianceMap g) args of
+        MkShimWit args' conv -> MkShimWit (GroundDolanSingularType g args') conv
+
+mapDolanSingularType ::
+       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => (forall polarity' t'.
+            Is PolarityType polarity' => DolanType ground polarity' t' -> DolanShimWit ground polarity' t')
+    -> DolanSingularType ground polarity t
+    -> DolanSingularShimWit ground polarity t
+mapDolanSingularType ff (GroundDolanSingularType gt args) = mapDolanGroundArguments ff gt args
+mapDolanSingularType _ t@(VarDolanSingularType _) = mkShimWit t
+
+mapDolanGroundArgumentsM ::
+       forall m (ground :: GroundTypeKind) polarity dv gt t.
+       (Monad m, IsDolanGroundType ground, Is PolarityType polarity)
+    => (forall polarity' t'.
+            Is PolarityType polarity' => DolanType ground polarity' t' -> m (DolanShimWit ground polarity' t'))
+    -> ground dv gt
+    -> DolanArguments dv (DolanType ground) gt polarity t
+    -> m (DolanSingularShimWit ground polarity t)
+mapDolanGroundArgumentsM ff g args = do
+    MkShimWit args' conv <- mapDolanArgumentsM ff (groundTypeVarianceType g) (groundTypeVarianceMap g) args
+    return $ MkShimWit (GroundDolanSingularType g args') conv
+
+mapDolanSingularTypeM ::
+       forall m (ground :: GroundTypeKind) polarity t. (Monad m, IsDolanGroundType ground, Is PolarityType polarity)
+    => (forall polarity' t'.
+            Is PolarityType polarity' => DolanType ground polarity' t' -> m (DolanShimWit ground polarity' t'))
+    -> DolanSingularType ground polarity t
+    -> m (DolanSingularShimWit ground polarity t)
+mapDolanSingularTypeM ff (GroundDolanSingularType gt args) = mapDolanGroundArgumentsM ff gt args
+mapDolanSingularTypeM _ t@(VarDolanSingularType _) = return $ mkShimWit t
