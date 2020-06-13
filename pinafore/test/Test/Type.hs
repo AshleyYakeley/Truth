@@ -257,6 +257,8 @@ testType =
                     [ textTypeTest "let x : rec a. Maybe a; x = Nothing in x" "{} -> rec a. Maybe a"
                     , textTypeTest "let x : rec a. Maybe a; x = Just x in x" "{} -> rec a. Maybe a"
                     , textTypeTest "let x = Just x in x" "{} -> rec a. Maybe a"
+                    , textTypeTest "let x : Entity; x = Just x in x" "{} -> Entity"
+                    , textTypeTest "let x : Maybe Entity; x = Just x in x" "{} -> Maybe Entity"
                     ]
               ]
         , testGroup
