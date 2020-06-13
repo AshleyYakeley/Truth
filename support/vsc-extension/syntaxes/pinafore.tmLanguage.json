@@ -48,7 +48,7 @@
 			"patterns": [
 				{
 					"name": "keyword.control.pinafore",
-					"match": "\\b(if|then|else|let|in|do|case|of|end|datatype|opentype|subtype|closedtype|property|entity)\\b"
+					"match": "\\b(rec|if|then|else|let|in|do|case|of|end|datatype|opentype|subtype|closedtype|property|entity)\\b"
 				}
 			]
 		},
