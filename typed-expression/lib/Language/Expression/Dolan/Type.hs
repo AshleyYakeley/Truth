@@ -52,6 +52,26 @@ data DolanSingularType ground polarity t where
 type DolanSingularShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanSingularShimWit ground polarity = PShimWit (DolanPolyShim ground Type) (DolanSingularType ground) polarity
 
+nilDolanPlainShimWit ::
+       forall (ground :: GroundTypeKind) (polarity :: Polarity). (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanPlainShimWit ground polarity (LimitType polarity)
+nilDolanPlainShimWit = mkShimWit NilDolanPlainType
+
+consDolanPlainShimWit ::
+       forall (ground :: GroundTypeKind) (polarity :: Polarity) t1 tr.
+       (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanSingularShimWit ground polarity t1
+    -> DolanPlainShimWit ground polarity tr
+    -> DolanPlainShimWit ground polarity (JoinMeetType polarity t1 tr)
+consDolanPlainShimWit (MkShimWit t1 conv1) (MkShimWit tr convr) =
+    MkShimWit (ConsDolanPlainType t1 tr) (polarBimap conv1 convr)
+
+unsafeDeleteVarPlainShimWit ::
+       forall (ground :: GroundTypeKind) (polarity :: Polarity) name.
+       (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanPlainShimWit ground polarity (UVar name)
+unsafeDeleteVarPlainShimWit = MkShimWit NilDolanPlainType $ isoPolarBackwards unsafeUVarIsomorphism
+
 class TypeFreeVariables (t :: Type) where
     typeFreeVariables :: t -> FiniteSet (AnyW SymbolType)
 

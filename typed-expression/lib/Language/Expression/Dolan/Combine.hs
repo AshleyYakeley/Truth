@@ -1,7 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Combine
-    ( joinMeetDolanShimWit
+    ( joinMeetDolanPlainShimWit
+    , joinMeetDolanShimWit
     , recursiveDolanType
     , recursiveDolanShimWit
     , dolanTypeToPlainRotate
@@ -182,8 +183,7 @@ rotateSingularType ::
     -> DolanPlainShimWit ground polarity t
 rotateSingularType (MkSub n (_ :: DolanShimWit ground polarity' _)) (VarDolanSingularType n')
     | Just Refl <- testEquality n n'
-    , Just Refl <- testEquality (polarityType @polarity) (polarityType @polarity') =
-        MkShimWit NilDolanPlainType $ isoPolarBackwards unsafeUVarIsomorphism
+    , Just Refl <- testEquality (polarityType @polarity) (polarityType @polarity') = unsafeDeleteVarPlainShimWit
 rotateSingularType sub t = singleDolanPlainShimWit $ mapDolanSingularType (substituteInType sub) t
 
 rotatePlainType ::
