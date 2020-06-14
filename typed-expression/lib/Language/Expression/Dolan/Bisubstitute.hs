@@ -2,6 +2,8 @@ module Language.Expression.Dolan.Bisubstitute
     ( Bisubstitution(..)
     , mkPolarBisubstitution
     , bisubstituteSingularType
+    , bisubstituteType
+    , bisubstituteShimWit
     , bisubstitutesType
     , bisubstitutes
     ) where
@@ -106,6 +108,13 @@ bisubstituteType bisub rt@(RecursiveDolanType n pt) =
             pt' <- renameDolanPlainType pt
             t' <- lift $ lift $ bisubstitutePlainShimWit bisub pt'
             return $ recursiveDolanShimWit n' t'
+
+bisubstituteShimWit ::
+       forall (ground :: GroundTypeKind) m polarity t. (IsDolanGroundType ground, MonadOne m, Is PolarityType polarity)
+    => Bisubstitution ground m
+    -> DolanShimWit ground polarity t
+    -> m (DolanShimWit ground polarity t)
+bisubstituteShimWit bisub = chainShimWitM $ bisubstituteType bisub
 
 bisubstitutesType ::
        forall (ground :: GroundTypeKind) m polarity t. (IsDolanGroundType ground, MonadOne m, Is PolarityType polarity)
