@@ -44,12 +44,12 @@ instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) TopType wh
 instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) b
          ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (JoinType a b) where
-    toShimWit = joinMeetDolanShimWit toJMShimWit toJMShimWit
+    toShimWit = joinMeetShimWit toJMShimWit toJMShimWit
 
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
          , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) b
          ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (MeetType a b) where
-    fromShimWit = joinMeetDolanShimWit fromJMShimWit fromJMShimWit
+    fromShimWit = joinMeetShimWit fromJMShimWit fromJMShimWit
 
 -- UVar
 instance KnownSymbol name => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (UVar name) where

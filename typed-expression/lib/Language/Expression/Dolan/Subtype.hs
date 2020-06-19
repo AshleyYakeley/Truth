@@ -15,14 +15,14 @@ import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
 import Shapes
 
-type SubtypeContext :: (Polarity -> Type -> Type) -> MapKind Type -> (Type -> Type) -> Polarity -> Polarity -> Type
+type SubtypeContext :: (Polarity -> Type -> Type) -> ShimKind Type -> (Type -> Type) -> Polarity -> Polarity -> Type
 data SubtypeContext w shim m pola polb = MkSubtypeContext
     { subtypeTypes :: forall ta tb. w pola ta -> w polb tb -> m (shim ta tb)
     , subtypeInverted :: SubtypeContext w shim m (InvertPolarity polb) (InvertPolarity pola)
     }
 
 subtypeVariance ::
-       forall (w :: Polarity -> Type -> Type) (shim :: MapKind Type) m pola polb sv a b.
+       forall (w :: Polarity -> Type -> Type) (shim :: ShimKind Type) m pola polb sv a b.
        (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext w shim m pola polb
     -> VarianceType sv
@@ -39,7 +39,7 @@ subtypeVariance sc RangevarianceType (MkRangeType tpa tqa) (MkRangeType tpb tqb)
     return $ MkCatRange pba qab
 
 subtypeArguments ::
-       forall (w :: Polarity -> Type -> Type) (pshim :: PolyMapKind) m pola polb dv (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) ta tb.
+       forall (w :: Polarity -> Type -> Type) (pshim :: PolyShimKind) m pola polb dv (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) ta tb.
        (DolanVarianceInCategory pshim, Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext w (pshim Type) m pola polb
     -> DolanVarianceType dv
@@ -65,7 +65,7 @@ subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDola
                                             pure $ \conv -> f (applyPolyShim svt conv sfunc)
 
 subtypeDolanArguments ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyMapKind) m pola polb dv gt argsa argsb.
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m pola polb dv gt argsa argsb.
        ( IsDolanGroundType ground
        , DolanVarianceInCategory pshim
        , Applicative m

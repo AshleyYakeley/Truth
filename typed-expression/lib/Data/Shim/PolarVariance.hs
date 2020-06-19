@@ -8,24 +8,24 @@ import Data.Shim.PolyShim
 import Data.Shim.Variance
 import Shapes
 
-type PolarVarianceMap (map :: MapKind Type) (polarity :: Polarity) (sv :: Variance)
-     = VarianceCategory (PolarMap map polarity) sv
+type PolarVarianceMap (shim :: ShimKind Type) (polarity :: Polarity) (sv :: Variance)
+     = VarianceCategory (PolarMap shim polarity) sv
 
 mkContravariantPolarMap ::
-       forall (map :: MapKind Type) polarity a b. Is PolarityType polarity
-    => PolarMap map (InvertPolarity polarity) a b
-    -> PolarVarianceMap map polarity 'Contravariance a b
+       forall (shim :: ShimKind Type) polarity a b. Is PolarityType polarity
+    => PolarMap shim (InvertPolarity polarity) a b
+    -> PolarVarianceMap shim polarity 'Contravariance a b
 mkContravariantPolarMap f = MkCatDual $ uninvertPolarMap f
 
 mkRangevariantPolarMap ::
-       forall (map :: MapKind Type) polarity p1 p2 q1 q2. Is PolarityType polarity
-    => PolarMap map (InvertPolarity polarity) p1 p2
-    -> PolarMap map polarity q1 q2
-    -> PolarVarianceMap map polarity 'Rangevariance '( p1, q1) '( p2, q2)
+       forall (shim :: ShimKind Type) polarity p1 p2 q1 q2. Is PolarityType polarity
+    => PolarMap shim (InvertPolarity polarity) p1 p2
+    -> PolarMap shim polarity q1 q2
+    -> PolarVarianceMap shim polarity 'Rangevariance '( p1, q1) '( p2, q2)
 mkRangevariantPolarMap pp qq = MkCatRange (uninvertPolarMap pp) qq
 
 polarMapTypeApply ::
-       forall (pmap :: PolyMapKind) (polarity :: Polarity) (v :: Variance) k (f :: VarianceKind v -> k) (g :: VarianceKind v -> k) (a :: VarianceKind v) (b :: VarianceKind v).
+       forall (pmap :: PolyShimKind) (polarity :: Polarity) (v :: Variance) k (f :: VarianceKind v -> k) (g :: VarianceKind v -> k) (a :: VarianceKind v) (b :: VarianceKind v).
        (ApplyPolyShim pmap, Is PolarityType polarity, InKind a, InKind b, HasVariance v f, HasVariance v g)
     => VarianceType v
     -> PolarMap (pmap (VarianceKind v -> k)) polarity f g

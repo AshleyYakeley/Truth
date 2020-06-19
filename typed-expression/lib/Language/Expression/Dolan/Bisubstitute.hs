@@ -36,7 +36,7 @@ mkPolarBisubstitution n a b =
         NegativeType -> MkBisubstitution n b a
 
 getBisubstitution ::
-       forall (polarity :: Polarity) (shim :: MapKind Type) m (wit :: Polarity -> Type -> Type) t.
+       forall (polarity :: Polarity) (shim :: ShimKind Type) m (wit :: Polarity -> Type -> Type) t.
        Is PolarityType polarity
     => m (PShimWit shim wit 'Positive t)
     -> m (PShimWit shim wit 'Negative t)
@@ -66,7 +66,7 @@ bisubstitutePlainType _ NilDolanPlainType = return $ mkShimWit $ PlainDolanType 
 bisubstitutePlainType bisub (ConsDolanPlainType ta tb) = do
     tfa <- bisubstituteSingularType bisub ta
     tfb <- bisubstitutePlainType bisub tb
-    return $ joinMeetDolanShimWit tfa tfb
+    return $ joinMeetShimWit tfa tfb
 
 bisubstitutePlainShimWit ::
        forall (ground :: GroundTypeKind) m polarity t. (IsDolanGroundType ground, MonadOne m, Is PolarityType polarity)

@@ -49,7 +49,7 @@ covaryToDolanVarianceMap (ConsListType Refl ml) (ConsCovaryMap vr) =
     ConsDolanVarianceMap $ covaryToDolanVarianceMap ml vr
 
 covaryKMCategory ::
-       forall (pmap :: PolyMapKind) dv. DolanVarianceInCategory pmap
+       forall (pmap :: PolyShimKind) dv. DolanVarianceInCategory pmap
     => CovaryType dv
     -> Dict (CoercibleKind (DolanVarianceKind dv), InCategory (pmap (DolanVarianceKind dv)))
 covaryKMCategory lc = dolanVarianceInCategory @pmap (mapListType (\Refl -> CovarianceType) lc)

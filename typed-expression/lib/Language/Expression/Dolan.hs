@@ -30,7 +30,7 @@ module Language.Expression.Dolan
     , singleDolanType
     , singleDolanShimWit
     , plainDolanShimWit
-    , joinMeetDolanShimWit
+    , joinMeetShimWit
     , recursiveDolanType
     , recursiveDolanShimWit
     , unToRangeShimWit

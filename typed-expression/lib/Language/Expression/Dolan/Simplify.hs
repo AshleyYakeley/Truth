@@ -6,6 +6,7 @@ import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Simplify.DuplicateGroundTypes
 import Language.Expression.Dolan.Simplify.DuplicateTypeVars
 import Language.Expression.Dolan.Simplify.OneSidedTypeVars
+import Language.Expression.Dolan.Simplify.RollUpRecursion
 import Language.Expression.Dolan.Simplify.SharedTypeVars
 import Language.Expression.Dolan.Simplify.UnusedRecursion
 import Language.Expression.Dolan.Type
@@ -39,6 +40,9 @@ simplifyTypes = True
 --
 -- mergeDuplicateTypeVars: merge duplicate type vars in join/meet (on each type)
 -- e.g. "a|a" => "a"
+--
+-- rollUpRecursiveTypes: roll up recursive types
+-- e.g. "F (rec a. F a)" => "rec a. F a"
 dolanSimplifyTypes ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
@@ -46,7 +50,8 @@ dolanSimplifyTypes ::
     -> a
 dolanSimplifyTypes =
     if simplifyTypes
-        then mergeDuplicateTypeVars @ground .
+        then rollUpRecursiveTypes @ground .
+             mergeDuplicateTypeVars @ground .
              mergeSharedTypeVars @ground .
              eliminateOneSidedTypeVars @ground . mergeDuplicateGroundTypes @ground . eliminateUnusedRecursion @ground
         else id

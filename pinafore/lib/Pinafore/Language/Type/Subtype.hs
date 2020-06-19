@@ -51,7 +51,7 @@ entityGroundSubtype _ sc (ConsListType Refl NilListType) MaybeEntityGroundType (
             MkConcreteType MaybeEntityGroundType $
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @polb
-    pure $ convE . cfmap (unjoinmeet1 @polb . conv)
+    pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
 -- [Entity] <= Entity
 entityGroundSubtype _ sc (ConsListType Refl NilListType) ListEntityGroundType (ConsDolanArguments t NilDolanArguments) NilListType TopEntityGroundType NilDolanArguments = do
     let
@@ -60,7 +60,7 @@ entityGroundSubtype _ sc (ConsListType Refl NilListType) ListEntityGroundType (C
             MkConcreteType ListEntityGroundType $
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @polb
-    pure $ convE . cfmap (unjoinmeet1 @polb . conv)
+    pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
 -- (Entity, Entity) <= Entity
 entityGroundSubtype _ sc (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
@@ -71,7 +71,7 @@ entityGroundSubtype _ sc (ConsListType Refl (ConsListType Refl NilListType)) Pai
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @polb
     convB <- subtypeTypes sc tb $ topEntityType @polb
-    pure $ convE . applyPolyShim CovarianceType (cfmap (unjoinmeet1 @polb . convA)) (unjoinmeet1 @polb . convB)
+    pure $ convE . applyPolyShim CovarianceType (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
 -- Either Entity Entity <= Entity
 entityGroundSubtype _ sc (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
@@ -82,7 +82,7 @@ entityGroundSubtype _ sc (ConsListType Refl (ConsListType Refl NilListType)) Eit
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @polb
     convB <- subtypeTypes sc tb $ topEntityType @polb
-    pure $ convE . applyPolyShim CovarianceType (cfmap (unjoinmeet1 @polb . convA)) (unjoinmeet1 @polb . convB)
+    pure $ convE . applyPolyShim CovarianceType (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
 -- (entity type) <= Entity
 entityGroundSubtype _ _ ct gt args NilListType TopEntityGroundType NilDolanArguments
     | Just ebij <- dolanToConcreteSimpleType ct gt args =

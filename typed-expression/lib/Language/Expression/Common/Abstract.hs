@@ -30,12 +30,12 @@ abstractNamedExpressionUnifier ::
                 UUNegShimWit unifier (MeetType t tu) -> UnifierOpenExpression unifier (tu -> a) -> UnifierMonad unifier r)
     -> UnifierMonad unifier r
 abstractNamedExpressionUnifier _name vwt (ClosedExpression a) cont =
-    cont (uuLiftNegShimWit $ mapShimWit polarUn1 vwt) $ pure $ \_ -> a
+    cont (uuLiftNegShimWit $ mapShimWit iPolarL1 vwt) $ pure $ \_ -> a
 abstractNamedExpressionUnifier name vwt (OpenExpression (MkNameWitness name' vwt') expr) cont
     | name == name' =
         abstractNamedExpressionUnifier @unifier name vwt expr $ \vwt1 expr' -> do
             vwtt <- unifyUUNegShimWit @unifier vwt1 (uuLiftNegShimWit vwt')
-            cont (mapNegShimWit swapMeetRight vwtt) $ fmap (\tta (BothMeetType ta tb) -> tta ta tb) expr'
+            cont (mapNegShimWit iMeetSwapL vwtt) $ fmap (\tta (BothMeetType ta tb) -> tta ta tb) expr'
 abstractNamedExpressionUnifier name vwt (OpenExpression (MkNameWitness name' vwt') expr) cont =
     abstractNamedExpressionUnifier @unifier name vwt expr $ \vwt1 expr' ->
         cont vwt1 $ OpenExpression (MkNameWitness name' vwt') $ fmap (\vva v1 v2 -> vva v2 v1) expr'

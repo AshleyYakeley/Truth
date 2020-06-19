@@ -18,7 +18,7 @@ newtype UVar (name :: Symbol) =
     MkUVar GHC.Exts.Any
 
 unsafeUVarIsomorphism ::
-       forall (cat :: MapKind Type) (name :: Symbol) (a :: Type). Category cat
+       forall (cat :: ShimKind Type) (name :: Symbol) (a :: Type). Category cat
     => Isomorphism cat a (UVar name)
 unsafeUVarIsomorphism =
     case MkUVar -- hack for unused name warning
@@ -26,7 +26,7 @@ unsafeUVarIsomorphism =
         _ -> unsafeIsomorphism
 
 renameUVar ::
-       forall m (cat :: MapKind Type) name1 r. (Monad m, Category cat)
+       forall m (cat :: ShimKind Type) name1 r. (Monad m, Category cat)
     => String
     -> SymbolType name1
     -> (forall (newname :: Symbol). SymbolType newname -> Isomorphism cat (UVar name1) (UVar newname) -> m r)
@@ -34,7 +34,7 @@ renameUVar ::
 renameUVar newname _ call = valueToWitness newname $ \namewit2 -> call namewit2 unsafeUVarIsomorphism
 
 renameUVars ::
-       forall m (cat :: MapKind Type) (names :: [Symbol]) r. (Monad m, Category cat)
+       forall m (cat :: ShimKind Type) (names :: [Symbol]) r. (Monad m, Category cat)
     => String
     -> ListType SymbolType names
     -> (forall (newname :: Symbol).
@@ -56,7 +56,7 @@ varRenamerTGenerateSuggestedSymbol name cont = do
     valueToWitness name' cont
 
 varNamespaceTRenameUVar ::
-       forall ts m (cat :: MapKind Type) name1 r. (Monad m, Category cat)
+       forall ts m (cat :: ShimKind Type) name1 r. (Monad m, Category cat)
     => SymbolType name1
     -> (forall (newname :: Symbol).
                 SymbolType newname -> Isomorphism cat (UVar name1) (UVar newname) -> VarNamespaceT ts (VarRenamerT ts m) r)
@@ -66,7 +66,7 @@ varNamespaceTRenameUVar namewit1 call = do
     renameUVar newname namewit1 call
 
 varNamespaceTAddUVars ::
-       forall ts m (cat :: MapKind Type) (names :: [Symbol]) r. (Monad m, Category cat)
+       forall ts m (cat :: ShimKind Type) (names :: [Symbol]) r. (Monad m, Category cat)
     => ListType SymbolType names
     -> (forall (newname :: Symbol).
                 SymbolType newname -> ListType (Compose (Isomorphism cat (UVar newname)) UVar) names -> VarNamespaceT ts (VarRenamerT ts m) r)

@@ -9,7 +9,7 @@ import Data.Shim.PolyShim
 import Data.Shim.Variance
 import Shapes
 
-type JMShim :: PolyMapKind
+type JMShim :: PolyShimKind
 data JMShim k a b where
     FuncJMShim :: forall k (a :: k) (b :: k). String -> KindFunction a b -> JMShim k a b
     IdentityJMShim :: forall k (t :: k). JMShim k t t
@@ -104,6 +104,8 @@ instance forall k (f :: (Type, Type) -> k). HasVariance 'Rangevariance f =>
         case (inKind @_ @a, inKind @_ @b) of
             (MkPairWitness, MkPairWitness) -> applyPolyShim RangevarianceType IdentityJMShim jmf
 
+instance JoinMeetIsoCategory (JMShim Type)
+
 instance JoinMeetCategory (JMShim Type) where
     initf = InitFJMShim
     termf = TermFJMShim
@@ -113,7 +115,7 @@ instance JoinMeetCategory (JMShim Type) where
     meet1 = Meet1JMShim cid
     meet2 = Meet2JMShim cid
     meetf = MeetFJMShim
-    applf (Meet1JMShim p) q = applf p q <.> meetBimap meet1 cid
+    applf (Meet1JMShim p) q = applf p q <.> iMeetPair meet1 cid
     applf (ConsJMShim CovarianceType IdentityJMShim p) q = p <.> applf cid q
     applf (ConsJMShim CovarianceType (ConsJMShim ContravarianceType IdentityJMShim (MkCatDual pa)) pb) q =
         pb <.> applf cid (pa <.> q)

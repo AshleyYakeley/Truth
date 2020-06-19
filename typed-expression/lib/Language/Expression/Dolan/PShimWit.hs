@@ -4,10 +4,10 @@ import Data.Shim
 import Language.Expression.Common
 import Shapes
 
-type PShimWit :: forall k. MapKind k -> (Polarity -> k -> Type) -> Polarity -> k -> Type
+type PShimWit :: forall k. ShimKind k -> (Polarity -> k -> Type) -> Polarity -> k -> Type
 type PShimWit cat wit polarity = ShimWit cat (wit polarity) polarity
 
-type PShimWitMappable (cat :: MapKind k) (wit :: Polarity -> k -> Type)
+type PShimWitMappable (cat :: ShimKind k) (wit :: Polarity -> k -> Type)
      = WitnessMappable (PShimWit cat wit 'Positive) (PShimWit cat wit 'Negative)
 
 mapPShimWitsM ::

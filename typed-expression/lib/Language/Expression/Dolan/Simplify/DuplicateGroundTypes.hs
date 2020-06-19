@@ -23,10 +23,8 @@ mergeInTypes ::
     -> DolanShimWit ground polarity (JoinMeetType polarity ta tb)
 mergeInTypes ta tb =
     case polarityType @polarity of
-        PositiveType ->
-            chainShimWit mergeDuplicateGroundTypesInType $ joinMeetDolanShimWit (mkShimWit ta) (mkShimWit tb)
-        NegativeType ->
-            chainShimWit mergeDuplicateGroundTypesInType $ joinMeetDolanShimWit (mkShimWit ta) (mkShimWit tb)
+        PositiveType -> chainShimWit mergeDuplicateGroundTypesInType $ joinMeetShimWit (mkShimWit ta) (mkShimWit tb)
+        NegativeType -> chainShimWit mergeDuplicateGroundTypesInType $ joinMeetShimWit (mkShimWit ta) (mkShimWit tb)
 
 mergeIn1SingularType ::
        forall (ground :: GroundTypeKind) polarity t1 tr. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -38,12 +36,12 @@ mergeIn1SingularType (GroundDolanSingularType gt1 args1) (ConsDolanPlainType (Gr
     | Just (Refl, HRefl) <- groundTypeTestEquality gt1 gt2 =
         case mergeDolanArguments mergeInTypes (groundTypeVarianceType gt1) (groundTypeVarianceMap gt1) args1 args2 of
             MkShimWit args' convargs ->
-                ccontramap (polarBimap convargs id . polarSwapRight) $
+                ccontramap (iPolarPair convargs id . iPolarSwapR) $
                 mergeIn1SingularType (GroundDolanSingularType gt1 args') tr
 mergeIn1SingularType ts (ConsDolanPlainType t1 tr) =
     case mergeIn1SingularType ts tr of
         MkShimWit tsr conv ->
-            MkShimWit (ConsDolanPlainType t1 tsr) $ polarF (polar2 . conv . polar1) (polarBimap id $ conv . polar2)
+            MkShimWit (ConsDolanPlainType t1 tsr) $ polarF (polar2 . conv . polar1) (iPolarPair id $ conv . polar2)
 
 mergeDuplicateGroundTypesInPlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -54,7 +52,7 @@ mergeDuplicateGroundTypesInPlainType (ConsDolanPlainType t1 tr) =
     case mergeInSingularType t1 of
         MkShimWit t1' conv1 ->
             case mergeDuplicateGroundTypesInPlainType tr of
-                MkShimWit tr' convr -> ccontramap (polarBimap conv1 convr) $ mergeIn1SingularType t1' tr'
+                MkShimWit tr' convr -> ccontramap (iPolarPair conv1 convr) $ mergeIn1SingularType t1' tr'
 
 mergeDuplicateGroundTypesInType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

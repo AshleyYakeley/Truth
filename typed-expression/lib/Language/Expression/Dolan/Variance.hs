@@ -12,7 +12,7 @@ type family DolanVarianceKind (dv :: DolanVariance) :: Type where
 
 type DolanVarianceType = ListType VarianceType
 
-class ApplyPolyShim pmap => DolanVarianceInCategory (pmap :: PolyMapKind) where
+class ApplyPolyShim pmap => DolanVarianceInCategory (pmap :: PolyShimKind) where
     dolanVarianceInCategory ::
            forall dv.
            DolanVarianceType dv
@@ -24,7 +24,7 @@ instance DolanVarianceInCategory JMShim where
         case dolanVarianceInCategory @JMShim lt of
             Dict -> Dict
 
-instance forall (pmap :: PolyMapKind). (DolanVarianceInCategory pmap) => DolanVarianceInCategory (PolyIso pmap) where
+instance forall (pmap :: PolyShimKind). (DolanVarianceInCategory pmap) => DolanVarianceInCategory (PolyIso pmap) where
     dolanVarianceInCategory NilListType = Dict
     dolanVarianceInCategory (ConsListType _ lt) =
         case dolanVarianceInCategory @pmap lt of
@@ -53,7 +53,10 @@ dolanVarianceMapInKind (ConsDolanVarianceMap dvm) =
         Dict -> Dict
 
 bijectSingleVarianceMap ::
-       forall (pmap :: PolyMapKind) sv gt. VarianceType sv -> VarianceMap pmap sv gt -> VarianceMap (PolyIso pmap) sv gt
+       forall (pmap :: PolyShimKind) sv gt.
+       VarianceType sv
+    -> VarianceMap pmap sv gt
+    -> VarianceMap (PolyIso pmap) sv gt
 bijectSingleVarianceMap CovarianceType svm (MkPolyMapT (MkIsomorphism ab ba)) =
     MkPolyMapT $ MkIsomorphism (svm ab) (svm ba)
 bijectSingleVarianceMap ContravarianceType svm (MkCatDual (MkPolyMapT (MkIsomorphism ab ba))) =

@@ -9,10 +9,13 @@ type GroundTypeKind = forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Ty
 type DolanTypeSystem :: GroundTypeKind -> Type
 data DolanTypeSystem ground
 
-type DolanPolyShim :: GroundTypeKind -> PolyMapKind
+type DolanPolyShim :: GroundTypeKind -> PolyShimKind
 type family DolanPolyShim ground
 
-type DolanPolarMap :: GroundTypeKind -> Polarity -> MapKind Type
+type DolanPolyIsoShim :: GroundTypeKind -> PolyShimKind
+type DolanPolyIsoShim ground = PolyIso (DolanPolyShim ground)
+
+type DolanPolarMap :: GroundTypeKind -> Polarity -> ShimKind Type
 type DolanPolarMap ground = PolarMap (DolanPolyShim ground Type)
 
 type DolanName :: GroundTypeKind -> Type

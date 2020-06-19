@@ -219,7 +219,7 @@ data InvertSubstitution ground where
         => SymbolType name
         -> SymbolType name'
         -> DolanType ground polarity t
-        -> Isomorphism (DolanPolyShim ground Type) (JoinMeetType (InvertPolarity polarity) (UVar name') t) (UVar name)
+        -> PolarMap (DolanPolyIsoShim ground Type) polarity (JoinMeetType (InvertPolarity polarity) (UVar name') t) (UVar name)
         -> InvertSubstitution ground
 
 invertSubstitute ::
@@ -237,7 +237,7 @@ invertSubstitute bisub@(MkInvertSubstitution bn n' (st :: DolanType ground spol 
                     expr' <- getCompose $ invertSubstitute bisub expr
                     return $
                         OpenExpression (MkSubsumeWitness n' vt) $
-                        fmap (\fa conv -> fa $ conv <.> uninvertPolarMap polar1 <.> isoPolarBackwards bij) expr'
+                        fmap (\fa conv -> fa $ conv <.> uninvertPolarMap polar1 <.> polarPolyIsoBackwards bij) expr'
             Right Refl ->
                 case isInvertInvertPolarity @wpol of
                     Refl -> do
@@ -245,7 +245,9 @@ invertSubstitute bisub@(MkInvertSubstitution bn n' (st :: DolanType ground spol 
                         expr' <- getCompose $ invertSubstitute bisub expr
                         return $
                             OpenExpression (MkSubsumeWitness n' vt) $
-                            fmap (\fa conv -> fa $ polarF conv convm <.> isoPolarBackwards bij) expr'
+                            fmap
+                                (\fa conv -> fa $ polarF conv convm <.> invertPolarMap (polarPolyIsoForwards bij))
+                                expr'
 invertSubstitute bisub (OpenExpression subwit expr) =
     Compose $ do
         expr' <- getCompose $ invertSubstitute bisub expr
@@ -262,23 +264,23 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => S
         invertPolarity @polarity $ do
             let
                 varBij ::
-                       Isomorphism (DolanPolyShim ground Type) (JoinMeetType (InvertPolarity polarity) (UVar name) t) (UVar name)
-                varBij = unsafeUVarIsomorphism
+                       PolarMap (DolanPolyIsoShim ground Type) polarity (JoinMeetType (InvertPolarity polarity) (UVar name) t) (UVar name)
+                varBij = isoPolyIso unsafeUVarIsomorphism
                 bisub :: Bisubstitution ground (SubsumerM ground)
                 bisub =
                     mkPolarBisubstitution
                         vn
                         (return $
-                         mapShimWit (uninvertPolarMap polar1 <.> isoPolarBackwards varBij) $
+                         mapShimWit (uninvertPolarMap polar1 <.> polarPolyIsoBackwards varBij) $
                          singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn)
                         (do
                              tq <- limitInvertType' tp
                              return $
-                                 mapShimWit (isoPolarBackwards varBij) $
-                                 joinMeetDolanShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn) tq)
+                                 mapShimWit (invertPolarMap $ polarPolyIsoForwards varBij) $
+                                 joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn) tq)
             expr' <- getCompose $ invertSubstitute (MkInvertSubstitution vn vn tp varBij) expr
             (expr'', bisubs) <-
-                solveSubsumer $ fmap (\fa -> fa $ uninvertPolarMap polar2 <.> isoPolarBackwards varBij) expr'
+                solveSubsumer $ fmap (\fa -> fa $ uninvertPolarMap polar2 <.> polarPolyIsoBackwards varBij) expr'
             return (expr'', bisub : bisubs)
     subsumerNegSubstitute subs t = runSubsumerM $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = fmap (fmap unPolarMap) $ getCompose $ subsumeType tinf tdecl

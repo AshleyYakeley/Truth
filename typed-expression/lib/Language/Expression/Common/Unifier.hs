@@ -18,6 +18,8 @@ instance Unifier unifier => InCategory (UUShim unifier) where
     cid = id
     (<.>) = (.)
 
+instance Unifier unifier => JoinMeetIsoCategory (UUShim unifier)
+
 instance Unifier unifier => JoinMeetCategory (UUShim unifier) where
     initf = MkUUShim $ pure initf
     termf = MkUUShim $ pure termf
@@ -87,7 +89,7 @@ unifyUUNegShimWit ::
     -> UnifierMonad unifier (UUNegShimWit unifier (MeetType a b))
 unifyUUNegShimWit (MkShimWit wa conva) (MkShimWit wb convb) = do
     uab <- unifyNegWitnesses @unifier wa wb
-    return $ mapShimWit (polarBimap conva convb) uab
+    return $ mapShimWit (iPolarPair conva convb) uab
 
 unifyUUPosShimWit ::
        forall unifier a b. Unifier unifier
@@ -96,7 +98,7 @@ unifyUUPosShimWit ::
     -> UnifierMonad unifier (UUPosShimWit unifier (JoinType a b))
 unifyUUPosShimWit (MkShimWit wa conva) (MkShimWit wb convb) = do
     uab <- unifyPosWitnesses @unifier wa wb
-    return $ mapShimWit (polarBimap conva convb) uab
+    return $ mapShimWit (iPolarPair conva convb) uab
 
 unifyUUPosNegShimWit ::
        forall unifier a b. Unifier unifier

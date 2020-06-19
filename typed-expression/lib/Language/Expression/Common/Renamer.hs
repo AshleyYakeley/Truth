@@ -27,7 +27,7 @@ class (MonadTransConstraint Monad rn, MonadTransConstraint Monad (RenamerNamespa
     type RenamerNegWitness rn :: Type -> Type
     type RenamerPosWitness rn :: Type -> Type
     type RenamerNamespaceT rn :: (Type -> Type) -> (Type -> Type)
-    type RenamerShim rn :: MapKind Type
+    type RenamerShim rn :: ShimKind Type
     renameNegWitness :: Monad m => RenamerNegWitness rn t -> RenamerNamespaceT rn (rn m) (RenamerNegShimWit rn t)
     renamePosWitness :: Monad m => RenamerPosWitness rn t -> RenamerNamespaceT rn (rn m) (RenamerPosShimWit rn t)
     renameNewVar :: Monad m => rn m (NewVar rn)

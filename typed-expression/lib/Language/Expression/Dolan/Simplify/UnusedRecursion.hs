@@ -16,7 +16,8 @@ elimInPlainType ::
     -> DolanPlainShimWit ground polarity t
 elimInPlainType _ NilDolanPlainType = nilDolanPlainShimWit
 elimInPlainType mn@(Just rn) (ConsDolanPlainType (VarDolanSingularType n) tr)
-    | Just Refl <- testEquality rn n = joinMeetDolanPlainShimWit unsafeDeleteVarPlainShimWit (elimInPlainType mn tr)
+    | Just Refl <- testEquality rn n =
+        joinMeetShimWit (polarPolyIsoShimWit unsafeDeleteVarPlainShimWit) (elimInPlainType mn tr)
 elimInPlainType mn (ConsDolanPlainType t1 tr) =
     consDolanPlainShimWit (mapDolanSingularType elimInType t1) (elimInPlainType mn tr)
 
