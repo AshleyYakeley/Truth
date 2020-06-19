@@ -71,7 +71,7 @@ fullUnifierLiftSourceScoped ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => DolanM ground a
     -> DolanFullUnifier ground a
-fullUnifierLiftSourceScoped tca = fullUnifierLiftTypeCheck $ lift tca
+fullUnifierLiftSourceScoped tca = fullUnifierLiftTypeCheck $ liftTypeCheck tca
 
 unifySubtypeContext ::
        forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
@@ -132,8 +132,8 @@ unifyPosNegDolanTypes ::
     -> DolanType ground 'Negative b
     -> DolanFullUnifier ground (DolanPolyShim ground Type a b)
 unifyPosNegDolanTypes (PlainDolanType pta) (PlainDolanType ptb) = unifyPosNegDolanPlainTypes pta ptb
-unifyPosNegDolanTypes (RecursiveDolanType n pt) _ = Compose $ lift $ throwTypeRecursiveError n pt
-unifyPosNegDolanTypes _ (RecursiveDolanType n pt) = Compose $ lift $ throwTypeRecursiveError n pt
+unifyPosNegDolanTypes (RecursiveDolanType n pt) _ = Compose $ liftTypeCheck $ throwTypeRecursiveError n pt
+unifyPosNegDolanTypes _ (RecursiveDolanType n pt) = Compose $ liftTypeCheck $ throwTypeRecursiveError n pt
 
 unifyPosNegDolanShimWit ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground

@@ -5,6 +5,7 @@ module Language.Expression.Dolan.Subtype
     , subtypeDolanArguments
     , IsDolanSubtypeGroundType(..)
     , DolanTypeCheckM
+    , liftTypeCheck
     ) where
 
 import Data.Shim
@@ -108,3 +109,9 @@ class (IsDolanGroundType ground, MonadPlus (DolanM ground)) => IsDolanSubtypeGro
 
 type DolanTypeCheckM :: GroundTypeKind -> Type -> Type
 type DolanTypeCheckM ground = VarRenamerT (DolanTypeSystem ground) (DolanM ground)
+
+liftTypeCheck ::
+       forall (ground :: GroundTypeKind) a. Monad (DolanM ground)
+    => DolanM ground a
+    -> DolanTypeCheckM ground a
+liftTypeCheck ma = lift ma

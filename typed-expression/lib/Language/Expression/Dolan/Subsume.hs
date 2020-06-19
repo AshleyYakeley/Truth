@@ -98,7 +98,7 @@ runSubsumerM ::
     => SubsumerM ground a
     -> DolanTypeCheckM ground a
 runSubsumerM (SuccessResult a) = return a
-runSubsumerM (FailureResult (UninvertibleError t)) = lift $ throwTypeNotInvertible t
+runSubsumerM (FailureResult (UninvertibleError t)) = liftTypeCheck $ throwTypeNotInvertible t
 
 limitInvertType' ::
        forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
@@ -131,7 +131,7 @@ type DolanFullSubsumer ground = Compose (DolanTypeCheckM ground) (DolanSubsumer 
 subsumerLiftTypeCheck ::
        forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
     => MFunction (DolanM ground) (DolanFullSubsumer ground)
-subsumerLiftTypeCheck tca = Compose $ fmap pure $ lift tca
+subsumerLiftTypeCheck tca = Compose $ fmap pure $ liftTypeCheck tca
 
 subsumeContext ::
        forall (ground :: GroundTypeKind) polarity. (SubsumerConstraint ground, Is PolarityType polarity)
@@ -184,7 +184,7 @@ subsumeGroundType ::
     -> DolanType ground polarity decl
     -> DolanFullSubsumer ground (DolanPolarMap ground polarity inf decl)
 subsumeGroundType gtinf targsinf (PlainDolanType ptdecl) = subsumeGroundPlainType gtinf targsinf ptdecl
-subsumeGroundType _ _ (RecursiveDolanType n pt) = Compose $ lift $ throwTypeRecursiveError n pt
+subsumeGroundType _ _ (RecursiveDolanType n pt) = Compose $ liftTypeCheck $ throwTypeRecursiveError n pt
 
 subsumeSingularType ::
        forall (ground :: GroundTypeKind) polarity inf decl. (SubsumerConstraint ground, Is PolarityType polarity)
@@ -210,7 +210,7 @@ subsumeType ::
     -> DolanType ground polarity decl
     -> DolanFullSubsumer ground (DolanPolarMap ground polarity inf decl)
 subsumeType (PlainDolanType ptinf) tdecl = subsumePlainType ptinf tdecl
-subsumeType (RecursiveDolanType n pt) _ = Compose $ lift $ throwTypeRecursiveError n pt
+subsumeType (RecursiveDolanType n pt) _ = Compose $ liftTypeCheck $ throwTypeRecursiveError n pt
 
 type InvertSubstitution :: GroundTypeKind -> Type
 data InvertSubstitution ground where
@@ -241,7 +241,7 @@ invertSubstitute bisub@(MkInvertSubstitution bn n' (st :: DolanType ground spol 
             Right Refl ->
                 case isInvertInvertPolarity @wpol of
                     Refl -> do
-                        convm <- invertedPolarSubtype lift st vt
+                        convm <- invertedPolarSubtype liftTypeCheck st vt
                         expr' <- getCompose $ invertSubstitute bisub expr
                         return $
                             OpenExpression (MkSubsumeWitness n' vt) $
