@@ -59,19 +59,31 @@ type DolanUnifier :: GroundTypeKind -> Type -> Type
 type DolanUnifier ground = Expression (BisubstitutionWitness ground)
 
 type DolanFullUnifier :: GroundTypeKind -> Type -> Type
-type DolanFullUnifier ground = Compose (DolanTypeCheckM ground) (DolanUnifier ground)
+type DolanFullUnifier ground = Compose (ReaderT () (DolanTypeCheckM ground)) (DolanUnifier ground)
+
+fullUnifierLift ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => DolanUnifier ground a
+    -> DolanFullUnifier ground a
+fullUnifierLift ua = Compose $ pure ua
 
 fullUnifierLiftTypeCheck ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => DolanTypeCheckM ground a
     -> DolanFullUnifier ground a
-fullUnifierLiftTypeCheck tca = Compose $ fmap pure tca
+fullUnifierLiftTypeCheck tca = Compose $ lift $ fmap pure tca
 
 fullUnifierLiftSourceScoped ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => DolanM ground a
     -> DolanFullUnifier ground a
 fullUnifierLiftSourceScoped tca = fullUnifierLiftTypeCheck $ liftTypeCheck tca
+
+runFullUnifier ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => DolanFullUnifier ground a
+    -> DolanTypeCheckM ground (DolanUnifier ground a)
+runFullUnifier (Compose rma) = runReaderT rma ()
 
 unifySubtypeContext ::
        forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
@@ -98,9 +110,9 @@ unifyPosNegDolanSingularTypes ::
 unifyPosNegDolanSingularTypes (VarDolanSingularType na) (VarDolanSingularType nb)
     | Just Refl <- testEquality na nb = pure id
 unifyPosNegDolanSingularTypes (VarDolanSingularType na) tb =
-    liftUnifier $ varExpression $ mkNegativeBisubstitutionWitness na tb
+    fullUnifierLift $ varExpression $ mkNegativeBisubstitutionWitness na tb
 unifyPosNegDolanSingularTypes ta (VarDolanSingularType nb) =
-    liftUnifier $ varExpression $ mkPositiveBisubstitutionWitness nb ta
+    fullUnifierLift $ varExpression $ mkPositiveBisubstitutionWitness nb ta
 unifyPosNegDolanSingularTypes (GroundDolanSingularType gta argsa) (GroundDolanSingularType gtb argsb) =
     unifyPosNegGroundTypes gta argsa gtb argsb
 
@@ -132,8 +144,8 @@ unifyPosNegDolanTypes ::
     -> DolanType ground 'Negative b
     -> DolanFullUnifier ground (DolanPolyShim ground Type a b)
 unifyPosNegDolanTypes (PlainDolanType pta) (PlainDolanType ptb) = unifyPosNegDolanPlainTypes pta ptb
-unifyPosNegDolanTypes (RecursiveDolanType n pt) _ = Compose $ liftTypeCheck $ throwTypeRecursiveError n pt
-unifyPosNegDolanTypes _ (RecursiveDolanType n pt) = Compose $ liftTypeCheck $ throwTypeRecursiveError n pt
+unifyPosNegDolanTypes (RecursiveDolanType n pt) _ = fullUnifierLiftSourceScoped $ throwTypeRecursiveError n pt
+unifyPosNegDolanTypes _ (RecursiveDolanType n pt) = fullUnifierLiftSourceScoped $ throwTypeRecursiveError n pt
 
 unifyPosNegDolanShimWit ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
@@ -283,7 +295,7 @@ runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name
              joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn) tp)
             (return $ cfmap (isoForwards varBij . join1) $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn)
     in do
-           expr' <- lift $ getCompose $ bisubstituteUnifier bisub expr
+           expr' <- lift $ runFullUnifier $ bisubstituteUnifier bisub expr
            ca <- runUnifier expr'
            tell [bisub]
            return $ ca $ isoForwards varBij . join2
@@ -298,7 +310,7 @@ runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolType name
             (return $
              cfmap (isoForwards varBij) $ joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn) tq)
     in do
-           expr' <- lift $ getCompose $ bisubstituteUnifier bisub expr
+           expr' <- lift $ runFullUnifier $ bisubstituteUnifier bisub expr
            ca <- runUnifier expr'
            tell [bisub]
            return $ ca $ meet2 . isoBackwards varBij
@@ -313,7 +325,7 @@ instance forall (ground :: GroundTypeKind). (Eq (DolanName ground), IsDolanSubty
     type UnifierShim (DolanUnifier ground) = DolanPolyShim ground Type
     unifyNegWitnesses ta tb = return $ uuLiftNegShimWit $ joinMeetShimWit (mkShimWit ta) (mkShimWit tb)
     unifyPosWitnesses ta tb = return $ uuLiftPosShimWit $ joinMeetShimWit (mkShimWit ta) (mkShimWit tb)
-    unifyPosNegWitnesses tq tp = fmap MkUUShim $ getCompose $ unifyPosNegDolanTypes tq tp
+    unifyPosNegWitnesses tq tp = fmap MkUUShim $ runFullUnifier $ unifyPosNegDolanTypes tq tp
     solveUnifier u = fmap (\(a, subs) -> (a, reverse subs)) $ runWriterT $ runUnifier u
     unifierPosSubstitute bisubs t = return $ runIdentity $ bisubstitutesType bisubs t
     unifierNegSubstitute bisubs t = return $ runIdentity $ bisubstitutesType bisubs t

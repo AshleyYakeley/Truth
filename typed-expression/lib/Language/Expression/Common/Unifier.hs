@@ -130,9 +130,6 @@ type UnifierSealedPattern unifier
 type UnifierPatternConstructor unifier
      = PatternConstructor (UnifierName unifier) (UnifierPosShimWit unifier) (UnifierNegShimWit unifier)
 
-liftUnifier :: Monad (UnifierMonad unifier) => unifier a -> Compose (UnifierMonad unifier) unifier a
-liftUnifier ua = Compose $ return ua
-
 solveUnifyPosNegShimWit ::
        forall unifier a b. Unifier unifier
     => UnifierPosShimWit unifier a
