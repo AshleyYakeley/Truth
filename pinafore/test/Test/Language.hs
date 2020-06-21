@@ -482,6 +482,22 @@ testQueries =
               , testSameType False "[rec a. a]" "[None]" $ Just "[]"
               , testSameType True "rec a. Integer" "Integer" $ Just "0"
               , testSameType True "[rec a. Integer]" "[Integer]" $ Just "[0]"
+              , testQuery "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount Nothing" $
+                Just "0"
+              , testQuery "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
+                Just "1"
+              , testQuery
+                    "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just Nothing" $
+                Just "2"
+              , testQuery
+                    "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
+                Just "3"
+              , testQuery
+                    "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just Nothing" $
+                Just "4"
+              , testQuery
+                    "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                Just "5"
               ]
         , testGroup
               "subtype"

@@ -259,6 +259,9 @@ testType =
                     , textTypeTest "let x = Just x in x" "{} -> rec d. Maybe d"
                     , textTypeTest "let x : Entity; x = Just x in x" "{} -> Entity"
                     , textTypeTest "let x : Maybe Entity; x = Just x in x" "{} -> Maybe Entity"
+                    , textTypeTest
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount"
+                          "{} -> (rec e. Maybe e) -> Integer"
                     ]
               ]
         , testGroup
