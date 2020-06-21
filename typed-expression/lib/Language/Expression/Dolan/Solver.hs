@@ -2,6 +2,7 @@ module Language.Expression.Dolan.Solver where
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -70,3 +71,32 @@ runSolver ::
     => Solver ground pola polb wit a
     -> DolanTypeCheckM ground (Expression wit a)
 runSolver (MkSolver rma) = fmap (fmap $ \ua -> ua ()) $ runReaderT rma NilListType
+
+solveRecursiveTypes ::
+       forall (ground :: GroundTypeKind) pola polb wit a b.
+       (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb)
+    => (forall pa pb.
+                DolanPlainType ground pola pa -> DolanPlainType ground polb pb -> Solver ground pola polb wit (DolanPolyShim ground Type pa pb))
+    -> DolanType ground pola a
+    -> DolanType ground polb b
+    -> Solver ground pola polb wit (DolanPolyShim ground Type a b)
+solveRecursiveTypes solvePlainTypes (PlainDolanType pta) (PlainDolanType ptb) = solvePlainTypes pta ptb
+solveRecursiveTypes solvePlainTypes ta tb =
+    invertPolarity @polb $
+    MkSolver $ do
+        let st = MkShimType ta tb
+        rcs <- ask
+        case lookUpListElement st rcs of
+            Just lelem -> return $ pure $ getListElement lelem
+            Nothing ->
+                withReaderT (ConsListType st) $ do
+                    MkShimWit pta iconva <- return $ dolanTypeToPlainUnroll ta
+                    MkShimWit ptb iconvb <- return $ dolanTypeToPlainUnroll tb
+                    erconv <- unSolver $ solvePlainTypes pta ptb
+                    let
+                        fixconv rconv rl = let
+                            conv =
+                                polarPolyIsoSingle (invertPolarMap iconvb) <.> rconv (conv, rl) <.>
+                                polarPolyIsoSingle iconva
+                            in conv
+                    return $ fmap fixconv erconv
