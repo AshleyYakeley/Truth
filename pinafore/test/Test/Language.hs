@@ -465,39 +465,71 @@ testQueries =
                     ]
               ]
         , testGroup
-              "recursive types"
+              "recursive"
               [ testQuery "let x : rec a. [a]; x = [] in x" $ Just "[]"
-              , testSameType True "Integer" "Integer" $ Just "0"
-              , testSameType True "Integer" "rec a. Integer" $ Just "0"
-              , testSameType True "[Integer]" "[rec a. Integer]" $ Just "[0]"
-              , testSameType True "rec a. [a]" "[rec a. [a]]" $ Just "[]"
-              , testSameType True "rec a. [a]" "rec a. [[a]]" $ Just "[]"
-              , testSameType False "rec a. Maybe a | [a]" "(rec a. Maybe a) | (rec b. [b])" $ Just "[]"
-              , testSameType False "rec a. Maybe a | [a]" "(rec a. Maybe a) | (rec a. [a])" $ Just "[]"
-              , testSubtype True "rec a. [a]" "Entity" $ Nothing
-              , testSubtype True "[rec a. [a]]" "Entity" $ Nothing
-              , testSubtype True "rec a. [a]" "[Entity]" $ Just "[]"
-              , testSubtype True "[rec a. [a]]" "[Entity]" $ Just "[]"
-              , testSameType False "rec a. a" "None" $ Nothing
-              , testSameType False "[rec a. a]" "[None]" $ Just "[]"
-              , testSameType True "rec a. Integer" "Integer" $ Just "0"
-              , testSameType True "[rec a. Integer]" "[Integer]" $ Just "[0]"
-              , testQuery "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount Nothing" $
-                Just "0"
-              , testQuery "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
-                Just "1"
-              , testQuery
-                    "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just Nothing" $
-                Just "2"
-              , testQuery
-                    "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
-                Just "3"
-              , testQuery
-                    "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just Nothing" $
-                Just "4"
-              , testQuery
-                    "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
-                Just "5"
+              , testGroup
+                    "equivalence"
+                    [ testSameType True "Integer" "Integer" $ Just "0"
+                    , testSameType True "Integer" "rec a. Integer" $ Just "0"
+                    , testSameType True "[Integer]" "[rec a. Integer]" $ Just "[0]"
+                    , testSameType True "rec a. [a]" "[rec a. [a]]" $ Just "[]"
+                    , testSameType True "rec a. [a]" "rec a. [[a]]" $ Just "[]"
+                    , testSameType False "rec a. Maybe a | [a]" "(rec a. Maybe a) | (rec b. [b])" $ Just "[]"
+                    , testSameType False "rec a. Maybe a | [a]" "(rec a. Maybe a) | (rec a. [a])" $ Just "[]"
+                    , testSubtype True "rec a. [a]" "Entity" $ Nothing
+                    , testSubtype True "[rec a. [a]]" "Entity" $ Nothing
+                    , testSubtype True "rec a. [a]" "[Entity]" $ Just "[]"
+                    , testSubtype True "[rec a. [a]]" "[Entity]" $ Just "[]"
+                    , testSameType False "rec a. a" "None" $ Nothing
+                    , testSameType False "[rec a. a]" "[None]" $ Just "[]"
+                    , testSameType True "rec a. Integer" "Integer" $ Just "0"
+                    , testSameType True "[rec a. Integer]" "[Integer]" $ Just "[0]"
+                    ]
+              , testGroup
+                    "case"
+                    [ testQuery "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount Nothing" $
+                      Just "0"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
+                      Just "1"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
+                      Just "3"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just Nothing" $
+                      Just "4"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      Just "5"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just $ Just Nothing in rcount rval" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe None)) ; rval = Just $ Just Nothing in rcount rval" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) ; rval = Just $ Just Nothing in rcount rval" $
+                      Just "2"
+                    , testQuery "Just $ Just $ Just Nothing" $ Just "Just Just Just Nothing"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just $ Just $ Just Nothing in rcount rval" $
+                      Just "3"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) ; rval = Just $ Just $ Just Nothing in rcount rval" $
+                      Just "3"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe (Maybe None)))) ; rval = Just $ Just $ Just Nothing in rcount rval" $
+                      Just "3"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; _ -> 4 end in rcount $ Just $ Just $ Just Nothing" $
+                      Just "3"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + r1count y end; r1count x = case x of Nothing -> 0; Just y -> 1 + r1count y end in rcount $ Just $ Just $ Just Nothing" $
+                      Just "3"
+                    ]
               ]
         , testGroup
               "subtype"
