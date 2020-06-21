@@ -66,6 +66,7 @@ library:
       - Language.Expression.Dolan.Simplify.DuplicateTypeVars
       - Language.Expression.Dolan.Simplify.RollUpRecursion
       - Language.Expression.Dolan.Simplify
+      - Language.Expression.Dolan.Solver
       - Language.Expression.Dolan.Unify
       - Language.Expression.Dolan.Inverted
       - Language.Expression.Dolan.Subsume

@@ -4,12 +4,9 @@ module Language.Expression.Dolan.Subtype
     ( SubtypeContext(..)
     , subtypeDolanArguments
     , IsDolanSubtypeGroundType(..)
-    , DolanTypeCheckM
-    , liftTypeCheck
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -106,12 +103,3 @@ class (IsDolanGroundType ground, MonadPlus (DolanM ground)) => IsDolanSubtypeGro
         -> DolanType ground polarity tdecl
         -> DolanM ground a
     throwTypeNotInvertible :: Is PolarityType polarity => DolanType ground polarity t -> DolanM ground a
-
-type DolanTypeCheckM :: GroundTypeKind -> Type -> Type
-type DolanTypeCheckM ground = VarRenamerT (DolanTypeSystem ground) (DolanM ground)
-
-liftTypeCheck ::
-       forall (ground :: GroundTypeKind) a. Monad (DolanM ground)
-    => DolanM ground a
-    -> DolanTypeCheckM ground a
-liftTypeCheck ma = lift ma

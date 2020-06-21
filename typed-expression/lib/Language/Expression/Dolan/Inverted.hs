@@ -1,6 +1,5 @@
 module Language.Expression.Dolan.Inverted
-    ( invertedSubtype
-    , invertedPolarSubtype
+    ( invertedPolarSubtype
     ) where
 
 import Data.Shim

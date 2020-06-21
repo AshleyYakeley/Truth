@@ -11,6 +11,7 @@ import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Inverted
 import Language.Expression.Dolan.Simplify
+import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
