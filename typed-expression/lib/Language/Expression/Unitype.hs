@@ -72,7 +72,7 @@ instance Monad m => Subsumer (UnitypeSubsumer m val) where
     solveSubsumer (MkUnitypeSubsumer ia) = pure $ (runIdentity ia, ())
     subsumerNegSubstitute () Refl = return $ unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
-    simplifyPosType = id
+    simplifyPosType = mkShimWit
 
 class UnitypeValue val where
     applyValue :: val -> val -> val

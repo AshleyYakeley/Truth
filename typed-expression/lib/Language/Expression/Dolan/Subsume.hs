@@ -279,6 +279,4 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => S
             return (expr'', bisub : bisubs)
     subsumerNegSubstitute subs t = runSubsumerM $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = fmap (fmap unPolarMap) $ runSolver $ subsumeType tinf tdecl
-    simplifyPosType (MkAnyW t) =
-        case dolanSimplifyTypes @ground $ mkShimWit @Type @(DolanPolyShim ground Type) @_ @'Positive t of
-            MkShimWit t' _ -> MkAnyW t'
+    simplifyPosType t = dolanSimplifyTypes @ground $ mkShimWit @Type @(DolanPolyShim ground Type) @_ @'Positive t
