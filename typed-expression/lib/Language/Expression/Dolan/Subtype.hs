@@ -96,10 +96,11 @@ class (IsDolanGroundType ground, MonadPlus (DolanM ground)) => IsDolanSubtypeGro
         -> m (DolanPolyShim ground Type a b)
     throwTypeRecursiveError ::
            Is PolarityType polarity => SymbolType name -> DolanPlainType ground polarity t -> DolanM ground a
-    throwTypeConvertInverseError :: DolanType ground 'Negative p -> DolanType ground 'Positive q -> DolanM ground a
+    throwTypeConvertInverseError ::
+           DolanPlainType ground 'Negative p -> DolanPlainType ground 'Positive q -> DolanM ground a
     throwTypeSubsumeError ::
            Is PolarityType polarity
         => DolanSingularType ground polarity tinf
-        -> DolanType ground polarity tdecl
+        -> DolanPlainType ground polarity tdecl
         -> DolanM ground a
     throwTypeNotInvertible :: Is PolarityType polarity => DolanType ground polarity t -> DolanM ground a

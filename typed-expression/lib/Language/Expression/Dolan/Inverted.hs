@@ -59,17 +59,17 @@ subtypeTT dlift _ (RecursiveDolanType n t) = dlift $ throwTypeRecursiveError n t
 invertedSubtype ::
        forall (ground :: GroundTypeKind) m p q. (IsDolanSubtypeGroundType ground, MonadPlus m)
     => MFunction (DolanM ground) m
-    -> DolanType ground 'Negative p
-    -> DolanType ground 'Positive q
+    -> DolanPlainType ground 'Negative p
+    -> DolanPlainType ground 'Positive q
     -> m (DolanPolyShim ground Type p q)
-invertedSubtype dlift tp tq = subtypeTT dlift tp tq <|> dlift (throwTypeConvertInverseError tp tq)
+invertedSubtype dlift tp tq = subtypePP dlift tp tq <|> dlift (throwTypeConvertInverseError tp tq)
 
 invertedPolarSubtype ::
        forall (ground :: GroundTypeKind) polarity m p q.
        (Is PolarityType polarity, IsDolanSubtypeGroundType ground, MonadPlus m)
     => MFunction (DolanM ground) m
-    -> DolanType ground (InvertPolarity polarity) p
-    -> DolanType ground polarity q
+    -> DolanPlainType ground (InvertPolarity polarity) p
+    -> DolanPlainType ground polarity q
     -> m (DolanPolarMap ground polarity p q)
 invertedPolarSubtype dlift tp tq =
     case polarityType @polarity of

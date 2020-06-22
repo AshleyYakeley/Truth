@@ -116,7 +116,7 @@ data SubsumeWitness ground t where
     MkSubsumeWitness
         :: forall (ground :: GroundTypeKind) polarity name t. Is PolarityType polarity
         => SymbolType name
-        -> DolanType ground polarity t
+        -> DolanPlainType ground polarity t
         -> SubsumeWitness ground (DolanPolarMap ground polarity (UVar name) t)
 
 type DolanSubsumer :: GroundTypeKind -> Type -> Type
@@ -126,23 +126,18 @@ type SubsumerConstraint :: GroundTypeKind -> Constraint
 type SubsumerConstraint ground
      = (IsDolanSubtypeGroundType ground, SubsumerMonad (DolanSubsumer ground) ~ DolanTypeCheckM ground)
 
-type DolanFullSubsumer :: GroundTypeKind -> Type -> Type
-type DolanFullSubsumer ground = Compose (DolanTypeCheckM ground) (DolanSubsumer ground)
-
-subsumerLiftTypeCheck ::
-       forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
-    => MFunction (DolanM ground) (DolanFullSubsumer ground)
-subsumerLiftTypeCheck tca = Compose $ fmap pure $ liftTypeCheck tca
+type FullSubsumer :: GroundTypeKind -> Type -> Type
+type FullSubsumer ground = Solver ground (SubsumeWitness ground)
 
 subsumeContext ::
        forall (ground :: GroundTypeKind) polarity. (SubsumerConstraint ground, Is PolarityType polarity)
-    => SubtypeContext (DolanType ground) (DolanPolyShim ground Type) (DolanFullSubsumer ground) polarity polarity
+    => SubtypeContext (DolanType ground) (DolanPolyShim ground Type) (FullSubsumer ground) polarity polarity
 subsumeContext = let
     subtypeTypes ::
            forall ta tb.
            DolanType ground polarity ta
         -> DolanType ground polarity tb
-        -> DolanFullSubsumer ground (DolanPolyShim ground Type ta tb)
+        -> FullSubsumer ground (DolanPolyShim ground Type ta tb)
     subtypeTypes ta tb =
         case polarityType @polarity of
             PositiveType -> fmap unPolarMap $ subsumeType ta tb
@@ -156,14 +151,12 @@ subsumeGroundSingularType ::
     => ground dv ginf
     -> DolanArguments dv (DolanType ground) ginf polarity inf
     -> DolanSingularType ground polarity decl
-    -> DolanFullSubsumer ground (DolanPolarMap ground polarity inf decl)
+    -> FullSubsumer ground (DolanPolarMap ground polarity inf decl)
 subsumeGroundSingularType _gtinf _targsinf (VarDolanSingularType _vdecl) = empty
 subsumeGroundSingularType gtinf targsinf (GroundDolanSingularType gtdecl targsdecl) =
     case polarityType @polarity of
-        PositiveType ->
-            fmap MkPolarMap $ subtypeGroundTypes subsumerLiftTypeCheck subsumeContext gtinf targsinf gtdecl targsdecl
-        NegativeType ->
-            fmap MkPolarMap $ subtypeGroundTypes subsumerLiftTypeCheck subsumeContext gtdecl targsdecl gtinf targsinf
+        PositiveType -> fmap MkPolarMap $ subtypeGroundTypes solverLiftM subsumeContext gtinf targsinf gtdecl targsdecl
+        NegativeType -> fmap MkPolarMap $ subtypeGroundTypes solverLiftM subsumeContext gtdecl targsdecl gtinf targsinf
 
 subsumeGroundPlainType ::
        forall (ground :: GroundTypeKind) polarity dv ginf inf decl.
@@ -171,36 +164,27 @@ subsumeGroundPlainType ::
     => ground dv ginf
     -> DolanArguments dv (DolanType ground) ginf polarity inf
     -> DolanPlainType ground polarity decl
-    -> DolanFullSubsumer ground (DolanPolarMap ground polarity inf decl)
+    -> FullSubsumer ground (DolanPolarMap ground polarity inf decl)
 subsumeGroundPlainType _gtinf _targsinf NilDolanPlainType = empty
 subsumeGroundPlainType gtinf targsinf (ConsDolanPlainType t1 tr) =
     (fmap (\conv -> polar1 . conv) $ subsumeGroundSingularType gtinf targsinf t1) <|>
     (fmap (\conv -> polar2 . conv) $ subsumeGroundPlainType gtinf targsinf tr)
 
-subsumeGroundType ::
-       forall (ground :: GroundTypeKind) polarity dv ginf inf decl.
-       (SubsumerConstraint ground, Is PolarityType polarity)
-    => ground dv ginf
-    -> DolanArguments dv (DolanType ground) ginf polarity inf
-    -> DolanType ground polarity decl
-    -> DolanFullSubsumer ground (DolanPolarMap ground polarity inf decl)
-subsumeGroundType gtinf targsinf (PlainDolanType ptdecl) = subsumeGroundPlainType gtinf targsinf ptdecl
-subsumeGroundType _ _ (RecursiveDolanType n pt) = Compose $ liftTypeCheck $ throwTypeRecursiveError n pt
-
 subsumeSingularType ::
        forall (ground :: GroundTypeKind) polarity inf decl. (SubsumerConstraint ground, Is PolarityType polarity)
     => DolanSingularType ground polarity inf
-    -> DolanType ground polarity decl
-    -> DolanFullSubsumer ground (DolanPolarMap ground polarity inf decl)
-subsumeSingularType (VarDolanSingularType vinf) tdecl = liftSubsumer $ varExpression $ MkSubsumeWitness vinf tdecl
+    -> DolanPlainType ground polarity decl
+    -> FullSubsumer ground (DolanPolarMap ground polarity inf decl)
+subsumeSingularType (VarDolanSingularType vinf) tdecl =
+    solverLiftExpression $ varExpression $ MkSubsumeWitness vinf tdecl
 subsumeSingularType tinf@(GroundDolanSingularType ginf argsinf) tdecl =
-    subsumeGroundType ginf argsinf tdecl <|> (subsumerLiftTypeCheck $ throwTypeSubsumeError tinf tdecl)
+    subsumeGroundPlainType ginf argsinf tdecl <|> (solverLiftM $ throwTypeSubsumeError tinf tdecl)
 
 subsumePlainType ::
        forall (ground :: GroundTypeKind) polarity inf decl. (SubsumerConstraint ground, Is PolarityType polarity)
     => DolanPlainType ground polarity inf
-    -> DolanType ground polarity decl
-    -> DolanFullSubsumer ground (DolanPolarMap ground polarity inf decl)
+    -> DolanPlainType ground polarity decl
+    -> FullSubsumer ground (DolanPolarMap ground polarity inf decl)
 subsumePlainType NilDolanPlainType _ = pure polarLimit
 subsumePlainType (ConsDolanPlainType t1 tr) tdecl =
     liftA2 polarF (subsumeSingularType t1 tdecl) (subsumePlainType tr tdecl)
@@ -209,9 +193,27 @@ subsumeType ::
        forall (ground :: GroundTypeKind) polarity inf decl. (SubsumerConstraint ground, Is PolarityType polarity)
     => DolanType ground polarity inf
     -> DolanType ground polarity decl
-    -> DolanFullSubsumer ground (DolanPolarMap ground polarity inf decl)
-subsumeType (PlainDolanType ptinf) tdecl = subsumePlainType ptinf tdecl
-subsumeType (RecursiveDolanType n pt) _ = Compose $ liftTypeCheck $ throwTypeRecursiveError n pt
+    -> FullSubsumer ground (DolanPolarMap ground polarity inf decl)
+subsumeType tinf tdecl =
+    case polarityType @polarity of
+        PositiveType ->
+            fmap MkPolarMap $
+            solveRecursiveTypes
+                @ground
+                @polarity
+                @polarity
+                (\pinf pdecl -> fmap unPolarMap $ subsumePlainType pinf pdecl)
+                tinf
+                tdecl
+        NegativeType ->
+            fmap MkPolarMap $
+            solveRecursiveTypes
+                @ground
+                @polarity
+                @polarity
+                (\pdecl pinf -> fmap unPolarMap $ subsumePlainType pinf pdecl)
+                tdecl
+                tinf
 
 type InvertSubstitution :: GroundTypeKind -> Type
 data InvertSubstitution ground where
@@ -219,7 +221,7 @@ data InvertSubstitution ground where
         :: forall (ground :: GroundTypeKind) polarity name name' t. Is PolarityType polarity
         => SymbolType name
         -> SymbolType name'
-        -> DolanType ground polarity t
+        -> DolanPlainType ground polarity t
         -> PolarMap (DolanPolyIsoShim ground Type) polarity (JoinMeetType (InvertPolarity polarity) (UVar name') t) (UVar name)
         -> InvertSubstitution ground
 
@@ -227,32 +229,34 @@ invertSubstitute ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => InvertSubstitution ground
     -> DolanSubsumer ground a
-    -> DolanFullSubsumer ground a
+    -> FullSubsumer ground a
 invertSubstitute _ (ClosedExpression a) = pure a
-invertSubstitute bisub@(MkInvertSubstitution bn n' (st :: DolanType ground spol _) bij) (OpenExpression (MkSubsumeWitness vn (vt :: DolanType ground wpol _)) expr)
+invertSubstitute bisub@(MkInvertSubstitution bn n' (st :: DolanPlainType ground spol _) bij) (OpenExpression (MkSubsumeWitness vn (vt :: DolanPlainType ground wpol _)) expr)
     | Just Refl <- testEquality bn vn =
-        Compose $
+        MkSolver $
         case samePolarity @spol @wpol of
             Left Refl ->
                 invertPolarity @wpol $ do
-                    expr' <- getCompose $ invertSubstitute bisub expr
+                    expr' <- unSolver $ invertSubstitute bisub expr
                     return $
                         OpenExpression (MkSubsumeWitness n' vt) $
-                        fmap (\fa conv -> fa $ conv <.> uninvertPolarMap polar1 <.> polarPolyIsoBackwards bij) expr'
+                        fmap
+                            (\fa conv rl -> fa rl $ conv <.> uninvertPolarMap polar1 <.> polarPolyIsoBackwards bij)
+                            expr'
             Right Refl ->
                 case isInvertInvertPolarity @wpol of
                     Refl -> do
-                        convm <- invertedPolarSubtype liftTypeCheck st vt
-                        expr' <- getCompose $ invertSubstitute bisub expr
+                        convm <- lift $ invertedPolarSubtype liftTypeCheck st vt
+                        expr' <- unSolver $ invertSubstitute bisub expr
                         return $
                             OpenExpression (MkSubsumeWitness n' vt) $
                             fmap
-                                (\fa conv -> fa $ polarF conv convm <.> invertPolarMap (polarPolyIsoForwards bij))
+                                (\fa conv rl -> fa rl $ polarF conv convm <.> invertPolarMap (polarPolyIsoForwards bij))
                                 expr'
 invertSubstitute bisub (OpenExpression subwit expr) =
-    Compose $ do
-        expr' <- getCompose $ invertSubstitute bisub expr
-        return $ OpenExpression subwit expr'
+    MkSolver $ do
+        expr' <- unSolver $ invertSubstitute bisub expr
+        return $ OpenExpression subwit $ fmap (\rta t r -> rta r t) expr'
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => Subsumer (DolanSubsumer ground) where
     type SubsumerMonad (DolanSubsumer ground) = DolanTypeCheckM ground
@@ -261,7 +265,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => S
     type SubsumerSubstitutions (DolanSubsumer ground) = [Bisubstitution ground (SubsumerM ground)]
     type SubsumerShim (DolanSubsumer ground) = DolanPolyShim ground Type
     solveSubsumer (ClosedExpression a) = return (a, [])
-    solveSubsumer (OpenExpression (MkSubsumeWitness (vn :: SymbolType name) (tp :: DolanType ground polarity t)) expr) =
+    solveSubsumer (OpenExpression (MkSubsumeWitness (vn :: SymbolType name) (tp :: DolanPlainType ground polarity t)) expr) =
         invertPolarity @polarity $ do
             let
                 varBij ::
@@ -275,16 +279,16 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => S
                          mapShimWit (uninvertPolarMap polar1 <.> polarPolyIsoBackwards varBij) $
                          singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn)
                         (do
-                             tq <- limitInvertType' tp
+                             tq <- limitInvertType' $ PlainDolanType tp
                              return $
                                  mapShimWit (invertPolarMap $ polarPolyIsoForwards varBij) $
                                  joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn) tq)
-            expr' <- getCompose $ invertSubstitute (MkInvertSubstitution vn vn tp varBij) expr
+            expr' <- runSolver $ invertSubstitute (MkInvertSubstitution vn vn tp varBij) expr
             (expr'', bisubs) <-
                 solveSubsumer $ fmap (\fa -> fa $ uninvertPolarMap polar2 <.> polarPolyIsoBackwards varBij) expr'
             return (expr'', bisub : bisubs)
     subsumerNegSubstitute subs t = runSubsumerM $ bisubstitutesType subs t
-    subsumePosWitnesses tinf tdecl = fmap (fmap unPolarMap) $ getCompose $ subsumeType tinf tdecl
+    subsumePosWitnesses tinf tdecl = fmap (fmap unPolarMap) $ runSolver $ subsumeType tinf tdecl
     simplifyPosType (MkAnyW t) =
         case dolanSimplifyTypes @ground $ mkShimWit @Type @(DolanPolyShim ground Type) @_ @'Positive t of
             MkShimWit t' _ -> MkAnyW t'

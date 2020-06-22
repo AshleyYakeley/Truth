@@ -141,7 +141,7 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
     throwTypeSubsumeError ::
            forall polarity tinf tdecl a. Is PolarityType polarity
         => PinaforeSingularType polarity tinf
-        -> PinaforeType polarity tdecl
+        -> PinaforePlainType polarity tdecl
         -> PinaforeSourceScoped a
     throwTypeSubsumeError tinf tdecl = let
         pol =

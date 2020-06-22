@@ -17,58 +17,63 @@ liftTypeCheck ::
     -> DolanTypeCheckM ground a
 liftTypeCheck ma = lift ma
 
-type ShimType :: GroundTypeKind -> Polarity -> Polarity -> Type -> Type
-data ShimType ground pola polb t where
+type ShimType :: GroundTypeKind -> Type -> Type
+data ShimType ground t where
     MkShimType
         :: forall (ground :: GroundTypeKind) pola polb a b.
-           DolanType ground pola a
+           PolarityType pola
+        -> PolarityType polb
+        -> DolanType ground pola a
         -> DolanType ground polb b
-        -> ShimType ground pola polb (DolanPolyShim ground Type a b)
+        -> ShimType ground (DolanPolyShim ground Type a b)
 
-instance forall (ground :: GroundTypeKind) pola polb. IsDolanGroundType ground =>
-             TestEquality (ShimType ground pola polb) where
-    testEquality (MkShimType ta1 tb1) (MkShimType ta2 tb2) = do
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEquality (ShimType ground) where
+    testEquality (MkShimType pa1 pb1 ta1 tb1) (MkShimType pa2 pb2 ta2 tb2) = do
+        Refl <- testEquality pa1 pa2
+        Refl <- testEquality pb1 pb2
         Refl <- testEquality ta1 ta2
         Refl <- testEquality tb1 tb2
         return Refl
 
-type Solver :: GroundTypeKind -> Polarity -> Polarity -> (Type -> Type) -> Type -> Type
-newtype Solver ground pola polb wit a = MkSolver
+type Solver :: GroundTypeKind -> (Type -> Type) -> Type -> Type
+newtype Solver ground wit a = MkSolver
     { unSolver :: forall (rlist :: [Type]).
-                          ReaderT (ListType (ShimType ground pola polb) rlist) (DolanTypeCheckM ground) (Expression wit (HList rlist -> a))
+                          ReaderT (ListType (ShimType ground) rlist) (DolanTypeCheckM ground) (Expression wit (HList rlist -> a))
     }
 
-instance forall (ground :: GroundTypeKind) pola polb wit. Functor (DolanM ground) =>
-             Functor (Solver ground pola polb wit) where
+instance forall (ground :: GroundTypeKind) wit. Functor (DolanM ground) => Functor (Solver ground wit) where
     fmap ab (MkSolver ruha) = MkSolver $ (fmap $ fmap $ fmap ab) ruha
 
-instance forall (ground :: GroundTypeKind) pola polb wit. Monad (DolanM ground) =>
-             Applicative (Solver ground pola polb wit) where
+instance forall (ground :: GroundTypeKind) wit. Monad (DolanM ground) => Applicative (Solver ground wit) where
     pure a = MkSolver $ pure $ pure $ pure a
     MkSolver ruhab <*> MkSolver ruha =
         MkSolver $ (\uhab uha -> (\hab ha h -> hab h $ ha h) <$> uhab <*> uha) <$> ruhab <*> ruha
 
-solverLift ::
-       forall (ground :: GroundTypeKind) pola polb wit a. IsDolanSubtypeGroundType ground
+instance forall (ground :: GroundTypeKind) wit. MonadPlus (DolanM ground) => Alternative (Solver ground wit) where
+    empty = MkSolver empty
+    MkSolver p <|> MkSolver q = MkSolver $ p <|> q
+
+solverLiftExpression ::
+       forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
     => Expression wit a
-    -> Solver ground pola polb wit a
-solverLift ua = MkSolver $ pure $ fmap pure ua
+    -> Solver ground wit a
+solverLiftExpression ua = MkSolver $ pure $ fmap pure ua
 
-solverLiftTypeCheck ::
-       forall (ground :: GroundTypeKind) pola polb wit a. IsDolanSubtypeGroundType ground
+solverLiftTypeCheckM ::
+       forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
     => DolanTypeCheckM ground a
-    -> Solver ground pola polb wit a
-solverLiftTypeCheck tca = MkSolver $ lift $ fmap (pure . pure) tca
+    -> Solver ground wit a
+solverLiftTypeCheckM tca = MkSolver $ lift $ fmap (pure . pure) tca
 
-solverLiftSourceScoped ::
-       forall (ground :: GroundTypeKind) pola polb wit a. IsDolanSubtypeGroundType ground
+solverLiftM ::
+       forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
     => DolanM ground a
-    -> Solver ground pola polb wit a
-solverLiftSourceScoped tca = solverLiftTypeCheck $ liftTypeCheck tca
+    -> Solver ground wit a
+solverLiftM tca = solverLiftTypeCheckM $ liftTypeCheck tca
 
 runSolver ::
-       forall (ground :: GroundTypeKind) pola polb wit a. IsDolanSubtypeGroundType ground
-    => Solver ground pola polb wit a
+       forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
+    => Solver ground wit a
     -> DolanTypeCheckM ground (Expression wit a)
 runSolver (MkSolver rma) = fmap (fmap $ \ua -> ua ()) $ runReaderT rma NilListType
 
@@ -76,15 +81,15 @@ solveRecursiveTypes ::
        forall (ground :: GroundTypeKind) pola polb wit a b.
        (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => (forall pa pb.
-                DolanPlainType ground pola pa -> DolanPlainType ground polb pb -> Solver ground pola polb wit (DolanPolyShim ground Type pa pb))
+                DolanPlainType ground pola pa -> DolanPlainType ground polb pb -> Solver ground wit (DolanPolyShim ground Type pa pb))
     -> DolanType ground pola a
     -> DolanType ground polb b
-    -> Solver ground pola polb wit (DolanPolyShim ground Type a b)
+    -> Solver ground wit (DolanPolyShim ground Type a b)
 solveRecursiveTypes solvePlainTypes (PlainDolanType pta) (PlainDolanType ptb) = solvePlainTypes pta ptb
 solveRecursiveTypes solvePlainTypes ta tb =
     invertPolarity @polb $
     MkSolver $ do
-        let st = MkShimType ta tb
+        let st = MkShimType (polarityType @pola) (polarityType @polb) ta tb
         rcs <- ask
         case lookUpListElement st rcs of
             Just lelem -> return $ pure $ getListElement lelem

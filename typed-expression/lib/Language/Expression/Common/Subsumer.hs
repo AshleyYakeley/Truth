@@ -2,7 +2,6 @@ module Language.Expression.Common.Subsumer
     ( Subsumer(..)
     , SubsumerOpenExpression
     , SubsumerSealedExpression
-    , liftSubsumer
     , subsumeExpression
     ) where
 
@@ -42,9 +41,6 @@ type SubsumerOpenExpression name subsumer = NamedExpression name (SubsumerNegShi
 
 type SubsumerSealedExpression name subsumer
      = SealedExpression name (SubsumerNegShimWit subsumer) (SubsumerPosShimWit subsumer)
-
-liftSubsumer :: Monad (SubsumerMonad subsumer) => subsumer a -> Compose (SubsumerMonad subsumer) subsumer a
-liftSubsumer ua = Compose $ return ua
 
 subsumerExpressionSubstitute ::
        forall subsumer name a. Subsumer subsumer

@@ -60,7 +60,7 @@ type DolanUnifier :: GroundTypeKind -> Type -> Type
 type DolanUnifier ground = Expression (BisubstitutionWitness ground)
 
 type FullUnifier :: GroundTypeKind -> Type -> Type
-type FullUnifier ground = Solver ground 'Positive 'Negative (BisubstitutionWitness ground)
+type FullUnifier ground = Solver ground (BisubstitutionWitness ground)
 
 type DolanUnification :: GroundTypeKind -> Type -> Type -> Type
 type DolanUnification ground a b = FullUnifier ground (DolanPolyShim ground Type a b)
@@ -80,7 +80,7 @@ unifyGroundTypes ::
     -> ground dvb gtb
     -> DolanArguments dvb (DolanType ground) gtb 'Negative tb
     -> DolanUnification ground ta tb
-unifyGroundTypes gta argsa gtb argsb = subtypeGroundTypes solverLiftSourceScoped unifySubtypeContext gta argsa gtb argsb
+unifyGroundTypes gta argsa gtb argsb = subtypeGroundTypes solverLiftM unifySubtypeContext gta argsa gtb argsb
 
 unifySingularTypes ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
@@ -89,8 +89,10 @@ unifySingularTypes ::
     -> DolanUnification ground a b
 unifySingularTypes (VarDolanSingularType na) (VarDolanSingularType nb)
     | Just Refl <- testEquality na nb = pure id
-unifySingularTypes (VarDolanSingularType na) tb = solverLift $ varExpression $ mkNegativeBisubstitutionWitness na tb
-unifySingularTypes ta (VarDolanSingularType nb) = solverLift $ varExpression $ mkPositiveBisubstitutionWitness nb ta
+unifySingularTypes (VarDolanSingularType na) tb =
+    solverLiftExpression $ varExpression $ mkNegativeBisubstitutionWitness na tb
+unifySingularTypes ta (VarDolanSingularType nb) =
+    solverLiftExpression $ varExpression $ mkPositiveBisubstitutionWitness nb ta
 unifySingularTypes (GroundDolanSingularType gta argsa) (GroundDolanSingularType gtb argsb) =
     unifyGroundTypes gta argsa gtb argsb
 
