@@ -134,22 +134,25 @@ testQuery query expected =
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ show e
         (Just s, SuccessResult v) -> assertEqual "result" s (showPinaforeRef v)
 
-testSubsumeSubtype :: Text -> Text -> Maybe Text -> TestTree
-testSubsumeSubtype t1 t2 (Just v) =
-    testQuery ("let x : " <> t1 <> "; x = " <> v <> "; y : " <> t2 <> "; y = x in y") $ Just $ unpack v
-testSubsumeSubtype t1 t2 Nothing =
-    testQuery ("let x : " <> t1 <> "; x = x; y : " <> t2 <> "; y = x in ()") $ Just "unit"
+testSubsumeSubtype :: Text -> Text -> Maybe Text -> [TestTree]
+testSubsumeSubtype t1 t2 mv =
+    [testQuery ("let x : " <> t1 <> "; x = x; y : " <> t2 <> "; y = x in ()") $ Just "unit"] <>
+    case mv of
+        Just v -> [testQuery ("let x : " <> t1 <> "; x = " <> v <> "; y : " <> t2 <> "; y = x in y") $ Just $ unpack v]
+        Nothing -> []
 
-testFunctionSubtype :: Text -> Text -> Maybe Text -> TestTree
-testFunctionSubtype t1 t2 (Just v) =
-    testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f " <> v) $ Just $ unpack v
-testFunctionSubtype t1 t2 Nothing = testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ Just "<?>"
+testFunctionSubtype :: Text -> Text -> Maybe Text -> [TestTree]
+testFunctionSubtype t1 t2 mv =
+    [testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ Just "<?>"] <>
+    case mv of
+        Just v -> [testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f " <> v) $ Just $ unpack v]
+        Nothing -> []
 
 testSubtype1 :: Bool -> Text -> Text -> Maybe Text -> [TestTree]
 testSubtype1 b t1 t2 v =
-    [testSubsumeSubtype t1 t2 v] <>
+    testSubsumeSubtype t1 t2 v <>
     if b
-        then [testFunctionSubtype t1 t2 v]
+        then testFunctionSubtype t1 t2 v
         else []
 
 testSubtype :: Bool -> Text -> Text -> Maybe Text -> TestTree
