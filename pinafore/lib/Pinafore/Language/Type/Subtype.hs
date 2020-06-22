@@ -136,7 +136,6 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
     subtypeGroundTypes sslift _ ga argsa gb argsb =
         sslift $
         convertFailure (exprShow $ GroundDolanSingularType ga argsa) (exprShow $ GroundDolanSingularType gb argsb)
-    throwTypeRecursiveError vn tp = throw $ TypeRecursiveError (symbolTypeToName vn) (exprShow tp)
     throwTypeConvertInverseError tp tq = throw $ TypeConvertInverseError (exprShow tp) (exprShow tq)
     throwTypeSubsumeError ::
            forall polarity tinf tdecl a. Is PolarityType polarity

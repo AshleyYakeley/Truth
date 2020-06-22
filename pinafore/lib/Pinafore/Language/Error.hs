@@ -22,8 +22,6 @@ data ErrorType
     | TypeSubsumeError Polarity
                        Text
                        Text
-    | TypeRecursiveError Name
-                         Text
     | TypeNotInvertibleError Text
     | NotationBareUnquoteError
     | InterpretTypeExprBadLimitError Polarity
@@ -87,7 +85,6 @@ instance Show ErrorType where
     show (TypeConvertInverseError ta tb) = "cannot inverse convert " <> unpack ta <> " <= " <> unpack tb
     show (TypeSubsumeError Positive tinf tdecl) = "cannot subsume " <> unpack tinf <> " <= " <> unpack tdecl
     show (TypeSubsumeError Negative tinf tdecl) = "cannot subsume " <> unpack tinf <> " >= " <> unpack tdecl
-    show (TypeRecursiveError n t) = "cannot construct recursive type " <> show n <> " = " <> unpack t
     show (TypeNotInvertibleError t) = "cannot invert type " <> unpack t
     show NotationBareUnquoteError = "unquote outside Ref quote"
     show (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"

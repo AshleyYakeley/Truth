@@ -1,4 +1,13 @@
-module Language.Expression.Dolan.Solver where
+module Language.Expression.Dolan.Solver
+    ( DolanTypeCheckM
+    , liftTypeCheck
+    , Solver
+    , solverLiftExpression
+    , solverLiftM
+    , solverOpenExpression
+    , runSolver
+    , solveRecursiveTypes
+    ) where
 
 import Data.Shim
 import Language.Expression.Common
@@ -59,17 +68,25 @@ solverLiftExpression ::
     -> Solver ground wit a
 solverLiftExpression ua = MkSolver $ pure $ fmap pure ua
 
-solverLiftTypeCheckM ::
-       forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
-    => DolanTypeCheckM ground a
-    -> Solver ground wit a
-solverLiftTypeCheckM tca = MkSolver $ lift $ fmap (pure . pure) tca
-
 solverLiftM ::
        forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
     => DolanM ground a
     -> Solver ground wit a
-solverLiftM tca = solverLiftTypeCheckM $ liftTypeCheck tca
+solverLiftM tca = MkSolver $ lift $ fmap (pure . pure) $ liftTypeCheck tca
+
+solverMapExpression ::
+       forall (ground :: GroundTypeKind) wit a b. IsDolanSubtypeGroundType ground
+    => (forall x. Expression wit (x -> a) -> Expression wit (x -> b))
+    -> Solver ground wit a
+    -> Solver ground wit b
+solverMapExpression ff (MkSolver ma) = MkSolver $ fmap ff ma
+
+solverOpenExpression ::
+       forall (ground :: GroundTypeKind) wit t a. IsDolanSubtypeGroundType ground
+    => wit t
+    -> Solver ground wit (t -> a)
+    -> Solver ground wit a
+solverOpenExpression wit = solverMapExpression $ \expr -> OpenExpression wit $ fmap (\xta t x -> xta x t) expr
 
 runSolver ::
        forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
@@ -94,7 +111,7 @@ solveRecursiveTypes solvePlainTypes ta tb =
         case lookUpListElement st rcs of
             Just lelem -> return $ pure $ getListElement lelem
             Nothing ->
-                withReaderT (ConsListType st) $ do
+                withReaderT (\rcs' -> ConsListType st rcs') $ do
                     MkShimWit pta iconva <- return $ dolanTypeToPlainUnroll ta
                     MkShimWit ptb iconvb <- return $ dolanTypeToPlainUnroll tb
                     erconv <- unSolver $ solvePlainTypes pta ptb

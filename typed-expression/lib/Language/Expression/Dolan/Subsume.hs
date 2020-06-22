@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Subsume
@@ -233,30 +234,19 @@ invertSubstitute ::
 invertSubstitute _ (ClosedExpression a) = pure a
 invertSubstitute bisub@(MkInvertSubstitution bn n' (st :: DolanPlainType ground spol _) bij) (OpenExpression (MkSubsumeWitness vn (vt :: DolanPlainType ground wpol _)) expr)
     | Just Refl <- testEquality bn vn =
-        MkSolver $
+        solverOpenExpression (MkSubsumeWitness n' vt) $
         case samePolarity @spol @wpol of
             Left Refl ->
                 invertPolarity @wpol $ do
-                    expr' <- unSolver $ invertSubstitute bisub expr
-                    return $
-                        OpenExpression (MkSubsumeWitness n' vt) $
-                        fmap
-                            (\fa conv rl -> fa rl $ conv <.> uninvertPolarMap polar1 <.> polarPolyIsoBackwards bij)
-                            expr'
+                    fa <- invertSubstitute bisub expr
+                    pure $ \conv -> fa $ conv <.> uninvertPolarMap polar1 <.> polarPolyIsoBackwards bij
             Right Refl ->
                 case isInvertInvertPolarity @wpol of
                     Refl -> do
-                        convm <- lift $ invertedPolarSubtype liftTypeCheck st vt
-                        expr' <- unSolver $ invertSubstitute bisub expr
-                        return $
-                            OpenExpression (MkSubsumeWitness n' vt) $
-                            fmap
-                                (\fa conv rl -> fa rl $ polarF conv convm <.> invertPolarMap (polarPolyIsoForwards bij))
-                                expr'
-invertSubstitute bisub (OpenExpression subwit expr) =
-    MkSolver $ do
-        expr' <- unSolver $ invertSubstitute bisub expr
-        return $ OpenExpression subwit $ fmap (\rta t r -> rta r t) expr'
+                        fa <- invertSubstitute bisub expr
+                        convm <- invertedPolarSubtype st vt
+                        pure $ \conv -> fa $ polarF conv convm <.> invertPolarMap (polarPolyIsoForwards bij)
+invertSubstitute bisub (OpenExpression subwit expr) = solverOpenExpression subwit $ invertSubstitute bisub expr
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => Subsumer (DolanSubsumer ground) where
     type SubsumerMonad (DolanSubsumer ground) = DolanTypeCheckM ground

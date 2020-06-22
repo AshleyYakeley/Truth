@@ -240,22 +240,16 @@ bisubstituteUnifier bisub@(MkBisubstitution bn (Identity tp) _) (OpenExpression 
         pure $ val' conv
 bisubstituteUnifier bisub (OpenExpression (PositiveBisubstitutionWitness vn tp) uval) = let
     wp' = runIdentity $ bisubstituteShimWit bisub tp
-    in unPosShimWit wp' $ \tp' conv ->
-           MkSolver $ do
-               uval' <- unSolver $ bisubstituteUnifier bisub uval
-               return $ do
-                   val' <- uval'
-                   pv <- bisubstitutePositiveVar vn tp'
-                   pure $ \rl -> val' rl $ pv <.> conv
+    in unPosShimWit wp' $ \tp' conv -> do
+           val' <- bisubstituteUnifier bisub uval
+           pv <- solverLiftExpression $ bisubstitutePositiveVar vn tp'
+           pure $ val' $ pv <.> conv
 bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) uval) = let
     wp' = runIdentity $ bisubstituteShimWit bisub tp
-    in unNegShimWit wp' $ \tp' conv ->
-           MkSolver $ do
-               uval' <- unSolver $ bisubstituteUnifier bisub uval
-               return $ do
-                   val' <- uval'
-                   pv <- bisubstituteNegativeVar vn tp'
-                   pure $ \rl -> val' rl $ conv <.> pv
+    in unNegShimWit wp' $ \tp' conv -> do
+           val' <- bisubstituteUnifier bisub uval
+           pv <- solverLiftExpression $ bisubstituteNegativeVar vn tp'
+           pure $ val' $ conv <.> pv
 
 runUnifier ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
