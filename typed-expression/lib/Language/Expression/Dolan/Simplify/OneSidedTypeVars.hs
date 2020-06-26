@@ -8,6 +8,7 @@ import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Simplify.VarUses
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeVariable
 import Shapes
 
 getEliminateBisubs ::
@@ -19,17 +20,21 @@ getEliminateBisubs expr = let
     posonlyvars = difference posvars negvars
     negonlyvars :: FiniteSet _
     negonlyvars = difference negvars posvars
-    mkbisub :: AnyW SymbolType -> Bisubstitution ground Identity
-    mkbisub (MkAnyW vn) =
+    posbisub :: AnyW SymbolType -> Bisubstitution ground Identity
+    posbisub (MkAnyW var) =
+        assignUVar @Type @BottomType var $
         MkBisubstitution
-            vn
-            (return $
-             ccontramap (toEnhanced @_ @(DolanPolyShim ground Type) "eliminated" $ \_ -> error "bad bisubstitution") $
-             mkShimWit $ PlainDolanType NilDolanPlainType)
-            (return $
-             cfmap (toEnhanced @_ @(DolanPolyShim ground Type) "eliminated" $ \_ -> error "bad bisubstitution") $
-             mkShimWit $ PlainDolanType NilDolanPlainType)
-    in toList $ fmap mkbisub $ posonlyvars <> negonlyvars
+            var
+            (return $ mkShimWit $ PlainDolanType NilDolanPlainType)
+            (return $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType var)
+    negbisub :: AnyW SymbolType -> Bisubstitution ground Identity
+    negbisub (MkAnyW var) =
+        assignUVar @Type @TopType var $
+        MkBisubstitution
+            var
+            (return $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType var)
+            (return $ mkShimWit $ PlainDolanType NilDolanPlainType)
+    in (fmap posbisub $ toList posonlyvars) <> (fmap negbisub $ toList negonlyvars)
 
 eliminateOneSidedTypeVars ::
        forall (ground :: GroundTypeKind) a.

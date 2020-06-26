@@ -207,7 +207,7 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity). Is PolarityTy
     mappend = (<>)
     mempty = MkAnyW NilDolanPlainType
 
-class (IsDolanPolyShim (DolanPolyShim ground)) => IsDolanGroundType (ground :: GroundTypeKind) where
+class IsDolanPolyShim (DolanPolyShim ground) => IsDolanGroundType (ground :: GroundTypeKind) where
     groundTypeVarianceType ::
            forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). ground dv t -> DolanVarianceType dv
     groundTypeVarianceMap ::

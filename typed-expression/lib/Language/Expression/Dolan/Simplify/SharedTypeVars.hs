@@ -34,7 +34,7 @@ mergeSharedTypeVars expr = let
     (posuses, neguses) = mappableGetVarUses @ground expr
     in case findShare posuses <|> findShare neguses of
            Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) ->
-               assignUVar @Type @(UVar Type nb) va $ let
+               assignUVar @Type @(UVar Type na) vb $ let
                    bisub =
                        MkBisubstitution
                            vb

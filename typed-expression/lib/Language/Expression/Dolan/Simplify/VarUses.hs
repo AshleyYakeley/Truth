@@ -59,7 +59,6 @@ getJMSingleTypeVars ::
 getJMSingleTypeVars (VarDolanSingularType vn) = [MkAnyW vn]
 getJMSingleTypeVars (GroundDolanSingularType _ _) = []
 
---getJMSingleTypeVars (RecursivePinaforeSingularType vn t _) = filter (\v -> v /= MkAnyW vn) $ getJMSingleTypeVars t
 getJMTypeVars ::
        forall (ground :: GroundTypeKind) polarity t. Is PolarityType polarity
     => DolanPlainType ground polarity t
