@@ -33,6 +33,7 @@ module Language.Expression.Dolan
     , joinMeetShimWit
     , recursiveDolanType
     , recursiveDolanShimWit
+    , dolanTypeToPlainUnroll
     , unToRangeShimWit
     , unFromRangeShimWit
     , biRangeAnyF

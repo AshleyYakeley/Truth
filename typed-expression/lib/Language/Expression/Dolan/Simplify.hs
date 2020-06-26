@@ -13,8 +13,9 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
-simplifyTypes :: Bool
-simplifyTypes = True
+doMod :: Bool -> (a -> a) -> a -> a
+doMod False _ = id
+doMod True f = f
 
 -- Simplification:
 --
@@ -49,9 +50,9 @@ dolanSimplifyTypes ::
     => a
     -> a
 dolanSimplifyTypes =
-    if simplifyTypes
-        then rollUpRecursiveTypes @ground .
-             mergeDuplicateTypeVars @ground .
-             mergeSharedTypeVars @ground .
-             eliminateOneSidedTypeVars @ground . mergeDuplicateGroundTypes @ground . eliminateUnusedRecursion @ground
-        else id
+    doMod True $
+    doMod True (rollUpRecursiveTypes @ground) .
+    doMod True (mergeDuplicateTypeVars @ground) .
+    doMod True (mergeSharedTypeVars @ground) .
+    doMod True (eliminateOneSidedTypeVars @ground) .
+    doMod True (mergeDuplicateGroundTypes @ground) . doMod True (eliminateUnusedRecursion @ground)

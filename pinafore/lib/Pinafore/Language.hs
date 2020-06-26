@@ -25,6 +25,7 @@ module Pinafore.Language
     ) where
 
 import Control.Exception
+import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
@@ -93,8 +94,9 @@ plainTypedShowValue NilDolanPlainType v = never v
 plainTypedShowValue (ConsDolanPlainType ts tt) v = joinf (singularTypedShowValue ts) (plainTypedShowValue tt) v
 
 typedShowValue :: PinaforeType 'Positive t -> t -> String
-typedShowValue (PlainDolanType pt) = plainTypedShowValue pt
-typedShowValue (RecursiveDolanType _ pt) = plainTypedShowValue pt
+typedShowValue t v =
+    case dolanTypeToPlainUnroll t of
+        MkShimWit pt iconv -> plainTypedShowValue pt $ fromEnhanced (polarPolyIsoSingle iconv) v
 
 showPinaforeRef :: QValue -> String
 showPinaforeRef (MkAnyValue (MkPosShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
