@@ -13,6 +13,7 @@ import Pinafore.Base
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Value
+import Pinafore.Language.Var
 import Shapes
 import Truth.Core
 
@@ -51,17 +52,17 @@ instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
          ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (MeetType a b) where
     fromShimWit = joinMeetShimWit fromJMShimWit fromJMShimWit
 
--- UVar
-instance KnownSymbol name => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (UVar name) where
-    toShimWit = mkShimWit $ VarDolanSingularType MkSymbolType
+-- Var Type
+instance KnownSymbol name => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (Var name) where
+    toShimWit = MkShimWit (VarDolanSingularType $ MkSymbolType @name) $ MkPolarMap $ coerceEnhanced "var"
 
-instance KnownSymbol name => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (UVar name) where
+instance KnownSymbol name => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (Var name) where
     toShimWit = singleDolanShimWit toJMShimWit
 
-instance KnownSymbol name => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (UVar name) where
-    fromShimWit = mkShimWit $ VarDolanSingularType MkSymbolType
+instance KnownSymbol name => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (Var name) where
+    fromShimWit = MkShimWit (VarDolanSingularType $ MkSymbolType @name) $ MkPolarMap $ coerceEnhanced "var"
 
-instance KnownSymbol name => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (UVar name) where
+instance KnownSymbol name => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (Var name) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- (,)

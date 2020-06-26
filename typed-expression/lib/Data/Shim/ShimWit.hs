@@ -2,9 +2,9 @@
 
 module Data.Shim.ShimWit where
 
+import Data.Shim.JoinMeet
 import Data.Shim.PolarMap
 import Data.Shim.Polarity
-import Data.Shim.PolyMap
 import Shapes
 
 type ShimWit :: forall k. ShimKind k -> (k -> Type) -> Polarity -> k -> Type

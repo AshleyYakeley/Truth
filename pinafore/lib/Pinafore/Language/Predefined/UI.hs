@@ -8,6 +8,7 @@ import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Value
+import Pinafore.Language.Var
 import Shapes
 import Truth.Core
 

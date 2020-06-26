@@ -1,6 +1,7 @@
 module Data.Shim.PolarVariance where
 
 import Data.Shim.CatRange
+import Data.Shim.JoinMeet
 import Data.Shim.PolarMap
 import Data.Shim.Polarity
 import Data.Shim.PolyMap

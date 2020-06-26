@@ -47,6 +47,7 @@ library:
       - Pinafore.Language.Error
       - Pinafore.Language.Subtype
       - Pinafore.Language.Scope
+      - Pinafore.Language.Var
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.Subtype

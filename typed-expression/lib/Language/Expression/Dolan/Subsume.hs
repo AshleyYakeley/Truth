@@ -46,7 +46,7 @@ minimalPositiveSupertype ::
 minimalPositiveSupertype (PlainDolanType pt) = minimalPositiveSupertypePlain pt
 minimalPositiveSupertype (RecursiveDolanType n pt) = do
     pt' <- minimalPositiveSupertypePlain pt
-    return $ recursiveDolanShimWit n pt'
+    return $ recursiveDolanShimWit (uVarName n) pt'
 
 maximalNegativeSubtypeSingular ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -74,7 +74,7 @@ maximalNegativeSubtype ::
 maximalNegativeSubtype (PlainDolanType pt) = maximalNegativeSubtypePlain pt
 maximalNegativeSubtype (RecursiveDolanType n pt) = do
     pt' <- maximalNegativeSubtypePlain pt
-    return $ recursiveDolanShimWit n pt'
+    return $ recursiveDolanShimWit (uVarName n) pt'
 
 limitInvertType ::
        forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
@@ -118,7 +118,7 @@ data SubsumeWitness ground t where
         :: forall (ground :: GroundTypeKind) polarity name t. Is PolarityType polarity
         => SymbolType name
         -> DolanPlainType ground polarity t
-        -> SubsumeWitness ground (DolanPolarMap ground polarity (UVar name) t)
+        -> SubsumeWitness ground (DolanPolarMap ground polarity (UVar Type name) t)
 
 type DolanSubsumer :: GroundTypeKind -> Type -> Type
 type DolanSubsumer ground = Expression (SubsumeWitness ground)
@@ -223,7 +223,7 @@ data InvertSubstitution ground where
         => SymbolType name
         -> SymbolType name'
         -> DolanPlainType ground polarity t
-        -> PolarMap (DolanPolyIsoShim ground Type) polarity (JoinMeetType (InvertPolarity polarity) (UVar name') t) (UVar name)
+        -> PolarMap (DolanPolyIsoShim ground Type) polarity (JoinMeetType (InvertPolarity polarity) (UVar Type name') t) (UVar Type name)
         -> InvertSubstitution ground
 
 invertSubstitute ::
@@ -255,28 +255,24 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => S
     type SubsumerSubstitutions (DolanSubsumer ground) = [Bisubstitution ground (SubsumerM ground)]
     type SubsumerShim (DolanSubsumer ground) = DolanPolyShim ground Type
     solveSubsumer (ClosedExpression a) = return (a, [])
-    solveSubsumer (OpenExpression (MkSubsumeWitness (vn :: SymbolType name) (tp :: DolanPlainType ground polarity t)) expr) =
-        invertPolarity @polarity $ do
-            let
-                varBij ::
-                       PolarMap (DolanPolyIsoShim ground Type) polarity (JoinMeetType (InvertPolarity polarity) (UVar name) t) (UVar name)
-                varBij = isoPolyIso unsafeUVarIsomorphism
-                bisub :: Bisubstitution ground (SubsumerM ground)
-                bisub =
-                    mkPolarBisubstitution
-                        vn
-                        (return $
-                         mapShimWit (uninvertPolarMap polar1 <.> polarPolyIsoBackwards varBij) $
-                         singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn)
-                        (do
-                             tq <- limitInvertType' $ PlainDolanType tp
-                             return $
-                                 mapShimWit (invertPolarMap $ polarPolyIsoForwards varBij) $
-                                 joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn) tq)
-            expr' <- runSolver $ invertSubstitute (MkInvertSubstitution vn vn tp varBij) expr
-            (expr'', bisubs) <-
-                solveSubsumer $ fmap (\fa -> fa $ uninvertPolarMap polar2 <.> polarPolyIsoBackwards varBij) expr'
-            return (expr'', bisub : bisubs)
+    solveSubsumer (OpenExpression (MkSubsumeWitness oldvar (tp :: DolanPlainType ground polarity t)) expr) =
+        invertPolarity @polarity $
+        newUVar (uVarName oldvar) $ \(newvar :: SymbolType newname) ->
+            assignUVar @Type @(JoinMeetType (InvertPolarity polarity) (UVar Type newname) t) oldvar $ do
+                let
+                    bisub :: Bisubstitution ground (SubsumerM ground)
+                    bisub =
+                        mkPolarBisubstitution
+                            oldvar
+                            (return $
+                             singleDolanShimWit $ MkShimWit (VarDolanSingularType newvar) $ uninvertPolarMap polar1)
+                            (do
+                                 tq <- limitInvertType' $ PlainDolanType tp
+                                 return $
+                                     joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvar) tq)
+                expr' <- runSolver $ invertSubstitute (MkInvertSubstitution oldvar newvar tp cid) expr
+                (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ uninvertPolarMap polar2) expr'
+                return (expr'', bisub : bisubs)
     subsumerNegSubstitute subs t = runSubsumerM $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = fmap (fmap unPolarMap) $ runSolver $ subsumeType tinf tdecl
     simplifyPosType t = dolanSimplifyTypes @ground $ mkShimWit @Type @(DolanPolyShim ground Type) @_ @'Positive t

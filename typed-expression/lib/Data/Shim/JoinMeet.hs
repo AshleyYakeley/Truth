@@ -2,6 +2,8 @@ module Data.Shim.JoinMeet where
 
 import Shapes
 
+type ShimKind k = k -> k -> Type
+
 data TopType =
     MkTopType
 
@@ -122,13 +124,16 @@ instance JoinMeetCategory (->) where
     meetf f1 f2 v = BothMeetType (f1 v) (f2 v)
     applf rab ra (BothMeetType r1 r2) = rab r1 (ra r2)
 
-class (CoercibleKind k, InCategory shim) => EnhancedFunction (shim :: k -> k -> Type) where
+class (CoercibleKind k, InCategory shim) => EnhancedFunction (shim :: ShimKind k) where
     toEnhanced :: (InKind a, InKind b) => String -> KindFunction a b -> shim a b
     fromEnhanced :: (InKind a, InKind b) => shim a b -> KindFunction a b
     coercionEnhanced :: (InKind a, InKind b) => String -> Coercion a b -> shim a b
     enhancedCoercion :: (InKind a, InKind b) => shim a b -> Maybe (Coercion a b)
 
-coerceEnhanced :: (EnhancedFunction shim, InKind a, InKind b, Coercible a b) => String -> shim a b
+coerceEnhanced ::
+       forall k (shim :: ShimKind k) (a :: k) (b :: k). (EnhancedFunction shim, InKind a, InKind b, Coercible a b)
+    => String
+    -> shim a b
 coerceEnhanced t = coercionEnhanced t MkCoercion
 
 instance EnhancedFunction (->) where
@@ -140,7 +145,7 @@ instance EnhancedFunction (->) where
 instance Eq a => Eq (MeetType a b) where
     BothMeetType a1 _ == BothMeetType a2 _ = a1 == a2
 
-class (InCategory shim, JoinMeetCategory shim, EnhancedFunction shim) => Shim (shim :: Type -> Type -> Type) where
+class (InCategory shim, JoinMeetCategory shim, EnhancedFunction shim) => Shim (shim :: ShimKind Type) where
     funcShim :: forall a b p q. shim a b -> shim p q -> shim (b -> p) (a -> q)
     pairShim :: forall a b p q. shim a b -> shim p q -> shim (a, p) (b, q)
     eitherShim :: forall a b p q. shim a b -> shim p q -> shim (Either a p) (Either b q)

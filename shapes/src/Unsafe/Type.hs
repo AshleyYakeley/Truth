@@ -33,7 +33,11 @@ unsafeGetIsomorphism ::
 unsafeGetIsomorphism = pure $ unsafeIsomorphism @k @cat @a @b
 
 unsafeHRefl :: forall ka (a :: ka) kb (b :: kb). a :~~: b
-unsafeHRefl = unsafeCoerce $ HRefl @a
+unsafeHRefl =
+    case unsafeRefl @Type @ka @kb of
+        Refl ->
+            case unsafeRefl @ka @a @b of
+                Refl -> HRefl
 
 unsafeCheatHetEquality :: forall (w :: forall k. k -> Type) ka (a :: ka) kb (b :: kb). w a -> w b -> a :~~: b
 unsafeCheatHetEquality _ _ = unsafeHRefl @ka @a @kb @b

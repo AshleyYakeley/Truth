@@ -6,11 +6,8 @@ module Pinafore.Language.If
 
 import Pinafore.Base
 import Pinafore.Language.Type
+import Pinafore.Language.Var
 import Shapes
-
-type A = UVar "a"
-
-type B = UVar "b"
 
 qifthenelse :: Bool -> A -> A -> A
 qifthenelse True v _ = v

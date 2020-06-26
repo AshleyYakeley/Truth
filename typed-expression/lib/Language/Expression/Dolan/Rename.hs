@@ -39,9 +39,9 @@ renameSingularTypeVars ::
 renameSingularTypeVars proxy (GroundDolanSingularType gt args) = do
     MkShimWit args' bij <- renameTypeArgs (groundTypeVarianceType gt) (groundTypeVarianceMap gt) proxy args
     return $ MkShimWit (GroundDolanSingularType gt args') bij
-renameSingularTypeVars (_ :: _ polarity) (VarDolanSingularType namewit1) =
-    varNamespaceTRenameUVar @_ @_ @(DolanPolyShim ground Type) namewit1 $ \namewit2 bij ->
-        return $ MkShimWit (VarDolanSingularType namewit2) $ isoPolyIso bij
+renameSingularTypeVars (_ :: _ polarity) (VarDolanSingularType namewit1) = do
+    newname <- varNamespaceTRename $ uVarName namewit1
+    renameUVar @Type newname namewit1 $ \namewit2 -> return $ mkShimWit $ VarDolanSingularType namewit2
 
 renamePlainTypeVars ::
        forall (ground :: GroundTypeKind). (IsDolanGroundType ground)
@@ -56,10 +56,10 @@ renameTypeVars ::
        forall (ground :: GroundTypeKind). (IsDolanGroundType ground)
     => DolanTypeNamespace ground (DolanType ground)
 renameTypeVars pp (PlainDolanType t) = fmap (chainShimWit $ mkShimWit . PlainDolanType) $ renamePlainTypeVars pp t
-renameTypeVars pp@(_ :: _ polarity) (RecursiveDolanType namewit1 st) =
-    varNamespaceTLocalUVar @_ @_ @(DolanPolyShim ground Type) namewit1 $ \namewit2 _ -> do
+renameTypeVars pp@(_ :: _ polarity) (RecursiveDolanType namewit1 st) = do
+    varNamespaceTLocal (uVarName namewit1) $ \newname -> do
         MkShimWit st' stmap <- renamePlainTypeVars pp st
-        return $ MkShimWit (RecursiveDolanType namewit2 st') stmap
+        return $ MkShimWit (plainRecursiveDolanType newname st') stmap
 
 renameDolanIsoPlainType ::
        forall (ground :: GroundTypeKind) polarity m t. (IsDolanGroundType ground, Is PolarityType polarity, Monad m)
@@ -98,7 +98,7 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Renamer 
     renamePosWitness = renameDolanType
     renameNewVar = do
         n <- varRenamerTGenerate []
-        valueToWitness n $ \wit ->
+        newUVar n $ \wit ->
             return $
             MkNewVar
                 (singleDolanShimWit $ mkShimWit $ VarDolanSingularType wit)

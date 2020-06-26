@@ -3,8 +3,6 @@ module Data.Shim.PolyMap where
 import Data.Shim.JoinMeet
 import Shapes
 
-type ShimKind k = k -> k -> Type
-
 type PolyShimKind = forall k -> ShimKind k
 
 type PolyMorphism :: ShimKind Type -> PolyShimKind

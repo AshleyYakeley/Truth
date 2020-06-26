@@ -3,7 +3,6 @@ module Data.Shim.PolarJoinMeet where
 import Data.Shim.JoinMeet
 import Data.Shim.PolarMap
 import Data.Shim.Polarity
-import Data.Shim.PolyMap
 import Shapes
 
 type family LimitType polarity :: Type where

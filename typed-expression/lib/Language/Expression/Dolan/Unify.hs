@@ -27,33 +27,33 @@ data BisubstitutionWitness ground t where
         :: forall (ground :: GroundTypeKind) name p.
            SymbolType name
         -> DolanShimWit ground 'Positive p
-        -> BisubstitutionWitness ground (DolanPolyShim ground Type p (UVar name))
+        -> BisubstitutionWitness ground (DolanPolyShim ground Type p (UVar Type name))
     NegativeBisubstitutionWitness
         :: forall (ground :: GroundTypeKind) name q.
            SymbolType name
         -> DolanShimWit ground 'Negative q
-        -> BisubstitutionWitness ground (DolanPolyShim ground Type (UVar name) q)
+        -> BisubstitutionWitness ground (DolanPolyShim ground Type (UVar Type name) q)
 
 mkPositiveBisubstitutionWitness ::
        forall (ground :: GroundTypeKind) name p. IsDolanSubtypeGroundType ground
     => SymbolType name
     -> DolanSingularType ground 'Positive p
-    -> BisubstitutionWitness ground (DolanPolyShim ground Type p (UVar name))
+    -> BisubstitutionWitness ground (DolanPolyShim ground Type p (UVar Type name))
 mkPositiveBisubstitutionWitness n t =
     PositiveBisubstitutionWitness n $
     if occursInSingularType n t
-        then plainRecursiveDolanShimWit n $ singleDolanPlainShimWit $ mkShimWit t
+        then plainRecursiveDolanShimWit (uVarName n) $ singleDolanPlainShimWit $ mkShimWit t
         else singleDolanShimWit $ mkShimWit t
 
 mkNegativeBisubstitutionWitness ::
        forall (ground :: GroundTypeKind) name q. IsDolanSubtypeGroundType ground
     => SymbolType name
     -> DolanSingularType ground 'Negative q
-    -> BisubstitutionWitness ground (DolanPolyShim ground Type (UVar name) q)
+    -> BisubstitutionWitness ground (DolanPolyShim ground Type (UVar Type name) q)
 mkNegativeBisubstitutionWitness n t =
     NegativeBisubstitutionWitness n $
     if occursInSingularType n t
-        then plainRecursiveDolanShimWit n $ singleDolanPlainShimWit $ mkShimWit t
+        then plainRecursiveDolanShimWit (uVarName n) $ singleDolanPlainShimWit $ mkShimWit t
         else singleDolanShimWit $ mkShimWit t
 
 type DolanUnifier :: GroundTypeKind -> Type -> Type
@@ -188,7 +188,7 @@ bisubstitutePlainPositiveVar ::
        forall (ground :: GroundTypeKind) name t. IsDolanSubtypeGroundType ground
     => SymbolType name
     -> DolanPlainType ground 'Positive t
-    -> DolanUnifier ground (DolanPolyShim ground Type t (UVar name))
+    -> DolanUnifier ground (DolanPolyShim ground Type t (UVar Type name))
 bisubstitutePlainPositiveVar _ NilDolanPlainType = pure initf
 bisubstitutePlainPositiveVar vn (ConsDolanPlainType t1 tr) =
     OpenExpression (mkPositiveBisubstitutionWitness vn t1) $
@@ -198,16 +198,16 @@ bisubstitutePositiveVar ::
        forall (ground :: GroundTypeKind) name t. IsDolanSubtypeGroundType ground
     => SymbolType name
     -> DolanType ground 'Positive t
-    -> DolanUnifier ground (DolanPolyShim ground Type t (UVar name))
+    -> DolanUnifier ground (DolanPolyShim ground Type t (UVar Type name))
 bisubstitutePositiveVar n t =
     case polarPolyIsoShimWit $ dolanTypeToPlainUnroll t of
-        MkShimWit pt (MkPolarMap tconv) -> fmap (\conv -> conv <.> tconv) $ bisubstitutePlainPositiveVar n pt
+        MkShimWit pt (MkPolarMap tconv) -> fmap (\conv -> conv . tconv) $ bisubstitutePlainPositiveVar n pt
 
 bisubstitutePlainNegativeVar ::
        forall (ground :: GroundTypeKind) name t. IsDolanSubtypeGroundType ground
     => SymbolType name
     -> DolanPlainType ground 'Negative t
-    -> DolanUnifier ground (DolanPolyShim ground Type (UVar name) t)
+    -> DolanUnifier ground (DolanPolyShim ground Type (UVar Type name) t)
 bisubstitutePlainNegativeVar _ NilDolanPlainType = pure termf
 bisubstitutePlainNegativeVar vn (ConsDolanPlainType t1 tr) =
     OpenExpression (mkNegativeBisubstitutionWitness vn t1) $
@@ -217,10 +217,10 @@ bisubstituteNegativeVar ::
        forall (ground :: GroundTypeKind) name t. IsDolanSubtypeGroundType ground
     => SymbolType name
     -> DolanType ground 'Negative t
-    -> DolanUnifier ground (DolanPolyShim ground Type (UVar name) t)
+    -> DolanUnifier ground (DolanPolyShim ground Type (UVar Type name) t)
 bisubstituteNegativeVar n t =
     case polarPolyIsoShimWit $ dolanTypeToPlainUnroll t of
-        MkShimWit pt (MkPolarMap tconv) -> fmap (\conv -> tconv <.> conv) $ bisubstitutePlainNegativeVar n pt
+        MkShimWit pt (MkPolarMap tconv) -> fmap (\conv -> tconv . conv) $ bisubstitutePlainNegativeVar n pt
 
 bisubstituteUnifier ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -256,36 +256,32 @@ runUnifier ::
     => DolanUnifier ground a
     -> WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground) a
 runUnifier (ClosedExpression a) = return a
-runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name) (tp :: DolanShimWit ground 'Positive vw)) expr) = let
-    varBij :: Isomorphism (DolanPolyShim ground Type) (JoinType (UVar name) vw) (UVar name)
-    varBij = unsafeUVarIsomorphism
-    bisub =
-        MkBisubstitution
-            vn
-            (return $
-             ccontramap (isoBackwards varBij) $
-             joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn) tp)
-            (return $ cfmap (isoForwards varBij . join1) $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn)
-    in do
-           expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
-           ca <- runUnifier expr'
-           tell [bisub]
-           return $ ca $ isoForwards varBij . join2
-runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolType name) (tq :: DolanShimWit ground 'Negative vw)) expr) = let
-    varBij :: Isomorphism (DolanPolyShim ground Type) (MeetType (UVar name) vw) (UVar name)
-    varBij = unsafeUVarIsomorphism
-    bisub =
-        MkBisubstitution
-            vn
-            (return $
-             ccontramap (meet1 . isoBackwards varBij) $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn)
-            (return $
-             cfmap (isoForwards varBij) $ joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType vn) tq)
-    in do
-           expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
-           ca <- runUnifier expr'
-           tell [bisub]
-           return $ ca $ meet2 . isoBackwards varBij
+runUnifier (OpenExpression (PositiveBisubstitutionWitness oldvn (tp :: DolanShimWit ground 'Positive vw)) expr) =
+    newUVar (uVarName oldvn) $ \(newvn :: SymbolType newname) ->
+        assignUVar @Type @(JoinType (UVar Type newname) vw) oldvn $ let
+            bisub =
+                MkBisubstitution
+                    oldvn
+                    (return $ joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvn) tp)
+                    (return $ singleDolanShimWit $ MkShimWit (VarDolanSingularType newvn) $ invertPolarMap polar1)
+            in do
+                   expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
+                   ca <- runUnifier expr'
+                   tell [bisub]
+                   return $ ca join2
+runUnifier (OpenExpression (NegativeBisubstitutionWitness oldvn (tq :: DolanShimWit ground 'Negative vw)) expr) =
+    newUVar (uVarName oldvn) $ \(newvn :: SymbolType newname) ->
+        assignUVar @Type @(MeetType (UVar Type newname) vw) oldvn $ let
+            bisub =
+                MkBisubstitution
+                    oldvn
+                    (return $ singleDolanShimWit $ MkShimWit (VarDolanSingularType newvn) $ invertPolarMap polar1)
+                    (return $ joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvn) tq)
+            in do
+                   expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
+                   ca <- runUnifier expr'
+                   tell [bisub]
+                   return $ ca meet2
 
 instance forall (ground :: GroundTypeKind). (Eq (DolanName ground), IsDolanSubtypeGroundType ground) =>
              Unifier (DolanUnifier ground) where

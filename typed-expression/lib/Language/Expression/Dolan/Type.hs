@@ -16,10 +16,17 @@ data DolanType ground polarity t where
     PlainDolanType
         :: forall (ground :: GroundTypeKind) polarity t. DolanPlainType ground polarity t -> DolanType ground polarity t
     RecursiveDolanType
-        :: forall (ground :: GroundTypeKind) polarity name t.
+        :: forall (ground :: GroundTypeKind) polarity name.
            SymbolType name
-        -> DolanPlainType ground polarity t
-        -> DolanType ground polarity t
+        -> DolanPlainType ground polarity (UVar Type name)
+        -> DolanType ground polarity (UVar Type name)
+
+plainRecursiveDolanType ::
+       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => String
+    -> DolanPlainType ground polarity t
+    -> DolanType ground polarity t
+plainRecursiveDolanType vname pt = newAssignUVar @Type @t vname $ \nsym -> RecursiveDolanType nsym pt
 
 instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
              TestEquality (DolanType ground polarity) where
@@ -62,7 +69,7 @@ type DolanPlainShimWit ground polarity = PShimWit (DolanPolyShim ground Type) (D
 type DolanIsoPlainShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanIsoPlainShimWit ground polarity = PShimWit (DolanPolyIsoShim ground Type) (DolanPlainType ground) polarity
 
--- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVar') for type variables.
+-- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVar Type') for type variables.
 type DolanSingularType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanSingularType ground polarity t where
     GroundDolanSingularType
@@ -73,7 +80,7 @@ data DolanSingularType ground polarity t where
     VarDolanSingularType
         :: forall (ground :: GroundTypeKind) polarity name.
            SymbolType name
-        -> DolanSingularType ground polarity (UVar name)
+        -> DolanSingularType ground polarity (UVar Type name)
 
 instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
              TestEquality (DolanSingularType ground polarity) where
@@ -106,8 +113,9 @@ consDolanPlainShimWit (MkShimWit t1 conv1) (MkShimWit tr convr) =
 unsafeDeleteVarPlainShimWit ::
        forall (ground :: GroundTypeKind) (polarity :: Polarity) name.
        (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanIsoPlainShimWit ground polarity (UVar name)
-unsafeDeleteVarPlainShimWit = MkShimWit NilDolanPlainType $ isoPolarBackwards unsafeUVarIsomorphism
+    => SymbolType name
+    -> DolanIsoPlainShimWit ground polarity (UVar Type name)
+unsafeDeleteVarPlainShimWit n = assignUVar @Type @(LimitType polarity) n $ mkShimWit NilDolanPlainType
 
 class TypeFreeVariables (t :: Type) where
     typeFreeVariables :: t -> FiniteSet (AnyW SymbolType)

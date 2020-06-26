@@ -1,85 +1,39 @@
 module Language.Expression.TypeVariable
     ( UVar
-    , unsafeUVarIsomorphism
-    , varRenamerTGenerateSymbol
-    , varRenamerTGenerateSuggestedSymbol
-    , varNamespaceTRenameUVar
-    , varNamespaceTAddUVars
-    , varNamespaceTLocalUVar
+    , uVarName
+    , newUVar
+    , assignUVar
+    , newAssignUVar
+    , renameUVar
     ) where
 
-import Data.Shim
-import qualified GHC.Exts (Any)
-import Language.Expression.Common
 import Shapes
-import Shapes.Unsafe (unsafeIsomorphism)
+import Shapes.Unsafe (unsafeRefl)
 
-newtype UVar (name :: Symbol) =
-    MkUVar GHC.Exts.Any
+type family UVar (k :: Type) (name :: Symbol) :: k where
 
-unsafeUVarIsomorphism ::
-       forall (cat :: ShimKind Type) (name :: Symbol) (a :: Type). Category cat
-    => Isomorphism cat a (UVar name)
-unsafeUVarIsomorphism =
-    case MkUVar -- hack for unused name warning
-          of
-        _ -> unsafeIsomorphism
+uVarName :: forall (name :: Symbol). SymbolType name -> String
+uVarName = witnessToValue
+
+newUVar :: forall r. String -> (forall (newname :: Symbol). SymbolType newname -> r) -> r
+newUVar = valueToWitness
+
+assignUVar :: forall (k :: Type) (t :: k) (name :: Symbol) r. SymbolType name -> (UVar k name ~ t => r) -> r
+assignUVar _ call =
+    case unsafeRefl @k @(UVar k name) @t of
+        Refl -> call
+
+newAssignUVar ::
+       forall (k :: Type) (t :: k) r.
+       String
+    -> (forall (newname :: Symbol). UVar k newname ~ t => SymbolType newname -> r)
+    -> r
+newAssignUVar nstr call = newUVar nstr $ \nsym -> assignUVar @k @t nsym $ call nsym
 
 renameUVar ::
-       forall m (cat :: ShimKind Type) name1 r. (Monad m, Category cat)
-    => String
-    -> SymbolType name1
-    -> (forall (newname :: Symbol). SymbolType newname -> Isomorphism cat (UVar name1) (UVar newname) -> m r)
-    -> m r
-renameUVar newname _ call = valueToWitness newname $ \namewit2 -> call namewit2 unsafeUVarIsomorphism
-
-renameUVars ::
-       forall m (cat :: ShimKind Type) (names :: [Symbol]) r. (Monad m, Category cat)
-    => String
-    -> ListType SymbolType names
-    -> (forall (newname :: Symbol).
-                SymbolType newname -> ListType (Compose (Isomorphism cat (UVar newname)) UVar) names -> m r)
-    -> m r
-renameUVars newname names call =
-    valueToWitness newname $ \namewit2 -> call namewit2 $ mapListType (\_ -> Compose unsafeUVarIsomorphism) names
-
-varRenamerTGenerateSymbol ::
-       Monad m => (forall (name :: Symbol). SymbolType name -> VarRenamerT ts m a) -> VarRenamerT ts m a
-varRenamerTGenerateSymbol cont = do
-    s <- varRenamerTGenerate []
-    valueToWitness s cont
-
-varRenamerTGenerateSuggestedSymbol ::
-       Monad m => String -> (forall (name :: Symbol). SymbolType name -> VarRenamerT ts m a) -> VarRenamerT ts m a
-varRenamerTGenerateSuggestedSymbol name cont = do
-    name' <- varRenamerTGenerate [name]
-    valueToWitness name' cont
-
-varNamespaceTRenameUVar ::
-       forall ts m (cat :: ShimKind Type) name1 r. (Monad m, Category cat)
-    => SymbolType name1
-    -> (forall (newname :: Symbol).
-                SymbolType newname -> Isomorphism cat (UVar name1) (UVar newname) -> VarNamespaceT ts (VarRenamerT ts m) r)
-    -> VarNamespaceT ts (VarRenamerT ts m) r
-varNamespaceTRenameUVar namewit1 call = do
-    newname <- varNamespaceTRename $ witnessToValue namewit1
-    renameUVar newname namewit1 call
-
-varNamespaceTAddUVars ::
-       forall ts m (cat :: ShimKind Type) (names :: [Symbol]) r. (Monad m, Category cat)
-    => ListType SymbolType names
-    -> (forall (newname :: Symbol).
-                SymbolType newname -> ListType (Compose (Isomorphism cat (UVar newname)) UVar) names -> VarNamespaceT ts (VarRenamerT ts m) r)
-    -> VarNamespaceT ts (VarRenamerT ts m) r
-varNamespaceTAddUVars names call = do
-    newname <- varNamespaceTAddNames $ listTypeToList witnessToValue names
-    renameUVars newname names call
-
-varNamespaceTLocalUVar ::
-       forall ts m cat name1 r. (Monad m, Category cat)
-    => SymbolType name1
-    -> (forall (newname :: Symbol).
-                SymbolType newname -> Isomorphism cat (UVar name1) (UVar newname) -> VarNamespaceT ts (VarRenamerT ts m) r)
-    -> VarNamespaceT ts (VarRenamerT ts m) r
-varNamespaceTLocalUVar namewit1 call =
-    varNamespaceTLocal (witnessToValue namewit1) $ \newname -> renameUVar newname namewit1 call
+       forall (k :: Type) (oldname :: Symbol) r.
+       String
+    -> SymbolType oldname
+    -> (forall (newname :: Symbol). UVar k newname ~ UVar k oldname => SymbolType newname -> r)
+    -> r
+renameUVar newname _ call = newAssignUVar @k @(UVar k oldname) newname call

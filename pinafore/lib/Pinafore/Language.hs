@@ -12,6 +12,12 @@ module Pinafore.Language
     , parseValueAtType
     , interact
     , TopType(..)
+    , Var
+    , A
+    , B
+    , C
+    , X
+    , Y
     , Entity
     , showPinaforeRef
     , runPinaforeSourceScoped
@@ -28,6 +34,7 @@ import Pinafore.Language.Read
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Scope
 import Pinafore.Language.Type
+import Pinafore.Language.Var
 import Shapes
 import System.IO.Error
 import Truth.Core

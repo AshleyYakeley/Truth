@@ -35,7 +35,7 @@ apExpr :: PExpression -> PExpression -> PinaforeSourceScoped PExpression
 apExpr = tsApply @TS
 
 idExpr :: PExpression
-idExpr = typeFConstExpression toJMShimWit $ \(v :: UVar "x") -> v
+idExpr = typeFConstExpression toJMShimWit $ \(v :: X) -> v
 
 nbFuncExpr :: PExpression
 nbFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: Number) -> False
@@ -51,30 +51,30 @@ varExpr = tsVar @TS "v"
 
 ifelseExpr :: PExpression
 ifelseExpr =
-    typeFConstExpression toJMShimWit $ \test (tb :: UVar "a") (eb :: UVar "a") ->
+    typeFConstExpression toJMShimWit $ \test (tb :: A) (eb :: A) ->
         if test
             then tb
             else eb
 
 list1Expr :: PExpression
-list1Expr = typeFConstExpression toJMShimWit $ \(a :: UVar "a") -> [a]
+list1Expr = typeFConstExpression toJMShimWit $ \(a :: A) -> [a]
 
 sndExpr :: PExpression
-sndExpr = typeFConstExpression toJMShimWit $ \(MkTopType, a :: UVar "a") -> a
+sndExpr = typeFConstExpression toJMShimWit $ \(MkTopType, a :: A) -> a
 
 twiceExpr :: PExpression
-twiceExpr = typeFConstExpression toJMShimWit $ \(a :: UVar "a") -> (a, a)
+twiceExpr = typeFConstExpression toJMShimWit $ \(a :: A) -> (a, a)
 
 thingExpr :: PExpression
 thingExpr =
-    typeFConstExpression toJMShimWit $ \(a :: UVar "a", b :: UVar "b") ->
+    typeFConstExpression toJMShimWit $ \(a :: A, b :: B) ->
         ( a
         , if False
               then MkJoinType $ Left a
               else MkJoinType $ Right b)
 
 dotExpr :: PExpression
-dotExpr = typeFConstExpression toJMShimWit $ \(f :: UVar "b" -> UVar "c") (g :: UVar "a" -> UVar "b") -> f . g
+dotExpr = typeFConstExpression toJMShimWit $ \(f :: B -> C) (g :: A -> B) -> f . g
 
 listNumBoolFuncExpr :: PExpression
 listNumBoolFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Number]) -> [True]
@@ -281,7 +281,7 @@ testType =
                     , simplifyTypeTest "Maybe (rec a. a)" "Maybe None"
                     , simplifyTypeTest "Maybe (rec a. [a])" "Maybe (rec a. [a])"
                     , simplifyTypeTest "Maybe (rec a. Integer)" "Maybe Integer"
-                    , simplifyTypeTest "rec a. rec b. (a, b)" "rec a. (a, a)"
+                    , simplifyTypeTest "rec a. rec b. (a, b)" "rec b. (b, b)"
                     , simplifyTypeTest "(rec a. Maybe a) | (rec b. [b])" "rec a. Maybe a | [a]"
                     , simplifyTypeTest "(rec a. Maybe a) | (rec a. [a])" "rec a. Maybe a | [a]"
                     ]

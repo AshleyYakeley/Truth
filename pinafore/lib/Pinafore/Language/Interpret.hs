@@ -16,11 +16,8 @@ import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Pinafore.Language.Value
+import Pinafore.Language.Var
 import Shapes
-
-type A = UVar "a"
-
-type B = UVar "b"
 
 interpretPatternConstructor :: SyntaxConstructor -> PinaforeSourceScoped (QPatternConstructor)
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
@@ -126,7 +123,7 @@ interpretConstructor _ (SLNumber n) =
         Nothing -> qConstExprAny $ jmToValue n
 interpretConstructor _ (SLString v) = return $ qConstExprAny $ jmToValue v
 interpretConstructor spos (SLNamedConstructor v) = interpretNamedConstructor spos v
-interpretConstructor _ SLPair = return $ qConstExprAny $ jmToValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
+interpretConstructor _ SLPair = return $ qConstExprAny $ jmToValue ((,) :: A -> B -> (A, B))
 interpretConstructor _ SLUnit = return $ qConstExprAny $ jmToValue ()
 
 interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression

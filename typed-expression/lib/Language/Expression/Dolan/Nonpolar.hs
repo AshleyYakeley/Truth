@@ -32,7 +32,7 @@ data NonpolarDolanType ground dv t where
         -> NonpolarArgument (NonpolarDolanType ground '[]) sv a
         -> NonpolarDolanType ground dv (f a)
     VarNonpolarType
-        :: forall (ground :: GroundTypeKind) name. SymbolType name -> NonpolarDolanType ground '[] (UVar name)
+        :: forall (ground :: GroundTypeKind) name. SymbolType name -> NonpolarDolanType ground '[] (UVar Type name)
 
 argFreeVariables ::
        forall (ground :: GroundTypeKind) sv t.

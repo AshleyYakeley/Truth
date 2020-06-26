@@ -1,7 +1,7 @@
 module Data.Shim.PolarMap where
 
+import Data.Shim.JoinMeet
 import Data.Shim.Polarity
-import Data.Shim.PolyMap
 import Shapes
 
 type family PolarMapType (shim :: ShimKind k) polarity (a :: k) (b :: k) :: Type where
@@ -24,6 +24,13 @@ instance forall polarity k (shim :: ShimKind k). (Is PolarityType polarity, Cate
             PositiveType -> \(MkPolarMap p) (MkPolarMap q) -> MkPolarMap $ p . q
             NegativeType -> \(MkPolarMap p) (MkPolarMap q) -> MkPolarMap $ q . p
 
+instance forall polarity k (shim :: ShimKind k). (Is PolarityType polarity, Groupoid shim) =>
+             Groupoid (PolarMap shim polarity) where
+    invert =
+        case polarityType @polarity of
+            PositiveType -> \(MkPolarMap p) -> MkPolarMap $ invert p
+            NegativeType -> \(MkPolarMap p) -> MkPolarMap $ invert p
+
 instance forall polarity k (shim :: ShimKind k). (Is PolarityType polarity, InCategory shim) =>
              InCategory (PolarMap shim polarity) where
     cid =
@@ -34,6 +41,13 @@ instance forall polarity k (shim :: ShimKind k). (Is PolarityType polarity, InCa
         case polarityType @polarity of
             PositiveType -> \(MkPolarMap p) (MkPolarMap q) -> MkPolarMap $ p <.> q
             NegativeType -> \(MkPolarMap p) (MkPolarMap q) -> MkPolarMap $ q <.> p
+
+instance forall polarity k (shim :: ShimKind k). (Is PolarityType polarity, InGroupoid shim) =>
+             InGroupoid (PolarMap shim polarity) where
+    cinvert =
+        case polarityType @polarity of
+            PositiveType -> \(MkPolarMap p) -> MkPolarMap $ cinvert p
+            NegativeType -> \(MkPolarMap p) -> MkPolarMap $ cinvert p
 
 invertPolarMap ::
        forall polarity k (shim :: ShimKind k) (a :: k) (b :: k). Is PolarityType polarity

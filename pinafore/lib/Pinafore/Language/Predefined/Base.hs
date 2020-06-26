@@ -11,6 +11,7 @@ import Pinafore.Language.If
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Type
 import Pinafore.Language.Value
+import Pinafore.Language.Var
 import Shapes
 import Shapes.Numeric
 import Truth.Core

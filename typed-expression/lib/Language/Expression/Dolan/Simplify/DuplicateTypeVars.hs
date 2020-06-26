@@ -7,6 +7,7 @@ import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeVariable
 import Shapes
 
 mergeInSingularType ::
@@ -48,7 +49,7 @@ mergeDuplicateTypeVarsInType ::
 mergeDuplicateTypeVarsInType (PlainDolanType t) =
     chainShimWit (mkShimWit . PlainDolanType) $ mergeDuplicateTypeVarsInPlainType t
 mergeDuplicateTypeVarsInType (RecursiveDolanType n t) =
-    plainRecursiveDolanShimWit n $ mergeDuplicateTypeVarsInPlainType t
+    plainRecursiveDolanShimWit (uVarName n) $ mergeDuplicateTypeVarsInPlainType t
 
 mergeDuplicateTypeVars ::
        forall (ground :: GroundTypeKind) a.

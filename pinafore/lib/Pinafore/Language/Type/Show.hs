@@ -3,6 +3,7 @@ module Pinafore.Language.Type.Show where
 import qualified Data.List as List
 import Data.Shim
 import Language.Expression.Dolan
+import Language.Expression.TypeVariable
 import Pinafore.Language.Name
 import Prelude (Bounded(..))
 import Shapes
@@ -25,7 +26,7 @@ instance ExprShow Name where
     exprShowPrec (MkName n) = (n, 0)
 
 instance ExprShow (SymbolType name) where
-    exprShowPrec n = (pack $ witnessToValue n, 0)
+    exprShowPrec n = (pack $ uVarName n, 0)
 
 instance AllWitnessConstraint ExprShow w => ExprShow (AnyInKind w) where
     exprShowPrec (MkAnyInKind (wt :: w t)) =

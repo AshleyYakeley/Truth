@@ -1,5 +1,6 @@
 module Pinafore.Language.Name where
 
+import Language.Expression.TypeVariable
 import Shapes
 
 newtype Name = MkName
@@ -15,7 +16,7 @@ instance IsString Name where
 type instance Element Name = Char
 
 nameToSymbolType :: Name -> (forall (symbol :: Symbol). SymbolType symbol -> r) -> r
-nameToSymbolType n = valueToWitness $ unpack n
+nameToSymbolType n = newUVar $ unpack n
 
 symbolTypeToName :: SymbolType symbol -> Name
-symbolTypeToName = MkName . pack . witnessToValue
+symbolTypeToName = MkName . pack . uVarName

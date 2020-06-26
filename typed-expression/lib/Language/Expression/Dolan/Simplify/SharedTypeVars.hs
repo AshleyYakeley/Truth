@@ -33,14 +33,12 @@ mergeSharedTypeVars ::
 mergeSharedTypeVars expr = let
     (posuses, neguses) = mappableGetVarUses @ground expr
     in case findShare posuses <|> findShare neguses of
-           Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) -> let
-               varBij :: Isomorphism (DolanPolyShim ground Type) (UVar na) (UVar nb)
-               varBij = unsafeUVarIsomorphism
-               bisub =
-                   MkBisubstitution
-                       vb
-                       (return $
-                        ccontramap (isoBackwards varBij) $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType va)
-                       (return $ cfmap (isoForwards varBij) $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType va)
-               in mergeSharedTypeVars @ground $ runIdentity $ bisubstitutes @ground [bisub] expr
+           Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) ->
+               assignUVar @Type @(UVar Type nb) va $ let
+                   bisub =
+                       MkBisubstitution
+                           vb
+                           (return $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType va)
+                           (return $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType va)
+                   in mergeSharedTypeVars @ground $ runIdentity $ bisubstitutes @ground [bisub] expr
            Nothing -> expr

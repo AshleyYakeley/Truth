@@ -21,14 +21,14 @@ import Shapes
 type Bisubstitution :: GroundTypeKind -> (Type -> Type) -> Type
 data Bisubstitution ground m =
     forall name. MkBisubstitution (SymbolType name)
-                                  (m (DolanShimWit ground 'Positive (UVar name)))
-                                  (m (DolanShimWit ground 'Negative (UVar name)))
+                                  (m (DolanShimWit ground 'Positive (UVar Type name)))
+                                  (m (DolanShimWit ground 'Negative (UVar Type name)))
 
 mkPolarBisubstitution ::
        forall (ground :: GroundTypeKind) polarity m name. Is PolarityType polarity
     => SymbolType name
-    -> m (DolanShimWit ground polarity (UVar name))
-    -> m (DolanShimWit ground (InvertPolarity polarity) (UVar name))
+    -> m (DolanShimWit ground polarity (UVar Type name))
+    -> m (DolanShimWit ground (InvertPolarity polarity) (UVar Type name))
     -> Bisubstitution ground m
 mkPolarBisubstitution n a b =
     case polarityType @polarity of
@@ -104,10 +104,10 @@ bisubstituteType bisub rt@(RecursiveDolanType n pt) =
     runVarNamespaceT $ do
         renameBisubstitution bisub
         _ <- renameDolanType rt
-        varNamespaceTAddUVars @_ @_ @(DolanPolyShim ground Type) (ConsListType n NilListType) $ \n' _ -> do
-            pt' <- renameDolanPlainType pt
-            t' <- lift $ lift $ bisubstitutePlainShimWit bisub pt'
-            return $ recursiveDolanShimWit n' t'
+        newname <- varNamespaceTAddNames [uVarName n]
+        pt' <- renameDolanPlainType pt
+        t' <- lift $ lift $ bisubstitutePlainShimWit bisub pt'
+        return $ recursiveDolanShimWit newname t'
 
 bisubstituteShimWit ::
        forall (ground :: GroundTypeKind) m polarity t. (IsDolanGroundType ground, MonadOne m, Is PolarityType polarity)

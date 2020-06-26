@@ -7,6 +7,7 @@ import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.TypeVariable
 import Shapes
 
 elimInPlainType ::
@@ -17,7 +18,7 @@ elimInPlainType ::
 elimInPlainType _ NilDolanPlainType = nilDolanPlainShimWit
 elimInPlainType mn@(Just rn) (ConsDolanPlainType (VarDolanSingularType n) tr)
     | Just Refl <- testEquality rn n =
-        joinMeetShimWit (polarPolyIsoShimWit unsafeDeleteVarPlainShimWit) (elimInPlainType mn tr)
+        joinMeetShimWit (polarPolyIsoShimWit $ unsafeDeleteVarPlainShimWit n) (elimInPlainType mn tr)
 elimInPlainType mn (ConsDolanPlainType t1 tr) =
     consDolanPlainShimWit (mapDolanSingularType elimInType t1) (elimInPlainType mn tr)
 
@@ -34,7 +35,8 @@ elimInType ::
     => DolanType ground polarity t
     -> DolanShimWit ground polarity t
 elimInType (PlainDolanType pt) = chainShimWit (mkShimWit . PlainDolanType) $ elimInPlainType Nothing pt
-elimInType (RecursiveDolanType n pt) = elimUnusuedInShimWit $ plainRecursiveDolanShimWit n $ elimInPlainType (Just n) pt
+elimInType (RecursiveDolanType n pt) =
+    elimUnusuedInShimWit $ plainRecursiveDolanShimWit (uVarName n) $ elimInPlainType (Just n) pt
 
 eliminateUnusedRecursion ::
        forall (ground :: GroundTypeKind) a.

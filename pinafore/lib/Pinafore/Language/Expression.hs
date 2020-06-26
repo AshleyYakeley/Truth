@@ -9,6 +9,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
+import Pinafore.Language.Var
 import Shapes
 
 type QExpr = TSSealedExpression PinaforeTypeSystem
@@ -108,7 +109,7 @@ qEmptyList :: QExpr
 qEmptyList = qConstExpr ([] :: [BottomType])
 
 qConsList :: QExpr
-qConsList = qConstExpr ((:) :: UVar "a" -> [UVar "a"] -> [UVar "a"])
+qConsList = qConstExpr ((:) :: A -> [A] -> [A])
 
 qSequenceExpr :: [QExpr] -> PinaforeSourceScoped QExpr
 qSequenceExpr [] = return $ qEmptyList

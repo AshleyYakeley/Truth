@@ -15,6 +15,7 @@ import Pinafore.Language.Expression
 import Pinafore.Language.Name
 import Pinafore.Language.Scope
 import Pinafore.Language.Type
+import Pinafore.Language.Var
 import Shapes
 
 type RefNotation = WriterT [(Name, QExpr)] (StateT Int PinaforeScoped)
@@ -53,10 +54,6 @@ refNotationUnquote spos rexpr = do
     expr <- lift $ runRefWriterT spos rexpr
     tell $ pure (varname, expr)
     return $ qVarExpr varname
-
-type A = UVar "a"
-
-type B = UVar "b"
 
 purerefExpr :: QExpr
 purerefExpr = qConstExpr (pure :: A -> PinaforeImmutableRef A)
