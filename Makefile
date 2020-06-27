@@ -67,7 +67,11 @@ out/licensing: ${BINPATH}/licensor
 licensing: out/licensing
 
 ${BINPATH}/pinafore: docker-image
-	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS) > out/stack.out
+	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench --no-interleaved-output $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
+ifeq ($(test),1)
+	mkdir -p out
+	cp -r .stack-work/logs out/stack-logs
+endif
 ifeq ($(bench),1)
 	test -n "$$(git status -s)" || (stack $(STACKFLAGS) exec -- benchgraph/adapters/criterion/export_benchs.sh pinafore/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
 endif
