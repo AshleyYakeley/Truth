@@ -466,6 +466,23 @@ testQueries =
                     ]
               ]
         , testGroup
+              "subtype"
+              [ testQuery "let i : Integer -> Number; i x = x in i 3" $ Just "3"
+              , testQuery "let a : Integer; a = 3; b : Number; b = a in b" $ Just "3"
+              , testQuery "let i : FiniteSetRef -a -> SetRef a; i x = x in 3" $ Just "3"
+              , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ Just "3"
+              ]
+        , testGroup
+              "subsume"
+              [ testQuery "let a : [Integer|Text]; a = [] in a" $ Just "[]"
+              , testQuery "let a : [Integer]|[Text]; a = [] in a" $ Just "[]"
+              , testSameType True "Integer" "Integer" ["56"]
+              , testSameType False "[Integer|Text]" "[Integer|Text]" ["[]"]
+              , testSameType False "[Integer]|[Text]" "[Integer]|[Text]" ["[]"]
+              , testSameType False "[Integer|Text]" "[Integer]|[Text]" ["[]"]
+              , testQuery "let a : Integer|Text; a = 3; b : [Integer]|[Text]; b = [a] in b" $ Just "[3]"
+              ]
+        , testGroup
               "recursive"
               [ testQuery "let x : rec a. [a]; x = [] in x" $ Just "[]"
               , let
@@ -567,21 +584,6 @@ testQueries =
                           "let rcount : (rec a . Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> 2 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
                       Just "3"
                     ]
-              ]
-        , testGroup
-              "subtype"
-              [ testQuery "let i : Integer -> Number; i x = x in i 3" $ Just "3"
-              , testQuery "let a : Integer; a = 3; b : Number; b = a in b" $ Just "3"
-              , testQuery "let i : FiniteSetRef -a -> SetRef a; i x = x in 3" $ Just "3"
-              , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ Just "3"
-              ]
-        , testGroup
-              "subsume"
-              [ testQuery "let a : [Integer|Text]; a = [] in a" $ Just "[]"
-              , testQuery "let a : [Integer|Text]; a = []; b : [Integer]|[Text]; b = a in b" $ Just "[]"
-              , testQuery "let a : Integer|Text; a = 3; b : [Integer]|[Text]; b = [a] in b" $ Just "[3]"
-              , testQuery "let a : [Integer]|[Text]; a = [] in a" $ Just "[]"
-              , testQuery "let a : [Integer]|[Text]; a = []; b : [Integer|Text]; b = a in b" $ Just "[]"
               ]
         ]
 
