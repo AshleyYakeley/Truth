@@ -58,20 +58,21 @@ format: ${BINPATH}/hindent
 ${BINPATH}/licensor: docker-image
 	stack $(STACKFLAGS) install licensor
 
-out/licensing: ${BINPATH}/licensor
+out:
 	mkdir -p out
+
+out/licensing: out ${BINPATH}/licensor
 	$< --quiet > $@
 
 .PHONY: licensing
 
 licensing: out/licensing
 
-${BINPATH}/pinafore: docker-image
-	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench --no-interleaved-output $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
-ifeq ($(test),1)
-	mkdir -p out
-	cp -r .stack-work/logs out/stack-logs
-endif
+${BINPATH}/pinafore: out docker-image
+	rm -rf .stack-work/logs
+	rm -rf out/logs
+	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench --no-interleaved-output $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS) || (cp -r .stack-work/logs out/; exit 1)
+	cp -r .stack-work/logs out/
 ifeq ($(bench),1)
 	test -n "$$(git status -s)" || (stack $(STACKFLAGS) exec -- benchgraph/adapters/criterion/export_benchs.sh pinafore/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
 endif
@@ -98,10 +99,9 @@ PACKAGEDIR := .build/deb/$(PACKAGEFULLNAME)
 	stack $(STACKFLAGS) exec --cwd .build/deb -- dpkg-deb --root-owner-group --build $(PACKAGEFULLNAME)
 	stack $(STACKFLAGS) exec -- lintian --fail-on-warnings --suppress-tags-from-file deb/lintian-ignore .build/deb/$(PACKAGEFULLNAME).deb
 
-out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest
+out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest out
 	install -m 755 deb/installtest .build/deb/
 	docker run --rm -v `pwd`/.build/deb:/home -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -it bitnami/minideb:latest /home/installtest `id -u`
-	mkdir -p out
 	cp $< $@
 
 .PHONY: deb
