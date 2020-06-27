@@ -15,7 +15,7 @@ endif
 STACKFLAGS := $(DOCKERFLAGS) $(JOBFLAGS)
 
 ifeq ($(test),1)
-TESTFLAGS :=
+TESTFLAGS := --ta --hide-successes
 else
 TESTFLAGS := --no-run-tests
 endif
@@ -67,7 +67,7 @@ out/licensing: ${BINPATH}/licensor
 licensing: out/licensing
 
 ${BINPATH}/pinafore: docker-image
-	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
+	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS) > out/stack.out
 ifeq ($(bench),1)
 	test -n "$$(git status -s)" || (stack $(STACKFLAGS) exec -- benchgraph/adapters/criterion/export_benchs.sh pinafore/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
 endif
