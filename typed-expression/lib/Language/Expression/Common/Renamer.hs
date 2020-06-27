@@ -122,7 +122,7 @@ varNamespaceTLocal oldname call = do
 
 newtype VarRenamerT (ts :: Type) m a =
     MkVarRenamerT (StateT ([String], Int) m a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadPlus, MonadFail, MonadTrans)
+    deriving (Functor, Applicative, Alternative, Monad, MonadPlus, MonadFail, MonadTrans, MonadTransSemiTunnel)
 
 instance MonadTransConstraint Monad (VarRenamerT ts) where
     hasTransConstraint = Dict

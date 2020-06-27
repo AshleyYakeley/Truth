@@ -6,6 +6,7 @@ import Shapes.Import as I
 import Shapes.Instances ()
 
 -- shapes
+import Control.Applicative.Compose as I
 import Control.AsyncRunner as I
 import Control.Category.Dual as I
 import Control.Category.Groupoid as I

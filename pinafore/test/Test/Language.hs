@@ -479,12 +479,12 @@ testQueries =
                            , testSameType True "rec a. [a]" "rec a. [[a]]" atree
                            , testSameType
                                  False
-                                 "rec a. Maybe a | [a]"
+                                 "rec a. (Maybe a | [a])"
                                  "(rec a. Maybe a) | (rec b. [b])"
                                  ["[]", "Nothing", "Just []", "[[]]"]
                            , testSameType
                                  False
-                                 "rec a. Maybe a | [a]"
+                                 "rec a. (Maybe a | [a])"
                                  "(rec a. Maybe a) | (rec a. [a])"
                                  ["[]", "Nothing", "Just []", "[[]]"]
                            , testSubtype True "rec a. [a]" "Entity" []
