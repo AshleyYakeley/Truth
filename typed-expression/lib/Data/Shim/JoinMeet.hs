@@ -53,6 +53,9 @@ class InCategory shim => JoinMeetIsoCategory (shim :: Type -> Type -> Type) wher
     iJoinPair :: shim a1 a2 -> shim b1 b2 -> shim (JoinType a1 b1) (JoinType a2 b2)
     default iJoinPair :: JoinMeetCategory shim => shim a1 a2 -> shim b1 b2 -> shim (JoinType a1 b1) (JoinType a2 b2)
     iJoinPair aa bb = joinf (join1 <.> aa) (join2 <.> bb)
+    iJoinSwap :: shim (JoinType a b) (JoinType b a)
+    default iJoinSwap :: JoinMeetCategory shim => shim (JoinType a b) (JoinType b a)
+    iJoinSwap = joinf join2 join1
     iJoinSwapL :: shim (JoinType (JoinType a b) c) (JoinType a (JoinType b c))
     default iJoinSwapL :: JoinMeetCategory shim => shim (JoinType (JoinType a b) c) (JoinType a (JoinType b c))
     iJoinSwapL = joinf (joinf join1 (join2 <.> join1)) (join2 <.> join2)
@@ -74,6 +77,9 @@ class InCategory shim => JoinMeetIsoCategory (shim :: Type -> Type -> Type) wher
     iMeetPair :: shim a1 a2 -> shim b1 b2 -> shim (MeetType a1 b1) (MeetType a2 b2)
     default iMeetPair :: JoinMeetCategory shim => shim a1 a2 -> shim b1 b2 -> shim (MeetType a1 b1) (MeetType a2 b2)
     iMeetPair aa bb = meetf (aa <.> meet1) (bb <.> meet2)
+    iMeetSwap :: shim (MeetType a b) (MeetType b a)
+    default iMeetSwap :: JoinMeetCategory shim => shim (MeetType a b) (MeetType b a)
+    iMeetSwap = meetf meet2 meet1
     iMeetSwapL :: shim (MeetType (MeetType a b) c) (MeetType a (MeetType b c))
     default iMeetSwapL :: JoinMeetCategory shim => shim (MeetType (MeetType a b) c) (MeetType a (MeetType b c))
     iMeetSwapL = meetf (meet1 <.> meet1) (meetf (meet2 <.> meet1) meet2)
@@ -88,6 +94,7 @@ instance JoinMeetIsoCategory shim => JoinMeetIsoCategory (Isomorphism shim) wher
     iJoinR2 = MkIsomorphism iJoinR2 iJoinL2
     iJoinPair (MkIsomorphism a1a2 a2a1) (MkIsomorphism b1b2 b2b1) =
         MkIsomorphism (iJoinPair a1a2 b1b2) (iJoinPair a2a1 b2b1)
+    iJoinSwap = MkIsomorphism iJoinSwap iJoinSwap
     iJoinSwapL = MkIsomorphism iJoinSwapL iJoinSwapR
     iJoinSwapR = MkIsomorphism iJoinSwapR iJoinSwapL
     iMeetL1 = MkIsomorphism iMeetL1 iMeetR1
@@ -96,6 +103,7 @@ instance JoinMeetIsoCategory shim => JoinMeetIsoCategory (Isomorphism shim) wher
     iMeetR2 = MkIsomorphism iMeetR2 iMeetL2
     iMeetPair (MkIsomorphism a1a2 a2a1) (MkIsomorphism b1b2 b2b1) =
         MkIsomorphism (iMeetPair a1a2 b1b2) (iMeetPair a2a1 b2b1)
+    iMeetSwap = MkIsomorphism iMeetSwap iMeetSwap
     iMeetSwapL = MkIsomorphism iMeetSwapL iMeetSwapR
     iMeetSwapR = MkIsomorphism iMeetSwapR iMeetSwapL
 

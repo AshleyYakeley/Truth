@@ -167,6 +167,9 @@ mpure :: Alternative m => Maybe a -> m a
 mpure (Just a) = pure a
 mpure Nothing = empty
 
+mcatch :: Alternative m => m a -> m (Maybe a)
+mcatch ma = fmap Just ma <|> pure Nothing
+
 compAll :: Category cat => [cat a a] -> cat a a
 compAll [] = id
 compAll (c:cc) = c . compAll cc

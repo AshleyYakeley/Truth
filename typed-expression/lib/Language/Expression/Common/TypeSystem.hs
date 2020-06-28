@@ -13,7 +13,7 @@ import Shapes
 type SubsumerRenamerConstraint subsumer renamer m
      = ( Monad m
        , Renamer renamer
-       , Subsumer subsumer
+       , SimplifySubsumer subsumer
        , SubsumerNegWitness subsumer ~ RenamerNegWitness renamer
        , SubsumerPosWitness subsumer ~ RenamerPosWitness renamer
        , SubsumerShim subsumer ~ RenamerShim renamer

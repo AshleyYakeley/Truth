@@ -63,6 +63,14 @@ iPolarPair =
         PositiveType -> \(MkPolarMap ar) (MkPolarMap br) -> MkPolarMap $ iJoinPair ar br
         NegativeType -> \(MkPolarMap ar) (MkPolarMap br) -> MkPolarMap $ iMeetPair ar br
 
+iPolarSwap ::
+       forall (shim :: ShimKind Type) polarity a b. (Is PolarityType polarity, JoinMeetIsoCategory shim)
+    => PolarMap shim polarity (JoinMeetType polarity a b) (JoinMeetType polarity b a)
+iPolarSwap =
+    case polarityType @polarity of
+        PositiveType -> MkPolarMap iJoinSwap
+        NegativeType -> MkPolarMap iMeetSwap
+
 iPolarSwapL ::
        forall (shim :: ShimKind Type) polarity a b c. (Is PolarityType polarity, JoinMeetIsoCategory shim)
     => PolarMap shim polarity (JoinMeetType polarity (JoinMeetType polarity a b) c) (JoinMeetType polarity a (JoinMeetType polarity b c))

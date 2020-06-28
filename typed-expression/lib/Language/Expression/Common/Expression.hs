@@ -27,3 +27,7 @@ evalExpression expr = throw $ UndefinedBindingsError $ nub $ expressionFreeWitne
 
 varExpression :: w t -> Expression w t
 varExpression wt = OpenExpression wt $ ClosedExpression id
+
+solveExpression :: Applicative m => (forall t. w t -> m t) -> Expression w a -> m a
+solveExpression _f (ClosedExpression a) = pure a
+solveExpression f (OpenExpression wt expr) = solveExpression f expr <*> f wt

@@ -1,7 +1,11 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Language.Expression.Dolan.Simplify
     ( dolanSimplifyTypes
     ) where
 
+import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Simplify.DuplicateGroundTypes
 import Language.Expression.Dolan.Simplify.DuplicateTypeVars
@@ -10,6 +14,7 @@ import Language.Expression.Dolan.Simplify.RollUpRecursion
 import Language.Expression.Dolan.Simplify.SharedTypeVars
 import Language.Expression.Dolan.Simplify.UnusedRecursion
 import Language.Expression.Dolan.Solver
+import Language.Expression.Dolan.Subsume
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -80,3 +85,6 @@ dolanSimplifyTypes =
         , mif True $ pureSimplifier $ mergeDuplicateTypeVars @ground
         , mif True $ pureSimplifier $ rollUpRecursiveTypes @ground
         ]
+
+instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => SimplifySubsumer (DolanSubsumer ground) where
+    simplifyPosType t = dolanSimplifyTypes @ground $ mkShimWit @Type @(DolanPolyShim ground Type) @_ @'Positive t

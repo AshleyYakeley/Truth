@@ -1,5 +1,6 @@
 module Language.Expression.Common.Subsumer
     ( Subsumer(..)
+    , SimplifySubsumer(..)
     , SubsumerOpenExpression
     , SubsumerSealedExpression
     , subsumeExpression
@@ -31,6 +32,8 @@ class ( Monad (SubsumerMonad subsumer)
            SubsumerPosWitness subsumer inf
         -> SubsumerPosWitness subsumer decl
         -> SubsumerMonad subsumer (subsumer (SubsumerShim subsumer inf decl))
+
+class Subsumer subsumer => SimplifySubsumer subsumer where
     simplifyPosType :: SubsumerPosWitness subsumer t -> SubsumerMonad subsumer (SubsumerPosShimWit subsumer t)
 
 type SubsumerNegShimWit subsumer = ShimWit (SubsumerShim subsumer) (SubsumerNegWitness subsumer) 'Negative
@@ -55,7 +58,7 @@ subsumerExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) 
 
 -- Note the user's declared type will be simplified first, so they'll end up seeing a simplified version of the type they declared for their expression.
 subsumeExpression ::
-       forall subsumer name. Subsumer subsumer
+       forall subsumer name. SimplifySubsumer subsumer
     => AnyW (SubsumerPosWitness subsumer)
     -> SubsumerSealedExpression name subsumer
     -> SubsumerMonad subsumer (SubsumerSealedExpression name subsumer)

@@ -58,6 +58,7 @@ instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind
     iJoinR1 = MkPolyMapT iJoinR1
     iJoinR2 = MkPolyMapT iJoinR2
     iJoinPair (MkPolyMapT aconv) (MkPolyMapT bconv) = MkPolyMapT $ iJoinPair aconv bconv
+    iJoinSwap = MkPolyMapT iJoinSwap
     iJoinSwapL = MkPolyMapT iJoinSwapL
     iJoinSwapR = MkPolyMapT iJoinSwapR
     iMeetL1 = MkPolyMapT iMeetL1
@@ -65,5 +66,6 @@ instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind
     iMeetR1 = MkPolyMapT iMeetR1
     iMeetR2 = MkPolyMapT iMeetR2
     iMeetPair (MkPolyMapT aconv) (MkPolyMapT bconv) = MkPolyMapT $ iMeetPair aconv bconv
+    iMeetSwap = MkPolyMapT iMeetSwap
     iMeetSwapL = MkPolyMapT iMeetSwapL
     iMeetSwapR = MkPolyMapT iMeetSwapR
