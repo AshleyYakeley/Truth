@@ -1,9 +1,9 @@
 default: full
 
 ifeq ($(nodocker),1)
-DOCKERFLAGS := --no-docker
+DOCKERFLAGS := --no-docker --ta --hide-successes
 else
-DOCKERFLAGS :=
+DOCKERFLAGS := --no-interleaved-output
 endif
 
 ifeq ($(single),1)
@@ -15,7 +15,7 @@ endif
 STACKFLAGS := $(DOCKERFLAGS) $(JOBFLAGS)
 
 ifeq ($(test),1)
-TESTFLAGS := --ta --hide-successes
+TESTFLAGS :=
 else
 TESTFLAGS := --no-run-tests
 endif
@@ -61,7 +61,7 @@ ${BINPATH}/licensor: docker-image
 out:
 	mkdir -p out
 
-out/licensing: out ${BINPATH}/licensor
+out/licensing: ${BINPATH}/licensor out
 	$< --quiet > $@
 
 .PHONY: licensing
@@ -70,9 +70,15 @@ licensing: out/licensing
 
 ${BINPATH}/pinafore: out docker-image
 	rm -rf .stack-work/logs
+ifeq ($(nodocker),1)
+else
 	rm -rf out/logs
-	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench --no-interleaved-output $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS) || (cp -r .stack-work/logs out/; exit 1)
+endif
+	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS) || (test -d .stack-work/logs && cp -r .stack-work/logs out/; exit 1)
+ifeq ($(nodocker),1)
+else
 	cp -r .stack-work/logs out/
+endif
 ifeq ($(bench),1)
 	test -n "$$(git status -s)" || (stack $(STACKFLAGS) exec -- benchgraph/adapters/criterion/export_benchs.sh pinafore/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
 endif
