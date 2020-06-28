@@ -297,4 +297,4 @@ instance forall (ground :: GroundTypeKind). (Eq (DolanName ground), IsDolanSubty
     solveUnifier u = fmap (\(a, subs) -> (a, reverse subs)) $ runWriterT $ runUnifier u
     unifierPosSubstitute bisubs t = return $ runIdentity $ bisubstitutesType bisubs t
     unifierNegSubstitute bisubs t = return $ runIdentity $ bisubstitutesType bisubs t
-    simplify = return . dolanSimplifyTypes @ground
+    simplify = dolanSimplifyTypes @ground

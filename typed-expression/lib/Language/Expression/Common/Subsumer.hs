@@ -31,7 +31,7 @@ class ( Monad (SubsumerMonad subsumer)
            SubsumerPosWitness subsumer inf
         -> SubsumerPosWitness subsumer decl
         -> SubsumerMonad subsumer (subsumer (SubsumerShim subsumer inf decl))
-    simplifyPosType :: SubsumerPosWitness subsumer t -> SubsumerPosShimWit subsumer t
+    simplifyPosType :: SubsumerPosWitness subsumer t -> SubsumerMonad subsumer (SubsumerPosShimWit subsumer t)
 
 type SubsumerNegShimWit subsumer = ShimWit (SubsumerShim subsumer) (SubsumerNegWitness subsumer) 'Negative
 
@@ -59,12 +59,10 @@ subsumeExpression ::
     => AnyW (SubsumerPosWitness subsumer)
     -> SubsumerSealedExpression name subsumer
     -> SubsumerMonad subsumer (SubsumerSealedExpression name subsumer)
-subsumeExpression (MkAnyW rawdecltype) (MkSealedExpression rawinfwit expr) =
-    case simplifyPosType @subsumer rawdecltype of
-        MkShimWit decltype _ ->
-            case chainShimWit (simplifyPosType @subsumer) rawinfwit of
-                MkShimWit inftype infconv -> do
-                    uab <- subsumePosWitnesses @subsumer inftype decltype
-                    (conv, subs) <- solveSubsumer uab
-                    expr' <- subsumerExpressionSubstitute @subsumer subs expr
-                    return $ MkSealedExpression (MkShimWit decltype $ MkPolarMap conv . infconv) expr'
+subsumeExpression (MkAnyW rawdecltype) (MkSealedExpression rawinfwit expr) = do
+    MkShimWit decltype _ <- simplifyPosType @subsumer rawdecltype
+    MkShimWit inftype infconv <- chainShimWitM (simplifyPosType @subsumer) rawinfwit
+    uab <- subsumePosWitnesses @subsumer inftype decltype
+    (conv, subs) <- solveSubsumer uab
+    expr' <- subsumerExpressionSubstitute @subsumer subs expr
+    return $ MkSealedExpression (MkShimWit decltype $ MkPolarMap conv . infconv) expr'

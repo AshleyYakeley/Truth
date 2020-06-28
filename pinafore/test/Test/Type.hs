@@ -105,12 +105,13 @@ simplifyTypeTest :: Text -> String -> TestTree
 simplifyTypeTest text e =
     testCase (unpack text) $ do
         simpexpr <-
-            throwResult $ do
-                mt <- runTestPinaforeSourceScoped $ parseType @'Positive text
+            throwResult $
+            runTestPinaforeSourceScoped $ do
+                mt <- parseType @'Positive text
                 case mt of
                     MkAnyW t ->
-                        return $
-                        dolanSimplifyTypes @PinaforeGroundType @PExpression $
+                        runRenamer @(TSRenamer PinaforeTypeSystem) $
+                        simplify @(TSUnifier PinaforeTypeSystem) @PExpression $
                         MkSealedExpression (mkShimWit t) $ ClosedExpression undefined
         case simpexpr of
             MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ exprShow t'

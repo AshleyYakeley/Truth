@@ -9,13 +9,33 @@ import Language.Expression.Dolan.Simplify.OneSidedTypeVars
 import Language.Expression.Dolan.Simplify.RollUpRecursion
 import Language.Expression.Dolan.Simplify.SharedTypeVars
 import Language.Expression.Dolan.Simplify.UnusedRecursion
+import Language.Expression.Dolan.Solver
+import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
-doMod :: Bool -> (a -> a) -> a -> a
-doMod False _ = id
-doMod True f = f
+type Simplifier :: GroundTypeKind -> Type
+newtype Simplifier ground = MkSimplifier
+    { runSimplifier :: forall a.
+                           PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a =>
+                                   a -> DolanTypeCheckM ground a
+    }
+
+pureSimplifier ::
+       forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
+    => (forall a. PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a => a -> a)
+    -> Simplifier ground
+pureSimplifier aa = MkSimplifier $ \a -> return $ aa a
+
+instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => Semigroup (Simplifier ground) where
+    MkSimplifier p <> MkSimplifier q =
+        MkSimplifier $ \a -> do
+            a' <- p a
+            q a'
+
+instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => Monoid (Simplifier ground) where
+    mempty = MkSimplifier return
 
 -- Simplification:
 --
@@ -46,13 +66,17 @@ doMod True f = f
 -- e.g. "F (rec a. F a)" => "rec a. F a"
 dolanSimplifyTypes ::
        forall (ground :: GroundTypeKind) a.
-       (IsDolanGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
+       (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
     => a
-    -> a
+    -> DolanTypeCheckM ground a
 dolanSimplifyTypes =
-    doMod True $
-    doMod True (rollUpRecursiveTypes @ground) .
-    doMod True (mergeDuplicateTypeVars @ground) .
-    doMod True (mergeSharedTypeVars @ground) .
-    doMod True (eliminateOneSidedTypeVars @ground) .
-    doMod True (mergeDuplicateGroundTypes @ground) . doMod True (eliminateUnusedRecursion @ground)
+    runSimplifier $
+    mif True $
+    mconcat
+        [ mif True $ pureSimplifier $ eliminateUnusedRecursion @ground
+        , mif True $ pureSimplifier $ mergeDuplicateGroundTypes @ground
+        , mif True $ pureSimplifier $ eliminateOneSidedTypeVars @ground
+        , mif True $ pureSimplifier $ mergeSharedTypeVars @ground
+        , mif True $ pureSimplifier $ mergeDuplicateTypeVars @ground
+        , mif True $ pureSimplifier $ rollUpRecursiveTypes @ground
+        ]

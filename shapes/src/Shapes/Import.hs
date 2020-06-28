@@ -195,3 +195,7 @@ shortAnd amb (a:aa) = do
     if b
         then shortAnd amb aa
         else return False
+
+mif :: Monoid a => Bool -> a -> a
+mif False _ = mempty
+mif True a = a

@@ -160,13 +160,21 @@ interactLoop inh outh echo = do
                                          else ""
                              SimplifyTypeInteractiveCommand polarity ttype -> do
                                  MkAnyW t <- lift $ liftRS ttype
-                                 liftIO $
-                                     hPutStrLn outh $
+                                 s :: Text <-
                                      case polarity of
-                                         PositiveType ->
-                                             unpack $ exprShow $ dolanSimplifyTypes @PinaforeGroundType $ MkAnyInKind t
-                                         NegativeType ->
-                                             unpack $ exprShow $ dolanSimplifyTypes @PinaforeGroundType $ MkAnyInKind t
+                                         PositiveType -> do
+                                             t' <-
+                                                 interactRunSourceScoped $
+                                                 runRenamer @(TSRenamer PinaforeTypeSystem) $
+                                                 simplify @(TSUnifier PinaforeTypeSystem) $ MkAnyInKind t
+                                             return $ exprShow t'
+                                         NegativeType -> do
+                                             t' <-
+                                                 interactRunSourceScoped $
+                                                 runRenamer @(TSRenamer PinaforeTypeSystem) $
+                                                 simplify @(TSUnifier PinaforeTypeSystem) $ MkAnyInKind t
+                                             return $ exprShow t'
+                                 liftIO $ hPutStrLn outh $ unpack s
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
                     [ Handler $ \(err :: PinaforeError) -> hPutStrLn outh $ show err
                     , Handler $ \err -> hPutStrLn outh $ "error: " <> ioeGetErrorString err
