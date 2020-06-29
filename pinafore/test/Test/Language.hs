@@ -474,7 +474,10 @@ testQueries =
               ]
         , testGroup
               "subsume"
-              [ testQuery "let a : [Integer|Text]; a = [] in a" $ Just "[]"
+              [ testQuery "let a : (); a = a in ()" $ Just "unit"
+              , testQuery "let a : Integer; a = a in ()" $ Just "unit"
+              , testQuery "let a : Integer|Text; a = a in ()" $ Just "unit"
+              , testQuery "let a : [Integer|Text]; a = [] in a" $ Just "[]"
               , testQuery "let a : [Integer]|[Text]; a = [] in a" $ Just "[]"
               , testSameType True "Integer" "Integer" ["56"]
               , testSameType False "[Integer|Text]" "[Integer|Text]" ["[]"]

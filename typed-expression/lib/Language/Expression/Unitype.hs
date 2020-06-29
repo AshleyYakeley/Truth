@@ -74,7 +74,7 @@ instance Monad m => Subsumer (UnitypeSubsumer m val) where
     subsumePosWitnesses Refl Refl = return $ pure id
 
 instance Monad m => SimplifySubsumer (UnitypeSubsumer m val) where
-    simplifyPosType t = return $ mkShimWit t
+    simplifyPosType _ t = return $ mkShimWit t
 
 class UnitypeValue val where
     applyValue :: val -> val -> val

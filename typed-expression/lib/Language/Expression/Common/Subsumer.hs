@@ -1,5 +1,6 @@
 module Language.Expression.Common.Subsumer
-    ( Subsumer(..)
+    ( TypePart(..)
+    , Subsumer(..)
     , SimplifySubsumer(..)
     , SubsumerOpenExpression
     , SubsumerSealedExpression
@@ -33,8 +34,14 @@ class ( Monad (SubsumerMonad subsumer)
         -> SubsumerPosWitness subsumer decl
         -> SubsumerMonad subsumer (subsumer (SubsumerShim subsumer inf decl))
 
+data TypePart
+    = TPWhole
+    | TPPartial
+    deriving (Eq)
+
 class Subsumer subsumer => SimplifySubsumer subsumer where
-    simplifyPosType :: SubsumerPosWitness subsumer t -> SubsumerMonad subsumer (SubsumerPosShimWit subsumer t)
+    simplifyPosType ::
+           TypePart -> SubsumerPosWitness subsumer t -> SubsumerMonad subsumer (SubsumerPosShimWit subsumer t)
 
 type SubsumerNegShimWit subsumer = ShimWit (SubsumerShim subsumer) (SubsumerNegWitness subsumer) 'Negative
 
@@ -62,8 +69,9 @@ subsumeExpression ::
     => AnyW (SubsumerPosWitness subsumer)
     -> SubsumerSealedExpression name subsumer
     -> SubsumerMonad subsumer (SubsumerSealedExpression name subsumer)
-subsumeExpression (MkAnyW rawdecltype) (MkSealedExpression (MkShimWit inftype infconv) expr) = do
-    MkShimWit decltype _ <- simplifyPosType @subsumer rawdecltype
+subsumeExpression (MkAnyW rawdecltype) (MkSealedExpression rawinfwit expr) = do
+    MkShimWit decltype _ <- simplifyPosType @subsumer TPWhole rawdecltype
+    MkShimWit inftype infconv <- chainShimWitM (simplifyPosType @subsumer TPPartial) rawinfwit
     uab <- subsumePosWitnesses @subsumer inftype decltype
     (conv, subs) <- solveSubsumer uab
     expr' <- subsumerExpressionSubstitute @subsumer subs expr

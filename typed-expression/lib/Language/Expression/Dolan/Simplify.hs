@@ -72,19 +72,20 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => M
 dolanSimplifyTypes ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
-    => a
+    => TypePart
+    -> a
     -> DolanTypeCheckM ground a
-dolanSimplifyTypes =
+dolanSimplifyTypes tp =
     runSimplifier $
     mif True $
     mconcat
         [ mif True $ pureSimplifier $ eliminateUnusedRecursion @ground
         , mif True $ MkSimplifier $ mergeDuplicateGroundTypes @ground
-        , mif True $ pureSimplifier $ eliminateOneSidedTypeVars @ground
-        , mif True $ pureSimplifier $ mergeSharedTypeVars @ground
+        , mif (tp == TPWhole) $ pureSimplifier $ eliminateOneSidedTypeVars @ground
+        , mif (tp == TPWhole) $ pureSimplifier $ mergeSharedTypeVars @ground
         , mif True $ pureSimplifier $ mergeDuplicateTypeVars @ground
         , mif True $ pureSimplifier $ rollUpRecursiveTypes @ground
         ]
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => SimplifySubsumer (DolanSubsumer ground) where
-    simplifyPosType t = dolanSimplifyTypes @ground $ mkShimWit @Type @(DolanPolyShim ground Type) @_ @'Positive t
+    simplifyPosType tp a = dolanSimplifyTypes @ground tp $ mkShimWit @Type @(DolanPolyShim ground Type) @_ @'Positive a
