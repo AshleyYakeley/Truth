@@ -62,9 +62,8 @@ subsumeExpression ::
     => AnyW (SubsumerPosWitness subsumer)
     -> SubsumerSealedExpression name subsumer
     -> SubsumerMonad subsumer (SubsumerSealedExpression name subsumer)
-subsumeExpression (MkAnyW rawdecltype) (MkSealedExpression rawinfwit expr) = do
+subsumeExpression (MkAnyW rawdecltype) (MkSealedExpression (MkShimWit inftype infconv) expr) = do
     MkShimWit decltype _ <- simplifyPosType @subsumer rawdecltype
-    MkShimWit inftype infconv <- chainShimWitM (simplifyPosType @subsumer) rawinfwit
     uab <- subsumePosWitnesses @subsumer inftype decltype
     (conv, subs) <- solveSubsumer uab
     expr' <- subsumerExpressionSubstitute @subsumer subs expr

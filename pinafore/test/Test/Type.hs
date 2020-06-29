@@ -222,30 +222,34 @@ testType =
               , textTypeTest
                     "\\v1 v2 v3 -> (([v1,v2],[v2,v3]),[v3,v1])"
                     "{} -> (a & c) -> (d & c) -> (a & d) -> (([c], [d]), [a])"
-              , badInterpretTest "\\x -> let y : Boolean | Number; y = x in y"
-              , badInterpretTest "\\x -> let y : (a -> a, Boolean | Number); y = x in y"
-              , badInterpretTest "\\x -> let y : (b -> b, Boolean | Number); y = x in y"
-              , textTypeTest
-                    "\\x -> let y : (Boolean, Number); y = (x,x) in y"
-                    "{} -> (Number & Boolean) -> (Boolean, Number)"
-              , textTypeTest
-                    "\\x1 -> \\x2 -> let y : (Boolean, Number); y = (x1,x2) in y"
-                    "{} -> Boolean -> Number -> (Boolean, Number)"
-              , textTypeTest
-                    "\\x1 -> \\x2 -> let y : (a -> a, a -> (a,a)); y = (x1,x2) in y"
-                    "{} -> (a -> a) -> (a -> (a, a)) -> (a -> a, a -> (a, a))"
-              , textTypeTest
-                    "\\x1 -> \\x2 -> let y : (a -> a, b -> (b,b)); y = (x1,x2) in y"
-                    "{} -> (a -> a) -> (b -> (b, b)) -> (a -> a, b -> (b, b))"
-              , textTypeTest
-                    "\\x1 -> \\x2 -> let y : (b -> b, a -> (a,a)); y = (x1,x2) in y"
-                    "{} -> (b -> b) -> (a -> (a, a)) -> (b -> b, a -> (a, a))"
-              , textTypeTest
-                    "\\x1 -> \\x2 -> let y : (a -> b, b -> a); y = (x1,x2) in y"
-                    "{} -> (a -> b) -> (b -> a) -> (a -> b, b -> a)"
-              , textTypeTest
-                    "\\x1 -> \\x2 -> let y : (c -> d, d -> c); y = (x1,x2) in y"
-                    "{} -> (c -> d) -> (d -> c) -> (c -> d, d -> c)"
+              , testGroup
+                    "inversion"
+                    [ textTypeTest "\\x -> let y : Integer; y = x in y" "{} -> Integer -> Integer"
+                    , badInterpretTest "\\x -> let y : Boolean | Number; y = x in y"
+                    , badInterpretTest "\\x -> let y : (a -> a, Boolean | Number); y = x in y"
+                    , badInterpretTest "\\x -> let y : (b -> b, Boolean | Number); y = x in y"
+                    , textTypeTest
+                          "\\x -> let y : (Boolean, Number); y = (x,x) in y"
+                          "{} -> (Number & Boolean) -> (Boolean, Number)"
+                    , textTypeTest
+                          "\\x1 -> \\x2 -> let y : (Boolean, Number); y = (x1,x2) in y"
+                          "{} -> Boolean -> Number -> (Boolean, Number)"
+                    , textTypeTest
+                          "\\x1 -> \\x2 -> let y : (a -> a, a -> (a,a)); y = (x1,x2) in y"
+                          "{} -> (a -> a) -> (a -> (a, a)) -> (a -> a, a -> (a, a))"
+                    , textTypeTest
+                          "\\x1 -> \\x2 -> let y : (a -> a, b -> (b,b)); y = (x1,x2) in y"
+                          "{} -> (a -> a) -> (b -> (b, b)) -> (a -> a, b -> (b, b))"
+                    , textTypeTest
+                          "\\x1 -> \\x2 -> let y : (b -> b, a -> (a,a)); y = (x1,x2) in y"
+                          "{} -> (b -> b) -> (a -> (a, a)) -> (b -> b, a -> (a, a))"
+                    , textTypeTest
+                          "\\x1 -> \\x2 -> let y : (a -> b, b -> a); y = (x1,x2) in y"
+                          "{} -> (a -> b) -> (b -> a) -> (a -> b, b -> a)"
+                    , textTypeTest
+                          "\\x1 -> \\x2 -> let y : (c -> d, d -> c); y = (x1,x2) in y"
+                          "{} -> (c -> d) -> (d -> c) -> (c -> d, d -> c)"
+                    ]
               , textTypeTest "let f : Entity; f = Nothing in f" "{} -> Entity"
               , textTypeTest "let f : Entity -> Entity; f = Just in f" "{} -> Entity -> Entity"
               , textTypeTest "let f : Entity; f = [] in f" "{} -> Entity"
@@ -278,14 +282,25 @@ testType =
               , simplifyTypeTest "(a,b) -> (a,a|b)" "(a, b) -> (a, a | b)"
               , simplifyTypeTest "(a,b) -> (b,a|b)" "(a, b) -> (b, a | b)"
               , simplifyTypeTest "(a&b) -> (a,b)" "a -> (a, a)"
-              , simplifyTypeTest "Literal | Integer" "Literal"
-              , simplifyTypeTest "Integer | Literal" "Literal"
-              , simplifyTypeTest "[Literal] | [Integer]" "[Literal]"
-              , simplifyTypeTest "[Integer] | [Literal]" "[Literal]"
-              , simplifyTypeTest "(Literal & Integer) -> ()" "Integer -> ()"
-              , simplifyTypeTest "(Integer & Literal) -> ()" "Integer -> ()"
-              , simplifyTypeTest "([Literal] & [Integer]) -> ()" "[Integer] -> ()"
-              , simplifyTypeTest "([Integer] & [Literal]) -> ()" "[Integer] -> ()"
+              , simplifyTypeTest "(a & Integer) -> Boolean" "Integer -> Boolean"
+              , simplifyTypeTest "(b & Integer) -> Integer" "Integer -> Integer"
+              , simplifyTypeTest "(a & Integer) -> b" "Integer -> None"
+              , simplifyTypeTest "(a & Integer) -> a" "(a & Integer) -> a"
+              , testGroup
+                    "subtype"
+                    [ simplifyTypeTest "Boolean | Integer" "Boolean | Integer"
+                    , simplifyTypeTest "Integer | Boolean" "Integer | Boolean"
+                    , simplifyTypeTest "(Boolean & Integer) -> ()" "(Boolean & Integer) -> ()"
+                    , simplifyTypeTest "(Integer & Boolean) -> ()" "(Integer & Boolean) -> ()"
+                    , simplifyTypeTest "Literal | Integer" "Literal"
+                    , simplifyTypeTest "Integer | Literal" "Literal"
+                    , simplifyTypeTest "[Literal] | [Integer]" "[Literal]"
+                    , simplifyTypeTest "[Integer] | [Literal]" "[Literal]"
+                    , simplifyTypeTest "(Literal & Integer) -> ()" "Integer -> ()"
+                    , simplifyTypeTest "(Integer & Literal) -> ()" "Integer -> ()"
+                    , simplifyTypeTest "([Literal] & [Integer]) -> ()" "[Integer] -> ()"
+                    , simplifyTypeTest "([Integer] & [Literal]) -> ()" "[Integer] -> ()"
+                    ]
               , testGroup
                     "recursive"
                     [ simplifyTypeTest "rec a. a" "None"
