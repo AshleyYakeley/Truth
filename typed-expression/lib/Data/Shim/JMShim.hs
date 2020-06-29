@@ -14,6 +14,11 @@ data JMShim k a b where
     FuncJMShim :: forall k (a :: k) (b :: k). String -> KindFunction a b -> JMShim k a b
     IdentityJMShim :: forall k (t :: k). JMShim k t t
     CoerceJMShim :: forall k (a :: k) (b :: k). String -> Coercion a b -> JMShim k a b
+    ComposeJMShim
+        :: forall k (a :: k) (b :: k) (c :: k). InKind b
+        => JMShim k b c
+        -> JMShim k a b
+        -> JMShim k a c -- first arg is never itself a ComposeJMShim
     InitFJMShim :: JMShim Type BottomType t
     TermFJMShim :: JMShim Type t TopType
     Join1JMShim :: JMShim Type t a -> JMShim Type t (JoinType a b)
@@ -35,6 +40,7 @@ instance Show (JMShim k a b) where
     show (FuncJMShim t _) = "[func " <> t <> "]"
     show IdentityJMShim = "id"
     show (CoerceJMShim t _) = "[coerce " <> t <> "]"
+    show (ComposeJMShim s1 s2) = "(compose " <> show s1 <> " " <> show s2 <> ")"
     show InitFJMShim = "initf"
     show TermFJMShim = "termf"
     show (Join1JMShim s) = "(join1 " <> show s <> ")"
@@ -56,8 +62,8 @@ instance CoercibleKind k => InCategory (JMShim k) where
         -> JMShim k a c
     p <.> IdentityJMShim = p
     IdentityJMShim <.> q = q
-    _ <.> InitFJMShim = InitFJMShim
-    TermFJMShim <.> _ = TermFJMShim
+    _ <.> InitFJMShim = initf
+    TermFJMShim <.> _ = termf
     ConsJMShim pvt pf pa <.> ConsJMShim qvt qf qa
         | Just Refl <- testEquality pvt qvt =
             case varianceInCategory @(JMShim Type) pvt of
@@ -67,15 +73,18 @@ instance CoercibleKind k => InCategory (JMShim k) where
         , Just qc <- enhancedCoercion q = CoerceJMShim (show p <> " . " <> show q) $ pc <.> qc
     Join1JMShim p <.> q = Join1JMShim $ p <.> q
     Join2JMShim p <.> q = Join2JMShim $ p <.> q
-    p <.> JoinFJMShim ta tb = JoinFJMShim (p <.> ta) (p <.> tb)
+    p <.> JoinFJMShim ta tb = joinf (p <.> ta) (p <.> tb)
     JoinFJMShim ap _ <.> Join1JMShim qa = ap <.> qa
     JoinFJMShim _ bp <.> Join2JMShim qb = bp <.> qb
     p <.> Meet1JMShim q = Meet1JMShim $ p <.> q
     p <.> Meet2JMShim q = Meet2JMShim $ p <.> q
-    MeetFJMShim ta tb <.> q = MeetFJMShim (ta <.> q) (tb <.> q)
+    MeetFJMShim ta tb <.> q = meetf (ta <.> q) (tb <.> q)
     Meet1JMShim aq <.> MeetFJMShim pa _ = aq <.> pa
     Meet2JMShim bq <.> MeetFJMShim _ pb = bq <.> pb
-    p <.> q = FuncJMShim (show p <> " . " <> show q) $ fromEnhanced p <.> fromEnhanced q
+    FuncJMShim tp p <.> FuncJMShim tq q = FuncJMShim (tp <> "." <> tq) $ p <.> q
+    f <.> ComposeJMShim p q = (f <.> p) <.> q
+    ComposeJMShim p q <.> f = ComposeJMShim p (q <.> f)
+    p <.> q = ComposeJMShim p q
 
 instance Category (JMShim Type) where
     id = cid
@@ -111,10 +120,12 @@ instance JoinMeetCategory (JMShim Type) where
     termf = TermFJMShim
     join1 = Join1JMShim cid
     join2 = Join2JMShim cid
-    joinf = JoinFJMShim
+    joinf (Join1JMShim IdentityJMShim) (Join2JMShim IdentityJMShim) = IdentityJMShim
+    joinf a b = JoinFJMShim a b
     meet1 = Meet1JMShim cid
     meet2 = Meet2JMShim cid
-    meetf = MeetFJMShim
+    meetf (Meet1JMShim IdentityJMShim) (Meet2JMShim IdentityJMShim) = IdentityJMShim
+    meetf a b = MeetFJMShim a b
     applf (Meet1JMShim p) q = applf p q <.> iMeetPair meet1 cid
     applf (ConsJMShim CovarianceType IdentityJMShim p) q = p <.> applf cid q
     applf (ConsJMShim CovarianceType (ConsJMShim ContravarianceType IdentityJMShim (MkCatDual pa)) pb) q =
@@ -143,6 +154,7 @@ instance CoercibleKind k => EnhancedFunction (JMShim k) where
         | Just c <- enhancedCoercion f = coercionToFunction c
     fromEnhanced (FuncJMShim _ f) = f
     fromEnhanced IdentityJMShim = cid
+    fromEnhanced (ComposeJMShim a b) = fromEnhanced a <.> fromEnhanced b
     fromEnhanced (CoerceJMShim _ c) = coercionToFunction c
     fromEnhanced InitFJMShim = initf
     fromEnhanced TermFJMShim = termf

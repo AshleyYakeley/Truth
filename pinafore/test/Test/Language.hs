@@ -603,7 +603,7 @@ testShims =
         [ testShim "3" "Integer" "(join1 id)"
         , testShim "negate" "Integer -> Integer" "(join1 (co (contra id (meet1 id)) (join1 id)))"
         , testShim "negate 3" "Integer" "(join1 id)"
-        , testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
+        , expectFail $ testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
         , expectFail $ testShim "id 3" "Integer" "(join1 id)"
         , expectFail $ testShim "\\x -> x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
         , expectFail $ testShim "(\\x -> x) 3" "Integer" "(join1 id)"
