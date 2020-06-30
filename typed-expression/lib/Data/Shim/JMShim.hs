@@ -83,7 +83,10 @@ instance CoercibleKind k => InCategory (JMShim k) where
     Meet2JMShim bq <.> MeetFJMShim _ pb = bq <.> pb
     FuncJMShim tp p <.> FuncJMShim tq q = FuncJMShim (tp <> "." <> tq) $ p <.> q
     f <.> ComposeJMShim p q = (f <.> p) <.> q
-    ComposeJMShim p q <.> f = ComposeJMShim p (q <.> f)
+    ComposeJMShim p q <.> f =
+        case q <.> f of
+            qf@(ComposeJMShim _ _) -> ComposeJMShim p qf
+            qf -> p <.> qf
     p <.> q = ComposeJMShim p q
 
 instance Category (JMShim Type) where
