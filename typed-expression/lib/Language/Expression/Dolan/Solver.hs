@@ -115,7 +115,8 @@ solveRecursiveTypes solvePlainTypes ta tb =
                     let
                         fixconv rconv rl = let
                             conv =
-                                polarPolyIsoSingle (invertPolarMap iconvb) <.> rconv (conv, rl) <.>
+                                fromEnhanced polarPolyIsoSingle (invertPolarMap iconvb) <.>
+                                rconv (toEnhanced "recursive" $ fromEnhanced conv, rl) <.>
                                 polarPolyIsoSingle iconva
                             in conv
                     return $ fmap fixconv erconv
