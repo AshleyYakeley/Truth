@@ -117,7 +117,7 @@ qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
     qApplyAllExpr qConsList [e, ee']
 
-type QBindings = TSBindings PinaforeTypeSystem
+type QBindings = Bindings PinaforeTypeSystem
 
 qBindExpr :: Name -> QExpr -> QBindings
 qBindExpr = singleBinding

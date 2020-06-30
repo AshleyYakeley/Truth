@@ -17,6 +17,3 @@ type DolanPolyIsoShim ground = PolyIso (DolanPolyShim ground)
 
 type DolanPolarMap :: GroundTypeKind -> Polarity -> ShimKind Type
 type DolanPolarMap ground = PolarMap (DolanPolyShim ground Type)
-
-type DolanName :: GroundTypeKind -> Type
-type family DolanName ground

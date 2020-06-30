@@ -83,8 +83,7 @@ subtypeDolanArguments sc gt argsa argsb = let
                case dolanVarianceInCategory @pshim vkt of
                    Dict -> fmap (\f -> f cid) $ subtypeArguments sc vkt dvm dvm argsa argsb
 
-class (IsDolanGroundType ground, MonadPlus (DolanM ground)) => IsDolanSubtypeGroundType (ground :: GroundTypeKind) where
-    type DolanM ground :: Type -> Type
+class (IsDolanGroundType ground) => IsDolanSubtypeGroundType (ground :: GroundTypeKind) where
     subtypeGroundTypes ::
            forall m pola polb dva gta a dvb gtb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
         => MFunction (DolanM ground) m

@@ -39,12 +39,14 @@ library:
       - Language.Expression.Common.NameWit
       - Language.Expression.Common.Named
       - Language.Expression.Common.Sealed
+      - Language.Expression.Common.TypeSystem
       - Language.Expression.Common.Renamer
+      - Language.Expression.Common.Simplifier
       - Language.Expression.Common.Unifier
       - Language.Expression.Common.Subsumer
       - Language.Expression.Common.Abstract
       - Language.Expression.Common.Bindings
-      - Language.Expression.Common.TypeSystem
+      - Language.Expression.Common.CompleteTypeSystem
       - Language.Expression.Common.Arguments
       - Language.Expression.Dolan.PShimWit
       - Language.Expression.Dolan.Covariance

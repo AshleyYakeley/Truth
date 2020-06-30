@@ -1,7 +1,8 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Unify
-    ( DolanUnifier
+    (
     ) where
 
 import Data.Shim
@@ -9,7 +10,6 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.Simplify
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
@@ -283,18 +283,12 @@ runUnifier (OpenExpression (NegativeBisubstitutionWitness oldvn (tq :: DolanShim
                    tell [bisub]
                    return $ ca meet2
 
-instance forall (ground :: GroundTypeKind). (Eq (DolanName ground), IsDolanSubtypeGroundType ground) =>
-             Unifier (DolanUnifier ground) where
-    type UnifierName (DolanUnifier ground) = DolanName ground
-    type UnifierMonad (DolanUnifier ground) = DolanTypeCheckM ground
-    type UnifierNegWitness (DolanUnifier ground) = DolanType ground 'Negative
-    type UnifierPosWitness (DolanUnifier ground) = DolanType ground 'Positive
-    type UnifierSubstitutions (DolanUnifier ground) = [UnifierBisubstitution ground]
-    type UnifierShim (DolanUnifier ground) = DolanPolyShim ground Type
+instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where
+    type Unifier (DolanTypeSystem ground) = DolanUnifier ground
+    type UnifierSubstitutions (DolanTypeSystem ground) = [UnifierBisubstitution ground]
     unifyNegWitnesses ta tb = return $ uuLiftNegShimWit $ joinMeetShimWit (mkShimWit ta) (mkShimWit tb)
     unifyPosWitnesses ta tb = return $ uuLiftPosShimWit $ joinMeetShimWit (mkShimWit ta) (mkShimWit tb)
     unifyPosNegWitnesses tq tp = fmap MkUUShim $ runSolver $ unifyTypes tq tp
     solveUnifier u = fmap (\(a, subs) -> (a, reverse subs)) $ runWriterT $ runUnifier u
     unifierPosSubstitute bisubs t = return $ runIdentity $ bisubstitutesType bisubs t
     unifierNegSubstitute bisubs t = return $ runIdentity $ bisubstitutesType bisubs t
-    simplify = dolanSimplifyTypes @ground TPWhole

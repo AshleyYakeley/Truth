@@ -1,9 +1,5 @@
 module Language.Expression.Common.Subsumer
-    ( TypePart(..)
-    , Subsumer(..)
-    , SimplifySubsumer(..)
-    , SubsumerOpenExpression
-    , SubsumerSealedExpression
+    ( SubsumeTypeSystem(..)
     , subsumeExpression
     ) where
 
@@ -11,68 +7,39 @@ import Data.Shim
 import Language.Expression.Common.Expression
 import Language.Expression.Common.Named
 import Language.Expression.Common.Sealed
+import Language.Expression.Common.Simplifier
+import Language.Expression.Common.TypeSystem
 import Shapes
 
-class ( Monad (SubsumerMonad subsumer)
-      , Applicative subsumer
-      , Category (SubsumerShim subsumer)
-      , InCategory (SubsumerShim subsumer)
-      ) => Subsumer subsumer where
-    type SubsumerMonad subsumer :: Type -> Type
-    type SubsumerNegWitness subsumer :: Type -> Type
-    type SubsumerPosWitness subsumer :: Type -> Type
-    type SubsumerSubstitutions subsumer :: Type
-    type SubsumerShim subsumer :: Type -> Type -> Type
-    solveSubsumer :: subsumer a -> SubsumerMonad subsumer (a, SubsumerSubstitutions subsumer)
+class (TypeSystem ts, Applicative (Subsumer ts)) => SubsumeTypeSystem ts where
+    type Subsumer ts :: Type -> Type
+    type SubsumerSubstitutions ts :: Type
+    solveSubsumer :: Subsumer ts a -> TSOuter ts (a, SubsumerSubstitutions ts)
     -- This should generate substitutions only for the inferred type, not the declared type.
-    subsumerNegSubstitute ::
-           SubsumerSubstitutions subsumer
-        -> SubsumerNegWitness subsumer t
-        -> SubsumerMonad subsumer (SubsumerNegShimWit subsumer t)
-    subsumePosWitnesses ::
-           SubsumerPosWitness subsumer inf
-        -> SubsumerPosWitness subsumer decl
-        -> SubsumerMonad subsumer (subsumer (SubsumerShim subsumer inf decl))
-
-data TypePart
-    = TPWhole
-    | TPPartial
-    deriving (Eq)
-
-class Subsumer subsumer => SimplifySubsumer subsumer where
-    simplifyPosType ::
-           TypePart -> SubsumerPosWitness subsumer t -> SubsumerMonad subsumer (SubsumerPosShimWit subsumer t)
-
-type SubsumerNegShimWit subsumer = ShimWit (SubsumerShim subsumer) (SubsumerNegWitness subsumer) 'Negative
-
-type SubsumerPosShimWit subsumer = ShimWit (SubsumerShim subsumer) (SubsumerPosWitness subsumer) 'Positive
-
-type SubsumerOpenExpression name subsumer = NamedExpression name (SubsumerNegShimWit subsumer)
-
-type SubsumerSealedExpression name subsumer
-     = SealedExpression name (SubsumerNegShimWit subsumer) (SubsumerPosShimWit subsumer)
+    subsumerNegSubstitute :: SubsumerSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)
+    subsumePosWitnesses :: TSPosWitness ts inf -> TSPosWitness ts decl -> TSOuter ts (Subsumer ts (TSShim ts inf decl))
 
 subsumerExpressionSubstitute ::
-       forall subsumer name a. Subsumer subsumer
-    => SubsumerSubstitutions subsumer
-    -> SubsumerOpenExpression name subsumer a
-    -> SubsumerMonad subsumer (SubsumerOpenExpression name subsumer a)
+       forall ts a. SubsumeTypeSystem ts
+    => SubsumerSubstitutions ts
+    -> TSOpenExpression ts a
+    -> TSOuter ts (TSOpenExpression ts a)
 subsumerExpressionSubstitute _ (ClosedExpression a) = return $ ClosedExpression a
 subsumerExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) = do
-    tw' <- chainShimWitM (subsumerNegSubstitute @subsumer subs) tw
-    expr' <- subsumerExpressionSubstitute @subsumer subs expr
+    tw' <- chainShimWitM (subsumerNegSubstitute @ts subs) tw
+    expr' <- subsumerExpressionSubstitute @ts subs expr
     return $ OpenExpression (MkNameWitness name tw') expr'
 
 -- Note the user's declared type will be simplified first, so they'll end up seeing a simplified version of the type they declared for their expression.
 subsumeExpression ::
-       forall subsumer name. SimplifySubsumer subsumer
-    => AnyW (SubsumerPosWitness subsumer)
-    -> SubsumerSealedExpression name subsumer
-    -> SubsumerMonad subsumer (SubsumerSealedExpression name subsumer)
+       forall ts. (SubsumeTypeSystem ts, SimplifyTypeSystem ts)
+    => AnyW (TSPosWitness ts)
+    -> TSSealedExpression ts
+    -> TSOuter ts (TSSealedExpression ts)
 subsumeExpression (MkAnyW rawdecltype) (MkSealedExpression rawinfwit expr) = do
-    MkShimWit decltype _ <- simplifyPosType @subsumer TPWhole rawdecltype
-    MkShimWit inftype infconv <- chainShimWitM (simplifyPosType @subsumer TPPartial) rawinfwit
-    uab <- subsumePosWitnesses @subsumer inftype decltype
-    (conv, subs) <- solveSubsumer uab
-    expr' <- subsumerExpressionSubstitute @subsumer subs expr
+    MkShimWit decltype _ <- simplifyPosType @ts TPWhole rawdecltype
+    MkShimWit inftype infconv <- chainShimWitM (simplifyPosType @ts TPPartial) rawinfwit
+    uab <- subsumePosWitnesses @ts inftype decltype
+    (conv, subs) <- solveSubsumer @ts uab
+    expr' <- subsumerExpressionSubstitute @ts subs expr
     return $ MkSealedExpression (MkShimWit decltype $ MkPolarMap conv . infconv) expr'

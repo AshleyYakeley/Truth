@@ -273,12 +273,10 @@ invertSubstitute bisub@(MkInvertSubstitution bn n' (st :: DolanPlainType ground 
                         pure $ \conv -> fa $ polarF conv convm <.> invertPolarMap (polarPolyIsoForwards bij)
 invertSubstitute bisub (OpenExpression subwit expr) = solverOpenExpression subwit $ invertSubstitute bisub expr
 
-instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => Subsumer (DolanSubsumer ground) where
-    type SubsumerMonad (DolanSubsumer ground) = DolanTypeCheckM ground
-    type SubsumerNegWitness (DolanSubsumer ground) = DolanType ground 'Negative
-    type SubsumerPosWitness (DolanSubsumer ground) = DolanType ground 'Positive
-    type SubsumerSubstitutions (DolanSubsumer ground) = [Bisubstitution ground (SubsumerM ground)]
-    type SubsumerShim (DolanSubsumer ground) = DolanPolyShim ground Type
+instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
+             SubsumeTypeSystem (DolanTypeSystem ground) where
+    type Subsumer (DolanTypeSystem ground) = DolanSubsumer ground
+    type SubsumerSubstitutions (DolanTypeSystem ground) = [Bisubstitution ground (SubsumerM ground)]
     solveSubsumer (ClosedExpression a) = return (a, [])
     solveSubsumer (OpenExpression (MkSubsumeWitness oldvar (tp :: DolanPlainType ground polarity t)) expr) =
         invertPolarity @polarity $
@@ -296,7 +294,8 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => S
                                  return $
                                      joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvar) tq)
                 expr' <- runSolver $ invertSubstitute (MkInvertSubstitution oldvar newvar tp cid) expr
-                (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ uninvertPolarMap polar2) expr'
+                (expr'', bisubs) <-
+                    solveSubsumer @(DolanTypeSystem ground) $ fmap (\fa -> fa $ uninvertPolarMap polar2) expr'
                 return (expr'', bisub : bisubs)
     subsumerNegSubstitute subs t = runSubsumerM $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = fmap (fmap unPolarMap) $ runSolver $ subsumeType tinf tdecl

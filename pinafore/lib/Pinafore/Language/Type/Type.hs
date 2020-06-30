@@ -31,8 +31,6 @@ type PinaforePatternConstructor = PatternConstructor Name (PinaforeShimWit 'Posi
 
 type PinaforePattern = SealedPattern Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
 
-type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
-
 type instance ScopeExpression PinaforeTypeSystem =
      PinaforeExpression
 

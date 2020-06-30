@@ -165,14 +165,14 @@ interactLoop inh outh echo = do
                                          PositiveType -> do
                                              t' <-
                                                  interactRunSourceScoped $
-                                                 runRenamer @(TSRenamer PinaforeTypeSystem) $
-                                                 simplify @(TSUnifier PinaforeTypeSystem) $ MkAnyInKind t
+                                                 runRenamer @PinaforeTypeSystem $
+                                                 simplify @PinaforeTypeSystem $ MkAnyInKind t
                                              return $ exprShow t'
                                          NegativeType -> do
                                              t' <-
                                                  interactRunSourceScoped $
-                                                 runRenamer @(TSRenamer PinaforeTypeSystem) $
-                                                 simplify @(TSUnifier PinaforeTypeSystem) $ MkAnyInKind t
+                                                 runRenamer @PinaforeTypeSystem $
+                                                 simplify @PinaforeTypeSystem $ MkAnyInKind t
                                              return $ exprShow t'
                                  liftIO $ hPutStrLn outh $ unpack s
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)

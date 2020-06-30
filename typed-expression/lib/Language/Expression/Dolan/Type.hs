@@ -1,6 +1,9 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Language.Expression.Dolan.Type where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.TypeSystem
@@ -20,6 +23,20 @@ data DolanType ground polarity t where
            SymbolType name
         -> DolanPlainType ground polarity (UVar Type name)
         -> DolanType ground polarity (UVar Type name)
+
+class (IsDolanPolyShim (DolanPolyShim ground), Eq (DolanName ground), MonadPlus (DolanM ground)) =>
+          IsDolanGroundType (ground :: GroundTypeKind) where
+    type DolanName ground :: Type
+    type DolanM ground :: Type -> Type
+    groundTypeVarianceType ::
+           forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). ground dv t -> DolanVarianceType dv
+    groundTypeVarianceMap ::
+           forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). ground dv t -> DolanVarianceMap dv t
+    groundTypeTestEquality ::
+           forall (dva :: DolanVariance) (ta :: DolanVarianceKind dva) (dvb :: DolanVariance) (tb :: DolanVarianceKind dvb).
+           ground dva ta
+        -> ground dvb tb
+        -> Maybe (dva :~: dvb, ta :~~: tb)
 
 plainRecursiveDolanType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -207,17 +224,6 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity). Is PolarityTy
     mappend = (<>)
     mempty = MkAnyW NilDolanPlainType
 
-class IsDolanPolyShim (DolanPolyShim ground) => IsDolanGroundType (ground :: GroundTypeKind) where
-    groundTypeVarianceType ::
-           forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). ground dv t -> DolanVarianceType dv
-    groundTypeVarianceMap ::
-           forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). ground dv t -> DolanVarianceMap dv t
-    groundTypeTestEquality ::
-           forall (dva :: DolanVariance) (ta :: DolanVarianceKind dva) (dvb :: DolanVariance) (tb :: DolanVarianceKind dvb).
-           ground dva ta
-        -> ground dvb tb
-        -> Maybe (dva :~: dvb, ta :~~: tb)
-
 mapDolanGroundArguments ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity dv gt t.
        (IsDolanGroundType ground, DolanVarianceInCategory pshim, Is PolarityType polarity)
@@ -265,3 +271,13 @@ mapDolanSingularTypeM ::
     -> m (PShimWit (pshim Type) (DolanSingularType ground) polarity t)
 mapDolanSingularTypeM ff (GroundDolanSingularType gt args) = mapDolanGroundArgumentsM ff gt args
 mapDolanSingularTypeM _ t@(VarDolanSingularType _) = return $ mkShimWit t
+
+type DolanTypeCheckM :: GroundTypeKind -> Type -> Type
+type DolanTypeCheckM ground = VarRenamerT (DolanTypeSystem ground) (DolanM ground)
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TypeSystem (DolanTypeSystem ground) where
+    type TSOuter (DolanTypeSystem ground) = DolanTypeCheckM ground
+    type TSNegWitness (DolanTypeSystem ground) = DolanType ground 'Negative
+    type TSPosWitness (DolanTypeSystem ground) = DolanType ground 'Positive
+    type TSShim (DolanTypeSystem ground) = DolanPolyShim ground Type
+    type TSName (DolanTypeSystem ground) = DolanName ground

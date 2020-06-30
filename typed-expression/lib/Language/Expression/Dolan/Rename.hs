@@ -89,11 +89,9 @@ renameDolanType t = do
     MkShimWit t' bij <- renameDolanIsoType t
     return $ MkShimWit t' $ polarPolyIsoForwards bij
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => Renamer (VarRenamerT (DolanTypeSystem ground)) where
-    type RenamerNamespaceT (VarRenamerT (DolanTypeSystem ground)) = VarNamespaceT (DolanTypeSystem ground)
-    type RenamerNegWitness (VarRenamerT (DolanTypeSystem ground)) = DolanType ground 'Negative
-    type RenamerPosWitness (VarRenamerT (DolanTypeSystem ground)) = DolanType ground 'Positive
-    type RenamerShim (VarRenamerT (DolanTypeSystem ground)) = DolanPolyShim ground Type
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => RenameTypeSystem (DolanTypeSystem ground) where
+    type RenamerT (DolanTypeSystem ground) = VarRenamerT (DolanTypeSystem ground)
+    type RenamerNamespaceT (DolanTypeSystem ground) = VarNamespaceT (DolanTypeSystem ground)
     renameNegWitness = renameDolanType
     renamePosWitness = renameDolanType
     renameNewVar = do

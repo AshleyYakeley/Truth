@@ -43,8 +43,6 @@ module Language.Expression.Dolan
     , SubtypeContext(..)
     , subtypeDolanArguments
     , DolanTypeSystem
-    , dolanSimplifyTypes
-    , DolanName
     , IsDolanGroundType(..)
     , IsDolanFunctionGroundType(..)
     , IsDolanSubtypeGroundType(..)
@@ -63,23 +61,23 @@ import Language.Expression.Dolan.Nonpolar
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.RangeF
 import Language.Expression.Dolan.Rename ()
-import Language.Expression.Dolan.Simplify
-import Language.Expression.Dolan.Subsume
+import Language.Expression.Dolan.Simplify ()
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unify
+import Language.Expression.Dolan.Unify ()
 import Language.Expression.Dolan.Variance
 import Shapes
+
+instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
+             AbstractTypeSystem (DolanTypeSystem ground) where
+    type TSInner (DolanTypeSystem ground) = DolanM ground
 
 class (Eq (DolanName ground), IsDolanSubtypeGroundType ground) => IsDolanFunctionGroundType (ground :: GroundTypeKind) where
     functionGroundType :: ground '[ 'Contravariance, 'Covariance] (->)
 
-instance forall (ground :: GroundTypeKind). IsDolanFunctionGroundType ground => TypeSystem (DolanTypeSystem ground) where
-    type TSRenamer (DolanTypeSystem ground) = VarRenamerT (DolanTypeSystem ground)
-    type TSUnifier (DolanTypeSystem ground) = DolanUnifier ground
-    type TSScoped (DolanTypeSystem ground) = DolanM ground
-    type TSSubsumer (DolanTypeSystem ground) = DolanSubsumer ground
+instance forall (ground :: GroundTypeKind). IsDolanFunctionGroundType ground =>
+             CompleteTypeSystem (DolanTypeSystem ground) where
     tsFunctionPosWitness ta tb =
         singleDolanShimWit $
         mkShimWit $

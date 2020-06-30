@@ -3,6 +3,8 @@ module Pinafore.Language.Type.Ground where
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.Name
+import Pinafore.Language.Scope
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Show
@@ -53,9 +55,13 @@ data PinaforeGroundType dv t where
     WindowPinaforeGroundType :: PinaforeGroundType '[] PinaforeWindow
     MenuItemPinaforeGroundType :: PinaforeGroundType '[] MenuEntry
 
+type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
+
 type instance DolanPolyShim PinaforeGroundType = PinaforePolyShim
 
 instance IsDolanGroundType PinaforeGroundType where
+    type DolanName PinaforeGroundType = Name
+    type DolanM PinaforeGroundType = SourceScoped PinaforeTypeSystem
     groundTypeVarianceMap ::
            forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). PinaforeGroundType dv f -> DolanVarianceMap dv f
     groundTypeVarianceMap (SimpleGroundType _ dvm _ _) = dvm

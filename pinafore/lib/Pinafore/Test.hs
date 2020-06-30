@@ -11,7 +11,6 @@ module Pinafore.Test
     , PinaforeShimWit
     , PinaforeScoped
     , PinaforeSourceScoped
-    , dolanSimplifyTypes
     , toJMShimWit
     , module Pinafore.Test
     ) where

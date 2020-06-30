@@ -1,26 +1,26 @@
 module Language.Expression.Common.Unifier where
 
 import Data.Shim
-import Language.Expression.Common.Named
-import Language.Expression.Common.Sealed
+import Language.Expression.Common.Simplifier
+import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-newtype UUShim (unifier :: Type -> Type) (a :: Type) (b :: Type) = MkUUShim
-    { uuGetShim :: unifier (UnifierShim unifier a b)
+newtype UUShim (ts :: Type) (a :: Type) (b :: Type) = MkUUShim
+    { uuGetShim :: Unifier ts (TSShim ts a b)
     }
 
-instance Unifier unifier => Category (UUShim unifier) where
+instance UnifyTypeSystem ts => Category (UUShim ts) where
     id = MkUUShim $ pure cid
     MkUUShim ubc . MkUUShim uab = MkUUShim $ liftA2 (<.>) ubc uab
 
-instance Unifier unifier => InCategory (UUShim unifier) where
+instance UnifyTypeSystem ts => InCategory (UUShim ts) where
     cid = id
     (<.>) = (.)
 
-instance Unifier unifier => JoinMeetIsoCategory (UUShim unifier)
+instance UnifyTypeSystem ts => JoinMeetIsoCategory (UUShim ts)
 
-instance Unifier unifier => JoinMeetCategory (UUShim unifier) where
+instance UnifyTypeSystem ts => JoinMeetCategory (UUShim ts) where
     initf = MkUUShim $ pure initf
     termf = MkUUShim $ pure termf
     join1 = MkUUShim $ pure join1
@@ -31,138 +31,95 @@ instance Unifier unifier => JoinMeetCategory (UUShim unifier) where
     meetf (MkUUShim uar) (MkUUShim ubr) = MkUUShim $ liftA2 meetf uar ubr
     applf (MkUUShim uar) (MkUUShim ubr) = MkUUShim $ liftA2 applf uar ubr
 
-uuLiftShim :: Unifier unifier => UnifierShim unifier a b -> UUShim unifier a b
+uuLiftShim :: UnifyTypeSystem ts => TSShim ts a b -> UUShim ts a b
 uuLiftShim conv = MkUUShim $ pure conv
 
-type UUNegShimWit unifier = ShimWit (UUShim unifier) (UnifierNegWitness unifier) 'Negative
+type UUNegShimWit ts = ShimWit (UUShim ts) (TSNegWitness ts) 'Negative
 
-type UUPosShimWit unifier = ShimWit (UUShim unifier) (UnifierPosWitness unifier) 'Positive
+type UUPosShimWit ts = ShimWit (UUShim ts) (TSPosWitness ts) 'Positive
 
-uuLiftNegShimWit :: Unifier unifier => UnifierNegShimWit unifier t -> UUNegShimWit unifier t
+uuLiftNegShimWit :: UnifyTypeSystem ts => TSNegShimWit ts t -> UUNegShimWit ts t
 uuLiftNegShimWit t = unNegShimWit t $ \wt conv -> mkNegShimWit wt $ uuLiftShim conv
 
-uuLiftPosShimWit :: Unifier unifier => UnifierPosShimWit unifier t -> UUPosShimWit unifier t
+uuLiftPosShimWit :: UnifyTypeSystem ts => TSPosShimWit ts t -> UUPosShimWit ts t
 uuLiftPosShimWit t = unPosShimWit t $ \wt conv -> mkPosShimWit wt $ uuLiftShim conv
 
-uuGetNegShimWit :: Unifier unifier => UUNegShimWit unifier t -> unifier (UnifierNegShimWit unifier t)
+uuGetNegShimWit :: UnifyTypeSystem ts => UUNegShimWit ts t -> Unifier ts (TSNegShimWit ts t)
 uuGetNegShimWit t = unNegShimWit t $ \wt (MkUUShim uconv) -> fmap (\conv -> mkNegShimWit wt conv) uconv
 
-uuGetPosShimWit :: Unifier unifier => UUPosShimWit unifier t -> unifier (UnifierPosShimWit unifier t)
+uuGetPosShimWit :: UnifyTypeSystem ts => UUPosShimWit ts t -> Unifier ts (TSPosShimWit ts t)
 uuGetPosShimWit t = unPosShimWit t $ \wt (MkUUShim uconv) -> fmap (\conv -> mkPosShimWit wt conv) uconv
 
-class (Monad (UnifierMonad unifier), Applicative unifier, Eq (UnifierName unifier), Shim (UnifierShim unifier)) =>
-          Unifier (unifier :: Type -> Type) where
-    type UnifierName unifier :: Type
-    type UnifierMonad unifier :: Type -> Type
-    type UnifierNegWitness unifier :: Type -> Type
-    type UnifierPosWitness unifier :: Type -> Type
-    type UnifierSubstitutions unifier :: Type
-    type UnifierShim unifier :: Type -> Type -> Type
-    unifyNegWitnesses ::
-           UnifierNegWitness unifier a
-        -> UnifierNegWitness unifier b
-        -> UnifierMonad unifier (UUNegShimWit unifier (MeetType a b))
-    unifyPosWitnesses ::
-           UnifierPosWitness unifier a
-        -> UnifierPosWitness unifier b
-        -> UnifierMonad unifier (UUPosShimWit unifier (JoinType a b))
-    unifyPosNegWitnesses ::
-           UnifierPosWitness unifier a -> UnifierNegWitness unifier b -> UnifierMonad unifier (UUShim unifier a b)
-    solveUnifier :: unifier a -> UnifierMonad unifier (a, UnifierSubstitutions unifier)
-    unifierPosSubstitute ::
-           UnifierSubstitutions unifier
-        -> UnifierPosWitness unifier t
-        -> UnifierMonad unifier (UnifierPosShimWit unifier t)
-    unifierNegSubstitute ::
-           UnifierSubstitutions unifier
-        -> UnifierNegWitness unifier t
-        -> UnifierMonad unifier (UnifierNegShimWit unifier t)
-    simplify ::
-           forall a. UnifierMappable unifier a
-        => a
-        -> UnifierMonad unifier a
+class (TypeSystem ts, Applicative (Unifier ts), Shim (TSShim ts)) => UnifyTypeSystem (ts :: Type) where
+    type Unifier ts :: Type -> Type
+    type UnifierSubstitutions ts :: Type
+    unifyNegWitnesses :: TSNegWitness ts a -> TSNegWitness ts b -> TSOuter ts (UUNegShimWit ts (MeetType a b))
+    unifyPosWitnesses :: TSPosWitness ts a -> TSPosWitness ts b -> TSOuter ts (UUPosShimWit ts (JoinType a b))
+    unifyPosNegWitnesses :: TSPosWitness ts a -> TSNegWitness ts b -> TSOuter ts (UUShim ts a b)
+    solveUnifier :: Unifier ts a -> TSOuter ts (a, UnifierSubstitutions ts)
+    unifierPosSubstitute :: UnifierSubstitutions ts -> TSPosWitness ts t -> TSOuter ts (TSPosShimWit ts t)
+    unifierNegSubstitute :: UnifierSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)
 
 unifyUUNegShimWit ::
-       forall unifier a b. Unifier unifier
-    => UUNegShimWit unifier a
-    -> UUNegShimWit unifier b
-    -> UnifierMonad unifier (UUNegShimWit unifier (MeetType a b))
+       forall ts a b. UnifyTypeSystem ts
+    => UUNegShimWit ts a
+    -> UUNegShimWit ts b
+    -> TSOuter ts (UUNegShimWit ts (MeetType a b))
 unifyUUNegShimWit (MkShimWit wa conva) (MkShimWit wb convb) = do
-    uab <- unifyNegWitnesses @unifier wa wb
+    uab <- unifyNegWitnesses @ts wa wb
     return $ mapShimWit (iPolarPair conva convb) uab
 
 unifyUUPosShimWit ::
-       forall unifier a b. Unifier unifier
-    => UUPosShimWit unifier a
-    -> UUPosShimWit unifier b
-    -> UnifierMonad unifier (UUPosShimWit unifier (JoinType a b))
+       forall ts a b. UnifyTypeSystem ts
+    => UUPosShimWit ts a
+    -> UUPosShimWit ts b
+    -> TSOuter ts (UUPosShimWit ts (JoinType a b))
 unifyUUPosShimWit (MkShimWit wa conva) (MkShimWit wb convb) = do
-    uab <- unifyPosWitnesses @unifier wa wb
+    uab <- unifyPosWitnesses @ts wa wb
     return $ mapShimWit (iPolarPair conva convb) uab
 
 unifyUUPosNegShimWit ::
-       forall unifier a b. Unifier unifier
-    => UUPosShimWit unifier a
-    -> UUNegShimWit unifier b
-    -> UnifierMonad unifier (UUShim unifier a b)
+       forall ts a b. UnifyTypeSystem ts
+    => UUPosShimWit ts a
+    -> UUNegShimWit ts b
+    -> TSOuter ts (UUShim ts a b)
 unifyUUPosNegShimWit ta tb =
     unPosShimWit ta $ \wa conva ->
         unNegShimWit tb $ \wb convb -> do
-            uab <- unifyPosNegWitnesses @unifier wa wb
+            uab <- unifyPosNegWitnesses @ts wa wb
             return $ convb . uab . conva
 
-type UnifierNegShimWit unifier = ShimWit (UnifierShim unifier) (UnifierNegWitness unifier) 'Negative
-
-type UnifierPosShimWit unifier = ShimWit (UnifierShim unifier) (UnifierPosWitness unifier) 'Positive
-
-type UnifierMappable unifier = WitnessMappable (UnifierPosShimWit unifier) (UnifierNegShimWit unifier)
-
-type UnifierOpenExpression unifier = NamedExpression (UnifierName unifier) (UnifierNegShimWit unifier)
-
-type UnifierSealedExpression unifier
-     = SealedExpression (UnifierName unifier) (UnifierNegShimWit unifier) (UnifierPosShimWit unifier)
-
-type UnifierOpenPattern unifier = NamedPattern (UnifierName unifier) (UnifierPosShimWit unifier)
-
-type UnifierSealedPattern unifier
-     = SealedPattern (UnifierName unifier) (UnifierPosShimWit unifier) (UnifierNegShimWit unifier)
-
-type UnifierPatternConstructor unifier
-     = PatternConstructor (UnifierName unifier) (UnifierPosShimWit unifier) (UnifierNegShimWit unifier)
-
 solveUnifyPosNegShimWit ::
-       forall unifier a b. Unifier unifier
-    => UnifierPosShimWit unifier a
-    -> UnifierNegShimWit unifier b
-    -> UnifierMonad unifier (UnifierShim unifier a b)
+       forall ts a b. UnifyTypeSystem ts
+    => TSPosShimWit ts a
+    -> TSNegShimWit ts b
+    -> TSOuter ts (TSShim ts a b)
 solveUnifyPosNegShimWit wa wb = do
-    MkUUShim uab <- unifyUUPosNegShimWit @unifier (uuLiftPosShimWit wa) (uuLiftNegShimWit wb)
-    (ab, _) <- solveUnifier uab
+    MkUUShim uab <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit wa) (uuLiftNegShimWit wb)
+    (ab, _) <- solveUnifier @ts uab
     return ab
 
 unifierSubstitute ::
-       forall unifier a. (Unifier unifier, UnifierMappable unifier a)
-    => UnifierSubstitutions unifier
+       forall ts a. (UnifyTypeSystem ts, TSMappable ts a)
+    => UnifierSubstitutions ts
     -> a
-    -> UnifierMonad unifier a
+    -> TSOuter ts a
 unifierSubstitute subs =
-    mapWitnessesM
-        (chainShimWitM $ unifierPosSubstitute @unifier subs)
-        (chainShimWitM $ unifierNegSubstitute @unifier subs)
+    mapWitnessesM (chainShimWitM $ unifierPosSubstitute @ts subs) (chainShimWitM $ unifierNegSubstitute @ts subs)
 
 unifierSubstituteAndSimplify ::
-       forall unifier a. (Unifier unifier, UnifierMappable unifier a)
-    => UnifierSubstitutions unifier
+       forall ts a. (UnifyTypeSystem ts, SimplifyTypeSystem ts, TSMappable ts a)
+    => UnifierSubstitutions ts
     -> a
-    -> UnifierMonad unifier a
+    -> TSOuter ts a
 unifierSubstituteAndSimplify subs a = do
-    a' <- unifierSubstitute @unifier subs a
-    simplify @unifier a'
+    a' <- unifierSubstitute @ts subs a
+    simplify @ts a'
 
 unifierSolve ::
-       forall unifier a. (Unifier unifier, UnifierMappable unifier a)
-    => unifier a
-    -> UnifierMonad unifier a
+       forall ts a. (UnifyTypeSystem ts, SimplifyTypeSystem ts, TSMappable ts a)
+    => Unifier ts a
+    -> TSOuter ts a
 unifierSolve ua = do
-    (a, subs) <- solveUnifier @unifier ua
-    unifierSubstituteAndSimplify @unifier subs a
+    (a, subs) <- solveUnifier @ts ua
+    unifierSubstituteAndSimplify @ts subs a

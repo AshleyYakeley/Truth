@@ -17,9 +17,6 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
-type DolanTypeCheckM :: GroundTypeKind -> Type -> Type
-type DolanTypeCheckM ground = VarRenamerT (DolanTypeSystem ground) (DolanM ground)
-
 liftTypeCheck ::
        forall (ground :: GroundTypeKind) a. Monad (DolanM ground)
     => DolanM ground a

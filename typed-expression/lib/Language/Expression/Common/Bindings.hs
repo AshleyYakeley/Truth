@@ -12,57 +12,55 @@ import Data.Shim.JoinMeet
 import Language.Expression.Common.Abstract
 import Language.Expression.Common.Renamer
 import Language.Expression.Common.Sealed
+import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.Unifier
 import Shapes
 
-data Binding (unifier :: Type -> Type) where
-    MkBinding :: UnifierName unifier -> UnifierSealedExpression unifier -> Binding unifier
+data Binding (ts :: Type) where
+    MkBinding :: TSName ts -> TSSealedExpression ts -> Binding ts
 
-newtype Bindings unifier =
-    MkBindings [Binding unifier]
+newtype Bindings ts =
+    MkBindings [Binding ts]
     deriving (Semigroup, Monoid)
 
-singleBinding :: UnifierName unifier -> UnifierSealedExpression unifier -> Bindings unifier
+singleBinding :: TSName ts -> TSSealedExpression ts -> Bindings ts
 singleBinding name expr = MkBindings $ pure $ MkBinding name expr
 
-bindingsMap ::
-       Ord (UnifierName unifier) => Bindings unifier -> Map (UnifierName unifier) (UnifierSealedExpression unifier)
+bindingsMap :: Ord (TSName ts) => Bindings ts -> Map (TSName ts) (TSSealedExpression ts)
 bindingsMap (MkBindings bb) = mapFromList $ fmap (\(MkBinding n e) -> (n, e)) bb
 
-data UnifyExpression unifier a =
-    forall t. MkUnifyExpression (unifier t)
-                                (UnifierOpenExpression unifier (t -> a))
+data UnifyExpression ts a =
+    forall t. MkUnifyExpression (Unifier ts t)
+                                (TSOpenExpression ts (t -> a))
 
-exprUnifyExpression :: Unifier unifier => UnifierOpenExpression unifier a -> UnifyExpression unifier a
+exprUnifyExpression :: UnifyTypeSystem ts => TSOpenExpression ts a -> UnifyExpression ts a
 exprUnifyExpression expr = MkUnifyExpression (pure ()) $ fmap (\a _ -> a) expr
 
-unifierExpression :: Functor unifier => UnifyExpression unifier a -> unifier (UnifierOpenExpression unifier a)
+unifierExpression :: Functor (Unifier ts) => UnifyExpression ts a -> Unifier ts (TSOpenExpression ts a)
 unifierExpression (MkUnifyExpression uconv expr) = fmap (\conv -> fmap (\conva -> conva conv) expr) uconv
 
-data Bound unifier =
-    forall vals. MkBound (forall a.
-                                  UnifierOpenExpression unifier a -> UnifierMonad unifier (UnifyExpression unifier (vals -> a)))
-                         (UnifierOpenExpression unifier vals)
-                         (UnifierSubstitutions unifier -> UnifierOpenExpression unifier vals -> UnifierMonad unifier (Bindings unifier))
+data Bound ts =
+    forall vals. MkBound (forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (vals -> a)))
+                         (TSOpenExpression ts vals)
+                         (UnifierSubstitutions ts -> TSOpenExpression ts vals -> TSOuter ts (Bindings ts))
 
 mkBound ::
-       forall renamer unifier m. UnifierRenamerConstraint unifier renamer m
-    => [Binding unifier]
-    -> renamer m (Bound unifier)
+       forall ts. AbstractTypeSystem ts
+    => [Binding ts]
+    -> TSOuter ts (Bound ts)
 mkBound [] =
     withTransConstraintTM @Monad $
     return $ MkBound (\e -> return $ exprUnifyExpression $ fmap (\a _ -> a) e) (pure ()) (\_ _ -> return mempty)
 mkBound ((MkBinding name sexpr):bb) =
     withTransConstraintTM @Monad $ do
-        MkSealedExpression twt expr <- rename sexpr
+        MkSealedExpression twt expr <- rename @ts sexpr
         MkBound abstractNames exprs getbinds <- mkBound bb
         return $ let
-            abstractNames' ::
-                   forall a. UnifierOpenExpression unifier a -> UnifierMonad unifier (UnifyExpression unifier (_ -> a))
+            abstractNames' :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (_ -> a))
             abstractNames' e = do
                 MkUnifyExpression uconvRest e' <- abstractNames e
-                MkAbstractResult vwt e'' <- abstractNamedExpression @unifier name e'
-                uconvFirst <- unifyUUPosNegShimWit @unifier (uuLiftPosShimWit twt) vwt
+                MkAbstractResult vwt e'' <- abstractNamedExpression @ts name e'
+                uconvFirst <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit twt) vwt
                 let
                     uresult = do
                         convFirst <- uuGetShim uconvFirst
@@ -72,42 +70,39 @@ mkBound ((MkBinding name sexpr):bb) =
                     MkUnifyExpression uresult $
                     fmap (\ff (convFirst, convRest) ~(t, vals) -> ff (fromEnhanced convFirst t) convRest vals) e''
             exprs' = (,) <$> expr <*> exprs
-            getbinds' ::
-                   UnifierSubstitutions unifier
-                -> UnifierOpenExpression unifier _
-                -> UnifierMonad unifier (Bindings unifier)
+            getbinds' :: UnifierSubstitutions ts -> TSOpenExpression ts _ -> TSOuter ts (Bindings ts)
             getbinds' subs fexpr = do
                 b1 <- getbinds subs (fmap snd fexpr)
-                e <- unifierSubstituteAndSimplify @unifier subs $ MkSealedExpression twt $ fmap fst fexpr
+                e <- unifierSubstituteAndSimplify @ts subs $ MkSealedExpression twt $ fmap fst fexpr
                 return $ b1 <> singleBinding name e
             in MkBound abstractNames' exprs' getbinds'
 
 boundToBindings ::
-       forall unifier. Unifier unifier
-    => Bound unifier
-    -> UnifierMonad unifier (Bindings unifier)
+       forall ts. UnifyTypeSystem ts
+    => Bound ts
+    -> TSOuter ts (Bindings ts)
 boundToBindings (MkBound abstractNames exprs getbinds) = do
     uexprvv <- abstractNames exprs
-    (fexpr, subs) <- solveUnifier @unifier $ unifierExpression uexprvv
+    (fexpr, subs) <- solveUnifier @ts $ unifierExpression uexprvv
     getbinds subs $ fmap fix fexpr
 
 -- for a recursive component
 bindingsComponentLetSealedExpression ::
-       forall renamer unifier m. (Ord (UnifierName unifier), UnifierRenamerConstraint unifier renamer m)
-    => Bindings unifier
-    -> m (Map (UnifierName unifier) (UnifierSealedExpression unifier))
+       forall ts. (Ord (TSName ts), AbstractTypeSystem ts)
+    => Bindings ts
+    -> TSInner ts (Map (TSName ts) (TSSealedExpression ts))
 bindingsComponentLetSealedExpression (MkBindings bindings) =
-    runRenamer @renamer $
+    runRenamer @ts $
     withTransConstraintTM @Monad $ do
         bound <- mkBound bindings
         bindings' <- boundToBindings bound
         return $ bindingsMap bindings'
 
 valuesLetSealedExpression ::
-       forall unifier. Unifier unifier
-    => Map (UnifierName unifier) (AnyValue (UnifierPosShimWit unifier))
-    -> Map (UnifierName unifier) (UnifierSealedExpression unifier)
+       forall ts. UnifyTypeSystem ts
+    => Map (TSName ts) (AnyValue (TSPosShimWit ts))
+    -> Map (TSName ts) (TSSealedExpression ts)
 valuesLetSealedExpression = fmap constSealedExpression
 
-bindingsNames :: Bindings unifier -> [UnifierName unifier]
+bindingsNames :: Bindings ts -> [TSName ts]
 bindingsNames (MkBindings bb) = fmap (\(MkBinding name _) -> name) bb

@@ -10,7 +10,6 @@ import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
-import Pinafore.Language.Name
 import Pinafore.Language.Scope
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
@@ -112,7 +111,6 @@ entityGroundSubtype sslift _ cta ga argsa ctb gb argsb =
         (exprShow $ GroundDolanSingularType (EntityPinaforeGroundType ctb gb) argsb)
 
 instance IsDolanSubtypeGroundType PinaforeGroundType where
-    type DolanM PinaforeGroundType = PinaforeSourceScoped
     subtypeGroundTypes ::
            forall m pola polb dva gta a dvb gtb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
         => MFunction PinaforeSourceScoped m
@@ -149,8 +147,6 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
                 NegativeType -> Negative
         in throw $ TypeSubsumeError pol (exprShow tinf) (exprShow tdecl)
     throwTypeNotInvertible t = throw $ TypeNotInvertibleError $ exprShow t
-
-type instance DolanName PinaforeGroundType = Name
 
 instance IsDolanFunctionGroundType PinaforeGroundType where
     functionGroundType = FuncPinaforeGroundType
