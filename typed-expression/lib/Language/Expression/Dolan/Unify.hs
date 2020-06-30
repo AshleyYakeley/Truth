@@ -239,13 +239,13 @@ bisubstituteUnifier bisub@(MkBisubstitution bn (Identity tp) _) (OpenExpression 
         val' <- bisubstituteUnifier bisub uval
         pure $ val' conv
 bisubstituteUnifier bisub (OpenExpression (PositiveBisubstitutionWitness vn tp) uval) = let
-    wp' = runIdentity $ bisubstituteShimWit bisub tp
+    wp' = runIdentity $ bisubstituteType bisub tp
     in unPosShimWit wp' $ \tp' conv -> do
            val' <- bisubstituteUnifier bisub uval
            pv <- solverLiftExpression $ bisubstitutePositiveVar vn tp'
            pure $ val' $ pv <.> conv
 bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) uval) = let
-    wp' = runIdentity $ bisubstituteShimWit bisub tp
+    wp' = runIdentity $ bisubstituteType bisub tp
     in unNegShimWit wp' $ \tp' conv -> do
            val' <- bisubstituteUnifier bisub uval
            pv <- solverLiftExpression $ bisubstituteNegativeVar vn tp'
