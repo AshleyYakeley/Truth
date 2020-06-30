@@ -36,9 +36,9 @@ subsumeExpression ::
     => AnyW (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSOuter ts (TSSealedExpression ts)
-subsumeExpression (MkAnyW rawdecltype) (MkSealedExpression rawinfwit expr) = do
-    MkShimWit decltype _ <- simplifyPosType @ts TPWhole rawdecltype
-    MkShimWit inftype infconv <- chainShimWitM (simplifyPosType @ts TPPartial) rawinfwit
+subsumeExpression (MkAnyW rawdecltype) rawinfexpr = do
+    MkShimWit decltype _ <- simplify @ts $ mkShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
+    MkSealedExpression (MkShimWit inftype infconv) expr <- simplify @ts rawinfexpr
     uab <- subsumePosWitnesses @ts inftype decltype
     (conv, subs) <- solveSubsumer @ts uab
     expr' <- subsumerExpressionSubstitute @ts subs expr

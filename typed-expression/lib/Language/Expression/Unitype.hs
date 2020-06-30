@@ -40,7 +40,6 @@ instance (Monad m, Eq name) => UnifyTypeSystem (Unitype m name val) where
 
 instance (Monad m, Eq name) => SimplifyTypeSystem (Unitype m name val) where
     simplify = return
-    simplifyPosType _ t = return $ mkShimWit t
 
 instance (Monad m, Eq name) => SubsumeTypeSystem (Unitype m name val) where
     type Subsumer (Unitype m name val) = Identity

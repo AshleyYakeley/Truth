@@ -4,7 +4,6 @@ module Language.Expression.Dolan.Simplify
     (
     ) where
 
-import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Simplify.DuplicateGroundTypes
@@ -71,22 +70,20 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => M
 dolanSimplifyTypes ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
-    => TypePart
-    -> a
+    => a
     -> DolanTypeCheckM ground a
-dolanSimplifyTypes tp =
+dolanSimplifyTypes =
     runSimplifier $
     mif True $
     mconcat
         [ mif True $ pureSimplifier $ eliminateUnusedRecursion @ground
         , mif True $ MkSimplifier $ mergeDuplicateGroundTypes @ground
-        , mif (tp == TPWhole) $ pureSimplifier $ eliminateOneSidedTypeVars @ground
-        , mif (tp == TPWhole) $ pureSimplifier $ mergeSharedTypeVars @ground
+        , mif True $ pureSimplifier $ eliminateOneSidedTypeVars @ground
+        , mif True $ pureSimplifier $ mergeSharedTypeVars @ground
         , mif True $ pureSimplifier $ mergeDuplicateTypeVars @ground
         , mif True $ pureSimplifier $ rollUpRecursiveTypes @ground
         ]
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              SimplifyTypeSystem (DolanTypeSystem ground) where
-    simplifyPosType tp a = dolanSimplifyTypes @ground tp $ mkShimWit @Type @(DolanPolyShim ground Type) @_ @'Positive a
-    simplify = dolanSimplifyTypes @ground TPWhole
+    simplify = dolanSimplifyTypes @ground
