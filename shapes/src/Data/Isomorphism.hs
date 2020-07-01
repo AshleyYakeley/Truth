@@ -1,4 +1,4 @@
-module Data.Bijection where
+module Data.Isomorphism where
 
 import Control.Category.Dual
 import Control.Category.Groupoid
@@ -73,7 +73,7 @@ class HasKindMorphism (k :: Type) where
         => (forall p q. cat1 p q -> cat2 p q)
         -> KindMorphism cat1 a b
         -> KindMorphism cat2 a b
-    mkKindBijection ::
+    mkKindIsomorphism ::
            forall (cat :: Type -> Type -> Type) (a :: k) (b :: k). Category cat
         => KindMorphism cat a b
         -> KindMorphism cat b a
@@ -85,27 +85,27 @@ type KindBijection = KindMorphism Bijection
 
 instance HasKindMorphism Type where
     kindMorphismMapCat ab = ab
-    mkKindBijection = MkIsomorphism
+    mkKindIsomorphism = MkIsomorphism
 
 instance HasKindMorphism kq => HasKindMorphism (kp -> kq) where
     kindMorphismMapCat ab (MkNestedMorphism a) = MkNestedMorphism $ kindMorphismMapCat ab a
-    mkKindBijection ::
+    mkKindIsomorphism ::
            forall cat (a :: kp -> kq) (b :: kp -> kq). Category cat
         => KindMorphism cat a b
         -> KindMorphism cat b a
         -> KindIsomorphism cat a b
-    mkKindBijection (MkNestedMorphism ab) (MkNestedMorphism ba) = MkNestedMorphism $ mkKindBijection @_ @cat ab ba
+    mkKindIsomorphism (MkNestedMorphism ab) (MkNestedMorphism ba) = MkNestedMorphism $ mkKindIsomorphism @_ @cat ab ba
 
 instance HasKindMorphism Constraint where
     kindMorphismMapCat ab (MkConstraintMorphism a) = MkConstraintMorphism $ ab a
-    mkKindBijection (MkConstraintMorphism ab) (MkConstraintMorphism ba) = MkConstraintMorphism $ MkIsomorphism ab ba
+    mkKindIsomorphism (MkConstraintMorphism ab) (MkConstraintMorphism ba) = MkConstraintMorphism $ MkIsomorphism ab ba
 
 instance (HasKindMorphism kp, HasKindMorphism kq) => HasKindMorphism (kp, kq) where
     kindMorphismMapCat ab (MkPairMorphism pa qa) = MkPairMorphism (kindMorphismMapCat ab pa) (kindMorphismMapCat ab qa)
-    mkKindBijection ::
+    mkKindIsomorphism ::
            forall cat (a :: (kp, kq)) b. Category cat
         => KindMorphism cat a b
         -> KindMorphism cat b a
         -> KindIsomorphism cat a b
-    mkKindBijection (MkPairMorphism papb qaqb) (MkPairMorphism pbpa qbqa) =
-        MkPairMorphism (mkKindBijection @_ @cat papb pbpa) (mkKindBijection @_ @cat qaqb qbqa)
+    mkKindIsomorphism (MkPairMorphism papb qaqb) (MkPairMorphism pbpa qbqa) =
+        MkPairMorphism (mkKindIsomorphism @_ @cat papb pbpa) (mkKindIsomorphism @_ @cat qaqb qbqa)

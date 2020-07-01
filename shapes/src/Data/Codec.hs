@@ -1,7 +1,7 @@
 module Data.Codec where
 
-import Data.Bijection
 import Data.CatFunctor
+import Data.Isomorphism
 import Data.MonadOne
 import Data.Result
 import qualified Data.Serialize as Serialize

@@ -2,8 +2,8 @@ module Data.Coercion where
 
 import Control.Category.Dual
 import Control.Category.Groupoid
-import Data.Bijection
 import Data.CatFunctor
+import Data.Isomorphism
 import Data.KindMorphism
 import Shapes.Import
 import Unsafe.Coerce

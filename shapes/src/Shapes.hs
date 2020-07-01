@@ -18,7 +18,6 @@ import Control.Monad.Exception as I
 import Control.Monad.LifeCycleIO as I
 import Control.Monad.Trans.LifeCycle as I
 import Control.Task as I
-import Data.Bijection as I
 import Data.CatFunctor as I
 import Data.Codec as I
 import Data.CoerceFunction as I
@@ -30,6 +29,7 @@ import Data.FixBox as I
 import Data.HasNewValue as I
 import Data.Injection as I
 import Data.IsoVariant as I
+import Data.Isomorphism as I
 import Data.KeyContainer as I
 import Data.KeyedOrder as I
 import Data.KindMorphism as I
@@ -38,4 +38,5 @@ import Data.MonadOne as I
 import Data.MonoApplicative as I
 import Data.Result as I
 import Data.SameItem as I
+import Data.SemiIsomorphism as I
 import Data.Store as I

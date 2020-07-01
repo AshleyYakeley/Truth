@@ -41,7 +41,8 @@ library:
       - Data.HasNewValue
       - Data.IsoVariant
       - Data.Injection
-      - Data.Bijection
+      - Data.Isomorphism
+      - Data.SemiIsomorphism
       - Data.Lens
       - Data.Store
       - Data.ConstFunction

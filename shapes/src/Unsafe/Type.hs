@@ -1,6 +1,6 @@
 module Unsafe.Type where
 
-import Data.Bijection
+import Data.Isomorphism
 import Shapes.Import
 import Unsafe.Coerce
 

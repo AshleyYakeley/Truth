@@ -1,10 +1,10 @@
 module Data.Lens where
 
-import Data.Bijection
 import Data.CatFunctor
 import Data.Codec
 import Data.Injection
 import Data.IsoVariant
+import Data.Isomorphism
 import Data.MonadOne
 import Shapes.Import
 
