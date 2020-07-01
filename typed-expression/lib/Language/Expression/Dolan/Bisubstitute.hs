@@ -56,7 +56,7 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) (w :: Polarity
          , shim ~ DolanPolyShim ground Type
          , InCategory shim
          ) => Bisubstitutable ground polarity (PShimWit shim w polarity) where
-    bisubstituteType wt = chainShimWitM $ bisubstituteType wt
+    bisubstituteType sub = chainShimWitM $ bisubstituteType sub
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              Bisubstitutable ground polarity (DolanSingularType ground polarity) where

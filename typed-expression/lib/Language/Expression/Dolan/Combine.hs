@@ -159,62 +159,65 @@ recursiveDolanShimWit ::
     -> DolanShimWit ground polarity t
 recursiveDolanShimWit n = chainShimWit $ \t -> polarPolyIsoShimWit $ recursiveDolanType n t
 
-type Sub :: GroundTypeKind -> Type
-data Sub ground =
+type IsoSubstitution :: GroundTypeKind -> Type
+data IsoSubstitution ground =
     forall name (polarity :: Polarity). Is PolarityType polarity =>
-                                            MkSub (SymbolType name)
-                                                  (DolanIsoShimWit ground polarity (UVar Type name))
+                                            MkIsoSubstitution (SymbolType name)
+                                                              (DolanIsoShimWit ground polarity (UVar Type name))
+
+class IsoSubstitutable (ground :: GroundTypeKind) (polarity :: Polarity) (w :: Type -> Type)
+    | w -> ground polarity
+    where
+    isoSubstituteType :: forall t. IsoSubstitution ground -> w t -> DolanIsoShimWit ground polarity t
+
+instance forall (ground :: GroundTypeKind) (polarity :: Polarity) (w :: Polarity -> Type -> Type) (shim :: ShimKind Type). ( IsoSubstitutable ground polarity (w polarity)
+         , Is PolarityType polarity
+         , shim ~ DolanPolyIsoShim ground Type
+         , InCategory shim
+         ) => IsoSubstitutable ground polarity (PShimWit shim w polarity) where
+    isoSubstituteType sub = chainShimWit $ isoSubstituteType sub
 
 substituteInVar ::
        forall (ground :: GroundTypeKind) polarity name. (IsDolanGroundType ground, Is PolarityType polarity)
-    => Sub ground
+    => IsoSubstitution ground
     -> SymbolType name
     -> DolanIsoShimWit ground polarity (UVar Type name)
-substituteInVar (MkSub sn (tw :: DolanIsoShimWit ground polarity' _)) n
+substituteInVar (MkIsoSubstitution sn (tw :: DolanIsoShimWit ground polarity' _)) n
     | Just Refl <- testEquality sn n
     , Just Refl <- testEquality (polarityType @polarity) (polarityType @polarity') = tw
 substituteInVar _ n = singleDolanShimWit $ mkShimWit $ VarDolanSingularType n
 
-substituteInSingularType ::
-       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => Sub ground
-    -> DolanSingularType ground polarity t
-    -> DolanIsoShimWit ground polarity t
-substituteInSingularType sub (VarDolanSingularType n) = substituteInVar sub n
-substituteInSingularType sub t = singleDolanShimWit $ mapDolanSingularType (substituteInType sub) t
+instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
+             IsoSubstitutable ground polarity (DolanSingularType ground polarity) where
+    isoSubstituteType sub (VarDolanSingularType n) = substituteInVar sub n
+    isoSubstituteType sub t = singleDolanShimWit $ mapDolanSingularType (isoSubstituteType sub) t
 
-substituteInPlainType ::
-       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => Sub ground
-    -> DolanPlainType ground polarity t
-    -> DolanIsoShimWit ground polarity t
-substituteInPlainType _ NilDolanPlainType = mkShimWit $ PlainDolanType NilDolanPlainType
-substituteInPlainType sub (ConsDolanPlainType t1 tr) =
-    joinMeetIsoShimWit (substituteInSingularType sub t1) (substituteInPlainType sub tr)
+instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
+             IsoSubstitutable ground polarity (DolanPlainType ground polarity) where
+    isoSubstituteType _ NilDolanPlainType = mkShimWit $ PlainDolanType NilDolanPlainType
+    isoSubstituteType sub (ConsDolanPlainType t1 tr) =
+        joinMeetIsoShimWit (isoSubstituteType sub t1) (isoSubstituteType sub tr)
 
-substituteInType ::
-       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => Sub ground
-    -> DolanType ground polarity t
-    -> DolanIsoShimWit ground polarity t
-substituteInType sub (PlainDolanType pt) = substituteInPlainType sub pt
-substituteInType (MkSub sn _) t@(RecursiveDolanType n _)
-    | Just Refl <- testEquality sn n = mkShimWit t
-substituteInType sub (RecursiveDolanType n pt) = recursiveDolanIsoShimWit (uVarName n) (substituteInPlainType sub pt)
+instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
+             IsoSubstitutable ground polarity (DolanType ground polarity) where
+    isoSubstituteType sub (PlainDolanType pt) = isoSubstituteType sub pt
+    isoSubstituteType (MkIsoSubstitution sn _) t@(RecursiveDolanType n _)
+        | Just Refl <- testEquality sn n = mkShimWit t
+    isoSubstituteType sub (RecursiveDolanType n pt) = recursiveDolanIsoShimWit (uVarName n) (isoSubstituteType sub pt)
 
 unrollSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => Sub ground
+    => IsoSubstitution ground
     -> DolanSingularType ground polarity t
     -> DolanIsoPlainShimWit ground polarity t
-unrollSingularType (MkSub n (_ :: DolanIsoShimWit ground polarity' _)) (VarDolanSingularType n')
+unrollSingularType (MkIsoSubstitution n (_ :: DolanIsoShimWit ground polarity' _)) (VarDolanSingularType n')
     | Just Refl <- testEquality n n'
     , Just Refl <- testEquality (polarityType @polarity) (polarityType @polarity') = unsafeDeleteVarPlainShimWit n
-unrollSingularType sub t = singleDolanPlainShimWit $ mapDolanSingularType (substituteInType sub) t
+unrollSingularType sub t = singleDolanPlainShimWit $ mapDolanSingularType (isoSubstituteType sub) t
 
 unrollPlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => Sub ground
+    => IsoSubstitution ground
     -> DolanPlainType ground polarity t
     -> DolanIsoPlainShimWit ground polarity t
 unrollPlainType _ NilDolanPlainType = mkShimWit NilDolanPlainType
@@ -225,4 +228,4 @@ dolanTypeToPlainUnroll ::
     => DolanType ground polarity t
     -> DolanIsoPlainShimWit ground polarity t
 dolanTypeToPlainUnroll (PlainDolanType pt) = mkShimWit pt
-dolanTypeToPlainUnroll t@(RecursiveDolanType n pt) = unrollPlainType (MkSub n $ mkShimWit t) pt
+dolanTypeToPlainUnroll t@(RecursiveDolanType n pt) = unrollPlainType (MkIsoSubstitution n $ mkShimWit t) pt
