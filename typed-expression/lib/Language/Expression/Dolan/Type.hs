@@ -62,6 +62,9 @@ type DolanShimWit ground polarity = PShimWit (DolanPolyShim ground Type) (DolanT
 type DolanIsoShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanIsoShimWit ground polarity = PShimWit (DolanPolyIsoShim ground Type) (DolanType ground) polarity
 
+type DolanSemiIsoShimWit :: GroundTypeKind -> Polarity -> Type -> Type
+type DolanSemiIsoShimWit ground polarity = PShimWit (DolanPolySemiIsoShim ground Type) (DolanType ground) polarity
+
 type DolanPlainType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanPlainType ground polarity t where
     NilDolanPlainType :: forall (ground :: GroundTypeKind) polarity. DolanPlainType ground polarity (LimitType polarity)
@@ -85,6 +88,10 @@ type DolanPlainShimWit ground polarity = PShimWit (DolanPolyShim ground Type) (D
 
 type DolanIsoPlainShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanIsoPlainShimWit ground polarity = PShimWit (DolanPolyIsoShim ground Type) (DolanPlainType ground) polarity
+
+type DolanSemiIsoPlainShimWit :: GroundTypeKind -> Polarity -> Type -> Type
+type DolanSemiIsoPlainShimWit ground polarity
+     = PShimWit (DolanPolySemiIsoShim ground Type) (DolanPlainType ground) polarity
 
 -- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVar Type') for type variables.
 type DolanSingularType :: GroundTypeKind -> Polarity -> Type -> Type
@@ -131,7 +138,7 @@ unsafeDeleteVarPlainShimWit ::
        forall (ground :: GroundTypeKind) (polarity :: Polarity) name.
        (IsDolanGroundType ground, Is PolarityType polarity)
     => SymbolType name
-    -> DolanIsoPlainShimWit ground polarity (UVar Type name)
+    -> DolanSemiIsoPlainShimWit ground polarity (UVar Type name)
 unsafeDeleteVarPlainShimWit n = assignUVar @Type @(LimitType polarity) n $ mkShimWit NilDolanPlainType
 
 class TypeFreeVariables (t :: Type) where

@@ -30,6 +30,12 @@ instance forall (pmap :: PolyShimKind). (DolanVarianceInCategory pmap) => DolanV
         case dolanVarianceInCategory @pmap lt of
             Dict -> Dict
 
+instance forall (pmap :: PolyShimKind). (DolanVarianceInCategory pmap) => DolanVarianceInCategory (PolySemiIso pmap) where
+    dolanVarianceInCategory NilListType = Dict
+    dolanVarianceInCategory (ConsListType _ lt) =
+        case dolanVarianceInCategory @pmap lt of
+            Dict -> Dict
+
 dolanVarianceHasKM :: forall dv. DolanVarianceType dv -> Dict (HasKindMorphism (DolanVarianceKind dv))
 dolanVarianceHasKM NilListType = Dict
 dolanVarianceHasKM (ConsListType _ lt) =

@@ -110,13 +110,12 @@ solveRecursiveTypes solvePlainTypes ta tb =
             Nothing ->
                 withReaderT (\rcs' -> ConsListType st rcs') $ do
                     MkShimWit pta iconva <- return $ dolanTypeToPlainUnroll ta
+                    conva <- mpure $ polarPolySemiIsoPositive iconva
                     MkShimWit ptb iconvb <- return $ dolanTypeToPlainUnroll tb
+                    convb <- mpure $ polarPolySemiIsoNegative iconvb
                     erconv <- unSolver $ solvePlainTypes pta ptb
                     let
                         fixconv rconv rl = let
-                            conv =
-                                fromEnhanced polarPolyIsoSingle (invertPolarMap iconvb) <.>
-                                rconv (toEnhanced "recursive" $ fromEnhanced conv, rl) <.>
-                                polarPolyIsoSingle iconva
+                            conv = convb <.> rconv (toEnhanced "recursive" $ fromEnhanced conv, rl) <.> conva
                             in conv
                     return $ fmap fixconv erconv

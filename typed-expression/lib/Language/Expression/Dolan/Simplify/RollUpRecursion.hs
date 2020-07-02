@@ -22,10 +22,11 @@ data RollUp ground where
 mkRollUp ::
        forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t
-    -> RollUp ground
-mkRollUp rolled =
-    case dolanTypeToPlainUnroll rolled of
-        MkShimWit unrolled conv -> MkRollUp unrolled $ MkShimWit rolled $ polarPolyIsoBackwards conv
+    -> Maybe (RollUp ground)
+mkRollUp rolled = do
+    MkShimWit unrolled sconv <- return $ dolanTypeToPlainUnroll rolled
+    conv <- polarPolySemiIsoBackwards sconv
+    return $ MkRollUp unrolled $ MkShimWit rolled conv
 
 rollUpThisPlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -115,7 +116,10 @@ getRollUpsInType ::
     => DolanType ground polarity t
     -> [RollUp ground]
 getRollUpsInType (PlainDolanType pt) = getRollUpsInPlainType pt
-getRollUpsInType t@(RecursiveDolanType _ pt) = mkRollUp t : getRollUpsInPlainType pt
+getRollUpsInType t@(RecursiveDolanType _ pt) =
+    case mkRollUp t of
+        Just rollup -> rollup : getRollUpsInPlainType pt
+        Nothing -> getRollUpsInPlainType pt
 
 rollUpInType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

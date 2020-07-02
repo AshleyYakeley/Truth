@@ -5,7 +5,6 @@ module Language.Expression.Dolan.Combine
     , IsJoinMeetWitness
     , joinMeetShimWit
     , recursiveDolanType
-    , recursiveDolanIsoShimWit
     , recursiveDolanShimWit
     , dolanTypeToPlainUnroll
     ) where
@@ -29,20 +28,20 @@ plainRecursiveDolanShimWit n = chainShimWit (\t -> mkShimWit $ plainRecursiveDol
 
 class JoinMeetCategory (JoinMeetShim w Type) => IsJoinMeetWitness (w :: Polarity -> Type -> Type) where
     type JoinMeetShim w :: PolyShimKind
-    joinMeetIsoType ::
+    joinMeetSemiIsoType ::
            forall polarity (a :: Type) (b :: Type). Is PolarityType polarity
         => w polarity a
         -> w polarity b
-        -> PShimWit (PolyIso (JoinMeetShim w) Type) w polarity (JoinMeetType polarity a b)
+        -> PShimWit (PolySemiIso (JoinMeetShim w) Type) w polarity (JoinMeetType polarity a b)
 
-joinMeetIsoShimWit ::
+joinMeetSemiIsoShimWit ::
        forall (w :: Polarity -> Type -> Type) (polarity :: Polarity) (a :: Type) (b :: Type).
        (IsJoinMeetWitness w, Is PolarityType polarity)
-    => PShimWit (PolyIso (JoinMeetShim w) Type) w polarity a
-    -> PShimWit (PolyIso (JoinMeetShim w) Type) w polarity b
-    -> PShimWit (PolyIso (JoinMeetShim w) Type) w polarity (JoinMeetType polarity a b)
-joinMeetIsoShimWit (MkShimWit ta conva) (MkShimWit tb convb) =
-    ccontramap (iPolarPair conva convb) $ joinMeetIsoType ta tb
+    => PShimWit (PolySemiIso (JoinMeetShim w) Type) w polarity a
+    -> PShimWit (PolySemiIso (JoinMeetShim w) Type) w polarity b
+    -> PShimWit (PolySemiIso (JoinMeetShim w) Type) w polarity (JoinMeetType polarity a b)
+joinMeetSemiIsoShimWit (MkShimWit ta conva) (MkShimWit tb convb) =
+    ccontramap (iPolarPair conva convb) $ joinMeetSemiIsoType ta tb
 
 joinMeetType ::
        forall (w :: Polarity -> Type -> Type) polarity (a :: Type) (b :: Type).
@@ -51,8 +50,8 @@ joinMeetType ::
     -> w polarity b
     -> PShimWit (JoinMeetShim w Type) w polarity (JoinMeetType polarity a b)
 joinMeetType ta tb =
-    case joinMeetIsoType ta tb of
-        MkShimWit tab conv -> MkShimWit tab $ polarPolyIsoForwards conv
+    case joinMeetSemiIsoType ta tb of
+        MkShimWit tab conv -> MkShimWit tab $ polarPolySemiIsoForwards conv
 
 joinMeetShimWit ::
        forall (w :: Polarity -> Type -> Type) (polarity :: Polarity) (a :: Type) (b :: Type).
@@ -65,50 +64,50 @@ joinMeetShimWit (MkShimWit ta conva) (MkShimWit tb convb) = ccontramap (iPolarPa
 instance forall (ground :: GroundTypeKind). JoinMeetCategory (DolanPolyShim ground Type) =>
              IsJoinMeetWitness (DolanPlainType ground) where
     type JoinMeetShim (DolanPlainType ground) = DolanPolyShim ground
-    joinMeetIsoType NilDolanPlainType tb = MkShimWit tb iPolarL2
-    joinMeetIsoType (ConsDolanPlainType ta tr) tb =
-        case joinMeetIsoType tr tb of
+    joinMeetSemiIsoType NilDolanPlainType tb = MkShimWit tb iPolarL2
+    joinMeetSemiIsoType (ConsDolanPlainType ta tr) tb =
+        case joinMeetSemiIsoType tr tb of
             MkShimWit trb convrb -> MkShimWit (ConsDolanPlainType ta trb) $ iPolarPair cid convrb <.> iPolarSwapL
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => IsJoinMeetWitness (DolanType ground) where
     type JoinMeetShim (DolanType ground) = DolanPolyShim ground
-    joinMeetIsoType (PlainDolanType pta) (PlainDolanType ptb) =
-        case joinMeetIsoType pta ptb of
+    joinMeetSemiIsoType (PlainDolanType pta) (PlainDolanType ptb) =
+        case joinMeetSemiIsoType pta ptb of
             MkShimWit ptab conv -> MkShimWit (PlainDolanType ptab) conv
-    joinMeetIsoType rta@(RecursiveDolanType na ta) rtb@(PlainDolanType tb) =
+    joinMeetSemiIsoType ta@(RecursiveDolanType na pta) tb@(PlainDolanType ptb) =
         runIdentity $
         runVarRenamerT $
         runVarNamespaceT $ do
-            _ <- renameDolanType rta
-            _ <- renameDolanType rtb
+            _ <- renameDolanType ta
+            _ <- renameDolanType tb
             newname <- varNamespaceTAddNames [uVarName na]
-            ta' <- renameDolanIsoPlainType ta
-            tb' <- renameDolanIsoPlainType tb
-            return $ plainRecursiveDolanShimWit newname $ joinMeetIsoShimWit ta' tb'
-    joinMeetIsoType rta@(PlainDolanType ta) rtb@(RecursiveDolanType nb tb) =
+            pta' <- renameDolanSemiIsoPlainType pta
+            ptb' <- renameDolanSemiIsoPlainType ptb
+            return $ plainRecursiveDolanShimWit newname $ joinMeetSemiIsoShimWit pta' ptb'
+    joinMeetSemiIsoType ta@(PlainDolanType pta) tb@(RecursiveDolanType nb ptb) =
         runIdentity $
         runVarRenamerT $
         runVarNamespaceT $ do
-            _ <- renameDolanType rta
-            _ <- renameDolanType rtb
+            _ <- renameDolanType ta
+            _ <- renameDolanType tb
             newname <- varNamespaceTAddNames [uVarName nb]
-            ta' <- renameDolanIsoPlainType ta
-            tb' <- renameDolanIsoPlainType tb
-            return $ plainRecursiveDolanShimWit newname $ joinMeetIsoShimWit ta' tb'
-    joinMeetIsoType (RecursiveDolanType na pta) (RecursiveDolanType nb ptb)
+            pta' <- renameDolanSemiIsoPlainType pta
+            ptb' <- renameDolanSemiIsoPlainType ptb
+            return $ plainRecursiveDolanShimWit newname $ joinMeetSemiIsoShimWit pta' ptb'
+    joinMeetSemiIsoType (RecursiveDolanType na pta) (RecursiveDolanType nb ptb)
         | Just Refl <- testEquality na nb =
-            case joinMeetIsoType pta ptb of
+            case joinMeetSemiIsoType pta ptb of
                 MkShimWit ptab conv -> MkShimWit (plainRecursiveDolanType (uVarName na) ptab) conv
-    joinMeetIsoType rta@(RecursiveDolanType na ta) rtb@(RecursiveDolanType nb tb) =
+    joinMeetSemiIsoType rta@(RecursiveDolanType na ta) rtb@(RecursiveDolanType nb tb) =
         runIdentity $
         runVarRenamerT $
         runVarNamespaceT $ do
             _ <- renameDolanType rta
             _ <- renameDolanType rtb
             newname <- varNamespaceTAddNames [uVarName na, uVarName nb]
-            ta' <- renameDolanIsoPlainType ta
-            tb' <- renameDolanIsoPlainType tb
-            return $ plainRecursiveDolanShimWit newname $ joinMeetIsoShimWit ta' tb'
+            ta' <- renameDolanSemiIsoPlainType ta
+            tb' <- renameDolanSemiIsoPlainType tb
+            return $ plainRecursiveDolanShimWit newname $ joinMeetSemiIsoShimWit ta' tb'
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (IsDolanGroundType ground, Is PolarityType polarity) =>
              Semigroup (AnyW (DolanType ground polarity)) where
@@ -135,97 +134,99 @@ recursiveDolanType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => String
     -> DolanType ground polarity t
-    -> DolanIsoShimWit ground polarity t
+    -> DolanSemiIsoShimWit ground polarity t
 recursiveDolanType n (PlainDolanType pt) = mkShimWit $ plainRecursiveDolanType n pt
 recursiveDolanType nb (RecursiveDolanType na pt) =
     runIdentity $
     runVarRenamerT $
     runVarNamespaceT $ do
         newname <- varNamespaceTAddNames [uVarName na, nb]
-        pt' <- renameDolanIsoPlainType pt
+        pt' <- renameDolanSemiIsoPlainType pt
         return $ plainRecursiveDolanShimWit newname pt'
 
-recursiveDolanIsoShimWit ::
+recursiveDolanSemiIsoShimWit ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => String
-    -> DolanIsoShimWit ground polarity t
-    -> DolanIsoShimWit ground polarity t
-recursiveDolanIsoShimWit n = chainShimWit $ recursiveDolanType n
+    -> DolanSemiIsoShimWit ground polarity t
+    -> DolanSemiIsoShimWit ground polarity t
+recursiveDolanSemiIsoShimWit n = chainShimWit $ recursiveDolanType n
 
 recursiveDolanShimWit ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => String
     -> DolanShimWit ground polarity t
     -> DolanShimWit ground polarity t
-recursiveDolanShimWit n = chainShimWit $ \t -> polarPolyIsoShimWit $ recursiveDolanType n t
+recursiveDolanShimWit n = chainShimWit $ \t -> polarPolySemiIsoShimWit $ recursiveDolanType n t
 
-type IsoSubstitution :: GroundTypeKind -> Type
-data IsoSubstitution ground =
+type SemiIsoSubstitution :: GroundTypeKind -> Type
+data SemiIsoSubstitution ground =
     forall name (polarity :: Polarity). Is PolarityType polarity =>
-                                            MkIsoSubstitution (SymbolType name)
-                                                              (DolanIsoShimWit ground polarity (UVar Type name))
+                                            MkSemiIsoSubstitution (SymbolType name)
+                                                                  (DolanSemiIsoShimWit ground polarity (UVar Type name))
 
-class IsoSubstitutable (ground :: GroundTypeKind) (polarity :: Polarity) (w :: Type -> Type)
+class SemiIsoSubstitutable (ground :: GroundTypeKind) (polarity :: Polarity) (w :: Type -> Type)
     | w -> ground polarity
     where
-    isoSubstituteType :: forall t. IsoSubstitution ground -> w t -> DolanIsoShimWit ground polarity t
+    semiIsoSubstituteType :: forall t. SemiIsoSubstitution ground -> w t -> DolanSemiIsoShimWit ground polarity t
 
-instance forall (ground :: GroundTypeKind) (polarity :: Polarity) (w :: Polarity -> Type -> Type) (shim :: ShimKind Type). ( IsoSubstitutable ground polarity (w polarity)
+instance forall (ground :: GroundTypeKind) (polarity :: Polarity) (w :: Polarity -> Type -> Type) (shim :: ShimKind Type). ( SemiIsoSubstitutable ground polarity (w polarity)
          , Is PolarityType polarity
-         , shim ~ DolanPolyIsoShim ground Type
+         , shim ~ DolanPolySemiIsoShim ground Type
          , InCategory shim
-         ) => IsoSubstitutable ground polarity (PShimWit shim w polarity) where
-    isoSubstituteType sub = chainShimWit $ isoSubstituteType sub
+         ) => SemiIsoSubstitutable ground polarity (PShimWit shim w polarity) where
+    semiIsoSubstituteType sub = chainShimWit $ semiIsoSubstituteType sub
 
 substituteInVar ::
        forall (ground :: GroundTypeKind) polarity name. (IsDolanGroundType ground, Is PolarityType polarity)
-    => IsoSubstitution ground
+    => SemiIsoSubstitution ground
     -> SymbolType name
-    -> DolanIsoShimWit ground polarity (UVar Type name)
-substituteInVar (MkIsoSubstitution sn (tw :: DolanIsoShimWit ground polarity' _)) n
+    -> DolanSemiIsoShimWit ground polarity (UVar Type name)
+substituteInVar (MkSemiIsoSubstitution sn (tw :: DolanSemiIsoShimWit ground polarity' _)) n
     | Just Refl <- testEquality sn n
     , Just Refl <- testEquality (polarityType @polarity) (polarityType @polarity') = tw
 substituteInVar _ n = singleDolanShimWit $ mkShimWit $ VarDolanSingularType n
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             IsoSubstitutable ground polarity (DolanSingularType ground polarity) where
-    isoSubstituteType sub (VarDolanSingularType n) = substituteInVar sub n
-    isoSubstituteType sub t = singleDolanShimWit $ mapDolanSingularType (isoSubstituteType sub) t
+             SemiIsoSubstitutable ground polarity (DolanSingularType ground polarity) where
+    semiIsoSubstituteType sub (VarDolanSingularType n) = substituteInVar sub n
+    semiIsoSubstituteType sub t = singleDolanShimWit $ mapDolanSingularType (semiIsoSubstituteType sub) t
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             IsoSubstitutable ground polarity (DolanPlainType ground polarity) where
-    isoSubstituteType _ NilDolanPlainType = mkShimWit $ PlainDolanType NilDolanPlainType
-    isoSubstituteType sub (ConsDolanPlainType t1 tr) =
-        joinMeetIsoShimWit (isoSubstituteType sub t1) (isoSubstituteType sub tr)
+             SemiIsoSubstitutable ground polarity (DolanPlainType ground polarity) where
+    semiIsoSubstituteType _ NilDolanPlainType = mkShimWit $ PlainDolanType NilDolanPlainType
+    semiIsoSubstituteType sub (ConsDolanPlainType t1 tr) =
+        joinMeetSemiIsoShimWit (semiIsoSubstituteType sub t1) (semiIsoSubstituteType sub tr)
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             IsoSubstitutable ground polarity (DolanType ground polarity) where
-    isoSubstituteType sub (PlainDolanType pt) = isoSubstituteType sub pt
-    isoSubstituteType (MkIsoSubstitution sn _) t@(RecursiveDolanType n _)
+             SemiIsoSubstitutable ground polarity (DolanType ground polarity) where
+    semiIsoSubstituteType sub (PlainDolanType pt) = semiIsoSubstituteType sub pt
+    semiIsoSubstituteType (MkSemiIsoSubstitution sn _) t@(RecursiveDolanType n _)
         | Just Refl <- testEquality sn n = mkShimWit t
-    isoSubstituteType sub (RecursiveDolanType n pt) = recursiveDolanIsoShimWit (uVarName n) (isoSubstituteType sub pt)
+    semiIsoSubstituteType sub (RecursiveDolanType n pt) =
+        recursiveDolanSemiIsoShimWit (uVarName n) (semiIsoSubstituteType sub pt)
 
 unrollSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => IsoSubstitution ground
+    => SemiIsoSubstitution ground
     -> DolanSingularType ground polarity t
-    -> DolanIsoPlainShimWit ground polarity t
-unrollSingularType (MkIsoSubstitution n (_ :: DolanIsoShimWit ground polarity' _)) (VarDolanSingularType n')
+    -> DolanSemiIsoPlainShimWit ground polarity t
+unrollSingularType (MkSemiIsoSubstitution n (_ :: DolanSemiIsoShimWit ground polarity' _)) (VarDolanSingularType n')
     | Just Refl <- testEquality n n'
     , Just Refl <- testEquality (polarityType @polarity) (polarityType @polarity') = unsafeDeleteVarPlainShimWit n
-unrollSingularType sub t = singleDolanPlainShimWit $ mapDolanSingularType (isoSubstituteType sub) t
+unrollSingularType sub t = singleDolanPlainShimWit $ mapDolanSingularType (semiIsoSubstituteType sub) t
 
 unrollPlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => IsoSubstitution ground
+    => SemiIsoSubstitution ground
     -> DolanPlainType ground polarity t
-    -> DolanIsoPlainShimWit ground polarity t
+    -> DolanSemiIsoPlainShimWit ground polarity t
 unrollPlainType _ NilDolanPlainType = mkShimWit NilDolanPlainType
-unrollPlainType sub (ConsDolanPlainType t1 tr) = joinMeetIsoShimWit (unrollSingularType sub t1) (unrollPlainType sub tr)
+unrollPlainType sub (ConsDolanPlainType t1 tr) =
+    joinMeetSemiIsoShimWit (unrollSingularType sub t1) (unrollPlainType sub tr)
 
 dolanTypeToPlainUnroll ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t
-    -> DolanIsoPlainShimWit ground polarity t
+    -> DolanSemiIsoPlainShimWit ground polarity t
 dolanTypeToPlainUnroll (PlainDolanType pt) = mkShimWit pt
-dolanTypeToPlainUnroll t@(RecursiveDolanType n pt) = unrollPlainType (MkIsoSubstitution n $ mkShimWit t) pt
+dolanTypeToPlainUnroll t@(RecursiveDolanType n pt) = unrollPlainType (MkSemiIsoSubstitution n $ mkShimWit t) pt

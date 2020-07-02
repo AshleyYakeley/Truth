@@ -200,7 +200,7 @@ bisubstitutePositiveVar ::
     -> DolanType ground 'Positive t
     -> DolanUnifier ground (DolanPolyShim ground Type t (UVar Type name))
 bisubstitutePositiveVar n t =
-    case polarPolyIsoShimWit $ dolanTypeToPlainUnroll t of
+    case polarPolySemiIsoShimWit $ dolanTypeToPlainUnroll t of
         MkShimWit pt (MkPolarMap tconv) -> fmap (\conv -> conv . tconv) $ bisubstitutePlainPositiveVar n pt
 
 bisubstitutePlainNegativeVar ::
@@ -219,7 +219,7 @@ bisubstituteNegativeVar ::
     -> DolanType ground 'Negative t
     -> DolanUnifier ground (DolanPolyShim ground Type (UVar Type name) t)
 bisubstituteNegativeVar n t =
-    case polarPolyIsoShimWit $ dolanTypeToPlainUnroll t of
+    case polarPolySemiIsoShimWit $ dolanTypeToPlainUnroll t of
         MkShimWit pt (MkPolarMap tconv) -> fmap (\conv -> tconv . conv) $ bisubstitutePlainNegativeVar n pt
 
 bisubstituteUnifier ::

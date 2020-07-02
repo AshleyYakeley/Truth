@@ -96,7 +96,7 @@ plainTypedShowValue (ConsDolanPlainType ts tt) v = joinf (singularTypedShowValue
 typedShowValue :: PinaforeType 'Positive t -> t -> String
 typedShowValue t v =
     case dolanTypeToPlainUnroll t of
-        MkShimWit pt iconv -> plainTypedShowValue pt $ fromEnhanced (polarPolyIsoSingle iconv) v
+        MkShimWit pt iconv -> plainTypedShowValue pt $ fromEnhanced (unPolarMap $ polarPolySemiIsoForwards iconv) v
 
 showPinaforeRef :: QValue -> String
 showPinaforeRef (MkAnyValue (MkPosShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)

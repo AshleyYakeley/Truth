@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Rename
-    ( renameDolanIsoPlainType
+    ( renameDolanSemiIsoPlainType
     , renameDolanPlainType
     , renameDolanType
     ) where
@@ -24,14 +24,14 @@ type TypeNamespace shim ts w
 
 type DolanTypeNamespace :: forall k. GroundTypeKind -> (Polarity -> k -> Type) -> Type
 type DolanTypeNamespace ground (w :: Polarity -> k -> Type)
-     = TypeNamespace (DolanPolyIsoShim ground k) (DolanTypeSystem ground) w
+     = TypeNamespace (DolanPolySemiIsoShim ground k) (DolanTypeSystem ground) w
 
 renameTypeArgs ::
        forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv). (IsDolanGroundType ground)
     => DolanVarianceType dv
     -> DolanVarianceMap dv gt
     -> DolanTypeNamespace ground (DolanArguments dv (DolanType ground) gt)
-renameTypeArgs dvt dvm _ args = mapDolanArgumentsM @_ @(DolanPolyIsoShim ground) (renameTypeVars Proxy) dvt dvm args
+renameTypeArgs dvt dvm _ args = mapDolanArgumentsM @_ @(DolanPolySemiIsoShim ground) (renameTypeVars Proxy) dvt dvm args
 
 renameSingularTypeVars ::
        forall (ground :: GroundTypeKind). (IsDolanGroundType ground)
@@ -50,7 +50,7 @@ renamePlainTypeVars (_ :: _ polarity) NilDolanPlainType = return $ mkShimWit Nil
 renamePlainTypeVars _ (ConsDolanPlainType ta tb) = do
     MkShimWit ta' bija <- renameSingularTypeVars Proxy ta
     MkShimWit tb' bijb <- renamePlainTypeVars Proxy tb
-    return $ MkShimWit (ConsDolanPlainType ta' tb') $ polarPolyIsoBimap bija bijb
+    return $ MkShimWit (ConsDolanPlainType ta' tb') $ polarPolySemiIsoBimap bija bijb
 
 renameTypeVars ::
        forall (ground :: GroundTypeKind). (IsDolanGroundType ground)
@@ -61,33 +61,33 @@ renameTypeVars pp@(_ :: _ polarity) (RecursiveDolanType namewit1 st) = do
         MkShimWit st' stmap <- renamePlainTypeVars pp st
         return $ MkShimWit (plainRecursiveDolanType newname st') stmap
 
-renameDolanIsoPlainType ::
+renameDolanSemiIsoPlainType ::
        forall (ground :: GroundTypeKind) polarity m t. (IsDolanGroundType ground, Is PolarityType polarity, Monad m)
     => DolanPlainType ground polarity t
-    -> VarNamespaceT (DolanTypeSystem ground) (VarRenamerT (DolanTypeSystem ground) m) (DolanIsoPlainShimWit ground polarity t)
-renameDolanIsoPlainType = renamePlainTypeVars Proxy
+    -> VarNamespaceT (DolanTypeSystem ground) (VarRenamerT (DolanTypeSystem ground) m) (DolanSemiIsoPlainShimWit ground polarity t)
+renameDolanSemiIsoPlainType = renamePlainTypeVars Proxy
 
 renameDolanPlainType ::
        forall (ground :: GroundTypeKind) polarity m t. (IsDolanGroundType ground, Is PolarityType polarity, Monad m)
     => DolanPlainType ground polarity t
     -> VarNamespaceT (DolanTypeSystem ground) (VarRenamerT (DolanTypeSystem ground) m) (DolanPlainShimWit ground polarity t)
 renameDolanPlainType t = do
-    MkShimWit t' bij <- renameDolanIsoPlainType t
-    return $ MkShimWit t' $ polarPolyIsoForwards bij
+    MkShimWit t' bij <- renameDolanSemiIsoPlainType t
+    return $ MkShimWit t' $ polarPolySemiIsoForwards bij
 
-renameDolanIsoType ::
+renameDolanSemiIsoType ::
        forall (ground :: GroundTypeKind) polarity m t. (IsDolanGroundType ground, Is PolarityType polarity, Monad m)
     => DolanType ground polarity t
-    -> VarNamespaceT (DolanTypeSystem ground) (VarRenamerT (DolanTypeSystem ground) m) (DolanIsoShimWit ground polarity t)
-renameDolanIsoType = renameTypeVars Proxy
+    -> VarNamespaceT (DolanTypeSystem ground) (VarRenamerT (DolanTypeSystem ground) m) (DolanSemiIsoShimWit ground polarity t)
+renameDolanSemiIsoType = renameTypeVars Proxy
 
 renameDolanType ::
        forall (ground :: GroundTypeKind) polarity m t. (IsDolanGroundType ground, Is PolarityType polarity, Monad m)
     => DolanType ground polarity t
     -> VarNamespaceT (DolanTypeSystem ground) (VarRenamerT (DolanTypeSystem ground) m) (DolanShimWit ground polarity t)
 renameDolanType t = do
-    MkShimWit t' bij <- renameDolanIsoType t
-    return $ MkShimWit t' $ polarPolyIsoForwards bij
+    MkShimWit t' bij <- renameDolanSemiIsoType t
+    return $ MkShimWit t' $ polarPolySemiIsoForwards bij
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => RenameTypeSystem (DolanTypeSystem ground) where
     type RenamerT (DolanTypeSystem ground) = VarRenamerT (DolanTypeSystem ground)
