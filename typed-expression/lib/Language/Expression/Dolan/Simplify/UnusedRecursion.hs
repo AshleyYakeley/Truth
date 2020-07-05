@@ -3,11 +3,11 @@ module Language.Expression.Dolan.Simplify.UnusedRecursion
     ) where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.TypeVariable
 import Shapes
 
 elimInPlainType ::
@@ -36,7 +36,7 @@ elimInType ::
     -> DolanShimWit ground polarity t
 elimInType (PlainDolanType pt) = chainShimWit (mkShimWit . PlainDolanType) $ elimInPlainType Nothing pt
 elimInType (RecursiveDolanType n pt) =
-    elimUnusuedInShimWit $ plainRecursiveDolanShimWit (uVarName n) $ elimInPlainType (Just n) pt
+    elimUnusuedInShimWit $ plainRecursiveDolanShimWitWRONG (uVarName n) $ elimInPlainType (Just n) pt
 
 eliminateUnusedRecursion ::
        forall (ground :: GroundTypeKind) a.

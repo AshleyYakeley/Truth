@@ -12,10 +12,14 @@ module Language.Expression.Common.Renamer
     , VarRenamerT
     , runVarRenamerT
     , varRenamerTGenerate
+    , varNamespaceTRenameUVar
+    , varNamespaceTLocalUVar
+    , varNamespaceTAddNamesUVar
     ) where
 
 import Data.Shim
 import Language.Expression.Common.TypeSystem
+import Language.Expression.Common.TypeVariable
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
@@ -27,8 +31,8 @@ class (TypeSystem ts, MonadTransConstraint Monad (RenamerT ts), MonadTransConstr
           RenameTypeSystem (ts :: Type) where
     type RenamerT ts :: (Type -> Type) -> (Type -> Type)
     type RenamerNamespaceT ts :: (Type -> Type) -> (Type -> Type)
-    renameNegWitness :: Monad m => TSNegWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSNegShimWit ts t)
-    renamePosWitness :: Monad m => TSPosWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSPosShimWit ts t)
+    renameNegWitness :: Monad m => TSNegWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSNegWitness ts t)
+    renamePosWitness :: Monad m => TSPosWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSPosWitness ts t)
     renameNewVar :: Monad m => RenamerT ts m (NewVar ts)
     namespace :: Monad m => RenamerNamespaceT ts (RenamerT ts m) r -> RenamerT ts m r
     runRenamer :: Monad m => RenamerT ts m r -> m r
@@ -41,7 +45,10 @@ renameNegShimWit =
     case hasTransConstraint @Monad @(RenamerT ts) @m of
         Dict ->
             case hasTransConstraint @Monad @(RenamerNamespaceT ts) @(RenamerT ts m) of
-                Dict -> chainShimWitM $ renameNegWitness @ts
+                Dict ->
+                    \(MkShimWit t conv) -> do
+                        t' <- renameNegWitness @ts t
+                        return $ MkShimWit t' conv
 
 renamePosShimWit ::
        forall ts m t. (RenameTypeSystem ts, Monad m)
@@ -51,7 +58,10 @@ renamePosShimWit =
     case hasTransConstraint @Monad @(RenamerT ts) @m of
         Dict ->
             case hasTransConstraint @Monad @(RenamerNamespaceT ts) @(RenamerT ts m) of
-                Dict -> chainShimWitM $ renamePosWitness @ts
+                Dict ->
+                    \(MkShimWit t conv) -> do
+                        t' <- renamePosWitness @ts t
+                        return $ MkShimWit t' conv
 
 rename ::
        forall ts m a. (RenameTypeSystem ts, Monad m, WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts) a)
@@ -160,3 +170,27 @@ varRenamerTGenerate (name:nn) = do
         else do
             MkVarRenamerT $ put (name : vars, succ i)
             return name
+
+varNamespaceTRenameUVar ::
+       forall k name ts m. Monad m
+    => SymbolType name
+    -> VarNamespaceT ts (VarRenamerT ts m) (AssignedUVar (UVar k name))
+varNamespaceTRenameUVar oldvar = do
+    newname <- varNamespaceTRename $ uVarName oldvar
+    return $ newAssignUVar newname
+
+-- | Use this for variable quantifiers (e.g. rec, forall)
+varNamespaceTLocalUVar ::
+       forall k name ts m a. Monad m
+    => SymbolType name
+    -> (AssignedUVar (UVar k name) -> VarNamespaceT ts (VarRenamerT ts m) a)
+    -> VarNamespaceT ts (VarRenamerT ts m) a
+varNamespaceTLocalUVar oldvar call = varNamespaceTLocal (uVarName oldvar) $ \newname -> call $ newAssignUVar newname
+
+varNamespaceTAddNamesUVar ::
+       forall k name ts m. Monad m
+    => [SymbolType name]
+    -> VarNamespaceT ts (VarRenamerT ts m) (AssignedUVar (UVar k name))
+varNamespaceTAddNamesUVar oldvars = do
+    newname <- varNamespaceTAddNames $ fmap uVarName oldvars
+    return $ newAssignUVar newname

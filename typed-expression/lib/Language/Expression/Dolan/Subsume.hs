@@ -16,7 +16,6 @@ import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.TypeVariable
 import Shapes
 
 minimalPositiveSupertypeSingular ::
@@ -43,10 +42,9 @@ minimalPositiveSupertype ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => DolanType ground 'Negative a
     -> Maybe (DolanShimWit ground 'Positive a)
-minimalPositiveSupertype (PlainDolanType pt) = minimalPositiveSupertypePlain pt
-minimalPositiveSupertype (RecursiveDolanType n pt) = do
-    pt' <- minimalPositiveSupertypePlain pt
-    return $ recursiveDolanShimWit (uVarName n) pt'
+minimalPositiveSupertype t = do
+    pt <- dolanTypeToPlainNonrec t
+    minimalPositiveSupertypePlain pt
 
 maximalNegativeSubtypeSingular ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -71,10 +69,9 @@ maximalNegativeSubtype ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => DolanType ground 'Positive a
     -> Maybe (DolanShimWit ground 'Negative a)
-maximalNegativeSubtype (PlainDolanType pt) = maximalNegativeSubtypePlain pt
-maximalNegativeSubtype (RecursiveDolanType n pt) = do
-    pt' <- maximalNegativeSubtypePlain pt
-    return $ recursiveDolanShimWit (uVarName n) pt'
+maximalNegativeSubtype t = do
+    pt <- dolanTypeToPlainNonrec t
+    maximalNegativeSubtypePlain pt
 
 limitInvertType ::
        forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)

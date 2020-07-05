@@ -16,6 +16,7 @@ import Language.Expression.Common.Sealed as I
 import Language.Expression.Common.Simplifier as I
 import Language.Expression.Common.Subsumer as I
 import Language.Expression.Common.TypeSystem as I
+import Language.Expression.Common.TypeVariable as I
 import Language.Expression.Common.Unifier as I
 import Language.Expression.Common.Witness as I
 import Language.Expression.Common.WitnessMappable as I

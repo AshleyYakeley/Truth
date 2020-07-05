@@ -2,8 +2,8 @@ module Pinafore.Language.Type.Show where
 
 import qualified Data.List as List
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan
-import Language.Expression.TypeVariable
 import Pinafore.Language.Name
 import Prelude (Bounded(..))
 import Shapes

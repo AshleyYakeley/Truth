@@ -15,7 +15,6 @@ import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
-import Language.Expression.TypeVariable
 import Shapes
 
 type UnifierBisubstitution :: GroundTypeKind -> Type
@@ -42,7 +41,7 @@ mkPositiveBisubstitutionWitness ::
 mkPositiveBisubstitutionWitness n t =
     PositiveBisubstitutionWitness n $
     if occursInSingularType n t
-        then plainRecursiveDolanShimWit (uVarName n) $ singleDolanPlainShimWit $ mkShimWit t
+        then plainRecursiveDolanShimWitWRONG (uVarName n) $ singleDolanPlainShimWit $ mkShimWit t
         else singleDolanShimWit $ mkShimWit t
 
 mkNegativeBisubstitutionWitness ::
@@ -53,7 +52,7 @@ mkNegativeBisubstitutionWitness ::
 mkNegativeBisubstitutionWitness n t =
     NegativeBisubstitutionWitness n $
     if occursInSingularType n t
-        then plainRecursiveDolanShimWit (uVarName n) $ singleDolanPlainShimWit $ mkShimWit t
+        then plainRecursiveDolanShimWitWRONG (uVarName n) $ singleDolanPlainShimWit $ mkShimWit t
         else singleDolanShimWit $ mkShimWit t
 
 type DolanUnifier :: GroundTypeKind -> Type -> Type

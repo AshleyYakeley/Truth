@@ -31,8 +31,8 @@ module Language.Expression.Dolan
     , singleDolanShimWit
     , plainDolanShimWit
     , joinMeetShimWit
-    , recursiveDolanType
-    , recursiveDolanShimWit
+    , recursiveDolanTypeWRONG
+    , recursiveDolanShimWitWRONG
     , dolanTypeToPlainUnroll
     , unToRangeShimWit
     , unFromRangeShimWit

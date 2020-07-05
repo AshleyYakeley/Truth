@@ -13,7 +13,6 @@ import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Rename
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.TypeVariable
 import Shapes
 
 type Bisubstitution :: GroundTypeKind -> (Type -> Type) -> Type
@@ -103,7 +102,7 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
             newname <- varNamespaceTAddNames [uVarName n]
             pt' <- renameDolanPlainType pt
             t' <- lift $ lift $ bisubstituteType bisub pt'
-            return $ recursiveDolanShimWit newname t'
+            return $ recursiveDolanShimWitWRONG newname t'
 
 bisubstitutesType ::
        forall (ground :: GroundTypeKind) m polarity t. (IsDolanGroundType ground, MonadOne m, Is PolarityType polarity)

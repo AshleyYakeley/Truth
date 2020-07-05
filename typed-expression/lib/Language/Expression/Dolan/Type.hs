@@ -8,7 +8,6 @@ import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
-import Language.Expression.TypeVariable
 import Shapes
 
 type IsDolanPolyShim :: PolyShimKind -> Constraint
@@ -38,12 +37,14 @@ class (IsDolanPolyShim (DolanPolyShim ground), Eq (DolanName ground), MonadPlus 
         -> ground dvb tb
         -> Maybe (dva :~: dvb, ta :~~: tb)
 
-plainRecursiveDolanType ::
+plainRecursiveDolanTypeWRONG ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => String
     -> DolanPlainType ground polarity t
     -> DolanType ground polarity t
-plainRecursiveDolanType vname pt = newAssignUVar @Type @t vname $ \nsym -> RecursiveDolanType nsym pt
+plainRecursiveDolanTypeWRONG vname pt =
+    case newAssignUVar @Type @t vname of
+        MkAssignedUVar nsym -> RecursiveDolanType nsym pt
 
 instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
              TestEquality (DolanType ground polarity) where

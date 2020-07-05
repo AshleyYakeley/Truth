@@ -116,6 +116,6 @@ solveRecursiveTypes solvePlainTypes ta tb =
                     erconv <- unSolver $ solvePlainTypes pta ptb
                     let
                         fixconv rconv rl = let
-                            conv = convb <.> rconv (toEnhanced "recursive" $ fromEnhanced conv, rl) <.> conva
+                            conv = convb <.> rconv (lazyEnhanced conv, rl) <.> conva
                             in conv
                     return $ fmap fixconv erconv

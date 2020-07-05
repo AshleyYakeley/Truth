@@ -4,7 +4,6 @@ import Data.Shim.CatRange
 import Data.Shim.JoinMeet
 import Data.Shim.PolarMap
 import Data.Shim.Polarity
-import Data.Shim.PolyMap
 import Data.Shim.PolyShim
 import Data.Shim.Variance
 import Shapes

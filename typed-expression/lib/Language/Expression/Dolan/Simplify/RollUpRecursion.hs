@@ -3,12 +3,12 @@ module Language.Expression.Dolan.Simplify.RollUpRecursion
     ) where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.TypeVariable
 import Shapes
 
 type RollUp :: GroundTypeKind -> Type
@@ -52,7 +52,7 @@ rollUpThisType ::
 rollUpThisType rr (PlainDolanType pt) = rollUpThisPlainType rr pt
 rollUpThisType rr (RecursiveDolanType n pt) = do
     t' <- rollUpThisPlainType rr pt
-    return $ recursiveDolanShimWit (uVarName n) t'
+    return $ recursiveDolanShimWitWRONG (uVarName n) t'
 
 rollUpChildrenPlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -73,7 +73,7 @@ rollUpChildrenType ::
 rollUpChildrenType rr (PlainDolanType pt) = rollUpChildrenPlainType rr pt
 rollUpChildrenType rr (RecursiveDolanType n pt) = do
     t' <- rollUpChildrenPlainType rr pt
-    return $ recursiveDolanShimWit (uVarName n) t'
+    return $ recursiveDolanShimWitWRONG (uVarName n) t'
 
 rollUpAllType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

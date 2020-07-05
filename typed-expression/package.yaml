@@ -14,10 +14,10 @@ library:
       - Data.Shim
       - Language.Expression.Common
       - Language.Expression.Unitype
-      - Language.Expression.TypeVariable
       - Language.Expression.Dolan
     other-modules:
       - Data.Shim.PolyMap
+      - Data.Shim.ComposeShim
       - Data.Shim.Polarity
       - Data.Shim.PolarMap
       - Data.Shim.Variance
@@ -30,6 +30,7 @@ library:
       - Data.Shim.PolyShim
       - Data.Shim.JMShim
       - Data.Shim.PolyIso
+      - Data.Shim.PolyComposeShim
       - Data.Shim.JMShimWit
       - Language.Expression.Common.Error
       - Language.Expression.Common.WitnessMappable
@@ -40,6 +41,7 @@ library:
       - Language.Expression.Common.Named
       - Language.Expression.Common.Sealed
       - Language.Expression.Common.TypeSystem
+      - Language.Expression.Common.TypeVariable
       - Language.Expression.Common.Renamer
       - Language.Expression.Common.Simplifier
       - Language.Expression.Common.Unifier

@@ -96,7 +96,7 @@ interpretTypeM' (VarSyntaxType name) =
 interpretTypeM' (RecursiveSyntaxType name st) = do
     mt <- interpretTypeM st
     nameToSymbolType name $ \n ->
-        return $ mapMPolarW (\(MkAnyW t) -> shimWitToAnyW $ recursiveDolanType (uVarName n) t) mt
+        return $ mapMPolarW (\(MkAnyW t) -> shimWitToAnyW $ recursiveDolanTypeWRONG (uVarName n) t) mt
 
 interpretTypeRangeFromType ::
        forall mpolarity. Is MPolarityType mpolarity

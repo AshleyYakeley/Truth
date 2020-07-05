@@ -1,6 +1,6 @@
 module Pinafore.Language.Name where
 
-import Language.Expression.TypeVariable
+import Language.Expression.Common
 import Shapes
 
 newtype Name = MkName

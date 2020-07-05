@@ -75,7 +75,7 @@ instance forall (pshim :: PolyShimKind). ApplyPolyShim pshim => ApplyPolyShim (P
             ((\fba xba1 xba2 -> applyPolyShim RangevarianceType fba (MkCatRange xba1 xba2)) <$> mfba <*> mxba1 <*> mxba2)
 
 polarPolyIsoPolar1 ::
-       forall (pshim :: PolyShimKind) polarity (a :: Type). (JoinMeetCategory (pshim Type), Is PolarityType polarity)
+       forall (pshim :: PolyShimKind) polarity (a :: Type). (JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)
     => PolarMap (PolyIso pshim Type) polarity (JoinMeetType polarity a (LimitType polarity)) a
 polarPolyIsoPolar1 =
     MkPolarMap $
