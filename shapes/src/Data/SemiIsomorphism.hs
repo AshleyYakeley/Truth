@@ -28,6 +28,12 @@ isoSemiIso MkIsomorphism {..} = let
     semiIsoBackwards = Just isoBackwards
     in MkSemiIsomorphism {..}
 
+semiIsoInvert ::
+       forall k (cat :: k -> k -> Type) (a :: k) (b :: k). SemiIsomorphism cat a b -> Maybe (SemiIsomorphism cat b a)
+semiIsoInvert (MkSemiIsomorphism p mq) = do
+    q <- mq
+    return $ MkSemiIsomorphism q $ Just p
+
 semiIsoMapCat ::
        forall k (cat1 :: k -> k -> Type) (cat2 :: k -> k -> Type) (p :: k) (q :: k).
        (forall (a :: k) (b :: k). cat1 a b -> cat2 a b)

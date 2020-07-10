@@ -10,7 +10,7 @@ module Language.Expression.Common.Bindings
 
 import Data.Shim.JoinMeet
 import Language.Expression.Common.Abstract
-import Language.Expression.Common.Renamer
+import Language.Expression.Common.Rename.RenameTypeSystem
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.Unifier

@@ -3,12 +3,12 @@ module Language.Expression.Dolan.Simplify.RollUpRecursion
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.Unroll
 import Shapes
 
 type RollUp :: GroundTypeKind -> Type
@@ -16,7 +16,7 @@ data RollUp ground where
     MkRollUp
         :: forall (ground :: GroundTypeKind) (polarity :: Polarity) t. Is PolarityType polarity
         => DolanPlainType ground polarity t
-        -> DolanShimWit ground polarity t
+        -> DolanSemiIsoShimWit ground polarity t
         -> RollUp ground
 
 mkRollUp ::
@@ -25,14 +25,14 @@ mkRollUp ::
     -> Maybe (RollUp ground)
 mkRollUp rolled = do
     MkShimWit unrolled sconv <- return $ dolanTypeToPlainUnroll rolled
-    conv <- polarPolySemiIsoBackwards sconv
+    conv <- polarPolySemiIsoInvert sconv
     return $ MkRollUp unrolled $ MkShimWit rolled conv
 
 rollUpThisPlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => [RollUp ground]
     -> DolanPlainType ground polarity t
-    -> Writer Any (DolanShimWit ground polarity t)
+    -> Writer Any (DolanSemiIsoShimWit ground polarity t)
 rollUpThisPlainType [] pt = return $ plainDolanShimWit $ mkShimWit pt
 rollUpThisPlainType (MkRollUp rpt (rt :: _ polarity' _):rr) pt = do
     t' <-
@@ -48,38 +48,38 @@ rollUpThisType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => [RollUp ground]
     -> DolanType ground polarity t
-    -> Writer Any (DolanShimWit ground polarity t)
+    -> Writer Any (DolanSemiIsoShimWit ground polarity t)
 rollUpThisType rr (PlainDolanType pt) = rollUpThisPlainType rr pt
-rollUpThisType rr (RecursiveDolanType n pt) = do
+rollUpThisType rr (RecursiveDolanType var pt) = do
     t' <- rollUpThisPlainType rr pt
-    return $ recursiveDolanShimWitWRONG (uVarName n) t'
+    return $ recursiveDolanShimWit var id t'
 
 rollUpChildrenPlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => [RollUp ground]
     -> DolanPlainType ground polarity t
-    -> Writer Any (DolanShimWit ground polarity t)
+    -> Writer Any (DolanSemiIsoShimWit ground polarity t)
 rollUpChildrenPlainType _rr NilDolanPlainType = return $ plainDolanShimWit nilDolanPlainShimWit
 rollUpChildrenPlainType rr (ConsDolanPlainType t1 tr) = do
     t1' <- mapDolanSingularTypeM (rollUpAllType rr) t1
     tr' <- rollUpChildrenPlainType rr tr
-    return $ joinMeetShimWit (singleDolanShimWit t1') tr'
+    return $ joinMeetSemiIsoShimWit (singleDolanShimWit t1') tr'
 
 rollUpChildrenType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => [RollUp ground]
     -> DolanType ground polarity t
-    -> Writer Any (DolanShimWit ground polarity t)
+    -> Writer Any (DolanSemiIsoShimWit ground polarity t)
 rollUpChildrenType rr (PlainDolanType pt) = rollUpChildrenPlainType rr pt
-rollUpChildrenType rr (RecursiveDolanType n pt) = do
+rollUpChildrenType rr (RecursiveDolanType var pt) = do
     t' <- rollUpChildrenPlainType rr pt
-    return $ recursiveDolanShimWitWRONG (uVarName n) t'
+    return $ recursiveDolanShimWit var id t'
 
 rollUpAllType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => [RollUp ground]
     -> DolanType ground polarity t
-    -> Writer Any (DolanShimWit ground polarity t)
+    -> Writer Any (DolanSemiIsoShimWit ground polarity t)
 rollUpAllType rr t = do
     t' <- rollUpThisType rr t
     chainShimWitM (rollUpChildrenType rr) t'
@@ -88,7 +88,7 @@ keepRolling ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => [RollUp ground]
     -> DolanType ground polarity t
-    -> DolanShimWit ground polarity t
+    -> DolanSemiIsoShimWit ground polarity t
 keepRolling [] t = mkShimWit t
 keepRolling rr t = let
     (t', Any x) = runWriter $ rollUpAllType rr t
@@ -124,12 +124,12 @@ getRollUpsInType t@(RecursiveDolanType _ pt) =
 rollUpInType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t
-    -> DolanShimWit ground polarity t
+    -> DolanSemiIsoShimWit ground polarity t
 rollUpInType t = keepRolling (getRollUpsInType t) t
 
 rollUpRecursiveTypes ::
        forall (ground :: GroundTypeKind) a.
-       (IsDolanGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
+       (IsDolanGroundType ground, PShimWitMappable (DolanPolySemiIsoShim ground Type) (DolanType ground) a)
     => a
     -> a
 rollUpRecursiveTypes = mapPShimWits @_ @(DolanType ground) rollUpInType rollUpInType

@@ -4,7 +4,8 @@ module Language.Expression.Common.TypeVariable
     , newUVar
     , assignUVar
     , assignUVarWit
-    , AssignedUVar(..)
+    , VarType(..)
+    , varTypeName
     , newAssignUVar
     , renameUVar
     ) where
@@ -33,12 +34,15 @@ assignUVarWit ::
     -> r
 assignUVarWit name _ = assignUVar @k @t name
 
-type AssignedUVar :: forall k. k -> Type
-data AssignedUVar t where
-    MkAssignedUVar :: forall k (name :: Symbol). SymbolType name -> AssignedUVar (UVar k name)
+type VarType :: forall k. k -> Type
+data VarType t where
+    MkVarType :: forall k (name :: Symbol). SymbolType name -> VarType (UVar k name)
 
-newAssignUVar :: forall (k :: Type) (t :: k). String -> AssignedUVar t
-newAssignUVar nstr = newUVar nstr $ \nsym -> assignUVar @k @t nsym $ MkAssignedUVar nsym
+varTypeName :: VarType t -> String
+varTypeName (MkVarType var) = uVarName var
 
-renameUVar :: forall (k :: Type) (oldname :: Symbol). SymbolType oldname -> String -> AssignedUVar (UVar k oldname)
+newAssignUVar :: forall (k :: Type) (t :: k). String -> VarType t
+newAssignUVar nstr = newUVar nstr $ \nsym -> assignUVar @k @t nsym $ MkVarType nsym
+
+renameUVar :: forall (k :: Type) (oldname :: Symbol). SymbolType oldname -> String -> VarType (UVar k oldname)
 renameUVar _ newname = newAssignUVar @k @(UVar k oldname) newname
