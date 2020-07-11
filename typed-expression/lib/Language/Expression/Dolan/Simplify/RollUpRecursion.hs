@@ -129,7 +129,12 @@ rollUpInType t = keepRolling (getRollUpsInType t) t
 
 rollUpRecursiveTypes ::
        forall (ground :: GroundTypeKind) a.
-       (IsDolanGroundType ground, PShimWitMappable (DolanPolySemiIsoShim ground Type) (DolanType ground) a)
+       (IsDolanGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
     => a
     -> a
-rollUpRecursiveTypes = mapPShimWits @_ @(DolanType ground) rollUpInType rollUpInType
+rollUpRecursiveTypes =
+    mapPShimWits
+        @_
+        @(DolanType ground)
+        (reshimWit polySemiIsoForwards . rollUpInType)
+        (reshimWit polySemiIsoForwards . rollUpInType)

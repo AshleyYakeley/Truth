@@ -289,10 +289,12 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
                             (do
                                  tq <- limitInvertType' $ PlainDolanType tp
                                  return $
-                                     joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvar) tq)
+                                     joinMeetSemiIsoShimWit
+                                         (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvar) $
+                                     reshimWit polySemiIso tq)
                 expr' <- runSolver $ invertSubstitute (MkInvertSubstitution oldvar newvar tp cid) expr
                 (expr'', bisubs) <-
                     solveSubsumer @(DolanTypeSystem ground) $ fmap (\fa -> fa $ uninvertPolarMap polar2) expr'
                 return (expr'', bisub : bisubs)
-    subsumerNegSubstitute subs t = runSubsumerM $ bisubstitutesType subs t
+    subsumerNegSubstitute subs t = fmap (reshimWit polySemiIsoForwards) $ runSubsumerM $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = fmap (fmap unPolarMap) $ runSolver $ subsumeType tinf tdecl

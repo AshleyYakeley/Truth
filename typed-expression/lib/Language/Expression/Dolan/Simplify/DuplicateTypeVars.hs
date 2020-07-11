@@ -50,7 +50,12 @@ mergeDuplicateTypeVarsInType (RecursiveDolanType var t) = recursiveMapType merge
 
 mergeDuplicateTypeVars ::
        forall (ground :: GroundTypeKind) a.
-       (IsDolanGroundType ground, PShimWitMappable (DolanPolySemiIsoShim ground Type) (DolanType ground) a)
+       (IsDolanGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
     => a
     -> a
-mergeDuplicateTypeVars = mapPShimWits @_ @(DolanType ground) mergeDuplicateTypeVarsInType mergeDuplicateTypeVarsInType
+mergeDuplicateTypeVars =
+    mapPShimWits
+        @_
+        @(DolanType ground)
+        (reshimWit polySemiIsoForwards . mergeDuplicateTypeVarsInType)
+        (reshimWit polySemiIsoForwards . mergeDuplicateTypeVarsInType)

@@ -86,6 +86,9 @@ polarPolyIsoPolar1 =
 type PolySemiIso :: PolyShimKind -> PolyShimKind
 type PolySemiIso = PolyMapT SemiIsomorphism
 
+polySemiIso :: forall (pshim :: PolyShimKind) k (a :: k) (b :: k). pshim k a b -> PolyMapT SemiIsomorphism pshim k a b
+polySemiIso iab = MkPolyMapT $ semiIso iab
+
 polySemiIsoForwards ::
        forall (pshim :: PolyShimKind) k (a :: k) (b :: k). PolyMapT SemiIsomorphism pshim k a b -> pshim k a b
 polySemiIsoForwards iab = semiIsoForwards $ unPolyMapT iab

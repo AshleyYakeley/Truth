@@ -160,11 +160,15 @@ bisubstitutesType (sub:subs) t = do
 
 bisubstitutes ::
        forall (ground :: GroundTypeKind) m a.
-       (IsDolanGroundType ground, MonadOne m, PShimWitMappable (DolanPolySemiIsoShim ground Type) (DolanType ground) a)
+       (IsDolanGroundType ground, MonadOne m, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
     => [Bisubstitution ground m]
     -> a
     -> m a
 bisubstitutes [] expr = return $ expr
 bisubstitutes (sub:subs) expr = do
-    expr' <- mapPShimWitsM (bisubstituteType sub) (bisubstituteType sub) expr
+    expr' <-
+        mapPShimWitsM
+            (fmap (reshimWit polySemiIsoForwards) . bisubstituteType sub)
+            (fmap (reshimWit polySemiIsoForwards) . bisubstituteType sub)
+            expr
     bisubstitutes subs expr'

@@ -37,7 +37,12 @@ elimInType (RecursiveDolanType var pt) = elimUnusuedInShimWit $ recursiveMapType
 
 eliminateUnusedRecursion ::
        forall (ground :: GroundTypeKind) a.
-       (IsDolanGroundType ground, PShimWitMappable (DolanPolySemiIsoShim ground Type) (DolanType ground) a)
+       (IsDolanGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
     => a
     -> a
-eliminateUnusedRecursion = mapPShimWits @_ @(DolanType ground) elimInType elimInType
+eliminateUnusedRecursion =
+    mapPShimWits
+        @_
+        @(DolanType ground)
+        (reshimWit polySemiIsoForwards . elimInType)
+        (reshimWit polySemiIsoForwards . elimInType)
