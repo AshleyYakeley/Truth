@@ -13,23 +13,23 @@ type T = UVar Type "t"
 type REC = T :~: Maybe T
 
 conv1 ::
-       forall shim a b. Category shim
+       forall (shim :: ShimKind Type) a b. InCategory shim
     => a :~: b -> shim a b
-conv1 Refl = id
+conv1 Refl = cid
 
 conv2 ::
-       forall shim a b. Category shim
+       forall (shim :: ShimKind Type) a b. InCategory shim
     => a :~: b -> shim b a
-conv2 Refl = id
+conv2 Refl = cid
 
 convT1 ::
-       forall shim. Category shim
+       forall (shim :: ShimKind Type). InCategory shim
     => REC
     -> shim T (Maybe T)
 convT1 = conv1 @shim @T @(Maybe T)
 
 convT2 ::
-       forall shim. Category shim
+       forall (shim :: ShimKind Type). InCategory shim
     => REC
     -> shim (Maybe T) T
 convT2 = conv2 @shim @T @(Maybe T)
@@ -60,20 +60,32 @@ testRec =
         found = countRec r r3
         in assertEqual "" 3 found
 
-justJM :: REC -> JMShim Type T T
-justJM r = convT2 r . toEnhanced "J" Just
+justJM :: EnhancedFunction shim => REC -> shim T T
+justJM r = convT2 r <.> toEnhanced "J" Just
 
-endless1 :: REC -> JMShim Type T T
-endless1 r = justJM r . lazyEnhanced (endless1 r)
+endless1 ::
+       forall (shim :: ShimKind Type). EnhancedFunction shim
+    => REC
+    -> shim T T
+endless1 r = justJM r <.> lazyEnhanced (endless1 r)
 
-endless2 :: REC -> JMShim Type T T
-endless2 r = lazyEnhanced (endless1 r) . justJM r
+endless2 ::
+       forall (shim :: ShimKind Type). EnhancedFunction shim
+    => REC
+    -> shim T T
+endless2 r = lazyEnhanced (endless1 @shim r) <.> justJM r
 
-applyEndless1 :: REC -> T
-applyEndless1 r = fromEnhanced (endless1 r) $ nothingRec r
+applyEndless1 ::
+       forall (shim :: ShimKind Type). EnhancedFunction shim
+    => REC
+    -> T
+applyEndless1 r = fromEnhanced (endless1 @shim r) $ nothingRec r
 
-applyEndless2 :: REC -> T
-applyEndless2 r = fromEnhanced (endless2 r) $ nothingRec r
+applyEndless2 ::
+       forall (shim :: ShimKind Type). EnhancedFunction shim
+    => REC
+    -> T
+applyEndless2 r = fromEnhanced (endless2 @shim r) $ nothingRec r
 
 checkEndless :: REC -> Int -> T -> Bool
 checkEndless _ 0 _ = True
@@ -83,10 +95,12 @@ checkEndless r n t =
         Nothing -> False
 
 testEndless1 :: TestTree
-testEndless1 = testCase "endless1" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless1 r
+testEndless1 =
+    testCase "endless1" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless1 @(JMShim Type) r
 
 testEndless2 :: TestTree
-testEndless2 = testCase "endless2" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless2 r
+testEndless2 =
+    testCase "endless2" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless2 @(JMShim Type) r
 
 testShim :: TestTree
 testShim = testGroup "shim" [testRec, testEndless1, testEndless2]
