@@ -66,8 +66,14 @@ justJM r = convT2 r . toEnhanced "J" Just
 endless1 :: REC -> JMShim Type T T
 endless1 r = justJM r . lazyEnhanced (endless1 r)
 
-applyEndless :: REC -> T
-applyEndless r = fromEnhanced (endless1 r) $ nothingRec r
+endless2 :: REC -> JMShim Type T T
+endless2 r = lazyEnhanced (endless1 r) . justJM r
+
+applyEndless1 :: REC -> T
+applyEndless1 r = fromEnhanced (endless1 r) $ nothingRec r
+
+applyEndless2 :: REC -> T
+applyEndless2 r = fromEnhanced (endless2 r) $ nothingRec r
 
 checkEndless :: REC -> Int -> T -> Bool
 checkEndless _ 0 _ = True
@@ -76,8 +82,11 @@ checkEndless r n t =
         Just _ -> checkEndless r (pred n) t
         Nothing -> False
 
-testRecursive :: TestTree
-testRecursive = testCase "recursive" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless r
+testEndless1 :: TestTree
+testEndless1 = testCase "endless1" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless1 r
+
+testEndless2 :: TestTree
+testEndless2 = testCase "endless2" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless2 r
 
 testShim :: TestTree
-testShim = testGroup "shim" [testRec, testRecursive]
+testShim = testGroup "shim" [testRec, testEndless1, testEndless2]
