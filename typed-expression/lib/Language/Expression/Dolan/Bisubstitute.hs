@@ -124,30 +124,6 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
                                        conv = sconv <.> (applyPolarPolyFuncShim vconv (lazyPolarSemiIso conv, id))
                                        in conv
 
-{-
-recursiveDolanType
-            pt' <- dolanNamespaceRename @ground pt
-            t' <- lift $ lift $ bisubstituteType sub pt'
-            return $ mkShimWit (RecursiveDolanType newvar t')
-
-
-    varSubstitute sub t@(RecursiveDolanType oldvar pt) = invertPolarity @polarity $ let
-            -- find a name that isn't free in either sub or t,
-            -- if possible the same name as oldvar
-            newname = runIdentity $
-                runVarRenamerT $ do
-                    runVarNamespaceT $ do
-                        _ <- dolanNamespaceRename @ground t
-                        _ <- dolanNamespaceRename @ground sub
-                        return ()
-                    varRenamerTGenerate [uVarName oldvar]
-            in newUVar newname $ \newvar -> case varSubstitute (mkPolarVarSubstitution @polarity oldvar newvar) pt of
-                MkShimWit pt' vconv -> case varSubstitute sub pt' of
-                    MkShimWit pt'' sconv -> assignUVarWit newvar pt'' $ MkShimWit (RecursiveDolanType newvar pt'') $
-                        mkPolarPolyFuncShim $ \vars -> let
-                            conv = applyPolarPolyFuncShim sconv vars <.> applyPolarPolyFuncShim vconv (lazyPolarSemiIso conv,cid)
-                            in conv
--}
 bisubstitutesType ::
        forall (ground :: GroundTypeKind) m polarity t. (IsDolanGroundType ground, MonadOne m, Is PolarityType polarity)
     => [Bisubstitution ground m]

@@ -80,3 +80,18 @@ library:
       - Language.Expression.Dolan.Subsume
       - Language.Expression.Dolan.Nonpolar
       - Language.Expression.Dolan.Concrete
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - typed-expression
+          - tasty
+          - tasty-expected-failure
+          - tasty-hunit
+        main: Main.hs
+        other-modules:
+          - Shim
+        ghc-options: -threaded
