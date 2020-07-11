@@ -84,3 +84,13 @@ isoPolarBackwards =
     case polarityType @polarity of
         PositiveType -> MkPolarMap . isoBackwards
         NegativeType -> MkPolarMap . isoForwards
+
+reshimPolarMap ::
+       forall polarity k (shim1 :: ShimKind k) (shim2 :: ShimKind k) (a :: k) (b :: k). Is PolarityType polarity
+    => (forall a' b'. shim1 a' b' -> shim2 a' b')
+    -> PolarMap shim1 polarity a b
+    -> PolarMap shim2 polarity a b
+reshimPolarMap f =
+    case polarityType @polarity of
+        PositiveType -> \(MkPolarMap p) -> MkPolarMap $ f p
+        NegativeType -> \(MkPolarMap p) -> MkPolarMap $ f p

@@ -6,12 +6,12 @@ module Language.Expression.Dolan.Nonpolar
     ) where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
-import Language.Expression.TypeVariable
 import Shapes
 
 newtype AnyPolarity (w :: k -> Type) (polarity :: Polarity) (a :: k) =

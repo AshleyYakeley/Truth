@@ -14,10 +14,10 @@ library:
       - Data.Shim
       - Language.Expression.Common
       - Language.Expression.Unitype
-      - Language.Expression.TypeVariable
       - Language.Expression.Dolan
     other-modules:
       - Data.Shim.PolyMap
+      - Data.Shim.ComposeShim
       - Data.Shim.Polarity
       - Data.Shim.PolarMap
       - Data.Shim.Variance
@@ -30,6 +30,7 @@ library:
       - Data.Shim.PolyShim
       - Data.Shim.JMShim
       - Data.Shim.PolyIso
+      - Data.Shim.PolyComposeShim
       - Data.Shim.JMShimWit
       - Language.Expression.Common.Error
       - Language.Expression.Common.WitnessMappable
@@ -40,7 +41,10 @@ library:
       - Language.Expression.Common.Named
       - Language.Expression.Common.Sealed
       - Language.Expression.Common.TypeSystem
-      - Language.Expression.Common.Renamer
+      - Language.Expression.Common.TypeVariable
+      - Language.Expression.Common.Rename.RenameTypeSystem
+      - Language.Expression.Common.Rename.VarRenamerT
+      - Language.Expression.Common.Rename.NamespaceRenamable
       - Language.Expression.Common.Simplifier
       - Language.Expression.Common.Unifier
       - Language.Expression.Common.Subsumer
@@ -55,11 +59,13 @@ library:
       - Language.Expression.Dolan.MPolarity
       - Language.Expression.Dolan.RangeF
       - Language.Expression.Dolan.Type
+      - Language.Expression.Dolan.VarSubstitute
       - Language.Expression.Dolan.Subtype
       - Language.Expression.Dolan.Bisubstitute
       - Language.Expression.Dolan.TypeSystem
       - Language.Expression.Dolan.Rename
       - Language.Expression.Dolan.Combine
+      - Language.Expression.Dolan.Unroll
       - Language.Expression.Dolan.Simplify.UnusedRecursion
       - Language.Expression.Dolan.Simplify.VarUses
       - Language.Expression.Dolan.Simplify.OneSidedTypeVars

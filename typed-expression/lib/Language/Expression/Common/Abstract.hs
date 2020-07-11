@@ -7,7 +7,7 @@ import Language.Expression.Common.Error
 import Language.Expression.Common.Expression
 import Language.Expression.Common.Named
 import Language.Expression.Common.Pattern
-import Language.Expression.Common.Renamer
+import Language.Expression.Common.Rename.RenameTypeSystem
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Simplifier
 import Language.Expression.Common.TypeSystem

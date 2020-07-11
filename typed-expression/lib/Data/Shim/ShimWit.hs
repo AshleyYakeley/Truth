@@ -159,3 +159,11 @@ toListShimWit ::
        forall k (shim :: ShimKind k) (wit :: k -> Type) lt. ToListShimWit shim wit lt
     => ListType (ShimWit shim wit 'Positive) lt
 toListShimWit = mapListType dictToShimWit representative
+
+reshimWit ::
+       forall polarity k (shim1 :: ShimKind k) (shim2 :: ShimKind k) (wit :: k -> Type) (t :: k).
+       Is PolarityType polarity
+    => (forall a' b'. shim1 a' b' -> shim2 a' b')
+    -> ShimWit shim1 wit polarity t
+    -> ShimWit shim2 wit polarity t
+reshimWit f (MkShimWit wt conv) = MkShimWit wt $ reshimPolarMap f conv

@@ -4,7 +4,7 @@ import Data.Shim
 import Language.Expression.Common.Abstract
 import Language.Expression.Common.Bindings
 import Language.Expression.Common.Error
-import Language.Expression.Common.Renamer
+import Language.Expression.Common.Rename.RenameTypeSystem
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Subsumer
 import Language.Expression.Common.TypeSystem

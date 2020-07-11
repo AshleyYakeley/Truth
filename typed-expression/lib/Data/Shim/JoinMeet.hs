@@ -152,11 +152,28 @@ instance JoinMeetCategory (->) where
     meetf f1 f2 v = BothMeetType (f1 v) (f2 v)
     applf rab ra (BothMeetType r1 r2) = rab r1 (ra r2)
 
+instance JoinMeetCategory shim => JoinMeetCategory (SemiIsomorphism shim) where
+    initf = semiIso initf
+    termf = semiIso termf
+    join1 = semiIso join1
+    join2 = semiIso join2
+    joinf ar br = semiIso $ joinf (semiIsoForwards ar) (semiIsoForwards br)
+    meet1 = semiIso meet1
+    meet2 = semiIso meet2
+    meetf ra rb = semiIso $ meetf (semiIsoForwards ra) (semiIsoForwards rb)
+    applf rab ra = semiIso $ applf (semiIsoForwards rab) (semiIsoForwards ra)
+
 class (CoercibleKind k, InCategory shim) => EnhancedFunction (shim :: ShimKind k) where
     toEnhanced :: (InKind a, InKind b) => String -> KindFunction a b -> shim a b
     fromEnhanced :: (InKind a, InKind b) => shim a b -> KindFunction a b
     coercionEnhanced :: (InKind a, InKind b) => String -> Coercion a b -> shim a b
     enhancedCoercion :: (InKind a, InKind b) => shim a b -> Maybe (Coercion a b)
+
+lazyEnhanced ::
+       forall k (shim :: ShimKind k) (a :: k) (b :: k). (EnhancedFunction shim, InKind a, InKind b)
+    => shim a b
+    -> shim a b
+lazyEnhanced sab = toEnhanced "recursive" $ fromEnhanced sab
 
 coerceEnhanced ::
        forall k (shim :: ShimKind k) (a :: k) (b :: k). (EnhancedFunction shim, InKind a, InKind b, Coercible a b)

@@ -1,32 +1,8 @@
 module Data.Shim.PolyMap where
 
 import Data.Shim.JoinMeet
+import Data.Shim.PolyShim
 import Shapes
-
-type PolyShimKind = forall k -> ShimKind k
-
-type PolyMorphism :: ShimKind Type -> PolyShimKind
-newtype PolyMorphism shim k a b =
-    MkPolyMorphism (KindMorphism shim a b)
-
-type PolyFunction :: PolyShimKind
-type PolyFunction = PolyMorphism (->)
-
-instance forall (shim :: ShimKind Type) k. InCategory (KindMorphism shim :: ShimKind k) =>
-             InCategory (PolyMorphism shim k) where
-    cid = MkPolyMorphism cid
-    MkPolyMorphism p <.> MkPolyMorphism q = MkPolyMorphism $ p <.> q
-
-instance forall (shim :: ShimKind Type) k. InGroupoid (KindMorphism shim :: ShimKind k) =>
-             InGroupoid (PolyMorphism shim k) where
-    cinvert (MkPolyMorphism p) = MkPolyMorphism $ cinvert p
-
-instance InCategory (KindMorphism shim :: ShimKind Type) => Category (PolyMorphism shim Type) where
-    id = cid
-    (.) = (<.>)
-
-instance InGroupoid (KindMorphism shim :: ShimKind Type) => Groupoid (PolyMorphism shim Type) where
-    invert = cinvert
 
 type PolyMapT :: (forall k. ShimKind k -> ShimKind k) -> PolyShimKind -> PolyShimKind
 newtype PolyMapT f pmap k a b = MkPolyMapT
@@ -69,3 +45,15 @@ instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind
     iMeetSwap = MkPolyMapT iMeetSwap
     iMeetSwapL = MkPolyMapT iMeetSwapL
     iMeetSwapR = MkPolyMapT iMeetSwapR
+
+instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind). JoinMeetCategory (f (pshim Type)) =>
+             JoinMeetCategory (PolyMapT f pshim Type) where
+    initf = MkPolyMapT initf
+    termf = MkPolyMapT termf
+    join1 = MkPolyMapT join1
+    join2 = MkPolyMapT join2
+    joinf ar br = MkPolyMapT $ joinf (unPolyMapT ar) (unPolyMapT br)
+    meet1 = MkPolyMapT meet1
+    meet2 = MkPolyMapT meet2
+    meetf ra rb = MkPolyMapT $ meetf (unPolyMapT ra) (unPolyMapT rb)
+    applf rab ra = MkPolyMapT $ applf (unPolyMapT rab) (unPolyMapT ra)
