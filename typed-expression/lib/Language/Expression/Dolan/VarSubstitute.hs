@@ -115,32 +115,6 @@ polarVarSubstitute oldvar newvar conv wt =
     case varSubstitute (mkPolarVarSubstitution @polarity oldvar newvar) wt of
         MkShimWit wt' rconv -> MkShimWit wt' $ applyPolarPolyFuncShim rconv (conv, id)
 
-recursiveMapType ::
-       forall (ground :: GroundTypeKind) polarity (name :: Symbol). (IsDolanGroundType ground, Is PolarityType polarity)
-    => (forall a. DolanType ground polarity a -> DolanSemiIsoShimWit ground polarity a)
-    -> SymbolType name
-    -> DolanType ground polarity (UVar Type name)
-    -> DolanSemiIsoSingularShimWit ground polarity (UVar Type name)
-recursiveMapType f oldvar pt = let
-    newname =
-        runIdentity $
-        runVarRenamerT $ do
-            runVarNamespaceT $ do
-                _ <- dolanNamespaceRename @ground pt
-                return ()
-            varRenamerTGenerate [uVarName oldvar]
-    in newUVar newname $ \newvar ->
-           invertPolarity @polarity $ let
-               sub :: VarSubstitution _ polarity _ _
-               sub = mkPolarVarSubstitution oldvar newvar
-               in case varSubstitute @_ @(DolanPolySemiIsoShim ground) sub pt of
-                      MkShimWit pt' rconv ->
-                          case f pt' of
-                              MkShimWit tpt jconv ->
-                                  assignUVarWit newvar tpt $ let
-                                      conv = jconv . (applyPolarPolyFuncShim rconv (lazyPolarMap conv, id))
-                                      in MkShimWit (RecursiveDolanSingularType newvar tpt) conv
-
 recursiveDolanShimWit ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity name t.
        (IsDolanGroundType ground, GenShim pshim, Is PolarityType polarity)

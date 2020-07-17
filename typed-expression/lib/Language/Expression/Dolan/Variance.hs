@@ -36,12 +36,6 @@ instance forall (pshim :: PolyShimKind). (DolanVarianceInCategory pshim) => Dola
         case dolanVarianceInCategory @pshim lt of
             Dict -> Dict
 
-instance forall (pshim :: PolyShimKind). (DolanVarianceInCategory pshim) => DolanVarianceInCategory (PolySemiIso pshim) where
-    dolanVarianceInCategory NilListType = Dict
-    dolanVarianceInCategory (ConsListType _ lt) =
-        case dolanVarianceInCategory @pshim lt of
-            Dict -> Dict
-
 instance forall (pshim :: PolyShimKind) m. (DolanVarianceInCategory pshim, Applicative m) =>
              DolanVarianceInCategory (PolyComposeShim m pshim) where
     dolanVarianceInCategory NilListType = Dict

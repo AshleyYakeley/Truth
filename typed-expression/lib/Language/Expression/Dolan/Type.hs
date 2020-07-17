@@ -33,9 +33,6 @@ type DolanShimWit ground polarity = PShimWit (DolanPolyShim ground Type) (DolanT
 type DolanIsoShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanIsoShimWit ground polarity = PShimWit (DolanPolyIsoShim ground Type) (DolanType ground) polarity
 
-type DolanSemiIsoShimWit :: GroundTypeKind -> Polarity -> Type -> Type
-type DolanSemiIsoShimWit ground polarity = PShimWit (DolanPolySemiIsoShim ground Type) (DolanType ground) polarity
-
 type DolanType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanType ground polarity t where
     NilDolanType :: forall (ground :: GroundTypeKind) polarity. DolanType ground polarity (LimitType polarity)
@@ -90,10 +87,6 @@ instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
 type DolanSingularShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanSingularShimWit ground polarity = PShimWit (DolanPolyShim ground Type) (DolanSingularType ground) polarity
 
-type DolanSemiIsoSingularShimWit :: GroundTypeKind -> Polarity -> Type -> Type
-type DolanSemiIsoSingularShimWit ground polarity
-     = PShimWit (DolanPolySemiIsoShim ground Type) (DolanSingularType ground) polarity
-
 nilDolanShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity).
        (IsDolanGroundType ground, InCategory shim, Is PolarityType polarity)
@@ -109,10 +102,10 @@ consDolanShimWit ::
 consDolanShimWit (MkShimWit t1 conv1) (MkShimWit tr convr) = MkShimWit (ConsDolanType t1 tr) (iPolarPair conv1 convr)
 
 unsafeDeleteVarShimWit ::
-       forall (ground :: GroundTypeKind) (polarity :: Polarity) name.
-       (IsDolanGroundType ground, Is PolarityType polarity)
+       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) name.
+       (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity)
     => SymbolType name
-    -> DolanSemiIsoShimWit ground polarity (UVar Type name)
+    -> PShimWit shim (DolanType ground) polarity (UVar Type name)
 unsafeDeleteVarShimWit n = assignUVar @Type @(LimitType polarity) n $ mkShimWit NilDolanType
 
 class TypeFreeVariables (t :: Type) where

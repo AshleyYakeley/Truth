@@ -12,14 +12,14 @@ import Shapes
 mergeInSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity t
-    -> DolanSemiIsoSingularShimWit ground polarity t
+    -> DolanSingularShimWit ground polarity t
 mergeInSingularType = mapDolanSingularType mergeDuplicateTypeVarsInType
 
 mergeIn1SingularType ::
        forall (ground :: GroundTypeKind) polarity t1 tr. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity t1
     -> DolanType ground polarity tr
-    -> DolanSemiIsoShimWit ground polarity (JoinMeetType polarity t1 tr)
+    -> DolanShimWit ground polarity (JoinMeetType polarity t1 tr)
 mergeIn1SingularType ts NilDolanType = mkShimWit $ ConsDolanType ts NilDolanType
 mergeIn1SingularType (VarDolanSingularType vn1) (ConsDolanType (VarDolanSingularType vn2) tr)
     | Just Refl <- testEquality vn1 vn2 =
@@ -32,7 +32,7 @@ mergeIn1SingularType ts (ConsDolanType t1 tr) =
 mergeDuplicateTypeVarsInType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t
-    -> DolanSemiIsoShimWit ground polarity t
+    -> DolanShimWit ground polarity t
 mergeDuplicateTypeVarsInType NilDolanType = mkShimWit NilDolanType
 mergeDuplicateTypeVarsInType (ConsDolanType t1 tr) =
     case mergeInSingularType t1 of
@@ -45,9 +45,4 @@ mergeDuplicateTypeVars ::
        (IsDolanGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
     => a
     -> a
-mergeDuplicateTypeVars =
-    mapPShimWits
-        @_
-        @(DolanType ground)
-        (reshimWit polySemiIsoForwards . mergeDuplicateTypeVarsInType)
-        (reshimWit polySemiIsoForwards . mergeDuplicateTypeVarsInType)
+mergeDuplicateTypeVars = mapPShimWits @_ @(DolanType ground) mergeDuplicateTypeVarsInType mergeDuplicateTypeVarsInType

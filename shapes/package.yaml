@@ -42,7 +42,6 @@ library:
       - Data.IsoVariant
       - Data.Injection
       - Data.Isomorphism
-      - Data.SemiIsomorphism
       - Data.Lens
       - Data.Store
       - Data.ConstFunction

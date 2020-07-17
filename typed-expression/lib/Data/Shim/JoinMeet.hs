@@ -107,26 +107,6 @@ instance JoinMeetIsoCategory shim => JoinMeetIsoCategory (Isomorphism shim) wher
     iMeetSwapL = MkIsomorphism iMeetSwapL iMeetSwapR
     iMeetSwapR = MkIsomorphism iMeetSwapR iMeetSwapL
 
-instance JoinMeetIsoCategory shim => JoinMeetIsoCategory (SemiIsomorphism shim) where
-    iJoinL1 = MkSemiIsomorphism iJoinL1 $ pure iJoinR1
-    iJoinL2 = MkSemiIsomorphism iJoinL2 $ pure iJoinR2
-    iJoinR1 = MkSemiIsomorphism iJoinR1 $ pure iJoinL1
-    iJoinR2 = MkSemiIsomorphism iJoinR2 $ pure iJoinL2
-    iJoinPair (MkSemiIsomorphism a1a2 ma2a1) (MkSemiIsomorphism b1b2 mb2b1) =
-        MkSemiIsomorphism (iJoinPair a1a2 b1b2) (liftA2 iJoinPair ma2a1 mb2b1)
-    iJoinSwap = MkSemiIsomorphism iJoinSwap $ pure iJoinSwap
-    iJoinSwapL = MkSemiIsomorphism iJoinSwapL $ pure iJoinSwapR
-    iJoinSwapR = MkSemiIsomorphism iJoinSwapR $ pure iJoinSwapL
-    iMeetL1 = MkSemiIsomorphism iMeetL1 $ pure iMeetR1
-    iMeetL2 = MkSemiIsomorphism iMeetL2 $ pure iMeetR2
-    iMeetR1 = MkSemiIsomorphism iMeetR1 $ pure iMeetL1
-    iMeetR2 = MkSemiIsomorphism iMeetR2 $ pure iMeetL2
-    iMeetPair (MkSemiIsomorphism a1a2 ma2a1) (MkSemiIsomorphism b1b2 mb2b1) =
-        MkSemiIsomorphism (iMeetPair a1a2 b1b2) (liftA2 iMeetPair ma2a1 mb2b1)
-    iMeetSwap = MkSemiIsomorphism iMeetSwap $ pure iMeetSwap
-    iMeetSwapL = MkSemiIsomorphism iMeetSwapL $ pure iMeetSwapR
-    iMeetSwapR = MkSemiIsomorphism iMeetSwapR $ pure iMeetSwapL
-
 class JoinMeetIsoCategory shim => JoinMeetCategory (shim :: ShimKind Type) where
     initf :: shim BottomType a
     termf :: shim a TopType
@@ -151,17 +131,6 @@ instance JoinMeetCategory (->) where
     meet2 (BothMeetType _ v) = v
     meetf f1 f2 v = BothMeetType (f1 v) (f2 v)
     applf rab ra (BothMeetType r1 r2) = rab r1 (ra r2)
-
-instance JoinMeetCategory shim => JoinMeetCategory (SemiIsomorphism shim) where
-    initf = semiIso initf
-    termf = semiIso termf
-    join1 = semiIso join1
-    join2 = semiIso join2
-    joinf ar br = semiIso $ joinf (semiIsoForwards ar) (semiIsoForwards br)
-    meet1 = semiIso meet1
-    meet2 = semiIso meet2
-    meetf ra rb = semiIso $ meetf (semiIsoForwards ra) (semiIsoForwards rb)
-    applf rab ra = semiIso $ applf (semiIsoForwards rab) (semiIsoForwards ra)
 
 class (CoercibleKind k, InCategory shim) => FunctionShim (shim :: ShimKind k) where
     functionToShim :: (InKind a, InKind b) => String -> KindFunction a b -> shim a b
@@ -212,6 +181,3 @@ instance LazyCategory (->)
 
 instance LazyCategory shim => LazyCategory (Isomorphism shim) where
     iLazy ~(MkIsomorphism ab ba) = MkIsomorphism (iLazy ab) (iLazy ba)
-
-instance LazyCategory shim => LazyCategory (SemiIsomorphism shim) where
-    iLazy ~(MkSemiIsomorphism ab mba) = MkSemiIsomorphism (iLazy ab) (fmap iLazy mba)

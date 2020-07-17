@@ -14,7 +14,7 @@ elimInType ::
        forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)
     => Maybe (SymbolType name)
     -> DolanType ground polarity t
-    -> DolanSemiIsoShimWit ground polarity t
+    -> DolanShimWit ground polarity t
 elimInType _ NilDolanType = nilDolanShimWit
 elimInType mn@(Just rn) (ConsDolanType (VarDolanSingularType n) tr)
     | Just Refl <- testEquality rn n = joinMeetShimWit (unsafeDeleteVarShimWit n) (elimInType mn tr)
@@ -25,9 +25,4 @@ eliminateUnusedRecursion ::
        (IsDolanGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
     => a
     -> a
-eliminateUnusedRecursion =
-    mapPShimWits
-        @_
-        @(DolanType ground)
-        (reshimWit polySemiIsoForwards . elimInType Nothing)
-        (reshimWit polySemiIsoForwards . elimInType Nothing)
+eliminateUnusedRecursion = mapPShimWits @_ @(DolanType ground) (elimInType Nothing) (elimInType Nothing)

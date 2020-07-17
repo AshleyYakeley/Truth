@@ -38,5 +38,4 @@ import Data.MonadOne as I
 import Data.MonoApplicative as I
 import Data.Result as I
 import Data.SameItem as I
-import Data.SemiIsomorphism as I
 import Data.Store as I
