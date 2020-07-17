@@ -51,7 +51,7 @@ tsAnyToVal ::
     -> TSInner ts t
 tsAnyToVal witn (MkAnyValue witp val) = do
     conv <- tsUnify @ts witp witn
-    return $ fromEnhanced conv val
+    return $ shimToFunction conv val
 
 tsEvalToType ::
        forall ts t. (CompleteTypeSystem ts, MonadThrow ExpressionError (TSInner ts), Show (TSName ts))

@@ -7,10 +7,13 @@ module Language.Expression.Dolan.Solver
     , solverOpenExpression
     , runSolver
     , solveRecursiveTypes
+    , solveRecursiveShimWits
+    , solveRecursiveSingularTypes
     ) where
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -29,8 +32,8 @@ data ShimType ground t where
         :: forall (ground :: GroundTypeKind) pola polb a b.
            PolarityType pola
         -> PolarityType polb
-        -> DolanType ground pola a
-        -> DolanType ground polb b
+        -> RecursiveOrPlainType ground pola a
+        -> RecursiveOrPlainType ground polb b
         -> ShimType ground (DolanPolyShim ground Type a b)
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEquality (ShimType ground) where
@@ -95,27 +98,50 @@ solveRecursiveTypes ::
        forall (ground :: GroundTypeKind) pola polb wit a b.
        (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb)
     => (forall pa pb.
-                DolanPlainType ground pola pa -> DolanPlainType ground polb pb -> Solver ground wit (DolanPolyShim ground Type pa pb))
-    -> DolanType ground pola a
-    -> DolanType ground polb b
+                DolanType ground pola pa -> DolanType ground polb pb -> Solver ground wit (DolanPolyShim ground Type pa pb))
+    -> RecursiveOrPlainType ground pola a
+    -> RecursiveOrPlainType ground polb b
     -> Solver ground wit (DolanPolyShim ground Type a b)
-solveRecursiveTypes solvePlainTypes (PlainDolanType pta) (PlainDolanType ptb) = solvePlainTypes pta ptb
-solveRecursiveTypes solvePlainTypes ta tb =
+solveRecursiveTypes solvePlainTypes rpta rptb =
     invertPolarity @polb $
     MkSolver $ do
-        let st = MkShimType (polarityType @pola) (polarityType @polb) ta tb
+        let st = MkShimType (polarityType @pola) (polarityType @polb) rpta rptb
         rcs <- ask
         case lookUpListElement st rcs of
             Just lelem -> return $ pure $ getListElement lelem
             Nothing ->
                 withReaderT (\rcs' -> ConsListType st rcs') $ do
-                    MkShimWit pta iconva <- return $ dolanTypeToPlainUnroll ta
-                    conva <- mpure $ polarPolySemiIsoPositive iconva
-                    MkShimWit ptb iconvb <- return $ dolanTypeToPlainUnroll tb
-                    convb <- mpure $ polarPolySemiIsoNegative iconvb
+                    MkShimWit pta iconva <- return $ unrollRecursiveOrPlainType rpta
+                    conva <- return $ polarPolyIsoPositive iconva
+                    MkShimWit ptb iconvb <- return $ unrollRecursiveOrPlainType rptb
+                    convb <- return $ polarPolyIsoNegative iconvb
                     erconv <- unSolver $ solvePlainTypes pta ptb
                     let
                         fixconv rconv rl = let
-                            conv = convb <.> rconv (lazyEnhanced conv, rl) <.> conva
+                            conv = convb <.> rconv (lazyFunctionShim conv, rl) <.> conva
                             in conv
                     return $ fmap fixconv erconv
+
+solveRecursiveShimWits ::
+       forall (ground :: GroundTypeKind) pola polb wit a b.
+       (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb)
+    => (forall pa pb.
+                DolanType ground pola pa -> DolanType ground polb pb -> Solver ground wit (DolanPolyShim ground Type pa pb))
+    -> PShimWit (DolanPolyIsoShim ground Type) (RecursiveOrPlainType ground) pola a
+    -> PShimWit (DolanPolyIsoShim ground Type) (RecursiveOrPlainType ground) polb b
+    -> Solver ground wit (DolanPolyShim ground Type a b)
+solveRecursiveShimWits solvePlainTypes (MkShimWit rpta conva) (MkShimWit rptb convb) =
+    fmap (\conv -> polarPolyIsoNegative convb . conv . polarPolyIsoPositive conva) $
+    solveRecursiveTypes solvePlainTypes rpta rptb
+
+-- | at least one type must be recursive
+solveRecursiveSingularTypes ::
+       forall (ground :: GroundTypeKind) pola polb wit a b.
+       (IsDolanSubtypeGroundType ground, Is PolarityType pola, Is PolarityType polb)
+    => (forall pa pb.
+                DolanType ground pola pa -> DolanType ground polb pb -> Solver ground wit (DolanPolyShim ground Type pa pb))
+    -> DolanSingularType ground pola a
+    -> DolanSingularType ground polb b
+    -> Solver ground wit (DolanPolyShim ground Type a b)
+solveRecursiveSingularTypes solvePlainTypes ta tb =
+    solveRecursiveShimWits solvePlainTypes (singularRecursiveOrPlainType ta) (singularRecursiveOrPlainType tb)

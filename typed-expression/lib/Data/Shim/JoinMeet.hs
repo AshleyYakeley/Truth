@@ -37,7 +37,7 @@ pattern BothMeetType a b = MkMeetType (a, b)
 
 {-# COMPLETE BothMeetType #-}
 
-class InCategory shim => JoinMeetIsoCategory (shim :: Type -> Type -> Type) where
+class (Category shim, InCategory shim) => JoinMeetIsoCategory (shim :: ShimKind Type) where
     iJoinL1 :: shim (JoinType a BottomType) a
     default iJoinL1 :: JoinMeetCategory shim => shim (JoinType a BottomType) a
     iJoinL1 = joinf cid initf
@@ -127,7 +127,7 @@ instance JoinMeetIsoCategory shim => JoinMeetIsoCategory (SemiIsomorphism shim) 
     iMeetSwapL = MkSemiIsomorphism iMeetSwapL $ pure iMeetSwapR
     iMeetSwapR = MkSemiIsomorphism iMeetSwapR $ pure iMeetSwapL
 
-class JoinMeetIsoCategory shim => JoinMeetCategory (shim :: Type -> Type -> Type) where
+class JoinMeetIsoCategory shim => JoinMeetCategory (shim :: ShimKind Type) where
     initf :: shim BottomType a
     termf :: shim a TopType
     join1 :: shim a (JoinType a b)
@@ -163,42 +163,55 @@ instance JoinMeetCategory shim => JoinMeetCategory (SemiIsomorphism shim) where
     meetf ra rb = semiIso $ meetf (semiIsoForwards ra) (semiIsoForwards rb)
     applf rab ra = semiIso $ applf (semiIsoForwards rab) (semiIsoForwards ra)
 
-class (CoercibleKind k, InCategory shim) => EnhancedFunction (shim :: ShimKind k) where
-    toEnhanced :: (InKind a, InKind b) => String -> KindFunction a b -> shim a b
-    fromEnhanced :: (InKind a, InKind b) => shim a b -> KindFunction a b
+class (CoercibleKind k, InCategory shim) => FunctionShim (shim :: ShimKind k) where
+    functionToShim :: (InKind a, InKind b) => String -> KindFunction a b -> shim a b
+    shimToFunction :: (InKind a, InKind b) => shim a b -> KindFunction a b
     coercionEnhanced :: (InKind a, InKind b) => String -> Coercion a b -> shim a b
     enhancedCoercion :: (InKind a, InKind b) => shim a b -> Maybe (Coercion a b)
 
-lazyEnhanced ::
-       forall k (shim :: ShimKind k) (a :: k) (b :: k). (EnhancedFunction shim, InKind a, InKind b)
+lazyFunctionShim ::
+       forall k (shim :: ShimKind k) (a :: k) (b :: k). (FunctionShim shim, InKind a, InKind b)
     => shim a b
     -> shim a b
-lazyEnhanced sab = toEnhanced "recursive" $ fromEnhanced sab
+lazyFunctionShim sab = functionToShim "recursive" $ shimToFunction sab
 
 coerceEnhanced ::
-       forall k (shim :: ShimKind k) (a :: k) (b :: k). (EnhancedFunction shim, InKind a, InKind b, Coercible a b)
+       forall k (shim :: ShimKind k) (a :: k) (b :: k). (FunctionShim shim, InKind a, InKind b, Coercible a b)
     => String
     -> shim a b
 coerceEnhanced t = coercionEnhanced t MkCoercion
 
-instance EnhancedFunction (->) where
-    toEnhanced _ = id
-    fromEnhanced = id
+instance FunctionShim (->) where
+    functionToShim _ = id
+    shimToFunction = id
     coercionEnhanced _ MkCoercion = coerce
     enhancedCoercion _ = Nothing
 
 instance Eq a => Eq (MeetType a b) where
     BothMeetType a1 _ == BothMeetType a2 _ = a1 == a2
 
-class (InCategory shim, JoinMeetCategory shim, EnhancedFunction shim) => Shim (shim :: ShimKind Type) where
+class (JoinMeetCategory shim, FunctionShim shim) => CartesianShim (shim :: ShimKind Type) where
     funcShim :: forall a b p q. shim a b -> shim p q -> shim (b -> p) (a -> q)
     pairShim :: forall a b p q. shim a b -> shim p q -> shim (a, p) (b, q)
     eitherShim :: forall a b p q. shim a b -> shim p q -> shim (Either a p) (Either b q)
     shimExtractFunction :: shim a (b -> c) -> (forall c'. shim a (b -> c') -> shim c' c -> r) -> r
     shimExtractFunction abc call = call abc cid
 
-instance Shim (->) where
+instance CartesianShim (->) where
     funcShim ab pq bp = pq . bp . ab
     pairShim ab pq (a, p) = (ab a, pq p)
     eitherShim ab _ (Left a) = Left $ ab a
     eitherShim _ pq (Right p) = Right $ pq p
+
+class JoinMeetIsoCategory shim => LazyCategory (shim :: ShimKind Type) where
+    iLazy :: forall a b. shim a b -> shim a b
+    default iLazy :: forall a b. FunctionShim shim => shim a b -> shim a b
+    iLazy = lazyFunctionShim
+
+instance LazyCategory (->)
+
+instance LazyCategory shim => LazyCategory (Isomorphism shim) where
+    iLazy ~(MkIsomorphism ab ba) = MkIsomorphism (iLazy ab) (iLazy ba)
+
+instance LazyCategory shim => LazyCategory (SemiIsomorphism shim) where
+    iLazy ~(MkSemiIsomorphism ab mba) = MkSemiIsomorphism (iLazy ab) (fmap iLazy mba)

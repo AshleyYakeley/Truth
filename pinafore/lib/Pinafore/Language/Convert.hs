@@ -39,25 +39,25 @@ $(literalInstances [t|()|])
 
 -- Double
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Double where
-    toShimWit = mapPosShimWit (toEnhanced "subtype" InexactNumber) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" InexactNumber) toJMShimWit
 
 -- Int
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Int where
-    toShimWit = mapPosShimWit (toEnhanced "subtype" toInteger) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" toInteger) toJMShimWit
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Int where
-    fromShimWit = mapNegShimWit (toEnhanced "subtype" fromInteger) fromJMShimWit
+    fromShimWit = mapNegShimWit (functionToShim "subtype" fromInteger) fromJMShimWit
 
 -- Rational
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Rational where
-    toShimWit = mapPosShimWit (toEnhanced "subtype" $ fromRational @SafeRational) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" $ fromRational @SafeRational) toJMShimWit
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Rational where
-    fromShimWit = mapNegShimWit (toEnhanced "subtype" $ toRational @SafeRational) fromJMShimWit
+    fromShimWit = mapNegShimWit (functionToShim "subtype" $ toRational @SafeRational) fromJMShimWit
 
 -- Fixed
 instance HasResolution r => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (Fixed r) where
-    toShimWit = mapPosShimWit (toEnhanced "subtype" toRational) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" toRational) toJMShimWit
 
 instance HasResolution r => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (Fixed r) where
-    fromShimWit = mapNegShimWit (toEnhanced "subtype" fromRational) fromJMShimWit
+    fromShimWit = mapNegShimWit (functionToShim "subtype" fromRational) fromJMShimWit

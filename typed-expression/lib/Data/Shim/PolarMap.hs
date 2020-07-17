@@ -94,3 +94,13 @@ reshimPolarMap f =
     case polarityType @polarity of
         PositiveType -> \(MkPolarMap p) -> MkPolarMap $ f p
         NegativeType -> \(MkPolarMap p) -> MkPolarMap $ f p
+
+lazyPolarMap ::
+       forall (shim :: ShimKind Type) polarity a b. (LazyCategory shim, Is PolarityType polarity)
+    => PolarMap shim polarity a b
+    -> PolarMap shim polarity a b
+lazyPolarMap (MkPolarMap ab) =
+    MkPolarMap $
+    case polarityType @polarity of
+        PositiveType -> iLazy ab
+        NegativeType -> iLazy ab

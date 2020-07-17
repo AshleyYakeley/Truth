@@ -45,22 +45,18 @@ instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground
     namespaceRename (VarDolanSingularType oldvar) = do
         MkVarType newvar <- varNamespaceTRenameUVar @Type oldvar
         return $ VarDolanSingularType newvar
-
-instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             NamespaceRenamable (DolanTypeSystem ground) (DolanPlainType ground polarity t) where
-    namespaceRename NilDolanPlainType = return NilDolanPlainType
-    namespaceRename (ConsDolanPlainType ta tb) = do
-        ta' <- dolanNamespaceRename @ground ta
-        tb' <- dolanNamespaceRename @ground tb
-        return $ ConsDolanPlainType ta' tb'
+    namespaceRename (RecursiveDolanSingularType oldvar st) = do
+        varNamespaceTLocalUVar @Type oldvar $ \(MkVarType newvar) -> do
+            st' <- dolanNamespaceRename @ground st
+            return $ RecursiveDolanSingularType newvar st'
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
              NamespaceRenamable (DolanTypeSystem ground) (DolanType ground polarity t) where
-    namespaceRename (PlainDolanType pt) = fmap PlainDolanType $ dolanNamespaceRename @ground pt
-    namespaceRename (RecursiveDolanType oldvar st) = do
-        varNamespaceTLocalUVar @Type oldvar $ \(MkVarType newvar) -> do
-            st' <- dolanNamespaceRename @ground st
-            return $ RecursiveDolanType newvar st'
+    namespaceRename NilDolanType = return NilDolanType
+    namespaceRename (ConsDolanType ta tb) = do
+        ta' <- dolanNamespaceRename @ground ta
+        tb' <- dolanNamespaceRename @ground tb
+        return $ ConsDolanType ta' tb'
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => RenameTypeSystem (DolanTypeSystem ground) where
     type RenamerT (DolanTypeSystem ground) = VarRenamerT (DolanTypeSystem ground)

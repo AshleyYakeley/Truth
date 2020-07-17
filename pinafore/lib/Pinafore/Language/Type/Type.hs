@@ -13,12 +13,6 @@ import Shapes
 type PinaforeSingularType :: Polarity -> Type -> Type
 type PinaforeSingularType = DolanSingularType PinaforeGroundType
 
-type PinaforePlainType :: Polarity -> Type -> Type
-type PinaforePlainType = DolanPlainType PinaforeGroundType
-
-type PinaforePlainShimWit :: Polarity -> Type -> Type
-type PinaforePlainShimWit polarity = PShimWit (PinaforePolyShim Type) PinaforePlainType polarity
-
 type PinaforeType :: Polarity -> Type -> Type
 type PinaforeType = DolanType PinaforeGroundType
 

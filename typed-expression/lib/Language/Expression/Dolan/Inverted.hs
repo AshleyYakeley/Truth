@@ -23,44 +23,39 @@ subtypeSS (VarDolanSingularType np) (VarDolanSingularType nq)
     | Just Refl <- testEquality np nq = pure id
 subtypeSS (GroundDolanSingularType gp argsp) (GroundDolanSingularType gq argsq) =
     subtypeGroundTypes solverLiftM invertedContext gp argsp gq argsq
+subtypeSS sta@(RecursiveDolanSingularType _ _) stb = solveRecursiveSingularTypes invertedSubtype sta stb
+subtypeSS sta stb@(RecursiveDolanSingularType _ _) = solveRecursiveSingularTypes invertedSubtype sta stb
 subtypeSS _ _ = empty
 
-subtypeSP ::
+subtypeST ::
        forall (ground :: GroundTypeKind) wit p q. (IsDolanSubtypeGroundType ground)
     => DolanSingularType ground 'Negative p
-    -> DolanPlainType ground 'Positive q
+    -> DolanType ground 'Positive q
     -> Solver ground wit (DolanPolyShim ground Type p q)
-subtypeSP _ NilDolanPlainType = empty
-subtypeSP sp (ConsDolanPlainType sq tq) =
-    fmap (\conv -> join1 . conv) (subtypeSS sp sq) <|> fmap (\conv -> join2 . conv) (subtypeSP sp tq)
-
-subtypePP ::
-       forall (ground :: GroundTypeKind) wit p q. (IsDolanSubtypeGroundType ground)
-    => DolanPlainType ground 'Negative p
-    -> DolanPlainType ground 'Positive q
-    -> Solver ground wit (DolanPolyShim ground Type p q)
-subtypePP NilDolanPlainType _ = empty
-subtypePP (ConsDolanPlainType sp tp) tq =
-    fmap (\conv -> conv . meet1) (subtypeSP sp tq) <|> fmap (\conv -> conv . meet2) (subtypePP tp tq)
+subtypeST _ NilDolanType = empty
+subtypeST sp (ConsDolanType sq tq) =
+    fmap (\conv -> join1 . conv) (subtypeSS sp sq) <|> fmap (\conv -> join2 . conv) (subtypeST sp tq)
 
 subtypeTT ::
        forall (ground :: GroundTypeKind) wit p q. (IsDolanSubtypeGroundType ground)
     => DolanType ground 'Negative p
     -> DolanType ground 'Positive q
     -> Solver ground wit (DolanPolyShim ground Type p q)
-subtypeTT = solveRecursiveTypes subtypePP
+subtypeTT NilDolanType _ = empty
+subtypeTT (ConsDolanType sp tp) tq =
+    fmap (\conv -> conv . meet1) (subtypeST sp tq) <|> fmap (\conv -> conv . meet2) (subtypeTT tp tq)
 
 invertedSubtype ::
        forall (ground :: GroundTypeKind) wit p q. (IsDolanSubtypeGroundType ground)
-    => DolanPlainType ground 'Negative p
-    -> DolanPlainType ground 'Positive q
+    => DolanType ground 'Negative p
+    -> DolanType ground 'Positive q
     -> Solver ground wit (DolanPolyShim ground Type p q)
-invertedSubtype tp tq = subtypePP tp tq <|> solverLiftM (throwTypeConvertInverseError tp tq)
+invertedSubtype tp tq = subtypeTT tp tq <|> solverLiftM (throwTypeConvertInverseError tp tq)
 
 invertedPolarSubtype ::
        forall (ground :: GroundTypeKind) polarity wit p q. (Is PolarityType polarity, IsDolanSubtypeGroundType ground)
-    => DolanPlainType ground (InvertPolarity polarity) p
-    -> DolanPlainType ground polarity q
+    => DolanType ground (InvertPolarity polarity) p
+    -> DolanType ground polarity q
     -> Solver ground wit (DolanPolarMap ground polarity p q)
 invertedPolarSubtype tp tq =
     case polarityType @polarity of

@@ -161,7 +161,7 @@ applySealedExpression appw sexprf sexpra =
             conv <- uuGetShim uconv
             pure $
                 shimExtractFunction conv $ \fconv tconv ->
-                    MkSealedExpression (mapPosShimWit tconv tx) $ fromEnhanced fconv <$> exprf <*> expra
+                    MkSealedExpression (mapPosShimWit tconv tx) $ shimToFunction fconv <$> exprf <*> expra
 
 -- | not recursive
 letSealedExpression ::
@@ -179,7 +179,7 @@ letSealedExpression name sexpre sexprb =
         uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit te) uvt
         unifierSolve @ts $ do
             conv <- uuGetShim uconv
-            pure $ MkSealedExpression tb $ (\f -> f . fromEnhanced conv) <$> exprf <*> expre
+            pure $ MkSealedExpression tb $ (\f -> f . shimToFunction conv) <$> exprf <*> expre
 
 bothSealedPattern ::
        forall ts. AbstractTypeSystem ts
@@ -219,7 +219,7 @@ caseSealedExpression sbexpr rawcases =
         unifierSolve @ts $ do
             rtwt <- uuGetPosShimWit urtwt
             conv <- uuGetShim uconv
-            pure $ MkSealedExpression rtwt $ (\t1a t -> runIdentity $ t1a $ fromEnhanced conv t) <$> rexpr <*> bexpr
+            pure $ MkSealedExpression rtwt $ (\t1a t -> runIdentity $ t1a $ shimToFunction conv t) <$> rexpr <*> bexpr
 
 caseAbstractSealedExpression ::
        forall ts. AbstractTypeSystem ts
@@ -260,5 +260,5 @@ applyPatternConstructor patcon patarg =
                         MkPatternConstructor pct pcla $
                         proc t -> do
                             (a, l) <- pcpat -< t
-                            pata -< fromEnhanced conv a
+                            pata -< shimToFunction conv a
                             returnA -< l

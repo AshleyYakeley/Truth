@@ -191,9 +191,10 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                                            (MkPredicate anchor)
                                    pinamorphism =
                                        MkLangMorphism $
-                                       cfmap3 (MkCatDual $ fromEnhanced praContra) $
-                                       cfmap2 (fromEnhanced praCo) $
-                                       cfmap1 (MkCatDual $ fromEnhanced prbContra) $ fmap (fromEnhanced prbCo) morphism
+                                       cfmap3 (MkCatDual $ shimToFunction praContra) $
+                                       cfmap2 (shimToFunction praCo) $
+                                       cfmap1 (MkCatDual $ shimToFunction prbContra) $
+                                       fmap (shimToFunction prbCo) morphism
                                    anyval = MkAnyValue typef pinamorphism
                                    in return $ qConstExprAny anyval
 interpretExpression' spos (SEEntity st anchor) =

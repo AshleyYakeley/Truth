@@ -93,11 +93,10 @@ class (IsDolanGroundType ground) => IsDolanSubtypeGroundType (ground :: GroundTy
         -> ground dvb gtb
         -> DolanArguments dvb (DolanType ground) gtb polb b
         -> m (DolanPolyShim ground Type a b)
-    throwTypeConvertInverseError ::
-           DolanPlainType ground 'Negative p -> DolanPlainType ground 'Positive q -> DolanM ground a
+    throwTypeConvertInverseError :: DolanType ground 'Negative p -> DolanType ground 'Positive q -> DolanM ground a
     throwTypeSubsumeError ::
            Is PolarityType polarity
         => DolanSingularType ground polarity tinf
-        -> DolanPlainType ground polarity tdecl
+        -> DolanType ground polarity tdecl
         -> DolanM ground a
     throwTypeNotInvertible :: Is PolarityType polarity => DolanType ground polarity t -> DolanM ground a

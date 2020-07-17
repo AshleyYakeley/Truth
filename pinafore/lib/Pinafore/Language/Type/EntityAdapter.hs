@@ -91,4 +91,4 @@ concreteToEntityShim :: ConcreteEntityType a -> PinaforePolyShim Type a Entity
 concreteToEntityShim (MkConcreteType TopEntityGroundType NilArguments) = id
 concreteToEntityShim (MkConcreteType NewEntityGroundType NilArguments) = coerceEnhanced "subtype"
 concreteToEntityShim (MkConcreteType (OpenEntityGroundType _ _) NilArguments) = coerceEnhanced "subtype"
-concreteToEntityShim t = toEnhanced "subtype" $ entityAdapterConvert $ concreteEntityAdapter t
+concreteToEntityShim t = functionToShim "subtype" $ entityAdapterConvert $ concreteEntityAdapter t

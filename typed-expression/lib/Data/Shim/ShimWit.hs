@@ -26,6 +26,12 @@ mkShimWit t =
         PositiveType -> MkShimWit t cid
         NegativeType -> MkShimWit t cid
 
+mkShimWitT ::
+       forall (shim :: ShimKind Type) wit polarity (t :: Type). (InCategory shim, Is PolarityType polarity)
+    => wit t
+    -> ShimWit shim wit polarity t
+mkShimWitT = mkShimWit
+
 mkPosShimWit ::
        forall (k :: Type) (shim :: ShimKind k) wit (t :: k) (t' :: k). InKind t'
     => wit t'
@@ -88,6 +94,13 @@ mapShimWit ::
     -> ShimWit shim wit polarity a
     -> ShimWit shim wit polarity b
 mapShimWit ab (MkShimWit t conv) = MkShimWit t $ conv <.> ab
+
+mapShimWitT ::
+       forall polarity (shim :: ShimKind Type) wit (a :: Type) (b :: Type). (InCategory shim, Is PolarityType polarity)
+    => PolarMap shim polarity b a
+    -> ShimWit shim wit polarity a
+    -> ShimWit shim wit polarity b
+mapShimWitT = mapShimWit
 
 mapPosShimWit ::
        forall (k :: Type) (shim :: ShimKind k) wit (a :: k) (b :: k). (InCategory shim, InKind a, InKind b)

@@ -50,7 +50,7 @@ uuGetNegShimWit t = unNegShimWit t $ \wt (MkUUShim uconv) -> fmap (\conv -> mkNe
 uuGetPosShimWit :: UnifyTypeSystem ts => UUPosShimWit ts t -> Unifier ts (TSPosShimWit ts t)
 uuGetPosShimWit t = unPosShimWit t $ \wt (MkUUShim uconv) -> fmap (\conv -> mkPosShimWit wt conv) uconv
 
-class (TypeSystem ts, Applicative (Unifier ts), Shim (TSShim ts)) => UnifyTypeSystem (ts :: Type) where
+class (TypeSystem ts, Applicative (Unifier ts), CartesianShim (TSShim ts)) => UnifyTypeSystem (ts :: Type) where
     type Unifier ts :: Type -> Type
     type UnifierSubstitutions ts :: Type
     unifyNegWitnesses :: TSNegWitness ts a -> TSNegWitness ts b -> TSOuter ts (UUNegShimWit ts (MeetType a b))

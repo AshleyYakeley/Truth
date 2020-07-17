@@ -23,10 +23,9 @@ import Shapes
 
 topEntityType :: forall pol. PinaforeType pol (JoinMeetType pol Entity (LimitType pol))
 topEntityType =
-    PlainDolanType $
-    ConsDolanPlainType
+    ConsDolanType
         (GroundDolanSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments)
-        NilDolanPlainType
+        NilDolanType
 
 entityGroundSubtype ::
        forall m pola polb dva fa a dvb fb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
@@ -129,7 +128,7 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
     -- FiniteSetRef -a <= SetRef a
     subtypeGroundTypes _ sc FiniteSetRefPinaforeGroundType (ConsDolanArguments (MkRangeType t1 _) NilDolanArguments) SetRefPinaforeGroundType (ConsDolanArguments t2 NilDolanArguments) = do
         shim <- subtypeTypes (subtypeInverted sc) t2 t1
-        return $ toEnhanced "FiniteSetRef to SetRef" $ contramap (fromEnhanced shim) . langFiniteSetRefToSetRef
+        return $ functionToShim "FiniteSetRef to SetRef" $ contramap (shimToFunction shim) . langFiniteSetRefToSetRef
     -- type conversion error
     subtypeGroundTypes sslift _ ga argsa gb argsb =
         sslift $
@@ -138,7 +137,7 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
     throwTypeSubsumeError ::
            forall polarity tinf tdecl a. Is PolarityType polarity
         => PinaforeSingularType polarity tinf
-        -> PinaforePlainType polarity tdecl
+        -> PinaforeType polarity tdecl
         -> PinaforeSourceScoped a
     throwTypeSubsumeError tinf tdecl = let
         pol =

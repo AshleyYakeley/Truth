@@ -52,25 +52,21 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
              ExprShow (DolanSingularType ground polarity t) where
     exprShowPrec (VarDolanSingularType namewit) = exprShowPrec namewit
     exprShowPrec (GroundDolanSingularType gt args) = groundTypeShowPrec gt args
+    exprShowPrec (RecursiveDolanSingularType n pt) = ("rec " <> exprShow n <> ". " <> exprShow pt, 4)
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
-             ExprShow (DolanPlainType ground polarity t) where
-    exprShowPrec NilDolanPlainType =
+             ExprShow (DolanType ground polarity t) where
+    exprShowPrec NilDolanType =
         case polarityType @polarity of
             PositiveType -> ("None", 0)
             NegativeType -> ("Any", 0)
-    exprShowPrec (ConsDolanPlainType ta NilDolanPlainType) = exprShowPrec ta
-    exprShowPrec (ConsDolanPlainType ta tb) = let
+    exprShowPrec (ConsDolanType ta NilDolanType) = exprShowPrec ta
+    exprShowPrec (ConsDolanType ta tb) = let
         jmConnector =
             case polarityType @polarity of
                 PositiveType -> " | "
                 NegativeType -> " & "
         in (exprPrecShow 2 ta <> jmConnector <> exprPrecShow 2 tb, 3)
-
-instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
-             ExprShow (DolanType ground polarity t) where
-    exprShowPrec (PlainDolanType pt) = exprShowPrec pt
-    exprShowPrec (RecursiveDolanType n pt) = ("rec " <> exprShow n <> ". " <> exprShow pt, 4)
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (GroundExprShow ground, Is PolarityType polarity) =>
              AllWitnessConstraint ExprShow (DolanType ground polarity) where
@@ -79,18 +75,12 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (GroundExprSh
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (RangeType (DolanType ground) polarity t) where
     exprShowPrec (MkRangeType t1 t2) = let
-        getplainpieces ::
-               forall pol a. Is PolarityType pol
-            => DolanPlainType ground pol a
-            -> [Text]
-        getplainpieces NilDolanPlainType = []
-        getplainpieces (ConsDolanPlainType t tr) = exprPrecShow 0 t : getplainpieces tr
         getpieces ::
                forall pol a. Is PolarityType pol
             => DolanType ground pol a
             -> [Text]
-        getpieces (PlainDolanType pt) = getplainpieces pt
-        getpieces t = [exprPrecShow 0 t]
+        getpieces NilDolanType = []
+        getpieces (ConsDolanType t tr) = exprPrecShow 0 t : getpieces tr
         contrapieces = nub $ invertPolarity @polarity $ getpieces t1
         copieces = nub $ getpieces t2
         bothpieces = List.intersect contrapieces copieces

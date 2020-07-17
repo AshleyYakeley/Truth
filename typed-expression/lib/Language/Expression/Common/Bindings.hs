@@ -68,7 +68,7 @@ mkBound ((MkBinding name sexpr):bb) =
                         pure (convFirst, convRest)
                 return $
                     MkUnifyExpression uresult $
-                    fmap (\ff (convFirst, convRest) ~(t, vals) -> ff (fromEnhanced convFirst t) convRest vals) e''
+                    fmap (\ff (convFirst, convRest) ~(t, vals) -> ff (shimToFunction convFirst t) convRest vals) e''
             exprs' = (,) <$> expr <*> exprs
             getbinds' :: UnifierSubstitutions ts -> TSOpenExpression ts _ -> TSOuter ts (Bindings ts)
             getbinds' subs fexpr = do

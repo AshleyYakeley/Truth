@@ -7,33 +7,18 @@ import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.VarSubstitute
 import Shapes
 
-elimInPlainType ::
+elimInType ::
        forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)
     => Maybe (SymbolType name)
-    -> DolanPlainType ground polarity t
-    -> DolanSemiIsoPlainShimWit ground polarity t
-elimInPlainType _ NilDolanPlainType = nilDolanPlainShimWit
-elimInPlainType mn@(Just rn) (ConsDolanPlainType (VarDolanSingularType n) tr)
-    | Just Refl <- testEquality rn n = joinMeetSemiIsoShimWit (unsafeDeleteVarPlainShimWit n) (elimInPlainType mn tr)
-elimInPlainType mn (ConsDolanPlainType t1 tr) =
-    consDolanPlainShimWit (mapDolanSingularType elimInType t1) (elimInPlainType mn tr)
-
-elimUnusuedInShimWit ::
-       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanSemiIsoShimWit ground polarity t
+    -> DolanType ground polarity t
     -> DolanSemiIsoShimWit ground polarity t
-elimUnusuedInShimWit (MkShimWit t conv)
-    | Just pt <- dolanTypeToPlainNonrec t = MkShimWit (PlainDolanType pt) conv
-elimUnusuedInShimWit t = t
-
-elimInType ::
-       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanType ground polarity t
-    -> DolanSemiIsoShimWit ground polarity t
-elimInType (PlainDolanType pt) = chainShimWit (mkShimWit . PlainDolanType) $ elimInPlainType Nothing pt
-elimInType (RecursiveDolanType var pt) = elimUnusuedInShimWit $ recursiveMapType (elimInPlainType (Just var)) var pt
+elimInType _ NilDolanType = nilDolanShimWit
+elimInType mn@(Just rn) (ConsDolanType (VarDolanSingularType n) tr)
+    | Just Refl <- testEquality rn n = joinMeetShimWit (unsafeDeleteVarShimWit n) (elimInType mn tr)
+elimInType mn (ConsDolanType t1 tr) = consDolanShimWit (mapDolanSingularType (elimInType Nothing) t1) (elimInType mn tr)
 
 eliminateUnusedRecursion ::
        forall (ground :: GroundTypeKind) a.
@@ -44,5 +29,5 @@ eliminateUnusedRecursion =
     mapPShimWits
         @_
         @(DolanType ground)
-        (reshimWit polySemiIsoForwards . elimInType)
-        (reshimWit polySemiIsoForwards . elimInType)
+        (reshimWit polySemiIsoForwards . elimInType Nothing)
+        (reshimWit polySemiIsoForwards . elimInType Nothing)

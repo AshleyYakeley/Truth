@@ -25,15 +25,11 @@ module Language.Expression.Dolan
     , covarymap
     , covaryToDolanVarianceMap
     , DolanSingularType(..)
-    , DolanPlainType(..)
     , DolanType(..)
     , singleDolanType
     , singleDolanShimWit
-    , plainDolanShimWit
     , joinMeetShimWit
-    , recursiveDolanType
-    , recursiveDolanShimWit
-    , dolanTypeToPlainUnroll
+    , unrollRecursiveType
     , unToRangeShimWit
     , unFromRangeShimWit
     , biRangeAnyF

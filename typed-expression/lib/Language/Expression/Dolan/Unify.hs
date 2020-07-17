@@ -14,29 +14,29 @@ import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unroll
+import Language.Expression.Dolan.VarSubstitute
 import Language.Expression.Dolan.Variance
 import Shapes
 
 type UnifierBisubstitution :: GroundTypeKind -> Type
-type UnifierBisubstitution ground = Bisubstitution ground Identity
+type UnifierBisubstitution ground = Bisubstitution ground (DolanPolyShim ground) Identity
 
 type BisubstitutionWitness :: GroundTypeKind -> Type -> Type
 data BisubstitutionWitness ground t where
     MkBisubstitutionWitness
         :: forall (ground :: GroundTypeKind) polarity name p. Is PolarityType polarity
         => SymbolType name
-        -> DolanSemiIsoShimWit ground polarity p
+        -> DolanShimWit ground polarity p
         -> BisubstitutionWitness ground (PolarMapType (DolanPolyShim ground Type) polarity p (UVar Type name))
 
 mapWRONG ::
        forall (ground :: GroundTypeKind) polarity a b. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
-    => PolarMap (DolanPolySemiIsoShim ground Type) polarity a b
+    => PolarMap (DolanPolyShim ground Type) polarity a b
 mapWRONG =
     MkPolarMap $
     case polarityType @polarity of
-        PositiveType -> MkPolyMapT $ semiIso $ toEnhanced "occurs" $ \_ -> error "occurs"
-        NegativeType -> MkPolyMapT $ semiIso $ toEnhanced "occurs" $ \_ -> error "occurs"
+        PositiveType -> functionToShim "occurs" $ \_ -> error "occurs"
+        NegativeType -> functionToShim "occurs" $ \_ -> error "occurs"
 
 mkBisubstitutionWitness ::
        forall (ground :: GroundTypeKind) polarity name p. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
@@ -45,9 +45,10 @@ mkBisubstitutionWitness ::
     -> BisubstitutionWitness ground (PolarMapType (DolanPolyShim ground Type) polarity p (UVar Type name))
 mkBisubstitutionWitness var t =
     MkBisubstitutionWitness var $
+    singleDolanShimWit $
     if occursInSingularType var t
         then recursiveDolanShimWit var (mapWRONG @ground) $ singleDolanShimWit $ mkShimWit t
-        else singleDolanShimWit $ mkShimWit t
+        else mkShimWit t
 
 type DolanUnifier :: GroundTypeKind -> Type -> Type
 type DolanUnifier ground = Expression (BisubstitutionWitness ground)
@@ -86,46 +87,41 @@ unifySingularTypes (VarDolanSingularType na) tb = solverLiftExpression $ varExpr
 unifySingularTypes ta (VarDolanSingularType nb) = solverLiftExpression $ varExpression $ mkBisubstitutionWitness nb ta
 unifySingularTypes (GroundDolanSingularType gta argsa) (GroundDolanSingularType gtb argsb) =
     unifyGroundTypes gta argsa gtb argsb
+unifySingularTypes sta@(RecursiveDolanSingularType _ _) stb = solveRecursiveSingularTypes unifyTypes sta stb
+unifySingularTypes sta stb@(RecursiveDolanSingularType _ _) = solveRecursiveSingularTypes unifyTypes sta stb
 
-unifyPlainTypes1 ::
+unifyTypes1 ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
     => DolanSingularType ground 'Positive a
-    -> DolanPlainType ground 'Negative b
+    -> DolanType ground 'Negative b
     -> DolanUnification ground a b
-unifyPlainTypes1 _ NilDolanPlainType = pure termf
-unifyPlainTypes1 ta (ConsDolanPlainType t1 t2) = do
+unifyTypes1 _ NilDolanType = pure termf
+unifyTypes1 ta (ConsDolanType t1 t2) = do
     f1 <- unifySingularTypes ta t1
-    f2 <- unifyPlainTypes1 ta t2
+    f2 <- unifyTypes1 ta t2
     return $ meetf f1 f2
-
-unifyPlainTypes ::
-       forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
-    => DolanPlainType ground 'Positive a
-    -> DolanPlainType ground 'Negative b
-    -> DolanUnification ground a b
-unifyPlainTypes NilDolanPlainType _ = pure initf
-unifyPlainTypes (ConsDolanPlainType ta1 tar) tb = do
-    f1 <- unifyPlainTypes1 ta1 tb
-    f2 <- unifyPlainTypes tar tb
-    return $ joinf f1 f2
 
 unifyTypes ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
     => DolanType ground 'Positive a
     -> DolanType ground 'Negative b
     -> DolanUnification ground a b
-unifyTypes = solveRecursiveTypes unifyPlainTypes
+unifyTypes NilDolanType _ = pure initf
+unifyTypes (ConsDolanType ta1 tar) tb = do
+    f1 <- unifyTypes1 ta1 tb
+    f2 <- unifyTypes tar tb
+    return $ joinf f1 f2
 
 unifyShimWits ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground
-    => DolanSemiIsoShimWit ground 'Positive a
-    -> DolanSemiIsoShimWit ground 'Negative b
+    => DolanShimWit ground 'Positive a
+    -> DolanShimWit ground 'Negative b
     -> DolanUnification ground a b
 unifyShimWits wa wb =
     unPosShimWit wa $ \ta conva ->
         unNegShimWit wb $ \tb convb -> do
             conv <- unifyTypes ta tb
-            return $ polySemiIsoForwards convb . conv . polySemiIsoForwards conva
+            return $ convb . conv . conva
 
 occursInArg ::
        forall (ground :: GroundTypeKind) polarity n sv a. IsDolanSubtypeGroundType ground
@@ -156,62 +152,35 @@ occursInSingularType n (VarDolanSingularType nt)
     | Just Refl <- testEquality n nt = True
 occursInSingularType _ (VarDolanSingularType _) = False
 occursInSingularType n (GroundDolanSingularType gt args) = occursInArgs (groundTypeVarianceType gt) n args
-
-occursInPlainType ::
-       forall (ground :: GroundTypeKind) polarity name a. IsDolanSubtypeGroundType ground
-    => SymbolType name
-    -> DolanPlainType ground polarity a
-    -> Bool
-occursInPlainType _ NilDolanPlainType = False
-occursInPlainType n (ConsDolanPlainType t1 t2) = occursInSingularType n t1 || occursInPlainType n t2
+occursInSingularType n (RecursiveDolanSingularType n' _)
+    | Just Refl <- testEquality n n' = False
+occursInSingularType n (RecursiveDolanSingularType _ pt) = occursInType n pt
 
 occursInType ::
        forall (ground :: GroundTypeKind) polarity name a. IsDolanSubtypeGroundType ground
     => SymbolType name
     -> DolanType ground polarity a
     -> Bool
-occursInType n (PlainDolanType pt) = occursInPlainType n pt
-occursInType n (RecursiveDolanType n' _)
-    | Just Refl <- testEquality n n' = False
-occursInType n (RecursiveDolanType _ pt) = occursInPlainType n pt
-
-bisubstitutePlainPositiveVar ::
-       forall (ground :: GroundTypeKind) name t. IsDolanSubtypeGroundType ground
-    => SymbolType name
-    -> DolanPlainType ground 'Positive t
-    -> DolanUnifier ground (DolanPolyShim ground Type t (UVar Type name))
-bisubstitutePlainPositiveVar _ NilDolanPlainType = pure initf
-bisubstitutePlainPositiveVar vn (ConsDolanPlainType t1 tr) =
-    OpenExpression (mkBisubstitutionWitness vn t1) $ fmap (\fr f1 -> joinf f1 fr) $ bisubstitutePlainPositiveVar vn tr
+occursInType _ NilDolanType = False
+occursInType n (ConsDolanType t1 t2) = occursInSingularType n t1 || occursInType n t2
 
 bisubstitutePositiveVar ::
        forall (ground :: GroundTypeKind) name t. IsDolanSubtypeGroundType ground
     => SymbolType name
     -> DolanType ground 'Positive t
     -> DolanUnifier ground (DolanPolyShim ground Type t (UVar Type name))
-bisubstitutePositiveVar n t =
-    case dolanTypeToPlainUnroll t of
-        MkShimWit pt (MkPolarMap tconv) ->
-            fmap (\conv -> conv . polySemiIsoForwards tconv) $ bisubstitutePlainPositiveVar n pt
-
-bisubstitutePlainNegativeVar ::
-       forall (ground :: GroundTypeKind) name t. IsDolanSubtypeGroundType ground
-    => SymbolType name
-    -> DolanPlainType ground 'Negative t
-    -> DolanUnifier ground (DolanPolyShim ground Type (UVar Type name) t)
-bisubstitutePlainNegativeVar _ NilDolanPlainType = pure termf
-bisubstitutePlainNegativeVar vn (ConsDolanPlainType t1 tr) =
-    OpenExpression (mkBisubstitutionWitness vn t1) $ fmap (\fr f1 -> meetf f1 fr) $ bisubstitutePlainNegativeVar vn tr
+bisubstitutePositiveVar _ NilDolanType = pure initf
+bisubstitutePositiveVar vn (ConsDolanType t1 tr) =
+    OpenExpression (mkBisubstitutionWitness vn t1) $ fmap (\fr f1 -> joinf f1 fr) $ bisubstitutePositiveVar vn tr
 
 bisubstituteNegativeVar ::
        forall (ground :: GroundTypeKind) name t. IsDolanSubtypeGroundType ground
     => SymbolType name
     -> DolanType ground 'Negative t
     -> DolanUnifier ground (DolanPolyShim ground Type (UVar Type name) t)
-bisubstituteNegativeVar n t =
-    case dolanTypeToPlainUnroll t of
-        MkShimWit pt (MkPolarMap tconv) ->
-            fmap (\conv -> polySemiIsoForwards tconv . conv) $ bisubstitutePlainNegativeVar n pt
+bisubstituteNegativeVar _ NilDolanType = pure termf
+bisubstituteNegativeVar vn (ConsDolanType t1 tr) =
+    OpenExpression (mkBisubstitutionWitness vn t1) $ fmap (\fr f1 -> meetf f1 fr) $ bisubstituteNegativeVar vn tr
 
 bisubstituteUnifier ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -219,7 +188,7 @@ bisubstituteUnifier ::
     -> DolanUnifier ground a
     -> FullUnifier ground a
 bisubstituteUnifier _ (ClosedExpression a) = pure a
-bisubstituteUnifier bisub@(MkBisubstitution vsub (Identity tp) (Identity tq)) (OpenExpression (MkBisubstitutionWitness vwit (tw :: DolanSemiIsoShimWit ground polarity _)) uval)
+bisubstituteUnifier bisub@(MkBisubstitution vsub (Identity tp) (Identity tq)) (OpenExpression (MkBisubstitutionWitness vwit (tw :: DolanShimWit ground polarity _)) uval)
     | Just Refl <- testEquality vsub vwit = do
         conv <-
             case polarityType @polarity of
@@ -227,26 +196,26 @@ bisubstituteUnifier bisub@(MkBisubstitution vsub (Identity tp) (Identity tq)) (O
                 NegativeType -> unifyShimWits tp tw
         val' <- bisubstituteUnifier bisub uval
         pure $ val' conv
-bisubstituteUnifier bisub (OpenExpression (MkBisubstitutionWitness vn (tw :: DolanSemiIsoShimWit ground polarity _)) uval) = let
+bisubstituteUnifier bisub (OpenExpression (MkBisubstitutionWitness vn (tw :: DolanShimWit ground polarity _)) uval) = let
     wp' = runIdentity $ bisubstituteType bisub tw
     in case polarityType @polarity of
            PositiveType ->
                unPosShimWit wp' $ \tp' conv -> do
                    val' <- bisubstituteUnifier bisub uval
                    pv <- solverLiftExpression $ bisubstitutePositiveVar vn tp'
-                   pure $ val' $ pv <.> polySemiIsoForwards conv
+                   pure $ val' $ pv <.> conv
            NegativeType ->
                unNegShimWit wp' $ \tp' conv -> do
                    val' <- bisubstituteUnifier bisub uval
                    pv <- solverLiftExpression $ bisubstituteNegativeVar vn tp'
-                   pure $ val' $ polySemiIsoForwards conv <.> pv
+                   pure $ val' $ conv <.> pv
 
 runUnifier ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => DolanUnifier ground a
     -> WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground) a
 runUnifier (ClosedExpression a) = return a
-runUnifier (OpenExpression (MkBisubstitutionWitness oldvn (tw :: DolanSemiIsoShimWit ground polarity vw)) expr) =
+runUnifier (OpenExpression (MkBisubstitutionWitness oldvn (tw :: DolanShimWit ground polarity vw)) expr) =
     newUVar (uVarName oldvn) $ \(newvn :: SymbolType newname) ->
         assignUVar @Type @(JoinMeetType polarity (UVar Type newname) vw) oldvn $ let
             bisub =
@@ -254,8 +223,7 @@ runUnifier (OpenExpression (MkBisubstitutionWitness oldvn (tw :: DolanSemiIsoShi
                     PositiveType ->
                         MkBisubstitution
                             oldvn
-                            (return $
-                             joinMeetSemiIsoShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvn) tw)
+                            (return $ joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvn) tw)
                             (return $
                              singleDolanShimWit $ MkShimWit (VarDolanSingularType newvn) $ invertPolarMap polar1)
                     NegativeType ->
@@ -263,8 +231,7 @@ runUnifier (OpenExpression (MkBisubstitutionWitness oldvn (tw :: DolanSemiIsoShi
                             oldvn
                             (return $
                              singleDolanShimWit $ MkShimWit (VarDolanSingularType newvn) $ invertPolarMap polar1)
-                            (return $
-                             joinMeetSemiIsoShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvn) tw)
+                            (return $ joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvn) tw)
             in do
                    expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
                    ca <- runUnifier expr'
@@ -281,5 +248,5 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => U
     unifyPosWitnesses ta tb = return $ uuLiftPosShimWit $ joinMeetShimWit (mkShimWit ta) (mkShimWit tb)
     unifyPosNegWitnesses tq tp = fmap MkUUShim $ runSolver $ unifyTypes tq tp
     solveUnifier u = fmap (\(a, subs) -> (a, reverse subs)) $ runWriterT $ runUnifier u
-    unifierPosSubstitute bisubs t = return $ reshimWit polySemiIsoForwards $ runIdentity $ bisubstitutesType bisubs t
-    unifierNegSubstitute bisubs t = return $ reshimWit polySemiIsoForwards $ runIdentity $ bisubstitutesType bisubs t
+    unifierPosSubstitute bisubs t = return $ runIdentity $ bisubstitutesType bisubs t
+    unifierNegSubstitute bisubs t = return $ runIdentity $ bisubstitutesType bisubs t

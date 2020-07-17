@@ -158,21 +158,14 @@ pinaforeSinglularTypeToNonpolar ::
 pinaforeSinglularTypeToNonpolar (VarDolanSingularType n) = Just $ MkAnyW $ VarNonpolarType n
 pinaforeSinglularTypeToNonpolar (GroundDolanSingularType ground args) =
     applyArgs @ground (groundTypeVarianceType ground) (GroundNonpolarType ground) args
-
-dolanPlainTypeToNonpolar ::
-       forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
-    => DolanPlainType ground polarity t
-    -> Maybe (AnyW (NonpolarDolanType ground '[]))
-dolanPlainTypeToNonpolar (ConsDolanPlainType t NilDolanPlainType) = pinaforeSinglularTypeToNonpolar t
-dolanPlainTypeToNonpolar _ = Nothing
+pinaforeSinglularTypeToNonpolar (RecursiveDolanSingularType _ _) = empty
 
 dolanTypeToNonpolar ::
        forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
     => DolanType ground polarity t
     -> Maybe (AnyW (NonpolarDolanType ground '[]))
-dolanTypeToNonpolar t = do
-    pt <- dolanTypeToPlainNonrec t
-    dolanPlainTypeToNonpolar pt
+dolanTypeToNonpolar (ConsDolanType t NilDolanType) = pinaforeSinglularTypeToNonpolar t
+dolanTypeToNonpolar _ = Nothing
 
 pinaforeNonpolarArgTypeTestEquality ::
        forall (ground :: GroundTypeKind) sv a b. IsDolanGroundType ground

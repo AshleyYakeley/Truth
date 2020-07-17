@@ -35,6 +35,7 @@ mergeSharedTypeVars expr = let
     in case findShare posuses <|> findShare neguses of
            Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) ->
                assignUVar @Type @(UVar Type na) vb $ let
+                   bisub :: Bisubstitution ground (DolanPolyShim ground) Identity
                    bisub =
                        MkBisubstitution
                            vb

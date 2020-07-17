@@ -37,10 +37,10 @@ type FromPinaforeType = FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negat
 
 -- top, bottom, join, meet
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) BottomType where
-    toShimWit = plainDolanShimWit $ mkShimWit NilDolanPlainType
+    toShimWit = mkShimWit NilDolanType
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) TopType where
-    fromShimWit = plainDolanShimWit $ mkShimWit NilDolanPlainType
+    fromShimWit = mkShimWit NilDolanType
 
 instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) b
@@ -248,12 +248,12 @@ instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
 -- IO
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (IO a) where
-    toShimWit = mapPosShimWit (toEnhanced "subtype" (liftIO :: IO a -> PinaforeAction a)) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" (liftIO :: IO a -> PinaforeAction a)) toJMShimWit
 
 -- View
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (View a) where
-    toShimWit = mapPosShimWit (toEnhanced "subtype" viewPinaforeAction) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" viewPinaforeAction) toJMShimWit
 
 -- LangOrder
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
@@ -371,30 +371,30 @@ instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
          ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeRef (WholeUpdate (Know t))) where
-    toShimWit = mapPosShimWit (toEnhanced "subtype" pinaforeRefToRef) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeRefToRef) toJMShimWit
 
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
          ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeRef (WholeUpdate (Know t))) where
-    fromShimWit = mapNegShimWit (toEnhanced "subtype" langRefToValue) fromJMShimWit
+    fromShimWit = mapNegShimWit (functionToShim "subtype" langRefToValue) fromJMShimWit
 
 -- PinaforeImmutableRef
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
              FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeImmutableRef a) where
-    fromShimWit = mapNegShimWit (toEnhanced "subtype" langRefToImmutable) fromJMShimWit
+    fromShimWit = mapNegShimWit (functionToShim "subtype" langRefToImmutable) fromJMShimWit
 
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeImmutableRef a) where
-    toShimWit = mapPosShimWit (toEnhanced "subtype" pinaforeImmutableToRef) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeImmutableToRef) toJMShimWit
 
 -- PinaforeROWRef
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t) =>
              FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeROWRef (Know t)) where
-    fromShimWit = mapNegShimWit (toEnhanced "subtype" langRefToReadOnlyValue) fromJMShimWit
+    fromShimWit = mapNegShimWit (functionToShim "subtype" langRefToReadOnlyValue) fromJMShimWit
 
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t) =>
              ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeROWRef (Know t)) where
-    toShimWit = mapPosShimWit (toEnhanced "subtype" pinaforeROWRefToRef) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeROWRefToRef) toJMShimWit
 
 -- LangSetRef
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
@@ -452,13 +452,13 @@ instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
 instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
          , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
          ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeRef (FiniteSetUpdate t)) where
-    fromShimWit = mapNegShimWit (toEnhanced "subtype" unLangFiniteSetRef) fromJMShimWit
+    fromShimWit = mapNegShimWit (functionToShim "subtype" unLangFiniteSetRef) fromJMShimWit
 
 instance ( Eq t
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
          , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
          ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeRef (FiniteSetUpdate t)) where
-    toShimWit = mapPosShimWit (toEnhanced "subtype" $ MkLangFiniteSetRef identityRange) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" $ MkLangFiniteSetRef identityRange) toJMShimWit
 
 -- LangMorphism
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) pa

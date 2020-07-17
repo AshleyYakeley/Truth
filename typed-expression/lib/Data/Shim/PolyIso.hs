@@ -45,6 +45,15 @@ polarPolyIsoPositive (MkPolarMap iab) =
         PositiveType -> isoForwards $ unPolyMapT iab
         NegativeType -> isoBackwards $ unPolyMapT iab
 
+polarPolyIsoNegative ::
+       forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k). Is PolarityType polarity
+    => PolarMap (PolyIso pshim k) polarity a b
+    -> pshim k b a
+polarPolyIsoNegative (MkPolarMap iab) =
+    case polarityType @polarity of
+        PositiveType -> isoBackwards $ unPolyMapT iab
+        NegativeType -> isoForwards $ unPolyMapT iab
+
 instance forall (pshim :: PolyShimKind). ApplyPolyShim pshim => ApplyPolyShim (PolyIso pshim) where
     applyPolyShim CovarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
         MkPolyMapT $ MkIsomorphism (applyPolyShim CovarianceType fab xab) (applyPolyShim CovarianceType fba xba)
@@ -83,14 +92,16 @@ polarPolyIsoPolar1 =
         PositiveType -> MkPolyMapT iJoinL1
         NegativeType -> MkPolyMapT iMeetR1
 
+polyIsoForwards :: forall (pshim :: PolyShimKind) k (a :: k) (b :: k). PolyIso pshim k a b -> pshim k a b
+polyIsoForwards iab = isoForwards $ unPolyMapT iab
+
 type PolySemiIso :: PolyShimKind -> PolyShimKind
 type PolySemiIso = PolyMapT SemiIsomorphism
 
-polySemiIso :: forall (pshim :: PolyShimKind) k (a :: k) (b :: k). pshim k a b -> PolyMapT SemiIsomorphism pshim k a b
+polySemiIso :: forall (pshim :: PolyShimKind) k (a :: k) (b :: k). pshim k a b -> PolySemiIso pshim k a b
 polySemiIso iab = MkPolyMapT $ semiIso iab
 
-polySemiIsoForwards ::
-       forall (pshim :: PolyShimKind) k (a :: k) (b :: k). PolyMapT SemiIsomorphism pshim k a b -> pshim k a b
+polySemiIsoForwards :: forall (pshim :: PolyShimKind) k (a :: k) (b :: k). PolySemiIso pshim k a b -> pshim k a b
 polySemiIsoForwards iab = semiIsoForwards $ unPolyMapT iab
 
 polarPolySemiIsoForwards ::
@@ -191,20 +202,3 @@ polarPolyToSemiIsoShimWit ::
     => ShimWit (pshim Type) w polarity t
     -> ShimWit (PolySemiIso pshim Type) w polarity t
 polarPolyToSemiIsoShimWit (MkShimWit t conv) = MkShimWit t $ polarPolyToSemiIso conv
-
-lazySemiIso ::
-       forall (pshim :: PolyShimKind) (a :: Type) (b :: Type). EnhancedFunction (pshim Type)
-    => PolySemiIso pshim Type a b
-    -> PolySemiIso pshim Type a b
-lazySemiIso (MkPolyMapT ~(MkSemiIsomorphism ab mba)) =
-    MkPolyMapT $ MkSemiIsomorphism (lazyEnhanced ab) (fmap lazyEnhanced mba)
-
-lazyPolarSemiIso ::
-       forall (pshim :: PolyShimKind) polarity (a :: Type) (b :: Type).
-       (EnhancedFunction (pshim Type), Is PolarityType polarity)
-    => PolarMap (PolySemiIso pshim Type) polarity a b
-    -> PolarMap (PolySemiIso pshim Type) polarity a b
-lazyPolarSemiIso =
-    case polarityType @polarity of
-        PositiveType -> \(MkPolarMap mab) -> MkPolarMap $ lazySemiIso mab
-        NegativeType -> \(MkPolarMap mab) -> MkPolarMap $ lazySemiIso mab

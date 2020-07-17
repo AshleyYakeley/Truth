@@ -88,18 +88,16 @@ groundTypedShowValue _ _ _ = "<?>"
 singularTypedShowValue :: PinaforeSingularType 'Positive t -> t -> String
 singularTypedShowValue (VarDolanSingularType _) _ = "<?>"
 singularTypedShowValue (GroundDolanSingularType gt args) v = groundTypedShowValue gt args v
-
-plainTypedShowValue :: PinaforePlainType 'Positive t -> t -> String
-plainTypedShowValue NilDolanPlainType v = never v
-plainTypedShowValue (ConsDolanPlainType ts tt) v = joinf (singularTypedShowValue ts) (plainTypedShowValue tt) v
+singularTypedShowValue (RecursiveDolanSingularType var pt) v =
+    case unrollRecursiveType var pt of
+        MkShimWit t iconv -> typedShowValue t $ shimToFunction (polarPolyIsoPositive iconv) v
 
 typedShowValue :: PinaforeType 'Positive t -> t -> String
-typedShowValue t v =
-    case dolanTypeToPlainUnroll t of
-        MkShimWit pt iconv -> plainTypedShowValue pt $ fromEnhanced (unPolarMap $ polarPolySemiIsoForwards iconv) v
+typedShowValue NilDolanType v = never v
+typedShowValue (ConsDolanType ts tt) v = joinf (singularTypedShowValue ts) (typedShowValue tt) v
 
 showPinaforeRef :: QValue -> String
-showPinaforeRef (MkAnyValue (MkPosShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
+showPinaforeRef (MkAnyValue (MkPosShimWit t conv) v) = typedShowValue t (shimToFunction conv v)
 
 type Interact = StateT SourcePos (ReaderStateT PinaforeScoped View)
 

@@ -146,28 +146,30 @@ varrep2 ::
     -> Maybe (Dict (RepresentationalRole g))
 varrep2 _ = varianceRepresentational @_ @v @g
 
-instance CoercibleKind k => EnhancedFunction (JMShim k) where
-    toEnhanced = FuncJMShim
-    fromEnhanced ::
+instance LazyCategory (JMShim Type)
+
+instance CoercibleKind k => FunctionShim (JMShim k) where
+    functionToShim = FuncJMShim
+    shimToFunction ::
            forall (a :: k) (b :: k). (InKind a, InKind b)
         => JMShim k a b
         -> KindFunction a b
-    fromEnhanced f
+    shimToFunction f
         | Just c <- enhancedCoercion f = coercionToFunction c
-    fromEnhanced (FuncJMShim _ f) = f
-    fromEnhanced IdentityJMShim = cid
-    fromEnhanced (ComposeJMShim a b) = fromEnhanced a <.> fromEnhanced b
-    fromEnhanced (CoerceJMShim _ c) = coercionToFunction c
-    fromEnhanced InitFJMShim = initf
-    fromEnhanced TermFJMShim = termf
-    fromEnhanced (Join1JMShim ta) = join1 <.> fromEnhanced ta
-    fromEnhanced (Join2JMShim tb) = join2 <.> fromEnhanced tb
-    fromEnhanced (JoinFJMShim ap bp) = joinf (fromEnhanced ap) (fromEnhanced bp)
-    fromEnhanced (Meet1JMShim ta) = fromEnhanced ta <.> meet1
-    fromEnhanced (Meet2JMShim tb) = fromEnhanced tb <.> meet2
-    fromEnhanced (MeetFJMShim pa pb) = meetf (fromEnhanced pa) (fromEnhanced pb)
-    fromEnhanced (ApplFJMShim pa pb) = applf (fromEnhanced pa) (fromEnhanced pb)
-    fromEnhanced (ConsJMShim vt jmf jma) = let
+    shimToFunction (FuncJMShim _ f) = f
+    shimToFunction IdentityJMShim = cid
+    shimToFunction (ComposeJMShim a b) = shimToFunction a <.> shimToFunction b
+    shimToFunction (CoerceJMShim _ c) = coercionToFunction c
+    shimToFunction InitFJMShim = initf
+    shimToFunction TermFJMShim = termf
+    shimToFunction (Join1JMShim ta) = join1 <.> shimToFunction ta
+    shimToFunction (Join2JMShim tb) = join2 <.> shimToFunction tb
+    shimToFunction (JoinFJMShim ap bp) = joinf (shimToFunction ap) (shimToFunction bp)
+    shimToFunction (Meet1JMShim ta) = shimToFunction ta <.> meet1
+    shimToFunction (Meet2JMShim tb) = shimToFunction tb <.> meet2
+    shimToFunction (MeetFJMShim pa pb) = meetf (shimToFunction pa) (shimToFunction pb)
+    shimToFunction (ApplFJMShim pa pb) = applf (shimToFunction pa) (shimToFunction pb)
+    shimToFunction (ConsJMShim vt jmf jma) = let
         fromCon ::
                forall (v :: Variance) (f :: VarianceKind v -> k) (g :: VarianceKind v -> k) (a' :: VarianceKind v) (b' :: VarianceKind v).
                ( InKind f
@@ -186,22 +188,23 @@ instance CoercibleKind k => EnhancedFunction (JMShim k) where
                 MkFunctionKindWitness ->
                     case inKind @_ @g of
                         MkFunctionKindWitness ->
-                            case fromEnhanced jmf' of
-                                MkNestedMorphism ff -> cfmap (fromEnhanced jma') <.> ff
+                            case shimToFunction jmf' of
+                                MkNestedMorphism ff -> cfmap (shimToFunction jma') <.> ff
         fromCon ContravarianceType jmf' (MkCatDual jma') =
             case inKind @_ @f of
                 MkFunctionKindWitness ->
                     case inKind @_ @g of
                         MkFunctionKindWitness ->
-                            case fromEnhanced jmf' of
-                                MkNestedMorphism ff -> cfmap (MkCatDual (fromEnhanced jma')) <.> ff
+                            case shimToFunction jmf' of
+                                MkNestedMorphism ff -> cfmap (MkCatDual (shimToFunction jma')) <.> ff
         fromCon RangevarianceType jmf' (MkCatRange jma1 jma2) =
             case inKind @_ @f of
                 MkFunctionKindWitness ->
                     case inKind @_ @g of
                         MkFunctionKindWitness ->
-                            case fromEnhanced jmf' of
-                                MkNestedMorphism ff -> cfmap (MkCatRange (fromEnhanced jma1) (fromEnhanced jma2)) <.> ff
+                            case shimToFunction jmf' of
+                                MkNestedMorphism ff ->
+                                    cfmap (MkCatRange (shimToFunction jma1) (shimToFunction jma2)) <.> ff
         in fromCon vt jmf jma
     coercionEnhanced = CoerceJMShim
     enhancedCoercion IdentityJMShim = Just cid
@@ -228,7 +231,7 @@ instance CoercibleKind k => EnhancedFunction (JMShim k) where
             return $ applyCoercion2 cf $ invert ca
     enhancedCoercion _ = Nothing
 
-instance Shim (JMShim Type) where
+instance CartesianShim (JMShim Type) where
     funcShim ab pq = applyPolyShim CovarianceType (applyPolyShim ContravarianceType cid (MkCatDual ab)) pq
     pairShim ab pq = applyPolyShim CovarianceType (applyPolyShim CovarianceType cid ab) pq
     eitherShim ab pq = applyPolyShim CovarianceType (applyPolyShim CovarianceType cid ab) pq

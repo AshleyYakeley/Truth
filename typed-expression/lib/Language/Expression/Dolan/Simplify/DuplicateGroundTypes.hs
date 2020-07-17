@@ -11,6 +11,7 @@ import Language.Expression.Dolan.Subsume
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.VarSubstitute
 import Shapes
 
 mergeInSingularType ::
@@ -26,8 +27,8 @@ mergeTypeType ::
     -> DolanTypeCheckM ground (DolanSemiIsoShimWit ground polarity (JoinMeetType polarity ta tb))
 mergeTypeType ta tb =
     case polarityType @polarity of
-        PositiveType -> chainShimWitM mergeInType $ joinMeetSemiIsoShimWit (mkShimWit ta) (mkShimWit tb)
-        NegativeType -> chainShimWitM mergeInType $ joinMeetSemiIsoShimWit (mkShimWit ta) (mkShimWit tb)
+        PositiveType -> chainShimWitM mergeInType $ joinMeetShimWit (mkShimWit ta) (mkShimWit tb)
+        NegativeType -> chainShimWitM mergeInType $ joinMeetShimWit (mkShimWit ta) (mkShimWit tb)
 
 mergeSSSubtype ::
        forall (ground :: GroundTypeKind) polarity ta tb. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
@@ -58,44 +59,32 @@ mergeSingularSingularType ::
 mergeSingularSingularType ta tb =
     mergeSSSubtype ta tb <|> fmap (mapShimWit iPolarSwap) (mergeSSSubtype tb ta) <|> mergeSSEquality ta tb
 
-mergeSingularPlainType ::
+mergeSingularType ::
        forall (ground :: GroundTypeKind) polarity t1 tr. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity t1
-    -> DolanPlainType ground polarity tr
-    -> DolanTypeCheckM ground (DolanSemiIsoPlainShimWit ground polarity (JoinMeetType polarity t1 tr))
-mergeSingularPlainType ts NilDolanPlainType = return $ mkShimWit $ ConsDolanPlainType ts NilDolanPlainType
-mergeSingularPlainType ts (ConsDolanPlainType t1 tr) = do
+    -> DolanType ground polarity tr
+    -> DolanTypeCheckM ground (DolanSemiIsoShimWit ground polarity (JoinMeetType polarity t1 tr))
+mergeSingularType ts NilDolanType = return $ mkShimWit $ ConsDolanType ts NilDolanType
+mergeSingularType ts (ConsDolanType t1 tr) = do
     mts1 <- mcatch $ mergeSingularSingularType ts t1
     case mts1 of
         Nothing -> do
-            MkShimWit tsr conv <- mergeSingularPlainType ts tr
-            return $
-                MkShimWit (ConsDolanPlainType t1 tsr) $ polarF (polar2 . conv . polar1) (iPolarPair id $ conv . polar2)
+            MkShimWit tsr conv <- mergeSingularType ts tr
+            return $ MkShimWit (ConsDolanType t1 tsr) $ polarF (polar2 . conv . polar1) (iPolarPair id $ conv . polar2)
         Just (MkShimWit ts1 conv1) -> do
-            t' <- mergeSingularPlainType ts1 tr
+            t' <- mergeSingularType ts1 tr
             return $ mapShimWit (iPolarPair conv1 cid <.> iPolarSwapR) t'
-
-mergeInPlainType ::
-       forall (ground :: GroundTypeKind) polarity t. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
-    => DolanPlainType ground polarity t
-    -> DolanTypeCheckM ground (DolanSemiIsoPlainShimWit ground polarity t)
-mergeInPlainType NilDolanPlainType = return $ mkShimWit NilDolanPlainType
-mergeInPlainType (ConsDolanPlainType t1 tr) = do
-    MkShimWit t1' conv1 <- mergeInSingularType t1
-    MkShimWit tr' convr <- mergeInPlainType tr
-    t'' <- mergeSingularPlainType t1' tr'
-    return $ ccontramap (iPolarPair conv1 convr) t''
 
 mergeInType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t
     -> DolanTypeCheckM ground (DolanSemiIsoShimWit ground polarity t)
-mergeInType (PlainDolanType pt) = do
-    MkShimWit pt' conv <- mergeInPlainType pt
-    return $ MkShimWit (PlainDolanType pt') conv
-mergeInType (RecursiveDolanType var pt) = do
-    t' <- mergeInPlainType pt
-    return $ recursiveDolanShimWit var id $ plainDolanShimWit t'
+mergeInType NilDolanType = return $ mkShimWit NilDolanType
+mergeInType (ConsDolanType t1 tr) = do
+    MkShimWit t1' conv1 <- mergeInSingularType t1
+    MkShimWit tr' convr <- mergeInType tr
+    t'' <- mergeSingularType t1' tr'
+    return $ ccontramap (iPolarPair conv1 convr) t''
 
 mergeDuplicateGroundTypes ::
        forall (ground :: GroundTypeKind) a.

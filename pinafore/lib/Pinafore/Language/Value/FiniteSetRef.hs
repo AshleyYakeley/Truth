@@ -15,7 +15,7 @@ data LangFiniteSetRef pq where
 
 unLangFiniteSetRef :: LangFiniteSetRef '( p, p) -> PinaforeRef (FiniteSetUpdate p)
 unLangFiniteSetRef (MkLangFiniteSetRef tr lv) =
-    eaMap (bijectionFiniteSetChangeLens $ isoMapCat fromEnhanced $ rangeBijection tr) lv
+    eaMap (bijectionFiniteSetChangeLens $ isoMapCat shimToFunction $ rangeBijection tr) lv
 
 instance CatFunctor (CatRange (->)) (->) LangFiniteSetRef where
     cfmap f (MkLangFiniteSetRef r v) = MkLangFiniteSetRef (cfmap f r) v
@@ -25,7 +25,7 @@ instance HasVariance 'Rangevariance LangFiniteSetRef where
 
 langFiniteSetRefValue :: LangFiniteSetRef '( q, q) -> PinaforeRef (FiniteSetUpdate q)
 langFiniteSetRefValue (MkLangFiniteSetRef tr lv) =
-    eaMap (bijectionFiniteSetChangeLens (isoMapCat fromEnhanced $ rangeBijection tr)) lv
+    eaMap (bijectionFiniteSetChangeLens (isoMapCat shimToFunction $ rangeBijection tr)) lv
 
 valueLangFiniteSetRef :: Eq q => PinaforeRef (FiniteSetUpdate q) -> LangFiniteSetRef '( q, q)
 valueLangFiniteSetRef lv = MkLangFiniteSetRef identityRange lv
@@ -61,7 +61,7 @@ langFiniteSetRefJoin seta setb =
 
 langFiniteSetRefAdd :: LangFiniteSetRef '( p, q) -> p -> PinaforeAction ()
 langFiniteSetRefAdd (MkLangFiniteSetRef tr set) p =
-    pinaforeRefPushAction set $ pure $ KeyEditInsertReplace $ fromEnhanced (rangeContra tr) p
+    pinaforeRefPushAction set $ pure $ KeyEditInsertReplace $ shimToFunction (rangeContra tr) p
 
 langFiniteSetRefAddNew :: LangFiniteSetRef '( NewEntity, TopType) -> PinaforeAction NewEntity
 langFiniteSetRefAddNew set = do
@@ -71,18 +71,18 @@ langFiniteSetRefAddNew set = do
 
 langFiniteSetRefRemove :: LangFiniteSetRef '( p, q) -> p -> PinaforeAction ()
 langFiniteSetRefRemove (MkLangFiniteSetRef tr set) p =
-    pinaforeRefPushAction set $ pure $ KeyEditDelete $ fromEnhanced (rangeContra tr) p
+    pinaforeRefPushAction set $ pure $ KeyEditDelete $ shimToFunction (rangeContra tr) p
 
 langFiniteSetRefRemoveAll :: LangFiniteSetRef '( BottomType, TopType) -> PinaforeAction ()
 langFiniteSetRefRemoveAll (MkLangFiniteSetRef _ set) = pinaforeRefPushAction set $ pure KeyEditClear
 
 langFiniteSetRefFunctionValue :: LangFiniteSetRef '( t, a) -> PinaforeROWRef (FiniteSet a)
 langFiniteSetRefFunctionValue (MkLangFiniteSetRef tr set) =
-    eaMapReadOnlyWhole (fmap $ fromEnhanced $ rangeCo tr) $ eaToReadOnlyWhole set
+    eaMapReadOnlyWhole (fmap $ shimToFunction $ rangeCo tr) $ eaToReadOnlyWhole set
 
 langFiniteSetRefMember :: forall a. LangFiniteSetRef '( a, TopType) -> a -> LangRef '( Bool, Bool)
 langFiniteSetRefMember (MkLangFiniteSetRef tr set) val = let
-    tval = fromEnhanced (rangeContra tr) val
+    tval = shimToFunction (rangeContra tr) val
     in pinaforeRefToRef $ eaMap (wholeChangeLens knowMaybeLens . finiteSetChangeLens tval) set
 
 langFiniteSetRefSingle :: forall a. LangFiniteSetRef '( BottomType, MeetType Entity a) -> LangRef '( TopType, a)
@@ -111,11 +111,11 @@ langFiniteSetRefCartesianProduct (MkLangFiniteSetRef tra vala) (MkLangFiniteSetR
 
 langFiniteSetRefToSetRef :: forall p q. LangFiniteSetRef '( p, q) -> LangSetRef p
 langFiniteSetRefToSetRef (MkLangFiniteSetRef tr sval) =
-    contramap (fromEnhanced $ rangeContra tr) $ MkLangSetRef (==) $ eaMap finiteSetFunctionChangeLens sval
+    contramap (shimToFunction $ rangeContra tr) $ MkLangSetRef (==) $ eaMap finiteSetFunctionChangeLens sval
 
 langFiniteSetRefSetIntersect :: forall p q. LangFiniteSetRef '( p, q) -> LangSetRef q -> LangFiniteSetRef '( p, q)
 langFiniteSetRefSetIntersect (MkLangFiniteSetRef tr fsetval) fsetref = let
-    MkLangSetRef _ setval = contramap (fromEnhanced $ rangeCo tr) fsetref
+    MkLangSetRef _ setval = contramap (shimToFunction $ rangeCo tr) fsetref
     in MkLangFiniteSetRef tr $
        eaMap (fromReadOnlyRejectingChangeLens . filterFiniteSetUpdateFunction) $ eaPair fsetval setval
 

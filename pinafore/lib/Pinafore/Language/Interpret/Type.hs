@@ -96,7 +96,8 @@ interpretTypeM' (VarSyntaxType name) =
 interpretTypeM' (RecursiveSyntaxType name st) = do
     mt <- interpretTypeM st
     nameToSymbolType name $ \var ->
-        return $ mapMPolarW (\(MkAnyW t) -> assignUVarWit var t $ MkAnyW $ recursiveDolanType var t) mt
+        return $
+        mapMPolarW (\(MkAnyW t) -> assignUVarWit var t $ MkAnyW $ singleDolanType $ RecursiveDolanSingularType var t) mt
 
 interpretTypeRangeFromType ::
        forall mpolarity. Is MPolarityType mpolarity
@@ -128,11 +129,10 @@ interpretTypeRangeItem ::
     -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
 interpretTypeRangeItem (Just CoSyntaxVariance, st) = do
     atq <- interpretTypeM st
-    return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType (PlainDolanType NilDolanPlainType) tq) atq
+    return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType NilDolanType tq) atq
 interpretTypeRangeItem (Just ContraSyntaxVariance, st) = do
     atp <- invertMPolarity @mpolarity $ interpretTypeM st
-    return $
-        toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkRangeType tp $ PlainDolanType NilDolanPlainType) (MkInvertMPolarW atp)
+    return $ toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkRangeType tp NilDolanType) (MkInvertMPolarW atp)
 interpretTypeRangeItem (Nothing, st) = interpretTypeRangeFromType st
 
 groundTypeText :: SyntaxGroundType -> Text

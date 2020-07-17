@@ -44,30 +44,37 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
              GetVarUses (DolanSingularType ground polarity) where
     getVarUses (GroundDolanSingularType gt args) = getArgsExpressionVarUses (groundTypeVarianceType gt) args
     getVarUses (VarDolanSingularType _) = mempty
+    getVarUses (RecursiveDolanSingularType vn st) = let
+        (pvarss, nvarss) = getVarUses st
+        removeVar :: [AnyW SymbolType] -> [AnyW SymbolType]
+        removeVar = filter $ (/=) $ MkAnyW vn
+        in case representative @_ @_ @polarity of
+               PositiveType -> (fmap removeVar pvarss, nvarss)
+               NegativeType -> (pvarss, fmap removeVar nvarss)
 
 getVarUses' ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanPlainType ground polarity t
+    => DolanType ground polarity t
     -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
-getVarUses' NilDolanPlainType = mempty
-getVarUses' (ConsDolanPlainType t1 tr) = getVarUses t1 <> getVarUses' tr
+getVarUses' NilDolanType = mempty
+getVarUses' (ConsDolanType t1 tr) = getVarUses t1 <> getVarUses' tr
 
 getJMSingleTypeVars ::
        forall (ground :: GroundTypeKind) polarity t. Is PolarityType polarity
     => DolanSingularType ground polarity t
     -> [AnyW SymbolType]
 getJMSingleTypeVars (VarDolanSingularType vn) = [MkAnyW vn]
-getJMSingleTypeVars (GroundDolanSingularType _ _) = []
+getJMSingleTypeVars _ = []
 
 getJMTypeVars ::
        forall (ground :: GroundTypeKind) polarity t. Is PolarityType polarity
-    => DolanPlainType ground polarity t
+    => DolanType ground polarity t
     -> [AnyW SymbolType]
-getJMTypeVars NilDolanPlainType = mempty
-getJMTypeVars (ConsDolanPlainType t1 tr) = getJMSingleTypeVars @ground t1 <> getJMTypeVars @ground tr
+getJMTypeVars NilDolanType = mempty
+getJMTypeVars (ConsDolanType t1 tr) = getJMSingleTypeVars @ground t1 <> getJMTypeVars @ground tr
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             GetVarUses (DolanPlainType ground polarity) where
+             GetVarUses (DolanType ground polarity) where
     getVarUses t =
         case getJMTypeVars t of
             tv ->
@@ -75,17 +82,6 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
                      PositiveType -> ([tv], [])
                      NegativeType -> ([], [tv])) <>
                 getVarUses' @ground t
-
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             GetVarUses (DolanType ground polarity) where
-    getVarUses (PlainDolanType t) = getVarUses t
-    getVarUses (RecursiveDolanType vn st) = let
-        (pvarss, nvarss) = getVarUses st
-        removeVar :: [AnyW SymbolType] -> [AnyW SymbolType]
-        removeVar = filter $ (/=) $ MkAnyW vn
-        in case representative @_ @_ @polarity of
-               PositiveType -> (fmap removeVar pvarss, nvarss)
-               NegativeType -> (pvarss, fmap removeVar nvarss)
 
 -- | (positive, negative)
 -- to be used after merging duplicate ground types
@@ -139,22 +135,18 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
         case polarityType @polarity of
             PositiveType -> ([MkAnyW vn], [])
             NegativeType -> ([], [MkAnyW vn])
-
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             GetExpressionVars ((DolanPlainType ground) polarity) where
-    getExpressionVars NilDolanPlainType = mempty
-    getExpressionVars (ConsDolanPlainType t1 tr) = getExpressionVars t1 <> getExpressionVars tr
-
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             GetExpressionVars ((DolanType ground) polarity) where
-    getExpressionVars (PlainDolanType t) = getExpressionVars t
-    getExpressionVars (RecursiveDolanType vn st) = let
+    getExpressionVars (RecursiveDolanSingularType vn st) = let
         (pvars, nvars) = getExpressionVars st
         removeVar :: [AnyW SymbolType] -> [AnyW SymbolType]
         removeVar = filter $ (/=) $ MkAnyW vn
         in case representative @_ @_ @polarity of
                PositiveType -> (removeVar pvars, nvars)
                NegativeType -> (pvars, removeVar nvars)
+
+instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
+             GetExpressionVars ((DolanType ground) polarity) where
+    getExpressionVars NilDolanType = mempty
+    getExpressionVars (ConsDolanType t1 tr) = getExpressionVars t1 <> getExpressionVars tr
 
 -- | (positive, negative)
 -- to be used after merging duplicate ground types

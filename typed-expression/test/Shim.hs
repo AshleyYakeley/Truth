@@ -60,32 +60,32 @@ testRec =
         found = countRec r r3
         in assertEqual "" 3 found
 
-justJM :: EnhancedFunction shim => REC -> shim T T
-justJM r = convT2 r <.> toEnhanced "J" Just
+justJM :: FunctionShim shim => REC -> shim T T
+justJM r = convT2 r <.> functionToShim "J" Just
 
 endless1 ::
-       forall (shim :: ShimKind Type). EnhancedFunction shim
+       forall (shim :: ShimKind Type). FunctionShim shim
     => REC
     -> shim T T
-endless1 r = justJM r <.> lazyEnhanced (endless1 r)
+endless1 r = justJM r <.> lazyFunctionShim (endless1 r)
 
 endless2 ::
-       forall (shim :: ShimKind Type). EnhancedFunction shim
+       forall (shim :: ShimKind Type). FunctionShim shim
     => REC
     -> shim T T
-endless2 r = lazyEnhanced (endless1 @shim r) <.> justJM r
+endless2 r = lazyFunctionShim (endless1 @shim r) <.> justJM r
 
 applyEndless1 ::
-       forall (shim :: ShimKind Type). EnhancedFunction shim
+       forall (shim :: ShimKind Type). FunctionShim shim
     => REC
     -> T
-applyEndless1 r = fromEnhanced (endless1 @shim r) $ nothingRec r
+applyEndless1 r = shimToFunction (endless1 @shim r) $ nothingRec r
 
 applyEndless2 ::
-       forall (shim :: ShimKind Type). EnhancedFunction shim
+       forall (shim :: ShimKind Type). FunctionShim shim
     => REC
     -> T
-applyEndless2 r = fromEnhanced (endless2 @shim r) $ nothingRec r
+applyEndless2 r = shimToFunction (endless2 @shim r) $ nothingRec r
 
 checkEndless :: REC -> Int -> T -> Bool
 checkEndless _ 0 _ = True

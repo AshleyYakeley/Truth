@@ -60,10 +60,10 @@ instance (TestEquality (tw polarity), TestEquality (tw (InvertPolarity polarity)
 rangeTypeInKind :: forall tw polarity. Subrepresentative (RangeType tw polarity) (KindWitness (Type, Type))
 rangeTypeInKind (MkRangeType _ _) = Dict
 
-rangeToEnhanced :: EnhancedFunction shim => CatRange (->) a b -> CatRange shim a b
-rangeToEnhanced (MkCatRange p q) = MkCatRange (toEnhanced "range-map" p) (toEnhanced "range-map" q)
+rangeToEnhanced :: FunctionShim shim => CatRange (->) a b -> CatRange shim a b
+rangeToEnhanced (MkCatRange p q) = MkCatRange (functionToShim "range-map" p) (functionToShim "range-map" q)
 
-instance EnhancedFunction shim => CatFunctor (CatRange (->)) (->) (Range shim a) where
+instance FunctionShim shim => CatFunctor (CatRange (->)) (->) (Range shim a) where
     cfmap f = catRangeMap $ rangeToEnhanced f
 
 coRangeLift ::

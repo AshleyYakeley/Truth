@@ -84,7 +84,7 @@ applyLangMorphismSet ::
     -> LangFiniteSetRef '( MeetType Entity b, b)
 applyLangMorphismSet lm (MkLangFiniteSetRef (tr :: Range _ t _) ss) = let
     tbkm :: PinaforeFunctionMorphism PinaforeEntityUpdate (Know t) (Know (MeetType Entity b))
-    tbkm = ccontramap1 (fmap $ fromEnhanced $ rangeCo tr) $ langMorphismFunction lm
+    tbkm = ccontramap1 (fmap $ shimToFunction $ rangeCo tr) $ langMorphismFunction lm
     tbskm :: PinaforeFunctionMorphism PinaforeEntityUpdate (FiniteSet (Know t)) (FiniteSet (Know (MeetType Entity b)))
     tbskm = cfmap tbkm
     tbsm :: PinaforeFunctionMorphism PinaforeEntityUpdate (FiniteSet t) (FiniteSet (MeetType Entity b))
@@ -118,11 +118,11 @@ inverseApplyLangMorphismSet ::
     -> LangFiniteSetRef '( MeetType Entity a, a)
 inverseApplyLangMorphismSet (MkLangMorphism m) (MkLangFiniteSetRef (tra :: Range _ t _) seta) = let
     byt :: by -> t
-    byt = fromEnhanced $ rangeContra tra . join2
+    byt = shimToFunction $ rangeContra tra . join2
     nt :: NewEntity -> t
-    nt = fromEnhanced $ rangeContra tra . join1
+    nt = shimToFunction $ rangeContra tra . join1
     tbx :: t -> bx
-    tbx = fromEnhanced $ rangeCo tra
+    tbx = shimToFunction $ rangeCo tra
     m' :: PinaforeLensMorphism PinaforeEntityUpdate (MeetType Entity a) (MeetType Entity a) t t
     m' = cfmap3 (MkCatDual $ meet2 @(->)) $ cfmap1 (MkCatDual tbx) $ fmap byt m
     newVal :: IO t
