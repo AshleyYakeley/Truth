@@ -58,6 +58,7 @@ library:
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.MPolarity
       - Language.Expression.Dolan.RangeF
+      - Language.Expression.Dolan.Recursive
       - Language.Expression.Dolan.Type
       - Language.Expression.Dolan.VarSubstitute
       - Language.Expression.Dolan.Subtype
@@ -94,4 +95,5 @@ tests:
         main: Main.hs
         other-modules:
           - Shim
+          - Recursive
         ghc-options: -threaded

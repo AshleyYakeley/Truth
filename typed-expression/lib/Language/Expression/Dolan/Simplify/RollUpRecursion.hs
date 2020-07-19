@@ -7,6 +7,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
+import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
@@ -22,14 +23,15 @@ data RollUp ground where
         -> RollUp ground
 
 mkRollUp ::
-       forall (ground :: GroundTypeKind) (polarity :: Polarity) name.
+       forall (ground :: GroundTypeKind) (polarity :: Polarity) name t.
        (IsDolanGroundType ground, Is PolarityType polarity)
     => SymbolType name
-    -> DolanType ground polarity (UVar Type name)
+    -> DolanType ground polarity t
     -> Maybe (RollUp ground)
 mkRollUp var rolled = do
-    MkShimWit unrolled conv <- return $ unrollRecursiveType var rolled
-    return $ MkRollUp unrolled $ mapShimWitT (invert conv) $ mkShimWitT rolled
+    MkShimWit unrolled conv <- return $ unrollRecursiveType var $ mkShimWitT rolled
+    assignUVar @Type @t var $
+        return $ MkRollUp unrolled $ mapShimWitT (polarPolyIso recursiveIso . invert conv) $ mkShimWitT rolled
 
 rollUpThisType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

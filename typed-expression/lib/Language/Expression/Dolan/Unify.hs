@@ -10,6 +10,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
+import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
@@ -29,15 +30,6 @@ data BisubstitutionWitness ground t where
         -> DolanShimWit ground polarity p
         -> BisubstitutionWitness ground (PolarMapType (DolanPolyShim ground Type) polarity p (UVar Type name))
 
-mapWRONG ::
-       forall (ground :: GroundTypeKind) polarity a b. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
-    => PolarMap (DolanPolyShim ground Type) polarity a b
-mapWRONG =
-    MkPolarMap $
-    case polarityType @polarity of
-        PositiveType -> functionToShim "occurs" $ \_ -> error "occurs"
-        NegativeType -> functionToShim "occurs" $ \_ -> error "occurs"
-
 mkBisubstitutionWitness ::
        forall (ground :: GroundTypeKind) polarity name p. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => SymbolType name
@@ -47,7 +39,8 @@ mkBisubstitutionWitness var t =
     MkBisubstitutionWitness var $
     singleDolanShimWit $
     if occursInSingularType var t
-        then recursiveDolanShimWit var (mapWRONG @ground) $ singleDolanShimWit $ mkShimWit t
+        then assignUVar @Type @p var $
+             mapShimWit (isoPolarBackwards recursiveIso) $ recursiveDolanShimWit var $ singleDolanShimWit $ mkShimWit t
         else mkShimWit t
 
 type DolanUnifier :: GroundTypeKind -> Type -> Type

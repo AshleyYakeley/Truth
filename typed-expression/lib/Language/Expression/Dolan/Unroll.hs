@@ -11,22 +11,25 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
+import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 unrollRecursiveType ::
-       forall (ground :: GroundTypeKind) polarity name. (IsDolanGroundType ground, Is PolarityType polarity)
+       forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)
     => SymbolType name
-    -> DolanType ground polarity (UVar Type name)
-    -> DolanIsoShimWit ground polarity (UVar Type name)
-unrollRecursiveType var t = runIdentity $ bisubstituteType (mkSingleBisubstitution var (pure $ mkShimWit t)) t
+    -> DolanIsoShimWit ground polarity t
+    -> DolanIsoShimWit ground polarity (Recursive (UVar Type name) t)
+unrollRecursiveType var t =
+    assignUVarWit var t $
+    mapShimWit (polarPolyIso recursiveIso) $ runIdentity $ bisubstituteType (mkSingleBisubstitution var (pure t)) t
 
 unrollSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity t
     -> DolanIsoShimWit ground polarity t
-unrollSingularType (RecursiveDolanSingularType var t) = unrollRecursiveType var t
+unrollSingularType (RecursiveDolanSingularType var t) = unrollRecursiveType var $ mkShimWit t
 unrollSingularType t = singleDolanShimWit $ mkShimWit t
 
 unrollType ::
@@ -43,10 +46,10 @@ data RecursiveOrPlainType ground polarity t where
            DolanType ground polarity t
         -> RecursiveOrPlainType ground polarity t
     RecursiveType
-        :: forall (ground :: GroundTypeKind) polarity name.
+        :: forall (ground :: GroundTypeKind) polarity name t.
            SymbolType name
-        -> DolanType ground polarity (UVar Type name)
-        -> RecursiveOrPlainType ground polarity (UVar Type name)
+        -> DolanType ground polarity t
+        -> RecursiveOrPlainType ground polarity (Recursive (UVar Type name) t)
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground) =>
              TestEquality (RecursiveOrPlainType ground polarity) where
@@ -61,8 +64,8 @@ unrollRecursiveOrPlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => RecursiveOrPlainType ground polarity t
     -> DolanIsoShimWit ground polarity t
-unrollRecursiveOrPlainType (PlainType pt) = mkShimWit pt
-unrollRecursiveOrPlainType (RecursiveType var pt) = unrollRecursiveType var pt
+unrollRecursiveOrPlainType (PlainType t) = mkShimWit t
+unrollRecursiveOrPlainType (RecursiveType var t) = unrollRecursiveType var $ mkShimWit t
 
 singularRecursiveOrPlainType ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) t.

@@ -11,6 +11,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
+import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Rename
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -86,27 +87,19 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
     bisubstituteType (MkBisubstitution nb _ _) t@(RecursiveDolanSingularType nt _)
         | Just Refl <- testEquality nb nt = return $ singleDolanShimWit $ mkShimWit t
     bisubstituteType sub t@(RecursiveDolanSingularType oldvar pt) =
-        invertPolarity @polarity $ let
-            -- find a name that isn't free in either sub or t,
-            -- if possible the same name as oldvar
-            newname =
-                runIdentity $
-                runVarRenamerT $ do
-                    runVarNamespaceT $ do
-                        _ <- dolanNamespaceRename @ground t
-                        _ <- dolanNamespaceRename @ground sub
-                        return ()
-                    varRenamerTGenerate [uVarName oldvar]
-            in newUVar newname $ \newvar ->
-                   case varSubstitute @_ @pshim (mkPolarVarSubstitution @polarity oldvar newvar) pt of
-                       MkShimWit pt' vconv -> do
-                           MkShimWit t' sconv <- bisubstituteType sub pt'
-                           assignUVarWit newvar t' $ do
-                               return $
-                                   singleDolanShimWit $
-                                   MkShimWit (RecursiveDolanSingularType newvar t') $ let
-                                       conv = sconv <.> (applyPolarPolyFuncShim vconv (lazyPolarMap conv, id))
-                                       in conv
+        runVarRenamerT $ do
+            runVarNamespaceT $ do
+                -- find a name that isn't free in either sub or t,
+                -- if possible the same name as oldvar
+                _ <- dolanNamespaceRename @ground t
+                _ <- dolanNamespaceRename @ground sub
+                MkVarType newvar :: VarType ntype <- varNamespaceTRenameUVar @Type oldvar
+                pt' <- dolanNamespaceRename @ground pt
+                MkShimWit pt'' conv <- lift $ lift $ bisubstituteType sub pt'
+                assignUVar @Type @ntype oldvar $
+                    return $
+                    mapShimWit (shimMapRecursive conv) $
+                    singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType newvar pt''
     bisubstituteType sub t = do
         t' <- mapDolanSingularTypeM (bisubstituteType sub) t
         return $ singleDolanShimWit t'

@@ -6,6 +6,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.PShimWit
+import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
 import Shapes
@@ -64,10 +65,10 @@ data DolanSingularType ground polarity t where
            SymbolType name
         -> DolanSingularType ground polarity (UVar Type name)
     RecursiveDolanSingularType
-        :: forall (ground :: GroundTypeKind) polarity name.
+        :: forall (ground :: GroundTypeKind) polarity name t.
            SymbolType name
-        -> DolanType ground polarity (UVar Type name)
-        -> DolanSingularType ground polarity (UVar Type name)
+        -> DolanType ground polarity t
+        -> DolanSingularType ground polarity (Recursive (UVar Type name) t)
 
 instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
              TestEquality (DolanSingularType ground polarity) where
