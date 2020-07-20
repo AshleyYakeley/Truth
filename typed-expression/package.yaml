@@ -60,6 +60,7 @@ library:
       - Language.Expression.Dolan.RangeF
       - Language.Expression.Dolan.Recursive
       - Language.Expression.Dolan.Type
+      - Language.Expression.Dolan.Occur
       - Language.Expression.Dolan.VarSubstitute
       - Language.Expression.Dolan.Subtype
       - Language.Expression.Dolan.Bisubstitute
