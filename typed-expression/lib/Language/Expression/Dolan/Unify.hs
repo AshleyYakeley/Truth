@@ -10,13 +10,13 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
+import Language.Expression.Dolan.MapType
 import Language.Expression.Dolan.Occur
 import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.VarSubstitute
 import Shapes
 
 type UnifierBisubstitution :: GroundTypeKind -> Type

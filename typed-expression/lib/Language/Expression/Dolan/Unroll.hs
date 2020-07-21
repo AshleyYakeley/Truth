@@ -10,6 +10,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
+import Language.Expression.Dolan.MapType
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Type

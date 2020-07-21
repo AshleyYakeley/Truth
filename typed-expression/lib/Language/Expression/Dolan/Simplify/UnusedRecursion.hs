@@ -5,12 +5,12 @@ module Language.Expression.Dolan.Simplify.UnusedRecursion
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Combine
+import Language.Expression.Dolan.MapType
 import Language.Expression.Dolan.Occur
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.VarSubstitute
 import Shapes
 
 elimUnusuedInShimWit ::

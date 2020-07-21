@@ -6,12 +6,12 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
+import Language.Expression.Dolan.MapType
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
-import Language.Expression.Dolan.VarSubstitute
 import Shapes
 
 type RollUp :: GroundTypeKind -> Type

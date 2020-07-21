@@ -10,12 +10,12 @@ module Language.Expression.Dolan.Bisubstitute
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Combine
+import Language.Expression.Dolan.MapType
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Rename
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.VarSubstitute
 import Shapes
 
 type Bisubstitution :: GroundTypeKind -> PolyShimKind -> (Type -> Type) -> Type

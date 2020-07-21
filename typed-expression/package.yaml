@@ -61,6 +61,7 @@ library:
       - Language.Expression.Dolan.Recursive
       - Language.Expression.Dolan.Type
       - Language.Expression.Dolan.Occur
+      - Language.Expression.Dolan.MapType
       - Language.Expression.Dolan.VarSubstitute
       - Language.Expression.Dolan.Subtype
       - Language.Expression.Dolan.Bisubstitute
