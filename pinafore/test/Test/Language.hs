@@ -537,6 +537,9 @@ testQueries =
                     [ testQuery "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount Nothing" $
                       Just "0"
                     , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> if True then 1 else 1 + rcount y end in rcount $ Just Nothing" $
+                      Just "1"
+                    , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
                       Just "1"
                     , testQuery

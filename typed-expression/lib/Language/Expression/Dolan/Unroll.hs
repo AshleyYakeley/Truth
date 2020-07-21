@@ -14,22 +14,38 @@ import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.VarSubstitute
 import Shapes
+
+unrollRecursiveMap ::
+       forall (ground :: GroundTypeKind) polarity name p t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => SymbolType name
+    -> (PolarMap (DolanPolyIsoShim ground Type) polarity (UVar Type name) p -> PolarMap (DolanPolyIsoShim ground Type) polarity (Recursive (UVar Type name) t) p)
+    -> PolarMap (DolanPolyIsoShim ground Type) polarity (Recursive (UVar Type name) t) t
+unrollRecursiveMap _var _convf = error "NYI"
 
 unrollRecursiveType ::
        forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)
     => SymbolType name
-    -> DolanIsoShimWit ground polarity t
+    -> DolanType ground polarity t
     -> DolanIsoShimWit ground polarity (Recursive (UVar Type name) t)
-unrollRecursiveType var t =
-    assignUVarWit var t $
-    mapShimWit (polarPolyIso recursiveIso) $ runIdentity $ bisubstituteType (mkSingleBisubstitution var (pure t)) t
+unrollRecursiveType oldvar oldpt =
+    invertPolarity @polarity $
+    newUVar (uVarName oldvar) $ \newvar -> let
+        vsub = mkPolarVarSubstitution @polarity oldvar newvar
+        newpt = varSubstitute @_ @(DolanPolyIsoShim ground) vsub oldpt
+        in case singleDolanShimWit $ recursiveDolanShimWit oldvar newpt of
+               MkShimWit newt convf ->
+                   assignUVarWit newvar newt $
+                   mapShimWit
+                       (unrollRecursiveMap @ground @polarity oldvar $ \conv -> applyPolarPolyFuncShim convf (conv, id)) $
+                   runIdentity $ bisubstituteType (mkSingleBisubstitution newvar (pure $ mkShimWit newt)) oldpt
 
 unrollSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanSingularType ground polarity t
     -> DolanIsoShimWit ground polarity t
-unrollSingularType (RecursiveDolanSingularType var t) = unrollRecursiveType var $ mkShimWit t
+unrollSingularType (RecursiveDolanSingularType var t) = unrollRecursiveType var t
 unrollSingularType t = singleDolanShimWit $ mkShimWit t
 
 unrollType ::
@@ -65,7 +81,7 @@ unrollRecursiveOrPlainType ::
     => RecursiveOrPlainType ground polarity t
     -> DolanIsoShimWit ground polarity t
 unrollRecursiveOrPlainType (PlainType t) = mkShimWit t
-unrollRecursiveOrPlainType (RecursiveType var t) = unrollRecursiveType var $ mkShimWit t
+unrollRecursiveOrPlainType (RecursiveType var t) = unrollRecursiveType var t
 
 singularRecursiveOrPlainType ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) t.

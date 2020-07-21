@@ -27,7 +27,15 @@ recursiveIso ::
     => Isomorphism shim (Recursive t t) t
 recursiveIso = let
     isoForwards = functionToShim "recursive-iso" $ \(MkRecursive taa) -> taa id
-    isoBackwards = functionToShim "recursive-iso" $ \t -> MkRecursive $ \_ -> t
+    isoBackwards = functionToShim "recursive-iso" $ \t -> MkRecursive $ \ta -> ta t
+    in MkIsomorphism {..}
+
+recursiveIsoNull ::
+       forall (shim :: ShimKind Type) (a :: Type) (t :: Type). FunctionShim shim
+    => Isomorphism shim (Recursive a t) t
+recursiveIsoNull = let
+    isoForwards = functionToShim "recursive-iso" $ \_ -> error "null"
+    isoBackwards = functionToShim "recursive-iso" $ \t -> MkRecursive $ \ta -> ta t
     in MkIsomorphism {..}
 
 newtype RecursiveF f =

@@ -21,7 +21,7 @@ elimUnusuedInShimWit ::
 elimUnusuedInShimWit var tw@(MkShimWit t _) =
     if occursInType var t
         then singleDolanShimWit $ recursiveDolanShimWit var tw
-        else assignUVarWit var tw $ mapShimWit (isoPolarForwards recursiveIso) tw
+        else mapShimWit (isoPolarForwards recursiveIsoNull) tw
 
 elimInSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

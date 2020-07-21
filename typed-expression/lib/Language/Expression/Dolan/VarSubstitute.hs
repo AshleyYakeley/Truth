@@ -14,61 +14,63 @@ import Shapes
 type GenShim :: PolyShimKind -> Constraint
 type GenShim pshim = (LazyCategory (pshim Type), DolanVarianceInCategory pshim)
 
-type VarSubstitution :: PolyShimKind -> Type
-data VarSubstitution pshim where
-    MkVarSubstitution
-        :: forall (pshim :: PolyShimKind) oldname.
-           SymbolType oldname
-        -> ShimWit (pshim Type) VarType 'Positive (UVar Type oldname)
-        -> ShimWit (pshim Type) VarType 'Negative (UVar Type oldname)
-        -> VarSubstitution pshim
+type SubShim :: PolyShimKind -> Type -> Polarity -> Type -> Type -> ShimKind Type
+type SubShim pshim oldtype polarity newtypepos newtypeneg
+     = PolyFuncShim ( PolarMap (pshim Type) polarity oldtype newtypepos
+                    , PolarMap (pshim Type) (InvertPolarity polarity) oldtype newtypeneg) pshim Type
 
-instance forall ts (pshim :: PolyShimKind). ( RenameTypeSystem ts
-         , RenamerNamespaceT ts ~ VarNamespaceT ts
-         , RenamerT ts ~ VarRenamerT ts
-         ) => NamespaceRenamable ts (VarSubstitution pshim) where
-    namespaceRename (MkVarSubstitution oldvar newpos newneg) = do
+type VarSubstitution :: Type -> Polarity -> Type -> Type -> Type
+data VarSubstitution oldtype polarity newtypepos newtypeneg where
+    MkVarSubstitution
+        :: forall oldname polarity newnamepos newnameneg.
+           SymbolType oldname
+        -> SymbolType newnamepos
+        -> SymbolType newnameneg
+        -> VarSubstitution (UVar Type oldname) polarity (UVar Type newnamepos) (UVar Type newnameneg)
+
+instance (RenamerNamespaceT ts ~ VarNamespaceT ts, RenamerT ts ~ VarRenamerT ts) =>
+             NamespaceRenamable ts (VarSubstitution oldtype polarity newtypepos newtypeneg) where
+    namespaceRename (MkVarSubstitution oldvar newvarpos newvarneg) = do
         MkVarType oldvar' <- namespaceRename @ts (MkVarType @Type oldvar)
-        newpos' <- namespaceRename @ts newpos
-        newneg' <- namespaceRename @ts newneg
-        return $ MkVarSubstitution oldvar' newpos' newneg'
+        MkVarType newvarpos' <- namespaceRename @ts (MkVarType @Type newvarpos)
+        MkVarType newvarneg' <- namespaceRename @ts (MkVarType @Type newvarneg)
+        return $ MkVarSubstitution oldvar' newvarpos' newvarneg'
 
 mkPolarVarSubstitution ::
-       forall (pshim :: PolyShimKind) polarity oldname. (GenShim pshim, Is PolarityType polarity)
-    => SymbolType oldname
-    -> ShimWit (pshim Type) VarType polarity (UVar Type oldname)
-    -> VarSubstitution pshim
-mkPolarVarSubstitution oldvar newwit =
-    case polarityType @polarity of
-        PositiveType -> MkVarSubstitution oldvar newwit (mkShimWit $ MkVarType oldvar)
-        NegativeType -> MkVarSubstitution oldvar (mkShimWit $ MkVarType oldvar) newwit
+       forall polarity oldname newname.
+       SymbolType oldname
+    -> SymbolType newname
+    -> VarSubstitution (UVar Type oldname) polarity (UVar Type newname) (UVar Type oldname)
+mkPolarVarSubstitution oldvar newvar = MkVarSubstitution oldvar newvar oldvar
 
 class VarSubstitutable (w :: Polarity -> Type -> Type) where
     varSubstitute ::
-           forall (pshim :: PolyShimKind) polarity t. (GenShim pshim, Is PolarityType polarity)
-        => VarSubstitution pshim
+           forall (pshim :: PolyShimKind) oldtype polarity polarity' newtypepos newtypeneg t.
+           (GenShim pshim, Is PolarityType polarity, Is PolarityType polarity')
+        => VarSubstitution oldtype polarity' newtypepos newtypeneg
         -> w polarity t
-        -> PShimWit (pshim Type) w polarity t
+        -> PShimWit (SubShim pshim oldtype polarity' newtypepos newtypeneg) w polarity t
 
 varShimSubstitute ::
-       forall (w :: Polarity -> Type -> Type) (pshim :: PolyShimKind) polarity t.
-       (GenShim pshim, VarSubstitutable w, Is PolarityType polarity)
-    => VarSubstitution pshim
-    -> PShimWit (pshim Type) w polarity t
-    -> PShimWit (pshim Type) w polarity t
+       forall (w :: Polarity -> Type -> Type) (pshim :: PolyShimKind) oldtype polarity polarity' newtypepos newtypeneg t.
+       (GenShim pshim, VarSubstitutable w, Is PolarityType polarity, Is PolarityType polarity')
+    => VarSubstitution oldtype polarity' newtypepos newtypeneg
+    -> PShimWit (SubShim pshim oldtype polarity' newtypepos newtypeneg) w polarity t
+    -> PShimWit (SubShim pshim oldtype polarity' newtypepos newtypeneg) w polarity t
 varShimSubstitute sub = chainShimWit (varSubstitute sub)
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => VarSubstitutable (DolanSingularType ground) where
     varSubstitute ::
-           forall (pshim :: PolyShimKind) polarity t. (GenShim pshim, Is PolarityType polarity)
-        => VarSubstitution pshim
+           forall (pshim :: PolyShimKind) oldtype polarity polarity' newtypepos newtypeneg t.
+           (GenShim pshim, Is PolarityType polarity, Is PolarityType polarity')
+        => VarSubstitution oldtype polarity' newtypepos newtypeneg
         -> DolanSingularType ground polarity t
-        -> PShimWit (pshim Type) (DolanSingularType ground) polarity t
-    varSubstitute (MkVarSubstitution oldvar newpos newneg) (VarDolanSingularType var)
-        | Just Refl <- testEquality oldvar var =
-            case polarityType @polarity of
-                PositiveType -> chainShimWit (\(MkVarType v) -> mkShimWit $ VarDolanSingularType v) newpos
-                NegativeType -> chainShimWit (\(MkVarType v) -> mkShimWit $ VarDolanSingularType v) newneg
+        -> PShimWit (SubShim pshim oldtype polarity' newtypepos newtypeneg) (DolanSingularType ground) polarity t
+    varSubstitute (MkVarSubstitution svar varpos varneg) (VarDolanSingularType var)
+        | Just Refl <- testEquality svar var =
+            case samePolarity @polarity @polarity' of
+                Left Refl -> MkShimWit (VarDolanSingularType varpos) $ mkPolarPolyFuncShim $ \(convp, _) -> convp
+                Right Refl -> MkShimWit (VarDolanSingularType varneg) $ mkPolarPolyFuncShim $ \(_, convn) -> convn
     varSubstitute (MkVarSubstitution svar _ _) t@(RecursiveDolanSingularType var _)
         | Just Refl <- testEquality svar var = mkShimWit t
     varSubstitute sub t@(RecursiveDolanSingularType oldvar pt) =
@@ -100,7 +102,9 @@ polarVarSubstitute ::
     -> w polarity t
     -> PShimWit (pshim Type) w polarity t
 polarVarSubstitute oldvar newvar conv wt =
-    varSubstitute (mkPolarVarSubstitution @pshim @polarity oldvar $ MkShimWit (MkVarType newvar) conv) wt
+    invertPolarity @polarity $
+    case varSubstitute (mkPolarVarSubstitution @polarity oldvar newvar) wt of
+        MkShimWit wt' rconv -> MkShimWit wt' $ applyPolarPolyFuncShim rconv (conv, id)
 
 recursiveDolanShimWit ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity name t.

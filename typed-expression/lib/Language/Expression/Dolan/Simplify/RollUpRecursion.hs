@@ -29,7 +29,7 @@ mkRollUp ::
     -> DolanType ground polarity t
     -> Maybe (RollUp ground)
 mkRollUp var rolled = do
-    MkShimWit unrolled conv <- return $ unrollRecursiveType var $ mkShimWitT rolled
+    MkShimWit unrolled conv <- return $ unrollRecursiveType var rolled
     assignUVar @Type @t var $
         return $ MkRollUp unrolled $ mapShimWitT (polarPolyIso recursiveIso . invert conv) $ mkShimWitT rolled
 

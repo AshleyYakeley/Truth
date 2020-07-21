@@ -89,7 +89,7 @@ singularTypedShowValue :: PinaforeSingularType 'Positive t -> t -> String
 singularTypedShowValue (VarDolanSingularType _) _ = "<?>"
 singularTypedShowValue (GroundDolanSingularType gt args) v = groundTypedShowValue gt args v
 singularTypedShowValue (RecursiveDolanSingularType var pt) v =
-    case unrollRecursiveType var (mkShimWit pt) of
+    case unrollRecursiveType var pt of
         MkShimWit t iconv -> typedShowValue t $ shimToFunction (polarPolyIsoPositive iconv) v
 
 typedShowValue :: PinaforeType 'Positive t -> t -> String
