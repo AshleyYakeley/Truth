@@ -31,7 +31,7 @@ mkRollUp ::
 mkRollUp var rolled = do
     MkShimWit unrolled conv <- return $ unrollRecursiveType var rolled
     assignUVar @Type @t var $
-        return $ MkRollUp unrolled $ mapShimWitT (polarPolyIso recursiveIso . invert conv) $ mkShimWitT rolled
+        return $ MkRollUp unrolled $ mapShimWitT (isoPolarPoly recursiveIso . invert conv) $ mkShimWitT rolled
 
 rollUpThisType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

@@ -15,6 +15,25 @@ import Shapes
 type PolyIso :: PolyShimKind -> PolyShimKind
 type PolyIso = PolyMapT Isomorphism
 
+polarPolyIso ::
+       forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k). (Is PolarityType polarity, Category (pshim k))
+    => PolarMap (PolyIso pshim k) polarity a b
+    -> Isomorphism (pshim k) a b
+polarPolyIso (MkPolarMap iab) =
+    case polarityType @polarity of
+        PositiveType -> unPolyMapT iab
+        NegativeType -> invert $ unPolyMapT iab
+
+isoPolarPoly ::
+       forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k). (Is PolarityType polarity, Category (pshim k))
+    => Isomorphism (pshim k) a b
+    -> PolarMap (PolyIso pshim k) polarity a b
+isoPolarPoly iab =
+    MkPolarMap $
+    case polarityType @polarity of
+        PositiveType -> MkPolyMapT iab
+        NegativeType -> MkPolyMapT $ invert iab
+
 polarPolyIsoForwards ::
        forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k). Is PolarityType polarity
     => PolarMap (PolyIso pshim k) polarity a b
@@ -78,13 +97,3 @@ polarPolyIsoPolar1 =
 
 polyIsoForwards :: forall (pshim :: PolyShimKind) k (a :: k) (b :: k). PolyIso pshim k a b -> pshim k a b
 polyIsoForwards iab = isoForwards $ unPolyMapT iab
-
-polarPolyIso ::
-       forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k). (Is PolarityType polarity, Category (pshim k))
-    => Isomorphism (pshim k) a b
-    -> PolarMap (PolyIso pshim k) polarity a b
-polarPolyIso iab =
-    MkPolarMap $
-    case polarityType @polarity of
-        PositiveType -> MkPolyMapT iab
-        NegativeType -> MkPolyMapT $ invert iab

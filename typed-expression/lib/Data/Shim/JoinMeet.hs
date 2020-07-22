@@ -138,6 +138,19 @@ class (CoercibleKind k, InCategory shim) => FunctionShim (shim :: ShimKind k) wh
     coercionEnhanced :: (InKind a, InKind b) => String -> Coercion a b -> shim a b
     enhancedCoercion :: (InKind a, InKind b) => shim a b -> Maybe (Coercion a b)
 
+isoFunctionToShim ::
+       forall k (shim :: ShimKind k) (a :: k) (b :: k). (FunctionShim shim, InKind a, InKind b)
+    => String
+    -> Isomorphism KindFunction a b
+    -> Isomorphism shim a b
+isoFunctionToShim s (MkIsomorphism ab ba) = MkIsomorphism (functionToShim s ab) (functionToShim s ba)
+
+isoShimToFunction ::
+       forall k (shim :: ShimKind k) (a :: k) (b :: k). (FunctionShim shim, InKind a, InKind b)
+    => Isomorphism shim a b
+    -> Isomorphism KindFunction a b
+isoShimToFunction (MkIsomorphism ab ba) = MkIsomorphism (shimToFunction ab) (shimToFunction ba)
+
 lazyFunctionShim ::
        forall k (shim :: ShimKind k) (a :: k) (b :: k). (FunctionShim shim, InKind a, InKind b)
     => shim a b

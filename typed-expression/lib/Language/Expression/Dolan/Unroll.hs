@@ -21,7 +21,7 @@ unrollRecursiveMap ::
     => SymbolType name
     -> (PolarMap (DolanPolyIsoShim ground Type) polarity (UVar Type name) (Recursive (UVar Type name) t) -> PolarMap (DolanPolyIsoShim ground Type) polarity t p)
     -> PolarMap (DolanPolyIsoShim ground Type) polarity (Recursive (UVar Type name) t) p
-unrollRecursiveMap _var _convf = error "NYI"
+unrollRecursiveMap var convf = isoPolarPoly $ unrollRecursiveIsoShim var (polarPolyIso . convf . isoPolarPoly)
 
 unrollRecursiveType ::
        forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)

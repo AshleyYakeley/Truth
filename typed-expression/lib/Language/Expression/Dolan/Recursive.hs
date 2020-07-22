@@ -1,6 +1,7 @@
 module Language.Expression.Dolan.Recursive where
 
 import Data.Shim
+import Language.Expression.Common
 import Shapes
 
 type Recursive :: Type -> Type -> Type
@@ -25,18 +26,37 @@ shimMapRecursive conv = polarMapTypeApply CovarianceType cid conv
 recursiveIso ::
        forall (shim :: ShimKind Type) (t :: Type). FunctionShim shim
     => Isomorphism shim (Recursive t t) t
-recursiveIso = let
-    isoForwards = functionToShim "recursive-iso" $ \(MkRecursive taa) -> taa id
-    isoBackwards = functionToShim "recursive-iso" $ \t -> MkRecursive $ \ta -> ta t
-    in MkIsomorphism {..}
+recursiveIso =
+    isoFunctionToShim "recursive" $ let
+        isoForwards (MkRecursive taa) = taa id
+        isoBackwards t = MkRecursive $ \ta -> ta t
+        in MkIsomorphism {..}
 
 recursiveIsoNull ::
        forall (shim :: ShimKind Type) (a :: Type) (t :: Type). FunctionShim shim
     => Isomorphism shim (Recursive a t) t
-recursiveIsoNull = let
-    isoForwards = functionToShim "recursive-iso" $ \_ -> error "null"
-    isoBackwards = functionToShim "recursive-iso" $ \t -> MkRecursive $ \ta -> ta t
+recursiveIsoNull =
+    isoFunctionToShim "recursive-null" $ let
+        isoForwards _ = error "null"
+        isoBackwards t = MkRecursive $ \ta -> ta t
+        in MkIsomorphism {..}
+
+unrollRecursiveBijection ::
+       SymbolType name
+    -> (Bijection (UVar Type name) (Recursive (UVar Type name) t) -> Bijection t p)
+    -> Bijection (Recursive (UVar Type name) t) p
+unrollRecursiveBijection _var _convf = let
+    isoForwards _ = error "NYI: unroll"
+    isoBackwards _ = error "NYI: unroll"
     in MkIsomorphism {..}
+
+unrollRecursiveIsoShim ::
+       FunctionShim shim
+    => SymbolType name
+    -> (Isomorphism shim (UVar Type name) (Recursive (UVar Type name) t) -> Isomorphism shim t p)
+    -> Isomorphism shim (Recursive (UVar Type name) t) p
+unrollRecursiveIsoShim var convf =
+    isoFunctionToShim "unroll" $ unrollRecursiveBijection var $ isoShimToFunction . convf . isoFunctionToShim "unroll"
 
 newtype RecursiveF f =
     MkRecursiveF (forall a. (f a -> a) -> a)
