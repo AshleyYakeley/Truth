@@ -10,19 +10,17 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.MapType
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.VarSubstitute
 import Shapes
 
 unrollRecursiveMap ::
        forall (ground :: GroundTypeKind) polarity name p t. (IsDolanGroundType ground, Is PolarityType polarity)
     => SymbolType name
-    -> (PolarMap (DolanPolyIsoShim ground Type) polarity (UVar Type name) p -> PolarMap (DolanPolyIsoShim ground Type) polarity (Recursive (UVar Type name) t) p)
-    -> PolarMap (DolanPolyIsoShim ground Type) polarity (Recursive (UVar Type name) t) t
+    -> (PolarMap (DolanPolyIsoShim ground Type) polarity (UVar Type name) (Recursive (UVar Type name) t) -> PolarMap (DolanPolyIsoShim ground Type) polarity t p)
+    -> PolarMap (DolanPolyIsoShim ground Type) polarity (Recursive (UVar Type name) t) p
 unrollRecursiveMap _var _convf = error "NYI"
 
 unrollRecursiveType ::
@@ -30,17 +28,22 @@ unrollRecursiveType ::
     => SymbolType name
     -> DolanType ground polarity t
     -> DolanIsoShimWit ground polarity (Recursive (UVar Type name) t)
-unrollRecursiveType oldvar oldpt =
-    invertPolarity @polarity $
-    newUVar (uVarName oldvar) $ \newvar -> let
-        vsub = mkPolarVarSubstitution @polarity oldvar newvar
-        newpt = varSubstitute @_ @(DolanPolyIsoShim ground) vsub oldpt
-        in case singleDolanShimWit $ recursiveDolanShimWit oldvar newpt of
-               MkShimWit newt convf ->
-                   assignUVarWit newvar newt $
-                   mapShimWit
-                       (unrollRecursiveMap @ground @polarity oldvar $ \conv -> applyPolarPolyFuncShim convf (conv, id)) $
-                   runIdentity $ bisubstituteType (mkSingleBisubstitution newvar (pure $ mkShimWit newt)) oldpt
+unrollRecursiveType var pt =
+    case polarityType @polarity of
+        PositiveType -> let
+            t = singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType var pt
+            dbisub =
+                MkDeferredBisubstitution var (pure t) (pure $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType var)
+            in case runIdentity $ deferBisubstituteType dbisub pt of
+                   MkShimWit t' fconv ->
+                       MkShimWit t' $ unrollRecursiveMap @ground var (\conv -> applyPolarPolyFuncShim fconv (conv, id))
+        NegativeType -> let
+            t = singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType var pt
+            dbisub =
+                MkDeferredBisubstitution var (pure $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType var) (pure t)
+            in case runIdentity $ deferBisubstituteType dbisub pt of
+                   MkShimWit t' fconv ->
+                       MkShimWit t' $ unrollRecursiveMap @ground var (\conv -> applyPolarPolyFuncShim fconv (id, conv))
 
 unrollSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

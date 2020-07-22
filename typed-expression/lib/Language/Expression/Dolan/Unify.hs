@@ -149,7 +149,7 @@ bisubstituteUnifier bisub@(MkBisubstitution vsub (Identity tp) (Identity tq)) (O
         val' <- bisubstituteUnifier bisub uval
         pure $ val' conv
 bisubstituteUnifier bisub (OpenExpression (MkBisubstitutionWitness vn (tw :: DolanShimWit ground polarity _)) uval) = let
-    wp' = runIdentity $ bisubstituteType bisub tw
+    wp' = runIdentity $ bisubstituteShimWit bisub tw
     in case polarityType @polarity of
            PositiveType ->
                unPosShimWit wp' $ \tp' conv -> do
@@ -168,22 +168,14 @@ runUnifier ::
     -> WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground) a
 runUnifier (ClosedExpression a) = return a
 runUnifier (OpenExpression (MkBisubstitutionWitness oldvn (tw :: DolanShimWit ground polarity vw)) expr) =
+    invertPolarity @polarity $
     newUVar (uVarName oldvn) $ \(newvn :: SymbolType newname) ->
         assignUVar @Type @(JoinMeetType polarity (UVar Type newname) vw) oldvn $ let
             bisub =
-                case polarityType @polarity of
-                    PositiveType ->
-                        MkBisubstitution
-                            oldvn
-                            (return $ joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvn) tw)
-                            (return $
-                             singleDolanShimWit $ MkShimWit (VarDolanSingularType newvn) $ invertPolarMap polar1)
-                    NegativeType ->
-                        MkBisubstitution
-                            oldvn
-                            (return $
-                             singleDolanShimWit $ MkShimWit (VarDolanSingularType newvn) $ invertPolarMap polar1)
-                            (return $ joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvn) tw)
+                mkPolarBisubstitution
+                    oldvn
+                    (return $ joinMeetShimWit (singleDolanShimWit $ mkShimWit $ VarDolanSingularType newvn) tw)
+                    (return $ singleDolanShimWit $ MkShimWit (VarDolanSingularType newvn) $ invertPolarMap polar1)
             in do
                    expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
                    ca <- runUnifier expr'
