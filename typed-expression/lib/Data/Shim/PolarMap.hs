@@ -104,3 +104,17 @@ lazyPolarMap (MkPolarMap ab) =
     case polarityType @polarity of
         PositiveType -> iLazy ab
         NegativeType -> iLazy ab
+
+isoPolarMapShim ::
+       forall polarity k (shim :: ShimKind k) (pa :: k) (pb :: k) (qa :: k) (qb :: k).
+       (Is PolarityType polarity, IsoMapShim shim, InKind pa, InKind pb, InKind qa, InKind qb)
+    => String
+    -> (KindFunction pa pb -> KindFunction qa qb)
+    -> (KindFunction pb pa -> KindFunction qb qa)
+    -> PolarMap shim polarity pa pb
+    -> PolarMap shim polarity qa qb
+isoPolarMapShim t f1 f2 (MkPolarMap pp) =
+    MkPolarMap $
+    case polarityType @polarity of
+        PositiveType -> isoMapShim t f1 f2 pp
+        NegativeType -> isoMapShim t f2 f1 pp

@@ -4,65 +4,60 @@ import Data.Shim
 import Language.Expression.Common
 import Shapes
 
-type Recursive :: Type -> Type -> Type
-newtype Recursive a t =
-    MkRecursive ((t -> a) -> a)
+type Recursive :: TF Type Type -> Type
+newtype Recursive tf =
+    MkRecursive (forall a. (Apply tf a -> a) -> a)
 
-instance Functor (Recursive a) where
-    fmap pq (MkRecursive rp) = MkRecursive $ \callq -> rp $ \p -> callq $ pq p
+mapRecursive :: forall tf1 tf2. (forall a. Apply tf1 a -> Apply tf2 a) -> Recursive tf1 -> Recursive tf2
+mapRecursive f (MkRecursive taa) = MkRecursive $ \(ta :: _ -> a) -> taa $ \t -> ta $ f @a t
 
-instance RepresentationalRole (Recursive a) where
-    representationalCoercion MkCoercion = MkCoercion
+rollRecursive :: forall (tf :: TF Type Type). ApplyFunctor tf -> Apply tf (Recursive tf) -> Recursive tf
+rollRecursive afmap t = MkRecursive $ \ta -> ta $ unApplyFunctor afmap (\(MkRecursive taa :: Recursive tf) -> taa ta) t
 
-instance HasVariance 'Covariance (Recursive a) where
-    varianceRepresentational = Just Dict
+unrollRecursive :: forall (tf :: TF Type Type). ApplyFunctor tf -> Recursive tf -> Apply tf (Recursive tf)
+unrollRecursive afmap (MkRecursive taa) = taa $ unApplyFunctor afmap (rollRecursive @tf afmap)
+
+rollRecursiveBijection ::
+       forall (tf :: TF Type Type). ApplyFunctor tf -> Bijection (Recursive tf) (Apply tf (Recursive tf))
+rollRecursiveBijection afmap = let
+    isoForwards = unrollRecursive afmap
+    isoBackwards = rollRecursive afmap
+    in MkIsomorphism {..}
 
 shimMapRecursive ::
-       forall (pshim :: PolyShimKind) polarity a p q. (ApplyPolyShim pshim, Is PolarityType polarity)
-    => PolarMap (pshim Type) polarity p q
-    -> PolarMap (pshim Type) polarity (Recursive a p) (Recursive a q)
-shimMapRecursive conv = polarMapTypeApply CovarianceType cid conv
+       forall (shim :: ShimKind Type) polarity name p q. (IsoMapShim shim, Is PolarityType polarity)
+    => SymbolType name
+    -> PolarMap shim polarity p q
+    -> PolarMap shim polarity (Recursive (USub name p)) (Recursive (USub name q))
+shimMapRecursive var conv =
+    withRefl (usubConstant @p var) $
+    withRefl (usubConstant @q var) $ isoPolarMapShim "map-recursive" mapRecursive mapRecursive conv
 
-recursiveIso ::
-       forall (shim :: ShimKind Type) (t :: Type). FunctionShim shim
-    => Isomorphism shim (Recursive t t) t
-recursiveIso =
+rollRecursiveIsoShim ::
+       forall (tf :: TF Type Type) (shim :: ShimKind Type). FunctionShim shim
+    => ApplyFunctor tf
+    -> Isomorphism shim (Recursive tf) (Apply tf (Recursive tf))
+rollRecursiveIsoShim afmap = isoFunctionToShim "unroll" $ rollRecursiveBijection afmap
+
+recursiveForceIso ::
+       forall (shim :: ShimKind Type) (name :: Symbol) (t :: Type). (FunctionShim shim, UVarT name ~ t)
+    => SymbolType name
+    -> Isomorphism shim (Recursive (USub name t)) t
+recursiveForceIso var =
+    withRefl (usubIdentity @t var) $
     isoFunctionToShim "recursive" $ let
+        isoForwards :: Recursive (USub name t) -> t
         isoForwards (MkRecursive taa) = taa id
-        isoBackwards t = MkRecursive $ \ta -> ta t
+        isoBackwards :: t -> Recursive (USub name t)
+        isoBackwards t = MkRecursive $ \(ta :: _ a) -> assignUVar @Type @a var $ ta t
         in MkIsomorphism {..}
 
 recursiveIsoNull ::
-       forall (shim :: ShimKind Type) (a :: Type) (t :: Type). FunctionShim shim
-    => Isomorphism shim (Recursive a t) t
-recursiveIsoNull =
+       forall (shim :: ShimKind Type) (name :: Symbol) (t :: Type). FunctionShim shim
+    => SymbolType name
+    -> Isomorphism shim (Recursive (USub name t)) t
+recursiveIsoNull var =
     isoFunctionToShim "recursive-null" $ let
         isoForwards _ = error "null"
-        isoBackwards t = MkRecursive $ \ta -> ta t
+        isoBackwards t = withRefl (usubConstant @t var) $ MkRecursive $ \ta -> ta t
         in MkIsomorphism {..}
-
-unrollRecursiveBijection ::
-       SymbolType name
-    -> (Bijection (UVar Type name) (Recursive (UVar Type name) t) -> Bijection t p)
-    -> Bijection (Recursive (UVar Type name) t) p
-unrollRecursiveBijection _var _convf = let
-    isoForwards _ = error "NYI: unroll"
-    isoBackwards _ = error "NYI: unroll"
-    in MkIsomorphism {..}
-
-unrollRecursiveIsoShim ::
-       FunctionShim shim
-    => SymbolType name
-    -> (Isomorphism shim (UVar Type name) (Recursive (UVar Type name) t) -> Isomorphism shim t p)
-    -> Isomorphism shim (Recursive (UVar Type name) t) p
-unrollRecursiveIsoShim var convf =
-    isoFunctionToShim "unroll" $ unrollRecursiveBijection var $ isoShimToFunction . convf . isoFunctionToShim "unroll"
-
-newtype RecursiveF f =
-    MkRecursiveF (forall a. (f a -> a) -> a)
-
-unrollRecursiveF :: Functor f => RecursiveF f -> f (RecursiveF f)
-unrollRecursiveF (MkRecursiveF faaa) = faaa $ fmap rollRecursiveF
-
-rollRecursiveF :: Functor f => f (RecursiveF f) -> RecursiveF f
-rollRecursiveF frf = MkRecursiveF $ \faa -> faa $ fmap (\(MkRecursiveF fbbb) -> fbbb faa) frf

@@ -4,6 +4,7 @@ module Data.Shim.PolyComposeShim where
 
 import Data.Shim.CatRange
 import Data.Shim.ComposeShim
+import Data.Shim.JoinMeet
 import Data.Shim.PolarMap
 import Data.Shim.Polarity
 import Data.Shim.PolyMap
@@ -80,3 +81,21 @@ mkPolarPolyFuncShim f =
     case polarityType @polarity of
         PositiveType -> mkPolyComposeShim $ \t -> unPolarMap $ f t
         NegativeType -> mkPolyComposeShim $ \t -> unPolarMap $ f t
+
+instance forall (pshim :: PolyShimKind) m. (IsoMapShim (pshim Type), Applicative m) =>
+             IsoMapShim (PolyComposeShim m pshim Type) where
+    {-
+    isoFunctionToShim :: (InKind a, InKind b) => String -> Isomorphism KindFunction a b -> Isomorphism (PolyComposeShim m pshim Type) a b
+    isoFunctionToShim t iso = case isoFunctionToShim @Type @(pshim Type) t iso of
+        MkIsomorphism ab ba -> MkIsomorphism (MkPolyMapT $ MkComposeShim $ pure ab) (MkPolyMapT $ MkComposeShim $ pure ba)
+    --isoShimToFunction :: (InKind a, InKind b) => Isomorphism (PolyComposeShim m pshim Type) a b -> Isomorphism KindFunction a b
+    --isoShimToFunction (MkIsomorphism (MkPolyMapT (MkComposeShim ab)) (MkPolyMapT (MkComposeShim ba))) = isoShimToFunction $ MkIsomorphism ab ba
+    -}
+    isoMapShim ::
+           (InKind pa, InKind pb, InKind qa, InKind qb)
+        => String
+        -> (KindFunction pa pb -> KindFunction qa qb)
+        -> (KindFunction pb pa -> KindFunction qb qa)
+        -> PolyComposeShim m pshim Type pa pb
+        -> PolyComposeShim m pshim Type qa qb
+    isoMapShim t f1 f2 (MkPolyMapT (MkComposeShim mab)) = MkPolyMapT $ MkComposeShim $ fmap (isoMapShim t f1 f2) mab

@@ -16,15 +16,15 @@ import Language.Expression.Dolan.Variance
 import Shapes
 
 type GenShim :: PolyShimKind -> Constraint
-type GenShim pshim = (LazyCategory (pshim Type), DolanVarianceInCategory pshim)
+type GenShim pshim = (LazyCategory (pshim Type), IsoMapShim (pshim Type), DolanVarianceInCategory pshim)
 
 recursiveDolanShimWit ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity name t.
        (IsDolanGroundType ground, GenShim pshim, Is PolarityType polarity)
     => SymbolType name
     -> PShimWit (pshim Type) (DolanType ground) polarity t
-    -> PShimWit (pshim Type) (DolanSingularType ground) polarity (Recursive (UVar Type name) t)
-recursiveDolanShimWit var (MkShimWit t conv) = MkShimWit (RecursiveDolanSingularType var t) $ shimMapRecursive conv
+    -> PShimWit (pshim Type) (DolanSingularType ground) polarity (Recursive (USub name t))
+recursiveDolanShimWit var (MkShimWit t conv) = MkShimWit (RecursiveDolanSingularType var t) $ shimMapRecursive var conv
 
 mapDolanGroundArguments ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity dv gt t.

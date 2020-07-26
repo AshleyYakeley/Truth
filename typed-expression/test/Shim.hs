@@ -8,7 +8,7 @@ import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
 
-type T = UVar Type "t"
+type T = UVarT "t"
 
 type REC = T :~: Maybe T
 

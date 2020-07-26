@@ -4,7 +4,7 @@ import Pinafore.Language.Type
 import Shapes
 
 newtype Var (name :: Symbol) =
-    MkVar (UVar Type name)
+    MkVar (UVarT name)
 
 type A = Var "a"
 

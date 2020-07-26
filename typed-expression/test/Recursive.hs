@@ -2,10 +2,25 @@ module Recursive
     ( testRecursive
     ) where
 
+import Language.Expression.Common
 import Language.Expression.Dolan
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
+
+type RecursiveF f = Recursive ('TFConstructor f)
+
+rollRecursiveF ::
+       forall f. Functor f
+    => f (RecursiveF f)
+    -> RecursiveF f
+rollRecursiveF = rollRecursive @('TFConstructor f) $ MkApplyFunctor fmap
+
+unrollRecursiveF ::
+       forall f. Functor f
+    => RecursiveF f
+    -> f (RecursiveF f)
+unrollRecursiveF = unrollRecursive @('TFConstructor f) $ MkApplyFunctor fmap
 
 countMaybeF :: RecursiveF Maybe -> Int
 countMaybeF rm =

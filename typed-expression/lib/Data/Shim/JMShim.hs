@@ -148,6 +148,8 @@ varrep2 _ = varianceRepresentational @_ @v @g
 
 instance LazyCategory (JMShim Type)
 
+instance CoercibleKind k => IsoMapShim (JMShim k)
+
 instance CoercibleKind k => FunctionShim (JMShim k) where
     functionToShim = FuncJMShim
     shimToFunction ::

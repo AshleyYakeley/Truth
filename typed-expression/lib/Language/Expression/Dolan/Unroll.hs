@@ -16,34 +16,21 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
-unrollRecursiveMap ::
-       forall (ground :: GroundTypeKind) polarity name p t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => SymbolType name
-    -> (PolarMap (DolanPolyIsoShim ground Type) polarity (UVar Type name) (Recursive (UVar Type name) t) -> PolarMap (DolanPolyIsoShim ground Type) polarity t p)
-    -> PolarMap (DolanPolyIsoShim ground Type) polarity (Recursive (UVar Type name) t) p
-unrollRecursiveMap var convf = isoPolarPoly $ unrollRecursiveIsoShim var (polarPolyIso . convf . isoPolarPoly)
-
 unrollRecursiveType ::
        forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)
     => SymbolType name
     -> DolanType ground polarity t
-    -> DolanIsoShimWit ground polarity (Recursive (UVar Type name) t)
-unrollRecursiveType var pt =
-    case polarityType @polarity of
-        PositiveType -> let
-            t = singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType var pt
-            dbisub =
-                MkDeferredBisubstitution var (pure t) (pure $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType var)
-            in case runIdentity $ deferBisubstituteType dbisub pt of
-                   MkShimWit t' fconv ->
-                       MkShimWit t' $ unrollRecursiveMap @ground var (\conv -> applyPolarPolyFuncShim fconv (conv, id))
-        NegativeType -> let
-            t = singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType var pt
-            dbisub =
-                MkDeferredBisubstitution var (pure $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType var) (pure t)
-            in case runIdentity $ deferBisubstituteType dbisub pt of
-                   MkShimWit t' fconv ->
-                       MkShimWit t' $ unrollRecursiveMap @ground var (\conv -> applyPolarPolyFuncShim fconv (id, conv))
+    -> DolanIsoShimWit ground polarity (Recursive (USub name t))
+unrollRecursiveType var pt = let
+    rt :: DolanShimWit ground polarity (Recursive (USub name t))
+    rt = singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType var pt
+    af :: ApplyFunctor (USub name t)
+    af = substituteApplyFunctor var pt
+    iso :: Isomorphism (DolanPolyShim ground Type) (Recursive (USub name t)) (Apply (USub name t) (Recursive (USub name t)))
+    iso = rollRecursiveIsoShim @(USub name t) af
+    t' :: DolanType ground polarity (Apply (USub name t) (Recursive (USub name t)))
+    t' = fst $ substituteShim @ground @polarity var rt pt
+    in MkShimWit t' $ isoPolarPoly iso
 
 unrollSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -69,7 +56,7 @@ data RecursiveOrPlainType ground polarity t where
         :: forall (ground :: GroundTypeKind) polarity name t.
            SymbolType name
         -> DolanType ground polarity t
-        -> RecursiveOrPlainType ground polarity (Recursive (UVar Type name) t)
+        -> RecursiveOrPlainType ground polarity (Recursive (USub name t))
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground) =>
              TestEquality (RecursiveOrPlainType ground polarity) where

@@ -3,12 +3,10 @@ module Language.Expression.Dolan.Simplify.RollUpRecursion
     ) where
 
 import Data.Shim
-import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.MapType
 import Language.Expression.Dolan.PShimWit
-import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
@@ -27,11 +25,10 @@ mkRollUp ::
        (IsDolanGroundType ground, Is PolarityType polarity)
     => SymbolType name
     -> DolanType ground polarity t
-    -> Maybe (RollUp ground)
-mkRollUp var rolled = do
-    MkShimWit unrolled conv <- return $ unrollRecursiveType var rolled
-    assignUVar @Type @t var $
-        return $ MkRollUp unrolled $ mapShimWitT (isoPolarPoly recursiveIso . invert conv) $ mkShimWitT rolled
+    -> RollUp ground
+mkRollUp var rolled =
+    case singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType var rolled of
+        MkShimWit rt conv -> MkRollUp rt $ mapShimWit (invert conv) $ unrollRecursiveType var rolled
 
 rollUpThisType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -88,10 +85,7 @@ getRollUpsInSingularType ::
 getRollUpsInSingularType (VarDolanSingularType _) = []
 getRollUpsInSingularType (GroundDolanSingularType gt args) =
     forDolanArguments getRollUpsInType (groundTypeVarianceType gt) args
-getRollUpsInSingularType (RecursiveDolanSingularType var t) =
-    case mkRollUp var t of
-        Just rollup -> rollup : getRollUpsInType t
-        Nothing -> getRollUpsInType t
+getRollUpsInSingularType (RecursiveDolanSingularType var t) = mkRollUp var t : getRollUpsInType t
 
 getRollUpsInType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

@@ -97,3 +97,15 @@ polarPolyIsoPolar1 =
 
 polyIsoForwards :: forall (pshim :: PolyShimKind) k (a :: k) (b :: k). PolyIso pshim k a b -> pshim k a b
 polyIsoForwards iab = isoForwards $ unPolyMapT iab
+
+instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, IsoMapShim (pshim k), Category (pshim k)) =>
+             IsoMapShim (PolyIso pshim k) where
+    isoMapShim ::
+           (InKind pa, InKind pb, InKind qa, InKind qb)
+        => String
+        -> (KindFunction pa pb -> KindFunction qa qb)
+        -> (KindFunction pb pa -> KindFunction qb qa)
+        -> PolyIso pshim k pa pb
+        -> PolyIso pshim k qa qb
+    isoMapShim t f1 f2 (MkPolyMapT (MkIsomorphism ab ba)) =
+        MkPolyMapT $ MkIsomorphism (isoMapShim t f1 f2 ab) (isoMapShim t f2 f1 ba)

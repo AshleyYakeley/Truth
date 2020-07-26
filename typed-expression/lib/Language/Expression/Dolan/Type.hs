@@ -52,7 +52,7 @@ instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
         return Refl
     testEquality _ _ = Nothing
 
--- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVar Type') for type variables.
+-- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVarT') for type variables.
 type DolanSingularType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanSingularType ground polarity t where
     GroundDolanSingularType
@@ -63,12 +63,12 @@ data DolanSingularType ground polarity t where
     VarDolanSingularType
         :: forall (ground :: GroundTypeKind) polarity name.
            SymbolType name
-        -> DolanSingularType ground polarity (UVar Type name)
+        -> DolanSingularType ground polarity (UVarT name)
     RecursiveDolanSingularType
         :: forall (ground :: GroundTypeKind) polarity name t.
            SymbolType name
         -> DolanType ground polarity t
-        -> DolanSingularType ground polarity (Recursive (UVar Type name) t)
+        -> DolanSingularType ground polarity (Recursive (USub name t))
 
 instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
              TestEquality (DolanSingularType ground polarity) where
@@ -88,6 +88,13 @@ instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
 type DolanSingularShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanSingularShimWit ground polarity = PShimWit (DolanPolyShim ground Type) (DolanSingularType ground) polarity
 
+varDolanShimWit ::
+       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) name.
+       (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity)
+    => SymbolType name
+    -> PShimWit shim (DolanType ground) polarity (UVarT name)
+varDolanShimWit var = singleDolanShimWit $ mkShimWit $ VarDolanSingularType var
+
 nilDolanShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity).
        (IsDolanGroundType ground, InCategory shim, Is PolarityType polarity)
@@ -106,7 +113,7 @@ unsafeDeleteVarShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) name.
        (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity)
     => SymbolType name
-    -> PShimWit shim (DolanType ground) polarity (UVar Type name)
+    -> PShimWit shim (DolanType ground) polarity (UVarT name)
 unsafeDeleteVarShimWit n = assignUVar @Type @(LimitType polarity) n $ mkShimWit NilDolanType
 
 singleDolanType ::

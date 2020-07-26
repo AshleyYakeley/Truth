@@ -8,6 +8,9 @@ module Language.Expression.Dolan.Bisubstitute
     , bisubstituteShimWit
     , bisubstitutesType
     , bisubstitutes
+    , deferBisubstituteTypeUSubPositive
+    , substituteShim
+    , substituteApplyFunctor
     ) where
 
 import Data.Shim
@@ -47,13 +50,13 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m oldname new
 type Bisubstitution :: GroundTypeKind -> PolyShimKind -> (Type -> Type) -> Type
 data Bisubstitution ground pshim m =
     forall name. MkBisubstitution (SymbolType name)
-                                  (m (PShimWit (pshim Type) (DolanType ground) 'Positive (UVar Type name)))
-                                  (m (PShimWit (pshim Type) (DolanType ground) 'Negative (UVar Type name)))
+                                  (m (PShimWit (pshim Type) (DolanType ground) 'Positive (UVarT name)))
+                                  (m (PShimWit (pshim Type) (DolanType ground) 'Negative (UVarT name)))
 
 deferredBisubstitution ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m r.
        Bisubstitution ground pshim m
-    -> (forall name. DeferredBisubstitution m ground pshim name (UVar Type name) (UVar Type name) -> r)
+    -> (forall name. DeferredBisubstitution m ground pshim name (UVarT name) (UVarT name) -> r)
     -> r
 deferredBisubstitution (MkBisubstitution var mpos mneg) call = call $ MkDeferredBisubstitution var mpos mneg
 
@@ -67,8 +70,8 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m. (IsDolanGr
 mkPolarBisubstitution ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity m name. Is PolarityType polarity
     => SymbolType name
-    -> m (PShimWit (pshim Type) (DolanType ground) polarity (UVar Type name))
-    -> m (PShimWit (pshim Type) (DolanType ground) (InvertPolarity polarity) (UVar Type name))
+    -> m (PShimWit (pshim Type) (DolanType ground) polarity (UVarT name))
+    -> m (PShimWit (pshim Type) (DolanType ground) (InvertPolarity polarity) (UVarT name))
     -> Bisubstitution ground pshim m
 mkPolarBisubstitution n a b =
     case polarityType @polarity of
@@ -79,11 +82,9 @@ mkSingleBisubstitution ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity m name.
        (IsDolanGroundType ground, GenShim pshim, Is PolarityType polarity, Applicative m)
     => SymbolType name
-    -> m (PShimWit (pshim Type) (DolanType ground) polarity (UVar Type name))
+    -> m (PShimWit (pshim Type) (DolanType ground) polarity (UVarT name))
     -> Bisubstitution ground pshim m
-mkSingleBisubstitution var mw =
-    invertPolarity @polarity $
-    mkPolarBisubstitution var mw $ pure $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType var
+mkSingleBisubstitution var mw = invertPolarity @polarity $ mkPolarBisubstitution var mw $ pure $ varDolanShimWit var
 
 class Bisubstitutable (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (w :: Type -> Type)
     | w -> ground polarity
@@ -92,7 +93,7 @@ class Bisubstitutable (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polari
            forall m oldname newtypepos newtypeneg t. (MonadOne m)
         => DeferredBisubstitution m ground pshim oldname newtypepos newtypeneg
         -> w t
-        -> m (PShimWit (DeferredShim pshim (UVar Type oldname) newtypepos newtypeneg) (DolanType ground) polarity t)
+        -> m (PShimWit (DeferredShim pshim (UVarT oldname) newtypepos newtypeneg) (DolanType ground) polarity t)
 
 bisubstituteType ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (w :: Type -> Type) m t.
@@ -139,9 +140,11 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
                 pt' <- dolanNamespaceRename @ground pt
                 MkShimWit pt'' conv <- lift $ lift $ deferBisubstituteType sub pt'
                 assignUVar @Type @ntype oldvar $
+                    withRefl (usubResub oldvar newvar pt'') $
                     return $
-                    mapShimWit (shimMapRecursive conv) $
-                    singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType newvar pt''
+                    mapShimWit (shimMapRecursive oldvar conv) $
+                    singleDolanShimWit $
+                    mkShimWit $ RecursiveDolanSingularType newvar $ reflWitCat (invert $ renameUSub oldvar newvar) pt''
     deferBisubstituteType sub t = do
         t' <- mapDolanSingularTypeM (deferBisubstituteType sub) t
         return $ singleDolanShimWit t'
@@ -177,3 +180,73 @@ bisubstitutes [] expr = return $ expr
 bisubstitutes (sub:subs) expr = do
     expr' <- mapPShimWitsM @_ @(pshim Type) (bisubstituteType sub) (bisubstituteType sub) expr
     bisubstitutes subs expr'
+
+deferBisubstituteTypeUSubPositive ::
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m oldname newtypepos w t.
+       (Bisubstitutable ground pshim 'Positive w, MonadOne m)
+    => DeferredBisubstitution m ground pshim oldname newtypepos (UVarT oldname)
+    -> w t
+    -> m ( DolanType ground 'Positive (Apply (USub oldname t) newtypepos)
+         , PolarMap (DeferredShim pshim (UVarT oldname) newtypepos (UVarT oldname)) 'Positive t (Apply (USub oldname t) newtypepos))
+deferBisubstituteTypeUSubPositive dbisub wt = do
+    MkShimWit (wt' :: _ t') fconv <- deferBisubstituteType dbisub wt
+    Refl <- return $ assignUSub @oldname @t @newtypepos @t'
+    return (wt', fconv)
+
+deferBisubstituteTypeUSubNegative ::
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m oldname newtypeneg w t.
+       (Bisubstitutable ground pshim 'Negative w, MonadOne m)
+    => DeferredBisubstitution m ground pshim oldname (UVarT oldname) newtypeneg
+    -> w t
+    -> m ( DolanType ground 'Negative (Apply (USub oldname t) newtypeneg)
+         , PolarMap (DeferredShim pshim (UVarT oldname) (UVarT oldname) newtypeneg) 'Negative t (Apply (USub oldname t) newtypeneg))
+deferBisubstituteTypeUSubNegative dbisub wt = do
+    MkShimWit (wt' :: _ t') fconv <- deferBisubstituteType dbisub wt
+    Refl <- return $ assignUSub @oldname @t @newtypeneg @t'
+    return (wt', fconv)
+
+substituteShim ::
+       forall (ground :: GroundTypeKind) polarity (w :: Type -> Type) oldname newt t.
+       (IsDolanGroundType ground, Is PolarityType polarity, Bisubstitutable ground (DolanPolyShim ground) polarity w)
+    => SymbolType oldname
+    -> DolanShimWit ground polarity newt
+    -> w t
+    -> ( DolanType ground polarity (Apply (USub oldname t) newt)
+       , (PolarMap (DolanPolyShim ground Type) polarity (UVarT oldname) newt) -> PolarMap (DolanPolyShim ground Type) polarity t (Apply (USub oldname t) newt))
+substituteShim oldvar newwit wt =
+    case polarityType @polarity of
+        PositiveType -> let
+            dbisub :: DeferredBisubstitution Identity ground (DolanPolyShim ground) oldname newt (UVarT oldname)
+            dbisub = MkDeferredBisubstitution oldvar (pure newwit) (pure $ varDolanShimWit oldvar)
+            (t', fconv) = runIdentity $ deferBisubstituteTypeUSubPositive @ground @(DolanPolyShim ground) dbisub wt
+            afmap ab = applyPolarPolyFuncShim fconv (ab, id)
+            in (t', afmap)
+        NegativeType -> let
+            dbisub :: DeferredBisubstitution Identity ground (DolanPolyShim ground) oldname (UVarT oldname) newt
+            dbisub = MkDeferredBisubstitution oldvar (pure $ varDolanShimWit oldvar) (pure newwit)
+            (t', fconv) = runIdentity $ deferBisubstituteTypeUSubNegative @ground @(DolanPolyShim ground) dbisub wt
+            afmap ab = applyPolarPolyFuncShim fconv (id, ab)
+            in (t', afmap)
+
+substituteApplyFunctor ::
+       forall (ground :: GroundTypeKind) polarity (w :: Type -> Type) name t.
+       (IsDolanGroundType ground, Is PolarityType polarity, Bisubstitutable ground (DolanPolyShim ground) polarity w)
+    => SymbolType name
+    -> w t
+    -> ApplyFunctor (USub name t)
+substituteApplyFunctor oldvar wt =
+    newUVar (uVarName oldvar) $ \newvar ->
+        case substituteShim @ground @polarity oldvar (varDolanShimWit newvar) wt of
+            (_, fconv) ->
+                withRefl (usubIdentity @t oldvar) $
+                case polarityType @polarity of
+                    PositiveType ->
+                        MkApplyFunctor $ \(ab :: a -> b) ->
+                            assignUVar @Type @a oldvar $
+                            assignUVar @Type @b newvar $
+                            shimToFunction $ unPolarMap $ fconv $ MkPolarMap $ functionToShim "apply-functor" ab
+                    NegativeType ->
+                        MkApplyFunctor $ \(ab :: a -> b) ->
+                            assignUVar @Type @b oldvar $
+                            assignUVar @Type @a newvar $
+                            shimToFunction $ unPolarMap $ fconv $ MkPolarMap $ functionToShim "apply-functor" ab

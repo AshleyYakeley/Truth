@@ -2,7 +2,6 @@ module Language.Expression.Dolan.Simplify.SharedTypeVars
     ( mergeSharedTypeVars
     ) where
 
-import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.PShimWit
@@ -34,12 +33,8 @@ mergeSharedTypeVars expr = let
     (posuses, neguses) = mappableGetVarUses @ground expr
     in case findShare posuses <|> findShare neguses of
            Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) ->
-               assignUVar @Type @(UVar Type na) vb $ let
+               assignUVar @Type @(UVarT na) vb $ let
                    bisub :: Bisubstitution ground (DolanPolyShim ground) Identity
-                   bisub =
-                       MkBisubstitution
-                           vb
-                           (return $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType va)
-                           (return $ singleDolanShimWit $ mkShimWit $ VarDolanSingularType va)
+                   bisub = MkBisubstitution vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
                    in mergeSharedTypeVars @ground $ runIdentity $ bisubstitutes @ground [bisub] expr
            Nothing -> expr
