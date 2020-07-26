@@ -27,8 +27,10 @@ mkRollUp ::
     -> DolanType ground polarity t
     -> RollUp ground
 mkRollUp var rolled =
-    case singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType var rolled of
-        MkShimWit rt conv -> MkRollUp rt $ mapShimWit (invert conv) $ unrollRecursiveType var rolled
+    case unrollRecursiveType var rolled of
+        MkShimWit unrolled conv ->
+            MkRollUp unrolled $
+            mapShimWit (invert conv) $ singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType var rolled
 
 rollUpThisType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
