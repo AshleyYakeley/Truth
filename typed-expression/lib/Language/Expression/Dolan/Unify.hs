@@ -31,18 +31,27 @@ data BisubstitutionWitness ground t where
         -> BisubstitutionWitness ground (PolarMapType (DolanPolyShim ground Type) polarity p (UVarT name))
 
 mkBisubstitutionWitness ::
-       forall (ground :: GroundTypeKind) polarity name p. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
+       forall (ground :: GroundTypeKind) polarity name t. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => SymbolType name
-    -> DolanSingularType ground polarity p
-    -> BisubstitutionWitness ground (PolarMapType (DolanPolyShim ground Type) polarity p (UVarT name))
-mkBisubstitutionWitness var t =
+    -> DolanSingularType ground polarity t
+    -> BisubstitutionWitness ground (PolarMapType (DolanPolyShim ground Type) polarity t (UVarT name))
+mkBisubstitutionWitness var pt =
     MkBisubstitutionWitness var $
     singleDolanShimWit $
-    if occursInSingularType var t
-        then assignUVar @Type @p var $
-             mapShimWit (isoPolarBackwards $ recursiveForceIso var) $
-             recursiveDolanShimWit var $ singleDolanShimWit $ mkShimWit t
-        else mkShimWit t
+    if occursInSingularType var pt
+        then withRefl (usubIdentity @t var) $ let
+                 af :: ApplyFunctor (USub name t)
+                 af = substituteApplyFunctor var pt
+                 bijRoll :: Bijection (Recursive (USub name t)) (Apply (USub name t) (Recursive (USub name t)))
+                 bijRoll = rollRecursiveBijection @(USub name t) af
+                 magic :: Bijection (Recursive (USub name t)) (UVar Type name)
+                 magic = assignUVar @Type @t var $ recursiveForceIso var
+                 fmagic :: Bijection (Apply (USub name t) (Recursive (USub name t))) (Apply (USub name t) (UVarT name))
+                 fmagic = bijApplyFunctor @(USub name t) @(Recursive (USub name t)) @(UVarT name) af magic
+                 iconv :: PolarMap (DolanPolyShim ground Type) polarity t (Recursive (USub name t))
+                 iconv = isoPolarBackwards $ isoFunctionToShim "unroll" $ fmagic . bijRoll
+                 in mapShimWit iconv $ recursiveDolanShimWit var $ singleDolanShimWit $ mkShimWit pt
+        else mkShimWit pt
 
 type DolanUnifier :: GroundTypeKind -> Type -> Type
 type DolanUnifier ground = Expression (BisubstitutionWitness ground)
