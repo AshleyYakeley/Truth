@@ -3,8 +3,9 @@ module Pinafore.Language.Var where
 import Pinafore.Language.Type
 import Shapes
 
-newtype Var (name :: Symbol) =
-    MkVar (UVarT name)
+newtype Var (name :: Symbol) = MkVar
+    { unVar :: UVarT name
+    }
 
 type A = Var "a"
 

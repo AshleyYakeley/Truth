@@ -10,10 +10,6 @@ module Language.Expression.Common.TypeVariable
     , varTypeName
     , newAssignUVar
     , renameUVar
-    , TF(..)
-    , Apply
-    , ApplyFunctor(..)
-    , bijApplyFunctor
     , USub
     , usubIdentity
     , usubResub
@@ -22,6 +18,7 @@ module Language.Expression.Common.TypeVariable
     , renameUSub
     ) where
 
+import Language.Expression.Common.TypeFunction
 import Shapes
 import Shapes.Unsafe (unsafeRefl)
 
@@ -59,28 +56,6 @@ newAssignUVar nstr = newUVar nstr $ \nsym -> assignUVar @k @t nsym $ MkVarType n
 
 renameUVar :: forall (k :: Type) (oldname :: Symbol). SymbolType oldname -> String -> VarType (UVar k oldname)
 renameUVar _ newname = newAssignUVar @k @(UVar k oldname) newname
-
-data TF kp kq
-    = TFConstant kq
-    | TFConstructor (kp -> kq)
-    | TFOther
-
-type Apply :: TF kp kq -> kp -> kq
-type family Apply s t where
-    Apply ('TFConstant a) t = a
-    Apply ('TFConstructor f) t = f t
-
-type ApplyFunctor :: TF Type Type -> Type
-newtype ApplyFunctor tf = MkApplyFunctor
-    { unApplyFunctor :: forall a b. (a -> b) -> Apply tf a -> Apply tf b
-    }
-
-bijApplyFunctor ::
-       forall (tf :: TF Type Type) (a :: Type) (b :: Type).
-       ApplyFunctor tf
-    -> Bijection a b
-    -> Bijection (Apply tf a) (Apply tf b)
-bijApplyFunctor (MkApplyFunctor afmap) (MkIsomorphism ab ba) = MkIsomorphism (afmap ab) (afmap ba)
 
 type USub :: Symbol -> Type -> TF Type Type
 type family USub name t where

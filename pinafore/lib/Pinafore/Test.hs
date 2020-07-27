@@ -6,7 +6,9 @@ module Pinafore.Test
     , PinaforeTypeSystem
     , Name
     , UVar
-    , PinaforeGroundType
+    , Var(..)
+    , PinaforeGroundType(..)
+    , EntityGroundType(..)
     , PinaforeType
     , PinaforeShimWit
     , PinaforeScoped
@@ -21,6 +23,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.Read
 import Pinafore.Language.Scope
 import Pinafore.Language.Type
+import Pinafore.Language.Var
 import Pinafore.Storage
 import Shapes
 import Truth.Core

@@ -87,6 +87,7 @@ tests:
           - base >= 4.12
           - shapes
           - filepath
+          - parsec
           - gi-gtk
           - gi-gobject
           - haskell-gi-base
@@ -106,6 +107,7 @@ tests:
           - Test.Entity
           - Test.Type
           - Test.ReadType
+          - Test.Recursive
           - Test.Scripts
           - Test.Interactive
           - Test.UI

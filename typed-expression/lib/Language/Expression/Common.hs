@@ -17,6 +17,7 @@ import Language.Expression.Common.Rename.VarRenamerT as I
 import Language.Expression.Common.Sealed as I
 import Language.Expression.Common.Simplifier as I
 import Language.Expression.Common.Subsumer as I
+import Language.Expression.Common.TypeFunction as I
 import Language.Expression.Common.TypeSystem as I
 import Language.Expression.Common.TypeVariable as I
 import Language.Expression.Common.Unifier as I

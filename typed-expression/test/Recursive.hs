@@ -47,5 +47,8 @@ testCount5 =
 testInfinite :: TestTree
 testInfinite = testCase "infinite" $ assertEqual "" True $ isJust $ unrollRecursiveF infiniteMaybeF
 
+testType :: TestTree
+testType = testGroup "type" [testCount5, testInfinite]
+
 testRecursive :: TestTree
-testRecursive = testGroup "recursive" [testCount5, testInfinite]
+testRecursive = testGroup "recursive" [testType]

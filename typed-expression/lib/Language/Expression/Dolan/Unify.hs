@@ -2,7 +2,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Unify
-    (
+    ( bisubstituteWitnessForTest
     ) where
 
 import Data.Shim
@@ -52,6 +52,19 @@ mkBisubstitutionWitness var pt =
                  iconv = isoPolarBackwards $ isoFunctionToShim "unroll" $ fmagic . bijRoll
                  in mapShimWit iconv $ recursiveDolanShimWit var $ singleDolanShimWit $ mkShimWit pt
         else mkShimWit pt
+
+bisubstituteWitnessForTest ::
+       forall (ground :: GroundTypeKind) polarity name t. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
+    => SymbolType name
+    -> DolanSingularType ground polarity t
+    -> DolanShimWit ground polarity t
+bisubstituteWitnessForTest var st =
+    case mkBisubstitutionWitness var st of
+        MkBisubstitutionWitness _ (t :: DolanShimWit ground polarity' _) ->
+            case (polarityType @polarity, polarityType @polarity') of
+                (PositiveType, PositiveType) -> t
+                (NegativeType, NegativeType) -> t
+                _ -> error "bisubstituteWitnessForTest"
 
 type DolanUnifier :: GroundTypeKind -> Type -> Type
 type DolanUnifier ground = Expression (BisubstitutionWitness ground)
