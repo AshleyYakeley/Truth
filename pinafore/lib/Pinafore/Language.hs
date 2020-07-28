@@ -7,6 +7,8 @@ module Pinafore.Language
     , qNegativeTypeDescription
     , FromPinaforeType
     , ToPinaforeType
+    , typedShowValue
+    , singularTypedShowValue
     , parseTopExpression
     , parseValue
     , parseValueAtType

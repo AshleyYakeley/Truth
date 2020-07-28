@@ -58,13 +58,14 @@ bisubstituteWitnessForTest ::
     => SymbolType name
     -> DolanSingularType ground polarity t
     -> DolanShimWit ground polarity t
-bisubstituteWitnessForTest var st =
-    case mkBisubstitutionWitness var st of
-        MkBisubstitutionWitness _ (t :: DolanShimWit ground polarity' _) ->
-            case (polarityType @polarity, polarityType @polarity') of
-                (PositiveType, PositiveType) -> t
-                (NegativeType, NegativeType) -> t
-                _ -> error "bisubstituteWitnessForTest"
+bisubstituteWitnessForTest var st = let
+    bisub = mkBisubstitutionWitness var st
+    in case bisub of
+           MkBisubstitutionWitness _ (t :: DolanShimWit ground polarity' _) ->
+               case (polarityType @polarity, polarityType @polarity') of
+                   (PositiveType, PositiveType) -> t
+                   (NegativeType, NegativeType) -> t
+                   _ -> error "bisubstituteWitnessForTest"
 
 type DolanUnifier :: GroundTypeKind -> Type -> Type
 type DolanUnifier ground = Expression (BisubstitutionWitness ground)

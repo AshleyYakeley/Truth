@@ -18,12 +18,12 @@ substituteVar var conv fx = assignUVar @Type @x var $ withRefl (usubIdentity @t 
 unsubsituteVar :: forall name f t x. SymbolType name -> (t -> f (UVarT name)) -> Apply (USub name t) x -> f x
 unsubsituteVar var conv x = assignUVar @Type @x var $ withRefl (usubIdentity @t var) $ conv x
 
-getConvertTo ::
+getUnifyTo ::
        forall t tp. FromPinaforeType t
     => PinaforeType 'Positive tp
     -> IO (tp -> t)
-getConvertTo twp = do
-    MkShimWit (twn :: _ tn) (MkPolarMap convn) <- return (fromShimWit :: PinaforeShimWit 'Negative t)
+getUnifyTo twp = do
+    MkShimWit twn (MkPolarMap convn) <- return (fromShimWit :: PinaforeShimWit 'Negative t)
     (convu, _) <-
         resultToM $
         mapResultFailure show $
@@ -33,11 +33,26 @@ getConvertTo twp = do
             solveUnifier @PinaforeTypeSystem $ uuGetShim uuconvu
     return $ shimToFunction $ convn . convu
 
+getSubsumeFrom ::
+       forall t tdecl. ToPinaforeType t
+    => PinaforeType 'Positive tdecl
+    -> IO (t -> tdecl)
+getSubsumeFrom twdecl = do
+    MkShimWit twinf (MkPolarMap convp) <- return (toShimWit :: PinaforeShimWit 'Positive t)
+    (convu, _) <-
+        resultToM $
+        mapResultFailure show $
+        runSourceScoped (initialPos "test") $
+        runVarRenamerT $ do
+            econv <- subsumePosWitnesses @PinaforeTypeSystem twinf twdecl
+            solveSubsumer @PinaforeTypeSystem econv
+    return $ shimToFunction $ convu . convp
+
 testSubstituteFunctor :: TestTree
 testSubstituteFunctor =
     testCase "substitute-functor" $ do
         MkShimWit (twp :: _ tp) (MkPolarMap convp) <- return (toShimWit :: PinaforeShimWit 'Positive [A])
-        convTo <- getConvertTo @[A] twp
+        convTo <- getUnifyTo @[A] twp
         let
             var :: SymbolType "a"
             var = representative
@@ -57,22 +72,40 @@ testSubstituteFunctor =
             yy = unsubsituteVar var (\aa -> fmap unVar $ convTo aa) yya
         assertEqual "" (fmap f xx) yy
 
-testBisubstituteWitness :: TestTree
-testBisubstituteWitness =
-    testCase "bisubstitute-witness" $ do
-        MkShimWit (twp :: _ tp) (MkPolarMap convp) <-
-            return $ (toShimWit :: PinaforeSingularShimWit 'Positive (Maybe A))
+type TestType1 = Maybe (Maybe (Maybe (Maybe BottomType)))
+
+type TestType2 = Maybe (Maybe (Maybe (Maybe TopType)))
+
+mapTestType :: TestType1 -> TestType2
+mapTestType = fmap $ fmap $ fmap $ fmap $ never
+
+testRecursiveConvert :: TestTree
+testRecursiveConvert =
+    testCase "recursive-convert" $ do
         let
             var :: SymbolType "a"
             var = representative
-        MkShimWit (twp' :: _ tp') (MkPolarMap convp') <- return $ bisubstituteWitnessForTest var twp
-        convTo <- getConvertTo @(Maybe TopType) twp'
+        -- create plain type
+        MkShimWit (twp :: _ tp) _ <- return $ (toShimWit :: PinaforeSingularShimWit 'Positive (Maybe A))
+        assertEqual "plain type" "Maybe a" $ exprShow twp
+        -- create recursive type
+        MkShimWit (twr :: _ tr) _ <- return $ bisubstituteWitnessForTest var twp
+        assertEqual "recursive type" "rec a. Maybe a" $ exprShow twr
+        -- find unify to TestType
+        convTo <- getUnifyTo @TestType2 twr
+        -- find subsume from TestType
+        confFrom <- getSubsumeFrom @TestType1 twr
         let
-            a1 :: Maybe A
-            a1 = Nothing
-            a2 :: Maybe TopType
-            a2 = convTo $ shimToFunction (convp' . convp) a1
-        assertEqual "" Nothing a2
+        -- test values
+            a1 :: TestType1
+            a1 = Just $ Just $ Just Nothing
+            a2 :: tr
+            a2 = confFrom a1
+        assertEqual "a2" "Just Just Just Nothing" $ typedShowValue twr a2
+        let
+            a3 :: TestType2
+            a3 = convTo a2
+        assertEqual "" (mapTestType a1) a3
 
 testRecursive :: TestTree
-testRecursive = testGroup "recursive" [testSubstituteFunctor, testBisubstituteWitness]
+testRecursive = testGroup "recursive" [testSubstituteFunctor, testRecursiveConvert]
