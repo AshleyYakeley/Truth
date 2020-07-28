@@ -25,10 +25,10 @@ type UnifierBisubstitution ground = Bisubstitution ground (DolanPolyShim ground)
 type BisubstitutionWitness :: GroundTypeKind -> Type -> Type
 data BisubstitutionWitness ground t where
     MkBisubstitutionWitness
-        :: forall (ground :: GroundTypeKind) polarity name p. Is PolarityType polarity
+        :: forall (ground :: GroundTypeKind) polarity name t. Is PolarityType polarity
         => SymbolType name
-        -> DolanShimWit ground polarity p
-        -> BisubstitutionWitness ground (PolarMapType (DolanPolyShim ground Type) polarity p (UVarT name))
+        -> DolanShimWit ground polarity t
+        -> BisubstitutionWitness ground (PolarMapType (DolanPolyShim ground Type) polarity t (UVarT name))
 
 mkBisubstitutionWitness ::
        forall (ground :: GroundTypeKind) polarity name t. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)

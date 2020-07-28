@@ -4,6 +4,7 @@ module Test.Recursive
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan
 import Language.Expression.Dolan.Test
 import Pinafore
 import Pinafore.Test
@@ -20,9 +21,9 @@ unsubsituteVar var conv x = assignUVar @Type @x var $ withRefl (usubIdentity @t 
 
 getUnifyTo ::
        forall t tp. FromPinaforeType t
-    => PinaforeType 'Positive tp
+    => PinaforeShimWit 'Positive tp
     -> IO (tp -> t)
-getUnifyTo twp = do
+getUnifyTo (MkShimWit twp (MkPolarMap convp)) = do
     MkShimWit twn (MkPolarMap convn) <- return (fromShimWit :: PinaforeShimWit 'Negative t)
     (convu, _) <-
         resultToM $
@@ -31,7 +32,7 @@ getUnifyTo twp = do
         runVarRenamerT $ do
             uuconvu <- unifyPosNegWitnesses @PinaforeTypeSystem twp twn
             solveUnifier @PinaforeTypeSystem $ uuGetShim uuconvu
-    return $ shimToFunction $ convn . convu
+    return $ shimToFunction $ convn . convu . convp
 
 getSubsumeFrom ::
        forall t tdecl. ToPinaforeType t
@@ -48,11 +49,11 @@ getSubsumeFrom twdecl = do
             solveSubsumer @PinaforeTypeSystem econv
     return $ shimToFunction $ convu . convp
 
-testSubstituteFunctor :: TestTree
-testSubstituteFunctor =
-    testCase "substitute-functor" $ do
+testSubstituteFunctorList :: TestTree
+testSubstituteFunctorList =
+    testCase "list" $ do
         MkShimWit (twp :: _ tp) (MkPolarMap convp) <- return (toShimWit :: PinaforeShimWit 'Positive [A])
-        convTo <- getUnifyTo @[A] twp
+        convTo <- getUnifyTo @[A] $ mkShimWit twp
         let
             var :: SymbolType "a"
             var = representative
@@ -72,6 +73,33 @@ testSubstituteFunctor =
             yy = unsubsituteVar var (\aa -> fmap unVar $ convTo aa) yya
         assertEqual "" (fmap f xx) yy
 
+testSubstituteFunctorMaybe :: TestTree
+testSubstituteFunctorMaybe =
+    testCase "maybe" $ do
+        MkShimWit (twp :: _ tp) (MkPolarMap convp) <- return (toShimWit :: PinaforeShimWit 'Positive (Maybe A))
+        convTo <- getUnifyTo @(Maybe A) $ mkShimWit twp
+        let
+            var :: SymbolType "a"
+            var = representative
+            af :: ApplyFunctor (USub "a" tp)
+            af = substituteApplyFunctor var twp
+            f :: String -> Int
+            f = length
+            xx :: Maybe String
+            xx = Just "hello"
+            xxa :: Apply (USub "a" tp) String
+            xxa = substituteVar var (\aa -> shimToFunction convp $ fmap MkVar aa) xx
+            afmaplength :: Apply (USub "a" tp) String -> Apply (USub "a" tp) Int
+            afmaplength = unApplyFunctor af f
+            yya :: Apply (USub "a" tp) Int
+            yya = afmaplength xxa
+            yy :: Maybe Int
+            yy = unsubsituteVar var (\aa -> fmap unVar $ convTo aa) yya
+        assertEqual "" (fmap f xx) yy
+
+testSubstituteFunctor :: TestTree
+testSubstituteFunctor = testGroup "substitute-functor" [testSubstituteFunctorList, testSubstituteFunctorMaybe]
+
 type TestType1 = Maybe (Maybe (Maybe (Maybe BottomType)))
 
 type TestType2 = Maybe (Maybe (Maybe (Maybe TopType)))
@@ -79,9 +107,9 @@ type TestType2 = Maybe (Maybe (Maybe (Maybe TopType)))
 mapTestType :: TestType1 -> TestType2
 mapTestType = fmap $ fmap $ fmap $ fmap $ never
 
-testRecursiveConvert :: TestTree
-testRecursiveConvert =
-    testCase "recursive-convert" $ do
+testConvert :: TestTree
+testConvert =
+    testCase "convert" $ do
         let
             var :: SymbolType "a"
             var = representative
@@ -92,7 +120,7 @@ testRecursiveConvert =
         MkShimWit (twr :: _ tr) _ <- return $ bisubstituteWitnessForTest var twp
         assertEqual "recursive type" "rec a. Maybe a" $ exprShow twr
         -- find unify to TestType
-        convTo <- getUnifyTo @TestType2 twr
+        convTo <- getUnifyTo @TestType2 $ mkShimWit twr
         -- find subsume from TestType
         confFrom <- getSubsumeFrom @TestType1 twr
         let
@@ -107,5 +135,62 @@ testRecursiveConvert =
             a3 = convTo a2
         assertEqual "" (mapTestType a1) a3
 
+testBisubstituteWitness :: TestTree
+testBisubstituteWitness =
+    testCase "bisubstitute-witness" $ do
+        let
+            var :: SymbolType "a"
+            var = representative
+        -- create plain type
+        MkShimWit (twp :: _ tp) (MkPolarMap convp) <-
+            return $ (toShimWit :: PinaforeSingularShimWit 'Positive (Maybe A))
+        assertEqual "plain type" "Maybe a" $ exprShow twp
+        -- create recursive type
+        MkShimWit (twr :: _ tr) (MkPolarMap convr) <- return $ bisubstituteWitnessForTest var twp
+        assertEqual "recursive type" "rec a. Maybe a" $ exprShow twr
+        -- find unify to TestType
+        convTo <- getUnifyTo @TestType2 $ mkShimWit twr
+        let
+        -- test values
+            a1 :: Maybe A
+            a1 = error "x"
+            a2 :: tr
+            a2 = shimToFunction (convr . convp) a1
+        assertEqual "a2" "Just Just Just Nothing" $ typedShowValue twr a2
+        let
+            a3 :: TestType2
+            a3 = convTo a2
+        assertEqual "" (Just Nothing) a3
+
+testBisubstituteInternal :: TestTree
+testBisubstituteInternal =
+    testCase "bisubstitute-internal" $ do
+        let
+            var :: SymbolType "a"
+            var = representative
+        MkShimWit (twp :: _ t) (MkPolarMap convp) <- return $ (toShimWit :: PinaforeSingularShimWit 'Positive (Maybe A))
+        Refl <- return $ usubIdentity @t var
+        let
+            af :: ApplyFunctor (USub "a" t)
+            af = substituteApplyFunctor var twp
+            magic :: UVar Type "a" -> Int
+            magic _ = 4
+            fmagic :: Apply (USub "a" t) (UVarT "a") -> Apply (USub "a" t) Int
+            fmagic = unApplyFunctor af magic
+        let
+        -- test values
+            a0 :: t
+            a0 = shimToFunction convp $ Just $ error "x"
+            a1 :: Apply (USub "a" t) (UVarT "a")
+            a1 = a0
+            a2 :: Apply (USub "a" t) Int
+            a2 = fmagic a1
+        convTo <- getUnifyTo @(Maybe (Var "a")) $ singleDolanShimWit $ mkShimWit twp
+        let
+            a3 :: Maybe Int
+            a3 = unsubsituteVar var (fmap unVar . convTo) a2
+        assertEqual "a3" (Just 4) a3
+
 testRecursive :: TestTree
-testRecursive = testGroup "recursive" [testSubstituteFunctor, testRecursiveConvert]
+testRecursive =
+    testGroup "recursive" [testSubstituteFunctor, testConvert, testBisubstituteWitness, testBisubstituteInternal]

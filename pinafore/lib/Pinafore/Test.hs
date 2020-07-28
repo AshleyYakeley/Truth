@@ -10,6 +10,7 @@ module Pinafore.Test
     , PinaforeGroundType(..)
     , EntityGroundType(..)
     , PinaforeType
+    , PinaforePolyShim
     , PinaforeShimWit
     , PinaforeSingularType
     , PinaforeSingularShimWit
@@ -24,6 +25,7 @@ import Pinafore.Language
 import Pinafore.Language.Name
 import Pinafore.Language.Read
 import Pinafore.Language.Scope
+import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Storage
