@@ -11,6 +11,8 @@ module Pinafore.Test
     , EntityGroundType(..)
     , PinaforeType
     , PinaforeShimWit
+    , PinaforeSingularType
+    , PinaforeSingularShimWit
     , PinaforeScoped
     , PinaforeSourceScoped
     , toJMShimWit

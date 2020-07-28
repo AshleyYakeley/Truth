@@ -6,10 +6,14 @@ type ShimKind k = k -> k -> Type
 
 data TopType =
     MkTopType
+    deriving (Eq)
+
+instance Show TopType where
+    show MkTopType = "T"
 
 newtype BottomType =
     MkBottomType None
-    deriving (Eq, Searchable, Countable, Empty)
+    deriving (Eq, Show, Searchable, Countable, Empty)
 
 instance Finite BottomType where
     allValues = []
