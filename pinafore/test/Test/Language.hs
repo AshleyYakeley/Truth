@@ -540,8 +540,59 @@ testQueries =
                           "let rcount x = case x of Nothing -> 0; Just y -> if True then 1 else 1 + rcount y end in rcount $ Just Nothing" $
                       Just "1"
                     , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> if True then 2 else 2 + rcount y end in rcount $ Just Nothing" $
+                      Just "1"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> if True then 2 else 1 + rcount y end end in rcount $ Just Nothing" $
+                      Just "1"
+                    , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
                       Just "1"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> if True then 1 else 1 + rcount y end in rcount $ Just $ Just Nothing" $
+                      Just "1"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> if True then 2 else 2 + rcount y end in rcount $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> if True then 2 else 1 + rcount y end end in rcount $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> case z of Nothing -> 2; Just p -> if True then 3 else 1 + rcount y end end end in rcount $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> case z of Nothing -> 2; Just p -> 1 + rcount y end end end in rcount $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> case z of Nothing -> 2; Just p -> 1 + rcount y end end end; rcount1 x = rcount x in rcount1 $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount1 y = case y of Nothing -> 0; Just z -> 1 + rcount z end; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just $ Just $ Just $ Just Nothing" $
+                      Just "4"
+                    , testQuery
+                          "let rcount1 y = case y of Nothing -> 0; Just z -> 1 + rcount z end; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      Just "12"
+                    , testQuery
+                          "let rcount1 y = case y of Nothing -> 0; Just z -> 1 + rcount z end; rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      Just "12"
+                    , testQuery
+                          "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> if True then 2 else 2 + rcount y end; rval : rec a. Maybe a; rval = Just $ Just Nothing in rcount rval" $
+                      Just "2"
+                    , testQuery
+                          "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; Just (Just (Just (Just Nothing))) -> 4; Just (Just (Just (Just (Just _)))) -> 5 end; rval : rec a. Maybe a; rval = Just $ Just $ Just $ Just Nothing in rcount rval" $
+                      Just "4"
+                    , testQuery
+                          "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; Just (Just (Just (Just Nothing))) -> 4; Just (Just (Just (Just (Just _)))) -> 5 end; rval : rec a. Maybe a; rval = Just rval in rcount rval" $
+                      Just "5"
+                    , testQuery
+                          "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : rec a. Maybe a; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing in rcount rval" $
+                      Just "10"
+                    , testQuery
+                          "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing in rcount rval" $
+                      Just "10"
+                    , testQuery
+                          "let fix: (a -> a) -> a; fix f = let x = f x in x; rc: (a -> Integer) -> Maybe a -> Integer; rc r x = case x of Nothing -> 0; Just y -> 1 + r y end in fix rc $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      Just "5"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just Nothing" $
                       Just "2"
@@ -621,6 +672,14 @@ testShims =
         , expectFail $ testShim "(\\x -> x) 3" "Integer" "(join1 id)"
         , testShim "\\x -> 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
         , testShim "(\\x -> 4) 3" "Integer" "(join1 id)"
+        , testShim
+              "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount"
+              "(rec c. Maybe c) -> Integer"
+              "(join1 id)"
+        , testShim
+              "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount"
+              "(rec a. Maybe a) -> Integer"
+              "(join1 id)"
         ]
 
 testLanguage :: TestTree

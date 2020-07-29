@@ -258,16 +258,19 @@ testType =
                     "recursive"
                     [ textTypeTest "let x : rec a. Maybe a; x = Nothing in x" "{} -> rec a. Maybe a"
                     , textTypeTest "let x : rec a. Maybe a; x = Just x in x" "{} -> rec a. Maybe a"
-                    , textTypeTest "let x = Just x in x" "{} -> rec d. Maybe d"
+                    , textTypeTest "let x = Just x in x" "{} -> rec a. Maybe a"
                     , textTypeTest "let x : Entity; x = Just x in x" "{} -> Entity"
                     , textTypeTest "let x : Maybe Entity; x = Just x in x" "{} -> Maybe Entity"
                     , textTypeTest
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount"
-                          "{} -> (rec e. Maybe e) -> Integer"
+                          "{} -> (rec c. Maybe c) -> Integer"
                     , textTypeTest "Just $ Just $ Just Nothing" "{} -> Maybe (Maybe (Maybe (Maybe None)))"
                     , textTypeTest
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + r1count y end; r1count x = case x of Nothing -> 0; Just y -> 1 + r1count y end in rcount $ Just $ Just $ Just Nothing"
                           "{} -> Integer"
+                    , textTypeTest
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just rval in ((rcount,rval),rcount rval)"
+                          "{} -> (((rec c. Maybe c) -> Integer, rec d. Maybe d), Integer)"
                     ]
               ]
         , testGroup

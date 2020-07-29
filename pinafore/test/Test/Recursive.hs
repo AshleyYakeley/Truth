@@ -64,13 +64,13 @@ testSubstituteFunctorList =
             xx :: [String]
             xx = ["hello", "goodbye"]
             xxa :: Apply (USub "a" tp) String
-            xxa = substituteVar var (\aa -> shimToFunction convp $ fmap MkVar aa) xx
+            xxa = substituteVar var (shimToFunction convp . fmap MkVar) xx
             afmaplength :: Apply (USub "a" tp) String -> Apply (USub "a" tp) Int
             afmaplength = unApplyFunctor af f
             yya :: Apply (USub "a" tp) Int
             yya = afmaplength xxa
             yy :: [Int]
-            yy = unsubsituteVar var (\aa -> fmap unVar $ convTo aa) yya
+            yy = unsubsituteVar var (fmap unVar . convTo) yya
         assertEqual "" (fmap f xx) yy
 
 testSubstituteFunctorMaybe :: TestTree
@@ -88,13 +88,13 @@ testSubstituteFunctorMaybe =
             xx :: Maybe String
             xx = Just "hello"
             xxa :: Apply (USub "a" tp) String
-            xxa = substituteVar var (\aa -> shimToFunction convp $ fmap MkVar aa) xx
+            xxa = substituteVar var (shimToFunction convp . fmap MkVar) xx
             afmaplength :: Apply (USub "a" tp) String -> Apply (USub "a" tp) Int
             afmaplength = unApplyFunctor af f
             yya :: Apply (USub "a" tp) Int
             yya = afmaplength xxa
             yy :: Maybe Int
-            yy = unsubsituteVar var (\aa -> fmap unVar $ convTo aa) yya
+            yy = unsubsituteVar var (fmap unVar . convTo) yya
         assertEqual "" (fmap f xx) yy
 
 testSubstituteFunctor :: TestTree
@@ -165,31 +165,27 @@ testBisubstituteWitness =
 testBisubstituteInternal :: TestTree
 testBisubstituteInternal =
     testCase "bisubstitute-internal" $ do
+        MkShimWit (twp :: _ tp) (MkPolarMap convp) <-
+            return $ (toShimWit :: PinaforeSingularShimWit 'Positive (Maybe (Var "a")))
+        convTo <- getUnifyTo @(Maybe (Var "a")) $ singleDolanShimWit $ mkShimWit twp
         let
             var :: SymbolType "a"
             var = representative
-        MkShimWit (twp :: _ t) (MkPolarMap convp) <- return $ (toShimWit :: PinaforeSingularShimWit 'Positive (Maybe A))
-        Refl <- return $ usubIdentity @t var
-        let
-            af :: ApplyFunctor (USub "a" t)
+            af :: ApplyFunctor (USub "a" tp)
             af = substituteApplyFunctor var twp
-            magic :: UVar Type "a" -> Int
-            magic _ = 4
-            fmagic :: Apply (USub "a" t) (UVarT "a") -> Apply (USub "a" t) Int
-            fmagic = unApplyFunctor af magic
-        let
-        -- test values
-            a0 :: t
-            a0 = shimToFunction convp $ Just $ error "x"
-            a1 :: Apply (USub "a" t) (UVarT "a")
-            a1 = a0
-            a2 :: Apply (USub "a" t) Int
-            a2 = fmagic a1
-        convTo <- getUnifyTo @(Maybe (Var "a")) $ singleDolanShimWit $ mkShimWit twp
-        let
-            a3 :: Maybe Int
-            a3 = unsubsituteVar var (fmap unVar . convTo) a2
-        assertEqual "a3" (Just 4) a3
+            f :: String -> Int
+            f = length
+            xx :: Maybe String
+            xx = Just "hello"
+            xxa :: Apply (USub "a" tp) String
+            xxa = substituteVar var (shimToFunction convp . fmap MkVar) xx
+            afmaplength :: Apply (USub "a" tp) String -> Apply (USub "a" tp) Int
+            afmaplength = unApplyFunctor af f
+            yya :: Apply (USub "a" tp) Int
+            yya = afmaplength xxa
+            yy :: Maybe Int
+            yy = unsubsituteVar var (fmap unVar . convTo) yya
+        assertEqual "" (fmap f xx) yy
 
 testRecursive :: TestTree
 testRecursive =

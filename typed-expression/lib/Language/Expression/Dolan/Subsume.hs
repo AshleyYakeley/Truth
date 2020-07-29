@@ -13,6 +13,7 @@ import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Inverted
 import Language.Expression.Dolan.PShimWit
+import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
@@ -29,7 +30,9 @@ minimalPositiveSupertypeSingular (GroundDolanSingularType gt args) = do
     MkShimWit args' conv <-
         mapInvertDolanArgumentsM limitInvertType (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args
     return $ singleDolanShimWit $ MkShimWit (GroundDolanSingularType gt args') conv
-minimalPositiveSupertypeSingular (RecursiveDolanSingularType _ _) = empty
+minimalPositiveSupertypeSingular (RecursiveDolanSingularType var t) = do
+    MkShimWit t' conv <- minimalPositiveSupertype t
+    return $ singleDolanShimWit $ MkShimWit (RecursiveDolanSingularType var t') $ shimMapRecursive var conv
 
 minimalPositiveSupertype ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -49,7 +52,9 @@ maximalNegativeSubtypeSingular (GroundDolanSingularType gt args) = do
     MkShimWit args' conv <-
         mapInvertDolanArgumentsM limitInvertType (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args
     return $ singleDolanShimWit $ MkShimWit (GroundDolanSingularType gt args') conv
-maximalNegativeSubtypeSingular (RecursiveDolanSingularType _ _) = empty
+maximalNegativeSubtypeSingular (RecursiveDolanSingularType var t) = do
+    MkShimWit t' conv <- maximalNegativeSubtype t
+    return $ singleDolanShimWit $ MkShimWit (RecursiveDolanSingularType var t') $ shimMapRecursive var conv
 
 maximalNegativeSubtype ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
