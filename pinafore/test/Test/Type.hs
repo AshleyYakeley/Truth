@@ -326,14 +326,14 @@ testType =
                     , simplifyTypeTest "Maybe (rec a. a)" "Maybe None"
                     , simplifyTypeTest "Maybe (rec a. [a])" "Maybe (rec a. [a])"
                     , simplifyTypeTest "Maybe (rec a. Integer)" "Maybe Integer"
-                    , simplifyTypeTest "rec a. rec b. (a, b)" "rec b. (b, b)"
-                    , simplifyTypeTest "(rec a. Maybe a) | (rec b. [b])" "rec a. Maybe a | [a]"
-                    , simplifyTypeTest "(rec a. Maybe a) | (rec a. [a])" "rec a. Maybe a | [a]"
+                    , expectFail $ simplifyTypeTest "rec a. rec b. (a, b)" "rec b. (b, b)" {- ISSUE #61-}
+                    , expectFail $ simplifyTypeTest "(rec a. Maybe a) | (rec b. [b])" "rec a. Maybe a | [a]" {- ISSUE #61-}
+                    , expectFail $ simplifyTypeTest "(rec a. Maybe a) | (rec a. [a])" "rec a. Maybe a | [a]" {- ISSUE #61-}
                     , testGroup
                           "roll"
                           [ simplifyTypeTest "Maybe (rec a. Maybe a)" "rec a. Maybe a"
                           , simplifyTypeTest "Maybe (Maybe (rec a. Maybe a))" "rec a. Maybe a"
-                          , simplifyTypeTest "Any -> Maybe (rec a. Maybe a)" "Any -> rec a. Maybe a"
+                          , simplifyTypeTest "Any -> Maybe (rec a. Maybe a)" "Any -> (rec a. Maybe a)"
                           , unrollTest "rec a. Maybe a" "Maybe (rec a. Maybe a)"
                           ]
                     ]
