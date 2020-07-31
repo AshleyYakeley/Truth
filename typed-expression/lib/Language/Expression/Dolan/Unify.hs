@@ -10,9 +10,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.MapType
 import Language.Expression.Dolan.Occur
-import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
@@ -28,6 +26,7 @@ data BisubstitutionWitness ground t where
         :: forall (ground :: GroundTypeKind) polarity name t. Is PolarityType polarity
         => SymbolType name
         -> DolanShimWit ground polarity t
+        -> Bool
         -> BisubstitutionWitness ground (PolarMapType (DolanPolyShim ground Type) polarity t (UVarT name))
 
 mkBisubstitutionWitness ::
@@ -36,24 +35,7 @@ mkBisubstitutionWitness ::
     -> DolanSingularType ground polarity p
     -> BisubstitutionWitness ground (PolarMapType (DolanPolyShim ground Type) polarity p (UVarT name))
 mkBisubstitutionWitness var spt =
-    case singleDolanShimWit $ mkShimWit spt of
-        psw@(MkShimWit (pt :: _ t) convw) ->
-            MkBisubstitutionWitness var $
-            if occursInType var pt
-                then withRefl (usubIdentity @t var) $ let
-                         af :: ApplyFunctor (USub name t)
-                         af = substituteApplyFunctor var pt
-                         bijRoll :: Bijection (Recursive (USub name t)) (Apply (USub name t) (Recursive (USub name t)))
-                         bijRoll = rollRecursiveBijection @(USub name t) af
-                         magic :: Bijection (Recursive (USub name t)) (UVar Type name)
-                         magic = assignUVar @Type @t var $ recursiveForceIso var
-                         fmagic ::
-                                Bijection (Apply (USub name t) (Recursive (USub name t))) (Apply (USub name t) (UVarT name))
-                         fmagic = bijApplyFunctor @(USub name t) @(Recursive (USub name t)) @(UVarT name) af magic
-                         iconv :: PolarMap (DolanPolyShim ground Type) polarity t (Recursive (USub name t))
-                         iconv = isoPolarBackwards $ isoFunctionToShim "unroll" $ fmagic . bijRoll
-                         in singleDolanShimWit $ mapShimWit (iconv . convw) $ recursiveDolanShimWit var $ mkShimWit pt
-                else psw
+    MkBisubstitutionWitness var (singleDolanShimWit $ mkShimWit spt) (occursInSingularType var spt)
 
 bisubstituteWitnessForTest ::
        forall (ground :: GroundTypeKind) polarity name t. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
@@ -63,7 +45,7 @@ bisubstituteWitnessForTest ::
 bisubstituteWitnessForTest var st = let
     bisub = mkBisubstitutionWitness var st
     in case bisub of
-           MkBisubstitutionWitness _ (t :: DolanShimWit ground polarity' _) ->
+           MkBisubstitutionWitness _ (t :: DolanShimWit ground polarity' _) _ ->
                case (polarityType @polarity, polarityType @polarity') of
                    (PositiveType, PositiveType) -> t
                    (NegativeType, NegativeType) -> t
@@ -166,7 +148,7 @@ bisubstituteUnifier ::
     -> DolanUnifier ground a
     -> FullUnifier ground a
 bisubstituteUnifier _ (ClosedExpression a) = pure a
-bisubstituteUnifier bisub@(MkBisubstitution vsub (Identity tp) (Identity tq)) (OpenExpression (MkBisubstitutionWitness vwit (tw :: DolanShimWit ground polarity _)) uval)
+bisubstituteUnifier bisub@(MkBisubstitution _ vsub (Identity tp) (Identity tq)) (OpenExpression (MkBisubstitutionWitness vwit (tw :: DolanShimWit ground polarity _) _) uval)
     | Just Refl <- testEquality vsub vwit = do
         conv <-
             case polarityType @polarity of
@@ -174,7 +156,7 @@ bisubstituteUnifier bisub@(MkBisubstitution vsub (Identity tp) (Identity tq)) (O
                 NegativeType -> unifyShimWits tp tw
         val' <- bisubstituteUnifier bisub uval
         pure $ val' conv
-bisubstituteUnifier bisub (OpenExpression (MkBisubstitutionWitness vn (tw :: DolanShimWit ground polarity _)) uval) = let
+bisubstituteUnifier bisub (OpenExpression (MkBisubstitutionWitness vn (tw :: DolanShimWit ground polarity _) _) uval) = let
     wp' = runIdentity $ bisubstituteShimWit bisub tw
     in case polarityType @polarity of
            PositiveType ->
@@ -193,15 +175,18 @@ runUnifier ::
     => DolanUnifier ground a
     -> WriterT [UnifierBisubstitution ground] (DolanTypeCheckM ground) a
 runUnifier (ClosedExpression a) = return a
-runUnifier (OpenExpression (MkBisubstitutionWitness oldvn (tw :: DolanShimWit ground polarity vw)) expr) =
+runUnifier (OpenExpression (MkBisubstitutionWitness oldvar (ptw :: DolanShimWit ground polarity pt) False) expr) =
     invertPolarity @polarity $
-    newUVar (uVarName oldvn) $ \(newvn :: SymbolType newname) ->
-        assignUVar @Type @(JoinMeetType polarity (UVarT newname) vw) oldvn $ let
+    newUVar (uVarName oldvar) $ \(newvar :: SymbolType newname) ->
+        assignUVar @Type @(JoinMeetType polarity (UVarT newname) pt) oldvar $ let
+            rtw :: DolanShimWit ground polarity (JoinMeetType polarity (UVarT newname) pt)
+            rtw = joinMeetShimWit (varDolanShimWit newvar) ptw
             bisub =
                 mkPolarBisubstitution
-                    oldvn
-                    (return $ joinMeetShimWit (varDolanShimWit newvn) tw)
-                    (return $ singleDolanShimWit $ MkShimWit (VarDolanSingularType newvn) $ invertPolarMap polar1)
+                    False
+                    oldvar
+                    (return rtw)
+                    (return $ singleDolanShimWit $ MkShimWit (VarDolanSingularType newvar) $ invertPolarMap polar1)
             in do
                    expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
                    ca <- runUnifier expr'
@@ -210,6 +195,26 @@ runUnifier (OpenExpression (MkBisubstitutionWitness oldvn (tw :: DolanShimWit gr
                        case polarityType @polarity of
                            PositiveType -> ca join2
                            NegativeType -> ca meet2
+runUnifier (OpenExpression (MkBisubstitutionWitness (oldvar :: SymbolType oldname) (ptw :: DolanShimWit ground polarity pt) True) expr) =
+    invertPolarity @polarity $
+    newUVar (uVarName oldvar) $ \(newvar :: SymbolType newname) ->
+        assignUVar @Type @(JoinMeetType polarity (UVarT newname) pt) oldvar $ do
+            let
+                rtw :: DolanShimWit ground polarity (JoinMeetType polarity (UVarT newname) pt)
+                rtw = singleDolanShimWit $ recursiveDolanShimWit oldvar $ joinMeetShimWit (varDolanShimWit newvar) ptw
+                bisub =
+                    mkPolarBisubstitution
+                        False
+                        oldvar
+                        (return rtw)
+                        (return $ singleDolanShimWit $ MkShimWit (VarDolanSingularType newvar) $ invertPolarMap polar1)
+            expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
+            ca <- runUnifier expr'
+            tell [bisub]
+            return $
+                case polarityType @polarity of
+                    PositiveType -> ca join2
+                    NegativeType -> ca meet2
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where
     type Unifier (DolanTypeSystem ground) = DolanUnifier ground

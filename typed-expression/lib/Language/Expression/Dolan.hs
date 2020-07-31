@@ -44,7 +44,6 @@ module Language.Expression.Dolan
     , IsDolanSubtypeGroundType(..)
     , module Language.Expression.Dolan.Nonpolar
     , module Language.Expression.Dolan.Concrete
-    , module Language.Expression.Dolan.Recursive
     ) where
 
 import Data.Shim
@@ -57,7 +56,6 @@ import Language.Expression.Dolan.MPolarity
 import Language.Expression.Dolan.Nonpolar
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.RangeF
-import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Simplify ()
 import Language.Expression.Dolan.Subtype

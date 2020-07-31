@@ -7,7 +7,6 @@ import Test.Entity
 import Test.Interactive
 import Test.Language
 import Test.ReadType
-import Test.Recursive
 import Test.Scripts
 import Test.Tasty
 import Test.Type
@@ -21,14 +20,5 @@ main = do
         tests =
             testGroup
                 "pinafore"
-                [ testType
-                , testLanguage
-                , testReadTypes
-                , testEntity
-                , testRecursive
-                , testUpdates
-                , testScripts
-                , testInteractive
-                , testUI
-                ]
+                [testType, testLanguage, testReadTypes, testEntity, testUpdates, testScripts, testInteractive, testUI]
     defaultMain tests

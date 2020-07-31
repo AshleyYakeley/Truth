@@ -107,7 +107,6 @@ tests:
           - Test.Entity
           - Test.Type
           - Test.ReadType
-          - Test.Recursive
           - Test.Scripts
           - Test.Interactive
           - Test.UI

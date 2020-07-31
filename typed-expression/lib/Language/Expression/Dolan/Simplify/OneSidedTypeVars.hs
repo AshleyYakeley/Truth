@@ -24,11 +24,11 @@ getEliminateBisubs expr = let
     posbisub :: AnyW SymbolType -> Bisubstitution ground (DolanPolyShim ground) Identity
     posbisub (MkAnyW var) =
         assignUVar @Type @BottomType var $
-        MkBisubstitution var (return $ mkShimWit NilDolanType) (return $ varDolanShimWit var)
+        MkBisubstitution False var (return $ mkShimWit NilDolanType) (return $ varDolanShimWit var)
     negbisub :: AnyW SymbolType -> Bisubstitution ground (DolanPolyShim ground) Identity
     negbisub (MkAnyW var) =
         assignUVar @Type @TopType var $
-        MkBisubstitution var (return $ varDolanShimWit var) (return $ mkShimWit NilDolanType)
+        MkBisubstitution False var (return $ varDolanShimWit var) (return $ mkShimWit NilDolanType)
     in (fmap posbisub $ toList posonlyvars) <> (fmap negbisub $ toList negonlyvars)
 
 eliminateOneSidedTypeVars ::

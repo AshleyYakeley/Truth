@@ -48,9 +48,7 @@ instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground
     namespaceRename (RecursiveDolanSingularType oldvar st) = do
         varNamespaceTLocalUVar @Type oldvar $ \(MkVarType newvar) -> do
             st' <- dolanNamespaceRename @ground st
-            return $
-                withRefl (usubResub oldvar newvar st') $
-                RecursiveDolanSingularType newvar $ reflWitCat (invert $ renameUSub oldvar newvar) st'
+            return $ RecursiveDolanSingularType newvar st'
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
              NamespaceRenamable (DolanTypeSystem ground) (DolanType ground polarity t) where

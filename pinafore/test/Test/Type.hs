@@ -4,6 +4,7 @@ module Test.Type
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan
 import Pinafore
 import Pinafore.Test
 import Shapes
@@ -115,6 +116,22 @@ simplifyTypeTest text e =
                         MkSealedExpression (mkShimWit t) $ ClosedExpression undefined
         case simpexpr of
             MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ exprShow t'
+
+unrollTest :: Text -> Text -> TestTree
+unrollTest rolledTypeText expectedUnrolledTypeText =
+    testCase (unpack rolledTypeText) $ do
+        action <-
+            throwResult $
+            runTestPinaforeSourceScoped $ do
+                mRolledType <- parseType @'Positive rolledTypeText
+                return $
+                    case mRolledType of
+                        MkAnyW (ConsDolanType (RecursiveDolanSingularType var t) NilDolanType) ->
+                            case unrollRecursiveType var t of
+                                MkShimWit unrolledType _ ->
+                                    assertEqual "" expectedUnrolledTypeText $ exprShow unrolledType
+                        _ -> fail "not a recursive type"
+        action
 
 testType :: TestTree
 testType =
@@ -312,6 +329,13 @@ testType =
                     , simplifyTypeTest "rec a. rec b. (a, b)" "rec b. (b, b)"
                     , simplifyTypeTest "(rec a. Maybe a) | (rec b. [b])" "rec a. Maybe a | [a]"
                     , simplifyTypeTest "(rec a. Maybe a) | (rec a. [a])" "rec a. Maybe a | [a]"
+                    , testGroup
+                          "roll"
+                          [ simplifyTypeTest "Maybe (rec a. Maybe a)" "rec a. Maybe a"
+                          , simplifyTypeTest "Maybe (Maybe (rec a. Maybe a))" "rec a. Maybe a"
+                          , simplifyTypeTest "Any -> Maybe (rec a. Maybe a)" "Any -> rec a. Maybe a"
+                          , unrollTest "rec a. Maybe a" "Maybe (rec a. Maybe a)"
+                          ]
                     ]
               ]
         ]

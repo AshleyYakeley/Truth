@@ -6,7 +6,6 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.PShimWit
-import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
 import Shapes
@@ -64,11 +63,13 @@ data DolanSingularType ground polarity t where
         :: forall (ground :: GroundTypeKind) polarity name.
            SymbolType name
         -> DolanSingularType ground polarity (UVarT name)
+    -- RecursiveDolanSingularType represents equirecursive type using type families,
+    -- similar to https://semantic.org/post/forbidden-haskell-types/
     RecursiveDolanSingularType
-        :: forall (ground :: GroundTypeKind) polarity name t.
+        :: forall (ground :: GroundTypeKind) polarity name.
            SymbolType name
-        -> DolanType ground polarity t
-        -> DolanSingularType ground polarity (Recursive (USub name t))
+        -> DolanType ground polarity (UVarT name)
+        -> DolanSingularType ground polarity (UVarT name)
 
 instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
              TestEquality (DolanSingularType ground polarity) where

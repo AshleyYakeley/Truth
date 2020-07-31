@@ -4,24 +4,23 @@ module Language.Expression.Dolan.Simplify.UnusedRecursion
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.MapType
 import Language.Expression.Dolan.Occur
 import Language.Expression.Dolan.PShimWit
-import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 elimUnusuedInShimWit ::
-       forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)
+       forall (ground :: GroundTypeKind) polarity name. (IsDolanGroundType ground, Is PolarityType polarity)
     => SymbolType name
-    -> DolanShimWit ground polarity t
-    -> DolanShimWit ground polarity (Recursive (USub name t))
+    -> DolanShimWit ground polarity (UVarT name)
+    -> DolanShimWit ground polarity (UVarT name)
 elimUnusuedInShimWit var tw@(MkShimWit t _) =
     if occursInType var t
         then singleDolanShimWit $ recursiveDolanShimWit var tw
-        else mapShimWit (isoPolarForwards $ recursiveIsoNull var) tw
+        else tw
 
 elimInSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

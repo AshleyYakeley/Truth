@@ -60,10 +60,8 @@ library:
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.MPolarity
       - Language.Expression.Dolan.RangeF
-      - Language.Expression.Dolan.Recursive
       - Language.Expression.Dolan.Type
       - Language.Expression.Dolan.Occur
-      - Language.Expression.Dolan.MapType
       - Language.Expression.Dolan.Subtype
       - Language.Expression.Dolan.Bisubstitute
       - Language.Expression.Dolan.TypeSystem
@@ -98,5 +96,4 @@ tests:
         main: Main.hs
         other-modules:
           - Shim
-          - Recursive
         ghc-options: -threaded

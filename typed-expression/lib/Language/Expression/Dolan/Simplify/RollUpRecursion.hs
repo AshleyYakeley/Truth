@@ -3,9 +3,10 @@ module Language.Expression.Dolan.Simplify.RollUpRecursion
     ) where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
+import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.MapType
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -21,16 +22,16 @@ data RollUp ground where
         -> RollUp ground
 
 mkRollUp ::
-       forall (ground :: GroundTypeKind) (polarity :: Polarity) name t.
+       forall (ground :: GroundTypeKind) (polarity :: Polarity) name.
        (IsDolanGroundType ground, Is PolarityType polarity)
     => SymbolType name
-    -> DolanType ground polarity t
+    -> DolanType ground polarity (UVarT name)
     -> RollUp ground
 mkRollUp var rolled =
     case unrollRecursiveType var rolled of
         MkShimWit unrolled conv ->
             MkRollUp unrolled $
-            mapShimWit (invert conv) $ singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType var rolled
+            mapShimWitT (invert conv) $ singleDolanShimWit $ mkShimWitT $ RecursiveDolanSingularType var rolled
 
 rollUpThisType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -38,11 +39,11 @@ rollUpThisType ::
     -> DolanType ground polarity t
     -> Writer Any (DolanIsoShimWit ground polarity t)
 rollUpThisType [] pt = return $ mkShimWit pt
-rollUpThisType (MkRollUp rpt (rt :: _ polarity' _):rr) pt = do
+rollUpThisType (MkRollUp unrolled (rt :: _ polarity' _):rr) pt = do
     t' <-
         fromMaybe (return $ mkShimWit pt) $ do
             Refl <- eitherLeft $ samePolarity @polarity @polarity'
-            Refl <- testEquality pt rpt
+            Refl <- testEquality pt unrolled
             return $ do
                 tell $ Any True
                 return rt

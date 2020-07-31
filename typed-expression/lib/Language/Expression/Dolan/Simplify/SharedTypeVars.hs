@@ -35,6 +35,6 @@ mergeSharedTypeVars expr = let
            Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) ->
                assignUVar @Type @(UVarT na) vb $ let
                    bisub :: Bisubstitution ground (DolanPolyShim ground) Identity
-                   bisub = MkBisubstitution vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
+                   bisub = MkBisubstitution False vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
                    in mergeSharedTypeVars @ground $ runIdentity $ bisubstitutes @ground [bisub] expr
            Nothing -> expr

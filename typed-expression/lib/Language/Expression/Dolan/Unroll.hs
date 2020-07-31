@@ -11,26 +11,21 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
-import Language.Expression.Dolan.Recursive
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 unrollRecursiveType ::
-       forall (ground :: GroundTypeKind) polarity name t. (IsDolanGroundType ground, Is PolarityType polarity)
+       forall (ground :: GroundTypeKind) polarity name. (IsDolanGroundType ground, Is PolarityType polarity)
     => SymbolType name
-    -> DolanType ground polarity t
-    -> DolanIsoShimWit ground polarity (Recursive (USub name t))
-unrollRecursiveType var pt = let
-    rt :: DolanShimWit ground polarity (Recursive (USub name t))
-    rt = singleDolanShimWit $ mkShimWit $ RecursiveDolanSingularType var pt
-    af :: ApplyFunctor (USub name t)
-    af = substituteApplyFunctor var pt
-    iso :: Isomorphism (DolanPolyShim ground Type) (Recursive (USub name t)) (Apply (USub name t) (Recursive (USub name t)))
-    iso = rollRecursiveIsoShim @(USub name t) af
-    t' :: DolanType ground polarity (Apply (USub name t) (Recursive (USub name t)))
-    t' = fst $ substituteShim @ground @polarity var rt pt
-    in MkShimWit t' $ isoPolarPoly iso
+    -> DolanType ground polarity (UVarT name)
+    -> DolanIsoShimWit ground polarity (UVarT name)
+unrollRecursiveType var pt =
+    invertPolarity @polarity $ let
+        rt = RecursiveDolanSingularType var pt
+        bisub :: Bisubstitution ground (DolanPolyIsoShim ground) Identity
+        bisub = mkSingleBisubstitution True var $ return $ singleDolanShimWit $ mkShimWit rt
+        in runIdentity $ bisubstituteShimWit bisub $ mkShimWit pt
 
 unrollSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -53,10 +48,10 @@ data RecursiveOrPlainType ground polarity t where
            DolanType ground polarity t
         -> RecursiveOrPlainType ground polarity t
     RecursiveType
-        :: forall (ground :: GroundTypeKind) polarity name t.
+        :: forall (ground :: GroundTypeKind) polarity name.
            SymbolType name
-        -> DolanType ground polarity t
-        -> RecursiveOrPlainType ground polarity (Recursive (USub name t))
+        -> DolanType ground polarity (UVarT name)
+        -> RecursiveOrPlainType ground polarity (UVarT name)
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground) =>
              TestEquality (RecursiveOrPlainType ground polarity) where

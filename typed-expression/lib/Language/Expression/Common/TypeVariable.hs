@@ -10,15 +10,9 @@ module Language.Expression.Common.TypeVariable
     , varTypeName
     , newAssignUVar
     , renameUVar
-    , USub
-    , usubIdentity
-    , usubResub
-    , usubConstant
-    , assignUSub
-    , renameUSub
     ) where
 
-import Language.Expression.Common.TypeFunction
+--import Language.Expression.Common.TypeFunction
 import Shapes
 import Shapes.Unsafe (unsafeRefl)
 
@@ -56,30 +50,3 @@ newAssignUVar nstr = newUVar nstr $ \nsym -> assignUVar @k @t nsym $ MkVarType n
 
 renameUVar :: forall (k :: Type) (oldname :: Symbol). SymbolType oldname -> String -> VarType (UVar k oldname)
 renameUVar _ newname = newAssignUVar @k @(UVar k oldname) newname
-
-type USub :: Symbol -> Type -> TF Type Type
-type family USub name t where
-
-usubConstant :: forall (t :: Type) (name :: Symbol). SymbolType name -> USub name t :~: 'TFConstant t
-usubConstant _ = unsafeRefl
-
-usubIdentity :: forall (t :: Type) (name :: Symbol). SymbolType name -> Apply (USub name t) (UVarT name) :~: t
-usubIdentity _ = unsafeRefl
-
-usubResub ::
-       forall (oldname :: Symbol) (newname :: Symbol) w (t :: Type).
-       SymbolType oldname
-    -> SymbolType newname
-    -> w t
-    -> USub newname (Apply (USub oldname t) (UVarT newname)) :~: USub oldname t
-usubResub _ _ _ = unsafeRefl
-
-assignUSub :: forall (name :: Symbol) (t :: Type) (x :: Type) (t' :: Type). Apply (USub name t) x :~: t'
-assignUSub = unsafeRefl
-
-renameUSub ::
-       forall (oldname :: Symbol) (newname :: Symbol) (t :: Type).
-       SymbolType oldname
-    -> SymbolType newname
-    -> Apply (USub oldname t) (UVarT newname) :~: t
-renameUSub _ _ = assignUSub @oldname @t @(UVarT newname) @t
