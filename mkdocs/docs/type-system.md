@@ -1,6 +1,6 @@
 The Pinafore type system is based on Stephen Dolan's [Algebraic Subtyping](https://www.cl.cam.ac.uk/~sd601/thesis.pdf), an extension of Hindley-Milner to allow subtyping.
 You can see his POPL talk [here](https://www.youtube.com/watch?v=-P1ks4NPIyk).
-Pinafore omits recursive types and record types.
+Pinafore omits record types.
 
 Familiarity with Hindley-Milner is assumed.
 
@@ -57,9 +57,22 @@ As in Haskell, the first letter is upper case for type constants, and lower case
 Type variables play essentially the same role as they do in Hindley-Milner typing, though in the context of Dolan typing they are best understood as connecting (negative) inputs to (positive) outputs.
 Type variables on only one side can be eliminated.
 
+## Recursive types
+
+Equirecursive types are not much used in Pinafore, however, they are necesssary as principal types for certain expressions.
+
+If `a` is a type variable, and `F a` is a type with only covariant use of `a`, then `rec a. F a` is a type with the same polarity as `F a`.
+
+The essential fact of recursive types is that `rec a. F a` and `F (rec a. F a)` are equivalent.
+
 ## Type Simplification
 
-1. Any type variables that appears only in the positive position are replaced by `None`. Likewise, any only in the negative position, with `Any`.  
+1. Unused recursion is eliminated.  
+`rec a. (a | T)` &rarr; `rec a. T`  
+`rec a. a` &rarr; `Any` or `None`  
+`rec a. T` &rarr; `T` (if `a` does not appear in `T`)
+
+1. Any type variables that appear only in the positive position are replaced by `None`. Likewise, any only in the negative position, with `Any`.  
 `\x y -> x : a -> b -> a` &rarr; `\x y -> x : a -> Any -> a`  
 `[] : [a]` &rarr; `[] : [None]`
 
@@ -78,6 +91,9 @@ More generally, if `P <= Q` then
 
 1. Type variables are merged if they appear in all the same positive positions, or in all the same negative positions.  
 `a -> b -> (a | b)` &rarr; `a -> a -> a` (`a` and `b` appear in the same set of positive positions)
+
+1. Recursive types are rolled up.  
+`F (rec a. F a)` &rarr; `rec a. F a`
 
 ## Type Ranges
 

@@ -42,11 +42,6 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => M
 
 -- Simplification:
 --
--- Some simplification happens by the way types are represented.
--- e.g. "(rec a. P) | Q" => "rec a. (P|Q)"
--- e.g. "rec a. rec b. (a,b)" => "rec a. (a,a)"
--- e.g. "(rec a. F a) | (rec a. G a)" => "rec a. (F a|G a)"
---
 -- eliminateUnusedRecursion: remove unused recursion & eliminate immediate recursion
 -- e.g. "rec a. Integer" => "Integer"
 -- e.g. "rec a. a" => "Any"/"None"

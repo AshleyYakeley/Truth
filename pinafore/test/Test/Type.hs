@@ -321,6 +321,8 @@ testType =
               , testGroup
                     "recursive"
                     [ simplifyTypeTest "rec a. a" "None"
+                    , simplifyTypeTest "rec a. (a | Maybe a)" "rec a. Maybe a"
+                    , simplifyTypeTest "rec a. (a | Integer)" "Integer"
                     , simplifyTypeTest "rec a. Maybe a" "rec a. Maybe a"
                     , simplifyTypeTest "rec a. Integer" "Integer"
                     , simplifyTypeTest "Maybe (rec a. a)" "Maybe None"
