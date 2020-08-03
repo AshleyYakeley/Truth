@@ -47,6 +47,7 @@ data Token t where
     TokPropMap :: Token ()
     TokProperty :: Token ()
     TokEntity :: Token ()
+    TokEvaluate :: Token ()
     TokAnchor :: Token Anchor
     TokAt :: Token ()
     TokOperator :: Token Name
@@ -88,6 +89,7 @@ instance TestEquality Token where
     testEquality TokPropMap TokPropMap = Just Refl
     testEquality TokProperty TokProperty = Just Refl
     testEquality TokEntity TokEntity = Just Refl
+    testEquality TokEvaluate TokEvaluate = Just Refl
     testEquality TokAnchor TokAnchor = Just Refl
     testEquality TokAt TokAt = Just Refl
     testEquality TokOperator TokOperator = Just Refl
@@ -130,6 +132,7 @@ instance Show (Token t) where
     show TokPropMap = show ("~>" :: String)
     show TokProperty = show ("property" :: String)
     show TokEntity = show ("entity" :: String)
+    show TokEvaluate = show ("evaluate" :: String)
     show TokAnchor = "anchor"
     show TokAt = show ("@" :: String)
     show TokOperator = "infix"
@@ -241,6 +244,7 @@ readTextToken = do
         "end" -> return $ MkAnyValue TokEnd ()
         "property" -> return $ MkAnyValue TokProperty ()
         "entity" -> return $ MkAnyValue TokEntity ()
+        "evaluate" -> return $ MkAnyValue TokEvaluate ()
         "if" -> return $ MkAnyValue TokIf ()
         "then" -> return $ MkAnyValue TokThen ()
         "else" -> return $ MkAnyValue TokElse ()

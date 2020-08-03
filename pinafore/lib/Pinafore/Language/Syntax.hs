@@ -116,6 +116,7 @@ data SyntaxExpression'
                  Anchor
     | SEEntity SyntaxType
                Anchor
+    | SEEvaluate SyntaxType
 
 seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression
 seConst spos sc = MkWithSourcePos spos $ SEConst sc
@@ -182,6 +183,7 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
     syntaxFreeVariables (SEProperty _ _ _) = mempty
     syntaxFreeVariables (SEEntity _ _) = mempty
+    syntaxFreeVariables (SEEvaluate _) = mempty
 
 instance SyntaxFreeVariables SyntaxBinding where
     syntaxFreeVariables (MkSyntaxBinding _ _ _ expr) = syntaxFreeVariables expr

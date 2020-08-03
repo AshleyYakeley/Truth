@@ -39,6 +39,8 @@ type instance ScopeProvidedType PinaforeTypeSystem = ProvidedType
 type instance ScopeClosedEntityType PinaforeTypeSystem =
      ClosedEntityType
 
+type PinaforeSpecialVals = SpecialVals PinaforeTypeSystem
+
 type PinaforeNamedType = NamedType PinaforeTypeSystem
 
 type PinaforeTypeBox = TypeBox PinaforeTypeSystem

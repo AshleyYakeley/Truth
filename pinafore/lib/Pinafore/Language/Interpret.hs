@@ -207,6 +207,56 @@ interpretExpression' spos (SEEntity st anchor) =
                     typef = concreteToPositiveDolanType tp
                     anyval = MkAnyValue typef pt
                 return $ qConstExprAny anyval
+interpretExpression' spos (SEEvaluate st) =
+    liftRefNotation $
+    runSourcePos spos $ do
+        mtp <- interpretType @'Positive st
+        spvals <- getSpecialVals
+        return $
+            case mtp of
+                MkAnyW tp -> let
+                    eitherShimWit ::
+                           forall a b.
+                           PinaforeShimWit 'Positive a
+                        -> PinaforeShimWit 'Positive b
+                        -> PinaforeShimWit 'Positive (Either a b)
+                    eitherShimWit swa swb =
+                        unPosShimWit swa $ \ta conva ->
+                            unPosShimWit swb $ \tb convb ->
+                                mapPosShimWit (applyPolyShim CovarianceType (cfmap conva) convb) $
+                                singleDolanShimWit $
+                                mkShimWit $
+                                GroundDolanSingularType
+                                    (EntityPinaforeGroundType
+                                         (ConsListType Refl $ ConsListType Refl NilListType)
+                                         EitherEntityGroundType) $
+                                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+                    funcShimWit ::
+                           forall a b.
+                           PinaforeShimWit 'Negative a
+                        -> PinaforeShimWit 'Positive b
+                        -> PinaforeShimWit 'Positive (a -> b)
+                    funcShimWit swa swb =
+                        unNegShimWit swa $ \ta conva ->
+                            unPosShimWit swb $ \tb convb ->
+                                mapPosShimWit (applyPolyShim CovarianceType (ccontramap conva) convb) $
+                                singleDolanShimWit $
+                                mkShimWit $
+                                GroundDolanSingularType FuncPinaforeGroundType $
+                                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+                    textShimWit ::
+                           forall polarity. Is PolarityType polarity
+                        => PinaforeShimWit polarity Text
+                    textShimWit =
+                        singleDolanShimWit $
+                        mkShimWit $
+                        GroundDolanSingularType
+                            (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType)
+                            NilDolanArguments
+                    valShimWit ::
+                           forall t. PinaforeShimWit 'Positive t -> PinaforeShimWit 'Positive (Text -> Either Text t)
+                    valShimWit t' = funcShimWit textShimWit $ eitherShimWit textShimWit t'
+                    in qConstExprAny $ MkAnyValue (valShimWit $ mkShimWit tp) $ specialEvaluate spvals tp
 
 makeEntity :: MonadThrow ErrorType m => ConcreteEntityType t -> Entity -> m t
 makeEntity (MkConcreteType TopEntityGroundType NilArguments) p = return p

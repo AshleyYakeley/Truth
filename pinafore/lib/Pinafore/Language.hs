@@ -1,5 +1,7 @@
 module Pinafore.Language
-    ( PinaforeError
+    ( PinaforeSpecialVals
+    , SpecialVals(..)
+    , PinaforeError
     , InterpretResult
     , throwResult
     , PinaforeAction
@@ -11,7 +13,8 @@ module Pinafore.Language
     , singularTypedShowValue
     , parseTopExpression
     , parseValue
-    , parseValueAtType
+    , parseValueUnify
+    , parseValueSubsume
     , interact
     , TopType(..)
     , Var
@@ -44,8 +47,16 @@ import Truth.Core
 
 runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeScoped a -> InterpretResult a
 runPinaforeScoped scp =
-    runScoped $
+    runScoped spvals $
     withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
+
+spvals :: (?pinafore :: PinaforeContext) => PinaforeSpecialVals
+spvals = let
+    specialEvaluate t text =
+        case runPinaforeSourceScoped "<evaluate>" $ parseValueSubsume t text of
+            SuccessResult r -> Right r
+            FailureResult err -> Left $ pack $ show err
+    in MkSpecialVals {..}
 
 runPinaforeSourceScoped :: (?pinafore :: PinaforeContext) => FilePath -> PinaforeSourceScoped a -> InterpretResult a
 runPinaforeSourceScoped fpath scp = runPinaforeScoped $ runSourcePos (initialPos fpath) scp
@@ -55,13 +66,22 @@ parseValue text = do
     rexpr <- parseTopExpression text
     qEvalExpr rexpr
 
-parseValueAtType ::
+parseValueUnify ::
        forall t. (FromPinaforeType t, ?pinafore :: PinaforeContext)
     => Text
     -> PinaforeSourceScoped t
-parseValueAtType text = do
+parseValueUnify text = do
     val <- parseValue text
     typedAnyToPinaforeVal val
+
+parseValueSubsume ::
+       forall t. (?pinafore :: PinaforeContext)
+    => PinaforeType 'Positive t
+    -> Text
+    -> PinaforeSourceScoped t
+parseValueSubsume t text = do
+    val <- parseValue text
+    tsSubsumeValue @PinaforeTypeSystem t val
 
 entityTypedShowValue ::
        CovaryType dv -> EntityGroundType f -> DolanArguments dv PinaforeType f 'Positive t -> t -> Maybe String

@@ -19,7 +19,7 @@ module Language.Expression.Dolan
     , DolanVarianceKind
     , DolanVarianceType
     , DolanVarianceMap(..)
-    , dolanVary
+    , HasDolanVary(..)
     , CovaryType
     , CovaryMap
     , covarymap

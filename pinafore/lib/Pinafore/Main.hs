@@ -51,7 +51,7 @@ sqlitePinaforeDumpTable dirpath = do
 
 pinaforeInterpretFileAtType ::
        (?pinafore :: PinaforeContext, FromPinaforeType t) => FilePath -> Text -> InterpretResult t
-pinaforeInterpretFileAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueAtType puitext
+pinaforeInterpretFileAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueUnify puitext
 
 pinaforeInterpretFile :: (?pinafore :: PinaforeContext) => FilePath -> Text -> InterpretResult (View ())
 pinaforeInterpretFile puipath puitext = do

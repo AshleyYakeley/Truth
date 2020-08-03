@@ -201,6 +201,11 @@ readExpression3 =
              mt <- readTypeAnnotation
              anchor <- readThis TokAnchor
              return $ SEEntity mt anchor) <|>
+    readSourcePos
+        (do
+             readThis TokEvaluate
+             mt <- readTypeAnnotation
+             return $ SEEvaluate mt) <|>
     (readParen $
      readSourcePos
          (do

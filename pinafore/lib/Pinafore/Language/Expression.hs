@@ -145,7 +145,7 @@ typedAnyToPinaforeVal ::
        forall t. FromPinaforeType t
     => QValue
     -> PinaforeSourceScoped t
-typedAnyToPinaforeVal = tsAnyToVal @PinaforeTypeSystem fromJMShimWit
+typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem fromJMShimWit
 
 qSubsumeExpr :: AnyW (PinaforeShimWit 'Positive) -> PinaforeExpression -> PinaforeSourceScoped PinaforeExpression
-qSubsumeExpr t expr = tsSubsume @PinaforeTypeSystem t expr
+qSubsumeExpr t expr = tsSubsumeExpression @PinaforeTypeSystem t expr

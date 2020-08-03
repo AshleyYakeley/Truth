@@ -1,5 +1,6 @@
 module Language.Expression.Common.Subsumer
     ( SubsumeTypeSystem(..)
+    , solveSubsumeShimWit
     , subsumeExpression
     ) where
 
@@ -18,6 +19,17 @@ class (TypeSystem ts, Applicative (Subsumer ts)) => SubsumeTypeSystem ts where
     -- This should generate substitutions only for the inferred type, not the declared type.
     subsumerNegSubstitute :: SubsumerSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)
     subsumePosWitnesses :: TSPosWitness ts inf -> TSPosWitness ts decl -> TSOuter ts (Subsumer ts (TSShim ts inf decl))
+
+solveSubsumeShimWit ::
+       forall ts inf decl. SubsumeTypeSystem ts
+    => TSPosShimWit ts inf
+    -> TSPosWitness ts decl
+    -> TSOuter ts (TSShim ts inf decl)
+solveSubsumeShimWit winf tdecl =
+    unPosShimWit winf $ \tinf convinf -> do
+        subsumer <- subsumePosWitnesses @ts tinf tdecl
+        (ab, _) <- solveSubsumer @ts subsumer
+        return $ ab . convinf
 
 subsumerExpressionSubstitute ::
        forall ts a. SubsumeTypeSystem ts

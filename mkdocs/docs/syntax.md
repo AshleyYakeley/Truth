@@ -115,6 +115,7 @@ In interactive mode, each line has syntax `<interactive>`.
 <expression-3> ::=
     "property" "@"<type-const> "@"<type-const> anchor |
     "entity" "@"<type-3> anchor |
+    "evaluate" "@"<type-3> |
     "{" <expression> "}" |
     "%" <expression-3> |
     lname |

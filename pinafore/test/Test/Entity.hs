@@ -613,4 +613,10 @@ testEntity =
               [ pointTest "do r <- newMemRef; interpretIntegerAsText r := \"37\"; testeq {37} r; end"
               , pointTest "do r <- newMemRef; interpretDateAsText r := \"2015-08-12\"; testeq {Date 2015 08 12} r; end"
               ]
+        , context ["runresult rr arg = case rr of Left err -> fail err; Right f -> f arg end"] $
+          tgroup
+              "evaluate"
+              [ pointTest
+                    "do r <- newMemRef; runresult (evaluate @(Ref Integer -> Action ()) \"\\\\r -> r := 45\") r; a <- get r; testeqval 45 a; end"
+              ]
         ]

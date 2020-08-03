@@ -44,13 +44,29 @@ tsEval ::
     -> m (TSValue ts)
 tsEval = evalSealedExpression
 
-tsAnyToVal ::
+tsUnifyValue ::
        forall ts t. CompleteTypeSystem ts
     => TSNegShimWit ts t
     -> TSValue ts
     -> TSInner ts t
-tsAnyToVal witn (MkAnyValue witp val) = do
+tsUnifyValue witn (MkAnyValue witp val) = do
     conv <- tsUnify @ts witp witn
+    return $ shimToFunction conv val
+
+tsSubsume ::
+       forall ts inf decl. CompleteTypeSystem ts
+    => TSPosShimWit ts inf
+    -> TSPosWitness ts decl
+    -> TSInner ts (TSShim ts inf decl)
+tsSubsume winf tdecl = runRenamer @ts $ solveSubsumeShimWit @ts winf tdecl
+
+tsSubsumeValue ::
+       forall ts t. CompleteTypeSystem ts
+    => TSPosWitness ts t
+    -> TSValue ts
+    -> TSInner ts t
+tsSubsumeValue tdecl (MkAnyValue winf val) = do
+    conv <- tsSubsume @ts winf tdecl
     return $ shimToFunction conv val
 
 tsEvalToType ::
@@ -60,7 +76,7 @@ tsEvalToType ::
     -> TSInner ts t
 tsEvalToType witn expr = do
     aval <- tsEval @ts expr
-    tsAnyToVal @ts witn aval
+    tsUnifyValue @ts witn aval
 
 tsApply ::
        forall ts. CompleteTypeSystem ts
@@ -133,12 +149,12 @@ tsValuesLet ::
     -> Map (TSName ts) (TSSealedExpression ts)
 tsValuesLet = valuesLetSealedExpression @ts
 
-tsSubsume ::
+tsSubsumeExpression ::
        forall ts. CompleteTypeSystem ts
     => AnyW (TSPosShimWit ts)
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
-tsSubsume (MkAnyW t) expr =
+tsSubsumeExpression (MkAnyW t) expr =
     runRenamer @ts $ do
         at' <-
             namespace @ts $
