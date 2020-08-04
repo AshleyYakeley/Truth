@@ -35,6 +35,7 @@ module Pinafore.Language.Scope
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
+import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
@@ -71,7 +72,8 @@ data NamedType (ts :: Type) where
 type OpenEntityShim = LiftedCategory (PinaforePolyShim Type) OpenEntity
 
 newtype SpecialVals (ts :: Type) = MkSpecialVals
-    { specialEvaluate :: forall t. TSPosWitness ts t -> Text -> Either Text t
+        -- | in Action because this can do things like import files
+    { specialEvaluate :: forall t. TSPosWitness ts t -> Text -> PinaforeAction (Either Text t)
     }
 
 data Scope (ts :: Type) = MkScope

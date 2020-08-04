@@ -649,17 +649,6 @@ testQueries =
                       Just "3"
                     ]
               ]
-        , testGroup
-              "evaluate"
-              [ testQuery "evaluate @Boolean \"True\"" $ Just "Right True"
-              , testQuery "evaluate @Integer \"5\"" $ Just "Right 5"
-              , testQuery "evaluate @Integer \"let x = 5 in x\"" $ Just "Right 5"
-              , testQuery "case evaluate @(Integer -> Integer) \"\\\\x -> x + 1\" of Left _ -> 0; Right f -> f 7 end" $
-                Just "8"
-              , testQuery "evaluate @Integer \"\"" $ Just "Left <evaluate>:1:1: expecting: expression"
-              , testQuery "evaluate @Integer \"f\"" $ Just "Left <evaluate>:1:1: undefined: f"
-              , testQuery "evaluate @Integer \"\\\"hello\\\"\"" $ Just "Left <evaluate>:1:1: cannot convert Text <= Integer\n<evaluate>:1:1: cannot subsume Text <= Integer"
-              ]
         ]
 
 testShim :: Text -> String -> String -> TestTree

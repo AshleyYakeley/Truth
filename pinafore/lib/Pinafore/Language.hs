@@ -52,10 +52,12 @@ runPinaforeScoped scp =
 
 spvals :: (?pinafore :: PinaforeContext) => PinaforeSpecialVals
 spvals = let
-    specialEvaluate t text =
-        case runPinaforeSourceScoped "<evaluate>" $ parseValueSubsume t text of
-            SuccessResult r -> Right r
-            FailureResult err -> Left $ pack $ show err
+    specialEvaluate t text = do
+        er <- liftIO $ evaluate $ runPinaforeSourceScoped "<evaluate>" $ parseValueSubsume t text
+        return $
+            case er of
+                SuccessResult r -> Right r
+                FailureResult err -> Left $ pack $ show err
     in MkSpecialVals {..}
 
 runPinaforeSourceScoped :: (?pinafore :: PinaforeContext) => FilePath -> PinaforeSourceScoped a -> InterpretResult a

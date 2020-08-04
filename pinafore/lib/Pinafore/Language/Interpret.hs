@@ -215,6 +215,14 @@ interpretExpression' spos (SEEvaluate st) =
         return $
             case mtp of
                 MkAnyW tp -> let
+                    actionShimWit ::
+                           forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
+                    actionShimWit swa =
+                        unPosShimWit swa $ \ta conva ->
+                            mapPosShimWit (cfmap conva) $
+                            singleDolanShimWit $
+                            mkShimWit $
+                            GroundDolanSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
                     eitherShimWit ::
                            forall a b.
                            PinaforeShimWit 'Positive a
@@ -254,8 +262,10 @@ interpretExpression' spos (SEEvaluate st) =
                             (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType)
                             NilDolanArguments
                     valShimWit ::
-                           forall t. PinaforeShimWit 'Positive t -> PinaforeShimWit 'Positive (Text -> Either Text t)
-                    valShimWit t' = funcShimWit textShimWit $ eitherShimWit textShimWit t'
+                           forall t.
+                           PinaforeShimWit 'Positive t
+                        -> PinaforeShimWit 'Positive (Text -> PinaforeAction (Either Text t))
+                    valShimWit t' = funcShimWit textShimWit $ actionShimWit $ eitherShimWit textShimWit t'
                     in qConstExprAny $ MkAnyValue (valShimWit $ mkShimWit tp) $ specialEvaluate spvals tp
 
 makeEntity :: MonadThrow ErrorType m => ConcreteEntityType t -> Entity -> m t

@@ -613,10 +613,22 @@ testEntity =
               [ pointTest "do r <- newMemRef; interpretIntegerAsText r := \"37\"; testeq {37} r; end"
               , pointTest "do r <- newMemRef; interpretDateAsText r := \"2015-08-12\"; testeq {Date 2015 08 12} r; end"
               ]
-        , context ["runresult rr arg = case rr of Left err -> fail err; Right f -> f arg end"] $
+        , context
+              [ "runresult ar arg = case ar of Left err -> fail err; Right f -> f arg end"
+              , "testaction expected action = do found <- action; testeqval expected found end"
+              ] $
           tgroup
               "evaluate"
-              [ pointTest
-                    "do r <- newMemRef; runresult (evaluate @(Ref Integer -> Action ()) \"\\\\r -> r := 45\") r; a <- get r; testeqval 45 a; end"
+              [ pointTest "testaction (Right True) $ evaluate @Boolean \"True\""
+              , pointTest "testaction (Right 5) $ evaluate @Integer \"5\""
+              , pointTest "testaction (Right 5) $ evaluate @Integer \"let x = 5 in x\""
+              , pointTest
+                    "do ar <- evaluate @(Integer -> Integer) \"\\\\x -> x + 1\"; case ar of Left err -> fail err; Right f -> testeqval 8 $ f 7 end end"
+              , pointTest "testaction (Left \"<evaluate>:1:1: expecting: expression\") $ evaluate @Integer \"\""
+              , pointTest "testaction (Left \"<evaluate>:1:1: undefined: f\") $ evaluate @Integer \"f\""
+              , pointTest
+                    "testaction (Left \"<evaluate>:1:1: cannot convert Text <= Integer\\\n<evaluate>:1:1: cannot subsume Text <= Integer\") $ evaluate @Integer \"\\\"hello\\\"\""
+              , pointTest
+                    "do r <- newMemRef; ar <- evaluate @(Ref Integer -> Action ()) \"\\\\r -> r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
               ]
         ]
