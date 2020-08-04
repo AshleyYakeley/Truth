@@ -72,8 +72,8 @@ data NamedType (ts :: Type) where
 type OpenEntityShim = LiftedCategory (PinaforePolyShim Type) OpenEntity
 
 newtype SpecialVals (ts :: Type) = MkSpecialVals
-        -- | in Action because this can do things like import files
     { specialEvaluate :: forall t. TSPosWitness ts t -> Text -> PinaforeAction (Either Text t)
+        -- ^ in Action because this can do things like import files
     }
 
 data Scope (ts :: Type) = MkScope
