@@ -152,7 +152,7 @@ testSubtype1 b t1 t2 vs =
         else []
 
 testSubtype :: Bool -> Text -> Text -> [Text] -> TestTree
-testSubtype b t1 t2 vs = testGroup (unpack $ t1 <> " <= " <> t2) $ testSubtype1 b t1 t2 vs
+testSubtype b t1 t2 vs = testGroup (unpack $ t1 <> " <: " <> t2) $ testSubtype1 b t1 t2 vs
 
 testSameType :: Bool -> Text -> Text -> [Text] -> TestTree
 testSameType b t1 t2 vs =

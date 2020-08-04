@@ -20,7 +20,7 @@ readSubtypeDeclaration = do
     spos <- getPosition
     readThis TokSubtype
     sta <- readType
-    readExactlyThis TokOperator "<="
+    readExactlyThis TokOperator "<:"
     stb <- readType
     return $ SubtypeDeclaration spos sta stb
 

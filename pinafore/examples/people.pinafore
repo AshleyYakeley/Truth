@@ -54,7 +54,7 @@ phone = property @LegalEntity @Text !"83dfc88b-7b5b-4262-a548-0af84d5e3b63";
 opentype Person;
 people : FiniteSetRef Person;
 people = property @Person @() !"d52b4d16-babc-4c9b-9588-c66439ada088" !@ {()};
-subtype Person <= LegalEntity;
+subtype Person <: LegalEntity;
 
 birthdate = property @Person @Text !"b711b9b3-b43c-4ff6-be12-3291cc6b050a";
 deathdate = property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb";
@@ -80,7 +80,7 @@ home = property @LegalEntity @Location !"b1ff2354-13e5-4def-b5d0-fdf29c2274ff";
 opentype Organisation;
 organisations : FiniteSetRef Organisation;
 organisations = property @Organisation @() !"b655e2db-cf45-4696-8b89-8812406ba71b" !@ {()};
-subtype Organisation <= LegalEntity;
+subtype Organisation <: LegalEntity;
 
 legalentities : FiniteSetRef (Either Person Organisation);
 legalentities = people <:+:> organisations;

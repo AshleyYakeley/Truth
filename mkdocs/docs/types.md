@@ -1,6 +1,6 @@
 ## Any and None
 
-For all types `T`, `None <= T` and `T <= Any`.
+For all types `T`, `None <: T` and `T <: Any`.
 
 ## Data Types
 
@@ -27,32 +27,32 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 ### Literals
 
-`Literal <= Entity`
+`Literal <: Entity`
 
-`() <= Literal`
+`() <: Literal`
 
-`Boolean <= Literal`
+`Boolean <: Literal`
 
-`Number <= Literal`
+`Number <: Literal`
 
-`Text <= Literal`
+`Text <: Literal`
 
-`Time <= Literal`
+`Time <: Literal`
 
-`Duration <= Literal`
+`Duration <: Literal`
 
-`Date <= Literal`
+`Date <: Literal`
 
-`TimeOfDay <= Literal`
+`TimeOfDay <: Literal`
 
-`LocalTime <= Literal`
+`LocalTime <: Literal`
 
 ### Maybe
 
 `Maybe a`  
 (`a` is covariant)
 
-`a <= Entity` implies `Maybe a <= Entity`.
+`a <: Entity` implies `Maybe a <: Entity`.
 
 #### Constructors & Functions
 `Just : a -> Maybe a`  
@@ -63,7 +63,7 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 `[a]`  
 (`a` is covariant)
 
-`a <= Entity` implies `[a] <= Entity`.
+`a <: Entity` implies `[a] <: Entity`.
 
 #### Constructors & Functions
 `[] : [None]`  
@@ -74,7 +74,7 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 `(a,b)`  
 (both `a` and `b` are covariant)
 
-`a <= Entity` and `b <= Entity` implies `(a,b) <= Entity`.
+`a <: Entity` and `b <: Entity` implies `(a,b) <: Entity`.
 
 There are no higher-arity tuples than pair.
 
@@ -88,7 +88,7 @@ There are no higher-arity tuples than pair.
 `Either a b`  
 (both `a` and `b` are covariant)
 
-`a <= Entity` and `b <= Entity` implies `Either a b <= Entity`.
+`a <: Entity` and `b <: Entity` implies `Either a b <: Entity`.
 
 #### Constructors & Functions
 `Left : a -> Either a None`  
@@ -127,11 +127,11 @@ These types can be declared using `opentype`, and subtype relations between them
 opentype Animal;
 opentype Person;
 opentype Cat;
-subtype Person <= Animal;
-subtype Cat <= Animal;
+subtype Person <: Animal;
+subtype Cat <: Animal;
 ```
 
-For any open entity type `T`, `NewEntity <= T` and `T <= Entity`.
+For any open entity type `T`, `NewEntity <: T` and `T <: Entity`.
 
 Subtypes relations are transitive.
 If there is a loop of subtype relations, it will simply make those types equivalent.
@@ -196,7 +196,7 @@ A set reference is a mutable predicate, like a test on values. Values can be add
 
 Finite set references are set references:
 
-`FiniteSetRef -a <= SetRef a`
+`FiniteSetRef -a <: SetRef a`
 
 Finite set references contain a finite number of members, which can be retrieved.
 

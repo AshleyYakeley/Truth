@@ -453,7 +453,7 @@ testEntity =
               "subtype"
               [ tgroup
                     "let"
-                    [ context ["opentype P", "opentype Q", "subtype P <= Q"] $
+                    [ context ["opentype P", "opentype Q", "subtype P <: Q"] $
                       tgroup
                           "1"
                           [ pointTest "pass"
@@ -461,7 +461,7 @@ testEntity =
                           , pointTest "let f : [P] -> [Q]; f x = x in pass"
                           , badInterpretTest "let f : Q -> P; f x = x in pass"
                           ]
-                    , context ["opentype P", "subtype P <= Q", "opentype Q"] $
+                    , context ["opentype P", "subtype P <: Q", "opentype Q"] $
                       tgroup
                           "2"
                           [ pointTest "pass"
@@ -469,7 +469,7 @@ testEntity =
                           , pointTest "let f : [P] -> [Q]; f x = x in pass"
                           , badInterpretTest "let f : Q -> P; f x = x in pass"
                           ]
-                    , context ["subtype P <= Q", "opentype P", "opentype Q"] $
+                    , context ["subtype P <: Q", "opentype P", "opentype Q"] $
                       tgroup
                           "3"
                           [ pointTest "pass"
@@ -484,28 +484,28 @@ testEntity =
                       tgroup
                           "1"
                           [ pointTest "pass"
-                          , pointTest "let opentype Q; subtype P <= Q in pass"
-                          , pointTest "let opentype Q; subtype P <= Q; f : P -> Q; f x = x in pass"
-                          , badInterpretTest "let opentype Q; subtype P <= Q; f : Q -> P; f x = x in pass"
+                          , pointTest "let opentype Q; subtype P <: Q in pass"
+                          , pointTest "let opentype Q; subtype P <: Q; f : P -> Q; f x = x in pass"
+                          , badInterpretTest "let opentype Q; subtype P <: Q; f : Q -> P; f x = x in pass"
                           ]
                     , context ["opentype Q"] $
                       tgroup
                           "2"
                           [ pointTest "pass"
-                          , pointTest "let opentype P; subtype P <= Q in pass"
-                          , pointTest "let opentype P; subtype P <= Q; f : P -> Q; f x = x in pass"
-                          , badInterpretTest "let opentype P; subtype P <= Q; f : Q -> P; f x = x in pass"
+                          , pointTest "let opentype P; subtype P <: Q in pass"
+                          , pointTest "let opentype P; subtype P <: Q; f : P -> Q; f x = x in pass"
+                          , badInterpretTest "let opentype P; subtype P <: Q; f : Q -> P; f x = x in pass"
                           ]
                     , context ["opentype P", "opentype Q"] $
                       tgroup
                           "3"
                           [ pointTest "pass"
-                          , pointTest "let subtype P <= Q in pass"
-                          , pointTest "let subtype P <= Q; f : P -> Q; f x = x in pass"
-                          , badInterpretTest "let subtype P <= Q; f : Q -> P; f x = x in pass"
+                          , pointTest "let subtype P <: Q in pass"
+                          , pointTest "let subtype P <: Q; f : P -> Q; f x = x in pass"
+                          , badInterpretTest "let subtype P <: Q; f : Q -> P; f x = x in pass"
                           ]
                     ]
-              , context ["opentype Q", "subtype Maybe Number <= Q"] $
+              , context ["opentype Q", "subtype Maybe Number <: Q"] $
                 tgroup
                     "closed-open" -- not allowed, per issue #28
                     [badInterpretTest "pass"]
@@ -627,7 +627,7 @@ testEntity =
               , pointTest "testaction (Left \"<evaluate>:1:1: expecting: expression\") $ evaluate @Integer \"\""
               , pointTest "testaction (Left \"<evaluate>:1:1: undefined: f\") $ evaluate @Integer \"f\""
               , pointTest
-                    "testaction (Left \"<evaluate>:1:1: cannot convert Text <= Integer\\\n<evaluate>:1:1: cannot subsume Text <= Integer\") $ evaluate @Integer \"\\\"hello\\\"\""
+                    "testaction (Left \"<evaluate>:1:1: cannot convert Text <: Integer\\\n<evaluate>:1:1: cannot subsume Text <: Integer\") $ evaluate @Integer \"\\\"hello\\\"\""
               , pointTest
                     "do r <- newMemRef; ar <- evaluate @(Ref Integer -> Action ()) \"\\\\r -> r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
               ]

@@ -38,10 +38,10 @@ entityGroundSubtype ::
     -> EntityGroundType fb
     -> DolanArguments dvb PinaforeType fb polb b
     -> m (PinaforePolyShim Type a b)
--- Entity <= Entity
+-- Entity <: Entity
 entityGroundSubtype _ _ NilListType TopEntityGroundType NilDolanArguments NilListType TopEntityGroundType NilDolanArguments =
     pure id
--- Maybe Entity <= Entity
+-- Maybe Entity <: Entity
 entityGroundSubtype _ sc (ConsListType Refl NilListType) MaybeEntityGroundType (ConsDolanArguments t NilDolanArguments) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
@@ -50,7 +50,7 @@ entityGroundSubtype _ sc (ConsListType Refl NilListType) MaybeEntityGroundType (
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @polb
     pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
--- [Entity] <= Entity
+-- [Entity] <: Entity
 entityGroundSubtype _ sc (ConsListType Refl NilListType) ListEntityGroundType (ConsDolanArguments t NilDolanArguments) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
@@ -59,7 +59,7 @@ entityGroundSubtype _ sc (ConsListType Refl NilListType) ListEntityGroundType (C
             ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @polb
     pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
--- (Entity, Entity) <= Entity
+-- (Entity, Entity) <: Entity
 entityGroundSubtype _ sc (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
@@ -70,7 +70,7 @@ entityGroundSubtype _ sc (ConsListType Refl (ConsListType Refl NilListType)) Pai
     convA <- subtypeTypes sc ta $ topEntityType @polb
     convB <- subtypeTypes sc tb $ topEntityType @polb
     pure $ convE . applyPolyShim CovarianceType (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
--- Either Entity Entity <= Entity
+-- Either Entity Entity <: Entity
 entityGroundSubtype _ sc (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
@@ -81,24 +81,24 @@ entityGroundSubtype _ sc (ConsListType Refl (ConsListType Refl NilListType)) Eit
     convA <- subtypeTypes sc ta $ topEntityType @polb
     convB <- subtypeTypes sc tb $ topEntityType @polb
     pure $ convE . applyPolyShim CovarianceType (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
--- (entity type) <= Entity
+-- (entity type) <: Entity
 entityGroundSubtype _ _ ct gt args NilListType TopEntityGroundType NilDolanArguments
     | Just ebij <- dolanToConcreteSimpleType ct gt args =
         case ebij of
             MkShimWit et conv -> pure $ concreteToEntityShim et <.> polarPolyIsoPositive conv
--- (literal type) <= (literal type)
+-- (literal type) <: (literal type)
 entityGroundSubtype _ _ NilListType (LiteralEntityGroundType t1) NilDolanArguments NilListType (LiteralEntityGroundType t2) NilDolanArguments
     | Just conv <- isSubtype t1 t2 = pure conv
--- NewEntity <= NewEntity
+-- NewEntity <: NewEntity
 entityGroundSubtype _ _ NilListType NewEntityGroundType NilDolanArguments NilListType NewEntityGroundType NilDolanArguments =
     pure id
--- NewEntity <= (open entity type)
+-- NewEntity <: (open entity type)
 entityGroundSubtype _ _ NilListType NewEntityGroundType NilDolanArguments NilListType (OpenEntityGroundType _ _) NilDolanArguments =
     pure $ coerceEnhanced "subtype"
--- (open entity type) <= (open entity type)
+-- (open entity type) <: (open entity type)
 entityGroundSubtype sslift _ NilListType (OpenEntityGroundType n1 t1) NilDolanArguments NilListType (OpenEntityGroundType n2 t2) NilDolanArguments =
     sslift $ getOpenEntitySubtype n1 t1 n2 t2
--- (closed entity type) <= (closed entity type)
+-- (closed entity type) <: (closed entity type)
 entityGroundSubtype _ _ NilListType (ClosedEntityGroundType _ sa ta) NilDolanArguments NilListType (ClosedEntityGroundType _ sb tb) NilDolanArguments
     | Just Refl <- testEquality sa sb
     , Just Refl <- testEquality ta tb = pure id
@@ -119,13 +119,13 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
         -> PinaforeGroundType dvb gtb
         -> DolanArguments dvb PinaforeType gtb polb b
         -> m (PinaforePolyShim Type a b)
-    -- f a0... <= f b0...
+    -- f a0... <: f b0...
     subtypeGroundTypes _ sc ga argsa gb argsb
         | Just (Refl, HRefl) <- groundTypeTestEquality ga gb = subtypeDolanArguments sc ga argsa argsb
-    -- (entity type) <= (entity type)
+    -- (entity type) <: (entity type)
     subtypeGroundTypes sslift sc (EntityPinaforeGroundType cta ga) argsa (EntityPinaforeGroundType ctb gb) argsb =
         entityGroundSubtype sslift sc cta ga argsa ctb gb argsb
-    -- FiniteSetRef -a <= SetRef a
+    -- FiniteSetRef -a <: SetRef a
     subtypeGroundTypes _ sc FiniteSetRefPinaforeGroundType (ConsDolanArguments (MkRangeType t1 _) NilDolanArguments) SetRefPinaforeGroundType (ConsDolanArguments t2 NilDolanArguments) = do
         shim <- subtypeTypes (subtypeInverted sc) t2 t1
         return $ functionToShim "FiniteSetRef to SetRef" $ contramap (shimToFunction shim) . langFiniteSetRefToSetRef

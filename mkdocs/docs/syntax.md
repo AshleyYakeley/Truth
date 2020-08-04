@@ -150,7 +150,7 @@ In interactive mode, each line has syntax `<interactive>`.
 <declaration> ::=
     "datatype" <type-const> <datatype-body> |
     "opentype" <type-const> |
-    "subtype" <type-const> "<=" <type-const> |
+    "subtype" <type-const> "<:" <type-const> |
     "closedtype" <type-const> <closedtype-body> |
     <binding>
 

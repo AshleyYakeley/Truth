@@ -1,6 +1,6 @@
 let opentype P
 let opentype Q
-let subtype P <= Q
+let subtype P <: Q
 let p = entity @P !"p"
 let q = entity @Q !"q"
 let pp = property @P @P !"pp"
