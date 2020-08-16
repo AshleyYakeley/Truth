@@ -1,125 +1,116 @@
 module Pinafore.Base.EntityAdapter
     ( EntityAdapter(..)
-    , entityEntityAdapter
+    , entityAdapterConvert
+    --, entityAdapterType
+    , plainEntityAdapter
+    , literalEntityAdapter
     , constructorEntityAdapter
     ) where
 
 import Pinafore.Base.Anchor
-import Pinafore.Base.Edit
 import Pinafore.Base.Entity
+import Pinafore.Base.EntityStorer
 import Pinafore.Base.Know
+import Pinafore.Base.KnowShim
+import Pinafore.Base.Literal
 import Shapes
-import Truth.Core
 
 data EntityAdapter t = MkEntityAdapter
-    { entityAdapterConvert :: t -> Entity
-    , entityAdapterGet :: Entity -> ReadM PinaforeEntityRead (Know t)
-    , entityAdapterPut :: t -> ReadM PinaforeEntityRead [PinaforeEntityEdit]
+    { entityAdapterDefinitions :: EntityStorer 'MultipleMode t
+    , entityAdapterToDefinition :: t -> AnyValue (EntityStorer 'SingleMode)
     }
 
+entityAdapterConvert :: EntityAdapter t -> t -> Entity
+entityAdapterConvert ea t =
+    case entityAdapterToDefinition ea t of
+        MkAnyValue def dt -> entityStorerToEntity def dt
+
 instance IsoVariant EntityAdapter where
-    isoMap ab ba (MkEntityAdapter ca ga pa) =
-        MkEntityAdapter
-            { entityAdapterConvert = \b -> ca $ ba b
-            , entityAdapterGet = \e -> fmap (fmap ab) $ ga e
-            , entityAdapterPut = \b -> pa $ ba b
-            }
+    isoMap ab ba (MkEntityAdapter defs todef) =
+        MkEntityAdapter {entityAdapterDefinitions = fmap ab defs, entityAdapterToDefinition = \b -> todef $ ba b}
 
 instance Summish EntityAdapter where
-    pNone =
-        MkEntityAdapter
-            { entityAdapterConvert = never
-            , entityAdapterGet = \_ -> return Unknown
-            , entityAdapterPut = \n -> return $ never n
-            }
+    pNone = MkEntityAdapter {entityAdapterDefinitions = pNone, entityAdapterToDefinition = never}
     (<+++>) :: forall a b. EntityAdapter a -> EntityAdapter b -> EntityAdapter (Either a b)
-    MkEntityAdapter ca ga pa <+++> MkEntityAdapter cb gb pb = let
-        cab (Left a) = ca a
-        cab (Right b) = cb b
-        gab :: Entity -> ReadM PinaforeEntityRead (Know (Either a b))
-        gab e =
-            getComposeM $
-            (do
-                 a <- MkComposeM $ ga e
-                 return $ Left a) <|>
-            (do
-                 b <- MkComposeM $ gb e
-                 return $ Right b)
-        pab :: Either a b -> ReadM PinaforeEntityRead [PinaforeEntityEdit]
-        pab (Left a) = pa a
-        pab (Right b) = pb b
-        in MkEntityAdapter cab gab pab
+    MkEntityAdapter defsa todefa <+++> MkEntityAdapter defsb todefb = let
+        defsab = defsa <+++> defsb
+        todefab :: Either a b -> AnyValue (EntityStorer 'SingleMode)
+        todefab (Left a) = todefa a
+        todefab (Right b) = todefb b
+        in MkEntityAdapter defsab todefab
 
-entityEntityAdapter :: EntityAdapter Entity
-entityEntityAdapter = let
-    entityAdapterConvert = id
-    entityAdapterGet :: Entity -> ReadM PinaforeEntityRead (Know Entity)
-    entityAdapterGet p = return $ Known p
-    entityAdapterPut _ = return []
-    in MkEntityAdapter {..}
-
-unitEntityAdapter :: Anchor -> EntityAdapter ()
-unitEntityAdapter anchor =
+unitEntityAdapter :: Entity -> EntityAdapter ()
+unitEntityAdapter entity =
     MkEntityAdapter
-        { entityAdapterConvert = \() -> MkEntity anchor
-        , entityAdapterGet =
-              \e ->
-                  return $
-                  if MkEntity anchor == e
+        { entityAdapterDefinitions =
+              MkEntityStorer $
+              pure $
+              MkKnowShim PlainConstructorStorer $ \e ->
+                  if entity == e
                       then Known ()
                       else Unknown
-        , entityAdapterPut = \() -> return []
+        , entityAdapterToDefinition = \() -> MkAnyValue (MkEntityStorer PlainConstructorStorer) entity
         }
+
+plainEntityAdapter :: EntityAdapter Entity
+plainEntityAdapter = let
+    entityAdapterDefinitions = MkEntityStorer $ pure $ MkKnowShim PlainConstructorStorer Known
+    entityAdapterToDefinition e = MkAnyValue (MkEntityStorer PlainConstructorStorer) e
+    in MkEntityAdapter {..}
+
+literalEntityAdapter ::
+       forall t. AsLiteral t
+    => EntityAdapter t
+literalEntityAdapter = let
+    entityAdapterDefinitions :: EntityStorer 'MultipleMode t
+    entityAdapterDefinitions = MkEntityStorer $ pure $ MkKnowShim LiteralConstructorStorer fromLiteral
+    entityAdapterToDefinition :: t -> AnyValue (EntityStorer 'SingleMode)
+    entityAdapterToDefinition t = MkAnyValue (MkEntityStorer LiteralConstructorStorer) $ toLiteral t
+    in MkEntityAdapter {..}
 
 hashedPredicate :: Anchor -> Int -> Int -> Predicate
 hashedPredicate anchor n i = MkPredicate $ hashToAnchor $ \call -> [call anchor, call $ show n, call $ show i]
 
-constructorGet ::
+constructorDefinitions ::
+       forall (tt :: [Type]).
        Anchor
     -> Int
     -> Int
     -> ListType EntityAdapter tt
-    -> Entity
-    -> ComposeM Know (ReadM PinaforeEntityRead) (HList tt)
-constructorGet _anchor _n _i NilListType _entity = return ()
-constructorGet anchor n i (ConsListType (MkEntityAdapter _ ga _) ll) entity = do
-    entitya <- MkComposeM $ readM $ PinaforeEntityReadGetPredicate (hashedPredicate anchor n i) entity
-    a <- MkComposeM $ ga entitya
-    l <- constructorGet anchor n (succ i) ll entity
-    return (a, l)
+    -> KnowShim (HListWit (FieldStorer 'MultipleMode)) (HList tt)
+constructorDefinitions _anchor _n _i NilListType = simpleKnowShim $ MkHListWit NilListType
+constructorDefinitions anchor n i (ConsListType ea lt) = let
+    predicate = hashedPredicate anchor n i
+    fact1 = MkFieldStorer predicate $ entityAdapterDefinitions ea
+    in case constructorDefinitions anchor n (succ i) lt of
+           MkKnowShim (MkHListWit factr) convr ->
+               MkKnowShim (MkHListWit (ConsListType fact1 factr)) $ \(dt1, dtr) -> do
+                   ar <- convr dtr
+                   return (dt1, ar)
 
-hashList :: (forall t. Serialize t => t -> r) -> ListType EntityAdapter tt -> HList tt -> [r]
-hashList _call NilListType () = []
-hashList call (ConsListType (MkEntityAdapter ca _ _) lt) (a, l) = call (ca a) : hashList call lt l
-
-getWriter :: Monad m => WriterT w m () -> m w
-getWriter = execWriterT
-
-mkWriter :: Functor m => m w -> WriterT w m ()
-mkWriter mw = WriterT $ fmap (\w -> ((), w)) mw
-
-constructorPut ::
-       Anchor
-    -> Int
-    -> Int
-    -> Entity
-    -> ListType EntityAdapter lt
-    -> HList lt
-    -> WriterT [PinaforeEntityEdit] (ReadM PinaforeEntityRead) ()
-constructorPut _anchor _n _i _entity NilListType () = return ()
-constructorPut anchor n i entity (ConsListType (MkEntityAdapter ga _ pa) lt) (a, l) = do
-    mkWriter $ pa a
-    tell $ pure $ PinaforeEntityEditSetPredicate (hashedPredicate anchor n i) entity $ Known $ ga a
-    constructorPut anchor n (succ i) entity lt l
+constructorToDefinition ::
+       Anchor -> Int -> Int -> ListType EntityAdapter lt -> HList lt -> AnyValue (HListWit (FieldStorer 'SingleMode))
+constructorToDefinition _anchor _n _i NilListType () = MkAnyValue (MkHListWit NilListType) ()
+constructorToDefinition anchor n i (ConsListType ea lt) (a, l) = let
+    predicate = hashedPredicate anchor n i
+    in case entityAdapterToDefinition ea a of
+           MkAnyValue tt1 v1 -> let
+               fact1 = MkFieldStorer predicate tt1
+               in case constructorToDefinition anchor n (succ i) lt l of
+                      MkAnyValue (MkHListWit factr) vr -> MkAnyValue (MkHListWit (ConsListType fact1 factr)) (v1, vr)
 
 constructorEntityAdapter :: forall lt. Anchor -> ListType EntityAdapter lt -> EntityAdapter (HList lt)
-constructorEntityAdapter anchor NilListType = unitEntityAdapter anchor
+constructorEntityAdapter anchor NilListType = unitEntityAdapter $ MkEntity anchor
 constructorEntityAdapter anchor lt = let
     n = listTypeLength lt
-    entityAdapterConvert :: HList lt -> Entity
-    entityAdapterConvert l = hashToEntity $ \call -> call anchor : hashList call lt l
-    entityAdapterGet :: Entity -> ReadM PinaforeEntityRead (Know (HList lt))
-    entityAdapterGet entity = getComposeM $ constructorGet anchor n 0 lt entity
-    entityAdapterPut :: HList lt -> ReadM PinaforeEntityRead [PinaforeEntityEdit]
-    entityAdapterPut l = getWriter $ constructorPut anchor n 0 (entityAdapterConvert l) lt l
+    entityAdapterDefinitions :: EntityStorer 'MultipleMode (HList lt)
+    entityAdapterDefinitions =
+        MkEntityStorer $
+        pure $
+        convertKnowShim (\(MkHListWit flt) -> ConstructorConstructorStorer anchor flt) $
+        constructorDefinitions anchor n 0 lt
+    entityAdapterToDefinition :: HList lt -> AnyValue (EntityStorer 'SingleMode)
+    entityAdapterToDefinition l =
+        case constructorToDefinition anchor n 0 lt l of
+            MkAnyValue (MkHListWit lft) v -> MkAnyValue (MkEntityStorer $ ConstructorConstructorStorer anchor lft) v
     in MkEntityAdapter {..}

@@ -1,97 +1,83 @@
 module Pinafore.Base.Edit
-    ( Predicate(..)
-    , PinaforeEntityRead(..)
-    , PinaforeEntityEdit(..)
-    , PinaforeEntityUpdate
+    ( PinaforeStorageRead(..)
+    , PinaforeStorageEdit(..)
+    , PinaforeStorageUpdate(..)
     ) where
 
-import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
+import Pinafore.Base.EntityAdapter
+import Pinafore.Base.EntityStorer
 import Pinafore.Base.Know
 import Pinafore.Base.Lens
-import Pinafore.Base.Literal
 import Shapes
 import Truth.Core
 
-newtype Predicate =
-    MkPredicate Anchor
-    deriving (Eq)
-
-instance Show Predicate where
-    show (MkPredicate anchor) = show anchor
-
 -- | Some of these reads may add to the database, but will always give consistent results between changes.
-data PinaforeEntityRead t where
-    PinaforeEntityReadGetPredicate :: Predicate -> Entity -> PinaforeEntityRead (Know Entity)
-    PinaforeEntityReadGetProperty :: Predicate -> Entity -> PinaforeEntityRead Entity
-    PinaforeEntityReadLookupPredicate :: Predicate -> Entity -> PinaforeEntityRead (FiniteSet Entity)
-    PinaforeEntityReadToLiteral :: Entity -> PinaforeEntityRead (Know Literal)
+type PinaforeStorageRead :: Type -> Type
+data PinaforeStorageRead t where
+    PinaforeStorageReadGet :: EntityAdapter t -> Predicate -> t -> PinaforeStorageRead Entity
+    PinaforeStorageReadLookup :: Predicate -> Entity -> PinaforeStorageRead (FiniteSet Entity)
+    PinaforeStorageReadEntity :: EntityAdapter t -> Entity -> PinaforeStorageRead (Know t)
 
-instance Show (PinaforeEntityRead t) where
-    show (PinaforeEntityReadGetPredicate p s) = "get " ++ show p ++ " of " ++ show s
-    show (PinaforeEntityReadGetProperty p s) = "get prop " ++ show p ++ " of " ++ show s
-    show (PinaforeEntityReadLookupPredicate p v) = "lookup " ++ show p ++ " for " ++ show v
-    show (PinaforeEntityReadToLiteral v) = "to literal " ++ show v
+instance Show (PinaforeStorageRead t) where
+    show (PinaforeStorageReadGet st p s) = "get " ++ show p ++ " of " ++ show (entityAdapterConvert st s)
+    show (PinaforeStorageReadLookup p v) = "lookup " ++ show p ++ " for " ++ show v
+    show (PinaforeStorageReadEntity _ e) = "fetch " ++ show e
 
-instance AllWitnessConstraint Show PinaforeEntityRead where
+instance AllWitnessConstraint Show PinaforeStorageRead where
     allWitnessConstraint = Dict
 
-instance WitnessConstraint Show PinaforeEntityRead where
-    witnessConstraint (PinaforeEntityReadGetPredicate _ _) = Dict
-    witnessConstraint (PinaforeEntityReadGetProperty _ _) = Dict
-    witnessConstraint (PinaforeEntityReadLookupPredicate _ _) = Dict
-    witnessConstraint (PinaforeEntityReadToLiteral _) = Dict
+data PinaforeStorageEdit where
+    MkPinaforeStorageEdit
+        :: EntityAdapter s -> EntityAdapter v -> Predicate -> s -> Know v -> PinaforeStorageEdit -- pred subj kval
 
-data PinaforeEntityEdit where
-    PinaforeEntityEditSetPredicate :: Predicate -> Entity -> Know Entity -> PinaforeEntityEdit -- pred subj kval
-    PinaforeEntityEditSetLiteral :: Entity -> Know Literal -> PinaforeEntityEdit
+instance Floating PinaforeStorageEdit PinaforeStorageEdit
 
-instance Floating PinaforeEntityEdit PinaforeEntityEdit
-
-instance ApplicableEdit PinaforeEntityEdit where
-    applyEdit (PinaforeEntityEditSetPredicate p s kv) _ (PinaforeEntityReadGetPredicate p' s')
-        | p == p'
-        , s == s' = return kv
-    applyEdit (PinaforeEntityEditSetPredicate p s (Known v)) _ (PinaforeEntityReadGetProperty p' s')
-        | p == p'
-        , s == s' = return v
-    applyEdit (PinaforeEntityEditSetPredicate p s Unknown) _ (PinaforeEntityReadGetProperty p' s')
-        | p == p'
-        , s == s' = newEntity
-    applyEdit (PinaforeEntityEditSetPredicate p s (Known v)) mr (PinaforeEntityReadLookupPredicate p' v')
-        | p == p'
-        , v == v' = do
-            ss <- mr $ PinaforeEntityReadLookupPredicate p' v'
-            return $ insertSet s ss
-    applyEdit (PinaforeEntityEditSetPredicate p s Unknown) mr (PinaforeEntityReadLookupPredicate p' v')
-        | p == p' = do
-            ss <- mr $ PinaforeEntityReadLookupPredicate p' v'
-            return $ deleteSet s ss
-    applyEdit (PinaforeEntityEditSetLiteral s kl) _ (PinaforeEntityReadToLiteral s')
-        | s == s' = return kl
+instance ApplicableEdit PinaforeStorageEdit where
+    applyEdit (MkPinaforeStorageEdit est evt ep es (Known ev)) _ (PinaforeStorageReadGet rst rp rs)
+        | ep == rp
+        , entityAdapterConvert est es == entityAdapterConvert rst rs = return $ entityAdapterConvert evt ev
+    applyEdit (MkPinaforeStorageEdit est _ ep es Unknown) _ (PinaforeStorageReadGet rst rp rs)
+        | ep == rp
+        , entityAdapterConvert est es == entityAdapterConvert rst rs = newEntity
+    applyEdit (MkPinaforeStorageEdit est evt ep es (Known ev)) mr (PinaforeStorageReadLookup rp rv)
+        | ep == rp
+        , entityAdapterConvert evt ev == rv = do
+            ss <- mr $ PinaforeStorageReadLookup rp rv
+            return $ insertSet (entityAdapterConvert est es) ss
+    applyEdit (MkPinaforeStorageEdit est _ ep es Unknown) mr (PinaforeStorageReadLookup rp rv)
+        | ep == rp = do
+            ss <- mr $ PinaforeStorageReadLookup rp rv
+            return $ deleteSet (entityAdapterConvert est es) ss
     applyEdit _ mr rt = mr rt
 
-instance InvertibleEdit PinaforeEntityEdit where
-    invertEdit (PinaforeEntityEditSetPredicate p s kv) mr = do
-        kv' <- mr $ PinaforeEntityReadGetPredicate p s
-        return $
-            if kv == kv'
-                then []
-                else [PinaforeEntityEditSetPredicate p s kv']
-    invertEdit (PinaforeEntityEditSetLiteral s kl) mr = do
-        kl' <- mr $ PinaforeEntityReadToLiteral s
-        return $
-            if kl == kl'
-                then []
-                else [PinaforeEntityEditSetLiteral s kl']
+instance InvertibleEdit PinaforeStorageEdit where
+    invertEdit (MkPinaforeStorageEdit st vt p s kv) mr = do
+        oldentity <- mr $ PinaforeStorageReadGet st p s
+        if fmap (entityAdapterConvert vt) kv == Known oldentity
+            then return []
+            else do
+                kv' <- mr $ PinaforeStorageReadEntity vt oldentity
+                return [MkPinaforeStorageEdit st vt p s kv']
 
-type instance EditReader PinaforeEntityEdit = PinaforeEntityRead
+type instance EditReader PinaforeStorageEdit = PinaforeStorageRead
 
-instance Show PinaforeEntityEdit where
-    show (PinaforeEntityEditSetPredicate p s kv) = "set " ++ show p ++ " of " ++ show s ++ " to " ++ show kv
-    show (PinaforeEntityEditSetLiteral p kl) = "set " ++ show p ++ " to " ++ show kl
+instance Show PinaforeStorageEdit where
+    show (MkPinaforeStorageEdit st vt p s kvt) =
+        "set prop " ++
+        show p ++ " of " ++ show (entityAdapterConvert st s) ++ " to " ++ show (fmap (entityAdapterConvert vt) kvt)
 
-type PinaforeEntityUpdate = EditUpdate PinaforeEntityEdit
+data PinaforeStorageUpdate =
+    MkPinaforeStorageUpdate Predicate
+                            Entity
+                            (Know Entity)
 
-instance BaseChangeLens PinaforeEntityUpdate PinaforeEntityUpdate where
+type instance UpdateEdit PinaforeStorageUpdate =
+     PinaforeStorageEdit
+
+instance IsUpdate PinaforeStorageUpdate where
+    editUpdate (MkPinaforeStorageEdit st vt p s kv) =
+        MkPinaforeStorageUpdate p (entityAdapterConvert st s) (fmap (entityAdapterConvert vt) kv)
+
+instance BaseChangeLens PinaforeStorageUpdate PinaforeStorageUpdate where
     baseChangeLens = id

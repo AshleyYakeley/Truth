@@ -16,7 +16,7 @@ import Truth.Core
 
 data PinaforeContext = MkPinaforeContext
     { pconRun :: forall a. PinaforeAction a -> View (Know a)
-    , pconEntityModel :: Model PinaforeEntityUpdate
+    , pconEntityModel :: Model PinaforeStorageUpdate
     }
 
 unliftPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction a -> View (Know a)
@@ -32,10 +32,10 @@ unliftPinaforeActionOrFail action = do
 runPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction () -> View ()
 runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
 
-pinaforeEntityModel :: (?pinafore :: PinaforeContext) => Model PinaforeEntityUpdate
+pinaforeEntityModel :: (?pinafore :: PinaforeContext) => Model PinaforeStorageUpdate
 pinaforeEntityModel = pconEntityModel ?pinafore
 
-makePinaforeContext :: Model PinaforeEntityUpdate -> UIToolkit -> LifeCycleIO PinaforeContext
+makePinaforeContext :: Model PinaforeStorageUpdate -> UIToolkit -> LifeCycleIO PinaforeContext
 makePinaforeContext rmodel toolkit = do
     uh <- liftIO newUndoHandler
     return $ MkPinaforeContext (unPinaforeAction toolkit uh) $ undoHandlerModel uh rmodel

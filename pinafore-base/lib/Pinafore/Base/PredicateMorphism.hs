@@ -4,45 +4,44 @@ module Pinafore.Base.PredicateMorphism
 
 import Pinafore.Base.Edit
 import Pinafore.Base.EntityAdapter
+import Pinafore.Base.EntityStorer
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
 
 propertyMorphism ::
-       forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeEntityUpdate a a b b
-propertyMorphism (MkEntityAdapter ap aget aput) (MkEntityAdapter bp bget bput) prd = let
-    pmGet :: a -> ReadM PinaforeEntityRead (Know b)
+       forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeStorageUpdate a a b b
+propertyMorphism eaa eab prd = let
+    ap = entityAdapterConvert eaa
+    bp = entityAdapterConvert eab
+    pmGet :: a -> ReadM PinaforeStorageRead (Know b)
     pmGet a = do
-        valp <- readM $ PinaforeEntityReadGetProperty prd $ ap a
-        bget valp
-    pmBaseUpdate :: PinaforeEntityUpdate -> Maybe (a -> ReadM PinaforeEntityRead (Maybe (Know b)))
-    pmBaseUpdate (MkEditUpdate (PinaforeEntityEditSetPredicate p s kv))
+        valp <- readM $ PinaforeStorageReadGet eaa prd a
+        readM $ PinaforeStorageReadEntity eab valp
+    pmBaseUpdate :: PinaforeStorageUpdate -> Maybe (a -> ReadM PinaforeStorageRead (Maybe (Know b)))
+    pmBaseUpdate (MkPinaforeStorageUpdate p s kv)
         | p == prd =
             Just $ \a ->
                 case ap a == s of
                     False -> return Nothing
                     True -> do
-                        kb <- for kv $ \v -> bget v
+                        kb <- for kv $ \b -> readM $ PinaforeStorageReadEntity eab b
                         return $ Just $ exec kb
     pmBaseUpdate _ = Nothing
-    pmPut :: Know a -> Know b -> ReadM PinaforeEntityRead (Maybe ([PinaforeEntityEdit], Maybe (Know a)))
-    pmPut (Known subja) kvalb = do
-        aedits <- aput subja
-        mbedits <- for kvalb $ \valb -> bput valb
-        let edits = aedits <> (fromKnow [] mbedits) <> [PinaforeEntityEditSetPredicate prd (ap subja) (fmap bp kvalb)]
-        return $ Just (edits, Nothing)
+    pmPut :: Know a -> Know b -> ReadM PinaforeStorageRead (Maybe ([PinaforeStorageEdit], Maybe (Know a)))
+    pmPut (Known subja) kvalb = return $ Just ([MkPinaforeStorageEdit eaa eab prd subja kvalb], Nothing)
     pmPut Unknown _ = return Nothing
-    pmInvGet :: b -> ReadM PinaforeEntityRead [a]
+    pmInvGet :: b -> ReadM PinaforeStorageRead [a]
     pmInvGet valb = do
-        setp <- readM $ PinaforeEntityReadLookupPredicate prd $ bp valb
-        setka <- for (setToList setp) $ \p -> aget p
+        setp <- readM $ PinaforeStorageReadLookup prd $ bp valb
+        setka <- for (setToList setp) $ \p -> readM $ PinaforeStorageReadEntity eaa p
         return $ catKnowns setka
-    pmInvBaseUpdate :: PinaforeEntityUpdate -> Maybe (b -> ReadM PinaforeEntityRead [(Bool, a)])
-    pmInvBaseUpdate (MkEditUpdate (PinaforeEntityEditSetPredicate p s kv))
+    pmInvBaseUpdate :: PinaforeStorageUpdate -> Maybe (b -> ReadM PinaforeStorageRead [(Bool, a)])
+    pmInvBaseUpdate (MkPinaforeStorageUpdate p s kv)
         | p == prd =
             Just $ \b -> do
-                ka <- aget s
+                ka <- readM $ PinaforeStorageReadEntity eaa s
                 return $
                     case ka of
                         Known a -> [(kv == Known (bp b), a)]

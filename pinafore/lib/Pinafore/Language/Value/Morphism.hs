@@ -10,7 +10,7 @@ import Truth.Core
 
 newtype LangMorphism (a :: (Type, Type)) (b :: (Type, Type)) =
     -- forall a b. (Eq a, Eq b) =>
-    MkLangMorphism (PinaforeLensMorphism PinaforeEntityUpdate (Contra a) (Co a) (Contra b) (Co b))
+    MkLangMorphism (PinaforeLensMorphism PinaforeStorageUpdate (Contra a) (Co a) (Contra b) (Co b))
 
 instance CatFunctor (CatRange (->)) (->) (LangMorphism a) where
     cfmap (MkCatRange pp qq) (MkLangMorphism m) = MkLangMorphism $ cfmap1 (MkCatDual pp) $ fmap qq m
@@ -27,14 +27,14 @@ instance HasVariance 'Rangevariance LangMorphism where
 instance HasVariance 'Rangevariance (LangMorphism a) where
     varianceRepresentational = Nothing
 
-langMorphismLens :: LangMorphism '( ap, aq) '( bp, bq) -> PinaforeLensMorphism PinaforeEntityUpdate ap aq bp bq
+langMorphismLens :: LangMorphism '( ap, aq) '( bp, bq) -> PinaforeLensMorphism PinaforeStorageUpdate ap aq bp bq
 langMorphismLens (MkLangMorphism lm) = lm
 
-pinaforeLensMorphism :: PinaforeLensMorphism PinaforeEntityUpdate ap aq bp bq -> LangMorphism '( ap, aq) '( bp, bq) {-(Eq a, Eq b) =>-}
+pinaforeLensMorphism :: PinaforeLensMorphism PinaforeStorageUpdate ap aq bp bq -> LangMorphism '( ap, aq) '( bp, bq) {-(Eq a, Eq b) =>-}
 pinaforeLensMorphism = MkLangMorphism
 
 langMorphismFunction ::
-       LangMorphism '( a, TopType) '( BottomType, b) -> PinaforeFunctionMorphism PinaforeEntityUpdate (Know a) (Know b)
+       LangMorphism '( a, TopType) '( BottomType, b) -> PinaforeFunctionMorphism PinaforeStorageUpdate (Know a) (Know b)
 langMorphismFunction (MkLangMorphism pm) = lensFunctionMorphism pm
 
 identityLangMorphism :: forall x y. LangMorphism '( x, y) '( y, x)
@@ -83,11 +83,11 @@ applyLangMorphismSet ::
     -> LangFiniteSetRef '( BottomType, a)
     -> LangFiniteSetRef '( MeetType Entity b, b)
 applyLangMorphismSet lm (MkLangFiniteSetRef (tr :: Range _ t _) ss) = let
-    tbkm :: PinaforeFunctionMorphism PinaforeEntityUpdate (Know t) (Know (MeetType Entity b))
+    tbkm :: PinaforeFunctionMorphism PinaforeStorageUpdate (Know t) (Know (MeetType Entity b))
     tbkm = ccontramap1 (fmap $ shimToFunction $ rangeCo tr) $ langMorphismFunction lm
-    tbskm :: PinaforeFunctionMorphism PinaforeEntityUpdate (FiniteSet (Know t)) (FiniteSet (Know (MeetType Entity b)))
+    tbskm :: PinaforeFunctionMorphism PinaforeStorageUpdate (FiniteSet (Know t)) (FiniteSet (Know (MeetType Entity b)))
     tbskm = cfmap tbkm
-    tbsm :: PinaforeFunctionMorphism PinaforeEntityUpdate (FiniteSet t) (FiniteSet (MeetType Entity b))
+    tbsm :: PinaforeFunctionMorphism PinaforeStorageUpdate (FiniteSet t) (FiniteSet (MeetType Entity b))
     tbsm = ccontramap1 (fmap Known) $ fmap (mapMaybe knowToMaybe) tbskm
     tsetref :: PinaforeROWRef (FiniteSet t)
     tsetref = eaToReadOnlyWhole ss
@@ -123,7 +123,7 @@ inverseApplyLangMorphismSet (MkLangMorphism m) (MkLangFiniteSetRef (tra :: Range
     nt = shimToFunction $ rangeContra tra . join1
     tbx :: t -> bx
     tbx = shimToFunction $ rangeCo tra
-    m' :: PinaforeLensMorphism PinaforeEntityUpdate (MeetType Entity a) (MeetType Entity a) t t
+    m' :: PinaforeLensMorphism PinaforeStorageUpdate (MeetType Entity a) (MeetType Entity a) t t
     m' = cfmap3 (MkCatDual $ meet2 @(->)) $ cfmap1 (MkCatDual tbx) $ fmap byt m
     newVal :: IO t
     newVal = fmap (nt . MkNewEntity) newEntity

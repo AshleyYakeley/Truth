@@ -9,7 +9,7 @@ import Shapes
 import Truth.Core
 
 data LangOrder a =
-    forall t. MkLangOrder (PinaforeFunctionMorphism PinaforeEntityUpdate (Know a) t)
+    forall t. MkLangOrder (PinaforeFunctionMorphism PinaforeStorageUpdate (Know a) t)
                           (t -> t -> Ordering)
 
 instance Semigroup (LangOrder a) where
@@ -51,10 +51,10 @@ qOrderSet ::
     => LangOrder a
     -> PinaforeROWRef (FiniteSet a)
     -> PinaforeROWRef (Know [a])
-qOrderSet (MkLangOrder (ofunc :: PinaforeFunctionMorphism PinaforeEntityUpdate (Know a) t) oord) pset = let
+qOrderSet (MkLangOrder (ofunc :: PinaforeFunctionMorphism PinaforeStorageUpdate (Know a) t) oord) pset = let
     cmp :: (a, t) -> (a, t) -> Ordering
     cmp (_, t1) (_, t2) = oord t1 t2
-    ofuncpair :: PinaforeFunctionMorphism PinaforeEntityUpdate a (a, t)
+    ofuncpair :: PinaforeFunctionMorphism PinaforeStorageUpdate a (a, t)
     ofuncpair =
         proc a -> do
             kt <- ofunc -< Known a
@@ -84,6 +84,6 @@ pinaforeSetGetOrdered ::
     -> LangRef '( TopType, [a])
 pinaforeSetGetOrdered order set = pinaforeROWRefToRef $ qOrderSet order $ langFiniteSetRefFunctionValue set
 
-pinaforeUpdateOrder :: LangOrder a -> UpdateOrder (ContextUpdate PinaforeEntityUpdate (WholeUpdate (Know a)))
+pinaforeUpdateOrder :: LangOrder a -> UpdateOrder (ContextUpdate PinaforeStorageUpdate (WholeUpdate (Know a)))
 pinaforeUpdateOrder (MkLangOrder m cmp) =
     MkUpdateOrder cmp $ changeLensToFloating $ pinaforeFunctionMorphismUpdateFunction m

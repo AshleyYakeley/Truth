@@ -16,6 +16,7 @@ module Pinafore.Test
     , PinaforeScoped
     , PinaforeSourceScoped
     , toJMShimWit
+    , PinaforeTableSubject(..)
     , module Pinafore.Test
     ) where
 
@@ -31,23 +32,22 @@ import Pinafore.Storage
 import Shapes
 import Truth.Core
 
-makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext, IO (EditSubject PinaforeTableEdit))
+makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext, IO PinaforeTableSubject)
 makeTestPinaforeContext uitoolkit = do
     let rc = emptyResourceContext
-    tableStateReference :: Reference (WholeEdit (EditSubject PinaforeTableEdit)) <-
-        liftIO $ makeMemoryReference ([], []) $ \_ -> True
+    tableStateReference :: Reference (WholeEdit PinaforeTableSubject) <-
+        liftIO $ makeMemoryReference (MkPinaforeTableSubject [] [] [] []) $ \_ -> True
     let
         tableReference :: Reference PinaforeTableEdit
         tableReference = convertReference tableStateReference
-        getTableState :: IO (EditSubject PinaforeTableEdit)
+        getTableState :: IO PinaforeTableSubject
         getTableState = getReferenceSubject rc tableStateReference
     (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
     pc <- makePinaforeContext model uitoolkit
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       ((?pinafore :: PinaforeContext) =>
-                UIToolkit -> MFunction LifeCycleIO IO -> IO (EditSubject PinaforeTableEdit) -> IO r)
+       ((?pinafore :: PinaforeContext) => UIToolkit -> MFunction LifeCycleIO IO -> IO PinaforeTableSubject -> IO r)
     -> IO r
 withTestPinaforeContext call =
     runLifeCycle $

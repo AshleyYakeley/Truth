@@ -25,7 +25,7 @@ uiTable ::
     -> LangUI
 uiTable cols order val onDoubleClick sn = do
     let
-        uo :: UpdateOrder (ContextUpdate PinaforeEntityUpdate (ConstWholeUpdate EnA))
+        uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
         uo =
             mapUpdateOrder
                 (changeLensToFloating $
@@ -33,7 +33,7 @@ uiTable cols order val onDoubleClick sn = do
             pinaforeUpdateOrder order
         rows :: Model (FiniteSetUpdate EnA)
         rows = unPinaforeRef $ unLangFiniteSetRef $ contraRangeLift meet2 val
-        pkSub :: Model (ContextUpdate PinaforeEntityUpdate (FiniteSetUpdate EnA))
+        pkSub :: Model (ContextUpdate PinaforeStorageUpdate (FiniteSetUpdate EnA))
         pkSub = contextModels pinaforeEntityModel rows
         readSub :: Model (ConstWholeUpdate EnA) -> View A
         readSub sub =
@@ -59,7 +59,7 @@ uiTable cols order val onDoubleClick sn = do
                     pinaforeRefModel $
                     eaMapSemiReadOnly (funcChangeLens showCell) $ langRefToReadOnlyValue $ getCellRef a
             in readOnlyKeyColumn nameOpenSub getCellSub
-    colSub :: Model (ContextUpdate PinaforeEntityUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
+    colSub :: Model (ContextUpdate PinaforeStorageUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
         cvFloatMapModel (contextOrderedSetLens uo) pkSub
     let
         olsub :: Model (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))

@@ -63,17 +63,28 @@ instance WitnessConstraint ToField LiteralTable where
     witnessConstraint LiteralKey = Dict
     witnessConstraint LiteralValue = Dict
 
+instance WitnessConstraint FromField RefCountTable where
+    witnessConstraint RefCountKey = Dict
+    witnessConstraint RefCountValue = Dict
+
+instance WitnessConstraint ToField RefCountTable where
+    witnessConstraint RefCountKey = Dict
+    witnessConstraint RefCountValue = Dict
+
 instance WitnessConstraint IsSQLiteTable PinaforeSchema where
-    witnessConstraint PinaforeTriple = Dict
+    witnessConstraint PinaforeProperty = Dict
+    witnessConstraint PinaforeRefCount = Dict
+    witnessConstraint PinaforeFact = Dict
     witnessConstraint PinaforeLiteral = Dict
 
 sqlitePinaforeSchema :: DatabaseSchema PinaforeSchema
 sqlitePinaforeSchema = let
     databaseTables = let
-        subWitnessDomain = [MkAnyW PinaforeTriple, MkAnyW PinaforeLiteral]
+        subWitnessDomain =
+            [MkAnyW PinaforeProperty, MkAnyW PinaforeRefCount, MkAnyW PinaforeFact, MkAnyW PinaforeLiteral]
         subWitnessMap :: PinaforeSchema t -> TableSchema t
-        subWitnessMap PinaforeTriple = let
-            tableName = "triple"
+        subWitnessMap PinaforeProperty = let
+            tableName = "property"
             tableColumns = let
                 domain = [MkAnyW TripleSubject, MkAnyW TriplePredicate, MkAnyW TripleValue]
                 witmap :: TripleTable t -> ColumnSchema t
@@ -81,7 +92,28 @@ sqlitePinaforeSchema = let
                 witmap TripleSubject = MkColumnSchema "subject" ColumnTypeNotNull True
                 witmap TripleValue = MkColumnSchema "value" ColumnTypeNotNull False
                 in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "predval" [MkAnyW TriplePredicate, MkAnyW TripleValue]]
+            tableIndexes = [MkIndexSchema "propval" [MkAnyW TriplePredicate, MkAnyW TripleValue]]
+            in MkTableSchema {..}
+        subWitnessMap PinaforeRefCount = let
+            tableName = "refcount"
+            tableColumns = let
+                domain = [MkAnyW RefCountKey, MkAnyW RefCountValue]
+                witmap :: RefCountTable t -> ColumnSchema t
+                witmap RefCountKey = MkColumnSchema "key" ColumnTypeNotNull True
+                witmap RefCountValue = MkColumnSchema "value" ColumnTypeNotNull False
+                in MkSubmapWitness domain witmap
+            tableIndexes = []
+            in MkTableSchema {..}
+        subWitnessMap PinaforeFact = let
+            tableName = "fact"
+            tableColumns = let
+                domain = [MkAnyW TripleSubject, MkAnyW TriplePredicate, MkAnyW TripleValue]
+                witmap :: TripleTable t -> ColumnSchema t
+                witmap TriplePredicate = MkColumnSchema "predicate" ColumnTypeNotNull True
+                witmap TripleSubject = MkColumnSchema "subject" ColumnTypeNotNull True
+                witmap TripleValue = MkColumnSchema "value" ColumnTypeNotNull False
+                in MkSubmapWitness domain witmap
+            tableIndexes = [MkIndexSchema "factval" [MkAnyW TriplePredicate, MkAnyW TripleValue]]
             in MkTableSchema {..}
         subWitnessMap PinaforeLiteral = let
             tableName = "literal"
@@ -107,27 +139,48 @@ instance TupleDatabase SQLiteDatabase PinaforeSchema where
 sqlitePinaforeLens :: ChangeLens (SQLiteUpdate PinaforeSchema) PinaforeTableUpdate
 sqlitePinaforeLens = let
     clRead :: ReadFunction (SQLiteReader PinaforeSchema) PinaforeTableRead
-    clRead mr (PinaforeTableReadGetPredicate p s) = do
+    clRead mr (PinaforeTableReadPropertyGet p s) = do
         row <-
             mr $
             DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeTriple)
+                (SingleTable $ MkTupleTableSel PinaforeProperty)
                 (MkTupleWhereClause $
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
         return $ fmap getSingleAll $ listToMaybe row
-    clRead mr (PinaforeTableReadLookupPredicate p v) = do
+    clRead mr (PinaforeTableReadPropertyLookup p v) = do
         row <-
             mr $
             DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeTriple)
+                (SingleTable $ MkTupleTableSel PinaforeProperty)
                 (MkTupleWhereClause $
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleValue === ConstExpr v))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
         return $ MkFiniteSet $ fmap getSingleAll row
-    clRead mr (PinaforeTableReadGetLiteral v) = do
+    clRead mr (PinaforeTableReadEntityRefCount v) = do
+        (row :: [AllValue ((:~:) RefCount)]) <-
+            mr $
+            DatabaseSelect
+                (SingleTable $ MkTupleTableSel PinaforeRefCount)
+                (MkTupleWhereClause $ ColumnExpr RefCountKey === ConstExpr v)
+                mempty
+                (MkTupleSelectClause $ \Refl -> ColumnExpr RefCountValue)
+        return $ do
+            sa <- listToMaybe row
+            return $ getSingleAll sa
+    clRead mr (PinaforeTableReadFactGet p s) = do
+        row <-
+            mr $
+            DatabaseSelect
+                (SingleTable $ MkTupleTableSel PinaforeFact)
+                (MkTupleWhereClause $
+                 (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
+                mempty
+                (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
+        return $ fmap getSingleAll $ listToMaybe row
+    clRead mr (PinaforeTableReadLiteralGet v) = do
         (row :: [AllValue ((:~:) Literal)]) <-
             mr $
             DatabaseSelect
@@ -148,24 +201,56 @@ sqlitePinaforeLens = let
            forall m. MonadIO m
         => PinaforeTableEdit
         -> m (Maybe [SQLiteEdit PinaforeSchema])
-    elPutEdit (PinaforeTableEditSetPredicate p s (Just v)) =
+    elPutEdit (PinaforeTableEditPropertySet p s (Just v)) =
         return $
         Just $
         pure $
-        DatabaseInsert (MkTupleTableSel PinaforeTriple) $
+        DatabaseInsert (MkTupleTableSel PinaforeProperty) $
         MkTupleInsertClause $
         pure $
         MkAllValue $ \case
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
-    elPutEdit (PinaforeTableEditSetPredicate p s Nothing) =
+    elPutEdit (PinaforeTableEditPropertySet p s Nothing) =
         return $
         Just $
         pure $
-        DatabaseDelete (MkTupleTableSel PinaforeTriple) $
+        DatabaseDelete (MkTupleTableSel PinaforeProperty) $
         MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s
-    elPutEdit (PinaforeTableEditSetLiteral v (Just l)) =
+    elPutEdit (PinaforeTableEditEntityRefCount v (Just rc)) =
+        return $
+        Just $
+        pure $
+        DatabaseInsert (MkTupleTableSel PinaforeRefCount) $
+        MkTupleInsertClause $
+        pure $
+        MkAllValue $ \case
+            RefCountKey -> v
+            RefCountValue -> rc
+    elPutEdit (PinaforeTableEditEntityRefCount v Nothing) =
+        return $
+        Just $
+        pure $
+        DatabaseDelete (MkTupleTableSel PinaforeRefCount) $ MkTupleWhereClause $ ColumnExpr RefCountKey === ConstExpr v
+    elPutEdit (PinaforeTableEditFactSet p s (Just v)) =
+        return $
+        Just $
+        pure $
+        DatabaseInsert (MkTupleTableSel PinaforeFact) $
+        MkTupleInsertClause $
+        pure $
+        MkAllValue $ \case
+            TriplePredicate -> p
+            TripleSubject -> s
+            TripleValue -> v
+    elPutEdit (PinaforeTableEditFactSet p s Nothing) =
+        return $
+        Just $
+        pure $
+        DatabaseDelete (MkTupleTableSel PinaforeFact) $
+        MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s
+    elPutEdit (PinaforeTableEditLiteralSet v (Just l)) =
         return $
         Just $
         pure $
@@ -175,7 +260,7 @@ sqlitePinaforeLens = let
         MkAllValue $ \case
             LiteralKey -> v
             LiteralValue -> l
-    elPutEdit (PinaforeTableEditSetLiteral v Nothing) =
+    elPutEdit (PinaforeTableEditLiteralSet v Nothing) =
         return $
         Just $
         pure $
@@ -188,20 +273,10 @@ sqlitePinaforeLens = let
     clPutEdits = clPutEditsFromSimplePutEdit elPutEdit
     in MkChangeLens {..}
 
-instance WitnessConstraint FiniteWitness PinaforeSchema where
-    witnessConstraint PinaforeTriple = Dict
-    witnessConstraint PinaforeLiteral = Dict
-
-instance WitnessConstraint (AllWitnessConstraint Show) PinaforeSchema where
-    witnessConstraint PinaforeTriple = Dict
-    witnessConstraint PinaforeLiteral = Dict
-
-instance WitnessConstraint (WitnessConstraint Show) PinaforeSchema where
-    witnessConstraint PinaforeTriple = Dict
-    witnessConstraint PinaforeLiteral = Dict
-
 instance WitnessConstraint IsPinaforeRow PinaforeSchema where
-    witnessConstraint PinaforeTriple = Dict
+    witnessConstraint PinaforeProperty = Dict
+    witnessConstraint PinaforeRefCount = Dict
+    witnessConstraint PinaforeFact = Dict
     witnessConstraint PinaforeLiteral = Dict
 
 instance ShowableTupleDatabase SQLiteDatabase PinaforeSchema where

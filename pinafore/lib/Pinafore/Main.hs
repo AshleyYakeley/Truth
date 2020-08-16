@@ -39,7 +39,7 @@ sqlitePinaforeDumpTable dirpath = do
         littable :: [(Entity, Literal)]
         littable =
             fmap (\(MkAllValue lrow) -> (lrow LiteralKey, lrow LiteralValue)) $ tables $ MkTupleTableSel PinaforeLiteral
-    for_ (tables $ MkTupleTableSel PinaforeTriple) $ \(MkAllValue row) -> let
+    for_ (tables $ MkTupleTableSel PinaforeProperty) $ \(MkAllValue row) -> let
         p = row TriplePredicate
         s = row TripleSubject
         v = row TripleValue

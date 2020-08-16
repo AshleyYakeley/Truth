@@ -2,6 +2,8 @@ module Pinafore.Storage.Table
     ( Anchor
     , Predicate(..)
     , Entity(..)
+    , RefCount
+    , PinaforeTableSubject(..)
     , PinaforeTableRead(..)
     , PinaforeTableEdit(..)
     , PinaforeTableUpdate
@@ -12,56 +14,84 @@ import Pinafore.Base
 import Shapes
 import Truth.Core
 
+type RefCount = Int
+
 data PinaforeTableRead t where
-    PinaforeTableReadGetPredicate :: Predicate -> Entity -> PinaforeTableRead (Maybe Entity)
-    PinaforeTableReadLookupPredicate :: Predicate -> Entity -> PinaforeTableRead (FiniteSet Entity)
-    PinaforeTableReadGetLiteral :: Entity -> PinaforeTableRead (Maybe Literal)
+    PinaforeTableReadPropertyGet :: Predicate -> Entity -> PinaforeTableRead (Maybe Entity)
+    PinaforeTableReadPropertyLookup :: Predicate -> Entity -> PinaforeTableRead (FiniteSet Entity)
+    PinaforeTableReadEntityRefCount :: Entity -> PinaforeTableRead (Maybe RefCount)
+    PinaforeTableReadFactGet :: Predicate -> Entity -> PinaforeTableRead (Maybe Entity)
+    PinaforeTableReadLiteralGet :: Entity -> PinaforeTableRead (Maybe Literal)
 
 instance Show (PinaforeTableRead t) where
-    show (PinaforeTableReadGetPredicate p s) = "get " ++ show p ++ " of " ++ show s
-    show (PinaforeTableReadLookupPredicate p v) = "lookup " ++ show p ++ " for " ++ show v
-    show (PinaforeTableReadGetLiteral v) = "get literal of " ++ show v
+    show (PinaforeTableReadPropertyGet p s) = "prop get " ++ show p ++ " of " ++ show s
+    show (PinaforeTableReadPropertyLookup p v) = "prop lookup " ++ show p ++ " for " ++ show v
+    show (PinaforeTableReadEntityRefCount v) = "entity ref count " ++ show v
+    show (PinaforeTableReadFactGet p s) = "fact get " ++ show p ++ " of " ++ show s
+    show (PinaforeTableReadLiteralGet v) = "literal get " ++ show v
 
 instance WitnessConstraint Show PinaforeTableRead where
-    witnessConstraint (PinaforeTableReadGetPredicate _ _) = Dict
-    witnessConstraint (PinaforeTableReadLookupPredicate _ _) = Dict
-    witnessConstraint (PinaforeTableReadGetLiteral _) = Dict
+    witnessConstraint (PinaforeTableReadPropertyGet _ _) = Dict
+    witnessConstraint (PinaforeTableReadPropertyLookup _ _) = Dict
+    witnessConstraint (PinaforeTableReadEntityRefCount _) = Dict
+    witnessConstraint (PinaforeTableReadFactGet _ _) = Dict
+    witnessConstraint (PinaforeTableReadLiteralGet _) = Dict
 
 instance AllWitnessConstraint Show PinaforeTableRead where
     allWitnessConstraint = Dict
 
 data PinaforeTableEdit where
-    PinaforeTableEditSetPredicate :: Predicate -> Entity -> Maybe Entity -> PinaforeTableEdit -- pred subj mval
-    PinaforeTableEditSetLiteral :: Entity -> Maybe Literal -> PinaforeTableEdit
+    PinaforeTableEditPropertySet :: Predicate -> Entity -> Maybe Entity -> PinaforeTableEdit -- pred subj mval
+    PinaforeTableEditEntityRefCount :: Entity -> Maybe RefCount -> PinaforeTableEdit -- pred subj mval
+    PinaforeTableEditFactSet :: Predicate -> Entity -> Maybe Entity -> PinaforeTableEdit -- pred subj mval
+    PinaforeTableEditLiteralSet :: Entity -> Maybe Literal -> PinaforeTableEdit
 
 instance Show PinaforeTableEdit where
-    show (PinaforeTableEditSetPredicate p s mv) = "set " ++ show p ++ " of " ++ show s ++ " to " ++ show mv
-    show (PinaforeTableEditSetLiteral v ml) = "set literal of " ++ show v ++ " to " ++ show ml
+    show (PinaforeTableEditPropertySet p s mv) = "prop set " ++ show p ++ " of " ++ show s ++ " to " ++ show mv
+    show (PinaforeTableEditEntityRefCount v rc) = "entity count " ++ show v ++ " to " ++ show rc
+    show (PinaforeTableEditFactSet p s v) = "fact set " ++ show p ++ " of " ++ show s ++ " is " ++ show v
+    show (PinaforeTableEditLiteralSet v l) = "literal set " ++ show v ++ " is " ++ show l
+
+data PinaforeTableSubject = MkPinaforeTableSubject
+    { ptsPredicates :: [(Predicate, Entity, Entity)]
+    , ptsRefCounts :: [(Entity, RefCount)]
+    , ptsFacts :: [(Predicate, Entity, Entity)]
+    , ptsLiterals :: [(Entity, Literal)]
+    }
 
 instance SubjectReader PinaforeTableRead where
-    type ReaderSubject PinaforeTableRead = ([(Predicate, Entity, Entity)], [(Entity, Literal)])
-    subjectToRead (triples, _) (PinaforeTableReadGetPredicate rp rs) =
-        listToMaybe $ [v | (p, s, v) <- triples, p == rp && s == rs]
-    subjectToRead (triples, _) (PinaforeTableReadLookupPredicate rp rv) =
-        MkFiniteSet [s | (p, s, v) <- triples, p == rp, v == rv]
-    subjectToRead (_, literals) (PinaforeTableReadGetLiteral rv) = listToMaybe [l | (v, l) <- literals, v == rv]
+    type ReaderSubject PinaforeTableRead = PinaforeTableSubject
+    subjectToRead MkPinaforeTableSubject {..} (PinaforeTableReadPropertyGet rp rs) =
+        listToMaybe $ [v | (p, s, v) <- ptsPredicates, p == rp && s == rs]
+    subjectToRead MkPinaforeTableSubject {..} (PinaforeTableReadPropertyLookup rp rv) =
+        MkFiniteSet [s | (p, s, v) <- ptsPredicates, p == rp, v == rv]
+    subjectToRead MkPinaforeTableSubject {..} (PinaforeTableReadEntityRefCount rv) =
+        listToMaybe $ [c | (v, c) <- ptsRefCounts, v == rv]
+    subjectToRead MkPinaforeTableSubject {..} (PinaforeTableReadFactGet rp rs) =
+        listToMaybe $ [v | (p, s, v) <- ptsFacts, p == rp && s == rs]
+    subjectToRead MkPinaforeTableSubject {..} (PinaforeTableReadLiteralGet rv) =
+        listToMaybe [l | (v, l) <- ptsLiterals, v == rv]
 
 instance Floating PinaforeTableEdit PinaforeTableEdit
 
 type instance EditReader PinaforeTableEdit = PinaforeTableRead
 
 instance ApplicableEdit PinaforeTableEdit where
-    applyEdit (PinaforeTableEditSetPredicate p s mv) _ (PinaforeTableReadGetPredicate p' s')
+    applyEdit (PinaforeTableEditPropertySet p s mv) _ (PinaforeTableReadPropertyGet p' s')
         | p == p' && s == s' = return mv
-    applyEdit (PinaforeTableEditSetPredicate p s mv) mr (PinaforeTableReadLookupPredicate p' v')
+    applyEdit (PinaforeTableEditPropertySet p s mv) mr (PinaforeTableReadPropertyLookup p' v')
         | p == p' = do
-            fs <- mr $ PinaforeTableReadLookupPredicate p' v'
+            fs <- mr $ PinaforeTableReadPropertyLookup p' v'
             return $
                 case mv of
                     Just v
                         | v == v' -> insertSet s fs
                     _ -> deleteSet s fs
-    applyEdit (PinaforeTableEditSetLiteral v ml) _mr (PinaforeTableReadGetLiteral v')
+    applyEdit (PinaforeTableEditEntityRefCount v mc) _ (PinaforeTableReadEntityRefCount v')
+        | v == v' = return mc
+    applyEdit (PinaforeTableEditFactSet p s mv) _ (PinaforeTableReadFactGet p' s')
+        | p == p' && s == s' = return mv
+    applyEdit (PinaforeTableEditLiteralSet v ml) _ (PinaforeTableReadLiteralGet v')
         | v == v' = return ml
     applyEdit _ mr rt = mr rt
 
@@ -76,87 +106,121 @@ replaceFirst f (a:aa) =
     case replaceFirst f aa of
         (aa', mb) -> (a : aa', mb)
 
+replaceOrAdd :: (a -> Bool) -> Maybe a -> [a] -> [a]
+replaceOrAdd f mitem aa =
+    case replaceFirst
+             (\a ->
+                  if f a
+                      then Just (mitem, ())
+                      else Nothing)
+             aa of
+        (aa', Just ()) -> aa'
+        (aa', Nothing) ->
+            case mitem of
+                Nothing -> aa'
+                Just a -> a : aa'
+
 instance SubjectMapEdit PinaforeTableEdit where
     mapSubjectEdits =
-        mapEditToMapEdits $ \edit (oldtriples, oldliterals) ->
+        mapEditToMapEdits $ \edit (MkPinaforeTableSubject oldPredicates oldRefCounts oldFacts oldLiterals) ->
             case edit of
-                PinaforeTableEditSetPredicate prd s mv -> let
-                    match (prd', s', _)
-                        | prd' == prd
-                        , s == s' = Just (fmap (\v -> (prd, s, v)) mv, ())
-                    match _ = Nothing
-                    (newtriples', mu) = replaceFirst match oldtriples
-                    newtriples =
-                        case (mu, mv) of
-                            (Nothing, Just v) -> (prd, s, v) : newtriples'
-                            _ -> newtriples'
-                    in return $ (newtriples, oldliterals)
-                PinaforeTableEditSetLiteral v ml -> let
-                    match (v', _)
-                        | v == v' = Just (fmap (\l -> (v, l)) ml, ())
-                    match _ = Nothing
-                    (newliterals', mu) = replaceFirst match oldliterals
-                    newliterals =
-                        case (mu, ml) of
-                            (Nothing, Just l) -> (v, l) : newliterals'
-                            _ -> newliterals'
-                    in return $ (oldtriples, newliterals)
+                PinaforeTableEditPropertySet prd s mv -> let
+                    newPredicates =
+                        replaceOrAdd
+                            (\(prd', s', _) -> (prd' == prd) && (s == s'))
+                            (fmap (\v -> (prd, s, v)) mv)
+                            oldPredicates
+                    in return $ MkPinaforeTableSubject newPredicates oldRefCounts oldFacts oldLiterals
+                PinaforeTableEditEntityRefCount v mrc -> let
+                    newRefCounts = replaceOrAdd (\(v', _) -> v == v') (fmap (\rc -> (v, rc)) mrc) oldRefCounts
+                    in return $ MkPinaforeTableSubject oldPredicates newRefCounts oldFacts oldLiterals
+                PinaforeTableEditFactSet prd s mv -> let
+                    newFacts =
+                        replaceOrAdd
+                            (\(prd', s', _) -> (prd' == prd) && (s == s'))
+                            (fmap (\v -> (prd, s, v)) mv)
+                            oldFacts
+                    in return $ MkPinaforeTableSubject oldPredicates oldRefCounts newFacts oldLiterals
+                PinaforeTableEditLiteralSet v ml -> let
+                    newLiterals = replaceOrAdd (\(v', _) -> v == v') (fmap (\l -> (v, l)) ml) oldLiterals
+                    in return $ MkPinaforeTableSubject oldPredicates oldRefCounts oldFacts newLiterals
 
 instance InvertibleEdit PinaforeTableEdit where
-    invertEdit (PinaforeTableEditSetPredicate p s _) mr = do
-        mv <- mr $ PinaforeTableReadGetPredicate p s
-        return [PinaforeTableEditSetPredicate p s mv]
-    invertEdit (PinaforeTableEditSetLiteral v _) mr = do
-        ml <- mr $ PinaforeTableReadGetLiteral v
-        return [PinaforeTableEditSetLiteral v ml]
+    invertEdit (PinaforeTableEditPropertySet p s _) mr = do
+        mv <- mr $ PinaforeTableReadPropertyGet p s
+        return [PinaforeTableEditPropertySet p s mv]
+    invertEdit (PinaforeTableEditEntityRefCount v _) mr = do
+        mrc <- mr $ PinaforeTableReadEntityRefCount v
+        return [PinaforeTableEditEntityRefCount v mrc]
+    invertEdit (PinaforeTableEditFactSet p s _) mr = do
+        mv <- mr $ PinaforeTableReadFactGet p s
+        return [PinaforeTableEditFactSet p s mv]
+    invertEdit (PinaforeTableEditLiteralSet v _) mr = do
+        ml <- mr $ PinaforeTableReadLiteralGet v
+        return [PinaforeTableEditLiteralSet v ml]
 
-data EntityCacheKey cache t ct where
-    GetEntityCacheKey :: EntityCacheKey cache t (cache (SimpleCacheKey Entity (Maybe t)))
-    LookupEntityCacheKey :: EntityCacheKey cache t (cache (SimpleCacheKey t (FiniteSet Entity)))
+data PropertyCacheKey cache t ct where
+    GetPropertyCacheKey :: PropertyCacheKey cache t (cache (SimpleCacheKey Entity (Maybe t)))
+    LookupPropertyCacheKey :: PropertyCacheKey cache t (cache (SimpleCacheKey t (FiniteSet Entity)))
 
-instance Eq t => TestEquality (EntityCacheKey cache t) where
-    testEquality GetEntityCacheKey GetEntityCacheKey = Just Refl
-    testEquality LookupEntityCacheKey LookupEntityCacheKey = Just Refl
+instance Eq t => TestEquality (PropertyCacheKey cache t) where
+    testEquality GetPropertyCacheKey GetPropertyCacheKey = Just Refl
+    testEquality LookupPropertyCacheKey LookupPropertyCacheKey = Just Refl
     testEquality _ _ = Nothing
 
 data PinaforeTableEditCacheKey cache ct where
-    PredicatePinaforeTableEditCacheKey
-        :: Predicate -> PinaforeTableEditCacheKey cache (cache (EntityCacheKey cache Entity))
-    LiteralPinaforeTableEditCacheKey :: PinaforeTableEditCacheKey cache (cache (EntityCacheKey cache Literal))
+    PropertyPinaforeTableEditCacheKey
+        :: Predicate -> PinaforeTableEditCacheKey cache (cache (PropertyCacheKey cache Entity))
+    RefCountPinaforeTableEditCacheKey
+        :: PinaforeTableEditCacheKey cache (cache (SimpleCacheKey Entity (Maybe RefCount)))
+    FactPinaforeTableEditCacheKey
+        :: Predicate -> PinaforeTableEditCacheKey cache (cache (SimpleCacheKey Entity (Maybe Entity)))
+    LiteralPinaforeTableEditCacheKey :: PinaforeTableEditCacheKey cache (cache (SimpleCacheKey Entity (Maybe Literal)))
 
 instance TestEquality (PinaforeTableEditCacheKey cache) where
-    testEquality (PredicatePinaforeTableEditCacheKey p1) (PredicatePinaforeTableEditCacheKey p2)
+    testEquality (PropertyPinaforeTableEditCacheKey p1) (PropertyPinaforeTableEditCacheKey p2)
+        | p1 == p2 = Just Refl
+    testEquality RefCountPinaforeTableEditCacheKey RefCountPinaforeTableEditCacheKey = Just Refl
+    testEquality (FactPinaforeTableEditCacheKey p1) (FactPinaforeTableEditCacheKey p2)
         | p1 == p2 = Just Refl
     testEquality LiteralPinaforeTableEditCacheKey LiteralPinaforeTableEditCacheKey = Just Refl
     testEquality _ _ = Nothing
 
 instance CacheableEdit PinaforeTableEdit where
     type EditCacheKey cache PinaforeTableEdit = PinaforeTableEditCacheKey cache
-    editCacheAdd (PinaforeTableReadGetPredicate p s) mv =
-        subcacheModify (PredicatePinaforeTableEditCacheKey p) $
-        subcacheModify GetEntityCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
-    editCacheAdd (PinaforeTableReadLookupPredicate p v) fs =
-        subcacheModify (PredicatePinaforeTableEditCacheKey p) $
-        subcacheModify LookupEntityCacheKey $ cacheAdd (MkSimpleCacheKey v) fs
-    editCacheAdd (PinaforeTableReadGetLiteral s) mv =
-        subcacheModify LiteralPinaforeTableEditCacheKey $
-        subcacheModify GetEntityCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
-    editCacheLookup (PinaforeTableReadGetPredicate p s) cache = do
-        subcache1 <- cacheLookup (PredicatePinaforeTableEditCacheKey p) cache
-        subcache2 <- cacheLookup GetEntityCacheKey subcache1
+    editCacheAdd (PinaforeTableReadPropertyGet p s) mv =
+        subcacheModify (PropertyPinaforeTableEditCacheKey p) $
+        subcacheModify GetPropertyCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
+    editCacheAdd (PinaforeTableReadPropertyLookup p v) fs =
+        subcacheModify (PropertyPinaforeTableEditCacheKey p) $
+        subcacheModify LookupPropertyCacheKey $ cacheAdd (MkSimpleCacheKey v) fs
+    editCacheAdd (PinaforeTableReadEntityRefCount v) mv =
+        subcacheModify RefCountPinaforeTableEditCacheKey $ cacheAdd (MkSimpleCacheKey v) mv
+    editCacheAdd (PinaforeTableReadFactGet p s) mv =
+        subcacheModify (FactPinaforeTableEditCacheKey p) $ cacheAdd (MkSimpleCacheKey s) mv
+    editCacheAdd (PinaforeTableReadLiteralGet s) mv =
+        subcacheModify LiteralPinaforeTableEditCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
+    editCacheLookup (PinaforeTableReadPropertyGet p s) cache = do
+        subcache1 <- cacheLookup (PropertyPinaforeTableEditCacheKey p) cache
+        subcache2 <- cacheLookup GetPropertyCacheKey subcache1
         cacheLookup (MkSimpleCacheKey s) subcache2
-    editCacheLookup (PinaforeTableReadLookupPredicate p v) cache = do
-        subcache1 <- cacheLookup (PredicatePinaforeTableEditCacheKey p) cache
-        subcache2 <- cacheLookup LookupEntityCacheKey subcache1
+    editCacheLookup (PinaforeTableReadPropertyLookup p v) cache = do
+        subcache1 <- cacheLookup (PropertyPinaforeTableEditCacheKey p) cache
+        subcache2 <- cacheLookup LookupPropertyCacheKey subcache1
         cacheLookup (MkSimpleCacheKey v) subcache2
-    editCacheLookup (PinaforeTableReadGetLiteral s) cache = do
+    editCacheLookup (PinaforeTableReadEntityRefCount v) cache = do
+        subcache1 <- cacheLookup RefCountPinaforeTableEditCacheKey cache
+        cacheLookup (MkSimpleCacheKey v) subcache1
+    editCacheLookup (PinaforeTableReadFactGet p s) cache = do
+        subcache1 <- cacheLookup (FactPinaforeTableEditCacheKey p) cache
+        cacheLookup (MkSimpleCacheKey s) subcache1
+    editCacheLookup (PinaforeTableReadLiteralGet s) cache = do
         subcache1 <- cacheLookup LiteralPinaforeTableEditCacheKey cache
-        subcache2 <- cacheLookup GetEntityCacheKey subcache1
-        cacheLookup (MkSimpleCacheKey s) subcache2
-    editCacheUpdate (PinaforeTableEditSetPredicate p s mv) =
-        subcacheModify (PredicatePinaforeTableEditCacheKey p) $ do
-            subcacheModify GetEntityCacheKey $ cacheModify (MkSimpleCacheKey s) $ Shapes.put $ Just mv
-            subcacheModify LookupEntityCacheKey $
+        cacheLookup (MkSimpleCacheKey s) subcache1
+    editCacheUpdate (PinaforeTableEditPropertySet p s mv) =
+        subcacheModify (PropertyPinaforeTableEditCacheKey p) $ do
+            subcacheModify GetPropertyCacheKey $ cacheModify (MkSimpleCacheKey s) $ Shapes.put $ Just mv
+            subcacheModify LookupPropertyCacheKey $
                 cacheTraverse $ \(MkSimpleCacheKey v') ss' ->
                     return $
                     Just $
@@ -165,20 +229,15 @@ instance CacheableEdit PinaforeTableEdit where
                          else deleteKey)
                         s
                         ss'
-    editCacheUpdate (PinaforeTableEditSetLiteral v mt) =
-        subcacheModify LiteralPinaforeTableEditCacheKey $ do
-            subcacheModify GetEntityCacheKey $ cacheModify (MkSimpleCacheKey v) $ Shapes.put $ Just mt
-            subcacheModify LookupEntityCacheKey $
-                cacheTraverse $ \(MkSimpleCacheKey t') vv' ->
-                    return $
-                    Just $
-                    (if mt == Just t'
-                         then insertItem
-                         else deleteKey)
-                        v
-                        vv'
+    editCacheUpdate (PinaforeTableEditEntityRefCount v t) =
+        subcacheModify RefCountPinaforeTableEditCacheKey $ do cacheModify (MkSimpleCacheKey v) $ Shapes.put $ Just t
+    editCacheUpdate (PinaforeTableEditFactSet prd s t) =
+        subcacheModify (FactPinaforeTableEditCacheKey prd) $ do cacheModify (MkSimpleCacheKey s) $ Shapes.put $ Just t
+    editCacheUpdate (PinaforeTableEditLiteralSet v t) =
+        subcacheModify LiteralPinaforeTableEditCacheKey $ do cacheModify (MkSimpleCacheKey v) $ Shapes.put $ Just t
 
-pinaforeTableEntityReference :: Reference PinaforeTableEdit -> Reference PinaforeEntityEdit
+-- can't be a Lens, because reads can cause edits
+pinaforeTableEntityReference :: Reference PinaforeTableEdit -> Reference PinaforeStorageEdit
 pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReference tableRead tableMPush refCommitTask)) =
     case resourceRunnerUnliftAllDict trun of
         Dict ->
@@ -186,35 +245,184 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                 Dict ->
                     case transStackDict @MonadFail @tt @IO of
                         Dict -> let
-                            tablePush :: NonEmpty PinaforeTableEdit -> EditSource -> ApplyStack tt IO ()
-                            tablePush edits esrc = pushOrFail "can't push table edit" esrc $ tableMPush edits
-                            refRead :: Readable (ApplyStack tt IO) PinaforeEntityRead
-                            refRead (PinaforeEntityReadGetPredicate prd subj) =
-                                fmap maybeToKnow $ tableRead $ PinaforeTableReadGetPredicate prd subj
-                            refRead (PinaforeEntityReadGetProperty prd subj) = do
-                                mval <- tableRead $ PinaforeTableReadGetPredicate prd subj
+                            tablePush :: EditSource -> PinaforeTableEdit -> ApplyStack tt IO ()
+                            tablePush esrc edit = pushOrFail "can't push table edit" esrc $ tableMPush $ pure edit
+                            acquireEntity :: EditSource -> Entity -> ApplyStack tt IO ()
+                            acquireEntity esrc entity = do
+                                mrc <- tableRead $ PinaforeTableReadEntityRefCount entity
+                                newrc <-
+                                    return $
+                                    case mrc of
+                                        Nothing -> 1
+                                        Just oldrc -> succ oldrc
+                                tablePush esrc $ PinaforeTableEditEntityRefCount entity $ Just newrc
+                            releaseByFact ::
+                                   forall t. EditSource -> FieldStorer 'MultipleMode t -> Entity -> ApplyStack tt IO ()
+                            releaseByFact esrc (MkFieldStorer p subdef) entity = do
+                                msubv <- tableRead $ PinaforeTableReadFactGet p entity
+                                for_ msubv $ \subv -> releaseByEntity esrc subdef subv
+                                tablePush esrc $ PinaforeTableEditFactSet p entity Nothing
+                            releaseByConstructor ::
+                                   forall t.
+                                   EditSource
+                                -> ConstructorStorer 'MultipleMode t
+                                -> Entity
+                                -> ApplyStack tt IO ()
+                            releaseByConstructor _ PlainConstructorStorer _ = return ()
+                            releaseByConstructor esrc LiteralConstructorStorer entity =
+                                tablePush esrc $ PinaforeTableEditLiteralSet entity Nothing
+                            releaseByConstructor esrc (ConstructorConstructorStorer _ facts) entity =
+                                listTypeFor_ facts $ \fact -> releaseByFact esrc fact entity
+                            releaseByEntity ::
+                                   forall t. EditSource -> EntityStorer 'MultipleMode t -> Entity -> ApplyStack tt IO ()
+                            releaseByEntity esrc (MkEntityStorer css) entity = do
+                                mrc <- tableRead $ PinaforeTableReadEntityRefCount entity
+                                case mrc of
+                                    Just 1 -> do
+                                        tablePush esrc $ PinaforeTableEditEntityRefCount entity Nothing
+                                        for_ css $ \(MkKnowShim def _) -> releaseByConstructor esrc def entity
+                                    Just oldrc ->
+                                        tablePush esrc $ PinaforeTableEditEntityRefCount entity $ Just $ pred oldrc
+                                    Nothing -> return ()
+                            releaseByAdapter :: forall t. EditSource -> EntityAdapter t -> Entity -> ApplyStack tt IO ()
+                            releaseByAdapter esrc vtype entity =
+                                releaseByEntity esrc (entityAdapterDefinitions vtype) entity
+                            setFact ::
+                                   forall (t :: Type).
+                                   EditSource
+                                -> FieldStorer 'SingleMode t
+                                -> Entity
+                                -> t
+                                -> ApplyStack tt IO ()
+                            setFact esrc (MkFieldStorer p subdef) v t = do
+                                let subv = entityStorerToEntity subdef t
+                                moldsub <- tableRead $ PinaforeTableReadFactGet p v
+                                case moldsub of
+                                    Just _ -> return ()
+                                    Nothing -> do
+                                        tablePush esrc $ PinaforeTableEditFactSet p v $ Just subv
+                                        acquireEntity esrc subv
+                                setEntity esrc subdef subv t
+                            setFacts ::
+                                   forall (t :: [Type]).
+                                   EditSource
+                                -> ListType (FieldStorer 'SingleMode) t
+                                -> Entity
+                                -> HList t
+                                -> ApplyStack tt IO ()
+                            setFacts _ NilListType _ () = return ()
+                            setFacts esrc (ConsListType f1 fr) v (a1, ar) = do
+                                setFact esrc f1 v a1
+                                setFacts esrc fr v ar
+                            setConstructor ::
+                                   forall (t :: Type).
+                                   EditSource
+                                -> ConstructorStorer 'SingleMode t
+                                -> Entity
+                                -> t
+                                -> ApplyStack tt IO ()
+                            setConstructor _ PlainConstructorStorer _ _ = return ()
+                            setConstructor esrc LiteralConstructorStorer v l =
+                                tablePush esrc $ PinaforeTableEditLiteralSet v $ Just l
+                            setConstructor esrc (ConstructorConstructorStorer _ facts) v t = setFacts esrc facts v t
+                            setEntity ::
+                                   forall (t :: Type).
+                                   EditSource
+                                -> EntityStorer 'SingleMode t
+                                -> Entity
+                                -> t
+                                -> ApplyStack tt IO ()
+                            setEntity esrc (MkEntityStorer cs) e t = setConstructor esrc cs e t
+                            setEntityFromAdapter :: EditSource -> Entity -> EntityAdapter t -> t -> ApplyStack tt IO ()
+                            setEntityFromAdapter esrc entity ea t = do
+                                case entityAdapterToDefinition ea t of
+                                    MkAnyValue def tt -> setEntity esrc def entity tt
+                            doEntityEdit :: EditSource -> PinaforeStorageEdit -> ApplyStack tt IO ()
+                            doEntityEdit esrc (MkPinaforeStorageEdit stype vtype p s (Known v)) = do
+                                let
+                                    se = entityAdapterConvert stype s
+                                    ve = entityAdapterConvert vtype v
+                                mroldv <- tableRead $ PinaforeTableReadPropertyGet p se
+                                case mroldv of
+                                    Just oldv
+                                        | oldv == ve -> return ()
+                                    Nothing -> do
+                                        setEntityFromAdapter esrc se stype s
+                                        acquireEntity esrc se
+                                        setEntityFromAdapter esrc ve vtype v
+                                        acquireEntity esrc ve
+                                    Just oldv -> do
+                                        setEntityFromAdapter esrc ve vtype v
+                                        acquireEntity esrc ve
+                                        releaseByAdapter esrc vtype oldv
+                                tablePush esrc $ PinaforeTableEditPropertySet p se $ Just ve
+                            doEntityEdit esrc (MkPinaforeStorageEdit stype vtype p s Unknown) = do
+                                let se = entityAdapterConvert stype s
+                                mroldv <- tableRead $ PinaforeTableReadPropertyGet p se
+                                case mroldv of
+                                    Nothing -> return ()
+                                    Just oldv -> do
+                                        releaseByAdapter esrc stype se
+                                        releaseByAdapter esrc vtype oldv
+                                        tablePush esrc $ PinaforeTableEditPropertySet p se Nothing
+                            readFact ::
+                                   forall (t :: Type).
+                                   FieldStorer 'MultipleMode t
+                                -> Entity
+                                -> ComposeM Know (ApplyStack tt IO) t
+                            readFact (MkFieldStorer p subdef) entity = do
+                                subentity <-
+                                    MkComposeM $ fmap maybeToKnow $ tableRead $ PinaforeTableReadFactGet p entity
+                                readEntity subdef subentity
+                            readFacts ::
+                                   forall (t :: [Type]).
+                                   ListType (FieldStorer 'MultipleMode) t
+                                -> Entity
+                                -> ComposeM Know (ApplyStack tt IO) (HList t)
+                            readFacts NilListType _ = return ()
+                            readFacts (ConsListType f1 fr) entity = do
+                                t1 <- readFact f1 entity
+                                tr <- readFacts fr entity
+                                return (t1, tr)
+                            readConstructor ::
+                                   forall (t :: Type).
+                                   ConstructorStorer 'MultipleMode t
+                                -> Entity
+                                -> ComposeM Know (ApplyStack tt IO) t
+                            readConstructor PlainConstructorStorer entity = return entity
+                            readConstructor LiteralConstructorStorer entity =
+                                MkComposeM $ fmap maybeToKnow $ tableRead $ PinaforeTableReadLiteralGet entity
+                            readConstructor (ConstructorConstructorStorer _ facts) entity = readFacts facts entity
+                            firstKnown :: MonadPlus m => [a] -> (a -> m b) -> m b
+                            firstKnown [] _ = empty
+                            firstKnown (a:aa) f = f a <|> firstKnown aa f
+                            readEntity ::
+                                   forall (t :: Type).
+                                   EntityStorer 'MultipleMode t
+                                -> Entity
+                                -> ComposeM Know (ApplyStack tt IO) t
+                            readEntity (MkEntityStorer css) entity =
+                                firstKnown css $ \(MkKnowShim def f) -> do
+                                    dt <- readConstructor def entity
+                                    liftInner $ f dt
+                            refRead :: Readable (ApplyStack tt IO) PinaforeStorageRead
+                            refRead (PinaforeStorageReadGet stype prd subj) = do
+                                mval <- tableRead $ PinaforeTableReadPropertyGet prd $ entityAdapterConvert stype subj
                                 case mval of
                                     Just val -> return val
                                     Nothing -> do
                                         val <- newEntity
-                                        tablePush
-                                            (pure $ PinaforeTableEditSetPredicate prd subj $ Just val)
-                                            noEditSource
+                                        doEntityEdit noEditSource $
+                                            MkPinaforeStorageEdit stype plainEntityAdapter prd subj (Known val)
                                         return val
-                            refRead (PinaforeEntityReadLookupPredicate prd val) =
-                                tableRead $ PinaforeTableReadLookupPredicate prd val
-                            refRead (PinaforeEntityReadToLiteral p) = do
-                                ml <- tableRead $ PinaforeTableReadGetLiteral p
-                                return $ maybeToKnow ml
+                            refRead (PinaforeStorageReadLookup prd val) =
+                                tableRead $ PinaforeTableReadPropertyLookup prd val
+                            refRead (PinaforeStorageReadEntity ea entity) =
+                                getComposeM $ readEntity (entityAdapterDefinitions ea) entity
                             refEdit ::
-                                   NonEmpty PinaforeEntityEdit
+                                   NonEmpty PinaforeStorageEdit
                                 -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-                            refEdit =
-                                singleAlwaysEdit $ \case
-                                    PinaforeEntityEditSetPredicate p s kv ->
-                                        tablePush $ pure $ PinaforeTableEditSetPredicate p s $ knowToMaybe kv
-                                    PinaforeEntityEditSetLiteral p kl ->
-                                        tablePush $ pure $ PinaforeTableEditSetLiteral p $ knowToMaybe kl
+                            refEdit = singleAlwaysEdit $ \edit esrc -> doEntityEdit esrc edit
                             in MkResource trun MkAReference {..}
 
 type PinaforeTableUpdate = EditUpdate PinaforeTableEdit

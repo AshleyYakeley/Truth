@@ -398,12 +398,15 @@ testEntity =
               , tgroup
                     "multiple set member"
                     [ pointTest "testeq {0} (count (tea !@ {e1}))"
+                    , pointTest "eea !$ {e2} := e1 >> testeq {1} (count (eea !@ {e1}))"
+                    , pointTest "eea !@ {e1} += e2 >> testeq {1} (count (eea !@ {e1}))"
+                    , pointTest "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
                     , pointTest "tea !@ {e1} += \"hello\" >> testeq {e1} (tea !$ {\"hello\"})"
+                    , pointTest "tea !$ {\"hello\"} := e1 >> testeq {1} (count (tea !@ {e1}))"
                     , pointTest "tea !@ {e1} += \"hello\" >> testeq {1} (count (tea !@ {e1}))"
                     , pointTest
                           "tea !@ {e1} += \"hello\" >> tea !@ {e1} += \"hello\" >> testeq {1} (count (tea !@ {e1}))"
                     , pointTest "tea !@ {e1} += \"h\" >> tea !@ {e1} += \"hello\" >> testeq {2} (count (tea !@ {e1}))"
-                    , pointTest "eea !$ {e2} := e1 >> testeq {1} (count (eea !@ {e1}))"
                     , pointTest $
                       "let counter = eia !$ {e1};someset = nea !@ {e1} in " <>
                       "counter := 0 >> someset += 1 >> someset += 1 >> (get (members noOrder someset) >>= \\pp -> for pp $ \\p -> runRef {counter := %counter + 1}) >> testeq {1} counter"
