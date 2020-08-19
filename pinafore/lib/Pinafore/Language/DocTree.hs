@@ -1,6 +1,5 @@
 module Pinafore.Language.DocTree where
 
-import Pinafore.Language.Name
 import Shapes
 
 data DocTree a =
@@ -39,7 +38,7 @@ runDocTree showTitle showDesc showEntry level (MkDocTree title desc entries) = d
         EntryDocTreeEntry a -> showEntry level a
 
 data DefDoc = MkDefDoc
-    { docName :: Name
+    { docName :: Text
     , docValueType :: Text
     , docIsSupertype :: Bool
     , docIsPattern :: Bool

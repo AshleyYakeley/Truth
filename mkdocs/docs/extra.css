@@ -12,7 +12,7 @@ ul.subnav ul {
     padding-left: 15px;
 }
 
-pre, code, .rst-content tt {
+pre, .rst-content pre, code, .rst-content code, tt, .rst-content tt {
     color: black;
     font-size: 75%;
     margin: 0;
@@ -32,7 +32,7 @@ footer {
     margin-top: 24px;
 }
 
-code {
+code, .rst-content code {
     background: white;
     border: solid 1px lightgrey;
     padding-top: 1px;

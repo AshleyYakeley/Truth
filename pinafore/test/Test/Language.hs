@@ -27,7 +27,7 @@ testOp n =
 
 testInfix :: TestTree
 testInfix = let
-    names = filter nameIsInfix $ fmap docName $ toList predefinedDoc
+    names = filter nameIsInfix $ fmap (MkName . docName) $ toList predefinedDoc
     in testGroup "infix" $ fmap testOp names
 
 newtype PreciseEq t =

@@ -20,7 +20,7 @@ escapeMarkdown s = let
 showDefEntry :: Int -> DefDoc -> IO ()
 showDefEntry _ MkDefDoc {..} = do
     let
-        nameType = "**`" ++ show docName ++ "`** : `" ++ unpack docValueType ++ "`"
+        nameType = "**`" ++ unpack docName ++ "`** : `" ++ unpack docValueType ++ "`"
         title =
             (if docIsSupertype
                  then "_" <> nameType <> "_"
@@ -35,6 +35,7 @@ showDefEntry _ MkDefDoc {..} = do
     putStrLn ""
 
 showDefTitle :: Int -> Text -> IO ()
+showDefTitle 1 "" = return ()
 showDefTitle level title = putStrLn $ replicate level '#' ++ " " ++ unpack title
 
 showDefDesc :: Int -> Text -> IO ()
@@ -51,7 +52,7 @@ printInfixOperatorTable = do
     let
         getDocName MkDefDoc {..}
             | not docIsSupertype
-            , nameIsInfix docName = Just docName
+            , nameIsInfix (MkName docName) = Just $ MkName docName
         getDocName _ = Nothing
         names = catMaybes $ fmap getDocName $ toList predefinedDoc
     putStrLn "| [n] | (A x B) x C | A x (B x C) | A x B only |"

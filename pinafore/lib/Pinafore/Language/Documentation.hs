@@ -6,7 +6,7 @@ module Pinafore.Language.Documentation
     , operatorFixity
     , Fixity(..)
     , FixAssoc(..)
-    , Name
+    , Name(..)
     , nameIsInfix
     ) where
 

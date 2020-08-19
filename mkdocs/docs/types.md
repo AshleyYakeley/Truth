@@ -1,3 +1,5 @@
+# Types
+
 ## Any and None
 
 For all types `T`, `None <: T` and `T <: Any`.

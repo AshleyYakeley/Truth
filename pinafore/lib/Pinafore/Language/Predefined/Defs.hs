@@ -12,12 +12,21 @@ import Shapes
 
 type EnA = MeetType Entity A
 
+data DefBind = MkDefBind
+    { dbName :: Name
+    , dbValue :: Maybe (PinaforeContext -> QValue)
+    , dbPattern :: Maybe QPatternConstructor
+    }
+
 data BindDoc = MkBindDoc
-    { bdName :: Name
-    , bdValue :: Maybe (PinaforeContext -> QValue)
-    , bdPattern :: Maybe (QPatternConstructor)
+    { bdBind :: Maybe DefBind
     , bdDoc :: DefDoc
     }
+
+mkDefDocEntry :: DefDoc -> BindDoc
+mkDefDocEntry bdDoc = let
+    bdBind = Nothing
+    in MkBindDoc {..}
 
 mkValEntry ::
        forall t. (ToPinaforeType t)
@@ -26,13 +35,14 @@ mkValEntry ::
     -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry BindDoc
 mkValEntry name docDescription val = let
-    bdName = name
-    bdValue =
+    dbName = name
+    dbValue =
         Just $ \bc -> let
             ?pinafore = bc
             in jmToValue val
-    bdPattern = Nothing
-    docName = name
+    dbPattern = Nothing
+    bdBind = Just MkDefBind {..}
+    docName = unName name
     docValueType = qPositiveTypeDescription @t
     docIsSupertype = False
     docIsPattern = False
@@ -46,10 +56,11 @@ mkSupertypeEntry ::
     -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry BindDoc
 mkSupertypeEntry name docDescription _val = let
-    bdName = name
-    bdValue = Nothing
-    bdPattern = Nothing
-    docName = name
+    dbName = name
+    dbValue = Nothing
+    dbPattern = Nothing
+    bdBind = Just MkDefBind {..}
+    docName = unName name
     docValueType = qPositiveTypeDescription @t
     docIsSupertype = True
     docIsPattern = False
@@ -65,13 +76,14 @@ mkValPatEntry ::
     -> (v -> Maybe (HList lt))
     -> DocTreeEntry BindDoc
 mkValPatEntry name docDescription val pat = let
-    bdName = name
-    bdValue =
+    dbName = name
+    dbValue =
         Just $ \bc -> let
             ?pinafore = bc
             in jmToValue val
-    bdPattern = Just $ qToPatternConstructor pat
-    docName = name
+    dbPattern = Just $ qToPatternConstructor pat
+    bdBind = Just MkDefBind {..}
+    docName = unName name
     docValueType = qPositiveTypeDescription @t
     docIsSupertype = False
     docIsPattern = True
@@ -86,10 +98,11 @@ mkPatEntry ::
     -> (v -> Maybe (HList lt))
     -> DocTreeEntry BindDoc
 mkPatEntry name docDescription docValueType pat = let
-    bdName = name
-    bdValue = Nothing
-    bdPattern = Just $ qToPatternConstructor pat
-    docName = name
+    dbName = name
+    dbValue = Nothing
+    dbPattern = Just $ qToPatternConstructor pat
+    bdBind = Just MkDefBind {..}
+    docName = unName name
     docIsSupertype = False
     docIsPattern = True
     bdDoc = MkDefDoc {..}
