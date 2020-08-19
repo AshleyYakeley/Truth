@@ -4,6 +4,8 @@ import Shapes
 import Truth.Core.Lens
 import Truth.Core.Read
 import Truth.Core.Types.Bi
+import Truth.Core.Types.Tuple.Pair
+import Truth.Core.Types.Tuple.Tuple
 import Truth.Core.Types.Whole
 
 type BiWholeEdit p q = BiEdit (WholeEdit p) (WholeEdit q)
@@ -59,3 +61,37 @@ lensBiWholeChangeLens g pb = let
 
 mapBiWholeChangeLens :: (p2 -> p1) -> (q1 -> q2) -> ChangeLens (BiWholeUpdate p1 q1) (BiWholeUpdate p2 q2)
 mapBiWholeChangeLens pp qq = lensBiWholeChangeLens qq $ \p2 _ -> Just $ pp p2
+
+pairBiWholeChangeLens ::
+       forall p1 q1 p2 q2.
+       ChangeLens (PairUpdate (BiWholeUpdate p1 q1) (BiWholeUpdate p2 q2)) (BiWholeUpdate (p1, p2) (q1, q2))
+pairBiWholeChangeLens = let
+    clRead :: ReadFunction (PairUpdateReader (BiWholeUpdate p1 q1) (BiWholeUpdate p2 q2)) (WholeReader (q1, q2))
+    clRead rd ReadWhole = do
+        q1 <- rd $ MkTupleUpdateReader SelectFirst ReadWhole
+        q2 <- rd $ MkTupleUpdateReader SelectSecond ReadWhole
+        return (q1, q2)
+    clUpdate ::
+           forall m. MonadIO m
+        => PairUpdate (BiWholeUpdate p1 q1) (BiWholeUpdate p2 q2)
+        -> Readable m (PairUpdateReader (BiWholeUpdate p1 q1) (BiWholeUpdate p2 q2))
+        -> m [BiWholeUpdate (p1, p2) (q1, q2)]
+    clUpdate (MkTupleUpdate SelectFirst (MkBiWholeUpdate q1)) rd = do
+        q2 <- rd $ MkTupleUpdateReader SelectSecond ReadWhole
+        return $ pure $ MkBiWholeUpdate (q1, q2)
+    clUpdate (MkTupleUpdate SelectSecond (MkBiWholeUpdate q2)) rd = do
+        q1 <- rd $ MkTupleUpdateReader SelectFirst ReadWhole
+        return $ pure $ MkBiWholeUpdate (q1, q2)
+    clPutEdits ::
+           forall m. MonadIO m
+        => [BiWholeEdit (p1, p2) (q1, q2)]
+        -> Readable m (PairUpdateReader (BiWholeUpdate p1 q1) (BiWholeUpdate p2 q2))
+        -> m (Maybe [PairUpdateEdit (BiWholeUpdate p1 q1) (BiWholeUpdate p2 q2)])
+    clPutEdits edits _ =
+        case lastM edits of
+            Just (MkBiWholeEdit (p1, p2)) ->
+                return $
+                Just $
+                [MkTupleUpdateEdit SelectFirst $ MkBiWholeEdit p1, MkTupleUpdateEdit SelectSecond $ MkBiWholeEdit p2]
+            Nothing -> return $ Just []
+    in MkChangeLens {..}

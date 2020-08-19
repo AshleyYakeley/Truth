@@ -520,10 +520,13 @@ base_predefinitions =
                 "contraMapRef"
                 "Map a function on setting a reference."
                 (contraRangeLift :: (B -> A) -> LangRef '( A, C) -> LangRef '( B, C))
+          , mkValEntry "maybeLensMapRef" "Map getter & pushback functions on a reference." $
+            maybeLensLangRef @AP @AQ @BP @BQ
           , mkValEntry "lensMapRef" "Map getter & pushback functions on a reference." $ fLensLangRef @AP @AQ @B
+          , mkValEntry "pairRef" "Combine references." $ langPairRefs @AP @AQ @BP @BQ
           , mkValEntry
                 "applyRef"
-                "Combine references."
+                "Combine getting of references. `applyRef f x` = `{?f ?x}`"
                 ((<*>) :: PinaforeImmutableRef (A -> B) -> PinaforeImmutableRef A -> PinaforeImmutableRef B)
           , mkValEntry
                 "unknown"
