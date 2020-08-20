@@ -24,7 +24,7 @@ std_window title moremenus contents = fixAction $ \window -> let
 
 selection_window : (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> ((item | NewEntity) -> Action Any) -> (set -> Notifier item -> UI) -> Action Window;
 selection_window (inames,inamep) iset iopen inew iui = do
-    (notifier,getsel) <- makeNotifier;
+    (notifier,selected) <- makeNotifier;
     let
     moremenus =
         [
@@ -35,8 +35,8 @@ selection_window (inames,inamep) iset iopen inew iui = do
                     inew i;
                     iopen i;
                     end},
-                menuAction "View" Nothing {getsel >>= iopen},
-                menuAction "Delete" Nothing {getsel >>= \p -> iset -= p}
+                menuAction "View" Nothing {get selected >>= iopen},
+                menuAction "Delete" Nothing {get selected >>= \p -> iset -= p}
             ]
         ];
     in std_window {inamep} moremenus (iui iset notifier);

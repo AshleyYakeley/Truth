@@ -40,11 +40,11 @@ main = do
                    -> (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
                    -> CVUISpec
                 ui sub1 msub2 extraui = do
-                    (setsel, getsel) <- liftIO $ makeRefSelectNotify
+                    (selModel, setsel) <- liftLifeCycleIO $ makeSharedModel makePremodelSelectNotify
                     let
                         openSelection :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text)) -> View ()
                         openSelection sub = do
-                            mflens <- getsel
+                            mflens <- viewRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
                             case mflens of
                                 Nothing -> return ()
                                 Just flens ->

@@ -77,12 +77,12 @@ soupReference dirpath = let
 soupWindow :: UIToolkit -> FilePath -> CreateView ()
 soupWindow uit dirpath = do
     smodel <- liftLifeCycleIO $ makeReflectingModel $ soupReference dirpath
-    (selnotify, getsel) <- liftIO $ makeRefSelectNotify
+    (selModel, selnotify) <- liftLifeCycleIO $ makeSharedModel makePremodelSelectNotify
     rec
         let
             withSelection :: (Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()) -> View ()
             withSelection call = do
-                msel <- getsel
+                msel <- viewRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
                 case msel of
                     Just sel -> call sel
                     Nothing -> return ()

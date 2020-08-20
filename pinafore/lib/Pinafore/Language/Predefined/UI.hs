@@ -200,14 +200,10 @@ notifiers = mconcat
 mapNotifier :: (B -> A) -> LangNotifier A -> LangNotifier B
 mapNotifier = contramap
 
-makeNotifier :: PinaforeAction (LangNotifier A, PinaforeAction A)
+makeNotifier :: PinaforeAction (LangNotifier A, PinaforeImmutableRef A)
 makeNotifier = do
-    (sn, getsel) <- liftIO makeRefSelectNotify
-    let
-        action = do
-            ma <- viewPinaforeAction getsel
-            pinaforeActionKnow $ maybeToKnow ma
-    return (sn, action)
+    (selModel, sn) <- pinaforeLiftLifeCycleIO $ makeSharedModel makePremodelSelectNotify
+    return (sn, MkPinaforeImmutableRef $ eaMapReadOnlyWhole maybeToKnow $ MkPinaforeRef selModel)
 
 notify :: LangNotifier A -> Maybe A -> PinaforeAction ()
 notify notifier ma = viewPinaforeAction $ runSelectNotify notifier $ return ma
