@@ -3,5 +3,5 @@
 A simple stopwatch, with one-millisecond resolution.
 
 ```pinafore
-{!examples/stopwatch.pinafore!}
+{!examples/stopwatch!}
 ```
