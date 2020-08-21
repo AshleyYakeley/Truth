@@ -523,6 +523,7 @@ base_predefinitions =
           , mkValEntry "maybeLensMapRef" "Map getter & pushback functions on a reference." $
             maybeLensLangRef @AP @AQ @BP @BQ
           , mkValEntry "lensMapRef" "Map getter & pushback functions on a reference." $ fLensLangRef @AP @AQ @B
+          , mkValEntry "maybeRef" "Map getter & pushback functions on a reference." $ maybeRef @A @B
           , mkValEntry "pairRef" "Combine references." $ langPairRefs @AP @AQ @BP @BQ
           , mkValEntry
                 "applyRef"

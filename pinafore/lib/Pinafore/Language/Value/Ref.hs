@@ -77,6 +77,9 @@ fLensLangRef ab baa =
         b <- mb
         return $ baa b ma
 
+maybeRef :: forall p q. LangRef '( p, q) -> LangRef '( Maybe p, Maybe q)
+maybeRef = maybeLensLangRef Just $ \mmp _ -> mmp
+
 langRefToBiWholeRef :: LangRef '( p, q) -> PinaforeRef (BiWholeUpdate (Know p) (Know q))
 langRefToBiWholeRef (MutableLangRef r) = r
 langRefToBiWholeRef (ImmutableLangRef ir) = immutableRefToRejectingBiRef ir
