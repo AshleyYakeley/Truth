@@ -142,3 +142,9 @@ install: out/$(PACKAGEFULLNAME).deb
 install-vsc-extension:
 	rm -rf ${HOME}/.vscode/extensions/ashleyyakeley.pinafore-0.0.1
 	cp -a support/vsc-extension ${HOME}/.vscode/extensions/ashleyyakeley.pinafore-0.0.1
+
+clean:
+	rm -rf out
+	rm -rf mkdocs/generated
+	rm -rf mkdocs/site
+	stack $(STACKFLAGS) clean
