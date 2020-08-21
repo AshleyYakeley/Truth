@@ -6,3 +6,4 @@ else
     echo "Failed: $1";
     paplay /usr/share/sounds/mate/default/alerts/bark.ogg
 fi
+exit $1
