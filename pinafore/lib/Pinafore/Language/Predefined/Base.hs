@@ -80,7 +80,15 @@ interpretAsText ::
        forall a. AsLiteral a
     => LangRef '( a, a)
     -> LangRef '( Text, Text)
-interpretAsText = fLensLangRef (unLiteral . toLiteral) (\t _ -> parseLiteral t)
+interpretAsText = let
+    getter :: Maybe a -> Maybe Text
+    getter Nothing = Just ""
+    getter (Just a) = Just $ unLiteral $ toLiteral a
+    setter :: Maybe Text -> Maybe a -> Maybe (Maybe a)
+    setter Nothing _ = Just Nothing
+    setter (Just "") _ = Just Nothing
+    setter (Just t) _ = fmap Just $ parseLiteral t
+    in maybeLensLangRef getter setter
 
 parseLiteral :: AsLiteral t => Text -> Maybe t
 parseLiteral = knowToMaybe . fromLiteral . MkLiteral
@@ -154,7 +162,9 @@ base_predefinitions =
                       ""
                       [ mkSupertypeEntry "id" "Every integer is a rational." integerToSafeRational
                       , mkValEntry "parseInteger" "Parse text as an integer." $ parseLiteral @Integer
-                      , mkValEntry "interpretIntegerAsText" "Interpret an integer reference as text." $
+                      , mkValEntry
+                            "interpretIntegerAsText"
+                            "Interpret an integer reference as text, interpreting deleted values as empty text" $
                         interpretAsText @Integer
                       , mkValEntry "+" "Add." $ (+) @Integer
                       , mkValEntry "-" "Subtract." $ (-) @Integer
@@ -176,7 +186,9 @@ base_predefinitions =
                       ""
                       [ mkSupertypeEntry "id" "Every rational is a number." safeRationalToNumber
                       , mkValEntry "parseRational" "Parse text as a rational." $ parseLiteral @SafeRational
-                      , mkValEntry "interpretRationalAsText" "Interpret a rational reference as text." $
+                      , mkValEntry
+                            "interpretRationalAsText"
+                            "Interpret a rational reference as text, interpreting deleted values as empty text." $
                         interpretAsText @SafeRational
                       , mkValEntry ".+" "Add." $ (+) @SafeRational
                       , mkValEntry ".-" "Subtract." $ (-) @SafeRational
@@ -197,7 +209,9 @@ base_predefinitions =
                       ""
                       [ mkSupertypeEntry "id" "Every number is a literal." $ toLiteral @Number
                       , mkValEntry "parseNumber" "Parse text as a number." $ parseLiteral @Number
-                      , mkValEntry "interpretNumberAsText" "Interpret a number reference as text." $
+                      , mkValEntry
+                            "interpretNumberAsText"
+                            "Interpret a number reference as text, interpreting deleted values as empty text." $
                         interpretAsText @Number
                       , mkValEntry "~+" "Add." $ (+) @Number
                       , mkValEntry "~-" "Subtract." $ (-) @Number
@@ -266,7 +280,9 @@ base_predefinitions =
                       [ mkSupertypeEntry "id" "Every duration is a literal." $ toLiteral @NominalDiffTime
                       , mkValEntry "parseDuration" "Parse text as a duration. Inverse of `toText`." $
                         parseLiteral @NominalDiffTime
-                      , mkValEntry "interpretDurationAsText" "Interpret a duration reference as text." $
+                      , mkValEntry
+                            "interpretDurationAsText"
+                            "Interpret a duration reference as text, interpreting deleted values as empty text." $
                         interpretAsText @NominalDiffTime
                       , mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
                       , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
@@ -285,7 +301,9 @@ base_predefinitions =
                       "Absolute time as measured by UTC."
                       [ mkSupertypeEntry "id" "Every time is a literal." $ toLiteral @UTCTime
                       , mkValEntry "parseTime" "Parse text as a time. Inverse of `toText`." $ parseLiteral @UTCTime
-                      , mkValEntry "interpretTimeAsText" "Interpret a time reference as text." $
+                      , mkValEntry
+                            "interpretTimeAsText"
+                            "Interpret a time reference as text, interpreting deleted values as empty text." $
                         interpretAsText @UTCTime
                       , mkValEntry "addTime" "Add duration to time." addUTCTime
                       , mkValEntry "diffTime" "Difference of times." diffUTCTime
@@ -326,7 +344,9 @@ base_predefinitions =
                             Just (todHour, (todMin, (todSec, ())))
                       , mkSupertypeEntry "id" "Every time of day is a literal." $ toLiteral @TimeOfDay
                       , mkValEntry "parseTimeOfDay" "Parse text as a time of day." $ parseLiteral @TimeOfDay
-                      , mkValEntry "interpretTimeOfDayAsText" "Interpret a time of day reference as text." $
+                      , mkValEntry
+                            "interpretTimeOfDayAsText"
+                            "Interpret a time of day reference as text, interpreting deleted values as empty text." $
                         interpretAsText @TimeOfDay
                       , mkValEntry "midnight" "Midnight." midnight
                       , mkValEntry "midday" "Midday." midday
@@ -346,7 +366,9 @@ base_predefinitions =
                             Just (localDay, (localTimeOfDay, ()))
                       , mkSupertypeEntry "id" "Every local time is a literal." $ toLiteral @LocalTime
                       , mkValEntry "parseLocalTime" "Parse text as a local time." $ parseLiteral @LocalTime
-                      , mkValEntry "interpretLocalTimeAsText" "Interpret a local time reference as text." $
+                      , mkValEntry
+                            "interpretLocalTimeAsText"
+                            "Interpret a local time reference as text, interpreting deleted values as empty text." $
                         interpretAsText @LocalTime
                       , mkValEntry "timeToLocal" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
                             utcToLocalTime $ minutesToTimeZone i
