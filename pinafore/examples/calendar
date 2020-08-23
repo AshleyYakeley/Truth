@@ -7,13 +7,13 @@ dateText = property @Date @Text !"example.calendar:dateText";
 ui : Ref Date -> UI;
 ui r = uiVertical
     [
-    (uiHorizontal
+    (False, uiHorizontal
         [
-        (uiButton {"<"} {do d <- get r; r := addDays (-1) d; end}, False),
-        (uiLabel {unixFormatDate "%A, %B %e, %Y" %r}, True),
-        (uiButton {">"} {do d <- get r; r := addDays 1 d; end}, False)
-        ], False),
-    (uiTextArea $ dateText !$ r, True)
+        (False, uiButton {"<"} {do d <- get r; r := addDays (-1) d; end}),
+        (True, uiLabel {unixFormatDate "%A, %B %e, %Y" %r}),
+        (False, uiButton {">"} {do d <- get r; r := addDays 1 d; end})
+        ]),
+    (True, uiTextArea $ dateText !$ r)
     ];
 
 in do

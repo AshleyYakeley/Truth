@@ -182,10 +182,10 @@ uiCheckBox name val =
 uiTextEntry :: PinaforeRef (WholeUpdate (Know Text)) -> CVUISpec
 uiTextEntry val = textEntryUISpec $ pinaforeRefModel $ eaMap (unknownValueChangeLens mempty) $ val
 
-uiHorizontal :: [(LangUI, Bool)] -> LangUI
+uiHorizontal :: [(Bool, LangUI)] -> LangUI
 uiHorizontal = horizontalUISpec
 
-uiVertical :: [(LangUI, Bool)] -> LangUI
+uiVertical :: [(Bool, LangUI)] -> LangUI
 uiVertical = verticalUISpec
 
 uiPages :: [(LangUI, LangUI)] -> LangUI

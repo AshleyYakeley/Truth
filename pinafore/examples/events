@@ -116,8 +116,8 @@ tablePage notifier = let
 eventWindow : Event -> Action Window;
 eventWindow evt = std_window (eventName !$ {evt}) [] $ uiVertical
     [
-        (ui_eventTime $ eventTime !$ {evt},False),
-        (uiTextEntry $ eventName !$ {evt},True)
+        (False, ui_eventTime $ eventTime !$ {evt}),
+        (True, uiTextEntry $ eventName !$ {evt})
     ];
 
 eventsWindow : Action Window;

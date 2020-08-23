@@ -32,7 +32,7 @@ testGViews =
     testGroup
         "GView"
         [ testGView "null" $ (nullUISpec :: CVUISpec)
-        , testGView "vertical layout" $ verticalUISpec [(return $ MkUISpec MkUIUnknown :: CVUISpec, False)]
+        , testGView "vertical layout" $ verticalUISpec [(False, return $ MkUISpec MkUIUnknown :: CVUISpec)]
         ]
 
 tests :: TestTree

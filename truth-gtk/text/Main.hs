@@ -55,8 +55,8 @@ main = do
                         rTextSpec (SuccessResult sub) = textAreaUISpec sub setsel
                         rTextSpec (FailureResult err) = labelUISpec $ constantModel err
                         makeSpecs sub =
-                            [ (simpleButtonUISpec (constantModel "View") $ openSelection sub, False)
-                            , (scrolledUISpec $ oneWholeUISpec sub rTextSpec, True)
+                            [ (False, simpleButtonUISpec (constantModel "View") $ openSelection sub)
+                            , (True, scrolledUISpec $ oneWholeUISpec sub rTextSpec)
                             ]
                         allSpecs =
                             case msub2 of

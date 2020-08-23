@@ -144,8 +144,8 @@ soupWindow uit dirpath = do
             wsContent :: CVUISpec
             wsContent =
                 verticalUISpec
-                    [ (simpleButtonUISpec (constantModel "View") $ withSelection openItem, False)
-                    , (soupEditSpec smodel selnotify openItem, True)
+                    [ (False, simpleButtonUISpec (constantModel "View") $ withSelection openItem)
+                    , (True, soupEditSpec smodel selnotify openItem)
                     ]
             wsCloseBoxAction :: View ()
             wsCloseBoxAction = liftIO closer
