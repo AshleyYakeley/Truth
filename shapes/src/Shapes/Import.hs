@@ -34,6 +34,7 @@ import Data.Traversable as I
 import Data.Tuple as I
 import Data.Unique as I
 import Data.Word as I
+import GHC.Stack as I (HasCallStack)
 import Prelude as I
     ( Enum(..)
     , Integer

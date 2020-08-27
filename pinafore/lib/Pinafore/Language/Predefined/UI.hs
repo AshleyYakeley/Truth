@@ -16,7 +16,7 @@ clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
 
 uiTable ::
-       (?pinafore :: PinaforeContext)
+       (HasCallStack, ?pinafore :: PinaforeContext)
     => [(LangRef '( BottomType, Text), A -> LangRef '( BottomType, Text))]
     -> LangOrder A
     -> LangFiniteSetRef '( A, EnA)

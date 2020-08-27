@@ -43,7 +43,10 @@ instance (Show (ContainerKey cont), WitnessConstraint Show reader) => WitnessCon
 keyItemReadFunction :: forall cont reader. ContainerKey cont -> ReadFunctionF Maybe (KeyReader cont reader) reader
 keyItemReadFunction key mr rt = MkComposeM $ mr $ KeyReadItem key rt
 
-knownKeyItemReadFunction :: forall cont reader. ContainerKey cont -> ReadFunction (KeyReader cont reader) reader
+knownKeyItemReadFunction ::
+       forall cont reader. HasCallStack
+    => ContainerKey cont
+    -> ReadFunction (KeyReader cont reader) reader
 knownKeyItemReadFunction key mr rt = do
     mt <- getComposeM $ keyItemReadFunction key mr rt
     case mt of

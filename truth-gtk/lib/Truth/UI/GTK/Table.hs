@@ -69,7 +69,8 @@ instance Monoid (KeyColumns update) where
 
 tableContainerView ::
        forall seq update.
-       ( IsSequence seq
+       ( HasCallStack
+       , IsSequence seq
        , IsUpdate update
        , ApplicableEdit (UpdateEdit update)
        , FullSubjectReader (UpdateReader update)
@@ -112,13 +113,12 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             for_ cols $ addColumn tview store
             return (store, tview)
         recvTable ::
-               (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
+               HasCallStack
+            => (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
             -> NonEmpty (OrderedListUpdate seq update)
             -> View ()
         recvTable (store, _tview) updates =
             for_ updates $ \case
-                OrderedListUpdateItem a b _
-                    | a == b -> return ()
                 OrderedListUpdateItem a b _ -> dynamicStoreMove a b store
                 OrderedListUpdateDelete i -> dynamicStoreDelete i store
                 OrderedListUpdateInsert i _ -> dynamicStoreInsert i defStoreEntry (makeStoreEntry i) store
