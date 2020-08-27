@@ -119,13 +119,8 @@ instance Eq subj => JoinSemiLatticeReadOnlyChangeLens (FiniteSetUpdate subj) whe
                     then []
                     else [MkReadOnlyUpdate $ KeyUpdateInsertReplace item]
         clUpdate (MkTupleUpdate SelectFirst KeyUpdateClear) mr = do
-            keys1 <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
             keys2 <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
-            return $
-                case (null keys1, null keys2) of
-                    (True, _) -> []
-                    (False, True) -> [MkReadOnlyUpdate KeyUpdateClear]
-                    (False, False) -> fmap (MkReadOnlyUpdate . KeyUpdateDelete) $ toList $ difference keys1 keys2
+            return $ fmap MkReadOnlyUpdate $ KeyUpdateClear : (fmap KeyUpdateInsertReplace $ toList keys2)
         clUpdate (MkTupleUpdate SelectSecond (KeyUpdateItem _ edit)) _ = never edit
         clUpdate (MkTupleUpdate SelectSecond (KeyUpdateDelete item)) mr = do
             (isJust -> r1) <- mr $ MkTupleUpdateReader SelectFirst $ KeyReadItem item ReadWhole
@@ -140,13 +135,8 @@ instance Eq subj => JoinSemiLatticeReadOnlyChangeLens (FiniteSetUpdate subj) whe
                     then []
                     else [MkReadOnlyUpdate $ KeyUpdateInsertReplace item]
         clUpdate (MkTupleUpdate SelectSecond KeyUpdateClear) mr = do
-            keys2 <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
             keys1 <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
-            return $
-                case (null keys2, null keys1) of
-                    (True, _) -> []
-                    (False, True) -> [MkReadOnlyUpdate KeyUpdateClear]
-                    (False, False) -> fmap (MkReadOnlyUpdate . KeyUpdateDelete) $ toList $ difference keys2 keys1
+            return $ fmap MkReadOnlyUpdate $ KeyUpdateClear : (fmap KeyUpdateInsertReplace $ toList keys1)
         in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
 instance Eq subj => MeetSemiLatticeReadOnlyChangeLens (FiniteSetUpdate subj) where
@@ -182,10 +172,9 @@ instance Eq subj => MeetSemiLatticeReadOnlyChangeLens (FiniteSetUpdate subj) whe
                     then [MkReadOnlyUpdate $ KeyUpdateInsertReplace item]
                     else []
         clUpdate (MkTupleUpdate SelectFirst KeyUpdateClear) mr = do
-            keys1 <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
             keys2 <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
             return $
-                if null $ keys1 /\ keys2
+                if null keys2
                     then []
                     else [MkReadOnlyUpdate KeyUpdateClear]
         clUpdate (MkTupleUpdate SelectSecond (KeyUpdateItem _ edit)) _ = never edit
@@ -202,10 +191,9 @@ instance Eq subj => MeetSemiLatticeReadOnlyChangeLens (FiniteSetUpdate subj) whe
                     then [MkReadOnlyUpdate $ KeyUpdateInsertReplace item]
                     else []
         clUpdate (MkTupleUpdate SelectSecond KeyUpdateClear) mr = do
-            keys2 <- mr $ MkTupleUpdateReader SelectSecond KeyReadKeys
             keys1 <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
             return $
-                if null $ keys2 /\ keys1
+                if null keys1
                     then []
                     else [MkReadOnlyUpdate KeyUpdateClear]
         in MkChangeLens {clPutEdits = clPutEditsNone, ..}
