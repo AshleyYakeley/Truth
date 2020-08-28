@@ -79,7 +79,11 @@ uiPick itemsRef ref = do
         mapItem (ea, t) = (Known ea, plainOptionUICell t)
         mapItems :: Know [(EnA, Text)] -> [PickerPairType]
         mapItems Unknown = []
-        mapItems (Known items) = fmap mapItem items
+        mapItems (Known items) =
+            ( Unknown
+            , (plainOptionUICell "unknown")
+                  {optionCellDefault = True, optionCellStyle = plainTextStyle {tsItalic = True}}) :
+            fmap mapItem items
         itemsLens ::
                ChangeLens (WholeUpdate (Know [(EnA, Text)])) (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
         itemsLens = liftReadOnlyChangeLens (toReadOnlyChangeLens . listOrderedListChangeLens) . funcChangeLens mapItems

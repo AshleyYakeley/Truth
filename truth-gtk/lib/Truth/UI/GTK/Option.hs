@@ -13,8 +13,8 @@ import Truth.UI.GTK.Useful
 optionGetView :: GetGView
 optionGetView =
     MkGetView $ \_ uispec -> do
-        MkOptionUISpec itemsSub whichSub <- isUISpec uispec
-        return $ optionView itemsSub whichSub
+        MkOptionUISpec itemsModel whichModel <- isUISpec uispec
+        return $ optionView itemsModel whichModel
 
 listStoreView ::
        forall update. (ApplicableUpdate update, FullSubjectReader (UpdateReader update))
@@ -22,7 +22,7 @@ listStoreView ::
     -> Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
     -> EditSource
     -> CreateView (SeqStore (UpdateSubject update))
-listStoreView (MkWMFunction blockSignal) oobj esrc = let
+listStoreView (MkWMFunction blockSignal) itemsModel esrc = let
     initV ::
            Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
         -> CreateView (SeqStore (UpdateSubject update))
@@ -57,7 +57,7 @@ listStoreView (MkWMFunction blockSignal) oobj esrc = let
                 OrderedListUpdateDelete (fromIntegral -> i) -> blockSignal $ seqStoreRemove store i
                 OrderedListUpdateInsert (fromIntegral -> i) item -> blockSignal $ seqStoreInsert store i item
                 OrderedListUpdateClear -> blockSignal $ seqStoreClear store
-    in cvBindModel oobj (Just esrc) initV mempty recv
+    in cvBindModel itemsModel (Just esrc) initV mempty recv
 
 optionUICellAttributes :: OptionUICell -> [AttrOp CellRendererText 'AttrSet]
 optionUICellAttributes MkOptionUICell {..} = textCellAttributes optionCellText optionCellStyle
@@ -68,14 +68,14 @@ optionFromStore ::
     -> EditSource
     -> SeqStore (t, OptionUICell)
     -> CreateView (WIOFunction IO, Widget)
-optionFromStore oobj esrc store = do
+optionFromStore whichModel esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
     #packStart widget renderer False
     cellLayoutSetAttributes widget renderer store $ \(_, cell) -> optionUICellAttributes cell
     changedSignal <-
         cvOn widget #changed $
-        viewRunResource oobj $ \asub -> do
+        viewRunResource whichModel $ \asub -> do
             mi <- #getActiveIter widget
             case mi of
                 (True, iter) -> do
@@ -87,11 +87,23 @@ optionFromStore oobj esrc store = do
     let
         blockSignal :: forall a. IO a -> IO a
         blockSignal = withSignalBlocked widget changedSignal
+        findN ::
+               forall l. SemiSequence l
+            => [Element l -> Bool]
+            -> l
+            -> Maybe (Element l)
+        findN [] _ = empty
+        findN (p:pp) fa = find p fa <|> findN pp fa
         update :: t -> View ()
         update t =
             liftIO $ do
                 items <- seqStoreToList store
-                case find (\(_, (t', _)) -> t == t') $ zip [(0 :: Int) ..] items of
+                let
+                    matchVal :: (Int, (t, OptionUICell)) -> Bool
+                    matchVal (_, (t', _)) = t == t'
+                    isDefault :: (Int, (t, OptionUICell)) -> Bool
+                    isDefault (_, (_, cell)) = optionCellDefault cell
+                case findN [matchVal, isDefault] $ zip [(0 :: Int) ..] items of
                     Just (i, _) -> do
                         tp <- treePathNewFromIndices [fromIntegral i]
                         mti <- treeModelGetIter store tp
@@ -99,7 +111,7 @@ optionFromStore oobj esrc store = do
                             Just ti -> blockSignal $ #setActiveIter widget $ Just ti
                             Nothing -> return ()
                     Nothing -> return ()
-    cvBindWholeModel oobj (Just esrc) update
+    cvBindWholeModel whichModel (Just esrc) update
     w <- toWidget widget
     return (MkWMFunction blockSignal, w)
 
@@ -113,9 +125,9 @@ optionView ::
     => Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
     -> Model (WholeUpdate t)
     -> GCreateView
-optionView itemsSub whichSub = do
+optionView itemsModel whichModel = do
     esrc <- newEditSource
     rec
-        store <- listStoreView blockSignal itemsSub esrc
-        (blockSignal, w) <- optionFromStore whichSub esrc store
+        store <- listStoreView blockSignal itemsModel esrc
+        (blockSignal, w) <- optionFromStore whichModel esrc store
     return w
