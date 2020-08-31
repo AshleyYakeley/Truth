@@ -4,39 +4,14 @@ module Main
 
 import Shapes
 import Test.Tasty
+
+{- no tests currently
 import Test.Tasty.HUnit
 import Truth.Core
 import Truth.UI.GTK
-
-testGView :: String -> CVUISpec -> TestTree
-testGView name luispec =
-    testCase name $
-    runLifeCycle $
-    liftWithUnlift $ \unlift -> do
-        uispec <- uitRunView (nullUIToolkit unlift) emptyResourceContext $ remonad unlift luispec
-        case getMaybeView uispec of
-            Just _ -> return ()
-            Nothing -> assertFailure "not matched"
-
-data UIUnknown where
-    MkUIUnknown :: UIUnknown
-
-instance Show UIUnknown where
-    show MkUIUnknown = "unknown"
-
-instance UIType UIUnknown where
-    uiWitness = $(iowitness [t|UIUnknown|])
-
-testGViews :: TestTree
-testGViews =
-    testGroup
-        "GView"
-        [ testGView "null" $ (nullUISpec :: CVUISpec)
-        , testGView "vertical layout" $ verticalUISpec [(False, return $ MkUISpec MkUIUnknown :: CVUISpec)]
-        ]
-
+-}
 tests :: TestTree
-tests = testGroup "truth-gtk" [testGViews]
+tests = testGroup "truth-gtk" []
 
 main :: IO ()
 main = defaultMain tests

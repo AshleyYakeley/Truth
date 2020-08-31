@@ -14,12 +14,11 @@ optParser = (,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2')
 main :: IO ()
 main = do
     (dirpaths, double) <- O.execParser (O.info optParser mempty)
-    truthMainGTK $ \MkTruthContext {..} -> do
-        (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
+    truthMainGTK $ \tc -> do
+        let newWindow spec = tcExitOnClosed tc $ createWindow spec
         for_ dirpaths $ \dirpath -> do
-            let action = soupWindow toolkit dirpath
+            let action = soupWindow tc newWindow dirpath
             action
             if double
                 then action
                 else return ()
-        liftIO checkdone

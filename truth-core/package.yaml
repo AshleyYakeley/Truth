@@ -13,7 +13,7 @@ library:
       - time
     exposed-modules:
       - Truth.Core
-      - Truth.Core.UI.Toolkit.Internal
+      - Truth.Core.UI.Toolkit.Run
     other-modules:
       - Truth.Core.Import
       - Truth.Core.Sequence
@@ -94,36 +94,12 @@ library:
       - Truth.Core.Reference.Savable
       - Truth.Core.Reference.Undo
       - Truth.Core.Reference
-      - Truth.Core.UI.Request
-      - Truth.Core.UI.TextStyle
-      - Truth.Core.UI.Specifier.Specifier
-      - Truth.Core.UI.Specifier.Null
-      - Truth.Core.UI.Specifier.Map
-      - Truth.Core.UI.Specifier.Selection
-      - Truth.Core.UI.Specifier.CSS
-      - Truth.Core.UI.Specifier.Button
-      - Truth.Core.UI.Specifier.One
-      - Truth.Core.UI.Specifier.Switch
-      - Truth.Core.UI.Specifier.Layout
-      - Truth.Core.UI.Specifier.Pages
-      - Truth.Core.UI.Specifier.Icon
-      - Truth.Core.UI.Specifier.Label
-      - Truth.Core.UI.Specifier.Checkbox
-      - Truth.Core.UI.Specifier.Option
-      - Truth.Core.UI.Specifier.TextEntry
-      - Truth.Core.UI.Specifier.TextEditor
-      - Truth.Core.UI.Specifier.Table
-      - Truth.Core.UI.Specifier.Drag
-      - Truth.Core.UI.Specifier.MenuBar
-      - Truth.Core.UI.Specifier.Scrolled
-      - Truth.Core.UI.Specifier.Calendar
       - Truth.Core.UI.View.Context
       - Truth.Core.UI.View.View
-      - Truth.Core.UI.Window
+      - Truth.Core.UI.Selection
       - Truth.Core.UI.Toolkit
       - Truth.Core.UI.View.CreateView
       - Truth.Core.UI.View.Dynamic
-      - Truth.Core.UI.GetView
       - Truth.Core.UI
 
 tests:

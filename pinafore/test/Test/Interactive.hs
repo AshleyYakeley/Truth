@@ -19,8 +19,8 @@ testFile inpath = let
     in goldenVsFile testname refpath outpath $
        withBinaryFile outpath WriteMode $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
-               withTestPinaforeContext $ \uitoolkit _ _ -> do
-                   uitRunView uitoolkit emptyResourceContext $ pinaforeInteractHandles inh outh True
+               withTestPinaforeContext $ \tc _ _ -> do
+                   tcRunView tc emptyResourceContext $ pinaforeInteractHandles inh outh True
                    hPutStrLn outh "<END>"
 
 getTestInteractive :: IO TestTree

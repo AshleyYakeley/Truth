@@ -1,17 +1,13 @@
 module Truth.UI.GTK.Label
-    ( labelGetView
+    ( createLabel
     ) where
 
 import GI.Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
 
-createWidget :: LabelUISpec -> CreateView Widget
-createWidget (MkLabelUISpec sub) = do
+createLabel :: Model (ROWUpdate Text) -> CreateView Widget
+createLabel lmod = do
     widget <- new Label []
-    cvBindReadOnlyWholeModel sub $ \label -> set widget [#label := label]
+    cvBindReadOnlyWholeModel lmod $ \label -> set widget [#label := label]
     toWidget widget
-
-labelGetView :: GetGView
-labelGetView = MkGetView $ \_ uispec -> fmap createWidget $ isUISpec uispec

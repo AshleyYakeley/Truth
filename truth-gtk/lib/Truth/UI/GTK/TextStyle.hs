@@ -4,7 +4,15 @@ import Data.GI.Base.Attributes
 import Data.GI.Gtk
 import GI.Pango
 import Shapes
-import Truth.Core
+
+data TextStyle = MkTextStyle
+    { tsItalic :: Bool
+    } deriving (Eq)
+
+plainTextStyle :: TextStyle
+plainTextStyle = let
+    tsItalic = False
+    in MkTextStyle {..}
 
 textCellAttributes :: Text -> TextStyle -> [AttrOp CellRendererText 'AttrSet]
 textCellAttributes text MkTextStyle {..} =

@@ -1,12 +1,14 @@
 module Truth.UI.GTK.Text
-    ( textAreaGetView
+    ( TextSelection
+    , createTextArea
     ) where
 
 import GI.Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
+
+type TextSelection = FloatingChangeLens (StringUpdate Text) (StringUpdate Text)
 
 replaceText :: Index s ~ Int => TextBuffer -> SequenceRun s -> Text -> IO ()
 replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)) text = do
@@ -31,8 +33,8 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-textView :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GCreateView
-textView rmod (MkSelectNotify setsel) = do
+createTextArea :: Model (StringUpdate Text) -> SelectNotify TextSelection -> CreateView Widget
+createTextArea rmod (MkSelectNotify setsel) = do
     esrc <- newEditSource
     buffer <- new TextBuffer []
     insertSignal <-
@@ -77,7 +79,3 @@ textView rmod (MkSelectNotify setsel) = do
     cvBindModel rmod (Just esrc) initV mempty recvV
     widget <- new TextView [#buffer := buffer]
     toWidget widget
-
-textAreaGetView :: GetGView
-textAreaGetView =
-    MkGetView $ \_ uispec -> fmap (\(MkTextAreaUISpec sub setsel) -> textView sub setsel) $ isUISpec uispec

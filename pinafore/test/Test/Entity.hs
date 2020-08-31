@@ -16,17 +16,16 @@ scriptTest ::
        forall a. FromPinaforeType a
     => Text
     -> Text
-    -> ((?pinafore :: PinaforeContext) => UIToolkit -> MFunction LifeCycleIO IO -> a -> IO ())
+    -> ((?pinafore :: PinaforeContext) => TruthContext -> MFunction LifeCycleIO IO -> a -> IO ())
     -> ContextTestTree
 scriptTest name text checker =
     contextTestCase name text $ \t ->
-        withTestPinaforeContext $ \uitoolkit unlift _getTableState -> do
+        withTestPinaforeContext $ \tc unlift _getTableState -> do
             a <- throwResult $ pinaforeInterpretFileAtType "<test>" $ "onStop (" <> t <> ") (fail \"stopped\")"
-            checker uitoolkit unlift a
+            checker tc unlift a
 
 pointTest :: Text -> ContextTestTree
-pointTest text =
-    scriptTest text text $ \uitoolkit _ action -> uitRunView uitoolkit emptyResourceContext $ runPinaforeAction action
+pointTest text = scriptTest text text $ \tc _ action -> tcRunView tc emptyResourceContext $ runPinaforeAction action
 
 assertThrows :: IO a -> IO ()
 assertThrows ma = do
@@ -37,8 +36,7 @@ assertThrows ma = do
 
 badPointTest :: Text -> ContextTestTree
 badPointTest text =
-    scriptTest text text $ \uitoolkit _ action ->
-        assertThrows $ uitRunView uitoolkit emptyResourceContext $ runPinaforeAction action
+    scriptTest text text $ \tc _ action -> assertThrows $ tcRunView tc emptyResourceContext $ runPinaforeAction action
 
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
@@ -49,18 +47,18 @@ badInterpretTest text c =
 exceptionTest :: Text -> ContextTestTree
 exceptionTest text c =
     testCase (unpack text) $
-    withTestPinaforeContext $ \uitoolkit _unlift _getTableState -> do
+    withTestPinaforeContext $ \tc _unlift _getTableState -> do
         action <- throwResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
-        assertThrows $ uitRunView uitoolkit emptyResourceContext action
+        assertThrows $ tcRunView tc emptyResourceContext action
 
 updateTest :: Text -> ContextTestTree
 updateTest text =
-    scriptTest text text $ \uitoolkit unlift action -> do
-        (sendUpdate, ref) <- uitRunView uitoolkit emptyResourceContext $ unliftPinaforeActionOrFail action
+    scriptTest text text $ \tc unlift action -> do
+        (sendUpdate, ref) <- tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
         unlift $
             runEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $
-            uitRunView uitoolkit emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
+            tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
 testUpdates = runContext $ tgroup "update" [updateTest "do ref <- newMemRef; return (ref := 1, ref) end"]

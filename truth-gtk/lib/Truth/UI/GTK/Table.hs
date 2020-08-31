@@ -1,5 +1,9 @@
 module Truth.UI.GTK.Table
-    ( tableGetView
+    ( TableCellProps(..)
+    , plainTableCellProps
+    , KeyColumn(..)
+    , readOnlyKeyColumn
+    , createListTable
     ) where
 
 import Data.GI.Base.Attributes hiding (get)
@@ -7,9 +11,39 @@ import Data.GI.Gtk hiding (get)
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.DynamicStore
-import Truth.UI.GTK.GView
 import Truth.UI.GTK.TextStyle
 import Truth.UI.GTK.Useful
+
+data TableCellProps = MkTableCellProps
+    { tcStyle :: TextStyle
+    }
+
+plainTableCellProps :: TableCellProps
+plainTableCellProps = let
+    tcStyle = plainTextStyle
+    in MkTableCellProps {..}
+
+data KeyColumn update = MkKeyColumn
+    { kcName :: Model (ROWUpdate Text)
+    , kcContents :: Model update -> CreateView (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
+    }
+
+readOnlyKeyColumn ::
+       forall update.
+       Model (ROWUpdate Text)
+    -> (Model update -> CreateView (Model (ROWUpdate (Text, TableCellProps))))
+    -> KeyColumn update
+readOnlyKeyColumn kcName getter = let
+    kcContents :: Model update -> CreateView (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
+    kcContents rowSub = do
+        cellSub <- getter rowSub
+        let
+            textSub :: Model (WholeUpdate Text)
+            textSub = mapModel (fromReadOnlyRejectingChangeLens . liftReadOnlyChangeLens (funcChangeLens fst)) cellSub
+            propsSub :: Model (ROWUpdate TableCellProps)
+            propsSub = mapModel (liftReadOnlyChangeLens $ funcChangeLens snd) cellSub
+        return (textSub, propsSub)
+    in MkKeyColumn {..}
 
 data Column row = MkColumn
     { colName :: Model (ROWUpdate Text)
@@ -81,7 +115,7 @@ tableContainerView ::
     -> Model (OrderedListUpdate seq update)
     -> (Model update -> View ())
     -> SelectNotify (Model update)
-    -> GCreateView
+    -> CreateView Widget
 tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model (WholeUpdate rowtext)
                                                                         , Model (ROWUpdate rowprops))) cols) tableSub onActivate notifier = do
     let
@@ -150,8 +184,18 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
                 Nothing -> return ()
     toWidget tview
 
-tableGetView :: GetGView
-tableGetView =
-    MkGetView $ \_getview uispec -> do
-        MkTableUISpec cols sub onActivate sel <- isUISpec uispec
-        return $ tableContainerView (mconcat $ fmap oneKeyColumn cols) sub onActivate sel
+createListTable ::
+       forall seq update.
+       ( IsSequence seq
+       , Integral (Index seq)
+       , IsUpdate update
+       , ApplicableEdit (UpdateEdit update)
+       , FullSubjectReader (UpdateReader update)
+       , UpdateSubject update ~ Element seq
+       )
+    => [KeyColumn update]
+    -> Model (OrderedListUpdate seq update)
+    -> (Model update -> View ())
+    -> SelectNotify (Model update)
+    -> CreateView Widget
+createListTable cols sub onActivate sel = tableContainerView (mconcat $ fmap oneKeyColumn cols) sub onActivate sel

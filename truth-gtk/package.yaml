@@ -37,9 +37,8 @@ library:
     other-modules:
       - Truth.UI.GTK.Useful
       - Truth.UI.GTK.TextStyle
-      - Truth.UI.GTK.GView
       - Truth.UI.GTK.DynamicStore
-      - Truth.UI.GTK.Window
+      - Truth.UI.GTK.Blank
       - Truth.UI.GTK.CSS
       - Truth.UI.GTK.Button
       - Truth.UI.GTK.Icon
@@ -48,7 +47,7 @@ library:
       - Truth.UI.GTK.Switch
       - Truth.UI.GTK.CheckButton
       - Truth.UI.GTK.Option
-      - Truth.UI.GTK.Entry
+      - Truth.UI.GTK.TextEntry
       - Truth.UI.GTK.Text
       - Truth.UI.GTK.Layout
       - Truth.UI.GTK.Pages
@@ -57,6 +56,9 @@ library:
       - Truth.UI.GTK.MenuBar
       - Truth.UI.GTK.Scrolled
       - Truth.UI.GTK.Calendar
+      - Truth.UI.GTK.ChooseFile
+      - Truth.UI.GTK.Window
+      - Truth.UI.GTK.Main
 
 tests:
     test:

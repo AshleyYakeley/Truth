@@ -9,7 +9,7 @@ import Shapes
 import Truth.Core
 
 nullViewIO :: View a -> IO a
-nullViewIO = uitRunView (nullUIToolkit runLifeCycle) emptyResourceContext
+nullViewIO = tcRunView (nullTruthContext runLifeCycle) emptyResourceContext
 
 benchHash :: Text -> Benchmark
 benchHash text = bench (show $ unpack text) $ nf literalToEntity text
@@ -27,7 +27,7 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullUIToolkit runLifeCycle) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullTruthContext runLifeCycle) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc
@@ -89,17 +89,17 @@ benchScripts =
 
 interpretUpdater :: (?pinafore :: PinaforeContext) => Text -> IO ()
 interpretUpdater text =
-    withTestPinaforeContext $ \uitoolkit unlift _getTableState -> do
+    withTestPinaforeContext $ \tc unlift _getTableState -> do
         action <- throwResult $ pinaforeInterpretFileAtType "<test>" text
-        (sendUpdate, ref) <- uitRunView uitoolkit emptyResourceContext $ unliftPinaforeActionOrFail action
+        (sendUpdate, ref) <- tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
         unlift $
             runEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $
-            uitRunView uitoolkit emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
+            tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullUIToolkit runLifeCycle) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullTruthContext runLifeCycle) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc

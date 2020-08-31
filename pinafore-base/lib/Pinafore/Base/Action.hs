@@ -2,11 +2,11 @@ module Pinafore.Base.Action
     ( PinaforeAction
     , unPinaforeAction
     , viewPinaforeAction
+    , createViewPinaforeAction
     , pinaforeResourceContext
     , pinaforeFunctionValueGet
     , pinaforeRefPushAction
-    , PinaforeWindow(..)
-    , pinaforeNewWindow
+    , pinaforeGetExitOnClose
     , pinaforeExit
     , pinaforeUndoHandler
     , pinaforeActionKnow
@@ -20,7 +20,7 @@ import Shapes
 import Truth.Core
 
 data ActionContext = MkActionContext
-    { acUIToolkit :: UIToolkit
+    { acTruthContext :: TruthContext
     , acUndoHandler :: UndoHandler
     }
 
@@ -34,12 +34,17 @@ instance MonadFail PinaforeAction where
 instance RepresentationalRole PinaforeAction where
     representationalCoercion MkCoercion = MkCoercion
 
-unPinaforeAction :: forall a. UIToolkit -> UndoHandler -> PinaforeAction a -> View (Know a)
-unPinaforeAction acUIToolkit acUndoHandler (MkPinaforeAction action) =
+unPinaforeAction :: forall a. TruthContext -> UndoHandler -> PinaforeAction a -> View (Know a)
+unPinaforeAction acTruthContext acUndoHandler (MkPinaforeAction action) =
     getComposeM $ runReaderT action MkActionContext {..}
 
 viewPinaforeAction :: View a -> PinaforeAction a
 viewPinaforeAction va = MkPinaforeAction $ lift $ lift va
+
+createViewPinaforeAction :: CreateView a -> PinaforeAction a
+createViewPinaforeAction cva = do
+    unlift <- MkPinaforeAction $ lift $ MkComposeM $ fmap Known askUnlift
+    pinaforeLiftLifeCycleIO $ runWUnliftAll unlift cva
 
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
@@ -52,24 +57,18 @@ pinaforeRefPushAction lv edits = do
         then return ()
         else empty
 
-data PinaforeWindow = MkPinaforeWindow
-    { pwClose :: View ()
-    , pwWindow :: UIWindow
-    }
+pinaforeGetExitOnClose :: PinaforeAction (WMFunction CreateView LifeCycleIO)
+pinaforeGetExitOnClose =
+    MkPinaforeAction $ do
+        tc <- asks acTruthContext
+        unlift <- lift $ MkComposeM $ fmap Known askUnlift
+        return $ MkWMFunction $ runWUnliftAll unlift . tcExitOnClosed tc
 
 -- | Closing will be done at end of session.
 pinaforeLiftLifeCycleIO :: LifeCycleIO a -> PinaforeAction a
 pinaforeLiftLifeCycleIO la = do
     MkActionContext {..} <- MkPinaforeAction ask
-    liftIO $ uitUnliftLifeCycle acUIToolkit la
-
-pinaforeNewWindow :: WindowSpec -> PinaforeAction PinaforeWindow
-pinaforeNewWindow uiw = do
-    uit <- MkPinaforeAction $ asks acUIToolkit
-    unlift <- MkPinaforeAction $ lift $ MkComposeM $ fmap Known askUnlift
-    (pwWindow, close) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ runWUnliftAll unlift $ uitCreateWindow uit uiw
-    let pwClose = liftIO close
-    return $ MkPinaforeWindow {..}
+    liftIO $ tcUnliftLifeCycle acTruthContext la
 
 pinaforeExit :: PinaforeAction ()
 pinaforeExit = viewPinaforeAction viewExit

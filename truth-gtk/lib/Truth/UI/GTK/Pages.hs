@@ -1,22 +1,13 @@
 module Truth.UI.GTK.Pages
-    ( pagesGetView
+    ( createNotebook
     ) where
 
 import GI.Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
 
-pagesGetView :: GetGView
-pagesGetView =
-    MkGetView $ \getview uispec -> do
-        MkPagesUISpec pagespecs <- isUISpec uispec
-        return $ do
-            pages <-
-                for pagespecs $ \(headspec, bodyspec) -> do
-                    headwidget <- getview headspec
-                    bodywidget <- getview bodyspec
-                    return (headwidget, bodywidget)
-            notebook <- new Notebook []
-            for_ pages $ \(headwidget, bodywidget) -> #appendPage notebook bodywidget $ Just headwidget
-            toWidget notebook
+createNotebook :: [(Widget, Widget)] -> CreateView Widget
+createNotebook pages = do
+    notebook <- new Notebook []
+    for_ pages $ \(headwidget, bodywidget) -> #appendPage notebook bodywidget $ Just headwidget
+    toWidget notebook

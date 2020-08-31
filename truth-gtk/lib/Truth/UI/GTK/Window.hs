@@ -1,117 +1,50 @@
 module Truth.UI.GTK.Window
-    ( truthMainGTK
-    , getMaybeView
+    ( WindowSpec(..)
+    , UIWindow(..)
+    , createWindow
     ) where
 
 import GI.GLib as GI hiding (String)
-import GI.Gdk as GI (threadsAddIdle)
-import GI.Gtk as GI
+import GI.Gtk as GI hiding (MenuBar)
 import Shapes
 import Truth.Core
-import Truth.Core.UI.Toolkit.Internal
-import Truth.UI.GTK.Button
-import Truth.UI.GTK.CSS
-import Truth.UI.GTK.Calendar
-import Truth.UI.GTK.CheckButton
-import Truth.UI.GTK.Drag
-import Truth.UI.GTK.Entry
-import Truth.UI.GTK.GView
-import Truth.UI.GTK.Icon
-import Truth.UI.GTK.Label
-import Truth.UI.GTK.Layout
-import Truth.UI.GTK.Maybe
 import Truth.UI.GTK.MenuBar
-import Truth.UI.GTK.Option
-import Truth.UI.GTK.Pages
-import Truth.UI.GTK.Scrolled
 import Truth.UI.GTK.Switch
-import Truth.UI.GTK.Table
-import Truth.UI.GTK.Text
 import Truth.UI.GTK.Useful
 
-lastResortView :: UISpec -> GCreateView
-lastResortView spec = do
-    w <- liftIO $ labelNew $ Just $ "missing viewer for " <> fromString (show spec)
-    toWidget w
+data WindowSpec = MkWindowSpec
+    { wsCloseBoxAction :: View ()
+    , wsTitle :: Model (ROWUpdate Text)
+    , wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
+    , wsContent :: Widget
+    }
 
-nullGetView :: GetGView
-nullGetView =
-    MkGetView $ \_ uispec -> do
-        MkNullUISpec <- isUISpec uispec
-        return $ do
-            w <- new DrawingArea []
-            toWidget w
+data UIWindow = MkUIWindow
+    { uiWindowHide :: View ()
+    , uiWindowShow :: View ()
+    }
 
-allGetView :: GetGView
-allGetView =
-    mconcat
-        [ nullGetView
-        , lensGetView
-        , cssGetView
-        , buttonGetView
-        , iconGetView
-        , labelGetView
-        , checkButtonGetView
-        , optionGetView
-        , textEntryGetView
-        , textAreaGetView
-        , tableGetView
-        , oneGetView
-        , switchGetView
-        , layoutGetView
-        , pagesGetView
-        , dragGetView
-        , scrolledGetView
-        , calendarGetView
-        ]
-
-getRequest :: forall t. IOWitness t -> Maybe t
-getRequest wit = do
-    Refl <- testEquality wit witChooseFile
-    return $ do
-        dialog <- new FileChooserDialog [#action := FileChooserActionOpen]
-        _ <- #addButton dialog "Cancel" $ fromIntegral $ fromEnum ResponseTypeCancel
-        _ <- #addButton dialog "Copy" $ fromIntegral $ fromEnum ResponseTypeOk
-        res <- #run dialog
-        mpath <-
-            case toEnum $ fromIntegral res of
-                ResponseTypeOk -> fileChooserGetFilename dialog
-                _ -> return Nothing
-        #destroy dialog
-        return mpath
-
-getMaybeView :: UISpec -> Maybe GCreateView
-getMaybeView = getUIView allGetView getTheView
-
-getTheView :: CVUISpec -> GCreateView
-getTheView lspec = do
-    spec <- lspec
-    case getMaybeView spec of
-        Just view -> view
-        Nothing -> lastResortView spec
-
-createWindowAndChild :: WindowSpec -> CreateView UIWindow
-createWindowAndChild MkWindowSpec {..} = do
+createWindow :: WindowSpec -> CreateView UIWindow
+createWindow MkWindowSpec {..} = do
     window <- lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
     cvBindReadOnlyWholeModel wsTitle $ \title -> set window [#title := title]
-    content <- getTheView wsContent
     _ <-
         cvOn window #deleteEvent $ \_ -> do
             wsCloseBoxAction
             return True -- don't run existing handler that closes the window
     ui <-
         case wsMenuBar of
-            Nothing -> return content
+            Nothing -> return wsContent
             Just efmbar -> do
                 ag <- new AccelGroup []
                 #addAccelGroup window ag
                 mb <-
-                    switchView $
+                    createDynamic $
                     mapModel (liftReadOnlyChangeLens $ funcChangeLens $ \mbar -> createMenuBar ag mbar >>= toWidget) $
                     efmbar
                 vbox <- new Box [#orientation := OrientationVertical]
                 #packStart vbox mb False False 0
-                #packStart vbox content True True 0
+                #packStart vbox wsContent True True 0
                 toWidget vbox
     #add window ui
     #show ui
@@ -120,45 +53,3 @@ createWindowAndChild MkWindowSpec {..} = do
         uiWindowHide = #hide window
         uiWindowShow = #show window
     return $ MkUIWindow {..}
-
-data RunState
-    = RSRun
-    | RSStop
-
-truthMainGTK :: TruthMain
-truthMainGTK appMain =
-    runLifeCycle $
-    liftIOWithUnlift $ \unlift -> do
-        _ <- GI.init Nothing
-        uiLockVar <- newMVar ()
-        runVar <- newMVar RSRun
-        let
-            uitWithLock :: forall a. IO a -> IO a
-            uitWithLock action = mVarUnitRun uiLockVar action
-            uitCreateWindow :: WindowSpec -> CreateView UIWindow
-            uitCreateWindow wspec = createWindowAndChild wspec
-            uitGetRequest = getRequest
-            uitExit :: IO ()
-            uitExit = mVarRun runVar $ put RSStop
-            uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
-            uitUnliftLifeCycle = unlift
-            tcUIToolkit = MkUIToolkit {..}
-        a <- unlift $ uitRunView tcUIToolkit emptyResourceContext $ appMain MkTruthContext {..}
-        shouldRun <- liftIO $ mVarRun runVar Shapes.get
-        case shouldRun of
-            RSStop -> return ()
-            RSRun -> do
-                mloop <- mainLoopNew Nothing False
-                _ <-
-                    threadsAddIdle PRIORITY_DEFAULT_IDLE $ do
-                        putMVar uiLockVar ()
-                        threadDelay 5000 -- 5ms delay
-                        takeMVar uiLockVar
-                        sr <- mVarRun runVar Shapes.get
-                        case sr of
-                            RSRun -> return SOURCE_CONTINUE
-                            RSStop -> do
-                                #quit mloop
-                                return SOURCE_REMOVE
-                mVarUnitRun uiLockVar $ #run mloop
-        return a

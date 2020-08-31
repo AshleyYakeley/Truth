@@ -1,16 +1,15 @@
 module Truth.UI.GTK.Button
-    ( buttonGetView
+    ( createButton
     ) where
 
 import Data.IORef
 import GI.Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-createWidget :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (View ()))) -> CreateView Widget
-createWidget rlabel raction = do
+createButton :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (View ()))) -> CreateView Widget
+createButton rlabel raction = do
     aref <- liftIO $ newIORef Nothing
     widget <- new Button []
     cvBindReadOnlyWholeModel rlabel $ \label -> set widget [#label := label]
@@ -24,9 +23,3 @@ createWidget rlabel raction = do
                 Nothing -> return ()
                 Just action -> action
     toWidget widget
-
-buttonGetView :: GetGView
-buttonGetView =
-    MkGetView $ \_ uispec -> do
-        MkButtonUISpec rlabel raction <- isUISpec uispec
-        return $ createWidget rlabel raction

@@ -1,20 +1,27 @@
 module Truth.UI.GTK.Option
-    ( optionGetView
+    ( ComboBoxCell(..)
+    , plainComboBoxCell
+    , createComboBox
     ) where
 
 import Data.GI.Base.Attributes
 import Data.GI.Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
 import Truth.UI.GTK.TextStyle
 import Truth.UI.GTK.Useful
 
-optionGetView :: GetGView
-optionGetView =
-    MkGetView $ \_ uispec -> do
-        MkOptionUISpec itemsModel whichModel <- isUISpec uispec
-        return $ optionView itemsModel whichModel
+data ComboBoxCell = MkComboBoxCell
+    { cbcText :: Text
+    , cbcStyle :: TextStyle
+    , cbcDefault :: Bool
+    } deriving (Eq)
+
+plainComboBoxCell :: Text -> ComboBoxCell
+plainComboBoxCell cbcText = let
+    cbcStyle = plainTextStyle
+    cbcDefault = False
+    in MkComboBoxCell {..}
 
 listStoreView ::
        forall update. (ApplicableUpdate update, FullSubjectReader (UpdateReader update))
@@ -59,20 +66,20 @@ listStoreView (MkWMFunction blockSignal) itemsModel esrc = let
                 OrderedListUpdateClear -> blockSignal $ seqStoreClear store
     in cvBindModel itemsModel (Just esrc) initV mempty recv
 
-optionUICellAttributes :: OptionUICell -> [AttrOp CellRendererText 'AttrSet]
-optionUICellAttributes MkOptionUICell {..} = textCellAttributes optionCellText optionCellStyle
+comboBoxCellAttributes :: ComboBoxCell -> [AttrOp CellRendererText 'AttrSet]
+comboBoxCellAttributes MkComboBoxCell {..} = textCellAttributes cbcText cbcStyle
 
-optionFromStore ::
+cboxFromStore ::
        forall t. Eq t
     => Model (WholeUpdate t)
     -> EditSource
-    -> SeqStore (t, OptionUICell)
+    -> SeqStore (t, ComboBoxCell)
     -> CreateView (WIOFunction IO, Widget)
-optionFromStore whichModel esrc store = do
+cboxFromStore whichModel esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
     #packStart widget renderer False
-    cellLayoutSetAttributes widget renderer store $ \(_, cell) -> optionUICellAttributes cell
+    cellLayoutSetAttributes widget renderer store $ \(_, cell) -> comboBoxCellAttributes cell
     changedSignal <-
         cvOn widget #changed $
         viewRunResource whichModel $ \asub -> do
@@ -99,10 +106,10 @@ optionFromStore whichModel esrc store = do
             liftIO $ do
                 items <- seqStoreToList store
                 let
-                    matchVal :: (Int, (t, OptionUICell)) -> Bool
+                    matchVal :: (Int, (t, ComboBoxCell)) -> Bool
                     matchVal (_, (t', _)) = t == t'
-                    isDefault :: (Int, (t, OptionUICell)) -> Bool
-                    isDefault (_, (_, cell)) = optionCellDefault cell
+                    isDefault :: (Int, (t, ComboBoxCell)) -> Bool
+                    isDefault (_, (_, cell)) = cbcDefault cell
                 case findN [matchVal, isDefault] $ zip [(0 :: Int) ..] items of
                     Just (i, _) -> do
                         tp <- treePathNewFromIndices [fromIntegral i]
@@ -115,19 +122,19 @@ optionFromStore whichModel esrc store = do
     w <- toWidget widget
     return (MkWMFunction blockSignal, w)
 
-optionView ::
+createComboBox ::
        forall update t.
        ( Eq t
        , FullSubjectReader (UpdateReader update)
        , ApplicableUpdate update
-       , UpdateSubject update ~ (t, OptionUICell)
+       , UpdateSubject update ~ (t, ComboBoxCell)
        )
     => Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
     -> Model (WholeUpdate t)
-    -> GCreateView
-optionView itemsModel whichModel = do
+    -> CreateView Widget
+createComboBox itemsModel whichModel = do
     esrc <- newEditSource
     rec
         store <- listStoreView blockSignal itemsModel esrc
-        (blockSignal, w) <- optionFromStore whichModel esrc store
+        (blockSignal, w) <- cboxFromStore whichModel esrc store
     return w

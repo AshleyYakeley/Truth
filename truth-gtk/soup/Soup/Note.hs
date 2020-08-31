@@ -4,6 +4,7 @@ import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Types as JSON
 import Shapes
 import Truth.Core
+import Truth.UI.GTK
 import Truth.World.JSON
 
 data NoteSel t where
@@ -78,13 +79,12 @@ instance HasNewValue (Tuple NoteSel) where
 
 type NoteUpdate = TupleUpdate NoteSel
 
-noteEditSpec :: Model NoteUpdate -> SelectNotify TextSelection -> CVUISpec
-noteEditSpec sub sel =
-    verticalUISpec
-        [ (False, textEntryUISpec $ mapModel (tupleChangeLens NoteTitle) sub)
-        , (False, checkboxUISpec (constantModel "past") $ mapModel (tupleChangeLens NotePast) sub)
-        , (True, textAreaUISpec (mapModel (tupleChangeLens NoteText) sub) sel)
-        ]
+noteEditSpec :: Model NoteUpdate -> SelectNotify TextSelection -> CreateView Widget
+noteEditSpec sub sel = do
+    titleUI <- createTextEntry $ mapModel (tupleChangeLens NoteTitle) sub
+    pastUI <- createCheckButton (constantModel "past") $ mapModel (tupleChangeLens NotePast) sub
+    textUI <- createTextArea (mapModel (tupleChangeLens NoteText) sub) sel
+    createLayout OrientationVertical [(False, titleUI), (False, pastUI), (True, textUI)]
 
 type Note = Tuple NoteSel
 

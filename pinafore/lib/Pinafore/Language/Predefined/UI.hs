@@ -11,6 +11,7 @@ import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
 import Truth.Core
+import Truth.UI.GTK
 
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
@@ -66,23 +67,21 @@ uiTable cols order val onDoubleClick sn = do
         olsub = mapModel (tupleChangeLens SelectContent) colSub
         tsn :: SelectNotify (Model (ConstWholeUpdate EnA))
         tsn = contramap readSub $ viewLiftSelectNotify sn
-    tableUISpec (fmap getColumn cols) olsub onSelect tsn
+    createListTable (fmap getColumn cols) olsub onSelect tsn
 
 type PickerType = Know EnA
 
-type PickerPairType = (PickerType, OptionUICell)
+type PickerPairType = (PickerType, ComboBoxCell)
 
-uiPick :: PinaforeImmutableRef ([(EnA, Text)]) -> LangRef '( A, EnA) -> CVUISpec
+uiPick :: PinaforeImmutableRef ([(EnA, Text)]) -> LangRef '( A, EnA) -> CreateView Widget
 uiPick itemsRef ref = do
     let
         mapItem :: (EnA, Text) -> PickerPairType
-        mapItem (ea, t) = (Known ea, plainOptionUICell t)
+        mapItem (ea, t) = (Known ea, plainComboBoxCell t)
         mapItems :: Know [(EnA, Text)] -> [PickerPairType]
         mapItems Unknown = []
         mapItems (Known items) =
-            ( Unknown
-            , (plainOptionUICell "unknown")
-                  {optionCellDefault = True, optionCellStyle = plainTextStyle {tsItalic = True}}) :
+            (Unknown, (plainComboBoxCell "unknown") {cbcDefault = True, cbcStyle = plainTextStyle {tsItalic = True}}) :
             fmap mapItem items
         itemsLens ::
                ChangeLens (WholeUpdate (Know [(EnA, Text)])) (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
@@ -91,7 +90,7 @@ uiPick itemsRef ref = do
         subOpts = pinaforeRefModel $ eaMapSemiReadOnly itemsLens $ immutableRefToReadOnlyRef itemsRef
         subVal :: Model (WholeUpdate PickerType)
         subVal = pinaforeRefModel $ langRefToValue $ contraRangeLift meet2 ref
-    optionUISpec subOpts subVal
+    createComboBox subOpts subVal
 
 actionRef ::
        (?pinafore :: PinaforeContext)
@@ -105,29 +104,30 @@ uiButton ::
        (?pinafore :: PinaforeContext)
     => PinaforeImmutableRef Text
     -> PinaforeImmutableRef (PinaforeAction TopType)
-    -> CVUISpec
+    -> CreateView Widget
 uiButton text raction =
-    buttonUISpec
+    createButton
         (pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text)
         (pinaforeRefModel $ actionRef raction)
 
-uiLabel :: PinaforeImmutableRef Text -> CVUISpec
-uiLabel text = labelUISpec $ pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text
+uiLabel :: PinaforeImmutableRef Text -> CreateView Widget
+uiLabel text = createLabel $ pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text
 
 uiDynamic :: PinaforeImmutableRef LangUI -> LangUI
 uiDynamic uiref = let
-    getSpec :: Know LangUI -> CVUISpec
-    getSpec Unknown = nullUISpec
+    getSpec :: Know LangUI -> CreateView Widget
+    getSpec Unknown = createBlank
     getSpec (Known pui) = pui
-    in switchUISpec $ pinaforeRefModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyRef uiref
+    in createDynamic $ pinaforeRefModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyRef uiref
 
 openWindow ::
        (?pinafore :: PinaforeContext)
     => PinaforeImmutableRef Text
     -> PinaforeImmutableRef MenuBar
     -> LangUI
-    -> PinaforeAction PinaforeWindow
-openWindow title mbar wsContent = do
+    -> PinaforeAction LangWindow
+openWindow title mbar mContent = do
+    wsContent <- createViewPinaforeAction mContent
     mfix $ \w ->
         pinaforeNewWindow $ let
             wsCloseBoxAction :: View ()
@@ -138,12 +138,12 @@ openWindow title mbar wsContent = do
             wsMenuBar = Just $ pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef mbar
             in MkWindowSpec {..}
 
-uiTextArea :: PinaforeRef (WholeUpdate (Know Text)) -> CVUISpec
+uiTextArea :: PinaforeRef (WholeUpdate (Know Text)) -> CreateView Widget
 uiTextArea val =
-    textAreaUISpec (pinaforeRefModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) val) mempty
+    createTextArea (pinaforeRefModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) val) mempty
 
-uiCalendar :: PinaforeRef (WholeUpdate (Know Day)) -> CVUISpec
-uiCalendar day = calendarUISpec $ pinaforeRefModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
+uiCalendar :: PinaforeRef (WholeUpdate (Know Day)) -> CreateView Widget
+uiCalendar day = createCalendar $ pinaforeRefModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
@@ -163,7 +163,7 @@ menuAction ::
     => Text
     -> Maybe Text
     -> PinaforeImmutableRef (PinaforeAction TopType)
-    -> MenuEntry
+    -> LangMenuEntry
 menuAction label maccelStr raction = let
     maccel = do
         accelStr <- maccelStr
@@ -171,29 +171,45 @@ menuAction label maccelStr raction = let
     in ActionMenuEntry label maccel $ pinaforeRefModel $ actionRef raction
 
 uiScrolled :: LangUI -> LangUI
-uiScrolled = scrolledUISpec
+uiScrolled lui = lui >>= createScrolled
 
-uiUnitCheckBox :: PinaforeImmutableRef Text -> PinaforeRef (WholeUpdate (Know ())) -> CVUISpec
+uiUnitCheckBox :: PinaforeImmutableRef Text -> PinaforeRef (WholeUpdate (Know ())) -> CreateView Widget
 uiUnitCheckBox name val =
-    checkboxUISpec (pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
+    createCheckButton (pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
     pinaforeRefModel $ eaMap (toChangeLens knowBool) val
 
-uiCheckBox :: PinaforeImmutableRef Text -> PinaforeRef (WholeUpdate (Know Bool)) -> CVUISpec
+uiCheckBox :: PinaforeImmutableRef Text -> PinaforeRef (WholeUpdate (Know Bool)) -> CreateView Widget
 uiCheckBox name val =
-    maybeCheckboxUISpec (pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
+    createMaybeCheckButton (pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
     pinaforeRefModel $ eaMap (toChangeLens knowMaybe) val
 
-uiTextEntry :: PinaforeRef (WholeUpdate (Know Text)) -> CVUISpec
-uiTextEntry val = textEntryUISpec $ pinaforeRefModel $ eaMap (unknownValueChangeLens mempty) $ val
+uiTextEntry :: PinaforeRef (WholeUpdate (Know Text)) -> CreateView Widget
+uiTextEntry val = createTextEntry $ pinaforeRefModel $ eaMap (unknownValueChangeLens mempty) $ val
 
 uiHorizontal :: [(Bool, LangUI)] -> LangUI
-uiHorizontal = horizontalUISpec
+uiHorizontal mitems = do
+    items <-
+        for mitems $ \(f, lui) -> do
+            ui <- lui
+            return (f, ui)
+    createLayout OrientationHorizontal items
 
 uiVertical :: [(Bool, LangUI)] -> LangUI
-uiVertical = verticalUISpec
+uiVertical mitems = do
+    items <-
+        for mitems $ \(f, lui) -> do
+            ui <- lui
+            return (f, ui)
+    createLayout OrientationVertical items
 
 uiPages :: [(LangUI, LangUI)] -> LangUI
-uiPages = pagesUISpec
+uiPages mitems = do
+    items <-
+        for mitems $ \(mt, mb) -> do
+            t <- mt
+            b <- mb
+            return (t, b)
+    createNotebook items
 
 noNotifier :: LangNotifier TopType
 noNotifier = mempty
@@ -217,7 +233,7 @@ uiRun pui = do
     kui <- cvLiftView $ unliftPinaforeAction pui
     case kui of
         Known ui -> ui
-        Unknown -> nullUISpec
+        Unknown -> createBlank
 
 ui_predefinitions :: [DocTreeEntry BindDoc]
 ui_predefinitions =
@@ -234,7 +250,7 @@ ui_predefinitions =
           "UI"
           "A user interface is something that goes inside a window."
           [ mkValEntry "uiRun" "UI that runs an Action first." uiRun
-          , mkValEntry "uiBlank" "Blank user-interface" nullUISpec
+          , mkValEntry "uiBlank" "Blank user-interface" createBlank
           , mkValEntry "uiUnitCheckBox" "(TBD)" uiUnitCheckBox
           , mkValEntry "uiCheckBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox
           , mkValEntry

@@ -5,7 +5,6 @@ module Truth.Core.UI.View.View
     , liftIOViewAsync
     , viewRunResource
     , viewRunResourceContext
-    , viewRequest
     , viewLocalResourceContext
     , viewGetResourceContext
     , runView
@@ -43,9 +42,6 @@ viewRunResourceContext ::
 viewRunResourceContext resource call = do
     rc <- viewGetResourceContext
     runResourceContext rc resource $ \rc' unlift ftt -> viewLocalResourceContext rc' $ call unlift ftt
-
-viewRequest :: Monad m => IOWitness t -> ViewT m (Maybe t)
-viewRequest wit = asks (\vc -> vcRequest vc wit)
 
 viewWithContext :: (ViewContext -> ViewContext) -> ViewT m a -> ViewT m a
 viewWithContext f ma = withReaderT f ma

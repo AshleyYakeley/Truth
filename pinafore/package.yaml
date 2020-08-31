@@ -17,6 +17,7 @@ library:
       - typed-expression
       - truth-core
       - truth-world
+      - truth-gtk
       - pinafore-base
     exposed-modules:
       - Pinafore.Language

@@ -1,16 +1,16 @@
 module Truth.UI.GTK.CheckButton
-    ( checkButtonGetView
+    ( createCheckButton
+    , createMaybeCheckButton
     ) where
 
 import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-createWidget :: CheckboxUISpec -> CreateView Widget
-createWidget (MkCheckboxUISpec label rmod) = do
+createCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate Bool) -> CreateView Widget
+createCheckButton label rmod = do
     esrc <- newEditSource
     initial <- viewRunResource rmod $ \asub -> aModelRead asub ReadWhole
     widget <- new CheckButton [#active := initial]
@@ -24,7 +24,9 @@ createWidget (MkCheckboxUISpec label rmod) = do
     cvBindWholeModel rmod (Just esrc) $ \st ->
         liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
-createWidget (MkMaybeCheckboxUISpec label rmod) = do
+
+createMaybeCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate (Maybe Bool)) -> CreateView Widget
+createMaybeCheckButton label rmod = do
     initial <- viewRunResource rmod $ \asub -> aModelRead asub ReadWhole
     widget <- new CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
     cvBindReadOnlyWholeModel label $ \val -> set widget [#label := val]
@@ -58,6 +60,3 @@ createWidget (MkMaybeCheckboxUISpec label rmod) = do
                 _ -> return False
     cvBindWholeModel rmod Nothing setWidgetState
     toWidget widget
-
-checkButtonGetView :: GetGView
-checkButtonGetView = MkGetView $ \_ uispec -> fmap createWidget $ isUISpec uispec

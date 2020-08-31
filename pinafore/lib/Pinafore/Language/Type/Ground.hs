@@ -10,7 +10,6 @@ import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Show
 import Pinafore.Language.Value
 import Shapes
-import Truth.Core
 
 newtype WitKind =
     MkWitKind (forall (k :: Type). k -> Type)
@@ -52,8 +51,8 @@ data PinaforeGroundType dv t where
     -- UI
     UserInterfacePinaforeGroundType :: PinaforeGroundType '[] LangUI
     NotifierPinaforeGroundType :: PinaforeGroundType '[ 'Contravariance] LangNotifier
-    WindowPinaforeGroundType :: PinaforeGroundType '[] PinaforeWindow
-    MenuItemPinaforeGroundType :: PinaforeGroundType '[] MenuEntry
+    WindowPinaforeGroundType :: PinaforeGroundType '[] LangWindow
+    MenuItemPinaforeGroundType :: PinaforeGroundType '[] LangMenuEntry
 
 type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
 
