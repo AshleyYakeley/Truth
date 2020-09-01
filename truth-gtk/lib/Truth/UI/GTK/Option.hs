@@ -77,7 +77,7 @@ cboxFromStore ::
     -> CreateView (WIOFunction IO, Widget)
 cboxFromStore whichModel esrc store = do
     widget <- comboBoxNewWithModel store
-    renderer <- new CellRendererText []
+    renderer <- cvNew CellRendererText []
     #packStart widget renderer False
     cellLayoutSetAttributes widget renderer store $ \(_, cell) -> comboBoxCellAttributes cell
     changedSignal <-

@@ -33,19 +33,19 @@ oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
                     ((), vs) <-
                         viewCreateView $ do
                             widget <- baseView $ fmap never fn
-                            lcContainPackStart True box widget
+                            cvPackStart True box widget
                             widgetShow widget
                     return $ MissingOVS fn vs
                 SuccessResult () -> do
                     ((), vs) <-
                         viewCreateView $ do
                             widget <- baseView $ pure $ mapModel (mustExistOneChangeLens "reference") rm
-                            lcContainPackStart True box widget
+                            cvPackStart True box widget
                             widgetShow widget
                     return $ PresentOVS vs
         initVS :: Model (FullResultOneUpdate f update) -> CreateView (OneWholeViews f, Box)
         initVS rm = do
-            box <- new Box [#orientation := OrientationVertical]
+            box <- cvNew Box [#orientation := OrientationVertical]
             firstfu <- viewRunResource rm $ \am -> aModelRead am ReadHasOne
             vs <- cvLiftView $ getWidgets box rm firstfu
             return (vs, box)

@@ -98,7 +98,7 @@ attachMenuEntry ag ms (SubMenuEntry name entries) = do
     menuItemSetSubmenu item $ Just menu
     attachMenuEntries ag menu entries
 attachMenuEntry _ ms SeparatorMenuEntry = do
-    item <- new SeparatorMenuItem []
+    item <- cvNew SeparatorMenuItem []
     menuShellAppend ms item
 
 attachMenuEntries :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> [MenuEntry] -> CreateView ()

@@ -11,7 +11,7 @@ import Truth.UI.GTK.Useful
 createButton :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (View ()))) -> CreateView Widget
 createButton rlabel raction = do
     aref <- liftIO $ newIORef Nothing
-    widget <- new Button []
+    widget <- cvNew Button []
     cvBindReadOnlyWholeModel rlabel $ \label -> set widget [#label := label]
     cvBindReadOnlyWholeModel raction $ \maction -> do
         liftIO $ writeIORef aref maction

@@ -36,7 +36,7 @@ getSequenceRun iter1 iter2 = do
 createTextArea :: Model (StringUpdate Text) -> SelectNotify TextSelection -> CreateView Widget
 createTextArea rmod (MkSelectNotify setsel) = do
     esrc <- newEditSource
-    buffer <- new TextBuffer []
+    buffer <- cvNew TextBuffer []
     insertSignal <-
         cvOn buffer #insertText $ \iter text _ -> do
             p <- getSequencePoint iter
@@ -77,5 +77,5 @@ createTextArea rmod (MkSelectNotify setsel) = do
                     StringReplaceWhole text -> #setText buffer text (-1)
                     StringReplaceSection bounds text -> replaceText buffer bounds text
     cvBindModel rmod (Just esrc) initV mempty recvV
-    widget <- new TextView [#buffer := buffer]
+    widget <- cvNew TextView [#buffer := buffer]
     toWidget widget

@@ -19,7 +19,7 @@ setCSSClass cssclass w = do
 
 setCSSStyleSheet :: Bool -> Word32 -> Text -> Widget -> CreateView ()
 setCSSStyleSheet full priority css w = do
-    provider <- new CssProvider []
+    provider <- cvNew CssProvider []
     #loadFromData provider $ encodeUtf8 css
     children <- liftIO $ widgetGetTree full w
     for_ children $ \child -> do

@@ -16,7 +16,7 @@ createDynamic sub = do
             ((), vs) <-
                 viewCreateView $ do
                     widget <- gview
-                    lcContainPackStart True box widget
+                    cvPackStart True box widget
                     #show widget
             return vs
         initVS :: Model (ROWUpdate (CreateView Widget)) -> CreateView (ViewState, ())

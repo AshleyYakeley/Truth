@@ -11,7 +11,7 @@ import Truth.UI.GTK.Useful
 createTextEntry :: Model (WholeUpdate Text) -> CreateView Widget
 createTextEntry rmod = do
     esrc <- newEditSource
-    widget <- new Entry []
+    widget <- cvNew Entry []
     invalidCol <- new RGBA [#red := 1, #green := 0, #blue := 0, #alpha := 1]
     let
         setValidState ::

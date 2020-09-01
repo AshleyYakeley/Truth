@@ -9,12 +9,12 @@ import Truth.UI.GTK.Useful
 
 createScrolled :: Widget -> CreateView Widget
 createScrolled content = do
-    sw <- new ScrolledWindow []
+    sw <- cvNew ScrolledWindow []
     scrollable <- liftIO $ isScrollable content
     if scrollable
         then #add sw content
         else do
-            viewport <- new Viewport []
+            viewport <- cvNew Viewport []
             #add viewport content
             #add sw viewport
     toWidget sw

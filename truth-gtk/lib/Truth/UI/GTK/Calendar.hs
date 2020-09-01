@@ -11,7 +11,7 @@ import Truth.UI.GTK.Useful
 createCalendar :: Model (WholeUpdate Day) -> CreateView Widget
 createCalendar rmod = do
     esrc <- newEditSource
-    widget <- new Calendar []
+    widget <- cvNew Calendar []
     let
         getDay ::
                forall m. MonadIO m

@@ -26,7 +26,8 @@ data UIWindow = MkUIWindow
 
 createWindow :: WindowSpec -> CreateView UIWindow
 createWindow MkWindowSpec {..} = do
-    window <- lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
+    window <-
+        cvTopLevelNew Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
     cvBindReadOnlyWholeModel wsTitle $ \title -> set window [#title := title]
     _ <-
         cvOn window #deleteEvent $ \_ -> do
@@ -36,13 +37,13 @@ createWindow MkWindowSpec {..} = do
         case wsMenuBar of
             Nothing -> return wsContent
             Just efmbar -> do
-                ag <- new AccelGroup []
+                ag <- cvNew AccelGroup []
                 #addAccelGroup window ag
                 mb <-
                     createDynamic $
                     mapModel (liftReadOnlyChangeLens $ funcChangeLens $ \mbar -> createMenuBar ag mbar >>= toWidget) $
                     efmbar
-                vbox <- new Box [#orientation := OrientationVertical]
+                vbox <- cvNew Box [#orientation := OrientationVertical]
                 #packStart vbox mb False False 0
                 #packStart vbox wsContent True True 0
                 toWidget vbox

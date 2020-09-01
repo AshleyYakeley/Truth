@@ -13,7 +13,7 @@ createCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate Bool) -> Creat
 createCheckButton label rmod = do
     esrc <- newEditSource
     initial <- viewRunResource rmod $ \asub -> aModelRead asub ReadWhole
-    widget <- new CheckButton [#active := initial]
+    widget <- cvNew CheckButton [#active := initial]
     cvBindReadOnlyWholeModel label $ \val -> set widget [#label := val]
     changedSignal <-
         cvOn widget #clicked $
@@ -28,7 +28,7 @@ createCheckButton label rmod = do
 createMaybeCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate (Maybe Bool)) -> CreateView Widget
 createMaybeCheckButton label rmod = do
     initial <- viewRunResource rmod $ \asub -> aModelRead asub ReadWhole
-    widget <- new CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
+    widget <- cvNew CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
     cvBindReadOnlyWholeModel label $ \val -> set widget [#label := val]
     let
         getWidgetState :: View (Maybe Bool)

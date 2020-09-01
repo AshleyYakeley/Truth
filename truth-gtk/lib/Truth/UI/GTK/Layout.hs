@@ -6,9 +6,10 @@ module Truth.UI.GTK.Layout
 import GI.Gtk
 import Shapes
 import Truth.Core
+import Truth.UI.GTK.Useful
 
 createLayout :: Orientation -> [(Bool, Widget)] -> CreateView Widget
 createLayout orientation contents = do
-    box <- new Box [#orientation := orientation]
+    box <- cvNew Box [#orientation := orientation]
     for_ contents $ \(grow, widget) -> #packStart box widget grow grow 0
     toWidget box

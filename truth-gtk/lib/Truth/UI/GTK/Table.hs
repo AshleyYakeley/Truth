@@ -69,8 +69,8 @@ cellAttributes MkColumn {..} MkStoreEntry {..} = let
 addColumn ::
        TreeView -> DynamicStore (StoreEntry update rowtext rowprops) -> Column (rowtext, rowprops) -> CreateView ()
 addColumn tview store col = do
-    renderer <- new CellRendererText []
-    column <- new TreeViewColumn []
+    renderer <- cvNew CellRendererText []
+    column <- cvNew TreeViewColumn []
     cvBindReadOnlyWholeModel (colName col) $ #setTitle column
     #packStart column renderer False
     cellLayoutSetAttributes column renderer (getDynamicSeqStore store) $ \entry ->
