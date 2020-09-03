@@ -22,10 +22,12 @@ uiTable ::
     -> LangOrder A
     -> LangFiniteSetRef '( A, EnA)
     -> (A -> PinaforeAction TopType)
-    -> SelectNotify A
+    -> Maybe (LangRef '( A, EnA))
     -> LangUI
-uiTable cols order val onDoubleClick sn = do
+uiTable cols order val onDoubleClick mSelectionLangRef = do
     let
+        mSelectionModel :: Maybe (Model (BiWholeUpdate (Know A) (Know EnA)))
+        mSelectionModel = fmap (unPinaforeRef . langRefToBiWholeRef) mSelectionLangRef
         uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
         uo =
             mapUpdateOrder
@@ -62,23 +64,44 @@ uiTable cols order val onDoubleClick sn = do
             in readOnlyKeyColumn nameOpenSub getCellSub
     colSub :: Model (ContextUpdate PinaforeStorageUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
         cvFloatMapModel (contextOrderedSetLens uo) pkSub
+    esrc <- newEditSource
     let
         olsub :: Model (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))
         olsub = mapModel (tupleChangeLens SelectContent) colSub
         tsn :: SelectNotify (Model (ConstWholeUpdate EnA))
-        tsn = contramap readSub $ viewLiftSelectNotify sn
-    fmap fst $ createListTable (fmap getColumn cols) olsub onSelect tsn
-        {-
-        (widget, setSelection) <- createListTable (fmap getColumn cols) olsub onSelect tsn
-        let
-            setRow :: EnA -> PinaforeAction ()
-            setRow ena =
-                viewPinaforeAction $
-                setSelection $ do
-                    item <- readM ReadWhole
-                    return $ item == ena
-        return (return widget, setRow)
-        -}
+        tsn =
+            case mSelectionModel of
+                Nothing -> mempty
+                Just selectionModel ->
+                    contramap readSub $
+                    viewLiftSelectNotify $
+                    MkSelectNotify $ \vma -> do
+                        ma <- vma
+                        viewRunResource selectionModel $ \asub -> do
+                            _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkBiEdit $ MkWholeReaderEdit $ maybeToKnow ma
+                            return ()
+    (widget, setSelection) <- createListTable (fmap getColumn cols) olsub onSelect tsn
+    case mSelectionModel of
+        Nothing -> return ()
+        Just selectionModel -> let
+            setsel :: Know EnA -> View ()
+            setsel Unknown = setSelection Nothing
+            setsel (Known a) =
+                setSelection $
+                Just $ do
+                    a' <- readM ReadWhole
+                    return $ a' == a
+            init :: CreateView ()
+            init =
+                viewRunResourceContext selectionModel $ \unlift (amod :: _ tt) -> do
+                    ka <- liftIO $ unlift $ aModelRead amod ReadWhole
+                    cvLiftView $ setsel ka
+            recv :: () -> NonEmpty (BiWholeUpdate (Know A) (Know EnA)) -> View ()
+            recv () updates = let
+                MkBiWholeUpdate ka = last updates
+                in setsel ka
+            in cvBindModel selectionModel (Just esrc) init mempty recv
+    return widget
 
 type PickerType = Know EnA
 
@@ -222,23 +245,6 @@ uiPages mitems = do
             return (t, b)
     createNotebook items
 
-noNotifier :: LangNotifier TopType
-noNotifier = mempty
-
-notifiers :: [LangNotifier A] -> LangNotifier A
-notifiers = mconcat
-
-mapNotifier :: (B -> A) -> LangNotifier A -> LangNotifier B
-mapNotifier = contramap
-
-makeNotifier :: PinaforeAction (LangNotifier A, PinaforeImmutableRef A)
-makeNotifier = do
-    (selModel, sn) <- pinaforeLiftLifeCycleIO $ makeSharedModel makePremodelSelectNotify
-    return (sn, MkPinaforeImmutableRef $ eaMapReadOnlyWhole maybeToKnow $ MkPinaforeRef selModel)
-
-notify :: LangNotifier A -> Maybe A -> PinaforeAction ()
-notify notifier ma = viewPinaforeAction $ runSelectNotify notifier $ return ma
-
 uiRun :: (?pinafore :: PinaforeContext) => PinaforeAction LangUI -> LangUI
 uiRun pui = do
     kui <- cvLiftView $ unliftPinaforeAction pui
@@ -249,15 +255,6 @@ uiRun pui = do
 ui_predefinitions :: [DocTreeEntry BindDoc]
 ui_predefinitions =
     [ docTreeEntry
-          "Notifiers"
-          "Notifiers are used to track selections in some UI elements."
-          [ mkValEntry "noNotifier" "No notifier, same as `notifiers []`." noNotifier
-          , mkValEntry "notifiers" "Join notifiers." notifiers
-          , mkValEntry "mapNotifier" "Map notifier." mapNotifier
-          , mkValEntry "makeNotifier" "Create a notifier." makeNotifier
-          , mkValEntry "notify" "Notify a notifier." notify
-          ]
-    , docTreeEntry
           "UI"
           "A user interface is something that goes inside a window."
           [ mkValEntry "uiRun" "UI that runs an Action first." uiRun

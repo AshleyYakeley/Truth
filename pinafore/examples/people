@@ -26,20 +26,25 @@ std_window title moremenus contents = fixAction $ \window -> let
     menus = {basemenus ++ moremenus};
     in openWindow title menus $ uiScrolled contents;
 
-selection_window : (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> (set -> Notifier item -> UI) -> Action Window;
+selection_window : (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> (set -> Ref {item,+NewEntity} -> UI) -> Action Window;
 selection_window (inames,inamep) iset iopen iui = do
-    (notifier, selected) <- makeNotifier;
+    selection <- newMemRef;
     let
     moremenus =
         [
             menuSubmenu "Selection"
             [
-                menuAction ("New " <> inames) (Just "Ctrl+K") {newEntity iset >>= iopen},
-                menuAction "View" Nothing {get selected >>= iopen},
-                menuAction "Delete" Nothing {get selected >>= \p -> iset -= p}
+                menuAction ("New " <> inames) (Just "Ctrl+K") {do
+                    item <- newEntity iset;
+                    iopen item;
+                    selection := item;
+                    end
+                    },
+                menuAction "View" Nothing {get selection >>= iopen},
+                menuAction "Delete" Nothing {get selection >>= \p -> iset -= p}
             ]
         ];
-    in std_window {inamep} moremenus (iui iset notifier);
+    in std_window {inamep} moremenus (iui iset selection);
     end;
 
 ### People
@@ -86,8 +91,8 @@ legalentities : FiniteSetRef (Either Person Organisation);
 legalentities = people <:+:> organisations;
 
 # UI
-table_entities : Notifier (Either Person Organisation) -> UI;
-table_entities notifier = let
+table_entities : Ref (Either Person Organisation) -> UI;
+table_entities selection = let
     nameColumn : (Ref +Text, Either Person Organisation -> Ref Text);
     nameColumn = ({"Name"},\i -> name !$ {either i});
     openItem : Either Person Organisation -> Action Window;
@@ -95,20 +100,20 @@ table_entities notifier = let
         Left p -> window_person p;
         Right o -> window_org o;
         end;
-    in uiTable [nameColumn] (orderOn (name !++ name) alphabetical) legalentities openItem notifier;
+    in uiTable [nameColumn] (orderOn (name !++ name) alphabetical) legalentities openItem (Just selection);
 
-table_people : FiniteSetRef Person -> Notifier Person -> UI;
-table_people people notifier = uiTable [({"Name"},\p -> name !$ {p})] (orderOn name alphabetical) people window_person notifier;
+table_people : FiniteSetRef Person -> Ref Person -> UI;
+table_people people selection = uiTable [({"Name"},\p -> name !$ {p})] (orderOn name alphabetical) people window_person (Just selection);
 
 ui_people : FiniteSetRef Person -> UI;
 ui_people people = uiRun $ do
-    (notifier, selected) <- makeNotifier;
+    selection <- newMemRef;
     return $ uiVertical
     [
         (False, uiButton {"New Person"} {newEntity people >>= window_person}),
-        (False, uiButton {"View Person"} {get selected >>= window_person}),
-        (False, uiButton {"Remove Person"} {get selected >>= \p -> people -= p}),
-        (True, table_people people notifier)
+        (False, uiButton {"View Person"} {get selection >>= window_person}),
+        (False, uiButton {"Remove Person"} {get selection >>= \p -> people -= p}),
+        (True, table_people people selection)
     ];
     end;
 

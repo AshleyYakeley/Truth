@@ -2,7 +2,6 @@
 
 module Pinafore.Language.Value.UI where
 
-import Data.Shim
 import Pinafore.Base
 import Shapes
 import Truth.Core
@@ -23,8 +22,3 @@ pinaforeNewWindow uiw = do
     return $ MkLangWindow {..}
 
 type LangMenuEntry = MenuEntry
-
-type LangNotifier = SelectNotify
-
-instance HasVariance 'Contravariance SelectNotify where
-    varianceRepresentational = Nothing

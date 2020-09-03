@@ -66,13 +66,13 @@ married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 # UI
 ui_people : FiniteSetRef Person -> UI;
 ui_people pp = uiRun $ do
-    (notifyperson,selectedperson) <- makeNotifier;
+    selectedperson <- newMemRef;
     return $ uiVertical
     [
         (False, uiButton {"New Person"} {newEntity pp >>= window_person}),
         (False, uiButton {"View Person"} {get selectedperson >>= window_person}),
         (False, uiButton {"Remove Person"} {get selectedperson >>= \p -> pp -= p}),
-        (True, uiTable [({"Name"},\p -> name !$ {p})] noOrder pp window_person notifyperson)
+        (True, uiTable [({"Name"},\p -> name !$ {p})] noOrder pp window_person (Just selectedperson))
     ];
     end;
 

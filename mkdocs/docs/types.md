@@ -160,14 +160,6 @@ Runners of an action that stops, such as the main program, or the handler of a b
 
 An order on a type.
 
-## Notifiers
-
-`Notifier a`  
-(`a` is contravariant)
-
-Certain user interface elements have a concept of _selection_.
-When given a notifier, it will be notified every time the selection changes.
-
 ## User Interfaces
 
 `UI`  

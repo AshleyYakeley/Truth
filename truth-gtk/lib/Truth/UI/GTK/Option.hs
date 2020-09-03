@@ -30,11 +30,9 @@ listStoreView ::
     -> EditSource
     -> CreateView (SeqStore (UpdateSubject update))
 listStoreView (MkWMFunction blockSignal) itemsModel esrc = let
-    initV ::
-           Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
-        -> CreateView (SeqStore (UpdateSubject update))
-    initV rm = do
-        subjectList <- viewRunResource rm $ \am -> readableToSubject $ aModelRead am
+    initV :: CreateView (SeqStore (UpdateSubject update))
+    initV = do
+        subjectList <- viewRunResource itemsModel $ \am -> readableToSubject $ aModelRead am
         seqStoreNew subjectList
     recv ::
            SeqStore (UpdateSubject update)

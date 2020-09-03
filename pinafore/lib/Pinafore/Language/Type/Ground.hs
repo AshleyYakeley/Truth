@@ -50,7 +50,6 @@ data PinaforeGroundType dv t where
     MorphismPinaforeGroundType :: PinaforeGroundType '[ 'Rangevariance, 'Rangevariance] LangMorphism
     -- UI
     UserInterfacePinaforeGroundType :: PinaforeGroundType '[] LangUI
-    NotifierPinaforeGroundType :: PinaforeGroundType '[ 'Contravariance] LangNotifier
     WindowPinaforeGroundType :: PinaforeGroundType '[] LangWindow
     MenuItemPinaforeGroundType :: PinaforeGroundType '[] LangMenuEntry
 
@@ -76,7 +75,6 @@ instance IsDolanGroundType PinaforeGroundType where
     groundTypeVarianceMap FiniteSetRefPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap MorphismPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap UserInterfacePinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap NotifierPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap WindowPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap MenuItemPinaforeGroundType = dolanVary @dv
     groundTypeVarianceType :: PinaforeGroundType dv t -> DolanVarianceType dv
@@ -92,7 +90,6 @@ instance IsDolanGroundType PinaforeGroundType where
     groundTypeVarianceType FiniteSetRefPinaforeGroundType = representative
     groundTypeVarianceType MorphismPinaforeGroundType = representative
     groundTypeVarianceType UserInterfacePinaforeGroundType = representative
-    groundTypeVarianceType NotifierPinaforeGroundType = representative
     groundTypeVarianceType WindowPinaforeGroundType = representative
     groundTypeVarianceType MenuItemPinaforeGroundType = representative
     groundTypeTestEquality :: PinaforeGroundType dka ta -> PinaforeGroundType dkb tb -> Maybe (dka :~: dkb, ta :~~: tb)
@@ -114,7 +111,6 @@ instance IsDolanGroundType PinaforeGroundType where
     groundTypeTestEquality FiniteSetRefPinaforeGroundType FiniteSetRefPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality MorphismPinaforeGroundType MorphismPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality UserInterfacePinaforeGroundType UserInterfacePinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality NotifierPinaforeGroundType NotifierPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality WindowPinaforeGroundType WindowPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality MenuItemPinaforeGroundType MenuItemPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality _ _ = Nothing
@@ -185,7 +181,5 @@ instance GroundExprShow PinaforeGroundType where
     groundTypeShowPrec MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
         invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
     groundTypeShowPrec UserInterfacePinaforeGroundType NilDolanArguments = ("UI", 0)
-    groundTypeShowPrec NotifierPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-        invertPolarity @polarity ("Notifier " <> exprShow ta, 2)
     groundTypeShowPrec WindowPinaforeGroundType NilDolanArguments = ("Window", 0)
     groundTypeShowPrec MenuItemPinaforeGroundType NilDolanArguments = ("MenuItem", 0)

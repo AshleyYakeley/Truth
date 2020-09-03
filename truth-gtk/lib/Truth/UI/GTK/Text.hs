@@ -61,9 +61,9 @@ createTextArea rmod (MkSelectNotify setsel) = do
     cvLiftView $ setsel aspect
     _ <- cvOn buffer #changed $ setsel aspect
     let
-        initV :: Model (StringUpdate Text) -> CreateView ()
-        initV rm = do
-            initial <- viewRunResource rm $ \am -> readableToSubject $ aModelRead am
+        initV :: CreateView ()
+        initV = do
+            initial <- viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
             liftIO $
                 withSignalBlocked buffer insertSignal $
                 withSignalBlocked buffer deleteSignal $ #setText buffer initial (-1)

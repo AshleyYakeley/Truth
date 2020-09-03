@@ -28,10 +28,10 @@ cvDynamic ::
     -> Task ()
     -> (a -> [update] -> StateT dvs View ())
     -> CreateView a
-cvDynamic sub initCV taskCV recvCV = do
+cvDynamic model initCV taskCV recvCV = do
     let
-        initBind :: Model update -> CreateView (MVar dvs, a)
-        initBind model = do
+        initBind :: CreateView (MVar dvs, a)
+        initBind = do
             (firstdvs, a) <- initCV model
             stateVar <- liftIO $ newMVar firstdvs
             liftLifeCycleIO $
@@ -41,6 +41,6 @@ cvDynamic sub initCV taskCV recvCV = do
             return (stateVar, a)
         recvBind :: (MVar dvs, a) -> NonEmpty update -> View ()
         recvBind (stateVar, a) updates = mVarRun stateVar $ recvCV a $ toList updates
-    (stateVar, a) <- cvBindModel sub Nothing initBind taskCV recvBind
+    (stateVar, a) <- cvBindModel model Nothing initBind taskCV recvBind
     cvLiftView $ mVarRun stateVar $ recvCV a []
     return a

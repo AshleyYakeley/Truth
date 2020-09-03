@@ -22,9 +22,9 @@ std_window title moremenus contents = fixAction $ \window -> let
     menus = {basemenus ++ moremenus};
     in openWindow title menus $ uiScrolled contents;
 
-selection_window : (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> ((item | NewEntity) -> Action Any) -> (set -> Notifier item -> UI) -> Action Window;
+selection_window : (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> ((item | NewEntity) -> Action Any) -> (set -> Ref item -> UI) -> Action Window;
 selection_window (inames,inamep) iset iopen inew iui = do
-    (notifier,selected) <- makeNotifier;
+    selection <- newMemRef;
     let
     moremenus =
         [
@@ -35,11 +35,11 @@ selection_window (inames,inamep) iset iopen inew iui = do
                     inew i;
                     iopen i;
                     end},
-                menuAction "View" Nothing {get selected >>= iopen},
-                menuAction "Delete" Nothing {get selected >>= \p -> iset -= p}
+                menuAction "View" Nothing {get selection >>= iopen},
+                menuAction "Delete" Nothing {get selection >>= \p -> iset -= p}
             ]
         ];
-    in std_window {inamep} moremenus (iui iset notifier);
+    in std_window {inamep} moremenus (iui iset selection);
     end;
 
 closedtype EventTime
@@ -102,8 +102,8 @@ overviewRef = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "
 overviewPage : (UI,UI);
 overviewPage = (uiLabel {"Overview"},uiLabel overviewRef);
 
-tablePage : Notifier Event -> (UI,UI);
-tablePage notifier = let
+tablePage : Ref Event -> (UI,UI);
+tablePage selection = let
     columns : [(Ref +Text, Event -> Ref Text)];
     columns = let
         timeColumn : (Ref +Text, Event -> Ref Text);
@@ -111,7 +111,7 @@ tablePage notifier = let
         nameColumn : (Ref +Text, Event -> Ref Text);
         nameColumn = ({"Name"},\e -> eventName !$ {e});
         in [timeColumn,nameColumn];
-    in (uiLabel {"Events"}, uiTable columns eventOrder events eventWindow notifier);
+    in (uiLabel {"Events"}, uiTable columns eventOrder events eventWindow (Just selection));
 
 eventWindow : Event -> Action Window;
 eventWindow evt = std_window (eventName !$ {evt}) [] $ uiVertical
@@ -127,7 +127,7 @@ eventsWindow = let
         eventTime !$ {i} := EventTimeDate day;
         eventName !$ {i} := "";
         end;
-    iui _ notifier = uiPages [overviewPage, tablePage notifier];
+    iui _ selection = uiPages [overviewPage, tablePage selection];
     in selection_window ("Event","Events") events eventWindow inew iui;
 
 in eventsWindow

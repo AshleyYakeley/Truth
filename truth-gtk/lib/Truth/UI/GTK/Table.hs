@@ -115,9 +115,9 @@ tableContainerView ::
     -> Model (OrderedListUpdate seq update)
     -> (Model update -> View ())
     -> SelectNotify (Model update)
-    -> CreateView (Widget, ReadM (UpdateReader update) Bool -> View ())
+    -> CreateView (Widget, Maybe (ReadM (UpdateReader update) Bool) -> View ())
 tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model (WholeUpdate rowtext)
-                                                                        , Model (ROWUpdate rowprops))) cols) tableSub onActivate notifier = do
+                                                                        , Model (ROWUpdate rowprops))) cols) tableModel onActivate notifier = do
     let
         defStoreEntry :: StoreEntry update rowtext rowprops
         defStoreEntry = MkStoreEntry (error "unset model") (error "unset text") (error "unset props")
@@ -129,17 +129,15 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             usub <-
                 cvFloatMapModel
                     (changeLensToFloating (mustExistOneChangeLens "GTK table view") . orderedListItemLens i)
-                    tableSub
+                    tableModel
             liftIO $ setval $ \entry -> entry {entryModel = usub}
             (textModel, propModel) <- colfunc usub
             cvBindWholeModel textModel Nothing $ \t -> liftIO $ setval $ \entry -> entry {entryRowText = t}
             cvBindReadOnlyWholeModel propModel $ \t -> liftIO $ setval $ \entry -> entry {entryRowProps = t}
-        initTable ::
-               Model (OrderedListUpdate seq update)
-            -> CreateView (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
-        initTable osub = do
+        initTable :: CreateView (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
+        initTable = do
             initialRows <-
-                viewRunResourceContext osub $ \unlift amodel -> do
+                viewRunResourceContext tableModel $ \unlift amodel -> do
                     n <- liftIO $ unlift $ aModelRead amodel ListReadLength
                     return $ fmap makeStoreEntry [0 .. pred n]
             store <- newDynamicStore defStoreEntry initialRows
@@ -158,7 +156,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
                 OrderedListUpdateDelete i -> dynamicStoreDelete i store
                 OrderedListUpdateInsert i _ -> dynamicStoreInsert i defStoreEntry (makeStoreEntry i) store
                 OrderedListUpdateClear -> dynamicStoreClear store
-    (store, tview) <- cvBindModel tableSub Nothing initTable mempty recvTable
+    (store, tview) <- cvBindModel tableModel Nothing initTable mempty recvTable
     tselection <- #getSelection tview
     set tselection [#mode := SelectionModeSingle] -- 0 or 1 selected
     let
@@ -176,8 +174,9 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             case ltpath of
                 [tpath] -> getItemFromPath tpath
                 _ -> return Nothing
-        setSelection :: ReadM (UpdateReader update) Bool -> View ()
-        setSelection sel = do
+        setSelection :: Maybe (ReadM (UpdateReader update) Bool) -> View ()
+        setSelection Nothing = #unselectAll tselection
+        setSelection (Just sel) = do
             let
                 testEntry :: StoreEntry update rowtext rowprops -> View Bool
                 testEntry se =
@@ -186,7 +185,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             items <- dynamicStoreContents store
             mi <- mFindIndex testEntry items
             case mi of
-                Nothing -> return ()
+                Nothing -> #unselectAll tselection
                 Just i -> do
                     tpath <- treePathNewFromIndices [fromIntegral i]
                     #selectPath tselection tpath
@@ -214,5 +213,5 @@ createListTable ::
     -> Model (OrderedListUpdate seq update)
     -> (Model update -> View ())
     -> SelectNotify (Model update)
-    -> CreateView (Widget, ReadM (UpdateReader update) Bool -> View ())
+    -> CreateView (Widget, Maybe (ReadM (UpdateReader update) Bool) -> View ())
 createListTable cols sub onActivate sel = tableContainerView (mconcat $ fmap oneKeyColumn cols) sub onActivate sel

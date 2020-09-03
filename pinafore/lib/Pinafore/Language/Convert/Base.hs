@@ -278,29 +278,6 @@ instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangOrder a) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
--- LangNotifier
-instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
-             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangNotifier a) where
-    toShimWit =
-        unNegShimWit fromJMShimWit $ \ta conva ->
-            mapPosShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
-            mkShimWit $ GroundDolanSingularType NotifierPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
-
-instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
-             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangNotifier a) where
-    toShimWit = singleDolanShimWit toJMShimWit
-
-instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
-             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangNotifier a) where
-    fromShimWit =
-        unPosShimWit toJMShimWit $ \ta conva ->
-            mapNegShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
-            mkShimWit $ GroundDolanSingularType NotifierPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
-
-instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
-             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangNotifier a) where
-    fromShimWit = singleDolanShimWit fromJMShimWit
-
 -- LangUI
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUI where
     toShimWit = mkShimWit $ GroundDolanSingularType UserInterfacePinaforeGroundType NilDolanArguments
