@@ -115,7 +115,7 @@ tableContainerView ::
     -> Model (OrderedListUpdate seq update)
     -> (Model update -> View ())
     -> SelectNotify (Model update)
-    -> CreateView Widget
+    -> CreateView (Widget, ReadM (UpdateReader update) Bool -> View ())
 tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model (WholeUpdate rowtext)
                                                                         , Model (ROWUpdate rowprops))) cols) tableSub onActivate notifier = do
     let
@@ -144,6 +144,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
                     return $ fmap makeStoreEntry [0 .. pred n]
             store <- newDynamicStore defStoreEntry initialRows
             tview <- treeViewNewWithModel $ getDynamicSeqStore store
+            cvAcquire tview
             for_ cols $ addColumn tview store
             return (store, tview)
         recvTable ::
@@ -175,6 +176,21 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             case ltpath of
                 [tpath] -> getItemFromPath tpath
                 _ -> return Nothing
+        setSelection :: ReadM (UpdateReader update) Bool -> View ()
+        setSelection sel = do
+            let
+                testEntry :: StoreEntry update rowtext rowprops -> View Bool
+                testEntry se =
+                    viewRunResourceContext (entryModel se) $ \unlift (amod :: _ tt) ->
+                        unReadM sel $ \rt -> liftIO $ unlift $ aModelRead amod rt
+            items <- dynamicStoreContents store
+            mi <- mFindIndex testEntry items
+            case mi of
+                Nothing -> return ()
+                Just i -> do
+                    tpath <- treePathNewFromIndices [fromIntegral i]
+                    #selectPath tselection tpath
+                    #free tpath
     _ <- cvOn tselection #changed $ runSelectNotify notifier getSelection
     _ <-
         cvOn tview #rowActivated $ \tpath _ -> do
@@ -182,7 +198,8 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             case msel of
                 Just sel -> onActivate sel
                 Nothing -> return ()
-    toWidget tview
+    w <- toWidget tview
+    return (w, setSelection)
 
 createListTable ::
        forall seq update.
@@ -197,5 +214,5 @@ createListTable ::
     -> Model (OrderedListUpdate seq update)
     -> (Model update -> View ())
     -> SelectNotify (Model update)
-    -> CreateView Widget
+    -> CreateView (Widget, ReadM (UpdateReader update) Bool -> View ())
 createListTable cols sub onActivate sel = tableContainerView (mconcat $ fmap oneKeyColumn cols) sub onActivate sel

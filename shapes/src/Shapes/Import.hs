@@ -184,6 +184,21 @@ deleteFirstMatching t (a:aa)
     | t a = aa
 deleteFirstMatching t (a:aa) = a : deleteFirstMatching t aa
 
+mFindIndex ::
+       forall m a. Monad m
+    => (a -> m Bool)
+    -> [a]
+    -> m (Maybe Int)
+mFindIndex test = let
+    findI :: Int -> [a] -> m (Maybe Int)
+    findI _ [] = return Nothing
+    findI i (a:aa) = do
+        t <- test a
+        if t
+            then return (Just i)
+            else findI (succ i) aa
+    in findI 0
+
 shortOr :: Monad m => (a -> m Bool) -> [a] -> m Bool
 shortOr _ [] = return False
 shortOr amb (a:aa) = do

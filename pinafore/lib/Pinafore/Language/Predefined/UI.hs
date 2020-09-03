@@ -67,7 +67,18 @@ uiTable cols order val onDoubleClick sn = do
         olsub = mapModel (tupleChangeLens SelectContent) colSub
         tsn :: SelectNotify (Model (ConstWholeUpdate EnA))
         tsn = contramap readSub $ viewLiftSelectNotify sn
-    createListTable (fmap getColumn cols) olsub onSelect tsn
+    fmap fst $ createListTable (fmap getColumn cols) olsub onSelect tsn
+        {-
+        (widget, setSelection) <- createListTable (fmap getColumn cols) olsub onSelect tsn
+        let
+            setRow :: EnA -> PinaforeAction ()
+            setRow ena =
+                viewPinaforeAction $
+                setSelection $ do
+                    item <- readM ReadWhole
+                    return $ item == ena
+        return (return widget, setRow)
+        -}
 
 type PickerType = Know EnA
 

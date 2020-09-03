@@ -56,7 +56,8 @@ soupEditSpec sub selnotify openItem = do
                     funcChangeLens pastResult .
                     liftFullResultOneChangeLens (tupleChangeLens NotePast) . tupleChangeLens SelectSecond
                 in return $ mapModel valLens cellsub
-    createListTable [nameColumn, pastColumn] osub openItem selnotify
+    (widget, _) <- createListTable [nameColumn, pastColumn] osub openItem selnotify
+    return widget
 
 soupReference :: FilePath -> Reference (UpdateEdit (SoupUpdate PossibleNoteUpdate))
 soupReference dirpath = let
