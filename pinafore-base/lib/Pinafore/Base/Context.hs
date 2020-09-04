@@ -35,10 +35,10 @@ runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
 pinaforeEntityModel :: (?pinafore :: PinaforeContext) => Model PinaforeStorageUpdate
 pinaforeEntityModel = pconEntityModel ?pinafore
 
-makePinaforeContext :: Model PinaforeStorageUpdate -> UIToolkit -> LifeCycleIO PinaforeContext
-makePinaforeContext rmodel toolkit = do
+makePinaforeContext :: Model PinaforeStorageUpdate -> TruthContext -> LifeCycleIO PinaforeContext
+makePinaforeContext rmodel tc = do
     uh <- liftIO newUndoHandler
-    return $ MkPinaforeContext (unPinaforeAction toolkit uh) $ undoHandlerModel uh rmodel
+    return $ MkPinaforeContext (unPinaforeAction tc uh) $ undoHandlerModel uh rmodel
 
 nullPinaforeContext :: PinaforeContext
 nullPinaforeContext = let

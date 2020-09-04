@@ -1,26 +1,15 @@
 module Truth.UI.GTK.Layout
-    ( layoutGetView
+    ( Orientation(..)
+    , createLayout
     ) where
 
 import GI.Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
+import Truth.UI.GTK.Useful
 
-layoutGetView :: GetGView
-layoutGetView =
-    MkGetView $ \getview uispec -> do
-        uilayout <- isUISpec uispec
-        (aspects, orientation) <-
-            return $
-            case uilayout of
-                HorizontalUISpec aspects -> (aspects, OrientationHorizontal)
-                VerticalUISpec aspects -> (aspects, OrientationVertical)
-        return $ do
-            widgets <-
-                for aspects $ \(grow, ispec) -> do
-                    w <- getview ispec
-                    return (w, grow)
-            vbox <- new Box [#orientation := orientation]
-            for_ widgets $ \(widget, grow) -> #packStart vbox widget grow grow 0
-            toWidget vbox
+createLayout :: Orientation -> [(Bool, Widget)] -> CreateView Widget
+createLayout orientation contents = do
+    box <- cvNew Box [#orientation := orientation]
+    for_ contents $ \(grow, widget) -> #packStart box widget grow grow 0
+    toWidget box

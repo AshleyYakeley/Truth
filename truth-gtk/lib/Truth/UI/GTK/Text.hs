@@ -1,13 +1,15 @@
 module Truth.UI.GTK.Text
-    ( textAreaGetView
+    ( TextSelection
+    , createTextArea
     ) where
 
 import GI.Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 import Truth.Debug.Reference
+
+type TextSelection = FloatingChangeLens (StringUpdate Text) (StringUpdate Text)
 
 replaceText :: Index s ~ Int => TextBuffer -> SequenceRun s -> Text -> IO ()
 replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)) text = do
@@ -32,10 +34,10 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-textView :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GCreateView
-textView rmod (MkSelectNotify setsel) = do
+createTextArea :: Model (StringUpdate Text) -> SelectNotify TextSelection -> CreateView Widget
+createTextArea rmod (MkSelectNotify setsel) = do
     esrc <- newEditSource
-    buffer <- new TextBuffer []
+    buffer <- cvNew TextBuffer []
     insertSignal <-
         cvOn buffer #insertText $ \iter text _ -> traceBracket "GTK.Text:insert" $ do
             p <- getSequencePoint iter
@@ -62,9 +64,9 @@ textView rmod (MkSelectNotify setsel) = do
     cvLiftView $ setsel aspect
     _ <- cvOn buffer #changed $ traceBracket "GTK.TextBuffer:changed" $ setsel aspect
     let
-        initV :: Model (StringUpdate Text) -> CreateView ()
-        initV rm = do
-            initial <- viewRunResource rm $ \am -> readableToSubject $ aModelRead am
+        initV :: CreateView ()
+        initV = do
+            initial <- viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
             liftIO $
                 withSignalBlocked buffer insertSignal $
                 withSignalBlocked buffer deleteSignal $ #setText buffer initial (-1)
@@ -79,9 +81,5 @@ textView rmod (MkSelectNotify setsel) = do
                     StringReplaceWhole text -> #setText buffer text (-1)
                     StringReplaceSection bounds text -> replaceText buffer bounds text
     cvBindModel rmod (Just esrc) initV mempty recvV
-    widget <- new TextView [#buffer := buffer]
+    widget <- cvNew TextView [#buffer := buffer]
     toWidget widget
-
-textAreaGetView :: GetGView
-textAreaGetView =
-    MkGetView $ \_ uispec -> fmap (\(MkTextAreaUISpec sub setsel) -> textView sub setsel) $ isUISpec uispec

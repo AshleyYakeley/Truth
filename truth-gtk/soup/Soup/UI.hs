@@ -8,6 +8,7 @@ import Soup.Edit
 import Soup.Note
 import System.FilePath hiding ((<.>))
 import Truth.Core
+import Truth.UI.GTK
 import Truth.World.FileSystem
 import Truth.Debug.Reference
 
@@ -27,7 +28,7 @@ soupEditSpec ::
        Model (SoupUpdate PossibleNoteUpdate)
     -> SelectNotify (Model (UUIDElementUpdate PossibleNoteUpdate))
     -> (Model (UUIDElementUpdate PossibleNoteUpdate) -> View ())
-    -> CVUISpec
+    -> CreateView Widget
 soupEditSpec sub selnotify openItem = do
     let
         nameLens :: ChangeLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Result Text Text))
@@ -56,7 +57,8 @@ soupEditSpec sub selnotify openItem = do
                     funcChangeLens pastResult .
                     liftFullResultOneChangeLens (tupleChangeLens NotePast) . tupleChangeLens SelectSecond
                 in return $ mapModel valLens cellsub
-    tableUISpec [nameColumn, pastColumn] osub openItem selnotify
+    (widget, _) <- createListTable [nameColumn, pastColumn] osub openItem selnotify
+    return widget
 
 soupReference :: FilePath -> Reference (UpdateEdit (SoupUpdate PossibleNoteUpdate))
 soupReference dirpath = let
@@ -75,8 +77,8 @@ soupReference dirpath = let
     lens = liftSoupLens paste $ soupItemLens . referenceChangeLens
     in mapReference lens rawSoupReference
 
-soupWindow :: UIToolkit -> FilePath -> CreateView ()
-soupWindow uit dirpath = do
+soupWindow :: TruthContext -> (WindowSpec -> CreateView UIWindow) -> FilePath -> CreateView ()
+soupWindow tc newWindow dirpath = do
     smodel <- liftLifeCycleIO $ makeReflectingModel $ traceThing "soup" $ soupReference dirpath
     (selModel, selnotify) <- liftLifeCycleIO $ makeSharedModel makePremodelSelectNotify
     rec
@@ -129,26 +131,27 @@ soupWindow uit dirpath = do
                 let
                     rowmodel :: Model PossibleNoteUpdate
                     rowmodel = mapModel (tupleChangeLens SelectSecond) imodel
-                    rspec :: Result Text (Model NoteUpdate) -> CVUISpec
+                    rspec :: Result Text (Model NoteUpdate) -> CreateView Widget
                     rspec (SuccessResult s2) = noteEditSpec s2 mempty
-                    rspec (FailureResult err) = labelUISpec $ constantModel err
-                rec
-                    ~(subwin, subcloser) <-
-                        uitUnliftCreateView uit $
-                        cvEarlyCloser $
-                        uitCreateWindow uit $
-                        MkWindowSpec (liftIO subcloser) (constantModel "item") (mbar subcloser subwin) $
-                        oneWholeUISpec rowmodel rspec
-                return ()
+                    rspec (FailureResult err) = createLabel $ constantModel err
+                tcUnliftCreateView tc $ do
+                    content <- createOneWhole rowmodel rspec
+                    rec
+                        ~(subwin, subcloser) <-
+                            cvEarlyCloser $ do
+                                newWindow $
+                                    MkWindowSpec
+                                        (liftIO subcloser)
+                                        (constantModel "item")
+                                        (mbar subcloser subwin)
+                                        content
+                    return ()
             wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
             wsMenuBar = mbar closer window
-            wsContent :: CVUISpec
-            wsContent =
-                verticalUISpec
-                    [ (False, simpleButtonUISpec (constantModel "View") $ withSelection openItem)
-                    , (True, soupEditSpec smodel selnotify openItem)
-                    ]
             wsCloseBoxAction :: View ()
             wsCloseBoxAction = liftIO closer
-        (window, closer) <- cvEarlyCloser $ uitCreateWindow uit MkWindowSpec {..}
+        button <- createButton (constantModel "View") $ constantModel $ Just $ withSelection openItem
+        stuff <- soupEditSpec smodel selnotify openItem
+        wsContent <- createLayout OrientationVertical [(False, button), (True, stuff)]
+        (window, closer) <- cvEarlyCloser $ newWindow MkWindowSpec {..}
     return ()

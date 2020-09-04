@@ -213,8 +213,6 @@ interpretGroundTypeConst (ConstSyntaxGroundType "Order") =
     return $ MkPinaforeGroundTypeM $ MkAnyW OrderPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "UI") =
     return $ MkPinaforeGroundTypeM $ MkAnyW UserInterfacePinaforeGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "Notifier") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW NotifierPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "Window") =
     return $ MkPinaforeGroundTypeM $ MkAnyW WindowPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "MenuItem") =

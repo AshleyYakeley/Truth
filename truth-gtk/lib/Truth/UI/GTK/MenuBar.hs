@@ -1,14 +1,45 @@
 module Truth.UI.GTK.MenuBar
-    ( createMenuBar
+    ( KeyboardModifier(..)
+    , KeyboardKey
+    , MenuAccelerator(..)
+    , MenuEntry(..)
+    , simpleActionMenuItem
+    , MenuBar
+    , createMenuBar
     ) where
 
 import Data.IORef
 import GI.Gdk
-import GI.Gtk as Gtk
+import GI.Gtk hiding (MenuBar)
+import qualified GI.Gtk as Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.Useful
 import Truth.Debug.Reference
+
+data KeyboardModifier
+    = KMShift
+    | KMCtrl
+    | KMAlt
+
+type KeyboardKey = Char
+
+data MenuAccelerator =
+    MkMenuAccelerator [KeyboardModifier]
+                      KeyboardKey
+
+data MenuEntry
+    = SeparatorMenuEntry
+    | ActionMenuEntry Text
+                      (Maybe MenuAccelerator)
+                      (Model (ROWUpdate (Maybe (View ()))))
+    | SubMenuEntry Text
+                   [MenuEntry]
+
+type MenuBar = [MenuEntry]
+
+simpleActionMenuItem :: Text -> Maybe MenuAccelerator -> View () -> MenuEntry
+simpleActionMenuItem label maccel action = ActionMenuEntry label maccel $ constantModel $ Just action
 
 toModifierType :: KeyboardModifier -> ModifierType
 toModifierType KMShift = ModifierTypeShiftMask
@@ -68,13 +99,13 @@ attachMenuEntry ag ms (SubMenuEntry name entries) = do
     menuItemSetSubmenu item $ Just menu
     attachMenuEntries ag menu entries
 attachMenuEntry _ ms SeparatorMenuEntry = do
-    item <- new SeparatorMenuItem []
+    item <- cvNew SeparatorMenuItem []
     menuShellAppend ms item
 
 attachMenuEntries :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> [MenuEntry] -> CreateView ()
 attachMenuEntries ag menu mm = for_ mm $ attachMenuEntry ag menu
 
-createMenuBar :: IsAccelGroup ag => ag -> Truth.Core.MenuBar -> CreateView Gtk.MenuBar
+createMenuBar :: IsAccelGroup ag => ag -> MenuBar -> CreateView Gtk.MenuBar
 createMenuBar ag menu = do
     mbar <- menuBarNew
     attachMenuEntries ag mbar menu

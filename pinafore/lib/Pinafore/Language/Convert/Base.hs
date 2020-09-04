@@ -278,29 +278,6 @@ instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangOrder a) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
--- LangNotifier
-instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
-             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangNotifier a) where
-    toShimWit =
-        unNegShimWit fromJMShimWit $ \ta conva ->
-            mapPosShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
-            mkShimWit $ GroundDolanSingularType NotifierPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
-
-instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
-             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangNotifier a) where
-    toShimWit = singleDolanShimWit toJMShimWit
-
-instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
-             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangNotifier a) where
-    fromShimWit =
-        unPosShimWit toJMShimWit $ \ta conva ->
-            mapNegShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
-            mkShimWit $ GroundDolanSingularType NotifierPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
-
-instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
-             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangNotifier a) where
-    fromShimWit = singleDolanShimWit fromJMShimWit
-
 -- LangUI
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUI where
     toShimWit = mkShimWit $ GroundDolanSingularType UserInterfacePinaforeGroundType NilDolanArguments
@@ -314,30 +291,30 @@ instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) La
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangUI where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
--- PinaforeWindow
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) PinaforeWindow where
+-- LangWindow
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangWindow where
     toShimWit = mkShimWit $ GroundDolanSingularType WindowPinaforeGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) PinaforeWindow where
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangWindow where
     toShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) PinaforeWindow where
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangWindow where
     fromShimWit = mkShimWit $ GroundDolanSingularType WindowPinaforeGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) PinaforeWindow where
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangWindow where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
--- MenuEntry
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) MenuEntry where
+-- LangMenuEntry
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangMenuEntry where
     toShimWit = mkShimWit $ GroundDolanSingularType MenuItemPinaforeGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) MenuEntry where
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangMenuEntry where
     toShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) MenuEntry where
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangMenuEntry where
     fromShimWit = mkShimWit $ GroundDolanSingularType MenuItemPinaforeGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) MenuEntry where
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangMenuEntry where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- LangRef

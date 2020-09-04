@@ -33,8 +33,8 @@ import Shapes
 import Truth.Core
 import Truth.Debug.Subscriber
 
-makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext, IO PinaforeTableSubject)
-makeTestPinaforeContext uitoolkit = do
+makeTestPinaforeContext :: TruthContext -> LifeCycleIO (PinaforeContext, IO PinaforeTableSubject)
+makeTestPinaforeContext tc = do
     let rc = emptyResourceContext
     tableStateReference :: Reference (WholeEdit PinaforeTableSubject) <-
         fmap (traceThing "makeTestPinaforeContext.tableStateObject") $
@@ -45,20 +45,20 @@ makeTestPinaforeContext uitoolkit = do
         getTableState :: IO PinaforeTableSubject
         getTableState = getReferenceSubject rc tableStateReference
     (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-    pc <- makePinaforeContext model uitoolkit
+    pc <- makePinaforeContext model tc
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       ((?pinafore :: PinaforeContext) => UIToolkit -> MFunction LifeCycleIO IO -> IO PinaforeTableSubject -> IO r)
+       ((?pinafore :: PinaforeContext) => TruthContext -> MFunction LifeCycleIO IO -> IO PinaforeTableSubject -> IO r)
     -> IO r
 withTestPinaforeContext call =
     runLifeCycle $
     liftWithUnlift $ \unlift -> do
-        let uitoolkit = nullUIToolkit unlift
-        (pc, getTableState) <- unlift $ makeTestPinaforeContext uitoolkit
+        let tc = nullTruthContext unlift
+        (pc, getTableState) <- unlift $ makeTestPinaforeContext tc
         let
             ?pinafore = pc
-            in call uitoolkit unlift getTableState
+            in call tc unlift getTableState
 
 withNullPinaforeContext :: ((?pinafore :: PinaforeContext) => r) -> r
 withNullPinaforeContext f = let

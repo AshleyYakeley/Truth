@@ -1,20 +1,19 @@
 module Truth.UI.GTK.Icon
-    ( iconGetView
+    ( IconName
+    , IconSize
+    , createIcon
     ) where
 
 import GI.Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
+import Truth.UI.GTK.Useful
 
-whichSize :: StockSize -> IconSize
-whichSize SizeDnD = IconSizeDnd
-whichSize (SizeCustom i) = AnotherIconSize i
+-- | https://specifications.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
+type IconName = Text
 
-iconGetView :: GetGView
-iconGetView =
-    MkGetView $ \_ uispec -> do
-        MkIconUISpec icon size <- isUISpec uispec
-        return $ do
-            image <- imageNewFromIconName (Just icon) (fromIntegral $ fromEnum $ whichSize size)
-            toWidget image
+createIcon :: IconName -> IconSize -> CreateView Widget
+createIcon icon size = do
+    image <- imageNewFromIconName (Just icon) (fromIntegral $ fromEnum size)
+    cvAcquire image
+    toWidget image

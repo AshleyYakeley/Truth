@@ -1,11 +1,11 @@
 module Truth.UI.GTK.Maybe
-    ( oneGetView
+    ( createOneWhole
+    , createOneWholSel
     ) where
 
 import GI.Gtk hiding (get)
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
 data OneWholeViews f
@@ -20,9 +20,9 @@ instance DynamicViewState (OneWholeViews f) where
 oneWholeView ::
        forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
-    -> (f (Model update) -> GCreateView)
+    -> (f (Model update) -> CreateView Widget)
     -> SelectNotify (f ())
-    -> GCreateView
+    -> CreateView Widget
 oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
     let
         getWidgets :: Box -> Model (FullResultOneUpdate f update) -> f () -> View (OneWholeViews f)
@@ -33,19 +33,19 @@ oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
                     ((), vs) <-
                         viewCreateView $ do
                             widget <- baseView $ fmap never fn
-                            lcContainPackStart True box widget
+                            cvPackStart True box widget
                             widgetShow widget
                     return $ MissingOVS fn vs
                 SuccessResult () -> do
                     ((), vs) <-
                         viewCreateView $ do
                             widget <- baseView $ pure $ mapModel (mustExistOneChangeLens "reference") rm
-                            lcContainPackStart True box widget
+                            cvPackStart True box widget
                             widgetShow widget
                     return $ PresentOVS vs
         initVS :: Model (FullResultOneUpdate f update) -> CreateView (OneWholeViews f, Box)
         initVS rm = do
-            box <- new Box [#orientation := OrientationVertical]
+            box <- cvNew Box [#orientation := OrientationVertical]
             firstfu <- viewRunResource rm $ \am -> aModelRead am ReadHasOne
             vs <- cvLiftView $ getWidgets box rm firstfu
             return (vs, box)
@@ -60,8 +60,27 @@ oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
     box <- cvDynamic rmod initVS mempty recvVS
     toWidget box
 
-oneGetView :: GetGView
-oneGetView =
-    MkGetView $ \getview uispec -> do
-        OneWholeUISpec sub itemspec notifyChange <- isUISpec uispec
-        return $ oneWholeView sub (\fs -> getview $ itemspec fs) notifyChange
+createOneWhole ::
+       forall f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
+    => Model (FullResultOneUpdate f update)
+    -> (f (Model update) -> CreateView Widget)
+    -> CreateView Widget
+createOneWhole sub itemspec = oneWholeView sub itemspec mempty
+
+createOneWholSel ::
+       forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
+    => Model (FullResultOneUpdate f update)
+    -> (f (Model update, SelectNotify sel) -> CreateView Widget)
+    -> SelectNotify (f sel)
+    -> CreateView Widget
+createOneWholSel subf specsel snfsel = let
+    spec :: f (Model update) -> CreateView Widget
+    spec fsub = specsel $ fmap (\sub -> (sub, contramap pure snfsel)) fsub
+    getf :: f () -> Maybe (f sel)
+    getf fu =
+        case retrieveOne fu of
+            SuccessResult _ -> Nothing
+            FailureResult fn -> Just $ fmap never fn
+    snfu :: SelectNotify (f ())
+    snfu = mapMaybeSelectNotify getf snfsel
+    in oneWholeView subf spec snfu

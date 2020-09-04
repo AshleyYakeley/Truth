@@ -22,13 +22,13 @@ optParser =
     O.switch (O.long "save")
 
 newtype AppUI =
-    MkAppUI (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
+    MkAppUI (IO () -> UIWindow -> CreateView Widget -> (MenuBar, CreateView Widget))
 
 main :: IO ()
 main = do
     (paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
-    truthMainGTK $ \MkTruthContext {..} -> do
-        (uit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
+    truthMainGTK $ \tc -> do
+        let newWindow spec = tcExitOnClosed tc $ createWindow spec
         for_ paths $ \path -> do
             let
                 bsObj :: Reference ByteStringEdit
@@ -37,8 +37,8 @@ main = do
                 wholeTextObj = mapReference textLens bsObj
                 ui :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
                    -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
-                   -> (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
-                   -> CVUISpec
+                   -> (IO () -> UIWindow -> CreateView Widget -> (MenuBar, CreateView Widget))
+                   -> CreateView Widget
                 ui sub1 msub2 extraui = do
                     (selModel, setsel) <- liftLifeCycleIO $ makeSharedModel makePremodelSelectNotify
                     let
@@ -48,44 +48,47 @@ main = do
                             case mflens of
                                 Nothing -> return ()
                                 Just flens ->
-                                    uitUnliftCreateView uit $ do
+                                    tcUnliftCreateView tc $ do
                                         subSub <- cvFloatMapModel (liftFullResultOneFloatingChangeLens flens) sub
                                         makeWindow "section" subSub Nothing extraui
-                        rTextSpec :: Result Text (Model (StringUpdate Text)) -> CVUISpec
-                        rTextSpec (SuccessResult sub) = textAreaUISpec sub setsel
-                        rTextSpec (FailureResult err) = labelUISpec $ constantModel err
-                        makeSpecs sub =
-                            [ (False, simpleButtonUISpec (constantModel "View") $ openSelection sub)
-                            , (True, scrolledUISpec $ oneWholeUISpec sub rTextSpec)
-                            ]
+                        rTextSpec :: Result Text (Model (StringUpdate Text)) -> CreateView Widget
+                        rTextSpec (SuccessResult sub) = createTextArea sub setsel
+                        rTextSpec (FailureResult err) = createLabel $ constantModel err
+                        makeSpecs sub = do
+                            viewButton <- createButton (constantModel "View") $ constantModel $ Just $ openSelection sub
+                            textContent <- createOneWhole sub rTextSpec
+                            scrolledTextContent <- createScrolled textContent
+                            return [(False, viewButton), (True, scrolledTextContent)]
                         allSpecs =
                             case msub2 of
                                 Nothing -> makeSpecs sub1
-                                Just sub2 -> makeSpecs sub1 <> makeSpecs sub2
-                    verticalUISpec allSpecs
+                                Just sub2 -> liftA2 (<>) (makeSpecs sub1) (makeSpecs sub2)
+                    specs <- allSpecs
+                    createLayout OrientationVertical specs
                 makeWindow ::
                        Text
                     -> Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
                     -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
-                    -> (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
+                    -> (IO () -> UIWindow -> CreateView Widget -> (MenuBar, CreateView Widget))
                     -> CreateView ()
                 makeWindow title sub msub2 extraui = do
                     rec
-                        let (mbar, uic) = extraui closer r $ ui sub msub2 extraui
+                        let (mbar, cuic) = extraui closer r $ ui sub msub2 extraui
+                        uic <- cuic
                         (r, closer) <-
                             cvEarlyCloser $
-                            uitCreateWindow uit $ let
+                            newWindow $ let
                                 wsCloseBoxAction :: View ()
                                 wsCloseBoxAction = liftIO closer
                                 wsTitle :: Model (ROWUpdate Text)
                                 wsTitle = constantModel title
                                 wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
                                 wsMenuBar = Just $ constantModel mbar
-                                wsContent :: CVUISpec
+                                wsContent :: Widget
                                 wsContent = uic
                                 in MkWindowSpec {..}
                     return ()
-                simpleUI :: IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec)
+                simpleUI :: IO () -> UIWindow -> CreateView Widget -> (MenuBar, CreateView Widget)
                 simpleUI closer _ spec = let
                     mbar :: MenuBar
                     mbar =
@@ -97,7 +100,13 @@ main = do
                               ]
                         ]
                     in (mbar, spec)
-                extraUI :: SaveActions -> UndoHandler -> IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec)
+                extraUI ::
+                       SaveActions
+                    -> UndoHandler
+                    -> IO ()
+                    -> UIWindow
+                    -> CreateView Widget
+                    -> (MenuBar, CreateView Widget)
                 extraUI (MkSaveActions saveActions) uh closer _ spec = let
                     saveAction = do
                         mactions <- saveActions
@@ -158,4 +167,3 @@ main = do
             if double
                 then action
                 else return ()
-            liftIO checkdone

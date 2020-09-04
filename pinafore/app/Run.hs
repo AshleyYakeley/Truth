@@ -10,9 +10,8 @@ import Truth.UI.GTK
 
 runFiles :: Bool -> FilePath -> [FilePath] -> IO ()
 runFiles fNoRun dirpath fpaths =
-    truthMainGTK $ \MkTruthContext {..} -> do
-        (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
-        context <- standardPinaforeContext dirpath toolkit
+    truthMainGTK $ \tc -> do
+        context <- standardPinaforeContext dirpath tc
         cvLiftView $
             for_ fpaths $ \fpath -> do
                 ptext <- liftIO $ readFile fpath
@@ -23,12 +22,11 @@ runFiles fNoRun dirpath fpaths =
                 if fNoRun
                     then return ()
                     else action
-        liftIO checkdone
 
 runInteractive :: FilePath -> IO ()
 runInteractive dirpath =
-    truthMainGTK $ \MkTruthContext {..} -> do
-        context <- standardPinaforeContext dirpath tcUIToolkit
+    truthMainGTK $ \tc -> do
+        context <- standardPinaforeContext dirpath tc
         let
             ?pinafore = context
             in cvLiftView pinaforeInteract

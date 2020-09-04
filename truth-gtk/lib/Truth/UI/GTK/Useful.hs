@@ -1,7 +1,22 @@
-module Truth.UI.GTK.Useful where
+module Truth.UI.GTK.Useful
+    ( cvGetObjectTypeName
+    , widgetGetTree
+    , withSignalBlocked
+    , cvOn
+    , cvAfter
+    , cvAcquire
+    , cvNew
+    , cvTopLevelNew
+    , cvSet
+    , cvAdd
+    , cvPackStart
+    , seqStoreTraverse_
+    , isScrollable
+    ) where
 
 import Data.GI.Base.Attributes
 import Data.GI.Base.Constructible
+import Data.GI.Base.GObject
 import Data.GI.Base.Signals
 import Data.GI.Gtk
 import Data.IORef
@@ -47,26 +62,37 @@ instance GTKCallbackType r => GTKCallbackType (a -> r) where
     type CallbackViewLifted (a -> r) = a -> CallbackViewLifted r
     gCallbackUnlift mf av a = gCallbackUnlift mf $ av a
 
+cvCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> CreateView ()
+cvCloseDisconnectSignal object shid =
+    liftLifeCycleIO $
+    lifeCycleClose $ do
+        -- Widgets that have been destroyed have already had their signals disconnected, even if references to them still exist.
+        -- So we need to check.
+        isConnected <- signalHandlerIsConnected object shid
+        if isConnected
+            then disconnectSignalHandler object shid
+            else return ()
+
 cvOn ::
-       (GObject widget, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
-    => widget
-    -> SignalProxy widget info
+       (IsObject object, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
+    => object
+    -> SignalProxy object info
     -> CallbackViewLifted (HaskellCallbackType info)
     -> CreateView SignalHandlerId
-cvOn widget signal call = do
-    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> on widget signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK on" $ unlift ma) call
-    liftLifeCycleIO $ lifeCycleClose $ disconnectSignalHandler widget shid
+cvOn object signal call = do
+    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK on" $ unlift ma) call
+    cvCloseDisconnectSignal object shid
     return shid
 
 cvAfter ::
-       (GObject widget, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
-    => widget
-    -> SignalProxy widget info
+       (IsObject object, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
+    => object
+    -> SignalProxy object info
     -> CallbackViewLifted (HaskellCallbackType info)
     -> CreateView SignalHandlerId
-cvAfter widget signal call = do
-    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> after widget signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK after" $ unlift ma) call
-    liftLifeCycleIO $ lifeCycleClose $ disconnectSignalHandler widget shid
+cvAfter object signal call = do
+    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK after" $ unlift ma) call
+    cvCloseDisconnectSignal object shid
     return shid
 
 newtype Change m a =
@@ -108,39 +134,44 @@ isScrollable widget = do
             (Nothing, Nothing) -> False
             _ -> True
 
--- | Probably only use this for top-level widgets
-lcNewDestroy :: (MonadLifeCycleIO m, Constructible a tag, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> m a
-lcNewDestroy cc attrs =
-    liftLifeCycleIO $ do
-        a <- liftIO $ new cc attrs
-        lifeCycleClose $ traceBracket "GTK.Widget:close" $ widgetDestroy a
-        return a
+cvAcquire :: IsObject a => a -> CreateView ()
+cvAcquire a = do
+    _ <- objectRef a
+    liftLifeCycleIO $ lifeCycleClose $ objectUnref a
 
-lcSetClear ::
-       (MonadLifeCycleIO m, AttrClearC info obj attr, AttrSetC info obj attr value)
-    => obj
-    -> AttrLabelProxy attr
-    -> value
-    -> m ()
-lcSetClear obj prop val =
+cvGetObjectTypeName :: IsObject a => a -> CreateView String
+cvGetObjectTypeName a = do
+    objtype <- liftIO $ gtypeFromInstance a
+    tname <- typeName objtype
+    return $ unpack tname
+
+cvNew :: (Constructible a tag, IsObject a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> CreateView a
+cvNew cc attrs = do
+    a <- new cc attrs
+    cvAcquire a
+    return a
+
+-- | Probably only use this for top-level widgets
+cvTopLevelNew :: (Constructible a tag, IsObject a, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> CreateView a
+cvTopLevelNew cc attrs = do
+    a <- cvNew cc attrs
+    liftLifeCycleIO $ lifeCycleClose $ traceBracket "GTK.Widget:close" $ widgetDestroy a
+    return a
+
+cvSet ::
+       (AttrClearC info obj attr, AttrSetC info obj attr value) => obj -> AttrLabelProxy attr -> value -> CreateView ()
+cvSet obj prop val =
     liftLifeCycleIO $ do
         set obj [prop := val]
         lifeCycleClose $ clear obj prop
 
-lcContain :: (MonadLifeCycleIO m, IsContainer c, IsWidget w) => c -> w -> m ()
-lcContain c w =
+cvAdd :: (IsContainer c, IsWidget w) => c -> w -> CreateView ()
+cvAdd c w =
     liftLifeCycleIO $ do
         containerAdd c w
         lifeCycleClose $ containerRemove c w
 
-lcContainPackStart :: (MonadLifeCycleIO m, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> m ()
-lcContainPackStart grow box w =
-    liftLifeCycleIO $ do
-        boxPackStart box w grow grow 0
-        lifeCycleClose $ containerRemove box w
-
-cvMakeButton :: Text -> View () -> CreateView Button
-cvMakeButton name action = do
-    button <- new Button [#label := name]
-    _ <- cvOn button #clicked $ traceBracket "GTK.Button:clicked" action
-    return button
+cvPackStart :: (IsObject w, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> CreateView ()
+cvPackStart grow box w = do
+    boxPackStart box w grow grow 0
+    liftLifeCycleIO $ lifeCycleClose $ containerRemove box w

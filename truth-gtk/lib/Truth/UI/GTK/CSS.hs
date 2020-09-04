@@ -1,38 +1,27 @@
 module Truth.UI.GTK.CSS
-    ( cssGetView
+    ( setCSSName
+    , setCSSClass
+    , setCSSStyleSheet
     ) where
 
 import GI.Gtk as Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-cssGetView :: GetGView
-cssGetView =
-    mconcat
-        [ MkGetView $ \getview uispec -> do
-              MkNameUISpec name spec <- isUISpec uispec
-              return $ do
-                  w <- getview spec
-                  #setName w name
-                  return w
-        , MkGetView $ \getview uispec -> do
-              MkCSSClassUISpec cssclass spec <- isUISpec uispec
-              return $ do
-                  w <- getview spec
-                  sc <- #getStyleContext w
-                  #addClass sc cssclass
-                  return w
-        , MkGetView $ \getview uispec -> do
-              MkCSSStyleSheetUISpec full priority css spec <- isUISpec uispec
-              return $ do
-                  w <- getview spec
-                  provider <- new CssProvider []
-                  #loadFromData provider $ encodeUtf8 css
-                  children <- liftIO $ widgetGetTree full w
-                  for_ children $ \child -> do
-                      sc <- #getStyleContext child
-                      #addProvider sc provider priority
-                  return w
-        ]
+setCSSName :: Text -> Widget -> CreateView ()
+setCSSName name w = #setName w name
+
+setCSSClass :: Text -> Widget -> CreateView ()
+setCSSClass cssclass w = do
+    sc <- #getStyleContext w
+    #addClass sc cssclass
+
+setCSSStyleSheet :: Bool -> Word32 -> Text -> Widget -> CreateView ()
+setCSSStyleSheet full priority css w = do
+    provider <- cvNew CssProvider []
+    #loadFromData provider $ encodeUtf8 css
+    children <- liftIO $ widgetGetTree full w
+    for_ children $ \child -> do
+        sc <- #getStyleContext child
+        #addProvider sc provider priority

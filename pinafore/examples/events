@@ -2,10 +2,12 @@
 
 let
 
-std_window : Ref +Text -> [MenuItem] -> UI -> Action Window;
-std_window title moremenus contents = fixAction $ \window -> let
-    basemenus : [MenuItem];
-    basemenus =
+# Create a window with some standard menus
+# arguments are title reference, more menus, content UI
+stdWindow: Ref +Text -> [MenuItem] -> UI -> Action Window;
+stdWindow title moremenus content = fixAction $ \window -> let
+    menus: [MenuItem];
+    menus =
         [
             menuSubmenu "File"
             [
@@ -18,116 +20,181 @@ std_window title moremenus contents = fixAction $ \window -> let
                 menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
                 menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
-        ];
-    menus = {basemenus ++ moremenus};
-    in openWindow title menus $ uiScrolled contents;
+        ] ++ moremenus;
+    in openWindow title {menus} $ uiScrolled content;
 
-selection_window : (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> ((item | NewEntity) -> Action Any) -> (set -> Notifier item -> UI) -> Action Window;
-selection_window (inames,inamep) iset iopen inew iui = do
-    (notifier,selected) <- makeNotifier;
+selectionWindow:
+    (Text, Text) ->
+    SetRef (item | NewEntity) ->
+    ((item | NewEntity) -> Action Any) ->
+    ((item | NewEntity) -> Action Any) ->
+    (Ref {item,+NewEntity} -> UI) ->
+    Action Window;
+selectionWindow (inames,inamep) iset iopen inew iui = do
+    selection <- newMemRef;
     let
-    moremenus =
-        [
-            menuSubmenu "Selection"
+        newItem: Action ();
+        newItem = do
+            item <- newEntity iset;
+            inew item;
+            iopen item;
+            selection := item;
+            end;
+
+        viewItem: Action ();
+        viewItem = do
+            item <- get selection;
+            iopen item;
+            return ();
+            end;
+
+        deleteItem: Action ();
+        deleteItem = do
+            item <- get selection;
+            iset -= item;
+            end;
+
+        moremenus: [MenuItem];
+        moremenus =
             [
-                menuAction ("New " <> inames) (Just "Ctrl+K") {do
-                    i <- newEntity iset;
-                    inew i;
-                    iopen i;
-                    end},
-                menuAction "View" Nothing {get selected >>= iopen},
-                menuAction "Delete" Nothing {get selected >>= \p -> iset -= p}
-            ]
-        ];
-    in std_window {inamep} moremenus (iui iset notifier);
+                menuSubmenu "Selection"
+                [
+                    menuAction ("New " <> inames) (Just "Ctrl+K") {newItem},
+                    menuAction "View" Nothing {viewItem},
+                    menuAction "Delete" Nothing {deleteItem}
+                ]
+            ];
+        in stdWindow {inamep} moremenus (iui selection);
     end;
 
-closedtype EventTime
-    = EventTimeDate Date !"EventTimeDate" # all-day event
-    | EventTimeTime LocalTime !"EventTimeTime"; # event at a time
 
-showEventTime : EventTime -> Text;
+### EventTime
+
+closedtype EventTime
+    = EventTimeDate Date !"Date" # all-day event
+    | EventTimeTime LocalTime !"Time"; # event at a time
+
+showEventTime: EventTime -> Text;
 showEventTime et = case et of
     EventTimeDate d -> toText d;
     EventTimeTime t -> toText t;
     end;
 
-eventTimeDate : EventTime -> Date;
+eventTimeDate: EventTime -> Date;
 eventTimeDate et = case et of
     EventTimeDate d -> d;
     EventTimeTime (LocalTime d _) -> d
     end;
 
-setEventTimeDate : Date -> Maybe EventTime -> Maybe EventTime;
+setEventTimeDate: Date -> Maybe EventTime -> Maybe EventTime;
 setEventTimeDate d et = Just $ case et of
     Just (EventTimeTime (LocalTime _ t)) -> EventTimeTime (LocalTime d t);
     _ -> EventTimeDate d;
     end;
 
-ui_eventTime : Ref EventTime -> UI;
-ui_eventTime r = uiCalendar $ lensMapRef eventTimeDate setEventTimeDate r;
+eventRefTimeDate: Ref EventTime -> Ref Date;
+eventRefTimeDate r = lensMapRef eventTimeDate setEventTimeDate r;
+
+eventRefTimeTimeOfDay: Ref EventTime -> Ref TimeOfDay;
+eventRefTimeTimeOfDay r = let
+    eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay;
+    eventTimeTimeOfDay met = case met of
+        Just (EventTimeTime (LocalTime _ tod)) -> Just tod;
+        _ -> Nothing;
+        end;
+
+    setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime);
+    setEventTimeTimeOfDay mtod met = Just $ case met of
+        Nothing -> Nothing;
+        Just et -> Just $ case mtod of
+            Nothing -> EventTimeDate $ eventTimeDate et;
+            Just tod -> EventTimeTime $ LocalTime (eventTimeDate et) tod;
+            end;
+        end;
+    in maybeLensMapRef eventTimeTimeOfDay setEventTimeTimeOfDay r;
 
 # for ordering
-eventTimeTime : EventTime -> LocalTime;
+eventTimeTime: EventTime -> LocalTime;
 eventTimeTime et = case et of
     EventTimeDate d -> LocalTime d midnight;
     EventTimeTime t -> t
     end;
 
-eventTimeOrder : Order EventTime;
+eventTimeOrder: Order EventTime;
 eventTimeOrder = mapOrder eventTimeTime localChronological;
 
+
+### Event
+
 opentype Event;
-events : FiniteSetRef Event;
-events = property @Event @() !"Events" !@ {()};
+events: FiniteSetRef Event;
+events = property @Event @() !"type.event" !@ {()};
 
-eventName = property @Event @Text !"eventName";
-eventTime = property @Event @EventTime !"eventTime";
+eventName = property @Event @Text !"identify.name";
+eventTime = property @Event @EventTime !"event.time";
+eventNotes = property @Event @Text !"item.description";
 
-eventOrder : Order Event;
+eventOrder: Order Event;
 eventOrder = orderOn eventTime eventTimeOrder;
 
-eventData : FiniteSetRef (EventTime,Text);
+eventData: FiniteSetRef (EventTime,Text);
 eventData = (eventTime !** eventName) !$$ events;
 
-eventDataOrder : Order (EventTime,Text);
+eventDataOrder: Order (EventTime,Text);
 eventDataOrder = mapOrder fst eventTimeOrder;
 
-eventList : Ref +[(EventTime,Text)];
+eventList: Ref +[(EventTime,Text)];
 eventList = members eventDataOrder eventData;
 
-overviewRef : Ref +Text;
+
+### UI
+
+overviewRef: Ref +Text;
 overviewRef = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %eventList};
 
-overviewPage : (UI,UI);
+overviewPage: (UI,UI);
 overviewPage = (uiLabel {"Overview"},uiLabel overviewRef);
 
-tablePage : Notifier Event -> (UI,UI);
-tablePage notifier = let
-    columns : [(Ref +Text, Event -> Ref Text)];
+tablePage: Ref Event -> (UI,UI);
+tablePage selection = let
+    columns: [(Ref +Text, Event -> Ref Text)];
     columns = let
-        timeColumn : (Ref +Text, Event -> Ref Text);
+        timeColumn: (Ref +Text, Event -> Ref Text);
         timeColumn = ({"Time"},\e -> {showEventTime $ %(eventTime !$ {e})});
-        nameColumn : (Ref +Text, Event -> Ref Text);
+        nameColumn: (Ref +Text, Event -> Ref Text);
         nameColumn = ({"Name"},\e -> eventName !$ {e});
         in [timeColumn,nameColumn];
-    in (uiLabel {"Events"}, uiTable columns eventOrder events eventWindow notifier);
+    in (uiLabel {"Events"}, uiTable columns eventOrder events eventWindow (Just selection));
 
-eventWindow : Event -> Action Window;
-eventWindow evt = std_window (eventName !$ {evt}) [] $ uiVertical
+calendarWindow: Event -> Action Window;
+calendarWindow evt = fixAction $ \window ->
+    openWindow {"date of " <> %(eventName !$ {evt})} {[]} $ uiVertical
     [
-        (False, ui_eventTime $ eventTime !$ {evt}),
-        (True, uiTextEntry $ eventName !$ {evt})
+        (False,uiCalendar $ eventRefTimeDate $ eventTime !$ {evt}),
+        (False,uiButton {"Done: " <> toText %(eventRefTimeDate $ eventTime !$ {evt})} {closeWindow window})
     ];
 
-eventsWindow : Action Window;
+eventWindow: Event -> Action Window;
+eventWindow evt = stdWindow (eventName !$ {evt}) [] $ uiVertical
+[
+    (False, uiTextEntry $ eventName !$ {evt}),
+    (False, uiHorizontal
+    [
+        (False, uiButton {"cal"} {calendarWindow evt}),
+        (False, uiTextEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$ {evt}),
+        (False, uiTextEntry $ interpretTimeOfDayAsText $ eventRefTimeTimeOfDay $ eventTime !$ {evt})
+    ]),
+    (True, uiTextArea $ eventNotes !$ {evt})
+];
+
+eventsWindow: Action Window;
 eventsWindow = let
     inew i = do
         day <- getDate;
         eventTime !$ {i} := EventTimeDate day;
         eventName !$ {i} := "";
         end;
-    iui _ notifier = uiPages [overviewPage, tablePage notifier];
-    in selection_window ("Event","Events") events eventWindow inew iui;
+    iui selection = uiPages [overviewPage, tablePage selection];
+    in selectionWindow ("Event","Events") events eventWindow inew iui;
 
 in eventsWindow

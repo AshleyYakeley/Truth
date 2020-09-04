@@ -22,15 +22,15 @@ type FilePinaforeType = PinaforeAction TopType
 filePinaforeType :: Text
 filePinaforeType = qNegativeTypeDescription @FilePinaforeType
 
-standardPinaforeContext :: FilePath -> UIToolkit -> CreateView PinaforeContext
-standardPinaforeContext dirpath uitoolkit = do
+standardPinaforeContext :: FilePath -> TruthContext -> CreateView PinaforeContext
+standardPinaforeContext dirpath tc = do
     rc <- viewGetResourceContext
     sqlReference <- liftIO $ sqlitePinaforeTableReference $ dirpath </> "tables.sqlite3"
     tableReference1 <- liftLifeCycleIO $ exclusiveResource rc sqlReference
     tableReference <- liftLifeCycleIO $ cacheReference rc 500000 tableReference1 -- half-second delay before writing
     (model, ()) <-
         liftLifeCycleIO $ makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference $ tableReference rc
-    liftLifeCycleIO $ makePinaforeContext model uitoolkit
+    liftLifeCycleIO $ makePinaforeContext model tc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

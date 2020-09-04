@@ -22,11 +22,11 @@ instance Show Timing where
     show SyncTiming = "sync"
     show AsyncTiming = "async"
 
-runUIAction :: forall a. Timing -> (UIToolkit -> View a) -> Text -> IO a
+runUIAction :: forall a. Timing -> (TruthContext -> View a) -> Text -> IO a
 runUIAction timing testaction t = do
     donevar <- newEmptyMVar
-    truthMainGTK $ \MkTruthContext {..} -> do
-        (pc, _) <- liftLifeCycleIO $ makeTestPinaforeContext tcUIToolkit
+    truthMainGTK $ \tc -> do
+        (pc, _) <- liftLifeCycleIO $ makeTestPinaforeContext tc
         scriptaction <- let
             ?pinafore = pc
             in throwResult $ pinaforeInterpretFile "<test>" t
@@ -34,7 +34,7 @@ runUIAction timing testaction t = do
         let
             testView :: View (Result SomeException a)
             testView = do
-                ar <- catchResult $ testaction tcUIToolkit
+                ar <- catchResult $ testaction tc
                 viewExit
                 return ar
         case timing of
@@ -45,7 +45,7 @@ runUIAction timing testaction t = do
                 _ <-
                     liftIO $
                     forkIO $ do
-                        ar <- uitRunView tcUIToolkit emptyResourceContext testView
+                        ar <- tcRunView tc emptyResourceContext testView
                         putMVar donevar ar
                 return ()
     ar <- takeMVar donevar
@@ -73,7 +73,7 @@ gobjectEmitClicked obj = do
         _ <- traceBracket "signalEmitv" $ signalEmitv [gvalObj] signalId detail
         return ()
 
-runClickButton :: UIToolkit -> View ()
+runClickButton :: TruthContext -> View ()
 runClickButton _ = do
     ww <- windowListToplevels
     visww <-
@@ -92,10 +92,10 @@ runClickButton _ = do
                 _ -> fail $ show (length bb) <> " Buttons"
         _ -> fail $ show (length ww) <> " visible windows"
 
-noTestAction :: UIToolkit -> View ()
+noTestAction :: TruthContext -> View ()
 noTestAction _ = return ()
 
-testUIAction :: Timing -> Text -> (UIToolkit -> View ()) -> ContextTestTree
+testUIAction :: Timing -> Text -> (TruthContext -> View ()) -> ContextTestTree
 testUIAction timing text testaction = contextTestCase text text $ runUIAction timing testaction
 
 testActions :: Timing -> [ContextTestTree]

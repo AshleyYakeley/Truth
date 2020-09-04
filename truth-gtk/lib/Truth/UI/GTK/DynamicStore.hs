@@ -9,6 +9,7 @@ module Truth.UI.GTK.DynamicStore
     , dynamicStoreDelete
     , dynamicStoreMove
     , dynamicStoreGet
+    , dynamicStoreContents
     ) where
 
 import Data.GI.Gtk hiding (get)
@@ -111,3 +112,8 @@ dynamicStoreGet :: Integral pos => pos -> DynamicStore t -> View t
 dynamicStoreGet i (MkDynamicStore store) = do
     entry <- seqStoreGetValue store $ fromIntegral i
     return $ dynamicStoreEntryValue entry
+
+dynamicStoreContents :: DynamicStore t -> View [t]
+dynamicStoreContents (MkDynamicStore store) = do
+    entries <- seqStoreToList store
+    return $ fmap dynamicStoreEntryValue entries

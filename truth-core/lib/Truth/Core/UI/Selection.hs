@@ -1,4 +1,4 @@
-module Truth.Core.UI.Specifier.Selection where
+module Truth.Core.UI.Selection where
 
 import Truth.Core.Import
 import Truth.Core.Reference
