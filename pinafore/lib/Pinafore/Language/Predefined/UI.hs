@@ -292,7 +292,7 @@ ui_predefinitions =
           , mkValEntry "uiPick" "A drop-down menu." uiPick
           , mkValEntry
                 "uiTable"
-                "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection."
+                "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection, fifth is an optional reference for the selected row."
                 uiTable
           , mkValEntry "uiCalendar" "A calendar." uiCalendar
           , mkValEntry "uiScrolled" "A scrollable container." uiScrolled
