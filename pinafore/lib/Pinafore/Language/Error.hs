@@ -1,7 +1,7 @@
 module Pinafore.Language.Error where
 
 import Data.Shim
-import Language.Expression.Error
+import Language.Expression.Common
 import Pinafore.Language.Name
 import Shapes
 import Text.Parsec.Error
@@ -22,9 +22,7 @@ data ErrorType
     | TypeSubsumeError Polarity
                        Text
                        Text
-    | TypeRecursiveError Name
-                         Text
-    | TypeNoInverseLimitError Text
+    | TypeNotInvertibleError Text
     | NotationBareUnquoteError
     | InterpretTypeExprBadLimitError Polarity
     | InterpretTypeExprBadJoinMeetError Polarity
@@ -83,12 +81,11 @@ instance Show ErrorType where
     show (LookupConstructorUnknownError n) = "unknown constructor: " <> show n
     show (DeclareTypeDuplicateError n) = "duplicate type: " <> show n
     show (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> show n
-    show (TypeConvertError ta tb) = "cannot convert " <> unpack ta <> " <= " <> unpack tb
-    show (TypeConvertInverseError ta tb) = "cannot inverse convert " <> unpack ta <> " <= " <> unpack tb
-    show (TypeSubsumeError Positive tinf tdecl) = "cannot subsume " <> unpack tinf <> " <= " <> unpack tdecl
-    show (TypeSubsumeError Negative tinf tdecl) = "cannot subsume " <> unpack tinf <> " >= " <> unpack tdecl
-    show (TypeRecursiveError n t) = "cannot construct recursive type " <> show n <> " = " <> unpack t
-    show (TypeNoInverseLimitError t) = "no inverse limit for " <> unpack t
+    show (TypeConvertError ta tb) = "cannot convert " <> unpack ta <> " <: " <> unpack tb
+    show (TypeConvertInverseError ta tb) = "cannot inverse convert " <> unpack ta <> " <: " <> unpack tb
+    show (TypeSubsumeError Positive tinf tdecl) = "cannot subsume " <> unpack tinf <> " <: " <> unpack tdecl
+    show (TypeSubsumeError Negative tinf tdecl) = "cannot subsume " <> unpack tinf <> " :> " <> unpack tdecl
+    show (TypeNotInvertibleError t) = "cannot invert type " <> unpack t
     show NotationBareUnquoteError = "unquote outside Ref quote"
     show (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"
     show (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"

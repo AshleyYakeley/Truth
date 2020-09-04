@@ -9,7 +9,7 @@ import Shapes
 import Truth.Core
 
 nullViewIO :: View a -> IO a
-nullViewIO = uitRunView nullUIToolkit emptyResourceContext
+nullViewIO = uitRunView (nullUIToolkit runLifeCycle) emptyResourceContext
 
 benchHash :: Text -> Benchmark
 benchHash text = bench (show $ unpack text) $ nf literalToEntity text
@@ -27,7 +27,7 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext nullUIToolkit) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullUIToolkit runLifeCycle) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc
@@ -51,8 +51,8 @@ benchScripts =
         , benchScript "let a=b; b=c; c=d; d=e; e=f; f=g; g=return () in a"
         , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ return ()"
         , benchScript
-              "let const a b = a; ui_labelled n ui = uiHorizontal [(uiLabel n,False),(ui,True)] in const (return ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} uiBlank"
-        , benchScript "let const a b = a; r = 3:r in const (return ()) r"
+              "let const a b = a; ui_labelled n ui = uiHorizontal [(False,uiLabel n),(True,ui)] in const (return ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} uiBlank"
+        , benchScript "let const a b = a; r = 3::r in const (return ()) r"
         , benchScript
               "let cpass x = return (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript
@@ -87,17 +87,19 @@ benchScripts =
           intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
         ]
 
-interpretUpdater :: (?pinafore :: PinaforeContext PinaforeUpdate) => Text -> IO ()
-interpretUpdater text = do
-    action <- throwResult $ pinaforeInterpretFileAtType "<test>" text
-    (sendUpdate, ref) <- nullViewIO $ unliftPinaforeActionOrFail action
-    runLifeCycle $
-        subscribeEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
-        checkUpdateEditor (Known (1 :: Integer)) $ nullViewIO $ unliftPinaforeActionOrFail sendUpdate
+interpretUpdater :: (?pinafore :: PinaforeContext) => Text -> IO ()
+interpretUpdater text =
+    withTestPinaforeContext $ \uitoolkit unlift _getTableState -> do
+        action <- throwResult $ pinaforeInterpretFileAtType "<test>" text
+        (sendUpdate, ref) <- uitRunView uitoolkit emptyResourceContext $ unliftPinaforeActionOrFail action
+        unlift $
+            runEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
+            checkUpdateEditor (Known (1 :: Integer)) $
+            uitRunView uitoolkit emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext nullUIToolkit) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullUIToolkit runLifeCycle) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc

@@ -11,11 +11,13 @@ import Truth.Core.UI.TextStyle
 data OptionUICell = MkOptionUICell
     { optionCellText :: Text
     , optionCellStyle :: TextStyle
+    , optionCellDefault :: Bool
     } deriving (Eq)
 
 plainOptionUICell :: Text -> OptionUICell
 plainOptionUICell optionCellText = let
     optionCellStyle = plainTextStyle
+    optionCellDefault = False
     in MkOptionUICell {..}
 
 data OptionUISpec where

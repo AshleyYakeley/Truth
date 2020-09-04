@@ -4,37 +4,21 @@ module Pinafore.Language.Type.EntityAdapter
     ) where
 
 import Data.Shim
-import Language.Expression.Dolan
+import Language.Expression.Common
 import Pinafore.Base
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Literal
 import Pinafore.Language.Value
 import Shapes
-import Truth.Core
 
 entityGroundTypeAdapter :: forall f t. EntityGroundType f -> Arguments ConcreteEntityType f t -> EntityAdapter t
-entityGroundTypeAdapter TopEntityGroundType NilArguments = entityEntityAdapter
-entityGroundTypeAdapter NewEntityGroundType NilArguments = isoMap MkNewEntity unNewEntity entityEntityAdapter
-entityGroundTypeAdapter (OpenEntityGroundType _ _) NilArguments = isoMap MkOpenEntity unNamedEntity entityEntityAdapter
+entityGroundTypeAdapter TopEntityGroundType NilArguments = plainEntityAdapter
+entityGroundTypeAdapter NewEntityGroundType NilArguments = isoMap MkNewEntity unNewEntity plainEntityAdapter
+entityGroundTypeAdapter (OpenEntityGroundType _ _) NilArguments = isoMap MkOpenEntity unNamedEntity plainEntityAdapter
 entityGroundTypeAdapter (LiteralEntityGroundType tl) NilArguments =
     case literalTypeAsLiteral tl of
-        Dict -> let
-            entityAdapterConvert = literalToEntity
-            entityAdapterGet ::
-                   forall m. MonadIO m
-                => Entity
-                -> Readable m PinaforeEntityRead
-                -> m (Know t)
-            entityAdapterGet p mr = do
-                kl <- mr $ PinaforeEntityReadToLiteral p
-                return $ kl >>= fromLiteral
-            entityAdapterPut ::
-                   forall m. MonadIO m
-                => t
-                -> Readable m PinaforeEntityRead
-                -> m [PinaforeEntityEdit]
-            entityAdapterPut t _mr = return [PinaforeEntityEditSetLiteral (literalToEntity t) (Known $ toLiteral t)]
-            in MkEntityAdapter {..}
+        Dict -> literalEntityAdapter
 entityGroundTypeAdapter MaybeEntityGroundType (ConsArguments t NilArguments) = let
     justAnchor = codeAnchor "pinafore-base:Just"
     justAdapter = constructorEntityAdapter justAnchor $ ConsListType (concreteEntityAdapter t) NilListType
@@ -94,8 +78,8 @@ closedEntityTypeAdapter (ConsClosedEntityType a cc rest) =
 concreteEntityAdapter :: forall t. ConcreteEntityType t -> EntityAdapter t
 concreteEntityAdapter (MkConcreteType gt args) = entityGroundTypeAdapter gt args
 
-concreteToEntityShim :: ConcreteEntityType a -> JMShim a Entity
+concreteToEntityShim :: ConcreteEntityType a -> PinaforePolyShim Type a Entity
 concreteToEntityShim (MkConcreteType TopEntityGroundType NilArguments) = id
 concreteToEntityShim (MkConcreteType NewEntityGroundType NilArguments) = coerceEnhanced "subtype"
 concreteToEntityShim (MkConcreteType (OpenEntityGroundType _ _) NilArguments) = coerceEnhanced "subtype"
-concreteToEntityShim t = toEnhanced "subtype" $ entityAdapterConvert $ concreteEntityAdapter t
+concreteToEntityShim t = functionToShim "subtype" $ entityAdapterConvert $ concreteEntityAdapter t

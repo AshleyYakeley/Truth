@@ -1,0 +1,24 @@
+#!/usr/bin/pinafore
+let
+
+dateText : Date ~> Text;
+dateText = property @Date @Text !"example.calendar:dateText";
+
+ui : Ref Date -> UI;
+ui r = uiVertical
+    [
+    (False, uiHorizontal
+        [
+        (False, uiButton {"<"} {do d <- get r; r := addDays (-1) d; end}),
+        (True, uiLabel {unixFormatDate "%A, %B %e, %Y" %r}),
+        (False, uiButton {">"} {do d <- get r; r := addDays 1 d; end})
+        ]),
+    (True, uiTextArea $ dateText !$ r)
+    ];
+
+in do
+    r <- newMemRef;
+    d <- getDate;
+    r := d;
+    openWindow {toText %r} {[]} $ ui r;
+    end

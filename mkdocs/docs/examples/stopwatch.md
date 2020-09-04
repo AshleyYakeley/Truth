@@ -1,7 +1,7 @@
 # Stopwatch
 
-A simple stopwatch, with one-second resolution.
+A simple stopwatch, with one-millisecond resolution.
 
 ```pinafore
-{!examples/stopwatch.pinafore!}
+{!examples/stopwatch!}
 ```

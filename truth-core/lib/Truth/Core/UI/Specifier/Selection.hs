@@ -1,7 +1,8 @@
 module Truth.Core.UI.Specifier.Selection where
 
-import Data.IORef
 import Truth.Core.Import
+import Truth.Core.Reference
+import Truth.Core.Types
 import Truth.Core.UI.View.View
 
 newtype SelectNotify sel = MkSelectNotify
@@ -27,12 +28,7 @@ viewLiftSelectNotify (MkSelectNotify sn) =
 mapMaybeSelectNotify :: (selb -> Maybe sela) -> SelectNotify sela -> SelectNotify selb
 mapMaybeSelectNotify f (MkSelectNotify sela) = MkSelectNotify $ \vmb -> sela $ fmap (\mselb -> mselb >>= f) vmb
 
-makeRefSelectNotify :: forall sel. IO (SelectNotify sel, View (Maybe sel))
-makeRefSelectNotify = do
-    ref :: IORef (View (Maybe sel)) <- newIORef $ return Nothing
-    let
-        setsel vms = liftIO $ writeIORef ref vms
-        getsel = do
-            vmsel <- liftIO $ readIORef ref
-            vmsel
-    return (MkSelectNotify setsel, getsel)
+makePremodelSelectNotify :: forall sel. Premodel (ROWUpdate (Maybe sel)) (SelectNotify sel)
+makePremodelSelectNotify utask recv =
+    fmap (fmap $ \update -> MkSelectNotify $ \vms -> liftIOWithUnlift $ \unlift -> update $ \_ -> unlift vms) $
+    notifyingPremodel Nothing utask recv

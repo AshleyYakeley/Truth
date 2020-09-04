@@ -1,6 +1,6 @@
 module Data.Result where
 
-import Data.Bijection
+import Data.Isomorphism
 import Shapes.Import
 
 data Result e a

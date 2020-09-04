@@ -37,31 +37,21 @@ library:
       - Pinafore.Language.Value.UI
       - Pinafore.Language.Value
       - Pinafore.Language.Name
+      - Pinafore.Language.Shim
       - Pinafore.Language.Type.Literal
       - Pinafore.Language.If
-      - Pinafore.Language.TypeSystem.Show
+      - Pinafore.Language.Type.Show
       - Pinafore.Language.Type.Ground
-      - Pinafore.Language.TypeSystem.Nonpolar
       - Pinafore.Language.Type.Data
       - Pinafore.Language.Type.Identified
       - Pinafore.Language.Error
       - Pinafore.Language.Subtype
       - Pinafore.Language.Scope
+      - Pinafore.Language.Var
       - Pinafore.Language.Convert.Base
-      - Pinafore.Language.TypeSystem.Type
-      - Pinafore.Language.TypeSystem.Subtype
-      - Pinafore.Language.TypeSystem.Rename
-      - Pinafore.Language.TypeSystem.Bisubstitute
-      - Pinafore.Language.TypeSystem.Simplify.VarUses
-      - Pinafore.Language.TypeSystem.Simplify.OneSidedTypeVars
-      - Pinafore.Language.TypeSystem.Simplify.DuplicateGroundTypes
-      - Pinafore.Language.TypeSystem.Simplify.SharedTypeVars
-      - Pinafore.Language.TypeSystem.Simplify.DuplicateTypeVars
-      - Pinafore.Language.TypeSystem.Simplify
-      - Pinafore.Language.TypeSystem.Unify
-      - Pinafore.Language.TypeSystem.Inverted
-      - Pinafore.Language.TypeSystem.Subsume
-      - Pinafore.Language.TypeSystem
+      - Pinafore.Language.Type.Type
+      - Pinafore.Language.Type.Subtype
+      - Pinafore.Language.Type
       - Pinafore.Language.Type.Entity
       - Pinafore.Language.Type.EntityAdapter
       - Pinafore.Language.Syntax
@@ -83,6 +73,7 @@ library:
       - Pinafore.Language.Convert
       - Pinafore.Language.DocTree
       - Pinafore.Language.Predefined.Defs
+      - Pinafore.Language.Predefined.SpecialForms
       - Pinafore.Language.Predefined.Base
       - Pinafore.Language.Predefined.UI
       - Pinafore.Language.Predefined.File
@@ -97,6 +88,7 @@ tests:
           - base >= 4.12
           - shapes
           - filepath
+          - parsec
           - gi-gtk
           - gi-gobject
           - haskell-gi-base

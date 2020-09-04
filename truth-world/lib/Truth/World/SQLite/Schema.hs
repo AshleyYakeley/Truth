@@ -16,6 +16,9 @@ instance FieldType SQLData where
 instance FieldType Int64 where
     fieldTypeName = "INT"
 
+instance FieldType Int where
+    fieldTypeName = "INT"
+
 instance FieldType Text where
     fieldTypeName = "TEXT"
 

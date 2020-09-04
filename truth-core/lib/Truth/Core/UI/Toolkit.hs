@@ -27,11 +27,10 @@ uitRunView MkUIToolkit {..} vcResourceContext vma = let
     vcExit = uitExit
     in runView MkViewContext {..} vma
 
-nullUIToolkit :: UIToolkit
-nullUIToolkit = let
+nullUIToolkit :: MFunction LifeCycleIO IO -> UIToolkit
+nullUIToolkit uitUnliftLifeCycle = let
     uitWithLock action = action
     uitCreateWindow _ = return nullUIWindow
-    uitUnliftLifeCycle = runLifeCycle
     uitGetRequest _ = Nothing
     uitExit = return ()
     in MkUIToolkit {..}

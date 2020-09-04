@@ -1,5 +1,5 @@
 # People and Places
 
 ```pinafore
-{!examples/people.pinafore!}
+{!examples/people!}
 ```

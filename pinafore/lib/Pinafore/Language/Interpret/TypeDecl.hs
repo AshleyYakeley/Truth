@@ -1,22 +1,17 @@
 module Pinafore.Language.Interpret.TypeDecl
-    ( interpretTypeDeclarations
+    ( concreteEntityToNegativePinaforeType
+    , interpretTypeDeclarations
     ) where
 
 import qualified Data.List as List
-import Data.Shim
-import Language.Expression.Dolan
-import Language.Expression.Sealed
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Name
+import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
-import Pinafore.Language.Type.Data
-import Pinafore.Language.Type.Identified
-import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Nonpolar
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Type
 import Shapes
 
 data Constructor w t =
@@ -40,11 +35,11 @@ assembleClosedEntityType ((n, a, MkAnyW el):cc) =
             MkClosedEntityBox (ConsClosedEntityType a el ct) $
             (MkConstructor n el Left eitherLeft) : fmap extendConstructor conss
 
-data DataBox baseupdate =
-    forall t. MkDataBox (PinaforeDataType baseupdate t)
-                        [Constructor (PinaforeNonpolarType baseupdate '[]) t]
+data DataBox =
+    forall t. MkDataBox (PinaforeDataType t)
+                        [Constructor (PinaforeNonpolarType '[]) t]
 
-assembleDataType :: [(Name, AnyW (ListType (PinaforeNonpolarType baseupdate '[])))] -> DataBox baseupdate
+assembleDataType :: [(Name, AnyW (ListType (PinaforeNonpolarType '[])))] -> DataBox
 assembleDataType [] = MkDataBox NilDataType []
 assembleDataType ((n, MkAnyW el):cc) =
     case assembleDataType cc of
@@ -54,29 +49,32 @@ assembleDataType ((n, MkAnyW el):cc) =
 datatypeIOWitness :: IOWitness ('MkWitKind IdentifiedType)
 datatypeIOWitness = $(iowitness [t|'MkWitKind IdentifiedType|])
 
-constructorFreeVariables :: Constructor (PinaforeNonpolarType baseupdate '[]) t -> [AnyW SymbolType]
-constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonPolarTypeFreeVariables lt
+constructorFreeVariables :: Constructor (PinaforeNonpolarType '[]) t -> [AnyW SymbolType]
+constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonpolarTypeFreeVariables lt
 
 interpretClosedEntityTypeConstructor ::
-       SyntaxClosedEntityConstructor
-    -> PinaforeSourceScoped baseupdate (Name, Anchor, AnyW (ListType ConcreteEntityType))
+       SyntaxClosedEntityConstructor -> PinaforeSourceScoped (Name, Anchor, AnyW (ListType ConcreteEntityType))
 interpretClosedEntityTypeConstructor (MkSyntaxClosedEntityConstructor consName stypes anchor) = do
     etypes <- for stypes interpretConcreteEntityType
     return (consName, anchor, assembleListType etypes)
 
 interpretDataTypeConstructor ::
-       SyntaxDatatypeConstructor
-    -> PinaforeSourceScoped baseupdate (Name, AnyW (ListType (PinaforeNonpolarType baseupdate '[])))
+       SyntaxDatatypeConstructor -> PinaforeSourceScoped (Name, AnyW (ListType (PinaforeNonpolarType '[])))
 interpretDataTypeConstructor (MkSyntaxDatatypeConstructor consName stypes) = do
     etypes <- for stypes interpretNonpolarType
     return (consName, assembleListType etypes)
 
+concreteEntityToNegativePinaforeType ::
+       forall m t. MonadThrow ErrorType m
+    => ConcreteEntityType t
+    -> m (PinaforeShimWit 'Negative t)
+concreteEntityToNegativePinaforeType et =
+    case concreteToMaybeNegativeDolanType et of
+        Just wit -> return wit
+        Nothing -> throw InterpretTypeNoneNotNegativeEntityError
+
 interpretTypeDeclaration ::
-       forall baseupdate.
-       Name
-    -> TypeID
-    -> SyntaxTypeDeclaration
-    -> PinaforeTypeBox baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate))
+       Name -> TypeID -> SyntaxTypeDeclaration -> PinaforeTypeBox (WMFunction PinaforeScoped PinaforeScoped)
 interpretTypeDeclaration name tid OpenEntitySyntaxTypeDeclaration =
     MkTypeBox name (\_ -> OpenEntityNamedType tid) $ return ((), id)
 interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
@@ -90,16 +88,16 @@ interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
                    cti :: ClosedEntityType (Identified n)
                    cti = (reflId $ applyRefl id $ invert tident) ct
                    ctf :: forall polarity. Is PolarityType polarity
-                       => PinaforeShimWit baseupdate polarity (Identified n)
+                       => PinaforeShimWit polarity (Identified n)
                    ctf =
-                       singlePinaforeShimWit $
-                       mkJMShimWit $
-                       GroundPinaforeSingularType
+                       singleDolanShimWit $
+                       mkShimWit $
+                       GroundDolanSingularType
                            (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym cti)
                            NilDolanArguments
                patts <-
                    for conss $ \(MkConstructor cname lt at tma) -> do
-                       ltp <- return $ mapListType (concreteEntityToPositivePinaforeType @baseupdate) lt
+                       ltp <- return $ mapListType concreteToPositiveDolanType lt
                        patt <- withNewPatternConstructor cname $ toPatternConstructor ctf ltp $ tma . reflId tident
                        ltn <- mapMListType concreteEntityToNegativePinaforeType lt
                        bind <-
@@ -130,22 +128,22 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                    Just vv -> throw $ InterpretUnboundTypeVariables $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
                let
                    ctf :: forall polarity. Is PolarityType polarity
-                       => PinaforeShimWit baseupdate polarity _
+                       => PinaforeShimWit polarity _
                    ctf =
-                       singlePinaforeShimWit $
-                       mkJMShimWit $
-                       GroundPinaforeSingularType
+                       singleDolanShimWit $
+                       mkShimWit $
+                       GroundDolanSingularType
                            (SimpleGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt)
                            NilDolanArguments
                tident <- unsafeGetIdentification
                let tiso = reflId tident
                patts <-
                    for conss $ \(MkConstructor cname lt at tma) -> do
-                       ltp <- return $ mapListType nonpolarToPinaforeType lt
+                       ltp <- return $ mapListType nonpolarToDolanType lt
                        patt <-
                            withNewPatternConstructor cname $
                            toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
-                       ltn <- return $ mapListType nonpolarToPinaforeType lt
+                       ltn <- return $ mapListType nonpolarToDolanType lt
                        bind <-
                            return $
                            MkWMFunction $
@@ -156,8 +154,7 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                return ((), compAll patts)
 
 interpretTypeDeclarations ::
-       [(SourcePos, Name, SyntaxTypeDeclaration)]
-    -> PinaforeSourceScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate))
+       [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceScoped (WMFunction PinaforeScoped PinaforeScoped)
 interpretTypeDeclarations decls = do
     wfs <-
         for decls $ \(spos, name, tdecl) ->

@@ -5,7 +5,6 @@ module Pinafore.Language.Read
     , parseInteractiveCommand
     ) where
 
-import Pinafore.Base
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret
 import Pinafore.Language.Interpret.Type
@@ -13,17 +12,16 @@ import Pinafore.Language.Read.Expression
 import Pinafore.Language.Read.Interactive
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Type
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Type
 import Shapes hiding (try)
 
-parseTopExpression ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate => Text -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
+parseTopExpression :: Text -> PinaforeSourceScoped QExpr
 parseTopExpression = parseScopedReaderWhole $ fmap interpretTopExpression readExpression
 
 parseType ::
-       forall baseupdate polarity. Is PolarityType polarity
+       forall polarity. Is PolarityType polarity
     => Text
-    -> PinaforeSourceScoped baseupdate (AnyW (PinaforeType baseupdate polarity))
+    -> PinaforeSourceScoped (AnyW (PinaforeType polarity))
 parseType text = do
     st <- parseScopedReaderWhole (fmap return readType) text
     interpretType st

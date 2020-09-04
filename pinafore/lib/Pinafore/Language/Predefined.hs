@@ -1,6 +1,5 @@
 module Pinafore.Language.Predefined
-    ( PinaforePredefinitions
-    , PinaforeContext
+    ( PinaforeContext
     , DefDoc(..)
     , DocTree(..)
     , runDocTree
@@ -17,49 +16,39 @@ import Pinafore.Language.Name
 import Pinafore.Language.Predefined.Base
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Predefined.File
+import Pinafore.Language.Predefined.SpecialForms
 import Pinafore.Language.Predefined.UI
-import Pinafore.Language.TypeSystem
-import Pinafore.Storage
+import Pinafore.Language.Type
 import Shapes
-import Truth.Core
 
-type PinaforePredefinitions baseupdate
-     = ( BaseChangeLens PinaforeEntityUpdate baseupdate
-       , BaseChangeLens PinaforeFileUpdate baseupdate
-       , BaseChangeLens MemoryCellUpdate baseupdate)
+predefinitions :: DocTree BindDoc
+predefinitions =
+    MkDocTree "Predefined Bindings" "Entries in italics are supertypes of existing types, for convenience." $
+    special_forms <> base_predefinitions <> ui_predefinitions <> file_predefinitions
 
-predefinitions ::
-       forall baseupdate. PinaforePredefinitions baseupdate
-    => DocTree (BindDoc baseupdate)
-predefinitions = MkDocTree "" "" $ base_predefinitions <> ui_predefinitions <> file_predefinitions
+predefinedDoc :: DocTree DefDoc
+predefinedDoc = fmap bdDoc $ predefinitions
 
-predefinedDoc ::
-       forall baseupdate. PinaforePredefinitions baseupdate
-    => DocTree DefDoc
-predefinedDoc = fmap bdDoc $ predefinitions @baseupdate
-
-predefinedBindings ::
-       forall baseupdate. (PinaforePredefinitions baseupdate, ?pinafore :: PinaforeContext baseupdate)
-    => Map Name (QValue baseupdate)
+predefinedBindings :: (?pinafore :: PinaforeContext) => Map Name QValue
 predefinedBindings =
     mapFromList $
     catMaybes $
     toList $
     fmap
         (\doc -> do
-             val <- bdValue doc
-             return (bdName doc, val ?pinafore)) $
-    predefinitions @baseupdate
+             db <- bdBind doc
+             val <- dbValue db
+             return (dbName db, val ?pinafore)) $
+    predefinitions
 
-predefinedPatternConstructors ::
-       forall baseupdate. PinaforePredefinitions baseupdate
-    => Map Name (PinaforePatternConstructor baseupdate)
+predefinedPatternConstructors :: Map Name PinaforePatternConstructor
 predefinedPatternConstructors =
     mapFromList $
     catMaybes $
     toList $
     fmap
         (\doc -> do
-             pat <- bdPattern doc
-             return (bdName doc, pat)) $
-    predefinitions @baseupdate
+             db <- bdBind doc
+             pat <- dbPattern db
+             return (dbName db, pat)) $
+    predefinitions

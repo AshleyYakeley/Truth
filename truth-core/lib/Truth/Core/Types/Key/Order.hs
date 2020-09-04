@@ -32,7 +32,8 @@ mapReadOnlyUpdateOrder lens (MkUpdateOrder cmp flens) = MkUpdateOrder cmp $ lift
 
 orderedSetLens ::
        forall update cont seq.
-       ( Index seq ~ Int
+       ( HasCallStack
+       , Index seq ~ Int
        , HasKeyUpdate cont update
        , FullSubjectReader (UpdateReader update)
        , Item cont ~ UpdateSubject update
@@ -58,7 +59,7 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens 
         -> m (Maybe o)
     getMaybeO ordr mr k = getComposeM $ clRead (rOrdLens ordr) (\rt -> MkComposeM $ mr $ KeyReadItem k rt) ReadWhole
     getO ::
-           forall m. MonadIO m
+           forall m. (HasCallStack, MonadIO m)
         => or
         -> Readable m (KeyReader cont (UpdateReader update))
         -> ContainerKey cont
@@ -95,7 +96,7 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens 
         ((o, _, ordr), pos) <- olLookupByPredicate ol $ \(_, k, _) -> k == key
         return (o, pos, ordr)
     sclUpdate ::
-           forall m. MonadIO m
+           forall m. (HasCallStack, MonadIO m)
         => KeyUpdate cont update
         -> Readable m (KeyReader cont (UpdateReader update))
         -> StateT (OrderedList (o, ContainerKey cont, or)) m [OrderedListUpdate seq update]
@@ -232,11 +233,11 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens 
 
 contextOrderedSetLens ::
        forall updateX updateN cont seq.
-       ( Index seq ~ Int
+       ( HasCallStack
+       , Index seq ~ Int
        , HasKeyUpdate cont updateN
        , FullSubjectReader (UpdateReader updateN)
        , Item cont ~ UpdateSubject updateN
-       --, ApplicableEdit (UpdateEdit updateX)
        , ApplicableEdit (UpdateEdit updateN)
        , IsUpdate updateN
        )
@@ -275,13 +276,14 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
             Just o -> return o
             Nothing -> liftIO $ fail "orderedSetLens: missing key"
     keyRF ::
-           ContainerKey cont
+           HasCallStack
+        => ContainerKey cont
         -> ReadFunction (ContextUpdateReader updateX (KeyUpdate cont updateN)) (ContextUpdateReader updateX updateN)
     keyRF _ mr (MkTupleUpdateReader SelectContext rt) = mr $ MkTupleUpdateReader SelectContext rt
     keyRF key mr (MkTupleUpdateReader SelectContent rt) =
         knownKeyItemReadFunction key (tupleReadFunction SelectContent mr) rt
     sclInit ::
-           forall m. MonadIO m
+           forall m. (HasCallStack, MonadIO m)
         => Readable m (ContextUpdateReader updateX (KeyUpdate cont updateN))
         -> m (OrderedList (o, ContainerKey cont, or))
     sclInit mr = do
@@ -308,7 +310,7 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
         ((o, _, ordr), pos) <- olLookupByPredicate ol $ \(_, k, _) -> k == key
         return (o, pos, ordr)
     sclUpdate ::
-           forall m. MonadIO m
+           forall m. (HasCallStack, MonadIO m)
         => ContextUpdate updateX (KeyUpdate cont updateN)
         -> Readable m (ContextUpdateReader updateX (KeyUpdate cont updateN))
         -> StateT (OrderedList (o, ContainerKey cont, or)) m [ContextUpdate updateX (OrderedListUpdate seq updateN)]
@@ -424,7 +426,7 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
         put $ olEmpty kcmp
         return [MkTupleUpdate SelectContent $ OrderedListUpdateClear]
     sPutEdit ::
-           forall m. MonadIO m
+           forall m. (HasCallStack, MonadIO m)
         => ContextUpdateEdit updateX (OrderedListUpdate seq updateN)
         -> Readable m (ContextUpdateReader updateX (KeyUpdate cont updateN))
         -> StateT (OrderedList (o, ContainerKey cont, or)) m (Maybe [ContextUpdateEdit updateX (KeyUpdate cont updateN)])
@@ -490,7 +492,7 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
     contentOnlyApplyEdits [] mr = mr
     contentOnlyApplyEdits (e:es) mr = contentOnlyApplyEdits es $ contentOnlyApplyEdit e mr
     sclPutEdits ::
-           forall m. MonadIO m
+           forall m. (HasCallStack, MonadIO m)
         => [ContextUpdateEdit updateX (OrderedListUpdate seq updateN)]
         -> Readable m (ContextUpdateReader updateX (KeyUpdate cont updateN))
         -> StateT (OrderedList (o, ContainerKey cont, or)) m (Maybe [ContextUpdateEdit updateX (KeyUpdate cont updateN)])

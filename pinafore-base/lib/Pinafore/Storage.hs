@@ -1,11 +1,8 @@
 module Pinafore.Storage
-    ( module Pinafore.Storage.Table
-    , module Pinafore.Storage.Database
-    , module Pinafore.Storage.Database.SQLite
-    , module Pinafore.Storage.File
+    ( module I
     ) where
 
-import Pinafore.Storage.Database
-import Pinafore.Storage.Database.SQLite
-import Pinafore.Storage.File
-import Pinafore.Storage.Table
+import Pinafore.Storage.Database as I
+import Pinafore.Storage.Database.SQLite as I
+import Pinafore.Storage.File as I
+import Pinafore.Storage.Table as I

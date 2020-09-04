@@ -3,13 +3,13 @@ Integer
 pinafore> :simplify- Integer
 Integer
 pinafore> :simplify+ Integer | Literal
-Integer | Literal
+Literal
 pinafore> :simplify- Integer & Literal
-Integer & Literal
+Integer
 pinafore> :simplify+ Maybe Integer | Maybe Literal
-Maybe (Integer | Literal)
+Maybe Literal
 pinafore> :simplify- Maybe Integer & Maybe Literal
-Maybe (Integer & Literal)
+Maybe Integer
 pinafore> :simplify+ a
 None
 pinafore> :simplify- a

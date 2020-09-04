@@ -13,6 +13,17 @@ import Shapes hiding (try)
 readType :: Parser SyntaxType
 readType = do
     spos <- getPosition
+    (do
+         readThis TokRec
+         n <- readTypeVar
+         readExactlyThis TokOperator "."
+         t <- readType
+         return $ MkWithSourcePos spos $ RecursiveSyntaxType n t) <|>
+        readType0
+
+readType0 :: Parser SyntaxType
+readType0 = do
+    spos <- getPosition
     t1 <- readType1
     (do
          readExactlyThis TokOperator "|"

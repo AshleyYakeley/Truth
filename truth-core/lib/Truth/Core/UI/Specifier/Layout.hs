@@ -4,8 +4,8 @@ import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
 data LayoutUISpec where
-    HorizontalUISpec :: [(CVUISpec, Bool)] -> LayoutUISpec
-    VerticalUISpec :: [(CVUISpec, Bool)] -> LayoutUISpec
+    HorizontalUISpec :: [(Bool, CVUISpec)] -> LayoutUISpec
+    VerticalUISpec :: [(Bool, CVUISpec)] -> LayoutUISpec
 
 instance Show LayoutUISpec where
     show (HorizontalUISpec _) = "horizontal layout"
@@ -14,8 +14,8 @@ instance Show LayoutUISpec where
 instance UIType LayoutUISpec where
     uiWitness = $(iowitness [t|LayoutUISpec|])
 
-horizontalUISpec :: [(CVUISpec, Bool)] -> CVUISpec
+horizontalUISpec :: [(Bool, CVUISpec)] -> CVUISpec
 horizontalUISpec specs = mkCVUISpec $ HorizontalUISpec specs
 
-verticalUISpec :: [(CVUISpec, Bool)] -> CVUISpec
+verticalUISpec :: [(Bool, CVUISpec)] -> CVUISpec
 verticalUISpec specs = mkCVUISpec $ VerticalUISpec specs

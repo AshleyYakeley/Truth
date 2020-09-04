@@ -8,7 +8,7 @@ module Pinafore.Base.Action
     , PinaforeWindow(..)
     , pinaforeNewWindow
     , pinaforeExit
-    , pinaforeUndoActions
+    , pinaforeUndoHandler
     , pinaforeActionKnow
     , knowPinaforeAction
     , pinaforeLiftLifeCycleIO
@@ -21,7 +21,7 @@ import Truth.Core
 
 data ActionContext = MkActionContext
     { acUIToolkit :: UIToolkit
-    , acUndoActions :: UndoActions
+    , acUndoHandler :: UndoHandler
     }
 
 newtype PinaforeAction a =
@@ -34,8 +34,8 @@ instance MonadFail PinaforeAction where
 instance RepresentationalRole PinaforeAction where
     representationalCoercion MkCoercion = MkCoercion
 
-unPinaforeAction :: forall a. UIToolkit -> UndoActions -> PinaforeAction a -> View (Know a)
-unPinaforeAction acUIToolkit acUndoActions (MkPinaforeAction action) =
+unPinaforeAction :: forall a. UIToolkit -> UndoHandler -> PinaforeAction a -> View (Know a)
+unPinaforeAction acUIToolkit acUndoHandler (MkPinaforeAction action) =
     getComposeM $ runReaderT action MkActionContext {..}
 
 viewPinaforeAction :: View a -> PinaforeAction a
@@ -74,10 +74,10 @@ pinaforeNewWindow uiw = do
 pinaforeExit :: PinaforeAction ()
 pinaforeExit = viewPinaforeAction viewExit
 
-pinaforeUndoActions :: PinaforeAction UndoActions
-pinaforeUndoActions = do
+pinaforeUndoHandler :: PinaforeAction UndoHandler
+pinaforeUndoHandler = do
     MkActionContext {..} <- MkPinaforeAction ask
-    return acUndoActions
+    return acUndoHandler
 
 pinaforeActionKnow :: forall a. Know a -> PinaforeAction a
 pinaforeActionKnow (Known a) = pure a

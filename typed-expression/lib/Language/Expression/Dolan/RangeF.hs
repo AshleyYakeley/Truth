@@ -1,29 +1,28 @@
 module Language.Expression.Dolan.RangeF where
 
-import Data.Shim.CatRange
-import Data.Shim.JMShim
-import Data.Shim.JMShimWit
-import Data.Shim.Polarity
-import Data.Shim.Range
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Dolan.PShimWit
 import Shapes
 
 unToRangeShimWit ::
-       forall tw pa qa r. (FromShimWit JMShim (tw 'Negative) pa, ToShimWit JMShim (tw 'Positive) qa)
-    => (forall pt qt. RangeType tw 'Positive '( pt, qt) -> CatRange JMShim '( pa, qa) '( pt, qt) -> r)
+       forall (map :: ShimKind Type) tw pa qa r. (FromShimWit map (tw 'Negative) pa, ToShimWit map (tw 'Positive) qa)
+    => (forall pt qt. RangeType tw 'Positive '( pt, qt) -> CatRange map '( pa, qa) '( pt, qt) -> r)
     -> r
 unToRangeShimWit cont =
-    unShimWit fromJMShimWit $ \tp convp ->
-        unShimWit toJMShimWit $ \tq convq -> cont (MkRangeType tp tq) (MkCatRange convp convq)
+    unNegShimWit fromShimWit $ \tp convp ->
+        unPosShimWit toShimWit $ \tq convq -> cont (MkRangeType tp tq) (MkCatRange convp convq)
 
 unFromRangeShimWit ::
-       forall tw pa qa r. (ToShimWit JMShim (tw 'Positive) pa, FromShimWit JMShim (tw 'Negative) qa)
-    => (forall pt qt. RangeType tw 'Negative '( pt, qt) -> CatRange JMShim '( pt, qt) '( pa, qa) -> r)
+       forall (map :: ShimKind Type) tw pa qa r. (ToShimWit map (tw 'Positive) pa, FromShimWit map (tw 'Negative) qa)
+    => (forall pt qt. RangeType tw 'Negative '( pt, qt) -> CatRange map '( pt, qt) '( pa, qa) -> r)
     -> r
 unFromRangeShimWit cont =
-    unShimWit toJMShimWit $ \tp convp ->
-        unShimWit fromJMShimWit $ \tq convq -> cont (MkRangeType tp tq) (MkCatRange convp convq)
+    unPosShimWit toShimWit $ \tp convp ->
+        unNegShimWit fromShimWit $ \tq convq -> cont (MkRangeType tp tq) (MkCatRange convp convq)
 
-biRangeAnyF :: (PJMShimWit tw 'Negative t, PJMShimWit tw 'Positive t) -> AnyF (RangeType tw 'Positive) (Range JMShim t)
-biRangeAnyF (MkShimWit tp convp, MkShimWit tq convq) = MkAnyF (MkRangeType tp tq) (MkRange convp convq)
+biRangeAnyF ::
+       forall (map :: ShimKind Type) tw t.
+       (PShimWit map tw 'Negative t, PShimWit map tw 'Positive t)
+    -> AnyF (RangeType tw 'Positive) (Range map t)
+biRangeAnyF (sp, sq) =
+    unNegShimWit sp $ \tp convp -> unPosShimWit sq $ \tq convq -> MkAnyF (MkRangeType tp tq) (MkRange convp convq)

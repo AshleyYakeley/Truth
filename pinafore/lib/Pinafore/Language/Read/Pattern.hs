@@ -34,7 +34,7 @@ nilPattern :: SourcePos -> SyntaxPattern
 nilPattern spos = MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor "[]") []
 
 consPattern :: SourcePos -> SyntaxPattern -> SyntaxPattern -> SyntaxPattern
-consPattern spos pat1 pat2 = MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor ":") [pat1, pat2]
+consPattern spos pat1 pat2 = MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor "::") [pat1, pat2]
 
 readPattern2 :: Parser SyntaxPattern
 readPattern2 = do
@@ -42,7 +42,7 @@ readPattern2 = do
     pat1 <- readPattern3
     mpat2 <-
         optional $ do
-            readExactlyThis TokOperator ":"
+            readExactlyThis TokOperator "::"
             readPattern2
     case mpat2 of
         Nothing -> return pat1

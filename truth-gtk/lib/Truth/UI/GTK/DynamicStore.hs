@@ -100,6 +100,8 @@ dynamicStoreDelete i (MkDynamicStore store) = do
     seqStoreRemove store $ fromIntegral i
 
 dynamicStoreMove :: Integral pos => pos -> pos -> DynamicStore t -> View ()
+dynamicStoreMove a b _
+    | a == b = return ()
 dynamicStoreMove a b (MkDynamicStore store) = do
     entry <- seqStoreGetValue store $ fromIntegral a
     seqStoreRemove store $ fromIntegral a

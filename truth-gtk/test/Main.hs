@@ -11,11 +11,12 @@ import Truth.UI.GTK
 testGView :: String -> CVUISpec -> TestTree
 testGView name luispec =
     testCase name $
-    runLifeCycle $ do
-        uispec <- uitRunView nullUIToolkit emptyResourceContext luispec
+    runLifeCycle $
+    liftWithUnlift $ \unlift -> do
+        uispec <- uitRunView (nullUIToolkit unlift) emptyResourceContext $ remonad unlift luispec
         case getMaybeView uispec of
             Just _ -> return ()
-            Nothing -> liftIO $ assertFailure "not matched"
+            Nothing -> assertFailure "not matched"
 
 data UIUnknown where
     MkUIUnknown :: UIUnknown
@@ -31,7 +32,7 @@ testGViews =
     testGroup
         "GView"
         [ testGView "null" $ (nullUISpec :: CVUISpec)
-        , testGView "vertical layout" $ verticalUISpec [(return $ MkUISpec MkUIUnknown :: CVUISpec, False)]
+        , testGView "vertical layout" $ verticalUISpec [(False, return $ MkUISpec MkUIUnknown :: CVUISpec)]
         ]
 
 tests :: TestTree

@@ -4,42 +4,47 @@ module Pinafore.Base.PredicateMorphism
 
 import Pinafore.Base.Edit
 import Pinafore.Base.EntityAdapter
+import Pinafore.Base.EntityStorer
 import Pinafore.Base.Know
-import Pinafore.Base.Lens
 import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
 
-predicatePinaforeTableLensMorphism ::
-       forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeEntityUpdate a a b b
-predicatePinaforeTableLensMorphism (MkEntityAdapter ap aget aput) (MkEntityAdapter bp bget bput) prd = let
-    pmGet :: a -> ReadM PinaforeEntityRead (Know b)
-    pmGet a = do
-        valp <- readM $ PinaforeEntityReadGetProperty prd $ ap a
-        bget valp readM
-    pmBaseUpdate :: PinaforeEntityUpdate -> ReadM PinaforeEntityRead Bool
-    pmBaseUpdate (MkEditUpdate (PinaforeEntityEditSetPredicate p _ _))
-        | p == prd = return True
-    pmBaseUpdate _ = return False
-    pmPut :: Know a -> Know b -> ReadM PinaforeEntityRead (Maybe ([PinaforeEntityEdit], Maybe (Know a)))
-    pmPut (Known subja) kvalb = do
-        aedits <- aput subja readM
-        mbedits <- for kvalb $ \valb -> bput valb readM
-        let edits = aedits <> (fromKnow [] mbedits) <> [PinaforeEntityEditSetPredicate prd (ap subja) (fmap bp kvalb)]
-        return $ Just (edits, Nothing)
-    pmPut Unknown _ = return Nothing
-    pmInv :: b -> ReadM PinaforeEntityRead [a]
-    pmInv valb = do
-        setp <- readM $ PinaforeEntityReadLookupPredicate prd $ bp valb
-        setka <- for (setToList setp) $ \p -> aget p readM
-        return $ catKnowns setka
-    in MkPinaforeLensMorphism {..}
-
 propertyMorphism ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => EntityAdapter a
-    -> EntityAdapter b
-    -> Predicate
-    -> PinaforeLensMorphism baseupdate a a b b
-propertyMorphism pa pb prd =
-    mapPinaforeLensMorphismBase (baseChangeLens @PinaforeEntityUpdate) $ predicatePinaforeTableLensMorphism pa pb prd
+       forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeStorageUpdate a a b b
+propertyMorphism eaa eab prd = let
+    ap = entityAdapterConvert eaa
+    bp = entityAdapterConvert eab
+    pmGet :: a -> ReadM PinaforeStorageRead (Know b)
+    pmGet a = do
+        valp <- readM $ PinaforeStorageReadGet eaa prd a
+        readM $ PinaforeStorageReadEntity eab valp
+    pmBaseUpdate :: PinaforeStorageUpdate -> Maybe (a -> ReadM PinaforeStorageRead (Maybe (Know b)))
+    pmBaseUpdate (MkPinaforeStorageUpdate p s kv)
+        | p == prd =
+            Just $ \a ->
+                case ap a == s of
+                    False -> return Nothing
+                    True -> do
+                        kb <- for kv $ \b -> readM $ PinaforeStorageReadEntity eab b
+                        return $ Just $ exec kb
+    pmBaseUpdate _ = Nothing
+    pmPut :: Know a -> Know b -> ReadM PinaforeStorageRead (Maybe ([PinaforeStorageEdit], Maybe (Know a)))
+    pmPut (Known subja) kvalb = return $ Just ([MkPinaforeStorageEdit eaa eab prd subja kvalb], Nothing)
+    pmPut Unknown _ = return Nothing
+    pmInvGet :: b -> ReadM PinaforeStorageRead [a]
+    pmInvGet valb = do
+        setp <- readM $ PinaforeStorageReadLookup prd $ bp valb
+        setka <- for (setToList setp) $ \p -> readM $ PinaforeStorageReadEntity eaa p
+        return $ catKnowns setka
+    pmInvBaseUpdate :: PinaforeStorageUpdate -> Maybe (b -> ReadM PinaforeStorageRead [(Bool, a)])
+    pmInvBaseUpdate (MkPinaforeStorageUpdate p s kv)
+        | p == prd =
+            Just $ \b -> do
+                ka <- readM $ PinaforeStorageReadEntity eaa s
+                return $
+                    case ka of
+                        Known a -> [(kv == Known (bp b), a)]
+                        Unknown -> []
+    pmInvBaseUpdate _ = Nothing
+    in MkPinaforeLensMorphism {..}

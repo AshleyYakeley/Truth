@@ -3,8 +3,6 @@ module Pinafore.Language.Read.Interactive
     , parseInteractiveCommand
     ) where
 
-import Data.Shim
-import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret
@@ -14,30 +12,25 @@ import Pinafore.Language.Read.Expression
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Scope
+import Pinafore.Language.Type
 import Shapes hiding (try)
 
-data InteractiveCommand baseupdate
-    = LetInteractiveCommand (PinaforeScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)))
-    | ExpressionInteractiveCommand (PinaforeScoped baseupdate (QExpr baseupdate))
+data InteractiveCommand
+    = LetInteractiveCommand (PinaforeScoped (WMFunction PinaforeScoped PinaforeScoped))
+    | ExpressionInteractiveCommand (PinaforeScoped QExpr)
     | ShowTypeInteractiveCommand Bool
-                                 (PinaforeScoped baseupdate (QExpr baseupdate))
+                                 (PinaforeScoped QExpr)
     | forall polarity. SimplifyTypeInteractiveCommand (PolarityType polarity)
-                                                      (PinaforeScoped baseupdate (AnyW (PinaforeType baseupdate polarity)))
+                                                      (PinaforeScoped (AnyW (PinaforeType polarity)))
     | ErrorInteractiveCommand Text
 
-showTypeInteractiveCommand ::
-       forall baseupdate. BaseChangeLens PinaforeEntityUpdate baseupdate
-    => Bool
-    -> Parser (InteractiveCommand baseupdate)
+showTypeInteractiveCommand :: Bool -> Parser InteractiveCommand
 showTypeInteractiveCommand showinfo = do
     expr <- readExpression
     return $ ShowTypeInteractiveCommand showinfo $ interpretTopExpression expr
 
-simplifyPolarTypeInteractiveCommand ::
-       forall baseupdate polarity. BaseChangeLens PinaforeEntityUpdate baseupdate
-    => PolarityType polarity
-    -> Parser (InteractiveCommand baseupdate)
+simplifyPolarTypeInteractiveCommand :: forall polarity. PolarityType polarity -> Parser InteractiveCommand
 simplifyPolarTypeInteractiveCommand polarity =
     case getRepWitness polarity of
         Dict -> do
@@ -49,12 +42,10 @@ readPolarity :: (forall polarity. PolarityType polarity -> Parser r) -> Parser r
 readPolarity cont =
     (readExactlyThis TokOperator "+" >> cont PositiveType) <|> (readExactlyThis TokOperator "-" >> cont NegativeType)
 
-simplifyTypeInteractiveCommand ::
-       forall baseupdate. BaseChangeLens PinaforeEntityUpdate baseupdate
-    => Parser (InteractiveCommand baseupdate)
+simplifyTypeInteractiveCommand :: Parser InteractiveCommand
 simplifyTypeInteractiveCommand = readPolarity simplifyPolarTypeInteractiveCommand
 
-readSpecialCommand :: BaseChangeLens PinaforeEntityUpdate baseupdate => Text -> Parser (InteractiveCommand baseupdate)
+readSpecialCommand :: Text -> Parser InteractiveCommand
 readSpecialCommand "t" = showTypeInteractiveCommand False
 readSpecialCommand "type" = showTypeInteractiveCommand False
 readSpecialCommand "info" = showTypeInteractiveCommand True
@@ -62,12 +53,10 @@ readSpecialCommand "simplify" = simplifyTypeInteractiveCommand
 readSpecialCommand "simplify-" = simplifyPolarTypeInteractiveCommand NegativeType
 readSpecialCommand cmd = return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd
 
-readInteractiveCommand ::
-       forall baseupdate. BaseChangeLens PinaforeEntityUpdate baseupdate
-    => Parser (InteractiveCommand baseupdate)
+readInteractiveCommand :: Parser InteractiveCommand
 readInteractiveCommand =
     (do
-         readExactlyThis TokOperator ":"
+         readThis TokTypeJudge
          MkName cmd <- readThis TokLName
          readSpecialCommand cmd) <|>
     (readEnd >> return (LetInteractiveCommand $ return id)) <|>
@@ -78,8 +67,5 @@ readInteractiveCommand =
          stdecls <- readTopDeclarations
          return $ LetInteractiveCommand $ interpretTopDeclarations stdecls)
 
-parseInteractiveCommand ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => Text
-    -> StateT SourcePos InterpretResult (InteractiveCommand baseupdate)
+parseInteractiveCommand :: Text -> StateT SourcePos InterpretResult InteractiveCommand
 parseInteractiveCommand = parseReader readInteractiveCommand

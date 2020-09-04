@@ -78,12 +78,12 @@ soupReference dirpath = let
 soupWindow :: UIToolkit -> FilePath -> CreateView ()
 soupWindow uit dirpath = do
     smodel <- liftLifeCycleIO $ makeReflectingModel $ traceThing "soup" $ soupReference dirpath
-    (selnotify, getsel) <- liftIO $ makeRefSelectNotify
+    (selModel, selnotify) <- liftLifeCycleIO $ makeSharedModel makePremodelSelectNotify
     rec
         let
             withSelection :: (Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()) -> View ()
             withSelection call = do
-                msel <- getsel
+                msel <- viewRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
                 case msel of
                     Just sel -> call sel
                     Nothing -> return ()
@@ -145,8 +145,8 @@ soupWindow uit dirpath = do
             wsContent :: CVUISpec
             wsContent =
                 verticalUISpec
-                    [ (simpleButtonUISpec (constantModel "View") $ withSelection openItem, False)
-                    , (soupEditSpec smodel selnotify openItem, True)
+                    [ (False, simpleButtonUISpec (constantModel "View") $ withSelection openItem)
+                    , (True, soupEditSpec smodel selnotify openItem)
                     ]
             wsCloseBoxAction :: View ()
             wsCloseBoxAction = liftIO closer

@@ -4,14 +4,10 @@ module Pinafore.Language.If
     , qbind_
     ) where
 
-import Data.Shim
 import Pinafore.Base
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Type
+import Pinafore.Language.Var
 import Shapes
-
-type A = UVar "a"
-
-type B = UVar "b"
 
 qifthenelse :: Bool -> A -> A -> A
 qifthenelse True v _ = v

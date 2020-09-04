@@ -4,7 +4,8 @@ import Data.Shim
 import Language.Expression.Dolan.Variance
 import Shapes
 
-data CovaryMap (f :: k) where
+type CovaryMap :: forall k. k -> Type
+data CovaryMap f where
     NilCovaryMap :: forall (f :: Type). CovaryMap f
     ConsCovaryMap
         :: forall (k :: Type) (f :: Type -> k). HasVariance 'Covariance f
@@ -48,8 +49,7 @@ covaryToDolanVarianceMap (ConsListType Refl ml) (ConsCovaryMap vr) =
     ConsDolanVarianceMap $ covaryToDolanVarianceMap ml vr
 
 covaryKMCategory ::
-       forall (cat :: forall kc. kc -> kc -> Type) dv. DolanVarianceInCategory cat
+       forall (pmap :: PolyShimKind) dv. DolanVarianceInCategory pmap
     => CovaryType dv
-    -> Dict ( CoercibleKind (DolanVarianceKind dv)
-            , InCategory (cat :: DolanVarianceKind dv -> DolanVarianceKind dv -> Type))
-covaryKMCategory lc = dolanVarianceInCategory @cat (mapListType (\Refl -> CovarianceType) lc)
+    -> Dict (CoercibleKind (DolanVarianceKind dv), InCategory (pmap (DolanVarianceKind dv)))
+covaryKMCategory lc = dolanVarianceInCategory @pmap (mapListType (\Refl -> CovarianceType) lc)

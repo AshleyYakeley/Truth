@@ -13,32 +13,32 @@ import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Scope
+import Pinafore.Language.Type
+import Pinafore.Language.Var
 import Shapes
 
-type RefNotation baseupdate = WriterT [(Name, QExpr baseupdate)] (StateT Int (PinaforeScoped baseupdate))
+type RefNotation = WriterT [(Name, QExpr)] (StateT Int PinaforeScoped)
 
-runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> WriterT [(Name, QExpr baseupdate)] m a -> m a
+runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> WriterT [(Name, QExpr)] m a -> m a
 runRefWriterT spos wma = do
     (a, w) <- runWriterT wma
     case w of
         [] -> return a
         _ -> throw $ MkErrorMessage spos NotationBareUnquoteError
 
-liftRefNotation :: PinaforeScoped baseupdate a -> RefNotation baseupdate a
+liftRefNotation :: PinaforeScoped a -> RefNotation a
 liftRefNotation = lift . lift
 
-remonadRefNotation ::
-       WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)
-    -> (forall a. RefNotation baseupdate a -> RefNotation baseupdate a)
+remonadRefNotation :: WMFunction PinaforeScoped PinaforeScoped -> (forall a. RefNotation a -> RefNotation a)
 remonadRefNotation (MkWMFunction mm) = remonad $ remonad mm
 
-runRefNotation :: SourcePos -> RefNotation baseupdate a -> PinaforeScoped baseupdate a
+runRefNotation :: SourcePos -> RefNotation a -> PinaforeScoped a
 runRefNotation spos rexpr = evalStateT (runRefWriterT spos rexpr) 0
 
-type RefExpression baseupdate = RefNotation baseupdate (QExpr baseupdate)
+type RefExpression = RefNotation QExpr
 
-varRefExpr :: SourcePos -> Name -> RefExpression baseupdate
+varRefExpr :: SourcePos -> Name -> RefExpression
 varRefExpr spos name =
     liftRefNotation $ do
         mexpr <- runSourcePos spos $ lookupBinding name
@@ -46,7 +46,7 @@ varRefExpr spos name =
             Just expr -> return expr
             Nothing -> return $ qVarExpr name
 
-refNotationUnquote :: SourcePos -> RefExpression baseupdate -> RefExpression baseupdate
+refNotationUnquote :: SourcePos -> RefExpression -> RefExpression
 refNotationUnquote spos rexpr = do
     i <- lift get
     lift $ put $ i + 1
@@ -55,23 +55,19 @@ refNotationUnquote spos rexpr = do
     tell $ pure (varname, expr)
     return $ qVarExpr varname
 
-type A = UVar "a"
-
-type B = UVar "b"
-
-purerefExpr :: forall baseupdate. QExpr baseupdate
+purerefExpr :: QExpr
 purerefExpr = qConstExpr (pure :: A -> PinaforeImmutableRef A)
 
-aprefExpr :: forall baseupdate. QExpr baseupdate
+aprefExpr :: QExpr
 aprefExpr = qConstExpr ((<*>) :: PinaforeImmutableRef (A -> B) -> PinaforeImmutableRef A -> PinaforeImmutableRef B)
 
-aplist :: QExpr baseupdate -> [QExpr baseupdate] -> PinaforeSourceScoped baseupdate (QExpr baseupdate)
+aplist :: QExpr -> [QExpr] -> PinaforeSourceScoped QExpr
 aplist expr [] = return expr
 aplist expr (arg:args) = do
     expr' <- qApplyAllExpr aprefExpr [expr, arg]
     aplist expr' args
 
-refNotationQuote :: SourcePos -> RefExpression baseupdate -> RefExpression baseupdate
+refNotationQuote :: SourcePos -> RefExpression -> RefExpression
 refNotationQuote spos rexpr =
     lift $ do
         (expr, binds) <- runWriterT rexpr

@@ -1,74 +1,71 @@
 module Pinafore.Test
     ( parseType
     , runScoped
-    , runSourceScoped
     , runSourcePos
     , PinaforeTypeSystem
     , Name
     , UVar
+    , Var(..)
+    , PinaforeGroundType(..)
+    , EntityGroundType(..)
     , PinaforeType
+    , PinaforePolyShim
     , PinaforeShimWit
+    , PinaforeSingularType
+    , PinaforeSingularShimWit
     , PinaforeScoped
     , PinaforeSourceScoped
-    , pinaforeSimplifyTypes
     , toJMShimWit
+    , PinaforeTableSubject(..)
     , module Pinafore.Test
     ) where
 
-import Data.Shim
 import Pinafore.Base
 import Pinafore.Language
 import Pinafore.Language.Name
 import Pinafore.Language.Read
-import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Simplify
-import Pinafore.Pinafore
+import Pinafore.Language.Scope
+import Pinafore.Language.Shim
+import Pinafore.Language.Type
+import Pinafore.Language.Var
 import Pinafore.Storage
 import Shapes
 import Truth.Core
-import Truth.World.ReferenceStore
 import Truth.Debug.Subscriber
 
-makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
+makeTestPinaforeContext :: UIToolkit -> LifeCycleIO (PinaforeContext, IO PinaforeTableSubject)
 makeTestPinaforeContext uitoolkit = do
     let rc = emptyResourceContext
-    tableStateReference :: Reference (WholeEdit (EditSubject PinaforeTableEdit)) <-
+    tableStateReference :: Reference (WholeEdit PinaforeTableSubject) <-
         fmap (traceThing "makeTestPinaforeContext.tableStateObject") $
-        liftIO $ makeMemoryReference ([], []) $ \_ -> True
+        liftIO $ makeMemoryReference (MkPinaforeTableSubject [] [] [] []) $ \_ -> True
     let
         tableReference :: Reference PinaforeTableEdit
         tableReference = convertReference tableStateReference
-        getTableState :: IO (EditSubject PinaforeTableEdit)
+        getTableState :: IO PinaforeTableSubject
         getTableState = getReferenceSubject rc tableStateReference
-    memoryReference <- liftIO makeMemoryCellReference
-    let
-        picker :: forall update. PinaforeSelector update -> Premodel update ()
-        picker PinaforeSelectPoint = traceThing "testObject.PinaforeSelectPoint" $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-        picker PinaforeSelectFile = traceThing "testObject.PinaforeSelectFile" $
-            reflectingPremodel $
-            mapReference (fromReadOnlyRejectingChangeLens @PinaforeFileUpdate) $
-            readConstantReference $ constFunctionReadFunction nullSingleReferenceReadable
-        picker PinaforeSelectMemory = traceThing "testObject.PinaforeSelectMemory" $ reflectingPremodel memoryReference
-    (sub, ()) <- makeSharedModel $ tuplePremodel picker
-    pc <- makePinaforeContext sub uitoolkit
+    (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
+    pc <- makePinaforeContext model uitoolkit
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       UIToolkit
-    -> ((?pinafore :: PinaforeContext PinaforeUpdate) => IO (EditSubject PinaforeTableEdit) -> IO r)
+       ((?pinafore :: PinaforeContext) => UIToolkit -> MFunction LifeCycleIO IO -> IO PinaforeTableSubject -> IO r)
     -> IO r
-withTestPinaforeContext uitoolkit f =
-    withLifeCycle (makeTestPinaforeContext uitoolkit) $ \(pc, getTableState) -> let
-        ?pinafore = pc
-        in f getTableState
+withTestPinaforeContext call =
+    runLifeCycle $
+    liftWithUnlift $ \unlift -> do
+        let uitoolkit = nullUIToolkit unlift
+        (pc, getTableState) <- unlift $ makeTestPinaforeContext uitoolkit
+        let
+            ?pinafore = pc
+            in call uitoolkit unlift getTableState
 
-withNullPinaforeContext :: ((?pinafore :: PinaforeContext baseupdate) => r) -> r
+withNullPinaforeContext :: ((?pinafore :: PinaforeContext) => r) -> r
 withNullPinaforeContext f = let
     ?pinafore = nullPinaforeContext
     in f
 
-runTestPinaforeSourceScoped ::
-       PinaforePredefinitions baseupdate => PinaforeSourceScoped baseupdate a -> InterpretResult a
+runTestPinaforeSourceScoped :: PinaforeSourceScoped a -> InterpretResult a
 runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa
 
 checkUpdateEditor ::
@@ -86,7 +83,7 @@ checkUpdateEditor val push = let
         -> NonEmpty (WholeUpdate a)
         -> EditContext
         -> IO ()
-    editorUpdate var _ _ edits _ = do putMVar var edits
+    editorUpdate var _ _ edits _ = putMVar var edits
     editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Reference (WholeEdit a) -> Task () -> LifeCycleIO ()
     editorDo var _ _ =
         traceBracket "checkUpdateEditor.do" $ liftIO $ do

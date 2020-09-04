@@ -7,18 +7,25 @@ module Pinafore.Base.FunctionMorphism
 import Shapes
 import Truth.Core
 
--- equivalent to: type PinaforeFunctionMorphism baseupdate a b = UpdateFunction baseupdate (OpaqueUpdate (FunctionUpdateEdit a (WholeUpdate b)))
+-- equivalent to: type PinaforeFunctionMorphism baseupdate a b = ChangeLens baseupdate (ReadOnlyUpdate (FunctionUpdate a (WholeUpdate b)))
 data PinaforeFunctionMorphism baseupdate a b = MkPinaforeFunctionMorphism
     { pfFuncRead :: a -> ReadM (UpdateReader baseupdate) b
-    , pfUpdate :: baseupdate -> ReadM (UpdateReader baseupdate) Bool
+    , pfUpdate :: baseupdate -> Maybe (a -> ReadM (UpdateReader baseupdate) (Maybe b))
     }
 
 instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (PinaforeFunctionMorphism baseupdate) where
-    cfmap (MkCatDual f) = MkNestedMorphism $ \(MkPinaforeFunctionMorphism fr u) -> MkPinaforeFunctionMorphism (fr . f) u
+    cfmap f =
+        MkNestedMorphism $ \(MkPinaforeFunctionMorphism fr up) -> let
+            fr' = (cfmap1 f) fr
+            up' = (fmap $ fmap $ cfmap1 f) up
+            in MkPinaforeFunctionMorphism fr' up'
 
 instance Functor (PinaforeFunctionMorphism baseupdate a) where
     fmap :: forall p q. (p -> q) -> PinaforeFunctionMorphism baseupdate a p -> PinaforeFunctionMorphism baseupdate a q
-    fmap pq (MkPinaforeFunctionMorphism fr up) = MkPinaforeFunctionMorphism (\a -> fmap pq (fr a)) up
+    fmap pq (MkPinaforeFunctionMorphism fr up) = let
+        fr' = (fmap $ fmap pq) fr
+        up' = (fmap $ fmap $ fmap $ fmap $ fmap pq) up
+        in MkPinaforeFunctionMorphism fr' up'
 
 instance Applicative (PinaforeFunctionMorphism baseupdate a) where
     pure b = arr $ \_ -> b
@@ -31,53 +38,118 @@ instance Applicative (PinaforeFunctionMorphism baseupdate a) where
 instance Category (PinaforeFunctionMorphism baseupdate) where
     id = let
         pfFuncRead = return
-        pfUpdate _ = return False
+        pfUpdate _ = Nothing
         in MkPinaforeFunctionMorphism {..}
     (.) :: forall a b c.
            PinaforeFunctionMorphism baseupdate b c
         -> PinaforeFunctionMorphism baseupdate a b
         -> PinaforeFunctionMorphism baseupdate a c
-    MkPinaforeFunctionMorphism lbc ubc . MkPinaforeFunctionMorphism lab uab = let
-        pfFuncRead :: a -> ReadM (UpdateReader baseupdate) c
-        pfFuncRead a = do
-            b <- lab a
-            lbc b
-        pfUpdate :: baseupdate -> ReadM (UpdateReader baseupdate) Bool
-        pfUpdate update = do
-            chab <- uab update
-            chbc <- ubc update
-            return $ chab || chbc
+    MkPinaforeFunctionMorphism getBC buBC . MkPinaforeFunctionMorphism getAB buAB = let
+        pfFuncRead a = getAB a >>= getBC
+        pfUpdate :: baseupdate -> Maybe (a -> ReadM (UpdateReader baseupdate) (Maybe c))
+        pfUpdate update =
+            case (buAB update, buBC update) of
+                (Nothing, Nothing) -> Nothing
+                _ ->
+                    Just $ \a -> do
+                        mb <-
+                            case buAB update of
+                                Nothing -> return Nothing
+                                Just amb -> amb a
+                        case mb of
+                            Nothing ->
+                                case buBC update of
+                                    Nothing -> return Nothing
+                                    Just bmc -> do
+                                        b <- getAB a
+                                        bmc b
+                            Just b -> do
+                                c <- getBC b
+                                return $ Just c
         in MkPinaforeFunctionMorphism {..}
 
 instance Arrow (PinaforeFunctionMorphism baseupdate) where
-    arr ab = MkPinaforeFunctionMorphism {pfFuncRead = \a -> return $ ab a, pfUpdate = \_ -> return False}
+    arr ab = let
+        pfFuncRead a = return $ ab a
+        pfUpdate _ = Nothing
+        in MkPinaforeFunctionMorphism {..}
     first :: forall b c d. PinaforeFunctionMorphism baseupdate b c -> PinaforeFunctionMorphism baseupdate (b, d) (c, d)
-    first (MkPinaforeFunctionMorphism bc pfUpdate) = let
+    first (MkPinaforeFunctionMorphism bmc umbmc) = let
         pfFuncRead :: (b, d) -> ReadM (UpdateReader baseupdate) (c, d)
         pfFuncRead (b, d) = do
-            c <- bc b
+            c <- bmc b
             return (c, d)
+        pfUpdate :: baseupdate -> Maybe ((b, d) -> ReadM (UpdateReader baseupdate) (Maybe (c, d)))
+        pfUpdate update =
+            case umbmc update of
+                Nothing -> Nothing
+                Just brmc ->
+                    Just $ \(b, d) -> do
+                        mc <- brmc b
+                        return $ fmap (\c -> (c, d)) mc
         in MkPinaforeFunctionMorphism {..}
     second = cfmap
 
 instance ArrowChoice (PinaforeFunctionMorphism baseupdate) where
-    left (MkPinaforeFunctionMorphism pfr pfUpdate) = let
-        pfFuncRead ebd =
-            case ebd of
-                Left b -> fmap Left (pfr b)
-                Right d -> return $ Right d
+    left ::
+           forall b c d.
+           PinaforeFunctionMorphism baseupdate b c
+        -> PinaforeFunctionMorphism baseupdate (Either b d) (Either c d)
+    left (MkPinaforeFunctionMorphism fr upd) = let
+        pfFuncRead (Left b) = fmap Left $ fr b
+        pfFuncRead (Right d) = return $ Right d
+        pfUpdate :: baseupdate -> Maybe (Either b d -> ReadM (UpdateReader baseupdate) (Maybe (Either c d)))
+        pfUpdate update =
+            case upd update of
+                Nothing -> Nothing
+                Just brmc ->
+                    Just $ \case
+                        Left b -> do
+                            mc <- brmc b
+                            return $ fmap Left mc
+                        Right _ -> return Nothing
         in MkPinaforeFunctionMorphism {..}
-    right (MkPinaforeFunctionMorphism pfr pfUpdate) = let
-        pfFuncRead ebd =
-            case ebd of
-                Left d -> return $ Left d
-                Right b -> fmap Right (pfr b)
+    right ::
+           forall b c d.
+           PinaforeFunctionMorphism baseupdate b c
+        -> PinaforeFunctionMorphism baseupdate (Either d b) (Either d c)
+    right (MkPinaforeFunctionMorphism fr upd) = let
+        pfFuncRead (Left d) = return $ Left d
+        pfFuncRead (Right b) = fmap Right $ fr b
+        pfUpdate :: baseupdate -> Maybe (Either d b -> ReadM (UpdateReader baseupdate) (Maybe (Either d c)))
+        pfUpdate update =
+            case upd update of
+                Nothing -> Nothing
+                Just brmc ->
+                    Just $ \case
+                        Left _ -> return Nothing
+                        Right b -> do
+                            mc <- brmc b
+                            return $ fmap Right mc
         in MkPinaforeFunctionMorphism {..}
 
 instance Traversable f => CatFunctor (PinaforeFunctionMorphism baseupdate) (PinaforeFunctionMorphism baseupdate) f where
     cfmap :: forall a b. PinaforeFunctionMorphism baseupdate a b -> PinaforeFunctionMorphism baseupdate (f a) (f b)
-    cfmap (MkPinaforeFunctionMorphism f pfUpdate) = let
+    cfmap (MkPinaforeFunctionMorphism f upd) = let
         pfFuncRead fa = for fa f
+        pfUpdate :: baseupdate -> Maybe (f a -> ReadM (UpdateReader baseupdate) (Maybe (f b)))
+        pfUpdate update =
+            case upd update of
+                Nothing -> Nothing
+                Just brmc ->
+                    Just $ \fa -> do
+                        fmb <-
+                            for fa $ \a -> do
+                                mb <- brmc a
+                                return $
+                                    case mb of
+                                        Just b -> (True, return b)
+                                        Nothing -> (False, f a)
+                        case any fst fmb of
+                            False -> return Nothing
+                            True -> do
+                                fb <- for fmb $ \(_, mb) -> mb
+                                return $ Just fb
         in MkPinaforeFunctionMorphism {..}
 
 pinaforeFunctionMorphismUpdateFunction ::
@@ -99,13 +171,15 @@ pinaforeFunctionMorphismUpdateFunction MkPinaforeFunctionMorphism {..} = let
         => (ContextUpdate baseupdate (WholeUpdate a))
         -> Readable m (ContextUpdateReader baseupdate (WholeUpdate a))
         -> m [ROWUpdate b]
-    clUpdate (MkTupleUpdate SelectContext pinupdate) mr = do
-        ch <- unReadM (pfUpdate pinupdate) $ tupleReadFunction SelectContext mr
-        if ch
-            then do
-                b <- getB mr
-                return [MkReadOnlyUpdate $ MkWholeReaderUpdate b]
-            else return []
+    clUpdate (MkTupleUpdate SelectContext pinupdate) mr =
+        case pfUpdate pinupdate of
+            Nothing -> return []
+            Just armb -> do
+                a <- mr $ MkTupleUpdateReader SelectContent ReadWhole
+                mb <- unReadM (armb a) $ tupleReadFunction SelectContext mr
+                case mb of
+                    Nothing -> return []
+                    Just b -> return [MkReadOnlyUpdate $ MkWholeReaderUpdate b]
     clUpdate (MkTupleUpdate SelectContent (MkWholeReaderUpdate a)) mr = do
         b <- unReadM (pfFuncRead a) (tupleReadFunction SelectContext mr)
         return [MkReadOnlyUpdate $ MkWholeReaderUpdate b]
@@ -116,12 +190,19 @@ mapPinaforeFunctionMorphismBase ::
        ChangeLens baseB baseA
     -> PinaforeFunctionMorphism baseA a b
     -> PinaforeFunctionMorphism baseB a b
-mapPinaforeFunctionMorphismBase aef (MkPinaforeFunctionMorphism frA updateA) = let
+mapPinaforeFunctionMorphismBase aef (MkPinaforeFunctionMorphism frA updA) = let
     rf :: ReadFunction (UpdateReader baseB) (UpdateReader baseA)
     rf = clRead aef
     frB a = mapReadM rf $ frA a
-    updateB beditB = do
-        beditAs <- MkReadM $ clUpdate aef beditB
-        chs <- for beditAs $ \beditA -> mapReadM rf $ updateA beditA
-        return $ or chs
-    in MkPinaforeFunctionMorphism frB updateB
+    updB :: baseB -> Maybe (a -> ReadM (UpdateReader baseB) (Maybe b))
+    updB updateB =
+        Just $ \a -> do
+            updateAs <- MkReadM $ clUpdate aef updateB
+            chs <-
+                for updateAs $ \updateA ->
+                    mapReadM rf $
+                    case updA updateA of
+                        Nothing -> return Nothing
+                        Just armb -> armb a
+            return $ lastM $ catMaybes chs
+    in MkPinaforeFunctionMorphism frB updB

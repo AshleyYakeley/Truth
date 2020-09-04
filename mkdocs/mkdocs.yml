@@ -1,5 +1,7 @@
 site_name: Pinafore
 markdown_extensions:
+  - toc:
+      baselevel: 4
   - codehilite
   - markdown_include.include:
       base_path: generated

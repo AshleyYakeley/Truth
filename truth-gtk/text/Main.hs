@@ -40,11 +40,11 @@ main = do
                    -> (IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec))
                    -> CVUISpec
                 ui sub1 msub2 extraui = do
-                    (setsel, getsel) <- liftIO $ makeRefSelectNotify
+                    (selModel, setsel) <- liftLifeCycleIO $ makeSharedModel makePremodelSelectNotify
                     let
                         openSelection :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text)) -> View ()
                         openSelection sub = do
-                            mflens <- getsel
+                            mflens <- viewRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
                             case mflens of
                                 Nothing -> return ()
                                 Just flens ->
@@ -55,8 +55,8 @@ main = do
                         rTextSpec (SuccessResult sub) = textAreaUISpec sub setsel
                         rTextSpec (FailureResult err) = labelUISpec $ constantModel err
                         makeSpecs sub =
-                            [ (simpleButtonUISpec (constantModel "View") $ openSelection sub, False)
-                            , (scrolledUISpec $ oneWholeUISpec sub rTextSpec, True)
+                            [ (False, simpleButtonUISpec (constantModel "View") $ openSelection sub)
+                            , (True, scrolledUISpec $ oneWholeUISpec sub rTextSpec)
                             ]
                         allSpecs =
                             case msub2 of
@@ -97,8 +97,8 @@ main = do
                               ]
                         ]
                     in (mbar, spec)
-                extraUI :: SaveActions -> UndoActions -> IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec)
-                extraUI (MkSaveActions saveActions) (MkUndoActions undo redo) closer _ spec = let
+                extraUI :: SaveActions -> UndoHandler -> IO () -> UIWindow -> CVUISpec -> (MenuBar, CVUISpec)
+                extraUI (MkSaveActions saveActions) uh closer _ spec = let
                     saveAction = do
                         mactions <- saveActions
                         _ <-
@@ -126,9 +126,9 @@ main = do
                         , SubMenuEntry
                               "Edit"
                               [ simpleActionMenuItem "Undo" (Just $ MkMenuAccelerator [KMCtrl] 'Z') $
-                                liftIO $ undo emptyResourceContext noEditSource >> return ()
+                                liftIO $ undoHandlerUndo uh emptyResourceContext noEditSource >> return ()
                               , simpleActionMenuItem "Redo" (Just $ MkMenuAccelerator [KMCtrl] 'Y') $
-                                liftIO $ redo emptyResourceContext noEditSource >> return ()
+                                liftIO $ undoHandlerRedo uh emptyResourceContext noEditSource >> return ()
                               ]
                         ]
                     in (mbar, spec)
@@ -139,8 +139,8 @@ main = do
                             (bufferSub, saveActions) <-
                                 liftLifeCycleIO $
                                 makeSharedModel $ saveBufferReference emptyResourceContext wholeTextObj
-                            (textSub, undoActions) <- liftIO $ undoQueueModel bufferSub
-                            return (textSub, MkAppUI $ extraUI saveActions undoActions)
+                            uh <- liftIO newUndoHandler
+                            return (undoHandlerModel uh bufferSub, MkAppUI $ extraUI saveActions uh)
                         else do
                             textSub <- liftLifeCycleIO $ makeReflectingModel $ convertReference wholeTextObj
                             return (textSub, MkAppUI simpleUI)

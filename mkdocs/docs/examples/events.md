@@ -1,5 +1,5 @@
 # Events
 
 ```pinafore
-{!examples/events.pinafore!}
+{!examples/events!}
 ```

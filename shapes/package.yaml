@@ -42,7 +42,7 @@ library:
       - Data.HasNewValue
       - Data.IsoVariant
       - Data.Injection
-      - Data.Bijection
+      - Data.Isomorphism
       - Data.Lens
       - Data.Store
       - Data.ConstFunction
@@ -56,6 +56,7 @@ library:
       - Data.FixBox
       - Control.Category.Dual
       - Control.Category.Lifted
+      - Control.Applicative.Compose
       - Control.Monad.Compose
       - Control.Monad.Exception
       - Control.Monad.Coroutine

@@ -1,0 +1,9 @@
+#!/bin/bash -e
+if [ "$1" -eq "0" ]; then
+    echo "Succeeded";
+    paplay --volume=32000 /usr/share/sounds/freedesktop/stereo/complete.oga
+else
+    echo "Failed: $1";
+    paplay /usr/share/sounds/mate/default/alerts/bark.ogg
+fi
+exit $1

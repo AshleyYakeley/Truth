@@ -23,6 +23,7 @@ data Token t where
     TokCloseBrace :: Token ()
     TokString :: Token Text
     TokUnref :: Token ()
+    TokRec :: Token ()
     TokLet :: Token ()
     TokIn :: Token ()
     TokDo :: Token ()
@@ -46,6 +47,7 @@ data Token t where
     TokPropMap :: Token ()
     TokProperty :: Token ()
     TokEntity :: Token ()
+    TokEvaluate :: Token ()
     TokAnchor :: Token Anchor
     TokAt :: Token ()
     TokOperator :: Token Name
@@ -63,6 +65,7 @@ instance TestEquality Token where
     testEquality TokCloseBrace TokCloseBrace = Just Refl
     testEquality TokString TokString = Just Refl
     testEquality TokUnref TokUnref = Just Refl
+    testEquality TokRec TokRec = Just Refl
     testEquality TokLet TokLet = Just Refl
     testEquality TokIn TokIn = Just Refl
     testEquality TokDo TokDo = Just Refl
@@ -86,6 +89,7 @@ instance TestEquality Token where
     testEquality TokPropMap TokPropMap = Just Refl
     testEquality TokProperty TokProperty = Just Refl
     testEquality TokEntity TokEntity = Just Refl
+    testEquality TokEvaluate TokEvaluate = Just Refl
     testEquality TokAnchor TokAnchor = Just Refl
     testEquality TokAt TokAt = Just Refl
     testEquality TokOperator TokOperator = Just Refl
@@ -95,7 +99,7 @@ instance TestEquality Token where
 instance Show (Token t) where
     show TokSemicolon = show (";" :: String)
     show TokComma = show ("," :: String)
-    show TokTypeJudge = show ("::" :: String)
+    show TokTypeJudge = show (":" :: String)
     show TokOpenParen = show ("(" :: String)
     show TokCloseParen = show (")" :: String)
     show TokOpenBracket = show ("[" :: String)
@@ -104,6 +108,7 @@ instance Show (Token t) where
     show TokCloseBrace = show ("}" :: String)
     show TokString = "quoted string"
     show TokUnref = "unreference"
+    show TokRec = show ("rec" :: String)
     show TokLet = show ("let" :: String)
     show TokIn = show ("in" :: String)
     show TokDo = show ("do" :: String)
@@ -127,6 +132,7 @@ instance Show (Token t) where
     show TokPropMap = show ("~>" :: String)
     show TokProperty = show ("property" :: String)
     show TokEntity = show ("entity" :: String)
+    show TokEvaluate = show ("evaluate" :: String)
     show TokAnchor = "anchor"
     show TokAt = show ("@" :: String)
     show TokOperator = "infix"
@@ -229,6 +235,7 @@ readTextToken = do
     case firstC : rest of
         -- keywords
         "_" -> return $ MkAnyValue TokUnderscore ()
+        "rec" -> return $ MkAnyValue TokRec ()
         "let" -> return $ MkAnyValue TokLet ()
         "in" -> return $ MkAnyValue TokIn ()
         "do" -> return $ MkAnyValue TokDo ()
@@ -237,6 +244,7 @@ readTextToken = do
         "end" -> return $ MkAnyValue TokEnd ()
         "property" -> return $ MkAnyValue TokProperty ()
         "entity" -> return $ MkAnyValue TokEntity ()
+        "evaluate" -> return $ MkAnyValue TokEvaluate ()
         "if" -> return $ MkAnyValue TokIf ()
         "then" -> return $ MkAnyValue TokThen ()
         "else" -> return $ MkAnyValue TokElse ()
@@ -281,7 +289,7 @@ readOpToken = do
         satisfy $ \c ->
             elem c ("!$%&*+./<=>?@\\^|-~:" :: String) || (not (isAscii c) && (isSymbol c || isPunctuation c))
     case name of
-        "::" -> return $ MkAnyValue TokTypeJudge ()
+        ":" -> return $ MkAnyValue TokTypeJudge ()
         "\\" -> return $ MkAnyValue TokLambda ()
         "=" -> return $ MkAnyValue TokAssign ()
         "->" -> return $ MkAnyValue TokMap ()

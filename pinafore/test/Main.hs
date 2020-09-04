@@ -1,5 +1,3 @@
-{-# OPTIONS -fno-warn-orphans #-}
-
 module Main
     ( main
     ) where

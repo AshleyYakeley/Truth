@@ -1,0 +1,133 @@
+#!/usr/bin/pinafore
+
+let
+
+std_window : Ref +Text -> [MenuItem] -> UI -> Action Window;
+std_window title moremenus contents = fixAction $ \window -> let
+    basemenus : [MenuItem];
+    basemenus =
+        [
+            menuSubmenu "File"
+            [
+                menuAction "Close" (Just "Ctrl+W") {closeWindow window},
+                menuSeparator,
+                menuAction "Exit" (Just "Ctrl+Q") {exitUI}
+            ],
+            menuSubmenu "Edit"
+            [
+                menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
+                menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
+            ]
+        ];
+    menus = {basemenus ++ moremenus};
+    in openWindow title menus $ uiScrolled contents;
+
+selection_window : (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> ((item | NewEntity) -> Action Any) -> (set -> Notifier item -> UI) -> Action Window;
+selection_window (inames,inamep) iset iopen inew iui = do
+    (notifier,selected) <- makeNotifier;
+    let
+    moremenus =
+        [
+            menuSubmenu "Selection"
+            [
+                menuAction ("New " <> inames) (Just "Ctrl+K") {do
+                    i <- newEntity iset;
+                    inew i;
+                    iopen i;
+                    end},
+                menuAction "View" Nothing {get selected >>= iopen},
+                menuAction "Delete" Nothing {get selected >>= \p -> iset -= p}
+            ]
+        ];
+    in std_window {inamep} moremenus (iui iset notifier);
+    end;
+
+closedtype EventTime
+    = EventTimeDate Date !"EventTimeDate" # all-day event
+    | EventTimeTime LocalTime !"EventTimeTime"; # event at a time
+
+showEventTime : EventTime -> Text;
+showEventTime et = case et of
+    EventTimeDate d -> toText d;
+    EventTimeTime t -> toText t;
+    end;
+
+eventTimeDate : EventTime -> Date;
+eventTimeDate et = case et of
+    EventTimeDate d -> d;
+    EventTimeTime (LocalTime d _) -> d
+    end;
+
+setEventTimeDate : Date -> Maybe EventTime -> Maybe EventTime;
+setEventTimeDate d et = Just $ case et of
+    Just (EventTimeTime (LocalTime _ t)) -> EventTimeTime (LocalTime d t);
+    _ -> EventTimeDate d;
+    end;
+
+ui_eventTime : Ref EventTime -> UI;
+ui_eventTime r = uiCalendar $ lensMapRef eventTimeDate setEventTimeDate r;
+
+# for ordering
+eventTimeTime : EventTime -> LocalTime;
+eventTimeTime et = case et of
+    EventTimeDate d -> LocalTime d midnight;
+    EventTimeTime t -> t
+    end;
+
+eventTimeOrder : Order EventTime;
+eventTimeOrder = mapOrder eventTimeTime localChronological;
+
+opentype Event;
+events : FiniteSetRef Event;
+events = property @Event @() !"Events" !@ {()};
+
+eventName = property @Event @Text !"eventName";
+eventTime = property @Event @EventTime !"eventTime";
+
+eventOrder : Order Event;
+eventOrder = orderOn eventTime eventTimeOrder;
+
+eventData : FiniteSetRef (EventTime,Text);
+eventData = (eventTime !** eventName) !$$ events;
+
+eventDataOrder : Order (EventTime,Text);
+eventDataOrder = mapOrder fst eventTimeOrder;
+
+eventList : Ref +[(EventTime,Text)];
+eventList = members eventDataOrder eventData;
+
+overviewRef : Ref +Text;
+overviewRef = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %eventList};
+
+overviewPage : (UI,UI);
+overviewPage = (uiLabel {"Overview"},uiLabel overviewRef);
+
+tablePage : Notifier Event -> (UI,UI);
+tablePage notifier = let
+    columns : [(Ref +Text, Event -> Ref Text)];
+    columns = let
+        timeColumn : (Ref +Text, Event -> Ref Text);
+        timeColumn = ({"Time"},\e -> {showEventTime $ %(eventTime !$ {e})});
+        nameColumn : (Ref +Text, Event -> Ref Text);
+        nameColumn = ({"Name"},\e -> eventName !$ {e});
+        in [timeColumn,nameColumn];
+    in (uiLabel {"Events"}, uiTable columns eventOrder events eventWindow notifier);
+
+eventWindow : Event -> Action Window;
+eventWindow evt = std_window (eventName !$ {evt}) [] $ uiVertical
+    [
+        (False, ui_eventTime $ eventTime !$ {evt}),
+        (True, uiTextEntry $ eventName !$ {evt})
+    ];
+
+eventsWindow : Action Window;
+eventsWindow = let
+    inew i = do
+        day <- getDate;
+        eventTime !$ {i} := EventTimeDate day;
+        eventName !$ {i} := "";
+        end;
+    iui _ notifier = uiPages [overviewPage, tablePage notifier];
+    in selection_window ("Event","Events") events eventWindow inew iui;
+
+in eventsWindow

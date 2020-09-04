@@ -4,8 +4,6 @@ module Pinafore.Language.Interpret
     ) where
 
 import Data.Graph
-import Data.Shim
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
@@ -14,17 +12,14 @@ import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Interpret.TypeDecl
 import Pinafore.Language.Name
 import Pinafore.Language.Read.RefNotation
+import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
-import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Type
 import Pinafore.Language.Value
+import Pinafore.Language.Var
 import Shapes
 
-type A = UVar "a"
-
-type B = UVar "b"
-
-interpretPatternConstructor :: SyntaxConstructor -> PinaforeSourceScoped baseupdate (QPatternConstructor baseupdate)
+interpretPatternConstructor :: SyntaxConstructor -> PinaforeSourceScoped (QPatternConstructor)
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
 interpretPatternConstructor (SLNumber v) =
     return $
@@ -41,7 +36,7 @@ interpretPatternConstructor (SLString v) =
 interpretPatternConstructor SLUnit = return $ qToPatternConstructor $ \() -> Just ()
 interpretPatternConstructor SLPair = return $ qToPatternConstructor $ \(a :: A, b :: B) -> Just $ (a, (b, ()))
 
-interpretPattern :: SyntaxPattern -> RefNotation baseupdate (QPattern baseupdate)
+interpretPattern :: SyntaxPattern -> RefNotation QPattern
 interpretPattern (MkWithSourcePos _ AnySyntaxPattern) = return qAnyPattern
 interpretPattern (MkWithSourcePos _ (VarSyntaxPattern n)) = return $ qVarPattern n
 interpretPattern (MkWithSourcePos spos (BothSyntaxPattern spat1 spat2)) = do
@@ -53,14 +48,11 @@ interpretPattern (MkWithSourcePos spos (ConstructorSyntaxPattern scons spats)) =
     pats <- for spats interpretPattern
     liftRefNotation $ runSourcePos spos $ qConstructPattern pc pats
 
-interpretPatternOrName :: SyntaxPattern -> Either Name (RefNotation baseupdate (QPattern baseupdate))
+interpretPatternOrName :: SyntaxPattern -> Either Name (RefNotation QPattern)
 interpretPatternOrName (MkWithSourcePos _ (VarSyntaxPattern n)) = Left n
 interpretPatternOrName pat = Right $ interpretPattern pat
 
-interpretExpression ::
-       forall baseupdate. BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SyntaxExpression
-    -> RefExpression baseupdate
+interpretExpression :: SyntaxExpression -> RefExpression
 interpretExpression (MkWithSourcePos spos sexpr) = interpretExpression' spos sexpr
 
 getBindingNode :: SyntaxBinding -> (SyntaxBinding, Name, [Name])
@@ -70,12 +62,7 @@ getBindingNode b@(MkSyntaxBinding _ _ n _) = (b, n, setToList $ syntaxFreeVariab
 clumpBindings :: [SyntaxBinding] -> [[SyntaxBinding]]
 clumpBindings bb = fmap flattenSCC $ stronglyConnComp $ fmap getBindingNode bb
 
-interpretLetBindingsClump ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SourcePos
-    -> [SyntaxBinding]
-    -> RefNotation baseupdate a
-    -> RefNotation baseupdate a
+interpretLetBindingsClump :: SourcePos -> [SyntaxBinding] -> RefNotation a -> RefNotation a
 interpretLetBindingsClump spos sbinds ra = do
     bl <- interpretBindings sbinds
     remonadRefNotation
@@ -84,29 +71,16 @@ interpretLetBindingsClump spos sbinds ra = do
              withNewBindings bmap se) $
         ra
 
-interpretLetBindingss ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SourcePos
-    -> [[SyntaxBinding]]
-    -> RefNotation baseupdate a
-    -> RefNotation baseupdate a
+interpretLetBindingss :: SourcePos -> [[SyntaxBinding]] -> RefNotation a -> RefNotation a
 interpretLetBindingss _ [] ra = ra
 interpretLetBindingss spos (b:bb) ra = interpretLetBindingsClump spos b $ interpretLetBindingss spos bb ra
 
-interpretLetBindings ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SourcePos
-    -> [SyntaxBinding]
-    -> RefNotation baseupdate a
-    -> RefNotation baseupdate a
+interpretLetBindings :: SourcePos -> [SyntaxBinding] -> RefNotation a -> RefNotation a
 interpretLetBindings spos sbinds ra = do
     liftRefNotation $ runSourcePos spos $ checkSyntaxBindingsDuplicates sbinds
     interpretLetBindingss spos (clumpBindings sbinds) ra
 
-interpretDeclarations ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => [SyntaxDeclaration]
-    -> PinaforeSourceScoped baseupdate (WMFunction (RefNotation baseupdate) (RefNotation baseupdate))
+interpretDeclarations :: [SyntaxDeclaration] -> PinaforeSourceScoped (WMFunction RefNotation RefNotation)
 interpretDeclarations decls = do
     let
         typeDecls =
@@ -131,14 +105,14 @@ interpretDeclarations decls = do
     spos <- askSourcePos
     return $ MkWMFunction $ remonadRefNotation (td . compAll trs) . interpretLetBindings spos sbinds
 
-interpretNamedConstructor :: SourcePos -> Name -> RefExpression baseupdate
+interpretNamedConstructor :: SourcePos -> Name -> RefExpression
 interpretNamedConstructor spos n = do
     me <- liftRefNotation $ runSourcePos spos $ lookupBinding n
     case me of
         Just e -> return e
         Nothing -> throw $ MkErrorMessage spos $ InterpretConstructorUnknownError n
 
-interpretConstructor :: SourcePos -> SyntaxConstructor -> RefExpression baseupdate
+interpretConstructor :: SourcePos -> SyntaxConstructor -> RefExpression
 interpretConstructor _ (SLNumber n) =
     return $
     case checkExactSafeRational n of
@@ -149,29 +123,22 @@ interpretConstructor _ (SLNumber n) =
         Nothing -> qConstExprAny $ jmToValue n
 interpretConstructor _ (SLString v) = return $ qConstExprAny $ jmToValue v
 interpretConstructor spos (SLNamedConstructor v) = interpretNamedConstructor spos v
-interpretConstructor _ SLPair = return $ qConstExprAny $ jmToValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
+interpretConstructor _ SLPair = return $ qConstExprAny $ jmToValue ((,) :: A -> B -> (A, B))
 interpretConstructor _ SLUnit = return $ qConstExprAny $ jmToValue ()
 
-interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression baseupdate
+interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression
 interpretConstant _ SCIfThenElse = return $ qConstExprAny $ jmToValue qifthenelse
 interpretConstant _ SCBind = return $ qConstExprAny $ jmToValue qbind
 interpretConstant _ SCBind_ = return $ qConstExprAny $ jmToValue qbind_
 interpretConstant spos (SCConstructor lit) = interpretConstructor spos lit
 
-interpretCase ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SyntaxCase
-    -> RefNotation baseupdate (QPattern baseupdate, QExpr baseupdate)
+interpretCase :: SyntaxCase -> RefNotation (QPattern, QExpr)
 interpretCase (MkSyntaxCase spat sexpr) = do
     pat <- interpretPattern spat
     expr <- interpretExpression sexpr
     return (pat, expr)
 
-interpretExpression' ::
-       forall baseupdate. BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SourcePos
-    -> SyntaxExpression'
-    -> RefExpression baseupdate
+interpretExpression' :: SourcePos -> SyntaxExpression' -> RefExpression
 interpretExpression' spos (SEAbstract spat sbody) = do
     val <- interpretExpression sbody
     case interpretPatternOrName spat of
@@ -206,16 +173,16 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                 etan <- runSourcePos spos $ concreteEntityToNegativePinaforeType eta
                 etbn <- runSourcePos spos $ concreteEntityToNegativePinaforeType etb
                 let
-                    bta = biRangeAnyF (etan, concreteEntityToPositivePinaforeType eta)
-                    btb = biRangeAnyF (etbn, concreteEntityToPositivePinaforeType etb)
+                    bta = biRangeAnyF (etan, concreteToPositiveDolanType eta)
+                    btb = biRangeAnyF (etbn, concreteToPositiveDolanType etb)
                     in case (bta, btb, concreteEntityTypeEq eta, concreteEntityTypeEq etb) of
                            (MkAnyF rta (MkRange praContra praCo), MkAnyF rtb (MkRange prbContra prbCo), Dict, Dict) ->
                                withSubrepresentative rangeTypeInKind rta $
                                withSubrepresentative rangeTypeInKind rtb $ let
                                    typef =
-                                       singlePinaforeShimWit $
-                                       mkPJMShimWit $
-                                       GroundPinaforeSingularType MorphismPinaforeGroundType $
+                                       singleDolanShimWit $
+                                       mkShimWit $
+                                       GroundDolanSingularType MorphismPinaforeGroundType $
                                        ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
                                    morphism =
                                        propertyMorphism
@@ -224,9 +191,10 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                                            (MkPredicate anchor)
                                    pinamorphism =
                                        MkLangMorphism $
-                                       cfmap3 (MkCatDual $ fromEnhanced praContra) $
-                                       cfmap2 (fromEnhanced praCo) $
-                                       cfmap1 (MkCatDual $ fromEnhanced prbContra) $ fmap (fromEnhanced prbCo) morphism
+                                       cfmap3 (MkCatDual $ shimToFunction praContra) $
+                                       cfmap2 (shimToFunction praCo) $
+                                       cfmap1 (MkCatDual $ shimToFunction prbContra) $
+                                       fmap (shimToFunction prbCo) morphism
                                    anyval = MkAnyValue typef pinamorphism
                                    in return $ qConstExprAny anyval
 interpretExpression' spos (SEEntity st anchor) =
@@ -236,9 +204,69 @@ interpretExpression' spos (SEEntity st anchor) =
             MkAnyW tp -> do
                 pt <- runSourcePos spos $ makeEntity tp $ MkEntity anchor
                 let
-                    typef = concreteEntityToPositivePinaforeType tp
+                    typef = concreteToPositiveDolanType tp
                     anyval = MkAnyValue typef pt
                 return $ qConstExprAny anyval
+interpretExpression' spos (SEEvaluate st) =
+    liftRefNotation $
+    runSourcePos spos $ do
+        mtp <- interpretType @'Positive st
+        spvals <- getSpecialVals
+        return $
+            case mtp of
+                MkAnyW tp -> let
+                    actionShimWit ::
+                           forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
+                    actionShimWit swa =
+                        unPosShimWit swa $ \ta conva ->
+                            mapPosShimWit (cfmap conva) $
+                            singleDolanShimWit $
+                            mkShimWit $
+                            GroundDolanSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+                    eitherShimWit ::
+                           forall a b.
+                           PinaforeShimWit 'Positive a
+                        -> PinaforeShimWit 'Positive b
+                        -> PinaforeShimWit 'Positive (Either a b)
+                    eitherShimWit swa swb =
+                        unPosShimWit swa $ \ta conva ->
+                            unPosShimWit swb $ \tb convb ->
+                                mapPosShimWit (applyPolyShim CovarianceType (cfmap conva) convb) $
+                                singleDolanShimWit $
+                                mkShimWit $
+                                GroundDolanSingularType
+                                    (EntityPinaforeGroundType
+                                         (ConsListType Refl $ ConsListType Refl NilListType)
+                                         EitherEntityGroundType) $
+                                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+                    funcShimWit ::
+                           forall a b.
+                           PinaforeShimWit 'Negative a
+                        -> PinaforeShimWit 'Positive b
+                        -> PinaforeShimWit 'Positive (a -> b)
+                    funcShimWit swa swb =
+                        unNegShimWit swa $ \ta conva ->
+                            unPosShimWit swb $ \tb convb ->
+                                mapPosShimWit (applyPolyShim CovarianceType (ccontramap conva) convb) $
+                                singleDolanShimWit $
+                                mkShimWit $
+                                GroundDolanSingularType FuncPinaforeGroundType $
+                                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+                    textShimWit ::
+                           forall polarity. Is PolarityType polarity
+                        => PinaforeShimWit polarity Text
+                    textShimWit =
+                        singleDolanShimWit $
+                        mkShimWit $
+                        GroundDolanSingularType
+                            (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType)
+                            NilDolanArguments
+                    valShimWit ::
+                           forall t.
+                           PinaforeShimWit 'Positive t
+                        -> PinaforeShimWit 'Positive (Text -> PinaforeAction (Either Text t))
+                    valShimWit t' = funcShimWit textShimWit $ actionShimWit $ eitherShimWit textShimWit t'
+                    in qConstExprAny $ MkAnyValue (valShimWit $ mkShimWit tp) $ specialEvaluate spvals tp
 
 makeEntity :: MonadThrow ErrorType m => ConcreteEntityType t -> Entity -> m t
 makeEntity (MkConcreteType TopEntityGroundType NilArguments) p = return p
@@ -246,40 +274,27 @@ makeEntity (MkConcreteType NewEntityGroundType NilArguments) p = return $ MkNewE
 makeEntity (MkConcreteType (OpenEntityGroundType _ _) NilArguments) p = return $ MkOpenEntity p
 makeEntity t _ = throw $ InterpretTypeNotOpenEntityError $ exprShow t
 
-interpretTypeSignature ::
-       Maybe SyntaxType
-    -> PinaforeExpression baseupdate
-    -> PinaforeSourceScoped baseupdate (PinaforeExpression baseupdate)
+interpretTypeSignature :: Maybe SyntaxType -> PinaforeExpression -> PinaforeSourceScoped PinaforeExpression
 interpretTypeSignature Nothing expr = return expr
 interpretTypeSignature (Just st) expr = do
     at <- interpretType st
     qSubsumeExpr (mapAnyW mkShimWit at) expr
 
-interpretBinding ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate => SyntaxBinding -> RefNotation baseupdate (QBindings baseupdate)
+interpretBinding :: SyntaxBinding -> RefNotation QBindings
 interpretBinding (MkSyntaxBinding spos mtype name sexpr) = do
     rexpr <- interpretExpression sexpr
     expr <- liftRefNotation $ runSourcePos spos $ interpretTypeSignature mtype rexpr
     return $ qBindExpr name expr
 
-interpretBindings ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => [SyntaxBinding]
-    -> RefNotation baseupdate (QBindings baseupdate)
+interpretBindings :: [SyntaxBinding] -> RefNotation QBindings
 interpretBindings sbinds = do
     qbinds <- for sbinds interpretBinding
     return $ mconcat qbinds
 
-interpretTopDeclarations ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SyntaxTopDeclarations
-    -> PinaforeScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate))
+interpretTopDeclarations :: SyntaxTopDeclarations -> PinaforeScoped (WMFunction PinaforeScoped PinaforeScoped)
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) = do
     MkWMFunction f <- runSourcePos spos $ interpretDeclarations sdecls
     return $ MkWMFunction $ \a -> runRefNotation spos $ f $ liftRefNotation a
 
-interpretTopExpression ::
-       BaseChangeLens PinaforeEntityUpdate baseupdate
-    => SyntaxExpression
-    -> PinaforeScoped baseupdate (QExpr baseupdate)
+interpretTopExpression :: SyntaxExpression -> PinaforeScoped QExpr
 interpretTopExpression sexpr@(MkWithSourcePos spos _) = runRefNotation spos $ interpretExpression sexpr

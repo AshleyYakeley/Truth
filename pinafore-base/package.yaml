@@ -20,7 +20,6 @@ library:
     exposed-modules:
       - Pinafore.Base
       - Pinafore.Storage
-      - Pinafore.Pinafore
     other-modules:
       - Pinafore.Base.Know
       - Pinafore.Base.SafeRational
@@ -32,6 +31,8 @@ library:
       - Pinafore.Base.Anchor
       - Pinafore.Base.Entity
       - Pinafore.Base.Lens
+      - Pinafore.Base.KnowShim
+      - Pinafore.Base.EntityStorer
       - Pinafore.Base.Edit
       - Pinafore.Base.EntityAdapter
       - Pinafore.Base.PredicateMorphism
@@ -50,6 +51,7 @@ tests:
         dependencies:
           - base >= 4.12
           - shapes
+          - truth-core
           - pinafore-base
           - tasty
           - tasty-hunit
@@ -57,4 +59,5 @@ tests:
         other-modules:
           - Test.Numeric
           - Test.Anchor
+          - Test.Storage
         ghc-options: -threaded

@@ -9,572 +9,563 @@ module Pinafore.Language.Convert.Base
     , literalInstances
     ) where
 
-import Data.Shim
-import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Shim
+import Pinafore.Language.Type
 import Pinafore.Language.Value
+import Pinafore.Language.Var
 import Shapes
 import Truth.Core
 
 qPositiveTypeDescription ::
-       forall baseupdate t. ToPinaforeType baseupdate t
+       forall t. ToPinaforeType t
     => Text
 qPositiveTypeDescription =
-    case toJMShimWit @(PinaforeType baseupdate 'Positive) @t of
-        MkShimWit w _ -> pack $ show w
+    case toShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Positive) @t of
+        MkShimWit w _ -> exprShow w
 
 qNegativeTypeDescription ::
-       forall baseupdate t. FromPinaforeType baseupdate t
+       forall t. FromPinaforeType t
     => Text
 qNegativeTypeDescription =
-    case fromJMShimWit @(PinaforeType baseupdate 'Negative) @t of
-        MkShimWit w _ -> pack $ show w
+    case fromShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative) @t of
+        MkShimWit w _ -> exprShow w
 
-type ToPinaforeType baseupdate = ToShimWit JMShim (PinaforeType baseupdate 'Positive)
+type ToPinaforeType = ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive)
 
-type FromPinaforeType baseupdate = FromShimWit JMShim (PinaforeType baseupdate 'Negative)
+type FromPinaforeType = FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative)
 
 -- top, bottom, join, meet
-instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) BottomType where
-    toShimWit = mkPJMShimWit NilPinaforeType
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) BottomType where
+    toShimWit = mkShimWit NilDolanType
 
-instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) TopType where
-    fromShimWit = mkPJMShimWit NilPinaforeType
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) TopType where
+    fromShimWit = mkShimWit NilDolanType
 
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) a
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) b
-         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (JoinType a b) where
-    toShimWit = joinPinaforeShimWit toJMShimWit toJMShimWit
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) b
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (JoinType a b) where
+    toShimWit = joinMeetShimWit toJMShimWit toJMShimWit
 
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) a
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) b
-         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (MeetType a b) where
-    fromShimWit = meetPinaforeShimWit fromJMShimWit fromJMShimWit
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) b
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (MeetType a b) where
+    fromShimWit = joinMeetShimWit fromJMShimWit fromJMShimWit
 
--- UVar
-instance KnownSymbol name => ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (UVar name) where
-    toShimWit = mkPJMShimWit $ VarPinaforeSingularType MkSymbolType
+-- Var Type
+instance KnownSymbol name => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (Var name) where
+    toShimWit = MkShimWit (VarDolanSingularType $ MkSymbolType @name) $ MkPolarMap $ coerceEnhanced "var"
 
-instance KnownSymbol name => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (UVar name) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance KnownSymbol name => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (Var name) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance KnownSymbol name => FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (UVar name) where
-    fromShimWit = mkPJMShimWit $ VarPinaforeSingularType MkSymbolType
+instance KnownSymbol name => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (Var name) where
+    fromShimWit = MkShimWit (VarDolanSingularType $ MkSymbolType @name) $ MkPolarMap $ coerceEnhanced "var"
 
-instance KnownSymbol name => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (UVar name) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance KnownSymbol name => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (Var name) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- (,)
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) a
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) b
-         ) => ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (a, b) where
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) b
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (a, b) where
     toShimWit =
-        unShimWit toJMShimWit $ \ta conva ->
-            unShimWit toJMShimWit $ \tb convb ->
-                mapShimWit (consShimFunc CovarianceType (cfmap conva) convb) $
-                mkPJMShimWit $
-                GroundPinaforeSingularType
+        unPosShimWit toJMShimWit $ \ta conva ->
+            unPosShimWit toJMShimWit $ \tb convb ->
+                mapPosShimWit (applyPolyShim CovarianceType (cfmap conva) convb) $
+                mkShimWit $
+                GroundDolanSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType) $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) a
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) b
-         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (a, b) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) b
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (a, b) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) a
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) b
-         ) => FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (a, b) where
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) b
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (a, b) where
     fromShimWit =
-        unShimWit fromJMShimWit $ \ta conva ->
-            unShimWit fromJMShimWit $ \tb convb ->
-                mapShimWit (consShimFunc CovarianceType (cfmap conva) convb) $
-                mkPJMShimWit $
-                GroundPinaforeSingularType
+        unNegShimWit fromJMShimWit $ \ta conva ->
+            unNegShimWit fromJMShimWit $ \tb convb ->
+                mapNegShimWit (applyPolyShim CovarianceType (cfmap conva) convb) $
+                mkShimWit $
+                GroundDolanSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType) $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) a
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) b
-         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (Either a b) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) b
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (Either a b) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- Either
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) a
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) b
-         ) => ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (Either a b) where
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) b
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (Either a b) where
     toShimWit =
-        unShimWit toJMShimWit $ \ta conva ->
-            unShimWit toJMShimWit $ \tb convb ->
-                mapShimWit (consShimFunc CovarianceType (cfmap conva) convb) $
-                mkPJMShimWit $
-                GroundPinaforeSingularType
+        unPosShimWit toJMShimWit $ \ta conva ->
+            unPosShimWit toJMShimWit $ \tb convb ->
+                mapPosShimWit (applyPolyShim CovarianceType (cfmap conva) convb) $
+                mkShimWit $
+                GroundDolanSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType) $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) a
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) b
-         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (Either a b) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) b
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (Either a b) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) a
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) b
-         ) => FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (Either a b) where
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) b
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (Either a b) where
     fromShimWit =
-        unShimWit fromJMShimWit $ \ta conva ->
-            unShimWit fromJMShimWit $ \tb convb ->
-                mapShimWit (consShimFunc CovarianceType (cfmap conva) convb) $
-                mkPJMShimWit $
-                GroundPinaforeSingularType
+        unNegShimWit fromJMShimWit $ \ta conva ->
+            unNegShimWit fromJMShimWit $ \tb convb ->
+                mapNegShimWit (applyPolyShim CovarianceType (cfmap conva) convb) $
+                mkShimWit $
+                GroundDolanSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType) $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) a
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) b
-         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (a, b) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) b
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (a, b) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- (->)
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) a
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) b
-         ) => ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (a -> b) where
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) b
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (a -> b) where
     toShimWit =
-        unShimWit fromJMShimWit $ \ta conva ->
-            unShimWit toJMShimWit $ \tb convb ->
-                mapShimWit (consShimFunc CovarianceType (ccontramap conva) convb) $
-                mkPJMShimWit $
-                GroundPinaforeSingularType FuncPinaforeGroundType $
+        unNegShimWit fromJMShimWit $ \ta conva ->
+            unPosShimWit toJMShimWit $ \tb convb ->
+                mapPosShimWit (applyPolyShim CovarianceType (ccontramap conva) convb) $
+                mkShimWit $
+                GroundDolanSingularType FuncPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) a
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) b
-         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (a -> b) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) b
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (a -> b) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) a
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) b
-         ) => FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (a -> b) where
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) b
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (a -> b) where
     fromShimWit =
-        unShimWit toJMShimWit $ \ta conva ->
-            unShimWit fromJMShimWit $ \tb convb ->
-                mapShimWit (consShimFunc CovarianceType (ccontramap conva) convb) $
-                mkPJMShimWit $
-                GroundPinaforeSingularType FuncPinaforeGroundType $
+        unPosShimWit toJMShimWit $ \ta conva ->
+            unNegShimWit fromJMShimWit $ \tb convb ->
+                mapNegShimWit (applyPolyShim CovarianceType (ccontramap conva) convb) $
+                mkShimWit $
+                GroundDolanSingularType FuncPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) a
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) b
-         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (a -> b) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) b
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (a -> b) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- Maybe
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (Maybe a) where
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (Maybe a) where
     toShimWit =
-        unShimWit toJMShimWit $ \ta conva ->
-            mapShimWit (cfmap conva) $
-            mkPJMShimWit $
-            GroundPinaforeSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType) $
+        unPosShimWit toJMShimWit $ \ta conva ->
+            mapPosShimWit (cfmap conva) $
+            mkShimWit $
+            GroundDolanSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType) $
             ConsDolanArguments ta NilDolanArguments
 
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (Maybe a) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (Maybe a) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (Maybe a) where
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (Maybe a) where
     fromShimWit =
-        unShimWit fromJMShimWit $ \ta conva ->
-            mapShimWit (cfmap conva) $
-            mkPJMShimWit $
-            GroundPinaforeSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType) $
+        unNegShimWit fromJMShimWit $ \ta conva ->
+            mapNegShimWit (cfmap conva) $
+            mkShimWit $
+            GroundDolanSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType) $
             ConsDolanArguments ta NilDolanArguments
 
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (Maybe a) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (Maybe a) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- []
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) [a] where
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) [a] where
     toShimWit =
-        unShimWit toJMShimWit $ \ta conva ->
-            mapShimWit (cfmap conva) $
-            mkPJMShimWit $
-            GroundPinaforeSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType) $
+        unPosShimWit toJMShimWit $ \ta conva ->
+            mapPosShimWit (cfmap conva) $
+            mkShimWit $
+            GroundDolanSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType) $
             ConsDolanArguments ta NilDolanArguments
 
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) [a] where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) [a] where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) [a] where
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) [a] where
     fromShimWit =
-        unShimWit fromJMShimWit $ \ta conva ->
-            mapShimWit (cfmap conva) $
-            mkPJMShimWit $
-            GroundPinaforeSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType) $
+        unNegShimWit fromJMShimWit $ \ta conva ->
+            mapNegShimWit (cfmap conva) $
+            mkShimWit $
+            GroundDolanSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType) $
             ConsDolanArguments ta NilDolanArguments
 
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) [a] where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) [a] where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- PinaforeAction
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (PinaforeAction a) where
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (PinaforeAction a) where
     toShimWit =
-        unShimWit toJMShimWit $ \ta conva ->
-            mapShimWit (cfmap conva) $
-            mkPJMShimWit $ GroundPinaforeSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+        unPosShimWit toJMShimWit $ \ta conva ->
+            mapPosShimWit (cfmap conva) $
+            mkShimWit $ GroundDolanSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeAction a) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeAction a) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (PinaforeAction a) where
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (PinaforeAction a) where
     fromShimWit =
-        unShimWit fromJMShimWit $ \ta conva ->
-            mapShimWit (cfmap conva) $
-            mkPJMShimWit $ GroundPinaforeSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+        unNegShimWit fromJMShimWit $ \ta conva ->
+            mapNegShimWit (cfmap conva) $
+            mkShimWit $ GroundDolanSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeAction a) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeAction a) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- IO
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (IO a) where
-    toShimWit = mapShimWit (toEnhanced "subtype" (liftIO :: IO a -> PinaforeAction a)) toJMShimWit
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (IO a) where
+    toShimWit = mapPosShimWit (functionToShim "subtype" (liftIO :: IO a -> PinaforeAction a)) toJMShimWit
 
 -- View
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (View a) where
-    toShimWit = mapShimWit (toEnhanced "subtype" viewPinaforeAction) toJMShimWit
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (View a) where
+    toShimWit = mapPosShimWit (functionToShim "subtype" viewPinaforeAction) toJMShimWit
 
 -- LangOrder
-instance (baseupdate ~ update, FromShimWit JMShim (PinaforeType update 'Negative) a) =>
-             ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (LangOrder update a) where
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangOrder a) where
     toShimWit =
-        unShimWit fromJMShimWit $ \ta conva ->
-            mapShimWit (consShimFunc ContravarianceType cid $ MkCatDual conva) $
-            mkPJMShimWit $ GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+        unNegShimWit fromJMShimWit $ \ta conva ->
+            mapPosShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
+            mkShimWit $ GroundDolanSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (baseupdate ~ update, FromShimWit JMShim (PinaforeType update 'Negative) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (LangOrder update a) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangOrder a) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance (baseupdate ~ update, ToShimWit JMShim (PinaforeType update 'Positive) a) =>
-             FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (LangOrder update a) where
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangOrder a) where
     fromShimWit =
-        unShimWit toJMShimWit $ \ta conva ->
-            mapShimWit (consShimFunc ContravarianceType cid $ MkCatDual conva) $
-            mkPJMShimWit $ GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+        unPosShimWit toJMShimWit $ \ta conva ->
+            mapNegShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
+            mkShimWit $ GroundDolanSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (baseupdate ~ update, ToShimWit JMShim (PinaforeType update 'Positive) a) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LangOrder update a) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangOrder a) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- LangNotifier
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (LangNotifier a) where
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangNotifier a) where
     toShimWit =
-        unShimWit fromJMShimWit $ \ta conva ->
-            mapShimWit (consShimFunc ContravarianceType cid $ MkCatDual conva) $
-            mkPJMShimWit $
-            GroundPinaforeSingularType NotifierPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+        unNegShimWit fromJMShimWit $ \ta conva ->
+            mapPosShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
+            mkShimWit $ GroundDolanSingularType NotifierPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (LangNotifier a) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangNotifier a) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (LangNotifier a) where
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangNotifier a) where
     fromShimWit =
-        unShimWit toJMShimWit $ \ta conva ->
-            mapShimWit (consShimFunc ContravarianceType cid $ MkCatDual conva) $
-            mkPJMShimWit $
-            GroundPinaforeSingularType NotifierPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+        unPosShimWit toJMShimWit $ \ta conva ->
+            mapNegShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
+            mkShimWit $ GroundDolanSingularType NotifierPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LangNotifier a) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangNotifier a) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- LangUI
-instance ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) LangUI where
-    toShimWit = mkPJMShimWit $ GroundPinaforeSingularType UserInterfacePinaforeGroundType NilDolanArguments
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUI where
+    toShimWit = mkShimWit $ GroundDolanSingularType UserInterfacePinaforeGroundType NilDolanArguments
 
-instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) LangUI where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangUI where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) LangUI where
-    fromShimWit = mkPJMShimWit $ GroundPinaforeSingularType UserInterfacePinaforeGroundType NilDolanArguments
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangUI where
+    fromShimWit = mkShimWit $ GroundDolanSingularType UserInterfacePinaforeGroundType NilDolanArguments
 
-instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) LangUI where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangUI where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- PinaforeWindow
-instance ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) PinaforeWindow where
-    toShimWit = mkPJMShimWit $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) PinaforeWindow where
+    toShimWit = mkShimWit $ GroundDolanSingularType WindowPinaforeGroundType NilDolanArguments
 
-instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) PinaforeWindow where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) PinaforeWindow where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) PinaforeWindow where
-    fromShimWit = mkPJMShimWit $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) PinaforeWindow where
+    fromShimWit = mkShimWit $ GroundDolanSingularType WindowPinaforeGroundType NilDolanArguments
 
-instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) PinaforeWindow where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) PinaforeWindow where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- MenuEntry
-instance ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) MenuEntry where
-    toShimWit = mkPJMShimWit $ GroundPinaforeSingularType MenuItemPinaforeGroundType NilDolanArguments
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) MenuEntry where
+    toShimWit = mkShimWit $ GroundDolanSingularType MenuItemPinaforeGroundType NilDolanArguments
 
-instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) MenuEntry where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) MenuEntry where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) MenuEntry where
-    fromShimWit = mkPJMShimWit $ GroundPinaforeSingularType MenuItemPinaforeGroundType NilDolanArguments
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) MenuEntry where
+    fromShimWit = mkShimWit $ GroundDolanSingularType MenuItemPinaforeGroundType NilDolanArguments
 
-instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) MenuEntry where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) MenuEntry where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- LangRef
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) p
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) q
-         ) => ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (LangRef '( p, q)) where
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangRef '( p, q)) where
     toShimWit =
         unToRangeShimWit $ \tpq conv ->
-            mapShimWit (consShimFunc RangevarianceType cid conv) $
-            mkPJMShimWit $ GroundPinaforeSingularType RefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mapPosShimWit (applyPolyShim RangevarianceType cid conv) $
+            mkShimWit $ GroundDolanSingularType RefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) p
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) q
-         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (LangRef '( p, q)) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangRef '( p, q)) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) p
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) q
-         ) => FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (LangRef '( p, q)) where
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangRef '( p, q)) where
     fromShimWit =
         unFromRangeShimWit $ \tpq conv ->
-            mapShimWit (consShimFunc RangevarianceType cid conv) $
-            mkPJMShimWit $ GroundPinaforeSingularType RefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mapNegShimWit (applyPolyShim RangevarianceType cid conv) $
+            mkShimWit $ GroundDolanSingularType RefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) p
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) q
-         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LangRef '( p, q)) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangRef '( p, q)) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- PinaforeRef
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) t
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) t
-         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeRef (WholeUpdate (Know t))) where
-    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeRefToRef) toJMShimWit
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeRef (WholeUpdate (Know t))) where
+    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeRefToRef) toJMShimWit
 
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) t
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) t
-         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeRef (WholeUpdate (Know t))) where
-    fromShimWit = mapShimWit (toEnhanced "subtype" langRefToValue) fromJMShimWit
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeRef (WholeUpdate (Know t))) where
+    fromShimWit = mapNegShimWit (functionToShim "subtype" langRefToValue) fromJMShimWit
 
 -- PinaforeImmutableRef
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeImmutableRef a) where
-    fromShimWit = mapShimWit (toEnhanced "subtype" langRefToImmutable) fromJMShimWit
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeImmutableRef a) where
+    fromShimWit = mapNegShimWit (functionToShim "subtype" langRefToImmutable) fromJMShimWit
 
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeImmutableRef a) where
-    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeImmutableToRef) toJMShimWit
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeImmutableRef a) where
+    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeImmutableToRef) toJMShimWit
 
 -- PinaforeROWRef
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) t) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeROWRef (Know t)) where
-    fromShimWit = mapShimWit (toEnhanced "subtype" langRefToReadOnlyValue) fromJMShimWit
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeROWRef (Know t)) where
+    fromShimWit = mapNegShimWit (functionToShim "subtype" langRefToReadOnlyValue) fromJMShimWit
 
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) t) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeROWRef (Know t)) where
-    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeROWRefToRef) toJMShimWit
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeROWRef (Know t)) where
+    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeROWRefToRef) toJMShimWit
 
 -- LangSetRef
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (LangSetRef a) where
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangSetRef a) where
     toShimWit =
-        unShimWit fromJMShimWit $ \ta conva ->
-            mapShimWit (consShimFunc ContravarianceType cid $ MkCatDual conva) $
-            mkPJMShimWit $ GroundPinaforeSingularType SetRefPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+        unNegShimWit fromJMShimWit $ \ta conva ->
+            mapPosShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
+            mkShimWit $ GroundDolanSingularType SetRefPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (FromShimWit JMShim (PinaforeType baseupdate 'Negative) a) =>
-             ToShimWit JMShim (PinaforeType baseupdate 'Positive) (LangSetRef a) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangSetRef a) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (LangSetRef a) where
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangSetRef a) where
     fromShimWit =
-        unShimWit toJMShimWit $ \ta conva ->
-            mapShimWit (consShimFunc ContravarianceType cid $ MkCatDual conva) $
-            mkPJMShimWit $ GroundPinaforeSingularType SetRefPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+        unPosShimWit toJMShimWit $ \ta conva ->
+            mapNegShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
+            mkShimWit $ GroundDolanSingularType SetRefPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (ToShimWit JMShim (PinaforeType baseupdate 'Positive) a) =>
-             FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LangSetRef a) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangSetRef a) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- LangFiniteSetRef
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) p
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) q
-         ) => ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (LangFiniteSetRef '( p, q)) where
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangFiniteSetRef '( p, q)) where
     toShimWit =
         unToRangeShimWit $ \tpq conv ->
-            mapShimWit (consShimFunc RangevarianceType cid conv) $
-            mkPJMShimWit $
-            GroundPinaforeSingularType FiniteSetRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mapPosShimWit (applyPolyShim RangevarianceType cid conv) $
+            mkShimWit $
+            GroundDolanSingularType FiniteSetRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
-instance ( FromShimWit JMShim (PinaforeType baseupdate 'Negative) p
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) q
-         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (LangFiniteSetRef '( p, q)) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangFiniteSetRef '( p, q)) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) p
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) q
-         ) => FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (LangFiniteSetRef '( p, q)) where
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangFiniteSetRef '( p, q)) where
     fromShimWit =
         unFromRangeShimWit $ \tpq conv ->
-            mapShimWit (consShimFunc RangevarianceType cid conv) $
-            mkPJMShimWit $
-            GroundPinaforeSingularType FiniteSetRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mapNegShimWit (applyPolyShim RangevarianceType cid conv) $
+            mkShimWit $
+            GroundDolanSingularType FiniteSetRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) p
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) q
-         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LangFiniteSetRef '( p, q)) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangFiniteSetRef '( p, q)) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- PinaforeRef FiniteSetUpdate
-instance ( ToShimWit JMShim (PinaforeType baseupdate 'Positive) t
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) t
-         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (PinaforeRef (FiniteSetUpdate t)) where
-    fromShimWit = mapShimWit (toEnhanced "subtype" unLangFiniteSetRef) fromJMShimWit
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeRef (FiniteSetUpdate t)) where
+    fromShimWit = mapNegShimWit (functionToShim "subtype" unLangFiniteSetRef) fromJMShimWit
 
 instance ( Eq t
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) t
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) t
-         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (PinaforeRef (FiniteSetUpdate t)) where
-    toShimWit = mapShimWit (toEnhanced "subtype" $ MkLangFiniteSetRef identityRange) toJMShimWit
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeRef (FiniteSetUpdate t)) where
+    toShimWit = mapPosShimWit (functionToShim "subtype" $ MkLangFiniteSetRef identityRange) toJMShimWit
 
 -- LangMorphism
-instance ( baseupdate ~ update
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) pa
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) qa
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) pb
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) qb
-         ) => ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) (LangMorphism update '( pa, qa) '( pb, qb)) where
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) pa
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) qa
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) pb
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) qb
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangMorphism '( pa, qa) '( pb, qb)) where
     toShimWit =
-        unToRangeShimWit @_ @pa @qa $ \ta conva ->
-            unToRangeShimWit @_ @pb @qb $ \tb convb ->
-                mapShimWit (consShimFunc RangevarianceType (consShimFunc RangevarianceType cid conva) convb) $
-                mkPJMShimWit $
-                GroundPinaforeSingularType MorphismPinaforeGroundType $
+        unToRangeShimWit @_ @_ @pa @qa $ \ta conva ->
+            unToRangeShimWit @_ @_ @pb @qb $ \tb convb ->
+                mapPosShimWit (applyPolyShim RangevarianceType (applyPolyShim RangevarianceType cid conva) convb) $
+                mkShimWit $
+                GroundDolanSingularType MorphismPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
-instance ( baseupdate ~ update
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) pa
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) qa
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) pb
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) qb
-         ) => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (LangMorphism update '( pa, qa) '( pb, qb)) where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) pa
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) qa
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) pb
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) qb
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangMorphism '( pa, qa) '( pb, qb)) where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance ( baseupdate ~ update
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) pa
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) qa
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) pb
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) qb
-         ) => FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) (LangMorphism update '( pa, qa) '( pb, qb)) where
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) pa
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) qa
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) pb
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) qb
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangMorphism '( pa, qa) '( pb, qb)) where
     fromShimWit =
         unFromRangeShimWit $ \ta conva ->
             unFromRangeShimWit $ \tb convb ->
-                mapShimWit (consShimFunc RangevarianceType (consShimFunc RangevarianceType cid conva) convb) $
-                mkPJMShimWit $
-                GroundPinaforeSingularType MorphismPinaforeGroundType $
+                mapNegShimWit (applyPolyShim RangevarianceType (applyPolyShim RangevarianceType cid conva) convb) $
+                mkShimWit $
+                GroundDolanSingularType MorphismPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
-instance ( baseupdate ~ update
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) pa
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) qa
-         , ToShimWit JMShim (PinaforeType baseupdate 'Positive) pb
-         , FromShimWit JMShim (PinaforeType baseupdate 'Negative) qb
-         ) => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (LangMorphism update '( pa, qa) '( pb, qb)) where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) pa
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) qa
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) pb
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) qb
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangMorphism '( pa, qa) '( pb, qb)) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- Entity
-instance ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) Entity where
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) Entity where
     toShimWit =
-        mkPJMShimWit $
-        GroundPinaforeSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
+        mkShimWit $ GroundDolanSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
 
-instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) Entity where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Entity where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) Entity where
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) Entity where
     fromShimWit =
-        mkPJMShimWit $
-        GroundPinaforeSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
+        mkShimWit $ GroundDolanSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
 
-instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) Entity where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Entity where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- NewEntity
-instance ToShimWit JMShim (PinaforeSingularType baseupdate 'Positive) NewEntity where
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) NewEntity where
     toShimWit =
-        mkPJMShimWit $
-        GroundPinaforeSingularType (EntityPinaforeGroundType NilListType NewEntityGroundType) NilDolanArguments
+        mkShimWit $ GroundDolanSingularType (EntityPinaforeGroundType NilListType NewEntityGroundType) NilDolanArguments
 
-instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) NewEntity where
-    toShimWit = singlePinaforeShimWit toJMShimWit
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) NewEntity where
+    toShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit JMShim (PinaforeSingularType baseupdate 'Negative) NewEntity where
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) NewEntity where
     fromShimWit =
-        mkPJMShimWit $
-        GroundPinaforeSingularType (EntityPinaforeGroundType NilListType NewEntityGroundType) NilDolanArguments
+        mkShimWit $ GroundDolanSingularType (EntityPinaforeGroundType NilListType NewEntityGroundType) NilDolanArguments
 
-instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) NewEntity where
-    fromShimWit = singlePinaforeShimWit fromJMShimWit
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) NewEntity where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- Literal
 literalInstances :: _ -> _
 literalInstances t =
     [d|
   
-  instance ToShimWit JMShim
-             (PinaforeSingularType baseupdate 'Positive)
+  instance ToShimWit (PinaforePolyShim Type)
+             (PinaforeSingularType 'Positive)
              $( t )
            where
           toShimWit
-            = mkPJMShimWit $
-                GroundPinaforeSingularType
+            = mkShimWit $
+                GroundDolanSingularType
                   (EntityPinaforeGroundType NilListType $
                      LiteralEntityGroundType representative)
                   NilDolanArguments
   
-  instance ToShimWit JMShim (PinaforeType baseupdate 'Positive)
+  instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive)
              $( t )
            where
-          toShimWit = singlePinaforeShimWit toJMShimWit
+          toShimWit = singleDolanShimWit toJMShimWit
   
-  instance FromShimWit JMShim
-             (PinaforeSingularType baseupdate 'Negative)
+  instance FromShimWit (PinaforePolyShim Type)
+             (PinaforeSingularType 'Negative)
              $( t )
            where
           fromShimWit
-            = mkPJMShimWit $
-                GroundPinaforeSingularType
+            = mkShimWit $
+                GroundDolanSingularType
                   (EntityPinaforeGroundType NilListType $
                      LiteralEntityGroundType representative)
                   NilDolanArguments
   
-  instance FromShimWit JMShim (PinaforeType baseupdate 'Negative)
+  instance FromShimWit (PinaforePolyShim Type)
+             (PinaforeType 'Negative)
              $( t )
            where
-          fromShimWit = singlePinaforeShimWit fromJMShimWit
+          fromShimWit = singleDolanShimWit fromJMShimWit
   |]

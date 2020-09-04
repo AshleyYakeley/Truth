@@ -27,7 +27,7 @@ testOp n =
 
 testInfix :: TestTree
 testInfix = let
-    names = filter nameIsInfix $ fmap docName $ toList $ predefinedDoc @PinaforeUpdate
+    names = filter nameIsInfix $ fmap (MkName . docName) $ toList predefinedDoc
     in testGroup "infix" $ fmap testOp names
 
 newtype PreciseEq t =
@@ -128,11 +128,35 @@ testQueryValues = testGroup "query values" []
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
     testCase (show $ unpack query) $
-    case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeUpdate query) of
+    case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue query) of
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ showPinaforeRef v
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ show e
         (Just s, SuccessResult v) -> assertEqual "result" s (showPinaforeRef v)
+
+testSubsumeSubtype :: Text -> Text -> [Text] -> [TestTree]
+testSubsumeSubtype t1 t2 vs =
+    [testQuery ("let r = r; x : " <> t1 <> "; x = r; y : " <> t2 <> "; y = x in ()") $ Just "unit"] <>
+    fmap (\v -> testQuery ("let x : " <> t1 <> "; x = " <> v <> "; y : " <> t2 <> "; y = x in y") $ Just $ unpack v) vs
+
+testFunctionSubtype :: Text -> Text -> [Text] -> [TestTree]
+testFunctionSubtype t1 t2 vs =
+    [testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ Just "<?>"] <>
+    fmap (\v -> testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f " <> v) $ Just $ unpack v) vs
+
+testSubtype1 :: Bool -> Text -> Text -> [Text] -> [TestTree]
+testSubtype1 b t1 t2 vs =
+    testSubsumeSubtype t1 t2 vs <>
+    if b
+        then testFunctionSubtype t1 t2 vs
+        else []
+
+testSubtype :: Bool -> Text -> Text -> [Text] -> TestTree
+testSubtype b t1 t2 vs = testGroup (unpack $ t1 <> " <: " <> t2) $ testSubtype1 b t1 t2 vs
+
+testSameType :: Bool -> Text -> Text -> [Text] -> TestTree
+testSameType b t1 t2 vs =
+    testGroup (unpack $ t1 <> " = " <> t2) $ (testSubtype1 b t1 t2 vs) <> (testSubtype1 b t2 t1 vs)
 
 testQueries :: TestTree
 testQueries =
@@ -358,20 +382,20 @@ testQueries =
               ]
         , testGroup
               "type signature"
-              [ testQuery "let i :: a -> a; i x = x in i 3" $ Just "3"
-              , testQuery "let i :: Number -> Number; i x = x in i 3" $ Just "3"
-              , testQuery "let i :: Text -> Text; i x = x in i 3" $ Nothing
-              , testQuery "let i :: a -> a; i x = x in i \"t\"" $ Just "t"
-              , testQuery "let i :: Number -> Number; i x = x in i \"t\"" $ Nothing
-              , testQuery "let i :: Text -> Text; i x = x in i \"t\"" $ Just "t"
-              , testQuery "let i :: a -> a; i x = x in 0" $ Just "0"
-              , testQuery "let i :: a -> Number; i x = x in 0" $ Nothing
-              , testQuery "let i :: Number -> a; i x = x in 0" $ Nothing
-              , testQuery "let i :: Number -> Number; i x = x in 0" $ Just "0"
-              , testQuery "let i :: Either Number Boolean; i = Left 5 in i" $ Just "Left 5"
-              , testQuery "let i :: Either Number Boolean; i = Right False in i" $ Just "Right False"
-              , testQuery "let i :: Maybe Number; i = Just 5 in i" $ Just "Just 5"
-              , testQuery "let i :: Maybe Number; i = Nothing in i" $ Just "Nothing"
+              [ testQuery "let i : a -> a; i x = x in i 3" $ Just "3"
+              , testQuery "let i : Number -> Number; i x = x in i 3" $ Just "3"
+              , testQuery "let i : Text -> Text; i x = x in i 3" $ Nothing
+              , testQuery "let i : a -> a; i x = x in i \"t\"" $ Just "t"
+              , testQuery "let i : Number -> Number; i x = x in i \"t\"" $ Nothing
+              , testQuery "let i : Text -> Text; i x = x in i \"t\"" $ Just "t"
+              , testQuery "let i : a -> a; i x = x in 0" $ Just "0"
+              , testQuery "let i : a -> Number; i x = x in 0" $ Nothing
+              , testQuery "let i : Number -> a; i x = x in 0" $ Nothing
+              , testQuery "let i : Number -> Number; i x = x in 0" $ Just "0"
+              , testQuery "let i : Either Number Boolean; i = Left 5 in i" $ Just "Left 5"
+              , testQuery "let i : Either Number Boolean; i = Right False in i" $ Just "Right False"
+              , testQuery "let i : Maybe Number; i = Just 5 in i" $ Just "Just 5"
+              , testQuery "let i : Maybe Number; i = Nothing in i" $ Just "Nothing"
               ]
         , testGroup
               "patterns"
@@ -429,12 +453,12 @@ testQueries =
               , testGroup
                     "List"
                     [ testQuery "case [] of [] -> True; _ -> False end" $ Just "True"
-                    , testQuery "case [] of _:_ -> True; _ -> False end" $ Just "False"
+                    , testQuery "case [] of _::_ -> True; _ -> False end" $ Just "False"
                     , testQuery "case [1,2] of [] -> True; _ -> False end" $ Just "False"
-                    , testQuery "case [3,4] of _:_ -> True; _ -> False end" $ Just "True"
-                    , testQuery "case [3] of a:b -> (a,b) end" $ Just "(3, [])"
-                    , testQuery "case [3,4] of a:b -> (a,b) end" $ Just "(3, [4])"
-                    , testQuery "case [3,4,5] of a:b -> (a,b) end" $ Just "(3, [4, 5])"
+                    , testQuery "case [3,4] of _::_ -> True; _ -> False end" $ Just "True"
+                    , testQuery "case [3] of a::b -> (a,b) end" $ Just "(3, [])"
+                    , testQuery "case [3,4] of a::b -> (a,b) end" $ Just "(3, [4])"
+                    , testQuery "case [3,4,5] of a::b -> (a,b) end" $ Just "(3, [4, 5])"
                     , testQuery "case [3] of [a,b] -> 1; _ -> 2 end" $ Just "2"
                     , testQuery "case [3,4] of [a,b] -> 1; _ -> 2 end" $ Just "1"
                     , testQuery "case [3,4,5] of [a,b] -> 1; _ -> 2 end" $ Just "2"
@@ -443,43 +467,222 @@ testQueries =
               ]
         , testGroup
               "subtype"
-              [ testQuery "let i :: Integer -> Number; i x = x in i 3" $ Just "3"
-              , testQuery "let a :: Integer; a = 3; b :: Number; b = a in b" $ Just "3"
-              , testQuery "let i :: FiniteSetRef -a -> SetRef a; i x = x in 3" $ Just "3"
-              , testQuery "let i :: FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ Just "3"
+              [ testQuery "let i : Integer -> Number; i x = x in i 3" $ Just "3"
+              , testQuery "let a : Integer; a = 3; b : Number; b = a in b" $ Just "3"
+              , testQuery "let i : FiniteSetRef -a -> SetRef a; i x = x in 3" $ Just "3"
+              , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ Just "3"
               ]
         , testGroup
-              "subsume"
-              [ testQuery "let a :: [Integer|Text]; a = [] in a" $ Just "[]"
-              , testQuery "let a :: [Integer|Text]; a = []; b :: [Integer]|[Text]; b = a in b" $ Just "[]"
-              , testQuery "let a :: Integer|Text; a = 3; b :: [Integer]|[Text]; b = [a] in b" $ Just "[3]"
-              , testQuery "let a :: [Integer]|[Text]; a = [] in a" $ Just "[]"
-              , testQuery "let a :: [Integer]|[Text]; a = []; b :: [Integer|Text]; b = a in b" $ Just "[]"
+              "subsume" -- see #58 for expected failures
+              [ testQuery "let a : (); a = a in ()" $ Just "unit"
+              , testQuery "let a : Integer; a = a in ()" $ Just "unit"
+              , expectFail $ testQuery "let a : Integer|Text; a = a in ()" $ Just "unit" {- ISSUE #60 -}
+              , testQuery "let r = r in let a : Integer|Text; a = r in ()" $ Just "unit"
+              , testQuery "let r = r; a : Integer|Text; a = r in ()" $ Just "unit"
+              , expectFail $ testQuery "let r = a; a : Integer|Text; a = r in ()" $ Just "unit" {- ISSUE #60 -}
+              , expectFail $ testQuery "let a : None; a = a in ()" $ Just "unit" {- ISSUE #60 -}
+              , testQuery "let r = r in let a : None; a = r in ()" $ Just "unit"
+              , testQuery "let r = r; a : None; a = r in ()" $ Just "unit"
+              , expectFail $ testQuery "let r = a; a : None; a = r in ()" $ Just "unit" {- ISSUE #60 -}
+              , testQuery "let a : [Integer|Text]; a = [] in a" $ Just "[]"
+              , testQuery "let a : [Integer]|[Text]; a = [] in a" $ Just "[]"
+              , testSameType True "Integer" "Integer" ["56"]
+              , testSameType False "[Integer|Text]" "[Integer|Text]" ["[]"]
+              , testSameType False "[Integer]|[Text]" "[Integer]|[Text]" ["[]"]
+              , testSameType False "[Integer|Text]" "[Integer]|[Text]" ["[]"]
+              , testQuery "let a : Integer|Text; a = 3; b : [Integer]|[Text]; b = [a] in b" $ Just "[3]"
+              ]
+        , testGroup
+              "recursive"
+              [ testQuery "let x : rec a. [a]; x = [] in x" $ Just "[]"
+              , let
+                    atree = ["[]", "[[]]", "[[[[]]]]", "[[], [[]]]"]
+                    in testGroup
+                           "equivalence"
+                           [ testSameType True "Integer" "Integer" ["0"]
+                           , testSameType True "Integer" "rec a. Integer" ["0"]
+                           , testSameType True "[Integer]" "[rec a. Integer]" ["[0]"]
+                           , testSameType True "rec a. [a]" "rec a. [a]" atree
+                           , testSameType True "rec a. [a]" "rec a. [[a]]" atree
+                           , ignoreTest $ {- ISSUE #61 -}
+                             testSameType
+                                 False
+                                 "rec a. (Maybe a | [a])"
+                                 "(rec a. Maybe a) | (rec b. [b])"
+                                 ["[]", "Nothing", "Just []", "[[]]"]
+                           , ignoreTest $ {- ISSUE #61 -}
+                             testSameType
+                                 False
+                                 "rec a. (Maybe a | [a])"
+                                 "(rec a. Maybe a) | (rec a. [a])"
+                                 ["[]", "Nothing", "Just []", "[[]]"]
+                           , testSubtype True "rec a. [a]" "Entity" []
+                           , testSubtype True "[rec a. [a]]" "Entity" []
+                           , testSubtype True "rec a. [a]" "[Entity]" ["[]"]
+                           , testSubtype True "[rec a. [a]]" "[Entity]" ["[]"]
+                           , testSameType False "None" "None" []
+                           , testSameType False "rec a. a" "None" []
+                           , testSameType False "[rec a. a]" "[None]" ["[]"]
+                           , testSameType True "rec a. Integer" "Integer" ["0"]
+                           , testSameType True "[rec a. Integer]" "[Integer]" ["[0]"]
+                           , testGroup
+                                 "unroll"
+                                 [ testSameType True "rec a. [a]" "[rec a. [a]]" atree
+                                 , testSameType False "rec a. ([a]|Integer)" "[rec a. ([a]|Integer)]|Integer" ["[]"]
+                                 , testSameType False "rec a. ([a]|Integer)" "[rec a. ([a]|Integer)]|Integer" ["2"]
+                                 , testSameType False "rec a. [a|Integer]" "[rec a. [a|Integer]|Integer]" ["[]"]
+                                 , testSameType False "rec a. [a|Integer]" "[rec a. [a|Integer]|Integer]" ["[3]"]
+                                 ]
+                           ]
+              , testGroup
+                    "case"
+                    [ testQuery "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount Nothing" $
+                      Just "0"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> if True then 1 else 1 + rcount y end in rcount $ Just Nothing" $
+                      Just "1"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> if True then 2 else 2 + rcount y end in rcount $ Just Nothing" $
+                      Just "1"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> if True then 2 else 1 + rcount y end end in rcount $ Just Nothing" $
+                      Just "1"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
+                      Just "1"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> if True then 1 else 1 + rcount y end in rcount $ Just $ Just Nothing" $
+                      Just "1"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> if True then 2 else 2 + rcount y end in rcount $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> if True then 2 else 1 + rcount y end end in rcount $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> case z of Nothing -> 2; Just p -> if True then 3 else 1 + rcount y end end end in rcount $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> case z of Nothing -> 2; Just p -> 1 + rcount y end end end in rcount $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> case z of Nothing -> 2; Just p -> 1 + rcount y end end end; rcount1 x = rcount x in rcount1 $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount1 y = case y of Nothing -> 0; Just z -> 1 + rcount z end; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just $ Just $ Just $ Just Nothing" $
+                      Just "4"
+                    , testQuery
+                          "let rcount1 y = case y of Nothing -> 0; Just z -> 1 + rcount z end; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      Just "12"
+                    , testQuery
+                          "let rcount1 y = case y of Nothing -> 0; Just z -> 1 + rcount z end; rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      Just "12"
+                    , testQuery
+                          "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> if True then 2 else 2 + rcount y end; rval : rec a. Maybe a; rval = Just $ Just Nothing in rcount rval" $
+                      Just "2"
+                    , testQuery
+                          "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; Just (Just (Just (Just Nothing))) -> 4; Just (Just (Just (Just (Just _)))) -> 5 end; rval : rec a. Maybe a; rval = Just $ Just $ Just $ Just Nothing in rcount rval" $
+                      Just "4"
+                    , testQuery
+                          "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; Just (Just (Just (Just Nothing))) -> 4; Just (Just (Just (Just (Just _)))) -> 5 end; rval : rec a. Maybe a; rval = Just rval in rcount rval" $
+                      Just "5"
+                    , testQuery
+                          "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : rec a. Maybe a; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing in rcount rval" $
+                      Just "10"
+                    , testQuery
+                          "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing in rcount rval" $
+                      Just "10"
+                    , testQuery
+                          "let fix: (a -> a) -> a; fix f = let x = f x in x; rc: (a -> Integer) -> Maybe a -> Integer; rc r x = case x of Nothing -> 0; Just y -> 1 + r y end in fix rc $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      Just "5"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just Nothing" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
+                      Just "3"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just Nothing" $
+                      Just "4"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      Just "5"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just $ Just Nothing in rcount rval" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe None)) ; rval = Just $ Just Nothing in rcount rval" $
+                      Just "2"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) ; rval = Just $ Just Nothing in rcount rval" $
+                      Just "2"
+                    , testQuery "Just $ Just $ Just Nothing" $ Just "Just Just Just Nothing"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just $ Just $ Just Nothing in rcount rval" $
+                      Just "3"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) ; rval = Just $ Just $ Just Nothing in rcount rval" $
+                      Just "3"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe (Maybe None)))) ; rval = Just $ Just $ Just Nothing in rcount rval" $
+                      Just "3"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; _ -> 4 end in rcount $ Just $ Just $ Just Nothing" $
+                      Just "3"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + r1count y end; r1count x = case x of Nothing -> 0; Just y -> 1 + r1count y end in rcount $ Just $ Just $ Just Nothing" $
+                      Just "3"
+                    , testQuery
+                          "case Just $ Just $ Just Nothing of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; _ -> 4 end" $
+                      Just "3"
+                    , testQuery
+                          "let rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; _ -> 4 end in rcount $ Just $ Just $ Just Nothing" $
+                      Just "3"
+                    , testQuery
+                          "let rcount : (rec a . Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; _ -> 4 end in rcount $ Just $ Just $ Just Nothing" $
+                      Just "3"
+                    , testQuery
+                          "let rcount : (rec a . Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; Just (Just (Just (Just y))) -> 4 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
+                      Just "3"
+                    , testQuery
+                          "let rcount : (rec a . Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> 2 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
+                      Just "3"
+                    ]
               ]
         ]
 
 testShim :: Text -> String -> String -> TestTree
 testShim query expectedType expectedShim =
     testCase (unpack query) $
-    case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeUpdate query of
+    case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue query of
         FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
-        SuccessResult (MkAnyValue (MkShimWit t shim) _) -> do
-            assertEqual "type" expectedType $ show t
+        SuccessResult (MkAnyValue (MkPosShimWit t shim) _) -> do
+            assertEqual "type" expectedType $ unpack $ exprShow t
             assertEqual "shim" expectedShim $ show shim
 
 testShims :: TestTree
 testShims =
     testGroup
-        "shims"
+        "shim"
         [ testShim "3" "Integer" "(join1 id)"
         , testShim "negate" "Integer -> Integer" "(join1 (co (contra id (meet1 id)) (join1 id)))"
         , testShim "negate 3" "Integer" "(join1 id)"
-        , testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
-        , expectFail $ testShim "id 3" "Integer" "(join1 id)"
-        , expectFail $ testShim "\\x -> x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
-        , expectFail $ testShim "(\\x -> x) 3" "Integer" "(join1 id)"
+        , expectFail $ testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))" {- ISSUE #63 -}
+        , expectFail $ testShim "id 3" "Integer" "(join1 id)" {- ISSUE #63 -}
+        , expectFail $ testShim "\\x -> x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))" {- ISSUE #63 -}
+        , expectFail $ testShim "(\\x -> x) 3" "Integer" "(join1 id)" {- ISSUE #63 -}
         , testShim "\\x -> 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
         , testShim "(\\x -> 4) 3" "Integer" "(join1 id)"
+        , expectFail $
+          testShim {- ISSUE #63 -}
+              "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount"
+              "(rec c. Maybe c) -> Integer"
+              "(join1 id)"
+        , expectFail $
+          testShim {- ISSUE #63 -}
+              "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount"
+              "(rec a. Maybe a) -> Integer"
+              "(join1 id)"
         ]
 
 testLanguage :: TestTree

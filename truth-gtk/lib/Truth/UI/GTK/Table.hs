@@ -4,8 +4,6 @@ module Truth.UI.GTK.Table
 
 import Data.GI.Base.Attributes hiding (get)
 import Data.GI.Gtk hiding (get)
-import GI.Gdk hiding (get)
-import GI.Gtk as Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.DynamicStore
@@ -72,7 +70,8 @@ instance Monoid (KeyColumns update) where
 
 tableContainerView ::
        forall seq update.
-       ( IsSequence seq
+       ( HasCallStack
+       , IsSequence seq
        , IsUpdate update
        , ApplicableEdit (UpdateEdit update)
        , FullSubjectReader (UpdateReader update)
@@ -85,7 +84,7 @@ tableContainerView ::
     -> SelectNotify (Model update)
     -> GCreateView
 tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model (WholeUpdate rowtext)
-                                                                        , Model (ROWUpdate rowprops))) cols) tableSub onDoubleClick sel = do
+                                                                        , Model (ROWUpdate rowprops))) cols) tableSub onActivate notifier = do
     let
         defStoreEntry :: StoreEntry update rowtext rowprops
         defStoreEntry = MkStoreEntry (error "unset model") (error "unset text") (error "unset props")
@@ -115,48 +114,45 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             for_ cols $ addColumn tview store
             return (store, tview)
         recvTable ::
-               (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
+               HasCallStack
+            => (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
             -> NonEmpty (OrderedListUpdate seq update)
             -> View ()
         recvTable (store, _tview) updates =
             for_ updates $ \case
-                OrderedListUpdateItem a b _
-                    | a == b -> return ()
                 OrderedListUpdateItem a b _ -> dynamicStoreMove a b store
                 OrderedListUpdateDelete i -> dynamicStoreDelete i store
                 OrderedListUpdateInsert i _ -> dynamicStoreInsert i defStoreEntry (makeStoreEntry i) store
                 OrderedListUpdateClear -> dynamicStoreClear store
     (store, tview) <- cvBindModel tableSub Nothing initTable mempty recvTable
+    tselection <- #getSelection tview
+    set tselection [#mode := SelectionModeSingle] -- 0 or 1 selected
     let
+        getItemFromPath :: TreePath -> View (Maybe (Model update))
+        getItemFromPath tpath = do
+            ii <- #getIndices tpath
+            case ii of
+                Just [i] -> do
+                    entry <- dynamicStoreGet i store
+                    return $ Just $ entryModel entry
+                _ -> return Nothing
         getSelection :: View (Maybe (Model update))
         getSelection = do
-            tsel <- #getSelection tview
-            (ltpath, _) <- #getSelectedRows tsel
+            (ltpath, _) <- #getSelectedRows tselection
             case ltpath of
-                [tpath] -> do
-                    ii <- #getIndices tpath
-                    case ii of
-                        Just [i] -> do
-                            entry <- dynamicStoreGet i store
-                            return $ Just $ entryModel entry
-                        _ -> return Nothing
+                [tpath] -> getItemFromPath tpath
                 _ -> return Nothing
-    _ <- cvOn tview #cursorChanged $ traceBracket "GTK.treeView:cursorChanged" $ runSelectNotify sel getSelection
+    _ <- cvOn tselection #changed $ traceBracket "GTK.treeView:cursorChanged" $ runSelectNotify notifier getSelection
     _ <-
-        cvOn tview #buttonPressEvent $ \event -> traceBracket "GTK.treeView:buttonPressEvent" $ do
-            click <- Gtk.get event #type
-            case click of
-                EventType2buttonPress -> do
-                    mkey <- getSelection
-                    case mkey of
-                        Just key -> onDoubleClick key
-                        Nothing -> return ()
-                    return True
-                _ -> return False
+        cvOn tview #rowActivated $ \tpath _ -> traceBracket "GTK.treeView:rowActivated" $ do
+            msel <- getItemFromPath tpath
+            case msel of
+                Just sel -> onActivate sel
+                Nothing -> return ()
     toWidget tview
 
 tableGetView :: GetGView
 tableGetView =
     MkGetView $ \_getview uispec -> do
-        MkTableUISpec cols sub onDoubleClick sel <- isUISpec uispec
-        return $ tableContainerView (mconcat $ fmap oneKeyColumn cols) sub onDoubleClick sel
+        MkTableUISpec cols sub onActivate sel <- isUISpec uispec
+        return $ tableContainerView (mconcat $ fmap oneKeyColumn cols) sub onActivate sel

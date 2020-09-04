@@ -4,11 +4,12 @@ import Data.Shim
 import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Name
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Shim
+import Pinafore.Language.Type.Show
 import Shapes
 
 class IsSubtype w where
-    isSubtype :: w a -> w b -> Maybe (JMShim a b)
+    isSubtype :: w a -> w b -> Maybe (PinaforePolyShim Type a b)
 
 data LiteralType (t :: Type) where
     LiteralLiteralType :: LiteralType Literal
@@ -72,11 +73,11 @@ instance IsSubtype LiteralType where
     isSubtype ta tb
         | Just Refl <- testEquality ta tb = return id
     isSubtype t LiteralLiteralType
-        | Dict <- literalTypeAsLiteral t = return $ toEnhanced "subtype" toLiteral
-    isSubtype RationalLiteralType NumberLiteralType = return $ toEnhanced "subtype" safeRationalToNumber
+        | Dict <- literalTypeAsLiteral t = return $ functionToShim "subtype" toLiteral
+    isSubtype RationalLiteralType NumberLiteralType = return $ functionToShim "subtype" safeRationalToNumber
     isSubtype IntegerLiteralType NumberLiteralType =
-        return $ toEnhanced "subtype" $ safeRationalToNumber . integerToSafeRational
-    isSubtype IntegerLiteralType RationalLiteralType = return $ toEnhanced "subtype" integerToSafeRational
+        return $ functionToShim "subtype" $ safeRationalToNumber . integerToSafeRational
+    isSubtype IntegerLiteralType RationalLiteralType = return $ functionToShim "subtype" integerToSafeRational
     isSubtype _ _ = Nothing
 
 literalTypeAsLiteral :: LiteralType t -> Dict (AsLiteral t)

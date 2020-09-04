@@ -10,9 +10,6 @@ import Test.Tasty
 import Test.Tasty.Golden
 import Truth.Core
 
-nullViewIO :: View a -> IO a
-nullViewIO = uitRunView nullUIToolkit emptyResourceContext
-
 testFile :: FilePath -> TestTree
 testFile inpath = let
     rootpath = dropExtension inpath
@@ -22,8 +19,8 @@ testFile inpath = let
     in goldenVsFile testname refpath outpath $
        withBinaryFile outpath WriteMode $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
-               withTestPinaforeContext nullUIToolkit $ \_ -> do
-                   nullViewIO $ pinaforeInteractHandles inh outh True
+               withTestPinaforeContext $ \uitoolkit _ _ -> do
+                   uitRunView uitoolkit emptyResourceContext $ pinaforeInteractHandles inh outh True
                    hPutStrLn outh "<END>"
 
 getTestInteractive :: IO TestTree

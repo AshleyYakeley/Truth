@@ -13,7 +13,7 @@
       "group": "build",
       "label": "Format",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make format && echo OK",
+      "command": "cd ${workspaceRoot} && make format ; bin/reportstatus $?",
       "problemMatcher": [
         {
           "owner": "hindent",
@@ -34,7 +34,7 @@
       "group": "build",
       "label": "Full Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make haddock=1 test=1 bench=1 full && echo OK",
+      "command": "cd ${workspaceRoot} && make haddock=1 test=1 bench=1 full ; bin/reportstatus $?",
       "problemMatcher": [
         {
           "owner": "stack",
@@ -75,7 +75,7 @@
       },
       "label": "Quick Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make nodocker=1 single=1 exe && echo OK",
+      "command": "cd ${workspaceRoot} && make nodocker=1 single=1 exe ; bin/reportstatus $?",
       "problemMatcher": [
         {
           "owner": "stack",
@@ -100,7 +100,7 @@
       "group": "test",
       "label": "Format & Quick Test",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make nodocker=1 test=1 format exe && echo OK",
+      "command": "cd ${workspaceRoot} && make nodocker=1 test=1 format exe ; bin/reportstatus $?",
       "problemMatcher": [
         {
           "owner": "stack",

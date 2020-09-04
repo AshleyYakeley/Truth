@@ -28,12 +28,13 @@ import Data.List.NonEmpty as I (NonEmpty(..), last, nonEmpty)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
 import Data.Ord as I
-import Data.Semigroup as I hiding (All(..), Any(..))
+import Data.Semigroup as I
 import Data.String as I hiding (lines, unlines, unwords, words)
 import Data.Traversable as I
 import Data.Tuple as I
 import Data.Unique as I
 import Data.Word as I
+import GHC.Stack as I (HasCallStack)
 import Prelude as I
     ( Enum(..)
     , Integer
@@ -167,9 +168,38 @@ mpure :: Alternative m => Maybe a -> m a
 mpure (Just a) = pure a
 mpure Nothing = empty
 
+mcatch :: Alternative m => m a -> m (Maybe a)
+mcatch ma = fmap Just ma <|> pure Nothing
+
 compAll :: Category cat => [cat a a] -> cat a a
 compAll [] = id
 compAll (c:cc) = c . compAll cc
 
 exec :: Monad m => m (m a) -> m a
 exec mma = mma >>= id
+
+deleteFirstMatching :: (a -> Bool) -> [a] -> [a]
+deleteFirstMatching _ [] = []
+deleteFirstMatching t (a:aa)
+    | t a = aa
+deleteFirstMatching t (a:aa) = a : deleteFirstMatching t aa
+
+shortOr :: Monad m => (a -> m Bool) -> [a] -> m Bool
+shortOr _ [] = return False
+shortOr amb (a:aa) = do
+    b <- amb a
+    if b
+        then return True
+        else shortOr amb aa
+
+shortAnd :: Monad m => (a -> m Bool) -> [a] -> m Bool
+shortAnd _ [] = return True
+shortAnd amb (a:aa) = do
+    b <- amb a
+    if b
+        then shortAnd amb aa
+        else return False
+
+mif :: Monoid a => Bool -> a -> a
+mif False _ = mempty
+mif True a = a

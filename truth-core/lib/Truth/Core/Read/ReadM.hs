@@ -26,3 +26,9 @@ mapReadM rf (MkReadM rmt) = MkReadM $ \r -> rmt $ rf r
 
 readM :: r t -> ReadM r t -- = Readable (Read r) r
 readM rt = MkReadM $ \rd -> rd rt
+
+readableToReadFunction :: Readable (ReadM ra) rb -> ReadFunction ra rb
+readableToReadFunction mrr mra rt = unReadM (mrr rt) mra
+
+readFunctionToReadable :: ReadFunction ra rb -> Readable (ReadM ra) rb
+readFunctionToReadable rf rt = MkReadM $ \rb -> rf rb rt

@@ -48,7 +48,8 @@ varianceCoercibleKind CovarianceType = Dict
 varianceCoercibleKind ContravarianceType = Dict
 varianceCoercibleKind RangevarianceType = Dict
 
-type family VarianceCategory (cat :: Type -> Type -> Type) (v :: Variance) :: VarianceKind v -> VarianceKind v -> Type where
+type VarianceCategory :: (Type -> Type -> Type) -> forall (v :: Variance) -> VarianceKind v -> VarianceKind v -> Type
+type family VarianceCategory cat v where
     VarianceCategory cat 'Covariance = cat
     VarianceCategory cat 'Contravariance = CatDual cat
     VarianceCategory cat 'Rangevariance = CatRange cat

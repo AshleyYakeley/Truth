@@ -18,7 +18,7 @@ layoutGetView =
                 VerticalUISpec aspects -> (aspects, OrientationVertical)
         return $ do
             widgets <-
-                for aspects $ \(ispec, grow) -> do
+                for aspects $ \(grow, ispec) -> do
                     w <- getview ispec
                     return (w, grow)
             vbox <- new Box [#orientation := orientation]

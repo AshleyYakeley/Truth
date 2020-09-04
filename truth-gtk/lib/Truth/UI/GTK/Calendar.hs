@@ -25,25 +25,25 @@ calendarGetView =
                          y <- get widget #year
                          m <- get widget #month
                          d <- get widget #day
-                         return $ fromGregorian (toInteger y) (fromIntegral m) (fromIntegral d)
+                         return $ fromGregorian (toInteger y) (fromIntegral m + 1) (fromIntegral d)
                      putDay ::
                             forall m. MonadIO m
                          => Day
                          -> m ()
                      putDay day = let
                          (y, m, d) = toGregorian day
-                         in traceBracket "GTK.Calendar:set" $ set widget [#year := fromInteger y, #month := fromIntegral m, #day := fromIntegral d]
+                         in traceBracket "GTK.Calendar:set" $ set widget [#year := fromInteger y, #month := fromIntegral m - 1, #day := fromIntegral d]
                      onChanged = traceBracket "GTK.Calendar:changed" $
                          viewRunResource rmod $ \asub -> do
                              st <- getDay
                              _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
                              return ()
-                 _ <- cvOn widget #daySelected onChanged
-                 _ <- cvOn widget #monthChanged onChanged
+                 sig1 <- cvOn widget #daySelected onChanged
+                 sig2 <- cvOn widget #monthChanged onChanged
                  cvBindWholeModel rmod (Just esrc) $ \newval -> traceBracket "GTK.Calendar:update" $ do
                      oldval <- getDay
                      if oldval == newval
                          then return ()
-                         else putDay newval
+                         else liftIO $ withSignalBlocked widget sig1 $ withSignalBlocked widget sig2 $ putDay newval
                  toWidget widget) $
         isUISpec uispec

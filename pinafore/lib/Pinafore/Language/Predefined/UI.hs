@@ -8,7 +8,7 @@ import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Value
-import Pinafore.Storage
+import Pinafore.Language.Var
 import Shapes
 import Truth.Core
 
@@ -16,19 +16,16 @@ clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
 
 uiTable ::
-       forall baseupdate.
-       ( ?pinafore :: PinaforeContext baseupdate
-       , BaseChangeLens PinaforeEntityUpdate baseupdate {-, ApplicableEdit (UpdateEdit baseupdate)-}
-       )
+       (HasCallStack, ?pinafore :: PinaforeContext)
     => [(LangRef '( BottomType, Text), A -> LangRef '( BottomType, Text))]
-    -> LangOrder baseupdate A
+    -> LangOrder A
     -> LangFiniteSetRef '( A, EnA)
     -> (A -> PinaforeAction TopType)
     -> SelectNotify A
     -> LangUI
 uiTable cols order val onDoubleClick sn = do
     let
-        uo :: UpdateOrder (ContextUpdate baseupdate (ConstWholeUpdate EnA))
+        uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
         uo =
             mapUpdateOrder
                 (changeLensToFloating $
@@ -36,8 +33,8 @@ uiTable cols order val onDoubleClick sn = do
             pinaforeUpdateOrder order
         rows :: Model (FiniteSetUpdate EnA)
         rows = unPinaforeRef $ unLangFiniteSetRef $ contraRangeLift meet2 val
-        pkSub :: Model (ContextUpdate baseupdate (FiniteSetUpdate EnA))
-        pkSub = contextModels pinaforeBase rows
+        pkSub :: Model (ContextUpdate PinaforeStorageUpdate (FiniteSetUpdate EnA))
+        pkSub = contextModels pinaforeEntityModel rows
         readSub :: Model (ConstWholeUpdate EnA) -> View A
         readSub sub =
             viewRunResource sub $ \asub -> do
@@ -62,7 +59,7 @@ uiTable cols order val onDoubleClick sn = do
                     pinaforeRefModel $
                     eaMapSemiReadOnly (funcChangeLens showCell) $ langRefToReadOnlyValue $ getCellRef a
             in readOnlyKeyColumn nameOpenSub getCellSub
-    colSub :: Model (ContextUpdate baseupdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
+    colSub :: Model (ContextUpdate PinaforeStorageUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
         cvFloatMapModel (contextOrderedSetLens uo) pkSub
     let
         olsub :: Model (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))
@@ -82,7 +79,11 @@ uiPick itemsRef ref = do
         mapItem (ea, t) = (Known ea, plainOptionUICell t)
         mapItems :: Know [(EnA, Text)] -> [PickerPairType]
         mapItems Unknown = []
-        mapItems (Known items) = fmap mapItem items
+        mapItems (Known items) =
+            ( Unknown
+            , (plainOptionUICell "unknown")
+                  {optionCellDefault = True, optionCellStyle = plainTextStyle {tsItalic = True}}) :
+            fmap mapItem items
         itemsLens ::
                ChangeLens (WholeUpdate (Know [(EnA, Text)])) (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
         itemsLens = liftReadOnlyChangeLens (toReadOnlyChangeLens . listOrderedListChangeLens) . funcChangeLens mapItems
@@ -93,7 +94,7 @@ uiPick itemsRef ref = do
     optionUISpec subOpts subVal
 
 actionRef ::
-       (?pinafore :: PinaforeContext baseupdate)
+       (?pinafore :: PinaforeContext)
     => PinaforeImmutableRef (PinaforeAction TopType)
     -> PinaforeROWRef (Maybe (View ()))
 actionRef raction =
@@ -101,7 +102,7 @@ actionRef raction =
     immutableRefToReadOnlyRef raction
 
 uiButton ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate)
+       (?pinafore :: PinaforeContext)
     => PinaforeImmutableRef Text
     -> PinaforeImmutableRef (PinaforeAction TopType)
     -> CVUISpec
@@ -121,7 +122,7 @@ uiDynamic uiref = let
     in switchUISpec $ pinaforeRefModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyRef uiref
 
 openWindow ::
-       (?pinafore :: PinaforeContext baseupdate)
+       (?pinafore :: PinaforeContext)
     => PinaforeImmutableRef Text
     -> PinaforeImmutableRef MenuBar
     -> LangUI
@@ -158,7 +159,7 @@ interpretAccelerator ('A':'l':'t':'+':s) = do
 interpretAccelerator _ = Nothing
 
 menuAction ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate)
+       (?pinafore :: PinaforeContext)
     => Text
     -> Maybe Text
     -> PinaforeImmutableRef (PinaforeAction TopType)
@@ -185,10 +186,10 @@ uiCheckBox name val =
 uiTextEntry :: PinaforeRef (WholeUpdate (Know Text)) -> CVUISpec
 uiTextEntry val = textEntryUISpec $ pinaforeRefModel $ eaMap (unknownValueChangeLens mempty) $ val
 
-uiHorizontal :: [(LangUI, Bool)] -> LangUI
+uiHorizontal :: [(Bool, LangUI)] -> LangUI
 uiHorizontal = horizontalUISpec
 
-uiVertical :: [(LangUI, Bool)] -> LangUI
+uiVertical :: [(Bool, LangUI)] -> LangUI
 uiVertical = verticalUISpec
 
 uiPages :: [(LangUI, LangUI)] -> LangUI
@@ -203,28 +204,22 @@ notifiers = mconcat
 mapNotifier :: (B -> A) -> LangNotifier A -> LangNotifier B
 mapNotifier = contramap
 
-makeNotifier :: PinaforeAction (LangNotifier A, PinaforeAction A)
+makeNotifier :: PinaforeAction (LangNotifier A, PinaforeImmutableRef A)
 makeNotifier = do
-    (sn, getsel) <- liftIO makeRefSelectNotify
-    let
-        action = do
-            ma <- viewPinaforeAction getsel
-            pinaforeActionKnow $ maybeToKnow ma
-    return (sn, action)
+    (selModel, sn) <- pinaforeLiftLifeCycleIO $ makeSharedModel makePremodelSelectNotify
+    return (sn, MkPinaforeImmutableRef $ eaMapReadOnlyWhole maybeToKnow $ MkPinaforeRef selModel)
 
 notify :: LangNotifier A -> Maybe A -> PinaforeAction ()
 notify notifier ma = viewPinaforeAction $ runSelectNotify notifier $ return ma
 
-uiRun :: (?pinafore :: PinaforeContext baseupdate) => PinaforeAction LangUI -> LangUI
+uiRun :: (?pinafore :: PinaforeContext) => PinaforeAction LangUI -> LangUI
 uiRun pui = do
     kui <- cvLiftView $ unliftPinaforeAction pui
     case kui of
         Known ui -> ui
         Unknown -> nullUISpec
 
-ui_predefinitions ::
-       forall baseupdate. (BaseChangeLens PinaforeEntityUpdate baseupdate, BaseChangeLens PinaforeFileUpdate baseupdate)
-    => [DocTreeEntry (BindDoc baseupdate)]
+ui_predefinitions :: [DocTreeEntry BindDoc]
 ui_predefinitions =
     [ docTreeEntry
           "Notifiers"
@@ -273,8 +268,8 @@ ui_predefinitions =
           , mkValEntry "uiPick" "A drop-down menu." uiPick
           , mkValEntry
                 "uiTable"
-                "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection." $
-            uiTable @baseupdate
+                "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection."
+                uiTable
           , mkValEntry "uiCalendar" "A calendar." uiCalendar
           , mkValEntry "uiScrolled" "A scrollable container." uiScrolled
           , mkValEntry "uiDynamic" "A UI that can be updated to different UIs." uiDynamic
@@ -284,8 +279,10 @@ ui_predefinitions =
           "Menu items."
           [ mkValEntry "menuSeparator" "Separator menu item." SeparatorMenuEntry
           , mkValEntry "menuSubmenu" "Submenu menu item." SubMenuEntry
-          , mkValEntry "menuAction" "Action menu item. Item will be disabled if the action reference is unknown." $
-            menuAction @baseupdate
+          , mkValEntry
+                "menuAction"
+                "Action menu item. Item will be disabled if the action reference is unknown."
+                menuAction
           ]
     , docTreeEntry
           "Window"

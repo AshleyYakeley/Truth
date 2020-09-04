@@ -11,7 +11,7 @@ import Pinafore.Language.Error
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
-import Pinafore.Language.TypeSystem
+import Pinafore.Language.Type
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.Pos (initialPos)
@@ -34,7 +34,7 @@ parseReader r text = let
                Right a -> return a
                Left e -> throwErrorMessage $ parseErrorMessage e
 
-parseScopedReaderWhole :: Parser (PinaforeScoped baseupdate t) -> Text -> PinaforeSourceScoped baseupdate t
+parseScopedReaderWhole :: Parser (PinaforeScoped t) -> Text -> PinaforeSourceScoped t
 parseScopedReaderWhole parser text = do
     spos <- askSourcePos
     case evalStateT (parseReader parser text) spos of

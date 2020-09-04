@@ -2,16 +2,13 @@ module Pinafore.Language.Predefined.File
     ( file_predefinitions
     ) where
 
-import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Predefined.Defs
-import Pinafore.Storage
 
 --import Truth.World.File
 {-
 file_import ::
-       forall baseupdate. BaseChangeLens PinaforeFileUpdate baseupdate
-    => LangFiniteSetRef '( A, A)
+        LangFiniteSetRef '( A, A)
     -> (A -> PinaforeAction ())
     -> PinaforeAction ()
 file_import set continue = do
@@ -41,15 +38,13 @@ file_import set continue = do
 file_size :: Reference ByteStringEdit -> IO Int64
 file_size MkReference {..} = runWMFunction objRun $ refRead ReadByteStringLength
 -}
-file_predefinitions ::
-       forall baseupdate. (BaseChangeLens PinaforeEntityUpdate baseupdate, BaseChangeLens PinaforeFileUpdate baseupdate)
-    => [DocTreeEntry (BindDoc baseupdate)]
+file_predefinitions :: [DocTreeEntry BindDoc]
 file_predefinitions =
     [ docTreeEntry
           "Files"
           "NYI"
                   {-
-                  mkValEntry "file_import" "Import a file into a set." $ file_import @baseupdate
+                  mkValEntry "file_import" "Import a file into a set." $ file_import
               , mkValEntry "file_size" "The size of a file." file_size
               -}
           []

@@ -3,7 +3,6 @@ module Documentation
     , printInfixOperatorTable
     ) where
 
-import Pinafore
 import Pinafore.Language.Documentation
 import Shapes
 
@@ -21,7 +20,7 @@ escapeMarkdown s = let
 showDefEntry :: Int -> DefDoc -> IO ()
 showDefEntry _ MkDefDoc {..} = do
     let
-        nameType = "**`" ++ show docName ++ "`** :: `" ++ unpack docValueType ++ "`"
+        nameType = "**`" ++ unpack docName ++ "`** : `" ++ unpack docValueType ++ "`"
         title =
             (if docIsSupertype
                  then "_" <> nameType <> "_"
@@ -36,6 +35,7 @@ showDefEntry _ MkDefDoc {..} = do
     putStrLn ""
 
 showDefTitle :: Int -> Text -> IO ()
+showDefTitle 1 "" = return ()
 showDefTitle level title = putStrLn $ replicate level '#' ++ " " ++ unpack title
 
 showDefDesc :: Int -> Text -> IO ()
@@ -45,16 +45,16 @@ showDefDesc _ desc = do
     putStrLn ""
 
 printPredefinedBindings :: IO ()
-printPredefinedBindings = runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeUpdate
+printPredefinedBindings = runDocTree showDefTitle showDefDesc showDefEntry 1 predefinedDoc
 
 printInfixOperatorTable :: IO ()
 printInfixOperatorTable = do
     let
         getDocName MkDefDoc {..}
             | not docIsSupertype
-            , nameIsInfix docName = Just docName
+            , nameIsInfix (MkName docName) = Just $ MkName docName
         getDocName _ = Nothing
-        names = catMaybes $ fmap getDocName $ toList $ predefinedDoc @PinaforeUpdate
+        names = catMaybes $ fmap getDocName $ toList predefinedDoc
     putStrLn "| [n] | (A x B) x C | A x (B x C) | A x B only |"
     putStrLn "| --- | --- | --- | --- |"
     for_ [10,9 .. 0] $ \level -> do

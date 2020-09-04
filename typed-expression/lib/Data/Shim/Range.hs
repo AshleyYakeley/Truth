@@ -29,11 +29,15 @@ coMapRange qq (MkRange p q) = MkRange p (qq <.> q)
 contraMapRange :: InCategory shim => shim p2 p1 -> Range shim t '( p1, q) -> Range shim t '( p2, q)
 contraMapRange pp (MkRange p q) = MkRange (p <.> pp) q
 
-pairRange :: Shim shim => Range shim a '( ap, aq) -> Range shim b '( bp, bq) -> Range shim (a, b) '( (ap, bp), (aq, bq))
+pairRange ::
+       CartesianShim shim
+    => Range shim a '( ap, aq)
+    -> Range shim b '( bp, bq)
+    -> Range shim (a, b) '( (ap, bp), (aq, bq))
 pairRange (MkRange pa aq) (MkRange pb bq) = MkRange (pairShim pa pb) (pairShim aq bq)
 
 eitherRange ::
-       Shim shim
+       CartesianShim shim
     => Range shim a '( ap, aq)
     -> Range shim b '( bp, bq)
     -> Range shim (Either a b) '( Either ap bp, Either aq bq)

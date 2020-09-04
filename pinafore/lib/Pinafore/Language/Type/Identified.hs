@@ -33,11 +33,10 @@ instance WitnessValue TypeIDType where
 
 type family Identified (tid :: BigNat) = (v :: Type) | v -> tid where
 
-data IdentifiedType :: Type -> forall k. k -> Type where
-    MkIdentifiedType
-        :: forall (baseupdate :: Type) (tid :: BigNat). TypeIDType tid -> IdentifiedType baseupdate (Identified tid)
+data IdentifiedType :: forall k. k -> Type where
+    MkIdentifiedType :: forall (tid :: BigNat). TypeIDType tid -> IdentifiedType (Identified tid)
 
-instance TestHetEquality (IdentifiedType baseupdate) where
+instance TestHetEquality (IdentifiedType) where
     testHetEquality (MkIdentifiedType ia) (MkIdentifiedType ib) = do
         Refl <- testEquality ia ib
         return HRefl

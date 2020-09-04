@@ -1,8 +1,8 @@
 module Data.Injection where
 
-import Data.Bijection
 import Data.CatFunctor
 import Data.Codec
+import Data.Isomorphism
 import Data.MonadOne
 import Shapes.Import
 

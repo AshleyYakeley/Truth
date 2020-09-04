@@ -12,38 +12,88 @@ library:
       - shapes
     exposed-modules:
       - Data.Shim
-      - Language.Expression.Error
-      - Language.Expression.UVar
-      - Language.Expression.WitnessMappable
-      - Language.Expression.Witness
-      - Language.Expression.Expression
-      - Language.Expression.Pattern
-      - Language.Expression.NameWit
-      - Language.Expression.Named
-      - Language.Expression.Sealed
-      - Language.Expression.Renamer
-      - Language.Expression.Unifier
-      - Language.Expression.Subsumer
-      - Language.Expression.Abstract
-      - Language.Expression.Bindings
-      - Language.Expression.TypeSystem
+      - Language.Expression.Common
       - Language.Expression.Unitype
-      - Language.Expression.Arguments
       - Language.Expression.Dolan
+      - Language.Expression.Dolan.Test
     other-modules:
+      - Data.Shim.PolyMap
+      - Data.Shim.ComposeShim
       - Data.Shim.Polarity
+      - Data.Shim.PolarMap
       - Data.Shim.Variance
+      - Data.Shim.PolarVariance
       - Data.Shim.ShimWit
       - Data.Shim.Range
       - Data.Shim.CatRange
       - Data.Shim.JoinMeet
+      - Data.Shim.PolarJoinMeet
       - Data.Shim.PolyShim
       - Data.Shim.JMShim
-      - Data.Shim.JMIsoShim
+      - Data.Shim.PolyIso
+      - Data.Shim.PolyComposeShim
       - Data.Shim.JMShimWit
+      - Language.Expression.Common.Error
+      - Language.Expression.Common.WitnessMappable
+      - Language.Expression.Common.Witness
+      - Language.Expression.Common.Expression
+      - Language.Expression.Common.Pattern
+      - Language.Expression.Common.NameWit
+      - Language.Expression.Common.Named
+      - Language.Expression.Common.Sealed
+      - Language.Expression.Common.TypeSystem
+      - Language.Expression.Common.TypeFunction
+      - Language.Expression.Common.TypeVariable
+      - Language.Expression.Common.Rename.RenameTypeSystem
+      - Language.Expression.Common.Rename.VarRenamerT
+      - Language.Expression.Common.Rename.NamespaceRenamable
+      - Language.Expression.Common.Simplifier
+      - Language.Expression.Common.Unifier
+      - Language.Expression.Common.Subsumer
+      - Language.Expression.Common.Abstract
+      - Language.Expression.Common.Bindings
+      - Language.Expression.Common.CompleteTypeSystem
+      - Language.Expression.Common.Arguments
       - Language.Expression.Dolan.PShimWit
       - Language.Expression.Dolan.Covariance
       - Language.Expression.Dolan.Variance
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.MPolarity
       - Language.Expression.Dolan.RangeF
+      - Language.Expression.Dolan.Type
+      - Language.Expression.Dolan.Occur
+      - Language.Expression.Dolan.Subtype
+      - Language.Expression.Dolan.Bisubstitute
+      - Language.Expression.Dolan.TypeSystem
+      - Language.Expression.Dolan.Rename
+      - Language.Expression.Dolan.Combine
+      - Language.Expression.Dolan.Unroll
+      - Language.Expression.Dolan.Simplify.UnusedRecursion
+      - Language.Expression.Dolan.Simplify.VarUses
+      - Language.Expression.Dolan.Simplify.OneSidedTypeVars
+      - Language.Expression.Dolan.Simplify.DuplicateGroundTypes
+      - Language.Expression.Dolan.Simplify.SharedTypeVars
+      - Language.Expression.Dolan.Simplify.DuplicateTypeVars
+      - Language.Expression.Dolan.Simplify.RollUpRecursion
+      - Language.Expression.Dolan.Simplify
+      - Language.Expression.Dolan.Solver
+      - Language.Expression.Dolan.Unify
+      - Language.Expression.Dolan.Inverted
+      - Language.Expression.Dolan.Subsume
+      - Language.Expression.Dolan.Nonpolar
+      - Language.Expression.Dolan.Concrete
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - typed-expression
+          - tasty
+          - tasty-expected-failure
+          - tasty-hunit
+        main: Main.hs
+        other-modules:
+          - Shim
+        ghc-options: -threaded

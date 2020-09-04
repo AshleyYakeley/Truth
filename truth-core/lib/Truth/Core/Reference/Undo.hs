@@ -1,111 +1,150 @@
 module Truth.Core.Reference.Undo
-    ( UndoActions(..)
-    , undoQueueModel
+    ( UndoHandler
+    , newUndoHandler
+    , undoHandlerUndo
+    , undoHandlerRedo
+    , undoHandlerReference
+    , undoHandlerModel
     ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Read
 import Truth.Core.Reference.EditContext
 import Truth.Core.Reference.Model
 import Truth.Core.Reference.Reference
 import Truth.Core.Resource
-import Truth.Debug.Reference
 
--- fst is original edits, snd is undoing edits
-type UndoEntry edit = (NonEmpty edit, NonEmpty edit)
-
-makeUndoEntry ::
-       (MonadIO m, InvertibleEdit edit) => Readable m (EditReader edit) -> NonEmpty edit -> m (Maybe (UndoEntry edit))
-makeUndoEntry mr edits = do
-    unedits <- invertEdits (toList edits) mr
-    case nonEmpty unedits of
-        Nothing -> return Nothing
-        Just unedits' -> return $ Just (edits, unedits')
-
-data UndoQueue edit = MkUndoQueue
-    { _uqUndoEdits :: [UndoEntry edit]
-    , _uqRedoEdits :: [UndoEntry edit]
+data RefEdits = forall edit. MkRefEdits
+    { _reRef :: Reference edit
+    , _reOriginalEdits :: NonEmpty edit
+    , _reUndoingEdits :: NonEmpty edit
     }
 
-updateUndoQueue ::
-       (MonadIO m, InvertibleEdit edit) => Readable m (EditReader edit) -> NonEmpty edit -> StateT (UndoQueue edit) m ()
-updateUndoQueue mr edits = traceBracket "updateUndoQueue" $ do
-    mue <- lift $ makeUndoEntry mr edits
-    case mue of
-        Nothing -> traceBracket "updateUndoQueue: not undoable" $ return ()
-        Just ue -> traceBracket "updateUndoQueue: undoable" $ do
-            traceIOM $ "updateUndoQueue: edit count: " <> show (length $ fst ue, length $ snd ue)
-            MkUndoQueue uq _ <- get
-            put $ MkUndoQueue (ue : uq) []
+type UndoEntry = NonEmpty RefEdits
 
-data UndoActions = MkUndoActions
-    { uaUndo :: ResourceContext -> EditSource -> IO Bool
-    , uaRedo :: ResourceContext -> EditSource -> IO Bool
+data UndoQueue = MkUndoQueue
+    { _uqUndoEdits :: [UndoEntry]
+    , _uqRedoEdits :: [UndoEntry]
     }
 
-undoQueueModel ::
-       forall update. InvertibleEdit (UpdateEdit update)
-    => Model update
-    -> IO (Model update, UndoActions)
-undoQueueModel sub = do
-    queueVar <- newMVar $ MkUndoQueue [] []
-    MkResource rrP (MkAModel (MkAReference readP pushP ctaskP) subscribeP utaskP) <- return sub
-    let
-        undoActions = let
-            uaUndo :: ResourceContext -> EditSource -> IO Bool
-            uaUndo rc esrc =
-                traceBarrier "undoQueueSubscriber.uaUndo" (mVarRun queueVar) $ do
-                    MkUndoQueue ues res <- get
-                    case ues of
-                        [] -> traceBracket "undoQueueSubscriber.uaUndo: no undoable" $ return False -- nothing to undo
-                        (entry:ee) -> traceBracket "undoQueueSubscriber.uaUndo: undoable" $ do
-                            did <-
-                                lift $
-                                runResourceRunner rc rrP $ do
-                                    maction <- pushP (snd entry)
-                                    case maction of
-                                        Just action -> traceBracket "undoQueueSubscriber.uaUndo: action" $ do
-                                            action esrc
-                                            return True
-                                        Nothing -> traceBracket "undoQueueSubscriber.uaUndo: no action" $ return False
-                            if did
-                                then do
-                                    put $ MkUndoQueue ee (entry : res)
-                                    return True
-                                else return False
-            uaRedo :: ResourceContext -> EditSource -> IO Bool
-            uaRedo rc esrc =
-                mVarRun queueVar $ do
-                    MkUndoQueue ues res <- get
-                    case res of
-                        [] -> return False -- nothing to redo
-                        (entry:ee) -> do
-                            did <-
-                                lift $
-                                runResourceRunner rc rrP $ do
-                                    maction <- pushP (fst entry)
-                                    case maction of
-                                        Just action -> do
-                                            action esrc
-                                            return True
-                                        Nothing -> return False
-                            if did
-                                then do
-                                    put $ MkUndoQueue (entry : ues) ee
-                                    return True
-                                else return False
-            in MkUndoActions {..}
-        pushC edits =
-            case resourceRunnerStackUnliftDict @IO rrP of
-                Dict -> do
-                    maction <- pushP edits
-                    return $
-                        case maction of
-                            Just action ->
-                                Just $ \esrc -> traceBracket "undoQueueSubscriber.push" $ do
-                                    mVarRun queueVar $ updateUndoQueue readP edits
+data UndoHandler = MkUndoHandler
+    { uhVar :: MVar UndoQueue
+    , uhRunner :: ResourceRunner '[ WriterT [RefEdits]]
+    }
+
+undoVarUnlift :: MVar UndoQueue -> UnliftAll MonadUnliftIO (WriterT [RefEdits])
+undoVarUnlift var wma = do
+    (a, lrefedits) <- runWriterT wma
+    case nonEmpty lrefedits of
+        Nothing -> return ()
+        Just nrefedits ->
+            mVarRun var $ do
+                MkUndoQueue uq _ <- get
+                put $ MkUndoQueue (nrefedits : uq) []
+    return a
+
+newUndoHandler :: IO UndoHandler
+newUndoHandler = do
+    uhVar <- newMVar $ MkUndoQueue [] []
+    uhRunner <- newResourceRunner $ undoVarUnlift uhVar
+    return MkUndoHandler {..}
+
+undoHandlerUndo :: UndoHandler -> ResourceContext -> EditSource -> IO Bool
+undoHandlerUndo MkUndoHandler {..} rc esrc =
+    mVarRun uhVar $ do
+        MkUndoQueue ues res <- get
+        case ues of
+            [] -> return False -- nothing to undo
+            (entry:ee) -> do
+                did <-
+                    for entry $ \(MkRefEdits (MkResource rrP (MkAReference _readP pushP _ctaskP)) _ edits) ->
+                        lift $
+                        runResourceRunner rc rrP $ do
+                            maction <- pushP edits
+                            case maction of
+                                Just action -> do
                                     action esrc
-                            Nothing -> Nothing
-        subC = MkResource rrP $ MkAModel (MkAReference readP pushC ctaskP) subscribeP utaskP
-        in return (subC, undoActions)
+                                    return True
+                                Nothing -> return False
+                if or did
+                    then do
+                        put $ MkUndoQueue ee (entry : res)
+                        return True
+                    else return False
+
+undoHandlerRedo :: UndoHandler -> ResourceContext -> EditSource -> IO Bool
+undoHandlerRedo MkUndoHandler {..} rc esrc =
+    mVarRun uhVar $ do
+        MkUndoQueue ues res <- get
+        case res of
+            [] -> return False -- nothing to redo
+            (entry:ee) -> do
+                did <-
+                    for entry $ \(MkRefEdits (MkResource rrP (MkAReference _readP pushP _ctaskP)) edits _) ->
+                        lift $
+                        runResourceRunner rc rrP $ do
+                            maction <- pushP edits
+                            case maction of
+                                Just action -> do
+                                    action esrc
+                                    return True
+                                Nothing -> return False
+                if or did
+                    then do
+                        put $ MkUndoQueue (entry : ues) ee
+                        return True
+                    else return False
+
+undoHandlerAReference ::
+       forall edit tt. (InvertibleEdit edit, MonadIO (ApplyStack tt IO))
+    => Reference edit
+    -> TransListFunction '[ WriterT [RefEdits]] tt
+    -> AReference edit tt
+    -> AReference edit tt
+undoHandlerAReference ref liftw (MkAReference read push ctask) = let
+    push' :: NonEmpty edit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+    push' edits = do
+        unedits <- invertEdits (toList edits) read
+        maction <- push edits
+        return $
+            case maction of
+                Just action ->
+                    Just $ \esrc -> do
+                        case nonEmpty unedits of
+                            Just nunedits -> tlfFunction liftw (Proxy @IO) $ tell $ pure $ MkRefEdits ref edits nunedits
+                            Nothing -> return ()
+                        action esrc
+                Nothing -> Nothing
+    in MkAReference read push' ctask
+
+undoHandlerReference ::
+       forall edit. InvertibleEdit edit
+    => UndoHandler
+    -> Reference edit
+    -> Reference edit
+undoHandlerReference MkUndoHandler {..} ref@(MkResource rr aref) =
+    combineResourceRunners uhRunner rr $ \rr' liftw liftr ->
+        case resourceRunnerUnliftAllDict rr of
+            Dict ->
+                case resourceRunnerUnliftAllDict rr' of
+                    Dict ->
+                        case resourceRunnerStackUnliftDict @IO rr' of
+                            Dict -> MkResource rr' $ undoHandlerAReference ref liftw $ mapResource liftr aref
+
+undoHandlerModel ::
+       forall update. InvertibleEdit (UpdateEdit update)
+    => UndoHandler
+    -> Model update
+    -> Model update
+undoHandlerModel MkUndoHandler {..} model@(MkResource rr amodel) =
+    combineResourceRunners uhRunner rr $ \rr' liftw liftr ->
+        case resourceRunnerUnliftAllDict rr of
+            Dict ->
+                case resourceRunnerUnliftAllDict rr' of
+                    Dict ->
+                        case resourceRunnerStackUnliftDict @IO rr' of
+                            Dict ->
+                                case mapResource liftr amodel of
+                                    MkAModel aref subscribe utask -> let
+                                        aref' = undoHandlerAReference (modelReference model) liftw aref
+                                        in MkResource rr' $ MkAModel aref' subscribe utask

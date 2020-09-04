@@ -1,4 +1,0 @@
-let
-pdate = property @() @Date !"calendar-test";
-rdate = pdate !$ {()};
-in openWindow {"Test Calendar"} {[]} $ uiVertical [(uiCalendar rdate,False),(uiLabel {toText %rdate},True)]

@@ -3,18 +3,15 @@ module Pinafore.Language.Predefined.Base
     , outputLn
     ) where
 
-import Data.Shim
 import Data.Time
 import Data.Time.Clock.System
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.If
 import Pinafore.Language.Predefined.Defs
-import Pinafore.Language.Type.Entity
-import Pinafore.Language.Type.EntityAdapter
+import Pinafore.Language.Type
 import Pinafore.Language.Value
-import Pinafore.Storage
+import Pinafore.Language.Var
 import Shapes
 import Shapes.Numeric
 import Truth.Core
@@ -47,28 +44,24 @@ entityAnchor p = pack $ show p
 onStop :: PinaforeAction A -> PinaforeAction A -> PinaforeAction A
 onStop p q = p <|> q
 
-newMemRef ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens MemoryCellUpdate baseupdate)
-    => IO (LangRef '( A, A))
+newMemRef :: PinaforeAction (LangRef '( A, A))
 newMemRef = do
-    lens <- makeMemoryCellChangeLens Unknown
-    return $ pinaforeRefToRef $ MkPinaforeRef $ mapModel lens $ pinaforeBaseModel @baseupdate
+    r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
+    model <- pinaforeLiftLifeCycleIO $ makeReflectingModel r
+    uh <- pinaforeUndoHandler
+    return $ pinaforeRefToRef $ MkPinaforeRef $ undoHandlerModel uh model
 
-newMemFiniteSet ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, BaseChangeLens MemoryCellUpdate baseupdate)
-    => IO (LangFiniteSetRef '( MeetType Entity A, A))
+newMemFiniteSet :: PinaforeAction (LangFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
-    lens <- makeMemoryCellChangeLens mempty
-    return $
-        meetValueLangFiniteSetRef $ MkPinaforeRef $ mapModel (convertChangeLens . lens) $ pinaforeBaseModel @baseupdate
+    r <- liftIO $ makeMemoryReference mempty $ \_ -> True
+    model <- pinaforeLiftLifeCycleIO $ makeReflectingModel $ convertReference r
+    uh <- pinaforeUndoHandler
+    return $ meetValueLangFiniteSetRef $ MkPinaforeRef $ undoHandlerModel uh model
 
 zeroTime :: UTCTime
 zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
-newClock ::
-       forall baseupdate. (?pinafore :: PinaforeContext baseupdate)
-    => NominalDiffTime
-    -> PinaforeAction (PinaforeImmutableRef UTCTime)
+newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableRef UTCTime)
 newClock duration = do
     (clockOM, ()) <- pinaforeLiftLifeCycleIO $ makeSharedModel $ clockPremodel zeroTime duration
     return $ functionImmutableRef $ MkPinaforeRef $ clockOM
@@ -88,7 +81,15 @@ interpretAsText ::
        forall a. AsLiteral a
     => LangRef '( a, a)
     -> LangRef '( Text, Text)
-interpretAsText = fLensLangRef (unLiteral . toLiteral) (\t _ -> parseLiteral t)
+interpretAsText = let
+    getter :: Maybe a -> Maybe Text
+    getter Nothing = Just ""
+    getter (Just a) = Just $ unLiteral $ toLiteral a
+    setter :: Maybe Text -> Maybe a -> Maybe (Maybe a)
+    setter Nothing _ = Just Nothing
+    setter (Just "") _ = Just Nothing
+    setter (Just t) _ = fmap Just $ parseLiteral t
+    in maybeLensLangRef getter setter
 
 parseLiteral :: AsLiteral t => Text -> Maybe t
 parseLiteral = knowToMaybe . fromLiteral . MkLiteral
@@ -110,13 +111,7 @@ unixParse fmt text = parseTimeM True defaultTimeLocale (unpack fmt) (unpack text
 getLocalTime :: IO LocalTime
 getLocalTime = fmap zonedTimeToLocalTime getZonedTime
 
-base_predefinitions ::
-       forall baseupdate.
-       ( BaseChangeLens PinaforeEntityUpdate baseupdate
-       , BaseChangeLens PinaforeFileUpdate baseupdate
-       , BaseChangeLens MemoryCellUpdate baseupdate
-       )
-    => [DocTreeEntry (BindDoc baseupdate)]
+base_predefinitions :: [DocTreeEntry BindDoc]
 base_predefinitions =
     [ docTreeEntry
           "Literals & Entities"
@@ -168,7 +163,9 @@ base_predefinitions =
                       ""
                       [ mkSupertypeEntry "id" "Every integer is a rational." integerToSafeRational
                       , mkValEntry "parseInteger" "Parse text as an integer." $ parseLiteral @Integer
-                      , mkValEntry "interpretIntegerAsText" "Interpret an integer reference as text." $
+                      , mkValEntry
+                            "interpretIntegerAsText"
+                            "Interpret an integer reference as text, interpreting deleted values as empty text" $
                         interpretAsText @Integer
                       , mkValEntry "+" "Add." $ (+) @Integer
                       , mkValEntry "-" "Subtract." $ (-) @Integer
@@ -190,7 +187,9 @@ base_predefinitions =
                       ""
                       [ mkSupertypeEntry "id" "Every rational is a number." safeRationalToNumber
                       , mkValEntry "parseRational" "Parse text as a rational." $ parseLiteral @SafeRational
-                      , mkValEntry "interpretRationalAsText" "Interpret a rational reference as text." $
+                      , mkValEntry
+                            "interpretRationalAsText"
+                            "Interpret a rational reference as text, interpreting deleted values as empty text." $
                         interpretAsText @SafeRational
                       , mkValEntry ".+" "Add." $ (+) @SafeRational
                       , mkValEntry ".-" "Subtract." $ (-) @SafeRational
@@ -211,7 +210,9 @@ base_predefinitions =
                       ""
                       [ mkSupertypeEntry "id" "Every number is a literal." $ toLiteral @Number
                       , mkValEntry "parseNumber" "Parse text as a number." $ parseLiteral @Number
-                      , mkValEntry "interpretNumberAsText" "Interpret a number reference as text." $
+                      , mkValEntry
+                            "interpretNumberAsText"
+                            "Interpret a number reference as text, interpreting deleted values as empty text." $
                         interpretAsText @Number
                       , mkValEntry "~+" "Add." $ (+) @Number
                       , mkValEntry "~-" "Subtract." $ (-) @Number
@@ -280,7 +281,9 @@ base_predefinitions =
                       [ mkSupertypeEntry "id" "Every duration is a literal." $ toLiteral @NominalDiffTime
                       , mkValEntry "parseDuration" "Parse text as a duration. Inverse of `toText`." $
                         parseLiteral @NominalDiffTime
-                      , mkValEntry "interpretDurationAsText" "Interpret a duration reference as text." $
+                      , mkValEntry
+                            "interpretDurationAsText"
+                            "Interpret a duration reference as text, interpreting deleted values as empty text." $
                         interpretAsText @NominalDiffTime
                       , mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
                       , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
@@ -299,7 +302,9 @@ base_predefinitions =
                       "Absolute time as measured by UTC."
                       [ mkSupertypeEntry "id" "Every time is a literal." $ toLiteral @UTCTime
                       , mkValEntry "parseTime" "Parse text as a time. Inverse of `toText`." $ parseLiteral @UTCTime
-                      , mkValEntry "interpretTimeAsText" "Interpret a time reference as text." $
+                      , mkValEntry
+                            "interpretTimeAsText"
+                            "Interpret a time reference as text, interpreting deleted values as empty text." $
                         interpretAsText @UTCTime
                       , mkValEntry "addTime" "Add duration to time." addUTCTime
                       , mkValEntry "diffTime" "Difference of times." diffUTCTime
@@ -310,8 +315,8 @@ base_predefinitions =
                       , mkValEntry "getTime" "Get the current time." $ getCurrentTime
                       , mkValEntry
                             "newClock"
-                            "Make a reference to the current time that updates per the given duration." $
-                        newClock @baseupdate
+                            "Make a reference to the current time that updates per the given duration."
+                            newClock
                       ]
                 , docTreeEntry
                       "Calendar"
@@ -340,7 +345,9 @@ base_predefinitions =
                             Just (todHour, (todMin, (todSec, ())))
                       , mkSupertypeEntry "id" "Every time of day is a literal." $ toLiteral @TimeOfDay
                       , mkValEntry "parseTimeOfDay" "Parse text as a time of day." $ parseLiteral @TimeOfDay
-                      , mkValEntry "interpretTimeOfDayAsText" "Interpret a time of day reference as text." $
+                      , mkValEntry
+                            "interpretTimeOfDayAsText"
+                            "Interpret a time of day reference as text, interpreting deleted values as empty text." $
                         interpretAsText @TimeOfDay
                       , mkValEntry "midnight" "Midnight." midnight
                       , mkValEntry "midday" "Midday." midday
@@ -360,7 +367,9 @@ base_predefinitions =
                             Just (localDay, (localTimeOfDay, ()))
                       , mkSupertypeEntry "id" "Every local time is a literal." $ toLiteral @LocalTime
                       , mkValEntry "parseLocalTime" "Parse text as a local time." $ parseLiteral @LocalTime
-                      , mkValEntry "interpretLocalTimeAsText" "Interpret a local time reference as text." $
+                      , mkValEntry
+                            "interpretLocalTimeAsText"
+                            "Interpret a local time reference as text, interpreting deleted values as empty text." $
                         interpretAsText @LocalTime
                       , mkValEntry "timeToLocal" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
                             utcToLocalTime $ minutesToTimeZone i
@@ -444,7 +453,7 @@ base_predefinitions =
                 case v of
                     [] -> Just ()
                     _ -> Nothing
-          , mkValPatEntry ":" "Construct a list" ((:) @A) $ \(v :: [A]) ->
+          , mkValPatEntry "::" "Construct a list" ((:) @A) $ \(v :: [A]) ->
                 case v of
                     a:b -> Just (a, (b, ()))
                     _ -> Nothing
@@ -511,13 +520,13 @@ base_predefinitions =
           "Undo"
           "Undo and redo changes."
           [ mkValEntry "queueUndo" "Undo an action." $ do
-                ua <- pinaforeUndoActions
+                uh <- pinaforeUndoHandler
                 rc <- pinaforeResourceContext
-                liftIO $ uaUndo ua rc noEditSource
+                liftIO $ undoHandlerUndo uh rc noEditSource
           , mkValEntry "queueRedo" "Redo an action." $ do
-                ua <- pinaforeUndoActions
+                uh <- pinaforeUndoHandler
                 rc <- pinaforeResourceContext
-                liftIO $ uaRedo ua rc noEditSource
+                liftIO $ undoHandlerRedo uh rc noEditSource
           ]
     , docTreeEntry
           "References"
@@ -535,10 +544,14 @@ base_predefinitions =
                 "contraMapRef"
                 "Map a function on setting a reference."
                 (contraRangeLift :: (B -> A) -> LangRef '( A, C) -> LangRef '( B, C))
+          , mkValEntry "maybeLensMapRef" "Map getter & pushback functions on a reference." $
+            maybeLensLangRef @AP @AQ @BP @BQ
           , mkValEntry "lensMapRef" "Map getter & pushback functions on a reference." $ fLensLangRef @AP @AQ @B
+          , mkValEntry "maybeRef" "Map getter & pushback functions on a reference." $ maybeRef @A @B
+          , mkValEntry "pairRef" "Combine references." $ langPairRefs @AP @AQ @BP @BQ
           , mkValEntry
                 "applyRef"
-                "Combine references."
+                "Combine getting of references. `applyRef f x` = `{?f ?x}`"
                 ((<*>) :: PinaforeImmutableRef (A -> B) -> PinaforeImmutableRef A -> PinaforeImmutableRef B)
           , mkValEntry
                 "unknown"
@@ -554,7 +567,7 @@ base_predefinitions =
           , mkValEntry "runRef" "Run an action from a reference." $ runLangRef
           , mkValEntry ":=" "Set a reference to a value. Stop if failed." setentity
           , mkValEntry "delete" "Delete an entity reference. Stop if failed." deleteentity
-          , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." $ newMemRef @baseupdate
+          , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." newMemRef
           ]
     , docTreeEntry
           "Set References"
@@ -619,7 +632,7 @@ base_predefinitions =
             langFiniteSetRefCartesianProduct @AP @AQ @BP @BQ
           , mkSupertypeEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
             langFiniteSetRefCartesianProduct @A @A @B @B
-          , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
+          , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @A
           , mkValEntry
                 "listFiniteSet"
                 "Represent a reference to a list as a finite set. Changing the set may scramble the order of the list." $
@@ -630,60 +643,55 @@ base_predefinitions =
                 "removeAll"
                 "Remove all entities from a finite set."
                 (langFiniteSetRefRemoveAll :: LangFiniteSetRef '( BottomType, TopType) -> PinaforeAction ())
-          , mkValEntry "newMemFiniteSet" "Create a new finite set reference to memory, initially empty." $
-            newMemFiniteSet @baseupdate
+          , mkValEntry "newMemFiniteSet" "Create a new finite set reference to memory, initially empty." newMemFiniteSet
           ]
     , docTreeEntry
           "Morphisms"
           "Morphisms relate entities."
-          [ mkValEntry "identity" "The identity morphism." $ identityLangMorphism @baseupdate @X @Y
-          , mkValEntry "!." "Compose morphisms." $ composeLangMorphism @baseupdate @AP @AQ @BX @BY @CP @CQ
-          , mkSupertypeEntry "!." "Compose morphisms." $ composeLangMorphism @baseupdate @A @A @B @B @C @C
+          [ mkValEntry "identity" "The identity morphism." $ identityLangMorphism @X @Y
+          , mkValEntry "!." "Compose morphisms." $ composeLangMorphism @AP @AQ @BX @BY @CP @CQ
+          , mkSupertypeEntry "!." "Compose morphisms." $ composeLangMorphism @A @A @B @B @C @C
           , mkValEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
-            pairLangMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+            pairLangMorphism @AP @AQ @BP @BQ @CP @CQ
           , mkSupertypeEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
-            pairLangMorphism @baseupdate @A @A @B @B @C @C
+            pairLangMorphism @A @A @B @B @C @C
           , mkValEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
-            eitherLangMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+            eitherLangMorphism @AP @AQ @BP @BQ @CP @CQ
           , mkSupertypeEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
-            eitherLangMorphism @baseupdate @A @A @B @B @C @C
-          , mkValEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @baseupdate @AP @AQ @BP @BQ
-          , mkSupertypeEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @baseupdate @A @A @B @B
+            eitherLangMorphism @A @A @B @B @C @C
+          , mkValEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @AP @AQ @BP @BQ
+          , mkSupertypeEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @A @A @B @B
           , mkValEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutRef r`" $
-            applyLangMorphismImmutRef @baseupdate @A @BP @BQ
+            applyLangMorphismImmutRef @A @BP @BQ
           , mkSupertypeEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutRef r`" $
-            applyLangMorphismImmutRef @baseupdate @A @B @B
-          , mkValEntry "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @baseupdate @A @B
-          , mkValEntry "!@" "Co-apply a morphism to a reference." $ inverseApplyLangMorphismRef @baseupdate @A @BX @BY
-          , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $
-            inverseApplyLangMorphismRef @baseupdate @A @B @B
+            applyLangMorphismImmutRef @A @B @B
+          , mkValEntry "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @A @B
+          , mkValEntry "!@" "Co-apply a morphism to a reference." $ inverseApplyLangMorphismRef @A @BX @BY
+          , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $ inverseApplyLangMorphismRef @A @B @B
           , mkValEntry "!@%" "Co-apply a morphism to an immutable reference. `m !@% r = m !@ immutRef r`" $
-            inverseApplyLangMorphismImmutRef @baseupdate @A @B
-          , mkValEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @baseupdate @A @BX @BY
-          , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @baseupdate @A @B @B
+            inverseApplyLangMorphismImmutRef @A @B
+          , mkValEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @BX @BY
+          , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @B @B
           ]
     , docTreeEntry
           "Orders"
           ""
-          [ mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @baseupdate @Text
-          , mkValEntry "numerical" "Numercal order." $ ordOrder @baseupdate @Number
-          , mkValEntry "chronological" "Chronological order." $ ordOrder @baseupdate @UTCTime
-          , mkValEntry "durational" "Durational order." $ ordOrder @baseupdate @NominalDiffTime
-          , mkValEntry "calendrical" "Date order." $ ordOrder @baseupdate @Day
-          , mkValEntry "horological" "Time of day order." $ ordOrder @baseupdate @TimeOfDay
-          , mkValEntry "localChronological" "Local time order." $ ordOrder @baseupdate @LocalTime
-          , mkValEntry "noOrder" "No order, same as `orders []`." $ noOrder @baseupdate
-          , mkValEntry "orders" "Join orders by priority." $ orders @baseupdate @A
-          , mkValEntry
-                "mapOrder"
-                "Map a function on an order."
-                (contramap :: (B -> A) -> LangOrder baseupdate A -> LangOrder baseupdate B)
-          , mkValEntry "orderOn" "Order by an order on a particular morphism." $ orderOn @baseupdate @B @A
-          , mkValEntry "rev" "Reverse an order." $ rev @baseupdate @A
-          , mkValEntry "orderEQ" "Equal by an order." $ langOrderCompare @baseupdate @A $ (==) EQ
-          , mkValEntry "orderLT" "Less than by an order." $ langOrderCompare @baseupdate @A $ (==) LT
-          , mkValEntry "orderLE" "Less than or equal to by an order." $ langOrderCompare @baseupdate @A $ (/=) GT
-          , mkValEntry "orderGT" "Greater than by an order." $ langOrderCompare @baseupdate @A $ (==) GT
-          , mkValEntry "orderGE" "Greater than or equal to by an order." $ langOrderCompare @baseupdate @A $ (/=) LT
+          [ mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @Text
+          , mkValEntry "numerical" "Numercal order." $ ordOrder @Number
+          , mkValEntry "chronological" "Chronological order." $ ordOrder @UTCTime
+          , mkValEntry "durational" "Durational order." $ ordOrder @NominalDiffTime
+          , mkValEntry "calendrical" "Date order." $ ordOrder @Day
+          , mkValEntry "horological" "Time of day order." $ ordOrder @TimeOfDay
+          , mkValEntry "localChronological" "Local time order." $ ordOrder @LocalTime
+          , mkValEntry "noOrder" "No order, same as `orders []`." $ noOrder
+          , mkValEntry "orders" "Join orders by priority." $ orders @A
+          , mkValEntry "mapOrder" "Map a function on an order." (contramap :: (B -> A) -> LangOrder A -> LangOrder B)
+          , mkValEntry "orderOn" "Order by an order on a particular morphism." $ orderOn @B @A
+          , mkValEntry "rev" "Reverse an order." $ rev @A
+          , mkValEntry "orderEQ" "Equal by an order." $ langOrderCompare @A $ (==) EQ
+          , mkValEntry "orderLT" "Less than by an order." $ langOrderCompare @A $ (==) LT
+          , mkValEntry "orderLE" "Less than or equal to by an order." $ langOrderCompare @A $ (/=) GT
+          , mkValEntry "orderGT" "Greater than by an order." $ langOrderCompare @A $ (==) GT
+          , mkValEntry "orderGE" "Greater than or equal to by an order." $ langOrderCompare @A $ (/=) LT
           ]
     ]

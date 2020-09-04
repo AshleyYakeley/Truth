@@ -5,61 +5,58 @@ module Pinafore.Language.Interpret.Type
     , interpretSubtypeRelation
     ) where
 
-import Data.Shim
 import Pinafore.Language.Error
 import Pinafore.Language.Name
+import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
-import Pinafore.Language.Type.Literal
-import Pinafore.Language.TypeSystem
-import Pinafore.Language.TypeSystem.Nonpolar
-import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Type
 import Shapes
 
-type PinaforeTypeM baseupdate = MPolarW (PinaforeType baseupdate)
+type PinaforeTypeM = MPolarW PinaforeType
 
-type PinaforeRangeType3 baseupdate = MPolarRangeType (PinaforeType baseupdate)
+type PinaforeRangeType3 = MPolarRangeType PinaforeType
 
 interpretType ::
-       forall baseupdate polarity. Is PolarityType polarity
+       forall polarity. Is PolarityType polarity
     => SyntaxType
-    -> PinaforeSourceScoped baseupdate (AnyW (PinaforeType baseupdate polarity))
+    -> PinaforeSourceScoped (AnyW (PinaforeType polarity))
 interpretType st = do
-    mpol <- isMPolarity @polarity $ interpretTypeM @baseupdate @('Just polarity) st
+    mpol <- isMPolarity @polarity $ interpretTypeM @('Just polarity) st
     case mpol of
         SingleMPolarW atw -> return atw
 
-interpretConcreteEntityType :: SyntaxType -> PinaforeSourceScoped baseupdate (AnyW ConcreteEntityType)
+interpretConcreteEntityType :: SyntaxType -> PinaforeSourceScoped (AnyW ConcreteEntityType)
 interpretConcreteEntityType st = do
-    mpol <- interpretTypeM @_ @'Nothing st
+    mpol <- interpretTypeM @'Nothing st
     case mpol of
         BothMPolarW atm ->
             case atm @'Positive of
                 MkAnyW tm ->
-                    case pinaforeToConcreteEntityType tm of
+                    case dolanToConcreteType tm of
                         Just (MkShimWit t _) -> return $ MkAnyW t
                         Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm
 
-interpretNonpolarType :: SyntaxType -> PinaforeSourceScoped baseupdate (AnyW (PinaforeNonpolarType baseupdate '[]))
+interpretNonpolarType :: SyntaxType -> PinaforeSourceScoped (AnyW (PinaforeNonpolarType '[]))
 interpretNonpolarType st = do
-    mpol <- interpretTypeM @_ @'Nothing st
+    mpol <- interpretTypeM @'Nothing st
     case mpol of
         BothMPolarW atm ->
             case atm @'Positive of
                 MkAnyW tm ->
-                    case pinaforeTypeToNonpolar tm of
+                    case dolanTypeToNonpolar tm of
                         Just t -> return t
                         Nothing -> throw $ InterpretTypeNotAmbipolarError $ exprShow tm
 
 interpretTypeM ::
-       forall baseupdate mpolarity. Is MPolarityType mpolarity
+       forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType
-    -> PinaforeSourceScoped baseupdate (PinaforeTypeM baseupdate mpolarity)
+    -> PinaforeSourceScoped (PinaforeTypeM mpolarity)
 interpretTypeM (MkWithSourcePos spos t) = localSourcePos spos $ interpretTypeM' t
 
 interpretTypeM' ::
-       forall baseupdate mpolarity. Is MPolarityType mpolarity
+       forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType'
-    -> PinaforeSourceScoped baseupdate (PinaforeTypeM baseupdate mpolarity)
+    -> PinaforeSourceScoped (PinaforeTypeM mpolarity)
 interpretTypeM' BottomSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> return $ toMPolar mempty
@@ -87,50 +84,55 @@ interpretTypeM' (AndSyntaxType st1 st2) =
             return $ toMPolar (<>) t1 t2
         MBothType -> throw $ InterpretTypeExprBadJoinMeetError Positive
 interpretTypeM' (SingleSyntaxType sgt sargs) = do
-    MkPinaforeGroundTypeM agt <- interpretGroundTypeConst @baseupdate sgt
+    MkPinaforeGroundTypeM agt <- interpretGroundTypeConst sgt
     case agt of
         MkAnyW gt ->
             toMPolarWM $ do
-                aargs <- interpretArgs sgt (pinaforeGroundTypeVarianceType gt) sargs
+                aargs <- interpretArgs sgt (groundTypeVarianceType gt) sargs
                 case aargs of
-                    MkAnyW args -> return $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType gt args
+                    MkAnyW args -> return $ MkAnyW $ singleDolanType $ GroundDolanSingularType gt args
 interpretTypeM' (VarSyntaxType name) =
-    nameToSymbolType name $ \t -> return $ toMPolar $ MkAnyW $ singlePinaforeType $ VarPinaforeSingularType t
+    nameToSymbolType name $ \t -> return $ toMPolar $ MkAnyW $ singleDolanType $ VarDolanSingularType t
+interpretTypeM' (RecursiveSyntaxType name st) = do
+    mt <- interpretTypeM st
+    nameToSymbolType name $ \var ->
+        return $
+        mapMPolarW (\(MkAnyW t) -> assignUVarWit var t $ MkAnyW $ singleDolanType $ RecursiveDolanSingularType var t) mt
 
 interpretTypeRangeFromType ::
-       forall baseupdate mpolarity. Is MPolarityType mpolarity
+       forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType
-    -> PinaforeSourceScoped baseupdate (PinaforeRangeType3 baseupdate mpolarity)
+    -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
 interpretTypeRangeFromType st = do
-    t <- interpretTypeM @baseupdate @'Nothing st
+    t <- interpretTypeM @'Nothing st
     let
         ff :: forall polarity. Is PolarityType polarity
-           => PinaforeTypeM baseupdate 'Nothing
-           -> AnyInKind (RangeType (PinaforeType baseupdate) polarity)
+           => PinaforeTypeM 'Nothing
+           -> AnyInKind (RangeType PinaforeType polarity)
         ff (BothMPolarW atw) =
             case (invertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
                 (MkAnyW tp, MkAnyW tq) -> MkAnyInKind $ MkRangeType tp tq
     return $ toMPolar $ ff t
 
 interpretTypeArgument ::
-       forall baseupdate mpolarity. Is MPolarityType mpolarity
+       forall mpolarity. Is MPolarityType mpolarity
     => SyntaxTypeArgument
-    -> PinaforeSourceScoped baseupdate (PinaforeRangeType3 baseupdate mpolarity)
+    -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
 interpretTypeArgument (SimpleSyntaxTypeArgument st) = interpretTypeRangeFromType st
 interpretTypeArgument (RangeSyntaxTypeArgument ss) = do
     tt <- for ss interpretTypeRangeItem
     return $ mconcat tt
 
 interpretTypeRangeItem ::
-       forall baseupdate mpolarity. Is MPolarityType mpolarity
+       forall mpolarity. Is MPolarityType mpolarity
     => (Maybe SyntaxVariance, SyntaxType)
-    -> PinaforeSourceScoped baseupdate (PinaforeRangeType3 baseupdate mpolarity)
+    -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
 interpretTypeRangeItem (Just CoSyntaxVariance, st) = do
     atq <- interpretTypeM st
-    return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType NilPinaforeType tq) atq
+    return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType NilDolanType tq) atq
 interpretTypeRangeItem (Just ContraSyntaxVariance, st) = do
     atp <- invertMPolarity @mpolarity $ interpretTypeM st
-    return $ toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkRangeType tp NilPinaforeType) (MkInvertMPolarW atp)
+    return $ toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkRangeType tp NilDolanType) (MkInvertMPolarW atp)
 interpretTypeRangeItem (Nothing, st) = interpretTypeRangeFromType st
 
 groundTypeText :: SyntaxGroundType -> Text
@@ -141,15 +143,15 @@ groundTypeText ListSyntaxGroundType = "[]"
 groundTypeText PairSyntaxGroundType = "(,)"
 groundTypeText UnitSyntaxGroundType = "()"
 
-data PinaforeGroundTypeM baseupdate where
-    MkPinaforeGroundTypeM :: AnyW (PinaforeGroundType baseupdate dv) -> PinaforeGroundTypeM baseupdate
+data PinaforeGroundTypeM where
+    MkPinaforeGroundTypeM :: AnyW (PinaforeGroundType dv) -> PinaforeGroundTypeM
 
 interpretArgs ::
-       forall baseupdate polarity dv (gt :: DolanVarianceKind dv). Is PolarityType polarity
+       forall polarity dv (gt :: DolanVarianceKind dv). Is PolarityType polarity
     => SyntaxGroundType
     -> DolanVarianceType dv
     -> [SyntaxTypeArgument]
-    -> PinaforeSourceScoped baseupdate (AnyW (DolanArguments dv (PinaforeType baseupdate) gt polarity))
+    -> PinaforeSourceScoped (AnyW (DolanArguments dv PinaforeType gt polarity))
 interpretArgs _ NilListType [] = return $ MkAnyW NilDolanArguments
 interpretArgs sgt NilListType (_:_) = throw $ InterpretTypeOverApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType _ _) [] = throw $ InterpretTypeUnderApplyError $ groundTypeText sgt
@@ -180,8 +182,7 @@ interpretArgs sgt (ConsListType RangevarianceType dv) (st:stt) = do
             case aargs of
                 MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
 
-interpretGroundTypeConst ::
-       forall baseupdate. SyntaxGroundType -> PinaforeSourceScoped baseupdate (PinaforeGroundTypeM baseupdate)
+interpretGroundTypeConst :: SyntaxGroundType -> PinaforeSourceScoped PinaforeGroundTypeM
 interpretGroundTypeConst UnitSyntaxGroundType =
     return $
     MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType UnitLiteralType
@@ -237,8 +238,7 @@ interpretGroundTypeConst (ConstSyntaxGroundType n) = do
             return $
             MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n tidsym ct
 
-interpretSubtypeRelation ::
-       SyntaxType -> SyntaxType -> PinaforeSourceScoped baseupdate a -> PinaforeSourceScoped baseupdate a
+interpretSubtypeRelation :: SyntaxType -> SyntaxType -> PinaforeSourceScoped a -> PinaforeSourceScoped a
 interpretSubtypeRelation sta stb ma = do
     ata <- interpretConcreteEntityType sta
     atb <- interpretConcreteEntityType stb

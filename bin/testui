@@ -1,3 +1,3 @@
 #!/bin/sh -e
 make nodocker=1 build
-`stack --no-docker path --local-bin`/pinafore --data test/pinafore pinafore/test/script/big-ui.pinafore
+`stack --no-docker path --local-bin`/pinafore --data test/pinafore pinafore/test/script/big-ui

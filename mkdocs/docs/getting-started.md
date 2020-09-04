@@ -45,7 +45,7 @@ You will need a 64-bit Linux machine.
 Try running one of the example files:
 
     :::text
-    pinafore pinafore/examples/people.pinafore
+    pinafore pinafore/examples/people
 
 Alternatively, if you're curious about the type system, try running in [interactive mode](invocation.md#interactive-mode).
 

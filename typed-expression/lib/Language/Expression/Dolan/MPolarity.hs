@@ -1,7 +1,6 @@
 module Language.Expression.Dolan.MPolarity where
 
-import Data.Shim.CatRange
-import Data.Shim.Polarity
+import Data.Shim
 import Shapes
 
 -- The only purpose of this module is for parsing types simultaneously as positive and negative.
@@ -34,7 +33,7 @@ isMPolarity ::
     => (Is MPolarityType ('Just polarity) => r)
     -> r
 isMPolarity v =
-    case representative @_ @_ @polarity of
+    case polarityType @polarity of
         PositiveType -> v
         NegativeType -> v
 
@@ -111,7 +110,7 @@ bothMPolarW posw negw = let
            forall polarity. Is PolarityType polarity
         => AnyW (w polarity)
     bothw =
-        case representative @_ @_ @polarity of
+        case polarityType @polarity of
             PositiveType -> posw
             NegativeType -> negw
     in BothMPolarW bothw
@@ -182,7 +181,7 @@ instance ( Is MPolarityType mpolarity
                         x :: forall polarity. Is PolarityType polarity
                           => AnyInKind (RangeType w polarity)
                         x =
-                            case representative @_ @_ @polarity of
+                            case polarityType @polarity of
                                 PositiveType -> a @polarity <> b @polarity
                                 NegativeType -> a @polarity <> b @polarity
                         in x
@@ -201,7 +200,7 @@ instance ( Is MPolarityType mpolarity
                     x :: forall polarity. Is PolarityType polarity
                       => AnyInKind (RangeType w polarity)
                     x =
-                        case representative @_ @_ @polarity of
+                        case polarityType @polarity of
                             PositiveType -> mempty
                             NegativeType -> mempty
                     in x

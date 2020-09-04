@@ -1,9 +1,8 @@
 module Control.Monad.Compose where
 
-import Shapes.Import
-
 import Data.MonadOne
 import Data.Result
+import Shapes.Import
 
 newtype ComposeM inner outer a = MkComposeM
     { getComposeM :: outer (inner a)
@@ -25,7 +24,7 @@ instance (MonadOne inner, Monad outer, Alternative inner) => Alternative (Compos
         ma <-
             MkComposeM $ do
                 ia <- oia
-                return $ (fmap Just ia) <|> return Nothing
+                return $ fmap Just ia <|> return Nothing
         case ma of
             Just a -> return a
             Nothing -> cb

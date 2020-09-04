@@ -1,14 +1,14 @@
 pinafore> let opentype P
 pinafore> let opentype Q
-pinafore> let subtype P <= Q
+pinafore> let subtype P <: Q
 pinafore> let p = entity @P !"p"
 pinafore> let q = entity @Q !"q"
-pinafore> let fp :: P -> Boolean; fp _ = True
-pinafore> let fq :: Q -> Boolean; fq _ = True
+pinafore> let fp : P -> Boolean; fp _ = True
+pinafore> let fq : Q -> Boolean; fq _ = True
 pinafore> fp p
 True
 pinafore> fp q
-<input>:1:1: cannot convert Q <= P
+<input>:1:1: cannot convert Q <: P
 pinafore> fq p
 True
 pinafore> fq q

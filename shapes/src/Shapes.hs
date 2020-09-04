@@ -6,6 +6,7 @@ import Shapes.Import as I
 import Shapes.Instances ()
 
 -- shapes
+import Control.Applicative.Compose as I
 import Control.AsyncRunner as I
 import Control.Category.Dual as I
 import Control.Category.Groupoid as I
@@ -17,7 +18,6 @@ import Control.Monad.Exception as I
 import Control.Monad.LifeCycleIO as I
 import Control.Monad.Trans.LifeCycle as I
 import Control.Task as I
-import Data.Bijection as I
 import Data.CatFunctor as I
 import Data.Codec as I
 import Data.CoerceFunction as I
@@ -29,6 +29,7 @@ import Data.FixBox as I
 import Data.HasNewValue as I
 import Data.Injection as I
 import Data.IsoVariant as I
+import Data.Isomorphism as I
 import Data.KeyContainer as I
 import Data.KeyedOrder as I
 import Data.KindMorphism as I

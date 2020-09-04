@@ -2,6 +2,7 @@ module Truth.Core.Reference.Premodel
     ( PremodelResult(..)
     , Premodel
     , reflectingPremodel
+    , notifyingPremodel
     , mapPremodel
     ) where
 
@@ -13,6 +14,7 @@ import Truth.Core.Reference.DeferActionT
 import Truth.Core.Reference.EditContext
 import Truth.Core.Reference.Reference
 import Truth.Core.Resource
+import Truth.Core.Types
 import Truth.Debug.Reference
 
 data PremodelResult edit a = MkPremodelResult
@@ -20,6 +22,9 @@ data PremodelResult edit a = MkPremodelResult
     , pmrUpdatesTask :: Task ()
     , pmrValue :: a
     }
+
+instance Functor (PremodelResult edit) where
+    fmap ab (MkPremodelResult r u v) = MkPremodelResult r u $ ab v
 
 type Premodel update a
      = Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (PremodelResult (UpdateEdit update) a)
@@ -58,6 +63,22 @@ reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAReference r e cta
         pmrValue = ()
         pmrReference :: Reference (UpdateEdit update)
         pmrReference = traceThing "reflectingPremodel" $ MkResource trun' anobj
+    return MkPremodelResult {..}
+
+notifyingPremodel :: forall a. a -> Premodel (ROWUpdate a) ((a -> IO a) -> IO ())
+notifyingPremodel initial pmrUpdatesTask recv = do
+    wit <- liftIO newIOWitness
+    var <- liftIO $ newMVar initial
+    let
+        pmrValue :: (a -> IO a) -> IO ()
+        pmrValue update = do
+            val <-
+                modifyMVar var $ \oldval -> do
+                    newval <- update oldval
+                    return (newval, newval)
+            recv emptyResourceContext (pure $ MkReadOnlyUpdate $ MkWholeReaderUpdate val) noEditContext
+        pmrReference :: Reference (ConstEdit (WholeReader a))
+        pmrReference = mapReference (toReadOnlyChangeLens @(WholeUpdate a)) $ mvarReference wit var (\_ -> False)
     return MkPremodelResult {..}
 
 mapPremodel ::
