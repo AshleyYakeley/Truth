@@ -68,9 +68,9 @@ cvCloseDisconnectSignal object shid =
     lifeCycleClose $ do
         -- Widgets that have been destroyed have already had their signals disconnected, even if references to them still exist.
         -- So we need to check.
-        isConnected <- signalHandlerIsConnected object shid
+        isConnected <- traceBracket "GTK.cvCloseDisconnectSignal:test" $ signalHandlerIsConnected object shid
         if isConnected
-            then disconnectSignalHandler object shid
+            then traceBracket "GTK.cvCloseDisconnectSignal:disconnect" $ disconnectSignalHandler object shid
             else return ()
 
 cvOn ::
@@ -136,8 +136,9 @@ isScrollable widget = do
 
 cvAcquire :: IsObject a => a -> CreateView ()
 cvAcquire a = do
-    _ <- objectRef a
-    liftLifeCycleIO $ lifeCycleClose $ objectUnref a
+    _ <- traceBracket "GTK.cvAcquire:ref" $ objectRef a
+    liftLifeCycleIO $ lifeCycleClose $ traceBracket "GTK.cvAcquire:unref" $ objectUnref a
+    return ()
 
 cvGetObjectTypeName :: IsObject a => a -> CreateView String
 cvGetObjectTypeName a = do
@@ -147,7 +148,7 @@ cvGetObjectTypeName a = do
 
 cvNew :: (Constructible a tag, IsObject a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> CreateView a
 cvNew cc attrs = do
-    a <- new cc attrs
+    a <- traceBracket "cvNew.new" $ new cc attrs
     cvAcquire a
     return a
 
@@ -155,7 +156,7 @@ cvNew cc attrs = do
 cvTopLevelNew :: (Constructible a tag, IsObject a, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> CreateView a
 cvTopLevelNew cc attrs = do
     a <- cvNew cc attrs
-    liftLifeCycleIO $ lifeCycleClose $ traceBracket "GTK.Widget:close" $ widgetDestroy a
+    liftLifeCycleIO $ lifeCycleClose $ traceBracket "GTK.cvTopLevelNew:destroy" $ widgetDestroy a
     return a
 
 cvSet ::
