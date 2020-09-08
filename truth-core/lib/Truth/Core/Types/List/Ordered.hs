@@ -125,12 +125,12 @@ orderedListItemLens initpos = let
                         Nothing -> []
             LT -> do
                 if newie >= i
-                    then put $ pred newie
+                    then put $ pred i
                     else return ()
                 return []
             GT -> do
                 if newie <= i
-                    then put $ succ newie
+                    then put $ succ i
                     else return ()
                 return []
     sclUpdate (OrderedListUpdateDelete ie) _ = do

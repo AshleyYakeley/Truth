@@ -9,6 +9,7 @@ module Truth.UI.GTK.DynamicStore
     , dynamicStoreDelete
     , dynamicStoreMove
     , dynamicStoreGet
+    , dynamicStoreLookup
     , dynamicStoreContents
     ) where
 
@@ -108,10 +109,23 @@ dynamicStoreMove a b (MkDynamicStore store) = do
     seqStoreRemove store $ fromIntegral a
     seqStoreInsert store (fromIntegral b) entry
 
-dynamicStoreGet :: Integral pos => pos -> DynamicStore t -> View t
+dynamicStoreGet :: Integral pos => pos -> DynamicStore t -> View (Unique, t)
 dynamicStoreGet i (MkDynamicStore store) = do
     entry <- seqStoreGetValue store $ fromIntegral i
-    return $ dynamicStoreEntryValue entry
+    return (dynamicStoreEntryKey entry, dynamicStoreEntryValue entry)
+
+dynamicStoreLookup ::
+       forall pos t. Integral pos
+    => Unique
+    -> DynamicStore t
+    -> View (Maybe pos)
+dynamicStoreLookup u (MkDynamicStore store) = do
+    entries <- seqStoreToList store
+    let
+        testEntry :: DynamicStoreEntry t -> View Bool
+        testEntry entry = return $ dynamicStoreEntryKey entry == u
+    mi <- mFindIndex testEntry entries
+    return $ fmap fromIntegral mi
 
 dynamicStoreContents :: DynamicStore t -> View [t]
 dynamicStoreContents (MkDynamicStore store) = do
