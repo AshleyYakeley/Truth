@@ -170,7 +170,6 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
         setSelectedIndex tselection (Just i) = do
             tpath <- treePathNewFromIndices [fromIntegral i]
             #selectPath tselection tpath
-            #free tpath
         recvTable ::
                HasCallStack
             => (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
