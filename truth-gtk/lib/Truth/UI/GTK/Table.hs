@@ -145,57 +145,75 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             cvAcquire tview
             for_ cols $ addColumn tview store
             return (store, tview)
+        getEntryFromPath ::
+               DynamicStore (StoreEntry update rowtext rowprops)
+            -> TreePath
+            -> View (Maybe (Unique, StoreEntry update rowtext rowprops))
+        getEntryFromPath store tpath = do
+            ii <- #getIndices tpath
+            case ii of
+                Just [i] -> do
+                    uentry <- dynamicStoreGet i store
+                    return $ Just uentry
+                _ -> return Nothing
+        getSelectedEntry ::
+               DynamicStore (StoreEntry update rowtext rowprops)
+            -> TreeSelection
+            -> View (Maybe (Unique, StoreEntry update rowtext rowprops))
+        getSelectedEntry store tselection = do
+            (ltpath, _) <- #getSelectedRows tselection
+            case ltpath of
+                [tpath] -> getEntryFromPath store tpath
+                _ -> return Nothing
+        setSelectedIndex :: TreeSelection -> Maybe Int -> View ()
+        setSelectedIndex tselection Nothing = #unselectAll tselection
+        setSelectedIndex tselection (Just i) = do
+            tpath <- treePathNewFromIndices [fromIntegral i]
+            #selectPath tselection tpath
+            #free tpath
         recvTable ::
                HasCallStack
             => (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
             -> NonEmpty (OrderedListUpdate seq update)
             -> View ()
-        recvTable (store, _tview) updates =
+        recvTable (store, tview) updates = do
+            tselection <- #getSelection tview
+            mselentry <- getSelectedEntry store tselection
             for_ updates $ \case
                 OrderedListUpdateItem a b _ -> dynamicStoreMove a b store
                 OrderedListUpdateDelete i -> dynamicStoreDelete i store
                 OrderedListUpdateInsert i _ -> dynamicStoreInsert i defStoreEntry (makeStoreEntry i) store
                 OrderedListUpdateClear -> dynamicStoreClear store
+            mi <-
+                case mselentry of
+                    Nothing -> return Nothing
+                    Just (selu, _) -> dynamicStoreLookup selu store
+            setSelectedIndex tselection mi
     (store, tview) <- cvBindModel tableModel Nothing initTable mempty recvTable
     tselection <- #getSelection tview
     set tselection [#mode := SelectionModeSingle] -- 0 or 1 selected
     let
-        getItemFromPath :: TreePath -> View (Maybe (Model update))
-        getItemFromPath tpath = do
-            ii <- #getIndices tpath
-            case ii of
-                Just [i] -> do
-                    entry <- dynamicStoreGet i store
-                    return $ Just $ entryModel entry
-                _ -> return Nothing
         getSelection :: View (Maybe (Model update))
         getSelection = do
-            (ltpath, _) <- #getSelectedRows tselection
-            case ltpath of
-                [tpath] -> getItemFromPath tpath
-                _ -> return Nothing
+            mentry <- getSelectedEntry store tselection
+            return $ fmap (entryModel . snd) mentry
         setSelection :: Maybe (ReadM (UpdateReader update) Bool) -> View ()
-        setSelection Nothing = #unselectAll tselection
+        setSelection Nothing = setSelectedIndex tselection Nothing
         setSelection (Just sel) = do
+            items <- dynamicStoreContents store
             let
                 testEntry :: StoreEntry update rowtext rowprops -> View Bool
                 testEntry se =
                     viewRunResourceContext (entryModel se) $ \unlift (amod :: _ tt) ->
                         unReadM sel $ \rt -> liftIO $ unlift $ aModelRead amod rt
-            items <- dynamicStoreContents store
             mi <- mFindIndex testEntry items
-            case mi of
-                Nothing -> #unselectAll tselection
-                Just i -> do
-                    tpath <- treePathNewFromIndices [fromIntegral i]
-                    #selectPath tselection tpath
-                    #free tpath
+            setSelectedIndex tselection mi
     _ <- cvOn tselection #changed $ runSelectNotify notifier getSelection
     _ <-
         cvOn tview #rowActivated $ \tpath _ -> do
-            msel <- getItemFromPath tpath
-            case msel of
-                Just sel -> onActivate sel
+            mentry <- getEntryFromPath store tpath
+            case mentry of
+                Just (_, entry) -> onActivate $ entryModel entry
                 Nothing -> return ()
     w <- toWidget tview
     return (w, setSelection)
