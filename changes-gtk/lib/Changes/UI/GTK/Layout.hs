@@ -1,12 +1,12 @@
-module Truth.UI.GTK.Layout
+module Changes.UI.GTK.Layout
     ( Orientation(..)
     , createLayout
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import GI.Gtk
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.Useful
 
 createLayout :: Orientation -> [(Bool, Widget)] -> CreateView Widget
 createLayout orientation contents = do

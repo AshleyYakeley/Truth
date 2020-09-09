@@ -1,4 +1,4 @@
-module Truth.Core.UI.View.View
+module Changes.Core.UI.View.View
     ( ViewContext
     , ViewT
     , View
@@ -11,9 +11,9 @@ module Truth.Core.UI.View.View
     , viewExit
     ) where
 
-import Truth.Core.Import
-import Truth.Core.Resource
-import Truth.Core.UI.View.Context
+import Changes.Core.Import
+import Changes.Core.Resource
+import Changes.Core.UI.View.Context
 
 type ViewT = ReaderT ViewContext
 

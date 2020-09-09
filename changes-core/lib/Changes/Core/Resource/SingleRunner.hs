@@ -1,4 +1,4 @@
-module Truth.Core.Resource.SingleRunner
+module Changes.Core.Resource.SingleRunner
     ( SingleRunner
     , mkSingleRunner
     , singleRunnerUnliftAllDict
@@ -7,8 +7,8 @@ module Truth.Core.Resource.SingleRunner
     , runSingleRunnerContext
     ) where
 
-import Truth.Core.Import
-import Truth.Debug
+import Changes.Core.Import
+import Changes.Debug
 import Unsafe.Coerce
 
 iowInteger :: IOWitness t -> Integer

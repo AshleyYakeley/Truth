@@ -1,10 +1,10 @@
 module Pinafore.Base.Ref where
 
+import Changes.Core
 import Pinafore.Base.FunctionMorphism
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
-import Truth.Core
 
 contextualiseModels :: Model baseupdate -> Model update -> Model (ContextUpdate baseupdate update)
 contextualiseModels subx subn =

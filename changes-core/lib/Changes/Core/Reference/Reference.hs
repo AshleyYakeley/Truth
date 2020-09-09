@@ -1,14 +1,14 @@
-module Truth.Core.Reference.Reference where
+module Changes.Core.Reference.Reference where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Reference.EditContext
-import Truth.Core.Resource
-import Truth.Core.Types.None
-import Truth.Core.Types.Whole
-import Truth.Debug
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Reference.EditContext
+import Changes.Core.Resource
+import Changes.Core.Types.None
+import Changes.Core.Types.Whole
+import Changes.Debug
 
 data AReference edit (tt :: [TransKind]) = MkAReference
     { refRead :: Readable (ApplyStack tt IO) (EditReader edit)

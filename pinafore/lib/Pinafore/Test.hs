@@ -20,6 +20,7 @@ module Pinafore.Test
     , module Pinafore.Test
     ) where
 
+import Changes.Core
 import Pinafore.Base
 import Pinafore.Language
 import Pinafore.Language.Name
@@ -30,10 +31,9 @@ import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Storage
 import Shapes
-import Truth.Core
-import Truth.Debug.Subscriber
+import Changes.Debug.Subscriber
 
-makeTestPinaforeContext :: TruthContext -> LifeCycleIO (PinaforeContext, IO PinaforeTableSubject)
+makeTestPinaforeContext :: ChangesContext -> LifeCycleIO (PinaforeContext, IO PinaforeTableSubject)
 makeTestPinaforeContext tc = do
     let rc = emptyResourceContext
     tableStateReference :: Reference (WholeEdit PinaforeTableSubject) <-
@@ -49,12 +49,12 @@ makeTestPinaforeContext tc = do
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       ((?pinafore :: PinaforeContext) => TruthContext -> MFunction LifeCycleIO IO -> IO PinaforeTableSubject -> IO r)
+       ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycleIO IO -> IO PinaforeTableSubject -> IO r)
     -> IO r
 withTestPinaforeContext call =
     runLifeCycle $
     liftWithUnlift $ \unlift -> do
-        let tc = nullTruthContext unlift
+        let tc = nullChangesContext unlift
         (pc, getTableState) <- unlift $ makeTestPinaforeContext tc
         let
             ?pinafore = pc

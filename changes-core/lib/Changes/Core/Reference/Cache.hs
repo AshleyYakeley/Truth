@@ -1,12 +1,12 @@
-module Truth.Core.Reference.Cache where
+module Changes.Core.Reference.Cache where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Read
-import Truth.Core.Reference.EditContext
-import Truth.Core.Reference.Reference
-import Truth.Core.Resource
-import Truth.Debug
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Read
+import Changes.Core.Reference.EditContext
+import Changes.Core.Reference.Reference
+import Changes.Core.Resource
+import Changes.Debug
 
 cacheReference ::
        forall edit. CacheableEdit edit

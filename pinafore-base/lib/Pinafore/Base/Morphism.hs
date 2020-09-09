@@ -13,11 +13,11 @@ module Pinafore.Base.Morphism
     , pinaforeLensMorphismInverseChangeLensSet
     ) where
 
+import Changes.Core
 import qualified Data.List as List
 import Pinafore.Base.FunctionMorphism
 import Pinafore.Base.Know
 import Shapes
-import Truth.Core
 
 data PinaforeLensMorphism baseupdate ap aq bp bq = MkPinaforeLensMorphism
     { pmGet :: ap -> ReadM (UpdateReader baseupdate) (Know bq)

@@ -1,7 +1,7 @@
-module Truth.Core.UI.View.Context where
+module Changes.Core.UI.View.Context where
 
-import Truth.Core.Import
-import Truth.Core.Resource
+import Changes.Core.Import
+import Changes.Core.Resource
 
 data ViewContext = MkViewContext
     { vcWithUILock :: forall a. IO a -> IO a

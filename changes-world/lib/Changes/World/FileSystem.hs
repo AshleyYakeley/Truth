@@ -1,10 +1,10 @@
-module Truth.World.FileSystem where
+module Changes.World.FileSystem where
 
+import Changes.Core
+import Changes.World.File
 import Shapes
 import System.Directory
 import System.FilePath
-import Truth.Core
-import Truth.World.File
 
 -- | an entire file system in memory
 type FileSystem = FileSystemDirectory

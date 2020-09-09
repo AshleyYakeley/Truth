@@ -1,13 +1,13 @@
-module Truth.UI.GTK.CSS
+module Changes.UI.GTK.CSS
     ( setCSSName
     , setCSSClass
     , setCSSStyleSheet
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import GI.Gtk as Gtk
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.Useful
 
 setCSSName :: Text -> Widget -> CreateView ()
 setCSSName name w = #setName w name

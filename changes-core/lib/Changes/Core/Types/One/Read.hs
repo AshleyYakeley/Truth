@@ -1,7 +1,7 @@
-module Truth.Core.Types.One.Read where
+module Changes.Core.Types.One.Read where
 
-import Truth.Core.Import
-import Truth.Core.Read
+import Changes.Core.Import
+import Changes.Core.Read
 
 data OneReader (f :: Type -> Type) (reader :: Type -> Type) (t :: Type) where
     ReadHasOne :: forall f reader. OneReader f reader (f ())

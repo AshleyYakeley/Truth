@@ -1,4 +1,4 @@
 #!/bin/sh -e
-stack --no-docker install truth-gtk
+stack --no-docker install changes-gtk
 echo OK
-`stack --no-docker path --local-bin`/truth-text -2 --seltest --save test/text
+`stack --no-docker path --local-bin`/changes-text -2 --seltest --save test/text

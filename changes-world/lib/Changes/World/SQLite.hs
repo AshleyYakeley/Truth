@@ -1,12 +1,14 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.World.SQLite
-    ( module Truth.World.SQLite
+module Changes.World.SQLite
+    ( module Changes.World.SQLite
     , SQLData
     , FromField(..)
     , ToField(..)
     ) where
 
+import Changes.Core
+import qualified Changes.World.SQLite.Schema as SQLite
 import Database.SQLite.Simple hiding (columnName)
 import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.Internal
@@ -14,9 +16,7 @@ import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField
 import Shapes
 import System.Directory
-import Truth.Core
-import qualified Truth.World.SQLite.Schema as SQLite
-import Truth.Debug.Reference
+import Changes.Debug.Reference
 
 data QueryString =
     MkQueryString Query

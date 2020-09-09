@@ -1,14 +1,14 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Debug.Edit
-    ( module Truth.Debug
-    , module Truth.Debug.Edit
+module Changes.Debug.Edit
+    ( module Changes.Debug
+    , module Changes.Debug.Edit
     ) where
 
-import Truth.Core.Edit.Edit
-import Truth.Core.Edit.Update
-import Truth.Core.Import
-import Truth.Debug
+import Changes.Core.Edit.Edit
+import Changes.Core.Edit.Update
+import Changes.Core.Import
+import Changes.Debug
 
 class TraceArgThing t where
     traceArgThing :: String -> t -> t

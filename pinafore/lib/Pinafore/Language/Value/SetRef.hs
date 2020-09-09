@@ -1,11 +1,11 @@
 module Pinafore.Language.Value.SetRef where
 
+import Changes.Core
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Value.OpenEntity
 import Pinafore.Language.Value.Ref
 import Shapes
-import Truth.Core
 
 data LangSetRef a =
     MkLangSetRef (a -> a -> Bool)

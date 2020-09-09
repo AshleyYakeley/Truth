@@ -1,8 +1,8 @@
-module Truth.Core.Types.List.Read where
+module Changes.Core.Types.List.Read where
 
-import Truth.Core.Import
-import Truth.Core.Read
-import Truth.Core.Sequence
+import Changes.Core.Import
+import Changes.Core.Read
+import Changes.Core.Sequence
 
 data ListReader seq reader t where
     ListReadLength :: ListReader seq reader (SequencePoint seq)

@@ -1,4 +1,4 @@
-module Truth.UI.GTK.DynamicStore
+module Changes.UI.GTK.DynamicStore
     ( DynamicStoreEntry
     , dynamicStoreEntryValue
     , DynamicStore
@@ -13,10 +13,10 @@ module Truth.UI.GTK.DynamicStore
     , dynamicStoreContents
     ) where
 
+import Changes.Core
 import Data.GI.Gtk hiding (get)
 import Data.IORef
 import Shapes
-import Truth.Core
 
 data DynamicStoreEntry t = MkDynamicStoreEntry
     { dynamicStoreEntryKey :: Unique

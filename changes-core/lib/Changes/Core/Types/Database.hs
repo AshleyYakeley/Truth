@@ -1,8 +1,8 @@
-module Truth.Core.Types.Database where
+module Changes.Core.Types.Database where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Read
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Read
 
 class TestEquality tablesel => Database (dbType :: Type) (tablesel :: Type -> Type) where
     tableAssemble :: Applicative m => (forall row. tablesel row -> m (f row)) -> m (AllF tablesel f)

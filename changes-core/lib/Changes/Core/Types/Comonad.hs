@@ -1,9 +1,9 @@
-module Truth.Core.Types.Comonad where
+module Changes.Core.Types.Comonad where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
 
 newtype ComonadReader (w :: Type -> Type) (reader :: Type -> Type) (t :: Type) where
     ReadExtract :: forall w reader t. reader t -> ComonadReader w reader t

@@ -1,12 +1,12 @@
-module Truth.UI.GTK.Switch
+module Changes.UI.GTK.Switch
     ( createDynamic
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import GI.Gtk hiding (get)
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.Useful
-import Truth.Debug.Reference
+import Changes.Debug.Reference
 
 createDynamic :: Model (ROWUpdate (CreateView Widget)) -> CreateView Widget
 createDynamic sub = do

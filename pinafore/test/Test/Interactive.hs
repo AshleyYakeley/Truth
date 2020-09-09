@@ -2,13 +2,13 @@ module Test.Interactive
     ( getTestInteractive
     ) where
 
+import Changes.Core
 import Pinafore
 import Pinafore.Test
 import Shapes hiding ((<.>))
 import System.FilePath
 import Test.Tasty
 import Test.Tasty.Golden
-import Truth.Core
 
 testFile :: FilePath -> TestTree
 testFile inpath = let

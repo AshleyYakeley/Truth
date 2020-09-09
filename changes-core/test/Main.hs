@@ -4,6 +4,7 @@ module Main
     ( main
     ) where
 
+import Changes.Core
 import Lens
 import Resource
 import Shapes
@@ -12,7 +13,6 @@ import Test.SimpleString
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
-import Truth.Core
 
 instance (Arbitrary (Index seq), Integral (Index seq)) => Arbitrary (SequencePoint seq) where
     arbitrary = MkSequencePoint <$> (getSmall . getNonNegative <$> arbitrary)
@@ -247,7 +247,7 @@ testSequence =
 tests :: TestTree
 tests =
     testGroup
-        "truth-core"
+        "changes-core"
         [ testResource
         , testApplyEditsPar
         , testApplyEditsSeq

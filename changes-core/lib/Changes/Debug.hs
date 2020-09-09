@@ -1,8 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Debug(module Debug.ThreadTrace, module Truth.Debug) where
+module Changes.Debug(module Debug.ThreadTrace, module Changes.Debug) where
 
-import Truth.Core.Import
+import Changes.Core.Import
 import Debug.ThreadTrace
 
 traceUnliftAll :: forall t m. (MonadTransConstraint MonadIO t, MonadIO m) => String -> MFunction (t m) m -> MFunction (t m) m

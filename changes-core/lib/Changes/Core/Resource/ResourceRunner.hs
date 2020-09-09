@@ -1,4 +1,4 @@
-module Truth.Core.Resource.ResourceRunner
+module Changes.Core.Resource.ResourceRunner
     ( ResourceRunner
     , nilResourceRunner
     , combineIndependentResourceRunners
@@ -18,9 +18,9 @@ module Truth.Core.Resource.ResourceRunner
     , runResourceRunnerContext
     ) where
 
-import Truth.Core.Import
-import Truth.Core.Resource.Function
-import Truth.Core.Resource.SingleRunner
+import Changes.Core.Import
+import Changes.Core.Resource.Function
+import Changes.Core.Resource.SingleRunner
 import Debug.ThreadTrace
 
 newtype ResourceRunner (tt :: [TransKind]) =

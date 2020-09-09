@@ -1,17 +1,17 @@
-module Truth.Core.Types.Set where
+module Changes.Core.Types.Set where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.None
-import Truth.Core.Types.Partial
-import Truth.Core.Types.ReadOnly
-import Truth.Core.Types.Tuple.Function
-import Truth.Core.Types.Tuple.Pair
-import Truth.Core.Types.Tuple.Tuple
-import Truth.Core.Types.Whole
-import Truth.Core.Types.WholeFunction
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.None
+import Changes.Core.Types.Partial
+import Changes.Core.Types.ReadOnly
+import Changes.Core.Types.Tuple.Function
+import Changes.Core.Types.Tuple.Pair
+import Changes.Core.Types.Tuple.Tuple
+import Changes.Core.Types.Whole
+import Changes.Core.Types.WholeFunction
 
 type SetUpdate a = WholeFunctionUpdate a Bool
 

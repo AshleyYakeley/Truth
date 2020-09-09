@@ -1,7 +1,7 @@
-module Truth.Core.Edit.Edit where
+module Changes.Core.Edit.Edit where
 
-import Truth.Core.Import
-import Truth.Core.Read
+import Changes.Core.Import
+import Changes.Core.Read
 
 class Floating edit (t :: Type) where
     floatingUpdate :: edit -> t -> t

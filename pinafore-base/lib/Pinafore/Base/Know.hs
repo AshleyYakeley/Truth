@@ -13,8 +13,8 @@ module Pinafore.Base.Know
     , unknownValueChangeLens
     ) where
 
+import Changes.Core
 import Shapes
-import Truth.Core
 
 newtype Know a =
     MkKnow (Maybe a)

@@ -1,10 +1,10 @@
 module Pinafore.Language.Value.Ref where
 
+import Changes.Core
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Value.Instances ()
 import Shapes
-import Truth.Core
 
 data LangRef (pq :: (Type, Type)) where
     MutableLangRef :: PinaforeRef (BiWholeUpdate (Know p) (Know q)) -> LangRef '( p, q)

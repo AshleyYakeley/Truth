@@ -1,4 +1,4 @@
-module Truth.UI.GTK.MenuBar
+module Changes.UI.GTK.MenuBar
     ( KeyboardModifier(..)
     , KeyboardKey
     , MenuAccelerator(..)
@@ -8,14 +8,14 @@ module Truth.UI.GTK.MenuBar
     , createMenuBar
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import Data.IORef
 import GI.Gdk
 import GI.Gtk hiding (MenuBar)
 import qualified GI.Gtk as Gtk
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.Useful
-import Truth.Debug.Reference
+import Changes.Debug.Reference
 
 data KeyboardModifier
     = KMShift

@@ -3,6 +3,7 @@ module Test.Entity
     , testUpdates
     ) where
 
+import Changes.Core
 import Pinafore
 import Pinafore.Test
 import Shapes
@@ -10,13 +11,12 @@ import Test.Context
 import Test.Tasty
 import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit
-import Truth.Core
 
 scriptTest ::
        forall a. FromPinaforeType a
     => Text
     -> Text
-    -> ((?pinafore :: PinaforeContext) => TruthContext -> MFunction LifeCycleIO IO -> a -> IO ())
+    -> ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycleIO IO -> a -> IO ())
     -> ContextTestTree
 scriptTest name text checker =
     contextTestCase name text $ \t ->

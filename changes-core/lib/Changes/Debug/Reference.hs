@@ -1,20 +1,20 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Debug.Reference
-    ( module Truth.Debug
-    , module Truth.Debug.Edit
-    , module Truth.Debug.Reference
+module Changes.Debug.Reference
+    ( module Changes.Debug
+    , module Changes.Debug.Edit
+    , module Changes.Debug.Reference
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Lens
-import Truth.Core.Import
-import Truth.Core.Reference.EditContext
-import Truth.Core.Reference.Reference
-import Truth.Core.Read
-import Truth.Core.Resource
-import Truth.Debug
-import Truth.Debug.Edit
+import Changes.Core.Edit
+import Changes.Core.Lens
+import Changes.Core.Import
+import Changes.Core.Reference.EditContext
+import Changes.Core.Reference.Reference
+import Changes.Core.Read
+import Changes.Core.Resource
+import Changes.Debug
+import Changes.Debug.Edit
 
 data EditShower edit = MkEditShower
     { showRead :: forall t. EditReader edit t -> String

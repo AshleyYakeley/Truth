@@ -1,9 +1,9 @@
-module Truth.Core.UI.Selection where
+module Changes.Core.UI.Selection where
 
-import Truth.Core.Import
-import Truth.Core.Reference
-import Truth.Core.Types
-import Truth.Core.UI.View.View
+import Changes.Core.Import
+import Changes.Core.Reference
+import Changes.Core.Types
+import Changes.Core.UI.View.View
 
 newtype SelectNotify sel = MkSelectNotify
     { runSelectNotify :: View (Maybe sel) -> View ()

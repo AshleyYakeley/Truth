@@ -1,5 +1,6 @@
 module Pinafore.Language.Value.FiniteSetRef where
 
+import Changes.Core
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Shim
@@ -7,7 +8,6 @@ import Pinafore.Language.Value.OpenEntity
 import Pinafore.Language.Value.Ref
 import Pinafore.Language.Value.SetRef
 import Shapes
-import Truth.Core
 
 data LangFiniteSetRef pq where
     MkLangFiniteSetRef

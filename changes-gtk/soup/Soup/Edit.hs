@@ -7,12 +7,12 @@ module Soup.Edit
     , liftSoupLens
     ) where
 
+import Changes.Core
+import Changes.World.FileSystem
 import Data.UUID
 import Shapes
 import System.FilePath hiding ((<.>))
-import Truth.Core
-import Truth.World.FileSystem
-import Truth.Debug.Reference
+import Changes.Debug.Reference
 
 type UUIDElementUpdate update = PairUpdate (ConstWholeUpdate UUID) update
 

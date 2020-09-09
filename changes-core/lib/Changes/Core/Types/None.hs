@@ -1,8 +1,8 @@
-module Truth.Core.Types.None where
+module Changes.Core.Types.None where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Read
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Read
 
 newtype NoReader (a :: Type) (t :: Type) =
     MkNoReader None

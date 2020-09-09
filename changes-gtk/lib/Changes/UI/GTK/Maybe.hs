@@ -1,12 +1,12 @@
-module Truth.UI.GTK.Maybe
+module Changes.UI.GTK.Maybe
     ( createOneWhole
     , createOneWholSel
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import GI.Gtk hiding (get)
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.Useful
 
 data OneWholeViews f
     = MissingOVS (f None)

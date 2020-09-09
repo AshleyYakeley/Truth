@@ -1,10 +1,10 @@
-module Truth.Core.Types.Tuple.Context where
+module Changes.Core.Types.Tuple.Context where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.Tuple.Tuple
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.Tuple.Tuple
 
 data WithContext context content =
     MkWithContext context

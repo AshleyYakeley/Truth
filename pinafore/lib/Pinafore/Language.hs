@@ -29,6 +29,7 @@ module Pinafore.Language
     , exprShow
     ) where
 
+import Changes.Core
 import Control.Exception
 import Language.Expression.Dolan
 import Pinafore.Base
@@ -43,7 +44,6 @@ import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
 import System.IO.Error
-import Truth.Core
 
 runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeScoped a -> InterpretResult a
 runPinaforeScoped scp =

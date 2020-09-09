@@ -1,12 +1,12 @@
-module Truth.Core.Types.ByteString
+module Changes.Core.Types.ByteString
     ( ByteStringReader(..)
     , ByteStringEdit(..)
     , ByteStringUpdate
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Read
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Read
 
 data ByteStringReader t where
     ReadByteStringLength :: ByteStringReader Int64

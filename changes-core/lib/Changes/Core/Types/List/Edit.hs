@@ -1,12 +1,12 @@
-module Truth.Core.Types.List.Edit
+module Changes.Core.Types.List.Edit
     ( ListEdit(..)
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Read
-import Truth.Core.Sequence
-import Truth.Core.Types.List.Read
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Read
+import Changes.Core.Sequence
+import Changes.Core.Types.List.Read
 
 data ListEdit seq edit where
     ListEditItem :: SequencePoint seq -> edit -> ListEdit seq edit

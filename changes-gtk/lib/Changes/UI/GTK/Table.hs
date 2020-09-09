@@ -1,4 +1,4 @@
-module Truth.UI.GTK.Table
+module Changes.UI.GTK.Table
     ( TableCellProps(..)
     , plainTableCellProps
     , KeyColumn(..)
@@ -6,14 +6,14 @@ module Truth.UI.GTK.Table
     , createListTable
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.DynamicStore
+import Changes.UI.GTK.TextStyle
+import Changes.UI.GTK.Useful
 import Data.GI.Base.Attributes hiding (get)
 import Data.GI.Gtk hiding (get)
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.DynamicStore
-import Truth.UI.GTK.TextStyle
-import Truth.UI.GTK.Useful
-import Truth.Debug.Reference
+import Changes.Debug.Reference
 
 data TableCellProps = MkTableCellProps
     { tcStyle :: TextStyle

@@ -1,16 +1,16 @@
-module Truth.Core.Types.List.Ordered where
+module Changes.Core.Types.List.Ordered where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Sequence
-import Truth.Core.Types.List.Edit
-import Truth.Core.Types.List.Read
-import Truth.Core.Types.List.Update
-import Truth.Core.Types.One.FullResult
-import Truth.Core.Types.One.Read
-import Truth.Core.Types.One.Result
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Sequence
+import Changes.Core.Types.List.Edit
+import Changes.Core.Types.List.Read
+import Changes.Core.Types.List.Update
+import Changes.Core.Types.One.FullResult
+import Changes.Core.Types.One.Read
+import Changes.Core.Types.One.Result
 
 -- | Like ListEdit, except without a way of adding new elements.
 -- This is what both lists and unordered sets presented in some order have in common.

@@ -1,10 +1,10 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Core.Types.Database.Tuple.Show where
+module Changes.Core.Types.Database.Tuple.Show where
 
-import Truth.Core.Import
-import Truth.Core.Types.Database.Show
-import Truth.Core.Types.Database.Tuple
+import Changes.Core.Import
+import Changes.Core.Types.Database.Show
+import Changes.Core.Types.Database.Tuple
 
 instance AllWitnessConstraint Show tablesel => Show (TupleTableSel tablesel row) where
     show (MkTupleTableSel col) = showAllWitness col

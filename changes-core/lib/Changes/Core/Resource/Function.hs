@@ -1,6 +1,6 @@
-module Truth.Core.Resource.Function where
+module Changes.Core.Resource.Function where
 
-import Truth.Core.Import
+import Changes.Core.Import
 
 data TransListFunction (tt1 :: [TransKind]) (tt2 :: [TransKind]) = MkTransListFunction
     { tlfFunction :: forall m. MonadIO m => Proxy m -> MFunction (ApplyStack tt1 m) (ApplyStack tt2 m)

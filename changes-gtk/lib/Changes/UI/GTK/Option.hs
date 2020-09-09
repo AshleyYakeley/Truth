@@ -1,16 +1,16 @@
-module Truth.UI.GTK.Option
+module Changes.UI.GTK.Option
     ( ComboBoxCell(..)
     , plainComboBoxCell
     , createComboBox
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.TextStyle
+import Changes.UI.GTK.Useful
 import Data.GI.Base.Attributes
 import Data.GI.Gtk
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.TextStyle
-import Truth.UI.GTK.Useful
-import Truth.Debug.Reference
+import Changes.Debug.Reference
 
 data ComboBoxCell = MkComboBoxCell
     { cbcText :: Text

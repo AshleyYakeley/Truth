@@ -1,21 +1,21 @@
-module Truth.UI.GTK.Main
-    ( truthMainGTK
+module Changes.UI.GTK.Main
+    ( changesMainGTK
     ) where
 
+import Changes.Core
+import Changes.Core.UI.Toolkit.Run
 import GI.GLib as GI hiding (String)
 import GI.Gdk as GI (threadsAddIdle)
 import GI.Gtk as GI
 import Shapes
-import Truth.Core
-import Truth.Core.UI.Toolkit.Run
-import Truth.Debug.Reference
+import Changes.Debug.Reference
 
 data RunState
     = RSRun
     | RSStop
 
-truthMainGTK :: TruthMain
-truthMainGTK appMain = traceBracketIO "THREAD: main" $
+changesMainGTK :: ChangesMain
+changesMainGTK appMain = traceBracketIO "THREAD: main" $
     runLifeCycle $
     liftIOWithUnlift $ \unlift -> traceBracket "truthMainGTK" $ do
         _ <- GI.init Nothing

@@ -1,12 +1,12 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Core.Types.Tuple.Either
+module Changes.Core.Types.Tuple.Either
     ( eitherTuple
     ) where
 
-import Truth.Core.Import
-import Truth.Core.Read
-import Truth.Core.Types.Tuple.Tuple
+import Changes.Core.Import
+import Changes.Core.Read
+import Changes.Core.Types.Tuple.Tuple
 
 instance (TupleUpdateWitness c p, TupleUpdateWitness c q) => TupleUpdateWitness c (EitherType p q) where
     tupleUpdateWitness (LeftType sel) = tupleUpdateWitness sel

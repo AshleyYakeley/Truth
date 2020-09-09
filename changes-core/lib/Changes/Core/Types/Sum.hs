@@ -1,11 +1,11 @@
-module Truth.Core.Types.Sum
+module Changes.Core.Types.Sum
     ( SumEdit(..)
     , SumUpdate(..)
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Read
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Read
 
 data SumEdit ea eb
     = SumEditLeft ea

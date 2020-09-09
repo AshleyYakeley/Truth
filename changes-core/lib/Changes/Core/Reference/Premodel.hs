@@ -1,4 +1,4 @@
-module Truth.Core.Reference.Premodel
+module Changes.Core.Reference.Premodel
     ( PremodelResult(..)
     , Premodel
     , reflectingPremodel
@@ -6,16 +6,16 @@ module Truth.Core.Reference.Premodel
     , mapPremodel
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Reference.DeferActionT
-import Truth.Core.Reference.EditContext
-import Truth.Core.Reference.Reference
-import Truth.Core.Resource
-import Truth.Core.Types
-import Truth.Debug.Reference
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Reference.DeferActionT
+import Changes.Core.Reference.EditContext
+import Changes.Core.Reference.Reference
+import Changes.Core.Resource
+import Changes.Core.Types
+import Changes.Debug.Reference
 
 data PremodelResult edit a = MkPremodelResult
     { pmrReference :: Reference edit

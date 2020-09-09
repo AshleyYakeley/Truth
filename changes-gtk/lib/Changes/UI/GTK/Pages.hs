@@ -1,11 +1,11 @@
-module Truth.UI.GTK.Pages
+module Changes.UI.GTK.Pages
     ( createNotebook
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import GI.Gtk
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.Useful
 
 createNotebook :: [(Widget, Widget)] -> CreateView Widget
 createNotebook pages = do

@@ -5,14 +5,14 @@ module Pinafore.Storage.Database.SQLite
     , sqlitePinaforeTableGetEntireDatabase
     ) where
 
+import Changes.Core
+import Changes.World.SQLite
+import Changes.World.SQLite.Schema
 import Pinafore.Base
 import Pinafore.Storage.Database
 import Pinafore.Storage.Table
 import Shapes
-import Truth.Core
-import Truth.World.SQLite
-import Truth.World.SQLite.Schema
-import Truth.Debug.Reference
+import Changes.Debug.Reference
 
 instance FieldType Anchor where
     fieldTypeName = "BLOB"

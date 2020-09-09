@@ -7,11 +7,11 @@ import Test.Tasty
 
 {- no tests currently
 import Test.Tasty.HUnit
-import Truth.Core
-import Truth.UI.GTK
+import Changes.Core
+import Changes.UI.GTK
 -}
 tests :: TestTree
-tests = testGroup "truth-gtk" []
+tests = testGroup "changes-gtk" []
 
 main :: IO ()
 main = defaultMain tests

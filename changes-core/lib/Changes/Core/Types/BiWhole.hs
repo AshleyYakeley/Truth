@@ -1,12 +1,12 @@
-module Truth.Core.Types.BiWhole where
+module Changes.Core.Types.BiWhole where
 
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.Bi
+import Changes.Core.Types.Tuple.Pair
+import Changes.Core.Types.Tuple.Tuple
+import Changes.Core.Types.Whole
 import Shapes
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.Bi
-import Truth.Core.Types.Tuple.Pair
-import Truth.Core.Types.Tuple.Tuple
-import Truth.Core.Types.Whole
 
 type BiWholeEdit p q = BiEdit (WholeEdit p) (WholeEdit q)
 

@@ -1,10 +1,10 @@
-module Truth.Core.UI.Toolkit.Run where
+module Changes.Core.UI.Toolkit.Run where
 
-import Truth.Core.Import
-import Truth.Core.Resource
-import Truth.Core.UI.View.Context
-import Truth.Core.UI.View.CreateView
-import Truth.Core.UI.View.View
+import Changes.Core.Import
+import Changes.Core.Resource
+import Changes.Core.UI.View.Context
+import Changes.Core.UI.View.CreateView
+import Changes.Core.UI.View.View
 
 data RunToolkit = MkRunToolkit
     { rtWithLock :: forall a. IO a -> IO a -- ^ run with lock, must not already have it

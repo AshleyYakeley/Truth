@@ -1,4 +1,4 @@
-module Truth.UI.GTK.Useful
+module Changes.UI.GTK.Useful
     ( cvGetObjectTypeName
     , widgetGetTree
     , withSignalBlocked
@@ -15,6 +15,7 @@ module Truth.UI.GTK.Useful
     , isScrollable
     ) where
 
+import Changes.Core
 import Data.GI.Base.Attributes
 import Data.GI.Base.Constructible
 import Data.GI.Base.GObject
@@ -23,8 +24,7 @@ import Data.GI.Gtk
 import Data.IORef
 import GI.GObject
 import Shapes
-import Truth.Core
-import Truth.Debug.Reference
+import Changes.Debug.Reference
 
 containerGetAllChildren :: Container -> IO [Widget]
 containerGetAllChildren cont = do

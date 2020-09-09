@@ -4,8 +4,8 @@ module Pinafore.Base.FunctionMorphism
     , mapPinaforeFunctionMorphismBase
     ) where
 
+import Changes.Core
 import Shapes
-import Truth.Core
 
 -- equivalent to: type PinaforeFunctionMorphism baseupdate a b = ChangeLens baseupdate (ReadOnlyUpdate (FunctionUpdate a (WholeUpdate b)))
 data PinaforeFunctionMorphism baseupdate a b = MkPinaforeFunctionMorphism

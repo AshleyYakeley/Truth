@@ -9,13 +9,13 @@ module Pinafore.Language.Convert.Base
     , literalInstances
     ) where
 
+import Changes.Core
 import Pinafore.Base
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
-import Truth.Core
 
 qPositiveTypeDescription ::
        forall t. ToPinaforeType t

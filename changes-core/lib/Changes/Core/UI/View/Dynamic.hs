@@ -1,9 +1,9 @@
-module Truth.Core.UI.View.Dynamic where
+module Changes.Core.UI.View.Dynamic where
 
-import Truth.Core.Import
-import Truth.Core.Reference
-import Truth.Core.UI.View.CreateView
-import Truth.Core.UI.View.View
+import Changes.Core.Import
+import Changes.Core.Reference
+import Changes.Core.UI.View.CreateView
+import Changes.Core.UI.View.View
 
 class DynamicViewState (dvs :: Type) where
     dynamicViewStates :: dvs -> [ViewState]

@@ -1,4 +1,4 @@
-module Truth.Core.Types.Key.Key
+module Changes.Core.Types.Key.Key
     ( KeyReader(..)
     , KeyEdit(..)
     , KeyUpdate(..)
@@ -10,16 +10,16 @@ module Truth.Core.Types.Key.Key
     , contextKeyChangeLens
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.Key.HasKey
-import Truth.Core.Types.One.FullResult
-import Truth.Core.Types.One.Read
-import Truth.Core.Types.One.Result
-import Truth.Core.Types.Tuple.Context
-import Truth.Core.Types.Tuple.Tuple
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.Key.HasKey
+import Changes.Core.Types.One.FullResult
+import Changes.Core.Types.One.Read
+import Changes.Core.Types.One.Result
+import Changes.Core.Types.Tuple.Context
+import Changes.Core.Types.Tuple.Tuple
 
 --- reader
 data KeyReader cont reader t where

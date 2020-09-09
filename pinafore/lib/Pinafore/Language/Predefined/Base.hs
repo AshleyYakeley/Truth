@@ -3,6 +3,8 @@ module Pinafore.Language.Predefined.Base
     , outputLn
     ) where
 
+import Changes.Core
+import Changes.World.Clock
 import Data.Time
 import Data.Time.Clock.System
 import Pinafore.Base
@@ -14,9 +16,7 @@ import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
 import Shapes.Numeric
-import Truth.Core
-import Truth.World.Clock
-import Truth.Debug
+import Changes.Debug
 
 getTimeMS :: IO Integer
 getTimeMS = do

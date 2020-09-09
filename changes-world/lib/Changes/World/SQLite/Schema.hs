@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.World.SQLite.Schema where
+module Changes.World.SQLite.Schema where
 
 import Data.Time
 import Database.SQLite.Simple hiding (columnName)

@@ -1,10 +1,10 @@
-module Truth.World.File
+module Changes.World.File
     ( fileReference
     ) where
 
+import Changes.Core
 import Shapes
-import Truth.Core
-import Truth.Debug
+import Changes.Debug
 
 fileWitness :: IOWitness (ReaderT Handle)
 fileWitness = $(iowitness [t|ReaderT Handle|])

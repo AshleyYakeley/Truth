@@ -1,13 +1,13 @@
-module Truth.UI.GTK.Button
+module Changes.UI.GTK.Button
     ( createButton
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import Data.IORef
 import GI.Gtk
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.Useful
-import Truth.Debug.Reference
+import Changes.Debug.Reference
 
 createButton :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (View ()))) -> CreateView Widget
 createButton rlabel raction = do

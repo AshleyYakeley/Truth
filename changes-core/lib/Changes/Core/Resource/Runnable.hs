@@ -1,4 +1,4 @@
-module Truth.Core.Resource.Runnable
+module Changes.Core.Resource.Runnable
     ( Resource(..)
     , MapResource(..)
     , joinResource_
@@ -8,9 +8,9 @@ module Truth.Core.Resource.Runnable
     , exclusiveResource
     ) where
 
-import Truth.Core.Import
-import Truth.Core.Resource.Function
-import Truth.Core.Resource.ResourceRunner
+import Changes.Core.Import
+import Changes.Core.Resource.Function
+import Changes.Core.Resource.ResourceRunner
 
 data Resource f =
     forall (tt :: [TransKind]). MkResource (ResourceRunner tt)

@@ -2,13 +2,13 @@ module Main
     ( main
     ) where
 
+import Changes.Core
+import Changes.UI.GTK
+import Changes.World.Charset
+import Changes.World.File
 import qualified Options.Applicative as O
 import Shapes
 import System.FilePath hiding ((<.>))
-import Truth.Core
-import Truth.UI.GTK
-import Truth.World.Charset
-import Truth.World.File
 
 textCodec :: ReasonCodec LazyByteString Text
 textCodec = bijectionCodec packBijection . utf8Codec . bijectionCodec unpackBijection
@@ -27,7 +27,7 @@ newtype AppUI =
 main :: IO ()
 main = do
     (paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
-    truthMainGTK $ \tc -> do
+    changesMainGTK $ \tc -> do
         let newWindow spec = tcExitOnClosed tc $ createWindow spec
         for_ paths $ \path -> do
             let

@@ -1,8 +1,8 @@
-module Truth.Core.Read.FullSubjectReader where
+module Changes.Core.Read.FullSubjectReader where
 
-import Truth.Core.Import
-import Truth.Core.Read.Readable
-import Truth.Core.Read.SubjectReader
+import Changes.Core.Import
+import Changes.Core.Read.Readable
+import Changes.Core.Read.SubjectReader
 
 class (SubjectReader reader) => FullSubjectReader (reader :: Type -> Type) where
     readableToSubject ::

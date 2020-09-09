@@ -2,12 +2,12 @@ module Test.Storage
     ( testStorage
     ) where
 
+import Changes.Core
 import Pinafore.Base
 import Pinafore.Storage
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
-import Truth.Core
 
 data TestContext = MkTestContext
     { putProperty :: forall s v. EntityAdapter s -> EntityAdapter v -> Predicate -> s -> Know v -> IO ()

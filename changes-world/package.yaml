@@ -1,4 +1,4 @@
-name: truth-world
+name: changes-world
 version: "0.1"
 _common: !include "../common.yaml"
 <<: *author
@@ -16,15 +16,15 @@ library:
       - aeson
       - sqlite-simple
       - mime
-      - truth-core
+      - changes-core
     exposed-modules:
-      - Truth.World.Clock
-      - Truth.World.Anything
-      - Truth.World.File
-      - Truth.World.FileSystem
-      - Truth.World.ReferenceStore
-      - Truth.World.Charset
-      - Truth.World.MIME
-      - Truth.World.JSON
-      - Truth.World.SQLite
-      - Truth.World.SQLite.Schema
+      - Changes.World.Clock
+      - Changes.World.Anything
+      - Changes.World.File
+      - Changes.World.FileSystem
+      - Changes.World.ReferenceStore
+      - Changes.World.Charset
+      - Changes.World.MIME
+      - Changes.World.JSON
+      - Changes.World.SQLite
+      - Changes.World.SQLite.Schema

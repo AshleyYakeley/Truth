@@ -3,14 +3,14 @@ module Soup.UI
     , soupWindow
     ) where
 
+import Changes.Core
+import Changes.UI.GTK
+import Changes.World.FileSystem
 import Shapes
 import Soup.Edit
 import Soup.Note
 import System.FilePath hiding ((<.>))
-import Truth.Core
-import Truth.UI.GTK
-import Truth.World.FileSystem
-import Truth.Debug.Reference
+import Changes.Debug.Reference
 
 fromResult :: Result Text Text -> (Text, TableCellProps)
 fromResult (SuccessResult "") = ("unnamed", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
@@ -77,7 +77,7 @@ soupReference dirpath = let
     lens = liftSoupLens paste $ soupItemLens . referenceChangeLens
     in mapReference lens rawSoupReference
 
-soupWindow :: TruthContext -> (WindowSpec -> CreateView UIWindow) -> FilePath -> CreateView ()
+soupWindow :: ChangesContext -> (WindowSpec -> CreateView UIWindow) -> FilePath -> CreateView ()
 soupWindow tc newWindow dirpath = do
     smodel <- liftLifeCycleIO $ makeReflectingModel $ traceThing "soup" $ soupReference dirpath
     (selModel, selnotify) <- liftLifeCycleIO $ makeSharedModel makePremodelSelectNotify

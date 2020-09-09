@@ -2,11 +2,11 @@ module Resource
     ( testResource
     ) where
 
+import Changes.Core
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Useful
-import Truth.Core
 
 data AThing (tt :: [TransKind]) =
     MkAThing (ApplyStack tt IO ())

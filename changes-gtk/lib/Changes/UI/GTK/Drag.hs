@@ -1,11 +1,11 @@
-module Truth.UI.GTK.Drag
+module Changes.UI.GTK.Drag
     (
     ) where
 {-
 import Shapes
 import GI.Gtk;
-import Truth.Core
-import Truth.UI.GTK.GView
+import Changes.Core
+import Changes.UI.GTK.GView
 
 uiDragSource :: Serialize t => String -> Model (WholeUpdate t) -> Widget -> CreateView ()
 

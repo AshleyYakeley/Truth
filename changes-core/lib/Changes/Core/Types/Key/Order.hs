@@ -1,4 +1,4 @@
-module Truth.Core.Types.Key.Order
+module Changes.Core.Types.Key.Order
     ( UpdateOrder(..)
     , mapUpdateOrder
     , mapReadOnlyUpdateOrder
@@ -6,18 +6,18 @@ module Truth.Core.Types.Key.Order
     , contextOrderedSetLens
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Sequence
-import Truth.Core.Types.Key.HasKey
-import Truth.Core.Types.Key.Key
-import Truth.Core.Types.List
-import Truth.Core.Types.ReadOnly
-import Truth.Core.Types.Tuple.Context
-import Truth.Core.Types.Tuple.Tuple
-import Truth.Core.Types.Whole
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Sequence
+import Changes.Core.Types.Key.HasKey
+import Changes.Core.Types.Key.Key
+import Changes.Core.Types.List
+import Changes.Core.Types.ReadOnly
+import Changes.Core.Types.Tuple.Context
+import Changes.Core.Types.Tuple.Tuple
+import Changes.Core.Types.Whole
 
 data UpdateOrder update =
     forall o. MkUpdateOrder (o -> o -> Ordering)

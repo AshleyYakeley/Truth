@@ -1,18 +1,18 @@
-module Truth.Core.Reference.Savable
+module Changes.Core.Reference.Savable
     ( SaveActions(..)
     , saveBufferReference
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Read
-import Truth.Core.Reference.DeferActionT
-import Truth.Core.Reference.EditContext
-import Truth.Core.Reference.Premodel
-import Truth.Core.Reference.Reference
-import Truth.Core.Resource
-import Truth.Core.Types
-import Truth.Debug
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Read
+import Changes.Core.Reference.DeferActionT
+import Changes.Core.Reference.EditContext
+import Changes.Core.Reference.Premodel
+import Changes.Core.Reference.Reference
+import Changes.Core.Resource
+import Changes.Core.Types
+import Changes.Debug
 
 data SaveBuffer a = MkSaveBuffer
     { saveBuffer :: a

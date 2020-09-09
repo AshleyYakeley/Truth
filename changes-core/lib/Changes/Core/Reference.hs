@@ -1,17 +1,17 @@
-module Truth.Core.Reference
+module Changes.Core.Reference
     ( module I
     ) where
 
-import Truth.Core.Reference.AutoClose as I
-import Truth.Core.Reference.Cache as I
-import Truth.Core.Reference.DeferActionT as I
-import Truth.Core.Reference.EditContext as I
-import Truth.Core.Reference.Editor as I
-import Truth.Core.Reference.MemoryCell as I
-import Truth.Core.Reference.Model as I
-import Truth.Core.Reference.Premodel as I
-import Truth.Core.Reference.Reference as I
-import Truth.Core.Reference.ReferenceEdit as I
-import Truth.Core.Reference.Savable as I
-import Truth.Core.Reference.Tuple as I
-import Truth.Core.Reference.Undo as I
+import Changes.Core.Reference.AutoClose as I
+import Changes.Core.Reference.Cache as I
+import Changes.Core.Reference.DeferActionT as I
+import Changes.Core.Reference.EditContext as I
+import Changes.Core.Reference.Editor as I
+import Changes.Core.Reference.MemoryCell as I
+import Changes.Core.Reference.Model as I
+import Changes.Core.Reference.Premodel as I
+import Changes.Core.Reference.Reference as I
+import Changes.Core.Reference.ReferenceEdit as I
+import Changes.Core.Reference.Savable as I
+import Changes.Core.Reference.Tuple as I
+import Changes.Core.Reference.Undo as I

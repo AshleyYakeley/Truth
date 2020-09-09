@@ -2,14 +2,14 @@ module Main
     ( main
     ) where
 
+import Changes.Core
 import Criterion.Main
 import Pinafore
 import Pinafore.Test
 import Shapes
-import Truth.Core
 
 nullViewIO :: View a -> IO a
-nullViewIO = tcRunView (nullTruthContext runLifeCycle) emptyResourceContext
+nullViewIO = tcRunView (nullChangesContext runLifeCycle) emptyResourceContext
 
 benchHash :: Text -> Benchmark
 benchHash text = bench (show $ unpack text) $ nf literalToEntity text
@@ -27,7 +27,7 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullTruthContext runLifeCycle) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullChangesContext runLifeCycle) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc
@@ -99,7 +99,7 @@ interpretUpdater text =
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullTruthContext runLifeCycle) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullChangesContext runLifeCycle) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc

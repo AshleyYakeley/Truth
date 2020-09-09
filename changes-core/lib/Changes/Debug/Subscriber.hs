@@ -1,17 +1,17 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Debug.Subscriber
-    ( module Truth.Debug
-    , module Truth.Debug.Edit
-    , module Truth.Debug.Reference
+module Changes.Debug.Subscriber
+    ( module Changes.Debug
+    , module Changes.Debug.Edit
+    , module Changes.Debug.Reference
     ) where
 
-import Truth.Core.Import
-import Truth.Core.Resource
-import Truth.Core.Reference.Model
-import Truth.Debug
-import Truth.Debug.Edit
-import Truth.Debug.Reference
+import Changes.Core.Import
+import Changes.Core.Resource
+import Changes.Core.Reference.Model
+import Changes.Debug
+import Changes.Debug.Edit
+import Changes.Debug.Reference
 
 instance TraceThing (Model edit) where
     traceThing prefix (MkResource rr (MkAModel anobj sub utask)) = case resourceRunnerStackUnliftDict @IO rr of

@@ -1,11 +1,11 @@
-module Truth.Core.Reference.Editor where
+module Changes.Core.Reference.Editor where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Reference.EditContext
-import Truth.Core.Reference.Model
-import Truth.Core.Reference.Reference
-import Truth.Core.Resource
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Reference.EditContext
+import Changes.Core.Reference.Model
+import Changes.Core.Reference.Reference
+import Changes.Core.Resource
 
 data Editor (update :: Type) r = forall editor. MkEditor
     { editorInit :: Reference (UpdateEdit update) -> LifeCycleIO editor

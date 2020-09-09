@@ -1,11 +1,11 @@
 module Soup.Note where
 
+import Changes.Core
+import Changes.UI.GTK
+import Changes.World.JSON
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Types as JSON
 import Shapes
-import Truth.Core
-import Truth.UI.GTK
-import Truth.World.JSON
 
 data NoteSel t where
     NoteTitle :: NoteSel (WholeUpdate Text)

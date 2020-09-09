@@ -1,4 +1,4 @@
-module Truth.Core.Types.Partial
+module Changes.Core.Types.Partial
     ( ReaderSet
     , PartialUpdate(..)
     , partialFullChangeLens
@@ -11,11 +11,11 @@ module Truth.Core.Types.Partial
     , partialConvertChangeLens
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.ReadOnly
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.ReadOnly
 
 type ReaderSet reader = forall t. reader t -> Bool
 

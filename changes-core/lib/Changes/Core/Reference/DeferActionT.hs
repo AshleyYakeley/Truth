@@ -1,13 +1,13 @@
-module Truth.Core.Reference.DeferActionT
+module Changes.Core.Reference.DeferActionT
     ( DeferActionT
     , deferAction
     , runDeferActionT
     , deferActionResourceRunner
     ) where
 
-import Truth.Core.Import
-import Truth.Core.Resource
-import Truth.Debug.Reference
+import Changes.Core.Import
+import Changes.Core.Resource
+import Changes.Debug.Reference
 
 newtype DeferActionT m a =
     MkDeferActionT (WriterT [IO ()] m a)

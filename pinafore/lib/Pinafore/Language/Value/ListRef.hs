@@ -1,10 +1,10 @@
 module Pinafore.Language.Value.ListRef where
 
+import Changes.Core
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Shim
 import Shapes
-import Truth.Core
 
 data LangListRef (pq :: (Type, Type)) where
     MkLangListRef :: Range (PinaforePolyShim Type) t pq -> PinaforeRef (ListEdit [t] (WholeEdit t)) -> LangListRef pq

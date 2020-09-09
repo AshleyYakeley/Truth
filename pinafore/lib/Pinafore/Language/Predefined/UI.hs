@@ -2,6 +2,8 @@ module Pinafore.Language.Predefined.UI
     ( ui_predefinitions
     ) where
 
+import Changes.Core
+import Changes.UI.GTK
 import Data.Shim
 import Data.Time
 import Pinafore.Base
@@ -10,8 +12,6 @@ import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
-import Truth.Core
-import Truth.UI.GTK
 
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)

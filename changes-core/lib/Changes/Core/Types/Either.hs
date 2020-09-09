@@ -1,11 +1,11 @@
-module Truth.Core.Types.Either
+module Changes.Core.Types.Either
     ( EitherReader(..)
     , EitherEdit(..)
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Read
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Read
 
 data EitherReader (ra :: Type -> Type) (rb :: Type -> Type) (t :: Type) where
     EitherReadIsRight :: EitherReader ra rb Bool

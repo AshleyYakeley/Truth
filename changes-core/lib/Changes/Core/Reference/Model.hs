@@ -1,4 +1,4 @@
-module Truth.Core.Reference.Model
+module Changes.Core.Reference.Model
     ( AModel(..)
     , aModelRead
     , aModelEdit
@@ -18,16 +18,16 @@ module Truth.Core.Reference.Model
     , makeMemoryModel
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Reference.EditContext
-import Truth.Core.Reference.Premodel
-import Truth.Core.Reference.Reference
-import Truth.Core.Resource
-import Truth.Core.Types
-import Truth.Debug
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Reference.EditContext
+import Changes.Core.Reference.Premodel
+import Changes.Core.Reference.Reference
+import Changes.Core.Resource
+import Changes.Core.Types
+import Changes.Debug
 
 data AModel update tt = MkAModel
     { aModelAReference :: AReference (UpdateEdit update) tt
