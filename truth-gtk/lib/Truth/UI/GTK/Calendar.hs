@@ -39,5 +39,5 @@ createCalendar rmod = do
         oldval <- getDay
         if oldval == newval
             then return ()
-            else liftIO $ withSignalBlocked widget sig1 $ withSignalBlocked widget sig2 $ putDay newval
+            else withSignalsBlocked widget [sig1, sig2] $ putDay newval
     toWidget widget

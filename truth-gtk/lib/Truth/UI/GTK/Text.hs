@@ -10,7 +10,7 @@ import Truth.UI.GTK.Useful
 
 type TextSelection = FloatingChangeLens (StringUpdate Text) (StringUpdate Text)
 
-replaceText :: Index s ~ Int => TextBuffer -> SequenceRun s -> Text -> IO ()
+replaceText :: Index s ~ Int => TextBuffer -> SequenceRun s -> Text -> View ()
 replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)) text = do
     startIter <- #getIterAtOffset buffer (fromIntegral start)
     if len > 0
@@ -64,15 +64,11 @@ createTextArea rmod (MkSelectNotify setsel) = do
         initV :: CreateView ()
         initV = do
             initial <- viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
-            liftIO $
-                withSignalBlocked buffer insertSignal $
-                withSignalBlocked buffer deleteSignal $ #setText buffer initial (-1)
+            cvLiftView $ withSignalsBlocked buffer [insertSignal, deleteSignal] $ #setText buffer initial (-1)
         recvV :: () -> NonEmpty (StringUpdate Text) -> View ()
         recvV () updates =
-            liftIO $
             for_ updates $ \(MkEditUpdate edit) ->
-                withSignalBlocked buffer insertSignal $
-                withSignalBlocked buffer deleteSignal $
+                withSignalsBlocked buffer [insertSignal, deleteSignal] $
                 case edit of
                     StringReplaceWhole text -> #setText buffer text (-1)
                     StringReplaceSection bounds text -> replaceText buffer bounds text
