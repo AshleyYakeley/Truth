@@ -2,6 +2,7 @@ module Truth.UI.GTK.Useful
     ( cvGetObjectTypeName
     , widgetGetTree
     , withSignalBlocked
+    , withSignalsBlocked
     , cvOn
     , cvAfter
     , cvAcquire
@@ -47,8 +48,12 @@ widgetGetTree full w = do
             return $ w : mconcat ww
         Nothing -> return [w]
 
-withSignalBlocked :: IsObject obj => obj -> SignalHandlerId -> IO a -> IO a
-withSignalBlocked obj conn = bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
+withSignalBlocked :: IsObject obj => obj -> SignalHandlerId -> View a -> View a
+withSignalBlocked obj conn = remonad $ bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
+
+withSignalsBlocked :: IsObject obj => obj -> [SignalHandlerId] -> View a -> View a
+withSignalsBlocked _obj [] = id
+withSignalsBlocked obj (c:cc) = withSignalBlocked obj c . withSignalsBlocked obj cc
 
 class GTKCallbackType t where
     type CallbackViewLifted t :: Type

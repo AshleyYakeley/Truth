@@ -27,7 +27,6 @@ createTextEntry rmod = do
             succeeded <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
             setValidState succeeded
     cvBindWholeModel rmod (Just esrc) $ \newtext ->
-        liftIO $
         withSignalBlocked widget changedSignal $ do
             oldtext <- get widget #text
             if oldtext == newtext

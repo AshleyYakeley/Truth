@@ -26,7 +26,7 @@ plainComboBoxCell cbcText = let
 
 listStoreView ::
        forall update. (ApplicableUpdate update, FullSubjectReader (UpdateReader update))
-    => WIOFunction IO
+    => WMFunction View View
     -> Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
     -> EditSource
     -> CreateView (SeqStore (UpdateSubject update))
@@ -40,7 +40,6 @@ listStoreView (MkWMFunction blockSignal) itemsModel esrc = let
         -> NonEmpty (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
         -> View ()
     recv store updates =
-        liftIO $
         for_ updates $ \(MkReadOnlyUpdate lupdate) -> traceBracket "GTK.Option:ListStore:receiveUpdate" $
             case lupdate of
                 OrderedListUpdateItem oldi newi Nothing
@@ -73,7 +72,7 @@ cboxFromStore ::
     => Model (WholeUpdate t)
     -> EditSource
     -> SeqStore (t, ComboBoxCell)
-    -> CreateView (WIOFunction IO, Widget)
+    -> CreateView (WMFunction View View, Widget)
 cboxFromStore whichModel esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- cvNew CellRendererText []
@@ -92,7 +91,7 @@ cboxFromStore whichModel esrc store = do
                     return ()
                 (False, _) -> return ()
     let
-        blockSignal :: forall a. IO a -> IO a
+        blockSignal :: forall a. View a -> View a
         blockSignal = withSignalBlocked widget changedSignal
         findN ::
                forall l. SemiSequence l
@@ -102,22 +101,21 @@ cboxFromStore whichModel esrc store = do
         findN [] _ = empty
         findN (p:pp) fa = find p fa <|> findN pp fa
         update :: t -> View ()
-        update t =
-            liftIO $ traceBracket "GTK.Option:receiveUpdate" $ do
-                items <- seqStoreToList store
-                let
-                    matchVal :: (Int, (t, ComboBoxCell)) -> Bool
-                    matchVal (_, (t', _)) = t == t'
-                    isDefault :: (Int, (t, ComboBoxCell)) -> Bool
-                    isDefault (_, (_, cell)) = cbcDefault cell
-                case findN [matchVal, isDefault] $ zip [(0 :: Int) ..] items of
-                    Just (i, _) -> do
-                        tp <- treePathNewFromIndices [fromIntegral i]
-                        mti <- treeModelGetIter store tp
-                        case mti of
-                            Just ti -> blockSignal $ #setActiveIter widget $ Just ti
-                            Nothing -> return ()
-                    Nothing -> return ()
+        update t = traceBracket "GTK.Option:receiveUpdate" $ do
+            items <- seqStoreToList store
+            let
+                matchVal :: (Int, (t, ComboBoxCell)) -> Bool
+                matchVal (_, (t', _)) = t == t'
+                isDefault :: (Int, (t, ComboBoxCell)) -> Bool
+                isDefault (_, (_, cell)) = cbcDefault cell
+            case findN [matchVal, isDefault] $ zip [(0 :: Int) ..] items of
+                Just (i, _) -> do
+                    tp <- treePathNewFromIndices [fromIntegral i]
+                    mti <- treeModelGetIter store tp
+                    case mti of
+                        Just ti -> blockSignal $ #setActiveIter widget $ Just ti
+                        Nothing -> return ()
+                Nothing -> return ()
     cvBindWholeModel whichModel (Just esrc) update
     w <- toWidget widget
     return (MkWMFunction blockSignal, w)

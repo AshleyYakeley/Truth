@@ -146,60 +146,59 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             cvAcquire tview
             for_ cols $ addColumn tview store
             return (store, tview)
-        getEntryFromPath ::
-               DynamicStore (StoreEntry update rowtext rowprops)
-            -> TreePath
-            -> View (Maybe (Unique, StoreEntry update rowtext rowprops))
-        getEntryFromPath store tpath = do
-            ii <- #getIndices tpath
-            case ii of
-                Just [i] -> do
-                    uentry <- dynamicStoreGet i store
-                    return $ Just uentry
-                _ -> return Nothing
-        getSelectedEntry ::
-               DynamicStore (StoreEntry update rowtext rowprops)
-            -> TreeSelection
-            -> View (Maybe (Unique, StoreEntry update rowtext rowprops))
-        getSelectedEntry store tselection = do
-            (ltpath, _) <- #getSelectedRows tselection
-            case ltpath of
-                [tpath] -> getEntryFromPath store tpath
-                _ -> return Nothing
-        setSelectedIndex :: TreeSelection -> Maybe Int -> View ()
-        setSelectedIndex tselection Nothing = #unselectAll tselection
-        setSelectedIndex tselection (Just i) = do
-            tpath <- treePathNewFromIndices [fromIntegral i]
-            #selectPath tselection tpath
-            #free tpath
-        recvTable ::
-               HasCallStack
-            => (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
-            -> NonEmpty (OrderedListUpdate seq update)
-            -> View ()
-        recvTable (store, tview) updates = do
-            tselection <- #getSelection tview
-            mselentry <- getSelectedEntry store tselection
-            for_ updates $ \case
-                OrderedListUpdateItem a b _ -> dynamicStoreMove a b store
-                OrderedListUpdateDelete i -> dynamicStoreDelete i store
-                OrderedListUpdateInsert i _ -> dynamicStoreInsert i defStoreEntry (makeStoreEntry i) store
-                OrderedListUpdateClear -> dynamicStoreClear store
-            mi <-
-                case mselentry of
-                    Nothing -> return Nothing
-                    Just (selu, _) -> dynamicStoreLookup selu store
-            setSelectedIndex tselection mi
-    (store, tview) <- cvBindModel tableModel Nothing initTable mempty recvTable
-    tselection <- #getSelection tview
-    set tselection [#mode := SelectionModeSingle] -- 0 or 1 selected
+    rec
+        let
+            getEntryFromPath :: TreePath -> View (Maybe (Unique, StoreEntry update rowtext rowprops))
+            getEntryFromPath tpath = do
+                ii <- #getIndices tpath
+                case ii of
+                    Just [i] -> do
+                        uentry <- dynamicStoreGet i store
+                        return $ Just uentry
+                    _ -> return Nothing
+            getSelectedEntry :: View (Maybe (Unique, StoreEntry update rowtext rowprops))
+            getSelectedEntry = do
+                (ltpath, _) <- #getSelectedRows tselection
+                case ltpath of
+                    [tpath] -> getEntryFromPath tpath
+                    _ -> return Nothing
+            setSelectedIndex :: Maybe Int -> View ()
+            setSelectedIndex Nothing = #unselectAll tselection
+            setSelectedIndex (Just i) = do
+                tpath <- treePathNewFromIndices [fromIntegral i]
+                #selectPath tselection tpath
+            recvTable ::
+                   HasCallStack
+                => (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
+                -> NonEmpty (OrderedListUpdate seq update)
+                -> View ()
+            recvTable _ updates = do
+                mselentry <- getSelectedEntry
+                withSignalBlocked tselection getSelSig $
+                    for_ updates $ \case
+                        OrderedListUpdateItem a b _ -> dynamicStoreMove a b store
+                        OrderedListUpdateDelete i -> dynamicStoreDelete i store
+                        OrderedListUpdateInsert i _ -> dynamicStoreInsert i defStoreEntry (makeStoreEntry i) store
+                        OrderedListUpdateClear -> dynamicStoreClear store
+                mi <-
+                    case mselentry of
+                        Nothing -> return Nothing
+                        Just (selu, _) -> dynamicStoreLookup selu store
+                case mi of
+                    Nothing -> setSelectedIndex mi
+                    Just _ -> withSignalBlocked tselection getSelSig $ setSelectedIndex mi
+        (store, tview) <- cvBindModel tableModel Nothing initTable mempty recvTable
+        tselection <- #getSelection tview
+        set tselection [#mode := SelectionModeSingle] -- 0 or 1 selected
+        let
+            getSelection :: View (Maybe (Model update))
+            getSelection = do
+                mentry <- getSelectedEntry
+                return $ fmap (entryModel . snd) mentry
+        getSelSig <- cvOn tselection #changed $ traceBracket "GTK.treeView:cursorChanged" $ runSelectNotify notifier getSelection
     let
-        getSelection :: View (Maybe (Model update))
-        getSelection = do
-            mentry <- getSelectedEntry store tselection
-            return $ fmap (entryModel . snd) mentry
         setSelection :: Maybe (ReadM (UpdateReader update) Bool) -> View ()
-        setSelection Nothing = setSelectedIndex tselection Nothing
+        setSelection Nothing = setSelectedIndex Nothing
         setSelection (Just sel) = do
             items <- dynamicStoreContents store
             let
@@ -208,11 +207,10 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
                     viewRunResourceContext (entryModel se) $ \unlift (amod :: _ tt) ->
                         unReadM sel $ \rt -> liftIO $ unlift $ aModelRead amod rt
             mi <- mFindIndex testEntry items
-            setSelectedIndex tselection mi
-    _ <- cvOn tselection #changed $ traceBracket "GTK.treeView:cursorChanged" $ runSelectNotify notifier getSelection
+            withSignalBlocked tselection getSelSig $ setSelectedIndex mi
     _ <-
         cvOn tview #rowActivated $ \tpath _ -> traceBracket "GTK.treeView:rowActivated" $ do
-            mentry <- getEntryFromPath store tpath
+            mentry <- getEntryFromPath tpath
             case mentry of
                 Just (_, entry) -> onActivate $ entryModel entry
                 Nothing -> return ()

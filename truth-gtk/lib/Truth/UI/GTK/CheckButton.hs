@@ -23,8 +23,7 @@ createCheckButton label rmod = do
             st <- Gtk.get widget #active
             _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
             return ()
-    cvBindWholeModel rmod (Just esrc) $ \st ->
-        liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
+    cvBindWholeModel rmod (Just esrc) $ \st -> withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
 
 createMaybeCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate (Maybe Bool)) -> CreateView Widget
