@@ -8,11 +8,11 @@ module Pinafore.Base.Context
     , pinaforeEntityModel
     ) where
 
+import Changes.Core
 import Pinafore.Base.Action
 import Pinafore.Base.Edit
 import Pinafore.Base.Know
 import Shapes
-import Truth.Core
 
 data PinaforeContext = MkPinaforeContext
     { pconRun :: forall a. PinaforeAction a -> View (Know a)
@@ -35,7 +35,7 @@ runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
 pinaforeEntityModel :: (?pinafore :: PinaforeContext) => Model PinaforeStorageUpdate
 pinaforeEntityModel = pconEntityModel ?pinafore
 
-makePinaforeContext :: Model PinaforeStorageUpdate -> TruthContext -> LifeCycleIO PinaforeContext
+makePinaforeContext :: Model PinaforeStorageUpdate -> ChangesContext -> LifeCycleIO PinaforeContext
 makePinaforeContext rmodel tc = do
     uh <- liftIO newUndoHandler
     return $ MkPinaforeContext (unPinaforeAction tc uh) $ undoHandlerModel uh rmodel

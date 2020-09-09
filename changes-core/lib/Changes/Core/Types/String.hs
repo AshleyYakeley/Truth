@@ -1,15 +1,15 @@
-module Truth.Core.Types.String
+module Changes.Core.Types.String
     ( StringUpdate
     , StringRead(..)
     , StringEdit(..)
     , stringSectionLens
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Sequence
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Sequence
 
 data StringRead seq t where
     StringReadLength :: StringRead seq (SequencePoint seq)

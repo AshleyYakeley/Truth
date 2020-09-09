@@ -1,8 +1,8 @@
-module Truth.World.ReferenceStore where
+module Changes.World.ReferenceStore where
 
+import Changes.Core
+import Changes.World.FileSystem
 import Shapes
-import Truth.Core
-import Truth.World.FileSystem
 
 data SingleReferenceReader edit t where
     ReadSingleReferenceStore :: SingleReferenceReader edit (Maybe (Reference edit))

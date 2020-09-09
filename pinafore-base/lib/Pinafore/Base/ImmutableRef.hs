@@ -1,11 +1,11 @@
 module Pinafore.Base.ImmutableRef where
 
+import Changes.Core
 import Pinafore.Base.Action
 import Pinafore.Base.FunctionMorphism
 import Pinafore.Base.Know
 import Pinafore.Base.Ref
 import Shapes
-import Truth.Core
 
 newtype PinaforeImmutableRef a =
     MkPinaforeImmutableRef (PinaforeROWRef (Know a))

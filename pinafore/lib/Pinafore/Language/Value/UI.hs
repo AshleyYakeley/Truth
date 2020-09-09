@@ -2,10 +2,10 @@
 
 module Pinafore.Language.Value.UI where
 
+import Changes.Core
+import Changes.UI.GTK
 import Pinafore.Base
 import Shapes
-import Truth.Core
-import Truth.UI.GTK
 
 type LangUI = CreateView Widget
 

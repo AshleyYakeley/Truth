@@ -1,4 +1,4 @@
-module Truth.Core.Lens.Floating
+module Changes.Core.Lens.Floating
     ( FloatInit(..)
     , runFloatInit
     , mapFloatInit
@@ -11,10 +11,10 @@ module Truth.Core.Lens.Floating
     , floatLift
     ) where
 
-import Truth.Core.Edit.Update
-import Truth.Core.Import
-import Truth.Core.Lens.Lens
-import Truth.Core.Read
+import Changes.Core.Edit.Update
+import Changes.Core.Import
+import Changes.Core.Lens.Lens
+import Changes.Core.Read
 
 data FloatInit reader r where
     ReadFloatInit :: (forall m. MonadIO m => Readable m reader -> m r) -> FloatInit reader r

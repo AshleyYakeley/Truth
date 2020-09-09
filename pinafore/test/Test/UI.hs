@@ -2,6 +2,8 @@ module Test.UI
     ( testUI
     ) where
 
+import Changes.Core
+import Changes.UI.GTK
 import Data.GI.Base.GValue
 import GI.GObject
 import GI.Gtk
@@ -10,8 +12,6 @@ import Pinafore.Test
 import Shapes hiding (get)
 import Test.Context
 import Test.Tasty
-import Truth.Core
-import Truth.UI.GTK
 
 data Timing
     = SyncTiming
@@ -21,10 +21,10 @@ instance Show Timing where
     show SyncTiming = "sync"
     show AsyncTiming = "async"
 
-runUIAction :: forall a. Timing -> (TruthContext -> View a) -> Text -> IO a
+runUIAction :: forall a. Timing -> (ChangesContext -> View a) -> Text -> IO a
 runUIAction timing testaction t = do
     donevar <- newEmptyMVar
-    truthMainGTK $ \tc -> do
+    changesMainGTK $ \tc -> do
         (pc, _) <- liftLifeCycleIO $ makeTestPinaforeContext tc
         scriptaction <- let
             ?pinafore = pc
@@ -72,7 +72,7 @@ gobjectEmitClicked obj = do
         _ <- signalEmitv [gvalObj] signalId detail
         return ()
 
-runClickButton :: TruthContext -> View ()
+runClickButton :: ChangesContext -> View ()
 runClickButton _ = do
     ww <- windowListToplevels
     visww <-
@@ -91,10 +91,10 @@ runClickButton _ = do
                 _ -> fail $ show (length bb) <> " Buttons"
         _ -> fail $ show (length ww) <> " visible windows"
 
-noTestAction :: TruthContext -> View ()
+noTestAction :: ChangesContext -> View ()
 noTestAction _ = return ()
 
-testUIAction :: Timing -> Text -> (TruthContext -> View ()) -> ContextTestTree
+testUIAction :: Timing -> Text -> (ChangesContext -> View ()) -> ContextTestTree
 testUIAction timing text testaction = contextTestCase text text $ runUIAction timing testaction
 
 testActions :: Timing -> [ContextTestTree]

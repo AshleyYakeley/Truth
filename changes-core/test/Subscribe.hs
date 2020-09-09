@@ -5,10 +5,10 @@ module Subscribe
     ( testSubscribe
     ) where
 
+import Changes.Core
 import Shapes
 import Test.Tasty
 import Test.Useful
-import Truth.Core
 
 debugLens ::
        forall updateA updateB.

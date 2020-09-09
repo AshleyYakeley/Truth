@@ -1,9 +1,9 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Core.Types.Database.Show where
+module Changes.Core.Types.Database.Show where
 
-import Truth.Core.Import
-import Truth.Core.Types.Database
+import Changes.Core.Import
+import Changes.Core.Types.Database
 
 class (Database dbType tablesel, AllWitnessConstraint Show tablesel) =>
           ShowableDatabase (dbType :: Type) (tablesel :: Type -> Type) where

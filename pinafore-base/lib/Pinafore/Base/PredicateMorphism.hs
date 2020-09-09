@@ -2,13 +2,13 @@ module Pinafore.Base.PredicateMorphism
     ( propertyMorphism
     ) where
 
+import Changes.Core
 import Pinafore.Base.Edit
 import Pinafore.Base.EntityAdapter
 import Pinafore.Base.EntityStorer
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
-import Truth.Core
 
 propertyMorphism ::
        forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeStorageUpdate a a b b

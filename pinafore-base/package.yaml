@@ -15,8 +15,8 @@ library:
       - cereal
       - memory
       - cryptonite
-      - truth-core
-      - truth-world
+      - changes-core
+      - changes-world
     exposed-modules:
       - Pinafore.Base
       - Pinafore.Storage
@@ -51,7 +51,7 @@ tests:
         dependencies:
           - base >= 4.12
           - shapes
-          - truth-core
+          - changes-core
           - pinafore-base
           - tasty
           - tasty-hunit

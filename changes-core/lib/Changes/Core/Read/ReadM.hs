@@ -1,7 +1,7 @@
-module Truth.Core.Read.ReadM where
+module Changes.Core.Read.ReadM where
 
-import Truth.Core.Import
-import Truth.Core.Read.Readable
+import Changes.Core.Import
+import Changes.Core.Read.Readable
 
 newtype ReadM r a = MkReadM
     { unReadM :: forall m. MonadIO m => Readable m r -> m a

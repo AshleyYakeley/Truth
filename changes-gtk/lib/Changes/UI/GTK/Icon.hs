@@ -1,13 +1,13 @@
-module Truth.UI.GTK.Icon
+module Changes.UI.GTK.Icon
     ( IconName
     , IconSize
     , createIcon
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import GI.Gtk
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.Useful
 
 -- | https://specifications.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
 type IconName = Text

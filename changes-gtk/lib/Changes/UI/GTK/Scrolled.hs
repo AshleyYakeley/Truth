@@ -1,11 +1,11 @@
-module Truth.UI.GTK.Scrolled
+module Changes.UI.GTK.Scrolled
     ( createScrolled
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import GI.Gtk
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.Useful
 
 createScrolled :: Widget -> CreateView Widget
 createScrolled content = do

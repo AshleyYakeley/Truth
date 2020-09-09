@@ -1,18 +1,18 @@
-module Truth.Core.Types.List.Update
+module Changes.Core.Types.List.Update
     ( ListUpdate(..)
     , listItemLens
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Sequence
-import Truth.Core.Types.List.Edit
-import Truth.Core.Types.List.Read
-import Truth.Core.Types.One.FullResult
-import Truth.Core.Types.One.Read
-import Truth.Core.Types.One.Result
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Sequence
+import Changes.Core.Types.List.Edit
+import Changes.Core.Types.List.Read
+import Changes.Core.Types.One.FullResult
+import Changes.Core.Types.One.Read
+import Changes.Core.Types.One.Result
 
 data ListUpdate seq update where
     ListUpdateItem :: SequencePoint seq -> update -> ListUpdate seq update

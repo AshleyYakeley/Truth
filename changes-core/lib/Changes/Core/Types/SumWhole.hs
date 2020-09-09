@@ -1,11 +1,11 @@
-module Truth.Core.Types.SumWhole where
+module Changes.Core.Types.SumWhole where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.Sum
-import Truth.Core.Types.Whole
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.Sum
+import Changes.Core.Types.Whole
 
 type SumWholeReaderEdit reader edit = SumEdit (WholeReaderEdit reader) edit
 

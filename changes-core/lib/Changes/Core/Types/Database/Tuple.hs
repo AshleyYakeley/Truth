@@ -1,7 +1,7 @@
-module Truth.Core.Types.Database.Tuple where
+module Changes.Core.Types.Database.Tuple where
 
-import Truth.Core.Import
-import Truth.Core.Types.Database
+import Changes.Core.Import
+import Changes.Core.Types.Database
 
 data TupleTableSel tablesel row where
     MkTupleTableSel :: tablesel colsel -> TupleTableSel tablesel (AllValue colsel)

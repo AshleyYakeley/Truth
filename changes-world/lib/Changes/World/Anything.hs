@@ -1,7 +1,7 @@
-module Truth.World.Anything where
+module Changes.World.Anything where
 
+import Changes.Core
 import Shapes
-import Truth.Core
 
 data Anything where
     MkAnything :: forall (edit :: Type). IOWitness edit -> EditSubject edit -> Anything

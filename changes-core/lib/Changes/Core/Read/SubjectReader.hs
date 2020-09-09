@@ -1,7 +1,7 @@
-module Truth.Core.Read.SubjectReader where
+module Changes.Core.Read.SubjectReader where
 
-import Truth.Core.Import
-import Truth.Core.Read.Readable
+import Changes.Core.Import
+import Changes.Core.Read.Readable
 
 -- | The values of the reader type are MutableEdit calls that read parts of something of type (ReaderSubject reader).
 class SubjectReader (reader :: Type -> Type) where

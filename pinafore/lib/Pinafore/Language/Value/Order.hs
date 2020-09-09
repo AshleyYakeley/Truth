@@ -1,12 +1,12 @@
 module Pinafore.Language.Value.Order where
 
+import Changes.Core
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Value.FiniteSetRef
 import Pinafore.Language.Value.Morphism
 import Pinafore.Language.Value.Ref
 import Shapes
-import Truth.Core
 
 data LangOrder a =
     forall t. MkLangOrder (PinaforeFunctionMorphism PinaforeStorageUpdate (Know a) t)

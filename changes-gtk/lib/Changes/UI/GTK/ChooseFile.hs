@@ -1,4 +1,4 @@
-module Truth.UI.GTK.ChooseFile
+module Changes.UI.GTK.ChooseFile
     ( chooseFile
     ) where
 

@@ -10,12 +10,12 @@ module Pinafore.Main
     , pinaforeInteract
     ) where
 
+import Changes.Core
 import Pinafore.Base
 import Pinafore.Language
 import Pinafore.Storage
 import Shapes
 import System.FilePath
-import Truth.Core
 
 type FilePinaforeType = PinaforeAction TopType
 
@@ -25,7 +25,7 @@ filePinaforeType = qNegativeTypeDescription @FilePinaforeType
 doCache :: Bool
 doCache = True
 
-standardPinaforeContext :: FilePath -> TruthContext -> CreateView PinaforeContext
+standardPinaforeContext :: FilePath -> ChangesContext -> CreateView PinaforeContext
 standardPinaforeContext dirpath tc = do
     rc <- viewGetResourceContext
     liftLifeCycleIO $ do

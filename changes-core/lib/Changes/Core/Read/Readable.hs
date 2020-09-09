@@ -1,6 +1,6 @@
-module Truth.Core.Read.Readable where
+module Changes.Core.Read.Readable where
 
-import Truth.Core.Import
+import Changes.Core.Import
 
 type Readable m reader = forall (t :: Type). reader t -> m t
 

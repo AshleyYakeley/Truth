@@ -1,10 +1,10 @@
-module Truth.Core.Types.ReadOnly where
+module Changes.Core.Types.ReadOnly where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.None
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.None
 
 newtype ReadOnlyUpdate update = MkReadOnlyUpdate
     { unReadOnlyUpdate :: update

@@ -1,16 +1,16 @@
-module Truth.Core
+module Changes.Core
     ( module I
-    , module Truth.Core
+    , module Changes.Core
     ) where
 
-import Truth.Core.Edit as I
-import Truth.Core.Import
-import Truth.Core.Lens as I
-import Truth.Core.Read as I
-import Truth.Core.Reference as I
-import Truth.Core.Resource as I
-import Truth.Core.Sequence as I
-import Truth.Core.Types as I
-import Truth.Core.UI as I
+import Changes.Core.Edit as I
+import Changes.Core.Import
+import Changes.Core.Lens as I
+import Changes.Core.Read as I
+import Changes.Core.Reference as I
+import Changes.Core.Resource as I
+import Changes.Core.Sequence as I
+import Changes.Core.Types as I
+import Changes.Core.UI as I
 
 type ReasonCodec = Codec' (Result Text)

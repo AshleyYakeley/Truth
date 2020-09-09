@@ -1,12 +1,12 @@
-module Truth.UI.GTK.TextEntry
+module Changes.UI.GTK.TextEntry
     ( createTextEntry
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes hiding (get)
-import Truth.Core
-import Truth.UI.GTK.Useful
 
 createTextEntry :: Model (WholeUpdate Text) -> CreateView Widget
 createTextEntry rmod = do

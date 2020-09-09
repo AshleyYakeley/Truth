@@ -14,13 +14,13 @@ module Pinafore.Base.Action
     , pinaforeLiftLifeCycleIO
     ) where
 
+import Changes.Core
 import Pinafore.Base.Know
 import Pinafore.Base.Ref
 import Shapes
-import Truth.Core
 
 data ActionContext = MkActionContext
-    { acTruthContext :: TruthContext
+    { acChangesContext :: ChangesContext
     , acUndoHandler :: UndoHandler
     }
 
@@ -34,8 +34,8 @@ instance MonadFail PinaforeAction where
 instance RepresentationalRole PinaforeAction where
     representationalCoercion MkCoercion = MkCoercion
 
-unPinaforeAction :: forall a. TruthContext -> UndoHandler -> PinaforeAction a -> View (Know a)
-unPinaforeAction acTruthContext acUndoHandler (MkPinaforeAction action) =
+unPinaforeAction :: forall a. ChangesContext -> UndoHandler -> PinaforeAction a -> View (Know a)
+unPinaforeAction acChangesContext acUndoHandler (MkPinaforeAction action) =
     getComposeM $ runReaderT action MkActionContext {..}
 
 viewPinaforeAction :: View a -> PinaforeAction a
@@ -60,7 +60,7 @@ pinaforeRefPushAction lv edits = do
 pinaforeGetExitOnClose :: PinaforeAction (WMFunction CreateView LifeCycleIO)
 pinaforeGetExitOnClose =
     MkPinaforeAction $ do
-        tc <- asks acTruthContext
+        tc <- asks acChangesContext
         unlift <- lift $ MkComposeM $ fmap Known askUnlift
         return $ MkWMFunction $ runWUnliftAll unlift . tcExitOnClosed tc
 
@@ -68,7 +68,7 @@ pinaforeGetExitOnClose =
 pinaforeLiftLifeCycleIO :: LifeCycleIO a -> PinaforeAction a
 pinaforeLiftLifeCycleIO la = do
     MkActionContext {..} <- MkPinaforeAction ask
-    liftIO $ tcUnliftLifeCycle acTruthContext la
+    liftIO $ tcUnliftLifeCycle acChangesContext la
 
 pinaforeExit :: PinaforeAction ()
 pinaforeExit = viewPinaforeAction viewExit

@@ -1,4 +1,4 @@
-module Truth.Core.UI.View.CreateView
+module Changes.Core.UI.View.CreateView
     ( CreateView
     , ViewState
     , viewCreateView
@@ -10,12 +10,12 @@ module Truth.Core.UI.View.CreateView
     , cvBindReadOnlyWholeModel
     ) where
 
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Reference
-import Truth.Core.Types
-import Truth.Core.UI.View.Context
-import Truth.Core.UI.View.View
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Reference
+import Changes.Core.Types
+import Changes.Core.UI.View.Context
+import Changes.Core.UI.View.View
 
 type CreateView = ViewT LifeCycleIO
 

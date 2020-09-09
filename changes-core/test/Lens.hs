@@ -2,10 +2,10 @@ module Lens
     ( testLens
     ) where
 
+import Changes.Core
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
-import Truth.Core
 
 collectModelUpdates :: ResourceContext -> Model update -> LifeCycleIO (IO [update])
 collectModelUpdates rc sub = do

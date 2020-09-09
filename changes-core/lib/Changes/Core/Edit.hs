@@ -1,9 +1,9 @@
-module Truth.Core.Edit
+module Changes.Core.Edit
     ( module I
     ) where
 
-import Truth.Core.Edit.Cache as I
-import Truth.Core.Edit.Edit as I
-import Truth.Core.Edit.FullEdit as I
-import Truth.Core.Edit.Opaque as I
-import Truth.Core.Edit.Update as I
+import Changes.Core.Edit.Cache as I
+import Changes.Core.Edit.Edit as I
+import Changes.Core.Edit.FullEdit as I
+import Changes.Core.Edit.Opaque as I
+import Changes.Core.Edit.Update as I

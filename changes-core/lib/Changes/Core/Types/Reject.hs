@@ -1,11 +1,11 @@
-module Truth.Core.Types.Reject where
+module Changes.Core.Types.Reject where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.None
-import Truth.Core.Types.ReadOnly
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.None
+import Changes.Core.Types.ReadOnly
 
 fromReadOnlyRejectingChangeLens :: forall update. ChangeLens (ReadOnlyUpdate update) update
 fromReadOnlyRejectingChangeLens = let

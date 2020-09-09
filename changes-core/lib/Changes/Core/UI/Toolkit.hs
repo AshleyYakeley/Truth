@@ -1,32 +1,32 @@
-module Truth.Core.UI.Toolkit where
+module Changes.Core.UI.Toolkit where
 
-import Truth.Core.Import
-import Truth.Core.Resource
-import Truth.Core.UI.Toolkit.Run
-import Truth.Core.UI.View.CreateView
-import Truth.Core.UI.View.View
+import Changes.Core.Import
+import Changes.Core.Resource
+import Changes.Core.UI.Toolkit.Run
+import Changes.Core.UI.View.CreateView
+import Changes.Core.UI.View.View
 
-data TruthContext = MkTruthContext
+data ChangesContext = MkChangesContext
     { tcRunToolkit :: RunToolkit
     , tcExitOnClosed :: forall m. MonadLifeCycleIO m => MFunction m m
     }
 
-tcUnliftLifeCycle :: TruthContext -> MFunction LifeCycleIO IO
+tcUnliftLifeCycle :: ChangesContext -> MFunction LifeCycleIO IO
 tcUnliftLifeCycle tc = rtUnliftLifeCycle $ tcRunToolkit tc
 
-tcRunView :: MonadUnliftIO m => TruthContext -> ResourceContext -> ViewT m a -> m a
+tcRunView :: MonadUnliftIO m => ChangesContext -> ResourceContext -> ViewT m a -> m a
 tcRunView tc = rtRunView $ tcRunToolkit tc
 
-tcUnliftCreateView :: TruthContext -> CreateView a -> View a
+tcUnliftCreateView :: ChangesContext -> CreateView a -> View a
 tcUnliftCreateView tc = rtUnliftCreateView $ tcRunToolkit tc
 
-nullTruthContext :: MFunction LifeCycleIO IO -> TruthContext
-nullTruthContext unlift = let
+nullChangesContext :: MFunction LifeCycleIO IO -> ChangesContext
+nullChangesContext unlift = let
     tcRunToolkit = nullRunToolkit unlift
     tcExitOnClosed = id
-    in MkTruthContext {..}
+    in MkChangesContext {..}
 
-quitOnAllClosed :: MonadIO cm => RunToolkit -> (TruthContext -> cm r) -> cm r
+quitOnAllClosed :: MonadIO cm => RunToolkit -> (ChangesContext -> cm r) -> cm r
 quitOnAllClosed tcRunToolkit call = do
     (ondone, checkdone) <- liftIO $ lifeCycleOnAllDone $ rtExit tcRunToolkit
     let
@@ -36,8 +36,8 @@ quitOnAllClosed tcRunToolkit call = do
         tcExitOnClosed ma = do
             liftLifeCycleIO ondone
             ma
-    r <- call $ MkTruthContext {..}
+    r <- call $ MkChangesContext {..}
     liftIO checkdone
     return r
 
-type TruthMain = forall a. (TruthContext -> CreateView a) -> IO a
+type ChangesMain = forall a. (ChangesContext -> CreateView a) -> IO a

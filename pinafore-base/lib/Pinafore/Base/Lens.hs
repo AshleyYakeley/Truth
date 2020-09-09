@@ -1,6 +1,6 @@
 module Pinafore.Base.Lens where
 
-import Truth.Core
+import Changes.Core
 
 class BaseChangeLens edit baseupdate where
     baseChangeLens :: ChangeLens baseupdate edit

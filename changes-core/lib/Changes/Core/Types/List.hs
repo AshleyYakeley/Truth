@@ -1,14 +1,14 @@
-module Truth.Core.Types.List
+module Changes.Core.Types.List
     ( ListReader(..)
     , itemReadFunction
     , knownItemReadFunction
     , ListEdit(..)
     , ListUpdate(..)
     , listItemLens
-    , module Truth.Core.Types.List.Ordered
+    , module Changes.Core.Types.List.Ordered
     ) where
 
-import Truth.Core.Types.List.Edit
-import Truth.Core.Types.List.Ordered
-import Truth.Core.Types.List.Read
-import Truth.Core.Types.List.Update
+import Changes.Core.Types.List.Edit
+import Changes.Core.Types.List.Ordered
+import Changes.Core.Types.List.Read
+import Changes.Core.Types.List.Update

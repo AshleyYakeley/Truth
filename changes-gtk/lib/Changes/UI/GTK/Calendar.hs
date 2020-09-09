@@ -1,12 +1,12 @@
-module Truth.UI.GTK.Calendar
+module Changes.UI.GTK.Calendar
     ( createCalendar
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import Data.Time
 import GI.Gtk as Gtk
 import Shapes hiding (get)
-import Truth.Core
-import Truth.UI.GTK.Useful
 
 createCalendar :: Model (WholeUpdate Day) -> CreateView Widget
 createCalendar rmod = do

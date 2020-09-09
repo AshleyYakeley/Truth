@@ -1,11 +1,11 @@
-module Truth.Core.Types.Bi where
+module Changes.Core.Types.Bi where
 
+import Changes.Core.Edit
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.None
+import Changes.Core.Types.ReadOnly
 import Shapes
-import Truth.Core.Edit
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.None
-import Truth.Core.Types.ReadOnly
 
 type BiReader (preader :: Type -> Type) (qreader :: Type -> Type) = qreader
 

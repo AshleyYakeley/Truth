@@ -1,13 +1,13 @@
-module Truth.UI.GTK.CheckButton
+module Changes.UI.GTK.CheckButton
     ( createCheckButton
     , createMaybeCheckButton
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.Useful
 
 createCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate Bool) -> CreateView Widget
 createCheckButton label rmod = do

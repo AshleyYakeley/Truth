@@ -1,6 +1,6 @@
-module Truth.Core.Reference.AutoClose where
+module Changes.Core.Reference.AutoClose where
 
-import Truth.Core.Import
+import Changes.Core.Import
 
 type AutoCloseT key t = StateT (Map key (t, LifeState IO))
 

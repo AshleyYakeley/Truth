@@ -1,11 +1,11 @@
-module Truth.Core.Types.One.FullResult where
+module Changes.Core.Types.One.FullResult where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.One.Read
-import Truth.Core.Types.One.Result
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.One.Read
+import Changes.Core.Types.One.Result
 
 data FullResultOneEdit (f :: Type -> Type) edit where
     SuccessFullResultOneEdit :: edit -> FullResultOneEdit f edit

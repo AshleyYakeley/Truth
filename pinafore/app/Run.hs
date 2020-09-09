@@ -3,14 +3,14 @@ module Run
     , runInteractive
     ) where
 
+import Changes.Core
+import Changes.UI.GTK
 import Pinafore
 import Shapes
-import Truth.Core
-import Truth.UI.GTK
 
 runFiles :: Bool -> FilePath -> [FilePath] -> IO ()
 runFiles fNoRun dirpath fpaths =
-    truthMainGTK $ \tc -> do
+    changesMainGTK $ \tc -> do
         context <- standardPinaforeContext dirpath tc
         cvLiftView $
             for_ fpaths $ \fpath -> do
@@ -25,7 +25,7 @@ runFiles fNoRun dirpath fpaths =
 
 runInteractive :: FilePath -> IO ()
 runInteractive dirpath =
-    truthMainGTK $ \tc -> do
+    changesMainGTK $ \tc -> do
         context <- standardPinaforeContext dirpath tc
         let
             ?pinafore = context

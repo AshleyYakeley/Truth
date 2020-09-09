@@ -1,10 +1,10 @@
-module Truth.UI.GTK.Blank
+module Changes.UI.GTK.Blank
     ( createBlank
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import GI.Gtk
-import Truth.Core
-import Truth.UI.GTK.Useful
 
 createBlank :: CreateView Widget
 createBlank = do

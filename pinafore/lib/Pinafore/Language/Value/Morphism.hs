@@ -1,12 +1,12 @@
 module Pinafore.Language.Value.Morphism where
 
+import Changes.Core
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Value.FiniteSetRef
 import Pinafore.Language.Value.OpenEntity
 import Pinafore.Language.Value.Ref
 import Shapes
-import Truth.Core
 
 newtype LangMorphism (a :: (Type, Type)) (b :: (Type, Type)) =
     -- forall a b. (Eq a, Eq b) =>

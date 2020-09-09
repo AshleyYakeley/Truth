@@ -1,10 +1,10 @@
-module Truth.World.Clock where
+module Changes.World.Clock where
 
+import Changes.Core
 import Data.Fixed
 import Data.IORef
 import Data.Time
 import Shapes
-import Truth.Core
 
 clockPremodel :: UTCTime -> NominalDiffTime -> Premodel (ROWUpdate UTCTime) ()
 clockPremodel basetime interval pmrUpdatesTask update = do

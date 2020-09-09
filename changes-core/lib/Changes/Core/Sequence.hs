@@ -1,6 +1,6 @@
-module Truth.Core.Sequence where
+module Changes.Core.Sequence where
 
-import Truth.Core.Import
+import Changes.Core.Import
 
 newtype SequencePoint seq =
     MkSequencePoint (Index seq)

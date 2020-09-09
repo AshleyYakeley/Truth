@@ -1,13 +1,13 @@
-module Truth.Core.Read
+module Changes.Core.Read
     ( module I
-    , module Truth.Core.Read
+    , module Changes.Core.Read
     ) where
 
-import Truth.Core.Import
-import Truth.Core.Read.FullSubjectReader as I
-import Truth.Core.Read.ReadM as I
-import Truth.Core.Read.Readable as I
-import Truth.Core.Read.SubjectReader as I
+import Changes.Core.Import
+import Changes.Core.Read.FullSubjectReader as I
+import Changes.Core.Read.ReadM as I
+import Changes.Core.Read.Readable as I
+import Changes.Core.Read.SubjectReader as I
 
 data ConstReader a t where
     MkConstReader :: a -> ConstReader a a

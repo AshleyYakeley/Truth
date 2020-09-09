@@ -1,14 +1,14 @@
-module Truth.Core.Reference.MemoryCell where
+module Changes.Core.Reference.MemoryCell where
 
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Reference.EditContext
+import Changes.Core.Reference.Reference
+import Changes.Core.Resource
+import Changes.Core.Types
 import Data.IORef
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Reference.EditContext
-import Truth.Core.Reference.Reference
-import Truth.Core.Resource
-import Truth.Core.Types
 
 type MemoryCellUpdate = DependentUpdate WitnessedIORef
 

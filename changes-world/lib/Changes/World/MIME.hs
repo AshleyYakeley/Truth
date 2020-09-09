@@ -1,11 +1,11 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.World.MIME where
+module Changes.World.MIME where
 
+import Changes.Core
+import Changes.World.Anything
 import qualified Codec.MIME.Type
 import Shapes
-import Truth.Core
-import Truth.World.Anything
 
 type MIMEContentType = Codec.MIME.Type.Type
 

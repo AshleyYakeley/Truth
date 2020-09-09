@@ -1,7 +1,7 @@
-module Truth.Core.Types.Unit where
+module Changes.Core.Types.Unit where
 
-import Truth.Core.Types.None
-import Truth.Core.Types.Whole
+import Changes.Core.Types.None
+import Changes.Core.Types.Whole
 
 type ConstWholeEdit a = ConstEdit (WholeReader a)
 

@@ -1,4 +1,4 @@
-name: truth-gtk
+name: changes-gtk
 version: "0.1"
 _common: !include "../common.yaml"
 <<: *author
@@ -31,34 +31,34 @@ library:
       - gi-gtk
       - gi-gtk-hs
       - shapes
-      - truth-core
+      - changes-core
     exposed-modules:
-      - Truth.UI.GTK
+      - Changes.UI.GTK
     other-modules:
-      - Truth.UI.GTK.Useful
-      - Truth.UI.GTK.TextStyle
-      - Truth.UI.GTK.DynamicStore
-      - Truth.UI.GTK.Blank
-      - Truth.UI.GTK.CSS
-      - Truth.UI.GTK.Button
-      - Truth.UI.GTK.Icon
-      - Truth.UI.GTK.Label
-      - Truth.UI.GTK.Maybe
-      - Truth.UI.GTK.Switch
-      - Truth.UI.GTK.CheckButton
-      - Truth.UI.GTK.Option
-      - Truth.UI.GTK.TextEntry
-      - Truth.UI.GTK.Text
-      - Truth.UI.GTK.Layout
-      - Truth.UI.GTK.Pages
-      - Truth.UI.GTK.Table
-      - Truth.UI.GTK.Drag
-      - Truth.UI.GTK.MenuBar
-      - Truth.UI.GTK.Scrolled
-      - Truth.UI.GTK.Calendar
-      - Truth.UI.GTK.ChooseFile
-      - Truth.UI.GTK.Window
-      - Truth.UI.GTK.Main
+      - Changes.UI.GTK.Useful
+      - Changes.UI.GTK.TextStyle
+      - Changes.UI.GTK.DynamicStore
+      - Changes.UI.GTK.Blank
+      - Changes.UI.GTK.CSS
+      - Changes.UI.GTK.Button
+      - Changes.UI.GTK.Icon
+      - Changes.UI.GTK.Label
+      - Changes.UI.GTK.Maybe
+      - Changes.UI.GTK.Switch
+      - Changes.UI.GTK.CheckButton
+      - Changes.UI.GTK.Option
+      - Changes.UI.GTK.TextEntry
+      - Changes.UI.GTK.Text
+      - Changes.UI.GTK.Layout
+      - Changes.UI.GTK.Pages
+      - Changes.UI.GTK.Table
+      - Changes.UI.GTK.Drag
+      - Changes.UI.GTK.MenuBar
+      - Changes.UI.GTK.Scrolled
+      - Changes.UI.GTK.Calendar
+      - Changes.UI.GTK.ChooseFile
+      - Changes.UI.GTK.Window
+      - Changes.UI.GTK.Main
 
 tests:
     test:
@@ -72,8 +72,8 @@ tests:
           - witness
           - open-witness
           - shapes
-          - truth-core
-          - truth-gtk
+          - changes-core
+          - changes-gtk
           - QuickCheck
           - tasty
           - tasty-hunit
@@ -81,7 +81,7 @@ tests:
         ghc-options: -threaded
 
 executables:
-    truth-text:
+    changes-text:
         when:
           - condition: "!flag(build-examples)"
             buildable: False
@@ -91,13 +91,13 @@ executables:
           - filepath
           - bytestring
           - shapes
-          - truth-core
-          - truth-gtk
-          - truth-world
+          - changes-core
+          - changes-gtk
+          - changes-world
           - optparse-applicative
         main: Main.hs
         ghc-options: -threaded
-    truth-soup:
+    changes-soup:
         when:
           - condition: "!flag(build-examples)"
             buildable: False
@@ -109,9 +109,9 @@ executables:
           - uuid
           - aeson
           - shapes
-          - truth-core
-          - truth-gtk
-          - truth-world
+          - changes-core
+          - changes-gtk
+          - changes-world
           - optparse-applicative
         main: Main.hs
         other-modules:

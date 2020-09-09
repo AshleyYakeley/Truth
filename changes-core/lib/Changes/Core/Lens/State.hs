@@ -1,14 +1,14 @@
-module Truth.Core.Lens.State
+module Changes.Core.Lens.State
     ( StateChangeLens(..)
     , StateLensInit
     , makeStateLens
     ) where
 
-import Truth.Core.Edit.Update
-import Truth.Core.Import
-import Truth.Core.Lens.Floating
-import Truth.Core.Lens.Lens
-import Truth.Core.Read
+import Changes.Core.Edit.Update
+import Changes.Core.Import
+import Changes.Core.Lens.Floating
+import Changes.Core.Lens.Lens
+import Changes.Core.Read
 
 data StateChangeLens updateA updateB = forall s. MkStateChangeLens
     { sclInit :: forall m. MonadIO m => Readable m (UpdateReader updateA) -> m s

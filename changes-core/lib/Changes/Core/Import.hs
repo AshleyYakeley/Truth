@@ -1,4 +1,4 @@
-module Truth.Core.Import
+module Changes.Core.Import
     ( module I
     ) where
 

@@ -1,13 +1,13 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Truth.Core.Types.Whole where
+module Changes.Core.Types.Whole where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.None
-import Truth.Core.Types.ReadOnly
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.None
+import Changes.Core.Types.ReadOnly
 
 data WholeReader (a :: Type) (t :: Type) where
     ReadWhole :: forall t. WholeReader t t

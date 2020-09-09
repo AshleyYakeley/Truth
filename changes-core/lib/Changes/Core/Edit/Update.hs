@@ -1,8 +1,8 @@
-module Truth.Core.Edit.Update where
+module Changes.Core.Edit.Update where
 
-import Truth.Core.Edit.Edit
-import Truth.Core.Import
-import Truth.Core.Read
+import Changes.Core.Edit.Edit
+import Changes.Core.Import
+import Changes.Core.Read
 
 type family UpdateEdit (update :: Type) :: Type
 

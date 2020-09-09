@@ -1,16 +1,16 @@
-module Truth.UI.GTK.Window
+module Changes.UI.GTK.Window
     ( WindowSpec(..)
     , UIWindow(..)
     , createWindow
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.MenuBar
+import Changes.UI.GTK.Switch
+import Changes.UI.GTK.Useful
 import GI.GLib as GI hiding (String)
 import GI.Gtk as GI hiding (MenuBar)
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.MenuBar
-import Truth.UI.GTK.Switch
-import Truth.UI.GTK.Useful
 
 data WindowSpec = MkWindowSpec
     { wsCloseBoxAction :: View ()

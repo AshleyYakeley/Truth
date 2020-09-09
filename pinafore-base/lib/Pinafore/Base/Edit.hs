@@ -4,13 +4,13 @@ module Pinafore.Base.Edit
     , PinaforeStorageUpdate(..)
     ) where
 
+import Changes.Core
 import Pinafore.Base.Entity
 import Pinafore.Base.EntityAdapter
 import Pinafore.Base.EntityStorer
 import Pinafore.Base.Know
 import Pinafore.Base.Lens
 import Shapes
-import Truth.Core
 
 -- | Some of these reads may add to the database, but will always give consistent results between changes.
 type PinaforeStorageRead :: Type -> Type

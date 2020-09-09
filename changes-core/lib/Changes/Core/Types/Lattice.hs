@@ -1,8 +1,8 @@
-module Truth.Core.Types.Lattice where
+module Changes.Core.Types.Lattice where
 
-import Truth.Core.Lens
-import Truth.Core.Types.ReadOnly
-import Truth.Core.Types.Tuple.Pair
+import Changes.Core.Lens
+import Changes.Core.Types.ReadOnly
+import Changes.Core.Types.Tuple.Pair
 
 class JoinSemiLatticeReadOnlyChangeLens update where
     joinChangeLens :: ChangeLens (PairUpdate update update) (ReadOnlyUpdate update)

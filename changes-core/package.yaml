@@ -1,4 +1,4 @@
-name: truth-core
+name: changes-core
 version: "0.1"
 _common: !include "../common.yaml"
 <<: *author
@@ -12,95 +12,95 @@ library:
       - base >= 4.12
       - time
     exposed-modules:
-      - Truth.Core
-      - Truth.Core.UI.Toolkit.Run
+      - Changes.Core
+      - Changes.Core.UI.Toolkit.Run
     other-modules:
-      - Truth.Core.Import
-      - Truth.Core.Sequence
-      - Truth.Core.Resource.Function
-      - Truth.Core.Resource.SingleRunner
-      - Truth.Core.Resource.ResourceRunner
-      - Truth.Core.Resource.Runnable
-      - Truth.Core.Resource
-      - Truth.Core.Read.Readable
-      - Truth.Core.Read.ReadM
-      - Truth.Core.Read.SubjectReader
-      - Truth.Core.Read.FullSubjectReader
-      - Truth.Core.Read
-      - Truth.Core.Edit.Edit
-      - Truth.Core.Edit.Update
-      - Truth.Core.Edit.FullEdit
-      - Truth.Core.Edit.Cache
-      - Truth.Core.Lens.Lens
-      - Truth.Core.Lens.Floating
-      - Truth.Core.Lens.State
-      - Truth.Core.Lens
-      - Truth.Core.Types.Partial
-      - Truth.Core.Edit.Opaque
-      - Truth.Core.Edit
-      - Truth.Core.Types.None
-      - Truth.Core.Types.ReadOnly
-      - Truth.Core.Types.Reject
-      - Truth.Core.Types.Whole
-      - Truth.Core.Types.WholeUpdateFunction
-      - Truth.Core.Types.Unit
-      - Truth.Core.Types.Sum
-      - Truth.Core.Types.SumWhole
-      - Truth.Core.Types.One.Read
-      - Truth.Core.Types.One.Edit
-      - Truth.Core.Types.One.Result
-      - Truth.Core.Types.One.FullResult
-      - Truth.Core.Types.Either
-      - Truth.Core.Types.Comonad
-      - Truth.Core.Types.Tuple.Tuple
-      - Truth.Core.Types.Tuple.Cons
-      - Truth.Core.Types.Tuple.Either
-      - Truth.Core.Types.Tuple.Pair
-      - Truth.Core.Types.Lattice
-      - Truth.Core.Types.Tuple.Function
-      - Truth.Core.Types.WholeFunction
-      - Truth.Core.Types.Set
-      - Truth.Core.Types.Tuple.Dependent
-      - Truth.Core.Types.Tuple.Context
-      - Truth.Core.Types.List.Read
-      - Truth.Core.Types.List.Edit
-      - Truth.Core.Types.List.Update
-      - Truth.Core.Types.List.Ordered
-      - Truth.Core.Types.List
-      - Truth.Core.Types.String
-      - Truth.Core.Types.ByteString
-      - Truth.Core.Types.Key.HasKey
-      - Truth.Core.Types.Key.Key
-      - Truth.Core.Types.Key.Order
-      - Truth.Core.Types.Key.FiniteSet
-      - Truth.Core.Types.Database
-      - Truth.Core.Types.Database.Show
-      - Truth.Core.Types.Database.Tuple
-      - Truth.Core.Types.Database.Tuple.Show
-      - Truth.Core.Types.Bi
-      - Truth.Core.Types.BiWhole
-      - Truth.Core.Types
-      - Truth.Core.Reference.DeferActionT
-      - Truth.Core.Reference.EditContext
-      - Truth.Core.Reference.Reference
-      - Truth.Core.Reference.AutoClose
-      - Truth.Core.Reference.ReferenceEdit
-      - Truth.Core.Reference.Premodel
-      - Truth.Core.Reference.Model
-      - Truth.Core.Reference.Tuple
-      - Truth.Core.Reference.MemoryCell
-      - Truth.Core.Reference.Editor
-      - Truth.Core.Reference.Cache
-      - Truth.Core.Reference.Savable
-      - Truth.Core.Reference.Undo
-      - Truth.Core.Reference
-      - Truth.Core.UI.View.Context
-      - Truth.Core.UI.View.View
-      - Truth.Core.UI.Selection
-      - Truth.Core.UI.Toolkit
-      - Truth.Core.UI.View.CreateView
-      - Truth.Core.UI.View.Dynamic
-      - Truth.Core.UI
+      - Changes.Core.Import
+      - Changes.Core.Sequence
+      - Changes.Core.Resource.Function
+      - Changes.Core.Resource.SingleRunner
+      - Changes.Core.Resource.ResourceRunner
+      - Changes.Core.Resource.Runnable
+      - Changes.Core.Resource
+      - Changes.Core.Read.Readable
+      - Changes.Core.Read.ReadM
+      - Changes.Core.Read.SubjectReader
+      - Changes.Core.Read.FullSubjectReader
+      - Changes.Core.Read
+      - Changes.Core.Edit.Edit
+      - Changes.Core.Edit.Update
+      - Changes.Core.Edit.FullEdit
+      - Changes.Core.Edit.Cache
+      - Changes.Core.Lens.Lens
+      - Changes.Core.Lens.Floating
+      - Changes.Core.Lens.State
+      - Changes.Core.Lens
+      - Changes.Core.Types.Partial
+      - Changes.Core.Edit.Opaque
+      - Changes.Core.Edit
+      - Changes.Core.Types.None
+      - Changes.Core.Types.ReadOnly
+      - Changes.Core.Types.Reject
+      - Changes.Core.Types.Whole
+      - Changes.Core.Types.WholeUpdateFunction
+      - Changes.Core.Types.Unit
+      - Changes.Core.Types.Sum
+      - Changes.Core.Types.SumWhole
+      - Changes.Core.Types.One.Read
+      - Changes.Core.Types.One.Edit
+      - Changes.Core.Types.One.Result
+      - Changes.Core.Types.One.FullResult
+      - Changes.Core.Types.Either
+      - Changes.Core.Types.Comonad
+      - Changes.Core.Types.Tuple.Tuple
+      - Changes.Core.Types.Tuple.Cons
+      - Changes.Core.Types.Tuple.Either
+      - Changes.Core.Types.Tuple.Pair
+      - Changes.Core.Types.Lattice
+      - Changes.Core.Types.Tuple.Function
+      - Changes.Core.Types.WholeFunction
+      - Changes.Core.Types.Set
+      - Changes.Core.Types.Tuple.Dependent
+      - Changes.Core.Types.Tuple.Context
+      - Changes.Core.Types.List.Read
+      - Changes.Core.Types.List.Edit
+      - Changes.Core.Types.List.Update
+      - Changes.Core.Types.List.Ordered
+      - Changes.Core.Types.List
+      - Changes.Core.Types.String
+      - Changes.Core.Types.ByteString
+      - Changes.Core.Types.Key.HasKey
+      - Changes.Core.Types.Key.Key
+      - Changes.Core.Types.Key.Order
+      - Changes.Core.Types.Key.FiniteSet
+      - Changes.Core.Types.Database
+      - Changes.Core.Types.Database.Show
+      - Changes.Core.Types.Database.Tuple
+      - Changes.Core.Types.Database.Tuple.Show
+      - Changes.Core.Types.Bi
+      - Changes.Core.Types.BiWhole
+      - Changes.Core.Types
+      - Changes.Core.Reference.DeferActionT
+      - Changes.Core.Reference.EditContext
+      - Changes.Core.Reference.Reference
+      - Changes.Core.Reference.AutoClose
+      - Changes.Core.Reference.ReferenceEdit
+      - Changes.Core.Reference.Premodel
+      - Changes.Core.Reference.Model
+      - Changes.Core.Reference.Tuple
+      - Changes.Core.Reference.MemoryCell
+      - Changes.Core.Reference.Editor
+      - Changes.Core.Reference.Cache
+      - Changes.Core.Reference.Savable
+      - Changes.Core.Reference.Undo
+      - Changes.Core.Reference
+      - Changes.Core.UI.View.Context
+      - Changes.Core.UI.View.View
+      - Changes.Core.UI.Selection
+      - Changes.Core.UI.Toolkit
+      - Changes.Core.UI.View.CreateView
+      - Changes.Core.UI.View.Dynamic
+      - Changes.Core.UI
 
 tests:
   test:
@@ -118,7 +118,7 @@ tests:
       - comonad
       - mono-traversable
       - shapes
-      - truth-core
+      - changes-core
       - filepath
       - directory
       - QuickCheck

@@ -1,10 +1,10 @@
-module Truth.Core.Lens.Lens where
+module Changes.Core.Lens.Lens where
 
-import Truth.Core.Edit.Edit
-import Truth.Core.Edit.FullEdit
-import Truth.Core.Edit.Update
-import Truth.Core.Import
-import Truth.Core.Read
+import Changes.Core.Edit.Edit
+import Changes.Core.Edit.FullEdit
+import Changes.Core.Edit.Update
+import Changes.Core.Import
+import Changes.Core.Read
 
 data ChangeLens updateA updateB = MkChangeLens
     { clRead :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)

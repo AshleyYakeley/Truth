@@ -1,4 +1,4 @@
-module Truth.Core.Reference.EditContext
+module Changes.Core.Reference.EditContext
     ( EditSource
     , noEditSource
     , newEditSource
@@ -7,7 +7,7 @@ module Truth.Core.Reference.EditContext
     , noEditContext
     ) where
 
-import Truth.Core.Import
+import Changes.Core.Import
 
 newtype EditSource =
     MkEditSource (Maybe Unique)

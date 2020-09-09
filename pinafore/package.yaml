@@ -15,9 +15,9 @@ library:
       - parsec
       - containers
       - typed-expression
-      - truth-core
-      - truth-world
-      - truth-gtk
+      - changes-core
+      - changes-world
+      - changes-gtk
       - pinafore-base
     exposed-modules:
       - Pinafore.Language
@@ -94,8 +94,8 @@ tests:
           - gi-gobject
           - haskell-gi-base
           - typed-expression
-          - truth-core
-          - truth-gtk
+          - changes-core
+          - changes-gtk
           - pinafore
           - tasty
           - tasty-expected-failure
@@ -120,7 +120,7 @@ benchmarks:
         dependencies:
           - base >= 4.12
           - shapes
-          - truth-core
+          - changes-core
           - pinafore
           - criterion
         main: Main.hs
@@ -136,8 +136,8 @@ executables:
           - directory
           - optparse-applicative
           - xdg-basedir
-          - truth-core
-          - truth-gtk
+          - changes-core
+          - changes-gtk
           - pinafore
           - githash
         main: Main.hs

@@ -1,4 +1,4 @@
-module Truth.Core.Reference.Tuple
+module Changes.Core.Reference.Tuple
     ( tupleReference
     , pairReferences
     , tuplePremodel
@@ -8,16 +8,16 @@ module Truth.Core.Reference.Tuple
     , contextModels
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Reference.EditContext
-import Truth.Core.Reference.Model
-import Truth.Core.Reference.Premodel
-import Truth.Core.Reference.Reference
-import Truth.Core.Resource
-import Truth.Core.Types
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Reference.EditContext
+import Changes.Core.Reference.Model
+import Changes.Core.Reference.Premodel
+import Changes.Core.Reference.Reference
+import Changes.Core.Resource
+import Changes.Core.Types
 
 class (forall update. MapResource (f update)) => TupleResource (f :: Type -> [TransKind] -> Type) where
     noneTupleAResource :: f (TupleUpdate (ListElementType '[])) '[]

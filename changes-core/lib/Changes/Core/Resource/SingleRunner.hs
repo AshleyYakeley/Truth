@@ -1,4 +1,4 @@
-module Truth.Core.Resource.SingleRunner
+module Changes.Core.Resource.SingleRunner
     ( SingleRunner
     , mkSingleRunner
     , singleRunnerUnliftAllDict
@@ -7,7 +7,7 @@ module Truth.Core.Resource.SingleRunner
     , runSingleRunnerContext
     ) where
 
-import Truth.Core.Import
+import Changes.Core.Import
 
 data SingleRunner (t :: TransKind) where
     MkSingleRunner

@@ -1,7 +1,7 @@
-module Truth.Core.Edit.Opaque where
+module Changes.Core.Edit.Opaque where
 
-import Truth.Core.Edit.Update
-import Truth.Core.Import
+import Changes.Core.Edit.Update
+import Changes.Core.Import
 
 data OpaqueUpdate (edit :: Type) =
     MkOpaqueUpdate

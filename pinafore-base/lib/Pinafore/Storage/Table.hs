@@ -10,9 +10,9 @@ module Pinafore.Storage.Table
     , pinaforeTableEntityReference
     ) where
 
+import Changes.Core
 import Pinafore.Base
 import Shapes
-import Truth.Core
 
 type RefCount = Int
 

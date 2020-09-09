@@ -1,12 +1,12 @@
-module Truth.UI.GTK.Text
+module Changes.UI.GTK.Text
     ( TextSelection
     , createTextArea
     ) where
 
+import Changes.Core
+import Changes.UI.GTK.Useful
 import GI.Gtk
 import Shapes
-import Truth.Core
-import Truth.UI.GTK.Useful
 
 type TextSelection = FloatingChangeLens (StringUpdate Text) (StringUpdate Text)
 

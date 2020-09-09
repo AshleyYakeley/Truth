@@ -1,9 +1,9 @@
-module Truth.Core.Types.Tuple.Tuple where
+module Changes.Core.Types.Tuple.Tuple where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
 
 class TupleUpdateWitness (c :: Type -> Constraint) (sel :: Type -> Type) where
     tupleUpdateWitness :: forall update. sel update -> Dict (c update)

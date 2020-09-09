@@ -1,11 +1,11 @@
-module Truth.Core.Types.One.Result where
+module Changes.Core.Types.One.Result where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Types.One.Edit
-import Truth.Core.Types.One.Read
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Types.One.Edit
+import Changes.Core.Types.One.Read
 
 data ResultOneUpdate (f :: Type -> Type) update where
     SuccessResultOneUpdate :: update -> ResultOneUpdate f update

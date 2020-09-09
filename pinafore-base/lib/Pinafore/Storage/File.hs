@@ -2,11 +2,11 @@
 
 module Pinafore.Storage.File where
 
+import Changes.Core
+import Changes.World.FileSystem
+import Changes.World.ReferenceStore
 import Pinafore.Base
 import Shapes
-import Truth.Core
-import Truth.World.FileSystem
-import Truth.World.ReferenceStore
 
 type PinaforeFileUpdate = ReferenceStoreUpdate FileEntity ByteStringEdit
 

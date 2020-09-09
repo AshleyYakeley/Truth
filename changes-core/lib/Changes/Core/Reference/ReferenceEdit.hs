@@ -1,4 +1,4 @@
-module Truth.Core.Reference.ReferenceEdit
+module Changes.Core.Reference.ReferenceEdit
     ( ReferenceReader(..)
     , ReferenceEdit
     , ReferenceUpdate
@@ -6,14 +6,14 @@ module Truth.Core.Reference.ReferenceEdit
     , referenceLiftChangeLens
     ) where
 
-import Truth.Core.Edit
-import Truth.Core.Import
-import Truth.Core.Lens
-import Truth.Core.Read
-import Truth.Core.Reference.EditContext
-import Truth.Core.Reference.Reference
-import Truth.Core.Resource
-import Truth.Core.Types
+import Changes.Core.Edit
+import Changes.Core.Import
+import Changes.Core.Lens
+import Changes.Core.Read
+import Changes.Core.Reference.EditContext
+import Changes.Core.Reference.Reference
+import Changes.Core.Resource
+import Changes.Core.Types
 
 data ReferenceReader edit t where
     ReadReferenceResourceContext :: ReferenceReader edit ResourceContext
