@@ -545,11 +545,11 @@ base_predefinitions =
           , mkValEntry "maybeLensMapRef" "Map getter & pushback functions on a reference." $
             maybeLensLangRef @AP @AQ @BP @BQ
           , mkValEntry "lensMapRef" "Map getter & pushback functions on a reference." $ fLensLangRef @AP @AQ @B
-          , mkValEntry "maybeRef" "Map getter & pushback functions on a reference." $ maybeRef @A @B
+          , mkValEntry "maybeRef" "Map known/unknown to `Maybe` for a reference." $ maybeRef @A @B
           , mkValEntry "pairRef" "Combine references." $ langPairRefs @AP @AQ @BP @BQ
           , mkValEntry
                 "applyRef"
-                "Combine getting of references. `applyRef f x` = `{?f ?x}`"
+                "Combine getting of references. `applyRef f x` = `{%f %x}`"
                 ((<*>) :: PinaforeImmutableRef (A -> B) -> PinaforeImmutableRef A -> PinaforeImmutableRef B)
           , mkValEntry
                 "unknown"
@@ -562,9 +562,9 @@ base_predefinitions =
                 "`p ?? q` = `p` if it is known, else `q`."
                 ((<|>) :: PinaforeImmutableRef A -> PinaforeImmutableRef A -> PinaforeImmutableRef A)
           , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $ langRefGet @A
-          , mkValEntry "runRef" "Run an action from a reference." $ runLangRef
+          , mkValEntry "runRef" "Run an action from a reference. `runRef r = do a <- get r; a end`" $ runLangRef
           , mkValEntry ":=" "Set a reference to a value. Stop if failed." setentity
-          , mkValEntry "delete" "Delete an entity reference. Stop if failed." deleteentity
+          , mkValEntry "delete" "Delete an entity reference (i.e., make unknown). Stop if failed." deleteentity
           , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." newMemRef
           ]
     , docTreeEntry

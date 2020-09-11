@@ -9,7 +9,7 @@ import Shapes
 escapeMarkdown :: String -> String
 escapeMarkdown s = let
     badchars :: String
-    badchars = "+-*>\\"
+    badchars = "+*>\\"
     escapeChar :: Char -> String
     escapeChar c =
         if elem c badchars

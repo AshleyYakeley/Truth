@@ -25,8 +25,8 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <interactive-command> ::=
     "type" <expression> |
-    "simplify" "+" <expression> |
-    "simplify" "-" <expression>
+    "simplify" "+" <type> |
+    "simplify" "-" <type>
 
 <type> :: =
     "rec" <type-var> "." <type>
