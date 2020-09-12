@@ -9,11 +9,11 @@ This will put the executable program in `/usr/bin/pinafore`.
 
 ## Running
 
-Try running one of the example files. Copy/paste [this example](examples/people.md) to `people` and run this:
+Try running one of the example files. Copy/paste [this example](examples/contacts.md) to `contacts` and run this:
 
     :::text
-    chmod 755 people
-    ./people
+    chmod 755 contacts
+    ./contacts
 
 Alternatively, if you're curious about the type system, try running in [interactive mode](invocation.md#interactive-mode).
 

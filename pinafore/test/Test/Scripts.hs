@@ -29,6 +29,6 @@ testScripts =
         , testExample "test/script/calendar"
         , testExample "examples/stopwatch"
         , testExample "examples/calendar"
-        , testExample "examples/people"
+        , testExample "examples/contacts"
         , testExample "examples/events"
         ]

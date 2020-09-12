@@ -23,5 +23,5 @@ nav:
 - Examples:
   - Stopwatch: 'examples/stopwatch.md'
   - Calendar: 'examples/calendar.md'
-  - People: 'examples/people.md'
+  - Contacts: 'examples/contacts.md'
   - Events: 'examples/events.md'
