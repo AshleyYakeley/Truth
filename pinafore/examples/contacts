@@ -2,10 +2,15 @@
 
 let
 
-### Useful
-ui_page n ui = (uiLabel n,ui);
-ui_labelled n ui = uiHorizontal [(False, uiLabel n),(True, ui)];
+### Useful UI stuff
 
+uiPage: Ref +Text -> UI -> (UI,UI);
+uiPage n ui = (uiLabel n,ui);
+
+uiLabelled: Ref +Text -> UI -> UI;
+uiLabelled n ui = uiHorizontal [(False, uiLabel n),(True, ui)];
+
+# A window that comes with some menus.
 stdWindow: Ref +Text -> [MenuItem] -> UI -> Action Window;
 stdWindow title moremenus contents = fixAction $ \window -> let
     menus: [MenuItem];
@@ -25,69 +30,18 @@ stdWindow title moremenus contents = fixAction $ \window -> let
         ] ++ moremenus;
     in openWindow title {menus} $ uiScrolled contents;
 
-selectionWindow:
-    (Text, Text) ->
-    SetRef (item | NewEntity) ->
-    ((item | NewEntity) -> Action Any) ->
-    ((item | NewEntity) -> Action Any) ->
-    (Ref {item,+NewEntity} -> UI) ->
-    Action Window;
-selectionWindow (inames,inamep) iset iopen inew iui = do
-    selection <- newMemRef;
-    let
-        newItem: Action ();
-        newItem = do
-            item <- newEntity iset;
-            inew item;
-            iopen item;
-            selection := item;
-            end;
-
-        viewItem: Action ();
-        viewItem = do
-            item <- get selection;
-            iopen item;
-            return ();
-            end;
-
-        deleteItem: Action ();
-        deleteItem = do
-            item <- get selection;
-            iset -= item;
-            end;
-
-        moremenus: [MenuItem];
-        moremenus =
-            [
-                menuSubmenu "Selection"
-                [
-                    menuAction ("New " <> inames) (Just "Ctrl+K") {newItem},
-                    menuAction "View" Nothing {viewItem},
-                    menuAction "Delete" Nothing {deleteItem}
-                ]
-            ];
-        in stdWindow {inamep} moremenus (iui selection);
-    end;
-
+# This is a two-pane window, the left has a "selector" of items (e.g. a table), and the right shows the selected item.
 selectionPairWindow:
-    (Text, Text) ->
-    SetRef (item | NewEntity) ->
-    ((item | NewEntity) -> Action Any) ->
-    ((item | NewEntity) -> Action Any) ->
-    (Ref {item,+NewEntity} -> UI) ->
-    (Ref {+item,+NewEntity} -> UI) ->
+    Text -> # window title
+    SetRef item -> # the set of items
+    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
+    (item -> Action Any) -> # what to do when an item is activated
+    (Ref {item} -> UI) -> # UI for the item selector
+    (Ref {+item} -> UI) -> # UI for the selected item
     Action Window;
-selectionPairWindow (inames,inamep) iset iopen inew getSelectorUI getSelectedUI = do
+selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedUI = do
     selection <- newMemRef;
     let
-        newItem: Action ();
-        newItem = do
-            item <- newEntity iset;
-            inew item;
-            iopen item;
-            selection := item;
-            end;
-
         viewItem: Action ();
         viewItem = do
             item <- get selection;
@@ -104,9 +58,8 @@ selectionPairWindow (inames,inamep) iset iopen inew getSelectorUI getSelectedUI 
         moremenus: [MenuItem];
         moremenus =
             [
-                menuSubmenu "Selection"
+                menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
                 [
-                    menuAction ("New " <> inames) (Just "Ctrl+K") {newItem},
                     menuAction "View" Nothing {viewItem},
                     menuAction "Delete" Nothing {deleteItem}
                 ]
@@ -120,34 +73,35 @@ selectionPairWindow (inames,inamep) iset iopen inew getSelectorUI getSelectedUI 
 
         ui: UI;
         ui = uiHorizontal [(False,sidebarUI),(True,selectedUI)];
-    in stdWindow {inamep} moremenus ui;
+    in stdWindow {wtitle} moremenus ui;
     end;
 
-### People
+### Ontology
 
-# Ontology
+# something with a name
+opentype Named;
+name = property @Named @Text !"identify.name";
 
-opentype LegalEntity;
-name = property @LegalEntity @Text !"identify.name";
-email = property @LegalEntity @Text !"contact.email";
-phone = property @LegalEntity @Text !"contact.telephone";
-
+# a person
 opentype Person;
 people: FiniteSetRef Person;
 people = property @Person @() !"type.person" !@ {()};
-subtype Person <: LegalEntity;
 
+# people have names
+subtype Person <: Named;
+
+# birth and death dates
 birthdate = property @Person @Date !"lifespan.start.date";
 deathdate = property @Person @Date !"lifespan.end.date";
 
+# family relationships between people
 mother = property @Person @Person !"relation.family.mother";
 father = property @Person @Person !"relation.family.father";
 children: Ref Person -> FiniteSetRef Person;
 children p = (mother !@ p) <:|:> (father !@ p);
 married = property @Person @Boolean !"relation.family.spouse.exist";
 
-employer = property @Person @LegalEntity !"relation.employer";
-
+# physical locations, that have addresses
 opentype Location;
 address = property @Location @Text !"location.address.withincity";
 locphone = property @Location @Text !"location.telephone";
@@ -156,90 +110,74 @@ postcode = property @Location @Text !"location.address.postcode";
 province = property @Location @Text !"location.address.province";
 country = property @Location @Text !"location.address.country";
 
-home = property @LegalEntity @Location !"being.location";
+# other personal information
+home = property @Person @Location !"being.location";
+email = property @Person @Text !"contact.email";
+phone = property @Person @Text !"contact.telephone";
+employer = property @Person @Text !"relation.employer";
 
-opentype Organisation;
-organisations: FiniteSetRef Organisation;
-organisations = property @Organisation @() !"type.organisation" !@ {()};
-subtype Organisation <: LegalEntity;
 
-legalentities: FiniteSetRef (Either Person Organisation);
-legalentities = people <:+:> organisations;
+### User Interface
 
-# UI
-table_entities: Ref (Either Person Organisation) -> UI;
-table_entities selection = let
-    nameColumn: (Ref +Text, Either Person Organisation -> Ref Text);
-    nameColumn = ({"Name"},\i -> name !$ {either i});
-    openItem: Either Person Organisation -> Action Window;
-    openItem i = case i of
-        Left p -> window_person p;
-        Right o -> window_org o;
-        end;
-    in uiTable [nameColumn] (orderOn (name !++ name) alphabetical) legalentities openItem (Just selection);
+# a table for a given finite set of people
+contactsTableUI: FiniteSetRef Person -> Maybe (Ref Person) -> UI;
+contactsTableUI pp mselection = uiTable [({"Name"},\p -> name !$ {p})] (orderOn name alphabetical) pp personWindow mselection;
 
-table_people: FiniteSetRef Person -> Maybe (Ref Person) -> UI;
-table_people pp mselection = uiTable [({"Name"},\p -> name !$ {p})] (orderOn name alphabetical) pp window_person mselection;
-
-ui_people: FiniteSetRef Person -> UI;
-ui_people pp = uiRun $ do
-    (selection,sel) <- makeNotifier;
-    return $ uiVertical
-    [
-        (False, uiButton {"New Person"} {newEntity pp >>= window_person}),
-        (False, uiButton {"View Person"} {get sel >>= window_person}),
-        (False, uiButton {"Remove Person"} {get sel >>= \p -> pp -= p}),
-        (True, table_people pp selection)
-    ];
-    end;
-
+# ordered list of people and their names
 peopleByName: Ref +[(Person,Text)];
 peopleByName = members (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
 
-ui_person: Ref {-LegalEntity,+Person} -> UI;
-ui_person p = uiVertical
+# a user interface for a person
+personUI: Ref {-Named,+Person} -> UI;
+personUI p = uiVertical
 [
-    (False, ui_labelled {"Name: "} $ uiTextEntry $ name !$ p),
+    (False, uiLabelled {"Name: "} $ uiTextEntry $ name !$ p),
     (True, uiPages
     [
-        ui_page {"Social"} $ uiVertical
+        uiPage {"Social"} $ uiVertical
         [
-            (False, ui_labelled {"Email: "} $ uiTextEntry $ email !$ p),
-            (False, ui_labelled {"Phone: "} $ uiTextEntry $ phone !$ p)
+            (False, uiLabelled {"Email: "} $ uiTextEntry $ email !$ p),
+            (False, uiLabelled {"Phone: "} $ uiTextEntry $ phone !$ p)
         ],
-        ui_page {"Home"} $ let homep = home !$ p in uiVertical
+        uiPage {"Home"} $ let homep = home !$ p in uiVertical
         [
-            (True, ui_labelled {"Address: "} $ uiTextArea $ address !$ homep),
-            (False, ui_labelled {"City: "} $ uiTextEntry $ city !$ homep),
-            (False, ui_labelled {"Postcode/ZIP: "} $ uiTextEntry $ postcode !$ homep),
-            (False, ui_labelled {"State/Province: "} $ uiTextEntry $ province !$ homep),
-            (False, ui_labelled {"Country: "} $ uiTextEntry $ country !$ homep),
-            (False, ui_labelled {"Phone: "} $ uiTextEntry $ locphone !$ homep)
+            (True, uiLabelled {"Address: "} $ uiTextArea $ address !$ homep),
+            (False, uiLabelled {"City: "} $ uiTextEntry $ city !$ homep),
+            (False, uiLabelled {"Postcode/ZIP: "} $ uiTextEntry $ postcode !$ homep),
+            (False, uiLabelled {"State/Province: "} $ uiTextEntry $ province !$ homep),
+            (False, uiLabelled {"Country: "} $ uiTextEntry $ country !$ homep),
+            (False, uiLabelled {"Phone: "} $ uiTextEntry $ locphone !$ homep)
         ],
-        ui_page {"Work"} $ uiVertical
+        uiPage {"Work"} $ uiVertical
         [
-            (False, ui_labelled {"Employer: "} $ uiTextEntry $ (name !. employer) !$ p)
+            (False, uiLabelled {"Employer: "} $ uiTextEntry $ employer !$ p)
         ],
-        ui_page {"Family"} $ uiVertical
+        uiPage {"Family"} $ uiVertical
         [
-            (False, ui_labelled {"Birth: "} $ uiTextEntry $ interpretDateAsText $ birthdate !$ p),
-            (False, ui_labelled {"Death: "} $ uiTextEntry $ interpretDateAsText $ deathdate !$ p),
+            (False, uiLabelled {"Birth: "} $ uiTextEntry $ interpretDateAsText $ birthdate !$ p),
+            (False, uiLabelled {"Death: "} $ uiTextEntry $ interpretDateAsText $ deathdate !$ p),
             (False, uiCheckBox {"Married"} $ married !$ p),
-            (False, ui_labelled {"Mother: "} $ uiPick peopleByName $ mother !$ p),
-            (False, ui_labelled {"Father: "} $ uiPick peopleByName $ father !$ p),
+            (False, uiLabelled {"Mother: "} $ uiPick peopleByName $ mother !$ p),
+            (False, uiLabelled {"Father: "} $ uiPick peopleByName $ father !$ p),
             (False, uiLabel {"Children:"}),
-            (True, table_people (children p) Nothing)
+            (True, contactsTableUI (children p) Nothing)
         ]
     ])
 ];
 
-window_person: Person -> Action Window;
-window_person p = stdWindow (name !$ {p}) [] (ui_person {p});
+# a window for a person
+personWindow: Person -> Action Window;
+personWindow p = stdWindow (name !$ {p}) [] (personUI {p});
 
-window_org: Organisation -> Action Window;
-window_org o = stdWindow (name !$ {o}) [] uiBlank;
+newPersonMenuItem: (Person -> Action ()) -> MenuItem;
+newPersonMenuItem setsel = menuAction ("New Person") (Just "Ctrl+K")
+    {do
+    item <- newEntity people;
+    setsel item;
+    end};
 
-window_people: Action Window;
-window_people = selectionPairWindow ("Person","People") people window_person (\_ -> return ()) (\selection -> table_people people (Just selection)) ui_person;
+# main window
+contactsWindow: Action Window;
+contactsWindow = selectionPairWindow "Contacts" people [newPersonMenuItem] personWindow (\selection -> contactsTableUI people (Just selection)) personUI;
 
-in window_people
+in contactsWindow
