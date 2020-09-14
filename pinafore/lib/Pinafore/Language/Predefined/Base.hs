@@ -563,8 +563,6 @@ base_predefinitions =
                 "`p ?? q` = `p` if it is known, else `q`."
                 ((<|>) :: PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A)
           , mkValEntry "get" "Get a whole reference, or `stop` if the whole reference is unknown." $ langWholeRefGet @A
-          , mkValEntry "runWholeRef" "Run an action from a whole reference. `runWholeRef r = do a <- get r; a end`" $
-            runLangWholeRef
           , mkValEntry ":=" "Set a whole reference to a value. Stop if failed." setentity
           , mkValEntry "delete" "Delete a whole reference (i.e., make unknown). Stop if failed." deleteentity
           , mkValEntry "newMemWhole" "Create a new whole reference to memory, initially unknown." newMemWhole

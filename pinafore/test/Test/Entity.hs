@@ -68,6 +68,7 @@ testEntity =
     runContext $
     context
         [ "pass = return ()"
+        , "runWholeRef r = do a <- get r; a end"
         , "runreforfail r = runWholeRef (r ?? {fail \"unknown ref\"})"
         , "testeq expected found = runreforfail {if %expected == %found then pass else fail \"not equal\"}"
         , "testneq expected found = runreforfail {if %expected /= %found then pass else fail \"equal\"}"

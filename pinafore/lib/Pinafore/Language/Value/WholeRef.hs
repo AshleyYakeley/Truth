@@ -52,9 +52,6 @@ langWholeRefSet :: forall p. LangWholeRef '( p, TopType) -> Know p -> PinaforeAc
 langWholeRefSet (MutableLangWholeRef sr) mp = pinaforeRefPushAction sr $ pure $ MkBiWholeEdit mp
 langWholeRefSet (ImmutableLangWholeRef _) _ = empty
 
-runLangWholeRef :: LangWholeRef '( BottomType, PinaforeAction ()) -> PinaforeAction ()
-runLangWholeRef ref = langWholeRefGet ref >>= id
-
 maybeLensLangWholeRef ::
        forall ap aq bp bq.
        (Maybe aq -> Maybe bq)

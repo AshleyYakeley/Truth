@@ -42,8 +42,9 @@ benchScripts :: Benchmark
 benchScripts =
     bgroup
         "script"
-        [ benchScript "runWholeRef {return ()}"
-        , benchScript "runWholeRef $ pureWhole $ return ()"
+        [ benchScript "do a <- return $ return (); a end"
+        , benchScript "do a <- get {return ()}; a end"
+        , benchScript "do a <- get $ pureWhole $ return (); a end"
         , benchScript "get {return ()} >>= \\v -> v"
         , benchScript "get {False} >>= \\v -> return ()"
         , benchScript "get (pureWhole False) >>= \\v -> return ()"
