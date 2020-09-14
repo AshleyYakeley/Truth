@@ -5,6 +5,7 @@ module Import
 import Control.Applicative as I
 import Control.Category as I
 import Control.Concurrent.MVar as I
+import Control.Exception as I (bracket_)
 import Control.Monad as I hiding (fail)
 import Control.Monad.Fail as I
 import Control.Monad.Fix as I

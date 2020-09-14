@@ -83,6 +83,9 @@ newtype PinaforeRef update = MkPinaforeRef
 pinaforeRefModel :: PinaforeRef update -> Model update
 pinaforeRefModel = unPinaforeRef
 
+pinaforeRefWaitUpdates :: PinaforeRef update -> View ()
+pinaforeRefWaitUpdates (MkPinaforeRef ref) = viewWithoutLock $ taskWait $ modelUpdatesTask ref
+
 instance EditApplicative PinaforeRef where
     eaPure subj = MkPinaforeRef $ constantModel subj
     eaMap lens (MkPinaforeRef sv) = MkPinaforeRef $ mapModel lens sv

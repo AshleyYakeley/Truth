@@ -22,7 +22,9 @@ changesMainGTK appMain =
         runVar <- newMVar RSRun
         let
             rtWithLock :: forall a. IO a -> IO a
-            rtWithLock action = mVarUnitRun uiLockVar action
+            rtWithLock = mVarUnitRun uiLockVar
+            rtWithoutLock :: forall a. IO a -> IO a
+            rtWithoutLock = mVarUnitUnlock uiLockVar
             rtExit :: IO ()
             rtExit = mVarRun runVar $ put RSStop
             rtUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a

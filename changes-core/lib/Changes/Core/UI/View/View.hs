@@ -7,6 +7,7 @@ module Changes.Core.UI.View.View
     , viewRunResourceContext
     , viewLocalResourceContext
     , viewGetResourceContext
+    , viewWithoutLock
     , runView
     , viewExit
     ) where
@@ -51,6 +52,11 @@ viewGetResourceContext = asks vcResourceContext
 
 viewLocalResourceContext :: ResourceContext -> ViewT m a -> ViewT m a
 viewLocalResourceContext rc = viewWithContext (\vc -> vc {vcResourceContext = rc})
+
+viewWithoutLock :: MonadIO m => IO a -> ViewT m a
+viewWithoutLock ioa = do
+    withoutLock <- asks vcWithoutUILock
+    liftIO $ withoutLock ioa
 
 runView ::
        forall m a. MonadUnliftIO m
