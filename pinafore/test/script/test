@@ -72,7 +72,7 @@ ui_people pp = uiRun $ do
         (False, uiButton {"New Person"} {newEntity pp >>= window_person}),
         (False, uiButton {"View Person"} {get selectedperson >>= window_person}),
         (False, uiButton {"Remove Person"} {get selectedperson >>= \p -> pp -= p}),
-        (True, uiTable [({"Name"},\p -> name !$ {p})] noOrder pp window_person (Just selectedperson))
+        (True, uiListTable [({"Name"},\p -> name !$ {p})] noOrder pp window_person (Just selectedperson))
     ];
     end;
 
@@ -166,7 +166,7 @@ window_file f = std_window {"File"} $ uiVertical
 in std_window {"Files"} $ uiVertical
 [
     #(False, uiButton "Import" {file_import Files $ \f -> std_window $ window_file f}),
-    #(True, uiTable [column "Caption" caption, column "Size" file_size] window_file Files)
+    #(True, uiListTable [column "Caption" caption, column "Size" file_size] window_file Files)
 ];
 
 ### Constant Edit

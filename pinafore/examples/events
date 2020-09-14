@@ -164,7 +164,7 @@ tablePage selection = let
         nameColumn: (WholeRef +Text, Event -> WholeRef Text);
         nameColumn = ({"Name"},\e -> eventName !$ {e});
         in [timeColumn,nameColumn];
-    in (uiLabel {"Events"}, uiTable columns eventOrder events eventWindow (Just selection));
+    in (uiLabel {"Events"}, uiListTable columns eventOrder events eventWindow (Just selection));
 
 calendarWindow: Event -> Action Window;
 calendarWindow evt = fixAction $ \window ->

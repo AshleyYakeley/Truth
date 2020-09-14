@@ -16,7 +16,7 @@ import Shapes
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
 
-uiTable ::
+uiListTable ::
        (HasCallStack, ?pinafore :: PinaforeContext)
     => [(LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))]
     -> LangOrder A
@@ -24,7 +24,7 @@ uiTable ::
     -> (A -> PinaforeAction TopType)
     -> Maybe (LangWholeRef '( A, EnA))
     -> LangUI
-uiTable cols order val onDoubleClick mSelectionLangRef = do
+uiListTable cols order val onDoubleClick mSelectionLangRef = do
     let
         mSelectionModel :: Maybe (Model (BiWholeUpdate (Know A) (Know EnA)))
         mSelectionModel = fmap (unPinaforeRef . langWholeRefToBiWholeRef) mSelectionLangRef
@@ -292,9 +292,9 @@ ui_predefinitions =
                 uiButton
           , mkValEntry "uiPick" "A drop-down menu." uiPick
           , mkValEntry
-                "uiTable"
+                "uiListTable"
                 "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection, fifth is an optional reference for the selected row."
-                uiTable
+                uiListTable
           , mkValEntry "uiCalendar" "A calendar." uiCalendar
           , mkValEntry "uiScrolled" "A scrollable container." uiScrolled
           , mkValEntry "uiDynamic" "A UI that can be updated to different UIs." uiDynamic
