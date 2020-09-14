@@ -199,6 +199,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
         setSelection :: Maybe (ReadM (UpdateReader update) Bool) -> View ()
         setSelection Nothing = setSelectedIndex Nothing
         setSelection (Just sel) = do
+            viewWaitUpdates tableModel
             items <- dynamicStoreContents store
             let
                 testEntry :: StoreEntry update rowtext rowprops -> View Bool

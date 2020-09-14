@@ -84,7 +84,7 @@ pinaforeRefModel :: PinaforeRef update -> Model update
 pinaforeRefModel = unPinaforeRef
 
 pinaforeRefWaitUpdates :: PinaforeRef update -> View ()
-pinaforeRefWaitUpdates (MkPinaforeRef ref) = viewWithoutLock $ taskWait $ modelUpdatesTask ref
+pinaforeRefWaitUpdates (MkPinaforeRef ref) = viewWaitUpdates ref
 
 instance EditApplicative PinaforeRef where
     eaPure subj = MkPinaforeRef $ constantModel subj

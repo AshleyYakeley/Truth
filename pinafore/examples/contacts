@@ -55,15 +55,10 @@ selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedU
             iset -= item;
             end;
 
-        setSelection i = do
-            waitUpdates iset;
-            selection := i;
-            end;
-
         moremenus: [MenuItem];
         moremenus =
             [
-                menuSubmenu "Selection" $ mapList (\mi -> mi setSelection) createMenuItems ++
+                menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
                 [
                     menuAction "View" Nothing {viewItem},
                     menuAction "Delete" Nothing {deleteItem}

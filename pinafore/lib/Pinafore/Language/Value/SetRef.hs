@@ -85,9 +85,6 @@ langSetRefCartesianProduct (MkLangSetRef eqA svA) (MkLangSetRef eqB svB) = let
     in MkLangSetRef eqAB $
        eaMap (fromReadOnlyRejectingChangeLens . setCartesianProductPartialLens eqA eqB) $ eaPair svA svB
 
-langSetWaitUpdates :: LangSetRef BottomType -> View ()
-langSetWaitUpdates (MkLangSetRef _ ref) = pinaforeRefWaitUpdates ref
-
 langSetRefAdd :: forall a. LangSetRef a -> a -> PinaforeAction ()
 langSetRefAdd (MkLangSetRef _eq sv) a =
     pinaforeRefPushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True

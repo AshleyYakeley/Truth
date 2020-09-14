@@ -603,8 +603,6 @@ base_predefinitions =
           , mkValEntry "<+>" "Cartesian sum of sets." $ langSetRefCartesianSum @A @B
           , mkValEntry "<*>" "Cartesian product of sets. The resulting set will be read-only." $
             langSetRefCartesianProduct @A @B
-          , mkValEntry "waitUpdates" "Wait until changes to this reference have updated all attached user interfaces." $
-            langSetWaitUpdates
           ]
     , docTreeEntry
           "Finite Set References"

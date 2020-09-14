@@ -8,11 +8,13 @@ module Changes.Core.UI.View.View
     , viewLocalResourceContext
     , viewGetResourceContext
     , viewWithoutLock
+    , viewWaitUpdates
     , runView
     , viewExit
     ) where
 
 import Changes.Core.Import
+import Changes.Core.Reference
 import Changes.Core.Resource
 import Changes.Core.UI.View.Context
 
@@ -57,6 +59,9 @@ viewWithoutLock :: MonadIO m => IO a -> ViewT m a
 viewWithoutLock ioa = do
     withoutLock <- asks vcWithoutUILock
     liftIO $ withoutLock ioa
+
+viewWaitUpdates :: Model update -> View ()
+viewWaitUpdates model = viewWithoutLock $ taskWait $ modelUpdatesTask model
 
 runView ::
        forall m a. MonadUnliftIO m
