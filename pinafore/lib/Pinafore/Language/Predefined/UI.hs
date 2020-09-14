@@ -18,16 +18,16 @@ clearText = funcChangeLens (fromKnow mempty)
 
 uiTable ::
        (HasCallStack, ?pinafore :: PinaforeContext)
-    => [(LangRef '( BottomType, Text), A -> LangRef '( BottomType, Text))]
+    => [(LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))]
     -> LangOrder A
     -> LangFiniteSetRef '( A, EnA)
     -> (A -> PinaforeAction TopType)
-    -> Maybe (LangRef '( A, EnA))
+    -> Maybe (LangWholeRef '( A, EnA))
     -> LangUI
 uiTable cols order val onDoubleClick mSelectionLangRef = do
     let
         mSelectionModel :: Maybe (Model (BiWholeUpdate (Know A) (Know EnA)))
-        mSelectionModel = fmap (unPinaforeRef . langRefToBiWholeRef) mSelectionLangRef
+        mSelectionModel = fmap (unPinaforeRef . langWholeRefToBiWholeRef) mSelectionLangRef
         uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
         uo =
             mapUpdateOrder
@@ -48,19 +48,20 @@ uiTable cols order val onDoubleClick mSelectionLangRef = do
             a <- readSub osub
             runPinaforeAction $ void $ onDoubleClick a
         getColumn ::
-               (LangRef '( BottomType, Text), A -> LangRef '( BottomType, Text)) -> KeyColumn (ConstWholeUpdate EnA)
+               (LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))
+            -> KeyColumn (ConstWholeUpdate EnA)
         getColumn (nameRef, getCellRef) = let
             showCell :: Know Text -> (Text, TableCellProps)
             showCell (Known s) = (s, plainTableCellProps)
             showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
             nameOpenSub :: Model (ROWUpdate Text)
-            nameOpenSub = pinaforeRefModel $ eaMapSemiReadOnly clearText $ langRefToReadOnlyValue nameRef
+            nameOpenSub = pinaforeRefModel $ eaMapSemiReadOnly clearText $ langWholeRefToReadOnlyValue nameRef
             getCellSub :: Model (ConstWholeUpdate EnA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
             getCellSub osub = do
                 a <- cvLiftView $ readSub osub
                 return $
                     pinaforeRefModel $
-                    eaMapSemiReadOnly (funcChangeLens showCell) $ langRefToReadOnlyValue $ getCellRef a
+                    eaMapSemiReadOnly (funcChangeLens showCell) $ langWholeRefToReadOnlyValue $ getCellRef a
             in readOnlyKeyColumn nameOpenSub getCellSub
     colSub :: Model (ContextUpdate PinaforeStorageUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
         cvFloatMapModel (contextOrderedSetLens uo) pkSub
@@ -107,7 +108,7 @@ type PickerType = Know EnA
 
 type PickerPairType = (PickerType, ComboBoxCell)
 
-uiPick :: PinaforeImmutableRef ([(EnA, Text)]) -> LangRef '( A, EnA) -> CreateView Widget
+uiPick :: PinaforeImmutableWholeRef ([(EnA, Text)]) -> LangWholeRef '( A, EnA) -> CreateView Widget
 uiPick itemsRef ref = do
     let
         mapItem :: (EnA, Text) -> PickerPairType
@@ -123,12 +124,12 @@ uiPick itemsRef ref = do
         subOpts :: Model (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
         subOpts = pinaforeRefModel $ eaMapSemiReadOnly itemsLens $ immutableRefToReadOnlyRef itemsRef
         subVal :: Model (WholeUpdate PickerType)
-        subVal = pinaforeRefModel $ langRefToValue $ contraRangeLift meet2 ref
+        subVal = pinaforeRefModel $ langWholeRefToValue $ contraRangeLift meet2 ref
     createComboBox subOpts subVal
 
 actionRef ::
        (?pinafore :: PinaforeContext)
-    => PinaforeImmutableRef (PinaforeAction TopType)
+    => PinaforeImmutableWholeRef (PinaforeAction TopType)
     -> PinaforeROWRef (Maybe (View ()))
 actionRef raction =
     eaMapReadOnlyWhole (fmap (\action -> runPinaforeAction (action >> return ())) . knowToMaybe) $
@@ -136,18 +137,18 @@ actionRef raction =
 
 uiButton ::
        (?pinafore :: PinaforeContext)
-    => PinaforeImmutableRef Text
-    -> PinaforeImmutableRef (PinaforeAction TopType)
+    => PinaforeImmutableWholeRef Text
+    -> PinaforeImmutableWholeRef (PinaforeAction TopType)
     -> CreateView Widget
 uiButton text raction =
     createButton
         (pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text)
         (pinaforeRefModel $ actionRef raction)
 
-uiLabel :: PinaforeImmutableRef Text -> CreateView Widget
+uiLabel :: PinaforeImmutableWholeRef Text -> CreateView Widget
 uiLabel text = createLabel $ pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text
 
-uiDynamic :: PinaforeImmutableRef LangUI -> LangUI
+uiDynamic :: PinaforeImmutableWholeRef LangUI -> LangUI
 uiDynamic uiref = let
     getSpec :: Know LangUI -> CreateView Widget
     getSpec Unknown = createBlank
@@ -156,8 +157,8 @@ uiDynamic uiref = let
 
 openWindow ::
        (?pinafore :: PinaforeContext)
-    => PinaforeImmutableRef Text
-    -> PinaforeImmutableRef MenuBar
+    => PinaforeImmutableWholeRef Text
+    -> PinaforeImmutableWholeRef MenuBar
     -> LangUI
     -> PinaforeAction LangWindow
 openWindow title mbar mContent = do
@@ -196,7 +197,7 @@ menuAction ::
        (?pinafore :: PinaforeContext)
     => Text
     -> Maybe Text
-    -> PinaforeImmutableRef (PinaforeAction TopType)
+    -> PinaforeImmutableWholeRef (PinaforeAction TopType)
     -> LangMenuEntry
 menuAction label maccelStr raction = let
     maccel = do
@@ -207,12 +208,12 @@ menuAction label maccelStr raction = let
 uiScrolled :: LangUI -> LangUI
 uiScrolled lui = lui >>= createScrolled
 
-uiUnitCheckBox :: PinaforeImmutableRef Text -> PinaforeRef (WholeUpdate (Know ())) -> CreateView Widget
+uiUnitCheckBox :: PinaforeImmutableWholeRef Text -> PinaforeRef (WholeUpdate (Know ())) -> CreateView Widget
 uiUnitCheckBox name val =
     createCheckButton (pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
     pinaforeRefModel $ eaMap (toChangeLens knowBool) val
 
-uiCheckBox :: PinaforeImmutableRef Text -> PinaforeRef (WholeUpdate (Know Bool)) -> CreateView Widget
+uiCheckBox :: PinaforeImmutableWholeRef Text -> PinaforeRef (WholeUpdate (Know Bool)) -> CreateView Widget
 uiCheckBox name val =
     createMaybeCheckButton (pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
     pinaforeRefModel $ eaMap (toChangeLens knowMaybe) val

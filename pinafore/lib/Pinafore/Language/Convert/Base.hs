@@ -317,61 +317,61 @@ instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) La
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangMenuEntry where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
--- LangRef
+-- LangWholeRef
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
-         ) => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangRef '( p, q)) where
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangWholeRef '( p, q)) where
     toShimWit =
         unToRangeShimWit $ \tpq conv ->
             mapPosShimWit (applyPolyShim RangevarianceType cid conv) $
-            mkShimWit $ GroundDolanSingularType RefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkShimWit $ GroundDolanSingularType WholeRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
-         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangRef '( p, q)) where
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangWholeRef '( p, q)) where
     toShimWit = singleDolanShimWit toJMShimWit
 
 instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
          , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
-         ) => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangRef '( p, q)) where
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangWholeRef '( p, q)) where
     fromShimWit =
         unFromRangeShimWit $ \tpq conv ->
             mapNegShimWit (applyPolyShim RangevarianceType cid conv) $
-            mkShimWit $ GroundDolanSingularType RefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkShimWit $ GroundDolanSingularType WholeRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
          , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
-         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangRef '( p, q)) where
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangWholeRef '( p, q)) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- PinaforeRef
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
          ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeRef (WholeUpdate (Know t))) where
-    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeRefToRef) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeRefToWholeRef) toJMShimWit
 
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
          ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeRef (WholeUpdate (Know t))) where
-    fromShimWit = mapNegShimWit (functionToShim "subtype" langRefToValue) fromJMShimWit
+    fromShimWit = mapNegShimWit (functionToShim "subtype" langWholeRefToValue) fromJMShimWit
 
--- PinaforeImmutableRef
+-- PinaforeImmutableWholeRef
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
-             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeImmutableRef a) where
-    fromShimWit = mapNegShimWit (functionToShim "subtype" langRefToImmutable) fromJMShimWit
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeImmutableWholeRef a) where
+    fromShimWit = mapNegShimWit (functionToShim "subtype" langWholeRefToImmutable) fromJMShimWit
 
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
-             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeImmutableRef a) where
-    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeImmutableToRef) toJMShimWit
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeImmutableWholeRef a) where
+    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeImmutableToWholeRef) toJMShimWit
 
 -- PinaforeROWRef
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t) =>
              FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeROWRef (Know t)) where
-    fromShimWit = mapNegShimWit (functionToShim "subtype" langRefToReadOnlyValue) fromJMShimWit
+    fromShimWit = mapNegShimWit (functionToShim "subtype" langWholeRefToReadOnlyValue) fromJMShimWit
 
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t) =>
              ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeROWRef (Know t)) where
-    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeROWRefToRef) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeROWRefToWholeRef) toJMShimWit
 
 -- LangSetRef
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>

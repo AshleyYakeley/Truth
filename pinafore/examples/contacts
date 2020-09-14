@@ -4,14 +4,14 @@ let
 
 ### Useful UI stuff
 
-uiPage: Ref +Text -> UI -> (UI,UI);
+uiPage: WholeRef +Text -> UI -> (UI,UI);
 uiPage n ui = (uiLabel n,ui);
 
-uiLabelled: Ref +Text -> UI -> UI;
+uiLabelled: WholeRef +Text -> UI -> UI;
 uiLabelled n ui = uiHorizontal [(False, uiLabel n),(True, ui)];
 
 # A window that comes with some menus.
-stdWindow: Ref +Text -> [MenuItem] -> UI -> Action Window;
+stdWindow: WholeRef +Text -> [MenuItem] -> UI -> Action Window;
 stdWindow title moremenus contents = fixAction $ \window -> let
     menus: [MenuItem];
     menus =
@@ -36,11 +36,11 @@ selectionPairWindow:
     SetRef item -> # the set of items
     [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
-    (Ref {item} -> UI) -> # UI for the item selector
-    (Ref {+item} -> UI) -> # UI for the selected item
+    (WholeRef {item} -> UI) -> # UI for the item selector
+    (WholeRef {+item} -> UI) -> # UI for the selected item
     Action Window;
 selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedUI = do
-    selection <- newMemRef;
+    selection <- newMemWhole;
     let
         viewItem: Action ();
         viewItem = do
@@ -74,7 +74,7 @@ selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedU
         sidebarUI = getSelectorUI selection;
 
         selectedUI: UI;
-        selectedUI = getSelectedUI $ immutRef selection;
+        selectedUI = getSelectedUI $ immutWhole selection;
 
         ui: UI;
         ui = uiHorizontal [(False,sidebarUI),(True,selectedUI)];
@@ -102,7 +102,7 @@ deathdate = property @Person @Date !"lifespan.end.date";
 # family relationships between people
 mother = property @Person @Person !"relation.family.mother";
 father = property @Person @Person !"relation.family.father";
-children: Ref Person -> FiniteSetRef Person;
+children: WholeRef Person -> FiniteSetRef Person;
 children p = (mother !@ p) <:|:> (father !@ p);
 married = property @Person @Boolean !"relation.family.spouse.exist";
 
@@ -125,15 +125,15 @@ employer = property @Person @Text !"relation.employer";
 ### User Interface
 
 # a table for a given finite set of people
-contactsTableUI: FiniteSetRef Person -> Maybe (Ref Person) -> UI;
+contactsTableUI: FiniteSetRef Person -> Maybe (WholeRef Person) -> UI;
 contactsTableUI pp mselection = uiTable [({"Name"},\p -> name !$ {p})] (orderOn name alphabetical) pp personWindow mselection;
 
 # ordered list of people and their names
-peopleByName: Ref +[(Person,Text)];
+peopleByName: WholeRef +[(Person,Text)];
 peopleByName = members (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
 
 # a user interface for a person
-personUI: Ref {-Named,+Person} -> UI;
+personUI: WholeRef {-Named,+Person} -> UI;
 personUI p = uiVertical
 [
     (False, uiLabelled {"Name: "} $ uiTextEntry $ name !$ p),

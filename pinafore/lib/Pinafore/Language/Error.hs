@@ -86,7 +86,7 @@ instance Show ErrorType where
     show (TypeSubsumeError Positive tinf tdecl) = "cannot subsume " <> unpack tinf <> " <: " <> unpack tdecl
     show (TypeSubsumeError Negative tinf tdecl) = "cannot subsume " <> unpack tinf <> " :> " <> unpack tdecl
     show (TypeNotInvertibleError t) = "cannot invert type " <> unpack t
-    show NotationBareUnquoteError = "unquote outside Ref quote"
+    show NotationBareUnquoteError = "unquote outside WholeRef quote"
     show (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"
     show (InterpretTypeExprBadLimitError Negative) = "\"None\" in negative type"
     show (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"

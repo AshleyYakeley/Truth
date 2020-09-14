@@ -5,7 +5,7 @@ import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Value.FiniteSetRef
 import Pinafore.Language.Value.OpenEntity
-import Pinafore.Language.Value.Ref
+import Pinafore.Language.Value.WholeRef
 import Shapes
 
 newtype LangMorphism (a :: (Type, Type)) (b :: (Type, Type)) =
@@ -65,17 +65,17 @@ eitherLangMorphism (MkLangMorphism m1) (MkLangMorphism m2) = MkLangMorphism $ ei
 applyLangMorphismRef ::
        forall ap aq bp bq. (?pinafore :: PinaforeContext)
     => LangMorphism '( ap, aq) '( bp, bq)
-    -> LangRef '( aq, ap)
-    -> LangRef '( bp, bq)
+    -> LangWholeRef '( aq, ap)
+    -> LangWholeRef '( bp, bq)
 applyLangMorphismRef (MkLangMorphism m) ref =
-    MutableLangRef $ applyPinaforeLens pinaforeEntityModel m $ langRefToBiWholeRef ref
+    MutableLangWholeRef $ applyPinaforeLens pinaforeEntityModel m $ langWholeRefToBiWholeRef ref
 
 applyLangMorphismImmutRef ::
        forall a bp bq. (?pinafore :: PinaforeContext)
     => LangMorphism '( a, TopType) '( bp, bq)
-    -> PinaforeImmutableRef a
-    -> LangRef '( bp, bq)
-applyLangMorphismImmutRef m r = applyLangMorphismRef m $ pinaforeImmutableToRef r
+    -> PinaforeImmutableWholeRef a
+    -> LangWholeRef '( bp, bq)
+applyLangMorphismImmutRef m r = applyLangMorphismRef m $ pinaforeImmutableToWholeRef r
 
 applyLangMorphismSet ::
        forall a b. (?pinafore :: PinaforeContext)
@@ -98,18 +98,18 @@ applyLangMorphismSet lm (MkLangFiniteSetRef (tr :: Range _ t _) ss) = let
 inverseApplyLangMorphismRef ::
        forall a bx by. (?pinafore :: PinaforeContext)
     => LangMorphism '( a, MeetType Entity a) '( bx, by)
-    -> LangRef '( by, bx)
+    -> LangWholeRef '( by, bx)
     -> LangFiniteSetRef '( MeetType Entity a, a)
 inverseApplyLangMorphismRef (MkLangMorphism m) ref =
     MkLangFiniteSetRef (MkRange id meet2) $
-    applyInversePinaforeLens pinaforeEntityModel (cfmap3 (MkCatDual $ meet2 @(->)) m) $ langRefToBiWholeRef ref
+    applyInversePinaforeLens pinaforeEntityModel (cfmap3 (MkCatDual $ meet2 @(->)) m) $ langWholeRefToBiWholeRef ref
 
 inverseApplyLangMorphismImmutRef ::
        forall a b. (?pinafore :: PinaforeContext)
     => LangMorphism '( a, MeetType Entity a) '( b, TopType)
-    -> PinaforeImmutableRef b
+    -> PinaforeImmutableWholeRef b
     -> LangFiniteSetRef '( MeetType Entity a, a)
-inverseApplyLangMorphismImmutRef m r = inverseApplyLangMorphismRef m $ pinaforeImmutableToRef r
+inverseApplyLangMorphismImmutRef m r = inverseApplyLangMorphismRef m $ pinaforeImmutableToWholeRef r
 
 inverseApplyLangMorphismSet ::
        forall a bx by. (?pinafore :: PinaforeContext)

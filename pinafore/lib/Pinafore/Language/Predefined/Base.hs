@@ -28,11 +28,11 @@ output text = liftIO $ putStr $ unpack text
 outputLn :: Text -> PinaforeAction ()
 outputLn text = liftIO $ putStrLn $ unpack text
 
-setentity :: LangRef '( A, TopType) -> A -> PinaforeAction ()
-setentity ref val = langRefSet ref (Known val)
+setentity :: LangWholeRef '( A, TopType) -> A -> PinaforeAction ()
+setentity ref val = langWholeRefSet ref (Known val)
 
-deleteentity :: LangRef '( BottomType, TopType) -> PinaforeAction ()
-deleteentity ref = langRefSet ref Unknown
+deleteentity :: LangWholeRef '( BottomType, TopType) -> PinaforeAction ()
+deleteentity ref = langWholeRefSet ref Unknown
 
 qfail :: Text -> PinaforeAction BottomType
 qfail t = fail $ unpack t
@@ -43,12 +43,12 @@ entityAnchor p = pack $ show p
 onStop :: PinaforeAction A -> PinaforeAction A -> PinaforeAction A
 onStop p q = p <|> q
 
-newMemRef :: PinaforeAction (LangRef '( A, A))
-newMemRef = do
+newMemWhole :: PinaforeAction (LangWholeRef '( A, A))
+newMemWhole = do
     r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
     model <- pinaforeLiftLifeCycleIO $ makeReflectingModel r
     uh <- pinaforeUndoHandler
-    return $ pinaforeRefToRef $ MkPinaforeRef $ undoHandlerModel uh model
+    return $ pinaforeRefToWholeRef $ MkPinaforeRef $ undoHandlerModel uh model
 
 newMemFiniteSet :: PinaforeAction (LangFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
@@ -60,12 +60,12 @@ newMemFiniteSet = do
 zeroTime :: UTCTime
 zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
-newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableRef UTCTime)
+newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableWholeRef UTCTime)
 newClock duration = do
     (clockOM, ()) <- pinaforeLiftLifeCycleIO $ makeSharedModel $ clockPremodel zeroTime duration
     return $ functionImmutableRef $ MkPinaforeRef $ clockOM
 
-newTimeZoneRef :: PinaforeImmutableRef UTCTime -> PinaforeAction (PinaforeImmutableRef Int)
+newTimeZoneRef :: PinaforeImmutableWholeRef UTCTime -> PinaforeAction (PinaforeImmutableWholeRef Int)
 newTimeZoneRef now = do
     rc <- pinaforeResourceContext
     ref <-
@@ -74,12 +74,12 @@ newTimeZoneRef now = do
             rc
             (floatLift (\mr ReadWhole -> fmap (fromKnow zeroTime) $ mr ReadWhole) liftROWChangeLens clockTimeZoneLens) $
         immutableRefToReadOnlyRef now
-    return $ fmap timeZoneMinutes $ MkPinaforeImmutableRef ref
+    return $ fmap timeZoneMinutes $ MkPinaforeImmutableWholeRef ref
 
 interpretAsText ::
        forall a. AsLiteral a
-    => LangRef '( a, a)
-    -> LangRef '( Text, Text)
+    => LangWholeRef '( a, a)
+    -> LangWholeRef '( Text, Text)
 interpretAsText = let
     getter :: Maybe a -> Maybe Text
     getter Nothing = Just ""
@@ -88,7 +88,7 @@ interpretAsText = let
     setter Nothing _ = Just Nothing
     setter (Just "") _ = Just Nothing
     setter (Just t) _ = fmap Just $ parseLiteral t
-    in maybeLensLangRef getter setter
+    in maybeLensLangWholeRef getter setter
 
 parseLiteral :: AsLiteral t => Text -> Maybe t
 parseLiteral = knowToMaybe . fromLiteral . MkLiteral
@@ -527,45 +527,47 @@ base_predefinitions =
                 liftIO $ undoHandlerRedo uh rc noEditSource
           ]
     , docTreeEntry
-          "References"
-          "A reference of type `Ref {-p,+q}` has a setting type of `p` and a getting type of `q`. References keep track of updates, and will update user interfaces constructed from them when their value changes."
-          [ mkValEntry "pureRef" "A constant reference for a value." (pure :: A -> PinaforeImmutableRef A)
+          "Whole References"
+          "A whole reference of type `WholeRef {-p,+q}` has a setting type of `p` and a getting type of `q`. Whole references keep track of updates, and will update user interfaces constructed from them when their value changes."
+          [ mkValEntry "pureWhole" "A constant whole reference for a value." (pure :: A -> PinaforeImmutableWholeRef A)
           , mkValEntry
-                "immutRef"
-                "Convert a reference to immutable.\n`immutRef r = {%r}`"
-                (id :: PinaforeImmutableRef A -> PinaforeImmutableRef A)
+                "immutWhole"
+                "Convert a whole reference to immutable.\n`immutWhole r = {%r}`"
+                (id :: PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A)
           , mkValEntry
-                "coMapRef"
-                "Map a function on getting a reference."
-                (coRangeLift :: (A -> B) -> LangRef '( C, A) -> LangRef '( C, B))
+                "coMapWhole"
+                "Map a function on getting a whole reference."
+                (coRangeLift :: (A -> B) -> LangWholeRef '( C, A) -> LangWholeRef '( C, B))
           , mkValEntry
-                "contraMapRef"
-                "Map a function on setting a reference."
-                (contraRangeLift :: (B -> A) -> LangRef '( A, C) -> LangRef '( B, C))
-          , mkValEntry "maybeLensMapRef" "Map getter & pushback functions on a reference." $
-            maybeLensLangRef @AP @AQ @BP @BQ
-          , mkValEntry "lensMapRef" "Map getter & pushback functions on a reference." $ fLensLangRef @AP @AQ @B
-          , mkValEntry "maybeRef" "Map known/unknown to `Maybe` for a reference." $ maybeRef @A @B
-          , mkValEntry "pairRef" "Combine references." $ langPairRefs @AP @AQ @BP @BQ
+                "contraMapWhole"
+                "Map a function on setting a whole reference."
+                (contraRangeLift :: (B -> A) -> LangWholeRef '( A, C) -> LangWholeRef '( B, C))
+          , mkValEntry "maybeLensMapWhole" "Map getter & pushback functions on a whole reference." $
+            maybeLensLangWholeRef @AP @AQ @BP @BQ
+          , mkValEntry "lensMapWhole" "Map getter & pushback functions on a whole reference." $
+            fLensLangWholeRef @AP @AQ @B
+          , mkValEntry "maybeWhole" "Map known/unknown to `Maybe` for a whole reference." $ langMaybeWholeRef @A @B
+          , mkValEntry "pairWhole" "Combine whole references." $ langPairWholeRefs @AP @AQ @BP @BQ
           , mkValEntry
-                "applyRef"
-                "Combine getting of references. `applyRef f x` = `{%f %x}`"
-                ((<*>) :: PinaforeImmutableRef (A -> B) -> PinaforeImmutableRef A -> PinaforeImmutableRef B)
+                "applyWhole"
+                "Combine getting of whole references. `applyWhole f x` = `{%f %x}`"
+                ((<*>) :: PinaforeImmutableWholeRef (A -> B) -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef B)
           , mkValEntry
                 "unknown"
-                "The unknown reference, representing missing information."
-                (empty :: PinaforeImmutableRef BottomType)
-          , mkValEntry "known" "True if the reference is known." $ \(val :: PinaforeROWRef (Know TopType)) ->
+                "The unknown whole reference, representing missing information."
+                (empty :: PinaforeImmutableWholeRef BottomType)
+          , mkValEntry "known" "True if the whole reference is known." $ \(val :: PinaforeROWRef (Know TopType)) ->
                 (eaMapReadOnlyWhole (Known . isKnown) val :: PinaforeROWRef (Know Bool))
           , mkValEntry
                 "??"
                 "`p ?? q` = `p` if it is known, else `q`."
-                ((<|>) :: PinaforeImmutableRef A -> PinaforeImmutableRef A -> PinaforeImmutableRef A)
-          , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $ langRefGet @A
-          , mkValEntry "runRef" "Run an action from a reference. `runRef r = do a <- get r; a end`" $ runLangRef
-          , mkValEntry ":=" "Set a reference to a value. Stop if failed." setentity
-          , mkValEntry "delete" "Delete an entity reference (i.e., make unknown). Stop if failed." deleteentity
-          , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." newMemRef
+                ((<|>) :: PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A)
+          , mkValEntry "get" "Get a whole reference, or `stop` if the whole reference is unknown." $ langWholeRefGet @A
+          , mkValEntry "runWholeRef" "Run an action from a whole reference. `runWholeRef r = do a <- get r; a end`" $
+            runLangWholeRef
+          , mkValEntry ":=" "Set a whole reference to a value. Stop if failed." setentity
+          , mkValEntry "delete" "Delete a whole reference (i.e., make unknown). Stop if failed." deleteentity
+          , mkValEntry "newMemWhole" "Create a new whole reference to memory, initially unknown." newMemWhole
           ]
     , docTreeEntry
           "Set References"
@@ -661,14 +663,14 @@ base_predefinitions =
             eitherLangMorphism @A @A @B @B @C @C
           , mkValEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @AP @AQ @BP @BQ
           , mkSupertypeEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @A @A @B @B
-          , mkValEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutRef r`" $
+          , mkValEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutWhole r`" $
             applyLangMorphismImmutRef @A @BP @BQ
-          , mkSupertypeEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutRef r`" $
+          , mkSupertypeEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutWhole r`" $
             applyLangMorphismImmutRef @A @B @B
           , mkValEntry "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @A @B
           , mkValEntry "!@" "Co-apply a morphism to a reference." $ inverseApplyLangMorphismRef @A @BX @BY
           , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $ inverseApplyLangMorphismRef @A @B @B
-          , mkValEntry "!@%" "Co-apply a morphism to an immutable reference. `m !@% r = m !@ immutRef r`" $
+          , mkValEntry "!@%" "Co-apply a morphism to an immutable reference. `m !@% r = m !@ immutWhole r`" $
             inverseApplyLangMorphismImmutRef @A @B
           , mkValEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @BX @BY
           , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @B @B

@@ -61,18 +61,18 @@ updateTest text =
             tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
-testUpdates = runContext $ tgroup "update" [updateTest "do ref <- newMemRef; return (ref := 1, ref) end"]
+testUpdates = runContext $ tgroup "update" [updateTest "do ref <- newMemWhole; return (ref := 1, ref) end"]
 
 testEntity :: TestTree
 testEntity =
     runContext $
     context
         [ "pass = return ()"
-        , "runreforfail r = runRef (r ?? {fail \"unknown ref\"})"
+        , "runreforfail r = runWholeRef (r ?? {fail \"unknown ref\"})"
         , "testeq expected found = runreforfail {if %expected == %found then pass else fail \"not equal\"}"
         , "testneq expected found = runreforfail {if %expected /= %found then pass else fail \"equal\"}"
-        , "testisknown t = runRef {if %(known t) then pass else fail \"known\"}"
-        , "testisunknown t = runRef {if %(known t) then fail \"known\" else pass}"
+        , "testisknown t = runWholeRef {if %(known t) then pass else fail \"known\"}"
+        , "testisunknown t = runWholeRef {if %(known t) then fail \"known\" else pass}"
         , "testeqval e f = testeq {e} {f}"
         , "expectStop p = onStop (p >> fail \"no stop\") pass"
         ] $
@@ -117,7 +117,7 @@ testEntity =
               , pointTest "do a <- return 3; testeqval 3 a end"
               , pointTest "do a <- return 3; b <- return $ a + a; testeqval 6 b end"
               ]
-        , context ["flagRef = do r <- newMemRef; r := False; return r; end"] $
+        , context ["flagRef = do r <- newMemWhole; r := False; return r; end"] $
           tgroup
               "stop"
               [ pointTest "return ()"
@@ -163,9 +163,9 @@ testEntity =
               ]
         , tgroup
               "memory references"
-              [ pointTest "expectStop $ do r <- newMemRef; get r; end"
-              , pointTest "do r <- newMemRef; r := 45; a <- get r; testeqval 45 a; end"
-              , pointTest "do r <- newMemRef; r := 3; r := 4; a <- get r; testeqval 4 a; end"
+              [ pointTest "expectStop $ do r <- newMemWhole; get r; end"
+              , pointTest "do r <- newMemWhole; r := 45; a <- get r; testeqval 45 a; end"
+              , pointTest "do r <- newMemWhole; r := 3; r := 4; a <- get r; testeqval 4 a; end"
               , pointTest "do s <- newMemFiniteSet; n <- get $ count s; testeqval 0 n; end"
               , pointTest "do s <- newMemFiniteSet; s += 57; n <- get $ count s; testeqval 1 n; end"
               , pointTest "do s <- newMemFiniteSet; s -= 57; n <- get $ count s; testeqval 0 n; end"
@@ -181,7 +181,7 @@ testEntity =
                     "do s <- newMemFiniteSet; member s {57} := False; m57 <- get $ member s {57}; testeqval False m57; end"
               , pointTest
                     "do s <- newMemFiniteSet; member s {57} := True; member s {57} := False; m57 <- get $ member s {57}; testeqval False m57; end"
-              , pointTest "expectStop $ do r <- newMemRef; immutRef r := 5; end"
+              , pointTest "expectStop $ do r <- newMemWhole; immutWhole r := 5; end"
               ]
         , context
               [ "convr : Rational -> Rational;convr = id"
@@ -244,14 +244,14 @@ testEntity =
                     , pointTest "eea !$ {e1} := e2 >> testeq {e2} (eea !$ {e1})"
                     , pointTest "eta !$ {e1} := \"hello\" >> testeq {\"hello\"} (eta !$ {e1})"
                     , pointTest "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
-                    , pointTest "tea !$ {\"hello\"} := e1 >> runRef {outputLn (toText $ %(count (tea !@ {e1})))}"
+                    , pointTest "tea !$ {\"hello\"} := e1 >> runWholeRef {outputLn (toText $ %(count (tea !@ {e1})))}"
                     , pointTest "tea !$ {\"hello\"} := e1 >> testeq {1} (count (tea !@ {e1}))"
                     , pointTest "(eea !. eea) !$ {e1} := e2"
                     , pointTest
                           "do (eea !. eea) !$ {e1} := e2; testeq {e2} ((eea !. eea) !$ {e1}); testeq {e2} (eea !$ (eea !$ {e1})); end"
                     , pointTest
                           "do eea !$ (eea !$ {e1}) := e2; testeq {e2} ((eea !. eea) !$ {e1}); testeq {e2} (eea !$ (eea !$ {e1})); end"
-                    , pointTest "expectStop $ do r <- newMemRef; eia !$ r := 4; end"
+                    , pointTest "expectStop $ do r <- newMemWhole; eia !$ r := 4; end"
                     ]
               , tgroup
                     "+="
@@ -407,7 +407,7 @@ testEntity =
                     , pointTest "tea !@ {e1} += \"h\" >> tea !@ {e1} += \"hello\" >> testeq {2} (count (tea !@ {e1}))"
                     , pointTest $
                       "let counter = eia !$ {e1};someset = nea !@ {e1} in " <>
-                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (members noOrder someset) >>= \\pp -> for pp $ \\p -> runRef {counter := %counter + 1}) >> testeq {1} counter"
+                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (members noOrder someset) >>= \\pp -> for pp $ \\p -> runWholeRef {counter := %counter + 1}) >> testeq {1} counter"
                     ]
               , tgroup
                     "types"
@@ -519,7 +519,7 @@ testEntity =
                     ]
               ]
         , context
-              [ "datatype T = T1 Text Number | T2 | T3 Boolean | T4 (Ref {-Boolean,+Integer} -> Integer) | T5 Text (Boolean -> Integer)"
+              [ "datatype T = T1 Text Number | T2 | T3 Boolean | T4 (WholeRef {-Boolean,+Integer} -> Integer) | T5 Text (Boolean -> Integer)"
               ] $
           tgroup
               "datatype"
@@ -611,8 +611,9 @@ testEntity =
               ]
         , tgroup
               "interpret"
-              [ pointTest "do r <- newMemRef; interpretIntegerAsText r := \"37\"; testeq {37} r; end"
-              , pointTest "do r <- newMemRef; interpretDateAsText r := \"2015-08-12\"; testeq {Date 2015 08 12} r; end"
+              [ pointTest "do r <- newMemWhole; interpretIntegerAsText r := \"37\"; testeq {37} r; end"
+              , pointTest
+                    "do r <- newMemWhole; interpretDateAsText r := \"2015-08-12\"; testeq {Date 2015 08 12} r; end"
               ]
         , context
               [ "runresult ar arg = case ar of Left err -> fail err; Right f -> f arg end"
@@ -630,6 +631,6 @@ testEntity =
               , pointTest
                     "testaction (Left \"<evaluate>:1:1: cannot convert Text <: Integer\\\n<evaluate>:1:1: cannot subsume Text <: Integer\") $ evaluate @Integer \"\\\"hello\\\"\""
               , pointTest
-                    "do r <- newMemRef; ar <- evaluate @(Ref Integer -> Action ()) \"\\\\r -> r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
+                    "do r <- newMemWhole; ar <- evaluate @(WholeRef Integer -> Action ()) \"\\\\r -> r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
               ]
         ]

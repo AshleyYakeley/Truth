@@ -202,7 +202,8 @@ interpretGroundTypeConst (ConstSyntaxGroundType "Either") =
     return $
     MkPinaforeGroundTypeM $
     MkAnyW $ EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "Ref") = return $ MkPinaforeGroundTypeM $ MkAnyW RefPinaforeGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "WholeRef") =
+    return $ MkPinaforeGroundTypeM $ MkAnyW WholeRefPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "SetRef") =
     return $ MkPinaforeGroundTypeM $ MkAnyW SetRefPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "FiniteSetRef") =

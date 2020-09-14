@@ -8,11 +8,11 @@ pinafore> let qp = property @Q @P !"qp"
 pinafore> :t pp
 : P ~> P
 pinafore> :t pp !$ {p}
-: Ref P
+: WholeRef P
 pinafore> :t pp !$ {q}
 <input>:10:4: cannot convert Q <: P
 pinafore> :t qp !$ {p}
-: Ref P
+: WholeRef P
 pinafore> :t qp !$ {q}
-: Ref P
+: WholeRef P
 pinafore> <END>

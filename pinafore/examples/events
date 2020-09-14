@@ -4,7 +4,7 @@ let
 
 # Create a window with some standard menus
 # arguments are title reference, more menus, content UI
-stdWindow: Ref +Text -> [MenuItem] -> UI -> Action Window;
+stdWindow: WholeRef +Text -> [MenuItem] -> UI -> Action Window;
 stdWindow title moremenus content = fixAction $ \window -> let
     menus: [MenuItem];
     menus =
@@ -28,10 +28,10 @@ selectionWindow:
     SetRef (item | NewEntity) ->
     ((item | NewEntity) -> Action Any) ->
     ((item | NewEntity) -> Action Any) ->
-    (Ref {item,+NewEntity} -> UI) ->
+    (WholeRef {item,+NewEntity} -> UI) ->
     Action Window;
 selectionWindow (inames,inamep) iset iopen inew iui = do
-    selection <- newMemRef;
+    selection <- newMemWhole;
     let
         newItem: Action ();
         newItem = do
@@ -92,10 +92,10 @@ setEventTimeDate d et = Just $ case et of
     _ -> EventTimeDate d;
     end;
 
-eventRefTimeDate: Ref EventTime -> Ref Date;
-eventRefTimeDate r = lensMapRef eventTimeDate setEventTimeDate r;
+eventRefTimeDate: WholeRef EventTime -> WholeRef Date;
+eventRefTimeDate r = lensMapWhole eventTimeDate setEventTimeDate r;
 
-eventRefTimeTimeOfDay: Ref EventTime -> Ref TimeOfDay;
+eventRefTimeTimeOfDay: WholeRef EventTime -> WholeRef TimeOfDay;
 eventRefTimeTimeOfDay r = let
     eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay;
     eventTimeTimeOfDay met = case met of
@@ -111,7 +111,7 @@ eventRefTimeTimeOfDay r = let
             Just tod -> EventTimeTime $ LocalTime (eventTimeDate et) tod;
             end;
         end;
-    in maybeLensMapRef eventTimeTimeOfDay setEventTimeTimeOfDay r;
+    in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
 
 # for ordering
 eventTimeTime: EventTime -> LocalTime;
@@ -143,25 +143,25 @@ eventData = (eventTime !** eventName) !$$ events;
 eventDataOrder: Order (EventTime,Text);
 eventDataOrder = mapOrder fst eventTimeOrder;
 
-eventList: Ref +[(EventTime,Text)];
+eventList: WholeRef +[(EventTime,Text)];
 eventList = members eventDataOrder eventData;
 
 
 ### UI
 
-overviewRef: Ref +Text;
+overviewRef: WholeRef +Text;
 overviewRef = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %eventList};
 
 overviewPage: (UI,UI);
 overviewPage = (uiLabel {"Overview"},uiLabel overviewRef);
 
-tablePage: Ref Event -> (UI,UI);
+tablePage: WholeRef Event -> (UI,UI);
 tablePage selection = let
-    columns: [(Ref +Text, Event -> Ref Text)];
+    columns: [(WholeRef +Text, Event -> WholeRef Text)];
     columns = let
-        timeColumn: (Ref +Text, Event -> Ref Text);
+        timeColumn: (WholeRef +Text, Event -> WholeRef Text);
         timeColumn = ({"Time"},\e -> {showEventTime $ %(eventTime !$ {e})});
-        nameColumn: (Ref +Text, Event -> Ref Text);
+        nameColumn: (WholeRef +Text, Event -> WholeRef Text);
         nameColumn = ({"Name"},\e -> eventName !$ {e});
         in [timeColumn,nameColumn];
     in (uiLabel {"Events"}, uiTable columns eventOrder events eventWindow (Just selection));

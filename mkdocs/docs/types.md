@@ -166,17 +166,19 @@ An order on a type.
 
 The contents of a user interface window. Can be composed in various ways.
 
-## References
+## References Types
 
-`Ref {-p,+q}`
+References (of the various reference types) keep track of updates, and will update user interfaces constructed from them when their value changes.
 
-A reference a mutable value, that is, something that can be fetched, set, and deleted, either by functions (`get`, `:=`, `delete`), or by a user interface.
+### Whole References
 
-References keep track of updates, and will update user interfaces constructed from them when their value changes.
+`WholeRef {-p,+q}`
 
-References may be "unknown"
+A whole reference a mutable value, that is, something that can be fetched, set, and deleted, either by functions (`get`, `:=`, `delete`), or by a user interface.
 
-## Set References
+Whole references may be "unknown"
+
+### Set References
 
 `SetRef a`
 
@@ -184,7 +186,7 @@ References may be "unknown"
 
 A set reference is a mutable predicate, like a test on values. Values can be added to it or deleted from it.
 
-## Finite Set References
+### Finite Set References
 
 `FiniteSetRef {-p,+q}`
 

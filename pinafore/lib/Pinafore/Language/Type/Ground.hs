@@ -42,7 +42,7 @@ data PinaforeGroundType dv t where
     OrderPinaforeGroundType :: PinaforeGroundType '[ 'Contravariance] (LangOrder)
     ActionPinaforeGroundType :: PinaforeGroundType '[ 'Covariance] PinaforeAction
     -- Reference
-    RefPinaforeGroundType :: PinaforeGroundType '[ 'Rangevariance] LangRef
+    WholeRefPinaforeGroundType :: PinaforeGroundType '[ 'Rangevariance] LangWholeRef
     ListRefPinaforeGroundType :: PinaforeGroundType '[ 'Rangevariance] LangListRef
     TextRefPinaforeGroundType :: PinaforeGroundType '[] LangTextRef
     SetRefPinaforeGroundType :: PinaforeGroundType '[ 'Contravariance] LangSetRef
@@ -68,7 +68,7 @@ instance IsDolanGroundType PinaforeGroundType where
         covaryToDolanVarianceMap dvcovary $ groundTypeCovaryMap gt
     groundTypeVarianceMap OrderPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap ActionPinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap RefPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap WholeRefPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap ListRefPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap TextRefPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap SetRefPinaforeGroundType = dolanVary @dv
@@ -83,7 +83,7 @@ instance IsDolanGroundType PinaforeGroundType where
     groundTypeVarianceType (EntityPinaforeGroundType lt _) = mapListType (\Refl -> CovarianceType) lt
     groundTypeVarianceType OrderPinaforeGroundType = representative
     groundTypeVarianceType ActionPinaforeGroundType = representative
-    groundTypeVarianceType RefPinaforeGroundType = representative
+    groundTypeVarianceType WholeRefPinaforeGroundType = representative
     groundTypeVarianceType ListRefPinaforeGroundType = representative
     groundTypeVarianceType TextRefPinaforeGroundType = representative
     groundTypeVarianceType SetRefPinaforeGroundType = representative
@@ -104,7 +104,7 @@ instance IsDolanGroundType PinaforeGroundType where
         Just (Refl, HRefl)
     groundTypeTestEquality OrderPinaforeGroundType OrderPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality ActionPinaforeGroundType ActionPinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality RefPinaforeGroundType RefPinaforeGroundType = Just (Refl, HRefl)
+    groundTypeTestEquality WholeRefPinaforeGroundType WholeRefPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality ListRefPinaforeGroundType ListRefPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality TextRefPinaforeGroundType TextRefPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality SetRefPinaforeGroundType SetRefPinaforeGroundType = Just (Refl, HRefl)
@@ -169,8 +169,8 @@ instance GroundExprShow PinaforeGroundType where
         invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
     groundTypeShowPrec ActionPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
         ("Action " <> exprPrecShow 0 ta, 2)
-    groundTypeShowPrec RefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-        ("Ref " <> exprPrecShow 0 ta, 2)
+    groundTypeShowPrec WholeRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+        ("WholeRef " <> exprPrecShow 0 ta, 2)
     groundTypeShowPrec ListRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
         ("ListRef " <> exprPrecShow 0 ta, 2)
     groundTypeShowPrec TextRefPinaforeGroundType NilDolanArguments = ("TextRef", 0)

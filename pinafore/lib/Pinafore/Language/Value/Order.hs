@@ -5,7 +5,7 @@ import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Value.FiniteSetRef
 import Pinafore.Language.Value.Morphism
-import Pinafore.Language.Value.Ref
+import Pinafore.Language.Value.WholeRef
 import Shapes
 
 data LangOrder a =
@@ -70,9 +70,9 @@ langOrderCompare ::
        forall a b. (?pinafore :: PinaforeContext)
     => (Ordering -> b)
     -> LangOrder a
-    -> PinaforeImmutableRef a
-    -> PinaforeImmutableRef a
-    -> PinaforeImmutableRef b
+    -> PinaforeImmutableWholeRef a
+    -> PinaforeImmutableWholeRef a
+    -> PinaforeImmutableWholeRef b
 langOrderCompare ob (MkLangOrder ef o) fv1 fv2 =
     (\v1 v2 -> ob $ o v1 v2) <$> (applyImmutableRef pinaforeEntityModel (fmap Known ef) fv1) <*>
     (applyImmutableRef pinaforeEntityModel (fmap Known ef) fv2)
@@ -81,8 +81,8 @@ pinaforeSetGetOrdered ::
        forall a. (?pinafore :: PinaforeContext)
     => LangOrder a
     -> LangFiniteSetRef '( BottomType, a)
-    -> LangRef '( TopType, [a])
-pinaforeSetGetOrdered order set = pinaforeROWRefToRef $ qOrderSet order $ langFiniteSetRefFunctionValue set
+    -> LangWholeRef '( TopType, [a])
+pinaforeSetGetOrdered order set = pinaforeROWRefToWholeRef $ qOrderSet order $ langFiniteSetRefFunctionValue set
 
 pinaforeUpdateOrder :: LangOrder a -> UpdateOrder (ContextUpdate PinaforeStorageUpdate (WholeUpdate (Know a)))
 pinaforeUpdateOrder (MkLangOrder m cmp) =
