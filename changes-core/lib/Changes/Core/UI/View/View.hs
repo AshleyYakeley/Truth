@@ -14,7 +14,7 @@ module Changes.Core.UI.View.View
     ) where
 
 import Changes.Core.Import
-import Changes.Core.Reference
+import Changes.Core.Model
 import Changes.Core.Resource
 import Changes.Core.UI.View.Context
 

@@ -1,7 +1,7 @@
 module Changes.Core.UI.View.Dynamic where
 
 import Changes.Core.Import
-import Changes.Core.Reference
+import Changes.Core.Model
 import Changes.Core.UI.View.CreateView
 import Changes.Core.UI.View.View
 

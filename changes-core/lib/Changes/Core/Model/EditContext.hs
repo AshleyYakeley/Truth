@@ -1,4 +1,4 @@
-module Changes.Core.Reference.EditContext
+module Changes.Core.Model.EditContext
     ( EditSource
     , noEditSource
     , newEditSource

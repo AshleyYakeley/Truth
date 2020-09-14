@@ -1,10 +1,10 @@
-module Changes.Core.Reference.Editor where
+module Changes.Core.Model.Editor where
 
 import Changes.Core.Edit
 import Changes.Core.Import
-import Changes.Core.Reference.EditContext
-import Changes.Core.Reference.Model
-import Changes.Core.Reference.Reference
+import Changes.Core.Model.EditContext
+import Changes.Core.Model.Model
+import Changes.Core.Model.Reference
 import Changes.Core.Resource
 
 data Editor (update :: Type) r = forall editor. MkEditor

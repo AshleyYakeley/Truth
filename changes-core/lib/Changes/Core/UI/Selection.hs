@@ -1,7 +1,7 @@
 module Changes.Core.UI.Selection where
 
 import Changes.Core.Import
-import Changes.Core.Reference
+import Changes.Core.Model
 import Changes.Core.Types
 import Changes.Core.UI.View.View
 

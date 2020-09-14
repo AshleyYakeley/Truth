@@ -12,7 +12,7 @@ module Changes.Core.UI.View.CreateView
 
 import Changes.Core.Import
 import Changes.Core.Lens
-import Changes.Core.Reference
+import Changes.Core.Model
 import Changes.Core.Types
 import Changes.Core.UI.View.Context
 import Changes.Core.UI.View.View

@@ -1,4 +1,4 @@
-module Changes.Core.Reference.AutoClose where
+module Changes.Core.Model.AutoClose where
 
 import Changes.Core.Import
 
