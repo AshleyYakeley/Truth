@@ -508,10 +508,9 @@ pinaforeLensMorphismInverseChangeLens plm@MkPinaforeLensMorphism {..} = let
 
 pinaforeLensMorphismInverseChangeLensSet ::
        forall baseupdate a b. (Eq a, Eq b)
-    => IO b
-    -> PinaforeLensMorphism baseupdate a a b b
+    => PinaforeLensMorphism baseupdate a a b b
     -> ChangeLens (ContextUpdate baseupdate (FiniteSetUpdate b)) (FiniteSetUpdate a)
-pinaforeLensMorphismInverseChangeLensSet newb plm@MkPinaforeLensMorphism {..} = let
+pinaforeLensMorphismInverseChangeLensSet plm@MkPinaforeLensMorphism {..} = let
     clRead' :: ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (FiniteSetReader a)
     clRead' (mr :: Readable m _) KeyReadKeys = do
         bs <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
@@ -567,12 +566,11 @@ pinaforeLensMorphismInverseChangeLensSet newb plm@MkPinaforeLensMorphism {..} = 
         mpedits <- putEditAB plm a Unknown $ tupleReadFunction SelectContext mr
         return $ fmap (\pedits -> fmap (MkTupleUpdateEdit SelectContext) pedits) mpedits
     elPutEdit' (KeyEditInsertReplace a) mr = do
-        b <- liftIO newb
-        getComposeM $ do
-            pedits <- MkComposeM $ putEditAB plm a (Known b) $ tupleReadFunction SelectContext mr
-            return $
-                (MkTupleUpdateEdit SelectContent $ KeyEditInsertReplace b) :
-                fmap (MkTupleUpdateEdit SelectContext) pedits
+        kb <- runContextReadM mr $ pmGet a
+        return $
+            case kb of
+                Unknown -> Nothing
+                Known b -> Just [MkTupleUpdateEdit SelectContent $ KeyEditInsertReplace b]
     elPutEdit' KeyEditClear mr = do
         bs <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
         getComposeM $ do

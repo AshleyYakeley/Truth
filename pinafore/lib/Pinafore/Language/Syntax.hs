@@ -91,11 +91,21 @@ data SyntaxCase =
     MkSyntaxCase SyntaxPattern
                  SyntaxExpression
 
+data SyntaxSpecialForm
+    = SSFProperty SyntaxType
+                  SyntaxType
+                  Anchor
+    | SSFOpenEntity SyntaxType
+                    Anchor
+    | SSFNewOpenEntity SyntaxType
+    | SSFEvaluate SyntaxType
+
 data SyntaxConstant
     = SCIfThenElse
     | SCBind
     | SCBind_
     | SCConstructor SyntaxConstructor
+    | SCSpecialForm SyntaxSpecialForm
 
 data SyntaxExpression'
     = SEConst SyntaxConstant
@@ -111,12 +121,6 @@ data SyntaxExpression'
     | SECase SyntaxExpression
              [SyntaxCase]
     | SEList [SyntaxExpression]
-    | SEProperty SyntaxType
-                 SyntaxType
-                 Anchor
-    | SEEntity SyntaxType
-               Anchor
-    | SEEvaluate SyntaxType
 
 seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression
 seConst spos sc = MkWithSourcePos spos $ SEConst sc
@@ -181,9 +185,6 @@ instance SyntaxFreeVariables SyntaxExpression' where
         difference (syntaxFreeVariables binds <> syntaxFreeVariables expr) (syntaxBindingVariables binds)
     syntaxFreeVariables (SECase expr cases) = union (syntaxFreeVariables expr) (syntaxFreeVariables cases)
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
-    syntaxFreeVariables (SEProperty _ _ _) = mempty
-    syntaxFreeVariables (SEEntity _ _) = mempty
-    syntaxFreeVariables (SEEvaluate _) = mempty
 
 instance SyntaxFreeVariables SyntaxBinding where
     syntaxFreeVariables (MkSyntaxBinding _ _ _ expr) = syntaxFreeVariables expr

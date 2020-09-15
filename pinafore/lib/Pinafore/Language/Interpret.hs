@@ -126,45 +126,8 @@ interpretConstructor spos (SLNamedConstructor v) = interpretNamedConstructor spo
 interpretConstructor _ SLPair = return $ qConstExprAny $ jmToValue ((,) :: A -> B -> (A, B))
 interpretConstructor _ SLUnit = return $ qConstExprAny $ jmToValue ()
 
-interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression
-interpretConstant _ SCIfThenElse = return $ qConstExprAny $ jmToValue qifthenelse
-interpretConstant _ SCBind = return $ qConstExprAny $ jmToValue qbind
-interpretConstant _ SCBind_ = return $ qConstExprAny $ jmToValue qbind_
-interpretConstant spos (SCConstructor lit) = interpretConstructor spos lit
-
-interpretCase :: SyntaxCase -> RefNotation (QPattern, QExpr)
-interpretCase (MkSyntaxCase spat sexpr) = do
-    pat <- interpretPattern spat
-    expr <- interpretExpression sexpr
-    return (pat, expr)
-
-interpretExpression' :: SourcePos -> SyntaxExpression' -> RefExpression
-interpretExpression' spos (SEAbstract spat sbody) = do
-    val <- interpretExpression sbody
-    case interpretPatternOrName spat of
-        Left name -> liftRefNotation $ runSourcePos spos $ qAbstractExpr name val
-        Right mpat -> do
-            pat <- mpat
-            liftRefNotation $ runSourcePos spos $ qCaseAbstract [(pat, val)]
-interpretExpression' spos (SELet decls sbody) = do
-    MkWMFunction bmap <- liftRefNotation $ runSourcePos spos $ interpretDeclarations decls
-    bmap $ interpretExpression sbody
-interpretExpression' spos (SECase sbody scases) = do
-    body <- interpretExpression sbody
-    pairs <- for scases interpretCase
-    liftRefNotation $ runSourcePos spos $ qCase body pairs
-interpretExpression' spos (SEApply sf sarg) = do
-    f <- interpretExpression sf
-    arg <- interpretExpression sarg
-    liftRefNotation $ runSourcePos spos $ qApplyExpr f arg
-interpretExpression' spos (SEConst c) = interpretConstant spos c
-interpretExpression' spos (SEVar name) = varRefExpr spos name
-interpretExpression' spos (SERef sexpr) = refNotationQuote spos $ interpretExpression sexpr
-interpretExpression' spos (SEUnref sexpr) = refNotationUnquote spos $ interpretExpression sexpr
-interpretExpression' spos (SEList sexprs) = do
-    exprs <- for sexprs interpretExpression
-    liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs
-interpretExpression' spos (SEProperty sta stb anchor) =
+interpretSpecialForm :: SourcePos -> SyntaxSpecialForm -> RefExpression
+interpretSpecialForm spos (SSFProperty sta stb anchor) =
     liftRefNotation $ do
         meta <- runSourcePos spos $ interpretConcreteEntityType sta
         metb <- runSourcePos spos $ interpretConcreteEntityType stb
@@ -197,17 +160,31 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                                        fmap (shimToFunction prbCo) morphism
                                    anyval = MkAnyValue typef pinamorphism
                                    in return $ qConstExprAny anyval
-interpretExpression' spos (SEEntity st anchor) =
+interpretSpecialForm spos (SSFOpenEntity st anchor) =
     liftRefNotation $ do
         mtp <- runSourcePos spos $ interpretConcreteEntityType st
         case mtp of
             MkAnyW tp -> do
                 pt <- runSourcePos spos $ makeEntity tp $ MkEntity anchor
+                let typef = concreteToPositiveDolanType tp
+                return $ qConstExprAny $ MkAnyValue typef pt
+interpretSpecialForm spos (SSFNewOpenEntity st) =
+    liftRefNotation $ do
+        mtp <- runSourcePos spos $ interpretOpenEntityType st
+        case mtp of
+            MkAnyW (tp :: OpenEntityType tid) -> do
                 let
-                    typef = concreteToPositiveDolanType tp
-                    anyval = MkAnyValue typef pt
-                return $ qConstExprAny anyval
-interpretExpression' spos (SEEvaluate st) =
+                    pt :: PinaforeAction (OpenEntity tid)
+                    pt = liftIO $ newKeyContainerItem @(FiniteSet (OpenEntity tid))
+                    typef =
+                        actionShimWit $
+                        singleDolanShimWit $
+                        mkShimWit $
+                        GroundDolanSingularType
+                            (EntityPinaforeGroundType NilListType $ OpenEntityGroundType tp)
+                            NilDolanArguments
+                return $ qConstExprAny $ MkAnyValue typef pt
+interpretSpecialForm spos (SSFEvaluate st) =
     liftRefNotation $
     runSourcePos spos $ do
         mtp <- interpretType @'Positive st
@@ -215,14 +192,6 @@ interpretExpression' spos (SEEvaluate st) =
         return $
             case mtp of
                 MkAnyW tp -> let
-                    actionShimWit ::
-                           forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
-                    actionShimWit swa =
-                        unPosShimWit swa $ \ta conva ->
-                            mapPosShimWit (cfmap conva) $
-                            singleDolanShimWit $
-                            mkShimWit $
-                            GroundDolanSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
                     eitherShimWit ::
                            forall a b.
                            PinaforeShimWit 'Positive a
@@ -268,10 +237,56 @@ interpretExpression' spos (SEEvaluate st) =
                     valShimWit t' = funcShimWit textShimWit $ actionShimWit $ eitherShimWit textShimWit t'
                     in qConstExprAny $ MkAnyValue (valShimWit $ mkShimWit tp) $ specialEvaluate spvals tp
 
+interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression
+interpretConstant _ SCIfThenElse = return $ qConstExprAny $ jmToValue qifthenelse
+interpretConstant _ SCBind = return $ qConstExprAny $ jmToValue qbind
+interpretConstant _ SCBind_ = return $ qConstExprAny $ jmToValue qbind_
+interpretConstant spos (SCConstructor lit) = interpretConstructor spos lit
+interpretConstant spos (SCSpecialForm sf) = interpretSpecialForm spos sf
+
+interpretCase :: SyntaxCase -> RefNotation (QPattern, QExpr)
+interpretCase (MkSyntaxCase spat sexpr) = do
+    pat <- interpretPattern spat
+    expr <- interpretExpression sexpr
+    return (pat, expr)
+
+actionShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
+actionShimWit swa =
+    unPosShimWit swa $ \ta conva ->
+        mapPosShimWit (cfmap conva) $
+        singleDolanShimWit $
+        mkShimWit $ GroundDolanSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+
+interpretExpression' :: SourcePos -> SyntaxExpression' -> RefExpression
+interpretExpression' spos (SEAbstract spat sbody) = do
+    val <- interpretExpression sbody
+    case interpretPatternOrName spat of
+        Left name -> liftRefNotation $ runSourcePos spos $ qAbstractExpr name val
+        Right mpat -> do
+            pat <- mpat
+            liftRefNotation $ runSourcePos spos $ qCaseAbstract [(pat, val)]
+interpretExpression' spos (SELet decls sbody) = do
+    MkWMFunction bmap <- liftRefNotation $ runSourcePos spos $ interpretDeclarations decls
+    bmap $ interpretExpression sbody
+interpretExpression' spos (SECase sbody scases) = do
+    body <- interpretExpression sbody
+    pairs <- for scases interpretCase
+    liftRefNotation $ runSourcePos spos $ qCase body pairs
+interpretExpression' spos (SEApply sf sarg) = do
+    f <- interpretExpression sf
+    arg <- interpretExpression sarg
+    liftRefNotation $ runSourcePos spos $ qApplyExpr f arg
+interpretExpression' spos (SEConst c) = interpretConstant spos c
+interpretExpression' spos (SEVar name) = varRefExpr spos name
+interpretExpression' spos (SERef sexpr) = refNotationQuote spos $ interpretExpression sexpr
+interpretExpression' spos (SEUnref sexpr) = refNotationUnquote spos $ interpretExpression sexpr
+interpretExpression' spos (SEList sexprs) = do
+    exprs <- for sexprs interpretExpression
+    liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs
+
 makeEntity :: MonadThrow ErrorType m => ConcreteEntityType t -> Entity -> m t
 makeEntity (MkConcreteType TopEntityGroundType NilArguments) p = return p
-makeEntity (MkConcreteType NewEntityGroundType NilArguments) p = return $ MkNewEntity p
-makeEntity (MkConcreteType (OpenEntityGroundType _ _) NilArguments) p = return $ MkOpenEntity p
+makeEntity (MkConcreteType (OpenEntityGroundType _) NilArguments) p = return $ MkOpenEntity p
 makeEntity t _ = throw $ InterpretTypeNotOpenEntityError $ exprShow t
 
 interpretTypeSignature :: Maybe SyntaxType -> PinaforeExpression -> PinaforeSourceScoped PinaforeExpression

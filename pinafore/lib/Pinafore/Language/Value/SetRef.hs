@@ -3,7 +3,6 @@ module Pinafore.Language.Value.SetRef where
 import Changes.Core
 import Data.Shim
 import Pinafore.Base
-import Pinafore.Language.Value.OpenEntity
 import Pinafore.Language.Value.WholeRef
 import Shapes
 
@@ -88,12 +87,6 @@ langSetRefCartesianProduct (MkLangSetRef eqA svA) (MkLangSetRef eqB svB) = let
 langSetRefAdd :: forall a. LangSetRef a -> a -> PinaforeAction ()
 langSetRefAdd (MkLangSetRef _eq sv) a =
     pinaforeRefPushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True
-
-langSetRefAddNew :: LangSetRef NewEntity -> PinaforeAction NewEntity
-langSetRefAddNew set = do
-    (MkNewEntity -> e) <- liftIO $ newKeyContainerItem @(FiniteSet Entity)
-    langSetRefAdd set e
-    return e
 
 langSetRefRemove :: forall a. LangSetRef a -> a -> PinaforeAction ()
 langSetRefRemove (MkLangSetRef _eq sv) a =

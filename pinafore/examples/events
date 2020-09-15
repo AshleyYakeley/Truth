@@ -24,23 +24,15 @@ stdWindow title moremenus content = fixAction $ \window -> let
     in openWindow title {menus} $ uiScrolled content;
 
 selectionWindow:
-    (Text, Text) ->
-    SetRef (item | NewEntity) ->
-    ((item | NewEntity) -> Action Any) ->
-    ((item | NewEntity) -> Action Any) ->
-    (WholeRef {item,+NewEntity} -> UI) ->
+    Text -> # window title
+    SetRef item -> # the set of items
+    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
+    (item -> Action Any) -> # what to do when an item is activated
+    (WholeRef item -> UI) ->
     Action Window;
-selectionWindow (inames,inamep) iset iopen inew iui = do
+selectionWindow wtitle iset createMenuItems iopen iui = do
     selection <- newMemWhole;
     let
-        newItem: Action ();
-        newItem = do
-            item <- newEntity iset;
-            inew item;
-            iopen item;
-            selection := item;
-            end;
-
         viewItem: Action ();
         viewItem = do
             item <- get selection;
@@ -57,14 +49,13 @@ selectionWindow (inames,inamep) iset iopen inew iui = do
         moremenus: [MenuItem];
         moremenus =
             [
-                menuSubmenu "Selection"
+                menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
                 [
-                    menuAction ("New " <> inames) (Just "Ctrl+K") {newItem},
                     menuAction "View" Nothing {viewItem},
                     menuAction "Delete" Nothing {deleteItem}
                 ]
             ];
-        in stdWindow {inamep} moremenus (iui selection);
+        in stdWindow {wtitle} moremenus (iui selection);
     end;
 
 
@@ -187,14 +178,20 @@ eventWindow evt = stdWindow (eventName !$ {evt}) [] $ uiVertical
     (True, uiTextArea $ eventNotes !$ {evt})
 ];
 
+newEventMenuItem: (Event -> Action ()) -> MenuItem;
+newEventMenuItem setsel = menuAction ("New Event") (Just "Ctrl+K")
+    {do
+    item <- newOpenEntity @Event;
+    day <- getDate;
+    eventTime !$ {item} := EventTimeDate day;
+    eventName !$ {item} := "";
+    events += item;
+    setsel item;
+    end};
+
 eventsWindow: Action Window;
 eventsWindow = let
-    inew i = do
-        day <- getDate;
-        eventTime !$ {i} := EventTimeDate day;
-        eventName !$ {i} := "";
-        end;
     iui selection = uiPages [overviewPage, tablePage selection];
-    in selectionWindow ("Event","Events") events eventWindow inew iui;
+    in selectionWindow "Events" events [newEventMenuItem] eventWindow iui;
 
 in eventsWindow

@@ -1,8 +1,8 @@
 pinafore> let opentype P
 pinafore> let opentype Q
 pinafore> let subtype P <: Q
-pinafore> let p = entity @P !"p"
-pinafore> let q = entity @Q !"q"
+pinafore> let p = openEntity @P !"p"
+pinafore> let q = openEntity @Q !"q"
 pinafore> let pp = property @P @P !"pp"
 pinafore> let qp = property @Q @P !"qp"
 pinafore> :t pp

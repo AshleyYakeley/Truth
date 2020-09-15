@@ -112,10 +112,14 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <expression-2> ::= <expression-3> | <expression-2> <expression-3>
 
-<expression-3> ::=
-    "property" "@"<type-const> "@"<type-const> anchor |
-    "entity" "@"<type-3> anchor |
+<special-form> ::=
+    "property" "@"<type-3> "@"<type-3> anchor |
+    "openEntity" "@"<type-3> anchor |
+    "newOpenEntity" "@"<type-3> |
     "evaluate" "@"<type-3> |
+
+<expression-3> ::=
+    <special-form> |
     "{" <expression> "}" |
     "%" <expression-3> |
     lname |

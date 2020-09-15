@@ -576,7 +576,6 @@ base_predefinitions =
           , mkValEntry "immutSet" "Convert a set to immutable." $ langSetRefImmutable @A
           , mkValEntry "+=" "Add an entity to a set." $ langSetRefAdd @A
           , mkValEntry "-=" "Remove an entity from a set." $ langSetRefRemove @A
-          , mkValEntry "newEntity" "Create a new entity in a set and act on it." $ langSetRefAddNew
           , mkValEntry "member" "A reference to the membership of a value in a set." $ langSetRefMember @A
           , mkValEntry
                 "notSet"

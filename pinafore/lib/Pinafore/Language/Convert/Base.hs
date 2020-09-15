@@ -493,21 +493,6 @@ instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) En
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Entity where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
--- NewEntity
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) NewEntity where
-    toShimWit =
-        mkShimWit $ GroundDolanSingularType (EntityPinaforeGroundType NilListType NewEntityGroundType) NilDolanArguments
-
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) NewEntity where
-    toShimWit = singleDolanShimWit toJMShimWit
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) NewEntity where
-    fromShimWit =
-        mkShimWit $ GroundDolanSingularType (EntityPinaforeGroundType NilListType NewEntityGroundType) NilDolanArguments
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) NewEntity where
-    fromShimWit = singleDolanShimWit fromJMShimWit
-
 -- Literal
 literalInstances :: _ -> _
 literalInstances t =

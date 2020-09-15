@@ -172,7 +172,8 @@ personWindow p = stdWindow (name !$ {p}) [] (personUI {p});
 newPersonMenuItem: (Person -> Action ()) -> MenuItem;
 newPersonMenuItem setsel = menuAction ("New Person") (Just "Ctrl+K")
     {do
-    item <- newEntity people;
+    item <- newOpenEntity @Person;
+    people += item;
     setsel item;
     end};
 

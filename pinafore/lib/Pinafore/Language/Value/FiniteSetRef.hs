@@ -4,7 +4,6 @@ import Changes.Core
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Shim
-import Pinafore.Language.Value.OpenEntity
 import Pinafore.Language.Value.SetRef
 import Pinafore.Language.Value.WholeRef
 import Shapes
@@ -62,12 +61,6 @@ langFiniteSetRefJoin seta setb =
 langFiniteSetRefAdd :: LangFiniteSetRef '( p, q) -> p -> PinaforeAction ()
 langFiniteSetRefAdd (MkLangFiniteSetRef tr set) p =
     pinaforeRefPushAction set $ pure $ KeyEditInsertReplace $ shimToFunction (rangeContra tr) p
-
-langFiniteSetRefAddNew :: LangFiniteSetRef '( NewEntity, TopType) -> PinaforeAction NewEntity
-langFiniteSetRefAddNew set = do
-    (MkNewEntity -> e) <- liftIO $ newKeyContainerItem @(FiniteSet Entity)
-    langFiniteSetRefAdd set e
-    return e
 
 langFiniteSetRefRemove :: LangFiniteSetRef '( p, q) -> p -> PinaforeAction ()
 langFiniteSetRefRemove (MkLangFiniteSetRef tr set) p =

@@ -151,21 +151,22 @@ applyArgs (ConsListType sv dv) ft (ConsDolanArguments a1 ar) = do
     case ana1 of
         MkAnyW na1 -> applyArgs dv (ApplyNonpolarType sv ft na1) ar
 
-pinaforeSinglularTypeToNonpolar ::
+dolanSingularTypeToNonpolar ::
        forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
     => DolanSingularType ground polarity t
     -> Maybe (AnyW (NonpolarDolanType ground '[]))
-pinaforeSinglularTypeToNonpolar (VarDolanSingularType n) = Just $ MkAnyW $ VarNonpolarType n
-pinaforeSinglularTypeToNonpolar (GroundDolanSingularType ground args) =
+dolanSingularTypeToNonpolar (VarDolanSingularType n) = Just $ MkAnyW $ VarNonpolarType n
+dolanSingularTypeToNonpolar (GroundDolanSingularType ground args) =
     applyArgs @ground (groundTypeVarianceType ground) (GroundNonpolarType ground) args
-pinaforeSinglularTypeToNonpolar (RecursiveDolanSingularType _ _) = empty
+dolanSingularTypeToNonpolar (RecursiveDolanSingularType _ _) = empty
 
 dolanTypeToNonpolar ::
        forall (ground :: GroundTypeKind) polarity t. IsDolanGroundType ground
     => DolanType ground polarity t
     -> Maybe (AnyW (NonpolarDolanType ground '[]))
-dolanTypeToNonpolar (ConsDolanType t NilDolanType) = pinaforeSinglularTypeToNonpolar t
-dolanTypeToNonpolar _ = Nothing
+dolanTypeToNonpolar t = do
+    MkAnyW st <- dolanTypeToSingular t
+    dolanSingularTypeToNonpolar st
 
 pinaforeNonpolarArgTypeTestEquality ::
        forall (ground :: GroundTypeKind) sv a b. IsDolanGroundType ground

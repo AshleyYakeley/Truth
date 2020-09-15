@@ -89,15 +89,9 @@ entityGroundSubtype _ _ ct gt args NilListType TopEntityGroundType NilDolanArgum
 -- (literal type) <: (literal type)
 entityGroundSubtype _ _ NilListType (LiteralEntityGroundType t1) NilDolanArguments NilListType (LiteralEntityGroundType t2) NilDolanArguments
     | Just conv <- isSubtype t1 t2 = pure conv
--- NewEntity <: NewEntity
-entityGroundSubtype _ _ NilListType NewEntityGroundType NilDolanArguments NilListType NewEntityGroundType NilDolanArguments =
-    pure id
--- NewEntity <: (open entity type)
-entityGroundSubtype _ _ NilListType NewEntityGroundType NilDolanArguments NilListType (OpenEntityGroundType _ _) NilDolanArguments =
-    pure $ coerceEnhanced "subtype"
 -- (open entity type) <: (open entity type)
-entityGroundSubtype sslift _ NilListType (OpenEntityGroundType n1 t1) NilDolanArguments NilListType (OpenEntityGroundType n2 t2) NilDolanArguments =
-    sslift $ getOpenEntitySubtype n1 t1 n2 t2
+entityGroundSubtype sslift _ NilListType (OpenEntityGroundType t1) NilDolanArguments NilListType (OpenEntityGroundType t2) NilDolanArguments =
+    sslift $ getOpenEntitySubtype t1 t2
 -- (closed entity type) <: (closed entity type)
 entityGroundSubtype _ _ NilListType (ClosedEntityGroundType _ sa ta) NilDolanArguments NilListType (ClosedEntityGroundType _ sb tb) NilDolanArguments
     | Just Refl <- testEquality sa sb

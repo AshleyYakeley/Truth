@@ -136,9 +136,8 @@ applyInversePinaforeLens basesub pm val =
 applyInversePinaforeLensSet ::
        forall baseupdate a b. (Eq a, Eq b)
     => Model baseupdate
-    -> IO b
     -> PinaforeLensMorphism baseupdate a a b b
     -> PinaforeRef (FiniteSetUpdate b)
     -> PinaforeRef (FiniteSetUpdate a)
-applyInversePinaforeLensSet basesub newb pm val =
-    eaMap (pinaforeLensMorphismInverseChangeLensSet newb pm) $ contextualisePinaforeRef basesub val
+applyInversePinaforeLensSet basesub pm val =
+    eaMap (pinaforeLensMorphismInverseChangeLensSet pm) $ contextualisePinaforeRef basesub val

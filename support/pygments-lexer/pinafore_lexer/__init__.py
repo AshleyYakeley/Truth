@@ -20,10 +20,10 @@ class PinaforeLexer(RegexLexer):
             (r'\#(.*?)\n', Comment.Single),
             (r'{\#', Comment.Multiline, 'comment'),
             (r'"(\\\\|\\"|[^"])*"', String),
-            (r'(datatype|opentype|subtype|closedtype|property|entity|evaluate)\b', Keyword.Declaration),
+            (r'(datatype|opentype|subtype|closedtype|property|openEntity|newOpenEntity|evaluate)\b', Keyword.Declaration),
             (words(('rec', 'if', 'then', 'else', 'let', 'in', 'do', 'case', 'of', 'end'), suffix=r'\b'), Keyword),
             (words((
-                'Any', 'None', 'Literal', 'Text', 'Number', 'Rational', 'Integer', 'Boolean', 'Time', 'Duration', 'Date', 'TimeOfDay', 'LocalTime', 'Entity', 'NewEntity',
+                'Any', 'None', 'Literal', 'Text', 'Number', 'Rational', 'Integer', 'Boolean', 'Time', 'Duration', 'Date', 'TimeOfDay', 'LocalTime', 'Entity',
                 'Maybe', 'Either', 'Order', 'Action', 'WholeRef', 'SetRef', 'FiniteSetRef', 'UI', 'Window', 'MenuItem'
                 ), suffix=r'\b'), Keyword.Type),
             (r'![-0-9A-Fa-f]+', Literal.Anchor),

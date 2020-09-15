@@ -133,7 +133,7 @@ subtype Person <: Animal;
 subtype Cat <: Animal;
 ```
 
-For any open entity type `T`, `NewEntity <: T` and `T <: Entity`.
+For any open entity type `T`, `T <: Entity`.
 
 Subtypes relations are transitive.
 If there is a loop of subtype relations, it will simply make those types equivalent.

@@ -1,5 +1,6 @@
 module Pinafore.Language.Interpret.Type
     ( interpretType
+    , interpretOpenEntityType
     , interpretConcreteEntityType
     , interpretNonpolarType
     , interpretSubtypeRelation
@@ -24,6 +25,18 @@ interpretType st = do
     mpol <- isMPolarity @polarity $ interpretTypeM @('Just polarity) st
     case mpol of
         SingleMPolarW atw -> return atw
+
+interpretOpenEntityType :: SyntaxType -> PinaforeSourceScoped (AnyW OpenEntityType)
+interpretOpenEntityType st = do
+    mpol <- interpretTypeM @'Nothing st
+    case mpol of
+        BothMPolarW atm ->
+            case atm @'Positive of
+                MkAnyW tm ->
+                    case dolanTypeToSingular tm of
+                        Just (MkAnyW (GroundDolanSingularType (EntityPinaforeGroundType _ (OpenEntityGroundType t)) NilDolanArguments)) ->
+                            return $ MkAnyW t
+                        _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm
 
 interpretConcreteEntityType :: SyntaxType -> PinaforeSourceScoped (AnyW ConcreteEntityType)
 interpretConcreteEntityType st = do
@@ -182,6 +195,9 @@ interpretArgs sgt (ConsListType RangevarianceType dv) (st:stt) = do
             case aargs of
                 MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
 
+makeOpenEntityType :: Name -> TypeID -> AnyW OpenEntityType
+makeOpenEntityType n tid = valueToWitness tid $ \tidsym -> MkAnyW $ MkOpenEntityType n tidsym
+
 interpretGroundTypeConst :: SyntaxGroundType -> PinaforeSourceScoped PinaforeGroundTypeM
 interpretGroundTypeConst UnitSyntaxGroundType =
     return $
@@ -220,8 +236,6 @@ interpretGroundTypeConst (ConstSyntaxGroundType "MenuItem") =
     return $ MkPinaforeGroundTypeM $ MkAnyW MenuItemPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "Entity") =
     return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType TopEntityGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "NewEntity") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType NewEntityGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType n)
     | Just (MkAnyW lt) <- nameToLiteralType n =
         return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType lt
@@ -230,9 +244,10 @@ interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     case nt of
         SimpleNamedType dv dm es wt -> return $ MkPinaforeGroundTypeM $ MkAnyW $ SimpleGroundType dv dm es wt
         OpenEntityNamedType tid ->
-            valueToWitness tid $ \tidsym ->
-                return $
-                MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType n tidsym
+            case makeOpenEntityType n tid of
+                MkAnyW t ->
+                    return $
+                    MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType t
         ClosedEntityNamedType tidsym ct ->
             return $
             MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n tidsym ct
@@ -244,11 +259,11 @@ interpretSubtypeRelation sta stb ma = do
     case ata of
         MkAnyW ta ->
             case ta of
-                MkConcreteType (OpenEntityGroundType _ tida) NilArguments ->
+                MkConcreteType (OpenEntityGroundType tida) NilArguments ->
                     case atb of
                         MkAnyW tb ->
                             case tb of
-                                MkConcreteType (OpenEntityGroundType _ tidb) NilArguments ->
+                                MkConcreteType (OpenEntityGroundType tidb) NilArguments ->
                                     remonadSourcePos (withEntitySubtype tida tidb) ma
                                 _ -> throw $ TypeNotOpenEntityError $ exprShow tb
                 _ -> throw $ TypeNotOpenEntityError $ exprShow ta

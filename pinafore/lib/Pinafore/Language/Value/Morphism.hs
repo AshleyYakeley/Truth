@@ -4,7 +4,6 @@ import Changes.Core
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Value.FiniteSetRef
-import Pinafore.Language.Value.OpenEntity
 import Pinafore.Language.Value.WholeRef
 import Shapes
 
@@ -114,19 +113,15 @@ inverseApplyLangMorphismImmutRef m r = inverseApplyLangMorphismRef m $ pinaforeI
 inverseApplyLangMorphismSet ::
        forall a bx by. (?pinafore :: PinaforeContext)
     => LangMorphism '( a, MeetType Entity a) '( bx, by)
-    -> LangFiniteSetRef '( JoinType NewEntity by, bx)
+    -> LangFiniteSetRef '( by, bx)
     -> LangFiniteSetRef '( MeetType Entity a, a)
 inverseApplyLangMorphismSet (MkLangMorphism m) (MkLangFiniteSetRef (tra :: Range _ t _) seta) = let
     byt :: by -> t
-    byt = shimToFunction $ rangeContra tra . join2
-    nt :: NewEntity -> t
-    nt = shimToFunction $ rangeContra tra . join1
+    byt = shimToFunction $ rangeContra tra
     tbx :: t -> bx
     tbx = shimToFunction $ rangeCo tra
     m' :: PinaforeLensMorphism PinaforeStorageUpdate (MeetType Entity a) (MeetType Entity a) t t
     m' = cfmap3 (MkCatDual $ meet2 @(->)) $ cfmap1 (MkCatDual tbx) $ fmap byt m
-    newVal :: IO t
-    newVal = fmap (nt . MkNewEntity) newEntity
     setb :: PinaforeRef (FiniteSetUpdate (MeetType Entity a))
-    setb = applyInversePinaforeLensSet pinaforeEntityModel newVal m' seta
+    setb = applyInversePinaforeLensSet pinaforeEntityModel m' seta
     in MkLangFiniteSetRef (MkRange id meet2) setb

@@ -213,10 +213,10 @@ testEntity =
               , "eic = property @E @Integer !\"eic\""
               , "tea = property @Text @E !\"tea\""
               , "nea = property @Integer @E !\"nea\""
-              , "e1 = entity @E !\"e1\""
-              , "e2 = entity @E !\"e2\""
-              , "e3 = entity @E !\"e3\""
-              , "e4 = entity @E !\"e4\""
+              , "e1 = openEntity @E !\"e1\""
+              , "e2 = openEntity @E !\"e2\""
+              , "e3 = openEntity @E !\"e3\""
+              , "e4 = openEntity @E !\"e4\""
               , "eba = property @E @Boolean !\"eba\""
               , "era = property @E @Rational !\"era\""
               , "ena = property @E @Number !\"ena\""
@@ -328,7 +328,7 @@ testEntity =
                     ]
               , tgroup
                     "identity inverse morphism"
-                    [ pointTest "(identity !@@ eta !@ {\"hello\"}) += e1 >> testisunknown (eta !$ {e1})"
+                    [ pointTest "(identity !@@ eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
                     , pointTest "(eea !@@ identity !@ {e2}) += e1 >> testneq {e2} (eea !$ {e1})"
                     , pointTest "(eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
                     , pointTest "((identity !. eta) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
@@ -361,9 +361,9 @@ testEntity =
                     , pointTest "eeb !$ {e1} := e2 >> ((eta !. eeb) !@ {\"hello\"}) += e1 >> testeq {e2} (eeb !$ {e1})"
                     , pointTest
                           "eeb !$ {e1} := e2 >> ((eta !. eeb) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e2})"
-                    , pointTest "eeb !$ {e1} := e2 >> (eeb !@@ eta !@  {\"hello\"}) += e1 >> testneq {e2} (eeb !$ {e1})"
+                    , pointTest "eeb !$ {e1} := e2 >> (eeb !@@ eta !@  {\"hello\"}) += e1 >> testeq {e2} (eeb !$ {e1})"
                     , pointTest
-                          "eeb !$ {e1} := e2 >> (eeb !@@ eta !@  {\"hello\"}) += e1 >> testisunknown (eta !$ {e2})"
+                          "eeb !$ {e1} := e2 >> (eeb !@@ eta !@  {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e2})"
                     , pointTest
                           "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> ((eta !. eeb) !@ {\"hello\"}) -= e1 >> testeq {e2} (eeb !$ {e1})"
                     , pointTest
@@ -593,15 +593,15 @@ testEntity =
         , tgroup
               "type escape"
               [ pointTest
-                    "let opentype T; t = let in entity @T !\"t\"; f = let f : T -> Action (); f _ = pass in f; in f t"
+                    "let opentype T; t = let in openEntity @T !\"t\"; f = let f : T -> Action (); f _ = pass in f; in f t"
               , badInterpretTest
-                    "let opentype T1; opentype T2; t = let in entity @T1 !\"t\"; f = let f : T2 -> Action (); f _ = pass in f; in f t"
+                    "let opentype T1; opentype T2; t = let in openEntity @T1 !\"t\"; f = let f : T2 -> Action (); f _ = pass in f; in f t"
               , badInterpretTest
-                    "let t = let opentype T in entity @T !\"t\"; f = let opentype T; f : T -> Action (); f _ = pass in f; in f t"
+                    "let t = let opentype T in openEntity @T !\"t\"; f = let opentype T; f : T -> Action (); f _ = pass in f; in f t"
               , badInterpretTest
-                    "let t = let opentype T1 in entity @T1 !\"t\"; f = let opentype T2; f : T2 -> Action (); f _ = pass in f; in f t"
+                    "let t = let opentype T1 in openEntity @T1 !\"t\"; f = let opentype T2; f : T2 -> Action (); f _ = pass in f; in f t"
               ]
-        , context ["opentype E", "eta = property @E @Text !\"eta\"", "e1 = entity @E !\"e1\"", "rt1 = eta !$ {e1}"] $
+        , context ["opentype E", "eta = property @E @Text !\"eta\"", "e1 = openEntity @E !\"e1\"", "rt1 = eta !$ {e1}"] $
           tgroup
               "undo"
               [ pointTest "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; end"

@@ -116,11 +116,12 @@ testUI :: TestTree
 testUI =
     runContext $
     context
-        [ "emptywindow : Action ()"
-        , "emptywindow = do openWindow {\"Empty\"} {[]} uiBlank ;return (); end"
-        , "newpoint : Action ()"
-        , "newpoint = do s <- newMemFiniteSet; newEntity s; return (); end"
-        , "buttonwindow : Action Any -> Action ()"
+        [ "emptywindow: Action ()"
+        , "emptywindow = do openWindow {\"Empty\"} {[]} uiBlank; return (); end"
+        , "opentype T"
+        , "newpoint: Action ()"
+        , "newpoint = do s <- newMemFiniteSet; p <- newOpenEntity @T; s += p; return (); end"
+        , "buttonwindow: Action Any -> Action ()"
         , "buttonwindow action = do openWindow {\"Test\"} {[]} (uiButton {\"Button\"} {action}); return (); end"
         ] $
     tgroup "UI" [tgroup "immediate" $ testActions SyncTiming, tgroup "wait" $ testActions AsyncTiming]

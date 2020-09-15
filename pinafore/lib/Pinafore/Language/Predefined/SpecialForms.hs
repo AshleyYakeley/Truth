@@ -21,7 +21,11 @@ special_forms =
                 "property @A @B <anchor>"
                 "A ~> B"
                 "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
-          , mkSpecialFormEntry "entity @A <anchor>" "A" "An open entity for this anchor. `A` is an open entity type."
+          , mkSpecialFormEntry
+                "openEntity @A <anchor>"
+                "A"
+                "An open entity for this anchor. `A` is an open entity type."
+          , mkSpecialFormEntry "newOpenEntity @A" "Action A" "Generate an open entity. `A` is an open entity type."
           , mkSpecialFormEntry
                 "evaluate @A"
                 "Text -> Action (Either Text A)"

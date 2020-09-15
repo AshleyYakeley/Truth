@@ -123,6 +123,13 @@ singleDolanType ::
     -> DolanType ground polarity (JoinMeetType polarity t (LimitType polarity))
 singleDolanType st = ConsDolanType st NilDolanType
 
+dolanTypeToSingular ::
+       forall (ground :: GroundTypeKind) (polarity :: Polarity) (t :: Type).
+       DolanType ground polarity t
+    -> Maybe (AnyW (DolanSingularType ground polarity))
+dolanTypeToSingular (ConsDolanType st NilDolanType) = Just $ MkAnyW st
+dolanTypeToSingular _ = Nothing
+
 singleDolanShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) (t :: Type).
        (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity)
