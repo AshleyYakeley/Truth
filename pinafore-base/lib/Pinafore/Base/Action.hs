@@ -2,7 +2,6 @@ module Pinafore.Base.Action
     ( PinaforeAction
     , unPinaforeAction
     , viewPinaforeAction
-    , createViewPinaforeAction
     , pinaforeResourceContext
     , pinaforeFunctionValueGet
     , pinaforeRefPushAction
@@ -40,11 +39,6 @@ unPinaforeAction acChangesContext acUndoHandler (MkPinaforeAction action) =
 
 viewPinaforeAction :: View a -> PinaforeAction a
 viewPinaforeAction va = MkPinaforeAction $ lift $ lift va
-
-createViewPinaforeAction :: CreateView a -> PinaforeAction a
-createViewPinaforeAction cva = do
-    unlift <- MkPinaforeAction $ lift $ MkComposeM $ fmap Known askUnlift
-    pinaforeLiftLifeCycleIO $ runWUnliftAll unlift cva
 
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext

@@ -16,7 +16,7 @@ data WindowSpec = MkWindowSpec
     { wsCloseBoxAction :: View ()
     , wsTitle :: Model (ROWUpdate Text)
     , wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-    , wsContent :: Widget
+    , wsContent :: CreateView Widget
     }
 
 data UIWindow = MkUIWindow
@@ -33,9 +33,10 @@ createWindow MkWindowSpec {..} = do
         cvOn window #deleteEvent $ \_ -> do
             wsCloseBoxAction
             return True -- don't run existing handler that closes the window
+    content <- wsContent
     ui <-
         case wsMenuBar of
-            Nothing -> return wsContent
+            Nothing -> return content
             Just efmbar -> do
                 ag <- cvNew AccelGroup []
                 #addAccelGroup window ag
@@ -45,7 +46,7 @@ createWindow MkWindowSpec {..} = do
                     efmbar
                 vbox <- cvNew Box [#orientation := OrientationVertical]
                 #packStart vbox mb False False 0
-                #packStart vbox wsContent True True 0
+                #packStart vbox content True True 0
                 toWidget vbox
     #add window ui
     #show ui

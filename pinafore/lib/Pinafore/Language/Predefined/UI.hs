@@ -161,8 +161,7 @@ openWindow ::
     -> PinaforeImmutableWholeRef MenuBar
     -> LangUI
     -> PinaforeAction LangWindow
-openWindow title mbar mContent = do
-    wsContent <- createViewPinaforeAction mContent
+openWindow title mbar wsContent =
     mfix $ \w ->
         pinaforeNewWindow $ let
             wsCloseBoxAction :: View ()
