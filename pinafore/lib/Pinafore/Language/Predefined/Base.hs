@@ -8,8 +8,10 @@ import Changes.World.Clock
 import Data.Time
 import Data.Time.Clock.System
 import Pinafore.Base
+import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.If
+import Pinafore.Language.Name
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Type
 import Pinafore.Language.Value
@@ -93,6 +95,19 @@ interpretAsText = let
 parseLiteral :: AsLiteral t => Text -> Maybe t
 parseLiteral = knowToMaybe . fromLiteral . MkLiteral
 
+plainFormattingDefs ::
+       forall t. (ToPinaforeType t, FromPinaforeType t, AsLiteral t)
+    => Text
+    -> Text
+    -> [DocTreeEntry BindDoc]
+plainFormattingDefs uname lname =
+    [ mkValEntry (MkName $ "parse" <> uname) ("Parse text as " <> lname <> ". Inverse of `toText`.") $ parseLiteral @t
+    , mkValEntry
+          (MkName $ "interpret" <> uname <> "AsText")
+          ("Interpret " <> lname <> " reference as text, interpreting deleted values as empty text.") $
+      interpretAsText @t
+    ]
+
 unixFormat ::
        forall t. FormatTime t
     => Text
@@ -106,6 +121,41 @@ unixParse ::
     -> Text
     -> Maybe t
 unixParse fmt text = parseTimeM True defaultTimeLocale (unpack fmt) (unpack text)
+
+unixInterpretAsText ::
+       forall a. (FormatTime a, ParseTime a)
+    => Text
+    -> LangWholeRef '( a, a)
+    -> LangWholeRef '( Text, Text)
+unixInterpretAsText fmt = let
+    getter :: Maybe a -> Maybe Text
+    getter Nothing = Just ""
+    getter (Just a) = Just $ unixFormat fmt a
+    setter :: Maybe Text -> Maybe a -> Maybe (Maybe a)
+    setter Nothing _ = Just Nothing
+    setter (Just "") _ = Just Nothing
+    setter (Just t) _ = fmap Just $ unixParse fmt t
+    in maybeLensLangWholeRef getter setter
+
+unixFormattingDefs ::
+       forall t. (ToPinaforeType t, FromPinaforeType t, FormatTime t, ParseTime t)
+    => Text
+    -> Text
+    -> [DocTreeEntry BindDoc]
+unixFormattingDefs uname lname =
+    [ mkValEntry
+          (MkName $ "unixFormat" <> uname)
+          ("Format " <> lname <> " as text, using a UNIX-style formatting string.") $
+      unixFormat @t
+    , mkValEntry
+          (MkName $ "unixParse" <> uname)
+          ("Parse text as " <> lname <> ", using a UNIX-style formatting string.") $
+      unixParse @t
+    , mkValEntry
+          (MkName $ "unixInterpret" <> uname <> "AsText")
+          ("Interpret " <> lname <> " reference as text, interpreting deleted values as empty text.") $
+      unixInterpretAsText @t
+    ]
 
 getLocalTime :: IO LocalTime
 getLocalTime = fmap zonedTimeToLocalTime getZonedTime
@@ -157,238 +207,172 @@ base_predefinitions =
                 , mkValEntry "<=" "Numeric less or equal." $ (<=) @Number
                 , mkValEntry ">" "Numeric strictly greater." $ (>) @Number
                 , mkValEntry ">=" "Numeric greater or equal." $ (>=) @Number
-                , docTreeEntry
-                      "Integer"
-                      ""
-                      [ mkSupertypeEntry "id" "Every integer is a rational." integerToSafeRational
-                      , mkValEntry "parseInteger" "Parse text as an integer." $ parseLiteral @Integer
-                      , mkValEntry
-                            "interpretIntegerAsText"
-                            "Interpret an integer reference as text, interpreting deleted values as empty text" $
-                        interpretAsText @Integer
-                      , mkValEntry "+" "Add." $ (+) @Integer
-                      , mkValEntry "-" "Subtract." $ (-) @Integer
-                      , mkValEntry "*" "Multiply." $ (*) @Integer
-                      , mkValEntry "negate" "Negate." $ negate @Integer
-                      , mkValEntry "abs" "Absolute value." $ abs @Integer
-                      , mkValEntry "signum" "Sign." $ signum @Integer
-                      , mkValEntry "mod" "Modulus, leftover from `div`" $ mod' @Integer
-                      , mkValEntry "even" "Is even?" $ even @Integer
-                      , mkValEntry "odd" "Is odd?" $ odd @Integer
-                      , mkValEntry "gcd" "Greatest common divisor." $ gcd @Integer
-                      , mkValEntry "lcm" "Least common multiple." $ lcm @Integer
-                      , mkValEntry "^" "Raise to non-negative power." $ (^) @Integer @Integer
-                      , mkValEntry "sum" "Sum." $ sum @[] @Integer
-                      , mkValEntry "product" "Product." $ product @[] @Integer
-                      ]
-                , docTreeEntry
-                      "Rational"
-                      ""
-                      [ mkSupertypeEntry "id" "Every rational is a number." safeRationalToNumber
-                      , mkValEntry "parseRational" "Parse text as a rational." $ parseLiteral @SafeRational
-                      , mkValEntry
-                            "interpretRationalAsText"
-                            "Interpret a rational reference as text, interpreting deleted values as empty text." $
-                        interpretAsText @SafeRational
-                      , mkValEntry ".+" "Add." $ (+) @SafeRational
-                      , mkValEntry ".-" "Subtract." $ (-) @SafeRational
-                      , mkValEntry ".*" "Multiply." $ (*) @SafeRational
-                      , mkValEntry "/" "Divide." $ (/) @SafeRational
-                      , mkValEntry "negateR" "Negate." $ negate @SafeRational
-                      , mkValEntry "recip" "Reciprocal." $ recip @SafeRational
-                      , mkValEntry "absR" "Absolute value." $ abs @SafeRational
-                      , mkValEntry "signumR" "Sign." $ signum @SafeRational
-                      , mkValEntry "modR" "Modulus, leftover from `div`" $ mod' @SafeRational
-                      , mkValEntry "^^" "Raise to Integer power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
-                      , mkValEntry "sumR" "Sum." $ sum @[] @SafeRational
-                      , mkValEntry "meanR" "Mean." $ \(vv :: [SafeRational]) -> sum vv / toSafeRational (length vv)
-                      , mkValEntry "productR" "Product." $ product @[] @SafeRational
-                      ]
-                , docTreeEntry
-                      "Number"
-                      ""
-                      [ mkSupertypeEntry "id" "Every number is a literal." $ toLiteral @Number
-                      , mkValEntry "parseNumber" "Parse text as a number." $ parseLiteral @Number
-                      , mkValEntry
-                            "interpretNumberAsText"
-                            "Interpret a number reference as text, interpreting deleted values as empty text." $
-                        interpretAsText @Number
-                      , mkValEntry "~+" "Add." $ (+) @Number
-                      , mkValEntry "~-" "Subtract." $ (-) @Number
-                      , mkValEntry "~*" "Multiply." $ (*) @Number
-                      , mkValEntry "~/" "Divide." $ (/) @Number
-                      , mkValEntry "negateN" "Negate." $ negate @Number
-                      , mkValEntry "recipN" "Reciprocal." $ recip @Number
-                      , mkValEntry "pi" "Half the radians in a circle." $ pi @Number
-                      , mkValEntry "exp" "Exponent" $ exp @Number
-                      , mkValEntry "log" "Natural logarithm" $ log @Number
-                      , mkValEntry "sqrt" "Square root." $ sqrt @Number
-                      , mkValEntry "**" "Raise to power." $ (**) @Number
-                      , mkValEntry "logBase" "" $ logBase @Number
-                      , mkValEntry "sin" "Sine of an angle in radians." $ sin @Number
-                      , mkValEntry "cos" "Cosine of an angle in radians." $ cos @Number
-                      , mkValEntry "tan" "Tangent of an angle in radians." $ tan @Number
-                      , mkValEntry "asin" "Radian angle of a sine." $ asin @Number
-                      , mkValEntry "acos" "Radian angle of a cosine." $ acos @Number
-                      , mkValEntry "atan" "Radian angle of a tangent." $ atan @Number
-                      , mkValEntry "sinh" "Hyperbolic sine." $ sinh @Number
-                      , mkValEntry "cosh" "Hyperbolic cosine." $ cosh @Number
-                      , mkValEntry "tanh" "Hyperbolic tangent." $ tanh @Number
-                      , mkValEntry "asinh" "Inverse hyperbolic sine." $ asinh @Number
-                      , mkValEntry "acosh" "Inverse hyperbolic cosine." $ acosh @Number
-                      , mkValEntry "atanh" "Inverse hyperbolic tangent." $ atanh @Number
-                      , mkValEntry "nabs" "Absolute value." $ abs @Number
-                      , mkValEntry "signumN" "Sign. Note this will be the same exact or inexact as the number." $
-                        signum @Number
-                      , mkValEntry "floor" "Integer towards negative infinity." (floor :: Number -> Integer)
-                      , mkValEntry "ceiling" "Integer towards positive infinity." (ceiling :: Number -> Integer)
-                      , mkValEntry "round" "Closest Integer." (round :: Number -> Integer)
-                      , mkValEntry "inexact" "Convert a number to inexact." numberToDouble
-                      , mkValEntry
-                            "approximate"
-                            "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`."
-                            approximate
-                      , mkValEntry
-                            "div"
-                            "Division to Integer, towards negative infinity."
-                            (div' :: Number -> Number -> Integer)
-                      , mkValEntry "modN" "Modulus, leftover from `div`" $ mod' @Number
-                      , mkValEntry "isNaN" "Is not a number?" numberIsNaN
-                      , mkValEntry "isInfinite" "Is infinite?" numberIsInfinite
-                      , mkValEntry "isNegativeZero" "Is negative zero?" numberIsNegativeZero
-                      , mkValEntry "isExact" "Is exact?" numberIsExact
-                      , mkValEntry "sumN" "Sum." $ sum @[] @Number
-                      , mkValEntry "meanN" "Mean." $ \(vv :: [Number]) ->
-                            sum vv / (ExactNumber $ toRational $ length vv)
-                      , mkValEntry "productN" "Product." $ product @[] @Number
-                      , mkValEntry
-                            "checkExactSafeRational"
-                            "Get the exact value of a Number, if it is one."
-                            checkExactSafeRational
-                      , mkValEntry
-                            "checkExactInteger"
-                            "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
-                            checkExactSafeRational n >>= safeRationalInteger
-                      ]
+                , docTreeEntry "Integer" "" $
+                  [mkSupertypeEntry "id" "Every integer is a rational." integerToSafeRational] <>
+                  plainFormattingDefs @Integer "Integer" "an integer" <>
+                  [ mkValEntry "+" "Add." $ (+) @Integer
+                  , mkValEntry "-" "Subtract." $ (-) @Integer
+                  , mkValEntry "*" "Multiply." $ (*) @Integer
+                  , mkValEntry "negate" "Negate." $ negate @Integer
+                  , mkValEntry "abs" "Absolute value." $ abs @Integer
+                  , mkValEntry "signum" "Sign." $ signum @Integer
+                  , mkValEntry "mod" "Modulus, leftover from `div`" $ mod' @Integer
+                  , mkValEntry "even" "Is even?" $ even @Integer
+                  , mkValEntry "odd" "Is odd?" $ odd @Integer
+                  , mkValEntry "gcd" "Greatest common divisor." $ gcd @Integer
+                  , mkValEntry "lcm" "Least common multiple." $ lcm @Integer
+                  , mkValEntry "^" "Raise to non-negative power." $ (^) @Integer @Integer
+                  , mkValEntry "sum" "Sum." $ sum @[] @Integer
+                  , mkValEntry "product" "Product." $ product @[] @Integer
+                  ]
+                , docTreeEntry "Rational" "" $
+                  [mkSupertypeEntry "id" "Every rational is a number." safeRationalToNumber] <>
+                  plainFormattingDefs @SafeRational "Rational" "a rational" <>
+                  [ mkValEntry ".+" "Add." $ (+) @SafeRational
+                  , mkValEntry ".-" "Subtract." $ (-) @SafeRational
+                  , mkValEntry ".*" "Multiply." $ (*) @SafeRational
+                  , mkValEntry "/" "Divide." $ (/) @SafeRational
+                  , mkValEntry "negateR" "Negate." $ negate @SafeRational
+                  , mkValEntry "recip" "Reciprocal." $ recip @SafeRational
+                  , mkValEntry "absR" "Absolute value." $ abs @SafeRational
+                  , mkValEntry "signumR" "Sign." $ signum @SafeRational
+                  , mkValEntry "modR" "Modulus, leftover from `div`" $ mod' @SafeRational
+                  , mkValEntry "^^" "Raise to Integer power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
+                  , mkValEntry "sumR" "Sum." $ sum @[] @SafeRational
+                  , mkValEntry "meanR" "Mean." $ \(vv :: [SafeRational]) -> sum vv / toSafeRational (length vv)
+                  , mkValEntry "productR" "Product." $ product @[] @SafeRational
+                  ]
+                , docTreeEntry "Number" "" $
+                  [mkSupertypeEntry "id" "Every number is a literal." $ toLiteral @Number] <>
+                  plainFormattingDefs @Number "Number" "a number" <>
+                  [ mkValEntry "~+" "Add." $ (+) @Number
+                  , mkValEntry "~-" "Subtract." $ (-) @Number
+                  , mkValEntry "~*" "Multiply." $ (*) @Number
+                  , mkValEntry "~/" "Divide." $ (/) @Number
+                  , mkValEntry "negateN" "Negate." $ negate @Number
+                  , mkValEntry "recipN" "Reciprocal." $ recip @Number
+                  , mkValEntry "pi" "Half the radians in a circle." $ pi @Number
+                  , mkValEntry "exp" "Exponent" $ exp @Number
+                  , mkValEntry "log" "Natural logarithm" $ log @Number
+                  , mkValEntry "sqrt" "Square root." $ sqrt @Number
+                  , mkValEntry "**" "Raise to power." $ (**) @Number
+                  , mkValEntry "logBase" "" $ logBase @Number
+                  , mkValEntry "sin" "Sine of an angle in radians." $ sin @Number
+                  , mkValEntry "cos" "Cosine of an angle in radians." $ cos @Number
+                  , mkValEntry "tan" "Tangent of an angle in radians." $ tan @Number
+                  , mkValEntry "asin" "Radian angle of a sine." $ asin @Number
+                  , mkValEntry "acos" "Radian angle of a cosine." $ acos @Number
+                  , mkValEntry "atan" "Radian angle of a tangent." $ atan @Number
+                  , mkValEntry "sinh" "Hyperbolic sine." $ sinh @Number
+                  , mkValEntry "cosh" "Hyperbolic cosine." $ cosh @Number
+                  , mkValEntry "tanh" "Hyperbolic tangent." $ tanh @Number
+                  , mkValEntry "asinh" "Inverse hyperbolic sine." $ asinh @Number
+                  , mkValEntry "acosh" "Inverse hyperbolic cosine." $ acosh @Number
+                  , mkValEntry "atanh" "Inverse hyperbolic tangent." $ atanh @Number
+                  , mkValEntry "nabs" "Absolute value." $ abs @Number
+                  , mkValEntry "signumN" "Sign. Note this will be the same exact or inexact as the number." $
+                    signum @Number
+                  , mkValEntry "floor" "Integer towards negative infinity." (floor :: Number -> Integer)
+                  , mkValEntry "ceiling" "Integer towards positive infinity." (ceiling :: Number -> Integer)
+                  , mkValEntry "round" "Closest Integer." (round :: Number -> Integer)
+                  , mkValEntry "inexact" "Convert a number to inexact." numberToDouble
+                  , mkValEntry
+                        "approximate"
+                        "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`."
+                        approximate
+                  , mkValEntry
+                        "div"
+                        "Division to Integer, towards negative infinity."
+                        (div' :: Number -> Number -> Integer)
+                  , mkValEntry "modN" "Modulus, leftover from `div`" $ mod' @Number
+                  , mkValEntry "isNaN" "Is not a number?" numberIsNaN
+                  , mkValEntry "isInfinite" "Is infinite?" numberIsInfinite
+                  , mkValEntry "isNegativeZero" "Is negative zero?" numberIsNegativeZero
+                  , mkValEntry "isExact" "Is exact?" numberIsExact
+                  , mkValEntry "sumN" "Sum." $ sum @[] @Number
+                  , mkValEntry "meanN" "Mean." $ \(vv :: [Number]) -> sum vv / (ExactNumber $ toRational $ length vv)
+                  , mkValEntry "productN" "Product." $ product @[] @Number
+                  , mkValEntry
+                        "checkExactSafeRational"
+                        "Get the exact value of a Number, if it is one."
+                        checkExactSafeRational
+                  , mkValEntry
+                        "checkExactInteger"
+                        "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
+                        checkExactSafeRational n >>= safeRationalInteger
+                  ]
                 ]
           , docTreeEntry
                 "Date & Time"
                 ""
-                [ docTreeEntry
-                      "Duration"
-                      ""
-                      [ mkSupertypeEntry "id" "Every duration is a literal." $ toLiteral @NominalDiffTime
-                      , mkValEntry "parseDuration" "Parse text as a duration. Inverse of `toText`." $
-                        parseLiteral @NominalDiffTime
-                      , mkValEntry
-                            "interpretDurationAsText"
-                            "Interpret a duration reference as text, interpreting deleted values as empty text." $
-                        interpretAsText @NominalDiffTime
-                      , mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
-                      , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
-                      , mkValEntry "durationToSeconds" "Convert duration to seconds." nominalDiffTimeToSeconds
-                      , mkValEntry "dayDuration" "One day duration." nominalDay
-                      , mkValEntry "addDuration" "Add durations." $ (+) @NominalDiffTime
-                      , mkValEntry "subtractDuration" "Subtract durations." $ (-) @NominalDiffTime
-                      , mkValEntry "negateDuration" "Negate duration." $ negate @NominalDiffTime
-                      , mkValEntry "multiplyDuration" "Multiply a duration by a number." $ \(n :: Number) (d :: NominalDiffTime) ->
-                            (realToFrac n) * d
-                      , mkValEntry "divideDuration" "Divide durations." $ \(a :: NominalDiffTime) (b :: NominalDiffTime) ->
-                            (realToFrac (a / b) :: Number)
-                      ]
-                , docTreeEntry
-                      "Time"
-                      "Absolute time as measured by UTC."
-                      [ mkSupertypeEntry "id" "Every time is a literal." $ toLiteral @UTCTime
-                      , mkValEntry "parseTime" "Parse text as a time. Inverse of `toText`." $ parseLiteral @UTCTime
-                      , mkValEntry
-                            "interpretTimeAsText"
-                            "Interpret a time reference as text, interpreting deleted values as empty text." $
-                        interpretAsText @UTCTime
-                      , mkValEntry "addTime" "Add duration to time." addUTCTime
-                      , mkValEntry "diffTime" "Difference of times." diffUTCTime
-                      , mkValEntry "unixFormatTime" "Format a time as text, using a UNIX-style formatting string." $
-                        unixFormat @UTCTime
-                      , mkValEntry "unixParseTime" "Parse text as a time, using a UNIX-style formatting string." $
-                        unixParse @UTCTime
-                      , mkValEntry "getTime" "Get the current time." $ getCurrentTime
-                      , mkValEntry
-                            "newClock"
-                            "Make a reference to the current time that updates per the given duration."
-                            newClock
-                      ]
-                , docTreeEntry
-                      "Calendar"
-                      ""
-                      [ mkValPatEntry "Date" "Construct a Date from year, month, day." fromGregorian $ \day -> let
-                            (y, m, d) = toGregorian day
-                            in Just (y, (m, (d, ())))
-                      , mkSupertypeEntry "id" "Every day is a literal." $ toLiteral @Day
-                      , mkValEntry "parseDate" "Parse text as a day." $ parseLiteral @Day
-                      , mkValEntry "interpretDateAsText" "Interpret a date reference as text." $ interpretAsText @Day
-                      , mkValEntry "dateToModifiedJulian" "Convert to MJD." toModifiedJulianDay
-                      , mkValEntry "modifiedJulianToDate" "Convert from MJD." ModifiedJulianDay
-                      , mkValEntry "addDays" "Add count to days to date." addDays
-                      , mkValEntry "diffDays" "Difference of days between dates." diffDays
-                      , mkValEntry "unixFormatDate" "Format a date as text, using a UNIX-style formatting string." $
-                        unixFormat @Day
-                      , mkValEntry "unixParseDate" "Parse text as a date, using a UNIX-style formatting string." $
-                        unixParse @Day
-                      , mkValEntry "getUTCDate" "Get the current UTC date." $ fmap utctDay getCurrentTime
-                      , mkValEntry "getDate" "Get the current local date." $ fmap localDay getLocalTime
-                      ]
-                , docTreeEntry
-                      "Time of Day"
-                      ""
-                      [ mkValPatEntry "TimeOfDay" "Construct a TimeOfDay from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
-                            Just (todHour, (todMin, (todSec, ())))
-                      , mkSupertypeEntry "id" "Every time of day is a literal." $ toLiteral @TimeOfDay
-                      , mkValEntry "parseTimeOfDay" "Parse text as a time of day." $ parseLiteral @TimeOfDay
-                      , mkValEntry
-                            "interpretTimeOfDayAsText"
-                            "Interpret a time of day reference as text, interpreting deleted values as empty text." $
-                        interpretAsText @TimeOfDay
-                      , mkValEntry "midnight" "Midnight." midnight
-                      , mkValEntry "midday" "Midday." midday
-                      , mkValEntry
-                            "unixFormatTimeOfDay"
-                            "Format a time of day as text, using a UNIX-style formatting string." $
-                        unixFormat @TimeOfDay
-                      , mkValEntry
-                            "unixParseTimeOfDay"
-                            "Parse text as a time of day, using a UNIX-style formatting string." $
-                        unixParse @TimeOfDay
-                      ]
-                , docTreeEntry
-                      "Local Time"
-                      ""
-                      [ mkValPatEntry "LocalTime" "Construct a LocalTime from day and time of day." LocalTime $ \LocalTime {..} ->
-                            Just (localDay, (localTimeOfDay, ()))
-                      , mkSupertypeEntry "id" "Every local time is a literal." $ toLiteral @LocalTime
-                      , mkValEntry "parseLocalTime" "Parse text as a local time." $ parseLiteral @LocalTime
-                      , mkValEntry
-                            "interpretLocalTimeAsText"
-                            "Interpret a local time reference as text, interpreting deleted values as empty text." $
-                        interpretAsText @LocalTime
-                      , mkValEntry "timeToLocal" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
-                            utcToLocalTime $ minutesToTimeZone i
-                      , mkValEntry "localToTime" "Convert a local time to time, given a time zone offset in minutes" $ \i ->
-                            localTimeToUTC $ minutesToTimeZone i
-                      , mkValEntry
-                            "unixFormatLocalTime"
-                            "Format a local time as text, using a UNIX-style formatting string." $
-                        unixFormat @LocalTime
-                      , mkValEntry
-                            "unixParseLocalTime"
-                            "Parse text as a local time, using a UNIX-style formatting string." $
-                        unixParse @LocalTime
-                      , mkValEntry "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
-                            fmap timeZoneMinutes $ getTimeZone t
-                      , mkValEntry "getCurrentTimeZone" "Get the current time zone offset in minutes." $
-                        fmap timeZoneMinutes getCurrentTimeZone
-                      , mkValEntry "getLocalTime" "Get the current local time." getLocalTime
-                      , mkValEntry "newTimeZoneRef" "The current time zone offset in minutes." newTimeZoneRef
-                      ]
+                [ docTreeEntry "Duration" "" $
+                  [mkSupertypeEntry "id" "Every duration is a literal." $ toLiteral @NominalDiffTime] <>
+                  plainFormattingDefs @NominalDiffTime "Duration" "a duration" <>
+                  [ mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
+                  , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
+                  , mkValEntry "durationToSeconds" "Convert duration to seconds." nominalDiffTimeToSeconds
+                  , mkValEntry "dayDuration" "One day duration." nominalDay
+                  , mkValEntry "addDuration" "Add durations." $ (+) @NominalDiffTime
+                  , mkValEntry "subtractDuration" "Subtract durations." $ (-) @NominalDiffTime
+                  , mkValEntry "negateDuration" "Negate duration." $ negate @NominalDiffTime
+                  , mkValEntry "multiplyDuration" "Multiply a duration by a number." $ \(n :: Number) (d :: NominalDiffTime) ->
+                        (realToFrac n) * d
+                  , mkValEntry "divideDuration" "Divide durations." $ \(a :: NominalDiffTime) (b :: NominalDiffTime) ->
+                        (realToFrac (a / b) :: Number)
+                  ]
+                , docTreeEntry "Time" "Absolute time as measured by UTC." $
+                  [mkSupertypeEntry "id" "Every time is a literal." $ toLiteral @UTCTime] <>
+                  plainFormattingDefs @UTCTime "Time" "a time" <>
+                  unixFormattingDefs @UTCTime "Time" "a time" <>
+                  [ mkValEntry "addTime" "Add duration to time." addUTCTime
+                  , mkValEntry "diffTime" "Difference of times." diffUTCTime
+                  , mkValEntry "getTime" "Get the current time." $ getCurrentTime
+                  , mkValEntry
+                        "newClock"
+                        "Make a reference to the current time that updates per the given duration."
+                        newClock
+                  ]
+                , docTreeEntry "Calendar" "" $
+                  [ mkValPatEntry "Date" "Construct a Date from year, month, day." fromGregorian $ \day -> let
+                        (y, m, d) = toGregorian day
+                        in Just (y, (m, (d, ())))
+                  , mkSupertypeEntry "id" "Every day is a literal." $ toLiteral @Day
+                  ] <>
+                  plainFormattingDefs @Day "Date" "a date" <>
+                  unixFormattingDefs @Day "Date" "a date" <>
+                  [ mkValEntry "dateToModifiedJulian" "Convert to MJD." toModifiedJulianDay
+                  , mkValEntry "modifiedJulianToDate" "Convert from MJD." ModifiedJulianDay
+                  , mkValEntry "addDays" "Add count to days to date." addDays
+                  , mkValEntry "diffDays" "Difference of days between dates." diffDays
+                  , mkValEntry "getUTCDate" "Get the current UTC date." $ fmap utctDay getCurrentTime
+                  , mkValEntry "getDate" "Get the current local date." $ fmap localDay getLocalTime
+                  ]
+                , docTreeEntry "Time of Day" "" $
+                  [ mkValPatEntry "TimeOfDay" "Construct a TimeOfDay from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
+                        Just (todHour, (todMin, (todSec, ())))
+                  , mkSupertypeEntry "id" "Every time of day is a literal." $ toLiteral @TimeOfDay
+                  ] <>
+                  plainFormattingDefs @TimeOfDay "TimeOfDay" "a time of day" <>
+                  unixFormattingDefs @TimeOfDay "TimeOfDay" "a time of day" <>
+                  [mkValEntry "midnight" "Midnight." midnight, mkValEntry "midday" "Midday." midday]
+                , docTreeEntry "Local Time" "" $
+                  [ mkValPatEntry "LocalTime" "Construct a LocalTime from day and time of day." LocalTime $ \LocalTime {..} ->
+                        Just (localDay, (localTimeOfDay, ()))
+                  , mkSupertypeEntry "id" "Every local time is a literal." $ toLiteral @LocalTime
+                  ] <>
+                  plainFormattingDefs @LocalTime "LocalTime" "a local time" <>
+                  unixFormattingDefs @LocalTime "LocalTime" "a local time" <>
+                  [ mkValEntry "timeToLocal" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
+                        utcToLocalTime $ minutesToTimeZone i
+                  , mkValEntry "localToTime" "Convert a local time to time, given a time zone offset in minutes" $ \i ->
+                        localTimeToUTC $ minutesToTimeZone i
+                  , mkValEntry "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
+                        fmap timeZoneMinutes $ getTimeZone t
+                  , mkValEntry "getCurrentTimeZone" "Get the current time zone offset in minutes." $
+                    fmap timeZoneMinutes getCurrentTimeZone
+                  , mkValEntry "getLocalTime" "Get the current local time." getLocalTime
+                  , mkValEntry "newTimeZoneRef" "The current time zone offset in minutes." newTimeZoneRef
+                  ]
                 ]
           ]
     , docTreeEntry
