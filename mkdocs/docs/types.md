@@ -155,10 +155,10 @@ Runners of an action that stops, such as the main program, or the handler of a b
 
 ## Orders
 
-`Order a`  
+`RefOrder a`  
 (`a` is contravariant)
 
-An order on a type.
+An order on a type. Can order by morphisms.
 
 ## User Interfaces
 

@@ -19,7 +19,7 @@ clearText = funcChangeLens (fromKnow mempty)
 uiListTable ::
        (HasCallStack, ?pinafore :: PinaforeContext)
     => [(LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))]
-    -> LangOrder A
+    -> LangRefOrder A
     -> LangFiniteSetRef '( A, EnA)
     -> (A -> PinaforeAction TopType)
     -> Maybe (LangWholeRef '( A, EnA))

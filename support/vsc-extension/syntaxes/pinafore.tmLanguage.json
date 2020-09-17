@@ -56,7 +56,7 @@
 			"patterns": [
 				{
 					"name": "storage.type.predefined.pinafore",
-					"match": "\\b(Any|None|Literal|Text|Number|Rational|Integer|Boolean|Time|Duration|Date|TimeOfDay|LocalTime|Entity|Maybe|Either|Order|Action|WholeRef|SetRef|FiniteSetRef|UI|Window|MenuItem)\\b"
+					"match": "\\b(Any|None|Literal|Text|Number|Rational|Integer|Boolean|Time|Duration|Date|TimeOfDay|LocalTime|Entity|Maybe|Either|RefOrder|Action|WholeRef|SetRef|FiniteSetRef|UI|Window|MenuItem)\\b"
 				}
 			]
 		},

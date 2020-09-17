@@ -111,7 +111,7 @@ eventTimeTime et = case et of
     EventTimeTime t -> t
     end;
 
-eventTimeOrder: Order EventTime;
+eventTimeOrder: RefOrder EventTime;
 eventTimeOrder = mapOrder eventTimeTime localChronological;
 
 
@@ -125,13 +125,13 @@ eventName = property @Event @Text !"identify.name";
 eventTime = property @Event @EventTime !"event.time";
 eventNotes = property @Event @Text !"item.description";
 
-eventOrder: Order Event;
-eventOrder = orderOn eventTime eventTimeOrder;
+eventOrder: RefOrder Event;
+eventOrder = refOrderOn eventTime eventTimeOrder;
 
 eventData: FiniteSetRef (EventTime,Text);
 eventData = (eventTime !** eventName) !$$ events;
 
-eventDataOrder: Order (EventTime,Text);
+eventDataOrder: RefOrder (EventTime,Text);
 eventDataOrder = mapOrder fst eventTimeOrder;
 
 eventList: WholeRef +Date -> WholeRef +[(EventTime,Text)];

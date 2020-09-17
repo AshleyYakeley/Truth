@@ -666,13 +666,16 @@ base_predefinitions =
           , mkValEntry "localChronological" "Local time order." $ ordOrder @LocalTime
           , mkValEntry "noOrder" "No order, same as `orders []`." $ noOrder
           , mkValEntry "orders" "Join orders by priority." $ orders @A
-          , mkValEntry "mapOrder" "Map a function on an order." (contramap :: (B -> A) -> LangOrder A -> LangOrder B)
-          , mkValEntry "orderOn" "Order by an order on a particular morphism." $ orderOn @B @A
+          , mkValEntry
+                "mapOrder"
+                "Map a function on an order."
+                (contramap :: (B -> A) -> LangRefOrder A -> LangRefOrder B)
+          , mkValEntry "refOrderOn" "Order by an order on a particular morphism." $ refOrderOn @B @A
           , mkValEntry "rev" "Reverse an order." $ rev @A
-          , mkValEntry "orderEQ" "Equal by an order." $ langOrderCompare @A $ (==) EQ
-          , mkValEntry "orderLT" "Less than by an order." $ langOrderCompare @A $ (==) LT
-          , mkValEntry "orderLE" "Less than or equal to by an order." $ langOrderCompare @A $ (/=) GT
-          , mkValEntry "orderGT" "Greater than by an order." $ langOrderCompare @A $ (==) GT
-          , mkValEntry "orderGE" "Greater than or equal to by an order." $ langOrderCompare @A $ (/=) LT
+          , mkValEntry "orderEQ" "Equal by an order." $ langRefOrderCompare @A $ (==) EQ
+          , mkValEntry "orderLT" "Less than by an order." $ langRefOrderCompare @A $ (==) LT
+          , mkValEntry "orderLE" "Less than or equal to by an order." $ langRefOrderCompare @A $ (/=) GT
+          , mkValEntry "orderGT" "Greater than by an order." $ langRefOrderCompare @A $ (==) GT
+          , mkValEntry "orderGE" "Greater than or equal to by an order." $ langRefOrderCompare @A $ (/=) LT
           ]
     ]

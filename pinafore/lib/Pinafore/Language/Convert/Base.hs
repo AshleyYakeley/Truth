@@ -255,27 +255,27 @@ instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (View a) where
     toShimWit = mapPosShimWit (functionToShim "subtype" viewPinaforeAction) toJMShimWit
 
--- LangOrder
+-- LangRefOrder
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
-             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangOrder a) where
+             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangRefOrder a) where
     toShimWit =
         unNegShimWit fromJMShimWit $ \ta conva ->
             mapPosShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
-            mkShimWit $ GroundDolanSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkShimWit $ GroundDolanSingularType RefOrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
-             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangOrder a) where
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangRefOrder a) where
     toShimWit = singleDolanShimWit toJMShimWit
 
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
-             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangOrder a) where
+             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangRefOrder a) where
     fromShimWit =
         unPosShimWit toJMShimWit $ \ta conva ->
             mapNegShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
-            mkShimWit $ GroundDolanSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkShimWit $ GroundDolanSingularType RefOrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
-             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangOrder a) where
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangRefOrder a) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- LangUI

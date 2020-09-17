@@ -33,7 +33,7 @@ library:
       - Pinafore.Language.Value.ListRef
       - Pinafore.Language.Value.TextRef
       - Pinafore.Language.Value.Morphism
-      - Pinafore.Language.Value.Order
+      - Pinafore.Language.Value.RefOrder
       - Pinafore.Language.Value.UI
       - Pinafore.Language.Value
       - Pinafore.Language.Name

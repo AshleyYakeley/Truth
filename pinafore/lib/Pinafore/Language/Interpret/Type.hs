@@ -226,8 +226,8 @@ interpretGroundTypeConst (ConstSyntaxGroundType "FiniteSetRef") =
     return $ MkPinaforeGroundTypeM $ MkAnyW FiniteSetRefPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "Action") =
     return $ MkPinaforeGroundTypeM $ MkAnyW ActionPinaforeGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "Order") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW OrderPinaforeGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "RefOrder") =
+    return $ MkPinaforeGroundTypeM $ MkAnyW RefOrderPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "UI") =
     return $ MkPinaforeGroundTypeM $ MkAnyW UserInterfacePinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "Window") =

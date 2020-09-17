@@ -121,11 +121,11 @@ employer = property @Person @Text !"relation.employer";
 
 # a table for a given finite set of people
 contactsTableUI: FiniteSetRef Person -> Maybe (WholeRef Person) -> UI;
-contactsTableUI pp mselection = uiListTable [({"Name"},\p -> name !$ {p})] (orderOn name alphabetical) pp personWindow mselection;
+contactsTableUI pp mselection = uiListTable [({"Name"},\p -> name !$ {p})] (refOrderOn name alphabetical) pp personWindow mselection;
 
 # ordered list of people and their names
 peopleByName: WholeRef +[(Person,Text)];
-peopleByName = members (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
+peopleByName = members (mapOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ people;
 
 # a user interface for a person
 personUI: WholeRef {-Named,+Person} -> UI;

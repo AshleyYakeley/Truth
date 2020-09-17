@@ -77,7 +77,7 @@ ui_people pp = uiRun $ do
     end;
 
 peopleByName : WholeRef +[(Person,Text)];
-peopleByName = members (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
+peopleByName = members (mapOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ people;
 
 ui_person : WholeRef Person -> UI;
 ui_person p = uiVertical
