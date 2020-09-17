@@ -94,15 +94,15 @@ eventRefTimeTimeOfDay r = let
         _ -> Nothing;
         end;
 
-    setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime);
-    setEventTimeTimeOfDay mtod met = Just $ case met of
-        Nothing -> Nothing;
-        Just et -> Just $ case mtod of
-            Nothing -> EventTimeDate $ eventTimeDate et;
-            Just tod -> EventTimeTime $ LocalTime (eventTimeDate et) tod;
-            end;
+setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime);
+setEventTimeTimeOfDay mtod met = Just $ case met of
+    Nothing -> Nothing;
+    Just et -> Just $ case mtod of
+        Nothing -> EventTimeDate $ eventTimeDate et;
+        Just tod -> EventTimeTime $ LocalTime (eventTimeDate et) tod;
         end;
-    in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
+    end;
+in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
 
 # for ordering
 eventTimeTime: EventTime -> LocalTime;
@@ -134,17 +134,24 @@ eventData = (eventTime !** eventName) !$$ events;
 eventDataOrder: Order (EventTime,Text);
 eventDataOrder = mapOrder fst eventTimeOrder;
 
-eventList: WholeRef +[(EventTime,Text)];
-eventList = members eventDataOrder eventData;
+eventList: WholeRef +Date -> WholeRef +[(EventTime,Text)];
+eventList today = {(EventTimeDate %today,"Today") :: %(members eventDataOrder eventData)};
 
 
 ### UI
 
-overviewRef: WholeRef +Text;
-overviewRef = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %eventList};
+overviewRef: WholeRef +Date -> WholeRef +Text;
+overviewRef today = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %(eventList today)};
+
+overviewLabel: UI;
+overviewLabel = uiRun $ do
+    now <- newClock $ secondsToDuration 60; # update every minute
+    tz <- newTimeZoneRef now;
+    return $ uiLabel $ overviewRef {case timeToLocal %tz %now of LocalTime d _ -> d end};
+    end;
 
 overviewPage: (UI,UI);
-overviewPage = (uiLabel {"Overview"},uiLabel overviewRef);
+overviewPage = (uiLabel {"Overview"},overviewLabel);
 
 tablePage: WholeRef Event -> (UI,UI);
 tablePage selection = let
@@ -173,7 +180,7 @@ eventWindow evt = stdWindow (eventName !$ {evt}) [] $ uiVertical
     [
         (False, uiButton {"cal"} {calendarWindow evt}),
         (False, uiTextEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$ {evt}),
-        (False, uiTextEntry $ interpretTimeOfDayAsText $ eventRefTimeTimeOfDay $ eventTime !$ {evt})
+        (False, uiTextEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$ {evt})
     ]),
     (True, uiTextArea $ eventNotes !$ {evt})
 ];
