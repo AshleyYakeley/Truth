@@ -10,6 +10,7 @@ import Changes.Core.Types.Database as I
 import Changes.Core.Types.Database.Show as I
 import Changes.Core.Types.Database.Tuple as I
 import Changes.Core.Types.Database.Tuple.Show as I
+import Changes.Core.Types.EditApplicative as I
 import Changes.Core.Types.Either as I
 import Changes.Core.Types.Key.FiniteSet as I
 import Changes.Core.Types.Key.HasKey as I
@@ -37,6 +38,7 @@ import Changes.Core.Types.Tuple.Function as I
 import Changes.Core.Types.Tuple.Pair as I
 import Changes.Core.Types.Tuple.Tuple as I
 import Changes.Core.Types.Unit as I
+import Changes.Core.Types.UpdateOrder as I
 import Changes.Core.Types.Whole as I
 import Changes.Core.Types.WholeFunction as I
 import Changes.Core.Types.WholeUpdateFunction as I

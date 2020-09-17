@@ -8,12 +8,12 @@ import Shapes
 
 data LangSetRef a =
     MkLangSetRef (a -> a -> Bool)
-                 (PinaforeRef (PartialSetUpdate a))
+                 (WModel (PartialSetUpdate a))
 
-mkLangSetRef :: Eq a => PinaforeRef (PartialSetUpdate a) -> LangSetRef a
+mkLangSetRef :: Eq a => WModel (PartialSetUpdate a) -> LangSetRef a
 mkLangSetRef sv = MkLangSetRef (==) sv
 
-unLangSetRef :: LangSetRef a -> PinaforeRef (PartialSetUpdate a)
+unLangSetRef :: LangSetRef a -> WModel (PartialSetUpdate a)
 unLangSetRef (MkLangSetRef _ sv) = sv
 
 instance Contravariant LangSetRef where

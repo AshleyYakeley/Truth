@@ -26,10 +26,10 @@ instance Alternative PinaforeImmutableWholeRef where
 immutableRefToReadOnlyRef :: PinaforeImmutableWholeRef a -> PinaforeROWRef (Know a)
 immutableRefToReadOnlyRef (MkPinaforeImmutableWholeRef fv) = fv
 
-immutableRefToRejectingRef :: PinaforeImmutableWholeRef a -> PinaforeRef (WholeUpdate (Know a))
+immutableRefToRejectingRef :: PinaforeImmutableWholeRef a -> WModel (WholeUpdate (Know a))
 immutableRefToRejectingRef ref = eaMap fromReadOnlyRejectingChangeLens $ immutableRefToReadOnlyRef ref
 
-immutableRefToRejectingBiRef :: PinaforeImmutableWholeRef a -> PinaforeRef (BiUpdate pupdate (WholeUpdate (Know a)))
+immutableRefToRejectingBiRef :: PinaforeImmutableWholeRef a -> WModel (BiUpdate pupdate (WholeUpdate (Know a)))
 immutableRefToRejectingBiRef ref =
     eaMap (fromReadOnlyRejectingChangeLens . readOnlyBiChangeLens) $ immutableRefToReadOnlyRef ref
 

@@ -344,15 +344,15 @@ instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
          ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangWholeRef '( p, q)) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
--- PinaforeRef
+-- WModel
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
-         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeRef (WholeUpdate (Know t))) where
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (WModel (WholeUpdate (Know t))) where
     toShimWit = mapPosShimWit (functionToShim "subtype" pinaforeRefToWholeRef) toJMShimWit
 
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
-         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeRef (WholeUpdate (Know t))) where
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (WModel (WholeUpdate (Know t))) where
     fromShimWit = mapNegShimWit (functionToShim "subtype" langWholeRefToValue) fromJMShimWit
 
 -- PinaforeImmutableWholeRef
@@ -425,16 +425,16 @@ instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
          ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangFiniteSetRef '( p, q)) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
--- PinaforeRef FiniteSetUpdate
+-- WModel FiniteSetUpdate
 instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
          , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
-         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeRef (FiniteSetUpdate t)) where
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (WModel (FiniteSetUpdate t)) where
     fromShimWit = mapNegShimWit (functionToShim "subtype" unLangFiniteSetRef) fromJMShimWit
 
 instance ( Eq t
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
          , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
-         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeRef (FiniteSetUpdate t)) where
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (WModel (FiniteSetUpdate t)) where
     toShimWit = mapPosShimWit (functionToShim "subtype" $ MkLangFiniteSetRef identityRange) toJMShimWit
 
 -- LangMorphism

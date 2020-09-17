@@ -94,7 +94,7 @@ interpretUpdater text =
         action <- throwResult $ pinaforeInterpretFileAtType "<test>" text
         (sendUpdate, ref) <- tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
         unlift $
-            runEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
+            runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $
             tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 

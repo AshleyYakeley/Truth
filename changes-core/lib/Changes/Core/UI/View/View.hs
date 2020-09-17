@@ -9,6 +9,7 @@ module Changes.Core.UI.View.View
     , viewGetResourceContext
     , viewWithoutLock
     , viewWaitUpdates
+    , wModelWaitUpdates
     , runView
     , viewExit
     ) where
@@ -62,6 +63,9 @@ viewWithoutLock ioa = do
 
 viewWaitUpdates :: Model update -> View ()
 viewWaitUpdates model = viewWithoutLock $ taskWait $ modelUpdatesTask model
+
+wModelWaitUpdates :: WModel update -> View ()
+wModelWaitUpdates (MkWModel ref) = viewWaitUpdates ref
 
 runView ::
        forall m a. MonadUnliftIO m

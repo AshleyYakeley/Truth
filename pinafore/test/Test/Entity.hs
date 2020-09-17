@@ -56,7 +56,7 @@ updateTest text =
     scriptTest text text $ \tc unlift action -> do
         (sendUpdate, ref) <- tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
         unlift $
-            runEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
+            runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $
             tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 

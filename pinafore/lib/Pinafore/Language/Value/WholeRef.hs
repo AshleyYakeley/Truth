@@ -7,7 +7,7 @@ import Pinafore.Language.Value.Instances ()
 import Shapes
 
 data LangWholeRef (pq :: (Type, Type)) where
-    MutableLangWholeRef :: PinaforeRef (BiWholeUpdate (Know p) (Know q)) -> LangWholeRef '( p, q)
+    MutableLangWholeRef :: WModel (BiWholeUpdate (Know p) (Know q)) -> LangWholeRef '( p, q)
     ImmutableLangWholeRef :: PinaforeImmutableWholeRef q -> LangWholeRef '( p, q)
 
 instance CatFunctor (CatRange (->)) (->) LangWholeRef where
@@ -36,11 +36,11 @@ langWholeRefToImmutable = langWholeRefToImmutable'
 pinaforeImmutableToWholeRef :: PinaforeImmutableWholeRef a -> LangWholeRef '( TopType, a)
 pinaforeImmutableToWholeRef ir = ImmutableLangWholeRef ir
 
-langWholeRefToValue :: LangWholeRef '( p, p) -> PinaforeRef (WholeUpdate (Know p))
+langWholeRefToValue :: LangWholeRef '( p, p) -> WModel (WholeUpdate (Know p))
 langWholeRefToValue (MutableLangWholeRef lv) = eaMap biSingleChangeLens lv
 langWholeRefToValue (ImmutableLangWholeRef ir) = immutableRefToRejectingRef ir
 
-pinaforeRefToWholeRef :: PinaforeRef (WholeUpdate (Know a)) -> LangWholeRef '( a, a)
+pinaforeRefToWholeRef :: WModel (WholeUpdate (Know a)) -> LangWholeRef '( a, a)
 pinaforeRefToWholeRef bsv = MutableLangWholeRef $ eaMap singleBiChangeLens bsv
 
 langWholeRefGet :: forall q. LangWholeRef '( BottomType, q) -> PinaforeAction q
@@ -79,11 +79,11 @@ fLensLangWholeRef ab baa =
 langMaybeWholeRef :: forall p q. LangWholeRef '( p, q) -> LangWholeRef '( Maybe p, Maybe q)
 langMaybeWholeRef = maybeLensLangWholeRef Just $ \mmp _ -> mmp
 
-langWholeRefToBiWholeRef :: LangWholeRef '( p, q) -> PinaforeRef (BiWholeUpdate (Know p) (Know q))
+langWholeRefToBiWholeRef :: LangWholeRef '( p, q) -> WModel (BiWholeUpdate (Know p) (Know q))
 langWholeRefToBiWholeRef (MutableLangWholeRef r) = r
 langWholeRefToBiWholeRef (ImmutableLangWholeRef ir) = immutableRefToRejectingBiRef ir
 
-langWholeRefToEntityRef :: LangWholeRef '( a, MeetType Entity a) -> PinaforeRef (WholeUpdate (Know (MeetType Entity a)))
+langWholeRefToEntityRef :: LangWholeRef '( a, MeetType Entity a) -> WModel (WholeUpdate (Know (MeetType Entity a)))
 langWholeRefToEntityRef ref =
     eaMap (biSingleChangeLens . mapBiWholeChangeLens (fmap meet2) id) $ langWholeRefToBiWholeRef ref
 

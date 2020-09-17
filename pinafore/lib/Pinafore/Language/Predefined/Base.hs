@@ -50,14 +50,14 @@ newMemWhole = do
     r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
     model <- pinaforeLiftLifeCycleIO $ makeReflectingModel r
     uh <- pinaforeUndoHandler
-    return $ pinaforeRefToWholeRef $ MkPinaforeRef $ undoHandlerModel uh model
+    return $ pinaforeRefToWholeRef $ MkWModel $ undoHandlerModel uh model
 
 newMemFiniteSet :: PinaforeAction (LangFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
     model <- pinaforeLiftLifeCycleIO $ makeReflectingModel $ convertReference r
     uh <- pinaforeUndoHandler
-    return $ meetValueLangFiniteSetRef $ MkPinaforeRef $ undoHandlerModel uh model
+    return $ meetValueLangFiniteSetRef $ MkWModel $ undoHandlerModel uh model
 
 zeroTime :: UTCTime
 zeroTime = UTCTime (fromGregorian 2000 1 1) 0
@@ -65,7 +65,7 @@ zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableWholeRef UTCTime)
 newClock duration = do
     (clockOM, ()) <- pinaforeLiftLifeCycleIO $ makeSharedModel $ clockPremodel zeroTime duration
-    return $ functionImmutableRef $ MkPinaforeRef $ clockOM
+    return $ functionImmutableRef $ MkWModel $ clockOM
 
 newTimeZoneRef :: PinaforeImmutableWholeRef UTCTime -> PinaforeAction (PinaforeImmutableWholeRef Int)
 newTimeZoneRef now = do

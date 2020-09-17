@@ -40,6 +40,7 @@ library:
       - Changes.Core.Edit
       - Changes.Core.Types.None
       - Changes.Core.Types.ReadOnly
+      - Changes.Core.Types.EditApplicative
       - Changes.Core.Types.Reject
       - Changes.Core.Types.Whole
       - Changes.Core.Types.WholeUpdateFunction
@@ -59,6 +60,7 @@ library:
       - Changes.Core.Types.Lattice
       - Changes.Core.Types.Tuple.Function
       - Changes.Core.Types.WholeFunction
+      - Changes.Core.Types.UpdateOrder
       - Changes.Core.Types.Set
       - Changes.Core.Types.Tuple.Dependent
       - Changes.Core.Types.Tuple.Context
@@ -93,6 +95,7 @@ library:
       - Changes.Core.Model.Cache
       - Changes.Core.Model.Savable
       - Changes.Core.Model.Undo
+      - Changes.Core.Model.WModel
       - Changes.Core.Model
       - Changes.Core.UI.View.Context
       - Changes.Core.UI.View.View

@@ -43,10 +43,10 @@ viewPinaforeAction va = MkPinaforeAction $ lift $ lift va
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
 
-pinaforeRefPushAction :: PinaforeRef update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
+pinaforeRefPushAction :: WModel update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
 pinaforeRefPushAction lv edits = do
     rc <- pinaforeResourceContext
-    ok <- liftIO $ pinaforeRefPush rc lv edits
+    ok <- liftIO $ wModelPush rc lv edits
     if ok
         then return ()
         else empty

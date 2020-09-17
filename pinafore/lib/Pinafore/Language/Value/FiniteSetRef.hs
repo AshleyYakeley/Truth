@@ -10,9 +10,9 @@ import Shapes
 
 data LangFiniteSetRef pq where
     MkLangFiniteSetRef
-        :: Eq t => Range (PinaforePolyShim Type) t pq -> PinaforeRef (FiniteSetUpdate t) -> LangFiniteSetRef pq
+        :: Eq t => Range (PinaforePolyShim Type) t pq -> WModel (FiniteSetUpdate t) -> LangFiniteSetRef pq
 
-unLangFiniteSetRef :: LangFiniteSetRef '( p, p) -> PinaforeRef (FiniteSetUpdate p)
+unLangFiniteSetRef :: LangFiniteSetRef '( p, p) -> WModel (FiniteSetUpdate p)
 unLangFiniteSetRef (MkLangFiniteSetRef tr lv) =
     eaMap (bijectionFiniteSetChangeLens $ isoMapCat shimToFunction $ rangeBijection tr) lv
 
@@ -22,20 +22,18 @@ instance CatFunctor (CatRange (->)) (->) LangFiniteSetRef where
 instance HasVariance 'Rangevariance LangFiniteSetRef where
     varianceRepresentational = Nothing
 
-langFiniteSetRefValue :: LangFiniteSetRef '( q, q) -> PinaforeRef (FiniteSetUpdate q)
+langFiniteSetRefValue :: LangFiniteSetRef '( q, q) -> WModel (FiniteSetUpdate q)
 langFiniteSetRefValue (MkLangFiniteSetRef tr lv) =
     eaMap (bijectionFiniteSetChangeLens (isoMapCat shimToFunction $ rangeBijection tr)) lv
 
-valueLangFiniteSetRef :: Eq q => PinaforeRef (FiniteSetUpdate q) -> LangFiniteSetRef '( q, q)
+valueLangFiniteSetRef :: Eq q => WModel (FiniteSetUpdate q) -> LangFiniteSetRef '( q, q)
 valueLangFiniteSetRef lv = MkLangFiniteSetRef identityRange lv
 
-langFiniteSetRefMeetValue ::
-       LangFiniteSetRef '( t, MeetType Entity t) -> PinaforeRef (FiniteSetUpdate (MeetType Entity t))
+langFiniteSetRefMeetValue :: LangFiniteSetRef '( t, MeetType Entity t) -> WModel (FiniteSetUpdate (MeetType Entity t))
 langFiniteSetRefMeetValue (MkLangFiniteSetRef tr lv) =
     langFiniteSetRefValue $ MkLangFiniteSetRef (contraMapRange meet2 tr) lv
 
-meetValueLangFiniteSetRef ::
-       PinaforeRef (FiniteSetUpdate (MeetType Entity t)) -> LangFiniteSetRef '( MeetType Entity t, t)
+meetValueLangFiniteSetRef :: WModel (FiniteSetUpdate (MeetType Entity t)) -> LangFiniteSetRef '( MeetType Entity t, t)
 meetValueLangFiniteSetRef lv = MkLangFiniteSetRef (coMapRange meet2 identityRange) lv
 
 langFiniteSetRefMeet ::

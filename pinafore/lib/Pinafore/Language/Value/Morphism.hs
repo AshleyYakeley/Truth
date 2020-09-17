@@ -122,6 +122,6 @@ inverseApplyLangMorphismSet (MkLangMorphism m) (MkLangFiniteSetRef (tra :: Range
     tbx = shimToFunction $ rangeCo tra
     m' :: PinaforeLensMorphism PinaforeStorageUpdate (MeetType Entity a) (MeetType Entity a) t t
     m' = cfmap3 (MkCatDual $ meet2 @(->)) $ cfmap1 (MkCatDual tbx) $ fmap byt m
-    setb :: PinaforeRef (FiniteSetUpdate (MeetType Entity a))
+    setb :: WModel (FiniteSetUpdate (MeetType Entity a))
     setb = applyInversePinaforeLensSet pinaforeEntityModel m' seta
     in MkLangFiniteSetRef (MkRange id meet2) setb
