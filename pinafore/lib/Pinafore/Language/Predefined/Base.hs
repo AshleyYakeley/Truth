@@ -657,7 +657,19 @@ base_predefinitions =
     , docTreeEntry
           "Orders"
           ""
-          [ mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @Text
+          [ mkValPatEntry "LT" "Less than." LT $ \v ->
+                case v of
+                    LT -> Just ()
+                    _ -> Nothing
+          , mkValPatEntry "EQ" "Equal to." EQ $ \v ->
+                case v of
+                    EQ -> Just ()
+                    _ -> Nothing
+          , mkValPatEntry "GT" "Greater than." GT $ \v ->
+                case v of
+                    GT -> Just ()
+                    _ -> Nothing
+          , mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @Text
           , mkValEntry "numerical" "Numercal order." $ ordOrder @Number
           , mkValEntry "chronological" "Chronological order." $ ordOrder @UTCTime
           , mkValEntry "durational" "Durational order." $ ordOrder @NominalDiffTime
