@@ -1,13 +1,12 @@
 module Pinafore.Base.FunctionMorphism
     ( PinaforeFunctionMorphism(..)
-    , pinaforeFunctionMorphismUpdateFunction
+    , pinaforeFunctionMorphismContextChangeLens
     , mapPinaforeFunctionMorphismBase
     ) where
 
 import Changes.Core
 import Shapes
 
--- equivalent to: type PinaforeFunctionMorphism baseupdate a b = ChangeLens baseupdate (ReadOnlyUpdate (FunctionUpdate a (WholeUpdate b)))
 data PinaforeFunctionMorphism baseupdate a b = MkPinaforeFunctionMorphism
     { pfFuncRead :: a -> ReadM (UpdateReader baseupdate) b
     , pfUpdate :: baseupdate -> Maybe (a -> ReadM (UpdateReader baseupdate) (Maybe b))
@@ -152,11 +151,11 @@ instance Traversable f => CatFunctor (PinaforeFunctionMorphism baseupdate) (Pina
                                 return $ Just fb
         in MkPinaforeFunctionMorphism {..}
 
-pinaforeFunctionMorphismUpdateFunction ::
+pinaforeFunctionMorphismContextChangeLens ::
        forall baseupdate a b.
        PinaforeFunctionMorphism baseupdate a b
     -> ChangeLens (ContextUpdate baseupdate (WholeUpdate a)) (ROWUpdate b)
-pinaforeFunctionMorphismUpdateFunction MkPinaforeFunctionMorphism {..} = let
+pinaforeFunctionMorphismContextChangeLens MkPinaforeFunctionMorphism {..} = let
     getB ::
            forall m. MonadIO m
         => Readable m (ContextUpdateReader baseupdate (WholeUpdate a))

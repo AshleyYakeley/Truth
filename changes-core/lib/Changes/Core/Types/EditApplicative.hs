@@ -41,9 +41,16 @@ eaMapFullReadOnly ::
     -> f (ReadOnlyUpdate updateB)
 eaMapFullReadOnly lens = eaMapSemiReadOnly $ toReadOnlyChangeLens . lens
 
+eaPairReadOnly ::
+       EditApplicative f
+    => f (ReadOnlyUpdate updateA)
+    -> f (ReadOnlyUpdate updateB)
+    -> f (ReadOnlyUpdate (PairUpdate updateA updateB))
+eaPairReadOnly fa fb = eaMap readOnlyPairChangeLens $ eaPair fa fb
+
 eaPairReadOnlyWhole :: EditApplicative f => f (ROWUpdate a) -> f (ROWUpdate b) -> f (ROWUpdate (a, b))
 eaPairReadOnlyWhole fa fb =
-    eaMap (liftReadOnlyChangeLens (toReadOnlyChangeLens . pairWholeChangeLens) . readOnlyPairChangeLens) $ eaPair fa fb
+    eaMap (liftReadOnlyChangeLens (toReadOnlyChangeLens . pairWholeChangeLens)) $ eaPairReadOnly fa fb
 
 eaToReadOnlyWhole ::
        (EditApplicative f, FullSubjectReader (UpdateReader update), ApplicableUpdate update)

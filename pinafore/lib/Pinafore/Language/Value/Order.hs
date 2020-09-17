@@ -63,7 +63,6 @@ qOrderSet (MkLangOrder (ofunc :: PinaforeFunctionMorphism PinaforeStorageUpdate 
     upairs = applyPinaforeFunction pinaforeEntityModel (cfmap ofuncpair) pset
     sortpoints :: FiniteSet (a, t) -> [a]
     sortpoints (MkFiniteSet pairs) = fmap fst $ sortBy cmp pairs
-    --in unWholeUpdateFunction $ fmap (Known . sortpoints) $ MkWholeUpdateFunction upairs
     in eaMapReadOnlyWhole (Known . sortpoints) upairs
 
 langOrderCompare ::
@@ -86,4 +85,4 @@ pinaforeSetGetOrdered order set = pinaforeROWRefToWholeRef $ qOrderSet order $ l
 
 pinaforeUpdateOrder :: LangOrder a -> UpdateOrder (ContextUpdate PinaforeStorageUpdate (WholeUpdate (Know a)))
 pinaforeUpdateOrder (MkLangOrder m cmp) =
-    MkUpdateOrder cmp $ changeLensToFloating $ pinaforeFunctionMorphismUpdateFunction m
+    MkUpdateOrder cmp $ changeLensToFloating $ pinaforeFunctionMorphismContextChangeLens m

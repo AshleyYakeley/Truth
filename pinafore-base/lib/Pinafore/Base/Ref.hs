@@ -27,7 +27,7 @@ applyPinaforeFunction ::
     -> PinaforeROWRef a
     -> PinaforeROWRef b
 applyPinaforeFunction basesub m val =
-    eaMap (pinaforeFunctionMorphismUpdateFunction m) $
+    eaMap (pinaforeFunctionMorphismContextChangeLens m) $
     contextualisePinaforeRef basesub $ eaMap fromReadOnlyRejectingChangeLens val
 
 applyPinaforeLens ::
