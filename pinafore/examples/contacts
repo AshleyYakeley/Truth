@@ -125,7 +125,7 @@ contactsTableUI pp mselection = uiListTable [({"Name"},\p -> name !$ {p})] (refO
 
 # ordered list of people and their names
 peopleByName: WholeRef +[(Person,Text)];
-peopleByName = members (mapOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ people;
+peopleByName = members (mapRefOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ people;
 
 # a user interface for a person
 personUI: WholeRef {-Named,+Person} -> UI;

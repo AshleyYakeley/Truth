@@ -37,11 +37,11 @@ ordOrder = MkLangRefOrder id compare
 refOrderOn :: forall a b. LangMorphism '( a, TopType) '( BottomType, b) -> LangRefOrder b -> LangRefOrder a
 refOrderOn f (MkLangRefOrder ef o) = MkLangRefOrder (ef . langMorphismFunction f) o
 
-noOrder :: LangRefOrder TopType
-noOrder = mempty
+noRefOrder :: LangRefOrder TopType
+noRefOrder = mempty
 
-orders :: forall a. [LangRefOrder a] -> LangRefOrder a
-orders = mconcat
+refOrders :: forall a. [LangRefOrder a] -> LangRefOrder a
+refOrders = mconcat
 
 rev :: forall a. LangRefOrder a -> LangRefOrder a
 rev (MkLangRefOrder ef o) = MkLangRefOrder ef $ \a b -> o b a
@@ -66,14 +66,13 @@ qOrderSet (MkLangRefOrder (ofunc :: PinaforeFunctionMorphism PinaforeStorageUpda
     in eaMapReadOnlyWhole (Known . sortpoints) upairs
 
 langRefOrderCompare ::
-       forall a b. (?pinafore :: PinaforeContext)
-    => (Ordering -> b)
-    -> LangRefOrder a
+       forall a. (?pinafore :: PinaforeContext)
+    => LangRefOrder a
     -> PinaforeImmutableWholeRef a
     -> PinaforeImmutableWholeRef a
-    -> PinaforeImmutableWholeRef b
-langRefOrderCompare ob (MkLangRefOrder ef o) fv1 fv2 =
-    (\v1 v2 -> ob $ o v1 v2) <$> (applyImmutableRef pinaforeEntityModel (fmap Known ef) fv1) <*>
+    -> PinaforeImmutableWholeRef Ordering
+langRefOrderCompare (MkLangRefOrder ef o) fv1 fv2 =
+    o <$> (applyImmutableRef pinaforeEntityModel (fmap Known ef) fv1) <*>
     (applyImmutableRef pinaforeEntityModel (fmap Known ef) fv2)
 
 pinaforeSetGetOrdered ::

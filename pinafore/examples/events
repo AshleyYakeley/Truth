@@ -112,7 +112,7 @@ eventTimeTime et = case et of
     end;
 
 eventTimeOrder: RefOrder EventTime;
-eventTimeOrder = mapOrder eventTimeTime localChronological;
+eventTimeOrder = mapRefOrder eventTimeTime localChronological;
 
 
 ### Event
@@ -132,7 +132,7 @@ eventData: FiniteSetRef (EventTime,Text);
 eventData = (eventTime !** eventName) !$$ events;
 
 eventDataOrder: RefOrder (EventTime,Text);
-eventDataOrder = mapOrder fst eventTimeOrder;
+eventDataOrder = mapRefOrder fst eventTimeOrder;
 
 eventList: WholeRef +Date -> WholeRef +[(EventTime,Text)];
 eventList today = {(EventTimeDate %today,"Today") :: %(members eventDataOrder eventData)};

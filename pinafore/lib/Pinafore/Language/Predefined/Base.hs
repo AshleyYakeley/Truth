@@ -669,25 +669,26 @@ base_predefinitions =
                 case v of
                     GT -> Just ()
                     _ -> Nothing
-          , mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @Text
-          , mkValEntry "numerical" "Numercal order." $ ordOrder @Number
-          , mkValEntry "chronological" "Chronological order." $ ordOrder @UTCTime
-          , mkValEntry "durational" "Durational order." $ ordOrder @NominalDiffTime
-          , mkValEntry "calendrical" "Date order." $ ordOrder @Day
-          , mkValEntry "horological" "Time of day order." $ ordOrder @TimeOfDay
-          , mkValEntry "localChronological" "Local time order." $ ordOrder @LocalTime
-          , mkValEntry "noOrder" "No order, same as `orders []`." $ noOrder
-          , mkValEntry "orders" "Join orders by priority." $ orders @A
+          , mkValEntry "eq" "Equal." $ (==) EQ
+          , mkValEntry "lt" "Less than." $ (==) LT
+          , mkValEntry "le" "Less than or equal to." $ (/=) GT
+          , mkValEntry "gt" "Greater than." $ (==) GT
+          , mkValEntry "ge" "Greater than or equal to." $ (/=) LT
+          , mkValEntry "alphabetical" "Alphabetical order." $ compare @Text
+          , mkValEntry "numerical" "Numercal order." $ compare @Number
+          , mkValEntry "chronological" "Chronological order." $ compare @UTCTime
+          , mkValEntry "durational" "Durational order." $ compare @NominalDiffTime
+          , mkValEntry "calendrical" "Date order." $ compare @Day
+          , mkValEntry "horological" "Time of day order." $ compare @TimeOfDay
+          , mkValEntry "localChronological" "Local time order." $ compare @LocalTime
+          , mkValEntry "noRefOrder" "No order, same as `refOrders []`." $ noRefOrder
+          , mkValEntry "refOrders" "Join orders by priority." $ refOrders @A
           , mkValEntry
-                "mapOrder"
+                "mapRefOrder"
                 "Map a function on an order."
                 (contramap :: (B -> A) -> LangRefOrder A -> LangRefOrder B)
           , mkValEntry "refOrderOn" "Order by an order on a particular morphism." $ refOrderOn @B @A
           , mkValEntry "rev" "Reverse an order." $ rev @A
-          , mkValEntry "orderEQ" "Equal by an order." $ langRefOrderCompare @A $ (==) EQ
-          , mkValEntry "orderLT" "Less than by an order." $ langRefOrderCompare @A $ (==) LT
-          , mkValEntry "orderLE" "Less than or equal to by an order." $ langRefOrderCompare @A $ (/=) GT
-          , mkValEntry "orderGT" "Greater than by an order." $ langRefOrderCompare @A $ (==) GT
-          , mkValEntry "orderGE" "Greater than or equal to by an order." $ langRefOrderCompare @A $ (/=) LT
+          , mkValEntry "orderWholeRef" "Order two whole references." $ langRefOrderCompare @A
           ]
     ]
