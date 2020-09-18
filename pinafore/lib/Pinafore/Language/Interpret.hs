@@ -200,7 +200,7 @@ interpretSpecialForm spos (SSFEvaluate st) =
                     eitherShimWit swa swb =
                         unPosShimWit swa $ \ta conva ->
                             unPosShimWit swb $ \tb convb ->
-                                mapPosShimWit (applyPolyShim CovarianceType (cfmap conva) convb) $
+                                mapPosShimWit (applyCoPolyShim (cfmap conva) convb) $
                                 singleDolanShimWit $
                                 mkShimWit $
                                 GroundDolanSingularType
@@ -216,7 +216,7 @@ interpretSpecialForm spos (SSFEvaluate st) =
                     funcShimWit swa swb =
                         unNegShimWit swa $ \ta conva ->
                             unPosShimWit swb $ \tb convb ->
-                                mapPosShimWit (applyPolyShim CovarianceType (ccontramap conva) convb) $
+                                mapPosShimWit (applyCoPolyShim (ccontramap conva) convb) $
                                 singleDolanShimWit $
                                 mkShimWit $
                                 GroundDolanSingularType FuncPinaforeGroundType $

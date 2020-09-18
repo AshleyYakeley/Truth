@@ -118,12 +118,12 @@ subsumeContext ::
        forall (ground :: GroundTypeKind) polarity. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => SubtypeContext (DolanType ground) (DolanPolyShim ground Type) (FullSubsumer ground) polarity polarity
 subsumeContext = let
-    subtypeTypes ::
+    subtypeConvert ::
            forall ta tb.
            DolanType ground polarity ta
         -> DolanType ground polarity tb
         -> FullSubsumer ground (DolanPolyShim ground Type ta tb)
-    subtypeTypes ta tb =
+    subtypeConvert ta tb =
         case polarityType @polarity of
             PositiveType -> fmap unPolarMap $ subsumeType ta tb
             NegativeType -> fmap unPolarMap $ subsumeType tb ta

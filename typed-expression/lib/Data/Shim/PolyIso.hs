@@ -74,17 +74,11 @@ polarPolyIsoNegative (MkPolarMap iab) =
 
 instance forall (pshim :: PolyShimKind). ApplyPolyShim pshim => ApplyPolyShim (PolyIso pshim) where
     applyPolyShim CovarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
-        MkPolyMapT $ MkIsomorphism (applyPolyShim CovarianceType fab xab) (applyPolyShim CovarianceType fba xba)
+        MkPolyMapT $ MkIsomorphism (applyCoPolyShim fab xab) (applyCoPolyShim fba xba)
     applyPolyShim ContravarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatDual (MkPolyMapT (MkIsomorphism xab xba))) =
-        MkPolyMapT $
-        MkIsomorphism
-            (applyPolyShim ContravarianceType fab $ MkCatDual xab)
-            (applyPolyShim ContravarianceType fba $ MkCatDual xba)
+        MkPolyMapT $ MkIsomorphism (applyContraPolyShim fab xab) (applyContraPolyShim fba xba)
     applyPolyShim RangevarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatRange (MkPolyMapT (MkIsomorphism xab1 xba1)) (MkPolyMapT (MkIsomorphism xab2 xba2))) =
-        MkPolyMapT $
-        MkIsomorphism
-            (applyPolyShim RangevarianceType fab (MkCatRange xab1 xab2))
-            (applyPolyShim RangevarianceType fba (MkCatRange xba1 xba2))
+        MkPolyMapT $ MkIsomorphism (applyRangePolyShim fab xab1 xab2) (applyRangePolyShim fba xba1 xba2)
 
 polarPolyIsoPolar1 ::
        forall (pshim :: PolyShimKind) polarity (a :: Type). (JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)

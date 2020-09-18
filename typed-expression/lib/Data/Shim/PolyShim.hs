@@ -42,6 +42,31 @@ class AllInCategory pshim => ApplyPolyShim (pshim :: PolyShimKind) where
         -> VarianceCategory (pshim Type) v a b
         -> pshim k (f a) (g b)
 
+applyCoPolyShim ::
+       forall (pshim :: PolyShimKind) k (f :: Type -> k) (g :: Type -> k) (a :: Type) (b :: Type).
+       (ApplyPolyShim pshim, HasVariance 'Covariance f, HasVariance 'Covariance g)
+    => pshim (Type -> k) f g
+    -> pshim Type a b
+    -> pshim k (f a) (g b)
+applyCoPolyShim fg ab = applyPolyShim CovarianceType fg ab
+
+applyContraPolyShim ::
+       forall (pshim :: PolyShimKind) k (f :: Type -> k) (g :: Type -> k) (a :: Type) (b :: Type).
+       (ApplyPolyShim pshim, HasVariance 'Contravariance f, HasVariance 'Contravariance g)
+    => pshim (Type -> k) f g
+    -> pshim Type b a
+    -> pshim k (f a) (g b)
+applyContraPolyShim fg ba = applyPolyShim ContravarianceType fg (MkCatDual ba)
+
+applyRangePolyShim ::
+       forall (pshim :: PolyShimKind) k (f :: (Type, Type) -> k) (g :: (Type, Type) -> k) (a1 :: Type) (a2 :: Type) (b1 :: Type) (b2 :: Type).
+       (ApplyPolyShim pshim, HasVariance 'Rangevariance f, HasVariance 'Rangevariance g)
+    => pshim ((Type, Type) -> k) f g
+    -> pshim Type b1 a1
+    -> pshim Type a2 b2
+    -> pshim k (f '( a1, a2)) (g '( b1, b2))
+applyRangePolyShim fg ba1 ab2 = applyPolyShim RangevarianceType fg (MkCatRange ba1 ab2)
+
 type PEqual :: PolyShimKind
 data PEqual k a b where
     MkPEqual :: forall k (a :: k). PEqual k a a

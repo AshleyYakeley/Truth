@@ -29,10 +29,8 @@ instance Contravariant (LangRefOrder) where
 instance HasVariance 'Contravariance (LangRefOrder) where
     varianceRepresentational = Nothing
 
-ordOrder ::
-       forall a. Ord a
-    => LangRefOrder a
-ordOrder = MkLangRefOrder id compare
+pureRefOrder :: forall a. (a -> a -> Ordering) -> LangRefOrder a
+pureRefOrder cmp = MkLangRefOrder id $ knowOrder cmp
 
 refOrderOn :: forall a b. LangMorphism '( a, TopType) '( BottomType, b) -> LangRefOrder b -> LangRefOrder a
 refOrderOn f (MkLangRefOrder ef o) = MkLangRefOrder (ef . langMorphismFunction f) o

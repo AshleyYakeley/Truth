@@ -72,7 +72,7 @@ instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
     toShimWit =
         unPosShimWit toJMShimWit $ \ta conva ->
             unPosShimWit toJMShimWit $ \tb convb ->
-                mapPosShimWit (applyPolyShim CovarianceType (cfmap conva) convb) $
+                mapPosShimWit (applyCoPolyShim (cfmap conva) convb) $
                 mkShimWit $
                 GroundDolanSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType) $
@@ -89,7 +89,7 @@ instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
     fromShimWit =
         unNegShimWit fromJMShimWit $ \ta conva ->
             unNegShimWit fromJMShimWit $ \tb convb ->
-                mapNegShimWit (applyPolyShim CovarianceType (cfmap conva) convb) $
+                mapNegShimWit (applyCoPolyShim (cfmap conva) convb) $
                 mkShimWit $
                 GroundDolanSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType) $
@@ -107,7 +107,7 @@ instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
     toShimWit =
         unPosShimWit toJMShimWit $ \ta conva ->
             unPosShimWit toJMShimWit $ \tb convb ->
-                mapPosShimWit (applyPolyShim CovarianceType (cfmap conva) convb) $
+                mapPosShimWit (applyCoPolyShim (cfmap conva) convb) $
                 mkShimWit $
                 GroundDolanSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType) $
@@ -124,7 +124,7 @@ instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
     fromShimWit =
         unNegShimWit fromJMShimWit $ \ta conva ->
             unNegShimWit fromJMShimWit $ \tb convb ->
-                mapNegShimWit (applyPolyShim CovarianceType (cfmap conva) convb) $
+                mapNegShimWit (applyCoPolyShim (cfmap conva) convb) $
                 mkShimWit $
                 GroundDolanSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType) $
@@ -142,7 +142,7 @@ instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
     toShimWit =
         unNegShimWit fromJMShimWit $ \ta conva ->
             unPosShimWit toJMShimWit $ \tb convb ->
-                mapPosShimWit (applyPolyShim CovarianceType (ccontramap conva) convb) $
+                mapPosShimWit (applyCoPolyShim (ccontramap conva) convb) $
                 mkShimWit $
                 GroundDolanSingularType FuncPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
@@ -158,7 +158,7 @@ instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
     fromShimWit =
         unPosShimWit toJMShimWit $ \ta conva ->
             unNegShimWit fromJMShimWit $ \tb convb ->
-                mapNegShimWit (applyPolyShim CovarianceType (ccontramap conva) convb) $
+                mapNegShimWit (applyCoPolyShim (ccontramap conva) convb) $
                 mkShimWit $
                 GroundDolanSingularType FuncPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
@@ -260,7 +260,7 @@ instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
              ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangRefOrder a) where
     toShimWit =
         unNegShimWit fromJMShimWit $ \ta conva ->
-            mapPosShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
+            mapPosShimWit (applyContraPolyShim cid conva) $
             mkShimWit $ GroundDolanSingularType RefOrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
@@ -271,7 +271,7 @@ instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangRefOrder a) where
     fromShimWit =
         unPosShimWit toJMShimWit $ \ta conva ->
-            mapNegShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
+            mapNegShimWit (applyContraPolyShim cid conva) $
             mkShimWit $ GroundDolanSingularType RefOrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
@@ -378,7 +378,7 @@ instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
              ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangSetRef a) where
     toShimWit =
         unNegShimWit fromJMShimWit $ \ta conva ->
-            mapPosShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
+            mapPosShimWit (applyContraPolyShim cid conva) $
             mkShimWit $ GroundDolanSingularType SetRefPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
@@ -389,7 +389,7 @@ instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangSetRef a) where
     fromShimWit =
         unPosShimWit toJMShimWit $ \ta conva ->
-            mapNegShimWit (applyPolyShim ContravarianceType cid $ MkCatDual conva) $
+            mapNegShimWit (applyContraPolyShim cid conva) $
             mkShimWit $ GroundDolanSingularType SetRefPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>

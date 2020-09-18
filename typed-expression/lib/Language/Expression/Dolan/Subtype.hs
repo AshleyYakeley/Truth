@@ -15,7 +15,7 @@ import Shapes
 
 type SubtypeContext :: (Polarity -> Type -> Type) -> ShimKind Type -> (Type -> Type) -> Polarity -> Polarity -> Type
 data SubtypeContext w shim m pola polb = MkSubtypeContext
-    { subtypeTypes :: forall ta tb. w pola ta -> w polb tb -> m (shim ta tb)
+    { subtypeConvert :: forall ta tb. w pola ta -> w polb tb -> m (shim ta tb)
     , subtypeInverted :: SubtypeContext w shim m (InvertPolarity polb) (InvertPolarity pola)
     }
 
@@ -27,13 +27,13 @@ subtypeVariance ::
     -> SingleArgument sv w pola a
     -> SingleArgument sv w polb b
     -> m (VarianceCategory shim sv a b)
-subtypeVariance sc CovarianceType ta tb = subtypeTypes sc ta tb
+subtypeVariance sc CovarianceType ta tb = subtypeConvert sc ta tb
 subtypeVariance sc ContravarianceType ta tb = do
-    ba <- subtypeTypes (subtypeInverted sc) tb ta
+    ba <- subtypeConvert (subtypeInverted sc) tb ta
     return $ MkCatDual ba
 subtypeVariance sc RangevarianceType (MkRangeType tpa tqa) (MkRangeType tpb tqb) = do
-    pba <- subtypeTypes (subtypeInverted sc) tpb tpa
-    qab <- subtypeTypes sc tqa tqb
+    pba <- subtypeConvert (subtypeInverted sc) tpb tpa
+    qab <- subtypeConvert sc tqa tqb
     return $ MkCatRange pba qab
 
 subtypeArguments ::
