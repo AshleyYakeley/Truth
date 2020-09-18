@@ -23,12 +23,13 @@ stdWindow title moremenus content = fixAction $ \window -> let
         ] ++ moremenus;
     in openWindow title {menus} $ uiScrolled content;
 
+# A window that shows a set of items, with appropriate menu items.
 selectionWindow:
     Text -> # window title
     SetRef item -> # the set of items
     [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
-    (WholeRef item -> UI) ->
+    (WholeRef item -> UI) -> # UI to show the set of items
     Action Window;
 selectionWindow wtitle iset createMenuItems iopen iui = do
     selection <- newMemWhole;
@@ -60,6 +61,8 @@ selectionWindow wtitle iset createMenuItems iopen iui = do
 
 
 ### EventTime
+
+# An event can either be at a particular time, or a whole-day event.
 
 closedtype EventTime
     = EventTimeDate Date !"Date" # all-day event
@@ -135,14 +138,24 @@ eventDataOrder: RefOrder (EventTime,Text);
 eventDataOrder = mapRefOrder fst eventTimeOrder;
 
 eventList: WholeRef +Date -> WholeRef +[(EventTime,Text)];
-eventList todayr = {let today = %todayr in (EventTimeDate today,"Today") :: filter (\(t,_) -> ge $ calendrical (eventTimeDate t) today) %(members eventDataOrder eventData)};
+eventList todayref = {
+    let
+        today: Date;
+        today = %todayref;
+
+        pickCurrent: (EventTime,Text) -> Boolean;
+        pickCurrent (t,_) = ge $ calendrical (eventTimeDate t) today;
+    in (EventTimeDate today,"Today") :: filter pickCurrent %(members eventDataOrder eventData)
+    };
 
 
 ### UI
 
+# Text for the overview tab.
 overviewRef: WholeRef +Date -> WholeRef +Text;
-overviewRef today = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %(eventList today)};
+overviewRef todayref = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %(eventList todayref)};
 
+# Overview tab UI
 overviewLabel: UI;
 overviewLabel = uiRun $ do
     now <- newClock $ secondsToDuration 60; # update every minute
@@ -185,6 +198,7 @@ eventWindow evt = stdWindow (eventName !$ {evt}) [] $ uiVertical
     (True, uiTextArea $ eventNotes !$ {evt})
 ];
 
+# Menu item for creating a new event, and telling the owning UI to set its selection to it.
 newEventMenuItem: (Event -> Action ()) -> MenuItem;
 newEventMenuItem setsel = menuAction ("New Event") (Just "Ctrl+K")
     {do
@@ -198,7 +212,7 @@ newEventMenuItem setsel = menuAction ("New Event") (Just "Ctrl+K")
 
 eventsWindow: Action Window;
 eventsWindow = let
-    iui selection = uiPages [overviewPage, tablePage selection];
-    in selectionWindow "Events" events [newEventMenuItem] eventWindow iui;
+    ui selection = uiPages [overviewPage, tablePage selection];
+    in selectionWindow "Events" events [newEventMenuItem] eventWindow ui;
 
 in eventsWindow
