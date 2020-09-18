@@ -135,7 +135,7 @@ eventDataOrder: RefOrder (EventTime,Text);
 eventDataOrder = mapRefOrder fst eventTimeOrder;
 
 eventList: WholeRef +Date -> WholeRef +[(EventTime,Text)];
-eventList today = {(EventTimeDate %today,"Today") :: %(members eventDataOrder eventData)};
+eventList todayr = {let today = %todayr in (EventTimeDate today,"Today") :: filter (\(t,_) -> ge $ calendrical (eventTimeDate t) today) %(members eventDataOrder eventData)};
 
 
 ### UI

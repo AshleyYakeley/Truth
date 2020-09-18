@@ -187,6 +187,38 @@ base_predefinitions =
                 , mkValEntry "not" "Boolean NOT." not
                 ]
           , docTreeEntry
+                "Ordering"
+                ""
+                [ mkValPatEntry "LT" "Less than." LT $ \v ->
+                      case v of
+                          LT -> Just ()
+                          _ -> Nothing
+                , mkValPatEntry "EQ" "Equal to." EQ $ \v ->
+                      case v of
+                          EQ -> Just ()
+                          _ -> Nothing
+                , mkValPatEntry "GT" "Greater than." GT $ \v ->
+                      case v of
+                          GT -> Just ()
+                          _ -> Nothing
+                , mkValEntry "eq" "Equal." $ (==) EQ
+                , mkValEntry "ne" "Not equal." $ (/=) EQ
+                , mkValEntry "lt" "Less than." $ (==) LT
+                , mkValEntry "le" "Less than or equal to." $ (/=) GT
+                , mkValEntry "gt" "Greater than." $ (==) GT
+                , mkValEntry "ge" "Greater than or equal to." $ (/=) LT
+                , mkValEntry "alphabetical" "Alphabetical order." $ compare @Text
+                , mkValEntry "numerical" "Numercal order." $ compare @Number
+                , mkValEntry "chronological" "Chronological order." $ compare @UTCTime
+                , mkValEntry "durational" "Durational order." $ compare @NominalDiffTime
+                , mkValEntry "calendrical" "Date order." $ compare @Day
+                , mkValEntry "horological" "Time of day order." $ compare @TimeOfDay
+                , mkValEntry "localChronological" "Local time order." $ compare @LocalTime
+                , mkValEntry "noOrder" "No order, everything EQ." $ noOrder @TopType
+                , mkValEntry "orders" "Join orders by priority." $ concatOrders @A
+                , mkValEntry "reverse" "Reverse an order." $ reverseOrder @A
+                ]
+          , docTreeEntry
                 "Text"
                 ""
                 [ mkSupertypeEntry "id" "Every text is a literal." $ toLiteral @Text
@@ -511,120 +543,139 @@ base_predefinitions =
                 liftIO $ undoHandlerRedo uh rc noEditSource
           ]
     , docTreeEntry
-          "Whole References"
-          "A whole reference of type `WholeRef {-p,+q}` has a setting type of `p` and a getting type of `q`. Whole references keep track of updates, and will update user interfaces constructed from them when their value changes."
-          [ mkValEntry "pureWhole" "A constant whole reference for a value." (pure :: A -> PinaforeImmutableWholeRef A)
-          , mkValEntry
-                "immutWhole"
-                "Convert a whole reference to immutable.\n`immutWhole r = {%r}`"
-                (id :: PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A)
-          , mkValEntry
-                "coMapWhole"
-                "Map a function on getting a whole reference."
-                (coRangeLift :: (A -> B) -> LangWholeRef '( C, A) -> LangWholeRef '( C, B))
-          , mkValEntry
-                "contraMapWhole"
-                "Map a function on setting a whole reference."
-                (contraRangeLift :: (B -> A) -> LangWholeRef '( A, C) -> LangWholeRef '( B, C))
-          , mkValEntry "maybeLensMapWhole" "Map getter & pushback functions on a whole reference." $
-            maybeLensLangWholeRef @AP @AQ @BP @BQ
-          , mkValEntry "lensMapWhole" "Map getter & pushback functions on a whole reference." $
-            fLensLangWholeRef @AP @AQ @B
-          , mkValEntry "maybeWhole" "Map known/unknown to `Maybe` for a whole reference." $ langMaybeWholeRef @A @B
-          , mkValEntry "pairWhole" "Combine whole references." $ langPairWholeRefs @AP @AQ @BP @BQ
-          , mkValEntry
-                "applyWhole"
-                "Combine getting of whole references. `applyWhole f x` = `{%f %x}`"
-                ((<*>) :: PinaforeImmutableWholeRef (A -> B) -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef B)
-          , mkValEntry
-                "unknown"
-                "The unknown whole reference, representing missing information."
-                (empty :: PinaforeImmutableWholeRef BottomType)
-          , mkValEntry "known" "True if the whole reference is known." $ \(val :: PinaforeROWRef (Know TopType)) ->
-                (eaMapReadOnlyWhole (Known . isKnown) val :: PinaforeROWRef (Know Bool))
-          , mkValEntry
-                "??"
-                "`p ?? q` = `p` if it is known, else `q`."
-                ((<|>) :: PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A)
-          , mkValEntry "get" "Get a whole reference, or `stop` if the whole reference is unknown." $ langWholeRefGet @A
-          , mkValEntry ":=" "Set a whole reference to a value. Stop if failed." setentity
-          , mkValEntry "delete" "Delete a whole reference (i.e., make unknown). Stop if failed." deleteentity
-          , mkValEntry "newMemWhole" "Create a new whole reference to memory, initially unknown." newMemWhole
-          ]
-    , docTreeEntry
-          "Set References"
-          ""
-          [ mkValEntry "mapSet" "Map a function on a set." (contramap :: (A -> B) -> LangSetRef B -> LangSetRef A)
-          , mkValEntry "pureSet" "Convert a predicate to a set." $ predicateToLangSetRef @A
-          , mkValEntry "refSet" "Convert a predicate reference to a set." $ predicateRefToLangSetRef @A
-          , mkValEntry "immutSet" "Convert a set to immutable." $ langSetRefImmutable @A
-          , mkValEntry "+=" "Add an entity to a set." $ langSetRefAdd @A
-          , mkValEntry "-=" "Remove an entity from a set." $ langSetRefRemove @A
-          , mkValEntry "member" "A reference to the membership of a value in a set." $ langSetRefMember @A
-          , mkValEntry
-                "notSet"
-                "Complement of a set. The resulting set can be added to (deleting from the original set) and deleted from (adding to the original set)." $
-            langSetRefComplement @A
-          , mkValEntry
-                "<&>"
-                "Intersection of sets. The resulting set can be added to (adding to both sets), but not deleted from." $
-            langSetRefIntersect @A
-          , mkValEntry
-                "<|>"
-                "Union of sets. The resulting set can be deleted from (deleting from both sets), but not added to." $
-            langSetRefUnion @A
-          , mkValEntry
-                "<\\>"
-                "Difference of sets, everything in the first set but not the second. The resulting set can be added to (adding to the first and deleting from the second), but not deleted from." $
-            langSetRefDifference @A
-          , mkValEntry
-                "<^>"
-                "Symmetric difference of sets, everything in exactly one of the sets. The resulting set will be read-only." $
-            langSetRefSymmetricDifference @A
-          , mkValEntry "<+>" "Cartesian sum of sets." $ langSetRefCartesianSum @A @B
-          , mkValEntry "<*>" "Cartesian product of sets. The resulting set will be read-only." $
-            langSetRefCartesianProduct @A @B
-          ]
-    , docTreeEntry
-          "Finite Set References"
-          ""
-          [ mkSupertypeEntry "id" "Every finite set is a set." $ langFiniteSetRefToSetRef @A @TopType
-          , mkValEntry
-                "coMapFiniteSet"
-                "Map a function on getting from a finite set."
-                (coRangeLift :: (A -> B) -> LangFiniteSetRef '( C, A) -> LangFiniteSetRef '( C, B))
-          , mkValEntry
-                "contraMapFiniteSet"
-                "Map a function on setting to and testing a finite set."
-                (contraRangeLift :: (B -> A) -> LangFiniteSetRef '( A, C) -> LangFiniteSetRef '( B, C))
-          , mkValEntry "<:&>" "Intersect a finite set with any set. The resulting finite set will be read-only." $
-            langFiniteSetRefSetIntersect @A @B
-          , mkValEntry "<:\\>" "Difference of a finite set and any set. The resulting finite set will be read-only." $
-            langFiniteSetRefSetDifference @A @B
-          , mkValEntry
-                "<:&:>"
-                "Intersection of finite sets. The resulting finite set can be added to, but not deleted from." $
-            langFiniteSetRefMeet @A
-          , mkValEntry "<:|:>" "Union of finite sets. The resulting finite set can be deleted from, but not added to." $
-            langFiniteSetRefJoin @A
-          , mkValEntry "<:+:>" "Cartesian sum of finite sets." $ langFiniteSetRefCartesianSum @AP @AQ @BP @BQ
-          , mkSupertypeEntry "<:+:>" "Cartesian sum of finite sets." $ langFiniteSetRefCartesianSum @A @A @B @B
-          , mkValEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
-            langFiniteSetRefCartesianProduct @AP @AQ @BP @BQ
-          , mkSupertypeEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
-            langFiniteSetRefCartesianProduct @A @A @B @B
-          , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @A
-          , mkValEntry
-                "listFiniteSet"
-                "Represent a reference to a list as a finite set. Changing the set may scramble the order of the list." $
-            langListRefToFiniteSetRef @A
-          , mkValEntry "single" "The member of a single-member finite set, or unknown." $ langFiniteSetRefSingle @A
-          , mkValEntry "count" "Count of members in a finite set." $ langFiniteSetRefFunc @TopType @Int olength
-          , mkValEntry
-                "removeAll"
-                "Remove all entities from a finite set."
-                (langFiniteSetRefRemoveAll :: LangFiniteSetRef '( BottomType, TopType) -> PinaforeAction ())
-          , mkValEntry "newMemFiniteSet" "Create a new finite set reference to memory, initially empty." newMemFiniteSet
+          "References"
+          "References keep track of updates, and will update user interfaces constructed from them when their value changes."
+          [ docTreeEntry
+                "Whole References"
+                "A whole reference of type `WholeRef {-p,+q}` has a setting type of `p` and a getting type of `q`."
+                [ mkValEntry
+                      "pureWhole"
+                      "A constant whole reference for a value."
+                      (pure :: A -> PinaforeImmutableWholeRef A)
+                , mkValEntry
+                      "immutWhole"
+                      "Convert a whole reference to immutable.\n`immutWhole r = {%r}`"
+                      (id :: PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A)
+                , mkValEntry
+                      "coMapWhole"
+                      "Map a function on getting a whole reference."
+                      (coRangeLift :: (A -> B) -> LangWholeRef '( C, A) -> LangWholeRef '( C, B))
+                , mkValEntry
+                      "contraMapWhole"
+                      "Map a function on setting a whole reference."
+                      (contraRangeLift :: (B -> A) -> LangWholeRef '( A, C) -> LangWholeRef '( B, C))
+                , mkValEntry "maybeLensMapWhole" "Map getter & pushback functions on a whole reference." $
+                  maybeLensLangWholeRef @AP @AQ @BP @BQ
+                , mkValEntry "lensMapWhole" "Map getter & pushback functions on a whole reference." $
+                  fLensLangWholeRef @AP @AQ @B
+                , mkValEntry "maybeWhole" "Map known/unknown to `Maybe` for a whole reference." $
+                  langMaybeWholeRef @A @B
+                , mkValEntry "pairWhole" "Combine whole references." $ langPairWholeRefs @AP @AQ @BP @BQ
+                , mkValEntry
+                      "applyWhole"
+                      "Combine getting of whole references. `applyWhole f x` = `{%f %x}`"
+                      ((<*>) :: PinaforeImmutableWholeRef (A -> B) -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef B)
+                , mkValEntry
+                      "unknown"
+                      "The unknown whole reference, representing missing information."
+                      (empty :: PinaforeImmutableWholeRef BottomType)
+                , mkValEntry "known" "True if the whole reference is known." $ \(val :: PinaforeROWRef (Know TopType)) ->
+                      (eaMapReadOnlyWhole (Known . isKnown) val :: PinaforeROWRef (Know Bool))
+                , mkValEntry
+                      "??"
+                      "`p ?? q` = `p` if it is known, else `q`."
+                      ((<|>) :: PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A)
+                , mkValEntry "get" "Get a whole reference, or `stop` if the whole reference is unknown." $
+                  langWholeRefGet @A
+                , mkValEntry ":=" "Set a whole reference to a value. Stop if failed." setentity
+                , mkValEntry "delete" "Delete a whole reference (i.e., make unknown). Stop if failed." deleteentity
+                , mkValEntry "newMemWhole" "Create a new whole reference to memory, initially unknown." newMemWhole
+                ]
+          , docTreeEntry
+                "Set References"
+                ""
+                [ mkValEntry "mapSet" "Map a function on a set." (contramap :: (A -> B) -> LangSetRef B -> LangSetRef A)
+                , mkValEntry "pureSet" "Convert a predicate to a set." $ predicateToLangSetRef @A
+                , mkValEntry "refSet" "Convert a predicate reference to a set." $ predicateRefToLangSetRef @A
+                , mkValEntry "immutSet" "Convert a set to immutable." $ langSetRefImmutable @A
+                , mkValEntry "+=" "Add an entity to a set." $ langSetRefAdd @A
+                , mkValEntry "-=" "Remove an entity from a set." $ langSetRefRemove @A
+                , mkValEntry "member" "A reference to the membership of a value in a set." $ langSetRefMember @A
+                , mkValEntry
+                      "notSet"
+                      "Complement of a set. The resulting set can be added to (deleting from the original set) and deleted from (adding to the original set)." $
+                  langSetRefComplement @A
+                , mkValEntry
+                      "<&>"
+                      "Intersection of sets. The resulting set can be added to (adding to both sets), but not deleted from." $
+                  langSetRefIntersect @A
+                , mkValEntry
+                      "<|>"
+                      "Union of sets. The resulting set can be deleted from (deleting from both sets), but not added to." $
+                  langSetRefUnion @A
+                , mkValEntry
+                      "<\\>"
+                      "Difference of sets, everything in the first set but not the second. The resulting set can be added to (adding to the first and deleting from the second), but not deleted from." $
+                  langSetRefDifference @A
+                , mkValEntry
+                      "<^>"
+                      "Symmetric difference of sets, everything in exactly one of the sets. The resulting set will be read-only." $
+                  langSetRefSymmetricDifference @A
+                , mkValEntry "<+>" "Cartesian sum of sets." $ langSetRefCartesianSum @A @B
+                , mkValEntry "<*>" "Cartesian product of sets. The resulting set will be read-only." $
+                  langSetRefCartesianProduct @A @B
+                ]
+          , docTreeEntry
+                "Finite Set References"
+                ""
+                [ mkSupertypeEntry "id" "Every finite set is a set." $ langFiniteSetRefToSetRef @A @TopType
+                , mkValEntry
+                      "coMapFiniteSet"
+                      "Map a function on getting from a finite set."
+                      (coRangeLift :: (A -> B) -> LangFiniteSetRef '( C, A) -> LangFiniteSetRef '( C, B))
+                , mkValEntry
+                      "contraMapFiniteSet"
+                      "Map a function on setting to and testing a finite set."
+                      (contraRangeLift :: (B -> A) -> LangFiniteSetRef '( A, C) -> LangFiniteSetRef '( B, C))
+                , mkValEntry "<:&>" "Intersect a finite set with any set. The resulting finite set will be read-only." $
+                  langFiniteSetRefSetIntersect @A @B
+                , mkValEntry
+                      "<:\\>"
+                      "Difference of a finite set and any set. The resulting finite set will be read-only." $
+                  langFiniteSetRefSetDifference @A @B
+                , mkValEntry
+                      "<:&:>"
+                      "Intersection of finite sets. The resulting finite set can be added to, but not deleted from." $
+                  langFiniteSetRefMeet @A
+                , mkValEntry
+                      "<:|:>"
+                      "Union of finite sets. The resulting finite set can be deleted from, but not added to." $
+                  langFiniteSetRefJoin @A
+                , mkValEntry "<:+:>" "Cartesian sum of finite sets." $ langFiniteSetRefCartesianSum @AP @AQ @BP @BQ
+                , mkSupertypeEntry "<:+:>" "Cartesian sum of finite sets." $ langFiniteSetRefCartesianSum @A @A @B @B
+                , mkValEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
+                  langFiniteSetRefCartesianProduct @AP @AQ @BP @BQ
+                , mkSupertypeEntry
+                      "<:*:>"
+                      "Cartesian product of finite sets. The resulting finite set will be read-only." $
+                  langFiniteSetRefCartesianProduct @A @A @B @B
+                , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @A
+                , mkValEntry
+                      "listFiniteSet"
+                      "Represent a reference to a list as a finite set. Changing the set may scramble the order of the list." $
+                  langListRefToFiniteSetRef @A
+                , mkValEntry "single" "The member of a single-member finite set, or unknown." $
+                  langFiniteSetRefSingle @A
+                , mkValEntry "count" "Count of members in a finite set." $ langFiniteSetRefFunc @TopType @Int olength
+                , mkValEntry
+                      "removeAll"
+                      "Remove all entities from a finite set."
+                      (langFiniteSetRefRemoveAll :: LangFiniteSetRef '( BottomType, TopType) -> PinaforeAction ())
+                , mkValEntry
+                      "newMemFiniteSet"
+                      "Create a new finite set reference to memory, initially empty."
+                      newMemFiniteSet
+                ]
           ]
     , docTreeEntry
           "Morphisms"
@@ -655,42 +706,16 @@ base_predefinitions =
           , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @B @B
           ]
     , docTreeEntry
-          "Orders & RefOrders"
+          "RefOrders"
           ""
           [ mkSupertypeEntry "id" "Every order is a RefOrder." $ pureRefOrder @A
-          , mkValPatEntry "LT" "Less than." LT $ \v ->
-                case v of
-                    LT -> Just ()
-                    _ -> Nothing
-          , mkValPatEntry "EQ" "Equal to." EQ $ \v ->
-                case v of
-                    EQ -> Just ()
-                    _ -> Nothing
-          , mkValPatEntry "GT" "Greater than." GT $ \v ->
-                case v of
-                    GT -> Just ()
-                    _ -> Nothing
-          , mkValEntry "eq" "Equal." $ (==) EQ
-          , mkValEntry "ne" "Not equal." $ (/=) EQ
-          , mkValEntry "lt" "Less than." $ (==) LT
-          , mkValEntry "le" "Less than or equal to." $ (/=) GT
-          , mkValEntry "gt" "Greater than." $ (==) GT
-          , mkValEntry "ge" "Greater than or equal to." $ (/=) LT
-          , mkValEntry "alphabetical" "Alphabetical order." $ compare @Text
-          , mkValEntry "numerical" "Numercal order." $ compare @Number
-          , mkValEntry "chronological" "Chronological order." $ compare @UTCTime
-          , mkValEntry "durational" "Durational order." $ compare @NominalDiffTime
-          , mkValEntry "calendrical" "Date order." $ compare @Day
-          , mkValEntry "horological" "Time of day order." $ compare @TimeOfDay
-          , mkValEntry "localChronological" "Local time order." $ compare @LocalTime
-          , mkValEntry "noRefOrder" "No RefOrder, same as `refOrders []`." $ noRefOrder
           , mkValEntry "refOrders" "Join RefOrders by priority." $ refOrders @A
           , mkValEntry
                 "mapRefOrder"
                 "Map a function on a RefOrder."
                 (contramap :: (B -> A) -> LangRefOrder A -> LangRefOrder B)
           , mkValEntry "refOrderOn" "Order by a RefOrder on a particular morphism." $ refOrderOn @B @A
-          , mkValEntry "rev" "Reverse a RefOrder." $ rev @A
+          , mkValEntry "reverseRef" "Reverse a RefOrder." $ reverseRefOrder @A
           , mkValEntry "orderWholeRef" "Order two whole references." $ langRefOrderCompare @A
           ]
     ]

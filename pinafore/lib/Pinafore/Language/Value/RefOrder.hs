@@ -8,16 +8,32 @@ import Pinafore.Language.Value.Morphism
 import Pinafore.Language.Value.WholeRef
 import Shapes
 
+type Order t = t -> t -> Ordering
+
+noOrder :: Order a
+noOrder _ _ = EQ
+
+reverseOrder :: forall a. Order a -> Order a
+reverseOrder o p q = o q p
+
+joinOrderings :: Ordering -> Ordering -> Ordering
+joinOrderings EQ ob = ob
+joinOrderings oa _ = oa
+
+joinOrders :: Order a -> Order a -> Order a
+joinOrders oa ob p q = joinOrderings (oa p q) (ob p q)
+
+concatOrders :: forall a. [Order a] -> Order a
+concatOrders [] = noOrder
+concatOrders (o:oo) = joinOrders o $ concatOrders oo
+
 data LangRefOrder a =
     forall t. MkLangRefOrder (PinaforeFunctionMorphism PinaforeStorageUpdate (Know a) t)
-                             (t -> t -> Ordering)
+                             (Order t)
 
 instance Semigroup (LangRefOrder a) where
     MkLangRefOrder fa oa <> MkLangRefOrder fb ob =
-        MkLangRefOrder (liftA2 (,) fa fb) $ \(a1, b1) (a2, b2) ->
-            case oa a1 a2 of
-                EQ -> ob b1 b2
-                cmp -> cmp
+        MkLangRefOrder (liftA2 (,) fa fb) $ \(a1, b1) (a2, b2) -> joinOrderings (oa a1 a2) (ob b1 b2)
 
 instance Monoid (LangRefOrder a) where
     mempty = MkLangRefOrder (pure ()) $ compare @()
@@ -29,20 +45,17 @@ instance Contravariant (LangRefOrder) where
 instance HasVariance 'Contravariance (LangRefOrder) where
     varianceRepresentational = Nothing
 
-pureRefOrder :: forall a. (a -> a -> Ordering) -> LangRefOrder a
+pureRefOrder :: forall a. Order a -> LangRefOrder a
 pureRefOrder cmp = MkLangRefOrder id $ knowOrder cmp
 
 refOrderOn :: forall a b. LangMorphism '( a, TopType) '( BottomType, b) -> LangRefOrder b -> LangRefOrder a
 refOrderOn f (MkLangRefOrder ef o) = MkLangRefOrder (ef . langMorphismFunction f) o
 
-noRefOrder :: LangRefOrder TopType
-noRefOrder = mempty
-
 refOrders :: forall a. [LangRefOrder a] -> LangRefOrder a
 refOrders = mconcat
 
-rev :: forall a. LangRefOrder a -> LangRefOrder a
-rev (MkLangRefOrder ef o) = MkLangRefOrder ef $ \a b -> o b a
+reverseRefOrder :: forall a. LangRefOrder a -> LangRefOrder a
+reverseRefOrder (MkLangRefOrder ef o) = MkLangRefOrder ef $ reverseOrder o
 
 qOrderSet ::
        forall a. (?pinafore :: PinaforeContext)
@@ -50,7 +63,7 @@ qOrderSet ::
     -> PinaforeROWRef (FiniteSet a)
     -> PinaforeROWRef (Know [a])
 qOrderSet (MkLangRefOrder (ofunc :: PinaforeFunctionMorphism PinaforeStorageUpdate (Know a) t) oord) pset = let
-    cmp :: (a, t) -> (a, t) -> Ordering
+    cmp :: Order (a, t)
     cmp (_, t1) (_, t2) = oord t1 t2
     ofuncpair :: PinaforeFunctionMorphism PinaforeStorageUpdate a (a, t)
     ofuncpair =

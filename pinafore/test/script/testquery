@@ -16,4 +16,4 @@ root = openEntity @Root !"example:root";
 people = property @Person @Root !"example:people" !@ {root};
 
 in
-get (members (rev alphabetical) (name !$$ people)) >>= \l -> for_ l outputLn
+get (members (reverse alphabetical) (name !$$ people)) >>= \l -> for_ l outputLn
