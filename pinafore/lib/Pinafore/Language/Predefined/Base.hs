@@ -655,9 +655,10 @@ base_predefinitions =
           , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @B @B
           ]
     , docTreeEntry
-          "Orders"
+          "Orders & RefOrders"
           ""
-          [ mkValPatEntry "LT" "Less than." LT $ \v ->
+          [ mkSupertypeEntry "id" "Every order is a RefOrder." $ pureRefOrder @A
+          , mkValPatEntry "LT" "Less than." LT $ \v ->
                 case v of
                     LT -> Just ()
                     _ -> Nothing
@@ -670,6 +671,7 @@ base_predefinitions =
                     GT -> Just ()
                     _ -> Nothing
           , mkValEntry "eq" "Equal." $ (==) EQ
+          , mkValEntry "ne" "Not equal." $ (/=) EQ
           , mkValEntry "lt" "Less than." $ (==) LT
           , mkValEntry "le" "Less than or equal to." $ (/=) GT
           , mkValEntry "gt" "Greater than." $ (==) GT
@@ -681,14 +683,14 @@ base_predefinitions =
           , mkValEntry "calendrical" "Date order." $ compare @Day
           , mkValEntry "horological" "Time of day order." $ compare @TimeOfDay
           , mkValEntry "localChronological" "Local time order." $ compare @LocalTime
-          , mkValEntry "noRefOrder" "No order, same as `refOrders []`." $ noRefOrder
-          , mkValEntry "refOrders" "Join orders by priority." $ refOrders @A
+          , mkValEntry "noRefOrder" "No RefOrder, same as `refOrders []`." $ noRefOrder
+          , mkValEntry "refOrders" "Join RefOrders by priority." $ refOrders @A
           , mkValEntry
                 "mapRefOrder"
-                "Map a function on an order."
+                "Map a function on a RefOrder."
                 (contramap :: (B -> A) -> LangRefOrder A -> LangRefOrder B)
-          , mkValEntry "refOrderOn" "Order by an order on a particular morphism." $ refOrderOn @B @A
-          , mkValEntry "rev" "Reverse an order." $ rev @A
+          , mkValEntry "refOrderOn" "Order by a RefOrder on a particular morphism." $ refOrderOn @B @A
+          , mkValEntry "rev" "Reverse a RefOrder." $ rev @A
           , mkValEntry "orderWholeRef" "Order two whole references." $ langRefOrderCompare @A
           ]
     ]

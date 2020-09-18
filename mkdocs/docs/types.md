@@ -35,6 +35,8 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 `Boolean <: Literal`
 
+`Ordering <: Literal`
+
 `Number <: Literal`
 
 `Text <: Literal`
@@ -159,6 +161,10 @@ Runners of an action that stops, such as the main program, or the handler of a b
 (`a` is contravariant)
 
 An order on a type. Can order by morphisms.
+
+Every order (comparison function) is a `RefOrder`:
+
+`a -> a -> Ordering <: RefOrder a`
 
 ## User Interfaces
 
