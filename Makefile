@@ -132,14 +132,14 @@ docs: mkdocs/generated/predefined.md mkdocs/generated/infix.md docker-image
 
 VSCXVERSION := $(PACKAGEVERSION).0
 
-out/pinafore-$(VSCXVERSION).vsix: \
+out/pinafore-$(VSCXVERSION).vsix: docker-image out \
  support/vsc-extension/package.json \
  support/vsc-extension/LICENSE \
  support/vsc-extension/README.md \
  support/vsc-extension/CHANGELOG.md \
  support/vsc-extension/language-configuration.json \
  support/vsc-extension/syntaxes/pinafore.tmLanguage.json
-	cd support/vsc-extension && vsce package -o ../../$@
+	cd support/vsc-extension && stack $(STACKFLAGS) exec -- vsce package -o ../../$@
 
 .PHONY: vsc-extension
 
