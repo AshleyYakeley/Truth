@@ -130,18 +130,24 @@ docs: mkdocs/generated/predefined.md mkdocs/generated/infix.md docker-image
 	stack $(STACKFLAGS) exec -- pip3 install --user file://`pwd`/support/pygments-lexer/
 	stack $(STACKFLAGS) exec --cwd mkdocs -- mkdocs build
 
-full: format deb licensing docs
+VSCXVERSION := $(PACKAGEVERSION).0
 
-.PHONY: install
+out/pinafore-$(VSCXVERSION).vsix: \
+ support/vsc-extension/package.json \
+ support/vsc-extension/LICENSE \
+ support/vsc-extension/README.md \
+ support/vsc-extension/CHANGELOG.md \
+ support/vsc-extension/language-configuration.json \
+ support/vsc-extension/syntaxes/pinafore.tmLanguage.json
+	cd support/vsc-extension && vsce package -o ../../$@
 
-install: out/$(PACKAGEFULLNAME).deb
-	sudo dpkg --install $<
+.PHONY: vsc-extension
 
-.PHONY: install-vsc-extension
+vsc-extension: out/pinafore-$(VSCXVERSION).vsix
 
-install-vsc-extension:
-	rm -rf ${HOME}/.vscode/extensions/ashleyyakeley.pinafore-0.0.1
-	cp -a support/vsc-extension ${HOME}/.vscode/extensions/ashleyyakeley.pinafore-0.0.1
+.PHONY: full
+
+full: format deb licensing docs vsc-extension
 
 clean:
 	rm -rf out
