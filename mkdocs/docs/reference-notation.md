@@ -9,8 +9,8 @@ For example:
 `{"answer: " ++ %r}` is the same as `coMapWhole (\v1 -> "answer: " ++ v1) r`  
 `{%x + %(y ?? z)}` is the same as `applyWhole (coMapWhole (\v1 v2 -> v1 + v2) x) (y ?? z)`
 
-If `expr : T`, then `{expr} : WholeRef +T`.  
-If `ref : WholeRef {-P,+Q}`, then `%(ref) : Q` within reference notation.
+If `expr: T`, then `{expr}: WholeRef +T`.  
+If `ref: WholeRef {-P,+Q}`, then `%(ref): Q` within reference notation.
 
 Reference notation works only with the getting of whole references, and ignores setting.
 Using `:=` or `delete` with whole references created this way will stop (see `stop` for what stopping means).

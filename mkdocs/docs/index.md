@@ -1,12 +1,12 @@
 # Pinafore 0.1
 
 Pinafore is a language that allows you to structure and store information, and create user interfaces for it.
-The language is loosely based on Haskell, featuring
+The language is loosely based on Haskell, featuring:
 
-* type-checking and inference, with optional type signatures
-* pattern-matching
-* lazy evaluation
-* separation of pure functions from executable actions
+* type-checking and inference, with optional type signatures,
+* pattern-matching,
+* lazy evaluation,
+* separation of pure functions from executable actions.
 
 Pinafore is an interpreted language; programs are first checked (parsed and type-checked), and then executed.
 
@@ -16,8 +16,9 @@ There is also a syntax-highlighting language extension for Visual Studio Code.
 ## Type System
 
 Pinafore implements Stephen Dolan's Algebraic Subtyping, an extension of Hindley-Milner to allow subtyping.
-Subtyping relationships ("every P is a Q") are part of how people tend to naturally organise information,
+Subtyping relationships (`P <: Q`, or "every P is a Q") are part of how people tend to naturally organise information,
 making the representation of information in the type system more natural.
+Hindley-Milner is the type system that languages such as ML and Haskell are based on, though extended in different ways.
 
 ## Storage
 

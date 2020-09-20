@@ -15,7 +15,7 @@ You can read `A <: B` to mean "every A is a B", or that something of type `A` wi
 This relation is of course reflexive and transitive.
 
 For example, if `P -> Q` is a positive type, then `P` is a negative type, and `Q` is a positive type.
-Given a function `f : P -> Q` and a value `a : T`, then the application `f a : Q` is allowed if `T <: P`.
+Given a function `f: P -> Q` and a value `a: T`, then the application `f a: Q` is allowed if `T <: P`.
 
 (Alternatively, if `P -> Q` is a negative type, then `P` is a positive type, and `Q` is a negative type.)
 
@@ -75,8 +75,8 @@ The essential fact of recursive types is that `rec a. F a` and `F (rec a. F a)` 
 `rec a. T` &rarr; `T` (if `a` does not appear in `T`)
 
 1. Any type variables that appear only in the positive position are replaced by `None`. Likewise, any only in the negative position, with `Any`.  
-`\x y -> x : a -> b -> a` &rarr; `\x y -> x : a -> Any -> a`  
-`[] : [a]` &rarr; `[] : [None]`
+`\x y -> x: a -> b -> a` &rarr; `\x y -> x: a -> Any -> a`  
+`[]: [a]` &rarr; `[]: [None]`
 
 1. `None` and `Any` act as identities for `|` and `&`, respectively.  
 `Int | None` &rarr; `Int`
