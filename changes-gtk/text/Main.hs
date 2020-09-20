@@ -74,7 +74,6 @@ main = do
                 makeWindow title sub msub2 extraui = do
                     rec
                         let (mbar, cuic) = extraui closer r $ ui sub msub2 extraui
-                        uic <- cuic
                         (r, closer) <-
                             cvEarlyCloser $
                             newWindow $ let
@@ -84,8 +83,8 @@ main = do
                                 wsTitle = constantModel title
                                 wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
                                 wsMenuBar = Just $ constantModel mbar
-                                wsContent :: Widget
-                                wsContent = uic
+                                wsContent :: CreateView Widget
+                                wsContent = cuic
                                 in MkWindowSpec {..}
                     return ()
                 simpleUI :: IO () -> UIWindow -> CreateView Widget -> (MenuBar, CreateView Widget)

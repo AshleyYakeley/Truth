@@ -1,6 +1,6 @@
 let
 opentype T;
-me = entity @T !"T";
+me = openEntity @T !"T";
 
 func20 n a b c d e f = uiLabel n;
 func19 n a b c d e f = func20 n a b c d e f;
@@ -25,7 +25,7 @@ func1 n a b c d e f = func2 n a b c d e f;
 func0 n a b c d e f = func1 n a b c d e f;
 
 w : Action Window;
-w = openWindow {"Test"} {[]} $ func0 (pureRef "Text") False False False False False False;
+w = openWindow {"Test"} {[]} $ func0 (pureWhole "Text") False False False False False False;
 
 prop0 = property @T @Text !"000";
 

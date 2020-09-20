@@ -49,6 +49,9 @@ mVarRun var (StateT smr) = liftIOWithUnlift $ \unlift -> modifyMVar var $ \olds 
 mVarUnitRun :: MonadUnliftIO m => MVar s -> MFunction m m
 mVarUnitRun var ma = mVarRun var $ lift ma
 
+mVarUnitUnlock :: MVar () -> MFunction IO IO
+mVarUnitUnlock var = bracket_ (putMVar var ()) (takeMVar var)
+
 -- | Dangerous, because the MVar won't be released on exception.
 dangerousMVarRun :: MVar s -> UnliftAll MonadIO (StateT s)
 dangerousMVarRun var (StateT smr) = do

@@ -16,18 +16,18 @@ import Shapes
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
 
-uiTable ::
+uiListTable ::
        (HasCallStack, ?pinafore :: PinaforeContext)
-    => [(LangRef '( BottomType, Text), A -> LangRef '( BottomType, Text))]
-    -> LangOrder A
+    => [(LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))]
+    -> LangRefOrder A
     -> LangFiniteSetRef '( A, EnA)
     -> (A -> PinaforeAction TopType)
-    -> Maybe (LangRef '( A, EnA))
+    -> Maybe (LangWholeRef '( A, EnA))
     -> LangUI
-uiTable cols order val onDoubleClick mSelectionLangRef = do
+uiListTable cols order val onDoubleClick mSelectionLangRef = do
     let
         mSelectionModel :: Maybe (Model (BiWholeUpdate (Know A) (Know EnA)))
-        mSelectionModel = fmap (unPinaforeRef . langRefToBiWholeRef) mSelectionLangRef
+        mSelectionModel = fmap (unWModel . langWholeRefToBiWholeRef) mSelectionLangRef
         uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
         uo =
             mapUpdateOrder
@@ -35,7 +35,7 @@ uiTable cols order val onDoubleClick mSelectionLangRef = do
                  liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
             pinaforeUpdateOrder order
         rows :: Model (FiniteSetUpdate EnA)
-        rows = unPinaforeRef $ unLangFiniteSetRef $ contraRangeLift meet2 val
+        rows = unWModel $ unLangFiniteSetRef $ contraRangeLift meet2 val
         pkSub :: Model (ContextUpdate PinaforeStorageUpdate (FiniteSetUpdate EnA))
         pkSub = contextModels pinaforeEntityModel rows
         readSub :: Model (ConstWholeUpdate EnA) -> View A
@@ -48,19 +48,19 @@ uiTable cols order val onDoubleClick mSelectionLangRef = do
             a <- readSub osub
             runPinaforeAction $ void $ onDoubleClick a
         getColumn ::
-               (LangRef '( BottomType, Text), A -> LangRef '( BottomType, Text)) -> KeyColumn (ConstWholeUpdate EnA)
+               (LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))
+            -> KeyColumn (ConstWholeUpdate EnA)
         getColumn (nameRef, getCellRef) = let
             showCell :: Know Text -> (Text, TableCellProps)
             showCell (Known s) = (s, plainTableCellProps)
             showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
             nameOpenSub :: Model (ROWUpdate Text)
-            nameOpenSub = pinaforeRefModel $ eaMapSemiReadOnly clearText $ langRefToReadOnlyValue nameRef
+            nameOpenSub = unWModel $ eaMapSemiReadOnly clearText $ langWholeRefToReadOnlyValue nameRef
             getCellSub :: Model (ConstWholeUpdate EnA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
             getCellSub osub = do
                 a <- cvLiftView $ readSub osub
                 return $
-                    pinaforeRefModel $
-                    eaMapSemiReadOnly (funcChangeLens showCell) $ langRefToReadOnlyValue $ getCellRef a
+                    unWModel $ eaMapSemiReadOnly (funcChangeLens showCell) $ langWholeRefToReadOnlyValue $ getCellRef a
             in readOnlyKeyColumn nameOpenSub getCellSub
     colSub :: Model (ContextUpdate PinaforeStorageUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
         cvFloatMapModel (contextOrderedSetLens uo) pkSub
@@ -107,7 +107,7 @@ type PickerType = Know EnA
 
 type PickerPairType = (PickerType, ComboBoxCell)
 
-uiPick :: PinaforeImmutableRef ([(EnA, Text)]) -> LangRef '( A, EnA) -> CreateView Widget
+uiPick :: PinaforeImmutableWholeRef ([(EnA, Text)]) -> LangWholeRef '( A, EnA) -> CreateView Widget
 uiPick itemsRef ref = do
     let
         mapItem :: (EnA, Text) -> PickerPairType
@@ -121,14 +121,14 @@ uiPick itemsRef ref = do
                ChangeLens (WholeUpdate (Know [(EnA, Text)])) (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
         itemsLens = liftReadOnlyChangeLens (toReadOnlyChangeLens . listOrderedListChangeLens) . funcChangeLens mapItems
         subOpts :: Model (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
-        subOpts = pinaforeRefModel $ eaMapSemiReadOnly itemsLens $ immutableRefToReadOnlyRef itemsRef
+        subOpts = unWModel $ eaMapSemiReadOnly itemsLens $ immutableRefToReadOnlyRef itemsRef
         subVal :: Model (WholeUpdate PickerType)
-        subVal = pinaforeRefModel $ langRefToValue $ contraRangeLift meet2 ref
+        subVal = unWModel $ langWholeRefToValue $ contraRangeLift meet2 ref
     createComboBox subOpts subVal
 
 actionRef ::
        (?pinafore :: PinaforeContext)
-    => PinaforeImmutableRef (PinaforeAction TopType)
+    => PinaforeImmutableWholeRef (PinaforeAction TopType)
     -> PinaforeROWRef (Maybe (View ()))
 actionRef raction =
     eaMapReadOnlyWhole (fmap (\action -> runPinaforeAction (action >> return ())) . knowToMaybe) $
@@ -136,48 +136,46 @@ actionRef raction =
 
 uiButton ::
        (?pinafore :: PinaforeContext)
-    => PinaforeImmutableRef Text
-    -> PinaforeImmutableRef (PinaforeAction TopType)
+    => PinaforeImmutableWholeRef Text
+    -> PinaforeImmutableWholeRef (PinaforeAction TopType)
     -> CreateView Widget
 uiButton text raction =
     createButton
-        (pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text)
-        (pinaforeRefModel $ actionRef raction)
+        (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text)
+        (unWModel $ actionRef raction)
 
-uiLabel :: PinaforeImmutableRef Text -> CreateView Widget
-uiLabel text = createLabel $ pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text
+uiLabel :: PinaforeImmutableWholeRef Text -> CreateView Widget
+uiLabel text = createLabel $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text
 
-uiDynamic :: PinaforeImmutableRef LangUI -> LangUI
+uiDynamic :: PinaforeImmutableWholeRef LangUI -> LangUI
 uiDynamic uiref = let
     getSpec :: Know LangUI -> CreateView Widget
     getSpec Unknown = createBlank
     getSpec (Known pui) = pui
-    in createDynamic $ pinaforeRefModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyRef uiref
+    in createDynamic $ unWModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyRef uiref
 
 openWindow ::
        (?pinafore :: PinaforeContext)
-    => PinaforeImmutableRef Text
-    -> PinaforeImmutableRef MenuBar
+    => PinaforeImmutableWholeRef Text
+    -> PinaforeImmutableWholeRef MenuBar
     -> LangUI
     -> PinaforeAction LangWindow
-openWindow title mbar mContent = do
-    wsContent <- createViewPinaforeAction mContent
+openWindow title mbar wsContent =
     mfix $ \w ->
         pinaforeNewWindow $ let
             wsCloseBoxAction :: View ()
             wsCloseBoxAction = pwClose w
             wsTitle :: Model (ROWUpdate Text)
-            wsTitle = pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
+            wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
             wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-            wsMenuBar = Just $ pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef mbar
+            wsMenuBar = Just $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef mbar
             in MkWindowSpec {..}
 
-uiTextArea :: PinaforeRef (WholeUpdate (Know Text)) -> CreateView Widget
-uiTextArea val =
-    createTextArea (pinaforeRefModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) val) mempty
+uiTextArea :: WModel (WholeUpdate (Know Text)) -> CreateView Widget
+uiTextArea val = createTextArea (unWModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) val) mempty
 
-uiCalendar :: PinaforeRef (WholeUpdate (Know Day)) -> CreateView Widget
-uiCalendar day = createCalendar $ pinaforeRefModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
+uiCalendar :: WModel (WholeUpdate (Know Day)) -> CreateView Widget
+uiCalendar day = createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
@@ -196,29 +194,29 @@ menuAction ::
        (?pinafore :: PinaforeContext)
     => Text
     -> Maybe Text
-    -> PinaforeImmutableRef (PinaforeAction TopType)
+    -> PinaforeImmutableWholeRef (PinaforeAction TopType)
     -> LangMenuEntry
 menuAction label maccelStr raction = let
     maccel = do
         accelStr <- maccelStr
         interpretAccelerator $ unpack accelStr
-    in ActionMenuEntry label maccel $ pinaforeRefModel $ actionRef raction
+    in ActionMenuEntry label maccel $ unWModel $ actionRef raction
 
 uiScrolled :: LangUI -> LangUI
 uiScrolled lui = lui >>= createScrolled
 
-uiUnitCheckBox :: PinaforeImmutableRef Text -> PinaforeRef (WholeUpdate (Know ())) -> CreateView Widget
+uiUnitCheckBox :: PinaforeImmutableWholeRef Text -> WModel (WholeUpdate (Know ())) -> CreateView Widget
 uiUnitCheckBox name val =
-    createCheckButton (pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
-    pinaforeRefModel $ eaMap (toChangeLens knowBool) val
+    createCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
+    unWModel $ eaMap (toChangeLens knowBool) val
 
-uiCheckBox :: PinaforeImmutableRef Text -> PinaforeRef (WholeUpdate (Know Bool)) -> CreateView Widget
+uiCheckBox :: PinaforeImmutableWholeRef Text -> WModel (WholeUpdate (Know Bool)) -> CreateView Widget
 uiCheckBox name val =
-    createMaybeCheckButton (pinaforeRefModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
-    pinaforeRefModel $ eaMap (toChangeLens knowMaybe) val
+    createMaybeCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
+    unWModel $ eaMap (toChangeLens knowMaybe) val
 
-uiTextEntry :: PinaforeRef (WholeUpdate (Know Text)) -> CreateView Widget
-uiTextEntry val = createTextEntry $ pinaforeRefModel $ eaMap (unknownValueChangeLens mempty) $ val
+uiTextEntry :: WModel (WholeUpdate (Know Text)) -> CreateView Widget
+uiTextEntry val = createTextEntry $ unWModel $ eaMap (unknownValueChangeLens mempty) $ val
 
 uiHorizontal :: [(Bool, LangUI)] -> LangUI
 uiHorizontal mitems = do
@@ -291,9 +289,9 @@ ui_predefinitions =
                 uiButton
           , mkValEntry "uiPick" "A drop-down menu." uiPick
           , mkValEntry
-                "uiTable"
+                "uiListTable"
                 "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection, fifth is an optional reference for the selected row."
-                uiTable
+                uiListTable
           , mkValEntry "uiCalendar" "A calendar." uiCalendar
           , mkValEntry "uiScrolled" "A scrollable container." uiScrolled
           , mkValEntry "uiDynamic" "A UI that can be updated to different UIs." uiDynamic

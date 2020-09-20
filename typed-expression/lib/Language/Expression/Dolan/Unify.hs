@@ -64,7 +64,7 @@ unifySubtypeContext ::
        forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
     => SubtypeContext (DolanType ground) (DolanPolyShim ground Type) (FullUnifier ground) 'Positive 'Negative
 unifySubtypeContext = let
-    subtypeTypes = unifyTypes
+    subtypeConvert = unifyTypes
     subtypeInverted = unifySubtypeContext
     in MkSubtypeContext {..}
 

@@ -1,18 +1,18 @@
 pinafore> let opentype P
 pinafore> let opentype Q
 pinafore> let subtype P <: Q
-pinafore> let p = entity @P !"p"
-pinafore> let q = entity @Q !"q"
+pinafore> let p = openEntity @P !"p"
+pinafore> let q = openEntity @Q !"q"
 pinafore> let pp = property @P @P !"pp"
 pinafore> let qp = property @Q @P !"qp"
 pinafore> :t pp
 : P ~> P
 pinafore> :t pp !$ {p}
-: Ref P
+: WholeRef P
 pinafore> :t pp !$ {q}
 <input>:10:4: cannot convert Q <: P
 pinafore> :t qp !$ {p}
-: Ref P
+: WholeRef P
 pinafore> :t qp !$ {q}
-: Ref P
+: WholeRef P
 pinafore> <END>

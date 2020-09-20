@@ -3,18 +3,17 @@ module Pinafore.Language.Value.SetRef where
 import Changes.Core
 import Data.Shim
 import Pinafore.Base
-import Pinafore.Language.Value.OpenEntity
-import Pinafore.Language.Value.Ref
+import Pinafore.Language.Value.WholeRef
 import Shapes
 
 data LangSetRef a =
     MkLangSetRef (a -> a -> Bool)
-                 (PinaforeRef (PartialSetUpdate a))
+                 (WModel (PartialSetUpdate a))
 
-mkLangSetRef :: Eq a => PinaforeRef (PartialSetUpdate a) -> LangSetRef a
+mkLangSetRef :: Eq a => WModel (PartialSetUpdate a) -> LangSetRef a
 mkLangSetRef sv = MkLangSetRef (==) sv
 
-unLangSetRef :: LangSetRef a -> PinaforeRef (PartialSetUpdate a)
+unLangSetRef :: LangSetRef a -> WModel (PartialSetUpdate a)
 unLangSetRef (MkLangSetRef _ sv) = sv
 
 instance Contravariant LangSetRef where
@@ -89,19 +88,13 @@ langSetRefAdd :: forall a. LangSetRef a -> a -> PinaforeAction ()
 langSetRefAdd (MkLangSetRef _eq sv) a =
     pinaforeRefPushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True
 
-langSetRefAddNew :: LangSetRef NewEntity -> PinaforeAction NewEntity
-langSetRefAddNew set = do
-    (MkNewEntity -> e) <- liftIO $ newKeyContainerItem @(FiniteSet Entity)
-    langSetRefAdd set e
-    return e
-
 langSetRefRemove :: forall a. LangSetRef a -> a -> PinaforeAction ()
 langSetRefRemove (MkLangSetRef _eq sv) a =
     pinaforeRefPushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit False
 
-langSetRefMember :: forall a. LangSetRef a -> LangRef '( BottomType, a) -> LangRef '( Bool, Bool)
+langSetRefMember :: forall a. LangSetRef a -> LangWholeRef '( BottomType, a) -> LangWholeRef '( Bool, Bool)
 langSetRefMember (MkLangSetRef eq sv) aref = let
-    afval = langRefToReadOnlyValue aref
+    afval = langWholeRefToReadOnlyValue aref
     knowApplySetLens :: ChangeLens (PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))) (WholeUpdate (Know Bool))
     knowApplySetLens = let
         getFunc ::
@@ -168,12 +161,13 @@ langSetRefMember (MkLangSetRef eq sv) aref = let
                                 MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit b
                             _ -> Nothing
         in MkChangeLens {..}
-    in pinaforeRefToRef $ eaMap knowApplySetLens $ eaPair sv $ eaMap fromReadOnlyRejectingChangeLens afval
+    in pinaforeRefToWholeRef $ eaMap knowApplySetLens $ eaPair sv $ eaMap fromReadOnlyRejectingChangeLens afval
 
 predicateToLangSetRef :: forall a. (a -> Bool) -> LangSetRef (MeetType Entity a)
 predicateToLangSetRef p = MkLangSetRef (==) $ eaMap fromReadOnlyRejectingChangeLens $ eaPure $ \mea -> p $ meet2 mea
 
-predicateRefToLangSetRef :: forall a. LangRef '( MeetType Entity a -> Bool, a -> Bool) -> LangSetRef (MeetType Entity a)
+predicateRefToLangSetRef ::
+       forall a. LangWholeRef '( MeetType Entity a -> Bool, a -> Bool) -> LangSetRef (MeetType Entity a)
 predicateRefToLangSetRef ref = let
-    sv = langRefToValue $ coRangeLift (\s ma -> s $ meet2 ma) ref
+    sv = langWholeRefToValue $ coRangeLift (\s ma -> s $ meet2 ma) ref
     in MkLangSetRef (==) $ eaMap (partialConvertChangeLens . unknownValueChangeLens (\_ -> False)) sv

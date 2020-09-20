@@ -10,10 +10,10 @@ father = property @Person @Person !"example:father";
 
 # Root type and entity
 opentype Root;
-root = entity @Root !"example:root";
+root = openEntity @Root !"example:root";
 
 # The set of people connected to root.
 people = property @Person @Root !"example:people" !@ {root};
 
 in
-get (members (rev alphabetical) (name !$$ people)) >>= \l -> for_ l outputLn
+get (members (reverse alphabetical) (name !$$ people)) >>= \l -> for_ l outputLn

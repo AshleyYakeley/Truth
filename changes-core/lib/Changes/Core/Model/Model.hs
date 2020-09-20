@@ -1,4 +1,4 @@
-module Changes.Core.Reference.Model
+module Changes.Core.Model.Model
     ( AModel(..)
     , aModelRead
     , aModelEdit
@@ -21,10 +21,10 @@ module Changes.Core.Reference.Model
 import Changes.Core.Edit
 import Changes.Core.Import
 import Changes.Core.Lens
+import Changes.Core.Model.EditContext
+import Changes.Core.Model.Premodel
+import Changes.Core.Model.Reference
 import Changes.Core.Read
-import Changes.Core.Reference.EditContext
-import Changes.Core.Reference.Premodel
-import Changes.Core.Reference.Reference
 import Changes.Core.Resource
 import Changes.Core.Types
 import Changes.Debug

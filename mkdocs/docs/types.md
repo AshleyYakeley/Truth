@@ -35,6 +35,8 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 `Boolean <: Literal`
 
+`Ordering <: Literal`
+
 `Number <: Literal`
 
 `Text <: Literal`
@@ -57,8 +59,8 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 `a <: Entity` implies `Maybe a <: Entity`.
 
 #### Constructors & Functions
-`Just : a -> Maybe a`  
-`Nothing : Maybe None`
+`Just: a -> Maybe a`  
+`Nothing: Maybe None`
 
 ### Lists
 
@@ -68,8 +70,8 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 `a <: Entity` implies `[a] <: Entity`.
 
 #### Constructors & Functions
-`[] : [None]`  
-`\x y -> x::y : a -> [a] -> [a]`
+`[]: [None]`  
+`\x y -> x::y: a -> [a] -> [a]`
 
 ### Pairs
 
@@ -81,9 +83,9 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 There are no higher-arity tuples than pair.
 
 #### Constructors & Functions
-`\x y -> (x, y) : a -> b -> (a, b)`  
-`fst : (a, Any) -> a`  
-`snd : (Any, b) -> b`
+`\x y -> (x, y): a -> b -> (a, b)`  
+`fst: (a, Any) -> a`  
+`snd: (Any, b) -> b`
 
 ### Either
 
@@ -93,8 +95,8 @@ There are no higher-arity tuples than pair.
 `a <: Entity` and `b <: Entity` implies `Either a b <: Entity`.
 
 #### Constructors & Functions
-`Left : a -> Either a None`  
-`Right : b -> Either None b`
+`Left: a -> Either a None`  
+`Right: b -> Either None b`
 
 ### Declared Closed Entity Types
 
@@ -109,7 +111,7 @@ closedtype Patient =
     LivingPatient Person Date !"Patient.LivingPatient" |
     DeadPatient Person Date Date !"Patient.DeadPatient";
 
-patientPerson : Patient -> Person;
+patientPerson: Patient -> Person;
 patientPerson patient =
     case patient of
         LivingPatient p _ -> p;
@@ -133,7 +135,7 @@ subtype Person <: Animal;
 subtype Cat <: Animal;
 ```
 
-For any open entity type `T`, `NewEntity <: T` and `T <: Entity`.
+For any open entity type `T`, `T <: Entity`.
 
 Subtypes relations are transitive.
 If there is a loop of subtype relations, it will simply make those types equivalent.
@@ -155,10 +157,14 @@ Runners of an action that stops, such as the main program, or the handler of a b
 
 ## Orders
 
-`Order a`  
+`RefOrder a`  
 (`a` is contravariant)
 
-An order on a type.
+An order on a type. Can order by morphisms.
+
+Every order (comparison function) is a `RefOrder`:
+
+`a -> a -> Ordering <: RefOrder a`
 
 ## User Interfaces
 
@@ -166,17 +172,19 @@ An order on a type.
 
 The contents of a user interface window. Can be composed in various ways.
 
-## References
+## References Types
 
-`Ref {-p,+q}`
+References (of the various reference types) keep track of updates, and will update user interfaces constructed from them when their value changes.
 
-A reference a mutable value, that is, something that can be fetched, set, and deleted, either by functions (`get`, `:=`, `delete`), or by a user interface.
+### Whole References
 
-References keep track of updates, and will update user interfaces constructed from them when their value changes.
+`WholeRef {-p,+q}`
 
-References may be "unknown"
+A whole reference a mutable value, that is, something that can be fetched, set, and deleted, either by functions (`get`, `:=`, `delete`), or by a user interface.
 
-## Set References
+Whole references may be "unknown"
+
+### Set References
 
 `SetRef a`
 
@@ -184,7 +192,7 @@ References may be "unknown"
 
 A set reference is a mutable predicate, like a test on values. Values can be added to it or deleted from it.
 
-## Finite Set References
+### Finite Set References
 
 `FiniteSetRef {-p,+q}`
 

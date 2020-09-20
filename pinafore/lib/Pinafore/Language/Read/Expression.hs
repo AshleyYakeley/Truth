@@ -185,7 +185,7 @@ readExpression3 =
              sta <- readTypeAnnotation
              stb <- readTypeAnnotation
              anchor <- readThis TokAnchor
-             return $ SEProperty sta stb anchor) <|>
+             return $ SEConst $ SCSpecialForm $ SSFProperty sta stb anchor) <|>
     readSourcePos
         (do
              rexpr <- readBracketed TokOpenBrace TokCloseBrace $ readExpression
@@ -197,15 +197,20 @@ readExpression3 =
              return $ SEUnref rexpr) <|>
     readSourcePos
         (do
-             readThis TokEntity
+             readThis TokOpenEntity
              mt <- readTypeAnnotation
              anchor <- readThis TokAnchor
-             return $ SEEntity mt anchor) <|>
+             return $ SEConst $ SCSpecialForm $ SSFOpenEntity mt anchor) <|>
+    readSourcePos
+        (do
+             readThis TokNewOpenEntity
+             mt <- readTypeAnnotation
+             return $ SEConst $ SCSpecialForm $ SSFNewOpenEntity mt) <|>
     readSourcePos
         (do
              readThis TokEvaluate
              mt <- readTypeAnnotation
-             return $ SEEvaluate mt) <|>
+             return $ SEConst $ SCSpecialForm $ SSFEvaluate mt) <|>
     (readParen $
      readSourcePos
          (do

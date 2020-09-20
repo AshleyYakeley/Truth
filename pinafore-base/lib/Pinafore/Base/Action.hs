@@ -2,7 +2,6 @@ module Pinafore.Base.Action
     ( PinaforeAction
     , unPinaforeAction
     , viewPinaforeAction
-    , createViewPinaforeAction
     , pinaforeResourceContext
     , pinaforeFunctionValueGet
     , pinaforeRefPushAction
@@ -41,18 +40,13 @@ unPinaforeAction acChangesContext acUndoHandler (MkPinaforeAction action) =
 viewPinaforeAction :: View a -> PinaforeAction a
 viewPinaforeAction va = MkPinaforeAction $ lift $ lift va
 
-createViewPinaforeAction :: CreateView a -> PinaforeAction a
-createViewPinaforeAction cva = do
-    unlift <- MkPinaforeAction $ lift $ MkComposeM $ fmap Known askUnlift
-    pinaforeLiftLifeCycleIO $ runWUnliftAll unlift cva
-
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
 
-pinaforeRefPushAction :: PinaforeRef update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
+pinaforeRefPushAction :: WModel update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
 pinaforeRefPushAction lv edits = do
     rc <- pinaforeResourceContext
-    ok <- liftIO $ pinaforeRefPush rc lv edits
+    ok <- liftIO $ wModelPush rc lv edits
     if ok
         then return ()
         else empty

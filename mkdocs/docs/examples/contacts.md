@@ -1,0 +1,5 @@
+# Contacts
+
+```pinafore
+{!examples/contacts!}
+```

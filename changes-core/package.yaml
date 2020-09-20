@@ -45,6 +45,7 @@ library:
       - Changes.Core.Edit
       - Changes.Core.Types.None
       - Changes.Core.Types.ReadOnly
+      - Changes.Core.Types.EditApplicative
       - Changes.Core.Types.Reject
       - Changes.Core.Types.Whole
       - Changes.Core.Types.WholeUpdateFunction
@@ -64,6 +65,7 @@ library:
       - Changes.Core.Types.Lattice
       - Changes.Core.Types.Tuple.Function
       - Changes.Core.Types.WholeFunction
+      - Changes.Core.Types.UpdateOrder
       - Changes.Core.Types.Set
       - Changes.Core.Types.Tuple.Dependent
       - Changes.Core.Types.Tuple.Context
@@ -85,20 +87,21 @@ library:
       - Changes.Core.Types.Bi
       - Changes.Core.Types.BiWhole
       - Changes.Core.Types
-      - Changes.Core.Reference.DeferActionT
-      - Changes.Core.Reference.EditContext
-      - Changes.Core.Reference.Reference
-      - Changes.Core.Reference.AutoClose
-      - Changes.Core.Reference.ReferenceEdit
-      - Changes.Core.Reference.Premodel
-      - Changes.Core.Reference.Model
-      - Changes.Core.Reference.Tuple
-      - Changes.Core.Reference.MemoryCell
-      - Changes.Core.Reference.Editor
-      - Changes.Core.Reference.Cache
-      - Changes.Core.Reference.Savable
-      - Changes.Core.Reference.Undo
-      - Changes.Core.Reference
+      - Changes.Core.Model.DeferActionT
+      - Changes.Core.Model.EditContext
+      - Changes.Core.Model.Reference
+      - Changes.Core.Model.AutoClose
+      - Changes.Core.Model.ReferenceEdit
+      - Changes.Core.Model.Premodel
+      - Changes.Core.Model.Model
+      - Changes.Core.Model.Tuple
+      - Changes.Core.Model.MemoryCell
+      - Changes.Core.Model.Editor
+      - Changes.Core.Model.Cache
+      - Changes.Core.Model.Savable
+      - Changes.Core.Model.Undo
+      - Changes.Core.Model.WModel
+      - Changes.Core.Model
       - Changes.Core.UI.View.Context
       - Changes.Core.UI.View.View
       - Changes.Core.UI.Selection

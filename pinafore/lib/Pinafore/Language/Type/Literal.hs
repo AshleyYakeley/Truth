@@ -19,6 +19,7 @@ data LiteralType (t :: Type) where
     RationalLiteralType :: LiteralType SafeRational
     IntegerLiteralType :: LiteralType Integer
     BooleanLiteralType :: LiteralType Bool
+    OrderingLiteralType :: LiteralType Ordering
     -- time
     TimeLiteralType :: LiteralType UTCTime
     DurationLiteralType :: LiteralType NominalDiffTime
@@ -34,6 +35,7 @@ instance TestEquality LiteralType where
     testEquality RationalLiteralType RationalLiteralType = Just Refl
     testEquality IntegerLiteralType IntegerLiteralType = Just Refl
     testEquality BooleanLiteralType BooleanLiteralType = Just Refl
+    testEquality OrderingLiteralType OrderingLiteralType = Just Refl
     testEquality TimeLiteralType TimeLiteralType = Just Refl
     testEquality DurationLiteralType DurationLiteralType = Just Refl
     testEquality DateLiteralType DateLiteralType = Just Refl
@@ -49,6 +51,7 @@ instance ExprShow (LiteralType t) where
     exprShowPrec RationalLiteralType = ("Rational", 0)
     exprShowPrec IntegerLiteralType = ("Integer", 0)
     exprShowPrec BooleanLiteralType = ("Boolean", 0)
+    exprShowPrec OrderingLiteralType = ("Ordering", 0)
     exprShowPrec TimeLiteralType = ("Time", 0)
     exprShowPrec DurationLiteralType = ("Duration", 0)
     exprShowPrec DateLiteralType = ("Date", 0)
@@ -62,6 +65,7 @@ nameToLiteralType "Number" = Just $ MkAnyW NumberLiteralType
 nameToLiteralType "Rational" = Just $ MkAnyW RationalLiteralType
 nameToLiteralType "Integer" = Just $ MkAnyW IntegerLiteralType
 nameToLiteralType "Boolean" = Just $ MkAnyW BooleanLiteralType
+nameToLiteralType "Ordering" = Just $ MkAnyW OrderingLiteralType
 nameToLiteralType "Time" = Just $ MkAnyW TimeLiteralType
 nameToLiteralType "Duration" = Just $ MkAnyW DurationLiteralType
 nameToLiteralType "Date" = Just $ MkAnyW DateLiteralType
@@ -88,6 +92,7 @@ literalTypeAsLiteral NumberLiteralType = Dict
 literalTypeAsLiteral RationalLiteralType = Dict
 literalTypeAsLiteral IntegerLiteralType = Dict
 literalTypeAsLiteral BooleanLiteralType = Dict
+literalTypeAsLiteral OrderingLiteralType = Dict
 literalTypeAsLiteral TimeLiteralType = Dict
 literalTypeAsLiteral DurationLiteralType = Dict
 literalTypeAsLiteral DateLiteralType = Dict
@@ -102,6 +107,7 @@ instance Representative LiteralType where
     getRepWitness RationalLiteralType = Dict
     getRepWitness IntegerLiteralType = Dict
     getRepWitness BooleanLiteralType = Dict
+    getRepWitness OrderingLiteralType = Dict
     getRepWitness TimeLiteralType = Dict
     getRepWitness DurationLiteralType = Dict
     getRepWitness DateLiteralType = Dict
@@ -128,6 +134,9 @@ instance Is LiteralType Integer where
 
 instance Is LiteralType Bool where
     representative = BooleanLiteralType
+
+instance Is LiteralType Ordering where
+    representative = OrderingLiteralType
 
 instance Is LiteralType UTCTime where
     representative = TimeLiteralType

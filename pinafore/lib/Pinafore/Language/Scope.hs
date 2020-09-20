@@ -41,8 +41,8 @@ import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Subtype
 import Pinafore.Language.Type.Identified
+import Pinafore.Language.Type.OpenEntity
 import Pinafore.Language.Type.Show
-import Pinafore.Language.Value
 import Shapes
 import Text.Parsec (SourcePos)
 
@@ -240,8 +240,8 @@ withNewPatternConstructor name pc = do
 withNewPatternConstructors :: Map Name (ScopePatternConstructor ts) -> Scoped ts a -> Scoped ts a
 withNewPatternConstructors pp = pLocalScope (\tc -> tc {scopePatternConstructors = pp <> scopePatternConstructors tc})
 
-withEntitySubtype :: TypeIDType tida -> TypeIDType tidb -> Scoped ts a -> Scoped ts a
-withEntitySubtype ta tb =
+withEntitySubtype :: OpenEntityType tida -> OpenEntityType tidb -> Scoped ts a -> Scoped ts a
+withEntitySubtype (MkOpenEntityType _ ta) (MkOpenEntityType _ tb) =
     pLocalScope $ \tc ->
         tc
             { scopeOpenEntitySubtypes =
@@ -250,12 +250,10 @@ withEntitySubtype ta tb =
             }
 
 getOpenEntitySubtype ::
-       Name
-    -> TypeIDType tida
-    -> Name
-    -> TypeIDType tidb
+       OpenEntityType tida
+    -> OpenEntityType tidb
     -> SourceScoped ts (PinaforePolyShim Type (OpenEntity tida) (OpenEntity tidb))
-getOpenEntitySubtype na wa nb wb = do
+getOpenEntitySubtype (MkOpenEntityType na wa) (MkOpenEntityType nb wb) = do
     (scopeOpenEntitySubtypes -> subtypes) <- spScope
     case unSubtypeMatch (getSubtypeShim subtypes equalSubtypeMatch) wa wb of
         Just (MkLiftedCategory conv) -> return conv

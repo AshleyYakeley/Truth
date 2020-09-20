@@ -4,16 +4,15 @@ import Changes.Core
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Shim
-import Pinafore.Language.Value.OpenEntity
-import Pinafore.Language.Value.Ref
 import Pinafore.Language.Value.SetRef
+import Pinafore.Language.Value.WholeRef
 import Shapes
 
 data LangFiniteSetRef pq where
     MkLangFiniteSetRef
-        :: Eq t => Range (PinaforePolyShim Type) t pq -> PinaforeRef (FiniteSetUpdate t) -> LangFiniteSetRef pq
+        :: Eq t => Range (PinaforePolyShim Type) t pq -> WModel (FiniteSetUpdate t) -> LangFiniteSetRef pq
 
-unLangFiniteSetRef :: LangFiniteSetRef '( p, p) -> PinaforeRef (FiniteSetUpdate p)
+unLangFiniteSetRef :: LangFiniteSetRef '( p, p) -> WModel (FiniteSetUpdate p)
 unLangFiniteSetRef (MkLangFiniteSetRef tr lv) =
     eaMap (bijectionFiniteSetChangeLens $ isoMapCat shimToFunction $ rangeBijection tr) lv
 
@@ -23,20 +22,18 @@ instance CatFunctor (CatRange (->)) (->) LangFiniteSetRef where
 instance HasVariance 'Rangevariance LangFiniteSetRef where
     varianceRepresentational = Nothing
 
-langFiniteSetRefValue :: LangFiniteSetRef '( q, q) -> PinaforeRef (FiniteSetUpdate q)
+langFiniteSetRefValue :: LangFiniteSetRef '( q, q) -> WModel (FiniteSetUpdate q)
 langFiniteSetRefValue (MkLangFiniteSetRef tr lv) =
     eaMap (bijectionFiniteSetChangeLens (isoMapCat shimToFunction $ rangeBijection tr)) lv
 
-valueLangFiniteSetRef :: Eq q => PinaforeRef (FiniteSetUpdate q) -> LangFiniteSetRef '( q, q)
+valueLangFiniteSetRef :: Eq q => WModel (FiniteSetUpdate q) -> LangFiniteSetRef '( q, q)
 valueLangFiniteSetRef lv = MkLangFiniteSetRef identityRange lv
 
-langFiniteSetRefMeetValue ::
-       LangFiniteSetRef '( t, MeetType Entity t) -> PinaforeRef (FiniteSetUpdate (MeetType Entity t))
+langFiniteSetRefMeetValue :: LangFiniteSetRef '( t, MeetType Entity t) -> WModel (FiniteSetUpdate (MeetType Entity t))
 langFiniteSetRefMeetValue (MkLangFiniteSetRef tr lv) =
     langFiniteSetRefValue $ MkLangFiniteSetRef (contraMapRange meet2 tr) lv
 
-meetValueLangFiniteSetRef ::
-       PinaforeRef (FiniteSetUpdate (MeetType Entity t)) -> LangFiniteSetRef '( MeetType Entity t, t)
+meetValueLangFiniteSetRef :: WModel (FiniteSetUpdate (MeetType Entity t)) -> LangFiniteSetRef '( MeetType Entity t, t)
 meetValueLangFiniteSetRef lv = MkLangFiniteSetRef (coMapRange meet2 identityRange) lv
 
 langFiniteSetRefMeet ::
@@ -63,12 +60,6 @@ langFiniteSetRefAdd :: LangFiniteSetRef '( p, q) -> p -> PinaforeAction ()
 langFiniteSetRefAdd (MkLangFiniteSetRef tr set) p =
     pinaforeRefPushAction set $ pure $ KeyEditInsertReplace $ shimToFunction (rangeContra tr) p
 
-langFiniteSetRefAddNew :: LangFiniteSetRef '( NewEntity, TopType) -> PinaforeAction NewEntity
-langFiniteSetRefAddNew set = do
-    (MkNewEntity -> e) <- liftIO $ newKeyContainerItem @(FiniteSet Entity)
-    langFiniteSetRefAdd set e
-    return e
-
 langFiniteSetRefRemove :: LangFiniteSetRef '( p, q) -> p -> PinaforeAction ()
 langFiniteSetRefRemove (MkLangFiniteSetRef tr set) p =
     pinaforeRefPushAction set $ pure $ KeyEditDelete $ shimToFunction (rangeContra tr) p
@@ -80,17 +71,20 @@ langFiniteSetRefFunctionValue :: LangFiniteSetRef '( t, a) -> PinaforeROWRef (Fi
 langFiniteSetRefFunctionValue (MkLangFiniteSetRef tr set) =
     eaMapReadOnlyWhole (fmap $ shimToFunction $ rangeCo tr) $ eaToReadOnlyWhole set
 
-langFiniteSetRefMember :: forall a. LangFiniteSetRef '( a, TopType) -> a -> LangRef '( Bool, Bool)
+langFiniteSetRefMember :: forall a. LangFiniteSetRef '( a, TopType) -> a -> LangWholeRef '( Bool, Bool)
 langFiniteSetRefMember (MkLangFiniteSetRef tr set) val = let
     tval = shimToFunction (rangeContra tr) val
-    in pinaforeRefToRef $ eaMap (wholeChangeLens knowMaybeLens . finiteSetChangeLens tval) set
+    in pinaforeRefToWholeRef $ eaMap (wholeChangeLens knowMaybeLens . finiteSetChangeLens tval) set
 
-langFiniteSetRefSingle :: forall a. LangFiniteSetRef '( BottomType, MeetType Entity a) -> LangRef '( TopType, a)
+langFiniteSetRefSingle :: forall a. LangFiniteSetRef '( BottomType, MeetType Entity a) -> LangWholeRef '( TopType, a)
 langFiniteSetRefSingle set =
-    pinaforeROWRefToRef $ eaMapReadOnlyWhole (fmap meet2 . maybeToKnow . getSingle) $ langFiniteSetRefFunctionValue set
+    pinaforeROWRefToWholeRef $
+    eaMapReadOnlyWhole (fmap meet2 . maybeToKnow . getSingle) $ langFiniteSetRefFunctionValue set
 
-langFiniteSetRefFunc :: forall a b. (FiniteSet a -> b) -> LangFiniteSetRef '( BottomType, a) -> LangRef '( TopType, b)
-langFiniteSetRefFunc f set = pinaforeROWRefToRef $ eaMapReadOnlyWhole (Known . f) $ langFiniteSetRefFunctionValue set
+langFiniteSetRefFunc ::
+       forall a b. (FiniteSet a -> b) -> LangFiniteSetRef '( BottomType, a) -> LangWholeRef '( TopType, b)
+langFiniteSetRefFunc f set =
+    pinaforeROWRefToWholeRef $ eaMapReadOnlyWhole (Known . f) $ langFiniteSetRefFunctionValue set
 
 langFiniteSetRefCartesianSum ::
        forall ap aq bp bq.
@@ -125,10 +119,11 @@ langFiniteSetRefSetDifference a b = langFiniteSetRefSetIntersect a $ langSetRefC
 wholeListFiniteSetChangeLens :: Eq a => ChangeLens (WholeUpdate [a]) (FiniteSetUpdate a)
 wholeListFiniteSetChangeLens = convertChangeLens . bijectionWholeChangeLens isoCoerce
 
-langListRefToFiniteSetRef :: forall a. LangRef '( [a], [MeetType Entity a]) -> LangFiniteSetRef '( MeetType Entity a, a)
+langListRefToFiniteSetRef ::
+       forall a. LangWholeRef '( [a], [MeetType Entity a]) -> LangFiniteSetRef '( MeetType Entity a, a)
 langListRefToFiniteSetRef ref =
     meetValueLangFiniteSetRef $
     eaMap
         (wholeListFiniteSetChangeLens .
          unknownValueChangeLens [] . biSingleChangeLens . mapBiWholeChangeLens (fmap $ fmap meet2) id) $
-    langRefToBiWholeRef ref
+    langWholeRefToBiWholeRef ref

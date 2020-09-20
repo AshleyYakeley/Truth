@@ -1,15 +1,15 @@
-module Changes.Core.Reference.Savable
+module Changes.Core.Model.Savable
     ( SaveActions(..)
     , saveBufferReference
     ) where
 
 import Changes.Core.Edit
 import Changes.Core.Import
+import Changes.Core.Model.DeferActionT
+import Changes.Core.Model.EditContext
+import Changes.Core.Model.Premodel
+import Changes.Core.Model.Reference
 import Changes.Core.Read
-import Changes.Core.Reference.DeferActionT
-import Changes.Core.Reference.EditContext
-import Changes.Core.Reference.Premodel
-import Changes.Core.Reference.Reference
 import Changes.Core.Resource
 import Changes.Core.Types
 import Changes.Debug

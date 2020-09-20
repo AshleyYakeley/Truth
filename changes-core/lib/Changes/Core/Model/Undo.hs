@@ -1,4 +1,4 @@
-module Changes.Core.Reference.Undo
+module Changes.Core.Model.Undo
     ( UndoHandler
     , newUndoHandler
     , undoHandlerUndo
@@ -9,9 +9,9 @@ module Changes.Core.Reference.Undo
 
 import Changes.Core.Edit
 import Changes.Core.Import
-import Changes.Core.Reference.EditContext
-import Changes.Core.Reference.Model
-import Changes.Core.Reference.Reference
+import Changes.Core.Model.EditContext
+import Changes.Core.Model.Model
+import Changes.Core.Model.Reference
 import Changes.Core.Resource
 
 data RefEdits = forall edit. MkRefEdits

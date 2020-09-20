@@ -8,7 +8,7 @@ module Changes.Debug.Subscriber
 
 import Changes.Core.Import
 import Changes.Core.Resource
-import Changes.Core.Reference.Model
+import Changes.Core.Model.Model
 import Changes.Debug
 import Changes.Debug.Edit
 import Changes.Debug.Reference

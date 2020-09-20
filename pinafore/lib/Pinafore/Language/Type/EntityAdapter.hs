@@ -9,13 +9,12 @@ import Pinafore.Base
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Literal
-import Pinafore.Language.Value
+import Pinafore.Language.Type.OpenEntity
 import Shapes
 
 entityGroundTypeAdapter :: forall f t. EntityGroundType f -> Arguments ConcreteEntityType f t -> EntityAdapter t
 entityGroundTypeAdapter TopEntityGroundType NilArguments = plainEntityAdapter
-entityGroundTypeAdapter NewEntityGroundType NilArguments = isoMap MkNewEntity unNewEntity plainEntityAdapter
-entityGroundTypeAdapter (OpenEntityGroundType _ _) NilArguments = isoMap MkOpenEntity unNamedEntity plainEntityAdapter
+entityGroundTypeAdapter (OpenEntityGroundType _) NilArguments = isoMap MkOpenEntity unNamedEntity plainEntityAdapter
 entityGroundTypeAdapter (LiteralEntityGroundType tl) NilArguments =
     case literalTypeAsLiteral tl of
         Dict -> literalEntityAdapter
@@ -80,6 +79,5 @@ concreteEntityAdapter (MkConcreteType gt args) = entityGroundTypeAdapter gt args
 
 concreteToEntityShim :: ConcreteEntityType a -> PinaforePolyShim Type a Entity
 concreteToEntityShim (MkConcreteType TopEntityGroundType NilArguments) = id
-concreteToEntityShim (MkConcreteType NewEntityGroundType NilArguments) = coerceEnhanced "subtype"
-concreteToEntityShim (MkConcreteType (OpenEntityGroundType _ _) NilArguments) = coerceEnhanced "subtype"
+concreteToEntityShim (MkConcreteType (OpenEntityGroundType _) NilArguments) = coerceEnhanced "subtype"
 concreteToEntityShim t = functionToShim "subtype" $ entityAdapterConvert $ concreteEntityAdapter t

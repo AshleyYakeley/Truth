@@ -56,10 +56,12 @@ refNotationUnquote spos rexpr = do
     return $ qVarExpr varname
 
 purerefExpr :: QExpr
-purerefExpr = qConstExpr (pure :: A -> PinaforeImmutableRef A)
+purerefExpr = qConstExpr (pure :: A -> PinaforeImmutableWholeRef A)
 
 aprefExpr :: QExpr
-aprefExpr = qConstExpr ((<*>) :: PinaforeImmutableRef (A -> B) -> PinaforeImmutableRef A -> PinaforeImmutableRef B)
+aprefExpr =
+    qConstExpr
+        ((<*>) :: PinaforeImmutableWholeRef (A -> B) -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef B)
 
 aplist :: QExpr -> [QExpr] -> PinaforeSourceScoped QExpr
 aplist expr [] = return expr

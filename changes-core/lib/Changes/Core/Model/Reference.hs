@@ -1,10 +1,10 @@
-module Changes.Core.Reference.Reference where
+module Changes.Core.Model.Reference where
 
 import Changes.Core.Edit
 import Changes.Core.Import
 import Changes.Core.Lens
+import Changes.Core.Model.EditContext
 import Changes.Core.Read
-import Changes.Core.Reference.EditContext
 import Changes.Core.Resource
 import Changes.Core.Types.None
 import Changes.Core.Types.Whole

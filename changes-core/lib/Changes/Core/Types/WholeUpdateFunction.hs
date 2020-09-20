@@ -10,7 +10,7 @@ import Changes.Core.Types.Tuple.Pair
 import Changes.Core.Types.Whole
 
 newtype WholeUpdateFunction update a = MkWholeUpdateFunction
-    { unWholeUpdateFunction :: ChangeLens update ((ROWUpdate a))
+    { unWholeUpdateFunction :: ChangeLens update (ROWUpdate a)
     }
 
 instance Functor (WholeUpdateFunction update) where

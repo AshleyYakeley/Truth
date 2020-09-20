@@ -51,6 +51,10 @@ instance AsLiteral Bool where
     toLiteral False = MkLiteral $ fromString "False"
     fromLiteral text = maybeToKnow $ lookup text $ fmap (\t -> (toLiteral t, t)) allValues
 
+instance AsLiteral Ordering where
+    toLiteral = MkLiteral . pack . show
+    fromLiteral = readFromLiteral
+
 instance AsLiteral Number where
     toLiteral = MkLiteral . pack . show
     fromLiteral = readFromLiteral

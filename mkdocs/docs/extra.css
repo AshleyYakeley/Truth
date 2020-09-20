@@ -13,6 +13,7 @@ ul.subnav ul {
 }
 
 pre, .rst-content pre, code, .rst-content code, tt, .rst-content tt {
+    font-family:  InconsolataRegular, Consolas, "Liberation Mono", "Courier New", Courier, monospace;
     color: black;
     font-size: 75%;
     margin: 0;
@@ -33,12 +34,11 @@ footer {
 }
 
 code, .rst-content code {
-    background: white;
-    border: solid 1px lightgrey;
-    padding-top: 1px;
-    padding-bottom: 1px;
-    padding-left: 3px;
-    padding-right: 3px;
+    background: unset;
+    border: unset;
+    padding: unset;
+    font-family:  InconsolataRegular, Consolas, "Liberation Mono", "Courier New", Courier, monospace;
+    color: darkred;
 }
 
 .codehilite {

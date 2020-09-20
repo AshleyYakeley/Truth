@@ -203,9 +203,9 @@ testQueries =
               , testQuery "True" $ Just "True"
               , testQuery "False" $ Just "False"
               , testQuery "\"1\"" $ Just "1"
-              , testQuery "uiTable" $ Just "<?>"
-              , testQuery "entity @Entity !\"example\"" $ Just "<?>"
-              , testQuery "entityAnchor $ entity @Entity !\"example\"" $
+              , testQuery "uiListTable" $ Just "<?>"
+              , testQuery "openEntity @Entity !\"example\"" $ Just "<?>"
+              , testQuery "entityAnchor $ openEntity @Entity !\"example\"" $
                 Just "!1AF8A5FD-24AAAF3E-3668C588-6C74D36A-70ED9618-CC874895-E4569C9F-FCD42CD3"
               ]
         , testGroup

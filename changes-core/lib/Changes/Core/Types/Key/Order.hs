@@ -1,8 +1,5 @@
 module Changes.Core.Types.Key.Order
-    ( UpdateOrder(..)
-    , mapUpdateOrder
-    , mapReadOnlyUpdateOrder
-    , orderedSetLens
+    ( orderedSetLens
     , contextOrderedSetLens
     ) where
 
@@ -14,21 +11,10 @@ import Changes.Core.Sequence
 import Changes.Core.Types.Key.HasKey
 import Changes.Core.Types.Key.Key
 import Changes.Core.Types.List
-import Changes.Core.Types.ReadOnly
 import Changes.Core.Types.Tuple.Context
 import Changes.Core.Types.Tuple.Tuple
+import Changes.Core.Types.UpdateOrder
 import Changes.Core.Types.Whole
-
-data UpdateOrder update =
-    forall o. MkUpdateOrder (o -> o -> Ordering)
-                            (FloatingChangeLens update (ROWUpdate o))
-
-mapUpdateOrder :: FloatingChangeLens updateB updateA -> UpdateOrder updateA -> UpdateOrder updateB
-mapUpdateOrder lens (MkUpdateOrder cmp flens) = MkUpdateOrder cmp $ flens . lens
-
-mapReadOnlyUpdateOrder ::
-       FloatingChangeLens updateB (ReadOnlyUpdate updateA) -> UpdateOrder updateA -> UpdateOrder updateB
-mapReadOnlyUpdateOrder lens (MkUpdateOrder cmp flens) = MkUpdateOrder cmp $ liftReadOnlyFloatingChangeLens flens . lens
 
 orderedSetLens ::
        forall update cont seq.

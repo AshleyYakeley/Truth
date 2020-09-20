@@ -1,11 +1,11 @@
-module Changes.Core.Reference.MemoryCell where
+module Changes.Core.Model.MemoryCell where
 
 import Changes.Core.Edit
 import Changes.Core.Import
 import Changes.Core.Lens
+import Changes.Core.Model.EditContext
+import Changes.Core.Model.Reference
 import Changes.Core.Read
-import Changes.Core.Reference.EditContext
-import Changes.Core.Reference.Reference
 import Changes.Core.Resource
 import Changes.Core.Types
 import Data.IORef

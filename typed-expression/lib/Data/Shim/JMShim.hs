@@ -99,7 +99,7 @@ instance ApplyPolyShim JMShim where
     applyPolyShim vt jmf jma = ConsJMShim vt jmf jma
 
 instance forall k (f :: Type -> k). HasVariance 'Covariance f => CatFunctor (JMShim Type) (JMShim k) f where
-    cfmap f = applyPolyShim CovarianceType IdentityJMShim f
+    cfmap f = applyCoPolyShim IdentityJMShim f
 
 instance forall k (f :: Type -> k). HasVariance 'Contravariance f => CatFunctor (CatDual (JMShim Type)) (JMShim k) f where
     cfmap jmfa = applyPolyShim ContravarianceType IdentityJMShim jmfa
@@ -234,11 +234,11 @@ instance CoercibleKind k => FunctionShim (JMShim k) where
     enhancedCoercion _ = Nothing
 
 instance CartesianShim (JMShim Type) where
-    funcShim ab pq = applyPolyShim CovarianceType (applyPolyShim ContravarianceType cid (MkCatDual ab)) pq
-    pairShim ab pq = applyPolyShim CovarianceType (applyPolyShim CovarianceType cid ab) pq
-    eitherShim ab pq = applyPolyShim CovarianceType (applyPolyShim CovarianceType cid ab) pq
+    funcShim ab pq = applyCoPolyShim (applyContraPolyShim cid ab) pq
+    pairShim ab pq = applyCoPolyShim (applyCoPolyShim cid ab) pq
+    eitherShim ab pq = applyCoPolyShim (applyCoPolyShim cid ab) pq
     shimExtractFunction :: JMShim Type a (b -> c) -> (forall c'. JMShim Type a (b -> c') -> JMShim Type c' c -> r) -> r
     shimExtractFunction (ConsJMShim CovarianceType fg cc) call = let
-        abc' = applyPolyShim CovarianceType fg id
+        abc' = applyCoPolyShim fg id
         in call abc' cc
     shimExtractFunction abc call = call abc cid

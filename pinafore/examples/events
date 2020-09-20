@@ -4,7 +4,7 @@ let
 
 # Create a window with some standard menus
 # arguments are title reference, more menus, content UI
-stdWindow: Ref +Text -> [MenuItem] -> UI -> Action Window;
+stdWindow: WholeRef +Text -> [MenuItem] -> UI -> Action Window;
 stdWindow title moremenus content = fixAction $ \window -> let
     menus: [MenuItem];
     menus =
@@ -23,24 +23,17 @@ stdWindow title moremenus content = fixAction $ \window -> let
         ] ++ moremenus;
     in openWindow title {menus} $ uiScrolled content;
 
+# A window that shows a set of items, with appropriate menu items.
 selectionWindow:
-    (Text, Text) ->
-    SetRef (item | NewEntity) ->
-    ((item | NewEntity) -> Action Any) ->
-    ((item | NewEntity) -> Action Any) ->
-    (Ref {item,+NewEntity} -> UI) ->
+    Text -> # window title
+    SetRef item -> # the set of items
+    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
+    (item -> Action Any) -> # what to do when an item is activated
+    (WholeRef item -> UI) -> # UI to show the set of items
     Action Window;
-selectionWindow (inames,inamep) iset iopen inew iui = do
-    selection <- newMemRef;
+selectionWindow wtitle iset createMenuItems iopen iui = do
+    selection <- newMemWhole;
     let
-        newItem: Action ();
-        newItem = do
-            item <- newEntity iset;
-            inew item;
-            iopen item;
-            selection := item;
-            end;
-
         viewItem: Action ();
         viewItem = do
             item <- get selection;
@@ -57,18 +50,19 @@ selectionWindow (inames,inamep) iset iopen inew iui = do
         moremenus: [MenuItem];
         moremenus =
             [
-                menuSubmenu "Selection"
+                menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
                 [
-                    menuAction ("New " <> inames) (Just "Ctrl+K") {newItem},
                     menuAction "View" Nothing {viewItem},
                     menuAction "Delete" Nothing {deleteItem}
                 ]
             ];
-        in stdWindow {inamep} moremenus (iui selection);
+        in stdWindow {wtitle} moremenus (iui selection);
     end;
 
 
 ### EventTime
+
+# An event can either be at a particular time, or a whole-day event.
 
 closedtype EventTime
     = EventTimeDate Date !"Date" # all-day event
@@ -92,10 +86,10 @@ setEventTimeDate d et = Just $ case et of
     _ -> EventTimeDate d;
     end;
 
-eventRefTimeDate: Ref EventTime -> Ref Date;
-eventRefTimeDate r = lensMapRef eventTimeDate setEventTimeDate r;
+eventRefTimeDate: WholeRef EventTime -> WholeRef Date;
+eventRefTimeDate r = lensMapWhole eventTimeDate setEventTimeDate r;
 
-eventRefTimeTimeOfDay: Ref EventTime -> Ref TimeOfDay;
+eventRefTimeTimeOfDay: WholeRef EventTime -> WholeRef TimeOfDay;
 eventRefTimeTimeOfDay r = let
     eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay;
     eventTimeTimeOfDay met = case met of
@@ -103,15 +97,15 @@ eventRefTimeTimeOfDay r = let
         _ -> Nothing;
         end;
 
-    setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime);
-    setEventTimeTimeOfDay mtod met = Just $ case met of
-        Nothing -> Nothing;
-        Just et -> Just $ case mtod of
-            Nothing -> EventTimeDate $ eventTimeDate et;
-            Just tod -> EventTimeTime $ LocalTime (eventTimeDate et) tod;
-            end;
+setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime);
+setEventTimeTimeOfDay mtod met = Just $ case met of
+    Nothing -> Nothing;
+    Just et -> Just $ case mtod of
+        Nothing -> EventTimeDate $ eventTimeDate et;
+        Just tod -> EventTimeTime $ LocalTime (eventTimeDate et) tod;
         end;
-    in maybeLensMapRef eventTimeTimeOfDay setEventTimeTimeOfDay r;
+    end;
+in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
 
 # for ordering
 eventTimeTime: EventTime -> LocalTime;
@@ -120,8 +114,8 @@ eventTimeTime et = case et of
     EventTimeTime t -> t
     end;
 
-eventTimeOrder: Order EventTime;
-eventTimeOrder = mapOrder eventTimeTime localChronological;
+eventTimeOrder: RefOrder EventTime;
+eventTimeOrder = mapRefOrder eventTimeTime localChronological;
 
 
 ### Event
@@ -134,37 +128,54 @@ eventName = property @Event @Text !"identify.name";
 eventTime = property @Event @EventTime !"event.time";
 eventNotes = property @Event @Text !"item.description";
 
-eventOrder: Order Event;
-eventOrder = orderOn eventTime eventTimeOrder;
+eventOrder: RefOrder Event;
+eventOrder = refOrderOn eventTime eventTimeOrder;
 
 eventData: FiniteSetRef (EventTime,Text);
 eventData = (eventTime !** eventName) !$$ events;
 
-eventDataOrder: Order (EventTime,Text);
-eventDataOrder = mapOrder fst eventTimeOrder;
+eventDataOrder: RefOrder (EventTime,Text);
+eventDataOrder = mapRefOrder fst eventTimeOrder;
 
-eventList: Ref +[(EventTime,Text)];
-eventList = members eventDataOrder eventData;
+eventList: WholeRef +Date -> WholeRef +[(EventTime,Text)];
+eventList todayref = {
+    let
+        today: Date;
+        today = %todayref;
+
+        pickCurrent: (EventTime,Text) -> Boolean;
+        pickCurrent (t,_) = ge $ calendrical (eventTimeDate t) today;
+    in (EventTimeDate today,"Today") :: filter pickCurrent %(members eventDataOrder eventData)
+    };
 
 
 ### UI
 
-overviewRef: Ref +Text;
-overviewRef = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %eventList};
+# Text for the overview tab.
+overviewRef: WholeRef +Date -> WholeRef +Text;
+overviewRef todayref = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %(eventList todayref)};
+
+# Overview tab UI
+overviewLabel: UI;
+overviewLabel = uiRun $ do
+    now <- newClock $ secondsToDuration 60; # update every minute
+    tz <- newTimeZoneRef now;
+    return $ uiLabel $ overviewRef {case timeToLocal %tz %now of LocalTime d _ -> d end};
+    end;
 
 overviewPage: (UI,UI);
-overviewPage = (uiLabel {"Overview"},uiLabel overviewRef);
+overviewPage = (uiLabel {"Overview"},overviewLabel);
 
-tablePage: Ref Event -> (UI,UI);
+tablePage: WholeRef Event -> (UI,UI);
 tablePage selection = let
-    columns: [(Ref +Text, Event -> Ref Text)];
+    columns: [(WholeRef +Text, Event -> WholeRef Text)];
     columns = let
-        timeColumn: (Ref +Text, Event -> Ref Text);
+        timeColumn: (WholeRef +Text, Event -> WholeRef Text);
         timeColumn = ({"Time"},\e -> {showEventTime $ %(eventTime !$ {e})});
-        nameColumn: (Ref +Text, Event -> Ref Text);
+        nameColumn: (WholeRef +Text, Event -> WholeRef Text);
         nameColumn = ({"Name"},\e -> eventName !$ {e});
         in [timeColumn,nameColumn];
-    in (uiLabel {"Events"}, uiTable columns eventOrder events eventWindow (Just selection));
+    in (uiLabel {"Events"}, uiListTable columns eventOrder events eventWindow (Just selection));
 
 calendarWindow: Event -> Action Window;
 calendarWindow evt = fixAction $ \window ->
@@ -182,19 +193,26 @@ eventWindow evt = stdWindow (eventName !$ {evt}) [] $ uiVertical
     [
         (False, uiButton {"cal"} {calendarWindow evt}),
         (False, uiTextEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$ {evt}),
-        (False, uiTextEntry $ interpretTimeOfDayAsText $ eventRefTimeTimeOfDay $ eventTime !$ {evt})
+        (False, uiTextEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$ {evt})
     ]),
     (True, uiTextArea $ eventNotes !$ {evt})
 ];
 
+# Menu item for creating a new event, and telling the owning UI to set its selection to it.
+newEventMenuItem: (Event -> Action ()) -> MenuItem;
+newEventMenuItem setsel = menuAction ("New Event") (Just "Ctrl+K")
+    {do
+    item <- newOpenEntity @Event;
+    day <- getDate;
+    eventTime !$ {item} := EventTimeDate day;
+    eventName !$ {item} := "";
+    events += item;
+    setsel item;
+    end};
+
 eventsWindow: Action Window;
 eventsWindow = let
-    inew i = do
-        day <- getDate;
-        eventTime !$ {i} := EventTimeDate day;
-        eventName !$ {i} := "";
-        end;
-    iui selection = uiPages [overviewPage, tablePage selection];
-    in selectionWindow ("Event","Events") events eventWindow inew iui;
+    ui selection = uiPages [overviewPage, tablePage selection];
+    in selectionWindow "Events" events [newEventMenuItem] eventWindow ui;
 
 in eventsWindow

@@ -9,7 +9,7 @@ import Shapes
 escapeMarkdown :: String -> String
 escapeMarkdown s = let
     badchars :: String
-    badchars = "+-*>\\"
+    badchars = "+*>\\"
     escapeChar :: Char -> String
     escapeChar c =
         if elem c badchars
@@ -20,7 +20,7 @@ escapeMarkdown s = let
 showDefEntry :: Int -> DefDoc -> IO ()
 showDefEntry _ MkDefDoc {..} = do
     let
-        nameType = "**`" ++ unpack docName ++ "`** : `" ++ unpack docValueType ++ "`"
+        nameType = "**`" ++ unpack docName ++ "`** `: " ++ unpack docValueType ++ "`"
         title =
             (if docIsSupertype
                  then "_" <> nameType <> "_"

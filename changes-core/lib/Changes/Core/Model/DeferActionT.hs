@@ -1,4 +1,4 @@
-module Changes.Core.Reference.DeferActionT
+module Changes.Core.Model.DeferActionT
     ( DeferActionT
     , deferAction
     , runDeferActionT

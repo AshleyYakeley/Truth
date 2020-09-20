@@ -1,4 +1,4 @@
-module Changes.Core.Reference.Premodel
+module Changes.Core.Model.Premodel
     ( PremodelResult(..)
     , Premodel
     , reflectingPremodel
@@ -9,10 +9,10 @@ module Changes.Core.Reference.Premodel
 import Changes.Core.Edit
 import Changes.Core.Import
 import Changes.Core.Lens
+import Changes.Core.Model.DeferActionT
+import Changes.Core.Model.EditContext
+import Changes.Core.Model.Reference
 import Changes.Core.Read
-import Changes.Core.Reference.DeferActionT
-import Changes.Core.Reference.EditContext
-import Changes.Core.Reference.Reference
 import Changes.Core.Resource
 import Changes.Core.Types
 import Changes.Debug.Reference

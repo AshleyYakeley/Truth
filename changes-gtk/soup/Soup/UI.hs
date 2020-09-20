@@ -135,7 +135,6 @@ soupWindow tc newWindow dirpath = do
                     rspec (SuccessResult s2) = noteEditSpec s2 mempty
                     rspec (FailureResult err) = createLabel $ constantModel err
                 tcUnliftCreateView tc $ do
-                    content <- createOneWhole rowmodel rspec
                     rec
                         ~(subwin, subcloser) <-
                             cvEarlyCloser $ do
@@ -144,7 +143,7 @@ soupWindow tc newWindow dirpath = do
                                         (liftIO subcloser)
                                         (constantModel "item")
                                         (mbar subcloser subwin)
-                                        content
+                                        (createOneWhole rowmodel rspec)
                     return ()
             wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
             wsMenuBar = mbar closer window
@@ -152,6 +151,6 @@ soupWindow tc newWindow dirpath = do
             wsCloseBoxAction = liftIO closer
         button <- createButton (constantModel "View") $ constantModel $ Just $ withSelection openItem
         stuff <- soupEditSpec smodel selnotify openItem
-        wsContent <- createLayout OrientationVertical [(False, button), (True, stuff)]
+        let wsContent = createLayout OrientationVertical [(False, button), (True, stuff)]
         (window, closer) <- cvEarlyCloser $ newWindow MkWindowSpec {..}
     return ()

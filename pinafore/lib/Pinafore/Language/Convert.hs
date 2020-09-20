@@ -25,6 +25,8 @@ $(literalInstances [t|Integer|])
 
 $(literalInstances [t|Bool|])
 
+$(literalInstances [t|Ordering|])
+
 $(literalInstances [t|UTCTime|])
 
 $(literalInstances [t|NominalDiffTime|])

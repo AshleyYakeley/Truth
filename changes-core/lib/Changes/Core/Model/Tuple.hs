@@ -1,4 +1,4 @@
-module Changes.Core.Reference.Tuple
+module Changes.Core.Model.Tuple
     ( tupleReference
     , pairReferences
     , tuplePremodel
@@ -11,11 +11,11 @@ module Changes.Core.Reference.Tuple
 import Changes.Core.Edit
 import Changes.Core.Import
 import Changes.Core.Lens
+import Changes.Core.Model.EditContext
+import Changes.Core.Model.Model
+import Changes.Core.Model.Premodel
+import Changes.Core.Model.Reference
 import Changes.Core.Read
-import Changes.Core.Reference.EditContext
-import Changes.Core.Reference.Model
-import Changes.Core.Reference.Premodel
-import Changes.Core.Reference.Reference
 import Changes.Core.Resource
 import Changes.Core.Types
 

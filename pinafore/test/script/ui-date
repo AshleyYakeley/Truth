@@ -1,7 +1,7 @@
 do
-dref <- newMemRef;
-tref <- newMemRef;
-iref <- newMemRef;
+dref <- newMemWhole;
+tref <- newMemWhole;
+iref <- newMemWhole;
 openWindow {"Date"} {[]} $ uiVertical
     [
         (uiTextEntry tref, False),

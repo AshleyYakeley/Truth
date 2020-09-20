@@ -42,11 +42,12 @@ benchScripts :: Benchmark
 benchScripts =
     bgroup
         "script"
-        [ benchScript "runRef {return ()}"
-        , benchScript "runRef $ pureRef $ return ()"
+        [ benchScript "do a <- return $ return (); a end"
+        , benchScript "do a <- get {return ()}; a end"
+        , benchScript "do a <- get $ pureWhole $ return (); a end"
         , benchScript "get {return ()} >>= \\v -> v"
         , benchScript "get {False} >>= \\v -> return ()"
-        , benchScript "get (pureRef False) >>= \\v -> return ()"
+        , benchScript "get (pureWhole False) >>= \\v -> return ()"
         , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ \\v -> return ()"
         , benchScript "let a=b; b=c; c=d; d=e; e=f; f=g; g=return () in a"
         , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ return ()"
@@ -64,23 +65,23 @@ benchScripts =
         , benchScript $
           pack $
           "let g r = get r >>= \\x -> return (); q = [" <>
-          intercalate "," (replicate 50 "g (pureRef 1)") <> "] in for_ q id"
+          intercalate "," (replicate 50 "g (pureWhole 1)") <> "] in for_ q id"
         , benchScript $
           pack $
           "let g1 r = get r >>= \\x -> return (); g2 r = get r >>= \\x -> return (); q = [" <>
-          intercalate "," (replicate 25 "g1 (pureRef 1)" <> replicate 25 "g2 (pureRef 1)") <> "] in for_ q id"
+          intercalate "," (replicate 25 "g1 (pureWhole 1)" <> replicate 25 "g2 (pureWhole 1)") <> "] in for_ q id"
         , benchScript $
           pack $
           "let g r = get r >>= \\x -> return () in let q = [" <>
-          intercalate "," (replicate 50 "g (pureRef 1)") <> "] in for_ q id"
+          intercalate "," (replicate 50 "g (pureWhole 1)") <> "] in for_ q id"
         , benchScript $
           pack $
           "let g r = get r >>= \\x -> return () in let q = [" <>
-          intercalate "," (fmap (\(i :: Int) -> "g (pureRef " <> show i <> ")") [1 .. 50]) <> "] in for_ q id"
+          intercalate "," (fmap (\(i :: Int) -> "g (pureWhole " <> show i <> ")") [1 .. 50]) <> "] in for_ q id"
         , benchScript $
           pack $
           "let g r = get r >>= \\x -> return (); q = [" <>
-          intercalate "," (replicate 50 "get (pureRef 1) >>= \\x -> return ()") <> "] in for_ q id"
+          intercalate "," (replicate 50 "get (pureWhole 1) >>= \\x -> return ()") <> "] in for_ q id"
         , benchScript $
           pack $
           "let g r = list (return ()) (\\x y -> return ()) r; q = [" <>
@@ -93,7 +94,7 @@ interpretUpdater text =
         action <- throwResult $ pinaforeInterpretFileAtType "<test>" text
         (sendUpdate, ref) <- tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
         unlift $
-            runEditor emptyResourceContext (unPinaforeRef $ immutableRefToRejectingRef ref) $
+            runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $
             tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
@@ -109,11 +110,11 @@ benchUpdates :: Benchmark
 benchUpdates =
     bgroup
         "update"
-        [ benchUpdate "do ref <- newMemRef; return (ref := 1, ref) end"
+        [ benchUpdate "do ref <- newMemWhole; return (ref := 1, ref) end"
         , benchUpdate
-              "let id x = x in do ref <- newMemRef; return (ref := 1, id (id (id (id (id (id (id (id (id (id (ref))))))))))) end"
+              "let id x = x in do ref <- newMemWhole; return (ref := 1, id (id (id (id (id (id (id (id (id (id (ref))))))))))) end"
         , benchUpdate
-              "let id x = x in do ref <- newMemRef; return (ref := 1, id $ id $ id $ id $ id $ id $ id $ id $ id $ id $ ref) end"
+              "let id x = x in do ref <- newMemWhole; return (ref := 1, id $ id $ id $ id $ id $ id $ id $ id $ id $ id $ ref) end"
         ]
 
 main :: IO ()

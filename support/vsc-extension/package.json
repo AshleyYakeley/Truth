@@ -1,8 +1,10 @@
 {
     "name": "pinafore",
-    "displayName": "pinafore",
-    "description": "Pinafore Language",
-    "version": "0.0.1",
+    "version": "0.1.0",
+    "license": "SEE LICENSE IN LICENSE",
+    "publisher": "Pinafore",
+    "displayName": "Pinafore",
+    "description": "Pinafore language support",
     "engines": {
         "vscode": "^1.29.0"
     },
@@ -22,5 +24,10 @@
             "scopeName": "source.pinafore",
             "path": "./syntaxes/pinafore.tmLanguage.json"
         }]
-    }
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/AshleyYakeley/Truth.git"
+    },
+    "homepage": "https://pinafore.info/"
 }

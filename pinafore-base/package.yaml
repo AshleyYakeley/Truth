@@ -38,7 +38,7 @@ library:
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
       - Pinafore.Base.Context
-      - Pinafore.Base.ImmutableRef
+      - Pinafore.Base.ImmutableWholeRef
       - Pinafore.Base.File
       - Pinafore.Storage.Table
       - Pinafore.Storage.Database

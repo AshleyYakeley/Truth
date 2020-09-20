@@ -7,6 +7,6 @@ let p = q
 p
 a
 p
-entity @X !"x"
-let y = entity @Y !"y"
+openEntity @X !"x"
+let y = openEntity @Y !"y"
 35

@@ -4,7 +4,7 @@ import Data.Shim
 import Shapes
 
 -- The only purpose of this module is for parsing types simultaneously as positive and negative.
--- For example, "Ref T" ==> "Ref {-T,+T}""
+-- For example, "WholeRef T" ==> "WholeRef {-T,+T}""
 data MPolarityType (mpolarity :: Maybe Polarity) where
     MPositiveType :: MPolarityType ('Just 'Positive)
     MNegativeType :: MPolarityType ('Just 'Negative)

@@ -11,7 +11,7 @@ import Pinafore.Base.EntityAdapter as I
 import Pinafore.Base.EntityStorer as I
 import Pinafore.Base.File as I
 import Pinafore.Base.FunctionMorphism as I
-import Pinafore.Base.ImmutableRef as I
+import Pinafore.Base.ImmutableWholeRef as I
 import Pinafore.Base.Know as I
 import Pinafore.Base.KnowShim as I
 import Pinafore.Base.Lens as I
