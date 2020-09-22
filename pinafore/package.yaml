@@ -1,5 +1,5 @@
 name: pinafore
-version: "0.1"
+version: "0.2"
 _common: !include "../common.yaml"
 <<: *author
 

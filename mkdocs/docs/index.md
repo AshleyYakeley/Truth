@@ -1,4 +1,4 @@
-# Pinafore 0.1
+# Pinafore 0.2
 
 Pinafore is a language that allows you to structure and store information, and create user interfaces for it.
 The language is loosely based on Haskell, featuring:
