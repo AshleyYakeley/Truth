@@ -55,6 +55,7 @@ library:
       - Pinafore.Language.Type.Entity
       - Pinafore.Language.Type.OpenEntity
       - Pinafore.Language.Type.EntityAdapter
+      - Pinafore.Language.Type.DynamicSupertype
       - Pinafore.Language.Syntax
       - Pinafore.Language.Read.Token
       - Pinafore.Language.Read.RefNotation

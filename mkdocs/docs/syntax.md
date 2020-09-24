@@ -184,15 +184,17 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <types> ::=  | <type-3> <types>
 
-<patterns> ::=  | <pattern-2> <patterns>
+<patterns> ::=  | <pattern-4> <patterns>
 
 <pattern-1> ::= <pattern-2> <patterns>
 
-<pattern-2> ::= <pattern-3> | <pattern-3> "::" <pattern-2>
+<pattern-2> ::= <pattern-3> | <pattern-3> ":" <type>
 
-<pattern-3> ::= <pattern-4> | <pattern-4> "@" <pattern-3>
+<pattern-3> ::= <pattern-4> | <pattern-4> "::" <pattern-3>
 
-<pattern-4> ::=
+<pattern-4> ::= <pattern-5> | <pattern-5> "@" <pattern-4>
+
+<pattern-5> ::=
     uname |
     literal-number |
     literal-text |

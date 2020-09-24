@@ -84,6 +84,8 @@ data SyntaxPattern'
                         SyntaxPattern
     | ConstructorSyntaxPattern SyntaxConstructor
                                [SyntaxPattern]
+    | TypedSyntaxPattern SyntaxPattern
+                         SyntaxType
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
 
@@ -208,6 +210,7 @@ instance SyntaxBindingVariables SyntaxPattern' where
     syntaxBindingVariables (BothSyntaxPattern pat1 pat2) =
         union (syntaxBindingVariables pat1) (syntaxBindingVariables pat2)
     syntaxBindingVariables (ConstructorSyntaxPattern _ pats) = syntaxBindingVariables pats
+    syntaxBindingVariables (TypedSyntaxPattern pat _) = syntaxBindingVariables pat
 
 instance SyntaxBindingVariables SyntaxDeclaration where
     syntaxBindingVariables (BindingSyntaxDeclaration bind) = syntaxBindingVariables bind

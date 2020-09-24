@@ -6,6 +6,7 @@ module Pinafore.Language.Read.Pattern
 import Pinafore.Language.Read.Constructor
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Token
+import Pinafore.Language.Read.Type
 import Pinafore.Language.Syntax
 import Shapes hiding (try)
 
@@ -16,7 +17,7 @@ readSourcePosPattern p = do
     return $ MkWithSourcePos spos expr'
 
 readPatterns :: Parser [SyntaxPattern]
-readPatterns = many readPattern2
+readPatterns = many readPattern4
 
 readPattern1 :: Parser SyntaxPattern
 readPattern1 = do
@@ -39,14 +40,15 @@ consPattern spos pat1 pat2 = MkWithSourcePos spos $ ConstructorSyntaxPattern (SL
 readPattern2 :: Parser SyntaxPattern
 readPattern2 = do
     spos <- getPosition
-    pat1 <- readPattern3
-    mpat2 <-
+    pat <- readPattern3
+    mt <-
         optional $ do
-            readExactlyThis TokOperator "::"
-            readPattern2
-    case mpat2 of
-        Nothing -> return pat1
-        Just pat2 -> return $ consPattern spos pat1 pat2
+            readThis TokTypeJudge
+            readType
+    return $
+        case mt of
+            Just t -> MkWithSourcePos spos $ TypedSyntaxPattern pat t
+            Nothing -> pat
 
 readPattern3 :: Parser SyntaxPattern
 readPattern3 = do
@@ -54,8 +56,20 @@ readPattern3 = do
     pat1 <- readPattern4
     mpat2 <-
         optional $ do
-            readThis TokAt
+            readExactlyThis TokOperator "::"
             readPattern3
+    case mpat2 of
+        Nothing -> return pat1
+        Just pat2 -> return $ consPattern spos pat1 pat2
+
+readPattern4 :: Parser SyntaxPattern
+readPattern4 = do
+    spos <- getPosition
+    pat1 <- readPattern5
+    mpat2 <-
+        optional $ do
+            readThis TokAt
+            readPattern4
     case mpat2 of
         Nothing -> return pat1
         Just pat2 -> return $ MkWithSourcePos spos $ BothSyntaxPattern pat1 pat2
@@ -64,8 +78,8 @@ listPattern :: SourcePos -> [SyntaxPattern] -> SyntaxPattern
 listPattern spos [] = nilPattern spos
 listPattern spos (p:pp) = consPattern spos p $ listPattern spos pp
 
-readPattern4 :: Parser SyntaxPattern
-readPattern4 =
+readPattern5 :: Parser SyntaxPattern
+readPattern5 =
     readSourcePosPattern
         (do
              c <- readConstructor

@@ -47,6 +47,20 @@ interpretPattern (MkWithSourcePos spos (ConstructorSyntaxPattern scons spats)) =
     pc <- liftRefNotation $ runSourcePos spos $ interpretPatternConstructor scons
     pats <- for spats interpretPattern
     liftRefNotation $ runSourcePos spos $ qConstructPattern pc pats
+interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
+    pat <- interpretPattern spat
+    liftRefNotation $
+        runSourcePos spos $ do
+            mtp <- interpretType @'Positive stype
+            case mtp of
+                MkAnyW tp -> do
+                    MkGreatestDynamicSupertype dtp _ convm <- getGreatestDynamicSupertype tp
+                    let
+                        pc :: QPatternConstructor
+                        pc =
+                            toPatternConstructor dtp (ConsListType (mkShimWit tp) NilListType) $ \dt ->
+                                fmap (\a -> (a, ())) (shimToFunction convm dt)
+                    qConstructPattern pc [pat]
 
 interpretPatternOrName :: SyntaxPattern -> Either Name (RefNotation QPattern)
 interpretPatternOrName (MkWithSourcePos _ (VarSyntaxPattern n)) = Left n

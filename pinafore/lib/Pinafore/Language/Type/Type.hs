@@ -48,5 +48,3 @@ type PinaforeTypeBox = TypeBox PinaforeTypeSystem
 type PinaforeScoped = Scoped PinaforeTypeSystem
 
 type PinaforeSourceScoped = SourceScoped PinaforeTypeSystem
-
-type PinaforeTypeCheck = VarRenamerT PinaforeTypeSystem PinaforeSourceScoped
