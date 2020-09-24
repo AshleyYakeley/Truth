@@ -74,7 +74,7 @@ readExpression = readExpressionInfixed readExpression1
 
 readCase :: Parser SyntaxCase
 readCase = do
-    pat <- readPattern1
+    pat <- readPattern2
     readThis TokMap
     e <- readExpression
     return $ MkSyntaxCase pat e
@@ -90,7 +90,7 @@ data DoLine
 readDoLine :: Parser DoLine
 readDoLine =
     (try $ do
-         pat <- readPattern1
+         pat <- readPattern2
          readThis TokBackMap
          expr <- readExpression
          return $ BindDoLine pat expr) <|>

@@ -527,6 +527,8 @@ testEntity =
               [ pointTest "pass"
               , pointTest "let t1 = T1 \"hello\" 3 in pass"
               , pointTest "let f (T1 x _) = x in pass"
+              , pointTest "case T2 of T2 -> pass end"
+              , pointTest "case T3 True of T3 True -> pass end"
               , pointTest "case T1 \"hello\" 3 of T1 \"hello\" 3 -> pass end"
               , pointTest
                     "case T1 \"hello\" 3 of T2 -> fail \"T2\"; T1 \"hello\" 2 -> fail \"T1 2\"; T1 \"hell\" 3 -> fail \"T1 hell\"; T1 \"hello\" 3 -> pass end"

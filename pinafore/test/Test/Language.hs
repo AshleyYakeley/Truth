@@ -649,6 +649,48 @@ testQueries =
                       Just "3"
                     ]
               ]
+        , let
+              testSupertype :: Text -> Text -> Text -> Text -> Maybe String -> TestTree
+              testSupertype supertype subtype val altval result =
+                  testGroup
+                      (unpack $ supertype <> " -> " <> subtype)
+                      [ testQuery
+                            ("let x: " <>
+                             supertype <>
+                             "; x=" <>
+                             val <>
+                             "; y: " <>
+                             subtype <> "; y = case x of (z: " <> subtype <> ") -> z; _ -> " <> altval <> "; end in y")
+                            result
+                      , testQuery
+                            ("let x: " <>
+                             supertype <>
+                             "; x=" <>
+                             val <>
+                             "; y: " <>
+                             subtype <>
+                             "; y = case check @(" <>
+                             subtype <> ") x of Just z -> z; Nothing -> " <> altval <> "; end in y")
+                            result
+                      , testQuery
+                            ("let x: " <>
+                             supertype <>
+                             "; x=" <> val <> "; y: " <> subtype <> "; y = coerce @(" <> subtype <> ") x in y")
+                            result
+                      ]
+              in testGroup
+                     "supertype"
+                     [ testSupertype "Integer" "Integer" "3" "0" $ Just "3"
+                     , testSupertype "Rational" "Integer" "3" "0" $ Just "3"
+                     , testSupertype "Rational" "Integer" "3.5" "0" $ Just "0"
+                     , testSupertype "Integer" "Rational" "3" "0" $ Just "3"
+                     , testSupertype "Number" "Integer" "3" "0" $ Just "3"
+                     , testSupertype "Number" "Integer" "3.5" "0" $ Just "0"
+                     , testSupertype "Integer" "Number" "3" "0" $ Just "3"
+                     , testSupertype "Number" "Rational" "3" "0" $ Just "3"
+                     , testSupertype "Number" "Rational" "3.5" "0" $ Just "3.5"
+                     , testSupertype "Rational" "Number" "3.5" "0" $ Just "3.5"
+                     ]
         ]
 
 testShim :: Text -> String -> String -> TestTree

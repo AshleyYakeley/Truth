@@ -141,11 +141,11 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <cases> ::=  | <case> ";" <cases>
 
-<case> ::= <pattern-1> "->" <expression>
+<case> ::= <pattern-2> "->" <expression>
 
 <do-lines> =  | <do-line> ";" <do-lines>
 
-<do-line> = <expression> | <pattern> "<-" <expression>
+<do-line> = <expression> | <pattern-2> "<-" <expression>
 
 <let-declarations> ::= "let" <declarations>
 
@@ -186,11 +186,11 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <patterns> ::=  | <pattern-4> <patterns>
 
-<pattern-1> ::= <pattern-2> <patterns>
+<pattern-1> ::= <pattern-2> | <pattern-2> ":" <type>
 
-<pattern-2> ::= <pattern-3> | <pattern-3> ":" <type>
+<pattern-2> ::= <pattern-3> | <pattern-3> "::" <pattern-2>
 
-<pattern-3> ::= <pattern-4> | <pattern-4> "::" <pattern-3>
+<pattern-3> ::= uname <patterns> | <pattern-4>
 
 <pattern-4> ::= <pattern-5> | <pattern-5> "@" <pattern-4>
 
@@ -200,7 +200,7 @@ In interactive mode, each line has syntax `<interactive>`.
     literal-text |
     lname |
     "_" |
-    "[" <comma-separated(<pattern>)> "]" |
+    "[" <comma-separated(<pattern-1>)> "]" |
     "(" ")" |
     "(" <pattern-1> "," <pattern-1> ")" |
     "(" <pattern-1> ")"

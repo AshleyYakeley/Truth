@@ -1,6 +1,6 @@
 module Pinafore.Language.Read.Pattern
     ( readPatterns
-    , readPattern1
+    , readPattern2
     ) where
 
 import Pinafore.Language.Read.Constructor
@@ -19,28 +19,16 @@ readSourcePosPattern p = do
 readPatterns :: Parser [SyntaxPattern]
 readPatterns = many readPattern4
 
-readPattern1 :: Parser SyntaxPattern
-readPattern1 = do
-    f <- readPattern2
-    args <- readPatterns
-    case args of
-        [] -> return f
-        _ ->
-            case f of
-                MkWithSourcePos spos (ConstructorSyntaxPattern c cargs) ->
-                    return $ MkWithSourcePos spos $ ConstructorSyntaxPattern c $ cargs <> args
-                _ -> fail "cannot apply pattern"
-
 nilPattern :: SourcePos -> SyntaxPattern
 nilPattern spos = MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor "[]") []
 
 consPattern :: SourcePos -> SyntaxPattern -> SyntaxPattern -> SyntaxPattern
 consPattern spos pat1 pat2 = MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor "::") [pat1, pat2]
 
-readPattern2 :: Parser SyntaxPattern
-readPattern2 = do
+readPattern1 :: Parser SyntaxPattern
+readPattern1 = do
     spos <- getPosition
-    pat <- readPattern3
+    pat <- readPattern2
     mt <-
         optional $ do
             readThis TokTypeJudge
@@ -50,17 +38,26 @@ readPattern2 = do
             Just t -> MkWithSourcePos spos $ TypedSyntaxPattern pat t
             Nothing -> pat
 
-readPattern3 :: Parser SyntaxPattern
-readPattern3 = do
+readPattern2 :: Parser SyntaxPattern
+readPattern2 = do
     spos <- getPosition
-    pat1 <- readPattern4
+    pat1 <- readPattern3
     mpat2 <-
         optional $ do
             readExactlyThis TokOperator "::"
-            readPattern3
+            readPattern2
     case mpat2 of
         Nothing -> return pat1
         Just pat2 -> return $ consPattern spos pat1 pat2
+
+readPattern3 :: Parser SyntaxPattern
+readPattern3 =
+    readSourcePosPattern
+        (do
+             c <- readConstructor
+             args <- readPatterns
+             return $ ConstructorSyntaxPattern c args) <|>
+    readPattern4
 
 readPattern4 :: Parser SyntaxPattern
 readPattern4 = do
