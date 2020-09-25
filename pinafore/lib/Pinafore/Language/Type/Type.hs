@@ -6,6 +6,7 @@ import Language.Expression.Dolan
 import Pinafore.Language.Name
 import Pinafore.Language.Scope
 import Pinafore.Language.Shim
+import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Ground
 import Shapes
@@ -48,3 +49,7 @@ type PinaforeTypeBox = TypeBox PinaforeTypeSystem
 type PinaforeScoped = Scoped PinaforeTypeSystem
 
 type PinaforeSourceScoped = SourceScoped PinaforeTypeSystem
+
+type PinaforeAnnotation = Annotation PinaforeTypeSystem
+
+type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeSourceScoped

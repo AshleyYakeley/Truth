@@ -48,6 +48,7 @@ import System.IO.Error
 runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeScoped a -> InterpretResult a
 runPinaforeScoped scp =
     runScoped spvals $
+    withNewSpecialForms predefinedSpecialForms $
     withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
 
 spvals :: (?pinafore :: PinaforeContext) => PinaforeSpecialVals

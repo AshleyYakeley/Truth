@@ -20,6 +20,8 @@ module Pinafore.Language.Scope
     , getSpecialVals
     , lookupBinding
     , withNewBindings
+    , lookupSpecialForm
+    , withNewSpecialForms
     , lookupNamedType
     , newTypeID
     , TypeBox(..)
@@ -39,6 +41,7 @@ import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
+import Pinafore.Language.SpecialForm
 import Pinafore.Language.Subtype
 import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.OpenEntity
@@ -82,6 +85,7 @@ data Scope (ts :: Type) = MkScope
     , scopeTypes :: Map Name (NamedType ts)
     , scopeOpenEntitySubtypes :: [SubtypeEntry OpenEntityShim TypeIDType]
     , scopeSpecialVals :: SpecialVals ts
+    , scopeSpecialForms :: Map Name (SpecialForm ts (SourceScoped ts))
     }
 
 newtype Scoped (ts :: Type) a =
@@ -102,7 +106,8 @@ instance Monoid a => Monoid (Scoped ts a) where
     mempty = pure mempty
 
 runScoped :: SpecialVals ts -> Scoped ts a -> InterpretResult a
-runScoped spvals (MkScoped qa) = evalStateT (runReaderT qa $ MkScope mempty mempty mempty mempty spvals) zeroTypeID
+runScoped spvals (MkScoped qa) =
+    evalStateT (runReaderT qa $ MkScope mempty mempty mempty mempty spvals mempty) zeroTypeID
 
 liftScoped :: InterpretResult a -> Scoped ts a
 liftScoped ra = MkScoped $ lift $ lift ra
@@ -168,6 +173,14 @@ lookupBinding name = do
 
 withNewBindings :: Map Name (ScopeExpression ts) -> Scoped ts a -> Scoped ts a
 withNewBindings bb = pLocalScope $ \tc -> tc {scopeBindings = bb <> (scopeBindings tc)}
+
+lookupSpecialForm :: Name -> SourceScoped ts (Maybe (SpecialForm ts (SourceScoped ts)))
+lookupSpecialForm name = do
+    (scopeSpecialForms -> names) <- spScope
+    return $ lookup name names
+
+withNewSpecialForms :: Map Name (SpecialForm ts (SourceScoped ts)) -> Scoped ts a -> Scoped ts a
+withNewSpecialForms bb = pLocalScope $ \tc -> tc {scopeSpecialForms = bb <> (scopeSpecialForms tc)}
 
 lookupNamedTypeM :: Name -> SourceScoped ts (Maybe (NamedType ts))
 lookupNamedTypeM name = do

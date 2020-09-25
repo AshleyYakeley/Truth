@@ -46,6 +46,7 @@ library:
       - Pinafore.Language.Type.Identified
       - Pinafore.Language.Error
       - Pinafore.Language.Subtype
+      - Pinafore.Language.SpecialForm
       - Pinafore.Language.Scope
       - Pinafore.Language.Var
       - Pinafore.Language.Convert.Base
