@@ -125,24 +125,40 @@ testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
 testQueryValues :: TestTree
 testQueryValues = testGroup "query values" []
 
-testQuery :: Text -> Maybe String -> TestTree
+data LangResult
+    = LRCheckFail
+    | LRRunError
+    | LRSuccess String
+
+testQuery :: Text -> LangResult -> TestTree
 testQuery query expected =
     testCase (show $ unpack query) $
-    case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue query) of
-        (Nothing, FailureResult _) -> return ()
-        (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ showPinaforeRef v
-        (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ show e
-        (Just s, SuccessResult v) -> assertEqual "result" s (showPinaforeRef v)
+    case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue query of
+        FailureResult e ->
+            case expected of
+                LRCheckFail -> return ()
+                _ -> assertFailure $ "check: expected success, found failure: " ++ show e
+        SuccessResult v -> do
+            let r = showPinaforeRef v
+            me <- catchPureError r
+            case (expected, me) of
+                (LRCheckFail, _) -> assertFailure $ "check: expected failure, found success"
+                (LRRunError, Nothing) -> assertFailure $ "run: expected error, found success: " ++ r
+                (LRRunError, Just _) -> return ()
+                (LRSuccess _, Just e) -> assertFailure $ "run: expected success, found error: " ++ show e
+                (LRSuccess s, Nothing) -> assertEqual "result" s r
 
 testSubsumeSubtype :: Text -> Text -> [Text] -> [TestTree]
 testSubsumeSubtype t1 t2 vs =
-    [testQuery ("let r = r; x : " <> t1 <> "; x = r; y : " <> t2 <> "; y = x in ()") $ Just "unit"] <>
-    fmap (\v -> testQuery ("let x : " <> t1 <> "; x = " <> v <> "; y : " <> t2 <> "; y = x in y") $ Just $ unpack v) vs
+    [testQuery ("let r = r; x : " <> t1 <> "; x = r; y : " <> t2 <> "; y = x in ()") $ LRSuccess "unit"] <>
+    fmap
+        (\v -> testQuery ("let x : " <> t1 <> "; x = " <> v <> "; y : " <> t2 <> "; y = x in y") $ LRSuccess $ unpack v)
+        vs
 
 testFunctionSubtype :: Text -> Text -> [Text] -> [TestTree]
 testFunctionSubtype t1 t2 vs =
-    [testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ Just "<?>"] <>
-    fmap (\v -> testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f " <> v) $ Just $ unpack v) vs
+    [testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ LRSuccess "<?>"] <>
+    fmap (\v -> testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f " <> v) $ LRSuccess $ unpack v) vs
 
 testSubtype1 :: Bool -> Text -> Text -> [Text] -> [TestTree]
 testSubtype1 b t1 t2 vs =
@@ -162,339 +178,340 @@ testQueries :: TestTree
 testQueries =
     testGroup
         "queries"
-        [ testGroup "trivial" [testQuery "" $ Nothing, testQuery "x" $ Nothing]
+        [ testGroup "trivial" [testQuery "" $ LRCheckFail, testQuery "x" $ LRCheckFail]
         , testGroup
               "comments"
-              [ testQuery "# comment\n1" $ Just "1"
-              , testQuery "1# comment\n" $ Just "1"
-              , testQuery "1 # comment\n" $ Just "1"
-              , testQuery "{# comment #} 1" $ Just "1"
-              , testQuery "{# comment #}\n1" $ Just "1"
-              , testQuery "{# comment\ncomment #}\n1" $ Just "1"
-              , testQuery "{# comment\ncomment\n#}\n1" $ Just "1"
-              , testQuery "{# A {# B #} C #} 1" $ Just "1"
-              , testQuery "{#\nA\n{#\nB\n#}\nC\n#}\n1" $ Just "1"
+              [ testQuery "# comment\n1" $ LRSuccess "1"
+              , testQuery "1# comment\n" $ LRSuccess "1"
+              , testQuery "1 # comment\n" $ LRSuccess "1"
+              , testQuery "{# comment #} 1" $ LRSuccess "1"
+              , testQuery "{# comment #}\n1" $ LRSuccess "1"
+              , testQuery "{# comment\ncomment #}\n1" $ LRSuccess "1"
+              , testQuery "{# comment\ncomment\n#}\n1" $ LRSuccess "1"
+              , testQuery "{# A {# B #} C #} 1" $ LRSuccess "1"
+              , testQuery "{#\nA\n{#\nB\n#}\nC\n#}\n1" $ LRSuccess "1"
               ]
         , testGroup
               "constants"
               [ testGroup
                     "numeric"
-                    [ testQuery "0.5" $ Just "1/2"
-                    , testQuery "0._3" $ Just "1/3"
-                    , testQuery "-0._3" $ Just "-1/3"
-                    , testQuery "-0.0_3" $ Just "-1/30"
-                    , testQuery "0.3_571428" $ Just "5/14"
-                    , testQuery "0." $ Just "0"
-                    , testQuery "0.0" $ Just "0"
-                    , testQuery "0._" $ Just "0"
-                    , testQuery "0._0" $ Just "0"
-                    , testQuery "0.0_" $ Just "0"
-                    , testQuery "0.0_0" $ Just "0"
-                    , testQuery "3" $ Just "3"
-                    , testQuery "3.2_4" $ Just "146/45"
-                    , testQuery "~1" $ Just "~1.0"
-                    , testQuery "~-2.4" $ Just "~-2.4"
-                    , testQuery "NaN" $ Just "NaN"
-                    , testQuery "~Infinity" $ Just "~Infinity"
-                    , testQuery "~-Infinity" $ Just "~-Infinity"
+                    [ testQuery "0.5" $ LRSuccess "1/2"
+                    , testQuery "0._3" $ LRSuccess "1/3"
+                    , testQuery "-0._3" $ LRSuccess "-1/3"
+                    , testQuery "-0.0_3" $ LRSuccess "-1/30"
+                    , testQuery "0.3_571428" $ LRSuccess "5/14"
+                    , testQuery "0." $ LRSuccess "0"
+                    , testQuery "0.0" $ LRSuccess "0"
+                    , testQuery "0._" $ LRSuccess "0"
+                    , testQuery "0._0" $ LRSuccess "0"
+                    , testQuery "0.0_" $ LRSuccess "0"
+                    , testQuery "0.0_0" $ LRSuccess "0"
+                    , testQuery "3" $ LRSuccess "3"
+                    , testQuery "3.2_4" $ LRSuccess "146/45"
+                    , testQuery "~1" $ LRSuccess "~1.0"
+                    , testQuery "~-2.4" $ LRSuccess "~-2.4"
+                    , testQuery "NaN" $ LRSuccess "NaN"
+                    , testQuery "~Infinity" $ LRSuccess "~Infinity"
+                    , testQuery "~-Infinity" $ LRSuccess "~-Infinity"
                     ]
-              , testQuery "\"\"" $ Just ""
-              , testQuery "\"Hello \"" $ Just "Hello "
-              , testQuery "True" $ Just "True"
-              , testQuery "False" $ Just "False"
-              , testQuery "\"1\"" $ Just "1"
-              , testQuery "uiListTable" $ Just "<?>"
-              , testQuery "openEntity @Entity !\"example\"" $ Just "<?>"
+              , testQuery "\"\"" $ LRSuccess ""
+              , testQuery "\"Hello \"" $ LRSuccess "Hello "
+              , testQuery "True" $ LRSuccess "True"
+              , testQuery "False" $ LRSuccess "False"
+              , testQuery "\"1\"" $ LRSuccess "1"
+              , testQuery "uiListTable" $ LRSuccess "<?>"
+              , testQuery "openEntity @Entity !\"example\"" $ LRSuccess "<?>"
               , testQuery "entityAnchor $ openEntity @Entity !\"example\"" $
-                Just "!1AF8A5FD-24AAAF3E-3668C588-6C74D36A-70ED9618-CC874895-E4569C9F-FCD42CD3"
+                LRSuccess "!1AF8A5FD-24AAAF3E-3668C588-6C74D36A-70ED9618-CC874895-E4569C9F-FCD42CD3"
               ]
         , testGroup
               "list construction"
-              [ testQuery "[]" $ Just $ show @[Text] []
-              , testQuery "[1]" $ Just $ "[1]"
-              , testQuery "[1,2,3]" $ Just "[1, 2, 3]"
+              [ testQuery "[]" $ LRSuccess $ show @[Text] []
+              , testQuery "[1]" $ LRSuccess $ "[1]"
+              , testQuery "[1,2,3]" $ LRSuccess "[1, 2, 3]"
               ]
         , testGroup
               "functions"
-              [ testQuery "\\x -> x" $ Just "<?>"
-              , testQuery "\\x -> 1" $ Just "<?>"
-              , testQuery "\\x y -> y" $ Just "<?>"
-              , testQuery "\\x y z -> [x,y,z]" $ Just "<?>"
+              [ testQuery "\\x -> x" $ LRSuccess "<?>"
+              , testQuery "\\x -> 1" $ LRSuccess "<?>"
+              , testQuery "\\x y -> y" $ LRSuccess "<?>"
+              , testQuery "\\x y z -> [x,y,z]" $ LRSuccess "<?>"
               ]
         , testGroup
               "predefined"
-              [ testQuery "abs" $ Just "<?>"
-              , testQuery "fst" $ Just "<?>"
-              , testQuery "(+)" $ Just "<?>"
-              , testQuery "\\a b -> a + b" $ Just "<?>"
-              , testQuery "(==)" $ Just "<?>"
-              , testQuery "\\a b -> a == b" $ Just "<?>"
+              [ testQuery "abs" $ LRSuccess "<?>"
+              , testQuery "fst" $ LRSuccess "<?>"
+              , testQuery "(+)" $ LRSuccess "<?>"
+              , testQuery "\\a b -> a + b" $ LRSuccess "<?>"
+              , testQuery "(==)" $ LRSuccess "<?>"
+              , testQuery "\\a b -> a == b" $ LRSuccess "<?>"
               ]
         , testGroup
               "let-binding"
-              [ testQuery "let in 27" $ Just "27"
-              , testQuery "let a=\"5\" in a" $ Just "5"
-              , testQuery "let a=5 in a" $ Just "5"
-              , testQuery "let a=1 in let a=2 in a" $ Just "2"
-              , testQuery "let a=1;b=2 in a" $ Just "1"
-              , testQuery "let a=1;b=2 in b" $ Just "2"
-              , testQuery "let a=1;b=2 in b" $ Just "2"
-              , testQuery "let a=1;b=\"2\" in b" $ Just "2"
-              , testQuery "let a=1 ;b=\"2\" in b" $ Just "2"
-              , testQuery "let a= 1 ;b=\"2\" in b" $ Just "2"
-              , testQuery "let a=7;b=a in a" $ Just "7"
-              , testQuery "let a=7;b=a in b" $ Just "7"
-              , testQuery "let a=2 in let b=a in b" $ Just "2"
+              [ testQuery "let in 27" $ LRSuccess "27"
+              , testQuery "let a=\"5\" in a" $ LRSuccess "5"
+              , testQuery "let a=5 in a" $ LRSuccess "5"
+              , testQuery "let a=1 in let a=2 in a" $ LRSuccess "2"
+              , testQuery "let a=1;b=2 in a" $ LRSuccess "1"
+              , testQuery "let a=1;b=2 in b" $ LRSuccess "2"
+              , testQuery "let a=1;b=2 in b" $ LRSuccess "2"
+              , testQuery "let a=1;b=\"2\" in b" $ LRSuccess "2"
+              , testQuery "let a=1 ;b=\"2\" in b" $ LRSuccess "2"
+              , testQuery "let a= 1 ;b=\"2\" in b" $ LRSuccess "2"
+              , testQuery "let a=7;b=a in a" $ LRSuccess "7"
+              , testQuery "let a=7;b=a in b" $ LRSuccess "7"
+              , testQuery "let a=2 in let b=a in b" $ LRSuccess "2"
               ]
         , testGroup
               "partial keywords"
-              [ testQuery "let i=1 in i" $ Just "1"
-              , testQuery "let inx=1 in inx" $ Just "1"
-              , testQuery "let l=1 in l" $ Just "1"
-              , testQuery "let le=1 in le" $ Just "1"
-              , testQuery "let letx=1 in letx" $ Just "1"
-              , testQuery "let letre=1 in letre" $ Just "1"
-              , testQuery "let letrecx=1 in letrecx" $ Just "1"
-              , testQuery "let tru=1 in tru" $ Just "1"
-              , testQuery "let truex=1 in truex" $ Just "1"
-              , testQuery "let f=1 in f" $ Just "1"
-              , testQuery "let fals=1 in fals" $ Just "1"
-              , testQuery "let falsex=1 in falsex" $ Just "1"
+              [ testQuery "let i=1 in i" $ LRSuccess "1"
+              , testQuery "let inx=1 in inx" $ LRSuccess "1"
+              , testQuery "let l=1 in l" $ LRSuccess "1"
+              , testQuery "let le=1 in le" $ LRSuccess "1"
+              , testQuery "let letx=1 in letx" $ LRSuccess "1"
+              , testQuery "let letre=1 in letre" $ LRSuccess "1"
+              , testQuery "let letrecx=1 in letrecx" $ LRSuccess "1"
+              , testQuery "let tru=1 in tru" $ LRSuccess "1"
+              , testQuery "let truex=1 in truex" $ LRSuccess "1"
+              , testQuery "let f=1 in f" $ LRSuccess "1"
+              , testQuery "let fals=1 in fals" $ LRSuccess "1"
+              , testQuery "let falsex=1 in falsex" $ LRSuccess "1"
               ]
         , testGroup
               "recursive let-binding"
-              [ testQuery "let a=1 in a" $ Just "1"
-              , testQuery "let a=1 in let a=2 in a" $ Just "2"
-              , testQuery "let a=1;a=2 in a" $ Nothing
-              , testQuery "let a=1;b=a in b" $ Just "1"
-              , testQuery "let b=a;a=1 in b" $ Just "1"
-              , testQuery "let a x = x in a 1" $ Just "1"
-              , testQuery "let a x = x; b = a in b" $ Just "<?>"
-              , testQuery "let a = \\x -> x in let b = a 1 in b" $ Just "1"
-              , testQuery "let a x = x; b = a 1 in b" $ Just "1"
-              , testQuery "let a x = b; b = b in a" $ Just "<?>"
-              , testQuery "let a x = 1; b = b in a b" $ Just "1"
-              , testQuery "let a x = 1; b = a b in b" $ Just "1"
-              , testQuery "let a x = 1 in let b = a b in b" $ Just "1"
-              , testQuery "let b = (\\x -> 1) b in b" $ Just "1"
-              , testQuery "let b = a b; a x = 1 in b" $ Just "1"
-              , testQuery "let a x = 1; b = a c; c=b in b" $ Just "1"
+              [ testQuery "let a=1 in a" $ LRSuccess "1"
+              , testQuery "let a=1 in let a=2 in a" $ LRSuccess "2"
+              , testQuery "let a=1;a=2 in a" $ LRCheckFail
+              , testQuery "let a=1;b=a in b" $ LRSuccess "1"
+              , testQuery "let b=a;a=1 in b" $ LRSuccess "1"
+              , testQuery "let a x = x in a 1" $ LRSuccess "1"
+              , testQuery "let a x = x; b = a in b" $ LRSuccess "<?>"
+              , testQuery "let a = \\x -> x in let b = a 1 in b" $ LRSuccess "1"
+              , testQuery "let a x = x; b = a 1 in b" $ LRSuccess "1"
+              , testQuery "let a x = b; b = b in a" $ LRSuccess "<?>"
+              , testQuery "let a x = 1; b = b in a b" $ LRSuccess "1"
+              , testQuery "let a x = 1; b = a b in b" $ LRSuccess "1"
+              , testQuery "let a x = 1 in let b = a b in b" $ LRSuccess "1"
+              , testQuery "let b = (\\x -> 1) b in b" $ LRSuccess "1"
+              , testQuery "let b = a b; a x = 1 in b" $ LRSuccess "1"
+              , testQuery "let a x = 1; b = a c; c=b in b" $ LRSuccess "1"
               ]
         , testGroup
               "recursive let-binding polymorphism"
-              [ testQuery "let i = \\x -> x in (1 + i 1, i False)" $ Just "(2, False)"
-              , testQuery "let i = \\x -> x; r = (1 + i 1, i False) in r" $ Just "(2, False)"
-              , testQuery "let r = (1 + i 1, i False); i = \\x -> x in r" $ Just "(2, False)"
+              [ testQuery "let i = \\x -> x in (1 + i 1, i False)" $ LRSuccess "(2, False)"
+              , testQuery "let i = \\x -> x; r = (1 + i 1, i False) in r" $ LRSuccess "(2, False)"
+              , testQuery "let r = (1 + i 1, i False); i = \\x -> x in r" $ LRSuccess "(2, False)"
               ]
         , testGroup
               "duplicate bindings"
-              [ testQuery "let a=1;a=1 in a" $ Nothing
-              , testQuery "let a=1;a=2 in a" $ Nothing
-              , testQuery "let a=1;b=0;a=2 in a" $ Nothing
+              [ testQuery "let a=1;a=1 in a" $ LRCheckFail
+              , testQuery "let a=1;a=2 in a" $ LRCheckFail
+              , testQuery "let a=1;b=0;a=2 in a" $ LRCheckFail
               ]
         , testGroup
               "lexical scoping"
-              [ testQuery "let a=1 in let b=a in let a=3 in a" $ Just "3"
-              , testQuery "let a=1;b=a;a=3 in a" $ Nothing
-              , testQuery "let a=1 in let b=a in let a=3 in b" $ Just "1"
-              , testQuery "let a=1;b=a;a=3 in b" $ Nothing
+              [ testQuery "let a=1 in let b=a in let a=3 in a" $ LRSuccess "3"
+              , testQuery "let a=1;b=a;a=3 in a" $ LRCheckFail
+              , testQuery "let a=1 in let b=a in let a=3 in b" $ LRSuccess "1"
+              , testQuery "let a=1;b=a;a=3 in b" $ LRCheckFail
               ]
         , testGroup
               "operators"
-              [ testQuery "0 == 1" $ Just "False"
-              , testQuery "1 == 1" $ Just "True"
-              , testQuery "0 /= 1" $ Just "True"
-              , testQuery "1 /= 1" $ Just "False"
-              , testQuery "0 <= 1" $ Just "True"
-              , testQuery "1 <= 1" $ Just "True"
-              , testQuery "2 <= 1" $ Just "False"
-              , testQuery "0 < 1" $ Just "True"
-              , testQuery "1 < 1" $ Just "False"
-              , testQuery "2 < 1" $ Just "False"
-              , testQuery "0 >= 1" $ Just "False"
-              , testQuery "1 >= 1" $ Just "True"
-              , testQuery "2 >= 1" $ Just "True"
-              , testQuery "0 >= ~1" $ Just "False"
-              , testQuery "1 >= ~1" $ Just "True"
-              , testQuery "2 >= ~1" $ Just "True"
-              , testQuery "0 > 1" $ Just "False"
-              , testQuery "1 > 1" $ Just "False"
-              , testQuery "2 > 1" $ Just "True"
-              , testQuery "1 == ~1" $ Just "False"
-              , testQuery "0 ~== 1" $ Just "False"
-              , testQuery "1 ~== 1" $ Just "True"
-              , testQuery "1 ~== ~1" $ Just "True"
-              , testQuery "0 ~== ~1" $ Just "False"
-              , testQuery "0 ~/= 1" $ Just "True"
-              , testQuery "1 ~/= 1" $ Just "False"
-              , testQuery "1 ~/= ~1" $ Just "False"
-              , testQuery "0 ~/= ~1" $ Just "True"
-              , testQuery "7+8" $ Just "15"
-              , testQuery "7 +8" $ Just "15"
-              , testQuery "7+ 8" $ Just "15"
-              , testQuery "7 + 8" $ Just "15"
-              , testQuery "\"abc\"<>\"def\"" $ Just "abcdef"
-              , testQuery "\"abc\" <>\"def\"" $ Just "abcdef"
-              , testQuery "\"abc\"<> \"def\"" $ Just "abcdef"
-              , testQuery "\"abc\" <> \"def\"" $ Just "abcdef"
-              , testQuery "let f x = x + 2 in f -1" $ Just "1"
-              , testQuery "let f = 2 in f - 1" $ Just "1"
+              [ testQuery "0 == 1" $ LRSuccess "False"
+              , testQuery "1 == 1" $ LRSuccess "True"
+              , testQuery "0 /= 1" $ LRSuccess "True"
+              , testQuery "1 /= 1" $ LRSuccess "False"
+              , testQuery "0 <= 1" $ LRSuccess "True"
+              , testQuery "1 <= 1" $ LRSuccess "True"
+              , testQuery "2 <= 1" $ LRSuccess "False"
+              , testQuery "0 < 1" $ LRSuccess "True"
+              , testQuery "1 < 1" $ LRSuccess "False"
+              , testQuery "2 < 1" $ LRSuccess "False"
+              , testQuery "0 >= 1" $ LRSuccess "False"
+              , testQuery "1 >= 1" $ LRSuccess "True"
+              , testQuery "2 >= 1" $ LRSuccess "True"
+              , testQuery "0 >= ~1" $ LRSuccess "False"
+              , testQuery "1 >= ~1" $ LRSuccess "True"
+              , testQuery "2 >= ~1" $ LRSuccess "True"
+              , testQuery "0 > 1" $ LRSuccess "False"
+              , testQuery "1 > 1" $ LRSuccess "False"
+              , testQuery "2 > 1" $ LRSuccess "True"
+              , testQuery "1 == ~1" $ LRSuccess "False"
+              , testQuery "0 ~== 1" $ LRSuccess "False"
+              , testQuery "1 ~== 1" $ LRSuccess "True"
+              , testQuery "1 ~== ~1" $ LRSuccess "True"
+              , testQuery "0 ~== ~1" $ LRSuccess "False"
+              , testQuery "0 ~/= 1" $ LRSuccess "True"
+              , testQuery "1 ~/= 1" $ LRSuccess "False"
+              , testQuery "1 ~/= ~1" $ LRSuccess "False"
+              , testQuery "0 ~/= ~1" $ LRSuccess "True"
+              , testQuery "7+8" $ LRSuccess "15"
+              , testQuery "7 +8" $ LRSuccess "15"
+              , testQuery "7+ 8" $ LRSuccess "15"
+              , testQuery "7 + 8" $ LRSuccess "15"
+              , testQuery "\"abc\"<>\"def\"" $ LRSuccess "abcdef"
+              , testQuery "\"abc\" <>\"def\"" $ LRSuccess "abcdef"
+              , testQuery "\"abc\"<> \"def\"" $ LRSuccess "abcdef"
+              , testQuery "\"abc\" <> \"def\"" $ LRSuccess "abcdef"
+              , testQuery "let f x = x + 2 in f -1" $ LRSuccess "1"
+              , testQuery "let f = 2 in f - 1" $ LRSuccess "1"
               ]
         , testGroup
               "boolean"
-              [ testQuery "True && True" $ Just "True"
-              , testQuery "True && False" $ Just "False"
-              , testQuery "False && True" $ Just "False"
-              , testQuery "False && False" $ Just "False"
-              , testQuery "True || True" $ Just "True"
-              , testQuery "True || False" $ Just "True"
-              , testQuery "False || True" $ Just "True"
-              , testQuery "False || False" $ Just "False"
-              , testQuery "not True" $ Just "False"
-              , testQuery "not False" $ Just "True"
+              [ testQuery "True && True" $ LRSuccess "True"
+              , testQuery "True && False" $ LRSuccess "False"
+              , testQuery "False && True" $ LRSuccess "False"
+              , testQuery "False && False" $ LRSuccess "False"
+              , testQuery "True || True" $ LRSuccess "True"
+              , testQuery "True || False" $ LRSuccess "True"
+              , testQuery "False || True" $ LRSuccess "True"
+              , testQuery "False || False" $ LRSuccess "False"
+              , testQuery "not True" $ LRSuccess "False"
+              , testQuery "not False" $ LRSuccess "True"
               ]
         , testGroup
               "text"
-              [ testQuery "\"pqrs\"" $ Just "pqrs"
-              , testQuery "textLength \"abd\"" $ Just "3"
-              , testQuery "textSection 4 3 \"ABCDEFGHIJKLMN\"" $ Just "EFG"
+              [ testQuery "\"pqrs\"" $ LRSuccess "pqrs"
+              , testQuery "textLength \"abd\"" $ LRSuccess "3"
+              , testQuery "textSection 4 3 \"ABCDEFGHIJKLMN\"" $ LRSuccess "EFG"
               ]
         , testGroup
               "operator precedence"
-              [ testQuery "1 + 2 * 3" $ Just "7"
-              , testQuery "3 * 2 + 1" $ Just "7"
-              , testQuery "2 * 2 * 2" $ Just "8"
-              , testQuery "12 / 2 / 2" $ Just "3"
-              , testQuery "12 / 2 / 2" $ Just "3"
-              , testQuery "0 == 0 == 0" $ Nothing
+              [ testQuery "1 + 2 * 3" $ LRSuccess "7"
+              , testQuery "3 * 2 + 1" $ LRSuccess "7"
+              , testQuery "2 * 2 * 2" $ LRSuccess "8"
+              , testQuery "12 / 2 / 2" $ LRSuccess "3"
+              , testQuery "12 / 2 / 2" $ LRSuccess "3"
+              , testQuery "0 == 0 == 0" $ LRCheckFail
               ]
         , testGroup
               "if/then/else"
-              [ testQuery "if True then 3 else 4" $ Just "3"
-              , testQuery "if False then 3 else 4" $ Just "4"
-              , testQuery "if False then if True then 1 else 2 else if True then 3 else 4" $ Just "3"
+              [ testQuery "if True then 3 else 4" $ LRSuccess "3"
+              , testQuery "if False then 3 else 4" $ LRSuccess "4"
+              , testQuery "if False then if True then 1 else 2 else if True then 3 else 4" $ LRSuccess "3"
               ]
-        , testGroup "pairs" [testQuery "fst (7,9)" $ Just "7", testQuery "snd (7,9)" $ Just "9"]
+        , testGroup "pairs" [testQuery "fst (7,9)" $ LRSuccess "7", testQuery "snd (7,9)" $ LRSuccess "9"]
         , testGroup
               "either"
-              [ testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Left \"x\"" $ Just "(Left, x)"
-              , testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Right \"x\"" $ Just "(Right, x)"
+              [ testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Left \"x\"" $ LRSuccess "(Left, x)"
+              , testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Right \"x\"" $
+                LRSuccess "(Right, x)"
               ]
         , testGroup
               "type signature"
-              [ testQuery "let i : a -> a; i x = x in i 3" $ Just "3"
-              , testQuery "let i : Number -> Number; i x = x in i 3" $ Just "3"
-              , testQuery "let i : Text -> Text; i x = x in i 3" $ Nothing
-              , testQuery "let i : a -> a; i x = x in i \"t\"" $ Just "t"
-              , testQuery "let i : Number -> Number; i x = x in i \"t\"" $ Nothing
-              , testQuery "let i : Text -> Text; i x = x in i \"t\"" $ Just "t"
-              , testQuery "let i : a -> a; i x = x in 0" $ Just "0"
-              , testQuery "let i : a -> Number; i x = x in 0" $ Nothing
-              , testQuery "let i : Number -> a; i x = x in 0" $ Nothing
-              , testQuery "let i : Number -> Number; i x = x in 0" $ Just "0"
-              , testQuery "let i : Either Number Boolean; i = Left 5 in i" $ Just "Left 5"
-              , testQuery "let i : Either Number Boolean; i = Right False in i" $ Just "Right False"
-              , testQuery "let i : Maybe Number; i = Just 5 in i" $ Just "Just 5"
-              , testQuery "let i : Maybe Number; i = Nothing in i" $ Just "Nothing"
+              [ testQuery "let i : a -> a; i x = x in i 3" $ LRSuccess "3"
+              , testQuery "let i : Number -> Number; i x = x in i 3" $ LRSuccess "3"
+              , testQuery "let i : Text -> Text; i x = x in i 3" $ LRCheckFail
+              , testQuery "let i : a -> a; i x = x in i \"t\"" $ LRSuccess "t"
+              , testQuery "let i : Number -> Number; i x = x in i \"t\"" $ LRCheckFail
+              , testQuery "let i : Text -> Text; i x = x in i \"t\"" $ LRSuccess "t"
+              , testQuery "let i : a -> a; i x = x in 0" $ LRSuccess "0"
+              , testQuery "let i : a -> Number; i x = x in 0" $ LRCheckFail
+              , testQuery "let i : Number -> a; i x = x in 0" $ LRCheckFail
+              , testQuery "let i : Number -> Number; i x = x in 0" $ LRSuccess "0"
+              , testQuery "let i : Either Number Boolean; i = Left 5 in i" $ LRSuccess "Left 5"
+              , testQuery "let i : Either Number Boolean; i = Right False in i" $ LRSuccess "Right False"
+              , testQuery "let i : Maybe Number; i = Just 5 in i" $ LRSuccess "Just 5"
+              , testQuery "let i : Maybe Number; i = Nothing in i" $ LRSuccess "Nothing"
               ]
         , testGroup
               "patterns"
-              [ testQuery "(\\a -> 5) 2" $ Just "5"
-              , testQuery "(\\a -> a) 2" $ Just "2"
-              , testQuery "(\\_ -> 5) 2" $ Just "5"
-              , testQuery "(\\a@b -> (a,b)) 2" $ Just "(2, 2)"
-              , testQuery "(\\(a,b) -> a + b) (5,6)" $ Just "11"
+              [ testQuery "(\\a -> 5) 2" $ LRSuccess "5"
+              , testQuery "(\\a -> a) 2" $ LRSuccess "2"
+              , testQuery "(\\_ -> 5) 2" $ LRSuccess "5"
+              , testQuery "(\\a@b -> (a,b)) 2" $ LRSuccess "(2, 2)"
+              , testQuery "(\\(a,b) -> a + b) (5,6)" $ LRSuccess "11"
               ]
         , testGroup
               "case"
               [ testGroup
                     "basic"
-                    [ testQuery "case 2 of a -> 5 end" $ Just "5"
-                    , testQuery "case 2 of a -> 5; a -> 3 end" $ Just "5"
-                    , testQuery "case 2 of a -> 5; a -> 3; end" $ Just "5"
-                    , testQuery "case 2 of a -> a end" $ Just "2"
-                    , testQuery "case 2 of _ -> 5 end" $ Just "5"
-                    , testQuery "case 2 of _ -> 5; _ -> 3 end" $ Just "5"
-                    , testQuery "case 2 of a@b -> (a,b) end" $ Just "(2, 2)"
+                    [ testQuery "case 2 of a -> 5 end" $ LRSuccess "5"
+                    , testQuery "case 2 of a -> 5; a -> 3 end" $ LRSuccess "5"
+                    , testQuery "case 2 of a -> 5; a -> 3; end" $ LRSuccess "5"
+                    , testQuery "case 2 of a -> a end" $ LRSuccess "2"
+                    , testQuery "case 2 of _ -> 5 end" $ LRSuccess "5"
+                    , testQuery "case 2 of _ -> 5; _ -> 3 end" $ LRSuccess "5"
+                    , testQuery "case 2 of a@b -> (a,b) end" $ LRSuccess "(2, 2)"
                     ]
               , testGroup
                     "Boolean"
-                    [ testQuery "case True of True -> 5; False -> 7 end" $ Just "5"
-                    , testQuery "case False of True -> 5; False -> 7 end" $ Just "7"
-                    , testQuery "case True of False -> 7; True -> 5 end" $ Just "5"
-                    , testQuery "case False of False -> 7; True -> 5 end" $ Just "7"
+                    [ testQuery "case True of True -> 5; False -> 7 end" $ LRSuccess "5"
+                    , testQuery "case False of True -> 5; False -> 7 end" $ LRSuccess "7"
+                    , testQuery "case True of False -> 7; True -> 5 end" $ LRSuccess "5"
+                    , testQuery "case False of False -> 7; True -> 5 end" $ LRSuccess "7"
                     ]
               , testGroup
                     "Number"
-                    [ testQuery "case 37 of 37 -> True; _ -> False end" $ Just "True"
-                    , testQuery "case 38 of 37 -> True; _ -> False end" $ Just "False"
-                    , testQuery "case -24.3 of 37 -> 1; -24.3 -> 2; _ -> 3 end" $ Just "2"
+                    [ testQuery "case 37 of 37 -> True; _ -> False end" $ LRSuccess "True"
+                    , testQuery "case 38 of 37 -> True; _ -> False end" $ LRSuccess "False"
+                    , testQuery "case -24.3 of 37 -> 1; -24.3 -> 2; _ -> 3 end" $ LRSuccess "2"
                     ]
               , testGroup
                     "String"
-                    [ testQuery "case \"Hello\" of \"Hello\" -> True; _ -> False end" $ Just "True"
-                    , testQuery "case \"thing\" of \"Hello\" -> True; _ -> False end" $ Just "False"
-                    , testQuery "case \"thing\" of \"Hello\" -> 1; \"thing\" -> 2; _ -> 3 end" $ Just "2"
+                    [ testQuery "case \"Hello\" of \"Hello\" -> True; _ -> False end" $ LRSuccess "True"
+                    , testQuery "case \"thing\" of \"Hello\" -> True; _ -> False end" $ LRSuccess "False"
+                    , testQuery "case \"thing\" of \"Hello\" -> 1; \"thing\" -> 2; _ -> 3 end" $ LRSuccess "2"
                     ]
               , testGroup
                     "Either"
-                    [ testQuery "case Left 3 of Left a -> a; Right _ -> 1 end" $ Just "3"
-                    , testQuery "case Right 4 of Left a -> a + 1; Right a -> a end" $ Just "4"
-                    , testQuery "case Right 7 of Right 4 -> True; _ -> False end" $ Just "False"
-                    , testQuery "case Right 7 of Right 4 -> 1; Right 7 -> 2; Left _ -> 3; _ -> 4 end" $ Just "2"
+                    [ testQuery "case Left 3 of Left a -> a; Right _ -> 1 end" $ LRSuccess "3"
+                    , testQuery "case Right 4 of Left a -> a + 1; Right a -> a end" $ LRSuccess "4"
+                    , testQuery "case Right 7 of Right 4 -> True; _ -> False end" $ LRSuccess "False"
+                    , testQuery "case Right 7 of Right 4 -> 1; Right 7 -> 2; Left _ -> 3; _ -> 4 end" $ LRSuccess "2"
                     ]
-              , testGroup "Unit" [testQuery "case () of () -> 4 end" $ Just "4"]
-              , testGroup "Pair" [testQuery "case (2,True) of (2,a) -> a end" $ Just "True"]
+              , testGroup "Unit" [testQuery "case () of () -> 4 end" $ LRSuccess "4"]
+              , testGroup "Pair" [testQuery "case (2,True) of (2,a) -> a end" $ LRSuccess "True"]
               , testGroup
                     "Maybe"
-                    [ testQuery "case Just 3 of Just a -> a + 1; Nothing -> 7 end" $ Just "4"
-                    , testQuery "case Nothing of Just a -> a + 1; Nothing -> 7 end" $ Just "7"
+                    [ testQuery "case Just 3 of Just a -> a + 1; Nothing -> 7 end" $ LRSuccess "4"
+                    , testQuery "case Nothing of Just a -> a + 1; Nothing -> 7 end" $ LRSuccess "7"
                     ]
               , testGroup
                     "List"
-                    [ testQuery "case [] of [] -> True; _ -> False end" $ Just "True"
-                    , testQuery "case [] of _::_ -> True; _ -> False end" $ Just "False"
-                    , testQuery "case [1,2] of [] -> True; _ -> False end" $ Just "False"
-                    , testQuery "case [3,4] of _::_ -> True; _ -> False end" $ Just "True"
-                    , testQuery "case [3] of a::b -> (a,b) end" $ Just "(3, [])"
-                    , testQuery "case [3,4] of a::b -> (a,b) end" $ Just "(3, [4])"
-                    , testQuery "case [3,4,5] of a::b -> (a,b) end" $ Just "(3, [4, 5])"
-                    , testQuery "case [3] of [a,b] -> 1; _ -> 2 end" $ Just "2"
-                    , testQuery "case [3,4] of [a,b] -> 1; _ -> 2 end" $ Just "1"
-                    , testQuery "case [3,4,5] of [a,b] -> 1; _ -> 2 end" $ Just "2"
-                    , testQuery "case [3,4] of [a,b] -> (a,b) end" $ Just "(3, 4)"
+                    [ testQuery "case [] of [] -> True; _ -> False end" $ LRSuccess "True"
+                    , testQuery "case [] of _::_ -> True; _ -> False end" $ LRSuccess "False"
+                    , testQuery "case [1,2] of [] -> True; _ -> False end" $ LRSuccess "False"
+                    , testQuery "case [3,4] of _::_ -> True; _ -> False end" $ LRSuccess "True"
+                    , testQuery "case [3] of a::b -> (a,b) end" $ LRSuccess "(3, [])"
+                    , testQuery "case [3,4] of a::b -> (a,b) end" $ LRSuccess "(3, [4])"
+                    , testQuery "case [3,4,5] of a::b -> (a,b) end" $ LRSuccess "(3, [4, 5])"
+                    , testQuery "case [3] of [a,b] -> 1; _ -> 2 end" $ LRSuccess "2"
+                    , testQuery "case [3,4] of [a,b] -> 1; _ -> 2 end" $ LRSuccess "1"
+                    , testQuery "case [3,4,5] of [a,b] -> 1; _ -> 2 end" $ LRSuccess "2"
+                    , testQuery "case [3,4] of [a,b] -> (a,b) end" $ LRSuccess "(3, 4)"
                     ]
               ]
         , testGroup
               "subtype"
-              [ testQuery "let i : Integer -> Number; i x = x in i 3" $ Just "3"
-              , testQuery "let a : Integer; a = 3; b : Number; b = a in b" $ Just "3"
-              , testQuery "let i : FiniteSetRef -a -> SetRef a; i x = x in 3" $ Just "3"
-              , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ Just "3"
+              [ testQuery "let i : Integer -> Number; i x = x in i 3" $ LRSuccess "3"
+              , testQuery "let a : Integer; a = 3; b : Number; b = a in b" $ LRSuccess "3"
+              , testQuery "let i : FiniteSetRef -a -> SetRef a; i x = x in 3" $ LRSuccess "3"
+              , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ LRSuccess "3"
               ]
         , testGroup
               "subsume" -- see #58 for expected failures
-              [ testQuery "let a : (); a = a in ()" $ Just "unit"
-              , testQuery "let a : Integer; a = a in ()" $ Just "unit"
-              , expectFail $ testQuery "let a : Integer|Text; a = a in ()" $ Just "unit" {- ISSUE #60 -}
-              , testQuery "let r = r in let a : Integer|Text; a = r in ()" $ Just "unit"
-              , testQuery "let r = r; a : Integer|Text; a = r in ()" $ Just "unit"
-              , expectFail $ testQuery "let r = a; a : Integer|Text; a = r in ()" $ Just "unit" {- ISSUE #60 -}
-              , expectFail $ testQuery "let a : None; a = a in ()" $ Just "unit" {- ISSUE #60 -}
-              , testQuery "let r = r in let a : None; a = r in ()" $ Just "unit"
-              , testQuery "let r = r; a : None; a = r in ()" $ Just "unit"
-              , expectFail $ testQuery "let r = a; a : None; a = r in ()" $ Just "unit" {- ISSUE #60 -}
-              , testQuery "let a : [Integer|Text]; a = [] in a" $ Just "[]"
-              , testQuery "let a : [Integer]|[Text]; a = [] in a" $ Just "[]"
+              [ testQuery "let a : (); a = a in ()" $ LRSuccess "unit"
+              , testQuery "let a : Integer; a = a in ()" $ LRSuccess "unit"
+              , expectFail $ testQuery "let a : Integer|Text; a = a in ()" $ LRSuccess "unit" {- ISSUE #60 -}
+              , testQuery "let r = r in let a : Integer|Text; a = r in ()" $ LRSuccess "unit"
+              , testQuery "let r = r; a : Integer|Text; a = r in ()" $ LRSuccess "unit"
+              , expectFail $ testQuery "let r = a; a : Integer|Text; a = r in ()" $ LRSuccess "unit" {- ISSUE #60 -}
+              , expectFail $ testQuery "let a : None; a = a in ()" $ LRSuccess "unit" {- ISSUE #60 -}
+              , testQuery "let r = r in let a : None; a = r in ()" $ LRSuccess "unit"
+              , testQuery "let r = r; a : None; a = r in ()" $ LRSuccess "unit"
+              , expectFail $ testQuery "let r = a; a : None; a = r in ()" $ LRSuccess "unit" {- ISSUE #60 -}
+              , testQuery "let a : [Integer|Text]; a = [] in a" $ LRSuccess "[]"
+              , testQuery "let a : [Integer]|[Text]; a = [] in a" $ LRSuccess "[]"
               , testSameType True "Integer" "Integer" ["56"]
               , testSameType False "[Integer|Text]" "[Integer|Text]" ["[]"]
               , testSameType False "[Integer]|[Text]" "[Integer]|[Text]" ["[]"]
               , testSameType False "[Integer|Text]" "[Integer]|[Text]" ["[]"]
-              , testQuery "let a : Integer|Text; a = 3; b : [Integer]|[Text]; b = [a] in b" $ Just "[3]"
+              , testQuery "let a : Integer|Text; a = 3; b : [Integer]|[Text]; b = [a] in b" $ LRSuccess "[3]"
               ]
         , testGroup
               "recursive"
-              [ testQuery "let x : rec a. [a]; x = [] in x" $ Just "[]"
+              [ testQuery "let x : rec a. [a]; x = [] in x" $ LRSuccess "[]"
               , let
                     atree = ["[]", "[[]]", "[[[[]]]]", "[[], [[]]]"]
                     in testGroup
@@ -537,159 +554,168 @@ testQueries =
               , testGroup
                     "case"
                     [ testQuery "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount Nothing" $
-                      Just "0"
+                      LRSuccess "0"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> if True then 1 else 1 + rcount y end in rcount $ Just Nothing" $
-                      Just "1"
+                      LRSuccess "1"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> if True then 2 else 2 + rcount y end in rcount $ Just Nothing" $
-                      Just "1"
+                      LRSuccess "1"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> if True then 2 else 1 + rcount y end end in rcount $ Just Nothing" $
-                      Just "1"
+                      LRSuccess "1"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
-                      Just "1"
+                      LRSuccess "1"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> if True then 1 else 1 + rcount y end in rcount $ Just $ Just Nothing" $
-                      Just "1"
+                      LRSuccess "1"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> if True then 2 else 2 + rcount y end in rcount $ Just $ Just Nothing" $
-                      Just "2"
+                      LRSuccess "2"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> if True then 2 else 1 + rcount y end end in rcount $ Just $ Just Nothing" $
-                      Just "2"
+                      LRSuccess "2"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> case z of Nothing -> 2; Just p -> if True then 3 else 1 + rcount y end end end in rcount $ Just $ Just Nothing" $
-                      Just "2"
+                      LRSuccess "2"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> case z of Nothing -> 2; Just p -> 1 + rcount y end end end in rcount $ Just $ Just Nothing" $
-                      Just "2"
+                      LRSuccess "2"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> case y of Nothing -> 1; Just z -> case z of Nothing -> 2; Just p -> 1 + rcount y end end end; rcount1 x = rcount x in rcount1 $ Just $ Just Nothing" $
-                      Just "2"
+                      LRSuccess "2"
                     , testQuery
                           "let rcount1 y = case y of Nothing -> 0; Just z -> 1 + rcount z end; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just $ Just $ Just $ Just Nothing" $
-                      Just "4"
+                      LRSuccess "4"
                     , testQuery
                           "let rcount1 y = case y of Nothing -> 0; Just z -> 1 + rcount z end; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
-                      Just "12"
+                      LRSuccess "12"
                     , testQuery
                           "let rcount1 y = case y of Nothing -> 0; Just z -> 1 + rcount z end; rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing" $
-                      Just "12"
+                      LRSuccess "12"
                     , testQuery
                           "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> if True then 2 else 2 + rcount y end; rval : rec a. Maybe a; rval = Just $ Just Nothing in rcount rval" $
-                      Just "2"
+                      LRSuccess "2"
                     , testQuery
                           "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; Just (Just (Just (Just Nothing))) -> 4; Just (Just (Just (Just (Just _)))) -> 5 end; rval : rec a. Maybe a; rval = Just $ Just $ Just $ Just Nothing in rcount rval" $
-                      Just "4"
+                      LRSuccess "4"
                     , testQuery
                           "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; Just (Just (Just (Just Nothing))) -> 4; Just (Just (Just (Just (Just _)))) -> 5 end; rval : rec a. Maybe a; rval = Just rval in rcount rval" $
-                      Just "5"
+                      LRSuccess "5"
                     , testQuery
                           "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : rec a. Maybe a; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing in rcount rval" $
-                      Just "10"
+                      LRSuccess "10"
                     , testQuery
                           "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just $ Just Nothing in rcount rval" $
-                      Just "10"
+                      LRSuccess "10"
                     , testQuery
                           "let fix: (a -> a) -> a; fix f = let x = f x in x; rc: (a -> Integer) -> Maybe a -> Integer; rc r x = case x of Nothing -> 0; Just y -> 1 + r y end in fix rc $ Just $ Just $ Just $ Just $ Just Nothing" $
-                      Just "5"
+                      LRSuccess "5"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just Nothing" $
-                      Just "2"
+                      LRSuccess "2"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
-                      Just "3"
+                      LRSuccess "3"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just Nothing" $
-                      Just "4"
+                      LRSuccess "4"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
-                      Just "5"
+                      LRSuccess "5"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just $ Just Nothing in rcount rval" $
-                      Just "2"
+                      LRSuccess "2"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe None)) ; rval = Just $ Just Nothing in rcount rval" $
-                      Just "2"
+                      LRSuccess "2"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) ; rval = Just $ Just Nothing in rcount rval" $
-                      Just "2"
-                    , testQuery "Just $ Just $ Just Nothing" $ Just "Just Just Just Nothing"
+                      LRSuccess "2"
+                    , testQuery "Just $ Just $ Just Nothing" $ LRSuccess "Just Just Just Nothing"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just $ Just $ Just Nothing in rcount rval" $
-                      Just "3"
+                      LRSuccess "3"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe None))) ; rval = Just $ Just $ Just Nothing in rcount rval" $
-                      Just "3"
+                      LRSuccess "3"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval : Maybe (Maybe (Maybe (Maybe (Maybe None)))) ; rval = Just $ Just $ Just Nothing in rcount rval" $
-                      Just "3"
+                      LRSuccess "3"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; _ -> 4 end in rcount $ Just $ Just $ Just Nothing" $
-                      Just "3"
+                      LRSuccess "3"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + r1count y end; r1count x = case x of Nothing -> 0; Just y -> 1 + r1count y end in rcount $ Just $ Just $ Just Nothing" $
-                      Just "3"
+                      LRSuccess "3"
                     , testQuery
                           "case Just $ Just $ Just Nothing of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; _ -> 4 end" $
-                      Just "3"
+                      LRSuccess "3"
                     , testQuery
                           "let rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; _ -> 4 end in rcount $ Just $ Just $ Just Nothing" $
-                      Just "3"
+                      LRSuccess "3"
                     , testQuery
                           "let rcount : (rec a . Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; _ -> 4 end in rcount $ Just $ Just $ Just Nothing" $
-                      Just "3"
+                      LRSuccess "3"
                     , testQuery
                           "let rcount : (rec a . Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just Nothing) -> 2; Just (Just (Just Nothing)) -> 3; Just (Just (Just (Just y))) -> 4 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
-                      Just "3"
+                      LRSuccess "3"
                     , testQuery
                           "let rcount : (rec a . Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just Nothing -> 1; Just (Just y) -> 2 + rcount y end in rcount $ Just $ Just $ Just Nothing" $
-                      Just "3"
+                      LRSuccess "3"
                     ]
               ]
         , let
-              testSupertype :: Text -> Text -> Text -> Text -> Maybe String -> TestTree
-              testSupertype supertype subtype val altval result =
-                  testGroup
-                      (unpack $ supertype <> " -> " <> subtype)
-                      [ testQuery
-                            ("let x: " <>
-                             supertype <>
-                             "; x=" <>
-                             val <>
-                             "; y: " <>
-                             subtype <> "; y = case x of (z: " <> subtype <> ") -> z; _ -> " <> altval <> "; end in y")
-                            result
-                      , testQuery
-                            ("let x: " <>
-                             supertype <>
-                             "; x=" <>
-                             val <>
-                             "; y: " <>
-                             subtype <>
-                             "; y = case check @(" <>
-                             subtype <> ") x of Just z -> z; Nothing -> " <> altval <> "; end in y")
-                            result
-                      , testQuery
-                            ("let x: " <>
-                             supertype <>
-                             "; x=" <> val <> "; y: " <> subtype <> "; y = coerce @(" <> subtype <> ") x in y")
-                            result
-                      ]
+              testSupertype :: Text -> Text -> Text -> Text -> Bool -> TestTree
+              testSupertype supertype subtype val altval good = let
+                  result =
+                      LRSuccess $
+                      unpack $
+                      if good
+                          then val
+                          else altval
+                  in testGroup
+                         (unpack $ supertype <> " -> " <> subtype)
+                         [ testQuery
+                               ("let x: " <>
+                                supertype <>
+                                "; x=" <>
+                                val <>
+                                "; y: " <>
+                                subtype <>
+                                "; y = case x of (z: " <> subtype <> ") -> z; _ -> " <> altval <> "; end in y")
+                               result
+                         , testQuery
+                               ("let x: " <>
+                                supertype <>
+                                "; x=" <>
+                                val <>
+                                "; y: " <>
+                                subtype <>
+                                "; y = case check @(" <>
+                                subtype <> ") x of Just z -> z; Nothing -> " <> altval <> "; end in y")
+                               result
+                         , testQuery
+                               ("let x: " <>
+                                supertype <>
+                                "; x=" <> val <> "; y: " <> subtype <> "; y = coerce @(" <> subtype <> ") x in y") $
+                           if good
+                               then result
+                               else LRRunError
+                         ]
               in testGroup
                      "supertype"
-                     [ testSupertype "Integer" "Integer" "3" "0" $ Just "3"
-                     , testSupertype "Rational" "Integer" "3" "0" $ Just "3"
-                     , testSupertype "Rational" "Integer" "3.5" "0" $ Just "0"
-                     , testSupertype "Integer" "Rational" "3" "0" $ Just "3"
-                     , testSupertype "Number" "Integer" "3" "0" $ Just "3"
-                     , testSupertype "Number" "Integer" "3.5" "0" $ Just "0"
-                     , testSupertype "Integer" "Number" "3" "0" $ Just "3"
-                     , testSupertype "Number" "Rational" "3" "0" $ Just "3"
-                     , testSupertype "Number" "Rational" "3.5" "0" $ Just "3.5"
-                     , testSupertype "Rational" "Number" "3.5" "0" $ Just "3.5"
+                     [ testSupertype "Integer" "Integer" "3" "0" True
+                     , testSupertype "Rational" "Integer" "3" "0" True
+                     , testSupertype "Rational" "Integer" "7/2" "0" False
+                     , testSupertype "Integer" "Rational" "3" "0" True
+                     , testSupertype "Number" "Integer" "3" "0" True
+                     , testSupertype "Number" "Integer" "7/2" "0" False
+                     , testSupertype "Integer" "Number" "3" "0" True
+                     , testSupertype "Number" "Rational" "3" "0" True
+                     , testSupertype "Number" "Rational" "7/2" "0" True
+                     , testSupertype "Rational" "Number" "7/2" "0" True
                      ]
         ]
 

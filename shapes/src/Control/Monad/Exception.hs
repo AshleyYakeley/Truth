@@ -2,6 +2,7 @@ module Control.Monad.Exception
     ( module Control.Monad.Exception
     , CE.SomeException
     , CE.Exception(..)
+    , CE.evaluate
     ) where
 
 import qualified Control.Exception as CE
@@ -83,3 +84,6 @@ instance MonadBracket IO where
 instance (MonadTransUnlift t, MonadBracket m, MonadUnliftIO m, Monad (t m)) => MonadBracket (t m) where
     bracket before after thing =
         liftWithUnlift $ \unlift -> bracket (unlift before) (\a -> unlift $ after a) (\a -> unlift $ thing a)
+
+catchPureError :: a -> IO (Maybe CE.SomeException)
+catchPureError a = catch (CE.evaluate a >> return Nothing) $ \e -> return $ Just e

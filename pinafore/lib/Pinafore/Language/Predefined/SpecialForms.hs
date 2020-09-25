@@ -13,12 +13,67 @@ import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Shapes
 
+textShimWit ::
+       forall polarity. Is PolarityType polarity
+    => PinaforeShimWit polarity Text
+textShimWit =
+    singleDolanShimWit $
+    mkShimWit $
+    GroundDolanSingularType
+        (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType)
+        NilDolanArguments
+
+maybeShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (Maybe a)
+maybeShimWit swa =
+    unPosShimWit swa $ \ta conva ->
+        mapPosShimWit (applyCoPolyShim cid conva) $
+        singleDolanShimWit $
+        mkShimWit $
+        GroundDolanSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType) $
+        ConsDolanArguments ta NilDolanArguments
+
+eitherShimWit ::
+       forall a b. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (Either a b)
+eitherShimWit swa swb =
+    unPosShimWit swa $ \ta conva ->
+        unPosShimWit swb $ \tb convb ->
+            mapPosShimWit (applyCoPolyShim (cfmap conva) convb) $
+            singleDolanShimWit $
+            mkShimWit $
+            GroundDolanSingularType
+                (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType) $
+            ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+
+funcShimWit ::
+       forall a b. PinaforeShimWit 'Negative a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (a -> b)
+funcShimWit swa swb =
+    unNegShimWit swa $ \ta conva ->
+        unPosShimWit swb $ \tb convb ->
+            mapPosShimWit (applyCoPolyShim (ccontramap conva) convb) $
+            singleDolanShimWit $
+            mkShimWit $
+            GroundDolanSingularType FuncPinaforeGroundType $
+            ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+
 special_forms :: [DocTreeEntry BindDoc]
 special_forms =
     [ docTreeEntry
           "Special Forms"
           "These are built-in keywords that resemble predefined bindings."
-          [ mkSpecialFormEntry
+          [ mkSpecialFormEntry "check" "Check from a dynamic supertype." "@A" "D(A) -> Maybe A" $
+            MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkAnyW tp, ()) -> do
+                MkGreatestDynamicSupertype dtw _ convm <- getGreatestDynamicSupertype tp
+                return $ MkAnyValue (funcShimWit dtw $ maybeShimWit $ mkShimWit tp) $ shimToFunction convm
+          , mkSpecialFormEntry "coerce" "Coerce from a dynamic supertype." "@A" "D(A) -> A" $
+            MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkAnyW tp, ()) -> do
+                MkGreatestDynamicSupertype dtw@(MkShimWit dtp _) _ convm <- getGreatestDynamicSupertype tp
+                return $
+                    MkAnyValue (funcShimWit dtw $ mkShimWit tp) $ \d ->
+                        case shimToFunction convm d of
+                            Just t -> t
+                            Nothing ->
+                                error $ unpack $ "coercion from " <> exprShow dtp <> " to " <> exprShow tp <> " failed"
+          , mkSpecialFormEntry
                 "property"
                 "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
                 "@A @B <anchor>"
@@ -85,44 +140,6 @@ special_forms =
             MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkAnyW tp, ()) -> do
                 spvals <- getSpecialVals
                 let
-                    eitherShimWit ::
-                           forall a b.
-                           PinaforeShimWit 'Positive a
-                        -> PinaforeShimWit 'Positive b
-                        -> PinaforeShimWit 'Positive (Either a b)
-                    eitherShimWit swa swb =
-                        unPosShimWit swa $ \ta conva ->
-                            unPosShimWit swb $ \tb convb ->
-                                mapPosShimWit (applyCoPolyShim (cfmap conva) convb) $
-                                singleDolanShimWit $
-                                mkShimWit $
-                                GroundDolanSingularType
-                                    (EntityPinaforeGroundType
-                                         (ConsListType Refl $ ConsListType Refl NilListType)
-                                         EitherEntityGroundType) $
-                                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-                    funcShimWit ::
-                           forall a b.
-                           PinaforeShimWit 'Negative a
-                        -> PinaforeShimWit 'Positive b
-                        -> PinaforeShimWit 'Positive (a -> b)
-                    funcShimWit swa swb =
-                        unNegShimWit swa $ \ta conva ->
-                            unPosShimWit swb $ \tb convb ->
-                                mapPosShimWit (applyCoPolyShim (ccontramap conva) convb) $
-                                singleDolanShimWit $
-                                mkShimWit $
-                                GroundDolanSingularType FuncPinaforeGroundType $
-                                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-                    textShimWit ::
-                           forall polarity. Is PolarityType polarity
-                        => PinaforeShimWit polarity Text
-                    textShimWit =
-                        singleDolanShimWit $
-                        mkShimWit $
-                        GroundDolanSingularType
-                            (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType)
-                            NilDolanArguments
                     valShimWit ::
                            forall t.
                            PinaforeShimWit 'Positive t
