@@ -93,25 +93,21 @@ data SyntaxCase =
     MkSyntaxCase SyntaxPattern
                  SyntaxExpression
 
-data SyntaxSpecialForm
-    = SSFProperty SyntaxType
-                  SyntaxType
-                  Anchor
-    | SSFOpenEntity SyntaxType
-                    Anchor
-    | SSFNewOpenEntity SyntaxType
-    | SSFEvaluate SyntaxType
+data SyntaxAnnotation
+    = SAType SyntaxType
+    | SAAnchor Anchor
 
 data SyntaxConstant
     = SCIfThenElse
     | SCBind
     | SCBind_
     | SCConstructor SyntaxConstructor
-    | SCSpecialForm SyntaxSpecialForm
 
 data SyntaxExpression'
     = SEConst SyntaxConstant
     | SEVar Name
+    | SESpecialForm Name
+                    (NonEmpty SyntaxAnnotation)
     | SEApply SyntaxExpression
               SyntaxExpression
     | SEAbstract SyntaxPattern
@@ -179,6 +175,7 @@ instance SyntaxFreeVariables SyntaxCase where
 instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEConst _) = mempty
     syntaxFreeVariables (SEVar name) = opoint name
+    syntaxFreeVariables (SESpecialForm _ _) = mempty
     syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
     syntaxFreeVariables (SEAbstract pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
     syntaxFreeVariables (SERef expr) = syntaxFreeVariables expr

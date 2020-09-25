@@ -45,10 +45,6 @@ data Token t where
     TokMap :: Token ()
     TokBackMap :: Token ()
     TokPropMap :: Token ()
-    TokProperty :: Token ()
-    TokOpenEntity :: Token ()
-    TokNewOpenEntity :: Token ()
-    TokEvaluate :: Token ()
     TokAnchor :: Token Anchor
     TokAt :: Token ()
     TokOperator :: Token Name
@@ -88,10 +84,6 @@ instance TestEquality Token where
     testEquality TokMap TokMap = Just Refl
     testEquality TokBackMap TokBackMap = Just Refl
     testEquality TokPropMap TokPropMap = Just Refl
-    testEquality TokProperty TokProperty = Just Refl
-    testEquality TokOpenEntity TokOpenEntity = Just Refl
-    testEquality TokNewOpenEntity TokNewOpenEntity = Just Refl
-    testEquality TokEvaluate TokEvaluate = Just Refl
     testEquality TokAnchor TokAnchor = Just Refl
     testEquality TokAt TokAt = Just Refl
     testEquality TokOperator TokOperator = Just Refl
@@ -132,10 +124,6 @@ instance Show (Token t) where
     show TokMap = show ("->" :: String)
     show TokBackMap = show ("<-" :: String)
     show TokPropMap = show ("~>" :: String)
-    show TokProperty = show ("property" :: String)
-    show TokOpenEntity = show ("openEntity" :: String)
-    show TokNewOpenEntity = show ("newOpenEntity" :: String)
-    show TokEvaluate = show ("evaluate" :: String)
     show TokAnchor = "anchor"
     show TokAt = show ("@" :: String)
     show TokOperator = "infix"
@@ -245,10 +233,6 @@ readTextToken = do
         "case" -> return $ MkAnyValue TokCase ()
         "of" -> return $ MkAnyValue TokOf ()
         "end" -> return $ MkAnyValue TokEnd ()
-        "property" -> return $ MkAnyValue TokProperty ()
-        "openEntity" -> return $ MkAnyValue TokOpenEntity ()
-        "newOpenEntity" -> return $ MkAnyValue TokNewOpenEntity ()
-        "evaluate" -> return $ MkAnyValue TokEvaluate ()
         "if" -> return $ MkAnyValue TokIf ()
         "then" -> return $ MkAnyValue TokThen ()
         "else" -> return $ MkAnyValue TokElse ()

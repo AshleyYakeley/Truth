@@ -11,6 +11,10 @@ data ErrorType
     = ParserError [Message]
     | ExpressionErrorError ExpressionError
     | LookupTypeUnknownError Name
+    | LookupSpecialFormUnknownError Name
+    | SpecialFormWrongAnnotationsError Name
+                                       [Text]
+                                       [Text]
     | TypeNotOpenEntityError Text
     | LookupConstructorUnknownError Name
     | DeclareTypeDuplicateError Name
@@ -77,6 +81,11 @@ instance Show ErrorType where
         in strUnexpected `semicolon` strExpecting `semicolon` strMessage
     show (ExpressionErrorError e) = show e
     show (LookupTypeUnknownError n) = "unknown type: " <> show n
+    show (LookupSpecialFormUnknownError n) = "unknown special form: " <> show n
+    show (SpecialFormWrongAnnotationsError n exp found) =
+        "wrong annotations for special form " <>
+        show n <>
+        ": expecting " <> intercalate " " (fmap unpack exp) <> ", found " <> intercalate " " (fmap unpack found)
     show (TypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
     show (LookupConstructorUnknownError n) = "unknown constructor: " <> show n
     show (DeclareTypeDuplicateError n) = "duplicate type: " <> show n

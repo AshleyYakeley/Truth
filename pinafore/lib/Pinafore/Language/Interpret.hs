@@ -140,123 +140,165 @@ interpretConstructor spos (SLNamedConstructor v) = interpretNamedConstructor spo
 interpretConstructor _ SLPair = return $ qConstExprAny $ jmToValue ((,) :: A -> B -> (A, B))
 interpretConstructor _ SLUnit = return $ qConstExprAny $ jmToValue ()
 
-interpretSpecialForm :: SourcePos -> SyntaxSpecialForm -> RefExpression
-interpretSpecialForm spos (SSFProperty sta stb anchor) =
-    liftRefNotation $ do
-        meta <- runSourcePos spos $ interpretConcreteEntityType sta
-        metb <- runSourcePos spos $ interpretConcreteEntityType stb
-        case (meta, metb) of
-            (MkAnyW eta, MkAnyW etb) -> do
-                etan <- runSourcePos spos $ concreteEntityToNegativePinaforeType eta
-                etbn <- runSourcePos spos $ concreteEntityToNegativePinaforeType etb
-                let
-                    bta = biRangeAnyF (etan, concreteToPositiveDolanType eta)
-                    btb = biRangeAnyF (etbn, concreteToPositiveDolanType etb)
-                    in case (bta, btb, concreteEntityTypeEq eta, concreteEntityTypeEq etb) of
-                           (MkAnyF rta (MkRange praContra praCo), MkAnyF rtb (MkRange prbContra prbCo), Dict, Dict) ->
-                               withSubrepresentative rangeTypeInKind rta $
-                               withSubrepresentative rangeTypeInKind rtb $ let
-                                   typef =
-                                       singleDolanShimWit $
-                                       mkShimWit $
-                                       GroundDolanSingularType MorphismPinaforeGroundType $
-                                       ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
-                                   morphism =
-                                       propertyMorphism
-                                           (concreteEntityAdapter eta)
-                                           (concreteEntityAdapter etb)
-                                           (MkPredicate anchor)
-                                   pinamorphism =
-                                       MkLangMorphism $
-                                       cfmap3 (MkCatDual $ shimToFunction praContra) $
-                                       cfmap2 (shimToFunction praCo) $
-                                       cfmap1 (MkCatDual $ shimToFunction prbContra) $
-                                       fmap (shimToFunction prbCo) morphism
-                                   anyval = MkAnyValue typef pinamorphism
-                                   in return $ qConstExprAny anyval
-interpretSpecialForm spos (SSFOpenEntity st anchor) =
-    liftRefNotation $ do
-        mtp <- runSourcePos spos $ interpretConcreteEntityType st
-        case mtp of
-            MkAnyW tp -> do
-                pt <- runSourcePos spos $ makeEntity tp $ MkEntity anchor
-                let typef = concreteToPositiveDolanType tp
-                return $ qConstExprAny $ MkAnyValue typef pt
-interpretSpecialForm spos (SSFNewOpenEntity st) =
-    liftRefNotation $ do
-        mtp <- runSourcePos spos $ interpretOpenEntityType st
-        case mtp of
-            MkAnyW (tp :: OpenEntityType tid) -> do
-                let
-                    pt :: PinaforeAction (OpenEntity tid)
-                    pt = liftIO $ newKeyContainerItem @(FiniteSet (OpenEntity tid))
-                    typef =
-                        actionShimWit $
-                        singleDolanShimWit $
-                        mkShimWit $
-                        GroundDolanSingularType
-                            (EntityPinaforeGroundType NilListType $ OpenEntityGroundType tp)
-                            NilDolanArguments
-                return $ qConstExprAny $ MkAnyValue typef pt
-interpretSpecialForm spos (SSFEvaluate st) =
-    liftRefNotation $
-    runSourcePos spos $ do
-        mtp <- interpretType @'Positive st
+data Annotation t where
+    AnnotAnchor :: Annotation Anchor
+    AnnotConcreteEntityType :: Annotation (AnyW ConcreteEntityType)
+    AnnotOpenEntityType :: Annotation (AnyW OpenEntityType)
+    AnnotPolarType :: PolarityType polarity -> Annotation (AnyW (PinaforeType polarity))
+
+data SpecialForm =
+    forall lt. MkSpecialForm (ListType Annotation lt)
+                             (HList lt -> PinaforeSourceScoped QValue)
+
+specialForms :: Name -> Maybe SpecialForm
+specialForms "property" =
+    Just $
+    MkSpecialForm
+        (ConsListType AnnotConcreteEntityType $
+         ConsListType AnnotConcreteEntityType $ ConsListType AnnotAnchor NilListType) $ \(MkAnyW eta, (MkAnyW etb, (anchor, ()))) -> do
+        etan <- concreteEntityToNegativePinaforeType eta
+        etbn <- concreteEntityToNegativePinaforeType etb
+        let
+            bta = biRangeAnyF (etan, concreteToPositiveDolanType eta)
+            btb = biRangeAnyF (etbn, concreteToPositiveDolanType etb)
+            in case (bta, btb, concreteEntityTypeEq eta, concreteEntityTypeEq etb) of
+                   (MkAnyF rta (MkRange praContra praCo), MkAnyF rtb (MkRange prbContra prbCo), Dict, Dict) ->
+                       withSubrepresentative rangeTypeInKind rta $
+                       withSubrepresentative rangeTypeInKind rtb $ let
+                           typef =
+                               singleDolanShimWit $
+                               mkShimWit $
+                               GroundDolanSingularType MorphismPinaforeGroundType $
+                               ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
+                           morphism =
+                               propertyMorphism
+                                   (concreteEntityAdapter eta)
+                                   (concreteEntityAdapter etb)
+                                   (MkPredicate anchor)
+                           pinamorphism =
+                               MkLangMorphism $
+                               cfmap3 (MkCatDual $ shimToFunction praContra) $
+                               cfmap2 (shimToFunction praCo) $
+                               cfmap1 (MkCatDual $ shimToFunction prbContra) $ fmap (shimToFunction prbCo) morphism
+                           anyval = MkAnyValue typef pinamorphism
+                           in return anyval
+specialForms "openEntity" =
+    Just $
+    MkSpecialForm (ConsListType AnnotConcreteEntityType $ ConsListType AnnotAnchor NilListType) $ \(MkAnyW tp, (anchor, ())) -> do
+        pt <- makeEntity tp $ MkEntity anchor
+        let typef = concreteToPositiveDolanType tp
+        return $ MkAnyValue typef pt
+specialForms "newOpenEntity" =
+    Just $
+    MkSpecialForm (ConsListType AnnotOpenEntityType NilListType) $ \(MkAnyW (tp :: OpenEntityType tid), ()) -> do
+        let
+            pt :: PinaforeAction (OpenEntity tid)
+            pt = liftIO $ newKeyContainerItem @(FiniteSet (OpenEntity tid))
+            typef =
+                actionShimWit $
+                singleDolanShimWit $
+                mkShimWit $
+                GroundDolanSingularType
+                    (EntityPinaforeGroundType NilListType $ OpenEntityGroundType tp)
+                    NilDolanArguments
+        return $ MkAnyValue typef pt
+specialForms "evaluate" =
+    Just $
+    MkSpecialForm (ConsListType (AnnotPolarType PositiveType) NilListType) $ \(MkAnyW tp, ()) -> do
         spvals <- getSpecialVals
-        return $
-            case mtp of
-                MkAnyW tp -> let
-                    eitherShimWit ::
-                           forall a b.
-                           PinaforeShimWit 'Positive a
-                        -> PinaforeShimWit 'Positive b
-                        -> PinaforeShimWit 'Positive (Either a b)
-                    eitherShimWit swa swb =
-                        unPosShimWit swa $ \ta conva ->
-                            unPosShimWit swb $ \tb convb ->
-                                mapPosShimWit (applyCoPolyShim (cfmap conva) convb) $
-                                singleDolanShimWit $
-                                mkShimWit $
-                                GroundDolanSingularType
-                                    (EntityPinaforeGroundType
-                                         (ConsListType Refl $ ConsListType Refl NilListType)
-                                         EitherEntityGroundType) $
-                                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-                    funcShimWit ::
-                           forall a b.
-                           PinaforeShimWit 'Negative a
-                        -> PinaforeShimWit 'Positive b
-                        -> PinaforeShimWit 'Positive (a -> b)
-                    funcShimWit swa swb =
-                        unNegShimWit swa $ \ta conva ->
-                            unPosShimWit swb $ \tb convb ->
-                                mapPosShimWit (applyCoPolyShim (ccontramap conva) convb) $
-                                singleDolanShimWit $
-                                mkShimWit $
-                                GroundDolanSingularType FuncPinaforeGroundType $
-                                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-                    textShimWit ::
-                           forall polarity. Is PolarityType polarity
-                        => PinaforeShimWit polarity Text
-                    textShimWit =
+        let
+            eitherShimWit ::
+                   forall a b.
+                   PinaforeShimWit 'Positive a
+                -> PinaforeShimWit 'Positive b
+                -> PinaforeShimWit 'Positive (Either a b)
+            eitherShimWit swa swb =
+                unPosShimWit swa $ \ta conva ->
+                    unPosShimWit swb $ \tb convb ->
+                        mapPosShimWit (applyCoPolyShim (cfmap conva) convb) $
                         singleDolanShimWit $
                         mkShimWit $
                         GroundDolanSingularType
-                            (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType)
-                            NilDolanArguments
-                    valShimWit ::
-                           forall t.
-                           PinaforeShimWit 'Positive t
-                        -> PinaforeShimWit 'Positive (Text -> PinaforeAction (Either Text t))
-                    valShimWit t' = funcShimWit textShimWit $ actionShimWit $ eitherShimWit textShimWit t'
-                    in qConstExprAny $ MkAnyValue (valShimWit $ mkShimWit tp) $ specialEvaluate spvals tp
+                            (EntityPinaforeGroundType
+                                 (ConsListType Refl $ ConsListType Refl NilListType)
+                                 EitherEntityGroundType) $
+                        ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+            funcShimWit ::
+                   forall a b.
+                   PinaforeShimWit 'Negative a
+                -> PinaforeShimWit 'Positive b
+                -> PinaforeShimWit 'Positive (a -> b)
+            funcShimWit swa swb =
+                unNegShimWit swa $ \ta conva ->
+                    unPosShimWit swb $ \tb convb ->
+                        mapPosShimWit (applyCoPolyShim (ccontramap conva) convb) $
+                        singleDolanShimWit $
+                        mkShimWit $
+                        GroundDolanSingularType FuncPinaforeGroundType $
+                        ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+            textShimWit ::
+                   forall polarity. Is PolarityType polarity
+                => PinaforeShimWit polarity Text
+            textShimWit =
+                singleDolanShimWit $
+                mkShimWit $
+                GroundDolanSingularType
+                    (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType)
+                    NilDolanArguments
+            valShimWit ::
+                   forall t.
+                   PinaforeShimWit 'Positive t
+                -> PinaforeShimWit 'Positive (Text -> PinaforeAction (Either Text t))
+            valShimWit t' = funcShimWit textShimWit $ actionShimWit $ eitherShimWit textShimWit t'
+        return $ MkAnyValue (valShimWit $ mkShimWit tp) $ specialEvaluate spvals tp
+specialForms _ = Nothing
+
+specialFormArg :: Annotation t -> SyntaxAnnotation -> ComposeM Maybe PinaforeSourceScoped t
+specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
+specialFormArg AnnotConcreteEntityType (SAType st) = liftOuter $ interpretConcreteEntityType st
+specialFormArg AnnotOpenEntityType (SAType st) = liftOuter $ interpretOpenEntityType st
+specialFormArg (AnnotPolarType PositiveType) (SAType st) = liftOuter $ interpretType @'Positive st
+specialFormArg (AnnotPolarType NegativeType) (SAType st) = liftOuter $ interpretType @'Negative st
+specialFormArg _ _ = liftInner Nothing
+
+specialFormArgs :: ListType Annotation lt -> [SyntaxAnnotation] -> ComposeM Maybe PinaforeSourceScoped (HList lt)
+specialFormArgs NilListType [] = return ()
+specialFormArgs (ConsListType t tt) (a:aa) = do
+    v <- specialFormArg t a
+    vv <- specialFormArgs tt aa
+    return (v, vv)
+specialFormArgs _ _ = liftInner Nothing
+
+showSA :: SyntaxAnnotation -> Text
+showSA (SAType _) = "type"
+showSA (SAAnchor _) = "anchor"
+
+showAnnotation :: Annotation a -> Text
+showAnnotation AnnotAnchor = "anchor"
+showAnnotation AnnotConcreteEntityType = "type"
+showAnnotation AnnotOpenEntityType = "type"
+showAnnotation (AnnotPolarType _) = "type"
+
+interpretSpecialForm :: Name -> NonEmpty SyntaxAnnotation -> PinaforeSourceScoped QValue
+interpretSpecialForm name annotations =
+    case specialForms name of
+        Nothing -> throw $ LookupSpecialFormUnknownError name
+        Just (MkSpecialForm largs val) -> do
+            margs <- getComposeM $ specialFormArgs largs $ toList annotations
+            case margs of
+                Just args -> val args
+                Nothing ->
+                    throw $
+                    SpecialFormWrongAnnotationsError
+                        name
+                        (listTypeToList showAnnotation largs)
+                        (fmap showSA $ toList annotations)
 
 interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression
 interpretConstant _ SCIfThenElse = return $ qConstExprAny $ jmToValue qifthenelse
 interpretConstant _ SCBind = return $ qConstExprAny $ jmToValue qbind
 interpretConstant _ SCBind_ = return $ qConstExprAny $ jmToValue qbind_
 interpretConstant spos (SCConstructor lit) = interpretConstructor spos lit
-interpretConstant spos (SCSpecialForm sf) = interpretSpecialForm spos sf
 
 interpretCase :: SyntaxCase -> RefNotation (QPattern, QExpr)
 interpretCase (MkSyntaxCase spat sexpr) = do
@@ -292,6 +334,11 @@ interpretExpression' spos (SEApply sf sarg) = do
     liftRefNotation $ runSourcePos spos $ qApplyExpr f arg
 interpretExpression' spos (SEConst c) = interpretConstant spos c
 interpretExpression' spos (SEVar name) = varRefExpr spos name
+interpretExpression' spos (SESpecialForm name annots) =
+    liftRefNotation $
+    runSourcePos spos $ do
+        val <- interpretSpecialForm name annots
+        return $ qConstExprAny val
 interpretExpression' spos (SERef sexpr) = refNotationQuote spos $ interpretExpression sexpr
 interpretExpression' spos (SEUnref sexpr) = refNotationUnquote spos $ interpretExpression sexpr
 interpretExpression' spos (SEList sexprs) = do
