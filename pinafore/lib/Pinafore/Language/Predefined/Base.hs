@@ -325,13 +325,13 @@ base_predefinitions =
                   , mkValEntry "meanN" "Mean." $ \(vv :: [Number]) -> sum vv / (ExactNumber $ toRational $ length vv)
                   , mkValEntry "productN" "Product." $ product @[] @Number
                   , mkValEntry
-                        "checkExactSafeRational"
+                        "numberCheckSafeRational"
                         "Get the exact value of a Number, if it is one."
-                        checkExactSafeRational
+                        numberCheckSafeRational
                   , mkValEntry
                         "checkExactInteger"
                         "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
-                        checkExactSafeRational n >>= safeRationalInteger
+                        numberCheckSafeRational n >>= safeRationalCheckInteger
                   ]
                 ]
           , docTreeEntry

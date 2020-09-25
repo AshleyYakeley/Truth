@@ -129,9 +129,9 @@ interpretNamedConstructor spos n = do
 interpretConstructor :: SourcePos -> SyntaxConstructor -> RefExpression
 interpretConstructor _ (SLNumber n) =
     return $
-    case checkExactSafeRational n of
+    case numberCheckSafeRational n of
         Just r ->
-            case safeRationalInteger r of
+            case safeRationalCheckInteger r of
                 Just i -> qConstExprAny $ jmToValue i
                 Nothing -> qConstExprAny $ jmToValue r
         Nothing -> qConstExprAny $ jmToValue n
