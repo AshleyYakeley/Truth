@@ -4,7 +4,6 @@ module Pinafore.Language.Predefined.SpecialForms
 
 import Pinafore.Base
 import Pinafore.Language.DocTree
-import Pinafore.Language.Error
 import Pinafore.Language.Interpret.TypeDecl
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Scope
@@ -54,6 +53,19 @@ funcShimWit swa swb =
             mkShimWit $
             GroundDolanSingularType FuncPinaforeGroundType $
             ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+
+openEntityShimWit :: forall tid. OpenEntityType tid -> PinaforeShimWit 'Positive (OpenEntity tid)
+openEntityShimWit tp =
+    singleDolanShimWit $
+    mkShimWit $
+    GroundDolanSingularType (EntityPinaforeGroundType NilListType $ OpenEntityGroundType tp) NilDolanArguments
+
+actionShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
+actionShimWit swa =
+    unPosShimWit swa $ \ta conva ->
+        mapPosShimWit (cfmap conva) $
+        singleDolanShimWit $
+        mkShimWit $ GroundDolanSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 special_forms :: [DocTreeEntry BindDoc]
 special_forms =
@@ -113,22 +125,18 @@ special_forms =
                 "An open entity for this anchor. `A` is an open entity type."
                 "@A <anchor>"
                 "A" $
-            MkSpecialForm (ConsListType AnnotConcreteEntityType $ ConsListType AnnotAnchor NilListType) $ \(MkAnyW tp, (anchor, ())) -> do
-                pt <- makeEntity tp $ MkEntity anchor
-                let typef = concreteToPositiveDolanType tp
+            MkSpecialForm (ConsListType AnnotOpenEntityType $ ConsListType AnnotAnchor NilListType) $ \(MkAnyW (tp :: OpenEntityType tid), (anchor, ())) -> do
+                let
+                    typef = openEntityShimWit tp
+                    pt :: OpenEntity tid
+                    pt = MkOpenEntity $ MkEntity anchor
                 return $ MkAnyValue typef pt
           , mkSpecialFormEntry "newOpenEntity" "Generate an open entity. `A` is an open entity type." "@A" "Action A" $
             MkSpecialForm (ConsListType AnnotOpenEntityType NilListType) $ \(MkAnyW (tp :: OpenEntityType tid), ()) -> do
                 let
                     pt :: PinaforeAction (OpenEntity tid)
                     pt = liftIO $ newKeyContainerItem @(FiniteSet (OpenEntity tid))
-                    typef =
-                        actionShimWit $
-                        singleDolanShimWit $
-                        mkShimWit $
-                        GroundDolanSingularType
-                            (EntityPinaforeGroundType NilListType $ OpenEntityGroundType tp)
-                            NilDolanArguments
+                    typef = actionShimWit $ openEntityShimWit tp
                 return $ MkAnyValue typef pt
           , mkSpecialFormEntry
                 "evaluate"
@@ -148,15 +156,3 @@ special_forms =
                 return $ MkAnyValue (valShimWit $ mkShimWit tp) $ specialEvaluate spvals tp
           ]
     ]
-
-actionShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
-actionShimWit swa =
-    unPosShimWit swa $ \ta conva ->
-        mapPosShimWit (cfmap conva) $
-        singleDolanShimWit $
-        mkShimWit $ GroundDolanSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
-
-makeEntity :: MonadThrow ErrorType m => ConcreteEntityType t -> Entity -> m t
-makeEntity (MkConcreteType TopEntityGroundType NilArguments) p = return p
-makeEntity (MkConcreteType (OpenEntityGroundType _) NilArguments) p = return $ MkOpenEntity p
-makeEntity t _ = throw $ InterpretTypeNotOpenEntityError $ exprShow t
