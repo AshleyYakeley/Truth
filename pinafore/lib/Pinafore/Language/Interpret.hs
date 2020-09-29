@@ -82,7 +82,7 @@ interpretLetBindingsClump spos sbinds ra = do
     remonadRefNotation
         (MkWMFunction $ \se -> do
              bmap <- runSourcePos spos $ qUncheckedBindingsComponentLetExpr bl
-             withNewBindings bmap se) $
+             withNewLetBindings bmap se) $
         ra
 
 interpretLetBindingss :: SourcePos -> [[SyntaxBinding]] -> RefNotation a -> RefNotation a
@@ -121,7 +121,7 @@ interpretDeclarations decls = do
 
 interpretNamedConstructor :: SourcePos -> Name -> RefExpression
 interpretNamedConstructor spos n = do
-    me <- liftRefNotation $ runSourcePos spos $ lookupBinding n
+    me <- liftRefNotation $ runSourcePos spos $ lookupLetBinding n
     case me of
         Just e -> return e
         Nothing -> throw $ MkErrorMessage spos $ InterpretConstructorUnknownError n
@@ -170,19 +170,16 @@ showAnnotation AnnotNegativeType = "type"
 
 interpretSpecialForm :: Name -> NonEmpty SyntaxAnnotation -> PinaforeSourceScoped QValue
 interpretSpecialForm name annotations = do
-    msform <- lookupSpecialForm name
-    case msform of
-        Nothing -> throw $ LookupSpecialFormUnknownError name
-        Just (MkSpecialForm largs val) -> do
-            margs <- getComposeM $ specialFormArgs largs $ toList annotations
-            case margs of
-                Just args -> val args
-                Nothing ->
-                    throw $
-                    SpecialFormWrongAnnotationsError
-                        name
-                        (listTypeToList showAnnotation largs)
-                        (fmap showSA $ toList annotations)
+    MkSpecialForm largs val <- lookupSpecialForm name
+    margs <- getComposeM $ specialFormArgs largs $ toList annotations
+    case margs of
+        Just args -> val args
+        Nothing ->
+            throw $
+            SpecialFormWrongAnnotationsError
+                name
+                (listTypeToList showAnnotation largs)
+                (fmap showSA $ toList annotations)
 
 interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression
 interpretConstant _ SCIfThenElse = return $ qConstExprAny $ jmToValue qifthenelse

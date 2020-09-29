@@ -464,7 +464,7 @@ base_predefinitions =
     , docTreeEntry
           "Lists"
           ""
-          [ mkPatEntry "[]" "Empty list" "[None]" $ \(v :: [A]) ->
+          [ mkValPatEntry "[]" "Empty list" ([] @BottomType) $ \(v :: [A]) ->
                 case v of
                     [] -> Just ()
                     _ -> Nothing

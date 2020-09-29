@@ -18,8 +18,8 @@ module Pinafore.Language.Scope
     , convertFailure
     , SpecialVals(..)
     , getSpecialVals
-    , lookupBinding
-    , withNewBindings
+    , lookupLetBinding
+    , withNewLetBindings
     , lookupSpecialForm
     , withNewSpecialForms
     , lookupNamedType
@@ -79,13 +79,16 @@ newtype SpecialVals (ts :: Type) = MkSpecialVals
         -- ^ in Action because this can do things like import files
     }
 
+data ScopeBinding (ts :: Type)
+    = ValueBinding (ScopeExpression ts)
+                   (Maybe (ScopePatternConstructor ts))
+    | TypeBinding (NamedType ts)
+    | SpecialFormBinding (SpecialForm ts (SourceScoped ts))
+
 data Scope (ts :: Type) = MkScope
-    { scopeBindings :: Map Name (ScopeExpression ts)
-    , scopePatternConstructors :: Map Name (ScopePatternConstructor ts)
-    , scopeTypes :: Map Name (NamedType ts)
+    { scopeBindings :: Map Name (ScopeBinding ts)
     , scopeOpenEntitySubtypes :: [SubtypeEntry OpenEntityShim TypeIDType]
     , scopeSpecialVals :: SpecialVals ts
-    , scopeSpecialForms :: Map Name (SpecialForm ts (SourceScoped ts))
     }
 
 newtype Scoped (ts :: Type) a =
@@ -106,8 +109,7 @@ instance Monoid a => Monoid (Scoped ts a) where
     mempty = pure mempty
 
 runScoped :: SpecialVals ts -> Scoped ts a -> InterpretResult a
-runScoped spvals (MkScoped qa) =
-    evalStateT (runReaderT qa $ MkScope mempty mempty mempty mempty spvals mempty) zeroTypeID
+runScoped spvals (MkScoped qa) = evalStateT (runReaderT qa $ MkScope mempty mempty spvals) zeroTypeID
 
 liftScoped :: InterpretResult a -> Scoped ts a
 liftScoped ra = MkScoped $ lift $ lift ra
@@ -161,31 +163,49 @@ instance MonadThrow ErrorType (SourceScoped ts) where
 convertFailure :: Text -> Text -> SourceScoped ts a
 convertFailure ta tb = throw $ TypeConvertError ta tb
 
+withNewBinding :: Name -> ScopeBinding ts -> Scoped ts a -> Scoped ts a
+withNewBinding name b = pLocalScope $ \tc -> tc {scopeBindings = insertMapLazy name b $ scopeBindings tc}
+
+withNewBindings :: Map Name (ScopeBinding ts) -> Scoped ts a -> Scoped ts a
+withNewBindings bb = pLocalScope $ \tc -> tc {scopeBindings = bb <> (scopeBindings tc)}
+
+lookupBinding :: Name -> SourceScoped ts (Maybe (ScopeBinding ts))
+lookupBinding name = do
+    (scopeBindings -> names) <- spScope
+    return $ lookup name names
+
 getSpecialVals :: SourceScoped ts (SpecialVals ts)
 getSpecialVals = do
     (scopeSpecialVals -> spvals) <- spScope
     return spvals
 
-lookupBinding :: Name -> SourceScoped ts (Maybe (ScopeExpression ts))
-lookupBinding name = do
-    (scopeBindings -> names) <- spScope
-    return $ lookup name names
+lookupLetBinding :: Name -> SourceScoped ts (Maybe (ScopeExpression ts))
+lookupLetBinding name = do
+    mb <- lookupBinding name
+    case mb of
+        Just (ValueBinding exp _) -> return $ Just exp
+        _ -> return Nothing
 
-withNewBindings :: Map Name (ScopeExpression ts) -> Scoped ts a -> Scoped ts a
-withNewBindings bb = pLocalScope $ \tc -> tc {scopeBindings = bb <> (scopeBindings tc)}
+withNewLetBindings :: Map Name (ScopeExpression ts) -> Scoped ts a -> Scoped ts a
+withNewLetBindings bb = withNewBindings $ fmap (\exp -> ValueBinding exp Nothing) bb
 
-lookupSpecialForm :: Name -> SourceScoped ts (Maybe (SpecialForm ts (SourceScoped ts)))
+lookupSpecialForm :: Name -> SourceScoped ts (SpecialForm ts (SourceScoped ts))
 lookupSpecialForm name = do
-    (scopeSpecialForms -> names) <- spScope
-    return $ lookup name names
+    mb <- lookupBinding name
+    case mb of
+        Just (SpecialFormBinding sf) -> return sf
+        _ -> throw $ LookupSpecialFormUnknownError name
 
 withNewSpecialForms :: Map Name (SpecialForm ts (SourceScoped ts)) -> Scoped ts a -> Scoped ts a
-withNewSpecialForms bb = pLocalScope $ \tc -> tc {scopeSpecialForms = bb <> (scopeSpecialForms tc)}
+withNewSpecialForms bb = withNewBindings $ fmap SpecialFormBinding bb
 
 lookupNamedTypeM :: Name -> SourceScoped ts (Maybe (NamedType ts))
 lookupNamedTypeM name = do
-    (scopeTypes -> names) <- spScope
-    return $ lookup name names
+    mb <- lookupBinding name
+    return $
+        case mb of
+            Just (TypeBinding t) -> Just t
+            _ -> Nothing
 
 lookupNamedType :: Name -> SourceScoped ts (NamedType ts)
 lookupNamedType name = do
@@ -196,8 +216,11 @@ lookupNamedType name = do
 
 lookupPatternConstructorM :: Name -> SourceScoped ts (Maybe (ScopePatternConstructor ts))
 lookupPatternConstructorM name = do
-    (scopePatternConstructors -> names) <- spScope
-    return $ lookup name names
+    mb <- lookupBinding name
+    return $
+        case mb of
+            Just (ValueBinding _ (Just pc)) -> Just pc
+            _ -> Nothing
 
 lookupPatternConstructor :: Name -> SourceScoped ts (ScopePatternConstructor ts)
 lookupPatternConstructor name = do
@@ -220,8 +243,7 @@ registerType name t =
         mnt <- lookupNamedTypeM name
         case mnt of
             Just _ -> throw $ DeclareTypeDuplicateError name
-            Nothing ->
-                remonadSourcePos (pLocalScope $ \tc -> tc {scopeTypes = insertMapLazy name t (scopeTypes tc)}) mta
+            Nothing -> remonadSourcePos (withNewBinding name $ TypeBinding t) mta
 
 data TypeBox ts x =
     forall t. MkTypeBox Name
@@ -240,18 +262,16 @@ registerTypeNames tboxes = do
     (sc, xx) <- runWriterT $ boxFix (fmap typeBoxToFixBox tboxes) $ lift spScope
     return (MkWMFunction $ pLocalScope (\_ -> sc), xx)
 
-withNewPatternConstructor :: Name -> ScopePatternConstructor ts -> SourceScoped ts (WMFunction (Scoped ts) (Scoped ts))
-withNewPatternConstructor name pc = do
+withNewPatternConstructor ::
+       Name -> ScopeExpression ts -> ScopePatternConstructor ts -> SourceScoped ts (WMFunction (Scoped ts) (Scoped ts))
+withNewPatternConstructor name exp pc = do
     ma <- lookupPatternConstructorM name
     case ma of
         Just _ -> throw $ DeclareConstructorDuplicateError name
-        Nothing ->
-            return $
-            MkWMFunction $
-            pLocalScope (\tc -> tc {scopePatternConstructors = insertMap name pc $ scopePatternConstructors tc})
+        Nothing -> return $ MkWMFunction $ withNewBinding name $ ValueBinding exp $ Just pc
 
-withNewPatternConstructors :: Map Name (ScopePatternConstructor ts) -> Scoped ts a -> Scoped ts a
-withNewPatternConstructors pp = pLocalScope (\tc -> tc {scopePatternConstructors = pp <> scopePatternConstructors tc})
+withNewPatternConstructors :: Map Name (ScopeExpression ts, ScopePatternConstructor ts) -> Scoped ts a -> Scoped ts a
+withNewPatternConstructors pp = withNewBindings $ fmap (\(exp, pc) -> ValueBinding exp $ Just pc) pp
 
 withEntitySubtype :: OpenEntityType tida -> OpenEntityType tidb -> Scoped ts a -> Scoped ts a
 withEntitySubtype (MkOpenEntityType _ ta) (MkOpenEntityType _ tb) =

@@ -47,15 +47,15 @@ predefinedBindings =
     toPredefined $ \db -> do
         val <-
             case db of
-                ValueDefBind val _ -> val
+                ValueDefBind val -> Just val
                 _ -> Nothing
         return $ val ?pinafore
 
-predefinedPatternConstructors :: Map Name PinaforePatternConstructor
+predefinedPatternConstructors :: Map Name (QValue, PinaforePatternConstructor)
 predefinedPatternConstructors =
     toPredefined $ \db ->
         case db of
-            ValueDefBind _ pat -> pat
+            PatternDefBind val pat -> Just (val, pat)
             _ -> Nothing
 
 predefinedSpecialForms :: Map Name PinaforeSpecialForm

@@ -98,16 +98,13 @@ interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
                patts <-
                    for conss $ \(MkConstructor cname lt at tma) -> do
                        ltp <- return $ mapListType concreteToPositiveDolanType lt
-                       patt <- withNewPatternConstructor cname $ toPatternConstructor ctf ltp $ tma . reflId tident
                        ltn <- mapMListType concreteEntityToNegativePinaforeType lt
-                       bind <-
-                           return $
-                           MkWMFunction $
-                           withNewBindings $
-                           singletonMap cname $
-                           qConstExprAny $
-                           MkAnyValue (qFunctionPosWitnesses ltn (mapShimWit (reflId $ invert tident) ctf)) at
-                       return $ patt . bind
+                       let
+                           expr =
+                               qConstExprAny $
+                               MkAnyValue (qFunctionPosWitnesses ltn (mapShimWit (reflId $ invert tident) ctf)) at
+                           pc = toPatternConstructor ctf ltp $ tma . reflId tident
+                       withNewPatternConstructor cname expr pc
                return (cti, compAll patts)
 interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \tidsym -> let
@@ -140,17 +137,13 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                patts <-
                    for conss $ \(MkConstructor cname lt at tma) -> do
                        ltp <- return $ mapListType nonpolarToDolanType lt
-                       patt <-
-                           withNewPatternConstructor cname $
-                           toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
                        ltn <- return $ mapListType nonpolarToDolanType lt
-                       bind <-
-                           return $
-                           MkWMFunction $
-                           withNewBindings $
-                           singletonMap cname $
-                           qConstExprAny $ MkAnyValue (qFunctionPosWitnesses ltn ctf) $ \hl -> isoBackwards tiso $ at hl
-                       return $ patt . bind
+                       let
+                           expr =
+                               qConstExprAny $
+                               MkAnyValue (qFunctionPosWitnesses ltn ctf) $ \hl -> isoBackwards tiso $ at hl
+                           pc = toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
+                       withNewPatternConstructor cname expr pc
                return ((), compAll patts)
 
 interpretTypeDeclarations ::

@@ -49,7 +49,8 @@ runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeScoped a -> Inter
 runPinaforeScoped scp =
     runScoped spvals $
     withNewSpecialForms predefinedSpecialForms $
-    withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
+    withNewPatternConstructors (fmap (\(v, pc) -> (qConstExprAny v, pc)) predefinedPatternConstructors) $
+    withNewLetBindings (fmap qConstExprAny predefinedBindings) scp
 
 spvals :: (?pinafore :: PinaforeContext) => PinaforeSpecialVals
 spvals = let

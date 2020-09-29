@@ -132,9 +132,6 @@ qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
 qUncheckedBindingsComponentLetExpr :: QBindings -> PinaforeSourceScoped (Map Name QExpr)
 qUncheckedBindingsComponentLetExpr = tsUncheckedComponentLet @PinaforeTypeSystem
 
-qValuesLetExpr :: Map Name QValue -> Map Name QExpr
-qValuesLetExpr = tsValuesLet @PinaforeTypeSystem
-
 qEvalExpr ::
        forall m. MonadThrow ExpressionError m
     => QExpr

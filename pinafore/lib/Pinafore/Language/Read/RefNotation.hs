@@ -41,7 +41,7 @@ type RefExpression = RefNotation QExpr
 varRefExpr :: SourcePos -> Name -> RefExpression
 varRefExpr spos name =
     liftRefNotation $ do
-        mexpr <- runSourcePos spos $ lookupBinding name
+        mexpr <- runSourcePos spos $ lookupLetBinding name
         case mexpr of
             Just expr -> return expr
             Nothing -> return $ qVarExpr name
