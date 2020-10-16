@@ -2,11 +2,11 @@
 
 Usage:
 ```text
-pinafore [-i|--interactive] [-n|--no-run] [--data PATH] [SCRIPT]
+pinafore [-i|--interactive] [-n|--no-run] [--data PATH] SCRIPT
 ```
 
-Call `pinafore` with one or more scripts containing actions to run those actions.
-Each script must consist of an expression of a subtype of `Action Any`.
+Call `pinafore` with a script containing actions to run those actions.
+The script must consist of an expression of a subtype of `Action Any`.
 
 By default, pinafore will store local information in the directory `$XDG_DATA_HOME/pinafore` (or else `$HOME/.local/share/pinafore`).
 Use `--data` to specify a different directory.

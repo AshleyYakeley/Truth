@@ -13,7 +13,7 @@ data Options
     | DumpTableOption (Maybe FilePath)
     | RunFileOption Bool
                     (Maybe FilePath)
-                    [FilePath]
+                    (Maybe FilePath)
     | RunInteractiveOption (Maybe FilePath)
 
 optDataFlag :: Parser (Maybe FilePath)
@@ -22,7 +22,8 @@ optDataFlag = optional $ strOption $ long "data" <> metavar "PATH"
 optParser :: Parser Options
 optParser =
     (flag' ShowVersionOption $ long "version" <> short 'v') <|>
-    (RunFileOption <$> (switch $ long "no-run" <> short 'n') <*> optDataFlag <*> (many $ strArgument $ metavar "SCRIPT")) <|>
+    (RunFileOption <$> (switch $ long "no-run" <> short 'n') <*> optDataFlag <*>
+     (optional $ strArgument $ metavar "SCRIPT")) <|>
     ((flag' RunInteractiveOption $ long "interactive" <> short 'i') <*> optDataFlag) <|>
     (flag' PredefinedDocOption $ long "doc-predefined") <|>
     (flag' InfixDocOption $ long "doc-infix") <|>

@@ -8,7 +8,7 @@ import Changes.UI.GTK
 import Pinafore
 import Shapes
 
-runFiles :: Bool -> FilePath -> [FilePath] -> IO ()
+runFiles :: Foldable t => Bool -> FilePath -> t FilePath -> IO ()
 runFiles fNoRun dirpath fpaths =
     changesMainGTK $ \tc -> do
         context <- standardPinaforeContext dirpath tc
