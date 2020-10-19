@@ -7,6 +7,7 @@ import Changes.UI.GTK
 import Data.Shim
 import Data.Time
 import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language.DocTree
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Value

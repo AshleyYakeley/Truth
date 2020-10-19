@@ -1,6 +1,7 @@
 module Pinafore.Language.Predefined.Defs where
 
 import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.Expression

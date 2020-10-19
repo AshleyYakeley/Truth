@@ -1,11 +1,9 @@
 module Pinafore
-    ( module Pinafore.Base
-    , module Pinafore.Storage
-    , module Pinafore.Language
-    , module Pinafore.Main
+    ( module I
     ) where
 
-import Pinafore.Base
-import Pinafore.Language
-import Pinafore.Main
-import Pinafore.Storage
+import Pinafore.Base as I
+import Pinafore.Context as I
+import Pinafore.Language as I
+import Pinafore.Main as I
+import Pinafore.Storage as I

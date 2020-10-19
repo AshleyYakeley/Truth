@@ -7,13 +7,16 @@ import Changes.Core
 import Changes.UI.GTK
 import Pinafore
 import Shapes
+import System.Environment
 
-runFiles :: Foldable t => Bool -> FilePath -> t FilePath -> IO ()
-runFiles fNoRun dirpath fpaths =
-    changesMainGTK $ \tc -> do
-        context <- standardPinaforeContext dirpath tc
-        cvLiftView $
-            for_ fpaths $ \fpath -> do
+runFiles :: Foldable t => Bool -> FilePath -> t (FilePath, [String]) -> IO ()
+runFiles fNoRun dirpath scripts =
+    changesMainGTK $ \tc ->
+        for_ scripts $ \(fpath, iiScriptArguments) -> do
+            let iiScriptName = fpath
+            iiEnvironment <- liftIO getEnvironment
+            context <- standardPinaforeContext MkInvocationInfo {..} dirpath tc
+            cvLiftView $ do
                 ptext <- liftIO $ readFile fpath
                 action <-
                     throwResult $ let
@@ -26,7 +29,11 @@ runFiles fNoRun dirpath fpaths =
 runInteractive :: FilePath -> IO ()
 runInteractive dirpath =
     changesMainGTK $ \tc -> do
-        context <- standardPinaforeContext dirpath tc
+        let
+            iiScriptName = ""
+            iiScriptArguments = []
+        iiEnvironment <- liftIO getEnvironment
+        context <- standardPinaforeContext MkInvocationInfo {..} dirpath tc
         let
             ?pinafore = context
             in cvLiftView pinaforeInteract

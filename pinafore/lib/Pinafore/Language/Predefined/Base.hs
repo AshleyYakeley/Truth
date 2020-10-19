@@ -8,6 +8,7 @@ import Changes.World.Clock
 import Data.Time
 import Data.Time.Clock.System
 import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.If
@@ -159,6 +160,9 @@ unixFormattingDefs uname lname =
 
 getLocalTime :: IO LocalTime
 getLocalTime = fmap zonedTimeToLocalTime getZonedTime
+
+getEnv :: (?pinafore :: PinaforeContext) => Text -> Maybe Text
+getEnv n = fmap pack $ lookup (unpack n) $ iiEnvironment pinaforeInvocationInfo
 
 base_predefinitions :: [DocTreeEntry BindDoc]
 base_predefinitions =
@@ -529,6 +533,20 @@ base_predefinitions =
                 "getTimeMS"
                 "Get the time as a whole number of milliseconds."
                 (liftIO getTimeMS :: PinaforeAction Integer)
+          ]
+    , docTreeEntry
+          "Invocation"
+          "How the script was invoked."
+          [ mkValEntry "scriptName" "The name of the script." (pack $ iiScriptName pinaforeInvocationInfo :: Text)
+          , mkValEntry
+                "scriptArguments"
+                "Arguments passed to the script."
+                (fmap pack $ iiScriptArguments pinaforeInvocationInfo :: [Text])
+          , mkValEntry
+                "environment"
+                "Environment variables."
+                (fmap (\(n, v) -> (pack n, pack v)) $ iiEnvironment pinaforeInvocationInfo :: [(Text, Text)])
+          , mkValEntry "getEnv" "Get environment variable." getEnv
           ]
     , docTreeEntry
           "Undo"

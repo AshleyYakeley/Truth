@@ -21,7 +21,7 @@ module Pinafore.Test
     ) where
 
 import Changes.Core
-import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Language.Name
 import Pinafore.Language.Read
@@ -43,7 +43,7 @@ makeTestPinaforeContext tc = do
         getTableState :: IO PinaforeTableSubject
         getTableState = getReferenceSubject rc tableStateReference
     (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-    pc <- makePinaforeContext model tc
+    pc <- makePinaforeContext nullInvocationInfo model tc
     return (pc, getTableState)
 
 withTestPinaforeContext ::

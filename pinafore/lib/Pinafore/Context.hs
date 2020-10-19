@@ -1,22 +1,37 @@
-module Pinafore.Base.Context
-    ( PinaforeContext
+module Pinafore.Context
+    ( InvocationInfo(..)
+    , nullInvocationInfo
+    , PinaforeContext
     , unliftPinaforeAction
     , unliftPinaforeActionOrFail
     , runPinaforeAction
     , makePinaforeContext
     , nullPinaforeContext
     , pinaforeEntityModel
+    , pinaforeInvocationInfo
     ) where
 
 import Changes.Core
-import Pinafore.Base.Action
-import Pinafore.Base.Edit
-import Pinafore.Base.Know
+import Pinafore.Base
 import Shapes
+
+data InvocationInfo = MkInvocationInfo
+    { iiScriptName :: String
+    , iiScriptArguments :: [String]
+    , iiEnvironment :: [(String, String)]
+    }
+
+nullInvocationInfo :: InvocationInfo
+nullInvocationInfo = let
+    iiScriptName = ""
+    iiScriptArguments = []
+    iiEnvironment = []
+    in MkInvocationInfo {..}
 
 data PinaforeContext = MkPinaforeContext
     { pconRun :: forall a. PinaforeAction a -> View (Know a)
     , pconEntityModel :: Model PinaforeStorageUpdate
+    , pconInvocation :: InvocationInfo
     }
 
 unliftPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction a -> View (Know a)
@@ -35,13 +50,21 @@ runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
 pinaforeEntityModel :: (?pinafore :: PinaforeContext) => Model PinaforeStorageUpdate
 pinaforeEntityModel = pconEntityModel ?pinafore
 
-makePinaforeContext :: Model PinaforeStorageUpdate -> ChangesContext -> LifeCycleIO PinaforeContext
-makePinaforeContext rmodel tc = do
+pinaforeInvocationInfo :: (?pinafore :: PinaforeContext) => InvocationInfo
+pinaforeInvocationInfo = pconInvocation ?pinafore
+
+makePinaforeContext :: InvocationInfo -> Model PinaforeStorageUpdate -> ChangesContext -> LifeCycleIO PinaforeContext
+makePinaforeContext pconInvocation rmodel tc = do
     uh <- liftIO newUndoHandler
-    return $ MkPinaforeContext (unPinaforeAction tc uh) $ undoHandlerModel uh rmodel
+    let
+        pconRun :: forall a. PinaforeAction a -> View (Know a)
+        pconRun = unPinaforeAction tc uh
+        pconEntityModel = undoHandlerModel uh rmodel
+    return $ MkPinaforeContext {..}
 
 nullPinaforeContext :: PinaforeContext
 nullPinaforeContext = let
     pconRun _ = fail "null Pinafore context"
     pconEntityModel = error "no pinafore base"
+    pconInvocation = nullInvocationInfo
     in MkPinaforeContext {..}

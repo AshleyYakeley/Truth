@@ -29,9 +29,9 @@ main =
         DumpTableOption mdirpath -> do
             dirpath <- getDirPath mdirpath
             sqlitePinaforeDumpTable dirpath
-        RunFileOption fNoRun mdirpath fpaths -> do
+        RunFileOption fNoRun mdirpath fscript -> do
             dirpath <- getDirPath mdirpath
-            runFiles fNoRun dirpath fpaths
+            runFiles fNoRun dirpath fscript
         RunInteractiveOption mdirpath -> do
             dirpath <- getDirPath mdirpath
             runInteractive dirpath

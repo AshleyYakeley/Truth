@@ -33,6 +33,7 @@ import Changes.Core
 import Control.Exception
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.Expression

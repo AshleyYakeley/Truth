@@ -12,6 +12,7 @@ module Pinafore.Main
 
 import Changes.Core
 import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Storage
 import Shapes
@@ -25,8 +26,8 @@ filePinaforeType = qNegativeTypeDescription @FilePinaforeType
 doCache :: Bool
 doCache = True
 
-standardPinaforeContext :: FilePath -> ChangesContext -> CreateView PinaforeContext
-standardPinaforeContext dirpath tc = do
+standardPinaforeContext :: InvocationInfo -> FilePath -> ChangesContext -> CreateView PinaforeContext
+standardPinaforeContext invinfo dirpath tc = do
     rc <- viewGetResourceContext
     liftLifeCycleIO $ do
         sqlReference <- liftIO $ sqlitePinaforeTableReference $ dirpath </> "tables.sqlite3"
@@ -38,7 +39,7 @@ standardPinaforeContext dirpath tc = do
                     return $ tableReferenceF rc
                 else return tableReference1
         (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-        makePinaforeContext model tc
+        makePinaforeContext invinfo model tc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

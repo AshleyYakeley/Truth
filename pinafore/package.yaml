@@ -26,6 +26,7 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
+      - Pinafore.Context
       - Pinafore.Language.Value.Instances
       - Pinafore.Language.Value.WholeRef
       - Pinafore.Language.Value.SetRef
@@ -114,6 +115,18 @@ tests:
           - Test.Scripts
           - Test.Interactive
           - Test.UI
+        ghc-options: -threaded
+    app:
+        source-dirs: app
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - optparse-applicative
+          - tasty
+          - tasty-hunit
+        main: Test.hs
+        other-modules:
+          - Options
         ghc-options: -threaded
 
 benchmarks:
