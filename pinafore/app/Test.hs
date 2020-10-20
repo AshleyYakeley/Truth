@@ -4,13 +4,14 @@ module Main
 
 import Options
 import Options.Applicative
+import Options.Applicative.Help hiding ((</>))
 import Shapes
 import Shapes.Test
 
 testOptions :: [String] -> Maybe Options -> TestTree
 testOptions args expected =
     testTree (intercalate " " args) $ let
-        found = getParseResult $ execParserPure (prefs mempty) optParserInfo args
+        found = getParseResult $ execParserPure defaultPrefs optParserInfo args
         in assertEqual "" expected found
 
 testOptionParsing :: TestTree
@@ -37,8 +38,18 @@ testOptionParsing =
         , testOptions ["-n", "scriptname", "-n"] $ Just $ RunFileOption True Nothing $ Just ("scriptname", ["-n"])
         ]
 
+testOptionHelp :: TestTree
+testOptionHelp =
+    testOutputVsFile ("test" </> "golden") "option-help" $ \h -> do
+        let pr = execParserPure defaultPrefs optParserInfo ["--help"]
+        case pr of
+            Failure (ParserFailure f) ->
+                case f "pinafore" of
+                    (ph, _, _) -> hPutStrLn h $ renderHelp 80 ph
+            _ -> assertFailure "parser didn't fail"
+
 tests :: TestTree
-tests = testTree "app" [testOptionParsing]
+tests = testTree "app" [testOptionParsing, testOptionHelp]
 
 main :: IO ()
 main = testMain tests

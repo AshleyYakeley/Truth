@@ -5,20 +5,21 @@ module Options
     ) where
 
 import Options.Applicative as OA
+import Options.Applicative.Builder.Internal as OA
 import Options.Applicative.Types as OA
 import Shapes
 
-remainingParser :: Parser [String]
-remainingParser = let
+remainingParser :: Mod CommandFields a -> Parser (String, [String])
+remainingParser (Mod _ _ modprops) = let
     remainingParserInfo :: ParserInfo [String]
     remainingParserInfo = (info (many $ strArgument mempty) mempty) {infoPolicy = AllPositionals}
-    optMain = CmdReader Nothing [] $ \s -> Just $ fmap ((:) s) remainingParserInfo
-    propVisibility = Internal
+    optMain = CmdReader Nothing [] $ \s -> Just $ fmap ((,) s) remainingParserInfo
+    propVisibility = Visible
     propHelp = mempty
     propMetaVar = ""
     propShowDefault = Nothing
     propDescMod = Nothing
-    optProps = OptProperties {..}
+    optProps = modprops OptProperties {..}
     in OptP OA.Option {..}
 
 data Options
@@ -35,10 +36,6 @@ data Options
 optDataFlag :: Parser (Maybe FilePath)
 optDataFlag = optional $ strOption $ long "data" <> metavar "PATH"
 
-toScript :: [String] -> Maybe (FilePath, [String])
-toScript [] = Nothing
-toScript (fpath:args) = Just (fpath, args)
-
 optParser :: Parser Options
 optParser =
     (flag' ShowVersionOption $ long "version" <> short 'v') <|>
@@ -46,7 +43,8 @@ optParser =
     (flag' PredefinedDocOption $ long "doc-predefined") <|>
     (flag' InfixDocOption $ long "doc-infix") <|>
     ((flag' DumpTableOption $ long "dump-table") <*> optDataFlag) <|>
-    (RunFileOption <$> (switch $ long "no-run" <> short 'n') <*> optDataFlag <*> fmap toScript remainingParser)
+    (RunFileOption <$> (switch $ long "no-run" <> short 'n') <*> optDataFlag <*>
+     fmap Just (remainingParser $ metavar "PATH"))
 
 optParserInfo :: ParserInfo Options
 optParserInfo = info optParser mempty
