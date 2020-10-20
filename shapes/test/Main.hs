@@ -3,12 +3,11 @@ module Main where
 import Data.IORef
 import Data.Time
 import Shapes
-import Test.Tasty
-import Test.Tasty.HUnit
+import Shapes.Test
 
 testComposeM :: TestTree
 testComposeM =
-    testCase "composeM" $ do
+    testTree "composeM" $ do
         r1 <- newIORef False
         r2 <- newIORef False
         let
@@ -42,7 +41,7 @@ withMessage appendStr s m = do
 
 testCoroutine :: TestTree
 testCoroutine =
-    testCase "coroutine" $
+    testTree "coroutine" $
     compareTest "+A+B-A-B" $ \appendStr -> do
         _ <-
             coroutine
@@ -58,7 +57,7 @@ testCoroutine =
 
 testLifeCycle :: TestTree
 testLifeCycle =
-    testCase "lifecycle" $
+    testTree "lifecycle" $
     compareTest "ACDB" $ \appendStr -> do
         let
             lc :: LifeCycleIO ()
@@ -74,7 +73,7 @@ baseTime = UTCTime (ModifiedJulianDay 0) 0
 
 testFastClock :: TestTree
 testFastClock =
-    testCase "fast" $ do
+    testTree "fast" $ do
         ref <- newIORef False
         runLifeCycle $ do
             _ <-
@@ -90,16 +89,16 @@ testFastClock =
 
 testSlowClock :: TestTree
 testSlowClock =
-    testCase "slow" $
+    testTree "slow" $
     runLifeCycle $ do
         _ <- clock baseTime (5000 * nominalDay) $ \_ -> return ()
         return ()
 
 testClock :: TestTree
-testClock = testGroup "clock" [testFastClock, testSlowClock]
+testClock = testTree "clock" [testFastClock, testSlowClock]
 
 tests :: TestTree
-tests = testGroup "shapes" [testComposeM, testCoroutine, testLifeCycle, testClock]
+tests = testTree "shapes" [testComposeM, testCoroutine, testLifeCycle, testClock]
 
 main :: IO ()
-main = defaultMain tests
+main = testMain tests

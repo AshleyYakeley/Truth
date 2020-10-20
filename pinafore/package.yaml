@@ -100,11 +100,6 @@ tests:
           - changes-core
           - changes-gtk
           - pinafore
-          - tasty
-          - tasty-expected-failure
-          - tasty-hunit
-          - tasty-golden
-          - tasty-quickcheck
         main: Main.hs
         other-modules:
           - Test.Context
@@ -122,8 +117,6 @@ tests:
           - base >= 4.12
           - shapes
           - optparse-applicative
-          - tasty
-          - tasty-hunit
         main: Test.hs
         other-modules:
           - Options

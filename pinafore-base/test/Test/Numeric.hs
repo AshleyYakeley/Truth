@@ -5,8 +5,7 @@ module Test.Numeric
 import Pinafore.Base
 import Shapes
 import Shapes.Numeric
-import Test.Tasty
-import Test.Tasty.HUnit
+import Shapes.Test
 
 class HasNaN t where
     nan :: t
@@ -27,16 +26,16 @@ instance HasNaN Number where
 
 testBothProperty :: String -> (forall r. (RealFrac r, HasNaN r) => Proxy r -> IO ()) -> TestTree
 testBothProperty name prop =
-    testGroup
+    testTree
         name
-        [ testCase "Double" $ prop @Double Proxy
-        , testCase "Number" $ prop @Number Proxy
-        , testCase "SafeRational" $ prop @SafeRational Proxy
+        [ testTree "Double" $ prop @Double Proxy
+        , testTree "Number" $ prop @Number Proxy
+        , testTree "SafeRational" $ prop @SafeRational Proxy
         ]
 
 testNumeric :: TestTree
 testNumeric =
-    testGroup
+    testTree
         "numeric"
         [ testBothProperty "isnan nan" $ \(Proxy :: Proxy r) -> assertEqual "" True $ isnan @r nan
         , testBothProperty "isnan 3" $ \(Proxy :: Proxy r) -> assertEqual "" False $ isnan @r 3
@@ -66,5 +65,5 @@ testNumeric =
         , testBothProperty "3 >= 3" $ \(Proxy :: Proxy r) -> assertEqual "" True $ (3 :: r) >= 3
         , testBothProperty "3 <= 3" $ \(Proxy :: Proxy r) -> assertEqual "" True $ (3 :: r) <= 3
         , testBothProperty "isnan $ 0 / 0" $ \(Proxy :: Proxy r) -> assertEqual "" True $ isnan @r $ 0 / 0
-        , testGroup "isnan $ 1 / 0" [testCase "SafeRational" $ assertEqual "" True $ isnan @SafeRational $ 1 / 0]
+        , testTree "isnan $ 1 / 0" [testTree "SafeRational" $ assertEqual "" True $ isnan @SafeRational $ 1 / 0]
         ]

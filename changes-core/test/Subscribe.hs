@@ -7,7 +7,7 @@ module Subscribe
 
 import Changes.Core
 import Shapes
-import Test.Tasty
+import Shapes.Test
 import Test.Useful
 
 debugLens ::
@@ -575,7 +575,7 @@ testPairedSharedString2 =
 
 testSubscribe :: TestTree
 testSubscribe =
-    testGroup
+    testTree
         "subscribe"
         [ testUpdateReference
         , testPair

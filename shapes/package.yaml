@@ -8,9 +8,12 @@ _common: !include "../common.yaml"
 library:
     source-dirs: src
     dependencies:
+      # core
       - base >= 4.12
       - time
+      - containers
       - stm
+      # general
       - constraints
       - mono-traversable
       - contravariant
@@ -19,13 +22,22 @@ library:
       - transformers
       - transformers-extra
       - hashable
-      - containers
       - unordered-containers
       - bytestring
       - cereal
       - text
       - cereal-text
       - random
+      # test
+      - directory
+      - filepath
+      - tasty
+      - tasty-expected-failure
+      - tasty-hunit
+      - tasty-golden
+      - QuickCheck
+      - tasty-quickcheck
+      # mine
       - countable
       - witness
       - open-witness
@@ -68,6 +80,7 @@ library:
       - Shapes
       - Shapes.Numeric
       - Shapes.Unsafe
+      - Shapes.Test
     other-modules:
       - Shapes.Import
       - Shapes.Instances
@@ -79,7 +92,5 @@ tests:
           - base >= 4.12
           - time
           - shapes
-          - tasty
-          - tasty-hunit
         main: Main.hs
         ghc-options: -threaded

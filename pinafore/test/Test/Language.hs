@@ -11,13 +11,11 @@ import Pinafore.Test
 import Prelude (read)
 import Shapes
 import Shapes.Numeric
-import Test.Tasty
-import Test.Tasty.ExpectedFailure
-import Test.Tasty.HUnit
+import Shapes.Test
 
 testOp :: Name -> TestTree
 testOp n =
-    testCase (show $ unpack n) $ do
+    testTree (show $ unpack n) $ do
         case unpack n of
             '(':_ -> assertFailure "parenthesis"
             _ -> return ()
@@ -28,7 +26,7 @@ testOp n =
 testInfix :: TestTree
 testInfix = let
     names = filter nameIsInfix $ fmap (MkName . docName) $ toList predefinedDoc
-    in testGroup "infix" $ fmap testOp names
+    in testTree "infix" $ fmap testOp names
 
 newtype PreciseEq t =
     MkPreciseEq t
@@ -53,11 +51,11 @@ instance Eq (PreciseEq t) => Eq (PreciseEq (Maybe t)) where
     _ == _ = False
 
 testCalc :: String -> Number -> Number -> TestTree
-testCalc name expected found = testCase name $ assertEqual "" (MkPreciseEq expected) (MkPreciseEq found)
+testCalc name expected found = testTree name $ assertEqual "" (MkPreciseEq expected) (MkPreciseEq found)
 
 testNumbersArithemetic :: TestTree
 testNumbersArithemetic =
-    testGroup
+    testTree
         "arithmetic"
         [ testCalc "1/0" (InexactNumber $ 1 / 0) (1 / 0)
         , testCalc "-1/0" (InexactNumber $ -1 / 0) (-1 / 0)
@@ -74,11 +72,11 @@ testShowRead ::
     -> t
     -> TestTree
 testShowRead str t =
-    testGroup
+    testTree
         (show str)
-        [ testCase "show" $ assertEqual "" str $ show t
-        , testCase "read" $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ read str
-        , testCase "read-show" $ assertEqual "" str $ show $ read @t str
+        [ testTree "show" $ assertEqual "" str $ show t
+        , testTree "read" $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ read str
+        , testTree "read-show" $ assertEqual "" str $ show $ read @t str
         ]
 
 testRead ::
@@ -86,11 +84,11 @@ testRead ::
     => String
     -> Maybe t
     -> TestTree
-testRead str t = testCase (show str) $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ readMaybe str
+testRead str t = testTree (show str) $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ readMaybe str
 
 testNumbersShowRead :: TestTree
 testNumbersShowRead =
-    testGroup
+    testTree
         "show,read"
         [ testShowRead "0" $ ExactNumber 0
         , testShowRead "1" $ ExactNumber 1
@@ -120,10 +118,7 @@ testNumbersShowRead =
         ]
 
 testNumbers :: TestTree
-testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
-
-testQueryValues :: TestTree
-testQueryValues = testGroup "query values" []
+testNumbers = testTree "numbers" [testNumbersArithemetic, testNumbersShowRead]
 
 data LangResult
     = LRCheckFail
@@ -132,7 +127,7 @@ data LangResult
 
 testQuery :: Text -> LangResult -> TestTree
 testQuery query expected =
-    testCase (show $ unpack query) $
+    testTree (show $ unpack query) $
     case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue query of
         FailureResult e ->
             case expected of
@@ -168,18 +163,17 @@ testSubtype1 b t1 t2 vs =
         else []
 
 testSubtype :: Bool -> Text -> Text -> [Text] -> TestTree
-testSubtype b t1 t2 vs = testGroup (unpack $ t1 <> " <: " <> t2) $ testSubtype1 b t1 t2 vs
+testSubtype b t1 t2 vs = testTree (unpack $ t1 <> " <: " <> t2) $ testSubtype1 b t1 t2 vs
 
 testSameType :: Bool -> Text -> Text -> [Text] -> TestTree
-testSameType b t1 t2 vs =
-    testGroup (unpack $ t1 <> " = " <> t2) $ (testSubtype1 b t1 t2 vs) <> (testSubtype1 b t2 t1 vs)
+testSameType b t1 t2 vs = testTree (unpack $ t1 <> " = " <> t2) $ (testSubtype1 b t1 t2 vs) <> (testSubtype1 b t2 t1 vs)
 
 testQueries :: TestTree
 testQueries =
-    testGroup
+    testTree
         "queries"
-        [ testGroup "trivial" [testQuery "" $ LRCheckFail, testQuery "x" $ LRCheckFail]
-        , testGroup
+        [ testTree "trivial" [testQuery "" $ LRCheckFail, testQuery "x" $ LRCheckFail]
+        , testTree
               "comments"
               [ testQuery "# comment\n1" $ LRSuccess "1"
               , testQuery "1# comment\n" $ LRSuccess "1"
@@ -191,9 +185,9 @@ testQueries =
               , testQuery "{# A {# B #} C #} 1" $ LRSuccess "1"
               , testQuery "{#\nA\n{#\nB\n#}\nC\n#}\n1" $ LRSuccess "1"
               ]
-        , testGroup
+        , testTree
               "constants"
-              [ testGroup
+              [ testTree
                     "numeric"
                     [ testQuery "0.5" $ LRSuccess "1/2"
                     , testQuery "0._3" $ LRSuccess "1/3"
@@ -224,20 +218,20 @@ testQueries =
               , testQuery "let opentype T in entityAnchor $ openEntity @T !\"example\"" $
                 LRSuccess "!1AF8A5FD-24AAAF3E-3668C588-6C74D36A-70ED9618-CC874895-E4569C9F-FCD42CD3"
               ]
-        , testGroup
+        , testTree
               "list construction"
               [ testQuery "[]" $ LRSuccess $ show @[Text] []
               , testQuery "[1]" $ LRSuccess $ "[1]"
               , testQuery "[1,2,3]" $ LRSuccess "[1, 2, 3]"
               ]
-        , testGroup
+        , testTree
               "functions"
               [ testQuery "\\x -> x" $ LRSuccess "<?>"
               , testQuery "\\x -> 1" $ LRSuccess "<?>"
               , testQuery "\\x y -> y" $ LRSuccess "<?>"
               , testQuery "\\x y z -> [x,y,z]" $ LRSuccess "<?>"
               ]
-        , testGroup
+        , testTree
               "predefined"
               [ testQuery "abs" $ LRSuccess "<?>"
               , testQuery "fst" $ LRSuccess "<?>"
@@ -246,7 +240,7 @@ testQueries =
               , testQuery "(==)" $ LRSuccess "<?>"
               , testQuery "\\a b -> a == b" $ LRSuccess "<?>"
               ]
-        , testGroup
+        , testTree
               "let-binding"
               [ testQuery "let in 27" $ LRSuccess "27"
               , testQuery "let a=\"5\" in a" $ LRSuccess "5"
@@ -262,7 +256,7 @@ testQueries =
               , testQuery "let a=7;b=a in b" $ LRSuccess "7"
               , testQuery "let a=2 in let b=a in b" $ LRSuccess "2"
               ]
-        , testGroup
+        , testTree
               "partial keywords"
               [ testQuery "let i=1 in i" $ LRSuccess "1"
               , testQuery "let inx=1 in inx" $ LRSuccess "1"
@@ -277,7 +271,7 @@ testQueries =
               , testQuery "let fals=1 in fals" $ LRSuccess "1"
               , testQuery "let falsex=1 in falsex" $ LRSuccess "1"
               ]
-        , testGroup
+        , testTree
               "recursive let-binding"
               [ testQuery "let a=1 in a" $ LRSuccess "1"
               , testQuery "let a=1 in let a=2 in a" $ LRSuccess "2"
@@ -296,26 +290,26 @@ testQueries =
               , testQuery "let b = a b; a x = 1 in b" $ LRSuccess "1"
               , testQuery "let a x = 1; b = a c; c=b in b" $ LRSuccess "1"
               ]
-        , testGroup
+        , testTree
               "recursive let-binding polymorphism"
               [ testQuery "let i = \\x -> x in (1 + i 1, i False)" $ LRSuccess "(2, False)"
               , testQuery "let i = \\x -> x; r = (1 + i 1, i False) in r" $ LRSuccess "(2, False)"
               , testQuery "let r = (1 + i 1, i False); i = \\x -> x in r" $ LRSuccess "(2, False)"
               ]
-        , testGroup
+        , testTree
               "duplicate bindings"
               [ testQuery "let a=1;a=1 in a" $ LRCheckFail
               , testQuery "let a=1;a=2 in a" $ LRCheckFail
               , testQuery "let a=1;b=0;a=2 in a" $ LRCheckFail
               ]
-        , testGroup
+        , testTree
               "lexical scoping"
               [ testQuery "let a=1 in let b=a in let a=3 in a" $ LRSuccess "3"
               , testQuery "let a=1;b=a;a=3 in a" $ LRCheckFail
               , testQuery "let a=1 in let b=a in let a=3 in b" $ LRSuccess "1"
               , testQuery "let a=1;b=a;a=3 in b" $ LRCheckFail
               ]
-        , testGroup
+        , testTree
               "operators"
               [ testQuery "0 == 1" $ LRSuccess "False"
               , testQuery "1 == 1" $ LRSuccess "True"
@@ -356,7 +350,7 @@ testQueries =
               , testQuery "let f x = x + 2 in f -1" $ LRSuccess "1"
               , testQuery "let f = 2 in f - 1" $ LRSuccess "1"
               ]
-        , testGroup
+        , testTree
               "boolean"
               [ testQuery "True && True" $ LRSuccess "True"
               , testQuery "True && False" $ LRSuccess "False"
@@ -369,13 +363,13 @@ testQueries =
               , testQuery "not True" $ LRSuccess "False"
               , testQuery "not False" $ LRSuccess "True"
               ]
-        , testGroup
+        , testTree
               "text"
               [ testQuery "\"pqrs\"" $ LRSuccess "pqrs"
               , testQuery "textLength \"abd\"" $ LRSuccess "3"
               , testQuery "textSection 4 3 \"ABCDEFGHIJKLMN\"" $ LRSuccess "EFG"
               ]
-        , testGroup
+        , testTree
               "operator precedence"
               [ testQuery "1 + 2 * 3" $ LRSuccess "7"
               , testQuery "3 * 2 + 1" $ LRSuccess "7"
@@ -384,20 +378,20 @@ testQueries =
               , testQuery "12 / 2 / 2" $ LRSuccess "3"
               , testQuery "0 == 0 == 0" $ LRCheckFail
               ]
-        , testGroup
+        , testTree
               "if/then/else"
               [ testQuery "if True then 3 else 4" $ LRSuccess "3"
               , testQuery "if False then 3 else 4" $ LRSuccess "4"
               , testQuery "if False then if True then 1 else 2 else if True then 3 else 4" $ LRSuccess "3"
               ]
-        , testGroup "pairs" [testQuery "fst (7,9)" $ LRSuccess "7", testQuery "snd (7,9)" $ LRSuccess "9"]
-        , testGroup
+        , testTree "pairs" [testQuery "fst (7,9)" $ LRSuccess "7", testQuery "snd (7,9)" $ LRSuccess "9"]
+        , testTree
               "either"
               [ testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Left \"x\"" $ LRSuccess "(Left, x)"
               , testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Right \"x\"" $
                 LRSuccess "(Right, x)"
               ]
-        , testGroup
+        , testTree
               "type signature"
               [ testQuery "let i : a -> a; i x = x in i 3" $ LRSuccess "3"
               , testQuery "let i : Number -> Number; i x = x in i 3" $ LRSuccess "3"
@@ -414,7 +408,7 @@ testQueries =
               , testQuery "let i : Maybe Number; i = Just 5 in i" $ LRSuccess "Just 5"
               , testQuery "let i : Maybe Number; i = Nothing in i" $ LRSuccess "Nothing"
               ]
-        , testGroup
+        , testTree
               "patterns"
               [ testQuery "(\\a -> 5) 2" $ LRSuccess "5"
               , testQuery "(\\a -> a) 2" $ LRSuccess "2"
@@ -422,9 +416,9 @@ testQueries =
               , testQuery "(\\a@b -> (a,b)) 2" $ LRSuccess "(2, 2)"
               , testQuery "(\\(a,b) -> a + b) (5,6)" $ LRSuccess "11"
               ]
-        , testGroup
+        , testTree
               "case"
-              [ testGroup
+              [ testTree
                     "basic"
                     [ testQuery "case 2 of a -> 5 end" $ LRSuccess "5"
                     , testQuery "case 2 of a -> 5; a -> 3 end" $ LRSuccess "5"
@@ -434,40 +428,40 @@ testQueries =
                     , testQuery "case 2 of _ -> 5; _ -> 3 end" $ LRSuccess "5"
                     , testQuery "case 2 of a@b -> (a,b) end" $ LRSuccess "(2, 2)"
                     ]
-              , testGroup
+              , testTree
                     "Boolean"
                     [ testQuery "case True of True -> 5; False -> 7 end" $ LRSuccess "5"
                     , testQuery "case False of True -> 5; False -> 7 end" $ LRSuccess "7"
                     , testQuery "case True of False -> 7; True -> 5 end" $ LRSuccess "5"
                     , testQuery "case False of False -> 7; True -> 5 end" $ LRSuccess "7"
                     ]
-              , testGroup
+              , testTree
                     "Number"
                     [ testQuery "case 37 of 37 -> True; _ -> False end" $ LRSuccess "True"
                     , testQuery "case 38 of 37 -> True; _ -> False end" $ LRSuccess "False"
                     , testQuery "case -24.3 of 37 -> 1; -24.3 -> 2; _ -> 3 end" $ LRSuccess "2"
                     ]
-              , testGroup
+              , testTree
                     "String"
                     [ testQuery "case \"Hello\" of \"Hello\" -> True; _ -> False end" $ LRSuccess "True"
                     , testQuery "case \"thing\" of \"Hello\" -> True; _ -> False end" $ LRSuccess "False"
                     , testQuery "case \"thing\" of \"Hello\" -> 1; \"thing\" -> 2; _ -> 3 end" $ LRSuccess "2"
                     ]
-              , testGroup
+              , testTree
                     "Either"
                     [ testQuery "case Left 3 of Left a -> a; Right _ -> 1 end" $ LRSuccess "3"
                     , testQuery "case Right 4 of Left a -> a + 1; Right a -> a end" $ LRSuccess "4"
                     , testQuery "case Right 7 of Right 4 -> True; _ -> False end" $ LRSuccess "False"
                     , testQuery "case Right 7 of Right 4 -> 1; Right 7 -> 2; Left _ -> 3; _ -> 4 end" $ LRSuccess "2"
                     ]
-              , testGroup "Unit" [testQuery "case () of () -> 4 end" $ LRSuccess "4"]
-              , testGroup "Pair" [testQuery "case (2,True) of (2,a) -> a end" $ LRSuccess "True"]
-              , testGroup
+              , testTree "Unit" [testQuery "case () of () -> 4 end" $ LRSuccess "4"]
+              , testTree "Pair" [testQuery "case (2,True) of (2,a) -> a end" $ LRSuccess "True"]
+              , testTree
                     "Maybe"
                     [ testQuery "case Just 3 of Just a -> a + 1; Nothing -> 7 end" $ LRSuccess "4"
                     , testQuery "case Nothing of Just a -> a + 1; Nothing -> 7 end" $ LRSuccess "7"
                     ]
-              , testGroup
+              , testTree
                     "List"
                     [ testQuery "case [] of [] -> True; _ -> False end" $ LRSuccess "True"
                     , testQuery "case [] of _::_ -> True; _ -> False end" $ LRSuccess "False"
@@ -482,14 +476,14 @@ testQueries =
                     , testQuery "case [3,4] of [a,b] -> (a,b) end" $ LRSuccess "(3, 4)"
                     ]
               ]
-        , testGroup
+        , testTree
               "subtype"
               [ testQuery "let i : Integer -> Number; i x = x in i 3" $ LRSuccess "3"
               , testQuery "let a : Integer; a = 3; b : Number; b = a in b" $ LRSuccess "3"
               , testQuery "let i : FiniteSetRef -a -> SetRef a; i x = x in 3" $ LRSuccess "3"
               , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ LRSuccess "3"
               ]
-        , testGroup
+        , testTree
               "subsume" -- see #58 for expected failures
               [ testQuery "let a : (); a = a in ()" $ LRSuccess "unit"
               , testQuery "let a : Integer; a = a in ()" $ LRSuccess "unit"
@@ -509,12 +503,12 @@ testQueries =
               , testSameType False "[Integer|Text]" "[Integer]|[Text]" ["[]"]
               , testQuery "let a : Integer|Text; a = 3; b : [Integer]|[Text]; b = [a] in b" $ LRSuccess "[3]"
               ]
-        , testGroup
+        , testTree
               "recursive"
               [ testQuery "let x : rec a. [a]; x = [] in x" $ LRSuccess "[]"
               , let
                     atree = ["[]", "[[]]", "[[[[]]]]", "[[], [[]]]"]
-                    in testGroup
+                    in testTree
                            "equivalence"
                            [ testSameType True "Integer" "Integer" ["0"]
                            , testSameType True "Integer" "rec a. Integer" ["0"]
@@ -542,7 +536,7 @@ testQueries =
                            , testSameType False "[rec a. a]" "[None]" ["[]"]
                            , testSameType True "rec a. Integer" "Integer" ["0"]
                            , testSameType True "[rec a. Integer]" "[Integer]" ["[0]"]
-                           , testGroup
+                           , testTree
                                  "unroll"
                                  [ testSameType True "rec a. [a]" "[rec a. [a]]" atree
                                  , testSameType False "rec a. ([a]|Integer)" "[rec a. ([a]|Integer)]|Integer" ["[]"]
@@ -551,7 +545,7 @@ testQueries =
                                  , testSameType False "rec a. [a|Integer]" "[rec a. [a|Integer]|Integer]" ["[3]"]
                                  ]
                            ]
-              , testGroup
+              , testTree
                     "case"
                     [ testQuery "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount Nothing" $
                       LRSuccess "0"
@@ -675,7 +669,7 @@ testQueries =
                       if good
                           then val
                           else altval
-                  in testGroup
+                  in testTree
                          (unpack $ supertype <> " -> " <> subtype)
                          [ testQuery
                                ("let x: " <>
@@ -704,7 +698,7 @@ testQueries =
                                then result
                                else LRRunError
                          ]
-              in testGroup
+              in testTree
                      "supertype"
                      [ testSupertype "Integer" "Integer" "3" "0" True
                      , testSupertype "Rational" "Integer" "3" "0" True
@@ -721,7 +715,7 @@ testQueries =
 
 testShim :: Text -> String -> String -> TestTree
 testShim query expectedType expectedShim =
-    testCase (unpack query) $
+    testTree (unpack query) $
     case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue query of
         FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
         SuccessResult (MkAnyValue (MkPosShimWit t shim) _) -> do
@@ -730,7 +724,7 @@ testShim query expectedType expectedShim =
 
 testShims :: TestTree
 testShims =
-    testGroup
+    testTree
         "shim"
         [ testShim "3" "Integer" "(join1 id)"
         , testShim "negate" "Integer -> Integer" "(join1 (co (contra id (meet1 id)) (join1 id)))"
@@ -754,6 +748,4 @@ testShims =
         ]
 
 testLanguage :: TestTree
-testLanguage =
-    localOption (mkTimeout 2000000) $
-    testGroup "language" [testInfix, testNumbers, testShims, testQueryValues, testQueries]
+testLanguage = localOption (mkTimeout 2000000) $ testTree "language" [testInfix, testNumbers, testShims, testQueries]

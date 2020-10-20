@@ -10,8 +10,8 @@ import GI.Gtk
 import Pinafore
 import Pinafore.Test
 import Shapes hiding (get)
+import Shapes.Test
 import Test.Context
-import Test.Tasty
 
 data Timing
     = SyncTiming

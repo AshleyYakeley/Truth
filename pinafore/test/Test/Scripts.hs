@@ -5,13 +5,12 @@ module Test.Scripts
 import Pinafore
 import Pinafore.Test
 import Shapes
-import Test.Tasty
-import Test.Tasty.HUnit
+import Shapes.Test
 
 -- Just check, don't run
 testExample :: String -> TestTree
 testExample fpath =
-    testCase fpath $
+    testTree fpath $
     withTestPinaforeContext $ \_ _ _getTableState -> do
         ptext <- readFile fpath
         _ <- throwResult $ pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
@@ -19,7 +18,7 @@ testExample fpath =
 
 testScripts :: TestTree
 testScripts =
-    testGroup
+    testTree
         "scripts"
         [ testExample "test/script/empty"
         , testExample "test/script/simple"

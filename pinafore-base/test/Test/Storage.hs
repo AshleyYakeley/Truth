@@ -6,8 +6,7 @@ import Changes.Core
 import Pinafore.Base
 import Pinafore.Storage
 import Shapes
-import Test.Tasty
-import Test.Tasty.HUnit
+import Shapes.Test
 
 data TestContext = MkTestContext
     { putProperty :: forall s v. EntityAdapter s -> EntityAdapter v -> Predicate -> s -> Know v -> IO ()
@@ -20,7 +19,7 @@ data TestContext = MkTestContext
 
 testStorageCase :: String -> (TestContext -> IO ()) -> TestTree
 testStorageCase name action =
-    testCase name $ do
+    testTree name $ do
         stateRef <- makeMemoryReference (MkPinaforeTableSubject [] [] [] []) $ \_ -> True
         let
             getState :: IO PinaforeTableSubject
@@ -142,7 +141,7 @@ enumAdapter = let
 
 testStorage :: TestTree
 testStorage =
-    testGroup
+    testTree
         "storage"
         [ testStorageCase "empty" $ \MkTestContext {..} -> checkEmpty "0"
         , testStorageCase "property-plain-plain" $ \tc -> do

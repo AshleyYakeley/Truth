@@ -4,8 +4,7 @@ module Lens
 
 import Changes.Core
 import Shapes
-import Test.Tasty
-import Test.Tasty.HUnit
+import Shapes.Test
 
 collectModelUpdates :: ResourceContext -> Model update -> LifeCycleIO (IO [update])
 collectModelUpdates rc sub = do
@@ -39,7 +38,7 @@ updToString OrderedListUpdateClear = "clear"
 -- the order is given in the context as a map from Char to Int
 testContextOrderedSetLensCase :: [(Char, Int)] -> [(SequencePoint String, SequencePoint String)] -> TestTree
 testContextOrderedSetLensCase assigns expected =
-    testCase (show assigns) $ do
+    testTree (show assigns) $ do
         let
             rc :: ResourceContext
             rc = emptyResourceContext
@@ -89,7 +88,7 @@ testContextOrderedSetLensCase assigns expected =
 
 testContextOrderedSetLens :: TestTree
 testContextOrderedSetLens =
-    testGroup
+    testTree
         "contextOrderedSetLens"
         [ testContextOrderedSetLensCase [('A', 25)] [(0, 1)]
         , testContextOrderedSetLensCase [('A', 25), ('B', 20)] [(0, 1)]
@@ -101,4 +100,4 @@ testContextOrderedSetLens =
         ]
 
 testLens :: TestTree
-testLens = testGroup "lens" [testContextOrderedSetLens]
+testLens = testTree "lens" [testContextOrderedSetLens]

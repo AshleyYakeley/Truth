@@ -110,26 +110,8 @@ tests:
     source-dirs: test
     dependencies:
       - base >= 4.12
-      - bytestring
-      - containers
-      - countable
-      - open-witness
-      - template-haskell
-      - transformers
-      - transformers-extra
-      - witness
-      - comonad
-      - mono-traversable
       - shapes
       - changes-core
-      - filepath
-      - directory
-      - QuickCheck
-      - tasty
-      - tasty-expected-failure
-      - tasty-hunit
-      - tasty-quickcheck
-      - tasty-golden
     main: Main.hs
     other-modules:
       - Test.Useful

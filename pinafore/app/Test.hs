@@ -5,18 +5,17 @@ module Main
 import Options
 import Options.Applicative
 import Shapes
-import Test.Tasty
-import Test.Tasty.HUnit
+import Shapes.Test
 
 testOptions :: [String] -> Maybe Options -> TestTree
 testOptions args expected =
-    testCase (intercalate " " args) $ let
+    testTree (intercalate " " args) $ let
         found = getParseResult $ execParserPure (prefs mempty) optParserInfo args
         in assertEqual "" expected found
 
 testOptionParsing :: TestTree
 testOptionParsing =
-    testGroup
+    testTree
         "option-parsing"
         [ testOptions ["-v"] $ Just ShowVersionOption
         , testOptions ["--version"] $ Just ShowVersionOption
@@ -39,7 +38,7 @@ testOptionParsing =
         ]
 
 tests :: TestTree
-tests = testGroup "app" [testOptionParsing]
+tests = testTree "app" [testOptionParsing]
 
 main :: IO ()
-main = defaultMain tests
+main = testMain tests

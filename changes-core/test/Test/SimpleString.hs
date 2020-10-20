@@ -3,7 +3,7 @@ module Test.SimpleString
     ) where
 
 import Prelude
-import Test.Tasty.QuickCheck
+import Shapes.Test
 
 newtype SimpleString = MkSimpleString
     { getSimpleString :: String

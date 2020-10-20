@@ -90,9 +90,6 @@ tests:
           - base >= 4.12
           - shapes
           - typed-expression
-          - tasty
-          - tasty-expected-failure
-          - tasty-hunit
         main: Main.hs
         other-modules:
           - Shim

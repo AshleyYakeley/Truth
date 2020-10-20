@@ -65,18 +65,9 @@ tests:
         source-dirs: test
         dependencies:
           - base >= 4.12
-          - bytestring
-          - transformers
-          - mono-traversable
-          - countable
-          - witness
-          - open-witness
           - shapes
           - changes-core
           - changes-gtk
-          - QuickCheck
-          - tasty
-          - tasty-hunit
         main: Main.hs
         ghc-options: -threaded
 

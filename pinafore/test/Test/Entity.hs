@@ -7,10 +7,8 @@ import Changes.Core
 import Pinafore
 import Pinafore.Test
 import Shapes
+import Shapes.Test
 import Test.Context
-import Test.Tasty
-import Test.Tasty.ExpectedFailure
-import Test.Tasty.HUnit
 
 scriptTest ::
        forall a. FromPinaforeType a
@@ -40,13 +38,13 @@ badPointTest text =
 
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
-    testCase (unpack text) $
+    testTree (unpack text) $
     withTestPinaforeContext $ \_uitoolkit _unlift _getTableState -> do
         assertThrows $ throwResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
 
 exceptionTest :: Text -> ContextTestTree
 exceptionTest text c =
-    testCase (unpack text) $
+    testTree (unpack text) $
     withTestPinaforeContext $ \tc _unlift _getTableState -> do
         action <- throwResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
         assertThrows $ tcRunView tc emptyResourceContext action

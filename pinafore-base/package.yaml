@@ -52,8 +52,6 @@ tests:
           - shapes
           - changes-core
           - pinafore-base
-          - tasty
-          - tasty-hunit
         main: Main.hs
         other-modules:
           - Test.Numeric

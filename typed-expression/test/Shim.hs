@@ -5,8 +5,7 @@ module Shim
 import Data.Shim
 import Language.Expression.Common
 import Shapes
-import Test.Tasty
-import Test.Tasty.HUnit
+import Shapes.Test
 
 type T = UVarT "t"
 
@@ -54,7 +53,7 @@ withRec = withRec' @(Maybe T)
 
 testRec :: TestTree
 testRec =
-    testCase "rec" $
+    testTree "rec" $
     withRec $ \r -> let
         r3 = justRec r $ justRec r $ justRec r $ nothingRec r
         found = countRec r r3
@@ -96,11 +95,11 @@ checkEndless r n t =
 
 testEndless1 :: TestTree
 testEndless1 =
-    testCase "endless1" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless1 @(JMShim Type) r
+    testTree "endless1" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless1 @(JMShim Type) r
 
 testEndless2 :: TestTree
 testEndless2 =
-    testCase "endless2" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless2 @(JMShim Type) r
+    testTree "endless2" $ withRec $ \r -> assertEqual "" True $ checkEndless r 17 $ applyEndless2 @(JMShim Type) r
 
 testShim :: TestTree
-testShim = testGroup "shim" [testRec, testEndless1, testEndless2]
+testShim = testTree "shim" [testRec, testEndless1, testEndless2]

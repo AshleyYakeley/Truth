@@ -8,11 +8,9 @@ import Changes.Core
 import Lens
 import Resource
 import Shapes
+import Shapes.Test
 import Subscribe
 import Test.SimpleString
-import Test.Tasty
-import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck
 
 instance (Arbitrary (Index seq), Integral (Index seq)) => Arbitrary (SequencePoint seq) where
     arbitrary = MkSequencePoint <$> (getSmall . getNonNegative <$> arbitrary)
@@ -42,7 +40,7 @@ instance {-# OVERLAPPING #-} Arbitrary (StringEdit String) where
 
 testApplyEditsPar :: TestTree
 testApplyEditsPar =
-    testCase "apply edits parallel" $ let
+    testTree "apply edits parallel" $ let
         start = (False, False)
         edits :: [PairUpdateEdit (WholeUpdate Bool) (WholeUpdate Bool)]
         edits =
@@ -58,7 +56,7 @@ testApplyEditsPar =
 
 testApplyEditsSeq :: TestTree
 testApplyEditsSeq =
-    testCase "apply edits sequence" $ let
+    testTree "apply edits sequence" $ let
         start = 0
         edits :: [WholeEdit Int]
         edits = [MkWholeReaderEdit 1, MkWholeReaderEdit 2]
@@ -86,7 +84,7 @@ testEdit ::
     -> TestTree
 testEdit edit original expected = let
     name = show edit ++ " " ++ show original
-    in testCase name $ do
+    in testTree name $ do
            found <- applyEditSubject edit original
            assertEqual "" expected found
 
@@ -106,7 +104,7 @@ testEditRead ::
     -> TestTree
 testEditRead edit original rt expected = let
     name = show edit ++ " " ++ show original ++ " " ++ show rt
-    in testCase name $ do
+    in testTree name $ do
            found <- applyEdit edit (subjectToReadable original) rt
            assertEqual "" expected found
 
@@ -115,7 +113,7 @@ seqRun start len = MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)
 
 testStringEdit :: TestTree
 testStringEdit =
-    testGroup
+    testTree
         "string edit"
         [ testEdit (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" "ABXYCDE"
         , testEdit (StringReplaceSection (seqRun 2 1) "XY") "ABCDE" "ABXYDE"
@@ -133,7 +131,7 @@ testStringEdit =
 
 testLensGet :: TestTree
 testLensGet =
-    testProperty "get" $ \srun (base :: String) ->
+    testTree "get" $ \srun (base :: String) ->
         ioProperty $
         runLifeCycle $ do
             MkFloatingChangeLens {..} <- return $ stringSectionLens srun
@@ -198,36 +196,36 @@ lensUpdateGetProperty lens oldA editA =
 
 testLensUpdate :: TestTree
 testLensUpdate =
-    testProperty "update" $ \run (MkSimpleString base) edit ->
+    testTree "update" $ \run (MkSimpleString base) edit ->
         lensUpdateGetProperty @(SequenceRun String) (stringSectionLens run) base edit
 
 testStringSectionLens :: TestTree
 testStringSectionLens =
-    testGroup
+    testTree
         "string section lens"
         [ testLensGet
         , localOption (QuickCheckTests 10000) testLensUpdate
         , localOption (QuickCheckTests 1) $
-          testGroup "update special" $
-          [ testProperty "1 0" $
+          testTree "update special" $
+          [ testTree "1 0" $
             lensUpdateGetProperty
                 @(SequenceRun String)
                 (stringSectionLens $ seqRun 0 1)
                 "A"
                 (StringReplaceSection (seqRun 1 0) "x")
-          , testProperty "4 1" $
+          , testTree "4 1" $
             lensUpdateGetProperty
                 @(SequenceRun String)
                 (stringSectionLens $ seqRun 0 5)
                 "ABCDE"
                 (StringReplaceSection (seqRun 4 1) "pqrstu")
-          , testProperty "4 2" $
+          , testTree "4 2" $
             lensUpdateGetProperty
                 @(SequenceRun String)
                 (stringSectionLens $ seqRun 0 5)
                 "ABCDE"
                 (StringReplaceSection (seqRun 4 2) "pqrstu")
-          , testProperty "SharedString5" $
+          , testTree "SharedString5" $
             lensUpdateGetProperty
                 @(SequenceRun String)
                 (stringSectionLens $ startEndRun @String 1 3)
@@ -238,15 +236,15 @@ testStringSectionLens =
 
 testSequence :: TestTree
 testSequence =
-    testGroup
+    testTree
         "sequence"
-        [ testCase "intersectInside" $
+        [ testTree "intersectInside" $
           assertEqual "" (Just $ startEndRun @[()] 2 3) $ seqIntersectInside (startEndRun 1 3) (startEndRun 2 4)
         ]
 
 tests :: TestTree
 tests =
-    testGroup
+    testTree
         "changes-core"
         [ testResource
         , testApplyEditsPar
@@ -259,4 +257,4 @@ tests =
         ]
 
 main :: IO ()
-main = defaultMain tests
+main = testMain tests
