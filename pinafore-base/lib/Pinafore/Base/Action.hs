@@ -11,6 +11,9 @@ module Pinafore.Base.Action
     , pinaforeActionKnow
     , knowPinaforeAction
     , pinaforeLiftLifeCycleIO
+    , pinaforeLifeCycle
+    , pinaforeOnClose
+    , pinaforeEarlyCloser
     ) where
 
 import Changes.Core
@@ -73,3 +76,29 @@ pinaforeActionKnow Unknown = empty
 knowPinaforeAction :: forall a. PinaforeAction a -> PinaforeAction (Know a)
 knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =
     MkPinaforeAction $ ReaderT $ \r -> MkComposeM $ fmap Known $ getComposeM $ rka r
+
+pinaforeLifeCycle :: PinaforeAction a -> PinaforeAction a
+pinaforeLifeCycle (MkPinaforeAction ra) = MkPinaforeAction $ (remonad $ remonad $ remonad $ lift . runLifeCycle) ra
+
+cvOnClose :: CreateView () -> CreateView ()
+cvOnClose closer = liftWithUnlift $ \unlift -> lifeCycleClose $ runLifeCycle $ unlift closer
+
+pinaforeOnClose :: PinaforeAction () -> PinaforeAction ()
+pinaforeOnClose (MkPinaforeAction closer) =
+    MkPinaforeAction $ do
+        MkWUnliftAll unlift <- askUnlift
+        lift $
+            liftOuter $
+            cvOnClose $ do
+                _ <- getComposeM $ unlift closer
+                return ()
+
+pinaforeEarlyCloser :: PinaforeAction a -> PinaforeAction (a, PinaforeAction ())
+pinaforeEarlyCloser (MkPinaforeAction ra) =
+    MkPinaforeAction $ do
+        MkWUnliftAll unliftA <- askUnlift
+        lift $
+            MkComposeM $
+            liftWithUnlift $ \unliftV ->
+                fmap (\(ka, closer) -> fmap (\a -> (a, liftIO closer)) ka) $
+                lifeCycleEarlyCloser $ unliftV $ getComposeM $ unliftA ra

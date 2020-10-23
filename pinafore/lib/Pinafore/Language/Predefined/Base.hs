@@ -533,6 +533,10 @@ base_predefinitions =
                 "getTimeMS"
                 "Get the time as a whole number of milliseconds."
                 (liftIO getTimeMS :: PinaforeAction Integer)
+          , mkValEntry "lifecycle" "Close everything that gets opened in the given action." $ pinaforeLifeCycle @A
+          , mkValEntry "onClose" "Add this action as to be done when closing." pinaforeOnClose
+          , mkValEntry "closer" "Get an (idempotent) action that closes what gets opened in the given action." $
+            pinaforeEarlyCloser @A
           ]
     , docTreeEntry
           "Invocation"
