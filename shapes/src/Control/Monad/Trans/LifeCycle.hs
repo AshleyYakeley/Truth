@@ -94,17 +94,19 @@ lifeCycleClose closer =
 
 type With m t = forall r. (t -> m r) -> m r
 
-withLifeCycle :: MonadUnliftIO m => LifeCycleT m t -> With m t
-withLifeCycle lc run = do
-    (t, MkLifeState closer) <- getLifeState lc
-    liftIOWithUnlift $ \unlift -> finally (unlift $ run t) (unlift closer)
+withLifeCycle :: (MonadBracket m, MonadIO m) => LifeCycleT m t -> With m t
+withLifeCycle (MkLifeCycleT f) run = do
+    var <- liftIO $ newMVar mempty
+    finally (f var >>= run) $ do
+        MkLifeState closer <- liftIO $ takeMVar var
+        closer
 
-runLifeCycle :: MonadUnliftIO m => LifeCycleT m t -> m t
+runLifeCycle :: (MonadBracket m, MonadIO m) => LifeCycleT m t -> m t
 runLifeCycle lc = withLifeCycle lc return
 
 lifeCycleWith :: (MonadCoroutine m, MonadFail m, MonadIO m) => With m t -> LifeCycleT m t
 lifeCycleWith withX = do
-    etp <- lift $ resume $ suspend withX -- :: m (Either t (t, t -> Suspended t t m t))
+    etp <- lift $ resume $ suspend withX
     case etp of
         Left t -> return t
         Right (t, tp) -> do
