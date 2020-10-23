@@ -20,7 +20,6 @@ library:
       - comonad
       - lattices
       - transformers
-      - transformers-extra
       - hashable
       - unordered-containers
       - bytestring
@@ -41,6 +40,7 @@ library:
       - countable
       - witness
       - open-witness
+      - transformers-extra
     exposed-modules:
       - Control.Category.Groupoid
       - Data.Filterable

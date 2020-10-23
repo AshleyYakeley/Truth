@@ -15,6 +15,7 @@ module Control.Monad.Trans.LifeCycle
 
 import Control.Monad.Coroutine
 import Control.Monad.Exception
+import Data.Coercion
 import Data.IORef
 import Shapes.Import
 
@@ -31,6 +32,14 @@ instance Monad m => Monoid (LifeState m) where
 newtype LifeCycleT m t = MkLifeCycleT
     { unLifeCycleT :: MVar (LifeState m) -> m t
     }
+
+instance RepresentationalRole LifeCycleT where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance RepresentationalRole m => RepresentationalRole (LifeCycleT m) where
+    representationalCoercion cab =
+        case representationalCoercion @_ @_ @m cab of
+            MkCoercion -> MkCoercion
 
 getLifeState :: MonadIO m => LifeCycleT m t -> m (t, LifeState m)
 getLifeState (MkLifeCycleT f) = do

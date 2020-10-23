@@ -143,3 +143,34 @@ instance RepresentationalRole (Either a) where
 
 instance RepresentationalRole IO where
     representationalCoercion MkCoercion = MkCoercion
+
+instance RepresentationalRole ReaderT where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance RepresentationalRole (ReaderT r) where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance RepresentationalRole m => RepresentationalRole (ReaderT r m) where
+    representationalCoercion cab =
+        case representationalCoercion @_ @_ @m cab of
+            MkCoercion -> MkCoercion
+
+instance RepresentationalRole (WriterT w) where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance RepresentationalRole m => RepresentationalRole (WriterT w m) where
+    representationalCoercion (cab :: Coercion a b) =
+        case representationalCoercion @_ @_ @(,) cab of
+            MkCoercion ->
+                case representationalCoercion @_ @_ @m (MkCoercion @_ @(a, w) @(b, w)) of
+                    MkCoercion -> MkCoercion
+
+instance RepresentationalRole (StateT s) where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance RepresentationalRole m => RepresentationalRole (StateT s m) where
+    representationalCoercion (cab :: Coercion a b) =
+        case representationalCoercion @_ @_ @(,) cab of
+            MkCoercion ->
+                case representationalCoercion @_ @_ @m (MkCoercion @_ @(a, s) @(b, s)) of
+                    MkCoercion -> MkCoercion

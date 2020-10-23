@@ -1,9 +1,11 @@
 module Control.Monad.Compose where
 
+import Data.Coercion
 import Data.MonadOne
 import Data.Result
 import Shapes.Import
 
+type ComposeM :: (Type -> Type) -> (Type -> Type) -> Type -> Type
 newtype ComposeM inner outer a = MkComposeM
     { getComposeM :: outer (inner a)
     }
@@ -78,6 +80,14 @@ instance MonadOne inner => MonadTransSemiTunnel (ComposeM inner)
 instance MonadOne inner => MonadTransTunnel (ComposeM inner) where
     tunnel call = MkComposeM $ call getComposeM
     transExcept (MkComposeM (ExceptT iema)) = MkComposeM $ fmap sequence iema
+
+instance RepresentationalRole (ComposeM inner) where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance (RepresentationalRole inner, RepresentationalRole outer) => RepresentationalRole (ComposeM inner outer) where
+    representationalCoercion cab =
+        case representationalCoercion @_ @_ @outer $ representationalCoercion @_ @_ @inner cab of
+            MkCoercion -> MkCoercion
 
 transComposeOne :: (MonadTransTunnel t, Monad m, MonadOne f) => t (ComposeM f m) a -> t m (f a)
 transComposeOne tca =
