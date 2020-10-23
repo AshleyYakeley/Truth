@@ -1,6 +1,8 @@
 module Pinafore.Base.Action
     ( PinaforeAction
     , unPinaforeAction
+    , createViewPinaforeAction
+    , pinaforeGetCreateViewUnlift
     , viewPinaforeAction
     , pinaforeResourceContext
     , pinaforeFunctionValueGet
@@ -37,8 +39,17 @@ unPinaforeAction :: forall a. ChangesContext -> UndoHandler -> PinaforeAction a 
 unPinaforeAction acChangesContext acUndoHandler (MkPinaforeAction action) =
     getComposeM $ runReaderT action MkActionContext {..}
 
+createViewPinaforeAction :: CreateView a -> PinaforeAction a
+createViewPinaforeAction cva = MkPinaforeAction $ lift $ lift cva
+
+pinaforeGetCreateViewUnlift :: PinaforeAction (WMFunction PinaforeAction (ComposeM Know CreateView))
+pinaforeGetCreateViewUnlift =
+    MkPinaforeAction $ do
+        MkWUnliftAll unlift <- askUnlift
+        return $ MkWMFunction $ \(MkPinaforeAction ra) -> unlift ra
+
 viewPinaforeAction :: View a -> PinaforeAction a
-viewPinaforeAction va = MkPinaforeAction $ lift $ lift $ cvLiftView va
+viewPinaforeAction va = createViewPinaforeAction $ cvLiftView va
 
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
@@ -51,12 +62,11 @@ pinaforeRefPushAction lv edits = do
         then return ()
         else empty
 
-pinaforeGetExitOnClose :: PinaforeAction (WMFunction CreateView LifeCycleIO)
+pinaforeGetExitOnClose :: PinaforeAction (WMFunction CreateView CreateView)
 pinaforeGetExitOnClose =
     MkPinaforeAction $ do
         tc <- asks acChangesContext
-        unlift <- lift $ MkComposeM $ fmap Known askUnlift
-        return $ MkWMFunction $ runWUnliftAll unlift . tcExitOnClosed tc
+        return $ MkWMFunction $ tcExitOnClosed tc
 
 pinaforeLiftLifeCycleIO :: LifeCycleIO a -> PinaforeAction a
 pinaforeLiftLifeCycleIO la = MkPinaforeAction $ lift $ lift $ lift la
@@ -84,21 +94,18 @@ cvOnClose :: CreateView () -> CreateView ()
 cvOnClose closer = liftWithUnlift $ \unlift -> lifeCycleClose $ runLifeCycle $ unlift closer
 
 pinaforeOnClose :: PinaforeAction () -> PinaforeAction ()
-pinaforeOnClose (MkPinaforeAction closer) =
-    MkPinaforeAction $ do
-        MkWUnliftAll unlift <- askUnlift
-        lift $
-            liftOuter $
-            cvOnClose $ do
-                _ <- getComposeM $ unlift closer
-                return ()
+pinaforeOnClose closer = do
+    MkWMFunction unlift <- pinaforeGetCreateViewUnlift
+    createViewPinaforeAction $
+        cvOnClose $ do
+            _ <- getComposeM $ unlift closer
+            return ()
 
-pinaforeEarlyCloser :: PinaforeAction a -> PinaforeAction (a, PinaforeAction ())
-pinaforeEarlyCloser (MkPinaforeAction ra) =
-    MkPinaforeAction $ do
-        MkWUnliftAll unliftA <- askUnlift
+pinaforeEarlyCloser :: PinaforeAction a -> PinaforeAction (a, IO ())
+pinaforeEarlyCloser ra = do
+    MkWMFunction unlift <- pinaforeGetCreateViewUnlift
+    MkPinaforeAction $
         lift $
-            MkComposeM $
-            liftWithUnlift $ \unliftV ->
-                fmap (\(ka, closer) -> fmap (\a -> (a, liftIO closer)) ka) $
-                lifeCycleEarlyCloser $ unliftV $ getComposeM $ unliftA ra
+        MkComposeM $ do
+            (ka, closer) <- cvEarlyCloser $ getComposeM $ unlift ra
+            return $ fmap (\a -> (a, closer)) ka

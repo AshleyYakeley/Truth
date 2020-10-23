@@ -43,7 +43,7 @@ cvBindModel model mesrc initv utask recv = do
     monitor <- liftLifeCycleIO lifeCycleMonitor
     withUILock <- asks vcWithUILock
     unliftView <- cvLiftView askUnliftIO
-    viewRunResourceContext model $ \unlift (amodel :: _ tt) -> do
+    viewRunResourceContext model $ \unlift amodel -> do
         a <- initv
         liftLifeCycleIO $
             unlift $
@@ -68,8 +68,8 @@ cvBindWholeModel :: forall t. Model (WholeUpdate t) -> Maybe EditSource -> (t ->
 cvBindWholeModel model mesrc setf = let
     init :: CreateView ()
     init =
-        viewRunResourceContext model $ \unlift (amod :: _ tt) -> do
-            val <- liftIO $ unlift $ aModelRead amod ReadWhole
+        viewRunResourceContext model $ \unlift amodel -> do
+            val <- liftIO $ unlift $ aModelRead amodel ReadWhole
             cvLiftView $ setf val
     recv :: () -> NonEmpty (WholeUpdate t) -> View ()
     recv () updates = let
@@ -81,8 +81,8 @@ cvBindReadOnlyWholeModel :: forall t. Model (ROWUpdate t) -> (t -> View ()) -> C
 cvBindReadOnlyWholeModel model setf = let
     init :: CreateView ()
     init =
-        viewRunResourceContext model $ \unlift (amod :: _ tt) -> do
-            val <- liftIO $ unlift $ aModelRead amod ReadWhole
+        viewRunResourceContext model $ \unlift amodel -> do
+            val <- liftIO $ unlift $ aModelRead amodel ReadWhole
             cvLiftView $ setf val
     recv :: () -> NonEmpty (ROWUpdate t) -> View ()
     recv () updates = let

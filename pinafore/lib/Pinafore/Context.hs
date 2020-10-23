@@ -45,11 +45,8 @@ unliftPinaforeActionOrFail action = do
         Known a -> return a
         Unknown -> fail "action stopped"
 
-runPinaforeActionCV :: (?pinafore :: PinaforeContext) => PinaforeAction () -> CreateView ()
-runPinaforeActionCV action = fmap (\_ -> ()) $ unliftPinaforeAction action
-
 runPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction () -> View ()
-runPinaforeAction action = pconUnliftCreateView ?pinafore $ runPinaforeActionCV action
+runPinaforeAction action = pconUnliftCreateView ?pinafore $ fmap (\_ -> ()) $ unliftPinaforeAction action
 
 pinaforeEntityModel :: (?pinafore :: PinaforeContext) => Model PinaforeStorageUpdate
 pinaforeEntityModel = pconEntityModel ?pinafore

@@ -7,7 +7,8 @@ import Changes.UI.GTK
 import Pinafore.Base
 import Shapes
 
-type LangUI = CreateView Widget
+newtype LangUI =
+    MkLangUI (CreateView Widget)
 
 data LangWindow = MkLangWindow
     { pwClose :: View ()
@@ -17,7 +18,7 @@ data LangWindow = MkLangWindow
 pinaforeNewWindow :: WindowSpec -> PinaforeAction LangWindow
 pinaforeNewWindow uiw = do
     MkWMFunction exitOnClose <- pinaforeGetExitOnClose
-    (pwWindow, close) <- pinaforeLiftLifeCycleIO $ lifeCycleEarlyCloser $ exitOnClose $ createWindow uiw
+    (pwWindow, close) <- pinaforeEarlyCloser $ createViewPinaforeAction $ exitOnClose $ createWindow uiw
     let pwClose = liftIO close
     return $ MkLangWindow {..}
 
