@@ -28,7 +28,7 @@ runUIAction timing testaction t = do
         (pc, _) <- liftLifeCycleIO $ makeTestPinaforeContext tc
         scriptaction <- let
             ?pinafore = pc
-            in throwResult $ pinaforeInterpretFile "<test>" t
+            in throwResult $ pinaforeInterpretText "<test>" t
         cvLiftView scriptaction
         let
             testView :: View (Result SomeException a)

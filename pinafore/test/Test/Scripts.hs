@@ -12,8 +12,7 @@ testExample :: String -> TestTree
 testExample fpath =
     testTree fpath $
     withTestPinaforeContext $ \_ _ _getTableState -> do
-        ptext <- readFile fpath
-        _ <- throwResult $ pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
+        _ <- pinaforeInterpretFile fpath
         return ()
 
 testScripts :: TestTree

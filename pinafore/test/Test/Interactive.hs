@@ -13,7 +13,7 @@ testFile :: FilePath -> TestTree
 testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
-    in testOutputVsFile dir testName $ \outh ->
+    in testHandleVsFile dir testName $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
                withTestPinaforeContext $ \tc _ _ -> do
                    tcRunView tc emptyResourceContext $ pinaforeInteractHandles inh outh True

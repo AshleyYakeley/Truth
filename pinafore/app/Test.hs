@@ -40,7 +40,7 @@ testOptionParsing =
 
 testOptionHelp :: TestTree
 testOptionHelp =
-    testOutputVsFile ("test" </> "golden") "option-help" $ \h -> do
+    testHandleVsFile ("test" </> "golden") "option-help" $ \h -> do
         let pr = execParserPure defaultPrefs optParserInfo ["--help"]
         case pr of
             Failure (ParserFailure f) ->

@@ -27,11 +27,14 @@ module Shapes.Test
     , counterexample
     , ioProperty
     -- * Golden
-    , testOutputVsFile
+    , testHandleVsFile
+    , withHandleStdOut
+    , testStdOutVsFile
     , findByExtension
     , (</>)
     ) where
 
+import GHC.IO.Handle
 import Shapes hiding ((<.>))
 import System.Directory
 import System.FilePath
@@ -60,8 +63,8 @@ instance BuildTestTree Property where
 instance (Arbitrary a, Show a, Testable b) => BuildTestTree (a -> b) where
     testTree name = testTree name . property
 
-testOutputVsFile :: FilePath -> TestName -> (Handle -> IO ()) -> TestTree
-testOutputVsFile dir testName call = let
+testHandleVsFile :: FilePath -> TestName -> (Handle -> IO ()) -> TestTree
+testHandleVsFile dir testName call = let
     refPath = dir </> testName <.> "ref"
     outPath = dir </> testName <.> "out"
     in goldenVsFile testName refPath outPath $ do
@@ -69,3 +72,19 @@ testOutputVsFile dir testName call = let
            withBinaryFile outPath WriteMode $ \h -> do
                hSetBuffering h NoBuffering
                call h
+
+withHandleStdOut :: Handle -> IO a -> IO a
+withHandleStdOut h action = let
+    open = do
+        b <- hGetBuffering stdout
+        oldStdOut <- hDuplicate stdout
+        hDuplicateTo h stdout
+        return (oldStdOut, b)
+    close (oldStdOut, b) = do
+        hDuplicateTo oldStdOut stdout
+        hSetBuffering stdout b
+        hClose oldStdOut
+    in bracket open close $ \_ -> action
+
+testStdOutVsFile :: FilePath -> TestName -> IO () -> TestTree
+testStdOutVsFile dir testName action = testHandleVsFile dir testName $ \h -> withHandleStdOut h action

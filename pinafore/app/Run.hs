@@ -17,11 +17,9 @@ runFiles fNoRun dirpath scripts =
             iiEnvironment <- liftIO getEnvironment
             context <- standardPinaforeContext MkInvocationInfo {..} dirpath tc
             cvLiftView $ do
-                ptext <- liftIO $ readFile fpath
-                action <-
-                    throwResult $ let
-                        ?pinafore = context
-                        in pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
+                action <- let
+                    ?pinafore = context
+                    in pinaforeInterpretFile fpath
                 if fNoRun
                     then return ()
                     else action
