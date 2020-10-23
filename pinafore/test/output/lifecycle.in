@@ -1,0 +1,22 @@
+#!/usr/bin/pinafore
+do
+    outputLn "A";
+    onClose $ outputLn "B";
+    outputLn "C";
+    lifecycle $ do
+        outputLn "1";
+        onClose $ outputLn "2";
+        outputLn "3";
+        end;
+    outputLn "D";
+    (_,cl) <- closer $ do
+        outputLn "p";
+        onClose $ outputLn "q";
+        outputLn "r";
+        end;
+    outputLn "E";
+    cl;
+    outputLn "F";
+    cl;
+    outputLn "G";
+end
