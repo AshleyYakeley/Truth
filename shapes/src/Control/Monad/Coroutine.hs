@@ -1,5 +1,6 @@
 module Control.Monad.Coroutine
     ( Suspended(..)
+    , runSuspendedUntilDone
     , MonadCoroutine(..)
     , coroutine
     ) where
@@ -9,6 +10,13 @@ import Shapes.Import
 newtype Suspended p q m a = MkSuspended
     { resume :: m (Either a (p, q -> Suspended p q m a))
     }
+
+runSuspendedUntilDone :: Monad m => Suspended p p m a -> m a
+runSuspendedUntilDone susp = do
+    eap <- resume susp
+    case eap of
+        Left a -> return a
+        Right (p, psusp) -> runSuspendedUntilDone $ psusp p
 
 class Monad m => MonadCoroutine m where
     suspend :: ((p -> m q) -> m r) -> Suspended p q m r
