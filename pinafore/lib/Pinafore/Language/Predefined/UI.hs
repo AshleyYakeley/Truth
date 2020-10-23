@@ -246,7 +246,7 @@ uiPages mitems = do
 
 uiRun :: (?pinafore :: PinaforeContext) => PinaforeAction LangUI -> LangUI
 uiRun pui = do
-    kui <- cvLiftView $ unliftPinaforeAction pui
+    kui <- unliftPinaforeAction pui
     case kui of
         Known ui -> ui
         Unknown -> createBlank

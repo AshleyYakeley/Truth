@@ -24,21 +24,18 @@ data ActionContext = MkActionContext
     }
 
 newtype PinaforeAction a =
-    MkPinaforeAction (ReaderT ActionContext (ComposeM Know View) a)
-    deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadIO)
+    MkPinaforeAction (ReaderT ActionContext (ComposeM Know CreateView) a)
+    deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadIO, RepresentationalRole)
 
 instance MonadFail PinaforeAction where
     fail s = liftIO $ fail s
 
-instance RepresentationalRole PinaforeAction where
-    representationalCoercion MkCoercion = MkCoercion
-
-unPinaforeAction :: forall a. ChangesContext -> UndoHandler -> PinaforeAction a -> View (Know a)
+unPinaforeAction :: forall a. ChangesContext -> UndoHandler -> PinaforeAction a -> CreateView (Know a)
 unPinaforeAction acChangesContext acUndoHandler (MkPinaforeAction action) =
     getComposeM $ runReaderT action MkActionContext {..}
 
 viewPinaforeAction :: View a -> PinaforeAction a
-viewPinaforeAction va = MkPinaforeAction $ lift $ lift va
+viewPinaforeAction va = MkPinaforeAction $ lift $ lift $ cvLiftView va
 
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
@@ -58,11 +55,8 @@ pinaforeGetExitOnClose =
         unlift <- lift $ MkComposeM $ fmap Known askUnlift
         return $ MkWMFunction $ runWUnliftAll unlift . tcExitOnClosed tc
 
--- | Closing will be done at end of session.
 pinaforeLiftLifeCycleIO :: LifeCycleIO a -> PinaforeAction a
-pinaforeLiftLifeCycleIO la = do
-    MkActionContext {..} <- MkPinaforeAction ask
-    liftIO $ tcUnliftLifeCycle acChangesContext la
+pinaforeLiftLifeCycleIO la = MkPinaforeAction $ lift $ lift $ lift la
 
 pinaforeExit :: PinaforeAction ()
 pinaforeExit = viewPinaforeAction viewExit

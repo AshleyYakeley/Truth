@@ -52,11 +52,12 @@ exceptionTest text c =
 updateTest :: Text -> ContextTestTree
 updateTest text =
     scriptTest text text $ \tc unlift action -> do
-        (sendUpdate, ref) <- tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
+        (sendUpdate, ref) <-
+            tcUnliftLifeCycle tc $ tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
         unlift $
             runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $
-            tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
+            tcUnliftLifeCycle tc $ tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
 testUpdates = runContext $ tgroup "update" [updateTest "do ref <- newMemWhole; return (ref := 1, ref) end"]

@@ -92,11 +92,12 @@ interpretUpdater :: (?pinafore :: PinaforeContext) => Text -> IO ()
 interpretUpdater text =
     withTestPinaforeContext $ \tc unlift _getTableState -> do
         action <- throwResult $ pinaforeInterpretFileAtType "<test>" text
-        (sendUpdate, ref) <- tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
+        (sendUpdate, ref) <-
+            tcUnliftLifeCycle tc $ tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
         unlift $
             runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $
-            tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
+            tcUnliftLifeCycle tc $ tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
