@@ -26,7 +26,9 @@ library:
       - haskell-gi-base
       - gi-glib
       - gi-gobject
+      - gi-gio
       - gi-gdk
+      - gi-gdkpixbuf
       - gi-pango
       - gi-gtk
       - gi-gtk-hs
@@ -41,6 +43,7 @@ library:
       - Changes.UI.GTK.Blank
       - Changes.UI.GTK.CSS
       - Changes.UI.GTK.Button
+      - Changes.UI.GTK.Image
       - Changes.UI.GTK.Icon
       - Changes.UI.GTK.Label
       - Changes.UI.GTK.Maybe
