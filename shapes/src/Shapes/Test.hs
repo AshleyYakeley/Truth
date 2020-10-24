@@ -28,8 +28,6 @@ module Shapes.Test
     , ioProperty
     -- * Golden
     , testHandleVsFile
-    , withHandleStdOut
-    , testStdOutVsFile
     , findByExtension
     , (</>)
     ) where
@@ -72,19 +70,3 @@ testHandleVsFile dir testName call = let
            withBinaryFile outPath WriteMode $ \h -> do
                hSetBuffering h NoBuffering
                call h
-
-withHandleStdOut :: Handle -> IO a -> IO a
-withHandleStdOut h action = let
-    open = do
-        b <- hGetBuffering stdout
-        oldStdOut <- hDuplicate stdout
-        hDuplicateTo h stdout
-        return (oldStdOut, b)
-    close (oldStdOut, b) = do
-        hDuplicateTo oldStdOut stdout
-        hSetBuffering stdout b
-        hClose oldStdOut
-    in bracket open close $ \_ -> action
-
-testStdOutVsFile :: FilePath -> TestName -> IO () -> TestTree
-testStdOutVsFile dir testName action = testHandleVsFile dir testName $ \h -> withHandleStdOut h action

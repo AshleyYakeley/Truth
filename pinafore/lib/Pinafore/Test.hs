@@ -32,8 +32,8 @@ import Pinafore.Language.Var
 import Pinafore.Storage
 import Shapes
 
-makeTestPinaforeContext :: ChangesContext -> LifeCycleIO (PinaforeContext, IO PinaforeTableSubject)
-makeTestPinaforeContext tc = do
+makeTestPinaforeContext :: ChangesContext -> Handle -> LifeCycleIO (PinaforeContext, IO PinaforeTableSubject)
+makeTestPinaforeContext tc hout = do
     let rc = emptyResourceContext
     tableStateReference :: Reference (WholeEdit PinaforeTableSubject) <-
         liftIO $ makeMemoryReference (MkPinaforeTableSubject [] [] [] []) $ \_ -> True
@@ -43,17 +43,18 @@ makeTestPinaforeContext tc = do
         getTableState :: IO PinaforeTableSubject
         getTableState = getReferenceSubject rc tableStateReference
     (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-    pc <- makePinaforeContext nullInvocationInfo model tc
+    pc <- makePinaforeContext nullInvocationInfo hout model tc
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycleIO IO -> IO PinaforeTableSubject -> IO r)
+       Handle
+    -> ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycleIO IO -> IO PinaforeTableSubject -> IO r)
     -> IO r
-withTestPinaforeContext call =
+withTestPinaforeContext hout call =
     runLifeCycle $
     liftWithUnlift $ \unlift -> do
         let tc = nullChangesContext unlift
-        (pc, getTableState) <- unlift $ makeTestPinaforeContext tc
+        (pc, getTableState) <- unlift $ makeTestPinaforeContext tc hout
         let
             ?pinafore = pc
             in call tc unlift getTableState

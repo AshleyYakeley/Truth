@@ -40,7 +40,7 @@ standardPinaforeContext invinfo dirpath tc = do
                     return $ tableReferenceF rc
                 else return tableReference1
         (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-        makePinaforeContext invinfo model tc
+        makePinaforeContext invinfo stdout model tc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

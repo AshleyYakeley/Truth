@@ -9,6 +9,7 @@ module Pinafore.Context
     , nullPinaforeContext
     , pinaforeEntityModel
     , pinaforeInvocationInfo
+    , pinaforeStdOut
     ) where
 
 import Changes.Core
@@ -33,6 +34,7 @@ data PinaforeContext = MkPinaforeContext
     , pconUnliftCreateView :: MFunction CreateView View
     , pconEntityModel :: Model PinaforeStorageUpdate
     , pconInvocation :: InvocationInfo
+    , pconStdOut :: Handle
     }
 
 unliftPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction a -> CreateView (Know a)
@@ -54,8 +56,12 @@ pinaforeEntityModel = pconEntityModel ?pinafore
 pinaforeInvocationInfo :: (?pinafore :: PinaforeContext) => InvocationInfo
 pinaforeInvocationInfo = pconInvocation ?pinafore
 
-makePinaforeContext :: InvocationInfo -> Model PinaforeStorageUpdate -> ChangesContext -> LifeCycleIO PinaforeContext
-makePinaforeContext pconInvocation rmodel tc = do
+pinaforeStdOut :: (?pinafore :: PinaforeContext) => Handle
+pinaforeStdOut = pconStdOut ?pinafore
+
+makePinaforeContext ::
+       InvocationInfo -> Handle -> Model PinaforeStorageUpdate -> ChangesContext -> LifeCycleIO PinaforeContext
+makePinaforeContext pconInvocation pconStdOut rmodel tc = do
     uh <- liftIO newUndoHandler
     let
         pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
@@ -71,4 +77,5 @@ nullPinaforeContext = let
     pconUnliftCreateView _ = fail "null Pinafore context"
     pconEntityModel = error "no pinafore base"
     pconInvocation = nullInvocationInfo
+    pconStdOut = stdout
     in MkPinaforeContext {..}

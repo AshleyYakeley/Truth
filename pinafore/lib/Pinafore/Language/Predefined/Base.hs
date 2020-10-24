@@ -25,11 +25,11 @@ getTimeMS = do
     MkSystemTime s ns <- getSystemTime
     return $ (toInteger s) * 1000 + div (toInteger ns) 1000000
 
-output :: Text -> PinaforeAction ()
-output text = liftIO $ putStr $ unpack text
+output :: (?pinafore :: PinaforeContext) => Text -> PinaforeAction ()
+output text = liftIO $ hPutStrLn pinaforeStdOut $ unpack text
 
-outputLn :: Text -> PinaforeAction ()
-outputLn text = liftIO $ putStrLn $ unpack text
+outputLn :: (?pinafore :: PinaforeContext) => Text -> PinaforeAction ()
+outputLn text = liftIO $ hPutStrLn pinaforeStdOut $ unpack text
 
 setentity :: LangWholeRef '( A, TopType) -> A -> PinaforeAction ()
 setentity ref val = langWholeRefSet ref (Known val)

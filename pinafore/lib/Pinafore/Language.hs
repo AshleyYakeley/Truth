@@ -142,7 +142,8 @@ interactEvalExpression texpr =
 runValue :: Handle -> QValue -> Interact (PinaforeAction ())
 runValue outh val =
     interactRunSourceScoped $
-    (typedAnyToPinaforeVal val) <|> (fmap outputLn $ typedAnyToPinaforeVal val) <|>
+    (typedAnyToPinaforeVal val) <|>
+    (fmap (\(text :: Text) -> liftIO $ hPutStrLn outh $ unpack text) $ typedAnyToPinaforeVal val) <|>
     (return $ liftIO $ hPutStrLn outh $ showPinaforeRef val)
 
 interactParse :: Text -> Interact InteractiveCommand

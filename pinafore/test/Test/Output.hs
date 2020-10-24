@@ -13,11 +13,11 @@ testFile :: FilePath -> TestTree
 testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
-    in testStdOutVsFile dir testName $
-       withTestPinaforeContext $ \tc _ _ -> do
-           action <- pinaforeInterpretFile inpath
-           tcRunView tc emptyResourceContext action
-           return ()
+    in testHandleVsFile dir testName $ \hout ->
+           withTestPinaforeContext hout $ \tc _ _ -> do
+               action <- pinaforeInterpretFile inpath
+               tcRunView tc emptyResourceContext action
+               return ()
 
 getTestOutput :: IO TestTree
 getTestOutput = do
