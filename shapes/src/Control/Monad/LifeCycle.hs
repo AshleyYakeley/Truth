@@ -3,10 +3,10 @@ module Control.Monad.LifeCycle
     , closeLifeState
     , LifeCycle
     , MonadLifeCycleIO(..)
-    , lifeCycleCloseIO
+    , lifeCycleClose
     , MonadUnliftLifeCycleIO(..)
     , LiftLifeCycle(..)
-    , lifeCycleClose
+    , lifeCycleCloseInner
     , runLifeCycle
     , With
     , lifeCycleWith
@@ -80,8 +80,8 @@ class MonadIO m => MonadLifeCycleIO m where
     default subLifeCycle :: forall a. LiftLifeCycle m => m a -> m a
     subLifeCycle lc = liftToLifeCycle $ runLifeCycle lc
 
-lifeCycleCloseIO :: MonadLifeCycleIO m => IO () -> m ()
-lifeCycleCloseIO closer =
+lifeCycleClose :: MonadLifeCycleIO m => IO () -> m ()
+lifeCycleClose closer =
     liftLifeCycle $
     MkLifeCycle $ \var ->
         dangerousMVarRun var $ do
@@ -126,7 +126,7 @@ lifeCycleEarlyCloser lc = do
             case mu of
                 Just () -> closer
                 Nothing -> return ()
-    lifeCycleCloseIO earlycloser
+    lifeCycleClose earlycloser
     return (a, earlycloser)
 
 instance MonadUnliftLifeCycleIO LifeCycle where
@@ -144,10 +144,10 @@ class (MonadLifeCycleIO m, MonadIO (LifeCycleInner m)) => LiftLifeCycle m where
     getInnerLifeState :: forall a. m a -> LifeCycleInner m (a, LifeState)
     withLifeCycle :: forall a. m a -> With (LifeCycleInner m) a
 
-lifeCycleClose :: (LiftLifeCycle m, MonadAskUnliftIO (LifeCycleInner m)) => LifeCycleInner m () -> m ()
-lifeCycleClose closer = do
+lifeCycleCloseInner :: (LiftLifeCycle m, MonadAskUnliftIO (LifeCycleInner m)) => LifeCycleInner m () -> m ()
+lifeCycleCloseInner closer = do
     MkWMFunction unlift <- liftToLifeCycle askUnliftIO
-    lifeCycleCloseIO $ unlift closer
+    lifeCycleClose $ unlift closer
 
 runLifeCycle :: LiftLifeCycle m => m t -> LifeCycleInner m t
 runLifeCycle lc = withLifeCycle lc return
@@ -187,7 +187,7 @@ lifeCycleWith withX = do
     case etp of
         Left t -> return t
         Right (t, tp) -> do
-            lifeCycleClose $ do
+            lifeCycleCloseInner $ do
                 _ <- runSuspendedUntilDone $ tp t
                 return ()
             return t
@@ -196,7 +196,7 @@ lifeCycleWith withX = do
 lifeCycleMonitor :: LiftLifeCycle m => m (IO Bool)
 lifeCycleMonitor = do
     ref <- liftIO $ newIORef True
-    lifeCycleCloseIO $ writeIORef ref False
+    lifeCycleClose $ writeIORef ref False
     return $ readIORef ref
 
 lifeCycleOnAllDone ::
@@ -211,7 +211,7 @@ lifeCycleOnAllDone onzero = do
                 mVarRun var $ do
                     olda <- get
                     put $ succ olda
-            lifeCycleClose $ do
+            lifeCycleCloseInner $ do
                 iszero <-
                     mVarRun var $ do
                         olda <- get

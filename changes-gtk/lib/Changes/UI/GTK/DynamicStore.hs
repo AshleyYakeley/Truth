@@ -81,7 +81,7 @@ newDynamicStore tdef lcv = do
     rec
         entries <- for lcv $ \cvt -> liftToLifeCycle $ makeEntry tdef cvt store
         store <- seqStoreNew entries
-    liftLifeCycle $ lifeCycleClose $ dynamicStoreClear $ MkDynamicStore store
+    lifeCycleClose $ dynamicStoreClear $ MkDynamicStore store
     return $ MkDynamicStore store
 
 dynamicStoreInsert :: Integral pos => pos -> t -> (((t -> t) -> IO ()) -> CreateView ()) -> DynamicStore t -> View ()

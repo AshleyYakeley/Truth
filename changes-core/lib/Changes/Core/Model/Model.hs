@@ -129,9 +129,9 @@ makeSharedModel om = do
         aModelSubscribe ::
                Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt LifeCycle ()
         aModelSubscribe taskC updateC =
-            stackLift @tt $ do
+            stackLift @tt @LifeCycle $ do
                 key <- liftIO $ mVarRun var $ addStoreStateT (taskC, updateC)
-                lifeCycleClose @LifeCycle $ mVarRun var $ deleteStoreStateT key
+                lifeCycleClose $ mVarRun var $ deleteStoreStateT key
         aModelUpdatesTask = pmrUpdatesTask
         child :: Model update
         child = MkResource trunC $ MkAModel {..}

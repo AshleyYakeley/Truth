@@ -86,14 +86,12 @@ knowPinaforeAction :: forall a. PinaforeAction a -> PinaforeAction (Know a)
 knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =
     MkPinaforeAction $ ReaderT $ \r -> MkComposeM $ fmap Known $ getComposeM $ rka r
 
-cvOnClose :: CreateView () -> CreateView ()
-cvOnClose closer = liftWithUnlift $ \unlift -> lifeCycleClose $ runLifeCycle $ unlift closer
-
 pinaforeOnClose :: PinaforeAction () -> PinaforeAction ()
 pinaforeOnClose closer = do
     MkWMFunction unlift <- pinaforeGetCreateViewUnlift
     createViewPinaforeAction $
-        cvOnClose $ do
+        lifeCycleCloseInner $
+        runLifeCycle $ do
             _ <- getComposeM $ unlift closer
             return ()
 
