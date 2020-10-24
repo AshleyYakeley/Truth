@@ -27,7 +27,7 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
+    env (fmap const $ getInnerLifeState $ makeTestPinaforeContext (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc
@@ -101,7 +101,7 @@ interpretUpdater text =
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
+    env (fmap const $ getInnerLifeState $ makeTestPinaforeContext (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc

@@ -6,7 +6,7 @@ import Changes.Core
 import Shapes
 import Shapes.Test
 
-collectModelUpdates :: ResourceContext -> Model update -> LifeCycleIO (IO [update])
+collectModelUpdates :: ResourceContext -> Model update -> LifeCycle (IO [update])
 collectModelUpdates rc sub = do
     var <- liftIO $ newMVar []
     runResource rc sub $ \asub ->
@@ -73,7 +73,7 @@ testContextOrderedSetLensCase assigns expected =
                 olSub <- floatMapModel rc flens bothSub
                 getUpdates <- collectModelUpdates rc $ mapModel (tupleChangeLens SelectContent) olSub
                 let
-                    pushOneEdit :: (Char, Int) -> LifeCycleIO ()
+                    pushOneEdit :: (Char, Int) -> LifeCycle ()
                     pushOneEdit (c, i) =
                         liftIO $
                         modelPushEdits rc contextSub $

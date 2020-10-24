@@ -15,8 +15,7 @@ import Control.Clock as I
 import Control.Monad.Compose as I
 import Control.Monad.Coroutine as I
 import Control.Monad.Exception as I
-import Control.Monad.LifeCycleIO as I
-import Control.Monad.Trans.LifeCycle as I
+import Control.Monad.LifeCycle as I
 import Control.Task as I
 import Data.CatFunctor as I
 import Data.Codec as I

@@ -14,7 +14,7 @@ scriptTest ::
        forall a. FromPinaforeType a
     => Text
     -> Text
-    -> ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycleIO IO -> a -> IO ())
+    -> ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycle IO -> a -> IO ())
     -> ContextTestTree
 scriptTest name text checker =
     contextTestCase name text $ \t ->

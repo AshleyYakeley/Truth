@@ -202,7 +202,7 @@ copyReference ::
     -> IO (Task ())
 copyReference rc esrc =
     joinResource_ $ \rr (MkAReference readSrc _ _) (MkAReference _ pushDest ctask) ->
-        runLifeCycle $ do
+        runLifeCycle @LifeCycle $ do
             liftIO $
                 runResourceRunner rc rr $
                 replaceEdit @edit readSrc $ \edit -> pushOrFail "failed to copy reference" esrc $ pushDest $ pure edit

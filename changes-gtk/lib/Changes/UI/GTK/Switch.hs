@@ -14,7 +14,7 @@ createDynamic sub = do
         getViewState :: CreateView Widget -> View ViewState
         getViewState gview = do
             ((), vs) <-
-                viewCreateView $ do
+                getInnerLifeState $ do
                     widget <- gview
                     cvPackStart True box widget
                     #show widget
@@ -22,7 +22,7 @@ createDynamic sub = do
         initVS :: Model (ROWUpdate (CreateView Widget)) -> CreateView (ViewState, ())
         initVS rm = do
             firstspec <- viewRunResource rm $ \am -> aModelRead am ReadWhole
-            vs <- cvLiftView $ getViewState firstspec
+            vs <- liftToLifeCycle $ getViewState firstspec
             return (vs, ())
         recvVS :: () -> [ROWUpdate (CreateView Widget)] -> StateT ViewState View ()
         recvVS () updates = for_ (lastReadOnlyWholeUpdate updates) $ \spec -> replaceDynamicView $ getViewState spec

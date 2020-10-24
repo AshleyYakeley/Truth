@@ -16,7 +16,7 @@ runFiles fNoRun dirpath scripts =
             let iiScriptName = fpath
             iiEnvironment <- liftIO getEnvironment
             context <- standardPinaforeContext MkInvocationInfo {..} dirpath tc
-            cvLiftView $ do
+            liftToLifeCycle $ do
                 action <- let
                     ?pinafore = context
                     in pinaforeInterpretFile fpath
@@ -34,5 +34,5 @@ runInteractive dirpath =
         context <- standardPinaforeContext MkInvocationInfo {..} dirpath tc
         let
             ?pinafore = context
-            in cvLiftView pinaforeInteract
-        cvLiftView viewExit
+            in liftToLifeCycle pinaforeInteract
+        liftToLifeCycle viewExit

@@ -49,14 +49,14 @@ onStop p q = p <|> q
 newMemWhole :: PinaforeAction (LangWholeRef '( A, A))
 newMemWhole = do
     r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
-    model <- pinaforeLiftLifeCycleIO $ makeReflectingModel r
+    model <- liftLifeCycle $ makeReflectingModel r
     uh <- pinaforeUndoHandler
     return $ pinaforeRefToWholeRef $ MkWModel $ undoHandlerModel uh model
 
 newMemFiniteSet :: PinaforeAction (LangFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
-    model <- pinaforeLiftLifeCycleIO $ makeReflectingModel $ convertReference r
+    model <- liftLifeCycle $ makeReflectingModel $ convertReference r
     uh <- pinaforeUndoHandler
     return $ meetValueLangFiniteSetRef $ MkWModel $ undoHandlerModel uh model
 
@@ -65,14 +65,14 @@ zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
 newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableWholeRef UTCTime)
 newClock duration = do
-    (clockOM, ()) <- pinaforeLiftLifeCycleIO $ makeSharedModel $ clockPremodel zeroTime duration
+    (clockOM, ()) <- liftLifeCycle $ makeSharedModel $ clockPremodel zeroTime duration
     return $ functionImmutableRef $ MkWModel $ clockOM
 
 newTimeZoneRef :: PinaforeImmutableWholeRef UTCTime -> PinaforeAction (PinaforeImmutableWholeRef Int)
 newTimeZoneRef now = do
     rc <- pinaforeResourceContext
     ref <-
-        pinaforeLiftLifeCycleIO $
+        liftLifeCycle $
         eaFloatMapReadOnly
             rc
             (floatLift (\mr ReadWhole -> fmap (fromKnow zeroTime) $ mr ReadWhole) liftROWChangeLens clockTimeZoneLens) $
@@ -533,7 +533,8 @@ base_predefinitions =
                 "getTimeMS"
                 "Get the time as a whole number of milliseconds."
                 (liftIO getTimeMS :: PinaforeAction Integer)
-          , mkValEntry "lifecycle" "Close everything that gets opened in the given action." $ pinaforeLifeCycle @A
+          , mkValEntry "lifecycle" "Close everything that gets opened in the given action." $
+            subLifeCycle @PinaforeAction @A
           , mkValEntry "onClose" "Add this action as to be done when closing." pinaforeOnClose
           , mkValEntry "closer" "Get an (idempotent) action that closes what gets opened in the given action." $
             pinaforeEarlyCloser @A

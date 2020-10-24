@@ -34,7 +34,7 @@ cvDynamic model initCV taskCV recvCV = do
         initBind = do
             (firstdvs, a) <- initCV model
             stateVar <- liftIO $ newMVar firstdvs
-            liftLifeCycleIO $
+            liftLifeCycle $
                 lifeCycleClose $ do
                     lastdvs <- takeMVar stateVar
                     closeDynamicView lastdvs
@@ -42,5 +42,5 @@ cvDynamic model initCV taskCV recvCV = do
         recvBind :: (MVar dvs, a) -> NonEmpty update -> View ()
         recvBind (stateVar, a) updates = mVarRun stateVar $ recvCV a $ toList updates
     (stateVar, a) <- cvBindModel model Nothing initBind taskCV recvBind
-    cvLiftView $ mVarRun stateVar $ recvCV a []
+    liftToLifeCycle $ mVarRun stateVar $ recvCV a []
     return a

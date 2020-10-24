@@ -78,8 +78,8 @@ soupReference dirpath = let
 
 soupWindow :: ChangesContext -> (WindowSpec -> CreateView UIWindow) -> FilePath -> CreateView ()
 soupWindow tc newWindow dirpath = do
-    smodel <- liftLifeCycleIO $ makeReflectingModel $ soupReference dirpath
-    (selModel, selnotify) <- liftLifeCycleIO $ makeSharedModel makePremodelSelectNotify
+    smodel <- liftLifeCycle $ makeReflectingModel $ soupReference dirpath
+    (selModel, selnotify) <- liftLifeCycle $ makeSharedModel makePremodelSelectNotify
     rec
         let
             withSelection :: (Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()) -> View ()
@@ -136,7 +136,7 @@ soupWindow tc newWindow dirpath = do
                 tcUnliftCreateView tc $ do
                     rec
                         ~(subwin, subcloser) <-
-                            cvEarlyCloser $ do
+                            lifeCycleEarlyCloser $ do
                                 newWindow $
                                     MkWindowSpec
                                         (liftIO subcloser)
@@ -151,5 +151,5 @@ soupWindow tc newWindow dirpath = do
         button <- createButton (constantModel "View") $ constantModel $ Just $ withSelection openItem
         stuff <- soupEditSpec smodel selnotify openItem
         let wsContent = createLayout OrientationVertical [(False, button), (True, stuff)]
-        (window, closer) <- cvEarlyCloser $ newWindow MkWindowSpec {..}
+        (window, closer) <- lifeCycleEarlyCloser $ newWindow MkWindowSpec {..}
     return ()

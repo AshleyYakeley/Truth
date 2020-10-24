@@ -25,11 +25,11 @@ runUIAction :: forall a. Timing -> (ChangesContext -> View a) -> Text -> IO a
 runUIAction timing testaction t = do
     donevar <- newEmptyMVar
     changesMainGTK $ \tc -> do
-        (pc, _) <- liftLifeCycleIO $ makeTestPinaforeContext tc stdout
+        (pc, _) <- liftLifeCycle $ makeTestPinaforeContext tc stdout
         scriptaction <- let
             ?pinafore = pc
             in throwResult $ pinaforeInterpretText "<test>" t
-        cvLiftView scriptaction
+        liftToLifeCycle scriptaction
         let
             testView :: View (Result SomeException a)
             testView = do
@@ -38,7 +38,7 @@ runUIAction timing testaction t = do
                 return ar
         case timing of
             SyncTiming -> do
-                ar <- cvLiftView testView
+                ar <- liftToLifeCycle testView
                 liftIO $ putMVar donevar ar
             AsyncTiming -> do
                 _ <-

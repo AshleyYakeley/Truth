@@ -1,9 +1,6 @@
 module Changes.Core.UI.View.CreateView
     ( CreateView
     , ViewState
-    , viewCreateView
-    , cvEarlyCloser
-    , cvLiftView
     , cvBindModel
     , cvFloatMapModel
     , cvBindWholeModel
@@ -17,18 +14,9 @@ import Changes.Core.Types
 import Changes.Core.UI.View.Context
 import Changes.Core.UI.View.View
 
-type CreateView = ViewT LifeCycleIO
+type CreateView = ViewT LifeCycle
 
-type ViewState = LifeState IO
-
-viewCreateView :: CreateView t -> View (t, ViewState)
-viewCreateView (ReaderT wff) = ReaderT $ \vc -> getLifeState $ wff vc
-
-cvEarlyCloser :: CreateView a -> CreateView (a, IO ())
-cvEarlyCloser ca = liftWithUnlift $ \unlift -> lifeCycleEarlyCloser $ unlift ca
-
-cvLiftView :: View a -> CreateView a
-cvLiftView = remonad liftIO
+type ViewState = LifeState
 
 cvBindModel ::
        forall update a.
@@ -40,12 +28,12 @@ cvBindModel ::
     -> CreateView a
 cvBindModel model mesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
-    monitor <- liftLifeCycleIO lifeCycleMonitor
+    monitor <- liftLifeCycle lifeCycleMonitor
     withUILock <- asks vcWithUILock
-    unliftView <- cvLiftView askUnliftIO
+    unliftView <- liftToLifeCycle askUnliftIO
     viewRunResourceContext model $ \unlift amodel -> do
         a <- initv
-        liftLifeCycleIO $
+        liftLifeCycle $
             unlift $
             aModelSubscribe amodel utask $ \urc updates MkEditContext {..} ->
                 if mesrc == Just editContextSource
@@ -62,7 +50,7 @@ cvFloatMapModel ::
        forall updateA updateB. FloatingChangeLens updateA updateB -> Model updateA -> CreateView (Model updateB)
 cvFloatMapModel flens model = do
     rc <- viewGetResourceContext
-    liftLifeCycleIO $ floatMapModel rc flens model
+    liftLifeCycle $ floatMapModel rc flens model
 
 cvBindWholeModel :: forall t. Model (WholeUpdate t) -> Maybe EditSource -> (t -> View ()) -> CreateView ()
 cvBindWholeModel model mesrc setf = let
@@ -70,7 +58,7 @@ cvBindWholeModel model mesrc setf = let
     init =
         viewRunResourceContext model $ \unlift amodel -> do
             val <- liftIO $ unlift $ aModelRead amodel ReadWhole
-            cvLiftView $ setf val
+            liftToLifeCycle $ setf val
     recv :: () -> NonEmpty (WholeUpdate t) -> View ()
     recv () updates = let
         MkWholeUpdate val = last updates
@@ -83,7 +71,7 @@ cvBindReadOnlyWholeModel model setf = let
     init =
         viewRunResourceContext model $ \unlift amodel -> do
             val <- liftIO $ unlift $ aModelRead amodel ReadWhole
-            cvLiftView $ setf val
+            liftToLifeCycle $ setf val
     recv :: () -> NonEmpty (ROWUpdate t) -> View ()
     recv () updates = let
         MkReadOnlyUpdate (MkWholeUpdate val) = last updates

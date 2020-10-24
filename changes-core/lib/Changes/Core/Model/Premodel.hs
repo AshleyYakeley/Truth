@@ -26,7 +26,7 @@ instance Functor (PremodelResult edit) where
     fmap ab (MkPremodelResult r u v) = MkPremodelResult r u $ ab v
 
 type Premodel update a
-     = Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifeCycleIO (PremodelResult (UpdateEdit update) a)
+     = Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> LifeCycle (PremodelResult (UpdateEdit update) a)
 
 reflectingPremodel ::
        forall update. IsUpdate update

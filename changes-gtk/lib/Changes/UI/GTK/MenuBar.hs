@@ -45,7 +45,7 @@ toModifierType KMShift = ModifierTypeShiftMask
 toModifierType KMCtrl = ModifierTypeControlMask
 toModifierType KMAlt = ModifierTypeMod1Mask
 
-accelGroupConnection :: IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> IO () -> LifeCycleIO ()
+accelGroupConnection :: IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> IO () -> LifeCycle ()
 accelGroupConnection ag key mods flags action = do
     closure <-
         genClosure_AccelGroupActivate $ \_ _ _ _ -> do
@@ -70,7 +70,7 @@ attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
                 Just action -> action
     set item [#label := label] -- creates child if not present
     mc <- binGetChild item
-    unliftView <- cvLiftView askUnliftIO
+    unliftView <- liftToLifeCycle askUnliftIO
     for_ mc $ \c -> do
         ml <- liftIO $ castTo AccelLabel c
         for_ ml $ \l -> do
@@ -83,7 +83,7 @@ attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
                         gmods :: [ModifierType]
                         gmods = fmap toModifierType mods
                     accelLabelSetAccel l keyw gmods
-                    liftLifeCycleIO $
+                    liftLifeCycle $
                         accelGroupConnection ag keyw gmods [AccelFlagsVisible] $ runWMFunction unliftView meaction
     cvBindReadOnlyWholeModel raction $ \maction ->
         liftIO $ do

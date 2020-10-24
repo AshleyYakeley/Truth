@@ -9,7 +9,7 @@ import Changes.Core.UI.View.View
 data RunToolkit = MkRunToolkit
     { rtWithLock :: forall a. IO a -> IO a -- ^ run with lock, must not already have it
     , rtWithoutLock :: forall a. IO a -> IO a -- ^ run without lock, must already have it
-    , rtUnliftLifeCycle :: MFunction LifeCycleIO IO -- ^ Closers will be run at the end of the session. (Lock doesn't matter.)
+    , rtUnliftLifeCycle :: MFunction LifeCycle IO -- ^ Closers will be run at the end of the session. (Lock doesn't matter.)
     , rtExit :: IO () -- ^ must already have the lock
     }
 
@@ -26,7 +26,7 @@ rtRunView MkRunToolkit {..} vcResourceContext vma = let
     vcExit = rtExit
     in runView MkViewContext {..} vma
 
-nullRunToolkit :: MFunction LifeCycleIO IO -> RunToolkit
+nullRunToolkit :: MFunction LifeCycle IO -> RunToolkit
 nullRunToolkit rtUnliftLifeCycle = let
     rtWithLock action = action
     rtWithoutLock action = action

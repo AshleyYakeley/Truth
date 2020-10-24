@@ -30,7 +30,7 @@ doCache = True
 standardPinaforeContext :: InvocationInfo -> FilePath -> ChangesContext -> CreateView PinaforeContext
 standardPinaforeContext invinfo dirpath tc = do
     rc <- viewGetResourceContext
-    liftLifeCycleIO $ do
+    liftLifeCycle $ do
         sqlReference <- liftIO $ sqlitePinaforeTableReference $ dirpath </> "tables.sqlite3"
         tableReference1 <- exclusiveResource rc sqlReference
         tableReference <-

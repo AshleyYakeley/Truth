@@ -60,7 +60,7 @@ testLifeCycle =
     testTree "lifecycle" $
     compareTest "ACDB" $ \appendStr -> do
         let
-            lc :: LifeCycleIO ()
+            lc :: LifeCycle ()
             lc = do
                 liftIO $ appendStr "A"
                 lifeCycleClose $ appendStr "B"

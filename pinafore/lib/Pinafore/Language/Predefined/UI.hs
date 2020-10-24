@@ -60,7 +60,7 @@ uiListTable cols order val onDoubleClick mSelectionLangRef =
                 nameOpenSub = unWModel $ eaMapSemiReadOnly clearText $ langWholeRefToReadOnlyValue nameRef
                 getCellSub :: Model (ConstWholeUpdate EnA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
                 getCellSub osub = do
-                    a <- cvLiftView $ readSub osub
+                    a <- liftToLifeCycle $ readSub osub
                     return $
                         unWModel $
                         eaMapSemiReadOnly (funcChangeLens showCell) $ langWholeRefToReadOnlyValue $ getCellRef a
@@ -100,7 +100,7 @@ uiListTable cols order val onDoubleClick mSelectionLangRef =
                 init =
                     viewRunResourceContext selectionModel $ \unlift (amod :: _ tt) -> do
                         ka <- liftIO $ unlift $ aModelRead amod ReadWhole
-                        cvLiftView $ setsel ka
+                        liftToLifeCycle $ setsel ka
                 recv :: () -> NonEmpty (BiWholeUpdate (Know A) (Know EnA)) -> View ()
                 recv () updates = let
                     MkBiWholeUpdate ka = last updates

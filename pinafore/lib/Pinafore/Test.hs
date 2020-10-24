@@ -32,7 +32,7 @@ import Pinafore.Language.Var
 import Pinafore.Storage
 import Shapes
 
-makeTestPinaforeContext :: ChangesContext -> Handle -> LifeCycleIO (PinaforeContext, IO PinaforeTableSubject)
+makeTestPinaforeContext :: ChangesContext -> Handle -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
 makeTestPinaforeContext tc hout = do
     let rc = emptyResourceContext
     tableStateReference :: Reference (WholeEdit PinaforeTableSubject) <-
@@ -48,11 +48,11 @@ makeTestPinaforeContext tc hout = do
 
 withTestPinaforeContext ::
        Handle
-    -> ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycleIO IO -> IO PinaforeTableSubject -> IO r)
+    -> ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycle IO -> IO PinaforeTableSubject -> IO r)
     -> IO r
 withTestPinaforeContext hout call =
-    runLifeCycle $
-    liftWithUnlift $ \unlift -> do
+    runLifeCycle @LifeCycle $
+    liftIOWithUnlift $ \unlift -> do
         let tc = nullChangesContext unlift
         (pc, getTableState) <- unlift $ makeTestPinaforeContext tc hout
         let
@@ -73,7 +73,7 @@ checkUpdateEditor ::
     -> IO ()
     -> Editor (WholeUpdate a) ()
 checkUpdateEditor val push = let
-    editorInit :: Reference (WholeEdit a) -> LifeCycleIO (MVar (NonEmpty (WholeUpdate a)))
+    editorInit :: Reference (WholeEdit a) -> LifeCycle (MVar (NonEmpty (WholeUpdate a)))
     editorInit _ = liftIO newEmptyMVar
     editorUpdate ::
            MVar (NonEmpty (WholeUpdate a))
@@ -83,7 +83,7 @@ checkUpdateEditor val push = let
         -> EditContext
         -> IO ()
     editorUpdate var _ _ edits _ = putMVar var edits
-    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Reference (WholeEdit a) -> Task () -> LifeCycleIO ()
+    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Reference (WholeEdit a) -> Task () -> LifeCycle ()
     editorDo var _ _ =
         liftIO $ do
             push

@@ -27,7 +27,7 @@ changesMainGTK appMain =
             rtWithoutLock = mVarUnitUnlock uiLockVar
             rtExit :: IO ()
             rtExit = mVarRun runVar $ put RSStop
-            rtUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
+            rtUnliftLifeCycle :: forall a. LifeCycle a -> IO a
             rtUnliftLifeCycle = unlift
             rt = MkRunToolkit {..}
         a <- unlift $ rtRunView rt emptyResourceContext $ quitOnAllClosed rt appMain

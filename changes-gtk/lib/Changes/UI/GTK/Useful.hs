@@ -68,7 +68,7 @@ instance GTKCallbackType r => GTKCallbackType (a -> r) where
 
 cvCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> CreateView ()
 cvCloseDisconnectSignal object shid =
-    liftLifeCycleIO $
+    liftLifeCycle $
     lifeCycleClose $ do
         -- Widgets that have been destroyed have already had their signals disconnected, even if references to them still exist.
         -- So we need to check.
@@ -84,7 +84,7 @@ cvOn ::
     -> CallbackViewLifted (HaskellCallbackType info)
     -> CreateView SignalHandlerId
 cvOn object signal call = do
-    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift unlift call
+    shid <- liftToLifeCycle $ liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift unlift call
     cvCloseDisconnectSignal object shid
     return shid
 
@@ -95,7 +95,7 @@ cvAfter ::
     -> CallbackViewLifted (HaskellCallbackType info)
     -> CreateView SignalHandlerId
 cvAfter object signal call = do
-    shid <- cvLiftView $ liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift unlift call
+    shid <- liftToLifeCycle $ liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift unlift call
     cvCloseDisconnectSignal object shid
     return shid
 
@@ -141,7 +141,7 @@ isScrollable widget = do
 cvAcquire :: IsObject a => a -> CreateView ()
 cvAcquire a = do
     _ <- objectRef a
-    liftLifeCycleIO $ lifeCycleClose $ objectUnref a
+    liftLifeCycle $ lifeCycleClose $ objectUnref a
 
 cvGetObjectTypeName :: IsObject a => a -> CreateView String
 cvGetObjectTypeName a = do
@@ -159,23 +159,23 @@ cvNew cc attrs = do
 cvTopLevelNew :: (Constructible a tag, IsObject a, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> CreateView a
 cvTopLevelNew cc attrs = do
     a <- cvNew cc attrs
-    liftLifeCycleIO $ lifeCycleClose $ widgetDestroy a
+    liftLifeCycle $ lifeCycleClose $ widgetDestroy a
     return a
 
 cvSet ::
        (AttrClearC info obj attr, AttrSetC info obj attr value) => obj -> AttrLabelProxy attr -> value -> CreateView ()
 cvSet obj prop val =
-    liftLifeCycleIO $ do
+    liftLifeCycle $ do
         set obj [prop := val]
         lifeCycleClose $ clear obj prop
 
 cvAdd :: (IsContainer c, IsWidget w) => c -> w -> CreateView ()
 cvAdd c w =
-    liftLifeCycleIO $ do
+    liftLifeCycle $ do
         containerAdd c w
         lifeCycleClose $ containerRemove c w
 
 cvPackStart :: (IsObject w, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> CreateView ()
 cvPackStart grow box w = do
     boxPackStart box w grow grow 0
-    liftLifeCycleIO $ lifeCycleClose $ containerRemove box w
+    liftLifeCycle $ lifeCycleClose $ containerRemove box w

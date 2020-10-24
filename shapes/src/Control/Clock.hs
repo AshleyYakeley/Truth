@@ -3,8 +3,7 @@ module Control.Clock
     ) where
 
 import Control.Monad.Exception
-import Control.Monad.LifeCycleIO
-import Control.Monad.Trans.LifeCycle
+import Control.Monad.LifeCycle
 import Data.Fixed
 import Data.Time.Clock
 import Shapes.Import
@@ -15,7 +14,7 @@ data Cancelled =
 
 instance Exception Cancelled
 
-clock :: UTCTime -> NominalDiffTime -> (UTCTime -> IO ()) -> LifeCycleIO UTCTime
+clock :: UTCTime -> NominalDiffTime -> (UTCTime -> IO ()) -> LifeCycle UTCTime
 clock utcBase ndtInterval call = do
     let
         getDiffTimes :: IO (NominalDiffTime, NominalDiffTime)

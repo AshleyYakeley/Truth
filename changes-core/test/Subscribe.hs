@@ -117,7 +117,7 @@ subscribeShowUpdates ::
        )
     => String
     -> Model update
-    -> LifeCycleIO (LifeCycleIO ())
+    -> LifeCycle (LifeCycle ())
 subscribeShowUpdates name sub = do
     chan <- liftIO newChan
     lifeCycleClose $ do
@@ -139,7 +139,7 @@ showModelSubject ::
        (Show (UpdateSubject update), FullSubjectReader (UpdateReader update), ?handle :: Handle, ?rc :: ResourceContext)
     => String
     -> Model update
-    -> LifeCycleIO ()
+    -> LifeCycle ()
 showModelSubject name sub =
     liftIO $ do
         taskWait $ modelUpdatesTask sub
@@ -152,7 +152,7 @@ modelPushEdits ::
     => String
     -> Model update
     -> [NonEmpty (UpdateEdit update)]
-    -> LifeCycleIO ()
+    -> LifeCycle ()
 modelPushEdits name sub editss =
     liftIO $
     runResource ?rc sub $ \asub ->
@@ -170,7 +170,7 @@ modelDontPushEdits ::
     => String
     -> Model update
     -> [NonEmpty (UpdateEdit update)]
-    -> LifeCycleIO ()
+    -> LifeCycle ()
 modelDontPushEdits name sub editss =
     liftIO $
     runResource ?rc sub $ \asub ->
@@ -190,7 +190,7 @@ testSubscription ::
        , Show (UpdateSubject update)
        )
     => UpdateSubject update
-    -> LifeCycleIO (Model update, LifeCycleIO (), NonEmpty (UpdateEdit update) -> LifeCycleIO ())
+    -> LifeCycle (Model update, LifeCycle (), NonEmpty (UpdateEdit update) -> LifeCycle ())
 testSubscription initial = do
     iow <- liftIO $ newIOWitness
     var <- liftIO $ newMVar initial
@@ -210,7 +210,7 @@ testSubscription initial = do
                     hPutStrLn ?handle $ "expected: " ++ show news
     return (sub, showVar, showExpected)
 
-doModelTest :: TestName -> ((?handle :: Handle, ?rc :: ResourceContext) => LifeCycleIO ()) -> TestTree
+doModelTest :: TestName -> ((?handle :: Handle, ?rc :: ResourceContext) => LifeCycle ()) -> TestTree
 doModelTest name call = goldenTest' name $ runLifeCycle call
 
 testPair :: TestTree
