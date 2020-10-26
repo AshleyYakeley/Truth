@@ -506,6 +506,26 @@ testEntity =
                           , badInterpretTest "let subtype P <: Q; f : Q -> P; f x = x in pass"
                           ]
                     ]
+              , tgroup
+                    "circular"
+                    [ context ["opentype P", "subtype P <: P"] $
+                      tgroup
+                          "single"
+                          [ pointTest "pass"
+                          , pointTest "let f : P -> P; f x = x in pass"
+                          , pointTest "let f : [P] -> [P]; f x = x in pass"
+                          ]
+                    , context ["opentype P", "opentype Q", "subtype P <: Q", "subtype Q <: P"] $
+                      tgroup
+                          "pair"
+                          [ pointTest "pass"
+                          , pointTest "let f : P -> P; f x = x in pass"
+                          , pointTest "let f : Q -> Q; f x = x in pass"
+                          , pointTest "let f : P -> Q; f x = x in pass"
+                          , pointTest "let f : [P] -> [Q]; f x = x in pass"
+                          , pointTest "let f : Q -> P; f x = x in pass"
+                          ]
+                    ]
               , context ["opentype Q", "subtype Maybe Number <: Q"] $
                 tgroup
                     "closed-open" -- not allowed, per issue #28
