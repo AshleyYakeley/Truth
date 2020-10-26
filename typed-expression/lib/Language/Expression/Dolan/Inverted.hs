@@ -2,6 +2,7 @@ module Language.Expression.Dolan.Inverted
     ( invertedPolarSubtype
     ) where
 
+import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
@@ -22,7 +23,7 @@ subtypeSS ::
 subtypeSS (VarDolanSingularType np) (VarDolanSingularType nq)
     | Just Refl <- testEquality np nq = pure id
 subtypeSS (GroundDolanSingularType gp argsp) (GroundDolanSingularType gq argsq) =
-    subtypeGroundTypes solverLiftM invertedContext gp argsp gq argsq
+    subtypeGroundTypes invertedContext gp argsp gq argsq
 subtypeSS sta@(RecursiveDolanSingularType _ _) stb = solveRecursiveSingularTypes invertedSubtype sta stb
 subtypeSS sta stb@(RecursiveDolanSingularType _ _) = solveRecursiveSingularTypes invertedSubtype sta stb
 subtypeSS _ _ = empty
@@ -50,7 +51,7 @@ invertedSubtype ::
     => DolanType ground 'Negative p
     -> DolanType ground 'Positive q
     -> Solver ground wit (DolanPolyShim ground Type p q)
-invertedSubtype tp tq = subtypeTT tp tq <|> solverLiftM (throwTypeConvertInverseError tp tq)
+invertedSubtype tp tq = subtypeTT tp tq <|> wlift (throwTypeConvertInverseError tp tq)
 
 invertedPolarSubtype ::
        forall (ground :: GroundTypeKind) polarity wit p q. (Is PolarityType polarity, IsDolanSubtypeGroundType ground)

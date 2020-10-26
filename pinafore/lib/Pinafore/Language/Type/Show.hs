@@ -37,16 +37,54 @@ type family ListTypeExprShow (dv :: [k]) :: Type where
     ListTypeExprShow '[] = (Text, Int)
     ListTypeExprShow (t ': tt) = (Text, Int) -> ListTypeExprShow tt
 
-class GroundExprShow (ground :: GroundTypeKind) where
+type GroundExprShow :: GroundTypeKind -> Constraint
+class GroundExprShow ground where
     groundTypeShowPrec ::
-           forall w polarity dv f t.
+           forall (w :: Polarity -> Type -> Type) polarity dv f t.
            ( Is PolarityType polarity
            , forall a polarity'. Is PolarityType polarity' => ExprShow (w polarity' a)
-           , forall a. ExprShow (RangeType w polarity a)
+           , forall a polarity'. Is PolarityType polarity' => ExprShow (RangeType w polarity' a)
            )
         => ground dv f
         -> DolanArguments dv w f polarity t
         -> (Text, Int)
+
+saturatedGroundTypeShowPrec ::
+       forall (ground :: GroundTypeKind) (w :: Polarity -> Type -> Type) dv f.
+       ( IsDolanGroundType ground
+       , GroundExprShow ground
+       , forall a polarity'. Is PolarityType polarity' => ExprShow (w polarity' a)
+       , forall a polarity'. Is PolarityType polarity' => ExprShow (RangeType w polarity' a)
+       )
+    => (forall pol. Is PolarityType pol => AnyW (w pol))
+    -> ground dv f
+    -> (Text, Int)
+saturatedGroundTypeShowPrec avar gt = let
+    singleVarArgument ::
+           forall polarity sv r. Is PolarityType polarity
+        => VarianceType sv
+        -> (forall a. InKind a => SingleArgument sv w polarity a -> r)
+        -> r
+    singleVarArgument CovarianceType call =
+        case avar of
+            MkAnyW var -> call var
+    singleVarArgument ContravarianceType call =
+        invertPolarity @polarity $
+        case avar of
+            MkAnyW var -> call var
+    singleVarArgument RangevarianceType call =
+        invertPolarity @polarity $
+        case (avar, avar) of
+            (MkAnyW var1, MkAnyW var2) -> call $ MkRangeType var1 var2
+    allVarArguments ::
+           forall polarity dv' f' r. Is PolarityType polarity
+        => DolanVarianceType dv'
+        -> (forall t. DolanArguments dv' w f' polarity t -> r)
+        -> r
+    allVarArguments NilListType call = call NilDolanArguments
+    allVarArguments (ConsListType svt dvt) call =
+        singleVarArgument @polarity svt $ \arg -> allVarArguments dvt $ \args -> call $ ConsDolanArguments arg args
+    in allVarArguments @'Positive (groundTypeVarianceType gt) $ \args -> groundTypeShowPrec gt args
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (DolanSingularType ground polarity t) where

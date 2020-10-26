@@ -17,6 +17,7 @@ library:
       - Language.Expression.Dolan
       - Language.Expression.Dolan.Test
     other-modules:
+      - Control.Applicative.Wrapped
       - Data.Shim.PolyMap
       - Data.Shim.ComposeShim
       - Data.Shim.Polarity

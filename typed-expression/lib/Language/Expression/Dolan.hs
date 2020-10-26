@@ -1,7 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan
-    ( PShimWit
+    ( module Control.Applicative.Wrapped
+    , PShimWit
     , MPolarityType(..)
     , MPolarW(..)
     , MPolarRangeType(..)
@@ -48,6 +49,7 @@ module Language.Expression.Dolan
     , module Language.Expression.Dolan.Concrete
     ) where
 
+import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments

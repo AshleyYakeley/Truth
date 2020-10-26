@@ -3,7 +3,6 @@ module Language.Expression.Dolan.Solver
     , liftTypeCheck
     , Solver
     , solverLiftExpression
-    , solverLiftM
     , solverOpenExpression
     , runSolver
     , solveRecursiveTypes
@@ -11,6 +10,7 @@ module Language.Expression.Dolan.Solver
     , solveRecursiveSingularTypes
     ) where
 
+import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.PShimWit
@@ -68,11 +68,12 @@ solverLiftExpression ::
     -> Solver ground wit a
 solverLiftExpression ua = MkSolver $ pure $ fmap pure ua
 
-solverLiftM ::
-       forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
-    => DolanM ground a
-    -> Solver ground wit a
-solverLiftM tca = MkSolver $ lift $ fmap (pure . pure) $ liftTypeCheck tca
+instance forall (ground :: GroundTypeKind) wit. Monad (DolanM ground) => WrappedApplicative (Solver ground wit) where
+    type WAWrapper (Solver ground wit) = DolanM ground
+    wexec msa =
+        MkSolver $ do
+            MkSolver sa <- lift $ lift $ msa
+            sa
 
 solverMapExpression ::
        forall (ground :: GroundTypeKind) wit a b. IsDolanSubtypeGroundType ground

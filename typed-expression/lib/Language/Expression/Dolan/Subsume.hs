@@ -7,6 +7,7 @@ module Language.Expression.Dolan.Subsume
     , invertType
     ) where
 
+import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
@@ -147,8 +148,8 @@ subsumeGroundSingularType ::
 subsumeGroundSingularType _gtinf _targsinf (VarDolanSingularType _vdecl) = empty
 subsumeGroundSingularType gtinf targsinf (GroundDolanSingularType gtdecl targsdecl) =
     case polarityType @polarity of
-        PositiveType -> fmap MkPolarMap $ subtypeGroundTypes solverLiftM subsumeContext gtinf targsinf gtdecl targsdecl
-        NegativeType -> fmap MkPolarMap $ subtypeGroundTypes solverLiftM subsumeContext gtdecl targsdecl gtinf targsinf
+        PositiveType -> fmap MkPolarMap $ subtypeGroundTypes subsumeContext gtinf targsinf gtdecl targsdecl
+        NegativeType -> fmap MkPolarMap $ subtypeGroundTypes subsumeContext gtdecl targsdecl gtinf targsinf
 subsumeGroundSingularType gtinf targsinf tdecl@(RecursiveDolanSingularType _ _) =
     subsumeRecursiveType
         (singularRecursiveOrPlainType $ GroundDolanSingularType gtinf targsinf)
@@ -186,7 +187,7 @@ subsumeSingularType ::
 subsumeSingularType (VarDolanSingularType vinf) tdecl =
     solverLiftExpression $ varExpression $ MkSubsumeWitness vinf tdecl
 subsumeSingularType tinf@(GroundDolanSingularType ginf argsinf) tdecl =
-    subsumeGroundType ginf argsinf tdecl <|> (solverLiftM $ throwTypeSubsumeError tinf tdecl)
+    subsumeGroundType ginf argsinf tdecl <|> (wlift $ throwTypeSubsumeError tinf tdecl)
 subsumeSingularType tinf@(RecursiveDolanSingularType _ _) tdecl =
     subsumeRecursiveType (singularRecursiveOrPlainType tinf) (mkShimWit $ PlainType tdecl)
 
