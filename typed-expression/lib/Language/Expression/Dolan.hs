@@ -45,6 +45,12 @@ module Language.Expression.Dolan
     , IsDolanGroundType(..)
     , IsDolanFunctionGroundType(..)
     , IsDolanSubtypeGroundType(..)
+    , IsDolanSubtypeEntriesGroundType(..)
+    , SubtypeArguments(..)
+    , SubtypeConversion(..)
+    , nilSubtypeConversion
+    , SubypeConversionEntry(..)
+    , simpleSubtypeConversionEntry
     , module Language.Expression.Dolan.Nonpolar
     , module Language.Expression.Dolan.Concrete
     ) where

@@ -1,6 +1,7 @@
 module Pinafore.Language.Type.EntityAdapter
     ( concreteEntityAdapter
     , concreteToEntityShim
+    , closedEntityShim
     ) where
 
 import Data.Shim
@@ -14,7 +15,7 @@ import Shapes
 
 entityGroundTypeAdapter :: forall f t. EntityGroundType f -> Arguments ConcreteEntityType f t -> EntityAdapter t
 entityGroundTypeAdapter TopEntityGroundType NilArguments = plainEntityAdapter
-entityGroundTypeAdapter (OpenEntityGroundType _) NilArguments = isoMap MkOpenEntity unNamedEntity plainEntityAdapter
+entityGroundTypeAdapter (OpenEntityGroundType _) NilArguments = isoMap MkOpenEntity unOpenEntity plainEntityAdapter
 entityGroundTypeAdapter (LiteralEntityGroundType tl) NilArguments =
     case literalTypeAsLiteral tl of
         Dict -> literalEntityAdapter
@@ -73,6 +74,9 @@ closedEntityTypeAdapter :: ClosedEntityType t -> EntityAdapter t
 closedEntityTypeAdapter NilClosedEntityType = pNone
 closedEntityTypeAdapter (ConsClosedEntityType a cc rest) =
     constructorEntityAdapter a (mapListType concreteEntityAdapter cc) <+++> closedEntityTypeAdapter rest
+
+closedEntityShim :: ClosedEntityType a -> PinaforePolyShim Type a Entity
+closedEntityShim t = functionToShim "ClosedEntity to Entity" $ entityAdapterConvert $ closedEntityTypeAdapter t
 
 concreteEntityAdapter :: forall t. ConcreteEntityType t -> EntityAdapter t
 concreteEntityAdapter (MkConcreteType gt args) = entityGroundTypeAdapter gt args
