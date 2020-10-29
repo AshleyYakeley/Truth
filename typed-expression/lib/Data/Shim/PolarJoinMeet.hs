@@ -29,6 +29,22 @@ iJoinMeetL2 =
         PositiveType -> iJoinL2
         NegativeType -> iMeetL2
 
+iJoinMeetR1 ::
+       forall pol shim t. (JoinMeetIsoCategory shim, Is PolarityType pol)
+    => shim t (JoinMeetType pol t (LimitType pol))
+iJoinMeetR1 =
+    case polarityType @pol of
+        PositiveType -> iJoinR1
+        NegativeType -> iMeetR1
+
+iJoinMeetR2 ::
+       forall pol shim t. (JoinMeetIsoCategory shim, Is PolarityType pol)
+    => shim t (JoinMeetType pol (LimitType pol) t)
+iJoinMeetR2 =
+    case polarityType @pol of
+        PositiveType -> iJoinR2
+        NegativeType -> iMeetR2
+
 iPolarL1 ::
        forall (shim :: ShimKind Type) polarity a. (Is PolarityType polarity, JoinMeetIsoCategory shim)
     => PolarMap shim polarity (JoinMeetType polarity a (LimitType polarity)) a

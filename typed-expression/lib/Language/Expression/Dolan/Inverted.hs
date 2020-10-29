@@ -51,7 +51,7 @@ invertedSubtype ::
     => DolanType ground 'Negative p
     -> DolanType ground 'Positive q
     -> Solver ground wit (DolanPolyShim ground Type p q)
-invertedSubtype tp tq = subtypeTT tp tq <|> wlift (throwTypeConvertInverseError tp tq)
+invertedSubtype tp tq = subtypeTT tp tq <|> wlift (lift $ throwTypeConvertInverseError tp tq)
 
 invertedPolarSubtype ::
        forall (ground :: GroundTypeKind) polarity wit p q. (Is PolarityType polarity, IsDolanSubtypeGroundType ground)

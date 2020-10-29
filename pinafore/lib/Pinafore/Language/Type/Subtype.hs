@@ -148,26 +148,39 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
                   EntityPinaforeGroundType NilListType (ClosedEntityGroundType _ _ t) ->
                       Just $ nilSubtypeConversion $ closedEntityShim t
                   _ -> Nothing
+            , simpleSubtypeConversionEntry FuncPinaforeGroundType RefOrderPinaforeGroundType $
+              MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t1 (ConsDolanArguments t2o NilDolanArguments)) ->
+                  invertPolarity @pola $
+                  invertPolarity @polb $ do
+                      MkVarType var <- varRenamerTGenerateUVar []
+                      let
+                          vara :: PinaforeType (InvertPolarity pola) _
+                          vara = singleDolanType $ VarDolanSingularType var
+                          varb :: PinaforeType (InvertPolarity polb) _
+                          varb = singleDolanType $ VarDolanSingularType var
+                          vconv = iJoinMeetR1 @(InvertPolarity polb) . iJoinMeetL1 @(InvertPolarity pola)
+                      return $
+                          MkSubtypeArguments (ConsDolanArguments vara NilDolanArguments) $ do
+                              conv1 <- subtypeConvert (subtypeInverted sc) varb t1
+                              conv2 <-
+                                  subtypeConvert sc t2o $
+                                  singleDolanType $
+                                  GroundDolanSingularType FuncPinaforeGroundType $
+                                  ConsDolanArguments varb $
+                                  ConsDolanArguments
+                                      (singleDolanType $
+                                       GroundDolanSingularType
+                                           (EntityPinaforeGroundType NilListType $
+                                            LiteralEntityGroundType OrderingLiteralType)
+                                           NilDolanArguments)
+                                      NilDolanArguments
+                              return $
+                                  (functionToShim "Order to RefOrder" pureRefOrder) .
+                                  applyCoPolyShim
+                                      (applyContraPolyShim cid $ conv1 . vconv)
+                                      (applyCoPolyShim (applyContraPolyShim cid vconv) (iJoinMeetL1 @polb) .
+                                       iJoinMeetL1 @polb . conv2)
     {-
-    -- a -> (a -> Ordering) <: RefOrder a
-    subtypeGroundTypes sc FuncPinaforeGroundType (ConsDolanArguments t1 (ConsDolanArguments t2o NilDolanArguments)) RefOrderPinaforeGroundType (ConsDolanArguments a NilDolanArguments) = do
-        conv1 <- subtypeConvert (subtypeInverted sc) a t1
-        conv2 <-
-            subtypeConvert sc t2o $
-            singleDolanType $
-            GroundDolanSingularType FuncPinaforeGroundType $
-            ConsDolanArguments a $
-            ConsDolanArguments
-                (singleDolanType $
-                 GroundDolanSingularType
-                     (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType OrderingLiteralType)
-                     NilDolanArguments)
-                NilDolanArguments
-        return $
-            (functionToShim "Order to RefOrder" pureRefOrder) .
-            applyCoPolyShim
-                (applyContraPolyShim cid conv1)
-                (applyCoPolyShim cid (iJoinMeetL1 @polb) . iJoinMeetL1 @polb . conv2)
     -- (open entity type) <: (open entity type)
     entityGroundSubtype _ NilListType (OpenEntityGroundType t1) NilDolanArguments NilListType (OpenEntityGroundType t2) NilDolanArguments =
         wlift $ getOpenEntitySubtype t1 t2

@@ -69,10 +69,10 @@ solverLiftExpression ::
 solverLiftExpression ua = MkSolver $ pure $ fmap pure ua
 
 instance forall (ground :: GroundTypeKind) wit. Monad (DolanM ground) => WrappedApplicative (Solver ground wit) where
-    type WAWrapper (Solver ground wit) = DolanM ground
+    type WAWrapper (Solver ground wit) = DolanTypeCheckM ground
     wexec msa =
         MkSolver $ do
-            MkSolver sa <- lift $ lift $ msa
+            MkSolver sa <- lift $ msa
             sa
 
 solverMapExpression ::

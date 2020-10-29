@@ -94,7 +94,11 @@ type IsDolanSubtypeGroundType :: GroundTypeKind -> Constraint
 class IsDolanGroundType ground => IsDolanSubtypeGroundType ground where
     subtypeGroundTypes ::
            forall solver pola polb dva gta a dvb gtb b.
-           (WrappedApplicative solver, WAWrapper solver ~ DolanM ground, Is PolarityType pola, Is PolarityType polb)
+           ( WrappedApplicative solver
+           , WAWrapper solver ~ DolanTypeCheckM ground
+           , Is PolarityType pola
+           , Is PolarityType polb
+           )
         => SubtypeContext (DolanType ground) (DolanPolyShim ground Type) solver pola polb
         -> ground dva gta
         -> DolanArguments dva (DolanType ground) gta pola a
@@ -105,18 +109,18 @@ class IsDolanGroundType ground => IsDolanSubtypeGroundType ground where
         forall solver pola polb dva gta a dvb gtb b.
             ( IsDolanSubtypeEntriesGroundType ground
             , WrappedApplicative solver
-            , WAWrapper solver ~ DolanM ground
+            , WAWrapper solver ~ DolanTypeCheckM ground
             , Is PolarityType pola
             , Is PolarityType polb
             ) =>
                     SubtypeContext (DolanType ground) (DolanPolyShim ground Type) solver pola polb -> ground dva gta -> DolanArguments dva (DolanType ground) gta pola a -> ground dvb gtb -> DolanArguments dvb (DolanType ground) gtb polb b -> solver (DolanPolyShim ground Type a b)
     subtypeGroundTypes sc ta argsa tb argsb = let
-        margswit :: DolanM ground (SubtypeArguments ground solver pola dvb gtb a)
+        margswit :: DolanTypeCheckM ground (SubtypeArguments ground solver pola dvb gtb a)
         margswit = do
-            entries <- subtypeConversionEntries
+            entries <- lift subtypeConversionEntries
             case getSubtypeShim entries ta tb of
                 Just (MkSubtypeConversion sconv) -> sconv sc argsa
-                Nothing -> throwTypeConvertError ta tb
+                Nothing -> lift $ throwTypeConvertError ta tb
         in wbind margswit $ \(MkSubtypeArguments argsb' sargsconv) ->
                (<.>) <$> subtypeDolanArguments sc tb argsb' argsb <*> sargsconv
     throwTypeConvertInverseError :: DolanType ground 'Negative p -> DolanType ground 'Positive q -> DolanM ground a
@@ -139,11 +143,11 @@ type SubtypeConversion :: GroundTypeKind -> forall (dva :: DolanVariance) ->
 newtype SubtypeConversion ground dva gta dvb gtb =
     MkSubtypeConversion (forall solver polarity polarity' a.
                              ( WrappedApplicative solver
-                             , WAWrapper solver ~ DolanM ground
+                             , WAWrapper solver ~ DolanTypeCheckM ground
                              , Is PolarityType polarity
                              , Is PolarityType polarity'
                              ) =>
-                                     SubtypeContext (DolanType ground) (DolanPolyShim ground Type) solver polarity polarity' -> DolanArguments dva (DolanType ground) gta polarity a -> DolanM ground (SubtypeArguments ground solver polarity dvb gtb a))
+                                     SubtypeContext (DolanType ground) (DolanPolyShim ground Type) solver polarity polarity' -> DolanArguments dva (DolanType ground) gta polarity a -> DolanTypeCheckM ground (SubtypeArguments ground solver polarity dvb gtb a))
 
 nilSubtypeConversion ::
        forall (ground :: GroundTypeKind) (a :: Type) (b :: Type).

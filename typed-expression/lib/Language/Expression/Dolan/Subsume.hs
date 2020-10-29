@@ -187,7 +187,7 @@ subsumeSingularType ::
 subsumeSingularType (VarDolanSingularType vinf) tdecl =
     solverLiftExpression $ varExpression $ MkSubsumeWitness vinf tdecl
 subsumeSingularType tinf@(GroundDolanSingularType ginf argsinf) tdecl =
-    subsumeGroundType ginf argsinf tdecl <|> (wlift $ throwTypeSubsumeError tinf tdecl)
+    subsumeGroundType ginf argsinf tdecl <|> (wlift $ lift $ throwTypeSubsumeError tinf tdecl)
 subsumeSingularType tinf@(RecursiveDolanSingularType _ _) tdecl =
     subsumeRecursiveType (singularRecursiveOrPlainType tinf) (mkShimWit $ PlainType tdecl)
 
