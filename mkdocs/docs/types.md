@@ -137,6 +137,17 @@ subtype Cat <: Animal;
 
 For any open entity type `T`, `T <: Entity`.
 
+#### Subtype Relations
+
+Subtype relations can be declared with `subtype`:
+
+```pinafore
+subtype P <: Q;
+```
+
+where `Q` is an open entity type, and `P` is a "simple" entity type, that is, a subtype of `Entity` that does not use type parameters.
+So `opentype Integer <: Q` is allowed, but `opentype Maybe Integer <: Q` is not (even though `Maybe Integer` is a subtype of `Entity`).
+
 Subtypes relations are transitive.
 If there is a loop of subtype relations, it will simply make those types equivalent.
 
