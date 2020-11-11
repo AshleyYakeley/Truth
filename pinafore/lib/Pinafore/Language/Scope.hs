@@ -1,5 +1,6 @@
 module Pinafore.Language.Scope
-    ( ScopeExpression
+    ( ScopeGroundType
+    , ScopeExpression
     , ScopePatternConstructor
     , ScopeProvidedType
     , ScopeClosedEntityType
@@ -29,25 +30,22 @@ module Pinafore.Language.Scope
     , lookupPatternConstructor
     , withNewPatternConstructor
     , withNewPatternConstructors
-    , withEntitySubtype
-    , getOpenEntitySubtype
-    , TypeCheckSubtype(..)
+    , withSubtypeConversions
+    , getSubtypeConversions
     ) where
 
-import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Name
-import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
-import Pinafore.Language.Subtype
 import Pinafore.Language.Type.Identified
-import Pinafore.Language.Type.OpenEntity
 import Pinafore.Language.Type.Show
 import Shapes
 import Text.Parsec (SourcePos)
+
+type family ScopeGroundType (ts :: Type) :: GroundTypeKind
 
 type family ScopeExpression (ts :: Type) :: Type
 
@@ -72,8 +70,6 @@ data NamedType (ts :: Type) where
         -> ScopeClosedEntityType ts (Identified tid)
         -> NamedType ts
 
-type OpenEntityShim = LiftedCategory (PinaforePolyShim Type) OpenEntity
-
 newtype SpecialVals (ts :: Type) = MkSpecialVals
     { specialEvaluate :: forall t. TSPosWitness ts t -> Text -> PinaforeAction (Either Text t)
         -- ^ in Action because this can do things like import files
@@ -87,7 +83,7 @@ data ScopeBinding (ts :: Type)
 
 data Scope (ts :: Type) = MkScope
     { scopeBindings :: Map Name (ScopeBinding ts)
-    , scopeOpenEntitySubtypes :: [SubtypeEntry OpenEntityShim TypeIDType]
+    , scopeSubtypes :: [SubypeConversionEntry (ScopeGroundType ts)]
     , scopeSpecialVals :: SpecialVals ts
     }
 
@@ -273,24 +269,8 @@ withNewPatternConstructor name exp pc = do
 withNewPatternConstructors :: Map Name (ScopeExpression ts, ScopePatternConstructor ts) -> Scoped ts a -> Scoped ts a
 withNewPatternConstructors pp = withNewBindings $ fmap (\(exp, pc) -> ValueBinding exp $ Just pc) pp
 
-withEntitySubtype :: OpenEntityType tida -> OpenEntityType tidb -> Scoped ts a -> Scoped ts a
-withEntitySubtype (MkOpenEntityType _ ta) (MkOpenEntityType _ tb) =
-    pLocalScope $ \tc ->
-        tc
-            { scopeOpenEntitySubtypes =
-                  (MkSubtypeEntry ta tb $ MkLiftedCategory $ coerceEnhanced "open entity subtype") :
-                  (scopeOpenEntitySubtypes tc)
-            }
+withSubtypeConversions :: [SubypeConversionEntry (ScopeGroundType ts)] -> Scoped ts a -> Scoped ts a
+withSubtypeConversions newsc = pLocalScope $ \tc -> tc {scopeSubtypes = newsc <> scopeSubtypes tc}
 
-getOpenEntitySubtype ::
-       OpenEntityType tida
-    -> OpenEntityType tidb
-    -> SourceScoped ts (PinaforePolyShim Type (OpenEntity tida) (OpenEntity tidb))
-getOpenEntitySubtype (MkOpenEntityType na wa) (MkOpenEntityType nb wb) = do
-    (scopeOpenEntitySubtypes -> subtypes) <- spScope
-    case unSubtypeMatch (getSubtypeShim subtypes equalSubtypeMatch) wa wb of
-        Just (MkLiftedCategory conv) -> return conv
-        Nothing -> convertFailure (exprShow na) (exprShow nb)
-
-class TypeCheckSubtype w where
-    getSubtype :: forall ts a b. w a -> w b -> SourceScoped ts (a -> b)
+getSubtypeConversions :: Scoped ts [SubypeConversionEntry (ScopeGroundType ts)]
+getSubtypeConversions = MkScoped $ asks scopeSubtypes

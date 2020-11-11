@@ -218,3 +218,6 @@ shortAnd amb (a:aa) = do
 mif :: Monoid a => Bool -> a -> a
 mif False _ = mempty
 mif True a = a
+
+localf :: (Traversable f, Applicative m) => (r -> f r) -> ReaderT r m a -> ReaderT r m (f a)
+localf rfr (ReaderT rma) = ReaderT $ \r -> for (rfr r) rma

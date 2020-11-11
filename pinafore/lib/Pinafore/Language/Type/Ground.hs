@@ -7,6 +7,8 @@ import Pinafore.Language.Name
 import Pinafore.Language.Scope
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
+import Pinafore.Language.Type.EntityAdapter
+import Pinafore.Language.Type.OpenEntity
 import Pinafore.Language.Type.Show
 import Pinafore.Language.Value
 import Shapes
@@ -54,6 +56,9 @@ data PinaforeGroundType dv t where
     MenuItemPinaforeGroundType :: PinaforeGroundType '[] LangMenuEntry
 
 type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
+
+type instance ScopeGroundType PinaforeTypeSystem =
+     PinaforeGroundType
 
 type instance DolanPolyShim PinaforeGroundType = PinaforePolyShim
 
@@ -183,3 +188,17 @@ instance GroundExprShow PinaforeGroundType where
     groundTypeShowPrec UserInterfacePinaforeGroundType NilDolanArguments = ("UI", 0)
     groundTypeShowPrec WindowPinaforeGroundType NilDolanArguments = ("Window", 0)
     groundTypeShowPrec MenuItemPinaforeGroundType NilDolanArguments = ("MenuItem", 0)
+
+withEntitySubtype ::
+       forall (t :: Type) tidb a.
+       EntityGroundType t
+    -> OpenEntityType tidb
+    -> Scoped PinaforeTypeSystem a
+    -> Scoped PinaforeTypeSystem a
+withEntitySubtype ta tb =
+    withSubtypeConversions $
+    pure $
+    simpleSubtypeConversionEntry
+        (EntityPinaforeGroundType NilListType ta)
+        (EntityPinaforeGroundType NilListType $ OpenEntityGroundType tb) $
+    nilSubtypeConversion $ coerceEnhanced "open entity" . entitySubtypeShim ta

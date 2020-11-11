@@ -259,11 +259,11 @@ interpretSubtypeRelation sta stb ma = do
     case ata of
         MkAnyW ta ->
             case ta of
-                MkConcreteType (OpenEntityGroundType tida) NilArguments ->
+                MkConcreteType tea NilArguments ->
                     case atb of
                         MkAnyW tb ->
                             case tb of
                                 MkConcreteType (OpenEntityGroundType tidb) NilArguments ->
-                                    remonadSourcePos (withEntitySubtype tida tidb) ma
+                                    remonadSourcePos (withEntitySubtype tea tidb) ma
                                 _ -> throw $ TypeNotOpenEntityError $ exprShow tb
-                _ -> throw $ TypeNotOpenEntityError $ exprShow ta
+                _ -> throw $ TypeNotSimpleEntityError $ exprShow ta

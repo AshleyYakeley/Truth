@@ -16,6 +16,7 @@ data ErrorType
                                        [Text]
                                        [Text]
     | TypeNotOpenEntityError Text
+    | TypeNotSimpleEntityError Text
     | LookupConstructorUnknownError Name
     | DeclareTypeDuplicateError Name
     | DeclareConstructorDuplicateError Name
@@ -87,6 +88,7 @@ instance Show ErrorType where
         show n <>
         ": expecting " <> intercalate " " (fmap unpack exp) <> ", found " <> intercalate " " (fmap unpack found)
     show (TypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
+    show (TypeNotSimpleEntityError t) = unpack t <> " is not a simple entity type"
     show (LookupConstructorUnknownError n) = "unknown constructor: " <> show n
     show (DeclareTypeDuplicateError n) = "duplicate type: " <> show n
     show (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> show n

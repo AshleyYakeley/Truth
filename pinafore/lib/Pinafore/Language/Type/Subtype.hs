@@ -61,8 +61,10 @@ literalSubtypeConversionEntry ta tb conv =
     nilSubtypeConversion conv
 
 instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
-    subtypeConversionEntries =
-        return
+    subtypeConversionEntries = do
+        entries <- liftSourcePos getSubtypeConversions
+        return $
+            entries <>
             [ simpleSubtypeConversionEntry FiniteSetRefPinaforeGroundType SetRefPinaforeGroundType $
               MkSubtypeConversion $ \_ (ConsDolanArguments (MkRangeType t _) NilDolanArguments) ->
                   return $
@@ -180,11 +182,6 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
                                       (applyContraPolyShim cid $ conv1 . vconv)
                                       (applyCoPolyShim (applyContraPolyShim cid vconv) (iJoinMeetL1 @polb) .
                                        iJoinMeetL1 @polb . conv2)
-    {-
-    -- (open entity type) <: (open entity type)
-    entityGroundSubtype _ NilListType (OpenEntityGroundType t1) NilDolanArguments NilListType (OpenEntityGroundType t2) NilDolanArguments =
-        wlift $ getOpenEntitySubtype t1 t2
-    -}
             ]
     throwTypeConvertError tp tq = convertFailure (showGroundType tp) (showGroundType tq)
 
