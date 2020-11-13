@@ -535,7 +535,16 @@ testEntity =
                            , pointTest "let f : Maybe (a & Number) -> (Entity,Maybe a); f x = (x,x) in pass"
                            ]
                      , tgroup "dynamic" $
-                       [ context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                       [ tgroup "DynamicEntity <: Entity" $ subtypeTests "DynamicEntity" "Entity"
+                       , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                         tgroup "P1 <: DynamicEntity" $ subtypeTests "P1" "DynamicEntity"
+                       , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                         tgroup "Q <: DynamicEntity" $ subtypeTests "Q" "DynamicEntity"
+                       , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                         tgroup "P1 <: Entity" $ subtypeTests "P1" "Entity"
+                       , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                         tgroup "Q <: Entity" $ subtypeTests "Q" "Entity"
+                       , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
                          tgroup "1" $ subtypeTests "P1" "Q"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | P2", "dynamictype P2 = !\"P2\""] $
                          tgroup "2" $ subtypeTests "P1" "Q"

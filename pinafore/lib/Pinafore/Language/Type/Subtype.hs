@@ -16,7 +16,6 @@ import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.EntityAdapter
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Literal
-import Pinafore.Language.Type.OpenEntity
 import Pinafore.Language.Type.Show
 import Pinafore.Language.Type.Type
 import Pinafore.Language.Value
@@ -126,12 +125,6 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
                       convA <- subtypeConvert sc ta $ topEntityType
                       convB <- subtypeConvert sc tb $ topEntityType
                       pure $ convE . applyCoPolyShim (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
-            , simpleSubtypeConversionEntry
-                  (EntityPinaforeGroundType NilListType (LiteralEntityGroundType LiteralLiteralType))
-                  (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-              MkSubtypeConversion $ \_ NilDolanArguments ->
-                  return $
-                  MkSubtypeArguments NilDolanArguments $ pure $ functionToShim "Literal to Entity" literalToEntity
             , MkSubypeConversionEntry
                   (EntityPinaforeGroundType NilListType (LiteralEntityGroundType LiteralLiteralType)) $ \case
                   EntityPinaforeGroundType NilListType (LiteralEntityGroundType t) ->
@@ -143,12 +136,10 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
             , literalSubtypeConversionEntry RationalLiteralType NumberLiteralType $
               functionToShim "Rational to Number" safeRationalToNumber
             , MkSubypeConversionEntry (EntityPinaforeGroundType NilListType TopEntityGroundType) $ \case
-                  EntityPinaforeGroundType NilListType (OpenEntityGroundType _) ->
-                      Just $ nilSubtypeConversion $ functionToShim "OpenEntity to Entity" unOpenEntity
+                  EntityPinaforeGroundType NilListType t -> Just $ nilSubtypeConversion $ entitySubtypeShim t
                   _ -> Nothing
-            , MkSubypeConversionEntry (EntityPinaforeGroundType NilListType TopEntityGroundType) $ \case
-                  EntityPinaforeGroundType NilListType (ClosedEntityGroundType _ _ t) ->
-                      Just $ nilSubtypeConversion $ closedEntityShim t
+            , MkSubypeConversionEntry (EntityPinaforeGroundType NilListType TopDynamicEntityGroundType) $ \case
+                  EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ _) -> Just $ nilSubtypeConversion id
                   _ -> Nothing
             , simpleSubtypeConversionEntry FuncPinaforeGroundType RefOrderPinaforeGroundType $
               MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t1 (ConsDolanArguments t2o NilDolanArguments)) ->

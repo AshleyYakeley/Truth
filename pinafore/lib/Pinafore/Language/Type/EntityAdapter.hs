@@ -71,7 +71,8 @@ entityGroundTypeAdapter ListEntityGroundType (ConsArguments t NilArguments) = le
     to (a:aa) = Right (a, (aa, ()))
     in listAdapter
 entityGroundTypeAdapter (ClosedEntityGroundType _ _ ct) NilArguments = closedEntityTypeAdapter ct
-entityGroundTypeAdapter (DynamicEntityGroundType _ dt) NilArguments = dynamicEntityAdapter dt
+entityGroundTypeAdapter TopDynamicEntityGroundType NilArguments = dynamicEntityAdapter Nothing
+entityGroundTypeAdapter (ADynamicEntityGroundType _ dt) NilArguments = dynamicEntityAdapter $ Just dt
 
 closedEntityTypeAdapter :: ClosedEntityType t -> EntityAdapter t
 closedEntityTypeAdapter NilClosedEntityType = pNone

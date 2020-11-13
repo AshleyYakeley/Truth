@@ -236,6 +236,8 @@ interpretGroundTypeConst (ConstSyntaxGroundType "MenuItem") =
     return $ MkPinaforeGroundTypeM $ MkAnyW MenuItemPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "Entity") =
     return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType TopEntityGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "DynamicEntity") =
+    return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType TopDynamicEntityGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType n)
     | Just (MkAnyW lt) <- nameToLiteralType n =
         return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType lt
@@ -253,7 +255,7 @@ interpretGroundTypeConst (ConstSyntaxGroundType n) = do
             MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n tidsym ct
         DynamicEntityNamedType dt ->
             return $
-            MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ DynamicEntityGroundType n dt
+            MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType n dt
 
 interpretSubtypeRelation :: SyntaxType -> SyntaxType -> PinaforeSourceScoped a -> PinaforeSourceScoped a
 interpretSubtypeRelation sta stb ma = do

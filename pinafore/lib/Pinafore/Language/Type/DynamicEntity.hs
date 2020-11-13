@@ -23,24 +23,26 @@ data DynamicEntity =
                     Entity
     deriving (Eq)
 
-typeEntityAdapter :: DynamicEntityType -> EntityAdapter DynamicType
-typeEntityAdapter dt = let
+typeEntityAdapter :: Maybe DynamicEntityType -> EntityAdapter DynamicType
+typeEntityAdapter mdt = let
     entityAdapterDefinitions =
         MkEntityStorer $
         pure $
         MkKnowShim PlainConstructorStorer $ \(MkDynamicType -> t) ->
-            if member t dt
-                then Known t
-                else Unknown
+            case mdt of
+                Just dt
+                    | member t dt -> Known t
+                Just _ -> Unknown
+                Nothing -> Known t
     entityAdapterToDefinition (MkDynamicType e) = MkAnyValue (MkEntityStorer PlainConstructorStorer) e
     in MkEntityAdapter {..}
 
 dynamicAnchor :: Anchor
 dynamicAnchor = codeAnchor "pinafore-base:dynamic"
 
-dynamicEntityAdapter :: DynamicEntityType -> EntityAdapter DynamicEntity
-dynamicEntityAdapter dt =
+dynamicEntityAdapter :: Maybe DynamicEntityType -> EntityAdapter DynamicEntity
+dynamicEntityAdapter mdt =
     isoMap (\(t, (v, ())) -> MkDynamicEntity t v) (\(MkDynamicEntity t v) -> (t, (v, ()))) $
     constructorEntityAdapter
         dynamicAnchor
-        (ConsListType (typeEntityAdapter dt) $ ConsListType plainEntityAdapter NilListType)
+        (ConsListType (typeEntityAdapter mdt) $ ConsListType plainEntityAdapter NilListType)
