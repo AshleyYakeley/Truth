@@ -15,10 +15,15 @@ data SyntaxDatatypeConstructor =
     MkSyntaxDatatypeConstructor Name
                                 [SyntaxType]
 
+data SyntaxDynamicEntityConstructor
+    = AnchorSyntaxDynamicEntityConstructor Anchor
+    | NameSyntaxDynamicEntityConstructor Name
+
 data SyntaxTypeDeclaration
     = ClosedEntitySyntaxTypeDeclaration [SyntaxClosedEntityConstructor]
     | DatatypeSyntaxTypeDeclaration [SyntaxDatatypeConstructor]
     | OpenEntitySyntaxTypeDeclaration
+    | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
 
 data SyntaxDeclaration
     = TypeSyntaxDeclaration SourcePos

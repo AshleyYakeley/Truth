@@ -37,6 +37,7 @@ data Token t where
     TokOpenType :: Token ()
     TokSubtype :: Token ()
     TokClosedType :: Token ()
+    TokDynamicType :: Token ()
     TokUName :: Token Name
     TokLName :: Token Name
     TokUnderscore :: Token ()
@@ -76,6 +77,7 @@ instance TestEquality Token where
     testEquality TokOpenType TokOpenType = Just Refl
     testEquality TokSubtype TokSubtype = Just Refl
     testEquality TokClosedType TokClosedType = Just Refl
+    testEquality TokDynamicType TokDynamicType = Just Refl
     testEquality TokUName TokUName = Just Refl
     testEquality TokLName TokLName = Just Refl
     testEquality TokUnderscore TokUnderscore = Just Refl
@@ -116,6 +118,7 @@ instance Show (Token t) where
     show TokOpenType = show ("opentype" :: String)
     show TokSubtype = show ("subtype" :: String)
     show TokClosedType = show ("closedtype" :: String)
+    show TokDynamicType = show ("dynamictype" :: String)
     show TokUName = "uname"
     show TokLName = "lname"
     show TokUnderscore = show ("_" :: String)
@@ -240,6 +243,7 @@ readTextToken = do
         "opentype" -> return $ MkAnyValue TokOpenType ()
         "subtype" -> return $ MkAnyValue TokSubtype ()
         "closedtype" -> return $ MkAnyValue TokClosedType ()
+        "dynamictype" -> return $ MkAnyValue TokDynamicType ()
         name
             | isUpper firstC -> return $ MkAnyValue TokUName $ MkName $ pack name
         name -> return $ MkAnyValue TokLName $ MkName $ pack name

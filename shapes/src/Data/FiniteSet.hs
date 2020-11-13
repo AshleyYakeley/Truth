@@ -78,7 +78,3 @@ instance Eq a => KeyContainer (FiniteSet a) where
 
 instance (Eq key, Random key) => IONewItemKeyContainer (FiniteSet key) where
     newKeyContainerItem = randomIO
-
-maybePoint :: (Monoid l, MonoPointed l, Element l ~ a) => Maybe a -> l
-maybePoint Nothing = mempty
-maybePoint (Just a) = opoint a

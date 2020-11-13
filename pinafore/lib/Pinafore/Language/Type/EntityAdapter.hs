@@ -9,6 +9,7 @@ import Data.Shim
 import Language.Expression.Common
 import Pinafore.Base
 import Pinafore.Language.Shim
+import Pinafore.Language.Type.DynamicEntity
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Literal
 import Pinafore.Language.Type.OpenEntity
@@ -70,6 +71,7 @@ entityGroundTypeAdapter ListEntityGroundType (ConsArguments t NilArguments) = le
     to (a:aa) = Right (a, (aa, ()))
     in listAdapter
 entityGroundTypeAdapter (ClosedEntityGroundType _ _ ct) NilArguments = closedEntityTypeAdapter ct
+entityGroundTypeAdapter (DynamicEntityGroundType _ dt) NilArguments = dynamicEntityAdapter dt
 
 closedEntityTypeAdapter :: ClosedEntityType t -> EntityAdapter t
 closedEntityTypeAdapter NilClosedEntityType = pNone
@@ -94,3 +96,4 @@ entitySubtypeShim (LiteralEntityGroundType t) =
     case literalTypeAsLiteral t of
         Dict -> functionToShim "literal to Entity" literalToEntity
 entitySubtypeShim (ClosedEntityGroundType _ _ t) = closedEntityShim t
+entitySubtypeShim t = functionToShim "to Entity" $ entityAdapterConvert $ entityGroundTypeAdapter t NilArguments

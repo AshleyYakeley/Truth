@@ -33,6 +33,7 @@ data ErrorType
     | InterpretTypeExprBadJoinMeetError Polarity
     | InterpretTypeNotAmbipolarError Text
     | InterpretTypeNotEntityError Text
+    | InterpretTypeNotDynamicEntityError Text
     | InterpretTypeNotOpenEntityError Text
     | InterpretTypeNoneNotNegativeEntityError
     | InterpretTypeUnderApplyError Text
@@ -104,6 +105,7 @@ instance Show ErrorType where
     show (InterpretTypeExprBadJoinMeetError Negative) = "\"|\" in negative type"
     show (InterpretTypeNotAmbipolarError t) = unpack t <> " is not an ambipolar type"
     show (InterpretTypeNotEntityError t) = unpack t <> " is not an entity type"
+    show (InterpretTypeNotDynamicEntityError t) = unpack t <> " is not a dynamic entity type"
     show (InterpretTypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
     show InterpretTypeNoneNotNegativeEntityError = "\"None\" is not a negative entity type"
     show (InterpretTypeUnderApplyError t) = "underapplied type constuctor: " <> unpack t

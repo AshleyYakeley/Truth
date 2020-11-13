@@ -13,7 +13,7 @@ import Shapes
 
 newtype Anchor =
     MkAnchor StrictByteString -- 256 bits = 64 hex chars = 32 bytes = 4 Word64s
-    deriving (Eq, Ord, NFData)
+    deriving (Eq, Ord, NFData, Hashable)
 
 anchorCodec ::
        forall m. MonadFail m

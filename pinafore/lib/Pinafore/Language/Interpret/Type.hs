@@ -251,6 +251,9 @@ interpretGroundTypeConst (ConstSyntaxGroundType n) = do
         ClosedEntityNamedType tidsym ct ->
             return $
             MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n tidsym ct
+        DynamicEntityNamedType dt ->
+            return $
+            MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ DynamicEntityGroundType n dt
 
 interpretSubtypeRelation :: SyntaxType -> SyntaxType -> PinaforeSourceScoped a -> PinaforeSourceScoped a
 interpretSubtypeRelation sta stb ma = do

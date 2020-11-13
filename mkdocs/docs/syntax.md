@@ -154,6 +154,7 @@ In interactive mode, each line has syntax `<interactive>`.
     "opentype" <type-const> |
     "subtype" <type-const> "<:" <type-const> |
     "closedtype" <type-const> <closedtype-body> |
+    "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
 
 <binding> ::=
@@ -179,6 +180,12 @@ In interactive mode, each line has syntax `<interactive>`.
     <closedtype-constructor> "|" <closedtype-constructors>
 
 <closedtype-constructor> ::= uname <types> anchor
+
+<dynamictype-constructors> ::=
+    <dynamictype-constructor> |
+    <dynamictype-constructor> "|" <dynamictype-constructors>
+
+<dynamictype-constructor> ::= <type-const> | <anchor>
 
 <types> ::=  | <type-3> <types>
 

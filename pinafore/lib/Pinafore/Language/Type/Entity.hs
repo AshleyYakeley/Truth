@@ -4,6 +4,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Name
+import Pinafore.Language.Type.DynamicEntity
 import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Literal
 import Pinafore.Language.Type.OpenEntity
@@ -14,6 +15,7 @@ type EntityGroundType :: forall k. k -> Type
 data EntityGroundType t where
     TopEntityGroundType :: EntityGroundType Entity
     OpenEntityGroundType :: OpenEntityType tid -> EntityGroundType (OpenEntity tid)
+    DynamicEntityGroundType :: Name -> DynamicEntityType -> EntityGroundType DynamicEntity
     LiteralEntityGroundType :: LiteralType t -> EntityGroundType t
     MaybeEntityGroundType :: EntityGroundType Maybe
     ListEntityGroundType :: EntityGroundType []
@@ -45,6 +47,7 @@ closedEntityTypeEq (ConsClosedEntityType _ t1 tr) =
 concreteEntityTypeEq :: ConcreteEntityType t -> Dict (Eq t)
 concreteEntityTypeEq (MkConcreteType TopEntityGroundType NilArguments) = Dict
 concreteEntityTypeEq (MkConcreteType (OpenEntityGroundType _) NilArguments) = Dict
+concreteEntityTypeEq (MkConcreteType (DynamicEntityGroundType _ _) NilArguments) = Dict
 concreteEntityTypeEq (MkConcreteType (LiteralEntityGroundType t) NilArguments) =
     case literalTypeAsLiteral t of
         Dict -> Dict
@@ -73,6 +76,10 @@ entityGroundTypeTestEquality TopEntityGroundType TopEntityGroundType = Just (HRe
 entityGroundTypeTestEquality (OpenEntityGroundType t1) (OpenEntityGroundType t2) = do
     Refl <- testEquality t1 t2
     Just (HRefl, Dict)
+entityGroundTypeTestEquality (DynamicEntityGroundType _ t1) (DynamicEntityGroundType _ t2) =
+    if t1 == t2
+        then Just (HRefl, Dict)
+        else Nothing
 entityGroundTypeTestEquality (LiteralEntityGroundType t1) (LiteralEntityGroundType t2) = do
     Refl <- testEquality t1 t2
     Just (HRefl, Dict)
@@ -99,6 +106,7 @@ instance IsCovaryGroundType EntityGroundType where
         -> r
     groundTypeCovaryType TopEntityGroundType cont = cont NilListType
     groundTypeCovaryType (OpenEntityGroundType _) cont = cont NilListType
+    groundTypeCovaryType (DynamicEntityGroundType _ _) cont = cont NilListType
     groundTypeCovaryType (LiteralEntityGroundType _) cont = cont NilListType
     groundTypeCovaryType MaybeEntityGroundType cont = cont $ ConsListType Refl NilListType
     groundTypeCovaryType ListEntityGroundType cont = cont $ ConsListType Refl NilListType
@@ -108,6 +116,7 @@ instance IsCovaryGroundType EntityGroundType where
     groundTypeCovaryMap :: forall k (t :: k). EntityGroundType t -> CovaryMap t
     groundTypeCovaryMap TopEntityGroundType = covarymap
     groundTypeCovaryMap (OpenEntityGroundType _) = covarymap
+    groundTypeCovaryMap (DynamicEntityGroundType _ _) = covarymap
     groundTypeCovaryMap (LiteralEntityGroundType _) = covarymap
     groundTypeCovaryMap MaybeEntityGroundType = covarymap
     groundTypeCovaryMap ListEntityGroundType = covarymap
@@ -119,6 +128,7 @@ entityGroundTypeShowPrec ::
        forall w f t. (forall a. w a -> (Text, Int)) -> EntityGroundType f -> Arguments w f t -> (Text, Int)
 entityGroundTypeShowPrec _ TopEntityGroundType NilArguments = ("Entity", 0)
 entityGroundTypeShowPrec _ (OpenEntityGroundType n) NilArguments = exprShowPrec n
+entityGroundTypeShowPrec _ (DynamicEntityGroundType n _) NilArguments = exprShowPrec n
 entityGroundTypeShowPrec _ (LiteralEntityGroundType t) NilArguments = exprShowPrec t
 entityGroundTypeShowPrec es MaybeEntityGroundType (ConsArguments ta NilArguments) = ("Maybe " <> precShow 0 (es ta), 2)
 entityGroundTypeShowPrec es ListEntityGroundType (ConsArguments ta NilArguments) = ("[" <> fst (es ta) <> "]", 0)

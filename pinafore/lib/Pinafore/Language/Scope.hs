@@ -40,6 +40,7 @@ import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
+import Pinafore.Language.Type.DynamicEntity
 import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Show
 import Shapes
@@ -69,6 +70,7 @@ data NamedType (ts :: Type) where
            TypeIDType tid
         -> ScopeClosedEntityType ts (Identified tid)
         -> NamedType ts
+    DynamicEntityNamedType :: forall (ts :: Type). DynamicEntityType -> NamedType ts
 
 newtype SpecialVals (ts :: Type) = MkSpecialVals
     { specialEvaluate :: forall t. TSPosWitness ts t -> Text -> PinaforeAction (Either Text t)

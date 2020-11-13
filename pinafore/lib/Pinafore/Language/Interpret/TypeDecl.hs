@@ -73,6 +73,15 @@ concreteEntityToNegativePinaforeType et =
         Just wit -> return wit
         Nothing -> throw InterpretTypeNoneNotNegativeEntityError
 
+intepretSyntaxDynamicEntityConstructor ::
+       SyntaxDynamicEntityConstructor -> SourceScoped PinaforeTypeSystem [DynamicType]
+intepretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ pure $ mkDynamicType a
+intepretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name) = do
+    t <- lookupNamedType name
+    case t of
+        DynamicEntityNamedType dt -> return $ toList dt
+        _ -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name
+
 interpretTypeDeclaration ::
        Name -> TypeID -> SyntaxTypeDeclaration -> PinaforeTypeBox (WMFunction PinaforeScoped PinaforeScoped)
 interpretTypeDeclaration name tid OpenEntitySyntaxTypeDeclaration =
@@ -145,6 +154,10 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                            pc = toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
                        withNewPatternConstructor cname expr pc
                return ((), compAll patts)
+interpretTypeDeclaration name _ (DynamicEntitySyntaxTypeDeclaration stcons) =
+    MkTypeBox name DynamicEntityNamedType $ do
+        dt <- for stcons intepretSyntaxDynamicEntityConstructor
+        return (setFromList $ mconcat $ toList dt, id)
 
 interpretTypeDeclarations ::
        [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceScoped (WMFunction PinaforeScoped PinaforeScoped)

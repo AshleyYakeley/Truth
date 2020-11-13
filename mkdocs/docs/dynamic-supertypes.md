@@ -10,6 +10,7 @@ Every ambipolar type `T` has an ambipolar *greatest dynamic supertype* `D(T)`:
 
 - `D(Integer)` = `Number`
 - `D(Rational)` = `Number`
+- `D(T)` = `DynamicEntity` for dynamic entity types (the main use case)
 - `D(T)` = `T` for all other types
 
 In each case, there is a "check" function that can convert `D(T)` back to `Maybe T`.

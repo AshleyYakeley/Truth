@@ -59,6 +59,21 @@ readClosedTypeDeclaration = do
             readSeparated1 (readExactlyThis TokOperator "|") $ fmap pure readClosedTypeConstructor
     return $ TypeSyntaxDeclaration spos name $ ClosedEntitySyntaxTypeDeclaration $ fromMaybe mempty mcons
 
+readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
+readDynamicTypeConstructor =
+    fmap AnchorSyntaxDynamicEntityConstructor (readThis TokAnchor) <|>
+    fmap NameSyntaxDynamicEntityConstructor readTypeName
+
+readDynamicTypeDeclaration :: Parser SyntaxDeclaration
+readDynamicTypeDeclaration = do
+    spos <- getPosition
+    readThis TokDynamicType
+    name <- readTypeName
+    readThis TokAssign
+    tcons <- readSeparated1 (readExactlyThis TokOperator "|") $ fmap pure readDynamicTypeConstructor
+    return $ TypeSyntaxDeclaration spos name $ DynamicEntitySyntaxTypeDeclaration tcons
+
 readTypeDeclaration :: Parser SyntaxDeclaration
 readTypeDeclaration =
-    readOpenEntityTypeDeclaration <|> readSubtypeDeclaration <|> readDataTypeDeclaration <|> readClosedTypeDeclaration
+    readOpenEntityTypeDeclaration <|> readSubtypeDeclaration <|> readDataTypeDeclaration <|> readClosedTypeDeclaration <|>
+    readDynamicTypeDeclaration

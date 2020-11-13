@@ -54,6 +54,7 @@ library:
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type
+      - Pinafore.Language.Type.DynamicEntity
       - Pinafore.Language.Type.Entity
       - Pinafore.Language.Type.OpenEntity
       - Pinafore.Language.Type.EntityAdapter

@@ -112,6 +112,7 @@ import qualified Data.Map.Lazy
 
 -- unordered-containers
 import Data.HashMap.Lazy as I (HashMap)
+import Data.HashSet as I (HashSet)
 
 -- bytestring
 import qualified Data.ByteString
@@ -221,3 +222,10 @@ mif True a = a
 
 localf :: (Traversable f, Applicative m) => (r -> f r) -> ReaderT r m a -> ReaderT r m (f a)
 localf rfr (ReaderT rma) = ReaderT $ \r -> for (rfr r) rma
+
+maybePoint :: (Monoid l, MonoPointed l, Element l ~ a) => Maybe a -> l
+maybePoint Nothing = mempty
+maybePoint (Just a) = opoint a
+
+subset :: (MonoFoldable t, SetContainer t) => t -> t -> Bool
+subset a b = onull $ difference a b

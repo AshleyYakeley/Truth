@@ -534,6 +534,14 @@ testEntity =
                            , pointTest "let f : Maybe Number -> Entity; f x = x in pass"
                            , pointTest "let f : Maybe (a & Number) -> (Entity,Maybe a); f x = (x,x) in pass"
                            ]
+                     , tgroup "dynamic" $
+                       [ context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                         tgroup "1" $ subtypeTests "P1" "Q"
+                       , context ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | P2", "dynamictype P2 = !\"P2\""] $
+                         tgroup "2" $ subtypeTests "P1" "Q"
+                       , context ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
+                         tgroup "3" $ subtypeTests "P1" "Q"
+                       ]
                      ]
         , context
               [ "datatype T = T1 Text Number | T2 | T3 Boolean | T4 (WholeRef {-Boolean,+Integer} -> Integer) | T5 Text (Boolean -> Integer)"
