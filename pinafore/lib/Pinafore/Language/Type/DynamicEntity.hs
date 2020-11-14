@@ -2,7 +2,7 @@ module Pinafore.Language.Type.DynamicEntity
     ( DynamicType
     , mkDynamicType
     , DynamicEntityType
-    , DynamicEntity
+    , DynamicEntity(..)
     , dynamicEntityAdapter
     ) where
 

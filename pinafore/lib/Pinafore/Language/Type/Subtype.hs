@@ -77,9 +77,9 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
                   MkSubtypeArguments NilDolanArguments $ do
                       let
                           convE =
-                              concreteToEntityShim $
-                              MkConcreteType MaybeEntityGroundType $
-                              ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
+                              monoToEntityShim $
+                              MkMonoType MaybeEntityGroundType $
+                              ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
                       conv <- subtypeConvert sc t $ topEntityType
                       pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
             , simpleSubtypeConversionEntry
@@ -90,9 +90,9 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
                   MkSubtypeArguments NilDolanArguments $ do
                       let
                           convE =
-                              concreteToEntityShim $
-                              MkConcreteType ListEntityGroundType $
-                              ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
+                              monoToEntityShim $
+                              MkMonoType ListEntityGroundType $
+                              ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
                       conv <- subtypeConvert sc t $ topEntityType
                       pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
             , simpleSubtypeConversionEntry
@@ -103,10 +103,10 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
                   MkSubtypeArguments NilDolanArguments $ do
                       let
                           convE =
-                              concreteToEntityShim $
-                              MkConcreteType PairEntityGroundType $
-                              ConsArguments (MkConcreteType TopEntityGroundType NilArguments) $
-                              ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
+                              monoToEntityShim $
+                              MkMonoType PairEntityGroundType $
+                              ConsArguments (MkMonoType TopEntityGroundType NilArguments) $
+                              ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
                       convA <- subtypeConvert sc ta $ topEntityType
                       convB <- subtypeConvert sc tb $ topEntityType
                       pure $ convE . applyCoPolyShim (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
@@ -118,10 +118,10 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
                   MkSubtypeArguments NilDolanArguments $ do
                       let
                           convE =
-                              concreteToEntityShim $
-                              MkConcreteType EitherEntityGroundType $
-                              ConsArguments (MkConcreteType TopEntityGroundType NilArguments) $
-                              ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
+                              monoToEntityShim $
+                              MkMonoType EitherEntityGroundType $
+                              ConsArguments (MkMonoType TopEntityGroundType NilArguments) $
+                              ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
                       convA <- subtypeConvert sc ta $ topEntityType
                       convB <- subtypeConvert sc tb $ topEntityType
                       pure $ convE . applyCoPolyShim (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)

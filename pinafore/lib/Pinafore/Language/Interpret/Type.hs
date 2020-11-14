@@ -1,7 +1,8 @@
 module Pinafore.Language.Interpret.Type
     ( interpretType
     , interpretOpenEntityType
-    , interpretConcreteEntityType
+    , interpretMonoEntityType
+    , interpretConcreteDynamicEntityType
     , interpretNonpolarType
     , interpretSubtypeRelation
     ) where
@@ -38,14 +39,26 @@ interpretOpenEntityType st = do
                             return $ MkAnyW t
                         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm
 
-interpretConcreteEntityType :: SyntaxType -> PinaforeSourceScoped (AnyW ConcreteEntityType)
-interpretConcreteEntityType st = do
+interpretConcreteDynamicEntityType :: SyntaxType -> PinaforeSourceScoped (Name, DynamicType)
+interpretConcreteDynamicEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
         BothMPolarW atm ->
             case atm @'Positive of
                 MkAnyW tm ->
-                    case dolanToConcreteType tm of
+                    case dolanTypeToSingular tm of
+                        Just (MkAnyW (GroundDolanSingularType (EntityPinaforeGroundType _ (ADynamicEntityGroundType n dts)) NilDolanArguments))
+                            | [dt] <- toList dts -> return (n, dt)
+                        _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm
+
+interpretMonoEntityType :: SyntaxType -> PinaforeSourceScoped (AnyW MonoEntityType)
+interpretMonoEntityType st = do
+    mpol <- interpretTypeM @'Nothing st
+    case mpol of
+        BothMPolarW atm ->
+            case atm @'Positive of
+                MkAnyW tm ->
+                    case dolanToMonoType tm of
                         Just (MkShimWit t _) -> return $ MkAnyW t
                         Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm
 
@@ -259,16 +272,16 @@ interpretGroundTypeConst (ConstSyntaxGroundType n) = do
 
 interpretSubtypeRelation :: SyntaxType -> SyntaxType -> PinaforeSourceScoped a -> PinaforeSourceScoped a
 interpretSubtypeRelation sta stb ma = do
-    ata <- interpretConcreteEntityType sta
-    atb <- interpretConcreteEntityType stb
+    ata <- interpretMonoEntityType sta
+    atb <- interpretMonoEntityType stb
     case ata of
         MkAnyW ta ->
             case ta of
-                MkConcreteType tea NilArguments ->
+                MkMonoType tea NilArguments ->
                     case atb of
                         MkAnyW tb ->
                             case tb of
-                                MkConcreteType (OpenEntityGroundType tidb) NilArguments ->
+                                MkMonoType (OpenEntityGroundType tidb) NilArguments ->
                                     remonadSourcePos (withEntitySubtype tea tidb) ma
                                 _ -> throw $ TypeNotOpenEntityError $ exprShow tb
                 _ -> throw $ TypeNotSimpleEntityError $ exprShow ta

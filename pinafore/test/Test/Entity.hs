@@ -565,6 +565,25 @@ testEntity =
                        ]
                      ]
         , context
+              [ "dynamictype P1 = !\"P1\""
+              , "dynamictype P2 = !\"P2\""
+              , "dynamictype Q = P1 | P2"
+              , "e1 = dynamicEntity @P1 !\"e1\""
+              ] $
+          tgroup
+              "dynamictype"
+              [ pointTest "pass"
+              , pointTest "testeq {e1} {e1}"
+              , pointTest "testeq {Just e1} {check @P1 e1}"
+              , pointTest "testeq {Nothing} {check @P2 e1}"
+              , pointTest "testeq {Just e1} {check @Q e1}"
+              , pointTest "testeq {True} {case e1 of (_: P1) -> True; _ -> False end}"
+              , pointTest "testeq {False} {case e1 of (_: P2) -> True; _ -> False end}"
+              , pointTest "testeq {True} {case e1 of (_: Q) -> True; _ -> False end}"
+              , pointTest "testeq {e1} {coerce @P1 e1}"
+              , pointTest "testeq {e1} {coerce @Q e1}"
+              ]
+        , context
               [ "datatype T = T1 Text Number | T2 | T3 Boolean | T4 (WholeRef {-Boolean,+Integer} -> Integer) | T5 Text (Boolean -> Integer)"
               ] $
           tgroup

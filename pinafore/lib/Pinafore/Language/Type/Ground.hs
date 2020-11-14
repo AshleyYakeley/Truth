@@ -121,11 +121,11 @@ instance IsDolanGroundType PinaforeGroundType where
     groundTypeTestEquality _ _ = Nothing
 
 instance CovarySubtype PinaforeGroundType EntityGroundType where
-    dolanToConcreteGroundType :: forall dv t. PinaforeGroundType dv t -> Maybe (CovaryType dv, EntityGroundType t)
-    dolanToConcreteGroundType (EntityPinaforeGroundType lc et) = Just (lc, et)
-    dolanToConcreteGroundType _ = Nothing
-    concreteToDolanGroundType :: forall dv t. CovaryType dv -> EntityGroundType t -> PinaforeGroundType dv t
-    concreteToDolanGroundType = EntityPinaforeGroundType
+    dolanToMonoGroundType :: forall dv t. PinaforeGroundType dv t -> Maybe (CovaryType dv, EntityGroundType t)
+    dolanToMonoGroundType (EntityPinaforeGroundType lc et) = Just (lc, et)
+    dolanToMonoGroundType _ = Nothing
+    monoToDolanGroundType :: forall dv t. CovaryType dv -> EntityGroundType t -> PinaforeGroundType dv t
+    monoToDolanGroundType = EntityPinaforeGroundType
 
 showPrecVariance ::
        forall w polarity sv t.

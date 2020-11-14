@@ -52,7 +52,7 @@ module Language.Expression.Dolan
     , SubypeConversionEntry(..)
     , simpleSubtypeConversionEntry
     , module Language.Expression.Dolan.Nonpolar
-    , module Language.Expression.Dolan.Concrete
+    , module Language.Expression.Dolan.Mono
     ) where
 
 import Control.Applicative.Wrapped
@@ -60,9 +60,9 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.Concrete
 import Language.Expression.Dolan.Covariance
 import Language.Expression.Dolan.MPolarity
+import Language.Expression.Dolan.Mono
 import Language.Expression.Dolan.Nonpolar
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.RangeF

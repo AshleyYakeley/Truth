@@ -5,6 +5,7 @@ module Pinafore.Language.Predefined.SpecialForms
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Interpret.TypeDecl
+import Pinafore.Language.Name
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Scope
 import Pinafore.Language.SpecialForm
@@ -60,6 +61,14 @@ openEntityShimWit tp =
     mkShimWit $
     GroundDolanSingularType (EntityPinaforeGroundType NilListType $ OpenEntityGroundType tp) NilDolanArguments
 
+dynamicEntityShimWit :: Name -> DynamicType -> PinaforeShimWit 'Positive DynamicEntity
+dynamicEntityShimWit n dt =
+    singleDolanShimWit $
+    mkShimWit $
+    GroundDolanSingularType
+        (EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType n $ singletonSet dt)
+        NilDolanArguments
+
 actionShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
 actionShimWit swa =
     unPosShimWit swa $ \ta conva ->
@@ -91,14 +100,14 @@ special_forms =
                 "@A @B <anchor>"
                 "A ~> B" $
             MkSpecialForm
-                (ConsListType AnnotConcreteEntityType $
-                 ConsListType AnnotConcreteEntityType $ ConsListType AnnotAnchor NilListType) $ \(MkAnyW eta, (MkAnyW etb, (anchor, ()))) -> do
-                etan <- concreteEntityToNegativePinaforeType eta
-                etbn <- concreteEntityToNegativePinaforeType etb
+                (ConsListType AnnotMonoEntityType $
+                 ConsListType AnnotMonoEntityType $ ConsListType AnnotAnchor NilListType) $ \(MkAnyW eta, (MkAnyW etb, (anchor, ()))) -> do
+                etan <- monoEntityToNegativePinaforeType eta
+                etbn <- monoEntityToNegativePinaforeType etb
                 let
-                    bta = biRangeAnyF (etan, concreteToPositiveDolanType eta)
-                    btb = biRangeAnyF (etbn, concreteToPositiveDolanType etb)
-                    in case (bta, btb, concreteEntityTypeEq eta, concreteEntityTypeEq etb) of
+                    bta = biRangeAnyF (etan, monoToPositiveDolanType eta)
+                    btb = biRangeAnyF (etbn, monoToPositiveDolanType etb)
+                    in case (bta, btb, monoEntityTypeEq eta, monoEntityTypeEq etb) of
                            (MkAnyF rta (MkRange praContra praCo), MkAnyF rtb (MkRange prbContra prbCo), Dict, Dict) ->
                                withSubrepresentative rangeTypeInKind rta $
                                withSubrepresentative rangeTypeInKind rtb $ let
@@ -109,8 +118,8 @@ special_forms =
                                        ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
                                    morphism =
                                        propertyMorphism
-                                           (concreteEntityAdapter eta)
-                                           (concreteEntityAdapter etb)
+                                           (monoEntityAdapter eta)
+                                           (monoEntityAdapter etb)
                                            (MkPredicate anchor)
                                    pinamorphism =
                                        MkLangMorphism $
@@ -137,6 +146,31 @@ special_forms =
                     pt :: PinaforeAction (OpenEntity tid)
                     pt = liftIO $ newKeyContainerItem @(FiniteSet (OpenEntity tid))
                     typef = actionShimWit $ openEntityShimWit tp
+                return $ MkAnyValue typef pt
+          , mkSpecialFormEntry
+                "dynamicEntity"
+                "A dynamic entity for this anchor. `A` is a concrete dynamic entity type."
+                "@A <anchor>"
+                "A" $
+            MkSpecialForm (ConsListType AnnotConcreteDynamicEntityType $ ConsListType AnnotAnchor NilListType) $ \((n, dt), (anchor, ())) -> do
+                let
+                    typef = dynamicEntityShimWit n dt
+                    pt :: DynamicEntity
+                    pt = MkDynamicEntity dt $ MkEntity anchor
+                return $ MkAnyValue typef pt
+          , mkSpecialFormEntry
+                "newDynamicEntity"
+                "Generate a dynamic entity. `A` is a concrete dynamic entity type."
+                "@A"
+                "Action A" $
+            MkSpecialForm (ConsListType AnnotConcreteDynamicEntityType NilListType) $ \((n, dt), ()) -> do
+                let
+                    pt :: PinaforeAction DynamicEntity
+                    pt =
+                        liftIO $ do
+                            e <- newKeyContainerItem @(FiniteSet Entity)
+                            return $ MkDynamicEntity dt e
+                    typef = actionShimWit $ dynamicEntityShimWit n dt
                 return $ MkAnyValue typef pt
           , mkSpecialFormEntry
                 "evaluate"

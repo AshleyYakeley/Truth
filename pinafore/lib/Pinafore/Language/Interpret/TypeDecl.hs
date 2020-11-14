@@ -1,5 +1,5 @@
 module Pinafore.Language.Interpret.TypeDecl
-    ( concreteEntityToNegativePinaforeType
+    ( monoEntityToNegativePinaforeType
     , interpretTypeDeclarations
     ) where
 
@@ -26,9 +26,9 @@ extendConstructor (MkConstructor n lt at tma) = MkConstructor n lt (Right . at) 
 
 data ClosedEntityBox =
     forall t. MkClosedEntityBox (ClosedEntityType t)
-                                [Constructor ConcreteEntityType t]
+                                [Constructor MonoEntityType t]
 
-assembleClosedEntityType :: [(Name, Anchor, AnyW (ListType ConcreteEntityType))] -> ClosedEntityBox
+assembleClosedEntityType :: [(Name, Anchor, AnyW (ListType MonoEntityType))] -> ClosedEntityBox
 assembleClosedEntityType [] = MkClosedEntityBox NilClosedEntityType []
 assembleClosedEntityType ((n, a, MkAnyW el):cc) =
     case assembleClosedEntityType cc of
@@ -54,9 +54,9 @@ constructorFreeVariables :: Constructor (PinaforeNonpolarType '[]) t -> [AnyW Sy
 constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonpolarTypeFreeVariables lt
 
 interpretClosedEntityTypeConstructor ::
-       SyntaxClosedEntityConstructor -> PinaforeSourceScoped (Name, Anchor, AnyW (ListType ConcreteEntityType))
+       SyntaxClosedEntityConstructor -> PinaforeSourceScoped (Name, Anchor, AnyW (ListType MonoEntityType))
 interpretClosedEntityTypeConstructor (MkSyntaxClosedEntityConstructor consName stypes anchor) = do
-    etypes <- for stypes interpretConcreteEntityType
+    etypes <- for stypes interpretMonoEntityType
     return (consName, anchor, assembleListType etypes)
 
 interpretDataTypeConstructor ::
@@ -65,12 +65,12 @@ interpretDataTypeConstructor (MkSyntaxDatatypeConstructor consName stypes) = do
     etypes <- for stypes interpretNonpolarType
     return (consName, assembleListType etypes)
 
-concreteEntityToNegativePinaforeType ::
+monoEntityToNegativePinaforeType ::
        forall m t. MonadThrow ErrorType m
-    => ConcreteEntityType t
+    => MonoEntityType t
     -> m (PinaforeShimWit 'Negative t)
-concreteEntityToNegativePinaforeType et =
-    case concreteToMaybeNegativeDolanType et of
+monoEntityToNegativePinaforeType et =
+    case monoToMaybeNegativeDolanType et of
         Just wit -> return wit
         Nothing -> throw InterpretTypeNoneNotNegativeEntityError
 
@@ -107,8 +107,8 @@ interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
                            NilDolanArguments
                patts <-
                    for conss $ \(MkConstructor cname lt at tma) -> do
-                       ltp <- return $ mapListType concreteToPositiveDolanType lt
-                       ltn <- mapMListType concreteEntityToNegativePinaforeType lt
+                       ltp <- return $ mapListType monoToPositiveDolanType lt
+                       ltn <- mapMListType monoEntityToNegativePinaforeType lt
                        let
                            expr =
                                qConstExprAny $

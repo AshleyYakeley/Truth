@@ -14,15 +14,15 @@ instance TestEquality w => TestEquality (Arguments w f) where
         Refl <- testEquality args1 args2
         Just Refl
 
-data ConcreteType (w :: forall k. k -> Type) (t :: Type) where
-    MkConcreteType
+data MonoType (w :: forall k. k -> Type) (t :: Type) where
+    MkMonoType
         :: forall (w :: forall k. k -> Type) (k :: Type) (f :: k) (t :: Type).
            w f
-        -> Arguments (ConcreteType w) f t
-        -> ConcreteType w t
+        -> Arguments (MonoType w) f t
+        -> MonoType w t
 
-instance forall (w :: forall k. k -> Type). TestHetEquality w => TestEquality (ConcreteType w) where
-    testEquality (MkConcreteType gt1 args1) (MkConcreteType gt2 args2) = do
+instance forall (w :: forall k. k -> Type). TestHetEquality w => TestEquality (MonoType w) where
+    testEquality (MkMonoType gt1 args1) (MkMonoType gt2 args2) = do
         HRefl <- testHetEquality gt1 gt2
         Refl <- testEquality args1 args2
         return Refl

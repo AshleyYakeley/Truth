@@ -28,7 +28,7 @@ data EntityGroundType t where
 data ClosedEntityType (t :: Type) where
     NilClosedEntityType :: ClosedEntityType None
     ConsClosedEntityType
-        :: Anchor -> ListType ConcreteEntityType tl -> ClosedEntityType tt -> ClosedEntityType (Either (HList tl) tt)
+        :: Anchor -> ListType MonoEntityType tl -> ClosedEntityType tt -> ClosedEntityType (Either (HList tl) tt)
 
 instance TestEquality ClosedEntityType where
     testEquality NilClosedEntityType NilClosedEntityType = Just Refl
@@ -42,30 +42,30 @@ instance TestEquality ClosedEntityType where
 closedEntityTypeEq :: ClosedEntityType t -> Dict (Eq t)
 closedEntityTypeEq NilClosedEntityType = Dict
 closedEntityTypeEq (ConsClosedEntityType _ t1 tr) =
-    case (hListEq concreteEntityTypeEq t1, closedEntityTypeEq tr) of
+    case (hListEq monoEntityTypeEq t1, closedEntityTypeEq tr) of
         (Dict, Dict) -> Dict
 
-concreteEntityTypeEq :: ConcreteEntityType t -> Dict (Eq t)
-concreteEntityTypeEq (MkConcreteType TopEntityGroundType NilArguments) = Dict
-concreteEntityTypeEq (MkConcreteType (OpenEntityGroundType _) NilArguments) = Dict
-concreteEntityTypeEq (MkConcreteType TopDynamicEntityGroundType NilArguments) = Dict
-concreteEntityTypeEq (MkConcreteType (ADynamicEntityGroundType _ _) NilArguments) = Dict
-concreteEntityTypeEq (MkConcreteType (LiteralEntityGroundType t) NilArguments) =
+monoEntityTypeEq :: MonoEntityType t -> Dict (Eq t)
+monoEntityTypeEq (MkMonoType TopEntityGroundType NilArguments) = Dict
+monoEntityTypeEq (MkMonoType (OpenEntityGroundType _) NilArguments) = Dict
+monoEntityTypeEq (MkMonoType TopDynamicEntityGroundType NilArguments) = Dict
+monoEntityTypeEq (MkMonoType (ADynamicEntityGroundType _ _) NilArguments) = Dict
+monoEntityTypeEq (MkMonoType (LiteralEntityGroundType t) NilArguments) =
     case literalTypeAsLiteral t of
         Dict -> Dict
-concreteEntityTypeEq (MkConcreteType MaybeEntityGroundType (ConsArguments t NilArguments)) =
-    case concreteEntityTypeEq t of
+monoEntityTypeEq (MkMonoType MaybeEntityGroundType (ConsArguments t NilArguments)) =
+    case monoEntityTypeEq t of
         Dict -> Dict
-concreteEntityTypeEq (MkConcreteType ListEntityGroundType (ConsArguments t NilArguments)) =
-    case concreteEntityTypeEq t of
+monoEntityTypeEq (MkMonoType ListEntityGroundType (ConsArguments t NilArguments)) =
+    case monoEntityTypeEq t of
         Dict -> Dict
-concreteEntityTypeEq (MkConcreteType PairEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
-    case (concreteEntityTypeEq ta, concreteEntityTypeEq tb) of
+monoEntityTypeEq (MkMonoType PairEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
+    case (monoEntityTypeEq ta, monoEntityTypeEq tb) of
         (Dict, Dict) -> Dict
-concreteEntityTypeEq (MkConcreteType EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
-    case (concreteEntityTypeEq ta, concreteEntityTypeEq tb) of
+monoEntityTypeEq (MkMonoType EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
+    case (monoEntityTypeEq ta, monoEntityTypeEq tb) of
         (Dict, Dict) -> Dict
-concreteEntityTypeEq (MkConcreteType (ClosedEntityGroundType _ _ t) NilArguments) =
+monoEntityTypeEq (MkMonoType (ClosedEntityGroundType _ _ t) NilArguments) =
     case closedEntityTypeEq t of
         Dict -> Dict
 
@@ -99,7 +99,7 @@ entityGroundTypeTestEquality _ _ = Nothing
 instance TestHetEquality EntityGroundType where
     testHetEquality eta etb = fmap fst $ entityGroundTypeTestEquality eta etb
 
-type ConcreteEntityType = ConcreteType EntityGroundType
+type MonoEntityType = MonoType EntityGroundType
 
 instance IsCovaryGroundType EntityGroundType where
     groundTypeCovaryType ::
@@ -144,8 +144,8 @@ entityGroundTypeShowPrec es EitherEntityGroundType (ConsArguments ta (ConsArgume
     ("Either " <> precShow 0 (es ta) <> " " <> precShow 0 (es tb), 2)
 entityGroundTypeShowPrec _ (ClosedEntityGroundType n _ _) NilArguments = exprShowPrec n
 
-instance ExprShow (ConcreteEntityType t) where
-    exprShowPrec (MkConcreteType gt args) = entityGroundTypeShowPrec exprShowPrec gt args
+instance ExprShow (MonoEntityType t) where
+    exprShowPrec (MkMonoType gt args) = entityGroundTypeShowPrec exprShowPrec gt args
 
-instance Show (ConcreteEntityType t) where
+instance Show (MonoEntityType t) where
     show t = unpack $ exprShow t

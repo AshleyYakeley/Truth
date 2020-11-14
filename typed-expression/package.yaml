@@ -82,7 +82,7 @@ library:
       - Language.Expression.Dolan.Inverted
       - Language.Expression.Dolan.Subsume
       - Language.Expression.Dolan.Nonpolar
-      - Language.Expression.Dolan.Concrete
+      - Language.Expression.Dolan.Mono
 
 tests:
     test:

@@ -36,6 +36,7 @@ data ErrorType
     | InterpretTypeNotEntityError Text
     | InterpretTypeNotDynamicEntityError Text
     | InterpretTypeNotOpenEntityError Text
+    | InterpretTypeNotConcreteDynamicEntityError Text
     | InterpretTypeNoneNotNegativeEntityError
     | InterpretTypeUnderApplyError Text
     | InterpretTypeOverApplyError Text
@@ -110,6 +111,7 @@ instance Show ErrorType where
     show (InterpretTypeNotEntityError t) = unpack t <> " is not an entity type"
     show (InterpretTypeNotDynamicEntityError t) = unpack t <> " is not a dynamic entity type"
     show (InterpretTypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
+    show (InterpretTypeNotConcreteDynamicEntityError t) = unpack t <> " is not a concrete dynamic entity type"
     show InterpretTypeNoneNotNegativeEntityError = "\"None\" is not a negative entity type"
     show (InterpretTypeUnderApplyError t) = "underapplied type constuctor: " <> unpack t
     show (InterpretTypeOverApplyError t) = "overapplied type constuctor: " <> unpack t

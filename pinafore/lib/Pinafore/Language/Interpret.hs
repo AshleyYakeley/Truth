@@ -142,8 +142,9 @@ interpretConstructor _ SLUnit = return $ qConstExprAny $ jmToValue ()
 
 specialFormArg :: PinaforeAnnotation t -> SyntaxAnnotation -> ComposeM Maybe PinaforeSourceScoped t
 specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
-specialFormArg AnnotConcreteEntityType (SAType st) = liftOuter $ interpretConcreteEntityType st
+specialFormArg AnnotMonoEntityType (SAType st) = liftOuter $ interpretMonoEntityType st
 specialFormArg AnnotOpenEntityType (SAType st) = liftOuter $ interpretOpenEntityType st
+specialFormArg AnnotConcreteDynamicEntityType (SAType st) = liftOuter $ interpretConcreteDynamicEntityType st
 specialFormArg AnnotPositiveType (SAType st) = liftOuter $ interpretType @'Positive st
 specialFormArg AnnotNegativeType (SAType st) = liftOuter $ interpretType @'Negative st
 specialFormArg _ _ = liftInner Nothing
@@ -163,8 +164,9 @@ showSA (SAAnchor _) = "anchor"
 
 showAnnotation :: PinaforeAnnotation a -> Text
 showAnnotation AnnotAnchor = "anchor"
-showAnnotation AnnotConcreteEntityType = "type"
+showAnnotation AnnotMonoEntityType = "type"
 showAnnotation AnnotOpenEntityType = "type"
+showAnnotation AnnotConcreteDynamicEntityType = "type"
 showAnnotation AnnotPositiveType = "type"
 showAnnotation AnnotNegativeType = "type"
 
