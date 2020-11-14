@@ -20,6 +20,7 @@ data ErrorType
     | LookupConstructorUnknownError Name
     | DeclareTypeDuplicateError Name
     | DeclareConstructorDuplicateError Name
+    | DeclareDynamicTypeCycle (NonEmpty Name)
     | TypeConvertError Text
                        Text
     | TypeConvertInverseError Text
@@ -93,6 +94,8 @@ instance Show ErrorType where
     show (LookupConstructorUnknownError n) = "unknown constructor: " <> show n
     show (DeclareTypeDuplicateError n) = "duplicate type: " <> show n
     show (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> show n
+    show (DeclareDynamicTypeCycle nn) =
+        "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap show $ toList nn)
     show (TypeConvertError ta tb) = "cannot convert " <> unpack ta <> " <: " <> unpack tb
     show (TypeConvertInverseError ta tb) = "cannot inverse convert " <> unpack ta <> " <: " <> unpack tb
     show (TypeSubsumeError Positive tinf tdecl) = "cannot subsume " <> unpack tinf <> " <: " <> unpack tdecl

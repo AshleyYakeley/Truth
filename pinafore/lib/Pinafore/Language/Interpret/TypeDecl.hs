@@ -3,6 +3,7 @@ module Pinafore.Language.Interpret.TypeDecl
     , interpretTypeDeclarations
     ) where
 
+import Data.Graph
 import qualified Data.List as List
 import Pinafore.Base
 import Pinafore.Language.Error
@@ -159,9 +160,28 @@ interpretTypeDeclaration name _ (DynamicEntitySyntaxTypeDeclaration stcons) =
         dt <- for stcons intepretSyntaxDynamicEntityConstructor
         return (setFromList $ mconcat $ toList dt, id)
 
+checkDynamicTypeCycles :: [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceScoped ()
+checkDynamicTypeCycles decls = let
+    constructorName :: SyntaxDynamicEntityConstructor -> Maybe Name
+    constructorName (NameSyntaxDynamicEntityConstructor n) = Just n
+    constructorName (AnchorSyntaxDynamicEntityConstructor _) = Nothing
+    getDynamicTypeReferences :: (SourcePos, Name, SyntaxTypeDeclaration) -> Maybe (Name, Name, [Name])
+    getDynamicTypeReferences (_, n, DynamicEntitySyntaxTypeDeclaration cs) =
+        Just $ (n, n, mapMaybe constructorName $ toList cs)
+    getDynamicTypeReferences _ = Nothing
+    sccs :: [SCC Name]
+    sccs = stronglyConnComp $ mapMaybe getDynamicTypeReferences decls
+    sccNames :: SCC Name -> Maybe (NonEmpty Name)
+    sccNames (CyclicSCC (n:nn)) = Just $ n :| nn
+    sccNames _ = Nothing
+    in case mapMaybe sccNames sccs of
+           [] -> return ()
+           (nn:_) -> throw $ DeclareDynamicTypeCycle nn
+
 interpretTypeDeclarations ::
        [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceScoped (WMFunction PinaforeScoped PinaforeScoped)
 interpretTypeDeclarations decls = do
+    checkDynamicTypeCycles decls
     wfs <-
         for decls $ \(spos, name, tdecl) ->
             localSourcePos spos $ do

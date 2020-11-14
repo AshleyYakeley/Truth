@@ -550,6 +550,18 @@ testEntity =
                          tgroup "2" $ subtypeTests "P1" "Q"
                        , context ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
                          tgroup "3" $ subtypeTests "P1" "Q"
+                       , tgroup
+                             "cycle"
+                             [ context ["dynamictype P = P"] $ badInterpretTest "pass"
+                             , context ["dynamictype P = Q", "dynamictype Q = P"] $ badInterpretTest "pass"
+                             , context ["dynamictype P = Q", "dynamictype Q = P"] $
+                               badInterpretTest "let f: P -> Q; f x = x in pass"
+                             , context ["dynamictype P1 = !\"P1\"", "dynamictype P = P1 | Q", "dynamictype Q = P"] $
+                               badInterpretTest "pass"
+                             , context ["dynamictype P1 = !\"P1\"", "dynamictype P = P1 | Q", "dynamictype Q = P | Q"] $
+                               badInterpretTest "pass"
+                             , context ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | Q"] $ badInterpretTest "pass"
+                             ]
                        ]
                      ]
         , context
