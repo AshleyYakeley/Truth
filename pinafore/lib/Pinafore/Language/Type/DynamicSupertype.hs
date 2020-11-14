@@ -7,6 +7,7 @@ import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Shim
+import Pinafore.Language.Type.DynamicEntity
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Literal
@@ -50,6 +51,14 @@ instance MakeGreatestDynamicSupertype EntityGroundType where
 instance MakeGreatestDynamicSupertype LiteralType where
     toNegativeShimWit wt = toNegativeShimWit $ LiteralEntityGroundType wt
 
+dynamicEntitySupertype :: DynamicEntityType -> GreatestDynamicSupertype DynamicEntity
+dynamicEntitySupertype dt =
+    makeGDS TopDynamicEntityGroundType id $
+    functionToShim "supertype" $ \e@(MkDynamicEntity t _) ->
+        if member t dt
+            then Just e
+            else Nothing
+
 literalSupertype :: LiteralType t -> Maybe (GreatestDynamicSupertype t)
 literalSupertype RationalLiteralType =
     Just $
@@ -66,6 +75,7 @@ literalSupertype IntegerLiteralType =
 literalSupertype _ = Nothing
 
 entitySupertype :: EntityGroundType t -> Maybe (GreatestDynamicSupertype t)
+entitySupertype (ADynamicEntityGroundType _ dt) = Just $ dynamicEntitySupertype dt
 entitySupertype (LiteralEntityGroundType t) = literalSupertype t
 entitySupertype _ = Nothing
 
