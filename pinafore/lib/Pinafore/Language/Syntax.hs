@@ -6,6 +6,12 @@ import Pinafore.Language.Name
 import Pinafore.Language.Scope
 import Shapes
 
+newtype ModuleName =
+    MkModuleName (NonEmpty Name)
+
+instance Show ModuleName where
+    show (MkModuleName nn) = intercalate "." $ toList $ fmap unpack nn
+
 data SyntaxClosedEntityConstructor =
     MkSyntaxClosedEntityConstructor Name
                                     [SyntaxType]
@@ -33,6 +39,8 @@ data SyntaxDeclaration
                          SyntaxType
                          SyntaxType
     | BindingSyntaxDeclaration SyntaxBinding
+    | ImportSyntaxDeclarataion SourcePos
+                               ModuleName
 
 data WithSourcePos t =
     MkWithSourcePos SourcePos
@@ -164,6 +172,7 @@ instance HasSourcePos SyntaxDeclaration where
     getSourcePos (BindingSyntaxDeclaration bind) = getSourcePos bind
     getSourcePos (TypeSyntaxDeclaration spos _ _) = spos
     getSourcePos (SubtypeDeclaration spos _ _) = spos
+    getSourcePos (ImportSyntaxDeclarataion spos _) = spos
 
 class SyntaxFreeVariables t where
     syntaxFreeVariables :: t -> FiniteSet Name

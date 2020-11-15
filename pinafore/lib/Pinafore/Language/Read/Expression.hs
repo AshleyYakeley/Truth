@@ -52,8 +52,18 @@ readLines p =
          return $ a : fromMaybe [] ma) <|>
     (return [])
 
+readModuleName :: Parser ModuleName
+readModuleName = fmap MkModuleName $ readSeparated1 (readExactlyThis TokOperator ".") $ fmap pure $ readThis TokUName
+
+readImport :: Parser SyntaxDeclaration
+readImport = do
+    spos <- getPosition
+    readThis TokImport
+    mname <- readModuleName
+    return $ ImportSyntaxDeclarataion spos mname
+
 readDeclaration :: Parser SyntaxDeclaration
-readDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding
+readDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding <|> readImport
 
 readDeclarations :: Parser [SyntaxDeclaration]
 readDeclarations = readLines readDeclaration
