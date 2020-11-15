@@ -227,5 +227,5 @@ maybePoint :: (Monoid l, MonoPointed l, Element l ~ a) => Maybe a -> l
 maybePoint Nothing = mempty
 maybePoint (Just a) = opoint a
 
-subset :: (MonoFoldable t, SetContainer t) => t -> t -> Bool
-subset a b = onull $ difference a b
+isSubsetOf :: SetContainer t => t -> t -> Bool
+isSubsetOf a b = onull $ difference a b

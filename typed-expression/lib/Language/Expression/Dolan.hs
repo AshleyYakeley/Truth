@@ -49,6 +49,8 @@ module Language.Expression.Dolan
     , SubtypeArguments(..)
     , SubtypeConversion(..)
     , nilSubtypeConversion
+    , idSubtypeConversion
+    , composeSubtypeConversion
     , SubypeConversionEntry(..)
     , simpleSubtypeConversionEntry
     , module Language.Expression.Dolan.Nonpolar

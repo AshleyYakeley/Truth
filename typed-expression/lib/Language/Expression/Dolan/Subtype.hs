@@ -7,6 +7,8 @@ module Language.Expression.Dolan.Subtype
     , SubtypeArguments(..)
     , SubtypeConversion(..)
     , nilSubtypeConversion
+    , idSubtypeConversion
+    , composeSubtypeConversion
     , SubypeConversionEntry(..)
     , simpleSubtypeConversionEntry
     , IsDolanSubtypeEntriesGroundType(..)
@@ -223,17 +225,17 @@ expandSupertypes entries tt = let
     in nub $ mconcat $ tt : ttt
 
 contains ::
-       forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
     => [SubtypeConversionWit ground dva gta]
     -> ground dvb gtb
     -> Maybe (SubtypeConversion ground dva gta dvb gtb)
 contains [] _ = Nothing
 contains (MkSubtypeConversionWit ta conv:_) tb
-    | Just (Refl, HRefl) <- groundTypeTestEquality ta tb = Just conv
+    | Just convm <- subtypeConversionMatchType ta tb = Just $ composeSubtypeConversion convm conv
 contains (_:aa) tb = contains aa tb
 
 isSupertype ::
-       forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
     => [SubypeConversionEntry ground]
     -> [SubtypeConversionWit ground dva gta]
     -> ground dvb gtb
@@ -247,7 +249,7 @@ isSupertype entries aa a = let
            else Nothing
 
 getSubtypeShim ::
-       forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanGroundType ground
+       forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
     => [SubypeConversionEntry ground]
     -> ground dva gta
     -> ground dvb gtb
@@ -257,4 +259,12 @@ getSubtypeShim entries ta tb = isSupertype entries [MkSubtypeConversionWit ta id
 type IsDolanSubtypeEntriesGroundType :: GroundTypeKind -> Constraint
 class IsDolanSubtypeGroundType ground => IsDolanSubtypeEntriesGroundType ground where
     subtypeConversionEntries :: DolanM ground [SubypeConversionEntry ground]
+    subtypeConversionMatchType ::
+           forall (dva :: DolanVariance) (ta :: DolanVarianceKind dva) (dvb :: DolanVariance) (tb :: DolanVarianceKind dvb).
+           ground dva ta
+        -> ground dvb tb
+        -> Maybe (SubtypeConversion ground dva ta dvb tb)
+    subtypeConversionMatchType gta gtb = do
+        (Refl, HRefl) <- groundTypeTestEquality gta gtb
+        return idSubtypeConversion
     throwTypeConvertError :: ground dva gta -> ground dvb gtb -> DolanM ground a

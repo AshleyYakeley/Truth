@@ -174,6 +174,13 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
                                       (applyCoPolyShim (applyContraPolyShim cid vconv) (iJoinMeetL1 @polb) .
                                        iJoinMeetL1 @polb . conv2)
             ]
+    subtypeConversionMatchType (EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dta)) (EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dtb)) =
+        if isSubsetOf dta dtb
+            then Just idSubtypeConversion
+            else Nothing
+    subtypeConversionMatchType gta gtb = do
+        (Refl, HRefl) <- groundTypeTestEquality gta gtb
+        return idSubtypeConversion
     throwTypeConvertError tp tq = convertFailure (showGroundType tp) (showGroundType tq)
 
 instance IsDolanFunctionGroundType PinaforeGroundType where
