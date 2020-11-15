@@ -64,6 +64,9 @@ varNamedExpression n t = varNameTypeExpression (MkUnitType n) (MkUnitType' t)
 
 type NamedPattern name w = NameTypePattern (UnitType name) (UnitType' w)
 
+patternNames :: NamedPattern name vw q a -> [name]
+patternNames = patternFreeWitnesses $ \(MkNameTypeWitness (MkUnitType name) _) -> name
+
 substitutePattern :: WitnessSubstitution Type vw1 vw2 -> NamedPattern name vw1 q a -> NamedPattern name vw2 q a
 substitutePattern _ (ClosedPattern a) = ClosedPattern a
 substitutePattern witmap@(MkWitnessMap wm) (OpenPattern (MkNameWitness name wt) pat) =

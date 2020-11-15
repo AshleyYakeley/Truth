@@ -20,20 +20,20 @@ import Shapes
 
 type RefNotation = WriterT [(Name, QExpr)] (StateT Int PinaforeScoped)
 
-runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> WriterT [(Name, QExpr)] m a -> m a
+runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> MFunction (WriterT [(Name, QExpr)] m) m
 runRefWriterT spos wma = do
     (a, w) <- runWriterT wma
     case w of
         [] -> return a
         _ -> throw $ MkErrorMessage spos NotationBareUnquoteError
 
-liftRefNotation :: PinaforeScoped a -> RefNotation a
+liftRefNotation :: MFunction PinaforeScoped RefNotation
 liftRefNotation = lift . lift
 
-remonadRefNotation :: WMFunction PinaforeScoped PinaforeScoped -> (forall a. RefNotation a -> RefNotation a)
+remonadRefNotation :: WMFunction PinaforeScoped PinaforeScoped -> MFunction RefNotation RefNotation
 remonadRefNotation (MkWMFunction mm) = remonad $ remonad mm
 
-runRefNotation :: SourcePos -> RefNotation a -> PinaforeScoped a
+runRefNotation :: SourcePos -> MFunction RefNotation PinaforeScoped
 runRefNotation spos rexpr = evalStateT (runRefWriterT spos rexpr) 0
 
 type RefExpression = RefNotation QExpr

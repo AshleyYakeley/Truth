@@ -229,3 +229,7 @@ maybePoint (Just a) = opoint a
 
 isSubsetOf :: SetContainer t => t -> t -> Bool
 isSubsetOf a b = onull $ difference a b
+
+deletesMap :: IsMap map => [ContainerKey map] -> map -> map
+deletesMap [] = id
+deletesMap (k:kk) = deleteMap k . deletesMap kk

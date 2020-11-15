@@ -21,6 +21,7 @@ module Pinafore.Language.Scope
     , getSpecialVals
     , lookupLetBinding
     , withNewLetBindings
+    , withRemovedBindings
     , lookupSpecialForm
     , withNewSpecialForms
     , lookupNamedType
@@ -166,6 +167,9 @@ withNewBinding name b = pLocalScope $ \tc -> tc {scopeBindings = insertMapLazy n
 
 withNewBindings :: Map Name (ScopeBinding ts) -> Scoped ts a -> Scoped ts a
 withNewBindings bb = pLocalScope $ \tc -> tc {scopeBindings = bb <> (scopeBindings tc)}
+
+withRemovedBindings :: [Name] -> Scoped ts a -> Scoped ts a
+withRemovedBindings nn = pLocalScope $ \tc -> tc {scopeBindings = deletesMap nn $ scopeBindings tc}
 
 lookupBinding :: Name -> SourceScoped ts (Maybe (ScopeBinding ts))
 lookupBinding name = do

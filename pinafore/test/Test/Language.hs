@@ -255,7 +255,17 @@ testQueries =
               , testQuery "let a=7;b=a in a" $ LRSuccess "7"
               , testQuery "let a=7;b=a in b" $ LRSuccess "7"
               , testQuery "let a=2 in let b=a in b" $ LRSuccess "2"
-              , expectFailBecause "ISSUE #74" $ testQuery "let a=1 in (\\a -> a) 2" $ LRSuccess "2"
+              ]
+        , testTree
+              "name shadowing"
+              [ testQuery "let a=1 in (\\a -> a) 2" $ LRSuccess "2"
+              , testQuery "let a=1 in (\\(Just a) -> a) (Just 2)" $ LRSuccess "2"
+              , testQuery "let a=1 in let a=2 in a" $ LRSuccess "2"
+              , testQuery "(\\a -> let a=2 in a) 1" $ LRSuccess "2"
+              , testQuery "(\\a -> \\a -> a) 1 2" $ LRSuccess "2"
+              , testQuery "let a=1 in case 2 of a -> a end" $ LRSuccess "2"
+              , testQuery "let a=1 in case Just 2 of Just a -> a end" $ LRSuccess "2"
+              , testQuery "case 1 of a -> case 2 of a -> a end end" $ LRSuccess "2"
               ]
         , testTree
               "partial keywords"

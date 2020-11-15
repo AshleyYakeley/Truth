@@ -64,6 +64,9 @@ varSealedPattern n twt vwt = MkSealedPattern twt $ varNamedPattern n vwt
 anySealedPattern :: tw t -> SealedPattern name vw tw
 anySealedPattern twt = MkSealedPattern twt $ pure ()
 
+sealedPatternNames :: SealedPattern name vw tw -> [name]
+sealedPatternNames (MkSealedPattern _ pat) = patternNames pat
+
 data PatternConstructor (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall (t :: Type) (lt :: [Type]). MkPatternConstructor (tw t)
                                                             (ListType vw lt)

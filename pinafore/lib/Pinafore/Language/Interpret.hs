@@ -192,16 +192,22 @@ interpretConstant spos (SCConstructor lit) = interpretConstructor spos lit
 interpretCase :: SyntaxCase -> RefNotation (QPattern, QExpr)
 interpretCase (MkSyntaxCase spat sexpr) = do
     pat <- interpretPattern spat
-    expr <- interpretExpression sexpr
+    expr <- interpretExpressionShadowed (sealedPatternNames pat) sexpr
     return (pat, expr)
 
+interpretExpressionShadowed :: [Name] -> SyntaxExpression -> RefExpression
+interpretExpressionShadowed names sbody =
+    remonadRefNotation (MkWMFunction $ withRemovedBindings names) $ interpretExpression sbody
+
 interpretExpression' :: SourcePos -> SyntaxExpression' -> RefExpression
-interpretExpression' spos (SEAbstract spat sbody) = do
-    val <- interpretExpression sbody
+interpretExpression' spos (SEAbstract spat sbody) =
     case interpretPatternOrName spat of
-        Left name -> liftRefNotation $ runSourcePos spos $ qAbstractExpr name val
+        Left name -> do
+            val <- interpretExpressionShadowed [name] sbody
+            liftRefNotation $ runSourcePos spos $ qAbstractExpr name val
         Right mpat -> do
             pat <- mpat
+            val <- interpretExpressionShadowed (sealedPatternNames pat) sbody
             liftRefNotation $ runSourcePos spos $ qCaseAbstract [(pat, val)]
 interpretExpression' spos (SELet decls sbody) = do
     MkWMFunction bmap <- liftRefNotation $ runSourcePos spos $ interpretDeclarations decls
