@@ -5,8 +5,8 @@ module Shapes.Test
     , TestName
     , testMain
     , BuildTestTree(..)
-    , ignoreTest
-    , expectFail
+    , ignoreTestBecause
+    , expectFailBecause
     -- * Options
     , localOption
     , QuickCheckTests(..)

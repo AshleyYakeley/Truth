@@ -173,8 +173,7 @@ testType =
                     e1 <- apExpr dotExpr sndExpr
                     apExpr e1 thingExpr
               , exprTypeTest "twice" (return "{} -> a -> (a, a)") $ return twiceExpr
-              , expectFail $
-                exprTypeTest "thing . twice" (return "{} -> a -> (a, a)") $ do
+              , exprTypeTest "thing . twice" (return "{} -> e -> (e, e)") $ do
                     e1 <- apExpr dotExpr thingExpr
                     apExpr e1 twiceExpr
               , exprTypeTest "thing $ twice number" (return "{} -> (Number, Number)") $ do
@@ -326,9 +325,11 @@ testType =
                     , simplifyTypeTest "Maybe (rec a. a)" "Maybe None"
                     , simplifyTypeTest "Maybe (rec a. [a])" "Maybe (rec a. [a])"
                     , simplifyTypeTest "Maybe (rec a. Integer)" "Maybe Integer"
-                    , expectFail $ simplifyTypeTest "rec a. rec b. (a, b)" "rec b. (b, b)" {- ISSUE #61-}
-                    , expectFail $ simplifyTypeTest "(rec a. Maybe a) | (rec b. [b])" "rec a. Maybe a | [a]" {- ISSUE #61-}
-                    , expectFail $ simplifyTypeTest "(rec a. Maybe a) | (rec a. [a])" "rec a. Maybe a | [a]" {- ISSUE #61-}
+                    , expectFailBecause "ISSUE #61" $ simplifyTypeTest "rec a. rec b. (a, b)" "rec b. (b, b)"
+                    , expectFailBecause "ISSUE #61" $
+                      simplifyTypeTest "(rec a. Maybe a) | (rec b. [b])" "rec a. Maybe a | [a]"
+                    , expectFailBecause "ISSUE #61" $
+                      simplifyTypeTest "(rec a. Maybe a) | (rec a. [a])" "rec a. Maybe a | [a]"
                     , testTree
                           "roll"
                           [ simplifyTypeTest "Maybe (rec a. Maybe a)" "rec a. Maybe a"

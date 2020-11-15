@@ -487,14 +487,14 @@ testQueries =
               "subsume" -- see #58 for expected failures
               [ testQuery "let a : (); a = a in ()" $ LRSuccess "unit"
               , testQuery "let a : Integer; a = a in ()" $ LRSuccess "unit"
-              , expectFail $ testQuery "let a : Integer|Text; a = a in ()" $ LRSuccess "unit" {- ISSUE #60 -}
+              , expectFailBecause "ISSUE #60" $ testQuery "let a : Integer|Text; a = a in ()" $ LRSuccess "unit"
               , testQuery "let r = r in let a : Integer|Text; a = r in ()" $ LRSuccess "unit"
               , testQuery "let r = r; a : Integer|Text; a = r in ()" $ LRSuccess "unit"
-              , expectFail $ testQuery "let r = a; a : Integer|Text; a = r in ()" $ LRSuccess "unit" {- ISSUE #60 -}
-              , expectFail $ testQuery "let a : None; a = a in ()" $ LRSuccess "unit" {- ISSUE #60 -}
+              , expectFailBecause "ISSUE #60" $ testQuery "let r = a; a : Integer|Text; a = r in ()" $ LRSuccess "unit"
+              , expectFailBecause "ISSUE #60" $ testQuery "let a : None; a = a in ()" $ LRSuccess "unit"
               , testQuery "let r = r in let a : None; a = r in ()" $ LRSuccess "unit"
               , testQuery "let r = r; a : None; a = r in ()" $ LRSuccess "unit"
-              , expectFail $ testQuery "let r = a; a : None; a = r in ()" $ LRSuccess "unit" {- ISSUE #60 -}
+              , expectFailBecause "ISSUE #60" $ testQuery "let r = a; a : None; a = r in ()" $ LRSuccess "unit"
               , testQuery "let a : [Integer|Text]; a = [] in a" $ LRSuccess "[]"
               , testQuery "let a : [Integer]|[Text]; a = [] in a" $ LRSuccess "[]"
               , testSameType True "Integer" "Integer" ["56"]
@@ -515,13 +515,13 @@ testQueries =
                            , testSameType True "[Integer]" "[rec a. Integer]" ["[0]"]
                            , testSameType True "rec a. [a]" "rec a. [a]" atree
                            , testSameType True "rec a. [a]" "rec a. [[a]]" atree
-                           , ignoreTest $ {- ISSUE #61 -}
+                           , ignoreTestBecause "ISSUE #61" $
                              testSameType
                                  False
                                  "rec a. (Maybe a | [a])"
                                  "(rec a. Maybe a) | (rec b. [b])"
                                  ["[]", "Nothing", "Just []", "[[]]"]
-                           , ignoreTest $ {- ISSUE #61 -}
+                           , ignoreTestBecause "ISSUE #61" $
                              testSameType
                                  False
                                  "rec a. (Maybe a | [a])"
@@ -729,19 +729,19 @@ testShims =
         [ testShim "3" "Integer" "(join1 id)"
         , testShim "negate" "Integer -> Integer" "(join1 (co (contra id (meet1 id)) (join1 id)))"
         , testShim "negate 3" "Integer" "(join1 id)"
-        , expectFail $ testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))" {- ISSUE #63 -}
-        , expectFail $ testShim "id 3" "Integer" "(join1 id)" {- ISSUE #63 -}
-        , expectFail $ testShim "\\x -> x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))" {- ISSUE #63 -}
-        , expectFail $ testShim "(\\x -> x) 3" "Integer" "(join1 id)" {- ISSUE #63 -}
+        , expectFailBecause "ISSUE #63" $ testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
+        , expectFailBecause "ISSUE #63" $ testShim "id 3" "Integer" "(join1 id)"
+        , expectFailBecause "ISSUE #63" $ testShim "\\x -> x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
+        , expectFailBecause "ISSUE #63" $ testShim "(\\x -> x) 3" "Integer" "(join1 id)"
         , testShim "\\x -> 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
         , testShim "(\\x -> 4) 3" "Integer" "(join1 id)"
-        , expectFail $
-          testShim {- ISSUE #63 -}
+        , expectFailBecause "ISSUE #63" $
+          testShim
               "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount"
               "(rec c. Maybe c) -> Integer"
               "(join1 id)"
-        , expectFail $
-          testShim {- ISSUE #63 -}
+        , expectFailBecause "ISSUE #63" $
+          testShim
               "let rcount : (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount"
               "(rec a. Maybe a) -> Integer"
               "(join1 id)"

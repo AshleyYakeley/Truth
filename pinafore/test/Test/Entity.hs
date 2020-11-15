@@ -599,7 +599,7 @@ testEntity =
               , pointTest
                     "let f : Boolean -> Integer; f b = if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff -> if ff True == 1 then pass else fail \"ff\" end"
               , badInterpretTest "let datatype B = MkB a in pass"
-              , tmodify ignoreTest $ pointTest "let datatype B a = MkB a in pass" {- ISSUE #41 -}
+              , tmodify (ignoreTestBecause "ISSUE #41") $ pointTest "let datatype B a = MkB a in pass"
               , pointTest "let datatype P in pass"
               , tgroup
                     "nominal"
