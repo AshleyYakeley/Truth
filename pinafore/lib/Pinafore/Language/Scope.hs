@@ -92,7 +92,7 @@ data Scope (ts :: Type) = MkScope
 
 newtype Scoped (ts :: Type) a =
     MkScoped (ReaderT (Scope ts) (StateT TypeID InterpretResult) a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadPlus, MonadFix)
+    deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFix)
 
 instance MonadThrow PinaforeError (Scoped ts) where
     throw err = MkScoped $ throw err
@@ -121,7 +121,7 @@ pLocalScope maptc (MkScoped ma) = MkScoped $ local maptc ma
 
 newtype SourceScoped ts a =
     MkSourceScoped (ReaderT SourcePos (Scoped ts) a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadPlus, MonadFix)
+    deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFix)
 
 askSourcePos :: SourceScoped ts SourcePos
 askSourcePos = MkSourceScoped ask

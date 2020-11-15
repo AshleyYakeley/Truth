@@ -127,21 +127,22 @@ data LangResult
 
 testQuery :: Text -> LangResult -> TestTree
 testQuery query expected =
-    testTree (show $ unpack query) $
-    case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue query of
-        FailureResult e ->
-            case expected of
-                LRCheckFail -> return ()
-                _ -> assertFailure $ "check: expected success, found failure: " ++ show e
-        SuccessResult v -> do
-            let r = showPinaforeRef v
-            me <- catchPureError r
-            case (expected, me) of
-                (LRCheckFail, _) -> assertFailure $ "check: expected failure, found success"
-                (LRRunError, Nothing) -> assertFailure $ "run: expected error, found success: " ++ r
-                (LRRunError, Just _) -> return ()
-                (LRSuccess _, Just e) -> assertFailure $ "run: expected success, found error: " ++ show e
-                (LRSuccess s, Nothing) -> assertEqual "result" s r
+    testTree (show $ unpack query) $ do
+        result <- withNullPinaforeContext $ runInterpretResult $ runPinaforeSourceScoped "<input>" $ parseValue query
+        case result of
+            FailureResult e ->
+                case expected of
+                    LRCheckFail -> return ()
+                    _ -> assertFailure $ "check: expected success, found failure: " ++ show e
+            SuccessResult v -> do
+                let r = showPinaforeRef v
+                me <- catchPureError r
+                case (expected, me) of
+                    (LRCheckFail, _) -> assertFailure $ "check: expected failure, found success"
+                    (LRRunError, Nothing) -> assertFailure $ "run: expected error, found success: " ++ r
+                    (LRRunError, Just _) -> return ()
+                    (LRSuccess _, Just e) -> assertFailure $ "run: expected success, found error: " ++ show e
+                    (LRSuccess s, Nothing) -> assertEqual "result" s r
 
 testSubsumeSubtype :: Text -> Text -> [Text] -> [TestTree]
 testSubsumeSubtype t1 t2 vs =
@@ -726,12 +727,13 @@ testQueries =
 
 testShim :: Text -> String -> String -> TestTree
 testShim query expectedType expectedShim =
-    testTree (unpack query) $
-    case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue query of
-        FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
-        SuccessResult (MkAnyValue (MkPosShimWit t shim) _) -> do
-            assertEqual "type" expectedType $ unpack $ exprShow t
-            assertEqual "shim" expectedShim $ show shim
+    testTree (unpack query) $ do
+        result <- withNullPinaforeContext $ runInterpretResult $ runPinaforeSourceScoped "<input>" $ parseValue query
+        case result of
+            FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
+            SuccessResult (MkAnyValue (MkPosShimWit t shim) _) -> do
+                assertEqual "type" expectedType $ unpack $ exprShow t
+                assertEqual "shim" expectedShim $ show shim
 
 testShims :: TestTree
 testShims =

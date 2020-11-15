@@ -72,7 +72,7 @@ pinaforeInterpretFile ::
        (?pinafore :: PinaforeContext, MonadIO m, MonadThrow PinaforeError m) => FilePath -> m (View ())
 pinaforeInterpretFile fpath = do
     ptext <- liftIO $ readFile fpath
-    throwResult $ pinaforeInterpretText fpath $ decodeUtf8 $ toStrict ptext
+    throwInterpretResult $ pinaforeInterpretText fpath $ decodeUtf8 $ toStrict ptext
 
 pinaforeInteractHandles :: (?pinafore :: PinaforeContext) => Handle -> Handle -> Bool -> View ()
 pinaforeInteractHandles inh outh echo = interact inh outh echo

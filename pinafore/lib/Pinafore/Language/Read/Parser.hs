@@ -37,7 +37,8 @@ parseReader r text = let
 parseScopedReaderWhole :: Parser (PinaforeScoped t) -> Text -> PinaforeSourceScoped t
 parseScopedReaderWhole parser text = do
     spos <- askSourcePos
-    case evalStateT (parseReader parser text) spos of
+    result <- runInterpretResult $ evalStateT (parseReader parser text) spos
+    case result of
         SuccessResult a -> liftSourcePos a
         FailureResult e -> throw e
 

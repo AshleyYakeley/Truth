@@ -25,10 +25,11 @@ showTypes (MkSealedExpression (MkShimWit t _) expr) =
 
 exprTypeTest :: String -> Maybe String -> PinaforeSourceScoped PExpression -> TestTree
 exprTypeTest name expected mexpr =
-    testTree name $
-    assertEqual "" expected $ do
-        expr <- resultToMaybe $ runTestPinaforeSourceScoped mexpr
-        return $ showTypes expr
+    testTree name $ do
+        result <- runInterpretResult $ runTestPinaforeSourceScoped mexpr
+        assertEqual "" expected $ do
+            expr <- resultToMaybe result
+            return $ showTypes expr
 
 apExpr :: PExpression -> PExpression -> PinaforeSourceScoped PExpression
 apExpr = tsApply @TS
@@ -90,21 +91,22 @@ joinExpr exp1 exp2 = do
 textTypeTest :: Text -> String -> TestTree
 textTypeTest text r =
     testTree (unpack text) $ do
-        expr <- throwResult $ runTestPinaforeSourceScoped $ parseTopExpression text
+        expr <- throwInterpretResult $ runTestPinaforeSourceScoped $ parseTopExpression text
         assertEqual "" r $ showTypes expr
 
 badInterpretTest :: Text -> TestTree
 badInterpretTest text =
-    testTree (unpack text) $
-    case runTestPinaforeSourceScoped $ parseTopExpression text of
-        FailureResult _ -> return ()
-        SuccessResult _ -> assertFailure "no exception"
+    testTree (unpack text) $ do
+        result <- runInterpretResult $ runTestPinaforeSourceScoped $ parseTopExpression text
+        case result of
+            FailureResult _ -> return ()
+            SuccessResult _ -> assertFailure "no exception"
 
 simplifyTypeTest :: Text -> String -> TestTree
 simplifyTypeTest text e =
     testTree (unpack text) $ do
         simpexpr <-
-            throwResult $
+            throwInterpretResult $
             runTestPinaforeSourceScoped $ do
                 mt <- parseType @'Positive text
                 case mt of
@@ -119,7 +121,7 @@ unrollTest :: Text -> Text -> TestTree
 unrollTest rolledTypeText expectedUnrolledTypeText =
     testTree @Assertion (unpack rolledTypeText) $ do
         action <-
-            throwResult $
+            throwInterpretResult $
             runTestPinaforeSourceScoped $ do
                 mRolledType <- parseType @'Positive rolledTypeText
                 return $

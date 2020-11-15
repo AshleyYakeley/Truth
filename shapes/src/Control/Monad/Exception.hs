@@ -24,6 +24,9 @@ instance MonadThrow e (Result e) where
 instance (MonadTrans t, MonadThrow e m, Monad (t m)) => MonadThrow e (t m) where
     throw e = lift $ throw e
 
+instance {-# OVERLAPPING #-} Monad m => MonadThrow e (ExceptT e m) where
+    throw e = ExceptT $ return $ Left e
+
 instance CE.Exception e => MonadThrow e IO where
     throw = CE.throwIO
 

@@ -140,7 +140,18 @@ instance Show PinaforeError where
 
 instance Exception PinaforeError
 
-type InterpretResult = Result PinaforeError
+type InterpretResult = ExceptT PinaforeError IO
+
+runInterpretResult :: MonadIO m => InterpretResult a -> m (Result PinaforeError a)
+runInterpretResult ir = fmap eitherToResult $ liftIO $ runExceptT ir
 
 throwErrorMessage :: MonadThrow PinaforeError m => ErrorMessage -> m a
 throwErrorMessage e = throw $ MkPinaforeError [e]
+
+throwInterpretResult ::
+       forall m a. (MonadThrow PinaforeError m, MonadIO m)
+    => InterpretResult a
+    -> m a
+throwInterpretResult ir = do
+    result <- runInterpretResult ir
+    throwResult result

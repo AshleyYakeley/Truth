@@ -33,8 +33,8 @@ benchScript text =
                ?pinafore = pc
                in bgroup
                       (show $ unpack text)
-                      [ bench "check" $ nfIO $ throwResult $ pinaforeInterpretText "<test>" text >> return ()
-                      , env (fmap const $ throwResult $ pinaforeInterpretText "<test>" text) $ \action ->
+                      [ bench "check" $ nfIO $ throwInterpretResult $ pinaforeInterpretText "<test>" text >> return ()
+                      , env (fmap const $ throwInterpretResult $ pinaforeInterpretText "<test>" text) $ \action ->
                             bench "run" $ nfIO (nullViewIO $ action ())
                       ]
 
@@ -91,7 +91,7 @@ benchScripts =
 interpretUpdater :: (?pinafore :: PinaforeContext) => Text -> IO ()
 interpretUpdater text =
     withTestPinaforeContext stdout $ \tc unlift _getTableState -> do
-        action <- throwResult $ pinaforeInterpretTextAtType "<test>" text
+        action <- throwInterpretResult $ pinaforeInterpretTextAtType "<test>" text
         (sendUpdate, ref) <-
             tcUnliftLifeCycle tc $ tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
         unlift $

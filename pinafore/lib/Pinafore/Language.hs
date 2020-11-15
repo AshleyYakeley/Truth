@@ -3,7 +3,8 @@ module Pinafore.Language
     , SpecialVals(..)
     , PinaforeError
     , InterpretResult
-    , throwResult
+    , throwInterpretResult
+    , runInterpretResult
     , PinaforeAction
     , qPositiveTypeDescription
     , qNegativeTypeDescription
@@ -56,9 +57,10 @@ runPinaforeScoped scp =
 spvals :: (?pinafore :: PinaforeContext) => PinaforeSpecialVals
 spvals = let
     specialEvaluate t text = do
-        er <- liftIO $ evaluate $ runPinaforeSourceScoped "<evaluate>" $ parseValueSubsume t text
+        ier <- liftIO $ evaluate $ runPinaforeSourceScoped "<evaluate>" $ parseValueSubsume t text
+        result <- runInterpretResult ier
         return $
-            case er of
+            case result of
                 SuccessResult r -> Right r
                 FailureResult err -> Left $ pack $ show err
     in MkSpecialVals {..}
@@ -147,7 +149,7 @@ runValue outh val =
     (return $ liftIO $ hPutStrLn outh $ showPinaforeRef val)
 
 interactParse :: Text -> Interact InteractiveCommand
-interactParse t = remonad throwResult $ parseInteractiveCommand t
+interactParse t = remonad throwInterpretResult $ parseInteractiveCommand t
 
 interactLoop :: (?pinafore :: PinaforeContext) => Handle -> Handle -> Bool -> Interact ()
 interactLoop inh outh echo = do
@@ -210,4 +212,5 @@ interactLoop inh outh echo = do
 interact :: (?pinafore :: PinaforeContext) => Handle -> Handle -> Bool -> View ()
 interact inh outh echo = do
     liftIO $ hSetBuffering outh NoBuffering
-    evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $ throwResult . runPinaforeScoped
+    evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $
+        throwInterpretResult . runPinaforeScoped

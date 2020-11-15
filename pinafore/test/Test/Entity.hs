@@ -19,7 +19,7 @@ scriptTest ::
 scriptTest name text checker =
     contextTestCase name text $ \t ->
         withTestPinaforeContext stdout $ \tc unlift _getTableState -> do
-            a <- throwResult $ pinaforeInterpretTextAtType "<test>" $ "onStop (" <> t <> ") (fail \"stopped\")"
+            a <- throwInterpretResult $ pinaforeInterpretTextAtType "<test>" $ "onStop (" <> t <> ") (fail \"stopped\")"
             checker tc unlift a
 
 pointTest :: Text -> ContextTestTree
@@ -40,13 +40,13 @@ badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
     testTree (unpack text) $
     withTestPinaforeContext stdout $ \_uitoolkit _unlift _getTableState -> do
-        assertThrows $ throwResult $ pinaforeInterpretText "<test>" $ prefix c <> text
+        assertThrows $ throwInterpretResult $ pinaforeInterpretText "<test>" $ prefix c <> text
 
 exceptionTest :: Text -> ContextTestTree
 exceptionTest text c =
     testTree (unpack text) $
     withTestPinaforeContext stdout $ \tc _unlift _getTableState -> do
-        action <- throwResult $ pinaforeInterpretText "<test>" $ prefix c <> text
+        action <- throwInterpretResult $ pinaforeInterpretText "<test>" $ prefix c <> text
         assertThrows $ tcRunView tc emptyResourceContext action
 
 updateTest :: Text -> ContextTestTree
