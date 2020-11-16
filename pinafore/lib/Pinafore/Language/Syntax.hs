@@ -6,12 +6,6 @@ import Pinafore.Language.Name
 import Pinafore.Language.Scope
 import Shapes
 
-newtype ModuleName =
-    MkModuleName (NonEmpty Name)
-
-instance Show ModuleName where
-    show (MkModuleName nn) = intercalate "." $ toList $ fmap unpack nn
-
 data SyntaxClosedEntityConstructor =
     MkSyntaxClosedEntityConstructor Name
                                     [SyntaxType]

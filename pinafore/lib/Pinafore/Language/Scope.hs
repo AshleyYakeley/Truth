@@ -129,9 +129,9 @@ liftScoped ra = MkScoped $ lift $ lift ra
 pScope :: Scoped ts (Scope ts)
 pScope = MkScoped $ asks icScope
 
-exportScope :: forall ts. [Name] -> Scoped ts (Either (NonEmpty Name) (Scope ts))
+exportScope :: forall ts. [Name] -> SourceScoped ts (Scope ts)
 exportScope names = do
-    MkScope bindings subtypes <- pScope
+    MkScope bindings subtypes <- spScope
     let
         mapName :: Name -> Either Name (Name, ScopeBinding ts)
         mapName name =
@@ -139,10 +139,9 @@ exportScope names = do
                 Just b -> Right (name, b)
                 Nothing -> Left name
         (badnames, goodbinds) = partitionEithers $ fmap mapName names
-    return $
-        case badnames of
-            [] -> Right $ MkScope (mapFromList goodbinds) subtypes
-            (n:nn) -> Left $ n :| nn
+    case badnames of
+        [] -> return $ MkScope (mapFromList goodbinds) subtypes
+        (n:nn) -> throw $  LookupNamesUnknownError $ n :| nn
 
 pLocalScope :: (Scope ts -> Scope ts) -> Scoped ts a -> Scoped ts a
 pLocalScope maptc (MkScoped ma) = MkScoped $ local (\ic -> ic {icScope = maptc $ icScope ic}) ma

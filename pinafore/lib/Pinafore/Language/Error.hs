@@ -10,6 +10,7 @@ import Text.Parsec.Pos
 data ErrorType
     = ParserError [Message]
     | ExpressionErrorError ExpressionError
+    | LookupNamesUnknownError (NonEmpty Name)
     | LookupTypeUnknownError Name
     | LookupSpecialFormUnknownError Name
     | SpecialFormWrongAnnotationsError Name
@@ -84,6 +85,7 @@ instance Show ErrorType where
         strMessage = intercalate "; " msgsMessage
         in strUnexpected `semicolon` strExpecting `semicolon` strMessage
     show (ExpressionErrorError e) = show e
+    show (LookupNamesUnknownError nn) = "unknown names: " <> (intercalate ", " $ fmap show $ toList nn)
     show (LookupTypeUnknownError n) = "unknown type: " <> show n
     show (LookupSpecialFormUnknownError n) = "unknown special form: " <> show n
     show (SpecialFormWrongAnnotationsError n exp found) =

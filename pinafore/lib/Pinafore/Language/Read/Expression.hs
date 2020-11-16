@@ -11,6 +11,7 @@ import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
 import Pinafore.Language.Read.TypeDecls
 import Pinafore.Language.Syntax
+import Pinafore.Language.Name
 import Shapes hiding (try)
 
 readTypeSignature :: Parser SyntaxType
