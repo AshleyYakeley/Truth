@@ -46,6 +46,8 @@ type PinaforeNamedType = NamedType PinaforeTypeSystem
 
 type PinaforeTypeBox = TypeBox PinaforeTypeSystem
 
+type PinaforeScope = Scope PinaforeTypeSystem
+
 type PinaforeScoped = Scoped PinaforeTypeSystem
 
 type PinaforeSourceScoped = SourceScoped PinaforeTypeSystem

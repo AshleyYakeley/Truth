@@ -94,8 +94,8 @@ interpretLetBindings spos sbinds ra = do
     liftRefNotation $ runSourcePos spos $ checkSyntaxBindingsDuplicates sbinds
     interpretLetBindingss spos (clumpBindings sbinds) ra
 
-interpretImport :: ModuleName -> PinaforeSourceScoped (WMFunction RefNotation RefNotation)
-interpretImport _ = return id
+interpretImport :: ModuleName -> PinaforeSourceScoped PinaforeScope
+interpretImport _ = return mempty
 
 interpretDeclarations :: [SyntaxDeclaration] -> PinaforeSourceScoped (WMFunction RefNotation RefNotation)
 interpretDeclarations decls = do
@@ -124,10 +124,14 @@ interpretDeclarations decls = do
                  ImportSyntaxDeclarataion spos mname -> Just (spos, mname)
                  _ -> Nothing)
                 decls
-    imports <- liftSourcePos $ for importmods $ \(spos, mname) -> runSourcePos spos $ interpretImport mname
+    imports <-
+        liftSourcePos $
+        for importmods $ \(spos, mname) -> do
+            scope <- runSourcePos spos $ interpretImport mname
+            return $ MkWMFunction $ importScope scope
     td <- interpretTypeDeclarations typeDecls
     spos <- askSourcePos
-    return $ compAll imports . (MkWMFunction $ remonadRefNotation (td . compAll trs) . interpretLetBindings spos sbinds)
+    return $ (MkWMFunction $ remonadRefNotation (compAll imports . td . compAll trs) . interpretLetBindings spos sbinds)
 
 interpretNamedConstructor :: SourcePos -> Name -> RefExpression
 interpretNamedConstructor spos n = do

@@ -8,6 +8,9 @@ module Pinafore.Language.Scope
     , Scoped
     , runScoped
     , liftScoped
+    , Scope
+    , exportScope
+    , importScope
     , SourcePos
     , SourceScoped
     , askSourcePos
@@ -86,12 +89,22 @@ data ScopeBinding (ts :: Type)
 
 data Scope (ts :: Type) = MkScope
     { scopeBindings :: Map Name (ScopeBinding ts)
-    , scopeSubtypes :: [SubypeConversionEntry (ScopeGroundType ts)]
-    , scopeSpecialVals :: SpecialVals ts
+    , scopeSubtypes :: HashMap Unique (SubypeConversionEntry (ScopeGroundType ts))
+    }
+
+instance Semigroup (Scope ts) where
+    MkScope b1 s1 <> MkScope b2 s2 = MkScope (b1 <> b2) (s1 <> s2)
+
+instance Monoid (Scope ts) where
+    mempty = MkScope mempty mempty
+
+data InterpretContext (ts :: Type) = MkInterpretContext
+    { icScope :: Scope ts
+    , icSpecialVals :: SpecialVals ts
     }
 
 newtype Scoped (ts :: Type) a =
-    MkScoped (ReaderT (Scope ts) (StateT TypeID InterpretResult) a)
+    MkScoped (ReaderT (InterpretContext ts) (StateT TypeID InterpretResult) a)
     deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFix)
 
 instance MonadThrow PinaforeError (Scoped ts) where
@@ -108,16 +121,34 @@ instance Monoid a => Monoid (Scoped ts a) where
     mempty = pure mempty
 
 runScoped :: SpecialVals ts -> Scoped ts a -> InterpretResult a
-runScoped spvals (MkScoped qa) = evalStateT (runReaderT qa $ MkScope mempty mempty spvals) zeroTypeID
+runScoped spvals (MkScoped qa) = evalStateT (runReaderT qa $ MkInterpretContext mempty spvals) zeroTypeID
 
 liftScoped :: InterpretResult a -> Scoped ts a
 liftScoped ra = MkScoped $ lift $ lift ra
 
 pScope :: Scoped ts (Scope ts)
-pScope = MkScoped ask
+pScope = MkScoped $ asks icScope
+
+exportScope :: forall ts. [Name] -> Scoped ts (Either (NonEmpty Name) (Scope ts))
+exportScope names = do
+    MkScope bindings subtypes <- pScope
+    let
+        mapName :: Name -> Either Name (Name, ScopeBinding ts)
+        mapName name =
+            case lookup name bindings of
+                Just b -> Right (name, b)
+                Nothing -> Left name
+        (badnames, goodbinds) = partitionEithers $ fmap mapName names
+    return $
+        case badnames of
+            [] -> Right $ MkScope (mapFromList goodbinds) subtypes
+            (n:nn) -> Left $ n :| nn
 
 pLocalScope :: (Scope ts -> Scope ts) -> Scoped ts a -> Scoped ts a
-pLocalScope maptc (MkScoped ma) = MkScoped $ local maptc ma
+pLocalScope maptc (MkScoped ma) = MkScoped $ local (\ic -> ic {icScope = maptc $ icScope ic}) ma
+
+importScope :: Scope ts -> Scoped ts a -> Scoped ts a
+importScope newscope = pLocalScope $ \oldscope -> newscope <> oldscope
 
 newtype SourceScoped ts a =
     MkSourceScoped (ReaderT SourcePos (Scoped ts) a)
@@ -177,9 +208,7 @@ lookupBinding name = do
     return $ lookup name names
 
 getSpecialVals :: SourceScoped ts (SpecialVals ts)
-getSpecialVals = do
-    (scopeSpecialVals -> spvals) <- spScope
-    return spvals
+getSpecialVals = MkSourceScoped $ lift $ MkScoped $ asks icSpecialVals
 
 lookupLetBinding :: Name -> SourceScoped ts (Maybe (ScopeExpression ts))
 lookupLetBinding name = do
@@ -276,7 +305,13 @@ withNewPatternConstructors :: Map Name (ScopeExpression ts, ScopePatternConstruc
 withNewPatternConstructors pp = withNewBindings $ fmap (\(exp, pc) -> ValueBinding exp $ Just pc) pp
 
 withSubtypeConversions :: [SubypeConversionEntry (ScopeGroundType ts)] -> Scoped ts a -> Scoped ts a
-withSubtypeConversions newsc = pLocalScope $ \tc -> tc {scopeSubtypes = newsc <> scopeSubtypes tc}
+withSubtypeConversions newscs ma = do
+    pairs <-
+        liftIO $
+        for newscs $ \newsc -> do
+            key <- newUnique
+            return (key, newsc)
+    pLocalScope (\tc -> tc {scopeSubtypes = mapFromList pairs <> scopeSubtypes tc}) ma
 
 getSubtypeConversions :: Scoped ts [SubypeConversionEntry (ScopeGroundType ts)]
-getSubtypeConversions = MkScoped $ asks scopeSubtypes
+getSubtypeConversions = fmap (fmap snd . mapToList . scopeSubtypes) pScope
