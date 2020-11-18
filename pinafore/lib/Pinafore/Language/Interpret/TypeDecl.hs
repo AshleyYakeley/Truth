@@ -132,7 +132,7 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                    unboundvars = freevars List.\\ declaredvars
                case nonEmpty unboundvars of
                    Nothing -> return ()
-                   Just vv -> throw $ InterpretUnboundTypeVariables $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
+                   Just vv -> throw $ InterpretUnboundTypeVariablesError $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
                let
                    ctf :: forall polarity. Is PolarityType polarity
                        => PinaforeShimWit polarity _
@@ -176,7 +176,7 @@ checkDynamicTypeCycles decls = let
     sccNames _ = Nothing
     in case mapMaybe sccNames sccs of
            [] -> return ()
-           (nn:_) -> throw $ DeclareDynamicTypeCycle nn
+           (nn:_) -> throw $ DeclareDynamicTypeCycleError nn
 
 interpretTypeDeclarations ::
        [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceScoped (WMFunction PinaforeScoped PinaforeScoped)

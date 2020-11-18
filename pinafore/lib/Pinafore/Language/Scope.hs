@@ -10,7 +10,7 @@ module Pinafore.Language.Scope
     , liftScoped
     , Scope
     , exportScope
-    , importScope
+    , importModule
     , SourcePos
     , SourceScoped
     , askSourcePos
@@ -98,14 +98,30 @@ instance Semigroup (Scope ts) where
 instance Monoid (Scope ts) where
     mempty = MkScope mempty mempty
 
-data InterpretContext (ts :: Type) = MkInterpretContext
+type InterpretContext :: Type -> Type
+data InterpretContext ts = MkInterpretContext
     { icScope :: Scope ts
     , icSpecialVals :: SpecialVals ts
+    , icModulePath :: [ModuleName]
+    , icLoadModule :: ModuleName -> Scoped ts (Maybe (Scope ts))
     }
 
-newtype Scoped (ts :: Type) a =
-    MkScoped (ReaderT (InterpretContext ts) (StateT TypeID InterpretResult) a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFix)
+type InterpretState :: Type -> Type
+data InterpretState ts = MkInterpretState
+    { isTypeID :: TypeID
+    , isModules :: Map ModuleName (Scope ts)
+    }
+
+emptyInterpretState :: InterpretState ts
+emptyInterpretState = let
+    isTypeID = zeroTypeID
+    isModules = mempty
+    in MkInterpretState {..}
+
+type Scoped :: Type -> Type -> Type
+newtype Scoped ts a = MkScoped
+    { unScoped :: ReaderT (InterpretContext ts) (StateT (InterpretState ts) InterpretResult) a
+    } deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFix)
 
 instance MonadThrow PinaforeError (Scoped ts) where
     throw err = MkScoped $ throw err
@@ -120,8 +136,9 @@ instance Monoid a => Monoid (Scoped ts a) where
     mappend = (<>)
     mempty = pure mempty
 
-runScoped :: SpecialVals ts -> Scoped ts a -> InterpretResult a
-runScoped spvals (MkScoped qa) = evalStateT (runReaderT qa $ MkInterpretContext mempty spvals) zeroTypeID
+runScoped :: (ModuleName -> Scoped ts (Maybe (Scope ts))) -> SpecialVals ts -> Scoped ts a -> InterpretResult a
+runScoped loadModule spvals qa =
+    evalStateT (runReaderT (unScoped qa) $ MkInterpretContext mempty spvals [] loadModule) emptyInterpretState
 
 liftScoped :: InterpretResult a -> Scoped ts a
 liftScoped ra = MkScoped $ lift $ lift ra
@@ -141,13 +158,47 @@ exportScope names = do
         (badnames, goodbinds) = partitionEithers $ fmap mapName names
     case badnames of
         [] -> return $ MkScope (mapFromList goodbinds) subtypes
-        (n:nn) -> throw $  LookupNamesUnknownError $ n :| nn
+        (n:nn) -> throw $ LookupNamesUnknownError $ n :| nn
 
 pLocalScope :: (Scope ts -> Scope ts) -> Scoped ts a -> Scoped ts a
 pLocalScope maptc (MkScoped ma) = MkScoped $ local (\ic -> ic {icScope = maptc $ icScope ic}) ma
 
-importScope :: Scope ts -> Scoped ts a -> Scoped ts a
-importScope newscope = pLocalScope $ \oldscope -> newscope <> oldscope
+getCycle :: ModuleName -> [ModuleName] -> Maybe (NonEmpty ModuleName)
+getCycle _ [] = Nothing
+getCycle mn (n:nn)
+    | mn == n = Just $ n :| nn
+getCycle mn (_:nn) = getCycle mn nn
+
+loadModuleInScope :: forall ts. ModuleName -> Scoped ts (Maybe (Scope ts))
+loadModuleInScope mname = do
+    oldic <- MkScoped ask
+    let
+        newic :: InterpretContext ts
+        newic = oldic {icScope = mempty, icModulePath = icModulePath oldic <> [mname]}
+    MkScoped $ lift $ runReaderT (unScoped (icLoadModule newic mname)) newic
+
+getModule :: ModuleName -> SourceScoped ts (Scope ts)
+getModule mname = do
+    istate <- liftSourcePos $ MkScoped $ lift get
+    let oldmodules = isModules istate
+    case lookup mname oldmodules of
+        Just m -> return m
+        Nothing -> do
+            mpath <- liftSourcePos $ MkScoped $ asks icModulePath
+            case getCycle mname mpath of
+                Just mnames -> throw $ ModuleCycleError mnames
+                Nothing -> do
+                    mm <- liftSourcePos $ loadModuleInScope mname
+                    case mm of
+                        Just m -> do
+                            liftSourcePos $ MkScoped $ lift $ put istate {isModules = insertMap mname m oldmodules}
+                            return m
+                        Nothing -> throw $ ModuleNotFoundError mname
+
+importModule :: ModuleName -> SourceScoped ts (WMFunction (Scoped ts) (Scoped ts))
+importModule mname = do
+    newscope <- getModule mname
+    return $ MkWMFunction $ pLocalScope $ \oldscope -> newscope <> oldscope
 
 newtype SourceScoped ts a =
     MkSourceScoped (ReaderT SourcePos (Scoped ts) a)
@@ -172,7 +223,7 @@ mapSourcePos :: forall ts a b. SourcePos -> (SourceScoped ts a -> SourceScoped t
 mapSourcePos spos f ca = runSourcePos spos $ f $ liftSourcePos ca
 
 spScope :: SourceScoped ts (Scope ts)
-spScope = MkSourceScoped $ lift pScope
+spScope = liftSourcePos pScope
 
 instance MonadThrow ExpressionError (SourceScoped ts) where
     throw err = throw $ ExpressionErrorError err
@@ -207,7 +258,7 @@ lookupBinding name = do
     return $ lookup name names
 
 getSpecialVals :: SourceScoped ts (SpecialVals ts)
-getSpecialVals = MkSourceScoped $ lift $ MkScoped $ asks icSpecialVals
+getSpecialVals = liftSourcePos $ MkScoped $ asks icSpecialVals
 
 lookupLetBinding :: Name -> SourceScoped ts (Maybe (ScopeExpression ts))
 lookupLetBinding name = do
@@ -263,8 +314,9 @@ newTypeID :: Scoped ts TypeID
 newTypeID =
     MkScoped $
     lift $ do
-        tid <- get
-        put $ succTypeID tid
+        istate <- get
+        let tid = isTypeID istate
+        put $ istate {isTypeID = succTypeID tid}
         return tid
 
 registerType :: Name -> NamedType ts -> WMFunction (SourceScoped ts) (SourceScoped ts)

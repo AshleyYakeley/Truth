@@ -3,6 +3,7 @@ module Pinafore.Language.Read.Expression
     , readTopDeclarations
     ) where
 
+import Pinafore.Language.Name
 import Pinafore.Language.Read.Constructor
 import Pinafore.Language.Read.Infix
 import Pinafore.Language.Read.Parser
@@ -11,7 +12,6 @@ import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
 import Pinafore.Language.Read.TypeDecls
 import Pinafore.Language.Syntax
-import Pinafore.Language.Name
 import Shapes hiding (try)
 
 readTypeSignature :: Parser SyntaxType

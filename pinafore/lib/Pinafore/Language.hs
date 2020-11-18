@@ -38,6 +38,7 @@ import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
+import Pinafore.Language.Name
 import Pinafore.Language.Predefined
 import Pinafore.Language.Read
 import Pinafore.Language.Read.Parser
@@ -49,10 +50,13 @@ import System.IO.Error
 
 runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeScoped a -> InterpretResult a
 runPinaforeScoped scp =
-    runScoped spvals $
+    runScoped loadModule spvals $
     withNewSpecialForms predefinedSpecialForms $
     withNewPatternConstructors (fmap (\(v, pc) -> (qConstExprAny v, pc)) predefinedPatternConstructors) $
     withNewLetBindings (fmap qConstExprAny predefinedBindings) scp
+
+loadModule :: (?pinafore :: PinaforeContext) => ModuleName -> PinaforeScoped (Maybe PinaforeScope)
+loadModule _ = return Nothing
 
 spvals :: (?pinafore :: PinaforeContext) => PinaforeSpecialVals
 spvals = let

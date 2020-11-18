@@ -21,7 +21,7 @@ data ErrorType
     | LookupConstructorUnknownError Name
     | DeclareTypeDuplicateError Name
     | DeclareConstructorDuplicateError Name
-    | DeclareDynamicTypeCycle (NonEmpty Name)
+    | DeclareDynamicTypeCycleError (NonEmpty Name)
     | TypeConvertError Text
                        Text
     | TypeConvertInverseError Text
@@ -44,7 +44,9 @@ data ErrorType
     | InterpretTypeRangeApplyError Text
     | InterpretConstructorUnknownError Name
     | InterpretBindingsDuplicateError [Name]
-    | InterpretUnboundTypeVariables (NonEmpty Name)
+    | InterpretUnboundTypeVariablesError (NonEmpty Name)
+    | ModuleNotFoundError ModuleName
+    | ModuleCycleError (NonEmpty ModuleName)
 
 instance Show ErrorType where
     show (ParserError msgs) = let
@@ -97,7 +99,7 @@ instance Show ErrorType where
     show (LookupConstructorUnknownError n) = "unknown constructor: " <> show n
     show (DeclareTypeDuplicateError n) = "duplicate type: " <> show n
     show (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> show n
-    show (DeclareDynamicTypeCycle nn) =
+    show (DeclareDynamicTypeCycleError nn) =
         "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap show $ toList nn)
     show (TypeConvertError ta tb) = "cannot convert " <> unpack ta <> " <: " <> unpack tb
     show (TypeConvertInverseError ta tb) = "cannot inverse convert " <> unpack ta <> " <: " <> unpack tb
@@ -120,7 +122,10 @@ instance Show ErrorType where
     show (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> unpack t
     show (InterpretConstructorUnknownError n) = "unknown constructor: " <> show n
     show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show nn)
-    show (InterpretUnboundTypeVariables vv) = "unbound type variables: " <> (intercalate ", " $ fmap show $ toList vv)
+    show (InterpretUnboundTypeVariablesError vv) =
+        "unbound type variables: " <> (intercalate ", " $ fmap show $ toList vv)
+    show (ModuleNotFoundError mname) = "can't find module " <> show mname
+    show (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap show $ toList nn)
 
 data ErrorMessage =
     MkErrorMessage SourcePos
