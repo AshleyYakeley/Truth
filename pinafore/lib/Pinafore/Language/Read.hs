@@ -1,5 +1,6 @@
 module Pinafore.Language.Read
     ( parseTopExpression
+    , parseModule
     , parseType
     , InteractiveCommand(..)
     , parseInteractiveCommand
@@ -17,6 +18,9 @@ import Shapes hiding (try)
 
 parseTopExpression :: Text -> PinaforeSourceScoped QExpr
 parseTopExpression = parseScopedReaderWhole $ fmap interpretTopExpression readExpression
+
+parseModule :: Text -> PinaforeSourceScoped PinaforeScope
+parseModule = parseScopedReaderWhole $ fmap interpretModule readModule
 
 parseType ::
        forall polarity. Is PolarityType polarity

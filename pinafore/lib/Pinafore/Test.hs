@@ -48,12 +48,12 @@ makeTestPinaforeContext fetchModuleText tc hout = do
         tableReference = convertReference tableStateReference
         getTableState :: IO PinaforeTableSubject
         getTableState = getReferenceSubject rc tableStateReference
-        fetchModule :: ModuleName -> IO (Maybe (Result UnicodeException (FilePath, Text)))
+        fetchModule :: ModuleName -> IO (Maybe (FilePath, Result UnicodeException Text))
         fetchModule mname = do
             mtext <- fetchModuleText mname
             return $ do
                 text <- mtext
-                return $ SuccessResult (show mname, text)
+                return $ (show mname, SuccessResult text)
     (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
     pc <- makePinaforeContext fetchModule nullInvocationInfo hout model tc
     return (pc, getTableState)

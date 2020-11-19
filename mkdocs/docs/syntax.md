@@ -14,12 +14,21 @@ All declarations, including type declarations, are local to a `let` block.
 * Only one equation is allowed for a function definition. Use `case` to match argument patterns.
 
 A file passed to `pinafore` has syntax `<file>`.
+Modules loaded with `import` have syntax `<module>`.
 In interactive mode, each line has syntax `<interactive>`.
 
 ## Grammar
 
 ```text
 <file> ::= <expression>
+
+<module> ::=
+    <let-declarations> "in" <module> |
+    "export" <names>
+
+<names> ::= | <name> <names>
+
+<name> ::= uname | lname | "(" <infix-operator[n]> ")"
 
 <interactive> ::= <expression> | <let-declarations> | ":" <interactive-command>
 
@@ -150,12 +159,15 @@ In interactive mode, each line has syntax `<interactive>`.
 <declarations> ::=  | <declaration> ";" <declarations>
 
 <declaration> ::=
+    "import" <module-name> |
     "datatype" <type-const> <datatype-body> |
     "opentype" <type-const> |
     "subtype" <type-const> "<:" <type-const> |
     "closedtype" <type-const> <closedtype-body> |
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
+
+<module-name> ::= uname | uname "." <module-name>
 
 <binding> ::=
     <type-signature> ";" <unsigned-binding> |

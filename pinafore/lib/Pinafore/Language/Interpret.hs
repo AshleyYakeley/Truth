@@ -1,5 +1,6 @@
 module Pinafore.Language.Interpret
     ( interpretTopExpression
+    , interpretModule
     , interpretTopDeclarations
     ) where
 
@@ -264,3 +265,9 @@ interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) = do
 
 interpretTopExpression :: SyntaxExpression -> PinaforeScoped QExpr
 interpretTopExpression sexpr@(MkWithSourcePos spos _) = runRefNotation spos $ interpretExpression sexpr
+
+interpretModule :: SyntaxModule -> PinaforeScoped PinaforeScope
+interpretModule (MkWithSourcePos spos (SMLet sdecls smod)) = do
+    MkWMFunction bmap <- runSourcePos spos $ interpretDeclarations sdecls
+    runRefNotation spos $ bmap $ liftRefNotation $ interpretModule smod
+interpretModule (MkWithSourcePos spos (SMExport names)) = runSourcePos spos $ exportScope names

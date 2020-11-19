@@ -1,5 +1,6 @@
 module Pinafore.Language.Read.Expression
     ( readExpression
+    , readModule
     , readTopDeclarations
     ) where
 
@@ -82,6 +83,22 @@ readTopDeclarations = do
 
 readExpression :: Parser SyntaxExpression
 readExpression = readExpressionInfixed readExpression1
+
+readName :: Parser Name
+readName = readThis TokUName <|> readThis TokLName <|> (readParen $ readThis TokOperator)
+
+readModule :: Parser SyntaxModule
+readModule =
+    readSourcePos $
+    (do
+         sdecls <- readLetBindings
+         readThis TokIn
+         sbody <- readModule
+         return $ SMLet sdecls sbody) <|>
+    (do
+         readThis TokExport
+         names <- many readName
+         return $ SMExport names)
 
 readCase :: Parser SyntaxCase
 readCase = do

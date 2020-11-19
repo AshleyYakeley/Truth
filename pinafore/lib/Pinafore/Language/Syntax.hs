@@ -146,6 +146,13 @@ seApplys spos f (a:aa) = seApplys spos (seApply spos f a) aa
 
 type SyntaxExpression = WithSourcePos SyntaxExpression'
 
+data SyntaxModule'
+    = SMExport [Name]
+    | SMLet [SyntaxDeclaration]
+            SyntaxModule
+
+type SyntaxModule = WithSourcePos SyntaxModule'
+
 data SyntaxTopDeclarations =
     MkSyntaxTopDeclarations SourcePos
                             [SyntaxDeclaration]

@@ -33,7 +33,7 @@ module Pinafore.Language
     ) where
 
 import Changes.Core
-import Control.Exception
+import Control.Exception (Handler(..), catches)
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Context
@@ -58,7 +58,13 @@ runPinaforeScoped scp =
     withNewLetBindings (fmap qConstExprAny predefinedBindings) scp
 
 loadModule :: (?pinafore :: PinaforeContext) => ModuleName -> PinaforeScoped (Maybe PinaforeScope)
-loadModule _ = return Nothing
+loadModule mname = do
+    mrr <- liftIO $ pinaforeFetchModuleText mname
+    case mrr of
+        Nothing -> return Nothing
+        Just (fpath, FailureResult err) ->
+            throw $ MkErrorMessage (initialPos fpath) $ UnicodeDecodeError $ pack $ show err
+        Just (fpath, SuccessResult text) -> fmap Just $ runSourcePos (initialPos fpath) $ parseModule text
 
 spvals :: (?pinafore :: PinaforeContext) => PinaforeSpecialVals
 spvals = let

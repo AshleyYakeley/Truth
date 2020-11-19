@@ -31,11 +31,11 @@ doCache = True
 standardPinaforeContext :: [FilePath] -> InvocationInfo -> FilePath -> ChangesContext -> CreateView PinaforeContext
 standardPinaforeContext moduleDirs invinfo dirpath tc = do
     let
-        fetchModule :: ModuleName -> IO (Maybe (Result UnicodeException (FilePath, Text)))
+        fetchModule :: ModuleName -> IO (Maybe (FilePath, Result UnicodeException Text))
         fetchModule (MkModuleName nn) = let
             namePath :: FilePath
             namePath = foldl1 (</>) $ fmap unpack nn
-            fetch :: [FilePath] -> IO (Maybe (Result UnicodeException (FilePath, Text)))
+            fetch :: [FilePath] -> IO (Maybe (FilePath, Result UnicodeException Text))
             fetch [] = return Nothing
             fetch (d:dd) = do
                 let fpath = d </> namePath
@@ -44,11 +44,7 @@ standardPinaforeContext moduleDirs invinfo dirpath tc = do
                     False -> fetch dd
                     True -> do
                         bs <- readFile fpath
-                        return $
-                            Just $
-                            case decodeUtf8' $ toStrict bs of
-                                Left err -> FailureResult err
-                                Right t -> SuccessResult (fpath, t)
+                        return $ Just $ (fpath, eitherToResult $ decodeUtf8' $ toStrict bs)
             in fetch moduleDirs
     rc <- viewGetResourceContext
     liftLifeCycle $ do
