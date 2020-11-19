@@ -17,6 +17,7 @@ import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Storage
 import Shapes
+import System.Directory (doesFileExist)
 import System.FilePath
 
 type FilePinaforeType = PinaforeAction TopType
@@ -27,8 +28,28 @@ filePinaforeType = qNegativeTypeDescription @FilePinaforeType
 doCache :: Bool
 doCache = True
 
-standardPinaforeContext :: InvocationInfo -> FilePath -> ChangesContext -> CreateView PinaforeContext
-standardPinaforeContext invinfo dirpath tc = do
+standardPinaforeContext :: [FilePath] -> InvocationInfo -> FilePath -> ChangesContext -> CreateView PinaforeContext
+standardPinaforeContext moduleDirs invinfo dirpath tc = do
+    let
+        fetchModule :: ModuleName -> IO (Maybe (Result UnicodeException (FilePath, Text)))
+        fetchModule (MkModuleName nn) = let
+            namePath :: FilePath
+            namePath = foldl1 (</>) $ fmap unpack nn
+            fetch :: [FilePath] -> IO (Maybe (Result UnicodeException (FilePath, Text)))
+            fetch [] = return Nothing
+            fetch (d:dd) = do
+                let fpath = d </> namePath
+                found <- doesFileExist fpath
+                case found of
+                    False -> fetch dd
+                    True -> do
+                        bs <- readFile fpath
+                        return $
+                            Just $
+                            case decodeUtf8' $ toStrict bs of
+                                Left err -> FailureResult err
+                                Right t -> SuccessResult (fpath, t)
+            in fetch moduleDirs
     rc <- viewGetResourceContext
     liftLifeCycle $ do
         sqlReference <- liftIO $ sqlitePinaforeTableReference $ dirpath </> "tables.sqlite3"
@@ -40,7 +61,7 @@ standardPinaforeContext invinfo dirpath tc = do
                     return $ tableReferenceF rc
                 else return tableReference1
         (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-        makePinaforeContext invinfo stdout model tc
+        makePinaforeContext fetchModule invinfo stdout model tc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

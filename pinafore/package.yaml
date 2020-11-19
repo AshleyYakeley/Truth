@@ -12,6 +12,7 @@ library:
       - shapes
       - time
       - filepath
+      - directory
       - parsec
       - containers
       - typed-expression
@@ -143,6 +144,7 @@ executables:
           - base >= 4.12
           - shapes
           - time
+          - filepath
           - directory
           - optparse-applicative
           - xdg-basedir

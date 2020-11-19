@@ -9,16 +9,20 @@ import Run
 import Shapes
 import System.Directory
 import System.Environment.XDG.BaseDir
+import System.FilePath
 import Version
 
-getDirPath :: MonadIO m => Maybe FilePath -> m FilePath
-getDirPath mdirpath = do
-    dirpath <-
+getPinaforeDir :: MonadIO m => Maybe FilePath -> m FilePath
+getPinaforeDir mdirpath = do
+    pinaforedir <-
         case mdirpath of
-            Just dirpath -> return dirpath
+            Just pinaforedir -> return pinaforedir
             Nothing -> liftIO $ getUserDataDir "pinafore"
-    liftIO $ createDirectoryIfMissing True dirpath
-    return dirpath
+    liftIO $ createDirectoryIfMissing True pinaforedir
+    return pinaforedir
+
+stdIncludeDirs :: FilePath -> [FilePath]
+stdIncludeDirs pinaforedir = [pinaforedir </> "lib", "/usr/local/share/pinafore/lib", "/usr/share/pinafore/lib"]
 
 main :: IO ()
 main =
@@ -27,11 +31,11 @@ main =
         PredefinedDocOption -> printPredefinedBindings
         InfixDocOption -> printInfixOperatorTable
         DumpTableOption mdirpath -> do
-            dirpath <- getDirPath mdirpath
-            sqlitePinaforeDumpTable dirpath
-        RunFileOption fNoRun mdirpath fscript -> do
-            dirpath <- getDirPath mdirpath
-            runFiles fNoRun dirpath fscript
-        RunInteractiveOption mdirpath -> do
-            dirpath <- getDirPath mdirpath
-            runInteractive dirpath
+            pinaforedir <- getPinaforeDir mdirpath
+            sqlitePinaforeDumpTable pinaforedir
+        RunFileOption fNoRun reqIncludeDirs mdirpath fscript -> do
+            pinaforedir <- getPinaforeDir mdirpath
+            runFiles fNoRun (reqIncludeDirs <> stdIncludeDirs pinaforedir) pinaforedir fscript
+        RunInteractiveOption reqIncludeDirs mdirpath -> do
+            pinaforedir <- getPinaforeDir mdirpath
+            runInteractive (reqIncludeDirs <> stdIncludeDirs pinaforedir) pinaforedir

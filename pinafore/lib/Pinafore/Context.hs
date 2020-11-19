@@ -14,6 +14,7 @@ module Pinafore.Context
 
 import Changes.Core
 import Pinafore.Base
+import Pinafore.Language.Name
 import Shapes
 
 data InvocationInfo = MkInvocationInfo
@@ -33,6 +34,7 @@ data PinaforeContext = MkPinaforeContext
     { pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
     , pconUnliftCreateView :: MFunction CreateView View
     , pconEntityModel :: Model PinaforeStorageUpdate
+    , pconFetchModuleText :: ModuleName -> IO (Maybe (Result UnicodeException (FilePath, Text)))
     , pconInvocation :: InvocationInfo
     , pconStdOut :: Handle
     }
@@ -60,8 +62,13 @@ pinaforeStdOut :: (?pinafore :: PinaforeContext) => Handle
 pinaforeStdOut = pconStdOut ?pinafore
 
 makePinaforeContext ::
-       InvocationInfo -> Handle -> Model PinaforeStorageUpdate -> ChangesContext -> LifeCycle PinaforeContext
-makePinaforeContext pconInvocation pconStdOut rmodel tc = do
+       (ModuleName -> IO (Maybe (Result UnicodeException (FilePath, Text))))
+    -> InvocationInfo
+    -> Handle
+    -> Model PinaforeStorageUpdate
+    -> ChangesContext
+    -> LifeCycle PinaforeContext
+makePinaforeContext pconFetchModuleText pconInvocation pconStdOut rmodel tc = do
     uh <- liftIO newUndoHandler
     let
         pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
@@ -76,6 +83,7 @@ nullPinaforeContext = let
     pconUnliftAction _ = fail "null Pinafore context"
     pconUnliftCreateView _ = fail "null Pinafore context"
     pconEntityModel = error "no pinafore base"
+    pconFetchModuleText _ = return Nothing
     pconInvocation = nullInvocationInfo
     pconStdOut = stdout
     in MkPinaforeContext {..}

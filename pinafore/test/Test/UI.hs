@@ -25,7 +25,7 @@ runUIAction :: forall a. Timing -> (ChangesContext -> View a) -> Text -> IO a
 runUIAction timing testaction t = do
     donevar <- newEmptyMVar
     changesMainGTK $ \tc -> do
-        (pc, _) <- liftLifeCycle $ makeTestPinaforeContext tc stdout
+        (pc, _) <- liftLifeCycle $ makeTestPinaforeContext nullFetchModuleText tc stdout
         scriptaction <- let
             ?pinafore = pc
             in throwInterpretResult $ pinaforeInterpretText "<test>" t

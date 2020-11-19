@@ -23,7 +23,6 @@ module Pinafore.Test
 import Changes.Core
 import Pinafore.Context
 import Pinafore.Language
-import Pinafore.Language.Name
 import Pinafore.Language.Read
 import Pinafore.Language.Scope
 import Pinafore.Language.Shim
@@ -32,8 +31,15 @@ import Pinafore.Language.Var
 import Pinafore.Storage
 import Shapes
 
-makeTestPinaforeContext :: ChangesContext -> Handle -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
-makeTestPinaforeContext tc hout = do
+nullFetchModuleText :: ModuleName -> IO (Maybe Text)
+nullFetchModuleText _ = return Nothing
+
+makeTestPinaforeContext ::
+       (ModuleName -> IO (Maybe Text))
+    -> ChangesContext
+    -> Handle
+    -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
+makeTestPinaforeContext fetchModuleText tc hout = do
     let rc = emptyResourceContext
     tableStateReference :: Reference (WholeEdit PinaforeTableSubject) <-
         liftIO $ makeMemoryReference (MkPinaforeTableSubject [] [] [] []) $ \_ -> True
@@ -42,19 +48,26 @@ makeTestPinaforeContext tc hout = do
         tableReference = convertReference tableStateReference
         getTableState :: IO PinaforeTableSubject
         getTableState = getReferenceSubject rc tableStateReference
+        fetchModule :: ModuleName -> IO (Maybe (Result UnicodeException (FilePath, Text)))
+        fetchModule mname = do
+            mtext <- fetchModuleText mname
+            return $ do
+                text <- mtext
+                return $ SuccessResult (show mname, text)
     (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-    pc <- makePinaforeContext nullInvocationInfo hout model tc
+    pc <- makePinaforeContext fetchModule nullInvocationInfo hout model tc
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       Handle
+       (ModuleName -> IO (Maybe Text))
+    -> Handle
     -> ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycle IO -> IO PinaforeTableSubject -> IO r)
     -> IO r
-withTestPinaforeContext hout call =
+withTestPinaforeContext fetchModuleText hout call =
     runLifeCycle @LifeCycle $
     liftIOWithUnlift $ \unlift -> do
         let tc = nullChangesContext unlift
-        (pc, getTableState) <- unlift $ makeTestPinaforeContext tc hout
+        (pc, getTableState) <- unlift $ makeTestPinaforeContext fetchModuleText tc hout
         let
             ?pinafore = pc
             in call tc unlift getTableState

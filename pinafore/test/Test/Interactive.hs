@@ -15,7 +15,7 @@ testFile inpath = let
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
-               withTestPinaforeContext outh $ \tc _ _ -> do
+               withTestPinaforeContext nullFetchModuleText outh $ \tc _ _ -> do
                    tcRunView tc emptyResourceContext $ pinaforeInteractHandles inh outh True
                    hPutStrLn outh "<END>"
 

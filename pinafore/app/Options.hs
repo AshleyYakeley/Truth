@@ -28,10 +28,15 @@ data Options
     | InfixDocOption
     | DumpTableOption (Maybe FilePath)
     | RunFileOption Bool
+                    [FilePath]
                     (Maybe FilePath)
                     (Maybe (FilePath, [String]))
-    | RunInteractiveOption (Maybe FilePath)
+    | RunInteractiveOption [FilePath]
+                           (Maybe FilePath)
     deriving (Eq, Show)
+
+optIncludes :: Parser [FilePath]
+optIncludes = many $ strOption $ long "include" <> short 'I' <> metavar "PATH"
 
 optDataFlag :: Parser (Maybe FilePath)
 optDataFlag = optional $ strOption $ long "data" <> metavar "PATH"
@@ -39,11 +44,11 @@ optDataFlag = optional $ strOption $ long "data" <> metavar "PATH"
 optParser :: Parser Options
 optParser =
     (flag' ShowVersionOption $ long "version" <> short 'v') <|>
-    ((flag' RunInteractiveOption $ long "interactive" <> short 'i') <*> optDataFlag) <|>
+    ((flag' RunInteractiveOption $ long "interactive" <> short 'i') <*> optIncludes <*> optDataFlag) <|>
     (flag' PredefinedDocOption $ long "doc-predefined") <|>
     (flag' InfixDocOption $ long "doc-infix") <|>
     ((flag' DumpTableOption $ long "dump-table") <*> optDataFlag) <|>
-    (RunFileOption <$> (switch $ long "no-run" <> short 'n') <*> optDataFlag <*>
+    (RunFileOption <$> (switch $ long "no-run" <> short 'n') <*> optIncludes <*> optDataFlag <*>
      fmap Just (remainingParser $ metavar "PATH"))
 
 optParserInfo :: ParserInfo Options

@@ -1,5 +1,6 @@
 Invalid option `--help'
 
-Usage: pinafore ((-v|--version) | (-i|--interactive) [--data PATH] | 
+Usage: pinafore ((-v|--version) | (-i|--interactive) [-I|--include PATH] 
+                  [--data PATH] |
                   --doc-predefined | --doc-infix | --dump-table [--data PATH] | 
-                  [-n|--no-run] [--data PATH] PATH)
+                  [-n|--no-run] [-I|--include PATH] [--data PATH] PATH)

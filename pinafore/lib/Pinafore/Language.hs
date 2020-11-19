@@ -1,5 +1,7 @@
 module Pinafore.Language
-    ( PinaforeSpecialVals
+    ( Name
+    , ModuleName(..)
+    , PinaforeSpecialVals
     , SpecialVals(..)
     , PinaforeError
     , InterpretResult
