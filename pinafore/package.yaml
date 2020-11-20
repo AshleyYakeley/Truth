@@ -111,6 +111,7 @@ tests:
           - Test.ReadType
           - Test.Scripts
           - Test.Output
+          - Test.Module
           - Test.Interactive
           - Test.UI
         ghc-options: -threaded

@@ -7,6 +7,7 @@ import Shapes.Test
 import Test.Entity
 import Test.Interactive
 import Test.Language
+import Test.Module
 import Test.Output
 import Test.ReadType
 import Test.Scripts
@@ -29,6 +30,7 @@ main = do
                 , testUpdates
                 , testScripts
                 , testOutput
+                , testModule
                 , testInteractive
                 , testUI
                 ]

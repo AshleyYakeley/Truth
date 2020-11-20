@@ -28,13 +28,16 @@ filePinaforeType = qNegativeTypeDescription @FilePinaforeType
 doCache :: Bool
 doCache = True
 
+moduleRelativePath :: ModuleName -> FilePath
+moduleRelativePath (MkModuleName nn) = (foldl1 (</>) $ fmap unpack nn) <> ".pinafore"
+
 standardPinaforeContext :: [FilePath] -> InvocationInfo -> FilePath -> ChangesContext -> CreateView PinaforeContext
 standardPinaforeContext moduleDirs invinfo dirpath tc = do
     let
         fetchModule :: ModuleName -> IO (Maybe (FilePath, Result UnicodeException Text))
-        fetchModule (MkModuleName nn) = let
+        fetchModule mname = let
             namePath :: FilePath
-            namePath = foldl1 (</>) $ fmap unpack nn
+            namePath = moduleRelativePath mname
             fetch :: [FilePath] -> IO (Maybe (FilePath, Result UnicodeException Text))
             fetch [] = return Nothing
             fetch (d:dd) = do
