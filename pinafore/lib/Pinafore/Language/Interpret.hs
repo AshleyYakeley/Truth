@@ -98,12 +98,14 @@ interpretLetBindings spos sbinds ra = do
 interpretDeclarations :: [SyntaxDeclaration] -> PinaforeSourceScoped (WMFunction RefNotation RefNotation)
 interpretDeclarations decls = do
     let
+        typeDecls :: [(SourcePos, Name, SyntaxTypeDeclaration)]
         typeDecls =
             mapMaybe
                 (\case
                      TypeSyntaxDeclaration spos name defn -> Just (spos, name, defn)
                      _ -> Nothing)
                 decls
+        trs :: [WMFunction PinaforeScoped PinaforeScoped]
         trs =
             mapMaybe
                 (\case
@@ -111,6 +113,7 @@ interpretDeclarations decls = do
                          Just $ MkWMFunction $ mapSourcePos spos $ interpretSubtypeRelation sta stb
                      _ -> Nothing)
                 decls
+        sbinds :: [SyntaxBinding]
         sbinds =
             (mapMaybe $ \case
                  BindingSyntaxDeclaration sbind -> Just sbind
@@ -125,7 +128,7 @@ interpretDeclarations decls = do
     imports <- liftSourcePos $ for importmods $ \(spos, mname) -> runSourcePos spos $ importModule mname
     td <- interpretTypeDeclarations typeDecls
     spos <- askSourcePos
-    return $ (MkWMFunction $ remonadRefNotation (compAll imports . td . compAll trs) . interpretLetBindings spos sbinds)
+    return $ (MkWMFunction $ remonadRefNotation (td . compAll trs . compAll imports) . interpretLetBindings spos sbinds)
 
 interpretNamedConstructor :: SourcePos -> Name -> RefExpression
 interpretNamedConstructor spos n = do

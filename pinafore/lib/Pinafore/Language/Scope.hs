@@ -137,8 +137,10 @@ instance Monoid a => Monoid (Scoped ts a) where
     mempty = pure mempty
 
 runScoped :: (ModuleName -> Scoped ts (Maybe (Scope ts))) -> SpecialVals ts -> Scoped ts a -> InterpretResult a
-runScoped loadModule spvals qa =
-    evalStateT (runReaderT (unScoped qa) $ MkInterpretContext mempty spvals [] loadModule) emptyInterpretState
+runScoped icLoadModule icSpecialVals qa = let
+    icScope = mempty
+    icModulePath = []
+    in evalStateT (runReaderT (unScoped qa) $ MkInterpretContext {..}) emptyInterpretState
 
 liftScoped :: InterpretResult a -> Scoped ts a
 liftScoped ra = MkScoped $ lift $ lift ra

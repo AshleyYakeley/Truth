@@ -38,4 +38,10 @@ testModule =
         , moduleRunTest
               [("M", "let datatype T = T1 | T2 in export T T1 T2")]
               "let import M; t: T; t = T1 in case t of T1 -> return (); T2 -> fail \"wrong\" end"
+        , moduleRunTest
+              [("M", "let datatype T = T1 | T2 in export T T1 T2")]
+              "let import M; f: T -> T; f x = x in return ()"
+        , moduleRunTest
+              [("M", "let datatype T = T1 | T2 in export T T1 T2")]
+              "let import M in let f: T -> T; f x = x in return ()"
         ]
