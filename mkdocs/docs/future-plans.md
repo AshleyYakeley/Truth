@@ -7,4 +7,3 @@ These are some of the more important pieces of the puzzle:
 * Work with external data sources
 * More reference types, e.g. `ListRef`, `TextRef`
 * More user interface elements
-* Importation of scripts into other scripts

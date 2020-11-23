@@ -2,7 +2,7 @@
 
 Usage:
 ```text
-pinafore [-n|--no-run] [--data PATH] SCRIPTPATH [ARGUMENT...]
+pinafore [--data PATH] [-I|--include PATH] [-n|--no-run] SCRIPTPATH [ARGUMENT...]
 ```
 
 Call `pinafore` with a script containing actions to run those actions.
@@ -22,7 +22,7 @@ If you want to make a script executable from the command line, you can put this 
 ### Interactive Mode
 
 ```text
-pinafore [--data PATH] (-i|--interactive)
+pinafore [--data PATH] [-I|--include PATH] (-i|--interactive)
 ```
 
 If `pinafore` is invoked with `-i` or `--interactive`, it will run in interactive mode.

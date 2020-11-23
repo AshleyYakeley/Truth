@@ -13,14 +13,14 @@ Also, `case` and `do` statements are terminated with `end`.
 All declarations, including type declarations, are local to a `let` block.
 * Only one equation is allowed for a function definition. Use `case` to match argument patterns.
 
-A file passed to `pinafore` has syntax `<file>`.
-Modules loaded with `import` have syntax `<module>`.
-In interactive mode, each line has syntax `<interactive>`.
-
 ## Grammar
 
+* A script file passed to `pinafore` has syntax `<script>`.
+* Modules loaded with `import` have syntax `<module>`.
+* In interactive mode, each line has syntax `<interactive>`.
+
 ```text
-<file> ::= <expression>
+<script> ::= <expression>
 
 <module> ::=
     <let-declarations> "in" <module> |
