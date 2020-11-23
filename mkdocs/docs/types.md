@@ -122,6 +122,45 @@ patientPerson patient =
 Each constructor is anchored by its anchor and its count of types.
 Constructors can be added or removed from a closed type without affecting the anchoring of existing constructors in the type.
 
+### Dynamic Entity Types
+
+A dynamic entity is an entity that stores its own "concrete type" (as an anchor).
+You can think of the `DynamicEntity` type as a `(concretetype, value)` pair of anchors.
+
+Dynamic entity types are subtypes of `DynamicEntity`, declared by the `dynamictype` keyword.
+Each one represents a set of concrete types.
+Subtype relationships between them are determined by subset.
+
+A dynamic entity type representing a single concrete type is called a concrete dynamic entity type.
+These can be declared like this:
+
+```pinafore
+dynamictype Human = !"type.human";
+```
+
+You can create dynamic entity types that are the unions of other dynamic entity types, like this:
+
+```pinafore
+dynamictype Cat = !"type.cat";
+dynamictype Dog = !"type.dog";
+dynamictype Animal = Human | Cat | Dog;
+```
+
+The [greatest dynamic supertype](dynamic-supertypes.md) of all dynamic entity types is `DynamicEntity`.
+So you can use `check`, `coerce`, and pattern-matching to convert between them.
+
+```pinafore
+describeAnimalType :: Animal -> Text;
+describeAnimalType a = case a of
+    (h: Human) -> "Human";
+    (c: Cat) -> "Cat";
+    (d: Dog) -> "Dog";
+    end;
+```
+
+To create new values of a concrete dynamic entity type at runtime, you can use `newDynamicEntity`.
+Or, you can declare them statically with `dynamicEntity`.
+
 ### Open Entity Types
 
 An open entity type is a type to which new entities can be added at run-time.
@@ -183,7 +222,7 @@ Every order (comparison function) is a `RefOrder`:
 
 The contents of a user interface window. Can be composed in various ways.
 
-## References Types
+## Reference Types
 
 References (of the various reference types) keep track of updates, and will update user interfaces constructed from them when their value changes.
 
