@@ -35,7 +35,7 @@ main =
             sqlitePinaforeDumpTable pinaforedir
         RunFileOption fNoRun reqIncludeDirs mdirpath fscript -> do
             pinaforedir <- getPinaforeDir mdirpath
-            runFiles fNoRun (reqIncludeDirs <> stdIncludeDirs pinaforedir) pinaforedir fscript
+            runFiles fNoRun (reqIncludeDirs <> stdIncludeDirs pinaforedir) pinaforedir [fscript]
         RunInteractiveOption reqIncludeDirs mdirpath -> do
             pinaforedir <- getPinaforeDir mdirpath
             runInteractive (reqIncludeDirs <> stdIncludeDirs pinaforedir) pinaforedir

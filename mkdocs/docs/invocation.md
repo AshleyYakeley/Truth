@@ -2,7 +2,7 @@
 
 Usage:
 ```text
-pinafore [-i|--interactive] [-n|--no-run] [--data PATH] SCRIPT
+pinafore [-n|--no-run] [--data PATH] SCRIPTPATH [ARGUMENT...]
 ```
 
 Call `pinafore` with a script containing actions to run those actions.
@@ -13,7 +13,17 @@ Use `--data` to specify a different directory.
 
 To just parse and type-check a file without running it, use `-n` or `--no-run`.
 
+If you want to make a script executable from the command line, you can put this at the top, in the usual UNIX fashion:
+
+```text
+#!/usr/bin/pinafore
+```
+
 ### Interactive Mode
+
+```text
+pinafore [--data PATH] (-i|--interactive)
+```
 
 If `pinafore` is invoked with `-i` or `--interactive`, it will run in interactive mode.
 This may be particularly helpful for understanding the type system.

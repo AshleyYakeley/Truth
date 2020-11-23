@@ -30,39 +30,34 @@ testOptionParsing =
         , testOptions ["--dump-table", "--data", "dpath"] $ SuccessResult $ DumpTableOption $ Just "dpath"
         , testTree
               "script"
-              [ testOptions ["scriptname"] $ SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", [])
-              , testOptions ["scriptname", "a"] $
-                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["a"])
-              , testOptions ["scriptname", "-x"] $
-                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["-x"])
+              [ testOptions ["scriptname"] $ SuccessResult $ RunFileOption False [] Nothing ("scriptname", [])
+              , testOptions ["scriptname", "a"] $ SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["a"])
+              , testOptions ["scriptname", "-x"] $ SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["-x"])
               , testOptions ["scriptname", "--opt"] $
-                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["--opt"])
-              , testOptions ["scriptname", "-n"] $
-                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["-n"])
-              , testOptions ["scriptname", "-v"] $
-                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["-v"])
+                SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["--opt"])
+              , testOptions ["scriptname", "-n"] $ SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["-n"])
+              , testOptions ["scriptname", "-v"] $ SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["-v"])
               , testOptions ["scriptname", "--data", "dpath"] $
-                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["--data", "dpath"])
-              , testOptions ["-n", "scriptname"] $
-                SuccessResult $ RunFileOption True [] Nothing $ Just ("scriptname", [])
+                SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["--data", "dpath"])
+              , testOptions ["-n", "scriptname"] $ SuccessResult $ RunFileOption True [] Nothing ("scriptname", [])
               , testOptions ["-n", "scriptname", "-n"] $
-                SuccessResult $ RunFileOption True [] Nothing $ Just ("scriptname", ["-n"])
+                SuccessResult $ RunFileOption True [] Nothing ("scriptname", ["-n"])
               , testOptions ["-I", "incpath", "scriptname"] $
-                SuccessResult $ RunFileOption False ["incpath"] Nothing $ Just ("scriptname", [])
+                SuccessResult $ RunFileOption False ["incpath"] Nothing ("scriptname", [])
               , testOptions ["-I", "path1", "-I", "path2", "scriptname"] $
-                SuccessResult $ RunFileOption False ["path1", "path2"] Nothing $ Just ("scriptname", [])
+                SuccessResult $ RunFileOption False ["path1", "path2"] Nothing ("scriptname", [])
               , testOptions ["--include", "incpath", "scriptname"] $
-                SuccessResult $ RunFileOption False ["incpath"] Nothing $ Just ("scriptname", [])
+                SuccessResult $ RunFileOption False ["incpath"] Nothing ("scriptname", [])
               , testOptions ["--include", "path1", "--include", "path2", "scriptname"] $
-                SuccessResult $ RunFileOption False ["path1", "path2"] Nothing $ Just ("scriptname", [])
+                SuccessResult $ RunFileOption False ["path1", "path2"] Nothing ("scriptname", [])
               , testOptions ["--data", "dpath", "scriptname"] $
-                SuccessResult $ RunFileOption False [] (Just "dpath") $ Just ("scriptname", [])
+                SuccessResult $ RunFileOption False [] (Just "dpath") ("scriptname", [])
               , testOptions ["--data", "dpath", "scriptname", "arg1"] $
-                SuccessResult $ RunFileOption False [] (Just "dpath") $ Just ("scriptname", ["arg1"])
+                SuccessResult $ RunFileOption False [] (Just "dpath") ("scriptname", ["arg1"])
               , testOptions ["--data", "dpath", "scriptname", "arg1", "arg2"] $
-                SuccessResult $ RunFileOption False [] (Just "dpath") $ Just ("scriptname", ["arg1", "arg2"])
+                SuccessResult $ RunFileOption False [] (Just "dpath") ("scriptname", ["arg1", "arg2"])
               , testOptions ["-n", "--data", "dpath", "scriptname", "arg1", "arg2"] $
-                SuccessResult $ RunFileOption True [] (Just "dpath") $ Just ("scriptname", ["arg1", "arg2"])
+                SuccessResult $ RunFileOption True [] (Just "dpath") ("scriptname", ["arg1", "arg2"])
               ]
         , testTree
               "interactive"
