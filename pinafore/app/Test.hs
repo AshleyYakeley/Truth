@@ -8,57 +8,82 @@ import Options.Applicative.Help hiding ((</>))
 import Shapes
 import Shapes.Test
 
-testOptions :: [String] -> Maybe Options -> TestTree
+parseResult :: Show a => ParserResult a -> Result String a
+parseResult (Success a) = SuccessResult a
+parseResult r = FailureResult $ show r
+
+testOptions :: [String] -> Result String Options -> TestTree
 testOptions args expected =
     testTree (intercalate " " args) $ let
-        found = getParseResult $ execParserPure defaultPrefs optParserInfo args
+        found = parseResult $ execParserPure defaultPrefs optParserInfo args
         in assertEqual "" expected found
 
 testOptionParsing :: TestTree
 testOptionParsing =
     testTree
         "option-parsing"
-        [ testOptions ["-v"] $ Just ShowVersionOption
-        , testOptions ["--version"] $ Just ShowVersionOption
-        , testOptions ["--doc-predefined"] $ Just PredefinedDocOption
-        , testOptions ["--doc-infix"] $ Just InfixDocOption
-        , testOptions ["--dump-table"] $ Just $ DumpTableOption Nothing
-        , testOptions ["--dump-table", "--data", "dpath"] $ Just $ DumpTableOption $ Just "dpath"
-        , testOptions ["-i"] $ Just $ RunInteractiveOption [] Nothing
-        , testOptions ["-i", "--data", "dpath"] $ Just $ RunInteractiveOption [] $ Just "dpath"
-        , testOptions ["--interactive"] $ Just $ RunInteractiveOption [] Nothing
-        , testOptions ["-I", "incpath", "--interactive"] $ Just $ RunInteractiveOption ["incpath"] Nothing
-        , testOptions ["--include", "incpath", "--interactive"] $ Just $ RunInteractiveOption ["incpath"] Nothing
-        , testOptions ["--interactive", "-I", "incpath"] $ Just $ RunInteractiveOption ["incpath"] Nothing
-        , testOptions ["-I", "path1", "-I", "path2", "--interactive"] $
-          Just $ RunInteractiveOption ["path1", "path2"] Nothing
-        , testOptions ["--include", "path1", "--include", "path2", "--interactive"] $
-          Just $ RunInteractiveOption ["path1", "path2"] Nothing
-        , testOptions ["--interactive", "-I", "path1", "-I", "path2"] $
-          Just $ RunInteractiveOption ["path1", "path2"] Nothing
-        , testOptions ["--interactive", "--data", "dpath"] $ Just $ RunInteractiveOption [] $ Just "dpath"
-        , testOptions ["scriptname"] $ Just $ RunFileOption False [] Nothing $ Just ("scriptname", [])
-        , testOptions ["-I", "incpath", "scriptname"] $
-          Just $ RunFileOption False ["incpath"] Nothing $ Just ("scriptname", [])
-        , testOptions ["-I", "path1", "-I", "path2", "scriptname"] $
-          Just $ RunFileOption False ["path1", "path2"] Nothing $ Just ("scriptname", [])
-        , testOptions ["--include", "incpath", "scriptname"] $
-          Just $ RunFileOption False ["incpath"] Nothing $ Just ("scriptname", [])
-        , testOptions ["--include", "path1", "--include", "path2", "scriptname"] $
-          Just $ RunFileOption False ["path1", "path2"] Nothing $ Just ("scriptname", [])
-        , testOptions ["--data", "dpath", "scriptname"] $
-          Just $ RunFileOption False [] (Just "dpath") $ Just ("scriptname", [])
-        , testOptions ["--data", "dpath", "scriptname", "arg1"] $
-          Just $ RunFileOption False [] (Just "dpath") $ Just ("scriptname", ["arg1"])
-        , testOptions ["--data", "dpath", "scriptname", "arg1", "arg2"] $
-          Just $ RunFileOption False [] (Just "dpath") $ Just ("scriptname", ["arg1", "arg2"])
-        , testOptions ["scriptname", "a"] $ Just $ RunFileOption False [] Nothing $ Just ("scriptname", ["a"])
-        , testOptions ["scriptname", "-x"] $ Just $ RunFileOption False [] Nothing $ Just ("scriptname", ["-x"])
-        , testOptions ["scriptname", "--opt"] $ Just $ RunFileOption False [] Nothing $ Just ("scriptname", ["--opt"])
-        , testOptions ["scriptname", "-n"] $ Just $ RunFileOption False [] Nothing $ Just ("scriptname", ["-n"])
-        , testOptions ["scriptname", "-v"] $ Just $ RunFileOption False [] Nothing $ Just ("scriptname", ["-v"])
-        , testOptions ["-n", "scriptname"] $ Just $ RunFileOption True [] Nothing $ Just ("scriptname", [])
-        , testOptions ["-n", "scriptname", "-n"] $ Just $ RunFileOption True [] Nothing $ Just ("scriptname", ["-n"])
+        [ testOptions ["-v"] $ SuccessResult ShowVersionOption
+        , testOptions ["--version"] $ SuccessResult ShowVersionOption
+        , testOptions ["--doc-predefined"] $ SuccessResult PredefinedDocOption
+        , testOptions ["--doc-infix"] $ SuccessResult InfixDocOption
+        , testOptions ["--dump-table"] $ SuccessResult $ DumpTableOption Nothing
+        , testOptions ["--dump-table", "--data", "dpath"] $ SuccessResult $ DumpTableOption $ Just "dpath"
+        , testTree
+              "script"
+              [ testOptions ["scriptname"] $ SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", [])
+              , testOptions ["scriptname", "a"] $
+                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["a"])
+              , testOptions ["scriptname", "-x"] $
+                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["-x"])
+              , testOptions ["scriptname", "--opt"] $
+                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["--opt"])
+              , testOptions ["scriptname", "-n"] $
+                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["-n"])
+              , testOptions ["scriptname", "-v"] $
+                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["-v"])
+              , testOptions ["scriptname", "--data", "dpath"] $
+                SuccessResult $ RunFileOption False [] Nothing $ Just ("scriptname", ["--data", "dpath"])
+              , testOptions ["-n", "scriptname"] $
+                SuccessResult $ RunFileOption True [] Nothing $ Just ("scriptname", [])
+              , testOptions ["-n", "scriptname", "-n"] $
+                SuccessResult $ RunFileOption True [] Nothing $ Just ("scriptname", ["-n"])
+              , testOptions ["-I", "incpath", "scriptname"] $
+                SuccessResult $ RunFileOption False ["incpath"] Nothing $ Just ("scriptname", [])
+              , testOptions ["-I", "path1", "-I", "path2", "scriptname"] $
+                SuccessResult $ RunFileOption False ["path1", "path2"] Nothing $ Just ("scriptname", [])
+              , testOptions ["--include", "incpath", "scriptname"] $
+                SuccessResult $ RunFileOption False ["incpath"] Nothing $ Just ("scriptname", [])
+              , testOptions ["--include", "path1", "--include", "path2", "scriptname"] $
+                SuccessResult $ RunFileOption False ["path1", "path2"] Nothing $ Just ("scriptname", [])
+              , testOptions ["--data", "dpath", "scriptname"] $
+                SuccessResult $ RunFileOption False [] (Just "dpath") $ Just ("scriptname", [])
+              , testOptions ["--data", "dpath", "scriptname", "arg1"] $
+                SuccessResult $ RunFileOption False [] (Just "dpath") $ Just ("scriptname", ["arg1"])
+              , testOptions ["--data", "dpath", "scriptname", "arg1", "arg2"] $
+                SuccessResult $ RunFileOption False [] (Just "dpath") $ Just ("scriptname", ["arg1", "arg2"])
+              , testOptions ["-n", "--data", "dpath", "scriptname", "arg1", "arg2"] $
+                SuccessResult $ RunFileOption True [] (Just "dpath") $ Just ("scriptname", ["arg1", "arg2"])
+              ]
+        , testTree
+              "interactive"
+              [ testOptions ["-i"] $ SuccessResult $ RunInteractiveOption [] Nothing
+              , testOptions ["-i", "--data", "dpath"] $ SuccessResult $ RunInteractiveOption [] $ Just "dpath"
+              , testOptions ["--interactive"] $ SuccessResult $ RunInteractiveOption [] Nothing
+              , testOptions ["-I", "incpath", "--interactive"] $
+                SuccessResult $ RunInteractiveOption ["incpath"] Nothing
+              , testOptions ["--include", "incpath", "--interactive"] $
+                SuccessResult $ RunInteractiveOption ["incpath"] Nothing
+              , testOptions ["--interactive", "-I", "incpath"] $
+                SuccessResult $ RunInteractiveOption ["incpath"] Nothing
+              , testOptions ["-I", "path1", "-I", "path2", "--interactive"] $
+                SuccessResult $ RunInteractiveOption ["path1", "path2"] Nothing
+              , testOptions ["--include", "path1", "--include", "path2", "--interactive"] $
+                SuccessResult $ RunInteractiveOption ["path1", "path2"] Nothing
+              , testOptions ["--interactive", "-I", "path1", "-I", "path2"] $
+                SuccessResult $ RunInteractiveOption ["path1", "path2"] Nothing
+              , testOptions ["--interactive", "--data", "dpath"] $
+                SuccessResult $ RunInteractiveOption [] $ Just "dpath"
+              ]
         ]
 
 testOptionHelp :: TestTree

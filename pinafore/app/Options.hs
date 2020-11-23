@@ -13,7 +13,9 @@ remainingParser :: Mod CommandFields a -> Parser (String, [String])
 remainingParser (Mod _ _ modprops) = let
     remainingParserInfo :: ParserInfo [String]
     remainingParserInfo = (info (many $ strArgument mempty) mempty) {infoPolicy = AllPositionals}
-    optMain = CmdReader Nothing [] $ \s -> Just $ fmap ((,) s) remainingParserInfo
+    matchCmd ('-':_) = Nothing
+    matchCmd s = Just $ fmap ((,) s) remainingParserInfo
+    optMain = CmdReader Nothing [] matchCmd
     propVisibility = Visible
     propHelp = mempty
     propMetaVar = ""
@@ -45,11 +47,11 @@ optParser :: Parser Options
 optParser =
     (flag' ShowVersionOption $ long "version" <> short 'v') <|>
     ((flag' RunInteractiveOption $ long "interactive" <> short 'i') <*> optIncludes <*> optDataFlag) <|>
-    (flag' PredefinedDocOption $ long "doc-predefined") <|>
-    (flag' InfixDocOption $ long "doc-infix") <|>
-    ((flag' DumpTableOption $ long "dump-table") <*> optDataFlag) <|>
     (RunFileOption <$> (switch $ long "no-run" <> short 'n') <*> optIncludes <*> optDataFlag <*>
-     fmap Just (remainingParser $ metavar "PATH"))
+     fmap Just (remainingParser $ metavar "PATH")) <|>
+    (flag' PredefinedDocOption $ long "doc-predefined" <> hidden) <|>
+    (flag' InfixDocOption $ long "doc-infix" <> hidden) <|>
+    ((flag' DumpTableOption $ long "dump-table") <*> optDataFlag)
 
 optParserInfo :: ParserInfo Options
 optParserInfo = info optParser mempty
