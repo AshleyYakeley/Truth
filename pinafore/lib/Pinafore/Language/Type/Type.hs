@@ -29,28 +29,29 @@ type PinaforePatternConstructor = PatternConstructor Name (PinaforeShimWit 'Posi
 
 type PinaforePattern = SealedPattern Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
 
-type instance ScopeExpression PinaforeTypeSystem =
+type instance InterpreterExpression PinaforeTypeSystem =
      PinaforeExpression
 
-type instance ScopePatternConstructor PinaforeTypeSystem =
+type instance InterpreterPatternConstructor PinaforeTypeSystem =
      PinaforePatternConstructor
 
-type instance ScopeProvidedType PinaforeTypeSystem = ProvidedType
+type instance InterpreterProvidedType PinaforeTypeSystem =
+     ProvidedType
 
-type instance ScopeClosedEntityType PinaforeTypeSystem =
+type instance InterpreterClosedEntityType PinaforeTypeSystem =
      ClosedEntityType
 
 type PinaforeSpecialVals = SpecialVals PinaforeTypeSystem
 
-type PinaforeNamedType = NamedType PinaforeTypeSystem
+type PinaforeBoundType = BoundType PinaforeTypeSystem
 
 type PinaforeTypeBox = TypeBox PinaforeTypeSystem
 
 type PinaforeScope = Scope PinaforeTypeSystem
 
-type PinaforeScoped = Scoped PinaforeTypeSystem
+type PinaforeScoped = Interpreter PinaforeTypeSystem
 
-type PinaforeSourceScoped = SourceScoped PinaforeTypeSystem
+type PinaforeSourceScoped = SourceInterpreter PinaforeTypeSystem
 
 type PinaforeAnnotation = Annotation PinaforeTypeSystem
 

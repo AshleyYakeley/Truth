@@ -255,18 +255,18 @@ interpretGroundTypeConst (ConstSyntaxGroundType n)
     | Just (MkAnyW lt) <- nameToLiteralType n =
         return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType lt
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
-    nt <- lookupNamedType n
+    nt <- lookupBoundType n
     case nt of
-        SimpleNamedType dv dm es wt -> return $ MkPinaforeGroundTypeM $ MkAnyW $ SimpleGroundType dv dm es wt
-        OpenEntityNamedType tid ->
+        SimpleBoundType dv dm es wt -> return $ MkPinaforeGroundTypeM $ MkAnyW $ SimpleGroundType dv dm es wt
+        OpenEntityBoundType tid ->
             case makeOpenEntityType n tid of
                 MkAnyW t ->
                     return $
                     MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType t
-        ClosedEntityNamedType tidsym ct ->
+        ClosedEntityBoundType tidsym ct ->
             return $
             MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n tidsym ct
-        DynamicEntityNamedType dt ->
+        DynamicEntityBoundType dt ->
             return $
             MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType n dt
 

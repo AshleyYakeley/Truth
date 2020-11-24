@@ -1,6 +1,6 @@
 module Pinafore.Test
     ( parseType
-    , runScoped
+    , runInterpreter
     , runSourcePos
     , PinaforeTypeSystem
     , Name

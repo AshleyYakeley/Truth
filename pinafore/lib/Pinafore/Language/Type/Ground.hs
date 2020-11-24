@@ -57,14 +57,14 @@ data PinaforeGroundType dv t where
 
 type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
 
-type instance ScopeGroundType PinaforeTypeSystem =
+type instance InterpreterGroundType PinaforeTypeSystem =
      PinaforeGroundType
 
 type instance DolanPolyShim PinaforeGroundType = PinaforePolyShim
 
 instance IsDolanGroundType PinaforeGroundType where
     type DolanName PinaforeGroundType = Name
-    type DolanM PinaforeGroundType = SourceScoped PinaforeTypeSystem
+    type DolanM PinaforeGroundType = SourceInterpreter PinaforeTypeSystem
     groundTypeVarianceMap ::
            forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). PinaforeGroundType dv f -> DolanVarianceMap dv f
     groundTypeVarianceMap (SimpleGroundType _ dvm _ _) = dvm
@@ -193,8 +193,8 @@ withEntitySubtype ::
        forall (t :: Type) tidb a.
        EntityGroundType t
     -> OpenEntityType tidb
-    -> Scoped PinaforeTypeSystem a
-    -> Scoped PinaforeTypeSystem a
+    -> Interpreter PinaforeTypeSystem a
+    -> Interpreter PinaforeTypeSystem a
 withEntitySubtype ta tb =
     withSubtypeConversions $
     pure $

@@ -75,21 +75,21 @@ monoEntityToNegativePinaforeType et =
         Nothing -> throw InterpretTypeNoneNotNegativeEntityError
 
 intepretSyntaxDynamicEntityConstructor ::
-       SyntaxDynamicEntityConstructor -> SourceScoped PinaforeTypeSystem [DynamicType]
+       SyntaxDynamicEntityConstructor -> SourceInterpreter PinaforeTypeSystem [DynamicType]
 intepretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ pure $ mkDynamicType a
 intepretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name) = do
-    t <- lookupNamedType name
+    t <- lookupBoundType name
     case t of
-        DynamicEntityNamedType dt -> return $ toList dt
+        DynamicEntityBoundType dt -> return $ toList dt
         _ -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name
 
 interpretTypeDeclaration ::
        Name -> TypeID -> SyntaxTypeDeclaration -> PinaforeTypeBox (WMFunction PinaforeScoped PinaforeScoped)
 interpretTypeDeclaration name tid OpenEntitySyntaxTypeDeclaration =
-    MkTypeBox name (\_ -> OpenEntityNamedType tid) $ return ((), id)
+    MkTypeBox name (\_ -> OpenEntityBoundType tid) $ return ((), id)
 interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \(tidsym :: TypeIDType n) -> let
-        mktype t = ClosedEntityNamedType tidsym t
+        mktype t = ClosedEntityBoundType tidsym t
         in MkTypeBox name mktype $ do
                tconss <- for sconss interpretClosedEntityTypeConstructor
                MkClosedEntityBox (ct :: ClosedEntityType t) conss <- return $ assembleClosedEntityType tconss
@@ -119,7 +119,7 @@ interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
 interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \tidsym -> let
         pt = MkProvidedType datatypeIOWitness $ MkIdentifiedType tidsym
-        mktype _ = SimpleNamedType NilListType NilDolanVarianceMap (exprShowPrec name) pt
+        mktype _ = SimpleBoundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
         in MkTypeBox name mktype $ do
                tconss <- for sconss interpretDataTypeConstructor
                MkDataBox _dt conss <- return $ assembleDataType tconss
@@ -156,7 +156,7 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                        withNewPatternConstructor cname expr pc
                return ((), compAll patts)
 interpretTypeDeclaration name _ (DynamicEntitySyntaxTypeDeclaration stcons) =
-    MkTypeBox name DynamicEntityNamedType $ do
+    MkTypeBox name DynamicEntityBoundType $ do
         dt <- for stcons intepretSyntaxDynamicEntityConstructor
         return (setFromList $ mconcat $ toList dt, id)
 
