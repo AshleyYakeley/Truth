@@ -49,7 +49,7 @@ library:
       - Pinafore.Language.Error
       - Pinafore.Language.Subtype
       - Pinafore.Language.SpecialForm
-      - Pinafore.Language.Scope
+      - Pinafore.Language.Interpret.Interpreter
       - Pinafore.Language.Var
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.Type.Type
@@ -62,7 +62,7 @@ library:
       - Pinafore.Language.Type.DynamicSupertype
       - Pinafore.Language.Syntax
       - Pinafore.Language.Read.Token
-      - Pinafore.Language.Read.RefNotation
+      - Pinafore.Language.Interpret.RefNotation
       - Pinafore.Language.Read.Parser
       - Pinafore.Language.Read.Type
       - Pinafore.Language.Read.TypeDecls

@@ -23,7 +23,7 @@ showTypes :: PExpression -> String
 showTypes (MkSealedExpression (MkShimWit t _) expr) =
     "{" <> intercalate ", " (showVars expr) <> "} -> " <> unpack (exprShow t)
 
-exprTypeTest :: String -> Maybe String -> PinaforeSourceScoped PExpression -> TestTree
+exprTypeTest :: String -> Maybe String -> PinaforeSourceInterpreter PExpression -> TestTree
 exprTypeTest name expected mexpr =
     testTree name $ do
         result <- runInterpretResult $ runTestPinaforeSourceScoped mexpr
@@ -31,7 +31,7 @@ exprTypeTest name expected mexpr =
             expr <- resultToMaybe result
             return $ showTypes expr
 
-apExpr :: PExpression -> PExpression -> PinaforeSourceScoped PExpression
+apExpr :: PExpression -> PExpression -> PinaforeSourceInterpreter PExpression
 apExpr = tsApply @TS
 
 idExpr :: PExpression
@@ -82,7 +82,7 @@ listNumBoolFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Number]) -> [Tr
 listBoolNumFuncExpr :: PExpression
 listBoolNumFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Bool]) -> [2 :: Number]
 
-joinExpr :: PExpression -> PExpression -> PinaforeSourceScoped PExpression
+joinExpr :: PExpression -> PExpression -> PinaforeSourceInterpreter PExpression
 joinExpr exp1 exp2 = do
     je <- apExpr ifelseExpr boolExpr
     e <- apExpr je exp1

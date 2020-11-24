@@ -8,9 +8,9 @@ import qualified Data.List as List
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
+import Pinafore.Language.Interpret.Interpreter
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Name
-import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes
@@ -54,13 +54,13 @@ constructorFreeVariables :: Constructor (PinaforeNonpolarType '[]) t -> [AnyW Sy
 constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonpolarTypeFreeVariables lt
 
 interpretClosedEntityTypeConstructor ::
-       SyntaxClosedEntityConstructor -> PinaforeSourceScoped (Name, Anchor, AnyW (ListType MonoEntityType))
+       SyntaxClosedEntityConstructor -> PinaforeSourceInterpreter (Name, Anchor, AnyW (ListType MonoEntityType))
 interpretClosedEntityTypeConstructor (MkSyntaxClosedEntityConstructor consName stypes anchor) = do
     etypes <- for stypes interpretMonoEntityType
     return (consName, anchor, assembleListType etypes)
 
 interpretDataTypeConstructor ::
-       SyntaxDatatypeConstructor -> PinaforeSourceScoped (Name, AnyW (ListType (PinaforeNonpolarType '[])))
+       SyntaxDatatypeConstructor -> PinaforeSourceInterpreter (Name, AnyW (ListType (PinaforeNonpolarType '[])))
 interpretDataTypeConstructor (MkSyntaxDatatypeConstructor consName stypes) = do
     etypes <- for stypes interpretNonpolarType
     return (consName, assembleListType etypes)
@@ -84,7 +84,7 @@ intepretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name)
         _ -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name
 
 interpretTypeDeclaration ::
-       Name -> TypeID -> SyntaxTypeDeclaration -> PinaforeTypeBox (WMFunction PinaforeScoped PinaforeScoped)
+       Name -> TypeID -> SyntaxTypeDeclaration -> PinaforeTypeBox (WMFunction PinaforeInterpreter PinaforeInterpreter)
 interpretTypeDeclaration name tid OpenEntitySyntaxTypeDeclaration =
     MkTypeBox name (\_ -> OpenEntityBoundType tid) $ return ((), id)
 interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
@@ -160,7 +160,7 @@ interpretTypeDeclaration name _ (DynamicEntitySyntaxTypeDeclaration stcons) =
         dt <- for stcons intepretSyntaxDynamicEntityConstructor
         return (setFromList $ mconcat $ toList dt, id)
 
-checkDynamicTypeCycles :: [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceScoped ()
+checkDynamicTypeCycles :: [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceInterpreter ()
 checkDynamicTypeCycles decls = let
     constructorName :: SyntaxDynamicEntityConstructor -> Maybe Name
     constructorName (NameSyntaxDynamicEntityConstructor n) = Just n
@@ -179,7 +179,8 @@ checkDynamicTypeCycles decls = let
            (nn:_) -> throw $ DeclareDynamicTypeCycleError nn
 
 interpretTypeDeclarations ::
-       [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceScoped (WMFunction PinaforeScoped PinaforeScoped)
+       [(SourcePos, Name, SyntaxTypeDeclaration)]
+    -> PinaforeSourceInterpreter (WMFunction PinaforeInterpreter PinaforeInterpreter)
 interpretTypeDeclarations decls = do
     checkDynamicTypeCycles decls
     wfs <-

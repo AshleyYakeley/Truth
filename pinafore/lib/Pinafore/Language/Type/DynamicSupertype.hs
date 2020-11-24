@@ -87,7 +87,7 @@ groundSupertype ::
 groundSupertype (EntityPinaforeGroundType NilListType egt) NilDolanArguments = entitySupertype egt
 groundSupertype _ _ = Nothing
 
-getGreatestDynamicSupertype :: PinaforeType 'Positive t -> PinaforeSourceScoped (GreatestDynamicSupertype t)
+getGreatestDynamicSupertype :: PinaforeType 'Positive t -> PinaforeSourceInterpreter (GreatestDynamicSupertype t)
 getGreatestDynamicSupertype (ConsDolanType (GroundDolanSingularType gt args) NilDolanType)
     | Just ds <- groundSupertype gt args = return $ isomapGDS iJoinR1 ds
 getGreatestDynamicSupertype t = do

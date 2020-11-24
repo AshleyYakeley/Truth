@@ -1,4 +1,4 @@
-module Pinafore.Language.Scope
+module Pinafore.Language.Interpret.Interpreter
     ( InterpreterGroundType
     , InterpreterExpression
     , InterpreterPatternConstructor
@@ -25,15 +25,15 @@ module Pinafore.Language.Scope
     , lookupLetBinding
     , withNewLetBindings
     , withRemovedBindings
+    , withNewBindings
     , lookupSpecialForm
-    , withNewSpecialForms
     , lookupBoundType
     , newTypeID
     , TypeBox(..)
     , registerTypeNames
+    , InterpreterBinding(..)
     , lookupPatternConstructor
     , withNewPatternConstructor
-    , withNewPatternConstructors
     , withSubtypeConversions
     , getSubtypeConversions
     ) where
@@ -285,9 +285,6 @@ lookupSpecialForm name = do
         Just (SpecialFormBinding sf) -> return sf
         _ -> throw $ LookupSpecialFormUnknownError name
 
-withNewSpecialForms :: Map Name (SpecialForm ts (SourceInterpreter ts)) -> Interpreter ts a -> Interpreter ts a
-withNewSpecialForms bb = withNewBindings $ fmap SpecialFormBinding bb
-
 lookupBoundTypeM :: Name -> SourceInterpreter ts (Maybe (BoundType ts))
 lookupBoundTypeM name = do
     mb <- lookupBinding name
@@ -362,10 +359,6 @@ withNewPatternConstructor name exp pc = do
     case ma of
         Just _ -> throw $ DeclareConstructorDuplicateError name
         Nothing -> return $ MkWMFunction $ withNewBinding name $ ValueBinding exp $ Just pc
-
-withNewPatternConstructors ::
-       Map Name (InterpreterExpression ts, InterpreterPatternConstructor ts) -> Interpreter ts a -> Interpreter ts a
-withNewPatternConstructors pp = withNewBindings $ fmap (\(exp, pc) -> ValueBinding exp $ Just pc) pp
 
 withSubtypeConversions :: [SubypeConversionEntry (InterpreterGroundType ts)] -> Interpreter ts a -> Interpreter ts a
 withSubtypeConversions newscs ma = do

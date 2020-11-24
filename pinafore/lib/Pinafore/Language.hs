@@ -40,31 +40,28 @@ import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
+import Pinafore.Language.Interpret
 import Pinafore.Language.Name
 import Pinafore.Language.Predefined
 import Pinafore.Language.Read
 import Pinafore.Language.Read.Parser
-import Pinafore.Language.Scope
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
 import System.IO.Error
 
-runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeScoped a -> InterpretResult a
-runPinaforeScoped scp =
-    runInterpreter loadModule spvals $
-    withNewSpecialForms predefinedSpecialForms $
-    withNewPatternConstructors (fmap (\(v, pc) -> (qConstExprAny v, pc)) predefinedPatternConstructors) $
-    withNewLetBindings (fmap qConstExprAny predefinedBindings) scp
+runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeInterpreter a -> InterpretResult a
+runPinaforeScoped scp = runInterpreter loadModule spvals $ withNewBindings predefinedBindings scp
 
-loadModule :: (?pinafore :: PinaforeContext) => ModuleName -> PinaforeScoped (Maybe PinaforeScope)
+loadModule :: (?pinafore :: PinaforeContext) => ModuleName -> PinaforeInterpreter (Maybe PinaforeScope)
 loadModule mname = do
     mrr <- liftIO $ pinaforeFetchModuleText mname
     case mrr of
         Nothing -> return Nothing
         Just (fpath, FailureResult err) ->
             throw $ MkErrorMessage (initialPos fpath) $ UnicodeDecodeError $ pack $ show err
-        Just (fpath, SuccessResult text) -> fmap Just $ runSourcePos (initialPos fpath) $ parseModule text
+        Just (fpath, SuccessResult text) ->
+            fmap Just $ withNewBindings predefinedBindings $ runSourcePos (initialPos fpath) $ parseModule text
 
 spvals :: (?pinafore :: PinaforeContext) => PinaforeSpecialVals
 spvals = let
@@ -77,10 +74,11 @@ spvals = let
                 FailureResult err -> Left $ pack $ show err
     in MkSpecialVals {..}
 
-runPinaforeSourceScoped :: (?pinafore :: PinaforeContext) => FilePath -> PinaforeSourceScoped a -> InterpretResult a
+runPinaforeSourceScoped ::
+       (?pinafore :: PinaforeContext) => FilePath -> PinaforeSourceInterpreter a -> InterpretResult a
 runPinaforeSourceScoped fpath scp = runPinaforeScoped $ runSourcePos (initialPos fpath) scp
 
-parseValue :: (?pinafore :: PinaforeContext) => Text -> PinaforeSourceScoped QValue
+parseValue :: (?pinafore :: PinaforeContext) => Text -> PinaforeSourceInterpreter QValue
 parseValue text = do
     rexpr <- parseTopExpression text
     qEvalExpr rexpr
@@ -88,7 +86,7 @@ parseValue text = do
 parseValueUnify ::
        forall t. (FromPinaforeType t, ?pinafore :: PinaforeContext)
     => Text
-    -> PinaforeSourceScoped t
+    -> PinaforeSourceInterpreter t
 parseValueUnify text = do
     val <- parseValue text
     typedAnyToPinaforeVal val
@@ -97,7 +95,7 @@ parseValueSubsume ::
        forall t. (?pinafore :: PinaforeContext)
     => PinaforeType 'Positive t
     -> Text
-    -> PinaforeSourceScoped t
+    -> PinaforeSourceInterpreter t
 parseValueSubsume t text = do
     val <- parseValue text
     tsSubsumeValue @PinaforeTypeSystem t val
@@ -140,14 +138,14 @@ typedShowValue (ConsDolanType ts tt) v = joinf (singularTypedShowValue ts) (type
 showPinaforeRef :: QValue -> String
 showPinaforeRef (MkAnyValue (MkPosShimWit t conv) v) = typedShowValue t (shimToFunction conv v)
 
-type Interact = StateT SourcePos (ReaderStateT PinaforeScoped View)
+type Interact = StateT SourcePos (ReaderStateT PinaforeInterpreter View)
 
-interactRunSourceScoped :: PinaforeSourceScoped a -> Interact a
+interactRunSourceScoped :: PinaforeSourceInterpreter a -> Interact a
 interactRunSourceScoped sa = do
     spos <- get
     lift $ liftRS $ runSourcePos spos sa
 
-interactEvalExpression :: PinaforeScoped QExpr -> Interact QValue
+interactEvalExpression :: PinaforeInterpreter QExpr -> Interact QValue
 interactEvalExpression texpr =
     interactRunSourceScoped $ do
         expr <- liftSourcePos texpr

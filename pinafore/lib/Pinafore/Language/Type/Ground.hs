@@ -3,8 +3,8 @@ module Pinafore.Language.Type.Ground where
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.Interpret.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Scope
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.EntityAdapter

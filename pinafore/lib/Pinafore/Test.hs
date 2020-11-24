@@ -13,8 +13,8 @@ module Pinafore.Test
     , PinaforeShimWit
     , PinaforeSingularType
     , PinaforeSingularShimWit
-    , PinaforeScoped
-    , PinaforeSourceScoped
+    , PinaforeInterpreter
+    , PinaforeSourceInterpreter
     , toJMShimWit
     , PinaforeTableSubject(..)
     , module Pinafore.Test
@@ -23,8 +23,8 @@ module Pinafore.Test
 import Changes.Core
 import Pinafore.Context
 import Pinafore.Language
+import Pinafore.Language.Interpret
 import Pinafore.Language.Read
-import Pinafore.Language.Scope
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
@@ -77,7 +77,7 @@ withNullPinaforeContext f = let
     ?pinafore = nullPinaforeContext
     in f
 
-runTestPinaforeSourceScoped :: PinaforeSourceScoped a -> InterpretResult a
+runTestPinaforeSourceScoped :: PinaforeSourceInterpreter a -> InterpretResult a
 runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa
 
 checkUpdateEditor ::

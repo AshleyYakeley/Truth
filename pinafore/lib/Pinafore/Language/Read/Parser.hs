@@ -8,8 +8,8 @@ module Pinafore.Language.Read.Parser
     ) where
 
 import Pinafore.Language.Error
+import Pinafore.Language.Interpret
 import Pinafore.Language.Read.Token
-import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes hiding (try)
@@ -34,7 +34,7 @@ parseReader r text = let
                Right a -> return a
                Left e -> throwErrorMessage $ parseErrorMessage e
 
-parseScopedReaderWhole :: Parser (PinaforeScoped t) -> Text -> PinaforeSourceScoped t
+parseScopedReaderWhole :: Parser (PinaforeInterpreter t) -> Text -> PinaforeSourceInterpreter t
 parseScopedReaderWhole parser text = do
     spos <- askSourcePos
     result <- runInterpretResult $ evalStateT (parseReader parser text) spos

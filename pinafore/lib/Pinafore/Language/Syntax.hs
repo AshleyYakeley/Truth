@@ -3,8 +3,8 @@ module Pinafore.Language.Syntax where
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Name
-import Pinafore.Language.Scope
 import Shapes
+import Text.Parsec (SourcePos)
 
 data SyntaxClosedEntityConstructor =
     MkSyntaxClosedEntityConstructor Name

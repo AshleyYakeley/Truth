@@ -5,6 +5,7 @@ import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.Expression
+import Pinafore.Language.Interpret
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
@@ -13,15 +14,8 @@ import Shapes
 
 type EnA = MeetType Entity A
 
-data DefBind
-    = NullDefBind
-    | ValueDefBind (PinaforeContext -> QValue)
-    | PatternDefBind QValue
-                     QPatternConstructor
-    | SpecialFormDefBind PinaforeSpecialForm
-
 data BindDoc = MkBindDoc
-    { bdBind :: Maybe (Name, DefBind)
+    { bdBind :: Maybe (Name, Maybe (PinaforeContext -> PinaforeBinding))
     , bdDoc :: DefDoc
     }
 
@@ -31,16 +25,18 @@ mkDefDocEntry bdDoc = let
     in MkBindDoc {..}
 
 mkValEntry ::
-       forall t. (ToPinaforeType t)
+       forall t. ToPinaforeType t
     => Name
     -> Text
     -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry BindDoc
 mkValEntry name docDescription val = let
-    dbValue bc = let
-        ?pinafore = bc
-        in jmToValue val
-    bdBind = Just (name, ValueDefBind dbValue)
+    bdBind =
+        Just
+            ( name
+            , Just $ \pc -> let
+                  ?pinafore = pc
+                  in ValueBinding (qConstExprAny $ jmToValue val) Nothing)
     docName = unName name
     docValueType = qPositiveTypeDescription @t
     docIsSupertype = False
@@ -49,13 +45,13 @@ mkValEntry name docDescription val = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSupertypeEntry ::
-       forall t. (ToPinaforeType t)
+       forall t. ToPinaforeType t
     => Name
     -> Text
     -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry BindDoc
 mkSupertypeEntry name docDescription _val = let
-    bdBind = Just (name, NullDefBind)
+    bdBind = Just (name, Nothing)
     docName = unName name
     docValueType = qPositiveTypeDescription @t
     docIsSupertype = True
@@ -72,7 +68,7 @@ mkValPatEntry ::
     -> (v -> Maybe (HList lt))
     -> DocTreeEntry BindDoc
 mkValPatEntry name docDescription val pat = let
-    bdBind = Just (name, PatternDefBind (jmToValue val) (qToPatternConstructor pat))
+    bdBind = Just (name, Just $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat)
     docName = unName name
     docValueType = qPositiveTypeDescription @t
     docIsSupertype = False
@@ -82,7 +78,7 @@ mkValPatEntry name docDescription val pat = let
 
 mkSpecialFormEntry :: Name -> Text -> Text -> Text -> PinaforeSpecialForm -> DocTreeEntry BindDoc
 mkSpecialFormEntry name docDescription params docValueType sf = let
-    bdBind = Just (name, SpecialFormDefBind sf)
+    bdBind = Just (name, Just $ \_ -> SpecialFormBinding sf)
     docName = unName name <> " " <> params
     docIsSupertype = False
     docIsPattern = False

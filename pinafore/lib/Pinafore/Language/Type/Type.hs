@@ -3,8 +3,8 @@ module Pinafore.Language.Type.Type where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
+import Pinafore.Language.Interpret.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Scope
 import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Entity
@@ -49,10 +49,12 @@ type PinaforeTypeBox = TypeBox PinaforeTypeSystem
 
 type PinaforeScope = Scope PinaforeTypeSystem
 
-type PinaforeScoped = Interpreter PinaforeTypeSystem
+type PinaforeBinding = InterpreterBinding PinaforeTypeSystem
 
-type PinaforeSourceScoped = SourceInterpreter PinaforeTypeSystem
+type PinaforeInterpreter = Interpreter PinaforeTypeSystem
+
+type PinaforeSourceInterpreter = SourceInterpreter PinaforeTypeSystem
 
 type PinaforeAnnotation = Annotation PinaforeTypeSystem
 
-type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeSourceScoped
+type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeSourceInterpreter

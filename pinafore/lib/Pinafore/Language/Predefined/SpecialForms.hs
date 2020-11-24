@@ -4,10 +4,9 @@ module Pinafore.Language.Predefined.SpecialForms
 
 import Pinafore.Base
 import Pinafore.Language.DocTree
-import Pinafore.Language.Interpret.TypeDecl
+import Pinafore.Language.Interpret
 import Pinafore.Language.Name
 import Pinafore.Language.Predefined.Defs
-import Pinafore.Language.Scope
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value

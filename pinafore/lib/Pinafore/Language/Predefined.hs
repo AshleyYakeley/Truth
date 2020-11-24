@@ -4,15 +4,12 @@ module Pinafore.Language.Predefined
     , DocTree(..)
     , runDocTree
     , predefinedBindings
-    , predefinedPatternConstructors
-    , predefinedSpecialForms
     , predefinedDoc
     , outputLn
     ) where
 
 import Pinafore.Context
 import Pinafore.Language.DocTree
-import Pinafore.Language.Expression
 import Pinafore.Language.Name
 import Pinafore.Language.Predefined.Base
 import Pinafore.Language.Predefined.Defs
@@ -30,37 +27,11 @@ predefinitions =
 predefinedDoc :: DocTree DefDoc
 predefinedDoc = fmap bdDoc $ predefinitions
 
-toPredefined :: (DefBind -> Maybe t) -> Map Name t
-toPredefined f =
-    mapFromList $
-    catMaybes $
-    toList $
-    fmap
-        (\doc -> do
-             (name, db) <- bdBind doc
-             t <- f db
-             return (name, t)) $
-    predefinitions
+bindDocBinding :: (?pinafore :: PinaforeContext) => BindDoc -> Maybe (Name, PinaforeBinding)
+bindDocBinding doc = do
+    (name, mb) <- bdBind doc
+    b <- mb
+    return (name, b ?pinafore)
 
-predefinedBindings :: (?pinafore :: PinaforeContext) => Map Name QValue
-predefinedBindings =
-    toPredefined $ \db -> do
-        val <-
-            case db of
-                ValueDefBind val -> Just val
-                _ -> Nothing
-        return $ val ?pinafore
-
-predefinedPatternConstructors :: Map Name (QValue, PinaforePatternConstructor)
-predefinedPatternConstructors =
-    toPredefined $ \db ->
-        case db of
-            PatternDefBind val pat -> Just (val, pat)
-            _ -> Nothing
-
-predefinedSpecialForms :: Map Name PinaforeSpecialForm
-predefinedSpecialForms =
-    toPredefined $ \db ->
-        case db of
-            SpecialFormDefBind sf -> return sf
-            _ -> Nothing
+predefinedBindings :: (?pinafore :: PinaforeContext) => Map Name PinaforeBinding
+predefinedBindings = mapFromList $ catMaybes $ toList $ fmap bindDocBinding predefinitions

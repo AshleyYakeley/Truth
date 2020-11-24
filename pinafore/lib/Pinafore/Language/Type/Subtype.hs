@@ -10,7 +10,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
-import Pinafore.Language.Scope
+import Pinafore.Language.Interpret.Interpreter
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.EntityAdapter
@@ -42,7 +42,7 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
            forall polarity tinf tdecl a. Is PolarityType polarity
         => PinaforeSingularType polarity tinf
         -> PinaforeType polarity tdecl
-        -> PinaforeSourceScoped a
+        -> PinaforeSourceInterpreter a
     throwTypeSubsumeError tinf tdecl = let
         pol =
             case polarityType @polarity of

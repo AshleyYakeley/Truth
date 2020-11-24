@@ -8,8 +8,8 @@ module Pinafore.Language.Interpret.Type
     ) where
 
 import Pinafore.Language.Error
+import Pinafore.Language.Interpret.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes
@@ -21,13 +21,13 @@ type PinaforeRangeType3 = MPolarRangeType PinaforeType
 interpretType ::
        forall polarity. Is PolarityType polarity
     => SyntaxType
-    -> PinaforeSourceScoped (AnyW (PinaforeType polarity))
+    -> PinaforeSourceInterpreter (AnyW (PinaforeType polarity))
 interpretType st = do
     mpol <- isMPolarity @polarity $ interpretTypeM @('Just polarity) st
     case mpol of
         SingleMPolarW atw -> return atw
 
-interpretOpenEntityType :: SyntaxType -> PinaforeSourceScoped (AnyW OpenEntityType)
+interpretOpenEntityType :: SyntaxType -> PinaforeSourceInterpreter (AnyW OpenEntityType)
 interpretOpenEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
@@ -39,7 +39,7 @@ interpretOpenEntityType st = do
                             return $ MkAnyW t
                         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm
 
-interpretConcreteDynamicEntityType :: SyntaxType -> PinaforeSourceScoped (Name, DynamicType)
+interpretConcreteDynamicEntityType :: SyntaxType -> PinaforeSourceInterpreter (Name, DynamicType)
 interpretConcreteDynamicEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
@@ -51,7 +51,7 @@ interpretConcreteDynamicEntityType st = do
                             | [dt] <- toList dts -> return (n, dt)
                         _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm
 
-interpretMonoEntityType :: SyntaxType -> PinaforeSourceScoped (AnyW MonoEntityType)
+interpretMonoEntityType :: SyntaxType -> PinaforeSourceInterpreter (AnyW MonoEntityType)
 interpretMonoEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
@@ -62,7 +62,7 @@ interpretMonoEntityType st = do
                         Just (MkShimWit t _) -> return $ MkAnyW t
                         Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm
 
-interpretNonpolarType :: SyntaxType -> PinaforeSourceScoped (AnyW (PinaforeNonpolarType '[]))
+interpretNonpolarType :: SyntaxType -> PinaforeSourceInterpreter (AnyW (PinaforeNonpolarType '[]))
 interpretNonpolarType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
@@ -76,13 +76,13 @@ interpretNonpolarType st = do
 interpretTypeM ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType
-    -> PinaforeSourceScoped (PinaforeTypeM mpolarity)
+    -> PinaforeSourceInterpreter (PinaforeTypeM mpolarity)
 interpretTypeM (MkWithSourcePos spos t) = localSourcePos spos $ interpretTypeM' t
 
 interpretTypeM' ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType'
-    -> PinaforeSourceScoped (PinaforeTypeM mpolarity)
+    -> PinaforeSourceInterpreter (PinaforeTypeM mpolarity)
 interpretTypeM' BottomSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> return $ toMPolar mempty
@@ -128,7 +128,7 @@ interpretTypeM' (RecursiveSyntaxType name st) = do
 interpretTypeRangeFromType ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType
-    -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
+    -> PinaforeSourceInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeRangeFromType st = do
     t <- interpretTypeM @'Nothing st
     let
@@ -143,7 +143,7 @@ interpretTypeRangeFromType st = do
 interpretTypeArgument ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxTypeArgument
-    -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
+    -> PinaforeSourceInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeArgument (SimpleSyntaxTypeArgument st) = interpretTypeRangeFromType st
 interpretTypeArgument (RangeSyntaxTypeArgument ss) = do
     tt <- for ss interpretTypeRangeItem
@@ -152,7 +152,7 @@ interpretTypeArgument (RangeSyntaxTypeArgument ss) = do
 interpretTypeRangeItem ::
        forall mpolarity. Is MPolarityType mpolarity
     => (Maybe SyntaxVariance, SyntaxType)
-    -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
+    -> PinaforeSourceInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeRangeItem (Just CoSyntaxVariance, st) = do
     atq <- interpretTypeM st
     return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType NilDolanType tq) atq
@@ -177,7 +177,7 @@ interpretArgs ::
     => SyntaxGroundType
     -> DolanVarianceType dv
     -> [SyntaxTypeArgument]
-    -> PinaforeSourceScoped (AnyW (DolanArguments dv PinaforeType gt polarity))
+    -> PinaforeSourceInterpreter (AnyW (DolanArguments dv PinaforeType gt polarity))
 interpretArgs _ NilListType [] = return $ MkAnyW NilDolanArguments
 interpretArgs sgt NilListType (_:_) = throw $ InterpretTypeOverApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType _ _) [] = throw $ InterpretTypeUnderApplyError $ groundTypeText sgt
@@ -211,7 +211,7 @@ interpretArgs sgt (ConsListType RangevarianceType dv) (st:stt) = do
 makeOpenEntityType :: Name -> TypeID -> AnyW OpenEntityType
 makeOpenEntityType n tid = valueToWitness tid $ \tidsym -> MkAnyW $ MkOpenEntityType n tidsym
 
-interpretGroundTypeConst :: SyntaxGroundType -> PinaforeSourceScoped PinaforeGroundTypeM
+interpretGroundTypeConst :: SyntaxGroundType -> PinaforeSourceInterpreter PinaforeGroundTypeM
 interpretGroundTypeConst UnitSyntaxGroundType =
     return $
     MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType UnitLiteralType
@@ -270,7 +270,7 @@ interpretGroundTypeConst (ConstSyntaxGroundType n) = do
             return $
             MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType n dt
 
-interpretSubtypeRelation :: SyntaxType -> SyntaxType -> PinaforeSourceScoped a -> PinaforeSourceScoped a
+interpretSubtypeRelation :: SyntaxType -> SyntaxType -> PinaforeSourceInterpreter a -> PinaforeSourceInterpreter a
 interpretSubtypeRelation sta stb ma = do
     ata <- interpretMonoEntityType sta
     atb <- interpretMonoEntityType stb

@@ -2,6 +2,16 @@ module Pinafore.Language.Interpret
     ( interpretTopExpression
     , interpretModule
     , interpretTopDeclarations
+    , interpretType
+    , monoEntityToNegativePinaforeType
+    , runInterpreter
+    , InterpreterBinding(..)
+    , withNewBindings
+    , SpecialVals(..)
+    , getSpecialVals
+    , askSourcePos
+    , liftSourcePos
+    , runSourcePos
     ) where
 
 import Data.Graph
@@ -9,18 +19,18 @@ import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.If
+import Pinafore.Language.Interpret.Interpreter
+import Pinafore.Language.Interpret.RefNotation
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Interpret.TypeDecl
 import Pinafore.Language.Name
-import Pinafore.Language.Read.RefNotation
-import Pinafore.Language.Scope
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
 
-interpretPatternConstructor :: SyntaxConstructor -> PinaforeSourceScoped (QPatternConstructor)
+interpretPatternConstructor :: SyntaxConstructor -> PinaforeSourceInterpreter (QPatternConstructor)
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
 interpretPatternConstructor (SLNumber v) =
     return $
@@ -95,7 +105,7 @@ interpretLetBindings spos sbinds ra = do
     liftRefNotation $ runSourcePos spos $ checkSyntaxBindingsDuplicates sbinds
     interpretLetBindingss spos (clumpBindings sbinds) ra
 
-interpretDeclarations :: [SyntaxDeclaration] -> PinaforeSourceScoped (WMFunction RefNotation RefNotation)
+interpretDeclarations :: [SyntaxDeclaration] -> PinaforeSourceInterpreter (WMFunction RefNotation RefNotation)
 interpretDeclarations decls = do
     let
         typeDecls :: [(SourcePos, Name, SyntaxTypeDeclaration)]
@@ -105,7 +115,7 @@ interpretDeclarations decls = do
                      TypeSyntaxDeclaration spos name defn -> Just (spos, name, defn)
                      _ -> Nothing)
                 decls
-        trs :: [WMFunction PinaforeScoped PinaforeScoped]
+        trs :: [WMFunction PinaforeInterpreter PinaforeInterpreter]
         trs =
             mapMaybe
                 (\case
@@ -151,7 +161,7 @@ interpretConstructor spos (SLNamedConstructor v) = interpretNamedConstructor spo
 interpretConstructor _ SLPair = return $ qConstExprAny $ jmToValue ((,) :: A -> B -> (A, B))
 interpretConstructor _ SLUnit = return $ qConstExprAny $ jmToValue ()
 
-specialFormArg :: PinaforeAnnotation t -> SyntaxAnnotation -> ComposeM Maybe PinaforeSourceScoped t
+specialFormArg :: PinaforeAnnotation t -> SyntaxAnnotation -> ComposeM Maybe PinaforeSourceInterpreter t
 specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
 specialFormArg AnnotMonoEntityType (SAType st) = liftOuter $ interpretMonoEntityType st
 specialFormArg AnnotOpenEntityType (SAType st) = liftOuter $ interpretOpenEntityType st
@@ -161,7 +171,7 @@ specialFormArg AnnotNegativeType (SAType st) = liftOuter $ interpretType @'Negat
 specialFormArg _ _ = liftInner Nothing
 
 specialFormArgs ::
-       ListType PinaforeAnnotation lt -> [SyntaxAnnotation] -> ComposeM Maybe PinaforeSourceScoped (HList lt)
+       ListType PinaforeAnnotation lt -> [SyntaxAnnotation] -> ComposeM Maybe PinaforeSourceInterpreter (HList lt)
 specialFormArgs NilListType [] = return ()
 specialFormArgs (ConsListType t tt) (a:aa) = do
     v <- specialFormArg t a
@@ -181,7 +191,7 @@ showAnnotation AnnotConcreteDynamicEntityType = "type"
 showAnnotation AnnotPositiveType = "type"
 showAnnotation AnnotNegativeType = "type"
 
-interpretSpecialForm :: Name -> NonEmpty SyntaxAnnotation -> PinaforeSourceScoped QValue
+interpretSpecialForm :: Name -> NonEmpty SyntaxAnnotation -> PinaforeSourceInterpreter QValue
 interpretSpecialForm name annotations = do
     MkSpecialForm largs val <- lookupSpecialForm name
     margs <- getComposeM $ specialFormArgs largs $ toList annotations
@@ -244,7 +254,7 @@ interpretExpression' spos (SEList sexprs) = do
     exprs <- for sexprs interpretExpression
     liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs
 
-interpretTypeSignature :: Maybe SyntaxType -> PinaforeExpression -> PinaforeSourceScoped PinaforeExpression
+interpretTypeSignature :: Maybe SyntaxType -> PinaforeExpression -> PinaforeSourceInterpreter PinaforeExpression
 interpretTypeSignature Nothing expr = return expr
 interpretTypeSignature (Just st) expr = do
     at <- interpretType st
@@ -261,15 +271,16 @@ interpretBindings sbinds = do
     qbinds <- for sbinds interpretBinding
     return $ mconcat qbinds
 
-interpretTopDeclarations :: SyntaxTopDeclarations -> PinaforeScoped (WMFunction PinaforeScoped PinaforeScoped)
+interpretTopDeclarations ::
+       SyntaxTopDeclarations -> PinaforeInterpreter (WMFunction PinaforeInterpreter PinaforeInterpreter)
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) = do
     MkWMFunction f <- runSourcePos spos $ interpretDeclarations sdecls
     return $ MkWMFunction $ \a -> runRefNotation spos $ f $ liftRefNotation a
 
-interpretTopExpression :: SyntaxExpression -> PinaforeScoped QExpr
+interpretTopExpression :: SyntaxExpression -> PinaforeInterpreter QExpr
 interpretTopExpression sexpr@(MkWithSourcePos spos _) = runRefNotation spos $ interpretExpression sexpr
 
-interpretModule :: SyntaxModule -> PinaforeScoped PinaforeScope
+interpretModule :: SyntaxModule -> PinaforeInterpreter PinaforeScope
 interpretModule (MkWithSourcePos spos (SMLet sdecls smod)) = do
     MkWMFunction bmap <- runSourcePos spos $ interpretDeclarations sdecls
     runRefNotation spos $ bmap $ liftRefNotation $ interpretModule smod
