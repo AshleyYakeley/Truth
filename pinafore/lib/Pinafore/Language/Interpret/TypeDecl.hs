@@ -158,7 +158,18 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
 interpretTypeDeclaration name _ (DynamicEntitySyntaxTypeDeclaration stcons) =
     MkTypeBox name DynamicEntityBoundType $ do
         dt <- for stcons intepretSyntaxDynamicEntityConstructor
-        return (setFromList $ mconcat $ toList dt, id)
+        let
+            dts = setFromList $ mconcat $ toList dt
+            tp = EntityPinaforeGroundType NilListType (ADynamicEntityGroundType name dts)
+        return $
+            (,) dts $
+            MkWMFunction $
+            withSubtypeConversions $
+            pure $
+            MkSubypeConversionEntry tp $ \case
+                EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dts')
+                    | isSubsetOf dts' dts -> Just idSubtypeConversion
+                _ -> Nothing
 
 checkDynamicTypeCycles :: [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceInterpreter ()
 checkDynamicTypeCycles decls = let

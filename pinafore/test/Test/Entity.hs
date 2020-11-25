@@ -457,6 +457,13 @@ testEntity =
                   , pointTest $ "let f : [" <> p <> "] -> [" <> q <> "]; f x = x in pass"
                   , badInterpretTest $ "let f : " <> q <> " -> " <> p <> "; f x = x in pass"
                   ]
+              equivalentTests p q =
+                  [ pointTest "pass"
+                  , pointTest $ "let f : " <> p <> " -> " <> q <> "; f x = x in pass"
+                  , pointTest $ "let f : [" <> p <> "] -> [" <> q <> "]; f x = x in pass"
+                  , pointTest $ "let f : " <> q <> " -> " <> p <> "; f x = x in pass"
+                  , pointTest $ "let f : [" <> q <> "] -> [" <> p <> "]; f x = x in pass"
+                  ]
               in tgroup
                      "subtype"
                      [ tgroup
@@ -550,6 +557,25 @@ testEntity =
                          tgroup "2" $ subtypeTests "P1" "Q"
                        , context ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
                          tgroup "3" $ subtypeTests "P1" "Q"
+                       , context
+                             [ "opentype T"
+                             , "subtype QA <: T"
+                             , "dynamictype QA = P1 | P2 | P3"
+                             , "dynamictype QB = P2 | P3 | P1"
+                             , "dynamictype QC = P2 | P3"
+                             , "dynamictype P1 = !\"P1\""
+                             , "dynamictype P2 = !\"P2\""
+                             , "dynamictype P3 = !\"P3\""
+                             ] $
+                         tgroup
+                             "open-transitive"
+                             [ tgroup "QC <: QB" $ subtypeTests "QC" "QB"
+                             , tgroup "QA = QB" $ equivalentTests "QA" "QB"
+                             , tgroup "QA <: T" $ subtypeTests "QA" "T"
+                             , tgroup "QB <: T" $ subtypeTests "QB" "T"
+                             , tgroup "QC <: T" $ subtypeTests "QC" "T"
+                             , tgroup "P1 <: T" $ subtypeTests "P1" "T"
+                             ]
                        , tgroup
                              "cycle"
                              [ context ["dynamictype P = P"] $ badInterpretTest "pass"
