@@ -198,6 +198,41 @@ instance Eq subj => MeetSemiLatticeReadOnlyChangeLens (FiniteSetUpdate subj) whe
                     else [MkReadOnlyUpdate KeyUpdateClear]
         in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
+mapMaybeFiniteSetChangeLens ::
+       forall a b. (a -> Maybe b) -> (b -> a) -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate b)
+mapMaybeFiniteSetChangeLens amb ba = let
+    mapFiniteSetEdit :: forall p q. (p -> q) -> FiniteSetEdit p -> FiniteSetEdit q
+    mapFiniteSetEdit _ (KeyEditItem _ edit) = never edit
+    mapFiniteSetEdit pq (KeyEditDelete p) = KeyEditDelete $ pq p
+    mapFiniteSetEdit pq (KeyEditInsertReplace p) = KeyEditInsertReplace $ pq p
+    mapFiniteSetEdit _ KeyEditClear = KeyEditClear
+    clRead ::
+           forall m t. MonadIO m
+        => Readable m (FiniteSetReader a)
+        -> FiniteSetReader b t
+        -> m t
+    clRead mra KeyReadKeys = fmap (mapMaybe amb) $ mra KeyReadKeys
+    clRead mra (KeyReadItem b ReadWhole) = fmap (mapMaybe amb) $ mra $ KeyReadItem (ba b) ReadWhole
+    clUpdate ::
+           forall m. MonadIO m
+        => FiniteSetUpdate a
+        -> Readable m (FiniteSetReader a)
+        -> m [FiniteSetUpdate b]
+    clUpdate (KeyUpdateItem _ update) _ = never update
+    clUpdate (KeyUpdateDelete a) _
+        | Just b <- amb a = return $ pure $ KeyUpdateDelete b
+    clUpdate (KeyUpdateInsertReplace a) _
+        | Just b <- amb a = return $ pure $ KeyUpdateInsertReplace b
+    clUpdate KeyUpdateClear _ = return $ pure KeyUpdateClear
+    clUpdate _ _ = return []
+    clPutEdits ::
+           forall m. MonadIO m
+        => [FiniteSetEdit b]
+        -> Readable m (FiniteSetReader a)
+        -> m (Maybe [FiniteSetEdit a])
+    clPutEdits ebs _ = return $ Just $ fmap (mapFiniteSetEdit ba) ebs
+    in MkChangeLens {..}
+
 bijectionFiniteSetChangeLens :: forall a b. Bijection a b -> ChangeLens (FiniteSetUpdate a) (FiniteSetUpdate b)
 bijectionFiniteSetChangeLens (MkIsomorphism ab ba) = let
     mapFiniteSetUpdate :: forall p q. (p -> q) -> FiniteSetUpdate p -> FiniteSetUpdate q

@@ -29,6 +29,17 @@ langFiniteSetRefValue (MkLangFiniteSetRef tr lv) =
 valueLangFiniteSetRef :: Eq q => WModel (FiniteSetUpdate q) -> LangFiniteSetRef '( q, q)
 valueLangFiniteSetRef lv = MkLangFiniteSetRef identityRange lv
 
+langFiniteSetMaybeMap ::
+       forall ap aq b. (aq -> Maybe b) -> LangFiniteSetRef '( ap, aq) -> LangFiniteSetRef '( MeetType ap b, b)
+langFiniteSetMaybeMap f (MkLangFiniteSetRef (tr :: _ t _) lv) = let
+    tr' :: Range (PinaforePolyShim Type) (MeetType t b) '( MeetType ap b, b)
+    tr' = MkRange (iMeetPair (rangeContra tr) cid) meet2
+    amb :: t -> Maybe (MeetType t b)
+    amb t = do
+        b <- f $ shimToFunction (rangeCo tr) t
+        return $ BothMeetType t b
+    in MkLangFiniteSetRef tr' $ eaMap (mapMaybeFiniteSetChangeLens amb meet1) lv
+
 langFiniteSetRefMeetValue :: LangFiniteSetRef '( t, MeetType Entity t) -> WModel (FiniteSetUpdate (MeetType Entity t))
 langFiniteSetRefMeetValue (MkLangFiniteSetRef tr lv) =
     langFiniteSetRefValue $ MkLangFiniteSetRef (contraMapRange meet2 tr) lv

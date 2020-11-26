@@ -658,6 +658,8 @@ base_predefinitions =
                       "contraMapFiniteSet"
                       "Map a function on setting to and testing a finite set."
                       (contraRangeLift :: (B -> A) -> LangFiniteSetRef '( A, C) -> LangFiniteSetRef '( B, C))
+                , mkValEntry "maybeMapFiniteSet" "Map and filter a function on a finite set." $
+                  langFiniteSetMaybeMap @AP @AQ @B
                 , mkValEntry "<:&>" "Intersect a finite set with any set. The resulting finite set will be read-only." $
                   langFiniteSetRefSetIntersect @A @B
                 , mkValEntry
