@@ -92,24 +92,39 @@ PACKAGEVERSION := 0.2
 PACKAGEREVISION := 1
 PACKAGEFULLNAME := $(PACKAGENAME)_$(PACKAGEVERSION)-$(PACKAGEREVISION)
 PACKAGEDIR := .build/deb/$(PACKAGEFULLNAME)
+DEBIANREL := buster
 
-.build/deb/$(PACKAGEFULLNAME).deb: ${BINPATH}/pinafore deb/control.m4
+.build/deb/$(PACKAGEFULLNAME).deb: ${BINPATH}/pinafore deb/copyright deb/control.m4 deb/changelog.m4
 	rm -rf $(PACKAGEDIR)
 	mkdir -p $(PACKAGEDIR)/usr/bin
 	cp ${BINPATH}/pinafore $(PACKAGEDIR)/usr/bin/
 	mkdir -p $(PACKAGEDIR)/usr/share/doc/pinafore
 	cp deb/copyright $(PACKAGEDIR)/usr/share/doc/pinafore/
+	stack $(STACKFLAGS) exec -- \
+		m4 \
+		-D PACKAGENAME="$(PACKAGENAME)" \
+		-D PACKAGEVERSION="$(PACKAGEVERSION)" \
+		-D PACKAGEREVISION="$(PACKAGEREVISION)" \
+		-D DEBIANREL="$(DEBIANREL)" \
+		-D RELEASEDATE="$$(date -R)" \
+		deb/changelog.m4 | gzip -9 > $(PACKAGEDIR)/usr/share/doc/pinafore/changelog.Debian.gz
 	mkdir -p $(PACKAGEDIR)/usr/share/bash-completion/completions/
 	$< --bash-completion-script /usr/bin/pinafore > $(PACKAGEDIR)/usr/share/bash-completion/completions/pinafore
 	mkdir -p $(PACKAGEDIR)/DEBIAN
-	stack $(STACKFLAGS) exec -- m4 -D PACKAGENAME="$(PACKAGENAME)" -D PACKAGEVERSION="$(PACKAGEVERSION)" -D PACKAGEREVISION="$(PACKAGEREVISION)" deb/control.m4 > $(PACKAGEDIR)/DEBIAN/control
+	stack $(STACKFLAGS) exec -- \
+		m4 \
+		-D PACKAGENAME="$(PACKAGENAME)" \
+		-D PACKAGEVERSION="$(PACKAGEVERSION)" \
+		-D PACKAGEREVISION="$(PACKAGEREVISION)" \
+		deb/control.m4 > $(PACKAGEDIR)/DEBIAN/control
 	chmod -R g-w $(PACKAGEDIR)
 	stack $(STACKFLAGS) exec --cwd .build/deb -- dpkg-deb --root-owner-group --build $(PACKAGEFULLNAME)
 	stack $(STACKFLAGS) exec -- lintian --fail-on-warnings --suppress-tags-from-file deb/lintian-ignore .build/deb/$(PACKAGEFULLNAME).deb
 
 out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest out
 	install -m 755 deb/installtest .build/deb/
-	docker run --rm -v `pwd`/.build/deb:/home -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -it bitnami/minideb:latest /home/installtest `id -u`
+	install -m 755 deb/checkscript .build/deb/
+	docker run --rm -v `pwd`/.build/deb:/home -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -it bitnami/minideb:$(DEBIANREL) /home/installtest $(PACKAGEFULLNAME).deb `id -u`
 	cp $< $@
 
 .PHONY: deb

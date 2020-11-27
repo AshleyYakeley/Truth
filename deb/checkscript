@@ -1,0 +1,5 @@
+#!/usr/bin/pinafore
+do
+w <- openWindow {"Test"} {[]} uiBlank;
+closeWindow w;
+end
