@@ -1,4 +1,4 @@
-module Pinafore.Language.Predefined.Base
+module Pinafore.Language.Library.Predefined.Base
     ( base_predefinitions
     , outputLn
     ) where
@@ -12,8 +12,8 @@ import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.If
+import Pinafore.Language.Library.Defs
 import Pinafore.Language.Name
-import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var

@@ -41,8 +41,8 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret
+import Pinafore.Language.Library
 import Pinafore.Language.Name
-import Pinafore.Language.Predefined
 import Pinafore.Language.Read
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Type
@@ -54,6 +54,8 @@ runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeInterpreter a -> 
 runPinaforeScoped scp = runInterpreter loadModule spvals $ importScope predefinedScope scp
 
 loadModule :: (?pinafore :: PinaforeContext) => ModuleName -> PinaforeInterpreter (Maybe PinaforeScope)
+loadModule mname
+    | Just scope <- stdLibraryScope mname = return $ Just scope
 loadModule mname = do
     mrr <- liftIO $ pinaforeFetchModuleText mname
     case mrr of

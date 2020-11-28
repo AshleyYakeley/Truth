@@ -1,4 +1,4 @@
-module Pinafore.Language.Predefined.UI
+module Pinafore.Language.Library.Predefined.UI
     ( ui_predefinitions
     ) where
 
@@ -9,7 +9,7 @@ import Data.Time
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.DocTree
-import Pinafore.Language.Predefined.Defs
+import Pinafore.Language.Library.Defs
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes

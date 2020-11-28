@@ -1,4 +1,4 @@
-module Pinafore.Language.Predefined.Defs where
+module Pinafore.Language.Library.Defs where
 
 import Pinafore.Base
 import Pinafore.Context
@@ -84,12 +84,3 @@ mkSpecialFormEntry name docDescription params docValueType sf = let
     docIsPattern = False
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
-
-docTreeScope :: (?pinafore :: PinaforeContext) => DocTree BindDoc -> PinaforeScope
-docTreeScope dt = let
-    bindDocBinding :: BindDoc -> Maybe (Name, PinaforeBinding)
-    bindDocBinding doc = do
-        (name, mb) <- bdBind doc
-        b <- mb
-        return (name, b ?pinafore)
-    in bindingsScope $ mapFromList $ mapMaybe bindDocBinding $ toList dt

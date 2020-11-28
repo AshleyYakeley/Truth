@@ -2,6 +2,8 @@
 
 let
 
+import Debug;
+
 opentype Named;
 name = property @Named @Text !"identify.name";
 byName: FiniteSetRef {+a,+Named} -> WholeRef +[(a,Text)];
@@ -37,5 +39,6 @@ in do
             #return $ uiLabel {"Set Text"};
             end) selection
         ;
+    debugMessage "MARK";
     openWindow {"Test"} {[]} $ contactsTableUI legalentities (Just selection);
     end

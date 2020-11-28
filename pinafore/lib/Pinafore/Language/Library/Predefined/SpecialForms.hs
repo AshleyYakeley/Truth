@@ -1,12 +1,12 @@
-module Pinafore.Language.Predefined.SpecialForms
+module Pinafore.Language.Library.Predefined.SpecialForms
     ( special_forms
     ) where
 
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Interpret
+import Pinafore.Language.Library.Defs
 import Pinafore.Language.Name
-import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value

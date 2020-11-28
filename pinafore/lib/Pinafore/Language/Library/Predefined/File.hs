@@ -1,9 +1,9 @@
-module Pinafore.Language.Predefined.File
+module Pinafore.Language.Library.Predefined.File
     ( file_predefinitions
     ) where
 
 import Pinafore.Language.DocTree
-import Pinafore.Language.Predefined.Defs
+import Pinafore.Language.Library.Defs
 
 --import Changes.World.File
 {-
