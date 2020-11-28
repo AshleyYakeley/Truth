@@ -2,6 +2,7 @@ module Pinafore.Language.Library.Debug
     ( debugDocModule
     ) where
 
+import Changes.UI.GTK
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Value
@@ -11,7 +12,7 @@ debugMessage :: Text -> IO ()
 debugMessage _ = return ()
 
 debugWindowInfo :: LangWindow -> IO Text
-debugWindowInfo _ = return "NYI"
+debugWindowInfo w = uiWindowDebugDescribe $ pwWindow w
 
 debugDocModule :: DocTree BindDoc
 debugDocModule =

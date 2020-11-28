@@ -22,7 +22,27 @@ data WindowSpec = MkWindowSpec
 data UIWindow = MkUIWindow
     { uiWindowHide :: View ()
     , uiWindowShow :: View ()
+    , uiWindowDebugDescribe :: IO Text
     }
+
+getWidgetChildren :: Widget -> IO (Maybe [Widget])
+getWidgetChildren w = do
+    mcont <- castTo Container w
+    case mcont of
+        Nothing -> return Nothing
+        Just cont -> do
+            cc <- #getChildren cont
+            return $ Just cc
+
+widgetInfoText :: Widget -> IO Text
+widgetInfoText w = do
+    tn <- getObjectTypeName w
+    mww <- getWidgetChildren w
+    case mww of
+        Nothing -> return tn
+        Just ww -> do
+            tt <- for ww widgetInfoText
+            return $ tn <> " (" <> intercalate ", " tt <> ")"
 
 createWindow :: WindowSpec -> CreateView UIWindow
 createWindow MkWindowSpec {..} = do
@@ -54,4 +74,7 @@ createWindow MkWindowSpec {..} = do
     let
         uiWindowHide = #hide window
         uiWindowShow = #show window
+        uiWindowDebugDescribe = do
+            w <- toWidget window
+            widgetInfoText w
     return $ MkUIWindow {..}

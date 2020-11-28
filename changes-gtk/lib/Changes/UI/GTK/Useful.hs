@@ -1,5 +1,5 @@
 module Changes.UI.GTK.Useful
-    ( cvGetObjectTypeName
+    ( getObjectTypeName
     , widgetGetTree
     , withSignalBlocked
     , withSignalsBlocked
@@ -142,11 +142,10 @@ cvAcquire a = do
     _ <- objectRef a
     lifeCycleClose $ objectUnref a
 
-cvGetObjectTypeName :: IsObject a => a -> CreateView String
-cvGetObjectTypeName a = do
-    objtype <- liftIO $ gtypeFromInstance a
-    tname <- typeName objtype
-    return $ unpack tname
+getObjectTypeName :: IsObject a => a -> IO Text
+getObjectTypeName a = do
+    objtype <- gtypeFromInstance a
+    typeName objtype
 
 cvNew :: (Constructible a tag, IsObject a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> CreateView a
 cvNew cc attrs = do

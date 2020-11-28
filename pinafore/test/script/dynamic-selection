@@ -28,17 +28,26 @@ inform t mv = outputLn $ t <> ": " <> case mv of
     Nothing -> "deleted";
     end;
 
+showWindow: Window -> Action ();
+showWindow window = do
+    t <- debugWindowInfo window;
+    outputLn t;
+    end;
+
 in do
     selection <- newMemWhole;
     subscribeWhole selection $ inform "sel";
     selection := testpt;
-    openWindow {"Test"} {[]} $
+    window <- openWindow {"Test"} {[]} $
         uiDynamic $ coMapWhole (\e -> uiRun $ do
             inform "dynamic" $ Just e;
             return $ uiVertical [(True,uiLabel {"Set Text"})];
             #return $ uiLabel {"Set Text"};
             end) selection
         ;
-    debugMessage "MARK";
+    showWindow window;
+    debugMessage "MARK:START";
     openWindow {"Test"} {[]} $ contactsTableUI legalentities (Just selection);
+    debugMessage "MARK:END";
+    showWindow window;
     end
