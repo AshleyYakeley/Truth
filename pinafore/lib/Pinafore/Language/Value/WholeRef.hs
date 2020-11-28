@@ -3,6 +3,7 @@ module Pinafore.Language.Value.WholeRef where
 import Changes.Core
 import Data.Shim
 import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language.Value.Instances ()
 import Shapes
 
@@ -51,6 +52,14 @@ langWholeRefGet ref = do
 langWholeRefSet :: forall p. LangWholeRef '( p, TopType) -> Know p -> PinaforeAction ()
 langWholeRefSet (MutableLangWholeRef sr) mp = pinaforeRefPushAction sr $ pure $ MkBiWholeEdit mp
 langWholeRefSet (ImmutableLangWholeRef _) _ = empty
+
+langWholeRefSubscribe ::
+       forall a. (?pinafore :: PinaforeContext)
+    => PinaforeImmutableWholeRef a
+    -> (Maybe a -> PinaforeAction ())
+    -> PinaforeAction ()
+langWholeRefSubscribe (MkPinaforeImmutableWholeRef (MkWModel ref)) update =
+    createViewPinaforeAction $ cvBindReadOnlyWholeModel ref (\ka -> runPinaforeAction $ update $ knowToMaybe ka)
 
 maybeLensLangWholeRef ::
        forall ap aq bp bq.

@@ -610,6 +610,8 @@ base_predefinitions =
                   langWholeRefGet @A
                 , mkValEntry ":=" "Set a whole reference to a value. Stop if failed." setentity
                 , mkValEntry "delete" "Delete a whole reference (i.e., make unknown). Stop if failed." deleteentity
+                , mkValEntry "subscribeWhole" "Do an action initially and on every update, until closed." $
+                  langWholeRefSubscribe @A
                 , mkValEntry "newMemWhole" "Create a new whole reference to memory, initially unknown." newMemWhole
                 ]
           , docTreeEntry
