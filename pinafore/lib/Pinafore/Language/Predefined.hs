@@ -3,14 +3,13 @@ module Pinafore.Language.Predefined
     , DefDoc(..)
     , DocTree(..)
     , runDocTree
-    , predefinedBindings
+    , predefinedScope
     , predefinedDoc
     , outputLn
     ) where
 
 import Pinafore.Context
 import Pinafore.Language.DocTree
-import Pinafore.Language.Name
 import Pinafore.Language.Predefined.Base
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Predefined.File
@@ -27,11 +26,5 @@ predefinitions =
 predefinedDoc :: DocTree DefDoc
 predefinedDoc = fmap bdDoc $ predefinitions
 
-bindDocBinding :: (?pinafore :: PinaforeContext) => BindDoc -> Maybe (Name, PinaforeBinding)
-bindDocBinding doc = do
-    (name, mb) <- bdBind doc
-    b <- mb
-    return (name, b ?pinafore)
-
-predefinedBindings :: (?pinafore :: PinaforeContext) => Map Name PinaforeBinding
-predefinedBindings = mapFromList $ catMaybes $ toList $ fmap bindDocBinding predefinitions
+predefinedScope :: (?pinafore :: PinaforeContext) => PinaforeScope
+predefinedScope = docTreeScope predefinitions

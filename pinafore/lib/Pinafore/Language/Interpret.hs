@@ -6,7 +6,9 @@ module Pinafore.Language.Interpret
     , monoEntityToNegativePinaforeType
     , runInterpreter
     , InterpreterBinding(..)
-    , withNewBindings
+    , importScope
+    , bindingsScope
+    , getSubtypesScope
     , SpecialVals(..)
     , getSpecialVals
     , askSourcePos
