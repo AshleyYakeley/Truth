@@ -4,8 +4,10 @@
 module Language.Expression.Dolan.Subsume
     ( DolanSubsumer
     , subtypeSingularType
+    , invertType
     ) where
 
+import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
@@ -27,7 +29,7 @@ minimalPositiveSupertypeSingular ::
 minimalPositiveSupertypeSingular (VarDolanSingularType v) = Just $ varDolanShimWit v
 minimalPositiveSupertypeSingular (GroundDolanSingularType gt args) = do
     MkShimWit args' conv <-
-        mapInvertDolanArgumentsM limitInvertType (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args
+        mapInvertDolanArgumentsM invertTypeMaybe (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args
     return $ singleDolanShimWit $ MkShimWit (GroundDolanSingularType gt args') conv
 minimalPositiveSupertypeSingular (RecursiveDolanSingularType var t) = do
     t' <- minimalPositiveSupertype t
@@ -49,7 +51,7 @@ maximalNegativeSubtypeSingular ::
 maximalNegativeSubtypeSingular (VarDolanSingularType v) = Just $ varDolanShimWit v
 maximalNegativeSubtypeSingular (GroundDolanSingularType gt args) = do
     MkShimWit args' conv <-
-        mapInvertDolanArgumentsM limitInvertType (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args
+        mapInvertDolanArgumentsM invertTypeMaybe (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args
     return $ singleDolanShimWit $ MkShimWit (GroundDolanSingularType gt args') conv
 maximalNegativeSubtypeSingular (RecursiveDolanSingularType var t) = do
     t' <- maximalNegativeSubtype t
@@ -64,11 +66,11 @@ maximalNegativeSubtype (ConsDolanType t NilDolanType) = do
     return $ cfmap @_ @_ @(DolanPolyShim ground Type) join1 tf
 maximalNegativeSubtype _ = Nothing
 
-limitInvertType ::
+invertTypeMaybe ::
        forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity a
     -> Maybe (DolanShimWit ground (InvertPolarity polarity) a)
-limitInvertType =
+invertTypeMaybe =
     case polarityType @polarity of
         PositiveType -> maximalNegativeSubtype @ground
         NegativeType -> minimalPositiveSupertype @ground
@@ -86,18 +88,24 @@ type SubsumerM ground = Result (SubsumerError ground)
 runSubsumerM ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
     => SubsumerM ground a
-    -> DolanTypeCheckM ground a
+    -> DolanM ground a
 runSubsumerM (SuccessResult a) = return a
-runSubsumerM (FailureResult (UninvertibleError t)) = liftTypeCheck $ throwTypeNotInvertible t
+runSubsumerM (FailureResult (UninvertibleError t)) = throwTypeNotInvertible t
 
-limitInvertType' ::
+invertTypeM ::
        forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity a
     -> SubsumerM ground (DolanShimWit ground (InvertPolarity polarity) a)
-limitInvertType' t =
-    case limitInvertType t of
+invertTypeM t =
+    case invertTypeMaybe t of
         Just r -> return r
         Nothing -> FailureResult (UninvertibleError t)
+
+invertType ::
+       forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
+    => DolanType ground polarity a
+    -> DolanM ground (DolanShimWit ground (InvertPolarity polarity) a)
+invertType t = runSubsumerM $ invertTypeM t
 
 -- Kind of the dual of 'BisubstitutionWitness'.
 type SubsumeWitness :: GroundTypeKind -> Type -> Type
@@ -140,8 +148,8 @@ subsumeGroundSingularType ::
 subsumeGroundSingularType _gtinf _targsinf (VarDolanSingularType _vdecl) = empty
 subsumeGroundSingularType gtinf targsinf (GroundDolanSingularType gtdecl targsdecl) =
     case polarityType @polarity of
-        PositiveType -> fmap MkPolarMap $ subtypeGroundTypes solverLiftM subsumeContext gtinf targsinf gtdecl targsdecl
-        NegativeType -> fmap MkPolarMap $ subtypeGroundTypes solverLiftM subsumeContext gtdecl targsdecl gtinf targsinf
+        PositiveType -> fmap MkPolarMap $ subtypeGroundTypes subsumeContext gtinf targsinf gtdecl targsdecl
+        NegativeType -> fmap MkPolarMap $ subtypeGroundTypes subsumeContext gtdecl targsdecl gtinf targsinf
 subsumeGroundSingularType gtinf targsinf tdecl@(RecursiveDolanSingularType _ _) =
     subsumeRecursiveType
         (singularRecursiveOrPlainType $ GroundDolanSingularType gtinf targsinf)
@@ -179,7 +187,7 @@ subsumeSingularType ::
 subsumeSingularType (VarDolanSingularType vinf) tdecl =
     solverLiftExpression $ varExpression $ MkSubsumeWitness vinf tdecl
 subsumeSingularType tinf@(GroundDolanSingularType ginf argsinf) tdecl =
-    subsumeGroundType ginf argsinf tdecl <|> (solverLiftM $ throwTypeSubsumeError tinf tdecl)
+    subsumeGroundType ginf argsinf tdecl <|> (wlift $ lift $ throwTypeSubsumeError tinf tdecl)
 subsumeSingularType tinf@(RecursiveDolanSingularType _ _) tdecl =
     subsumeRecursiveType (singularRecursiveOrPlainType tinf) (mkShimWit $ PlainType tdecl)
 
@@ -289,11 +297,11 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
                             (return $
                              singleDolanShimWit $ MkShimWit (VarDolanSingularType newvar) $ uninvertPolarMap polar1)
                             (do
-                                 tq <- limitInvertType' tp
+                                 tq <- invertTypeM tp
                                  return $ joinMeetShimWit (varDolanShimWit newvar) tq)
                 expr' <- runSolver $ invertSubstitute (MkInvertSubstitution oldvar newvar tp cid) expr
                 (expr'', bisubs) <-
                     solveSubsumer @(DolanTypeSystem ground) $ fmap (\fa -> fa $ uninvertPolarMap polar2) expr'
                 return (expr'', bisub : bisubs)
-    subsumerNegSubstitute subs t = runSubsumerM $ bisubstitutesType subs t
+    subsumerNegSubstitute subs t = liftTypeCheck $ runSubsumerM $ bisubstitutesType subs t
     subsumePosWitnesses tinf tdecl = fmap (fmap unPolarMap) $ runSolver $ subsumeType tinf tdecl

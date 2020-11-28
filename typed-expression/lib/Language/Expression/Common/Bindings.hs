@@ -5,7 +5,6 @@ module Language.Expression.Common.Bindings
     , singleBinding
     , bindingsNames
     , bindingsComponentLetSealedExpression
-    , valuesLetSealedExpression
     ) where
 
 import Data.Shim.JoinMeet
@@ -97,12 +96,6 @@ bindingsComponentLetSealedExpression (MkBindings bindings) =
         bound <- mkBound bindings
         bindings' <- boundToBindings bound
         return $ bindingsMap bindings'
-
-valuesLetSealedExpression ::
-       forall ts. UnifyTypeSystem ts
-    => Map (TSName ts) (AnyValue (TSPosShimWit ts))
-    -> Map (TSName ts) (TSSealedExpression ts)
-valuesLetSealedExpression = fmap constSealedExpression
 
 bindingsNames :: Bindings ts -> [TSName ts]
 bindingsNames (MkBindings bb) = fmap (\(MkBinding name _) -> name) bb

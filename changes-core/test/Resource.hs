@@ -4,8 +4,7 @@ module Resource
 
 import Changes.Core
 import Shapes
-import Test.Tasty
-import Test.Tasty.HUnit
+import Shapes.Test
 import Test.Useful
 
 data AThing (tt :: [TransKind]) =
@@ -48,7 +47,7 @@ simpleThing name = do
 
 testIOWitness :: TestTree
 testIOWitness =
-    testCase "iowitness" $ do
+    testTree "iowitness" $ do
         a <- newIOWitness
         case testEquality a a of
             Just Refl -> return ()
@@ -56,7 +55,7 @@ testIOWitness =
 
 testUnlift :: TestTree
 testUnlift =
-    testCase "unlift" $ do
+    testTree "unlift" $ do
         var <- newMVar ()
         mVarRun var $ liftWithUnlift $ \unlift -> unlift $ return ()
 
@@ -201,7 +200,7 @@ testABBC =
 
 testResource :: TestTree
 testResource =
-    testGroup
+    testTree
         "resource"
         [ testIOWitness
         , testUnlift

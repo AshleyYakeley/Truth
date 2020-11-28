@@ -3,8 +3,8 @@ module Pinafore.Base.Number
     , showDecimalRational
     , numberToDouble
     , safeRationalToNumber
-    , checkExactSafeRational
-    , safeRationalInteger
+    , numberCheckSafeRational
+    , safeRationalCheckInteger
     , approximate
     , numberIsNaN
     , numberIsInfinite
@@ -47,16 +47,16 @@ safeRationalToNumber :: SafeRational -> Number
 safeRationalToNumber (SRNumber n) = ExactNumber n
 safeRationalToNumber SRNaN = InexactNumber $ 0 / 0
 
-checkExactSafeRational :: Number -> Maybe SafeRational
-checkExactSafeRational (ExactNumber n) = Just $ SRNumber n
-checkExactSafeRational (InexactNumber n)
+numberCheckSafeRational :: Number -> Maybe SafeRational
+numberCheckSafeRational (ExactNumber n) = Just $ SRNumber n
+numberCheckSafeRational (InexactNumber n)
     | isNaN n = Just $ SRNaN
-checkExactSafeRational _ = Nothing
+numberCheckSafeRational _ = Nothing
 
-safeRationalInteger :: SafeRational -> Maybe Integer
-safeRationalInteger (SRNumber r)
+safeRationalCheckInteger :: SafeRational -> Maybe Integer
+safeRationalCheckInteger (SRNumber r)
     | denominator r == 1 = Just $ numerator r
-safeRationalInteger _ = Nothing
+safeRationalCheckInteger _ = Nothing
 
 approximate :: Rational -> Number -> Rational
 approximate res n = res * toRational (round (n / fromRational res) :: Integer)

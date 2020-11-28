@@ -1,0 +1,41 @@
+#!/usr/bin/pinafore
+
+let
+
+opentype Named;
+name = property @Named @Text !"identify.name";
+byName: FiniteSetRef {+a,+Named} -> WholeRef +[(a,Text)];
+byName ref = members (mapRefOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ ref;
+
+dynamictype Person = !"type.person";
+dynamictype Organisation = !"type.organisation";
+dynamictype LegalEntity = Person | Organisation;
+subtype LegalEntity <: Named;
+legalentities: FiniteSetRef LegalEntity;
+legalentities = property @LegalEntity @() !"type.legalentity" !@ {()};
+
+# a table for a given finite set of people
+contactsTableUI: FiniteSetRef LegalEntity -> Maybe (WholeRef LegalEntity) -> UI;
+contactsTableUI pp mselection = uiListTable [({"Name"},\p -> name !$ {p})] (refOrderOn name alphabetical) pp (\_ -> return ()) mselection;
+
+testpt = dynamicEntity @Person !"testpt";
+
+inform: Text -> Maybe Entity -> Action ();
+inform t mv = outputLn $ t <> ": " <> case mv of
+    Just v -> "changed: " <> entityAnchor v;
+    Nothing -> "deleted";
+    end;
+
+in do
+    selection <- newMemWhole;
+    subscribeWhole selection $ inform "sel";
+    selection := testpt;
+    openWindow {"Test"} {[]} $
+        uiDynamic $ coMapWhole (\e -> uiRun $ do
+            inform "dynamic" $ Just e;
+            return $ uiVertical [(True,uiLabel {"Set Text"})];
+            #return $ uiLabel {"Set Text"};
+            end) selection
+        ;
+    openWindow {"Test"} {[]} $ contactsTableUI legalentities (Just selection);
+    end

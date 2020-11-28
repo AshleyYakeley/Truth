@@ -1,5 +1,5 @@
 name: typed-expression
-version: "0.1"
+version: "0.2"
 _common: !include "../common.yaml"
 <<: *author
 
@@ -17,6 +17,7 @@ library:
       - Language.Expression.Dolan
       - Language.Expression.Dolan.Test
     other-modules:
+      - Control.Applicative.Wrapped
       - Data.Shim.PolyMap
       - Data.Shim.ComposeShim
       - Data.Shim.Polarity
@@ -81,7 +82,7 @@ library:
       - Language.Expression.Dolan.Inverted
       - Language.Expression.Dolan.Subsume
       - Language.Expression.Dolan.Nonpolar
-      - Language.Expression.Dolan.Concrete
+      - Language.Expression.Dolan.Mono
 
 tests:
     test:
@@ -90,9 +91,6 @@ tests:
           - base >= 4.12
           - shapes
           - typed-expression
-          - tasty
-          - tasty-expected-failure
-          - tasty-hunit
         main: Main.hs
         other-modules:
           - Shim

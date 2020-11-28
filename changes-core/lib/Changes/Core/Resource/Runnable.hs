@@ -68,7 +68,7 @@ runResourceContext ::
     -> m r
 runResourceContext rc (MkResource rr ftt) call = runResourceRunnerContext rc rr $ \rc' run -> call rc' run ftt
 
-exclusiveResource :: MapResource f => ResourceContext -> Resource f -> LifeCycleIO (Resource f)
+exclusiveResource :: MapResource f => ResourceContext -> Resource f -> LifeCycle (Resource f)
 exclusiveResource rc (MkResource trun f) = do
     Dict <- return $ resourceRunnerUnliftAllDict trun
     trun' <- exclusiveResourceRunner rc trun

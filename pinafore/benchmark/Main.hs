@@ -27,14 +27,15 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullChangesContext runLifeCycle) $ \tpc -> let
+    env (fmap const $
+         getInnerLifeState $ makeTestPinaforeContext nullFetchModuleText (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc
                in bgroup
                       (show $ unpack text)
-                      [ bench "check" $ nfIO $ throwResult $ pinaforeInterpretFile "<test>" text >> return ()
-                      , env (fmap const $ throwResult $ pinaforeInterpretFile "<test>" text) $ \action ->
+                      [ bench "check" $ nfIO $ throwInterpretResult $ pinaforeInterpretText "<test>" text >> return ()
+                      , env (fmap const $ throwInterpretResult $ pinaforeInterpretText "<test>" text) $ \action ->
                             bench "run" $ nfIO (nullViewIO $ action ())
                       ]
 
@@ -90,17 +91,19 @@ benchScripts =
 
 interpretUpdater :: (?pinafore :: PinaforeContext) => Text -> IO ()
 interpretUpdater text =
-    withTestPinaforeContext $ \tc unlift _getTableState -> do
-        action <- throwResult $ pinaforeInterpretFileAtType "<test>" text
-        (sendUpdate, ref) <- tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
+    withTestPinaforeContext nullFetchModuleText stdout $ \tc unlift _getTableState -> do
+        action <- throwInterpretResult $ pinaforeInterpretTextAtType "<test>" text
+        (sendUpdate, ref) <-
+            tcUnliftLifeCycle tc $ tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
         unlift $
             runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $
-            tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
+            tcUnliftLifeCycle tc $ tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext $ nullChangesContext runLifeCycle) $ \tpc -> let
+    env (fmap const $
+         getInnerLifeState $ makeTestPinaforeContext nullFetchModuleText (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc

@@ -8,6 +8,7 @@ import Changes.World.Clock
 import Data.Time
 import Data.Time.Clock.System
 import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.If
@@ -25,11 +26,11 @@ getTimeMS = do
     MkSystemTime s ns <- getSystemTime
     return $ (toInteger s) * 1000 + div (toInteger ns) 1000000
 
-output :: Text -> PinaforeAction ()
-output text = liftIO $ putStr $ unpack text
+output :: (?pinafore :: PinaforeContext) => Text -> PinaforeAction ()
+output text = liftIO $ hPutStrLn pinaforeStdOut $ unpack text
 
-outputLn :: Text -> PinaforeAction ()
-outputLn text = liftIO $ putStrLn $ unpack text
+outputLn :: (?pinafore :: PinaforeContext) => Text -> PinaforeAction ()
+outputLn text = liftIO $ hPutStrLn pinaforeStdOut $ unpack text
 
 setentity :: LangWholeRef '( A, TopType) -> A -> PinaforeAction ()
 setentity ref val = langWholeRefSet ref (Known val)
@@ -49,14 +50,14 @@ onStop p q = p <|> q
 newMemWhole :: PinaforeAction (LangWholeRef '( A, A))
 newMemWhole = do
     r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
-    model <- pinaforeLiftLifeCycleIO $ makeReflectingModel r
+    model <- liftLifeCycle $ makeReflectingModel r
     uh <- pinaforeUndoHandler
     return $ pinaforeRefToWholeRef $ MkWModel $ undoHandlerModel uh model
 
 newMemFiniteSet :: PinaforeAction (LangFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
-    model <- pinaforeLiftLifeCycleIO $ makeReflectingModel $ convertReference r
+    model <- liftLifeCycle $ makeReflectingModel $ convertReference r
     uh <- pinaforeUndoHandler
     return $ meetValueLangFiniteSetRef $ MkWModel $ undoHandlerModel uh model
 
@@ -65,14 +66,14 @@ zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
 newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableWholeRef UTCTime)
 newClock duration = do
-    (clockOM, ()) <- pinaforeLiftLifeCycleIO $ makeSharedModel $ clockPremodel zeroTime duration
+    (clockOM, ()) <- liftLifeCycle $ makeSharedModel $ clockPremodel zeroTime duration
     return $ functionImmutableRef $ MkWModel $ clockOM
 
 newTimeZoneRef :: PinaforeImmutableWholeRef UTCTime -> PinaforeAction (PinaforeImmutableWholeRef Int)
 newTimeZoneRef now = do
     rc <- pinaforeResourceContext
     ref <-
-        pinaforeLiftLifeCycleIO $
+        liftLifeCycle $
         eaFloatMapReadOnly
             rc
             (floatLift (\mr ReadWhole -> fmap (fromKnow zeroTime) $ mr ReadWhole) liftROWChangeLens clockTimeZoneLens) $
@@ -160,6 +161,9 @@ unixFormattingDefs uname lname =
 
 getLocalTime :: IO LocalTime
 getLocalTime = fmap zonedTimeToLocalTime getZonedTime
+
+getEnv :: (?pinafore :: PinaforeContext) => Text -> Maybe Text
+getEnv n = fmap pack $ lookup (unpack n) $ iiEnvironment pinaforeInvocationInfo
 
 base_predefinitions :: [DocTreeEntry BindDoc]
 base_predefinitions =
@@ -326,13 +330,13 @@ base_predefinitions =
                   , mkValEntry "meanN" "Mean." $ \(vv :: [Number]) -> sum vv / (ExactNumber $ toRational $ length vv)
                   , mkValEntry "productN" "Product." $ product @[] @Number
                   , mkValEntry
-                        "checkExactSafeRational"
+                        "numberCheckSafeRational"
                         "Get the exact value of a Number, if it is one."
-                        checkExactSafeRational
+                        numberCheckSafeRational
                   , mkValEntry
                         "checkExactInteger"
                         "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
-                        checkExactSafeRational n >>= safeRationalInteger
+                        numberCheckSafeRational n >>= safeRationalCheckInteger
                   ]
                 ]
           , docTreeEntry
@@ -421,19 +425,18 @@ base_predefinitions =
                     _ -> Nothing
           , mkSupertypeEntry "id" "Entity conversion." $
             entityAdapterConvert $
-            concreteEntityAdapter $
-            MkConcreteType MaybeEntityGroundType $
-            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
+            monoEntityAdapter $
+            MkMonoType MaybeEntityGroundType $ ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
           ]
     , docTreeEntry
           "Pairs"
           ""
           [ mkSupertypeEntry "id" "Entity conversion." $
             entityAdapterConvert $
-            concreteEntityAdapter $
-            MkConcreteType PairEntityGroundType $
-            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) $
-            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
+            monoEntityAdapter $
+            MkMonoType PairEntityGroundType $
+            ConsArguments (MkMonoType TopEntityGroundType NilArguments) $
+            ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
           , mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
           , mkValEntry "toPair" "Construct a pair." $ (,) @A @B
@@ -452,10 +455,10 @@ base_predefinitions =
                     _ -> Nothing
           , mkSupertypeEntry "id" "Entity conversion." $
             entityAdapterConvert $
-            concreteEntityAdapter $
-            MkConcreteType EitherEntityGroundType $
-            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) $
-            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
+            monoEntityAdapter $
+            MkMonoType EitherEntityGroundType $
+            ConsArguments (MkMonoType TopEntityGroundType NilArguments) $
+            ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
           , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
           , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
                 case v of
@@ -465,7 +468,7 @@ base_predefinitions =
     , docTreeEntry
           "Lists"
           ""
-          [ mkPatEntry "[]" "Empty list" "[None]" $ \(v :: [A]) ->
+          [ mkValPatEntry "[]" "Empty list" ([] @BottomType) $ \(v :: [A]) ->
                 case v of
                     [] -> Just ()
                     _ -> Nothing
@@ -475,9 +478,8 @@ base_predefinitions =
                     _ -> Nothing
           , mkSupertypeEntry "id" "Entity conversion." $
             entityAdapterConvert $
-            concreteEntityAdapter $
-            MkConcreteType ListEntityGroundType $
-            ConsArguments (MkConcreteType TopEntityGroundType NilArguments) NilArguments
+            monoEntityAdapter $
+            MkMonoType ListEntityGroundType $ ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
           , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                 case l of
                     [] -> fnil
@@ -530,7 +532,26 @@ base_predefinitions =
                 "getTimeMS"
                 "Get the time as a whole number of milliseconds."
                 (liftIO getTimeMS :: PinaforeAction Integer)
+          , mkValEntry "lifecycle" "Close everything that gets opened in the given action." $
+            subLifeCycle @PinaforeAction @A
+          , mkValEntry "onClose" "Add this action as to be done when closing." pinaforeOnClose
+          , mkValEntry "closer" "Get an (idempotent) action that closes what gets opened in the given action." $
+            pinaforeEarlyCloser @A
           , mkValEntry "debugmsg" "Debug message (debug only)." (traceIOM . unpack :: Text -> PinaforeAction ())
+          ]
+    , docTreeEntry
+          "Invocation"
+          "How the script was invoked."
+          [ mkValEntry "scriptName" "The name of the script." (pack $ iiScriptName pinaforeInvocationInfo :: Text)
+          , mkValEntry
+                "scriptArguments"
+                "Arguments passed to the script."
+                (fmap pack $ iiScriptArguments pinaforeInvocationInfo :: [Text])
+          , mkValEntry
+                "environment"
+                "Environment variables."
+                (fmap (\(n, v) -> (pack n, pack v)) $ iiEnvironment pinaforeInvocationInfo :: [(Text, Text)])
+          , mkValEntry "getEnv" "Get environment variable." getEnv
           ]
     , docTreeEntry
           "Undo"
@@ -591,6 +612,8 @@ base_predefinitions =
                   langWholeRefGet @A
                 , mkValEntry ":=" "Set a whole reference to a value. Stop if failed." setentity
                 , mkValEntry "delete" "Delete a whole reference (i.e., make unknown). Stop if failed." deleteentity
+                , mkValEntry "subscribeWhole" "Do an action initially and on every update, until closed." $
+                  langWholeRefSubscribe @A
                 , mkValEntry "newMemWhole" "Create a new whole reference to memory, initially unknown." newMemWhole
                 ]
           , docTreeEntry
@@ -639,6 +662,8 @@ base_predefinitions =
                       "contraMapFiniteSet"
                       "Map a function on setting to and testing a finite set."
                       (contraRangeLift :: (B -> A) -> LangFiniteSetRef '( A, C) -> LangFiniteSetRef '( B, C))
+                , mkValEntry "maybeMapFiniteSet" "Map and filter a function on a finite set." $
+                  langFiniteSetMaybeMap @AP @AQ @B
                 , mkValEntry "<:&>" "Intersect a finite set with any set. The resulting finite set will be read-only." $
                   langFiniteSetRefSetIntersect @A @B
                 , mkValEntry

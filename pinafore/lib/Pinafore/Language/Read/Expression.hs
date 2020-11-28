@@ -1,8 +1,10 @@
 module Pinafore.Language.Read.Expression
     ( readExpression
+    , readModule
     , readTopDeclarations
     ) where
 
+import Pinafore.Language.Name
 import Pinafore.Language.Read.Constructor
 import Pinafore.Language.Read.Infix
 import Pinafore.Language.Read.Parser
@@ -52,8 +54,18 @@ readLines p =
          return $ a : fromMaybe [] ma) <|>
     (return [])
 
+readModuleName :: Parser ModuleName
+readModuleName = fmap MkModuleName $ readSeparated1 (readExactlyThis TokOperator ".") $ fmap pure $ readThis TokUName
+
+readImport :: Parser SyntaxDeclaration
+readImport = do
+    spos <- getPosition
+    readThis TokImport
+    mname <- readModuleName
+    return $ ImportSyntaxDeclarataion spos mname
+
 readDeclaration :: Parser SyntaxDeclaration
-readDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding
+readDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding <|> readImport
 
 readDeclarations :: Parser [SyntaxDeclaration]
 readDeclarations = readLines readDeclaration
@@ -72,9 +84,25 @@ readTopDeclarations = do
 readExpression :: Parser SyntaxExpression
 readExpression = readExpressionInfixed readExpression1
 
+readName :: Parser Name
+readName = readThis TokUName <|> readThis TokLName <|> (readParen $ readThis TokOperator)
+
+readModule :: Parser SyntaxModule
+readModule =
+    readSourcePos $
+    (do
+         sdecls <- readLetBindings
+         readThis TokIn
+         sbody <- readModule
+         return $ SMLet sdecls sbody) <|>
+    (do
+         readThis TokExport
+         names <- many readName
+         return $ SMExport names)
+
 readCase :: Parser SyntaxCase
 readCase = do
-    pat <- readPattern1
+    pat <- readPattern2
     readThis TokMap
     e <- readExpression
     return $ MkSyntaxCase pat e
@@ -90,7 +118,7 @@ data DoLine
 readDoLine :: Parser DoLine
 readDoLine =
     (try $ do
-         pat <- readPattern1
+         pat <- readPattern2
          readThis TokBackMap
          expr <- readExpression
          return $ BindDoLine pat expr) <|>
@@ -164,28 +192,30 @@ readExpression2 = do
     sargs <- many readExpression3
     return $ seApplys spos sfunc sargs
 
-readTypeAnnotation :: Parser SyntaxType
-readTypeAnnotation = do
-    readThis TokAt
-    readType3
+readAnnotation :: Parser SyntaxAnnotation
+readAnnotation =
+    (do
+         readThis TokAt
+         t <- readType3
+         return $ SAType t) <|>
+    (do
+         anchor <- readThis TokAnchor
+         return $ SAAnchor anchor)
 
 readExpression3 :: Parser SyntaxExpression
 readExpression3 =
     readSourcePos
         (do
              name <- readThis TokLName
-             return $ SEVar name) <|>
+             annotations <- many readAnnotation
+             return $
+                 case annotations of
+                     [] -> SEVar name
+                     (a:aa) -> SESpecialForm name $ a :| aa) <|>
     readSourcePos
         (do
              c <- readConstructor
              return $ SEConst $ SCConstructor c) <|>
-    readSourcePos
-        (do
-             readThis TokProperty
-             sta <- readTypeAnnotation
-             stb <- readTypeAnnotation
-             anchor <- readThis TokAnchor
-             return $ SEConst $ SCSpecialForm $ SSFProperty sta stb anchor) <|>
     readSourcePos
         (do
              rexpr <- readBracketed TokOpenBrace TokCloseBrace $ readExpression
@@ -195,22 +225,6 @@ readExpression3 =
              readThis TokUnref
              rexpr <- readExpression3
              return $ SEUnref rexpr) <|>
-    readSourcePos
-        (do
-             readThis TokOpenEntity
-             mt <- readTypeAnnotation
-             anchor <- readThis TokAnchor
-             return $ SEConst $ SCSpecialForm $ SSFOpenEntity mt anchor) <|>
-    readSourcePos
-        (do
-             readThis TokNewOpenEntity
-             mt <- readTypeAnnotation
-             return $ SEConst $ SCSpecialForm $ SSFNewOpenEntity mt) <|>
-    readSourcePos
-        (do
-             readThis TokEvaluate
-             mt <- readTypeAnnotation
-             return $ SEConst $ SCSpecialForm $ SSFEvaluate mt) <|>
     (readParen $
      readSourcePos
          (do

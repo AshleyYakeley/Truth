@@ -37,6 +37,9 @@ data Token t where
     TokOpenType :: Token ()
     TokSubtype :: Token ()
     TokClosedType :: Token ()
+    TokDynamicType :: Token ()
+    TokExport :: Token ()
+    TokImport :: Token ()
     TokUName :: Token Name
     TokLName :: Token Name
     TokUnderscore :: Token ()
@@ -45,10 +48,6 @@ data Token t where
     TokMap :: Token ()
     TokBackMap :: Token ()
     TokPropMap :: Token ()
-    TokProperty :: Token ()
-    TokOpenEntity :: Token ()
-    TokNewOpenEntity :: Token ()
-    TokEvaluate :: Token ()
     TokAnchor :: Token Anchor
     TokAt :: Token ()
     TokOperator :: Token Name
@@ -80,6 +79,9 @@ instance TestEquality Token where
     testEquality TokOpenType TokOpenType = Just Refl
     testEquality TokSubtype TokSubtype = Just Refl
     testEquality TokClosedType TokClosedType = Just Refl
+    testEquality TokDynamicType TokDynamicType = Just Refl
+    testEquality TokExport TokExport = Just Refl
+    testEquality TokImport TokImport = Just Refl
     testEquality TokUName TokUName = Just Refl
     testEquality TokLName TokLName = Just Refl
     testEquality TokUnderscore TokUnderscore = Just Refl
@@ -88,10 +90,6 @@ instance TestEquality Token where
     testEquality TokMap TokMap = Just Refl
     testEquality TokBackMap TokBackMap = Just Refl
     testEquality TokPropMap TokPropMap = Just Refl
-    testEquality TokProperty TokProperty = Just Refl
-    testEquality TokOpenEntity TokOpenEntity = Just Refl
-    testEquality TokNewOpenEntity TokNewOpenEntity = Just Refl
-    testEquality TokEvaluate TokEvaluate = Just Refl
     testEquality TokAnchor TokAnchor = Just Refl
     testEquality TokAt TokAt = Just Refl
     testEquality TokOperator TokOperator = Just Refl
@@ -124,6 +122,9 @@ instance Show (Token t) where
     show TokOpenType = show ("opentype" :: String)
     show TokSubtype = show ("subtype" :: String)
     show TokClosedType = show ("closedtype" :: String)
+    show TokDynamicType = show ("dynamictype" :: String)
+    show TokExport = show ("export" :: String)
+    show TokImport = show ("import" :: String)
     show TokUName = "uname"
     show TokLName = "lname"
     show TokUnderscore = show ("_" :: String)
@@ -132,10 +133,6 @@ instance Show (Token t) where
     show TokMap = show ("->" :: String)
     show TokBackMap = show ("<-" :: String)
     show TokPropMap = show ("~>" :: String)
-    show TokProperty = show ("property" :: String)
-    show TokOpenEntity = show ("openEntity" :: String)
-    show TokNewOpenEntity = show ("newOpenEntity" :: String)
-    show TokEvaluate = show ("evaluate" :: String)
     show TokAnchor = "anchor"
     show TokAt = show ("@" :: String)
     show TokOperator = "infix"
@@ -245,10 +242,6 @@ readTextToken = do
         "case" -> return $ MkAnyValue TokCase ()
         "of" -> return $ MkAnyValue TokOf ()
         "end" -> return $ MkAnyValue TokEnd ()
-        "property" -> return $ MkAnyValue TokProperty ()
-        "openEntity" -> return $ MkAnyValue TokOpenEntity ()
-        "newOpenEntity" -> return $ MkAnyValue TokNewOpenEntity ()
-        "evaluate" -> return $ MkAnyValue TokEvaluate ()
         "if" -> return $ MkAnyValue TokIf ()
         "then" -> return $ MkAnyValue TokThen ()
         "else" -> return $ MkAnyValue TokElse ()
@@ -256,6 +249,9 @@ readTextToken = do
         "opentype" -> return $ MkAnyValue TokOpenType ()
         "subtype" -> return $ MkAnyValue TokSubtype ()
         "closedtype" -> return $ MkAnyValue TokClosedType ()
+        "dynamictype" -> return $ MkAnyValue TokDynamicType ()
+        "export" -> return $ MkAnyValue TokExport ()
+        "import" -> return $ MkAnyValue TokImport ()
         name
             | isUpper firstC -> return $ MkAnyValue TokUName $ MkName $ pack name
         name -> return $ MkAnyValue TokLName $ MkName $ pack name

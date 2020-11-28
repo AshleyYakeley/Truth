@@ -4,7 +4,8 @@ module Pinafore.Main
     , makePinaforeContext
     , standardPinaforeContext
     , sqlitePinaforeDumpTable
-    , pinaforeInterpretFileAtType
+    , pinaforeInterpretTextAtType
+    , pinaforeInterpretText
     , pinaforeInterpretFile
     , pinaforeInteractHandles
     , pinaforeInteract
@@ -12,9 +13,11 @@ module Pinafore.Main
 
 import Changes.Core
 import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Storage
 import Shapes
+import System.Directory (doesFileExist)
 import System.FilePath
 
 type FilePinaforeType = PinaforeAction TopType
@@ -25,10 +28,29 @@ filePinaforeType = qNegativeTypeDescription @FilePinaforeType
 doCache :: Bool
 doCache = True
 
-standardPinaforeContext :: FilePath -> ChangesContext -> CreateView PinaforeContext
-standardPinaforeContext dirpath tc = do
+moduleRelativePath :: ModuleName -> FilePath
+moduleRelativePath (MkModuleName nn) = (foldl1 (</>) $ fmap unpack nn) <> ".pinafore"
+
+standardPinaforeContext :: [FilePath] -> InvocationInfo -> FilePath -> ChangesContext -> CreateView PinaforeContext
+standardPinaforeContext moduleDirs invinfo dirpath tc = do
+    let
+        fetchModule :: ModuleName -> IO (Maybe (FilePath, Result UnicodeException Text))
+        fetchModule mname = let
+            namePath :: FilePath
+            namePath = moduleRelativePath mname
+            fetch :: [FilePath] -> IO (Maybe (FilePath, Result UnicodeException Text))
+            fetch [] = return Nothing
+            fetch (d:dd) = do
+                let fpath = d </> namePath
+                found <- doesFileExist fpath
+                case found of
+                    False -> fetch dd
+                    True -> do
+                        bs <- readFile fpath
+                        return $ Just $ (fpath, eitherToResult $ decodeUtf8' $ toStrict bs)
+            in fetch moduleDirs
     rc <- viewGetResourceContext
-    liftLifeCycleIO $ do
+    liftLifeCycle $ do
         sqlReference <- liftIO $ sqlitePinaforeTableReference $ dirpath </> "tables.sqlite3"
         tableReference1 <- exclusiveResource rc sqlReference
         tableReference <-
@@ -38,7 +60,7 @@ standardPinaforeContext dirpath tc = do
                     return $ tableReferenceF rc
                 else return tableReference1
         (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-        makePinaforeContext model tc
+        makePinaforeContext fetchModule invinfo stdout model tc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
@@ -57,14 +79,20 @@ sqlitePinaforeDumpTable dirpath = do
                 Nothing -> show v
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
-pinaforeInterpretFileAtType ::
+pinaforeInterpretTextAtType ::
        (?pinafore :: PinaforeContext, FromPinaforeType t) => FilePath -> Text -> InterpretResult t
-pinaforeInterpretFileAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueUnify puitext
+pinaforeInterpretTextAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueUnify puitext
 
-pinaforeInterpretFile :: (?pinafore :: PinaforeContext) => FilePath -> Text -> InterpretResult (View ())
-pinaforeInterpretFile puipath puitext = do
-    action :: FilePinaforeType <- pinaforeInterpretFileAtType puipath puitext
+pinaforeInterpretText :: (?pinafore :: PinaforeContext) => FilePath -> Text -> InterpretResult (View ())
+pinaforeInterpretText puipath puitext = do
+    action :: FilePinaforeType <- pinaforeInterpretTextAtType puipath puitext
     return $ runPinaforeAction $ fmap (\MkTopType -> ()) $ action
+
+pinaforeInterpretFile ::
+       (?pinafore :: PinaforeContext, MonadIO m, MonadThrow PinaforeError m) => FilePath -> m (View ())
+pinaforeInterpretFile fpath = do
+    ptext <- liftIO $ readFile fpath
+    throwInterpretResult $ pinaforeInterpretText fpath $ decodeUtf8 $ toStrict ptext
 
 pinaforeInteractHandles :: (?pinafore :: PinaforeContext) => Handle -> Handle -> Bool -> View ()
 pinaforeInteractHandles inh outh echo = interact inh outh echo

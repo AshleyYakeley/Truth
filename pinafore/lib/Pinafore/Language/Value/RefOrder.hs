@@ -3,6 +3,7 @@ module Pinafore.Language.Value.RefOrder where
 import Changes.Core
 import Data.Shim
 import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language.Value.FiniteSetRef
 import Pinafore.Language.Value.Morphism
 import Pinafore.Language.Value.WholeRef

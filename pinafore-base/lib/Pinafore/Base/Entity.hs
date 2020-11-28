@@ -6,7 +6,7 @@ import Shapes
 
 newtype Entity =
     MkEntity Anchor
-    deriving (Eq, Ord, Random, Serialize, NFData)
+    deriving (Eq, Ord, Random, Serialize, NFData, Hashable)
 
 instance Show Entity where
     show (MkEntity anchor) = show anchor

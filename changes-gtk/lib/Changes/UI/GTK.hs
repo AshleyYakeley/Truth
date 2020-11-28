@@ -11,6 +11,7 @@ import Changes.UI.GTK.CheckButton as I
 import Changes.UI.GTK.ChooseFile as I
 import Changes.UI.GTK.Drag as I ()
 import Changes.UI.GTK.Icon as I
+import Changes.UI.GTK.Image as I
 import Changes.UI.GTK.Label as I
 import Changes.UI.GTK.Layout as I
 import Changes.UI.GTK.Main as I

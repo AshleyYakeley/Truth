@@ -1,14 +1,15 @@
 module Pinafore.Language.Interpret.Type
     ( interpretType
     , interpretOpenEntityType
-    , interpretConcreteEntityType
+    , interpretMonoEntityType
+    , interpretConcreteDynamicEntityType
     , interpretNonpolarType
     , interpretSubtypeRelation
     ) where
 
 import Pinafore.Language.Error
+import Pinafore.Language.Interpret.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes
@@ -20,13 +21,13 @@ type PinaforeRangeType3 = MPolarRangeType PinaforeType
 interpretType ::
        forall polarity. Is PolarityType polarity
     => SyntaxType
-    -> PinaforeSourceScoped (AnyW (PinaforeType polarity))
+    -> PinaforeSourceInterpreter (AnyW (PinaforeType polarity))
 interpretType st = do
     mpol <- isMPolarity @polarity $ interpretTypeM @('Just polarity) st
     case mpol of
         SingleMPolarW atw -> return atw
 
-interpretOpenEntityType :: SyntaxType -> PinaforeSourceScoped (AnyW OpenEntityType)
+interpretOpenEntityType :: SyntaxType -> PinaforeSourceInterpreter (AnyW OpenEntityType)
 interpretOpenEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
@@ -38,18 +39,30 @@ interpretOpenEntityType st = do
                             return $ MkAnyW t
                         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm
 
-interpretConcreteEntityType :: SyntaxType -> PinaforeSourceScoped (AnyW ConcreteEntityType)
-interpretConcreteEntityType st = do
+interpretConcreteDynamicEntityType :: SyntaxType -> PinaforeSourceInterpreter (Name, DynamicType)
+interpretConcreteDynamicEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
         BothMPolarW atm ->
             case atm @'Positive of
                 MkAnyW tm ->
-                    case dolanToConcreteType tm of
+                    case dolanTypeToSingular tm of
+                        Just (MkAnyW (GroundDolanSingularType (EntityPinaforeGroundType _ (ADynamicEntityGroundType n dts)) NilDolanArguments))
+                            | [dt] <- toList dts -> return (n, dt)
+                        _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm
+
+interpretMonoEntityType :: SyntaxType -> PinaforeSourceInterpreter (AnyW MonoEntityType)
+interpretMonoEntityType st = do
+    mpol <- interpretTypeM @'Nothing st
+    case mpol of
+        BothMPolarW atm ->
+            case atm @'Positive of
+                MkAnyW tm ->
+                    case dolanToMonoType tm of
                         Just (MkShimWit t _) -> return $ MkAnyW t
                         Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm
 
-interpretNonpolarType :: SyntaxType -> PinaforeSourceScoped (AnyW (PinaforeNonpolarType '[]))
+interpretNonpolarType :: SyntaxType -> PinaforeSourceInterpreter (AnyW (PinaforeNonpolarType '[]))
 interpretNonpolarType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
@@ -63,13 +76,13 @@ interpretNonpolarType st = do
 interpretTypeM ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType
-    -> PinaforeSourceScoped (PinaforeTypeM mpolarity)
+    -> PinaforeSourceInterpreter (PinaforeTypeM mpolarity)
 interpretTypeM (MkWithSourcePos spos t) = localSourcePos spos $ interpretTypeM' t
 
 interpretTypeM' ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType'
-    -> PinaforeSourceScoped (PinaforeTypeM mpolarity)
+    -> PinaforeSourceInterpreter (PinaforeTypeM mpolarity)
 interpretTypeM' BottomSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> return $ toMPolar mempty
@@ -115,7 +128,7 @@ interpretTypeM' (RecursiveSyntaxType name st) = do
 interpretTypeRangeFromType ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType
-    -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
+    -> PinaforeSourceInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeRangeFromType st = do
     t <- interpretTypeM @'Nothing st
     let
@@ -130,7 +143,7 @@ interpretTypeRangeFromType st = do
 interpretTypeArgument ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxTypeArgument
-    -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
+    -> PinaforeSourceInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeArgument (SimpleSyntaxTypeArgument st) = interpretTypeRangeFromType st
 interpretTypeArgument (RangeSyntaxTypeArgument ss) = do
     tt <- for ss interpretTypeRangeItem
@@ -139,7 +152,7 @@ interpretTypeArgument (RangeSyntaxTypeArgument ss) = do
 interpretTypeRangeItem ::
        forall mpolarity. Is MPolarityType mpolarity
     => (Maybe SyntaxVariance, SyntaxType)
-    -> PinaforeSourceScoped (PinaforeRangeType3 mpolarity)
+    -> PinaforeSourceInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeRangeItem (Just CoSyntaxVariance, st) = do
     atq <- interpretTypeM st
     return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType NilDolanType tq) atq
@@ -164,7 +177,7 @@ interpretArgs ::
     => SyntaxGroundType
     -> DolanVarianceType dv
     -> [SyntaxTypeArgument]
-    -> PinaforeSourceScoped (AnyW (DolanArguments dv PinaforeType gt polarity))
+    -> PinaforeSourceInterpreter (AnyW (DolanArguments dv PinaforeType gt polarity))
 interpretArgs _ NilListType [] = return $ MkAnyW NilDolanArguments
 interpretArgs sgt NilListType (_:_) = throw $ InterpretTypeOverApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType _ _) [] = throw $ InterpretTypeUnderApplyError $ groundTypeText sgt
@@ -198,7 +211,7 @@ interpretArgs sgt (ConsListType RangevarianceType dv) (st:stt) = do
 makeOpenEntityType :: Name -> TypeID -> AnyW OpenEntityType
 makeOpenEntityType n tid = valueToWitness tid $ \tidsym -> MkAnyW $ MkOpenEntityType n tidsym
 
-interpretGroundTypeConst :: SyntaxGroundType -> PinaforeSourceScoped PinaforeGroundTypeM
+interpretGroundTypeConst :: SyntaxGroundType -> PinaforeSourceInterpreter PinaforeGroundTypeM
 interpretGroundTypeConst UnitSyntaxGroundType =
     return $
     MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType UnitLiteralType
@@ -236,34 +249,39 @@ interpretGroundTypeConst (ConstSyntaxGroundType "MenuItem") =
     return $ MkPinaforeGroundTypeM $ MkAnyW MenuItemPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "Entity") =
     return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType TopEntityGroundType
+interpretGroundTypeConst (ConstSyntaxGroundType "DynamicEntity") =
+    return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType TopDynamicEntityGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType n)
     | Just (MkAnyW lt) <- nameToLiteralType n =
         return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType lt
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
-    nt <- lookupNamedType n
+    nt <- lookupBoundType n
     case nt of
-        SimpleNamedType dv dm es wt -> return $ MkPinaforeGroundTypeM $ MkAnyW $ SimpleGroundType dv dm es wt
-        OpenEntityNamedType tid ->
+        SimpleBoundType dv dm es wt -> return $ MkPinaforeGroundTypeM $ MkAnyW $ SimpleGroundType dv dm es wt
+        OpenEntityBoundType tid ->
             case makeOpenEntityType n tid of
                 MkAnyW t ->
                     return $
                     MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType t
-        ClosedEntityNamedType tidsym ct ->
+        ClosedEntityBoundType tidsym ct ->
             return $
             MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n tidsym ct
+        DynamicEntityBoundType dt ->
+            return $
+            MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType n dt
 
-interpretSubtypeRelation :: SyntaxType -> SyntaxType -> PinaforeSourceScoped a -> PinaforeSourceScoped a
+interpretSubtypeRelation :: SyntaxType -> SyntaxType -> PinaforeSourceInterpreter a -> PinaforeSourceInterpreter a
 interpretSubtypeRelation sta stb ma = do
-    ata <- interpretConcreteEntityType sta
-    atb <- interpretConcreteEntityType stb
+    ata <- interpretMonoEntityType sta
+    atb <- interpretMonoEntityType stb
     case ata of
         MkAnyW ta ->
             case ta of
-                MkConcreteType (OpenEntityGroundType tida) NilArguments ->
+                MkMonoType tea NilArguments ->
                     case atb of
                         MkAnyW tb ->
                             case tb of
-                                MkConcreteType (OpenEntityGroundType tidb) NilArguments ->
-                                    remonadSourcePos (withEntitySubtype tida tidb) ma
+                                MkMonoType (OpenEntityGroundType tidb) NilArguments ->
+                                    remonadSourcePos (withEntitySubtype tea tidb) ma
                                 _ -> throw $ TypeNotOpenEntityError $ exprShow tb
-                _ -> throw $ TypeNotOpenEntityError $ exprShow ta
+                _ -> throw $ TypeNotSimpleEntityError $ exprShow ta

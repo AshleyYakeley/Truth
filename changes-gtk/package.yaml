@@ -1,5 +1,5 @@
 name: changes-gtk
-version: "0.1"
+version: "0.2"
 _common: !include "../common.yaml"
 <<: *author
 
@@ -26,7 +26,9 @@ library:
       - haskell-gi-base
       - gi-glib
       - gi-gobject
+      - gi-gio
       - gi-gdk
+      - gi-gdkpixbuf
       - gi-pango
       - gi-gtk
       - gi-gtk-hs
@@ -41,6 +43,7 @@ library:
       - Changes.UI.GTK.Blank
       - Changes.UI.GTK.CSS
       - Changes.UI.GTK.Button
+      - Changes.UI.GTK.Image
       - Changes.UI.GTK.Icon
       - Changes.UI.GTK.Label
       - Changes.UI.GTK.Maybe
@@ -65,18 +68,9 @@ tests:
         source-dirs: test
         dependencies:
           - base >= 4.12
-          - bytestring
-          - transformers
-          - mono-traversable
-          - countable
-          - witness
-          - open-witness
           - shapes
           - changes-core
           - changes-gtk
-          - QuickCheck
-          - tasty
-          - tasty-hunit
         main: Main.hs
         ghc-options: -threaded
 

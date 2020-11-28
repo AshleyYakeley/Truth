@@ -40,7 +40,7 @@ main = do
                    -> (IO () -> UIWindow -> CreateView Widget -> (MenuBar, CreateView Widget))
                    -> CreateView Widget
                 ui sub1 msub2 extraui = do
-                    (selModel, setsel) <- liftLifeCycleIO $ makeSharedModel makePremodelSelectNotify
+                    (selModel, setsel) <- liftLifeCycle $ makeSharedModel makePremodelSelectNotify
                     let
                         openSelection :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text)) -> View ()
                         openSelection sub = do
@@ -75,7 +75,7 @@ main = do
                     rec
                         let (mbar, cuic) = extraui closer r $ ui sub msub2 extraui
                         (r, closer) <-
-                            cvEarlyCloser $
+                            lifeCycleEarlyCloser $
                             newWindow $ let
                                 wsCloseBoxAction :: View ()
                                 wsCloseBoxAction = liftIO closer
@@ -145,12 +145,11 @@ main = do
                     if saveOpt
                         then do
                             (bufferSub, saveActions) <-
-                                liftLifeCycleIO $
-                                makeSharedModel $ saveBufferReference emptyResourceContext wholeTextObj
+                                liftLifeCycle $ makeSharedModel $ saveBufferReference emptyResourceContext wholeTextObj
                             uh <- liftIO newUndoHandler
                             return (undoHandlerModel uh bufferSub, MkAppUI $ extraUI saveActions uh)
                         else do
-                            textSub <- liftLifeCycleIO $ makeReflectingModel $ convertReference wholeTextObj
+                            textSub <- liftLifeCycle $ makeReflectingModel $ convertReference wholeTextObj
                             return (textSub, MkAppUI simpleUI)
                 mTextSub2 <-
                     case selTest of
@@ -158,7 +157,7 @@ main = do
                         True -> do
                             bsObj2 <- liftIO $ makeMemoryReference mempty $ \_ -> True
                             textSub2 <-
-                                liftLifeCycleIO $
+                                liftLifeCycle $
                                 makeReflectingModel $ convertReference $ mapReference textLens $ convertReference bsObj2
                             return $ Just textSub2
                 return $ makeWindow (fromString $ takeFileName path) textSub mTextSub2 appUI

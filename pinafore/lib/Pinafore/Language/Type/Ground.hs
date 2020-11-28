@@ -3,10 +3,12 @@ module Pinafore.Language.Type.Ground where
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.Interpret.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Scope
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
+import Pinafore.Language.Type.EntityAdapter
+import Pinafore.Language.Type.OpenEntity
 import Pinafore.Language.Type.Show
 import Pinafore.Language.Value
 import Shapes
@@ -55,11 +57,14 @@ data PinaforeGroundType dv t where
 
 type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
 
+type instance InterpreterGroundType PinaforeTypeSystem =
+     PinaforeGroundType
+
 type instance DolanPolyShim PinaforeGroundType = PinaforePolyShim
 
 instance IsDolanGroundType PinaforeGroundType where
     type DolanName PinaforeGroundType = Name
-    type DolanM PinaforeGroundType = SourceScoped PinaforeTypeSystem
+    type DolanM PinaforeGroundType = SourceInterpreter PinaforeTypeSystem
     groundTypeVarianceMap ::
            forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). PinaforeGroundType dv f -> DolanVarianceMap dv f
     groundTypeVarianceMap (SimpleGroundType _ dvm _ _) = dvm
@@ -116,11 +121,11 @@ instance IsDolanGroundType PinaforeGroundType where
     groundTypeTestEquality _ _ = Nothing
 
 instance CovarySubtype PinaforeGroundType EntityGroundType where
-    dolanToConcreteGroundType :: forall dv t. PinaforeGroundType dv t -> Maybe (CovaryType dv, EntityGroundType t)
-    dolanToConcreteGroundType (EntityPinaforeGroundType lc et) = Just (lc, et)
-    dolanToConcreteGroundType _ = Nothing
-    concreteToDolanGroundType :: forall dv t. CovaryType dv -> EntityGroundType t -> PinaforeGroundType dv t
-    concreteToDolanGroundType = EntityPinaforeGroundType
+    dolanToMonoGroundType :: forall dv t. PinaforeGroundType dv t -> Maybe (CovaryType dv, EntityGroundType t)
+    dolanToMonoGroundType (EntityPinaforeGroundType lc et) = Just (lc, et)
+    dolanToMonoGroundType _ = Nothing
+    monoToDolanGroundType :: forall dv t. CovaryType dv -> EntityGroundType t -> PinaforeGroundType dv t
+    monoToDolanGroundType = EntityPinaforeGroundType
 
 showPrecVariance ::
        forall w polarity sv t.
@@ -183,3 +188,17 @@ instance GroundExprShow PinaforeGroundType where
     groundTypeShowPrec UserInterfacePinaforeGroundType NilDolanArguments = ("UI", 0)
     groundTypeShowPrec WindowPinaforeGroundType NilDolanArguments = ("Window", 0)
     groundTypeShowPrec MenuItemPinaforeGroundType NilDolanArguments = ("MenuItem", 0)
+
+withEntitySubtype ::
+       forall (t :: Type) tidb a.
+       EntityGroundType t
+    -> OpenEntityType tidb
+    -> Interpreter PinaforeTypeSystem a
+    -> Interpreter PinaforeTypeSystem a
+withEntitySubtype ta tb =
+    withSubtypeConversions $
+    pure $
+    simpleSubtypeConversionEntry
+        (EntityPinaforeGroundType NilListType ta)
+        (EntityPinaforeGroundType NilListType $ OpenEntityGroundType tb) $
+    nilSubtypeConversion $ coerceEnhanced "open entity" . entitySubtypeShim ta

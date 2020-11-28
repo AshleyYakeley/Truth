@@ -1,5 +1,5 @@
 name: pinafore-base
-version: "0.1"
+version: "0.2"
 _common: !include "../common.yaml"
 <<: *author
 
@@ -37,7 +37,6 @@ library:
       - Pinafore.Base.EntityAdapter
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
-      - Pinafore.Base.Context
       - Pinafore.Base.ImmutableWholeRef
       - Pinafore.Base.File
       - Pinafore.Storage.Table
@@ -53,8 +52,6 @@ tests:
           - shapes
           - changes-core
           - pinafore-base
-          - tasty
-          - tasty-hunit
         main: Main.hs
         other-modules:
           - Test.Numeric

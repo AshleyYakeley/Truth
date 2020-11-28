@@ -99,15 +99,8 @@ instance TraceThing (Reference edit) where
 instance ShowableEdit edit => TraceArgThing (Reference edit) where
     traceArgThing prefix = traceObject prefix showEditShower
 
-instance TraceThing (LifeState m) where
+instance TraceThing LifeState where
     traceThing _ ls = ls
-
-instance MonadIO m => TraceThing (LifeCycleT m a) where
-    traceThing prefix (MkLifeCycleT oc) =
-        MkLifeCycleT $
-        traceBracket (contextStr prefix "open") $ do
-            (t, closer) <- oc
-            return (t, traceThing (contextStr prefix "close") closer)
 
 slowObject :: Int -> Reference edit -> Reference edit
 slowObject mus (MkResource rr (MkAReference rd push ct)) =  case resourceRunnerStackUnliftDict @IO rr of

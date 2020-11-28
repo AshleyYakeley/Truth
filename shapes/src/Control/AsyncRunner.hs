@@ -4,8 +4,7 @@ module Control.AsyncRunner
     , asyncIORunner
     ) where
 
-import Control.Monad.LifeCycleIO
-import Control.Monad.Trans.LifeCycle
+import Control.Monad.LifeCycle
 import Control.Task
 import Shapes.Import
 import Debug.ThreadTrace
@@ -21,7 +20,7 @@ asyncWaitRunner ::
        forall t. Semigroup t
     => Int
     -> (t -> IO ())
-    -> LifeCycleIO (Maybe t -> IO (), Task ())
+    -> LifeCycle (Maybe t -> IO (), Task ())
 asyncWaitRunner mus doit = do
     bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSIdle
     let
@@ -93,12 +92,12 @@ asyncWaitRunner mus doit = do
 asyncRunner ::
        forall t. Semigroup t
     => (t -> IO ())
-    -> LifeCycleIO (t -> IO (), Task ())
+    -> LifeCycle (t -> IO (), Task ())
 asyncRunner doit = do
     (asyncDoIt, utask) <- asyncWaitRunner 0 doit
     return (\t -> asyncDoIt $ Just t, utask)
 
-asyncIORunner :: LifeCycleIO (IO () -> IO (), Task ())
+asyncIORunner :: LifeCycle (IO () -> IO (), Task ())
 asyncIORunner = do
     (asyncDoIt, utask) <- asyncRunner sequence_
     return (\io -> asyncDoIt [io], utask)

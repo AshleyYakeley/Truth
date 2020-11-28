@@ -75,7 +75,7 @@ unifyGroundTypes ::
     -> ground dvb gtb
     -> DolanArguments dvb (DolanType ground) gtb 'Negative tb
     -> DolanUnification ground ta tb
-unifyGroundTypes gta argsa gtb argsb = subtypeGroundTypes solverLiftM unifySubtypeContext gta argsa gtb argsb
+unifyGroundTypes gta argsa gtb argsb = subtypeGroundTypes unifySubtypeContext gta argsa gtb argsb
 
 unifySingularTypes ::
        forall (ground :: GroundTypeKind) a b. IsDolanSubtypeGroundType ground

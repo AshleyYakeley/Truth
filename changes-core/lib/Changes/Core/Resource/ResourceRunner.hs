@@ -195,9 +195,9 @@ runResourceRunnerContext ::
 runResourceRunnerContext (MkResourceContext rc) (MkResourceRunner rr) call = traceBracket "runResourceRunnerContext: outside" $
     runLSRContext rc rr $ \rc' (MkWStackUnliftAll unlift) -> traceBracket "runResourceRunnerContext: inside" $ call (MkResourceContext rc') $ unlift
 
-exclusiveResourceRunner :: ResourceContext -> ResourceRunner tt -> LifeCycleIO (ResourceRunner '[ StackT tt])
+exclusiveResourceRunner :: ResourceContext -> ResourceRunner tt -> LifeCycle (ResourceRunner '[ StackT tt])
 exclusiveResourceRunner rc rr = do
     Dict <- return $ resourceRunnerUnliftAllDict rr
-    iow <- lift $ newIOWitness
+    iow <- liftIO $ newIOWitness
     lifeCycleWith $ \call ->
         runResourceRunnerContext rc rr $ \_ unlift -> call $ mkResourceRunner iow $ \(MkStackT tma) -> unlift tma

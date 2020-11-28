@@ -10,8 +10,8 @@ import GI.Gtk
 import Pinafore
 import Pinafore.Test
 import Shapes hiding (get)
+import Shapes.Test
 import Test.Context
-import Test.Tasty
 import Changes.Debug
 
 data Timing
@@ -26,11 +26,11 @@ runUIAction :: forall a. Timing -> (ChangesContext -> View a) -> Text -> IO a
 runUIAction timing testaction t = do
     donevar <- newEmptyMVar
     changesMainGTK $ \tc -> do
-        (pc, _) <- liftLifeCycleIO $ makeTestPinaforeContext tc
+        (pc, _) <- liftLifeCycle $ makeTestPinaforeContext nullFetchModuleText tc stdout
         scriptaction <- let
             ?pinafore = pc
-            in throwResult $ pinaforeInterpretFile "<test>" t
-        cvLiftView scriptaction
+            in throwInterpretResult $ pinaforeInterpretText "<test>" t
+        liftToLifeCycle scriptaction
         let
             testView :: View (Result SomeException a)
             testView = do
@@ -39,7 +39,7 @@ runUIAction timing testaction t = do
                 return ar
         case timing of
             SyncTiming -> do
-                ar <- cvLiftView testView
+                ar <- liftToLifeCycle testView
                 liftIO $ putMVar donevar ar
             AsyncTiming -> do
                 _ <-

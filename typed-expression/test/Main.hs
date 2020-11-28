@@ -3,12 +3,11 @@ module Main
     ) where
 
 import Shapes
+import Shapes.Test
 import Shim
-import Test.Tasty
+
+tests :: TestTree
+tests = testTree "typed-expression" [testShim]
 
 main :: IO ()
-main = do
-    let
-        tests :: TestTree
-        tests = testGroup "typed-expression" [testShim]
-    defaultMain tests
+main = testMain tests

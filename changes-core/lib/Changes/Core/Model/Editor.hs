@@ -8,10 +8,10 @@ import Changes.Core.Model.Reference
 import Changes.Core.Resource
 
 data Editor (update :: Type) r = forall editor. MkEditor
-    { editorInit :: Reference (UpdateEdit update) -> LifeCycleIO editor
+    { editorInit :: Reference (UpdateEdit update) -> LifeCycle editor
     , editorUpdate :: editor -> Reference (UpdateEdit update) -> ResourceContext -> NonEmpty update -> EditContext -> IO ()
     , editorTask :: Task ()
-    , editorDo :: editor -> Reference (UpdateEdit update) -> Task () -> LifeCycleIO r
+    , editorDo :: editor -> Reference (UpdateEdit update) -> Task () -> LifeCycle r
     }
 
 instance Functor (Editor update) where
@@ -24,8 +24,8 @@ instance Applicative (Editor update) where
         editorTask = mempty
         editorDo () _ _ = return a
         in MkEditor {..}
-    (MkEditor (ei1 :: Reference (UpdateEdit update) -> LifeCycleIO editor1) eu1 et1 ed1) <*> (MkEditor (ei2 :: Reference (UpdateEdit update) -> LifeCycleIO editor2) eu2 et2 ed2) = let
-        editorInit :: Reference (UpdateEdit update) -> LifeCycleIO (editor1, editor2)
+    (MkEditor (ei1 :: Reference (UpdateEdit update) -> LifeCycle editor1) eu1 et1 ed1) <*> (MkEditor (ei2 :: Reference (UpdateEdit update) -> LifeCycle editor2) eu2 et2 ed2) = let
+        editorInit :: Reference (UpdateEdit update) -> LifeCycle (editor1, editor2)
         editorInit reference = do
             e1 <- ei1 reference
             e2 <- ei2 reference
@@ -47,7 +47,7 @@ instance Applicative (Editor update) where
             return $ ab a
         in MkEditor {..}
 
-runEditor :: ResourceContext -> Model update -> Editor update r -> LifeCycleIO r
+runEditor :: ResourceContext -> Model update -> Editor update r -> LifeCycle r
 runEditor rc (MkResource (rr :: _ tt) (MkAModel anreference sub utask)) MkEditor {..} = do
     let reference = MkResource rr anreference
     e <- editorInit reference

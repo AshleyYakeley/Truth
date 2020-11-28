@@ -1,7 +1,8 @@
 #!/bin/bash -e
 apt update
 apt install -y sudo
-apt install -y /home/pinafore_0.1-1.deb
-useradd -u $1 user
-sudo -u user pinafore
+apt install -y /home/$1
+useradd -u $2 user
+sudo -u user pinafore /home/checkscript
+sudo -u user /home/checkscript
 echo "package runs OK"

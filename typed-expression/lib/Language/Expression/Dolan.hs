@@ -1,7 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan
-    ( PShimWit
+    ( module Control.Applicative.Wrapped
+    , PShimWit
     , MPolarityType(..)
     , MPolarW(..)
     , MPolarRangeType(..)
@@ -39,26 +40,37 @@ module Language.Expression.Dolan
     , dolanArgumentsToArguments
     , SubtypeContext(..)
     , subtypeDolanArguments
+    , invertType
     , DolanTypeSystem
     , IsDolanGroundType(..)
     , IsDolanFunctionGroundType(..)
     , IsDolanSubtypeGroundType(..)
+    , IsDolanSubtypeEntriesGroundType(..)
+    , SubtypeArguments(..)
+    , SubtypeConversion(..)
+    , nilSubtypeConversion
+    , idSubtypeConversion
+    , composeSubtypeConversion
+    , SubypeConversionEntry(..)
+    , simpleSubtypeConversionEntry
     , module Language.Expression.Dolan.Nonpolar
-    , module Language.Expression.Dolan.Concrete
+    , module Language.Expression.Dolan.Mono
     ) where
 
+import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
-import Language.Expression.Dolan.Concrete
 import Language.Expression.Dolan.Covariance
 import Language.Expression.Dolan.MPolarity
+import Language.Expression.Dolan.Mono
 import Language.Expression.Dolan.Nonpolar
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.RangeF
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Simplify ()
+import Language.Expression.Dolan.Subsume
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem

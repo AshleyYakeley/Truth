@@ -1,5 +1,5 @@
 name: pinafore
-version: "0.1"
+version: "0.2"
 _common: !include "../common.yaml"
 <<: *author
 
@@ -12,6 +12,7 @@ library:
       - shapes
       - time
       - filepath
+      - directory
       - parsec
       - containers
       - typed-expression
@@ -26,6 +27,7 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
+      - Pinafore.Context
       - Pinafore.Language.Value.Instances
       - Pinafore.Language.Value.WholeRef
       - Pinafore.Language.Value.SetRef
@@ -46,18 +48,21 @@ library:
       - Pinafore.Language.Type.Identified
       - Pinafore.Language.Error
       - Pinafore.Language.Subtype
-      - Pinafore.Language.Scope
+      - Pinafore.Language.SpecialForm
+      - Pinafore.Language.Interpret.Interpreter
       - Pinafore.Language.Var
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type
+      - Pinafore.Language.Type.DynamicEntity
       - Pinafore.Language.Type.Entity
       - Pinafore.Language.Type.OpenEntity
       - Pinafore.Language.Type.EntityAdapter
+      - Pinafore.Language.Type.DynamicSupertype
       - Pinafore.Language.Syntax
       - Pinafore.Language.Read.Token
-      - Pinafore.Language.Read.RefNotation
+      - Pinafore.Language.Interpret.RefNotation
       - Pinafore.Language.Read.Parser
       - Pinafore.Language.Read.Type
       - Pinafore.Language.Read.TypeDecls
@@ -97,11 +102,6 @@ tests:
           - changes-core
           - changes-gtk
           - pinafore
-          - tasty
-          - tasty-expected-failure
-          - tasty-hunit
-          - tasty-golden
-          - tasty-quickcheck
         main: Main.hs
         other-modules:
           - Test.Context
@@ -110,8 +110,20 @@ tests:
           - Test.Type
           - Test.ReadType
           - Test.Scripts
+          - Test.Output
+          - Test.Module
           - Test.Interactive
           - Test.UI
+        ghc-options: -threaded
+    app:
+        source-dirs: app
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - optparse-applicative
+        main: Test.hs
+        other-modules:
+          - Options
         ghc-options: -threaded
 
 benchmarks:
@@ -133,6 +145,7 @@ executables:
           - base >= 4.12
           - shapes
           - time
+          - filepath
           - directory
           - optparse-applicative
           - xdg-basedir

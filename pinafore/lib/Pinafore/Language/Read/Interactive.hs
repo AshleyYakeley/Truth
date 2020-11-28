@@ -6,23 +6,21 @@ module Pinafore.Language.Read.Interactive
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret
-import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Name
 import Pinafore.Language.Read.Expression
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
-import Pinafore.Language.Scope
 import Pinafore.Language.Type
 import Shapes hiding (try)
 
 data InteractiveCommand
-    = LetInteractiveCommand (PinaforeScoped (WMFunction PinaforeScoped PinaforeScoped))
-    | ExpressionInteractiveCommand (PinaforeScoped QExpr)
+    = LetInteractiveCommand (PinaforeInterpreter (WMFunction PinaforeInterpreter PinaforeInterpreter))
+    | ExpressionInteractiveCommand (PinaforeInterpreter QExpr)
     | ShowTypeInteractiveCommand Bool
-                                 (PinaforeScoped QExpr)
+                                 (PinaforeInterpreter QExpr)
     | forall polarity. SimplifyTypeInteractiveCommand (PolarityType polarity)
-                                                      (PinaforeScoped (AnyW (PinaforeType polarity)))
+                                                      (PinaforeInterpreter (AnyW (PinaforeType polarity)))
     | ErrorInteractiveCommand Text
 
 showTypeInteractiveCommand :: Bool -> Parser InteractiveCommand

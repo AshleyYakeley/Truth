@@ -6,19 +6,18 @@ import Data.Shim
 import Pinafore
 import Pinafore.Test
 import Shapes
-import Test.Tasty
-import Test.Tasty.HUnit
+import Shapes.Test
 
 testReadType :: Text -> TestTree
 testReadType text =
-    testCase (unpack text) $
-    throwResult $ do
+    testTree @Assertion (unpack text) $
+    throwInterpretResult $ do
         _ <- runTestPinaforeSourceScoped $ parseType @'Positive text
         return ()
 
 testReadTypes :: TestTree
 testReadTypes =
-    testGroup
+    testTree
         "read-type"
         [ testReadType "()"
         , testReadType "Boolean"
@@ -65,7 +64,7 @@ testReadTypes =
         , testReadType "FiniteSetRef +a"
         , testReadType "FiniteSetRef {+a,b,-Entity}"
         , testReadType "WholeRef +Text -> (Action a -> [MenuItem]) -> UI -> Action Window"
-        , testGroup
+        , testTree
               "recursive"
               [testReadType "rec a. Maybe a", testReadType "rec a. Maybe a -> b", testReadType "rec a. rec b. (a,b)"]
         ]

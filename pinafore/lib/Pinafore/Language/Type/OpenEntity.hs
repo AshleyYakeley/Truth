@@ -21,5 +21,5 @@ instance ExprShow (OpenEntityType tid) where
 
 type OpenEntity :: BigNat -> Type
 newtype OpenEntity tid = MkOpenEntity
-    { unNamedEntity :: Entity
+    { unOpenEntity :: Entity
     } deriving (Eq, Random)

@@ -61,13 +61,13 @@ createTextArea rmod (MkSelectNotify setsel) = do
             -- get selection...
             srun <- getSequenceRun iter1 iter2
             return $ Just $ stringSectionLens srun
-    cvLiftView $ setsel aspect
+    liftToLifeCycle $ setsel aspect
     _ <- cvOn buffer #changed $ traceBracket "GTK.TextBuffer:changed" $ setsel aspect
     let
         initV :: CreateView ()
         initV = do
             initial <- viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
-            cvLiftView $ withSignalsBlocked buffer [insertSignal, deleteSignal] $ #setText buffer initial (-1)
+            liftToLifeCycle $ withSignalsBlocked buffer [insertSignal, deleteSignal] $ #setText buffer initial (-1)
         recvV :: () -> NonEmpty (StringUpdate Text) -> View ()
         recvV () updates =
             for_ updates $ \(MkEditUpdate edit) ->

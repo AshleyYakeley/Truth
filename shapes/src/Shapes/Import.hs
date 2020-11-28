@@ -112,6 +112,7 @@ import qualified Data.Map.Lazy
 
 -- unordered-containers
 import Data.HashMap.Lazy as I (HashMap)
+import Data.HashSet as I (HashSet)
 
 -- bytestring
 import qualified Data.ByteString
@@ -123,6 +124,8 @@ import Data.Serialize as I (Serialize)
 
 -- text
 import Data.Text as I (Text)
+import Data.Text.Encoding as I (decodeUtf8')
+import Data.Text.Encoding.Error as I (UnicodeException(..))
 
 -- cereal-text
 import Data.Serialize.Text as I ()
@@ -218,3 +221,17 @@ shortAnd amb (a:aa) = do
 mif :: Monoid a => Bool -> a -> a
 mif False _ = mempty
 mif True a = a
+
+localf :: (Traversable f, Applicative m) => (r -> f r) -> ReaderT r m a -> ReaderT r m (f a)
+localf rfr (ReaderT rma) = ReaderT $ \r -> for (rfr r) rma
+
+maybePoint :: (Monoid l, MonoPointed l, Element l ~ a) => Maybe a -> l
+maybePoint Nothing = mempty
+maybePoint (Just a) = opoint a
+
+isSubsetOf :: SetContainer t => t -> t -> Bool
+isSubsetOf a b = onull $ difference a b
+
+deletesMap :: IsMap map => [ContainerKey map] -> map -> map
+deletesMap [] = id
+deletesMap (k:kk) = deleteMap k . deletesMap kk

@@ -1,15 +1,16 @@
 module Pinafore.Language.Interpret.TypeDecl
-    ( concreteEntityToNegativePinaforeType
+    ( monoEntityToNegativePinaforeType
     , interpretTypeDeclarations
     ) where
 
+import Data.Graph
 import qualified Data.List as List
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
+import Pinafore.Language.Interpret.Interpreter
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Name
-import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes
@@ -25,9 +26,9 @@ extendConstructor (MkConstructor n lt at tma) = MkConstructor n lt (Right . at) 
 
 data ClosedEntityBox =
     forall t. MkClosedEntityBox (ClosedEntityType t)
-                                [Constructor ConcreteEntityType t]
+                                [Constructor MonoEntityType t]
 
-assembleClosedEntityType :: [(Name, Anchor, AnyW (ListType ConcreteEntityType))] -> ClosedEntityBox
+assembleClosedEntityType :: [(Name, Anchor, AnyW (ListType MonoEntityType))] -> ClosedEntityBox
 assembleClosedEntityType [] = MkClosedEntityBox NilClosedEntityType []
 assembleClosedEntityType ((n, a, MkAnyW el):cc) =
     case assembleClosedEntityType cc of
@@ -53,33 +54,42 @@ constructorFreeVariables :: Constructor (PinaforeNonpolarType '[]) t -> [AnyW Sy
 constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonpolarTypeFreeVariables lt
 
 interpretClosedEntityTypeConstructor ::
-       SyntaxClosedEntityConstructor -> PinaforeSourceScoped (Name, Anchor, AnyW (ListType ConcreteEntityType))
+       SyntaxClosedEntityConstructor -> PinaforeSourceInterpreter (Name, Anchor, AnyW (ListType MonoEntityType))
 interpretClosedEntityTypeConstructor (MkSyntaxClosedEntityConstructor consName stypes anchor) = do
-    etypes <- for stypes interpretConcreteEntityType
+    etypes <- for stypes interpretMonoEntityType
     return (consName, anchor, assembleListType etypes)
 
 interpretDataTypeConstructor ::
-       SyntaxDatatypeConstructor -> PinaforeSourceScoped (Name, AnyW (ListType (PinaforeNonpolarType '[])))
+       SyntaxDatatypeConstructor -> PinaforeSourceInterpreter (Name, AnyW (ListType (PinaforeNonpolarType '[])))
 interpretDataTypeConstructor (MkSyntaxDatatypeConstructor consName stypes) = do
     etypes <- for stypes interpretNonpolarType
     return (consName, assembleListType etypes)
 
-concreteEntityToNegativePinaforeType ::
+monoEntityToNegativePinaforeType ::
        forall m t. MonadThrow ErrorType m
-    => ConcreteEntityType t
+    => MonoEntityType t
     -> m (PinaforeShimWit 'Negative t)
-concreteEntityToNegativePinaforeType et =
-    case concreteToMaybeNegativeDolanType et of
+monoEntityToNegativePinaforeType et =
+    case monoToMaybeNegativeDolanType et of
         Just wit -> return wit
         Nothing -> throw InterpretTypeNoneNotNegativeEntityError
 
+intepretSyntaxDynamicEntityConstructor ::
+       SyntaxDynamicEntityConstructor -> SourceInterpreter PinaforeTypeSystem [DynamicType]
+intepretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ pure $ mkDynamicType a
+intepretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name) = do
+    t <- lookupBoundType name
+    case t of
+        DynamicEntityBoundType dt -> return $ toList dt
+        _ -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name
+
 interpretTypeDeclaration ::
-       Name -> TypeID -> SyntaxTypeDeclaration -> PinaforeTypeBox (WMFunction PinaforeScoped PinaforeScoped)
+       Name -> TypeID -> SyntaxTypeDeclaration -> PinaforeTypeBox (WMFunction PinaforeInterpreter PinaforeInterpreter)
 interpretTypeDeclaration name tid OpenEntitySyntaxTypeDeclaration =
-    MkTypeBox name (\_ -> OpenEntityNamedType tid) $ return ((), id)
+    MkTypeBox name (\_ -> OpenEntityBoundType tid) $ return ((), id)
 interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \(tidsym :: TypeIDType n) -> let
-        mktype t = ClosedEntityNamedType tidsym t
+        mktype t = ClosedEntityBoundType tidsym t
         in MkTypeBox name mktype $ do
                tconss <- for sconss interpretClosedEntityTypeConstructor
                MkClosedEntityBox (ct :: ClosedEntityType t) conss <- return $ assembleClosedEntityType tconss
@@ -97,22 +107,19 @@ interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
                            NilDolanArguments
                patts <-
                    for conss $ \(MkConstructor cname lt at tma) -> do
-                       ltp <- return $ mapListType concreteToPositiveDolanType lt
-                       patt <- withNewPatternConstructor cname $ toPatternConstructor ctf ltp $ tma . reflId tident
-                       ltn <- mapMListType concreteEntityToNegativePinaforeType lt
-                       bind <-
-                           return $
-                           MkWMFunction $
-                           withNewBindings $
-                           singletonMap cname $
-                           qConstExprAny $
-                           MkAnyValue (qFunctionPosWitnesses ltn (mapShimWit (reflId $ invert tident) ctf)) at
-                       return $ patt . bind
+                       ltp <- return $ mapListType monoToPositiveDolanType lt
+                       ltn <- mapMListType monoEntityToNegativePinaforeType lt
+                       let
+                           expr =
+                               qConstExprAny $
+                               MkAnyValue (qFunctionPosWitnesses ltn (mapShimWit (reflId $ invert tident) ctf)) at
+                           pc = toPatternConstructor ctf ltp $ tma . reflId tident
+                       withNewPatternConstructor cname expr pc
                return (cti, compAll patts)
 interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \tidsym -> let
         pt = MkProvidedType datatypeIOWitness $ MkIdentifiedType tidsym
-        mktype _ = SimpleNamedType NilListType NilDolanVarianceMap (exprShowPrec name) pt
+        mktype _ = SimpleBoundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
         in MkTypeBox name mktype $ do
                tconss <- for sconss interpretDataTypeConstructor
                MkDataBox _dt conss <- return $ assembleDataType tconss
@@ -125,7 +132,7 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                    unboundvars = freevars List.\\ declaredvars
                case nonEmpty unboundvars of
                    Nothing -> return ()
-                   Just vv -> throw $ InterpretUnboundTypeVariables $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
+                   Just vv -> throw $ InterpretUnboundTypeVariablesError $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
                let
                    ctf :: forall polarity. Is PolarityType polarity
                        => PinaforeShimWit polarity _
@@ -140,22 +147,53 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                patts <-
                    for conss $ \(MkConstructor cname lt at tma) -> do
                        ltp <- return $ mapListType nonpolarToDolanType lt
-                       patt <-
-                           withNewPatternConstructor cname $
-                           toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
                        ltn <- return $ mapListType nonpolarToDolanType lt
-                       bind <-
-                           return $
-                           MkWMFunction $
-                           withNewBindings $
-                           singletonMap cname $
-                           qConstExprAny $ MkAnyValue (qFunctionPosWitnesses ltn ctf) $ \hl -> isoBackwards tiso $ at hl
-                       return $ patt . bind
+                       let
+                           expr =
+                               qConstExprAny $
+                               MkAnyValue (qFunctionPosWitnesses ltn ctf) $ \hl -> isoBackwards tiso $ at hl
+                           pc = toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
+                       withNewPatternConstructor cname expr pc
                return ((), compAll patts)
+interpretTypeDeclaration name _ (DynamicEntitySyntaxTypeDeclaration stcons) =
+    MkTypeBox name DynamicEntityBoundType $ do
+        dt <- for stcons intepretSyntaxDynamicEntityConstructor
+        let
+            dts = setFromList $ mconcat $ toList dt
+            tp = EntityPinaforeGroundType NilListType (ADynamicEntityGroundType name dts)
+        return $
+            (,) dts $
+            MkWMFunction $
+            withSubtypeConversions $
+            pure $
+            MkSubypeConversionEntry tp $ \case
+                EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dts')
+                    | isSubsetOf dts' dts -> Just idSubtypeConversion
+                _ -> Nothing
+
+checkDynamicTypeCycles :: [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceInterpreter ()
+checkDynamicTypeCycles decls = let
+    constructorName :: SyntaxDynamicEntityConstructor -> Maybe Name
+    constructorName (NameSyntaxDynamicEntityConstructor n) = Just n
+    constructorName (AnchorSyntaxDynamicEntityConstructor _) = Nothing
+    getDynamicTypeReferences :: (SourcePos, Name, SyntaxTypeDeclaration) -> Maybe (Name, Name, [Name])
+    getDynamicTypeReferences (_, n, DynamicEntitySyntaxTypeDeclaration cs) =
+        Just $ (n, n, mapMaybe constructorName $ toList cs)
+    getDynamicTypeReferences _ = Nothing
+    sccs :: [SCC Name]
+    sccs = stronglyConnComp $ mapMaybe getDynamicTypeReferences decls
+    sccNames :: SCC Name -> Maybe (NonEmpty Name)
+    sccNames (CyclicSCC (n:nn)) = Just $ n :| nn
+    sccNames _ = Nothing
+    in case mapMaybe sccNames sccs of
+           [] -> return ()
+           (nn:_) -> throw $ DeclareDynamicTypeCycleError nn
 
 interpretTypeDeclarations ::
-       [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceScoped (WMFunction PinaforeScoped PinaforeScoped)
+       [(SourcePos, Name, SyntaxTypeDeclaration)]
+    -> PinaforeSourceInterpreter (WMFunction PinaforeInterpreter PinaforeInterpreter)
 interpretTypeDeclarations decls = do
+    checkDynamicTypeCycles decls
     wfs <-
         for decls $ \(spos, name, tdecl) ->
             localSourcePos spos $ do

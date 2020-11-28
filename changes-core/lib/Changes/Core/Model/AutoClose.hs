@@ -2,7 +2,7 @@ module Changes.Core.Model.AutoClose where
 
 import Changes.Core.Import
 
-type AutoCloseT key t = StateT (Map key (t, LifeState IO))
+type AutoCloseT key t = StateT (Map key (t, LifeState))
 
 runAutoClose :: Ord key => UnliftAll MonadUnliftIO (AutoCloseT key t)
 runAutoClose ac = do
@@ -16,6 +16,6 @@ acOpenReference key withX = do
     case lookup key oldmap of
         Just mutedcloser -> return $ fst mutedcloser
         Nothing -> do
-            mutedcloser <- lift $ getLifeState $ lifeCycleWith withX
+            mutedcloser <- lift $ getInnerLifeState @LifeCycle $ lifeCycleWith withX
             put $ insertMap key mutedcloser oldmap
             return $ fst mutedcloser

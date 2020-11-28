@@ -13,13 +13,22 @@ Also, `case` and `do` statements are terminated with `end`.
 All declarations, including type declarations, are local to a `let` block.
 * Only one equation is allowed for a function definition. Use `case` to match argument patterns.
 
-A file passed to `pinafore` has syntax `<file>`.
-In interactive mode, each line has syntax `<interactive>`.
-
 ## Grammar
 
+* A script file passed to `pinafore` has syntax `<script>`.
+* Modules loaded with `import` have syntax `<module>`.
+* In interactive mode, each line has syntax `<interactive>`.
+
 ```text
-<file> ::= <expression>
+<script> ::= <expression>
+
+<module> ::=
+    <let-declarations> "in" <module> |
+    "export" <names>
+
+<names> ::= | <name> <names>
+
+<name> ::= uname | lname | "(" <infix-operator[n]> ")"
 
 <interactive> ::= <expression> | <let-declarations> | ":" <interactive-command>
 
@@ -112,16 +121,14 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <expression-2> ::= <expression-3> | <expression-2> <expression-3>
 
-<special-form> ::=
-    "property" "@"<type-3> "@"<type-3> anchor |
-    "openEntity" "@"<type-3> anchor |
-    "newOpenEntity" "@"<type-3> |
-    "evaluate" "@"<type-3> |
+<annotation> ::= "@" <type-3> | anchor
+
+<annotations> ::= <annotation> | <annotations> <annotation>
 
 <expression-3> ::=
-    <special-form> |
     "{" <expression> "}" |
     "%" <expression-3> |
+    lname <annotations> |
     lname |
     uname |
     literal-boolean |
@@ -141,22 +148,26 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <cases> ::=  | <case> ";" <cases>
 
-<case> ::= <pattern-1> "->" <expression>
+<case> ::= <pattern-2> "->" <expression>
 
 <do-lines> =  | <do-line> ";" <do-lines>
 
-<do-line> = <expression> | <pattern> "<-" <expression>
+<do-line> = <expression> | <pattern-2> "<-" <expression>
 
 <let-declarations> ::= "let" <declarations>
 
 <declarations> ::=  | <declaration> ";" <declarations>
 
 <declaration> ::=
+    "import" <module-name> |
     "datatype" <type-const> <datatype-body> |
     "opentype" <type-const> |
     "subtype" <type-const> "<:" <type-const> |
     "closedtype" <type-const> <closedtype-body> |
+    "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
+
+<module-name> ::= uname | uname "." <module-name>
 
 <binding> ::=
     <type-signature> ";" <unsigned-binding> |
@@ -182,23 +193,31 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <closedtype-constructor> ::= uname <types> anchor
 
+<dynamictype-constructors> ::=
+    <dynamictype-constructor> |
+    <dynamictype-constructor> "|" <dynamictype-constructors>
+
+<dynamictype-constructor> ::= <type-const> | <anchor>
+
 <types> ::=  | <type-3> <types>
 
-<patterns> ::=  | <pattern-2> <patterns>
+<patterns> ::=  | <pattern-4> <patterns>
 
-<pattern-1> ::= <pattern-2> <patterns>
+<pattern-1> ::= <pattern-2> | <pattern-2> ":" <type>
 
 <pattern-2> ::= <pattern-3> | <pattern-3> "::" <pattern-2>
 
-<pattern-3> ::= <pattern-4> | <pattern-4> "@" <pattern-3>
+<pattern-3> ::= uname <patterns> | <pattern-4>
 
-<pattern-4> ::=
+<pattern-4> ::= <pattern-5> | <pattern-5> "@" <pattern-4>
+
+<pattern-5> ::=
     uname |
     literal-number |
     literal-text |
     lname |
     "_" |
-    "[" <comma-separated(<pattern>)> "]" |
+    "[" <comma-separated(<pattern-1>)> "]" |
     "(" ")" |
     "(" <pattern-1> "," <pattern-1> ")" |
     "(" <pattern-1> ")"

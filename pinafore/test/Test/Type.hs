@@ -8,9 +8,7 @@ import Language.Expression.Dolan
 import Pinafore
 import Pinafore.Test
 import Shapes
-import Test.Tasty
-import Test.Tasty.ExpectedFailure
-import Test.Tasty.HUnit
+import Shapes.Test
 
 type TS = PinaforeTypeSystem
 
@@ -25,14 +23,15 @@ showTypes :: PExpression -> String
 showTypes (MkSealedExpression (MkShimWit t _) expr) =
     "{" <> intercalate ", " (showVars expr) <> "} -> " <> unpack (exprShow t)
 
-exprTypeTest :: String -> Maybe String -> PinaforeSourceScoped PExpression -> TestTree
+exprTypeTest :: String -> Maybe String -> PinaforeSourceInterpreter PExpression -> TestTree
 exprTypeTest name expected mexpr =
-    testCase name $
-    assertEqual "" expected $ do
-        expr <- resultToMaybe $ runTestPinaforeSourceScoped mexpr
-        return $ showTypes expr
+    testTree name $ do
+        result <- runInterpretResult $ runTestPinaforeSourceScoped mexpr
+        assertEqual "" expected $ do
+            expr <- resultToMaybe result
+            return $ showTypes expr
 
-apExpr :: PExpression -> PExpression -> PinaforeSourceScoped PExpression
+apExpr :: PExpression -> PExpression -> PinaforeSourceInterpreter PExpression
 apExpr = tsApply @TS
 
 idExpr :: PExpression
@@ -83,7 +82,7 @@ listNumBoolFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Number]) -> [Tr
 listBoolNumFuncExpr :: PExpression
 listBoolNumFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Bool]) -> [2 :: Number]
 
-joinExpr :: PExpression -> PExpression -> PinaforeSourceScoped PExpression
+joinExpr :: PExpression -> PExpression -> PinaforeSourceInterpreter PExpression
 joinExpr exp1 exp2 = do
     je <- apExpr ifelseExpr boolExpr
     e <- apExpr je exp1
@@ -91,22 +90,23 @@ joinExpr exp1 exp2 = do
 
 textTypeTest :: Text -> String -> TestTree
 textTypeTest text r =
-    testCase (unpack text) $ do
-        expr <- throwResult $ runTestPinaforeSourceScoped $ parseTopExpression text
+    testTree (unpack text) $ do
+        expr <- throwInterpretResult $ runTestPinaforeSourceScoped $ parseTopExpression text
         assertEqual "" r $ showTypes expr
 
 badInterpretTest :: Text -> TestTree
 badInterpretTest text =
-    testCase (unpack text) $
-    case runTestPinaforeSourceScoped $ parseTopExpression text of
-        FailureResult _ -> return ()
-        SuccessResult _ -> assertFailure "no exception"
+    testTree (unpack text) $ do
+        result <- runInterpretResult $ runTestPinaforeSourceScoped $ parseTopExpression text
+        case result of
+            FailureResult _ -> return ()
+            SuccessResult _ -> assertFailure "no exception"
 
 simplifyTypeTest :: Text -> String -> TestTree
 simplifyTypeTest text e =
-    testCase (unpack text) $ do
+    testTree (unpack text) $ do
         simpexpr <-
-            throwResult $
+            throwInterpretResult $
             runTestPinaforeSourceScoped $ do
                 mt <- parseType @'Positive text
                 case mt of
@@ -119,9 +119,9 @@ simplifyTypeTest text e =
 
 unrollTest :: Text -> Text -> TestTree
 unrollTest rolledTypeText expectedUnrolledTypeText =
-    testCase (unpack rolledTypeText) $ do
+    testTree @Assertion (unpack rolledTypeText) $ do
         action <-
-            throwResult $
+            throwInterpretResult $
             runTestPinaforeSourceScoped $ do
                 mRolledType <- parseType @'Positive rolledTypeText
                 return $
@@ -135,9 +135,9 @@ unrollTest rolledTypeText expectedUnrolledTypeText =
 
 testType :: TestTree
 testType =
-    testGroup
+    testTree
         "type"
-        [ testGroup
+        [ testTree
               "pure"
               [ exprTypeTest "number" (return "{} -> Number") $ return numExpr
               , exprTypeTest "boolean" (return "{} -> Boolean") $ return boolExpr
@@ -175,8 +175,7 @@ testType =
                     e1 <- apExpr dotExpr sndExpr
                     apExpr e1 thingExpr
               , exprTypeTest "twice" (return "{} -> a -> (a, a)") $ return twiceExpr
-              , expectFail $
-                exprTypeTest "thing . twice" (return "{} -> a -> (a, a)") $ do
+              , exprTypeTest "thing . twice" (return "{} -> e -> (e, e)") $ do
                     e1 <- apExpr dotExpr thingExpr
                     apExpr e1 twiceExpr
               , exprTypeTest "thing $ twice number" (return "{} -> (Number, Number)") $ do
@@ -212,7 +211,7 @@ testType =
                 runRenamer @TS $
                 simplify @TS $ typeFConstExpression toJMShimWit ([MkJoinType (Right 3)] :: [JoinType Number Number])
               ]
-        , testGroup
+        , testTree
               "read"
               [ textTypeTest "v" "{v : a} -> a"
               , textTypeTest "if t then v1 else v2" "{t : Boolean, v1 : c, v2 : c} -> c"
@@ -236,7 +235,7 @@ testType =
               , textTypeTest
                     "\\v1 v2 v3 -> (([v1,v2],[v2,v3]),[v3,v1])"
                     "{} -> (a & c) -> (d & c) -> (a & d) -> (([c], [d]), [a])"
-              , testGroup
+              , testTree
                     "inversion"
                     [ textTypeTest "\\x -> let y : Integer; y = x in y" "{} -> Integer -> Integer"
                     , badInterpretTest "\\x -> let y : Boolean | Number; y = x in y"
@@ -271,7 +270,7 @@ testType =
               , textTypeTest "let f : Entity -> Entity -> Entity; f a b = (a,b) in f" "{} -> Entity -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity; f = Left in f" "{} -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity; f = Right in f" "{} -> Entity -> Entity"
-              , testGroup
+              , testTree
                     "recursive"
                     [ textTypeTest "let x : rec a. Maybe a; x = Nothing in x" "{} -> rec a. Maybe a"
                     , textTypeTest "let x : rec a. Maybe a; x = Just x in x" "{} -> rec a. Maybe a"
@@ -290,7 +289,7 @@ testType =
                           "{} -> (((rec c. Maybe c) -> Integer, rec d. Maybe d), Integer)"
                     ]
               ]
-        , testGroup
+        , testTree
               "simplify"
               [ simplifyTypeTest "a" "None"
               , simplifyTypeTest "a -> (a|a)" "a -> a"
@@ -303,7 +302,7 @@ testType =
               , simplifyTypeTest "(b & Integer) -> Integer" "Integer -> Integer"
               , simplifyTypeTest "(a & Integer) -> b" "Integer -> None"
               , simplifyTypeTest "(a & Integer) -> a" "(a & Integer) -> a"
-              , testGroup
+              , testTree
                     "subtype"
                     [ simplifyTypeTest "Boolean | Integer" "Boolean | Integer"
                     , simplifyTypeTest "Integer | Boolean" "Integer | Boolean"
@@ -318,7 +317,7 @@ testType =
                     , simplifyTypeTest "([Literal] & [Integer]) -> ()" "[Integer] -> ()"
                     , simplifyTypeTest "([Integer] & [Literal]) -> ()" "[Integer] -> ()"
                     ]
-              , testGroup
+              , testTree
                     "recursive"
                     [ simplifyTypeTest "rec a. a" "None"
                     , simplifyTypeTest "rec a. (a | Maybe a)" "rec a. Maybe a"
@@ -328,10 +327,12 @@ testType =
                     , simplifyTypeTest "Maybe (rec a. a)" "Maybe None"
                     , simplifyTypeTest "Maybe (rec a. [a])" "Maybe (rec a. [a])"
                     , simplifyTypeTest "Maybe (rec a. Integer)" "Maybe Integer"
-                    , expectFail $ simplifyTypeTest "rec a. rec b. (a, b)" "rec b. (b, b)" {- ISSUE #61-}
-                    , expectFail $ simplifyTypeTest "(rec a. Maybe a) | (rec b. [b])" "rec a. Maybe a | [a]" {- ISSUE #61-}
-                    , expectFail $ simplifyTypeTest "(rec a. Maybe a) | (rec a. [a])" "rec a. Maybe a | [a]" {- ISSUE #61-}
-                    , testGroup
+                    , expectFailBecause "ISSUE #61" $ simplifyTypeTest "rec a. rec b. (a, b)" "rec b. (b, b)"
+                    , expectFailBecause "ISSUE #61" $
+                      simplifyTypeTest "(rec a. Maybe a) | (rec b. [b])" "rec a. Maybe a | [a]"
+                    , expectFailBecause "ISSUE #61" $
+                      simplifyTypeTest "(rec a. Maybe a) | (rec a. [a])" "rec a. Maybe a | [a]"
+                    , testTree
                           "roll"
                           [ simplifyTypeTest "Maybe (rec a. Maybe a)" "rec a. Maybe a"
                           , simplifyTypeTest "Maybe (Maybe (rec a. Maybe a))" "rec a. Maybe a"

@@ -2,6 +2,7 @@ module Control.Monad.Exception
     ( module Control.Monad.Exception
     , CE.SomeException
     , CE.Exception(..)
+    , CE.evaluate
     ) where
 
 import qualified Control.Exception as CE
@@ -22,6 +23,9 @@ instance MonadThrow e (Result e) where
 
 instance (MonadTrans t, MonadThrow e m, Monad (t m)) => MonadThrow e (t m) where
     throw e = lift $ throw e
+
+instance {-# OVERLAPPING #-} Monad m => MonadThrow e (ExceptT e m) where
+    throw e = ExceptT $ return $ Left e
 
 instance CE.Exception e => MonadThrow e IO where
     throw = CE.throwIO
@@ -83,3 +87,6 @@ instance MonadBracket IO where
 instance (MonadTransUnlift t, MonadBracket m, MonadUnliftIO m, Monad (t m)) => MonadBracket (t m) where
     bracket before after thing =
         liftWithUnlift $ \unlift -> bracket (unlift before) (\a -> unlift $ after a) (\a -> unlift $ thing a)
+
+catchPureError :: a -> IO (Maybe CE.SomeException)
+catchPureError a = catch (CE.evaluate a >> return Nothing) $ \e -> return $ Just e

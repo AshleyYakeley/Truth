@@ -3,15 +3,14 @@ module Main
     ) where
 
 import Shapes
-import Test.Tasty
+import Shapes.Test
 
 {- no tests currently
-import Test.Tasty.HUnit
 import Changes.Core
 import Changes.UI.GTK
 -}
 tests :: TestTree
-tests = testGroup "changes-gtk" []
+tests = testTree "changes-gtk" ([] @TestTree)
 
 main :: IO ()
-main = defaultMain tests
+main = testMain tests

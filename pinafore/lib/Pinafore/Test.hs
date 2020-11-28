@@ -1,6 +1,6 @@
 module Pinafore.Test
     ( parseType
-    , runScoped
+    , runInterpreter
     , runSourcePos
     , PinaforeTypeSystem
     , Name
@@ -13,19 +13,18 @@ module Pinafore.Test
     , PinaforeShimWit
     , PinaforeSingularType
     , PinaforeSingularShimWit
-    , PinaforeScoped
-    , PinaforeSourceScoped
+    , PinaforeInterpreter
+    , PinaforeSourceInterpreter
     , toJMShimWit
     , PinaforeTableSubject(..)
     , module Pinafore.Test
     ) where
 
 import Changes.Core
-import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language
-import Pinafore.Language.Name
+import Pinafore.Language.Interpret
 import Pinafore.Language.Read
-import Pinafore.Language.Scope
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
@@ -33,8 +32,15 @@ import Pinafore.Storage
 import Shapes
 import Changes.Debug.Subscriber
 
-makeTestPinaforeContext :: ChangesContext -> LifeCycleIO (PinaforeContext, IO PinaforeTableSubject)
-makeTestPinaforeContext tc = do
+nullFetchModuleText :: ModuleName -> IO (Maybe Text)
+nullFetchModuleText _ = return Nothing
+
+makeTestPinaforeContext ::
+       (ModuleName -> IO (Maybe Text))
+    -> ChangesContext
+    -> Handle
+    -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
+makeTestPinaforeContext fetchModuleText tc hout = do
     let rc = emptyResourceContext
     tableStateReference :: Reference (WholeEdit PinaforeTableSubject) <-
         fmap (traceThing "makeTestPinaforeContext.tableStateObject") $
@@ -44,18 +50,26 @@ makeTestPinaforeContext tc = do
         tableReference = convertReference tableStateReference
         getTableState :: IO PinaforeTableSubject
         getTableState = getReferenceSubject rc tableStateReference
+        fetchModule :: ModuleName -> IO (Maybe (FilePath, Result UnicodeException Text))
+        fetchModule mname = do
+            mtext <- fetchModuleText mname
+            return $ do
+                text <- mtext
+                return $ (show mname, SuccessResult text)
     (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-    pc <- makePinaforeContext model tc
+    pc <- makePinaforeContext fetchModule nullInvocationInfo hout model tc
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycleIO IO -> IO PinaforeTableSubject -> IO r)
+       (ModuleName -> IO (Maybe Text))
+    -> Handle
+    -> ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycle IO -> IO PinaforeTableSubject -> IO r)
     -> IO r
-withTestPinaforeContext call =
-    runLifeCycle $
-    liftWithUnlift $ \unlift -> do
+withTestPinaforeContext fetchModuleText hout call =
+    runLifeCycle @LifeCycle $
+    liftIOWithUnlift $ \unlift -> do
         let tc = nullChangesContext unlift
-        (pc, getTableState) <- unlift $ makeTestPinaforeContext tc
+        (pc, getTableState) <- unlift $ makeTestPinaforeContext fetchModuleText tc hout
         let
             ?pinafore = pc
             in call tc unlift getTableState
@@ -65,7 +79,7 @@ withNullPinaforeContext f = let
     ?pinafore = nullPinaforeContext
     in f
 
-runTestPinaforeSourceScoped :: PinaforeSourceScoped a -> InterpretResult a
+runTestPinaforeSourceScoped :: PinaforeSourceInterpreter a -> InterpretResult a
 runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa
 
 checkUpdateEditor ::
@@ -74,7 +88,7 @@ checkUpdateEditor ::
     -> IO ()
     -> Editor (WholeUpdate a) ()
 checkUpdateEditor val push = let
-    editorInit :: Reference (WholeEdit a) -> LifeCycleIO (MVar (NonEmpty (WholeUpdate a)))
+    editorInit :: Reference (WholeEdit a) -> LifeCycle (MVar (NonEmpty (WholeUpdate a)))
     editorInit _ = liftIO newEmptyMVar
     editorUpdate ::
            MVar (NonEmpty (WholeUpdate a))
@@ -84,7 +98,7 @@ checkUpdateEditor val push = let
         -> EditContext
         -> IO ()
     editorUpdate var _ _ edits _ = putMVar var edits
-    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Reference (WholeEdit a) -> Task () -> LifeCycleIO ()
+    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Reference (WholeEdit a) -> Task () -> LifeCycle ()
     editorDo var _ _ =
         traceBracket "checkUpdateEditor.do" $ liftIO $ do
             traceBracket "checkUpdateEditor.push" $ push

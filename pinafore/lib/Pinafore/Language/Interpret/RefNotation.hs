@@ -1,4 +1,4 @@
-module Pinafore.Language.Read.RefNotation
+module Pinafore.Language.Interpret.RefNotation
     ( RefNotation
     , RefExpression
     , varRefExpr
@@ -12,28 +12,28 @@ module Pinafore.Language.Read.RefNotation
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
+import Pinafore.Language.Interpret.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Scope
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
 
-type RefNotation = WriterT [(Name, QExpr)] (StateT Int PinaforeScoped)
+type RefNotation = WriterT [(Name, QExpr)] (StateT Int PinaforeInterpreter)
 
-runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> WriterT [(Name, QExpr)] m a -> m a
+runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> MFunction (WriterT [(Name, QExpr)] m) m
 runRefWriterT spos wma = do
     (a, w) <- runWriterT wma
     case w of
         [] -> return a
         _ -> throw $ MkErrorMessage spos NotationBareUnquoteError
 
-liftRefNotation :: PinaforeScoped a -> RefNotation a
+liftRefNotation :: MFunction PinaforeInterpreter RefNotation
 liftRefNotation = lift . lift
 
-remonadRefNotation :: WMFunction PinaforeScoped PinaforeScoped -> (forall a. RefNotation a -> RefNotation a)
+remonadRefNotation :: WMFunction PinaforeInterpreter PinaforeInterpreter -> MFunction RefNotation RefNotation
 remonadRefNotation (MkWMFunction mm) = remonad $ remonad mm
 
-runRefNotation :: SourcePos -> RefNotation a -> PinaforeScoped a
+runRefNotation :: SourcePos -> MFunction RefNotation PinaforeInterpreter
 runRefNotation spos rexpr = evalStateT (runRefWriterT spos rexpr) 0
 
 type RefExpression = RefNotation QExpr
@@ -41,7 +41,7 @@ type RefExpression = RefNotation QExpr
 varRefExpr :: SourcePos -> Name -> RefExpression
 varRefExpr spos name =
     liftRefNotation $ do
-        mexpr <- runSourcePos spos $ lookupBinding name
+        mexpr <- runSourcePos spos $ lookupLetBinding name
         case mexpr of
             Just expr -> return expr
             Nothing -> return $ qVarExpr name
@@ -63,7 +63,7 @@ aprefExpr =
     qConstExpr
         ((<*>) :: PinaforeImmutableWholeRef (A -> B) -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef B)
 
-aplist :: QExpr -> [QExpr] -> PinaforeSourceScoped QExpr
+aplist :: QExpr -> [QExpr] -> PinaforeSourceInterpreter QExpr
 aplist expr [] = return expr
 aplist expr (arg:args) = do
     expr' <- qApplyAllExpr aprefExpr [expr, arg]

@@ -3,8 +3,8 @@ module Pinafore.Language.Syntax where
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Name
-import Pinafore.Language.Scope
 import Shapes
+import Text.Parsec (SourcePos)
 
 data SyntaxClosedEntityConstructor =
     MkSyntaxClosedEntityConstructor Name
@@ -15,10 +15,15 @@ data SyntaxDatatypeConstructor =
     MkSyntaxDatatypeConstructor Name
                                 [SyntaxType]
 
+data SyntaxDynamicEntityConstructor
+    = AnchorSyntaxDynamicEntityConstructor Anchor
+    | NameSyntaxDynamicEntityConstructor Name
+
 data SyntaxTypeDeclaration
     = ClosedEntitySyntaxTypeDeclaration [SyntaxClosedEntityConstructor]
     | DatatypeSyntaxTypeDeclaration [SyntaxDatatypeConstructor]
     | OpenEntitySyntaxTypeDeclaration
+    | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
 
 data SyntaxDeclaration
     = TypeSyntaxDeclaration SourcePos
@@ -28,6 +33,8 @@ data SyntaxDeclaration
                          SyntaxType
                          SyntaxType
     | BindingSyntaxDeclaration SyntaxBinding
+    | ImportSyntaxDeclarataion SourcePos
+                               ModuleName
 
 data WithSourcePos t =
     MkWithSourcePos SourcePos
@@ -84,6 +91,8 @@ data SyntaxPattern'
                         SyntaxPattern
     | ConstructorSyntaxPattern SyntaxConstructor
                                [SyntaxPattern]
+    | TypedSyntaxPattern SyntaxPattern
+                         SyntaxType
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
 
@@ -91,25 +100,21 @@ data SyntaxCase =
     MkSyntaxCase SyntaxPattern
                  SyntaxExpression
 
-data SyntaxSpecialForm
-    = SSFProperty SyntaxType
-                  SyntaxType
-                  Anchor
-    | SSFOpenEntity SyntaxType
-                    Anchor
-    | SSFNewOpenEntity SyntaxType
-    | SSFEvaluate SyntaxType
+data SyntaxAnnotation
+    = SAType SyntaxType
+    | SAAnchor Anchor
 
 data SyntaxConstant
     = SCIfThenElse
     | SCBind
     | SCBind_
     | SCConstructor SyntaxConstructor
-    | SCSpecialForm SyntaxSpecialForm
 
 data SyntaxExpression'
     = SEConst SyntaxConstant
     | SEVar Name
+    | SESpecialForm Name
+                    (NonEmpty SyntaxAnnotation)
     | SEApply SyntaxExpression
               SyntaxExpression
     | SEAbstract SyntaxPattern
@@ -141,6 +146,13 @@ seApplys spos f (a:aa) = seApplys spos (seApply spos f a) aa
 
 type SyntaxExpression = WithSourcePos SyntaxExpression'
 
+data SyntaxModule'
+    = SMExport [Name]
+    | SMLet [SyntaxDeclaration]
+            SyntaxModule
+
+type SyntaxModule = WithSourcePos SyntaxModule'
+
 data SyntaxTopDeclarations =
     MkSyntaxTopDeclarations SourcePos
                             [SyntaxDeclaration]
@@ -161,6 +173,7 @@ instance HasSourcePos SyntaxDeclaration where
     getSourcePos (BindingSyntaxDeclaration bind) = getSourcePos bind
     getSourcePos (TypeSyntaxDeclaration spos _ _) = spos
     getSourcePos (SubtypeDeclaration spos _ _) = spos
+    getSourcePos (ImportSyntaxDeclarataion spos _) = spos
 
 class SyntaxFreeVariables t where
     syntaxFreeVariables :: t -> FiniteSet Name
@@ -177,6 +190,7 @@ instance SyntaxFreeVariables SyntaxCase where
 instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SEConst _) = mempty
     syntaxFreeVariables (SEVar name) = opoint name
+    syntaxFreeVariables (SESpecialForm _ _) = mempty
     syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
     syntaxFreeVariables (SEAbstract pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
     syntaxFreeVariables (SERef expr) = syntaxFreeVariables expr
@@ -208,6 +222,7 @@ instance SyntaxBindingVariables SyntaxPattern' where
     syntaxBindingVariables (BothSyntaxPattern pat1 pat2) =
         union (syntaxBindingVariables pat1) (syntaxBindingVariables pat2)
     syntaxBindingVariables (ConstructorSyntaxPattern _ pats) = syntaxBindingVariables pats
+    syntaxBindingVariables (TypedSyntaxPattern pat _) = syntaxBindingVariables pat
 
 instance SyntaxBindingVariables SyntaxDeclaration where
     syntaxBindingVariables (BindingSyntaxDeclaration bind) = syntaxBindingVariables bind

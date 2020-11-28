@@ -4,7 +4,6 @@ module Pinafore.Base
 
 import Pinafore.Base.Action as I
 import Pinafore.Base.Anchor as I
-import Pinafore.Base.Context as I
 import Pinafore.Base.Edit as I
 import Pinafore.Base.Entity as I
 import Pinafore.Base.EntityAdapter as I

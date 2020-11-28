@@ -11,7 +11,7 @@ data ChangesContext = MkChangesContext
     , tcExitOnClosed :: forall m. MonadLifeCycleIO m => MFunction m m
     }
 
-tcUnliftLifeCycle :: ChangesContext -> MFunction LifeCycleIO IO
+tcUnliftLifeCycle :: ChangesContext -> MFunction LifeCycle IO
 tcUnliftLifeCycle tc = rtUnliftLifeCycle $ tcRunToolkit tc
 
 tcRunView :: MonadUnliftIO m => ChangesContext -> ResourceContext -> ViewT m a -> m a
@@ -20,7 +20,7 @@ tcRunView tc = rtRunView $ tcRunToolkit tc
 tcUnliftCreateView :: ChangesContext -> CreateView a -> View a
 tcUnliftCreateView tc = rtUnliftCreateView $ tcRunToolkit tc
 
-nullChangesContext :: MFunction LifeCycleIO IO -> ChangesContext
+nullChangesContext :: MFunction LifeCycle IO -> ChangesContext
 nullChangesContext unlift = let
     tcRunToolkit = nullRunToolkit unlift
     tcExitOnClosed = id
@@ -34,7 +34,7 @@ quitOnAllClosed tcRunToolkit call = do
                forall m. MonadLifeCycleIO m
             => MFunction m m
         tcExitOnClosed ma = do
-            liftLifeCycleIO ondone
+            liftLifeCycle ondone
             ma
     r <- call $ MkChangesContext {..}
     liftIO checkdone

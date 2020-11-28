@@ -143,12 +143,6 @@ tsUncheckedComponentLet ::
     -> TSInner ts (Map (TSName ts) (TSSealedExpression ts))
 tsUncheckedComponentLet = bindingsComponentLetSealedExpression @ts
 
-tsValuesLet ::
-       forall ts. (Ord (TSName ts), CompleteTypeSystem ts)
-    => Map (TSName ts) (TSValue ts)
-    -> Map (TSName ts) (TSSealedExpression ts)
-tsValuesLet = valuesLetSealedExpression @ts
-
 tsSubsumeExpression ::
        forall ts. CompleteTypeSystem ts
     => AnyW (TSPosShimWit ts)

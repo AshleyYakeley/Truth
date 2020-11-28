@@ -248,12 +248,17 @@ instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
 -- IO
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (IO a) where
-    toShimWit = mapPosShimWit (functionToShim "subtype" (liftIO :: IO a -> PinaforeAction a)) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" $ liftIO @PinaforeAction) toJMShimWit
 
 -- View
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (View a) where
-    toShimWit = mapPosShimWit (functionToShim "subtype" viewPinaforeAction) toJMShimWit
+    toShimWit = mapPosShimWit (functionToShim "subtype" $ liftToLifeCycle @CreateView) toJMShimWit
+
+-- CreateView
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (CreateView a) where
+    toShimWit = mapPosShimWit (functionToShim "subtype" createViewPinaforeAction) toJMShimWit
 
 -- LangRefOrder
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>

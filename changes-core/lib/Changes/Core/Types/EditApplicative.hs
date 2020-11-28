@@ -67,14 +67,14 @@ class EditApplicative f => FloatingEditApplicative (f :: Type -> Type) where
            ResourceContext
         -> FloatingChangeLens updateA updateB
         -> f updateA
-        -> LifeCycleIO (f updateB)
+        -> LifeCycle (f updateB)
 
 eaFloatMapReadOnly ::
        forall f updateA updateB. FloatingEditApplicative f
     => ResourceContext
     -> FloatingChangeLens updateA (ReadOnlyUpdate updateB)
     -> f (ReadOnlyUpdate updateA)
-    -> LifeCycleIO (f (ReadOnlyUpdate updateB))
+    -> LifeCycle (f (ReadOnlyUpdate updateB))
 eaFloatMapReadOnly rc flens = eaFloatMap rc $ liftReadOnlyFloatingChangeLens flens
 
 instance FloatingEditApplicative (FloatingChangeLens update) where

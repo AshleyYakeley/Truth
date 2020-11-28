@@ -31,14 +31,14 @@ oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
             case retrieveOne fu of
                 FailureResult fn -> do
                     ((), vs) <-
-                        viewCreateView $ do
+                        getInnerLifeState $ do
                             widget <- baseView $ fmap never fn
                             cvPackStart True box widget
                             widgetShow widget
                     return $ MissingOVS fn vs
                 SuccessResult () -> do
                     ((), vs) <-
-                        viewCreateView $ do
+                        getInnerLifeState $ do
                             widget <- baseView $ pure $ mapModel (mustExistOneChangeLens "reference") rm
                             cvPackStart True box widget
                             widgetShow widget
@@ -47,7 +47,7 @@ oneWholeView rmod baseView (MkSelectNotify notifyChange) = do
         initVS rm = do
             box <- cvNew Box [#orientation := OrientationVertical]
             firstfu <- viewRunResource rm $ \am -> aModelRead am ReadHasOne
-            vs <- cvLiftView $ getWidgets box rm firstfu
+            vs <- liftToLifeCycle $ getWidgets box rm firstfu
             return (vs, box)
         recvVS :: Box -> [FullResultOneUpdate f update] -> StateT (OneWholeViews f) (View) ()
         recvVS box _ = do

@@ -7,27 +7,32 @@ import Changes.Core
 import Changes.UI.GTK
 import Pinafore
 import Shapes
+import System.Environment
 
-runFiles :: Bool -> FilePath -> [FilePath] -> IO ()
-runFiles fNoRun dirpath fpaths =
-    changesMainGTK $ \tc -> do
-        context <- standardPinaforeContext dirpath tc
-        cvLiftView $
-            for_ fpaths $ \fpath -> do
-                ptext <- liftIO $ readFile fpath
-                action <-
-                    throwResult $ let
-                        ?pinafore = context
-                        in pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
+runFiles :: Foldable t => Bool -> [FilePath] -> FilePath -> t (FilePath, [String]) -> IO ()
+runFiles fNoRun includeDirs dirpath scripts =
+    changesMainGTK $ \tc ->
+        for_ scripts $ \(fpath, iiScriptArguments) -> do
+            let iiScriptName = fpath
+            iiEnvironment <- liftIO getEnvironment
+            context <- standardPinaforeContext includeDirs MkInvocationInfo {..} dirpath tc
+            liftToLifeCycle $ do
+                action <- let
+                    ?pinafore = context
+                    in pinaforeInterpretFile fpath
                 if fNoRun
                     then return ()
                     else action
 
-runInteractive :: FilePath -> IO ()
-runInteractive dirpath =
+runInteractive :: [FilePath] -> FilePath -> IO ()
+runInteractive includeDirs dirpath =
     changesMainGTK $ \tc -> do
-        context <- standardPinaforeContext dirpath tc
+        let
+            iiScriptName = ""
+            iiScriptArguments = []
+        iiEnvironment <- liftIO getEnvironment
+        context <- standardPinaforeContext includeDirs MkInvocationInfo {..} dirpath tc
         let
             ?pinafore = context
-            in cvLiftView pinaforeInteract
-        cvLiftView viewExit
+            in liftToLifeCycle pinaforeInteract
+        liftToLifeCycle viewExit

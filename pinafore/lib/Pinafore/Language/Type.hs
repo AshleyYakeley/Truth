@@ -8,6 +8,8 @@ import Data.Shim as I
 import Language.Expression.Common as I
 import Language.Expression.Dolan as I
 import Pinafore.Language.Type.Data as I
+import Pinafore.Language.Type.DynamicEntity as I
+import Pinafore.Language.Type.DynamicSupertype as I
 import Pinafore.Language.Type.Entity as I
 import Pinafore.Language.Type.EntityAdapter as I
 import Pinafore.Language.Type.Ground as I

@@ -3,9 +3,10 @@ module Pinafore.Language.Type.Type where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
+import Pinafore.Language.Interpret.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Scope
 import Pinafore.Language.Shim
+import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.Ground
 import Shapes
@@ -28,25 +29,32 @@ type PinaforePatternConstructor = PatternConstructor Name (PinaforeShimWit 'Posi
 
 type PinaforePattern = SealedPattern Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
 
-type instance ScopeExpression PinaforeTypeSystem =
+type instance InterpreterExpression PinaforeTypeSystem =
      PinaforeExpression
 
-type instance ScopePatternConstructor PinaforeTypeSystem =
+type instance InterpreterPatternConstructor PinaforeTypeSystem =
      PinaforePatternConstructor
 
-type instance ScopeProvidedType PinaforeTypeSystem = ProvidedType
+type instance InterpreterProvidedType PinaforeTypeSystem =
+     ProvidedType
 
-type instance ScopeClosedEntityType PinaforeTypeSystem =
+type instance InterpreterClosedEntityType PinaforeTypeSystem =
      ClosedEntityType
 
 type PinaforeSpecialVals = SpecialVals PinaforeTypeSystem
 
-type PinaforeNamedType = NamedType PinaforeTypeSystem
+type PinaforeBoundType = BoundType PinaforeTypeSystem
 
 type PinaforeTypeBox = TypeBox PinaforeTypeSystem
 
-type PinaforeScoped = Scoped PinaforeTypeSystem
+type PinaforeScope = Scope PinaforeTypeSystem
 
-type PinaforeSourceScoped = SourceScoped PinaforeTypeSystem
+type PinaforeBinding = InterpreterBinding PinaforeTypeSystem
 
-type PinaforeTypeCheck = VarRenamerT PinaforeTypeSystem PinaforeSourceScoped
+type PinaforeInterpreter = Interpreter PinaforeTypeSystem
+
+type PinaforeSourceInterpreter = SourceInterpreter PinaforeTypeSystem
+
+type PinaforeAnnotation = Annotation PinaforeTypeSystem
+
+type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeSourceInterpreter

@@ -4,14 +4,12 @@ module Pinafore.Language.Predefined
     , DocTree(..)
     , runDocTree
     , predefinedBindings
-    , predefinedPatternConstructors
     , predefinedDoc
     , outputLn
     ) where
 
-import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language.DocTree
-import Pinafore.Language.Expression
 import Pinafore.Language.Name
 import Pinafore.Language.Predefined.Base
 import Pinafore.Language.Predefined.Defs
@@ -29,26 +27,11 @@ predefinitions =
 predefinedDoc :: DocTree DefDoc
 predefinedDoc = fmap bdDoc $ predefinitions
 
-predefinedBindings :: (?pinafore :: PinaforeContext) => Map Name QValue
-predefinedBindings =
-    mapFromList $
-    catMaybes $
-    toList $
-    fmap
-        (\doc -> do
-             db <- bdBind doc
-             val <- dbValue db
-             return (dbName db, val ?pinafore)) $
-    predefinitions
+bindDocBinding :: (?pinafore :: PinaforeContext) => BindDoc -> Maybe (Name, PinaforeBinding)
+bindDocBinding doc = do
+    (name, mb) <- bdBind doc
+    b <- mb
+    return (name, b ?pinafore)
 
-predefinedPatternConstructors :: Map Name PinaforePatternConstructor
-predefinedPatternConstructors =
-    mapFromList $
-    catMaybes $
-    toList $
-    fmap
-        (\doc -> do
-             db <- bdBind doc
-             pat <- dbPattern db
-             return (dbName db, pat)) $
-    predefinitions
+predefinedBindings :: (?pinafore :: PinaforeContext) => Map Name PinaforeBinding
+predefinedBindings = mapFromList $ catMaybes $ toList $ fmap bindDocBinding predefinitions

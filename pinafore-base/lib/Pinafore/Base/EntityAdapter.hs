@@ -54,7 +54,7 @@ unitEntityAdapter entity =
 
 plainEntityAdapter :: EntityAdapter Entity
 plainEntityAdapter = let
-    entityAdapterDefinitions = MkEntityStorer $ pure $ MkKnowShim PlainConstructorStorer Known
+    entityAdapterDefinitions = MkEntityStorer $ pure $ simpleKnowShim PlainConstructorStorer
     entityAdapterToDefinition e = MkAnyValue (MkEntityStorer PlainConstructorStorer) e
     in MkEntityAdapter {..}
 

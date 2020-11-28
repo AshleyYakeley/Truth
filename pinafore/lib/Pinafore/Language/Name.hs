@@ -20,3 +20,10 @@ nameToSymbolType n = newUVar $ unpack n
 
 symbolTypeToName :: SymbolType symbol -> Name
 symbolTypeToName = MkName . pack . uVarName
+
+newtype ModuleName =
+    MkModuleName (NonEmpty Name)
+    deriving (Eq, Ord)
+
+instance Show ModuleName where
+    show (MkModuleName nn) = intercalate "." $ toList $ fmap unpack nn

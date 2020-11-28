@@ -18,7 +18,9 @@ nav:
   - Syntax: 'syntax.md'
   - Type System: 'type-system.md'
   - Types: 'types.md'
+  - Dynamic Supertypes: 'dynamic-supertypes.md'
   - Reference Notation: 'reference-notation.md'
+  - Modules: 'modules.md'
   - Predefined Bindings: 'predefined.md'
 - Examples:
   - Stopwatch: 'examples/stopwatch.md'

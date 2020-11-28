@@ -87,7 +87,7 @@ instance AsLiteral SafeRational where
     toLiteral = toLiteral . safeRationalToNumber
     fromLiteral t = do
         n <- fromLiteral t
-        case checkExactSafeRational n of
+        case numberCheckSafeRational n of
             Just x -> return x
             _ -> Unknown
 

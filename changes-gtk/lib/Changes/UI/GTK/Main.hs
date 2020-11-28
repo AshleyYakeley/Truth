@@ -28,7 +28,7 @@ changesMainGTK appMain = traceBracketIO "THREAD: main" $
             rtWithoutLock = traceBarrier "rtWithoutLock" $ mVarUnitUnlock uiLockVar
             rtExit :: IO ()
             rtExit = traceBarrier "truthMainGTK: rtExit" (mVarRun runVar) $ put RSStop
-            rtUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
+            rtUnliftLifeCycle :: forall a. LifeCycle a -> IO a
             rtUnliftLifeCycle = unlift
             rt = MkRunToolkit {..}
         a <- unlift $ rtRunView rt emptyResourceContext $ quitOnAllClosed rt appMain

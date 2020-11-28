@@ -71,7 +71,7 @@ makeEntry tdef cvt store = do
         setVal tt = do
             sv <- readIORef setValRef
             sv tt
-    ((), dynamicStoreEntryState) <- viewCreateView $ cvt setVal
+    ((), dynamicStoreEntryState) <- getInnerLifeState $ cvt setVal
     liftIO $ writeIORef setValRef setValStore
     dynamicStoreEntryValue <- liftIO $ readIORef initValRef
     return MkDynamicStoreEntry {..}
@@ -79,9 +79,9 @@ makeEntry tdef cvt store = do
 newDynamicStore :: t -> [((t -> t) -> IO ()) -> CreateView ()] -> CreateView (DynamicStore t)
 newDynamicStore tdef lcv = do
     rec
-        entries <- for lcv $ \cvt -> cvLiftView $ makeEntry tdef cvt store
+        entries <- for lcv $ \cvt -> liftToLifeCycle $ makeEntry tdef cvt store
         store <- seqStoreNew entries
-    liftLifeCycleIO $ lifeCycleClose $ dynamicStoreClear $ MkDynamicStore store
+    lifeCycleClose $ dynamicStoreClear $ MkDynamicStore store
     return $ MkDynamicStore store
 
 dynamicStoreInsert :: Integral pos => pos -> t -> (((t -> t) -> IO ()) -> CreateView ()) -> DynamicStore t -> View ()

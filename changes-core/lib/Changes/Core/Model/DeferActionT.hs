@@ -71,5 +71,5 @@ runDeferActionT (MkDeferActionT (WriterT wma)) = traceBracket "runDeferActionT" 
     traceBracket "runDeferActionT.deferred" $ for_ actions liftIO
     return a
 
-deferActionResourceRunner :: LifeCycleIO (ResourceRunner '[ DeferActionT])
+deferActionResourceRunner :: LifeCycle (ResourceRunner '[ DeferActionT])
 deferActionResourceRunner = liftIO $ newResourceRunner runDeferActionT
