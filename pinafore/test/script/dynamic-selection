@@ -13,32 +13,42 @@ dynamictype Person = !"type.person";
 testpt = dynamicEntity @Person !"testpt";
 
 inform: Text -> Maybe Entity -> Action ();
-inform t mv = outputLn $ t <> ": " <> case mv of
+inform t mv = debugMessage $ t <> ": " <> case mv of
     Just v -> "changed: " <> entityAnchor v;
     Nothing -> "deleted";
     end;
 
-showWindow: Window -> Action ();
-showWindow window = do
+debugWindow: Window -> Action ();
+debugWindow window = do
     t <- debugWindowInfo window;
     debugMessage t;
     end;
 
-in do
+debugThing: Text -> Action a -> Action a;
+debugThing t action = do
+    debugMessage $ t <> ": [";
+    a <- action;
+    debugMessage $ t <> ": ]";
+    return a;
+    end;
+
+in debugThing "SCRIPT" $ do
     selection <- newMemWhole;
-    subscribeWhole selection $ inform "sel";
+    subscribeWhole selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
     selection := testpt;
-    window <- openWindow {"Test"} {[]} $
-        uiDynamic $ coMapWhole (\e -> uiRun $ do
+    window <- fixAction $ \w -> openWindow {"Test"} {[]} $
+        uiDynamic $ coMapWhole (\e -> uiRun $ debugThing "DYNAMIC" $ do
+            # debugWindow w;
             inform "dynamic" $ Just e;
             return $ uiVertical [(True,uiLabel {"Set Text"})];
-            #return $ uiLabel {"Set Text"};
             end) selection
         ;
-    showWindow window;
-    debugMessage "MARK:START";
+    debugWindow window;
     selection := testpt;
-    sleep 10000;
-    debugMessage "MARK:END";
-    showWindow window;
+    debugWindow window;
+    openWindow {"Check"} {[]} $ uiButton {"Check"} $ {debugThing "CHECK" $ do
+        debugWindow window;
+        selection := testpt;
+        debugWindow window;
+        end};
     end

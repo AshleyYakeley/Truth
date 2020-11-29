@@ -327,6 +327,8 @@ ui_predefinitions =
           "User interface windows."
           [ mkValEntry "openWindow" "Open a new window with this title and UI." openWindow
           , mkValEntry "closeWindow" "Close a window." pwClose
+          , mkValEntry "showWindow" "Show a window." uiWindowShow
+          , mkValEntry "hideWindow" "Hide a window." uiWindowHide
           , mkValEntry "exitUI" "Exit the user interface." pinaforeExit
           ]
     ]

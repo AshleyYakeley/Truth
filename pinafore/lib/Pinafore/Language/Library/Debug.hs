@@ -5,14 +5,10 @@ module Pinafore.Language.Library.Debug
 import Changes.UI.GTK
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Value
 import Shapes
 
 debugMessage :: Text -> IO ()
 debugMessage t = hPutStrLn stderr $ unpack t
-
-debugWindowInfo :: LangWindow -> IO Text
-debugWindowInfo w = uiWindowDebugDescribe $ pwWindow w
 
 debugDocModule :: DocTree BindDoc
 debugDocModule =
@@ -20,5 +16,5 @@ debugDocModule =
         "Debug"
         "Functions for debugging."
         [ mkValEntry "debugMessage" "Debug message to std error." debugMessage
-        , mkValEntry "debugWindowInfo" "Get window contents information" debugWindowInfo
+        , mkValEntry "debugWindowInfo" "Get window contents information" uiWindowDebugDescribe
         ]
