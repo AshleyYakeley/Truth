@@ -9,6 +9,7 @@ module Pinafore.Language.Interpret.Interpreter
     , runInterpreter
     , liftInterpreter
     , Scope
+    , importScope
     , exportScope
     , importModule
     , SourcePos
@@ -25,7 +26,8 @@ module Pinafore.Language.Interpret.Interpreter
     , lookupLetBinding
     , withNewLetBindings
     , withRemovedBindings
-    , withNewBindings
+    , bindingsScope
+    , getSubtypesScope
     , lookupSpecialForm
     , lookupBoundType
     , newTypeID
@@ -166,6 +168,9 @@ exportScope names = do
 pLocalScope :: (Scope ts -> Scope ts) -> Interpreter ts a -> Interpreter ts a
 pLocalScope maptc (MkInterpreter ma) = MkInterpreter $ local (\ic -> ic {icScope = maptc $ icScope ic}) ma
 
+importScope :: Scope ts -> Interpreter ts a -> Interpreter ts a
+importScope newscope = pLocalScope $ \oldscope -> newscope <> oldscope
+
 getCycle :: ModuleName -> [ModuleName] -> Maybe (NonEmpty ModuleName)
 getCycle _ [] = Nothing
 getCycle mn (n:nn)
@@ -201,7 +206,7 @@ getModule mname = do
 importModule :: ModuleName -> SourceInterpreter ts (WMFunction (Interpreter ts) (Interpreter ts))
 importModule mname = do
     newscope <- getModule mname
-    return $ MkWMFunction $ pLocalScope $ \oldscope -> newscope <> oldscope
+    return $ MkWMFunction $ importScope newscope
 
 newtype SourceInterpreter ts a =
     MkSourceInterpreter (ReaderT SourcePos (Interpreter ts) a)
@@ -254,8 +259,20 @@ convertFailure ta tb = throw $ TypeConvertError ta tb
 withNewBinding :: Name -> InterpreterBinding ts -> Interpreter ts a -> Interpreter ts a
 withNewBinding name b = pLocalScope $ \tc -> tc {scopeBindings = insertMapLazy name b $ scopeBindings tc}
 
+bindingsScope :: Map Name (InterpreterBinding ts) -> Scope ts
+bindingsScope bb = mempty {scopeBindings = bb}
+
+getSubtypesScope :: MonadIO m => [SubypeConversionEntry (InterpreterGroundType ts)] -> m (Scope ts)
+getSubtypesScope newscs = do
+    pairs <-
+        liftIO $
+        for newscs $ \newsc -> do
+            key <- newUnique
+            return (key, newsc)
+    return $ mempty {scopeSubtypes = mapFromList pairs}
+
 withNewBindings :: Map Name (InterpreterBinding ts) -> Interpreter ts a -> Interpreter ts a
-withNewBindings bb = pLocalScope $ \tc -> tc {scopeBindings = bb <> (scopeBindings tc)}
+withNewBindings bb = importScope $ bindingsScope bb
 
 withRemovedBindings :: [Name] -> Interpreter ts a -> Interpreter ts a
 withRemovedBindings nn = pLocalScope $ \tc -> tc {scopeBindings = deletesMap nn $ scopeBindings tc}
@@ -362,12 +379,8 @@ withNewPatternConstructor name exp pc = do
 
 withSubtypeConversions :: [SubypeConversionEntry (InterpreterGroundType ts)] -> Interpreter ts a -> Interpreter ts a
 withSubtypeConversions newscs ma = do
-    pairs <-
-        liftIO $
-        for newscs $ \newsc -> do
-            key <- newUnique
-            return (key, newsc)
-    pLocalScope (\tc -> tc {scopeSubtypes = mapFromList pairs <> scopeSubtypes tc}) ma
+    newscope <- getSubtypesScope newscs
+    importScope newscope ma
 
 getSubtypeConversions :: Interpreter ts [SubypeConversionEntry (InterpreterGroundType ts)]
 getSubtypeConversions = fmap (fmap snd . mapToList . scopeSubtypes) interpreterScope

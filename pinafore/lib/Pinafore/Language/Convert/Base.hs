@@ -10,6 +10,7 @@ module Pinafore.Language.Convert.Base
     ) where
 
 import Changes.Core
+import Changes.UI.GTK
 import Pinafore.Base
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
@@ -307,6 +308,13 @@ instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) La
     fromShimWit = mkShimWit $ GroundDolanSingularType WindowPinaforeGroundType NilDolanArguments
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangWindow where
+    fromShimWit = singleDolanShimWit fromJMShimWit
+
+-- UIWindow
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) UIWindow where
+    fromShimWit = mapNegShimWit (functionToShim "subtype" pwWindow) fromJMShimWit
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) UIWindow where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- LangMenuEntry

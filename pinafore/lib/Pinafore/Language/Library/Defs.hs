@@ -1,4 +1,4 @@
-module Pinafore.Language.Predefined.Defs where
+module Pinafore.Language.Library.Defs where
 
 import Pinafore.Base
 import Pinafore.Context

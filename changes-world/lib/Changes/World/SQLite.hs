@@ -143,15 +143,10 @@ instance HasSchema (TupleWhereClause SQLiteDatabase row) where
     type Schema (TupleWhereClause SQLiteDatabase row) = SubmapWitness (RowColSel row) ColumnRefSchema
     schemaString csch (MkTupleWhereClause expr) = schemaString csch expr
 
-intercalate' :: Monoid a => a -> [a] -> a
-intercalate' _ [] = mempty
-intercalate' _ [a] = a
-intercalate' i (a:aa) = mconcat [a, i, intercalate' i aa]
-
 instance HasSchema (TupleSelectClause SQLiteDatabase tablesel row row') where
     type Schema (TupleSelectClause SQLiteDatabase tablesel row row') = SubmapWitness (RowColSel row) ColumnRefSchema
     schemaString csch (MkTupleSelectClause mapSel) =
-        intercalate' "," $ fmap (\(MkAnyW cs') -> schemaString csch $ mapSel cs') $ allWitnesses @(RowColSel row')
+        intercalate "," $ fmap (\(MkAnyW cs') -> schemaString csch $ mapSel cs') $ allWitnesses @(RowColSel row')
 
 instance HasSchema (TupleOrderItem colsel) where
     type Schema (TupleOrderItem colsel) = SubmapWitness colsel ColumnRefSchema
@@ -221,13 +216,13 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
                     fromPart =
                         case tabRefs of
                             [] -> ""
-                            _ -> " FROM " <> intercalate' "," tabRefs
+                            _ -> " FROM " <> intercalate "," tabRefs
                     orderPart :: QueryString
                     orderPart =
                         case oc of
                             MkTupleOrderClause [] -> ""
                             MkTupleOrderClause ocs ->
-                                " ORDER BY " <> (intercalate' "," $ fmap (schemaString rowSchema) ocs)
+                                " ORDER BY " <> (intercalate "," $ fmap (schemaString rowSchema) ocs)
                     in "SELECT " <> schemaString rowSchema sc <> fromPart <> wherePart rowSchema wc <> orderPart
         tableSchema ::
                TupleTableSel tablesel row -> (SQLite.TableSchema (RowColSel row), Dict (IsSQLiteTable (RowColSel row)))
@@ -241,7 +236,7 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
             -> QueryString
         rowSchemaString MkSubmapWitness {..} (MkAllValue row) =
             "(" <>
-            intercalate'
+            intercalate
                 ","
                 (fmap
                      (\(MkAnyW col) ->
@@ -256,7 +251,7 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
         sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema {..}, Dict)) (MkTupleInsertClause ic)) = let
             tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
             in "INSERT OR REPLACE INTO " <>
-               fromString tableName <> " VALUES " <> intercalate' "," (fmap (rowSchemaString tableColumnRefs) ic)
+               fromString tableName <> " VALUES " <> intercalate "," (fmap (rowSchemaString tableColumnRefs) ic)
         sqliteEditQuery (DatabaseDelete (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc) = let
             tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
             in "DELETE FROM " <> fromString tableName <> wherePart tableColumnRefs wc
@@ -264,7 +259,7 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
             tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
             in "UPDATE " <>
                fromString tableName <>
-               " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc
+               " SET " <> intercalate "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc
         refRead :: Readable (ReaderT Connection IO) (SQLiteReader tablesel)
         refRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
             case sqliteReadQuery r of

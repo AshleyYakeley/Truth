@@ -23,7 +23,7 @@ import Data.Functor.Compose as I
 import Data.Functor.Identity as I
 import Data.Int as I
 import Data.Kind as I
-import Data.List as I ((++), intercalate, nub, nubBy, zip)
+import Data.List as I ((++), nub, nubBy, zip)
 import Data.List.NonEmpty as I (NonEmpty(..), last, nonEmpty)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
@@ -235,3 +235,8 @@ isSubsetOf a b = onull $ difference a b
 deletesMap :: IsMap map => [ContainerKey map] -> map -> map
 deletesMap [] = id
 deletesMap (k:kk) = deleteMap k . deletesMap kk
+
+intercalate :: Monoid a => a -> [a] -> a
+intercalate _ [] = mempty
+intercalate _ [a] = a
+intercalate i (a:aa) = mconcat [a, i, intercalate i aa]

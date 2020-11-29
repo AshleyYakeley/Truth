@@ -1,4 +1,4 @@
-module Pinafore.Language.Predefined.UI
+module Pinafore.Language.Library.Predefined.UI
     ( ui_predefinitions
     ) where
 
@@ -9,7 +9,7 @@ import Data.Time
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.DocTree
-import Pinafore.Language.Predefined.Defs
+import Pinafore.Language.Library.Defs
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
@@ -327,6 +327,8 @@ ui_predefinitions =
           "User interface windows."
           [ mkValEntry "openWindow" "Open a new window with this title and UI." openWindow
           , mkValEntry "closeWindow" "Close a window." pwClose
+          , mkValEntry "showWindow" "Show a window." uiWindowShow
+          , mkValEntry "hideWindow" "Hide a window." uiWindowHide
           , mkValEntry "exitUI" "Exit the user interface." pinaforeExit
           ]
     ]
