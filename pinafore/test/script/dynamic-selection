@@ -10,16 +10,6 @@ byName: FiniteSetRef {+a,+Named} -> WholeRef +[(a,Text)];
 byName ref = members (mapRefOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ ref;
 
 dynamictype Person = !"type.person";
-dynamictype Organisation = !"type.organisation";
-dynamictype LegalEntity = Person | Organisation;
-subtype LegalEntity <: Named;
-legalentities: FiniteSetRef LegalEntity;
-legalentities = property @LegalEntity @() !"type.legalentity" !@ {()};
-
-# a table for a given finite set of people
-contactsTableUI: FiniteSetRef LegalEntity -> Maybe (WholeRef LegalEntity) -> UI;
-contactsTableUI pp mselection = uiListTable [({"Name"},\p -> name !$ {p})] (refOrderOn name alphabetical) pp (\_ -> return ()) mselection;
-
 testpt = dynamicEntity @Person !"testpt";
 
 inform: Text -> Maybe Entity -> Action ();
@@ -31,7 +21,7 @@ inform t mv = outputLn $ t <> ": " <> case mv of
 showWindow: Window -> Action ();
 showWindow window = do
     t <- debugWindowInfo window;
-    outputLn t;
+    debugMessage t;
     end;
 
 in do
@@ -47,7 +37,8 @@ in do
         ;
     showWindow window;
     debugMessage "MARK:START";
-    openWindow {"Test"} {[]} $ contactsTableUI legalentities (Just selection);
+    selection := testpt;
+    sleep 10000;
     debugMessage "MARK:END";
     showWindow window;
     end

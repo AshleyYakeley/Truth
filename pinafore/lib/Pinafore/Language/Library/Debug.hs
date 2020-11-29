@@ -9,7 +9,7 @@ import Pinafore.Language.Value
 import Shapes
 
 debugMessage :: Text -> IO ()
-debugMessage _ = return ()
+debugMessage t = hPutStrLn stderr $ unpack t
 
 debugWindowInfo :: LangWindow -> IO Text
 debugWindowInfo w = uiWindowDebugDescribe $ pwWindow w
@@ -19,6 +19,6 @@ debugDocModule =
     MkDocTree
         "Debug"
         "Functions for debugging."
-        [ mkValEntry "debugMessage" "Message to debug output. Does nothing except in debug builds." debugMessage
+        [ mkValEntry "debugMessage" "Debug message to std error." debugMessage
         , mkValEntry "debugWindowInfo" "Get window contents information" debugWindowInfo
         ]

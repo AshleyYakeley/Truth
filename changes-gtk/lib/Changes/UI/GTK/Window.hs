@@ -1,6 +1,9 @@
 module Changes.UI.GTK.Window
     ( WindowSpec(..)
-    , UIWindow(..)
+    , UIWindow
+    , uiWindowHide
+    , uiWindowShow
+    , uiWindowDebugDescribe
     , createWindow
     ) where
 
@@ -37,12 +40,19 @@ getWidgetChildren w = do
 widgetInfoText :: Widget -> IO Text
 widgetInfoText w = do
     tn <- getObjectTypeName w
+    vis <- getWidgetVisible w
+    let
+        hh =
+            tn <>
+            if vis
+                then ""
+                else "{hidden}"
     mww <- getWidgetChildren w
     case mww of
-        Nothing -> return tn
+        Nothing -> return hh
         Just ww -> do
             tt <- for ww widgetInfoText
-            return $ tn <> " (" <> intercalate ", " tt <> ")"
+            return $ hh <> " (" <> intercalate ", " tt <> ")"
 
 createWindow :: WindowSpec -> CreateView UIWindow
 createWindow MkWindowSpec {..} = do

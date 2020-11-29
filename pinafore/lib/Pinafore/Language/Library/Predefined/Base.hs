@@ -531,6 +531,7 @@ base_predefinitions =
                 "getTimeMS"
                 "Get the time as a whole number of milliseconds."
                 (liftIO getTimeMS :: PinaforeAction Integer)
+          , mkValEntry "sleep" "Do nothing for this number of milliseconds." (\t -> threadDelay $ t * 1000)
           , mkValEntry "lifecycle" "Close everything that gets opened in the given action." $
             subLifeCycle @PinaforeAction @A
           , mkValEntry "onClose" "Add this action as to be done when closing." pinaforeOnClose
