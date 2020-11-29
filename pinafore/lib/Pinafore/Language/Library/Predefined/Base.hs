@@ -19,7 +19,6 @@ import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
 import Shapes.Numeric
-import Changes.Debug
 
 getTimeMS :: IO Integer
 getTimeMS = do
@@ -538,7 +537,6 @@ base_predefinitions =
           , mkValEntry "onClose" "Add this action as to be done when closing." pinaforeOnClose
           , mkValEntry "closer" "Get an (idempotent) action that closes what gets opened in the given action." $
             pinaforeEarlyCloser @A
-          , mkValEntry "debugmsg" "Debug message (debug only)." (traceIOM . unpack :: Text -> PinaforeAction ())
           ]
     , docTreeEntry
           "Invocation"
