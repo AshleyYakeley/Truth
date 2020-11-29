@@ -496,17 +496,17 @@ testQueries =
               , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ LRSuccess "3"
               ]
         , testTree
-              "subsume" -- see #58 for expected failures
+              "subsume"
               [ testQuery "let a : (); a = a in ()" $ LRSuccess "unit"
               , testQuery "let a : Integer; a = a in ()" $ LRSuccess "unit"
-              , expectFailBecause "ISSUE #60" $ testQuery "let a : Integer|Text; a = a in ()" $ LRSuccess "unit"
+              , expectFailBecause "ISSUE #58" $ testQuery "let a : Integer|Text; a = a in ()" $ LRSuccess "unit"
               , testQuery "let r = r in let a : Integer|Text; a = r in ()" $ LRSuccess "unit"
               , testQuery "let r = r; a : Integer|Text; a = r in ()" $ LRSuccess "unit"
-              , expectFailBecause "ISSUE #60" $ testQuery "let r = a; a : Integer|Text; a = r in ()" $ LRSuccess "unit"
-              , expectFailBecause "ISSUE #60" $ testQuery "let a : None; a = a in ()" $ LRSuccess "unit"
+              , expectFailBecause "ISSUE #58" $ testQuery "let r = a; a : Integer|Text; a = r in ()" $ LRSuccess "unit"
+              , expectFailBecause "ISSUE #58" $ testQuery "let a : None; a = a in ()" $ LRSuccess "unit"
               , testQuery "let r = r in let a : None; a = r in ()" $ LRSuccess "unit"
               , testQuery "let r = r; a : None; a = r in ()" $ LRSuccess "unit"
-              , expectFailBecause "ISSUE #60" $ testQuery "let r = a; a : None; a = r in ()" $ LRSuccess "unit"
+              , expectFailBecause "ISSUE #58" $ testQuery "let r = a; a : None; a = r in ()" $ LRSuccess "unit"
               , testQuery "let a : [Integer|Text]; a = [] in a" $ LRSuccess "[]"
               , testQuery "let a : [Integer]|[Text]; a = [] in a" $ LRSuccess "[]"
               , testSameType True "Integer" "Integer" ["56"]
