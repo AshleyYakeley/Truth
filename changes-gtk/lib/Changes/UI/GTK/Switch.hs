@@ -17,7 +17,7 @@ createDynamic sub = do
                 getInnerLifeState $ do
                     widget <- gview
                     cvPackStart True box widget
-                    #show widget
+                    #showAll widget
             return vs
         initVS :: Model (ROWUpdate (CreateView Widget)) -> CreateView (ViewState, ())
         initVS rm = do
