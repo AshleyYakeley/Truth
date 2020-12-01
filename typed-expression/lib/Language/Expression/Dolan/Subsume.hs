@@ -247,11 +247,11 @@ subtypeSingularType ta tb = do
 type InvertSubstitution :: GroundTypeKind -> Type
 data InvertSubstitution ground where
     MkInvertSubstitution
-        :: forall (ground :: GroundTypeKind) polarity name name' t. Is PolarityType polarity
+        :: forall (ground :: GroundTypeKind) polarity name name' t.
+           (Is PolarityType polarity, JoinMeetType (InvertPolarity polarity) (UVarT name') t ~ UVarT name)
         => SymbolType name
         -> SymbolType name'
         -> DolanType ground polarity t
-        -> PolarMap (DolanPolyIsoShim ground Type) polarity (JoinMeetType (InvertPolarity polarity) (UVarT name') t) (UVarT name)
         -> InvertSubstitution ground
 
 invertSubstitute ::
@@ -260,20 +260,20 @@ invertSubstitute ::
     -> DolanSubsumer ground a
     -> FullSubsumer ground a
 invertSubstitute _ (ClosedExpression a) = pure a
-invertSubstitute bisub@(MkInvertSubstitution bn n' (st :: DolanType ground spol _) bij) (OpenExpression (MkSubsumeWitness vn (vt :: DolanType ground wpol _)) expr)
-    | Just Refl <- testEquality bn vn =
-        solverOpenExpression (MkSubsumeWitness n' vt) $
+invertSubstitute bisub@(MkInvertSubstitution oldvar newvar (st :: DolanType ground spol _)) (OpenExpression (MkSubsumeWitness depvar (vt :: DolanType ground wpol _)) expr)
+    | Just Refl <- testEquality oldvar depvar =
+        solverOpenExpression (MkSubsumeWitness newvar vt) $
         case samePolarity @spol @wpol of
             Left Refl ->
                 invertPolarity @wpol $ do
                     fa <- invertSubstitute bisub expr
-                    pure $ \conv -> fa $ conv <.> uninvertPolarMap polar1 <.> polarPolyIsoBackwards bij
+                    pure $ \conv -> fa $ conv <.> uninvertPolarMap polar1
             Right Refl ->
                 case isInvertInvertPolarity @wpol of
                     Refl -> do
                         fa <- invertSubstitute bisub expr
                         convm <- invertedPolarSubtype st vt
-                        pure $ \conv -> fa $ polarF conv convm <.> invertPolarMap (polarPolyIsoForwards bij)
+                        pure $ \conv -> fa $ polarF conv convm
 invertSubstitute bisub (OpenExpression subwit expr) = solverOpenExpression subwit $ invertSubstitute bisub expr
 
 type SubsumerBisubstitution :: GroundTypeKind -> Type
@@ -288,6 +288,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
         invertPolarity @polarity $
         newUVar (uVarName oldvar) $ \(newvar :: SymbolType newname) ->
             assignUVar @Type @(JoinMeetType (InvertPolarity polarity) (UVarT newname) t) oldvar $ do
+                expr' <- runSolver $ invertSubstitute (MkInvertSubstitution oldvar newvar tp) expr
                 let
                     bisub :: SubsumerBisubstitution ground
                     bisub =
@@ -299,7 +300,6 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
                             (do
                                  tq <- invertTypeM tp
                                  return $ joinMeetShimWit (varDolanShimWit newvar) tq)
-                expr' <- runSolver $ invertSubstitute (MkInvertSubstitution oldvar newvar tp cid) expr
                 (expr'', bisubs) <-
                     solveSubsumer @(DolanTypeSystem ground) $ fmap (\fa -> fa $ uninvertPolarMap polar2) expr'
                 return (expr'', bisub : bisubs)
