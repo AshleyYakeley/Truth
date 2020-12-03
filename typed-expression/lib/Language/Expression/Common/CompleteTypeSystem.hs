@@ -133,6 +133,7 @@ tsLet n expv expb = letSealedExpression @ts n expv expb
 tsSingleBinding ::
        forall ts. CompleteTypeSystem ts
     => TSName ts
+    -> Maybe (AnyW (TSPosWitness ts))
     -> TSSealedExpression ts
     -> Bindings ts
 tsSingleBinding = singleBinding

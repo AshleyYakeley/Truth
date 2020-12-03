@@ -120,11 +120,11 @@ qSequenceExpr (e:ee) = do
 
 type QBindings = Bindings PinaforeTypeSystem
 
-qBindExpr :: Name -> QExpr -> QBindings
-qBindExpr = singleBinding
+qBindExpr :: Name -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBindings
+qBindExpr = tsSingleBinding @PinaforeTypeSystem
 
 qBindVal :: ToPinaforeType t => Name -> t -> QBindings
-qBindVal name val = qBindExpr name $ qConstExpr val
+qBindVal name val = qBindExpr name Nothing $ qConstExpr val
 
 qLetExpr :: Name -> QExpr -> QExpr -> PinaforeSourceInterpreter QExpr
 qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
