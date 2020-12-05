@@ -7,10 +7,12 @@ module Language.Expression.Common.Bindings
     , bindingsComponentLetSealedExpression
     ) where
 
-import Data.Shim.JoinMeet
+import Data.Shim
 import Language.Expression.Common.Abstract
 import Language.Expression.Common.Rename.RenameTypeSystem
 import Language.Expression.Common.Sealed
+import Language.Expression.Common.Simplifier
+import Language.Expression.Common.Subsumer
 import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.Unifier
 import Shapes
@@ -36,68 +38,98 @@ unifierExpression :: Functor (Unifier ts) => UnifyExpression ts a -> Unifier ts 
 unifierExpression (MkUnifyExpression uconv expr) = fmap (\conv -> fmap (\conva -> conva conv) expr) uconv
 
 data Bound ts =
-    forall vals. MkBound (forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (vals -> a)))
-                         (TSOpenExpression ts vals)
-                         (UnifierSubstitutions ts -> TSOpenExpression ts vals -> TSOuter ts (Bindings ts))
+    forall tdecl tinf. MkBound (forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (tdecl -> a)))
+                               (TSOpenExpression ts tinf)
+                               (Subsumer ts (tinf -> tdecl))
+                               (UnifierSubstitutions ts -> SubsumerSubstitutions ts -> TSOpenExpression ts tdecl -> TSOuter ts (Bindings ts))
 
-instance AbstractTypeSystem ts => Semigroup (Bound ts) where
-    MkBound abstractNamesA (exprsA :: _ valsA) getbindsA <> MkBound abstractNamesB (exprsB :: _ valsB) getbindsB = let
-        abstractNamesAB :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts ((valsA, valsB) -> a))
+instance (AbstractTypeSystem ts, SubsumeTypeSystem ts) => Semigroup (Bound ts) where
+    MkBound abstractNamesA (exprsA :: _ ainf) subsumerA (getbindsA :: _ -> _ -> _ adecl -> _) <> MkBound abstractNamesB (exprsB :: _ binf) subsumerB (getbindsB :: _ -> _ -> _ bdecl -> _) = let
+        abstractNamesAB :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts ((adecl, bdecl) -> a))
         abstractNamesAB expr = do
             MkUnifyExpression uconvA exprA <- abstractNamesA expr
             MkUnifyExpression uconvB exprAB <- abstractNamesB exprA
-            let uconvAB = (,) <$> uconvA <*> uconvB
+            let uconvAB = liftA2 (,) uconvA uconvB
             return $ MkUnifyExpression uconvAB $ fmap (\ff (ta, tb) ~(va, vb) -> ff tb vb ta va) exprAB
-        exprsAB :: TSOpenExpression ts (valsA, valsB)
-        exprsAB = (,) <$> exprsA <*> exprsB
-        getbindsAB :: UnifierSubstitutions ts -> TSOpenExpression ts (valsA, valsB) -> TSOuter ts (Bindings ts)
-        getbindsAB usubs fexprAB = do
-            bindsA <- getbindsA usubs $ fmap fst fexprAB
-            bindsB <- getbindsB usubs $ fmap snd fexprAB
+        exprsAB :: TSOpenExpression ts (ainf, binf)
+        exprsAB = liftA2 (,) exprsA exprsB
+        subsumerAB :: Subsumer ts ((ainf, binf) -> (adecl, bdecl))
+        subsumerAB = liftA2 (\fa fb (a, b) -> (fa a, fb b)) subsumerA subsumerB
+        getbindsAB ::
+               UnifierSubstitutions ts
+            -> SubsumerSubstitutions ts
+            -> TSOpenExpression ts (adecl, bdecl)
+            -> TSOuter ts (Bindings ts)
+        getbindsAB usubs ssubs fexprAB = do
+            bindsA <- getbindsA usubs ssubs $ fmap fst fexprAB
+            bindsB <- getbindsB usubs ssubs $ fmap snd fexprAB
             return $ bindsA <> bindsB
-        in MkBound abstractNamesAB exprsAB getbindsAB
+        in MkBound abstractNamesAB exprsAB subsumerAB getbindsAB
 
-instance AbstractTypeSystem ts => Monoid (Bound ts) where
+instance (AbstractTypeSystem ts, SubsumeTypeSystem ts) => Monoid (Bound ts) where
     mempty = let
         abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (() -> a))
         abstractNames expr = return $ MkUnifyExpression (pure ()) $ fmap (\a _ _ -> a) expr
         exprs :: TSOpenExpression ts ()
         exprs = pure ()
-        getbinds :: UnifierSubstitutions ts -> TSOpenExpression ts () -> TSOuter ts (Bindings ts)
-        getbinds _ _ = return mempty
-        in MkBound abstractNames exprs getbinds
+        subsumer :: Subsumer ts (() -> ())
+        subsumer = pure id
+        getbinds ::
+               UnifierSubstitutions ts -> SubsumerSubstitutions ts -> TSOpenExpression ts () -> TSOuter ts (Bindings ts)
+        getbinds _ _ _ = return mempty
+        in MkBound abstractNames exprs subsumer getbinds
+
+data SubsumerWit ts tinf =
+    forall tdecl. MkSubsumerWit (TSPosShimWit ts tdecl)
+                                (Subsumer ts (TSShim ts tinf tdecl))
 
 singleBound ::
-       forall ts. AbstractTypeSystem ts
+       forall ts. (AbstractTypeSystem ts, SubsumeTypeSystem ts)
     => Binding ts
     -> TSOuter ts (Bound ts)
-singleBound (MkBinding name _ sexpr) =
+singleBound (MkBinding name mtdecl sexpr) =
     withTransConstraintTM @Monad $ do
-        MkSealedExpression (twt :: _ t) expr <- rename @ts sexpr
-        return $ let
-            abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (t -> a))
-            abstractNames e = do
-                MkAbstractResult vwt e' <- abstractNamedExpression @ts name e
-                uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit twt) vwt
-                return $ MkUnifyExpression (uuGetShim uconv) $ fmap (\ta conv -> ta . shimToFunction conv) e'
-            getbinds :: UnifierSubstitutions ts -> TSOpenExpression ts t -> TSOuter ts (Bindings ts)
-            getbinds subs fexpr = do
-                e <- unifierSubstituteAndSimplify @ts subs $ MkSealedExpression twt fexpr
-                return $ singleBinding name Nothing e
-            in MkBound abstractNames expr getbinds
+        MkSealedExpression (twtinf :: _ tinf) bexpr <- rename @ts sexpr
+        subswit :: SubsumerWit ts tinf <-
+            case mtdecl of
+                Nothing -> return $ MkSubsumerWit twtinf $ pure id
+                Just (MkAnyW rawdecltype) -> do
+                    MkShimWit decltype _ <- simplify @ts $ mkShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
+                    twtdecl' <- namespace @ts $ renamePosWitness @ts decltype
+                    subsumer <- subsumePosShimWit @ts twtinf twtdecl'
+                    return $ MkSubsumerWit (mkShimWit twtdecl') subsumer
+        return $
+            case subswit of
+                MkSubsumerWit (wdecl :: _ tdecl) subsumer -> let
+                    abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (tdecl -> a))
+                    abstractNames e = do
+                        MkAbstractResult vwt e' <- abstractNamedExpression @ts name e
+                        uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit wdecl) vwt
+                        return $ MkUnifyExpression (uuGetShim uconv) $ fmap (\ta conv -> ta . shimToFunction conv) e'
+                    getbinds ::
+                           UnifierSubstitutions ts
+                        -> SubsumerSubstitutions ts
+                        -> TSOpenExpression ts tdecl
+                        -> TSOuter ts (Bindings ts)
+                    getbinds usubs ssubs fexpr = do
+                        fexpr' <- subsumerExpressionSubstitute @ts ssubs fexpr
+                        expr <- unifierSubstituteAndSimplify @ts usubs $ MkSealedExpression wdecl fexpr'
+                        return $ singleBinding name Nothing expr
+                    in MkBound abstractNames bexpr (fmap shimToFunction subsumer) getbinds
 
 boundToBindings ::
-       forall ts. UnifyTypeSystem ts
+       forall ts. (UnifyTypeSystem ts, SubsumeTypeSystem ts)
     => Bound ts
     -> TSOuter ts (Bindings ts)
-boundToBindings (MkBound abstractNames exprs getbinds) = do
-    uexprvv <- abstractNames exprs
-    (fexpr, subs) <- solveUnifier @ts $ unifierExpression uexprvv
-    getbinds subs $ fmap fix fexpr
+boundToBindings (MkBound abstractNames exprs subsumer getbinds) = do
+    uexprvv <- abstractNames exprs -- abstract
+    (fexpr, usubs) <- solveUnifier @ts $ unifierExpression uexprvv -- unify
+    (subconv, ssubs) <- solveSubsumer @ts subsumer
+    getbinds usubs ssubs $ fmap (\tdi -> fix $ subconv . tdi) fexpr
 
 -- for a recursive component
 bindingsComponentLetSealedExpression ::
-       forall ts. (Ord (TSName ts), AbstractTypeSystem ts)
+       forall ts. (Ord (TSName ts), AbstractTypeSystem ts, SubsumeTypeSystem ts)
     => Bindings ts
     -> TSInner ts (Map (TSName ts) (TSSealedExpression ts))
 bindingsComponentLetSealedExpression (MkBindings bindings) =

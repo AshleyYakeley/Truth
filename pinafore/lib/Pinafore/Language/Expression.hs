@@ -145,4 +145,4 @@ typedAnyToPinaforeVal ::
 typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem fromJMShimWit
 
 qSubsumeExpr :: AnyW (PinaforeShimWit 'Positive) -> PinaforeExpression -> PinaforeSourceInterpreter PinaforeExpression
-qSubsumeExpr t expr = tsSubsumeExpression @PinaforeTypeSystem t expr
+qSubsumeExpr = tsSubsumeExpression @PinaforeTypeSystem

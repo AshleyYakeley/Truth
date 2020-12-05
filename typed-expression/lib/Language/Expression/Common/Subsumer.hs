@@ -1,6 +1,8 @@
 module Language.Expression.Common.Subsumer
     ( SubsumeTypeSystem(..)
+    , subsumePosShimWit
     , solveSubsumeShimWit
+    , subsumerExpressionSubstitute
     , subsumeExpression
     ) where
 
@@ -20,16 +22,25 @@ class (TypeSystem ts, Applicative (Subsumer ts)) => SubsumeTypeSystem ts where
     subsumerNegSubstitute :: SubsumerSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)
     subsumePosWitnesses :: TSPosWitness ts inf -> TSPosWitness ts decl -> TSOuter ts (Subsumer ts (TSShim ts inf decl))
 
+subsumePosShimWit ::
+       forall ts inf decl. SubsumeTypeSystem ts
+    => TSPosShimWit ts inf
+    -> TSPosWitness ts decl
+    -> TSOuter ts (Subsumer ts (TSShim ts inf decl))
+subsumePosShimWit winf tdecl =
+    unPosShimWit winf $ \tinf convinf -> do
+        subsumer <- subsumePosWitnesses @ts tinf tdecl
+        return $ fmap (\td -> td . convinf) subsumer
+
 solveSubsumeShimWit ::
        forall ts inf decl. SubsumeTypeSystem ts
     => TSPosShimWit ts inf
     -> TSPosWitness ts decl
     -> TSOuter ts (TSShim ts inf decl)
-solveSubsumeShimWit winf tdecl =
-    unPosShimWit winf $ \tinf convinf -> do
-        subsumer <- subsumePosWitnesses @ts tinf tdecl
-        (ab, _) <- solveSubsumer @ts subsumer
-        return $ ab . convinf
+solveSubsumeShimWit winf tdecl = do
+    subsumer <- subsumePosShimWit @ts winf tdecl
+    (ab, _) <- solveSubsumer @ts subsumer
+    return ab
 
 subsumerExpressionSubstitute ::
        forall ts a. SubsumeTypeSystem ts
