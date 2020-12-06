@@ -557,7 +557,8 @@ testQueries =
                                  , testSameType False "rec a. [a|Integer]" "[rec a. [a|Integer]|Integer]" ["[3]"]
                                  ]
                            ]
-              , testTree
+              , repeatTest 100 $
+                testTree
                     "subsume"
                     [ testQuery "let rval: rec a. Maybe a; rval = rval in ()" $ LRSuccess "unit"
                     , testQuery "let rval: rec a. Maybe a; rval = Just rval in ()" $ LRSuccess "unit"

@@ -34,4 +34,4 @@ main = do
                 , testInteractive
                 , testUI
                 ]
-    testMain tests
+    testMainNoSignalHandler tests
