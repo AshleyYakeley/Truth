@@ -18,6 +18,7 @@ class ( RenameTypeSystem ts
       , UnifyTypeSystem ts
       , SimplifyTypeSystem ts
       , Monad (TSInner ts)
+      , Ord (TSName ts)
       , TSOuter ts ~ RenamerT ts (TSInner ts)
       ) => AbstractTypeSystem ts where
     type TSInner ts :: Type -> Type

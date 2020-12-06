@@ -123,9 +123,6 @@ type QBindings = Bindings PinaforeTypeSystem
 qBindExpr :: Name -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBindings
 qBindExpr = tsSingleBinding @PinaforeTypeSystem
 
-qBindVal :: ToPinaforeType t => Name -> t -> QBindings
-qBindVal name val = qBindExpr name Nothing $ qConstExpr val
-
 qLetExpr :: Name -> QExpr -> QExpr -> PinaforeSourceInterpreter QExpr
 qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
 
@@ -143,6 +140,3 @@ typedAnyToPinaforeVal ::
     => QValue
     -> PinaforeSourceInterpreter t
 typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem fromJMShimWit
-
-qSubsumeExpr :: AnyW (PinaforeShimWit 'Positive) -> PinaforeExpression -> PinaforeSourceInterpreter PinaforeExpression
-qSubsumeExpr = tsSubsumeExpression @PinaforeTypeSystem

@@ -3,7 +3,9 @@ module Language.Expression.Common.Subsumer
     , subsumePosShimWit
     , solveSubsumeShimWit
     , subsumerExpressionSubstitute
-    , subsumeExpression
+    , SubsumerOpenExpression(..)
+    , SubsumerExpression(..)
+    , subsumerExpression
     ) where
 
 import Data.Shim
@@ -53,16 +55,38 @@ subsumerExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) 
     expr' <- subsumerExpressionSubstitute @ts subs expr
     return $ OpenExpression (MkNameWitness name tw') expr'
 
+data SubsumerOpenExpression ts tdecl =
+    forall tinf. MkSubsumerOpenExpression (Subsumer ts (tinf -> tdecl))
+                                          (TSOpenExpression ts tinf)
+
+instance SubsumeTypeSystem ts => Functor (SubsumerOpenExpression ts) where
+    fmap ab (MkSubsumerOpenExpression subsumer expr) = MkSubsumerOpenExpression (fmap (fmap ab) subsumer) expr
+
+instance SubsumeTypeSystem ts => IsoVariant (SubsumerOpenExpression ts)
+
+instance SubsumeTypeSystem ts => Productish (SubsumerOpenExpression ts) where
+    pUnit = MkSubsumerOpenExpression (pure $ \_ -> ()) pUnit
+    MkSubsumerOpenExpression subsumerA exprA <***> MkSubsumerOpenExpression subsumerB exprB = let
+        subsumerAB = liftA2 (\fa fb ~(a, b) -> (fa a, fb b)) subsumerA subsumerB
+        exprAB = exprA <***> exprB
+        in MkSubsumerOpenExpression subsumerAB exprAB
+
+data SubsumerExpression ts =
+    forall tdecl. MkSubsumerExpression (TSPosShimWit ts tdecl)
+                                       (SubsumerOpenExpression ts tdecl)
+
 -- Note the user's declared type will be simplified first, so they'll end up seeing a simplified version of the type they declared for their expression.
-subsumeExpression ::
-       forall ts. (SubsumeTypeSystem ts, SimplifyTypeSystem ts)
-    => AnyW (TSPosWitness ts)
+subsumerExpression ::
+       forall ts. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
+    => Maybe (AnyW (TSPosWitness ts))
     -> TSSealedExpression ts
-    -> TSOuter ts (TSSealedExpression ts)
-subsumeExpression (MkAnyW rawdecltype) rawinfexpr = do
-    MkShimWit decltype _ <- simplify @ts $ mkShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
-    MkSealedExpression (MkShimWit inftype infconv) expr <- simplify @ts rawinfexpr
-    uab <- subsumePosWitnesses @ts inftype decltype
-    (conv, subs) <- solveSubsumer @ts uab
-    expr' <- subsumerExpressionSubstitute @ts subs expr
-    return $ MkSealedExpression (MkShimWit decltype $ MkPolarMap conv . infconv) expr'
+    -> TSOuter ts (SubsumerExpression ts)
+subsumerExpression marawdecltype rawinfexpr = do
+    MkSealedExpression wtinf expr <- simplify @ts rawinfexpr
+    case marawdecltype of
+        Nothing -> return $ MkSubsumerExpression wtinf $ MkSubsumerOpenExpression (pure id) expr
+        Just (MkAnyW rawdecltype) -> do
+            MkShimWit decltype _ <- simplify @ts $ mkShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
+            subsumer <- subsumePosShimWit @ts wtinf decltype
+            return $
+                MkSubsumerExpression (mkShimWit decltype) $ MkSubsumerOpenExpression (fmap shimToFunction subsumer) expr

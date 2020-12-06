@@ -12,10 +12,14 @@ instance Functor (Expression w) where
     fmap ab (ClosedExpression a) = ClosedExpression $ ab a
     fmap ab (OpenExpression name expr) = OpenExpression name $ fmap (\va v -> ab $ va v) expr
 
+instance IsoVariant (Expression w)
+
 instance Applicative (Expression w) where
     pure = ClosedExpression
     (ClosedExpression ab) <*> expr = fmap ab expr
     (OpenExpression name exprab) <*> expr = OpenExpression name $ (\vab a v -> vab v a) <$> exprab <*> expr
+
+instance Productish (Expression w)
 
 expressionFreeWitnesses :: (forall t. w t -> r) -> Expression w a -> [r]
 expressionFreeWitnesses _wr (ClosedExpression _) = []

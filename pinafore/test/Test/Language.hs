@@ -558,6 +558,20 @@ testQueries =
                                  ]
                            ]
               , testTree
+                    "subsume"
+                    [ testQuery "let rval: rec a. Maybe a; rval = rval in ()" $ LRSuccess "unit"
+                    , testQuery "let rval: rec a. Maybe a; rval = Just rval in ()" $ LRSuccess "unit"
+                    , testQuery
+                          "let rcount: (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in ()" $
+                      LRSuccess "unit"
+                    , testQuery
+                          "let rcount: (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount Nothing" $
+                      LRSuccess "0"
+                    , testQuery
+                          "let rcount: (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
+                      LRSuccess "1"
+                    ]
+              , testTree
                     "case"
                     [ testQuery "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount Nothing" $
                       LRSuccess "0"
