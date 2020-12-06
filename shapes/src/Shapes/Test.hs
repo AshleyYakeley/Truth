@@ -10,6 +10,7 @@ module Shapes.Test
     , BuildTestTree(..)
     , ignoreTestBecause
     , expectFailBecause
+    , failTestBecause
     -- * Options
     , localOption
     , QuickCheckTests(..)
@@ -45,6 +46,7 @@ import Test.Tasty
 import Test.Tasty.ExpectedFailure
 import Test.Tasty.Golden
 import Test.Tasty.HUnit
+import Test.Tasty.Providers
 import Test.Tasty.QuickCheck
 import Test.Tasty.Runners
 
@@ -90,6 +92,9 @@ repeatTest :: Int -> TestTree -> TestTree
 repeatTest n tests =
     testGroup (lensGet testTreeNameLens tests) $
     fmap (\i -> runIdentity $ lensPutback testTreeNameLens (show i <> "/" <> show n) tests) [1 .. n]
+
+failTestBecause :: String -> TestTree -> TestTree
+failTestBecause reason = wrapTest $ \_ -> return $ (testFailed "") {resultShortDescription = "FAILS: " <> reason}
 
 class BuildTestTree a where
     testTree :: TestName -> a -> TestTree
