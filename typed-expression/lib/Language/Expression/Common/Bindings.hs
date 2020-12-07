@@ -77,12 +77,12 @@ singleBound ::
     => Binding ts
     -> TSOuter ts (Bound ts)
 singleBound (MkBinding name mexpr) = do
-    MkSubsumerExpression (wdecl :: _ tdecl) subsexpr <- mexpr
+    MkSubsumerExpression (decltype :: _ tdecl) subsexpr <- mexpr
     let
         abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (tdecl -> a))
         abstractNames e = do
             MkAbstractResult vwt e' <- abstractNamedExpression @ts name e
-            uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit wdecl) vwt
+            uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit decltype) vwt
             return $ MkUnifyExpression (uuGetShim uconv) $ fmap (\ta conv -> ta . shimToFunction conv) e'
         getbinds ::
                UnifierSubstitutions ts
@@ -91,7 +91,7 @@ singleBound (MkBinding name mexpr) = do
             -> TSOuter ts (BindMap ts)
         getbinds usubs ssubs fexpr = do
             fexpr' <- subsumerExpressionSubstitute @ts ssubs fexpr
-            expr <- unifierSubstituteAndSimplify @ts usubs $ MkSealedExpression wdecl fexpr'
+            expr <- unifierSubstituteAndSimplify @ts usubs $ MkSealedExpression decltype fexpr'
             return $ singletonMap name expr
     return $ MkBound abstractNames subsexpr getbinds
 

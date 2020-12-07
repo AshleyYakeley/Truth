@@ -82,11 +82,11 @@ subsumerExpression ::
     -> TSSealedExpression ts
     -> TSOuter ts (SubsumerExpression ts)
 subsumerExpression marawdecltype rawinfexpr = do
-    MkSealedExpression wtinf expr <- simplify @ts rawinfexpr
+    MkSealedExpression infwit expr <- simplify @ts rawinfexpr
     case marawdecltype of
-        Nothing -> return $ MkSubsumerExpression wtinf $ MkSubsumerOpenExpression (pure id) expr
+        Nothing -> return $ MkSubsumerExpression infwit $ MkSubsumerOpenExpression (pure id) expr
         Just (MkAnyW rawdecltype) -> do
             MkShimWit decltype _ <- simplify @ts $ mkShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
-            subsumer <- subsumePosShimWit @ts wtinf decltype
+            subsumer <- subsumePosShimWit @ts infwit decltype
             return $
                 MkSubsumerExpression (mkShimWit decltype) $ MkSubsumerOpenExpression (fmap shimToFunction subsumer) expr
