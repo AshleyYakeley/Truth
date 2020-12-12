@@ -14,11 +14,13 @@ import Language.Expression.Common.Named
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Simplifier
 import Language.Expression.Common.TypeSystem
+import Language.Expression.Common.Unifier
 import Shapes
 
-class (TypeSystem ts, Applicative (Subsumer ts)) => SubsumeTypeSystem ts where
+class (UnifyTypeSystem ts, Applicative (Subsumer ts)) => SubsumeTypeSystem ts where
     type Subsumer ts :: Type -> Type
     type SubsumerSubstitutions ts :: Type
+    usubSubsumer :: UnifierSubstitutions ts -> Subsumer ts a -> TSOuter ts (Subsumer ts a)
     solveSubsumer :: Subsumer ts a -> TSOuter ts (a, SubsumerSubstitutions ts)
     -- This should generate substitutions only for the inferred type, not the declared type.
     subsumerNegSubstitute :: SubsumerSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)

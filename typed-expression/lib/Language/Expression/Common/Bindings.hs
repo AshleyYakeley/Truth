@@ -96,13 +96,14 @@ singleBound (MkBinding name mexpr) = do
     return $ MkBound abstractNames subsexpr getbinds
 
 boundToMap ::
-       forall ts. (UnifyTypeSystem ts, SubsumeTypeSystem ts)
+       forall ts. SubsumeTypeSystem ts
     => Bound ts
     -> TSOuter ts (BindMap ts)
-boundToMap (MkBound abstractNames (MkSubsumerOpenExpression subsumer exprs) getbinds) = do
+boundToMap (MkBound abstractNames (MkSubsumerOpenExpression (subsumer :: _ (tinf -> tdecl)) exprs) getbinds) = do
     uexprvv <- abstractNames exprs -- abstract
     (fexpr, usubs) <- solveUnifier @ts $ unifierExpression uexprvv -- unify
-    (subconv, ssubs) <- solveSubsumer @ts subsumer
+    subsumer' <- usubSubsumer @ts usubs subsumer
+    (subconv, ssubs) <- solveSubsumer @ts subsumer'
     getbinds usubs ssubs $ fmap (\tdi -> fix $ subconv . tdi) fexpr
 
 -- for a recursive component

@@ -44,6 +44,7 @@ instance (Monad m, Eq name) => SimplifyTypeSystem (Unitype m name val) where
 instance (Monad m, Eq name) => SubsumeTypeSystem (Unitype m name val) where
     type Subsumer (Unitype m name val) = Identity
     type SubsumerSubstitutions (Unitype m name val) = ()
+    usubSubsumer () ia = lift $ return ia
     solveSubsumer ia = pure $ (runIdentity ia, ())
     subsumerNegSubstitute () Refl = return $ unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id

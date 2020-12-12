@@ -35,3 +35,12 @@ varExpression wt = OpenExpression wt $ ClosedExpression id
 solveExpression :: Applicative m => (forall t. w t -> m t) -> Expression w a -> m a
 solveExpression _f (ClosedExpression a) = pure a
 solveExpression f (OpenExpression wt expr) = solveExpression f expr <*> f wt
+
+mapExpressionWitnessesM ::
+       Applicative m
+    => (forall t r. w t -> (forall t'. w t' -> (t' -> t) -> m r) -> m r)
+    -> Expression w a
+    -> m (Expression w a)
+mapExpressionWitnessesM _ (ClosedExpression a) = pure $ ClosedExpression a
+mapExpressionWitnessesM f (OpenExpression wt expr) =
+    f wt $ \wt' conv -> fmap (OpenExpression wt') $ mapExpressionWitnessesM f $ fmap (\ta -> ta . conv) expr

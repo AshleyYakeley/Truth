@@ -557,8 +557,7 @@ testQueries =
                                  , testSameType False "rec a. [a|Integer]" "[rec a. [a|Integer]|Integer]" ["[3]"]
                                  ]
                            ]
-              , repeatTest 100 $
-                testTree
+              , testTree
                     "subsume"
                     [ testQuery "let rval: rec a. Maybe a; rval = rval in ()" $ LRSuccess "unit"
                     , testQuery "let rval: rec a. Maybe a; rval = Just rval in ()" $ LRSuccess "unit"
@@ -580,28 +579,22 @@ testQueries =
                     , testQuery
                           "let rcount: (rec a. Maybe a) -> Integer; rcount = rcount1; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just Nothing" $
                       LRSuccess "1"
-                    , failTestBecause "SIGSEGV" $
-                      testQuery
+                    , testQuery
                           "let rcount: (rec xb. Maybe xb) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
                       LRSuccess "1"
-                    , failTestBecause "SIGSEGV" $
-                      testQuery
+                    , testQuery
                           "let rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just Nothing" $
                       LRSuccess "1"
-                    , failTestBecause "SIGSEGV" $
-                      testQuery
+                    , testQuery
                           "let rcount: (rec xa. Maybe xa) -> Integer; rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just Nothing" $
                       LRSuccess "1"
-                    , failTestBecause "SIGSEGV" $
-                      testQuery
+                    , testQuery
                           "let rcount: (rec xa. Maybe xa) -> Integer; rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
                       LRSuccess "1"
-                    , failTestBecause "SIGSEGV" $
-                      testQuery
+                    , testQuery
                           "let rcount: (rec xa. Maybe xa) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
                       LRSuccess "1"
-                    , failTestBecause "SIGSEGV" $
-                      testQuery
+                    , testQuery
                           "let rcount: (rec xc. Maybe xc) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     ]

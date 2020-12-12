@@ -19,6 +19,7 @@ import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.Unify
 import Language.Expression.Dolan.Unroll
 import Shapes
 
@@ -122,6 +123,31 @@ type DolanSubsumer ground = Expression (SubsumeWitness ground)
 type FullSubsumer :: GroundTypeKind -> Type -> Type
 type FullSubsumer ground = Solver ground (SubsumeWitness ground)
 
+{-
+instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) a. (shim ~ DolanPolyShim ground Type) =>
+             WitnessMappable (PShimWit shim (DolanType ground) 'Positive) (PShimWit shim (DolanType ground) 'Negative) (DolanSubsumer ground a) where
+    mapWitnessesM ::
+           forall m. Monad m
+        => (forall (t :: Type). DolanShimWit ground 'Positive t -> m (DolanShimWit ground 'Positive t))
+        -> (forall (t :: Type). DolanShimWit ground 'Negative t -> m (DolanShimWit ground 'Negative t))
+        -> DolanSubsumer ground a
+        -> m (DolanSubsumer ground a)
+    mapWitnessesM _mapPos _mapNeg (ClosedExpression r) = return $ ClosedExpression r
+    mapWitnessesM mapPos mapNeg (OpenExpression (MkSubsumeWitness name (t :: _ polarity _)) expr) =
+        case polarityType @polarity of
+            PositiveType -> do
+                MkShimWit t' conv <- mapPos $ mkShimWit t
+                expr' <- mapWitnessesM mapPos mapNeg expr
+                return $ OpenExpression (MkSubsumeWitness name t') $ fmap (\f a -> f $ foo conv . a) expr'
+            NegativeType -> do
+                MkShimWit t' conv <- mapNeg $ mkShimWit t
+                expr' <- mapWitnessesM mapPos mapNeg expr
+                return $ OpenExpression (MkSubsumeWitness name t') $ fmap (\f a -> f $ foo conv . a) expr'
+
+instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type). (shim ~ DolanPolyShim ground Type) =>
+             AllWitnessConstraint (WitnessMappable (PShimWit shim (DolanType ground) 'Positive) (PShimWit shim (DolanType ground) 'Negative)) (DolanSubsumer ground) where
+    allWitnessConstraint = Dict
+-}
 subsumeContext ::
        forall (ground :: GroundTypeKind) polarity. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => SubtypeContext (DolanType ground) (DolanPolyShim ground Type) (FullSubsumer ground) polarity polarity
@@ -276,13 +302,36 @@ invertSubstitute bisub@(MkInvertSubstitution oldvar newvar (st :: DolanType grou
                         pure $ \conv -> fa $ polarF conv convm
 invertSubstitute bisub (OpenExpression subwit expr) = solverOpenExpression subwit $ invertSubstitute bisub expr
 
+bisubSubsumer ::
+       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
+    => UnifierBisubstitution ground
+    -> DolanSubsumer ground a
+    -> DolanTypeCheckM ground (DolanSubsumer ground a)
+bisubSubsumer _ (ClosedExpression a) = return $ ClosedExpression a
+bisubSubsumer (MkBisubstitution _ uname (Identity (MkShimWit tpos convpos)) (Identity (MkShimWit tneg convneg))) (OpenExpression (MkSubsumeWitness sname (stype :: _ polarity _)) expr)
+    | Just Refl <- testEquality uname sname =
+        case polarityType @polarity of
+            PositiveType -> do
+                newexpr <- runSolver $ subsumeType tpos stype
+                return $ liftA2 (\newconv f -> f $ newconv . convpos) newexpr expr
+            NegativeType -> do
+                newexpr <- runSolver $ subsumeType tneg stype
+                return $ liftA2 (\newconv f -> f $ newconv . convneg) newexpr expr
+bisubSubsumer sub (OpenExpression wit expr) = do
+    expr' <- bisubSubsumer sub expr
+    return $ OpenExpression wit expr'
+
 type SubsumerBisubstitution :: GroundTypeKind -> Type
-type SubsumerBisubstitution ground = Bisubstitution ground (DolanPolyShim ground) (SubsumerM ground)
+type SubsumerBisubstitution ground = Bisubstitution ground (DolanPolyShim ground Type) (SubsumerM ground)
 
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              SubsumeTypeSystem (DolanTypeSystem ground) where
     type Subsumer (DolanTypeSystem ground) = DolanSubsumer ground
     type SubsumerSubstitutions (DolanTypeSystem ground) = [SubsumerBisubstitution ground]
+    usubSubsumer [] subsumer = return subsumer
+    usubSubsumer (s:ss) subsumer = do
+        subsumer' <- bisubSubsumer s subsumer
+        usubSubsumer @(DolanTypeSystem ground) ss subsumer'
     solveSubsumer (ClosedExpression a) = return (a, [])
     solveSubsumer (OpenExpression (MkSubsumeWitness oldvar (tp :: DolanType ground polarity t)) expr) =
         invertPolarity @polarity $

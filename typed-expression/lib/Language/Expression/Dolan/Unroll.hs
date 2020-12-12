@@ -23,7 +23,7 @@ unrollRecursiveType ::
 unrollRecursiveType var pt =
     invertPolarity @polarity $ let
         rt = RecursiveDolanSingularType var pt
-        bisub :: Bisubstitution ground (DolanPolyIsoShim ground) Identity
+        bisub :: Bisubstitution ground (DolanPolyIsoShim ground Type) Identity
         bisub = mkSingleBisubstitution True var $ return $ singleDolanShimWit $ mkShimWit rt
         in runIdentity $ bisubstituteShimWit bisub $ mkShimWit pt
 
