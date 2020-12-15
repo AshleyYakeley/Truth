@@ -8,10 +8,16 @@ data NameTypeWitness nw vw t =
     forall n. MkNameTypeWitness (nw n)
                                 (vw n t)
 
-instance AllWitnessConstraint Show nw => Show (NameTypeWitness nw vw t) where
-    show (MkNameTypeWitness n _) = showAllWitness n
+instance (AllWitnessConstraint Show nw, AllWitnessConstraint (AllWitnessConstraint Show) vw) =>
+             Show (NameTypeWitness nw vw t) where
+    show (MkNameTypeWitness namewit (typewit :: vw n t)) =
+        showAllWitness namewit <>
+        ": " <>
+        case allWitnessConstraint @_ @_ @(AllWitnessConstraint Show) @vw @n of
+            Dict -> showAllWitness typewit
 
-instance AllWitnessConstraint Show nw => AllWitnessConstraint Show (NameTypeWitness nw vw) where
+instance (AllWitnessConstraint Show nw, AllWitnessConstraint (AllWitnessConstraint Show) vw) =>
+             AllWitnessConstraint Show (NameTypeWitness nw vw) where
     allWitnessConstraint = Dict
 
 type NameTypeExpression nw vw = Expression (NameTypeWitness nw vw)

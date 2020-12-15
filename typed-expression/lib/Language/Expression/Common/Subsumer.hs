@@ -17,7 +17,11 @@ import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.Unifier
 import Shapes
 
-class (UnifyTypeSystem ts, Applicative (Subsumer ts)) => SubsumeTypeSystem ts where
+class ( UnifyTypeSystem ts
+      , Applicative (Subsumer ts)
+      , Show (SubsumerSubstitutions ts)
+      , AllWitnessConstraint Show (TSNegWitness ts)
+      ) => SubsumeTypeSystem ts where
     type Subsumer ts :: Type -> Type
     type SubsumerSubstitutions ts :: Type
     usubSubsumer :: UnifierSubstitutions ts -> Subsumer ts a -> TSOuter ts (Subsumer ts a)

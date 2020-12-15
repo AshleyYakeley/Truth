@@ -14,7 +14,10 @@ data SealedExpression (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
 constSealedExpression :: AnyValue tw -> SealedExpression name vw tw
 constSealedExpression (MkAnyValue twt t) = MkSealedExpression twt $ pure t
 
-evalSealedExpression :: (MonadThrow ExpressionError m, Show name) => SealedExpression name vw tw -> m (AnyValue tw)
+evalSealedExpression ::
+       (MonadThrow ExpressionError m, AllWitnessConstraint Show vw, Show name)
+    => SealedExpression name vw tw
+    -> m (AnyValue tw)
 evalSealedExpression (MkSealedExpression twa expr) = do
     a <- evalExpression expr
     return $ MkAnyValue twa a

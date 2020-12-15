@@ -39,7 +39,7 @@ tsUnify ::
 tsUnify wa wb = runRenamer @ts $ solveUnifyPosNegShimWit @ts wa wb
 
 tsEval ::
-       forall ts m. (MonadThrow ExpressionError m, Show (TSName ts))
+       forall ts m. (MonadThrow ExpressionError m, Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression

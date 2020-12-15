@@ -10,3 +10,5 @@ p
 openEntity @X !"x"
 let y = openEntity @Y !"y"
 35
+x + 1
+x + y

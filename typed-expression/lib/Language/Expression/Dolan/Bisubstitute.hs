@@ -56,6 +56,25 @@ data Bisubstitution ground shim m =
                                   (m (PShimWit shim (DolanType ground) 'Positive (UVarT name)))
                                   (m (PShimWit shim (DolanType ground) 'Negative (UVarT name)))
 
+instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. ( MonadOne m
+         , AllWitnessConstraint Show (DolanType ground 'Positive)
+         , AllWitnessConstraint Show (DolanType ground 'Negative)
+         ) => Show (Bisubstitution ground shim m) where
+    show (MkBisubstitution isRecursive var mtpos mtneg) = let
+        srec =
+            if isRecursive
+                then " (recursive)"
+                else ""
+        spos =
+            case getMaybeOne mtpos of
+                Just (MkShimWit t _) -> showAllWitness t
+                Nothing -> "fails"
+        sneg =
+            case getMaybeOne mtneg of
+                Just (MkShimWit t _) -> showAllWitness t
+                Nothing -> "fails"
+        in show var <> srec <> " => " <> "(" <> spos <> "," <> sneg <> ")"
+
 deferredBisubstitution ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m r.
        Bisubstitution ground shim m

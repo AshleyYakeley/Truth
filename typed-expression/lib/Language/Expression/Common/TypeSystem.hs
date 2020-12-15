@@ -6,7 +6,8 @@ import Language.Expression.Common.Sealed
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-class (Monad (TSOuter ts), Category (TSShim ts), InCategory (TSShim ts), Eq (TSName ts)) => TypeSystem (ts :: Type) where
+class (Monad (TSOuter ts), Category (TSShim ts), InCategory (TSShim ts), Eq (TSName ts), Show (TSName ts)) =>
+          TypeSystem (ts :: Type) where
     type TSOuter ts :: Type -> Type
     type TSNegWitness ts :: Type -> Type
     type TSPosWitness ts :: Type -> Type

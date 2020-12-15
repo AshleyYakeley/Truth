@@ -589,14 +589,35 @@ testQueries =
                           "let rcount: (rec xa. Maybe xa) -> Integer; rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rcount: (rec xa. Maybe xa) -> Integer; rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
+                          "let rcount: (rec x. Maybe x) -> Integer; rcount = rcount1; rcount1: (rec x. Maybe x) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in ()" $
+                      LRSuccess "unit"
+                    , testQuery
+                          "let rcount = rcount1; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
                       LRSuccess "1"
                     , testQuery
-                          "let rcount: (rec xa. Maybe xa) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
+                          "let rcount = rcount1; rcount1: (rec x. Maybe x) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
                       LRSuccess "1"
+                    , testTree
+                          "failing"
+                          [ testQuery
+                                "let f: (a -> Integer) -> Maybe a -> Integer; f rc x = case x of Nothing -> 0; Just y -> 1 + rc y end in let rcount: (rec a. Maybe a) -> Integer; rcount = rcount1; rcount1 = f rcount in rcount $ Just Nothing" $
+                            LRSuccess "1"
+                          , testQuery
+                                "let rcount: (rec a. Maybe a) -> Integer; rcount = rcount1; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
+                            LRSuccess "1"
+                          , testQuery
+                                "let rcount: (rec a. Maybe a) -> Integer; rcount = rcount1; rcount1: (rec a. Maybe a) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
+                            LRSuccess "1"
+                          , testQuery
+                                "let rcount: (rec xa. Maybe xa) -> Integer; rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
+                            LRSuccess "1"
+                          ]
                     , testQuery
-                          "let rcount: (rec xc. Maybe xc) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
-                      LRSuccess "1"
+                          "let rcount: (rec xa. Maybe xa) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      LRSuccess "5"
+                    , testQuery
+                          "let rcount: (rec xc. Maybe xc) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      LRSuccess "5"
                     ]
               , testTree
                     "case"

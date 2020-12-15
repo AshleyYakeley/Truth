@@ -7,7 +7,7 @@ import Shapes
 type Unitype :: (Type -> Type) -> Type -> Type -> Type
 data Unitype m name val
 
-instance (Monad m, Eq name) => TypeSystem (Unitype m name val) where
+instance (Monad m, Eq name, Show name) => TypeSystem (Unitype m name val) where
     type TSOuter (Unitype m name val) = IdentityT m
     type TSNegWitness (Unitype m name val) = ((:~:) val)
     type TSPosWitness (Unitype m name val) = ((:~:) val)
@@ -19,7 +19,7 @@ unitypeShimWit ::
     => ShimWit (->) ((:~:) val) polarity val
 unitypeShimWit = mkShimWit Refl
 
-instance (Monad m, Eq name) => RenameTypeSystem (Unitype m name val) where
+instance (Monad m, Eq name, Show name) => RenameTypeSystem (Unitype m name val) where
     type RenamerT (Unitype m name val) = IdentityT
     renameNegWitness Refl = return Refl
     renamePosWitness Refl = return Refl
@@ -28,7 +28,7 @@ instance (Monad m, Eq name) => RenameTypeSystem (Unitype m name val) where
     namespace = runIdentityT
     runRenamer = runIdentityT
 
-instance (Monad m, Eq name) => UnifyTypeSystem (Unitype m name val) where
+instance (Monad m, Eq name, Show name) => UnifyTypeSystem (Unitype m name val) where
     type Unifier (Unitype m name val) = Identity
     type UnifierSubstitutions (Unitype m name val) = ()
     unifyNegWitnesses Refl Refl = return $ uuLiftNegShimWit $ MkShimWit Refl $ polarF id id
@@ -38,10 +38,10 @@ instance (Monad m, Eq name) => UnifyTypeSystem (Unitype m name val) where
     unifierPosSubstitute () Refl = return unitypeShimWit
     unifierNegSubstitute () Refl = return unitypeShimWit
 
-instance (Monad m, Eq name) => SimplifyTypeSystem (Unitype m name val) where
+instance (Monad m, Eq name, Show name) => SimplifyTypeSystem (Unitype m name val) where
     simplify = return
 
-instance (Monad m, Eq name) => SubsumeTypeSystem (Unitype m name val) where
+instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val) where
     type Subsumer (Unitype m name val) = Identity
     type SubsumerSubstitutions (Unitype m name val) = ()
     usubSubsumer () ia = lift $ return ia
@@ -49,13 +49,13 @@ instance (Monad m, Eq name) => SubsumeTypeSystem (Unitype m name val) where
     subsumerNegSubstitute () Refl = return $ unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
 
-instance (Monad m, Ord name) => AbstractTypeSystem (Unitype m name val) where
+instance (Monad m, Ord name, Show name) => AbstractTypeSystem (Unitype m name val) where
     type TSInner (Unitype m name val) = m
 
 class UnitypeValue val where
     applyValue :: val -> val -> val
     abstractValue :: (val -> val) -> val
 
-instance (Monad m, Ord name, UnitypeValue val) => CompleteTypeSystem (Unitype m name val) where
+instance (Monad m, Ord name, Show name, UnitypeValue val) => CompleteTypeSystem (Unitype m name val) where
     tsFunctionPosWitness Refl Refl = mkPosShimWit Refl abstractValue
     tsFunctionNegWitness Refl Refl = mkNegShimWit Refl applyValue

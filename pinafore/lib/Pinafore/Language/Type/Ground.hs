@@ -202,3 +202,9 @@ withEntitySubtype ta tb =
         (EntityPinaforeGroundType NilListType ta)
         (EntityPinaforeGroundType NilListType $ OpenEntityGroundType tb) $
     nilSubtypeConversion $ coerceEnhanced "open entity" . entitySubtypeShim ta
+
+instance Is PolarityType polarity => Show (DolanType PinaforeGroundType polarity a) where
+    show t = unpack $ exprShow t
+
+instance Is PolarityType polarity => AllWitnessConstraint Show (DolanType PinaforeGroundType polarity) where
+    allWitnessConstraint = Dict

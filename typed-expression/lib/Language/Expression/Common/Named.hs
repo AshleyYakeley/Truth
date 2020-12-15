@@ -7,6 +7,7 @@ import Language.Expression.Common.Witness
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
+type UnitType :: Type -> Type -> Type
 data UnitType a b where
     MkUnitType :: a -> UnitType a ()
 
@@ -21,8 +22,21 @@ instance Show a => Show (UnitType a b) where
 instance Show a => AllWitnessConstraint Show (UnitType a) where
     allWitnessConstraint = Dict
 
+type UnitType' :: (Type -> Type) -> Type -> Type -> Type
 data UnitType' a b c where
     MkUnitType' :: a c -> UnitType' a () c
+
+instance Show (a c) => Show (UnitType' a b c) where
+    show (MkUnitType' ac) = show ac
+
+instance AllWitnessConstraint Show a => AllWitnessConstraint Show (UnitType' a b) where
+    allWitnessConstraint :: forall (t :: Type). Dict (Show (UnitType' a b t))
+    allWitnessConstraint =
+        case allWitnessConstraint @_ @_ @Show @a @t of
+            Dict -> Dict
+
+instance AllWitnessConstraint Show a => AllWitnessConstraint (AllWitnessConstraint Show) (UnitType' a) where
+    allWitnessConstraint = Dict
 
 type NameWitness name w = NameTypeWitness (UnitType name) (UnitType' w)
 

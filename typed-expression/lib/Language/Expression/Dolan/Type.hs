@@ -13,8 +13,13 @@ import Shapes
 type IsDolanPolyShim :: PolyShimKind -> Constraint
 type IsDolanPolyShim pshim = (DolanVarianceInCategory pshim, LazyCategory (pshim Type), CartesianShim (pshim Type))
 
-class (IsDolanPolyShim (DolanPolyShim ground), Ord (DolanName ground), MonadPlus (DolanM ground)) =>
-          IsDolanGroundType (ground :: GroundTypeKind) where
+class ( IsDolanPolyShim (DolanPolyShim ground)
+      , Ord (DolanName ground)
+      , Show (DolanName ground)
+      , MonadPlus (DolanM ground)
+      , AllWitnessConstraint Show (DolanType ground 'Positive)
+      , AllWitnessConstraint Show (DolanType ground 'Negative)
+      ) => IsDolanGroundType (ground :: GroundTypeKind) where
     type DolanName ground :: Type
     type DolanM ground :: Type -> Type
     groundTypeVarianceType ::
