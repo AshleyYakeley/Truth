@@ -720,7 +720,7 @@ testEntity =
               , pointTest
                     "do ar <- evaluate @(Integer -> Integer) \"\\\\x -> x + 1\"; case ar of Left err -> fail err; Right f -> testeqval 8 $ f 7 end end"
               , pointTest "testaction (Left \"<evaluate>:1:1: expecting: expression\") $ evaluate @Integer \"\""
-              , pointTest "testaction (Left \"<evaluate>:1:1: undefined: f: a\") $ evaluate @Integer \"f\""
+              , pointTest "testaction (Left \"<evaluate>:1:1: undefined: f:a\") $ evaluate @Integer \"f\""
               , pointTest
                     "testaction (Left \"<evaluate>:1:1: cannot convert Text <: Integer\\\n<evaluate>:1:1: cannot subsume Text <: Integer\") $ evaluate @Integer \"\\\"hello\\\"\""
               , pointTest
