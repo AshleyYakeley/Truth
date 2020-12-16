@@ -499,6 +499,10 @@ base_predefinitions =
           , mkValEntry "$" "Apply a function to a value." $ id @(->) @(A -> B)
           , mkValEntry "." "Compose functions." $ (.) @(->) @A @B @C
           , mkValEntry "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
+          , mkValEntry
+                "seq"
+                "Evaluate the first argument, then if that's not \"bottom\" (error or non-termination), return the second argument."
+                (seq :: TopType -> A -> A)
           ]
     , docTreeEntry
           "Actions"
