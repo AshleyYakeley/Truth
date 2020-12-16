@@ -64,7 +64,7 @@ instance (AbstractTypeSystem ts, SubsumeTypeSystem ts) => Semigroup (Bound ts) w
 instance (AbstractTypeSystem ts, SubsumeTypeSystem ts) => Monoid (Bound ts) where
     mempty = let
         abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (() -> a))
-        abstractNames expr = return $ MkUnifyExpression (pure ()) $ fmap (\a _ _ -> a) expr
+        abstractNames expr = return $ MkUnifyExpression (pure ()) $ fmap (\a () ~() -> a) expr
         exprs :: SubsumerOpenExpression ts ()
         exprs = pUnit
         getbinds ::
@@ -80,10 +80,10 @@ singleBound (MkBinding name mexpr) = do
     MkSubsumerExpression (decltype :: _ tdecl) subsexpr <- mexpr
     let
         abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (tdecl -> a))
-        abstractNames e = do
-            MkAbstractResult vwt e' <- abstractNamedExpression @ts name e
+        abstractNames expr = do
+            MkAbstractResult vwt expr' <- abstractNamedExpression @ts name expr
             uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit decltype) vwt
-            return $ MkUnifyExpression (uuGetShim uconv) $ fmap (\ta conv -> ta . shimToFunction conv) e'
+            return $ MkUnifyExpression (uuGetShim uconv) $ fmap (\ta conv -> ta . shimToFunction conv) expr'
         getbinds ::
                UnifierSubstitutions ts
             -> SubsumerSubstitutions ts

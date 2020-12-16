@@ -558,6 +558,22 @@ testQueries =
                                  ]
                            ]
               , testTree
+                    "lazy"
+                    [ testQuery
+                          "let lazy: Any -> Integer -> Integer; lazy _ x = x in (\\x -> lazy x 1) (error \"strict\")" $
+                      LRSuccess "1"
+                    , testQuery "let lazy: Any -> Integer -> Integer; lazy _ x = x in let x = lazy x 1 in x" $
+                      LRSuccess "1"
+                    , testQuery
+                          "let lazy: Any -> Integer -> Integer; lazy _ x = x in let x = lazy (error \"strict\") 1 in x" $
+                      LRSuccess "1"
+                    , testQuery "let lazy: Any -> Integer -> Integer; lazy _ x = x in let f = lazy f in f 1" $
+                      LRSuccess "1"
+                    , testQuery
+                          "let lazy: Any -> Integer -> Integer; lazy _ x = x in let f = lazy (error \"strict\") in f 1" $
+                      LRSuccess "1"
+                    ]
+              , testTree
                     "subsume"
                     [ testQuery "let rval: rec a. Maybe a; rval = rval in ()" $ LRSuccess "unit"
                     , testQuery "let rval: rec a. Maybe a; rval = Just rval in ()" $ LRSuccess "unit"
@@ -597,10 +613,38 @@ testQueries =
                     , testQuery
                           "let rcount = rcount1; rcount1: (rec x. Maybe x) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
                       LRSuccess "1"
+                    , testQuery
+                          "let rcount: (rec xa. Maybe xa) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      LRSuccess "5"
+                    , testQuery
+                          "let rcount: (rec xc. Maybe xc) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
+                      LRSuccess "5"
                     , testTree
-                          "failing"
+                          "lazy"
                           [ testQuery
-                                "let f: (a -> Integer) -> Maybe a -> Integer; f rc x = case x of Nothing -> 0; Just y -> 1 + rc y end in let rcount: (rec a. Maybe a) -> Integer; rcount = rcount1; rcount1 = f rcount in rcount $ Just Nothing" $
+                                "let f: (x -> Integer) -> Maybe x -> Integer; f rc x = case x of Nothing -> 0; Just y -> 1 + rc y end in let rcount: (rec z. Maybe z) -> Integer; rcount = rcount1; rcount1 = f rcount in rcount $ Just Nothing" $
+                            LRSuccess "1"
+                          , testQuery
+                                "let f: ((rec x. Maybe x) -> Integer) -> (rec x. Maybe x) -> Integer; f rc x = case x of Nothing -> 0; Just y -> 1 + rc y end in let rcount: (rec z. Maybe z) -> Integer; rcount = rcount1; rcount1 = f rcount in rcount $ Just Nothing" $
+                            LRSuccess "1"
+                          , testQuery
+                                "let f: (Integer -> Integer) -> Integer -> Integer; f rc x = if x == 0 then 0 else 1 + rc (x - 1) in let rcount: Integer -> Integer; rcount = rcount1; rcount1 = f rcount in rcount 1" $
+                            LRSuccess "1"
+                          , testQuery "let f _ x = x in let rcount = f rcount in rcount 1" $ LRSuccess "1"
+                          , testQuery
+                                "let f: Any -> Integer -> Integer; f _ x = x in let rcount = f (seq (error \"strict\") rcount) in rcount 1" $
+                            LRSuccess "1"
+                          , testQuery
+                                "let f: Any -> Integer -> Integer; f _ x = x in let rcount = f (seq rcount (error \"strict\")) in rcount 1" $
+                            LRSuccess "1"
+                          , testQuery
+                                "let f: (Integer -> Integer) -> Integer -> Integer; f _ x = x in let rcount = f rcount in rcount 1" $
+                            LRSuccess "1"
+                          , testQuery
+                                "let f: (Integer -> Integer) -> Integer -> Integer; f _ x = x in let rcount = rcount1; rcount1 = f rcount in rcount 1" $
+                            LRSuccess "1"
+                          , testQuery
+                                "let f: (Integer -> Integer) -> Integer -> Integer; f _ x = x in let rcount: Integer -> Integer; rcount = rcount1; rcount1 = f rcount in rcount 1" $
                             LRSuccess "1"
                           , testQuery
                                 "let rcount: (rec a. Maybe a) -> Integer; rcount = rcount1; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
@@ -612,12 +656,6 @@ testQueries =
                                 "let rcount: (rec xa. Maybe xa) -> Integer; rcount = rcount1; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just Nothing" $
                             LRSuccess "1"
                           ]
-                    , testQuery
-                          "let rcount: (rec xa. Maybe xa) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end; rcount1: (rec xb. Maybe xb) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
-                      LRSuccess "5"
-                    , testQuery
-                          "let rcount: (rec xc. Maybe xc) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount1 y end; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount $ Just $ Just $ Just $ Just $ Just Nothing" $
-                      LRSuccess "5"
                     ]
               , testTree
                     "case"
