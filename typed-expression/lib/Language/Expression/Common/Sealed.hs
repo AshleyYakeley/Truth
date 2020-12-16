@@ -48,6 +48,10 @@ instance WitnessMappable poswit negwit (SealedExpression name negwit poswit) whe
         expr' <- mapWitnessesM mapPos mapNeg expr
         return $ MkSealedExpression tt' expr'
 
+instance (Show name, AllWitnessConstraint Show negwit, AllWitnessConstraint Show poswit) =>
+             Show (SealedExpression name negwit poswit) where
+    show (MkSealedExpression t expr) = show expr <> " => " <> showAllWitness t
+
 data SealedPattern (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall t. MkSealedPattern (tw t)
                               (NamedPattern name vw t ())

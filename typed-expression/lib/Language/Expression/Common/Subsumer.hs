@@ -20,12 +20,16 @@ import Shapes
 class ( UnifyTypeSystem ts
       , Applicative (Subsumer ts)
       , Show (SubsumerSubstitutions ts)
+      , AllWitnessConstraint Show (TSPosWitness ts)
       , AllWitnessConstraint Show (TSNegWitness ts)
       ) => SubsumeTypeSystem ts where
     type Subsumer ts :: Type -> Type
     type SubsumerSubstitutions ts :: Type
-    usubSubsumer :: UnifierSubstitutions ts -> Subsumer ts a -> TSOuter ts (Subsumer ts a)
-    solveSubsumer :: Subsumer ts a -> TSOuter ts (a, SubsumerSubstitutions ts)
+    usubSubsumer :: forall a. UnifierSubstitutions ts -> Subsumer ts a -> TSOuter ts (Subsumer ts a)
+    solveSubsumer :: forall a. Subsumer ts a -> TSOuter ts (a, SubsumerSubstitutions ts)
+    showSubsumer :: forall a. Subsumer ts a -> String
+    default showSubsumer :: AllWitnessConstraint Show (Subsumer ts) => forall a. Subsumer ts a -> String
+    showSubsumer = showAllWitness
     -- This should generate substitutions only for the inferred type, not the declared type.
     subsumerNegSubstitute :: SubsumerSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)
     subsumePosWitnesses :: TSPosWitness ts inf -> TSPosWitness ts decl -> TSOuter ts (Subsumer ts (TSShim ts inf decl))
@@ -65,6 +69,9 @@ data SubsumerOpenExpression ts tdecl =
     forall tinf. MkSubsumerOpenExpression (Subsumer ts (tinf -> tdecl))
                                           (TSOpenExpression ts tinf)
 
+instance SubsumeTypeSystem ts => Show (SubsumerOpenExpression ts tdecl) where
+    show (MkSubsumerOpenExpression subs expr) = showSubsumer @ts subs <> "/" <> showAllWitness expr
+
 instance SubsumeTypeSystem ts => Functor (SubsumerOpenExpression ts) where
     fmap ab (MkSubsumerOpenExpression subsumer expr) = MkSubsumerOpenExpression (fmap (fmap ab) subsumer) expr
 
@@ -80,6 +87,9 @@ instance SubsumeTypeSystem ts => Productish (SubsumerOpenExpression ts) where
 data SubsumerExpression ts =
     forall tdecl. MkSubsumerExpression (TSPosShimWit ts tdecl)
                                        (SubsumerOpenExpression ts tdecl)
+
+instance SubsumeTypeSystem ts => Show (SubsumerExpression ts) where
+    show (MkSubsumerExpression t expr) = show expr <> " => " <> show t
 
 -- Note the user's declared type will be simplified first, so they'll end up seeing a simplified version of the type they declared for their expression.
 subsumerExpression ::

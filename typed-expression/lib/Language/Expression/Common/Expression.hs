@@ -21,6 +21,12 @@ instance Applicative (Expression w) where
 
 instance Productish (Expression w)
 
+instance AllWitnessConstraint Show w => Show (Expression w a) where
+    show expr = "{" <> intercalate "," (expressionFreeWitnesses showAllWitness expr) <> "}"
+
+instance AllWitnessConstraint Show w => AllWitnessConstraint Show (Expression w) where
+    allWitnessConstraint = Dict
+
 expressionFreeWitnesses :: (forall t. w t -> r) -> Expression w a -> [r]
 expressionFreeWitnesses _wr (ClosedExpression _) = []
 expressionFreeWitnesses wr (OpenExpression wt expr) = (wr wt) : expressionFreeWitnesses wr expr

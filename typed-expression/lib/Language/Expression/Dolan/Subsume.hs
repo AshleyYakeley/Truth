@@ -117,37 +117,22 @@ data SubsumeWitness ground t where
         -> DolanType ground polarity t
         -> SubsumeWitness ground (DolanPolarMap ground polarity (UVarT name) t)
 
+instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (SubsumeWitness ground t) where
+    show (MkSubsumeWitness name (t :: _ polarity _)) =
+        case polarityType @polarity of
+            PositiveType -> show name <> " <: " <> showAllWitness t
+            NegativeType -> show name <> " :> " <> showAllWitness t
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground =>
+             AllWitnessConstraint Show (SubsumeWitness ground) where
+    allWitnessConstraint = Dict
+
 type DolanSubsumer :: GroundTypeKind -> Type -> Type
 type DolanSubsumer ground = Expression (SubsumeWitness ground)
 
 type FullSubsumer :: GroundTypeKind -> Type -> Type
 type FullSubsumer ground = Solver ground (SubsumeWitness ground)
 
-{-
-instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) a. (shim ~ DolanPolyShim ground Type) =>
-             WitnessMappable (PShimWit shim (DolanType ground) 'Positive) (PShimWit shim (DolanType ground) 'Negative) (DolanSubsumer ground a) where
-    mapWitnessesM ::
-           forall m. Monad m
-        => (forall (t :: Type). DolanShimWit ground 'Positive t -> m (DolanShimWit ground 'Positive t))
-        -> (forall (t :: Type). DolanShimWit ground 'Negative t -> m (DolanShimWit ground 'Negative t))
-        -> DolanSubsumer ground a
-        -> m (DolanSubsumer ground a)
-    mapWitnessesM _mapPos _mapNeg (ClosedExpression r) = return $ ClosedExpression r
-    mapWitnessesM mapPos mapNeg (OpenExpression (MkSubsumeWitness name (t :: _ polarity _)) expr) =
-        case polarityType @polarity of
-            PositiveType -> do
-                MkShimWit t' conv <- mapPos $ mkShimWit t
-                expr' <- mapWitnessesM mapPos mapNeg expr
-                return $ OpenExpression (MkSubsumeWitness name t') $ fmap (\f a -> f $ foo conv . a) expr'
-            NegativeType -> do
-                MkShimWit t' conv <- mapNeg $ mkShimWit t
-                expr' <- mapWitnessesM mapPos mapNeg expr
-                return $ OpenExpression (MkSubsumeWitness name t') $ fmap (\f a -> f $ foo conv . a) expr'
-
-instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type). (shim ~ DolanPolyShim ground Type) =>
-             AllWitnessConstraint (WitnessMappable (PShimWit shim (DolanType ground) 'Positive) (PShimWit shim (DolanType ground) 'Negative)) (DolanSubsumer ground) where
-    allWitnessConstraint = Dict
--}
 subsumeContext ::
        forall (ground :: GroundTypeKind) polarity. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => SubtypeContext (DolanType ground) (DolanPolyShim ground Type) (FullSubsumer ground) polarity polarity
