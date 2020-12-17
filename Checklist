@@ -1,0 +1,54 @@
+Before release:
+
+1. Check milestone is complete
+
+    https://github.com/AshleyYakeley/Truth/milestones
+
+2. Pull upstream changes
+
+    git checkout master
+    git pull
+
+3. Update version numbers
+
+    Makefile
+    */package.yaml
+    support/vsc-extension/package.json
+    support/pygments-lexer/setup.py
+    pinafore/app/Version.hs
+    mkdocs/docs/index.md
+
+4. Update changelog
+
+    deb/changelog.m4
+
+5. Use latest LTS resolver
+
+    https://www.stackage.org/lts
+    stack.yaml
+    docker/Dockerfile
+    witness/stack.yaml
+    open-witness/stack.yaml
+
+6. Use latest stack
+
+    stack upgrade
+    stack --version
+
+7. Build & test
+
+    VS tasks "Full Build"
+
+10. Commit and push changes to repo
+
+    git commit -a
+    git push
+
+15. Tag commit
+
+    git tag -a -s VERSION -m "Version VERSION"
+    git push --tags
+
+18. Close completed milestone
+
+    https://github.com/AshleyYakeley/Truth/milestones
