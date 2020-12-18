@@ -11,7 +11,7 @@ import Shapes.Test
 testExample :: String -> TestTree
 testExample fpath =
     testTree fpath $
-    withTestPinaforeContext nullFetchModuleText stdout $ \_ _ _getTableState -> do
+    withTestPinaforeContext (directoryFetchModule "examples") stdout $ \_ _ _getTableState -> do
         _ <- pinaforeInterpretFile fpath
         return ()
 

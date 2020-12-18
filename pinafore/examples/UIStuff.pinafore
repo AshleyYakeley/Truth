@@ -1,0 +1,117 @@
+let
+
+### Useful UI stuff
+
+# A window that comes with some menus.
+stdWindow: WholeRef +Text -> [MenuItem] -> UI -> Action Window;
+stdWindow title moremenus contents = fixAction $ \window -> let
+    menus: [MenuItem];
+    menus =
+        [
+            menuSubmenu "File"
+            [
+                menuAction "Close" (Just "Ctrl+W") {closeWindow window},
+                menuSeparator,
+                menuAction "Exit" (Just "Ctrl+Q") {exitUI}
+            ],
+            menuSubmenu "Edit"
+            [
+                menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
+                menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
+            ]
+        ] ++ moremenus;
+    in openWindow title {menus} $ uiScrolled contents;
+
+selectionWindow:
+    Text -> # window title
+    SetRef item -> # the set of items
+    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
+    (item -> Action Any) -> # what to do when an item is activated
+    (WholeRef item -> UI) ->
+    Action Window;
+selectionWindow wtitle iset createMenuItems iopen iui = do
+    selection <- newMemWhole;
+    let
+        viewItem: Action ();
+        viewItem = do
+            item <- get selection;
+            iopen item;
+            return ();
+            end;
+
+        deleteItem: Action ();
+        deleteItem = do
+            item <- get selection;
+            iset -= item;
+            end;
+
+        moremenus: [MenuItem];
+        moremenus =
+            [
+                menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
+                [
+                    menuAction "View" Nothing {viewItem},
+                    menuAction "Delete" Nothing {deleteItem}
+                ]
+            ];
+        in stdWindow {wtitle} moremenus (iui selection);
+    end;
+
+# This is a two-pane window, the left has a "selector" of items (e.g. a table), and the right shows the selected item.
+selectionPairWindow:
+    Text -> # window title
+    SetRef item -> # the set of items
+    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
+    (item -> Action Any) -> # what to do when an item is activated
+    (WholeRef item -> UI) -> # UI for the item selector
+    (WholeRef +item -> UI) -> # UI for the selected item
+    Action Window;
+selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedUI = do
+    selection <- newMemWhole;
+    let
+        viewItem: Action ();
+        viewItem = do
+            item <- get selection;
+            iopen item;
+            return ();
+            end;
+
+        deleteItem: Action ();
+        deleteItem = do
+            item <- get selection;
+            iset -= item;
+            end;
+
+        moremenus: [MenuItem];
+        moremenus =
+            [
+                menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
+                [
+                    menuAction "View" Nothing {viewItem},
+                    menuAction "Delete" Nothing {deleteItem}
+                ]
+            ];
+
+        sidebarUI: UI;
+        sidebarUI = getSelectorUI selection;
+
+        selectedUI: UI;
+        selectedUI = getSelectedUI $ immutWhole selection;
+
+        ui: UI;
+        ui = uiHorizontal [(False,sidebarUI),(True,selectedUI)];
+    in stdWindow {wtitle} moremenus ui;
+    end;
+
+uiPage: WholeRef +Text -> UI -> (UI,UI);
+uiPage n ui = (uiLabel n,ui);
+
+uiLabelled: WholeRef +Text -> UI -> UI;
+uiLabelled n ui = uiHorizontal [(False, uiLabel n),(True, ui)];
+
+in export
+    stdWindow
+    selectionWindow
+    selectionPairWindow
+    uiPage
+    uiLabelled

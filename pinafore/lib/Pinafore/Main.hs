@@ -17,7 +17,6 @@ import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Storage
 import Shapes
-import System.Directory (doesFileExist)
 import System.FilePath
 
 type FilePinaforeType = PinaforeAction TopType
@@ -28,27 +27,11 @@ filePinaforeType = qNegativeTypeDescription @FilePinaforeType
 doCache :: Bool
 doCache = True
 
-moduleRelativePath :: ModuleName -> FilePath
-moduleRelativePath (MkModuleName nn) = (foldl1 (</>) $ fmap unpack nn) <> ".pinafore"
-
 standardPinaforeContext :: [FilePath] -> InvocationInfo -> FilePath -> ChangesContext -> CreateView PinaforeContext
 standardPinaforeContext moduleDirs invinfo dirpath tc = do
     let
-        fetchModule :: ModuleName -> IO (Maybe (FilePath, Result UnicodeException Text))
-        fetchModule mname = let
-            namePath :: FilePath
-            namePath = moduleRelativePath mname
-            fetch :: [FilePath] -> IO (Maybe (FilePath, Result UnicodeException Text))
-            fetch [] = return Nothing
-            fetch (d:dd) = do
-                let fpath = d </> namePath
-                found <- doesFileExist fpath
-                case found of
-                    False -> fetch dd
-                    True -> do
-                        bs <- readFile fpath
-                        return $ Just $ (fpath, eitherToResult $ decodeUtf8' $ toStrict bs)
-            in fetch moduleDirs
+        fetchModule :: FetchModule
+        fetchModule = mconcat $ fmap directoryFetchModule moduleDirs
     rc <- viewGetResourceContext
     liftLifeCycle $ do
         sqlReference <- liftIO $ sqlitePinaforeTableReference $ dirpath </> "tables.sqlite3"

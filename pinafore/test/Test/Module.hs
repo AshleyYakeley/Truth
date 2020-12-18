@@ -10,10 +10,10 @@ import Shapes.Test
 
 moduleRunTest :: [(Text, Text)] -> Text -> TestTree
 moduleRunTest modules text = let
-    fetchModuleText :: ModuleName -> IO (Maybe Text)
-    fetchModuleText mname = return $ lookup (pack $ show mname) modules
+    fetchModule :: FetchModule
+    fetchModule = textFetchModule $ \mname -> return $ lookup (pack $ show mname) modules
     in testTree (unpack text) $
-       withTestPinaforeContext fetchModuleText stdout $ \tc _unlift _getTableState -> do
+       withTestPinaforeContext fetchModule stdout $ \tc _unlift _getTableState -> do
            action <-
                throwInterpretResult $
                pinaforeInterpretTextAtType "<test>" $ "onStop (" <> text <> ") (fail \"stopped\")"
