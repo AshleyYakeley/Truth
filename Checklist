@@ -35,20 +35,29 @@ Before release:
     stack upgrade
     stack --version
 
-7. Build & test
-
-    VS tasks "Full Build"
-
-10. Commit and push changes to repo
+7. Commit and push changes to repo
 
     git commit -a
     git push
 
-15. Tag commit
+8. Build & test
+
+    VS tasks "Full Build"
+
+9. Upload to Github
+
+    https://github.com/AshleyYakeley/Truth/releases
+
+10. Upload documentation to pinafore.info
+
+    (use script)
+    https://pinafore.info/
+
+11. Tag commit
 
     git tag -a -s VERSION -m "Version VERSION"
     git push --tags
 
-18. Close completed milestone
+12. Close completed milestone
 
     https://github.com/AshleyYakeley/Truth/milestones
