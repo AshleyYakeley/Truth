@@ -47,7 +47,6 @@ library:
       - Pinafore.Language.Type.Data
       - Pinafore.Language.Type.Identified
       - Pinafore.Language.Error
-      - Pinafore.Language.Subtype
       - Pinafore.Language.SpecialForm
       - Pinafore.Language.Interpret.Interpreter
       - Pinafore.Language.Var
