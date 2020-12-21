@@ -30,34 +30,38 @@ Before release:
     witness/stack.yaml
     open-witness/stack.yaml
 
-6. Use latest stack
+6. Update Dockerfile date
+
+    docker/Dockerfile
+
+7. Use latest stack
 
     stack upgrade
     stack --version
 
-7. Commit and push changes to repo
+8. Commit and push changes to repo
 
     git commit -a
     git push
 
-8. Build & test
+9. Build & test
 
     VS tasks "Full Build"
 
-9. Upload to Github
+10. Upload to Github
 
     https://github.com/AshleyYakeley/Truth/releases
 
-10. Upload documentation to pinafore.info
+11. Upload documentation to pinafore.info
 
     (use script)
     https://pinafore.info/
 
-11. Tag commit
+12. Tag commit
 
     git tag -a -s VERSION -m "Version VERSION"
     git push --tags
 
-12. Close completed milestone
+13. Close completed milestone
 
     https://github.com/AshleyYakeley/Truth/milestones
