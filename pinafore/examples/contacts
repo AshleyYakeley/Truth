@@ -147,9 +147,12 @@ newOrganisationMenuItem setsel = menuAction ("New Organisation") (Just "Ctrl+K")
     setsel item;
     end};
 
+contactsSelector: WholeRef LegalEntity -> UI;
+contactsSelector selection = namedTable legalentities contactWindow (Just selection);
+
 # main window
 contactsWindow: Action Window;
 contactsWindow = selectionPairWindow "Contacts" legalentities [newPersonMenuItem,newOrganisationMenuItem] contactWindow
-    (\selection -> namedTable legalentities contactWindow (Just selection)) contactRefUI;
+    contactsSelector contactRefUI;
 
 in contactsWindow

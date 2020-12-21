@@ -66,42 +66,15 @@ selectionPairWindow:
     (WholeRef item -> UI) -> # UI for the item selector
     (WholeRef +item -> UI) -> # UI for the selected item
     Action Window;
-selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedUI = do
-    selection <- newMemWhole;
-    let
-        viewItem: Action ();
-        viewItem = do
-            item <- get selection;
-            iopen item;
-            return ();
-            end;
-
-        deleteItem: Action ();
-        deleteItem = do
-            item <- get selection;
-            iset -= item;
-            end;
-
-        moremenus: [MenuItem];
-        moremenus =
-            [
-                menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
-                [
-                    menuAction "View" Nothing {viewItem},
-                    menuAction "Delete" Nothing {deleteItem}
-                ]
-            ];
-
+selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedUI =
+    selectionWindow wtitle iset createMenuItems iopen $ \selection -> let
         sidebarUI: UI;
         sidebarUI = getSelectorUI selection;
 
         selectedUI: UI;
         selectedUI = getSelectedUI $ immutWhole selection;
 
-        ui: UI;
-        ui = uiHorizontal [(False,sidebarUI),(True,selectedUI)];
-    in stdWindow {wtitle} moremenus ui;
-    end;
+        in uiHorizontal [(False,sidebarUI),(True,selectedUI)];
 
 uiPage: WholeRef +Text -> UI -> (UI,UI);
 uiPage n ui = (uiLabel n,ui);
