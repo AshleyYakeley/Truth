@@ -5,6 +5,7 @@ packages:
 - shapes
 - typed-expression
 - changes-core
+- changes-media
 - changes-world
 - changes-gtk
 - pinafore-base

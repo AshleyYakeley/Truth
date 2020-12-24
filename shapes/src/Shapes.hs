@@ -38,3 +38,4 @@ import Data.MonoApplicative as I
 import Data.Result as I
 import Data.SameItem as I
 import Data.Store as I
+import Data.Words as I
