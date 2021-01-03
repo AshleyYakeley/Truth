@@ -1,4 +1,4 @@
-# Run "pinafore --doc" to see all predefined bindings.
+#!/usr/bin/pinafore
 
 let
 
@@ -180,6 +180,14 @@ window_constant = std_window {"Constant"} $ uiVertical
     (True, uiTextArea {"constant"})
 ];
 
+### CSS UI
+window_css: Action Window;
+window_css = do
+    cssref <- newMemWhole;
+    cssref := "* {color:green; font-family: \"serif\";}";
+    std_window {"CSS"} $ uiStyleSheet (let import Debug in debugIgnoreUpdateUIExceptions cssref) $ uiTextArea cssref;
+    end;
+
 ### Start Window
 
 window_start : Action Window;
@@ -203,6 +211,7 @@ window_start = do
             (False, uiButton {"Switch"} {window_switch}),
             (False, uiButton {"Files"} {window_files}),
             (False, uiButton {"Constant"} {window_constant}),
+            (False, uiButton {"CSS"} {window_css}),
             (False, uiButton {"Disabled"} unknown),
             (True, uiBlank)
         ];

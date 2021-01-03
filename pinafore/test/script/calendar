@@ -1,3 +1,4 @@
+#!/usr/bin/pinafore
 let
 pdate = property @() @Date !"calendar-test";
 rdate = pdate !$ {()};

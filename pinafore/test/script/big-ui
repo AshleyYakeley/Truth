@@ -1,3 +1,4 @@
+#!/usr/bin/pinafore
 let
 opentype T;
 me = openEntity @T !"T";

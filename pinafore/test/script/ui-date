@@ -1,3 +1,4 @@
+#!/usr/bin/pinafore
 do
 dref <- newMemWhole;
 tref <- newMemWhole;

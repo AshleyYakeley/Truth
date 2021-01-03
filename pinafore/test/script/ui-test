@@ -1,3 +1,4 @@
+#!/usr/bin/pinafore
 let
 
 emptywindow :: Action ();
