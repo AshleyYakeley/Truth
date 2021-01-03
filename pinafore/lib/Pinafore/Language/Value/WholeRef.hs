@@ -53,6 +53,12 @@ langWholeRefSet :: forall p. LangWholeRef '( p, TopType) -> Know p -> PinaforeAc
 langWholeRefSet (MutableLangWholeRef sr) mp = pinaforeRefPushAction sr $ pure $ MkBiWholeEdit mp
 langWholeRefSet (ImmutableLangWholeRef _) _ = empty
 
+langWholeRefMapModel ::
+       Functor f => (forall update. WModel update -> f (WModel update)) -> LangWholeRef pq -> f (LangWholeRef pq)
+langWholeRefMapModel ff (MutableLangWholeRef model) = fmap MutableLangWholeRef $ ff model
+langWholeRefMapModel ff (ImmutableLangWholeRef (MkPinaforeImmutableWholeRef model)) =
+    fmap (ImmutableLangWholeRef . MkPinaforeImmutableWholeRef) $ ff model
+
 langWholeRefSubscribe ::
        forall a. (?pinafore :: PinaforeContext)
     => PinaforeImmutableWholeRef a

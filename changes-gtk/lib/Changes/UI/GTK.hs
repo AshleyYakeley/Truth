@@ -1,6 +1,5 @@
 module Changes.UI.GTK
-    ( Widget
-    , module I
+    ( module I
     ) where
 
 import Changes.UI.GTK.Blank as I
@@ -26,4 +25,4 @@ import Changes.UI.GTK.Text as I
 import Changes.UI.GTK.TextEntry as I
 import Changes.UI.GTK.TextStyle as I
 import Changes.UI.GTK.Window as I
-import GI.Gtk
+import GI.Gtk as I (GError, Widget)

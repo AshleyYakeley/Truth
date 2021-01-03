@@ -266,6 +266,13 @@ uiRun pui =
             Known (MkLangUI ui) -> ui
             Unknown -> createBlank
 
+uiStyleSheet :: PinaforeImmutableWholeRef Text -> LangUI -> LangUI
+uiStyleSheet cssmodel (MkLangUI mw) =
+    MkLangUI $ do
+        widget <- mw
+        bindCSS maxBound (unWModel $ pinaforeImmutableRefValue mempty cssmodel) widget
+        return widget
+
 ui_predefinitions :: [DocTreeEntry BindDoc]
 ui_predefinitions =
     [ docTreeEntry
@@ -311,6 +318,7 @@ ui_predefinitions =
           , mkValEntry "uiCalendar" "A calendar." uiCalendar
           , mkValEntry "uiScrolled" "A scrollable container." uiScrolled
           , mkValEntry "uiDynamic" "A UI that can be updated to different UIs." uiDynamic
+          , mkValEntry "uiStyleSheet" "A UI with a CSS style-sheet attached." uiStyleSheet
           ]
     , docTreeEntry
           "Menu"

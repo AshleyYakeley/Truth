@@ -4,16 +4,24 @@ module Control.AsyncRunner
     , asyncIORunner
     ) where
 
+import Control.Monad.Exception
 import Control.Monad.LifeCycle
 import Control.Task
+import Data.Result
 import Shapes.Import
 
 data VarState t
     = VSIdle
+    -- ^ worker is idle, with no tasks pending
+    | VSException SomeException
+    -- ^ worker has terminated because task gave this exception
     | VSRunning
+    -- ^ worker is working, with no tasks pending
     | VSPending t
                 Bool
+    -- ^ worker has tasks pending, flag means worker should wait for more tasks (for given period)
     | VSEnd
+    -- ^ caller is telling worker to terminate
 
 asyncWaitRunner ::
        forall t. Semigroup t
@@ -32,7 +40,8 @@ asyncWaitRunner mus doit = do
                         VSEnd -> do
                             writeTVar bufferVar VSIdle
                             return Nothing
-                        VSIdle -> do mzero
+                        VSException _ -> return Nothing
+                        VSIdle -> mzero
                         VSRunning -> do
                             writeTVar bufferVar VSIdle
                             return $ Just $ return ()
@@ -45,24 +54,36 @@ asyncWaitRunner mus doit = do
                             return $ Just $ doit vals
             case maction of
                 Just action -> do
-                    action
+                    catch action $ \ex -> atomically $ writeTVar bufferVar $ VSException ex
                     threadDo
                 Nothing -> return ()
-        waitForIdle :: STM ()
+        waitForIdle :: STM (Result SomeException ())
         waitForIdle = do
             vs <- readTVar bufferVar
             case vs of
-                VSIdle -> return ()
+                VSIdle -> return $ return ()
+                VSException ex -> return $ throw ex
                 _ -> mzero
+        atomicallyDo :: STM (Result SomeException a) -> IO a
+        atomicallyDo stra = do
+            ra <- atomically stra
+            throwResult ra
         pushVal :: Maybe t -> IO ()
         pushVal (Just val) =
-            atomically $ do
+            atomicallyDo $ do
                 vs <- readTVar bufferVar
                 case vs of
-                    VSEnd -> return ()
-                    VSIdle -> writeTVar bufferVar $ VSPending val True
-                    VSRunning -> writeTVar bufferVar $ VSPending val True
-                    VSPending oldval _ -> writeTVar bufferVar $ VSPending (oldval <> val) True
+                    VSEnd -> return $ return ()
+                    VSException ex -> return $ throw ex
+                    VSIdle -> do
+                        writeTVar bufferVar $ VSPending val True
+                        return $ return ()
+                    VSRunning -> do
+                        writeTVar bufferVar $ VSPending val True
+                        return $ return ()
+                    VSPending oldval _ -> do
+                        writeTVar bufferVar $ VSPending (oldval <> val) True
+                        return $ return ()
         pushVal Nothing =
             atomically $ do
                 vs <- readTVar bufferVar
@@ -71,21 +92,25 @@ asyncWaitRunner mus doit = do
                     _ -> return ()
         utask :: Task ()
         utask = let
-            taskWait = atomically waitForIdle
+            taskWait = atomicallyDo waitForIdle
             taskIsDone =
-                atomically $ do
+                atomicallyDo $ do
                     vs <- readTVar bufferVar
                     return $
                         case vs of
-                            VSIdle -> Just ()
-                            _ -> Nothing
+                            VSIdle -> return $ Just ()
+                            VSException ex -> throw ex
+                            _ -> return Nothing
             in MkTask {..}
     _ <- liftIO $ forkIO threadDo
     lifeCycleClose $ do
-        atomically $ do
-            waitForIdle
-            writeTVar bufferVar $ VSEnd
-        atomically waitForIdle
+        atomicallyDo $ do
+            me <- waitForIdle
+            case me of
+                SuccessResult _ -> writeTVar bufferVar VSEnd
+                FailureResult _ -> return ()
+            return me
+        atomicallyDo waitForIdle
     return (pushVal, utask)
 
 asyncRunner ::
