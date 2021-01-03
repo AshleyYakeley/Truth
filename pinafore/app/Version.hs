@@ -7,7 +7,7 @@ import GitHash
 import Shapes
 
 pinaforeVersion :: String
-pinaforeVersion = "0.2"
+pinaforeVersion = "0.3"
 
 gi :: GitInfo
 gi = $$tGitInfoCwd
