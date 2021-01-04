@@ -58,10 +58,13 @@ containerGetAllChildren cont = do
         writeIORef ref $ children ++ [child]
     readIORef ref
 
-getWidgetChildren :: Widget -> IO (Maybe [Widget])
-getWidgetChildren w = do
+getWidgetChildren :: Bool -> Widget -> IO (Maybe [Widget])
+getWidgetChildren full w = do
     mcont <- castTo Container w
-    for mcont #getChildren
+    for mcont $
+        if full
+            then containerGetAllChildren
+            else containerGetChildren
 
 widgetInfoText :: Widget -> IO Text
 widgetInfoText w = do
@@ -73,7 +76,7 @@ widgetInfoText w = do
             if vis
                 then ""
                 else "{hidden}"
-    mww <- getWidgetChildren w
+    mww <- getWidgetChildren True w
     case mww of
         Nothing -> return hh
         Just ww -> do
@@ -82,14 +85,9 @@ widgetInfoText w = do
 
 widgetGetTree :: Bool -> Widget -> IO [Widget]
 widgetGetTree full w = do
-    mwc <- castTo Container w
-    case mwc of
-        Just wc -> do
-            children <-
-                (if full
-                     then containerGetAllChildren
-                     else containerGetChildren) $
-                wc
+    mchildren <- getWidgetChildren full w
+    case mchildren of
+        Just children -> do
             ww <- for children $ widgetGetTree full
             return $ w : mconcat ww
         Nothing -> return [w]

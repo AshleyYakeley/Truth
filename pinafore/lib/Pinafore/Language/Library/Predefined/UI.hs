@@ -270,7 +270,21 @@ uiStyleSheet :: PinaforeImmutableWholeRef Text -> LangUI -> LangUI
 uiStyleSheet cssmodel (MkLangUI mw) =
     MkLangUI $ do
         widget <- mw
-        bindCSS maxBound (unWModel $ pinaforeImmutableRefValue mempty cssmodel) widget
+        bindCSS True maxBound (unWModel $ pinaforeImmutableRefValue mempty cssmodel) widget
+        return widget
+
+uiName :: Text -> LangUI -> LangUI
+uiName name (MkLangUI mw) =
+    MkLangUI $ do
+        widget <- mw
+        setCSSName name widget
+        return widget
+
+uiStyleClass :: Text -> LangUI -> LangUI
+uiStyleClass sclass (MkLangUI mw) =
+    MkLangUI $ do
+        widget <- mw
+        setCSSClass sclass widget
         return widget
 
 ui_predefinitions :: [DocTreeEntry BindDoc]
@@ -318,7 +332,19 @@ ui_predefinitions =
           , mkValEntry "uiCalendar" "A calendar." uiCalendar
           , mkValEntry "uiScrolled" "A scrollable container." uiScrolled
           , mkValEntry "uiDynamic" "A UI that can be updated to different UIs." uiDynamic
-          , mkValEntry "uiStyleSheet" "A UI with a CSS style-sheet attached." uiStyleSheet
+          , mkValEntry
+                "uiName"
+                "A UI with name set. You can use something like `#text` to refer to it in the CSS style-sheet."
+                uiName
+          , mkValEntry
+                "uiStyleClass"
+                "A UI with CSS class set. You can use something like `.text` to refer to all elements in this class in the CSS style-sheet."
+                uiStyleClass
+          , mkValEntry
+                "uiStyleSheet"
+                "A UI with a CSS style-sheet (applied to the whole tree of UI elements). \
+                    \See the GTK+ CSS [overview](https://developer.gnome.org/gtk3/stable/chap-css-overview.html) and [properties](https://developer.gnome.org/gtk3/stable/chap-css-properties.html) for how this works."
+                uiStyleSheet
           ]
     , docTreeEntry
           "Menu"

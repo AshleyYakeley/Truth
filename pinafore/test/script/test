@@ -184,8 +184,17 @@ window_constant = std_window {"Constant"} $ uiVertical
 window_css: Action Window;
 window_css = do
     cssref <- newMemWhole;
-    cssref := "* {color:green; font-family: \"serif\";}";
-    std_window {"CSS"} $ uiStyleSheet (let import Debug in debugIgnoreUpdateUIExceptions cssref) $ uiTextArea cssref;
+    cssref := ".y, .y > text {color:green; font-family: \"serif\";}";
+    sometext <- newMemWhole;
+    sometext := "whatever";
+    std_window {"CSS"} $ uiStyleSheet (let import Debug in debugIgnoreUpdateUIExceptions cssref) $ uiName "root" $ uiVertical
+        [
+            (False, uiStyleClass "x" $ uiName "A" $ uiCheckBox {"Box"} {True}),
+            (False, uiStyleClass "x" $ uiName "B" $ uiButton {"Button"} {return ()}),
+            (False, uiStyleClass "x" $ uiName "C" $ uiTextEntry sometext),
+            (True, uiStyleClass "y" $ uiName "D" $ uiTextArea cssref),
+            (False, uiStyleClass "y" $ uiName "E" $ uiLabel {"Some Text"})
+        ];
     end;
 
 ### Start Window

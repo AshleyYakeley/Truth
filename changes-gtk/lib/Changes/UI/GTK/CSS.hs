@@ -1,7 +1,6 @@
 module Changes.UI.GTK.CSS
     ( setCSSName
     , setCSSClass
-    , setCSSStyleSheet
     , bindCSS
     ) where
 
@@ -18,18 +17,14 @@ setCSSClass cssclass w = do
     sc <- #getStyleContext w
     #addClass sc cssclass
 
-setCSSStyleSheet :: Bool -> Word32 -> Text -> Widget -> CreateView ()
-setCSSStyleSheet full priority css w = do
+bindCSS :: Bool -> Word32 -> Model (ROWUpdate Text) -> Widget -> CreateView ()
+bindCSS tree priority cssmod widget = do
     provider <- cvNew CssProvider []
-    #loadFromData provider $ encodeUtf8 css
-    children <- liftIO $ widgetGetTree full w
-    for_ children $ \child -> do
-        sc <- #getStyleContext child
+    widgets <-
+        case tree of
+            False -> return [widget]
+            True -> liftIO $ widgetGetTree False widget
+    for_ widgets $ \w -> do
+        sc <- #getStyleContext w
         #addProvider sc provider priority
-
-bindCSS :: Word32 -> Model (ROWUpdate Text) -> Widget -> CreateView ()
-bindCSS priority cssmod widget = do
-    provider <- cvNew CssProvider []
-    sc <- #getStyleContext widget
-    #addProvider sc provider priority
     cvBindReadOnlyWholeModel cssmod $ \css -> #loadFromData provider $ encodeUtf8 css
