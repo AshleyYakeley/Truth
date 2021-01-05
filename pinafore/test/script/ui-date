@@ -3,7 +3,7 @@ do
 dref <- newMemWhole;
 tref <- newMemWhole;
 iref <- newMemWhole;
-openWindow {"Date"} {[]} $ uiVertical
+openWindow (300,400) {"Date"} {[]} $ uiVertical
     [
         (uiTextEntry tref, False),
         (uiTextEntry tref, False),

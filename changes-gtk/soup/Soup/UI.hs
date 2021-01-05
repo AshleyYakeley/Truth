@@ -80,70 +80,73 @@ soupWindow :: ChangesContext -> (WindowSpec -> CreateView UIWindow) -> FilePath 
 soupWindow tc newWindow dirpath = do
     smodel <- liftLifeCycle $ makeReflectingModel $ soupReference dirpath
     (selModel, selnotify) <- liftLifeCycle $ makeSharedModel makePremodelSelectNotify
+    let
+        withSelection :: (Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()) -> View ()
+        withSelection call = do
+            msel <- viewRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
+            case msel of
+                Just sel -> call sel
+                Nothing -> return ()
+        blankNote :: Tuple NoteSel
+        blankNote =
+            MkTuple $ \case
+                NoteTitle -> "untitled"
+                NotePast -> False
+                NoteText -> ""
+        newItem :: View ()
+        newItem =
+            viewRunResource smodel $ \samodel -> do
+                key <- liftIO randomIO
+                _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditInsertReplace (key, return blankNote)
+                return ()
+        deleteItem :: Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()
+        deleteItem imodel =
+            viewRunResourceContext imodel $ \unlift iamodel -> do
+                key <- liftIO $ unlift $ aModelRead iamodel $ MkTupleUpdateReader SelectFirst ReadWhole
+                viewRunResource smodel $ \samodel -> do
+                    _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditDelete key
+                    return ()
+        mbar :: IO () -> UIWindow -> Maybe (Model (ROWUpdate [MenuEntry]))
+        mbar cc _ =
+            Just $
+            constantModel $
+            [ SubMenuEntry
+                  "File"
+                  [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO cc
+                  , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExit
+                  ]
+            , SubMenuEntry
+                  "Item"
+                  [ simpleActionMenuItem "New" (Just $ MkMenuAccelerator [KMCtrl] 'K') newItem
+                  , simpleActionMenuItem "Delete" Nothing $ withSelection deleteItem
+                  ]
+            ]
+        openItem :: Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()
+        openItem imodel = do
+            let
+                rowmodel :: Model PossibleNoteUpdate
+                rowmodel = mapModel (tupleChangeLens SelectSecond) imodel
+                rspec :: Result Text (Model NoteUpdate) -> CreateView Widget
+                rspec (SuccessResult s2) = noteEditSpec s2 mempty
+                rspec (FailureResult err) = createLabel $ constantModel err
+            tcUnliftCreateView tc $ do
+                rec
+                    ~(subwin, subcloser) <-
+                        lifeCycleEarlyCloser $ let
+                            wsPosition = WindowPositionCenter
+                            wsSize = (300, 400)
+                            wsCloseBoxAction = liftIO subcloser
+                            wsTitle = constantModel "item"
+                            wsMenuBar = mbar subcloser subwin
+                            wsContent = createOneWhole rowmodel rspec
+                            in newWindow MkWindowSpec {..}
+                return ()
     rec
         let
-            withSelection :: (Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()) -> View ()
-            withSelection call = do
-                msel <- viewRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
-                case msel of
-                    Just sel -> call sel
-                    Nothing -> return ()
-            blankNote :: Tuple NoteSel
-            blankNote =
-                MkTuple $ \case
-                    NoteTitle -> "untitled"
-                    NotePast -> False
-                    NoteText -> ""
-            newItem :: View ()
-            newItem =
-                viewRunResource smodel $ \samodel -> do
-                    key <- liftIO randomIO
-                    _ <-
-                        pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditInsertReplace (key, return blankNote)
-                    return ()
-            deleteItem :: Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()
-            deleteItem imodel =
-                viewRunResourceContext imodel $ \unlift iamodel -> do
-                    key <- liftIO $ unlift $ aModelRead iamodel $ MkTupleUpdateReader SelectFirst ReadWhole
-                    viewRunResource smodel $ \samodel -> do
-                        _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditDelete key
-                        return ()
-            mbar :: IO () -> UIWindow -> Maybe (Model (ROWUpdate [MenuEntry]))
-            mbar cc _ =
-                Just $
-                constantModel $
-                [ SubMenuEntry
-                      "File"
-                      [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO cc
-                      , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExit
-                      ]
-                , SubMenuEntry
-                      "Item"
-                      [ simpleActionMenuItem "New" (Just $ MkMenuAccelerator [KMCtrl] 'K') newItem
-                      , simpleActionMenuItem "Delete" Nothing $ withSelection deleteItem
-                      ]
-                ]
+            wsPosition = WindowPositionCenter
+            wsSize = (300, 400)
             wsTitle :: Model (ROWUpdate Text)
             wsTitle = constantModel $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
-            openItem :: Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()
-            openItem imodel = do
-                let
-                    rowmodel :: Model PossibleNoteUpdate
-                    rowmodel = mapModel (tupleChangeLens SelectSecond) imodel
-                    rspec :: Result Text (Model NoteUpdate) -> CreateView Widget
-                    rspec (SuccessResult s2) = noteEditSpec s2 mempty
-                    rspec (FailureResult err) = createLabel $ constantModel err
-                tcUnliftCreateView tc $ do
-                    rec
-                        ~(subwin, subcloser) <-
-                            lifeCycleEarlyCloser $ do
-                                newWindow $
-                                    MkWindowSpec
-                                        (liftIO subcloser)
-                                        (constantModel "item")
-                                        (mbar subcloser subwin)
-                                        (createOneWhole rowmodel rspec)
-                    return ()
             wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
             wsMenuBar = mbar closer window
             wsCloseBoxAction :: View ()

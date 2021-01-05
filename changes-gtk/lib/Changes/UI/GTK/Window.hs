@@ -5,6 +5,7 @@ module Changes.UI.GTK.Window
     , uiWindowShow
     , uiWindowDebugDescribe
     , createWindow
+    , WindowPosition(..)
     ) where
 
 import Changes.Core
@@ -16,7 +17,9 @@ import GI.Gtk as GI hiding (MenuBar)
 import Shapes
 
 data WindowSpec = MkWindowSpec
-    { wsCloseBoxAction :: View ()
+    { wsPosition :: WindowPosition
+    , wsSize :: (Int32, Int32)
+    , wsCloseBoxAction :: View ()
     , wsTitle :: Model (ROWUpdate Text)
     , wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
     , wsContent :: CreateView Widget
@@ -31,7 +34,7 @@ data UIWindow = MkUIWindow
 createWindow :: WindowSpec -> CreateView UIWindow
 createWindow MkWindowSpec {..} = do
     window <-
-        cvTopLevelNew Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
+        cvTopLevelNew Window [#windowPosition := wsPosition, #defaultWidth := fst wsSize, #defaultHeight := snd wsSize]
     cvBindReadOnlyWholeModel wsTitle $ \title -> set window [#title := title]
     _ <-
         cvOn window #deleteEvent $ \_ -> do

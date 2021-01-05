@@ -25,6 +25,8 @@ main = do
             (_, closer) <-
                 lifeCycleEarlyCloser $
                 newWindow $ let
+                    wsPosition = WindowPositionCenter
+                    wsSize = (600, 600)
                     wsCloseBoxAction :: View ()
                     wsCloseBoxAction = liftIO closer
                     wsTitle :: Model (ROWUpdate Text)

@@ -165,13 +165,15 @@ uiDynamic uiref = let
 
 openWindow ::
        (?pinafore :: PinaforeContext)
-    => PinaforeImmutableWholeRef Text
+    => (Int32, Int32)
+    -> PinaforeImmutableWholeRef Text
     -> PinaforeImmutableWholeRef MenuBar
     -> LangUI
     -> PinaforeAction LangWindow
-openWindow title mbar (MkLangUI wsContent) =
+openWindow wsSize title mbar (MkLangUI wsContent) =
     mfix $ \w ->
         pinaforeNewWindow $ let
+            wsPosition = WindowPositionCenter
             wsCloseBoxAction :: View ()
             wsCloseBoxAction = pwClose w
             wsTitle :: Model (ROWUpdate Text)

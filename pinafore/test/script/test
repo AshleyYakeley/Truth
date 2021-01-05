@@ -23,7 +23,7 @@ std_window title contents = fixAction $ \window -> let
                 menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ]
-    in openWindow title {menus} $ uiScrolled contents;
+    in openWindow (300,400) title {menus} $ uiScrolled contents;
 
 ### People
 

@@ -111,7 +111,7 @@ overviewPage = (uiLabel {"Overview"}, overviewLabel);
 
 calendarWindow: WholeRef +Event -> Action Window;
 calendarWindow evt = fixAction $ \window ->
-    openWindow {"date of " <> %(eventName !$% evt)} {[]} $ uiVertical
+    openWindow (200,200) {"date of " <> %(eventName !$% evt)} {[]} $ uiVertical
     [
         (False,uiCalendar $ eventRefTimeDate $ eventTime !$% evt),
         (False,uiButton {"Done: " <> toText %(eventRefTimeDate $ eventTime !$% evt)} {closeWindow window})

@@ -28,5 +28,5 @@ in do
     now <- newClock $ secondsToDuration 0.001;
     r <- newMemWhole;
     r := StoppedState zeroDuration;
-    openWindow {"Stopwatch"} {[]} $ ui now r;
+    openWindow (150,40) {"Stopwatch"} {[]} $ ui now r;
     end
