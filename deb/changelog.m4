@@ -1,6 +1,7 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * UI elements for CSS styling
+  * openWindow now takes size
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 
