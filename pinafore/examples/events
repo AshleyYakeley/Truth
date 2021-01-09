@@ -98,16 +98,13 @@ eventList todayref = {
 overviewRef: WholeRef +Date -> WholeRef +Text;
 overviewRef todayref = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %(eventList todayref)};
 
-# Overview tab UI
-overviewLabel: UI;
-overviewLabel = uiRun $ do
+# Overview page
+overviewPage: (UI,UI);
+overviewPage = uiPage {"Overview"} $ uiRun $ do
     now <- newClock $ secondsToDuration 60; # update every minute
     tz <- newTimeZoneRef now;
     return $ uiLabel $ overviewRef {case timeToLocal %tz %now of LocalTime d _ -> d end};
     end;
-
-overviewPage: ((UI,UI),());
-overviewPage = ((uiLabel {"Overview"}, overviewLabel),());
 
 calendarWindow: WholeRef +Event -> Action Window;
 calendarWindow evt = fixAction $ \window ->
@@ -158,8 +155,8 @@ eventsWindow = selectionWindow "Events" events [newEventMenuItem] eventWindow $ 
             in [timeColumn,nameColumn];
         in uiListTable columns eventOrder events eventWindow (Just selection);
 
-    eventsPage: ((UI,UI),());
-    eventsPage = ((uiLabel {"Events"},uiScrolled $ uiHorizontal [(False,eventsTableUI),(True,eventUI $ immutWhole selection)]),());
+    eventsPage: (UI,UI);
+    eventsPage = uiPage {"Events"} $ uiScrolled $ uiHorizontal [(False,eventsTableUI),(True,eventUI $ immutWhole selection)];
 
     in uiNotebook unknown [overviewPage, eventsPage];
 

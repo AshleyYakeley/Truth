@@ -242,14 +242,14 @@ uiVertical mitems =
                 return (f, ui)
         createLayout OrientationVertical items
 
-uiNotebook :: LangWholeRef '( A, TopType) -> [((LangUI, LangUI), A)] -> LangUI
+uiNotebook :: LangWholeRef '( Int, TopType) -> [(LangUI, LangUI)] -> LangUI
 uiNotebook selref mitems =
     MkLangUI $ do
         items <-
-            for mitems $ \((MkLangUI mt, MkLangUI mb), a) -> do
+            for mitems $ \(MkLangUI mt, MkLangUI mb) -> do
                 t <- mt
                 b <- mb
-                return (t, b, a)
+                return (t, b)
         createNotebook (langWholeRefSelectNotify noEditSource selref) items
 
 uiRun :: (?pinafore :: PinaforeContext) => PinaforeAction LangUI -> LangUI

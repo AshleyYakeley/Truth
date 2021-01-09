@@ -3,7 +3,7 @@
 let
 
 ### Useful
-ui_page n ui = ((uiLabel n,ui),());
+ui_page n ui = (uiLabel n,ui);
 ui_labelled n ui = uiHorizontal [(False, uiLabel n),(True, ui)];
 
 std_window : WholeRef +Text -> UI -> Action Window;
