@@ -85,7 +85,7 @@ organisations = property @Organisation @() !"type.organisation" !@ {()};
 namedTable: FiniteSetRef {a,+Named} -> (a -> Action Any) -> Maybe (WholeRef {a,+Named}) -> UI;
 namedTable = uiListTable [({"Name"},\p -> name !$ {p})] (refOrderOn name alphabetical);
 
-contactPages: WholeRef +LegalEntity -> [(UI, UI)];
+contactPages: WholeRef +LegalEntity -> [((UI, UI),())];
 contactPages er =
 [
     uiPage {"Social"} $ uiVertical
@@ -96,7 +96,7 @@ contactPages er =
     uiPage {"Home"} $ locationUI $ home !$% er
 ];
 
-personPages: WholeRef +Person -> [(UI, UI)];
+personPages: WholeRef +Person -> [((UI, UI),())];
 personPages p =
 [
     uiPage {"Work"} $ uiVertical
@@ -106,7 +106,7 @@ personPages p =
     uiPage {"Family"} $ familyUI p
 ];
 
-organisationPages: WholeRef +Organisation -> [(UI, UI)];
+organisationPages: WholeRef +Organisation -> [((UI, UI),())];
 organisationPages subj =
 [
     uiPage {"Employees"} $ namedTable (employees subj) contactWindow Nothing
@@ -114,7 +114,7 @@ organisationPages subj =
 
 contactUI: LegalEntity -> UI;
 contactUI e = let
-    pages: [(UI, UI)];
+    pages: [((UI, UI),())];
     pages = contactPages {e} ++ case e of
         (p: Person) -> personPages {p};
         (o: Organisation) -> organisationPages {o};
@@ -122,7 +122,7 @@ contactUI e = let
     in uiVertical
     [
         (False, uiLabelled {"Name: "} $ uiTextEntry $ name !$% {e}),
-        (True, uiPages pages)
+        (True, uiNotebook unknown pages)
     ];
 
 contactRefUI: WholeRef +LegalEntity -> UI;

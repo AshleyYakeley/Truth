@@ -3,7 +3,7 @@
 let
 
 ### Useful
-ui_page n ui = (uiLabel n,ui);
+ui_page n ui = ((uiLabel n,ui),());
 ui_labelled n ui = uiHorizontal [(False, uiLabel n),(True, ui)];
 
 std_window : WholeRef +Text -> UI -> Action Window;
@@ -83,7 +83,7 @@ ui_person : WholeRef Person -> UI;
 ui_person p = uiVertical
 [
     (False, ui_labelled {"Name: "} $ uiTextEntry $ name !$ p),
-    (True, uiPages
+    (True, uiNotebook unknown
     [
         ui_page {"Social"} $ uiVertical
         [

@@ -106,8 +106,8 @@ overviewLabel = uiRun $ do
     return $ uiLabel $ overviewRef {case timeToLocal %tz %now of LocalTime d _ -> d end};
     end;
 
-overviewPage: (UI,UI);
-overviewPage = (uiLabel {"Overview"}, overviewLabel);
+overviewPage: ((UI,UI),());
+overviewPage = ((uiLabel {"Overview"}, overviewLabel),());
 
 calendarWindow: WholeRef +Event -> Action Window;
 calendarWindow evt = fixAction $ \window ->
@@ -158,9 +158,9 @@ eventsWindow = selectionWindow "Events" events [newEventMenuItem] eventWindow $ 
             in [timeColumn,nameColumn];
         in uiListTable columns eventOrder events eventWindow (Just selection);
 
-    eventsPage: (UI,UI);
-    eventsPage = (uiLabel {"Events"},uiScrolled $ uiHorizontal [(False,eventsTableUI),(True,eventUI $ immutWhole selection)]);
+    eventsPage: ((UI,UI),());
+    eventsPage = ((uiLabel {"Events"},uiScrolled $ uiHorizontal [(False,eventsTableUI),(True,eventUI $ immutWhole selection)]),());
 
-    in uiPages [overviewPage, eventsPage];
+    in uiNotebook unknown [overviewPage, eventsPage];
 
 in eventsWindow

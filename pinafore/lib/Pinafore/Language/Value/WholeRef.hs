@@ -116,3 +116,15 @@ langPairWholeRefs (MutableLangWholeRef aref) (MutableLangWholeRef bref) = let
     in MutableLangWholeRef $ eaMap (lensBiWholeChangeLens lget lputback . pairBiWholeChangeLens) $ eaPair aref bref
 langPairWholeRefs (langWholeRefToImmutable' -> aref) (langWholeRefToImmutable' -> bref) =
     ImmutableLangWholeRef $ liftA2 (,) aref bref
+
+modelSelectNotify :: EditSource -> Model (BiWholeUpdate (Know p) q) -> SelectNotify p
+modelSelectNotify esrc model =
+    MkSelectNotify $ \vma -> do
+        ma <- vma
+        viewRunResource model $ \asub -> do
+            _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkBiEdit $ MkWholeReaderEdit $ maybeToKnow ma
+            return ()
+
+langWholeRefSelectNotify :: EditSource -> LangWholeRef '( p, q) -> SelectNotify p
+langWholeRefSelectNotify esrc (MutableLangWholeRef (MkWModel model)) = modelSelectNotify esrc model
+langWholeRefSelectNotify _ (ImmutableLangWholeRef _) = mempty

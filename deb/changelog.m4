@@ -2,6 +2,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * UI elements for CSS styling
   * openWindow now takes size
+  * uiNotebook can track page selection
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

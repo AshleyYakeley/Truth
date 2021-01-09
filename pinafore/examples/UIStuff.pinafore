@@ -76,8 +76,8 @@ selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedU
 
         in uiHorizontal [(False,sidebarUI),(True,selectedUI)];
 
-uiPage: WholeRef +Text -> UI -> (UI,UI);
-uiPage n ui = (uiLabel n,ui);
+uiPage: WholeRef +Text -> UI -> ((UI,UI),());
+uiPage n ui = ((uiLabel n,ui),());
 
 uiLabelled: WholeRef +Text -> UI -> UI;
 uiLabelled n ui = uiHorizontal [(False, uiLabel n),(True, ui)];

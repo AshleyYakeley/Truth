@@ -55,7 +55,7 @@ library:
       - Changes.UI.GTK.TextEntry
       - Changes.UI.GTK.Text
       - Changes.UI.GTK.Layout
-      - Changes.UI.GTK.Pages
+      - Changes.UI.GTK.Notebook
       - Changes.UI.GTK.Table
       - Changes.UI.GTK.Drag
       - Changes.UI.GTK.MenuBar

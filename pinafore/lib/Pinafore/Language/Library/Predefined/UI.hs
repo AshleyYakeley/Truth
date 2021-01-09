@@ -76,15 +76,7 @@ uiListTable cols order val onDoubleClick mSelectionLangRef =
                 case mSelectionModel of
                     Nothing -> mempty
                     Just selectionModel ->
-                        contramap readSub $
-                        viewLiftSelectNotify $
-                        MkSelectNotify $ \vma -> do
-                            ma <- vma
-                            viewRunResource selectionModel $ \asub -> do
-                                _ <-
-                                    pushEdit esrc $
-                                    aModelEdit asub $ pure $ MkBiEdit $ MkWholeReaderEdit $ maybeToKnow ma
-                                return ()
+                        contramap readSub $ viewLiftSelectNotify $ modelSelectNotify esrc selectionModel
         (widget, setSelection) <- createListTable (fmap getColumn cols) olsub onSelect tsn
         case mSelectionModel of
             Nothing -> return ()
@@ -250,15 +242,15 @@ uiVertical mitems =
                 return (f, ui)
         createLayout OrientationVertical items
 
-uiPages :: [(LangUI, LangUI)] -> LangUI
-uiPages mitems =
+uiNotebook :: LangWholeRef '( A, TopType) -> [((LangUI, LangUI), A)] -> LangUI
+uiNotebook selref mitems =
     MkLangUI $ do
         items <-
-            for mitems $ \(MkLangUI mt, MkLangUI mb) -> do
+            for mitems $ \((MkLangUI mt, MkLangUI mb), a) -> do
                 t <- mt
                 b <- mb
-                return (t, b)
-        createNotebook items
+                return (t, b, a)
+        createNotebook (langWholeRefSelectNotify noEditSource selref) items
 
 uiRun :: (?pinafore :: PinaforeContext) => PinaforeAction LangUI -> LangUI
 uiRun pui =
@@ -316,9 +308,9 @@ ui_predefinitions =
                 "Items arranged vertically, each flag is whether to expand into remaining space."
                 uiVertical
           , mkValEntry
-                "uiPages"
+                "uiNotebook"
                 "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
-                uiPages
+                uiNotebook
                 -- CSS
                 -- drag
                 -- icon
