@@ -48,5 +48,5 @@ testModule =
               ScriptExpectSuccess
               [("M", "let datatype T = T1 | T2 in export T T1 T2")]
               "let import M in let f: T -> T; f x = x in return ()"
-        , moduleRunTest (ScriptExpectRejection $ pure True) [("M", "let a = b in export a")] "return ()"
+        , moduleRunTest (ScriptExpectRejection $ pure True) [("M", "let a = b in export a")] "let import M in return ()"
         ]
