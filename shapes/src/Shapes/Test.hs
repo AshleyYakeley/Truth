@@ -19,6 +19,8 @@ module Shapes.Test
     , Assertion
     , assertEqual
     , assertFailure
+    , assertThrowsException
+    , assertThrowsAnyException
     -- * QuickCheck
     , Testable
     , Property
@@ -120,3 +122,23 @@ testHandleVsFile dir testName call = let
            withBinaryFile outPath WriteMode $ \h -> do
                hSetBuffering h NoBuffering
                call h
+
+assertThrowsException ::
+       forall ex a. Exception ex
+    => (ex -> Bool)
+    -> IO a
+    -> IO ()
+assertThrowsException checkEx ma = do
+    result <- catchResult @SomeException ma
+    case result of
+        SuccessResult _ -> assertFailure "no exception"
+        FailureResult se ->
+            case fromException se of
+                Nothing -> assertFailure $ "bad exception type: " <> show se
+                Just e ->
+                    if checkEx e
+                        then return ()
+                        else assertFailure $ "bad exception: " <> show e
+
+assertThrowsAnyException :: IO a -> IO ()
+assertThrowsAnyException = assertThrowsException @SomeException $ \_ -> True

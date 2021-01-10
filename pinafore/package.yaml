@@ -106,6 +106,7 @@ tests:
         main: Main.hs
         other-modules:
           - Test.Context
+          - Test.RunScript
           - Test.Language
           - Test.Entity
           - Test.Type
