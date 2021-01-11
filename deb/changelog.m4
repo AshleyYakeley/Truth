@@ -4,6 +4,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * openWindow now takes size
   * uiNotebook can track page selection
   * fix bug involving export of open expressions
+  * add "index" function for lists
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

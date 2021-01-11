@@ -484,6 +484,7 @@ base_predefinitions =
                     [] -> fnil
                     (a:aa) -> fcons a aa
           , mkValEntry "length" "Number of items in a list" (length :: [TopType] -> Int)
+          , mkValEntry "index" "Get item from list by index." (index :: [A] -> Int -> Maybe A)
           , mkValEntry "mapList" "Map the items of a list." (fmap :: (A -> B) -> [A] -> [B])
           , mkValEntry "++" "Concatentate lists." ((++) :: [A] -> [A] -> [A])
           , mkValEntry "filter" "Filter a list." (filter :: (A -> Bool) -> [A] -> [A])
