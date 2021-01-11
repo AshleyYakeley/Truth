@@ -599,6 +599,8 @@ base_predefinitions =
                   langToMaybeWholeRef @A @B
                 , mkValEntry "fromMaybeWhole" "Map `Maybe` to known/unknown for a whole reference." $
                   langFromMaybeWholeRef @A @B
+                , mkValEntry "forWhole" "Traverse a list to make a reference to a list." $
+                  (for :: [A] -> (A -> PinaforeImmutableWholeRef B) -> PinaforeImmutableWholeRef [B])
                 , mkValEntry "pairWhole" "Combine whole references." $ langPairWholeRefs @AP @AQ @BP @BQ
                 , mkValEntry
                       "applyWhole"

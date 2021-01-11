@@ -5,6 +5,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * uiNotebook can track page selection
   * fix bug involving export of open expressions
   * add "index" function for lists
+  * add "forWhole" function
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 
