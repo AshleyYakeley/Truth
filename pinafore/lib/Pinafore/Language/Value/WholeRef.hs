@@ -91,8 +91,15 @@ fLensLangWholeRef ab baa =
         b <- mb
         return $ baa b ma
 
-langMaybeWholeRef :: forall p q. LangWholeRef '( p, q) -> LangWholeRef '( Maybe p, Maybe q)
-langMaybeWholeRef = maybeLensLangWholeRef Just $ \mmp _ -> mmp
+langToMaybeWholeRef :: forall p q. LangWholeRef '( p, q) -> LangWholeRef '( Maybe p, Maybe q)
+langToMaybeWholeRef = maybeLensLangWholeRef Just $ \mmp _ -> mmp
+
+langFromMaybeWholeRef :: forall p q. LangWholeRef '( Maybe p, Maybe q) -> LangWholeRef '( p, q)
+langFromMaybeWholeRef =
+    maybeLensLangWholeRef exec $ \mp mq ->
+        Just $ do
+            _ <- mq
+            Just mp
 
 langWholeRefToBiWholeRef :: LangWholeRef '( p, q) -> WModel (BiWholeUpdate (Know p) (Know q))
 langWholeRefToBiWholeRef (MutableLangWholeRef r) = r

@@ -595,8 +595,10 @@ base_predefinitions =
                   maybeLensLangWholeRef @AP @AQ @BP @BQ
                 , mkValEntry "lensMapWhole" "Map getter & pushback functions on a whole reference." $
                   fLensLangWholeRef @AP @AQ @B
-                , mkValEntry "maybeWhole" "Map known/unknown to `Maybe` for a whole reference." $
-                  langMaybeWholeRef @A @B
+                , mkValEntry "toMaybeWhole" "Map known/unknown to `Maybe` for a whole reference." $
+                  langToMaybeWholeRef @A @B
+                , mkValEntry "fromMaybeWhole" "Map `Maybe` to known/unknown for a whole reference." $
+                  langFromMaybeWholeRef @A @B
                 , mkValEntry "pairWhole" "Combine whole references." $ langPairWholeRefs @AP @AQ @BP @BQ
                 , mkValEntry
                       "applyWhole"
