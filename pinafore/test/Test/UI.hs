@@ -26,7 +26,7 @@ runUIAction :: forall a. Timing -> (ChangesContext -> View a) -> Text -> IO a
 runUIAction timing testaction t = do
     donevar <- newEmptyMVar
     changesMainGTK $ \tc -> do
-        (pc, _) <- liftLifeCycle $ makeTestPinaforeContext nullFetchModuleText tc stdout
+        (pc, _) <- liftLifeCycle $ makeTestPinaforeContext mempty tc stdout
         scriptaction <- let
             ?pinafore = pc
             in throwInterpretResult $ pinaforeInterpretText "<test>" t
@@ -118,11 +118,11 @@ testUI =
     runContext $
     context
         [ "emptywindow: Action ()"
-        , "emptywindow = do openWindow {\"Empty\"} {[]} uiBlank; return (); end"
+        , "emptywindow = do openWindow (300,400) {\"Empty\"} {[]} uiBlank; return (); end"
         , "opentype T"
         , "newpoint: Action ()"
         , "newpoint = do s <- newMemFiniteSet; p <- newOpenEntity @T; s += p; return (); end"
         , "buttonwindow: Action Any -> Action ()"
-        , "buttonwindow action = do openWindow {\"Test\"} {[]} (uiButton {\"Button\"} {action}); return (); end"
+        , "buttonwindow action = do openWindow (300,400) {\"Test\"} {[]} (uiButton {\"Button\"} {action}); return (); end"
         ] $
     tgroup "UI" [tgroup "immediate" $ testActions SyncTiming, tgroup "wait" $ testActions AsyncTiming]

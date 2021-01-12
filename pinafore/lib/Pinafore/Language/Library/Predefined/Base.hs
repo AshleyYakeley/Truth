@@ -484,6 +484,7 @@ base_predefinitions =
                     [] -> fnil
                     (a:aa) -> fcons a aa
           , mkValEntry "length" "Number of items in a list" (length :: [TopType] -> Int)
+          , mkValEntry "index" "Get item from list by index." (index :: [A] -> Int -> Maybe A)
           , mkValEntry "mapList" "Map the items of a list." (fmap :: (A -> B) -> [A] -> [B])
           , mkValEntry "++" "Concatentate lists." ((++) :: [A] -> [A] -> [A])
           , mkValEntry "filter" "Filter a list." (filter :: (A -> Bool) -> [A] -> [A])
@@ -499,6 +500,10 @@ base_predefinitions =
           , mkValEntry "$" "Apply a function to a value." $ id @(->) @(A -> B)
           , mkValEntry "." "Compose functions." $ (.) @(->) @A @B @C
           , mkValEntry "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
+          , mkValEntry
+                "seq"
+                "Evaluate the first argument, then if that's not \"bottom\" (error or non-termination), return the second argument."
+                (seq :: TopType -> A -> A)
           ]
     , docTreeEntry
           "Actions"
@@ -590,8 +595,12 @@ base_predefinitions =
                   maybeLensLangWholeRef @AP @AQ @BP @BQ
                 , mkValEntry "lensMapWhole" "Map getter & pushback functions on a whole reference." $
                   fLensLangWholeRef @AP @AQ @B
-                , mkValEntry "maybeWhole" "Map known/unknown to `Maybe` for a whole reference." $
-                  langMaybeWholeRef @A @B
+                , mkValEntry "toMaybeWhole" "Map known/unknown to `Maybe` for a whole reference." $
+                  langToMaybeWholeRef @A @B
+                , mkValEntry "fromMaybeWhole" "Map `Maybe` to known/unknown for a whole reference." $
+                  langFromMaybeWholeRef @A @B
+                , mkValEntry "forWhole" "Traverse a list to make a reference to a list." $
+                  (for :: [A] -> (A -> PinaforeImmutableWholeRef B) -> PinaforeImmutableWholeRef [B])
                 , mkValEntry "pairWhole" "Combine whole references." $ langPairWholeRefs @AP @AQ @BP @BQ
                 , mkValEntry
                       "applyWhole"

@@ -5,6 +5,7 @@ module Changes.UI.GTK.Window
     , uiWindowShow
     , uiWindowDebugDescribe
     , createWindow
+    , WindowPosition(..)
     ) where
 
 import Changes.Core
@@ -17,7 +18,9 @@ import Shapes
 import Changes.Debug.Reference
 
 data WindowSpec = MkWindowSpec
-    { wsCloseBoxAction :: View ()
+    { wsPosition :: WindowPosition
+    , wsSize :: (Int32, Int32)
+    , wsCloseBoxAction :: View ()
     , wsTitle :: Model (ROWUpdate Text)
     , wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
     , wsContent :: CreateView Widget
@@ -29,36 +32,10 @@ data UIWindow = MkUIWindow
     , uiWindowDebugDescribe :: IO Text
     }
 
-getWidgetChildren :: Widget -> IO (Maybe [Widget])
-getWidgetChildren w = do
-    mcont <- castTo Container w
-    case mcont of
-        Nothing -> return Nothing
-        Just cont -> do
-            cc <- #getChildren cont
-            return $ Just cc
-
-widgetInfoText :: Widget -> IO Text
-widgetInfoText w = do
-    tn <- getObjectTypeName w
-    vis <- getWidgetVisible w
-    let
-        hh =
-            tn <>
-            if vis
-                then ""
-                else "{hidden}"
-    mww <- getWidgetChildren w
-    case mww of
-        Nothing -> return hh
-        Just ww -> do
-            tt <- for ww widgetInfoText
-            return $ hh <> " (" <> intercalate ", " tt <> ")"
-
 createWindow :: WindowSpec -> CreateView UIWindow
 createWindow MkWindowSpec {..} = do
     window <-
-        cvTopLevelNew Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
+        cvTopLevelNew Window [#windowPosition := wsPosition, #defaultWidth := fst wsSize, #defaultHeight := snd wsSize]
     cvBindReadOnlyWholeModel wsTitle $ \title -> set window [#title := title]
     _ <-
         cvOn window #deleteEvent $ \_ -> traceBracket "GTK.Window:close" $ do

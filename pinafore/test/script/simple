@@ -1,3 +1,4 @@
+#!/usr/bin/pinafore
 let
 
 # Ontology
@@ -15,7 +16,7 @@ ui_person : Person -> UI;
 ui_person p = uiTextEntry $ name !$ {p};
 
 window_person : Person -> Action Window;
-window_person p = openWindow {"Name"} {[]} (ui_person p);
+window_person p = openWindow (300,400) {"Name"} {[]} (ui_person p);
 
 in do
     window_person me;

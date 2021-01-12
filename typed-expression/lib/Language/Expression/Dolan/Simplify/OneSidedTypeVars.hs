@@ -14,18 +14,18 @@ import Shapes
 getEliminateBisubs ::
        forall (ground :: GroundTypeKind) t. IsDolanGroundType ground
     => (PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) t) =>
-               t -> [Bisubstitution ground (DolanPolyShim ground) Identity]
+               t -> [Bisubstitution ground (DolanPolyShim ground Type) Identity]
 getEliminateBisubs expr = let
     (setFromList -> posvars, setFromList -> negvars) = mappableGetVars @ground expr
     posonlyvars :: FiniteSet _
     posonlyvars = difference posvars negvars
     negonlyvars :: FiniteSet _
     negonlyvars = difference negvars posvars
-    posbisub :: AnyW SymbolType -> Bisubstitution ground (DolanPolyShim ground) Identity
+    posbisub :: AnyW SymbolType -> Bisubstitution ground (DolanPolyShim ground Type) Identity
     posbisub (MkAnyW var) =
         assignUVar @Type @BottomType var $
         MkBisubstitution False var (return $ mkShimWit NilDolanType) (return $ varDolanShimWit var)
-    negbisub :: AnyW SymbolType -> Bisubstitution ground (DolanPolyShim ground) Identity
+    negbisub :: AnyW SymbolType -> Bisubstitution ground (DolanPolyShim ground Type) Identity
     negbisub (MkAnyW var) =
         assignUVar @Type @TopType var $
         MkBisubstitution False var (return $ varDolanShimWit var) (return $ mkShimWit NilDolanType)

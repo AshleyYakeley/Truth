@@ -120,11 +120,8 @@ qSequenceExpr (e:ee) = do
 
 type QBindings = Bindings PinaforeTypeSystem
 
-qBindExpr :: Name -> QExpr -> QBindings
-qBindExpr = singleBinding
-
-qBindVal :: ToPinaforeType t => Name -> t -> QBindings
-qBindVal name val = qBindExpr name $ qConstExpr val
+qBindExpr :: Name -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBindings
+qBindExpr = tsSingleBinding @PinaforeTypeSystem
 
 qLetExpr :: Name -> QExpr -> QExpr -> PinaforeSourceInterpreter QExpr
 qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
@@ -143,6 +140,3 @@ typedAnyToPinaforeVal ::
     => QValue
     -> PinaforeSourceInterpreter t
 typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem fromJMShimWit
-
-qSubsumeExpr :: AnyW (PinaforeShimWit 'Positive) -> PinaforeExpression -> PinaforeSourceInterpreter PinaforeExpression
-qSubsumeExpr t expr = tsSubsumeExpression @PinaforeTypeSystem t expr

@@ -1,5 +1,5 @@
 name: changes-gtk
-version: "0.2"
+version: "0.3"
 _common: !include "../common.yaml"
 <<: *author
 
@@ -19,6 +19,7 @@ library:
       - text
       - time
       - transformers
+      - vector
       - mono-traversable
       - countable
       - witness
@@ -34,6 +35,7 @@ library:
       - gi-gtk-hs
       - shapes
       - changes-core
+      - changes-media
     exposed-modules:
       - Changes.UI.GTK
     other-modules:
@@ -53,7 +55,7 @@ library:
       - Changes.UI.GTK.TextEntry
       - Changes.UI.GTK.Text
       - Changes.UI.GTK.Layout
-      - Changes.UI.GTK.Pages
+      - Changes.UI.GTK.Notebook
       - Changes.UI.GTK.Table
       - Changes.UI.GTK.Drag
       - Changes.UI.GTK.MenuBar
@@ -113,4 +115,20 @@ executables:
           - Soup.Note
           - Soup.Edit
           - Soup.UI
+        ghc-options: -threaded
+    changes-showImages:
+        when:
+          - condition: "!flag(build-examples)"
+            buildable: False
+        source-dirs: showImages
+        dependencies:
+          - base >= 4.12
+          - filepath
+          - directory
+          - shapes
+          - changes-core
+          - changes-media
+          - changes-world
+          - changes-gtk
+        main: Main.hs
         ghc-options: -threaded

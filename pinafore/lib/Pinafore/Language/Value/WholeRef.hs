@@ -53,6 +53,12 @@ langWholeRefSet :: forall p. LangWholeRef '( p, TopType) -> Know p -> PinaforeAc
 langWholeRefSet (MutableLangWholeRef sr) mp = pinaforeRefPushAction sr $ pure $ MkBiWholeEdit mp
 langWholeRefSet (ImmutableLangWholeRef _) _ = empty
 
+langWholeRefMapModel ::
+       Functor f => (forall update. WModel update -> f (WModel update)) -> LangWholeRef pq -> f (LangWholeRef pq)
+langWholeRefMapModel ff (MutableLangWholeRef model) = fmap MutableLangWholeRef $ ff model
+langWholeRefMapModel ff (ImmutableLangWholeRef (MkPinaforeImmutableWholeRef model)) =
+    fmap (ImmutableLangWholeRef . MkPinaforeImmutableWholeRef) $ ff model
+
 langWholeRefSubscribe ::
        forall a. (?pinafore :: PinaforeContext)
     => PinaforeImmutableWholeRef a
@@ -85,8 +91,15 @@ fLensLangWholeRef ab baa =
         b <- mb
         return $ baa b ma
 
-langMaybeWholeRef :: forall p q. LangWholeRef '( p, q) -> LangWholeRef '( Maybe p, Maybe q)
-langMaybeWholeRef = maybeLensLangWholeRef Just $ \mmp _ -> mmp
+langToMaybeWholeRef :: forall p q. LangWholeRef '( p, q) -> LangWholeRef '( Maybe p, Maybe q)
+langToMaybeWholeRef = maybeLensLangWholeRef Just $ \mmp _ -> mmp
+
+langFromMaybeWholeRef :: forall p q. LangWholeRef '( Maybe p, Maybe q) -> LangWholeRef '( p, q)
+langFromMaybeWholeRef =
+    maybeLensLangWholeRef exec $ \mp mq ->
+        Just $ do
+            _ <- mq
+            Just mp
 
 langWholeRefToBiWholeRef :: LangWholeRef '( p, q) -> WModel (BiWholeUpdate (Know p) (Know q))
 langWholeRefToBiWholeRef (MutableLangWholeRef r) = r
@@ -110,3 +123,15 @@ langPairWholeRefs (MutableLangWholeRef aref) (MutableLangWholeRef bref) = let
     in MutableLangWholeRef $ eaMap (lensBiWholeChangeLens lget lputback . pairBiWholeChangeLens) $ eaPair aref bref
 langPairWholeRefs (langWholeRefToImmutable' -> aref) (langWholeRefToImmutable' -> bref) =
     ImmutableLangWholeRef $ liftA2 (,) aref bref
+
+modelSelectNotify :: EditSource -> Model (BiWholeUpdate (Know p) q) -> SelectNotify p
+modelSelectNotify esrc model =
+    MkSelectNotify $ \vma -> do
+        ma <- vma
+        viewRunResource model $ \asub -> do
+            _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkBiEdit $ MkWholeReaderEdit $ maybeToKnow ma
+            return ()
+
+langWholeRefSelectNotify :: EditSource -> LangWholeRef '( p, q) -> SelectNotify p
+langWholeRefSelectNotify esrc (MutableLangWholeRef (MkWModel model)) = modelSelectNotify esrc model
+langWholeRefSelectNotify _ (ImmutableLangWholeRef _) = mempty

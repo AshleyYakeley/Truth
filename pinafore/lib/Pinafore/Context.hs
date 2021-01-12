@@ -1,5 +1,7 @@
 module Pinafore.Context
-    ( InvocationInfo(..)
+    ( FetchModule(..)
+    , directoryFetchModule
+    , InvocationInfo(..)
     , nullInvocationInfo
     , PinaforeContext
     , unliftPinaforeAction
@@ -17,6 +19,34 @@ import Changes.Core
 import Pinafore.Base
 import Pinafore.Language.Name
 import Shapes
+import System.Directory (doesFileExist)
+import System.FilePath
+
+newtype FetchModule = MkFetchModule
+    { runFetchModule :: ModuleName -> IO (Maybe (FilePath, Result UnicodeException Text))
+    }
+
+instance Semigroup FetchModule where
+    MkFetchModule fma <> MkFetchModule fmb =
+        MkFetchModule $ \mname -> do
+            mrr <- fma mname
+            case mrr of
+                Just rr -> return $ Just rr
+                Nothing -> fmb mname
+
+instance Monoid FetchModule where
+    mempty = MkFetchModule $ \_ -> return Nothing
+
+directoryFetchModule :: FilePath -> FetchModule
+directoryFetchModule dirpath =
+    MkFetchModule $ \mname -> do
+        let fpath = dirpath </> moduleRelativePath mname
+        found <- doesFileExist fpath
+        case found of
+            False -> return Nothing
+            True -> do
+                bs <- readFile fpath
+                return $ Just $ (fpath, eitherToResult $ decodeUtf8' $ toStrict bs)
 
 data InvocationInfo = MkInvocationInfo
     { iiScriptName :: String
@@ -35,7 +65,7 @@ data PinaforeContext = MkPinaforeContext
     { pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
     , pconUnliftCreateView :: MFunction CreateView View
     , pconEntityModel :: Model PinaforeStorageUpdate
-    , pconFetchModuleText :: ModuleName -> IO (Maybe (FilePath, Result UnicodeException Text))
+    , pconFetchModule :: FetchModule
     , pconInvocation :: InvocationInfo
     , pconStdOut :: Handle
     }
@@ -62,14 +92,17 @@ pinaforeInvocationInfo = pconInvocation ?pinafore
 pinaforeStdOut :: (?pinafore :: PinaforeContext) => Handle
 pinaforeStdOut = pconStdOut ?pinafore
 
+moduleRelativePath :: ModuleName -> FilePath
+moduleRelativePath (MkModuleName nn) = (foldl1 (</>) $ fmap unpack nn) <> ".pinafore"
+
 makePinaforeContext ::
-       (ModuleName -> IO (Maybe (FilePath, Result UnicodeException Text)))
+       FetchModule
     -> InvocationInfo
     -> Handle
     -> Model PinaforeStorageUpdate
     -> ChangesContext
     -> LifeCycle PinaforeContext
-makePinaforeContext pconFetchModuleText pconInvocation pconStdOut rmodel tc = do
+makePinaforeContext pconFetchModule pconInvocation pconStdOut rmodel tc = do
     uh <- liftIO newUndoHandler
     let
         pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
@@ -79,16 +112,15 @@ makePinaforeContext pconFetchModuleText pconInvocation pconStdOut rmodel tc = do
         pconEntityModel = undoHandlerModel uh rmodel
     return $ MkPinaforeContext {..}
 
-pinaforeFetchModuleText ::
-       (?pinafore :: PinaforeContext) => ModuleName -> IO (Maybe (FilePath, Result UnicodeException Text))
-pinaforeFetchModuleText = pconFetchModuleText ?pinafore
+pinaforeFetchModuleText :: (?pinafore :: PinaforeContext) => FetchModule
+pinaforeFetchModuleText = pconFetchModule ?pinafore
 
 nullPinaforeContext :: PinaforeContext
 nullPinaforeContext = let
     pconUnliftAction _ = fail "null Pinafore context"
     pconUnliftCreateView _ = fail "null Pinafore context"
     pconEntityModel = error "no pinafore base"
-    pconFetchModuleText _ = return Nothing
+    pconFetchModule = mempty
     pconInvocation = nullInvocationInfo
     pconStdOut = stdout
     in MkPinaforeContext {..}

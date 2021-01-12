@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.2.0
+- Update grammar for Pinafore 0.2.
+
 ## 0.1.0
 - Initial release
 - Syntax highlighting

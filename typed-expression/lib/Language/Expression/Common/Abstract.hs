@@ -18,6 +18,7 @@ class ( RenameTypeSystem ts
       , UnifyTypeSystem ts
       , SimplifyTypeSystem ts
       , Monad (TSInner ts)
+      , Ord (TSName ts)
       , TSOuter ts ~ RenamerT ts (TSInner ts)
       ) => AbstractTypeSystem ts where
     type TSInner ts :: Type -> Type
@@ -35,7 +36,7 @@ abstractNamedExpressionUnifier name vwt (OpenExpression (MkNameWitness name' vwt
     | name == name' =
         abstractNamedExpressionUnifier @ts name vwt expr $ \vwt1 expr' -> do
             vwtt <- unifyUUNegShimWit @ts vwt1 (uuLiftNegShimWit vwt')
-            cont (mapNegShimWit iMeetSwapL vwtt) $ fmap (\tta (BothMeetType ta tb) -> tta ta tb) expr'
+            cont (mapNegShimWit iMeetSwapL vwtt) $ fmap (\tta ~(BothMeetType ta tb) -> tta ta tb) expr'
 abstractNamedExpressionUnifier name vwt (OpenExpression (MkNameWitness name' vwt') expr) cont =
     abstractNamedExpressionUnifier @ts name vwt expr $ \vwt1 expr' ->
         cont vwt1 $ OpenExpression (MkNameWitness name' vwt') $ fmap (\vva v1 v2 -> vva v2 v1) expr'

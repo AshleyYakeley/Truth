@@ -12,10 +12,20 @@ instance Functor (Expression w) where
     fmap ab (ClosedExpression a) = ClosedExpression $ ab a
     fmap ab (OpenExpression name expr) = OpenExpression name $ fmap (\va v -> ab $ va v) expr
 
+instance IsoVariant (Expression w)
+
 instance Applicative (Expression w) where
     pure = ClosedExpression
     (ClosedExpression ab) <*> expr = fmap ab expr
     (OpenExpression name exprab) <*> expr = OpenExpression name $ (\vab a v -> vab v a) <$> exprab <*> expr
+
+instance Productish (Expression w)
+
+instance AllWitnessConstraint Show w => Show (Expression w a) where
+    show expr = "{" <> intercalate "," (expressionFreeWitnesses showAllWitness expr) <> "}"
+
+instance AllWitnessConstraint Show w => AllWitnessConstraint Show (Expression w) where
+    allWitnessConstraint = Dict
 
 expressionFreeWitnesses :: (forall t. w t -> r) -> Expression w a -> [r]
 expressionFreeWitnesses _wr (ClosedExpression _) = []
@@ -31,3 +41,12 @@ varExpression wt = OpenExpression wt $ ClosedExpression id
 solveExpression :: Applicative m => (forall t. w t -> m t) -> Expression w a -> m a
 solveExpression _f (ClosedExpression a) = pure a
 solveExpression f (OpenExpression wt expr) = solveExpression f expr <*> f wt
+
+mapExpressionWitnessesM ::
+       Applicative m
+    => (forall t r. w t -> (forall t'. w t' -> (t' -> t) -> m r) -> m r)
+    -> Expression w a
+    -> m (Expression w a)
+mapExpressionWitnessesM _ (ClosedExpression a) = pure $ ClosedExpression a
+mapExpressionWitnessesM f (OpenExpression wt expr) =
+    f wt $ \wt' conv -> fmap (OpenExpression wt') $ mapExpressionWitnessesM f $ fmap (\ta -> ta . conv) expr

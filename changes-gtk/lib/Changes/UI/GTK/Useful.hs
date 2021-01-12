@@ -1,5 +1,10 @@
 module Changes.UI.GTK.Useful
-    ( getObjectTypeName
+    ( GTKError(..)
+    , getGTKError
+    , catchGTKNull
+    , getObjectTypeName
+    , getWidgetChildren
+    , widgetInfoText
     , widgetGetTree
     , withSignalBlocked
     , withSignalsBlocked
@@ -18,6 +23,7 @@ module Changes.UI.GTK.Useful
 import Changes.Core
 import Data.GI.Base.Attributes
 import Data.GI.Base.Constructible
+import Data.GI.Base.GError
 import Data.GI.Base.GObject
 import Data.GI.Base.Signals
 import Data.GI.Gtk
@@ -25,6 +31,25 @@ import Data.IORef
 import GI.GObject
 import Shapes
 import Changes.Debug.Reference
+
+data GTKError = MkGTKError
+    { gtkerrDomain :: Word32
+    , gtkerrCode :: Int32
+    , gtkerrMessage :: Text
+    }
+
+instance Show GTKError where
+    show MkGTKError {..} = (unpack gtkerrMessage) <> " (" <> show gtkerrDomain <> ": " <> show gtkerrCode <> ")"
+
+getGTKError :: GError -> IO GTKError
+getGTKError err = do
+    gtkerrDomain <- gerrorDomain err
+    gtkerrCode <- gerrorCode err
+    gtkerrMessage <- gerrorMessage err
+    return MkGTKError {..}
+
+catchGTKNull :: IO a -> IO (Maybe a)
+catchGTKNull ioa = catch (fmap Just ioa) $ \(_ :: UnexpectedNullPointerReturn) -> return Nothing
 
 containerGetAllChildren :: Container -> IO [Widget]
 containerGetAllChildren cont = do
@@ -34,16 +59,36 @@ containerGetAllChildren cont = do
         writeIORef ref $ children ++ [child]
     readIORef ref
 
+getWidgetChildren :: Bool -> Widget -> IO (Maybe [Widget])
+getWidgetChildren full w = do
+    mcont <- castTo Container w
+    for mcont $
+        if full
+            then containerGetAllChildren
+            else containerGetChildren
+
+widgetInfoText :: Widget -> IO Text
+widgetInfoText w = do
+    tn <- getObjectTypeName w
+    vis <- getWidgetVisible w
+    let
+        hh =
+            tn <>
+            if vis
+                then ""
+                else "{hidden}"
+    mww <- getWidgetChildren True w
+    case mww of
+        Nothing -> return hh
+        Just ww -> do
+            tt <- for ww widgetInfoText
+            return $ hh <> " (" <> intercalate ", " tt <> ")"
+
 widgetGetTree :: Bool -> Widget -> IO [Widget]
 widgetGetTree full w = do
-    mwc <- castTo Container w
-    case mwc of
-        Just wc -> do
-            children <-
-                (if full
-                     then containerGetAllChildren
-                     else containerGetChildren) $
-                wc
+    mchildren <- getWidgetChildren full w
+    case mchildren of
+        Just children -> do
             ww <- for children $ widgetGetTree full
             return $ w : mconcat ww
         Nothing -> return [w]

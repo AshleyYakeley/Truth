@@ -57,7 +57,7 @@ loadModule :: (?pinafore :: PinaforeContext) => ModuleName -> PinaforeInterprete
 loadModule mname
     | Just scope <- stdLibraryScope mname = return $ Just scope
 loadModule mname = do
-    mrr <- liftIO $ pinaforeFetchModuleText mname
+    mrr <- liftIO $ runFetchModule pinaforeFetchModuleText mname
     case mrr of
         Nothing -> return Nothing
         Just (fpath, FailureResult err) ->

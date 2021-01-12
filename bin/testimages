@@ -1,0 +1,5 @@
+#!/bin/sh -e
+make nodocker=1 testimages
+stack --no-docker install changes-gtk
+echo OK
+`stack --no-docker path --local-bin`/changes-showImages

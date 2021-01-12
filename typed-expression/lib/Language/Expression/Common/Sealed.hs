@@ -14,7 +14,10 @@ data SealedExpression (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
 constSealedExpression :: AnyValue tw -> SealedExpression name vw tw
 constSealedExpression (MkAnyValue twt t) = MkSealedExpression twt $ pure t
 
-evalSealedExpression :: (MonadThrow ExpressionError m, Show name) => SealedExpression name vw tw -> m (AnyValue tw)
+evalSealedExpression ::
+       (MonadThrow ExpressionError m, AllWitnessConstraint Show vw, Show name)
+    => SealedExpression name vw tw
+    -> m (AnyValue tw)
 evalSealedExpression (MkSealedExpression twa expr) = do
     a <- evalExpression expr
     return $ MkAnyValue twa a
@@ -44,6 +47,10 @@ instance WitnessMappable poswit negwit (SealedExpression name negwit poswit) whe
         tt' <- mapPos tt
         expr' <- mapWitnessesM mapPos mapNeg expr
         return $ MkSealedExpression tt' expr'
+
+instance (Show name, AllWitnessConstraint Show negwit, AllWitnessConstraint Show poswit) =>
+             Show (SealedExpression name negwit poswit) where
+    show (MkSealedExpression t expr) = show expr <> " => " <> showAllWitness t
 
 data SealedPattern (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall t. MkSealedPattern (tw t)

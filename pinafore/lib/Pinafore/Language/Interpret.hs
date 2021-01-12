@@ -256,17 +256,11 @@ interpretExpression' spos (SEList sexprs) = do
     exprs <- for sexprs interpretExpression
     liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs
 
-interpretTypeSignature :: Maybe SyntaxType -> PinaforeExpression -> PinaforeSourceInterpreter PinaforeExpression
-interpretTypeSignature Nothing expr = return expr
-interpretTypeSignature (Just st) expr = do
-    at <- interpretType st
-    qSubsumeExpr (mapAnyW mkShimWit at) expr
-
 interpretBinding :: SyntaxBinding -> RefNotation QBindings
-interpretBinding (MkSyntaxBinding spos mtype name sexpr) = do
-    rexpr <- interpretExpression sexpr
-    expr <- liftRefNotation $ runSourcePos spos $ interpretTypeSignature mtype rexpr
-    return $ qBindExpr name expr
+interpretBinding (MkSyntaxBinding spos mstype name sexpr) = do
+    mtype <- liftRefNotation $ runSourcePos spos $ for mstype interpretType
+    expr <- interpretExpression sexpr
+    return $ qBindExpr name mtype expr
 
 interpretBindings :: [SyntaxBinding] -> RefNotation QBindings
 interpretBindings sbinds = do

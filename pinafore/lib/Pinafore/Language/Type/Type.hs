@@ -29,12 +29,6 @@ type PinaforePatternConstructor = PatternConstructor Name (PinaforeShimWit 'Posi
 
 type PinaforePattern = SealedPattern Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
 
-type instance InterpreterExpression PinaforeTypeSystem =
-     PinaforeExpression
-
-type instance InterpreterPatternConstructor PinaforeTypeSystem =
-     PinaforePatternConstructor
-
 type instance InterpreterProvidedType PinaforeTypeSystem =
      ProvidedType
 

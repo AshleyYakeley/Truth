@@ -1,7 +1,5 @@
 module Pinafore.Language.Interpret.Interpreter
     ( InterpreterGroundType
-    , InterpreterExpression
-    , InterpreterPatternConstructor
     , InterpreterProvidedType
     , InterpreterClosedEntityType
     , BoundType(..)
@@ -54,10 +52,6 @@ import Text.Parsec (SourcePos)
 
 type family InterpreterGroundType (ts :: Type) :: GroundTypeKind
 
-type family InterpreterExpression (ts :: Type) :: Type
-
-type family InterpreterPatternConstructor (ts :: Type) :: Type
-
 type family InterpreterProvidedType (ts :: Type) :: forall k. k -> Type
 
 type family InterpreterClosedEntityType (ts :: Type) :: Type -> Type
@@ -84,8 +78,8 @@ newtype SpecialVals (ts :: Type) = MkSpecialVals
     }
 
 data InterpreterBinding (ts :: Type)
-    = ValueBinding (InterpreterExpression ts)
-                   (Maybe (InterpreterPatternConstructor ts))
+    = ValueBinding (TSSealedExpression ts)
+                   (Maybe (TSPatternConstructor ts))
     | TypeBinding (BoundType ts)
     | SpecialFormBinding (SpecialForm ts (SourceInterpreter ts))
 
@@ -151,16 +145,37 @@ liftInterpreter ra = MkInterpreter $ lift $ lift ra
 interpreterScope :: Interpreter ts (Scope ts)
 interpreterScope = MkInterpreter $ asks icScope
 
-exportScope :: forall ts. [Name] -> SourceInterpreter ts (Scope ts)
+purifyExpression ::
+       forall ts. (Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
+    => TSSealedExpression ts
+    -> SourceInterpreter ts (TSSealedExpression ts)
+purifyExpression expr = do
+    _ <- tsEval @ts expr
+    return expr
+
+purifyBinding ::
+       (Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
+    => InterpreterBinding ts
+    -> SourceInterpreter ts (InterpreterBinding ts)
+purifyBinding (ValueBinding expr mpatc) = do
+    expr' <- purifyExpression expr
+    return $ ValueBinding expr' mpatc
+purifyBinding b = return b
+
+exportScope ::
+       forall ts. (Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
+    => [Name]
+    -> SourceInterpreter ts (Scope ts)
 exportScope names = do
     MkScope bindings subtypes <- spScope
-    let
-        mapName :: Name -> Either Name (Name, InterpreterBinding ts)
-        mapName name =
+    ees <-
+        for names $ \name ->
             case lookup name bindings of
-                Just b -> Right (name, b)
-                Nothing -> Left name
-        (badnames, goodbinds) = partitionEithers $ fmap mapName names
+                Just b -> do
+                    b' <- purifyBinding b
+                    return $ Right (name, b')
+                Nothing -> return $ Left name
+    let (badnames, goodbinds) = partitionEithers ees
     case badnames of
         [] -> return $ MkScope (mapFromList goodbinds) subtypes
         (n:nn) -> throw $ LookupNamesUnknownError $ n :| nn
@@ -285,14 +300,14 @@ lookupBinding name = do
 getSpecialVals :: SourceInterpreter ts (SpecialVals ts)
 getSpecialVals = liftSourcePos $ MkInterpreter $ asks icSpecialVals
 
-lookupLetBinding :: Name -> SourceInterpreter ts (Maybe (InterpreterExpression ts))
+lookupLetBinding :: Name -> SourceInterpreter ts (Maybe (TSSealedExpression ts))
 lookupLetBinding name = do
     mb <- lookupBinding name
     case mb of
         Just (ValueBinding exp _) -> return $ Just exp
         _ -> return Nothing
 
-withNewLetBindings :: Map Name (InterpreterExpression ts) -> Interpreter ts a -> Interpreter ts a
+withNewLetBindings :: Map Name (TSSealedExpression ts) -> Interpreter ts a -> Interpreter ts a
 withNewLetBindings bb = withNewBindings $ fmap (\exp -> ValueBinding exp Nothing) bb
 
 lookupSpecialForm :: Name -> SourceInterpreter ts (SpecialForm ts (SourceInterpreter ts))
@@ -317,7 +332,7 @@ lookupBoundType name = do
         Just nt -> return nt
         Nothing -> throw $ LookupTypeUnknownError name
 
-lookupPatternConstructorM :: Name -> SourceInterpreter ts (Maybe (InterpreterPatternConstructor ts))
+lookupPatternConstructorM :: Name -> SourceInterpreter ts (Maybe (TSPatternConstructor ts))
 lookupPatternConstructorM name = do
     mb <- lookupBinding name
     return $
@@ -325,7 +340,7 @@ lookupPatternConstructorM name = do
             Just (ValueBinding _ (Just pc)) -> Just pc
             _ -> Nothing
 
-lookupPatternConstructor :: Name -> SourceInterpreter ts (InterpreterPatternConstructor ts)
+lookupPatternConstructor :: Name -> SourceInterpreter ts (TSPatternConstructor ts)
 lookupPatternConstructor name = do
     ma <- lookupPatternConstructorM name
     case ma of
@@ -368,8 +383,8 @@ registerTypeNames tboxes = do
 
 withNewPatternConstructor ::
        Name
-    -> InterpreterExpression ts
-    -> InterpreterPatternConstructor ts
+    -> TSSealedExpression ts
+    -> TSPatternConstructor ts
     -> SourceInterpreter ts (WMFunction (Interpreter ts) (Interpreter ts))
 withNewPatternConstructor name exp pc = do
     ma <- lookupPatternConstructorM name

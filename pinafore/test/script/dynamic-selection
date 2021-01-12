@@ -36,7 +36,7 @@ in debugThing "SCRIPT" $ do
     selection <- newMemWhole;
     subscribeWhole selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
     selection := testpt;
-    window <- fixAction $ \w -> openWindow {"Test"} {[]} $
+    window <- fixAction $ \w -> openWindow (300,400) {"Test"} {[]} $
         uiDynamic $ coMapWhole (\e -> uiRun $ debugThing "DYNAMIC" $ do
             # debugWindow w;
             inform "dynamic" $ Just e;
@@ -46,7 +46,7 @@ in debugThing "SCRIPT" $ do
     debugWindow window;
     selection := testpt;
     debugWindow window;
-    openWindow {"Check"} {[]} $ uiButton {"Check"} $ {debugThing "CHECK" $ do
+    openWindow (300,400) {"Check"} {[]} $ uiButton {"Check"} $ {debugThing "CHECK" $ do
         debugWindow window;
         selection := testpt;
         debugWindow window;

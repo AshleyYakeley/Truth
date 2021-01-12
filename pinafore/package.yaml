@@ -1,5 +1,5 @@
 name: pinafore
-version: "0.2"
+version: "0.3"
 _common: !include "../common.yaml"
 <<: *author
 
@@ -47,7 +47,6 @@ library:
       - Pinafore.Language.Type.Data
       - Pinafore.Language.Type.Identified
       - Pinafore.Language.Error
-      - Pinafore.Language.Subtype
       - Pinafore.Language.SpecialForm
       - Pinafore.Language.Interpret.Interpreter
       - Pinafore.Language.Var
@@ -107,6 +106,7 @@ tests:
         main: Main.hs
         other-modules:
           - Test.Context
+          - Test.RunScript
           - Test.Language
           - Test.Entity
           - Test.Type

@@ -6,12 +6,13 @@ packages:
 - shapes
 - typed-expression
 - changes-core
+- changes-media
 - changes-world
 - changes-gtk
 - pinafore-base
 - pinafore
 
-resolver: lts-16.15
+resolver: lts-16.26
 compiler: ghc-8.10.2
 
 allow-newer: true

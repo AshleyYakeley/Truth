@@ -1,5 +1,5 @@
 name: shapes
-version: "0.2"
+version: "0.3"
 _common: !include "../common.yaml"
 <<: *author
 
@@ -43,6 +43,7 @@ library:
       - transformers-extra
       - thread-trace
     exposed-modules:
+      - Data.Words
       - Control.Category.Groupoid
       - Data.Filterable
       - Data.MonoApplicative

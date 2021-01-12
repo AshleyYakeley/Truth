@@ -39,7 +39,11 @@ infixr 3 <***>, ***>, <***
 
 class IsoVariant f => Productish f where
     pUnit :: f ()
+    default pUnit :: Applicative f => f ()
+    pUnit = pure ()
     (<***>) :: f a -> f b -> f (a, b)
+    default (<***>) :: Applicative f => f a -> f b -> f (a, b)
+    (<***>) = liftA2 (,)
     (***>) :: f () -> f a -> f a
     fu ***> fa = isoMap (\((), a) -> a) (\a -> ((), a)) $ fu <***> fa
     (<***) :: f a -> f () -> f a

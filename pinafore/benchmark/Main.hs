@@ -27,8 +27,7 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $
-         getInnerLifeState $ makeTestPinaforeContext nullFetchModuleText (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
+    env (fmap const $ getInnerLifeState $ makeTestPinaforeContext mempty (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc
@@ -91,7 +90,7 @@ benchScripts =
 
 interpretUpdater :: (?pinafore :: PinaforeContext) => Text -> IO ()
 interpretUpdater text =
-    withTestPinaforeContext nullFetchModuleText stdout $ \tc unlift _getTableState -> do
+    withTestPinaforeContext mempty stdout $ \tc unlift _getTableState -> do
         action <- throwInterpretResult $ pinaforeInterpretTextAtType "<test>" text
         (sendUpdate, ref) <-
             tcUnliftLifeCycle tc $ tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
@@ -102,8 +101,7 @@ interpretUpdater text =
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
-    env (fmap const $
-         getInnerLifeState $ makeTestPinaforeContext nullFetchModuleText (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
+    env (fmap const $ getInnerLifeState $ makeTestPinaforeContext mempty (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc

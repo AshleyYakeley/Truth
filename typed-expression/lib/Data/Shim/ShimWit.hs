@@ -16,6 +16,12 @@ data ShimWit shim wit polarity t where
         -> PolarMap shim polarity t t'
         -> ShimWit shim wit polarity t
 
+instance AllWitnessConstraint Show wit => Show (ShimWit shim wit polarity t) where
+    show (MkShimWit t _) = showAllWitness t
+
+instance AllWitnessConstraint Show wit => AllWitnessConstraint Show (ShimWit shim wit polarity) where
+    allWitnessConstraint = Dict
+
 mkShimWit ::
        forall (k :: Type) (shim :: ShimKind k) wit polarity (t :: k).
        (InKind t, InCategory shim, Is PolarityType polarity)

@@ -2,7 +2,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Unify
-    ( bisubstituteWitnessForTest
+    ( UnifierBisubstitution
+    , bisubstituteWitnessForTest
     ) where
 
 import Data.Shim
@@ -18,7 +19,7 @@ import Language.Expression.Dolan.TypeSystem
 import Shapes
 
 type UnifierBisubstitution :: GroundTypeKind -> Type
-type UnifierBisubstitution ground = Bisubstitution ground (DolanPolyShim ground) Identity
+type UnifierBisubstitution ground = Bisubstitution ground (DolanPolyShim ground Type) Identity
 
 type BisubstitutionWitness :: GroundTypeKind -> Type -> Type
 data BisubstitutionWitness ground t where

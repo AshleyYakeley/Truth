@@ -50,6 +50,13 @@ instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Int where
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Int where
     fromShimWit = mapNegShimWit (functionToShim "subtype" fromInteger) fromJMShimWit
 
+-- Int32
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Int32 where
+    toShimWit = mapPosShimWit (functionToShim "subtype" toInteger) toJMShimWit
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Int32 where
+    fromShimWit = mapNegShimWit (functionToShim "subtype" fromInteger) fromJMShimWit
+
 -- Rational
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Rational where
     toShimWit = mapPosShimWit (functionToShim "subtype" $ fromRational @SafeRational) toJMShimWit

@@ -39,7 +39,7 @@ tsUnify ::
 tsUnify wa wb = runRenamer @ts $ solveUnifyPosNegShimWit @ts wa wb
 
 tsEval ::
-       forall ts m. (MonadThrow ExpressionError m, Show (TSName ts))
+       forall ts m. (MonadThrow ExpressionError m, Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression
@@ -133,30 +133,23 @@ tsLet n expv expb = letSealedExpression @ts n expv expb
 tsSingleBinding ::
        forall ts. CompleteTypeSystem ts
     => TSName ts
+    -> Maybe (AnyW (TSPosWitness ts))
     -> TSSealedExpression ts
     -> Bindings ts
-tsSingleBinding = singleBinding
+tsSingleBinding name madecltype expr =
+    singleBinding name $ do
+        madecltype' <-
+            for madecltype $ \(MkAnyW decltype) -> do
+                decltype' <- namespace @ts $ renamePosWitness @ts decltype
+                return $ MkAnyW decltype'
+        expr' <- rename @ts expr
+        subsumerExpression madecltype' expr'
 
 tsUncheckedComponentLet ::
        forall ts. (Ord (TSName ts), CompleteTypeSystem ts)
     => Bindings ts
     -> TSInner ts (Map (TSName ts) (TSSealedExpression ts))
 tsUncheckedComponentLet = bindingsComponentLetSealedExpression @ts
-
-tsSubsumeExpression ::
-       forall ts. CompleteTypeSystem ts
-    => AnyW (TSPosShimWit ts)
-    -> TSSealedExpression ts
-    -> TSInner ts (TSSealedExpression ts)
-tsSubsumeExpression (MkAnyW t) expr =
-    runRenamer @ts $ do
-        at' <-
-            namespace @ts $
-            withTransConstraintTM @Monad $ do
-                MkShimWit t' _ <- renamePosShimWit @ts t
-                return $ MkAnyW t'
-        expr' <- rename @ts expr
-        subsumeExpression @ts at' expr'
 
 tsVarPattern ::
        forall ts. CompleteTypeSystem ts

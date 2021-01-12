@@ -3,6 +3,7 @@ module Control.Monad.Exception
     , CE.SomeException
     , CE.Exception(..)
     , CE.evaluate
+    , CE.IOException
     ) where
 
 import qualified Control.Exception as CE

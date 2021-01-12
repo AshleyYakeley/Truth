@@ -17,6 +17,10 @@ type X = Var "x"
 
 type Y = Var "y"
 
+type P = Var "p"
+
+type Q = Var "q"
+
 type AP = Var "ap"
 
 type BP = Var "bp"

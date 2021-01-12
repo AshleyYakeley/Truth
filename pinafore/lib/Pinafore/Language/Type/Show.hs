@@ -5,7 +5,6 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Language.Name
-import Prelude (Bounded(..))
 import Shapes
 
 class ExprShow t where

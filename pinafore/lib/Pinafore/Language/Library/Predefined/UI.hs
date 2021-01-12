@@ -76,15 +76,7 @@ uiListTable cols order val onDoubleClick mSelectionLangRef =
                 case mSelectionModel of
                     Nothing -> mempty
                     Just selectionModel ->
-                        contramap readSub $
-                        viewLiftSelectNotify $
-                        MkSelectNotify $ \vma -> do
-                            ma <- vma
-                            viewRunResource selectionModel $ \asub -> do
-                                _ <-
-                                    pushEdit esrc $
-                                    aModelEdit asub $ pure $ MkBiEdit $ MkWholeReaderEdit $ maybeToKnow ma
-                                return ()
+                        contramap readSub $ viewLiftSelectNotify $ modelSelectNotify esrc selectionModel
         (widget, setSelection) <- createListTable (fmap getColumn cols) olsub onSelect tsn
         case mSelectionModel of
             Nothing -> return ()
@@ -165,13 +157,15 @@ uiDynamic uiref = let
 
 openWindow ::
        (?pinafore :: PinaforeContext)
-    => PinaforeImmutableWholeRef Text
+    => (Int32, Int32)
+    -> PinaforeImmutableWholeRef Text
     -> PinaforeImmutableWholeRef MenuBar
     -> LangUI
     -> PinaforeAction LangWindow
-openWindow title mbar (MkLangUI wsContent) =
+openWindow wsSize title mbar (MkLangUI wsContent) =
     mfix $ \w ->
         pinaforeNewWindow $ let
+            wsPosition = WindowPositionCenter
             wsCloseBoxAction :: View ()
             wsCloseBoxAction = pwClose w
             wsTitle :: Model (ROWUpdate Text)
@@ -248,15 +242,15 @@ uiVertical mitems =
                 return (f, ui)
         createLayout OrientationVertical items
 
-uiPages :: [(LangUI, LangUI)] -> LangUI
-uiPages mitems =
+uiNotebook :: LangWholeRef '( Int, TopType) -> [(LangUI, LangUI)] -> LangUI
+uiNotebook selref mitems =
     MkLangUI $ do
         items <-
             for mitems $ \(MkLangUI mt, MkLangUI mb) -> do
                 t <- mt
                 b <- mb
                 return (t, b)
-        createNotebook items
+        createNotebook (langWholeRefSelectNotify noEditSource selref) items
 
 uiRun :: (?pinafore :: PinaforeContext) => PinaforeAction LangUI -> LangUI
 uiRun pui =
@@ -265,6 +259,27 @@ uiRun pui =
         case kui of
             Known (MkLangUI ui) -> ui
             Unknown -> createBlank
+
+uiStyleSheet :: PinaforeImmutableWholeRef Text -> LangUI -> LangUI
+uiStyleSheet cssmodel (MkLangUI mw) =
+    MkLangUI $ do
+        widget <- mw
+        bindCSS True maxBound (unWModel $ pinaforeImmutableRefValue mempty cssmodel) widget
+        return widget
+
+uiName :: Text -> LangUI -> LangUI
+uiName name (MkLangUI mw) =
+    MkLangUI $ do
+        widget <- mw
+        setCSSName name widget
+        return widget
+
+uiStyleClass :: Text -> LangUI -> LangUI
+uiStyleClass sclass (MkLangUI mw) =
+    MkLangUI $ do
+        widget <- mw
+        setCSSClass sclass widget
+        return widget
 
 ui_predefinitions :: [DocTreeEntry BindDoc]
 ui_predefinitions =
@@ -293,9 +308,9 @@ ui_predefinitions =
                 "Items arranged vertically, each flag is whether to expand into remaining space."
                 uiVertical
           , mkValEntry
-                "uiPages"
+                "uiNotebook"
                 "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
-                uiPages
+                uiNotebook
                 -- CSS
                 -- drag
                 -- icon
@@ -311,6 +326,19 @@ ui_predefinitions =
           , mkValEntry "uiCalendar" "A calendar." uiCalendar
           , mkValEntry "uiScrolled" "A scrollable container." uiScrolled
           , mkValEntry "uiDynamic" "A UI that can be updated to different UIs." uiDynamic
+          , mkValEntry
+                "uiName"
+                "A UI with name set. You can use something like `#text` to refer to it in the CSS style-sheet."
+                uiName
+          , mkValEntry
+                "uiStyleClass"
+                "A UI with CSS class set. You can use something like `.text` to refer to all elements in this class in the CSS style-sheet."
+                uiStyleClass
+          , mkValEntry
+                "uiStyleSheet"
+                "A UI with a CSS style-sheet (applied to the whole tree of UI elements). \
+                    \See the GTK+ CSS [overview](https://developer.gnome.org/gtk3/stable/chap-css-overview.html) and [properties](https://developer.gnome.org/gtk3/stable/chap-css-properties.html) for how this works."
+                uiStyleSheet
           ]
     , docTreeEntry
           "Menu"
@@ -325,7 +353,7 @@ ui_predefinitions =
     , docTreeEntry
           "Window"
           "User interface windows."
-          [ mkValEntry "openWindow" "Open a new window with this title and UI." openWindow
+          [ mkValEntry "openWindow" "Open a new window with this size, title and UI." openWindow
           , mkValEntry "closeWindow" "Close a window." pwClose
           , mkValEntry "showWindow" "Show a window." uiWindowShow
           , mkValEntry "hideWindow" "Hide a window." uiWindowHide
