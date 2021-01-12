@@ -22,7 +22,7 @@ cacheReference rc mus obj = do
     return $ \rc' -> let
         refRead :: Readable (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
         refRead rt = traceBracket "cache read" $ do
-            oldcache <- get
+            oldcache <- traceBracket "cache get" $ get
             case editCacheLookup @edit rt oldcache of
                 Just t -> do
                     traceIOM "cache hit"
