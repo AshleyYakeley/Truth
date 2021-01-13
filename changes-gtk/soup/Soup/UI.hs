@@ -130,7 +130,7 @@ soupWindow tc newWindow dirpath = do
                 rspec :: Result Text (Model NoteUpdate) -> CreateView Widget
                 rspec (SuccessResult s2) = noteEditSpec s2 mempty
                 rspec (FailureResult err) = createLabel $ constantModel err
-            tcUnliftCreateView tc $ do
+            ccUnliftCreateView tc $ do
                 rec
                     ~(subwin, subcloser) <-
                         lifeCycleEarlyCloser $ let

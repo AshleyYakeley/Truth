@@ -17,7 +17,7 @@ testUpdate text =
     ScriptExpectSuccessResult $ \cc (sendUpdate, ref) ->
         runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
         checkUpdateEditor (Known (1 :: Integer)) $
-        tcUnliftLifeCycle cc $ tcRunView cc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
+        ccUnliftLifeCycle cc $ ccRunView cc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
 testUpdates = runContext $ tgroup "update" [testUpdate "do ref <- newMemWhole; return (ref := 1, ref) end"]

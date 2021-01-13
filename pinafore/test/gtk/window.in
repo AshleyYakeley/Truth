@@ -1,0 +1,9 @@
+#!/usr/bin/pinafore
+
+do
+outputLn "BEGIN";
+w <- openWindow (600,800) {"Window"} {[]} uiBlank;
+outputLn "Open";
+closeWindow w;
+outputLn "END";
+end

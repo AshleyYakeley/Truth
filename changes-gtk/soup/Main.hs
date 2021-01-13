@@ -15,7 +15,7 @@ main :: IO ()
 main = do
     (dirpaths, double) <- O.execParser (O.info optParser mempty)
     changesMainGTK $ \tc -> do
-        let newWindow spec = tcExitOnClosed tc $ createWindow spec
+        let newWindow spec = ccExitOnClosed tc $ createWindow spec
         for_ dirpaths $ \dirpath -> do
             let action = soupWindow tc newWindow dirpath
             action

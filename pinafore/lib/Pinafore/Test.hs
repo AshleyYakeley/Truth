@@ -21,6 +21,7 @@ module Pinafore.Test
     ) where
 
 import Changes.Core
+import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language
 import Pinafore.Language.Interpret
@@ -40,10 +41,8 @@ textFetchModule getText =
             text <- mtext
             return $ (show mname, SuccessResult text)
 
-makeTestPinaforeContext ::
-       FetchModule -> ChangesContext -> Handle -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
-makeTestPinaforeContext fetchModule tc hout = do
-    let rc = emptyResourceContext
+makeTestStorageModel :: LifeCycle (Model PinaforeStorageUpdate, IO PinaforeTableSubject)
+makeTestStorageModel = do
     tableStateReference :: Reference (WholeEdit PinaforeTableSubject) <-
         fmap (traceThing "makeTestPinaforeContext.tableStateObject") $
         liftIO $ makeMemoryReference (MkPinaforeTableSubject [] [] [] []) $ \_ -> True
@@ -51,9 +50,15 @@ makeTestPinaforeContext fetchModule tc hout = do
         tableReference :: Reference PinaforeTableEdit
         tableReference = convertReference tableStateReference
         getTableState :: IO PinaforeTableSubject
-        getTableState = getReferenceSubject rc tableStateReference
+        getTableState = getReferenceSubject emptyResourceContext tableStateReference
     (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-    pc <- makePinaforeContext fetchModule nullInvocationInfo hout model tc
+    return (model, getTableState)
+
+makeTestPinaforeContext ::
+       FetchModule -> ChangesContext -> Handle -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
+makeTestPinaforeContext fetchModule cc hout = do
+    (model, getTableState) <- makeTestStorageModel
+    pc <- makePinaforeContext fetchModule nullInvocationInfo hout model cc
     return (pc, getTableState)
 
 withTestPinaforeContext ::
@@ -64,11 +69,11 @@ withTestPinaforeContext ::
 withTestPinaforeContext fetchModule hout call =
     runLifeCycle @LifeCycle $
     liftIOWithUnlift $ \unlift -> do
-        let tc = nullChangesContext unlift
-        (pc, getTableState) <- unlift $ makeTestPinaforeContext fetchModule tc hout
+        let cc = nullChangesContext unlift
+        (pc, getTableState) <- unlift $ makeTestPinaforeContext fetchModule cc hout
         let
             ?pinafore = pc
-            in call tc unlift getTableState
+            in call cc unlift getTableState
 
 withNullPinaforeContext :: ((?pinafore :: PinaforeContext) => r) -> r
 withNullPinaforeContext f = let

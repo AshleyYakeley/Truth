@@ -7,33 +7,33 @@ import Changes.Core.UI.View.CreateView
 import Changes.Core.UI.View.View
 
 data ChangesContext = MkChangesContext
-    { tcRunToolkit :: RunToolkit
-    , tcExitOnClosed :: forall m. MonadLifeCycleIO m => MFunction m m
+    { ccRunToolkit :: RunToolkit
+    , ccExitOnClosed :: forall m. MonadLifeCycleIO m => MFunction m m
     }
 
-tcUnliftLifeCycle :: ChangesContext -> MFunction LifeCycle IO
-tcUnliftLifeCycle tc = rtUnliftLifeCycle $ tcRunToolkit tc
+ccUnliftLifeCycle :: ChangesContext -> MFunction LifeCycle IO
+ccUnliftLifeCycle cc = rtUnliftLifeCycle $ ccRunToolkit cc
 
-tcRunView :: MonadUnliftIO m => ChangesContext -> ResourceContext -> ViewT m a -> m a
-tcRunView tc = rtRunView $ tcRunToolkit tc
+ccRunView :: MonadUnliftIO m => ChangesContext -> ResourceContext -> ViewT m a -> m a
+ccRunView cc = rtRunView $ ccRunToolkit cc
 
-tcUnliftCreateView :: ChangesContext -> CreateView a -> View a
-tcUnliftCreateView tc = rtUnliftCreateView $ tcRunToolkit tc
+ccUnliftCreateView :: ChangesContext -> CreateView a -> View a
+ccUnliftCreateView cc = rtUnliftCreateView $ ccRunToolkit cc
 
 nullChangesContext :: MFunction LifeCycle IO -> ChangesContext
 nullChangesContext unlift = let
-    tcRunToolkit = nullRunToolkit unlift
-    tcExitOnClosed = id
+    ccRunToolkit = nullRunToolkit unlift
+    ccExitOnClosed = id
     in MkChangesContext {..}
 
 quitOnAllClosed :: MonadIO cm => RunToolkit -> (ChangesContext -> cm r) -> cm r
-quitOnAllClosed tcRunToolkit call = do
-    (ondone, checkdone) <- liftIO $ lifeCycleOnAllDone $ rtExit tcRunToolkit
+quitOnAllClosed ccRunToolkit call = do
+    (ondone, checkdone) <- liftIO $ lifeCycleOnAllDone $ rtExit ccRunToolkit
     let
-        tcExitOnClosed ::
+        ccExitOnClosed ::
                forall m. MonadLifeCycleIO m
             => MFunction m m
-        tcExitOnClosed ma = do
+        ccExitOnClosed ma = do
             liftLifeCycle ondone
             ma
     r <- call $ MkChangesContext {..}

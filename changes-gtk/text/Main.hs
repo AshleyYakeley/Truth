@@ -28,7 +28,7 @@ main :: IO ()
 main = do
     (paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
     changesMainGTK $ \tc -> do
-        let newWindow spec = tcExitOnClosed tc $ createWindow spec
+        let newWindow spec = ccExitOnClosed tc $ createWindow spec
         for_ paths $ \path -> do
             let
                 bsObj :: Reference ByteStringEdit
@@ -48,7 +48,7 @@ main = do
                             case mflens of
                                 Nothing -> return ()
                                 Just flens ->
-                                    tcUnliftCreateView tc $ do
+                                    ccUnliftCreateView tc $ do
                                         subSub <- cvFloatMapModel (liftFullResultOneFloatingChangeLens flens) sub
                                         makeWindow "section" subSub Nothing extraui
                         rTextSpec :: Result Text (Model (StringUpdate Text)) -> CreateView Widget

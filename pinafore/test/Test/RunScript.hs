@@ -32,17 +32,17 @@ testPinaforeScript name fetchModule text expect =
                    ScriptExpectRejection checkEx -> assertThrowsException checkEx $ runTest @()
                    ScriptExpectRuntimeException checkEx -> do
                        action <- runTest @()
-                       assertThrowsException checkEx $ tcRunView cc emptyResourceContext $ runPinaforeAction action
+                       assertThrowsException checkEx $ ccRunView cc emptyResourceContext $ runPinaforeAction action
                    ScriptExpectStop -> do
                        action <- runTestCatchStop @()
                        assertThrowsException @IOException (\err -> show err == "user error (stopped)") $
-                           tcRunView cc emptyResourceContext $ runPinaforeAction action
+                           ccRunView cc emptyResourceContext $ runPinaforeAction action
                    ScriptExpectSuccess -> do
                        action <- runTestCatchStop @()
-                       tcRunView cc emptyResourceContext $ runPinaforeAction action
+                       ccRunView cc emptyResourceContext $ runPinaforeAction action
                    ScriptExpectSuccessResult (checkResult :: ChangesContext -> a -> LifeCycle ()) -> do
                        action <- runTestCatchStop @a
-                       r <- tcUnliftLifeCycle cc $ tcRunView cc emptyResourceContext $ unliftPinaforeActionOrFail action
+                       r <- ccUnliftLifeCycle cc $ ccRunView cc emptyResourceContext $ unliftPinaforeActionOrFail action
                        unlift $ checkResult cc r
 
 testExpectSuccess :: Text -> ContextTestTree

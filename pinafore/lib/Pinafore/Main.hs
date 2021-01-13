@@ -31,23 +31,28 @@ data ContextOptions = MkContextOptions
     , coDataDir :: FilePath
     }
 
-standardPinaforeContext :: ContextOptions -> InvocationInfo -> ChangesContext -> CreateView PinaforeContext
-standardPinaforeContext MkContextOptions {..} invinfo cc = do
-    let
-        fetchModule :: FetchModule
-        fetchModule = mconcat $ fmap directoryFetchModule coModuleDirs
+standardStorageModel :: Bool -> FilePath -> CreateView (Model PinaforeStorageUpdate)
+standardStorageModel cache dataDir = do
     rc <- viewGetResourceContext
     liftLifeCycle $ do
-        sqlReference <- liftIO $ sqlitePinaforeTableReference $ coDataDir </> "tables.sqlite3"
+        sqlReference <- liftIO $ sqlitePinaforeTableReference $ dataDir </> "tables.sqlite3"
         tableReference1 <- exclusiveResource rc sqlReference
         tableReference <-
-            if coCache
+            if cache
                 then do
                     tableReferenceF <- cacheReference rc 500000 tableReference1 -- half-second delay before writing
                     return $ tableReferenceF rc
                 else return tableReference1
         (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-        makePinaforeContext fetchModule invinfo stdout model cc
+        return model
+
+standardPinaforeContext :: ContextOptions -> InvocationInfo -> ChangesContext -> CreateView PinaforeContext
+standardPinaforeContext MkContextOptions {..} invinfo cc = do
+    let
+        fetchModule :: FetchModule
+        fetchModule = mconcat $ fmap directoryFetchModule coModuleDirs
+    model <- standardStorageModel coCache coDataDir
+    liftLifeCycle $ makePinaforeContext fetchModule invinfo stdout model cc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
