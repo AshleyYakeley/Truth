@@ -44,7 +44,7 @@ runUIAction timing testaction t = do
                 _ <-
                     liftIO $
                     forkIO $ do
-                        ar <- tcRunView tc emptyResourceContext testView
+                        ar <- ccRunView tc emptyResourceContext testView
                         putMVar donevar ar
                 return ()
     ar <- takeMVar donevar

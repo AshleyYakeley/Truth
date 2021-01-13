@@ -1,0 +1,32 @@
+#!/usr/bin/pinafore
+
+let
+
+selectionPairPane:
+    (WholeRef a -> UI) ->
+    (WholeRef +a -> UI) ->
+    Action UI;
+selectionPairPane getSelectorUI getSelectedUI = do
+    sel <- newMemWhole;
+    return (uiHorizontal [(False,getSelectorUI sel),(True,getSelectedUI (immutWhole sel))]);
+    end;
+
+dynamictype Person = !"type.person";
+people: FiniteSetRef Person;
+people = property @Person @() !"set.person" !@ {()};
+name = property @Person @Text !"identify.name";
+
+namedTable: FiniteSetRef {a,+Person} -> (a -> Action Any) -> Maybe (WholeRef {a,+Person}) -> UI;
+namedTable = uiListTable [] (refOrders []);
+
+namedPairPane: FiniteSetRef Person -> Action UI;
+namedPairPane set = selectionPairPane (\sel -> namedTable set (\_ -> return ()) (Just sel)) (\ref -> uiTextEntry (name !$% ref));
+
+in do
+    p <- newDynamicEntity @Person;
+    people += p;
+    ui <- namedPairPane people;
+    w <- openWindow (600,800) {"Window"} {[]} ui;
+    outputLn "LAST";
+    closeWindow w;
+    end

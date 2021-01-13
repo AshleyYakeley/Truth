@@ -9,7 +9,7 @@ import Pinafore.Test
 import Shapes
 
 nullViewIO :: View a -> IO a
-nullViewIO = tcRunView (nullChangesContext runLifeCycle) emptyResourceContext
+nullViewIO = ccRunView (nullChangesContext runLifeCycle) emptyResourceContext
 
 benchHash :: Text -> Benchmark
 benchHash text = bench (show $ unpack text) $ nf literalToEntity text
@@ -93,11 +93,11 @@ interpretUpdater text =
     withTestPinaforeContext mempty stdout $ \tc unlift _getTableState -> do
         action <- throwInterpretResult $ pinaforeInterpretTextAtType "<test>" text
         (sendUpdate, ref) <-
-            tcUnliftLifeCycle tc $ tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
+            ccUnliftLifeCycle tc $ ccRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
         unlift $
             runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $
-            tcUnliftLifeCycle tc $ tcRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
+            ccUnliftLifeCycle tc $ ccRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =

@@ -108,7 +108,7 @@ makePinaforeContext pconFetchModule pconInvocation pconStdOut rmodel tc = do
         pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
         pconUnliftAction = unPinaforeAction tc uh
         pconUnliftCreateView :: MFunction CreateView View
-        pconUnliftCreateView = tcUnliftCreateView tc
+        pconUnliftCreateView = ccUnliftCreateView tc
         pconEntityModel = undoHandlerModel uh rmodel
     return $ MkPinaforeContext {..}
 

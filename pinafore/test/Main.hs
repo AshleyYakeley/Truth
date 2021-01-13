@@ -5,6 +5,7 @@ module Main
 import Shapes
 import Shapes.Test
 import Test.Entity
+import Test.GTK
 import Test.Interactive
 import Test.Language
 import Test.Module
@@ -17,6 +18,7 @@ import Test.UI
 main :: IO ()
 main = do
     testOutput <- getTestOutput
+    testGTK <- getTestGTK
     testInteractive <- getTestInteractive
     let
         tests :: TestTree
@@ -30,6 +32,7 @@ main = do
                 , testUpdates
                 , testScripts
                 , testOutput
+                , testGTK
                 , testModule
                 , testInteractive
                 , testUI

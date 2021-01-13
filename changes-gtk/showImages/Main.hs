@@ -17,7 +17,7 @@ main = do
     filenames <- listDirectory imagedir
     --(paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
     changesMainGTK $ \tc -> do
-        let newWindow spec = tcExitOnClosed tc $ createWindow spec
+        let newWindow spec = ccExitOnClosed tc $ createWindow spec
         -- fileReference :: FilePath -> Reference ByteStringEdit
         imageRef <- liftIO $ makeMemoryReference (blankImage @PixelRGB8 (100, 100) black) $ \_ -> True
         model <- liftLifeCycle $ makeReflectingModel imageRef

@@ -68,7 +68,7 @@ pinaforeGetExitOnClose :: PinaforeAction (WMFunction CreateView CreateView)
 pinaforeGetExitOnClose =
     MkPinaforeAction $ do
         tc <- asks acChangesContext
-        return $ MkWMFunction $ tcExitOnClosed tc
+        return $ MkWMFunction $ ccExitOnClosed tc
 
 pinaforeExit :: PinaforeAction ()
 pinaforeExit = viewPinaforeAction viewExit

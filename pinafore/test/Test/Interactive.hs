@@ -16,7 +16,7 @@ testFile inpath = let
     in testHandleVsFile dir testName $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
                withTestPinaforeContext mempty outh $ \tc _ _ -> do
-                   tcRunView tc emptyResourceContext $ pinaforeInteractHandles inh outh True
+                   ccRunView tc emptyResourceContext $ pinaforeInteractHandles inh outh True
                    hPutStrLn outh "<END>"
 
 getTestInteractive :: IO TestTree
