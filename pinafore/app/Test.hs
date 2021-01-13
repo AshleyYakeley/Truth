@@ -30,54 +30,63 @@ testOptionParsing =
         , testOptions ["--dump-table", "--data", "dpath"] $ SuccessResult $ DumpTableOption $ Just "dpath"
         , testTree
               "script"
-              [ testOptions ["scriptname"] $ SuccessResult $ RunFileOption False [] Nothing ("scriptname", [])
-              , testOptions ["scriptname", "a"] $ SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["a"])
-              , testOptions ["scriptname", "-x"] $ SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["-x"])
+              [ testOptions ["scriptname"] $
+                SuccessResult $ RunFileOption (MkRunOptions True [] Nothing) False ("scriptname", [])
+              , testOptions ["scriptname", "a"] $
+                SuccessResult $ RunFileOption (MkRunOptions True [] Nothing) False ("scriptname", ["a"])
+              , testOptions ["scriptname", "-x"] $
+                SuccessResult $ RunFileOption (MkRunOptions True [] Nothing) False ("scriptname", ["-x"])
               , testOptions ["scriptname", "--opt"] $
-                SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["--opt"])
-              , testOptions ["scriptname", "-n"] $ SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["-n"])
-              , testOptions ["scriptname", "-v"] $ SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["-v"])
+                SuccessResult $ RunFileOption (MkRunOptions True [] Nothing) False ("scriptname", ["--opt"])
+              , testOptions ["scriptname", "-n"] $
+                SuccessResult $ RunFileOption (MkRunOptions True [] Nothing) False ("scriptname", ["-n"])
+              , testOptions ["scriptname", "-v"] $
+                SuccessResult $ RunFileOption (MkRunOptions True [] Nothing) False ("scriptname", ["-v"])
               , testOptions ["scriptname", "--data", "dpath"] $
-                SuccessResult $ RunFileOption False [] Nothing ("scriptname", ["--data", "dpath"])
-              , testOptions ["-n", "scriptname"] $ SuccessResult $ RunFileOption True [] Nothing ("scriptname", [])
+                SuccessResult $ RunFileOption (MkRunOptions True [] Nothing) False ("scriptname", ["--data", "dpath"])
+              , testOptions ["-n", "scriptname"] $
+                SuccessResult $ RunFileOption (MkRunOptions True [] Nothing) True ("scriptname", [])
               , testOptions ["-n", "scriptname", "-n"] $
-                SuccessResult $ RunFileOption True [] Nothing ("scriptname", ["-n"])
+                SuccessResult $ RunFileOption (MkRunOptions True [] Nothing) True ("scriptname", ["-n"])
               , testOptions ["-I", "incpath", "scriptname"] $
-                SuccessResult $ RunFileOption False ["incpath"] Nothing ("scriptname", [])
+                SuccessResult $ RunFileOption (MkRunOptions True ["incpath"] Nothing) False ("scriptname", [])
               , testOptions ["-I", "path1", "-I", "path2", "scriptname"] $
-                SuccessResult $ RunFileOption False ["path1", "path2"] Nothing ("scriptname", [])
+                SuccessResult $ RunFileOption (MkRunOptions True ["path1", "path2"] Nothing) False ("scriptname", [])
               , testOptions ["--include", "incpath", "scriptname"] $
-                SuccessResult $ RunFileOption False ["incpath"] Nothing ("scriptname", [])
+                SuccessResult $ RunFileOption (MkRunOptions True ["incpath"] Nothing) False ("scriptname", [])
               , testOptions ["--include", "path1", "--include", "path2", "scriptname"] $
-                SuccessResult $ RunFileOption False ["path1", "path2"] Nothing ("scriptname", [])
+                SuccessResult $ RunFileOption (MkRunOptions True ["path1", "path2"] Nothing) False ("scriptname", [])
               , testOptions ["--data", "dpath", "scriptname"] $
-                SuccessResult $ RunFileOption False [] (Just "dpath") ("scriptname", [])
+                SuccessResult $ RunFileOption (MkRunOptions True [] (Just "dpath")) False ("scriptname", [])
               , testOptions ["--data", "dpath", "scriptname", "arg1"] $
-                SuccessResult $ RunFileOption False [] (Just "dpath") ("scriptname", ["arg1"])
+                SuccessResult $ RunFileOption (MkRunOptions True [] (Just "dpath")) False ("scriptname", ["arg1"])
               , testOptions ["--data", "dpath", "scriptname", "arg1", "arg2"] $
-                SuccessResult $ RunFileOption False [] (Just "dpath") ("scriptname", ["arg1", "arg2"])
+                SuccessResult $
+                RunFileOption (MkRunOptions True [] (Just "dpath")) False ("scriptname", ["arg1", "arg2"])
               , testOptions ["-n", "--data", "dpath", "scriptname", "arg1", "arg2"] $
-                SuccessResult $ RunFileOption True [] (Just "dpath") ("scriptname", ["arg1", "arg2"])
+                SuccessResult $
+                RunFileOption (MkRunOptions True [] (Just "dpath")) True ("scriptname", ["arg1", "arg2"])
               ]
         , testTree
               "interactive"
-              [ testOptions ["-i"] $ SuccessResult $ RunInteractiveOption [] Nothing
-              , testOptions ["-i", "--data", "dpath"] $ SuccessResult $ RunInteractiveOption [] $ Just "dpath"
-              , testOptions ["--interactive"] $ SuccessResult $ RunInteractiveOption [] Nothing
+              [ testOptions ["-i"] $ SuccessResult $ RunInteractiveOption $ MkRunOptions True [] Nothing
+              , testOptions ["-i", "--data", "dpath"] $
+                SuccessResult $ RunInteractiveOption $ MkRunOptions True [] $ Just "dpath"
+              , testOptions ["--interactive"] $ SuccessResult $ RunInteractiveOption $ MkRunOptions True [] Nothing
               , testOptions ["-I", "incpath", "--interactive"] $
-                SuccessResult $ RunInteractiveOption ["incpath"] Nothing
+                SuccessResult $ RunInteractiveOption $ MkRunOptions True ["incpath"] Nothing
               , testOptions ["--include", "incpath", "--interactive"] $
-                SuccessResult $ RunInteractiveOption ["incpath"] Nothing
+                SuccessResult $ RunInteractiveOption $ MkRunOptions True ["incpath"] Nothing
               , testOptions ["--interactive", "-I", "incpath"] $
-                SuccessResult $ RunInteractiveOption ["incpath"] Nothing
+                SuccessResult $ RunInteractiveOption $ MkRunOptions True ["incpath"] Nothing
               , testOptions ["-I", "path1", "-I", "path2", "--interactive"] $
-                SuccessResult $ RunInteractiveOption ["path1", "path2"] Nothing
+                SuccessResult $ RunInteractiveOption $ MkRunOptions True ["path1", "path2"] Nothing
               , testOptions ["--include", "path1", "--include", "path2", "--interactive"] $
-                SuccessResult $ RunInteractiveOption ["path1", "path2"] Nothing
+                SuccessResult $ RunInteractiveOption $ MkRunOptions True ["path1", "path2"] Nothing
               , testOptions ["--interactive", "-I", "path1", "-I", "path2"] $
-                SuccessResult $ RunInteractiveOption ["path1", "path2"] Nothing
+                SuccessResult $ RunInteractiveOption $ MkRunOptions True ["path1", "path2"] Nothing
               , testOptions ["--interactive", "--data", "dpath"] $
-                SuccessResult $ RunInteractiveOption [] $ Just "dpath"
+                SuccessResult $ RunInteractiveOption $ MkRunOptions True [] $ Just "dpath"
               ]
         ]
 

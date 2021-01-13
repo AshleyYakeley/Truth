@@ -9,13 +9,13 @@ import Pinafore
 import Shapes
 import System.Environment
 
-runFiles :: Foldable t => Bool -> [FilePath] -> FilePath -> t (FilePath, [String]) -> IO ()
-runFiles fNoRun includeDirs dirpath scripts =
-    changesMainGTK $ \tc ->
+runFiles :: Foldable t => ContextOptions -> Bool -> t (FilePath, [String]) -> IO ()
+runFiles copts fNoRun scripts =
+    changesMainGTK $ \cc ->
         for_ scripts $ \(fpath, iiScriptArguments) -> do
             let iiScriptName = fpath
             iiEnvironment <- liftIO getEnvironment
-            context <- standardPinaforeContext includeDirs MkInvocationInfo {..} dirpath tc
+            context <- standardPinaforeContext copts MkInvocationInfo {..} cc
             liftToLifeCycle $ do
                 action <- let
                     ?pinafore = context
@@ -24,14 +24,14 @@ runFiles fNoRun includeDirs dirpath scripts =
                     then return ()
                     else action
 
-runInteractive :: [FilePath] -> FilePath -> IO ()
-runInteractive includeDirs dirpath =
-    changesMainGTK $ \tc -> do
+runInteractive :: ContextOptions -> IO ()
+runInteractive copts =
+    changesMainGTK $ \cc -> do
         let
             iiScriptName = ""
             iiScriptArguments = []
         iiEnvironment <- liftIO getEnvironment
-        context <- standardPinaforeContext includeDirs MkInvocationInfo {..} dirpath tc
+        context <- standardPinaforeContext copts MkInvocationInfo {..} cc
         let
             ?pinafore = context
             in liftToLifeCycle pinaforeInteract

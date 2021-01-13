@@ -24,6 +24,14 @@ getPinaforeDir mdirpath = do
 stdIncludeDirs :: FilePath -> [FilePath]
 stdIncludeDirs pinaforedir = [pinaforedir </> "lib", "/usr/local/share/pinafore/lib", "/usr/share/pinafore/lib"]
 
+getContextOptions :: MonadIO m => RunOptions -> m ContextOptions
+getContextOptions MkRunOptions {..} = do
+    coDataDir <- getPinaforeDir roDataDir
+    let
+        coCache = roCache
+        coModuleDirs = roIncludeDirs <> stdIncludeDirs coDataDir
+    return MkContextOptions {..}
+
 main :: IO ()
 main =
     getOptions >>= \case
@@ -33,9 +41,9 @@ main =
         DumpTableOption mdirpath -> do
             pinaforedir <- getPinaforeDir mdirpath
             sqlitePinaforeDumpTable pinaforedir
-        RunFileOption fNoRun reqIncludeDirs mdirpath fscript -> do
-            pinaforedir <- getPinaforeDir mdirpath
-            runFiles fNoRun (reqIncludeDirs <> stdIncludeDirs pinaforedir) pinaforedir [fscript]
-        RunInteractiveOption reqIncludeDirs mdirpath -> do
-            pinaforedir <- getPinaforeDir mdirpath
-            runInteractive (reqIncludeDirs <> stdIncludeDirs pinaforedir) pinaforedir
+        RunFileOption ropts fNoRun fscript -> do
+            copts <- getContextOptions ropts
+            runFiles copts fNoRun [fscript]
+        RunInteractiveOption ropts -> do
+            copts <- getContextOptions ropts
+            runInteractive copts

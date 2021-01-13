@@ -2,6 +2,7 @@ module Pinafore.Main
     ( filePinaforeType
     , PinaforeContext
     , makePinaforeContext
+    , ContextOptions(..)
     , standardPinaforeContext
     , sqlitePinaforeDumpTable
     , pinaforeInterpretTextAtType
@@ -24,26 +25,29 @@ type FilePinaforeType = PinaforeAction TopType
 filePinaforeType :: Text
 filePinaforeType = qNegativeTypeDescription @FilePinaforeType
 
-doCache :: Bool
-doCache = True
+data ContextOptions = MkContextOptions
+    { coCache :: Bool
+    , coModuleDirs :: [FilePath]
+    , coDataDir :: FilePath
+    }
 
-standardPinaforeContext :: [FilePath] -> InvocationInfo -> FilePath -> ChangesContext -> CreateView PinaforeContext
-standardPinaforeContext moduleDirs invinfo dirpath tc = do
+standardPinaforeContext :: ContextOptions -> InvocationInfo -> ChangesContext -> CreateView PinaforeContext
+standardPinaforeContext MkContextOptions {..} invinfo cc = do
     let
         fetchModule :: FetchModule
-        fetchModule = mconcat $ fmap directoryFetchModule moduleDirs
+        fetchModule = mconcat $ fmap directoryFetchModule coModuleDirs
     rc <- viewGetResourceContext
     liftLifeCycle $ do
-        sqlReference <- liftIO $ sqlitePinaforeTableReference $ dirpath </> "tables.sqlite3"
+        sqlReference <- liftIO $ sqlitePinaforeTableReference $ coDataDir </> "tables.sqlite3"
         tableReference1 <- exclusiveResource rc sqlReference
         tableReference <-
-            if doCache
+            if coCache
                 then do
                     tableReferenceF <- cacheReference rc 500000 tableReference1 -- half-second delay before writing
                     return $ tableReferenceF rc
                 else return tableReference1
         (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
-        makePinaforeContext fetchModule invinfo stdout model tc
+        makePinaforeContext fetchModule invinfo stdout model cc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
