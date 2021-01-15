@@ -8,12 +8,14 @@ import Pinafore.Test
 import Shapes hiding ((<.>))
 import Shapes.Test
 import System.FilePath
+import Changes.Debug.Reference
 
 testFile :: FilePath -> TestTree
 testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \hout ->
+           traceBracketIO "testFile" $
            changesMainGTK $ \cc -> do
                pc <-
                    liftLifeCycle $ do
