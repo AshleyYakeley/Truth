@@ -20,6 +20,7 @@ import Control.Monad.Exception
 import Data.Coercion
 import Data.IORef
 import Shapes.Import
+import Debug.ThreadTrace
 
 newtype LifeState = MkLifeState
     { closeLifeState :: IO ()
@@ -86,7 +87,7 @@ lifeCycleClose closer =
     MkLifeCycle $ \var ->
         dangerousMVarRun var $ do
             s <- get
-            put $ MkLifeState closer <> s
+            put $ MkLifeState (traceBracketIO "closer" closer) <> s
 
 instance {-# OVERLAPPING #-} MonadLifeCycleIO LifeCycle where
     liftLifeCycle lc = lc
@@ -126,7 +127,7 @@ lifeCycleEarlyCloser lc = do
             case mu of
                 Just () -> closer
                 Nothing -> return ()
-    lifeCycleClose earlycloser
+    lifeCycleClose $ traceBracketIO "lifeCycleEarlyCloser.close" earlycloser
     return (a, earlycloser)
 
 instance MonadUnliftLifeCycleIO LifeCycle where
@@ -147,7 +148,7 @@ class (MonadLifeCycleIO m, MonadIO (LifeCycleInner m)) => LiftLifeCycle m where
 lifeCycleCloseInner :: (LiftLifeCycle m, MonadAskUnliftIO (LifeCycleInner m)) => LifeCycleInner m () -> m ()
 lifeCycleCloseInner closer = do
     MkWMFunction unlift <- liftToLifeCycle askUnliftIO
-    lifeCycleClose $ unlift closer
+    lifeCycleClose $ traceBracketIO "lifeCycleCloseInner.close" $ unlift closer
 
 runLifeCycle :: LiftLifeCycle m => m t -> LifeCycleInner m t
 runLifeCycle lc = withLifeCycle lc return
@@ -162,7 +163,7 @@ instance LiftLifeCycle LifeCycle where
         return (t, ls)
     withLifeCycle (MkLifeCycle f) run = do
         var <- newMVar mempty
-        finally (f var >>= run) $ do
+        finally (f var >>= run) $ traceBracketIO "withLifeCycle closing" $ do
             MkLifeState closer <- takeMVar var
             closer
 

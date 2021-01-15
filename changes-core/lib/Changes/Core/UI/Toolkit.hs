@@ -5,6 +5,7 @@ import Changes.Core.Resource
 import Changes.Core.UI.Toolkit.Run
 import Changes.Core.UI.View.CreateView
 import Changes.Core.UI.View.View
+import Changes.Debug.Reference
 
 data ChangesContext = MkChangesContext
     { ccRunToolkit :: RunToolkit
@@ -28,7 +29,7 @@ nullChangesContext unlift = let
 
 quitOnAllClosed :: MonadIO cm => RunToolkit -> (ChangesContext -> cm r) -> cm r
 quitOnAllClosed ccRunToolkit call = do
-    (ondone, checkdone) <- liftIO $ lifeCycleOnAllDone $ rtExit ccRunToolkit
+    (ondone, checkdone) <- liftIO $ lifeCycleOnAllDone $ traceBracket "quit on all closed" $ rtExit ccRunToolkit
     let
         ccExitOnClosed ::
                forall m. MonadLifeCycleIO m

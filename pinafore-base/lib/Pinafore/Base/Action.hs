@@ -20,6 +20,7 @@ import Changes.Core
 import Pinafore.Base.Know
 import Pinafore.Base.Ref
 import Shapes
+import Changes.Debug.Reference
 
 data ActionContext = MkActionContext
     { acChangesContext :: ChangesContext
@@ -71,7 +72,7 @@ pinaforeGetExitOnClose =
         return $ MkWMFunction $ ccExitOnClosed tc
 
 pinaforeExit :: PinaforeAction ()
-pinaforeExit = viewPinaforeAction viewExit
+pinaforeExit = traceBracket "pinaforeExit" $ viewPinaforeAction viewExit
 
 pinaforeUndoHandler :: PinaforeAction UndoHandler
 pinaforeUndoHandler = do

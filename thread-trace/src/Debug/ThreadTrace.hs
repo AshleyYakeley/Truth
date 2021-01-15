@@ -57,8 +57,14 @@ traceBracketIO s ma = do
             traceIOM $ s ++ " ! " ++ show e
             throw e
 
+traceEvaluate :: MonadIO m => String -> r -> m r
+traceEvaluate s a = liftIO $ traceBracketIO ("evaluate " <> s) $ evaluate a
+
 traceBarrier :: (MonadIO m1,MonadIO m2) => String -> (m1 a -> m2 b) -> m1 a -> m2 b
 traceBarrier s tr ma = traceBracket (contextStr s "outside") $ tr $ traceBracket (contextStr s  "inside") ma
+
+traceBarrierIO :: String -> (IO a -> IO b) -> IO a -> IO b
+traceBarrierIO s tr ma = traceBracketIO (contextStr s "outside") $ tr $ traceBracketIO (contextStr s  "inside") ma
 
 tracePure :: String -> a -> a
 tracePure s = seq (unsafePerformIO (traceIOM s))

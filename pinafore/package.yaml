@@ -117,7 +117,7 @@ tests:
           - Test.Module
           - Test.Interactive
           - Test.UI
-        ghc-options: -threaded
+        ghc-options: -threaded -rtsopts
     app:
         source-dirs: app
         dependencies:
@@ -162,4 +162,4 @@ executables:
           - Version
           - Run
           - Documentation
-        ghc-options: -threaded
+        ghc-options: -threaded -rtsopts

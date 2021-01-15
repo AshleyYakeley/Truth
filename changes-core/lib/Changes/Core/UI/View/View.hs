@@ -18,6 +18,7 @@ import Changes.Core.Import
 import Changes.Core.Model
 import Changes.Core.Resource
 import Changes.Core.UI.View.Context
+import Changes.Debug.Reference
 
 type ViewT = ReaderT ViewContext
 
@@ -76,6 +77,6 @@ runView vc (ReaderT view) = liftIOWithUnlift $ \unlift -> vcWithUILock vc $ unli
 
 -- | Stop the UI loop. This does not throw any kind of exception.
 viewExit :: MonadIO m => ViewT m ()
-viewExit = do
+viewExit = traceBracket "viewExit" $ do
     exit <- asks vcExit
     liftIO exit

@@ -185,7 +185,9 @@ convertReference (MkResource (trun :: ResourceRunner tt) (MkAReference mra pe re
             case transStackDict @MonadIO @tt @IO of
                 Dict -> let
                     refRead :: Readable (ApplyStack tt IO) (EditReader editb)
-                    refRead = mSubjectToReadable $ readableToSubject mra
+                    refRead = (.) (traceBracket "convertReference.read.mSubjectToReadable") $ mSubjectToReadable $ do
+                        a <- traceBracket "convertReference.read.readableToSubject" $ readableToSubject mra
+                        traceEvaluate "convertReference.subject" a
                     refEdit :: NonEmpty editb -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
                     refEdit ebs = do
                         oldsubj <- readableToSubject mra

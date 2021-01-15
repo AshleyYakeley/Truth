@@ -186,7 +186,7 @@ isScrollable widget = do
 cvAcquire :: IsObject a => a -> CreateView ()
 cvAcquire a = do
     _ <- traceBracket "GTK.cvAcquire:ref" $ objectRef a
-    lifeCycleClose $ traceBracket "GTK.cvAcquire:unref" $ objectUnref a
+    lifeCycleClose $ traceBracketIO "GTK.cvAcquire:unref" $ objectUnref a
     return ()
 
 getObjectTypeName :: IsObject a => a -> IO Text
@@ -204,21 +204,21 @@ cvNew cc attrs = do
 cvTopLevelNew :: (Constructible a tag, IsObject a, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> CreateView a
 cvTopLevelNew cc attrs = do
     a <- cvNew cc attrs
-    lifeCycleClose $ traceBracket "GTK.cvTopLevelNew:destroy" $ widgetDestroy a
+    lifeCycleClose $ traceBracketIO "GTK.cvTopLevelNew:destroy" $ widgetDestroy a
     return a
 
 cvSet ::
        (AttrClearC info obj attr, AttrSetC info obj attr value) => obj -> AttrLabelProxy attr -> value -> CreateView ()
 cvSet obj prop val = do
     set obj [prop := val]
-    lifeCycleClose $ clear obj prop
+    lifeCycleClose $ traceBracketIO "GTK.clear" $ clear obj prop
 
 cvAdd :: (IsContainer c, IsWidget w) => c -> w -> CreateView ()
 cvAdd c w = do
     containerAdd c w
-    lifeCycleClose $ containerRemove c w
+    lifeCycleClose $ traceBracketIO "GTK.containerRemove" $ containerRemove c w
 
 cvPackStart :: (IsObject w, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> CreateView ()
 cvPackStart grow box w = do
     boxPackStart box w grow grow 0
-    lifeCycleClose $ containerRemove box w
+    lifeCycleClose $ traceBracketIO "GTK.containerRemove.box" $ containerRemove box w

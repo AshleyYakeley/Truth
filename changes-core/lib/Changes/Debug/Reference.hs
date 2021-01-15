@@ -25,8 +25,8 @@ data EditShower edit = MkEditShower
 blankEditShower :: EditShower edit
 blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> "", showEdit = \_ -> "edit"}
 
-traceAnObject :: forall tt edit. (MonadIO (ApplyStack tt IO)) => String -> EditShower edit -> AReference edit tt -> AReference edit tt
-traceAnObject prefix MkEditShower {..} (MkAReference r e ct) = let
+traceAReference :: forall tt edit. (MonadIO (ApplyStack tt IO)) => String -> EditShower edit -> AReference edit tt -> AReference edit tt
+traceAReference prefix MkEditShower {..} (MkAReference r e ct) = let
     r' :: Readable (ApplyStack tt IO) (EditReader edit)
     r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
     e' :: NonEmpty edit -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
@@ -45,9 +45,9 @@ traceAnObject prefix MkEditShower {..} (MkAReference r e ct) = let
         e edits
     in MkAReference r' e' ct
 
-traceObject :: forall edit. String -> EditShower edit -> Reference edit -> Reference edit
-traceObject prefix shower (MkResource rr anobj) = case resourceRunnerStackUnliftDict @IO rr of
-    Dict -> MkResource rr $ traceAnObject prefix shower anobj
+traceReference :: forall edit. String -> EditShower edit -> Reference edit -> Reference edit
+traceReference prefix shower (MkResource rr anobj) = case resourceRunnerStackUnliftDict @IO rr of
+    Dict -> MkResource rr $ traceAReference prefix shower anobj
 
 showEditShower ::
        forall edit. ShowableEdit edit
@@ -94,10 +94,10 @@ instance (ShowableUpdate updateA, ShowableUpdate updateB) => TraceArgThing (Chan
                 )
 
 instance TraceThing (Reference edit) where
-    traceThing prefix = traceObject prefix blankEditShower
+    traceThing prefix = traceReference prefix blankEditShower
 
 instance ShowableEdit edit => TraceArgThing (Reference edit) where
-    traceArgThing prefix = traceObject prefix showEditShower
+    traceArgThing prefix = traceReference prefix showEditShower
 
 instance TraceThing LifeState where
     traceThing _ ls = ls

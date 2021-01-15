@@ -52,10 +52,10 @@ asyncWaitRunner mus doit = do
                                 return $ Just $ threadDelay mus
                         VSPending vals _ -> do
                             writeTVar bufferVar VSRunning
-                            return $ Just $ doit vals
+                            return $ Just $ traceBracketIO "async runner: task" $ doit vals
             case maction of
                 Just action -> do
-                    catch action $ \ex -> atomically $ writeTVar bufferVar $ VSException ex
+                    catch action $ \ex -> traceBracketIO ("async runner: caught exception: " <> show ex) $ atomically $ writeTVar bufferVar $ VSException ex
                     threadDo
                 Nothing -> return ()
         waitForIdle :: STM (Result SomeException ())
@@ -68,6 +68,9 @@ asyncWaitRunner mus doit = do
         atomicallyDo :: STM (Result SomeException a) -> IO a
         atomicallyDo stra = do
             ra <- atomically stra
+            case ra of
+                SuccessResult _ -> return ()
+                FailureResult ex -> traceIOM $ "async runner: throwing exception: " <> show ex
             throwResult ra
         pushVal :: Maybe t -> IO ()
         pushVal (Just val) =
@@ -104,14 +107,14 @@ asyncWaitRunner mus doit = do
                             _ -> return Nothing
             in MkTask {..}
     _ <- liftIO $ forkIO $ traceBracketIO "THREAD: async runner" threadDo
-    lifeCycleClose $ do
-        atomicallyDo $ do
+    lifeCycleClose $ traceBracketIO "async runner: close" $ do
+        traceBracketIO "async runner: close: send end" $ atomicallyDo $ do
             me <- waitForIdle
             case me of
                 SuccessResult _ -> writeTVar bufferVar VSEnd
                 FailureResult _ -> return ()
             return me
-        atomicallyDo waitForIdle
+        traceBracketIO "async runner: close: wait" $ atomicallyDo waitForIdle
     return (pushVal, utask)
 
 asyncRunner ::

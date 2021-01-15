@@ -13,6 +13,7 @@ import Changes.Core.Model
 import Changes.Core.Types
 import Changes.Core.UI.View.Context
 import Changes.Core.UI.View.View
+import Changes.Debug.Reference
 
 type CreateView = ViewT LifeCycle
 
@@ -38,7 +39,7 @@ cvBindModel model mesrc initv utask recv = do
             aModelSubscribe amodel utask $ \urc updates MkEditContext {..} ->
                 if mesrc == Just editContextSource
                     then return ()
-                    else withUILock $ do
+                    else traceBarrierIO "cvBindModel.update" withUILock $ do
                              alive <- monitor
                              if alive
                                  then do

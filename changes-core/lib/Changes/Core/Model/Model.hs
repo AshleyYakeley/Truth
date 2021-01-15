@@ -97,7 +97,7 @@ getRunner ::
 getRunner recv = do
     (runAsync, utask) <-
         asyncRunner $ \(MkUpdateQueue sourcedupdates) ->
-            traceBracket "getRunner:action" $ for_ sourcedupdates $ \(ec, updates) -> recv emptyResourceContext updates ec
+            traceBracketIO "getRunner:action" $ for_ sourcedupdates $ \(ec, updates) -> recv emptyResourceContext updates ec
     let recvAsync _ updates ec = runAsync $ singleUpdateQueue updates ec
     return (utask, recvAsync)
 
@@ -111,9 +111,9 @@ makeSharedModel om = traceBracket "makeSharedModel:run" $ do
     var :: MVar (UpdateStore update) <- liftIO $ newMVar emptyStore
     let
         updateP :: ResourceContext -> NonEmpty update -> EditContext -> IO ()
-        updateP rc updates ectxt = traceBracket "makeSharedModel:updateP" $ do
+        updateP rc updates ectxt = traceBracketIO "makeSharedModel:updateP" $ do
             store <- traceBarrier "makeSharedModel:updateP.get.mVarRun" (mVarRun var) get
-            for_ store $ \(_, entry) -> traceBracket "makeSharedModel:updateP.entry" $ entry rc updates ectxt
+            for_ store $ \(_, entry) -> traceBracketIO "makeSharedModel:updateP.entry" $ entry rc updates ectxt
     (utaskRunner, updatePAsync) <- getRunner updateP
     let
         getTasks :: IO ([Task ()])
@@ -167,12 +167,14 @@ mapModel plens (MkResource rr (MkAModel objA subA utaskA)) =
         Dict -> let
             objB = mapAReference plens objA
             subB utask recvB = let
-                recvA rc updatesA ec = do
+                recvA rc updatesA ec = traceBracketIO "mapModel.update" $ do
+                    for_ updatesA $ traceEvaluate "mapModel.update update"
                     updatessB <-
-                        runResourceRunner rc rr $ for updatesA $ \updateA -> clUpdate plens updateA (refRead objA)
+                        traceBracketIO "mapModel.update.calc" $
+                        runResourceRunner rc rr $ traceBracket "mapModel.update.clUpdates" $ for updatesA $ \updateA -> traceBracket "mapModel.update.clUpdate" $ clUpdate plens updateA (refRead objA)
                     case nonEmpty $ mconcat $ toList updatessB of
                         Nothing -> return ()
-                        Just updatesB' -> recvB rc updatesB' ec
+                        Just updatesB' -> traceBracketIO "mapModel.update.recvB" $ recvB rc updatesB' ec
                 in subA utask recvA
             in MkResource rr $ MkAModel objB subB utaskA
 
