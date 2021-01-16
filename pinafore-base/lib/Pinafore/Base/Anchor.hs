@@ -25,7 +25,10 @@ anchorCodec = let
             32 -> return $ MkAnchor bs
             _ -> fail "deserialize: bad anchor"
     encode :: Anchor -> StrictByteString
-    encode (MkAnchor bs) = bs
+    encode (MkAnchor bs) =
+        case olength bs of
+            32 -> bs
+            n -> error $ "broken anchor: " <> show n
     in MkCodec {..}
 
 mkAnchor :: Word64 -> Word64 -> Word64 -> Word64 -> Anchor

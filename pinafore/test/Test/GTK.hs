@@ -32,5 +32,5 @@ getTestGTK = do
             "gtk"
             [ testFile ("test" </> "gtk" </> "output.in")
             , testFile ("test" </> "gtk" </> "window.in")
-            , failTestBecause "ISSUE #103" $ testFile ("test" </> "gtk" </> "issue103.in")
+            , testFile ("test" </> "gtk" </> "issue103.in")
             ]
