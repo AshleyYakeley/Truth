@@ -28,7 +28,7 @@ anchorCodec = let
     encode (MkAnchor bs) =
         case olength bs of
             32 -> bs
-            n -> error $ "broken anchor: " <> show n
+            n -> error $ "encode: broken anchor (" <> show n <> ")"
     in MkCodec {..}
 
 mkAnchor :: Word64 -> Word64 -> Word64 -> Word64 -> Anchor
