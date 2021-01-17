@@ -223,6 +223,12 @@ interpretExpressionShadowed names sbody =
     remonadRefNotation (MkWMFunction $ withRemovedBindings names) $ interpretExpression sbody
 
 interpretExpression' :: SourcePos -> SyntaxExpression' -> RefExpression
+interpretExpression' spos (SESubsume sexpr stype) = do
+    expr <- interpretExpression sexpr
+    liftRefNotation $
+        runSourcePos spos $ do
+            t <- interpretType stype
+            qSubsumeExpr t expr
 interpretExpression' spos (SEAbstract spat sbody) =
     case interpretPatternOrName spat of
         Left name -> do

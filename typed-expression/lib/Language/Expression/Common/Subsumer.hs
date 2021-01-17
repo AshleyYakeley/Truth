@@ -6,6 +6,7 @@ module Language.Expression.Common.Subsumer
     , SubsumerOpenExpression(..)
     , SubsumerExpression(..)
     , subsumerExpression
+    , subsumeExpression
     ) where
 
 import Data.Shim
@@ -106,3 +107,14 @@ subsumerExpression marawdecltype rawinfexpr = do
             subsumer <- subsumePosShimWit @ts infwit decltype
             return $
                 MkSubsumerExpression (mkShimWit decltype) $ MkSubsumerOpenExpression (fmap shimToFunction subsumer) expr
+
+subsumeExpression ::
+       forall ts. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
+    => AnyW (TSPosWitness ts)
+    -> TSSealedExpression ts
+    -> TSOuter ts (TSSealedExpression ts)
+subsumeExpression t expr = do
+    MkSubsumerExpression tp (MkSubsumerOpenExpression subsumer oexpr) <- subsumerExpression @ts (Just t) expr
+    (subconv, ssubs) <- solveSubsumer @ts subsumer
+    oexpr' <- subsumerExpressionSubstitute @ts ssubs oexpr
+    return $ MkSealedExpression tp $ fmap subconv oexpr'

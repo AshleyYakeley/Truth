@@ -81,8 +81,22 @@ readTopDeclarations = do
     sdecls <- readLetBindings
     return $ MkSyntaxTopDeclarations spos sdecls
 
+readSubsumedExpression :: SyntaxExpression -> Parser SyntaxExpression
+readSubsumedExpression expr = do
+    mt <-
+        optional $ do
+            spos <- getPosition
+            readThis TokTypeJudge
+            t <- readType
+            return (spos, t)
+    case mt of
+        Nothing -> return expr
+        Just (spos, t) -> readSubsumedExpression $ MkWithSourcePos spos $ SESubsume expr t
+
 readExpression :: Parser SyntaxExpression
-readExpression = readExpressionInfixed readExpression1
+readExpression = do
+    expr <- readExpressionInfixed readExpression1
+    readSubsumedExpression expr
 
 readName :: Parser Name
 readName = readThis TokUName <|> readThis TokLName <|> (readParen $ readThis TokOperator)

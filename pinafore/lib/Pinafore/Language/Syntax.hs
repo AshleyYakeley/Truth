@@ -111,7 +111,9 @@ data SyntaxConstant
     | SCConstructor SyntaxConstructor
 
 data SyntaxExpression'
-    = SEConst SyntaxConstant
+    = SESubsume SyntaxExpression
+                SyntaxType
+    | SEConst SyntaxConstant
     | SEVar Name
     | SESpecialForm Name
                     (NonEmpty SyntaxAnnotation)
@@ -188,6 +190,7 @@ instance SyntaxFreeVariables SyntaxCase where
     syntaxFreeVariables (MkSyntaxCase pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
 
 instance SyntaxFreeVariables SyntaxExpression' where
+    syntaxFreeVariables (SESubsume expr _) = syntaxFreeVariables expr
     syntaxFreeVariables (SEConst _) = mempty
     syntaxFreeVariables (SEVar name) = opoint name
     syntaxFreeVariables (SESpecialForm _ _) = mempty

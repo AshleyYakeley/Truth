@@ -123,6 +123,9 @@ type QBindings = Bindings PinaforeTypeSystem
 qBindExpr :: Name -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBindings
 qBindExpr = tsSingleBinding @PinaforeTypeSystem
 
+qSubsumeExpr :: AnyW (PinaforeType 'Positive) -> QExpr -> PinaforeSourceInterpreter QExpr
+qSubsumeExpr = tsSubsumeExpression @PinaforeTypeSystem
+
 qLetExpr :: Name -> QExpr -> QExpr -> PinaforeSourceInterpreter QExpr
 qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
 

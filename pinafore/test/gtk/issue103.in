@@ -2,31 +2,27 @@
 
 let
 
-selectionPairPane:
-    (WholeRef a -> UI) ->
-    (WholeRef +a -> UI) ->
-    Action UI;
-selectionPairPane getSelectorUI getSelectedUI = do
-    sel <- newMemWhole;
-    return (uiHorizontal [(False,getSelectorUI sel),(True,getSelectedUI (immutWhole sel))]);
+closedtype T = MkT Entity !"MkT";
+t: T;
+t = MkT (let opentype E in openEntity @E !"t");
+
+tset: FiniteSetRef T;
+tset = property @T @() !"tset" !@ {()};
+tprop = property @Entity @Text !"tprop";
+
+f_ui: FiniteSetRef T -> Action UI;
+f_ui set = do
+    ref <- newMemWhole;
+    return $ uiHorizontal [
+        (False,(uiListTable [] (refOrders []) : FiniteSetRef {a,+T} -> (a -> Action Any) -> Maybe (WholeRef {a,+T}) -> UI) set (\_ -> return ()) (Just ref)),
+        (True,uiLabel (tprop !$% ref))
+        ]
     end;
 
-dynamictype Person = !"type.person";
-people: FiniteSetRef Person;
-people = property @Person @() !"set.person" !@ {()};
-name = property @Person @Text !"identify.name";
-
-namedTable: FiniteSetRef {a,+Person} -> (a -> Action Any) -> Maybe (WholeRef {a,+Person}) -> UI;
-namedTable = uiListTable [] (refOrders []);
-
-namedPairPane: FiniteSetRef Person -> Action UI;
-namedPairPane set = selectionPairPane (\sel -> namedTable set (\_ -> return ()) (Just sel)) (\ref -> uiTextEntry (name !$% ref));
-
 in do
-    p <- newDynamicEntity @Person;
-    people += p;
-    ui <- namedPairPane people;
+    tset += t;
+    ui <- f_ui tset;
     w <- openWindow (600,800) {"Window"} {[]} ui;
-    outputLn "LAST";
     closeWindow w;
+    outputLn "LAST";
     end
