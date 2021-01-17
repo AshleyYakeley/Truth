@@ -125,6 +125,10 @@ data LangResult
     | LRRunError
     | LRSuccess String
 
+goodLangResult :: Bool -> LangResult -> LangResult
+goodLangResult True lr = lr
+goodLangResult False _ = LRCheckFail
+
 testQuery :: Text -> LangResult -> TestTree
 testQuery query expected =
     testTree (show $ unpack query) $ do
@@ -144,30 +148,47 @@ testQuery query expected =
                     (LRSuccess _, Just e) -> assertFailure $ "run: expected success, found error: " ++ show e
                     (LRSuccess s, Nothing) -> assertEqual "result" s r
 
-testSubsumeSubtype :: Text -> Text -> [Text] -> [TestTree]
-testSubsumeSubtype t1 t2 vs =
-    [testQuery ("let r = r; x : " <> t1 <> "; x = r; y : " <> t2 <> "; y = x in ()") $ LRSuccess "unit"] <>
+testSubsumeSubtype :: Bool -> Text -> Text -> [Text] -> [TestTree]
+testSubsumeSubtype good t1 t2 vs =
+    [ testQuery ("let r = r; x : " <> t1 <> "; x = r; y : " <> t2 <> "; y = x in ()") $
+      goodLangResult good $ LRSuccess "unit"
+    ] <>
     fmap
-        (\v -> testQuery ("let x : " <> t1 <> "; x = " <> v <> "; y : " <> t2 <> "; y = x in y") $ LRSuccess $ unpack v)
+        (\v ->
+             testQuery ("let x : " <> t1 <> "; x = " <> v <> " in x : " <> t2) $
+             goodLangResult good $ LRSuccess $ unpack v)
+        vs <>
+    fmap
+        (\v ->
+             testQuery ("let x : " <> t1 <> "; x = " <> v <> "; y : " <> t2 <> "; y = x in y") $
+             goodLangResult good $ LRSuccess $ unpack v)
         vs
 
-testFunctionSubtype :: Text -> Text -> [Text] -> [TestTree]
-testFunctionSubtype t1 t2 vs =
-    [testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ LRSuccess "<?>"] <>
-    fmap (\v -> testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f " <> v) $ LRSuccess $ unpack v) vs
+testFunctionSubtype :: Bool -> Text -> Text -> [Text] -> [TestTree]
+testFunctionSubtype good t1 t2 vs =
+    [ testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ goodLangResult good $ LRSuccess "<?>"
+    , testQuery ("(\\x -> x) : (" <> t1 <> ") -> (" <> t2 <> ")") $ goodLangResult good $ LRSuccess "<?>"
+    ] <>
+    fmap
+        (\v ->
+             testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f " <> v) $
+             goodLangResult good $ LRSuccess $ unpack v)
+        vs
 
-testSubtype1 :: Bool -> Text -> Text -> [Text] -> [TestTree]
-testSubtype1 b t1 t2 vs =
-    testSubsumeSubtype t1 t2 vs <>
+testSubtype1 :: Bool -> Bool -> Text -> Text -> [Text] -> [TestTree]
+testSubtype1 good b t1 t2 vs =
+    testSubsumeSubtype good t1 t2 vs <>
     if b
-        then testFunctionSubtype t1 t2 vs
+        then testFunctionSubtype good t1 t2 vs
         else []
 
 testSubtype :: Bool -> Text -> Text -> [Text] -> TestTree
-testSubtype b t1 t2 vs = testTree (unpack $ t1 <> " <: " <> t2) $ testSubtype1 b t1 t2 vs
+testSubtype b t1 t2 vs =
+    testTree (unpack $ t1 <> " <: " <> t2) $ testSubtype1 True b t1 t2 vs <> testSubtype1 False b t2 t1 vs
 
 testSameType :: Bool -> Text -> Text -> [Text] -> TestTree
-testSameType b t1 t2 vs = testTree (unpack $ t1 <> " = " <> t2) $ (testSubtype1 b t1 t2 vs) <> (testSubtype1 b t2 t1 vs)
+testSameType b t1 t2 vs =
+    testTree (unpack $ t1 <> " = " <> t2) $ testSubtype1 True b t1 t2 vs <> testSubtype1 True b t2 t1 vs
 
 testQueries :: TestTree
 testQueries =

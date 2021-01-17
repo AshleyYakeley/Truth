@@ -101,7 +101,9 @@ All declarations, including type declarations, are local to a `let` block.
 
 <type-const> ::= uname
 
-<expression> ::= <expression-infix[0]>
+<expression> ::=
+    <expression-infix[0]> |
+    <expression> ":" <type>
 
 <expression-infix[n]> ::=
     <expression-infix[n+1]> |

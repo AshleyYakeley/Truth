@@ -1,11 +1,15 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
-  * UI elements for CSS styling
-  * openWindow now takes size
-  * uiNotebook can track page selection
-  * fix bug involving export of open expressions
-  * add "index" function for lists
-  * add "forWhole" function
+  * Language
+    - add subsumption expressions
+  * Library
+    - UI elements for CSS styling
+    - openWindow now takes size
+    - uiNotebook can track page selection
+    - add "index" function for lists
+    - add "forWhole" function
+  * Fixes
+    - fix defect involving export of open expressions
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

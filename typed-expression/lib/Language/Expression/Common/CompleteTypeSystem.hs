@@ -145,6 +145,13 @@ tsSingleBinding name madecltype expr =
         expr' <- rename @ts expr
         subsumerExpression madecltype' expr'
 
+tsSubsumeExpression ::
+       forall ts. CompleteTypeSystem ts
+    => AnyW (TSPosWitness ts)
+    -> TSSealedExpression ts
+    -> TSInner ts (TSSealedExpression ts)
+tsSubsumeExpression t expr = runRenamer @ts $ withTransConstraintTM @Monad $ subsumeExpression @ts t expr
+
 tsUncheckedComponentLet ::
        forall ts. (Ord (TSName ts), CompleteTypeSystem ts)
     => Bindings ts
