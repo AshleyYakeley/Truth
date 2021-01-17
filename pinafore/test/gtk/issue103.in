@@ -2,7 +2,10 @@
 
 let
 
-dynamictype T = !"T";
+closedtype T = MkT Entity !"MkT";
+t: T;
+t = MkT (let opentype E in openEntity @E !"t");
+
 tset: FiniteSetRef T;
 tset = property @T @() !"tset" !@ {()};
 tprop = property @T @Text !"tprop";
@@ -17,7 +20,6 @@ f_ui set = do
     end;
 
 in do
-    t <- newDynamicEntity @T;
     tset += t;
     ui <- f_ui tset;
     w <- openWindow (600,800) {"Window"} {[]} ui;
