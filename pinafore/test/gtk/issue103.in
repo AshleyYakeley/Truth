@@ -8,15 +8,15 @@ t = MkT (let opentype E in openEntity @E !"t");
 
 tset: FiniteSetRef T;
 tset = property @T @() !"tset" !@ {()};
-tprop = property @T @Text !"tprop";
-
-f_table: FiniteSetRef {a,+T} -> (a -> Action Any) -> Maybe (WholeRef {a,+T}) -> UI;
-f_table = uiListTable [] (refOrders []);
+tprop = property @Entity @Text !"tprop";
 
 f_ui: FiniteSetRef T -> Action UI;
 f_ui set = do
     ref <- newMemWhole;
-    return $ uiHorizontal [(False,f_table set (\_ -> return ()) (Just ref)),(True,uiLabel (tprop !$% ref))]
+    return $ uiHorizontal [
+        (False,(uiListTable [] (refOrders []) : FiniteSetRef {a,+T} -> (a -> Action Any) -> Maybe (WholeRef {a,+T}) -> UI) set (\_ -> return ()) (Just ref)),
+        (True,uiLabel (tprop !$% ref))
+        ]
     end;
 
 in do
