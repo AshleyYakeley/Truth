@@ -4,6 +4,7 @@ module Pinafore.Language.Library.Debug
 
 import Changes.Core
 import Changes.UI.GTK
+import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Value
@@ -28,6 +29,11 @@ ignoreUpdateException (MkWModel (MkResource rr amodel)) =
 debugIgnoreUpdateUIExceptions :: LangWholeRef '( P, Q) -> LangWholeRef '( P, Q)
 debugIgnoreUpdateUIExceptions ref = runIdentity $ langWholeRefMapModel (Identity . ignoreUpdateException) ref
 
+debugCheckEntity :: Text -> Entity -> IO ()
+debugCheckEntity t e = do
+    _ <- evaluate $ checkEntity (unpack t) e
+    return ()
+
 debugDocModule :: DocTree BindDoc
 debugDocModule =
     MkDocTree
@@ -36,4 +42,5 @@ debugDocModule =
         [ mkValEntry "debugMessage" "Debug message to std error." debugMessage
         , mkValEntry "debugIgnoreUpdateUIExceptions" "Drop exceptions from updates" debugIgnoreUpdateUIExceptions
         , mkValEntry "debugWindowInfo" "Get window contents information" uiWindowDebugDescribe
+        , mkValEntry "debugCheckEntity" "debugCheckEntity" debugCheckEntity
         ]

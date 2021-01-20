@@ -2,27 +2,19 @@
 
 let
 
-closedtype T = MkT Entity !"MkT";
-t: T;
-t = MkT (let opentype E in openEntity @E !"t");
+import Debug;
 
-tset: FiniteSetRef T;
-tset = property @T @() !"tset" !@ {()};
-tprop = property @Entity @Text !"tprop";
+e1: Entity;
+e1 = ();
 
-f_ui: FiniteSetRef T -> Action UI;
-f_ui set = do
-    ref <- newMemWhole;
-    return $ uiHorizontal [
-        (False,(uiListTable [] (refOrders []) : FiniteSetRef {a,+T} -> (a -> Action Any) -> Maybe (WholeRef {a,+T}) -> UI) set (\_ -> return ()) (Just ref)),
-        (True,uiLabel (tprop !$% ref))
-        ]
-    end;
+f: WholeRef a -> ();
+f _ = ();
 
 in do
-    tset += t;
-    ui <- f_ui tset;
-    w <- openWindow (600,800) {"Window"} {[]} ui;
-    closeWindow w;
+    (ref,_) <- newMemWhole >>= \ref -> return (ref, f ref);
+    ref := e1;
+    e2 <- get ref;
+    debugCheckEntity "CHECK e1" e1;
+    debugCheckEntity "CHECK e2" e2;
     outputLn "LAST";
     end

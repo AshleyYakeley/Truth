@@ -39,6 +39,11 @@ instance TestEquality ClosedEntityType where
             Just Refl
     testEquality _ _ = Nothing
 
+instance Show (ClosedEntityType t) where
+    show NilClosedEntityType = "nil"
+    show (ConsClosedEntityType a tt NilClosedEntityType) = show tt <> " " <> show a
+    show (ConsClosedEntityType a tt rest) = show tt <> " " <> show a <> " | " <> show rest
+
 closedEntityTypeEq :: ClosedEntityType t -> Dict (Eq t)
 closedEntityTypeEq NilClosedEntityType = Dict
 closedEntityTypeEq (ConsClosedEntityType _ t1 tr) =

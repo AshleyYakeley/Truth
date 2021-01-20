@@ -1,5 +1,6 @@
 module Pinafore.Base.Anchor
     ( Anchor
+    , checkAnchor
     , anchorCodec
     , hashToAnchor
     , codeAnchor
@@ -15,6 +16,12 @@ newtype Anchor =
     MkAnchor StrictByteString -- 256 bits = 64 hex chars = 32 bytes = 4 Word64s
     deriving (Eq, Ord, NFData, Hashable)
 
+checkAnchor :: String -> Anchor -> Anchor
+checkAnchor s anchor@(MkAnchor bs) =
+    case olength bs of
+        32 -> anchor
+        n -> error $ s <> ": broken anchor (" <> show n <> ")"
+
 anchorCodec ::
        forall m. MonadFail m
     => Codec' m StrictByteString Anchor
@@ -25,10 +32,7 @@ anchorCodec = let
             32 -> return $ MkAnchor bs
             _ -> fail "deserialize: bad anchor"
     encode :: Anchor -> StrictByteString
-    encode (MkAnchor bs) =
-        case olength bs of
-            32 -> bs
-            n -> error $ "encode: broken anchor (" <> show n <> ")"
+    encode (checkAnchor "encode" -> MkAnchor bs) = bs
     in MkCodec {..}
 
 mkAnchor :: Word64 -> Word64 -> Word64 -> Word64 -> Anchor

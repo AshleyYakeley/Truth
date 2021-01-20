@@ -18,9 +18,12 @@ import Shapes
 
 newtype VarNamespaceT (ts :: Type) m a =
     MkVarNamespaceT (StateT [(String, String)] m a)
-    deriving (Functor, Applicative, Monad, MonadFail, MonadTrans)
+    deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTrans)
 
 instance MonadTransConstraint Monad (VarNamespaceT ts) where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadIO (VarNamespaceT ts) where
     hasTransConstraint = Dict
 
 instance MonadTransConstraint MonadFail (VarNamespaceT ts) where
@@ -72,9 +75,12 @@ varNamespaceTLocal oldname call = do
 
 newtype VarRenamerT (ts :: Type) m a =
     MkVarRenamerT (StateT ([String], Int) m a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadPlus, MonadFail, MonadTrans, MonadTransSemiTunnel)
+    deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail, MonadTrans, MonadTransSemiTunnel)
 
 instance MonadTransConstraint Monad (VarRenamerT ts) where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadIO (VarRenamerT ts) where
     hasTransConstraint = Dict
 
 instance MonadTransConstraint MonadFail (VarRenamerT ts) where

@@ -1,4 +1,11 @@
-module Pinafore.Base.EntityStorer where
+module Pinafore.Base.EntityStorer
+    ( Predicate(..)
+    , FieldStorer(..)
+    , ConstructorStorer(..)
+    , EntityStorer(..)
+    , StorerMode(..)
+    , entityStorerToEntity
+    ) where
 
 import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
@@ -71,9 +78,8 @@ type family EntityStorer' mode t where
     EntityStorer' 'MultipleMode t = [KnowShim (ConstructorStorer 'MultipleMode) t]
 
 type EntityStorer :: StorerMode -> Type -> Type
-newtype EntityStorer mode t = MkEntityStorer
-    { unEntityStorer :: EntityStorer' mode t
-    }
+newtype EntityStorer mode t =
+    MkEntityStorer (EntityStorer' mode t)
 
 instance TestEquality (EntityStorer 'SingleMode) where
     testEquality (MkEntityStorer fca) (MkEntityStorer fcb) = testEquality fca fcb

@@ -1,0 +1,16 @@
+pinafore> let e1: Entity; e1 = ()
+pinafore> :type e1
+: Entity
+pinafore> let f: WholeRef a -> (); f _ = ()
+pinafore> :type f
+: WholeRef a -> ()
+pinafore> let m1 = newMemWhole >>= \ref -> return (ref, ())
+pinafore> :type m1
+: Action (WholeRef c, ())
+pinafore> let m2 = newMemWhole >>= \ref -> return (ref, ((\_ -> ()) : WholeRef a -> ()) ref)
+pinafore> :type m2
+: Action (WholeRef c, ())
+pinafore> let m3 = newMemWhole >>= \ref -> return (ref, f ref)
+pinafore> :type m3
+: Action (WholeRef c, ())
+pinafore> <END>
