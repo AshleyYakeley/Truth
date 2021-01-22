@@ -5,7 +5,7 @@ pinafore> :type f
 pinafore> :type i
 : a -> a
 pinafore> :type f i
-: Maybe (c -> c)
+: Maybe (e -> e)
 pinafore>
 pinafore> let g: ((a -> a) & b) -> b; g x = x
 pinafore> :type g
@@ -19,9 +19,9 @@ pinafore> :type ur
 pinafore> :type newMemWhole >>= \ref -> return (ref, ())
 : Action (WholeRef c, ())
 pinafore> :type newMemWhole >>= \ref -> return (ref, ((\_ -> ()) : WholeRef a -> ()) ref)
-: Action (WholeRef c, ())
+: Action (WholeRef g, ())
 pinafore> :type \ref -> return (ref, ur ref)
 : (WholeRef c & b) -> Action (b, ())
 pinafore> :type newMemWhole >>= \ref -> return (ref, ur ref)
-: Action (WholeRef c, ())
+: Action (WholeRef g, ())
 pinafore> <END>
