@@ -6,13 +6,13 @@ pinafore> :type i
 : a -> a
 pinafore> :type f i
 : Maybe (e -> e)
-pinafore>
+pinafore> 
 pinafore> let g: ((a -> a) & b) -> b; g x = x
 pinafore> :type g
 : ((a -> a) & b) -> b
 pinafore> :type g i
 : c -> c
-pinafore>
+pinafore> 
 pinafore> let ur: WholeRef a -> (); ur _ = ()
 pinafore> :type ur
 : WholeRef a -> ()

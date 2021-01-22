@@ -10,6 +10,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - add "forWhole" function
   * Fixes
     - fix defect involving export of open expressions
+    - fix serious defect in type unifier
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 
