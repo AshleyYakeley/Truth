@@ -1,16 +1,27 @@
-pinafore> let e1: Entity; e1 = ()
-pinafore> :type e1
-: Entity
-pinafore> let f: WholeRef a -> (); f _ = ()
+pinafore> let f: ((a -> a) & b) -> Maybe b; f = Just
+pinafore> let i: a -> a; i x = x;
 pinafore> :type f
+: ((a -> a) & b) -> Maybe b
+pinafore> :type i
+: a -> a
+pinafore> :type f i
+: Maybe (c -> c)
+pinafore>
+pinafore> let g: ((a -> a) & b) -> b; g x = x
+pinafore> :type g
+: ((a -> a) & b) -> b
+pinafore> :type g i
+: c -> c
+pinafore>
+pinafore> let ur: WholeRef a -> (); ur _ = ()
+pinafore> :type ur
 : WholeRef a -> ()
-pinafore> let m1 = newMemWhole >>= \ref -> return (ref, ())
-pinafore> :type m1
+pinafore> :type newMemWhole >>= \ref -> return (ref, ())
 : Action (WholeRef c, ())
-pinafore> let m2 = newMemWhole >>= \ref -> return (ref, ((\_ -> ()) : WholeRef a -> ()) ref)
-pinafore> :type m2
+pinafore> :type newMemWhole >>= \ref -> return (ref, ((\_ -> ()) : WholeRef a -> ()) ref)
 : Action (WholeRef c, ())
-pinafore> let m3 = newMemWhole >>= \ref -> return (ref, f ref)
-pinafore> :type m3
+pinafore> :type \ref -> return (ref, ur ref)
+: (WholeRef c & b) -> Action (b, ())
+pinafore> :type newMemWhole >>= \ref -> return (ref, ur ref)
 : Action (WholeRef c, ())
 pinafore> <END>

@@ -30,6 +30,21 @@ data BisubstitutionWitness ground t where
         -> Bool
         -> BisubstitutionWitness ground (PolarMapType (DolanPolyShim ground Type) polarity t (UVarT name))
 
+instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (BisubstitutionWitness ground t) where
+    show (MkBisubstitutionWitness var (wt :: _ polarity _) recflag) = let
+        rs :: String
+        rs =
+            if recflag
+                then "rec"
+                else "nonrec"
+        in case polarityType @polarity of
+               PositiveType -> show var <> " :> " <> show wt <> " (" <> rs <> ")"
+               NegativeType -> show var <> " <: " <> show wt <> " (" <> rs <> ")"
+
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground =>
+             AllWitnessConstraint Show (BisubstitutionWitness ground) where
+    allWitnessConstraint = Dict
+
 mkBisubstitutionWitness ::
        forall (ground :: GroundTypeKind) polarity name p. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => SymbolType name

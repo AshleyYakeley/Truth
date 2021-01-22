@@ -1,10 +1,16 @@
-let e1: Entity; e1 = ()
-:type e1
-let f: WholeRef a -> (); f _ = ()
+let f: ((a -> a) & b) -> Maybe b; f = Just
+let i: a -> a; i x = x;
 :type f
-let m1 = newMemWhole >>= \ref -> return (ref, ())
-:type m1
-let m2 = newMemWhole >>= \ref -> return (ref, ((\_ -> ()) : WholeRef a -> ()) ref)
-:type m2
-let m3 = newMemWhole >>= \ref -> return (ref, f ref)
-:type m3
+:type i
+:type f i
+
+let g: ((a -> a) & b) -> b; g x = x
+:type g
+:type g i
+
+let ur: WholeRef a -> (); ur _ = ()
+:type ur
+:type newMemWhole >>= \ref -> return (ref, ())
+:type newMemWhole >>= \ref -> return (ref, ((\_ -> ()) : WholeRef a -> ()) ref)
+:type \ref -> return (ref, ur ref)
+:type newMemWhole >>= \ref -> return (ref, ur ref)
