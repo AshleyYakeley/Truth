@@ -1,8 +1,12 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Source: https://github.com/AshleyYakeley/Truth
+Copyright: 2017-2021 Ashley Yakeley
+License: GPL-2
+ On Debian systems, the complete text of the GNU General Public
+ License can be found in `/usr/share/common-licenses/GPL-2'.
 
 Files: *
-Copyright: 2017-2020 Ashley Yakeley
+Copyright: 2017-2021 Ashley Yakeley
 License: GPL-2
  On Debian systems, the complete text of the GNU General Public
  License can be found in `/usr/share/common-licenses/GPL-2'.

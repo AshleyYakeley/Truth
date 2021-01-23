@@ -1,7 +1,7 @@
 - &author
     author: Ashley Yakeley
-    copyright: (c) 2017-2020 Ashley Yakeley
-    license: GPL-2
+    copyright: (c) 2017-2021 Ashley Yakeley
+    license: GPL-2.0-only
     license-file: LICENSE
     maintainer: <ashley@semantic.org>
 
