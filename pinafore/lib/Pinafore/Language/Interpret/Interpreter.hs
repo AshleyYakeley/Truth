@@ -218,10 +218,10 @@ getModule mname = do
                             return m
                         Nothing -> throw $ ModuleNotFoundError mname
 
-importModule :: ModuleName -> SourceInterpreter ts (WMFunction (Interpreter ts) (Interpreter ts))
-importModule mname = do
-    newscope <- getModule mname
-    return $ MkWMFunction $ importScope newscope
+importModule :: SourcePos -> ModuleName -> MFunction (Interpreter ts) (Interpreter ts)
+importModule spos mname ma = do
+    newscope <- runSourcePos spos $ getModule mname
+    importScope newscope ma
 
 newtype SourceInterpreter ts a =
     MkSourceInterpreter (ReaderT SourcePos (Interpreter ts) a)
@@ -356,29 +356,30 @@ newTypeID =
         put $ istate {isTypeID = succTypeID tid}
         return tid
 
-registerType :: Name -> BoundType ts -> WMFunction (SourceInterpreter ts) (SourceInterpreter ts)
-registerType name t =
-    MkWMFunction $ \mta -> do
-        mnt <- lookupBoundTypeM name
-        case mnt of
-            Just _ -> throw $ DeclareTypeDuplicateError name
-            Nothing -> remonadSourcePos (withNewBinding name $ TypeBinding t) mta
+registerType :: SourcePos -> Name -> BoundType ts -> WMFunction (Interpreter ts) (Interpreter ts)
+registerType spos name t =
+    MkWMFunction $ \mta ->
+        runSourcePos spos $ do
+            mnt <- lookupBoundTypeM name
+            case mnt of
+                Just _ -> throw $ DeclareTypeDuplicateError name
+                Nothing -> liftSourcePos $ withNewBinding name (TypeBinding t) mta
 
 data TypeBox ts x =
     forall t. MkTypeBox Name
                         (t -> BoundType ts)
-                        (SourceInterpreter ts (t, x))
+                        (Interpreter ts (t, x))
 
-typeBoxToFixBox :: TypeBox ts x -> FixBox (WriterT [x] (SourceInterpreter ts))
-typeBoxToFixBox (MkTypeBox name ttype mtx) =
-    mkFixBox (\t -> liftWMFunction $ registerType name $ ttype t) $ do
+typeBoxToFixBox :: (SourcePos, TypeBox ts x) -> FixBox (WriterT [x] (Interpreter ts))
+typeBoxToFixBox (spos, MkTypeBox name ttype mtx) =
+    mkFixBox (\t -> liftWMFunction $ registerType spos name $ ttype t) $ do
         (t, x) <- lift mtx
         tell [x]
         return t
 
-registerTypeNames :: [TypeBox ts x] -> SourceInterpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
+registerTypeNames :: [(SourcePos, TypeBox ts x)] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
 registerTypeNames tboxes = do
-    (sc, xx) <- runWriterT $ boxFix (fmap typeBoxToFixBox tboxes) $ lift spScope
+    (sc, xx) <- runWriterT $ boxFix (fmap typeBoxToFixBox tboxes) $ lift interpreterScope
     return (MkWMFunction $ pLocalScope (\_ -> sc), xx)
 
 withNewPatternConstructor ::

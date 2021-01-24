@@ -180,9 +180,8 @@ interactLoop inh outh echo = do
                     (unlift $ do
                          p <- interactParse $ pack inputstr
                          case p of
-                             LetInteractiveCommand fbind ->
+                             LetInteractiveCommand bind ->
                                  lift $ do
-                                     MkWMFunction bind <- liftRS fbind
                                      liftRS $ bind $ return () -- check errors
                                      updateRS bind
                              ExpressionInteractiveCommand texpr -> do

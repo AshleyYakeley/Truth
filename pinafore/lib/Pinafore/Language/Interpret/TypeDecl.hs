@@ -84,13 +84,18 @@ intepretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name)
         _ -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name
 
 interpretTypeDeclaration ::
-       Name -> TypeID -> SyntaxTypeDeclaration -> PinaforeTypeBox (WMFunction PinaforeInterpreter PinaforeInterpreter)
-interpretTypeDeclaration name tid OpenEntitySyntaxTypeDeclaration =
+       SourcePos
+    -> Name
+    -> TypeID
+    -> SyntaxTypeDeclaration
+    -> PinaforeTypeBox (WMFunction PinaforeInterpreter PinaforeInterpreter)
+interpretTypeDeclaration _ name tid OpenEntitySyntaxTypeDeclaration =
     MkTypeBox name (\_ -> OpenEntityBoundType tid) $ return ((), id)
-interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
+interpretTypeDeclaration spos name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \(tidsym :: TypeIDType n) -> let
         mktype t = ClosedEntityBoundType tidsym t
-        in MkTypeBox name mktype $ do
+        in MkTypeBox name mktype $
+           runSourcePos spos $ do
                tconss <- for sconss interpretClosedEntityTypeConstructor
                MkClosedEntityBox (ct :: ClosedEntityType t) conss <- return $ assembleClosedEntityType tconss
                tident :: Identified n :~: t <- unsafeGetIdentification
@@ -116,11 +121,12 @@ interpretTypeDeclaration name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
                            pc = toPatternConstructor ctf ltp $ tma . reflId tident
                        withNewPatternConstructor cname expr pc
                return (cti, compAll patts)
-interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
+interpretTypeDeclaration spos name tid (DatatypeSyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \tidsym -> let
         pt = MkProvidedType datatypeIOWitness $ MkIdentifiedType tidsym
         mktype _ = SimpleBoundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
-        in MkTypeBox name mktype $ do
+        in MkTypeBox name mktype $
+           runSourcePos spos $ do
                tconss <- for sconss interpretDataTypeConstructor
                MkDataBox _dt conss <- return $ assembleDataType tconss
                let
@@ -155,8 +161,9 @@ interpretTypeDeclaration name tid (DatatypeSyntaxTypeDeclaration sconss) =
                            pc = toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
                        withNewPatternConstructor cname expr pc
                return ((), compAll patts)
-interpretTypeDeclaration name _ (DynamicEntitySyntaxTypeDeclaration stcons) =
-    MkTypeBox name DynamicEntityBoundType $ do
+interpretTypeDeclaration spos name _ (DynamicEntitySyntaxTypeDeclaration stcons) =
+    MkTypeBox name DynamicEntityBoundType $
+    runSourcePos spos $ do
         dt <- for stcons intepretSyntaxDynamicEntityConstructor
         let
             dts = setFromList $ mconcat $ toList dt
@@ -171,33 +178,32 @@ interpretTypeDeclaration name _ (DynamicEntitySyntaxTypeDeclaration stcons) =
                     | isSubsetOf dts' dts -> Just idSubtypeConversion
                 _ -> Nothing
 
-checkDynamicTypeCycles :: [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeSourceInterpreter ()
+checkDynamicTypeCycles :: [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeInterpreter ()
 checkDynamicTypeCycles decls = let
     constructorName :: SyntaxDynamicEntityConstructor -> Maybe Name
     constructorName (NameSyntaxDynamicEntityConstructor n) = Just n
     constructorName (AnchorSyntaxDynamicEntityConstructor _) = Nothing
-    getDynamicTypeReferences :: (SourcePos, Name, SyntaxTypeDeclaration) -> Maybe (Name, Name, [Name])
-    getDynamicTypeReferences (_, n, DynamicEntitySyntaxTypeDeclaration cs) =
-        Just $ (n, n, mapMaybe constructorName $ toList cs)
+    getDynamicTypeReferences :: (SourcePos, Name, SyntaxTypeDeclaration) -> Maybe ((SourcePos, Name), Name, [Name])
+    getDynamicTypeReferences (spos, n, DynamicEntitySyntaxTypeDeclaration cs) =
+        Just $ ((spos, n), n, mapMaybe constructorName $ toList cs)
     getDynamicTypeReferences _ = Nothing
-    sccs :: [SCC Name]
+    sccs :: [SCC (SourcePos, Name)]
     sccs = stronglyConnComp $ mapMaybe getDynamicTypeReferences decls
-    sccNames :: SCC Name -> Maybe (NonEmpty Name)
+    sccNames :: forall a. SCC a -> Maybe (NonEmpty a)
     sccNames (CyclicSCC (n:nn)) = Just $ n :| nn
     sccNames _ = Nothing
     in case mapMaybe sccNames sccs of
            [] -> return ()
-           (nn:_) -> throw $ DeclareDynamicTypeCycleError nn
+           (nn@((spos, _) :| _):_) -> runSourcePos spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
 
 interpretTypeDeclarations ::
-       [(SourcePos, Name, SyntaxTypeDeclaration)]
-    -> PinaforeSourceInterpreter (WMFunction PinaforeInterpreter PinaforeInterpreter)
-interpretTypeDeclarations decls = do
+       [(SourcePos, Name, SyntaxTypeDeclaration)] -> MFunction PinaforeInterpreter PinaforeInterpreter
+interpretTypeDeclarations decls ma = do
     checkDynamicTypeCycles decls
     wfs <-
         for decls $ \(spos, name, tdecl) ->
-            localSourcePos spos $ do
+            runSourcePos spos $ do
                 tid <- liftSourcePos newTypeID
-                return $ interpretTypeDeclaration name tid tdecl
+                return $ (spos, interpretTypeDeclaration spos name tid tdecl)
     (wtt, wcc) <- registerTypeNames wfs
-    return $ wtt . compAll wcc
+    runWMFunction (wtt . compAll wcc) ma

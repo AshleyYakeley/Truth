@@ -89,7 +89,7 @@ getBindingNode b@(MkSyntaxBinding _ _ n _) = (b, n, setToList $ syntaxFreeVariab
 clumpBindings :: [SyntaxBinding] -> [[SyntaxBinding]]
 clumpBindings bb = fmap flattenSCC $ stronglyConnComp $ fmap getBindingNode bb
 
-interpretLetBindingsClump :: SourcePos -> [SyntaxBinding] -> RefNotation a -> RefNotation a
+interpretLetBindingsClump :: SourcePos -> [SyntaxBinding] -> MFunction RefNotation RefNotation
 interpretLetBindingsClump spos sbinds ra = do
     bl <- interpretBindings sbinds
     remonadRefNotation
@@ -98,49 +98,50 @@ interpretLetBindingsClump spos sbinds ra = do
              withNewLetBindings bmap se) $
         ra
 
-interpretLetBindingss :: SourcePos -> [[SyntaxBinding]] -> RefNotation a -> RefNotation a
+interpretLetBindingss :: SourcePos -> [[SyntaxBinding]] -> MFunction RefNotation RefNotation
 interpretLetBindingss _ [] ra = ra
 interpretLetBindingss spos (b:bb) ra = interpretLetBindingsClump spos b $ interpretLetBindingss spos bb ra
 
-interpretLetBindings :: SourcePos -> [SyntaxBinding] -> RefNotation a -> RefNotation a
+interpretLetBindings :: SourcePos -> [SyntaxBinding] -> MFunction RefNotation RefNotation
 interpretLetBindings spos sbinds ra = do
     liftRefNotation $ runSourcePos spos $ checkSyntaxBindingsDuplicates sbinds
     interpretLetBindingss spos (clumpBindings sbinds) ra
 
-interpretDeclarations :: [SyntaxDeclaration] -> PinaforeSourceInterpreter (WMFunction RefNotation RefNotation)
-interpretDeclarations decls = do
-    let
-        typeDecls :: [(SourcePos, Name, SyntaxTypeDeclaration)]
-        typeDecls =
-            mapMaybe
-                (\case
-                     TypeSyntaxDeclaration spos name defn -> Just (spos, name, defn)
-                     _ -> Nothing)
-                decls
-        trs :: [WMFunction PinaforeInterpreter PinaforeInterpreter]
-        trs =
-            mapMaybe
-                (\case
-                     SubtypeDeclaration spos sta stb ->
-                         Just $ MkWMFunction $ mapSourcePos spos $ interpretSubtypeRelation sta stb
-                     _ -> Nothing)
-                decls
-        sbinds :: [SyntaxBinding]
-        sbinds =
-            (mapMaybe $ \case
-                 BindingSyntaxDeclaration sbind -> Just sbind
+interpretDeclarations :: SourcePos -> [SyntaxDeclaration] -> MFunction RefNotation RefNotation
+interpretDeclarations dspos decls = let
+    importDecls :: WMFunction PinaforeInterpreter PinaforeInterpreter
+    importDecls =
+        compAll $
+        (mapMaybe $ \case
+             ImportSyntaxDeclarataion spos mname -> Just $ MkWMFunction $ importModule spos mname
+             _ -> Nothing)
+            decls
+    typeDecls :: WMFunction PinaforeInterpreter PinaforeInterpreter
+    typeDecls =
+        MkWMFunction $
+        interpretTypeDeclarations $
+        mapMaybe
+            (\case
+                 TypeSyntaxDeclaration spos name defn -> Just (spos, name, defn)
                  _ -> Nothing)
-                decls
-        importmods :: [(SourcePos, ModuleName)]
-        importmods =
-            (mapMaybe $ \case
-                 ImportSyntaxDeclarataion spos mname -> Just (spos, mname)
+            decls
+    subtypeDecls :: WMFunction PinaforeInterpreter PinaforeInterpreter
+    subtypeDecls =
+        compAll $
+        mapMaybe
+            (\case
+                 SubtypeDeclaration spos sta stb ->
+                     Just $ MkWMFunction $ mapSourcePos spos $ interpretSubtypeRelation sta stb
                  _ -> Nothing)
-                decls
-    imports <- liftSourcePos $ for importmods $ \(spos, mname) -> runSourcePos spos $ importModule mname
-    td <- interpretTypeDeclarations typeDecls
-    spos <- askSourcePos
-    return $ (MkWMFunction $ remonadRefNotation (td . compAll trs . compAll imports) . interpretLetBindings spos sbinds)
+            decls
+    bindingDecls :: MFunction RefNotation RefNotation
+    bindingDecls =
+        interpretLetBindings dspos $
+        (mapMaybe $ \case
+             BindingSyntaxDeclaration sbind -> Just sbind
+             _ -> Nothing)
+            decls
+    in remonadRefNotation (importDecls . typeDecls . subtypeDecls) . bindingDecls
 
 interpretNamedConstructor :: SourcePos -> Name -> RefExpression
 interpretNamedConstructor spos n = do
@@ -238,9 +239,7 @@ interpretExpression' spos (SEAbstract spat sbody) =
             pat <- mpat
             val <- interpretExpressionShadowed (sealedPatternNames pat) sbody
             liftRefNotation $ runSourcePos spos $ qCaseAbstract [(pat, val)]
-interpretExpression' spos (SELet decls sbody) = do
-    MkWMFunction bmap <- liftRefNotation $ runSourcePos spos $ interpretDeclarations decls
-    bmap $ interpretExpression sbody
+interpretExpression' spos (SELet sdecls sbody) = interpretDeclarations spos sdecls $ interpretExpression sbody
 interpretExpression' spos (SECase sbody scases) = do
     body <- interpretExpression sbody
     pairs <- for scases interpretCase
@@ -273,17 +272,14 @@ interpretBindings sbinds = do
     qbinds <- for sbinds interpretBinding
     return $ mconcat qbinds
 
-interpretTopDeclarations ::
-       SyntaxTopDeclarations -> PinaforeInterpreter (WMFunction PinaforeInterpreter PinaforeInterpreter)
-interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) = do
-    MkWMFunction f <- runSourcePos spos $ interpretDeclarations sdecls
-    return $ MkWMFunction $ \a -> runRefNotation spos $ f $ liftRefNotation a
+interpretTopDeclarations :: SyntaxTopDeclarations -> MFunction PinaforeInterpreter PinaforeInterpreter
+interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) ma =
+    runRefNotation spos $ interpretDeclarations spos sdecls $ liftRefNotation ma
 
 interpretTopExpression :: SyntaxExpression -> PinaforeInterpreter QExpr
 interpretTopExpression sexpr@(MkWithSourcePos spos _) = runRefNotation spos $ interpretExpression sexpr
 
 interpretModule :: SyntaxModule -> PinaforeInterpreter PinaforeScope
-interpretModule (MkWithSourcePos spos (SMLet sdecls smod)) = do
-    MkWMFunction bmap <- runSourcePos spos $ interpretDeclarations sdecls
-    runRefNotation spos $ bmap $ liftRefNotation $ interpretModule smod
+interpretModule (MkWithSourcePos spos (SMLet sdecls smod)) =
+    runRefNotation spos $ interpretDeclarations spos sdecls $ liftRefNotation $ interpretModule smod
 interpretModule (MkWithSourcePos spos (SMExport names)) = runSourcePos spos $ exportScope names

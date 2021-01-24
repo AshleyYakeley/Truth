@@ -15,7 +15,7 @@ import Pinafore.Language.Type
 import Shapes hiding (try)
 
 data InteractiveCommand
-    = LetInteractiveCommand (PinaforeInterpreter (WMFunction PinaforeInterpreter PinaforeInterpreter))
+    = LetInteractiveCommand (MFunction PinaforeInterpreter PinaforeInterpreter)
     | ExpressionInteractiveCommand (PinaforeInterpreter QExpr)
     | ShowTypeInteractiveCommand Bool
                                  (PinaforeInterpreter QExpr)
@@ -57,7 +57,7 @@ readInteractiveCommand =
          readThis TokTypeJudge
          MkName cmd <- readThis TokLName
          readSpecialCommand cmd) <|>
-    (readEnd >> return (LetInteractiveCommand $ return id)) <|>
+    (readEnd >> return (LetInteractiveCommand id)) <|>
     (try $ do
          sexpr <- readExpression
          return $ ExpressionInteractiveCommand $ interpretTopExpression sexpr) <|>

@@ -1,5 +1,5 @@
 pinafore> let opentype A
 pinafore> let opentype B
 pinafore> let opentype A
-<input>:1:1: duplicate type: A
+<input>:3:5: duplicate type: A
 pinafore> <END>
