@@ -11,6 +11,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Fixes
     - fix defect involving export of open expressions
     - fix serious defect in type unifier
+    - fix defect involving imported types
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 
