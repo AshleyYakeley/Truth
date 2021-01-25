@@ -209,8 +209,6 @@ testEntity =
                     , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} (eea !$ {e1})"
                     , testExpectSuccess "eta !$ {e1} := \"hello\" >> testeq {\"hello\"} (eta !$ {e1})"
                     , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
-                    , testExpectSuccess
-                          "tea !$ {\"hello\"} := e1 >> runWholeRef {outputLn (toText $ %(count (tea !@ {e1})))}"
                     , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {1} (count (tea !@ {e1}))"
                     , testExpectSuccess "(eea !. eea) !$ {e1} := e2"
                     , testExpectSuccess
