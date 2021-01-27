@@ -1,6 +1,6 @@
-FROM fpco/stack-build:lts-16.26
+FROM commercialhaskell/stackage:lts17
 ENV DEBIAN_FRONTEND noninteractive
-RUN echo 2020-12-21
+RUN echo 2021-01-26
 RUN apt-get update
 RUN apt-get purge -y msodbcsql17
 RUN apt-get upgrade -y

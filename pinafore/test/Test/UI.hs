@@ -65,7 +65,7 @@ gobjectEmitClicked ::
     => t
     -> IO ()
 gobjectEmitClicked obj = do
-    gtype <- gobjectType @t
+    gtype <- glibType @t
     (_, signalId, detail) <- signalParseName "clicked" gtype False
     withManagedPtr obj $ \entryPtr -> do
         gvalObj <- buildGValue gtype set_object entryPtr
