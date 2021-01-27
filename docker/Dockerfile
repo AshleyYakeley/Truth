@@ -10,4 +10,5 @@ RUN pip3 install mkdocs markdown-include Pygments
 RUN R -e "install.packages(c('shiny','ggplot2','plotly','optparse','shinyWidgets'),dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN npm --global install vsce
 RUN apt-get install -y imagemagick
+ENV PATH "/usr/local/bin:${PATH}"
 #RUN echo "stack ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers
