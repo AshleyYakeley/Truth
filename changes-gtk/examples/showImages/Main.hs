@@ -10,7 +10,7 @@ import System.Directory
 import System.FilePath
 
 imagedir :: FilePath
-imagedir = "changes-gtk/showImages/images"
+imagedir = "changes-gtk/examples/showImages/images"
 
 main :: IO ()
 main = do

@@ -162,21 +162,21 @@ out/pinafore-$(VSCXVERSION).vsix: docker-image out \
 
 vsc-extension: out/pinafore-$(VSCXVERSION).vsix
 
-changes-gtk/showImages/images/%.RGB.jpeg: changes-gtk/showImages/%.jpeg
-	mkdir -p changes-gtk/showImages/images
+changes-gtk/examples/showImages/images/%.RGB.jpeg: changes-gtk/examples/showImages/%.jpeg
+	mkdir -p changes-gtk/examples/showImages/images
 	stack $(STACKFLAGS) exec -- convert $< -colorspace RGB $@
 
-changes-gtk/showImages/images/%.YCbCr.jpeg: changes-gtk/showImages/%.jpeg
-	mkdir -p changes-gtk/showImages/images
+changes-gtk/examples/showImages/images/%.YCbCr.jpeg: changes-gtk/examples/showImages/%.jpeg
+	mkdir -p changes-gtk/examples/showImages/images
 	stack $(STACKFLAGS) exec -- convert $< -colorspace YCbCr $@
 
 .PHONY: testimages
 
 testimages: docker-image \
-	changes-gtk/showImages/images/cat.RGB.jpeg \
-	changes-gtk/showImages/images/cat.YCbCr.jpeg \
-	changes-gtk/showImages/images/stairs.RGB.jpeg \
-	changes-gtk/showImages/images/stairs.YCbCr.jpeg
+	changes-gtk/examples/showImages/images/cat.RGB.jpeg \
+	changes-gtk/examples/showImages/images/cat.YCbCr.jpeg \
+	changes-gtk/examples/showImages/images/stairs.RGB.jpeg \
+	changes-gtk/examples/showImages/images/stairs.YCbCr.jpeg
 
 .PHONY: full
 
@@ -186,5 +186,5 @@ clean:
 	rm -rf out
 	rm -rf mkdocs/generated
 	rm -rf mkdocs/site
-	rm -rf changes-gtk/showImages/images
+	rm -rf changes-gtk/examples/showImages/images
 	stack $(STACKFLAGS) clean
