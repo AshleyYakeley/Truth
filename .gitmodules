@@ -7,3 +7,6 @@
 [submodule "benchgraph"]
 	path = benchgraph
 	url = git@github.com:novadiscovery/benchgraph.git
+[submodule "diagrams-gi-cairo"]
+	path = diagrams-gi-cairo
+	url = git@github.com:AshleyYakeley/diagrams-gi-cairo.git

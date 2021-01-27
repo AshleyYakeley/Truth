@@ -8,6 +8,7 @@ packages:
 - changes-media
 - changes-world
 - changes-gtk
+- diagrams-gi-cairo
 - pinafore-base
 - pinafore-language
 - pinafore-gtk
@@ -15,8 +16,17 @@ packages:
 
 resolver: lts-17.0
 
+allow-newer: true
+
 extra-deps:
 - mime-0.4.0.2
+- diagrams-core-1.4.2
+- diagrams-lib-1.4.3
+- statestack-0.3
+- gi-pangocairo-1.0.24
+- active-0.2.0.14
+- dual-tree-0.2.2.1
+- monoid-extras-0.5.1
 - git: https://github.com/AshleyYakeley/haskell-src-exts.git
   commit: 0f5103dd6fbea4f7ee8b156b40c7782e989e7025
 - git: https://github.com/AshleyYakeley/hindent.git
