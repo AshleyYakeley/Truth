@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
 do
-w <- openWindow (300,400) {"Test"} {[]} uiBlank;
+w <- openWindow (300,400) {"Test"} {[]} $ uiLabel {"Hello"};
 closeWindow w;
 end
