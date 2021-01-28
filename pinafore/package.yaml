@@ -22,7 +22,7 @@ library:
       - pinafore-base
     exposed-modules:
       - Pinafore.Language
-      - Pinafore.Language.Documentation
+      - Pinafore.Documentation
       - Pinafore.Main
       - Pinafore
       - Pinafore.Test
@@ -48,7 +48,7 @@ library:
       - Pinafore.Language.Type.Identified
       - Pinafore.Language.Error
       - Pinafore.Language.SpecialForm
-      - Pinafore.Language.Interpret.Interpreter
+      - Pinafore.Language.Interpreter
       - Pinafore.Language.Var
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.Type.Type
@@ -59,32 +59,33 @@ library:
       - Pinafore.Language.Type.OpenEntity
       - Pinafore.Language.Type.EntityAdapter
       - Pinafore.Language.Type.DynamicSupertype
-      - Pinafore.Language.Syntax
-      - Pinafore.Language.Read.Token
-      - Pinafore.Language.Interpret.RefNotation
-      - Pinafore.Language.Read.Parser
-      - Pinafore.Language.Read.Type
-      - Pinafore.Language.Read.TypeDecls
-      - Pinafore.Language.Read.Infix
-      - Pinafore.Language.Read.Constructor
-      - Pinafore.Language.Read.Pattern
-      - Pinafore.Language.Read.Expression
-      - Pinafore.Language.Read.Interactive
-      - Pinafore.Language.Read
-      - Pinafore.Language.Interpret.Type
-      - Pinafore.Language.Interpret.TypeDecl
-      - Pinafore.Language.Interpret
+      - Pinafore.Language.Grammar.Syntax
+      - Pinafore.Language.Grammar.Read.Token
+      - Pinafore.Language.Grammar.Read.Parser
+      - Pinafore.Language.Grammar.Read.Type
+      - Pinafore.Language.Grammar.Read.TypeDecls
+      - Pinafore.Language.Grammar.Read.Infix
+      - Pinafore.Language.Grammar.Read.Constructor
+      - Pinafore.Language.Grammar.Read.Pattern
+      - Pinafore.Language.Grammar.Read.Expression
+      - Pinafore.Language.Grammar.Read.Interactive
+      - Pinafore.Language.Grammar.Read
+      - Pinafore.Language.Grammar.Interpret.RefNotation
+      - Pinafore.Language.Grammar.Interpret.Type
+      - Pinafore.Language.Grammar.Interpret.TypeDecl
+      - Pinafore.Language.Grammar.Interpret
+      - Pinafore.Language.Grammar
       - Pinafore.Language.Expression
       - Pinafore.Language.Convert
       - Pinafore.Language.DocTree
-      - Pinafore.Library.Defs
-      - Pinafore.Library.Std.SpecialForms
-      - Pinafore.Library.Std.Base
-      - Pinafore.Library.Std.UI
-      - Pinafore.Library.Std.File
-      - Pinafore.Library.Std
-      - Pinafore.Library.Debug
-      - Pinafore.Library
+      - Pinafore.Language.Library.Defs
+      - Pinafore.Language.Library.Std.SpecialForms
+      - Pinafore.Language.Library.Std.Base
+      - Pinafore.Language.Library.Std.UI
+      - Pinafore.Language.Library.Std.File
+      - Pinafore.Language.Library.Std
+      - Pinafore.Language.Library.Debug
+      - Pinafore.Language.Library
 
 extra-doc-files: examples/*
 

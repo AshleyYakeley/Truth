@@ -1,4 +1,4 @@
-module Pinafore.Language.Interpret.Type
+module Pinafore.Language.Grammar.Interpret.Type
     ( interpretType
     , interpretOpenEntityType
     , interpretMonoEntityType
@@ -8,9 +8,9 @@ module Pinafore.Language.Interpret.Type
     ) where
 
 import Pinafore.Language.Error
-import Pinafore.Language.Interpret.Interpreter
+import Pinafore.Language.Grammar.Syntax
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes
 

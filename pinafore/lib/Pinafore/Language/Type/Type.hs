@@ -3,7 +3,8 @@ module Pinafore.Language.Type.Type where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
-import Pinafore.Language.Interpret.Interpreter
+import Pinafore.Language.Error
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
@@ -52,3 +53,12 @@ type PinaforeSourceInterpreter = SourceInterpreter PinaforeTypeSystem
 type PinaforeAnnotation = Annotation PinaforeTypeSystem
 
 type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeSourceInterpreter
+
+monoEntityToNegativePinaforeType ::
+       forall m t. MonadThrow ErrorType m
+    => MonoEntityType t
+    -> m (PinaforeShimWit 'Negative t)
+monoEntityToNegativePinaforeType et =
+    case monoToMaybeNegativeDolanType et of
+        Just wit -> return wit
+        Nothing -> throw InterpretTypeNoneNotNegativeEntityError

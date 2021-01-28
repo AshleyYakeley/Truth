@@ -1,4 +1,4 @@
-module Pinafore.Language.Read.Token
+module Pinafore.Language.Grammar.Read.Token
     ( Token(..)
     , parseTokens
     ) where

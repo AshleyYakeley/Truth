@@ -1,4 +1,4 @@
-module Pinafore.Language.Interpret.RefNotation
+module Pinafore.Language.Grammar.Interpret.RefNotation
     ( RefNotation
     , RefExpression
     , varRefExpr
@@ -12,7 +12,7 @@ module Pinafore.Language.Interpret.RefNotation
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
-import Pinafore.Language.Interpret.Interpreter
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Var

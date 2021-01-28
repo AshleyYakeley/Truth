@@ -1,13 +1,13 @@
-module Pinafore.Library.Std
+module Pinafore.Language.Library.Std
     ( stdLibraryModule
     ) where
 
 import Pinafore.Language.DocTree
-import Pinafore.Library.Defs
-import Pinafore.Library.Std.Base
-import Pinafore.Library.Std.File
-import Pinafore.Library.Std.SpecialForms
-import Pinafore.Library.Std.UI
+import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.Std.Base
+import Pinafore.Language.Library.Std.File
+import Pinafore.Language.Library.Std.SpecialForms
+import Pinafore.Language.Library.Std.UI
 import Shapes
 
 stdLibraryModule :: LibraryModule

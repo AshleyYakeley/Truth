@@ -1,6 +1,7 @@
 module Pinafore.Language
     ( Name
     , ModuleName(..)
+    , FetchModule(..)
     , PinaforeSpecialVals
     , SpecialVals(..)
     , PinaforeError
@@ -40,24 +41,27 @@ import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
-import Pinafore.Language.Interpret
+import Pinafore.Language.Grammar
+import Pinafore.Language.Interpreter
+import Pinafore.Language.Library
 import Pinafore.Language.Name
-import Pinafore.Language.Read
-import Pinafore.Language.Read.Parser
 import Pinafore.Language.Type
 import Pinafore.Language.Var
-import Pinafore.Library
 import Shapes
 import System.IO.Error
 
-runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeInterpreter a -> InterpretResult a
+runPinaforeScoped ::
+       (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => PinaforeInterpreter a -> InterpretResult a
 runPinaforeScoped scp = runInterpreter loadModule spvals $ importScope implicitScope scp
 
-loadModule :: (?pinafore :: PinaforeContext) => ModuleName -> PinaforeInterpreter (Maybe PinaforeScope)
+loadModule ::
+       (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule)
+    => ModuleName
+    -> PinaforeInterpreter (Maybe PinaforeScope)
 loadModule mname
-    | Just scope <- stdLibraryScope mname = return $ Just scope
+    | Just scope <- getLibraryScope mname = return $ Just scope
 loadModule mname = do
-    mrr <- liftIO $ runFetchModule pinaforeFetchModuleText mname
+    mrr <- liftIO $ runFetchModule ?fetchModule mname
     case mrr of
         Nothing -> return Nothing
         Just (fpath, FailureResult err) ->
@@ -65,8 +69,9 @@ loadModule mname = do
         Just (fpath, SuccessResult text) ->
             fmap Just $ importScope implicitScope $ runSourcePos (initialPos fpath) $ parseModule text
 
-spvals :: (?pinafore :: PinaforeContext) => PinaforeSpecialVals
+spvals :: (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => PinaforeSpecialVals
 spvals = let
+    specialEvaluate :: forall t. PinaforeType 'Positive t -> Text -> PinaforeAction (Either Text t)
     specialEvaluate t text = do
         ier <- liftIO $ evaluate $ runPinaforeSourceScoped "<evaluate>" $ parseValueSubsume t text
         result <- runInterpretResult ier
@@ -77,7 +82,10 @@ spvals = let
     in MkSpecialVals {..}
 
 runPinaforeSourceScoped ::
-       (?pinafore :: PinaforeContext) => FilePath -> PinaforeSourceInterpreter a -> InterpretResult a
+       (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule)
+    => FilePath
+    -> PinaforeSourceInterpreter a
+    -> InterpretResult a
 runPinaforeSourceScoped fpath scp = runPinaforeScoped $ runSourcePos (initialPos fpath) scp
 
 parseValue :: (?pinafore :: PinaforeContext) => Text -> PinaforeSourceInterpreter QValue
@@ -163,7 +171,7 @@ runValue outh val =
 interactParse :: Text -> Interact InteractiveCommand
 interactParse t = remonad throwInterpretResult $ parseInteractiveCommand t
 
-interactLoop :: (?pinafore :: PinaforeContext) => Handle -> Handle -> Bool -> Interact ()
+interactLoop :: (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => Handle -> Handle -> Bool -> Interact ()
 interactLoop inh outh echo = do
     liftIO $ hPutStr outh "pinafore> "
     eof <- liftIO $ hIsEOF inh
@@ -220,7 +228,7 @@ interactLoop inh outh echo = do
                     ]
             interactLoop inh outh echo
 
-interact :: (?pinafore :: PinaforeContext) => Handle -> Handle -> Bool -> View ()
+interact :: (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => Handle -> Handle -> Bool -> View ()
 interact inh outh echo = do
     liftIO $ hSetBuffering outh NoBuffering
     evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $

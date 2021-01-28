@@ -36,7 +36,7 @@ main :: IO ()
 main =
     getOptions >>= \case
         ShowVersionOption -> printVersion
-        PredefinedDocOption -> printPredefinedBindings
+        LibraryDocOption -> printLibraryBindings
         InfixDocOption -> printInfixOperatorTable
         DumpTableOption mdirpath -> do
             pinaforedir <- getPinaforeDir mdirpath

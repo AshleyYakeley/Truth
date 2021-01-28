@@ -1,11 +1,11 @@
-module Pinafore.Language.Read.TypeDecls
+module Pinafore.Language.Grammar.Read.TypeDecls
     ( readTypeDeclaration
     ) where
 
-import Pinafore.Language.Read.Parser
-import Pinafore.Language.Read.Token
-import Pinafore.Language.Read.Type
-import Pinafore.Language.Syntax
+import Pinafore.Language.Grammar.Read.Parser
+import Pinafore.Language.Grammar.Read.Token
+import Pinafore.Language.Grammar.Read.Type
+import Pinafore.Language.Grammar.Syntax
 import Shapes hiding (try)
 
 readOpenEntityTypeDeclaration :: Parser SyntaxDeclaration

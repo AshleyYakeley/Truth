@@ -1,18 +1,18 @@
-module Pinafore.Language.Read.Expression
+module Pinafore.Language.Grammar.Read.Expression
     ( readExpression
     , readModule
     , readTopDeclarations
     ) where
 
+import Pinafore.Language.Grammar.Read.Constructor
+import Pinafore.Language.Grammar.Read.Infix
+import Pinafore.Language.Grammar.Read.Parser
+import Pinafore.Language.Grammar.Read.Pattern
+import Pinafore.Language.Grammar.Read.Token
+import Pinafore.Language.Grammar.Read.Type
+import Pinafore.Language.Grammar.Read.TypeDecls
+import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
-import Pinafore.Language.Read.Constructor
-import Pinafore.Language.Read.Infix
-import Pinafore.Language.Read.Parser
-import Pinafore.Language.Read.Pattern
-import Pinafore.Language.Read.Token
-import Pinafore.Language.Read.Type
-import Pinafore.Language.Read.TypeDecls
-import Pinafore.Language.Syntax
 import Shapes hiding (try)
 
 readTypeSignature :: Parser SyntaxType

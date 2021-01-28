@@ -1,9 +1,9 @@
 module Documentation
-    ( printPredefinedBindings
+    ( printLibraryBindings
     , printInfixOperatorTable
     ) where
 
-import Pinafore.Language.Documentation
+import Pinafore.Documentation
 import Shapes
 
 escapeMarkdown :: String -> String
@@ -44,8 +44,8 @@ showDefDesc _ desc = do
     putStrLn $ unpack desc
     putStrLn ""
 
-printPredefinedBindings :: IO ()
-printPredefinedBindings = runDocTree showDefTitle showDefDesc showDefEntry 1 predefinedDoc
+printLibraryBindings :: IO ()
+printLibraryBindings = runDocTree showDefTitle showDefDesc showDefEntry 1 libraryDoc
 
 printInfixOperatorTable :: IO ()
 printInfixOperatorTable = do
@@ -54,7 +54,7 @@ printInfixOperatorTable = do
             | not docIsSupertype
             , nameIsInfix (MkName docName) = Just $ MkName docName
         getDocName _ = Nothing
-        names = catMaybes $ fmap getDocName $ toList predefinedDoc
+        names = catMaybes $ fmap getDocName $ toList libraryDoc
     putStrLn "| [n] | (A x B) x C | A x (B x C) | A x B only |"
     putStrLn "| --- | --- | --- | --- |"
     for_ [10,9 .. 0] $ \level -> do

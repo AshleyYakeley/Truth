@@ -1,33 +1,22 @@
-module Pinafore.Language.Interpret
+module Pinafore.Language.Grammar.Interpret
     ( interpretTopExpression
     , interpretModule
     , interpretTopDeclarations
     , interpretType
-    , monoEntityToNegativePinaforeType
-    , runInterpreter
-    , InterpreterBinding(..)
-    , importScope
-    , bindingsScope
-    , getSubtypesScope
-    , SpecialVals(..)
-    , getSpecialVals
-    , askSourcePos
-    , liftSourcePos
-    , runSourcePos
     ) where
 
 import Data.Graph
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
+import Pinafore.Language.Grammar.Interpret.RefNotation
+import Pinafore.Language.Grammar.Interpret.Type
+import Pinafore.Language.Grammar.Interpret.TypeDecl
+import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.If
-import Pinafore.Language.Interpret.Interpreter
-import Pinafore.Language.Interpret.RefNotation
-import Pinafore.Language.Interpret.Type
-import Pinafore.Language.Interpret.TypeDecl
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
-import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes

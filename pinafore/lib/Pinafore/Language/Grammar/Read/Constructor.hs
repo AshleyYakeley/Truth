@@ -1,10 +1,10 @@
-module Pinafore.Language.Read.Constructor
+module Pinafore.Language.Grammar.Read.Constructor
     ( readConstructor
     ) where
 
-import Pinafore.Language.Read.Parser
-import Pinafore.Language.Read.Token
-import Pinafore.Language.Syntax
+import Pinafore.Language.Grammar.Read.Parser
+import Pinafore.Language.Grammar.Read.Token
+import Pinafore.Language.Grammar.Syntax
 import Shapes hiding (try)
 
 readConstructor :: Parser SyntaxConstructor

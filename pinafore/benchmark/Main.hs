@@ -27,10 +27,11 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $ getInnerLifeState $ makeTestPinaforeContext mempty (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
+    env (fmap const $ getInnerLifeState $ makeTestPinaforeContext (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc
+               ?fetchModule = mempty
                in bgroup
                       (show $ unpack text)
                       [ bench "check" $ nfIO $ throwInterpretResult $ pinaforeInterpretText "<test>" text >> return ()
@@ -101,7 +102,7 @@ interpretUpdater text =
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
-    env (fmap const $ getInnerLifeState $ makeTestPinaforeContext mempty (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
+    env (fmap const $ getInnerLifeState $ makeTestPinaforeContext (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc

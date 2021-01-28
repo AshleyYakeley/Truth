@@ -1,11 +1,11 @@
-module Pinafore.Library.Defs where
+module Pinafore.Language.Library.Defs where
 
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.Expression
-import Pinafore.Language.Interpret
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type

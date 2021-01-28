@@ -1,4 +1,4 @@
-module Pinafore.Language.Interpret.Interpreter
+module Pinafore.Language.Interpreter
     ( InterpreterGroundType
     , InterpreterProvidedType
     , InterpreterClosedEntityType

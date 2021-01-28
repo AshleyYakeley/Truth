@@ -24,8 +24,8 @@ import Changes.Core
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language
-import Pinafore.Language.Interpret
-import Pinafore.Language.Read
+import Pinafore.Language.Grammar
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
@@ -52,30 +52,32 @@ makeTestStorageModel = do
     (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
     return (model, getTableState)
 
-makeTestPinaforeContext ::
-       FetchModule -> ChangesContext -> Handle -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
-makeTestPinaforeContext fetchModule cc hout = do
+makeTestPinaforeContext :: ChangesContext -> Handle -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
+makeTestPinaforeContext cc hout = do
     (model, getTableState) <- makeTestStorageModel
-    pc <- makePinaforeContext fetchModule nullInvocationInfo hout model cc
+    pc <- makePinaforeContext nullInvocationInfo hout model cc
     return (pc, getTableState)
 
 withTestPinaforeContext ::
        FetchModule
     -> Handle
-    -> ((?pinafore :: PinaforeContext) => ChangesContext -> MFunction LifeCycle IO -> IO PinaforeTableSubject -> IO r)
+    -> ((?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) =>
+                ChangesContext -> MFunction LifeCycle IO -> IO PinaforeTableSubject -> IO r)
     -> IO r
 withTestPinaforeContext fetchModule hout call =
     runLifeCycle @LifeCycle $
     liftIOWithUnlift $ \unlift -> do
         let cc = nullChangesContext unlift
-        (pc, getTableState) <- unlift $ makeTestPinaforeContext fetchModule cc hout
+        (pc, getTableState) <- unlift $ makeTestPinaforeContext cc hout
         let
             ?pinafore = pc
+            ?fetchModule = fetchModule
             in call cc unlift getTableState
 
-withNullPinaforeContext :: ((?pinafore :: PinaforeContext) => r) -> r
+withNullPinaforeContext :: ((?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => r) -> r
 withNullPinaforeContext f = let
     ?pinafore = nullPinaforeContext
+    ?fetchModule = mempty
     in f
 
 runTestPinaforeSourceScoped :: PinaforeSourceInterpreter a -> InterpretResult a

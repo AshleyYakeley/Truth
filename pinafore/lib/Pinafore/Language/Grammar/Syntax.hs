@@ -1,4 +1,4 @@
-module Pinafore.Language.Syntax where
+module Pinafore.Language.Grammar.Syntax where
 
 import Pinafore.Base
 import Pinafore.Language.Error

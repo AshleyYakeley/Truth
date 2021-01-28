@@ -1,16 +1,17 @@
-module Pinafore.Language.Read.Interactive
+module Pinafore.Language.Grammar.Read.Interactive
     ( InteractiveCommand(..)
     , parseInteractiveCommand
     ) where
 
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
-import Pinafore.Language.Interpret
+import Pinafore.Language.Grammar.Interpret
+import Pinafore.Language.Grammar.Read.Expression
+import Pinafore.Language.Grammar.Read.Parser
+import Pinafore.Language.Grammar.Read.Token
+import Pinafore.Language.Grammar.Read.Type
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Read.Expression
-import Pinafore.Language.Read.Parser
-import Pinafore.Language.Read.Token
-import Pinafore.Language.Read.Type
 import Pinafore.Language.Type
 import Shapes hiding (try)
 

@@ -1,4 +1,4 @@
-module Pinafore.Library.Debug
+module Pinafore.Language.Library.Debug
     ( debugLibraryModule
     ) where
 
@@ -6,9 +6,9 @@ import Changes.Core
 import Changes.UI.GTK
 import Pinafore.Base
 import Pinafore.Language.DocTree
+import Pinafore.Language.Library.Defs
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Pinafore.Library.Defs
 import Shapes
 
 debugMessage :: Text -> IO ()

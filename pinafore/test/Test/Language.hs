@@ -6,7 +6,7 @@ module Test.Language
 
 import Data.Shim
 import Pinafore
-import Pinafore.Language.Documentation
+import Pinafore.Documentation
 import Pinafore.Test
 import Prelude (read)
 import Shapes
@@ -25,7 +25,7 @@ testOp n =
 
 testInfix :: TestTree
 testInfix = let
-    names = filter nameIsInfix $ fmap (MkName . docName) $ toList predefinedDoc
+    names = filter nameIsInfix $ fmap (MkName . docName) $ toList libraryDoc
     in testTree "infix" $ fmap testOp names
 
 newtype PreciseEq t =

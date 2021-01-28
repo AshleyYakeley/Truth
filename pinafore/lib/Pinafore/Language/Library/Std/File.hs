@@ -1,9 +1,9 @@
-module Pinafore.Library.Std.File
+module Pinafore.Language.Library.Std.File
     ( file_stdLibraryModule
     ) where
 
 import Pinafore.Language.DocTree
-import Pinafore.Library.Defs
+import Pinafore.Language.Library.Defs
 
 --import Changes.World.File
 {-

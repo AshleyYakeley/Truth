@@ -10,7 +10,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
-import Pinafore.Language.Interpret.Interpreter
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.EntityAdapter

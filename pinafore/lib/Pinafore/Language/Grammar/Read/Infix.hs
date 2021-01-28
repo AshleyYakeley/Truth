@@ -1,14 +1,14 @@
-module Pinafore.Language.Read.Infix
+module Pinafore.Language.Grammar.Read.Infix
     ( readExpressionInfixed
     , operatorFixity
     , Fixity(..)
     , FixAssoc(..)
     ) where
 
+import Pinafore.Language.Grammar.Read.Parser
+import Pinafore.Language.Grammar.Read.Token
+import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
-import Pinafore.Language.Read.Parser
-import Pinafore.Language.Read.Token
-import Pinafore.Language.Syntax
 import Shapes hiding (try)
 
 data FixAssoc

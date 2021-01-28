@@ -1,6 +1,5 @@
-module Pinafore.Language.Interpret.TypeDecl
-    ( monoEntityToNegativePinaforeType
-    , interpretTypeDeclarations
+module Pinafore.Language.Grammar.Interpret.TypeDecl
+    ( interpretTypeDeclarations
     ) where
 
 import Data.Graph
@@ -8,10 +7,10 @@ import qualified Data.List as List
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
-import Pinafore.Language.Interpret.Interpreter
-import Pinafore.Language.Interpret.Type
+import Pinafore.Language.Grammar.Interpret.Type
+import Pinafore.Language.Grammar.Syntax
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes
 
@@ -64,15 +63,6 @@ interpretDataTypeConstructor ::
 interpretDataTypeConstructor (MkSyntaxDatatypeConstructor consName stypes) = do
     etypes <- for stypes interpretNonpolarType
     return (consName, assembleListType etypes)
-
-monoEntityToNegativePinaforeType ::
-       forall m t. MonadThrow ErrorType m
-    => MonoEntityType t
-    -> m (PinaforeShimWit 'Negative t)
-monoEntityToNegativePinaforeType et =
-    case monoToMaybeNegativeDolanType et of
-        Just wit -> return wit
-        Nothing -> throw InterpretTypeNoneNotNegativeEntityError
 
 intepretSyntaxDynamicEntityConstructor ::
        SyntaxDynamicEntityConstructor -> SourceInterpreter PinaforeTypeSystem [DynamicType]

@@ -12,7 +12,6 @@ module Pinafore.Context
     , pinaforeEntityModel
     , pinaforeInvocationInfo
     , pinaforeStdOut
-    , pinaforeFetchModuleText
     ) where
 
 import Changes.Core
@@ -65,7 +64,6 @@ data PinaforeContext = MkPinaforeContext
     { pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
     , pconUnliftCreateView :: MFunction CreateView View
     , pconEntityModel :: Model PinaforeStorageUpdate
-    , pconFetchModule :: FetchModule
     , pconInvocation :: InvocationInfo
     , pconStdOut :: Handle
     }
@@ -96,13 +94,8 @@ moduleRelativePath :: ModuleName -> FilePath
 moduleRelativePath (MkModuleName nn) = (foldl1 (</>) $ fmap unpack nn) <> ".pinafore"
 
 makePinaforeContext ::
-       FetchModule
-    -> InvocationInfo
-    -> Handle
-    -> Model PinaforeStorageUpdate
-    -> ChangesContext
-    -> LifeCycle PinaforeContext
-makePinaforeContext pconFetchModule pconInvocation pconStdOut rmodel tc = do
+       InvocationInfo -> Handle -> Model PinaforeStorageUpdate -> ChangesContext -> LifeCycle PinaforeContext
+makePinaforeContext pconInvocation pconStdOut rmodel tc = do
     uh <- liftIO newUndoHandler
     let
         pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
@@ -112,15 +105,11 @@ makePinaforeContext pconFetchModule pconInvocation pconStdOut rmodel tc = do
         pconEntityModel = undoHandlerModel uh rmodel
     return $ MkPinaforeContext {..}
 
-pinaforeFetchModuleText :: (?pinafore :: PinaforeContext) => FetchModule
-pinaforeFetchModuleText = pconFetchModule ?pinafore
-
 nullPinaforeContext :: PinaforeContext
 nullPinaforeContext = let
     pconUnliftAction _ = fail "null Pinafore context"
     pconUnliftCreateView _ = fail "null Pinafore context"
     pconEntityModel = error "no pinafore base"
-    pconFetchModule = mempty
     pconInvocation = nullInvocationInfo
     pconStdOut = stdout
     in MkPinaforeContext {..}

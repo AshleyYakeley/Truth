@@ -1,5 +1,5 @@
-module Pinafore.Language.Read.Parser
-    ( module Pinafore.Language.Read.Parser
+module Pinafore.Language.Grammar.Read.Parser
+    ( module Pinafore.Language.Grammar.Read.Parser
     , SourcePos
     , initialPos
     , getPosition
@@ -8,9 +8,9 @@ module Pinafore.Language.Read.Parser
     ) where
 
 import Pinafore.Language.Error
-import Pinafore.Language.Interpret
-import Pinafore.Language.Read.Token
-import Pinafore.Language.Syntax
+import Pinafore.Language.Grammar.Read.Token
+import Pinafore.Language.Grammar.Syntax
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)

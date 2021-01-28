@@ -46,13 +46,15 @@ standardStorageModel cache dataDir = do
         (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
         return model
 
-standardPinaforeContext :: ContextOptions -> InvocationInfo -> ChangesContext -> CreateView PinaforeContext
+standardPinaforeContext ::
+       ContextOptions -> InvocationInfo -> ChangesContext -> CreateView (PinaforeContext, FetchModule)
 standardPinaforeContext MkContextOptions {..} invinfo cc = do
     let
         fetchModule :: FetchModule
         fetchModule = mconcat $ fmap directoryFetchModule coModuleDirs
     model <- standardStorageModel coCache coDataDir
-    liftLifeCycle $ makePinaforeContext fetchModule invinfo stdout model cc
+    pc <- liftLifeCycle $ makePinaforeContext invinfo stdout model cc
+    return (pc, fetchModule)
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
@@ -72,22 +74,29 @@ sqlitePinaforeDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 pinaforeInterpretTextAtType ::
-       (?pinafore :: PinaforeContext, FromPinaforeType t) => FilePath -> Text -> InterpretResult t
+       (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule, FromPinaforeType t)
+    => FilePath
+    -> Text
+    -> InterpretResult t
 pinaforeInterpretTextAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueUnify puitext
 
-pinaforeInterpretText :: (?pinafore :: PinaforeContext) => FilePath -> Text -> InterpretResult (View ())
+pinaforeInterpretText ::
+       (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => FilePath -> Text -> InterpretResult (View ())
 pinaforeInterpretText puipath puitext = do
     action :: FilePinaforeType <- pinaforeInterpretTextAtType puipath puitext
     return $ runPinaforeAction $ fmap (\MkTopType -> ()) $ action
 
 pinaforeInterpretFile ::
-       (?pinafore :: PinaforeContext, MonadIO m, MonadThrow PinaforeError m) => FilePath -> m (View ())
+       (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule, MonadIO m, MonadThrow PinaforeError m)
+    => FilePath
+    -> m (View ())
 pinaforeInterpretFile fpath = do
     ptext <- liftIO $ readFile fpath
     throwInterpretResult $ pinaforeInterpretText fpath $ decodeUtf8 $ toStrict ptext
 
-pinaforeInteractHandles :: (?pinafore :: PinaforeContext) => Handle -> Handle -> Bool -> View ()
+pinaforeInteractHandles ::
+       (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => Handle -> Handle -> Bool -> View ()
 pinaforeInteractHandles inh outh echo = interact inh outh echo
 
-pinaforeInteract :: (?pinafore :: PinaforeContext) => View ()
+pinaforeInteract :: (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => View ()
 pinaforeInteract = pinaforeInteractHandles stdin stdout False

@@ -1,4 +1,4 @@
-module Pinafore.Library.Std.UI
+module Pinafore.Language.Library.Std.UI
     ( ui_stdLibraryModule
     ) where
 
@@ -9,9 +9,9 @@ import Data.Time
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.DocTree
+import Pinafore.Language.Library.Defs
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Pinafore.Library.Defs
 import Shapes
 
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)

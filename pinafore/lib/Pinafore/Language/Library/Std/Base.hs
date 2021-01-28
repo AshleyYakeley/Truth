@@ -1,4 +1,4 @@
-module Pinafore.Library.Std.Base
+module Pinafore.Language.Library.Std.Base
     ( base_stdLibraryModule
     , outputLn
     ) where
@@ -12,11 +12,11 @@ import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.If
+import Pinafore.Language.Library.Defs
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
-import Pinafore.Library.Defs
 import Shapes
 import Shapes.Numeric
 

@@ -1,13 +1,13 @@
-module Pinafore.Language.Read.Pattern
+module Pinafore.Language.Grammar.Read.Pattern
     ( readPatterns
     , readPattern2
     ) where
 
-import Pinafore.Language.Read.Constructor
-import Pinafore.Language.Read.Parser
-import Pinafore.Language.Read.Token
-import Pinafore.Language.Read.Type
-import Pinafore.Language.Syntax
+import Pinafore.Language.Grammar.Read.Constructor
+import Pinafore.Language.Grammar.Read.Parser
+import Pinafore.Language.Grammar.Read.Token
+import Pinafore.Language.Grammar.Read.Type
+import Pinafore.Language.Grammar.Syntax
 import Shapes hiding (try)
 
 readSourcePosPattern :: Parser SyntaxPattern' -> Parser SyntaxPattern

@@ -133,7 +133,7 @@ deb: out/$(PACKAGEFULLNAME).deb
 
 mkdocs/generated/predefined.md: ${BINPATH}/pinafore
 	mkdir -p mkdocs/generated
-	$< --doc-predefined > $@
+	$< --doc-library > $@
 
 mkdocs/generated/infix.md: ${BINPATH}/pinafore
 	mkdir -p mkdocs/generated
