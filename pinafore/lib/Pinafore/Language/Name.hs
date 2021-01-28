@@ -25,5 +25,8 @@ newtype ModuleName =
     MkModuleName (NonEmpty Name)
     deriving (Eq, Ord)
 
+moduleNameText :: ModuleName -> Text
+moduleNameText (MkModuleName nn) = intercalate "." $ fmap unName $ toList nn
+
 instance Show ModuleName where
-    show (MkModuleName nn) = intercalate "." $ toList $ fmap unpack nn
+    show mname = unpack $ moduleNameText mname

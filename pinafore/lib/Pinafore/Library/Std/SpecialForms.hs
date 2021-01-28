@@ -1,15 +1,15 @@
-module Pinafore.Language.Library.Predefined.SpecialForms
+module Pinafore.Library.Std.SpecialForms
     ( special_forms
     ) where
 
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Interpret
-import Pinafore.Language.Library.Defs
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
+import Pinafore.Library.Defs
 import Shapes
 
 textShimWit ::

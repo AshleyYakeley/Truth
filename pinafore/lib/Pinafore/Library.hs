@@ -1,5 +1,5 @@
-module Pinafore.Language.Library
-    ( predefinedScope
+module Pinafore.Library
+    ( implicitScope
     , stdLibraryScope
     , DefDoc(..)
     , DocTree
@@ -10,12 +10,15 @@ module Pinafore.Language.Library
 import Pinafore.Context
 import Pinafore.Language.DocTree
 import Pinafore.Language.Interpret
-import Pinafore.Language.Library.Debug
-import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Predefined
 import Pinafore.Language.Name
 import Pinafore.Language.Type
+import Pinafore.Library.Debug
+import Pinafore.Library.Defs
+import Pinafore.Library.Std
 import Shapes
+
+libraryModules :: [LibraryModule]
+libraryModules = [stdLibraryModule, debugLibraryModule]
 
 docTreeScope :: (?pinafore :: PinaforeContext) => DocTree BindDoc -> PinaforeScope
 docTreeScope dt = let
@@ -27,11 +30,13 @@ docTreeScope dt = let
     in bindingsScope $ mapFromList $ mapMaybe bindDocBinding $ toList dt
 
 predefinedDoc :: DocTree DefDoc
-predefinedDoc = fmap bdDoc $ predefinitions
+predefinedDoc = MkDocTree "Built-In Modules" "" $ fmap (TreeDocTreeEntry . fmap bdDoc) libraryModules
 
-predefinedScope :: (?pinafore :: PinaforeContext) => PinaforeScope
-predefinedScope = docTreeScope predefinitions
+implicitScope :: (?pinafore :: PinaforeContext) => PinaforeScope
+implicitScope = docTreeScope stdLibraryModule
+
+libraryModulesMap :: (?pinafore :: PinaforeContext) => Map Text PinaforeScope
+libraryModulesMap = mapFromList $ fmap (\lmod -> (docTreeName lmod, docTreeScope lmod)) libraryModules
 
 stdLibraryScope :: (?pinafore :: PinaforeContext) => ModuleName -> Maybe PinaforeScope
-stdLibraryScope (MkModuleName ("Debug" :| [])) = Just $ docTreeScope debugDocModule
-stdLibraryScope _ = Nothing
+stdLibraryScope mname = lookup (moduleNameText mname) libraryModulesMap

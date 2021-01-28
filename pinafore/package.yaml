@@ -77,14 +77,14 @@ library:
       - Pinafore.Language.Expression
       - Pinafore.Language.Convert
       - Pinafore.Language.DocTree
-      - Pinafore.Language.Library.Defs
-      - Pinafore.Language.Library.Predefined.SpecialForms
-      - Pinafore.Language.Library.Predefined.Base
-      - Pinafore.Language.Library.Predefined.UI
-      - Pinafore.Language.Library.Predefined.File
-      - Pinafore.Language.Library.Predefined
-      - Pinafore.Language.Library.Debug
-      - Pinafore.Language.Library
+      - Pinafore.Library.Defs
+      - Pinafore.Library.Std.SpecialForms
+      - Pinafore.Library.Std.Base
+      - Pinafore.Library.Std.UI
+      - Pinafore.Library.Std.File
+      - Pinafore.Library.Std
+      - Pinafore.Library.Debug
+      - Pinafore.Library
 
 extra-doc-files: examples/*
 

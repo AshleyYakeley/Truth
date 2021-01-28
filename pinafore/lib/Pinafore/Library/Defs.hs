@@ -1,4 +1,4 @@
-module Pinafore.Language.Library.Defs where
+module Pinafore.Library.Defs where
 
 import Pinafore.Base
 import Pinafore.Context
@@ -11,6 +11,8 @@ import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Shapes
+
+type LibraryModule = DocTree BindDoc
 
 type EnA = MeetType Entity A
 

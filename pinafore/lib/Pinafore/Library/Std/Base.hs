@@ -1,5 +1,5 @@
-module Pinafore.Language.Library.Predefined.Base
-    ( base_predefinitions
+module Pinafore.Library.Std.Base
+    ( base_stdLibraryModule
     , outputLn
     ) where
 
@@ -12,11 +12,11 @@ import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.If
-import Pinafore.Language.Library.Defs
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
+import Pinafore.Library.Defs
 import Shapes
 import Shapes.Numeric
 
@@ -164,8 +164,8 @@ getLocalTime = fmap zonedTimeToLocalTime getZonedTime
 getEnv :: (?pinafore :: PinaforeContext) => Text -> Maybe Text
 getEnv n = fmap pack $ lookup (unpack n) $ iiEnvironment pinaforeInvocationInfo
 
-base_predefinitions :: [DocTreeEntry BindDoc]
-base_predefinitions =
+base_stdLibraryModule :: [DocTreeEntry BindDoc]
+base_stdLibraryModule =
     [ docTreeEntry
           "Literals & Entities"
           ""

@@ -41,17 +41,17 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret
-import Pinafore.Language.Library
 import Pinafore.Language.Name
 import Pinafore.Language.Read
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Pinafore.Library
 import Shapes
 import System.IO.Error
 
 runPinaforeScoped :: (?pinafore :: PinaforeContext) => PinaforeInterpreter a -> InterpretResult a
-runPinaforeScoped scp = runInterpreter loadModule spvals $ importScope predefinedScope scp
+runPinaforeScoped scp = runInterpreter loadModule spvals $ importScope implicitScope scp
 
 loadModule :: (?pinafore :: PinaforeContext) => ModuleName -> PinaforeInterpreter (Maybe PinaforeScope)
 loadModule mname
@@ -63,7 +63,7 @@ loadModule mname = do
         Just (fpath, FailureResult err) ->
             throw $ MkErrorMessage (initialPos fpath) $ UnicodeDecodeError $ pack $ show err
         Just (fpath, SuccessResult text) ->
-            fmap Just $ importScope predefinedScope $ runSourcePos (initialPos fpath) $ parseModule text
+            fmap Just $ importScope implicitScope $ runSourcePos (initialPos fpath) $ parseModule text
 
 spvals :: (?pinafore :: PinaforeContext) => PinaforeSpecialVals
 spvals = let

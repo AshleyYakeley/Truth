@@ -11,9 +11,9 @@ module Pinafore.Language.Documentation
     ) where
 
 import Pinafore.Language.DocTree
-import Pinafore.Language.Library
 import Pinafore.Language.Name
 import Pinafore.Language.Read.Infix
+import Pinafore.Library
 import Shapes
 
 nameIsInfix :: Name -> Bool

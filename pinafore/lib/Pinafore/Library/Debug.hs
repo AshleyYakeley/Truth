@@ -1,14 +1,14 @@
-module Pinafore.Language.Library.Debug
-    ( debugDocModule
+module Pinafore.Library.Debug
+    ( debugLibraryModule
     ) where
 
 import Changes.Core
 import Changes.UI.GTK
 import Pinafore.Base
 import Pinafore.Language.DocTree
-import Pinafore.Language.Library.Defs
 import Pinafore.Language.Value
 import Pinafore.Language.Var
+import Pinafore.Library.Defs
 import Shapes
 
 debugMessage :: Text -> IO ()
@@ -34,8 +34,8 @@ debugCheckEntity t e = do
     _ <- evaluate $ checkEntity (unpack t) e
     return ()
 
-debugDocModule :: DocTree BindDoc
-debugDocModule =
+debugLibraryModule :: LibraryModule
+debugLibraryModule =
     MkDocTree
         "Debug"
         "Functions for debugging."

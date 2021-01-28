@@ -1,5 +1,5 @@
-module Pinafore.Language.Library.Predefined.UI
-    ( ui_predefinitions
+module Pinafore.Library.Std.UI
+    ( ui_stdLibraryModule
     ) where
 
 import Changes.Core
@@ -9,9 +9,9 @@ import Data.Time
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.DocTree
-import Pinafore.Language.Library.Defs
 import Pinafore.Language.Value
 import Pinafore.Language.Var
+import Pinafore.Library.Defs
 import Shapes
 
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
@@ -281,8 +281,8 @@ uiStyleClass sclass (MkLangUI mw) =
         setCSSClass sclass widget
         return widget
 
-ui_predefinitions :: [DocTreeEntry BindDoc]
-ui_predefinitions =
+ui_stdLibraryModule :: [DocTreeEntry BindDoc]
+ui_stdLibraryModule =
     [ docTreeEntry
           "UI"
           "A user interface is something that goes inside a window."

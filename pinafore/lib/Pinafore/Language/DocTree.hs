@@ -2,10 +2,11 @@ module Pinafore.Language.DocTree where
 
 import Shapes
 
-data DocTree a =
-    MkDocTree Text
-              Text
-              [DocTreeEntry a]
+data DocTree a = MkDocTree
+    { docTreeName :: Text
+    , docTreeDescription :: Text
+    , docTreeEntries :: [DocTreeEntry a]
+    }
 
 data DocTreeEntry a
     = TreeDocTreeEntry (DocTree a)
@@ -23,17 +24,17 @@ instance Foldable DocTreeEntry where
     foldMap am (EntryDocTreeEntry a) = am a
 
 instance Foldable DocTree where
-    foldMap am (MkDocTree _ _ entries) = mconcat $ fmap (foldMap am) entries
+    foldMap am dt = mconcat $ fmap (foldMap am) $ docTreeEntries dt
 
 docTreeEntry :: Text -> Text -> [DocTreeEntry a] -> DocTreeEntry a
 docTreeEntry title desc entries = TreeDocTreeEntry $ MkDocTree title desc entries
 
 runDocTree ::
        Monad m => (Int -> Text -> m ()) -> (Int -> Text -> m ()) -> (Int -> a -> m ()) -> Int -> DocTree a -> m ()
-runDocTree showTitle showDesc showEntry level (MkDocTree title desc entries) = do
-    showTitle level title
-    showDesc level desc
-    for_ entries $ \case
+runDocTree showTitle showDesc showEntry level MkDocTree {..} = do
+    showTitle level docTreeName
+    showDesc level docTreeDescription
+    for_ docTreeEntries $ \case
         TreeDocTreeEntry tree -> runDocTree showTitle showDesc showEntry (level + 1) tree
         EntryDocTreeEntry a -> showEntry level a
 

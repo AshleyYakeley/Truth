@@ -1,9 +1,9 @@
-module Pinafore.Language.Library.Predefined.File
-    ( file_predefinitions
+module Pinafore.Library.Std.File
+    ( file_stdLibraryModule
     ) where
 
 import Pinafore.Language.DocTree
-import Pinafore.Language.Library.Defs
+import Pinafore.Library.Defs
 
 --import Changes.World.File
 {-
@@ -38,8 +38,8 @@ file_import set continue = do
 file_size :: Reference ByteStringEdit -> IO Int64
 file_size MkReference {..} = runWMFunction objRun $ refRead ReadByteStringLength
 -}
-file_predefinitions :: [DocTreeEntry BindDoc]
-file_predefinitions =
+file_stdLibraryModule :: [DocTreeEntry BindDoc]
+file_stdLibraryModule =
     [ docTreeEntry
           "Files"
           "NYI"
