@@ -38,10 +38,15 @@ runDocTree showTitle showDesc showEntry level MkDocTree {..} = do
         TreeDocTreeEntry tree -> runDocTree showTitle showDesc showEntry (level + 1) tree
         EntryDocTreeEntry a -> showEntry level a
 
+data DocType
+    = NormalDocType
+    | SupertypeDocType
+    | SubtypeRelationDocType
+
 data DefDoc = MkDefDoc
     { docName :: Text
     , docValueType :: Text
-    , docIsSupertype :: Bool
+    , docType :: DocType
     , docIsPattern :: Bool
     , docDescription :: Text
     }

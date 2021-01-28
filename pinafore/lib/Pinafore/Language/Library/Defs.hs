@@ -40,7 +40,7 @@ mkValEntry name docDescription val = let
             in ValueBinding (qConstExprAny $ jmToValue val) Nothing
     docName = unName name
     docValueType = qPositiveTypeDescription @t
-    docIsSupertype = False
+    docType = NormalDocType
     docIsPattern = False
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
@@ -55,7 +55,7 @@ mkSupertypeEntry name docDescription _val = let
     bdScopeEntry = BindScopeEntry name Nothing
     docName = unName name
     docValueType = qPositiveTypeDescription @t
-    docIsSupertype = True
+    docType = SupertypeDocType
     docIsPattern = False
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
@@ -65,7 +65,7 @@ mkSubtypeRelationEntry ta tb docDescription scentries = let
     bdScopeEntry = SubtypeScopeEntry scentries
     docName = ta <> " <: " <> tb
     docValueType = ""
-    docIsSupertype = True
+    docType = SubtypeRelationDocType
     docIsPattern = False
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
@@ -84,7 +84,7 @@ mkValPatEntry name docDescription val pat = let
         Just $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
     docName = unName name
     docValueType = qPositiveTypeDescription @t
-    docIsSupertype = False
+    docType = NormalDocType
     docIsPattern = True
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
@@ -93,7 +93,7 @@ mkSpecialFormEntry :: Name -> Text -> Text -> Text -> PinaforeSpecialForm -> Doc
 mkSpecialFormEntry name docDescription params docValueType sf = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> SpecialFormBinding sf
     docName = unName name <> " " <> params
-    docIsSupertype = False
+    docType = NormalDocType
     docIsPattern = False
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}

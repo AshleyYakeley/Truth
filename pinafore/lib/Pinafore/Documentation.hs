@@ -1,6 +1,7 @@
 module Pinafore.Documentation
     ( DefDoc(..)
     , DocTree(..)
+    , DocType(..)
     , runDocTree
     , libraryDoc
     , operatorFixity

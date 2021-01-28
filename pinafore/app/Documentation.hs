@@ -21,14 +21,17 @@ escapeMarkdown s = let
 showDefEntry :: Handle -> Int -> DefDoc -> IO ()
 showDefEntry h _ MkDefDoc {..} = do
     let
-        nameType = "**`" ++ unpack docName ++ "`** `: " ++ unpack docValueType ++ "`"
+        name = "**`" <> unpack docName <> "`**"
+        nameType = name <> " `: " <> unpack docValueType <> "`"
         title =
-            (if docIsSupertype
-                 then "_" <> nameType <> "_"
-                 else nameType) <>
-            (if docIsPattern
-                 then " (also pattern)"
-                 else "")
+            case docType of
+                NormalDocType ->
+                    nameType <>
+                    (if docIsPattern
+                         then " (also pattern)"
+                         else "")
+                SupertypeDocType -> "_" <> nameType <> "_"
+                SubtypeRelationDocType -> name
     hPutStrLn h $ title <> "  "
     if docDescription == ""
         then return ()
@@ -37,7 +40,7 @@ showDefEntry h _ MkDefDoc {..} = do
 
 showDefTitle :: Handle -> Int -> Text -> IO ()
 showDefTitle _ 1 "" = return ()
-showDefTitle h level title = hPutStrLn h $ replicate level '#' ++ " " ++ unpack title
+showDefTitle h level title = hPutStrLn h $ replicate level '#' <> " " <> unpack title
 
 showDefDesc :: Handle -> Int -> Text -> IO ()
 showDefDesc _ _ "" = return ()

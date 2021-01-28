@@ -54,9 +54,8 @@ nameIsInfix n =
 
 allOperatorNames :: [Name]
 allOperatorNames = let
-    getDocName MkDefDoc {..}
-        | not docIsSupertype
-        , nameIsInfix (MkName docName) = Just $ MkName docName
+    getDocName MkDefDoc {docType = NormalDocType, ..}
+        | nameIsInfix (MkName docName) = Just $ MkName docName
     getDocName _ = Nothing
     in catMaybes $ fmap getDocName $ mconcat $ fmap toList libraryDoc
 
