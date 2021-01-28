@@ -24,7 +24,7 @@ testOptionParsing =
         "option-parsing"
         [ testOptions ["-v"] $ SuccessResult ShowVersionOption
         , testOptions ["--version"] $ SuccessResult ShowVersionOption
-        , testOptions ["--doc-library"] $ SuccessResult LibraryDocOption
+        , testOptions ["--doc-library", "mydir"] $ SuccessResult $ LibraryDocOption "mydir"
         , testOptions ["--doc-infix"] $ SuccessResult InfixDocOption
         , testOptions ["--dump-table"] $ SuccessResult $ DumpTableOption Nothing
         , testOptions ["--dump-table", "--data", "dpath"] $ SuccessResult $ DumpTableOption $ Just "dpath"

@@ -25,7 +25,7 @@ testOp n =
 
 testInfix :: TestTree
 testInfix = let
-    names = filter nameIsInfix $ fmap (MkName . docName) $ toList libraryDoc
+    names = filter nameIsInfix $ fmap (MkName . docName) $ mconcat $ fmap toList libraryDoc
     in testTree "infix" $ fmap testOp names
 
 newtype PreciseEq t =

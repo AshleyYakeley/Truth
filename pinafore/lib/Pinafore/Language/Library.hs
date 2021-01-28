@@ -29,8 +29,8 @@ docTreeScope dt = let
         return (name, b ?pinafore)
     in bindingsScope $ mapFromList $ mapMaybe bindDocBinding $ toList dt
 
-libraryDoc :: DocTree DefDoc
-libraryDoc = MkDocTree "Library" "" $ fmap (TreeDocTreeEntry . fmap bdDoc) library
+libraryDoc :: [DocTree DefDoc]
+libraryDoc = fmap (fmap bdDoc) library
 
 implicitScope :: (?pinafore :: PinaforeContext) => PinaforeScope
 implicitScope = docTreeScope stdLibraryModule
