@@ -277,10 +277,9 @@ withNewBinding name b = pLocalScope $ \tc -> tc {scopeBindings = insertMapLazy n
 bindingsScope :: Map Name (InterpreterBinding ts) -> Scope ts
 bindingsScope bb = mempty {scopeBindings = bb}
 
-getSubtypesScope :: MonadIO m => [SubypeConversionEntry (InterpreterGroundType ts)] -> m (Scope ts)
+getSubtypesScope :: [SubypeConversionEntry (InterpreterGroundType ts)] -> IO (Scope ts)
 getSubtypesScope newscs = do
     pairs <-
-        liftIO $
         for newscs $ \newsc -> do
             key <- newUnique
             return (key, newsc)
@@ -395,7 +394,7 @@ withNewPatternConstructor name exp pc = do
 
 withSubtypeConversions :: [SubypeConversionEntry (InterpreterGroundType ts)] -> Interpreter ts a -> Interpreter ts a
 withSubtypeConversions newscs ma = do
-    newscope <- getSubtypesScope newscs
+    newscope <- liftIO $ getSubtypesScope newscs
     importScope newscope ma
 
 getSubtypeConversions :: Interpreter ts [SubypeConversionEntry (InterpreterGroundType ts)]

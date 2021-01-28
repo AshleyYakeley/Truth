@@ -19,11 +19,11 @@ testPinaforeScript :: Text -> FetchModule -> Text -> ScriptExpectation -> Contex
 testPinaforeScript name fetchModule text expect =
     contextTestCase name text $ \t -> let
         runTest ::
-               forall a. (FromPinaforeType a, ?pinafore :: PinaforeContext, ?fetchModule :: FetchModule)
+               forall a. (FromPinaforeType a, ?pinafore :: PinaforeContext, ?library :: LibraryContext)
             => IO (PinaforeAction a)
         runTest = throwInterpretResult $ pinaforeInterpretTextAtType "<test>" t
         runTestCatchStop ::
-               forall a. (FromPinaforeType a, ?pinafore :: PinaforeContext, ?fetchModule :: FetchModule)
+               forall a. (FromPinaforeType a, ?pinafore :: PinaforeContext, ?library :: LibraryContext)
             => IO (PinaforeAction a)
         runTestCatchStop =
             throwInterpretResult $ pinaforeInterpretTextAtType "<test>" $ "onStop (" <> t <> ") (fail \"stopped\")"

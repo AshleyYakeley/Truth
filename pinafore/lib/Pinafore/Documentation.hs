@@ -7,19 +7,10 @@ module Pinafore.Documentation
     , Fixity(..)
     , FixAssoc(..)
     , Name(..)
-    , nameIsInfix
+    , allOperatorNames
     ) where
 
 import Pinafore.Language.DocTree
 import Pinafore.Language.Grammar
 import Pinafore.Language.Library
 import Pinafore.Language.Name
-import Shapes
-
-nameIsInfix :: Name -> Bool
-nameIsInfix n =
-    case unpack n of
-        (c:_)
-            | isAlpha c -> False
-        "[]" -> False
-        _ -> True

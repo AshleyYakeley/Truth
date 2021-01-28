@@ -29,15 +29,14 @@ benchScript :: Text -> Benchmark
 benchScript text =
     env (fmap const $ getInnerLifeState $ makeTestPinaforeContext (nullChangesContext runLifeCycle) stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
-        in let
-               ?pinafore = pc
-               ?fetchModule = mempty
-               in bgroup
-                      (show $ unpack text)
-                      [ bench "check" $ nfIO $ throwInterpretResult $ pinaforeInterpretText "<test>" text >> return ()
-                      , env (fmap const $ throwInterpretResult $ pinaforeInterpretText "<test>" text) $ \action ->
-                            bench "run" $ nfIO (nullViewIO $ action ())
-                      ]
+        in bgroup
+               (show $ unpack text)
+               [ bench "check" $
+                 nfIO $
+                 runWithContext pc mempty $ throwInterpretResult $ pinaforeInterpretText "<test>" text >> return ()
+               , env (fmap const $ runWithContext pc mempty $ throwInterpretResult $ pinaforeInterpretText "<test>" text) $ \action ->
+                     bench "run" $ nfIO (nullViewIO $ action ())
+               ]
 
 benchScripts :: Benchmark
 benchScripts =

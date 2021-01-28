@@ -79,7 +79,6 @@ library:
       - Pinafore.Language.Convert
       - Pinafore.Language.DocTree
       - Pinafore.Language.Library.Defs
-      - Pinafore.Language.Library.Std.SpecialForms
       - Pinafore.Language.Library.Std.Base
       - Pinafore.Language.Library.Std.UI
       - Pinafore.Language.Library.Std.File

@@ -19,10 +19,7 @@ testFile inpath = let
                    liftLifeCycle $ do
                        (model, _) <- makeTestStorageModel
                        makePinaforeContext nullInvocationInfo hout model cc
-               action <- let
-                   ?pinafore = pc
-                   ?fetchModule = mempty
-                   in pinaforeInterpretFile inpath
+               action <- runWithContext pc mempty $ pinaforeInterpretFile inpath
                liftToLifeCycle action
                return ()
 

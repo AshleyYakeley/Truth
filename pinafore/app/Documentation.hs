@@ -53,12 +53,6 @@ printLibraryBindings dirpath =
 
 printInfixOperatorTable :: IO ()
 printInfixOperatorTable = do
-    let
-        getDocName MkDefDoc {..}
-            | not docIsSupertype
-            , nameIsInfix (MkName docName) = Just $ MkName docName
-        getDocName _ = Nothing
-        names = catMaybes $ fmap getDocName $ mconcat $ fmap toList libraryDoc
     putStrLn "| [n] | (A x B) x C | A x (B x C) | A x B only |"
     putStrLn "| --- | --- | --- | --- |"
     for_ [10,9 .. 0] $ \level -> do
@@ -67,6 +61,6 @@ printInfixOperatorTable = do
             putStr " |"
             let
                 fixity = MkFixity assc level
-                mnames = filter (\n -> operatorFixity n == fixity) names
+                mnames = filter (\n -> operatorFixity n == fixity) allOperatorNames
             for_ mnames $ \n -> putStr $ " `" <> show n <> "`"
         putStrLn ""

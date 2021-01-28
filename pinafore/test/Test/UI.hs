@@ -26,10 +26,7 @@ runUIAction timing testaction t = do
     donevar <- newEmptyMVar
     changesMainGTK $ \tc -> do
         (pc, _) <- liftLifeCycle $ makeTestPinaforeContext tc stdout
-        scriptaction <- let
-            ?pinafore = pc
-            ?fetchModule = mempty
-            in throwInterpretResult $ pinaforeInterpretText "<test>" t
+        scriptaction <- runWithContext pc mempty $ throwInterpretResult $ pinaforeInterpretText "<test>" t
         liftToLifeCycle scriptaction
         let
             testView :: View (Result SomeException a)

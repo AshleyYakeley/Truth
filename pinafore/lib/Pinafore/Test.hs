@@ -21,15 +21,12 @@ module Pinafore.Test
     ) where
 
 import Changes.Core
-import Pinafore.Base
-import Pinafore.Context
-import Pinafore.Language
+import Pinafore
 import Pinafore.Language.Grammar
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
-import Pinafore.Storage
 import Shapes
 
 textFetchModule :: (ModuleName -> IO (Maybe Text)) -> FetchModule
@@ -61,7 +58,7 @@ makeTestPinaforeContext cc hout = do
 withTestPinaforeContext ::
        FetchModule
     -> Handle
-    -> ((?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) =>
+    -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) =>
                 ChangesContext -> MFunction LifeCycle IO -> IO PinaforeTableSubject -> IO r)
     -> IO r
 withTestPinaforeContext fetchModule hout call =
@@ -69,16 +66,10 @@ withTestPinaforeContext fetchModule hout call =
     liftIOWithUnlift $ \unlift -> do
         let cc = nullChangesContext unlift
         (pc, getTableState) <- unlift $ makeTestPinaforeContext cc hout
-        let
-            ?pinafore = pc
-            ?fetchModule = fetchModule
-            in call cc unlift getTableState
+        runWithContext pc fetchModule $ call cc unlift getTableState
 
-withNullPinaforeContext :: ((?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => r) -> r
-withNullPinaforeContext f = let
-    ?pinafore = nullPinaforeContext
-    ?fetchModule = mempty
-    in f
+withNullPinaforeContext :: MonadIO m => ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => m r) -> m r
+withNullPinaforeContext = runWithContext nullPinaforeContext mempty
 
 runTestPinaforeSourceScoped :: PinaforeSourceInterpreter a -> InterpretResult a
 runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa

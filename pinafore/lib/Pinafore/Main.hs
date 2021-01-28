@@ -74,20 +74,20 @@ sqlitePinaforeDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 pinaforeInterpretTextAtType ::
-       (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule, FromPinaforeType t)
+       (?pinafore :: PinaforeContext, ?library :: LibraryContext, FromPinaforeType t)
     => FilePath
     -> Text
     -> InterpretResult t
 pinaforeInterpretTextAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueUnify puitext
 
 pinaforeInterpretText ::
-       (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => FilePath -> Text -> InterpretResult (View ())
+       (?pinafore :: PinaforeContext, ?library :: LibraryContext) => FilePath -> Text -> InterpretResult (View ())
 pinaforeInterpretText puipath puitext = do
     action :: FilePinaforeType <- pinaforeInterpretTextAtType puipath puitext
     return $ runPinaforeAction $ fmap (\MkTopType -> ()) $ action
 
 pinaforeInterpretFile ::
-       (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule, MonadIO m, MonadThrow PinaforeError m)
+       (?pinafore :: PinaforeContext, ?library :: LibraryContext, MonadIO m, MonadThrow PinaforeError m)
     => FilePath
     -> m (View ())
 pinaforeInterpretFile fpath = do
@@ -95,8 +95,8 @@ pinaforeInterpretFile fpath = do
     throwInterpretResult $ pinaforeInterpretText fpath $ decodeUtf8 $ toStrict ptext
 
 pinaforeInteractHandles ::
-       (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => Handle -> Handle -> Bool -> View ()
+       (?pinafore :: PinaforeContext, ?library :: LibraryContext) => Handle -> Handle -> Bool -> View ()
 pinaforeInteractHandles inh outh echo = interact inh outh echo
 
-pinaforeInteract :: (?pinafore :: PinaforeContext, ?fetchModule :: FetchModule) => View ()
+pinaforeInteract :: (?pinafore :: PinaforeContext, ?library :: LibraryContext) => View ()
 pinaforeInteract = pinaforeInteractHandles stdin stdout False

@@ -24,9 +24,7 @@ testOp n =
             _ -> return ()
 
 testInfix :: TestTree
-testInfix = let
-    names = filter nameIsInfix $ fmap (MkName . docName) $ mconcat $ fmap toList libraryDoc
-    in testTree "infix" $ fmap testOp names
+testInfix = testTree "infix" $ fmap testOp allOperatorNames
 
 newtype PreciseEq t =
     MkPreciseEq t

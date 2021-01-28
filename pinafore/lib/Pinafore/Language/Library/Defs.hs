@@ -16,15 +16,15 @@ type LibraryModule = DocTree BindDoc
 
 type EnA = MeetType Entity A
 
+data ScopeEntry
+    = BindScopeEntry Name
+                     (Maybe (PinaforeContext -> PinaforeBinding))
+    | SubtypeScopeEntry [SubypeConversionEntry PinaforeGroundType]
+
 data BindDoc = MkBindDoc
-    { bdBind :: Maybe (Name, Maybe (PinaforeContext -> PinaforeBinding))
+    { bdScopeEntry :: ScopeEntry
     , bdDoc :: DefDoc
     }
-
-mkDefDocEntry :: DefDoc -> BindDoc
-mkDefDocEntry bdDoc = let
-    bdBind = Nothing
-    in MkBindDoc {..}
 
 mkValEntry ::
        forall t. ToPinaforeType t
@@ -33,12 +33,11 @@ mkValEntry ::
     -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry BindDoc
 mkValEntry name docDescription val = let
-    bdBind =
-        Just
-            ( name
-            , Just $ \pc -> let
-                  ?pinafore = pc
-                  in ValueBinding (qConstExprAny $ jmToValue val) Nothing)
+    bdScopeEntry =
+        BindScopeEntry name $
+        Just $ \pc -> let
+            ?pinafore = pc
+            in ValueBinding (qConstExprAny $ jmToValue val) Nothing
     docName = unName name
     docValueType = qPositiveTypeDescription @t
     docIsSupertype = False
@@ -53,9 +52,19 @@ mkSupertypeEntry ::
     -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry BindDoc
 mkSupertypeEntry name docDescription _val = let
-    bdBind = Just (name, Nothing)
+    bdScopeEntry = BindScopeEntry name Nothing
     docName = unName name
     docValueType = qPositiveTypeDescription @t
+    docIsSupertype = True
+    docIsPattern = False
+    bdDoc = MkDefDoc {..}
+    in EntryDocTreeEntry MkBindDoc {..}
+
+mkSubtypeRelationEntry :: Text -> Text -> Text -> [SubypeConversionEntry PinaforeGroundType] -> DocTreeEntry BindDoc
+mkSubtypeRelationEntry ta tb docDescription scentries = let
+    bdScopeEntry = SubtypeScopeEntry scentries
+    docName = ta <> " <: " <> tb
+    docValueType = ""
     docIsSupertype = True
     docIsPattern = False
     bdDoc = MkDefDoc {..}
@@ -70,7 +79,9 @@ mkValPatEntry ::
     -> (v -> Maybe (HList lt))
     -> DocTreeEntry BindDoc
 mkValPatEntry name docDescription val pat = let
-    bdBind = Just (name, Just $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat)
+    bdScopeEntry =
+        BindScopeEntry name $
+        Just $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
     docName = unName name
     docValueType = qPositiveTypeDescription @t
     docIsSupertype = False
@@ -80,7 +91,7 @@ mkValPatEntry name docDescription val pat = let
 
 mkSpecialFormEntry :: Name -> Text -> Text -> Text -> PinaforeSpecialForm -> DocTreeEntry BindDoc
 mkSpecialFormEntry name docDescription params docValueType sf = let
-    bdBind = Just (name, Just $ \_ -> SpecialFormBinding sf)
+    bdScopeEntry = BindScopeEntry name $ Just $ \_ -> SpecialFormBinding sf
     docName = unName name <> " " <> params
     docIsSupertype = False
     docIsPattern = False
