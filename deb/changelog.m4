@@ -2,6 +2,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * Language
     - add subsumption expressions
+    - allow module-qualified names
   * Library
     - UI elements for CSS styling
     - openWindow now takes size
