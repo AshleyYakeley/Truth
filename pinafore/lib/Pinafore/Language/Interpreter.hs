@@ -55,7 +55,7 @@ type family InterpreterProvidedType (ts :: Type) :: forall k. k -> Type
 type family InterpreterClosedEntityType (ts :: Type) :: Type -> Type
 
 data BoundType (ts :: Type) where
-    MkGroundType
+    MkBoundType
         :: forall (ts :: Type) (dv :: DolanVariance) (t :: DolanVarianceKind dv).
            InterpreterGroundType ts dv t
         -> BoundType ts
@@ -279,15 +279,18 @@ withNewBindings bb = importScope $ bindingsScope bb
 withRemovedBindings :: [Name] -> Interpreter ts a -> Interpreter ts a
 withRemovedBindings nn = pLocalScope $ \tc -> tc {scopeBindings = deletesMap nn $ scopeBindings tc}
 
-lookupBinding :: Name -> SourceInterpreter ts (Maybe (InterpreterBinding ts))
-lookupBinding name = do
+lookupBinding :: ReferenceName -> SourceInterpreter ts (Maybe (InterpreterBinding ts))
+lookupBinding (UnqualifiedReferenceName name) = do
     (scopeBindings -> names) <- spScope
     return $ lookup name names
+lookupBinding (QualifiedReferenceName mname name) = do
+    scope <- getModule mname
+    return $ lookup name $ scopeBindings scope
 
 getSpecialVals :: SourceInterpreter ts (SpecialVals ts)
 getSpecialVals = liftSourcePos $ MkInterpreter $ asks icSpecialVals
 
-lookupLetBinding :: Name -> SourceInterpreter ts (Maybe (TSSealedExpression ts))
+lookupLetBinding :: ReferenceName -> SourceInterpreter ts (Maybe (TSSealedExpression ts))
 lookupLetBinding name = do
     mb <- lookupBinding name
     case mb of
@@ -297,14 +300,14 @@ lookupLetBinding name = do
 withNewLetBindings :: Map Name (TSSealedExpression ts) -> Interpreter ts a -> Interpreter ts a
 withNewLetBindings bb = withNewBindings $ fmap (\exp -> ValueBinding exp Nothing) bb
 
-lookupSpecialForm :: Name -> SourceInterpreter ts (SpecialForm ts (SourceInterpreter ts))
+lookupSpecialForm :: ReferenceName -> SourceInterpreter ts (SpecialForm ts (SourceInterpreter ts))
 lookupSpecialForm name = do
     mb <- lookupBinding name
     case mb of
         Just (SpecialFormBinding sf) -> return sf
         _ -> throw $ LookupSpecialFormUnknownError name
 
-lookupBoundTypeM :: Name -> SourceInterpreter ts (Maybe (BoundType ts))
+lookupBoundTypeM :: ReferenceName -> SourceInterpreter ts (Maybe (BoundType ts))
 lookupBoundTypeM name = do
     mb <- lookupBinding name
     return $
@@ -312,14 +315,14 @@ lookupBoundTypeM name = do
             Just (TypeBinding t) -> Just t
             _ -> Nothing
 
-lookupBoundType :: Name -> SourceInterpreter ts (BoundType ts)
+lookupBoundType :: ReferenceName -> SourceInterpreter ts (BoundType ts)
 lookupBoundType name = do
     mnt <- lookupBoundTypeM name
     case mnt of
         Just nt -> return nt
         Nothing -> throw $ LookupTypeUnknownError name
 
-lookupPatternConstructorM :: Name -> SourceInterpreter ts (Maybe (TSPatternConstructor ts))
+lookupPatternConstructorM :: ReferenceName -> SourceInterpreter ts (Maybe (TSPatternConstructor ts))
 lookupPatternConstructorM name = do
     mb <- lookupBinding name
     return $
@@ -327,7 +330,7 @@ lookupPatternConstructorM name = do
             Just (ValueBinding _ (Just pc)) -> Just pc
             _ -> Nothing
 
-lookupPatternConstructor :: Name -> SourceInterpreter ts (TSPatternConstructor ts)
+lookupPatternConstructor :: ReferenceName -> SourceInterpreter ts (TSPatternConstructor ts)
 lookupPatternConstructor name = do
     ma <- lookupPatternConstructorM name
     case ma of
@@ -347,7 +350,7 @@ registerType :: SourcePos -> Name -> BoundType ts -> WMFunction (Interpreter ts)
 registerType spos name t =
     MkWMFunction $ \mta ->
         runSourcePos spos $ do
-            mnt <- lookupBoundTypeM name
+            mnt <- lookupBoundTypeM $ UnqualifiedReferenceName name
             case mnt of
                 Just _ -> throw $ DeclareTypeDuplicateError name
                 Nothing -> liftSourcePos $ withNewBinding name (TypeBinding t) mta
@@ -375,7 +378,7 @@ withNewPatternConstructor ::
     -> TSPatternConstructor ts
     -> SourceInterpreter ts (WMFunction (Interpreter ts) (Interpreter ts))
 withNewPatternConstructor name exp pc = do
-    ma <- lookupPatternConstructorM name
+    ma <- lookupPatternConstructorM $ UnqualifiedReferenceName name
     case ma of
         Just _ -> throw $ DeclareConstructorDuplicateError name
         Nothing -> return $ MkWMFunction $ withNewBinding name $ ValueBinding exp $ Just pc

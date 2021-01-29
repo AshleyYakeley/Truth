@@ -12,14 +12,15 @@ data ErrorType
     | ParserError [Message]
     | ExpressionErrorError ExpressionError
     | LookupNamesUnknownError (NonEmpty Name)
-    | LookupTypeUnknownError Name
-    | LookupSpecialFormUnknownError Name
-    | SpecialFormWrongAnnotationsError Name
+    | LookupRefNameUnknownError ReferenceName
+    | LookupTypeUnknownError ReferenceName
+    | LookupSpecialFormUnknownError ReferenceName
+    | SpecialFormWrongAnnotationsError ReferenceName
                                        [Text]
                                        [Text]
     | TypeNotOpenEntityError Text
     | TypeNotSimpleEntityError Text
-    | LookupConstructorUnknownError Name
+    | LookupConstructorUnknownError ReferenceName
     | DeclareTypeDuplicateError Name
     | DeclareConstructorDuplicateError Name
     | DeclareDynamicTypeCycleError (NonEmpty Name)
@@ -43,7 +44,7 @@ data ErrorType
     | InterpretTypeUnderApplyError Text
     | InterpretTypeOverApplyError Text
     | InterpretTypeRangeApplyError Text
-    | InterpretConstructorUnknownError Name
+    | InterpretConstructorUnknownError ReferenceName
     | InterpretBindingsDuplicateError [Name]
     | InterpretUnboundTypeVariablesError (NonEmpty Name)
     | ModuleNotFoundError ModuleName
@@ -90,6 +91,7 @@ instance Show ErrorType where
         in strUnexpected `semicolon` strExpecting `semicolon` strMessage
     show (ExpressionErrorError e) = show e
     show (LookupNamesUnknownError nn) = "unknown names: " <> (intercalate ", " $ fmap show $ toList nn)
+    show (LookupRefNameUnknownError n) = "undefined: " <> show n
     show (LookupTypeUnknownError n) = "unknown type: " <> show n
     show (LookupSpecialFormUnknownError n) = "unknown special form: " <> show n
     show (SpecialFormWrongAnnotationsError n exp found) =

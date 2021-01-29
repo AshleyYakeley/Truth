@@ -90,7 +90,7 @@ readInfix prec =
         name <- readThis TokOperator
         let MkFixity assoc fprec = operatorFixity name
         if prec == fprec
-            then return (name, assoc, MkWithSourcePos spos $ SEVar name)
+            then return (name, assoc, MkWithSourcePos spos $ SEVar $ UnqualifiedReferenceName name)
             else empty
 
 leftApply :: SyntaxExpression -> [(SourcePos, SyntaxExpression, SyntaxExpression)] -> SyntaxExpression

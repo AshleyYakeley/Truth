@@ -353,7 +353,7 @@ uiLibEntries =
     [ docTreeEntry
           "UI"
           ""
-          [ mkTypeEntry "UI" "A user interface is something that goes inside a window." $ MkGroundType uiGroundType
+          [ mkTypeEntry "UI" "A user interface is something that goes inside a window." $ MkBoundType uiGroundType
           , mkValEntry "uiRun" "UI that runs an Action first." uiRun
           , mkValEntry "uiBlank" "Blank user-interface" $ MkLangUI createBlank
           , mkValEntry "uiUnitCheckBox" "(TBD)" uiUnitCheckBox
@@ -411,7 +411,7 @@ uiLibEntries =
     , docTreeEntry
           "Menu"
           ""
-          [ mkTypeEntry "MenuItem" "A item of a menu." $ MkGroundType menuItemGroundType
+          [ mkTypeEntry "MenuItem" "A item of a menu." $ MkBoundType menuItemGroundType
           , mkValEntry "menuSeparator" "Separator menu item." SeparatorMenuEntry
           , mkValEntry "menuSubmenu" "Submenu menu item." SubMenuEntry
           , mkValEntry
@@ -422,7 +422,7 @@ uiLibEntries =
     , docTreeEntry
           "Window"
           ""
-          [ mkTypeEntry "Window" "A user interface window." $ MkGroundType windowGroundType
+          [ mkTypeEntry "Window" "A user interface window." $ MkBoundType windowGroundType
           , mkValEntry "openWindow" "Open a new window with this size, title and UI." openWindow
           , mkValEntry "closeWindow" "Close a window." pwClose
           , mkValEntry "showWindow" "Show a window." uiWindowShow

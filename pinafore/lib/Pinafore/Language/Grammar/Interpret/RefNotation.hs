@@ -38,13 +38,16 @@ runRefNotation spos rexpr = evalStateT (runRefWriterT spos rexpr) 0
 
 type RefExpression = RefNotation QExpr
 
-varRefExpr :: SourcePos -> Name -> RefExpression
+varRefExpr :: SourcePos -> ReferenceName -> RefExpression
 varRefExpr spos name =
     liftRefNotation $ do
         mexpr <- runSourcePos spos $ lookupLetBinding name
         case mexpr of
             Just expr -> return expr
-            Nothing -> return $ qVarExpr name
+            Nothing ->
+                case name of
+                    UnqualifiedReferenceName n -> return $ qVarExpr n
+                    _ -> throw $ MkErrorMessage spos $ LookupRefNameUnknownError name
 
 refNotationUnquote :: SourcePos -> RefExpression -> RefExpression
 refNotationUnquote spos rexpr = do

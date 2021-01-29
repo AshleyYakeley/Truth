@@ -22,7 +22,10 @@ exprShow :: ExprShow t => t -> Text
 exprShow = exprPrecShow maxBound
 
 instance ExprShow Name where
-    exprShowPrec (MkName n) = (n, 0)
+    exprShowPrec n = (toText n, 0)
+
+instance ExprShow ReferenceName where
+    exprShowPrec n = (toText n, 0)
 
 instance ExprShow (SymbolType name) where
     exprShowPrec n = (pack $ uVarName n, 0)

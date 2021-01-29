@@ -41,7 +41,9 @@ data Token t where
     TokExport :: Token ()
     TokImport :: Token ()
     TokUName :: Token Name
+    TokQUName :: Token (ModuleName, Name)
     TokLName :: Token Name
+    TokQLName :: Token (ModuleName, Name)
     TokUnderscore :: Token ()
     TokLambda :: Token ()
     TokAssign :: Token ()
@@ -83,7 +85,9 @@ instance TestEquality Token where
     testEquality TokExport TokExport = Just Refl
     testEquality TokImport TokImport = Just Refl
     testEquality TokUName TokUName = Just Refl
+    testEquality TokQUName TokQUName = Just Refl
     testEquality TokLName TokLName = Just Refl
+    testEquality TokQLName TokQLName = Just Refl
     testEquality TokUnderscore TokUnderscore = Just Refl
     testEquality TokLambda TokLambda = Just Refl
     testEquality TokAssign TokAssign = Just Refl
@@ -126,7 +130,9 @@ instance Show (Token t) where
     show TokExport = show ("export" :: String)
     show TokImport = show ("import" :: String)
     show TokUName = "uname"
+    show TokQUName = "qualified uname"
     show TokLName = "lname"
+    show TokQLName = "qualified lname"
     show TokUnderscore = show ("_" :: String)
     show TokLambda = show ("\\" :: String)
     show TokAssign = show ("=" :: String)
@@ -141,6 +147,9 @@ instance Show (Token t) where
 instance Show (AnyValue Token) where
     show (MkAnyValue t _) = show t
 
+readChar :: Char -> Parser ()
+readChar c = void $ char c
+
 readWS :: Parser ()
 readWS = do
     spaces
@@ -152,10 +161,6 @@ readWS = do
     return ()
     <?> "white space"
   where
-    char1 :: Char -> Parser ()
-    char1 c = do
-        void $ char c
-        return ()
     isLineBreak :: Char -> Bool
     isLineBreak '\n' = True
     isLineBreak '\r' = True
@@ -163,16 +168,16 @@ readWS = do
     blockCommentOpen :: Parser ()
     blockCommentOpen =
         try $ do
-            char1 '{'
-            char1 '#'
+            readChar '{'
+            readChar '#'
     blockCommentClose :: Parser ()
     blockCommentClose =
         try $ do
-            char1 '#'
-            char1 '}'
+            readChar '#'
+            readChar '}'
     lineComment :: Parser ()
     lineComment = do
-        char1 '#'
+        readChar '#'
         void $ many (satisfy (\c -> not (isLineBreak c)))
         void endOfLine
     blockComment :: Parser ()
@@ -184,7 +189,7 @@ readWS = do
 
 readEscapedChar :: Parser Char
 readEscapedChar = do
-    void $ char '\\'
+    readChar '\\'
     c <- anyToken
     case c of
         'n' -> return '\n'
@@ -195,9 +200,9 @@ readEscapedChar = do
 
 readQuotedString :: Parser Text
 readQuotedString = do
-    void $ char '"'
+    readChar '"'
     s <- many readQuotedChar
-    void $ char '"'
+    readChar '"'
     return $ pack s
   where
     readQuotedChar :: Parser Char
@@ -228,33 +233,61 @@ readNumber =
          text <- many1 $ satisfy $ \c -> elem c ("0123456789-.e_~" :: String)
          mpure $ readNumberLiteral text)
 
-readTextToken :: Parser (AnyValue Token)
-readTextToken = do
+readQName :: Parser ([Name], Bool, String)
+readQName = do
     firstC <- satisfy identifierFirstChar
     rest <- many $ satisfy identifierChar
-    case firstC : rest of
-        -- keywords
-        "_" -> return $ MkAnyValue TokUnderscore ()
-        "rec" -> return $ MkAnyValue TokRec ()
-        "let" -> return $ MkAnyValue TokLet ()
-        "in" -> return $ MkAnyValue TokIn ()
-        "do" -> return $ MkAnyValue TokDo ()
-        "case" -> return $ MkAnyValue TokCase ()
-        "of" -> return $ MkAnyValue TokOf ()
-        "end" -> return $ MkAnyValue TokEnd ()
-        "if" -> return $ MkAnyValue TokIf ()
-        "then" -> return $ MkAnyValue TokThen ()
-        "else" -> return $ MkAnyValue TokElse ()
-        "datatype" -> return $ MkAnyValue TokDataType ()
-        "opentype" -> return $ MkAnyValue TokOpenType ()
-        "subtype" -> return $ MkAnyValue TokSubtype ()
-        "closedtype" -> return $ MkAnyValue TokClosedType ()
-        "dynamictype" -> return $ MkAnyValue TokDynamicType ()
-        "export" -> return $ MkAnyValue TokExport ()
-        "import" -> return $ MkAnyValue TokImport ()
-        name
-            | isUpper firstC -> return $ MkAnyValue TokUName $ MkName $ pack name
-        name -> return $ MkAnyValue TokLName $ MkName $ pack name
+    let name = firstC : rest
+    if isUpper firstC
+        then (do
+                  readChar '.'
+                  (qual, u, n) <- readQName
+                  return (MkName (pack name) : qual, u, n)) <|>
+             return ([], True, name)
+        else return ([], False, name)
+
+checkKeyword :: String -> Maybe (AnyValue Token)
+checkKeyword "_" = return $ MkAnyValue TokUnderscore ()
+checkKeyword "rec" = return $ MkAnyValue TokRec ()
+checkKeyword "let" = return $ MkAnyValue TokLet ()
+checkKeyword "in" = return $ MkAnyValue TokIn ()
+checkKeyword "do" = return $ MkAnyValue TokDo ()
+checkKeyword "case" = return $ MkAnyValue TokCase ()
+checkKeyword "of" = return $ MkAnyValue TokOf ()
+checkKeyword "end" = return $ MkAnyValue TokEnd ()
+checkKeyword "if" = return $ MkAnyValue TokIf ()
+checkKeyword "then" = return $ MkAnyValue TokThen ()
+checkKeyword "else" = return $ MkAnyValue TokElse ()
+checkKeyword "datatype" = return $ MkAnyValue TokDataType ()
+checkKeyword "opentype" = return $ MkAnyValue TokOpenType ()
+checkKeyword "subtype" = return $ MkAnyValue TokSubtype ()
+checkKeyword "closedtype" = return $ MkAnyValue TokClosedType ()
+checkKeyword "dynamictype" = return $ MkAnyValue TokDynamicType ()
+checkKeyword "export" = return $ MkAnyValue TokExport ()
+checkKeyword "import" = return $ MkAnyValue TokImport ()
+checkKeyword _ = Nothing
+
+readTextToken :: Parser (AnyValue Token)
+readTextToken = do
+    (qual, u, name) <- readQName
+    case nonEmpty qual of
+        Nothing ->
+            return $
+            case checkKeyword name of
+                Just tok -> tok
+                Nothing ->
+                    if u
+                        then MkAnyValue TokUName $ MkName $ pack name
+                        else MkAnyValue TokLName $ MkName $ pack name
+        Just qualnames ->
+            case checkKeyword name of
+                Just _ -> empty
+                Nothing ->
+                    return $ let
+                        mname = MkModuleName qualnames
+                        in if u
+                               then MkAnyValue TokQUName (mname, MkName $ pack name)
+                               else MkAnyValue TokQLName (mname, MkName $ pack name)
 
 toHexDigit :: Char -> Maybe Word8
 toHexDigit c =
@@ -306,20 +339,21 @@ readOpToken = do
         "@" -> return $ MkAnyValue TokAt ()
         _ -> return $ MkAnyValue TokOperator $ MkName $ pack name
 
-readChar :: Char -> Token () -> Parser (AnyValue Token)
-readChar c tok = do
-    void $ char c
+readCharTok :: Char -> Token () -> Parser (AnyValue Token)
+readCharTok c tok = do
+    readChar c
     return $ MkAnyValue tok ()
 
 readToken :: Parser ((SourcePos, AnyValue Token))
 readToken = do
     pos <- getPosition
     t <-
-        readChar ';' TokSemicolon <|> readChar ',' TokComma <|> readChar '(' TokOpenParen <|> readChar ')' TokCloseParen <|>
-        readChar '[' TokOpenBracket <|>
-        readChar ']' TokCloseBracket <|>
-        readChar '{' TokOpenBrace <|>
-        readChar '}' TokCloseBrace <|>
+        readCharTok ';' TokSemicolon <|> readCharTok ',' TokComma <|> readCharTok '(' TokOpenParen <|>
+        readCharTok ')' TokCloseParen <|>
+        readCharTok '[' TokOpenBracket <|>
+        readCharTok ']' TokCloseBracket <|>
+        readCharTok '{' TokOpenBrace <|>
+        readCharTok '}' TokCloseBrace <|>
         try readNumber <|>
         fmap (MkAnyValue TokString) readQuotedString <|>
         readTextToken <|>

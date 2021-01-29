@@ -1,5 +1,6 @@
 module Pinafore.Language.Grammar.Read.Type
-    ( readTypeName
+    ( readTypeReferenceName
+    , readTypeNewName
     , readType
     , readType3
     ) where
@@ -54,12 +55,15 @@ readType1 =
          return $ SingleSyntaxType tc [t1, t2]) <|>
     readType2
 
-readTypeName :: Parser Name
-readTypeName = readThis TokUName
+readTypeReferenceName :: Parser ReferenceName
+readTypeReferenceName = readReferenceUName
+
+readTypeNewName :: Parser Name
+readTypeNewName = readThis TokUName
 
 readTypeConstant :: Parser SyntaxGroundType
 readTypeConstant = do
-    name <- readTypeName
+    name <- readTypeReferenceName
     return $ ConstSyntaxGroundType name
 
 readTypeArgument :: Parser SyntaxType -> Parser SyntaxTypeArgument

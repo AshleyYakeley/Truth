@@ -12,7 +12,7 @@ readOpenEntityTypeDeclaration :: Parser SyntaxDeclaration
 readOpenEntityTypeDeclaration = do
     spos <- getPosition
     readThis TokOpenType
-    name <- readTypeName
+    name <- readTypeNewName
     return $ TypeSyntaxDeclaration spos name OpenEntitySyntaxTypeDeclaration
 
 readSubtypeDeclaration :: Parser SyntaxDeclaration
@@ -41,7 +41,7 @@ readDataTypeDeclaration :: Parser SyntaxDeclaration
 readDataTypeDeclaration = do
     spos <- getPosition
     readThis TokDataType
-    name <- readTypeName
+    name <- readTypeNewName
     mcons <-
         optional $ do
             readThis TokAssign
@@ -52,7 +52,7 @@ readClosedTypeDeclaration :: Parser SyntaxDeclaration
 readClosedTypeDeclaration = do
     spos <- getPosition
     readThis TokClosedType
-    name <- readTypeName
+    name <- readTypeNewName
     mcons <-
         optional $ do
             readThis TokAssign
@@ -62,13 +62,13 @@ readClosedTypeDeclaration = do
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
 readDynamicTypeConstructor =
     fmap AnchorSyntaxDynamicEntityConstructor (readThis TokAnchor) <|>
-    fmap NameSyntaxDynamicEntityConstructor readTypeName
+    fmap NameSyntaxDynamicEntityConstructor readTypeReferenceName
 
 readDynamicTypeDeclaration :: Parser SyntaxDeclaration
 readDynamicTypeDeclaration = do
     spos <- getPosition
     readThis TokDynamicType
-    name <- readTypeName
+    name <- readTypeNewName
     readThis TokAssign
     tcons <- readSeparated1 (readExactlyThis TokOperator "|") $ fmap pure readDynamicTypeConstructor
     return $ TypeSyntaxDeclaration spos name $ DynamicEntitySyntaxTypeDeclaration tcons

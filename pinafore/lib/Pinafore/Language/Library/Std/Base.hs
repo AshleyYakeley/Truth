@@ -232,7 +232,8 @@ baseLibEntries =
     [ docTreeEntry
           "Literals & Entities"
           ""
-          [ mkValEntry "==" "Entity equality." $ (==) @Entity
+          [ mkTypeEntry "Entity" "" $ MkBoundType $ EntityPinaforeGroundType NilListType TopEntityGroundType
+          , mkValEntry "==" "Entity equality." $ (==) @Entity
           , mkValEntry "/=" "Entity non-equality." $ (/=) @Entity
           , mkValEntry "entityAnchor" "The anchor of an entity, as text." entityAnchor
           , mkSubtypeRelationEntry "Literal" "Entity" "" $
@@ -521,7 +522,9 @@ baseLibEntries =
           , docTreeEntry
                 "Dynamic Entity Types"
                 ""
-                [ mkSubtypeRelationEntry "(any dynamic entity type)" "Entity" "" $
+                [ mkTypeEntry "DynamicEntity" "" $
+                  MkBoundType $ EntityPinaforeGroundType NilListType TopDynamicEntityGroundType
+                , mkSubtypeRelationEntry "(any dynamic entity type)" "Entity" "" $
                   pure $
                   MkSubypeConversionEntry (EntityPinaforeGroundType NilListType TopDynamicEntityGroundType) $ \case
                       EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ _) ->
@@ -557,7 +560,9 @@ baseLibEntries =
     , docTreeEntry
           "Maybe"
           ""
-          [ mkValPatEntry "Just" "Construct a Maybe from a value." (Just @A) $ \(v :: Maybe A) ->
+          [ mkTypeEntry "Maybe" "" $
+            MkBoundType $ EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType
+          , mkValPatEntry "Just" "Construct a Maybe from a value." (Just @A) $ \(v :: Maybe A) ->
                 case v of
                     Just a -> Just (a, ())
                     _ -> Nothing
@@ -609,7 +614,10 @@ baseLibEntries =
     , docTreeEntry
           "Either"
           ""
-          [ mkValPatEntry "Left" "Construct an Either from the left." (Left @A @B) $ \(v :: Either A B) ->
+          [ mkTypeEntry "Either" "" $
+            MkBoundType $
+            EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType
+          , mkValPatEntry "Left" "Construct an Either from the left." (Left @A @B) $ \(v :: Either A B) ->
                 case v of
                     Left a -> Just (a, ())
                     _ -> Nothing
@@ -708,7 +716,8 @@ baseLibEntries =
     , docTreeEntry
           "Actions"
           ""
-          [ mkValEntry "return" "A value as an Action." $ return @PinaforeAction @A
+          [ mkTypeEntry "Action" "" $ MkBoundType ActionPinaforeGroundType
+          , mkValEntry "return" "A value as an Action." $ return @PinaforeAction @A
           , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind
           , mkValEntry ">>" "Do actions in sequence." $ qbind_
           , mkValEntry

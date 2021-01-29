@@ -3,9 +3,15 @@ module Pinafore.Language.Name where
 import Language.Expression.Common
 import Shapes
 
-newtype Name = MkName
-    { unName :: Text
-    } deriving (Eq, Ord, MonoFoldable)
+class ToText t where
+    toText :: t -> Text
+
+newtype Name =
+    MkName Text
+    deriving (Eq, Ord, MonoFoldable)
+
+instance ToText Name where
+    toText (MkName n) = n
 
 instance Show Name where
     show = unpack
@@ -25,8 +31,20 @@ newtype ModuleName =
     MkModuleName (NonEmpty Name)
     deriving (Eq, Ord)
 
-moduleNameText :: ModuleName -> Text
-moduleNameText (MkModuleName nn) = intercalate "." $ fmap unName $ toList nn
+instance ToText ModuleName where
+    toText (MkModuleName nn) = intercalate "." $ fmap toText $ toList nn
 
 instance Show ModuleName where
-    show mname = unpack $ moduleNameText mname
+    show = unpack . toText
+
+data ReferenceName
+    = QualifiedReferenceName ModuleName
+                             Name
+    | UnqualifiedReferenceName Name
+
+instance ToText ReferenceName where
+    toText (UnqualifiedReferenceName n) = toText n
+    toText (QualifiedReferenceName m n) = toText m <> "." <> toText n
+
+instance Show ReferenceName where
+    show = unpack . toText

@@ -11,6 +11,7 @@ import Pinafore.Language.Error
 import Pinafore.Language.Grammar.Read.Token
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
+import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
@@ -92,3 +93,13 @@ readSourcePos p = do
     spos <- getPosition
     t <- p
     return $ MkWithSourcePos spos t
+
+readReferenceUName :: Parser ReferenceName
+readReferenceUName =
+    (fmap UnqualifiedReferenceName $ readThis TokUName) <|>
+    (fmap (\(m, n) -> QualifiedReferenceName m n) $ readThis TokQUName)
+
+readReferenceLName :: Parser ReferenceName
+readReferenceLName =
+    (fmap UnqualifiedReferenceName $ readThis TokLName) <|>
+    (fmap (\(m, n) -> QualifiedReferenceName m n) $ readThis TokQLName)

@@ -220,7 +220,7 @@ readExpression3 :: Parser SyntaxExpression
 readExpression3 =
     readSourcePos
         (do
-             name <- readThis TokLName
+             name <- readReferenceLName
              annotations <- many readAnnotation
              return $
                  case annotations of
@@ -243,7 +243,7 @@ readExpression3 =
      readSourcePos
          (do
               name <- readThis TokOperator
-              return $ SEVar name) <|>
+              return $ SEVar $ UnqualifiedReferenceName name) <|>
      (do
           spos <- getPosition
           msexpr1 <- optional readExpression

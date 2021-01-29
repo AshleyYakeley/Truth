@@ -17,7 +17,7 @@ data SyntaxDatatypeConstructor =
 
 data SyntaxDynamicEntityConstructor
     = AnchorSyntaxDynamicEntityConstructor Anchor
-    | NameSyntaxDynamicEntityConstructor Name
+    | NameSyntaxDynamicEntityConstructor ReferenceName
 
 data SyntaxTypeDeclaration
     = ClosedEntitySyntaxTypeDeclaration [SyntaxClosedEntityConstructor]
@@ -45,7 +45,7 @@ data SyntaxVariance
     | ContraSyntaxVariance
 
 data SyntaxGroundType
-    = ConstSyntaxGroundType Name
+    = ConstSyntaxGroundType ReferenceName
     | FunctionSyntaxGroundType
     | MorphismSyntaxGroundType
     | ListSyntaxGroundType
@@ -80,7 +80,7 @@ data SyntaxBinding =
 data SyntaxConstructor
     = SLNumber Number
     | SLString Text
-    | SLNamedConstructor Name
+    | SLNamedConstructor ReferenceName
     | SLPair
     | SLUnit
 
@@ -114,8 +114,8 @@ data SyntaxExpression'
     = SESubsume SyntaxExpression
                 SyntaxType
     | SEConst SyntaxConstant
-    | SEVar Name
-    | SESpecialForm Name
+    | SEVar ReferenceName
+    | SESpecialForm ReferenceName
                     (NonEmpty SyntaxAnnotation)
     | SEApply SyntaxExpression
               SyntaxExpression
@@ -192,7 +192,8 @@ instance SyntaxFreeVariables SyntaxCase where
 instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SESubsume expr _) = syntaxFreeVariables expr
     syntaxFreeVariables (SEConst _) = mempty
-    syntaxFreeVariables (SEVar name) = opoint name
+    syntaxFreeVariables (SEVar (UnqualifiedReferenceName name)) = opoint name
+    syntaxFreeVariables (SEVar (QualifiedReferenceName _ _)) = mempty
     syntaxFreeVariables (SESpecialForm _ _) = mempty
     syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
     syntaxFreeVariables (SEAbstract pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)

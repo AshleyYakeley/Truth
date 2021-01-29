@@ -8,7 +8,11 @@ import Pinafore.Language.Grammar.Read.Parser
 import Pinafore.Language.Grammar.Read.Token
 import Pinafore.Language.Grammar.Read.Type
 import Pinafore.Language.Grammar.Syntax
+import Pinafore.Language.Name
 import Shapes hiding (try)
+
+stdModule :: ModuleName
+stdModule = MkModuleName $ opoint "Std"
 
 readSourcePosPattern :: Parser SyntaxPattern' -> Parser SyntaxPattern
 readSourcePosPattern p = do
@@ -20,10 +24,13 @@ readPatterns :: Parser [SyntaxPattern]
 readPatterns = many readPattern4
 
 nilPattern :: SourcePos -> SyntaxPattern
-nilPattern spos = MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor "[]") []
+nilPattern spos =
+    MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor $ QualifiedReferenceName stdModule "[]") []
 
 consPattern :: SourcePos -> SyntaxPattern -> SyntaxPattern -> SyntaxPattern
-consPattern spos pat1 pat2 = MkWithSourcePos spos $ ConstructorSyntaxPattern (SLNamedConstructor "::") [pat1, pat2]
+consPattern spos pat1 pat2 =
+    MkWithSourcePos spos $
+    ConstructorSyntaxPattern (SLNamedConstructor $ QualifiedReferenceName stdModule "::") [pat1, pat2]
 
 readPattern1 :: Parser SyntaxPattern
 readPattern1 = do

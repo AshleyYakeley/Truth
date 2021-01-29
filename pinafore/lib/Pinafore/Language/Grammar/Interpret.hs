@@ -132,7 +132,7 @@ interpretDeclarations dspos decls = let
             decls
     in remonadRefNotation (importDecls . typeDecls . subtypeDecls) . bindingDecls
 
-interpretNamedConstructor :: SourcePos -> Name -> RefExpression
+interpretNamedConstructor :: SourcePos -> ReferenceName -> RefExpression
 interpretNamedConstructor spos n = do
     me <- liftRefNotation $ runSourcePos spos $ lookupLetBinding n
     case me of
@@ -183,7 +183,7 @@ showAnnotation AnnotConcreteDynamicEntityType = "type"
 showAnnotation AnnotPositiveType = "type"
 showAnnotation AnnotNegativeType = "type"
 
-interpretSpecialForm :: Name -> NonEmpty SyntaxAnnotation -> PinaforeSourceInterpreter QValue
+interpretSpecialForm :: ReferenceName -> NonEmpty SyntaxAnnotation -> PinaforeSourceInterpreter QValue
 interpretSpecialForm name annotations = do
     MkSpecialForm largs val <- lookupSpecialForm name
     margs <- getComposeM $ specialFormArgs largs $ toList annotations

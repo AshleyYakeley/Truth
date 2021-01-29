@@ -162,7 +162,7 @@ interpretTypeRangeItem (Just ContraSyntaxVariance, st) = do
 interpretTypeRangeItem (Nothing, st) = interpretTypeRangeFromType st
 
 groundTypeText :: SyntaxGroundType -> Text
-groundTypeText (ConstSyntaxGroundType n) = unName n
+groundTypeText (ConstSyntaxGroundType n) = toText n
 groundTypeText FunctionSyntaxGroundType = "->"
 groundTypeText MorphismSyntaxGroundType = "~>"
 groundTypeText ListSyntaxGroundType = "[]"
@@ -221,32 +221,11 @@ interpretGroundTypeConst PairSyntaxGroundType =
     return $
     MkPinaforeGroundTypeM $
     MkAnyW $ EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "Maybe") =
-    return $
-    MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "Either") =
-    return $
-    MkPinaforeGroundTypeM $
-    MkAnyW $ EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "WholeRef") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW WholeRefPinaforeGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "SetRef") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW SetRefPinaforeGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "FiniteSetRef") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW FiniteSetRefPinaforeGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "Action") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW ActionPinaforeGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "RefOrder") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW RefOrderPinaforeGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "Entity") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType TopEntityGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "DynamicEntity") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType TopDynamicEntityGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType n)
+interpretGroundTypeConst (ConstSyntaxGroundType (UnqualifiedReferenceName n))
     | Just (MkAnyW lt) <- nameToLiteralType n =
         return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType lt
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
-    MkGroundType t <- lookupBoundType n
+    MkBoundType t <- lookupBoundType n
     return $ MkPinaforeGroundTypeM $ MkAnyW t
 
 interpretSubtypeRelation :: SyntaxType -> SyntaxType -> PinaforeSourceInterpreter a -> PinaforeSourceInterpreter a

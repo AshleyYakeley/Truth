@@ -68,7 +68,7 @@ intepretSyntaxDynamicEntityConstructor ::
        SyntaxDynamicEntityConstructor -> SourceInterpreter PinaforeTypeSystem [DynamicType]
 intepretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ pure $ mkDynamicType a
 intepretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name) = do
-    MkGroundType t <- lookupBoundType name
+    MkBoundType t <- lookupBoundType name
     case t of
         EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dt) -> return $ toList dt
         _ -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name
@@ -85,11 +85,11 @@ interpretTypeDeclaration ::
 interpretTypeDeclaration _ name tid OpenEntitySyntaxTypeDeclaration = let
     mktype _ =
         case makeOpenEntityType name tid of
-            MkAnyW t -> MkGroundType $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType t
+            MkAnyW t -> MkBoundType $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType t
     in MkTypeBox name mktype $ return ((), id)
 interpretTypeDeclaration spos name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \(tidsym :: TypeIDType n) -> let
-        mktype t = MkGroundType $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym t
+        mktype t = MkBoundType $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym t
         in MkTypeBox name mktype $
            runSourcePos spos $ do
                tconss <- for sconss interpretClosedEntityTypeConstructor
@@ -120,7 +120,7 @@ interpretTypeDeclaration spos name tid (ClosedEntitySyntaxTypeDeclaration sconss
 interpretTypeDeclaration spos name tid (DatatypeSyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \tidsym -> let
         pt = MkProvidedType datatypeIOWitness $ MkIdentifiedType tidsym
-        mktype _ = MkGroundType $ SimpleGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
+        mktype _ = MkBoundType $ SimpleGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
         in MkTypeBox name mktype $
            runSourcePos spos $ do
                tconss <- for sconss interpretDataTypeConstructor
@@ -159,7 +159,7 @@ interpretTypeDeclaration spos name tid (DatatypeSyntaxTypeDeclaration sconss) =
                return ((), compAll patts)
 interpretTypeDeclaration spos name _ (DynamicEntitySyntaxTypeDeclaration stcons) = let
     mktype :: DynamicEntityType -> PinaforeBoundType
-    mktype t = MkGroundType $ EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType name t
+    mktype t = MkBoundType $ EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType name t
     in MkTypeBox name mktype $
        runSourcePos spos $ do
            dt <- for stcons intepretSyntaxDynamicEntityConstructor
@@ -179,8 +179,8 @@ interpretTypeDeclaration spos name _ (DynamicEntitySyntaxTypeDeclaration stcons)
 checkDynamicTypeCycles :: [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeInterpreter ()
 checkDynamicTypeCycles decls = let
     constructorName :: SyntaxDynamicEntityConstructor -> Maybe Name
-    constructorName (NameSyntaxDynamicEntityConstructor n) = Just n
-    constructorName (AnchorSyntaxDynamicEntityConstructor _) = Nothing
+    constructorName (NameSyntaxDynamicEntityConstructor (UnqualifiedReferenceName n)) = Just n
+    constructorName _ = Nothing
     getDynamicTypeReferences :: (SourcePos, Name, SyntaxTypeDeclaration) -> Maybe ((SourcePos, Name), Name, [Name])
     getDynamicTypeReferences (spos, n, DynamicEntitySyntaxTypeDeclaration cs) =
         Just $ ((spos, n), n, mapMaybe constructorName $ toList cs)

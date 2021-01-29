@@ -7,6 +7,7 @@ module Pinafore.Language.Library.Std.Reference
 import Changes.Core
 import Pinafore.Base
 import Pinafore.Language.DocTree
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.SpecialForm
@@ -42,8 +43,12 @@ refLibEntries =
           "References keep track of updates, and will update user interfaces constructed from them when their value changes."
           [ docTreeEntry
                 "Whole References"
-                "A whole reference of type `WholeRef {-p,+q}` has a setting type of `p` and a getting type of `q`."
-                [ mkValEntry
+                ""
+                [ mkTypeEntry
+                      "WholeRef"
+                      "A whole reference of type `WholeRef {-p,+q}` has a setting type of `p` and a getting type of `q`." $
+                  MkBoundType WholeRefPinaforeGroundType
+                , mkValEntry
                       "pureWhole"
                       "A constant whole reference for a value."
                       (pure :: A -> PinaforeImmutableWholeRef A)
@@ -95,7 +100,8 @@ refLibEntries =
           , docTreeEntry
                 "Set References"
                 ""
-                [ mkValEntry "mapSet" "Map a function on a set." (contramap :: (A -> B) -> LangSetRef B -> LangSetRef A)
+                [ mkTypeEntry "SetRef" "" $ MkBoundType SetRefPinaforeGroundType
+                , mkValEntry "mapSet" "Map a function on a set." (contramap :: (A -> B) -> LangSetRef B -> LangSetRef A)
                 , mkValEntry "pureSet" "Convert a predicate to a set." $ predicateToLangSetRef @A
                 , mkValEntry "refSet" "Convert a predicate reference to a set." $ predicateRefToLangSetRef @A
                 , mkValEntry "immutSet" "Convert a set to immutable." $ langSetRefImmutable @A
@@ -129,7 +135,8 @@ refLibEntries =
           , docTreeEntry
                 "Finite Set References"
                 ""
-                [ mkSubtypeRelationEntry "FiniteSetRef -a" "SetRef a" "" $
+                [ mkTypeEntry "FiniteSetRef" "" $ MkBoundType FiniteSetRefPinaforeGroundType
+                , mkSubtypeRelationEntry "FiniteSetRef -a" "SetRef a" "" $
                   pure $
                   simpleSubtypeConversionEntry FiniteSetRefPinaforeGroundType SetRefPinaforeGroundType $
                   MkSubtypeConversion $ \_ (ConsDolanArguments (MkRangeType t _) NilDolanArguments) ->
@@ -252,7 +259,8 @@ refLibEntries =
     , docTreeEntry
           "RefOrders"
           ""
-          [ mkSubtypeRelationEntry "a -> a -> Ordering" "RefOrder a" "" $
+          [ mkTypeEntry "RefOrder" "" $ MkBoundType RefOrderPinaforeGroundType
+          , mkSubtypeRelationEntry "a -> a -> Ordering" "RefOrder a" "" $
             pure $
             simpleSubtypeConversionEntry FuncPinaforeGroundType RefOrderPinaforeGroundType $
             MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t1 (ConsDolanArguments t2o NilDolanArguments)) ->

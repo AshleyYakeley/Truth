@@ -73,7 +73,7 @@ getLibraryModuleMap = do
 getLibraryScope :: (?pinafore :: PinaforeContext) => IO (ModuleName -> Maybe PinaforeScope)
 getLibraryScope = do
     libraryModuleMap <- getLibraryModuleMap
-    return $ \mname -> lookup (moduleNameText mname) libraryModuleMap
+    return $ \mname -> lookup (toText mname) libraryModuleMap
 
 data LibraryContext = MkLibraryContext
     { lcImplictScope :: PinaforeScope
