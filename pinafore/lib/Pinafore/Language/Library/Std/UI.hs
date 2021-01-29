@@ -1,3 +1,5 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Pinafore.Language.Library.Std.UI
     ( uiLibEntries
     ) where
@@ -10,9 +12,58 @@ import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.Std.Convert ()
+import Pinafore.Language.Shim
+import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
+
+-- LangUI
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUI where
+    toShimWit = mkShimWit $ GroundDolanSingularType UserInterfacePinaforeGroundType NilDolanArguments
+
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangUI where
+    toShimWit = singleDolanShimWit toJMShimWit
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangUI where
+    fromShimWit = mkShimWit $ GroundDolanSingularType UserInterfacePinaforeGroundType NilDolanArguments
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangUI where
+    fromShimWit = singleDolanShimWit fromJMShimWit
+
+-- LangWindow
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangWindow where
+    toShimWit = mkShimWit $ GroundDolanSingularType WindowPinaforeGroundType NilDolanArguments
+
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangWindow where
+    toShimWit = singleDolanShimWit toJMShimWit
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangWindow where
+    fromShimWit = mkShimWit $ GroundDolanSingularType WindowPinaforeGroundType NilDolanArguments
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangWindow where
+    fromShimWit = singleDolanShimWit fromJMShimWit
+
+-- UIWindow
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) UIWindow where
+    fromShimWit = mapNegShimWit (functionToShim "subtype" pwWindow) fromJMShimWit
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) UIWindow where
+    fromShimWit = singleDolanShimWit fromJMShimWit
+
+-- LangMenuEntry
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangMenuEntry where
+    toShimWit = mkShimWit $ GroundDolanSingularType MenuItemPinaforeGroundType NilDolanArguments
+
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangMenuEntry where
+    toShimWit = singleDolanShimWit toJMShimWit
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangMenuEntry where
+    fromShimWit = mkShimWit $ GroundDolanSingularType MenuItemPinaforeGroundType NilDolanArguments
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangMenuEntry where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)

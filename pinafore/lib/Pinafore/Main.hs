@@ -1,6 +1,5 @@
 module Pinafore.Main
-    ( filePinaforeType
-    , PinaforeContext
+    ( PinaforeContext
     , makePinaforeContext
     , ContextOptions(..)
     , standardPinaforeContext
@@ -21,9 +20,6 @@ import Shapes
 import System.FilePath
 
 type FilePinaforeType = PinaforeAction TopType
-
-filePinaforeType :: Text
-filePinaforeType = qNegativeTypeDescription @FilePinaforeType
 
 data ContextOptions = MkContextOptions
     { coCache :: Bool

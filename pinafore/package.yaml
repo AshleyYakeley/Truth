@@ -50,7 +50,8 @@ library:
       - Pinafore.Language.SpecialForm
       - Pinafore.Language.Interpreter
       - Pinafore.Language.Var
-      - Pinafore.Language.Convert.Base
+      - Pinafore.Language.Convert.TH
+      - Pinafore.Language.Convert
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type
@@ -76,9 +77,9 @@ library:
       - Pinafore.Language.Grammar.Interpret
       - Pinafore.Language.Grammar
       - Pinafore.Language.Expression
-      - Pinafore.Language.Convert
       - Pinafore.Language.DocTree
       - Pinafore.Language.Library.Defs
+      - Pinafore.Language.Library.Std.Convert
       - Pinafore.Language.Library.Std.Base
       - Pinafore.Language.Library.Std.Reference
       - Pinafore.Language.Library.Std.UI

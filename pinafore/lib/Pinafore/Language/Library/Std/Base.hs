@@ -16,6 +16,7 @@ import Pinafore.Language.DocTree
 import Pinafore.Language.If
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm

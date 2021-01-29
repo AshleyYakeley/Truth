@@ -11,8 +11,6 @@ module Pinafore.Language
     , throwInterpretResult
     , runInterpretResult
     , PinaforeAction
-    , qPositiveTypeDescription
-    , qNegativeTypeDescription
     , FromPinaforeType
     , ToPinaforeType
     , typedShowValue

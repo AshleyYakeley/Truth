@@ -8,6 +8,7 @@ import Changes.Core
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
+import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
