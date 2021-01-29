@@ -114,7 +114,7 @@ interpretTypeDeclaration spos name tid (ClosedEntitySyntaxTypeDeclaration sconss
 interpretTypeDeclaration spos name tid (DatatypeSyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \tidsym -> let
         pt = MkProvidedType datatypeIOWitness $ MkIdentifiedType tidsym
-        mktype _ = SimpleBoundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
+        mktype _ = GroundBoundType $ SimpleGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
         in MkTypeBox name mktype $
            runSourcePos spos $ do
                tconss <- for sconss interpretDataTypeConstructor

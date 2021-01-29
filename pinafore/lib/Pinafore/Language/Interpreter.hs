@@ -46,7 +46,6 @@ import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.DynamicEntity
 import Pinafore.Language.Type.Identified
-import Pinafore.Language.Type.Show
 import Shapes
 import Text.Parsec (SourcePos)
 
@@ -57,12 +56,9 @@ type family InterpreterProvidedType (ts :: Type) :: forall k. k -> Type
 type family InterpreterClosedEntityType (ts :: Type) :: Type -> Type
 
 data BoundType (ts :: Type) where
-    SimpleBoundType
+    GroundBoundType
         :: forall (ts :: Type) (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-           DolanVarianceType dv
-        -> DolanVarianceMap dv t
-        -> ListTypeExprShow dv
-        -> InterpreterProvidedType ts t
+           InterpreterGroundType ts dv t
         -> BoundType ts
     OpenEntityBoundType :: TypeID -> BoundType ts
     ClosedEntityBoundType

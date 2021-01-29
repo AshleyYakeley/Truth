@@ -72,12 +72,7 @@ mkSupertypeEntry name docDescription _val = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
-mkTypeEntry ::
-       forall t. ToPinaforeType t
-    => Name
-    -> Text
-    -> PinaforeBoundType
-    -> DocTreeEntry BindDoc
+mkTypeEntry :: Name -> Text -> PinaforeBoundType -> DocTreeEntry BindDoc
 mkTypeEntry name docDescription t = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> TypeBinding t
     docName = unName name

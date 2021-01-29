@@ -241,12 +241,6 @@ interpretGroundTypeConst (ConstSyntaxGroundType "Action") =
     return $ MkPinaforeGroundTypeM $ MkAnyW ActionPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "RefOrder") =
     return $ MkPinaforeGroundTypeM $ MkAnyW RefOrderPinaforeGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "UI") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW UserInterfacePinaforeGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "Window") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW WindowPinaforeGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType "MenuItem") =
-    return $ MkPinaforeGroundTypeM $ MkAnyW MenuItemPinaforeGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "Entity") =
     return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType TopEntityGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType "DynamicEntity") =
@@ -257,7 +251,7 @@ interpretGroundTypeConst (ConstSyntaxGroundType n)
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     nt <- lookupBoundType n
     case nt of
-        SimpleBoundType dv dm es wt -> return $ MkPinaforeGroundTypeM $ MkAnyW $ SimpleGroundType dv dm es wt
+        GroundBoundType t -> return $ MkPinaforeGroundTypeM $ MkAnyW t
         OpenEntityBoundType tid ->
             case makeOpenEntityType n tid of
                 MkAnyW t ->

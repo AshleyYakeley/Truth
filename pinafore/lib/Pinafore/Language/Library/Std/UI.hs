@@ -11,6 +11,7 @@ import Data.Time
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.DocTree
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
 import Pinafore.Language.Shim
@@ -19,28 +20,43 @@ import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
 
+uiGroundType :: PinaforeGroundType '[] LangUI
+uiGroundType =
+    SimpleGroundType NilListType NilDolanVarianceMap ("UI", 0) $
+    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangUI)|]) HetRefl
+
+windowGroundType :: PinaforeGroundType '[] LangWindow
+windowGroundType =
+    SimpleGroundType NilListType NilDolanVarianceMap ("Window", 0) $
+    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangWindow)|]) HetRefl
+
+menuItemGroundType :: PinaforeGroundType '[] LangMenuEntry
+menuItemGroundType =
+    SimpleGroundType NilListType NilDolanVarianceMap ("MenuItem", 0) $
+    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangMenuEntry)|]) HetRefl
+
 -- LangUI
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUI where
-    toShimWit = mkShimWit $ GroundDolanSingularType UserInterfacePinaforeGroundType NilDolanArguments
+    toShimWit = mkShimWit $ GroundDolanSingularType uiGroundType NilDolanArguments
 
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangUI where
     toShimWit = singleDolanShimWit toJMShimWit
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangUI where
-    fromShimWit = mkShimWit $ GroundDolanSingularType UserInterfacePinaforeGroundType NilDolanArguments
+    fromShimWit = mkShimWit $ GroundDolanSingularType uiGroundType NilDolanArguments
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangUI where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- LangWindow
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangWindow where
-    toShimWit = mkShimWit $ GroundDolanSingularType WindowPinaforeGroundType NilDolanArguments
+    toShimWit = mkShimWit $ GroundDolanSingularType windowGroundType NilDolanArguments
 
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangWindow where
     toShimWit = singleDolanShimWit toJMShimWit
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangWindow where
-    fromShimWit = mkShimWit $ GroundDolanSingularType WindowPinaforeGroundType NilDolanArguments
+    fromShimWit = mkShimWit $ GroundDolanSingularType windowGroundType NilDolanArguments
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangWindow where
     fromShimWit = singleDolanShimWit fromJMShimWit
@@ -54,13 +70,13 @@ instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) UIWindow w
 
 -- LangMenuEntry
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangMenuEntry where
-    toShimWit = mkShimWit $ GroundDolanSingularType MenuItemPinaforeGroundType NilDolanArguments
+    toShimWit = mkShimWit $ GroundDolanSingularType menuItemGroundType NilDolanArguments
 
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangMenuEntry where
     toShimWit = singleDolanShimWit toJMShimWit
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangMenuEntry where
-    fromShimWit = mkShimWit $ GroundDolanSingularType MenuItemPinaforeGroundType NilDolanArguments
+    fromShimWit = mkShimWit $ GroundDolanSingularType menuItemGroundType NilDolanArguments
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangMenuEntry where
     fromShimWit = singleDolanShimWit fromJMShimWit
@@ -336,8 +352,9 @@ uiLibEntries :: [DocTreeEntry BindDoc]
 uiLibEntries =
     [ docTreeEntry
           "UI"
-          "A user interface is something that goes inside a window."
-          [ mkValEntry "uiRun" "UI that runs an Action first." uiRun
+          ""
+          [ mkTypeEntry "UI" "A user interface is something that goes inside a window." $ GroundBoundType uiGroundType
+          , mkValEntry "uiRun" "UI that runs an Action first." uiRun
           , mkValEntry "uiBlank" "Blank user-interface" $ MkLangUI createBlank
           , mkValEntry "uiUnitCheckBox" "(TBD)" uiUnitCheckBox
           , mkValEntry "uiCheckBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox
@@ -393,8 +410,9 @@ uiLibEntries =
           ]
     , docTreeEntry
           "Menu"
-          "Menu items."
-          [ mkValEntry "menuSeparator" "Separator menu item." SeparatorMenuEntry
+          ""
+          [ mkTypeEntry "MenuItem" "A item of a menu." $ GroundBoundType menuItemGroundType
+          , mkValEntry "menuSeparator" "Separator menu item." SeparatorMenuEntry
           , mkValEntry "menuSubmenu" "Submenu menu item." SubMenuEntry
           , mkValEntry
                 "menuAction"
@@ -403,8 +421,9 @@ uiLibEntries =
           ]
     , docTreeEntry
           "Window"
-          "User interface windows."
-          [ mkValEntry "openWindow" "Open a new window with this size, title and UI." openWindow
+          ""
+          [ mkTypeEntry "Window" "A user interface window." $ GroundBoundType windowGroundType
+          , mkValEntry "openWindow" "Open a new window with this size, title and UI." openWindow
           , mkValEntry "closeWindow" "Close a window." pwClose
           , mkValEntry "showWindow" "Show a window." uiWindowShow
           , mkValEntry "hideWindow" "Hide a window." uiWindowHide

@@ -23,7 +23,7 @@ data ProvidedType :: forall k. k -> Type where
         -> w t
         -> ProvidedType t
 
-instance TestHetEquality (ProvidedType) where
+instance TestHetEquality ProvidedType where
     testHetEquality (MkProvidedType wa ta) (MkProvidedType wb tb) = do
         Refl <- testEquality wa wb
         HRefl <- testHetEquality ta tb
@@ -50,10 +50,6 @@ data PinaforeGroundType dv t where
     SetRefPinaforeGroundType :: PinaforeGroundType '[ 'Contravariance] LangSetRef
     FiniteSetRefPinaforeGroundType :: PinaforeGroundType '[ 'Rangevariance] LangFiniteSetRef
     MorphismPinaforeGroundType :: PinaforeGroundType '[ 'Rangevariance, 'Rangevariance] LangMorphism
-    -- UI
-    UserInterfacePinaforeGroundType :: PinaforeGroundType '[] LangUI
-    WindowPinaforeGroundType :: PinaforeGroundType '[] LangWindow
-    MenuItemPinaforeGroundType :: PinaforeGroundType '[] LangMenuEntry
 
 type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
 
@@ -79,9 +75,6 @@ instance IsDolanGroundType PinaforeGroundType where
     groundTypeVarianceMap SetRefPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap FiniteSetRefPinaforeGroundType = dolanVary @dv
     groundTypeVarianceMap MorphismPinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap UserInterfacePinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap WindowPinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap MenuItemPinaforeGroundType = dolanVary @dv
     groundTypeVarianceType :: PinaforeGroundType dv t -> DolanVarianceType dv
     groundTypeVarianceType (SimpleGroundType dvt _ _ _) = dvt
     groundTypeVarianceType FuncPinaforeGroundType = representative
@@ -94,9 +87,6 @@ instance IsDolanGroundType PinaforeGroundType where
     groundTypeVarianceType SetRefPinaforeGroundType = representative
     groundTypeVarianceType FiniteSetRefPinaforeGroundType = representative
     groundTypeVarianceType MorphismPinaforeGroundType = representative
-    groundTypeVarianceType UserInterfacePinaforeGroundType = representative
-    groundTypeVarianceType WindowPinaforeGroundType = representative
-    groundTypeVarianceType MenuItemPinaforeGroundType = representative
     groundTypeTestEquality :: PinaforeGroundType dka ta -> PinaforeGroundType dkb tb -> Maybe (dka :~: dkb, ta :~~: tb)
     groundTypeTestEquality (SimpleGroundType dva _ _ ta) (SimpleGroundType dvb _ _ tb) = do
         Refl <- testEquality dva dvb
@@ -115,9 +105,6 @@ instance IsDolanGroundType PinaforeGroundType where
     groundTypeTestEquality SetRefPinaforeGroundType SetRefPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality FiniteSetRefPinaforeGroundType FiniteSetRefPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality MorphismPinaforeGroundType MorphismPinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality UserInterfacePinaforeGroundType UserInterfacePinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality WindowPinaforeGroundType WindowPinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality MenuItemPinaforeGroundType MenuItemPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality _ _ = Nothing
 
 instance CovarySubtype PinaforeGroundType EntityGroundType where
@@ -185,9 +172,6 @@ instance GroundExprShow PinaforeGroundType where
         ("FiniteSetRef " <> exprPrecShow 0 ta, 2)
     groundTypeShowPrec MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
         invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
-    groundTypeShowPrec UserInterfacePinaforeGroundType NilDolanArguments = ("UI", 0)
-    groundTypeShowPrec WindowPinaforeGroundType NilDolanArguments = ("Window", 0)
-    groundTypeShowPrec MenuItemPinaforeGroundType NilDolanArguments = ("MenuItem", 0)
 
 withEntitySubtype ::
        forall (t :: Type) tidb a.
