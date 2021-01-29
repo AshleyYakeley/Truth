@@ -25,11 +25,9 @@ showDefEntry h _ MkDefDoc {..} = do
         nameType = name <> " `: " <> unpack docValueType <> "`"
         title =
             case docType of
-                NormalDocType ->
-                    nameType <>
-                    (if docIsPattern
-                         then " (also pattern)"
-                         else "")
+                ValueDocType -> nameType
+                ValuePatternDocType -> nameType <> " (also pattern)"
+                TypeDocType -> name
                 SupertypeDocType -> "_" <> nameType <> "_"
                 SubtypeRelationDocType -> name
     hPutStrLn h $ title <> "  "

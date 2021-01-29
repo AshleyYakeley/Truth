@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Std.File
-    ( file_stdLibraryModule
+    ( fileLibEntries
     ) where
 
 import Pinafore.Language.DocTree
@@ -38,8 +38,8 @@ file_import set continue = do
 file_size :: Reference ByteStringEdit -> IO Int64
 file_size MkReference {..} = runWMFunction objRun $ refRead ReadByteStringLength
 -}
-file_stdLibraryModule :: [DocTreeEntry BindDoc]
-file_stdLibraryModule =
+fileLibEntries :: [DocTreeEntry BindDoc]
+fileLibEntries =
     [ docTreeEntry
           "Files"
           "NYI"

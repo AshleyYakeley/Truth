@@ -80,6 +80,7 @@ library:
       - Pinafore.Language.DocTree
       - Pinafore.Language.Library.Defs
       - Pinafore.Language.Library.Std.Base
+      - Pinafore.Language.Library.Std.Reference
       - Pinafore.Language.Library.Std.UI
       - Pinafore.Language.Library.Std.File
       - Pinafore.Language.Library.Std

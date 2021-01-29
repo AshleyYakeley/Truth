@@ -54,7 +54,7 @@ nameIsInfix n =
 
 allOperatorNames :: [Name]
 allOperatorNames = let
-    getDocName MkDefDoc {docType = NormalDocType, ..}
+    getDocName MkDefDoc {docType = ValueDocType, ..}
         | nameIsInfix (MkName docName) = Just $ MkName docName
     getDocName _ = Nothing
     in catMaybes $ fmap getDocName $ mconcat $ fmap toList libraryDoc

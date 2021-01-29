@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.Std.UI
-    ( ui_stdLibraryModule
+    ( uiLibEntries
     ) where
 
 import Changes.Core
@@ -281,8 +281,8 @@ uiStyleClass sclass (MkLangUI mw) =
         setCSSClass sclass widget
         return widget
 
-ui_stdLibraryModule :: [DocTreeEntry BindDoc]
-ui_stdLibraryModule =
+uiLibEntries :: [DocTreeEntry BindDoc]
+uiLibEntries =
     [ docTreeEntry
           "UI"
           "A user interface is something that goes inside a window."

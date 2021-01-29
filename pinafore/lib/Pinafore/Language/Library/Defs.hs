@@ -40,8 +40,7 @@ mkValEntry name docDescription val = let
             in ValueBinding (qConstExprAny $ jmToValue val) Nothing
     docName = unName name
     docValueType = qPositiveTypeDescription @t
-    docType = NormalDocType
-    docIsPattern = False
+    docType = ValueDocType
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
@@ -56,7 +55,20 @@ mkSupertypeEntry name docDescription _val = let
     docName = unName name
     docValueType = qPositiveTypeDescription @t
     docType = SupertypeDocType
-    docIsPattern = False
+    bdDoc = MkDefDoc {..}
+    in EntryDocTreeEntry MkBindDoc {..}
+
+mkTypeEntry ::
+       forall t. ToPinaforeType t
+    => Name
+    -> Text
+    -> PinaforeBoundType
+    -> DocTreeEntry BindDoc
+mkTypeEntry name docDescription t = let
+    bdScopeEntry = BindScopeEntry name $ Just $ \_ -> TypeBinding t
+    docName = unName name
+    docValueType = ""
+    docType = TypeDocType
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
@@ -66,7 +78,6 @@ mkSubtypeRelationEntry ta tb docDescription scentries = let
     docName = ta <> " <: " <> tb
     docValueType = ""
     docType = SubtypeRelationDocType
-    docIsPattern = False
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
@@ -84,8 +95,7 @@ mkValPatEntry name docDescription val pat = let
         Just $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
     docName = unName name
     docValueType = qPositiveTypeDescription @t
-    docType = NormalDocType
-    docIsPattern = True
+    docType = ValuePatternDocType
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
@@ -93,7 +103,6 @@ mkSpecialFormEntry :: Name -> Text -> Text -> Text -> PinaforeSpecialForm -> Doc
 mkSpecialFormEntry name docDescription params docValueType sf = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> SpecialFormBinding sf
     docName = unName name <> " " <> params
-    docType = NormalDocType
-    docIsPattern = False
+    docType = ValueDocType
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
