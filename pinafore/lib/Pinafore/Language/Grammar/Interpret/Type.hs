@@ -208,9 +208,6 @@ interpretArgs sgt (ConsListType RangevarianceType dv) (st:stt) = do
             case aargs of
                 MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
 
-makeOpenEntityType :: Name -> TypeID -> AnyW OpenEntityType
-makeOpenEntityType n tid = valueToWitness tid $ \tidsym -> MkAnyW $ MkOpenEntityType n tidsym
-
 interpretGroundTypeConst :: SyntaxGroundType -> PinaforeSourceInterpreter PinaforeGroundTypeM
 interpretGroundTypeConst UnitSyntaxGroundType =
     return $
@@ -249,20 +246,8 @@ interpretGroundTypeConst (ConstSyntaxGroundType n)
     | Just (MkAnyW lt) <- nameToLiteralType n =
         return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType lt
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
-    nt <- lookupBoundType n
-    case nt of
-        GroundBoundType t -> return $ MkPinaforeGroundTypeM $ MkAnyW t
-        OpenEntityBoundType tid ->
-            case makeOpenEntityType n tid of
-                MkAnyW t ->
-                    return $
-                    MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType t
-        ClosedEntityBoundType tidsym ct ->
-            return $
-            MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n tidsym ct
-        DynamicEntityBoundType dt ->
-            return $
-            MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType n dt
+    MkGroundType t <- lookupBoundType n
+    return $ MkPinaforeGroundTypeM $ MkAnyW t
 
 interpretSubtypeRelation :: SyntaxType -> SyntaxType -> PinaforeSourceInterpreter a -> PinaforeSourceInterpreter a
 interpretSubtypeRelation sta stb ma = do

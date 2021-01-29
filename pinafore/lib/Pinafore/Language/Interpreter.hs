@@ -44,7 +44,6 @@ import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
-import Pinafore.Language.Type.DynamicEntity
 import Pinafore.Language.Type.Identified
 import Shapes
 import Text.Parsec (SourcePos)
@@ -56,17 +55,10 @@ type family InterpreterProvidedType (ts :: Type) :: forall k. k -> Type
 type family InterpreterClosedEntityType (ts :: Type) :: Type -> Type
 
 data BoundType (ts :: Type) where
-    GroundBoundType
+    MkGroundType
         :: forall (ts :: Type) (dv :: DolanVariance) (t :: DolanVarianceKind dv).
            InterpreterGroundType ts dv t
         -> BoundType ts
-    OpenEntityBoundType :: TypeID -> BoundType ts
-    ClosedEntityBoundType
-        :: forall (ts :: Type) (tid :: BigNat).
-           TypeIDType tid
-        -> InterpreterClosedEntityType ts (Identified tid)
-        -> BoundType ts
-    DynamicEntityBoundType :: forall (ts :: Type). DynamicEntityType -> BoundType ts
 
 newtype SpecialVals (ts :: Type) = MkSpecialVals
     { specialEvaluate :: forall t. TSPosWitness ts t -> Text -> PinaforeAction (Either Text t)

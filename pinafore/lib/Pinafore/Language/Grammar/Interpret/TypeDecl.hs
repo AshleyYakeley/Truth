@@ -68,10 +68,13 @@ intepretSyntaxDynamicEntityConstructor ::
        SyntaxDynamicEntityConstructor -> SourceInterpreter PinaforeTypeSystem [DynamicType]
 intepretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ pure $ mkDynamicType a
 intepretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name) = do
-    t <- lookupBoundType name
+    MkGroundType t <- lookupBoundType name
     case t of
-        DynamicEntityBoundType dt -> return $ toList dt
+        EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dt) -> return $ toList dt
         _ -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name
+
+makeOpenEntityType :: Name -> TypeID -> AnyW OpenEntityType
+makeOpenEntityType n tid = valueToWitness tid $ \tidsym -> MkAnyW $ MkOpenEntityType n tidsym
 
 interpretTypeDeclaration ::
        SourcePos
@@ -79,11 +82,14 @@ interpretTypeDeclaration ::
     -> TypeID
     -> SyntaxTypeDeclaration
     -> PinaforeTypeBox (WMFunction PinaforeInterpreter PinaforeInterpreter)
-interpretTypeDeclaration _ name tid OpenEntitySyntaxTypeDeclaration =
-    MkTypeBox name (\_ -> OpenEntityBoundType tid) $ return ((), id)
+interpretTypeDeclaration _ name tid OpenEntitySyntaxTypeDeclaration = let
+    mktype _ =
+        case makeOpenEntityType name tid of
+            MkAnyW t -> MkGroundType $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType t
+    in MkTypeBox name mktype $ return ((), id)
 interpretTypeDeclaration spos name tid (ClosedEntitySyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \(tidsym :: TypeIDType n) -> let
-        mktype t = ClosedEntityBoundType tidsym t
+        mktype t = MkGroundType $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym t
         in MkTypeBox name mktype $
            runSourcePos spos $ do
                tconss <- for sconss interpretClosedEntityTypeConstructor
@@ -114,7 +120,7 @@ interpretTypeDeclaration spos name tid (ClosedEntitySyntaxTypeDeclaration sconss
 interpretTypeDeclaration spos name tid (DatatypeSyntaxTypeDeclaration sconss) =
     valueToWitness tid $ \tidsym -> let
         pt = MkProvidedType datatypeIOWitness $ MkIdentifiedType tidsym
-        mktype _ = GroundBoundType $ SimpleGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
+        mktype _ = MkGroundType $ SimpleGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
         in MkTypeBox name mktype $
            runSourcePos spos $ do
                tconss <- for sconss interpretDataTypeConstructor
@@ -151,22 +157,24 @@ interpretTypeDeclaration spos name tid (DatatypeSyntaxTypeDeclaration sconss) =
                            pc = toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
                        withNewPatternConstructor cname expr pc
                return ((), compAll patts)
-interpretTypeDeclaration spos name _ (DynamicEntitySyntaxTypeDeclaration stcons) =
-    MkTypeBox name DynamicEntityBoundType $
-    runSourcePos spos $ do
-        dt <- for stcons intepretSyntaxDynamicEntityConstructor
-        let
-            dts = setFromList $ mconcat $ toList dt
-            tp = EntityPinaforeGroundType NilListType (ADynamicEntityGroundType name dts)
-        return $
-            (,) dts $
-            MkWMFunction $
-            withSubtypeConversions $
-            pure $
-            MkSubypeConversionEntry tp $ \case
-                EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dts')
-                    | isSubsetOf dts' dts -> Just idSubtypeConversion
-                _ -> Nothing
+interpretTypeDeclaration spos name _ (DynamicEntitySyntaxTypeDeclaration stcons) = let
+    mktype :: DynamicEntityType -> PinaforeBoundType
+    mktype t = MkGroundType $ EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType name t
+    in MkTypeBox name mktype $
+       runSourcePos spos $ do
+           dt <- for stcons intepretSyntaxDynamicEntityConstructor
+           let
+               dts = setFromList $ mconcat $ toList dt
+               tp = EntityPinaforeGroundType NilListType (ADynamicEntityGroundType name dts)
+           return $
+               (,) dts $
+               MkWMFunction $
+               withSubtypeConversions $
+               pure $
+               MkSubypeConversionEntry tp $ \case
+                   EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dts')
+                       | isSubsetOf dts' dts -> Just idSubtypeConversion
+                   _ -> Nothing
 
 checkDynamicTypeCycles :: [(SourcePos, Name, SyntaxTypeDeclaration)] -> PinaforeInterpreter ()
 checkDynamicTypeCycles decls = let
