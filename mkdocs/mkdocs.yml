@@ -23,6 +23,7 @@ nav:
   - Modules: 'modules.md'
 - Library:
   - Std: 'library/Std.md'
+  - UI: 'library/UI.md'
   - Debug: 'library/Debug.md'
 - Examples:
   - Stopwatch: 'examples/stopwatch.md'
