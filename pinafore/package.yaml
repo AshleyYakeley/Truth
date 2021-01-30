@@ -81,9 +81,9 @@ library:
       - Pinafore.Language.Library.Std.Convert
       - Pinafore.Language.Library.Std.Base
       - Pinafore.Language.Library.Std.Reference
-      - Pinafore.Language.Library.UI
       - Pinafore.Language.Library.Std.File
       - Pinafore.Language.Library.Std
+      - Pinafore.Language.Library.UI
       - Pinafore.Language.Library.Debug
       - Pinafore.Language.Library
 
