@@ -115,11 +115,11 @@ testUI =
     runContext $
     context
         [ "emptywindow: Action ()"
-        , "emptywindow = do openWindow (300,400) {\"Empty\"} {[]} uiBlank; return (); end"
+        , "emptywindow = do UI.openWindow (300,400) {\"Empty\"} {[]} UI.blank; return (); end"
         , "opentype T"
         , "newpoint: Action ()"
         , "newpoint = do s <- newMemFiniteSet; p <- newOpenEntity @T; s += p; return (); end"
         , "buttonwindow: Action Any -> Action ()"
-        , "buttonwindow action = do openWindow (300,400) {\"Test\"} {[]} (uiButton {\"Button\"} {action}); return (); end"
+        , "buttonwindow action = do UI.openWindow (300,400) {\"Test\"} {[]} (UI.button {\"Button\"} {action}); return (); end"
         ] $
     tgroup "UI" [tgroup "immediate" $ testActions SyncTiming, tgroup "wait" $ testActions AsyncTiming]

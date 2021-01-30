@@ -63,7 +63,7 @@ testReadTypes =
         , testReadType "FiniteSetRef a"
         , testReadType "FiniteSetRef +a"
         , testReadType "FiniteSetRef {+a,b,-Entity}"
-        , testReadType "WholeRef +Text -> (Action a -> [MenuItem]) -> UI -> Action Window"
+        , testReadType "WholeRef +Text -> (Action a -> [UI.MenuItem]) -> UI.Element -> Action UI.Window"
         , testTree
               "recursive"
               [testReadType "rec a. Maybe a", testReadType "rec a. Maybe a -> b", testReadType "rec a. rec b. (a,b)"]

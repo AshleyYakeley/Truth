@@ -3,11 +3,11 @@ let
 
 emptywindow :: Action ();
 emptywindow = do
-    openWindow (300,400) {"Empty"} {[]} uiBlank;
+    UI.openWindow (300,400) {"Empty"} {[]} UI.blank;
     return ();
     end;
 
 newpoint :: Action ();
 newpoint = do s <- newMemFiniteSet; newEntity s; return (); end;
 
-in openWindow (300,400) {"Test"} {[]} $ uiButton {"Button"} {newpoint >> emptywindow};
+in UI.openWindow (300,400) {"Test"} {[]} $ UI.button {"Button"} {newpoint >> emptywindow};

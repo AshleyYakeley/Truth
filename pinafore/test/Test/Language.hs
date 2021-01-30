@@ -233,7 +233,7 @@ testQueries =
               , testQuery "True" $ LRSuccess "True"
               , testQuery "False" $ LRSuccess "False"
               , testQuery "\"1\"" $ LRSuccess "1"
-              , testQuery "uiListTable" $ LRSuccess "<?>"
+              , testQuery "UI.listTable" $ LRSuccess "<?>"
               , testQuery "let opentype T in openEntity @T !\"example\"" $ LRSuccess "<?>"
               , testQuery "let opentype T in entityAnchor $ openEntity @T !\"example\"" $
                 LRSuccess "!1AF8A5FD-24AAAF3E-3668C588-6C74D36A-70ED9618-CC874895-E4569C9F-FCD42CD3"

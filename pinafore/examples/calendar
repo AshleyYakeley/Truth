@@ -4,21 +4,21 @@ let
 dateText: Date ~> Text;
 dateText = property @Date @Text !"example.calendar:dateText";
 
-ui: WholeRef Date -> UI;
-ui r = uiVertical
+ui: WholeRef Date -> UI.Element;
+ui r = UI.vertical
     [
-    (False, uiHorizontal
+    (False, UI.horizontal
         [
-        (False, uiButton {"<"} {do d <- get r; r := addDays (-1) d; end}),
-        (True, uiLabel {unixFormatDate "%A, %B %e, %Y" %r}),
-        (False, uiButton {">"} {do d <- get r; r := addDays 1 d; end})
+        (False, UI.button {"<"} {do d <- get r; r := addDays (-1) d; end}),
+        (True, UI.label {unixFormatDate "%A, %B %e, %Y" %r}),
+        (False, UI.button {">"} {do d <- get r; r := addDays 1 d; end})
         ]),
-    (True, uiTextArea $ dateText !$ r)
+    (True, UI.textArea $ dateText !$ r)
     ];
 
 in do
     r <- newMemWhole;
     d <- getDate;
     r := d;
-    openWindow (300,400) {toText %r} {[]} $ ui r;
+    UI.openWindow (300,400) {toText %r} {[]} $ ui r;
     end

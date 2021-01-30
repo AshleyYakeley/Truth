@@ -2,8 +2,8 @@
 
 do
 outputLn "BEGIN";
-w <- openWindow (600,800) {"Window"} {[]} uiBlank;
+w <- UI.openWindow (600,800) {"Window"} {[]} UI.blank;
 outputLn "Open";
-closeWindow w;
+UI.closeWindow w;
 outputLn "END";
 end

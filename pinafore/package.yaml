@@ -36,7 +36,6 @@ library:
       - Pinafore.Language.Value.TextRef
       - Pinafore.Language.Value.Morphism
       - Pinafore.Language.Value.RefOrder
-      - Pinafore.Language.Value.UI
       - Pinafore.Language.Value
       - Pinafore.Language.Name
       - Pinafore.Language.Shim
@@ -82,7 +81,7 @@ library:
       - Pinafore.Language.Library.Std.Convert
       - Pinafore.Language.Library.Std.Base
       - Pinafore.Language.Library.Std.Reference
-      - Pinafore.Language.Library.Std.UI
+      - Pinafore.Language.Library.UI
       - Pinafore.Language.Library.Std.File
       - Pinafore.Language.Library.Std
       - Pinafore.Language.Library.Debug

@@ -3,13 +3,13 @@ do
 dref <- newMemWhole;
 tref <- newMemWhole;
 iref <- newMemWhole;
-openWindow (300,400) {"Date"} {[]} $ uiVertical
+UI.openWindow (300,400) {"Date"} {[]} $ UI.vertical
     [
-        (uiTextEntry tref, False),
-        (uiTextEntry tref, False),
-        (uiTextEntry $ interpretDateAsText dref, False),
-        (uiTextEntry $ interpretDateAsText dref, False),
-        (uiTextEntry $ interpretIntegerAsText iref, False),
-        (uiTextEntry $ interpretIntegerAsText iref, False)
+        (UI.textEntry tref, False),
+        (UI.textEntry tref, False),
+        (UI.textEntry $ interpretDateAsText dref, False),
+        (UI.textEntry $ interpretDateAsText dref, False),
+        (UI.textEntry $ interpretIntegerAsText iref, False),
+        (UI.textEntry $ interpretIntegerAsText iref, False)
     ];
 end

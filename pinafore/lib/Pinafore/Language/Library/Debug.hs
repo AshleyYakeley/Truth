@@ -7,7 +7,7 @@ import Changes.UI.GTK
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
-import Pinafore.Language.Library.Std.UI ()
+import Pinafore.Language.Library.UI ()
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes

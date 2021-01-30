@@ -1,34 +1,34 @@
 let
 
-### Useful UI stuff
+### Useful UI.Element stuff
 
 # A window that comes with some menus.
-stdWindow: WholeRef +Text -> [MenuItem] -> UI -> Action Window;
+stdWindow: WholeRef +Text -> [UI.MenuItem] -> UI.Element -> Action UI.Window;
 stdWindow title moremenus contents = fixAction $ \window -> let
-    menus: [MenuItem];
+    menus: [UI.MenuItem];
     menus =
         [
-            menuSubmenu "File"
+            UI.menuSubmenu "File"
             [
-                menuAction "Close" (Just "Ctrl+W") {closeWindow window},
-                menuSeparator,
-                menuAction "Exit" (Just "Ctrl+Q") {exitUI}
+                UI.menuAction "Close" (Just "Ctrl+W") {UI.closeWindow window},
+                UI.menuSeparator,
+                UI.menuAction "Exit" (Just "Ctrl+Q") {UI.exitUI}
             ],
-            menuSubmenu "Edit"
+            UI.menuSubmenu "Edit"
             [
-                menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
-                menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
+                UI.menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
+                UI.menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ] ++ moremenus;
-    in openWindow (600,800) title {menus} $ uiScrolled contents;
+    in UI.openWindow (600,800) title {menus} $ UI.scrolled contents;
 
 selectionWindow:
     Text -> # window title
     SetRef item -> # the set of items
-    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
+    [(item -> Action ()) -> UI.MenuItem] -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
-    (WholeRef item -> UI) ->
-    Action Window;
+    (WholeRef item -> UI.Element) ->
+    Action UI.Window;
 selectionWindow wtitle iset createMenuItems iopen iui = do
     selection <- newMemWhole;
     let
@@ -45,13 +45,13 @@ selectionWindow wtitle iset createMenuItems iopen iui = do
             iset -= item;
             end;
 
-        moremenus: [MenuItem];
+        moremenus: [UI.MenuItem];
         moremenus =
             [
-                menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
+                UI.menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
                 [
-                    menuAction "View" Nothing {viewItem},
-                    menuAction "Delete" Nothing {deleteItem}
+                    UI.menuAction "View" Nothing {viewItem},
+                    UI.menuAction "Delete" Nothing {deleteItem}
                 ]
             ];
         in stdWindow {wtitle} moremenus (iui selection);
@@ -61,26 +61,26 @@ selectionWindow wtitle iset createMenuItems iopen iui = do
 selectionPairWindow:
     Text -> # window title
     SetRef item -> # the set of items
-    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
+    [(item -> Action ()) -> UI.MenuItem] -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
-    (WholeRef item -> UI) -> # UI for the item selector
-    (WholeRef +item -> UI) -> # UI for the selected item
-    Action Window;
+    (WholeRef item -> UI.Element) -> # UI.Element for the item selector
+    (WholeRef +item -> UI.Element) -> # UI.Element for the selected item
+    Action UI.Window;
 selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedUI =
     selectionWindow wtitle iset createMenuItems iopen $ \selection -> let
-        sidebarUI: UI;
+        sidebarUI: UI.Element;
         sidebarUI = getSelectorUI selection;
 
-        selectedUI: UI;
+        selectedUI: UI.Element;
         selectedUI = getSelectedUI $ immutWhole selection;
 
-        in uiHorizontal [(False,sidebarUI),(True,selectedUI)];
+        in UI.horizontal [(False,sidebarUI),(True,selectedUI)];
 
-uiPage: WholeRef +Text -> UI -> (UI,UI);
-uiPage n ui = (uiLabel n,ui);
+uiPage: WholeRef +Text -> UI.Element -> (UI.Element,UI.Element);
+uiPage n ui = (UI.label n,ui);
 
-uiLabelled: WholeRef +Text -> UI -> UI;
-uiLabelled n ui = uiHorizontal [(False, uiLabel n),(True, ui)];
+uiLabelled: WholeRef +Text -> UI.Element -> UI.Element;
+uiLabelled n ui = UI.horizontal [(False, UI.label n),(True, ui)];
 
 in export
     stdWindow

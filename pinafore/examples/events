@@ -99,40 +99,40 @@ overviewRef: WholeRef +Date -> WholeRef +Text;
 overviewRef todayref = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %(eventList todayref)};
 
 # Overview page
-overviewPage: (UI,UI);
-overviewPage = uiPage {"Overview"} $ uiRun $ do
+overviewPage: (UI.Element,UI.Element);
+overviewPage = uiPage {"Overview"} $ UI.run $ do
     now <- newClock $ secondsToDuration 60; # update every minute
     tz <- newTimeZoneRef now;
-    return $ uiLabel $ overviewRef {case timeToLocal %tz %now of LocalTime d _ -> d end};
+    return $ UI.label $ overviewRef {case timeToLocal %tz %now of LocalTime d _ -> d end};
     end;
 
-calendarWindow: WholeRef +Event -> Action Window;
+calendarWindow: WholeRef +Event -> Action UI.Window;
 calendarWindow evt = fixAction $ \window ->
-    openWindow (200,200) {"date of " <> %(eventName !$% evt)} {[]} $ uiVertical
+    UI.openWindow (200,200) {"date of " <> %(eventName !$% evt)} {[]} $ UI.vertical
     [
-        (False,uiCalendar $ eventRefTimeDate $ eventTime !$% evt),
-        (False,uiButton {"Done: " <> toText %(eventRefTimeDate $ eventTime !$% evt)} {closeWindow window})
+        (False,UI.calendar $ eventRefTimeDate $ eventTime !$% evt),
+        (False,UI.button {"Done: " <> toText %(eventRefTimeDate $ eventTime !$% evt)} {UI.closeWindow window})
     ];
 
-eventUI: WholeRef +Event -> UI;
-eventUI evt = uiVertical
+eventUI: WholeRef +Event -> UI.Element;
+eventUI evt = UI.vertical
 [
-    (False, uiTextEntry $ eventName !$% evt),
-    (False, uiHorizontal
+    (False, UI.textEntry $ eventName !$% evt),
+    (False, UI.horizontal
     [
-        (False, uiButton {"cal"} {calendarWindow evt}),
-        (False, uiTextEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$% evt),
-        (False, uiTextEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$% evt)
+        (False, UI.button {"cal"} {calendarWindow evt}),
+        (False, UI.textEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$% evt),
+        (False, UI.textEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$% evt)
     ]),
-    (True, uiTextArea $ eventNotes !$% evt)
+    (True, UI.textArea $ eventNotes !$% evt)
 ];
 
-eventWindow: Event -> Action Window;
+eventWindow: Event -> Action UI.Window;
 eventWindow evt = stdWindow (eventName !$ {evt}) [] $ eventUI {evt};
 
-# Menu item for creating a new event, and telling the owning UI to set its selection to it.
-newEventMenuItem: (Event -> Action ()) -> MenuItem;
-newEventMenuItem setsel = menuAction ("New Event") (Just "Ctrl+K")
+# Menu item for creating a new event, and telling the owning element to set its selection to it.
+newEventMenuItem: (Event -> Action ()) -> UI.MenuItem;
+newEventMenuItem setsel = UI.menuAction ("New Event") (Just "Ctrl+K")
     {do
     item <- newOpenEntity @Event;
     day <- getDate;
@@ -142,9 +142,9 @@ newEventMenuItem setsel = menuAction ("New Event") (Just "Ctrl+K")
     setsel item;
     end};
 
-eventsWindow: Action Window;
+eventsWindow: Action UI.Window;
 eventsWindow = selectionWindow "Events" events [newEventMenuItem] eventWindow $ \selection -> let
-    eventsTableUI: UI;
+    eventsTableUI: UI.Element;
     eventsTableUI = let
         columns: [(WholeRef +Text, Event -> WholeRef Text)];
         columns = let
@@ -153,11 +153,11 @@ eventsWindow = selectionWindow "Events" events [newEventMenuItem] eventWindow $ 
             nameColumn: (WholeRef +Text, Event -> WholeRef Text);
             nameColumn = ({"What"},\e -> eventName !$ {e});
             in [timeColumn,nameColumn];
-        in uiListTable columns eventOrder events eventWindow (Just selection);
+        in UI.listTable columns eventOrder events eventWindow (Just selection);
 
-    eventsPage: (UI,UI);
-    eventsPage = uiPage {"Events"} $ uiScrolled $ uiHorizontal [(False,eventsTableUI),(True,eventUI $ immutWhole selection)];
+    eventsPage: (UI.Element,UI.Element);
+    eventsPage = uiPage {"Events"} $ UI.scrolled $ UI.horizontal [(False,eventsTableUI),(True,eventUI $ immutWhole selection)];
 
-    in uiNotebook unknown [overviewPage, eventsPage];
+    in UI.notebook unknown [overviewPage, eventsPage];
 
 in eventsWindow

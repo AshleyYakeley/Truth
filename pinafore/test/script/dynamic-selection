@@ -18,7 +18,7 @@ inform t mv = debugMessage $ t <> ": " <> case mv of
     Nothing -> "deleted";
     end;
 
-debugWindow: Window -> Action ();
+debugWindow: UI.Window -> Action ();
 debugWindow window = do
     t <- debugWindowInfo window;
     debugMessage t;
@@ -36,17 +36,17 @@ in debugThing "SCRIPT" $ do
     selection <- newMemWhole;
     subscribeWhole selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
     selection := testpt;
-    window <- fixAction $ \w -> openWindow (300,400) {"Test"} {[]} $
-        uiDynamic $ coMapWhole (\e -> uiRun $ debugThing "DYNAMIC" $ do
+    window <- fixAction $ \w -> UI.openWindow (300,400) {"Test"} {[]} $
+        UI.dynamic $ coMapWhole (\e -> UI.run $ debugThing "DYNAMIC" $ do
             # debugWindow w;
             inform "dynamic" $ Just e;
-            return $ uiVertical [(True,uiLabel {"Set Text"})];
+            return $ UI.vertical [(True,UI.label {"Set Text"})];
             end) selection
         ;
     debugWindow window;
     selection := testpt;
     debugWindow window;
-    openWindow (300,400) {"Check"} {[]} $ uiButton {"Check"} $ {debugThing "CHECK" $ do
+    UI.openWindow (300,400) {"Check"} {[]} $ UI.button {"Check"} $ {debugThing "CHECK" $ do
         debugWindow window;
         selection := testpt;
         debugWindow window;

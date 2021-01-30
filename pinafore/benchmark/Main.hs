@@ -52,7 +52,7 @@ benchScripts =
         , benchScript "let a=b; b=c; c=d; d=e; e=f; f=g; g=return () in a"
         , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ return ()"
         , benchScript
-              "let const a b = a; ui_labelled n ui = uiHorizontal [(False,uiLabel n),(True,ui)] in const (return ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} uiBlank"
+              "let const a b = a; ui_labelled n ui = UI.horizontal [(False,UI.label n),(True,ui)] in const (return ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} UI.blank"
         , benchScript "let const a b = a; r = 3::r in const (return ()) r"
         , benchScript
               "let cpass x = return (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"

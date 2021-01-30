@@ -16,12 +16,13 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Debug
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std
+import Pinafore.Language.Library.UI
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes
 
 library :: [LibraryModule]
-library = [stdLibraryModule, debugLibraryModule]
+library = [stdLibraryModule, uiLibraryModule, debugLibraryModule]
 
 getModuleScope :: (?pinafore :: PinaforeContext) => LibraryModule -> IO PinaforeScope
 getModuleScope dt = do
