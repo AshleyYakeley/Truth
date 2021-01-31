@@ -10,9 +10,12 @@ import Changes.Core
 import Changes.UI.GTK
 import Data.Shim
 import Data.Time
+import GI.Cairo.Render
+import GI.Gtk.Objects.DrawingArea
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.API
+import Pinafore.Language.Library.GTK.Drawing
 import Shapes
 
 newtype LangUIElement =
@@ -261,6 +264,16 @@ uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangUIElement
 uiCalendar day =
     MkLangUIElement $ createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
 
+convertDrawing :: ((Int32, Int32) -> LangDrawing) -> DrawingArea -> Render ()
+convertDrawing drawing widget = do
+    w <- #getAllocatedWidth widget
+    h <- #getAllocatedHeight widget
+    unLangDrawing $ drawing (w, h)
+
+uiDraw :: PinaforeImmutableWholeRef ((Int32, Int32) -> LangDrawing) -> LangUIElement
+uiDraw ref =
+    MkLangUIElement $ createCairo $ unWModel $ pinaforeImmutableRefValue (\_ -> return ()) $ fmap convertDrawing ref
+
 elementStuff :: DocTreeEntry BindDoc
 elementStuff =
     docTreeEntry
@@ -269,7 +282,8 @@ elementStuff =
         [ mkTypeEntry "Element" "A user interface element is something that goes inside a window." $
           MkBoundType elementGroundType
         , mkValEntry "run" "Element that runs an Action first." uiRun
-        , mkValEntry "blank" "Blank user-interface" $ MkLangUIElement createBlank
+        , mkValEntry "blank" "Blank element" $ MkLangUIElement createBlank
+        , mkValEntry "draw" "Drawable element" uiDraw
         , mkValEntry "unitCheckBox" "(TBD)" uiUnitCheckBox
         , mkValEntry "checkBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox
         , mkValEntry

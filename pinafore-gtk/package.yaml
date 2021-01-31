@@ -12,6 +12,8 @@ library:
       - shapes
       - time
       - typed-expression
+      - gi-cairo-render
+      - gi-gtk
       - changes-core
       - changes-gtk
       - pinafore-base
@@ -19,6 +21,7 @@ library:
     exposed-modules:
       - Pinafore.Language.Library.GTK
     other-modules:
+      - Pinafore.Language.Library.GTK.Drawing
       - Pinafore.Language.Library.GTK.Element
       - Pinafore.Language.Library.GTK.MenuItem
       - Pinafore.Language.Library.GTK.Window
