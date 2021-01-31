@@ -1,0 +1,62 @@
+name: pinafore-app
+version: "0.3"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+extra-doc-files: examples/*
+
+executables:
+    pinafore:
+        source-dirs: app
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - time
+          - filepath
+          - directory
+          - optparse-applicative
+          - xdg-basedir
+          - changes-core
+          - changes-gtk
+          - pinafore-language
+          - pinafore-gtk
+          - githash
+        main: Main.hs
+        other-modules:
+          - Options
+          - Version
+          - Run
+          - Documentation
+        ghc-options: -threaded
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - filepath
+          - parsec
+          - gi-gtk
+          - gi-gobject
+          - haskell-gi-base
+          - typed-expression
+          - changes-core
+          - pinafore-language
+          - pinafore-gtk
+        main: Main.hs
+        other-modules:
+          - Test.Scripts
+        ghc-options: -threaded
+    app:
+        source-dirs: app
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - optparse-applicative
+        main: Test.hs
+        other-modules:
+          - Options
+        ghc-options: -threaded

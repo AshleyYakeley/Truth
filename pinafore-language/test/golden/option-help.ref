@@ -1,0 +1,5 @@
+Invalid option `--help'
+
+Usage: pinafore ((-v|--version) | ((-i|--interactive) | [-n|--no-run] PATH) 
+                  [--no-cache] [-I|--include PATH] [--data PATH] |
+                  --dump-table [--data PATH])

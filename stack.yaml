@@ -9,7 +9,9 @@ packages:
 - changes-world
 - changes-gtk
 - pinafore-base
-- pinafore
+- pinafore-language
+- pinafore-gtk
+- pinafore-app
 
 resolver: lts-17.0
 

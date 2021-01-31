@@ -1,0 +1,48 @@
+name: pinafore-gtk
+version: "0.3"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.12
+      - shapes
+      - time
+      - filepath
+      - directory
+      - parsec
+      - containers
+      - typed-expression
+      - changes-core
+      - changes-world
+      - changes-gtk
+      - pinafore-base
+      - pinafore-language
+    exposed-modules:
+      - Pinafore.Language.Library.UI
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - filepath
+          - parsec
+          - gi-gtk
+          - gi-gobject
+          - haskell-gi-base
+          - typed-expression
+          - changes-core
+          - changes-gtk
+          - pinafore-language
+          - pinafore-gtk
+        main: Main.hs
+        other-modules:
+          - Test.Context
+          - Test.GTK
+          - Test.UI
+        ghc-options: -threaded

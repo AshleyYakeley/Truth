@@ -1,0 +1,52 @@
+#!/usr/bin/pinafore
+
+let
+
+opentype Named;
+name = property @Named @Text !"identify.name";
+byName: FiniteSetRef {+a,+Named} -> WholeRef +[(a,Text)];
+byName ref = members (mapRefOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ ref;
+
+dynamictype Person = !"type.person";
+testpt = dynamicEntity @Person !"testpt";
+
+inform: Text -> Maybe Entity -> Action ();
+inform t mv = Debug.message $ t <> ": " <> case mv of
+    Just v -> "changed: " <> entityAnchor v;
+    Nothing -> "deleted";
+    end;
+
+debugWindow: UI.Window -> Action ();
+debugWindow window = do
+    t <- UI.Debug.windowInfo window;
+    Debug.message t;
+    end;
+
+debugThing: Text -> Action a -> Action a;
+debugThing t action = do
+    Debug.message $ t <> ": [";
+    a <- action;
+    Debug.message $ t <> ": ]";
+    return a;
+    end;
+
+in debugThing "SCRIPT" $ do
+    selection <- newMemWhole;
+    subscribeWhole selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
+    selection := testpt;
+    window <- fixAction $ \w -> UI.openWindow (300,400) {"Test"} {[]} $
+        UI.dynamic $ coMapWhole (\e -> UI.run $ debugThing "DYNAMIC" $ do
+            # debugWindow w;
+            inform "dynamic" $ Just e;
+            return $ UI.vertical [(True,UI.label {"Set Text"})];
+            end) selection
+        ;
+    debugWindow window;
+    selection := testpt;
+    debugWindow window;
+    UI.openWindow (300,400) {"Check"} {[]} $ UI.button {"Check"} $ {debugThing "CHECK" $ do
+        debugWindow window;
+        selection := testpt;
+        debugWindow window;
+        end};
+    end
