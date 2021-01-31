@@ -8,7 +8,7 @@ import Data.GI.Base.GValue
 import GI.GObject
 import GI.Gtk
 import Pinafore
-import Pinafore.Language.Library.UI
+import Pinafore.Language.Library.GTK
 import Pinafore.Test
 import Shapes hiding (get)
 import Shapes.Test
@@ -28,7 +28,7 @@ runUIAction timing testaction t = do
     changesMainGTK $ \tc -> do
         (pc, _) <- liftLifeCycle $ makeTestPinaforeContext tc stdout
         scriptaction <-
-            runWithContext pc (libraryFetchModule uiLibrary) $ throwInterpretResult $ pinaforeInterpretText "<test>" t
+            runWithContext pc (libraryFetchModule gtkLibrary) $ throwInterpretResult $ pinaforeInterpretText "<test>" t
         liftToLifeCycle scriptaction
         let
             testView :: View (Result SomeException a)

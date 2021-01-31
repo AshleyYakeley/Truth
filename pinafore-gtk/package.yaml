@@ -17,7 +17,12 @@ library:
       - pinafore-base
       - pinafore-language
     exposed-modules:
-      - Pinafore.Language.Library.UI
+      - Pinafore.Language.Library.GTK
+    other-modules:
+      - Pinafore.Language.Library.GTK.Element
+      - Pinafore.Language.Library.GTK.MenuItem
+      - Pinafore.Language.Library.GTK.Window
+      - Pinafore.Language.Library.GTK.Debug
 
 tests:
     test:

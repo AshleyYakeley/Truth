@@ -3,7 +3,7 @@ module Test.Scripts
     ) where
 
 import Pinafore
-import Pinafore.Language.Library.UI
+import Pinafore.Language.Library.GTK
 import Pinafore.Test
 import Shapes
 import Shapes.Test
@@ -12,7 +12,7 @@ import Shapes.Test
 testExample :: String -> TestTree
 testExample fpath =
     testTree fpath $
-    withTestPinaforeContext (libraryFetchModule uiLibrary <> directoryFetchModule "examples") stdout $ \_ _ _getTableState -> do
+    withTestPinaforeContext (libraryFetchModule gtkLibrary <> directoryFetchModule "examples") stdout $ \_ _ _getTableState -> do
         _ <- pinaforeInterpretFile fpath
         return ()
 

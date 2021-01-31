@@ -1,7 +1,9 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.UI
-    ( uiLibrary
+module Pinafore.Language.Library.GTK.Element
+    ( elementStuff
+    , actionRef
+    , LangUIElement(..)
     ) where
 
 import Changes.Core
@@ -11,7 +13,6 @@ import Data.Time
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.API
-
 import Shapes
 
 newtype LangUIElement =
@@ -21,23 +22,6 @@ elementGroundType :: PinaforeGroundType '[] LangUIElement
 elementGroundType =
     SimpleGroundType NilListType NilDolanVarianceMap ("Element", 0) $
     MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangUIElement)|]) HetRefl
-
-data LangWindow = MkLangWindow
-    { pwClose :: View ()
-    , pwWindow :: UIWindow
-    }
-
-windowGroundType :: PinaforeGroundType '[] LangWindow
-windowGroundType =
-    SimpleGroundType NilListType NilDolanVarianceMap ("Window", 0) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangWindow)|]) HetRefl
-
-type LangMenuEntry = MenuEntry
-
-menuItemGroundType :: PinaforeGroundType '[] LangMenuEntry
-menuItemGroundType =
-    SimpleGroundType NilListType NilDolanVarianceMap ("MenuItem", 0) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangMenuEntry)|]) HetRefl
 
 -- LangUIElement
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUIElement where
@@ -50,39 +34,6 @@ instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) La
     fromShimWit = mkShimWit $ GroundDolanSingularType elementGroundType NilDolanArguments
 
 instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangUIElement where
-    fromShimWit = singleDolanShimWit fromJMShimWit
-
--- LangWindow
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangWindow where
-    toShimWit = mkShimWit $ GroundDolanSingularType windowGroundType NilDolanArguments
-
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangWindow where
-    toShimWit = singleDolanShimWit toJMShimWit
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangWindow where
-    fromShimWit = mkShimWit $ GroundDolanSingularType windowGroundType NilDolanArguments
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangWindow where
-    fromShimWit = singleDolanShimWit fromJMShimWit
-
--- UIWindow
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) UIWindow where
-    fromShimWit = mapNegShimWit (functionToShim "subtype" pwWindow) fromJMShimWit
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) UIWindow where
-    fromShimWit = singleDolanShimWit fromJMShimWit
-
--- LangMenuEntry
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangMenuEntry where
-    toShimWit = mkShimWit $ GroundDolanSingularType menuItemGroundType NilDolanArguments
-
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangMenuEntry where
-    toShimWit = singleDolanShimWit toJMShimWit
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangMenuEntry where
-    fromShimWit = mkShimWit $ GroundDolanSingularType menuItemGroundType NilDolanArguments
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangMenuEntry where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
@@ -227,65 +178,6 @@ uiDynamic uiref = let
     getSpec (Known (MkLangUIElement pui)) = pui
     in MkLangUIElement $ createDynamic $ unWModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyRef uiref
 
-createLangWindow :: WindowSpec -> PinaforeAction LangWindow
-createLangWindow uiw = do
-    MkWMFunction exitOnClose <- pinaforeGetExitOnClose
-    (pwWindow, close) <- pinaforeEarlyCloser $ createViewPinaforeAction $ exitOnClose $ createWindow uiw
-    let pwClose = liftIO close
-    return $ MkLangWindow {..}
-
-openWindow ::
-       (?pinafore :: PinaforeContext)
-    => (Int32, Int32)
-    -> PinaforeImmutableWholeRef Text
-    -> PinaforeImmutableWholeRef MenuBar
-    -> LangUIElement
-    -> PinaforeAction LangWindow
-openWindow wsSize title mbar (MkLangUIElement wsContent) =
-    mfix $ \w ->
-        createLangWindow $ let
-            wsPosition = WindowPositionCenter
-            wsCloseBoxAction :: View ()
-            wsCloseBoxAction = pwClose w
-            wsTitle :: Model (ROWUpdate Text)
-            wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
-            wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-            wsMenuBar = Just $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef mbar
-            in MkWindowSpec {..}
-
-uiTextArea :: WModel (WholeUpdate (Know Text)) -> LangUIElement
-uiTextArea val =
-    MkLangUIElement $ createTextArea (unWModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) val) mempty
-
-uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangUIElement
-uiCalendar day =
-    MkLangUIElement $ createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
-
-interpretAccelerator :: String -> Maybe MenuAccelerator
-interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
-interpretAccelerator ('C':'t':'r':'l':'+':s) = do
-    MkMenuAccelerator mods c <- interpretAccelerator s
-    return $ MkMenuAccelerator (KMCtrl : mods) c
-interpretAccelerator ('S':'h':'i':'f':'t':'+':s) = do
-    MkMenuAccelerator mods c <- interpretAccelerator s
-    return $ MkMenuAccelerator (KMShift : mods) c
-interpretAccelerator ('A':'l':'t':'+':s) = do
-    MkMenuAccelerator mods c <- interpretAccelerator s
-    return $ MkMenuAccelerator (KMAlt : mods) c
-interpretAccelerator _ = Nothing
-
-menuAction ::
-       (?pinafore :: PinaforeContext)
-    => Text
-    -> Maybe Text
-    -> PinaforeImmutableWholeRef (PinaforeAction TopType)
-    -> LangMenuEntry
-menuAction label maccelStr raction = let
-    maccel = do
-        accelStr <- maccelStr
-        interpretAccelerator $ unpack accelStr
-    in ActionMenuEntry label maccel $ unWModel $ actionRef raction
-
 uiScrolled :: LangUIElement -> LangUIElement
 uiScrolled (MkLangUIElement lui) = MkLangUIElement $ lui >>= createScrolled
 
@@ -361,116 +253,72 @@ uiStyleClass sclass (MkLangUIElement mw) =
         setCSSClass sclass widget
         return widget
 
-uiLibraryModule :: LibraryModule
-uiLibraryModule =
-    MkDocTree
-        "UI"
-        "User interface, using GTK."
-        [ docTreeEntry
-              "Element"
-              ""
-              [ mkTypeEntry "Element" "A user interface element is something that goes inside a window." $
-                MkBoundType elementGroundType
-              , mkValEntry "run" "Element that runs an Action first." uiRun
-              , mkValEntry "blank" "Blank user-interface" $ MkLangUIElement createBlank
-              , mkValEntry "unitCheckBox" "(TBD)" uiUnitCheckBox
-              , mkValEntry "checkBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox
-              , mkValEntry
-                    "textEntry"
-                    "Text entry, unknown reference will be interpreted as empty text, but the element will not delete the reference."
-                    uiTextEntry
-              , mkValEntry
-                    "textArea"
-                    "Text area, unknown reference will be interpreted as empty text, but the element will not delete the reference." $
-                uiTextArea
-              , mkValEntry "label" "Label." uiLabel
-              , mkValEntry
-                    "horizontal"
-                    "Items arranged horizontally, each flag is whether to expand into remaining space."
-                    uiHorizontal
-              , mkValEntry
-                    "vertical"
-                    "Items arranged vertically, each flag is whether to expand into remaining space."
-                    uiVertical
-              , mkValEntry
-                    "notebook"
-                    "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
-                    uiNotebook
+uiTextArea :: WModel (WholeUpdate (Know Text)) -> LangUIElement
+uiTextArea val =
+    MkLangUIElement $ createTextArea (unWModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) val) mempty
+
+uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangUIElement
+uiCalendar day =
+    MkLangUIElement $ createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
+
+elementStuff :: DocTreeEntry BindDoc
+elementStuff =
+    docTreeEntry
+        "Element"
+        ""
+        [ mkTypeEntry "Element" "A user interface element is something that goes inside a window." $
+          MkBoundType elementGroundType
+        , mkValEntry "run" "Element that runs an Action first." uiRun
+        , mkValEntry "blank" "Blank user-interface" $ MkLangUIElement createBlank
+        , mkValEntry "unitCheckBox" "(TBD)" uiUnitCheckBox
+        , mkValEntry "checkBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox
+        , mkValEntry
+              "textEntry"
+              "Text entry, unknown reference will be interpreted as empty text, but the element will not delete the reference."
+              uiTextEntry
+        , mkValEntry
+              "textArea"
+              "Text area, unknown reference will be interpreted as empty text, but the element will not delete the reference." $
+          uiTextArea
+        , mkValEntry "label" "Label." uiLabel
+        , mkValEntry
+              "horizontal"
+              "Items arranged horizontally, each flag is whether to expand into remaining space."
+              uiHorizontal
+        , mkValEntry
+              "vertical"
+              "Items arranged vertically, each flag is whether to expand into remaining space."
+              uiVertical
+        , mkValEntry
+              "notebook"
+              "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
+              uiNotebook
                 -- CSS
                 -- drag
                 -- icon
-              , mkValEntry
-                    "button"
-                    "A button with this text that does this action. Button will be disabled if the action reference is unknown."
-                    uiButton
-              , mkValEntry "pick" "A drop-down menu." uiPick
-              , mkValEntry
-                    "listTable"
-                    "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection, fifth is an optional reference for the selected row."
-                    uiListTable
-              , mkValEntry "calendar" "A calendar." uiCalendar
-              , mkValEntry "scrolled" "A scrollable container." uiScrolled
-              , mkValEntry "dynamic" "An element that can be updated to different UIs." uiDynamic
-              , mkValEntry
-                    "name"
-                    "An element with name set. You can use something like `#text` to refer to it in the CSS style-sheet."
-                    uiName
-              , mkValEntry
-                    "styleClass"
-                    "An element with CSS class set. You can use something like `.text` to refer to all elements in this class in the CSS style-sheet."
-                    uiStyleClass
-              , mkValEntry
-                    "styleSheet"
-                    "An element with a CSS style-sheet (applied to the whole tree of elements). \
+        , mkValEntry
+              "button"
+              "A button with this text that does this action. Button will be disabled if the action reference is unknown."
+              uiButton
+        , mkValEntry "pick" "A drop-down menu." uiPick
+        , mkValEntry
+              "listTable"
+              "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection, fifth is an optional reference for the selected row."
+              uiListTable
+        , mkValEntry "calendar" "A calendar." uiCalendar
+        , mkValEntry "scrolled" "A scrollable container." uiScrolled
+        , mkValEntry "dynamic" "An element that can be updated to different UIs." uiDynamic
+        , mkValEntry
+              "name"
+              "An element with name set. You can use something like `#text` to refer to it in the CSS style-sheet."
+              uiName
+        , mkValEntry
+              "styleClass"
+              "An element with CSS class set. You can use something like `.text` to refer to all elements in this class in the CSS style-sheet."
+              uiStyleClass
+        , mkValEntry
+              "styleSheet"
+              "An element with a CSS style-sheet (applied to the whole tree of elements). \
                     \See the GTK+ CSS [overview](https://developer.gnome.org/gtk3/stable/chap-css-overview.html) and [properties](https://developer.gnome.org/gtk3/stable/chap-css-properties.html) for how this works."
-                    uiStyleSheet
-              ]
-        , docTreeEntry
-              "Menu"
-              ""
-              [ mkTypeEntry "MenuItem" "A item of a menu." $ MkBoundType menuItemGroundType
-              , mkValEntry "menuSeparator" "Separator menu item." SeparatorMenuEntry
-              , mkValEntry "menuSubmenu" "Submenu menu item." SubMenuEntry
-              , mkValEntry
-                    "menuAction"
-                    "Action menu item. Item will be disabled if the action reference is unknown."
-                    menuAction
-              ]
-        , docTreeEntry
-              "Window"
-              ""
-              [ mkTypeEntry "Window" "A user interface window." $ MkBoundType windowGroundType
-              , mkValEntry "openWindow" "Open a new window with this size, title and element." openWindow
-              , mkValEntry "closeWindow" "Close a window." pwClose
-              , mkValEntry "showWindow" "Show a window." uiWindowShow
-              , mkValEntry "hideWindow" "Hide a window." uiWindowHide
-              , mkValEntry "exitUI" "Exit the user interface." pinaforeExit
-              ]
+              uiStyleSheet
         ]
-
-ignoreGError :: IO () -> IO ()
-ignoreGError io = catch io $ \(_ :: GError) -> return ()
-
-ignoreUpdateException :: forall update. WModel update -> WModel update
-ignoreUpdateException (MkWModel (MkResource rr amodel)) =
-    MkWModel $
-    MkResource rr $
-    amodel
-        { aModelSubscribe =
-              \task recv -> aModelSubscribe amodel task $ \rc updates ec -> ignoreGError $ recv rc updates ec
-        }
-
-debugIgnoreUpdateUIExceptions :: LangWholeRef '( P, Q) -> LangWholeRef '( P, Q)
-debugIgnoreUpdateUIExceptions ref = runIdentity $ langWholeRefMapModel (Identity . ignoreUpdateException) ref
-
-uiDebugLibraryModule :: LibraryModule
-uiDebugLibraryModule =
-    MkDocTree
-        "Debug.UI"
-        "Functions for UI debugging."
-        [ mkValEntry "ignoreUpdateUIExceptions" "Drop exceptions from updates" debugIgnoreUpdateUIExceptions
-        , mkValEntry "windowInfo" "Get window contents information" uiWindowDebugDescribe
-        ]
-
-uiLibrary :: [LibraryModule]
-uiLibrary = [uiLibraryModule, uiDebugLibraryModule]
