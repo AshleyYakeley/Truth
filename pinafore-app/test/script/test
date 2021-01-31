@@ -187,7 +187,7 @@ window_css = do
     cssref := ".y, .y > text {color:green; font-family: \"serif\";}";
     sometext <- newMemWhole;
     sometext := "whatever";
-    std_window {"CSS"} $ UI.styleSheet (UI.Debug.ignoreUpdateUIExceptions cssref) $ UI.name "root" $ UI.vertical
+    std_window {"CSS"} $ UI.styleSheet (Debug.UI.ignoreUpdateUIExceptions cssref) $ UI.name "root" $ UI.vertical
         [
             (False, UI.styleClass "x" $ UI.name "A" $ UI.checkBox {"Box"} {True}),
             (False, UI.styleClass "x" $ UI.name "B" $ UI.button {"Button"} {return ()}),

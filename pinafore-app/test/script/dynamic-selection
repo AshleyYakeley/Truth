@@ -18,7 +18,7 @@ inform t mv = Debug.message $ t <> ": " <> case mv of
 
 debugWindow: UI.Window -> Action ();
 debugWindow window = do
-    t <- UI.Debug.windowInfo window;
+    t <- Debug.UI.windowInfo window;
     Debug.message t;
     end;
 

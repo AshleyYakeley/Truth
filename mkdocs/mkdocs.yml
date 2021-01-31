@@ -23,9 +23,9 @@ nav:
   - Modules: 'modules.md'
 - Library:
   - Std: 'library/Std.md'
-  - Debug: 'library/Debug.md'
   - UI: 'library/UI.md'
-  - UI.Debug: 'library/UI.Debug.md'
+  - Debug: 'library/Debug.md'
+  - Debug.UI: 'library/Debug.UI.md'
 - Examples:
   - Stopwatch: 'examples/stopwatch.md'
   - Calendar: 'examples/calendar.md'
