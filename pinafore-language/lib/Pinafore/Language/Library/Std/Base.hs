@@ -236,6 +236,8 @@ baseLibEntries =
           , mkValEntry "==" "Entity equality." $ (==) @Entity
           , mkValEntry "/=" "Entity non-equality." $ (/=) @Entity
           , mkValEntry "entityAnchor" "The anchor of an entity, as text." entityAnchor
+          , mkTypeEntry "Literal" "" $
+            MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType LiteralLiteralType
           , mkSubtypeRelationEntry "Literal" "Entity" "" $
             pure $
             MkSubypeConversionEntry (EntityPinaforeGroundType NilListType TopEntityGroundType) $ \case
@@ -245,7 +247,9 @@ baseLibEntries =
           , docTreeEntry
                 "Boolean"
                 ""
-                [ mkSubtypeRelationEntry "Boolean" "Literal" "" $
+                [ mkTypeEntry "Boolean" "" $
+                  MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType BooleanLiteralType
+                , mkSubtypeRelationEntry "Boolean" "Literal" "" $
                   pure $
                   MkSubypeConversionEntry
                       (EntityPinaforeGroundType NilListType (LiteralEntityGroundType LiteralLiteralType)) $ \case
@@ -268,7 +272,9 @@ baseLibEntries =
           , docTreeEntry
                 "Ordering"
                 ""
-                [ mkValPatEntry "LT" "Less than." LT $ \v ->
+                [ mkTypeEntry "Ordering" "" $
+                  MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType OrderingLiteralType
+                , mkValPatEntry "LT" "Less than." LT $ \v ->
                       case v of
                           LT -> Just ()
                           _ -> Nothing
@@ -300,7 +306,9 @@ baseLibEntries =
           , docTreeEntry
                 "Text"
                 ""
-                [ mkSubtypeRelationEntry "Text" "Literal" "" []
+                [ mkTypeEntry "Text" "" $
+                  MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType
+                , mkSubtypeRelationEntry "Text" "Literal" "" []
                 , mkValEntry "<>" "Concatenate text." $ (<>) @Text
                 , mkValEntry "textLength" "The length of a piece of text." $ olength @Text
                 , mkValEntry
@@ -319,7 +327,9 @@ baseLibEntries =
                 , mkValEntry ">" "Numeric strictly greater." $ (>) @Number
                 , mkValEntry ">=" "Numeric greater or equal." $ (>=) @Number
                 , docTreeEntry "Integer" "" $
-                  [ mkSubtypeRelationEntry "Integer" "Rational" "" $
+                  [ mkTypeEntry "Integer" "" $
+                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType IntegerLiteralType
+                  , mkSubtypeRelationEntry "Integer" "Rational" "" $
                     pure $
                     literalSubtypeConversionEntry IntegerLiteralType RationalLiteralType $
                     functionToShim "Integer to Rational" integerToSafeRational
@@ -341,7 +351,9 @@ baseLibEntries =
                   , mkValEntry "product" "Product." $ product @[] @Integer
                   ]
                 , docTreeEntry "Rational" "" $
-                  [ mkSubtypeRelationEntry "Rational" "Number" "" $
+                  [ mkTypeEntry "Rational" "" $
+                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType RationalLiteralType
+                  , mkSubtypeRelationEntry "Rational" "Number" "" $
                     pure $
                     literalSubtypeConversionEntry RationalLiteralType NumberLiteralType $
                     functionToShim "Rational to Number" safeRationalToNumber
@@ -364,7 +376,9 @@ baseLibEntries =
                 , docTreeEntry "Number" "" $
                   [mkSubtypeRelationEntry "Number" "Literal" "" []] <>
                   plainFormattingDefs @Number "Number" "a number" <>
-                  [ mkValEntry "~+" "Add." $ (+) @Number
+                  [ mkTypeEntry "Number" "" $
+                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType NumberLiteralType
+                  , mkValEntry "~+" "Add." $ (+) @Number
                   , mkValEntry "~-" "Subtract." $ (-) @Number
                   , mkValEntry "~*" "Multiply." $ (*) @Number
                   , mkValEntry "~/" "Divide." $ (/) @Number
@@ -425,7 +439,10 @@ baseLibEntries =
                 "Date & Time"
                 ""
                 [ docTreeEntry "Duration" "" $
-                  [mkSubtypeRelationEntry "Duration" "Literal" "" []] <>
+                  [ mkTypeEntry "Duration" "" $
+                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType DurationLiteralType
+                  , mkSubtypeRelationEntry "Duration" "Literal" "" []
+                  ] <>
                   plainFormattingDefs @NominalDiffTime "Duration" "a duration" <>
                   [ mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
                   , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
@@ -439,8 +456,11 @@ baseLibEntries =
                   , mkValEntry "divideDuration" "Divide durations." $ \(a :: NominalDiffTime) (b :: NominalDiffTime) ->
                         (realToFrac (a / b) :: Number)
                   ]
-                , docTreeEntry "Time" "Absolute time as measured by UTC." $
-                  [mkSubtypeRelationEntry "Time" "Literal" "" []] <>
+                , docTreeEntry "Time" "" $
+                  [ mkTypeEntry "Time" "Absolute time as measured by UTC." $
+                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TimeLiteralType
+                  , mkSubtypeRelationEntry "Time" "Literal" "" []
+                  ] <>
                   plainFormattingDefs @UTCTime "Time" "a time" <>
                   unixFormattingDefs @UTCTime "Time" "a time" <>
                   [ mkValEntry "addTime" "Add duration to time." addUTCTime
@@ -452,7 +472,9 @@ baseLibEntries =
                         newClock
                   ]
                 , docTreeEntry "Calendar" "" $
-                  [ mkValPatEntry "Date" "Construct a Date from year, month, day." fromGregorian $ \day -> let
+                  [ mkTypeEntry "Date" "" $
+                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType DateLiteralType
+                  , mkValPatEntry "MkDate" "Construct a Date from year, month, day." fromGregorian $ \day -> let
                         (y, m, d) = toGregorian day
                         in Just (y, (m, (d, ())))
                   , mkSubtypeRelationEntry "Date" "Literal" "" []
@@ -467,7 +489,9 @@ baseLibEntries =
                   , mkValEntry "getDate" "Get the current local date." $ fmap localDay getLocalTime
                   ]
                 , docTreeEntry "Time of Day" "" $
-                  [ mkValPatEntry "TimeOfDay" "Construct a TimeOfDay from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
+                  [ mkTypeEntry "TimeOfDay" "" $
+                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TimeOfDayLiteralType
+                  , mkValPatEntry "MkTimeOfDay" "Construct a TimeOfDay from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
                         Just (todHour, (todMin, (todSec, ())))
                   , mkSubtypeRelationEntry "TimeOfDay" "Literal" "" []
                   ] <>
@@ -475,7 +499,9 @@ baseLibEntries =
                   unixFormattingDefs @TimeOfDay "TimeOfDay" "a time of day" <>
                   [mkValEntry "midnight" "Midnight." midnight, mkValEntry "midday" "Midday." midday]
                 , docTreeEntry "Local Time" "" $
-                  [ mkValPatEntry "LocalTime" "Construct a LocalTime from day and time of day." LocalTime $ \LocalTime {..} ->
+                  [ mkTypeEntry "LocalTime" "" $
+                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType LocalTimeLiteralType
+                  , mkValPatEntry "MkLocalTime" "Construct a LocalTime from day and time of day." LocalTime $ \LocalTime {..} ->
                         Just (localDay, (localTimeOfDay, ()))
                   , mkSubtypeRelationEntry "LocalTime" "Literal" "" []
                   ] <>

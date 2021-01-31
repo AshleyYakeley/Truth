@@ -20,12 +20,12 @@ showEventTime et = case et of
 eventTimeDate: EventTime -> Date;
 eventTimeDate et = case et of
     EventTimeDate d -> d;
-    EventTimeTime (LocalTime d _) -> d
+    EventTimeTime (MkLocalTime d _) -> d
     end;
 
 setEventTimeDate: Date -> Maybe EventTime -> Maybe EventTime;
 setEventTimeDate d et = Just $ case et of
-    Just (EventTimeTime (LocalTime _ t)) -> EventTimeTime (LocalTime d t);
+    Just (EventTimeTime (MkLocalTime _ t)) -> EventTimeTime (MkLocalTime d t);
     _ -> EventTimeDate d;
     end;
 
@@ -36,7 +36,7 @@ eventRefTimeTimeOfDay: WholeRef EventTime -> WholeRef TimeOfDay;
 eventRefTimeTimeOfDay r = let
     eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay;
     eventTimeTimeOfDay met = case met of
-        Just (EventTimeTime (LocalTime _ tod)) -> Just tod;
+        Just (EventTimeTime (MkLocalTime _ tod)) -> Just tod;
         _ -> Nothing;
         end;
 
@@ -45,7 +45,7 @@ setEventTimeTimeOfDay mtod met = Just $ case met of
     Nothing -> Nothing;
     Just et -> Just $ case mtod of
         Nothing -> EventTimeDate $ eventTimeDate et;
-        Just tod -> EventTimeTime $ LocalTime (eventTimeDate et) tod;
+        Just tod -> EventTimeTime $ MkLocalTime (eventTimeDate et) tod;
         end;
     end;
 in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
@@ -53,7 +53,7 @@ in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
 # for ordering
 eventTimeTime: EventTime -> LocalTime;
 eventTimeTime et = case et of
-    EventTimeDate d -> LocalTime d midnight;
+    EventTimeDate d -> MkLocalTime d midnight;
     EventTimeTime t -> t
     end;
 
@@ -103,7 +103,7 @@ overviewPage: (UI.Element,UI.Element);
 overviewPage = uiPage {"Overview"} $ UI.run $ do
     now <- newClock $ secondsToDuration 60; # update every minute
     tz <- newTimeZoneRef now;
-    return $ UI.label $ overviewRef {case timeToLocal %tz %now of LocalTime d _ -> d end};
+    return $ UI.label $ overviewRef {case timeToLocal %tz %now of MkLocalTime d _ -> d end};
     end;
 
 calendarWindow: WholeRef +Event -> Action UI.Window;

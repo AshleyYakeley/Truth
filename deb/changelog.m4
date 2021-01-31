@@ -7,6 +7,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - Std
       . add "index" function for lists
       . add "forWhole" function
+      . change some constructor names not to clash with type name
     - UI
       . separate module
       . rename "UI" type to "Element"

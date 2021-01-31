@@ -206,7 +206,7 @@ window_start = do
     let
         utcDate = {%now};
         localNow = {timeToLocal %timeZone %now};
-        today = {case %localNow of LocalTime day _ -> day end};
+        today = {case %localNow of MkLocalTime day _ -> day end};
         in do
         std_window {"Pinafore"} $ UI.vertical
         [

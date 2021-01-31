@@ -2,7 +2,6 @@ module Pinafore.Language.Type.Literal where
 
 import Data.Time
 import Pinafore.Base
-import Pinafore.Language.Name
 import Pinafore.Language.Type.Show
 import Shapes
 
@@ -52,21 +51,6 @@ instance ExprShow (LiteralType t) where
     exprShowPrec DateLiteralType = ("Date", 0)
     exprShowPrec TimeOfDayLiteralType = ("TimeOfDay", 0)
     exprShowPrec LocalTimeLiteralType = ("LocalTime", 0)
-
-nameToLiteralType :: Name -> Maybe (AnyW LiteralType)
-nameToLiteralType "Literal" = Just $ MkAnyW LiteralLiteralType
-nameToLiteralType "Text" = Just $ MkAnyW TextLiteralType
-nameToLiteralType "Number" = Just $ MkAnyW NumberLiteralType
-nameToLiteralType "Rational" = Just $ MkAnyW RationalLiteralType
-nameToLiteralType "Integer" = Just $ MkAnyW IntegerLiteralType
-nameToLiteralType "Boolean" = Just $ MkAnyW BooleanLiteralType
-nameToLiteralType "Ordering" = Just $ MkAnyW OrderingLiteralType
-nameToLiteralType "Time" = Just $ MkAnyW TimeLiteralType
-nameToLiteralType "Duration" = Just $ MkAnyW DurationLiteralType
-nameToLiteralType "Date" = Just $ MkAnyW DateLiteralType
-nameToLiteralType "TimeOfDay" = Just $ MkAnyW TimeOfDayLiteralType
-nameToLiteralType "LocalTime" = Just $ MkAnyW LocalTimeLiteralType
-nameToLiteralType _ = Nothing
 
 literalTypeAsLiteral :: LiteralType t -> Dict (AsLiteral t)
 literalTypeAsLiteral LiteralLiteralType = Dict

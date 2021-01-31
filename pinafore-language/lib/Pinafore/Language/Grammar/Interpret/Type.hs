@@ -221,9 +221,6 @@ interpretGroundTypeConst PairSyntaxGroundType =
     return $
     MkPinaforeGroundTypeM $
     MkAnyW $ EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType
-interpretGroundTypeConst (ConstSyntaxGroundType (UnqualifiedReferenceName n))
-    | Just (MkAnyW lt) <- nameToLiteralType n =
-        return $ MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType lt
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     MkBoundType t <- lookupBoundType n
     return $ MkPinaforeGroundTypeM $ MkAnyW t

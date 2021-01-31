@@ -678,7 +678,7 @@ testEntity =
               "interpret"
               [ testExpectSuccess "do r <- newMemWhole; interpretIntegerAsText r := \"37\"; testeq {37} r; end"
               , testExpectSuccess
-                    "do r <- newMemWhole; interpretDateAsText r := \"2015-08-12\"; testeq {Date 2015 08 12} r; end"
+                    "do r <- newMemWhole; interpretDateAsText r := \"2015-08-12\"; testeq {MkDate 2015 08 12} r; end"
               ]
         , context
               [ "runresult ar arg = case ar of Left err -> fail err; Right f -> f arg end"
