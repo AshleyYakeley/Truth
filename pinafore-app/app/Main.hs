@@ -5,7 +5,7 @@ module Main
 import Documentation
 import Options
 import Pinafore
-import Pinafore.Language.Library.UI
+import Pinafore.Language.Library.GTK
 import Run
 import Shapes
 import System.Directory
@@ -23,7 +23,7 @@ getPinaforeDir mdirpath = do
     return pinaforedir
 
 extraLibrary :: [LibraryModule]
-extraLibrary = uiLibrary
+extraLibrary = gtkLibrary
 
 stdIncludeDirs :: FilePath -> [FilePath]
 stdIncludeDirs pinaforedir = [pinaforedir </> "lib", "/usr/local/share/pinafore/lib", "/usr/share/pinafore/lib"]
