@@ -2,14 +2,22 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * Language
     - add subsumption expressions
+    - allow module-qualified names
   * Library
-    - UI elements for CSS styling
-    - openWindow now takes size
-    - uiNotebook can track page selection
-    - add "index" function for lists
-    - add "forWhole" function
+    - Std
+      . add "index" function for lists
+      . add "forWhole" function
+      . change some constructor names not to clash with type name
+    - UI
+      . separate module
+      . rename "UI" type to "Element"
+      . elements for CSS styling
+      . openWindow now takes size
+      . notebook can track page selection
   * Fixes
     - fix defect involving export of open expressions
+    - fix serious defect in type unifier
+    - fix defect involving imported types
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

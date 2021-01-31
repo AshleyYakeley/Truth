@@ -1,0 +1,16 @@
+let f: ((a -> a) & b) -> Maybe b; f = Just
+let i: a -> a; i x = x;
+:type f
+:type i
+:type f i
+
+let g: ((a -> a) & b) -> b; g x = x
+:type g
+:type g i
+
+let ur: WholeRef a -> (); ur _ = ()
+:type ur
+:type newMemWhole >>= \ref -> return (ref, ())
+:type newMemWhole >>= \ref -> return (ref, ((\_ -> ()) : WholeRef a -> ()) ref)
+:type \ref -> return (ref, ur ref)
+:type newMemWhole >>= \ref -> return (ref, ur ref)

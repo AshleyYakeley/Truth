@@ -1,0 +1,18 @@
+#!/usr/bin/pinafore
+
+let
+
+e1: Entity;
+e1 = ();
+
+f: WholeRef a -> ();
+f _ = ();
+
+in do
+    (ref,_) <- newMemWhole >>= \ref -> return (ref, f ref);
+    ref := e1;
+    e2 <- get ref;
+    Debug.checkEntity "CHECK e1" e1;
+    Debug.checkEntity "CHECK e2" e2;
+    outputLn "LAST";
+    end

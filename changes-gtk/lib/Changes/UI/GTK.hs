@@ -5,6 +5,7 @@ module Changes.UI.GTK
 import Changes.UI.GTK.Blank as I
 import Changes.UI.GTK.Button as I
 import Changes.UI.GTK.CSS as I
+import Changes.UI.GTK.Cairo as I
 import Changes.UI.GTK.Calendar as I
 import Changes.UI.GTK.CheckButton as I
 import Changes.UI.GTK.ChooseFile as I

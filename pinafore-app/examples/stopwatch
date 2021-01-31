@@ -1,0 +1,32 @@
+#!/usr/bin/pinafore
+
+let
+
+datatype StopwatchState = StoppedState Duration | RunningState Time;
+
+toggleStopwatch: WholeRef +Time -> WholeRef StopwatchState -> Action ();
+toggleStopwatch now r = do
+    n <- get now;
+    oldstate <- get r;
+    newstate <- return $ case oldstate of
+        StoppedState d -> RunningState $ addTime (negateDuration d) n;
+        RunningState t -> StoppedState $ diffTime n t
+        end;
+    r := newstate;
+    end;
+
+showStopwatch: StopwatchState -> Time -> Text;
+showStopwatch state n = case state of
+    StoppedState d -> "[" <> toText d <> "]";
+    RunningState t -> toText $ diffTime n t
+    end;
+
+ui: WholeRef +Time -> WholeRef StopwatchState -> UI.Element;
+ui now r = UI.button {showStopwatch %r %now} {toggleStopwatch now r};
+
+in do
+    now <- newClock $ secondsToDuration 0.001;
+    r <- newMemWhole;
+    r := StoppedState zeroDuration;
+    UI.openWindow (150,40) {"Stopwatch"} {[]} $ ui now r;
+    end

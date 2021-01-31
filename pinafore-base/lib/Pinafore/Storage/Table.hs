@@ -125,7 +125,7 @@ instance SubjectMapEdit PinaforeTableEdit where
     mapSubjectEdits =
         mapEditToMapEdits $ \edit (MkPinaforeTableSubject oldPredicates oldRefCounts oldFacts oldLiterals) ->
             case edit of
-                PinaforeTableEditPropertySet prd s mv -> let
+                PinaforeTableEditPropertySet prd (checkEntity "store.prop.s" -> s) (fmap (checkEntity "store.prop.v") -> mv) -> let
                     newPredicates =
                         replaceOrAdd
                             (\(prd', s', _) -> (prd' == prd) && (s == s'))
@@ -135,14 +135,14 @@ instance SubjectMapEdit PinaforeTableEdit where
                 PinaforeTableEditEntityRefCount v mrc -> let
                     newRefCounts = replaceOrAdd (\(v', _) -> v == v') (fmap (\rc -> (v, rc)) mrc) oldRefCounts
                     in return $ MkPinaforeTableSubject oldPredicates newRefCounts oldFacts oldLiterals
-                PinaforeTableEditFactSet prd s mv -> let
+                PinaforeTableEditFactSet prd (checkEntity "store.fact.s" -> s) (fmap (checkEntity "store.fact.v") -> mv) -> let
                     newFacts =
                         replaceOrAdd
                             (\(prd', s', _) -> (prd' == prd) && (s == s'))
                             (fmap (\v -> (prd, s, v)) mv)
                             oldFacts
                     in return $ MkPinaforeTableSubject oldPredicates oldRefCounts newFacts oldLiterals
-                PinaforeTableEditLiteralSet v ml -> let
+                PinaforeTableEditLiteralSet (checkEntity "store.literal.v" -> v) ml -> let
                     newLiterals = replaceOrAdd (\(v', _) -> v == v') (fmap (\l -> (v, l)) ml) oldLiterals
                     in return $ MkPinaforeTableSubject oldPredicates oldRefCounts oldFacts newLiterals
 

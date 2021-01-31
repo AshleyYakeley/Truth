@@ -1,0 +1,27 @@
+pinafore> let f: ((a -> a) & b) -> Maybe b; f = Just
+pinafore> let i: a -> a; i x = x;
+pinafore> :type f
+: ((a -> a) & b) -> Maybe b
+pinafore> :type i
+: a -> a
+pinafore> :type f i
+: Maybe (e -> e)
+pinafore> 
+pinafore> let g: ((a -> a) & b) -> b; g x = x
+pinafore> :type g
+: ((a -> a) & b) -> b
+pinafore> :type g i
+: c -> c
+pinafore> 
+pinafore> let ur: WholeRef a -> (); ur _ = ()
+pinafore> :type ur
+: WholeRef a -> ()
+pinafore> :type newMemWhole >>= \ref -> return (ref, ())
+: Action (WholeRef c, ())
+pinafore> :type newMemWhole >>= \ref -> return (ref, ((\_ -> ()) : WholeRef a -> ()) ref)
+: Action (WholeRef g, ())
+pinafore> :type \ref -> return (ref, ur ref)
+: (WholeRef c & b) -> Action (b, ())
+pinafore> :type newMemWhole >>= \ref -> return (ref, ur ref)
+: Action (WholeRef g, ())
+pinafore> <END>

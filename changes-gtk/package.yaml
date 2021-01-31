@@ -30,6 +30,9 @@ library:
       - gi-gio
       - gi-gdk
       - gi-gdkpixbuf
+      - gi-cairo
+      - gi-cairo-render
+      - gi-cairo-connector
       - gi-pango
       - gi-gtk
       - gi-gtk-hs
@@ -43,6 +46,7 @@ library:
       - Changes.UI.GTK.TextStyle
       - Changes.UI.GTK.DynamicStore
       - Changes.UI.GTK.Blank
+      - Changes.UI.GTK.Cairo
       - Changes.UI.GTK.CSS
       - Changes.UI.GTK.Button
       - Changes.UI.GTK.Image
@@ -81,7 +85,7 @@ executables:
         when:
           - condition: "!flag(build-examples)"
             buildable: False
-        source-dirs: text
+        source-dirs: examples/text
         dependencies:
           - base >= 4.12
           - filepath
@@ -97,7 +101,7 @@ executables:
         when:
           - condition: "!flag(build-examples)"
             buildable: False
-        source-dirs: soup
+        source-dirs: examples/soup
         dependencies:
           - base >= 4.12
           - filepath
@@ -120,7 +124,7 @@ executables:
         when:
           - condition: "!flag(build-examples)"
             buildable: False
-        source-dirs: showImages
+        source-dirs: examples/showImages
         dependencies:
           - base >= 4.12
           - filepath
@@ -130,5 +134,21 @@ executables:
           - changes-media
           - changes-world
           - changes-gtk
+        main: Main.hs
+        ghc-options: -threaded
+    changes-cairo:
+        when:
+          - condition: "!flag(build-examples)"
+            buildable: False
+        source-dirs: examples/cairo
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - time
+          - changes-core
+          - changes-world
+          - changes-gtk
+          - gi-cairo-render
+          - gi-gtk
         main: Main.hs
         ghc-options: -threaded

@@ -1,0 +1,15 @@
+#!/usr/bin/pinafore
+do
+dref <- newMemWhole;
+tref <- newMemWhole;
+iref <- newMemWhole;
+UI.openWindow (300,400) {"Date"} {[]} $ UI.vertical
+    [
+        (UI.textEntry tref, False),
+        (UI.textEntry tref, False),
+        (UI.textEntry $ interpretDateAsText dref, False),
+        (UI.textEntry $ interpretDateAsText dref, False),
+        (UI.textEntry $ interpretIntegerAsText iref, False),
+        (UI.textEntry $ interpretIntegerAsText iref, False)
+    ];
+end

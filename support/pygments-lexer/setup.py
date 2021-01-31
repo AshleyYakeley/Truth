@@ -9,7 +9,7 @@ pinafore=pinafore_lexer:PinaforeLexer
 
 setup(
     name='pinafore-lexer',
-    version='0.2.0',
+    version='0.3.0',
     description='Pygments lexer for Pinafore',
     author='Ashley Yakeley',
     author_email='ashley@semantic.org',

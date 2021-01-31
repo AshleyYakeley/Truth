@@ -1,0 +1,158 @@
+#!/usr/bin/pinafore
+
+let
+
+import UIStuff;
+
+# something with a name
+opentype Named;
+name = property @Named @Text !"identify.name";
+
+byName: FiniteSetRef {+a,+Named} -> WholeRef +[(a,Text)];
+byName ref = members (mapRefOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ ref;
+
+# something with a lifespan
+opentype Lifespanned;
+# birth and death dates
+birthdate = property @Lifespanned @Date !"lifespan.start.date";
+deathdate = property @Lifespanned @Date !"lifespan.end.date";
+
+# physical locations, that have addresses
+opentype Location;
+address = property @Location @Text !"location.address.withincity";
+locphone = property @Location @Text !"location.telephone";
+city = property @Location @Text !"location.address.city";
+postcode = property @Location @Text !"location.address.postcode";
+province = property @Location @Text !"location.address.province";
+country = property @Location @Text !"location.address.country";
+
+locationUI: WholeRef +Location -> UI.Element;
+locationUI loc = UI.vertical
+[
+    (True, uiLabelled {"Address: "} $ UI.textArea $ address !$% loc),
+    (False, uiLabelled {"City: "} $ UI.textEntry $ city !$% loc),
+    (False, uiLabelled {"Postcode/ZIP: "} $ UI.textEntry $ postcode !$% loc),
+    (False, uiLabelled {"State/Province: "} $ UI.textEntry $ province !$% loc),
+    (False, uiLabelled {"Country: "} $ UI.textEntry $ country !$% loc),
+    (False, uiLabelled {"Phone: "} $ UI.textEntry $ locphone !$% loc)
+];
+
+# a person or organisation
+dynamictype LegalEntity = Person | Organisation;
+subtype LegalEntity <: Named;
+subtype LegalEntity <: Lifespanned;
+email = property @LegalEntity @Text !"contact.email";
+phone = property @LegalEntity @Text !"contact.telephone";
+home = property @LegalEntity @Location !"being.location";
+legalentities: FiniteSetRef LegalEntity;
+legalentities = property @LegalEntity @() !"type.legalentity" !@ {()};
+
+# a person
+dynamictype Person = !"type.person";
+people: FiniteSetRef Person;
+people = maybeMapFiniteSet (check @Person) legalentities;
+# family relationships between people
+mother = property @Person @Person !"relation.family.mother";
+father = property @Person @Person !"relation.family.father";
+children: WholeRef +Person -> FiniteSetRef Person;
+children p = (mother !@% p) <:|:> (father !@% p);
+married = property @Person @Boolean !"relation.family.spouse.exist";
+
+familyUI: WholeRef +Person -> UI.Element;
+familyUI p = UI.vertical
+[
+    (False, uiLabelled {"Birth: "} $ UI.textEntry $ interpretDateAsText $ birthdate !$% p),
+    (False, uiLabelled {"Death: "} $ UI.textEntry $ interpretDateAsText $ deathdate !$% p),
+    (False, UI.checkBox {"Married"} $ married !$% p),
+    (False, uiLabelled {"Mother: "} $ UI.pick (byName people) $ mother !$% p),
+    (False, uiLabelled {"Father: "} $ UI.pick (byName people) $ father !$% p),
+    (False, UI.label {"Children:"}),
+    (True, namedTable (children p) contactWindow Nothing)
+];
+
+# employment relationship
+employer = property @Person @LegalEntity !"relation.employer";
+employees: WholeRef +LegalEntity -> FiniteSetRef Person;
+employees p = employer !@% p;
+
+# an organisation
+dynamictype Organisation = !"type.organisation";
+organisations: FiniteSetRef Organisation;
+organisations = property @Organisation @() !"type.organisation" !@ {()};
+
+### User Interface
+
+namedTable: FiniteSetRef {a,+Named} -> (a -> Action Any) -> Maybe (WholeRef {a,+Named}) -> UI.Element;
+namedTable = UI.listTable [({"Name"},\p -> name !$ {p})] (refOrderOn name alphabetical);
+
+contactPages: WholeRef +LegalEntity -> [(UI.Element, UI.Element)];
+contactPages er =
+[
+    uiPage {"Social"} $ UI.vertical
+    [
+        (False, uiLabelled {"Email: "} $ UI.textEntry $ email !$% er),
+        (False, uiLabelled {"Phone: "} $ UI.textEntry $ phone !$% er)
+    ],
+    uiPage {"Home"} $ locationUI $ home !$% er
+];
+
+personPages: WholeRef +Person -> [(UI.Element, UI.Element)];
+personPages p =
+[
+    uiPage {"Work"} $ UI.vertical
+    [
+        (False, uiLabelled {"Employer: "} $ UI.pick (byName legalentities) $ employer !$% p)
+    ],
+    uiPage {"Family"} $ familyUI p
+];
+
+organisationPages: WholeRef +Organisation -> [(UI.Element, UI.Element)];
+organisationPages subj =
+[
+    uiPage {"Employees"} $ namedTable (employees subj) contactWindow Nothing
+];
+
+contactUI: LegalEntity -> UI.Element;
+contactUI e = let
+    pages: [(UI.Element, UI.Element)];
+    pages = contactPages {e} ++ case e of
+        (p: Person) -> personPages {p};
+        (o: Organisation) -> organisationPages {o};
+        end;
+    in UI.vertical
+    [
+        (False, uiLabelled {"Name: "} $ UI.textEntry $ name !$% {e}),
+        (True, UI.notebook unknown pages)
+    ];
+
+contactRefUI: WholeRef +LegalEntity -> UI.Element;
+contactRefUI ref = UI.dynamic $ coMapWhole contactUI ref;
+
+contactWindow: LegalEntity -> Action UI.Window;
+contactWindow e = stdWindow (name !$ {e}) [] $ contactUI e;
+
+newPersonMenuItem: (LegalEntity -> Action ()) -> UI.MenuItem;
+newPersonMenuItem setsel = UI.menuAction ("New Person") (Just "Ctrl+K")
+    {do
+    item <- newDynamicEntity @Person;
+    legalentities += item;
+    setsel item;
+    end};
+
+newOrganisationMenuItem: (LegalEntity -> Action ()) -> UI.MenuItem;
+newOrganisationMenuItem setsel = UI.menuAction ("New Organisation") (Just "Ctrl+K")
+    {do
+    item <- newDynamicEntity @Organisation;
+    legalentities += item;
+    setsel item;
+    end};
+
+contactsSelector: WholeRef LegalEntity -> UI.Element;
+contactsSelector selection = namedTable legalentities contactWindow (Just selection);
+
+# main window
+contactsWindow: Action UI.Window;
+contactsWindow = selectionPairWindow "Contacts" legalentities [newPersonMenuItem,newOrganisationMenuItem] contactWindow
+    contactsSelector contactRefUI;
+
+in contactsWindow

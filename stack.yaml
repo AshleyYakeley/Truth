@@ -10,17 +10,14 @@ packages:
 - changes-world
 - changes-gtk
 - pinafore-base
-- pinafore
+- pinafore-language
+- pinafore-gtk
+- pinafore-app
 
-resolver: lts-16.26
-compiler: ghc-8.10.2
-
-allow-newer: true
+resolver: lts-17.0
 
 extra-deps:
 - mime-0.4.0.2
-- direct-sqlite-2.3.26
-- sqlite-simple-0.4.18.0
 - git: https://github.com/AshleyYakeley/haskell-src-exts.git
   commit: 0f5103dd6fbea4f7ee8b156b40c7782e989e7025
 - git: https://github.com/AshleyYakeley/hindent.git

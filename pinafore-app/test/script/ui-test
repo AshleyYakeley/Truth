@@ -1,0 +1,13 @@
+#!/usr/bin/pinafore
+let
+
+emptywindow :: Action ();
+emptywindow = do
+    UI.openWindow (300,400) {"Empty"} {[]} UI.blank;
+    return ();
+    end;
+
+newpoint :: Action ();
+newpoint = do s <- newMemFiniteSet; newEntity s; return (); end;
+
+in UI.openWindow (300,400) {"Test"} {[]} $ UI.button {"Button"} {newpoint >> emptywindow};

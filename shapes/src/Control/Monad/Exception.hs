@@ -4,6 +4,8 @@ module Control.Monad.Exception
     , CE.Exception(..)
     , CE.evaluate
     , CE.IOException
+    , CE.ErrorCall
+    , pattern CE.ErrorCall
     ) where
 
 import qualified Control.Exception as CE

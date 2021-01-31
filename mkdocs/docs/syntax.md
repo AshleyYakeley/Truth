@@ -26,9 +26,11 @@ All declarations, including type declarations, are local to a `let` block.
     <let-declarations> "in" <module> |
     "export" <names>
 
-<names> ::= | <name> <names>
+<names> ::=  | <name> <names>
 
 <name> ::= uname | lname | "(" <infix-operator[n]> ")"
+
+<refname> ::= uname | lname | "(" <infix-operator[n]> ")"
 
 <interactive> ::= <expression> | <let-declarations> | ":" <interactive-command>
 
@@ -99,7 +101,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <type-var> ::= lname
 
-<type-const> ::= uname
+<type-const> ::= quname
 
 <expression> ::=
     <expression-infix[0]> |
@@ -130,17 +132,19 @@ All declarations, including type declarations, are local to a `let` block.
 <expression-3> ::=
     "{" <expression> "}" |
     "%" <expression-3> |
-    lname <annotations> |
-    lname |
-    uname |
-    literal-boolean |
-    literal-number |
-    literal-text |
+    <expression-specialform> |
+    <expression-var> |
+    <constructor> |
+    <literal> |
     "[" <comma-separated(<expression>)> "]" |
     "(" ")" |
     "(" <expression> "," <expression> ")" |
     "(" <expression> ")" |
     "(" <infix-operator[n]> ")"
+
+<expression-var> ::= qlname
+
+<expression-specialform> ::= qlname <annotations>
 
 <comma-separated(n)> ::=  | <comma-separated-1(n)>
 
@@ -214,15 +218,22 @@ All declarations, including type declarations, are local to a `let` block.
 <pattern-4> ::= <pattern-5> | <pattern-5> "@" <pattern-4>
 
 <pattern-5> ::=
-    uname |
-    literal-number |
-    literal-text |
-    lname |
+    <literal> |
+    <constructor> |
+    <pattern-var> |
     "_" |
     "[" <comma-separated(<pattern-1>)> "]" |
     "(" ")" |
     "(" <pattern-1> "," <pattern-1> ")" |
     "(" <pattern-1> ")"
+
+<pattern-var> ::= lname
+
+<constructor> ::= quname
+
+<literal> ::=
+    literal-number |
+    literal-text
 ```
 
 ## Infix Operators
@@ -231,18 +242,31 @@ All declarations, including type declarations, are local to a `let` block.
 
 ## Lexical
 
+This is only approximate.
+Block comments (inside `{#`, `#}`) nest.
+
 ```text
-uname = [[:upper:]][-_[:alnum:]]*
+ignored ::=
+    whitespace |
+    "#" linearchar* newline |
+    "{#" char* "#}"
 
-lname = [_[:lower:]][-_[:alnum:]]*
+uname ::= upper ("-" | "_" | alnum)*
 
-literal-boolean = (True)|(False)
+quname ::= (uname ".")* uname
 
-literal-number = (-?[0-9]+(.[0-9]*(_[0-9]*)?)?)|(~-?[0-9]+(.[0-9]*)?(e-?[0-9]+)?)|(NaN)
+lname ::= lower ("-" | "_" | alnum)*
 
-literal-text = "([^"\\]|\\.)*"
+qlname ::= (uname ".")* lname
 
-hex64 = [[:xdigit:]]{64}
+literal-number ::=
+    "-"? digit+ ("." digit* ("_" digit*)?)? |
+    "~" "-"? digit+ ("." digit*)? ("e" "-"? digit+)? |
+    "NaN"
 
-anchor = !(literal-text|hex64)
+literal-text ::= "\"" (safechar | "\\" char)* "\""
+
+hex64 ::= "-"* (xdigit "-"*){64}
+
+anchor ::= "!" (literal-text|hex64)
 ```

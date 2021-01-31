@@ -11,6 +11,13 @@ in outputLn sometext
 ```
 
 Module names are one or more unames, separated by periods.
+
+You can also qualify names (of types, constructors, values) with module names, which will import the module and find the name in it:
+
+```pinafore
+outputLn My.Stuff.sometext
+```
+
 To import the module `My.Stuff`, Pinafore will look for a file in these paths in this order:
 
 1. `$dir/My/Stuff.pinafore` for each `-I $dir` on the command line

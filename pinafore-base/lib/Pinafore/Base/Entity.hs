@@ -16,3 +16,6 @@ newEntity = liftIO randomIO
 
 hashToEntity :: (forall r. (forall t. Serialize t => t -> r) -> [r]) -> Entity
 hashToEntity f = MkEntity $ hashToAnchor f
+
+checkEntity :: String -> Entity -> Entity
+checkEntity s (MkEntity anchor) = MkEntity $ checkAnchor s anchor

@@ -21,7 +21,10 @@ nav:
   - Dynamic Supertypes: 'dynamic-supertypes.md'
   - Reference Notation: 'reference-notation.md'
   - Modules: 'modules.md'
-  - Predefined Bindings: 'predefined.md'
+- Library:
+  - Std: 'library/Std.md'
+  - UI: 'library/UI.md'
+  - Debug: 'library/Debug.md'
 - Examples:
   - Stopwatch: 'examples/stopwatch.md'
   - Calendar: 'examples/calendar.md'
