@@ -109,15 +109,3 @@ tests:
           - Test.Module
           - Test.Interactive
         ghc-options: -threaded
-
-benchmarks:
-    benchmark:
-        source-dirs: benchmark
-        dependencies:
-          - base >= 4.12
-          - shapes
-          - changes-core
-          - pinafore-language
-          - criterion
-        main: Main.hs
-        ghc-options: -threaded

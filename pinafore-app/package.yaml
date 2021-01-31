@@ -53,3 +53,16 @@ tests:
         other-modules:
           - Options
         ghc-options: -threaded
+
+benchmarks:
+    benchmark:
+        source-dirs: benchmark
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - changes-core
+          - pinafore-language
+          - pinafore-gtk
+          - criterion
+        main: Main.hs
+        ghc-options: -threaded

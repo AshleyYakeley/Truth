@@ -5,6 +5,7 @@ module Main
 import Changes.Core
 import Criterion.Main
 import Pinafore
+import Pinafore.Language.Library.UI
 import Pinafore.Test
 import Shapes
 
@@ -33,8 +34,11 @@ benchScript text =
                (show $ unpack text)
                [ bench "check" $
                  nfIO $
-                 runWithContext pc mempty $ throwInterpretResult $ pinaforeInterpretText "<test>" text >> return ()
-               , env (fmap const $ runWithContext pc mempty $ throwInterpretResult $ pinaforeInterpretText "<test>" text) $ \action ->
+                 runWithContext pc (libraryFetchModule uiLibrary) $
+                 throwInterpretResult $ pinaforeInterpretText "<test>" text >> return ()
+               , env (fmap const $
+                      runWithContext pc (libraryFetchModule uiLibrary) $
+                      throwInterpretResult $ pinaforeInterpretText "<test>" text) $ \action ->
                      bench "run" $ nfIO (nullViewIO $ action ())
                ]
 

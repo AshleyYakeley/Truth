@@ -80,7 +80,7 @@ else
 	cp -r .stack-work/logs out/
 endif
 ifeq ($(bench),1)
-	test -n "$$(git status -s)" || (stack $(STACKFLAGS) exec -- benchgraph/adapters/criterion/export_benchs.sh pinafore/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
+	test -n "$$(git status -s)" || (stack $(STACKFLAGS) exec -- benchgraph/adapters/criterion/export_benchs.sh pinafore-app/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
 endif
 
 .PHONY: exe
@@ -143,7 +143,7 @@ mkdocs/generated/infix.md: ${BINPATH}/pinafore
 
 docs: mkdocs/docs/library/Std.md mkdocs/generated/infix.md docker-image
 	mkdir -p mkdocs/generated/examples
-	cp pinafore/examples/* mkdocs/generated/examples/
+	cp pinafore-app/examples/* mkdocs/generated/examples/
 	stack $(STACKFLAGS) exec -- pip3 install --user file://`pwd`/support/pygments-lexer/
 	stack $(STACKFLAGS) exec --cwd mkdocs -- mkdocs build
 
