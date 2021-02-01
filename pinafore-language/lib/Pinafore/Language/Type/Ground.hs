@@ -32,7 +32,6 @@ instance TestHetEquality ProvidedType where
 
 type PinaforeGroundType :: GroundTypeKind
 data PinaforeGroundType dv t where
-    -- a simple ground type is one with no special subtype relationships
     SimpleGroundType
         :: forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
            DolanVarianceType dv

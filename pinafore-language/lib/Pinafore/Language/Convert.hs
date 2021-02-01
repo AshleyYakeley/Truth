@@ -78,7 +78,7 @@ instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
 
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
          , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) b
-         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (Either a b) where
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (a, b) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- Either
@@ -113,7 +113,7 @@ instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
 
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
          , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) b
-         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (a, b) where
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (Either a b) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 -- (->)
@@ -292,6 +292,9 @@ $(literalInstances [t|()|])
 -- Double
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Double where
     toShimWit = mapPosShimWit (functionToShim "subtype" InexactNumber) toJMShimWit
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Double where
+    fromShimWit = mapNegShimWit (functionToShim "subtype" numberToDouble) fromJMShimWit
 
 -- Int
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Int where
