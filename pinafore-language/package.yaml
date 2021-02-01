@@ -51,6 +51,7 @@ library:
       - Pinafore.Language.Var
       - Pinafore.Language.Convert.TH
       - Pinafore.Language.Convert
+      - Pinafore.Language.ExprShow
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type

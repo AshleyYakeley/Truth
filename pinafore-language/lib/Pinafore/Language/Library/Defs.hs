@@ -4,6 +4,7 @@ import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name

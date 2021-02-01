@@ -9,6 +9,7 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Language.Error
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Show

@@ -2,7 +2,7 @@ module Pinafore.Language.Type.Literal where
 
 import Data.Time
 import Pinafore.Base
-import Pinafore.Language.Type.Show
+import Pinafore.Language.ExprShow
 import Shapes
 
 data LiteralType (t :: Type) where

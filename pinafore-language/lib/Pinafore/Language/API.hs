@@ -1,5 +1,6 @@
 module Pinafore.Language.API
-    ( module Pinafore.Language.DocTree
+    ( module Pinafore.Language.ExprShow
+    , module Pinafore.Language.DocTree
     , module Pinafore.Language.Var
     , module Pinafore.Language.Library.Defs
     , module Pinafore.Context
@@ -15,6 +16,7 @@ module Pinafore.Language.API
 
 import Pinafore.Context
 import Pinafore.Language.DocTree
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std ()

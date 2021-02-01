@@ -3,6 +3,7 @@ module Pinafore.Language.Type.Ground where
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
