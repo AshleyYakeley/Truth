@@ -27,3 +27,5 @@ library:
       - pinafore-gtk
     exposed-modules:
       - Pinafore.Language.Library.Chart
+    other-modules:
+      - Pinafore.Language.Library.Diagram
