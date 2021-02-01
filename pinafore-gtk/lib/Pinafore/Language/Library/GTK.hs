@@ -2,6 +2,7 @@
 
 module Pinafore.Language.Library.GTK
     ( gtkLibrary
+    , LangDrawing(..)
     ) where
 
 import Pinafore.Language.API
