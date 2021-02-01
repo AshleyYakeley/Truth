@@ -13,29 +13,30 @@ import Graphics.Rendering.Chart as C
 import Graphics.Rendering.Chart.Backend.Diagrams as C
 import Language.Expression.Dolan
 import Pinafore.Language.API
+import Pinafore.Language.Library.Chart.Plot
 import Pinafore.Language.Library.Diagram
 import Pinafore.Language.Library.GTK
 import Shapes
 import Shapes.Numeric
 
-type LangChart = C.Renderable ()
+type LangRenderable = C.Renderable ()
 
-chartGroundType :: PinaforeGroundType '[] LangChart
-chartGroundType =
-    SimpleGroundType NilListType NilDolanVarianceMap ("Chart", 0) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangChart)|]) HetRefl
+renderableGroundType :: PinaforeGroundType '[] LangRenderable
+renderableGroundType =
+    SimpleGroundType NilListType NilDolanVarianceMap ("Renderable", 0) $
+    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangRenderable)|]) HetRefl
 
--- LangChart
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangChart where
-    toShimWit = mkShimWit $ GroundDolanSingularType chartGroundType NilDolanArguments
+-- LangRenderable
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangRenderable where
+    toShimWit = mkShimWit $ GroundDolanSingularType renderableGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangChart where
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangRenderable where
     toShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangChart where
-    fromShimWit = mkShimWit $ GroundDolanSingularType chartGroundType NilDolanArguments
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangRenderable where
+    fromShimWit = mkShimWit $ GroundDolanSingularType renderableGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangChart where
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangRenderable where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 data ChartContext = MkChartContext
@@ -47,22 +48,22 @@ mkChartContext = do
     ccFontSelector <- loadCommonFonts
     return MkChartContext {..}
 
-chartToDiagram :: ChartContext -> (Double, Double) -> LangChart -> LangDiagram
+chartToDiagram :: ChartContext -> (Double, Double) -> LangRenderable -> LangDiagram
 chartToDiagram MkChartContext {..} (w, h) chart = let
     env :: DEnv Double
     env = createEnv bitmapAlignmentFns w h ccFontSelector
     in fst $ runBackendR env chart
 
-chartToDrawing :: ChartContext -> LangChart -> (Double, Double) -> LangDrawing
+chartToDrawing :: ChartContext -> LangRenderable -> (Double, Double) -> LangDrawing
 chartToDrawing cc chart sz = diagramToDrawing sz $ chartToDiagram cc sz chart
 
-getDraw :: IO (LangChart -> (Double, Double) -> LangDrawing)
+getDraw :: IO (LangRenderable -> (Double, Double) -> LangDrawing)
 getDraw = do
     cc <- mkChartContext
     return $ chartToDrawing cc
 
 -- from https://github.com/timbod7/haskell-chart/wiki/example-1
-test :: LangChart
+test :: LangRenderable
 test = toRenderable layout
   where
     am :: Double -> Double
@@ -84,12 +85,16 @@ chartLibraryModule =
     MkDocTree
         "Chart"
         "Drawing charts."
-        [ mkTypeEntry "Chart" "A chart." $ MkBoundType chartGroundType
-        , mkValEntry
+        [ mkValEntry
               "getDraw"
-              "Initialise the Chart module to get a chart-drawing function. May take several seconds."
+              "Initialise the Chart module to get a rendering function. May take several seconds."
               getDraw
         , mkValEntry "test" "A test chart." test
+        , docTreeEntry
+              "Renderable"
+              ""
+              [mkTypeEntry "Renderable" "Something that can be rendered." $ MkBoundType renderableGroundType]
+        , plotStuff
         ]
 
 chartLibrary :: [LibraryModule]

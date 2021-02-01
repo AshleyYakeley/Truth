@@ -8,6 +8,7 @@ module Pinafore.Language.Grammar.Interpret.Type
     ) where
 
 import Pinafore.Language.Error
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name

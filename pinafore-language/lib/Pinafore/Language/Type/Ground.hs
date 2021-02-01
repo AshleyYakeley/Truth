@@ -3,6 +3,7 @@ module Pinafore.Language.Type.Ground where
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
@@ -31,7 +32,6 @@ instance TestHetEquality ProvidedType where
 
 type PinaforeGroundType :: GroundTypeKind
 data PinaforeGroundType dv t where
-    -- a simple ground type is one with no special subtype relationships
     SimpleGroundType
         :: forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
            DolanVarianceType dv

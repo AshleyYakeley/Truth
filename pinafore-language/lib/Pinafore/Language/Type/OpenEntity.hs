@@ -1,9 +1,9 @@
 module Pinafore.Language.Type.OpenEntity where
 
 import Pinafore.Base
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Name
 import Pinafore.Language.Type.Identified
-import Pinafore.Language.Type.Show
 import Shapes
 
 type OpenEntityType :: BigNat -> Type

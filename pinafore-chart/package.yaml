@@ -28,4 +28,5 @@ library:
     exposed-modules:
       - Pinafore.Language.Library.Chart
     other-modules:
+      - Pinafore.Language.Library.Chart.Plot
       - Pinafore.Language.Library.Diagram
