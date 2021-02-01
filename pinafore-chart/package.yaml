@@ -1,0 +1,29 @@
+name: pinafore-chart
+version: "0.3"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.12
+      - shapes
+      - time
+      - lens
+      - data-default-class
+      - colour
+      - diagrams-core
+      - diagrams-lib
+      - diagrams-gi-cairo
+      - Chart
+      - Chart-diagrams
+      - typed-expression
+      - changes-core
+      - changes-gtk
+      - pinafore-base
+      - pinafore-language
+      - pinafore-gtk
+    exposed-modules:
+      - Pinafore.Language.Library.Chart

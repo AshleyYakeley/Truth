@@ -25,6 +25,7 @@ nav:
   - Std: 'library/Std.md'
   - Drawing: 'library/Drawing.md'
   - UI: 'library/UI.md'
+  - Chart: 'library/Chart.md'
   - Debug: 'library/Debug.md'
   - Debug.UI: 'library/Debug.UI.md'
 - Examples:

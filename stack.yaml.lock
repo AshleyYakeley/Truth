@@ -61,6 +61,41 @@ packages:
   original:
     hackage: monoid-extras-0.5.1
 - completed:
+    hackage: Chart-diagrams-1.9.3@sha256:dcaa8899fa5e2de7cd7013fdd84cc320a6ed63dc9d1bbf6559cd0233c7f9a4c2,1802
+    pantry-tree:
+      size: 934
+      sha256: aa074ef59fa95980c0e861448d0f64e6a47aa427299d72d18bf055211be07b31
+  original:
+    hackage: Chart-diagrams-1.9.3
+- completed:
+    hackage: SVGFonts-1.7.0.1@sha256:af422f17a3a87f2d7185ba7ea4b1cf693f71c164e99ce7386f1902145db25df0,3909
+    pantry-tree:
+      size: 1836
+      sha256: 13f2c1b8ad72eefc1adb87229a2ccdc11be680dafe2fd7c65d52d751dcf885c8
+  original:
+    hackage: SVGFonts-1.7.0.1
+- completed:
+    hackage: diagrams-postscript-1.5@sha256:666dcc41d0a2942c884077b070ea0dd71c586567944fa4f67976251c717587b2,2379
+    pantry-tree:
+      size: 480
+      sha256: 86eb388c52d91deb8da273270de2f6308b111161e7618e06e3fa41e9af8911e5
+  original:
+    hackage: diagrams-postscript-1.5
+- completed:
+    hackage: diagrams-svg-1.4.3@sha256:36708b0b4cf35507ccf689f1a25f6f81b8f41c2c4c2900793de820f66d4e241c,3181
+    pantry-tree:
+      size: 475
+      sha256: 2a2f10e8c32a6c181a06494e13a462e00f77e98ad346fd99c123afa3fa89f9e1
+  original:
+    hackage: diagrams-svg-1.4.3
+- completed:
+    hackage: svg-builder-0.1.1@sha256:43c2adbb301592666d44d32b4741ffe68fb58ed2ac873c2bd9cc86cadeac1680,1477
+    pantry-tree:
+      size: 535
+      sha256: 897cdee109d3aa0a733b043519694f432e5421d656e5dcc7abd1ba7df3a68019
+  original:
+    hackage: svg-builder-0.1.1
+- completed:
     name: haskell-src-exts
     version: 1.23.0
     git: https://github.com/AshleyYakeley/haskell-src-exts.git

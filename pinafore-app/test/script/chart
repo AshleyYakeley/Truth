@@ -1,0 +1,6 @@
+#!/usr/bin/pinafore
+
+do
+    dc <- Chart.drawChart;
+    UI.openWindow (300,400) {"Chart"} {[]} $ UI.draw $ {dc Chart.testChart};
+end

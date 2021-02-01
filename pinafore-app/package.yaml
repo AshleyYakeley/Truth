@@ -22,6 +22,7 @@ executables:
           - changes-gtk
           - pinafore-language
           - pinafore-gtk
+          - pinafore-chart
           - githash
         main: Main.hs
         other-modules:

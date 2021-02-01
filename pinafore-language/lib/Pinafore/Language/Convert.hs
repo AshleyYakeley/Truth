@@ -293,6 +293,9 @@ $(literalInstances [t|()|])
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Double where
     toShimWit = mapPosShimWit (functionToShim "subtype" InexactNumber) toJMShimWit
 
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Double where
+    fromShimWit = mapNegShimWit (functionToShim "subtype" numberToDouble) fromJMShimWit
+
 -- Int
 instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Int where
     toShimWit = mapPosShimWit (functionToShim "subtype" toInteger) toJMShimWit

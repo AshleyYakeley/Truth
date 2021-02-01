@@ -12,6 +12,7 @@ packages:
 - pinafore-base
 - pinafore-language
 - pinafore-gtk
+- pinafore-chart
 - pinafore-app
 
 resolver: lts-17.0
@@ -27,6 +28,11 @@ extra-deps:
 - active-0.2.0.14
 - dual-tree-0.2.2.1
 - monoid-extras-0.5.1
+- Chart-diagrams-1.9.3
+- SVGFonts-1.7.0.1
+- diagrams-postscript-1.5
+- diagrams-svg-1.4.3
+- svg-builder-0.1.1
 - git: https://github.com/AshleyYakeley/haskell-src-exts.git
   commit: 0f5103dd6fbea4f7ee8b156b40c7782e989e7025
 - git: https://github.com/AshleyYakeley/hindent.git
