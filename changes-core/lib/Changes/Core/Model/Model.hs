@@ -16,6 +16,7 @@ module Changes.Core.Model.Model
     , constantModel
     , modelToReadOnly
     , makeMemoryModel
+    , rejectingModel
     ) where
 
 import Changes.Core.Edit
@@ -192,5 +193,8 @@ modelToReadOnly = mapModel toReadOnlyChangeLens
 
 makeMemoryModel :: forall a. a -> LifeCycle (Model (WholeUpdate a))
 makeMemoryModel initial = do
-    obj <- liftIO $ makeMemoryReference initial $ \_ -> True
-    makeReflectingModel obj
+    ref <- liftIO $ makeMemoryReference initial $ \_ -> True
+    makeReflectingModel ref
+
+rejectingModel :: Readable IO (UpdateReader update) -> Model update
+rejectingModel rd = aReferenceModel $ rejectingAReference rd

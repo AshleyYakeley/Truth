@@ -138,19 +138,25 @@ floatMapReference rc lens (MkResource rr anobjA) = do
     anobjB <- runResourceRunner rc rr $ floatMapAReference lens anobjA
     return $ MkResource rr anobjB
 
+rejectingAReference ::
+       forall tt edit. MonadTransStackUnliftAll tt
+    => Readable (ApplyStack tt IO) (EditReader edit)
+    -> AReference edit tt
+rejectingAReference mr =
+    case transStackDict @Monad @tt @IO of
+        Dict -> MkAReference mr (\_ -> return Nothing) mempty
+
 immutableAReference ::
        forall tt reader. MonadTransStackUnliftAll tt
     => Readable (ApplyStack tt IO) reader
     -> AReference (ConstEdit reader) tt
-immutableAReference mr =
-    case transStackDict @Monad @tt @IO of
-        Dict -> MkAReference mr (\_ -> return Nothing) mempty
+immutableAReference = rejectingAReference
 
-readConstantReference :: Readable IO reader -> Reference (ConstEdit reader)
-readConstantReference mr = MkResource nilResourceRunner $ immutableAReference mr
+rejectingReference :: Readable IO (EditReader edit) -> Reference edit
+rejectingReference mr = MkResource nilResourceRunner $ rejectingAReference mr
 
 constantReference :: SubjectReader reader => ReaderSubject reader -> Reference (ConstEdit reader)
-constantReference subj = readConstantReference $ subjectToReadable subj
+constantReference subj = rejectingReference $ subjectToReadable subj
 
 alwaysEdit :: Monad m => (NonEmpty edit -> EditSource -> m ()) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))
 alwaysEdit em edits = return $ Just $ em edits

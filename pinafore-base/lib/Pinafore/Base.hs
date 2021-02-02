@@ -13,7 +13,6 @@ import Pinafore.Base.FunctionMorphism as I
 import Pinafore.Base.ImmutableWholeRef as I
 import Pinafore.Base.Know as I
 import Pinafore.Base.KnowShim as I
-import Pinafore.Base.Lens as I
 import Pinafore.Base.Literal as I
 import Pinafore.Base.Morphism as I
 import Pinafore.Base.Number as I

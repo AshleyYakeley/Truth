@@ -44,7 +44,7 @@ makeTestStorageModel = do
 makeTestPinaforeContext :: ChangesContext -> Handle -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
 makeTestPinaforeContext cc hout = do
     (model, getTableState) <- makeTestStorageModel
-    pc <- makePinaforeContext nullInvocationInfo hout model cc
+    pc <- makePinaforeContext nullInvocationInfo hout model nullFileModel cc
     return (pc, getTableState)
 
 withTestPinaforeContext ::

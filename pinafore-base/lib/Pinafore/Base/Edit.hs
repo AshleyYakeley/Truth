@@ -9,7 +9,6 @@ import Pinafore.Base.Entity
 import Pinafore.Base.EntityAdapter
 import Pinafore.Base.EntityStorer
 import Pinafore.Base.Know
-import Pinafore.Base.Lens
 import Shapes
 
 -- | Some of these reads may add to the database, but will always give consistent results between changes.
@@ -78,6 +77,3 @@ type instance UpdateEdit PinaforeStorageUpdate =
 instance IsUpdate PinaforeStorageUpdate where
     editUpdate (MkPinaforeStorageEdit st vt p s kv) =
         MkPinaforeStorageUpdate p (entityAdapterConvert st s) (fmap (entityAdapterConvert vt) kv)
-
-instance BaseChangeLens PinaforeStorageUpdate PinaforeStorageUpdate where
-    baseChangeLens = id

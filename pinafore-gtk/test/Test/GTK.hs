@@ -19,7 +19,7 @@ testFile inpath = let
                pc <-
                    liftLifeCycle $ do
                        (model, _) <- makeTestStorageModel
-                       makePinaforeContext nullInvocationInfo hout model cc
+                       makePinaforeContext nullInvocationInfo hout model nullFileModel cc
                action <- runWithContext pc (libraryFetchModule gtkLibrary) $ pinaforeInterpretFile inpath
                liftToLifeCycle action
                return ()

@@ -43,6 +43,11 @@ standardStorageModel cache dataDir = do
         (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
         return model
 
+standardFileModel :: FilePath -> CreateView (Model PinaforeFileUpdate)
+standardFileModel fdir = do
+    (model, ()) <- liftLifeCycle $ makeSharedModel $ reflectingPremodel $ directoryPinaforeFileReference fdir
+    return model
+
 standardPinaforeContext ::
        ContextOptions -> InvocationInfo -> ChangesContext -> CreateView (PinaforeContext, FetchModule)
 standardPinaforeContext MkContextOptions {..} invinfo cc = do
@@ -51,8 +56,9 @@ standardPinaforeContext MkContextOptions {..} invinfo cc = do
         extraLibFetchModule = libraryFetchModule coExtraLibrary
         dirFetchModule :: FetchModule
         dirFetchModule = mconcat $ fmap directoryFetchModule coModuleDirs
-    model <- standardStorageModel coCache coDataDir
-    pc <- liftLifeCycle $ makePinaforeContext invinfo stdout model cc
+    storageModel <- standardStorageModel coCache coDataDir
+    fileModel <- standardFileModel $ coDataDir </> "files"
+    pc <- liftLifeCycle $ makePinaforeContext invinfo stdout storageModel fileModel cc
     return (pc, extraLibFetchModule <> dirFetchModule)
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
