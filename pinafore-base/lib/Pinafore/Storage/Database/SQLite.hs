@@ -197,11 +197,11 @@ sqlitePinaforeLens = let
         -> Readable m (EditReader (SQLiteEdit PinaforeSchema))
         -> m [PinaforeTableUpdate]
     clUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
-    elPutEdit ::
+    clPutEdit ::
            forall m. MonadIO m
         => PinaforeTableEdit
         -> m (Maybe [SQLiteEdit PinaforeSchema])
-    elPutEdit (PinaforeTableEditPropertySet p s (Just v)) =
+    clPutEdit (PinaforeTableEditPropertySet p s (Just v)) =
         return $
         Just $
         pure $
@@ -212,13 +212,13 @@ sqlitePinaforeLens = let
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
-    elPutEdit (PinaforeTableEditPropertySet p s Nothing) =
+    clPutEdit (PinaforeTableEditPropertySet p s Nothing) =
         return $
         Just $
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeProperty) $
         MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s
-    elPutEdit (PinaforeTableEditEntityRefCount v (Just rc)) =
+    clPutEdit (PinaforeTableEditEntityRefCount v (Just rc)) =
         return $
         Just $
         pure $
@@ -228,12 +228,12 @@ sqlitePinaforeLens = let
         MkAllValue $ \case
             RefCountKey -> v
             RefCountValue -> rc
-    elPutEdit (PinaforeTableEditEntityRefCount v Nothing) =
+    clPutEdit (PinaforeTableEditEntityRefCount v Nothing) =
         return $
         Just $
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeRefCount) $ MkTupleWhereClause $ ColumnExpr RefCountKey === ConstExpr v
-    elPutEdit (PinaforeTableEditFactSet p s (Just v)) =
+    clPutEdit (PinaforeTableEditFactSet p s (Just v)) =
         return $
         Just $
         pure $
@@ -244,13 +244,13 @@ sqlitePinaforeLens = let
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
-    elPutEdit (PinaforeTableEditFactSet p s Nothing) =
+    clPutEdit (PinaforeTableEditFactSet p s Nothing) =
         return $
         Just $
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeFact) $
         MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s
-    elPutEdit (PinaforeTableEditLiteralSet v (Just l)) =
+    clPutEdit (PinaforeTableEditLiteralSet v (Just l)) =
         return $
         Just $
         pure $
@@ -260,7 +260,7 @@ sqlitePinaforeLens = let
         MkAllValue $ \case
             LiteralKey -> v
             LiteralValue -> l
-    elPutEdit (PinaforeTableEditLiteralSet v Nothing) =
+    clPutEdit (PinaforeTableEditLiteralSet v Nothing) =
         return $
         Just $
         pure $
@@ -270,7 +270,7 @@ sqlitePinaforeLens = let
         => [PinaforeTableEdit]
         -> Readable m (SQLiteReader PinaforeSchema)
         -> m (Maybe [SQLiteEdit PinaforeSchema])
-    clPutEdits = clPutEditsFromSimplePutEdit elPutEdit
+    clPutEdits = clPutEditsFromSimplePutEdit clPutEdit
     in MkChangeLens {..}
 
 instance WitnessConstraint IsPinaforeRow PinaforeSchema where

@@ -57,8 +57,8 @@ instance TestEquality reader => CacheableEdit (ConstEdit reader)
 type ConstUpdate reader = EditUpdate (ConstEdit reader)
 
 clPutEditsNone ::
-       forall edita readerb m m'. (Monad m', MonadIO m)
-    => [ConstEdit readerb]
+       forall edita editb m m'. (Monad m', MonadIO m, Empty editb)
+    => [editb]
     -> Readable m (EditReader edita)
     -> m' (Maybe [edita])
 clPutEditsNone [] _ = return $ Just []

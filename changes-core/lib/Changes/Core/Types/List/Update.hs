@@ -35,6 +35,26 @@ instance IsEditUpdate update => IsEditUpdate (ListUpdate seq update) where
     updateEdit (ListUpdateInsert p subj) = ListEditInsert p subj
     updateEdit ListUpdateClear = ListEditClear
 
+instance ( IsSequence seq
+         , FullSubjectReader (UpdateReader update)
+         , IsEditUpdate update
+         , ApplicableEdit (UpdateEdit update)
+         , UpdateSubject update ~ Element seq
+         ) => ApplicableUpdate (ListUpdate seq update)
+
+instance ( IsSequence seq
+         , FullSubjectReader (UpdateReader update)
+         , IsEditUpdate update
+         , ApplicableEdit (UpdateEdit update)
+         , UpdateSubject update ~ Element seq
+         ) => FullUpdate (ListUpdate seq update) where
+    replaceUpdate mr write = do
+        write ListUpdateClear
+        len <- mr ListReadLength
+        for_ [0 .. pred len] $ \i -> do
+            item <- readableToSubject $ knownItemReadFunction i mr
+            write $ ListUpdateInsert i item
+
 listItemLens ::
        forall seq update.
        ( IsSequence seq

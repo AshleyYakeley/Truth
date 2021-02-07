@@ -42,6 +42,27 @@ instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangUIElem
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
 
+orderFiniteSet ::
+       (?pinafore :: PinaforeContext)
+    => LangRefOrder A
+    -> LangFiniteSetRef '( A, EnA)
+    -> CreateView (Model (OrderedListUpdate [EnA] (ROWUpdate EnA)))
+orderFiniteSet order val = do
+    let
+        uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
+        uo =
+            mapUpdateOrder
+                (changeLensToFloating $
+                 liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
+            pinaforeUpdateOrder order
+        rows :: Model (FiniteSetUpdate EnA)
+        rows = unWModel $ unLangFiniteSetRef $ contraRangeLift meet2 val
+        pkSub :: Model (ContextUpdate PinaforeStorageUpdate (FiniteSetUpdate EnA))
+        pkSub = contextModels pinaforeEntityModel rows
+    colSub :: Model (ContextUpdate PinaforeStorageUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
+        cvFloatMapModel (contextOrderedSetLens uo) pkSub
+    return $ mapModel (liftOrderedListChangeLens (constWholeChangeLens id) . tupleChangeLens SelectContent) colSub
+
 uiListTable ::
        (HasCallStack, ?pinafore :: PinaforeContext)
     => [(LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))]
@@ -52,51 +73,37 @@ uiListTable ::
     -> LangUIElement
 uiListTable cols order val onDoubleClick mSelectionLangRef =
     MkLangUIElement $ do
+        olsub :: Model (OrderedListUpdate [EnA] (ROWUpdate EnA)) <- orderFiniteSet order val
+        esrc <- newEditSource
         let
             mSelectionModel :: Maybe (Model (BiWholeUpdate (Know A) (Know EnA)))
             mSelectionModel = fmap (unWModel . langWholeRefToBiWholeRef) mSelectionLangRef
-            uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
-            uo =
-                mapUpdateOrder
-                    (changeLensToFloating $
-                     liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
-                pinaforeUpdateOrder order
-            rows :: Model (FiniteSetUpdate EnA)
-            rows = unWModel $ unLangFiniteSetRef $ contraRangeLift meet2 val
-            pkSub :: Model (ContextUpdate PinaforeStorageUpdate (FiniteSetUpdate EnA))
-            pkSub = contextModels pinaforeEntityModel rows
-            readSub :: Model (ConstWholeUpdate EnA) -> View A
+            readSub :: Model (ROWUpdate EnA) -> View A
             readSub sub =
                 viewRunResource sub $ \asub -> do
                     ea <- aModelRead asub ReadWhole
                     return $ meet2 ea
-            onSelect :: Model (ConstWholeUpdate EnA) -> View ()
+            onSelect :: Model (ROWUpdate EnA) -> View ()
             onSelect osub = do
                 a <- readSub osub
                 runPinaforeAction $ void $ onDoubleClick a
             getColumn ::
                    (LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))
-                -> KeyColumn (ConstWholeUpdate EnA)
+                -> KeyColumn (ROWUpdate EnA)
             getColumn (nameRef, getCellRef) = let
                 showCell :: Know Text -> (Text, TableCellProps)
                 showCell (Known s) = (s, plainTableCellProps)
                 showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
                 nameOpenSub :: Model (ROWUpdate Text)
                 nameOpenSub = unWModel $ eaMapSemiReadOnly clearText $ langWholeRefToReadOnlyValue nameRef
-                getCellSub :: Model (ConstWholeUpdate EnA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
+                getCellSub :: Model (ROWUpdate EnA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
                 getCellSub osub = do
                     a <- liftToLifeCycle $ readSub osub
                     return $
                         unWModel $
                         eaMapSemiReadOnly (funcChangeLens showCell) $ langWholeRefToReadOnlyValue $ getCellRef a
                 in readOnlyKeyColumn nameOpenSub getCellSub
-        colSub :: Model (ContextUpdate PinaforeStorageUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
-            cvFloatMapModel (contextOrderedSetLens uo) pkSub
-        esrc <- newEditSource
-        let
-            olsub :: Model (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))
-            olsub = mapModel (tupleChangeLens SelectContent) colSub
-            tsn :: SelectNotify (Model (ConstWholeUpdate EnA))
+            tsn :: SelectNotify (Model (ROWUpdate EnA))
             tsn =
                 case mSelectionModel of
                     Nothing -> mempty

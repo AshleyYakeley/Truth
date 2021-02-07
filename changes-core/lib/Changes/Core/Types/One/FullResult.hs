@@ -90,18 +90,18 @@ liftFullResultOneChangeLens (MkChangeLens g u pe) = let
             SuccessResult (Just a) -> Just $ pure a
             SuccessResult Nothing -> Nothing
             FailureResult fn -> Just $ fmap never fn
-    elPutEdit ::
+    clPutEdit ::
            forall m. MonadIO m
         => FullResultOneEdit f (UpdateEdit updateB)
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
-    elPutEdit (SuccessFullResultOneEdit eb) mr = do
+    clPutEdit (SuccessFullResultOneEdit eb) mr = do
         fme <- getComposeM $ pe [eb] $ oneReadFunctionF mr
         return $
             case getMaybeOne fme of
                 Just me -> fmap (fmap SuccessFullResultOneEdit) me
                 Nothing -> Just []
-    elPutEdit (NewFullResultOneEdit fb) mr = do
+    clPutEdit (NewFullResultOneEdit fb) mr = do
         case retrieveOne fb of
             SuccessResult b -> do
                 fma <-
@@ -118,7 +118,7 @@ liftFullResultOneChangeLens (MkChangeLens g u pe) = let
         => [FullResultOneEdit f (UpdateEdit updateB)]
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
-    clPutEdits = clPutEditsFromPutEdit elPutEdit
+    clPutEdits = clPutEditsFromPutEdit clPutEdit
     in MkChangeLens {..}
 
 -- | suitable for Results; trying to put a failure code will be rejected

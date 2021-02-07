@@ -41,14 +41,11 @@ listStoreView (MkWMFunction blockSignal) itemsModel esrc = let
     recv store updates =
         for_ updates $ \(MkReadOnlyUpdate lupdate) ->
             case lupdate of
-                OrderedListUpdateItem oldi newi Nothing
+                OrderedListUpdateItem oldi newi []
                     | oldi == newi -> return ()
-                OrderedListUpdateItem (fromIntegral -> oldi) (fromIntegral -> newi) mupdate -> do
+                OrderedListUpdateItem (fromIntegral -> oldi) (fromIntegral -> newi) iupdates -> do
                     oldval <- seqStoreGetValue store oldi
-                    newval <-
-                        case mupdate of
-                            Just update -> readableToSubject $ applyUpdate update $ subjectToReadable oldval
-                            Nothing -> return oldval
+                    newval <- readableToSubject $ applyUpdates iupdates $ subjectToReadable oldval
                     blockSignal $
                         case compare newi oldi of
                             EQ -> seqStoreSetValue store newi newval

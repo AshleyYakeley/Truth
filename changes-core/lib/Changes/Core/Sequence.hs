@@ -21,6 +21,9 @@ deriving instance
 instance Integral (Index seq) => Show (SequencePoint seq) where
     show (MkSequencePoint i) = show $ toInteger i
 
+seqPointConvert :: (Index seqA ~ Index seqB) => SequencePoint seqA -> SequencePoint seqB
+seqPointConvert (MkSequencePoint i) = MkSequencePoint i
+
 seqLength :: IsSequence seq => seq -> SequencePoint seq
 seqLength = fromIntegral . olength64
 

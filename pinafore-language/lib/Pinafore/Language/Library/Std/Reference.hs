@@ -1,3 +1,4 @@
+{-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE ApplicativeDo #-}
 
 module Pinafore.Language.Library.Std.Reference
@@ -7,14 +8,48 @@ module Pinafore.Language.Library.Std.Reference
 import Changes.Core
 import Pinafore.Base
 import Pinafore.Language.DocTree
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
+import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
+
+listRefGroundType :: PinaforeGroundType '[ 'Rangevariance] LangListRef
+listRefGroundType =
+    SimpleGroundType representative dolanVary (\ta -> ("ListRef " <> precShow 0 ta, 2)) $
+    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangListRef)|]) HetRefl
+
+-- LangListRef
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangListRef '( p, q)) where
+    toShimWit =
+        unToRangeShimWit $ \tpq conv ->
+            mapPosShimWit (applyPolyShim RangevarianceType cid conv) $
+            mkShimWit $ GroundDolanSingularType listRefGroundType $ ConsDolanArguments tpq NilDolanArguments
+
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangListRef '( p, q)) where
+    toShimWit = singleDolanShimWit toJMShimWit
+
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangListRef '( p, q)) where
+    fromShimWit =
+        unFromRangeShimWit $ \tpq conv ->
+            mapNegShimWit (applyPolyShim RangevarianceType cid conv) $
+            mkShimWit $ GroundDolanSingularType listRefGroundType $ ConsDolanArguments tpq NilDolanArguments
+
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangListRef '( p, q)) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
 
 setentity :: LangWholeRef '( A, TopType) -> A -> PinaforeAction ()
 setentity ref val = langWholeRefSet ref (Known val)
@@ -192,6 +227,7 @@ refLibEntries =
                       "Create a new finite set reference to memory, initially empty."
                       newMemFiniteSet
                 ]
+          , docTreeEntry "List References" "" [mkTypeEntry "ListRef" "" $ MkBoundType listRefGroundType]
           ]
     , docTreeEntry
           "Morphisms"

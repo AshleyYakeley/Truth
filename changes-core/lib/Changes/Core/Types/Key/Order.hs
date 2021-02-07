@@ -109,14 +109,14 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens 
                             Nothing ->
                                 return
                                     [ OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint oldPos) $
-                                      Just update
+                                      pure update
                                     ] -- key & order unchanged
                             Just newO -> do
                                 let (newPos, newOL) = olInsert (newO, oldkey, ordr) $ olDeleteByPos oldPos ol
                                 put newOL
                                 return
                                     [ OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) $
-                                      Just update
+                                      pure update
                                     ]
                         -- key changed
                     Just newkey -> do
@@ -128,7 +128,7 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens 
                                     Nothing -> oldO
                         let (newPos, newOL) = olInsert (newO, newkey, ordr) $ olDeleteByPos oldPos ol
                         put newOL
-                        return [OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) $ Just update]
+                        return [OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) $ pure update]
     sclUpdate (KeyUpdateDelete key) _mr = do
         ol <- get
         case lookUpByKey ol key of
@@ -324,7 +324,7 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
                                                OrderedListUpdateItem
                                                    (MkSequencePoint oldPos)
                                                    (MkSequencePoint newPos)
-                                                   Nothing
+                                                   []
                                              ]
         return $ mconcat moveUpdates <> [MkTupleUpdate SelectContext update]
     sclUpdate (MkTupleUpdate SelectContent (KeyUpdateItem oldkey (update :: updateN))) newmr = do
@@ -351,7 +351,7 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
                                 return
                                     [ MkTupleUpdate SelectContent $
                                       OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint oldPos) $
-                                      Just update
+                                      pure update
                                     ] -- key & order unchanged
                             Just newO -> do
                                 let (newPos, newOL) = olInsert (newO, oldkey, ordr) $ olDeleteByPos oldPos ol
@@ -359,7 +359,7 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
                                 return
                                     [ MkTupleUpdate SelectContent $
                                       OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) $
-                                      Just update
+                                      pure update
                                     ]
                         -- key changed
                     Just newkey -> do
@@ -373,7 +373,7 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
                         put newOL
                         return
                             [ MkTupleUpdate SelectContent $
-                              OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) $ Just update
+                              OrderedListUpdateItem (MkSequencePoint oldPos) (MkSequencePoint newPos) $ pure update
                             ]
     sclUpdate (MkTupleUpdate SelectContent (KeyUpdateDelete key)) _mr = do
         ol <- get

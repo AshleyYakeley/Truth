@@ -78,10 +78,10 @@ clPutEditsFromPutEdit ::
     -> Readable m (EditReader edita)
     -> m' (Maybe [edita])
 clPutEditsFromPutEdit _ [] _ = getComposeM $ return []
-clPutEditsFromPutEdit elPutEdit (e:ee) mr =
+clPutEditsFromPutEdit clPutEdit (e:ee) mr =
     getComposeM $ do
-        ea <- MkComposeM $ elPutEdit e mr
-        eea <- MkComposeM $ clPutEditsFromPutEdit elPutEdit ee $ applyEdits ea mr
+        ea <- MkComposeM $ clPutEdit e mr
+        eea <- MkComposeM $ clPutEditsFromPutEdit clPutEdit ee $ applyEdits ea mr
         return $ ea ++ eea
 
 clPutEditsFromSimplePutEdit ::

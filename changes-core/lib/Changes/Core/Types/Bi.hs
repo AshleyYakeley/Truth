@@ -67,13 +67,7 @@ biReadOnlyChangeLens = let
         -> Readable m (UpdateReader qupdate)
         -> m [ReadOnlyUpdate qupdate]
     clUpdate (MkBiUpdate qupdate) _ = return [MkReadOnlyUpdate qupdate]
-    clPutEdits ::
-           forall m. MonadIO m
-        => [_]
-        -> Readable m (UpdateReader qupdate)
-        -> m (Maybe [_])
-    clPutEdits = clPutEditsNone
-    in MkChangeLens {..}
+    in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
 readOnlyBiChangeLens ::
        forall pupdate qupdate. ChangeLens (ReadOnlyUpdate qupdate) (ReadOnlyUpdate (BiUpdate pupdate qupdate))
@@ -86,10 +80,4 @@ readOnlyBiChangeLens = let
         -> Readable m (UpdateReader qupdate)
         -> m [ReadOnlyUpdate (BiUpdate pupdate qupdate)]
     clUpdate (MkReadOnlyUpdate qupdate) _ = return [MkReadOnlyUpdate $ MkBiUpdate qupdate]
-    clPutEdits ::
-           forall m. MonadIO m
-        => [_]
-        -> Readable m (UpdateReader qupdate)
-        -> m (Maybe [_])
-    clPutEdits = clPutEditsNone
-    in MkChangeLens {..}
+    in MkChangeLens {clPutEdits = clPutEditsNone, ..}

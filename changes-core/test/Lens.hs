@@ -28,8 +28,8 @@ modelPushEdits rc sub edits = do
 type UpdateX = KeyUpdate [(Char, Int)] (PairUpdate (ConstWholeUpdate Char) (WholeUpdate Int))
 
 updToString :: OrderedListUpdate String (ConstWholeUpdate Char) -> String
-updToString (OrderedListUpdateItem a b Nothing) = "move " <> show a <> " -> " <> show b
-updToString (OrderedListUpdateItem _ _ (Just update)) = never update
+updToString (OrderedListUpdateItem a b []) = "move " <> show a <> " -> " <> show b
+updToString (OrderedListUpdateItem _ _ (update:_)) = never update
 updToString (OrderedListUpdateDelete a) = "del " <> show a
 updToString (OrderedListUpdateInsert a c) = "ins " <> show a <> " " <> show c
 updToString OrderedListUpdateClear = "clear"
@@ -82,7 +82,7 @@ testContextOrderedSetLensCase assigns expected =
                 return getUpdates
         let
             expectedUpdates :: [OrderedListUpdate String (ConstWholeUpdate Char)]
-            expectedUpdates = fmap (\(a, b) -> OrderedListUpdateItem a b Nothing) expected
+            expectedUpdates = fmap (\(a, b) -> OrderedListUpdateItem a b []) expected
         foundUpdates <- getUpdates
         assertEqual "updates" (fmap updToString expectedUpdates) (fmap updToString foundUpdates)
 

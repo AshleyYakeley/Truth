@@ -556,22 +556,22 @@ pinaforeLensMorphismInverseChangeLensSet plm@MkPinaforeLensMorphism {..} = let
         -> ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (ContextUpdateReader baseupdate (FiniteSetUpdate b))
     applyEdits' [] mr = mr
     applyEdits' (e:es) mr = applyEdits' es $ applyEdit' e mr
-    elPutEdit' ::
+    clPutEdit' ::
            forall m. MonadIO m
         => FiniteSetEdit a
         -> Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
         -> m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
-    elPutEdit' (KeyEditItem _ update) _ = never update
-    elPutEdit' (KeyEditDelete a) mr = do
+    clPutEdit' (KeyEditItem _ update) _ = never update
+    clPutEdit' (KeyEditDelete a) mr = do
         mpedits <- putEditAB plm a Unknown $ tupleReadFunction SelectContext mr
         return $ fmap (\pedits -> fmap (MkTupleUpdateEdit SelectContext) pedits) mpedits
-    elPutEdit' (KeyEditInsertReplace a) mr = do
+    clPutEdit' (KeyEditInsertReplace a) mr = do
         kb <- runContextReadM mr $ pmGet a
         return $
             case kb of
                 Unknown -> Nothing
                 Known b -> Just [MkTupleUpdateEdit SelectContent $ KeyEditInsertReplace b]
-    elPutEdit' KeyEditClear mr = do
+    clPutEdit' KeyEditClear mr = do
         bs <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
         getComposeM $ do
             lpedits <-
@@ -590,7 +590,7 @@ pinaforeLensMorphismInverseChangeLensSet plm@MkPinaforeLensMorphism {..} = let
     clPutEdits' [] _ = getComposeM $ return []
     clPutEdits' (e:ee) mr =
         getComposeM $ do
-            ea <- MkComposeM $ elPutEdit' @m e mr
+            ea <- MkComposeM $ clPutEdit' @m e mr
             eea <- MkComposeM $ clPutEdits' ee $ applyEdits' ea mr
             return $ ea ++ eea
     in MkChangeLens clRead' clUpdate' clPutEdits'
