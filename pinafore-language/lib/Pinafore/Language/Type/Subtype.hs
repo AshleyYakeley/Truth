@@ -48,4 +48,4 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
     throwTypeConvertError tp tq = convertFailure (showGroundType tp) (showGroundType tq)
 
 instance IsDolanFunctionGroundType PinaforeGroundType where
-    functionGroundType = FuncPinaforeGroundType
+    functionGroundType = funcGroundType

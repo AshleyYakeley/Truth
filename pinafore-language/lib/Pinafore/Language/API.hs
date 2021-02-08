@@ -9,6 +9,7 @@ module Pinafore.Language.API
     , BoundType(..)
     , PinaforePolyShim
     , PinaforeGroundType(..)
+    , stdSingleGroundType
     , PinaforeSingularType
     , PinaforeType
     , module Pinafore.Language.Value

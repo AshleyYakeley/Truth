@@ -22,9 +22,7 @@ newtype LangUIElement =
     MkLangUIElement (CreateView Widget)
 
 elementGroundType :: PinaforeGroundType '[] LangUIElement
-elementGroundType =
-    SimpleGroundType NilListType NilDolanVarianceMap ("Element", 0) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangUIElement)|]) HetRefl
+elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangUIElement)|]) "Element"
 
 -- LangUIElement
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUIElement where

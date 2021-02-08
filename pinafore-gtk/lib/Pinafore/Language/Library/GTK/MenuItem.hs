@@ -16,9 +16,7 @@ import Shapes
 type LangMenuItem = MenuEntry
 
 menuItemGroundType :: PinaforeGroundType '[] LangMenuItem
-menuItemGroundType =
-    SimpleGroundType NilListType NilDolanVarianceMap ("MenuItem", 0) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangMenuItem)|]) HetRefl
+menuItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangMenuItem)|]) "MenuItem"
 
 -- LangMenuItem
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangMenuItem where

@@ -8,7 +8,6 @@ module Pinafore.Language.Library.Std.Reference
 import Changes.Core
 import Pinafore.Base
 import Pinafore.Language.DocTree
-import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
@@ -19,12 +18,78 @@ import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
 
-listRefGroundType :: PinaforeGroundType '[ 'Rangevariance] LangListRef
-listRefGroundType =
-    SimpleGroundType representative dolanVary (\ta -> ("ListRef " <> precShow 0 ta, 2)) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangListRef)|]) HetRefl
+-- SetRef
+setRefGroundType :: PinaforeGroundType '[ 'Contravariance] LangSetRef
+setRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangSetRef)|]) "SetRef"
 
--- LangListRef
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangSetRef a) where
+    toShimWit =
+        unNegShimWit fromJMShimWit $ \ta conva ->
+            mapPosShimWit (applyContraPolyShim cid conva) $
+            mkShimWit $ GroundDolanSingularType setRefGroundType $ ConsDolanArguments ta NilDolanArguments
+
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangSetRef a) where
+    toShimWit = singleDolanShimWit toJMShimWit
+
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangSetRef a) where
+    fromShimWit =
+        unPosShimWit toJMShimWit $ \ta conva ->
+            mapNegShimWit (applyContraPolyShim cid conva) $
+            mkShimWit $ GroundDolanSingularType setRefGroundType $ ConsDolanArguments ta NilDolanArguments
+
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangSetRef a) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
+
+-- FiniteSetRef
+finiteSetRefGroundType :: PinaforeGroundType '[ 'Rangevariance] LangFiniteSetRef
+finiteSetRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangFiniteSetRef)|]) "FiniteSetRef"
+
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangFiniteSetRef '( p, q)) where
+    toShimWit =
+        unToRangeShimWit $ \tpq conv ->
+            mapPosShimWit (applyPolyShim RangevarianceType cid conv) $
+            mkShimWit $ GroundDolanSingularType finiteSetRefGroundType $ ConsDolanArguments tpq NilDolanArguments
+
+instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangFiniteSetRef '( p, q)) where
+    toShimWit = singleDolanShimWit toJMShimWit
+
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangFiniteSetRef '( p, q)) where
+    fromShimWit =
+        unFromRangeShimWit $ \tpq conv ->
+            mapNegShimWit (applyPolyShim RangevarianceType cid conv) $
+            mkShimWit $ GroundDolanSingularType finiteSetRefGroundType $ ConsDolanArguments tpq NilDolanArguments
+
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangFiniteSetRef '( p, q)) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
+
+-- WModel FiniteSetUpdate
+instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
+         ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (WModel (FiniteSetUpdate t)) where
+    fromShimWit = mapNegShimWit (functionToShim "subtype" unLangFiniteSetRef) fromJMShimWit
+
+instance ( Eq t
+         , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
+         , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
+         ) => ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (WModel (FiniteSetUpdate t)) where
+    toShimWit = mapPosShimWit (functionToShim "subtype" $ MkLangFiniteSetRef identityRange) toJMShimWit
+
+-- ListRef
+listRefGroundType :: PinaforeGroundType '[ 'Rangevariance] LangListRef
+listRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangListRef)|]) "ListRef"
+
 instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
          ) => ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangListRef '( p, q)) where
@@ -49,6 +114,32 @@ instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
 instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
          , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
          ) => FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangListRef '( p, q)) where
+    fromShimWit = singleDolanShimWit fromJMShimWit
+
+-- RefOrder
+refOrderGroundType :: PinaforeGroundType '[ 'Contravariance] LangRefOrder
+refOrderGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangRefOrder)|]) "RefOrder"
+
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangRefOrder a) where
+    toShimWit =
+        unNegShimWit fromJMShimWit $ \ta conva ->
+            mapPosShimWit (applyContraPolyShim cid conva) $
+            mkShimWit $ GroundDolanSingularType refOrderGroundType $ ConsDolanArguments ta NilDolanArguments
+
+instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
+             ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangRefOrder a) where
+    toShimWit = singleDolanShimWit toJMShimWit
+
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangRefOrder a) where
+    fromShimWit =
+        unPosShimWit toJMShimWit $ \ta conva ->
+            mapNegShimWit (applyContraPolyShim cid conva) $
+            mkShimWit $ GroundDolanSingularType refOrderGroundType $ ConsDolanArguments ta NilDolanArguments
+
+instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
+             FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangRefOrder a) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 setentity :: LangWholeRef '( A, TopType) -> A -> PinaforeAction ()
@@ -82,7 +173,7 @@ refLibEntries =
                 [ mkTypeEntry
                       "WholeRef"
                       "A whole reference of type `WholeRef {-p,+q}` has a setting type of `p` and a getting type of `q`." $
-                  MkBoundType WholeRefPinaforeGroundType
+                  MkBoundType wholeRefGroundType
                 , mkValEntry
                       "pureWhole"
                       "A constant whole reference for a value."
@@ -135,7 +226,7 @@ refLibEntries =
           , docTreeEntry
                 "Set References"
                 ""
-                [ mkTypeEntry "SetRef" "" $ MkBoundType SetRefPinaforeGroundType
+                [ mkTypeEntry "SetRef" "" $ MkBoundType setRefGroundType
                 , mkValEntry "mapSet" "Map a function on a set." (contramap :: (A -> B) -> LangSetRef B -> LangSetRef A)
                 , mkValEntry "pureSet" "Convert a predicate to a set." $ predicateToLangSetRef @A
                 , mkValEntry "refSet" "Convert a predicate reference to a set." $ predicateRefToLangSetRef @A
@@ -170,10 +261,10 @@ refLibEntries =
           , docTreeEntry
                 "Finite Set References"
                 ""
-                [ mkTypeEntry "FiniteSetRef" "" $ MkBoundType FiniteSetRefPinaforeGroundType
+                [ mkTypeEntry "FiniteSetRef" "" $ MkBoundType finiteSetRefGroundType
                 , mkSubtypeRelationEntry "FiniteSetRef -a" "SetRef a" "" $
                   pure $
-                  simpleSubtypeConversionEntry FiniteSetRefPinaforeGroundType SetRefPinaforeGroundType $
+                  simpleSubtypeConversionEntry finiteSetRefGroundType setRefGroundType $
                   MkSubtypeConversion $ \_ (ConsDolanArguments (MkRangeType t _) NilDolanArguments) ->
                       return $
                       MkSubtypeArguments (ConsDolanArguments t NilDolanArguments) $
@@ -276,7 +367,7 @@ refLibEntries =
                                    typef =
                                        singleDolanShimWit $
                                        mkShimWit $
-                                       GroundDolanSingularType MorphismPinaforeGroundType $
+                                       GroundDolanSingularType morphismGroundType $
                                        ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
                                    morphism =
                                        propertyMorphism
@@ -295,10 +386,10 @@ refLibEntries =
     , docTreeEntry
           "RefOrders"
           ""
-          [ mkTypeEntry "RefOrder" "" $ MkBoundType RefOrderPinaforeGroundType
+          [ mkTypeEntry "RefOrder" "" $ MkBoundType refOrderGroundType
           , mkSubtypeRelationEntry "a -> a -> Ordering" "RefOrder a" "" $
             pure $
-            simpleSubtypeConversionEntry FuncPinaforeGroundType RefOrderPinaforeGroundType $
+            simpleSubtypeConversionEntry funcGroundType refOrderGroundType $
             MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t1 (ConsDolanArguments t2o NilDolanArguments)) ->
                 invertPolarity @pola $
                 invertPolarity @polb $ do
@@ -315,7 +406,7 @@ refLibEntries =
                             conv2 <-
                                 subtypeConvert sc t2o $
                                 singleDolanType $
-                                GroundDolanSingularType FuncPinaforeGroundType $
+                                GroundDolanSingularType funcGroundType $
                                 ConsDolanArguments varb $
                                 ConsDolanArguments
                                     (singleDolanType $

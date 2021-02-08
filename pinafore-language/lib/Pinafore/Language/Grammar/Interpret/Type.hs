@@ -213,8 +213,8 @@ interpretGroundTypeConst :: SyntaxGroundType -> PinaforeSourceInterpreter Pinafo
 interpretGroundTypeConst UnitSyntaxGroundType =
     return $
     MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType UnitLiteralType
-interpretGroundTypeConst FunctionSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW FuncPinaforeGroundType
-interpretGroundTypeConst MorphismSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW MorphismPinaforeGroundType
+interpretGroundTypeConst FunctionSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW funcGroundType
+interpretGroundTypeConst MorphismSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW morphismGroundType
 interpretGroundTypeConst ListSyntaxGroundType =
     return $
     MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType

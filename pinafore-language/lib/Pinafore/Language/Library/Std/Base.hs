@@ -80,15 +80,14 @@ funcShimWit swa swb =
             mapPosShimWit (applyCoPolyShim (ccontramap conva) convb) $
             singleDolanShimWit $
             mkShimWit $
-            GroundDolanSingularType FuncPinaforeGroundType $
-            ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+            GroundDolanSingularType funcGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
 actionShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
 actionShimWit swa =
     unPosShimWit swa $ \ta conva ->
         mapPosShimWit (cfmap conva) $
         singleDolanShimWit $
-        mkShimWit $ GroundDolanSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+        mkShimWit $ GroundDolanSingularType actionGroundType $ ConsDolanArguments ta NilDolanArguments
 
 getTimeMS :: IO Integer
 getTimeMS = do
@@ -743,7 +742,7 @@ baseLibEntries =
     , docTreeEntry
           "Actions"
           ""
-          [ mkTypeEntry "Action" "" $ MkBoundType ActionPinaforeGroundType
+          [ mkTypeEntry "Action" "" $ MkBoundType actionGroundType
           , mkValEntry "return" "A value as an Action." $ return @PinaforeAction @A
           , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind
           , mkValEntry ">>" "Do actions in sequence." $ qbind_
