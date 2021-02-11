@@ -3,6 +3,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Language
     - add subsumption expressions
     - allow module-qualified names
+    - improve type simplification
   * Library
     - Std
       . add "index" function for lists
