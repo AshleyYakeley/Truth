@@ -27,6 +27,10 @@ instance AllWitnessConstraint Show w => Show (Expression w a) where
 instance AllWitnessConstraint Show w => AllWitnessConstraint Show (Expression w) where
     allWitnessConstraint = Dict
 
+isClosedExpression :: Expression w t -> Bool
+isClosedExpression (ClosedExpression _) = True
+isClosedExpression (OpenExpression _ _) = False
+
 expressionFreeWitnesses :: (forall t. w t -> r) -> Expression w a -> [r]
 expressionFreeWitnesses _wr (ClosedExpression _) = []
 expressionFreeWitnesses wr (OpenExpression wt expr) = (wr wt) : expressionFreeWitnesses wr expr

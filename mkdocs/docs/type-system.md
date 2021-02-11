@@ -74,7 +74,9 @@ The essential fact of recursive types is that `rec a. F a` and `F (rec a. F a)` 
 `rec a. a` &rarr; `Any` or `None`  
 `rec a. T` &rarr; `T` (if `a` does not appear in `T`)
 
-1. Any type variables that appear only in the positive position are replaced by `None`. Likewise, any only in the negative position, with `Any`.  
+1. Any type variables that are "fully constrained" are eliminated (i.e., replaced with `None` or `Any`).  
+`(a & Text) -> a | Literal` &rarr; `Text -> Literal` (because `Text <: Literal`)  
+This implies eliminating variables that appear only in the positive position, or only in the negative position.  
 `\x y -> x: a -> b -> a` &rarr; `\x y -> x: a -> Any -> a`  
 `[]: [a]` &rarr; `[]: [None]`
 

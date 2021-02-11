@@ -91,6 +91,22 @@ instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
         return Refl
     testEquality _ _ = Nothing
 
+singularsToAnyType ::
+       forall (ground :: GroundTypeKind) (polarity :: Polarity).
+       [AnyW (DolanSingularType ground polarity)]
+    -> AnyW (DolanType ground polarity)
+singularsToAnyType [] = MkAnyW NilDolanType
+singularsToAnyType (MkAnyW s:ss) =
+    case singularsToAnyType ss of
+        MkAnyW t -> MkAnyW $ ConsDolanType s t
+
+typeToAnySingulars ::
+       forall (ground :: GroundTypeKind) (polarity :: Polarity) t.
+       DolanType ground polarity t
+    -> [AnyW (DolanSingularType ground polarity)]
+typeToAnySingulars NilDolanType = []
+typeToAnySingulars (ConsDolanType s t) = MkAnyW s : typeToAnySingulars t
+
 type DolanSingularShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanSingularShimWit ground polarity = PShimWit (DolanPolyShim ground Type) (DolanSingularType ground) polarity
 

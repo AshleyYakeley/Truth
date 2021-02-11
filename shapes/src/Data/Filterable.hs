@@ -25,3 +25,13 @@ instance Filterable Maybe where
 
 forf :: (Applicative m, Filterable f, Traversable f) => f a -> (a -> m (Maybe b)) -> m (f b)
 forf fa ammb = fmap catMaybes $ for fa ammb
+
+forfilt :: (Applicative m, Filterable f, Traversable f) => f a -> (a -> m Bool) -> m (f a)
+forfilt fa amt =
+    forf fa $ \a ->
+        fmap
+            (\t ->
+                 if t
+                     then Just a
+                     else Nothing)
+            (amt a)

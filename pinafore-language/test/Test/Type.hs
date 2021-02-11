@@ -175,7 +175,7 @@ testType =
                     e1 <- apExpr dotExpr sndExpr
                     apExpr e1 thingExpr
               , exprTypeTest "twice" (return "{} -> a -> (a, a)") $ return twiceExpr
-              , exprTypeTest "thing . twice" (return "{} -> e -> (e, e)") $ do
+              , exprTypeTest "thing . twice" (return "{} -> d -> (d, d)") $ do
                     e1 <- apExpr dotExpr thingExpr
                     apExpr e1 twiceExpr
               , exprTypeTest "thing $ twice number" (return "{} -> (Number, Number)") $ do
@@ -270,8 +270,7 @@ testType =
               , textTypeTest "let f : Entity -> Entity -> Entity; f a b = (a,b) in f" "{} -> Entity -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity; f = Left in f" "{} -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity; f = Right in f" "{} -> Entity -> Entity"
-              , expectFailBecause "ISSUE #56" $
-                textTypeTest "\\x -> if odd x then x else (x:Number)" "{} -> Integer -> Number"
+              , textTypeTest "\\x -> if odd x then x else (x:Number)" "{} -> Integer -> Number"
               , testTree
                     "recursive"
                     [ textTypeTest "let x : rec a. Maybe a; x = Nothing in x" "{} -> rec a. Maybe a"
@@ -304,7 +303,7 @@ testType =
               , simplifyTypeTest "(b & Integer) -> Integer" "Integer -> Integer"
               , simplifyTypeTest "(a & Integer) -> b" "Integer -> None"
               , simplifyTypeTest "(a & Integer) -> a" "(a & Integer) -> a"
-              , expectFailBecause "ISSUE #56" $ simplifyTypeTest "(a & Integer) -> (a | Number)" "Integer -> Number"
+              , simplifyTypeTest "(a & Integer) -> (a | Number)" "Integer -> Number"
               , testTree
                     "subtype"
                     [ simplifyTypeTest "Boolean | Integer" "Boolean | Integer"

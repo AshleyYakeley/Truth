@@ -7,5 +7,5 @@ pinafore> :type f
 pinafore> f p
 [5, 6, 7, 1, 1, 1, 5, 6, 7, 1, 1, 1]
 pinafore> :simplify+ (a -> Literal) | ((Text & b) -> a)
-(a & Text) -> Literal | a
+Text -> Literal
 pinafore> <END>

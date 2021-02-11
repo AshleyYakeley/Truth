@@ -8,6 +8,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Simplify.DuplicateGroundTypes
 import Language.Expression.Dolan.Simplify.DuplicateTypeVars
+import Language.Expression.Dolan.Simplify.FullyConstrainedTypeVars
 import Language.Expression.Dolan.Simplify.OneSidedTypeVars
 import Language.Expression.Dolan.Simplify.RollUpRecursion
 import Language.Expression.Dolan.Simplify.SharedTypeVars
@@ -52,6 +53,11 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => M
 -- eliminateOneSidedTypeVars: eliminate one-sided type vars (on whole expression)
 -- Type vars are one-sided if they appear only in positive position, or only in negative position.
 -- e.g. "a -> [b]" => "Any -> [None]"
+-- This is usually switched off since fullyConstrainedTypeVars does this.
+--
+-- fullyConstrainedTypeVars: eliminate fully-constrained vars (on whole expression)
+-- Type vars are fully constrained if their positive and negative constraints overlap.
+-- e.g. "(a & Integer) -> (a | Number)" => "Integer -> Number"
 --
 -- mergeSharedTypeVars: merge shared type vars (on whole expression)
 -- Two type variables are shared, if they always appear together (join/meet) in the positive positions, or in the negative positions.
@@ -73,7 +79,8 @@ dolanSimplifyTypes =
     mconcat
         [ mif True $ pureSimplifier $ eliminateUnusedRecursion @ground
         , mif True $ MkSimplifier $ mergeDuplicateGroundTypes @ground
-        , mif True $ pureSimplifier $ eliminateOneSidedTypeVars @ground
+        , mif False $ pureSimplifier $ eliminateOneSidedTypeVars @ground
+        , mif True $ MkSimplifier $ fullyConstrainedTypeVars @ground
         , mif True $ pureSimplifier $ mergeSharedTypeVars @ground
         , mif True $ pureSimplifier $ mergeDuplicateTypeVars @ground
         , mif True $ pureSimplifier $ rollUpRecursiveTypes @ground
