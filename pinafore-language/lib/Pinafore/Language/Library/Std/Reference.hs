@@ -203,7 +203,7 @@ refLibEntries =
                 , mkValEntry "pairWhole" "Combine whole references." $ langPairWholeRefs @AP @AQ @BP @BQ
                 , mkValEntry
                       "applyWhole"
-                      "Combine getting of whole references. `applyWhole f x` = `{%f %x}`"
+                      "Combine getting of whole references.\n`applyWhole f x` = `{%f %x}`"
                       ((<*>) :: PinaforeImmutableWholeRef (A -> B) -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef B)
                 , mkValEntry
                       "unknown"
@@ -336,14 +336,14 @@ refLibEntries =
             eitherLangMorphism @A @A @B @B @C @C
           , mkValEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @AP @AQ @BP @BQ
           , mkSupertypeEntry "!$" "Apply a morphism to a reference." $ applyLangMorphismRef @A @A @B @B
-          , mkValEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutWhole r`" $
+          , mkValEntry "!$%" "Apply a morphism to an immutable reference.\n`m !$% r = m !$ immutWhole r`" $
             applyLangMorphismImmutRef @A @BP @BQ
-          , mkSupertypeEntry "!$%" "Apply a morphism to an immutable reference. `m !$% r = m !$ immutWhole r`" $
+          , mkSupertypeEntry "!$%" "Apply a morphism to an immutable reference.\n`m !$% r = m !$ immutWhole r`" $
             applyLangMorphismImmutRef @A @B @B
           , mkValEntry "!$$" "Apply a morphism to a set." $ applyLangMorphismSet @A @B
           , mkValEntry "!@" "Co-apply a morphism to a reference." $ inverseApplyLangMorphismRef @A @BX @BY
           , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $ inverseApplyLangMorphismRef @A @B @B
-          , mkValEntry "!@%" "Co-apply a morphism to an immutable reference. `m !@% r = m !@ immutWhole r`" $
+          , mkValEntry "!@%" "Co-apply a morphism to an immutable reference.\n`m !@% r = m !@ immutWhole r`" $
             inverseApplyLangMorphismImmutRef @A @B
           , mkValEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @BX @BY
           , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $ inverseApplyLangMorphismSet @A @B @B
