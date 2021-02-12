@@ -343,4 +343,25 @@ testType =
                           ]
                     ]
               ]
+        , testTree
+              "library"
+              [ textTypeTest "()" "{} -> ()"
+              , textTypeTest "{3}" "{} -> WholeRef +Integer"
+              , textTypeTest "identity !$% {3}" "{} -> WholeRef +Integer"
+              , textTypeTest "identity !$ {3}" "{} -> WholeRef +Integer"
+              , textTypeTest "(identity !. identity) !$% {3}" "{} -> WholeRef +Integer"
+              , textTypeTest "(identity !. identity) !$ {3}" "{} -> WholeRef +Integer"
+              , textTypeTest
+                    "property @Integer @Text !\"a\" !** property @Number @Text !\"b\""
+                    "{} -> {-Integer,+Number} ~> (Text, Text)"
+              , textTypeTest
+                    "property @Text @Integer !\"a\" !++ property @Text @Number !\"b\""
+                    "{} -> (Either Text Text) ~> {-Integer,+Number}"
+              , textTypeTest
+                    "(property @Integer @Text !\"a\" !** property @Number @Text !\"b\") !$% {3}"
+                    "{} -> WholeRef (Text, Text)"
+              , textTypeTest
+                    "(property @Integer @Text !\"a\" !** property @Number @Text !\"b\") !$ {3}"
+                    "{} -> WholeRef (Text, Text)"
+              ]
         ]
