@@ -363,5 +363,11 @@ testType =
               , textTypeTest
                     "(property @Integer @Text !\"a\" !** property @Number @Text !\"b\") !$ {3}"
                     "{} -> WholeRef (Text, Text)"
+              , textTypeTest "property @Integer @Text !\"a\" !@% {\"x\"}" "{} -> FiniteSetRef Integer"
+              , textTypeTest "property @Integer @Text !\"a\" !@ {\"x\"}" "{} -> FiniteSetRef Integer"
+              , textTypeTest
+                    "(property @Integer @Text !\"a\" !@% {\"x\"}) <:*:> (property @Number @Text !\"b\" !@% {\"y\"})"
+                    "{} -> FiniteSetRef (Integer, Number)"
+              , textTypeTest "pairWhole {3} {\"x\"}" "{} -> WholeRef {-(Any, Any),+(Integer, Text)}"
               ]
         ]
