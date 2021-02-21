@@ -369,5 +369,6 @@ testType =
                     "(property @Integer @Text !\"a\" !@% {\"x\"}) <:*:> (property @Number @Text !\"b\" !@% {\"y\"})"
                     "{} -> FiniteSetRef (Integer, Number)"
               , textTypeTest "pairWhole {3} {\"x\"}" "{} -> WholeRef {-(Any, Any),+(Integer, Text)}"
+              , textTypeTest "immutWhole $ pairWhole {3} {\"x\"}" "{} -> WholeRef +(Integer, Text)"
               ]
         ]
