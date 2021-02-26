@@ -44,8 +44,7 @@ testContextOrderedSetLensCase assigns expected =
             rc = emptyResourceContext
             uo :: UpdateOrder (ContextUpdate UpdateX (ConstWholeUpdate Char))
             uo =
-                MkUpdateOrder (compare @Int) $
-                changeLensToFloating $
+                mkUpdateOrder (compare @Int) $
                 funcChangeLens $ \(MkWithContext lm c) ->
                     case lookupItem c lm of
                         Just (_, i) -> i

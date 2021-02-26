@@ -49,9 +49,7 @@ orderFiniteSet order val = do
     let
         uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
         uo =
-            mapUpdateOrder
-                (changeLensToFloating $
-                 liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
+            mapUpdateOrder (liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
             pinaforeUpdateOrder order
         rows :: Model (FiniteSetUpdate EnA)
         rows = unWModel $ unLangFiniteSetRef $ contraRangeLift meet2 val

@@ -95,5 +95,4 @@ pinaforeSetGetOrdered ::
 pinaforeSetGetOrdered order set = pinaforeROWRefToWholeRef $ qOrderSet order $ langFiniteSetRefFunctionValue set
 
 pinaforeUpdateOrder :: LangRefOrder a -> UpdateOrder (ContextUpdate PinaforeStorageUpdate (WholeUpdate (Know a)))
-pinaforeUpdateOrder (MkLangRefOrder m cmp) =
-    MkUpdateOrder cmp $ changeLensToFloating $ pinaforeFunctionMorphismContextChangeLens m
+pinaforeUpdateOrder (MkLangRefOrder m cmp) = mkUpdateOrder cmp $ pinaforeFunctionMorphismContextChangeLens m
