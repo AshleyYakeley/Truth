@@ -79,8 +79,10 @@ library:
       - Changes.Core.Types.Database.Show
       - Changes.Core.Types.Database.Tuple
       - Changes.Core.Types.Database.Tuple.Show
+      - Changes.Core.Types.Bi.Bi
+      - Changes.Core.Types.Bi.ChangeMap
+      - Changes.Core.Types.Bi.Whole
       - Changes.Core.Types.Bi
-      - Changes.Core.Types.BiWhole
       - Changes.Core.Types
       - Changes.Core.Model.DeferActionT
       - Changes.Core.Model.EditContext

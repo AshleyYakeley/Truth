@@ -1,8 +1,8 @@
-module Changes.Core.Types.BiWhole where
+module Changes.Core.Types.Bi.Whole where
 
 import Changes.Core.Lens
 import Changes.Core.Read
-import Changes.Core.Types.Bi
+import Changes.Core.Types.Bi.Bi
 import Changes.Core.Types.Tuple.Pair
 import Changes.Core.Types.Tuple.Tuple
 import Changes.Core.Types.Whole

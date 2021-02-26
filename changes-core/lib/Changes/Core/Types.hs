@@ -3,7 +3,6 @@ module Changes.Core.Types
     ) where
 
 import Changes.Core.Types.Bi as I
-import Changes.Core.Types.BiWhole as I
 import Changes.Core.Types.ByteString as I
 import Changes.Core.Types.Comonad as I
 import Changes.Core.Types.Database as I
