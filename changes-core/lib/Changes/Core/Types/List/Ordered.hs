@@ -8,9 +8,12 @@ import Changes.Core.Sequence
 import Changes.Core.Types.List.Edit
 import Changes.Core.Types.List.Read
 import Changes.Core.Types.List.Update
+import Changes.Core.Types.None
 import Changes.Core.Types.One.FullResult
 import Changes.Core.Types.One.Read
 import Changes.Core.Types.One.Result
+import Changes.Core.Types.ReadOnly
+import Changes.Core.Types.Whole
 
 -- | Like ListEdit, except without a way of adding new elements.
 -- This is what both lists and unordered sets presented in some order have in common.
@@ -75,6 +78,24 @@ data OrderedListUpdate seq update where
 
 type instance UpdateEdit (OrderedListUpdate seq update) =
      OrderedListEdit seq (UpdateEdit update)
+
+orderedListLengthLens ::
+       forall seq update. (Num (Index seq))
+    => ChangeLens (OrderedListUpdate seq update) (ROWUpdate (SequencePoint seq))
+orderedListLengthLens = let
+    clRead :: ReadFunction (ListReader seq (UpdateReader update)) (WholeReader (SequencePoint seq))
+    clRead mr ReadWhole = mr ListReadLength
+    clUpdate ::
+           forall m. MonadIO m
+        => OrderedListUpdate seq update
+        -> Readable m (ListReader seq (UpdateReader update))
+        -> m [ROWUpdate (SequencePoint seq)]
+    clUpdate OrderedListUpdateClear _ = return $ pure $ MkReadOnlyUpdate $ MkWholeUpdate 0
+    clUpdate (OrderedListUpdateItem _ _ _) _ = return []
+    clUpdate _ mr = do
+        i <- mr ListReadLength
+        return $ pure $ MkReadOnlyUpdate $ MkWholeUpdate i
+    in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
 -- no "instance IsUpdate OrderedListUpdate", because we cannot calculate moves without knowing the order
 

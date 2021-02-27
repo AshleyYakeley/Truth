@@ -318,7 +318,12 @@ refLibEntries =
                       "Create a new finite set reference to memory, initially empty."
                       newMemFiniteSet
                 ]
-          , docTreeEntry "List References" "" [mkTypeEntry "ListRef" "" $ MkBoundType listRefGroundType]
+          , docTreeEntry
+                "List References"
+                ""
+                [ mkTypeEntry "ListRef" "" $ MkBoundType listRefGroundType
+                , mkValEntry "countList" "Count of elements in a list." langListRefCount
+                ]
           ]
     , docTreeEntry
           "Morphisms"

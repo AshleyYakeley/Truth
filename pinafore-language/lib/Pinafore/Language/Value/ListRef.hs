@@ -2,6 +2,7 @@ module Pinafore.Language.Value.ListRef where
 
 import Changes.Core
 import Data.Shim
+import Pinafore.Base
 import Shapes
 
 type LangListRef :: (Type, Type) -> Type
@@ -26,3 +27,10 @@ langListRefToOrdered (FullLangListRef model) =
         (liftOrderedListChangeLens toReadOnlyChangeLens .
          listOrderedListChangeLens . fromReadOnlyRejectingChangeLens . biReadOnlyChangeLens)
         model
+
+langListRefCount :: LangListRef '( BottomType, TopType) -> PinaforeImmutableWholeRef Int
+langListRefCount (OrderedLangListRef model) =
+    functionImmutableRef $ eaMap (funcChangeLens coerce . orderedListLengthLens) model
+langListRefCount (FullLangListRef model) =
+    functionImmutableRef $
+    eaMap (funcChangeLens coerce . liftReadOnlyChangeLens listLengthLens . biReadOnlyChangeLens) model

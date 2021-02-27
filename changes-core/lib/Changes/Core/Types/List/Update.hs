@@ -1,5 +1,6 @@
 module Changes.Core.Types.List.Update
     ( ListUpdate(..)
+    , listLengthLens
     , listItemLens
     ) where
 
@@ -10,9 +11,12 @@ import Changes.Core.Read
 import Changes.Core.Sequence
 import Changes.Core.Types.List.Edit
 import Changes.Core.Types.List.Read
+import Changes.Core.Types.None
 import Changes.Core.Types.One.FullResult
 import Changes.Core.Types.One.Read
 import Changes.Core.Types.One.Result
+import Changes.Core.Types.ReadOnly
+import Changes.Core.Types.Whole
 
 data ListUpdate seq update where
     ListUpdateItem :: SequencePoint seq -> update -> ListUpdate seq update
@@ -54,6 +58,24 @@ instance ( IsSequence seq
         for_ [0 .. pred len] $ \i -> do
             item <- readableToSubject $ knownItemReadFunction i mr
             write $ ListUpdateInsert i item
+
+listLengthLens ::
+       forall seq update. (Num (Index seq))
+    => ChangeLens (ListUpdate seq update) (ROWUpdate (SequencePoint seq))
+listLengthLens = let
+    clRead :: ReadFunction (ListReader seq (UpdateReader update)) (WholeReader (SequencePoint seq))
+    clRead mr ReadWhole = mr ListReadLength
+    clUpdate ::
+           forall m. MonadIO m
+        => ListUpdate seq update
+        -> Readable m (ListReader seq (UpdateReader update))
+        -> m [ROWUpdate (SequencePoint seq)]
+    clUpdate ListUpdateClear _ = return $ pure $ MkReadOnlyUpdate $ MkWholeUpdate 0
+    clUpdate (ListUpdateItem _ _) _ = return []
+    clUpdate _ mr = do
+        i <- mr ListReadLength
+        return $ pure $ MkReadOnlyUpdate $ MkWholeUpdate i
+    in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
 listItemLens ::
        forall seq update.
