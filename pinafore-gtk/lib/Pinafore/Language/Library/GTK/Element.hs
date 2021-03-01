@@ -40,36 +40,15 @@ instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangUIElem
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
 
-orderFiniteSet ::
-       (?pinafore :: PinaforeContext)
-    => LangRefOrder A
-    -> LangFiniteSetRef '( A, EnA)
-    -> CreateView (Model (OrderedListUpdate [EnA] (ROWUpdate EnA)))
-orderFiniteSet order val = do
-    let
-        uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
-        uo =
-            mapUpdateOrder (liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
-            pinaforeUpdateOrder order
-        rows :: Model (FiniteSetUpdate EnA)
-        rows = unWModel $ unLangFiniteSetRef $ contraRangeLift meet2 val
-        pkSub :: Model (ContextUpdate PinaforeStorageUpdate (FiniteSetUpdate EnA))
-        pkSub = contextModels pinaforeEntityModel rows
-    colSub :: Model (ContextUpdate PinaforeStorageUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
-        cvFloatMapModel (contextOrderedSetLens uo) pkSub
-    return $ mapModel (liftOrderedListChangeLens (constWholeChangeLens id) . tupleChangeLens SelectContent) colSub
-
 uiListTable ::
        (HasCallStack, ?pinafore :: PinaforeContext)
     => [(LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))]
-    -> LangRefOrder A
-    -> LangFiniteSetRef '( A, EnA)
+    -> LangListRef '( BottomType, EnA)
     -> (A -> PinaforeAction TopType)
     -> Maybe (LangWholeRef '( A, EnA))
     -> LangUIElement
-uiListTable cols order val onDoubleClick mSelectionLangRef =
+uiListTable cols lref onDoubleClick mSelectionLangRef =
     MkLangUIElement $ do
-        olsub :: Model (OrderedListUpdate [EnA] (ROWUpdate EnA)) <- orderFiniteSet order val
         esrc <- newEditSource
         let
             mSelectionModel :: Maybe (Model (BiWholeUpdate (Know A) (Know EnA)))
@@ -105,7 +84,8 @@ uiListTable cols order val onDoubleClick mSelectionLangRef =
                     Nothing -> mempty
                     Just selectionModel ->
                         contramap readSub $ viewLiftSelectNotify $ modelSelectNotify esrc selectionModel
-        (widget, setSelection) <- createListTable (fmap getColumn cols) olsub onSelect tsn
+        (widget, setSelection) <-
+            createListTable (fmap getColumn cols) (unWModel $ langListRefToOrdered lref) onSelect tsn
         case mSelectionModel of
             Nothing -> return ()
             Just selectionModel -> let
@@ -310,7 +290,6 @@ elementStuff =
               "notebook"
               "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
               uiNotebook
-                -- CSS
                 -- drag
                 -- icon
         , mkValEntry

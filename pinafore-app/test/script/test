@@ -67,12 +67,13 @@ married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 ui_people : FiniteSetRef Person -> UI.Element;
 ui_people pp = UI.run $ do
     selectedperson <- newMemWhole;
+    pplist <- orderFiniteSet noOrder pp;
     return $ UI.vertical
     [
         (False, UI.button {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end}),
         (False, UI.button {"View Person"} {get selectedperson >>= window_person}),
         (False, UI.button {"Remove Person"} {get selectedperson >>= \p -> pp -= p}),
-        (True, UI.listTable [({"Name"},\p -> name !$ {p})] noOrder pp window_person (Just selectedperson))
+        (True, UI.listTable [({"Name"},\p -> name !$ {p})] pplist window_person (Just selectedperson))
     ];
     end;
 

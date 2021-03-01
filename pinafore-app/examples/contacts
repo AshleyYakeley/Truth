@@ -83,7 +83,10 @@ organisations = property @Organisation @() !"type.organisation" !@ {()};
 ### User Interface
 
 namedTable: FiniteSetRef {a,+Named} -> (a -> Action Any) -> Maybe (WholeRef {a,+Named}) -> UI.Element;
-namedTable = UI.listTable [({"Name"},\p -> name !$ {p})] (refOrderOn name alphabetical);
+namedTable setr onActivate msel = UI.run $ do
+    listr <- orderFiniteSet (refOrderOn name alphabetical) setr;
+    return $ UI.listTable [({"Name"},\p -> name !$ {p})] listr onActivate msel;
+    end;
 
 contactPages: WholeRef +LegalEntity -> [(UI.Element, UI.Element)];
 contactPages er =

@@ -7,6 +7,7 @@ module Pinafore.Language.Library.Std.Reference
 
 import Changes.Core
 import Pinafore.Base
+import Pinafore.Context
 import Pinafore.Language.DocTree
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
@@ -141,6 +142,27 @@ instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangRefOrder a) where
     fromShimWit = singleDolanShimWit fromJMShimWit
+
+orderFiniteSet ::
+       (?pinafore :: PinaforeContext)
+    => LangRefOrder A
+    -> LangFiniteSetRef '( A, EnA)
+    -> CreateView (LangListRef '( TopType, A))
+orderFiniteSet order val = do
+    let
+        uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
+        uo =
+            mapUpdateOrder (liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
+            pinaforeUpdateOrder order
+        rows :: Model (FiniteSetUpdate EnA)
+        rows = unWModel $ unLangFiniteSetRef $ contraRangeLift meet2 val
+        pkSub :: Model (ContextUpdate PinaforeStorageUpdate (FiniteSetUpdate EnA))
+        pkSub = contextModels pinaforeEntityModel rows
+    colSub :: Model (ContextUpdate PinaforeStorageUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
+        cvFloatMapModel (contextOrderedSetLens uo) pkSub
+    return $
+        OrderedLangListRef $
+        eaMap (liftOrderedListChangeLens (constWholeChangeLens meet2) . tupleChangeLens SelectContent) $ MkWModel colSub
 
 setentity :: LangWholeRef '( A, TopType) -> A -> PinaforeAction ()
 setentity ref val = langWholeRefSet ref (Known val)
@@ -471,5 +493,6 @@ refLibEntries =
           , mkValEntry "refOrderOn" "Order by a RefOrder on a particular morphism." $ refOrderOn @B @A
           , mkValEntry "reverseRef" "Reverse a RefOrder." $ reverseRefOrder @A
           , mkValEntry "orderWholeRef" "Order two whole references." $ langRefOrderCompare @A
+          , mkValEntry "orderFiniteSet" "Order a FiniteSet by a RefOrder" orderFiniteSet
           ]
     ]

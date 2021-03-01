@@ -153,7 +153,10 @@ eventsWindow = selectionWindow "Events" events [newEventMenuItem] eventWindow $ 
             nameColumn: (WholeRef +Text, Event -> WholeRef Text);
             nameColumn = ({"What"},\e -> eventName !$ {e});
             in [timeColumn,nameColumn];
-        in UI.listTable columns eventOrder events eventWindow (Just selection);
+        in UI.run $ do
+            eventList <- orderFiniteSet eventOrder events;
+            return $ UI.listTable columns eventList eventWindow (Just selection);
+            end;
 
     eventsPage: (UI.Element,UI.Element);
     eventsPage = uiPage {"Events"} $ UI.scrolled $ UI.horizontal [(False,eventsTableUI),(True,eventUI $ immutWhole selection)];
