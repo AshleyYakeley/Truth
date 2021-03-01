@@ -322,6 +322,43 @@ refLibEntries =
                 "List References"
                 ""
                 [ mkTypeEntry "ListRef" "" $ MkBoundType listRefGroundType
+                , mkSubtypeRelationEntry "WholeRef [a]" "ListRef a" "" $
+                  pure $
+                  simpleSubtypeConversionEntry wholeRefGroundType listRefGroundType $
+                  MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments (MkRangeType t1 t2) NilDolanArguments) ->
+                      invertPolarity @pola $
+                      invertPolarity @polb $ do
+                          MkVarType var <- varRenamerTGenerateUVar []
+                          let
+                              var1a :: PinaforeType (InvertPolarity pola) _
+                              var1a = singleDolanType $ VarDolanSingularType var
+                              var2a :: PinaforeType pola _
+                              var2a = singleDolanType $ VarDolanSingularType var
+                              var1b :: PinaforeType (InvertPolarity polb) _
+                              var1b = singleDolanType $ VarDolanSingularType var
+                              var2b :: PinaforeType polb _
+                              var2b = singleDolanType $ VarDolanSingularType var
+                              varList1 :: PinaforeType (InvertPolarity polb) _
+                              varList1 =
+                                  singleDolanType $
+                                  GroundDolanSingularType listGroundType $ ConsDolanArguments var1b NilDolanArguments
+                              varList2 :: PinaforeType polb _
+                              varList2 =
+                                  singleDolanType $
+                                  GroundDolanSingularType listGroundType $ ConsDolanArguments var2b NilDolanArguments
+                          return $
+                              MkSubtypeArguments (ConsDolanArguments (MkRangeType var1a var2a) NilDolanArguments) $ do
+                                  rconv1 <- subtypeConvert (subtypeInverted sc) varList1 t1
+                                  rconv2 <- subtypeConvert sc t2 varList2
+                                  pure $ let
+                                      conv1 =
+                                          rconv1 .
+                                          iJoinMeetR1 @(InvertPolarity polb) .
+                                          applyCoPolyShim cid (iJoinMeetR1 @(InvertPolarity polb))
+                                      conv2 = applyCoPolyShim cid (iJoinMeetL1 @polb) . iJoinMeetL1 @polb . rconv2
+                                      convv = applyRangePolyShim cid conv1 conv2
+                                      in applyRangePolyShim cid (iJoinMeetL1 @(InvertPolarity pola)) (iJoinMeetR1 @pola) .
+                                         (functionToShim "WholeRef to ListRef" langWholeRefToListRef) . convv
                 , mkValEntry "countList" "Count of elements in a list." langListRefCount
                 ]
           ]

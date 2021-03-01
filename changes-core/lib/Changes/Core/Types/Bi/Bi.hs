@@ -9,8 +9,9 @@ import Shapes
 
 type BiReader (preader :: Type -> Type) (qreader :: Type -> Type) = qreader
 
-newtype BiEdit (pedit :: Type) (qedit :: Type) =
-    MkBiEdit pedit
+newtype BiEdit (pedit :: Type) (qedit :: Type) = MkBiEdit
+    { unBiEdit :: pedit
+    }
 
 type instance EditReader (BiEdit pedit qedit) =
      BiReader (EditReader pedit) (EditReader qedit)
@@ -81,3 +82,39 @@ readOnlyBiChangeLens = let
         -> m [ReadOnlyUpdate (BiUpdate pupdate qupdate)]
     clUpdate (MkReadOnlyUpdate qupdate) _ = return [MkReadOnlyUpdate $ MkBiUpdate qupdate]
     in MkChangeLens {clPutEdits = clPutEditsNone, ..}
+
+convertBiChangeLens ::
+       forall updateAP updateAQ updateBP updateBQ.
+       ( UpdateSubject updateAP ~ UpdateSubject updateBP
+       , UpdateSubject updateAQ ~ UpdateSubject updateBQ
+       , FullSubjectReader (UpdateReader updateAQ)
+       , FullSubjectReader (UpdateReader updateBP)
+       , FullUpdate updateBQ
+       , FullEdit (UpdateEdit updateAP)
+       , ApplicableEdit (UpdateEdit updateBP)
+       )
+    => (UpdateSubject updateAQ -> UpdateSubject updateAP)
+    -> ChangeLens (BiUpdate updateAP updateAQ) (BiUpdate updateBP updateBQ)
+convertBiChangeLens qp = let
+    clRead :: ReadFunction (UpdateReader updateAQ) (UpdateReader updateBQ)
+    clRead mr = mSubjectToReadable $ readableToSubject mr
+    clUpdate ::
+           forall m. MonadIO m
+        => BiUpdate updateAP updateAQ
+        -> Readable m (UpdateReader updateAQ)
+        -> m [BiUpdate updateBP updateBQ]
+    clUpdate _updateA mr = do
+        newa <- readableToSubject mr
+        updates <- getReplaceUpdatesFromSubject newa
+        return $ fmap MkBiUpdate updates
+    clPutEdits ::
+           forall m. MonadIO m
+        => [BiEdit (UpdateEdit updateBP) (UpdateEdit updateBQ)]
+        -> Readable m (UpdateReader updateAQ)
+        -> m (Maybe [BiEdit (UpdateEdit updateAP) (UpdateEdit updateAQ)])
+    clPutEdits editbs mr = do
+        newsubject <-
+            readableToSubject $ applyEdits (fmap unBiEdit editbs) $ mSubjectToReadable $ fmap qp $ readableToSubject mr
+        editas <- getReplaceEditsFromSubject newsubject
+        return $ Just $ fmap MkBiEdit editas
+    in MkChangeLens {..}

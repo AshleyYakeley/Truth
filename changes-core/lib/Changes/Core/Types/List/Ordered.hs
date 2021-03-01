@@ -79,6 +79,56 @@ data OrderedListUpdate seq update where
 type instance UpdateEdit (OrderedListUpdate seq update) =
      OrderedListEdit seq (UpdateEdit update)
 
+instance ( IsSequence seq
+         , ApplicableUpdate update
+         , SubjectReader (UpdateReader update)
+         , UpdateSubject update ~ Element seq
+         ) => ApplicableUpdate (OrderedListUpdate seq update) where
+    applyUpdate (OrderedListUpdateItem a b updates) mr (ListReadItem i reader)
+        | b == i = getComposeM $ applyUpdates updates (itemReadFunction a mr) reader
+    applyUpdate (OrderedListUpdateItem a b updates) mr (ListReadItem i reader)
+        | i < b
+        , i >= a = getComposeM $ applyUpdates updates (itemReadFunction (succ i) mr) reader
+    applyUpdate (OrderedListUpdateItem a b updates) mr (ListReadItem i reader)
+        | i > b
+        , i <= a = getComposeM $ applyUpdates updates (itemReadFunction (pred i) mr) reader
+    applyUpdate (OrderedListUpdateItem _ _ _) mr reader = mr reader
+    applyUpdate (OrderedListUpdateInsert _ _) mr ListReadLength = do
+        len <- mr ListReadLength
+        return $ succ len
+    applyUpdate (OrderedListUpdateInsert a subj) mr (ListReadItem i reader) = do
+        len <- mr ListReadLength
+        if i > len
+            then return Nothing
+            else case compare i a of
+                     EQ -> fmap Just $ subjectToReadable subj reader
+                     LT -> mr $ ListReadItem i reader
+                     GT -> mr $ ListReadItem (pred i) reader
+    applyUpdate (OrderedListUpdateDelete p) mr ListReadLength = do
+        len <- mr ListReadLength
+        return $
+            if p >= 0 && p < len
+                then len - 1
+                else len
+    applyUpdate (OrderedListUpdateDelete p) mr (ListReadItem i reader)
+        | p >= 0 && p < i = mr $ ListReadItem (i + 1) reader
+    applyUpdate (OrderedListUpdateDelete _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
+    applyUpdate OrderedListUpdateClear _mr reader = subjectToReadable mempty reader
+
+instance ( IsSequence seq
+         , ApplicableUpdate update
+         , FullSubjectReader (UpdateReader update)
+         , UpdateSubject update ~ Element seq
+         ) => FullUpdate (OrderedListUpdate seq update) where
+    replaceUpdate rd push = do
+        push OrderedListUpdateClear
+        len <- rd ListReadLength
+        for_ [0 .. pred len] $ \i -> do
+            msubj <- getComposeM $ readableToSubject $ itemReadFunction i rd
+            case msubj of
+                Just subj -> push $ OrderedListUpdateInsert i $ subj
+                Nothing -> return ()
+
 orderedListLengthLens ::
        forall seq update. (Num (Index seq))
     => ChangeLens (OrderedListUpdate seq update) (ROWUpdate (SequencePoint seq))

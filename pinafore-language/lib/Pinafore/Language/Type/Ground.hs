@@ -66,6 +66,9 @@ funcGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (HetEqual (->))|]) $ \ta tb ->
         (precShow 2 ta <> " -> " <> precShow 3 tb, 3)
 
+listGroundType :: PinaforeGroundType '[ 'Covariance] []
+listGroundType = EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType
+
 morphismGroundType :: PinaforeGroundType '[ 'Rangevariance, 'Rangevariance] LangMorphism
 morphismGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (HetEqual LangMorphism)|]) $ \ta tb ->

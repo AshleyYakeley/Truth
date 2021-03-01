@@ -3,6 +3,7 @@ module Pinafore.Language.Value.ListRef where
 import Changes.Core
 import Data.Shim
 import Pinafore.Base
+import Pinafore.Language.Value.WholeRef
 import Shapes
 
 type LangListRef :: (Type, Type) -> Type
@@ -34,3 +35,12 @@ langListRefCount (OrderedLangListRef model) =
 langListRefCount (FullLangListRef model) =
     functionImmutableRef $
     eaMap (funcChangeLens coerce . liftReadOnlyChangeLens listLengthLens . biReadOnlyChangeLens) model
+
+biKnowWhole :: forall p q. ChangeLens (BiWholeUpdate (Know [p]) (Know [q])) (BiWholeUpdate [p] [q])
+biKnowWhole = mapBiWholeChangeLens Known $ fromKnow []
+
+langWholeRefToListRef :: LangWholeRef '( [a], [a]) -> LangListRef '( a, a)
+langWholeRefToListRef (MutableLangWholeRef model) = FullLangListRef $ eaMap (convertBiChangeLens id . biKnowWhole) model
+langWholeRefToListRef (ImmutableLangWholeRef ref) =
+    OrderedLangListRef $
+    eaMap (fromReadOnlyRejectingChangeLens . convertReadOnlyChangeLens) $ pinaforeImmutableRefValue [] ref

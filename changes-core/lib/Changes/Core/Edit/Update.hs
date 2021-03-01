@@ -67,4 +67,10 @@ getReplaceUpdates ::
     -> m [update]
 getReplaceUpdates mr = execWriterT $ replaceUpdate (remonadReadable lift mr) $ tell . pure
 
+getReplaceUpdatesFromSubject ::
+       forall m update. (FullUpdate update, MonadIO m)
+    => UpdateSubject update
+    -> m [update]
+getReplaceUpdatesFromSubject subj = getReplaceUpdates $ subjectToReadable subj
+
 instance FullEdit edit => FullUpdate (EditUpdate edit)
