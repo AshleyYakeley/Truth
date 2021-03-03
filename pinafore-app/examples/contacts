@@ -9,7 +9,7 @@ opentype Named;
 name = property @Named @Text !"identify.name";
 
 byName: FiniteSetRef {+a,+Named} -> WholeRef +[(a,Text)];
-byName ref = members (mapRefOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ ref;
+byName ref = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ ref;
 
 # something with a lifespan
 opentype Lifespanned;
@@ -84,7 +84,7 @@ organisations = property @Organisation @() !"type.organisation" !@ {()};
 
 namedTable: FiniteSetRef {a,+Named} -> (a -> Action Any) -> Maybe (WholeRef {a,+Named}) -> UI.Element;
 namedTable setr onActivate msel = UI.run $ do
-    listr <- orderFiniteSet (refOrderOn name alphabetical) setr;
+    listr <- getSetList (orderOn name alphabetical) setr;
     return $ UI.listTable [({"Name"},\p -> name !$ {p})] listr onActivate msel;
     end;
 

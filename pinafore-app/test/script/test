@@ -67,7 +67,7 @@ married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 ui_people : FiniteSetRef Person -> UI.Element;
 ui_people pp = UI.run $ do
     selectedperson <- newMemWhole;
-    pplist <- orderFiniteSet noOrder pp;
+    pplist <- getSetList noOrder pp;
     return $ UI.vertical
     [
         (False, UI.button {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end}),
@@ -78,7 +78,7 @@ ui_people pp = UI.run $ do
     end;
 
 peopleByName : WholeRef +[(Person,Text)];
-peopleByName = members (mapRefOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ people;
+peopleByName = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
 
 ui_person : WholeRef Person -> UI.Element;
 ui_person p = UI.vertical

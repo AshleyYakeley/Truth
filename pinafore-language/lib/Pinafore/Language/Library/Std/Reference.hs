@@ -143,12 +143,12 @@ instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangRefOrder a) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
-orderFiniteSet ::
+getSetList ::
        (?pinafore :: PinaforeContext)
     => LangRefOrder A
     -> LangFiniteSetRef '( A, EnA)
     -> CreateView (LangListRef '( TopType, A))
-orderFiniteSet order val = do
+getSetList order val = do
     let
         uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
         uo =
@@ -323,16 +323,21 @@ refLibEntries =
                       "<:*:>"
                       "Cartesian product of finite sets. The resulting finite set will be read-only." $
                   langFiniteSetRefCartesianProduct @A @A @B @B
-                , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @A
+                , mkValEntry "setList" "All members of a finite set, by an order." $ pinaforeSetGetOrdered @A
                 , mkValEntry
-                      "listFiniteSet"
+                      "getSetList"
+                      "Get all members of a finite set, by an order. \
+                    \The resulting `ListRef` will behave more \"list-like\" than `setList`."
+                      getSetList
+                , mkValEntry
+                      "listSet"
                       "Represent a reference to a list as a finite set. Changing the set may scramble the order of the list." $
                   langListRefToFiniteSetRef @A
-                , mkValEntry "single" "The member of a single-member finite set, or unknown." $
+                , mkValEntry "setSingle" "The member of a single-member finite set, or unknown." $
                   langFiniteSetRefSingle @A
-                , mkValEntry "count" "Count of members in a finite set." $ langFiniteSetRefFunc @TopType @Int olength
+                , mkValEntry "setCount" "Count of members in a finite set." $ langFiniteSetRefFunc @TopType @Int olength
                 , mkValEntry
-                      "removeAll"
+                      "setClear"
                       "Remove all entities from a finite set."
                       (langFiniteSetRefRemoveAll :: LangFiniteSetRef '( BottomType, TopType) -> PinaforeAction ())
                 , mkValEntry
@@ -381,7 +386,7 @@ refLibEntries =
                                       convv = applyRangePolyShim cid conv1 conv2
                                       in applyRangePolyShim cid (iJoinMeetL1 @(InvertPolarity pola)) (iJoinMeetR1 @pola) .
                                          (functionToShim "WholeRef to ListRef" langWholeRefToListRef) . convv
-                , mkValEntry "countList" "Count of elements in a list." langListRefCount
+                , mkValEntry "listCount" "Count of elements in a list reference." langListRefCount
                 ]
           ]
     , docTreeEntry
@@ -485,14 +490,13 @@ refLibEntries =
                                     (applyContraPolyShim cid $ conv1 . vconv)
                                     (applyCoPolyShim (applyContraPolyShim cid vconv) (iJoinMeetL1 @polb) .
                                      iJoinMeetL1 @polb . conv2)
-          , mkValEntry "refOrders" "Join RefOrders by priority." $ refOrders @A
+          , mkValEntry "orders" "Join `RefOrder`s by priority." $ refOrders @A
           , mkValEntry
-                "mapRefOrder"
-                "Map a function on a RefOrder."
+                "mapOrder"
+                "Map a function on a `RefOrder`."
                 (contramap :: (B -> A) -> LangRefOrder A -> LangRefOrder B)
-          , mkValEntry "refOrderOn" "Order by a RefOrder on a particular morphism." $ refOrderOn @B @A
-          , mkValEntry "reverseRef" "Reverse a RefOrder." $ reverseRefOrder @A
-          , mkValEntry "orderWholeRef" "Order two whole references." $ langRefOrderCompare @A
-          , mkValEntry "orderFiniteSet" "Order a FiniteSet by a RefOrder" orderFiniteSet
+          , mkValEntry "orderOn" "Order by a `RefOrder` on a particular morphism." $ refOrderOn @B @A
+          , mkValEntry "reverseOrder" "Reverse a `RefOrder`." $ reverseRefOrder @A
+          , mkValEntry "orderWhole" "Order two whole references." $ langRefOrderCompare @A
           ]
     ]

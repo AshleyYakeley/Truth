@@ -9,6 +9,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add "index" function for lists
       . add "forWhole" function
       . change some constructor names not to clash with type name
+      . rename various reference-related functions
     - UI
       . separate module
       . rename "UI" type to "Element"

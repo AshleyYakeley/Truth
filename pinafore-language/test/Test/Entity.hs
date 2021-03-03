@@ -127,10 +127,10 @@ testEntity =
               [ testExpectSuccess "expectStop $ do r <- newMemWhole; get r; end"
               , testExpectSuccess "do r <- newMemWhole; r := 45; a <- get r; testeqval 45 a; end"
               , testExpectSuccess "do r <- newMemWhole; r := 3; r := 4; a <- get r; testeqval 4 a; end"
-              , testExpectSuccess "do s <- newMemFiniteSet; n <- get $ count s; testeqval 0 n; end"
-              , testExpectSuccess "do s <- newMemFiniteSet; s += 57; n <- get $ count s; testeqval 1 n; end"
-              , testExpectSuccess "do s <- newMemFiniteSet; s -= 57; n <- get $ count s; testeqval 0 n; end"
-              , testExpectSuccess "do s <- newMemFiniteSet; s += 57; s -= 57; n <- get $ count s; testeqval 0 n; end"
+              , testExpectSuccess "do s <- newMemFiniteSet; n <- get $ setCount s; testeqval 0 n; end"
+              , testExpectSuccess "do s <- newMemFiniteSet; s += 57; n <- get $ setCount s; testeqval 1 n; end"
+              , testExpectSuccess "do s <- newMemFiniteSet; s -= 57; n <- get $ setCount s; testeqval 0 n; end"
+              , testExpectSuccess "do s <- newMemFiniteSet; s += 57; s -= 57; n <- get $ setCount s; testeqval 0 n; end"
               , testExpectSuccess
                     "do s <- newMemFiniteSet; s += 57; m54 <- get $ member s {54}; m57 <- get $ member s {57}; testeqval False m54; testeqval True m57; end"
               , testExpectSuccess
@@ -209,7 +209,7 @@ testEntity =
                     , testExpectSuccess "eea !$ {e1} := e2 >> testeq {e2} (eea !$ {e1})"
                     , testExpectSuccess "eta !$ {e1} := \"hello\" >> testeq {\"hello\"} (eta !$ {e1})"
                     , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
-                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {1} (count (tea !@ {e1}))"
+                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {1} (setCount (tea !@ {e1}))"
                     , testExpectSuccess "(eea !. eea) !$ {e1} := e2"
                     , testExpectSuccess
                           "do (eea !. eea) !$ {e1} := e2; testeq {e2} ((eea !. eea) !$ {e1}); testeq {e2} (eea !$ (eea !$ {e1})); end"
@@ -229,9 +229,9 @@ testEntity =
                           "eta !@ {\"hello\"} += e1 >> eta !@ {\"hello\"} -= e1 >> testisunknown (eta !$ {e1})"
                     ]
               , tgroup
-                    "removeAll"
+                    "setClear"
                     [ testExpectSuccess
-                          "eta !@ {\"hello\"} += e1 >> removeAll (eta !@ {\"hello\"}) >> testisunknown (eta !$ {e1})"
+                          "eta !@ {\"hello\"} += e1 >> setClear (eta !@ {\"hello\"}) >> testisunknown (eta !$ {e1})"
                     ]
               , tgroup
                     "literal storage"
@@ -342,44 +342,44 @@ testEntity =
                     , testExpectSuccess
                           "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> (eeb !@@ eta !@ {\"hello\"}) -= e1 >> testeq {\"hello\"} (eta !$ {e2})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeAll ((eta !. eeb) !@ {\"hello\"}) >> testeq {e2} (eeb !$ {e1})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> setClear ((eta !. eeb) !@ {\"hello\"}) >> testeq {e2} (eeb !$ {e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeAll ((eta !. eeb) !@ {\"hello\"}) >> testisunknown (eta !$ {e2})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> setClear ((eta !. eeb) !@ {\"hello\"}) >> testisunknown (eta !$ {e2})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeAll (eeb !@@ eta !@ {\"hello\"}) >> testneq {e2} (eeb !$ {e1})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> setClear (eeb !@@ eta !@ {\"hello\"}) >> testneq {e2} (eeb !$ {e1})"
                     , testExpectSuccess
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeAll (eeb !@@ eta !@ {\"hello\"}) >> testeq {\"hello\"} (eta !$ {e2})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> setClear (eeb !@@ eta !@ {\"hello\"}) >> testeq {\"hello\"} (eta !$ {e2})"
                     ]
               , tgroup
-                    "single"
-                    [ testExpectSuccess "testisunknown (single $ eib !$$ eia !@ {0})"
+                    "setSingle"
+                    [ testExpectSuccess "testisunknown (setSingle $ eib !$$ eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> testeq {1} (single $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> testeq {1} (setSingle $ eib !$$ eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eic !$ {e1} := 0 >> testeq {1} (single $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eic !$ {e1} := 0 >> testeq {1} (setSingle $ eib !$$ eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eia !$ {e1} := 0 >> testeq {1} (single $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eia !$ {e1} := 0 >> eia !$ {e1} := 0 >> testeq {1} (setSingle $ eib !$$ eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eib !$ {e2} := 2 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testisunknown (single $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eib !$ {e2} := 2 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testisunknown (setSingle $ eib !$$ eia !@ {0})"
                     , testExpectSuccess
-                          "eib !$ {e1} := 1 >> eib !$ {e2} := 1 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testeq {1} (single $ eib !$$ eia !@ {0})"
+                          "eib !$ {e1} := 1 >> eib !$ {e2} := 1 >> eia !$ {e1} := 0 >> eia !$ {e2} := 0 >> testeq {1} (setSingle $ eib !$$ eia !@ {0})"
                     ]
               , tgroup
                     "multiple set member"
-                    [ testExpectSuccess "testeq {0} (count (tea !@ {e1}))"
-                    , testExpectSuccess "eea !$ {e2} := e1 >> testeq {1} (count (eea !@ {e1}))"
-                    , testExpectSuccess "eea !@ {e1} += e2 >> testeq {1} (count (eea !@ {e1}))"
+                    [ testExpectSuccess "testeq {0} (setCount (tea !@ {e1}))"
+                    , testExpectSuccess "eea !$ {e2} := e1 >> testeq {1} (setCount (eea !@ {e1}))"
+                    , testExpectSuccess "eea !@ {e1} += e2 >> testeq {1} (setCount (eea !@ {e1}))"
                     , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
                     , testExpectSuccess "tea !@ {e1} += \"hello\" >> testeq {e1} (tea !$ {\"hello\"})"
-                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {1} (count (tea !@ {e1}))"
-                    , testExpectSuccess "tea !@ {e1} += \"hello\" >> testeq {1} (count (tea !@ {e1}))"
+                    , testExpectSuccess "tea !$ {\"hello\"} := e1 >> testeq {1} (setCount (tea !@ {e1}))"
+                    , testExpectSuccess "tea !@ {e1} += \"hello\" >> testeq {1} (setCount (tea !@ {e1}))"
                     , testExpectSuccess
-                          "tea !@ {e1} += \"hello\" >> tea !@ {e1} += \"hello\" >> testeq {1} (count (tea !@ {e1}))"
+                          "tea !@ {e1} += \"hello\" >> tea !@ {e1} += \"hello\" >> testeq {1} (setCount (tea !@ {e1}))"
                     , testExpectSuccess
-                          "tea !@ {e1} += \"h\" >> tea !@ {e1} += \"hello\" >> testeq {2} (count (tea !@ {e1}))"
+                          "tea !@ {e1} += \"h\" >> tea !@ {e1} += \"hello\" >> testeq {2} (setCount (tea !@ {e1}))"
                     , testExpectSuccess $
                       "let counter = eia !$ {e1};someset = nea !@ {e1} in " <>
-                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (members noOrder someset) >>= \\pp -> for pp $ \\p -> runWholeRef {counter := %counter + 1}) >> testeq {1} counter"
+                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (setList noOrder someset) >>= \\pp -> for pp $ \\p -> runWholeRef {counter := %counter + 1}) >> testeq {1} counter"
                     ]
               , tgroup
                     "types"
@@ -475,7 +475,7 @@ testEntity =
                            "circular"
                            [ context ["opentype P", "subtype P <: P"] $
                              tgroup
-                                 "single"
+                                 "setSingle"
                                  [ testExpectSuccess "pass"
                                  , testExpectSuccess "let f : P -> P; f x = x in pass"
                                  , testExpectSuccess "let f : [P] -> [P]; f x = x in pass"
