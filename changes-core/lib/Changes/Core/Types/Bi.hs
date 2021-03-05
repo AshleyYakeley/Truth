@@ -1,16 +1,17 @@
 module Changes.Core.Types.Bi
     ( module I
     , mappingBiChangeLens
+    , biLinearChangeLens
+    , biLinearFloatingChangeLens
     ) where
 
 import Changes.Core.Edit
 import Changes.Core.Lens
 import Changes.Core.Read
-import Shapes
-
 import Changes.Core.Types.Bi.Bi as I
 import Changes.Core.Types.Bi.ChangeMap as I
 import Changes.Core.Types.Bi.Whole as I
+import Shapes
 
 mappingBiChangeLens ::
        forall updateAP updateBP updateAQ updateBQ.
@@ -35,3 +36,31 @@ mappingBiChangeLens pmap qmap = let
         -> m (Maybe [BiEdit (UpdateEdit updateAP) (UpdateEdit updateAQ)])
     clPutEdits edits _ = return $ Just $ fmap mapEdit edits
     in MkChangeLens {..}
+
+biLinearChangeLens ::
+       forall lin updateAP updateBP updateAQ updateBQ.
+       LinearChangeLens updateAP updateBP
+    -> LinearChangeLens updateAQ updateBQ
+    -> GenChangeLens lin (BiUpdate updateAP updateAQ) (BiUpdate updateBP updateBQ)
+biLinearChangeLens (MkChangeLens _ _ pe) (MkChangeLens r u _) = let
+    u' :: forall m. MonadIO m
+       => BiUpdate updateAP updateAQ
+       -> Readable m (UpdateReader updateAQ)
+       -> m [BiUpdate updateBP updateBQ]
+    u' (MkBiUpdate update) rd = fmap (fmap MkBiUpdate) $ u update rd
+    pe' :: forall m. MonadIO m
+        => [BiEdit (UpdateEdit updateBP) (UpdateEdit updateBQ)]
+        -> Readable m (NL lin (UpdateReader updateAQ))
+        -> m (Maybe [BiEdit (UpdateEdit updateAP) (UpdateEdit updateAQ)])
+    pe' edits _ = fmap (fmap (fmap MkBiEdit)) $ pe (fmap unBiEdit edits) nullReadable
+    in MkChangeLens r u' pe'
+
+biLinearFloatingChangeLens ::
+       forall r updateAP updateBP updateAQ updateBQ.
+       LinearFloatingChangeLens r updateAP updateBP
+    -> LinearFloatingChangeLens r updateAQ updateBQ
+    -> ExpFloatingChangeLens 'Linear r (BiUpdate updateAP updateAQ) (BiUpdate updateBP updateBQ)
+biLinearFloatingChangeLens (MkExpFloatingChangeLens _ rlensp) (MkExpFloatingChangeLens initq rlensq) = let
+    rlenspq :: r -> GenChangeLens 'Linear (BiUpdate updateAP updateAQ) (BiUpdate updateBP updateBQ)
+    rlenspq r = biLinearChangeLens (rlensp r) (rlensq r)
+    in MkExpFloatingChangeLens initq rlenspq

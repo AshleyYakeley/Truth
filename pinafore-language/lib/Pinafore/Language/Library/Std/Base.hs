@@ -119,11 +119,8 @@ newClock duration = do
 
 newTimeZoneRef :: PinaforeImmutableWholeRef UTCTime -> PinaforeAction (PinaforeImmutableWholeRef Int)
 newTimeZoneRef now = do
-    rc <- pinaforeResourceContext
     ref <-
-        liftLifeCycle $
-        eaFloatMapReadOnly
-            rc
+        pinaforeFloatMapReadOnly
             (floatLift (\mr ReadWhole -> fmap (fromKnow zeroTime) $ mr ReadWhole) liftROWChangeLens clockTimeZoneLens) $
         immutableRefToReadOnlyRef now
     return $ fmap timeZoneMinutes $ MkPinaforeImmutableWholeRef ref

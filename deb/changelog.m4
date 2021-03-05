@@ -9,6 +9,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add "index" function for lists
       . add "forWhole" function
       . change some constructor names not to clash with type name
+      . new ListRef type, with functions
       . rename various reference-related functions
     - UI
       . separate module

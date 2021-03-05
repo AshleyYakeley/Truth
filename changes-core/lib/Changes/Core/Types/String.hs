@@ -222,4 +222,4 @@ stringSectionLens initRun = let
         -> Readable m (StringRead seq)
         -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
     sclPutEdits = clPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateChangeLens {..}
+    in makeStateLens @'NonLinear MkStateChangeLens {..}

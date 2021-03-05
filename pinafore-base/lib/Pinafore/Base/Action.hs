@@ -14,6 +14,8 @@ module Pinafore.Base.Action
     , knowPinaforeAction
     , pinaforeOnClose
     , pinaforeEarlyCloser
+    , pinaforeFloatMap
+    , pinaforeFloatMapReadOnly
     ) where
 
 import Changes.Core
@@ -103,3 +105,19 @@ pinaforeEarlyCloser ra = do
         MkComposeM $ do
             (ka, closer) <- lifeCycleEarlyCloser $ getComposeM $ unlift ra
             return $ fmap (\a -> (a, closer)) ka
+
+pinaforeFloatMap ::
+       forall f updateA updateB. FloatingEditApplicative f
+    => FloatingChangeLens updateA updateB
+    -> f updateA
+    -> PinaforeAction (f updateB)
+pinaforeFloatMap flens fa = do
+    rc <- pinaforeResourceContext
+    liftLifeCycle $ eaFloatMap rc flens fa
+
+pinaforeFloatMapReadOnly ::
+       forall f updateA updateB. FloatingEditApplicative f
+    => FloatingChangeLens updateA (ReadOnlyUpdate updateB)
+    -> f (ReadOnlyUpdate updateA)
+    -> PinaforeAction (f (ReadOnlyUpdate updateB))
+pinaforeFloatMapReadOnly flens = pinaforeFloatMap $ liftReadOnlyFloatingChangeLens flens

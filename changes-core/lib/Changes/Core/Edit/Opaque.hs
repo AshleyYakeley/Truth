@@ -10,3 +10,6 @@ type instance UpdateEdit (OpaqueUpdate edit) = edit
 
 instance IsUpdate (OpaqueUpdate edit) where
     editUpdate _edit = MkOpaqueUpdate
+
+instance FullUpdate (OpaqueUpdate edit) where
+    replaceUpdate _ call = call MkOpaqueUpdate

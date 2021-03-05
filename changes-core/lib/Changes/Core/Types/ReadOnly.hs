@@ -16,9 +16,6 @@ type instance UpdateEdit (ReadOnlyUpdate update) =
 instance IsUpdate (ReadOnlyUpdate update) where
     editUpdate = never
 
-instance ApplicableUpdate update => ApplicableUpdate (ReadOnlyUpdate update) where
-    applyUpdate (MkReadOnlyUpdate update) = applyUpdate update
-
 instance FullUpdate update => FullUpdate (ReadOnlyUpdate update) where
     replaceUpdate rd pushU = replaceUpdate rd $ \update -> pushU $ MkReadOnlyUpdate update
 
@@ -54,7 +51,11 @@ liftReadOnlyFloatingChangeLens = floatLift (\mr -> mr) liftReadOnlyChangeLens
 
 ioFuncChangeLens ::
        forall updateA updateB.
-       (FullSubjectReader (UpdateReader updateA), FullUpdate updateB, Empty (UpdateEdit updateB))
+       ( FullSubjectReader (UpdateReader updateA)
+       , SubjectReader (UpdateReader updateB)
+       , FullUpdate updateB
+       , Empty (UpdateEdit updateB)
+       )
     => (UpdateSubject updateA -> IO (UpdateSubject updateB))
     -> ChangeLens updateA updateB
 ioFuncChangeLens amb = let
@@ -74,7 +75,11 @@ ioFuncChangeLens amb = let
 
 funcChangeLens ::
        forall updateA updateB.
-       (FullSubjectReader (UpdateReader updateA), FullUpdate updateB, Empty (UpdateEdit updateB))
+       ( FullSubjectReader (UpdateReader updateA)
+       , SubjectReader (UpdateReader updateB)
+       , FullUpdate updateB
+       , Empty (UpdateEdit updateB)
+       )
     => (UpdateSubject updateA -> UpdateSubject updateB)
     -> ChangeLens updateA updateB
 funcChangeLens ab = ioFuncChangeLens $ \a -> return $ ab a
@@ -82,6 +87,7 @@ funcChangeLens ab = ioFuncChangeLens $ \a -> return $ ab a
 convertReadOnlyChangeLens ::
        forall updateA updateB.
        ( FullSubjectReader (UpdateReader updateA)
+       , SubjectReader (UpdateReader updateB)
        , FullUpdate updateB
        , Empty (UpdateEdit updateB)
        , UpdateSubject updateA ~ UpdateSubject updateB

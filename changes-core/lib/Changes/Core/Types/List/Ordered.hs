@@ -79,47 +79,7 @@ data OrderedListUpdate seq update where
 type instance UpdateEdit (OrderedListUpdate seq update) =
      OrderedListEdit seq (UpdateEdit update)
 
-instance ( IsSequence seq
-         , ApplicableUpdate update
-         , SubjectReader (UpdateReader update)
-         , UpdateSubject update ~ Element seq
-         ) => ApplicableUpdate (OrderedListUpdate seq update) where
-    applyUpdate (OrderedListUpdateItem a b updates) mr (ListReadItem i reader)
-        | b == i = getComposeM $ applyUpdates updates (itemReadFunction a mr) reader
-    applyUpdate (OrderedListUpdateItem a b updates) mr (ListReadItem i reader)
-        | i < b
-        , i >= a = getComposeM $ applyUpdates updates (itemReadFunction (succ i) mr) reader
-    applyUpdate (OrderedListUpdateItem a b updates) mr (ListReadItem i reader)
-        | i > b
-        , i <= a = getComposeM $ applyUpdates updates (itemReadFunction (pred i) mr) reader
-    applyUpdate (OrderedListUpdateItem _ _ _) mr reader = mr reader
-    applyUpdate (OrderedListUpdateInsert _ _) mr ListReadLength = do
-        len <- mr ListReadLength
-        return $ succ len
-    applyUpdate (OrderedListUpdateInsert a subj) mr (ListReadItem i reader) = do
-        len <- mr ListReadLength
-        if i > len
-            then return Nothing
-            else case compare i a of
-                     EQ -> fmap Just $ subjectToReadable subj reader
-                     LT -> mr $ ListReadItem i reader
-                     GT -> mr $ ListReadItem (pred i) reader
-    applyUpdate (OrderedListUpdateDelete p) mr ListReadLength = do
-        len <- mr ListReadLength
-        return $
-            if p >= 0 && p < len
-                then len - 1
-                else len
-    applyUpdate (OrderedListUpdateDelete p) mr (ListReadItem i reader)
-        | p >= 0 && p < i = mr $ ListReadItem (i + 1) reader
-    applyUpdate (OrderedListUpdateDelete _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
-    applyUpdate OrderedListUpdateClear _mr reader = subjectToReadable mempty reader
-
-instance ( IsSequence seq
-         , ApplicableUpdate update
-         , FullSubjectReader (UpdateReader update)
-         , UpdateSubject update ~ Element seq
-         ) => FullUpdate (OrderedListUpdate seq update) where
+instance (IsSequence seq, FullSubjectReader (UpdateReader update)) => FullUpdate (OrderedListUpdate seq update) where
     replaceUpdate rd push = do
         push OrderedListUpdateClear
         len <- rd ListReadLength
@@ -150,7 +110,7 @@ orderedListLengthLens = let
 -- no "instance IsUpdate OrderedListUpdate", because we cannot calculate moves without knowing the order
 
 -- | prevents creation of the element
-orderedListItemLens ::
+orderedListItemLinearLens ::
        forall seq update.
        ( IsSequence seq
        , FullSubjectReader (UpdateReader update)
@@ -158,8 +118,8 @@ orderedListItemLens ::
        , UpdateSubject update ~ Element seq
        )
     => SequencePoint seq
-    -> FloatingChangeLens (OrderedListUpdate seq update) (MaybeUpdate update)
-orderedListItemLens initpos = let
+    -> LinearFloatingChangeLens (StateLensVar (SequencePoint seq)) (OrderedListUpdate seq update) (MaybeUpdate update)
+orderedListItemLinearLens initpos = let
     sclInit ::
            forall m. MonadIO m
         => Readable m (ListReader seq (UpdateReader update))
@@ -221,22 +181,33 @@ orderedListItemLens initpos = let
     sPutEdit ::
            forall m. MonadIO m
         => MaybeEdit (UpdateEdit update)
-        -> Readable m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [OrderedListEdit seq (UpdateEdit update)])
-    sPutEdit (SuccessFullResultOneEdit edit) _ = do
+    sPutEdit (SuccessFullResultOneEdit edit) = do
         i <- get
         return $ Just [OrderedListEditItem i edit]
-    sPutEdit (NewFullResultOneEdit Nothing) _ = do
+    sPutEdit (NewFullResultOneEdit Nothing) = do
         i <- get
         return $ Just [OrderedListEditDelete i]
-    sPutEdit (NewFullResultOneEdit (Just _)) _ = return Nothing
+    sPutEdit (NewFullResultOneEdit (Just _)) = return Nothing
     sclPutEdits ::
            forall m. MonadIO m
         => [MaybeEdit (UpdateEdit update)]
-        -> Readable m (ListReader seq (UpdateReader update))
+        -> Readable m NullReader
         -> StateT (SequencePoint seq) m (Maybe [OrderedListEdit seq (UpdateEdit update)])
-    sclPutEdits = clPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateChangeLens {..}
+    sclPutEdits = linearPutEditsFromPutEdit sPutEdit
+    in makeStateExpLens MkStateChangeLens {..}
+
+-- | prevents creation of the element
+orderedListItemLens ::
+       forall seq update.
+       ( IsSequence seq
+       , FullSubjectReader (UpdateReader update)
+       , ApplicableEdit (UpdateEdit update)
+       , UpdateSubject update ~ Element seq
+       )
+    => SequencePoint seq
+    -> FloatingChangeLens (OrderedListUpdate seq update) (MaybeUpdate update)
+orderedListItemLens initpos = expToFloatingChangeLens $ orderedListItemLinearLens initpos
 
 listOrderedListChangeLens ::
        forall seq update.

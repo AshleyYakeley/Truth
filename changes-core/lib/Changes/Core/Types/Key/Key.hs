@@ -203,12 +203,14 @@ instance IsEditUpdate update => IsEditUpdate (KeyUpdate cont update) where
     updateEdit (KeyUpdateInsertReplace a) = KeyEditInsertReplace a
     updateEdit KeyUpdateClear = KeyEditClear
 
-instance ( IsEditUpdate update
-         , FullSubjectReader (UpdateReader update)
-         , ApplicableEdit (UpdateEdit update)
-         , HasKeyReader cont (UpdateReader update)
-         , Item cont ~ UpdateSubject update
-         ) => ApplicableUpdate (KeyUpdate cont update)
+instance (FullSubjectReader (UpdateReader update), Item cont ~ UpdateSubject update) =>
+             FullUpdate (KeyUpdate cont update) where
+    replaceUpdate mr write = do
+        write KeyUpdateClear
+        allkeys <- mr KeyReadKeys
+        for_ allkeys $ \key -> do
+            item <- readableToSubject $ knownKeyItemReadFunction key mr
+            write $ KeyUpdateInsertReplace item
 
 keyElementChangeLens ::
        forall cont update.
@@ -289,7 +291,7 @@ keyElementChangeLens initKey = let
         -> Readable m (KeyReader cont (UpdateReader update))
         -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont (UpdateEdit update)])
     sclPutEdits = clPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateChangeLens {..}
+    in makeStateLens @'NonLinear MkStateChangeLens {..}
 
 fixedKeyElementChangeLens ::
        forall cont update.
@@ -375,8 +377,8 @@ liftKeyElementFloatingChangeLens ::
     => (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA)))
     -> FloatingChangeLens updateA updateB
     -> FloatingChangeLens (KeyUpdate conta updateA) (KeyUpdate contb updateB)
-liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens NoFloatInit rlens) =
-    changeLensToFloating $ liftKeyElementChangeLens bma $ rlens ()
+liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (NoFloatInit r) rlens) =
+    changeLensToFloating $ liftKeyElementChangeLens bma $ rlens r
 liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit init :: FloatInit _ r) rlens) = let
     sclInit :: StateLensInit (KeyReader conta (UpdateReader updateA)) (InternalKeyMap (ContainerKey conta) r)
     sclInit _ = return mempty
@@ -458,7 +460,7 @@ liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit init :
         -> Readable m (KeyReader conta (UpdateReader updateA))
         -> StateT (InternalKeyMap (ContainerKey conta) r) m (Maybe [KeyEdit conta (UpdateEdit updateA)])
     sclPutEdits = clPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateChangeLens {..}
+    in makeStateLens @'NonLinear MkStateChangeLens {..}
 
 contextKeyChangeLens ::
        forall cont1 cont2 ua ub.

@@ -44,3 +44,22 @@ langWholeRefToListRef (MutableLangWholeRef model) = FullLangListRef $ eaMap (con
 langWholeRefToListRef (ImmutableLangWholeRef ref) =
     OrderedLangListRef $
     eaMap (fromReadOnlyRejectingChangeLens . convertReadOnlyChangeLens) $ pinaforeImmutableRefValue [] ref
+
+langListRefItem :: forall p q. Int -> LangListRef '( p, q) -> PinaforeAction (LangWholeRef '( p, q))
+langListRefItem i (FullLangListRef lmodel) = do
+    let
+        linearListItemCL ::
+               forall t.
+               LinearFloatingChangeLens (StateLensVar Int, ()) (ListUpdate [t] (WholeUpdate t)) (WholeUpdate (Know t))
+        linearListItemCL =
+            composeExpFloatingChangeLens (changeLensToExpFloating $ bijectionWholeChangeLens $ invert knowMaybe) $
+            listItemLinearLens $ MkSequencePoint i
+    wmodel <-
+        pinaforeFloatMap
+            (expToFloatingChangeLens $ biLinearFloatingChangeLens (linearListItemCL @p) (linearListItemCL @q))
+            lmodel
+    return $ MutableLangWholeRef wmodel
+langListRefItem i (OrderedLangListRef lmodel) = do
+    let ip = MkSequencePoint i
+    wmodel <- pinaforeFloatMap (changeLensToFloating (funcChangeLens maybeToKnow) . orderedListItemLens ip) lmodel
+    return $ ImmutableLangWholeRef $ MkPinaforeImmutableWholeRef wmodel

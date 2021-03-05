@@ -89,6 +89,7 @@ convertBiChangeLens ::
        , UpdateSubject updateAQ ~ UpdateSubject updateBQ
        , FullSubjectReader (UpdateReader updateAQ)
        , FullSubjectReader (UpdateReader updateBP)
+       , SubjectReader (UpdateReader updateBQ)
        , FullUpdate updateBQ
        , FullEdit (UpdateEdit updateAP)
        , ApplicableEdit (UpdateEdit updateBP)

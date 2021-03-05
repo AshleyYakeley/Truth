@@ -57,6 +57,11 @@ instance (Functor f, IsUpdate update) => IsUpdate (FullResultOneUpdate f update)
     editUpdate (SuccessFullResultOneEdit edit) = MkFullResultOneUpdate $ SuccessResultOneUpdate $ editUpdate edit
     editUpdate (NewFullResultOneEdit fa) = MkFullResultOneUpdate $ NewResultOneUpdate $ fmap (\_ -> ()) fa
 
+instance (MonadOne f, FullSubjectReader (UpdateReader update)) => FullUpdate (FullResultOneUpdate f update) where
+    replaceUpdate mr writer = do
+        fsubj <- readableToSubject mr
+        writer $ MkFullResultOneUpdate $ NewResultOneUpdate $ fmap (\_ -> ()) fsubj
+
 type MaybeEdit edit = FullResultOneEdit Maybe edit
 
 type MaybeUpdate update = FullResultOneUpdate Maybe update
@@ -221,7 +226,7 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
         -> Readable m (OneReader f (UpdateReader updateA))
         -> StateT (f r) m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
     sclPutEdits = clPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateChangeLens {..}
+    in makeStateLens @'NonLinear MkStateChangeLens {..}
 
 -- | for use in UIs where items can be deleted
 mustExistOneChangeLens ::

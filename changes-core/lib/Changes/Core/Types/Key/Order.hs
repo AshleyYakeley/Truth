@@ -215,7 +215,7 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens 
         -> Readable m (KeyReader cont (UpdateReader update))
         -> StateT (OrderedList (o, ContainerKey cont, or)) m (Maybe [KeyEdit cont (UpdateEdit update)])
     sclPutEdits = clPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateChangeLens {..}
+    in makeStateLens @'NonLinear MkStateChangeLens {..}
 
 contextOrderedSetLens ::
        forall updateX updateN cont seq.
@@ -488,4 +488,4 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
             ea <- MkComposeM $ sPutEdit e mr
             eea <- MkComposeM $ sclPutEdits ee $ contentOnlyApplyEdits ea mr
             return $ ea ++ eea
-    in makeStateLens MkStateChangeLens {..}
+    in makeStateLens @'NonLinear MkStateChangeLens {..}

@@ -387,6 +387,10 @@ refLibEntries =
                                       in applyRangePolyShim cid (iJoinMeetL1 @(InvertPolarity pola)) (iJoinMeetR1 @pola) .
                                          (functionToShim "WholeRef to ListRef" langWholeRefToListRef) . convv
                 , mkValEntry "listCount" "Count of elements in a list reference." langListRefCount
+                , mkValEntry
+                      "getListItem"
+                      "Get a whole reference to a particular item in the list. It will track the item as the list changes." $
+                  langListRefItem @P @Q
                 ]
           ]
     , docTreeEntry
