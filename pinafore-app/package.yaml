@@ -1,6 +1,6 @@
-name: pinafore-app
-version: "0.3"
 _common: !include "../common.yaml"
+name: pinafore-app
+version: *pinafore_version
 <<: *author
 
 <<: *language

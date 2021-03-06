@@ -1,13 +1,19 @@
 packages:
+
+# separate (submodule) dependencies
 - witness
 - open-witness
+
+# Changes
 - transformers-extra
 - shapes
-- typed-expression
 - changes-core
 - changes-media
 - changes-world
 - changes-gtk
+
+# Pinafore
+- typed-expression
 - pinafore-base
 - pinafore-language
 - pinafore-gtk

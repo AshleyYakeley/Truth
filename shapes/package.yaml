@@ -1,6 +1,6 @@
-name: shapes
-version: "0.3"
 _common: !include "../common.yaml"
+name: shapes
+version: *changes_version
 <<: *author
 
 <<: *language

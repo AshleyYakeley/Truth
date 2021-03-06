@@ -1,6 +1,6 @@
-name: changes-media
-version: "0.3"
 _common: !include "../common.yaml"
+name: changes-media
+version: *changes_version
 <<: *author
 
 <<: *language

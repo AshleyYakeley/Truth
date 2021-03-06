@@ -1,6 +1,6 @@
-name: changes-world
-version: "0.2"
 _common: !include "../common.yaml"
+name: changes-world
+version: *changes_version
 <<: *author
 
 <<: *language

@@ -1,6 +1,6 @@
-name: typed-expression
-version: "0.2"
 _common: !include "../common.yaml"
+name: typed-expression
+version: *pinafore_version
 <<: *author
 
 <<: *language
