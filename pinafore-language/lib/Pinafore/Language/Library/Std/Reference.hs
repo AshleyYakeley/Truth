@@ -389,7 +389,7 @@ refLibEntries =
                 , mkValEntry "listCount" "Count of elements in a list reference." langListRefCount
                 , mkValEntry
                       "getListItem"
-                      "Get a whole reference to a particular item in the list. It will track the item as the list changes." $
+                      "Get a whole reference to a particular item in the list. It will track the item as the list changes. Pass `True` for an existing item, `False` for a point between items." $
                   langListRefItem @P @Q
                 ]
           ]

@@ -42,7 +42,7 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit ed
                 then len - 1
                 else len
     applyEdit (ListEditDelete p) mr (ListReadItem i reader)
-        | p >= 0 && p < i = mr $ ListReadItem (i + 1) reader
+        | p >= 0 && p <= i = mr $ ListReadItem (i + 1) reader
     applyEdit (ListEditDelete _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
     applyEdit (ListEditInsert p _) mr ListReadLength = do
         len <- mr ListReadLength

@@ -145,6 +145,20 @@ testEntity =
                     "do s <- newMemFiniteSet; member s {57} := True; member s {57} := False; m57 <- get $ member s {57}; testeqval False m57; end"
               , testExpectSuccess "expectStop $ do r <- newMemWhole; immutWhole r := 5; end"
               ]
+        , context ["showList: [Literal] -> Action (); showList l = for_ l (outputLn . toText)"] $
+          tgroup
+              "list references"
+              [ testExpectSuccess "do r <- newMemWhole; n <- get $ listCount r; testeqval 0 n; end"
+              , testExpectSuccess "do r <- newMemWhole; r := [10,20,30]; n <- get $ listCount r; testeqval 3 n; end"
+              , testExpectSuccess
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem True 1 r; i <- get ir; testeqval 20 i; end"
+              , testExpectSuccess
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem True 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
+              , testExpectSuccess
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem True 1 r; ir := 25; l <- get r; testeqval [10,25,30] l; end"
+              , testExpectSuccess
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem True 1 r; delete ir; l <- get r; showList l; testeqval [10,30] l; end"
+              ]
         , context
               [ "convr : Rational -> Rational;convr = id"
               , "convn : Number -> Number;convn = id"
