@@ -52,7 +52,7 @@ varRefExpr spos name =
 refNotationUnquote :: SourcePos -> RefExpression -> RefExpression
 refNotationUnquote spos rexpr = do
     i <- lift get
-    lift $ put $ i + 1
+    lift $ put $ succ i
     let varname = fromString $ "%ref" <> show i
     expr <- lift $ runRefWriterT spos rexpr
     tell $ pure (varname, expr)

@@ -20,14 +20,14 @@ createCalendar rmod = do
             y <- get widget #year
             m <- get widget #month
             d <- get widget #day
-            return $ fromGregorian (toInteger y) (fromIntegral m + 1) (fromIntegral d)
+            return $ fromGregorian (toInteger y) (succ $ fromIntegral m) (fromIntegral d)
         putDay ::
                forall m. MonadIO m
             => Day
             -> m ()
         putDay day = let
             (y, m, d) = toGregorian day
-            in set widget [#year := fromInteger y, #month := fromIntegral m - 1, #day := fromIntegral d]
+            in set widget [#year := fromInteger y, #month := pred (fromIntegral m), #day := fromIntegral d]
         onChanged =
             viewRunResource rmod $ \asub -> do
                 st <- getDay

@@ -44,10 +44,10 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit ed
         len <- mr ListReadLength
         return $
             if p >= 0 && p < len
-                then len - 1
+                then pred len
                 else len
     applyEdit (OrderedListEditDelete p) mr (ListReadItem i reader)
-        | p >= 0 && p < i = mr $ ListReadItem (i + 1) reader
+        | p >= 0 && p < i = mr $ ListReadItem (succ i) reader
     applyEdit (OrderedListEditDelete _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
     applyEdit OrderedListEditClear _mr reader = subjectToReadable mempty reader
 
@@ -165,14 +165,14 @@ orderedListItemLinearLens initpos = let
         i <- get
         case compare ie i of
             LT -> do
-                put $ i - 1
+                put $ pred i
                 return []
             EQ -> return [MkFullResultOneUpdate $ NewResultOneUpdate Nothing]
             GT -> return []
     sclUpdate (OrderedListUpdateInsert ie _) _ = do
         i <- get
         if ie <= i
-            then put $ i + 1
+            then put $ succ i
             else return ()
         return []
     sclUpdate OrderedListUpdateClear _ = do

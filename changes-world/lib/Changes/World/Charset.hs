@@ -15,7 +15,7 @@ utf8Codec = MkCodec decodeUTF8 encodeUTF8
                 (\s@(bb, i) ->
                      return
                          (case bb of
-                              b:bs -> (Just b, (bs, i + 1))
+                              b:bs -> (Just b, (bs, succ i))
                               [] -> (Nothing, s)))
         decodeError :: StateT (s, Int) (Result Text) a
         decodeError = StateT (\(_, i) -> fail $ "decode error at byte " ++ show i)

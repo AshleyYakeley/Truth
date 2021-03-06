@@ -25,7 +25,7 @@ isEmptyStore :: Store a -> Bool
 isEmptyStore (MkStore _ mp) = null mp
 
 addStore :: a -> Store a -> (Key, Store a)
-addStore a (MkStore i mp) = (i, MkStore (i + 1) (insertMap i a mp))
+addStore a (MkStore i mp) = (i, MkStore (succ i) (insertMap i a mp))
 
 lookupStore :: Key -> Store a -> Maybe a
 lookupStore key (MkStore _ mp) = lookup key mp

@@ -101,7 +101,7 @@ runVarRenamerT (MkVarRenamerT ma) = do
 varName :: Int -> String
 varName i
     | i < 26 = pure $ toEnum $ i + fromEnum 'a'
-varName i = varName ((div i 26) - 1) <> (pure $ toEnum $ (mod i 26) + fromEnum 'a')
+varName i = varName (pred (div i 26)) <> (pure $ toEnum $ (mod i 26) + fromEnum 'a')
 
 varRenamerTGenerate :: Monad m => [String] -> VarRenamerT ts m String
 varRenamerTGenerate [] = do
