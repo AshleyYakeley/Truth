@@ -5,8 +5,8 @@ module Pinafore.Base.Action
     , pinaforeGetCreateViewUnlift
     , viewPinaforeAction
     , pinaforeResourceContext
-    , pinaforeFunctionValueGet
-    , pinaforeRefPushAction
+    , pinaforeRefGet
+    , pinaforeRefPush
     , pinaforeGetExitOnClose
     , pinaforeExit
     , pinaforeUndoHandler
@@ -20,7 +20,6 @@ module Pinafore.Base.Action
 
 import Changes.Core
 import Pinafore.Base.Know
-import Pinafore.Base.Ref
 import Shapes
 
 data ActionContext = MkActionContext
@@ -58,10 +57,15 @@ viewPinaforeAction va = createViewPinaforeAction $ liftToLifeCycle va
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
 
-pinaforeRefPushAction :: WModel update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
-pinaforeRefPushAction lv edits = do
+pinaforeRefGet :: WModel update -> ReadM (UpdateReader update) t -> PinaforeAction t
+pinaforeRefGet model rm = do
     rc <- pinaforeResourceContext
-    ok <- liftIO $ wModelPush rc lv edits
+    liftIO $ wModelGet rc model rm
+
+pinaforeRefPush :: WModel update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
+pinaforeRefPush model edits = do
+    rc <- pinaforeResourceContext
+    ok <- liftIO $ wModelPush rc model edits
     if ok
         then return ()
         else empty

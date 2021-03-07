@@ -86,11 +86,11 @@ langSetRefCartesianProduct (MkLangSetRef eqA svA) (MkLangSetRef eqB svB) = let
 
 langSetRefAdd :: forall a. LangSetRef a -> a -> PinaforeAction ()
 langSetRefAdd (MkLangSetRef _eq sv) a =
-    pinaforeRefPushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True
+    pinaforeRefPush sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit True
 
 langSetRefRemove :: forall a. LangSetRef a -> a -> PinaforeAction ()
 langSetRefRemove (MkLangSetRef _eq sv) a =
-    pinaforeRefPushAction sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit False
+    pinaforeRefPush sv $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit False
 
 langSetRefMember :: forall a. LangSetRef a -> LangWholeRef '( BottomType, a) -> LangWholeRef '( Bool, Bool)
 langSetRefMember (MkLangSetRef eq sv) aref = let

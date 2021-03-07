@@ -50,7 +50,7 @@ langWholeRefGet ref = do
     pinaforeActionKnow ka
 
 langWholeRefSet :: forall p. LangWholeRef '( p, TopType) -> Know p -> PinaforeAction ()
-langWholeRefSet (MutableLangWholeRef sr) mp = pinaforeRefPushAction sr $ pure $ MkBiWholeEdit mp
+langWholeRefSet (MutableLangWholeRef sr) mp = pinaforeRefPush sr $ pure $ MkBiWholeEdit mp
 langWholeRefSet (ImmutableLangWholeRef _) _ = empty
 
 langWholeRefMapModel ::

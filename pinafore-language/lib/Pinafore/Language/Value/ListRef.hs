@@ -36,6 +36,34 @@ langListRefCount (FullLangListRef model) =
     functionImmutableRef $
     eaMap (funcChangeLens coerce . liftReadOnlyChangeLens listLengthLens . biReadOnlyChangeLens) model
 
+langListRefGet :: forall q. Int -> LangListRef '( BottomType, q) -> PinaforeAction q
+langListRefGet i (OrderedLangListRef model) = do
+    mq <- pinaforeRefGet model $ readM $ ListReadItem (MkSequencePoint i) ReadWhole
+    pinaforeActionKnow $ maybeToKnow mq
+langListRefGet i (FullLangListRef model) = do
+    mq <- pinaforeRefGet model $ readM $ ListReadItem (MkSequencePoint i) ReadWhole
+    pinaforeActionKnow $ maybeToKnow mq
+
+langListRefInsert :: forall p. Int -> p -> LangListRef '( p, TopType) -> PinaforeAction ()
+langListRefInsert _ _ (OrderedLangListRef _) = empty
+langListRefInsert i val (FullLangListRef model) =
+    pinaforeRefPush model $ pure $ MkBiEdit $ ListEditInsert (MkSequencePoint i) val
+
+langListRefSet :: forall p. Int -> p -> LangListRef '( p, TopType) -> PinaforeAction ()
+langListRefSet _ _ (OrderedLangListRef _) = empty
+langListRefSet i val (FullLangListRef model) =
+    pinaforeRefPush model $ pure $ MkBiEdit $ ListEditItem (MkSequencePoint i) $ MkWholeReaderEdit val
+
+langListRefDelete :: Int -> LangListRef '( BottomType, TopType) -> PinaforeAction ()
+langListRefDelete i (OrderedLangListRef model) =
+    pinaforeRefPush model $ pure $ OrderedListEditDelete (MkSequencePoint i)
+langListRefDelete i (FullLangListRef model) =
+    pinaforeRefPush model $ pure $ MkBiEdit $ ListEditDelete (MkSequencePoint i)
+
+langListRefClear :: LangListRef '( BottomType, TopType) -> PinaforeAction ()
+langListRefClear (OrderedLangListRef model) = pinaforeRefPush model $ pure OrderedListEditClear
+langListRefClear (FullLangListRef model) = pinaforeRefPush model $ pure $ MkBiEdit ListEditClear
+
 biKnowWhole :: forall p q. ChangeLens (BiWholeUpdate (Know [p]) (Know [q])) (BiWholeUpdate [p] [q])
 biKnowWhole = mapBiWholeChangeLens Known $ fromKnow []
 

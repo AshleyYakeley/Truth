@@ -34,9 +34,7 @@ immutableRefToRejectingBiRef ref =
     eaMap (fromReadOnlyRejectingChangeLens . readOnlyBiChangeLens) $ immutableRefToReadOnlyRef ref
 
 getImmutableRef :: PinaforeImmutableWholeRef a -> PinaforeAction (Know a)
-getImmutableRef ref = do
-    rc <- pinaforeResourceContext
-    liftIO $ pinaforeFunctionValueGet rc $ immutableRefToReadOnlyRef ref
+getImmutableRef ref = pinaforeRefGet (immutableRefToReadOnlyRef ref) $ readM ReadWhole
 
 functionImmutableRef :: PinaforeROWRef a -> PinaforeImmutableWholeRef a
 functionImmutableRef fv = MkPinaforeImmutableWholeRef $ eaMap (liftReadOnlyChangeLens $ funcChangeLens Known) fv
