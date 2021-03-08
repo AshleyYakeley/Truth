@@ -2,8 +2,9 @@ module Changes.Core.Sequence where
 
 import Changes.Core.Import
 
-newtype SequencePoint seq =
-    MkSequencePoint (Index seq)
+newtype SequencePoint seq = MkSequencePoint
+    { unSequencePoint :: Index seq
+    }
 
 deriving instance Eq (Index seq) => Eq (SequencePoint seq)
 

@@ -386,14 +386,15 @@ refLibEntries =
                                       convv = applyRangePolyShim cid conv1 conv2
                                       in applyRangePolyShim cid (iJoinMeetL1 @(InvertPolarity pola)) (iJoinMeetR1 @pola) .
                                          (functionToShim "WholeRef to ListRef" langWholeRefToListRef) . convv
-                , mkValEntry "listCount" "Count of elements in a list reference." langListRefCount
-                , mkValEntry "listGet" "Get an element of a list reference." $ langListRefGet @Q
+                , mkValEntry "listGetCount" "Get Count of elements in a list reference." langListRefGetCount
+                , mkValEntry "listGetItem" "Get an element of a list reference." $ langListRefGetItem @Q
                 , mkValEntry "listInsert" "Insert an element in a list reference." $ langListRefInsert @P
                 , mkValEntry "listSet" "Set an element of a list reference." $ langListRefSet @P
                 , mkValEntry "listDelete" "Delete an element of a list reference." langListRefDelete
                 , mkValEntry "listClear" "Delete all elements of a list reference." langListRefClear
+                , mkValEntry "listCountRef" "Reference to a count of elements in a list reference." langListRefCountRef
                 , mkValEntry
-                      "getListItem"
+                      "listGetItemRef"
                       "Get a whole reference to a particular item in the list. It will track the item as the list changes. Pass `True` for an existing item, `False` for a point between items." $
                   langListRefItem @P @Q
                 ]

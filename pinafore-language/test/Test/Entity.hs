@@ -145,31 +145,42 @@ testEntity =
                     "do s <- newMemFiniteSet; member s {57} := True; member s {57} := False; m57 <- get $ member s {57}; testeqval False m57; end"
               , testExpectSuccess "expectStop $ do r <- newMemWhole; immutWhole r := 5; end"
               ]
-        , context ["showList: [Literal] -> Action (); showList l = for_ l (outputLn . toText)"] $
+        , context
+              [ "showList: [Literal] -> Action (); showList l = for_ l (outputLn . toText)"
+              , mif False "testImmutList: Boolean -> Integer -> (ListRef Integer -> Action ()) -> Action ();" <>
+                "testImmutList present n call = do lr <- newMemWhole; lr := [10,20,30]; r <- listGetItemRef present n lr; ir <- listGetItemRef present n $ immutWhole lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
+              ] $
           tgroup
               "list references"
-              [ testExpectSuccess "do r <- newMemWhole; n <- get $ listCount r; testeqval 0 n; end"
-              , testExpectSuccess "do r <- newMemWhole; r := [10,20,30]; n <- get $ listCount r; testeqval 3 n; end"
+              [ testExpectSuccess "do r <- newMemWhole; n <- listGetCount r; testeqval 0 n; end"
+              , testExpectSuccess "do r <- newMemWhole; r := [10,20,30]; n <- listGetCount r; testeqval 3 n; end"
+              , testExpectSuccess "do r <- newMemWhole; n <- get $ listCountRef r; testeqval 0 n; end"
+              , testExpectSuccess "do r <- newMemWhole; r := [10,20,30]; n <- get $ listCountRef r; testeqval 3 n; end"
               , testExpectSuccess
-                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem True 1 r; i <- get ir; testeqval 20 i; end"
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef True 1 r; i <- get ir; testeqval 20 i; end"
               , testExpectSuccess
-                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem True 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef True 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
               , testExpectSuccess
-                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem True 1 r; ir := 25; l <- get r; testeqval [10,25,30] l; end"
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef True 1 r; ir := 25; l <- get r; testeqval [10,25,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem True 1 r; delete ir; l <- get r; testeqval [10,30] l; end"
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef True 1 r; delete ir; l <- get r; testeqval [10,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem True 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,30] l; end"
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef True 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem False 1 r; i <- expectStop $ get ir; return (); end"
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef False 1 r; i <- expectStop $ get ir; return (); end"
               , testExpectSuccess
-                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem False 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef False 1 r; ir := 25; i <- get ir; testeqval 25 i; end"
               , testExpectSuccess
-                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem False 1 r; ir := 25; l <- get r; testeqval [10,25,20,30] l; end"
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef False 1 r; ir := 25; l <- get r; testeqval [10,25,20,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef False 1 r; delete ir; l <- get r; testeqval [10,20,30] l; end"
               , testExpectSuccess
-                    "do r <- newMemWhole; r := [10,20,30]; ir <- getListItem False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef False 1 r; delete ir; ir := 15; l <- get r; testeqval [10,15,20,30] l; end"
+              , testExpectSuccess
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef True 1 r; listInsert 1 12 r; i <- get ir; testeqval 20 i; end"
+              , testExpectSuccess
+                    "do r <- newMemWhole; r := [10,20,30]; ir <- listGetItemRef True 1 r; listInsert 1 12 r; ir := 15; l <- get r; testeqval [10,12,15,30] l; end"
+              , testExpectSuccess "testImmutList True 1 $ \\_ -> return ()"
               ]
         , context
               [ "convr : Rational -> Rational;convr = id"

@@ -29,19 +29,23 @@ langListRefToOrdered (FullLangListRef model) =
          listOrderedListChangeLens . fromReadOnlyRejectingChangeLens . biReadOnlyChangeLens)
         model
 
-langListRefCount :: LangListRef '( BottomType, TopType) -> PinaforeImmutableWholeRef Int
-langListRefCount (OrderedLangListRef model) =
+langListRefCountRef :: LangListRef '( BottomType, TopType) -> PinaforeImmutableWholeRef Int
+langListRefCountRef (OrderedLangListRef model) =
     functionImmutableRef $ eaMap (funcChangeLens coerce . orderedListLengthLens) model
-langListRefCount (FullLangListRef model) =
+langListRefCountRef (FullLangListRef model) =
     functionImmutableRef $
     eaMap (funcChangeLens coerce . liftReadOnlyChangeLens listLengthLens . biReadOnlyChangeLens) model
 
-langListRefGet :: forall q. Int -> LangListRef '( BottomType, q) -> PinaforeAction q
-langListRefGet i (OrderedLangListRef model) = do
-    mq <- pinaforeRefGet model $ readM $ ListReadItem (MkSequencePoint i) ReadWhole
-    pinaforeActionKnow $ maybeToKnow mq
-langListRefGet i (FullLangListRef model) = do
-    mq <- pinaforeRefGet model $ readM $ ListReadItem (MkSequencePoint i) ReadWhole
+langListRefRead :: LangListRef '( p, q) -> ReadM (ListReader [q] (WholeReader q)) t -> PinaforeAction t
+langListRefRead (OrderedLangListRef model) rm = pinaforeRefGet model rm
+langListRefRead (FullLangListRef model) rm = pinaforeRefGet model rm
+
+langListRefGetCount :: LangListRef '( BottomType, TopType) -> PinaforeAction Int
+langListRefGetCount ref = fmap unSequencePoint $ langListRefRead ref $ readM ListReadLength
+
+langListRefGetItem :: forall q. Int -> LangListRef '( BottomType, q) -> PinaforeAction q
+langListRefGetItem i ref = do
+    mq <- langListRefRead ref $ readM $ ListReadItem (MkSequencePoint i) ReadWhole
     pinaforeActionKnow $ maybeToKnow mq
 
 langListRefInsert :: forall p. Int -> p -> LangListRef '( p, TopType) -> PinaforeAction ()
