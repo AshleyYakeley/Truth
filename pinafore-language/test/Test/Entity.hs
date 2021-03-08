@@ -460,26 +460,61 @@ testEntity =
                     ]
               ]
         , let
-              subtypeTests p q =
-                  [ testExpectSuccess "pass"
-                  , testExpectSuccess $ "let f : " <> p <> " -> " <> q <> "; f x = x in pass"
-                  , testExpectSuccess $ "let f : [" <> p <> "] -> [" <> q <> "]; f x = x in pass"
-                  , testExpectReject $ "let f : " <> q <> " -> " <> p <> "; f x = x in pass"
+              subsumeTests strict p q =
+                  tgroup "subsume" $
+                  [ testExpectSuccess $ "let x: " <> p <> "; x = x; y: " <> q <> "; y = x in pass"
+                  , testExpectSuccess $ "let f: (" <> p <> ") -> (" <> q <> "); f x = x in pass"
+                  , (if strict
+                         then testExpectReject
+                         else testExpectSuccess) $
+                    "let x: " <> q <> "; x = x; y: " <> p <> "; y = x in pass"
+                  , (if strict
+                         then testExpectReject
+                         else testExpectSuccess) $
+                    "let f: (" <> q <> ") -> (" <> p <> "); f x = x in pass"
                   ]
-              equivalentTests p q =
+              subsumeTest strict p q = tgroup (unpack $ p <> " <: " <> q) [subsumeTests strict p q]
+              subtypeTests strict p q =
                   [ testExpectSuccess "pass"
-                  , testExpectSuccess $ "let f : " <> p <> " -> " <> q <> "; f x = x in pass"
-                  , testExpectSuccess $ "let f : [" <> p <> "] -> [" <> q <> "]; f x = x in pass"
-                  , testExpectSuccess $ "let f : " <> q <> " -> " <> p <> "; f x = x in pass"
-                  , testExpectSuccess $ "let f : [" <> q <> "] -> [" <> p <> "]; f x = x in pass"
+                  , tgroup
+                        "unify"
+                        [ testExpectSuccess $
+                          "let f: (" <> q <> ") -> (); f = f; x: " <> p <> "; x = x; fx = f x in pass"
+                        , (if strict
+                               then testExpectReject
+                               else testExpectSuccess) $
+                          "let f: (" <> p <> ") -> (); f = f; x: " <> q <> "; x = x; fx = f x in pass"
+                        ]
+                  , subsumeTests strict p q
                   ]
+              subtypeTest strict p q = tgroup (unpack $ p <> " <: " <> q) $ subtypeTests strict p q
+              equivalentTests = subtypeTests False
+              equivalentTest p q = tgroup (unpack $ p <> " <: " <> q) $ equivalentTests p q
               in tgroup
                      "subtype"
                      [ tgroup
+                           "conversion"
+                           [ equivalentTest "Integer" "Integer"
+                           , subtypeTest True "Integer" "Rational"
+                           , subtypeTest True "Maybe Entity" "Entity"
+                           , subtypeTest False "a" "a"
+                           , subtypeTest False "[a]" "[a]"
+                           , subtypeTest True "a -> a -> Ordering" "RefOrder a"
+                           , subtypeTest True "Integer -> Integer -> Ordering" "RefOrder Integer"
+                           , subtypeTest True "WholeRef [a]" "ListRef a"
+                           , subtypeTest True "WholeRef [Integer]" "ListRef Integer"
+                           , subtypeTest True "WholeRef {-[Integer],+[Integer]}" "ListRef Integer"
+                           , subsumeTest True "WholeRef {-[a & Integer],+[a | Integer]}" "ListRef Integer"
+                           , subsumeTest True "WholeRef {-[a & Entity],+[a | Integer]}" "ListRef Integer"
+                           ]
+                     , tgroup
                            "let"
-                           [ context ["opentype P", "opentype Q", "subtype P <: Q"] $ tgroup "1" $ subtypeTests "P" "Q"
-                           , context ["opentype P", "subtype P <: Q", "opentype Q"] $ tgroup "2" $ subtypeTests "P" "Q"
-                           , context ["subtype P <: Q", "opentype P", "opentype Q"] $ tgroup "3" $ subtypeTests "P" "Q"
+                           [ context ["opentype P", "opentype Q", "subtype P <: Q"] $
+                             tgroup "1" $ subtypeTests True "P" "Q"
+                           , context ["opentype P", "subtype P <: Q", "opentype Q"] $
+                             tgroup "2" $ subtypeTests True "P" "Q"
+                           , context ["subtype P <: Q", "opentype P", "opentype Q"] $
+                             tgroup "3" $ subtypeTests True "P" "Q"
                            ]
                      , tgroup
                            "local"
@@ -532,9 +567,10 @@ testEntity =
                        tgroup
                            "non-simple" -- not allowed, per issue #28
                            [testExpectReject "pass"]
-                     , context ["opentype Q", "subtype Integer <: Q"] $ tgroup "literal" $ subtypeTests "Integer" "Q"
+                     , context ["opentype Q", "subtype Integer <: Q"] $
+                       tgroup "literal" $ subtypeTests True "Integer" "Q"
                      , context ["opentype Q", "closedtype P = P1 Text Number !\"P.P1\"", "subtype P <: Q"] $
-                       tgroup "closed" $ subtypeTests "P" "Q"
+                       tgroup "closed" $ subtypeTests True "P" "Q"
                      , context
                            [ "opentype Q"
                            , "opentype R"
@@ -542,7 +578,7 @@ testEntity =
                            , "subtype P <: Q"
                            , "subtype P <: R"
                            ] $
-                       tgroup "closed" $ subtypeTests "P" "R"
+                       tgroup "closed" $ subtypeTests True "P" "R"
                      , tgroup
                            "Entity"
                            [ testExpectSuccess "let f : Number -> Entity; f x = x in pass"
@@ -551,21 +587,21 @@ testEntity =
                            , testExpectSuccess "let f : Maybe (a & Number) -> (Entity,Maybe a); f x = (x,x) in pass"
                            ]
                      , tgroup "dynamic" $
-                       [ tgroup "DynamicEntity <: Entity" $ subtypeTests "DynamicEntity" "Entity"
+                       [ tgroup "DynamicEntity <: Entity" $ subtypeTests True "DynamicEntity" "Entity"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tgroup "P1 <: DynamicEntity" $ subtypeTests "P1" "DynamicEntity"
+                         tgroup "P1 <: DynamicEntity" $ subtypeTests True "P1" "DynamicEntity"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tgroup "Q <: DynamicEntity" $ subtypeTests "Q" "DynamicEntity"
+                         tgroup "Q <: DynamicEntity" $ subtypeTests True "Q" "DynamicEntity"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tgroup "P1 <: Entity" $ subtypeTests "P1" "Entity"
+                         tgroup "P1 <: Entity" $ subtypeTests True "P1" "Entity"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tgroup "Q <: Entity" $ subtypeTests "Q" "Entity"
+                         tgroup "Q <: Entity" $ subtypeTests True "Q" "Entity"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tgroup "1" $ subtypeTests "P1" "Q"
+                         tgroup "1" $ subtypeTests True "P1" "Q"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | P2", "dynamictype P2 = !\"P2\""] $
-                         tgroup "2" $ subtypeTests "P1" "Q"
+                         tgroup "2" $ subtypeTests True "P1" "Q"
                        , context ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
-                         tgroup "3" $ subtypeTests "P1" "Q"
+                         tgroup "3" $ subtypeTests True "P1" "Q"
                        , context
                              [ "opentype T"
                              , "subtype QA <: T"
@@ -578,12 +614,12 @@ testEntity =
                              ] $
                          tgroup
                              "open-transitive"
-                             [ tgroup "QC <: QB" $ subtypeTests "QC" "QB"
+                             [ tgroup "QC <: QB" $ subtypeTests True "QC" "QB"
                              , tgroup "QA = QB" $ equivalentTests "QA" "QB"
-                             , tgroup "QA <: T" $ subtypeTests "QA" "T"
-                             , tgroup "QB <: T" $ subtypeTests "QB" "T"
-                             , tgroup "QC <: T" $ subtypeTests "QC" "T"
-                             , tgroup "P1 <: T" $ subtypeTests "P1" "T"
+                             , tgroup "QA <: T" $ subtypeTests True "QA" "T"
+                             , tgroup "QB <: T" $ subtypeTests True "QB" "T"
+                             , tgroup "QC <: T" $ subtypeTests True "QC" "T"
+                             , tgroup "P1 <: T" $ subtypeTests True "P1" "T"
                              ]
                        , tgroup
                              "cycle"

@@ -49,10 +49,10 @@ testExpectSuccess :: Text -> ContextTestTree
 testExpectSuccess text = testPinaforeScript text mempty text ScriptExpectSuccess
 
 testExpectThrow :: Text -> ContextTestTree
-testExpectThrow text = testPinaforeScript text mempty text $ ScriptExpectRuntimeException $ pure True
+testExpectThrow text = testPinaforeScript ("THROW: " <> text) mempty text $ ScriptExpectRuntimeException $ pure True
 
 testExpectReject :: Text -> ContextTestTree
-testExpectReject text = testPinaforeScript text mempty text $ ScriptExpectRejection $ pure True
+testExpectReject text = testPinaforeScript ("REJECT: " <> text) mempty text $ ScriptExpectRejection $ pure True
 
 testExpectStop :: Text -> ContextTestTree
-testExpectStop text = testPinaforeScript text mempty text ScriptExpectStop
+testExpectStop text = testPinaforeScript ("STOP: " <> text) mempty text ScriptExpectStop
