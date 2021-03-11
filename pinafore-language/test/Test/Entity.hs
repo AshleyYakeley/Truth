@@ -33,6 +33,7 @@ testEntity =
     runContext $
     context
         [ "pass = return ()"
+        , "undefined = error \"undefined\""
         , "runWholeRef r = do a <- get r; a end"
         , "runreforfail r = runWholeRef (r ?? {fail \"unknown ref\"})"
         , "testeq expected found = runreforfail {if %expected == %found then pass else fail \"not equal\"}"
@@ -491,6 +492,9 @@ testEntity =
                         ]
                   , tgroup "subsume" $
                     [ testSubtypeSubsume sr $ "let x: " <> p <> "; x = x; y: " <> q <> "; y = x in pass"
+                    , testSubtypeSubsume sr $ "let x: " <> p <> "; x = undefined; y: " <> q <> "; y = x in pass"
+                    , testSubtypeSubsume sr $ "let x: " <> q <> "; x = undefined: " <> p <> " in pass"
+                    , testSubtypeSubsume sr $ "let x = (undefined: " <> p <> "): " <> q <> " in pass"
                     , (if polar
                            then testExpectReject
                            else testSubtypeSingle sr) $
@@ -505,7 +509,9 @@ testEntity =
                            "conversion"
                            [ subtypeTest False SRSingle "Integer" "Integer"
                            , subtypeTest False SRSingle "Integer" "Rational"
+                           , subtypeTest False SRNot "Rational" "Integer"
                            , subtypeTest False SRSingle "Maybe Entity" "Entity"
+                           , subtypeTest False SRNot "Entity" "Maybe Entity"
                            , subtypeTest False SRSingle "a" "a"
                            , subtypeTest False SRSubsume "a" "Integer"
                            , subtypeTest False SRUnify "Integer" "a"
