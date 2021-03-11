@@ -22,6 +22,12 @@ testUpdate text =
 testUpdates :: TestTree
 testUpdates = runContext $ tgroup "update" [testUpdate "do ref <- newMemWhole; return (ref := 1, ref) end"]
 
+data SubtypeResult
+    = SRNot
+    | SRUnify
+    | SRSubsume
+    | SRSingle
+
 testEntity :: TestTree
 testEntity =
     runContext $
@@ -460,61 +466,80 @@ testEntity =
                     ]
               ]
         , let
-              subsumeTests strict p q =
-                  tgroup "subsume" $
-                  [ testExpectSuccess $ "let x: " <> p <> "; x = x; y: " <> q <> "; y = x in pass"
-                  , testExpectSuccess $ "let f: (" <> p <> ") -> (" <> q <> "); f x = x in pass"
-                  , (if strict
-                         then testExpectReject
-                         else testExpectSuccess) $
-                    "let x: " <> q <> "; x = x; y: " <> p <> "; y = x in pass"
-                  , (if strict
-                         then testExpectReject
-                         else testExpectSuccess) $
-                    "let f: (" <> q <> ") -> (" <> p <> "); f x = x in pass"
-                  ]
-              subsumeTest strict p q = tgroup (unpack $ p <> " <: " <> q) [subsumeTests strict p q]
-              subtypeTests strict p q =
+              testSubtypeUnify :: SubtypeResult -> Text -> ContextTestTree
+              testSubtypeUnify SRNot = testExpectReject
+              testSubtypeUnify SRUnify = testExpectSuccess
+              testSubtypeUnify SRSubsume = testExpectSuccess
+              testSubtypeUnify SRSingle = testExpectSuccess
+              testSubtypeSubsume :: SubtypeResult -> Text -> ContextTestTree
+              testSubtypeSubsume SRNot = testExpectReject
+              testSubtypeSubsume SRUnify = testExpectReject
+              testSubtypeSubsume SRSubsume = testExpectSuccess
+              testSubtypeSubsume SRSingle = testExpectSuccess
+              testSubtypeSingle :: SubtypeResult -> Text -> ContextTestTree
+              testSubtypeSingle SRNot = testExpectReject
+              testSubtypeSingle SRUnify = testExpectReject
+              testSubtypeSingle SRSubsume = testExpectReject
+              testSubtypeSingle SRSingle = testExpectSuccess
+              subtypeTests :: Bool -> SubtypeResult -> Text -> Text -> [ContextTestTree]
+              subtypeTests polar sr p q =
                   [ testExpectSuccess "pass"
                   , tgroup
                         "unify"
-                        [ testExpectSuccess $
+                        [ testSubtypeUnify sr $
                           "let f: (" <> q <> ") -> (); f = f; x: " <> p <> "; x = x; fx = f x in pass"
-                        , (if strict
-                               then testExpectReject
-                               else testExpectSuccess) $
-                          "let f: (" <> p <> ") -> (); f = f; x: " <> q <> "; x = x; fx = f x in pass"
                         ]
-                  , subsumeTests strict p q
+                  , tgroup "subsume" $
+                    [ testSubtypeSubsume sr $ "let x: " <> p <> "; x = x; y: " <> q <> "; y = x in pass"
+                    , (if polar
+                           then testExpectReject
+                           else testSubtypeSingle sr) $
+                      "let f: (" <> p <> ") -> (" <> q <> "); f x = x in pass"
+                    ]
                   ]
-              subtypeTest strict p q = tgroup (unpack $ p <> " <: " <> q) $ subtypeTests strict p q
-              equivalentTests = subtypeTests False
-              equivalentTest p q = tgroup (unpack $ p <> " <: " <> q) $ equivalentTests p q
+              subtypeTest :: Bool -> SubtypeResult -> Text -> Text -> ContextTestTree
+              subtypeTest polar sr p q = tgroup (unpack $ p <> " <: " <> q) $ subtypeTests polar sr p q
               in tgroup
                      "subtype"
                      [ tgroup
                            "conversion"
-                           [ equivalentTest "Integer" "Integer"
-                           , subtypeTest True "Integer" "Rational"
-                           , subtypeTest True "Maybe Entity" "Entity"
-                           , subtypeTest False "a" "a"
-                           , subtypeTest False "[a]" "[a]"
-                           , subtypeTest True "a -> a -> Ordering" "RefOrder a"
-                           , subtypeTest True "Integer -> Integer -> Ordering" "RefOrder Integer"
-                           , subtypeTest True "WholeRef [a]" "ListRef a"
-                           , subtypeTest True "WholeRef [Integer]" "ListRef Integer"
-                           , subtypeTest True "WholeRef {-[Integer],+[Integer]}" "ListRef Integer"
-                           , subsumeTest True "WholeRef {-[a & Integer],+[a | Integer]}" "ListRef Integer"
-                           , subsumeTest True "WholeRef {-[a & Entity],+[a | Integer]}" "ListRef Integer"
+                           [ subtypeTest False SRSingle "Integer" "Integer"
+                           , subtypeTest False SRSingle "Integer" "Rational"
+                           , subtypeTest False SRSingle "Maybe Entity" "Entity"
+                           , subtypeTest False SRSingle "a" "a"
+                           , subtypeTest False SRSubsume "a" "Integer"
+                           , subtypeTest False SRUnify "Integer" "a"
+                           , subtypeTest False SRSubsume "[a]" "[Integer]"
+                           , subtypeTest False SRUnify "[Integer]" "[a]"
+                           , subtypeTest False SRSubsume "(a,b)" "(Integer,Rational)"
+                           , subtypeTest False SRSubsume "(a,a)" "(Integer,Integer)"
+                           , subtypeTest False SRSubsume "(a,a)" "(Integer,Rational)"
+                           , subtypeTest False SRSubsume "(a,Text)" "(Integer,Text)"
+                           , subtypeTest False SRSingle "[a]" "[a]"
+                           , subtypeTest False SRSingle "a -> a -> Ordering" "RefOrder a"
+                           , subtypeTest False SRSingle "Integer -> Integer -> Ordering" "RefOrder Integer"
+                           , subtypeTest False SRSingle "WholeRef [a]" "ListRef a"
+                           , subtypeTest False SRSingle "WholeRef [Integer]" "ListRef Integer"
+                           , subtypeTest False SRSingle "WholeRef {-[Integer],+[Integer]}" "ListRef Integer"
+                           , subtypeTest True SRSingle "WholeRef {-[a & Integer],+[a | Integer]}" "ListRef Integer"
+                           , subtypeTest True SRSingle "WholeRef {-[a & Entity],+[a | Integer]}" "ListRef Integer"
+                           , subtypeTest False SRSingle "rec a. Maybe a" "rec a. Maybe a"
+                           , subtypeTest False SRSingle "rec a. Maybe a" "rec b. Maybe b"
+                           , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec a. Maybe a)"
+                           , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec b. Maybe b)"
+                           , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec a. Maybe a"
+                           , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec b. Maybe b"
+                           , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec a. Maybe a)"
+                           , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec b. Maybe b)"
                            ]
                      , tgroup
                            "let"
                            [ context ["opentype P", "opentype Q", "subtype P <: Q"] $
-                             tgroup "1" $ subtypeTests True "P" "Q"
+                             tgroup "1" $ subtypeTests False SRSingle "P" "Q"
                            , context ["opentype P", "subtype P <: Q", "opentype Q"] $
-                             tgroup "2" $ subtypeTests True "P" "Q"
+                             tgroup "2" $ subtypeTests False SRSingle "P" "Q"
                            , context ["subtype P <: Q", "opentype P", "opentype Q"] $
-                             tgroup "3" $ subtypeTests True "P" "Q"
+                             tgroup "3" $ subtypeTests False SRSingle "P" "Q"
                            ]
                      , tgroup
                            "local"
@@ -568,9 +593,9 @@ testEntity =
                            "non-simple" -- not allowed, per issue #28
                            [testExpectReject "pass"]
                      , context ["opentype Q", "subtype Integer <: Q"] $
-                       tgroup "literal" $ subtypeTests True "Integer" "Q"
+                       tgroup "literal" $ subtypeTests False SRSingle "Integer" "Q"
                      , context ["opentype Q", "closedtype P = P1 Text Number !\"P.P1\"", "subtype P <: Q"] $
-                       tgroup "closed" $ subtypeTests True "P" "Q"
+                       tgroup "closed" $ subtypeTests False SRSingle "P" "Q"
                      , context
                            [ "opentype Q"
                            , "opentype R"
@@ -578,7 +603,7 @@ testEntity =
                            , "subtype P <: Q"
                            , "subtype P <: R"
                            ] $
-                       tgroup "closed" $ subtypeTests True "P" "R"
+                       tgroup "closed" $ subtypeTests False SRSingle "P" "R"
                      , tgroup
                            "Entity"
                            [ testExpectSuccess "let f : Number -> Entity; f x = x in pass"
@@ -587,21 +612,21 @@ testEntity =
                            , testExpectSuccess "let f : Maybe (a & Number) -> (Entity,Maybe a); f x = (x,x) in pass"
                            ]
                      , tgroup "dynamic" $
-                       [ tgroup "DynamicEntity <: Entity" $ subtypeTests True "DynamicEntity" "Entity"
+                       [ tgroup "DynamicEntity <: Entity" $ subtypeTests False SRSingle "DynamicEntity" "Entity"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tgroup "P1 <: DynamicEntity" $ subtypeTests True "P1" "DynamicEntity"
+                         tgroup "P1 <: DynamicEntity" $ subtypeTests False SRSingle "P1" "DynamicEntity"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tgroup "Q <: DynamicEntity" $ subtypeTests True "Q" "DynamicEntity"
+                         tgroup "Q <: DynamicEntity" $ subtypeTests False SRSingle "Q" "DynamicEntity"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tgroup "P1 <: Entity" $ subtypeTests True "P1" "Entity"
+                         tgroup "P1 <: Entity" $ subtypeTests False SRSingle "P1" "Entity"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tgroup "Q <: Entity" $ subtypeTests True "Q" "Entity"
+                         tgroup "Q <: Entity" $ subtypeTests False SRSingle "Q" "Entity"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tgroup "1" $ subtypeTests True "P1" "Q"
+                         tgroup "1" $ subtypeTests False SRSingle "P1" "Q"
                        , context ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | P2", "dynamictype P2 = !\"P2\""] $
-                         tgroup "2" $ subtypeTests True "P1" "Q"
+                         tgroup "2" $ subtypeTests False SRSingle "P1" "Q"
                        , context ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
-                         tgroup "3" $ subtypeTests True "P1" "Q"
+                         tgroup "3" $ subtypeTests False SRSingle "P1" "Q"
                        , context
                              [ "opentype T"
                              , "subtype QA <: T"
@@ -614,12 +639,13 @@ testEntity =
                              ] $
                          tgroup
                              "open-transitive"
-                             [ tgroup "QC <: QB" $ subtypeTests True "QC" "QB"
-                             , tgroup "QA = QB" $ equivalentTests "QA" "QB"
-                             , tgroup "QA <: T" $ subtypeTests True "QA" "T"
-                             , tgroup "QB <: T" $ subtypeTests True "QB" "T"
-                             , tgroup "QC <: T" $ subtypeTests True "QC" "T"
-                             , tgroup "P1 <: T" $ subtypeTests True "P1" "T"
+                             [ tgroup "QC <: QB" $ subtypeTests False SRSingle "QC" "QB"
+                             , tgroup "QA = QB" $ subtypeTests False SRSingle "QA" "QB"
+                             , tgroup "QA = QB" $ subtypeTests False SRSingle "QB" "QA"
+                             , tgroup "QA <: T" $ subtypeTests False SRSingle "QA" "T"
+                             , tgroup "QB <: T" $ subtypeTests False SRSingle "QB" "T"
+                             , tgroup "QC <: T" $ subtypeTests False SRSingle "QC" "T"
+                             , tgroup "P1 <: T" $ subtypeTests False SRSingle "P1" "T"
                              ]
                        , tgroup
                              "cycle"

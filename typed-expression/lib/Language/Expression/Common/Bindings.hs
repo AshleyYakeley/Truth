@@ -9,7 +9,7 @@ module Language.Expression.Common.Bindings
 
 import Data.Shim
 import Language.Expression.Common.Abstract
-import Language.Expression.Common.Rename.RenameTypeSystem
+import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Subsumer
 import Language.Expression.Common.TypeSystem

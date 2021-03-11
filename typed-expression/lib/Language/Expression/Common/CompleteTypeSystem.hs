@@ -4,7 +4,7 @@ import Data.Shim
 import Language.Expression.Common.Abstract
 import Language.Expression.Common.Bindings
 import Language.Expression.Common.Error
-import Language.Expression.Common.Rename.RenameTypeSystem
+import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Subsumer
 import Language.Expression.Common.TypeSystem
@@ -140,7 +140,7 @@ tsSingleBinding name madecltype expr =
     singleBinding name $ do
         madecltype' <-
             for madecltype $ \(MkAnyW decltype) -> do
-                decltype' <- namespace @ts $ renamePosWitness @ts decltype
+                decltype' <- namespace @ts True $ renamePosWitness @ts decltype
                 return $ MkAnyW decltype'
         expr' <- rename @ts expr
         subsumerExpression madecltype' expr'

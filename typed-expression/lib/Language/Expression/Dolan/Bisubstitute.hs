@@ -160,7 +160,7 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
             if isRecursive
                 then return (MkVarType oldvar, pt)
                 else runVarRenamerT $ do
-                         runVarNamespaceT $ do
+                         runVarNamespaceT False $ do
                 -- find a name that isn't free in either sub or t,
                 -- if possible the same name as oldvar
                              _ <- dolanNamespaceRename @ground t

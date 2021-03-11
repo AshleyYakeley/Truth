@@ -46,8 +46,10 @@ library:
       - Language.Expression.Common.TypeFunction
       - Language.Expression.Common.TypeVariable
       - Language.Expression.Common.Rename.RenameTypeSystem
+      - Language.Expression.Common.Rename.VarNamespaceT
       - Language.Expression.Common.Rename.VarRenamerT
       - Language.Expression.Common.Rename.NamespaceRenamable
+      - Language.Expression.Common.Rename
       - Language.Expression.Common.Simplifier
       - Language.Expression.Common.Unifier
       - Language.Expression.Common.Subsumer

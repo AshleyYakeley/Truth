@@ -25,7 +25,7 @@ instance (Monad m, Eq name, Show name) => RenameTypeSystem (Unitype m name val) 
     renamePosWitness Refl = return Refl
     type RenamerNamespaceT (Unitype m name val) = IdentityT
     renameNewVar = return $ MkNewVar unitypeShimWit unitypeShimWit
-    namespace = runIdentityT
+    namespace _ = runIdentityT
     runRenamer = runIdentityT
 
 instance (Monad m, Eq name, Show name) => UnifyTypeSystem (Unitype m name val) where

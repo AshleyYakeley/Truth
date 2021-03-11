@@ -22,7 +22,7 @@ class (TypeSystem ts, MonadTransConstraint Monad (RenamerT ts), MonadTransConstr
     renameNegWitness :: Monad m => TSNegWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSNegWitness ts t)
     renamePosWitness :: Monad m => TSPosWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSPosWitness ts t)
     renameNewVar :: Monad m => RenamerT ts m (NewVar ts)
-    namespace :: Monad m => RenamerNamespaceT ts (RenamerT ts m) r -> RenamerT ts m r
+    namespace :: Monad m => Bool -> RenamerNamespaceT ts (RenamerT ts m) r -> RenamerT ts m r
     runRenamer :: Monad m => RenamerT ts m r -> m r
 
 renameNegShimWit ::
@@ -57,4 +57,4 @@ rename ::
     -> RenamerT ts m a
 rename a =
     withTransConstraintTM @Monad $
-    namespace @ts $ withTransConstraintTM @Monad $ mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts) a
+    namespace @ts False $ withTransConstraintTM @Monad $ mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts) a

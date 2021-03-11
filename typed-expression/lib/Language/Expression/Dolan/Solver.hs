@@ -1,6 +1,6 @@
 module Language.Expression.Dolan.Solver
     ( DolanTypeCheckM
-    , liftTypeCheck
+    , lift
     , Solver
     , solverLiftExpression
     , solverOpenExpression
@@ -19,12 +19,6 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
 import Shapes
-
-liftTypeCheck ::
-       forall (ground :: GroundTypeKind) a. Monad (DolanM ground)
-    => DolanM ground a
-    -> DolanTypeCheckM ground a
-liftTypeCheck ma = lift ma
 
 type ShimType :: GroundTypeKind -> Type -> Type
 data ShimType ground t where

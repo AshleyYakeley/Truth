@@ -55,7 +55,7 @@ fullyConstrainedTypeVars ::
     => a
     -> DolanTypeCheckM ground a
 fullyConstrainedTypeVars expr =
-    liftTypeCheck $ do
+    lift $ do
         let
             (setFromList -> posvars, setFromList -> negvars) = mappableGetVars @ground expr
             allvars = union posvars negvars

@@ -2,6 +2,7 @@ module Language.Expression.Common.Rename.NamespaceRenamable where
 
 import Data.Shim
 import Language.Expression.Common.Rename.RenameTypeSystem
+import Language.Expression.Common.Rename.VarNamespaceT
 import Language.Expression.Common.Rename.VarRenamerT
 import Language.Expression.Common.TypeVariable
 import Shapes

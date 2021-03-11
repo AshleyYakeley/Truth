@@ -355,7 +355,7 @@ refLibEntries =
                   MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments (MkRangeType t1 t2) NilDolanArguments) ->
                       invertPolarity @pola $
                       invertPolarity @polb $ do
-                          MkVarType var <- varRenamerTGenerateUVar []
+                          MkVarType var <- renamerGenerateUVar []
                           let
                               var1a :: PinaforeType (InvertPolarity pola) _
                               var1a = singleDolanType $ VarDolanSingularType var
@@ -472,7 +472,7 @@ refLibEntries =
             MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t1 (ConsDolanArguments t2o NilDolanArguments)) ->
                 invertPolarity @pola $
                 invertPolarity @polb $ do
-                    MkVarType var <- varRenamerTGenerateUVar []
+                    MkVarType var <- renamerGenerateUVar []
                     let
                         vara :: PinaforeType (InvertPolarity pola) _
                         vara = singleDolanType $ VarDolanSingularType var
