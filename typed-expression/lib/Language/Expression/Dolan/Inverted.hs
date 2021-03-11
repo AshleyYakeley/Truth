@@ -13,7 +13,7 @@ import Shapes
 invertedContext ::
        forall (ground :: GroundTypeKind) wit. (IsDolanSubtypeGroundType ground)
     => SubtypeContext (DolanType ground) (DolanPolyShim ground Type) (Solver ground wit) 'Negative 'Positive
-invertedContext = MkSubtypeContext {subtypeConvert = subtypeTT, subtypeInverted = invertedContext}
+invertedContext = MkSubtypeContext {subtypeConvert = invertedSubtype, subtypeInverted = invertedContext}
 
 subtypeSS ::
        forall (ground :: GroundTypeKind) wit p q. (IsDolanSubtypeGroundType ground)
