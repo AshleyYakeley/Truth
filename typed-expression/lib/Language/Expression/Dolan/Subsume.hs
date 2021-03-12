@@ -139,7 +139,6 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground =>
 type DolanSubsumer :: GroundTypeKind -> Type -> Type
 type DolanSubsumer ground = Expression (SubsumeWitness ground)
 
--- type DolanSubsumer ground = ReaderT [AnyW SymbolType] (DolanSubsumer ground)
 type FullSubsumer :: GroundTypeKind -> Type -> Type
 type FullSubsumer ground = Solver ground (SubsumeWitness ground)
 
@@ -168,7 +167,7 @@ subsumeGroundSingularType ::
     -> FullSubsumer ground (DolanPolarMap ground polarity inf decl)
 subsumeGroundSingularType gtinf targsinf (VarDolanSingularType vdecl) =
     wbind renamerGetRigidNames $ \rigidnames ->
-        if elem (MkAnyW vdecl) $ fmap valueToAny rigidnames
+        if elem (witnessToValue vdecl) rigidnames
             then empty
             else fmap (\conv -> conv . polar1) $
                  solverLiftExpression $

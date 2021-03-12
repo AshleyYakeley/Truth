@@ -1,7 +1,5 @@
 module Language.Expression.Dolan.Solver
-    ( DolanTypeCheckM
-    , lift
-    , Solver
+    ( Solver
     , solverLiftExpression
     , solverOpenExpression
     , runSolver

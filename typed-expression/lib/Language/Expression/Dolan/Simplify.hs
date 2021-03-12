@@ -13,7 +13,6 @@ import Language.Expression.Dolan.Simplify.OneSidedTypeVars
 import Language.Expression.Dolan.Simplify.RollUpRecursion
 import Language.Expression.Dolan.Simplify.SharedTypeVars
 import Language.Expression.Dolan.Simplify.UnusedRecursion
-import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
