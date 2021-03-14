@@ -88,9 +88,9 @@ instance Monad m => RenamerMonad (VarRenamerT ts m) where
         modifyState $ \state -> let
             newvars = filter ((/=) name) $ rsAssignedNames state
             in state {rsAssignedNames = newvars}
-    renamerGetRigidNames :: VarRenamerT ts m [String]
-    renamerGetRigidNames = do
+    renamerGetIsNameRigid :: VarRenamerT ts m (String -> Bool)
+    renamerGetIsNameRigid = do
         state <- MkVarRenamerT $ lift get
-        return $ rsRigidNames state
+        return $ \name -> elem name $ rsRigidNames state
     renamerRigid :: Monad m => VarRenamerT ts m a -> VarRenamerT ts m a
     renamerRigid (MkVarRenamerT rma) = MkVarRenamerT $ local (\_ -> True) rma

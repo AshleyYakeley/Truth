@@ -179,3 +179,12 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TypeSyst
     type TSPosWitness (DolanTypeSystem ground) = DolanType ground 'Positive
     type TSShim (DolanTypeSystem ground) = DolanPolyShim ground Type
     type TSName (DolanTypeSystem ground) = DolanName ground
+
+showDolanType ::
+       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanType ground polarity t
+    -> String
+showDolanType =
+    case polarityType @polarity of
+        PositiveType -> showAllWitness
+        NegativeType -> showAllWitness

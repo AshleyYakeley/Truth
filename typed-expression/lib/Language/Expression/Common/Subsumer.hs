@@ -1,5 +1,6 @@
 module Language.Expression.Common.Subsumer
     ( SubsumeTypeSystem(..)
+    , usubSolveSubsumer
     , subsumePosShimWit
     , solveSubsumeShimWit
     , subsumerExpressionSubstitute
@@ -34,6 +35,15 @@ class ( UnifyTypeSystem ts
     -- This should generate substitutions only for the inferred type, not the declared type.
     subsumerNegSubstitute :: SubsumerSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)
     subsumePosWitnesses :: TSPosWitness ts inf -> TSPosWitness ts decl -> TSOuter ts (Subsumer ts (TSShim ts inf decl))
+
+usubSolveSubsumer ::
+       forall ts a. SubsumeTypeSystem ts
+    => UnifierSubstitutions ts
+    -> Subsumer ts a
+    -> TSOuter ts (a, SubsumerSubstitutions ts)
+usubSolveSubsumer subs subsumer = do
+    subsumer' <- usubSubsumer @ts subs subsumer
+    solveSubsumer @ts subsumer'
 
 subsumePosShimWit ::
        forall ts inf decl. SubsumeTypeSystem ts

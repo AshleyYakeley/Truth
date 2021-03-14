@@ -13,6 +13,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
+import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.Inverted
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Solver
@@ -22,59 +23,6 @@ import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unify
 import Language.Expression.Dolan.Unroll
 import Shapes
-
-minimalPositiveSupertypeSingular ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => DolanSingularType ground 'Negative a
-    -> Maybe (DolanShimWit ground 'Positive a)
-minimalPositiveSupertypeSingular (VarDolanSingularType v) = Just $ varDolanShimWit v
-minimalPositiveSupertypeSingular (GroundDolanSingularType gt args) = do
-    MkShimWit args' conv <-
-        mapInvertDolanArgumentsM invertTypeMaybe (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args
-    return $ singleDolanShimWit $ MkShimWit (GroundDolanSingularType gt args') conv
-minimalPositiveSupertypeSingular (RecursiveDolanSingularType var t) = do
-    t' <- minimalPositiveSupertype t
-    return $ singleDolanShimWit $ recursiveDolanShimWit var t'
-
-minimalPositiveSupertype ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => DolanType ground 'Negative a
-    -> Maybe (DolanShimWit ground 'Positive a)
-minimalPositiveSupertype (ConsDolanType t NilDolanType) = do
-    tf <- minimalPositiveSupertypeSingular t
-    return $ ccontramap @_ @_ @(DolanPolyShim ground Type) meet1 tf
-minimalPositiveSupertype _ = Nothing
-
-maximalNegativeSubtypeSingular ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => DolanSingularType ground 'Positive a
-    -> Maybe (DolanShimWit ground 'Negative a)
-maximalNegativeSubtypeSingular (VarDolanSingularType v) = Just $ varDolanShimWit v
-maximalNegativeSubtypeSingular (GroundDolanSingularType gt args) = do
-    MkShimWit args' conv <-
-        mapInvertDolanArgumentsM invertTypeMaybe (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args
-    return $ singleDolanShimWit $ MkShimWit (GroundDolanSingularType gt args') conv
-maximalNegativeSubtypeSingular (RecursiveDolanSingularType var t) = do
-    t' <- maximalNegativeSubtype t
-    return $ singleDolanShimWit $ recursiveDolanShimWit var t'
-
-maximalNegativeSubtype ::
-       forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
-    => DolanType ground 'Positive a
-    -> Maybe (DolanShimWit ground 'Negative a)
-maximalNegativeSubtype (ConsDolanType t NilDolanType) = do
-    tf <- maximalNegativeSubtypeSingular t
-    return $ cfmap @_ @_ @(DolanPolyShim ground Type) join1 tf
-maximalNegativeSubtype _ = Nothing
-
-invertTypeMaybe ::
-       forall (ground :: GroundTypeKind) polarity a. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
-    => DolanType ground polarity a
-    -> Maybe (DolanShimWit ground (InvertPolarity polarity) a)
-invertTypeMaybe =
-    case polarityType @polarity of
-        PositiveType -> maximalNegativeSubtype @ground
-        NegativeType -> minimalPositiveSupertype @ground
 
 type SubsumerError :: GroundTypeKind -> Type
 data SubsumerError ground where
@@ -166,8 +114,8 @@ subsumeGroundSingularType ::
     -> DolanSingularType ground polarity decl
     -> FullSubsumer ground (DolanPolarMap ground polarity inf decl)
 subsumeGroundSingularType gtinf targsinf (VarDolanSingularType vdecl) =
-    wbind renamerGetRigidNames $ \rigidnames ->
-        if elem (witnessToValue vdecl) rigidnames
+    wbind renamerGetIsNameRigid $ \isrigid ->
+        if isrigid $ witnessToValue vdecl
             then empty
             else fmap (\conv -> conv . polar1) $
                  solverLiftExpression $

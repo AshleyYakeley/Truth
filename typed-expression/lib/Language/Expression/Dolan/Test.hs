@@ -1,7 +1,5 @@
 module Language.Expression.Dolan.Test
-    ( bisubstituteWitnessForTest
-    , recursiveDolanShimWit
+    ( recursiveDolanShimWit
     ) where
 
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.Unify

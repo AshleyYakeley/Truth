@@ -14,7 +14,7 @@ import Shapes
 class Monad m => RenamerMonad m where
     renamerGenerate :: [String] -> m String
     renamerRemoveName :: String -> m ()
-    renamerGetRigidNames :: m [String]
+    renamerGetIsNameRigid :: m (String -> Bool)
     renamerRigid :: forall a. m a -> m a
 
 renamerGenerateUVar ::
