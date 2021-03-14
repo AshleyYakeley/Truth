@@ -13,7 +13,7 @@ data RenamerState = MkRenamerState
     }
 
 newtype VarRenamerT (ts :: Type) m a =
-    MkVarRenamerT (ReaderT Bool (StateT RenamerState m) a)
+    MkVarRenamerT (ReaderT NameRigidity (StateT RenamerState m) a)
     deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail)
 
 instance MonadTrans (VarRenamerT ts) where
@@ -39,7 +39,7 @@ runVarRenamerT (MkVarRenamerT rma) = let
     rsAssignedNames = []
     rsRigidNames = []
     rsIndex = 0
-    in evalStateT (runReaderT rma False) MkRenamerState {..}
+    in evalStateT (runReaderT rma FreeName) MkRenamerState {..}
 
 varName :: Int -> String
 varName i
@@ -57,10 +57,13 @@ assignName name = modifyState $ \state -> state {rsAssignedNames = name : rsAssi
 
 rigidName :: Monad m => String -> VarRenamerT ts m ()
 rigidName name = do
-    rigid <- MkVarRenamerT ask
-    if rigid
-        then modifyState $ \state -> state {rsRigidNames = name : rsRigidNames state}
-        else return ()
+    rgd <- MkVarRenamerT ask
+    case rgd of
+        FreeName -> return ()
+        RigidName -> modifyState $ \state -> state {rsRigidNames = name : rsRigidNames state}
+
+withRigidity :: Monad m => NameRigidity -> VarRenamerT ts m a -> VarRenamerT ts m a
+withRigidity rgd (MkVarRenamerT rma) = MkVarRenamerT $ local (\_ -> rgd) rma
 
 instance Monad m => RenamerMonad (VarRenamerT ts m) where
     renamerGenerate :: [String] -> VarRenamerT ts m String
@@ -83,14 +86,19 @@ instance Monad m => RenamerMonad (VarRenamerT ts m) where
                 incIndex
                 assignName name
                 return name
+    renamerGenerateFree :: String -> VarRenamerT ts m String
+    renamerGenerateFree name = withRigidity FreeName $ renamerGenerate [name]
     renamerRemoveName :: String -> VarRenamerT ts m ()
     renamerRemoveName name =
         modifyState $ \state -> let
             newvars = filter ((/=) name) $ rsAssignedNames state
             in state {rsAssignedNames = newvars}
-    renamerGetIsNameRigid :: VarRenamerT ts m (String -> Bool)
-    renamerGetIsNameRigid = do
+    renamerGetNameRigidity :: VarRenamerT ts m (String -> NameRigidity)
+    renamerGetNameRigidity = do
         state <- MkVarRenamerT $ lift get
-        return $ \name -> elem name $ rsRigidNames state
+        return $ \name ->
+            if elem name $ rsRigidNames state
+                then RigidName
+                else FreeName
     renamerRigid :: Monad m => VarRenamerT ts m a -> VarRenamerT ts m a
-    renamerRigid (MkVarRenamerT rma) = MkVarRenamerT $ local (\_ -> True) rma
+    renamerRigid = withRigidity RigidName

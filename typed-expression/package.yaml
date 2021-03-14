@@ -84,7 +84,6 @@ library:
       - Language.Expression.Dolan.Solver
       - Language.Expression.Dolan.Unifier.UnifierM
       - Language.Expression.Dolan.Unifier
-      - Language.Expression.Dolan.Unify
       - Language.Expression.Dolan.Inverted
       - Language.Expression.Dolan.Subsume
       - Language.Expression.Dolan.Nonpolar

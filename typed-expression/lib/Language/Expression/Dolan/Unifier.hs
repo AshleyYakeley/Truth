@@ -128,17 +128,19 @@ unifySingularTypes ::
 unifySingularTypes (VarDolanSingularType na) (VarDolanSingularType nb)
     | Just Refl <- testEquality na nb = pure id
 unifySingularTypes (VarDolanSingularType na) tb =
-    wbind renamerGetIsNameRigid $ \isrigid ->
-        if isrigid $ witnessToValue na
-            then empty
-            else fmap (\conv -> fromJoinMeetLimit @_ @polb . conv) $
-                 solverLiftExpression $ varExpression $ leBisubstitutionWitness na tb
+    wbind renamerGetNameRigidity $ \isrigid ->
+        case isrigid $ witnessToValue na of
+            RigidName -> empty
+            FreeName ->
+                fmap (\conv -> fromJoinMeetLimit @_ @polb . conv) $
+                solverLiftExpression $ varExpression $ leBisubstitutionWitness na tb
 unifySingularTypes ta (VarDolanSingularType nb) =
-    wbind renamerGetIsNameRigid $ \isrigid ->
-        if isrigid $ witnessToValue nb
-            then empty
-            else fmap (\conv -> conv . toJoinMeetLimit @_ @pola) $
-                 solverLiftExpression $ varExpression $ geBisubstitutionWitness nb ta
+    wbind renamerGetNameRigidity $ \isrigid ->
+        case isrigid $ witnessToValue nb of
+            RigidName -> empty
+            FreeName ->
+                fmap (\conv -> conv . toJoinMeetLimit @_ @pola) $
+                solverLiftExpression $ varExpression $ geBisubstitutionWitness nb ta
 unifySingularTypes (GroundDolanSingularType gta argsa) (GroundDolanSingularType gtb argsb) =
     unifyGroundTypes gta argsa gtb argsb
 unifySingularTypes sta@(RecursiveDolanSingularType _ _) stb = solveRecursiveSingularTypes unifyTypes sta stb
@@ -232,7 +234,7 @@ bindUnifierMWit ::
     -> (forall t'.
                 DolanType ground polarity t' -> PolarMapType (DolanPolyShim ground Type) polarity t t' -> Solver ground wit r)
     -> Solver ground wit r
-bindUnifierMWit mst call = wbind (lift $ runUnifierM mst) $ \(MkShimWit wt (MkPolarMap conv)) -> call wt conv
+bindUnifierMWit mst call = wbindUnifierM mst $ \(MkShimWit wt (MkPolarMap conv)) -> call wt conv
 
 bisubstituteUnifier ::
        forall (ground :: GroundTypeKind) a. (IsDolanSubtypeGroundType ground)
@@ -241,15 +243,13 @@ bisubstituteUnifier ::
     -> FullUnifier ground a
 bisubstituteUnifier _ (ClosedExpression a) = pure a
 bisubstituteUnifier bisub@(MkBisubstitution _ vsub mwp _) (OpenExpression (LEBisubstitutionWitness vwit (tw :: _ polarity _) _) uval)
-    | Just Refl <- testEquality vsub vwit
-    , PositiveType <- polarityType @polarity =
+    | Just Refl <- testEquality vsub vwit =
         bindUnifierMWit mwp $ \tp convp -> do
             conv <- unifyTypes tp tw
             val' <- bisubstituteUnifier bisub uval
             pure $ val' $ conv . convp
 bisubstituteUnifier bisub@(MkBisubstitution _ vsub _ mwq) (OpenExpression (GEBisubstitutionWitness vwit (tw :: _ polarity _) _) uval)
-    | Just Refl <- testEquality vsub vwit
-    , NegativeType <- polarityType @polarity =
+    | Just Refl <- testEquality vsub vwit =
         bindUnifierMWit mwq $ \tq convq -> do
             conv <- unifyTypes tw tq
             val' <- bisubstituteUnifier bisub uval

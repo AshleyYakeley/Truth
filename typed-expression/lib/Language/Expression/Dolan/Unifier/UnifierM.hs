@@ -1,7 +1,9 @@
 module Language.Expression.Dolan.Unifier.UnifierM where
 
+import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Dolan.Invert
+import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -38,3 +40,10 @@ invertType ::
     => DolanType ground polarity a
     -> DolanM ground (DolanShimWit ground (InvertPolarity polarity) a)
 invertType t = runUnifierM $ invertTypeM t
+
+wbindUnifierM ::
+       forall (ground :: GroundTypeKind) wit a r. IsDolanSubtypeGroundType ground
+    => UnifierM ground a
+    -> (a -> Solver ground wit r)
+    -> Solver ground wit r
+wbindUnifierM ma = wbind (lift $ runUnifierM ma)
