@@ -598,7 +598,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t NilDolanArguments) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -606,8 +606,10 @@ baseLibEntries =
                             monoToEntityShim $
                             MkMonoType MaybeEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    conv <- subtypeConvert sc t $ topEntityType
-                    pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
+                    conv <- subtypeConvert sc t $ topEntityType @'Negative
+                    pure $ convE . cfmap (iJoinMeetL1 @'Negative . conv)
+                {-
+                -}
           ]
     , docTreeEntry
           "Pairs"
@@ -617,7 +619,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments) :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -626,9 +628,11 @@ baseLibEntries =
                             MkMonoType PairEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    convA <- subtypeConvert sc ta $ topEntityType
-                    convB <- subtypeConvert sc tb $ topEntityType
-                    pure $ convE . applyCoPolyShim (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
+                    convA <- subtypeConvert sc ta $ topEntityType @'Negative
+                    convB <- subtypeConvert sc tb $ topEntityType @'Negative
+                    pure $
+                        convE .
+                        applyCoPolyShim (cfmap (iJoinMeetL1 @'Negative . convA)) (iJoinMeetL1 @'Negative . convB)
           , mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
           , mkValEntry "toPair" "Construct a pair." $ (,) @A @B
@@ -653,7 +657,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments) :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -662,9 +666,11 @@ baseLibEntries =
                             MkMonoType EitherEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    convA <- subtypeConvert sc ta $ topEntityType
-                    convB <- subtypeConvert sc tb $ topEntityType
-                    pure $ convE . applyCoPolyShim (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
+                    convA <- subtypeConvert sc ta $ topEntityType @'Negative
+                    convB <- subtypeConvert sc tb $ topEntityType @'Negative
+                    pure $
+                        convE .
+                        applyCoPolyShim (cfmap (iJoinMeetL1 @'Negative . convA)) (iJoinMeetL1 @'Negative . convB)
           , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
           , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
                 case v of
@@ -687,7 +693,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t NilDolanArguments) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -695,8 +701,8 @@ baseLibEntries =
                             monoToEntityShim $
                             MkMonoType ListEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    conv <- subtypeConvert sc t $ topEntityType
-                    pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
+                    conv <- subtypeConvert sc t $ topEntityType @'Negative
+                    pure $ convE . cfmap (iJoinMeetL1 @'Negative . conv)
           , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                 case l of
                     [] -> fnil

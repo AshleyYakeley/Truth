@@ -2,12 +2,14 @@ module Control.Applicative.Wrapped where
 
 import Shapes
 
-class (Monad (WAWrapper s), Applicative s) => WrappedApplicative s where
-    type WAWrapper s :: Type -> Type
-    wexec :: forall a. WAWrapper s (s a) -> s a
+-- | An 'Applicative' that wraps a 'Monad'.
+class (Monad (WAInnerM s), Applicative s) => WrappedApplicative s where
+    type WAInnerM s :: Type -> Type
+    wexec :: forall a. WAInnerM s (s a) -> s a
+    wremonad :: (forall a. WAInnerM s a -> WAInnerM s a) -> s b -> s b
 
-wbind :: WrappedApplicative s => WAWrapper s a -> (a -> s b) -> s b
+wbind :: WrappedApplicative s => WAInnerM s a -> (a -> s b) -> s b
 wbind ma asb = wexec $ fmap asb ma
 
-wlift :: WrappedApplicative s => WAWrapper s a -> s a
+wlift :: WrappedApplicative s => WAInnerM s a -> s a
 wlift ma = wbind ma pure

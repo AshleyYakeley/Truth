@@ -61,11 +61,12 @@ solverLiftExpression ::
 solverLiftExpression ua = MkSolver $ pure $ fmap pure ua
 
 instance forall (ground :: GroundTypeKind) wit. Monad (DolanM ground) => WrappedApplicative (Solver ground wit) where
-    type WAWrapper (Solver ground wit) = DolanTypeCheckM ground
+    type WAInnerM (Solver ground wit) = DolanTypeCheckM ground
     wexec msa =
         MkSolver $ do
             MkSolver sa <- lift $ msa
             sa
+    wremonad mm (MkSolver sb) = MkSolver $ remonad mm sb
 
 solverMapExpression ::
        forall (ground :: GroundTypeKind) wit a b. IsDolanSubtypeGroundType ground

@@ -64,7 +64,7 @@ abstractNamedExpression ::
     -> TSOpenExpression ts a
     -> TSOuter ts (AbstractResult ts a)
 abstractNamedExpression name expr = do
-    MkNewVar vwt0 _ <- renameNewVar @ts
+    MkNewVar vwt0 _ <- renameNewFreeVar @ts
     abstractNamedExpressionUnifier @ts name vwt0 expr $ \vwt expr' ->
         return $ MkAbstractResult (mapShimWit polar2 vwt) expr'
 
@@ -103,8 +103,8 @@ joinPatternResults ::
     => [PatternResult ts Maybe]
     -> TSOuter ts (PatternResult ts Identity)
 joinPatternResults [] = do
-    MkNewVar tt _ <- renameNewVar @ts
-    MkNewVar _ ta <- renameNewVar @ts
+    MkNewVar tt _ <- renameNewFreeVar @ts
+    MkNewVar _ ta <- renameNewFreeVar @ts
     return $
         MkPatternResult (uuLiftPosShimWit ta) $
         MkAbstractResult (uuLiftNegShimWit tt) $ pure $ \_ -> error "missing case"
@@ -155,7 +155,7 @@ applySealedExpression appw sexprf sexpra =
     withTransConstraintTM @Monad $ do
         MkSealedExpression tf exprf <- rename @ts sexprf
         MkSealedExpression ta expra <- rename @ts sexpra
-        MkNewVar vx tx <- renameNewVar @ts
+        MkNewVar vx tx <- renameNewFreeVar @ts
         let vax = appw ta vx
         uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit tf) (uuLiftNegShimWit vax)
         unifierSolve @ts $ do

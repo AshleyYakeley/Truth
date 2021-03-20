@@ -5,13 +5,12 @@ module Language.Expression.Dolan.Simplify.FullyConstrainedTypeVars
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan.Bisubstitute
-import Language.Expression.Dolan.Inverted
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Simplify.VarUses
-import Language.Expression.Dolan.Solver
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.Unifier
 import Shapes
 
 eliminationBisubs ::
@@ -43,7 +42,7 @@ testInvertedSubtype ::
     -> AnyW (DolanType ground 'Positive)
     -> DolanM ground Bool
 testInvertedSubtype (MkAnyW negtype) (MkAnyW postype) = do
-    mexpr <- mcatch $ runVarRenamerT $ runSolver $ invertedPolarSubtype @ground negtype postype
+    mexpr <- mcatch $ runVarRenamerT $ invertedPolarSubtype @ground negtype postype
     return $
         case mexpr of
             Nothing -> False

@@ -6,7 +6,8 @@ data Polarity
     = Positive
     | Negative
 
-data PolarityType (polarity :: Polarity) where
+type PolarityType :: Polarity -> Type
+data PolarityType polarity where
     PositiveType :: PolarityType 'Positive
     NegativeType :: PolarityType 'Negative
 
@@ -24,6 +25,19 @@ instance Is PolarityType 'Positive where
 
 instance Is PolarityType 'Negative where
     representative = NegativeType
+
+instance WitnessValue PolarityType where
+    type WitnessValueType PolarityType = Polarity
+    witnessToValue :: forall (t :: Polarity). PolarityType t -> Polarity
+    witnessToValue PositiveType = Positive
+    witnessToValue NegativeType = Negative
+    valueToWitness :: forall r. Polarity -> (forall (t :: Polarity). PolarityType t -> r) -> r
+    valueToWitness Positive call = call PositiveType
+    valueToWitness Negative call = call NegativeType
+
+polaritySymbol :: Polarity -> Text
+polaritySymbol Positive = "+"
+polaritySymbol Negative = "-"
 
 type family InvertPolarity polarity = (inv :: Polarity) | inv -> polarity where
     InvertPolarity 'Positive = 'Negative
@@ -58,12 +72,17 @@ isInvertInvertPolarity =
         PositiveType -> Refl
         NegativeType -> Refl
 
+samePolarityType ::
+       forall (p1 :: Polarity) (p2 :: Polarity).
+       PolarityType p1
+    -> PolarityType p2
+    -> Either (p1 :~: p2) (p1 :~: InvertPolarity p2)
+samePolarityType PositiveType PositiveType = Left Refl
+samePolarityType PositiveType NegativeType = Right Refl
+samePolarityType NegativeType PositiveType = Right Refl
+samePolarityType NegativeType NegativeType = Left Refl
+
 samePolarity ::
        forall (p1 :: Polarity) (p2 :: Polarity). (Is PolarityType p1, Is PolarityType p2)
     => Either (p1 :~: p2) (p1 :~: InvertPolarity p2)
-samePolarity =
-    case (polarityType @p1, polarityType @p2) of
-        (PositiveType, PositiveType) -> Left Refl
-        (PositiveType, NegativeType) -> Right Refl
-        (NegativeType, PositiveType) -> Right Refl
-        (NegativeType, NegativeType) -> Left Refl
+samePolarity = samePolarityType (polarityType @p1) (polarityType @p2)

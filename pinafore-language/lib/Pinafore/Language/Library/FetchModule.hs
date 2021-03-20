@@ -43,7 +43,7 @@ loadModuleFromByteString :: PinaforeScope -> FilePath -> LazyByteString -> Pinaf
 loadModuleFromByteString implictScope fpath bs =
     case eitherToResult $ decodeUtf8' $ toStrict bs of
         SuccessResult text -> loadModuleFromText implictScope fpath text
-        FailureResult err -> throw $ MkErrorMessage (initialPos fpath) $ UnicodeDecodeError $ pack $ show err
+        FailureResult err -> throwErrorType (initialPos fpath) $ UnicodeDecodeError $ pack $ show err
 
 textFetchModule :: (ModuleName -> IO (Maybe Text)) -> FetchModule
 textFetchModule getText =

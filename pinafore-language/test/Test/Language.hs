@@ -424,7 +424,9 @@ testQueries =
               ]
         , testTree
               "type signature"
-              [ testQuery "let i : a -> a; i x = x in i 3" $ LRSuccess "3"
+              [ testQuery "let i x = x in i 3" $ LRSuccess "3"
+              , testQuery "let i : tvar -> tvar; i x = x in i 3" $ LRSuccess "3"
+              , testQuery "let i : a -> a; i x = x in i 3" $ LRSuccess "3"
               , testQuery "let i : Number -> Number; i x = x in i 3" $ LRSuccess "3"
               , testQuery "let i : Text -> Text; i x = x in i 3" $ LRCheckFail
               , testQuery "let i : a -> a; i x = x in i \"t\"" $ LRSuccess "t"
@@ -438,6 +440,14 @@ testQueries =
               , testQuery "let i : Either Number Boolean; i = Right False in i" $ LRSuccess "Right False"
               , testQuery "let i : Maybe Number; i = Just 5 in i" $ LRSuccess "Just 5"
               , testQuery "let i : Maybe Number; i = Nothing in i" $ LRSuccess "Nothing"
+              , testTree
+                    "polar"
+                    [ testQuery "let x : Text | Number; x = 3 in x" $ LRSuccess "3"
+                    , testQuery "let f : Any -> Integer; f _ = 3 in f ()" $ LRSuccess "3"
+                    , testQuery "(\\x -> (x,x)) : ((a & Number) -> (Literal,a))" $ LRSuccess "<?>"
+                    , testQuery "let f = (\\x -> (x,x)) : (a & Number) -> (Literal,a) in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "let f : (a & Number) -> (Literal,a); f x = (x,x) in f 3" $ LRSuccess "(3, 3)"
+                    ]
               ]
         , testTree
               "patterns"
@@ -518,7 +528,11 @@ testQueries =
               "subsume"
               [ testQuery "let a : (); a = a in ()" $ LRSuccess "unit"
               , testQuery "let a : Integer; a = a in ()" $ LRSuccess "unit"
+              , testQuery "let a : Integer|Text; a = error \"undefined\" in ()" $ LRSuccess "unit"
               , testQuery "let a : Integer|Text; a = a in ()" $ LRSuccess "unit"
+              , testQuery "let a : Integer|Text; a = 3 in ()" $ LRSuccess "unit"
+              , testQuery "let a : Integer|Text; a = 3; b : Integer|Text; b = 3 in ()" $ LRSuccess "unit"
+              , testQuery "let a : Integer|Text; a = 3; b : Integer|Text; b = a in ()" $ LRSuccess "unit"
               , testQuery "let r = r in let a : Integer|Text; a = r in ()" $ LRSuccess "unit"
               , testQuery "let r = r; a : Integer|Text; a = r in ()" $ LRSuccess "unit"
               , testQuery "let r = a; a : Integer|Text; a = r in ()" $ LRSuccess "unit"
@@ -572,8 +586,10 @@ testQueries =
                                  [ testSameType True "rec a. [a]" "[rec a. [a]]" atree
                                  , testSameType False "rec a. ([a]|Integer)" "[rec a. ([a]|Integer)]|Integer" ["[]"]
                                  , testSameType False "rec a. ([a]|Integer)" "[rec a. ([a]|Integer)]|Integer" ["2"]
-                                 , testSameType False "rec a. [a|Integer]" "[rec a. [a|Integer]|Integer]" ["[]"]
-                                 , testSameType False "rec a. [a|Integer]" "[rec a. [a|Integer]|Integer]" ["[3]"]
+                                 , testSameType False "rec a. [a|Integer]" "[(rec a. [a|Integer])|Integer]" ["[]"]
+                                 , testSameType False "rec a. [a|Integer]" "[(rec a. [a|Integer])|Integer]" ["[3]"]
+                                 , testSameType False "rec a. [a|Integer]" "[rec a. ([a|Integer]|Integer)]" ["[]"]
+                                 , testSameType False "rec a. [a|Integer]" "[rec a. ([a|Integer]|Integer)]" ["[3]"]
                                  ]
                            ]
               , testTree

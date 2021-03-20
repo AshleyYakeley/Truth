@@ -788,6 +788,7 @@ testEntity =
         , context
               [ "runresult ar arg = case ar of Left err -> fail err; Right f -> f arg end"
               , "testaction expected action = do found <- action; testeqval expected found end"
+              , "testleft action = do found <- action; case found of Left _ -> pass; Right _ -> fail \"not Left\" end end"
               ] $
           tgroup
               "evaluate"
@@ -798,8 +799,7 @@ testEntity =
                     "do ar <- evaluate @(Integer -> Integer) \"\\\\x -> x + 1\"; case ar of Left err -> fail err; Right f -> testeqval 8 $ f 7 end end"
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: expecting: expression\") $ evaluate @Integer \"\""
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: undefined: f:a\") $ evaluate @Integer \"f\""
-              , testExpectSuccess
-                    "testaction (Left \"<evaluate>:1:1: cannot convert Text <: Integer\\\n<evaluate>:1:1: cannot subsume Text <: Integer\") $ evaluate @Integer \"\\\"hello\\\"\""
+              , testExpectSuccess "testleft $ evaluate @Integer \"\\\"hello\\\"\""
               , testExpectSuccess
                     "do r <- newMemWhole; ar <- evaluate @(WholeRef Integer -> Action ()) \"\\\\r -> r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
               ]

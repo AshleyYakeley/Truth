@@ -113,7 +113,7 @@ tsVar name =
     runIdentity $
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        MkNewVar vwt twt <- renameNewVar @ts
+        MkNewVar vwt twt <- renameNewFreeVar @ts
         return $ varSealedExpression name vwt twt
 
 tsConst ::
@@ -138,10 +138,7 @@ tsSingleBinding ::
     -> Bindings ts
 tsSingleBinding name madecltype expr =
     singleBinding name $ do
-        madecltype' <-
-            for madecltype $ \(MkAnyW decltype) -> do
-                decltype' <- namespace @ts True $ renamePosWitness @ts decltype
-                return $ MkAnyW decltype'
+        madecltype' <- for madecltype $ renameTypeSignature @ts
         expr' <- rename @ts expr
         subsumerExpression madecltype' expr'
 
@@ -150,7 +147,12 @@ tsSubsumeExpression ::
     => AnyW (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
-tsSubsumeExpression t expr = runRenamer @ts $ withTransConstraintTM @Monad $ subsumeExpression @ts t expr
+tsSubsumeExpression decltype expr =
+    runRenamer @ts $
+    withTransConstraintTM @Monad $ do
+        decltype' <- renameTypeSignature @ts decltype
+        expr' <- rename @ts expr
+        subsumeExpression @ts decltype' expr'
 
 tsUncheckedComponentLet ::
        forall ts. (Ord (TSName ts), CompleteTypeSystem ts)
@@ -166,7 +168,7 @@ tsVarPattern name =
     runIdentity $
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        MkNewVar vwt twt <- renameNewVar @ts
+        MkNewVar vwt twt <- renameNewFreeVar @ts
         return $ varSealedPattern name vwt twt
 
 tsAnyPattern ::
@@ -176,7 +178,7 @@ tsAnyPattern =
     runIdentity $
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        MkNewVar twt _ <- renameNewVar @ts
+        MkNewVar twt _ <- renameNewFreeVar @ts
         return $ anySealedPattern twt
 
 tsBothPattern ::

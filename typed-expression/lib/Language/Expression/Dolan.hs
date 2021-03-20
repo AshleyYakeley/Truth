@@ -70,11 +70,11 @@ import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.RangeF
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Simplify ()
-import Language.Expression.Dolan.Subsume
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unifier ()
+import Language.Expression.Dolan.Unifier
 import Language.Expression.Dolan.Unroll
 import Language.Expression.Dolan.Variance
 import Shapes

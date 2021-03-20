@@ -147,7 +147,7 @@ testType =
               , exprTypeTest "apply id number" (return "{} -> Number") $ apExpr idExpr numExpr
               , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
               , exprTypeTest "apply nb boolean" Nothing $ apExpr nbFuncExpr boolExpr
-              , exprTypeTest "apply id var" (return "{v : c} -> c") $ apExpr idExpr varExpr
+              , exprTypeTest "apply id var" (return "{v : b} -> b") $ apExpr idExpr varExpr
               , exprTypeTest "apply nb var" (return "{v : Number} -> Boolean") $ apExpr nbFuncExpr varExpr
               , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
               , exprTypeTest "list1" (return "{} -> a -> [a]") $ return list1Expr
@@ -175,7 +175,7 @@ testType =
                     e1 <- apExpr dotExpr sndExpr
                     apExpr e1 thingExpr
               , exprTypeTest "twice" (return "{} -> a -> (a, a)") $ return twiceExpr
-              , exprTypeTest "thing . twice" (return "{} -> d -> (d, d)") $ do
+              , exprTypeTest "thing . twice" (return "{} -> e -> (e, e)") $ do
                     e1 <- apExpr dotExpr thingExpr
                     apExpr e1 twiceExpr
               , exprTypeTest "thing $ twice number" (return "{} -> (Number, Number)") $ do
@@ -229,6 +229,15 @@ testType =
                     "((v 3,v False),v 3)"
                     "{v : Integer -> c, v : Boolean -> d, v : Integer -> b} -> ((c, d), b)"
               , textTypeTest "let v = x in [v,v,v]" "{x : a, x : a, x : a} -> [a]"
+              , testTree
+                    "function"
+                    [ textTypeTest "let i: tvar -> tvar; i = id in i" "{} -> tvar -> tvar"
+                    , textTypeTest "id: tvar -> tvar" "{} -> tvar -> tvar"
+                    , textTypeTest "let i x = x in i" "{} -> a -> a"
+                    , textTypeTest "let i : a -> a; i x = x in i" "{} -> a -> a"
+                    , textTypeTest "let i : tvar -> tvar; i x = x in i" "{} -> tvar -> tvar"
+                    , textTypeTest "let i : a -> a; i x = x in i 3" "{} -> Integer"
+                    ]
               , textTypeTest "\\x -> let v = x in [v,v,v]" "{} -> a -> [a]"
               , textTypeTest "\\v1 v2 -> [v1,v2]" "{} -> a -> a -> [a]"
               , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> c -> (a & c) -> a -> ([c], [a])"
@@ -287,7 +296,7 @@ testType =
                           "{} -> Integer"
                     , textTypeTest
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just rval in ((rcount,rval),rcount rval)"
-                          "{} -> (((rec c. Maybe c) -> Integer, rec d. Maybe d), Integer)"
+                          "{} -> (((rec c. Maybe c) -> Integer, rec c. Maybe c), Integer)"
                     ]
               ]
         , testTree

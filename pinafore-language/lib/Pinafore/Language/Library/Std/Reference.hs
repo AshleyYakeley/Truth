@@ -352,37 +352,37 @@ refLibEntries =
                 , mkSubtypeRelationEntry "WholeRef [a]" "ListRef a" "" $
                   pure $
                   simpleSubtypeConversionEntry wholeRefGroundType listRefGroundType $
-                  MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments (MkRangeType t1 t2) NilDolanArguments) ->
-                      invertPolarity @pola $
-                      invertPolarity @polb $ do
-                          MkVarType var <- renamerGenerateUVar []
+                  MkSubtypeConversion $ \sc (ConsDolanArguments (MkRangeType t1 t2) NilDolanArguments :: _ pola _) ->
+                      invertPolarity @pola $ do
+                          MkVarType var <- renamerGenerateFreeUVar []
                           let
                               var1a :: PinaforeType (InvertPolarity pola) _
                               var1a = singleDolanType $ VarDolanSingularType var
                               var2a :: PinaforeType pola _
                               var2a = singleDolanType $ VarDolanSingularType var
-                              var1b :: PinaforeType (InvertPolarity polb) _
+                              var1b :: PinaforeType (InvertPolarity 'Negative) _
                               var1b = singleDolanType $ VarDolanSingularType var
-                              var2b :: PinaforeType polb _
+                              var2b :: PinaforeType 'Negative _
                               var2b = singleDolanType $ VarDolanSingularType var
-                              varList1 :: PinaforeType (InvertPolarity polb) _
+                              varList1 :: PinaforeType (InvertPolarity 'Negative) _
                               varList1 =
                                   singleDolanType $
                                   GroundDolanSingularType listGroundType $ ConsDolanArguments var1b NilDolanArguments
-                              varList2 :: PinaforeType polb _
+                              varList2 :: PinaforeType 'Negative _
                               varList2 =
                                   singleDolanType $
                                   GroundDolanSingularType listGroundType $ ConsDolanArguments var2b NilDolanArguments
                           return $
                               MkSubtypeArguments (ConsDolanArguments (MkRangeType var1a var2a) NilDolanArguments) $ do
-                                  rconv1 <- subtypeConvert (subtypeInverted sc) varList1 t1
+                                  rconv1 <- subtypeConvert sc varList1 t1
                                   rconv2 <- subtypeConvert sc t2 varList2
                                   pure $ let
                                       conv1 =
                                           rconv1 .
-                                          iJoinMeetR1 @(InvertPolarity polb) .
-                                          applyCoPolyShim cid (iJoinMeetR1 @(InvertPolarity polb))
-                                      conv2 = applyCoPolyShim cid (iJoinMeetL1 @polb) . iJoinMeetL1 @polb . rconv2
+                                          iJoinMeetR1 @(InvertPolarity 'Negative) .
+                                          applyCoPolyShim cid (iJoinMeetR1 @(InvertPolarity 'Negative))
+                                      conv2 =
+                                          applyCoPolyShim cid (iJoinMeetL1 @'Negative) . iJoinMeetL1 @'Negative . rconv2
                                       convv = applyRangePolyShim cid conv1 conv2
                                       in applyRangePolyShim cid (iJoinMeetL1 @(InvertPolarity pola)) (iJoinMeetR1 @pola) .
                                          (functionToShim "WholeRef to ListRef" langWholeRefToListRef) . convv
@@ -469,19 +469,18 @@ refLibEntries =
           , mkSubtypeRelationEntry "a -> a -> Ordering" "RefOrder a" "" $
             pure $
             simpleSubtypeConversionEntry funcGroundType refOrderGroundType $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t1 (ConsDolanArguments t2o NilDolanArguments)) ->
-                invertPolarity @pola $
-                invertPolarity @polb $ do
-                    MkVarType var <- renamerGenerateUVar []
+            MkSubtypeConversion $ \sc (ConsDolanArguments t1 (ConsDolanArguments t2o NilDolanArguments) :: _ pola _) ->
+                invertPolarity @pola $ do
+                    MkVarType var <- renamerGenerateFreeUVar []
                     let
                         vara :: PinaforeType (InvertPolarity pola) _
                         vara = singleDolanType $ VarDolanSingularType var
-                        varb :: PinaforeType (InvertPolarity polb) _
+                        varb :: PinaforeType (InvertPolarity 'Negative) _
                         varb = singleDolanType $ VarDolanSingularType var
-                        vconv = iJoinMeetR1 @(InvertPolarity polb) . iJoinMeetL1 @(InvertPolarity pola)
+                        vconv = iJoinMeetR1 @(InvertPolarity 'Negative) . iJoinMeetL1 @(InvertPolarity pola)
                     return $
                         MkSubtypeArguments (ConsDolanArguments vara NilDolanArguments) $ do
-                            conv1 <- subtypeConvert (subtypeInverted sc) varb t1
+                            conv1 <- subtypeConvert sc varb t1
                             conv2 <-
                                 subtypeConvert sc t2o $
                                 singleDolanType $
@@ -498,8 +497,8 @@ refLibEntries =
                                 (functionToShim "Order to RefOrder" pureRefOrder) .
                                 applyCoPolyShim
                                     (applyContraPolyShim cid $ conv1 . vconv)
-                                    (applyCoPolyShim (applyContraPolyShim cid vconv) (iJoinMeetL1 @polb) .
-                                     iJoinMeetL1 @polb . conv2)
+                                    (applyCoPolyShim (applyContraPolyShim cid vconv) (iJoinMeetL1 @'Negative) .
+                                     iJoinMeetL1 @'Negative . conv2)
           , mkValEntry "orders" "Join `RefOrder`s by priority." $ refOrders @A
           , mkValEntry
                 "mapOrder"
