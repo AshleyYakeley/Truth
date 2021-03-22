@@ -250,7 +250,7 @@ instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
 -- PinaforeImmutableWholeRef
 instance (FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
              FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (PinaforeImmutableWholeRef a) where
-    fromShimWit = mapNegShimWit (functionToShim "subtype" langWholeRefToImmutable) fromJMShimWit
+    fromShimWit = mapNegShimWit (functionToShim "subtype" $ langWholeRefToImmutable @BottomType) fromJMShimWit
 
 instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (PinaforeImmutableWholeRef a) where

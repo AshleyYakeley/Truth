@@ -165,12 +165,12 @@ getSetList order val = do
         eaMap (liftOrderedListChangeLens (constWholeChangeLens meet2) . tupleChangeLens SelectContent) $ MkWModel colSub
 
 setentity :: LangWholeRef '( A, TopType) -> A -> PinaforeAction ()
-setentity ref val = langWholeRefSet ref (Known val)
+setentity ref val = langWholeRefSet ref $ Known val
 
 deleteentity :: LangWholeRef '( BottomType, TopType) -> PinaforeAction ()
 deleteentity ref = langWholeRefSet ref Unknown
 
-newMemWhole :: PinaforeAction (LangWholeRef '( A, A))
+newMemWhole :: forall a. PinaforeAction (LangWholeRef '( a, a))
 newMemWhole = do
     r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
     model <- liftLifeCycle $ makeReflectingModel r
@@ -238,12 +238,12 @@ refLibEntries =
                       "`p ?? q` = `p` if it is known, else `q`."
                       ((<|>) :: PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef A)
                 , mkValEntry "get" "Get a whole reference, or `stop` if the whole reference is unknown." $
-                  langWholeRefGet @A
+                  langWholeRefGet @BottomType @A
                 , mkValEntry ":=" "Set a whole reference to a value. Stop if failed." setentity
                 , mkValEntry "delete" "Delete a whole reference (i.e., make unknown). Stop if failed." deleteentity
                 , mkValEntry "subscribeWhole" "Do an action initially and on every update, until closed." $
                   langWholeRefSubscribe @A
-                , mkValEntry "newMemWhole" "Create a new whole reference to memory, initially unknown." newMemWhole
+                , mkValEntry "newMemWhole" "Create a new whole reference to memory, initially unknown." $ newMemWhole @A
                 ]
           , docTreeEntry
                 "Set References"
