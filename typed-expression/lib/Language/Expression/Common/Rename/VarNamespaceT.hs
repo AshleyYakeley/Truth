@@ -19,12 +19,11 @@ class Monad m => RenamerMonad m where
     renamerGetNameRigidity :: m (String -> NameRigidity)
 
 renamerGenerateFreeUVar ::
-       forall k name m. RenamerMonad m
-    => [SymbolType name]
-    -> m (VarType (UVar k name))
-renamerGenerateFreeUVar oldvars = do
-    newname <- renamerGenerate FreeName $ fmap uVarName oldvars
-    return $ newAssignUVar newname
+       forall m. RenamerMonad m
+    => m AnyVar
+renamerGenerateFreeUVar = do
+    newname <- renamerGenerate FreeName []
+    return $ newUVarAny newname
 
 newtype VarNamespaceT (ts :: Type) m a =
     MkVarNamespaceT (ReaderT NameRigidity (StateT [(String, String)] m) a)

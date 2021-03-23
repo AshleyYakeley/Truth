@@ -354,7 +354,7 @@ refLibEntries =
                   simpleSubtypeConversionEntry wholeRefGroundType listRefGroundType $
                   MkSubtypeConversion $ \sc (ConsDolanArguments (MkRangeType t1 t2) NilDolanArguments :: _ pola _) ->
                       invertPolarity @pola $ do
-                          MkVarType var <- renamerGenerateFreeUVar []
+                          MkAnyVar var <- renamerGenerateFreeUVar
                           let
                               var1a :: PinaforeType (InvertPolarity pola) _
                               var1a = singleDolanType $ VarDolanSingularType var
@@ -471,7 +471,7 @@ refLibEntries =
             simpleSubtypeConversionEntry funcGroundType refOrderGroundType $
             MkSubtypeConversion $ \sc (ConsDolanArguments t1 (ConsDolanArguments t2o NilDolanArguments) :: _ pola _) ->
                 invertPolarity @pola $ do
-                    MkVarType var <- renamerGenerateFreeUVar []
+                    MkAnyVar var <- renamerGenerateFreeUVar
                     let
                         vara :: PinaforeType (InvertPolarity pola) _
                         vara = singleDolanType $ VarDolanSingularType var

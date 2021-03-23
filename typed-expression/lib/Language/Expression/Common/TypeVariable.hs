@@ -4,15 +4,16 @@ module Language.Expression.Common.TypeVariable
     , UVarT
     , uVarName
     , newUVar
+    , AnyVar(..)
+    , newUVarAny
     , assignUVar
+    , assignUVarT
     , assignUVarWit
     , VarType(..)
     , varTypeName
     , newAssignUVar
-    , renameUVar
     ) where
 
---import Language.Expression.Common.TypeFunction
 import Shapes
 import Shapes.Unsafe (unsafeRefl)
 
@@ -27,8 +28,17 @@ uVarName = witnessToValue
 newUVar :: forall r. String -> (forall (newname :: Symbol). SymbolType newname -> r) -> r
 newUVar = valueToWitness
 
+data AnyVar =
+    forall name. MkAnyVar (SymbolType name)
+
+newUVarAny :: String -> AnyVar
+newUVarAny nstr = newUVar nstr MkAnyVar
+
 assignUVar :: forall (k :: Type) (t :: k) (name :: Symbol) r. SymbolType name -> (UVar k name ~ t => r) -> r
 assignUVar _ = withRefl $ unsafeRefl @k @(UVar k name) @t
+
+assignUVarT :: forall (t :: Type) (name :: Symbol) r. SymbolType name -> (UVarT name ~ t => r) -> r
+assignUVarT = assignUVar @Type @t
 
 assignUVarWit ::
        forall (k :: Type) (t :: k) (name :: Symbol) (w :: k -> Type) r.
@@ -47,6 +57,3 @@ varTypeName (MkVarType var) = uVarName var
 
 newAssignUVar :: forall (k :: Type) (t :: k). String -> VarType t
 newAssignUVar nstr = newUVar nstr $ \nsym -> assignUVar @k @t nsym $ MkVarType nsym
-
-renameUVar :: forall (k :: Type) (oldname :: Symbol). SymbolType oldname -> String -> VarType (UVar k oldname)
-renameUVar _ newname = newAssignUVar @k @(UVar k oldname) newname
