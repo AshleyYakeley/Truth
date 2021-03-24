@@ -9,27 +9,20 @@ import Test.RunScript
 
 testLib :: LibraryModule
 testLib = let
-    specialA :: forall a. PinaforeAction ([a] -> [a])
-    specialA = return id
-    specialB :: forall a. a -> (a -> PinaforeAction ()) -> PinaforeAction ([a] -> [a]) -> PinaforeAction ()
-    specialB v0 withVal mr = do
-        liftIO $ hPutStrLn stderr "specialB ["
-        r <- mr
-        let
-            l0 = [v0]
-            l1 = r l0
-            l2 = r l1
-        for_ l2 withVal
-        liftIO $ hPutStrLn stderr "specialB ]"
-    specialMsgT :: Text -> PinaforeAction ()
-    specialMsgT x = liftIO $ hPutStrLn stderr $ unpack x
-    specialMsgI :: Integer -> PinaforeAction ()
-    specialMsgI x = liftIO $ hPutStrLn stderr $ show x
+    f :: forall a. a -> (a -> PinaforeAction ()) -> (a -> a) -> PinaforeAction ()
+    f v withVal r = do
+        liftIO $ hPutStrLn stderr "f ["
+        withVal $ r $ r v
+        liftIO $ hPutStrLn stderr "f ]"
+    msgT :: Text -> PinaforeAction ()
+    msgT x = liftIO $ hPutStrLn stderr $ unpack x
+    msgI :: Integer -> PinaforeAction ()
+    msgI x = liftIO $ hPutStrLn stderr $ show x
     in MkDocTree "TEST" "" $
-       [ mkValEntry "specialA" "TEST" $ specialA @X
-       , mkValEntry "specialB" "TEST" $ specialB @Y
-       , mkValEntry "specialMsgT" "TEST" $ specialMsgT
-       , mkValEntry "specialMsgI" "TEST" $ specialMsgI
+       [ mkValEntry "i" "TEST" $ (id :: Text -> Text)
+       , mkValEntry "f" "TEST" $ f @X
+       , mkValEntry "msgT" "TEST" $ msgT
+       , mkValEntry "msgI" "TEST" $ msgI
        ]
 
 testUnifier :: TestTree
@@ -41,7 +34,8 @@ testUnifier =
           tDecls ["import TEST"] $
           tGroup
               "ISSUE 108"
-              [ tModify (failTestBecause "ISSUE 108") $ testExpectSuccess "specialB \"PQPQPQ\" specialMsgT specialA"
-              , tModify (failTestBecause "ISSUE 108") $ testExpectSuccess "specialB 10 specialMsgI specialA"
+              [ tModify (failTestBecause "ISSUE 108") $ testExpectSuccess "f \"PQPQPQ\" msgT i"
+              , tModify (failTestBecause "ISSUE 108") $ testExpectSuccess "f \"PQPQPQ\" msgT id"
+              , tModify (failTestBecause "ISSUE 108") $ testExpectSuccess "f 10 msgI id"
               ]
         ]
