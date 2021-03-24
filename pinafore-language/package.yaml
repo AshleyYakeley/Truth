@@ -102,6 +102,7 @@ tests:
         other-modules:
           - Test.RunScript
           - Test.Language
+          - Test.Unifier
           - Test.Entity
           - Test.Type
           - Test.ReadType

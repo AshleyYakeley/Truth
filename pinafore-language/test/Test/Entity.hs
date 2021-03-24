@@ -153,7 +153,7 @@ testEntity =
               , testExpectSuccess "expectStop $ do r <- newMemWhole; immutWhole r := 5; end"
               ]
         , tDecls
-              [ "showList: [Literal] -> Action (); showList l = for_ l (outputLn . toText)"
+              [ "showList: [Literal] -> Action (); showList l = do Debug.message \"[[[\"; for_ l (Debug.message . toText);  Debug.message \"]]]\"; end"
               , mif False "testImmutList: Boolean -> Integer -> (ListRef Integer -> Action ()) -> Action ();" <>
                 "testImmutList present n call = do lr <- newMemWhole; lr := [10,20,30]; r <- listGetItemRef present n lr; ir <- listGetItemRef present n $ immutWhole lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
               ] $
