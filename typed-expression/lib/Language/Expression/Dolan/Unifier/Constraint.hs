@@ -29,21 +29,9 @@ data UnifierConstraint ground t where
 
 instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (UnifierConstraint ground t) where
     show (LEUnifierConstraint var polwit wt recflag) =
-        withRepresentative polwit $ let
-            rs :: String
-            rs =
-                if recflag
-                    then "rec"
-                    else "nonrec"
-            in show var <> " <: " <> showDolanType wt <> " (" <> rs <> ")"
+        withRepresentative polwit $ mif recflag "REC " <> show var <> " <: " <> showDolanType wt
     show (GEUnifierConstraint var polwit wt recflag) =
-        withRepresentative polwit $ let
-            rs :: String
-            rs =
-                if recflag
-                    then "rec"
-                    else "nonrec"
-            in show var <> " :> " <> showDolanType wt <> " (" <> rs <> ")"
+        withRepresentative polwit $ mif recflag "REC " <> show var <> " :> " <> showDolanType wt
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground =>
              AllWitnessConstraint Show (UnifierConstraint ground) where

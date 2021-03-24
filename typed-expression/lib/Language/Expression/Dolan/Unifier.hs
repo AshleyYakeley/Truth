@@ -75,12 +75,12 @@ bisubstituteUnifier bisub@(MkBisubstitution _ vsub _ mwq) (OpenExpression (GEUni
             val' <- bisubstituteUnifier bisub expr
             pure $ val' $ convq . conv
 bisubstituteUnifier bisub (OpenExpression (LEUnifierConstraint vn NegativeType tw _) expr) =
-    bindUnifierMWit (bisubstituteShimWit bisub $ mkShimWit tw) $ \tp' conv -> do
+    bindUnifierMWit (bisubstituteType bisub  tw) $ \tp' conv -> do
         val' <- bisubstituteUnifier bisub expr
         pv <- solverLiftExpression $ bisubstituteNegativeVar vn tp'
         pure $ val' $ conv . pv
 bisubstituteUnifier bisub (OpenExpression (GEUnifierConstraint vn PositiveType tw _) expr) =
-    bindUnifierMWit (bisubstituteShimWit bisub $ mkShimWit tw) $ \tp' conv -> do
+    bindUnifierMWit (bisubstituteType bisub  tw) $ \tp' conv -> do
         val' <- bisubstituteUnifier bisub expr
         pv <- solverLiftExpression $ bisubstitutePositiveVar vn tp'
         pure $ val' $ pv . conv

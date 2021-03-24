@@ -5,7 +5,6 @@ module Language.Expression.Dolan.Bisubstitute
     , mkSingleBisubstitution
     , Bisubstitutable(..)
     , bisubstituteType
-    , bisubstituteShimWit
     , bisubstitutesType
     , bisubstitutes
     , GenShim
@@ -131,14 +130,6 @@ bisubstituteType bisub wt =
     deferredBisubstitution bisub $ \dbisub -> do
         MkShimWit wt' fconv <- deferBisubstituteType dbisub wt
         return $ MkShimWit wt' $ applyPolarPolyFuncShim fconv (id, id)
-
-bisubstituteShimWit ::
-       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (w :: Polarity -> Type -> Type) m t.
-       (Bisubstitutable ground pshim polarity (w polarity), GenShim pshim, Is PolarityType polarity, MonadOne m)
-    => Bisubstitution ground (pshim Type) m
-    -> PShimWit (pshim Type) w polarity t
-    -> m (PShimWit (pshim Type) (DolanType ground) polarity t)
-bisubstituteShimWit sub = chainShimWitM $ bisubstituteType sub
 
 instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( IsDolanGroundType ground
          , GenShim pshim
