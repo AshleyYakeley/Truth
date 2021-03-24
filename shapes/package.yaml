@@ -81,6 +81,7 @@ library:
       - Shapes.Numeric
       - Shapes.Unsafe
       - Shapes.Test
+      - Shapes.Test.Context
     other-modules:
       - Shapes.Import
       - Shapes.Instances

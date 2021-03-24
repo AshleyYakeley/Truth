@@ -100,7 +100,6 @@ tests:
           - pinafore-language
         main: Main.hs
         other-modules:
-          - Test.Context
           - Test.RunScript
           - Test.Language
           - Test.Entity

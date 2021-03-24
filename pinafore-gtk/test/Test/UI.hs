@@ -94,10 +94,10 @@ runClickButton _ = do
 noTestAction :: ChangesContext -> View ()
 noTestAction _ = return ()
 
-testUIAction :: Timing -> Text -> (ChangesContext -> View ()) -> ContextTestTree
-testUIAction timing text testaction = contextTestCase text text $ runUIAction timing testaction
+testUIAction :: Timing -> Text -> (ChangesContext -> View ()) -> ScriptTestTree
+testUIAction timing text testaction = scriptTestCase text text $ runUIAction timing testaction
 
-testActions :: Timing -> [ContextTestTree]
+testActions :: Timing -> [ScriptTestTree]
 testActions timing =
     [ testUIAction timing "return ()" noTestAction
     , testUIAction timing "newpoint" noTestAction
@@ -114,8 +114,8 @@ testActions timing =
 
 testUI :: TestTree
 testUI =
-    runContext $
-    context
+    runScriptTestTree $
+    tDecls
         [ "emptywindow: Action ()"
         , "emptywindow = do UI.openWindow (300,400) {\"Empty\"} {[]} UI.blank; return (); end"
         , "opentype T"
@@ -124,4 +124,4 @@ testUI =
         , "buttonwindow: Action Any -> Action ()"
         , "buttonwindow action = do UI.openWindow (300,400) {\"Test\"} {[]} (UI.button {\"Button\"} {action}); return (); end"
         ] $
-    tgroup "UI" [tgroup "immediate" $ testActions SyncTiming, tgroup "wait" $ testActions AsyncTiming]
+    tGroup "UI" [tGroup "immediate" $ testActions SyncTiming, tGroup "wait" $ testActions AsyncTiming]
