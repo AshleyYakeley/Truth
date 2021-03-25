@@ -36,7 +36,11 @@ tsUnify ::
     => TSPosShimWit ts a
     -> TSNegShimWit ts b
     -> TSInner ts (TSShim ts a b)
-tsUnify wa wb = runRenamer @ts $ solveUnifyPosNegShimWit @ts wa wb
+tsUnify wa wb =
+    runRenamer @ts $ do
+        wa' <- rename @ts wa
+        wb' <- rename @ts wb
+        solveUnifyPosNegShimWit @ts wa' wb'
 
 tsEval ::
        forall ts m. (MonadThrow ExpressionError m, Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
