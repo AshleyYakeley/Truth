@@ -10,14 +10,12 @@ import Shapes
 import Test.RunScript
 
 testUpdate :: Text -> ScriptTestTree
-testUpdate text = let
-    expected :: ScriptExpectation
-    expected =
-        ScriptExpectSuccessResult $ \cc (sendUpdate, ref) ->
-            runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
+testUpdate text =
+    testExpression text text $ \cc interpret -> do
+        (sendUpdate, ref) <- liftIO interpret
+        runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $
             ccUnliftLifeCycle cc $ ccRunView cc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
-    in testPinaforeScript text expected text
 
 testUpdates :: TestTree
 testUpdates = runScriptTestTree $ tGroup "update" [testUpdate "do ref <- newMemWhole; return (ref := 1, ref) end"]

@@ -7,8 +7,9 @@ module Test.RunScript
     , tModule
     , tLibrary
     , runScriptTestTree
+    , testExpression
     , ScriptExpectation(..)
-    , testPinaforeScript
+    , testScriptExpectation
     , testExpectSuccess
     , testExpectThrow
     , testExpectReject
@@ -57,57 +58,65 @@ runScriptTestTree =
 prefix :: [String] -> Text
 prefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
 
+testExpression ::
+       forall a. FromPinaforeType a
+    => Text
+    -> Text
+    -> ((?pinafore :: PinaforeContext) => ChangesContext -> IO a -> LifeCycle ())
+    -> ScriptTestTree
+testExpression name script call =
+    MkContextTestTree $ \MkScriptContext {..} ->
+        testTree (unpack name) $ let
+            fullscript = prefix scDeclarations <> script
+            in withTestPinaforeContext scFetchModule stdout $ \cc unlift _getTableState ->
+                   unlift $ call cc $ throwInterpretResult $ pinaforeInterpretTextAtType "<test>" fullscript
+
+testScript ::
+       Text
+    -> Text
+    -> ((?pinafore :: PinaforeContext) => ChangesContext -> IO (PinaforeAction ()) -> IO ())
+    -> ScriptTestTree
+testScript name script call =
+    testExpression @(PinaforeAction ()) name script $ \cc interpret -> liftIO $ call cc interpret
+
+testScriptCatchStop ::
+       Text
+    -> Text
+    -> ((?pinafore :: PinaforeContext) => ChangesContext -> IO (PinaforeAction ()) -> IO ())
+    -> ScriptTestTree
+testScriptCatchStop name script = testScript name $ "onStop (" <> script <> ") (fail \"stopped\")"
+
 data ScriptExpectation
     = ScriptExpectRejection (PinaforeError -> Bool)
     | ScriptExpectRuntimeException (IOException -> Bool)
     | ScriptExpectStop
     | ScriptExpectSuccess
-    | forall a. FromPinaforeType a =>
-                    ScriptExpectSuccessResult ((?pinafore :: PinaforeContext) => ChangesContext -> a -> LifeCycle ())
 
-testPinaforeScript :: Text -> ScriptExpectation -> Text -> ScriptTestTree
-testPinaforeScript name expect script =
-    MkContextTestTree $ \MkScriptContext {..} ->
-        testTree (unpack name) $ let
-            fullscript = prefix scDeclarations <> script
-            runTest ::
-                   forall a. (FromPinaforeType a, ?pinafore :: PinaforeContext, ?library :: LibraryContext)
-                => IO (PinaforeAction a)
-            runTest = throwInterpretResult $ pinaforeInterpretTextAtType "<test>" fullscript
-            runTestCatchStop ::
-                   forall a. (FromPinaforeType a, ?pinafore :: PinaforeContext, ?library :: LibraryContext)
-                => IO (PinaforeAction a)
-            runTestCatchStop =
-                throwInterpretResult $
-                pinaforeInterpretTextAtType "<test>" $ "onStop (" <> fullscript <> ") (fail \"stopped\")"
-            in withTestPinaforeContext scFetchModule stdout $ \cc unlift _getTableState ->
-                   case expect of
-                       ScriptExpectRejection checkEx -> assertThrowsException checkEx $ runTest @()
-                       ScriptExpectRuntimeException checkEx -> do
-                           action <- runTest @()
-                           assertThrowsException checkEx $ ccRunView cc emptyResourceContext $ runPinaforeAction action
-                       ScriptExpectStop -> do
-                           action <- runTestCatchStop @()
-                           assertThrowsException @IOException (\err -> show err == "user error (stopped)") $
-                               ccRunView cc emptyResourceContext $ runPinaforeAction action
-                       ScriptExpectSuccess -> do
-                           action <- runTestCatchStop @()
-                           ccRunView cc emptyResourceContext $ runPinaforeAction action
-                       ScriptExpectSuccessResult (checkResult :: ChangesContext -> a -> LifeCycle ()) -> do
-                           action <- runTestCatchStop @a
-                           r <-
-                               ccUnliftLifeCycle cc $
-                               ccRunView cc emptyResourceContext $ unliftPinaforeActionOrFail action
-                           unlift $ checkResult cc r
+testScriptExpectation :: Text -> ScriptExpectation -> Text -> ScriptTestTree
+testScriptExpectation name (ScriptExpectRejection checkEx) script =
+    testScript name script $ \_ interpret -> assertThrowsException checkEx interpret
+testScriptExpectation name (ScriptExpectRuntimeException checkEx) script =
+    testScript name script $ \cc interpret -> do
+        action <- interpret
+        assertThrowsException checkEx $ ccRunView cc emptyResourceContext $ runPinaforeAction action
+testScriptExpectation name ScriptExpectStop script =
+    testScriptCatchStop name script $ \cc interpret -> do
+        action <- interpret
+        assertThrowsException @IOException (\err -> show err == "user error (stopped)") $
+            ccRunView cc emptyResourceContext $ runPinaforeAction action
+testScriptExpectation name ScriptExpectSuccess script =
+    testScriptCatchStop name script $ \cc interpret -> do
+        action <- interpret
+        ccRunView cc emptyResourceContext $ runPinaforeAction action
 
 testExpectSuccess :: Text -> ScriptTestTree
-testExpectSuccess script = testPinaforeScript script ScriptExpectSuccess script
+testExpectSuccess script = testScriptExpectation script ScriptExpectSuccess script
 
 testExpectThrow :: Text -> ScriptTestTree
-testExpectThrow script = testPinaforeScript ("THROW: " <> script) (ScriptExpectRuntimeException $ pure True) script
+testExpectThrow script = testScriptExpectation ("THROW: " <> script) (ScriptExpectRuntimeException $ pure True) script
 
 testExpectReject :: Text -> ScriptTestTree
-testExpectReject script = testPinaforeScript ("REJECT: " <> script) (ScriptExpectRejection $ pure True) script
+testExpectReject script = testScriptExpectation ("REJECT: " <> script) (ScriptExpectRejection $ pure True) script
 
 testExpectStop :: Text -> ScriptTestTree
-testExpectStop script = testPinaforeScript ("STOP: " <> script) ScriptExpectStop script
+testExpectStop script = testScriptExpectation ("STOP: " <> script) ScriptExpectStop script
