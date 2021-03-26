@@ -84,14 +84,20 @@ idText = id
 
 testLib :: LibraryModule
 testLib = let
-    msgT :: Text -> PinaforeAction ()
-    msgT x = liftIO $ hPutStrLn stderr $ unpack x
-    msgI :: Integer -> PinaforeAction ()
-    msgI x = liftIO $ hPutStrLn stderr $ show x
+    testSameT :: Text -> Text -> PinaforeAction ()
+    testSameT expected found =
+        if expected == found
+            then return ()
+            else fail "different"
+    testSameI :: Integer -> Integer -> PinaforeAction ()
+    testSameI expected found =
+        if expected == found
+            then return ()
+            else fail "different"
     in MkDocTree "TEST" "" $
        [ mkValEntry "idText" "TEST" idText
-       , mkValEntry "msgT" "TEST" msgT
-       , mkValEntry "msgI" "TEST" msgI
+       , mkValEntry "testSameT" "TEST" testSameT
+       , mkValEntry "testSameI" "TEST" testSameI
        , mkValEntry "op1" "TEST" op1
        , mkValEntry "op2" "TEST" op2
        , mkValEntry "op3" "TEST" op3
@@ -133,8 +139,8 @@ testUnifier =
                     , testInterpret @((Text -> Text) -> Text) "op1 \"PQPQPQ\"" $ \found ->
                           assertEqual "" "PQPQPQ" $ found id
                     , testInterpret @Text "op1 \"PQPQPQ\" id" $ \found -> assertEqual "" "PQPQPQ" found
-                    , testExpectSuccess "msgT $ op1 \"PQPQPQ\" idText"
-                    , testExpectSuccess "msgT $ op1 \"PQPQPQ\" id"
+                    , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" idText"
+                    , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" id"
                     ]
               ]
         , testTree
@@ -185,8 +191,10 @@ testUnifier =
                           assertEqual "" "PQPQPQ" $ found id
                     , tModify (failTestBecause "ISSUE #108") $
                       testInterpret @Text "op2 \"PQPQPQ\" id idText" $ \found -> assertEqual "" "PQPQPQ" found
-                    , tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "msgT $ op2 \"PQPQPQ\" id idText"
-                    , tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "msgT $ op2 \"PQPQPQ\" id id"
+                    , tModify (failTestBecause "ISSUE #108") $
+                      testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id idText"
+                    , tModify (failTestBecause "ISSUE #108") $
+                      testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id id"
                     ]
               ]
         , testTree
@@ -198,9 +206,12 @@ testUnifier =
                 tDecls ["import TEST"] $
                 tGroup
                     "interpret"
-                    [ tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "op3 \"PQPQPQ\" msgT idText"
-                    , tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "op3 \"PQPQPQ\" msgT id"
-                    , tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "op3 10 msgI id"
+                    [ testExpectSuccess "testSameT \"PQPQPQ\" \"PQPQPQ\""
+                    , tModify (failTestBecause "ISSUE #108") $
+                      testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") idText"
+                    , tModify (failTestBecause "ISSUE #108") $
+                      testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") id"
+                    , tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "op3 10 (testSameI 10) id"
                     ]
               ]
         ]
