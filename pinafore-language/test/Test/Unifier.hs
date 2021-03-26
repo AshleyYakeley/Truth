@@ -20,12 +20,16 @@ testValue name call = testTree (unpack name) $ withTestPinaforeContext mempty st
 
 testUnifyToType ::
        forall t. FromPinaforeType t
-    => QValue
+    => PinaforeSourceInterpreter QValue
     -> (t -> IO ())
     -> TestTree
-testUnifyToType val checkval =
+testUnifyToType mval checkval =
     testValue ("unify to " <> qNegativeTypeDescription @t) $ do
-        found <- throwInterpretResult $ runPinaforeSourceScoped "<test>" $ typedAnyToPinaforeVal @t val
+        found <-
+            throwInterpretResult $
+            runPinaforeSourceScoped "<test>" $ do
+                val <- mval
+                typedAnyToPinaforeVal @t val
         checkval found
 
 testBisubstitute ::
@@ -75,6 +79,9 @@ op2 v withVal r = withVal $ r $ r v
 op3 :: X -> (X -> PinaforeAction ()) -> (X -> X) -> PinaforeAction ()
 op3 v withVal r = withVal $ r $ r v
 
+idText :: Text -> Text
+idText = id
+
 testLib :: LibraryModule
 testLib = let
     msgT :: Text -> PinaforeAction ()
@@ -82,7 +89,7 @@ testLib = let
     msgI :: Integer -> PinaforeAction ()
     msgI x = liftIO $ hPutStrLn stderr $ show x
     in MkDocTree "TEST" "" $
-       [ mkValEntry "i" "TEST" $ (id :: Text -> Text)
+       [ mkValEntry "idText" "TEST" idText
        , mkValEntry "msgT" "TEST" msgT
        , mkValEntry "msgI" "TEST" msgI
        , mkValEntry "op1" "TEST" op1
@@ -98,9 +105,9 @@ testUnifier =
               "op1"
               [ testTree
                     "unify"
-                    [ testUnifyToType @(Text -> (Text -> Text) -> Text) (jmToValue op1) $ \found ->
+                    [ testUnifyToType @(Text -> (Text -> Text) -> Text) (return $ jmToValue op1) $ \found ->
                           assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
-                    , testUnifyToType @(A -> (A -> A) -> A) (jmToValue op1) $ \found ->
+                    , testUnifyToType @(A -> (A -> A) -> A) (return $ jmToValue op1) $ \found ->
                           assignUVarT @Text (MkSymbolType @"a") $
                           assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
                     ]
@@ -121,8 +128,12 @@ testUnifier =
                     [ testInterpret @(A -> (A -> A) -> A) "op1" $ \found ->
                           assignUVarT @Text (MkSymbolType @"a") $
                           assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
+                    , testInterpret @(Text -> (Text -> Text) -> Text) "op1" $ \found ->
+                          assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
+                    , testInterpret @((Text -> Text) -> Text) "op1 \"PQPQPQ\"" $ \found ->
+                          assertEqual "" "PQPQPQ" $ found id
                     , testInterpret @Text "op1 \"PQPQPQ\" id" $ \found -> assertEqual "" "PQPQPQ" found
-                    , testExpectSuccess "msgT $ op1 \"PQPQPQ\" i"
+                    , testExpectSuccess "msgT $ op1 \"PQPQPQ\" idText"
                     , testExpectSuccess "msgT $ op1 \"PQPQPQ\" id"
                     ]
               ]
@@ -130,11 +141,26 @@ testUnifier =
               "op2"
               [ testTree
                     "unify"
-                    [ testUnifyToType @(Text -> (Text -> Text) -> (Text -> Text) -> Text) (jmToValue op2) $ \found ->
+                    [ testUnifyToType @(Text -> (Text -> Text) -> (Text -> Text) -> Text) (return $ jmToValue op2) $ \found ->
                           assertEqual "" "PQPQPQ" $ found "PQPQPQ" id id
-                    , testUnifyToType @(A -> (A -> Text) -> (A -> A) -> Text) (jmToValue op2) $ \found ->
+                    , testUnifyToType @(A -> (A -> Text) -> (A -> A) -> Text) (return $ jmToValue op2) $ \found ->
                           assignUVarT @Text (MkSymbolType @"a") $
                           assertEqual "" "PQPQPQ" $ found (MkVar "PQPQPQ") unVar id
+                    , let
+                          makeVal :: PinaforeSourceInterpreter QValue
+                          makeVal = do
+                              expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
+                              qEvalExpr expr1
+                          checkVal found = assertEqual "" "PQPQPQ" $ found idText id
+                          in testUnifyToType @((Text -> Text) -> (Text -> Text) -> Text) makeVal checkVal
+                    , failTestBecause "ISSUE #108" $ let
+                          makeVal :: PinaforeSourceInterpreter QValue
+                          makeVal = do
+                              expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
+                              expr2 <- qApplyExpr expr1 (qConstExpr idText)
+                              qEvalExpr expr2
+                          checkVal found = assertEqual "" "PQPQPQ" $ found id
+                          in testUnifyToType @((Text -> Text) -> Text) makeVal checkVal
                     ]
               , testTree
                     "bisubstitute"
@@ -147,7 +173,19 @@ testUnifier =
                 tDecls ["import TEST"] $
                 tGroup
                     "interpret"
-                    [ tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "msgT $ op2 \"PQPQPQ\" id i"
+                    [ testInterpret @(Text -> (Text -> Text) -> (Text -> Text) -> Text) "op2" $ \found ->
+                          assertEqual "" "PQPQPQ" $ found "PQPQPQ" id id
+                    , testInterpret @((Text -> Text) -> (Text -> Text) -> Text) "op2 \"PQPQPQ\"" $ \found ->
+                          assertEqual "" "PQPQPQ" $ found id id
+                    , tModify (failTestBecause "ISSUE #108") $
+                      testInterpret @((Text -> Text) -> Text) "op2 \"PQPQPQ\" id" $ \found ->
+                          assertEqual "" "PQPQPQ" $ found id
+                    , tModify (failTestBecause "ISSUE #108") $
+                      testInterpret @((Text -> Text) -> Text) "op2 \"PQPQPQ\" idText" $ \found ->
+                          assertEqual "" "PQPQPQ" $ found id
+                    , tModify (failTestBecause "ISSUE #108") $
+                      testInterpret @Text "op2 \"PQPQPQ\" id idText" $ \found -> assertEqual "" "PQPQPQ" found
+                    , tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "msgT $ op2 \"PQPQPQ\" id idText"
                     , tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "msgT $ op2 \"PQPQPQ\" id id"
                     ]
               ]
@@ -160,7 +198,7 @@ testUnifier =
                 tDecls ["import TEST"] $
                 tGroup
                     "interpret"
-                    [ tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "op3 \"PQPQPQ\" msgT i"
+                    [ tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "op3 \"PQPQPQ\" msgT idText"
                     , tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "op3 \"PQPQPQ\" msgT id"
                     , tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "op3 10 msgI id"
                     ]
