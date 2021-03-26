@@ -41,6 +41,11 @@ instance InKind t => WitnessMappable (poswit :: k -> Type) negwit (poswit t) whe
 instance InKind t => WitnessMappable poswit (negwit :: k -> Type) (negwit t) where
     mapWitnessesM _ mapNeg = mapNeg
 
+instance WitnessMappable poswit negwit (AnyValue poswit) where
+    mapWitnessesM mapPos _ (MkAnyValue tw val) = do
+        tw' <- mapPos tw
+        return $ MkAnyValue tw' val
+
 instance WitnessMappable poswit negwit (AnyInKind poswit) where
     mapWitnessesM mapPos _ (MkAnyInKind pa) = do
         pa' <- mapPos pa

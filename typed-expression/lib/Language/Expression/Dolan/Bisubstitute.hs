@@ -6,6 +6,7 @@ module Language.Expression.Dolan.Bisubstitute
     , Bisubstitutable(..)
     , bisubstituteType
     , bisubstitutesType
+    , bisubstitute
     , bisubstitutes
     , GenShim
     , recursiveDolanShimWit
@@ -186,6 +187,14 @@ bisubstitutesType (sub:subs) t = do
     tf <- bisubstituteType sub t
     chainShimWitM (bisubstitutesType subs) tf
 
+bisubstitute ::
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m a.
+       (IsDolanGroundType ground, GenShim pshim, MonadOne m, PShimWitMappable (pshim Type) (DolanType ground) a)
+    => Bisubstitution ground (pshim Type) m
+    -> a
+    -> m a
+bisubstitute sub expr = mapPShimWitsM @_ @(pshim Type) (bisubstituteType sub) (bisubstituteType sub) expr
+
 bisubstitutes ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m a.
        (IsDolanGroundType ground, GenShim pshim, MonadOne m, PShimWitMappable (pshim Type) (DolanType ground) a)
@@ -194,7 +203,7 @@ bisubstitutes ::
     -> m a
 bisubstitutes [] expr = return $ expr
 bisubstitutes (sub:subs) expr = do
-    expr' <- mapPShimWitsM @_ @(pshim Type) (bisubstituteType sub) (bisubstituteType sub) expr
+    expr' <- bisubstitute sub expr
     bisubstitutes subs expr'
 
 type GenShim :: PolyShimKind -> Constraint

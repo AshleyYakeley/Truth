@@ -142,4 +142,4 @@ typedAnyToPinaforeVal ::
        forall t. FromPinaforeType t
     => QValue
     -> PinaforeSourceInterpreter t
-typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem fromJMShimWit
+typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem

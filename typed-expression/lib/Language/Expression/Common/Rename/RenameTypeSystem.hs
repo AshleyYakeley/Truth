@@ -1,7 +1,5 @@
 module Language.Expression.Common.Rename.RenameTypeSystem
     ( RenameTypeSystem(..)
-    , renameNegShimWit
-    , renamePosShimWit
     , rename
     , renameTypeSignature
     , NewVar(..)
@@ -55,12 +53,12 @@ renamePosShimWit =
 
 rename ::
        forall ts m a. (RenameTypeSystem ts, Monad m, WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts) a)
-    => a
+    => NameRigidity
+    -> a
     -> RenamerT ts m a
-rename a =
+rename rigid a =
     withTransConstraintTM @Monad $
-    namespace @ts FreeName $
-    withTransConstraintTM @Monad $ mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts) a
+    namespace @ts rigid $ withTransConstraintTM @Monad $ mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts) a
 
 renameTypeSignature ::
        forall ts m. (RenameTypeSystem ts, Monad m)

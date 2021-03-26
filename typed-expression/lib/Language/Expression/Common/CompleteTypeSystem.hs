@@ -31,17 +31,6 @@ tsFunctionNegShimWit ta tb =
     unPosShimWit ta $ \wa conva ->
         unNegShimWit tb $ \wb convb -> mapNegShimWit (funcShim conva convb) $ tsFunctionNegWitness @ts wa wb
 
-tsUnify ::
-       forall ts a b. CompleteTypeSystem ts
-    => TSPosShimWit ts a
-    -> TSNegShimWit ts b
-    -> TSInner ts (TSShim ts a b)
-tsUnify wa wb =
-    runRenamer @ts $ do
-        wa' <- rename @ts wa
-        wb' <- rename @ts wb
-        solveUnifyPosNegShimWit @ts wa' wb'
-
 tsEval ::
        forall ts m. (MonadThrow ExpressionError m, Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
     => TSSealedExpression ts
@@ -49,13 +38,15 @@ tsEval ::
 tsEval = evalSealedExpression
 
 tsUnifyValue ::
-       forall ts t. CompleteTypeSystem ts
-    => TSNegShimWit ts t
-    -> TSValue ts
+       forall ts t. (CompleteTypeSystem ts, FromShimWit (TSShim ts) (TSNegWitness ts) t)
+    => TSValue ts
     -> TSInner ts t
-tsUnifyValue witn (MkAnyValue witp val) = do
-    conv <- tsUnify @ts witp witn
-    return $ shimToFunction conv val
+tsUnifyValue (MkAnyValue witp val) =
+    runRenamer @ts $ do
+        witp' <- rename @ts FreeName witp
+        witn' <- rename @ts RigidName fromShimWit
+        conv <- solveUnifyPosNegShimWit @ts witp' witn'
+        return $ shimToFunction conv val
 
 tsSubsume ::
        forall ts inf decl. CompleteTypeSystem ts
@@ -72,15 +63,6 @@ tsSubsumeValue ::
 tsSubsumeValue tdecl (MkAnyValue winf val) = do
     conv <- tsSubsume @ts winf tdecl
     return $ shimToFunction conv val
-
-tsEvalToType ::
-       forall ts t. (CompleteTypeSystem ts, MonadThrow ExpressionError (TSInner ts), Show (TSName ts))
-    => TSNegShimWit ts t
-    -> TSSealedExpression ts
-    -> TSInner ts t
-tsEvalToType witn expr = do
-    aval <- tsEval @ts expr
-    tsUnifyValue @ts witn aval
 
 tsApply ::
        forall ts. CompleteTypeSystem ts
@@ -143,7 +125,7 @@ tsSingleBinding ::
 tsSingleBinding name madecltype expr =
     singleBinding name $ do
         madecltype' <- for madecltype $ renameTypeSignature @ts
-        expr' <- rename @ts expr
+        expr' <- rename @ts FreeName expr
         subsumerExpression madecltype' expr'
 
 tsSubsumeExpression ::
@@ -155,7 +137,7 @@ tsSubsumeExpression decltype expr =
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
         decltype' <- renameTypeSignature @ts decltype
-        expr' <- rename @ts expr
+        expr' <- rename @ts FreeName expr
         subsumeExpression @ts decltype' expr'
 
 tsUncheckedComponentLet ::
