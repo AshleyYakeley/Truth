@@ -1,9 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Expression
-    ( module Pinafore.Language.Expression
-    , PinaforeInterpreter
-    ) where
+module Pinafore.Language.Expression where
 
 import Pinafore.Language.Convert
 import Pinafore.Language.Name

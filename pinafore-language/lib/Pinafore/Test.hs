@@ -15,9 +15,8 @@ module Pinafore.Test
     , PinaforeSingularShimWit
     , PinaforeInterpreter
     , PinaforeSourceInterpreter
-    , QValue
     , toJMShimWit
-    , typedAnyToPinaforeVal
+    , module Pinafore.Language.Expression
     , PinaforeTableSubject(..)
     , module Pinafore.Test
     ) where
