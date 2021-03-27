@@ -1,6 +1,8 @@
 module Language.Expression.Dolan.Test
     ( recursiveDolanShimWit
     , Bisubstitution
+    , mkPolarBisubstitution
+    , PShimWitMappable
     , bisubstitute
     , bisubstitutes
     , UnifierM
@@ -8,4 +10,5 @@ module Language.Expression.Dolan.Test
     ) where
 
 import Language.Expression.Dolan.Bisubstitute
+import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Unifier.UnifierM

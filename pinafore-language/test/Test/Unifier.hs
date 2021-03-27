@@ -3,7 +3,9 @@ module Test.Unifier
     ) where
 
 import Data.Shim
+import Debug.Trace.Null
 import Language.Expression.Common
+import Language.Expression.Dolan
 import Language.Expression.Dolan.Test
 import Pinafore
 import Pinafore.Language.API
@@ -13,11 +15,22 @@ import Test.RunScript
 
 type PinaforeBisubstitution = Bisubstitution PinaforeGroundType (PinaforePolyShim Type) (UnifierM PinaforeGroundType)
 
+-- type PinaforeShimWitMappable = PShimWitMappable (PinaforePolyShim Type) (DolanType PinaforeGroundType)
+pinaforeBisubstitutes :: [PinaforeBisubstitution] -> QValue -> PinaforeSourceInterpreter QValue
+pinaforeBisubstitutes bisubs val = do
+    liftIO $ traceIO $ "bisubstitute: before: " <> showValType val
+    val' <- runUnifierM @PinaforeGroundType $ bisubstitutes @PinaforeGroundType bisubs val
+    liftIO $ traceIO $ "bisubstitute: after: " <> showValType val'
+    return val'
+
 testValue :: Text -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => IO ()) -> TestTree
 testValue name call = testTree (unpack name) $ withTestPinaforeContext mempty stdout $ \_ _ _ -> call
 
 testSourceScoped :: Text -> PinaforeSourceInterpreter () -> TestTree
 testSourceScoped name action = testValue name $ throwInterpretResult $ runPinaforeSourceScoped "<test>" $ action
+
+showValType :: QValue -> String
+showValType (MkAnyValue (MkShimWit t _) _) = show t
 
 testUnifyToType ::
        forall t. FromPinaforeType t
@@ -28,7 +41,9 @@ testUnifyToType ::
 testUnifyToType mval bisubs checkVal =
     testSourceScoped (" unify to " <> qNegativeTypeDescription @t) $ do
         val <- mval
-        val' <- runUnifierM @PinaforeGroundType $ bisubstitutes @PinaforeGroundType bisubs val
+        liftIO $ traceIO $ "original type: " <> showValType val
+        val' <- pinaforeBisubstitutes bisubs val
+        liftIO $ traceIO $ "bisub type: " <> showValType val'
         found <- typedAnyToPinaforeVal @t val'
         liftIO $ checkVal found
 
@@ -48,9 +63,6 @@ op1 v r = r $ r v
 
 op2 :: X -> (X -> Text) -> (X -> X) -> Text
 op2 v withVal r = withVal $ r $ r v
-
-op2Partial :: Text -> (JoinType X Text -> Text) -> (JoinType X Text -> X) -> Text
-op2Partial v withVal r = withVal $ LeftJoinType $ r $ LeftJoinType $ r $ RightJoinType v
 
 op2Text :: Text -> (Text -> Text) -> (Text -> Text) -> Text
 op2Text v withVal r = withVal $ r $ r v
@@ -149,17 +161,36 @@ testUnifier =
                           val1 <- qEvalExpr expr1
                           found1 <- typedAnyToPinaforeVal @((Text -> Text) -> (Text -> Text) -> Text) val1
                           liftIO $ assertEqual "found1" "PQPQPQ" $ found1 idText id
-                    , failTestBecause "ISSUE #108" $
-                      testMark $ let
-                          makeVal :: PinaforeSourceInterpreter QValue
-                          makeVal = do
-                              expr2 <- qApplyExpr (qConstExpr $ op2Partial "PQPQPQ") (qConstExpr idText)
-                              val2 <- qEvalExpr expr2
-                              case val2 of
-                                  MkAnyValue t _ -> liftIO $ hPutStrLn stderr $ show t
-                              return val2
-                          checkVal found = assertEqual "found2" "PQPQPQ" $ found id
-                          in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
+                    , testMark $
+                      failTestBecause "ISSUE #108" $
+                      testSourceScoped "value2" $ do
+                          liftIO $ traceIO "\nCASE"
+                          let
+                              op :: Text -> (JoinType X Text -> Text) -> (JoinType X Text -> X) -> Text
+                              op v withVal r = withVal $ LeftJoinType $ r $ LeftJoinType $ r $ RightJoinType v
+                              bisubs :: [PinaforeBisubstitution]
+                              bisubs =
+                                  newUVar "x" $ \oldvar ->
+                                      newUVar "b" $ \(newvar :: SymbolType newname) -> let
+                                          ptw :: DolanShimWit PinaforeGroundType 'Negative Text
+                                          ptw = fromJMShimWit
+                                          in assignUVarT @(MeetType (UVarT newname) Text) oldvar $
+                                             pure $
+                                             mkPolarBisubstitution
+                                                 False
+                                                 oldvar
+                                                 (return $ joinMeetShimWit (varDolanShimWit newvar) ptw)
+                                                 (return $
+                                                  singleDolanShimWit $
+                                                  MkShimWit (VarDolanSingularType newvar) $ MkPolarMap meet1)
+                              val1 :: QValue
+                              val1 = jmToValue $ op "PQPQPQ"
+                          val1' <- pinaforeBisubstitutes bisubs val1
+                            --found <- rigidTypedAnyToPinaforeVal @((JoinType B Text -> Text) -> (JoinType B Text -> MeetType B Text) -> Text) val1'
+                            --liftIO $ assertEqual "" "PQPQPQ" $ assignUVarT @Text (MkSymbolType @"b") $ found (joinf unVar id) (meetf MkVar id . joinf unVar id)
+                          val1'' <- runRenamer @PinaforeTypeSystem $ simplify @PinaforeTypeSystem val1'
+                          found' <- rigidTypedAnyToPinaforeVal @((Text -> Text) -> (Text -> Text) -> Text) val1''
+                          liftIO $ assertEqual "" "PQPQPQ" $ found' id id
                     , failTestBecause "ISSUE #108" $ let
                           makeVal :: PinaforeSourceInterpreter QValue
                           makeVal = do

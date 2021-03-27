@@ -29,8 +29,10 @@ module Language.Expression.Dolan
     , DolanType(..)
     , singleDolanType
     , dolanTypeToSingular
+    , DolanShimWit
     , singleDolanShimWit
     , joinMeetShimWit
+    , varDolanShimWit
     , unrollRecursiveType
     , unToRangeShimWit
     , unFromRangeShimWit
