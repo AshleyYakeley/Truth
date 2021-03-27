@@ -11,8 +11,6 @@ import Pinafore.Test
 import Shapes
 import Test.RunScript
 
-type TS = PinaforeTypeSystem
-
 type PinaforeBisubstitution = Bisubstitution PinaforeGroundType (PinaforePolyShim Type) (UnifierM PinaforeGroundType)
 
 testValue :: Text -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => IO ()) -> TestTree
@@ -24,40 +22,15 @@ testSourceScoped name action = testValue name $ throwInterpretResult $ runPinafo
 testUnifyToType ::
        forall t. FromPinaforeType t
     => PinaforeSourceInterpreter QValue
-    -> (t -> IO ())
-    -> TestTree
-testUnifyToType mval checkval =
-    testSourceScoped ("unify to " <> qNegativeTypeDescription @t) $ do
-        val <- mval
-        found <- typedAnyToPinaforeVal @t val
-        liftIO $ checkval found
-
-testBisubstitute ::
-       forall t. FromPinaforeType t
-    => QValue
     -> [PinaforeBisubstitution]
     -> (t -> IO ())
     -> TestTree
-testBisubstitute val bisubs checkVal = let
-    wExpected :: PinaforeShimWit 'Negative t
-    wExpected = fromJMShimWit
-    in case wExpected of
-           MkShimWit tExpected _ ->
-               testValue (pack $ show tExpected) $ do
-                   MkAnyValue wFound vFound <-
-                       throwInterpretResult $
-                       runPinaforeSourceScoped "<test>" $
-                       runUnifierM @PinaforeGroundType $ bisubstitutes @PinaforeGroundType bisubs val
-                   conv <-
-                       throwInterpretResult $
-                       runPinaforeSourceScoped "<test>" $
-                       runRenamer @TS $ do
-                           wExpected' <- rename @TS RigidName wExpected
-                           solveUnifyPosNegShimWit @TS wFound wExpected'
-                   let
-                       found :: t
-                       found = shimToFunction conv vFound
-                   checkVal found
+testUnifyToType mval bisubs checkVal =
+    testSourceScoped (" unify to " <> qNegativeTypeDescription @t) $ do
+        val <- mval
+        val' <- runUnifierM @PinaforeGroundType $ bisubstitutes @PinaforeGroundType bisubs val
+        found <- typedAnyToPinaforeVal @t val'
+        liftIO $ checkVal found
 
 testInterpret ::
        forall t. FromPinaforeType t
@@ -121,18 +94,12 @@ testUnifier =
               "op1"
               [ testTree
                     "unify"
-                    [ testUnifyToType @(Text -> (Text -> Text) -> Text) (return $ jmToValue op1) $ \found ->
+                    [ testUnifyToType @(Text -> (Text -> Text) -> Text) (return $ jmToValue op1) [] $ \found ->
                           assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
-                    , testUnifyToType @(A -> (A -> A) -> A) (return $ jmToValue op1) $ \found ->
-                          assignUVarT @Text (MkSymbolType @"a") $
-                          assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
-                    ]
-              , testTree
-                    "bisubstitute"
-                    [ testBisubstitute @(X -> (X -> X) -> X) (jmToValue op1) [] $ \found ->
+                    , testUnifyToType @(X -> (X -> X) -> X) (return $ jmToValue op1) [] $ \found ->
                           assignUVarT @Text (MkSymbolType @"x") $
                           assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
-                    , testBisubstitute @(A -> (A -> A) -> A) (jmToValue op1) [] $ \found ->
+                    , testUnifyToType @(A -> (A -> A) -> A) (return $ jmToValue op1) [] $ \found ->
                           assignUVarT @Text (MkSymbolType @"a") $
                           assertEqual "" "PQPQPQ" $ unVar $ found (MkVar "PQPQPQ") id
                     ]
@@ -157,9 +124,9 @@ testUnifier =
               "op2"
               [ testTree
                     "unify"
-                    [ testUnifyToType @(Text -> (Text -> Text) -> (Text -> Text) -> Text) (return $ jmToValue op2) $ \found ->
+                    [ testUnifyToType @(Text -> (Text -> Text) -> (Text -> Text) -> Text) (return $ jmToValue op2) [] $ \found ->
                           assertEqual "" "PQPQPQ" $ found "PQPQPQ" id id
-                    , testUnifyToType @(A -> (A -> Text) -> (A -> A) -> Text) (return $ jmToValue op2) $ \found ->
+                    , testUnifyToType @(A -> (A -> Text) -> (A -> A) -> Text) (return $ jmToValue op2) [] $ \found ->
                           assignUVarT @Text (MkSymbolType @"a") $
                           assertEqual "" "PQPQPQ" $ found (MkVar "PQPQPQ") unVar id
                     , let
@@ -168,7 +135,7 @@ testUnifier =
                               expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
                               qEvalExpr expr1
                           checkVal found = assertEqual "" "PQPQPQ" $ found idText id
-                          in testUnifyToType @((Text -> Text) -> (Text -> Text) -> Text) makeVal checkVal
+                          in testUnifyToType @((Text -> Text) -> (Text -> Text) -> Text) makeVal [] checkVal
                     , let
                           makeVal :: PinaforeSourceInterpreter QValue
                           makeVal = do
@@ -176,21 +143,23 @@ testUnifier =
                               expr2 <- qApplyExpr expr1 (qConstExpr idText)
                               qEvalExpr expr2
                           checkVal found = assertEqual "" "PQPQPQ" $ found id
-                          in testUnifyToType @((Text -> Text) -> Text) makeVal checkVal
+                          in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
                     , testSourceScoped "value1" $ do
                           expr1 <- qApplyExpr (qConstExpr op2) (qConstExpr @Text "PQPQPQ")
                           val1 <- qEvalExpr expr1
                           found1 <- typedAnyToPinaforeVal @((Text -> Text) -> (Text -> Text) -> Text) val1
                           liftIO $ assertEqual "found1" "PQPQPQ" $ found1 idText id
                     , failTestBecause "ISSUE #108" $
-                      testMark $
-                      testSourceScoped "value2" $ do
-                          expr2 <- qApplyExpr (qConstExpr $ op2Partial "PQPQPQ") (qConstExpr idText)
-                          val2 <- qEvalExpr expr2
-                          case val2 of
-                              MkAnyValue t _ -> liftIO $ hPutStrLn stderr $ show t
-                          found2 <- typedAnyToPinaforeVal @((Text -> Text) -> Text) val2
-                          liftIO $ assertEqual "found2" "PQPQPQ" $ found2 id
+                      testMark $ let
+                          makeVal :: PinaforeSourceInterpreter QValue
+                          makeVal = do
+                              expr2 <- qApplyExpr (qConstExpr $ op2Partial "PQPQPQ") (qConstExpr idText)
+                              val2 <- qEvalExpr expr2
+                              case val2 of
+                                  MkAnyValue t _ -> liftIO $ hPutStrLn stderr $ show t
+                              return val2
+                          checkVal found = assertEqual "found2" "PQPQPQ" $ found id
+                          in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
                     , failTestBecause "ISSUE #108" $ let
                           makeVal :: PinaforeSourceInterpreter QValue
                           makeVal = do
@@ -199,7 +168,7 @@ testUnifier =
                               expr2 <- qApplyExpr (qConstExprAny val1) (qConstExpr idText)
                               qEvalExpr expr2
                           checkVal found = assertEqual "" "PQPQPQ" $ found id
-                          in testUnifyToType @((Text -> Text) -> Text) makeVal checkVal
+                          in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
                     , failTestBecause "ISSUE #108" $ let
                           makeVal :: PinaforeSourceInterpreter QValue
                           makeVal = do
@@ -207,13 +176,7 @@ testUnifier =
                               expr2 <- qApplyExpr expr1 (qConstExpr idText)
                               qEvalExpr expr2
                           checkVal found = assertEqual "" "PQPQPQ" $ found id
-                          in testUnifyToType @((Text -> Text) -> Text) makeVal checkVal
-                    ]
-              , testTree
-                    "bisubstitute"
-                    [ testBisubstitute @(A -> (A -> Text) -> (A -> A) -> Text) (jmToValue op2) [] $ \found ->
-                          assignUVarT @Text (MkSymbolType @"a") $
-                          assertEqual "" "PQPQPQ" $ found (MkVar "PQPQPQ") unVar id
+                          in testUnifyToType @((Text -> Text) -> Text) makeVal [] checkVal
                     ]
               , runScriptTestTree $
                 tLibrary testLib $
@@ -241,7 +204,6 @@ testUnifier =
         , testTree
               "op3"
               [ testTree @[TestTree] "unify" []
-              , testTree @[TestTree] "bisubstitute" []
               , runScriptTestTree $
                 tLibrary testLib $
                 tDecls ["import TEST"] $
@@ -258,16 +220,14 @@ testUnifier =
         , testTree
               "op4"
               [ testTree
-                    @[TestTree]
                     "unify"
                     [ let
                           makeVal :: PinaforeSourceInterpreter QValue
                           makeVal = do
                               expr1 <- qApplyExpr (qConstExpr op4) (qConstExpr idText)
-                        -- expr2 <- qApplyExpr expr1 (qConstExpr @Text "PQPQPQ")
                               qEvalExpr expr1
                           checkVal found = assertEqual "" "PQPQPQ" $ found idText "PQPQPQ"
-                          in testUnifyToType @((Text -> Text) -> Text -> Text) makeVal checkVal
+                          in testUnifyToType @((Text -> Text) -> Text -> Text) makeVal [] checkVal
                     , let
                           makeVal :: PinaforeSourceInterpreter QValue
                           makeVal = do
@@ -275,7 +235,7 @@ testUnifier =
                               expr2 <- qApplyExpr expr1 (qConstExpr idText)
                               qEvalExpr expr2
                           checkVal found = assertEqual "" "PQPQPQ" $ found "PQPQPQ"
-                          in testUnifyToType @(Text -> Text) makeVal checkVal
+                          in testUnifyToType @(Text -> Text) makeVal [] checkVal
                     , let
                           makeVal :: PinaforeSourceInterpreter QValue
                           makeVal = do
@@ -284,7 +244,7 @@ testUnifier =
                               expr3 <- qApplyExpr expr2 (qConstExpr @Text "PQPQPQ")
                               qEvalExpr expr3
                           checkVal found = assertEqual "" "PQPQPQ" found
-                          in testUnifyToType @Text makeVal checkVal
+                          in testUnifyToType @Text makeVal [] checkVal
                     ]
               ]
         ]
