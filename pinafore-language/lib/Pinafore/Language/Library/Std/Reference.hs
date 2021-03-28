@@ -184,6 +184,13 @@ newMemFiniteSet = do
     uh <- pinaforeUndoHandler
     return $ meetValueLangFiniteSetRef $ MkWModel $ undoHandlerModel uh model
 
+newMemList :: forall a. PinaforeAction (LangListRef '( a, a))
+newMemList = do
+    r <- liftIO $ makeMemoryReference [] $ \_ -> True
+    model :: Model (ListUpdate [a] (WholeUpdate a)) <- liftLifeCycle $ makeReflectingModel $ convertReference r
+    uh <- pinaforeUndoHandler
+    return $ FullLangListRef $ eaMap singleBiChangeLens $ MkWModel $ undoHandlerModel uh model
+
 refLibEntries :: [DocTreeEntry BindDoc]
 refLibEntries =
     [ docTreeEntry
@@ -386,6 +393,7 @@ refLibEntries =
                                       convv = applyRangePolyShim cid conv1 conv2
                                       in applyRangePolyShim cid (iJoinMeetL1 @(InvertPolarity pola)) (iJoinMeetR1 @pola) .
                                          (functionToShim "WholeRef to ListRef" langWholeRefToListRef) . convv
+                , mkValEntry "listWhole" "Represent a list reference as a whole reference." $ langListRefToWholeRef @A
                 , mkValEntry "listGetCount" "Get Count of elements in a list reference." langListRefGetCount
                 , mkValEntry "listGetItem" "Get an element of a list reference." $ langListRefGetItem @Q
                 , mkValEntry "listInsert" "Insert an element in a list reference." $ langListRefInsert @P
@@ -397,6 +405,7 @@ refLibEntries =
                       "listGetItemRef"
                       "Get a whole reference to a particular item in the list. It will track the item as the list changes. Pass `True` for an existing item, `False` for a point between items." $
                   langListRefItem @P @Q
+                , mkValEntry "newMemList" "Create a new list reference to memory, initially empty." $ newMemList @A
                 ]
           ]
     , docTreeEntry

@@ -5,6 +5,8 @@ module Pinafore.Base.Action
     , pinaforeGetCreateViewUnlift
     , viewPinaforeAction
     , pinaforeResourceContext
+    , pinaforeFlushModelUpdates
+    , pinaforeFlushModelCommits
     , pinaforeRefGet
     , pinaforeRefPush
     , pinaforeGetExitOnClose
@@ -57,13 +59,21 @@ viewPinaforeAction va = createViewPinaforeAction $ liftToLifeCycle va
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
 
+pinaforeFlushModelUpdates :: WModel update -> PinaforeAction ()
+pinaforeFlushModelUpdates (MkWModel model) = liftIO $ taskWait $ modelUpdatesTask model
+
+pinaforeFlushModelCommits :: WModel update -> PinaforeAction ()
+pinaforeFlushModelCommits (MkWModel model) = liftIO $ taskWait $ modelCommitTask model
+
 pinaforeRefGet :: WModel update -> ReadM (UpdateReader update) t -> PinaforeAction t
 pinaforeRefGet model rm = do
+    pinaforeFlushModelUpdates model
     rc <- pinaforeResourceContext
     liftIO $ wModelGet rc model rm
 
 pinaforeRefPush :: WModel update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
 pinaforeRefPush model edits = do
+    pinaforeFlushModelUpdates model
     rc <- pinaforeResourceContext
     ok <- liftIO $ wModelPush rc model edits
     if ok

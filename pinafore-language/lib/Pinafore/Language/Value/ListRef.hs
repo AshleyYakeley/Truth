@@ -68,14 +68,24 @@ langListRefClear :: LangListRef '( BottomType, TopType) -> PinaforeAction ()
 langListRefClear (OrderedLangListRef model) = pinaforeRefPush model $ pure OrderedListEditClear
 langListRefClear (FullLangListRef model) = pinaforeRefPush model $ pure $ MkBiEdit ListEditClear
 
-biKnowWhole :: forall p q. ChangeLens (BiWholeUpdate (Know [p]) (Know [q])) (BiWholeUpdate [p] [q])
-biKnowWhole = mapBiWholeChangeLens Known $ fromKnow []
+biFromKnowWhole :: forall p q. ChangeLens (BiWholeUpdate (Know [p]) (Know [q])) (BiWholeUpdate [p] [q])
+biFromKnowWhole = mapBiWholeChangeLens Known $ fromKnow []
 
 langWholeRefToListRef :: forall a. LangWholeRef '( [a], [a]) -> LangListRef '( a, a)
-langWholeRefToListRef (MutableLangWholeRef model) = FullLangListRef $ eaMap (convertBiChangeLens id . biKnowWhole) model
+langWholeRefToListRef (MutableLangWholeRef model) =
+    FullLangListRef $ eaMap (convertBiChangeLens id . biFromKnowWhole) model
 langWholeRefToListRef (ImmutableLangWholeRef ref) =
     OrderedLangListRef $
     eaMap (fromReadOnlyRejectingChangeLens . convertReadOnlyChangeLens) $ pinaforeImmutableRefValue [] ref
+
+biToKnowWhole :: forall p q. ChangeLens (BiWholeUpdate [p] [q]) (BiWholeUpdate (Know [p]) (Know [q]))
+biToKnowWhole = mapBiWholeChangeLens (fromKnow []) Known
+
+langListRefToWholeRef :: forall a. LangListRef '( a, a) -> LangWholeRef '( [a], [a])
+langListRefToWholeRef (FullLangListRef model) =
+    MutableLangWholeRef $ eaMap (biToKnowWhole . convertBiChangeLens id) model
+langListRefToWholeRef (OrderedLangListRef model) =
+    ImmutableLangWholeRef $ functionImmutableRef $ eaMap convertReadOnlyChangeLens model
 
 langListRefItem :: forall p q. Bool -> Int -> LangListRef '( p, q) -> PinaforeAction (LangWholeRef '( p, q))
 langListRefItem present i (FullLangListRef lmodel) = do
