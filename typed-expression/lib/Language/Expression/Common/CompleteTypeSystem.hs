@@ -37,6 +37,18 @@ tsEval ::
     -> m (TSValue ts)
 tsEval = evalSealedExpression
 
+-- | for debugging
+tsUnifyRigidValue ::
+       forall ts t. (CompleteTypeSystem ts, FromShimWit (TSShim ts) (TSNegWitness ts) t)
+    => TSValue ts
+    -> TSInner ts t
+tsUnifyRigidValue (MkAnyValue witp val) =
+    runRenamer @ts $ do
+        witp' <- rename @ts RigidName witp
+        witn' <- rename @ts RigidName fromShimWit
+        conv <- solveUnifyPosNegShimWit @ts witp' witn'
+        return $ shimToFunction conv val
+
 tsUnifyValue ::
        forall ts t. (CompleteTypeSystem ts, FromShimWit (TSShim ts) (TSNegWitness ts) t)
     => TSValue ts

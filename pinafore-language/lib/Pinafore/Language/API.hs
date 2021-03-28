@@ -8,10 +8,13 @@ module Pinafore.Language.API
     , ProvidedType(..)
     , BoundType(..)
     , PinaforePolyShim
+    , LiteralType(..)
+    , EntityGroundType(..)
     , PinaforeGroundType(..)
     , stdSingleGroundType
     , PinaforeSingularType
     , PinaforeType
+    , funcGroundType
     , module Pinafore.Language.Value
     ) where
 

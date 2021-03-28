@@ -1,6 +1,6 @@
 module Language.Expression.Dolan.Test
     ( recursiveDolanShimWit
-    , Bisubstitution
+    , Bisubstitution(..)
     , mkPolarBisubstitution
     , PShimWitMappable
     , bisubstitute

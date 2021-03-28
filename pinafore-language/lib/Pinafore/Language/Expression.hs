@@ -140,3 +140,10 @@ typedAnyToPinaforeVal ::
     => QValue
     -> PinaforeSourceInterpreter t
 typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem
+
+-- | for debugging
+rigidTypedAnyToPinaforeVal ::
+       forall t. FromPinaforeType t
+    => QValue
+    -> PinaforeSourceInterpreter t
+rigidTypedAnyToPinaforeVal = tsUnifyRigidValue @PinaforeTypeSystem
