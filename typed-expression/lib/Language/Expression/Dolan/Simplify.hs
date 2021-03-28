@@ -78,8 +78,8 @@ dolanSimplifyTypes =
     mconcat
         [ mif True $ pureSimplifier $ eliminateUnusedRecursion @ground
         , mif True $ MkSimplifier $ mergeDuplicateGroundTypes @ground
-        , mif False $ pureSimplifier $ eliminateOneSidedTypeVars @ground
-        , mif True $ MkSimplifier $ fullyConstrainedTypeVars @ground
+        , mif True $ pureSimplifier $ eliminateOneSidedTypeVars @ground
+        , mif False $ MkSimplifier $ fullyConstrainedTypeVars @ground
         , mif True $ pureSimplifier $ mergeSharedTypeVars @ground
         , mif True $ pureSimplifier $ mergeDuplicateTypeVars @ground
         , mif True $ pureSimplifier $ rollUpRecursiveTypes @ground
