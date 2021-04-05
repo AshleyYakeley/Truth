@@ -12,7 +12,8 @@ import Test.RunScript
 testUpdate :: Text -> ScriptTestTree
 testUpdate text =
     testExpression text text $ \cc interpret -> do
-        (sendUpdate, ref) <- liftIO interpret
+        (stuff :: PinaforeAction _) <- liftIO interpret
+        (sendUpdate, ref) <- ccRunView cc emptyResourceContext $ unliftPinaforeActionOrFail stuff
         runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $
             ccUnliftLifeCycle cc $ ccRunView cc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate

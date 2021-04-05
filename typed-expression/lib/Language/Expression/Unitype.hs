@@ -50,13 +50,14 @@ instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val)
     subsumerNegSubstitute () Refl = return $ unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
 
-instance (Monad m, Ord name, Show name) => AbstractTypeSystem (Unitype m name val) where
+instance (MonadThrow ExpressionError m, Ord name, Show name) => AbstractTypeSystem (Unitype m name val) where
     type TSInner (Unitype m name val) = m
 
 class UnitypeValue val where
     applyValue :: val -> val -> val
     abstractValue :: (val -> val) -> val
 
-instance (Monad m, Ord name, Show name, UnitypeValue val) => CompleteTypeSystem (Unitype m name val) where
+instance (MonadThrow ExpressionError m, Ord name, Show name, UnitypeValue val) =>
+             CompleteTypeSystem (Unitype m name val) where
     tsFunctionPosWitness Refl Refl = mkPosShimWit Refl abstractValue
     tsFunctionNegWitness Refl Refl = mkNegShimWit Refl applyValue

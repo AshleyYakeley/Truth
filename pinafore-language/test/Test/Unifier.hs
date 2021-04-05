@@ -5,7 +5,6 @@ module Test.Unifier
 import Data.Shim
 import Debug.Trace.Null
 import Language.Expression.Common
-import Language.Expression.Dolan
 import Language.Expression.Dolan.Test
 import Pinafore
 import Pinafore.Language.API
@@ -15,7 +14,6 @@ import Test.RunScript
 
 type PinaforeBisubstitution = Bisubstitution PinaforeGroundType (PinaforePolyShim Type) (UnifierM PinaforeGroundType)
 
--- type PinaforeShimWitMappable = PShimWitMappable (PinaforePolyShim Type) (DolanType PinaforeGroundType)
 pinaforeBisubstitutes :: [PinaforeBisubstitution] -> QValue -> PinaforeSourceInterpreter QValue
 pinaforeBisubstitutes bisubs val = do
     liftIO $ traceIO $ "bisubstitute: before: " <> showValType val
@@ -127,11 +125,9 @@ testUnifier =
                           assertEqual "" "PQPQPQ" $ found "PQPQPQ" id
                     , testInterpret @((Text -> Text) -> Text) "op1 \"PQPQPQ\"" $ \found ->
                           assertEqual "" "PQPQPQ" $ found id
-                    , tModify (failTestBecause "ISSUE #108") $
-                      testInterpret @Text "op1 \"PQPQPQ\" id" $ \found -> assertEqual "" "PQPQPQ" found
+                    , testInterpret @Text "op1 \"PQPQPQ\" id" $ \found -> assertEqual "" "PQPQPQ" found
                     , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" idText"
-                    , tModify (failTestBecause "ISSUE #108") $
-                      testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" id"
+                    , testExpectSuccess "testSameT \"PQPQPQ\" $ op1 \"PQPQPQ\" id"
                     ]
               ]
         , testTree
@@ -163,108 +159,6 @@ testUnifier =
                           val1 <- qEvalExpr expr1
                           found1 <- typedAnyToPinaforeVal @((Text -> Text) -> (Text -> Text) -> Text) val1
                           liftIO $ assertEqual "found1" "PQPQPQ" $ found1 idText id
-                    , ignoreTestBecause "ISSUE #108" $
-                      testMark $
-                      testSourceScoped "value2" $ do
-                          liftIO $ traceIO "\nCASE"
-                          let
-                              op :: Text -> (JoinType X Text -> Text) -> (JoinType X Text -> X) -> Text
-                              op v withVal r = withVal $ join1 $ r $ join1 $ r $ join2 v
-                              -- opA :: Text -> (JoinType B Text -> Text) -> (JoinType B Text -> MeetType B Text) -> Text
-                              -- opA v withVal r = withVal $ join1 $ meet1 $ r $ foo
-                              bisub1 :: PinaforeBisubstitution
-                              bisub1 =
-                                  newUVar "x" $ \oldvar ->
-                                      newUVar "b" $ \(newvar :: SymbolType newname) -> let
-                                          ptw :: DolanShimWit PinaforeGroundType 'Negative Text
-                                          ptw = fromJMShimWit
-                                          in assignUVarT @(MeetType (UVarT newname) Text) oldvar $
-                                             mkPolarBisubstitution
-                                                 False
-                                                 oldvar
-                                                 (return $ joinMeetShimWit (varDolanShimWit newvar) ptw)
-                                                 (return $
-                                                  singleDolanShimWit $
-                                                  MkShimWit (VarDolanSingularType newvar) $ MkPolarMap meet1)
-                              posbisub :: AnyW SymbolType -> PinaforeBisubstitution
-                              posbisub (MkAnyW var) =
-                                  assignUVarT @BottomType var $
-                                  MkBisubstitution
-                                      False
-                                      var
-                                      (return $ mkShimWit NilDolanType)
-                                      (return $ varDolanShimWit var)
-                              negbisub :: AnyW SymbolType -> PinaforeBisubstitution
-                              negbisub (MkAnyW var) =
-                                  assignUVarT @TopType var $
-                                  MkBisubstitution
-                                      False
-                                      var
-                                      (return $ varDolanShimWit var)
-                                      (return $ mkShimWit NilDolanType)
-                              elimBisubs =
-                                  [posbisub $ MkAnyW $ MkSymbolType @"b", negbisub $ MkAnyW $ MkSymbolType @"b"]
-                              qval1 :: QValue
-                              qval1 = jmToValue $ op "PQPQPQ"
-                          liftIO $ hPutStrLn stderr $ "bisubstituting " <> showValType qval1
-                          qval2 <- pinaforeBisubstitutes [bisub1] qval1
-                          let
-                              funcType ::
-                                     PinaforeType (InvertPolarity polarity) a
-                                  -> PinaforeType polarity b
-                                  -> PinaforeType polarity (JoinMeetType polarity (a -> b) (LimitType polarity))
-                              funcType ta tb =
-                                  singleDolanType $
-                                  GroundDolanSingularType funcGroundType $
-                                  ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-                              singleTextType :: PinaforeSingularType polarity Text
-                              singleTextType =
-                                  GroundDolanSingularType
-                                      (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType)
-                                      NilDolanArguments
-                              textType :: PinaforeType polarity (JoinMeetType polarity Text (LimitType polarity))
-                              textType = singleDolanType singleTextType
-                              joinMeetBTextType ::
-                                     PinaforeType polarity (JoinMeetType polarity (UVarT "b") (JoinMeetType polarity Text (LimitType polarity)))
-                              joinMeetBTextType =
-                                  ConsDolanType (VarDolanSingularType $ MkSymbolType @"b") $
-                                  ConsDolanType singleTextType NilDolanType
-                              expected2Type :: PinaforeType 'Positive _
-                              expected2Type =
-                                  funcType (funcType joinMeetBTextType textType) $
-                                  funcType (funcType joinMeetBTextType joinMeetBTextType) textType
-                          liftIO $
-                              assignUVarT @Text @_ @(IO ()) (MkSymbolType @"b") $
-                              case qval2 of
-                                  MkAnyValue (MkShimWit t2 (MkPolarMap conv2)) v2 ->
-                                      case testEquality t2 expected2Type of
-                                          Just Refl -> do
-                                              let val2 = shimToFunction conv2 v2
-                                              assertEqual @Text "" "PQPQPQ" $
-                                                  iJoinL1 $
-                                                  (iJoinL1 $
-                                                   iJoinL1 val2 $ iMeetR1 $ iMeetR1 . joinf id id . iJoinL1 . iJoinSwapR)
-                                                      (iMeetR1 $
-                                                       iMeetSwapL .
-                                                       iMeetR1 . meetf id id . joinf id id . iJoinL1 . iJoinSwapR)
-                                          Nothing -> fail "wrong type"
-                          liftIO $ hPutStrLn stderr $ "simplifying " <> showValType qval2
-                          qval3 <- pinaforeBisubstitutes elimBisubs qval2
-                          let
-                              expected3Type :: PinaforeType 'Positive _
-                              expected3Type =
-                                  funcType (funcType textType textType) $ funcType (funcType textType textType) textType
-                          liftIO @_ @() $
-                              case qval3 of
-                                  MkAnyValue (MkShimWit t3 (MkPolarMap conv3)) v3 ->
-                                      case testEquality t3 expected3Type of
-                                          Just Refl -> do
-                                              let val3 = shimToFunction conv3 v3
-                                              assertEqual @Text "" "PQPQPQ" $
-                                                  iJoinL1 $
-                                                  (iJoinL1 $ iJoinL1 val3 $ iMeetR1 $ iMeetR1 . iJoinL1) $
-                                                  iMeetR1 $ iMeetR1 . iJoinL1
-                                          Nothing -> fail "wrong type"
                     , let
                           makeVal :: PinaforeSourceInterpreter QValue
                           makeVal = do
@@ -298,8 +192,7 @@ testUnifier =
                           assertEqual "" "PQPQPQ" $ found id
                     , testInterpret @Text "op2 \"PQPQPQ\" id idText" $ \found -> assertEqual "" "PQPQPQ" found
                     , testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id idText"
-                    , tModify (failTestBecause "ISSUE #108") $
-                      testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id id"
+                    , testExpectSuccess "testSameT \"PQPQPQ\" $ op2 \"PQPQPQ\" id id"
                     ]
               ]
         , testTree
@@ -312,9 +205,8 @@ testUnifier =
                     "interpret"
                     [ testExpectSuccess "testSameT \"PQPQPQ\" \"PQPQPQ\""
                     , testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") idText"
-                    , tModify (failTestBecause "ISSUE #108") $
-                      testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") id"
-                    , tModify (failTestBecause "ISSUE #108") $ testExpectSuccess "op3 10 (testSameI 10) id"
+                    , testExpectSuccess "op3 \"PQPQPQ\" (testSameT \"PQPQPQ\") id"
+                    , testExpectSuccess "op3 10 (testSameI 10) id"
                     ]
               ]
         , testTree

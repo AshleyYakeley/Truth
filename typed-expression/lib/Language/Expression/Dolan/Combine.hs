@@ -1,7 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Language.Expression.Dolan.Combine
-    ( joinMeetShimWit
+    ( joinMeetType
+    , joinMeetShimWit
     ) where
 
 import Data.Shim

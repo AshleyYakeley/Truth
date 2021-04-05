@@ -11,6 +11,10 @@ data PolarityType polarity where
     PositiveType :: PolarityType 'Positive
     NegativeType :: PolarityType 'Negative
 
+instance Show (PolarityType polarity) where
+    show PositiveType = "+"
+    show NegativeType = "-"
+
 instance TestEquality PolarityType where
     testEquality PositiveType PositiveType = Just Refl
     testEquality NegativeType NegativeType = Just Refl

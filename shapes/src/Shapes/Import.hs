@@ -66,7 +66,7 @@ import Text.Show as I (Show(..))
 import Control.Concurrent.STM as I
 
 -- constraints
-import Data.Constraint as I ((:-)(..), Dict(..))
+import Data.Constraint as I ((:-)(..), Dict(..), withDict)
 
 -- mono-traversable
 import Data.Containers as I

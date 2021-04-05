@@ -33,7 +33,8 @@ instance InGroupoid (KindMorphism shim :: ShimKind Type) => Groupoid (PolyMorphi
 type AllInCategory :: PolyShimKind -> Constraint
 type AllInCategory pshim = forall k. CoercibleKind k => InCategory (pshim k)
 
-class AllInCategory pshim => ApplyPolyShim (pshim :: PolyShimKind) where
+type ApplyPolyShim :: PolyShimKind -> Constraint
+class AllInCategory pshim => ApplyPolyShim pshim where
     applyPolyShim ::
            forall k (v :: Variance) (f :: VarianceKind v -> k) (g :: VarianceKind v -> k) (a :: VarianceKind v) (b :: VarianceKind v).
            (InKind a, InKind b, HasVariance v f, HasVariance v g)
@@ -89,3 +90,22 @@ instance ApplyPolyShim PEqual where
     applyPolyShim CovarianceType MkPEqual MkPEqual = MkPEqual
     applyPolyShim ContravarianceType MkPEqual (MkCatDual MkPEqual) = MkPEqual
     applyPolyShim RangevarianceType MkPEqual (MkCatRange MkPEqual MkPEqual) = MkPEqual
+
+-- | used for dealing with laziness for recursivly-constructed shims
+type ReduciblePolyShim :: PolyShimKind -> Constraint
+class AllInCategory pshim => ReduciblePolyShim pshim where
+    type ReducedPolyShim pshim :: PolyShimKind
+    reduceShim ::
+           forall a b c d.
+           (ReducedPolyShim pshim Type a b -> ReducedPolyShim pshim Type c d)
+        -> pshim Type a b
+        -> pshim Type c d
+    -- type ReducedPolyShim (pshim :: PolyShimKind) = pshim
+    default reduceShim ::
+        forall a b c d.
+            (ReducedPolyShim pshim Type ~ pshim Type) =>
+                    (ReducedPolyShim pshim Type a b -> ReducedPolyShim pshim Type c d) -> pshim Type a b -> pshim Type c d
+    reduceShim f = f
+
+instance ReduciblePolyShim PEqual where
+    type ReducedPolyShim PEqual = PEqual

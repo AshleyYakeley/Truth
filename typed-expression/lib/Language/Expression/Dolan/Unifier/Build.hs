@@ -23,11 +23,11 @@ type UnifierSolver :: GroundTypeKind -> Type -> Type
 type UnifierSolver ground = Solver ground (UnifierConstraint ground)
 
 type UnificationSolver :: GroundTypeKind -> Type -> Type -> Type
-type UnificationSolver ground a b = UnifierSolver ground (DolanPolyShim ground Type a b)
+type UnificationSolver ground a b = UnifierSolver ground (DolanShim ground a b)
 
 unifySubtypeContext ::
        forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
-    => SubtypeContext (DolanType ground) (DolanPolyShim ground Type) (UnifierSolver ground)
+    => SubtypeContext (DolanType ground) (DolanShim ground) (UnifierSolver ground)
 unifySubtypeContext = MkSubtypeContext unifyTypes
 
 unifyGroundTypes ::

@@ -607,7 +607,7 @@ baseLibEntries =
                             MkMonoType MaybeEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
                     conv <- subtypeConvert sc t $ topEntityType @'Negative
-                    pure $ convE . cfmap (iJoinMeetL1 @'Negative . conv)
+                    pure $ convE . cfmap (iJoinMeetL1 @_ @'Negative . conv)
                 {-
                 -}
           ]
@@ -632,7 +632,7 @@ baseLibEntries =
                     convB <- subtypeConvert sc tb $ topEntityType @'Negative
                     pure $
                         convE .
-                        applyCoPolyShim (cfmap (iJoinMeetL1 @'Negative . convA)) (iJoinMeetL1 @'Negative . convB)
+                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
           , mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
           , mkValEntry "toPair" "Construct a pair." $ (,) @A @B
@@ -670,7 +670,7 @@ baseLibEntries =
                     convB <- subtypeConvert sc tb $ topEntityType @'Negative
                     pure $
                         convE .
-                        applyCoPolyShim (cfmap (iJoinMeetL1 @'Negative . convA)) (iJoinMeetL1 @'Negative . convB)
+                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
           , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
           , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
                 case v of
@@ -702,7 +702,7 @@ baseLibEntries =
                             MkMonoType ListEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
                     conv <- subtypeConvert sc t $ topEntityType @'Negative
-                    pure $ convE . cfmap (iJoinMeetL1 @'Negative . conv)
+                    pure $ convE . cfmap (iJoinMeetL1 @_ @'Negative . conv)
           , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                 case l of
                     [] -> fnil

@@ -204,7 +204,8 @@ instance CartesianShim (->) where
     eitherShim ab _ (Left a) = Left $ ab a
     eitherShim _ pq (Right p) = Right $ pq p
 
-class JoinMeetIsoCategory shim => LazyCategory (shim :: ShimKind Type) where
+type LazyCategory :: ShimKind Type -> Constraint
+class JoinMeetIsoCategory shim => LazyCategory shim where
     iLazy :: forall a b. shim a b -> shim a b
     default iLazy :: forall a b. FunctionShim shim => shim a b -> shim a b
     iLazy = lazyFunctionShim

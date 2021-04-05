@@ -240,10 +240,10 @@ testType =
                     ]
               , textTypeTest "\\x -> let v = x in [v,v,v]" "{} -> a -> [a]"
               , textTypeTest "\\v1 v2 -> [v1,v2]" "{} -> a -> a -> [a]"
-              , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> c -> (a & c) -> a -> ([c], [a])"
+              , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> c -> (c & a) -> a -> ([c], [a])"
               , textTypeTest
                     "\\v1 v2 v3 -> (([v1,v2],[v2,v3]),[v3,v1])"
-                    "{} -> (a & c) -> (d & c) -> (a & d) -> (([c], [d]), [a])"
+                    "{} -> (c & a) -> (c & d) -> (d & a) -> (([c], [d]), [a])"
               , testTree
                     "inversion"
                     [ textTypeTest "\\x -> let y : Integer; y = x in y" "{} -> Integer -> Integer"
@@ -252,7 +252,7 @@ testType =
                     , badInterpretTest "\\x -> let y : (b -> b, Boolean | Number); y = x in y"
                     , textTypeTest
                           "\\x -> let y : (Boolean, Number); y = (x,x) in y"
-                          "{} -> (Number & Boolean) -> (Boolean, Number)"
+                          "{} -> (Boolean & Number) -> (Boolean, Number)"
                     , textTypeTest
                           "\\x1 -> \\x2 -> let y : (Boolean, Number); y = (x1,x2) in y"
                           "{} -> Boolean -> Number -> (Boolean, Number)"
@@ -350,6 +350,16 @@ testType =
                           , simplifyTypeTest "Any -> Maybe (rec a. Maybe a)" "Any -> (rec a. Maybe a)"
                           , unrollTest "rec a. Maybe a" "Maybe (rec a. Maybe a)"
                           ]
+                    ]
+              , testTree
+                    "fullconstraint"
+                    [ simplifyTypeTest "Integer | d" "Integer"
+                    , simplifyTypeTest "(rec a. Maybe a) | d" "rec a. Maybe a"
+                    , simplifyTypeTest "rec a. (Maybe a | d)" "rec a. Maybe a"
+                    , simplifyTypeTest "Maybe (rec a. Maybe a | d)" "rec a. Maybe a"
+                    , simplifyTypeTest "d -> Maybe (rec a. Maybe a | d)" "d -> Maybe (rec a. Maybe a | d)"
+                    , simplifyTypeTest "(a -> Literal) | ((Text & b) -> a)" "Text -> Literal"
+                    , simplifyTypeTest "(a & Text) -> (Literal | a)" "Text -> Literal"
                     ]
               ]
         , testTree

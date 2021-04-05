@@ -61,20 +61,20 @@ forDolanArguments call (ConsListType sv dv) (ConsDolanArguments arg args) =
 
 type ArgTypeF :: (Type -> Type -> Type) -> forall (sv :: Variance) ->
                                                    (Polarity -> Type -> Type) -> Polarity -> VarianceKind sv -> Type
-data ArgTypeF map sv ft polarity t where
+data ArgTypeF shim sv ft polarity t where
     MkArgTypeF
         :: InVarianceKind sv t'
         => SingleArgument sv ft polarity t'
-        -> PolarVarianceMap map polarity sv t t'
-        -> ArgTypeF map sv ft polarity t
+        -> PolarVarianceMap shim polarity sv t t'
+        -> ArgTypeF shim sv ft polarity t
 
 mapArgTypeF ::
-       forall m (map :: Type -> Type -> Type) (fta :: Polarity -> Type -> Type) (ftb :: Polarity -> Type -> Type) sv polarity t.
+       forall m (shim :: Type -> Type -> Type) (fta :: Polarity -> Type -> Type) (ftb :: Polarity -> Type -> Type) sv polarity t.
        (Monad m, Is PolarityType polarity)
     => VarianceType sv
-    -> (forall polarity' t'. Is PolarityType polarity' => fta polarity' t' -> m (PShimWit map ftb polarity' t'))
+    -> (forall polarity' t'. Is PolarityType polarity' => fta polarity' t' -> m (PShimWit shim ftb polarity' t'))
     -> SingleArgument sv fta polarity t
-    -> m (ArgTypeF map sv ftb polarity t)
+    -> m (ArgTypeF shim sv ftb polarity t)
 mapArgTypeF CovarianceType f arg = do
     tf <- f arg
     return $ unShimWit tf MkArgTypeF
@@ -147,12 +147,12 @@ mapDolanArguments ::
 mapDolanArguments f dvt kv args = runIdentity $ mapDolanArgumentsM (\t -> return $ f t) dvt kv args
 
 mapInvertArgTypeF ::
-       forall m map fta ftb sv polarity t. (Monad m, Is PolarityType polarity)
+       forall m shim fta ftb sv polarity t. (Monad m, Is PolarityType polarity)
     => VarianceType sv
     -> (forall polarity' t'.
-            Is PolarityType polarity' => fta polarity' t' -> m (PShimWit map ftb (InvertPolarity polarity') t'))
+            Is PolarityType polarity' => fta polarity' t' -> m (PShimWit shim ftb (InvertPolarity polarity') t'))
     -> SingleArgument sv fta polarity t
-    -> m (ArgTypeF map sv ftb (InvertPolarity polarity) t)
+    -> m (ArgTypeF shim sv ftb (InvertPolarity polarity) t)
 mapInvertArgTypeF CovarianceType f arg = do
     MkShimWit arg' conv <- f arg
     return $ MkArgTypeF arg' conv
@@ -218,14 +218,14 @@ svJoinMeetTypeInKind ContravarianceType = Dict
 svJoinMeetTypeInKind RangevarianceType = Dict
 
 mergeArgTypeF ::
-       forall m map fta ftb ftab sv polarity ta tb. (Monad m, Is PolarityType polarity)
+       forall m shim fta ftb ftab sv polarity ta tb. (Monad m, Is PolarityType polarity)
     => VarianceType sv
     -> (forall polarity' ta' tb'.
             Is PolarityType polarity' =>
-                    fta polarity' ta' -> ftb polarity' tb' -> m (PShimWit map ftab polarity' (JoinMeetType polarity' ta' tb')))
+                    fta polarity' ta' -> ftb polarity' tb' -> m (PShimWit shim ftab polarity' (JoinMeetType polarity' ta' tb')))
     -> SingleArgument sv fta polarity ta
     -> SingleArgument sv ftb polarity tb
-    -> m (ArgTypeF map sv ftab polarity (SVJoinMeetType sv polarity ta tb))
+    -> m (ArgTypeF shim sv ftab polarity (SVJoinMeetType sv polarity ta tb))
 mergeArgTypeF CovarianceType f arga argb = do
     MkShimWit argab conv <- f arga argb
     return $ MkArgTypeF argab conv
@@ -240,10 +240,10 @@ mergeArgTypeF RangevarianceType f (MkRangeType tpa tqa) (MkRangeType tpb tqb) =
         return $ MkArgTypeF (MkRangeType tpab tqab) $ mkRangevariantPolarMap convp convq
 
 varPolar1 ::
-       forall map polarity sv a b.
-       (JoinMeetCategory map, Is PolarityType polarity, InVarianceKind sv a, InVarianceKind sv b)
+       forall shim polarity sv a b.
+       (JoinMeetCategory shim, Is PolarityType polarity, InVarianceKind sv a, InVarianceKind sv b)
     => VarianceType sv
-    -> PolarVarianceMap map polarity sv a (SVJoinMeetType sv polarity a b)
+    -> PolarVarianceMap shim polarity sv a (SVJoinMeetType sv polarity a b)
 varPolar1 CovarianceType = polar1
 varPolar1 ContravarianceType = invertPolarity @polarity $ mkContravariantPolarMap polar1
 varPolar1 RangevarianceType =
@@ -252,10 +252,10 @@ varPolar1 RangevarianceType =
         (MkPairWitness, MkPairWitness) -> mkRangevariantPolarMap polar1 polar1
 
 varPolar2 ::
-       forall map polarity sv a b.
-       (JoinMeetCategory map, Is PolarityType polarity, InVarianceKind sv a, InVarianceKind sv b)
+       forall shim polarity sv a b.
+       (JoinMeetCategory shim, Is PolarityType polarity, InVarianceKind sv a, InVarianceKind sv b)
     => VarianceType sv
-    -> PolarVarianceMap map polarity sv b (SVJoinMeetType sv polarity a b)
+    -> PolarVarianceMap shim polarity sv b (SVJoinMeetType sv polarity a b)
 varPolar2 CovarianceType = polar2
 varPolar2 ContravarianceType = invertPolarity @polarity $ mkContravariantPolarMap polar2
 varPolar2 RangevarianceType =

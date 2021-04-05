@@ -10,11 +10,11 @@ pinafore> a
 <input>:2:1: undefined: a:a
 pinafore> let p = q
 pinafore> p
-<input>:3:1: undefined: q:a
+<input>:3:1: undefined: q:c
 pinafore> a
 <input>:3:1: undefined: a:a
 pinafore> p
-<input>:3:1: undefined: q:a
+<input>:3:1: undefined: q:c
 pinafore> openEntity @X !"x"
 <input>:2:13: unknown type: X
 pinafore> let y = openEntity @Y !"y"

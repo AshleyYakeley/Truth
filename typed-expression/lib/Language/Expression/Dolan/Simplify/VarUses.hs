@@ -75,6 +75,44 @@ type GetVarUses :: GroundTypeKind -> (k -> Type) -> Constraint
 class GetVarUses ground f | f -> ground where
     getVarAppearances :: forall t. f t -> ([Appearance ground 'Positive], [Appearance ground 'Negative])
 
+{-
+type VarReplacements :: GroundTypeKind -> Symbol -> Type
+data VarReplacements ground name = MkVarReplacements
+    {
+        vrPositive :: [DolanShimWit ground 'Positive (UVarT name)],
+        vrNegative :: [DolanShimWit ground 'Negative (UVarT name)]
+    }
+
+runSVR ::forall (ground :: GroundTypeKind) name a.
+    ([DolanShimWit ground 'Positive (UVarT name)],[DolanShimWit ground 'Negative (UVarT name)]) -> State (VarReplacements ground name) a -> a
+runSVR (vrPositive,vrNegative) svr = case runState svr MkVarReplacements{..} of
+    (a,MkVarReplacements [] []) -> a
+    _ -> error "simplifier:  leftover types"
+
+svrDrawPositiveType :: forall (ground :: GroundTypeKind) name. State (VarReplacements ground name) (DolanShimWit ground 'Positive (UVarT name))
+svrDrawPositiveType = do
+    vr <- get
+    case vrPositive vr of
+        t : tt -> do
+            put vr {vrPositive = tt}
+            return t
+        [] -> error "simplifier: missing positive type"
+
+svrDrawNegativeType :: forall (ground :: GroundTypeKind) name. State (VarReplacements ground name) (DolanShimWit ground 'Negative (UVarT name))
+svrDrawNegativeType = do
+    vr <- get
+    case vrNegative vr of
+        t : tt -> do
+            put vr {vrNegative = tt}
+            return t
+        [] -> error "simplifier: missing negative type"
+
+type ReplaceVarUses :: GroundTypeKind -> (Polarity -> Type -> Type) -> Constraint
+class ReplaceVarUses ground f | f -> ground where
+    replaceVarByUses ::
+        forall polarity name t. PolarityType polarity ->
+            SymbolType name -> f polarity t -> State (VarReplacements ground name) (DolanShimWit ground polarity t)
+-}
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              GetVarUses ground (RangeType (DolanType ground) polarity) where
     getVarAppearances (MkRangeType tp tq) = invertPolarity @polarity $ getVarAppearances tp <> getVarAppearances tq
@@ -107,10 +145,18 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
     getVarAppearances (VarDolanSingularType _) = mempty
     getVarAppearances (RecursiveDolanSingularType vn st) = let
         (pvarss, nvarss) = getVarAppearances st
-        in case representative @_ @_ @polarity of
+        in case polarityType @polarity of
                PositiveType -> (fmap (removeAppearanceVar $ MkAnyW vn) pvarss, nvarss)
                NegativeType -> (pvarss, fmap (removeAppearanceVar $ MkAnyW vn) nvarss)
 
+{-
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground =>
+             ReplaceVarUses ground (DolanSingularType ground) where
+    replaceVarByUses polw var (VarDolanSingularType v) | Just Refl <- testEquality var v = do
+        case polw of
+               PositiveType -> svrDrawPositiveType
+               NegativeType -> svrDrawNegativeType
+-}
 getVarAppearances' ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t
@@ -129,7 +175,7 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
 
 mappableGetAppearances ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a =>
+    => PShimWitMappable (DolanShim ground) (DolanType ground) a =>
                a -> ([Appearance ground 'Positive], [Appearance ground 'Negative])
 mappableGetAppearances a =
     mconcat $
@@ -145,8 +191,7 @@ mappableGetAppearances a =
 -- example: "a -> (b|c,d)" ==> ([[b,c],[d]],[[a]])
 mappableGetVarUses ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a =>
-               a -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
+    => PShimWitMappable (DolanShim ground) (DolanType ground) a => a -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
 mappableGetVarUses a = let
     (posapprs, negapprs) = mappableGetAppearances @ground a
     in (fmap appearanceVars posapprs, fmap appearanceVars negapprs)
@@ -191,7 +236,7 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
         (pvars, nvars) = getExpressionVars st
         removeVar :: [AnyW SymbolType] -> [AnyW SymbolType]
         removeVar = filter $ (/=) $ MkAnyW vn
-        in case representative @_ @_ @polarity of
+        in case polarityType @polarity of
                PositiveType -> (removeVar pvars, nvars)
                NegativeType -> (pvars, removeVar nvars)
 
@@ -206,7 +251,7 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
 -- example: "a -> (b|c,d)" ==> ([b,c,d]],[a])
 mappableGetVars ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a => a -> ([AnyW SymbolType], [AnyW SymbolType])
+    => PShimWitMappable (DolanShim ground) (DolanType ground) a => a -> ([AnyW SymbolType], [AnyW SymbolType])
 mappableGetVars a =
     mconcat $
     fmap

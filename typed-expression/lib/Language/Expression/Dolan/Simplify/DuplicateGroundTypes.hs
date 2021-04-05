@@ -87,7 +87,7 @@ mergeInType (ConsDolanType t1 tr) = do
 
 mergeDuplicateGroundTypes ::
        forall (ground :: GroundTypeKind) a.
-       (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
+       (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
     => a
     -> DolanTypeCheckM ground a
 mergeDuplicateGroundTypes = mapPShimWitsM mergeInType mergeInType

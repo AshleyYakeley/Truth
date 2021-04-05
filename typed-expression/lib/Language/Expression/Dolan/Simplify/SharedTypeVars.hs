@@ -28,13 +28,13 @@ findShare uses = let
 
 mergeSharedTypeVars ::
        forall (ground :: GroundTypeKind) a. IsDolanGroundType ground
-    => PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a => a -> a
+    => PShimWitMappable (DolanShim ground) (DolanType ground) a => a -> a
 mergeSharedTypeVars expr = let
     (posuses, neguses) = mappableGetVarUses @ground expr
     in case findShare posuses <|> findShare neguses of
            Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) ->
                assignUVarT @(UVarT na) vb $ let
-                   bisub :: Bisubstitution ground (DolanPolyShim ground Type) Identity
+                   bisub :: Bisubstitution ground (DolanShim ground) Identity
                    bisub = MkBisubstitution False vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)
                    in mergeSharedTypeVars @ground $ runIdentity $ bisubstitutes @ground [bisub] expr
            Nothing -> expr

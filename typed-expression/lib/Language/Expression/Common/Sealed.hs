@@ -1,3 +1,5 @@
+{-# LANGUAGE ApplicativeDo #-}
+
 module Language.Expression.Common.Sealed where
 
 import Language.Expression.Common.Error
@@ -46,7 +48,7 @@ instance WitnessMappable poswit negwit (SealedExpression name negwit poswit) whe
     mapWitnessesM mapPos mapNeg (MkSealedExpression tt expr) = do
         tt' <- mapPos tt
         expr' <- mapWitnessesM mapPos mapNeg expr
-        return $ MkSealedExpression tt' expr'
+        pure $ MkSealedExpression tt' expr'
 
 instance (Show name, AllWitnessConstraint Show negwit, AllWitnessConstraint Show poswit) =>
              Show (SealedExpression name negwit poswit) where
@@ -60,7 +62,7 @@ instance WitnessMappable poswit negwit (SealedPattern name poswit negwit) where
     mapWitnessesM mapPos mapNeg (MkSealedPattern tt pat) = do
         tt' <- mapNeg tt
         pat' <- mapWitnessesM mapPos mapNeg pat
-        return $ MkSealedPattern tt' $ pat'
+        pure $ MkSealedPattern tt' $ pat'
 
 typeFConstExpression :: poswit t -> t -> SealedExpression name negwit poswit
 typeFConstExpression tt t = MkSealedExpression tt $ pure t
@@ -97,9 +99,12 @@ instance WitnessMappable (poswit :: Type -> Type) (negwit :: Type -> Type) (Patt
     mapWitnessesM mapPos mapNeg (MkPatternConstructor (tt :: negwit t) (lvw :: ListType wit lt) pat) = do
         tt' <- mapNeg tt
         pat' <- mapWitnessesM @Type @poswit @negwit mapPos mapNeg pat
-        MkHListWit (lvw' :: ListType wit lt') <- mapWitnessesM @Type (liftHListPolwit mapPos) mapNeg $ MkHListWit lvw
-        Refl <- return $ injectiveHList @lt @lt'
-        return $ MkPatternConstructor tt' lvw' pat'
+        hwit <- mapWitnessesM @Type (liftHListPolwit mapPos) mapNeg $ MkHListWit lvw
+        pure $
+            case hwit of
+                MkHListWit (lvw' :: ListType wit lt') ->
+                    case injectiveHList @lt @lt' of
+                        Refl -> MkPatternConstructor tt' lvw' pat'
 
 sealedPatternConstructor ::
        MonadThrow ExpressionError m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)

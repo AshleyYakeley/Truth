@@ -29,7 +29,7 @@ minimalPositiveSupertype ::
     -> Maybe (DolanShimWit ground 'Positive a)
 minimalPositiveSupertype (ConsDolanType t NilDolanType) = do
     tf <- minimalPositiveSupertypeSingular t
-    return $ ccontramap @_ @_ @(DolanPolyShim ground Type) meet1 tf
+    return $ ccontramap @_ @_ @(DolanShim ground) meet1 tf
 minimalPositiveSupertype _ = Nothing
 
 maximalNegativeSubtypeSingular ::
@@ -51,7 +51,7 @@ maximalNegativeSubtype ::
     -> Maybe (DolanShimWit ground 'Negative a)
 maximalNegativeSubtype (ConsDolanType t NilDolanType) = do
     tf <- maximalNegativeSubtypeSingular t
-    return $ cfmap @_ @_ @(DolanPolyShim ground Type) join1 tf
+    return $ cfmap @_ @_ @(DolanShim ground) join1 tf
 maximalNegativeSubtype _ = Nothing
 
 invertTypeMaybe ::

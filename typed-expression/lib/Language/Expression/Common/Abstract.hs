@@ -18,6 +18,7 @@ class ( RenameTypeSystem ts
       , UnifyTypeSystem ts
       , SimplifyTypeSystem ts
       , Monad (TSInner ts)
+      , MonadThrow ExpressionError (TSInner ts)
       , Ord (TSName ts)
       , TSOuter ts ~ RenamerT ts (TSInner ts)
       ) => AbstractTypeSystem ts where
@@ -145,7 +146,8 @@ abstractSealedExpression absw name sexpr =
             pure $ MkSealedExpression (absw vwt twt) expr'
 
 applySealedExpression ::
-       forall ts. AbstractTypeSystem ts
+       forall ts.
+       (AllWitnessConstraint Show (TSPosWitness ts), AllWitnessConstraint Show (TSNegWitness ts), AbstractTypeSystem ts)
     => UnifierFunctionNegWitness ts
     -> TSSealedExpression ts
     -> TSSealedExpression ts
@@ -242,7 +244,7 @@ caseAbstractSealedExpression absw rawcases =
             pure $ MkSealedExpression (absw rvwt rtwt) $ fmap (\t1a t -> runIdentity $ t1a t) rexpr
 
 applyPatternConstructor ::
-       forall ts. (AbstractTypeSystem ts, MonadThrow ExpressionError (TSInner ts))
+       forall ts. AbstractTypeSystem ts
     => TSPatternConstructor ts
     -> TSSealedPattern ts
     -> TSInner ts (TSPatternConstructor ts)

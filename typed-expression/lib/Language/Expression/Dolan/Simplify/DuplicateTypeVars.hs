@@ -42,7 +42,7 @@ mergeDuplicateTypeVarsInType (ConsDolanType t1 tr) =
 
 mergeDuplicateTypeVars ::
        forall (ground :: GroundTypeKind) a.
-       (IsDolanGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
+       (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
     => a
     -> a
 mergeDuplicateTypeVars = mapPShimWits @_ @(DolanType ground) mergeDuplicateTypeVarsInType mergeDuplicateTypeVarsInType

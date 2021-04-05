@@ -21,13 +21,12 @@ import Shapes
 type Simplifier :: GroundTypeKind -> Type
 newtype Simplifier ground = MkSimplifier
     { runSimplifier :: forall a.
-                           PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a =>
-                                   a -> DolanTypeCheckM ground a
+                           PShimWitMappable (DolanShim ground) (DolanType ground) a => a -> DolanTypeCheckM ground a
     }
 
 pureSimplifier ::
        forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
-    => (forall a. PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a => a -> a)
+    => (forall a. PShimWitMappable (DolanShim ground) (DolanType ground) a => a -> a)
     -> Simplifier ground
 pureSimplifier aa = MkSimplifier $ \a -> return $ aa a
 
@@ -69,7 +68,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => M
 -- e.g. "F (rec a. F a)" => "rec a. F a"
 dolanSimplifyTypes ::
        forall (ground :: GroundTypeKind) a.
-       (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
+       (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
     => a
     -> DolanTypeCheckM ground a
 dolanSimplifyTypes =
@@ -78,8 +77,8 @@ dolanSimplifyTypes =
     mconcat
         [ mif True $ pureSimplifier $ eliminateUnusedRecursion @ground
         , mif True $ MkSimplifier $ mergeDuplicateGroundTypes @ground
-        , mif True $ pureSimplifier $ eliminateOneSidedTypeVars @ground
-        , mif False $ MkSimplifier $ fullyConstrainedTypeVars @ground
+        , mif False $ pureSimplifier $ eliminateOneSidedTypeVars @ground
+        , mif True $ MkSimplifier $ fullyConstrainedTypeVars @ground
         , mif True $ pureSimplifier $ mergeSharedTypeVars @ground
         , mif True $ pureSimplifier $ mergeDuplicateTypeVars @ground
         , mif True $ pureSimplifier $ rollUpRecursiveTypes @ground
