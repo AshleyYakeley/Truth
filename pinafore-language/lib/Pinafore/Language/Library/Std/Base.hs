@@ -775,15 +775,37 @@ baseLibEntries =
                 "Get the time as a whole number of milliseconds."
                 (liftIO getTimeMS :: PinaforeAction Integer)
           , mkValEntry "sleep" "Do nothing for this number of milliseconds." (\t -> threadDelay $ t * 1000)
-          , mkValEntry "lifecycle" "Close everything that gets opened in the given action." $
+          ]
+    , docTreeEntry
+          "Lifecycle"
+          "Ways of managing the closing of things that get opened, most notably UI windows."
+          [ mkValEntry
+                "lifecycle"
+                "Close everything that gets opened in the given action.\n\n\
+                \Example: `lifecycle $ do openResource; sleep 1000 end`  \n\
+                \This opens some resource, sleeps for one second, and then closes it again." $
             subLifeCycle @PinaforeAction @A
-          , mkValEntry "onClose" "Add this action as to be done when closing." pinaforeOnClose
-          , mkValEntry "closer" "Get an (idempotent) action that closes what gets opened in the given action." $
+          , mkValEntry
+                "onClose"
+                "Add this action as to be done when closing.\n\n\
+                \Example: `lifecycle $ do onClose $ outputLn \"hello\"; sleep 1000 end`  \n\
+                \This sleeps for one second, and then outputs \"hello\" (when the lifecycle closes)."
+                pinaforeOnClose
+          , mkValEntry
+                "closer"
+                "Get an (idempotent) action that closes what gets opened in the given action.\n\n\
+                \Example: `(cl,r) <- closer openResource`  \n\
+                \This opens a resource `r`, also creating an action `cl`, that will close the resource when first called (subsequent calls do nothing).\n\
+                \This action will also be run at the end of the lifecycle, only if it hasn't already." $
             pinaforeEarlyCloser @A
-          , mkSpecialFormEntry
+          ]
+    , docTreeEntry
+          "Interpreter"
+          ""
+          [ mkSpecialFormEntry
                 "evaluate"
-                "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\
-                \The result of the action is either the value (`Right`), or an error message (`Left`).\n\
+                "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\n\
+                \The result of the action is either the value (`Right`), or an error message (`Left`).\n\n\
                 \The local scope is not in any way transmitted to the evaluation."
                 "@A"
                 "Text -> Action (Either Text A)" $

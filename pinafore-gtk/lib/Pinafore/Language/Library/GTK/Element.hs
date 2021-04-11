@@ -299,7 +299,7 @@ elementStuff =
         , mkValEntry "pick" "A drop-down menu." uiPick
         , mkValEntry
               "listTable"
-              "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection, fifth is an optional reference for the selected row."
+              "A list table. First arg is columns (name, property), second is list-reference of items, third is the action for item activation, fourth is an optional reference for the selected row."
               uiListTable
         , mkValEntry "calendar" "A calendar." uiCalendar
         , mkValEntry "scrolled" "A scrollable container." uiScrolled
