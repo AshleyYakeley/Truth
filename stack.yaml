@@ -19,7 +19,7 @@ packages:
 - pinafore-gtk
 - pinafore-app
 
-resolver: lts-17.5
+resolver: lts-17.9
 
 allow-newer: true
 
