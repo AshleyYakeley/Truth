@@ -1,5 +1,7 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
+  * (no changes)
+
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 
 pinafore (0.3) buster; urgency=medium
