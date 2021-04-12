@@ -1,5 +1,9 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
+ -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
+
+pinafore (0.3) buster; urgency=medium
+
   * Language
     - add subsumption expressions
     - allow module-qualified names
@@ -22,7 +26,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - fix serious defect in type unifier
     - fix defect involving imported types
 
- -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
+ -- Ashley Yakeley <ashley@semantic.org>  Sat, 10 Apr 2021 18:08:24 -0700
 
 pinafore (0.2) buster; urgency=medium
 
