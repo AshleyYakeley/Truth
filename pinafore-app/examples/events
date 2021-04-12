@@ -58,7 +58,7 @@ eventTimeTime et = case et of
     end;
 
 eventTimeOrder: RefOrder EventTime;
-eventTimeOrder = mapRefOrder eventTimeTime localChronological;
+eventTimeOrder = mapOrder eventTimeTime localChronological;
 
 
 ### Event
@@ -72,13 +72,13 @@ eventTime = property @Event @EventTime !"event.time";
 eventNotes = property @Event @Text !"item.description";
 
 eventOrder: RefOrder Event;
-eventOrder = refOrderOn eventTime eventTimeOrder;
+eventOrder = orderOn eventTime eventTimeOrder;
 
 eventData: FiniteSetRef (EventTime,Text);
 eventData = (eventTime !** eventName) !$$ events;
 
 eventDataOrder: RefOrder (EventTime,Text);
-eventDataOrder = mapRefOrder fst eventTimeOrder;
+eventDataOrder = mapOrder fst eventTimeOrder;
 
 eventList: WholeRef +Date -> WholeRef +[(EventTime,Text)];
 eventList todayref = {
@@ -88,7 +88,7 @@ eventList todayref = {
 
         pickCurrent: (EventTime,Text) -> Boolean;
         pickCurrent (t,_) = ge $ calendrical (eventTimeDate t) today;
-    in (EventTimeDate today,"Today") :: filter pickCurrent %(members eventDataOrder eventData)
+    in (EventTimeDate today,"Today") :: filter pickCurrent %(setList eventDataOrder eventData)
     };
 
 
@@ -153,7 +153,10 @@ eventsWindow = selectionWindow "Events" events [newEventMenuItem] eventWindow $ 
             nameColumn: (WholeRef +Text, Event -> WholeRef Text);
             nameColumn = ({"What"},\e -> eventName !$ {e});
             in [timeColumn,nameColumn];
-        in UI.listTable columns eventOrder events eventWindow (Just selection);
+        in UI.run $ do
+            eventList <- getSetList eventOrder events;
+            return $ UI.listTable columns eventList eventWindow (Just selection);
+            end;
 
     eventsPage: (UI.Element,UI.Element);
     eventsPage = uiPage {"Events"} $ UI.scrolled $ UI.horizontal [(False,eventsTableUI),(True,eventUI $ immutWhole selection)];

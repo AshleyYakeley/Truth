@@ -2,8 +2,9 @@ module Changes.Core.Sequence where
 
 import Changes.Core.Import
 
-newtype SequencePoint seq =
-    MkSequencePoint (Index seq)
+newtype SequencePoint seq = MkSequencePoint
+    { unSequencePoint :: Index seq
+    }
 
 deriving instance Eq (Index seq) => Eq (SequencePoint seq)
 
@@ -20,6 +21,9 @@ deriving instance
 
 instance Integral (Index seq) => Show (SequencePoint seq) where
     show (MkSequencePoint i) = show $ toInteger i
+
+seqPointConvert :: (Index seqA ~ Index seqB) => SequencePoint seqA -> SequencePoint seqB
+seqPointConvert (MkSequencePoint i) = MkSequencePoint i
 
 seqLength :: IsSequence seq => seq -> SequencePoint seq
 seqLength = fromIntegral . olength64

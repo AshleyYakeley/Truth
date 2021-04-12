@@ -1,6 +1,7 @@
 module Changes.Core.Edit.Update where
 
 import Changes.Core.Edit.Edit
+import Changes.Core.Edit.FullEdit
 import Changes.Core.Import
 import Changes.Core.Read
 
@@ -36,11 +37,28 @@ instance IsUpdate (EditUpdate edit) where
 instance IsEditUpdate (EditUpdate edit) where
     updateEdit (MkEditUpdate edit) = edit
 
-class ApplicableUpdate (update :: Type) where
-    applyUpdate :: update -> ReadFunction (UpdateReader update) (UpdateReader update)
-    default applyUpdate ::
-        (IsEditUpdate update, ApplicableEdit (UpdateEdit update)) =>
-                update -> ReadFunction (UpdateReader update) (UpdateReader update)
-    applyUpdate update = applyEdit $ updateEdit update
+class FullUpdate update where
+    -- | Updates do not have to be precise, only comprehensive
+    replaceUpdate ::
+           forall m. (MonadIO m)
+        => Readable m (UpdateReader update)
+        -> (update -> m ())
+        -> m ()
+    default replaceUpdate ::
+        (IsEditUpdate update, FullEdit (UpdateEdit update)) =>
+                forall m. (MonadIO m) => Readable m (UpdateReader update) -> (update -> m ()) -> m ()
+    replaceUpdate rd pushUpdate = replaceEdit rd $ \edit -> pushUpdate $ editUpdate edit
 
-instance ApplicableEdit edit => ApplicableUpdate (EditUpdate edit)
+getReplaceUpdates ::
+       forall m update. (FullUpdate update, MonadIO m)
+    => Readable m (UpdateReader update)
+    -> m [update]
+getReplaceUpdates mr = execWriterT $ replaceUpdate (remonadReadable lift mr) $ tell . pure
+
+getReplaceUpdatesFromSubject ::
+       forall m update. (SubjectReader (UpdateReader update), FullUpdate update, MonadIO m)
+    => UpdateSubject update
+    -> m [update]
+getReplaceUpdatesFromSubject subj = getReplaceUpdates $ subjectToReadable subj
+
+instance FullEdit edit => FullUpdate (EditUpdate edit)

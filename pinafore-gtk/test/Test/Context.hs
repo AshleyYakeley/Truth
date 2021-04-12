@@ -1,30 +1,26 @@
-module Test.Context where
+module Test.Context
+    ( module Shapes.Test
+    , module Shapes.Test.Context
+    , ScriptTestTree
+    , runScriptTestTree
+    , tDecls
+    , scriptTestCase
+    ) where
 
 import Shapes
 import Shapes.Test
+import Shapes.Test.Context
 
-type ContextTestTree = [String] -> TestTree
+type ScriptTestTree = ContextTestTree [String]
 
-tmodify :: (TestTree -> TestTree) -> ContextTestTree -> ContextTestTree
-tmodify f ct c = f $ ct c
+runScriptTestTree :: ScriptTestTree -> TestTree
+runScriptTestTree = runContextTestTree mempty
 
-context :: [String] -> ContextTestTree -> ContextTestTree
-context defs tree c = tree $ defs <> c
-
-tgroup :: String -> [ContextTestTree] -> ContextTestTree
-tgroup name tests c = testTree name $ fmap (\test -> test c) tests
-
-runContext :: ContextTestTree -> TestTree
-runContext tree = tree mempty
+tDecls :: [String] -> ScriptTestTree -> ScriptTestTree
+tDecls defs = tContext $ \c -> defs <> c
 
 prefix :: [String] -> Text
 prefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
 
-contextTestCase :: Text -> Text -> (Text -> IO ()) -> ContextTestTree
-contextTestCase name text tester c = testTree (unpack name) $ tester $ prefix c <> text
-
-contextTestProperty :: BuildTestTree prop => Text -> Text -> (Text -> prop) -> ContextTestTree
-contextTestProperty name text prop c = testTree (unpack name) $ prop $ prefix c <> text
-
-message :: MonadIO m => String -> m ()
-message s = liftIO $ hPutStrLn stderr s
+scriptTestCase :: Text -> Text -> (Text -> IO ()) -> ScriptTestTree
+scriptTestCase name text tester = MkContextTestTree $ \c -> testTree (unpack name) $ tester $ prefix c <> text

@@ -80,15 +80,14 @@ funcShimWit swa swb =
             mapPosShimWit (applyCoPolyShim (ccontramap conva) convb) $
             singleDolanShimWit $
             mkShimWit $
-            GroundDolanSingularType FuncPinaforeGroundType $
-            ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+            GroundDolanSingularType funcGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
 actionShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
 actionShimWit swa =
     unPosShimWit swa $ \ta conva ->
         mapPosShimWit (cfmap conva) $
         singleDolanShimWit $
-        mkShimWit $ GroundDolanSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+        mkShimWit $ GroundDolanSingularType actionGroundType $ ConsDolanArguments ta NilDolanArguments
 
 getTimeMS :: IO Integer
 getTimeMS = do
@@ -120,11 +119,8 @@ newClock duration = do
 
 newTimeZoneRef :: PinaforeImmutableWholeRef UTCTime -> PinaforeAction (PinaforeImmutableWholeRef Int)
 newTimeZoneRef now = do
-    rc <- pinaforeResourceContext
     ref <-
-        liftLifeCycle $
-        eaFloatMapReadOnly
-            rc
+        pinaforeFloatMapReadOnly
             (floatLift (\mr ReadWhole -> fmap (fromKnow zeroTime) $ mr ReadWhole) liftROWChangeLens clockTimeZoneLens) $
         immutableRefToReadOnlyRef now
     return $ fmap timeZoneMinutes $ MkPinaforeImmutableWholeRef ref
@@ -602,7 +598,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t NilDolanArguments) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -610,8 +606,10 @@ baseLibEntries =
                             monoToEntityShim $
                             MkMonoType MaybeEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    conv <- subtypeConvert sc t $ topEntityType
-                    pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
+                    conv <- subtypeConvert sc t $ topEntityType @'Negative
+                    pure $ convE . cfmap (iJoinMeetL1 @_ @'Negative . conv)
+                {-
+                -}
           ]
     , docTreeEntry
           "Pairs"
@@ -621,7 +619,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments) :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -630,9 +628,11 @@ baseLibEntries =
                             MkMonoType PairEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    convA <- subtypeConvert sc ta $ topEntityType
-                    convB <- subtypeConvert sc tb $ topEntityType
-                    pure $ convE . applyCoPolyShim (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
+                    convA <- subtypeConvert sc ta $ topEntityType @'Negative
+                    convB <- subtypeConvert sc tb $ topEntityType @'Negative
+                    pure $
+                        convE .
+                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
           , mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
           , mkValEntry "toPair" "Construct a pair." $ (,) @A @B
@@ -657,7 +657,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments) :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -666,9 +666,11 @@ baseLibEntries =
                             MkMonoType EitherEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    convA <- subtypeConvert sc ta $ topEntityType
-                    convB <- subtypeConvert sc tb $ topEntityType
-                    pure $ convE . applyCoPolyShim (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
+                    convA <- subtypeConvert sc ta $ topEntityType @'Negative
+                    convB <- subtypeConvert sc tb $ topEntityType @'Negative
+                    pure $
+                        convE .
+                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
           , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
           , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
                 case v of
@@ -691,7 +693,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t NilDolanArguments) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -699,8 +701,8 @@ baseLibEntries =
                             monoToEntityShim $
                             MkMonoType ListEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    conv <- subtypeConvert sc t $ topEntityType
-                    pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
+                    conv <- subtypeConvert sc t $ topEntityType @'Negative
+                    pure $ convE . cfmap (iJoinMeetL1 @_ @'Negative . conv)
           , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                 case l of
                     [] -> fnil
@@ -743,7 +745,7 @@ baseLibEntries =
     , docTreeEntry
           "Actions"
           ""
-          [ mkTypeEntry "Action" "" $ MkBoundType ActionPinaforeGroundType
+          [ mkTypeEntry "Action" "" $ MkBoundType actionGroundType
           , mkValEntry "return" "A value as an Action." $ return @PinaforeAction @A
           , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind
           , mkValEntry ">>" "Do actions in sequence." $ qbind_
@@ -773,15 +775,37 @@ baseLibEntries =
                 "Get the time as a whole number of milliseconds."
                 (liftIO getTimeMS :: PinaforeAction Integer)
           , mkValEntry "sleep" "Do nothing for this number of milliseconds." (\t -> threadDelay $ t * 1000)
-          , mkValEntry "lifecycle" "Close everything that gets opened in the given action." $
+          ]
+    , docTreeEntry
+          "Lifecycle"
+          "Ways of managing the closing of things that get opened, most notably UI windows."
+          [ mkValEntry
+                "lifecycle"
+                "Close everything that gets opened in the given action.\n\n\
+                \Example: `lifecycle $ do openResource; sleep 1000 end`  \n\
+                \This opens some resource, sleeps for one second, and then closes it again." $
             subLifeCycle @PinaforeAction @A
-          , mkValEntry "onClose" "Add this action as to be done when closing." pinaforeOnClose
-          , mkValEntry "closer" "Get an (idempotent) action that closes what gets opened in the given action." $
+          , mkValEntry
+                "onClose"
+                "Add this action as to be done when closing.\n\n\
+                \Example: `lifecycle $ do onClose $ outputLn \"hello\"; sleep 1000 end`  \n\
+                \This sleeps for one second, and then outputs \"hello\" (when the lifecycle closes)."
+                pinaforeOnClose
+          , mkValEntry
+                "closer"
+                "Get an (idempotent) action that closes what gets opened in the given action.\n\n\
+                \Example: `(cl,r) <- closer openResource`  \n\
+                \This opens a resource `r`, also creating an action `cl`, that will close the resource when first called (subsequent calls do nothing).\n\
+                \This action will also be run at the end of the lifecycle, only if it hasn't already." $
             pinaforeEarlyCloser @A
-          , mkSpecialFormEntry
+          ]
+    , docTreeEntry
+          "Interpreter"
+          ""
+          [ mkSpecialFormEntry
                 "evaluate"
-                "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\
-                \The result of the action is either the value (`Right`), or an error message (`Left`).\n\
+                "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\n\
+                \The result of the action is either the value (`Right`), or an error message (`Left`).\n\n\
                 \The local scope is not in any way transmitted to the evaluation."
                 "@A"
                 "Text -> Action (Either Text A)" $

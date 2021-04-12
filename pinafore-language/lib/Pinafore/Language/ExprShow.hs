@@ -1,6 +1,8 @@
 module Pinafore.Language.ExprShow where
 
+import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan
 import Pinafore.Language.Name
 import Shapes
 
@@ -35,3 +37,13 @@ instance AllWitnessConstraint ExprShow w => ExprShow (AnyInKind w) where
 type family ListTypeExprShow (dv :: [k]) :: Type where
     ListTypeExprShow '[] = (Text, Int)
     ListTypeExprShow (t ': tt) = (Text, Int) -> ListTypeExprShow tt
+
+standardListTypeExprShow ::
+       forall (dv :: [Variance]). Is DolanVarianceType dv
+    => Text
+    -> ListTypeExprShow dv
+standardListTypeExprShow = let
+    sh :: forall (dv' :: [Variance]). Int -> DolanVarianceType dv' -> Text -> ListTypeExprShow dv'
+    sh i NilListType t = (t, i)
+    sh _ (ConsListType _ lt) t = \ta -> sh 2 lt (t <> " " <> precShow 0 ta)
+    in sh 0 $ representative @_ @_ @dv

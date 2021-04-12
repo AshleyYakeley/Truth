@@ -127,12 +127,6 @@ instance (TestEquality sel, TupleEditWitness ApplicableEdit sel) => ApplicableEd
             (Dict, Just Refl) -> applyEdit edit (mr . MkTupleUpdateReader aggedite) reader
             _ -> mr aggreader
 
-instance (TestEquality sel, TupleUpdateWitness ApplicableUpdate sel) => ApplicableUpdate (TupleUpdate sel) where
-    applyUpdate (MkTupleUpdate selU update) mr aggreader@(MkTupleUpdateReader selR reader) =
-        case (tupleUpdateWitness @ApplicableUpdate selU, testEquality selU selR) of
-            (Dict, Just Refl) -> applyUpdate update (mr . MkTupleUpdateReader selU) reader
-            _ -> mr aggreader
-
 data TupleUpdateEditList sel where
     MkTupleUpdateEditList :: sel update -> [UpdateEdit update] -> TupleUpdateEditList sel
 

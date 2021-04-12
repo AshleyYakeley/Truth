@@ -25,7 +25,7 @@ runRefWriterT spos wma = do
     (a, w) <- runWriterT wma
     case w of
         [] -> return a
-        _ -> throw $ MkErrorMessage spos NotationBareUnquoteError
+        _ -> throwErrorType spos NotationBareUnquoteError
 
 liftRefNotation :: MFunction PinaforeInterpreter RefNotation
 liftRefNotation = lift . lift
@@ -47,12 +47,12 @@ varRefExpr spos name =
             Nothing ->
                 case name of
                     UnqualifiedReferenceName n -> return $ qVarExpr n
-                    _ -> throw $ MkErrorMessage spos $ LookupRefNameUnknownError name
+                    _ -> throwErrorType spos (LookupRefNameUnknownError name)
 
 refNotationUnquote :: SourcePos -> RefExpression -> RefExpression
 refNotationUnquote spos rexpr = do
     i <- lift get
-    lift $ put $ i + 1
+    lift $ put $ succ i
     let varname = fromString $ "%ref" <> show i
     expr <- lift $ runRefWriterT spos rexpr
     tell $ pure (varname, expr)

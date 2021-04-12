@@ -1,3 +1,5 @@
+{-# LANGUAGE ApplicativeDo #-}
+
 module Language.Expression.Common.WitnessMappable where
 
 import Data.Shim
@@ -5,7 +7,7 @@ import Shapes
 
 class WitnessMappable (poswit :: k -> Type) (negwit :: k -> Type) (a :: Type) where
     mapWitnessesM ::
-           forall m. Monad m
+           forall m. Applicative m
         => (forall (t :: k). InKind t => poswit t -> m (poswit t))
         -> (forall (t :: k). InKind t => negwit t -> m (negwit t))
         -> a
@@ -41,24 +43,25 @@ instance InKind t => WitnessMappable (poswit :: k -> Type) negwit (poswit t) whe
 instance InKind t => WitnessMappable poswit (negwit :: k -> Type) (negwit t) where
     mapWitnessesM _ mapNeg = mapNeg
 
+instance WitnessMappable poswit negwit (AnyValue poswit) where
+    mapWitnessesM mapPos _ (MkAnyValue tw val) = do
+        tw' <- mapPos tw
+        pure $ MkAnyValue tw' val
+
 instance WitnessMappable poswit negwit (AnyInKind poswit) where
     mapWitnessesM mapPos _ (MkAnyInKind pa) = do
         pa' <- mapPos pa
-        return $ MkAnyInKind pa'
+        pure $ MkAnyInKind pa'
 
 instance WitnessMappable poswit negwit (AnyInKind negwit) where
     mapWitnessesM _ mapNeg (MkAnyInKind pa) = do
         pa' <- mapNeg pa
-        return $ MkAnyInKind pa'
+        pure $ MkAnyInKind pa'
 
 instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Type). InCategory shim =>
              WitnessMappable (ShimWit shim poswit 'Positive) (ShimWit shim negwit 'Negative) (AnyInKind poswit) where
-    mapWitnessesM mapPos _ (MkAnyInKind w) = do
-        MkShimWit w' _ <- mapPos $ mkShimWit w
-        return $ MkAnyInKind w'
+    mapWitnessesM mapPos _ (MkAnyInKind w) = fmap (\(MkShimWit w' _) -> MkAnyInKind w') $ mapPos $ mkShimWit w
 
 instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Type). InCategory shim =>
              WitnessMappable (ShimWit shim poswit 'Positive) (ShimWit shim negwit 'Negative) (AnyInKind negwit) where
-    mapWitnessesM _ mapNeg (MkAnyInKind w) = do
-        MkShimWit w' _ <- mapNeg $ mkShimWit w
-        return $ MkAnyInKind w'
+    mapWitnessesM _ mapNeg (MkAnyInKind w) = fmap (\(MkShimWit w' _) -> MkAnyInKind w') $ mapNeg $ mkShimWit w

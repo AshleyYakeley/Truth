@@ -22,9 +22,7 @@ newtype LangUIElement =
     MkLangUIElement (CreateView Widget)
 
 elementGroundType :: PinaforeGroundType '[] LangUIElement
-elementGroundType =
-    SimpleGroundType NilListType NilDolanVarianceMap ("Element", 0) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangUIElement)|]) HetRefl
+elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangUIElement)|]) "Element"
 
 -- LangUIElement
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUIElement where
@@ -45,64 +43,49 @@ clearText = funcChangeLens (fromKnow mempty)
 uiListTable ::
        (HasCallStack, ?pinafore :: PinaforeContext)
     => [(LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))]
-    -> LangRefOrder A
-    -> LangFiniteSetRef '( A, EnA)
+    -> LangListRef '( BottomType, EnA)
     -> (A -> PinaforeAction TopType)
     -> Maybe (LangWholeRef '( A, EnA))
     -> LangUIElement
-uiListTable cols order val onDoubleClick mSelectionLangRef =
+uiListTable cols lref onDoubleClick mSelectionLangRef =
     MkLangUIElement $ do
+        esrc <- newEditSource
         let
             mSelectionModel :: Maybe (Model (BiWholeUpdate (Know A) (Know EnA)))
             mSelectionModel = fmap (unWModel . langWholeRefToBiWholeRef) mSelectionLangRef
-            uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
-            uo =
-                mapUpdateOrder
-                    (changeLensToFloating $
-                     liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
-                pinaforeUpdateOrder order
-            rows :: Model (FiniteSetUpdate EnA)
-            rows = unWModel $ unLangFiniteSetRef $ contraRangeLift meet2 val
-            pkSub :: Model (ContextUpdate PinaforeStorageUpdate (FiniteSetUpdate EnA))
-            pkSub = contextModels pinaforeEntityModel rows
-            readSub :: Model (ConstWholeUpdate EnA) -> View A
+            readSub :: Model (ROWUpdate EnA) -> View A
             readSub sub =
                 viewRunResource sub $ \asub -> do
                     ea <- aModelRead asub ReadWhole
                     return $ meet2 ea
-            onSelect :: Model (ConstWholeUpdate EnA) -> View ()
+            onSelect :: Model (ROWUpdate EnA) -> View ()
             onSelect osub = do
                 a <- readSub osub
                 runPinaforeAction $ void $ onDoubleClick a
             getColumn ::
                    (LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))
-                -> KeyColumn (ConstWholeUpdate EnA)
+                -> KeyColumn (ROWUpdate EnA)
             getColumn (nameRef, getCellRef) = let
                 showCell :: Know Text -> (Text, TableCellProps)
                 showCell (Known s) = (s, plainTableCellProps)
                 showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
                 nameOpenSub :: Model (ROWUpdate Text)
                 nameOpenSub = unWModel $ eaMapSemiReadOnly clearText $ langWholeRefToReadOnlyValue nameRef
-                getCellSub :: Model (ConstWholeUpdate EnA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
+                getCellSub :: Model (ROWUpdate EnA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
                 getCellSub osub = do
                     a <- liftToLifeCycle $ readSub osub
                     return $
                         unWModel $
                         eaMapSemiReadOnly (funcChangeLens showCell) $ langWholeRefToReadOnlyValue $ getCellRef a
                 in readOnlyKeyColumn nameOpenSub getCellSub
-        colSub :: Model (ContextUpdate PinaforeStorageUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
-            cvFloatMapModel (contextOrderedSetLens uo) pkSub
-        esrc <- newEditSource
-        let
-            olsub :: Model (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))
-            olsub = mapModel (tupleChangeLens SelectContent) colSub
-            tsn :: SelectNotify (Model (ConstWholeUpdate EnA))
+            tsn :: SelectNotify (Model (ROWUpdate EnA))
             tsn =
                 case mSelectionModel of
                     Nothing -> mempty
                     Just selectionModel ->
                         contramap readSub $ viewLiftSelectNotify $ modelSelectNotify esrc selectionModel
-        (widget, setSelection) <- createListTable (fmap getColumn cols) olsub onSelect tsn
+        (widget, setSelection) <-
+            createListTable (fmap getColumn cols) (unWModel $ langListRefToOrdered lref) onSelect tsn
         case mSelectionModel of
             Nothing -> return ()
             Just selectionModel -> let
@@ -307,7 +290,6 @@ elementStuff =
               "notebook"
               "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
               uiNotebook
-                -- CSS
                 -- drag
                 -- icon
         , mkValEntry
@@ -317,7 +299,7 @@ elementStuff =
         , mkValEntry "pick" "A drop-down menu." uiPick
         , mkValEntry
               "listTable"
-              "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection, fifth is an optional reference for the selected row."
+              "A list table. First arg is columns (name, property), second is list-reference of items, third is the action for item activation, fourth is an optional reference for the selected row."
               uiListTable
         , mkValEntry "calendar" "A calendar." uiCalendar
         , mkValEntry "scrolled" "A scrollable container." uiScrolled

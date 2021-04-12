@@ -7,11 +7,10 @@ import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Bisubstitute
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.PShimWit
-import Language.Expression.Dolan.Solver
-import Language.Expression.Dolan.Subsume
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
+import Language.Expression.Dolan.Unifier
 import Shapes
 
 mergeInSingularType ::
@@ -88,7 +87,7 @@ mergeInType (ConsDolanType t1 tr) = do
 
 mergeDuplicateGroundTypes ::
        forall (ground :: GroundTypeKind) a.
-       (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanPolyShim ground Type) (DolanType ground) a)
+       (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
     => a
     -> DolanTypeCheckM ground a
 mergeDuplicateGroundTypes = mapPShimWitsM mergeInType mergeInType

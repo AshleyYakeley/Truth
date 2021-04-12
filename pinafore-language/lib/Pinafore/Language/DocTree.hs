@@ -35,7 +35,7 @@ runDocTree showTitle showDesc showEntry level MkDocTree {..} = do
     showTitle level docTreeName
     showDesc level docTreeDescription
     for_ docTreeEntries $ \case
-        TreeDocTreeEntry tree -> runDocTree showTitle showDesc showEntry (level + 1) tree
+        TreeDocTreeEntry tree -> runDocTree showTitle showDesc showEntry (succ level) tree
         EntryDocTreeEntry a -> showEntry level a
 
 data DocType

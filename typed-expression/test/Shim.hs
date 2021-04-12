@@ -46,7 +46,7 @@ countRec r t =
         Just t' -> succ $ countRec r t'
 
 withRec' :: forall t r. (T :~: t -> r) -> r
-withRec' call = assignUVar @Type @t (MkSymbolType @"t") $ call Refl
+withRec' call = assignUVarT @t (MkSymbolType @"t") $ call Refl
 
 withRec :: forall r. (REC -> r) -> r
 withRec = withRec' @(Maybe T)

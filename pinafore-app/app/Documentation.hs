@@ -28,9 +28,9 @@ showDefEntry h _ MkDefDoc {..} = do
             case docType of
                 ValueDocType -> nameType
                 ValuePatternDocType -> nameType <> " (also pattern)"
-                TypeDocType -> name
+                TypeDocType -> "`type` " <> name
                 SupertypeDocType -> "_" <> nameType <> "_"
-                SubtypeRelationDocType -> name
+                SubtypeRelationDocType -> "`subtype` " <> name
     hPutStrLn h $ title <> "  "
     if docDescription == ""
         then return ()

@@ -1,6 +1,6 @@
-name: shapes
-version: "0.3"
 _common: !include "../common.yaml"
+name: shapes
+version: *changes_version
 <<: *author
 
 <<: *language
@@ -77,10 +77,13 @@ library:
       - Control.Task
       - Control.AsyncRunner
       - Unsafe.Type
+      - Unsafe.IO
+      - Debug.Trace.Null
       - Shapes
       - Shapes.Numeric
       - Shapes.Unsafe
       - Shapes.Test
+      - Shapes.Test.Context
     other-modules:
       - Shapes.Import
       - Shapes.Instances

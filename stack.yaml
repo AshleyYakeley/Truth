@@ -1,21 +1,27 @@
 packages:
+
+# separate (submodule) dependencies
+- diagrams-gi-cairo
 - witness
 - open-witness
+
+# Changes
 - transformers-extra
 - shapes
-- typed-expression
 - changes-core
 - changes-media
 - changes-world
 - changes-gtk
-- diagrams-gi-cairo
+
+# Pinafore
+- typed-expression
 - pinafore-base
 - pinafore-language
 - pinafore-gtk
 - pinafore-chart
 - pinafore-app
 
-resolver: lts-17.0
+resolver: lts-17.9
 
 allow-newer: true
 

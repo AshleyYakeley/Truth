@@ -10,13 +10,45 @@ import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Variance
 import Shapes
 
+type BisubstitutablePolyShim :: PolyShimKind -> Constraint
+class ( JoinMeetIsoCategory (pshim Type)
+      , IsoMapShim (pshim Type)
+      , DolanVarianceInCategory pshim
+      , ReduciblePolyShim pshim
+      ) => BisubstitutablePolyShim pshim where
+    reducedBisubstitutablePolyShim ::
+           Dict (BisubstitutablePolyShim (ReducedPolyShim pshim), LazyCategory (ReducedPolyShim pshim Type))
+
+instance forall m (pshim :: PolyShimKind). (Applicative m, BisubstitutablePolyShim pshim) =>
+             BisubstitutablePolyShim (PolyComposeShim m pshim) where
+    reducedBisubstitutablePolyShim =
+        case reducedBisubstitutablePolyShim @pshim of
+            Dict -> Dict
+
+instance forall (pshim :: PolyShimKind). (BisubstitutablePolyShim pshim, LazyCategory (pshim Type)) =>
+             BisubstitutablePolyShim (PolyIso pshim) where
+    reducedBisubstitutablePolyShim =
+        case reducedBisubstitutablePolyShim @pshim of
+            Dict -> Dict
+
+instance ReduciblePolyShim JMShim where
+    type ReducedPolyShim JMShim = JMShim
+
+instance BisubstitutablePolyShim JMShim where
+    reducedBisubstitutablePolyShim = Dict
+
 type IsDolanPolyShim :: PolyShimKind -> Constraint
-type IsDolanPolyShim pshim = (DolanVarianceInCategory pshim, LazyCategory (pshim Type), CartesianShim (pshim Type))
+type IsDolanPolyShim pshim
+     = ( BisubstitutablePolyShim pshim
+       , JoinMeetCategory (pshim Type)
+       , LazyCategory (pshim Type)
+       , CartesianShim (pshim Type))
 
 class ( IsDolanPolyShim (DolanPolyShim ground)
       , Ord (DolanName ground)
       , Show (DolanName ground)
       , MonadPlus (DolanM ground)
+      , MonadThrow ExpressionError (DolanM ground)
       , AllWitnessConstraint Show (DolanType ground 'Positive)
       , AllWitnessConstraint Show (DolanType ground 'Negative)
       ) => IsDolanGroundType (ground :: GroundTypeKind) where
@@ -33,7 +65,7 @@ class ( IsDolanPolyShim (DolanPolyShim ground)
         -> Maybe (dva :~: dvb, ta :~~: tb)
 
 type DolanShimWit :: GroundTypeKind -> Polarity -> Type -> Type
-type DolanShimWit ground polarity = PShimWit (DolanPolyShim ground Type) (DolanType ground) polarity
+type DolanShimWit ground polarity = PShimWit (DolanShim ground) (DolanType ground) polarity
 
 type DolanIsoShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanIsoShimWit ground polarity = PShimWit (DolanPolyIsoShim ground Type) (DolanType ground) polarity
@@ -91,8 +123,24 @@ instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
         return Refl
     testEquality _ _ = Nothing
 
+singularsToAnyType ::
+       forall (ground :: GroundTypeKind) (polarity :: Polarity).
+       [AnyW (DolanSingularType ground polarity)]
+    -> AnyW (DolanType ground polarity)
+singularsToAnyType [] = MkAnyW NilDolanType
+singularsToAnyType (MkAnyW s:ss) =
+    case singularsToAnyType ss of
+        MkAnyW t -> MkAnyW $ ConsDolanType s t
+
+typeToAnySingulars ::
+       forall (ground :: GroundTypeKind) (polarity :: Polarity) t.
+       DolanType ground polarity t
+    -> [AnyW (DolanSingularType ground polarity)]
+typeToAnySingulars NilDolanType = []
+typeToAnySingulars (ConsDolanType s t) = MkAnyW s : typeToAnySingulars t
+
 type DolanSingularShimWit :: GroundTypeKind -> Polarity -> Type -> Type
-type DolanSingularShimWit ground polarity = PShimWit (DolanPolyShim ground Type) (DolanSingularType ground) polarity
+type DolanSingularShimWit ground polarity = PShimWit (DolanShim ground) (DolanSingularType ground) polarity
 
 varDolanShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) name.
@@ -120,7 +168,7 @@ unsafeDeleteVarShimWit ::
        (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity)
     => SymbolType name
     -> PShimWit shim (DolanType ground) polarity (UVarT name)
-unsafeDeleteVarShimWit n = assignUVar @Type @(LimitType polarity) n $ mkShimWit NilDolanType
+unsafeDeleteVarShimWit n = assignUVarT @(LimitType polarity) n $ mkShimWit NilDolanType
 
 singleDolanType ::
        forall (ground :: GroundTypeKind) (polarity :: Polarity) (t :: Type).
@@ -161,5 +209,14 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TypeSyst
     type TSOuter (DolanTypeSystem ground) = DolanTypeCheckM ground
     type TSNegWitness (DolanTypeSystem ground) = DolanType ground 'Negative
     type TSPosWitness (DolanTypeSystem ground) = DolanType ground 'Positive
-    type TSShim (DolanTypeSystem ground) = DolanPolyShim ground Type
+    type TSShim (DolanTypeSystem ground) = DolanShim ground
     type TSName (DolanTypeSystem ground) = DolanName ground
+
+showDolanType ::
+       forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanType ground polarity t
+    -> String
+showDolanType =
+    case polarityType @polarity of
+        PositiveType -> showAllWitness
+        NegativeType -> showAllWitness

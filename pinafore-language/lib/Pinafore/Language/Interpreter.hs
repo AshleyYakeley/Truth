@@ -18,7 +18,6 @@ module Pinafore.Language.Interpreter
     , runSourcePos
     , liftSourcePos
     , mapSourcePos
-    , convertFailure
     , SpecialVals(..)
     , getSpecialVals
     , lookupLetBinding
@@ -109,6 +108,9 @@ newtype Interpreter ts a = MkInterpreter
 
 instance MonadThrow PinaforeError (Interpreter ts) where
     throw err = MkInterpreter $ throw err
+
+instance MonadCatch PinaforeError (Interpreter ts) where
+    catch (MkInterpreter ma) ema = MkInterpreter $ catch ma $ \e -> unInterpreter $ ema e
 
 instance MonadThrow ErrorMessage (Interpreter ts) where
     throw = throwErrorMessage
@@ -211,9 +213,9 @@ importModule spos mname ma = do
     newscope <- runSourcePos spos $ getModule mname
     importScope newscope ma
 
-newtype SourceInterpreter ts a =
-    MkSourceInterpreter (ReaderT SourcePos (Interpreter ts) a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFix)
+newtype SourceInterpreter ts a = MkSourceInterpreter
+    { unSourceInterpreter :: ReaderT SourcePos (Interpreter ts) a
+    } deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFix)
 
 askSourcePos :: SourceInterpreter ts SourcePos
 askSourcePos = MkSourceInterpreter ask
@@ -247,6 +249,9 @@ instance MonadThrow ExpressionError (SourceInterpreter ts) where
 instance MonadThrow PinaforeError (SourceInterpreter ts) where
     throw err = MkSourceInterpreter $ throw err
 
+instance MonadCatch PinaforeError (SourceInterpreter ts) where
+    catch (MkSourceInterpreter ma) ema = MkSourceInterpreter $ catch ma $ \e -> unSourceInterpreter $ ema e
+
 instance MonadThrow ErrorMessage (SourceInterpreter ts) where
     throw err = MkSourceInterpreter $ throw err
 
@@ -254,10 +259,7 @@ instance MonadThrow ErrorType (SourceInterpreter ts) where
     throw err =
         MkSourceInterpreter $ do
             spos <- ask
-            throw $ MkErrorMessage spos err
-
-convertFailure :: Text -> Text -> SourceInterpreter ts a
-convertFailure ta tb = throw $ TypeConvertError ta tb
+            throwErrorType spos err
 
 withNewBinding :: Name -> InterpreterBinding ts -> Interpreter ts a -> Interpreter ts a
 withNewBinding name b = pLocalScope $ \tc -> tc {scopeBindings = insertMapLazy name b $ scopeBindings tc}

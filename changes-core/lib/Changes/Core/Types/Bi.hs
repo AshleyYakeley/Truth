@@ -1,95 +1,66 @@
-module Changes.Core.Types.Bi where
+module Changes.Core.Types.Bi
+    ( module I
+    , mappingBiChangeLens
+    , biLinearChangeLens
+    , biLinearFloatingChangeLens
+    ) where
 
 import Changes.Core.Edit
 import Changes.Core.Lens
 import Changes.Core.Read
-import Changes.Core.Types.None
-import Changes.Core.Types.ReadOnly
+import Changes.Core.Types.Bi.Bi as I
+import Changes.Core.Types.Bi.ChangeMap as I
+import Changes.Core.Types.Bi.Whole as I
 import Shapes
 
-type BiReader (preader :: Type -> Type) (qreader :: Type -> Type) = qreader
-
-newtype BiEdit (pedit :: Type) (qedit :: Type) =
-    MkBiEdit pedit
-
-type instance EditReader (BiEdit pedit qedit) =
-     BiReader (EditReader pedit) (EditReader qedit)
-
-newtype BiUpdate (pupdate :: Type) (qupdate :: Type) =
-    MkBiUpdate qupdate
-
-type instance UpdateEdit (BiUpdate pupdate qupdate) =
-     BiEdit (UpdateEdit pupdate) (UpdateEdit qupdate)
-
-biSingleChangeLens :: forall update. ChangeLens (BiUpdate update update) update
-biSingleChangeLens = let
-    clRead :: ReadFunction (UpdateReader update) (UpdateReader update)
-    clRead rd = rd
+mappingBiChangeLens ::
+       forall updateAP updateBP updateAQ updateBQ.
+       ChangeMap updateBP updateAP
+    -> ChangeMap updateAQ updateBQ
+    -> ChangeLens (BiUpdate updateAP updateAQ) (BiUpdate updateBP updateBQ)
+mappingBiChangeLens pmap qmap = let
+    clRead :: ReadFunction (UpdateReader updateAQ) (UpdateReader updateBQ)
+    clRead rd rt2 = chmapRead qmap rt2 $ \rt1 qq -> fmap qq (rd rt1)
     clUpdate ::
            forall m. MonadIO m
-        => BiUpdate update update
-        -> Readable m (UpdateReader update)
-        -> m [update]
-    clUpdate (MkBiUpdate update) _ = return [update]
+        => BiUpdate updateAP updateAQ
+        -> Readable m (UpdateReader updateAQ)
+        -> m [BiUpdate updateBP updateBQ]
+    clUpdate (MkBiUpdate uq1) _ = return $ pure $ MkBiUpdate $ chmapUpdate qmap uq1
+    mapEdit :: BiEdit (UpdateEdit updateBP) (UpdateEdit updateBQ) -> BiEdit (UpdateEdit updateAP) (UpdateEdit updateAQ)
+    mapEdit (MkBiEdit edit) = MkBiEdit $ chmapEdit pmap edit
     clPutEdits ::
            forall m. MonadIO m
-        => [UpdateEdit update]
-        -> Readable m (UpdateReader update)
-        -> m (Maybe [BiEdit (UpdateEdit update) (UpdateEdit update)])
-    clPutEdits = clPutEditsFromSimplePutEdit $ \edit -> return $ Just [MkBiEdit edit]
+        => [BiEdit (UpdateEdit updateBP) (UpdateEdit updateBQ)]
+        -> Readable m (UpdateReader updateAQ)
+        -> m (Maybe [BiEdit (UpdateEdit updateAP) (UpdateEdit updateAQ)])
+    clPutEdits edits _ = return $ Just $ fmap mapEdit edits
     in MkChangeLens {..}
 
-singleBiChangeLens :: forall update. ChangeLens update (BiUpdate update update)
-singleBiChangeLens = let
-    clRead :: ReadFunction (UpdateReader update) (UpdateReader update)
-    clRead rd = rd
-    clUpdate ::
-           forall m. MonadIO m
-        => update
-        -> Readable m (UpdateReader update)
-        -> m [BiUpdate update update]
-    clUpdate update _ = return [MkBiUpdate update]
-    clPutEdits ::
-           forall m. MonadIO m
-        => [BiEdit (UpdateEdit update) (UpdateEdit update)]
-        -> Readable m (UpdateReader update)
-        -> m (Maybe [UpdateEdit update])
-    clPutEdits = clPutEditsFromSimplePutEdit $ \(MkBiEdit edit) -> return $ Just [edit]
-    in MkChangeLens {..}
+biLinearChangeLens ::
+       forall lin updateAP updateBP updateAQ updateBQ.
+       LinearChangeLens updateAP updateBP
+    -> LinearChangeLens updateAQ updateBQ
+    -> GenChangeLens lin (BiUpdate updateAP updateAQ) (BiUpdate updateBP updateBQ)
+biLinearChangeLens (MkChangeLens _ _ pe) (MkChangeLens r u _) = let
+    u' :: forall m. MonadIO m
+       => BiUpdate updateAP updateAQ
+       -> Readable m (UpdateReader updateAQ)
+       -> m [BiUpdate updateBP updateBQ]
+    u' (MkBiUpdate update) rd = fmap (fmap MkBiUpdate) $ u update rd
+    pe' :: forall m. MonadIO m
+        => [BiEdit (UpdateEdit updateBP) (UpdateEdit updateBQ)]
+        -> Readable m (NL lin (UpdateReader updateAQ))
+        -> m (Maybe [BiEdit (UpdateEdit updateAP) (UpdateEdit updateAQ)])
+    pe' edits _ = fmap (fmap (fmap MkBiEdit)) $ pe (fmap unBiEdit edits) nullReadable
+    in MkChangeLens r u' pe'
 
-biReadOnlyChangeLens :: forall pupdate qupdate. ChangeLens (BiUpdate pupdate qupdate) (ReadOnlyUpdate qupdate)
-biReadOnlyChangeLens = let
-    clRead :: ReadFunction (UpdateReader qupdate) (UpdateReader qupdate)
-    clRead rd = rd
-    clUpdate ::
-           forall m. MonadIO m
-        => BiUpdate pupdate qupdate
-        -> Readable m (UpdateReader qupdate)
-        -> m [ReadOnlyUpdate qupdate]
-    clUpdate (MkBiUpdate qupdate) _ = return [MkReadOnlyUpdate qupdate]
-    clPutEdits ::
-           forall m. MonadIO m
-        => [_]
-        -> Readable m (UpdateReader qupdate)
-        -> m (Maybe [_])
-    clPutEdits = clPutEditsNone
-    in MkChangeLens {..}
-
-readOnlyBiChangeLens ::
-       forall pupdate qupdate. ChangeLens (ReadOnlyUpdate qupdate) (ReadOnlyUpdate (BiUpdate pupdate qupdate))
-readOnlyBiChangeLens = let
-    clRead :: ReadFunction (UpdateReader qupdate) (UpdateReader qupdate)
-    clRead rd = rd
-    clUpdate ::
-           forall m. MonadIO m
-        => ReadOnlyUpdate qupdate
-        -> Readable m (UpdateReader qupdate)
-        -> m [ReadOnlyUpdate (BiUpdate pupdate qupdate)]
-    clUpdate (MkReadOnlyUpdate qupdate) _ = return [MkReadOnlyUpdate $ MkBiUpdate qupdate]
-    clPutEdits ::
-           forall m. MonadIO m
-        => [_]
-        -> Readable m (UpdateReader qupdate)
-        -> m (Maybe [_])
-    clPutEdits = clPutEditsNone
-    in MkChangeLens {..}
+biLinearFloatingChangeLens ::
+       forall r updateAP updateBP updateAQ updateBQ.
+       LinearFloatingChangeLens r updateAP updateBP
+    -> LinearFloatingChangeLens r updateAQ updateBQ
+    -> ExpFloatingChangeLens 'Linear r (BiUpdate updateAP updateAQ) (BiUpdate updateBP updateBQ)
+biLinearFloatingChangeLens (MkExpFloatingChangeLens _ rlensp) (MkExpFloatingChangeLens initq rlensq) = let
+    rlenspq :: r -> GenChangeLens 'Linear (BiUpdate updateAP updateAQ) (BiUpdate updateBP updateBQ)
+    rlenspq r = biLinearChangeLens (rlensp r) (rlensq r)
+    in MkExpFloatingChangeLens initq rlenspq

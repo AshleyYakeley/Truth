@@ -10,7 +10,10 @@ pinafore> :t pp
 pinafore> :t pp !$ {p}
 : WholeRef P
 pinafore> :t pp !$ {q}
-<input>:10:4: cannot convert Q <: P
+<input>:10:4: cannot convert WholeRef P -> WholeRef P+ <: WholeRef +Q -> a-
+ <input>:10:4: cannot convert WholeRef +Q+ <: WholeRef P-
+  <input>:10:4: cannot convert Q+ <: P-
+   <input>:10:4: cannot convert Q <: P
 pinafore> :t qp !$ {p}
 : WholeRef P
 pinafore> :t qp !$ {q}

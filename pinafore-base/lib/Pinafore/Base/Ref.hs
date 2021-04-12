@@ -17,9 +17,6 @@ contextualisePinaforeRef basesub (MkWModel sv) = MkWModel $ contextualiseModels 
 
 type PinaforeROWRef a = WModel (ROWUpdate a)
 
-pinaforeFunctionValueGet :: ResourceContext -> PinaforeROWRef t -> IO t
-pinaforeFunctionValueGet rc (MkWModel sub) = runResource rc sub $ \asub -> aModelRead asub ReadWhole
-
 applyPinaforeFunction ::
        forall baseupdate a b.
        Model baseupdate

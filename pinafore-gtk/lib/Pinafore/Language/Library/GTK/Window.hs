@@ -20,9 +20,7 @@ data LangWindow = MkLangWindow
     }
 
 windowGroundType :: PinaforeGroundType '[] LangWindow
-windowGroundType =
-    SimpleGroundType NilListType NilDolanVarianceMap ("Window", 0) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangWindow)|]) HetRefl
+windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangWindow)|]) "Window"
 
 -- LangWindow
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangWindow where

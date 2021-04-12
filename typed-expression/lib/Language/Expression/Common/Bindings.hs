@@ -9,7 +9,7 @@ module Language.Expression.Common.Bindings
 
 import Data.Shim
 import Language.Expression.Common.Abstract
-import Language.Expression.Common.Rename.RenameTypeSystem
+import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Subsumer
 import Language.Expression.Common.TypeSystem
@@ -102,8 +102,7 @@ boundToMap ::
 boundToMap (MkBound abstractNames (MkSubsumerOpenExpression (subsumer :: _ (tinf -> tdecl)) exprs) getbinds) = do
     uexprvv <- abstractNames exprs -- abstract
     (fexpr, usubs) <- solveUnifier @ts $ unifierExpression uexprvv -- unify
-    subsumer' <- usubSubsumer @ts usubs subsumer
-    (subconv, ssubs) <- solveSubsumer @ts subsumer'
+    (subconv, ssubs) <- usubSolveSubsumer @ts usubs subsumer
     getbinds usubs ssubs $ fmap (\tdi -> fix $ subconv . tdi) fexpr
 
 -- for a recursive component

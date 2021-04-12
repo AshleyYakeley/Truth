@@ -137,7 +137,7 @@ interpretNamedConstructor spos n = do
     me <- liftRefNotation $ runSourcePos spos $ lookupLetBinding n
     case me of
         Just e -> return e
-        Nothing -> throw $ MkErrorMessage spos $ InterpretConstructorUnknownError n
+        Nothing -> throwErrorType spos $ InterpretConstructorUnknownError n
 
 interpretConstructor :: SourcePos -> SyntaxConstructor -> RefExpression
 interpretConstructor _ (SLNumber n) =

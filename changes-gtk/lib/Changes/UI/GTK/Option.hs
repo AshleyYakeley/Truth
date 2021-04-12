@@ -24,7 +24,7 @@ plainComboBoxCell cbcText = let
     in MkComboBoxCell {..}
 
 listStoreView ::
-       forall update. (ApplicableUpdate update, FullSubjectReader (UpdateReader update))
+       forall update. (IsEditUpdate update, ApplicableEdit (UpdateEdit update), FullSubjectReader (UpdateReader update))
     => WMFunction View View
     -> Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
     -> EditSource
@@ -41,14 +41,11 @@ listStoreView (MkWMFunction blockSignal) itemsModel esrc = let
     recv store updates =
         for_ updates $ \(MkReadOnlyUpdate lupdate) ->
             case lupdate of
-                OrderedListUpdateItem oldi newi Nothing
+                OrderedListUpdateItem oldi newi []
                     | oldi == newi -> return ()
-                OrderedListUpdateItem (fromIntegral -> oldi) (fromIntegral -> newi) mupdate -> do
+                OrderedListUpdateItem (fromIntegral -> oldi) (fromIntegral -> newi) iupdates -> do
                     oldval <- seqStoreGetValue store oldi
-                    newval <-
-                        case mupdate of
-                            Just update -> readableToSubject $ applyUpdate update $ subjectToReadable oldval
-                            Nothing -> return oldval
+                    newval <- readableToSubject $ applyEdits (fmap updateEdit iupdates) $ subjectToReadable oldval
                     blockSignal $
                         case compare newi oldi of
                             EQ -> seqStoreSetValue store newi newval
@@ -122,7 +119,8 @@ createComboBox ::
        forall update t.
        ( Eq t
        , FullSubjectReader (UpdateReader update)
-       , ApplicableUpdate update
+       , IsEditUpdate update
+       , ApplicableEdit (UpdateEdit update)
        , UpdateSubject update ~ (t, ComboBoxCell)
        )
     => Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))

@@ -22,9 +22,7 @@ instance Monoid LangDrawing where
     mempty = MkLangDrawing $ return ()
 
 drawingGroundType :: PinaforeGroundType '[] LangDrawing
-drawingGroundType =
-    SimpleGroundType NilListType NilDolanVarianceMap ("Drawing", 0) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangDrawing)|]) HetRefl
+drawingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangDrawing)|]) "Drawing"
 
 -- LangDrawing
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangDrawing where

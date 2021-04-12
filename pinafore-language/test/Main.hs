@@ -11,6 +11,7 @@ import Test.Module
 import Test.Output
 import Test.ReadType
 import Test.Type
+import Test.Unifier
 
 main :: IO ()
 main = do
@@ -24,6 +25,7 @@ main = do
                 [ testType
                 , testLanguage
                 , testReadTypes
+                , testUnifier
                 , testEntity
                 , testUpdates
                 , testOutput

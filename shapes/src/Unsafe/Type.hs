@@ -1,4 +1,7 @@
-module Unsafe.Type where
+module Unsafe.Type
+    ( unsafeCoerce
+    , module Unsafe.Type
+    ) where
 
 import Data.Isomorphism
 import Shapes.Import

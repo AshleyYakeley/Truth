@@ -29,8 +29,10 @@ module Language.Expression.Dolan
     , DolanType(..)
     , singleDolanType
     , dolanTypeToSingular
+    , DolanShimWit
     , singleDolanShimWit
     , joinMeetShimWit
+    , varDolanShimWit
     , unrollRecursiveType
     , unToRangeShimWit
     , unFromRangeShimWit
@@ -70,11 +72,10 @@ import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.RangeF
 import Language.Expression.Dolan.Rename ()
 import Language.Expression.Dolan.Simplify ()
-import Language.Expression.Dolan.Subsume
 import Language.Expression.Dolan.Subtype
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Unify ()
+import Language.Expression.Dolan.Unifier (invertType)
 import Language.Expression.Dolan.Unroll
 import Language.Expression.Dolan.Variance
 import Shapes

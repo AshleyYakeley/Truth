@@ -39,12 +39,12 @@ sumWholeLiftChangeLens pushback (MkChangeLens g u pe) = let
             SumUpdateRight edita -> do
                 editbs <- u edita mr
                 return $ fmap SumUpdateRight editbs
-    elPutEdit ::
+    clPutEdit ::
            forall m. MonadIO m
         => SumEdit (WholeReaderEdit (UpdateReader updateB)) (UpdateEdit updateB)
         -> Readable m (UpdateReader updateA)
         -> m (Maybe [SumEdit (WholeReaderEdit (UpdateReader updateA)) (UpdateEdit updateA)])
-    elPutEdit peditb mr =
+    clPutEdit peditb mr =
         case peditb of
             SumEditLeft (MkWholeReaderEdit b) -> do
                 ma <- pushback b mr
@@ -52,4 +52,4 @@ sumWholeLiftChangeLens pushback (MkChangeLens g u pe) = let
             SumEditRight editb -> do
                 mstateedita <- pe [editb] mr
                 return $ fmap (fmap SumEditRight) mstateedita
-    in MkChangeLens {clPutEdits = clPutEditsFromPutEdit elPutEdit, clRead = g, ..}
+    in MkChangeLens {clPutEdits = clPutEditsFromPutEdit clPutEdit, clRead = g, ..}

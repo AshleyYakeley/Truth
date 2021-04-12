@@ -12,7 +12,7 @@ Before release:
 3. Update version numbers
 
     Makefile
-    */package.yaml
+    common.yaml
     support/vsc-extension/package.json
     support/pygments-lexer/setup.py
     pinafore/app/Version.hs

@@ -1,9 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Expression
-    ( module Pinafore.Language.Expression
-    , PinaforeInterpreter
-    ) where
+module Pinafore.Language.Expression where
 
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
@@ -142,4 +139,11 @@ typedAnyToPinaforeVal ::
        forall t. FromPinaforeType t
     => QValue
     -> PinaforeSourceInterpreter t
-typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem fromJMShimWit
+typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem
+
+-- | for debugging
+rigidTypedAnyToPinaforeVal ::
+       forall t. FromPinaforeType t
+    => QValue
+    -> PinaforeSourceInterpreter t
+rigidTypedAnyToPinaforeVal = tsUnifyRigidValue @PinaforeTypeSystem

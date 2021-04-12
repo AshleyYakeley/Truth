@@ -1,6 +1,6 @@
-name: changes-gtk
-version: "0.3"
 _common: !include "../common.yaml"
+name: changes-gtk
+version: *changes_version
 <<: *author
 
 <<: *language

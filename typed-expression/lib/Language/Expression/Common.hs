@@ -11,9 +11,7 @@ import Language.Expression.Common.Expression as I
 import Language.Expression.Common.NameWit as I
 import Language.Expression.Common.Named as I
 import Language.Expression.Common.Pattern as I
-import Language.Expression.Common.Rename.NamespaceRenamable as I
-import Language.Expression.Common.Rename.RenameTypeSystem as I
-import Language.Expression.Common.Rename.VarRenamerT as I
+import Language.Expression.Common.Rename as I
 import Language.Expression.Common.Sealed as I
 import Language.Expression.Common.Simplifier as I
 import Language.Expression.Common.Subsumer as I

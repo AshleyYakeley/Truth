@@ -72,18 +72,18 @@ finiteSetChangeLens subj = let
         | key == subj = return [MkWholeReaderUpdate True]
     clUpdate (KeyUpdateInsertReplace _) _ = return []
     clUpdate KeyUpdateClear _ = return [MkWholeReaderUpdate False]
-    elPutEdit ::
+    clPutEdit ::
            forall m. MonadIO m
         => WholeEdit Bool
         -> m (Maybe [FiniteSetEdit subj])
-    elPutEdit (MkWholeReaderEdit False) = return $ Just [KeyEditDelete subj]
-    elPutEdit (MkWholeReaderEdit True) = return $ Just [KeyEditInsertReplace subj]
+    clPutEdit (MkWholeReaderEdit False) = return $ Just [KeyEditDelete subj]
+    clPutEdit (MkWholeReaderEdit True) = return $ Just [KeyEditInsertReplace subj]
     clPutEdits ::
            forall m. MonadIO m
         => [WholeEdit Bool]
         -> Readable m (FiniteSetReader subj)
         -> m (Maybe [FiniteSetEdit subj])
-    clPutEdits = clPutEditsFromSimplePutEdit elPutEdit
+    clPutEdits = clPutEditsFromSimplePutEdit clPutEdit
     in MkChangeLens {..}
 
 instance Eq subj => JoinSemiLatticeReadOnlyChangeLens (FiniteSetUpdate subj) where
@@ -376,11 +376,11 @@ finiteSetFunctionChangeLens = let
     clUpdate (KeyUpdateInsertReplace p) _ =
         return [KnownPartialUpdate $ MkTupleUpdate (MkFunctionSelector p) (MkWholeReaderUpdate True)]
     clUpdate KeyUpdateClear _ = return [UnknownPartialUpdate $ \_ -> True]
-    elPutEdit ::
+    clPutEdit ::
            forall m. MonadIO m
         => FunctionUpdateEdit a (WholeUpdate Bool)
         -> m (Maybe [FiniteSetEdit a])
-    elPutEdit (MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit b)) =
+    clPutEdit (MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit b)) =
         return $
         Just
             [ if b
@@ -392,7 +392,7 @@ finiteSetFunctionChangeLens = let
         => [FunctionUpdateEdit a (WholeUpdate Bool)]
         -> Readable m (FiniteSetReader a)
         -> m (Maybe [FiniteSetEdit a])
-    clPutEdits = clPutEditsFromSimplePutEdit elPutEdit
+    clPutEdits = clPutEditsFromSimplePutEdit clPutEdit
     in MkChangeLens {..}
 
 filterFiniteSetUpdateFunction ::

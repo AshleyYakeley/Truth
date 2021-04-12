@@ -1,6 +1,6 @@
-name: pinafore-language
-version: "0.3"
 _common: !include "../common.yaml"
+name: pinafore-language
+version: *pinafore_version
 <<: *author
 
 <<: *language
@@ -100,9 +100,9 @@ tests:
           - pinafore-language
         main: Main.hs
         other-modules:
-          - Test.Context
           - Test.RunScript
           - Test.Language
+          - Test.Unifier
           - Test.Entity
           - Test.Type
           - Test.ReadType

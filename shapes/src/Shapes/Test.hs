@@ -11,6 +11,7 @@ module Shapes.Test
     , ignoreTestBecause
     , expectFailBecause
     , failTestBecause
+    , testMark
     -- * Options
     , localOption
     , QuickCheckTests(..)
@@ -112,6 +113,9 @@ instance BuildTestTree Property where
 
 instance (Arbitrary a, Show a, Testable b) => BuildTestTree (a -> b) where
     testTree name = testTree name . property
+
+testMark :: TestTree -> TestTree
+testMark test = testTree "MARK" [test]
 
 testHandleVsFile :: FilePath -> TestName -> (Handle -> IO ()) -> TestTree
 testHandleVsFile dir testName call = let

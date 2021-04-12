@@ -25,12 +25,9 @@ data ErrorType
     | DeclareConstructorDuplicateError Name
     | DeclareDynamicTypeCycleError (NonEmpty Name)
     | TypeConvertError Text
+                       (Maybe Polarity)
                        Text
-    | TypeConvertInverseError Text
-                              Text
-    | TypeSubsumeError Polarity
-                       Text
-                       Text
+                       (Maybe Polarity)
     | TypeNotInvertibleError Text
     | NotationBareUnquoteError
     | InterpretTypeExprBadLimitError Polarity
@@ -105,10 +102,8 @@ instance Show ErrorType where
     show (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> show n
     show (DeclareDynamicTypeCycleError nn) =
         "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap show $ toList nn)
-    show (TypeConvertError ta tb) = "cannot convert " <> unpack ta <> " <: " <> unpack tb
-    show (TypeConvertInverseError ta tb) = "cannot inverse convert " <> unpack ta <> " <: " <> unpack tb
-    show (TypeSubsumeError Positive tinf tdecl) = "cannot subsume " <> unpack tinf <> " <: " <> unpack tdecl
-    show (TypeSubsumeError Negative tinf tdecl) = "cannot subsume " <> unpack tinf <> " :> " <> unpack tdecl
+    show (TypeConvertError ta pa tb pb) =
+        unpack $ "cannot convert " <> ta <> maybe "" polaritySymbol pa <> " <: " <> tb <> maybe "" polaritySymbol pb
     show (TypeNotInvertibleError t) = "cannot invert type " <> unpack t
     show NotationBareUnquoteError = "unquote outside WholeRef quote"
     show (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"
@@ -134,13 +129,29 @@ instance Show ErrorType where
 data ErrorMessage =
     MkErrorMessage SourcePos
                    ErrorType
+                   PinaforeError
+
+showSourceError :: SourcePos -> String -> String
+showSourceError spos s =
+    sourceName spos <> ":" <> show (sourceLine spos) <> ":" <> show (sourceColumn spos) <> ": " <> s
+
+showIndentErrorMessage :: Int -> ErrorMessage -> String
+showIndentErrorMessage n (MkErrorMessage spos err pe) =
+    replicate n ' ' <> (showSourceError spos $ show err <> showIndentPinaforeError (succ n) pe)
+
+showIndentPinaforeError :: Int -> PinaforeError -> String
+showIndentPinaforeError n (MkPinaforeError ems) = let
+    showMsg em = "\n" <> showIndentErrorMessage n em
+    in mconcat $ fmap showMsg ems
 
 instance Show ErrorMessage where
-    show (MkErrorMessage spos err) =
-        sourceName spos <> ":" <> show (sourceLine spos) <> ":" <> show (sourceColumn spos) <> ": " <> show err
+    show = showIndentErrorMessage 0
+
+throwErrorType :: MonadThrow ErrorMessage m => SourcePos -> ErrorType -> m a
+throwErrorType spos err = throw $ MkErrorMessage spos err mempty
 
 parseErrorMessage :: ParseError -> ErrorMessage
-parseErrorMessage err = MkErrorMessage (errorPos err) $ ParserError $ errorMessages err
+parseErrorMessage err = MkErrorMessage (errorPos err) (ParserError $ errorMessages err) mempty
 
 newtype PinaforeError =
     MkPinaforeError [ErrorMessage]
@@ -150,6 +161,9 @@ instance Show PinaforeError where
     show (MkPinaforeError msgs) = intercalate "\n" $ fmap show msgs
 
 instance Exception PinaforeError
+
+rethrowCause :: MonadCatch PinaforeError m => SourcePos -> ErrorType -> m a -> m a
+rethrowCause spos err ma = catch ma $ \pe -> throwErrorMessage $ MkErrorMessage spos err pe
 
 type InterpretResult = ExceptT PinaforeError IO
 

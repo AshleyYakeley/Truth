@@ -69,14 +69,14 @@ langFiniteSetRefJoin seta setb =
 
 langFiniteSetRefAdd :: LangFiniteSetRef '( p, q) -> p -> PinaforeAction ()
 langFiniteSetRefAdd (MkLangFiniteSetRef tr set) p =
-    pinaforeRefPushAction set $ pure $ KeyEditInsertReplace $ shimToFunction (rangeContra tr) p
+    pinaforeRefPush set $ pure $ KeyEditInsertReplace $ shimToFunction (rangeContra tr) p
 
 langFiniteSetRefRemove :: LangFiniteSetRef '( p, q) -> p -> PinaforeAction ()
 langFiniteSetRefRemove (MkLangFiniteSetRef tr set) p =
-    pinaforeRefPushAction set $ pure $ KeyEditDelete $ shimToFunction (rangeContra tr) p
+    pinaforeRefPush set $ pure $ KeyEditDelete $ shimToFunction (rangeContra tr) p
 
 langFiniteSetRefRemoveAll :: LangFiniteSetRef '( BottomType, TopType) -> PinaforeAction ()
-langFiniteSetRefRemoveAll (MkLangFiniteSetRef _ set) = pinaforeRefPushAction set $ pure KeyEditClear
+langFiniteSetRefRemoveAll (MkLangFiniteSetRef _ set) = pinaforeRefPush set $ pure KeyEditClear
 
 langFiniteSetRefFunctionValue :: LangFiniteSetRef '( t, a) -> PinaforeROWRef (FiniteSet a)
 langFiniteSetRefFunctionValue (MkLangFiniteSetRef tr set) =

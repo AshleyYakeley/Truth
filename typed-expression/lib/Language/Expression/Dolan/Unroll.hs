@@ -25,7 +25,7 @@ unrollRecursiveType var pt =
         rt = RecursiveDolanSingularType var pt
         bisub :: Bisubstitution ground (DolanPolyIsoShim ground Type) Identity
         bisub = mkSingleBisubstitution True var $ return $ singleDolanShimWit $ mkShimWit rt
-        in runIdentity $ bisubstituteShimWit bisub $ mkShimWit pt
+        in runIdentity $ bisubstituteType bisub pt
 
 unrollSingularType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

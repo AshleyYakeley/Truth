@@ -1,12 +1,12 @@
 module Language.Expression.Common.Rename.RenameTypeSystem
     ( RenameTypeSystem(..)
-    , renameNegShimWit
-    , renamePosShimWit
     , rename
+    , renameTypeSignature
     , NewVar(..)
     ) where
 
 import Data.Shim
+import Language.Expression.Common.Rename.Rigidity
 import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.WitnessMappable
 import Shapes
@@ -21,8 +21,8 @@ class (TypeSystem ts, MonadTransConstraint Monad (RenamerT ts), MonadTransConstr
     type RenamerNamespaceT ts :: (Type -> Type) -> (Type -> Type)
     renameNegWitness :: Monad m => TSNegWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSNegWitness ts t)
     renamePosWitness :: Monad m => TSPosWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSPosWitness ts t)
-    renameNewVar :: Monad m => RenamerT ts m (NewVar ts)
-    namespace :: Monad m => RenamerNamespaceT ts (RenamerT ts m) r -> RenamerT ts m r
+    renameNewFreeVar :: Monad m => RenamerT ts m (NewVar ts)
+    namespace :: Monad m => NameRigidity -> RenamerNamespaceT ts (RenamerT ts m) r -> RenamerT ts m r
     runRenamer :: Monad m => RenamerT ts m r -> m r
 
 renameNegShimWit ::
@@ -53,8 +53,18 @@ renamePosShimWit =
 
 rename ::
        forall ts m a. (RenameTypeSystem ts, Monad m, WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts) a)
-    => a
+    => NameRigidity
+    -> a
     -> RenamerT ts m a
-rename a =
+rename rigid a =
     withTransConstraintTM @Monad $
-    namespace @ts $ withTransConstraintTM @Monad $ mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts) a
+    namespace @ts rigid $ withTransConstraintTM @Monad $ mapWitnessesM (renamePosShimWit @ts) (renameNegShimWit @ts) a
+
+renameTypeSignature ::
+       forall ts m. (RenameTypeSystem ts, Monad m)
+    => AnyW (TSPosWitness ts)
+    -> RenamerT ts m (AnyW (TSPosWitness ts))
+renameTypeSignature (MkAnyW t) =
+    withTransConstraintTM @Monad $ do
+        t' <- namespace @ts RigidName $ renamePosWitness @ts t
+        return $ MkAnyW t'
