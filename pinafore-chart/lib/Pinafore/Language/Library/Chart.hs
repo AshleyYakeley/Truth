@@ -22,9 +22,7 @@ import Shapes.Numeric
 type LangRenderable = C.Renderable ()
 
 renderableGroundType :: PinaforeGroundType '[] LangRenderable
-renderableGroundType =
-    SimpleGroundType NilListType NilDolanVarianceMap ("Renderable", 0) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangRenderable)|]) HetRefl
+renderableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangRenderable)|]) "Renderable"
 
 -- LangRenderable
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangRenderable where

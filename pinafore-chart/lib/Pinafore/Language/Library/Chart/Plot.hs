@@ -39,12 +39,7 @@ instance HasVariance 'Covariance LangPlot where
     varianceRepresentational = Just Dict
 
 plotGroundType :: PinaforeGroundType '[ 'Covariance, 'Covariance] LangPlot
-plotGroundType =
-    SimpleGroundType
-        (ConsListType CovarianceType $ ConsListType CovarianceType NilListType)
-        (ConsDolanVarianceMap $ ConsDolanVarianceMap NilDolanVarianceMap)
-        (\ta tb -> ("Plot " <> precShow 0 ta <> " " <> precShow 0 tb, 2)) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual LangPlot)|]) HetRefl
+plotGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangPlot)|]) "Plot"
 
 instance ( ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a
          , ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) b
@@ -77,9 +72,7 @@ instance ( FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a
     fromShimWit = singleDolanShimWit fromJMShimWit
 
 pointStyleGroundType :: PinaforeGroundType '[] PointStyle
-pointStyleGroundType =
-    SimpleGroundType NilListType NilDolanVarianceMap ("PointStyle", 0) $
-    MkProvidedType $(iowitness [t|'MkWitKind (HetEqual PointStyle)|]) HetRefl
+pointStyleGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual PointStyle)|]) "PointStyle"
 
 -- PointStyle
 instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) PointStyle where
