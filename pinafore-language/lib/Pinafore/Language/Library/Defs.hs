@@ -109,9 +109,14 @@ mkValPatEntry name docDescription val pat = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
-mkSpecialFormEntry :: Name -> Text -> Text -> Text -> PinaforeSpecialForm -> DocTreeEntry BindDoc
+mkSpecialFormEntry ::
+       Name -> Text -> Text -> Text -> ((?pinafore :: PinaforeContext) => PinaforeSpecialForm) -> DocTreeEntry BindDoc
 mkSpecialFormEntry name docDescription params docValueType sf = let
-    bdScopeEntry = BindScopeEntry name $ Just $ \_ -> SpecialFormBinding sf
+    bdScopeEntry =
+        BindScopeEntry name $
+        Just $ \pc -> let
+            ?pinafore = pc
+            in SpecialFormBinding sf
     docName = toText name <> " " <> params
     docType = ValueDocType
     bdDoc = MkDefDoc {..}

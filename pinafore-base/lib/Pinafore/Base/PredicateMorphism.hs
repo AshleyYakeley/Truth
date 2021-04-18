@@ -11,7 +11,7 @@ import Pinafore.Base.Morphism
 import Shapes
 
 propertyMorphism ::
-       forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeStorageUpdate a a b b
+       forall a b. EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism a a b b PinaforeStorageUpdate
 propertyMorphism eaa eab prd = let
     ap = entityAdapterConvert eaa
     bp = entityAdapterConvert eab

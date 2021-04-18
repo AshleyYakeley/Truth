@@ -77,3 +77,6 @@ eaFloatMapReadOnly rc flens = eaFloatMap rc $ liftReadOnlyFloatingChangeLens fle
 
 instance FloatingEditApplicative (FloatingChangeLens update) where
     eaFloatMap _ ab ua = return $ ab . ua
+
+class EditContraFunctor (f :: Type -> Type) where
+    eaContraMap :: forall updateA updateB. ChangeLens updateB updateA -> f updateA -> f updateB

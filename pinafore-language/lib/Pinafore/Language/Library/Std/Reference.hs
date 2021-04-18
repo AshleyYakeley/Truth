@@ -143,26 +143,25 @@ instance (ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangRefOrder a) where
     fromShimWit = singleDolanShimWit fromJMShimWit
 
-getSetList ::
-       (?pinafore :: PinaforeContext)
-    => LangRefOrder A
-    -> LangFiniteSetRef '( A, EnA)
-    -> CreateView (LangListRef '( TopType, A))
-getSetList order val = do
-    let
-        uo :: UpdateOrder (ContextUpdate PinaforeStorageUpdate (ConstWholeUpdate EnA))
-        uo =
-            mapUpdateOrder (liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2)) $
-            pinaforeUpdateOrder order
-        rows :: Model (FiniteSetUpdate EnA)
-        rows = unWModel $ unLangFiniteSetRef $ contraRangeLift meet2 val
-        pkSub :: Model (ContextUpdate PinaforeStorageUpdate (FiniteSetUpdate EnA))
-        pkSub = contextModels pinaforeEntityModel rows
-    colSub :: Model (ContextUpdate PinaforeStorageUpdate (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
-        cvFloatMapModel (contextOrderedSetLens uo) pkSub
-    return $
-        OrderedLangListRef $
-        eaMap (liftOrderedListChangeLens (constWholeChangeLens meet2) . tupleChangeLens SelectContent) $ MkWModel colSub
+getSetList :: LangRefOrder A -> LangFiniteSetRef '( A, EnA) -> CreateView (LangListRef '( TopType, A))
+getSetList order val =
+    pinaforeUpdateOrder order $ \(model :: Model update) uorder -> do
+        let
+            uo :: UpdateOrder (ContextUpdate update (ConstWholeUpdate EnA))
+            uo =
+                mapUpdateOrder
+                    (liftContextChangeLens $ fromReadOnlyRejectingChangeLens . funcChangeLens (Known . meet2))
+                    uorder
+            rows :: Model (FiniteSetUpdate EnA)
+            rows = unWModel $ unLangFiniteSetRef $ contraRangeLift meet2 val
+            pkSub :: Model (ContextUpdate update (FiniteSetUpdate EnA))
+            pkSub = contextModels model rows
+        colSub :: Model (ContextUpdate update (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
+            cvFloatMapModel (contextOrderedSetLens uo) pkSub
+        return $
+            OrderedLangListRef $
+            eaMap (liftOrderedListChangeLens (constWholeChangeLens meet2) . tupleChangeLens SelectContent) $
+            MkWModel colSub
 
 setentity :: LangWholeRef '( A, TopType) -> A -> PinaforeAction ()
 setentity ref val = langWholeRefSet ref $ Known val
@@ -468,10 +467,11 @@ refLibEntries =
                                            (MkPredicate anchor)
                                    pinamorphism =
                                        MkLangMorphism $
-                                       cfmap3 (MkCatDual $ shimToFunction praContra) $
-                                       cfmap2 (shimToFunction praCo) $
-                                       cfmap1 (MkCatDual $ shimToFunction prbContra) $
-                                       fmap (shimToFunction prbCo) morphism
+                                       storageModelBased pinaforeStorageModel $
+                                       cfmap4 (MkCatDual $ shimToFunction praContra) $
+                                       cfmap3 (shimToFunction praCo) $
+                                       cfmap2 (MkCatDual $ shimToFunction prbContra) $
+                                       cfmap1 (shimToFunction prbCo) morphism
                                    anyval = MkAnyValue typef pinamorphism
                                    in return anyval
           ]
@@ -507,7 +507,7 @@ refLibEntries =
                                          NilDolanArguments)
                                     NilDolanArguments
                             return $
-                                (functionToShim "Order to RefOrder" pureRefOrder) .
+                                (functionToShim "Order to RefOrder" pureLangRefOrder) .
                                 applyCoPolyShim
                                     (applyContraPolyShim cid $ conv1 . vconv)
                                     (applyCoPolyShim (applyContraPolyShim cid vconv) (iJoinMeetL1 @_ @'Negative) .
@@ -517,8 +517,8 @@ refLibEntries =
                 "mapOrder"
                 "Map a function on a `RefOrder`."
                 (contramap :: (B -> A) -> LangRefOrder A -> LangRefOrder B)
-          , mkValEntry "orderOn" "Order by a `RefOrder` on a particular morphism." $ refOrderOn @B @A
-          , mkValEntry "reverseOrder" "Reverse a `RefOrder`." $ reverseRefOrder @A
+          , mkValEntry "orderOn" "Order by a `RefOrder` on a particular morphism." $ langRefOrderOn @B @A
+          , mkValEntry "reverseOrder" "Reverse a `RefOrder`." $ reverseLangRefOrder @A
           , mkValEntry "orderWhole" "Order two whole references." $ langRefOrderCompare @A
           ]
     ]

@@ -30,7 +30,7 @@ applyPinaforeFunction basesub m val =
 applyPinaforeLens ::
        forall baseupdate ap aq bp bq.
        Model baseupdate
-    -> PinaforeLensMorphism baseupdate ap aq bp bq
+    -> PinaforeLensMorphism ap aq bp bq baseupdate
     -> WModel (BiWholeUpdate (Know aq) (Know ap))
     -> WModel (BiWholeUpdate (Know bp) (Know bq))
 applyPinaforeLens basesub pm val = eaMap (pinaforeLensMorphismChangeLens pm) $ contextualisePinaforeRef basesub val
@@ -38,7 +38,7 @@ applyPinaforeLens basesub pm val = eaMap (pinaforeLensMorphismChangeLens pm) $ c
 applyInversePinaforeLens ::
        forall baseupdate a bp bq. (Eq a)
     => Model baseupdate
-    -> PinaforeLensMorphism baseupdate a a bq bp
+    -> PinaforeLensMorphism a a bq bp baseupdate
     -> WModel (BiWholeUpdate (Know bp) (Know bq))
     -> WModel (FiniteSetUpdate a)
 applyInversePinaforeLens basesub pm val =
@@ -47,7 +47,7 @@ applyInversePinaforeLens basesub pm val =
 applyInversePinaforeLensSet ::
        forall baseupdate a b. (Eq a, Eq b)
     => Model baseupdate
-    -> PinaforeLensMorphism baseupdate a a b b
+    -> PinaforeLensMorphism a a b b baseupdate
     -> WModel (FiniteSetUpdate b)
     -> WModel (FiniteSetUpdate a)
 applyInversePinaforeLensSet basesub pm val =

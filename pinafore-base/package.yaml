@@ -24,9 +24,13 @@ library:
       - Pinafore.Base.Know
       - Pinafore.Base.SafeRational
       - Pinafore.Base.Number
+      - Pinafore.Base.Order
       - Pinafore.Base.Literal
       - Pinafore.Base.FunctionMorphism
       - Pinafore.Base.Morphism
+      - Pinafore.Base.ModelBased
+      - Pinafore.Base.ModelMorphism
+      - Pinafore.Base.ModelOrder
       - Pinafore.Base.Ref
       - Pinafore.Base.Anchor
       - Pinafore.Base.Entity

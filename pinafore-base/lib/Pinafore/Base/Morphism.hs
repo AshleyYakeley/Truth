@@ -11,7 +11,6 @@ module Pinafore.Base.Morphism
     , pinaforeLensMorphismChangeLens
     , pinaforeLensMorphismInverseChangeLens
     , pinaforeLensMorphismInverseChangeLensSet
-    , pinaforeLensMorphismMapBaseUpdate
     ) where
 
 import Changes.Core
@@ -20,7 +19,7 @@ import Pinafore.Base.FunctionMorphism
 import Pinafore.Base.Know
 import Shapes
 
-data PinaforeLensMorphism baseupdate ap aq bp bq = MkPinaforeLensMorphism
+data PinaforeLensMorphism ap aq bp bq baseupdate = MkPinaforeLensMorphism
     { pmGet :: ap -> ReadM (UpdateReader baseupdate) (Know bq)
     , pmBaseUpdate :: baseupdate -> ReadM (UpdateReader baseupdate) (Maybe (ap -> ReadM (UpdateReader baseupdate) (Maybe (Know bq))))
     , pmPut :: Know ap -> Know bp -> ReadM (UpdateReader baseupdate) (Maybe ([UpdateEdit baseupdate], Maybe (Know aq)))
@@ -29,22 +28,25 @@ data PinaforeLensMorphism baseupdate ap aq bp bq = MkPinaforeLensMorphism
                                                                                                                       , aq)]))
     }
 
-instance Functor (PinaforeLensMorphism baseupdate ap aq bp) where
-    fmap f (MkPinaforeLensMorphism g bu p i ibu) = let
-        g' = (fmap $ fmap $ fmap f) g
-        bu' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap $ fmap f) bu
-        in MkPinaforeLensMorphism g' bu' p i ibu
-
-instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (PinaforeLensMorphism baseupdate ap aq) where
+instance CatFunctor (->) (NestedMorphism (->)) (PinaforeLensMorphism ap aq bp) where
     cfmap f =
+        MkNestedMorphism $ \(MkPinaforeLensMorphism g bu p i ibu) -> let
+            g' = (fmap $ fmap $ fmap f) g
+            bu' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap $ fmap f) bu
+            in MkPinaforeLensMorphism g' bu' p i ibu
+
+instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (PinaforeLensMorphism ap aq) where
+    cfmap f =
+        MkNestedMorphism $
         MkNestedMorphism $ \(MkPinaforeLensMorphism g bu p i ibu) -> let
             p' = (fmap $ cfmap1 $ endocfmap f) p
             i' = (cfmap1 f) i
             ibu' = (fmap $ fmap $ fmap $ cfmap1 f) ibu
             in MkPinaforeLensMorphism g bu p' i' ibu'
 
-instance CatFunctor (->) (NestedMorphism (->)) (PinaforeLensMorphism baseupdate ap) where
+instance CatFunctor (->) (NestedMorphism (->)) (PinaforeLensMorphism ap) where
     cfmap f =
+        MkNestedMorphism $
         MkNestedMorphism $
         MkNestedMorphism $ \(MkPinaforeLensMorphism g bu p i ibu) -> let
             p' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap $ fmap f) p
@@ -52,8 +54,9 @@ instance CatFunctor (->) (NestedMorphism (->)) (PinaforeLensMorphism baseupdate 
             ibu' = (fmap $ fmap $ fmap $ fmap $ fmap $ fmap $ fmap f) ibu
             in MkPinaforeLensMorphism g bu p' i' ibu'
 
-instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (PinaforeLensMorphism baseupdate) where
+instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (PinaforeLensMorphism) where
     cfmap f =
+        MkNestedMorphism $
         MkNestedMorphism $
         MkNestedMorphism $
         MkNestedMorphism $ \(MkPinaforeLensMorphism g bu p i ibu) -> let
@@ -62,29 +65,29 @@ instance CatFunctor (CatDual (->)) (NestedMorphism (->)) (PinaforeLensMorphism b
             p' = (cfmap1 $ endocfmap f) p
             in MkPinaforeLensMorphism g' bu' p' i ibu
 
-pmKGet :: PinaforeLensMorphism baseupdate ap aq bp bq -> Know ap -> ReadM (UpdateReader baseupdate) (Know bq)
+pmKGet :: PinaforeLensMorphism ap aq bp bq baseupdate -> Know ap -> ReadM (UpdateReader baseupdate) (Know bq)
 pmKGet plm (Known a) = pmGet plm a
 pmKGet _ Unknown = return Unknown
 
 pmGetPointPreimage ::
-       Eq aq => PinaforeLensMorphism baseupdate ap aq bp bq -> bp -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
+       Eq aq => PinaforeLensMorphism ap aq bp bq baseupdate -> bp -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
 pmGetPointPreimage MkPinaforeLensMorphism {..} b = fmap setFromList $ pmInvGet b
 
 pmGetKnowPointPreimage ::
-       Eq aq => PinaforeLensMorphism baseupdate ap aq bp bq -> Know bp -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
+       Eq aq => PinaforeLensMorphism ap aq bp bq baseupdate -> Know bp -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
 pmGetKnowPointPreimage plm (Known b) = pmGetPointPreimage plm b
 pmGetKnowPointPreimage _ Unknown = return mempty
 
 pmGetSetPreimage ::
        Eq aq
-    => PinaforeLensMorphism baseupdate ap aq bp bq
+    => PinaforeLensMorphism ap aq bp bq baseupdate
     -> FiniteSet bp
     -> ReadM (UpdateReader baseupdate) (FiniteSet aq)
 pmGetSetPreimage plm bs = do
     as <- for bs $ pmGetPointPreimage plm
     return $ mconcat $ toList as
 
-identityPinaforeLensMorphism :: forall baseupdate x y. PinaforeLensMorphism baseupdate x y y x
+identityPinaforeLensMorphism :: forall baseupdate x y. PinaforeLensMorphism x y y x baseupdate
 identityPinaforeLensMorphism = let
     pmGet a = return $ Known a
     pmBaseUpdate ::
@@ -99,9 +102,9 @@ identityPinaforeLensMorphism = let
 
 composePinaforeLensMorphism ::
        forall baseupdate ap aq bx by cp cq.
-       PinaforeLensMorphism baseupdate bx by cp cq
-    -> PinaforeLensMorphism baseupdate ap aq by bx
-    -> PinaforeLensMorphism baseupdate ap aq cp cq
+       PinaforeLensMorphism bx by cp cq baseupdate
+    -> PinaforeLensMorphism ap aq by bx baseupdate
+    -> PinaforeLensMorphism ap aq cp cq baseupdate
 composePinaforeLensMorphism (MkPinaforeLensMorphism getBC buBC putBC invBC invbuBC) ab@(MkPinaforeLensMorphism getAB buAB putAB invAB invbuAB) = let
     pmGet a =
         getComposeM $ do
@@ -184,9 +187,9 @@ partitionBPairs ((t, a):aa) = let
 
 pairPinaforeLensMorphism ::
        forall baseupdate ap aq bp bq cp cq. Eq aq
-    => PinaforeLensMorphism baseupdate ap aq bp bq
-    -> PinaforeLensMorphism baseupdate ap aq cp cq
-    -> PinaforeLensMorphism baseupdate ap aq (bp, cp) (bq, cq)
+    => PinaforeLensMorphism ap aq bp bq baseupdate
+    -> PinaforeLensMorphism ap aq cp cq baseupdate
+    -> PinaforeLensMorphism ap aq (bp, cp) (bq, cq) baseupdate
 pairPinaforeLensMorphism (MkPinaforeLensMorphism getB buB putB invB invbuB) (MkPinaforeLensMorphism getC buC putC invC invbuC) = let
     pmGet a =
         getComposeM $ do
@@ -279,9 +282,9 @@ pairPinaforeLensMorphism (MkPinaforeLensMorphism getB buB putB invB invbuB) (MkP
 
 eitherPinaforeLensMorphism ::
        forall baseupdate ap aq bp bq cp cq.
-       PinaforeLensMorphism baseupdate ap aq cp cq
-    -> PinaforeLensMorphism baseupdate bp bq cp cq
-    -> PinaforeLensMorphism baseupdate (Either ap bp) (Either aq bq) cp cq
+       PinaforeLensMorphism ap aq cp cq baseupdate
+    -> PinaforeLensMorphism bp bq cp cq baseupdate
+    -> PinaforeLensMorphism (Either ap bp) (Either aq bq) cp cq baseupdate
 eitherPinaforeLensMorphism (MkPinaforeLensMorphism getA buA putA invA invbuA) (MkPinaforeLensMorphism getB buB putB invB invbuB) = let
     pmGet (Left a) = getA a
     pmGet (Right b) = getB b
@@ -344,7 +347,7 @@ funcPinaforeLensMorphism ::
        (ap -> Know bq)
     -> (bp -> [aq])
     -> (Know bp -> Maybe (Know aq))
-    -> PinaforeLensMorphism baseupdate ap aq bp bq
+    -> PinaforeLensMorphism ap aq bp bq baseupdate
 funcPinaforeLensMorphism ab bsa bma = let
     pmGet :: ap -> ReadM (UpdateReader baseupdate) (Know bq)
     pmGet a = return $ ab a
@@ -364,23 +367,16 @@ funcPinaforeLensMorphism ab bsa bma = let
     pmInvBaseUpdate _ = return Nothing
     in MkPinaforeLensMorphism {..}
 
-nullPinaforeLensMorphism :: forall baseupdate ap aq bp bq. PinaforeLensMorphism baseupdate ap aq bp bq
+nullPinaforeLensMorphism :: forall baseupdate ap aq bp bq. PinaforeLensMorphism ap aq bp bq baseupdate
 nullPinaforeLensMorphism = funcPinaforeLensMorphism (\_ -> Unknown) (\_ -> mempty) (\_ -> Nothing)
 
-bijectionPinaforeLensMorphism :: Bijection a b -> PinaforeLensMorphism baseupdate a a b b
+bijectionPinaforeLensMorphism :: Bijection a b -> PinaforeLensMorphism a a b b baseupdate
 bijectionPinaforeLensMorphism (MkIsomorphism ab ba) =
     funcPinaforeLensMorphism (Known . ab) (\b -> opoint $ ba b) (\kb -> Just $ fmap ba kb)
 
-{-
-instance IsoVariant (PinaforeLensMorphism baseupdate t) where
-    isoMap ab ba m = bijectionPinaforeLensMorphism (MkIsomorphism ab ba) . m
-
-instance IsoVariant' (PinaforeLensMorphism baseupdate) where
-    isoMap' ab ba m = m . bijectionPinaforeLensMorphism (MkIsomorphism ba ab)
--}
 lensFunctionMorphism ::
        forall baseupdate ap aq bp bq.
-       PinaforeLensMorphism baseupdate ap aq bp bq
+       PinaforeLensMorphism ap aq bp bq baseupdate
     -> PinaforeFunctionMorphism baseupdate (Know ap) (Know bq)
 lensFunctionMorphism plm = let
     pfFuncRead = pmKGet plm
@@ -398,7 +394,7 @@ runContextReadM rd rmt = unReadM rmt $ tupleReadFunction SelectContext rd
 
 putEditBA ::
        forall m baseupdate ap aq bp bq. MonadIO m
-    => PinaforeLensMorphism baseupdate ap aq bp bq
+    => PinaforeLensMorphism ap aq bp bq baseupdate
     -> [BiWholeEdit (Know bp) (Know bq)]
     -> Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know aq) (Know ap)))
     -> m (Maybe [ContextUpdateEdit baseupdate (BiWholeUpdate (Know aq) (Know ap))])
@@ -422,7 +418,7 @@ putEditBA plm editsB mr =
 
 putEditAB ::
        forall m baseupdate ap aq bp bq. MonadIO m
-    => PinaforeLensMorphism baseupdate ap aq bp bq
+    => PinaforeLensMorphism ap aq bp bq baseupdate
     -> ap
     -> Know bp
     -> Readable m (UpdateReader baseupdate)
@@ -444,7 +440,7 @@ putEditAB plm a kb mr = do
 
 pinaforeLensMorphismChangeLens ::
        forall baseupdate ap aq bp bq.
-       PinaforeLensMorphism baseupdate ap aq bp bq
+       PinaforeLensMorphism ap aq bp bq baseupdate
     -> ChangeLens (ContextUpdate baseupdate (BiWholeUpdate (Know aq) (Know ap))) (BiWholeUpdate (Know bp) (Know bq))
 pinaforeLensMorphismChangeLens plm = let
     clRead ::
@@ -488,7 +484,7 @@ bpairToFiniteSetUpdate (True, a) = KeyUpdateInsertReplace a
 
 pinaforeLensMorphismInverseChangeLens ::
        forall baseupdate a bp bq. Eq a
-    => PinaforeLensMorphism baseupdate a a bq bp
+    => PinaforeLensMorphism a a bq bp baseupdate
     -> ChangeLens (ContextUpdate baseupdate (BiWholeUpdate (Know bp) (Know bq))) (FiniteSetUpdate a)
 pinaforeLensMorphismInverseChangeLens plm@MkPinaforeLensMorphism {..} = let
     fsetReadFunction ::
@@ -546,7 +542,7 @@ pinaforeLensMorphismInverseChangeLens plm@MkPinaforeLensMorphism {..} = let
 
 pinaforeLensMorphismInverseChangeLensSet ::
        forall baseupdate a b. (Eq a, Eq b)
-    => PinaforeLensMorphism baseupdate a a b b
+    => PinaforeLensMorphism a a b b baseupdate
     -> ChangeLens (ContextUpdate baseupdate (FiniteSetUpdate b)) (FiniteSetUpdate a)
 pinaforeLensMorphismInverseChangeLensSet plm@MkPinaforeLensMorphism {..} = let
     clRead' :: ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (FiniteSetReader a)
@@ -634,44 +630,45 @@ pinaforeLensMorphismInverseChangeLensSet plm@MkPinaforeLensMorphism {..} = let
             return $ ea ++ eea
     in MkChangeLens clRead' clUpdate' clPutEdits'
 
-pinaforeLensMorphismMapBaseUpdate ::
-       forall update1 update2 ap aq bp bq.
-       ChangeLens update2 update1
-    -> PinaforeLensMorphism update1 ap aq bp bq
-    -> PinaforeLensMorphism update2 ap aq bp bq
-pinaforeLensMorphismMapBaseUpdate MkChangeLens {..} (MkPinaforeLensMorphism get1 bu1 put1 inv1 invbu1) = let
-    get2 :: ap -> ReadM (UpdateReader update2) (Know bq)
-    get2 a = mapReadM clRead $ get1 a
-    bu2 :: update2 -> ReadM (UpdateReader update2) (Maybe (ap -> ReadM (UpdateReader update2) (Maybe (Know bq))))
-    bu2 update2 = do
-        updates1 <- MkReadM $ clUpdate update2
-        mfs <- mapReadM clRead $ for updates1 bu1
-        return $
-            case catMaybes mfs of
-                [] -> Nothing
-                fs ->
-                    Just $ \a ->
-                        mapReadM clRead $ do
-                            mkbs <- for fs $ \f -> f a
-                            return $ fmap last $ nonEmpty $ catMaybes mkbs
-    put2 :: Know ap -> Know bp -> ReadM (UpdateReader update2) (Maybe ([UpdateEdit update2], Maybe (Know aq)))
-    put2 ka kb = do
-        mea <- mapReadM clRead $ put1 ka kb
-        forf mea $ \(edits1, mka) -> do
-            medits2 <- MkReadM $ clPutEdits edits1
-            return $ fmap (\edits2 -> (edits2, mka)) medits2
-    inv2 :: bp -> ReadM (UpdateReader update2) [aq]
-    inv2 bp = mapReadM clRead $ inv1 bp
-    invbu2 :: update2 -> ReadM (UpdateReader update2) (Maybe (bp -> ReadM (UpdateReader update2) [(Bool, aq)]))
-    invbu2 update2 = do
-        updates1 <- MkReadM $ clUpdate update2
-        mfs <- mapReadM clRead $ for updates1 invbu1
-        return $
-            case catMaybes mfs of
-                [] -> Nothing
-                fs ->
-                    Just $ \b ->
-                        mapReadM clRead $ do
-                            las <- for fs $ \f -> f b
-                            return $ mconcat las
-    in MkPinaforeLensMorphism get2 bu2 put2 inv2 invbu2
+instance EditContraFunctor (PinaforeLensMorphism ap aq bp bq) where
+    eaContraMap ::
+           forall update1 update2.
+           ChangeLens update2 update1
+        -> PinaforeLensMorphism ap aq bp bq update1
+        -> PinaforeLensMorphism ap aq bp bq update2
+    eaContraMap MkChangeLens {..} (MkPinaforeLensMorphism get1 bu1 put1 inv1 invbu1) = let
+        get2 :: ap -> ReadM (UpdateReader update2) (Know bq)
+        get2 a = mapReadM clRead $ get1 a
+        bu2 :: update2 -> ReadM (UpdateReader update2) (Maybe (ap -> ReadM (UpdateReader update2) (Maybe (Know bq))))
+        bu2 update2 = do
+            updates1 <- MkReadM $ clUpdate update2
+            mfs <- mapReadM clRead $ for updates1 bu1
+            return $
+                case catMaybes mfs of
+                    [] -> Nothing
+                    fs ->
+                        Just $ \a ->
+                            mapReadM clRead $ do
+                                mkbs <- for fs $ \f -> f a
+                                return $ fmap last $ nonEmpty $ catMaybes mkbs
+        put2 :: Know ap -> Know bp -> ReadM (UpdateReader update2) (Maybe ([UpdateEdit update2], Maybe (Know aq)))
+        put2 ka kb = do
+            mea <- mapReadM clRead $ put1 ka kb
+            forf mea $ \(edits1, mka) -> do
+                medits2 <- MkReadM $ clPutEdits edits1
+                return $ fmap (\edits2 -> (edits2, mka)) medits2
+        inv2 :: bp -> ReadM (UpdateReader update2) [aq]
+        inv2 bp = mapReadM clRead $ inv1 bp
+        invbu2 :: update2 -> ReadM (UpdateReader update2) (Maybe (bp -> ReadM (UpdateReader update2) [(Bool, aq)]))
+        invbu2 update2 = do
+            updates1 <- MkReadM $ clUpdate update2
+            mfs <- mapReadM clRead $ for updates1 invbu1
+            return $
+                case catMaybes mfs of
+                    [] -> Nothing
+                    fs ->
+                        Just $ \b ->
+                            mapReadM clRead $ do
+                                las <- for fs $ \f -> f b
+                                return $ mconcat las
+        in MkPinaforeLensMorphism get2 bu2 put2 inv2 invbu2

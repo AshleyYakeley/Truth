@@ -7,7 +7,7 @@ module Pinafore.Context
     , runPinaforeAction
     , makePinaforeContext
     , nullPinaforeContext
-    , pinaforeEntityModel
+    , pinaforeStorageModel
     , pinaforeInvocationInfo
     , pinaforeStdOut
     ) where
@@ -32,7 +32,7 @@ nullInvocationInfo = let
 data PinaforeContext = MkPinaforeContext
     { pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
     , pconUnliftCreateView :: MFunction CreateView View
-    , pconEntityModel :: Model PinaforeStorageUpdate
+    , pconStorageModel :: Model PinaforeStorageUpdate
     , pconInvocation :: InvocationInfo
     , pconStdOut :: Handle
     }
@@ -50,8 +50,8 @@ unliftPinaforeActionOrFail action = do
 runPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction () -> View ()
 runPinaforeAction action = pconUnliftCreateView ?pinafore $ fmap (\_ -> ()) $ unliftPinaforeAction action
 
-pinaforeEntityModel :: (?pinafore :: PinaforeContext) => Model PinaforeStorageUpdate
-pinaforeEntityModel = pconEntityModel ?pinafore
+pinaforeStorageModel :: (?pinafore :: PinaforeContext) => Model PinaforeStorageUpdate
+pinaforeStorageModel = pconStorageModel ?pinafore
 
 pinaforeInvocationInfo :: (?pinafore :: PinaforeContext) => InvocationInfo
 pinaforeInvocationInfo = pconInvocation ?pinafore
@@ -68,14 +68,14 @@ makePinaforeContext pconInvocation pconStdOut rmodel tc = do
         pconUnliftAction = unPinaforeAction tc uh
         pconUnliftCreateView :: MFunction CreateView View
         pconUnliftCreateView = ccUnliftCreateView tc
-        pconEntityModel = undoHandlerModel uh rmodel
+        pconStorageModel = undoHandlerModel uh rmodel
     return $ MkPinaforeContext {..}
 
 nullPinaforeContext :: PinaforeContext
 nullPinaforeContext = let
     pconUnliftAction _ = fail "null Pinafore context"
     pconUnliftCreateView _ = fail "null Pinafore context"
-    pconEntityModel = error "no pinafore base"
+    pconStorageModel = error "no pinafore base"
     pconInvocation = nullInvocationInfo
     pconStdOut = stdout
     in MkPinaforeContext {..}
