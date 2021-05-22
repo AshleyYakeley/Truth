@@ -13,7 +13,12 @@ testFile :: FilePath -> TestTree
 testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
-    in testHandleVsFile dir testName $ \hout ->
+    tmod =
+        case testName of
+            "sequence" -> failTestBecause "ISSUE #113"
+            _ -> id
+    in tmod $
+       testHandleVsFile dir testName $ \hout ->
            withTestPinaforeContext mempty hout $ \cc _ _ -> do
                action <- pinaforeInterpretFile inpath
                ccRunView cc emptyResourceContext action
