@@ -15,7 +15,8 @@ testFile inpath = let
     testName = takeBaseName inpath
     tmod =
         case testName of
-            "sequence" -> failTestBecause "ISSUE #113"
+            "recursive-1" -> failTestBecause "ISSUE #113"
+            "recursive-2" -> failTestBecause "ISSUE #113"
             _ -> id
     in tmod $
        testHandleVsFile dir testName $ \hout ->
