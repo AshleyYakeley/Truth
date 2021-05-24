@@ -175,7 +175,7 @@ testType =
                     e1 <- apExpr dotExpr sndExpr
                     apExpr e1 thingExpr
               , exprTypeTest "twice" (return "{} -> a -> (a, a)") $ return twiceExpr
-              , exprTypeTest "thing . twice" (return "{} -> d -> (d, d)") $ do
+              , exprTypeTest "thing . twice" (return "{} -> e -> (e, e)") $ do
                     e1 <- apExpr dotExpr thingExpr
                     apExpr e1 twiceExpr
               , exprTypeTest "thing $ twice number" (return "{} -> (Number, Number)") $ do
