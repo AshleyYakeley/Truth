@@ -1,6 +1,7 @@
 module Language.Expression.Common.Rename.VarNamespaceT
     ( NameRigidity(..)
     , RenamerMonad(..)
+    , renamerGenerateFree
     , renamerGenerateFreeUVar
     , VarNamespaceT
     , runVarNamespaceT
@@ -18,11 +19,16 @@ class Monad m => RenamerMonad m where
     renamerRemoveName :: String -> m ()
     renamerGetNameRigidity :: m (String -> NameRigidity)
 
+renamerGenerateFree ::
+       forall m. RenamerMonad m
+    => m String
+renamerGenerateFree = renamerGenerate FreeName []
+
 renamerGenerateFreeUVar ::
        forall m. RenamerMonad m
     => m AnyVar
 renamerGenerateFreeUVar = do
-    newname <- renamerGenerate FreeName []
+    newname <- renamerGenerateFree
     return $ newUVarAny newname
 
 newtype VarNamespaceT (ts :: Type) m a =

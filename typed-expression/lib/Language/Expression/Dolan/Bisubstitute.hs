@@ -9,8 +9,8 @@ module Language.Expression.Dolan.Bisubstitute
     , bisubstitute
     , bisubstitutes
     , BisubstitutablePolyShim
-    , recursiveBisubstitute
     , recursiveDolanShimWit
+    , recursiveRenameDolanShimWit
     , mapDolanSingularType
     , mapDolanSingularTypeM
     ) where
@@ -239,12 +239,13 @@ recursiveBisubstitute ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity name a.
        (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
     => SymbolType name
+    -> String
     -> DolanType ground polarity a
     -> FuncShimWit (pshim Type) (DolanSingularType ground) polarity (UVarT name) a
-recursiveBisubstitute oldvar t =
+recursiveBisubstitute oldvar recvarname t =
     invertPolarity @polarity $
     withDict (reducedBisubstitutablePolyShim @pshim) $
-    newUVar (uVarName oldvar) $ \(newvar :: SymbolType newname) ->
+    newUVar recvarname $ \(newvar :: SymbolType newname) ->
         case polarityType @polarity of
             PositiveType -> let
                 dbisub ::
@@ -279,13 +280,23 @@ recursiveBisubstitute oldvar t =
                                conv = lazyPolarMap $ (applyPolarPolyFuncShim rconv (id, conv)) . sconv
                                in conv
 
+recursiveRenameDolanShimWit ::
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity name.
+       (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
+    => SymbolType name
+    -> String
+    -> PShimWit (pshim Type) (DolanType ground) polarity (UVarT name)
+    -> PShimWit (pshim Type) (DolanSingularType ground) polarity (UVarT name)
+recursiveRenameDolanShimWit oldvar recvarname (MkShimWit t sconv) =
+    mapFuncShimWit (recursiveBisubstitute oldvar recvarname t) sconv
+
 recursiveDolanShimWit ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity name.
        (IsDolanGroundType ground, BisubstitutablePolyShim pshim, Is PolarityType polarity)
     => SymbolType name
     -> PShimWit (pshim Type) (DolanType ground) polarity (UVarT name)
     -> PShimWit (pshim Type) (DolanSingularType ground) polarity (UVarT name)
-recursiveDolanShimWit oldvar (MkShimWit t sconv) = mapFuncShimWit (recursiveBisubstitute oldvar t) sconv
+recursiveDolanShimWit oldvar = recursiveRenameDolanShimWit oldvar (uVarName oldvar)
 
 mapDolanGroundArguments ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity dv gt t.
