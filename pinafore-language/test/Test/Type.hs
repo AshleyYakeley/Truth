@@ -175,7 +175,7 @@ testType =
                     e1 <- apExpr dotExpr sndExpr
                     apExpr e1 thingExpr
               , exprTypeTest "twice" (return "{} -> a -> (a, a)") $ return twiceExpr
-              , exprTypeTest "thing . twice" (return "{} -> e -> (e, e)") $ do
+              , exprTypeTest "thing . twice" (return "{} -> d -> (d, d)") $ do
                     e1 <- apExpr dotExpr thingExpr
                     apExpr e1 twiceExpr
               , exprTypeTest "thing $ twice number" (return "{} -> (Number, Number)") $ do
@@ -284,19 +284,19 @@ testType =
                     "recursive"
                     [ textTypeTest "let x : rec a. Maybe a; x = Nothing in x" "{} -> rec a. Maybe a"
                     , textTypeTest "let x : rec a. Maybe a; x = Just x in x" "{} -> rec a. Maybe a"
-                    , textTypeTest "let x = Just x in x" "{} -> rec a. Maybe a"
+                    , textTypeTest "let x = Just x in x" "{} -> rec e. Maybe e"
                     , textTypeTest "let x : Entity; x = Just x in x" "{} -> Entity"
                     , textTypeTest "let x : Maybe Entity; x = Just x in x" "{} -> Maybe Entity"
                     , textTypeTest
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount"
-                          "{} -> (rec c. Maybe c) -> Integer"
+                          "{} -> (rec e. Maybe e) -> Integer"
                     , textTypeTest "Just $ Just $ Just Nothing" "{} -> Maybe (Maybe (Maybe (Maybe None)))"
                     , textTypeTest
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + r1count y end; r1count x = case x of Nothing -> 0; Just y -> 1 + r1count y end in rcount $ Just $ Just $ Just Nothing"
                           "{} -> Integer"
                     , textTypeTest
                           "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just rval in ((rcount,rval),rcount rval)"
-                          "{} -> (((rec c. Maybe c) -> Integer, rec c. Maybe c), Integer)"
+                          "{} -> (((rec e. Maybe e) -> Integer, rec e. Maybe e), Integer)"
                     ]
               ]
         , testTree

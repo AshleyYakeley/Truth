@@ -130,7 +130,11 @@ unifyTypesST ::
     -> DolanType ground polb b
     -> UnificationSolver ground a b
 unifyTypesST (VarDolanSingularType na) tb
-    | FreeName <- ?rigidity $ witnessToValue na = solverLiftExpression $ varExpression $ leUnifierConstraint na tb
+    | FreeName <- ?rigidity $ witnessToValue na =
+        case tb of
+            (ConsDolanType (VarDolanSingularType nb) NilDolanType)
+                | Just Refl <- testEquality na nb -> pure $ iJoinMeetR1 @_ @polb
+            _ -> solverLiftExpression $ varExpression $ leUnifierConstraint na tb
 unifyTypesST ta@(RecursiveDolanSingularType _ _) tb =
     unifyRecursiveType (singularRecursiveOrPlainType ta) (mkShimWit $ PlainType tb)
 unifyTypesST ta tb = unifyTypesST1 ta tb
@@ -152,7 +156,11 @@ unifyTypesTNS ::
     -> DolanSingularType ground polb b
     -> UnificationSolver ground a b
 unifyTypesTNS ta (VarDolanSingularType nb)
-    | FreeName <- ?rigidity $ witnessToValue nb = solverLiftExpression $ varExpression $ geUnifierConstraint nb ta
+    | FreeName <- ?rigidity $ witnessToValue nb =
+        case ta of
+            (ConsDolanType (VarDolanSingularType na) NilDolanType)
+                | Just Refl <- testEquality na nb -> pure iMeetL1
+            _ -> solverLiftExpression $ varExpression $ geUnifierConstraint nb ta
 unifyTypesTNS ta tb@(RecursiveDolanSingularType _ _) =
     unifyRecursiveType (mkShimWit $ PlainType ta) (singularRecursiveOrPlainType tb)
 unifyTypesTNS ta tb = unifyTypesTNS1 ta tb
