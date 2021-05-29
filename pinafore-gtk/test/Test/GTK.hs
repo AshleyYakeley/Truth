@@ -26,9 +26,4 @@ testFile inpath = let
 
 getTestGTK :: IO TestTree
 getTestGTK = do
-    return $
-        testTree
-            "gtk"
-            [ testFile ("test" </> "gtk" </> "output.in")
-            , testFile ("test" </> "gtk" </> "window.in")
-            ]
+    return $ testTree "gtk" [testFile ("test" </> "gtk" </> "output.in"), testFile ("test" </> "gtk" </> "window.in")]
