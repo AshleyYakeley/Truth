@@ -62,14 +62,6 @@ isFreeVar n =
         FreeName -> True
         RigidName -> False
 
-notUnify ::
-       forall pola polb. (Is PolarityType pola, Is PolarityType polb)
-    => Bool
-notUnify =
-    case (polarityType @pola, polarityType @polb) of
-        (PositiveType, NegativeType) -> False
-        _ -> True
-
 unifyTypesSS ::
        forall (ground :: GroundTypeKind) pola polb a b.
        ( IsDolanSubtypeGroundType ground
@@ -145,7 +137,7 @@ unifyTypesST ::
     -> UnificationSolver ground a b
 unifyTypesST (VarDolanSingularType na) tb
     | isFreeVar na
-    , notUnify @pola @polb = solverLiftExpression $ varExpression $ leUnifierConstraint na tb
+    , PositiveType <- polarityType @polb = solverLiftExpression $ varExpression $ leUnifierConstraint na tb
 unifyTypesST ta@(RecursiveDolanSingularType _ _) tb =
     unifyRecursiveType (singularRecursiveOrPlainType ta) (mkShimWit $ PlainType tb)
 unifyTypesST ta tb = unifyTypesST1 ta tb
@@ -167,8 +159,7 @@ unifyTypesTNS ::
     -> DolanSingularType ground polb b
     -> UnificationSolver ground a b
 unifyTypesTNS ta (VarDolanSingularType nb)
-    | isFreeVar nb
-    , notUnify @'Negative @polb = solverLiftExpression $ varExpression $ geUnifierConstraint nb ta
+    | isFreeVar nb = solverLiftExpression $ varExpression $ geUnifierConstraint nb ta
 unifyTypesTNS ta tb@(RecursiveDolanSingularType _ _) =
     unifyRecursiveType (mkShimWit $ PlainType ta) (singularRecursiveOrPlainType tb)
 unifyTypesTNS ta tb = unifyTypesTNS1 ta tb

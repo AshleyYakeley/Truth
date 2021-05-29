@@ -1,6 +1,7 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
-  * (no changes)
+  * Fixes
+    - fix serious defect in type unifier (really this time)
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 
