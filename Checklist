@@ -4,7 +4,7 @@ Before release:
 
     https://github.com/AshleyYakeley/Truth/milestones
 
-2. Pull upstream changes
+2. Pull upstream changes (if necessary)
 
     git checkout master
     git pull
@@ -15,7 +15,7 @@ Before release:
     common.yaml
     support/vsc-extension/package.json
     support/pygments-lexer/setup.py
-    pinafore/app/Version.hs
+    pinafore-app/app/Version.hs
     mkdocs/docs/index.md
 
 4. Update changelogs

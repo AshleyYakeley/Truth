@@ -4,6 +4,13 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 
+pinafore (0.3.1) buster; urgency=medium
+
+  * Fixes
+    - fix serious defect in type unifier (really this time)
+
+ -- Ashley Yakeley <ashley@semantic.org>  Sat, 29 May 2021 15:11:02 -0700
+
 pinafore (0.3) buster; urgency=medium
 
   * Language

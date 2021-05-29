@@ -126,8 +126,13 @@ invertSubstitute sub@(MkInvertSubstitution oldvar PositiveType newvar st) (OpenE
             pure $ \conv -> fa $ meetf conv convm
 invertSubstitute sub (OpenExpression subwit expr) = solverOpenExpression subwit $ invertSubstitute sub expr
 
-genNewName :: Bool
-genNewName = True
+-- | possibly can be switched off, but safer on
+genNewNamePlain :: Bool
+genNewNamePlain = True
+
+-- | switching this off will break the unifier
+genNewNameRec :: Bool
+genNewNameRec = True
 
 runUnifier ::
        forall (ground :: GroundTypeKind) a. IsDolanSubtypeGroundType ground
@@ -136,7 +141,7 @@ runUnifier ::
 runUnifier (ClosedExpression a) = return a
 runUnifier (OpenExpression (LEUnifierConstraint oldvar NegativeType (ptw :: _ pt) False) expr) = do
     MkAnyVar (newvar :: SymbolType newname) <-
-        if genNewName
+        if genNewNamePlain
             then lift renamerGenerateFreeUVar
             else return $ MkAnyVar oldvar
     assignUVarT @(MeetType (UVarT newname) pt) oldvar $ do
@@ -153,7 +158,7 @@ runUnifier (OpenExpression (LEUnifierConstraint oldvar NegativeType (ptw :: _ pt
         return $ expr'' meet2
 runUnifier (OpenExpression (LEUnifierConstraint oldvar PositiveType (ptw :: _ pt) False) expr) = do
     MkAnyVar (newvar :: SymbolType newname) <-
-        if genNewName
+        if genNewNamePlain
             then lift renamerGenerateFreeUVar
             else return $ MkAnyVar oldvar
     assignUVarT @(MeetType (UVarT newname) pt) oldvar $ do
@@ -172,7 +177,7 @@ runUnifier (OpenExpression (LEUnifierConstraint oldvar PositiveType (ptw :: _ pt
         return $ expr'' meet2
 runUnifier (OpenExpression (GEUnifierConstraint oldvar PositiveType (ptw :: _ pt) False) expr) = do
     MkAnyVar (newvar :: SymbolType newname) <-
-        if genNewName
+        if genNewNamePlain
             then lift renamerGenerateFreeUVar
             else return $ MkAnyVar oldvar
     assignUVarT @(JoinType (UVarT newname) pt) oldvar $ do
@@ -189,7 +194,7 @@ runUnifier (OpenExpression (GEUnifierConstraint oldvar PositiveType (ptw :: _ pt
         return $ expr'' join2
 runUnifier (OpenExpression (GEUnifierConstraint oldvar NegativeType (ptw :: _ pt) False) expr) = do
     MkAnyVar (newvar :: SymbolType newname) <-
-        if genNewName
+        if genNewNamePlain
             then lift renamerGenerateFreeUVar
             else return $ MkAnyVar oldvar
     assignUVarT @(JoinType (UVarT newname) pt) oldvar $ do
@@ -207,8 +212,12 @@ runUnifier (OpenExpression (GEUnifierConstraint oldvar NegativeType (ptw :: _ pt
         tell [bisub]
         return $ expr'' join2
 runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: SymbolType oldname) NegativeType (ptw :: _ pt) True) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <- lift renamerGenerateFreeUVar
+    MkAnyVar (newvar :: SymbolType newname) <-
+        if genNewNameRec
+            then lift renamerGenerateFreeUVar
+            else return $ MkAnyVar oldvar
     assignUVarT @(MeetType (UVarT newname) pt) oldvar $ do
+        recvarname <- lift renamerGenerateFree
         let
             bisub =
                 mkPolarBisubstitution
@@ -216,15 +225,20 @@ runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: SymbolType oldname) N
                     oldvar
                     (return $
                      singleDolanShimWit $
-                     recursiveDolanShimWit oldvar $ joinMeetShimWit (varDolanShimWit newvar) (mkShimWit ptw))
+                     recursiveRenameDolanShimWit oldvar recvarname $
+                     joinMeetShimWit (varDolanShimWit newvar) (mkShimWit ptw))
                     (return $ singleDolanShimWit $ MkShimWit (VarDolanSingularType newvar) $ MkPolarMap meet1)
         expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
         expr'' <- runUnifier expr'
         tell [bisub]
         return $ expr'' meet2
 runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: SymbolType oldname) PositiveType (ptw :: _ pt) True) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <- lift renamerGenerateFreeUVar
+    MkAnyVar (newvar :: SymbolType newname) <-
+        if genNewNameRec
+            then lift renamerGenerateFreeUVar
+            else return $ MkAnyVar oldvar
     assignUVarT @(MeetType (UVarT newname) pt) oldvar $ do
+        recvarname <- lift renamerGenerateFree
         let
             bisub =
                 mkPolarBisubstitution
@@ -235,14 +249,18 @@ runUnifier (OpenExpression (LEUnifierConstraint (oldvar :: SymbolType oldname) P
                          tq <- invertTypeM ptw
                          return $
                              singleDolanShimWit $
-                             recursiveDolanShimWit oldvar $ joinMeetShimWit (varDolanShimWit newvar) tq)
+                             recursiveRenameDolanShimWit oldvar recvarname $ joinMeetShimWit (varDolanShimWit newvar) tq)
         expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar PositiveType newvar ptw) expr
         expr'' <- runUnifier expr'
         tell [bisub]
         return $ expr'' meet2
 runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: SymbolType oldname) PositiveType (ptw :: _ pt) True) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <- lift renamerGenerateFreeUVar
+    MkAnyVar (newvar :: SymbolType newname) <-
+        if genNewNameRec
+            then lift renamerGenerateFreeUVar
+            else return $ MkAnyVar oldvar
     assignUVarT @(JoinType (UVarT newname) pt) oldvar $ do
+        recvarname <- lift renamerGenerateFree
         let
             bisub =
                 mkPolarBisubstitution
@@ -250,15 +268,20 @@ runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: SymbolType oldname) P
                     oldvar
                     (return $
                      singleDolanShimWit $
-                     recursiveDolanShimWit oldvar $ joinMeetShimWit (varDolanShimWit newvar) (mkShimWit ptw))
+                     recursiveRenameDolanShimWit oldvar recvarname $
+                     joinMeetShimWit (varDolanShimWit newvar) (mkShimWit ptw))
                     (return $ singleDolanShimWit $ MkShimWit (VarDolanSingularType newvar) $ MkPolarMap join1)
         expr' <- lift $ runSolver $ bisubstituteUnifier bisub expr
         expr'' <- runUnifier expr'
         tell [bisub]
         return $ expr'' join2
 runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: SymbolType oldname) NegativeType (ptw :: _ pt) True) expr) = do
-    MkAnyVar (newvar :: SymbolType newname) <- lift renamerGenerateFreeUVar
+    MkAnyVar (newvar :: SymbolType newname) <-
+        if genNewNameRec
+            then lift renamerGenerateFreeUVar
+            else return $ MkAnyVar oldvar
     assignUVarT @(JoinType (UVarT newname) pt) oldvar $ do
+        recvarname <- lift renamerGenerateFree
         let
             bisub =
                 mkPolarBisubstitution
@@ -269,7 +292,7 @@ runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: SymbolType oldname) N
                          tq <- invertTypeM ptw
                          return $
                              singleDolanShimWit $
-                             recursiveDolanShimWit oldvar $ joinMeetShimWit (varDolanShimWit newvar) tq)
+                             recursiveRenameDolanShimWit oldvar recvarname $ joinMeetShimWit (varDolanShimWit newvar) tq)
         expr' <- lift $ runSolver $ invertSubstitute (MkInvertSubstitution oldvar NegativeType newvar ptw) expr
         expr'' <- runUnifier expr'
         tell [bisub]
