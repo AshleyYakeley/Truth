@@ -1,6 +1,7 @@
 FROM commercialhaskell/stackage:lts17
 ENV DEBIAN_FRONTEND noninteractive
 RUN echo 2021-05-29
+RUN wget -qO - https://packages.confluent.io/deb/5.2/archive.key | apt-key add -
 RUN apt-get update
 RUN apt-get purge -y msodbcsql17
 RUN apt-get upgrade -y
