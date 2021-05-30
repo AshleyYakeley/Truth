@@ -6,11 +6,12 @@ import Changes.Core
 import Changes.UI.GTK
 import Changes.World.Clock
 import Data.Time
-import GI.Cairo.Render
-import GI.Gtk.Objects.DrawingArea
+import qualified GI.Gtk as GI
+import Graphics.Cairo.Functional
 import Shapes hiding (rotate)
 import Shapes.Numeric
 
+{-
 render :: TimeZone -> UTCTime -> DrawingArea -> Render ()
 render tz t widget = do
     w <- #getAllocatedWidth widget
@@ -35,6 +36,26 @@ render tz t widget = do
     lineTo 0 1
     -- draw
     stroke
+-}
+showPoint :: String -> UIDrawing
+showPoint t =
+    onMouseEvent $ \p _ -> do
+        liftIO $ putStrLn $ t <> ": " <> show p
+        return True
+
+withShowPoint :: String -> UIDrawing -> UIDrawing
+withShowPoint s d = mappend (fallThrough $ showPoint s) d
+
+drawing :: TimeZone -> UTCTime -> (Int32, Int32) -> UIDrawing
+drawing tz t (fromIntegral -> w, fromIntegral -> h) = let
+    size = min w h
+    LocalTime _ (TimeOfDay _ _ s) = utcToLocalTime tz t
+    in translate (w / 2, h / 2) $
+       scale (size, size) $
+       scale (-0.5, -0.5) $
+       rotate (realToFrac s * pi / 30) $
+       operatorOver $
+       lineCapSquare $ sourceRGB (0.3, 0, 1) $ lineWidth 0.01 $ withShowPoint "P" $ stroke [moveTo 0 0, lineTo 0 1]
 
 zeroTime :: UTCTime
 zeroTime = UTCTime (fromGregorian 2000 1 1) 0
@@ -58,6 +79,10 @@ main = do
                     wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
                     wsMenuBar = Nothing
                     wsContent :: CreateView Widget
-                    wsContent = createCairo $ mapModel (funcChangeLens $ render tz) clockModel
+                    wsContent = do
+                        w1 <- createButton (constantModel "Button") (constantModel Nothing)
+                        w2 <- createCairo $ mapModel (funcChangeLens $ drawing tz) clockModel
+                        GI.set w2 [#marginStart GI.:= 100, #marginTop GI.:= 200]
+                        createLayout OrientationHorizontal [(False, w1), (True, w2)]
                     in MkWindowSpec {..}
         return ()

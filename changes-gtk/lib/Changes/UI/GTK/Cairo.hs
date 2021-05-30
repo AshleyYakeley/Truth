@@ -1,5 +1,10 @@
 module Changes.UI.GTK.Cairo
-    ( createCairo
+    ( UIEvents
+    , UIDrawing
+    , createCairo
+    , onMouseEvent
+    , fallThrough
+    , onClick
     ) where
 
 import Changes.Core
@@ -7,20 +12,70 @@ import Changes.UI.GTK.Useful
 import Data.IORef
 import GI.Cairo.Render
 import GI.Cairo.Render.Connector
-import GI.Gtk
+import GI.Gdk as GI
+import GI.Gtk as GI
+import Graphics.Cairo.Functional
 import Shapes
+import Shapes.Numeric
 
-createCairo :: Model (ROWUpdate (DrawingArea -> Render ())) -> CreateView Widget
+data UIEvents = MkUIEvents
+    { unUIEvents :: EventButton -> View Bool
+    }
+
+instance Semigroup UIEvents where
+    MkUIEvents evta <> MkUIEvents evtb =
+        MkUIEvents $ \et -> do
+            sa <- evta et
+            if sa
+                then return True
+                else evtb et
+
+instance Monoid UIEvents where
+    mempty = MkUIEvents $ \_ -> return False
+
+type UIDrawing = Drawing (PixelPoint -> UIEvents)
+
+onMouseEvent :: ((Double, Double) -> EventButton -> View Bool) -> UIDrawing
+onMouseEvent f = pointDrawing $ \p -> MkUIEvents $ f p
+
+fallThrough :: UIDrawing -> UIDrawing
+fallThrough = fmap $ \f p -> MkUIEvents $ \evt -> fmap (\_ -> False) $ (unUIEvents $ f p) evt
+
+onClick :: View () -> UIDrawing
+onClick action =
+    onMouseEvent $ \_ event -> do
+        click <- GI.get event #type
+        case click of
+            EventTypeButtonPress -> do
+                action
+                return True
+            _ -> return False
+
+createCairo :: Model (ROWUpdate ((Int32, Int32) -> UIDrawing)) -> CreateView Widget
 createCairo model = do
     widget <- cvNew DrawingArea []
-    renderRef <- liftIO $ newIORef $ \_ -> return ()
-    cvBindReadOnlyWholeModel model $ \render -> do
-        liftIO $ writeIORef renderRef render
+    drawingRef :: IORef ((Int32, Int32) -> UIDrawing) <- liftIO $ newIORef $ \_ -> mempty
+    cvBindReadOnlyWholeModel model $ \pdrawing -> do
+        liftIO $ writeIORef drawingRef pdrawing
         #queueDraw widget
+    let
+        getDrawing :: IO UIDrawing
+        getDrawing = do
+            pdrawing <- readIORef drawingRef
+            w <- #getAllocatedWidth widget
+            h <- #getAllocatedHeight widget
+            return $ pdrawing (w, h)
     _ <-
         cvOn widget #draw $ \context ->
             liftIO $ do
-                render <- readIORef renderRef
-                renderWithContext (render widget) context
+                drawing <- getDrawing
+                renderWithContext (drawingRender drawing) context
                 return True
+    widgetAddEvents widget [EventMaskButtonPressMask]
+    _ <-
+        cvOn widget #buttonPressEvent $ \event -> do
+            drawing <- liftIO getDrawing
+            h <- GI.get event #x
+            v <- GI.get event #y
+            unUIEvents (drawingPoint drawing (h, v)) event
     toWidget widget

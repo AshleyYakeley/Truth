@@ -40,6 +40,7 @@ library:
       - changes-core
       - changes-media
     exposed-modules:
+      - Graphics.Cairo.Functional
       - Changes.UI.GTK
     other-modules:
       - Changes.UI.GTK.Useful
@@ -77,6 +78,7 @@ tests:
           - shapes
           - changes-core
           - changes-gtk
+          - gi-cairo-render
         main: Main.hs
         ghc-options: -threaded
 
