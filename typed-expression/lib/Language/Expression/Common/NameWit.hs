@@ -12,7 +12,7 @@ instance (AllWitnessConstraint Show nw, AllWitnessConstraint (AllWitnessConstrai
              Show (NameTypeWitness nw vw t) where
     show (MkNameTypeWitness namewit (typewit :: vw n t)) =
         showAllWitness namewit <>
-        ":" <>
+        ": " <>
         case allWitnessConstraint @_ @_ @(AllWitnessConstraint Show) @vw @n of
             Dict -> showAllWitness typewit
 

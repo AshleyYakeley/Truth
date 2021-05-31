@@ -198,6 +198,27 @@ window_css = do
         ];
     end;
 
+### Drawing
+window_drawing: Action UI.Window;
+window_drawing = let import Drawing in do
+    nowref <- newClock $ secondsToDuration 1;
+    tzref <- newTimeZoneRef now;
+    std_window {"Drawing"} $ UI.draw {\(w,h) -> let
+        size = min w h;
+        in case timeToLocal %tzref %nowref of
+            MkLocalTime _ (MkTimeOfDay _ _ s) ->
+                translate (w / 2, h / 2) $
+                scale (size, size) $
+                scale (-0.5, -0.5) $
+                rotate (s ~* pi ~/ 30) $
+                operatorOver $
+                #sourceRGB (0.3, 0, 1) $
+                lineCapSquare $
+                lineWidth 0.01 $
+                stroke [moveTo 0 0, lineTo 0 1];
+            end};
+    end;
+
 ### Start Window
 
 window_start : Action UI.Window;
@@ -222,6 +243,7 @@ window_start = do
             (False, UI.button {"Files"} {window_files}),
             (False, UI.button {"Constant"} {window_constant}),
             (False, UI.button {"CSS"} {window_css}),
+            (False, UI.button {"Drawing"} {window_drawing}),
             (False, UI.button {"Disabled"} unknown),
             (True, UI.blank)
         ];

@@ -39,6 +39,7 @@ module Language.Expression.Dolan
     , biRangeAnyF
     , SingleArgument
     , DolanArguments(..)
+    , saturateArgsConstraint
     , dolanArgumentsToArguments
     , SubtypeContext(..)
     , subtypeDolanArguments
@@ -55,6 +56,7 @@ module Language.Expression.Dolan
     , composeSubtypeConversion
     , SubypeConversionEntry(..)
     , simpleSubtypeConversionEntry
+    , saturateGroundType
     , module Language.Expression.Dolan.Nonpolar
     , module Language.Expression.Dolan.Mono
     ) where

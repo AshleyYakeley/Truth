@@ -11,7 +11,6 @@ import Changes.UI.GTK
 import Data.Shim
 import Data.Time
 import GI.Cairo.Render
-import GI.Gtk.Objects.DrawingArea
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.API
@@ -247,15 +246,8 @@ uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangUIElement
 uiCalendar day =
     MkLangUIElement $ createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
 
-convertDrawing :: ((Int32, Int32) -> LangDrawing) -> DrawingArea -> Render ()
-convertDrawing drawing widget = do
-    w <- #getAllocatedWidth widget
-    h <- #getAllocatedHeight widget
-    unLangDrawing $ drawing (w, h)
-
 uiDraw :: PinaforeImmutableWholeRef ((Int32, Int32) -> LangDrawing) -> LangUIElement
-uiDraw ref =
-    MkLangUIElement $ createCairo $ unWModel $ pinaforeImmutableRefValue (\_ -> return ()) $ fmap convertDrawing ref
+uiDraw ref = MkLangUIElement $ createCairo $ unWModel $ pinaforeImmutableRefValue mempty ref
 
 elementStuff :: DocTreeEntry BindDoc
 elementStuff =

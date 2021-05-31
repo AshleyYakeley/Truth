@@ -2,6 +2,7 @@ module Language.Expression.Dolan.Arguments
     ( SingleArgument
     , DolanArguments(..)
     , forDolanArguments
+    , saturateArgsConstraint
     , mapDolanArgumentsType
     , mapDolanArgumentsM
     , mapDolanArguments
@@ -58,6 +59,14 @@ forDolanArguments ::
 forDolanArguments _call NilListType NilDolanArguments = mempty
 forDolanArguments call (ConsListType sv dv) (ConsDolanArguments arg args) =
     forDolanArgument @polarity call sv arg <> forDolanArguments call dv args
+
+saturateArgsConstraint ::
+       forall (w :: Type -> Type) dv ft gt polarity (t :: Type).
+       SaturatedWitness w gt
+    -> DolanArguments dv ft gt polarity t
+    -> w t
+saturateArgsConstraint (NilSaturatedWitness wt) NilDolanArguments = wt
+saturateArgsConstraint (ConsSaturatedWitness sw) (ConsDolanArguments _ args) = saturateArgsConstraint sw args
 
 type ArgTypeF :: (Type -> Type -> Type) -> forall (sv :: Variance) ->
                                                    (Polarity -> Type -> Type) -> Polarity -> VarianceKind sv -> Type

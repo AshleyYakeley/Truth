@@ -8,6 +8,7 @@ module Graphics.Cairo.Functional
     , abstractToPixel
     , pointDrawing
     , ifPoint
+    -- * Drawing
     , stroke
     , lineWidth
     , sourceRGB
@@ -92,7 +93,11 @@ renderDrawing r = mempty {drawingRender = checkStatus r}
 dcontext :: R.Render () -> Drawing a -> Drawing a
 dcontext change (MkDrawing render mp) = MkDrawing (rcontext $ checkStatus change >> render) mp
 
-ifPoint :: Monoid a => ((Double, Double) -> Bool) -> Drawing (PixelPoint -> a) -> Drawing (PixelPoint -> a)
+ifPoint ::
+       forall a. Monoid a
+    => ((Double, Double) -> Bool)
+    -> Drawing (PixelPoint -> a)
+    -> Drawing (PixelPoint -> a)
 ifPoint test drawing =
     liftA2
         (\t a p ->
@@ -102,16 +107,16 @@ ifPoint test drawing =
         (pointDrawing test)
         drawing
 
-lineWidth :: Double -> Drawing a -> Drawing a
+lineWidth :: forall a. Double -> Drawing a -> Drawing a
 lineWidth w = dcontext $ R.setLineWidth w
 
-sourceRGB :: (Double, Double, Double) -> Drawing a -> Drawing a
+sourceRGB :: forall a. (Double, Double, Double) -> Drawing a -> Drawing a
 sourceRGB (r, g, b) = dcontext $ R.setSourceRGB r g b
 
-lineCapSquare :: Drawing a -> Drawing a
+lineCapSquare :: forall a. Drawing a -> Drawing a
 lineCapSquare = dcontext $ R.setLineCap R.LineCapSquare
 
-operatorOver :: Drawing a -> Drawing a
+operatorOver :: forall a. Drawing a -> Drawing a
 operatorOver = dcontext $ R.setOperator $ R.OperatorOver
 
 -- Paths
@@ -140,7 +145,10 @@ lineTo x y = MkPath $ R.lineTo x y
 moveTo :: Double -> Double -> Path
 moveTo x y = MkPath $ R.moveTo x y
 
-stroke :: Monoid a => [Path] -> Drawing a
+stroke ::
+       forall a. Monoid a
+    => [Path]
+    -> Drawing a
 stroke pp =
     renderDrawing $ do
         R.newPath
@@ -148,26 +156,26 @@ stroke pp =
         R.stroke
 
 -- Transformations
-saveMatrix :: R.Render a -> R.Render a
+saveMatrix :: forall a. R.Render a -> R.Render a
 saveMatrix render = do
     m <- R.getMatrix
     a <- render
     R.setMatrix m
     return a
 
-translate :: (Double, Double) -> Drawing a -> Drawing a
+translate :: forall a. (Double, Double) -> Drawing a -> Drawing a
 translate (x, y) (MkDrawing render mp) = let
     render' = saveMatrix $ checkStatus (R.translate x y) >> render
     mp' m = mp $ (RM.translate x y RM.identity) * m
     in MkDrawing render' mp'
 
-rotate :: Double -> Drawing a -> Drawing a
+rotate :: forall a. Double -> Drawing a -> Drawing a
 rotate angle (MkDrawing render mp) = let
     render' = saveMatrix $ R.rotate angle >> render
     mp' m = mp $ (RM.rotate angle RM.identity) * m
     in MkDrawing render' mp'
 
-scale :: (Double, Double) -> Drawing a -> Drawing a
+scale :: forall a. (Double, Double) -> Drawing a -> Drawing a
 scale (sx, sy) (MkDrawing render mp) = let
     render' = saveMatrix $ R.scale sx sy >> render
     mp' m = mp $ (RM.scale sx sy RM.identity) * m

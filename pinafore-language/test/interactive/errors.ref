@@ -5,16 +5,16 @@ pinafore> (
 pinafore> in
 <input>:1:1: unexpected: "in"; expecting: end of input, expression
 pinafore> a
-<input>:2:1: undefined: a:a
+<input>:2:1: undefined: a: a
 pinafore> a
-<input>:2:1: undefined: a:a
+<input>:2:1: undefined: a: a
 pinafore> let p = q
 pinafore> p
-<input>:3:1: undefined: q:c
+<input>:3:1: undefined: q: c
 pinafore> a
-<input>:3:1: undefined: a:a
+<input>:3:1: undefined: a: a
 pinafore> p
-<input>:3:1: undefined: q:c
+<input>:3:1: undefined: q: c
 pinafore> openEntity @X !"x"
 <input>:2:13: unknown type: X
 pinafore> let y = openEntity @Y !"y"
@@ -22,7 +22,7 @@ pinafore> let y = openEntity @Y !"y"
 pinafore> 35
 35
 pinafore> x + 1
-<input>:4:1: undefined: x:Integer
+<input>:4:1: undefined: x: Integer
 pinafore> x + y
-<input>:4:1: undefined: x:Integer, y:Integer
+<input>:4:1: undefined: x: Integer, y: Integer
 pinafore> <END>

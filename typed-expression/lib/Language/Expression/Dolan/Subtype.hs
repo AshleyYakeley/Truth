@@ -11,11 +11,13 @@ module Language.Expression.Dolan.Subtype
     , composeSubtypeConversion
     , SubypeConversionEntry(..)
     , simpleSubtypeConversionEntry
+    , saturateGroundType
     , IsDolanSubtypeEntriesGroundType(..)
     ) where
 
 import Control.Applicative.Wrapped
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
@@ -164,6 +166,40 @@ newtype SubtypeConversion ground dva gta dvb gtb =
     MkSubtypeConversion (forall solver pola a.
                              (WrappedApplicative solver, WAInnerM solver ~ DolanTypeCheckM ground, Is PolarityType pola) =>
                                      SubtypeContext (DolanType ground) (DolanShim ground) solver -> DolanArguments dva (DolanType ground) gta pola a -> DolanTypeCheckM ground (SubtypeArguments ground solver pola dvb gtb a))
+
+generateVarType ::
+       forall (ground :: GroundTypeKind) polarity. Monad (DolanM ground)
+    => DolanTypeCheckM ground (AnyInKind (DolanType ground polarity))
+generateVarType = do
+    n <- renamerGenerate FreeName []
+    MkAnyVar v <- return $ newUVarAny n
+    return $ MkAnyInKind $ singleDolanType $ VarDolanSingularType v
+
+saturateSingleArgument ::
+       forall (ground :: GroundTypeKind) polarity sv. Monad (DolanM ground)
+    => VarianceType sv
+    -> DolanTypeCheckM ground (AnyInKind (SingleArgument sv (DolanType ground) polarity))
+saturateSingleArgument CovarianceType = generateVarType
+saturateSingleArgument ContravarianceType = generateVarType
+saturateSingleArgument RangevarianceType = do
+    MkAnyInKind ta <- generateVarType
+    MkAnyInKind tb <- generateVarType
+    return $ MkAnyInKind $ MkRangeType ta tb
+
+saturateDolanArguments ::
+       forall (ground :: GroundTypeKind) polarity dv gt. Monad (DolanM ground)
+    => DolanVarianceType dv
+    -> DolanTypeCheckM ground (AnyW (DolanArguments dv (DolanType ground) gt polarity))
+saturateDolanArguments NilListType = return $ MkAnyW NilDolanArguments
+saturateDolanArguments (ConsListType t1 tr) =
+    saturateSingleArgument @ground @polarity t1 >>= \(MkAnyInKind arg) ->
+        saturateDolanArguments tr >>= \(MkAnyW args) -> return $ MkAnyW $ ConsDolanArguments arg args
+
+saturateGroundType ::
+       forall (ground :: GroundTypeKind) polarity dv gt. IsDolanGroundType ground
+    => ground dv gt
+    -> DolanTypeCheckM ground (AnyW (DolanArguments dv (DolanType ground) gt polarity))
+saturateGroundType gt = saturateDolanArguments $ groundTypeVarianceType gt
 
 nilSubtypeConversion ::
        forall (ground :: GroundTypeKind) (a :: Type) (b :: Type).

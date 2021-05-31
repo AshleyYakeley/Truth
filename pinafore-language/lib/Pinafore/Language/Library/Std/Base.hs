@@ -224,6 +224,18 @@ literalSubtypeConversionEntry ta tb conv =
         (EntityPinaforeGroundType NilListType (LiteralEntityGroundType tb)) $
     nilSubtypeConversion conv
 
+lesser :: (A -> A -> Ordering) -> A -> A -> A
+lesser f a b =
+    case f a b of
+        GT -> b
+        _ -> a
+
+greater :: (A -> A -> Ordering) -> A -> A -> A
+greater f a b =
+    case f a b of
+        GT -> a
+        _ -> b
+
 baseLibEntries :: [DocTreeEntry BindDoc]
 baseLibEntries =
     [ docTreeEntry
@@ -289,6 +301,8 @@ baseLibEntries =
                 , mkValEntry "le" "Less than or equal to." $ (/=) GT
                 , mkValEntry "gt" "Greater than." $ (==) GT
                 , mkValEntry "ge" "Greater than or equal to." $ (/=) LT
+                , mkValEntry "lesser" "The lesser of two weevils." lesser
+                , mkValEntry "greater" "The greater of two weevils." greater
                 , mkValEntry "alphabetical" "Alphabetical order." $ compare @Text
                 , mkValEntry "numerical" "Numercal order." $ compare @Number
                 , mkValEntry "chronological" "Chronological order." $ compare @UTCTime
@@ -332,7 +346,9 @@ baseLibEntries =
                     functionToShim "Integer to Rational" integerToSafeRational
                   ] <>
                   plainFormattingDefs @Integer "Integer" "an integer" <>
-                  [ mkValEntry "+" "Add." $ (+) @Integer
+                  [ mkValEntry "min" "Lesser of two Integers" $ min @Integer
+                  , mkValEntry "max" "Greater of two Integers" $ max @Integer
+                  , mkValEntry "+" "Add." $ (+) @Integer
                   , mkValEntry "-" "Subtract." $ (-) @Integer
                   , mkValEntry "*" "Multiply." $ (*) @Integer
                   , mkValEntry "negate" "Negate." $ negate @Integer
@@ -356,7 +372,9 @@ baseLibEntries =
                     functionToShim "Rational to Number" safeRationalToNumber
                   ] <>
                   plainFormattingDefs @SafeRational "Rational" "a rational" <>
-                  [ mkValEntry ".+" "Add." $ (+) @SafeRational
+                  [ mkValEntry "minR" "Lesser of two Rationals" $ min @SafeRational
+                  , mkValEntry "maxR" "Greater of two Rationals" $ max @SafeRational
+                  , mkValEntry ".+" "Add." $ (+) @SafeRational
                   , mkValEntry ".-" "Subtract." $ (-) @SafeRational
                   , mkValEntry ".*" "Multiply." $ (*) @SafeRational
                   , mkValEntry "/" "Divide." $ (/) @SafeRational
@@ -375,6 +393,8 @@ baseLibEntries =
                   plainFormattingDefs @Number "Number" "a number" <>
                   [ mkTypeEntry "Number" "" $
                     MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType NumberLiteralType
+                  , mkValEntry "minN" "Lesser of two Numbers" $ min @Number
+                  , mkValEntry "maxN" "Greater of two Numbers" $ max @Number
                   , mkValEntry "~+" "Add." $ (+) @Number
                   , mkValEntry "~-" "Subtract." $ (-) @Number
                   , mkValEntry "~*" "Multiply." $ (*) @Number
@@ -608,8 +628,6 @@ baseLibEntries =
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
                     conv <- subtypeConvert sc t $ topEntityType @'Negative
                     pure $ convE . cfmap (iJoinMeetL1 @_ @'Negative . conv)
-                {-
-                -}
           ]
     , docTreeEntry
           "Pairs"

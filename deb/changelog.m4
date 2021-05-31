@@ -1,6 +1,10 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
-  * (no changes)
+  * Library
+    - Std
+      . add min/max/lesser/greater functions
+    - Drawing
+      . Cairo-based functions for creating drawings
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

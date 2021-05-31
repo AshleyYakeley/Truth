@@ -11,32 +11,6 @@ import Graphics.Cairo.Functional
 import Shapes hiding (rotate)
 import Shapes.Numeric
 
-{-
-render :: TimeZone -> UTCTime -> DrawingArea -> Render ()
-render tz t widget = do
-    w <- #getAllocatedWidth widget
-    h <- #getAllocatedHeight widget
-    -- move to middle
-    translate (fromIntegral w / 2) (fromIntegral h / 2)
-    let
-    -- fit to window
-        size = min w h
-    scale (fromIntegral size) (fromIntegral size)
-    -- set rotating frame of reference, y-axis up
-    scale (-0.5) (-0.5)
-    let LocalTime _ (TimeOfDay _ _ s) = utcToLocalTime tz t
-    rotate (realToFrac s * pi / 30)
-    -- set up pen
-    setOperator OperatorOver
-    setLineCap LineCapSquare
-    setSourceRGB 0.3 0 1 -- purple
-    setLineWidth 0.01
-    -- make line
-    moveTo 0 0
-    lineTo 0 1
-    -- draw
-    stroke
--}
 showPoint :: String -> UIDrawing
 showPoint t =
     onMouseEvent $ \p _ -> do

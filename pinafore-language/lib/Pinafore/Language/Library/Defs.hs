@@ -91,6 +91,30 @@ mkSubtypeRelationEntry ta tb docDescription scentries = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
+-- | The 'Monoid' trick of representing @Monoid T@ as @[T] <: T@.
+monoidSubypeConversionEntry ::
+       forall dv gt. Is (SaturatedConstraintWitness Monoid) gt
+    => PinaforeGroundType dv gt
+    -> SubypeConversionEntry PinaforeGroundType
+monoidSubypeConversionEntry t =
+    simpleSubtypeConversionEntry (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType) t $
+    MkSubtypeConversion $ \sc (ConsDolanArguments ta NilDolanArguments :: _ pola _) -> do
+        margs <- saturateGroundType t
+        case margs of
+            MkAnyW args ->
+                case saturateArgsConstraint (representative @_ @(SaturatedConstraintWitness Monoid) @gt) args of
+                    Compose Dict -> let
+                        tb = singleDolanType $ GroundDolanSingularType t args
+                        sconv = subtypeConvert sc ta tb
+                        cshim :: forall a. JMShim Type (JoinMeetType pola a (LimitType pola)) a
+                        cshim =
+                            case polarityType @pola of
+                                PositiveType -> iJoinL1
+                                NegativeType -> iMeetL1
+                        in return $
+                           MkSubtypeArguments args $
+                           fmap (\conv -> functionToShim "mconcat" mconcat . applyCoPolyShim cid (cshim . conv)) sconv
+
 mkValPatEntry ::
        forall t v lt.
        (ToPinaforeType t, FromPinaforeType v, ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt)
