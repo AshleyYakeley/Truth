@@ -17,6 +17,7 @@ chocolate
 coral
 cornflowerblue
 cornsilk
+crimson
 cyan
 darkblue
 darkcyan
@@ -57,6 +58,7 @@ grey
 honeydew
 hotpink
 indianred
+indigo
 ivory
 khaki
 lavender
@@ -99,6 +101,7 @@ moccasin
 navajowhite
 navy
 oldlace
+olive
 olivedrab
 orange
 orangered
@@ -123,6 +126,7 @@ sandybrown
 seagreen
 seashell
 sienna
+silver
 skyblue
 slateblue
 slategray
@@ -131,6 +135,7 @@ snow
 springgreen
 steelblue
 tan
+teal
 thistle
 tomato
 turquoise
