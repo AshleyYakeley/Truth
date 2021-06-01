@@ -6,6 +6,7 @@ module Pinafore.Language.Library.GTK
     ) where
 
 import Pinafore.Language.API
+import Pinafore.Language.Library.GTK.Colour
 import Pinafore.Language.Library.GTK.Debug
 import Pinafore.Language.Library.GTK.Drawing
 import Pinafore.Language.Library.GTK.Element
@@ -16,4 +17,4 @@ uiLibraryModule :: LibraryModule
 uiLibraryModule = MkDocTree "UI" "User interface, using GTK." [elementStuff, menuItemStuff, windowStuff]
 
 gtkLibrary :: [LibraryModule]
-gtkLibrary = [drawingLibraryModule, uiLibraryModule, uiDebugLibraryModule]
+gtkLibrary = [colourLibraryModule, drawingLibraryModule, uiLibraryModule, uiDebugLibraryModule]

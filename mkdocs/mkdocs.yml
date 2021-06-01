@@ -26,6 +26,7 @@ nav:
   - Modules: 'modules.md'
 - Library:
   - Std: 'library/Std.md'
+  - Colour: 'library/Colour.md'
   - Drawing: 'library/Drawing.md'
   - UI: 'library/UI.md'
   - Debug: 'library/Debug.md'
