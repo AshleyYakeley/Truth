@@ -6,6 +6,7 @@ module Language.Expression.Dolan.Subtype
     , IsDolanSubtypeGroundType(..)
     , SubtypeArguments(..)
     , SubtypeConversion(..)
+    , simpleSubtypeConversion
     , nilSubtypeConversion
     , idSubtypeConversion
     , composeSubtypeConversion
@@ -166,6 +167,11 @@ newtype SubtypeConversion ground dva gta dvb gtb =
     MkSubtypeConversion (forall solver pola a.
                              (WrappedApplicative solver, WAInnerM solver ~ DolanTypeCheckM ground, Is PolarityType pola) =>
                                      SubtypeContext (DolanType ground) (DolanShim ground) solver -> DolanArguments dva (DolanType ground) gta pola a -> DolanTypeCheckM ground (SubtypeArguments ground solver pola dvb gtb a))
+
+simpleSubtypeConversion ::
+       forall (ground :: GroundTypeKind) a b. DolanPolyShim ground Type a b -> SubtypeConversion ground '[] a '[] b
+simpleSubtypeConversion conv =
+    MkSubtypeConversion $ \_ NilDolanArguments -> return $ MkSubtypeArguments NilDolanArguments $ pure conv
 
 generateVarType ::
        forall (ground :: GroundTypeKind) polarity. Monad (DolanM ground)

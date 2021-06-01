@@ -51,6 +51,7 @@ module Language.Expression.Dolan
     , IsDolanSubtypeEntriesGroundType(..)
     , SubtypeArguments(..)
     , SubtypeConversion(..)
+    , simpleSubtypeConversion
     , nilSubtypeConversion
     , idSubtypeConversion
     , composeSubtypeConversion
