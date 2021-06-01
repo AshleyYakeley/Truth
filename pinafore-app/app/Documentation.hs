@@ -8,44 +8,36 @@ import Pinafore.Language
 import Shapes
 import System.FilePath
 
-escapeMarkdown :: String -> String
-escapeMarkdown s = let
-    badchars :: String
-    badchars = "+*>\\"
-    escapeChar :: Char -> String
-    escapeChar c =
-        if elem c badchars
-            then ['\\', c]
-            else [c]
-    in mconcat $ fmap escapeChar s
+hPutMarkdownLn :: Handle -> Markdown -> IO ()
+hPutMarkdownLn h m = hPutStrLn h $ unpack $ getRawMarkdown m
 
 showDefEntry :: Handle -> Int -> DefDoc -> IO ()
 showDefEntry h _ MkDefDoc {..} = do
     let
-        name = "**`" <> unpack docName <> "`**"
-        nameType = name <> " `: " <> unpack docValueType <> "`"
+        name = boldMarkdown $ codeMarkdown docName
+        nameType = name <> " " <> codeMarkdown (": " <> docValueType)
         title =
             case docType of
                 ValueDocType -> nameType
                 ValuePatternDocType -> nameType <> " (also pattern)"
-                TypeDocType -> "`type` " <> name
-                SupertypeDocType -> "_" <> nameType <> "_"
-                SubtypeRelationDocType -> "`subtype` " <> name
-    hPutStrLn h $ title <> "  "
+                TypeDocType -> codeMarkdown "type" <> " " <> name
+                SupertypeDocType -> italicMarkdown nameType
+                SubtypeRelationDocType -> codeMarkdown "subtype" <> " " <> name
+    hPutMarkdownLn h $ title <> "  "
     if docDescription == ""
         then return ()
-        else hPutStrLn h $ escapeMarkdown $ unpack docDescription
-    hPutStrLn h ""
+        else hPutMarkdownLn h docDescription
+    hPutMarkdownLn h ""
 
 showDefTitle :: Handle -> Int -> Text -> IO ()
 showDefTitle _ 1 "" = return ()
-showDefTitle h level title = hPutStrLn h $ replicate level '#' <> " " <> unpack title
+showDefTitle h level title = hPutMarkdownLn h $ titleMarkdown level $ plainMarkdown title
 
-showDefDesc :: Handle -> Int -> Text -> IO ()
+showDefDesc :: Handle -> Int -> Markdown -> IO ()
 showDefDesc _ _ "" = return ()
 showDefDesc h _ desc = do
-    hPutStrLn h $ unpack desc
-    hPutStrLn h ""
+    hPutMarkdownLn h desc
+    hPutMarkdownLn h ""
 
 printLibraryBindings :: [LibraryModule] -> FilePath -> IO ()
 printLibraryBindings extralib dirpath =

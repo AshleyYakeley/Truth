@@ -11,6 +11,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Pinafore.Markdown
 import Shapes
 
 qPositiveTypeDescription ::
@@ -44,7 +45,7 @@ data BindDoc = MkBindDoc
 mkValEntry ::
        forall t. ToPinaforeType t
     => Name
-    -> Text
+    -> Markdown
     -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry BindDoc
 mkValEntry name docDescription val = let
@@ -62,7 +63,7 @@ mkValEntry name docDescription val = let
 mkSupertypeEntry ::
        forall t. ToPinaforeType t
     => Name
-    -> Text
+    -> Markdown
     -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry BindDoc
 mkSupertypeEntry name docDescription _val = let
@@ -73,7 +74,7 @@ mkSupertypeEntry name docDescription _val = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
-mkTypeEntry :: Name -> Text -> PinaforeBoundType -> DocTreeEntry BindDoc
+mkTypeEntry :: Name -> Markdown -> PinaforeBoundType -> DocTreeEntry BindDoc
 mkTypeEntry name docDescription t = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> TypeBinding t
     docName = toText name
@@ -82,7 +83,7 @@ mkTypeEntry name docDescription t = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
-mkSubtypeRelationEntry :: Text -> Text -> Text -> [SubypeConversionEntry PinaforeGroundType] -> DocTreeEntry BindDoc
+mkSubtypeRelationEntry :: Text -> Text -> Markdown -> [SubypeConversionEntry PinaforeGroundType] -> DocTreeEntry BindDoc
 mkSubtypeRelationEntry ta tb docDescription scentries = let
     bdScopeEntry = SubtypeScopeEntry scentries
     docName = ta <> " <: " <> tb
@@ -119,7 +120,7 @@ mkValPatEntry ::
        forall t v lt.
        (ToPinaforeType t, FromPinaforeType v, ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt)
     => Name
-    -> Text
+    -> Markdown
     -> t
     -> (v -> Maybe (HList lt))
     -> DocTreeEntry BindDoc
@@ -134,7 +135,12 @@ mkValPatEntry name docDescription val pat = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSpecialFormEntry ::
-       Name -> Text -> Text -> Text -> ((?pinafore :: PinaforeContext) => PinaforeSpecialForm) -> DocTreeEntry BindDoc
+       Name
+    -> Markdown
+    -> Text
+    -> Text
+    -> ((?pinafore :: PinaforeContext) => PinaforeSpecialForm)
+    -> DocTreeEntry BindDoc
 mkSpecialFormEntry name docDescription params docValueType sf = let
     bdScopeEntry =
         BindScopeEntry name $

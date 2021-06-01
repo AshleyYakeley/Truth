@@ -27,6 +27,7 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
+      - Pinafore.Markdown
       - Pinafore.Context
       - Pinafore.Language.Value.Instances
       - Pinafore.Language.Value.WholeRef

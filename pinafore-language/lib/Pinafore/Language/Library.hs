@@ -39,10 +39,11 @@ nameIsInfix n =
 
 allOperatorNames :: [Name]
 allOperatorNames = let
-    getDocName MkDefDoc {docType = ValueDocType, ..}
-        | nameIsInfix (MkName docName) = Just $ MkName docName
+    getDocName :: BindDoc -> Maybe Name
+    getDocName MkBindDoc {bdScopeEntry = BindScopeEntry name _}
+        | nameIsInfix name = Just name
     getDocName _ = Nothing
-    in catMaybes $ fmap getDocName $ mconcat $ fmap toList $ libraryDoc []
+    in catMaybes $ fmap getDocName $ mconcat $ fmap toList library
 
 getImplictScope :: (?pinafore :: PinaforeContext) => IO PinaforeScope
 getImplictScope = getModuleScope stdLibraryModule

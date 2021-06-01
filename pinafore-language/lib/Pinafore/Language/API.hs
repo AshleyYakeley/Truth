@@ -1,5 +1,6 @@
 module Pinafore.Language.API
     ( module Pinafore.Language.ExprShow
+    , module Pinafore.Markdown
     , module Pinafore.Language.DocTree
     , module Pinafore.Language.Var
     , module Pinafore.Language.Library.Defs
@@ -28,3 +29,4 @@ import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
+import Pinafore.Markdown

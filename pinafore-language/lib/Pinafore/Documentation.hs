@@ -1,5 +1,6 @@
 module Pinafore.Documentation
-    ( DefDoc(..)
+    ( module Pinafore.Markdown
+    , DefDoc(..)
     , DocTree(..)
     , DocType(..)
     , runDocTree
@@ -15,3 +16,4 @@ import Pinafore.Language.DocTree
 import Pinafore.Language.Grammar
 import Pinafore.Language.Library
 import Pinafore.Language.Name
+import Pinafore.Markdown

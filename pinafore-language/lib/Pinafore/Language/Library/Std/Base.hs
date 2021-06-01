@@ -24,6 +24,7 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
+import Pinafore.Markdown
 import Shapes
 import Shapes.Numeric
 
@@ -148,10 +149,11 @@ plainFormattingDefs ::
     -> Text
     -> [DocTreeEntry BindDoc]
 plainFormattingDefs uname lname =
-    [ mkValEntry (MkName $ "parse" <> uname) ("Parse text as " <> lname <> ". Inverse of `toText`.") $ parseLiteral @t
+    [ mkValEntry (MkName $ "parse" <> uname) ("Parse text as " <> plainMarkdown lname <> ". Inverse of `toText`.") $
+      parseLiteral @t
     , mkValEntry
           (MkName $ "interpret" <> uname <> "AsText")
-          ("Interpret " <> lname <> " reference as text, interpreting deleted values as empty text.") $
+          ("Interpret " <> plainMarkdown lname <> " reference as text, interpreting deleted values as empty text.") $
       interpretAsText @t
     ]
 
@@ -192,15 +194,15 @@ unixFormattingDefs ::
 unixFormattingDefs uname lname =
     [ mkValEntry
           (MkName $ "unixFormat" <> uname)
-          ("Format " <> lname <> " as text, using a UNIX-style formatting string.") $
+          ("Format " <> plainMarkdown lname <> " as text, using a UNIX-style formatting string.") $
       unixFormat @t
     , mkValEntry
           (MkName $ "unixParse" <> uname)
-          ("Parse text as " <> lname <> ", using a UNIX-style formatting string.") $
+          ("Parse text as " <> plainMarkdown lname <> ", using a UNIX-style formatting string.") $
       unixParse @t
     , mkValEntry
           (MkName $ "unixInterpret" <> uname <> "AsText")
-          ("Interpret " <> lname <> " reference as text, interpreting deleted values as empty text.") $
+          ("Interpret " <> plainMarkdown lname <> " reference as text, interpreting deleted values as empty text.") $
       unixInterpretAsText @t
     ]
 
