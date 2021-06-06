@@ -12,6 +12,7 @@ module Graphics.Cairo.Functional
     , stroke
     , lineWidth
     , sourceRGB
+    , sourceRGBA
     , lineCapSquare
     , operatorOver
         -- * Paths
@@ -112,6 +113,9 @@ lineWidth w = dcontext $ R.setLineWidth w
 
 sourceRGB :: forall a. (Double, Double, Double) -> Drawing a -> Drawing a
 sourceRGB (r, g, b) = dcontext $ R.setSourceRGB r g b
+
+sourceRGBA :: forall a. ((Double, Double, Double), Double) -> Drawing a -> Drawing a
+sourceRGBA ((r, g, b), a) = dcontext $ R.setSourceRGBA r g b a
 
 lineCapSquare :: forall a. Drawing a -> Drawing a
 lineCapSquare = dcontext $ R.setLineCap R.LineCapSquare

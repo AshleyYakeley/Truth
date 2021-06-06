@@ -11,9 +11,8 @@ library:
       - base >= 4.12
       - shapes
       - time
-      - template-haskell
       - typed-expression
-      - colour
+      - Color
       - gi-cairo-render
       - gi-gtk
       - changes-core
@@ -23,7 +22,6 @@ library:
     exposed-modules:
       - Pinafore.Language.Library.GTK
     other-modules:
-      - Pinafore.Language.Library.GTK.Colour.TH
       - Pinafore.Language.Library.GTK.Colour
       - Pinafore.Language.Library.GTK.Drawing
       - Pinafore.Language.Library.GTK.Element

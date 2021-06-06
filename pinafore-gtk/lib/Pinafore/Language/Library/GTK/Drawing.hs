@@ -10,6 +10,7 @@ import Data.Shim
 import Graphics.Cairo.Functional
 import Language.Expression.Dolan
 import Pinafore.Language.API
+import Pinafore.Language.Library.GTK.Colour
 import Shapes hiding (rotate)
 
 -- LangDrawing
@@ -50,6 +51,9 @@ instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangPath w
 
 type UIP = PixelPoint -> UIEvents
 
+setSourceColour :: LangAlphaColour -> LangDrawing -> LangDrawing
+setSourceColour (MkLangAlphaColour op (MkSRGBColour r g b)) = sourceRGBA ((r, g, b), op)
+
 drawingLibraryModule :: LibraryModule
 drawingLibraryModule =
     MkDocTree
@@ -61,8 +65,8 @@ drawingLibraryModule =
         , mkValEntry "stroke" "Draw a path" $ stroke @UIP
         , mkValEntry "lineCapSquare" "Use a square line cap" $ lineCapSquare @UIP
         , mkValEntry "lineWidth" "Use this width for line" $ lineWidth @UIP
-        --, mkValEntry "sourceRGB" "Set the colour of the source" $ sourceRGB @UIP
         , mkValEntry "operatorOver" "Draw over" $ operatorOver @UIP
+        , mkValEntry "setSourceColour" "Set the source colour" setSourceColour
         , docTreeEntry
               "Path"
               ""
