@@ -68,6 +68,14 @@ pattern MkSRGBColour r g b <- (ecctf -> MkNLSRGB r g b)
 
 {-# COMPLETE MkSRGBColour #-}
 
+pattern MkLinearRGBColour ::
+        Double -> Double -> Double -> LangColour
+
+pattern MkLinearRGBColour r g b <- (ColorSRGB r g b)
+  where MkLinearRGBColour r g b = ColorSRGB r g b
+
+{-# COMPLETE MkLinearRGBColour #-}
+
 pattern MkLangAlphaColour ::
         Double -> LangColour -> LangAlphaColour
 
@@ -107,8 +115,14 @@ colourLibraryModule =
         "Colour"
         ""
         [ mkTypeEntry "Colour" "A human-perceivable colour." $ MkBoundType colourGroundType
-        , mkValPatEntry "SRGB" "Construct a Colour from sRGB red, green, blue, in range 0 to 1." MkSRGBColour $ \(MkSRGBColour r g b) ->
-              Just (r, (g, (b, ())))
+        , mkValPatEntry
+              "LinearRGB"
+              "Construct a Colour from linear red, green, blue, in range 0 to 1."
+              MkLinearRGBColour $ \(MkLinearRGBColour r g b) -> Just (r, (g, (b, ())))
+        , mkValPatEntry
+              "SRGB"
+              "Construct a Colour from sRGB (perceptual) red, green, blue, in range 0 to 1."
+              MkSRGBColour $ \(MkSRGBColour r g b) -> Just (r, (g, (b, ())))
         , mkTypeEntry "AlphaColour" "A human-perceivable colour, with opacity." $ MkBoundType alphaColourGroundType
         , mkSubtypeRelationEntry "Colour" "AlphaColour" "A Colour is an opaque AlphaColour" $
           pure $
@@ -117,7 +131,7 @@ colourLibraryModule =
         , mkValPatEntry "MkAlphaColour" "Construct an AlphaColour from an opacity and a Colour." MkLangAlphaColour $ \(MkLangAlphaColour op col) ->
               Just (op, (col, ()))
         , mkValEntry "transparent" "The zero-opacity AlphaColour" transparent
-        {-
+        {- https://github.com/lehins/Color/issues/9
         , mkValEntry "over" "An AlphaColour over a Colour" $ over @Colour @Double
         , mkValEntry "overA" "An AlphaColour over an AlphaColour" $ over @AlphaColour @Double
         , mkValEntry "blend" "Blend two Colours by weight (of the first)" $ blend @Double @Colour
