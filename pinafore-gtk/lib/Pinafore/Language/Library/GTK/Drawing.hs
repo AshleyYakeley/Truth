@@ -195,29 +195,29 @@ drawingLibraryModule =
                     , mkValEntry "fillRuleNonZero" "fill for non-zero winding number" $ fillRuleWinding @UIP
                     , mkValEntry "fillRuleOdd" "fill for odd winding number" $ fillRuleEvenOdd @UIP
                     ]
+              ]
+        , docTreeEntry
+              "Text"
+              ""
+              [ mkValEntry "textPath" "" $ textPath
+              , mkValEntry "fontFace" "" $ fontFace' @UIP
+              , mkValEntry "fontSize" "" $ fontSize @UIP
+              ]
+        , docTreeEntry
+              "Patterns"
+              ""
+              [ mkTypeEntry "Pattern" "" $ MkBoundType patternGroundType
+              , mkValEntry "patternSource" "" $ patternSource @UIP
+              , mkValEntry "patternMask" "" $ patternMask @UIP
+              , mkValEntry "solidPattern" "" solidPattern
+              , mkValEntry "linearPattern" "" $ linearPattern
+              , mkValEntry "radialPattern" "" $ radialPattern
               , docTreeEntry
-                    "Text"
+                    "From Drawings"
                     ""
-                    [ mkValEntry "textPath" "" $ textPath
-                    , mkValEntry "fontFace" "" $ fontFace' @UIP
-                    , mkValEntry "fontSize" "" $ fontSize @UIP
-                    ]
-              , docTreeEntry
-                    "Patterns"
-                    ""
-                    [ mkTypeEntry "Pattern" "" $ MkBoundType patternGroundType
-                    , mkValEntry "patternSource" "" $ patternSource @UIP
-                    , mkValEntry "patternMask" "" $ patternMask @UIP
-                    , mkValEntry "solidPattern" "" solidPattern
-                    , mkValEntry "linearPattern" "" $ linearPattern
-                    , mkValEntry "radialPattern" "" $ radialPattern
-                    , docTreeEntry
-                          "From Drawings"
-                          ""
-                          [ mkValEntry "colorDrawingPattern" "" $ colorDrawingPattern @UIP
-                          , mkValEntry "alphaDrawingPattern" "" $ alphaDrawingPattern @UIP
-                          , mkValEntry "colorAlphaDrawingPattern" "" $ colorAlphaDrawingPattern @UIP
-                          ]
+                    [ mkValEntry "colorDrawingPattern" "" $ colorDrawingPattern @UIP
+                    , mkValEntry "alphaDrawingPattern" "" $ alphaDrawingPattern @UIP
+                    , mkValEntry "colorAlphaDrawingPattern" "" $ colorAlphaDrawingPattern @UIP
                     ]
               ]
         ]
