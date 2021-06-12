@@ -1,4 +1,4 @@
-module Version
+module Pinafore.Version
     ( printVersion
     ) where
 

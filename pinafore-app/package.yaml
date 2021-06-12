@@ -7,27 +7,50 @@ version: *pinafore_version
 
 extra-doc-files: examples/*
 
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.12
+      - shapes
+      - time
+      - directory
+      - xdg-basedir
+      - githash
+      - pinafore-language
+      - pinafore-gtk
+    exposed-modules:
+      - Pinafore.Version
+      - Pinafore.Libs
+
 executables:
     pinafore:
-        source-dirs: app
+        source-dirs: app/main
         dependencies:
           - base >= 4.12
           - shapes
-          - time
           - filepath
-          - directory
           - optparse-applicative
-          - xdg-basedir
           - changes-core
           - changes-gtk
           - pinafore-language
-          - pinafore-gtk
-          - githash
+          - pinafore-app
         main: Main.hs
         other-modules:
           - Options
-          - Version
           - Run
+        ghc-options: -threaded
+    pinafore-doc:
+        source-dirs: app/doc
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - filepath
+          - optparse-applicative
+          - pinafore-language
+          - pinafore-app
+        main: Main.hs
+        other-modules:
+          - Options
           - Documentation
         ghc-options: -threaded
 
@@ -44,7 +67,7 @@ tests:
           - Test.Scripts
         ghc-options: -threaded
     app:
-        source-dirs: app
+        source-dirs: app/main
         dependencies:
           - base >= 4.12
           - shapes

@@ -33,8 +33,6 @@ data RunOptions = MkRunOptions
 
 data Options
     = ShowVersionOption
-    | LibraryDocOption FilePath
-    | InfixDocOption
     | DumpTableOption (Maybe FilePath)
     | RunFileOption RunOptions
                     Bool
@@ -66,8 +64,6 @@ optParser =
     (((flag' RunInteractiveOption $ long "interactive" <> short 'i') <|>
       ((\nr script ropts -> RunFileOption ropts nr script) <$> optNoRun <*> optScript)) <*>
      optRunOptions) <|>
-    (fmap LibraryDocOption $ strOption $ long "doc-library" <> hidden <> metavar "PATH") <|>
-    (flag' InfixDocOption $ long "doc-infix" <> hidden) <|>
     ((flag' DumpTableOption $ long "dump-table") <*> optDataPath)
 
 optParserInfo :: ParserInfo Options

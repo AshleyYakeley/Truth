@@ -68,7 +68,7 @@ out/licensing: ${BINPATH}/licensor out
 
 licensing: out/licensing
 
-${BINPATH}/pinafore: out docker-image
+${BINPATH}/pinafore ${BINPATH}/pinafore-doc &: out docker-image
 	rm -rf .stack-work/logs
 ifeq ($(nodocker),1)
 else
@@ -131,11 +131,11 @@ out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest ou
 
 deb: out/$(PACKAGEFULLNAME).deb
 
-mkdocs/docs/library/Std.md: ${BINPATH}/pinafore
+mkdocs/docs/library/Std.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/docs/library
 	$< --doc-library mkdocs/docs/library
 
-mkdocs/generated/infix.md: ${BINPATH}/pinafore
+mkdocs/generated/infix.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/generated
 	$< --doc-infix > $@
 
