@@ -26,6 +26,7 @@ testScripts =
         , testExample "test/script/test"
         , testExample "test/script/big-ui"
         , testExample "test/script/calendar"
+        , testExample "test/script/drawing"
         , testExample "examples/stopwatch"
         , testExample "examples/calendar"
         , testExample "examples/contacts"
