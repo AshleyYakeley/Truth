@@ -1,6 +1,7 @@
 module Pinafore.Language.Type.Ground where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.ExprShow
@@ -12,6 +13,7 @@ import Pinafore.Language.Type.EntityAdapter
 import Pinafore.Language.Type.OpenEntity
 import Pinafore.Language.Type.Show
 import Pinafore.Language.Value
+import Pinafore.Markdown
 import Shapes
 
 newtype WitKind =
@@ -75,6 +77,8 @@ morphismGroundType =
         (precShow 2 ta <> " ~> " <> precShow 3 tb, 3)
 
 type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
+
+type instance TSBindingData PinaforeTypeSystem = Markdown
 
 type instance InterpreterGroundType PinaforeTypeSystem =
      PinaforeGroundType

@@ -3,6 +3,7 @@ module Pinafore.Language.Grammar.Syntax where
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Name
+import Pinafore.Markdown
 import Shapes
 import Text.Parsec (SourcePos)
 
@@ -35,6 +36,10 @@ data SyntaxDeclaration
     | BindingSyntaxDeclaration SyntaxBinding
     | ImportSyntaxDeclarataion SourcePos
                                ModuleName
+
+data SyntaxDocDeclaration =
+    MkSyntaxDocDeclaration Markdown
+                           SyntaxDeclaration
 
 data WithSourcePos t =
     MkWithSourcePos SourcePos
@@ -123,7 +128,7 @@ data SyntaxExpression'
                  SyntaxExpression
     | SERef SyntaxExpression
     | SEUnref SyntaxExpression
-    | SELet [SyntaxDeclaration]
+    | SELet [SyntaxDocDeclaration]
             SyntaxExpression
     | SECase SyntaxExpression
              [SyntaxCase]
@@ -150,14 +155,14 @@ type SyntaxExpression = WithSourcePos SyntaxExpression'
 
 data SyntaxModule'
     = SMExport [Name]
-    | SMLet [SyntaxDeclaration]
+    | SMLet [SyntaxDocDeclaration]
             SyntaxModule
 
 type SyntaxModule = WithSourcePos SyntaxModule'
 
 data SyntaxTopDeclarations =
     MkSyntaxTopDeclarations SourcePos
-                            [SyntaxDeclaration]
+                            [SyntaxDocDeclaration]
 
 class HasSourcePos t where
     getSourcePos :: t -> SourcePos
@@ -207,6 +212,9 @@ instance SyntaxFreeVariables SyntaxExpression' where
 instance SyntaxFreeVariables SyntaxBinding where
     syntaxFreeVariables (MkSyntaxBinding _ _ _ expr) = syntaxFreeVariables expr
 
+instance SyntaxFreeVariables SyntaxDocDeclaration where
+    syntaxFreeVariables (MkSyntaxDocDeclaration _ decl) = syntaxFreeVariables decl
+
 instance SyntaxFreeVariables SyntaxDeclaration where
     syntaxFreeVariables (BindingSyntaxDeclaration bind) = syntaxFreeVariables bind
     syntaxFreeVariables _ = mempty
@@ -227,6 +235,9 @@ instance SyntaxBindingVariables SyntaxPattern' where
         union (syntaxBindingVariables pat1) (syntaxBindingVariables pat2)
     syntaxBindingVariables (ConstructorSyntaxPattern _ pats) = syntaxBindingVariables pats
     syntaxBindingVariables (TypedSyntaxPattern pat _) = syntaxBindingVariables pat
+
+instance SyntaxBindingVariables SyntaxDocDeclaration where
+    syntaxBindingVariables (MkSyntaxDocDeclaration _ decl) = syntaxBindingVariables decl
 
 instance SyntaxBindingVariables SyntaxDeclaration where
     syntaxBindingVariables (BindingSyntaxDeclaration bind) = syntaxBindingVariables bind

@@ -1,5 +1,6 @@
 module Pinafore.Language.Grammar.Read.Expression
-    ( readExpression
+    ( readName
+    , readExpression
     , readModule
     , readTopDeclarations
     ) where
@@ -67,13 +68,19 @@ readImport = do
 readDeclaration :: Parser SyntaxDeclaration
 readDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding <|> readImport
 
-readDeclarations :: Parser [SyntaxDeclaration]
-readDeclarations = readLines readDeclaration
+readDocDeclaration :: Parser SyntaxDocDeclaration
+readDocDeclaration = do
+    doc <- readDocComment
+    decl <- readDeclaration
+    return $ MkSyntaxDocDeclaration doc decl
 
-readLetBindings :: Parser [SyntaxDeclaration]
+readDocDeclarations :: Parser [SyntaxDocDeclaration]
+readDocDeclarations = readLines readDocDeclaration
+
+readLetBindings :: Parser [SyntaxDocDeclaration]
 readLetBindings = do
     readThis TokLet
-    readDeclarations
+    readDocDeclarations
 
 readTopDeclarations :: Parser SyntaxTopDeclarations
 readTopDeclarations = do

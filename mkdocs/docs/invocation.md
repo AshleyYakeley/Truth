@@ -33,6 +33,7 @@ At the prompt, you can enter:
 * An expression. If this is an action, it will be executed, otherwise its value will be printed.
 * A let-expression, which will add bindings to the context.
 * A special command:
+    * ":doc name" will show the documentation for a name.
     * ":type expression" will show the inferred type of an expression.
     * ":simplify+ type" will show a simplified positive type.
     * ":simplify- type" will show a simplified negative type.

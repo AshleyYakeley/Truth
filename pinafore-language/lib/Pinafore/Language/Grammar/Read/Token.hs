@@ -1,5 +1,6 @@
 module Pinafore.Language.Grammar.Read.Token
-    ( Token(..)
+    ( Comment(..)
+    , Token(..)
     , parseTokens
     ) where
 
@@ -11,7 +12,16 @@ import Shapes.Numeric
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String
 
+data Comment
+    = BlockComment String
+    | LineComment String
+
+commentWrite :: Comment -> String
+commentWrite (BlockComment t) = "{#|" <> t <> "#}"
+commentWrite (LineComment t) = "#|" <> t
+
 data Token t where
+    TokComment :: Token Comment
     TokSemicolon :: Token ()
     TokComma :: Token ()
     TokTypeJudge :: Token ()
@@ -56,6 +66,7 @@ data Token t where
     TokNumber :: Token Number
 
 instance TestEquality Token where
+    testEquality TokComment TokComment = Just Refl
     testEquality TokSemicolon TokSemicolon = Just Refl
     testEquality TokComma TokComma = Just Refl
     testEquality TokTypeJudge TokTypeJudge = Just Refl
@@ -101,6 +112,7 @@ instance TestEquality Token where
     testEquality _ _ = Nothing
 
 instance Show (Token t) where
+    show TokComment = show ("comment" :: String)
     show TokSemicolon = show (";" :: String)
     show TokComma = show ("," :: String)
     show TokTypeJudge = show (":" :: String)
@@ -151,41 +163,41 @@ readChar :: Char -> Parser ()
 readChar c = void $ char c
 
 readWS :: Parser ()
-readWS = do
-    spaces
-    void $
-        optional
-            (do
-                 comment
-                 readWS)
-    return ()
-    <?> "white space"
-  where
-    isLineBreak :: Char -> Bool
-    isLineBreak '\n' = True
-    isLineBreak '\r' = True
-    isLineBreak _ = False
+readWS = do spaces <?> "white space"
+
+readBlockComment :: Parser Comment
+readBlockComment = let
     blockCommentOpen :: Parser ()
     blockCommentOpen =
         try $ do
             readChar '{'
             readChar '#'
+    blockCommentInterior :: Parser String
+    blockCommentInterior = (fmap commentWrite readBlockComment) <|> (endOfLine >> return "") <|> fmap pure anyToken
     blockCommentClose :: Parser ()
     blockCommentClose =
         try $ do
             readChar '#'
             readChar '}'
-    lineComment :: Parser ()
-    lineComment = do
-        readChar '#'
-        void $ many (satisfy (\c -> not (isLineBreak c)))
-        void endOfLine
-    blockComment :: Parser ()
-    blockComment = do
-        blockCommentOpen
-        void $ manyTill (blockComment <|> void endOfLine <|> void anyToken) blockCommentClose
-    comment :: Parser ()
-    comment = blockComment <|> lineComment
+    in do
+           blockCommentOpen
+           s <- manyTill blockCommentInterior blockCommentClose
+           return $ BlockComment $ mconcat s
+
+readLineComment :: Parser Comment
+readLineComment = let
+    isLineBreak :: Char -> Bool
+    isLineBreak '\n' = True
+    isLineBreak '\r' = True
+    isLineBreak _ = False
+    in do
+           readChar '#'
+           s <- many (satisfy (\c -> not (isLineBreak c)))
+           void endOfLine
+           return $ LineComment s
+
+readComment :: Parser Comment
+readComment = readBlockComment <|> readLineComment
 
 readEscapedChar :: Parser Char
 readEscapedChar = do
@@ -348,7 +360,8 @@ readToken :: Parser ((SourcePos, AnyValue Token))
 readToken = do
     pos <- getPosition
     t <-
-        readCharTok ';' TokSemicolon <|> readCharTok ',' TokComma <|> readCharTok '(' TokOpenParen <|>
+        fmap (MkAnyValue TokComment) readComment <|> readCharTok ';' TokSemicolon <|> readCharTok ',' TokComma <|>
+        readCharTok '(' TokOpenParen <|>
         readCharTok ')' TokCloseParen <|>
         readCharTok '[' TokOpenBracket <|>
         readCharTok ']' TokCloseBracket <|>

@@ -124,7 +124,7 @@ import qualified Data.ByteString.Lazy
 import Data.Serialize as I (Serialize)
 
 -- text
-import Data.Text as I (Text)
+import Data.Text as I (Text, strip)
 import Data.Text.Encoding as I (decodeUtf8')
 import Data.Text.Encoding.Error as I (UnicodeException(..))
 

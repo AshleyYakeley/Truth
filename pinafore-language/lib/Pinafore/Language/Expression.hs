@@ -7,6 +7,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Pinafore.Markdown
 import Shapes
 
 type QExpr = TSSealedExpression PinaforeTypeSystem
@@ -117,7 +118,7 @@ qSequenceExpr (e:ee) = do
 
 type QBindings = Bindings PinaforeTypeSystem
 
-qBindExpr :: Name -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBindings
+qBindExpr :: Name -> Markdown -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBindings
 qBindExpr = tsSingleBinding @PinaforeTypeSystem
 
 qSubsumeExpr :: AnyW (PinaforeType 'Positive) -> QExpr -> PinaforeSourceInterpreter QExpr
@@ -126,7 +127,7 @@ qSubsumeExpr = tsSubsumeExpression @PinaforeTypeSystem
 qLetExpr :: Name -> QExpr -> QExpr -> PinaforeSourceInterpreter QExpr
 qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
 
-qUncheckedBindingsComponentLetExpr :: QBindings -> PinaforeSourceInterpreter (Map Name QExpr)
+qUncheckedBindingsComponentLetExpr :: QBindings -> PinaforeSourceInterpreter (Map Name (Markdown, QExpr))
 qUncheckedBindingsComponentLetExpr = tsUncheckedComponentLet @PinaforeTypeSystem
 
 qEvalExpr ::

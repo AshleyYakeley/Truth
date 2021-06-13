@@ -76,8 +76,12 @@ getModuleScope dt = do
             b <- mb
             return (name, b ?pinafore)
         seBinding _ = Nothing
+        getEntry :: BindDoc -> Maybe (Name, DocInterpreterBinding PinaforeTypeSystem)
+        getEntry MkBindDoc {..} = do
+            (name, b) <- seBinding bdScopeEntry
+            return (name, (docDescription bdDoc, b))
         bscope :: PinaforeScope
-        bscope = bindingsScope $ mapFromList $ mapMaybe (seBinding . bdScopeEntry) bindDocs
+        bscope = bindingsScope $ mapFromList $ mapMaybe getEntry bindDocs
         seSubtype :: ScopeEntry -> [SubypeConversionEntry PinaforeGroundType]
         seSubtype (SubtypeScopeEntry entries) = entries
         seSubtype _ = []

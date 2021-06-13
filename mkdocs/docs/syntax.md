@@ -32,9 +32,12 @@ All declarations, including type declarations, are local to a `let` block.
 
 <refname> ::= uname | lname | "(" <infix-operator[n]> ")"
 
+<qname> ::= quname | qlname
+
 <interactive> ::= <expression> | <let-declarations> | ":" <interactive-command>
 
 <interactive-command> ::=
+    "doc" <qname> |
     "type" <expression> |
     "simplify" "+" <type> |
     "simplify" "-" <type>
@@ -270,3 +273,9 @@ hex64 ::= "-"* (xdigit "-"*){64}
 
 anchor ::= "!" (literal-text|hex64)
 ```
+
+## Documentation Comments
+
+A documentation comment can be placed before any `<declaration>`.
+A block documentation comment consists of a comment inside `{#|`, `#}`.
+A line documentation comment consists of one or more lines starting with `#|`.

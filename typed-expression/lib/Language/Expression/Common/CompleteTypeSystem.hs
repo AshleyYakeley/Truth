@@ -131,11 +131,12 @@ tsLet n expv expb = letSealedExpression @ts n expv expb
 tsSingleBinding ::
        forall ts. CompleteTypeSystem ts
     => TSName ts
+    -> TSBindingData ts
     -> Maybe (AnyW (TSPosWitness ts))
     -> TSSealedExpression ts
     -> Bindings ts
-tsSingleBinding name madecltype expr =
-    singleBinding name $ do
+tsSingleBinding name bd madecltype expr =
+    singleBinding name bd $ do
         madecltype' <- for madecltype $ renameTypeSignature @ts
         expr' <- rename @ts FreeName expr
         subsumerExpression madecltype' expr'
@@ -155,7 +156,7 @@ tsSubsumeExpression decltype expr =
 tsUncheckedComponentLet ::
        forall ts. (Ord (TSName ts), CompleteTypeSystem ts)
     => Bindings ts
-    -> TSInner ts (Map (TSName ts) (TSSealedExpression ts))
+    -> TSInner ts (Map (TSName ts) (TSBindingData ts, TSSealedExpression ts))
 tsUncheckedComponentLet = bindingsComponentLetSealedExpression @ts
 
 tsVarPattern ::

@@ -19,6 +19,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Pinafore.Markdown
 import Shapes
 
 interpretPatternConstructor :: SyntaxConstructor -> PinaforeSourceInterpreter (QPatternConstructor)
@@ -71,14 +72,16 @@ interpretPatternOrName pat = Right $ interpretPattern pat
 interpretExpression :: SyntaxExpression -> RefExpression
 interpretExpression (MkWithSourcePos spos sexpr) = interpretExpression' spos sexpr
 
-getBindingNode :: SyntaxBinding -> (SyntaxBinding, Name, [Name])
-getBindingNode b@(MkSyntaxBinding _ _ n _) = (b, n, setToList $ syntaxFreeVariables b)
+type DocSyntaxBinding = (Markdown, SyntaxBinding)
+
+getBindingNode :: DocSyntaxBinding -> (DocSyntaxBinding, Name, [Name])
+getBindingNode db@(_, b@(MkSyntaxBinding _ _ n _)) = (db, n, setToList $ syntaxFreeVariables b)
 
 -- | Group bindings into a topologically-sorted list of strongly-connected components
-clumpBindings :: [SyntaxBinding] -> [[SyntaxBinding]]
+clumpBindings :: [DocSyntaxBinding] -> [[DocSyntaxBinding]]
 clumpBindings bb = fmap flattenSCC $ stronglyConnComp $ fmap getBindingNode bb
 
-interpretLetBindingsClump :: SourcePos -> [SyntaxBinding] -> MFunction RefNotation RefNotation
+interpretLetBindingsClump :: SourcePos -> [DocSyntaxBinding] -> MFunction RefNotation RefNotation
 interpretLetBindingsClump spos sbinds ra = do
     bl <- interpretBindings sbinds
     remonadRefNotation
@@ -87,17 +90,19 @@ interpretLetBindingsClump spos sbinds ra = do
              withNewLetBindings bmap se) $
         ra
 
-interpretLetBindingss :: SourcePos -> [[SyntaxBinding]] -> MFunction RefNotation RefNotation
+interpretLetBindingss :: SourcePos -> [[DocSyntaxBinding]] -> MFunction RefNotation RefNotation
 interpretLetBindingss _ [] ra = ra
 interpretLetBindingss spos (b:bb) ra = interpretLetBindingsClump spos b $ interpretLetBindingss spos bb ra
 
-interpretLetBindings :: SourcePos -> [SyntaxBinding] -> MFunction RefNotation RefNotation
+interpretLetBindings :: SourcePos -> [DocSyntaxBinding] -> MFunction RefNotation RefNotation
 interpretLetBindings spos sbinds ra = do
-    liftRefNotation $ runSourcePos spos $ checkSyntaxBindingsDuplicates sbinds
+    liftRefNotation $ runSourcePos spos $ checkSyntaxBindingsDuplicates $ fmap snd sbinds
     interpretLetBindingss spos (clumpBindings sbinds) ra
 
-interpretDeclarations :: SourcePos -> [SyntaxDeclaration] -> MFunction RefNotation RefNotation
-interpretDeclarations dspos decls = let
+interpretDeclarations :: SourcePos -> [SyntaxDocDeclaration] -> MFunction RefNotation RefNotation
+interpretDeclarations dspos ddecls = let
+    decls :: [SyntaxDeclaration]
+    decls = fmap (\(MkSyntaxDocDeclaration _ decl) -> decl) ddecls
     importDecls :: WMFunction PinaforeInterpreter PinaforeInterpreter
     importDecls =
         compAll $
@@ -111,9 +116,9 @@ interpretDeclarations dspos decls = let
         interpretTypeDeclarations $
         mapMaybe
             (\case
-                 TypeSyntaxDeclaration spos name defn -> Just (spos, name, defn)
+                 MkSyntaxDocDeclaration doc (TypeSyntaxDeclaration spos name defn) -> Just (spos, name, doc, defn)
                  _ -> Nothing)
-            decls
+            ddecls
     subtypeDecls :: WMFunction PinaforeInterpreter PinaforeInterpreter
     subtypeDecls =
         compAll $
@@ -127,9 +132,9 @@ interpretDeclarations dspos decls = let
     bindingDecls =
         interpretLetBindings dspos $
         (mapMaybe $ \case
-             BindingSyntaxDeclaration sbind -> Just sbind
+             MkSyntaxDocDeclaration doc (BindingSyntaxDeclaration sbind) -> Just (doc, sbind)
              _ -> Nothing)
-            decls
+            ddecls
     in remonadRefNotation (importDecls . typeDecls . subtypeDecls) . bindingDecls
 
 interpretNamedConstructor :: SourcePos -> ReferenceName -> RefExpression
@@ -250,13 +255,13 @@ interpretExpression' spos (SEList sexprs) = do
     exprs <- for sexprs interpretExpression
     liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs
 
-interpretBinding :: SyntaxBinding -> RefNotation QBindings
-interpretBinding (MkSyntaxBinding spos mstype name sexpr) = do
+interpretBinding :: DocSyntaxBinding -> RefNotation QBindings
+interpretBinding (doc, MkSyntaxBinding spos mstype name sexpr) = do
     mtype <- liftRefNotation $ runSourcePos spos $ for mstype interpretType
     expr <- interpretExpression sexpr
-    return $ qBindExpr name mtype expr
+    return $ qBindExpr name doc mtype expr
 
-interpretBindings :: [SyntaxBinding] -> RefNotation QBindings
+interpretBindings :: [DocSyntaxBinding] -> RefNotation QBindings
 interpretBindings sbinds = do
     qbinds <- for sbinds interpretBinding
     return $ mconcat qbinds

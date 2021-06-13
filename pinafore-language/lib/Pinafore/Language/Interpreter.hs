@@ -30,6 +30,8 @@ module Pinafore.Language.Interpreter
     , newTypeID
     , TypeBox(..)
     , registerTypeNames
+    , DocInterpreterBinding
+    , lookupDocBinding
     , InterpreterBinding(..)
     , lookupPatternConstructor
     , withNewPatternConstructor
@@ -44,6 +46,7 @@ import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Identified
+import Pinafore.Markdown
 import Shapes
 import Text.Parsec (SourcePos)
 
@@ -70,8 +73,10 @@ data InterpreterBinding (ts :: Type)
     | TypeBinding (BoundType ts)
     | SpecialFormBinding (SpecialForm ts (SourceInterpreter ts))
 
+type DocInterpreterBinding ts = (Markdown, InterpreterBinding ts)
+
 data Scope (ts :: Type) = MkScope
-    { scopeBindings :: Map Name (InterpreterBinding ts)
+    { scopeBindings :: Map Name (DocInterpreterBinding ts)
     , scopeSubtypes :: HashMap Unique (SubypeConversionEntry (InterpreterGroundType ts))
     }
 
@@ -161,9 +166,9 @@ exportScope names = do
     ees <-
         for names $ \name ->
             case lookup name bindings of
-                Just b -> do
+                Just (doc, b) -> do
                     b' <- purifyBinding b
-                    return $ Right (name, b')
+                    return $ Right (name, (doc, b'))
                 Nothing -> return $ Left name
     let (badnames, goodbinds) = partitionEithers ees
     case badnames of
@@ -261,10 +266,10 @@ instance MonadThrow ErrorType (SourceInterpreter ts) where
             spos <- ask
             throwErrorType spos err
 
-withNewBinding :: Name -> InterpreterBinding ts -> Interpreter ts a -> Interpreter ts a
-withNewBinding name b = pLocalScope $ \tc -> tc {scopeBindings = insertMapLazy name b $ scopeBindings tc}
+withNewBinding :: Name -> DocInterpreterBinding ts -> Interpreter ts a -> Interpreter ts a
+withNewBinding name db = pLocalScope $ \tc -> tc {scopeBindings = insertMapLazy name db $ scopeBindings tc}
 
-bindingsScope :: Map Name (InterpreterBinding ts) -> Scope ts
+bindingsScope :: Map Name (DocInterpreterBinding ts) -> Scope ts
 bindingsScope bb = mempty {scopeBindings = bb}
 
 getSubtypesScope :: [SubypeConversionEntry (InterpreterGroundType ts)] -> IO (Scope ts)
@@ -275,19 +280,22 @@ getSubtypesScope newscs = do
             return (key, newsc)
     return $ mempty {scopeSubtypes = mapFromList pairs}
 
-withNewBindings :: Map Name (InterpreterBinding ts) -> Interpreter ts a -> Interpreter ts a
+withNewBindings :: Map Name (DocInterpreterBinding ts) -> Interpreter ts a -> Interpreter ts a
 withNewBindings bb = importScope $ bindingsScope bb
 
 withRemovedBindings :: [Name] -> Interpreter ts a -> Interpreter ts a
 withRemovedBindings nn = pLocalScope $ \tc -> tc {scopeBindings = deletesMap nn $ scopeBindings tc}
 
-lookupBinding :: ReferenceName -> SourceInterpreter ts (Maybe (InterpreterBinding ts))
-lookupBinding (UnqualifiedReferenceName name) = do
+lookupDocBinding :: ReferenceName -> SourceInterpreter ts (Maybe (DocInterpreterBinding ts))
+lookupDocBinding (UnqualifiedReferenceName name) = do
     (scopeBindings -> names) <- spScope
     return $ lookup name names
-lookupBinding (QualifiedReferenceName mname name) = do
+lookupDocBinding (QualifiedReferenceName mname name) = do
     scope <- getModule mname
     return $ lookup name $ scopeBindings scope
+
+lookupBinding :: ReferenceName -> SourceInterpreter ts (Maybe (InterpreterBinding ts))
+lookupBinding rname = fmap (fmap snd) $ lookupDocBinding rname
 
 getSpecialVals :: SourceInterpreter ts (SpecialVals ts)
 getSpecialVals = liftSourcePos $ MkInterpreter $ asks icSpecialVals
@@ -299,8 +307,8 @@ lookupLetBinding name = do
         Just (ValueBinding exp _) -> return $ Just exp
         _ -> return Nothing
 
-withNewLetBindings :: Map Name (TSSealedExpression ts) -> Interpreter ts a -> Interpreter ts a
-withNewLetBindings bb = withNewBindings $ fmap (\exp -> ValueBinding exp Nothing) bb
+withNewLetBindings :: Map Name (Markdown, TSSealedExpression ts) -> Interpreter ts a -> Interpreter ts a
+withNewLetBindings bb = withNewBindings $ fmap (\(doc, exp) -> (doc, ValueBinding exp Nothing)) bb
 
 lookupSpecialForm :: ReferenceName -> SourceInterpreter ts (SpecialForm ts (SourceInterpreter ts))
 lookupSpecialForm name = do
@@ -348,42 +356,44 @@ newTypeID =
         put $ istate {isTypeID = succTypeID tid}
         return tid
 
-registerType :: SourcePos -> Name -> BoundType ts -> WMFunction (Interpreter ts) (Interpreter ts)
-registerType spos name t =
+registerType :: SourcePos -> Name -> Markdown -> BoundType ts -> WMFunction (Interpreter ts) (Interpreter ts)
+registerType spos name doc t =
     MkWMFunction $ \mta ->
         runSourcePos spos $ do
             mnt <- lookupBoundTypeM $ UnqualifiedReferenceName name
             case mnt of
                 Just _ -> throw $ DeclareTypeDuplicateError name
-                Nothing -> liftSourcePos $ withNewBinding name (TypeBinding t) mta
+                Nothing -> liftSourcePos $ withNewBinding name (doc, TypeBinding t) mta
 
 data TypeBox ts x =
     forall t. MkTypeBox Name
                         (t -> BoundType ts)
                         (Interpreter ts (t, x))
 
-typeBoxToFixBox :: (SourcePos, TypeBox ts x) -> FixBox (WriterT [x] (Interpreter ts))
-typeBoxToFixBox (spos, MkTypeBox name ttype mtx) =
-    mkFixBox (\t -> liftWMFunction $ registerType spos name $ ttype t) $ do
+typeBoxToFixBox :: (SourcePos, Markdown, TypeBox ts x) -> FixBox (WriterT [x] (Interpreter ts))
+typeBoxToFixBox (spos, doc, MkTypeBox name ttype mtx) =
+    mkFixBox (\t -> liftWMFunction $ registerType spos name doc $ ttype t) $ do
         (t, x) <- lift mtx
         tell [x]
         return t
 
-registerTypeNames :: [(SourcePos, TypeBox ts x)] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
+registerTypeNames ::
+       [(SourcePos, Markdown, TypeBox ts x)] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
 registerTypeNames tboxes = do
     (sc, xx) <- runWriterT $ boxFix (fmap typeBoxToFixBox tboxes) $ lift interpreterScope
     return (MkWMFunction $ pLocalScope (\_ -> sc), xx)
 
 withNewPatternConstructor ::
        Name
+    -> Markdown
     -> TSSealedExpression ts
     -> TSPatternConstructor ts
     -> SourceInterpreter ts (WMFunction (Interpreter ts) (Interpreter ts))
-withNewPatternConstructor name exp pc = do
+withNewPatternConstructor name doc exp pc = do
     ma <- lookupPatternConstructorM $ UnqualifiedReferenceName name
     case ma of
         Just _ -> throw $ DeclareConstructorDuplicateError name
-        Nothing -> return $ MkWMFunction $ withNewBinding name $ ValueBinding exp $ Just pc
+        Nothing -> return $ MkWMFunction $ withNewBinding name $ (doc, ValueBinding exp $ Just pc)
 
 withSubtypeConversions :: [SubypeConversionEntry (InterpreterGroundType ts)] -> Interpreter ts a -> Interpreter ts a
 withSubtypeConversions newscs ma = do

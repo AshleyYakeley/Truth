@@ -13,5 +13,5 @@ stdLibraryModule :: LibraryModule
 stdLibraryModule =
     MkDocTree
         "Std"
-        "The standard library, implicitly impoted. Entries in italics are supertypes of existing types, for convenience." $
+        "The standard library, implicitly imported. Entries in italics are supertypes of existing types, for convenience." $
     mconcat [baseLibEntries, refLibEntries, fileLibEntries]

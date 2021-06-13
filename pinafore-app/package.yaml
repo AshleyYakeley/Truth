@@ -59,11 +59,15 @@ tests:
         source-dirs: test
         dependencies:
           - base >= 4.12
+          - filepath
           - shapes
+          - changes-core
           - pinafore-language
           - pinafore-gtk
+          - pinafore-app
         main: Main.hs
         other-modules:
+          - Test.Interactive
           - Test.Scripts
         ghc-options: -threaded
     app:
