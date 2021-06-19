@@ -30,9 +30,9 @@ data SyntaxDeclaration
     = TypeSyntaxDeclaration SourcePos
                             Name
                             SyntaxTypeDeclaration
-    | SubtypeDeclaration SourcePos
-                         SyntaxType
-                         SyntaxType
+    | SubtypeSyntaxDeclaration SourcePos
+                               SyntaxType
+                               SyntaxType
     | BindingSyntaxDeclaration SyntaxBinding
     | ImportSyntaxDeclarataion SourcePos
                                ModuleName
@@ -179,7 +179,7 @@ instance HasSourcePos SyntaxTopDeclarations where
 instance HasSourcePos SyntaxDeclaration where
     getSourcePos (BindingSyntaxDeclaration bind) = getSourcePos bind
     getSourcePos (TypeSyntaxDeclaration spos _ _) = spos
-    getSourcePos (SubtypeDeclaration spos _ _) = spos
+    getSourcePos (SubtypeSyntaxDeclaration spos _ _) = spos
     getSourcePos (ImportSyntaxDeclarataion spos _) = spos
 
 class SyntaxFreeVariables t where

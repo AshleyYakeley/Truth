@@ -124,7 +124,7 @@ interpretDeclarations dspos ddecls = let
         compAll $
         mapMaybe
             (\case
-                 SubtypeDeclaration spos sta stb ->
+                 SubtypeSyntaxDeclaration spos sta stb ->
                      Just $ MkWMFunction $ mapSourcePos spos $ interpretSubtypeRelation sta stb
                  _ -> Nothing)
             decls

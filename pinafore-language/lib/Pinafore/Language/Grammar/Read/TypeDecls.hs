@@ -22,7 +22,7 @@ readSubtypeDeclaration = do
     sta <- readType
     readExactlyThis TokOperator "<:"
     stb <- readType
-    return $ SubtypeDeclaration spos sta stb
+    return $ SubtypeSyntaxDeclaration spos sta stb
 
 readDataTypeConstructor :: Parser SyntaxDatatypeConstructor
 readDataTypeConstructor = do
