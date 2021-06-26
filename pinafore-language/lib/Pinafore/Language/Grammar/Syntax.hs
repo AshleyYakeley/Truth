@@ -34,7 +34,7 @@ data SyntaxDeclaration
                                SyntaxType
                                SyntaxType
     | BindingSyntaxDeclaration SyntaxBinding
-    | ImportSyntaxDeclarataion SourcePos
+    | ImportSyntaxDeclaration SourcePos
                                ModuleName
 
 data SyntaxDocDeclaration =
@@ -180,7 +180,7 @@ instance HasSourcePos SyntaxDeclaration where
     getSourcePos (BindingSyntaxDeclaration bind) = getSourcePos bind
     getSourcePos (TypeSyntaxDeclaration spos _ _) = spos
     getSourcePos (SubtypeSyntaxDeclaration spos _ _) = spos
-    getSourcePos (ImportSyntaxDeclarataion spos _) = spos
+    getSourcePos (ImportSyntaxDeclaration spos _) = spos
 
 class SyntaxFreeVariables t where
     syntaxFreeVariables :: t -> FiniteSet Name

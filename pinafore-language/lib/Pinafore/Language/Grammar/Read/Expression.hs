@@ -63,7 +63,7 @@ readImport = do
     spos <- getPosition
     readThis TokImport
     mname <- readModuleName
-    return $ ImportSyntaxDeclarataion spos mname
+    return $ ImportSyntaxDeclaration spos mname
 
 readDeclaration :: Parser SyntaxDeclaration
 readDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding <|> readImport
