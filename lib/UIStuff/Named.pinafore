@@ -1,0 +1,42 @@
+let
+import UIStuff.Selection;
+
+# something with a name
+opentype Named;
+name = property @Named @Text !"identify.name";
+
+nameOrder: RefOrder Named;
+nameOrder = orderOn name alphabetical;
+
+byName: FiniteSetRef {+a,+Named} -> WholeRef +[(a,Text)];
+byName ref = setList (mapOrder fst nameOrder) $ (identity !** name) !$$ ref;
+
+namedPane: (WholeRef +a -> UI.Element) -> WholeRef +(a & Named) -> Pane;
+namedPane iui e = MkPane (name !$% e) (iui $ immutWhole e) {[]};
+
+nameColumn: (WholeRef +Text, Named -> WholeRef Text);
+nameColumn = ({"Name"},\p -> name !$ {p});
+
+namedTable: FiniteSetRef {a,+Named} -> (a -> Action Any) -> Maybe (WholeRef {a,+Named}) -> UI.Element;
+namedTable sref onActivate msel = UI.run $ do
+    lref <- getSetList nameOrder sref;
+    return $ UI.listTable [nameColumn] lref onActivate msel;
+    end;
+
+namedItemTable: FiniteSetRef {a,+Named} -> (WholeRef +a -> UI.Element) -> Maybe (WholeRef {a,+Named}) -> UI.Element;
+namedItemTable set iui msel = namedTable set (\e -> paneWindow $ namedPane iui {e}) msel;
+
+namedPairPane: Text -> FiniteSetRef {a,+Named} -> [SetRef a -> ((a & Named) -> Action ()) -> UI.MenuItem] -> (WholeRef +a -> UI.Element) -> Action Pane;
+namedPairPane name set mitems getSelectedUI = let
+    getSelectorUI sel = namedItemTable set getSelectedUI (Just sel);
+    iopen e = paneWindow $ namedPane getSelectedUI {e};
+    in selectionPairPane name set (mapList (\mitem -> mitem set) mitems) iopen getSelectorUI getSelectedUI;
+
+in export
+    Named
+    name
+    byName
+    namedPane
+    namedTable
+    namedItemTable
+    namedPairPane

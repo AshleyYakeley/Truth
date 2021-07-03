@@ -94,10 +94,19 @@ PACKAGEFULLNAME := $(PACKAGENAME)_$(PACKAGEVERSION)-$(PACKAGEREVISION)
 PACKAGEDIR := .build/deb/$(PACKAGEFULLNAME)
 DEBIANREL := buster
 
-.build/deb/$(PACKAGEFULLNAME).deb: ${BINPATH}/pinafore deb/copyright deb/control.m4 deb/changelog.m4
+.build/deb/$(PACKAGEFULLNAME).deb: \
+		${BINPATH}/pinafore \
+		lib/UIStuff/Selection.pinafore \
+		lib/UIStuff/Named.pinafore \
+		deb/copyright \
+		deb/control.m4 \
+		deb/changelog.m4
 	rm -rf $(PACKAGEDIR)
 	mkdir -p $(PACKAGEDIR)/usr/bin
 	cp ${BINPATH}/pinafore $(PACKAGEDIR)/usr/bin/
+	mkdir -p $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff
+	cp lib/UIStuff/Selection.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff/
+	cp lib/UIStuff/Named.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff/
 	mkdir -p $(PACKAGEDIR)/usr/share/doc/pinafore
 	cp deb/copyright $(PACKAGEDIR)/usr/share/doc/pinafore/
 	stack $(STACKFLAGS) exec -- \
@@ -137,7 +146,9 @@ LIBMODULES := \
     Drawing \
     UI \
     Debug \
-    Debug.UI
+    Debug.UI \
+	UIStuff.Selection \
+	UIStuff.Named
 
 mkdocs/docs/library/%.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/docs/library

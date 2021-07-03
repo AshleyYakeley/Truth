@@ -31,6 +31,8 @@ nav:
   - UI: 'library/UI.md'
   - Debug: 'library/Debug.md'
   - Debug.UI: 'library/Debug.UI.md'
+  - UIStuff.Selection: 'library/UIStuff.Selection.md'
+  - UIStuff.Named: 'library/UIStuff.Named.md'
 - Examples:
   - Stopwatch: 'examples/stopwatch.md'
   - Calendar: 'examples/calendar.md'
