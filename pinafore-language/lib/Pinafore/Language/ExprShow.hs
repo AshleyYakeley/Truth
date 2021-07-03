@@ -20,6 +20,10 @@ exprPrecShow c t = precShow c $ exprShowPrec t
 exprShow :: ExprShow t => t -> Text
 exprShow = exprPrecShow maxBound
 
+instance ExprShow t => ExprShow (Maybe t) where
+    exprShowPrec Nothing = ("", 0)
+    exprShowPrec (Just t) = exprShowPrec t
+
 instance ExprShow Name where
     exprShowPrec n = (toText n, 0)
 

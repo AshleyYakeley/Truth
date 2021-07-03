@@ -9,8 +9,9 @@ import Test.Scripts
 
 main :: IO ()
 main = do
+    testLibraries <- getTestLibraries
     testInteractive <- getTestInteractive
     let
         tests :: TestTree
-        tests = testTree "pinafore" [testInteractive, testScripts]
+        tests = testTree "pinafore" [testLibraries, testInteractive, testScripts]
     testMainNoSignalHandler tests

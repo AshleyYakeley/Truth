@@ -131,17 +131,25 @@ out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest ou
 
 deb: out/$(PACKAGEFULLNAME).deb
 
-mkdocs/docs/library/Std.md: ${BINPATH}/pinafore-doc
+LIBMODULES := \
+    Std \
+    Colour \
+    Drawing \
+    UI \
+    Debug \
+    Debug.UI
+
+mkdocs/docs/library/%.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/docs/library
-	$< --doc-library mkdocs/docs/library
+	$< --module $* --include lib > $@
 
 mkdocs/generated/infix.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/generated
-	$< --doc-infix > $@
+	$< --infix > $@
 
 .PHONY: docs
 
-docs: mkdocs/docs/library/Std.md mkdocs/generated/infix.md docker-image
+docs: $(foreach f,$(LIBMODULES),mkdocs/docs/library/$f.md) mkdocs/generated/infix.md docker-image
 	mkdir -p mkdocs/generated/examples
 	cp pinafore-app/examples/* mkdocs/generated/examples/
 	stack $(STACKFLAGS) exec -- pip3 install --user file://`pwd`/support/pygments-lexer/

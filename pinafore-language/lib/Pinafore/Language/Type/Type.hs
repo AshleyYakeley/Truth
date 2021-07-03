@@ -44,6 +44,8 @@ type PinaforeTypeBox = TypeBox PinaforeTypeSystem
 
 type PinaforeScope = Scope PinaforeTypeSystem
 
+type PinaforeModule = Module PinaforeTypeSystem
+
 type PinaforeBinding = InterpreterBinding PinaforeTypeSystem
 
 type PinaforeInterpreter = Interpreter PinaforeTypeSystem

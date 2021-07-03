@@ -38,17 +38,3 @@ runDocTree showTitle showDesc showEntry level MkDocTree {..} = do
     for_ docTreeEntries $ \case
         TreeDocTreeEntry tree -> runDocTree showTitle showDesc showEntry (succ level) tree
         EntryDocTreeEntry a -> showEntry level a
-
-data DocType
-    = ValueDocType
-    | ValuePatternDocType
-    | TypeDocType
-    | SupertypeDocType
-    | SubtypeRelationDocType
-
-data DefDoc = MkDefDoc
-    { docName :: Text
-    , docValueType :: Text
-    , docType :: DocType
-    , docDescription :: Markdown
-    }

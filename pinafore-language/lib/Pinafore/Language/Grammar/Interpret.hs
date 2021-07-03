@@ -7,7 +7,10 @@ module Pinafore.Language.Grammar.Interpret
 
 import Data.Graph
 import Pinafore.Base
+import Pinafore.Language.DefDoc
+import Pinafore.Language.DocTree
 import Pinafore.Language.Error
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.RefNotation
 import Pinafore.Language.Grammar.Interpret.Type
@@ -21,6 +24,8 @@ import Pinafore.Language.Type
 import Pinafore.Language.Var
 import Pinafore.Markdown
 import Shapes
+
+type instance EntryDoc PinaforeTypeSystem = DefDoc
 
 interpretPatternConstructor :: SyntaxConstructor -> PinaforeSourceInterpreter (QPatternConstructor)
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
@@ -99,43 +104,61 @@ interpretLetBindings spos sbinds ra = do
     liftRefNotation $ runSourcePos spos $ checkSyntaxBindingsDuplicates $ fmap snd sbinds
     interpretLetBindingss spos (clumpBindings sbinds) ra
 
+interpretDocDeclarations ::
+       SourcePos -> [SyntaxDocDeclaration] -> RefNotation a -> RefNotation ([DocTreeEntry DefDoc], a)
+interpretDocDeclarations dspos ddecls ma = do
+    (MkChain importDecls, typeDecls, MkChain subtypeDecls, bindingDecls, docDecls) <-
+        liftRefNotation $
+        fmap mconcat $
+        for ddecls $ \(MkSyntaxDocDeclaration doc decl) ->
+            case decl of
+                ImportSyntaxDeclaration spos mname -> do
+                    newmod <- runSourcePos spos $ getModule mname
+                    return
+                        ( MkChain $ MkWMFunction $ importScope $ moduleScope newmod
+                        , mempty
+                        , mempty
+                        , mempty
+                        , pure $ TreeDocTreeEntry $ moduleDoc newmod)
+                TypeSyntaxDeclaration spos name defn ->
+                    return $ let
+                        docName = toText name
+                        docValueType = ""
+                        docType = TypeDocType
+                        docDescription = doc
+                        in ( mempty
+                           , pure (spos, name, doc, defn)
+                           , mempty
+                           , mempty
+                           , pure $ EntryDocTreeEntry $ MkDefDoc {..})
+                SubtypeSyntaxDeclaration spos sta stb ->
+                    return $ let
+                        docName = exprShow sta <> " <: " <> exprShow stb
+                        docValueType = ""
+                        docType = SubtypeRelationDocType
+                        docDescription = doc
+                        in ( mempty
+                           , mempty
+                           , MkChain $ MkWMFunction $ mapSourcePos spos $ interpretSubtypeRelation sta stb
+                           , mempty
+                           , pure $ EntryDocTreeEntry $ MkDefDoc {..})
+                BindingSyntaxDeclaration sbind@(MkSyntaxBinding _ mtype name _) ->
+                    return $ let
+                        docName = toText name
+                        docValueType =
+                            case mtype of
+                                Nothing -> ""
+                                Just st -> exprShow st
+                        docType = ValueDocType
+                        docDescription = doc
+                        in (mempty, mempty, mempty, pure (doc, sbind), pure $ EntryDocTreeEntry $ MkDefDoc {..})
+    a <-
+        remonadRefNotation (importDecls . MkWMFunction (interpretTypeDeclarations typeDecls) . subtypeDecls) $
+        interpretLetBindings dspos bindingDecls ma
+    return (docDecls, a)
+
 interpretDeclarations :: SourcePos -> [SyntaxDocDeclaration] -> MFunction RefNotation RefNotation
-interpretDeclarations dspos ddecls = let
-    decls :: [SyntaxDeclaration]
-    decls = fmap (\(MkSyntaxDocDeclaration _ decl) -> decl) ddecls
-    importDecls :: WMFunction PinaforeInterpreter PinaforeInterpreter
-    importDecls =
-        compAll $
-        (mapMaybe $ \case
-             ImportSyntaxDeclarataion spos mname -> Just $ MkWMFunction $ importModule spos mname
-             _ -> Nothing)
-            decls
-    typeDecls :: WMFunction PinaforeInterpreter PinaforeInterpreter
-    typeDecls =
-        MkWMFunction $
-        interpretTypeDeclarations $
-        mapMaybe
-            (\case
-                 MkSyntaxDocDeclaration doc (TypeSyntaxDeclaration spos name defn) -> Just (spos, name, doc, defn)
-                 _ -> Nothing)
-            ddecls
-    subtypeDecls :: WMFunction PinaforeInterpreter PinaforeInterpreter
-    subtypeDecls =
-        compAll $
-        mapMaybe
-            (\case
-                 SubtypeSyntaxDeclaration spos sta stb ->
-                     Just $ MkWMFunction $ mapSourcePos spos $ interpretSubtypeRelation sta stb
-                 _ -> Nothing)
-            decls
-    bindingDecls :: MFunction RefNotation RefNotation
-    bindingDecls =
-        interpretLetBindings dspos $
-        (mapMaybe $ \case
-             MkSyntaxDocDeclaration doc (BindingSyntaxDeclaration sbind) -> Just (doc, sbind)
-             _ -> Nothing)
-            ddecls
-    in remonadRefNotation (importDecls . typeDecls . subtypeDecls) . bindingDecls
+interpretDeclarations spos decls ma = fmap snd $ interpretDocDeclarations spos decls ma
 
 interpretNamedConstructor :: SourcePos -> ReferenceName -> RefExpression
 interpretNamedConstructor spos n = do
@@ -273,7 +296,29 @@ interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) ma =
 interpretTopExpression :: SyntaxExpression -> PinaforeInterpreter QExpr
 interpretTopExpression sexpr@(MkWithSourcePos spos _) = runRefNotation spos $ interpretExpression sexpr
 
-interpretModule :: SyntaxModule -> PinaforeInterpreter PinaforeScope
-interpretModule (MkWithSourcePos spos (SMLet sdecls smod)) =
-    runRefNotation spos $ interpretDeclarations spos sdecls $ liftRefNotation $ interpretModule smod
-interpretModule (MkWithSourcePos spos (SMExport names)) = runSourcePos spos $ exportScope names
+exposeDeclids :: [Name] -> [DefDoc] -> [DefDoc]
+exposeDeclids names decls = let
+    inDecl :: Name -> Maybe DefDoc
+    inDecl n = find (\doc -> docName doc == toText n) decls
+    isSubtypeDDI :: DefDoc -> Bool
+    isSubtypeDDI doc =
+        case docType doc of
+            SubtypeRelationDocType -> True
+            _ -> False
+    in mapMaybe inDecl names <> filter isSubtypeDDI decls
+
+exposeDeclsDocTree :: [Name] -> [DocTreeEntry DefDoc] -> [DocTreeEntry DefDoc]
+exposeDeclsDocTree names = fmap EntryDocTreeEntry . exposeDeclids names . mconcat . fmap toList
+
+interpretModule' :: SyntaxModule -> PinaforeInterpreter ([DocTreeEntry DefDoc] -> [DocTreeEntry DefDoc], PinaforeScope)
+interpretModule' (MkWithSourcePos spos (SMLet sdecls smod)) = do
+    (newdoc, (docf, scope)) <-
+        runRefNotation spos $ interpretDocDeclarations spos sdecls $ liftRefNotation $ interpretModule' smod
+    return $ (\olddoc -> docf $ olddoc <> newdoc, scope)
+interpretModule' (MkWithSourcePos spos (SMExport names)) = do
+    scope <- runSourcePos spos $ exportScope names
+    return (exposeDeclsDocTree names, scope)
+
+interpretModule :: ModuleName -> SyntaxModule -> PinaforeInterpreter PinaforeModule
+interpretModule modname smod =
+    fmap (\(docf, scope) -> MkModule (MkDocTree (toText modname) "" $ docf []) scope) $ interpretModule' smod

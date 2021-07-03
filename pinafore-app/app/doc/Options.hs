@@ -9,15 +9,19 @@ import Shapes
 
 data Options
     = ShowVersionOption
-    | LibraryDocOption FilePath
+    | ModuleDocOption [FilePath]
+                      Text
     | InfixDocOption
     deriving (Eq, Show)
+
+optIncludes :: Parser [FilePath]
+optIncludes = many $ strOption $ long "include" <> short 'I' <> metavar "PATH"
 
 optParser :: Parser Options
 optParser =
     (flag' ShowVersionOption $ long "version" <> short 'v') <|>
-    (fmap LibraryDocOption $ strOption $ long "doc-library" <> metavar "PATH") <|>
-    (flag' InfixDocOption $ long "doc-infix")
+    (ModuleDocOption <$> optIncludes <*> (strOption $ long "module" <> metavar "MODULENAME")) <|>
+    (flag' InfixDocOption $ long "infix")
 
 optParserInfo :: ParserInfo Options
 optParserInfo = info optParser mempty

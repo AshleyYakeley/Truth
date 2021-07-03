@@ -8,6 +8,7 @@ module Options
 import Options.Applicative as OA
 import Options.Applicative.Builder.Internal as OA
 import Options.Applicative.Types as OA
+import Pinafore.Options
 import Shapes
 
 remainingParser :: Mod CommandFields a -> Parser (String, [String])
@@ -24,12 +25,6 @@ remainingParser (Mod _ _ modprops) = let
     propDescMod = Nothing
     optProps = modprops OptProperties {..}
     in OptP OA.Option {..}
-
-data RunOptions = MkRunOptions
-    { roCache :: Bool
-    , roIncludeDirs :: [FilePath]
-    , roDataDir :: Maybe FilePath
-    } deriving (Eq, Show)
 
 data Options
     = ShowVersionOption

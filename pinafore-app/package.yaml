@@ -14,12 +14,14 @@ library:
       - shapes
       - time
       - directory
+      - filepath
       - xdg-basedir
       - githash
       - pinafore-language
       - pinafore-gtk
     exposed-modules:
       - Pinafore.Version
+      - Pinafore.Options
       - Pinafore.Libs
 
 executables:
@@ -28,7 +30,6 @@ executables:
         dependencies:
           - base >= 4.12
           - shapes
-          - filepath
           - optparse-applicative
           - changes-core
           - changes-gtk
@@ -51,7 +52,6 @@ executables:
         main: Main.hs
         other-modules:
           - Options
-          - Documentation
         ghc-options: -threaded
 
 tests:
@@ -60,6 +60,7 @@ tests:
         dependencies:
           - base >= 4.12
           - filepath
+          - directory
           - shapes
           - changes-core
           - pinafore-language
@@ -76,6 +77,7 @@ tests:
           - base >= 4.12
           - shapes
           - optparse-applicative
+          - pinafore-app
         main: Test.hs
         other-modules:
           - Options

@@ -1,12 +1,15 @@
 module Pinafore.Language
     ( Name
     , ModuleName(..)
+    , toModuleName
     , LibraryModule
     , FetchModule
     , directoryFetchModule
     , textFetchModule
     , libraryFetchModule
-    , LibraryContext
+    , PinaforeModule
+    , Module(..)
+    , LibraryContext(..)
     , mkLibraryContext
     , PinaforeSpecialVals
     , SpecialVals(..)
@@ -33,6 +36,7 @@ module Pinafore.Language
     , Y
     , Entity
     , showPinaforeRef
+    , runPinaforeScoped
     , runPinaforeSourceScoped
     , exprShow
     ) where

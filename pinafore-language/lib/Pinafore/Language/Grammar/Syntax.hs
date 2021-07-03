@@ -2,6 +2,7 @@ module Pinafore.Language.Grammar.Syntax where
 
 import Pinafore.Base
 import Pinafore.Language.Error
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Name
 import Pinafore.Markdown
 import Shapes
@@ -35,7 +36,7 @@ data SyntaxDeclaration
                                SyntaxType
     | BindingSyntaxDeclaration SyntaxBinding
     | ImportSyntaxDeclaration SourcePos
-                               ModuleName
+                              ModuleName
 
 data SyntaxDocDeclaration =
     MkSyntaxDocDeclaration Markdown
@@ -45,9 +46,16 @@ data WithSourcePos t =
     MkWithSourcePos SourcePos
                     t
 
+instance ExprShow t => ExprShow (WithSourcePos t) where
+    exprShowPrec (MkWithSourcePos _ expr) = exprShowPrec expr
+
 data SyntaxVariance
     = CoSyntaxVariance
     | ContraSyntaxVariance
+
+instance ExprShow SyntaxVariance where
+    exprShowPrec CoSyntaxVariance = ("+", 0)
+    exprShowPrec ContraSyntaxVariance = ("-", 0)
 
 data SyntaxGroundType
     = ConstSyntaxGroundType ReferenceName
@@ -61,6 +69,12 @@ data SyntaxTypeArgument
     = SimpleSyntaxTypeArgument SyntaxType
     | RangeSyntaxTypeArgument [(Maybe SyntaxVariance, SyntaxType)]
 
+instance ExprShow SyntaxTypeArgument where
+    exprShowPrec (SimpleSyntaxTypeArgument t) = exprShowPrec t
+    exprShowPrec (RangeSyntaxTypeArgument args) = let
+        showArg (mv, t) = exprShow mv <> exprShow t
+        in ("{" <> intercalate "," (fmap showArg args) <> "}", 0)
+
 data SyntaxType'
     = SingleSyntaxType SyntaxGroundType
                        [SyntaxTypeArgument]
@@ -73,6 +87,25 @@ data SyntaxType'
     | BottomSyntaxType
     | RecursiveSyntaxType Name
                           SyntaxType
+
+instance ExprShow SyntaxType' where
+    exprShowPrec (VarSyntaxType v) = exprShowPrec v
+    exprShowPrec (OrSyntaxType ta tb) = (exprPrecShow 2 ta <> " | " <> exprPrecShow 2 tb, 3)
+    exprShowPrec (AndSyntaxType ta tb) = (exprPrecShow 2 ta <> " & " <> exprPrecShow 2 tb, 3)
+    exprShowPrec TopSyntaxType = ("None", 0)
+    exprShowPrec BottomSyntaxType = ("Any", 0)
+    exprShowPrec (RecursiveSyntaxType n pt) = ("rec " <> exprShow n <> ". " <> exprShow pt, 4)
+    exprShowPrec (SingleSyntaxType UnitSyntaxGroundType []) = ("()", 0)
+    exprShowPrec (SingleSyntaxType PairSyntaxGroundType [ta, tb]) = ("(" <> exprShow ta <> "," <> exprShow tb <> ")", 0)
+    exprShowPrec (SingleSyntaxType ListSyntaxGroundType [ta]) = ("[" <> exprShow ta <> "]", 0)
+    exprShowPrec (SingleSyntaxType FunctionSyntaxGroundType [ta, tb]) =
+        (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
+    exprShowPrec (SingleSyntaxType MorphismSyntaxGroundType [ta, tb]) =
+        (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
+    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) []) = (exprShow n, 0)
+    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) args) =
+        (exprShow n <> mconcat (fmap (\arg -> " " <> exprPrecShow 0 arg) args), 2)
+    exprShowPrec (SingleSyntaxType _ _) = ("UNKNOWN", 0)
 
 type SyntaxType = WithSourcePos SyntaxType'
 

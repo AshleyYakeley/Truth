@@ -27,6 +27,9 @@ resultFromMaybe :: e -> Maybe a -> Result e a
 resultFromMaybe _ (Just a) = SuccessResult a
 resultFromMaybe e Nothing = FailureResult e
 
+maybeToM :: MonadFail m => String -> Maybe a -> m a
+maybeToM e = resultToM . resultFromMaybe e
+
 deriving instance (Eq e, Eq a) => Eq (Result e a)
 
 instance Functor (Result e) where

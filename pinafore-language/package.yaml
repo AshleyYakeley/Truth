@@ -61,6 +61,7 @@ library:
       - Pinafore.Language.Type.OpenEntity
       - Pinafore.Language.Type.EntityAdapter
       - Pinafore.Language.Type.DynamicSupertype
+      - Pinafore.Language.DefDoc
       - Pinafore.Language.Grammar.Syntax
       - Pinafore.Language.Grammar.Read.Token
       - Pinafore.Language.Grammar.Read.Parser

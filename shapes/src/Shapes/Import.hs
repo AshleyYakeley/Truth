@@ -241,3 +241,14 @@ intercalate :: Monoid a => a -> [a] -> a
 intercalate _ [] = mempty
 intercalate _ [a] = a
 intercalate i (a:aa) = mconcat [a, i, intercalate i aa]
+
+startsWith :: Eq a => [a] -> [a] -> Maybe [a]
+startsWith [] s = Just s
+startsWith (p:pp) (q:qq)
+    | p == q = startsWith pp qq
+startsWith _ _ = Nothing
+
+endsWith :: Eq a => [a] -> [a] -> Maybe [a]
+endsWith e s = do
+    a <- startsWith (reverse e) (reverse s)
+    return $ reverse a

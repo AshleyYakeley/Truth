@@ -12,6 +12,7 @@ module Pinafore.Documentation
     , allOperatorNames
     ) where
 
+import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
 import Pinafore.Language.Grammar
 import Pinafore.Language.Library

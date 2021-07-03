@@ -51,7 +51,7 @@ data Token t where
     TokExport :: Token ()
     TokImport :: Token ()
     TokUName :: Token Name
-    TokQUName :: Token (ModuleName, Name)
+    TokQUName :: Token (NonEmpty Name, Name)
     TokLName :: Token Name
     TokQLName :: Token (ModuleName, Name)
     TokUnderscore :: Token ()
@@ -295,11 +295,10 @@ readTextToken = do
             case checkKeyword name of
                 Just _ -> empty
                 Nothing ->
-                    return $ let
-                        mname = MkModuleName qualnames
-                        in if u
-                               then MkAnyValue TokQUName (mname, MkName $ pack name)
-                               else MkAnyValue TokQLName (mname, MkName $ pack name)
+                    return $
+                    if u
+                        then MkAnyValue TokQUName (qualnames, MkName $ pack name)
+                        else MkAnyValue TokQLName (MkModuleName qualnames, MkName $ pack name)
 
 toHexDigit :: Char -> Maybe Word8
 toHexDigit c =

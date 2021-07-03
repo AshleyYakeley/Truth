@@ -44,6 +44,7 @@ library:
     exposed-modules:
       - Data.Words
       - Control.Category.Groupoid
+      - Data.Chain
       - Data.Filterable
       - Data.MonoApplicative
       - Data.CatFunctor
@@ -71,6 +72,7 @@ library:
       - Control.Applicative.Compose
       - Control.Monad.Compose
       - Control.Monad.Exception
+      - Control.Monad.MonadCont
       - Control.Monad.Coroutine
       - Control.Monad.LifeCycle
       - Control.Clock

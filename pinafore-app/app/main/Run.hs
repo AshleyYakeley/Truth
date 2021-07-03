@@ -9,26 +9,26 @@ import Pinafore
 import Shapes
 import System.Environment
 
-runFiles :: Foldable t => ContextOptions -> Bool -> t (FilePath, [String]) -> IO ()
-runFiles copts fNoRun scripts =
+runFiles :: Foldable t => (ContextOptions, ModuleOptions) -> Bool -> t (FilePath, [String]) -> IO ()
+runFiles (copts, modopts) fNoRun scripts =
     changesMainGTK $ \cc ->
         for_ scripts $ \(fpath, iiScriptArguments) -> do
             let iiScriptName = fpath
             iiEnvironment <- liftIO getEnvironment
-            (context, fetchModule) <- standardPinaforeContext copts MkInvocationInfo {..} cc
+            context <- standardPinaforeContext copts MkInvocationInfo {..} cc
             liftToLifeCycle $ do
-                action <- runWithContext context fetchModule $ pinaforeInterpretFile fpath
+                action <- runWithContext context (standardFetchModule modopts) $ pinaforeInterpretFile fpath
                 if fNoRun
                     then return ()
                     else action
 
-runInteractive :: ContextOptions -> IO ()
-runInteractive copts =
+runInteractive :: (ContextOptions, ModuleOptions) -> IO ()
+runInteractive (copts, modopts) =
     changesMainGTK $ \cc -> do
         let
             iiScriptName = ""
             iiScriptArguments = []
         iiEnvironment <- liftIO getEnvironment
-        (context, fetchModule) <- standardPinaforeContext copts MkInvocationInfo {..} cc
-        runWithContext context fetchModule $ liftToLifeCycle pinaforeInteract
+        context <- standardPinaforeContext copts MkInvocationInfo {..} cc
+        runWithContext context (standardFetchModule modopts) $ liftToLifeCycle pinaforeInteract
         liftToLifeCycle viewExit

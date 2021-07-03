@@ -56,7 +56,8 @@ readLines p =
     (return [])
 
 readModuleName :: Parser ModuleName
-readModuleName = fmap MkModuleName $ readSeparated1 (readExactlyThis TokOperator ".") $ fmap pure $ readThis TokUName
+readModuleName =
+    fmap MkModuleName $ (fmap pure $ readThis TokUName) <|> (fmap (\(nn, n) -> nn <> pure n) $ readThis TokQUName)
 
 readImport :: Parser SyntaxDeclaration
 readImport = do

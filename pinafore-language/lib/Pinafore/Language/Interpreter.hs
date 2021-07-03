@@ -6,10 +6,13 @@ module Pinafore.Language.Interpreter
     , Interpreter
     , runInterpreter
     , liftInterpreter
+    , EntryDoc
+    , Module(..)
     , Scope
     , importScope
+    , exportNames
     , exportScope
-    , importModule
+    , getModule
     , SourcePos
     , SourceInterpreter
     , askSourcePos
@@ -42,6 +45,7 @@ module Pinafore.Language.Interpreter
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.DocTree
 import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
@@ -86,18 +90,25 @@ instance Semigroup (Scope ts) where
 instance Monoid (Scope ts) where
     mempty = MkScope mempty mempty
 
+type family EntryDoc (ts :: Type) :: Type
+
+data Module ts = MkModule
+    { moduleDoc :: DocTree (EntryDoc ts)
+    , moduleScope :: Scope ts
+    }
+
 type InterpretContext :: Type -> Type
 data InterpretContext ts = MkInterpretContext
     { icScope :: Scope ts
     , icSpecialVals :: SpecialVals ts
     , icModulePath :: [ModuleName]
-    , icLoadModule :: ModuleName -> Interpreter ts (Maybe (Scope ts))
+    , icLoadModule :: ModuleName -> Interpreter ts (Maybe (Module ts))
     }
 
 type InterpretState :: Type -> Type
 data InterpretState ts = MkInterpretState
     { isTypeID :: TypeID
-    , isModules :: Map ModuleName (Scope ts)
+    , isModules :: Map ModuleName (Module ts)
     }
 
 emptyInterpretState :: InterpretState ts
@@ -128,7 +139,7 @@ instance Monoid a => Monoid (Interpreter ts a) where
     mempty = pure mempty
 
 runInterpreter ::
-       (ModuleName -> Interpreter ts (Maybe (Scope ts))) -> SpecialVals ts -> Interpreter ts a -> InterpretResult a
+       (ModuleName -> Interpreter ts (Maybe (Module ts))) -> SpecialVals ts -> Interpreter ts a -> InterpretResult a
 runInterpreter icLoadModule icSpecialVals qa = let
     icScope = mempty
     icModulePath = []
@@ -157,23 +168,37 @@ purifyBinding (ValueBinding expr mpatc) = do
     return $ ValueBinding expr' mpatc
 purifyBinding b = return b
 
+exportName ::
+       forall ts. (Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
+    => Name
+    -> SourceInterpreter ts (Maybe (DocInterpreterBinding ts))
+exportName name = do
+    MkScope bindings _ <- spScope
+    for (lookup name bindings) $ \(doc, b) -> do
+        b' <- purifyBinding b
+        return (doc, b')
+
+exportNames ::
+       forall ts. (Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
+    => [Name]
+    -> SourceInterpreter ts [(Name, DocInterpreterBinding ts)]
+exportNames names = do
+    nbs <-
+        for names $ \name -> do
+            mdib <- exportName name
+            return $ (name, mdib)
+    case [name | (name, Nothing) <- nbs] of
+        [] -> return [(name, dib) | (name, Just dib) <- nbs]
+        (n:nn) -> throw $ LookupNamesUnknownError $ n :| nn
+
 exportScope ::
        forall ts. (Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
     => [Name]
     -> SourceInterpreter ts (Scope ts)
 exportScope names = do
-    MkScope bindings subtypes <- spScope
-    ees <-
-        for names $ \name ->
-            case lookup name bindings of
-                Just (doc, b) -> do
-                    b' <- purifyBinding b
-                    return $ Right (name, (doc, b'))
-                Nothing -> return $ Left name
-    let (badnames, goodbinds) = partitionEithers ees
-    case badnames of
-        [] -> return $ MkScope (mapFromList goodbinds) subtypes
-        (n:nn) -> throw $ LookupNamesUnknownError $ n :| nn
+    MkScope _ subtypes <- spScope
+    goodbinds <- exportNames names
+    return $ MkScope (mapFromList goodbinds) subtypes
 
 pLocalScope :: (Scope ts -> Scope ts) -> Interpreter ts a -> Interpreter ts a
 pLocalScope maptc (MkInterpreter ma) = MkInterpreter $ local (\ic -> ic {icScope = maptc $ icScope ic}) ma
@@ -187,7 +212,7 @@ getCycle mn (n:nn)
     | mn == n = Just $ n :| nn
 getCycle mn (_:nn) = getCycle mn nn
 
-loadModuleInScope :: forall ts. ModuleName -> Interpreter ts (Maybe (Scope ts))
+loadModuleInScope :: forall ts. ModuleName -> Interpreter ts (Maybe (Module ts))
 loadModuleInScope mname = do
     oldic <- MkInterpreter ask
     let
@@ -195,7 +220,7 @@ loadModuleInScope mname = do
         newic = oldic {icScope = mempty, icModulePath = icModulePath oldic <> [mname]}
     MkInterpreter $ lift $ runReaderT (unInterpreter (icLoadModule newic mname)) newic
 
-getModule :: ModuleName -> SourceInterpreter ts (Scope ts)
+getModule :: ModuleName -> SourceInterpreter ts (Module ts)
 getModule mname = do
     istate <- liftSourcePos $ MkInterpreter $ lift get
     let oldmodules = isModules istate
@@ -212,11 +237,6 @@ getModule mname = do
                             liftSourcePos $ MkInterpreter $ lift $ put istate {isModules = insertMap mname m oldmodules}
                             return m
                         Nothing -> throw $ ModuleNotFoundError mname
-
-importModule :: SourcePos -> ModuleName -> MFunction (Interpreter ts) (Interpreter ts)
-importModule spos mname ma = do
-    newscope <- runSourcePos spos $ getModule mname
-    importScope newscope ma
 
 newtype SourceInterpreter ts a = MkSourceInterpreter
     { unSourceInterpreter :: ReaderT SourcePos (Interpreter ts) a
@@ -291,8 +311,8 @@ lookupDocBinding (UnqualifiedReferenceName name) = do
     (scopeBindings -> names) <- spScope
     return $ lookup name names
 lookupDocBinding (QualifiedReferenceName mname name) = do
-    scope <- getModule mname
-    return $ lookup name $ scopeBindings scope
+    modl <- getModule mname
+    return $ lookup name $ scopeBindings $ moduleScope modl
 
 lookupBinding :: ReferenceName -> SourceInterpreter ts (Maybe (InterpreterBinding ts))
 lookupBinding rname = fmap (fmap snd) $ lookupDocBinding rname

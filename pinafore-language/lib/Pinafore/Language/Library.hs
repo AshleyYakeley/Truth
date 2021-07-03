@@ -14,7 +14,9 @@ module Pinafore.Language.Library
     ) where
 
 import Pinafore.Context
+import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Debug
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.FetchModule
@@ -46,11 +48,11 @@ allOperatorNames = let
     in catMaybes $ fmap getDocName $ mconcat $ fmap toList library
 
 getImplictScope :: (?pinafore :: PinaforeContext) => IO PinaforeScope
-getImplictScope = getModuleScope stdLibraryModule
+getImplictScope = fmap moduleScope $ getLibraryModuleModule stdLibraryModule
 
 data LibraryContext = MkLibraryContext
     { lcImplictScope :: PinaforeScope
-    , lcLoadModule :: ModuleName -> PinaforeInterpreter (Maybe PinaforeScope)
+    , lcLoadModule :: ModuleName -> PinaforeInterpreter (Maybe PinaforeModule)
     }
 
 mkLibraryContext :: (?pinafore :: PinaforeContext) => FetchModule -> IO LibraryContext

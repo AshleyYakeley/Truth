@@ -135,7 +135,7 @@ readSourcePos p = do
 readReferenceUName :: Parser ReferenceName
 readReferenceUName =
     (fmap UnqualifiedReferenceName $ readThis TokUName) <|>
-    (fmap (\(m, n) -> QualifiedReferenceName m n) $ readThis TokQUName)
+    (fmap (\(m, n) -> QualifiedReferenceName (MkModuleName m) n) $ readThis TokQUName)
 
 readReferenceLName :: Parser ReferenceName
 readReferenceLName =

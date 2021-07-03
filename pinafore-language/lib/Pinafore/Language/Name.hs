@@ -31,6 +31,9 @@ newtype ModuleName =
     MkModuleName (NonEmpty Name)
     deriving (Eq, Ord)
 
+toModuleName :: Text -> Maybe ModuleName
+toModuleName t = fmap (MkModuleName . fmap MkName) $ nonEmpty $ splitSeq "." t
+
 instance ToText ModuleName where
     toText (MkModuleName nn) = intercalate "." $ fmap toText $ toList nn
 
