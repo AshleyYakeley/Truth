@@ -1,0 +1,28 @@
+#!/usr/bin/pinafore
+
+let
+
+years: Integer ~> ();
+years = property @Integer @() !"FTSJ.years";
+
+yearTheme: Integer ~> Text;
+yearTheme = property @Integer @Text !"FTSJ.yearTheme";
+
+import UIStuff.Selection;
+
+frontCoverPane: Pane;
+frontCoverPane = pane "Cover" $ UI.styleSheet {"* {font-size: 32pt;}"} $ UI.label {"FAKE\nSYSTEMS\nTHEME\nJOURNAL"};
+
+themesPane: Pane;
+themesPane = pane "Themes" $ UI.blank;
+
+daysPane: Pane;
+daysPane = pane "Days" $ UI.blank;
+
+createMainPane: Action Pane;
+createMainPane = notebookPane {"Fake Theme Systems Journal"} [frontCoverPane,themesPane,daysPane];
+
+in do
+    mainPane <- createMainPane;
+    paneWindow mainPane;
+    end

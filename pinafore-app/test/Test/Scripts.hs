@@ -74,5 +74,7 @@ testScripts =
               (\name -> testCheckScript ("test/script" </> name) name)
               ["empty", "simple", "testquery", "test", "big-ui", "calendar", "drawing"]
         , testTree "example" $
-          fmap (\name -> testCheckScript ("examples" </> name) name) ["stopwatch", "calendar", "contacts", "events"]
+          fmap
+              (\name -> testCheckScript ("examples" </> name) name)
+              ["stopwatch", "calendar", "contacts", "events", "fake-theme-systems-journal"]
         ]
