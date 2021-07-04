@@ -2,14 +2,8 @@
 
 let
 
-import UIStuff;
-
-# something with a name
-opentype Named;
-name = property @Named @Text !"identify.name";
-
-byName: FiniteSetRef {+a,+Named} -> WholeRef +[(a,Text)];
-byName ref = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ ref;
+import UIStuff.Selection;
+import UIStuff.Named;
 
 # something with a lifespan
 opentype Lifespanned;
@@ -82,12 +76,6 @@ organisations = property @Organisation @() !"type.organisation" !@ {()};
 
 ### User Interface
 
-namedTable: FiniteSetRef {a,+Named} -> (a -> Action Any) -> Maybe (WholeRef {a,+Named}) -> UI.Element;
-namedTable setr onActivate msel = UI.run $ do
-    listr <- getSetList (orderOn name alphabetical) setr;
-    return $ UI.listTable [({"Name"},\p -> name !$ {p})] listr onActivate msel;
-    end;
-
 contactPages: WholeRef +LegalEntity -> [(UI.Element, UI.Element)];
 contactPages er =
 [
@@ -132,7 +120,7 @@ contactRefUI: WholeRef +LegalEntity -> UI.Element;
 contactRefUI ref = UI.dynamic $ coMapWhole contactUI ref;
 
 contactWindow: LegalEntity -> Action UI.Window;
-contactWindow e = stdWindow (name !$ {e}) [] $ contactUI e;
+contactWindow e = stdWindow (name !$ {e}) {[]} $ contactUI e;
 
 newPersonMenuItem: (LegalEntity -> Action ()) -> UI.MenuItem;
 newPersonMenuItem setsel = UI.menuAction ("New Person") (Just "Ctrl+K")

@@ -2,7 +2,7 @@
 
 let
 
-import UIStuff;
+import UIStuff.Selection;
 
 ### EventTime
 
@@ -128,7 +128,7 @@ eventUI evt = UI.vertical
 ];
 
 eventWindow: Event -> Action UI.Window;
-eventWindow evt = stdWindow (eventName !$ {evt}) [] $ eventUI {evt};
+eventWindow evt = stdWindow (eventName !$ {evt}) {[]} $ eventUI {evt};
 
 # Menu item for creating a new event, and telling the owning element to set its selection to it.
 newEventMenuItem: (Event -> Action ()) -> UI.MenuItem;

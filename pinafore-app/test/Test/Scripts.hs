@@ -17,7 +17,7 @@ libDir = "../lib"
 testCheckScript :: FilePath -> String -> TestTree
 testCheckScript fpath name =
     testTree name $
-    withTestPinaforeContext (libraryFetchModule gtkLibrary <> directoryFetchModule "examples") stdout $ \_ _ _getTableState -> do
+    withTestPinaforeContext (libraryFetchModule gtkLibrary <> directoryFetchModule libDir) stdout $ \_ _ _getTableState -> do
         _ <- pinaforeInterpretFile fpath
         return ()
 
