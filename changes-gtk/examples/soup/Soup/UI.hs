@@ -153,6 +153,10 @@ soupWindow tc newWindow dirpath = do
             wsCloseBoxAction = liftIO closer
         button <- createButton (constantModel "View") $ constantModel $ Just $ withSelection openItem
         stuff <- soupEditSpec smodel selnotify openItem
-        let wsContent = createLayout OrientationVertical [(False, button), (True, stuff)]
+        let
+            wsContent =
+                createLayout
+                    OrientationVertical
+                    [(defaultLayoutOptions, button), (defaultLayoutOptions {loGrow = True}, stuff)]
         (window, closer) <- lifeCycleEarlyCloser $ newWindow MkWindowSpec {..}
     return ()

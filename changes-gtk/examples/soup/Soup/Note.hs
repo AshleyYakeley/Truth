@@ -84,7 +84,12 @@ noteEditSpec sub sel = do
     titleUI <- createTextEntry $ mapModel (tupleChangeLens NoteTitle) sub
     pastUI <- createCheckButton (constantModel "past") $ mapModel (tupleChangeLens NotePast) sub
     textUI <- createTextArea (mapModel (tupleChangeLens NoteText) sub) sel
-    createLayout OrientationVertical [(False, titleUI), (False, pastUI), (True, textUI)]
+    createLayout
+        OrientationVertical
+        [ (defaultLayoutOptions, titleUI)
+        , (defaultLayoutOptions, pastUI)
+        , (defaultLayoutOptions {loGrow = True}, textUI)
+        ]
 
 type Note = Tuple NoteSel
 
