@@ -330,130 +330,157 @@ baseLibEntries =
                       take len $ drop start text
                 , mkValEntry "textConcat" "Concatenate texts." $ mconcat @Text
                 ]
-          , docTreeEntry
-                "Numeric"
-                ""
-                [ mkValEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
-                , mkValEntry "~/=" "Numeric non-equality." $ (/=) @Number
-                , mkValEntry "<" "Numeric strictly less." $ (<) @Number
-                , mkValEntry "<=" "Numeric less or equal." $ (<=) @Number
-                , mkValEntry ">" "Numeric strictly greater." $ (>) @Number
-                , mkValEntry ">=" "Numeric greater or equal." $ (>=) @Number
-                , docTreeEntry "Integer" "" $
-                  [ mkTypeEntry "Integer" "" $
-                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType IntegerLiteralType
-                  , mkSubtypeRelationEntry "Integer" "Rational" "" $
-                    pure $
-                    literalSubtypeConversionEntry IntegerLiteralType RationalLiteralType $
-                    functionToShim "Integer to Rational" integerToSafeRational
-                  ] <>
-                  plainFormattingDefs @Integer "Integer" "an integer" <>
-                  [ mkValEntry "min" "Lesser of two Integers" $ min @Integer
-                  , mkValEntry "max" "Greater of two Integers" $ max @Integer
-                  , mkValEntry "+" "Add." $ (+) @Integer
-                  , mkValEntry "-" "Subtract." $ (-) @Integer
-                  , mkValEntry "*" "Multiply." $ (*) @Integer
-                  , mkValEntry "negate" "Negate." $ negate @Integer
-                  , mkValEntry "abs" "Absolute value." $ abs @Integer
-                  , mkValEntry "signum" "Sign." $ signum @Integer
-                  , mkValEntry "mod" "Modulus, leftover from `div`" $ mod' @Integer
-                  , mkValEntry "even" "Is even?" $ even @Integer
-                  , mkValEntry "odd" "Is odd?" $ odd @Integer
-                  , mkValEntry "gcd" "Greatest common divisor." $ gcd @Integer
-                  , mkValEntry "lcm" "Least common multiple." $ lcm @Integer
-                  , mkValEntry "^" "Raise to non-negative power." $ (^) @Integer @Integer
-                  , mkValEntry "sum" "Sum." $ sum @[] @Integer
-                  , mkValEntry "product" "Product." $ product @[] @Integer
-                  ]
-                , docTreeEntry "Rational" "" $
-                  [ mkTypeEntry "Rational" "" $
-                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType RationalLiteralType
-                  , mkSubtypeRelationEntry "Rational" "Number" "" $
-                    pure $
-                    literalSubtypeConversionEntry RationalLiteralType NumberLiteralType $
-                    functionToShim "Rational to Number" safeRationalToNumber
-                  ] <>
-                  plainFormattingDefs @SafeRational "Rational" "a rational" <>
-                  [ mkValEntry "minR" "Lesser of two Rationals" $ min @SafeRational
-                  , mkValEntry "maxR" "Greater of two Rationals" $ max @SafeRational
-                  , mkValEntry ".+" "Add." $ (+) @SafeRational
-                  , mkValEntry ".-" "Subtract." $ (-) @SafeRational
-                  , mkValEntry ".*" "Multiply." $ (*) @SafeRational
-                  , mkValEntry "/" "Divide." $ (/) @SafeRational
-                  , mkValEntry "negateR" "Negate." $ negate @SafeRational
-                  , mkValEntry "recip" "Reciprocal." $ recip @SafeRational
-                  , mkValEntry "absR" "Absolute value." $ abs @SafeRational
-                  , mkValEntry "signumR" "Sign." $ signum @SafeRational
-                  , mkValEntry "modR" "Modulus, leftover from `div`" $ mod' @SafeRational
-                  , mkValEntry "^^" "Raise to Integer power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
-                  , mkValEntry "sumR" "Sum." $ sum @[] @SafeRational
-                  , mkValEntry "meanR" "Mean." $ \(vv :: [SafeRational]) -> sum vv / toSafeRational (length vv)
-                  , mkValEntry "productR" "Product." $ product @[] @SafeRational
-                  ]
-                , docTreeEntry "Number" "" $
-                  [mkSubtypeRelationEntry "Number" "Literal" "" []] <>
-                  plainFormattingDefs @Number "Number" "a number" <>
-                  [ mkTypeEntry "Number" "" $
-                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType NumberLiteralType
-                  , mkValEntry "minN" "Lesser of two Numbers" $ min @Number
-                  , mkValEntry "maxN" "Greater of two Numbers" $ max @Number
-                  , mkValEntry "~+" "Add." $ (+) @Number
-                  , mkValEntry "~-" "Subtract." $ (-) @Number
-                  , mkValEntry "~*" "Multiply." $ (*) @Number
-                  , mkValEntry "~/" "Divide." $ (/) @Number
-                  , mkValEntry "negateN" "Negate." $ negate @Number
-                  , mkValEntry "recipN" "Reciprocal." $ recip @Number
-                  , mkValEntry "pi" "Half the radians in a circle." $ pi @Number
-                  , mkValEntry "exp" "Exponent" $ exp @Number
-                  , mkValEntry "log" "Natural logarithm" $ log @Number
-                  , mkValEntry "sqrt" "Square root." $ sqrt @Number
-                  , mkValEntry "**" "Raise to power." $ (**) @Number
-                  , mkValEntry "logBase" "" $ logBase @Number
-                  , mkValEntry "sin" "Sine of an angle in radians." $ sin @Number
-                  , mkValEntry "cos" "Cosine of an angle in radians." $ cos @Number
-                  , mkValEntry "tan" "Tangent of an angle in radians." $ tan @Number
-                  , mkValEntry "asin" "Radian angle of a sine." $ asin @Number
-                  , mkValEntry "acos" "Radian angle of a cosine." $ acos @Number
-                  , mkValEntry "atan" "Radian angle of a tangent." $ atan @Number
-                  , mkValEntry "sinh" "Hyperbolic sine." $ sinh @Number
-                  , mkValEntry "cosh" "Hyperbolic cosine." $ cosh @Number
-                  , mkValEntry "tanh" "Hyperbolic tangent." $ tanh @Number
-                  , mkValEntry "asinh" "Inverse hyperbolic sine." $ asinh @Number
-                  , mkValEntry "acosh" "Inverse hyperbolic cosine." $ acosh @Number
-                  , mkValEntry "atanh" "Inverse hyperbolic tangent." $ atanh @Number
-                  , mkValEntry "nabs" "Absolute value." $ abs @Number
-                  , mkValEntry "signumN" "Sign. Note this will be the same exact or inexact as the number." $
-                    signum @Number
-                  , mkValEntry "floor" "Integer towards negative infinity." (floor :: Number -> Integer)
-                  , mkValEntry "ceiling" "Integer towards positive infinity." (ceiling :: Number -> Integer)
-                  , mkValEntry "round" "Closest Integer." (round :: Number -> Integer)
-                  , mkValEntry "inexact" "Convert a number to inexact." numberToDouble
-                  , mkValEntry
-                        "approximate"
-                        "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`."
-                        approximate
-                  , mkValEntry
-                        "div"
-                        "Division to Integer, towards negative infinity."
-                        (div' :: Number -> Number -> Integer)
-                  , mkValEntry "modN" "Modulus, leftover from `div`" $ mod' @Number
-                  , mkValEntry "isNaN" "Is not a number?" numberIsNaN
-                  , mkValEntry "isInfinite" "Is infinite?" numberIsInfinite
-                  , mkValEntry "isNegativeZero" "Is negative zero?" numberIsNegativeZero
-                  , mkValEntry "isExact" "Is exact?" numberIsExact
-                  , mkValEntry "sumN" "Sum." $ sum @[] @Number
-                  , mkValEntry "meanN" "Mean." $ \(vv :: [Number]) -> sum vv / (ExactNumber $ toRational $ length vv)
-                  , mkValEntry "productN" "Product." $ product @[] @Number
-                  , mkValEntry
-                        "numberCheckSafeRational"
-                        "Get the exact value of a Number, if it is one."
-                        numberCheckSafeRational
-                  , mkValEntry
-                        "checkExactInteger"
-                        "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
-                        numberCheckSafeRational n >>= safeRationalCheckInteger
-                  ]
-                ]
+          , let
+                arithList :: (Num a, Ord a) => a -> a -> Maybe a -> [a]
+                arithList step a mb = let
+                    cond =
+                        case mb of
+                            Nothing -> \_ -> True
+                            Just b ->
+                                case compare step 0 of
+                                    GT -> \x -> x <= b
+                                    LT -> \x -> x >= b
+                                    EQ -> \_ -> True
+                    in takeWhile cond $ iterate (+ step) a
+                range :: (Num a, Ord a) => a -> a -> [a]
+                range a b = arithList 1 a $ Just b
+                in docTreeEntry
+                       "Numeric"
+                       ""
+                       [ mkValEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
+                       , mkValEntry "~/=" "Numeric non-equality." $ (/=) @Number
+                       , mkValEntry "<" "Numeric strictly less." $ (<) @Number
+                       , mkValEntry "<=" "Numeric less or equal." $ (<=) @Number
+                       , mkValEntry ">" "Numeric strictly greater." $ (>) @Number
+                       , mkValEntry ">=" "Numeric greater or equal." $ (>=) @Number
+                       , docTreeEntry "Integer" "" $
+                         [ mkTypeEntry "Integer" "" $
+                           MkBoundType $
+                           EntityPinaforeGroundType NilListType $ LiteralEntityGroundType IntegerLiteralType
+                         , mkSubtypeRelationEntry "Integer" "Rational" "" $
+                           pure $
+                           literalSubtypeConversionEntry IntegerLiteralType RationalLiteralType $
+                           functionToShim "Integer to Rational" integerToSafeRational
+                         ] <>
+                         plainFormattingDefs @Integer "Integer" "an integer" <>
+                         [ mkValEntry "min" "Lesser of two Integers" $ min @Integer
+                         , mkValEntry "max" "Greater of two Integers" $ max @Integer
+                         , mkValEntry "+" "Add." $ (+) @Integer
+                         , mkValEntry "-" "Subtract." $ (-) @Integer
+                         , mkValEntry "*" "Multiply." $ (*) @Integer
+                         , mkValEntry "negate" "Negate." $ negate @Integer
+                         , mkValEntry "abs" "Absolute value." $ abs @Integer
+                         , mkValEntry "signum" "Sign." $ signum @Integer
+                         , mkValEntry "mod" "Modulus, leftover from `div`" $ mod' @Integer
+                         , mkValEntry "even" "Is even?" $ even @Integer
+                         , mkValEntry "odd" "Is odd?" $ odd @Integer
+                         , mkValEntry "gcd" "Greatest common divisor." $ gcd @Integer
+                         , mkValEntry "lcm" "Least common multiple." $ lcm @Integer
+                         , mkValEntry "^" "Raise to non-negative power." $ (^) @Integer @Integer
+                         , mkValEntry "sum" "Sum." $ sum @[] @Integer
+                         , mkValEntry "product" "Product." $ product @[] @Integer
+                         , mkValEntry
+                               "range"
+                               "`range a b` is an arithmetic sequence starting from `a`, with all numbers `<= b`. Step is +1." $
+                           range @Integer
+                         , mkValEntry
+                               "arithList"
+                               "`arithList step a (Just b)` is an arithmetic sequence starting from `a`, with all numbers `<= b` (for positive step) or `>= b` (for negative step).\n\n\
+                                \`arithList step a Nothing` is an infinite arithmetic sequence starting from `a`." $
+                           arithList @Integer
+                         ]
+                       , docTreeEntry "Rational" "" $
+                         [ mkTypeEntry "Rational" "" $
+                           MkBoundType $
+                           EntityPinaforeGroundType NilListType $ LiteralEntityGroundType RationalLiteralType
+                         , mkSubtypeRelationEntry "Rational" "Number" "" $
+                           pure $
+                           literalSubtypeConversionEntry RationalLiteralType NumberLiteralType $
+                           functionToShim "Rational to Number" safeRationalToNumber
+                         ] <>
+                         plainFormattingDefs @SafeRational "Rational" "a rational" <>
+                         [ mkValEntry "minR" "Lesser of two Rationals" $ min @SafeRational
+                         , mkValEntry "maxR" "Greater of two Rationals" $ max @SafeRational
+                         , mkValEntry ".+" "Add." $ (+) @SafeRational
+                         , mkValEntry ".-" "Subtract." $ (-) @SafeRational
+                         , mkValEntry ".*" "Multiply." $ (*) @SafeRational
+                         , mkValEntry "/" "Divide." $ (/) @SafeRational
+                         , mkValEntry "negateR" "Negate." $ negate @SafeRational
+                         , mkValEntry "recip" "Reciprocal." $ recip @SafeRational
+                         , mkValEntry "absR" "Absolute value." $ abs @SafeRational
+                         , mkValEntry "signumR" "Sign." $ signum @SafeRational
+                         , mkValEntry "modR" "Modulus, leftover from `div`" $ mod' @SafeRational
+                         , mkValEntry "^^" "Raise to Integer power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
+                         , mkValEntry "sumR" "Sum." $ sum @[] @SafeRational
+                         , mkValEntry "meanR" "Mean." $ \(vv :: [SafeRational]) -> sum vv / toSafeRational (length vv)
+                         , mkValEntry "productR" "Product." $ product @[] @SafeRational
+                         ]
+                       , docTreeEntry "Number" "" $
+                         [mkSubtypeRelationEntry "Number" "Literal" "" []] <>
+                         plainFormattingDefs @Number "Number" "a number" <>
+                         [ mkTypeEntry "Number" "" $
+                           MkBoundType $
+                           EntityPinaforeGroundType NilListType $ LiteralEntityGroundType NumberLiteralType
+                         , mkValEntry "minN" "Lesser of two Numbers" $ min @Number
+                         , mkValEntry "maxN" "Greater of two Numbers" $ max @Number
+                         , mkValEntry "~+" "Add." $ (+) @Number
+                         , mkValEntry "~-" "Subtract." $ (-) @Number
+                         , mkValEntry "~*" "Multiply." $ (*) @Number
+                         , mkValEntry "~/" "Divide." $ (/) @Number
+                         , mkValEntry "negateN" "Negate." $ negate @Number
+                         , mkValEntry "recipN" "Reciprocal." $ recip @Number
+                         , mkValEntry "pi" "Half the radians in a circle." $ pi @Number
+                         , mkValEntry "exp" "Exponent" $ exp @Number
+                         , mkValEntry "log" "Natural logarithm" $ log @Number
+                         , mkValEntry "sqrt" "Square root." $ sqrt @Number
+                         , mkValEntry "**" "Raise to power." $ (**) @Number
+                         , mkValEntry "logBase" "" $ logBase @Number
+                         , mkValEntry "sin" "Sine of an angle in radians." $ sin @Number
+                         , mkValEntry "cos" "Cosine of an angle in radians." $ cos @Number
+                         , mkValEntry "tan" "Tangent of an angle in radians." $ tan @Number
+                         , mkValEntry "asin" "Radian angle of a sine." $ asin @Number
+                         , mkValEntry "acos" "Radian angle of a cosine." $ acos @Number
+                         , mkValEntry "atan" "Radian angle of a tangent." $ atan @Number
+                         , mkValEntry "sinh" "Hyperbolic sine." $ sinh @Number
+                         , mkValEntry "cosh" "Hyperbolic cosine." $ cosh @Number
+                         , mkValEntry "tanh" "Hyperbolic tangent." $ tanh @Number
+                         , mkValEntry "asinh" "Inverse hyperbolic sine." $ asinh @Number
+                         , mkValEntry "acosh" "Inverse hyperbolic cosine." $ acosh @Number
+                         , mkValEntry "atanh" "Inverse hyperbolic tangent." $ atanh @Number
+                         , mkValEntry "nabs" "Absolute value." $ abs @Number
+                         , mkValEntry "signumN" "Sign. Note this will be the same exact or inexact as the number." $
+                           signum @Number
+                         , mkValEntry "floor" "Integer towards negative infinity." (floor :: Number -> Integer)
+                         , mkValEntry "ceiling" "Integer towards positive infinity." (ceiling :: Number -> Integer)
+                         , mkValEntry "round" "Closest Integer." (round :: Number -> Integer)
+                         , mkValEntry "inexact" "Convert a number to inexact." numberToDouble
+                         , mkValEntry
+                               "approximate"
+                               "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`."
+                               approximate
+                         , mkValEntry
+                               "div"
+                               "Division to Integer, towards negative infinity."
+                               (div' :: Number -> Number -> Integer)
+                         , mkValEntry "modN" "Modulus, leftover from `div`" $ mod' @Number
+                         , mkValEntry "isNaN" "Is not a number?" numberIsNaN
+                         , mkValEntry "isInfinite" "Is infinite?" numberIsInfinite
+                         , mkValEntry "isNegativeZero" "Is negative zero?" numberIsNegativeZero
+                         , mkValEntry "isExact" "Is exact?" numberIsExact
+                         , mkValEntry "sumN" "Sum." $ sum @[] @Number
+                         , mkValEntry "meanN" "Mean." $ \(vv :: [Number]) ->
+                               sum vv / (ExactNumber $ toRational $ length vv)
+                         , mkValEntry "productN" "Product." $ product @[] @Number
+                         , mkValEntry
+                               "numberCheckSafeRational"
+                               "Get the exact value of a Number, if it is one."
+                               numberCheckSafeRational
+                         , mkValEntry
+                               "checkExactInteger"
+                               "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
+                               numberCheckSafeRational n >>= safeRationalCheckInteger
+                         ]
+                       ]
           , docTreeEntry
                 "Date & Time"
                 ""
@@ -735,6 +762,8 @@ baseLibEntries =
           , mkValEntry "maybeMapList" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
           , mkValEntry "take" "Take the first n elements." (take :: Int -> [A] -> [A])
           , mkValEntry "drop" "Drop the first n elements." (drop :: Int -> [A] -> [A])
+          , mkValEntry "takeWhile" "Take while the condition holds." (takeWhile :: (A -> Bool) -> [A] -> [A])
+          , mkValEntry "dropWhile" "Drop while the condition holds." (dropWhile :: (A -> Bool) -> [A] -> [A])
           , mkValEntry "zip" "Zip two lists." $ zip @A @B
           ]
     , docTreeEntry

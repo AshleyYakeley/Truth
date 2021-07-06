@@ -13,7 +13,7 @@ module Pinafore.Base.Number
     , readNumberLiteral
     ) where
 
-import Data.List (head, iterate)
+import Data.List (head)
 import Pinafore.Base.SafeRational
 import Shapes hiding ((+++), option)
 import Shapes.Numeric
