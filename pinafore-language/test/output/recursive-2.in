@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 let
 fix: (a -> a) -> a;
-fix f = let x = f x in x;
+fix f = let rec x = f x end in x;
 
 recf: (Integer -> b -> Maybe b) -> Integer -> b -> Maybe b;
 recf s a b = if a <= 0 then Just b else s (a - 1) b;

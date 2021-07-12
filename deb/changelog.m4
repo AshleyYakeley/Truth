@@ -1,7 +1,10 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
   * Language
-    - can provide binding documentation with #| and {#| #} comments
+    - overhaul of declarations
+      . declarations now non-recursive, with recursive rec-blocks
+      . "expose" declarations
+      . allow declaration documentation with #| and {#| #} comments
   * Interactive
     - :doc to retrieve name documentation
   * Library

@@ -48,7 +48,7 @@ data Token t where
     TokSubtype :: Token ()
     TokClosedType :: Token ()
     TokDynamicType :: Token ()
-    TokExport :: Token ()
+    TokExpose :: Token ()
     TokImport :: Token ()
     TokUName :: Token Name
     TokQUName :: Token (NonEmpty Name, Name)
@@ -93,7 +93,7 @@ instance TestEquality Token where
     testEquality TokSubtype TokSubtype = Just Refl
     testEquality TokClosedType TokClosedType = Just Refl
     testEquality TokDynamicType TokDynamicType = Just Refl
-    testEquality TokExport TokExport = Just Refl
+    testEquality TokExpose TokExpose = Just Refl
     testEquality TokImport TokImport = Just Refl
     testEquality TokUName TokUName = Just Refl
     testEquality TokQUName TokQUName = Just Refl
@@ -139,7 +139,7 @@ instance Show (Token t) where
     show TokSubtype = show ("subtype" :: String)
     show TokClosedType = show ("closedtype" :: String)
     show TokDynamicType = show ("dynamictype" :: String)
-    show TokExport = show ("export" :: String)
+    show TokExpose = show ("expose" :: String)
     show TokImport = show ("import" :: String)
     show TokUName = "uname"
     show TokQUName = "qualified uname"
@@ -275,7 +275,7 @@ checkKeyword "opentype" = return $ MkAnyValue TokOpenType ()
 checkKeyword "subtype" = return $ MkAnyValue TokSubtype ()
 checkKeyword "closedtype" = return $ MkAnyValue TokClosedType ()
 checkKeyword "dynamictype" = return $ MkAnyValue TokDynamicType ()
-checkKeyword "export" = return $ MkAnyValue TokExport ()
+checkKeyword "expose" = return $ MkAnyValue TokExpose ()
 checkKeyword "import" = return $ MkAnyValue TokImport ()
 checkKeyword _ = Nothing
 

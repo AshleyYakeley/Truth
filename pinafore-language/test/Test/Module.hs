@@ -16,7 +16,7 @@ testModule =
               , testExpectThrow "fail \"wrong\""
               , testExpectSuccess "let a=4 in if a == 4 then return () else fail \"wrong\""
               ]
-        , tModule "M" "let a=4 in export a" $
+        , tModule "M" "let a=4 in expose a" $
           tGroup
               "exprs"
               [ testExpectSuccess "let import M in if a == 4 then return () else fail \"wrong\""
@@ -26,7 +26,7 @@ testModule =
               , testExpectSuccess "let b = M.a in if b == 4 then return () else fail \"wrong\""
               , testExpectSuccess "let a = 3; b = M.a in if b == 4 then return () else fail \"wrong\""
               ]
-        , tModule "M" "let datatype T = T1 | T2 in export T T1 T2" $
+        , tModule "M" "let datatype T = T1 | T2 in expose T T1 T2" $
           tGroup
               "type"
               [ testExpectSuccess "let import M in case T1 of T1 -> return (); T2 -> fail \"wrong\" end"
@@ -39,8 +39,8 @@ testModule =
               , testExpectSuccess "let import M in let f: T -> T; f x = x in return ()"
               , testExpectSuccess "let f: M.T -> M.T; f x = x in return ()"
               ]
-        , tModule "M" "let a = b in export a" $ testExpectReject "let import M in return ()"
-        , tModule "M" "let opentype T in export T" $
+        , tModule "M" "let a = b in expose a" $ testExpectReject "let import M in return ()"
+        , tModule "M" "let opentype T in expose T" $
           tGroup
               "opentype"
               [ testExpectSuccess "let import M; datatype D = MkD T; in return ()"

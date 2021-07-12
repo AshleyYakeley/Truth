@@ -252,7 +252,7 @@ testType =
                     , badInterpretTest "\\x -> let y : (b -> b, Boolean | Number); y = x in y"
                     , textTypeTest
                           "\\x -> let y : (Boolean, Number); y = (x,x) in y"
-                          "{} -> (Boolean & Number) -> (Boolean, Number)"
+                          "{} -> (Number & Boolean) -> (Boolean, Number)"
                     , textTypeTest
                           "\\x1 -> \\x2 -> let y : (Boolean, Number); y = (x1,x2) in y"
                           "{} -> Boolean -> Number -> (Boolean, Number)"
@@ -283,19 +283,19 @@ testType =
               , testTree
                     "recursive"
                     [ textTypeTest "let x : rec a. Maybe a; x = Nothing in x" "{} -> rec a. Maybe a"
-                    , textTypeTest "let x : rec a. Maybe a; x = Just x in x" "{} -> rec a. Maybe a"
-                    , textTypeTest "let x = Just x in x" "{} -> rec e. Maybe e"
-                    , textTypeTest "let x : Entity; x = Just x in x" "{} -> Entity"
-                    , textTypeTest "let x : Maybe Entity; x = Just x in x" "{} -> Maybe Entity"
+                    , textTypeTest "let rec x : rec a. Maybe a; x = Just x end in x" "{} -> rec a. Maybe a"
+                    , textTypeTest "let rec x = Just x end in x" "{} -> rec e. Maybe e"
+                    , textTypeTest "let rec x : Entity; x = Just x end in x" "{} -> Entity"
+                    , textTypeTest "let rec x : Maybe Entity; x = Just x end in x" "{} -> Maybe Entity"
                     , textTypeTest
-                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount"
+                          "let rec rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end end in rcount"
                           "{} -> (rec e. Maybe e) -> Integer"
                     , textTypeTest "Just $ Just $ Just Nothing" "{} -> Maybe (Maybe (Maybe (Maybe None)))"
                     , textTypeTest
-                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + r1count y end; r1count x = case x of Nothing -> 0; Just y -> 1 + r1count y end in rcount $ Just $ Just $ Just Nothing"
+                          "let rec rcount x = case x of Nothing -> 0; Just y -> 1 + r1count y end; r1count x = case x of Nothing -> 0; Just y -> 1 + r1count y end end in rcount $ Just $ Just $ Just Nothing"
                           "{} -> Integer"
                     , textTypeTest
-                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just rval in ((rcount,rval),rcount rval)"
+                          "let rec rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end end; rec rval = Just rval end in ((rcount,rval),rcount rval)"
                           "{} -> (((rec e. Maybe e) -> Integer, rec e. Maybe e), Integer)"
                     ]
               ]

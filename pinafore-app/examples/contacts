@@ -31,6 +31,7 @@ locationUI loc = UI.vertical
     (False, uiLabelled {"Phone: "} $ UI.textEntry $ locphone !$% loc)
 ];
 
+rec
 # a person or organisation
 dynamictype LegalEntity = Person | Organisation;
 subtype LegalEntity <: Named;
@@ -73,9 +74,11 @@ employees p = employer !@% p;
 dynamictype Organisation = !"type.organisation";
 organisations: FiniteSetRef Organisation;
 organisations = property @Organisation @() !"type.organisation" !@ {()};
+end;
 
 ### User Interface
 
+rec
 contactPages: WholeRef +LegalEntity -> [(UI.Element, UI.Element)];
 contactPages er =
 [
@@ -145,5 +148,6 @@ contactsSelector selection = namedTable legalentities contactWindow (Just select
 contactsWindow: Action UI.Window;
 contactsWindow = selectionPairWindow "Contacts" legalentities [newPersonMenuItem,newOrganisationMenuItem] contactWindow
     contactsSelector contactRefUI;
+end;
 
 in contactsWindow

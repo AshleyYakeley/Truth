@@ -32,7 +32,7 @@ namedPairPane name set mitems getSelectedUI = let
     iopen e = paneWindow $ namedPane getSelectedUI {e};
     in selectionPairPane name set (mapList (\mitem -> mitem set) mitems) iopen getSelectorUI getSelectedUI;
 
-in export
+in expose
     Named
     name
     byName

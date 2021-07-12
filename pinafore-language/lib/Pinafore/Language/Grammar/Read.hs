@@ -13,12 +13,13 @@ import Pinafore.Language.Grammar.Read.Expression
 import Pinafore.Language.Grammar.Read.Interactive
 import Pinafore.Language.Grammar.Read.Parser
 import Pinafore.Language.Grammar.Read.Type
+import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes hiding (try)
 
 parseTopExpression :: Text -> PinaforeSourceInterpreter QExpr
-parseTopExpression = parseScopedReaderWhole $ fmap interpretTopExpression readExpression
+parseTopExpression = parseScopedReaderWhole $ fmap (liftSourcePos . interpretTopExpression) readExpression
 
 parseModule :: ModuleName -> Text -> PinaforeSourceInterpreter PinaforeModule
 parseModule modname =

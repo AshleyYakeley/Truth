@@ -27,7 +27,13 @@ data SyntaxTypeDeclaration
     | OpenEntitySyntaxTypeDeclaration
     | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
 
-data SyntaxDeclaration
+data SyntaxExpose
+    = SExpExpose SourcePos
+                 [Name]
+    | SExpLet [SyntaxWithDoc SyntaxDeclaration]
+              SyntaxExpose
+
+data SyntaxDirectDeclaration
     = TypeSyntaxDeclaration SourcePos
                             Name
                             SyntaxTypeDeclaration
@@ -35,12 +41,19 @@ data SyntaxDeclaration
                                SyntaxType
                                SyntaxType
     | BindingSyntaxDeclaration SyntaxBinding
+
+data SyntaxWithDoc t =
+    MkSyntaxWithDoc Markdown
+                    t
+
+data SyntaxDeclaration
+    = DirectSyntaxDeclaration SyntaxDirectDeclaration
     | ImportSyntaxDeclaration SourcePos
                               ModuleName
-
-data SyntaxDocDeclaration =
-    MkSyntaxDocDeclaration Markdown
-                           SyntaxDeclaration
+    | ExposeSyntaxDeclaration SourcePos
+                              SyntaxExpose
+    | RecursiveSyntaxDeclaration SourcePos
+                                 [SyntaxWithDoc SyntaxDirectDeclaration]
 
 data WithSourcePos t =
     MkWithSourcePos SourcePos
@@ -161,7 +174,7 @@ data SyntaxExpression'
                  SyntaxExpression
     | SERef SyntaxExpression
     | SEUnref SyntaxExpression
-    | SELet [SyntaxDocDeclaration]
+    | SELet [SyntaxWithDoc SyntaxDeclaration]
             SyntaxExpression
     | SECase SyntaxExpression
              [SyntaxCase]
@@ -186,16 +199,11 @@ seApplys spos f (a:aa) = seApplys spos (seApply spos f a) aa
 
 type SyntaxExpression = WithSourcePos SyntaxExpression'
 
-data SyntaxModule'
-    = SMExport [Name]
-    | SMLet [SyntaxDocDeclaration]
-            SyntaxModule
-
-type SyntaxModule = WithSourcePos SyntaxModule'
+type SyntaxModule = SyntaxExpose
 
 data SyntaxTopDeclarations =
     MkSyntaxTopDeclarations SourcePos
-                            [SyntaxDocDeclaration]
+                            [SyntaxWithDoc SyntaxDeclaration]
 
 class HasSourcePos t where
     getSourcePos :: t -> SourcePos
@@ -209,11 +217,16 @@ instance HasSourcePos SyntaxBinding where
 instance HasSourcePos SyntaxTopDeclarations where
     getSourcePos (MkSyntaxTopDeclarations spos _) = spos
 
-instance HasSourcePos SyntaxDeclaration where
+instance HasSourcePos SyntaxDirectDeclaration where
     getSourcePos (BindingSyntaxDeclaration bind) = getSourcePos bind
     getSourcePos (TypeSyntaxDeclaration spos _ _) = spos
     getSourcePos (SubtypeSyntaxDeclaration spos _ _) = spos
+
+instance HasSourcePos SyntaxDeclaration where
+    getSourcePos (DirectSyntaxDeclaration decl) = getSourcePos decl
     getSourcePos (ImportSyntaxDeclaration spos _) = spos
+    getSourcePos (ExposeSyntaxDeclaration spos _) = spos
+    getSourcePos (RecursiveSyntaxDeclaration spos _) = spos
 
 class SyntaxFreeVariables t where
     syntaxFreeVariables :: t -> FiniteSet Name
@@ -245,11 +258,16 @@ instance SyntaxFreeVariables SyntaxExpression' where
 instance SyntaxFreeVariables SyntaxBinding where
     syntaxFreeVariables (MkSyntaxBinding _ _ _ expr) = syntaxFreeVariables expr
 
-instance SyntaxFreeVariables SyntaxDocDeclaration where
-    syntaxFreeVariables (MkSyntaxDocDeclaration _ decl) = syntaxFreeVariables decl
+instance SyntaxFreeVariables t => SyntaxFreeVariables (SyntaxWithDoc t) where
+    syntaxFreeVariables (MkSyntaxWithDoc _ decl) = syntaxFreeVariables decl
+
+instance SyntaxFreeVariables SyntaxDirectDeclaration where
+    syntaxFreeVariables (BindingSyntaxDeclaration bind) = syntaxFreeVariables bind
+    syntaxFreeVariables _ = mempty
 
 instance SyntaxFreeVariables SyntaxDeclaration where
-    syntaxFreeVariables (BindingSyntaxDeclaration bind) = syntaxFreeVariables bind
+    syntaxFreeVariables (DirectSyntaxDeclaration bind) = syntaxFreeVariables bind
+    syntaxFreeVariables (RecursiveSyntaxDeclaration _ decls) = syntaxFreeVariables decls
     syntaxFreeVariables _ = mempty
 
 class SyntaxBindingVariables t where
@@ -269,11 +287,16 @@ instance SyntaxBindingVariables SyntaxPattern' where
     syntaxBindingVariables (ConstructorSyntaxPattern _ pats) = syntaxBindingVariables pats
     syntaxBindingVariables (TypedSyntaxPattern pat _) = syntaxBindingVariables pat
 
-instance SyntaxBindingVariables SyntaxDocDeclaration where
-    syntaxBindingVariables (MkSyntaxDocDeclaration _ decl) = syntaxBindingVariables decl
+instance SyntaxBindingVariables t => SyntaxBindingVariables (SyntaxWithDoc t) where
+    syntaxBindingVariables (MkSyntaxWithDoc _ decl) = syntaxBindingVariables decl
+
+instance SyntaxBindingVariables SyntaxDirectDeclaration where
+    syntaxBindingVariables (BindingSyntaxDeclaration bind) = syntaxBindingVariables bind
+    syntaxBindingVariables _ = mempty
 
 instance SyntaxBindingVariables SyntaxDeclaration where
-    syntaxBindingVariables (BindingSyntaxDeclaration bind) = syntaxBindingVariables bind
+    syntaxBindingVariables (DirectSyntaxDeclaration bind) = syntaxBindingVariables bind
+    syntaxBindingVariables (RecursiveSyntaxDeclaration _ decls) = syntaxBindingVariables decls
     syntaxBindingVariables _ = mempty
 
 instance SyntaxBindingVariables SyntaxBinding where

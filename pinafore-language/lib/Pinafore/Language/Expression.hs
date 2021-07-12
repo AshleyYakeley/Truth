@@ -116,9 +116,9 @@ qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
     qApplyAllExpr qConsList [e, ee']
 
-type QBindings = Bindings PinaforeTypeSystem
+type QBinding = Binding PinaforeTypeSystem
 
-qBindExpr :: Name -> Markdown -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBindings
+qBindExpr :: Name -> Markdown -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBinding
 qBindExpr = tsSingleBinding @PinaforeTypeSystem
 
 qSubsumeExpr :: AnyW (PinaforeType 'Positive) -> QExpr -> PinaforeSourceInterpreter QExpr
@@ -127,8 +127,11 @@ qSubsumeExpr = tsSubsumeExpression @PinaforeTypeSystem
 qLetExpr :: Name -> QExpr -> QExpr -> PinaforeSourceInterpreter QExpr
 qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
 
-qUncheckedBindingsComponentLetExpr :: QBindings -> PinaforeSourceInterpreter (Map Name (Markdown, QExpr))
-qUncheckedBindingsComponentLetExpr = tsUncheckedComponentLet @PinaforeTypeSystem
+qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> PinaforeSourceInterpreter (Map Name (Markdown, QExpr))
+qUncheckedBindingsRecursiveLetExpr = tsUncheckedRecursiveLet @PinaforeTypeSystem
+
+qBindingSequentialLetExpr :: QBinding -> PinaforeSourceInterpreter (Map Name (Markdown, QExpr))
+qBindingSequentialLetExpr = tsSequentialLet @PinaforeTypeSystem
 
 qEvalExpr ::
        forall m. MonadThrow ExpressionError m

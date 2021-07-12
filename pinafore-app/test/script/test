@@ -64,6 +64,7 @@ deathdate = property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb";
 married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 
 # UI
+rec
 ui_people : FiniteSetRef Person -> UI.Element;
 ui_people pp = UI.run $ do
     selectedperson <- newMemWhole;
@@ -121,6 +122,7 @@ window_person p = std_window (name !$ {p}) (ui_person {p});
 
 window_people : Action UI.Window;
 window_people = std_window {"People"} (ui_people people);
+end;
 
 ### Calculator
 

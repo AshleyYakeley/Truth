@@ -135,7 +135,7 @@ newItemMenuAction name mkey newItem set setsel = UI.menuAction name mkey
     setsel item;
     end};
 
-in export
+in expose
     stdWindow
     selectionWindow
     selectionPairWindow

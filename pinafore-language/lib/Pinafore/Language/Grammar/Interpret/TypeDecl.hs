@@ -1,5 +1,6 @@
 module Pinafore.Language.Grammar.Interpret.TypeDecl
-    ( interpretTypeDeclarations
+    ( interpretTypeDeclaration
+    , interpretRecursiveTypeDeclarations
     ) where
 
 import Data.Graph
@@ -78,106 +79,113 @@ intepretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name)
 makeOpenEntityType :: Name -> TypeID -> AnyW OpenEntityType
 makeOpenEntityType n tid = valueToWitness tid $ \tidsym -> MkAnyW $ MkOpenEntityType n tidsym
 
-interpretTypeDeclaration ::
+typeDeclarationTypeBox ::
        SourcePos
     -> Name
     -> Markdown
-    -> TypeID
     -> SyntaxTypeDeclaration
-    -> PinaforeTypeBox (WMFunction PinaforeInterpreter PinaforeInterpreter)
-interpretTypeDeclaration _ name _ tid OpenEntitySyntaxTypeDeclaration = let
-    mktype _ =
-        case makeOpenEntityType name tid of
-            MkAnyW t -> MkBoundType $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType t
-    in MkTypeBox name mktype $ return ((), id)
-interpretTypeDeclaration spos name doc tid (ClosedEntitySyntaxTypeDeclaration sconss) =
-    valueToWitness tid $ \(tidsym :: TypeIDType n) -> let
-        mktype t = MkBoundType $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym t
-        in MkTypeBox name mktype $
+    -> PinaforeInterpreter (TypeFixBox PinaforeTypeSystem (WMFunction PinaforeInterpreter PinaforeInterpreter))
+typeDeclarationTypeBox spos name doc OpenEntitySyntaxTypeDeclaration = do
+    tid <- newTypeID
+    let
+        mktype _ =
+            case makeOpenEntityType name tid of
+                MkAnyW t -> MkBoundType $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType t
+    return $ mkTypeFixBox spos name doc mktype $ return ((), id)
+typeDeclarationTypeBox spos name doc (ClosedEntitySyntaxTypeDeclaration sconss) = do
+    tid <- newTypeID
+    return $
+        valueToWitness tid $ \(tidsym :: TypeIDType n) -> let
+            mktype t = MkBoundType $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym t
+            in mkTypeFixBox spos name doc mktype $
+               runSourcePos spos $ do
+                   tconss <- for sconss interpretClosedEntityTypeConstructor
+                   MkClosedEntityBox (ct :: ClosedEntityType t) conss <- return $ assembleClosedEntityType tconss
+                   tident :: Identified n :~: t <- unsafeGetIdentification
+                   let
+                       cti :: ClosedEntityType (Identified n)
+                       cti = (reflId $ applyRefl id $ invert tident) ct
+                       ctf :: forall polarity. Is PolarityType polarity
+                           => PinaforeShimWit polarity (Identified n)
+                       ctf =
+                           singleDolanShimWit $
+                           mkShimWit $
+                           GroundDolanSingularType
+                               (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym cti)
+                               NilDolanArguments
+                   patts <-
+                       for conss $ \(MkConstructor cname lt at tma) -> do
+                           ltp <- return $ mapListType monoToPositiveDolanType lt
+                           ltn <- mapMListType monoEntityToNegativePinaforeType lt
+                           let
+                               expr =
+                                   qConstExprAny $
+                                   MkAnyValue (qFunctionPosWitnesses ltn (mapShimWit (reflId $ invert tident) ctf)) at
+                               pc = toPatternConstructor ctf ltp $ tma . reflId tident
+                           withNewPatternConstructor cname doc expr pc
+                   return (cti, compAll patts)
+typeDeclarationTypeBox spos name doc (DatatypeSyntaxTypeDeclaration sconss) = do
+    tid <- newTypeID
+    return $
+        valueToWitness tid $ \tidsym -> let
+            pt = MkProvidedType datatypeIOWitness $ MkIdentifiedType tidsym
+            mktype _ = MkBoundType $ ProvidedGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
+            in mkTypeFixBox spos name doc mktype $
+               runSourcePos spos $ do
+                   tconss <- for sconss interpretDataTypeConstructor
+                   MkDataBox _dt conss <- return $ assembleDataType tconss
+                   let
+                       freevars :: [AnyW SymbolType]
+                       freevars = nub $ mconcat $ fmap constructorFreeVariables conss
+                       declaredvars :: [AnyW SymbolType]
+                       declaredvars = [] -- ISSUE #41
+                       unboundvars :: [AnyW SymbolType]
+                       unboundvars = freevars List.\\ declaredvars
+                   case nonEmpty unboundvars of
+                       Nothing -> return ()
+                       Just vv ->
+                           throw $ InterpretUnboundTypeVariablesError $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
+                   let
+                       ctf :: forall polarity. Is PolarityType polarity
+                           => PinaforeShimWit polarity _
+                       ctf =
+                           singleDolanShimWit $
+                           mkShimWit $
+                           GroundDolanSingularType
+                               (ProvidedGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt)
+                               NilDolanArguments
+                   tident <- unsafeGetIdentification
+                   let tiso = reflId tident
+                   patts <-
+                       for conss $ \(MkConstructor cname lt at tma) -> do
+                           ltp <- return $ mapListType nonpolarToDolanType lt
+                           ltn <- return $ mapListType nonpolarToDolanType lt
+                           let
+                               expr =
+                                   qConstExprAny $
+                                   MkAnyValue (qFunctionPosWitnesses ltn ctf) $ \hl -> isoBackwards tiso $ at hl
+                               pc = toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
+                           withNewPatternConstructor cname doc expr pc
+                   return ((), compAll patts)
+typeDeclarationTypeBox spos name doc (DynamicEntitySyntaxTypeDeclaration stcons) =
+    return $ let
+        mktype :: DynamicEntityType -> PinaforeBoundType
+        mktype t = MkBoundType $ EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType name t
+        in mkTypeFixBox spos name doc mktype $
            runSourcePos spos $ do
-               tconss <- for sconss interpretClosedEntityTypeConstructor
-               MkClosedEntityBox (ct :: ClosedEntityType t) conss <- return $ assembleClosedEntityType tconss
-               tident :: Identified n :~: t <- unsafeGetIdentification
+               dt <- for stcons intepretSyntaxDynamicEntityConstructor
                let
-                   cti :: ClosedEntityType (Identified n)
-                   cti = (reflId $ applyRefl id $ invert tident) ct
-                   ctf :: forall polarity. Is PolarityType polarity
-                       => PinaforeShimWit polarity (Identified n)
-                   ctf =
-                       singleDolanShimWit $
-                       mkShimWit $
-                       GroundDolanSingularType
-                           (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym cti)
-                           NilDolanArguments
-               patts <-
-                   for conss $ \(MkConstructor cname lt at tma) -> do
-                       ltp <- return $ mapListType monoToPositiveDolanType lt
-                       ltn <- mapMListType monoEntityToNegativePinaforeType lt
-                       let
-                           expr =
-                               qConstExprAny $
-                               MkAnyValue (qFunctionPosWitnesses ltn (mapShimWit (reflId $ invert tident) ctf)) at
-                           pc = toPatternConstructor ctf ltp $ tma . reflId tident
-                       withNewPatternConstructor cname doc expr pc
-               return (cti, compAll patts)
-interpretTypeDeclaration spos name doc tid (DatatypeSyntaxTypeDeclaration sconss) =
-    valueToWitness tid $ \tidsym -> let
-        pt = MkProvidedType datatypeIOWitness $ MkIdentifiedType tidsym
-        mktype _ = MkBoundType $ ProvidedGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
-        in MkTypeBox name mktype $
-           runSourcePos spos $ do
-               tconss <- for sconss interpretDataTypeConstructor
-               MkDataBox _dt conss <- return $ assembleDataType tconss
-               let
-                   freevars :: [AnyW SymbolType]
-                   freevars = nub $ mconcat $ fmap constructorFreeVariables conss
-                   declaredvars :: [AnyW SymbolType]
-                   declaredvars = [] -- ISSUE #41
-                   unboundvars :: [AnyW SymbolType]
-                   unboundvars = freevars List.\\ declaredvars
-               case nonEmpty unboundvars of
-                   Nothing -> return ()
-                   Just vv -> throw $ InterpretUnboundTypeVariablesError $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
-               let
-                   ctf :: forall polarity. Is PolarityType polarity
-                       => PinaforeShimWit polarity _
-                   ctf =
-                       singleDolanShimWit $
-                       mkShimWit $
-                       GroundDolanSingularType
-                           (ProvidedGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt)
-                           NilDolanArguments
-               tident <- unsafeGetIdentification
-               let tiso = reflId tident
-               patts <-
-                   for conss $ \(MkConstructor cname lt at tma) -> do
-                       ltp <- return $ mapListType nonpolarToDolanType lt
-                       ltn <- return $ mapListType nonpolarToDolanType lt
-                       let
-                           expr =
-                               qConstExprAny $
-                               MkAnyValue (qFunctionPosWitnesses ltn ctf) $ \hl -> isoBackwards tiso $ at hl
-                           pc = toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
-                       withNewPatternConstructor cname doc expr pc
-               return ((), compAll patts)
-interpretTypeDeclaration spos name _ _ (DynamicEntitySyntaxTypeDeclaration stcons) = let
-    mktype :: DynamicEntityType -> PinaforeBoundType
-    mktype t = MkBoundType $ EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType name t
-    in MkTypeBox name mktype $
-       runSourcePos spos $ do
-           dt <- for stcons intepretSyntaxDynamicEntityConstructor
-           let
-               dts = setFromList $ mconcat $ toList dt
-               tp = EntityPinaforeGroundType NilListType (ADynamicEntityGroundType name dts)
-           return $
-               (,) dts $
-               MkWMFunction $
-               withSubtypeConversions $
-               pure $
-               MkSubypeConversionEntry tp $ \case
-                   EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dts')
-                       | isSubsetOf dts' dts -> Just idSubtypeConversion
-                   _ -> Nothing
+                   dts = setFromList $ mconcat $ toList dt
+                   tp = EntityPinaforeGroundType NilListType (ADynamicEntityGroundType name dts)
+               return $
+                   (,) dts $
+                   MkWMFunction $
+                   withSubtypeConversions $
+                   pure $
+                   MkSubypeConversionEntry tp $ \case
+                       EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dts')
+                           | isSubsetOf dts' dts -> Just idSubtypeConversion
+                       _ -> Nothing
 
 checkDynamicTypeCycles :: [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> PinaforeInterpreter ()
 checkDynamicTypeCycles decls = let
@@ -198,14 +206,17 @@ checkDynamicTypeCycles decls = let
            [] -> return ()
            (nn@((spos, _) :| _):_) -> runSourcePos spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
 
-interpretTypeDeclarations ::
+interpretTypeDeclaration ::
+       SourcePos -> Name -> Markdown -> SyntaxTypeDeclaration -> MFunction PinaforeInterpreter PinaforeInterpreter
+interpretTypeDeclaration spos name doc tdecl ma = do
+    tbox <- typeDeclarationTypeBox spos name doc tdecl
+    (wtt, wcc) <- registerTypeName tbox
+    runWMFunction (wtt . compAll wcc) ma
+
+interpretRecursiveTypeDeclarations ::
        [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> MFunction PinaforeInterpreter PinaforeInterpreter
-interpretTypeDeclarations decls ma = do
+interpretRecursiveTypeDeclarations decls ma = do
     checkDynamicTypeCycles decls
-    wfs <-
-        for decls $ \(spos, name, doc, tdecl) ->
-            runSourcePos spos $ do
-                tid <- liftSourcePos newTypeID
-                return $ (spos, doc, interpretTypeDeclaration spos name doc tid tdecl)
-    (wtt, wcc) <- registerTypeNames wfs
+    wfs <- for decls $ \(spos, name, doc, tdecl) -> typeDeclarationTypeBox spos name doc tdecl
+    (wtt, wcc) <- registerRecursiveTypeNames wfs
     runWMFunction (wtt . compAll wcc) ma

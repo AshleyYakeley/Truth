@@ -33,8 +33,10 @@ liftRefNotation = lift . lift
 remonadRefNotation :: WMFunction PinaforeInterpreter PinaforeInterpreter -> MFunction RefNotation RefNotation
 remonadRefNotation (MkWMFunction mm) = remonad $ remonad mm
 
-runRefNotation :: SourcePos -> MFunction RefNotation PinaforeInterpreter
-runRefNotation spos rexpr = evalStateT (runRefWriterT spos rexpr) 0
+runRefNotation :: MFunction RefNotation PinaforeSourceInterpreter
+runRefNotation rexpr = do
+    spos <- askSourcePos
+    liftSourcePos $ evalStateT (runRefWriterT spos rexpr) 0
 
 type RefExpression = RefNotation QExpr
 

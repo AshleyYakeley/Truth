@@ -41,8 +41,8 @@ closedtype T = T1 Integer Boolean | T2;
 
 subtype T <: X;
 
-in export sometext somenumber X T T1 T2
+in expose sometext somenumber X T T1 T2
 ```
 
-The `export` statement exports the given names (values, types, type constructors) that will be available when imported.
-Subtype relations are always exported.
+The `expose` statement exposes the given names (values, types, type constructors) that will be available when imported.
+Subtype relations are always exposed.

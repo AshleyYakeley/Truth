@@ -4,6 +4,7 @@ module Test.Context
     , ScriptTestTree
     , runScriptTestTree
     , tDecls
+    , tDeclsRec
     , scriptTestCase
     ) where
 
@@ -18,6 +19,9 @@ runScriptTestTree = runContextTestTree mempty
 
 tDecls :: [String] -> ScriptTestTree -> ScriptTestTree
 tDecls defs = tContext $ \c -> defs <> c
+
+tDeclsRec :: [String] -> ScriptTestTree -> ScriptTestTree
+tDeclsRec defs = tDecls $ pure $ "rec\n" ++ intercalate ";\n" defs ++ "\nend"
 
 prefix :: [String] -> Text
 prefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"

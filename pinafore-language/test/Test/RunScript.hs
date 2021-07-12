@@ -3,6 +3,7 @@ module Test.RunScript
     , module Shapes.Test.Context
     , ScriptTestTree
     , tDecls
+    , tDeclsRec
     , tFetchModule
     , tModule
     , tLibrary
@@ -32,6 +33,9 @@ type ScriptTestTree = ContextTestTree ScriptContext
 
 tDecls :: [String] -> ScriptTestTree -> ScriptTestTree
 tDecls defs = tContext $ \sc -> sc {scDeclarations = scDeclarations sc <> defs}
+
+tDeclsRec :: [String] -> ScriptTestTree -> ScriptTestTree
+tDeclsRec defs = tDecls $ pure $ "rec\n" ++ intercalate ";\n" defs ++ "\nend"
 
 tFetchModule :: FetchModule -> ScriptTestTree -> ScriptTestTree
 tFetchModule fm = tContext $ \sc -> sc {scFetchModule = fm <> scFetchModule sc}

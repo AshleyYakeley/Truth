@@ -53,15 +53,15 @@ benchScripts =
         , benchScript "get {False} >>= \\v -> return ()"
         , benchScript "get (pureWhole False) >>= \\v -> return ()"
         , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ \\v -> return ()"
-        , benchScript "let a=b; b=c; c=d; d=e; e=f; f=g; g=return () in a"
+        , benchScript "let rec a=b; b=c; c=d; d=e; e=f; f=g; g=return () end in a"
         , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ return ()"
         , benchScript
               "let const a b = a; ui_labelled n ui = UI.horizontal [(False,UI.label n),(True,ui)] in const (return ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} UI.blank"
-        , benchScript "let const a b = a; r = 3::r in const (return ()) r"
+        , benchScript "let const a b = a; rec r = 3::r end in const (return ()) r"
         , benchScript
               "let cpass x = return (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript
-              "let cpass x = return (); d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3 in cpass d"
+              "let cpass x = return (); rec d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3 end in cpass d"
         , benchScript
               "let cpass x = return () in let a = 3 in let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript

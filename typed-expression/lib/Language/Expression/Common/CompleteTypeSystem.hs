@@ -134,7 +134,7 @@ tsSingleBinding ::
     -> TSBindingData ts
     -> Maybe (AnyW (TSPosWitness ts))
     -> TSSealedExpression ts
-    -> Bindings ts
+    -> Binding ts
 tsSingleBinding name bd madecltype expr =
     singleBinding name bd $ do
         madecltype' <- for madecltype $ renameTypeSignature @ts
@@ -153,11 +153,17 @@ tsSubsumeExpression decltype expr =
         expr' <- rename @ts FreeName expr
         subsumeExpression @ts decltype' expr'
 
-tsUncheckedComponentLet ::
+tsUncheckedRecursiveLet ::
        forall ts. (Ord (TSName ts), CompleteTypeSystem ts)
-    => Bindings ts
+    => [Binding ts]
     -> TSInner ts (Map (TSName ts) (TSBindingData ts, TSSealedExpression ts))
-tsUncheckedComponentLet = bindingsComponentLetSealedExpression @ts
+tsUncheckedRecursiveLet = bindingsRecursiveLetSealedExpression @ts
+
+tsSequentialLet ::
+       forall ts. (Ord (TSName ts), CompleteTypeSystem ts)
+    => Binding ts
+    -> TSInner ts (Map (TSName ts) (TSBindingData ts, TSSealedExpression ts))
+tsSequentialLet = bindingSequentialLetSealedExpression @ts
 
 tsVarPattern ::
        forall ts. CompleteTypeSystem ts

@@ -494,10 +494,10 @@ testEntity =
                   , tGroup
                         "unify"
                         [ testSubtypeUnify sr $
-                          "let f: (" <> q <> ") -> (); f = f; x: " <> p <> "; x = x; fx = f x in pass"
+                          "let rec f: (" <> q <> ") -> (); f = f end; rec x: " <> p <> "; x = x; end; fx = f x in pass"
                         ]
                   , tGroup "subsume" $
-                    [ testSubtypeSubsume sr $ "let x: " <> p <> "; x = x; y: " <> q <> "; y = x in pass"
+                    [ testSubtypeSubsume sr $ "let rec x: " <> p <> "; x = x end; y: " <> q <> "; y = x in pass"
                     , testSubtypeSubsume sr $ "let x: " <> p <> "; x = undefined; y: " <> q <> "; y = x in pass"
                     , testSubtypeSubsume sr $ "let x: " <> q <> "; x = undefined: " <> p <> " in pass"
                     , testSubtypeSubsume sr $ "let x = (undefined: " <> p <> "): " <> q <> " in pass"
@@ -547,11 +547,13 @@ testEntity =
                      , tGroup
                            "let"
                            [ tDecls ["opentype P", "opentype Q", "subtype P <: Q"] $
-                             tGroup "1" $ subtypeTests False SRSingle "P" "Q"
-                           , tDecls ["opentype P", "subtype P <: Q", "opentype Q"] $
-                             tGroup "2" $ subtypeTests False SRSingle "P" "Q"
-                           , tDecls ["subtype P <: Q", "opentype P", "opentype Q"] $
-                             tGroup "3" $ subtypeTests False SRSingle "P" "Q"
+                             tGroup "seq" $ subtypeTests False SRSingle "P" "Q"
+                           , tDeclsRec ["opentype P", "opentype Q", "subtype P <: Q"] $
+                             tGroup "rec 1" $ subtypeTests False SRSingle "P" "Q"
+                           , tDeclsRec ["opentype P", "subtype P <: Q", "opentype Q"] $
+                             tGroup "rec 2" $ subtypeTests False SRSingle "P" "Q"
+                           , tDeclsRec ["subtype P <: Q", "opentype P", "opentype Q"] $
+                             tGroup "rec 3" $ subtypeTests False SRSingle "P" "Q"
                            ]
                      , tGroup
                            "local"
@@ -634,12 +636,14 @@ testEntity =
                        , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
                          tGroup "Q <: Entity" $ subtypeTests False SRSingle "Q" "Entity"
                        , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tGroup "1" $ subtypeTests False SRSingle "P1" "Q"
-                       , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | P2", "dynamictype P2 = !\"P2\""] $
-                         tGroup "2" $ subtypeTests False SRSingle "P1" "Q"
-                       , tDecls ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
-                         tGroup "3" $ subtypeTests False SRSingle "P1" "Q"
-                       , tDecls
+                         tGroup "seq" $ subtypeTests False SRSingle "P1" "Q"
+                       , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                         tGroup "rec 1" $ subtypeTests False SRSingle "P1" "Q"
+                       , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | P2", "dynamictype P2 = !\"P2\""] $
+                         tGroup "rec 2" $ subtypeTests False SRSingle "P1" "Q"
+                       , tDeclsRec ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
+                         tGroup "rec 3" $ subtypeTests False SRSingle "P1" "Q"
+                       , tDeclsRec
                              [ "opentype T"
                              , "subtype QA <: T"
                              , "dynamictype QA = P1 | P2 | P3"
@@ -724,15 +728,15 @@ testEntity =
                     "recursive"
                     [ testExpectSuccess "let datatype P = P1 in let datatype Q = Q1 P in pass"
                     , testExpectSuccess "let datatype P = P1; datatype Q = Q1 P in pass"
-                    , testExpectSuccess "let datatype P = P1 Q; datatype Q in pass"
-                    , testExpectSuccess "let datatype P = P1 Q; datatype Q = Q1 P in pass"
-                    , testExpectSuccess "let datatype P = P1 P in pass"
+                    , testExpectSuccess "let rec datatype P = P1 Q; datatype Q end in pass"
+                    , testExpectSuccess "let rec datatype P = P1 Q; datatype Q = Q1 P end in pass"
+                    , testExpectSuccess "let rec datatype P = P1 P end in pass"
                     , testExpectSuccess
-                          "let datatype P = P1 Q; datatype Q = Q1 P; f : P -> P; f p = case p of P1 q -> case q of Q1 p -> p end end in pass"
-                    , testExpectSuccess "let datatype P = P1 Q; closedtype Q = Q1 !\"Q1\" in pass"
-                    , testExpectReject "let closedtype P = P1 Q; datatype Q = Q1 !\"Q1\" in pass"
+                          "let rec datatype P = P1 Q; datatype Q = Q1 P; f : P -> P; f p = case p of P1 q -> case q of Q1 p -> p end end end in pass"
+                    , testExpectSuccess "let rec datatype P = P1 Q; closedtype Q = Q1 !\"Q1\" end in pass"
+                    , testExpectReject "let rec closedtype P = P1 Q; datatype Q = Q1 !\"Q1\" end in pass"
                     , testExpectSuccess
-                          "let datatype P = P1 Q; datatype Q = Q1 (Action ()); pqpass = P1 (Q1 pass) in case pqpass of P1 (Q1 p) -> p end"
+                          "let rec datatype P = P1 Q; datatype Q = Q1 (Action ()); pqpass = P1 (Q1 pass) end in case pqpass of P1 (Q1 p) -> p end"
                     ]
               ]
         , tDecls ["closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\""] $
@@ -760,9 +764,10 @@ testEntity =
                     "recursive"
                     [ testExpectSuccess "let closedtype P = P1 !\"P1\" in let closedtype Q = Q1 P !\"Q1\" in pass"
                     , testExpectSuccess "let closedtype P = P1 !\"P1\"; closedtype Q = Q1 P !\"Q1\" in pass"
-                    , testExpectSuccess "let closedtype P = P1 Q !\"P1\"; closedtype Q in pass"
-                    , testExpectSuccess "let closedtype P = P1 Q !\"P1\"; closedtype Q = Q1 P !\"Q1\" in pass"
-                    , testExpectSuccess "let closedtype P = P1 P !\"P1\" in pass"
+                    , testExpectSuccess "let rec closedtype P = P1 !\"P1\"; closedtype Q = Q1 P !\"Q1\" end in pass"
+                    , testExpectSuccess "let rec closedtype P = P1 Q !\"P1\"; closedtype Q end in pass"
+                    , testExpectSuccess "let rec closedtype P = P1 Q !\"P1\"; closedtype Q = Q1 P !\"Q1\" end in pass"
+                    , testExpectSuccess "let rec closedtype P = P1 P !\"P1\" end in pass"
                     ]
               ]
         , tGroup

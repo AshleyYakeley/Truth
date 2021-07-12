@@ -38,12 +38,12 @@ parseReader r text = let
                Right a -> return a
                Left e -> throwErrorMessage $ parseErrorMessage e
 
-parseScopedReaderWhole :: Parser (PinaforeInterpreter t) -> Text -> PinaforeSourceInterpreter t
+parseScopedReaderWhole :: Parser (PinaforeSourceInterpreter t) -> Text -> PinaforeSourceInterpreter t
 parseScopedReaderWhole parser text = do
     spos <- askSourcePos
     result <- runInterpretResult $ evalStateT (parseReader parser text) spos
     case result of
-        SuccessResult a -> liftSourcePos a
+        SuccessResult a -> a
         FailureResult e -> throw e
 
 readToken :: Token t -> Parser t

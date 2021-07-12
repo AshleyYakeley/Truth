@@ -19,6 +19,7 @@ nav:
 - Building: 'building.md'
 - Language:
   - Syntax: 'syntax.md'
+  - Declarations: 'declarations.md'
   - Type System: 'type-system.md'
   - Types: 'types.md'
   - Dynamic Supertypes: 'dynamic-supertypes.md'

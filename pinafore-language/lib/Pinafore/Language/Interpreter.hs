@@ -31,8 +31,10 @@ module Pinafore.Language.Interpreter
     , lookupSpecialForm
     , lookupBoundType
     , newTypeID
-    , TypeBox(..)
-    , registerTypeNames
+    , TypeFixBox
+    , mkTypeFixBox
+    , registerTypeName
+    , registerRecursiveTypeNames
     , DocInterpreterBinding
     , lookupDocBinding
     , InterpreterBinding(..)
@@ -385,23 +387,27 @@ registerType spos name doc t =
                 Just _ -> throw $ DeclareTypeDuplicateError name
                 Nothing -> liftSourcePos $ withNewBinding name (doc, TypeBinding t) mta
 
-data TypeBox ts x =
-    forall t. MkTypeBox Name
-                        (t -> BoundType ts)
-                        (Interpreter ts (t, x))
+type TypeFixBox ts x = FixBox (WriterT [x] (Interpreter ts))
 
-typeBoxToFixBox :: (SourcePos, Markdown, TypeBox ts x) -> FixBox (WriterT [x] (Interpreter ts))
-typeBoxToFixBox (spos, doc, MkTypeBox name ttype mtx) =
+mkTypeFixBox :: SourcePos -> Name -> Markdown -> (t -> BoundType ts) -> Interpreter ts (t, x) -> TypeFixBox ts x
+mkTypeFixBox spos name doc ttype mtx =
     mkFixBox (\t -> liftWMFunction $ registerType spos name doc $ ttype t) $ do
         (t, x) <- lift mtx
         tell [x]
         return t
 
-registerTypeNames ::
-       [(SourcePos, Markdown, TypeBox ts x)] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
-registerTypeNames tboxes = do
-    (sc, xx) <- runWriterT $ boxFix (fmap typeBoxToFixBox tboxes) $ lift interpreterScope
+runWriterInterpreterMF ::
+       MFunction (WriterT [x] (Interpreter ts)) (WriterT [x] (Interpreter ts))
+    -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
+runWriterInterpreterMF mf = do
+    (sc, xx) <- runWriterT $ mf $ lift interpreterScope
     return (MkWMFunction $ pLocalScope (\_ -> sc), xx)
+
+registerRecursiveTypeNames :: [TypeFixBox ts x] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
+registerRecursiveTypeNames tboxes = runWriterInterpreterMF $ boxesFix tboxes
+
+registerTypeName :: TypeFixBox ts x -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
+registerTypeName tbox = runWriterInterpreterMF $ boxSeq tbox
 
 withNewPatternConstructor ::
        Name

@@ -22,9 +22,7 @@ All declarations, including type declarations, are local to a `let` block.
 ```text
 <script> ::= <expression>
 
-<module> ::=
-    <let-declarations> "in" <module> |
-    "export" <names>
+<module> ::= <expose-declaration>
 
 <names> ::=  | <name> <names>
 
@@ -168,13 +166,23 @@ All declarations, including type declarations, are local to a `let` block.
 <declarations> ::=  | <declaration> ";" <declarations>
 
 <declaration> ::=
+    direct-declaration |
     "import" <module-name> |
+    <expose-declaration> |
+    "rec" <direct-declarations> "end"
+
+<direct-declarations> ::=  | <direct-declaration> ";" <direct-declarations>
+
+<direct-declaration> ::=
     "datatype" <type-const> <datatype-body> |
     "opentype" <type-const> |
     "subtype" <type-const> "<:" <type-const> |
     "closedtype" <type-const> <closedtype-body> |
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
+
+<expose-declaration> ::= <let-declarations> "in" <expose-declaration> |
+    "expose" <names>
 
 <module-name> ::= uname | uname "." <module-name>
 

@@ -2,6 +2,8 @@ module Data.FixBox
     ( FixBox
     , mkFixBox
     , boxFix
+    , boxesFix
+    , boxSeq
     ) where
 
 import Shapes.Import
@@ -19,9 +21,15 @@ instance Applicative m => Monoid (FixBox m) where
 mkFixBox :: (t -> WMFunction m m) -> m t -> FixBox m
 mkFixBox = MkFixBox
 
-boxFix :: MonadFix m => [FixBox m] -> MFunction m m
-boxFix boxes ma =
-    case mconcat boxes of
-        MkFixBox twmm mt -> do
-            (_, a) <- mfix $ \(~(t, _)) -> runWMFunction (twmm t) $ liftA2 (,) mt ma
-            return a
+boxFix :: MonadFix m => FixBox m -> MFunction m m
+boxFix (MkFixBox twmm mt) ma = do
+    (_, a) <- mfix $ \(~(t, _)) -> runWMFunction (twmm t) $ liftA2 (,) mt ma
+    return a
+
+boxesFix :: MonadFix m => [FixBox m] -> MFunction m m
+boxesFix boxes = boxFix $ mconcat boxes
+
+boxSeq :: Monad m => FixBox m -> MFunction m m
+boxSeq (MkFixBox twmm mt) ma = do
+    t <- mt
+    runWMFunction (twmm t) ma
