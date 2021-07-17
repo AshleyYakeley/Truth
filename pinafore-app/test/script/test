@@ -203,12 +203,12 @@ window_css = do
 ### Drawing
 window_drawing: Action UI.Window;
 window_drawing = let import Colour; import Drawing in do
-    nowref <- newClock $ secondsToDuration 1;
+    nowref <- newClock $ Seconds 1;
     tzref <- newTimeZoneRef now;
     std_window {"Drawing"} $ UI.draw {\(w,h) -> let
         size = min w h;
         in case timeToLocal %tzref %nowref of
-            MkLocalTime _ (MkTimeOfDay _ _ s) ->
+            DateAndTime _ (HourMinuteSecond _ _ s) ->
                 translate (w / 2, h / 2) $
                 scale (size, size) $
                 scale (-0.5, -0.5) $
@@ -225,12 +225,12 @@ window_drawing = let import Colour; import Drawing in do
 
 window_start : Action UI.Window;
 window_start = do
-    now <- newClock $ secondsToDuration 1;
+    now <- newClock $ Seconds 1;
     timeZone <- newTimeZoneRef now;
     let
         utcDate = {%now};
         localNow = {timeToLocal %timeZone %now};
-        today = {case %localNow of MkLocalTime day _ -> day end};
+        today = {case %localNow of DateAndTime day _ -> day end};
         in do
         std_window {"Pinafore"} $ UI.vertical
         [

@@ -488,11 +488,11 @@ baseLibEntries =
                   [ mkTypeEntry "Duration" "" $
                     MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType DurationLiteralType
                   , mkSubtypeRelationEntry "Duration" "Literal" "" []
+                  , mkValPatEntry "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $ \d ->
+                        Just (nominalDiffTimeToSeconds d, ())
                   ] <>
                   plainFormattingDefs @NominalDiffTime "Duration" "a duration" <>
                   [ mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
-                  , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
-                  , mkValEntry "durationToSeconds" "Convert duration to seconds." nominalDiffTimeToSeconds
                   , mkValEntry "dayDuration" "One day duration." nominalDay
                   , mkValEntry "addDuration" "Add durations." $ (+) @NominalDiffTime
                   , mkValEntry "subtractDuration" "Subtract durations." $ (-) @NominalDiffTime
@@ -520,16 +520,16 @@ baseLibEntries =
                 , docTreeEntry "Calendar" "" $
                   [ mkTypeEntry "Date" "" $
                     MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType DateLiteralType
-                  , mkValPatEntry "MkDate" "Construct a Date from year, month, day." fromGregorian $ \day -> let
+                  , mkValPatEntry "YearMonthDay" "Construct a `Date` from year, month, day." fromGregorian $ \day -> let
                         (y, m, d) = toGregorian day
                         in Just (y, (m, (d, ())))
+                  , mkValPatEntry "ModifiedJulianDay" "Construct a `Date` from its MJD." ModifiedJulianDay $ \day ->
+                        Just (toModifiedJulianDay day, ())
                   , mkSubtypeRelationEntry "Date" "Literal" "" []
                   ] <>
                   plainFormattingDefs @Day "Date" "a date" <>
                   unixFormattingDefs @Day "Date" "a date" <>
-                  [ mkValEntry "dateToModifiedJulian" "Convert to MJD." toModifiedJulianDay
-                  , mkValEntry "modifiedJulianToDate" "Convert from MJD." ModifiedJulianDay
-                  , mkValEntry "addDays" "Add count to days to date." addDays
+                  [ mkValEntry "addDays" "Add count to days to date." addDays
                   , mkValEntry "diffDays" "Difference of days between dates." diffDays
                   , mkValEntry "getUTCDate" "Get the current UTC date." $ fmap utctDay getCurrentTime
                   , mkValEntry "getDate" "Get the current local date." $ fmap localDay getLocalTime
@@ -537,8 +537,13 @@ baseLibEntries =
                 , docTreeEntry "Time of Day" "" $
                   [ mkTypeEntry "TimeOfDay" "" $
                     MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TimeOfDayLiteralType
-                  , mkValPatEntry "MkTimeOfDay" "Construct a TimeOfDay from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
+                  , mkValPatEntry "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
                         Just (todHour, (todMin, (todSec, ())))
+                  , mkValPatEntry
+                        "SinceMidnight"
+                        "Construct a `TimeOfDay` from duration since midnight (wrapping whole days)."
+                        (snd . timeToDaysAndTimeOfDay)
+                        (\t -> Just (daysAndTimeOfDayToTime 0 t, ()))
                   , mkSubtypeRelationEntry "TimeOfDay" "Literal" "" []
                   ] <>
                   plainFormattingDefs @TimeOfDay "TimeOfDay" "a time of day" <>
@@ -547,7 +552,7 @@ baseLibEntries =
                 , docTreeEntry "Local Time" "" $
                   [ mkTypeEntry "LocalTime" "" $
                     MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType LocalTimeLiteralType
-                  , mkValPatEntry "MkLocalTime" "Construct a LocalTime from day and time of day." LocalTime $ \LocalTime {..} ->
+                  , mkValPatEntry "DateAndTime" "Construct a `LocalTime` from day and time of day." LocalTime $ \LocalTime {..} ->
                         Just (localDay, (localTimeOfDay, ()))
                   , mkSubtypeRelationEntry "LocalTime" "Literal" "" []
                   ] <>

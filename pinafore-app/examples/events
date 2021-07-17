@@ -20,12 +20,12 @@ showEventTime et = case et of
 eventTimeDate: EventTime -> Date;
 eventTimeDate et = case et of
     EventTimeDate d -> d;
-    EventTimeTime (MkLocalTime d _) -> d
+    EventTimeTime (DateAndTime d _) -> d
     end;
 
 setEventTimeDate: Date -> Maybe EventTime -> Maybe EventTime;
 setEventTimeDate d et = Just $ case et of
-    Just (EventTimeTime (MkLocalTime _ t)) -> EventTimeTime (MkLocalTime d t);
+    Just (EventTimeTime (DateAndTime _ t)) -> EventTimeTime (DateAndTime d t);
     _ -> EventTimeDate d;
     end;
 
@@ -36,7 +36,7 @@ eventRefTimeTimeOfDay: WholeRef EventTime -> WholeRef TimeOfDay;
 eventRefTimeTimeOfDay r = let
     eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay;
     eventTimeTimeOfDay met = case met of
-        Just (EventTimeTime (MkLocalTime _ tod)) -> Just tod;
+        Just (EventTimeTime (DateAndTime _ tod)) -> Just tod;
         _ -> Nothing;
         end;
 
@@ -45,7 +45,7 @@ setEventTimeTimeOfDay mtod met = Just $ case met of
     Nothing -> Nothing;
     Just et -> Just $ case mtod of
         Nothing -> EventTimeDate $ eventTimeDate et;
-        Just tod -> EventTimeTime $ MkLocalTime (eventTimeDate et) tod;
+        Just tod -> EventTimeTime $ DateAndTime (eventTimeDate et) tod;
         end;
     end;
 in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
@@ -53,7 +53,7 @@ in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
 # for ordering
 eventTimeTime: EventTime -> LocalTime;
 eventTimeTime et = case et of
-    EventTimeDate d -> MkLocalTime d midnight;
+    EventTimeDate d -> DateAndTime d midnight;
     EventTimeTime t -> t
     end;
 
@@ -101,9 +101,9 @@ overviewRef todayref = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " 
 # Overview page
 overviewPage: (UI.Element,UI.Element);
 overviewPage = uiPage {"Overview"} $ UI.run $ do
-    now <- newClock $ secondsToDuration 60; # update every minute
+    now <- newClock $ Seconds 60; # update every minute
     tz <- newTimeZoneRef now;
-    return $ UI.label $ overviewRef {case timeToLocal %tz %now of MkLocalTime d _ -> d end};
+    return $ UI.label $ overviewRef {case timeToLocal %tz %now of DateAndTime d _ -> d end};
     end;
 
 calendarWindow: WholeRef +Event -> Action UI.Window;
