@@ -53,7 +53,7 @@ hindent: ${BINPATH}/hindent
 .PHONY: format
 
 format: ${BINPATH}/hindent
-	#for f in `find -name '*.hs' -not -path '*.stack-work/*' | grep -xvf .hindent.ignore`; do ${BINPATH}/hindent $$f || exit; done
+	#for f in `find -name '*.hs' -not -path '*.stack-work/*' | grep -v -e -- -f .hindent.ignore`; do ${BINPATH}/hindent $$f || exit; done
 
 ${BINPATH}/licensor: docker-image
 	stack $(STACKFLAGS) install licensor
@@ -68,7 +68,7 @@ out/licensing: ${BINPATH}/licensor out
 
 licensing: out/licensing
 
-${BINPATH}/pinafore: out docker-image
+${BINPATH}/pinafore ${BINPATH}/pinafore-doc &: out docker-image
 	rm -rf .stack-work/logs
 ifeq ($(nodocker),1)
 else
@@ -88,16 +88,25 @@ endif
 exe: ${BINPATH}/pinafore
 
 PACKAGENAME := pinafore
-PACKAGEVERSION := 0.3
+PACKAGEVERSION := 0.4
 PACKAGEREVISION := 1
 PACKAGEFULLNAME := $(PACKAGENAME)_$(PACKAGEVERSION)-$(PACKAGEREVISION)
 PACKAGEDIR := .build/deb/$(PACKAGEFULLNAME)
 DEBIANREL := buster
 
-.build/deb/$(PACKAGEFULLNAME).deb: ${BINPATH}/pinafore deb/copyright deb/control.m4 deb/changelog.m4
+.build/deb/$(PACKAGEFULLNAME).deb: \
+		${BINPATH}/pinafore \
+		lib/UIStuff/Selection.pinafore \
+		lib/UIStuff/Named.pinafore \
+		deb/copyright \
+		deb/control.m4 \
+		deb/changelog.m4
 	rm -rf $(PACKAGEDIR)
 	mkdir -p $(PACKAGEDIR)/usr/bin
 	cp ${BINPATH}/pinafore $(PACKAGEDIR)/usr/bin/
+	mkdir -p $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff
+	cp lib/UIStuff/Selection.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff/
+	cp lib/UIStuff/Named.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff/
 	mkdir -p $(PACKAGEDIR)/usr/share/doc/pinafore
 	cp deb/copyright $(PACKAGEDIR)/usr/share/doc/pinafore/
 	stack $(STACKFLAGS) exec -- \
@@ -131,17 +140,27 @@ out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest ou
 
 deb: out/$(PACKAGEFULLNAME).deb
 
-mkdocs/docs/library/Std.md: ${BINPATH}/pinafore
-	mkdir -p mkdocs/docs/library
-	$< --doc-library mkdocs/docs/library
+LIBMODULES := \
+    Std \
+    Colour \
+    Drawing \
+    UI \
+    Debug \
+    Debug.UI \
+	UIStuff.Selection \
+	UIStuff.Named
 
-mkdocs/generated/infix.md: ${BINPATH}/pinafore
+mkdocs/docs/library/%.md: ${BINPATH}/pinafore-doc
+	mkdir -p mkdocs/docs/library
+	$< --module $* --include lib > $@
+
+mkdocs/generated/infix.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/generated
-	$< --doc-infix > $@
+	$< --infix > $@
 
 .PHONY: docs
 
-docs: mkdocs/docs/library/Std.md mkdocs/generated/infix.md docker-image
+docs: $(foreach f,$(LIBMODULES),mkdocs/docs/library/$f.md) mkdocs/generated/infix.md docker-image
 	mkdir -p mkdocs/generated/examples
 	cp pinafore-app/examples/* mkdocs/generated/examples/
 	stack $(STACKFLAGS) exec -- pip3 install --user file://`pwd`/support/pygments-lexer/

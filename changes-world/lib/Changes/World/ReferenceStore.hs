@@ -80,7 +80,7 @@ directoryReferenceStore (MkResource (rr :: ResourceRunner tt) (MkAReference rd p
                 mitem <- rd $ FSReadItem $ undoName name i
                 case mitem of
                     Nothing -> return i
-                    Just _ -> findUndoCode name $ i + 1
+                    Just _ -> findUndoCode name $ succ i
             refRead :: Readable (ApplyStack tt IO) (UpdateReader (ReferenceStoreUpdate name ByteStringEdit))
             refRead (MkTupleUpdateReader (MkFunctionSelector (nameStr -> name)) edit) =
                 case edit of

@@ -1,6 +1,6 @@
-name: transformers-extra
-version: "0.2"
 _common: !include "../common.yaml"
+name: transformers-extra
+version: *changes_version
 <<: *author
 
 <<: *language

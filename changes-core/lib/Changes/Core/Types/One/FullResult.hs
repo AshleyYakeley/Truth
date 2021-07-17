@@ -57,6 +57,11 @@ instance (Functor f, IsUpdate update) => IsUpdate (FullResultOneUpdate f update)
     editUpdate (SuccessFullResultOneEdit edit) = MkFullResultOneUpdate $ SuccessResultOneUpdate $ editUpdate edit
     editUpdate (NewFullResultOneEdit fa) = MkFullResultOneUpdate $ NewResultOneUpdate $ fmap (\_ -> ()) fa
 
+instance (MonadOne f, FullSubjectReader (UpdateReader update)) => FullUpdate (FullResultOneUpdate f update) where
+    replaceUpdate mr writer = do
+        fsubj <- readableToSubject mr
+        writer $ MkFullResultOneUpdate $ NewResultOneUpdate $ fmap (\_ -> ()) fsubj
+
 type MaybeEdit edit = FullResultOneEdit Maybe edit
 
 type MaybeUpdate update = FullResultOneUpdate Maybe update
@@ -90,18 +95,18 @@ liftFullResultOneChangeLens (MkChangeLens g u pe) = let
             SuccessResult (Just a) -> Just $ pure a
             SuccessResult Nothing -> Nothing
             FailureResult fn -> Just $ fmap never fn
-    elPutEdit ::
+    clPutEdit ::
            forall m. MonadIO m
         => FullResultOneEdit f (UpdateEdit updateB)
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
-    elPutEdit (SuccessFullResultOneEdit eb) mr = do
+    clPutEdit (SuccessFullResultOneEdit eb) mr = do
         fme <- getComposeM $ pe [eb] $ oneReadFunctionF mr
         return $
             case getMaybeOne fme of
                 Just me -> fmap (fmap SuccessFullResultOneEdit) me
                 Nothing -> Just []
-    elPutEdit (NewFullResultOneEdit fb) mr = do
+    clPutEdit (NewFullResultOneEdit fb) mr = do
         case retrieveOne fb of
             SuccessResult b -> do
                 fma <-
@@ -118,7 +123,7 @@ liftFullResultOneChangeLens (MkChangeLens g u pe) = let
         => [FullResultOneEdit f (UpdateEdit updateB)]
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
-    clPutEdits = clPutEditsFromPutEdit elPutEdit
+    clPutEdits = clPutEditsFromPutEdit clPutEdit
     in MkChangeLens {..}
 
 -- | suitable for Results; trying to put a failure code will be rejected
@@ -221,7 +226,7 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
         -> Readable m (OneReader f (UpdateReader updateA))
         -> StateT (f r) m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
     sclPutEdits = clPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateChangeLens {..}
+    in makeStateLens @'NonLinear MkStateChangeLens {..}
 
 -- | for use in UIs where items can be deleted
 mustExistOneChangeLens ::

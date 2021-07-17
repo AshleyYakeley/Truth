@@ -14,7 +14,7 @@ import Control.Monad.Fix as I
 import Control.Monad.IO.Class as I
 import Data.Bits as I
 import Data.Bool as I
-import Data.Char as I hiding (toLower, toUpper)
+import Data.Char as I hiding (toLower, toTitle, toUpper)
 import Data.Coerce as I
 import Data.Either as I
 import Data.Eq as I
@@ -23,7 +23,7 @@ import Data.Functor.Compose as I
 import Data.Functor.Identity as I
 import Data.Int as I
 import Data.Kind as I
-import Data.List as I ((++), nub, nubBy, zip)
+import Data.List as I ((++), iterate, nub, nubBy, zip)
 import Data.List.NonEmpty as I (NonEmpty(..), last, nonEmpty)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
@@ -66,7 +66,7 @@ import Text.Show as I (Show(..))
 import Control.Concurrent.STM as I
 
 -- constraints
-import Data.Constraint as I ((:-)(..), Dict(..))
+import Data.Constraint as I ((:-)(..), Dict(..), withDict)
 
 -- mono-traversable
 import Data.Containers as I
@@ -124,7 +124,7 @@ import qualified Data.ByteString.Lazy
 import Data.Serialize as I (Serialize)
 
 -- text
-import Data.Text as I (Text)
+import Data.Text as I (Text, strip)
 import Data.Text.Encoding as I (decodeUtf8')
 import Data.Text.Encoding.Error as I (UnicodeException(..))
 
@@ -241,3 +241,14 @@ intercalate :: Monoid a => a -> [a] -> a
 intercalate _ [] = mempty
 intercalate _ [a] = a
 intercalate i (a:aa) = mconcat [a, i, intercalate i aa]
+
+startsWith :: Eq a => [a] -> [a] -> Maybe [a]
+startsWith [] s = Just s
+startsWith (p:pp) (q:qq)
+    | p == q = startsWith pp qq
+startsWith _ _ = Nothing
+
+endsWith :: Eq a => [a] -> [a] -> Maybe [a]
+endsWith e s = do
+    a <- startsWith (reverse e) (reverse s)
+    return $ reverse a

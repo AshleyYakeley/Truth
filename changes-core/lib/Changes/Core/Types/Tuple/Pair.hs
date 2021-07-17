@@ -190,8 +190,8 @@ pairCombineFloatingChangeLenses ::
        FloatingChangeLens updateA updateB1
     -> FloatingChangeLens updateA updateB2
     -> FloatingChangeLens updateA (PairUpdate updateB1 updateB2)
-pairCombineFloatingChangeLenses (MkFloatingChangeLens NoFloatInit rlens1) (MkFloatingChangeLens NoFloatInit rlens2) =
-    changeLensToFloating $ pairCombineChangeLenses (rlens1 ()) (rlens2 ())
+pairCombineFloatingChangeLenses (MkFloatingChangeLens (NoFloatInit r1) rlens1) (MkFloatingChangeLens (NoFloatInit r2) rlens2) =
+    changeLensToFloating $ pairCombineChangeLenses (rlens1 r1) (rlens2 r2)
 pairCombineFloatingChangeLenses (MkFloatingChangeLens (init1 :: FloatInit (UpdateReader updateA) r1) rlens1) (MkFloatingChangeLens (init2 :: FloatInit (UpdateReader updateA) r2) rlens2) = let
     init12 :: FloatInit (UpdateReader updateA) (r1, r2)
     init12 =

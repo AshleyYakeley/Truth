@@ -64,20 +64,22 @@ deathdate = property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb";
 married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 
 # UI
+rec
 ui_people : FiniteSetRef Person -> UI.Element;
 ui_people pp = UI.run $ do
     selectedperson <- newMemWhole;
+    pplist <- getSetList noOrder pp;
     return $ UI.vertical
     [
         (False, UI.button {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end}),
         (False, UI.button {"View Person"} {get selectedperson >>= window_person}),
         (False, UI.button {"Remove Person"} {get selectedperson >>= \p -> pp -= p}),
-        (True, UI.listTable [({"Name"},\p -> name !$ {p})] noOrder pp window_person (Just selectedperson))
+        (True, UI.listTable [({"Name"},\p -> name !$ {p})] pplist window_person (Just selectedperson))
     ];
     end;
 
 peopleByName : WholeRef +[(Person,Text)];
-peopleByName = members (mapRefOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ people;
+peopleByName = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
 
 ui_person : WholeRef Person -> UI.Element;
 ui_person p = UI.vertical
@@ -120,6 +122,7 @@ window_person p = std_window (name !$ {p}) (ui_person {p});
 
 window_people : Action UI.Window;
 window_people = std_window {"People"} (ui_people people);
+end;
 
 ### Calculator
 
@@ -197,16 +200,37 @@ window_css = do
         ];
     end;
 
+### Drawing
+window_drawing: Action UI.Window;
+window_drawing = let import Colour; import Drawing in do
+    nowref <- newClock $ Seconds 1;
+    tzref <- newTimeZoneRef now;
+    std_window {"Drawing"} $ UI.draw {\(w,h) -> let
+        size = min w h;
+        in case timeToLocal %tzref %nowref of
+            DateAndTime _ (HourMinuteSecond _ _ s) ->
+                translate (w / 2, h / 2) $
+                scale (size, size) $
+                scale (-0.5, -0.5) $
+                rotate (s ~* pi ~/ 30) $
+                operatorOver $
+                source purple $
+                lineCapSquare $
+                lineWidth 0.01 $
+                stroke [moveTo (0, 0), lineTo (0, 1)];
+            end};
+    end;
+
 ### Start Window
 
 window_start : Action UI.Window;
 window_start = do
-    now <- newClock $ secondsToDuration 1;
+    now <- newClock $ Seconds 1;
     timeZone <- newTimeZoneRef now;
     let
         utcDate = {%now};
         localNow = {timeToLocal %timeZone %now};
-        today = {case %localNow of MkLocalTime day _ -> day end};
+        today = {case %localNow of DateAndTime day _ -> day end};
         in do
         std_window {"Pinafore"} $ UI.vertical
         [
@@ -221,6 +245,7 @@ window_start = do
             (False, UI.button {"Files"} {window_files}),
             (False, UI.button {"Constant"} {window_constant}),
             (False, UI.button {"CSS"} {window_css}),
+            (False, UI.button {"Drawing"} {window_drawing}),
             (False, UI.button {"Disabled"} unknown),
             (True, UI.blank)
         ];

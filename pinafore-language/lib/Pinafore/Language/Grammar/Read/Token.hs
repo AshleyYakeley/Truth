@@ -1,5 +1,6 @@
 module Pinafore.Language.Grammar.Read.Token
-    ( Token(..)
+    ( Comment(..)
+    , Token(..)
     , parseTokens
     ) where
 
@@ -11,7 +12,16 @@ import Shapes.Numeric
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String
 
+data Comment
+    = BlockComment String
+    | LineComment String
+
+commentWrite :: Comment -> String
+commentWrite (BlockComment t) = "{#|" <> t <> "#}"
+commentWrite (LineComment t) = "#|" <> t
+
 data Token t where
+    TokComment :: Token Comment
     TokSemicolon :: Token ()
     TokComma :: Token ()
     TokTypeJudge :: Token ()
@@ -38,10 +48,10 @@ data Token t where
     TokSubtype :: Token ()
     TokClosedType :: Token ()
     TokDynamicType :: Token ()
-    TokExport :: Token ()
+    TokExpose :: Token ()
     TokImport :: Token ()
     TokUName :: Token Name
-    TokQUName :: Token (ModuleName, Name)
+    TokQUName :: Token (NonEmpty Name, Name)
     TokLName :: Token Name
     TokQLName :: Token (ModuleName, Name)
     TokUnderscore :: Token ()
@@ -56,6 +66,7 @@ data Token t where
     TokNumber :: Token Number
 
 instance TestEquality Token where
+    testEquality TokComment TokComment = Just Refl
     testEquality TokSemicolon TokSemicolon = Just Refl
     testEquality TokComma TokComma = Just Refl
     testEquality TokTypeJudge TokTypeJudge = Just Refl
@@ -82,7 +93,7 @@ instance TestEquality Token where
     testEquality TokSubtype TokSubtype = Just Refl
     testEquality TokClosedType TokClosedType = Just Refl
     testEquality TokDynamicType TokDynamicType = Just Refl
-    testEquality TokExport TokExport = Just Refl
+    testEquality TokExpose TokExpose = Just Refl
     testEquality TokImport TokImport = Just Refl
     testEquality TokUName TokUName = Just Refl
     testEquality TokQUName TokQUName = Just Refl
@@ -101,6 +112,7 @@ instance TestEquality Token where
     testEquality _ _ = Nothing
 
 instance Show (Token t) where
+    show TokComment = show ("comment" :: String)
     show TokSemicolon = show (";" :: String)
     show TokComma = show ("," :: String)
     show TokTypeJudge = show (":" :: String)
@@ -127,7 +139,7 @@ instance Show (Token t) where
     show TokSubtype = show ("subtype" :: String)
     show TokClosedType = show ("closedtype" :: String)
     show TokDynamicType = show ("dynamictype" :: String)
-    show TokExport = show ("export" :: String)
+    show TokExpose = show ("expose" :: String)
     show TokImport = show ("import" :: String)
     show TokUName = "uname"
     show TokQUName = "qualified uname"
@@ -151,41 +163,41 @@ readChar :: Char -> Parser ()
 readChar c = void $ char c
 
 readWS :: Parser ()
-readWS = do
-    spaces
-    void $
-        optional
-            (do
-                 comment
-                 readWS)
-    return ()
-    <?> "white space"
-  where
-    isLineBreak :: Char -> Bool
-    isLineBreak '\n' = True
-    isLineBreak '\r' = True
-    isLineBreak _ = False
+readWS = do spaces <?> "white space"
+
+readBlockComment :: Parser Comment
+readBlockComment = let
     blockCommentOpen :: Parser ()
     blockCommentOpen =
         try $ do
             readChar '{'
             readChar '#'
+    blockCommentInterior :: Parser String
+    blockCommentInterior = (fmap commentWrite readBlockComment) <|> (endOfLine >> return "") <|> fmap pure anyToken
     blockCommentClose :: Parser ()
     blockCommentClose =
         try $ do
             readChar '#'
             readChar '}'
-    lineComment :: Parser ()
-    lineComment = do
-        readChar '#'
-        void $ many (satisfy (\c -> not (isLineBreak c)))
-        void endOfLine
-    blockComment :: Parser ()
-    blockComment = do
-        blockCommentOpen
-        void $ manyTill (blockComment <|> void endOfLine <|> void anyToken) blockCommentClose
-    comment :: Parser ()
-    comment = blockComment <|> lineComment
+    in do
+           blockCommentOpen
+           s <- manyTill blockCommentInterior blockCommentClose
+           return $ BlockComment $ mconcat s
+
+readLineComment :: Parser Comment
+readLineComment = let
+    isLineBreak :: Char -> Bool
+    isLineBreak '\n' = True
+    isLineBreak '\r' = True
+    isLineBreak _ = False
+    in do
+           readChar '#'
+           s <- many (satisfy (\c -> not (isLineBreak c)))
+           void endOfLine
+           return $ LineComment s
+
+readComment :: Parser Comment
+readComment = readBlockComment <|> readLineComment
 
 readEscapedChar :: Parser Char
 readEscapedChar = do
@@ -263,7 +275,7 @@ checkKeyword "opentype" = return $ MkAnyValue TokOpenType ()
 checkKeyword "subtype" = return $ MkAnyValue TokSubtype ()
 checkKeyword "closedtype" = return $ MkAnyValue TokClosedType ()
 checkKeyword "dynamictype" = return $ MkAnyValue TokDynamicType ()
-checkKeyword "export" = return $ MkAnyValue TokExport ()
+checkKeyword "expose" = return $ MkAnyValue TokExpose ()
 checkKeyword "import" = return $ MkAnyValue TokImport ()
 checkKeyword _ = Nothing
 
@@ -283,11 +295,10 @@ readTextToken = do
             case checkKeyword name of
                 Just _ -> empty
                 Nothing ->
-                    return $ let
-                        mname = MkModuleName qualnames
-                        in if u
-                               then MkAnyValue TokQUName (mname, MkName $ pack name)
-                               else MkAnyValue TokQLName (mname, MkName $ pack name)
+                    return $
+                    if u
+                        then MkAnyValue TokQUName (qualnames, MkName $ pack name)
+                        else MkAnyValue TokQLName (MkModuleName qualnames, MkName $ pack name)
 
 toHexDigit :: Char -> Maybe Word8
 toHexDigit c =
@@ -348,7 +359,8 @@ readToken :: Parser ((SourcePos, AnyValue Token))
 readToken = do
     pos <- getPosition
     t <-
-        readCharTok ';' TokSemicolon <|> readCharTok ',' TokComma <|> readCharTok '(' TokOpenParen <|>
+        fmap (MkAnyValue TokComment) readComment <|> readCharTok ';' TokSemicolon <|> readCharTok ',' TokComma <|>
+        readCharTok '(' TokOpenParen <|>
         readCharTok ')' TokCloseParen <|>
         readCharTok '[' TokOpenBracket <|>
         readCharTok ']' TokCloseBracket <|>

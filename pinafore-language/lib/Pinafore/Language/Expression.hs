@@ -1,15 +1,13 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Expression
-    ( module Pinafore.Language.Expression
-    , PinaforeInterpreter
-    ) where
+module Pinafore.Language.Expression where
 
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Pinafore.Markdown
 import Shapes
 
 type QExpr = TSSealedExpression PinaforeTypeSystem
@@ -118,9 +116,9 @@ qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
     qApplyAllExpr qConsList [e, ee']
 
-type QBindings = Bindings PinaforeTypeSystem
+type QBinding = Binding PinaforeTypeSystem
 
-qBindExpr :: Name -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBindings
+qBindExpr :: Name -> Markdown -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBinding
 qBindExpr = tsSingleBinding @PinaforeTypeSystem
 
 qSubsumeExpr :: AnyW (PinaforeType 'Positive) -> QExpr -> PinaforeSourceInterpreter QExpr
@@ -129,8 +127,11 @@ qSubsumeExpr = tsSubsumeExpression @PinaforeTypeSystem
 qLetExpr :: Name -> QExpr -> QExpr -> PinaforeSourceInterpreter QExpr
 qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
 
-qUncheckedBindingsComponentLetExpr :: QBindings -> PinaforeSourceInterpreter (Map Name QExpr)
-qUncheckedBindingsComponentLetExpr = tsUncheckedComponentLet @PinaforeTypeSystem
+qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> PinaforeSourceInterpreter (Map Name (Markdown, QExpr))
+qUncheckedBindingsRecursiveLetExpr = tsUncheckedRecursiveLet @PinaforeTypeSystem
+
+qBindingSequentialLetExpr :: QBinding -> PinaforeSourceInterpreter (Map Name (Markdown, QExpr))
+qBindingSequentialLetExpr = tsSequentialLet @PinaforeTypeSystem
 
 qEvalExpr ::
        forall m. MonadThrow ExpressionError m
@@ -142,4 +143,11 @@ typedAnyToPinaforeVal ::
        forall t. FromPinaforeType t
     => QValue
     -> PinaforeSourceInterpreter t
-typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem fromJMShimWit
+typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem
+
+-- | for debugging
+rigidTypedAnyToPinaforeVal ::
+       forall t. FromPinaforeType t
+    => QValue
+    -> PinaforeSourceInterpreter t
+rigidTypedAnyToPinaforeVal = tsUnifyRigidValue @PinaforeTypeSystem

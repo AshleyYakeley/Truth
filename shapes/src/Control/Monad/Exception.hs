@@ -71,6 +71,14 @@ instance CE.Exception e => MonadCatch e IO where
 instance (MonadTransSemiTunnel t, MonadCatch e m, Monad (t m)) => MonadCatch e (t m) where
     catch tma handler = semitunnel $ \unlift -> catch (unlift tma) $ \e -> unlift $ handler e
 
+instance {-# OVERLAPPING #-} Monad m => MonadCatch e (ExceptT e m) where
+    catch (ExceptT mea) handler =
+        ExceptT $ do
+            ea <- mea
+            case ea of
+                Left e -> runExceptT $ handler e
+                Right a -> return $ Right a
+
 instance MonadCatch e (Result e) where
     catch (SuccessResult a) _ = SuccessResult a
     catch (FailureResult e) handler = handler e

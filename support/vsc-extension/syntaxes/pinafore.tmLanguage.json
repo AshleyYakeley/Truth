@@ -48,7 +48,7 @@
 			"patterns": [
 				{
 					"name": "keyword.control.pinafore",
-					"match": "\\b(rec|if|then|else|let|import|export|in|do|case|of|end)\\b"
+					"match": "\\b(rec|if|then|else|let|import|expose|in|do|case|of|end)\\b"
 				},
 				{
 					"name": "keyword.declaration.pinafore",
@@ -64,7 +64,7 @@
 			"patterns": [
 				{
 					"name": "storage.type.predefined.pinafore",
-					"match": "\\b(Any|None|Literal|Text|Number|Rational|Integer|Boolean|Ordering|Time|Duration|Date|TimeOfDay|LocalTime|Entity|DynamicEntity|Maybe|Either|RefOrder|Action|WholeRef|SetRef|FiniteSetRef|Element|Window|MenuItem)\\b"
+					"match": "\\b(Any|None|Literal|Text|Number|Rational|Integer|Boolean|Ordering|Time|Duration|Date|TimeOfDay|LocalTime|Entity|DynamicEntity|Maybe|Either|RefOrder|Action|WholeRef|SetRef|FiniteSetRef|ListRef|Element|Window|MenuItem)\\b"
 				}
 			]
 		},

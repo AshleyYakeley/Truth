@@ -2,5 +2,5 @@ module Shapes.Unsafe
     ( module I
     ) where
 
-import Unsafe.Coerce as I (unsafeCoerce)
+import Unsafe.IO as I
 import Unsafe.Type as I

@@ -18,11 +18,17 @@ import Shapes hiding (try)
 data InteractiveCommand
     = LetInteractiveCommand (MFunction PinaforeInterpreter PinaforeInterpreter)
     | ExpressionInteractiveCommand (PinaforeInterpreter QExpr)
+    | ShowDocInteractiveCommand ReferenceName
     | ShowTypeInteractiveCommand Bool
                                  (PinaforeInterpreter QExpr)
     | forall polarity. SimplifyTypeInteractiveCommand (PolarityType polarity)
                                                       (PinaforeInterpreter (AnyW (PinaforeType polarity)))
     | ErrorInteractiveCommand Text
+
+showDocInteractiveCommand :: Parser InteractiveCommand
+showDocInteractiveCommand = do
+    name <- readReferenceName
+    return $ ShowDocInteractiveCommand name
 
 showTypeInteractiveCommand :: Bool -> Parser InteractiveCommand
 showTypeInteractiveCommand showinfo = do
@@ -45,6 +51,7 @@ simplifyTypeInteractiveCommand :: Parser InteractiveCommand
 simplifyTypeInteractiveCommand = readPolarity simplifyPolarTypeInteractiveCommand
 
 readSpecialCommand :: Text -> Parser InteractiveCommand
+readSpecialCommand "doc" = showDocInteractiveCommand
 readSpecialCommand "t" = showTypeInteractiveCommand False
 readSpecialCommand "type" = showTypeInteractiveCommand False
 readSpecialCommand "info" = showTypeInteractiveCommand True

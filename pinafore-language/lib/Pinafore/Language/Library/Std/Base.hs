@@ -7,12 +7,15 @@ module Pinafore.Language.Library.Std.Base
 
 import Changes.Core
 import Changes.World.Clock
+import qualified Data.Text
+import qualified Data.Text.ICU
 import Data.Time
 import Data.Time.Clock.System
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
+import Pinafore.Language.ExprShow
 import Pinafore.Language.If
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
@@ -23,6 +26,7 @@ import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
+import Pinafore.Markdown
 import Shapes
 import Shapes.Numeric
 
@@ -79,15 +83,14 @@ funcShimWit swa swb =
             mapPosShimWit (applyCoPolyShim (ccontramap conva) convb) $
             singleDolanShimWit $
             mkShimWit $
-            GroundDolanSingularType FuncPinaforeGroundType $
-            ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+            GroundDolanSingularType funcGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
 actionShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
 actionShimWit swa =
     unPosShimWit swa $ \ta conva ->
         mapPosShimWit (cfmap conva) $
         singleDolanShimWit $
-        mkShimWit $ GroundDolanSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+        mkShimWit $ GroundDolanSingularType actionGroundType $ ConsDolanArguments ta NilDolanArguments
 
 getTimeMS :: IO Integer
 getTimeMS = do
@@ -119,11 +122,8 @@ newClock duration = do
 
 newTimeZoneRef :: PinaforeImmutableWholeRef UTCTime -> PinaforeAction (PinaforeImmutableWholeRef Int)
 newTimeZoneRef now = do
-    rc <- pinaforeResourceContext
     ref <-
-        liftLifeCycle $
-        eaFloatMapReadOnly
-            rc
+        pinaforeFloatMapReadOnly
             (floatLift (\mr ReadWhole -> fmap (fromKnow zeroTime) $ mr ReadWhole) liftROWChangeLens clockTimeZoneLens) $
         immutableRefToReadOnlyRef now
     return $ fmap timeZoneMinutes $ MkPinaforeImmutableWholeRef ref
@@ -151,10 +151,11 @@ plainFormattingDefs ::
     -> Text
     -> [DocTreeEntry BindDoc]
 plainFormattingDefs uname lname =
-    [ mkValEntry (MkName $ "parse" <> uname) ("Parse text as " <> lname <> ". Inverse of `toText`.") $ parseLiteral @t
+    [ mkValEntry (MkName $ "parse" <> uname) ("Parse text as " <> plainMarkdown lname <> ". Inverse of `toText`.") $
+      parseLiteral @t
     , mkValEntry
           (MkName $ "interpret" <> uname <> "AsText")
-          ("Interpret " <> lname <> " reference as text, interpreting deleted values as empty text.") $
+          ("Interpret " <> plainMarkdown lname <> " reference as text, interpreting deleted values as empty text.") $
       interpretAsText @t
     ]
 
@@ -195,15 +196,15 @@ unixFormattingDefs ::
 unixFormattingDefs uname lname =
     [ mkValEntry
           (MkName $ "unixFormat" <> uname)
-          ("Format " <> lname <> " as text, using a UNIX-style formatting string.") $
+          ("Format " <> plainMarkdown lname <> " as text, using a UNIX-style formatting string.") $
       unixFormat @t
     , mkValEntry
           (MkName $ "unixParse" <> uname)
-          ("Parse text as " <> lname <> ", using a UNIX-style formatting string.") $
+          ("Parse text as " <> plainMarkdown lname <> ", using a UNIX-style formatting string.") $
       unixParse @t
     , mkValEntry
           (MkName $ "unixInterpret" <> uname <> "AsText")
-          ("Interpret " <> lname <> " reference as text, interpreting deleted values as empty text.") $
+          ("Interpret " <> plainMarkdown lname <> " reference as text, interpreting deleted values as empty text.") $
       unixInterpretAsText @t
     ]
 
@@ -226,6 +227,18 @@ literalSubtypeConversionEntry ta tb conv =
         (EntityPinaforeGroundType NilListType (LiteralEntityGroundType ta))
         (EntityPinaforeGroundType NilListType (LiteralEntityGroundType tb)) $
     nilSubtypeConversion conv
+
+lesser :: (A -> A -> Ordering) -> A -> A -> A
+lesser f a b =
+    case f a b of
+        GT -> b
+        _ -> a
+
+greater :: (A -> A -> Ordering) -> A -> A -> A
+greater f a b =
+    case f a b of
+        GT -> a
+        _ -> b
 
 baseLibEntries :: [DocTreeEntry BindDoc]
 baseLibEntries =
@@ -292,7 +305,12 @@ baseLibEntries =
                 , mkValEntry "le" "Less than or equal to." $ (/=) GT
                 , mkValEntry "gt" "Greater than." $ (==) GT
                 , mkValEntry "ge" "Greater than or equal to." $ (/=) LT
-                , mkValEntry "alphabetical" "Alphabetical order." $ compare @Text
+                , mkValEntry "lesser" "The lesser of two weevils." lesser
+                , mkValEntry "greater" "The greater of two weevils." greater
+                , mkValEntry "alphabetical" "Alphabetical case-insensitive order, per Unicode normalisation." $
+                  Data.Text.ICU.compare [Data.Text.ICU.CompareIgnoreCase]
+                , mkValEntry "casedAlphabetical" "Alphabetical case-sensitive order, per Unicode normalisation." $
+                  Data.Text.ICU.compare []
                 , mkValEntry "numerical" "Numercal order." $ compare @Number
                 , mkValEntry "chronological" "Chronological order." $ compare @UTCTime
                 , mkValEntry "durational" "Durational order." $ compare @NominalDiffTime
@@ -302,6 +320,7 @@ baseLibEntries =
                 , mkValEntry "noOrder" "No order, everything EQ." $ noOrder @TopType
                 , mkValEntry "orders" "Join orders by priority." $ concatOrders @A
                 , mkValEntry "reverse" "Reverse an order." $ reverseOrder @A
+                , mkValEntry "sort" "Sort by an order." (sortBy :: (A -> A -> Ordering) -> [A] -> [A])
                 ]
           , docTreeEntry
                 "Text"
@@ -316,125 +335,161 @@ baseLibEntries =
                       "`textSection start len text` is the section of `text` beginning at `start` of length `len`." $ \start len (text :: Text) ->
                       take len $ drop start text
                 , mkValEntry "textConcat" "Concatenate texts." $ mconcat @Text
+                , mkValEntry "toUpperCase" "" Data.Text.toUpper
+                , mkValEntry "toLowerCase" "" Data.Text.toLower
+                , mkValEntry "toTitleCase" "" Data.Text.toTitle
                 ]
-          , docTreeEntry
-                "Numeric"
-                ""
-                [ mkValEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
-                , mkValEntry "~/=" "Numeric non-equality." $ (/=) @Number
-                , mkValEntry "<" "Numeric strictly less." $ (<) @Number
-                , mkValEntry "<=" "Numeric less or equal." $ (<=) @Number
-                , mkValEntry ">" "Numeric strictly greater." $ (>) @Number
-                , mkValEntry ">=" "Numeric greater or equal." $ (>=) @Number
-                , docTreeEntry "Integer" "" $
-                  [ mkTypeEntry "Integer" "" $
-                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType IntegerLiteralType
-                  , mkSubtypeRelationEntry "Integer" "Rational" "" $
-                    pure $
-                    literalSubtypeConversionEntry IntegerLiteralType RationalLiteralType $
-                    functionToShim "Integer to Rational" integerToSafeRational
-                  ] <>
-                  plainFormattingDefs @Integer "Integer" "an integer" <>
-                  [ mkValEntry "+" "Add." $ (+) @Integer
-                  , mkValEntry "-" "Subtract." $ (-) @Integer
-                  , mkValEntry "*" "Multiply." $ (*) @Integer
-                  , mkValEntry "negate" "Negate." $ negate @Integer
-                  , mkValEntry "abs" "Absolute value." $ abs @Integer
-                  , mkValEntry "signum" "Sign." $ signum @Integer
-                  , mkValEntry "mod" "Modulus, leftover from `div`" $ mod' @Integer
-                  , mkValEntry "even" "Is even?" $ even @Integer
-                  , mkValEntry "odd" "Is odd?" $ odd @Integer
-                  , mkValEntry "gcd" "Greatest common divisor." $ gcd @Integer
-                  , mkValEntry "lcm" "Least common multiple." $ lcm @Integer
-                  , mkValEntry "^" "Raise to non-negative power." $ (^) @Integer @Integer
-                  , mkValEntry "sum" "Sum." $ sum @[] @Integer
-                  , mkValEntry "product" "Product." $ product @[] @Integer
-                  ]
-                , docTreeEntry "Rational" "" $
-                  [ mkTypeEntry "Rational" "" $
-                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType RationalLiteralType
-                  , mkSubtypeRelationEntry "Rational" "Number" "" $
-                    pure $
-                    literalSubtypeConversionEntry RationalLiteralType NumberLiteralType $
-                    functionToShim "Rational to Number" safeRationalToNumber
-                  ] <>
-                  plainFormattingDefs @SafeRational "Rational" "a rational" <>
-                  [ mkValEntry ".+" "Add." $ (+) @SafeRational
-                  , mkValEntry ".-" "Subtract." $ (-) @SafeRational
-                  , mkValEntry ".*" "Multiply." $ (*) @SafeRational
-                  , mkValEntry "/" "Divide." $ (/) @SafeRational
-                  , mkValEntry "negateR" "Negate." $ negate @SafeRational
-                  , mkValEntry "recip" "Reciprocal." $ recip @SafeRational
-                  , mkValEntry "absR" "Absolute value." $ abs @SafeRational
-                  , mkValEntry "signumR" "Sign." $ signum @SafeRational
-                  , mkValEntry "modR" "Modulus, leftover from `div`" $ mod' @SafeRational
-                  , mkValEntry "^^" "Raise to Integer power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
-                  , mkValEntry "sumR" "Sum." $ sum @[] @SafeRational
-                  , mkValEntry "meanR" "Mean." $ \(vv :: [SafeRational]) -> sum vv / toSafeRational (length vv)
-                  , mkValEntry "productR" "Product." $ product @[] @SafeRational
-                  ]
-                , docTreeEntry "Number" "" $
-                  [mkSubtypeRelationEntry "Number" "Literal" "" []] <>
-                  plainFormattingDefs @Number "Number" "a number" <>
-                  [ mkTypeEntry "Number" "" $
-                    MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType NumberLiteralType
-                  , mkValEntry "~+" "Add." $ (+) @Number
-                  , mkValEntry "~-" "Subtract." $ (-) @Number
-                  , mkValEntry "~*" "Multiply." $ (*) @Number
-                  , mkValEntry "~/" "Divide." $ (/) @Number
-                  , mkValEntry "negateN" "Negate." $ negate @Number
-                  , mkValEntry "recipN" "Reciprocal." $ recip @Number
-                  , mkValEntry "pi" "Half the radians in a circle." $ pi @Number
-                  , mkValEntry "exp" "Exponent" $ exp @Number
-                  , mkValEntry "log" "Natural logarithm" $ log @Number
-                  , mkValEntry "sqrt" "Square root." $ sqrt @Number
-                  , mkValEntry "**" "Raise to power." $ (**) @Number
-                  , mkValEntry "logBase" "" $ logBase @Number
-                  , mkValEntry "sin" "Sine of an angle in radians." $ sin @Number
-                  , mkValEntry "cos" "Cosine of an angle in radians." $ cos @Number
-                  , mkValEntry "tan" "Tangent of an angle in radians." $ tan @Number
-                  , mkValEntry "asin" "Radian angle of a sine." $ asin @Number
-                  , mkValEntry "acos" "Radian angle of a cosine." $ acos @Number
-                  , mkValEntry "atan" "Radian angle of a tangent." $ atan @Number
-                  , mkValEntry "sinh" "Hyperbolic sine." $ sinh @Number
-                  , mkValEntry "cosh" "Hyperbolic cosine." $ cosh @Number
-                  , mkValEntry "tanh" "Hyperbolic tangent." $ tanh @Number
-                  , mkValEntry "asinh" "Inverse hyperbolic sine." $ asinh @Number
-                  , mkValEntry "acosh" "Inverse hyperbolic cosine." $ acosh @Number
-                  , mkValEntry "atanh" "Inverse hyperbolic tangent." $ atanh @Number
-                  , mkValEntry "nabs" "Absolute value." $ abs @Number
-                  , mkValEntry "signumN" "Sign. Note this will be the same exact or inexact as the number." $
-                    signum @Number
-                  , mkValEntry "floor" "Integer towards negative infinity." (floor :: Number -> Integer)
-                  , mkValEntry "ceiling" "Integer towards positive infinity." (ceiling :: Number -> Integer)
-                  , mkValEntry "round" "Closest Integer." (round :: Number -> Integer)
-                  , mkValEntry "inexact" "Convert a number to inexact." numberToDouble
-                  , mkValEntry
-                        "approximate"
-                        "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`."
-                        approximate
-                  , mkValEntry
-                        "div"
-                        "Division to Integer, towards negative infinity."
-                        (div' :: Number -> Number -> Integer)
-                  , mkValEntry "modN" "Modulus, leftover from `div`" $ mod' @Number
-                  , mkValEntry "isNaN" "Is not a number?" numberIsNaN
-                  , mkValEntry "isInfinite" "Is infinite?" numberIsInfinite
-                  , mkValEntry "isNegativeZero" "Is negative zero?" numberIsNegativeZero
-                  , mkValEntry "isExact" "Is exact?" numberIsExact
-                  , mkValEntry "sumN" "Sum." $ sum @[] @Number
-                  , mkValEntry "meanN" "Mean." $ \(vv :: [Number]) -> sum vv / (ExactNumber $ toRational $ length vv)
-                  , mkValEntry "productN" "Product." $ product @[] @Number
-                  , mkValEntry
-                        "numberCheckSafeRational"
-                        "Get the exact value of a Number, if it is one."
-                        numberCheckSafeRational
-                  , mkValEntry
-                        "checkExactInteger"
-                        "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
-                        numberCheckSafeRational n >>= safeRationalCheckInteger
-                  ]
-                ]
+          , let
+                arithList :: (Num a, Ord a) => a -> a -> Maybe a -> [a]
+                arithList step a mb = let
+                    cond =
+                        case mb of
+                            Nothing -> \_ -> True
+                            Just b ->
+                                case compare step 0 of
+                                    GT -> \x -> x <= b
+                                    LT -> \x -> x >= b
+                                    EQ -> \_ -> True
+                    in takeWhile cond $ iterate (+ step) a
+                range :: (Num a, Ord a) => a -> a -> [a]
+                range a b = arithList 1 a $ Just b
+                in docTreeEntry
+                       "Numeric"
+                       ""
+                       [ mkValEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
+                       , mkValEntry "~/=" "Numeric non-equality." $ (/=) @Number
+                       , mkValEntry "<" "Numeric strictly less." $ (<) @Number
+                       , mkValEntry "<=" "Numeric less or equal." $ (<=) @Number
+                       , mkValEntry ">" "Numeric strictly greater." $ (>) @Number
+                       , mkValEntry ">=" "Numeric greater or equal." $ (>=) @Number
+                       , docTreeEntry "Integer" "" $
+                         [ mkTypeEntry "Integer" "" $
+                           MkBoundType $
+                           EntityPinaforeGroundType NilListType $ LiteralEntityGroundType IntegerLiteralType
+                         , mkSubtypeRelationEntry "Integer" "Rational" "" $
+                           pure $
+                           literalSubtypeConversionEntry IntegerLiteralType RationalLiteralType $
+                           functionToShim "Integer to Rational" integerToSafeRational
+                         ] <>
+                         plainFormattingDefs @Integer "Integer" "an integer" <>
+                         [ mkValEntry "min" "Lesser of two Integers" $ min @Integer
+                         , mkValEntry "max" "Greater of two Integers" $ max @Integer
+                         , mkValEntry "+" "Add." $ (+) @Integer
+                         , mkValEntry "-" "Subtract." $ (-) @Integer
+                         , mkValEntry "*" "Multiply." $ (*) @Integer
+                         , mkValEntry "negate" "Negate." $ negate @Integer
+                         , mkValEntry "abs" "Absolute value." $ abs @Integer
+                         , mkValEntry "signum" "Sign." $ signum @Integer
+                         , mkValEntry "mod" "Modulus, leftover from `div`" $ mod' @Integer
+                         , mkValEntry "even" "Is even?" $ even @Integer
+                         , mkValEntry "odd" "Is odd?" $ odd @Integer
+                         , mkValEntry "gcd" "Greatest common divisor." $ gcd @Integer
+                         , mkValEntry "lcm" "Least common multiple." $ lcm @Integer
+                         , mkValEntry "^" "Raise to non-negative power." $ (^) @Integer @Integer
+                         , mkValEntry "sum" "Sum." $ sum @[] @Integer
+                         , mkValEntry "product" "Product." $ product @[] @Integer
+                         , mkValEntry
+                               "range"
+                               "`range a b` is an arithmetic sequence starting from `a`, with all numbers `<= b`. Step is +1." $
+                           range @Integer
+                         , mkValEntry
+                               "arithList"
+                               "`arithList step a (Just b)` is an arithmetic sequence starting from `a`, with all numbers `<= b` (for positive step) or `>= b` (for negative step).\n\n\
+                                \`arithList step a Nothing` is an infinite arithmetic sequence starting from `a`." $
+                           arithList @Integer
+                         ]
+                       , docTreeEntry "Rational" "" $
+                         [ mkTypeEntry "Rational" "" $
+                           MkBoundType $
+                           EntityPinaforeGroundType NilListType $ LiteralEntityGroundType RationalLiteralType
+                         , mkSubtypeRelationEntry "Rational" "Number" "" $
+                           pure $
+                           literalSubtypeConversionEntry RationalLiteralType NumberLiteralType $
+                           functionToShim "Rational to Number" safeRationalToNumber
+                         ] <>
+                         plainFormattingDefs @SafeRational "Rational" "a rational" <>
+                         [ mkValEntry "minR" "Lesser of two Rationals" $ min @SafeRational
+                         , mkValEntry "maxR" "Greater of two Rationals" $ max @SafeRational
+                         , mkValEntry ".+" "Add." $ (+) @SafeRational
+                         , mkValEntry ".-" "Subtract." $ (-) @SafeRational
+                         , mkValEntry ".*" "Multiply." $ (*) @SafeRational
+                         , mkValEntry "/" "Divide." $ (/) @SafeRational
+                         , mkValEntry "negateR" "Negate." $ negate @SafeRational
+                         , mkValEntry "recip" "Reciprocal." $ recip @SafeRational
+                         , mkValEntry "absR" "Absolute value." $ abs @SafeRational
+                         , mkValEntry "signumR" "Sign." $ signum @SafeRational
+                         , mkValEntry "modR" "Modulus, leftover from `div`" $ mod' @SafeRational
+                         , mkValEntry "^^" "Raise to Integer power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
+                         , mkValEntry "sumR" "Sum." $ sum @[] @SafeRational
+                         , mkValEntry "meanR" "Mean." $ \(vv :: [SafeRational]) -> sum vv / toSafeRational (length vv)
+                         , mkValEntry "productR" "Product." $ product @[] @SafeRational
+                         ]
+                       , docTreeEntry "Number" "" $
+                         [mkSubtypeRelationEntry "Number" "Literal" "" []] <>
+                         plainFormattingDefs @Number "Number" "a number" <>
+                         [ mkTypeEntry "Number" "" $
+                           MkBoundType $
+                           EntityPinaforeGroundType NilListType $ LiteralEntityGroundType NumberLiteralType
+                         , mkValEntry "minN" "Lesser of two Numbers" $ min @Number
+                         , mkValEntry "maxN" "Greater of two Numbers" $ max @Number
+                         , mkValEntry "~+" "Add." $ (+) @Number
+                         , mkValEntry "~-" "Subtract." $ (-) @Number
+                         , mkValEntry "~*" "Multiply." $ (*) @Number
+                         , mkValEntry "~/" "Divide." $ (/) @Number
+                         , mkValEntry "negateN" "Negate." $ negate @Number
+                         , mkValEntry "recipN" "Reciprocal." $ recip @Number
+                         , mkValEntry "pi" "Half the radians in a circle." $ pi @Number
+                         , mkValEntry "exp" "Exponent" $ exp @Number
+                         , mkValEntry "log" "Natural logarithm" $ log @Number
+                         , mkValEntry "sqrt" "Square root." $ sqrt @Number
+                         , mkValEntry "**" "Raise to power." $ (**) @Number
+                         , mkValEntry "logBase" "" $ logBase @Number
+                         , mkValEntry "sin" "Sine of an angle in radians." $ sin @Number
+                         , mkValEntry "cos" "Cosine of an angle in radians." $ cos @Number
+                         , mkValEntry "tan" "Tangent of an angle in radians." $ tan @Number
+                         , mkValEntry "asin" "Radian angle of a sine." $ asin @Number
+                         , mkValEntry "acos" "Radian angle of a cosine." $ acos @Number
+                         , mkValEntry "atan" "Radian angle of a tangent." $ atan @Number
+                         , mkValEntry "sinh" "Hyperbolic sine." $ sinh @Number
+                         , mkValEntry "cosh" "Hyperbolic cosine." $ cosh @Number
+                         , mkValEntry "tanh" "Hyperbolic tangent." $ tanh @Number
+                         , mkValEntry "asinh" "Inverse hyperbolic sine." $ asinh @Number
+                         , mkValEntry "acosh" "Inverse hyperbolic cosine." $ acosh @Number
+                         , mkValEntry "atanh" "Inverse hyperbolic tangent." $ atanh @Number
+                         , mkValEntry "nabs" "Absolute value." $ abs @Number
+                         , mkValEntry "signumN" "Sign. Note this will be the same exact or inexact as the number." $
+                           signum @Number
+                         , mkValEntry "floor" "Integer towards negative infinity." (floor :: Number -> Integer)
+                         , mkValEntry "ceiling" "Integer towards positive infinity." (ceiling :: Number -> Integer)
+                         , mkValEntry "round" "Closest Integer." (round :: Number -> Integer)
+                         , mkValEntry "inexact" "Convert a number to inexact." numberToDouble
+                         , mkValEntry
+                               "approximate"
+                               "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`."
+                               approximate
+                         , mkValEntry
+                               "div"
+                               "Division to Integer, towards negative infinity."
+                               (div' :: Number -> Number -> Integer)
+                         , mkValEntry "modN" "Modulus, leftover from `div`" $ mod' @Number
+                         , mkValEntry "isNaN" "Is not a number?" numberIsNaN
+                         , mkValEntry "isInfinite" "Is infinite?" numberIsInfinite
+                         , mkValEntry "isNegativeZero" "Is negative zero?" numberIsNegativeZero
+                         , mkValEntry "isExact" "Is exact?" numberIsExact
+                         , mkValEntry "sumN" "Sum." $ sum @[] @Number
+                         , mkValEntry "meanN" "Mean." $ \(vv :: [Number]) ->
+                               sum vv / (ExactNumber $ toRational $ length vv)
+                         , mkValEntry "productN" "Product." $ product @[] @Number
+                         , mkValEntry
+                               "numberCheckSafeRational"
+                               "Get the exact value of a Number, if it is one."
+                               numberCheckSafeRational
+                         , mkValEntry
+                               "checkExactInteger"
+                               "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
+                               numberCheckSafeRational n >>= safeRationalCheckInteger
+                         ]
+                       ]
           , docTreeEntry
                 "Date & Time"
                 ""
@@ -442,11 +497,11 @@ baseLibEntries =
                   [ mkTypeEntry "Duration" "" $
                     MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType DurationLiteralType
                   , mkSubtypeRelationEntry "Duration" "Literal" "" []
+                  , mkValPatEntry "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $ \d ->
+                        Just (nominalDiffTimeToSeconds d, ())
                   ] <>
                   plainFormattingDefs @NominalDiffTime "Duration" "a duration" <>
                   [ mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
-                  , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
-                  , mkValEntry "durationToSeconds" "Convert duration to seconds." nominalDiffTimeToSeconds
                   , mkValEntry "dayDuration" "One day duration." nominalDay
                   , mkValEntry "addDuration" "Add durations." $ (+) @NominalDiffTime
                   , mkValEntry "subtractDuration" "Subtract durations." $ (-) @NominalDiffTime
@@ -474,16 +529,16 @@ baseLibEntries =
                 , docTreeEntry "Calendar" "" $
                   [ mkTypeEntry "Date" "" $
                     MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType DateLiteralType
-                  , mkValPatEntry "MkDate" "Construct a Date from year, month, day." fromGregorian $ \day -> let
+                  , mkValPatEntry "YearMonthDay" "Construct a `Date` from year, month, day." fromGregorian $ \day -> let
                         (y, m, d) = toGregorian day
                         in Just (y, (m, (d, ())))
+                  , mkValPatEntry "ModifiedJulianDay" "Construct a `Date` from its MJD." ModifiedJulianDay $ \day ->
+                        Just (toModifiedJulianDay day, ())
                   , mkSubtypeRelationEntry "Date" "Literal" "" []
                   ] <>
                   plainFormattingDefs @Day "Date" "a date" <>
                   unixFormattingDefs @Day "Date" "a date" <>
-                  [ mkValEntry "dateToModifiedJulian" "Convert to MJD." toModifiedJulianDay
-                  , mkValEntry "modifiedJulianToDate" "Convert from MJD." ModifiedJulianDay
-                  , mkValEntry "addDays" "Add count to days to date." addDays
+                  [ mkValEntry "addDays" "Add count to days to date." addDays
                   , mkValEntry "diffDays" "Difference of days between dates." diffDays
                   , mkValEntry "getUTCDate" "Get the current UTC date." $ fmap utctDay getCurrentTime
                   , mkValEntry "getDate" "Get the current local date." $ fmap localDay getLocalTime
@@ -491,8 +546,13 @@ baseLibEntries =
                 , docTreeEntry "Time of Day" "" $
                   [ mkTypeEntry "TimeOfDay" "" $
                     MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TimeOfDayLiteralType
-                  , mkValPatEntry "MkTimeOfDay" "Construct a TimeOfDay from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
+                  , mkValPatEntry "HourMinuteSecond" "Construct a `TimeOfDay` from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
                         Just (todHour, (todMin, (todSec, ())))
+                  , mkValPatEntry
+                        "SinceMidnight"
+                        "Construct a `TimeOfDay` from duration since midnight (wrapping whole days)."
+                        (snd . timeToDaysAndTimeOfDay)
+                        (\t -> Just (daysAndTimeOfDayToTime 0 t, ()))
                   , mkSubtypeRelationEntry "TimeOfDay" "Literal" "" []
                   ] <>
                   plainFormattingDefs @TimeOfDay "TimeOfDay" "a time of day" <>
@@ -501,7 +561,7 @@ baseLibEntries =
                 , docTreeEntry "Local Time" "" $
                   [ mkTypeEntry "LocalTime" "" $
                     MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType LocalTimeLiteralType
-                  , mkValPatEntry "MkLocalTime" "Construct a LocalTime from day and time of day." LocalTime $ \LocalTime {..} ->
+                  , mkValPatEntry "DateAndTime" "Construct a `LocalTime` from day and time of day." LocalTime $ \LocalTime {..} ->
                         Just (localDay, (localTimeOfDay, ()))
                   , mkSubtypeRelationEntry "LocalTime" "Literal" "" []
                   ] <>
@@ -601,7 +661,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t NilDolanArguments) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -609,8 +669,8 @@ baseLibEntries =
                             monoToEntityShim $
                             MkMonoType MaybeEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    conv <- subtypeConvert sc t $ topEntityType
-                    pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
+                    conv <- subtypeConvert sc t $ topEntityType @'Negative
+                    pure $ convE . cfmap (iJoinMeetL1 @_ @'Negative . conv)
           ]
     , docTreeEntry
           "Pairs"
@@ -620,7 +680,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments) :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -629,9 +689,11 @@ baseLibEntries =
                             MkMonoType PairEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    convA <- subtypeConvert sc ta $ topEntityType
-                    convB <- subtypeConvert sc tb $ topEntityType
-                    pure $ convE . applyCoPolyShim (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
+                    convA <- subtypeConvert sc ta $ topEntityType @'Negative
+                    convB <- subtypeConvert sc tb $ topEntityType @'Negative
+                    pure $
+                        convE .
+                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
           , mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
           , mkValEntry "toPair" "Construct a pair." $ (,) @A @B
@@ -656,7 +718,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments) :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -665,9 +727,11 @@ baseLibEntries =
                             MkMonoType EitherEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    convA <- subtypeConvert sc ta $ topEntityType
-                    convB <- subtypeConvert sc tb $ topEntityType
-                    pure $ convE . applyCoPolyShim (cfmap (iJoinMeetL1 @polb . convA)) (iJoinMeetL1 @polb . convB)
+                    convA <- subtypeConvert sc ta $ topEntityType @'Negative
+                    convB <- subtypeConvert sc tb $ topEntityType @'Negative
+                    pure $
+                        convE .
+                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
           , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
           , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
                 case v of
@@ -690,7 +754,7 @@ baseLibEntries =
             simpleSubtypeConversionEntry
                 (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType)
                 (EntityPinaforeGroundType NilListType TopEntityGroundType) $
-            MkSubtypeConversion $ \(sc :: _ pola polb) (ConsDolanArguments t NilDolanArguments) ->
+            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
                 return $
                 MkSubtypeArguments NilDolanArguments $ do
                     let
@@ -698,8 +762,8 @@ baseLibEntries =
                             monoToEntityShim $
                             MkMonoType ListEntityGroundType $
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
-                    conv <- subtypeConvert sc t $ topEntityType
-                    pure $ convE . cfmap (iJoinMeetL1 @polb . conv)
+                    conv <- subtypeConvert sc t $ topEntityType @'Negative
+                    pure $ convE . cfmap (iJoinMeetL1 @_ @'Negative . conv)
           , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                 case l of
                     [] -> fnil
@@ -712,6 +776,8 @@ baseLibEntries =
           , mkValEntry "maybeMapList" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
           , mkValEntry "take" "Take the first n elements." (take :: Int -> [A] -> [A])
           , mkValEntry "drop" "Drop the first n elements." (drop :: Int -> [A] -> [A])
+          , mkValEntry "takeWhile" "Take while the condition holds." (takeWhile :: (A -> Bool) -> [A] -> [A])
+          , mkValEntry "dropWhile" "Drop while the condition holds." (dropWhile :: (A -> Bool) -> [A] -> [A])
           , mkValEntry "zip" "Zip two lists." $ zip @A @B
           ]
     , docTreeEntry
@@ -742,7 +808,7 @@ baseLibEntries =
     , docTreeEntry
           "Actions"
           ""
-          [ mkTypeEntry "Action" "" $ MkBoundType ActionPinaforeGroundType
+          [ mkTypeEntry "Action" "" $ MkBoundType actionGroundType
           , mkValEntry "return" "A value as an Action." $ return @PinaforeAction @A
           , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind
           , mkValEntry ">>" "Do actions in sequence." $ qbind_
@@ -772,15 +838,37 @@ baseLibEntries =
                 "Get the time as a whole number of milliseconds."
                 (liftIO getTimeMS :: PinaforeAction Integer)
           , mkValEntry "sleep" "Do nothing for this number of milliseconds." (\t -> threadDelay $ t * 1000)
-          , mkValEntry "lifecycle" "Close everything that gets opened in the given action." $
+          ]
+    , docTreeEntry
+          "Lifecycle"
+          "Ways of managing the closing of things that get opened, most notably UI windows."
+          [ mkValEntry
+                "lifecycle"
+                "Close everything that gets opened in the given action.\n\n\
+                \Example: `lifecycle $ do openResource; sleep 1000 end`  \n\
+                \This opens some resource, sleeps for one second, and then closes it again." $
             subLifeCycle @PinaforeAction @A
-          , mkValEntry "onClose" "Add this action as to be done when closing." pinaforeOnClose
-          , mkValEntry "closer" "Get an (idempotent) action that closes what gets opened in the given action." $
+          , mkValEntry
+                "onClose"
+                "Add this action as to be done when closing.\n\n\
+                \Example: `lifecycle $ do onClose $ outputLn \"hello\"; sleep 1000 end`  \n\
+                \This sleeps for one second, and then outputs \"hello\" (when the lifecycle closes)."
+                pinaforeOnClose
+          , mkValEntry
+                "closer"
+                "Get an (idempotent) action that closes what gets opened in the given action.\n\n\
+                \Example: `(cl,r) <- closer openResource`  \n\
+                \This opens a resource `r`, also creating an action `cl`, that will close the resource when first called (subsequent calls do nothing).\n\
+                \This action will also be run at the end of the lifecycle, only if it hasn't already." $
             pinaforeEarlyCloser @A
-          , mkSpecialFormEntry
+          ]
+    , docTreeEntry
+          "Interpreter"
+          ""
+          [ mkSpecialFormEntry
                 "evaluate"
-                "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\
-                \The result of the action is either the value (`Right`), or an error message (`Left`).\n\
+                "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\n\
+                \The result of the action is either the value (`Right`), or an error message (`Left`).\n\n\
                 \The local scope is not in any way transmitted to the evaluation."
                 "@A"
                 "Text -> Action (Either Text A)" $

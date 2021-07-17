@@ -62,6 +62,13 @@ cfmap3 ::
     -> catq (f a p q r) (f b p q r)
 cfmap3 c = unNestedMorphism $ unNestedMorphism $ unNestedMorphism $ cfmap c
 
+cfmap4 ::
+       forall catp (catq :: Type -> Type -> Type) f a b p q r s.
+       (CatFunctor catp (NestedMorphism catq) f, InKind a, InKind b, InKind p, InKind q, InKind r, InKind s)
+    => catp a b
+    -> catq (f a p q r s) (f b p q r s)
+cfmap4 c = unNestedMorphism $ unNestedMorphism $ unNestedMorphism $ unNestedMorphism $ cfmap c
+
 ccontramap1 ::
        forall catp (catq :: Type -> Type -> Type) f a b p.
        (CatFunctor (CatDual catp) (NestedMorphism catq) f, InKind a, InKind b, InKind p)

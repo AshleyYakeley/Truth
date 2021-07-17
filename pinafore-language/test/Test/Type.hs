@@ -147,7 +147,7 @@ testType =
               , exprTypeTest "apply id number" (return "{} -> Number") $ apExpr idExpr numExpr
               , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
               , exprTypeTest "apply nb boolean" Nothing $ apExpr nbFuncExpr boolExpr
-              , exprTypeTest "apply id var" (return "{v : c} -> c") $ apExpr idExpr varExpr
+              , exprTypeTest "apply id var" (return "{v : b} -> b") $ apExpr idExpr varExpr
               , exprTypeTest "apply nb var" (return "{v : Number} -> Boolean") $ apExpr nbFuncExpr varExpr
               , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
               , exprTypeTest "list1" (return "{} -> a -> [a]") $ return list1Expr
@@ -229,12 +229,21 @@ testType =
                     "((v 3,v False),v 3)"
                     "{v : Integer -> c, v : Boolean -> d, v : Integer -> b} -> ((c, d), b)"
               , textTypeTest "let v = x in [v,v,v]" "{x : a, x : a, x : a} -> [a]"
+              , testTree
+                    "function"
+                    [ textTypeTest "let i: tvar -> tvar; i = id in i" "{} -> tvar -> tvar"
+                    , textTypeTest "id: tvar -> tvar" "{} -> tvar -> tvar"
+                    , textTypeTest "let i x = x in i" "{} -> a -> a"
+                    , textTypeTest "let i : a -> a; i x = x in i" "{} -> a -> a"
+                    , textTypeTest "let i : tvar -> tvar; i x = x in i" "{} -> tvar -> tvar"
+                    , textTypeTest "let i : a -> a; i x = x in i 3" "{} -> Integer"
+                    ]
               , textTypeTest "\\x -> let v = x in [v,v,v]" "{} -> a -> [a]"
               , textTypeTest "\\v1 v2 -> [v1,v2]" "{} -> a -> a -> [a]"
-              , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> c -> (a & c) -> a -> ([c], [a])"
+              , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> c -> (c & a) -> a -> ([c], [a])"
               , textTypeTest
                     "\\v1 v2 v3 -> (([v1,v2],[v2,v3]),[v3,v1])"
-                    "{} -> (a & c) -> (d & c) -> (a & d) -> (([c], [d]), [a])"
+                    "{} -> (c & a) -> (c & d) -> (d & a) -> (([c], [d]), [a])"
               , testTree
                     "inversion"
                     [ textTypeTest "\\x -> let y : Integer; y = x in y" "{} -> Integer -> Integer"
@@ -270,23 +279,24 @@ testType =
               , textTypeTest "let f : Entity -> Entity -> Entity; f a b = (a,b) in f" "{} -> Entity -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity; f = Left in f" "{} -> Entity -> Entity"
               , textTypeTest "let f : Entity -> Entity; f = Right in f" "{} -> Entity -> Entity"
+              , textTypeTest "\\x -> if odd x then x else (x:Number)" "{} -> Integer -> Number"
               , testTree
                     "recursive"
                     [ textTypeTest "let x : rec a. Maybe a; x = Nothing in x" "{} -> rec a. Maybe a"
-                    , textTypeTest "let x : rec a. Maybe a; x = Just x in x" "{} -> rec a. Maybe a"
-                    , textTypeTest "let x = Just x in x" "{} -> rec a. Maybe a"
-                    , textTypeTest "let x : Entity; x = Just x in x" "{} -> Entity"
-                    , textTypeTest "let x : Maybe Entity; x = Just x in x" "{} -> Maybe Entity"
+                    , textTypeTest "let rec x : rec a. Maybe a; x = Just x end in x" "{} -> rec a. Maybe a"
+                    , textTypeTest "let rec x = Just x end in x" "{} -> rec e. Maybe e"
+                    , textTypeTest "let rec x : Entity; x = Just x end in x" "{} -> Entity"
+                    , textTypeTest "let rec x : Maybe Entity; x = Just x end in x" "{} -> Maybe Entity"
                     , textTypeTest
-                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end in rcount"
-                          "{} -> (rec c. Maybe c) -> Integer"
+                          "let rec rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end end in rcount"
+                          "{} -> (rec e. Maybe e) -> Integer"
                     , textTypeTest "Just $ Just $ Just Nothing" "{} -> Maybe (Maybe (Maybe (Maybe None)))"
                     , textTypeTest
-                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + r1count y end; r1count x = case x of Nothing -> 0; Just y -> 1 + r1count y end in rcount $ Just $ Just $ Just Nothing"
+                          "let rec rcount x = case x of Nothing -> 0; Just y -> 1 + r1count y end; r1count x = case x of Nothing -> 0; Just y -> 1 + r1count y end end in rcount $ Just $ Just $ Just Nothing"
                           "{} -> Integer"
                     , textTypeTest
-                          "let rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end; rval = Just rval in ((rcount,rval),rcount rval)"
-                          "{} -> (((rec c. Maybe c) -> Integer, rec d. Maybe d), Integer)"
+                          "let rec rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end end; rec rval = Just rval end in ((rcount,rval),rcount rval)"
+                          "{} -> (((rec e. Maybe e) -> Integer, rec e. Maybe e), Integer)"
                     ]
               ]
         , testTree
@@ -302,6 +312,7 @@ testType =
               , simplifyTypeTest "(b & Integer) -> Integer" "Integer -> Integer"
               , simplifyTypeTest "(a & Integer) -> b" "Integer -> None"
               , simplifyTypeTest "(a & Integer) -> a" "(a & Integer) -> a"
+              , simplifyTypeTest "(a & Integer) -> (a | Number)" "Integer -> Number"
               , testTree
                     "subtype"
                     [ simplifyTypeTest "Boolean | Integer" "Boolean | Integer"
@@ -340,5 +351,43 @@ testType =
                           , unrollTest "rec a. Maybe a" "Maybe (rec a. Maybe a)"
                           ]
                     ]
+              , testTree
+                    "fullconstraint"
+                    [ simplifyTypeTest "Integer | d" "Integer"
+                    , simplifyTypeTest "(rec a. Maybe a) | d" "rec a. Maybe a"
+                    , simplifyTypeTest "rec a. (Maybe a | d)" "rec a. Maybe a"
+                    , simplifyTypeTest "Maybe (rec a. Maybe a | d)" "rec a. Maybe a"
+                    , simplifyTypeTest "d -> Maybe (rec a. Maybe a | d)" "d -> Maybe (rec a. Maybe a | d)"
+                    , simplifyTypeTest "(a -> Literal) | ((Text & b) -> a)" "Text -> Literal"
+                    , simplifyTypeTest "(a & Text) -> (Literal | a)" "Text -> Literal"
+                    ]
+              ]
+        , testTree
+              "library"
+              [ textTypeTest "()" "{} -> ()"
+              , textTypeTest "{3}" "{} -> WholeRef +Integer"
+              , textTypeTest "identity !$% {3}" "{} -> WholeRef +Integer"
+              , textTypeTest "identity !$ {3}" "{} -> WholeRef +Integer"
+              , textTypeTest "(identity !. identity) !$% {3}" "{} -> WholeRef +Integer"
+              , textTypeTest "(identity !. identity) !$ {3}" "{} -> WholeRef +Integer"
+              , textTypeTest
+                    "property @Integer @Text !\"a\" !** property @Number @Text !\"b\""
+                    "{} -> {-Integer,+Number} ~> (Text, Text)"
+              , textTypeTest
+                    "property @Text @Integer !\"a\" !++ property @Text @Number !\"b\""
+                    "{} -> (Either Text Text) ~> {-Integer,+Number}"
+              , textTypeTest
+                    "(property @Integer @Text !\"a\" !** property @Number @Text !\"b\") !$% {3}"
+                    "{} -> WholeRef (Text, Text)"
+              , textTypeTest
+                    "(property @Integer @Text !\"a\" !** property @Number @Text !\"b\") !$ {3}"
+                    "{} -> WholeRef (Text, Text)"
+              , textTypeTest "property @Integer @Text !\"a\" !@% {\"x\"}" "{} -> FiniteSetRef Integer"
+              , textTypeTest "property @Integer @Text !\"a\" !@ {\"x\"}" "{} -> FiniteSetRef Integer"
+              , textTypeTest
+                    "(property @Integer @Text !\"a\" !@% {\"x\"}) <:*:> (property @Number @Text !\"b\" !@% {\"y\"})"
+                    "{} -> FiniteSetRef (Integer, Number)"
+              , textTypeTest "pairWhole {3} {\"x\"}" "{} -> WholeRef {-(Any, Any),+(Integer, Text)}"
+              , textTypeTest "immutWhole $ pairWhole {3} {\"x\"}" "{} -> WholeRef +(Integer, Text)"
               ]
         ]

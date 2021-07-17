@@ -1,8 +1,10 @@
 module Pinafore.Language.Type.Ground where
 
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
@@ -11,6 +13,7 @@ import Pinafore.Language.Type.EntityAdapter
 import Pinafore.Language.Type.OpenEntity
 import Pinafore.Language.Type.Show
 import Pinafore.Language.Value
+import Pinafore.Markdown
 import Shapes
 
 newtype WitKind =
@@ -31,27 +34,51 @@ instance TestHetEquality ProvidedType where
 
 type PinaforeGroundType :: GroundTypeKind
 data PinaforeGroundType dv t where
-    -- a simple ground type is one with no special subtype relationships
-    SimpleGroundType
+    ProvidedGroundType
         :: forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
            DolanVarianceType dv
         -> DolanVarianceMap dv t
         -> ListTypeExprShow dv
         -> ProvidedType t
         -> PinaforeGroundType dv t
-    FuncPinaforeGroundType :: PinaforeGroundType '[ 'Contravariance, 'Covariance] (->)
     EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType dv t
-    RefOrderPinaforeGroundType :: PinaforeGroundType '[ 'Contravariance] (LangRefOrder)
-    ActionPinaforeGroundType :: PinaforeGroundType '[ 'Covariance] PinaforeAction
-    -- Reference
-    WholeRefPinaforeGroundType :: PinaforeGroundType '[ 'Rangevariance] LangWholeRef
-    ListRefPinaforeGroundType :: PinaforeGroundType '[ 'Rangevariance] LangListRef
-    TextRefPinaforeGroundType :: PinaforeGroundType '[] LangTextRef
-    SetRefPinaforeGroundType :: PinaforeGroundType '[ 'Contravariance] LangSetRef
-    FiniteSetRefPinaforeGroundType :: PinaforeGroundType '[ 'Rangevariance] LangFiniteSetRef
-    MorphismPinaforeGroundType :: PinaforeGroundType '[ 'Rangevariance, 'Rangevariance] LangMorphism
+
+singleGroundType ::
+       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). (Is DolanVarianceType dv, HasDolanVary dv t)
+    => IOWitness ('MkWitKind (HetEqual t))
+    -> ListTypeExprShow dv
+    -> PinaforeGroundType dv t
+singleGroundType wit showexp = ProvidedGroundType representative dolanVary showexp $ MkProvidedType wit HetRefl
+
+stdSingleGroundType ::
+       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). (Is DolanVarianceType dv, HasDolanVary dv t)
+    => IOWitness ('MkWitKind (HetEqual t))
+    -> Text
+    -> PinaforeGroundType dv t
+stdSingleGroundType wit name = singleGroundType wit $ standardListTypeExprShow @dv name
+
+actionGroundType :: PinaforeGroundType '[ 'Covariance] PinaforeAction
+actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual PinaforeAction)|]) "Action"
+
+wholeRefGroundType :: PinaforeGroundType '[ 'Rangevariance] LangWholeRef
+wholeRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangWholeRef)|]) "WholeRef"
+
+funcGroundType :: PinaforeGroundType '[ 'Contravariance, 'Covariance] (->)
+funcGroundType =
+    singleGroundType $(iowitness [t|'MkWitKind (HetEqual (->))|]) $ \ta tb ->
+        (precShow 2 ta <> " -> " <> precShow 3 tb, 3)
+
+listGroundType :: PinaforeGroundType '[ 'Covariance] []
+listGroundType = EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType
+
+morphismGroundType :: PinaforeGroundType '[ 'Rangevariance, 'Rangevariance] LangMorphism
+morphismGroundType =
+    singleGroundType $(iowitness [t|'MkWitKind (HetEqual LangMorphism)|]) $ \ta tb ->
+        (precShow 2 ta <> " ~> " <> precShow 3 tb, 3)
 
 type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
+
+type instance TSBindingData PinaforeTypeSystem = Markdown
 
 type instance InterpreterGroundType PinaforeTypeSystem =
      PinaforeGroundType
@@ -63,48 +90,21 @@ instance IsDolanGroundType PinaforeGroundType where
     type DolanM PinaforeGroundType = SourceInterpreter PinaforeTypeSystem
     groundTypeVarianceMap ::
            forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). PinaforeGroundType dv f -> DolanVarianceMap dv f
-    groundTypeVarianceMap (SimpleGroundType _ dvm _ _) = dvm
-    groundTypeVarianceMap FuncPinaforeGroundType = dolanVary @dv
+    groundTypeVarianceMap (ProvidedGroundType _ dvm _ _) = dvm
     groundTypeVarianceMap (EntityPinaforeGroundType dvcovary gt) =
         covaryToDolanVarianceMap dvcovary $ groundTypeCovaryMap gt
-    groundTypeVarianceMap RefOrderPinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap ActionPinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap WholeRefPinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap ListRefPinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap TextRefPinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap SetRefPinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap FiniteSetRefPinaforeGroundType = dolanVary @dv
-    groundTypeVarianceMap MorphismPinaforeGroundType = dolanVary @dv
     groundTypeVarianceType :: PinaforeGroundType dv t -> DolanVarianceType dv
-    groundTypeVarianceType (SimpleGroundType dvt _ _ _) = dvt
-    groundTypeVarianceType FuncPinaforeGroundType = representative
+    groundTypeVarianceType (ProvidedGroundType dvt _ _ _) = dvt
     groundTypeVarianceType (EntityPinaforeGroundType lt _) = mapListType (\Refl -> CovarianceType) lt
-    groundTypeVarianceType RefOrderPinaforeGroundType = representative
-    groundTypeVarianceType ActionPinaforeGroundType = representative
-    groundTypeVarianceType WholeRefPinaforeGroundType = representative
-    groundTypeVarianceType ListRefPinaforeGroundType = representative
-    groundTypeVarianceType TextRefPinaforeGroundType = representative
-    groundTypeVarianceType SetRefPinaforeGroundType = representative
-    groundTypeVarianceType FiniteSetRefPinaforeGroundType = representative
-    groundTypeVarianceType MorphismPinaforeGroundType = representative
     groundTypeTestEquality :: PinaforeGroundType dka ta -> PinaforeGroundType dkb tb -> Maybe (dka :~: dkb, ta :~~: tb)
-    groundTypeTestEquality (SimpleGroundType dva _ _ ta) (SimpleGroundType dvb _ _ tb) = do
+    groundTypeTestEquality (ProvidedGroundType dva _ _ ta) (ProvidedGroundType dvb _ _ tb) = do
         Refl <- testEquality dva dvb
         HRefl <- testHetEquality ta tb
         Just (Refl, HRefl)
-    groundTypeTestEquality FuncPinaforeGroundType FuncPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality (EntityPinaforeGroundType la gta) (EntityPinaforeGroundType lb gtb) = do
         Refl <- testEquality la lb
         (HRefl, _) <- entityGroundTypeTestEquality gta gtb
         Just (Refl, HRefl)
-    groundTypeTestEquality RefOrderPinaforeGroundType RefOrderPinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality ActionPinaforeGroundType ActionPinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality WholeRefPinaforeGroundType WholeRefPinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality ListRefPinaforeGroundType ListRefPinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality TextRefPinaforeGroundType TextRefPinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality SetRefPinaforeGroundType SetRefPinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality FiniteSetRefPinaforeGroundType FiniteSetRefPinaforeGroundType = Just (Refl, HRefl)
-    groundTypeTestEquality MorphismPinaforeGroundType MorphismPinaforeGroundType = Just (Refl, HRefl)
     groundTypeTestEquality _ _ = Nothing
 
 instance CovarySubtype PinaforeGroundType EntityGroundType where
@@ -151,27 +151,10 @@ instance GroundExprShow PinaforeGroundType where
         => PinaforeGroundType dv f
         -> DolanArguments dv w f polarity t
         -> (Text, Int)
-    groundTypeShowPrec (SimpleGroundType dv _ n _) args = showPrecDolanVariance n dv args
-    groundTypeShowPrec FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
-        invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
+    groundTypeShowPrec (ProvidedGroundType dv _ n _) args = showPrecDolanVariance n dv args
     groundTypeShowPrec (EntityPinaforeGroundType lt gt) dargs =
         case dolanArgumentsToArguments @PinaforePolyShim mkShimWit lt (groundTypeCovaryMap gt) dargs of
             MkShimWit args _ -> entityGroundTypeShowPrec exprShowPrec gt args
-    groundTypeShowPrec RefOrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-        invertPolarity @polarity ("RefOrder " <> exprPrecShow 0 ta, 2)
-    groundTypeShowPrec ActionPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-        ("Action " <> exprPrecShow 0 ta, 2)
-    groundTypeShowPrec WholeRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-        ("WholeRef " <> exprPrecShow 0 ta, 2)
-    groundTypeShowPrec ListRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-        ("ListRef " <> exprPrecShow 0 ta, 2)
-    groundTypeShowPrec TextRefPinaforeGroundType NilDolanArguments = ("TextRef", 0)
-    groundTypeShowPrec SetRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-        invertPolarity @polarity ("SetRef " <> exprPrecShow 0 ta, 2)
-    groundTypeShowPrec FiniteSetRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-        ("FiniteSetRef " <> exprPrecShow 0 ta, 2)
-    groundTypeShowPrec MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
-        invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
 
 withEntitySubtype ::
        forall (t :: Type) tidb a.

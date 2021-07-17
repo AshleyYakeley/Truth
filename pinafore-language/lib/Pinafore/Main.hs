@@ -1,5 +1,8 @@
 module Pinafore.Main
-    ( PinaforeContext
+    ( ModuleOptions(..)
+    , standardFetchModule
+    , PinaforeContext
+    , nullPinaforeContext
     , makePinaforeContext
     , ContextOptions(..)
     , standardPinaforeContext
@@ -21,10 +24,13 @@ import System.FilePath
 
 type FilePinaforeType = PinaforeAction TopType
 
+data ModuleOptions = MkModuleOptions
+    { moExtraLibrary :: [LibraryModule]
+    , moModuleDirs :: [FilePath]
+    }
+
 data ContextOptions = MkContextOptions
     { coCache :: Bool
-    , coExtraLibrary :: [LibraryModule]
-    , coModuleDirs :: [FilePath]
     , coDataDir :: FilePath
     }
 
@@ -43,17 +49,19 @@ standardStorageModel cache dataDir = do
         (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
         return model
 
-standardPinaforeContext ::
-       ContextOptions -> InvocationInfo -> ChangesContext -> CreateView (PinaforeContext, FetchModule)
+standardFetchModule :: ModuleOptions -> FetchModule
+standardFetchModule MkModuleOptions {..} = let
+    extraLibFetchModule :: FetchModule
+    extraLibFetchModule = libraryFetchModule moExtraLibrary
+    dirFetchModule :: FetchModule
+    dirFetchModule = mconcat $ fmap directoryFetchModule moModuleDirs
+    in extraLibFetchModule <> dirFetchModule
+
+standardPinaforeContext :: ContextOptions -> InvocationInfo -> ChangesContext -> CreateView PinaforeContext
 standardPinaforeContext MkContextOptions {..} invinfo cc = do
-    let
-        extraLibFetchModule :: FetchModule
-        extraLibFetchModule = libraryFetchModule coExtraLibrary
-        dirFetchModule :: FetchModule
-        dirFetchModule = mconcat $ fmap directoryFetchModule coModuleDirs
     model <- standardStorageModel coCache coDataDir
     pc <- liftLifeCycle $ makePinaforeContext invinfo stdout model cc
-    return (pc, extraLibFetchModule <> dirFetchModule)
+    return pc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

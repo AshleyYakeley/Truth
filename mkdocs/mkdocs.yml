@@ -5,6 +5,9 @@ markdown_extensions:
   - codehilite
   - markdown_include.include:
       base_path: generated
+  - pymdownx.escapeall:
+      hardbreak: True
+      nbsp: True
 repo_url: https://github.com/AshleyYakeley/Truth
 theme: readthedocs
 extra_css: [extra.css]
@@ -16,6 +19,7 @@ nav:
 - Building: 'building.md'
 - Language:
   - Syntax: 'syntax.md'
+  - Declarations: 'declarations.md'
   - Type System: 'type-system.md'
   - Types: 'types.md'
   - Dynamic Supertypes: 'dynamic-supertypes.md'
@@ -23,9 +27,13 @@ nav:
   - Modules: 'modules.md'
 - Library:
   - Std: 'library/Std.md'
+  - Colour: 'library/Colour.md'
+  - Drawing: 'library/Drawing.md'
   - UI: 'library/UI.md'
   - Debug: 'library/Debug.md'
   - Debug.UI: 'library/Debug.UI.md'
+  - UIStuff.Selection: 'library/UIStuff.Selection.md'
+  - UIStuff.Named: 'library/UIStuff.Named.md'
 - Examples:
   - Stopwatch: 'examples/stopwatch.md'
   - Calendar: 'examples/calendar.md'

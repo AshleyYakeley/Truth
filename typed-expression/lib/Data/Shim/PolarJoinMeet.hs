@@ -14,39 +14,39 @@ type family JoinMeetType polarity :: Type -> Type -> Type where
     JoinMeetType 'Negative = MeetType
 
 iJoinMeetL1 ::
-       forall pol shim t. (JoinMeetIsoCategory shim, Is PolarityType pol)
-    => shim (JoinMeetType pol t (LimitType pol)) t
+       forall (shim :: ShimKind Type) polarity t. (JoinMeetIsoCategory shim, Is PolarityType polarity)
+    => shim (JoinMeetType polarity t (LimitType polarity)) t
 iJoinMeetL1 =
-    case polarityType @pol of
+    case polarityType @polarity of
         PositiveType -> iJoinL1
         NegativeType -> iMeetL1
 
 iJoinMeetL2 ::
-       forall pol shim t. (JoinMeetIsoCategory shim, Is PolarityType pol)
-    => shim (JoinMeetType pol (LimitType pol) t) t
+       forall (shim :: ShimKind Type) polarity t. (JoinMeetIsoCategory shim, Is PolarityType polarity)
+    => shim (JoinMeetType polarity (LimitType polarity) t) t
 iJoinMeetL2 =
-    case polarityType @pol of
+    case polarityType @polarity of
         PositiveType -> iJoinL2
         NegativeType -> iMeetL2
 
 iJoinMeetR1 ::
-       forall pol shim t. (JoinMeetIsoCategory shim, Is PolarityType pol)
-    => shim t (JoinMeetType pol t (LimitType pol))
+       forall (shim :: ShimKind Type) polarity t. (JoinMeetIsoCategory shim, Is PolarityType polarity)
+    => shim t (JoinMeetType polarity t (LimitType polarity))
 iJoinMeetR1 =
-    case polarityType @pol of
+    case polarityType @polarity of
         PositiveType -> iJoinR1
         NegativeType -> iMeetR1
 
 iJoinMeetR2 ::
-       forall pol shim t. (JoinMeetIsoCategory shim, Is PolarityType pol)
-    => shim t (JoinMeetType pol (LimitType pol) t)
+       forall (shim :: ShimKind Type) polarity t. (JoinMeetIsoCategory shim, Is PolarityType polarity)
+    => shim t (JoinMeetType polarity (LimitType polarity) t)
 iJoinMeetR2 =
-    case polarityType @pol of
+    case polarityType @polarity of
         PositiveType -> iJoinR2
         NegativeType -> iMeetR2
 
 iPolarL1 ::
-       forall (shim :: ShimKind Type) polarity a. (Is PolarityType polarity, JoinMeetIsoCategory shim)
+       forall (shim :: ShimKind Type) polarity a. (JoinMeetIsoCategory shim, Is PolarityType polarity)
     => PolarMap shim polarity (JoinMeetType polarity a (LimitType polarity)) a
 iPolarL1 =
     case polarityType @polarity of
@@ -54,7 +54,7 @@ iPolarL1 =
         NegativeType -> MkPolarMap iMeetR1
 
 iPolarL2 ::
-       forall (shim :: ShimKind Type) polarity a. (Is PolarityType polarity, JoinMeetIsoCategory shim)
+       forall (shim :: ShimKind Type) polarity a. (JoinMeetIsoCategory shim, Is PolarityType polarity)
     => PolarMap shim polarity (JoinMeetType polarity (LimitType polarity) a) a
 iPolarL2 =
     case polarityType @polarity of
@@ -62,15 +62,23 @@ iPolarL2 =
         NegativeType -> MkPolarMap iMeetR2
 
 iPolarR1 ::
-       forall (shim :: ShimKind Type) polarity a. (Is PolarityType polarity, JoinMeetIsoCategory shim)
+       forall (shim :: ShimKind Type) polarity a. (JoinMeetIsoCategory shim, Is PolarityType polarity)
     => PolarMap shim polarity a (JoinMeetType polarity a (LimitType polarity))
 iPolarR1 =
     case polarityType @polarity of
         PositiveType -> MkPolarMap iJoinR1
         NegativeType -> MkPolarMap iMeetL1
 
+iPolarR2 ::
+       forall (shim :: ShimKind Type) polarity a. (JoinMeetIsoCategory shim, Is PolarityType polarity)
+    => PolarMap shim polarity a (JoinMeetType polarity (LimitType polarity) a)
+iPolarR2 =
+    case polarityType @polarity of
+        PositiveType -> MkPolarMap iJoinR2
+        NegativeType -> MkPolarMap iMeetL2
+
 iPolarPair ::
-       forall (shim :: ShimKind Type) polarity a1 a2 b1 b2. (Is PolarityType polarity, JoinMeetIsoCategory shim)
+       forall (shim :: ShimKind Type) polarity a1 a2 b1 b2. (JoinMeetIsoCategory shim, Is PolarityType polarity)
     => PolarMap shim polarity a1 a2
     -> PolarMap shim polarity b1 b2
     -> PolarMap shim polarity (JoinMeetType polarity a1 b1) (JoinMeetType polarity a2 b2)
@@ -80,7 +88,7 @@ iPolarPair =
         NegativeType -> \(MkPolarMap ar) (MkPolarMap br) -> MkPolarMap $ iMeetPair ar br
 
 iPolarSwap ::
-       forall (shim :: ShimKind Type) polarity a b. (Is PolarityType polarity, JoinMeetIsoCategory shim)
+       forall (shim :: ShimKind Type) polarity a b. (JoinMeetIsoCategory shim, Is PolarityType polarity)
     => PolarMap shim polarity (JoinMeetType polarity a b) (JoinMeetType polarity b a)
 iPolarSwap =
     case polarityType @polarity of
@@ -88,7 +96,7 @@ iPolarSwap =
         NegativeType -> MkPolarMap iMeetSwap
 
 iPolarSwapL ::
-       forall (shim :: ShimKind Type) polarity a b c. (Is PolarityType polarity, JoinMeetIsoCategory shim)
+       forall (shim :: ShimKind Type) polarity a b c. (JoinMeetIsoCategory shim, Is PolarityType polarity)
     => PolarMap shim polarity (JoinMeetType polarity (JoinMeetType polarity a b) c) (JoinMeetType polarity a (JoinMeetType polarity b c))
 iPolarSwapL =
     case polarityType @polarity of
@@ -96,7 +104,7 @@ iPolarSwapL =
         NegativeType -> MkPolarMap iMeetSwapR
 
 iPolarSwapR ::
-       forall (shim :: ShimKind Type) polarity a b c. (Is PolarityType polarity, JoinMeetIsoCategory shim)
+       forall (shim :: ShimKind Type) polarity a b c. (JoinMeetIsoCategory shim, Is PolarityType polarity)
     => PolarMap shim polarity (JoinMeetType polarity a (JoinMeetType polarity b c)) (JoinMeetType polarity (JoinMeetType polarity a b) c)
 iPolarSwapR =
     case polarityType @polarity of

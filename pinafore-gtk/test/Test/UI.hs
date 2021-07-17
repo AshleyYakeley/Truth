@@ -8,7 +8,7 @@ import Data.GI.Base.GValue
 import GI.GObject
 import GI.Gtk
 import Pinafore
-import Pinafore.Language.Library.UI
+import Pinafore.Language.Library.GTK
 import Pinafore.Test
 import Shapes hiding (get)
 import Shapes.Test
@@ -29,7 +29,7 @@ runUIAction timing testaction t = do
     changesMainGTK $ \tc -> do
         (pc, _) <- liftLifeCycle $ makeTestPinaforeContext tc stdout
         scriptaction <-
-            runWithContext pc (libraryFetchModule uiLibrary) $ throwInterpretResult $ pinaforeInterpretText "<test>" t
+            runWithContext pc (libraryFetchModule gtkLibrary) $ throwInterpretResult $ pinaforeInterpretText "<test>" t
         liftToLifeCycle scriptaction
         let
             testView :: View (Result SomeException a)
@@ -95,10 +95,10 @@ runClickButton _ = do
 noTestAction :: ChangesContext -> View ()
 noTestAction _ = return ()
 
-testUIAction :: Timing -> Text -> (ChangesContext -> View ()) -> ContextTestTree
-testUIAction timing text testaction = contextTestCase text text $ runUIAction timing testaction
+testUIAction :: Timing -> Text -> (ChangesContext -> View ()) -> ScriptTestTree
+testUIAction timing text testaction = scriptTestCase text text $ runUIAction timing testaction
 
-testActions :: Timing -> [ContextTestTree]
+testActions :: Timing -> [ScriptTestTree]
 testActions timing =
     [ testUIAction timing "return ()" noTestAction
     , testUIAction timing "newpoint" noTestAction
@@ -115,8 +115,8 @@ testActions timing =
 
 testUI :: TestTree
 testUI =
-    runContext $
-    context
+    runScriptTestTree $
+    tDecls
         [ "emptywindow: Action ()"
         , "emptywindow = do UI.openWindow (300,400) {\"Empty\"} {[]} UI.blank; return (); end"
         , "opentype T"
@@ -125,4 +125,4 @@ testUI =
         , "buttonwindow: Action Any -> Action ()"
         , "buttonwindow action = do UI.openWindow (300,400) {\"Test\"} {[]} (UI.button {\"Button\"} {action}); return (); end"
         ] $
-    tgroup "UI" [tgroup "immediate" $ testActions SyncTiming, tgroup "wait" $ testActions AsyncTiming]
+    tGroup "UI" [tGroup "immediate" $ testActions SyncTiming, tGroup "wait" $ testActions AsyncTiming]

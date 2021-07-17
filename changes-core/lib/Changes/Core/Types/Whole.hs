@@ -138,10 +138,10 @@ changeOnlyUpdateFunction = let
     sclPutEdits ::
            forall m. MonadIO m
         => [ConstEdit _]
-        -> Readable m (WholeReader a)
+        -> Readable m NullReader
         -> StateT a m (Maybe [WholeEdit a])
     sclPutEdits = clPutEditsNone
-    in makeStateLens MkStateChangeLens {..}
+    in makeStateLens @'Linear MkStateChangeLens {..}
 
 liftROWChangeLens ::
        forall f a b. Traversable f
@@ -205,8 +205,33 @@ wholeChangeLens ::
 wholeChangeLens lens =
     ioWholeChangeLens (\a -> return $ lensGet lens a) (\b olda -> return $ getMaybeOne $ lensPutback lens b olda)
 
-bijectionWholeChangeLens :: Bijection a b -> ChangeLens (WholeUpdate a) (WholeUpdate b)
-bijectionWholeChangeLens = wholeChangeLens . bijectionLens
+bijectionWholeChangeLens ::
+       forall lin updateA b. (FullEdit (UpdateEdit updateA))
+    => Bijection (UpdateSubject updateA) b
+    -> GenChangeLens lin updateA (WholeUpdate b)
+bijectionWholeChangeLens MkIsomorphism {..} = let
+    clRead :: ReadFunction (UpdateReader updateA) (WholeReader b)
+    clRead mr ReadWhole = do
+        a <- readableToSubject mr
+        return $ isoForwards a
+    clUpdate ::
+           forall m. MonadIO m
+        => updateA
+        -> Readable m (UpdateReader updateA)
+        -> m [WholeUpdate b]
+    clUpdate _ mr = do
+        a <- readableToSubject mr
+        return [MkWholeUpdate $ isoForwards a]
+    clPutEdits ::
+           forall m. MonadIO m
+        => [WholeEdit b]
+        -> Readable m _
+        -> m (Maybe [UpdateEdit updateA])
+    clPutEdits =
+        linearPutEditsFromPutEdit $ \(MkWholeReaderEdit b) -> do
+            editas <- getReplaceEditsFromSubject $ isoBackwards b
+            return $ Just editas
+    in MkChangeLens {..}
 
 instance MonadOne m => IsChangeLens (Lens' m a b) where
     type LensDomain (Lens' m a b) = WholeUpdate a

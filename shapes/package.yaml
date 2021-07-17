@@ -1,6 +1,6 @@
-name: shapes
-version: "0.3"
 _common: !include "../common.yaml"
+name: shapes
+version: *changes_version
 <<: *author
 
 <<: *language
@@ -45,6 +45,7 @@ library:
     exposed-modules:
       - Data.Words
       - Control.Category.Groupoid
+      - Data.Chain
       - Data.Filterable
       - Data.MonoApplicative
       - Data.CatFunctor
@@ -72,16 +73,20 @@ library:
       - Control.Applicative.Compose
       - Control.Monad.Compose
       - Control.Monad.Exception
+      - Control.Monad.MonadCont
       - Control.Monad.Coroutine
       - Control.Monad.LifeCycle
       - Control.Clock
       - Control.Task
       - Control.AsyncRunner
       - Unsafe.Type
+      - Unsafe.IO
+      - Debug.Trace.Null
       - Shapes
       - Shapes.Numeric
       - Shapes.Unsafe
       - Shapes.Test
+      - Shapes.Test.Context
     other-modules:
       - Shapes.Import
       - Shapes.Instances

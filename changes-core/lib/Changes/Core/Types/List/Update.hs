@@ -1,5 +1,7 @@
 module Changes.Core.Types.List.Update
     ( ListUpdate(..)
+    , listLengthLens
+    , listItemLinearLens
     , listItemLens
     ) where
 
@@ -10,9 +12,12 @@ import Changes.Core.Read
 import Changes.Core.Sequence
 import Changes.Core.Types.List.Edit
 import Changes.Core.Types.List.Read
+import Changes.Core.Types.None
 import Changes.Core.Types.One.FullResult
 import Changes.Core.Types.One.Read
 import Changes.Core.Types.One.Result
+import Changes.Core.Types.ReadOnly
+import Changes.Core.Types.Whole
 
 data ListUpdate seq update where
     ListUpdateItem :: SequencePoint seq -> update -> ListUpdate seq update
@@ -35,82 +40,156 @@ instance IsEditUpdate update => IsEditUpdate (ListUpdate seq update) where
     updateEdit (ListUpdateInsert p subj) = ListEditInsert p subj
     updateEdit ListUpdateClear = ListEditClear
 
-listItemLens ::
+instance (IsSequence seq, FullSubjectReader (UpdateReader update)) => FullUpdate (ListUpdate seq update) where
+    replaceUpdate mr write = do
+        write ListUpdateClear
+        len <- mr ListReadLength
+        for_ [0 .. pred len] $ \i -> do
+            item <- readableToSubject $ knownItemReadFunction i mr
+            write $ ListUpdateInsert i item
+
+listLengthLens ::
+       forall seq update. (Num (Index seq))
+    => ChangeLens (ListUpdate seq update) (ROWUpdate (SequencePoint seq))
+listLengthLens = let
+    clRead :: ReadFunction (ListReader seq (UpdateReader update)) (WholeReader (SequencePoint seq))
+    clRead mr ReadWhole = mr ListReadLength
+    clUpdate ::
+           forall m. MonadIO m
+        => ListUpdate seq update
+        -> Readable m (ListReader seq (UpdateReader update))
+        -> m [ROWUpdate (SequencePoint seq)]
+    clUpdate ListUpdateClear _ = return $ pure $ MkReadOnlyUpdate $ MkWholeUpdate 0
+    clUpdate (ListUpdateItem _ _) _ = return []
+    clUpdate _ mr = do
+        i <- mr ListReadLength
+        return $ pure $ MkReadOnlyUpdate $ MkWholeUpdate i
+    in MkChangeLens {clPutEdits = clPutEditsNone, ..}
+
+listItemLinearLens ::
        forall seq update.
        ( IsSequence seq
        , FullSubjectReader (UpdateReader update)
-       , ApplicableEdit (UpdateEdit update)
+       , FullEdit (UpdateEdit update)
        , UpdateSubject update ~ Element seq
        )
-    => SequencePoint seq
-    -> FloatingChangeLens (ListUpdate seq update) (MaybeUpdate update)
-listItemLens initpos = let
+    => Bool
+    -> SequencePoint seq
+    -> LinearFloatingChangeLens (StateLensVar (Bool, Index seq)) (ListUpdate seq update) (MaybeUpdate update)
+listItemLinearLens initpresent (MkSequencePoint initpos) = let
     sclInit ::
            forall m. MonadIO m
         => Readable m (ListReader seq (UpdateReader update))
-        -> m (SequencePoint seq)
-    sclInit _ = return initpos
+        -> m (Bool, Index seq)
+    sclInit _ = return (initpresent, initpos)
+    getSP ::
+           forall m. Monad m
+        => StateT (Bool, Index seq) m (Bool, SequencePoint seq)
+    getSP = do
+        (present, i) <- get
+        return (present, MkSequencePoint i)
+    putSP ::
+           forall m. Monad m
+        => Bool
+        -> SequencePoint seq
+        -> StateT (Bool, Index seq) m ()
+    putSP present (MkSequencePoint i) = put (present, i)
     sclRead ::
-           ReadFunctionT (StateT (SequencePoint seq)) (ListReader seq (UpdateReader update)) (OneReader Maybe (UpdateReader update))
+           ReadFunctionT (StateT (Bool, Index seq)) (ListReader seq (UpdateReader update)) (OneReader Maybe (UpdateReader update))
     sclRead mr (ReadOne rt) = do
-        i <- get
-        lift $ mr $ ListReadItem i rt
+        (present, i) <- getSP
+        if present
+            then lift $ mr $ ListReadItem i rt
+            else return Nothing
     sclRead mr ReadHasOne = do
-        i <- get
-        if i < 0
-            then return Nothing
-            else do
-                len <- lift $ mr ListReadLength
-                return $
-                    if i >= len
-                        then Nothing
-                        else Just ()
+        (present, i) <- getSP
+        if present
+            then if i < 0
+                     then return Nothing
+                     else do
+                         len <- lift $ mr ListReadLength
+                         return $
+                             if i >= len
+                                 then Nothing
+                                 else Just ()
+            else return Nothing
     sclUpdate ::
            forall m. MonadIO m
         => ListUpdate seq update
         -> Readable m (ListReader seq (UpdateReader update))
-        -> StateT (SequencePoint seq) m [MaybeUpdate update]
+        -> StateT (Bool, Index seq) m [MaybeUpdate update]
     sclUpdate (ListUpdateItem ie update) _ = do
-        i <- get
+        (present, i) <- getSP
         return $
-            if i == ie
+            if present && i == ie
                 then [MkFullResultOneUpdate $ SuccessResultOneUpdate update]
                 else []
     sclUpdate (ListUpdateDelete ie) _ = do
-        i <- get
-        case compare ie i of
-            LT -> do
-                put $ i - 1
+        (present, i) <- getSP
+        case (present, compare ie i) of
+            (_, LT) -> do
+                putSP present $ pred i
                 return []
-            EQ -> return [MkFullResultOneUpdate $ NewResultOneUpdate Nothing]
-            GT -> return []
+            (True, EQ) -> do
+                putSP False i
+                return [MkFullResultOneUpdate $ NewResultOneUpdate Nothing]
+            _ -> return []
     sclUpdate (ListUpdateInsert ie _) _ = do
-        i <- get
-        if ie <= i
-            then put $ i + 1
-            else return ()
-        return []
+        (present, i) <- getSP
+        case (present, compare ie i) of
+            (_, GT) -> return []
+            (False, EQ) -> do
+                putSP True i
+                return [MkFullResultOneUpdate $ NewResultOneUpdate $ Just ()]
+            _ -> do
+                putSP present $ succ i
+                return []
     sclUpdate ListUpdateClear _ = do
-        put 0
+        putSP False 0
         return [MkFullResultOneUpdate $ NewResultOneUpdate Nothing]
     sPutEdit ::
            forall m. MonadIO m
         => MaybeEdit (UpdateEdit update)
-        -> Readable m (ListReader seq (UpdateReader update))
-        -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
-    sPutEdit (SuccessFullResultOneEdit edit) _ = do
-        i <- get
-        return $ Just [ListEditItem i edit]
-    sPutEdit (NewFullResultOneEdit Nothing) _ = do
-        i <- get
-        return $ Just [ListEditDelete i]
-    sPutEdit (NewFullResultOneEdit (Just subj)) _ = do
-        i <- get
-        return $ Just [ListEditInsert i subj]
+        -> StateT (Bool, Index seq) m (Maybe [ListEdit seq (UpdateEdit update)])
+    sPutEdit (SuccessFullResultOneEdit edit) = do
+        (present, i) <- getSP
+        return $
+            Just $
+            if present
+                then [ListEditItem i edit]
+                else []
+    sPutEdit (NewFullResultOneEdit Nothing) = do
+        (present, i) <- getSP
+        if present
+            then do
+                putSP False i
+                return $ Just [ListEditDelete i]
+            else return $ Just []
+    sPutEdit (NewFullResultOneEdit (Just subj)) = do
+        (present, i) <- getSP
+        if present
+            then do
+                edits <- getReplaceEditsFromSubject subj
+                return $ Just $ fmap (ListEditItem i) edits
+            else do
+                putSP True i
+                return $ Just [ListEditInsert i subj]
     sclPutEdits ::
            forall m. MonadIO m
         => [MaybeEdit (UpdateEdit update)]
-        -> Readable m (ListReader seq (UpdateReader update))
-        -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
-    sclPutEdits = clPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateChangeLens {..}
+        -> Readable m NullReader
+        -> StateT (Bool, Index seq) m (Maybe [ListEdit seq (UpdateEdit update)])
+    sclPutEdits = linearPutEditsFromPutEdit sPutEdit
+    in makeStateExpLens MkStateChangeLens {..}
+
+listItemLens ::
+       forall seq update.
+       ( IsSequence seq
+       , FullSubjectReader (UpdateReader update)
+       , FullEdit (UpdateEdit update)
+       , UpdateSubject update ~ Element seq
+       )
+    => Bool
+    -> SequencePoint seq
+    -> FloatingChangeLens (ListUpdate seq update) (MaybeUpdate update)
+listItemLens present initpos = expToFloatingChangeLens $ listItemLinearLens present initpos

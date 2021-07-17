@@ -1,6 +1,6 @@
-name: pinafore-language
-version: "0.3"
 _common: !include "../common.yaml"
+name: pinafore-language
+version: *pinafore_version
 <<: *author
 
 <<: *language
@@ -15,6 +15,8 @@ library:
       - directory
       - parsec
       - containers
+      - text
+      - text-icu
       - typed-expression
       - changes-core
       - changes-world
@@ -27,6 +29,7 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
+      - Pinafore.Markdown
       - Pinafore.Context
       - Pinafore.Language.Value.Instances
       - Pinafore.Language.Value.WholeRef
@@ -51,6 +54,7 @@ library:
       - Pinafore.Language.Var
       - Pinafore.Language.Convert.TH
       - Pinafore.Language.Convert
+      - Pinafore.Language.ExprShow
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type
@@ -59,6 +63,7 @@ library:
       - Pinafore.Language.Type.OpenEntity
       - Pinafore.Language.Type.EntityAdapter
       - Pinafore.Language.Type.DynamicSupertype
+      - Pinafore.Language.DefDoc
       - Pinafore.Language.Grammar.Syntax
       - Pinafore.Language.Grammar.Read.Token
       - Pinafore.Language.Grammar.Read.Parser
@@ -99,9 +104,9 @@ tests:
           - pinafore-language
         main: Main.hs
         other-modules:
-          - Test.Context
           - Test.RunScript
           - Test.Language
+          - Test.Unifier
           - Test.Entity
           - Test.Type
           - Test.ReadType

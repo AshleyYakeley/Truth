@@ -20,13 +20,13 @@ class PinaforeLexer(RegexLexer):
             (r'\#(.*?)\n', Comment.Single),
             (r'{\#', Comment.Multiline, 'comment'),
             (r'"(\\\\|\\"|[^"])*"', String),
-            (words(('rec', 'if', 'then', 'else', 'let', 'import', 'export', 'in', 'do', 'case', 'of', 'end'), suffix=r'\b'), Keyword),
+            (words(('rec', 'if', 'then', 'else', 'let', 'import', 'expose', 'in', 'do', 'case', 'of', 'end'), suffix=r'\b'), Keyword),
             (words(('datatype', 'opentype', 'subtype', 'closedtype', 'dynamictype'), suffix=r'\b'), Keyword.Declaration),
             (words(('property', 'openEntity', 'newOpenEntity', 'evaluate'), suffix=r'\b'), Keyword.Pseudo),
             (words((
                 'Any', 'None', 'Literal', 'Text', 'Number', 'Rational', 'Integer', 'Boolean', 'Ordering', 'Time', 'Duration', 'Date', 'TimeOfDay', 'LocalTime',
                 'Entity', 'DynamicEntity',
-                'Maybe', 'Either', 'RefOrder', 'Action', 'WholeRef', 'SetRef', 'FiniteSetRef', 'Element', 'Window', 'MenuItem'
+                'Maybe', 'Either', 'RefOrder', 'Action', 'WholeRef', 'SetRef', 'FiniteSetRef', 'ListRef', 'Element', 'Window', 'MenuItem'
                 ), suffix=r'\b'), Keyword.Type),
             (r'![-0-9A-Fa-f]+', Literal.Anchor),
             (r'!"(\\\\|\\"|[^"])*"', Literal.Anchor),

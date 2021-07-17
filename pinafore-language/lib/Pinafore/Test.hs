@@ -16,12 +16,14 @@ module Pinafore.Test
     , PinaforeInterpreter
     , PinaforeSourceInterpreter
     , toJMShimWit
+    , module Pinafore.Language.Expression
     , PinaforeTableSubject(..)
     , module Pinafore.Test
     ) where
 
 import Changes.Core
 import Pinafore
+import Pinafore.Language.Expression
 import Pinafore.Language.Grammar
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Shim

@@ -16,8 +16,10 @@ import Control.Monad.Compose as I
 import Control.Monad.Coroutine as I
 import Control.Monad.Exception as I
 import Control.Monad.LifeCycle as I
+import Control.Monad.MonadCont as I
 import Control.Task as I
 import Data.CatFunctor as I
+import Data.Chain as I
 import Data.Codec as I
 import Data.CoerceFunction as I
 import Data.Coercion as I

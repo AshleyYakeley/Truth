@@ -7,7 +7,10 @@ module Pinafore.Language.Grammar.Interpret
 
 import Data.Graph
 import Pinafore.Base
+import Pinafore.Language.DefDoc
+import Pinafore.Language.DocTree
 import Pinafore.Language.Error
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.RefNotation
 import Pinafore.Language.Grammar.Interpret.Type
@@ -19,7 +22,10 @@ import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Pinafore.Markdown
 import Shapes
+
+type instance EntryDoc PinaforeTypeSystem = DefDoc
 
 interpretPatternConstructor :: SyntaxConstructor -> PinaforeSourceInterpreter (QPatternConstructor)
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
@@ -71,73 +77,162 @@ interpretPatternOrName pat = Right $ interpretPattern pat
 interpretExpression :: SyntaxExpression -> RefExpression
 interpretExpression (MkWithSourcePos spos sexpr) = interpretExpression' spos sexpr
 
-getBindingNode :: SyntaxBinding -> (SyntaxBinding, Name, [Name])
-getBindingNode b@(MkSyntaxBinding _ _ n _) = (b, n, setToList $ syntaxFreeVariables b)
+type DocSyntaxBinding = (Markdown, SyntaxBinding)
+
+getBindingNode :: DocSyntaxBinding -> (DocSyntaxBinding, Name, [Name])
+getBindingNode db@(_, b@(MkSyntaxBinding _ _ n _)) = (db, n, setToList $ syntaxFreeVariables b)
 
 -- | Group bindings into a topologically-sorted list of strongly-connected components
-clumpBindings :: [SyntaxBinding] -> [[SyntaxBinding]]
+clumpBindings :: [DocSyntaxBinding] -> [[DocSyntaxBinding]]
 clumpBindings bb = fmap flattenSCC $ stronglyConnComp $ fmap getBindingNode bb
 
-interpretLetBindingsClump :: SourcePos -> [SyntaxBinding] -> MFunction RefNotation RefNotation
-interpretLetBindingsClump spos sbinds ra = do
+interpretRecursiveLetBindingsClump :: SourcePos -> [DocSyntaxBinding] -> MFunction RefNotation RefNotation
+interpretRecursiveLetBindingsClump spos sbinds ra = do
     bl <- interpretBindings sbinds
     remonadRefNotation
         (MkWMFunction $ \se -> do
-             bmap <- runSourcePos spos $ qUncheckedBindingsComponentLetExpr bl
-             withNewLetBindings bmap se) $
+             bmap <- runSourcePos spos $ qUncheckedBindingsRecursiveLetExpr bl
+             withNewLetBindings bmap se)
         ra
 
-interpretLetBindingss :: SourcePos -> [[SyntaxBinding]] -> MFunction RefNotation RefNotation
-interpretLetBindingss _ [] ra = ra
-interpretLetBindingss spos (b:bb) ra = interpretLetBindingsClump spos b $ interpretLetBindingss spos bb ra
+interpretRecursiveLetBindingss :: SourcePos -> [[DocSyntaxBinding]] -> MFunction RefNotation RefNotation
+interpretRecursiveLetBindingss _ [] ra = ra
+interpretRecursiveLetBindingss spos (b:bb) ra =
+    interpretRecursiveLetBindingsClump spos b $ interpretRecursiveLetBindingss spos bb ra
 
-interpretLetBindings :: SourcePos -> [SyntaxBinding] -> MFunction RefNotation RefNotation
-interpretLetBindings spos sbinds ra = do
-    liftRefNotation $ runSourcePos spos $ checkSyntaxBindingsDuplicates sbinds
-    interpretLetBindingss spos (clumpBindings sbinds) ra
+interpretRecursiveLetBindings :: SourcePos -> [DocSyntaxBinding] -> MFunction RefNotation RefNotation
+interpretRecursiveLetBindings spos sbinds ra = do
+    liftRefNotation $ runSourcePos spos $ checkSyntaxBindingsDuplicates $ fmap snd sbinds
+    interpretRecursiveLetBindingss spos (clumpBindings sbinds) ra
 
-interpretDeclarations :: SourcePos -> [SyntaxDeclaration] -> MFunction RefNotation RefNotation
-interpretDeclarations dspos decls = let
-    importDecls :: WMFunction PinaforeInterpreter PinaforeInterpreter
-    importDecls =
-        compAll $
-        (mapMaybe $ \case
-             ImportSyntaxDeclarataion spos mname -> Just $ MkWMFunction $ importModule spos mname
-             _ -> Nothing)
-            decls
-    typeDecls :: WMFunction PinaforeInterpreter PinaforeInterpreter
-    typeDecls =
-        MkWMFunction $
-        interpretTypeDeclarations $
-        mapMaybe
-            (\case
-                 TypeSyntaxDeclaration spos name defn -> Just (spos, name, defn)
-                 _ -> Nothing)
-            decls
-    subtypeDecls :: WMFunction PinaforeInterpreter PinaforeInterpreter
-    subtypeDecls =
-        compAll $
-        mapMaybe
-            (\case
-                 SubtypeDeclaration spos sta stb ->
-                     Just $ MkWMFunction $ mapSourcePos spos $ interpretSubtypeRelation sta stb
-                 _ -> Nothing)
-            decls
-    bindingDecls :: MFunction RefNotation RefNotation
-    bindingDecls =
-        interpretLetBindings dspos $
-        (mapMaybe $ \case
-             BindingSyntaxDeclaration sbind -> Just sbind
-             _ -> Nothing)
-            decls
-    in remonadRefNotation (importDecls . typeDecls . subtypeDecls) . bindingDecls
+interpretSequentialLetBinding :: DocSyntaxBinding -> MFunction RefNotation RefNotation
+interpretSequentialLetBinding sbind ra = do
+    b <- interpretBinding sbind
+    remonadRefNotation
+        (MkWMFunction $ \se -> do
+             bmap <- runSourcePos (getSourcePos $ snd sbind) $ qBindingSequentialLetExpr b
+             withNewLetBindings bmap se)
+        ra
+
+interpretRecursiveDocDeclarations ::
+       SourcePos -> [SyntaxWithDoc SyntaxDirectDeclaration] -> RefNotation a -> RefNotation ([DocTreeEntry DefDoc], a)
+interpretRecursiveDocDeclarations dspos ddecls ma = do
+    (typeDecls, MkChain subtypeDecls, bindingDecls, docDecls) <-
+        liftRefNotation $
+        fmap mconcat $
+        for ddecls $ \(MkSyntaxWithDoc doc decl) ->
+            case decl of
+                TypeSyntaxDeclaration spos name defn ->
+                    return $ let
+                        docName = toText name
+                        docValueType = ""
+                        docType = TypeDocType
+                        docDescription = doc
+                        in (pure (spos, name, doc, defn), mempty, mempty, pure $ EntryDocTreeEntry $ MkDefDoc {..})
+                SubtypeSyntaxDeclaration spos sta stb ->
+                    return $ let
+                        docName = exprShow sta <> " <: " <> exprShow stb
+                        docValueType = ""
+                        docType = SubtypeRelationDocType
+                        docDescription = doc
+                        in ( mempty
+                           , MkChain $ MkWMFunction $ mapSourcePos spos $ interpretSubtypeRelation sta stb
+                           , mempty
+                           , pure $ EntryDocTreeEntry $ MkDefDoc {..})
+                BindingSyntaxDeclaration sbind@(MkSyntaxBinding _ mtype name _) ->
+                    return $ let
+                        docName = toText name
+                        docValueType =
+                            case mtype of
+                                Nothing -> ""
+                                Just st -> exprShow st
+                        docType = ValueDocType
+                        docDescription = doc
+                        in (mempty, mempty, pure (doc, sbind), pure $ EntryDocTreeEntry $ MkDefDoc {..})
+    a <-
+        remonadRefNotation (MkWMFunction (interpretRecursiveTypeDeclarations typeDecls) . subtypeDecls) $
+        interpretRecursiveLetBindings dspos bindingDecls ma
+    return (docDecls, a)
+
+exposeDeclids :: [Name] -> [DefDoc] -> [DefDoc]
+exposeDeclids names decls = let
+    inDecl :: Name -> Maybe DefDoc
+    inDecl n = find (\doc -> docName doc == toText n) decls
+    isSubtypeDDI :: DefDoc -> Bool
+    isSubtypeDDI doc =
+        case docType doc of
+            SubtypeRelationDocType -> True
+            _ -> False
+    in mapMaybe inDecl names <> filter isSubtypeDDI decls
+
+exposeDeclsDocTree :: [Name] -> [DocTreeEntry DefDoc] -> [DocTreeEntry DefDoc]
+exposeDeclsDocTree names = fmap EntryDocTreeEntry . exposeDeclids names . mconcat . fmap toList
+
+interpretExpose :: SyntaxExpose -> RefNotation ([DocTreeEntry DefDoc] -> [DocTreeEntry DefDoc], PinaforeScope)
+interpretExpose (SExpExpose spos names) = do
+    scope <- liftRefNotation $ runSourcePos spos $ exportScope names
+    return (exposeDeclsDocTree names, scope)
+interpretExpose (SExpLet sdecls expose) = do
+    (olddoc, (restrict, scope)) <- interpretDocDeclarations sdecls $ interpretExpose expose
+    return (\newdoc -> restrict $ olddoc <> newdoc, scope)
+
+interpretDocDeclaration :: SyntaxWithDoc SyntaxDeclaration -> RefNotation a -> RefNotation ([DocTreeEntry DefDoc], a)
+interpretDocDeclaration (MkSyntaxWithDoc doc decl) ma =
+    case decl of
+        ExposeSyntaxDeclaration _ sexp -> do
+            (docs, scope) <- interpretExpose sexp
+            a <- remonadRefNotation (MkWMFunction $ importScope scope) ma
+            return $ (docs [], a)
+        ImportSyntaxDeclaration spos mname -> do
+            newmod <- liftRefNotation $ runSourcePos spos $ getModule mname
+            a <- remonadRefNotation (MkWMFunction $ importScope $ moduleScope newmod) ma
+            return $ (pure $ TreeDocTreeEntry $ moduleDoc newmod, a)
+        DirectSyntaxDeclaration (TypeSyntaxDeclaration spos name defn) -> do
+            a <- remonadRefNotation (MkWMFunction $ interpretTypeDeclaration spos name doc defn) ma
+            let
+                docName = toText name
+                docValueType = ""
+                docType = TypeDocType
+                docDescription = doc
+            return (pure $ EntryDocTreeEntry $ MkDefDoc {..}, a)
+        DirectSyntaxDeclaration (SubtypeSyntaxDeclaration spos sta stb) -> do
+            a <- remonadRefNotation (MkWMFunction $ mapSourcePos spos $ interpretSubtypeRelation sta stb) ma
+            let
+                docName = exprShow sta <> " <: " <> exprShow stb
+                docValueType = ""
+                docType = SubtypeRelationDocType
+                docDescription = doc
+            return (pure $ EntryDocTreeEntry $ MkDefDoc {..}, a)
+        DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind@(MkSyntaxBinding _ mtype name _)) -> do
+            a <- interpretSequentialLetBinding (doc, sbind) ma
+            let
+                docName = toText name
+                docValueType =
+                    case mtype of
+                        Nothing -> ""
+                        Just st -> exprShow st
+                docType = ValueDocType
+                docDescription = doc
+            return (pure $ EntryDocTreeEntry $ MkDefDoc {..}, a)
+        RecursiveSyntaxDeclaration spos rdecls -> interpretRecursiveDocDeclarations spos rdecls ma
+
+interpretDocDeclarations :: [SyntaxWithDoc SyntaxDeclaration] -> RefNotation a -> RefNotation ([DocTreeEntry DefDoc], a)
+interpretDocDeclarations [] ma = do
+    a <- ma
+    return ([], a)
+interpretDocDeclarations (decl:decls) ma =
+    fmap (\(olddoc, (newdoc, a)) -> (olddoc <> newdoc, a)) $
+    interpretDocDeclaration decl $ interpretDocDeclarations decls ma
+
+interpretDeclarations :: [SyntaxWithDoc SyntaxDeclaration] -> MFunction RefNotation RefNotation
+interpretDeclarations decls ma = fmap snd $ interpretDocDeclarations decls ma
 
 interpretNamedConstructor :: SourcePos -> ReferenceName -> RefExpression
 interpretNamedConstructor spos n = do
     me <- liftRefNotation $ runSourcePos spos $ lookupLetBinding n
     case me of
         Just e -> return e
-        Nothing -> throw $ MkErrorMessage spos $ InterpretConstructorUnknownError n
+        Nothing -> throwErrorType spos $ InterpretConstructorUnknownError n
 
 interpretConstructor :: SourcePos -> SyntaxConstructor -> RefExpression
 interpretConstructor _ (SLNumber n) =
@@ -228,7 +323,7 @@ interpretExpression' spos (SEAbstract spat sbody) =
             pat <- mpat
             val <- interpretExpressionShadowed (sealedPatternNames pat) sbody
             liftRefNotation $ runSourcePos spos $ qCaseAbstract [(pat, val)]
-interpretExpression' spos (SELet sdecls sbody) = interpretDeclarations spos sdecls $ interpretExpression sbody
+interpretExpression' _ (SELet sdecls sbody) = interpretDeclarations sdecls $ interpretExpression sbody
 interpretExpression' spos (SECase sbody scases) = do
     body <- interpretExpression sbody
     pairs <- for scases interpretCase
@@ -250,25 +345,23 @@ interpretExpression' spos (SEList sexprs) = do
     exprs <- for sexprs interpretExpression
     liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs
 
-interpretBinding :: SyntaxBinding -> RefNotation QBindings
-interpretBinding (MkSyntaxBinding spos mstype name sexpr) = do
+interpretBinding :: DocSyntaxBinding -> RefNotation QBinding
+interpretBinding (doc, MkSyntaxBinding spos mstype name sexpr) = do
     mtype <- liftRefNotation $ runSourcePos spos $ for mstype interpretType
     expr <- interpretExpression sexpr
-    return $ qBindExpr name mtype expr
+    return $ qBindExpr name doc mtype expr
 
-interpretBindings :: [SyntaxBinding] -> RefNotation QBindings
-interpretBindings sbinds = do
-    qbinds <- for sbinds interpretBinding
-    return $ mconcat qbinds
+interpretBindings :: [DocSyntaxBinding] -> RefNotation [QBinding]
+interpretBindings sbinds = for sbinds interpretBinding
 
 interpretTopDeclarations :: SyntaxTopDeclarations -> MFunction PinaforeInterpreter PinaforeInterpreter
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) ma =
-    runRefNotation spos $ interpretDeclarations spos sdecls $ liftRefNotation ma
+    runSourcePos spos $ runRefNotation $ interpretDeclarations sdecls $ liftRefNotation ma
 
 interpretTopExpression :: SyntaxExpression -> PinaforeInterpreter QExpr
-interpretTopExpression sexpr@(MkWithSourcePos spos _) = runRefNotation spos $ interpretExpression sexpr
+interpretTopExpression sexpr@(MkWithSourcePos spos _) = runSourcePos spos $ runRefNotation $ interpretExpression sexpr
 
-interpretModule :: SyntaxModule -> PinaforeInterpreter PinaforeScope
-interpretModule (MkWithSourcePos spos (SMLet sdecls smod)) =
-    runRefNotation spos $ interpretDeclarations spos sdecls $ liftRefNotation $ interpretModule smod
-interpretModule (MkWithSourcePos spos (SMExport names)) = runSourcePos spos $ exportScope names
+interpretModule :: ModuleName -> SyntaxModule -> PinaforeSourceInterpreter PinaforeModule
+interpretModule moduleName smod = do
+    (docs, scope) <- runRefNotation $ interpretExpose smod
+    return $ MkModule (MkDocTree (toText moduleName) "" $ docs []) scope

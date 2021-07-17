@@ -3,13 +3,16 @@ module Pinafore.Language.Library.Defs where
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.Convert
+import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Pinafore.Markdown
 import Shapes
 
 qPositiveTypeDescription ::
@@ -43,7 +46,7 @@ data BindDoc = MkBindDoc
 mkValEntry ::
        forall t. ToPinaforeType t
     => Name
-    -> Text
+    -> Markdown
     -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry BindDoc
 mkValEntry name docDescription val = let
@@ -61,7 +64,7 @@ mkValEntry name docDescription val = let
 mkSupertypeEntry ::
        forall t. ToPinaforeType t
     => Name
-    -> Text
+    -> Markdown
     -> ((?pinafore :: PinaforeContext) => t)
     -> DocTreeEntry BindDoc
 mkSupertypeEntry name docDescription _val = let
@@ -72,7 +75,7 @@ mkSupertypeEntry name docDescription _val = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
-mkTypeEntry :: Name -> Text -> PinaforeBoundType -> DocTreeEntry BindDoc
+mkTypeEntry :: Name -> Markdown -> PinaforeBoundType -> DocTreeEntry BindDoc
 mkTypeEntry name docDescription t = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> TypeBinding t
     docName = toText name
@@ -81,7 +84,7 @@ mkTypeEntry name docDescription t = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
-mkSubtypeRelationEntry :: Text -> Text -> Text -> [SubypeConversionEntry PinaforeGroundType] -> DocTreeEntry BindDoc
+mkSubtypeRelationEntry :: Text -> Text -> Markdown -> [SubypeConversionEntry PinaforeGroundType] -> DocTreeEntry BindDoc
 mkSubtypeRelationEntry ta tb docDescription scentries = let
     bdScopeEntry = SubtypeScopeEntry scentries
     docName = ta <> " <: " <> tb
@@ -90,11 +93,35 @@ mkSubtypeRelationEntry ta tb docDescription scentries = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
+-- | The 'Monoid' trick of representing @Monoid T@ as @[T] <: T@.
+monoidSubypeConversionEntry ::
+       forall dv gt. Is (SaturatedConstraintWitness Monoid) gt
+    => PinaforeGroundType dv gt
+    -> SubypeConversionEntry PinaforeGroundType
+monoidSubypeConversionEntry t =
+    simpleSubtypeConversionEntry (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType) t $
+    MkSubtypeConversion $ \sc (ConsDolanArguments ta NilDolanArguments :: _ pola _) -> do
+        margs <- saturateGroundType t
+        case margs of
+            MkAnyW args ->
+                case saturateArgsConstraint (representative @_ @(SaturatedConstraintWitness Monoid) @gt) args of
+                    Compose Dict -> let
+                        tb = singleDolanType $ GroundDolanSingularType t args
+                        sconv = subtypeConvert sc ta tb
+                        cshim :: forall a. JMShim Type (JoinMeetType pola a (LimitType pola)) a
+                        cshim =
+                            case polarityType @pola of
+                                PositiveType -> iJoinL1
+                                NegativeType -> iMeetL1
+                        in return $
+                           MkSubtypeArguments args $
+                           fmap (\conv -> functionToShim "mconcat" mconcat . applyCoPolyShim cid (cshim . conv)) sconv
+
 mkValPatEntry ::
        forall t v lt.
        (ToPinaforeType t, FromPinaforeType v, ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt)
     => Name
-    -> Text
+    -> Markdown
     -> t
     -> (v -> Maybe (HList lt))
     -> DocTreeEntry BindDoc
@@ -108,9 +135,19 @@ mkValPatEntry name docDescription val pat = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
-mkSpecialFormEntry :: Name -> Text -> Text -> Text -> PinaforeSpecialForm -> DocTreeEntry BindDoc
+mkSpecialFormEntry ::
+       Name
+    -> Markdown
+    -> Text
+    -> Text
+    -> ((?pinafore :: PinaforeContext) => PinaforeSpecialForm)
+    -> DocTreeEntry BindDoc
 mkSpecialFormEntry name docDescription params docValueType sf = let
-    bdScopeEntry = BindScopeEntry name $ Just $ \_ -> SpecialFormBinding sf
+    bdScopeEntry =
+        BindScopeEntry name $
+        Just $ \pc -> let
+            ?pinafore = pc
+            in SpecialFormBinding sf
     docName = toText name <> " " <> params
     docType = ValueDocType
     bdDoc = MkDefDoc {..}

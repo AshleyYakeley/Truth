@@ -13,7 +13,7 @@ module Pinafore.Base.Number
     , readNumberLiteral
     ) where
 
-import Data.List (head, iterate)
+import Data.List (head)
 import Pinafore.Base.SafeRational
 import Shapes hiding ((+++), option)
 import Shapes.Numeric
@@ -254,7 +254,7 @@ readNumberLiteral = let
                         return $
                             if repD == 1
                                 then 0
-                                else repN % (fixD * (repD - 1))
+                                else repN % (fixD * (pred repD))
                 return $ (fixN % fixD) + repR
         return $ sign $ toRational intPart + decPart
     readNaN :: ReadP Number

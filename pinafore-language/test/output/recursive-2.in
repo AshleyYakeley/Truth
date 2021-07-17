@@ -1,0 +1,14 @@
+#!/usr/bin/pinafore
+let
+fix: (a -> a) -> a;
+fix f = let rec x = f x end in x;
+
+recf: (Integer -> b -> Maybe b) -> Integer -> b -> Maybe b;
+recf s a b = if a <= 0 then Just b else s (a - 1) b;
+
+f: Integer -> Integer -> Maybe Integer;
+f = fix recf;
+in outputLn $ toText $ case f 2 5 of
+    Just b -> b;
+    Nothing -> 0;
+    end

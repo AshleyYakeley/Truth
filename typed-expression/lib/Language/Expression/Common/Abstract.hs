@@ -7,7 +7,7 @@ import Language.Expression.Common.Error
 import Language.Expression.Common.Expression
 import Language.Expression.Common.Named
 import Language.Expression.Common.Pattern
-import Language.Expression.Common.Rename.RenameTypeSystem
+import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Simplifier
 import Language.Expression.Common.TypeSystem
@@ -18,6 +18,7 @@ class ( RenameTypeSystem ts
       , UnifyTypeSystem ts
       , SimplifyTypeSystem ts
       , Monad (TSInner ts)
+      , MonadThrow ExpressionError (TSInner ts)
       , Ord (TSName ts)
       , TSOuter ts ~ RenamerT ts (TSInner ts)
       ) => AbstractTypeSystem ts where
@@ -64,7 +65,7 @@ abstractNamedExpression ::
     -> TSOpenExpression ts a
     -> TSOuter ts (AbstractResult ts a)
 abstractNamedExpression name expr = do
-    MkNewVar vwt0 _ <- renameNewVar @ts
+    MkNewVar vwt0 _ <- renameNewFreeVar @ts
     abstractNamedExpressionUnifier @ts name vwt0 expr $ \vwt expr' ->
         return $ MkAbstractResult (mapShimWit polar2 vwt) expr'
 
@@ -103,8 +104,8 @@ joinPatternResults ::
     => [PatternResult ts Maybe]
     -> TSOuter ts (PatternResult ts Identity)
 joinPatternResults [] = do
-    MkNewVar tt _ <- renameNewVar @ts
-    MkNewVar _ ta <- renameNewVar @ts
+    MkNewVar tt _ <- renameNewFreeVar @ts
+    MkNewVar _ ta <- renameNewFreeVar @ts
     return $
         MkPatternResult (uuLiftPosShimWit ta) $
         MkAbstractResult (uuLiftNegShimWit tt) $ pure $ \_ -> error "missing case"
@@ -138,14 +139,15 @@ abstractSealedExpression ::
 abstractSealedExpression absw name sexpr =
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression twt expr <- rename @ts sexpr
+        MkSealedExpression twt expr <- rename @ts FreeName sexpr
         MkAbstractResult uvwt expr' <- abstractNamedExpression @ts name expr
         unifierSolve @ts $ do
             vwt <- uuGetNegShimWit uvwt
             pure $ MkSealedExpression (absw vwt twt) expr'
 
 applySealedExpression ::
-       forall ts. AbstractTypeSystem ts
+       forall ts.
+       (AllWitnessConstraint Show (TSPosWitness ts), AllWitnessConstraint Show (TSNegWitness ts), AbstractTypeSystem ts)
     => UnifierFunctionNegWitness ts
     -> TSSealedExpression ts
     -> TSSealedExpression ts
@@ -153,9 +155,9 @@ applySealedExpression ::
 applySealedExpression appw sexprf sexpra =
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression tf exprf <- rename @ts sexprf
-        MkSealedExpression ta expra <- rename @ts sexpra
-        MkNewVar vx tx <- renameNewVar @ts
+        MkSealedExpression tf exprf <- rename @ts FreeName sexprf
+        MkSealedExpression ta expra <- rename @ts FreeName sexpra
+        MkNewVar vx tx <- renameNewFreeVar @ts
         let vax = appw ta vx
         uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit tf) (uuLiftNegShimWit vax)
         unifierSolve @ts $ do
@@ -174,8 +176,8 @@ letSealedExpression ::
 letSealedExpression name sexpre sexprb =
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression te expre <- rename @ts sexpre
-        MkSealedExpression tb exprb <- rename @ts sexprb
+        MkSealedExpression te expre <- rename @ts FreeName sexpre
+        MkSealedExpression tb exprb <- rename @ts FreeName sexprb
         MkAbstractResult uvt exprf <- abstractNamedExpression @ts name exprb
         uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit te) uvt
         unifierSolve @ts $ do
@@ -190,8 +192,8 @@ bothSealedPattern ::
 bothSealedPattern spat1 spat2 =
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        MkSealedPattern tw1 pat1 <- rename @ts spat1
-        MkSealedPattern tw2 pat2 <- rename @ts spat2
+        MkSealedPattern tw1 pat1 <- rename @ts FreeName spat1
+        MkSealedPattern tw2 pat2 <- rename @ts FreeName spat2
         utwr <- unifyUUNegShimWit @ts (uuLiftNegShimWit tw1) (uuLiftNegShimWit tw2)
         unifierSolve @ts $ do
             twr <- uuGetNegShimWit utwr
@@ -211,11 +213,11 @@ caseSealedExpression sbexpr rawcases =
     withTransConstraintTM @Monad $ do
         patrs <-
             for rawcases $ \(rawpat, rawexpr) -> do
-                pat <- rename @ts rawpat
-                expr <- rename @ts rawexpr
+                pat <- rename @ts FreeName rawpat
+                expr <- rename @ts FreeName rawexpr
                 patternAbstractSealedExpression @ts pat expr
         MkPatternResult urtwt (MkAbstractResult rvwt rexpr) <- joinPatternResults patrs
-        MkSealedExpression btwt bexpr <- rename @ts sbexpr
+        MkSealedExpression btwt bexpr <- rename @ts FreeName sbexpr
         uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit btwt) rvwt
         unifierSolve @ts $ do
             rtwt <- uuGetPosShimWit urtwt
@@ -232,8 +234,8 @@ caseAbstractSealedExpression absw rawcases =
     withTransConstraintTM @Monad $ do
         patrs <-
             for rawcases $ \(rawpat, rawexpr) -> do
-                pat <- rename @ts rawpat
-                expr <- rename @ts rawexpr
+                pat <- rename @ts FreeName rawpat
+                expr <- rename @ts FreeName rawexpr
                 patternAbstractSealedExpression @ts pat expr
         MkPatternResult urtwt (MkAbstractResult urvwt rexpr) <- joinPatternResults patrs
         unifierSolve @ts $ do
@@ -242,18 +244,18 @@ caseAbstractSealedExpression absw rawcases =
             pure $ MkSealedExpression (absw rvwt rtwt) $ fmap (\t1a t -> runIdentity $ t1a t) rexpr
 
 applyPatternConstructor ::
-       forall ts. (AbstractTypeSystem ts, MonadThrow ExpressionError (TSInner ts))
+       forall ts. AbstractTypeSystem ts
     => TSPatternConstructor ts
     -> TSSealedPattern ts
     -> TSInner ts (TSPatternConstructor ts)
 applyPatternConstructor patcon patarg =
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        MkPatternConstructor pct pclt pcpat <- rename @ts patcon
+        MkPatternConstructor pct pclt pcpat <- rename @ts FreeName patcon
         case pclt of
             NilListType -> lift $ throw PatternTooManyConsArgsError
             ConsListType pca pcla -> do
-                MkSealedPattern ta pata <- rename @ts patarg
+                MkSealedPattern ta pata <- rename @ts FreeName patarg
                 uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit pca) (uuLiftNegShimWit ta)
                 unifierSolve @ts $ do
                     conv <- uuGetShim uconv

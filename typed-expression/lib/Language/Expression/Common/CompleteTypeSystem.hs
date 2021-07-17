@@ -4,7 +4,7 @@ import Data.Shim
 import Language.Expression.Common.Abstract
 import Language.Expression.Common.Bindings
 import Language.Expression.Common.Error
-import Language.Expression.Common.Rename.RenameTypeSystem
+import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Subsumer
 import Language.Expression.Common.TypeSystem
@@ -31,27 +31,34 @@ tsFunctionNegShimWit ta tb =
     unPosShimWit ta $ \wa conva ->
         unNegShimWit tb $ \wb convb -> mapNegShimWit (funcShim conva convb) $ tsFunctionNegWitness @ts wa wb
 
-tsUnify ::
-       forall ts a b. CompleteTypeSystem ts
-    => TSPosShimWit ts a
-    -> TSNegShimWit ts b
-    -> TSInner ts (TSShim ts a b)
-tsUnify wa wb = runRenamer @ts $ solveUnifyPosNegShimWit @ts wa wb
-
 tsEval ::
        forall ts m. (MonadThrow ExpressionError m, Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression
 
-tsUnifyValue ::
-       forall ts t. CompleteTypeSystem ts
-    => TSNegShimWit ts t
-    -> TSValue ts
+-- | for debugging
+tsUnifyRigidValue ::
+       forall ts t. (CompleteTypeSystem ts, FromShimWit (TSShim ts) (TSNegWitness ts) t)
+    => TSValue ts
     -> TSInner ts t
-tsUnifyValue witn (MkAnyValue witp val) = do
-    conv <- tsUnify @ts witp witn
-    return $ shimToFunction conv val
+tsUnifyRigidValue (MkAnyValue witp val) =
+    runRenamer @ts $ do
+        witp' <- rename @ts RigidName witp
+        witn' <- rename @ts RigidName fromShimWit
+        conv <- solveUnifyPosNegShimWit @ts witp' witn'
+        return $ shimToFunction conv val
+
+tsUnifyValue ::
+       forall ts t. (CompleteTypeSystem ts, FromShimWit (TSShim ts) (TSNegWitness ts) t)
+    => TSValue ts
+    -> TSInner ts t
+tsUnifyValue (MkAnyValue witp val) =
+    runRenamer @ts $ do
+        witp' <- rename @ts FreeName witp
+        witn' <- rename @ts RigidName fromShimWit
+        conv <- solveUnifyPosNegShimWit @ts witp' witn'
+        return $ shimToFunction conv val
 
 tsSubsume ::
        forall ts inf decl. CompleteTypeSystem ts
@@ -68,15 +75,6 @@ tsSubsumeValue ::
 tsSubsumeValue tdecl (MkAnyValue winf val) = do
     conv <- tsSubsume @ts winf tdecl
     return $ shimToFunction conv val
-
-tsEvalToType ::
-       forall ts t. (CompleteTypeSystem ts, MonadThrow ExpressionError (TSInner ts), Show (TSName ts))
-    => TSNegShimWit ts t
-    -> TSSealedExpression ts
-    -> TSInner ts t
-tsEvalToType witn expr = do
-    aval <- tsEval @ts expr
-    tsUnifyValue @ts witn aval
 
 tsApply ::
        forall ts. CompleteTypeSystem ts
@@ -113,7 +111,7 @@ tsVar name =
     runIdentity $
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        MkNewVar vwt twt <- renameNewVar @ts
+        MkNewVar vwt twt <- renameNewFreeVar @ts
         return $ varSealedExpression name vwt twt
 
 tsConst ::
@@ -133,16 +131,14 @@ tsLet n expv expb = letSealedExpression @ts n expv expb
 tsSingleBinding ::
        forall ts. CompleteTypeSystem ts
     => TSName ts
+    -> TSBindingData ts
     -> Maybe (AnyW (TSPosWitness ts))
     -> TSSealedExpression ts
-    -> Bindings ts
-tsSingleBinding name madecltype expr =
-    singleBinding name $ do
-        madecltype' <-
-            for madecltype $ \(MkAnyW decltype) -> do
-                decltype' <- namespace @ts $ renamePosWitness @ts decltype
-                return $ MkAnyW decltype'
-        expr' <- rename @ts expr
+    -> Binding ts
+tsSingleBinding name bd madecltype expr =
+    singleBinding name bd $ do
+        madecltype' <- for madecltype $ renameTypeSignature @ts
+        expr' <- rename @ts FreeName expr
         subsumerExpression madecltype' expr'
 
 tsSubsumeExpression ::
@@ -150,13 +146,24 @@ tsSubsumeExpression ::
     => AnyW (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
-tsSubsumeExpression t expr = runRenamer @ts $ withTransConstraintTM @Monad $ subsumeExpression @ts t expr
+tsSubsumeExpression decltype expr =
+    runRenamer @ts $
+    withTransConstraintTM @Monad $ do
+        decltype' <- renameTypeSignature @ts decltype
+        expr' <- rename @ts FreeName expr
+        subsumeExpression @ts decltype' expr'
 
-tsUncheckedComponentLet ::
+tsUncheckedRecursiveLet ::
        forall ts. (Ord (TSName ts), CompleteTypeSystem ts)
-    => Bindings ts
-    -> TSInner ts (Map (TSName ts) (TSSealedExpression ts))
-tsUncheckedComponentLet = bindingsComponentLetSealedExpression @ts
+    => [Binding ts]
+    -> TSInner ts (Map (TSName ts) (TSBindingData ts, TSSealedExpression ts))
+tsUncheckedRecursiveLet = bindingsRecursiveLetSealedExpression @ts
+
+tsSequentialLet ::
+       forall ts. (Ord (TSName ts), CompleteTypeSystem ts)
+    => Binding ts
+    -> TSInner ts (Map (TSName ts) (TSBindingData ts, TSSealedExpression ts))
+tsSequentialLet = bindingSequentialLetSealedExpression @ts
 
 tsVarPattern ::
        forall ts. CompleteTypeSystem ts
@@ -166,7 +173,7 @@ tsVarPattern name =
     runIdentity $
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        MkNewVar vwt twt <- renameNewVar @ts
+        MkNewVar vwt twt <- renameNewFreeVar @ts
         return $ varSealedPattern name vwt twt
 
 tsAnyPattern ::
@@ -176,7 +183,7 @@ tsAnyPattern =
     runIdentity $
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
-        MkNewVar twt _ <- renameNewVar @ts
+        MkNewVar twt _ <- renameNewFreeVar @ts
         return $ anySealedPattern twt
 
 tsBothPattern ::

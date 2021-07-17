@@ -1,0 +1,3 @@
+#!/bin/sh -e
+stack --no-docker install changes-gtk
+`stack --no-docker path --local-bin`/changes-cairo

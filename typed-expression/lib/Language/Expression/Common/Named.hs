@@ -1,3 +1,5 @@
+{-# LANGUAGE ApplicativeDo #-}
+
 module Language.Expression.Common.Named where
 
 import Language.Expression.Common.Expression
@@ -50,18 +52,18 @@ pattern MkNameWitness name wit =
 type NamedExpression name w = NameTypeExpression (UnitType name) (UnitType' w)
 
 instance WitnessMappable poswit negwit (NamedExpression name negwit a) where
-    mapWitnessesM _ _ (ClosedExpression a) = return $ ClosedExpression a
+    mapWitnessesM _ _ (ClosedExpression a) = pure $ ClosedExpression a
     mapWitnessesM mapPos mapNeg (OpenExpression (MkNameWitness name tt) expr) = do
         tt' <- mapNeg tt
         expr' <- mapWitnessesM mapPos mapNeg expr
-        return $ OpenExpression (MkNameWitness name tt') expr'
+        pure $ OpenExpression (MkNameWitness name tt') expr'
 
 instance WitnessMappable poswit negwit (NamedPattern name poswit a b) where
-    mapWitnessesM _ _ (ClosedPattern a) = return $ ClosedPattern a
+    mapWitnessesM _ _ (ClosedPattern a) = pure $ ClosedPattern a
     mapWitnessesM mapPos mapNeg (OpenPattern (MkNameWitness name tt) pat) = do
         tt' <- mapPos tt
         pat' <- mapWitnessesM mapPos mapNeg pat
-        return $ OpenPattern (MkNameWitness name tt') pat'
+        pure $ OpenPattern (MkNameWitness name tt') pat'
 
 namedExpressionFreeNames :: NamedExpression name vw a -> [name]
 namedExpressionFreeNames expr = expressionFreeWitnesses (\(MkNameWitness n _) -> n) expr

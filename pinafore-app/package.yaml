@@ -1,34 +1,57 @@
-name: pinafore-app
-version: "0.3"
 _common: !include "../common.yaml"
+name: pinafore-app
+version: *pinafore_version
 <<: *author
 
 <<: *language
 
 extra-doc-files: examples/*
 
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.12
+      - shapes
+      - time
+      - directory
+      - filepath
+      - xdg-basedir
+      - githash
+      - pinafore-language
+      - pinafore-gtk
+    exposed-modules:
+      - Pinafore.Version
+      - Pinafore.Options
+      - Pinafore.Libs
+
 executables:
     pinafore:
-        source-dirs: app
+        source-dirs: app/main
         dependencies:
           - base >= 4.12
           - shapes
-          - time
-          - filepath
-          - directory
           - optparse-applicative
-          - xdg-basedir
           - changes-core
           - changes-gtk
           - pinafore-language
-          - pinafore-gtk
-          - githash
+          - pinafore-app
         main: Main.hs
         other-modules:
           - Options
-          - Version
           - Run
-          - Documentation
+        ghc-options: -threaded
+    pinafore-doc:
+        source-dirs: app/doc
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - filepath
+          - optparse-applicative
+          - pinafore-language
+          - pinafore-app
+        main: Main.hs
+        other-modules:
+          - Options
         ghc-options: -threaded -rtsopts
 
 tests:
@@ -36,19 +59,25 @@ tests:
         source-dirs: test
         dependencies:
           - base >= 4.12
+          - filepath
+          - directory
           - shapes
+          - changes-core
           - pinafore-language
           - pinafore-gtk
+          - pinafore-app
         main: Main.hs
         other-modules:
+          - Test.Interactive
           - Test.Scripts
         ghc-options: -threaded -rtsopts
     app:
-        source-dirs: app
+        source-dirs: app/main
         dependencies:
           - base >= 4.12
           - shapes
           - optparse-applicative
+          - pinafore-app
         main: Test.hs
         other-modules:
           - Options

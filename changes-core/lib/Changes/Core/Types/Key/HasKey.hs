@@ -49,8 +49,9 @@ instance ( Eq key
          , SubjectReader (UpdateReader keyupdate)
          , FullSubjectReader (UpdateReader keyupdate)
          , SubjectReader (UpdateReader valupdate)
-         , ApplicableUpdate keyupdate
+         , IsEditUpdate keyupdate
+         , ApplicableEdit (UpdateEdit keyupdate)
          ) => HasKeyUpdate [(key, val)] (PairUpdate keyupdate valupdate) where
     updatesKey (MkTupleUpdate SelectFirst update) =
-        Just $ \oldKey -> readableToSubject $ applyUpdate update $ subjectToReadable oldKey
+        Just $ \oldKey -> readableToSubject $ applyEdit (updateEdit update) $ subjectToReadable oldKey
     updatesKey _ = Nothing

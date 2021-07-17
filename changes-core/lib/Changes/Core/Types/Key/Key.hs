@@ -203,12 +203,14 @@ instance IsEditUpdate update => IsEditUpdate (KeyUpdate cont update) where
     updateEdit (KeyUpdateInsertReplace a) = KeyEditInsertReplace a
     updateEdit KeyUpdateClear = KeyEditClear
 
-instance ( IsEditUpdate update
-         , FullSubjectReader (UpdateReader update)
-         , ApplicableEdit (UpdateEdit update)
-         , HasKeyReader cont (UpdateReader update)
-         , Item cont ~ UpdateSubject update
-         ) => ApplicableUpdate (KeyUpdate cont update)
+instance (FullSubjectReader (UpdateReader update), Item cont ~ UpdateSubject update) =>
+             FullUpdate (KeyUpdate cont update) where
+    replaceUpdate mr write = do
+        write KeyUpdateClear
+        allkeys <- mr KeyReadKeys
+        for_ allkeys $ \key -> do
+            item <- readableToSubject $ knownKeyItemReadFunction key mr
+            write $ KeyUpdateInsertReplace item
 
 keyElementChangeLens ::
        forall cont update.
@@ -289,7 +291,7 @@ keyElementChangeLens initKey = let
         -> Readable m (KeyReader cont (UpdateReader update))
         -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont (UpdateEdit update)])
     sclPutEdits = clPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateChangeLens {..}
+    in makeStateLens @'NonLinear MkStateChangeLens {..}
 
 fixedKeyElementChangeLens ::
        forall cont update.
@@ -337,17 +339,17 @@ liftKeyElementChangeLens bma (MkChangeLens g u pe) = let
         case mresult of
             Just ebs -> return $ fmap (KeyUpdateItem key) ebs
             Nothing -> return []
-    elPutEdit ::
+    clPutEdit ::
            forall m. MonadIO m
         => KeyEdit contb (UpdateEdit updateB)
         -> Readable m (KeyReader conta (UpdateReader updateA))
         -> m (Maybe [KeyEdit conta (UpdateEdit updateA)])
-    elPutEdit KeyEditClear _ = return $ Just [KeyEditClear]
-    elPutEdit (KeyEditInsertReplace itemb) _ = do
+    clPutEdit KeyEditClear _ = return $ Just [KeyEditClear]
+    clPutEdit (KeyEditInsertReplace itemb) _ = do
         fitema <- bma itemb
         return $ fmap (\itema -> [KeyEditInsertReplace itema]) fitema
-    elPutEdit (KeyEditDelete key) _ = return $ Just [KeyEditDelete key]
-    elPutEdit (KeyEditItem key eb) mr = do
+    clPutEdit (KeyEditDelete key) _ = return $ Just [KeyEditDelete key]
+    clPutEdit (KeyEditItem key eb) mr = do
         mfresult <- getComposeM $ pe [eb] (keyItemReadFunction @conta key mr)
         return $
             case mfresult of
@@ -358,7 +360,7 @@ liftKeyElementChangeLens bma (MkChangeLens g u pe) = let
         => [KeyEdit contb (UpdateEdit updateB)]
         -> Readable m (KeyReader conta (UpdateReader updateA))
         -> m (Maybe [KeyEdit conta (UpdateEdit updateA)])
-    clPutEdits = clPutEditsFromPutEdit elPutEdit
+    clPutEdits = clPutEditsFromPutEdit clPutEdit
     in MkChangeLens {..}
 
 liftKeyElementFloatingChangeLens ::
@@ -375,8 +377,8 @@ liftKeyElementFloatingChangeLens ::
     => (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA)))
     -> FloatingChangeLens updateA updateB
     -> FloatingChangeLens (KeyUpdate conta updateA) (KeyUpdate contb updateB)
-liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens NoFloatInit rlens) =
-    changeLensToFloating $ liftKeyElementChangeLens bma $ rlens ()
+liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (NoFloatInit r) rlens) =
+    changeLensToFloating $ liftKeyElementChangeLens bma $ rlens r
 liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit init :: FloatInit _ r) rlens) = let
     sclInit :: StateLensInit (KeyReader conta (UpdateReader updateA)) (InternalKeyMap (ContainerKey conta) r)
     sclInit _ = return mempty
@@ -458,7 +460,7 @@ liftKeyElementFloatingChangeLens bma (MkFloatingChangeLens (ReadFloatInit init :
         -> Readable m (KeyReader conta (UpdateReader updateA))
         -> StateT (InternalKeyMap (ContainerKey conta) r) m (Maybe [KeyEdit conta (UpdateEdit updateA)])
     sclPutEdits = clPutEditsFromPutEdit sPutEdit
-    in makeStateLens MkStateChangeLens {..}
+    in makeStateLens @'NonLinear MkStateChangeLens {..}
 
 contextKeyChangeLens ::
        forall cont1 cont2 ua ub.
@@ -491,22 +493,22 @@ contextKeyChangeLens = let
     clUpdate (MkTupleUpdate SelectContent (KeyUpdateDelete key)) _ = return [KeyUpdateDelete key]
     clUpdate (MkTupleUpdate SelectContent (KeyUpdateInsertReplace e)) _ = return [KeyUpdateInsertReplace e]
     clUpdate (MkTupleUpdate SelectContent KeyUpdateClear) _ = return [KeyUpdateClear]
-    elPutEdit ::
+    clPutEdit ::
            forall m. MonadIO m
         => KeyEdit cont2 (ContextUpdateEdit ua ub)
         -> Readable m (ContextUpdateReader ua (KeyUpdate cont1 ub))
         -> m (Maybe [ContextUpdateEdit ua (KeyUpdate cont1 ub)])
-    elPutEdit (KeyEditItem _ (MkTupleUpdateEdit SelectContext edit)) _ =
+    clPutEdit (KeyEditItem _ (MkTupleUpdateEdit SelectContext edit)) _ =
         return $ Just [MkTupleUpdateEdit SelectContext edit]
-    elPutEdit (KeyEditItem key (MkTupleUpdateEdit SelectContent edit)) _ =
+    clPutEdit (KeyEditItem key (MkTupleUpdateEdit SelectContent edit)) _ =
         return $ Just [MkTupleUpdateEdit SelectContent $ KeyEditItem key edit]
-    elPutEdit (KeyEditDelete key) _ = return $ Just [MkTupleUpdateEdit SelectContent $ KeyEditDelete key]
-    elPutEdit (KeyEditInsertReplace e) _ = return $ Just [MkTupleUpdateEdit SelectContent $ KeyEditInsertReplace e]
-    elPutEdit KeyEditClear _ = return $ Just [MkTupleUpdateEdit SelectContent KeyEditClear]
+    clPutEdit (KeyEditDelete key) _ = return $ Just [MkTupleUpdateEdit SelectContent $ KeyEditDelete key]
+    clPutEdit (KeyEditInsertReplace e) _ = return $ Just [MkTupleUpdateEdit SelectContent $ KeyEditInsertReplace e]
+    clPutEdit KeyEditClear _ = return $ Just [MkTupleUpdateEdit SelectContent KeyEditClear]
     clPutEdits ::
            forall m. MonadIO m
         => [KeyEdit cont2 (ContextUpdateEdit ua ub)]
         -> Readable m (ContextUpdateReader ua (KeyUpdate cont1 ub))
         -> m (Maybe [ContextUpdateEdit ua (KeyUpdate cont1 ub)])
-    clPutEdits = clPutEditsFromPutEdit elPutEdit
+    clPutEdits = clPutEditsFromPutEdit clPutEdit
     in MkChangeLens {..}

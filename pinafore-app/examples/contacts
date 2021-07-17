@@ -1,15 +1,8 @@
 #!/usr/bin/pinafore
 
 let
-
-import UIStuff;
-
-# something with a name
-opentype Named;
-name = property @Named @Text !"identify.name";
-
-byName: FiniteSetRef {+a,+Named} -> WholeRef +[(a,Text)];
-byName ref = members (mapRefOrder fst $ refOrderOn name alphabetical) $ (identity !** name) !$$ ref;
+import UIStuff.Selection;
+import UIStuff.Named;
 
 # something with a lifespan
 opentype Lifespanned;
@@ -37,6 +30,7 @@ locationUI loc = UI.vertical
     (False, uiLabelled {"Phone: "} $ UI.textEntry $ locphone !$% loc)
 ];
 
+rec
 # a person or organisation
 dynamictype LegalEntity = Person | Organisation;
 subtype LegalEntity <: Named;
@@ -67,7 +61,7 @@ familyUI p = UI.vertical
     (False, uiLabelled {"Mother: "} $ UI.pick (byName people) $ mother !$% p),
     (False, uiLabelled {"Father: "} $ UI.pick (byName people) $ father !$% p),
     (False, UI.label {"Children:"}),
-    (True, namedTable (children p) contactWindow Nothing)
+    (True, namedItemTable (children p) contactRefUI Nothing)
 ];
 
 # employment relationship
@@ -79,12 +73,11 @@ employees p = employer !@% p;
 dynamictype Organisation = !"type.organisation";
 organisations: FiniteSetRef Organisation;
 organisations = property @Organisation @() !"type.organisation" !@ {()};
+end;
 
 ### User Interface
 
-namedTable: FiniteSetRef {a,+Named} -> (a -> Action Any) -> Maybe (WholeRef {a,+Named}) -> UI.Element;
-namedTable = UI.listTable [({"Name"},\p -> name !$ {p})] (refOrderOn name alphabetical);
-
+rec
 contactPages: WholeRef +LegalEntity -> [(UI.Element, UI.Element)];
 contactPages er =
 [
@@ -109,7 +102,7 @@ personPages p =
 organisationPages: WholeRef +Organisation -> [(UI.Element, UI.Element)];
 organisationPages subj =
 [
-    uiPage {"Employees"} $ namedTable (employees subj) contactWindow Nothing
+    uiPage {"Employees"} $ namedItemTable (employees subj) contactRefUI Nothing
 ];
 
 contactUI: LegalEntity -> UI.Element;
@@ -127,32 +120,21 @@ contactUI e = let
 
 contactRefUI: WholeRef +LegalEntity -> UI.Element;
 contactRefUI ref = UI.dynamic $ coMapWhole contactUI ref;
+end;
 
-contactWindow: LegalEntity -> Action UI.Window;
-contactWindow e = stdWindow (name !$ {e}) [] $ contactUI e;
+contactsPane: Action Pane;
+contactsPane = let
+    menuItems =
+    [
+        newItemMenuAction "New Person" (Just "Ctrl+K") $ newDynamicEntity @Person,
+        newItemMenuAction "New Organisation" Nothing $ newDynamicEntity @Organisation
+    ];
+    in namedPairPane "Contacts" legalentities menuItems contactRefUI;
 
-newPersonMenuItem: (LegalEntity -> Action ()) -> UI.MenuItem;
-newPersonMenuItem setsel = UI.menuAction ("New Person") (Just "Ctrl+K")
-    {do
-    item <- newDynamicEntity @Person;
-    legalentities += item;
-    setsel item;
-    end};
-
-newOrganisationMenuItem: (LegalEntity -> Action ()) -> UI.MenuItem;
-newOrganisationMenuItem setsel = UI.menuAction ("New Organisation") (Just "Ctrl+K")
-    {do
-    item <- newDynamicEntity @Organisation;
-    legalentities += item;
-    setsel item;
-    end};
-
-contactsSelector: WholeRef LegalEntity -> UI.Element;
-contactsSelector selection = namedTable legalentities contactWindow (Just selection);
-
-# main window
 contactsWindow: Action UI.Window;
-contactsWindow = selectionPairWindow "Contacts" legalentities [newPersonMenuItem,newOrganisationMenuItem] contactWindow
-    contactsSelector contactRefUI;
+contactsWindow = do
+    pane <- contactsPane;
+    paneWindow pane;
+    end;
 
 in contactsWindow

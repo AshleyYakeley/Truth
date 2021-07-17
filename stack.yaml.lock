@@ -55,9 +55,22 @@ packages:
   original:
     git: https://github.com/fpco/ghc-prof-flamegraph.git
     commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
+- completed:
+    subdir: Color
+    name: Color
+    version: 0.3.2
+    git: https://github.com/AshleyYakeley/Color.git
+    pantry-tree:
+      size: 8026
+      sha256: b14934523ff44fafdd4db33943de93ede3cb6fc68a3b95ec1e052c4ccd8b51d7
+    commit: 4bd2cc37f927d270b802bc5ac9fcdc3d8d6039aa
+  original:
+    subdir: Color
+    git: https://github.com/AshleyYakeley/Color.git
+    commit: 4bd2cc37f927d270b802bc5ac9fcdc3d8d6039aa
 snapshots:
 - completed:
-    size: 563100
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/0.yaml
-    sha256: e93a85871577ea3423d5f3454b2b6bd37c2c2123c79faf511dfb64f5b49a9f8b
-  original: lts-17.0
+    size: 567675
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/13.yaml
+    sha256: 84fa3ab606af79b1239ec213e8db5d49e4857f461eda9ac61fe589c967643b7d
+  original: lts-17.13

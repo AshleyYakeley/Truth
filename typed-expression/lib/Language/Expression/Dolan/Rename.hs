@@ -18,7 +18,7 @@ renameTypeArgs ::
     => DolanVarianceType dv
     -> DolanVarianceMap dv gt
     -> DolanArguments dv (DolanType ground) gt polarity t
-    -> VarNamespaceT (DolanTypeSystem ground) (VarRenamerT (DolanTypeSystem ground) m) (DolanArguments dv (DolanType ground) gt polarity t)
+    -> VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m) (DolanArguments dv (DolanType ground) gt polarity t)
 renameTypeArgs dvt dvm args = do
     MkShimWit args' (MkPolarMap conv) <-
         mapDolanArgumentsM @_ @PEqual (\t -> fmap mkShimWit $ dolanNamespaceRename t) dvt dvm args
@@ -34,7 +34,7 @@ renameTypeArgs dvt dvm args = do
 dolanNamespaceRename ::
        forall (ground :: GroundTypeKind) m t. (NamespaceRenamable (DolanTypeSystem ground) t, Monad m)
     => t
-    -> VarNamespaceT (DolanTypeSystem ground) (VarRenamerT (DolanTypeSystem ground) m) t
+    -> VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m) t
 dolanNamespaceRename = namespaceRename @(DolanTypeSystem ground)
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
@@ -63,8 +63,8 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => RenameTy
     type RenamerNamespaceT (DolanTypeSystem ground) = VarNamespaceT (DolanTypeSystem ground)
     renameNegWitness = dolanNamespaceRename @ground
     renamePosWitness = dolanNamespaceRename @ground
-    renameNewVar = do
-        n <- varRenamerTGenerate []
+    renameNewFreeVar = do
+        n <- renamerGenerate FreeName []
         newUVar n $ \wit -> return $ MkNewVar (varDolanShimWit wit) (varDolanShimWit wit)
     namespace = runVarNamespaceT
     runRenamer = runVarRenamerT

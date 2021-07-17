@@ -46,6 +46,26 @@ purePolyComposeShimWit (MkShimWit wt (MkPolarMap conv)) =
         PositiveType -> purePolyComposeShim conv
         NegativeType -> purePolyComposeShim conv
 
+polarUnPolyComposeShim ::
+       forall (pshim :: PolyShimKind) (m :: Type -> Type) k polarity (a :: k) (b :: k).
+       (Is PolarityType polarity, Functor m)
+    => PolarMap (PolyComposeShim m pshim k) polarity a b
+    -> m (PolarMap (pshim k) polarity a b)
+polarUnPolyComposeShim (MkPolarMap mab) =
+    case polarityType @polarity of
+        PositiveType -> fmap MkPolarMap $ unPolyComposeShim mab
+        NegativeType -> fmap MkPolarMap $ unPolyComposeShim mab
+
+polarMkPolyComposeShim ::
+       forall (pshim :: PolyShimKind) (m :: Type -> Type) k polarity (a :: k) (b :: k).
+       (Is PolarityType polarity, Functor m)
+    => m (PolarMap (pshim k) polarity a b)
+    -> PolarMap (PolyComposeShim m pshim k) polarity a b
+polarMkPolyComposeShim mab =
+    case polarityType @polarity of
+        PositiveType -> MkPolarMap $ mkPolyComposeShim $ fmap unPolarMap mab
+        NegativeType -> MkPolarMap $ mkPolyComposeShim $ fmap unPolarMap mab
+
 instance forall (pshim :: PolyShimKind) m. (ApplyPolyShim pshim, Applicative m) =>
              ApplyPolyShim (PolyComposeShim m pshim) where
     applyPolyShim CovarianceType (MkPolyMapT (MkComposeShim mfab)) (MkPolyMapT (MkComposeShim mxab)) =
@@ -81,13 +101,6 @@ mkPolarPolyFuncShim f =
 
 instance forall (pshim :: PolyShimKind) m. (IsoMapShim (pshim Type), Applicative m) =>
              IsoMapShim (PolyComposeShim m pshim Type) where
-    {-
-    isoFunctionToShim :: (InKind a, InKind b) => String -> Isomorphism KindFunction a b -> Isomorphism (PolyComposeShim m pshim Type) a b
-    isoFunctionToShim t iso = case isoFunctionToShim @Type @(pshim Type) t iso of
-        MkIsomorphism ab ba -> MkIsomorphism (MkPolyMapT $ MkComposeShim $ pure ab) (MkPolyMapT $ MkComposeShim $ pure ba)
-    --isoShimToFunction :: (InKind a, InKind b) => Isomorphism (PolyComposeShim m pshim Type) a b -> Isomorphism KindFunction a b
-    --isoShimToFunction (MkIsomorphism (MkPolyMapT (MkComposeShim ab)) (MkPolyMapT (MkComposeShim ba))) = isoShimToFunction $ MkIsomorphism ab ba
-    -}
     isoMapShim ::
            (InKind pa, InKind pb, InKind qa, InKind qb)
         => String
@@ -96,3 +109,8 @@ instance forall (pshim :: PolyShimKind) m. (IsoMapShim (pshim Type), Applicative
         -> PolyComposeShim m pshim Type pa pb
         -> PolyComposeShim m pshim Type qa qb
     isoMapShim t f1 f2 (MkPolyMapT (MkComposeShim mab)) = MkPolyMapT $ MkComposeShim $ fmap (isoMapShim t f1 f2) mab
+
+instance forall (pshim :: PolyShimKind) m. (ReduciblePolyShim pshim, Applicative m) =>
+             ReduciblePolyShim (PolyComposeShim m pshim) where
+    type ReducedPolyShim (PolyComposeShim m pshim) = ReducedPolyShim pshim
+    reduceShim f (MkPolyMapT (MkComposeShim conv)) = MkPolyMapT $ MkComposeShim $ fmap (reduceShim f) conv

@@ -1,12 +1,15 @@
 module Pinafore.Language
     ( Name
     , ModuleName(..)
+    , toModuleName
     , LibraryModule
     , FetchModule
     , directoryFetchModule
     , textFetchModule
     , libraryFetchModule
-    , LibraryContext
+    , PinaforeModule
+    , Module(..)
+    , LibraryContext(..)
     , mkLibraryContext
     , PinaforeSpecialVals
     , SpecialVals(..)
@@ -33,6 +36,7 @@ module Pinafore.Language
     , Y
     , Entity
     , showPinaforeRef
+    , runPinaforeScoped
     , runPinaforeSourceScoped
     , exprShow
     ) where
@@ -44,6 +48,7 @@ import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.Error
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar
 import Pinafore.Language.Interpreter
@@ -51,6 +56,7 @@ import Pinafore.Language.Library
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Pinafore.Markdown
 import Shapes
 import System.IO.Error
 
@@ -185,6 +191,13 @@ interactLoop inh outh echo = do
                                  val <- interactEvalExpression texpr
                                  action <- runValue outh val
                                  lift $ lift $ runPinaforeAction action
+                             ShowDocInteractiveCommand rname -> do
+                                 md <- interactRunSourceScoped $ lookupDocBinding rname
+                                 liftIO $
+                                     case md of
+                                         Nothing -> hPutStrLn outh $ "! " <> show rname <> " not found"
+                                         Just ("", _) -> return ()
+                                         Just (doc, _) -> hPutStrLn outh $ "#| " <> unpack (getRawMarkdown doc)
                              ShowTypeInteractiveCommand showinfo texpr -> do
                                  MkAnyValue (MkPosShimWit t shim) _ <- interactEvalExpression texpr
                                  liftIO $
@@ -213,7 +226,7 @@ interactLoop inh outh echo = do
                                  liftIO $ hPutStrLn outh $ unpack s
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
                     [ Handler $ \(err :: PinaforeError) -> hPutStrLn outh $ show err
-                    , Handler $ \err -> hPutStrLn outh $ "error: " <> ioeGetErrorString err
+                    , Handler $ \err -> hPutStrLn outh $ "! error: " <> ioeGetErrorString err
                     ]
             interactLoop inh outh echo
 

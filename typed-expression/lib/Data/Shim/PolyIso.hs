@@ -103,3 +103,6 @@ instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, IsoMapShim (pshim k
         -> PolyIso pshim k qa qb
     isoMapShim t f1 f2 (MkPolyMapT (MkIsomorphism ab ba)) =
         MkPolyMapT $ MkIsomorphism (isoMapShim t f1 f2 ab) (isoMapShim t f2 f1 ba)
+
+instance forall (pshim :: PolyShimKind). AllInCategory pshim => ReduciblePolyShim (PolyIso pshim) where
+    type ReducedPolyShim (PolyIso pshim) = PolyIso pshim

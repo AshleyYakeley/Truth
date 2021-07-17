@@ -40,9 +40,9 @@ type PinaforeSpecialVals = SpecialVals PinaforeTypeSystem
 
 type PinaforeBoundType = BoundType PinaforeTypeSystem
 
-type PinaforeTypeBox = TypeBox PinaforeTypeSystem
-
 type PinaforeScope = Scope PinaforeTypeSystem
+
+type PinaforeModule = Module PinaforeTypeSystem
 
 type PinaforeBinding = InterpreterBinding PinaforeTypeSystem
 

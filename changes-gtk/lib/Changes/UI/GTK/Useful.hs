@@ -167,7 +167,7 @@ instance Monad m => Monoid (Change m a) where
 seqStoreTraverse_ :: MonadIO m => SeqStore a -> Change m a -> m ()
 seqStoreTraverse_ store (MkChange f) = do
     n <- seqStoreGetSize store
-    for_ [0 .. (n - 1)] $ \i -> do
+    for_ [0 .. pred n] $ \i -> do
         oldval <- seqStoreGetValue store i
         mnewval <- f oldval
         case mnewval of

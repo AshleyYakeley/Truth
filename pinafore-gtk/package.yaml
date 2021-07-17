@@ -1,6 +1,6 @@
-name: pinafore-gtk
-version: "0.3"
 _common: !include "../common.yaml"
+name: pinafore-gtk
+version: *pinafore_version
 <<: *author
 
 <<: *language
@@ -12,12 +12,22 @@ library:
       - shapes
       - time
       - typed-expression
+      - Color
+      - gi-cairo-render
+      - gi-gtk
       - changes-core
       - changes-gtk
       - pinafore-base
       - pinafore-language
     exposed-modules:
-      - Pinafore.Language.Library.UI
+      - Pinafore.Language.Library.GTK
+    other-modules:
+      - Pinafore.Language.Library.GTK.Colour
+      - Pinafore.Language.Library.GTK.Drawing
+      - Pinafore.Language.Library.GTK.Element
+      - Pinafore.Language.Library.GTK.MenuItem
+      - Pinafore.Language.Library.GTK.Window
+      - Pinafore.Language.Library.GTK.Debug
 
 tests:
     test:

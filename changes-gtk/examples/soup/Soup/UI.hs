@@ -38,7 +38,7 @@ soupEditSpec sub selnotify openItem = do
         cmp :: Result Text Text -> Result Text Text -> Ordering
         cmp a b = compare (resultToMaybe a) (resultToMaybe b)
         uo :: UpdateOrder (UUIDElementUpdate PossibleNoteUpdate)
-        uo = MkUpdateOrder cmp $ changeLensToFloating nameLens
+        uo = mkUpdateOrder cmp nameLens
     osub :: Model (OrderedListUpdate [(UUID, Result Text (Tuple NoteSel))] (UUIDElementUpdate PossibleNoteUpdate)) <-
         cvFloatMapModel (orderedSetLens uo) sub
     let

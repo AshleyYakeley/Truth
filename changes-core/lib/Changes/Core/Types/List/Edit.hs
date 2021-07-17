@@ -39,16 +39,16 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit ed
         len <- mr ListReadLength
         return $
             if p >= 0 && p < len
-                then len - 1
+                then pred len
                 else len
     applyEdit (ListEditDelete p) mr (ListReadItem i reader)
-        | p >= 0 && p < i = mr $ ListReadItem (i + 1) reader
+        | p >= 0 && p <= i = mr $ ListReadItem (succ i) reader
     applyEdit (ListEditDelete _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
     applyEdit (ListEditInsert p _) mr ListReadLength = do
         len <- mr ListReadLength
         return $
             if p >= 0 && p <= len
-                then len + 1
+                then succ len
                 else len
     applyEdit (ListEditInsert p a) mr (ListReadItem i reader)
         | p == i = do
@@ -58,7 +58,7 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit ed
                     then Just $ subjectToRead a reader
                     else Nothing
     applyEdit (ListEditInsert p _) mr (ListReadItem i reader)
-        | p >= 0 && p < i = mr $ ListReadItem (i - 1) reader
+        | p >= 0 && p < i = mr $ ListReadItem (pred i) reader
     applyEdit (ListEditInsert _ _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
     applyEdit ListEditClear _mr reader = subjectToReadable mempty reader
 

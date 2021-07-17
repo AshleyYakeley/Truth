@@ -1,3 +1,7 @@
+- &changes_version "0.4"
+
+- &pinafore_version "0.4"
+
 - &author
     author: Ashley Yakeley
     copyright: (c) 2017-2021 Ashley Yakeley

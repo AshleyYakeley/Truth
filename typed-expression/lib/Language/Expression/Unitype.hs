@@ -24,8 +24,8 @@ instance (Monad m, Eq name, Show name) => RenameTypeSystem (Unitype m name val) 
     renameNegWitness Refl = return Refl
     renamePosWitness Refl = return Refl
     type RenamerNamespaceT (Unitype m name val) = IdentityT
-    renameNewVar = return $ MkNewVar unitypeShimWit unitypeShimWit
-    namespace = runIdentityT
+    renameNewFreeVar = return $ MkNewVar unitypeShimWit unitypeShimWit
+    namespace _ = runIdentityT
     runRenamer = runIdentityT
 
 instance (Monad m, Eq name, Show name) => UnifyTypeSystem (Unitype m name val) where
@@ -50,13 +50,14 @@ instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val)
     subsumerNegSubstitute () Refl = return $ unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
 
-instance (Monad m, Ord name, Show name) => AbstractTypeSystem (Unitype m name val) where
+instance (MonadThrow ExpressionError m, Ord name, Show name) => AbstractTypeSystem (Unitype m name val) where
     type TSInner (Unitype m name val) = m
 
 class UnitypeValue val where
     applyValue :: val -> val -> val
     abstractValue :: (val -> val) -> val
 
-instance (Monad m, Ord name, Show name, UnitypeValue val) => CompleteTypeSystem (Unitype m name val) where
+instance (MonadThrow ExpressionError m, Ord name, Show name, UnitypeValue val) =>
+             CompleteTypeSystem (Unitype m name val) where
     tsFunctionPosWitness Refl Refl = mkPosShimWit Refl abstractValue
     tsFunctionNegWitness Refl Refl = mkNegShimWit Refl applyValue

@@ -13,6 +13,7 @@ import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
+import Pinafore.Markdown
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.Pos (initialPos)
@@ -20,7 +21,9 @@ import Text.Parsec.Pos (initialPos)
 type Parser = Parsec [(SourcePos, AnyValue Token)] ()
 
 readEnd :: Parser ()
-readEnd = eof
+readEnd = do
+    ignoreComments
+    eof
 
 parseReader :: Parser a -> Text -> StateT SourcePos InterpretResult a
 parseReader r text = let
@@ -35,20 +38,55 @@ parseReader r text = let
                Right a -> return a
                Left e -> throwErrorMessage $ parseErrorMessage e
 
-parseScopedReaderWhole :: Parser (PinaforeInterpreter t) -> Text -> PinaforeSourceInterpreter t
+parseScopedReaderWhole :: Parser (PinaforeSourceInterpreter t) -> Text -> PinaforeSourceInterpreter t
 parseScopedReaderWhole parser text = do
     spos <- askSourcePos
     result <- runInterpretResult $ evalStateT (parseReader parser text) spos
     case result of
-        SuccessResult a -> liftSourcePos a
+        SuccessResult a -> a
         FailureResult e -> throw e
+
+readToken :: Token t -> Parser t
+readToken stok =
+    token (\(_, MkAnyValue tok _) -> show tok) fst $ \(_, MkAnyValue tok t) ->
+        case testEquality stok tok of
+            Just Refl -> Just t
+            Nothing -> Nothing
+
+readComments :: Parser [Comment]
+readComments = many $ readToken TokComment
+
+ignoreComments :: Parser ()
+ignoreComments = void readComments
+
+lineMarkdown :: [Comment] -> Maybe Markdown
+lineMarkdown [] = Nothing
+lineMarkdown (LineComment ('|':s):cc) = do
+    ss <- lineMarkdown cc
+    return $ (rawMarkdown $ strip $ pack s) <> "\n" <> ss
+lineMarkdown _ = Nothing
+
+getMarkdown :: [Comment] -> Maybe Markdown
+getMarkdown [] = Nothing
+getMarkdown [BlockComment ('|':s)] = Just $ rawMarkdown $ strip $ pack s
+getMarkdown (LineComment ('|':s):cc) = do
+    ss <- lineMarkdown cc
+    return $ (rawMarkdown $ strip $ pack s) <> "\n" <> ss
+getMarkdown (_:cc) = getMarkdown cc
+
+readDocComment :: Parser Markdown
+readDocComment = do
+    comments <- readComments
+    return $
+        case getMarkdown comments of
+            Just md -> md
+            Nothing -> ""
 
 readThis :: Token t -> Parser t
 readThis tok =
-    token (\(_, MkAnyValue tok' _) -> show tok') fst $ \(_, MkAnyValue tok' t) ->
-        case testEquality tok tok' of
-            Just Refl -> Just t
-            Nothing -> Nothing
+    try $ do
+        ignoreComments
+        readToken tok
 
 readExactlyThis :: Eq t => Token t -> t -> Parser ()
 readExactlyThis tok t =
@@ -97,9 +135,12 @@ readSourcePos p = do
 readReferenceUName :: Parser ReferenceName
 readReferenceUName =
     (fmap UnqualifiedReferenceName $ readThis TokUName) <|>
-    (fmap (\(m, n) -> QualifiedReferenceName m n) $ readThis TokQUName)
+    (fmap (\(m, n) -> QualifiedReferenceName (MkModuleName m) n) $ readThis TokQUName)
 
 readReferenceLName :: Parser ReferenceName
 readReferenceLName =
     (fmap UnqualifiedReferenceName $ readThis TokLName) <|>
     (fmap (\(m, n) -> QualifiedReferenceName m n) $ readThis TokQLName)
+
+readReferenceName :: Parser ReferenceName
+readReferenceName = readReferenceUName <|> readReferenceLName

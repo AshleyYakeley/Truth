@@ -22,8 +22,14 @@ instance Monoid (UpdateOrder update) where
     mempty = MkUpdateOrder (\_ _ -> EQ) $ eaPure ()
     mappend = (<>)
 
-mapUpdateOrder :: FloatingChangeLens updateB updateA -> UpdateOrder updateA -> UpdateOrder updateB
-mapUpdateOrder lens (MkUpdateOrder cmp flens) = MkUpdateOrder cmp $ flens . lens
+mkUpdateOrder :: (o -> o -> Ordering) -> ChangeLens update (ROWUpdate o) -> UpdateOrder update
+mkUpdateOrder cmp lens = MkUpdateOrder cmp $ changeLensToFloating lens
+
+mapFloatingUpdateOrder :: FloatingChangeLens updateB updateA -> UpdateOrder updateA -> UpdateOrder updateB
+mapFloatingUpdateOrder lens (MkUpdateOrder cmp flens) = MkUpdateOrder cmp $ flens . lens
+
+mapUpdateOrder :: ChangeLens updateB updateA -> UpdateOrder updateA -> UpdateOrder updateB
+mapUpdateOrder lens = mapFloatingUpdateOrder $ changeLensToFloating lens
 
 mapReadOnlyUpdateOrder ::
        FloatingChangeLens updateB (ReadOnlyUpdate updateA) -> UpdateOrder updateA -> UpdateOrder updateB

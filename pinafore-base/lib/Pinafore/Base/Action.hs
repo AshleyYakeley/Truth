@@ -5,8 +5,10 @@ module Pinafore.Base.Action
     , pinaforeGetCreateViewUnlift
     , viewPinaforeAction
     , pinaforeResourceContext
-    , pinaforeFunctionValueGet
-    , pinaforeRefPushAction
+    , pinaforeFlushModelUpdates
+    , pinaforeFlushModelCommits
+    , pinaforeRefGet
+    , pinaforeRefPush
     , pinaforeGetExitOnClose
     , pinaforeExit
     , pinaforeUndoHandler
@@ -14,11 +16,12 @@ module Pinafore.Base.Action
     , knowPinaforeAction
     , pinaforeOnClose
     , pinaforeEarlyCloser
+    , pinaforeFloatMap
+    , pinaforeFloatMapReadOnly
     ) where
 
 import Changes.Core
 import Pinafore.Base.Know
-import Pinafore.Base.Ref
 import Shapes
 import Changes.Debug.Reference
 
@@ -57,10 +60,23 @@ viewPinaforeAction va = createViewPinaforeAction $ liftToLifeCycle va
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
 
-pinaforeRefPushAction :: WModel update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
-pinaforeRefPushAction lv edits = do
+pinaforeFlushModelUpdates :: WModel update -> PinaforeAction ()
+pinaforeFlushModelUpdates (MkWModel model) = liftIO $ taskWait $ modelUpdatesTask model
+
+pinaforeFlushModelCommits :: WModel update -> PinaforeAction ()
+pinaforeFlushModelCommits (MkWModel model) = liftIO $ taskWait $ modelCommitTask model
+
+pinaforeRefGet :: WModel update -> ReadM (UpdateReader update) t -> PinaforeAction t
+pinaforeRefGet model rm = do
+    pinaforeFlushModelUpdates model
     rc <- pinaforeResourceContext
-    ok <- liftIO $ wModelPush rc lv edits
+    liftIO $ wModelGet rc model rm
+
+pinaforeRefPush :: WModel update -> NonEmpty (UpdateEdit update) -> PinaforeAction ()
+pinaforeRefPush model edits = do
+    pinaforeFlushModelUpdates model
+    rc <- pinaforeResourceContext
+    ok <- liftIO $ wModelPush rc model edits
     if ok
         then return ()
         else empty
@@ -104,3 +120,19 @@ pinaforeEarlyCloser ra = do
         MkComposeM $ do
             (ka, closer) <- lifeCycleEarlyCloser $ getComposeM $ unlift ra
             return $ fmap (\a -> (a, closer)) ka
+
+pinaforeFloatMap ::
+       forall f updateA updateB. FloatingEditApplicative f
+    => FloatingChangeLens updateA updateB
+    -> f updateA
+    -> PinaforeAction (f updateB)
+pinaforeFloatMap flens fa = do
+    rc <- pinaforeResourceContext
+    liftLifeCycle $ eaFloatMap rc flens fa
+
+pinaforeFloatMapReadOnly ::
+       forall f updateA updateB. FloatingEditApplicative f
+    => FloatingChangeLens updateA (ReadOnlyUpdate updateB)
+    -> f (ReadOnlyUpdate updateA)
+    -> PinaforeAction (f (ReadOnlyUpdate updateB))
+pinaforeFloatMapReadOnly flens = pinaforeFloatMap $ liftReadOnlyFloatingChangeLens flens

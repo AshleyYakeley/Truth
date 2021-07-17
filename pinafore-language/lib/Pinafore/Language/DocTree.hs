@@ -1,10 +1,11 @@
 module Pinafore.Language.DocTree where
 
+import Pinafore.Markdown
 import Shapes
 
 data DocTree a = MkDocTree
     { docTreeName :: Text
-    , docTreeDescription :: Text
+    , docTreeDescription :: Markdown
     , docTreeEntries :: [DocTreeEntry a]
     }
 
@@ -26,28 +27,14 @@ instance Foldable DocTreeEntry where
 instance Foldable DocTree where
     foldMap am dt = mconcat $ fmap (foldMap am) $ docTreeEntries dt
 
-docTreeEntry :: Text -> Text -> [DocTreeEntry a] -> DocTreeEntry a
+docTreeEntry :: Text -> Markdown -> [DocTreeEntry a] -> DocTreeEntry a
 docTreeEntry title desc entries = TreeDocTreeEntry $ MkDocTree title desc entries
 
 runDocTree ::
-       Monad m => (Int -> Text -> m ()) -> (Int -> Text -> m ()) -> (Int -> a -> m ()) -> Int -> DocTree a -> m ()
+       Monad m => (Int -> Text -> m ()) -> (Int -> Markdown -> m ()) -> (Int -> a -> m ()) -> Int -> DocTree a -> m ()
 runDocTree showTitle showDesc showEntry level MkDocTree {..} = do
     showTitle level docTreeName
     showDesc level docTreeDescription
     for_ docTreeEntries $ \case
-        TreeDocTreeEntry tree -> runDocTree showTitle showDesc showEntry (level + 1) tree
+        TreeDocTreeEntry tree -> runDocTree showTitle showDesc showEntry (succ level) tree
         EntryDocTreeEntry a -> showEntry level a
-
-data DocType
-    = ValueDocType
-    | ValuePatternDocType
-    | TypeDocType
-    | SupertypeDocType
-    | SubtypeRelationDocType
-
-data DefDoc = MkDefDoc
-    { docName :: Text
-    , docValueType :: Text
-    , docType :: DocType
-    , docDescription :: Text
-    }

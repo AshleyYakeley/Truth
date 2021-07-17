@@ -1,0 +1,19 @@
+:doc textLength
+:doc Time
+:doc Just
+let import Drawing
+:doc paintAlpha
+:doc UI.Element
+:doc UI.textArea
+:doc notfound
+let aa = 8
+:doc aa
+let {#| doc 1 xx #} xx: Integer; xx = 45
+:doc xx
+let {#| doc 2 yy #} yy = 57
+:doc yy
+:doc xx
+let {# plain comment #} zz = 12
+:doc zz
+let {#| doc 3 T #} opentype T
+:doc T

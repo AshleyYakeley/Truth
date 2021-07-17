@@ -53,9 +53,7 @@ eaPairReadOnlyWhole fa fb =
     eaMap (liftReadOnlyChangeLens (toReadOnlyChangeLens . pairWholeChangeLens)) $ eaPairReadOnly fa fb
 
 eaToReadOnlyWhole ::
-       (EditApplicative f, FullSubjectReader (UpdateReader update), ApplicableUpdate update)
-    => f update
-    -> f (ROWUpdate (UpdateSubject update))
+       (EditApplicative f, FullSubjectReader (UpdateReader update)) => f update -> f (ROWUpdate (UpdateSubject update))
 eaToReadOnlyWhole = eaMap convertReadOnlyChangeLens
 
 eaMapReadOnlyWhole :: EditApplicative f => (a -> b) -> f (ROWUpdate a) -> f (ROWUpdate b)
@@ -79,3 +77,6 @@ eaFloatMapReadOnly rc flens = eaFloatMap rc $ liftReadOnlyFloatingChangeLens fle
 
 instance FloatingEditApplicative (FloatingChangeLens update) where
     eaFloatMap _ ab ua = return $ ab . ua
+
+class EditContraFunctor (f :: Type -> Type) where
+    eaContraMap :: forall updateA updateB. ChangeLens updateB updateA -> f updateA -> f updateB

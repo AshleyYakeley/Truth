@@ -60,7 +60,7 @@ fromApplyArg ::
     -> DolanArguments dv (DolanType ground) (f a) polarity t
     -> (forall b.
             InKind b =>
-                    SingleArgument sv (DolanType ground) polarity b -> PShimWit (DolanPolyShim ground Type) (DolanArguments dv (DolanType ground) (f b)) polarity t -> r)
+                    SingleArgument sv (DolanType ground) polarity b -> PShimWit (DolanShim ground) (DolanArguments dv (DolanType ground) (f b)) polarity t -> r)
     -> r
 fromApplyArg CovarianceType dvt dvm (MkAnyPolarity ta) args call =
     case dolanVarianceInCategory @(DolanPolyShim ground) (ConsListType CovarianceType dvt) of

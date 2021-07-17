@@ -169,7 +169,7 @@ joinTableSchema ::
     -> State Int ([QueryString], SubmapWitness (RowColSel row) ColumnRefSchema)
 joinTableSchema schema (SingleTable (MkTupleTableSel tsel)) = do
     i <- get
-    put $ i + 1
+    put $ succ i
     let
         tableRefName = "t" ++ show i
         SQLite.MkTableSchema {..} = subWitnessMap schema tsel

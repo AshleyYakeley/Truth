@@ -8,21 +8,21 @@ import Pinafore.Language.Grammar.Read.Type
 import Pinafore.Language.Grammar.Syntax
 import Shapes hiding (try)
 
-readOpenEntityTypeDeclaration :: Parser SyntaxDeclaration
+readOpenEntityTypeDeclaration :: Parser SyntaxDirectDeclaration
 readOpenEntityTypeDeclaration = do
     spos <- getPosition
     readThis TokOpenType
     name <- readTypeNewName
     return $ TypeSyntaxDeclaration spos name OpenEntitySyntaxTypeDeclaration
 
-readSubtypeDeclaration :: Parser SyntaxDeclaration
+readSubtypeDeclaration :: Parser SyntaxDirectDeclaration
 readSubtypeDeclaration = do
     spos <- getPosition
     readThis TokSubtype
     sta <- readType
     readExactlyThis TokOperator "<:"
     stb <- readType
-    return $ SubtypeDeclaration spos sta stb
+    return $ SubtypeSyntaxDeclaration spos sta stb
 
 readDataTypeConstructor :: Parser SyntaxDatatypeConstructor
 readDataTypeConstructor = do
@@ -37,7 +37,7 @@ readClosedTypeConstructor = do
     anchor <- readThis TokAnchor
     return $ MkSyntaxClosedEntityConstructor consName mtypes anchor
 
-readDataTypeDeclaration :: Parser SyntaxDeclaration
+readDataTypeDeclaration :: Parser SyntaxDirectDeclaration
 readDataTypeDeclaration = do
     spos <- getPosition
     readThis TokDataType
@@ -48,7 +48,7 @@ readDataTypeDeclaration = do
             readSeparated1 (readExactlyThis TokOperator "|") $ fmap pure readDataTypeConstructor
     return $ TypeSyntaxDeclaration spos name $ DatatypeSyntaxTypeDeclaration $ fromMaybe mempty mcons
 
-readClosedTypeDeclaration :: Parser SyntaxDeclaration
+readClosedTypeDeclaration :: Parser SyntaxDirectDeclaration
 readClosedTypeDeclaration = do
     spos <- getPosition
     readThis TokClosedType
@@ -64,7 +64,7 @@ readDynamicTypeConstructor =
     fmap AnchorSyntaxDynamicEntityConstructor (readThis TokAnchor) <|>
     fmap NameSyntaxDynamicEntityConstructor readTypeReferenceName
 
-readDynamicTypeDeclaration :: Parser SyntaxDeclaration
+readDynamicTypeDeclaration :: Parser SyntaxDirectDeclaration
 readDynamicTypeDeclaration = do
     spos <- getPosition
     readThis TokDynamicType
@@ -73,7 +73,7 @@ readDynamicTypeDeclaration = do
     tcons <- readSeparated1 (readExactlyThis TokOperator "|") $ fmap pure readDynamicTypeConstructor
     return $ TypeSyntaxDeclaration spos name $ DynamicEntitySyntaxTypeDeclaration tcons
 
-readTypeDeclaration :: Parser SyntaxDeclaration
+readTypeDeclaration :: Parser SyntaxDirectDeclaration
 readTypeDeclaration =
     readOpenEntityTypeDeclaration <|> readSubtypeDeclaration <|> readDataTypeDeclaration <|> readClosedTypeDeclaration <|>
     readDynamicTypeDeclaration

@@ -27,12 +27,9 @@ langWholeRefToReadOnlyValue ref =
 pinaforeROWRefToWholeRef :: PinaforeROWRef (Know a) -> LangWholeRef '( TopType, a)
 pinaforeROWRefToWholeRef ef = pinaforeImmutableToWholeRef $ MkPinaforeImmutableWholeRef ef
 
-langWholeRefToImmutable' :: LangWholeRef '( ap, aq) -> PinaforeImmutableWholeRef aq
-langWholeRefToImmutable' (MutableLangWholeRef sr) = MkPinaforeImmutableWholeRef $ eaMap biReadOnlyChangeLens sr
-langWholeRefToImmutable' (ImmutableLangWholeRef ir) = ir
-
-langWholeRefToImmutable :: LangWholeRef '( BottomType, a) -> PinaforeImmutableWholeRef a
-langWholeRefToImmutable = langWholeRefToImmutable'
+langWholeRefToImmutable :: forall p q. LangWholeRef '( p, q) -> PinaforeImmutableWholeRef q
+langWholeRefToImmutable (MutableLangWholeRef sr) = MkPinaforeImmutableWholeRef $ eaMap biReadOnlyChangeLens sr
+langWholeRefToImmutable (ImmutableLangWholeRef ir) = ir
 
 pinaforeImmutableToWholeRef :: PinaforeImmutableWholeRef a -> LangWholeRef '( TopType, a)
 pinaforeImmutableToWholeRef ir = ImmutableLangWholeRef ir
@@ -44,13 +41,13 @@ langWholeRefToValue (ImmutableLangWholeRef ir) = immutableRefToRejectingRef ir
 pinaforeRefToWholeRef :: WModel (WholeUpdate (Know a)) -> LangWholeRef '( a, a)
 pinaforeRefToWholeRef bsv = MutableLangWholeRef $ eaMap singleBiChangeLens bsv
 
-langWholeRefGet :: forall q. LangWholeRef '( BottomType, q) -> PinaforeAction q
+langWholeRefGet :: forall p q. LangWholeRef '( p, q) -> PinaforeAction q
 langWholeRefGet ref = do
     ka <- getImmutableRef $ langWholeRefToImmutable ref
     pinaforeActionKnow ka
 
-langWholeRefSet :: forall p. LangWholeRef '( p, TopType) -> Know p -> PinaforeAction ()
-langWholeRefSet (MutableLangWholeRef sr) mp = pinaforeRefPushAction sr $ pure $ MkBiWholeEdit mp
+langWholeRefSet :: forall p q. LangWholeRef '( p, q) -> Know p -> PinaforeAction ()
+langWholeRefSet (MutableLangWholeRef sr) mp = pinaforeRefPush sr $ pure $ MkBiWholeEdit mp
 langWholeRefSet (ImmutableLangWholeRef _) _ = empty
 
 langWholeRefMapModel ::
@@ -121,7 +118,7 @@ langPairWholeRefs (MutableLangWholeRef aref) (MutableLangWholeRef bref) = let
     lputback Unknown _ = Just (Unknown, Unknown)
     lputback (Known (a, b)) _ = Just (Known a, Known b)
     in MutableLangWholeRef $ eaMap (lensBiWholeChangeLens lget lputback . pairBiWholeChangeLens) $ eaPair aref bref
-langPairWholeRefs (langWholeRefToImmutable' -> aref) (langWholeRefToImmutable' -> bref) =
+langPairWholeRefs (langWholeRefToImmutable -> aref) (langWholeRefToImmutable -> bref) =
     ImmutableLangWholeRef $ liftA2 (,) aref bref
 
 modelSelectNotify :: EditSource -> Model (BiWholeUpdate (Know p) q) -> SelectNotify p

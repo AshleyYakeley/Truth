@@ -144,13 +144,11 @@ instance forall (shim :: ShimKind Type) wit polarity. (InCategory shim, Is Polar
 
 chainShimWitM ::
        forall m polarity (k :: Type) (shim :: ShimKind k) (wita :: k -> Type) (witb :: k -> Type) (t' :: k).
-       (Monad m, InCategory shim, Is PolarityType polarity, InKind t')
+       (Functor m, InCategory shim, Is PolarityType polarity, InKind t')
     => (forall (t :: k). InKind t => wita t -> m (ShimWit shim witb polarity t))
     -> ShimWit shim wita polarity t'
     -> m (ShimWit shim witb polarity t')
-chainShimWitM f (MkShimWit t conv) = do
-    tf <- f t
-    return $ mapShimWit conv tf
+chainShimWitM f (MkShimWit t conv) = fmap (mapShimWit conv) $ f t
 
 chainShimWit ::
        forall polarity (k :: Type) (shim :: ShimKind k) (wita :: k -> Type) (witb :: k -> Type) (t' :: k).

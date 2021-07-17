@@ -3,12 +3,12 @@ module Pinafore.Language.Type.Entity where
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Name
 import Pinafore.Language.Type.DynamicEntity
 import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Literal
 import Pinafore.Language.Type.OpenEntity
-import Pinafore.Language.Type.Show
 import Shapes
 
 type EntityGroundType :: forall k. k -> Type

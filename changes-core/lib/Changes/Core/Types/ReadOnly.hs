@@ -16,6 +16,9 @@ type instance UpdateEdit (ReadOnlyUpdate update) =
 instance IsUpdate (ReadOnlyUpdate update) where
     editUpdate = never
 
+instance FullUpdate update => FullUpdate (ReadOnlyUpdate update) where
+    replaceUpdate rd pushU = replaceUpdate rd $ \update -> pushU $ MkReadOnlyUpdate update
+
 toReadOnlyChangeLens :: forall update. ChangeLens update (ReadOnlyUpdate update)
 toReadOnlyChangeLens = let
     clRead :: ReadFunction (UpdateReader update) (UpdateReader update)
@@ -48,9 +51,13 @@ liftReadOnlyFloatingChangeLens = floatLift (\mr -> mr) liftReadOnlyChangeLens
 
 ioFuncChangeLens ::
        forall updateA updateB.
-       (IsUpdate updateB, FullSubjectReader (UpdateReader updateA), FullEdit (UpdateEdit updateB))
+       ( FullSubjectReader (UpdateReader updateA)
+       , SubjectReader (UpdateReader updateB)
+       , FullUpdate updateB
+       , Empty (UpdateEdit updateB)
+       )
     => (UpdateSubject updateA -> IO (UpdateSubject updateB))
-    -> ChangeLens updateA (ReadOnlyUpdate updateB)
+    -> ChangeLens updateA updateB
 ioFuncChangeLens amb = let
     clRead :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
     clRead mra rt = (mSubjectToReadable $ readableToSubject mra >>= \a -> liftIO (amb a)) rt
@@ -58,42 +65,40 @@ ioFuncChangeLens amb = let
            forall m. MonadIO m
         => updateA
         -> Readable m (UpdateReader updateA)
-        -> m [ReadOnlyUpdate updateB]
+        -> m [updateB]
     clUpdate _ mra =
-        fmap (fmap (MkReadOnlyUpdate . editUpdate)) $
-        getReplaceEdits $
+        getReplaceUpdates $
         mSubjectToReadable $ do
             a <- readableToSubject mra
             liftIO $ amb a
-    clPutEdits ::
-           forall m. MonadIO m
-        => [ConstEdit (UpdateReader updateB)]
-        -> Readable m (UpdateReader updateA)
-        -> m (Maybe [UpdateEdit updateA])
-    clPutEdits = clPutEditsNone
-    in MkChangeLens {..}
+    in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
 funcChangeLens ::
        forall updateA updateB.
-       (IsUpdate updateB, FullSubjectReader (UpdateReader updateA), FullEdit (UpdateEdit updateB))
+       ( FullSubjectReader (UpdateReader updateA)
+       , SubjectReader (UpdateReader updateB)
+       , FullUpdate updateB
+       , Empty (UpdateEdit updateB)
+       )
     => (UpdateSubject updateA -> UpdateSubject updateB)
-    -> ChangeLens updateA (ReadOnlyUpdate updateB)
+    -> ChangeLens updateA updateB
 funcChangeLens ab = ioFuncChangeLens $ \a -> return $ ab a
 
 convertReadOnlyChangeLens ::
        forall updateA updateB.
-       ( IsUpdate updateB
-       , FullSubjectReader (UpdateReader updateA)
-       , FullEdit (UpdateEdit updateB)
+       ( FullSubjectReader (UpdateReader updateA)
+       , SubjectReader (UpdateReader updateB)
+       , FullUpdate updateB
+       , Empty (UpdateEdit updateB)
        , UpdateSubject updateA ~ UpdateSubject updateB
        )
-    => ChangeLens updateA (ReadOnlyUpdate updateB)
+    => ChangeLens updateA updateB
 convertReadOnlyChangeLens = funcChangeLens id
 
 immutableChangeLens ::
-       forall updateA updateB.
-       (forall m. MonadIO m => Readable m (UpdateReader updateB))
-    -> ChangeLens updateA (ReadOnlyUpdate updateB)
+       forall updateA updateB. (Empty (UpdateEdit updateB))
+    => (forall m. MonadIO m => Readable m (UpdateReader updateB))
+    -> ChangeLens updateA updateB
 immutableChangeLens mr = let
     clRead :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
     clRead _ = mr
@@ -101,20 +106,16 @@ immutableChangeLens mr = let
            forall m. MonadIO m
         => updateA
         -> Readable m (UpdateReader updateA)
-        -> m [ReadOnlyUpdate updateB]
+        -> m [updateB]
     clUpdate _ _ = return []
-    clPutEdits ::
-           forall m. MonadIO m
-        => [ConstEdit (UpdateReader updateB)]
-        -> Readable m (UpdateReader updateA)
-        -> m (Maybe [UpdateEdit updateA])
-    clPutEdits = clPutEditsNone
-    in MkChangeLens {..}
+    in MkChangeLens {clPutEdits = clPutEditsNone, ..}
 
 ioConstChangeLens ::
-       SubjectReader (UpdateReader updateB) => IO (UpdateSubject updateB) -> ChangeLens updateA (ReadOnlyUpdate updateB)
+       (Empty (UpdateEdit updateB))
+    => SubjectReader (UpdateReader updateB) => IO (UpdateSubject updateB) -> ChangeLens updateA updateB
 ioConstChangeLens iob = immutableChangeLens $ mSubjectToReadable $ liftIO iob
 
 constChangeLens ::
-       SubjectReader (UpdateReader updateB) => UpdateSubject updateB -> ChangeLens updateA (ReadOnlyUpdate updateB)
+       (Empty (UpdateEdit updateB))
+    => SubjectReader (UpdateReader updateB) => UpdateSubject updateB -> ChangeLens updateA updateB
 constChangeLens b = ioConstChangeLens $ return b

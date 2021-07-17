@@ -1,5 +1,6 @@
 module Pinafore.Language.Grammar.Read.Expression
-    ( readExpression
+    ( readName
+    , readExpression
     , readModule
     , readTopDeclarations
     ) where
@@ -55,25 +56,60 @@ readLines p =
     (return [])
 
 readModuleName :: Parser ModuleName
-readModuleName = fmap MkModuleName $ readSeparated1 (readExactlyThis TokOperator ".") $ fmap pure $ readThis TokUName
+readModuleName =
+    fmap MkModuleName $ (fmap pure $ readThis TokUName) <|> (fmap (\(nn, n) -> nn <> pure n) $ readThis TokQUName)
 
 readImport :: Parser SyntaxDeclaration
 readImport = do
     spos <- getPosition
     readThis TokImport
     mname <- readModuleName
-    return $ ImportSyntaxDeclarataion spos mname
+    return $ ImportSyntaxDeclaration spos mname
+
+readExpose :: Parser SyntaxExpose
+readExpose =
+    (do
+         sdecls <- readLetBindings
+         readThis TokIn
+         sbody <- readExpose
+         return $ SExpLet sdecls sbody) <|>
+    (do
+         spos <- getPosition
+         readThis TokExpose
+         names <- many readName
+         return $ SExpExpose spos names)
+
+readDirectDeclaration :: Parser SyntaxDirectDeclaration
+readDirectDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding
+
+readRecursiveDeclaration :: Parser SyntaxDeclaration
+readRecursiveDeclaration = do
+    spos <- getPosition
+    readThis TokRec
+    decls <- readLines $ readWithDoc readDirectDeclaration
+    readThis TokEnd
+    return $ RecursiveSyntaxDeclaration spos decls
 
 readDeclaration :: Parser SyntaxDeclaration
-readDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding <|> readImport
+readDeclaration =
+    fmap DirectSyntaxDeclaration readDirectDeclaration <|> readImport <|> readRecursiveDeclaration <|> do
+        spos <- getPosition
+        expb <- readExpose
+        return $ ExposeSyntaxDeclaration spos expb
 
-readDeclarations :: Parser [SyntaxDeclaration]
-readDeclarations = readLines readDeclaration
+readWithDoc :: Parser t -> Parser (SyntaxWithDoc t)
+readWithDoc pt = do
+    doc <- readDocComment
+    decl <- pt
+    return $ MkSyntaxWithDoc doc decl
 
-readLetBindings :: Parser [SyntaxDeclaration]
+readDocDeclarations :: Parser [SyntaxWithDoc SyntaxDeclaration]
+readDocDeclarations = readLines $ readWithDoc readDeclaration
+
+readLetBindings :: Parser [SyntaxWithDoc SyntaxDeclaration]
 readLetBindings = do
     readThis TokLet
-    readDeclarations
+    readDocDeclarations
 
 readTopDeclarations :: Parser SyntaxTopDeclarations
 readTopDeclarations = do
@@ -102,17 +138,7 @@ readName :: Parser Name
 readName = readThis TokUName <|> readThis TokLName <|> (readParen $ readThis TokOperator)
 
 readModule :: Parser SyntaxModule
-readModule =
-    readSourcePos $
-    (do
-         sdecls <- readLetBindings
-         readThis TokIn
-         sbody <- readModule
-         return $ SMLet sdecls sbody) <|>
-    (do
-         readThis TokExport
-         names <- many readName
-         return $ SMExport names)
+readModule = readExpose
 
 readCase :: Parser SyntaxCase
 readCase = do
