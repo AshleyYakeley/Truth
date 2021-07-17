@@ -339,14 +339,14 @@ instance Semigroup Path where
 instance Monoid Path where
     mempty = MkPath $ return ()
 
-pathRender :: [Path] -> R.Render ()
+pathRender :: Path -> R.Render ()
 pathRender pp = do
     R.newPath
-    unPath $ mconcat pp
+    unPath pp
 
 stroke ::
        forall a. Monoid a
-    => [Path]
+    => Path
     -> Drawing a
 stroke pp =
     renderDrawing $ do
@@ -355,14 +355,14 @@ stroke pp =
 
 fill ::
        forall a. Monoid a
-    => [Path]
+    => Path
     -> Drawing a
 fill pp =
     renderDrawing $ do
         pathRender pp
         R.fill
 
-clip :: forall a. [Path] -> Drawing a -> Drawing a
+clip :: forall a. Path -> Drawing a -> Drawing a
 clip pp =
     dcontext $ do
         pathRender pp

@@ -178,8 +178,8 @@ drawingLibraryModule =
                     , mkValEntry "relLineTo" "draw a line by this displacement" relLineTo
                     , mkValEntry "relCurveTo" "draw a curve by this displacement" relCurveTo
                     , mkValEntry "rectangle" "draw a rectangle" rectangle
-                    , mkValEntry "arc" "arc" arc
-                    , mkValEntry "arcNegative" "arc negative" arcNegative
+                    , mkValEntry "arc" "`arc center radius angle1 angle2`" arc
+                    , mkValEntry "arcNegative" "`arcNegative center radius angle1 angle2`" arcNegative
                     ]
               , docTreeEntry
                     "Properties"

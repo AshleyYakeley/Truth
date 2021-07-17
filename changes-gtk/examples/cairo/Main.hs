@@ -30,7 +30,7 @@ drawing tz t (fromIntegral -> w, fromIntegral -> h) = let
        rotate (realToFrac s * pi / 30) $
        operatorOver $
        lineCapSquare $
-       sourceRGB (0.3, 0, 1) $ lineWidth 0.01 $ withShowPoint "P" $ stroke [moveTo (0, 0), lineTo (0, 1)]
+       sourceRGB (0.3, 0, 1) $ lineWidth 0.01 $ withShowPoint "P" $ stroke $ mconcat [moveTo (0, 0), lineTo (0, 1)]
 
 zeroTime :: UTCTime
 zeroTime = UTCTime (fromGregorian 2000 1 1) 0
