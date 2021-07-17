@@ -1,7 +1,6 @@
 #!/usr/bin/pinafore
 
 let
-
 import UIStuff.Selection;
 import UIStuff.Named;
 
@@ -62,7 +61,7 @@ familyUI p = UI.vertical
     (False, uiLabelled {"Mother: "} $ UI.pick (byName people) $ mother !$% p),
     (False, uiLabelled {"Father: "} $ UI.pick (byName people) $ father !$% p),
     (False, UI.label {"Children:"}),
-    (True, namedTable (children p) contactWindow Nothing)
+    (True, namedItemTable (children p) contactRefUI Nothing)
 ];
 
 # employment relationship
@@ -103,7 +102,7 @@ personPages p =
 organisationPages: WholeRef +Organisation -> [(UI.Element, UI.Element)];
 organisationPages subj =
 [
-    uiPage {"Employees"} $ namedTable (employees subj) contactWindow Nothing
+    uiPage {"Employees"} $ namedItemTable (employees subj) contactRefUI Nothing
 ];
 
 contactUI: LegalEntity -> UI.Element;
@@ -121,33 +120,21 @@ contactUI e = let
 
 contactRefUI: WholeRef +LegalEntity -> UI.Element;
 contactRefUI ref = UI.dynamic $ coMapWhole contactUI ref;
-
-contactWindow: LegalEntity -> Action UI.Window;
-contactWindow e = stdWindow (name !$ {e}) {[]} $ contactUI e;
-
-newPersonMenuItem: (LegalEntity -> Action ()) -> UI.MenuItem;
-newPersonMenuItem setsel = UI.menuAction ("New Person") (Just "Ctrl+K")
-    {do
-    item <- newDynamicEntity @Person;
-    legalentities += item;
-    setsel item;
-    end};
-
-newOrganisationMenuItem: (LegalEntity -> Action ()) -> UI.MenuItem;
-newOrganisationMenuItem setsel = UI.menuAction ("New Organisation") (Just "Ctrl+K")
-    {do
-    item <- newDynamicEntity @Organisation;
-    legalentities += item;
-    setsel item;
-    end};
-
-contactsSelector: WholeRef LegalEntity -> UI.Element;
-contactsSelector selection = namedTable legalentities contactWindow (Just selection);
-
-# main window
-contactsWindow: Action UI.Window;
-contactsWindow = selectionPairWindow "Contacts" legalentities [newPersonMenuItem,newOrganisationMenuItem] contactWindow
-    contactsSelector contactRefUI;
 end;
+
+contactsPane: Action Pane;
+contactsPane = let
+    menuItems =
+    [
+        newItemMenuAction "New Person" (Just "Ctrl+K") $ newDynamicEntity @Person,
+        newItemMenuAction "New Organisation" Nothing $ newDynamicEntity @Organisation
+    ];
+    in namedPairPane "Contacts" legalentities menuItems contactRefUI;
+
+contactsWindow: Action UI.Window;
+contactsWindow = do
+    pane <- contactsPane;
+    paneWindow pane;
+    end;
 
 in contactsWindow

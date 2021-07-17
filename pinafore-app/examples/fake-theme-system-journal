@@ -2,8 +2,8 @@
 
 let
 
-years: Integer ~> ();
-years = property @Integer @() !"FTSJ.years";
+years: FiniteSetRef Integer;
+years = property @Integer @() !"FTSJ.years" !@ {()};
 
 yearTheme: Integer ~> Text;
 yearTheme = property @Integer @Text !"FTSJ.yearTheme";
@@ -14,14 +14,17 @@ import UIStuff.Selection;
 frontCoverPane: Pane;
 frontCoverPane = pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
-themesPane: Pane;
-themesPane = pane "Themes" $ blank;
+getThemesPane: Action Pane;
+getThemesPane = return $ pane "Themes" $ blank;
 
 daysPane: Pane;
 daysPane = pane "Days" $ blank;
 
 createMainPane: Action Pane;
-createMainPane = notebookPane {"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
+createMainPane = do
+    themesPane <- getThemesPane;
+    notebookPane {"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
+    end;
 
 in do
     mainPane <- createMainPane;

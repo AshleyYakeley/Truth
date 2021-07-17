@@ -1,49 +1,53 @@
 let
 
+import UI;
+
 ### Useful UI stuff
 
-uiPage: WholeRef +Text -> UI.Element -> (UI.Element,UI.Element);
-uiPage n ui = (UI.label n,ui);
+uiPage: WholeRef +Text -> Element -> (Element,Element);
+uiPage n ui = (label n,ui);
 
-uiLabelled: WholeRef +Text -> UI.Element -> UI.Element;
-uiLabelled n ui = UI.horizontal [(False, UI.label n),(True, ui)];
+uiLabelled: WholeRef +Text -> Element -> Element;
+uiLabelled n ui = horizontal [(False, label n),(True, ui)];
 
-# A window that comes with some menus.
-stdWindow: WholeRef +Text -> WholeRef +[UI.MenuItem] -> UI.Element -> Action UI.Window;
+#| A window that comes with some menus.
+stdWindow: WholeRef +Text -> WholeRef +[MenuItem] -> Element -> Action Window;
 stdWindow title moremenus contents = fixAction $ \window -> let
-    menus: WholeRef +[UI.MenuItem];
+    menus: WholeRef +[MenuItem];
     menus =
         {[
-            UI.menuSubmenu "File"
+            menuSubmenu "File"
             [
-                UI.menuAction "Close" (Just "Ctrl+W") {UI.closeWindow window},
-                UI.menuSeparator,
-                UI.menuAction "Exit" (Just "Ctrl+Q") {UI.exitUI}
+                menuAction "Close" (Just "Ctrl+W") {closeWindow window},
+                menuSeparator,
+                menuAction "Exit" (Just "Ctrl+Q") {exitUI}
             ],
-            UI.menuSubmenu "Edit"
+            menuSubmenu "Edit"
             [
-                UI.menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
-                UI.menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
+                menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
+                menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ] ++ %moremenus};
-    in UI.openWindow (600,800) title menus $ UI.scrolled contents;
+    in openWindow (600,800) title menus $ scrolled contents;
 
-datatype Pane = MkPane (WholeRef Text) UI.Element (WholeRef [UI.MenuItem]);
+#| A pane is a title, UI element, and menu.
+datatype Pane = MkPane (WholeRef Text) Element (WholeRef [MenuItem]);
 
-paneWindow: Pane -> Action UI.Window;
+paneWindow: Pane -> Action Window;
 paneWindow (MkPane title ui moremenus) = stdWindow title moremenus ui;
 
-pane: Text -> UI.Element -> Pane;
+pane: Text -> Element -> Pane;
 pane title ui = MkPane {title} ui {[]};
 
+#| A notebook from a list of panes
 notebookPane: WholeRef +Text -> [Pane] -> Action Pane;
 notebookPane title panes = do
     tabRef <- newMemWhole;
     return $ let
-        makePage: Pane -> (UI.Element,UI.Element);
+        makePage: Pane -> (Element,Element);
         makePage (MkPane rname ui _) = uiPage rname ui;
-        nui: UI.Element;
-        nui = UI.notebook tabRef $ mapList makePage panes;
+        nui: Element;
+        nui = notebook tabRef $ mapList makePage panes;
         itemsRef = forWhole panes $ \(MkPane _ _ rmenus) -> rmenus;
         in MkPane (immutWhole title) nui $ fromMaybeWhole {index %itemsRef %tabRef};
     end;
@@ -51,9 +55,9 @@ notebookPane title panes = do
 selectionPane:
     Text -> # window title
     SetRef item -> # the set of items
-    [(item -> Action ()) -> UI.MenuItem] -> # Menu items for creating new items
+    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
-    (WholeRef item -> UI.Element) ->
+    (WholeRef item -> Element) ->
     Action Pane;
 selectionPane title iset createMenuItems iopen iui = do
     selection <- newMemWhole;
@@ -71,64 +75,64 @@ selectionPane title iset createMenuItems iopen iui = do
             iset -= item;
             end;
 
-        moremenus: [UI.MenuItem];
+        moremenus: [MenuItem];
         moremenus =
             [
-                UI.menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
+                menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
                 [
-                    UI.menuAction "View" Nothing {viewItem},
-                    UI.menuAction "Delete" Nothing {deleteItem}
+                    menuAction "View" Nothing {viewItem},
+                    menuAction "Delete" Nothing {deleteItem}
                 ]
             ];
         in MkPane {title} (iui selection) {moremenus};
     end;
 
 selectionPairPane:
-    Text -> # window title
+    Text -> # pane title
     SetRef item -> # the set of items
-    [(item -> Action ()) -> UI.MenuItem] -> # Menu items for creating new items
+    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
-    (WholeRef item -> UI.Element) -> # UI.Element for the item selector
-    (WholeRef +item -> UI.Element) -> # UI.Element for the selected item
+    (WholeRef item -> Element) -> # Element for the item selector
+    (WholeRef +item -> Element) -> # Element for the selected item
     Action Pane;
 selectionPairPane title iset createMenuItems iopen getSelectorUI getSelectedUI =
     selectionPane title iset createMenuItems iopen $ \selection -> let
-        sidebarUI: UI.Element;
+        sidebarUI: Element;
         sidebarUI = getSelectorUI selection;
 
-        selectedUI: UI.Element;
+        selectedUI: Element;
         selectedUI = getSelectedUI $ immutWhole selection;
 
-        in UI.horizontal [(False,sidebarUI),(True,selectedUI)];
+        in horizontal [(False,sidebarUI),(True,selectedUI)];
 
 selectionWindow:
     Text -> # window title
     SetRef item -> # the set of items
-    [(item -> Action ()) -> UI.MenuItem] -> # Menu items for creating new items
+    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
-    (WholeRef item -> UI.Element) ->
-    Action UI.Window;
+    (WholeRef item -> Element) ->
+    Action Window;
 selectionWindow wtitle iset createMenuItems iopen iui = do
     mui <- selectionPane wtitle iset createMenuItems iopen iui;
     paneWindow mui;
     end;
 
-# This is a two-pane window, the left has a "selector" of items (e.g. a table), and the right shows the selected item.
+#| This is a two-pane window, the left has a "selector" of items (e.g. a table), and the right shows the selected item.
 selectionPairWindow:
     Text -> # window title
     SetRef item -> # the set of items
-    [(item -> Action ()) -> UI.MenuItem] -> # Menu items for creating new items
+    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
-    (WholeRef item -> UI.Element) -> # UI.Element for the item selector
-    (WholeRef +item -> UI.Element) -> # UI.Element for the selected item
-    Action UI.Window;
+    (WholeRef item -> Element) -> # Element for the item selector
+    (WholeRef +item -> Element) -> # Element for the selected item
+    Action Window;
 selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedUI = do
     mui <- selectionPairPane wtitle iset createMenuItems iopen getSelectorUI getSelectedUI;
     paneWindow mui;
     end;
 
-newItemMenuAction: Text -> Maybe Text -> Action a -> SetRef a -> (a -> Action ()) -> UI.MenuItem;
-newItemMenuAction name mkey newItem set setsel = UI.menuAction name mkey
+newItemMenuAction: Text -> Maybe Text -> Action a -> SetRef a -> (a -> Action ()) -> MenuItem;
+newItemMenuAction name mkey newItem set setsel = menuAction name mkey
     {do
     item <- newItem;
     set += item;

@@ -3,6 +3,7 @@
 let
 
 import UIStuff.Selection;
+import UIStuff.Named;
 
 ### EventTime
 
@@ -64,10 +65,10 @@ eventTimeOrder = mapOrder eventTimeTime localChronological;
 ### Event
 
 opentype Event;
+subtype Event <: Named;
 events: FiniteSetRef Event;
 events = property @Event @() !"type.event" !@ {()};
 
-eventName = property @Event @Text !"identify.name";
 eventTime = property @Event @EventTime !"event.time";
 eventNotes = property @Event @Text !"item.description";
 
@@ -75,7 +76,7 @@ eventOrder: RefOrder Event;
 eventOrder = orderOn eventTime eventTimeOrder;
 
 eventData: FiniteSetRef (EventTime,Text);
-eventData = (eventTime !** eventName) !$$ events;
+eventData = (eventTime !** name) !$$ events;
 
 eventDataOrder: RefOrder (EventTime,Text);
 eventDataOrder = mapOrder fst eventTimeOrder;
@@ -98,9 +99,9 @@ eventList todayref = {
 overviewRef: WholeRef +Date -> WholeRef +Text;
 overviewRef todayref = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %(eventList todayref)};
 
-# Overview page
-overviewPage: (UI.Element,UI.Element);
-overviewPage = uiPage {"Overview"} $ UI.run $ do
+# Overview tab UI
+overviewPane: Pane;
+overviewPane = pane "Overview" $ UI.run $ do
     now <- newClock $ Seconds 60; # update every minute
     tz <- newTimeZoneRef now;
     return $ UI.label $ overviewRef {case timeToLocal %tz %now of DateAndTime d _ -> d end};
@@ -108,7 +109,7 @@ overviewPage = uiPage {"Overview"} $ UI.run $ do
 
 calendarWindow: WholeRef +Event -> Action UI.Window;
 calendarWindow evt = fixAction $ \window ->
-    UI.openWindow (200,200) {"date of " <> %(eventName !$% evt)} {[]} $ UI.vertical
+    UI.openWindow (200,200) {"date of " <> %(name !$% evt)} {[]} $ UI.vertical
     [
         (False,UI.calendar $ eventRefTimeDate $ eventTime !$% evt),
         (False,UI.button {"Done: " <> toText %(eventRefTimeDate $ eventTime !$% evt)} {UI.closeWindow window})
@@ -117,7 +118,7 @@ calendarWindow evt = fixAction $ \window ->
 eventUI: WholeRef +Event -> UI.Element;
 eventUI evt = UI.vertical
 [
-    (False, UI.textEntry $ eventName !$% evt),
+    (False, UI.textEntry $ name !$% evt),
     (False, UI.horizontal
     [
         (False, UI.button {"cal"} {calendarWindow evt}),
@@ -128,39 +129,33 @@ eventUI evt = UI.vertical
 ];
 
 eventWindow: Event -> Action UI.Window;
-eventWindow evt = stdWindow (eventName !$ {evt}) {[]} $ eventUI {evt};
+eventWindow evt = paneWindow $ namedPane eventUI {evt};
 
-# Menu item for creating a new event, and telling the owning element to set its selection to it.
-newEventMenuItem: (Event -> Action ()) -> UI.MenuItem;
-newEventMenuItem setsel = UI.menuAction ("New Event") (Just "Ctrl+K")
-    {do
+newEvent: Action Event;
+newEvent = do
     item <- newOpenEntity @Event;
     day <- getDate;
     eventTime !$ {item} := EventTimeDate day;
-    eventName !$ {item} := "";
-    events += item;
-    setsel item;
-    end};
+    name !$ {item} := "";
+    return item;
+    end;
 
-eventsWindow: Action UI.Window;
-eventsWindow = selectionWindow "Events" events [newEventMenuItem] eventWindow $ \selection -> let
-    eventsTableUI: UI.Element;
-    eventsTableUI = let
-        columns: [(WholeRef +Text, Event -> WholeRef Text)];
-        columns = let
-            timeColumn: (WholeRef +Text, Event -> WholeRef Text);
-            timeColumn = ({"When"},\e -> {showEventTime $ %(eventTime !$ {e})});
-            nameColumn: (WholeRef +Text, Event -> WholeRef Text);
-            nameColumn = ({"What"},\e -> eventName !$ {e});
-            in [timeColumn,nameColumn];
-        in UI.run $ do
-            eventList <- getSetList eventOrder events;
-            return $ UI.listTable columns eventList eventWindow (Just selection);
-            end;
+eventsTableUI: WholeRef Event -> UI.Element;
+eventsTableUI selection = let
+    columns: [(WholeRef +Text, Event -> WholeRef Text)];
+    columns = let
+        timeColumn: (WholeRef +Text, Event -> WholeRef Text);
+        timeColumn = ({"When"},\e -> {showEventTime $ %(eventTime !$ {e})});
+        nameColumn: (WholeRef +Text, Event -> WholeRef Text);
+        nameColumn = ({"What"},\e -> name !$ {e});
+        in [timeColumn,nameColumn];
+    in UI.run $ do
+        lref <- getSetList eventOrder events;
+        return $ UI.listTable columns lref eventWindow (Just selection);
+        end;
 
-    eventsPage: (UI.Element,UI.Element);
-    eventsPage = uiPage {"Events"} $ UI.scrolled $ UI.horizontal [(False,eventsTableUI),(True,eventUI $ immutWhole selection)];
-
-    in UI.notebook unknown [overviewPage, eventsPage];
-
-in eventsWindow
+in do
+    eventsPane <- selectionPairPane "Events" events [newItemMenuAction ("New Event") (Just "Ctrl+K") newEvent events] eventWindow eventsTableUI eventUI;
+    pane <- notebookPane {"Events"} [overviewPane,eventsPane];
+    paneWindow pane
+    end
