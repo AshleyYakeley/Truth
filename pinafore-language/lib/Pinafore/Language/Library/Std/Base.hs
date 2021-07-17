@@ -7,6 +7,8 @@ module Pinafore.Language.Library.Std.Base
 
 import Changes.Core
 import Changes.World.Clock
+import qualified Data.Text
+import qualified Data.Text.ICU
 import Data.Time
 import Data.Time.Clock.System
 import Pinafore.Base
@@ -305,7 +307,10 @@ baseLibEntries =
                 , mkValEntry "ge" "Greater than or equal to." $ (/=) LT
                 , mkValEntry "lesser" "The lesser of two weevils." lesser
                 , mkValEntry "greater" "The greater of two weevils." greater
-                , mkValEntry "alphabetical" "Alphabetical order." $ compare @Text
+                , mkValEntry "alphabetical" "Alphabetical case-insensitive order, per Unicode normalisation." $
+                  Data.Text.ICU.compare [Data.Text.ICU.CompareIgnoreCase]
+                , mkValEntry "casedAlphabetical" "Alphabetical case-sensitive order, per Unicode normalisation." $
+                  Data.Text.ICU.compare []
                 , mkValEntry "numerical" "Numercal order." $ compare @Number
                 , mkValEntry "chronological" "Chronological order." $ compare @UTCTime
                 , mkValEntry "durational" "Durational order." $ compare @NominalDiffTime
@@ -315,6 +320,7 @@ baseLibEntries =
                 , mkValEntry "noOrder" "No order, everything EQ." $ noOrder @TopType
                 , mkValEntry "orders" "Join orders by priority." $ concatOrders @A
                 , mkValEntry "reverse" "Reverse an order." $ reverseOrder @A
+                , mkValEntry "sort" "Sort by an order." (sortBy :: (A -> A -> Ordering) -> [A] -> [A])
                 ]
           , docTreeEntry
                 "Text"
@@ -329,6 +335,9 @@ baseLibEntries =
                       "`textSection start len text` is the section of `text` beginning at `start` of length `len`." $ \start len (text :: Text) ->
                       take len $ drop start text
                 , mkValEntry "textConcat" "Concatenate texts." $ mconcat @Text
+                , mkValEntry "toUpperCase" "" Data.Text.toUpper
+                , mkValEntry "toLowerCase" "" Data.Text.toLower
+                , mkValEntry "toTitleCase" "" Data.Text.toTitle
                 ]
           , let
                 arithList :: (Num a, Ord a) => a -> a -> Maybe a -> [a]

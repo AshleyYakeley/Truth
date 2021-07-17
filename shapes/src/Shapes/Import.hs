@@ -14,7 +14,7 @@ import Control.Monad.Fix as I
 import Control.Monad.IO.Class as I
 import Data.Bits as I
 import Data.Bool as I
-import Data.Char as I hiding (toLower, toUpper)
+import Data.Char as I hiding (toLower, toTitle, toUpper)
 import Data.Coerce as I
 import Data.Either as I
 import Data.Eq as I
