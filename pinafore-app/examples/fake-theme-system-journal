@@ -8,19 +8,20 @@ years = property @Integer @() !"FTSJ.years";
 yearTheme: Integer ~> Text;
 yearTheme = property @Integer @Text !"FTSJ.yearTheme";
 
+import UI;
 import UIStuff.Selection;
 
 frontCoverPane: Pane;
-frontCoverPane = pane "Cover" $ UI.styleSheet {"* {font-size: 32pt;}"} $ UI.label {"FAKE\nSYSTEMS\nTHEME\nJOURNAL"};
+frontCoverPane = pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
 themesPane: Pane;
-themesPane = pane "Themes" $ UI.blank;
+themesPane = pane "Themes" $ blank;
 
 daysPane: Pane;
-daysPane = pane "Days" $ UI.blank;
+daysPane = pane "Days" $ blank;
 
 createMainPane: Action Pane;
-createMainPane = notebookPane {"Fake Theme Systems Journal"} [frontCoverPane,themesPane,daysPane];
+createMainPane = notebookPane {"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
 
 in do
     mainPane <- createMainPane;
