@@ -2,9 +2,7 @@ module Pinafore.Base.Number
     ( Number(..)
     , showDecimalRational
     , numberToDouble
-    , safeRationalToNumber
-    , numberCheckSafeRational
-    , safeRationalCheckInteger
+    , safeRationalNumber
     , approximate
     , numberIsNaN
     , numberIsInfinite
@@ -17,7 +15,6 @@ import Data.List (head)
 import Pinafore.Base.SafeRational
 import Shapes hiding ((+++), option)
 import Shapes.Numeric
-import Text.ParserCombinators.ReadP hiding (many)
 
 data Number
     = ExactNumber Rational
@@ -43,6 +40,9 @@ numberIsExact :: Number -> Bool
 numberIsExact (ExactNumber _) = True
 numberIsExact _ = False
 
+safeRationalNumber :: Codec Number SafeRational
+safeRationalNumber = MkCodec numberCheckSafeRational safeRationalToNumber
+
 safeRationalToNumber :: SafeRational -> Number
 safeRationalToNumber (SRNumber n) = ExactNumber n
 safeRationalToNumber SRNaN = InexactNumber $ 0 / 0
@@ -52,11 +52,6 @@ numberCheckSafeRational (ExactNumber n) = Just $ SRNumber n
 numberCheckSafeRational (InexactNumber n)
     | isNaN n = Just $ SRNaN
 numberCheckSafeRational _ = Nothing
-
-safeRationalCheckInteger :: SafeRational -> Maybe Integer
-safeRationalCheckInteger (SRNumber r)
-    | denominator r == 1 = Just $ numerator r
-safeRationalCheckInteger _ = Nothing
 
 approximate :: Rational -> Number -> Rational
 approximate res n = res * toRational (round (n / fromRational res) :: Integer)
@@ -188,123 +183,23 @@ showDecimalRational maxDigits r = let
     in pack $ sign ++ show i' ++ decimal'
 
 instance Show Number where
-    show (ExactNumber r) = let
-        sn = numerator r
-        d = denominator r
-        sign =
-            if sn < 0
-                then "-"
-                else ""
-        n = abs sn
-        in sign <>
-           (if d == 1
-                then show n
-                else show n <> "/" <> show d)
+    show (ExactNumber r) = show (SRNumber r)
     show (InexactNumber d)
-        | isNaN d = show d
+        | isNaN d = show SRNaN
     show (InexactNumber d) = '~' : (show d)
 
-runReadP :: ReadP a -> String -> Maybe a
-runReadP r s = let
-    pickdone (a, "") = Just a
-    pickdone _ = Nothing
-    in case mapMaybe pickdone $ readP_to_S r s of
-           [a] -> Just a
-           _ -> Nothing
-
 readNumberLiteral :: String -> Maybe Number
-readNumberLiteral = let
-    option' :: a -> ReadP a -> ReadP a
-    option' x p = p <++ return x
-    many' :: ReadP a -> ReadP [a]
-    many' p = many1' p <++ return []
-    many1' :: ReadP a -> ReadP [a]
-    many1' p = liftA2 (:) p $ many' p
-    readP ::
-           forall a. Read a
-        => ReadP a
-    readP = readS_to_P $ readsPrec 0
-    readInexact :: ReadP Double
-    readInexact = do
-        void $ char '~'
-        readP
-    assembleDigits :: (Integer, Integer) -> String -> (Integer, Integer)
-    assembleDigits it [] = it
-    assembleDigits (i, t) (c:cc) = assembleDigits (i * 10 + toInteger (digitToInt c), t * 10) cc
-    readDigits :: ReadP (Integer, Integer)
-    readDigits = do
-        s <- many' $ satisfy isDigit
-        return $ assembleDigits (0, 1) s
-    readDigits1 :: ReadP (Integer, Integer)
-    readDigits1 = do
-        s <- many1' $ satisfy isDigit
-        return $ assembleDigits (0, 1) s
-    readExact :: ReadP Rational
-    readExact = do
-        sign <- (char '-' >> return negate) <++ return id
-        (intPart, _) <- readDigits1
-        decPart <-
-            option' 0 $ do
-                void $ char '.'
-                (fixN, fixD) <- readDigits
-                repR <-
-                    option' 0 $ do
-                        void $ char '_'
-                        (repN, repD) <- readDigits
-                        return $
-                            if repD == 1
-                                then 0
-                                else repN % (fixD * (pred repD))
-                return $ (fixN % fixD) + repR
-        return $ sign $ toRational intPart + decPart
-    readNaN :: ReadP Number
-    readNaN = do
-        void $ string "NaN"
-        return $ InexactNumber $ 0 / 0
-    readNumber :: ReadP Number
-    readNumber = fmap InexactNumber readInexact <++ fmap ExactNumber readExact <++ readNaN
-    in runReadP readNumber
+readNumberLiteral = runReadPrec readPrec
 
 instance Read Number where
-    readsPrec prec = let
-        option' :: a -> ReadP a -> ReadP a
-        option' x p = p <++ return x
-        many' :: ReadP a -> ReadP [a]
-        many' p = many1' p <++ return []
-        many1' :: ReadP a -> ReadP [a]
-        many1' p = liftA2 (:) p $ many' p
-        readP ::
-               forall a. Read a
-            => ReadP a
-        readP = readS_to_P $ readsPrec prec
-        readInexact :: ReadP Double
+    readPrec = let
+        readInexact :: ReadPrec Double
         readInexact = do
-            void $ char '~'
-            readP
-        assembleDigits :: Integer -> String -> Integer
-        assembleDigits i [] = i
-        assembleDigits i (c:cc) = assembleDigits (i * 10 + toInteger (digitToInt c)) cc
-        readDigits1 :: ReadP Integer
-        readDigits1 = do
-            s <- many1' $ satisfy isDigit
-            return $ assembleDigits 0 s
-        readExact :: ReadP Rational
-        readExact = do
-            sign <- (char '-' >> return negate) <++ return id
-            n <- readDigits1
-            d <-
-                option' 1 $ do
-                    void $ char '/'
-                    readDigits1
-            return $ sign $ n % d
-        readNaN :: ReadP Number
-        readNaN = do
-            void $ string "NaN"
-            return $ InexactNumber $ 0 / 0
-        readNumber :: ReadP Number
-        readNumber = do
-            skipSpaces
-            n <- fmap InexactNumber readInexact <++ fmap ExactNumber readExact <++ readNaN
-            skipSpaces
-            return n
-        in readP_to_S readNumber
+            pLiteral '~'
+            readPrec
+        in fmap InexactNumber readInexact <++ do
+               sr <- readPrec
+               return $
+                   case sr of
+                       SRNumber n -> ExactNumber n
+                       SRNaN -> InexactNumber $ 0 / 0

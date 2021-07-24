@@ -128,7 +128,7 @@ langFiniteSetRefSetDifference :: forall p q. LangFiniteSetRef '( p, q) -> LangSe
 langFiniteSetRefSetDifference a b = langFiniteSetRefSetIntersect a $ langSetRefComplement b
 
 wholeListFiniteSetChangeLens :: Eq a => ChangeLens (WholeUpdate [a]) (FiniteSetUpdate a)
-wholeListFiniteSetChangeLens = convertChangeLens . bijectionWholeChangeLens isoCoerce
+wholeListFiniteSetChangeLens = convertChangeLens . bijectionWholeChangeLens coerceIsomorphism
 
 langListRefToFiniteSetRef ::
        forall a. LangWholeRef '( [a], [MeetType Entity a]) -> LangFiniteSetRef '( MeetType Entity a, a)

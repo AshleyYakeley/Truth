@@ -129,30 +129,30 @@ newTimeZoneRef now = do
     return $ fmap timeZoneMinutes $ MkPinaforeImmutableWholeRef ref
 
 interpretAsText ::
-       forall a. AsLiteral a
+       forall a. (Read a, Show a)
     => LangWholeRef '( a, a)
     -> LangWholeRef '( Text, Text)
 interpretAsText = let
     getter :: Maybe a -> Maybe Text
     getter Nothing = Just ""
-    getter (Just a) = Just $ unLiteral $ toLiteral a
+    getter (Just a) = Just $ pack $ show a
     setter :: Maybe Text -> Maybe a -> Maybe (Maybe a)
     setter Nothing _ = Just Nothing
     setter (Just "") _ = Just Nothing
-    setter (Just t) _ = fmap Just $ parseLiteral t
+    setter (Just t) _ = fmap Just $ textReadMaybe t
     in maybeLensLangWholeRef getter setter
 
-parseLiteral :: AsLiteral t => Text -> Maybe t
-parseLiteral = knowToMaybe . fromLiteral . MkLiteral
+textReadMaybe :: Read t => Text -> Maybe t
+textReadMaybe t = readMaybe $ unpack t
 
 plainFormattingDefs ::
-       forall t. (ToPinaforeType t, FromPinaforeType t, AsLiteral t)
+       forall t. (ToPinaforeType t, FromPinaforeType t, Read t, Show t)
     => Text
     -> Text
     -> [DocTreeEntry BindDoc]
 plainFormattingDefs uname lname =
     [ mkValEntry (MkName $ "parse" <> uname) ("Parse text as " <> plainMarkdown lname <> ". Inverse of `toText`.") $
-      parseLiteral @t
+      textReadMaybe @t
     , mkValEntry
           (MkName $ "interpret" <> uname <> "AsText")
           ("Interpret " <> plainMarkdown lname <> " reference as text, interpreting deleted values as empty text.") $
@@ -256,7 +256,6 @@ baseLibEntries =
             MkSubypeConversionEntry (EntityPinaforeGroundType NilListType TopEntityGroundType) $ \case
                 EntityPinaforeGroundType NilListType t -> Just $ nilSubtypeConversion $ entitySubtypeShim t
                 _ -> Nothing
-          , mkValEntry "toText" "The text of a literal." unLiteral
           , docTreeEntry
                 "Boolean"
                 ""
@@ -369,7 +368,7 @@ baseLibEntries =
                          , mkSubtypeRelationEntry "Integer" "Rational" "" $
                            pure $
                            literalSubtypeConversionEntry IntegerLiteralType RationalLiteralType $
-                           functionToShim "Integer to Rational" integerToSafeRational
+                           functionToShim "Integer to Rational" $ encode integerSafeRational
                          ] <>
                          plainFormattingDefs @Integer "Integer" "an integer" <>
                          [ mkValEntry "min" "Lesser of two Integers" $ min @Integer
@@ -405,7 +404,7 @@ baseLibEntries =
                          , mkSubtypeRelationEntry "Rational" "Number" "" $
                            pure $
                            literalSubtypeConversionEntry RationalLiteralType NumberLiteralType $
-                           functionToShim "Rational to Number" safeRationalToNumber
+                           functionToShim "Rational to Number" $ encode safeRationalNumber
                          ] <>
                          plainFormattingDefs @SafeRational "Rational" "a rational" <>
                          [ mkValEntry "minR" "Lesser of two Rationals" $ min @SafeRational
@@ -480,14 +479,12 @@ baseLibEntries =
                          , mkValEntry "meanN" "Mean." $ \(vv :: [Number]) ->
                                sum vv / (ExactNumber $ toRational $ length vv)
                          , mkValEntry "productN" "Product." $ product @[] @Number
-                         , mkValEntry
-                               "numberCheckSafeRational"
-                               "Get the exact value of a Number, if it is one."
-                               numberCheckSafeRational
+                         , mkValEntry "numberCheckSafeRational" "Get the exact value of a Number, if it is one." $
+                           decode safeRationalNumber
                          , mkValEntry
                                "checkExactInteger"
-                               "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
-                               numberCheckSafeRational n >>= safeRationalCheckInteger
+                               "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $
+                           decode $ integerSafeRational . safeRationalNumber
                          ]
                        ]
           , docTreeEntry
@@ -500,7 +497,7 @@ baseLibEntries =
                   , mkValPatEntry "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $ \d ->
                         Just (nominalDiffTimeToSeconds d, ())
                   ] <>
-                  plainFormattingDefs @NominalDiffTime "Duration" "a duration" <>
+                  -- plainFormattingDefs @NominalDiffTime "Duration" "a duration" <>
                   [ mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
                   , mkValEntry "dayDuration" "One day duration." nominalDay
                   , mkValEntry "addDuration" "Add durations." $ (+) @NominalDiffTime

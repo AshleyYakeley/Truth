@@ -108,8 +108,20 @@ parseValueSubsume t text = do
 entityTypedShowValue ::
        CovaryType dv -> EntityGroundType f -> DolanArguments dv PinaforeType f 'Positive t -> t -> Maybe String
 entityTypedShowValue NilListType (LiteralEntityGroundType t) NilDolanArguments v =
-    case literalTypeAsLiteral t of
-        Dict -> Just $ unpack $ unLiteral $ toLiteral v
+    case t of
+        LiteralLiteralType -> Nothing
+        UnitLiteralType -> Just $ show v
+        TextLiteralType -> Just $ show v
+        NumberLiteralType -> Just $ show v
+        RationalLiteralType -> Just $ show v
+        IntegerLiteralType -> Just $ show v
+        BooleanLiteralType -> Just $ show v
+        OrderingLiteralType -> Just $ show v
+        TimeLiteralType -> Just $ show v
+        DurationLiteralType -> Just $ show v
+        DateLiteralType -> Just $ show v
+        TimeOfDayLiteralType -> Just $ show v
+        LocalTimeLiteralType -> Just $ show v
 entityTypedShowValue (ConsListType Refl NilListType) MaybeEntityGroundType (ConsDolanArguments t NilDolanArguments) (Just x) =
     Just $ "Just " <> typedShowValue t x
 entityTypedShowValue (ConsListType Refl NilListType) MaybeEntityGroundType (ConsDolanArguments _t NilDolanArguments) Nothing =

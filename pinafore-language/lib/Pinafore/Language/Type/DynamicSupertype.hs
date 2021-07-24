@@ -35,6 +35,9 @@ makeGDS ::
     -> GreatestDynamicSupertype t
 makeGDS wt = MkGreatestDynamicSupertype $ toNegativeShimWit wt
 
+codecGDS :: MakeGreatestDynamicSupertype w => w dt -> Codec dt t -> GreatestDynamicSupertype t
+codecGDS wt codec = makeGDS wt (functionToShim "subtype" $ encode codec) (functionToShim "supertype" $ decode codec)
+
 instance MakeGreatestDynamicSupertype (PinaforeShimWit 'Negative) where
     toNegativeShimWit wt = wt
 
@@ -60,18 +63,8 @@ dynamicEntitySupertype dt =
             else Nothing
 
 literalSupertype :: LiteralType t -> Maybe (GreatestDynamicSupertype t)
-literalSupertype RationalLiteralType =
-    Just $
-    makeGDS
-        NumberLiteralType
-        (functionToShim "subtype" safeRationalToNumber)
-        (functionToShim "supertype" numberCheckSafeRational)
-literalSupertype IntegerLiteralType =
-    Just $
-    makeGDS
-        NumberLiteralType
-        (functionToShim "subtype" $ safeRationalToNumber . integerToSafeRational)
-        (functionToShim "supertype" $ \n -> numberCheckSafeRational n >>= safeRationalCheckInteger)
+literalSupertype RationalLiteralType = Just $ codecGDS NumberLiteralType safeRationalNumber
+literalSupertype IntegerLiteralType = Just $ codecGDS NumberLiteralType $ integerSafeRational . safeRationalNumber
 literalSupertype _ = Nothing
 
 entitySupertype :: EntityGroundType t -> Maybe (GreatestDynamicSupertype t)

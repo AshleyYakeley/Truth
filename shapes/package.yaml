@@ -54,6 +54,7 @@ library:
       - Data.MonadOne
       - Data.HasNewValue
       - Data.IsoVariant
+      - Data.Streamish
       - Data.Injection
       - Data.Isomorphism
       - Data.Lens
@@ -67,6 +68,9 @@ library:
       - Data.FiniteSet
       - Data.KindMorphism
       - Data.FixBox
+      - Data.Serializer
+      - Data.Serialize.Instances
+      - Data.ReadShow
       - Control.Category.Dual
       - Control.Category.Lifted
       - Control.Applicative.Compose

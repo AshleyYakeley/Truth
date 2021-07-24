@@ -37,7 +37,11 @@ import Data.KindMorphism as I
 import Data.Lens as I
 import Data.MonadOne as I
 import Data.MonoApplicative as I
+import Data.ReadShow as I
 import Data.Result as I
 import Data.SameItem as I
+import Data.Serialize.Instances as I ()
+import Data.Serializer as I
 import Data.Store as I
+import Data.Streamish as I
 import Data.Words as I

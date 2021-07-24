@@ -61,4 +61,5 @@ tests:
           - Test.Numeric
           - Test.Anchor
           - Test.Storage
+          - Test.ReadShow
         ghc-options: -threaded
