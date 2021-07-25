@@ -9,6 +9,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - :doc to retrieve name documentation
   * Library
     - Std
+      . add Showable type for showing
       . add min/max/lesser/greater functions
     - Drawing
       . Cairo-based functions for creating drawings

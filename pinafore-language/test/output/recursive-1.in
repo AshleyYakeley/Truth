@@ -8,4 +8,4 @@ recf s a b = if a <= 0 then b else s (a - 1) b;
 
 f: Integer -> Integer -> Integer;
 f = fix recf;
-in outputLn $ toText $ f 2 5
+in outputLn $ show $ f 2 5

@@ -36,7 +36,7 @@ act = do
     tstart <- getTimeMS;
     prop0 !$ {me} := "Example";
     tend <- getTimeMS;
-    outputLn $ "Time: " <> toText (tend - tstart);
+    outputLn $ "Time: " <> show (tend - tstart);
     #debugmsg "ACTION: end";
     end
 

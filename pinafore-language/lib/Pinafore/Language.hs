@@ -20,8 +20,6 @@ module Pinafore.Language
     , PinaforeAction
     , FromPinaforeType
     , ToPinaforeType
-    , typedShowValue
-    , singularTypedShowValue
     , parseTopExpression
     , parseValue
     , parseValueUnify
@@ -43,7 +41,6 @@ module Pinafore.Language
 
 import Changes.Core
 import Control.Exception (Handler(..), catches)
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.Convert
@@ -105,55 +102,8 @@ parseValueSubsume t text = do
     val <- parseValue text
     tsSubsumeValue @PinaforeTypeSystem t val
 
-entityTypedShowValue ::
-       CovaryType dv -> EntityGroundType f -> DolanArguments dv PinaforeType f 'Positive t -> t -> Maybe String
-entityTypedShowValue NilListType (LiteralEntityGroundType t) NilDolanArguments v =
-    case t of
-        LiteralLiteralType -> Nothing
-        UnitLiteralType -> Just $ show v
-        TextLiteralType -> Just $ show v
-        NumberLiteralType -> Just $ show v
-        RationalLiteralType -> Just $ show v
-        IntegerLiteralType -> Just $ show v
-        BooleanLiteralType -> Just $ show v
-        OrderingLiteralType -> Just $ show v
-        TimeLiteralType -> Just $ show v
-        DurationLiteralType -> Just $ show v
-        DateLiteralType -> Just $ show v
-        TimeOfDayLiteralType -> Just $ show v
-        LocalTimeLiteralType -> Just $ show v
-entityTypedShowValue (ConsListType Refl NilListType) MaybeEntityGroundType (ConsDolanArguments t NilDolanArguments) (Just x) =
-    Just $ "Just " <> typedShowValue t x
-entityTypedShowValue (ConsListType Refl NilListType) MaybeEntityGroundType (ConsDolanArguments _t NilDolanArguments) Nothing =
-    Just "Nothing"
-entityTypedShowValue (ConsListType Refl NilListType) ListEntityGroundType (ConsDolanArguments t NilDolanArguments) v =
-    Just $ "[" <> intercalate ", " (fmap (typedShowValue t) v) <> "]"
-entityTypedShowValue (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (a, b) =
-    Just $ "(" <> typedShowValue ta a <> ", " <> typedShowValue tb b <> ")"
-entityTypedShowValue (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments _tb NilDolanArguments)) (Left x) =
-    Just $ "Left " <> typedShowValue ta x
-entityTypedShowValue (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments _ta (ConsDolanArguments tb NilDolanArguments)) (Right x) =
-    Just $ "Right " <> typedShowValue tb x
-entityTypedShowValue _ _ _ _ = Nothing
-
-groundTypedShowValue :: PinaforeGroundType dv t -> DolanArguments dv PinaforeType t 'Positive ta -> ta -> String
-groundTypedShowValue (EntityPinaforeGroundType ct t) args v
-    | Just str <- entityTypedShowValue ct t args v = str
-groundTypedShowValue _ _ _ = "<?>"
-
-singularTypedShowValue :: PinaforeSingularType 'Positive t -> t -> String
-singularTypedShowValue (VarDolanSingularType _) _ = "<?>"
-singularTypedShowValue (GroundDolanSingularType gt args) v = groundTypedShowValue gt args v
-singularTypedShowValue (RecursiveDolanSingularType var pt) v =
-    case unrollRecursiveType var pt of
-        MkShimWit t iconv -> typedShowValue t $ shimToFunction (polarPolyIsoPositive iconv) v
-
-typedShowValue :: PinaforeType 'Positive t -> t -> String
-typedShowValue NilDolanType v = never v
-typedShowValue (ConsDolanType ts tt) v = joinf (singularTypedShowValue ts) (typedShowValue tt) v
-
-showPinaforeRef :: QValue -> String
-showPinaforeRef (MkAnyValue (MkPosShimWit t conv) v) = typedShowValue t (shimToFunction conv v)
+showPinaforeRef :: QValue -> PinaforeSourceInterpreter String
+showPinaforeRef val = catch (fmap show $ typedAnyToPinaforeVal @Showable val) (\(_ :: PinaforeError) -> return "<?>")
 
 type Interact = StateT SourcePos (ReaderStateT PinaforeInterpreter View)
 
@@ -173,7 +123,9 @@ runValue outh val =
     interactRunSourceScoped $
     (typedAnyToPinaforeVal val) <|>
     (fmap (\(text :: Text) -> liftIO $ hPutStrLn outh $ unpack text) $ typedAnyToPinaforeVal val) <|>
-    (return $ liftIO $ hPutStrLn outh $ showPinaforeRef val)
+    (do
+         s <- showPinaforeRef val
+         return $ liftIO $ hPutStrLn outh s)
 
 interactParse :: Text -> Interact InteractiveCommand
 interactParse t = remonad throwInterpretResult $ parseInteractiveCommand t

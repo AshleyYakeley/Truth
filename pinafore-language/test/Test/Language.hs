@@ -105,9 +105,6 @@ testNumbersShowRead =
         , testRead "NaN" $ Just $ InexactNumber $ 0 / 0
         , testRead "~Infinity" $ Just $ InexactNumber $ 1 / 0
         , testRead "~-Infinity" $ Just $ InexactNumber $ -1 / 0
-        , testRead " 1" $ Just $ ExactNumber 1
-        , testRead "1 " $ Just $ ExactNumber 1
-        , testRead " 1 " $ Just $ ExactNumber 1
         , testRead "z" $ Nothing @Number
         , testRead "ZZ" $ Nothing @Number
         , testRead "~1Z" $ Nothing @Number
@@ -130,14 +127,18 @@ goodLangResult False _ = LRCheckFail
 testQuery :: Text -> LangResult -> TestTree
 testQuery query expected =
     testTree (show $ unpack query) $ do
-        result <- withNullPinaforeContext $ runInterpretResult $ runPinaforeSourceScoped "<input>" $ parseValue query
+        result <-
+            withNullPinaforeContext $
+            runInterpretResult $
+            runPinaforeSourceScoped "<input>" $ do
+                v <- parseValue query
+                showPinaforeRef v
         case result of
             FailureResult e ->
                 case expected of
                     LRCheckFail -> return ()
                     _ -> assertFailure $ "check: expected success, found failure: " ++ show e
-            SuccessResult v -> do
-                let r = showPinaforeRef v
+            SuccessResult r -> do
                 me <- catchPureError r
                 case (expected, me) of
                     (LRCheckFail, _) -> assertFailure $ "check: expected failure, found success"
@@ -445,9 +446,9 @@ testQueries =
                     "polar"
                     [ testQuery "let x : Text | Number; x = 3 in x" $ LRSuccess "3"
                     , testQuery "let f : Any -> Integer; f _ = 3 in f ()" $ LRSuccess "3"
-                    , testQuery "(\\x -> (x,x)) : ((a & Number) -> (Literal,a))" $ LRSuccess "<?>"
-                    , testQuery "let f = (\\x -> (x,x)) : (a & Number) -> (Literal,a) in f 3" $ LRSuccess "(3, 3)"
-                    , testQuery "let f : (a & Number) -> (Literal,a); f x = (x,x) in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "(\\x -> (x,x)) : ((a & Number) -> (Showable,a))" $ LRSuccess "<?>"
+                    , testQuery "let f = (\\x -> (x,x)) : (a & Number) -> (Showable,a) in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "let f : (a & Number) -> (Showable,a); f x = (x,x) in f 3" $ LRSuccess "(3, 3)"
                     ]
               ]
         , testTree
@@ -573,10 +574,10 @@ testQueries =
                                  "rec a. (Maybe a | [a])"
                                  "(rec a. Maybe a) | (rec a. [a])"
                                  ["[]", "Nothing", "Just []", "[[]]"]
-                           , testSubtype True "rec a. [a]" "Entity" []
-                           , testSubtype True "[rec a. [a]]" "Entity" []
-                           , testSubtype True "rec a. [a]" "[Entity]" ["[]"]
-                           , testSubtype True "[rec a. [a]]" "[Entity]" ["[]"]
+                           , testSubtype True "rec a. [a]" "Showable" []
+                           , testSubtype True "[rec a. [a]]" "Showable" []
+                           , testSubtype True "rec a. [a]" "[Showable]" ["[]"]
+                           , testSubtype True "[rec a. [a]]" "[Showable]" ["[]"]
                            , testSameType False "None" "None" []
                            , testSameType False "rec a. a" "None" []
                            , testSameType False "[rec a. a]" "[None]" ["[]"]

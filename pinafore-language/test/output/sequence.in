@@ -7,4 +7,4 @@ rrange s a b = if a > b then [] else a :: s (a + 1) b;
 
 range: Integer -> Number -> [Integer];
 range = fix rrange;
-in for_ (range 1 5) $ \n -> outputLn (toText n)
+in for_ (range 1 5) $ \n -> outputLn (show n)

@@ -1,4 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.Std.Base
     ( baseLibEntries
@@ -29,6 +30,38 @@ import Pinafore.Language.Var
 import Pinafore.Markdown
 import Shapes
 import Shapes.Numeric
+
+topEntityType :: forall pol. PinaforeType pol (JoinMeetType pol Entity (LimitType pol))
+topEntityType =
+    ConsDolanType
+        (GroundDolanSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments)
+        NilDolanType
+
+-- Showable
+showableGroundType :: PinaforeGroundType '[] Showable
+showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual Showable)|]) "Showable"
+
+showableType :: forall pol. PinaforeType pol (JoinMeetType pol Showable (LimitType pol))
+showableType = ConsDolanType (GroundDolanSingularType showableGroundType NilDolanArguments) NilDolanType
+
+instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) Showable where
+    toShimWit = mkShimWit $ GroundDolanSingularType showableGroundType NilDolanArguments
+
+instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Showable where
+    toShimWit = singleDolanShimWit toJMShimWit
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) Showable where
+    fromShimWit = mkShimWit $ GroundDolanSingularType showableGroundType NilDolanArguments
+
+instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Showable where
+    fromShimWit = singleDolanShimWit fromJMShimWit
+
+showableSubtypeConversionEntry ::
+       forall a. TextShow a
+    => PinaforeGroundType '[] a
+    -> SubypeConversionEntry PinaforeGroundType
+showableSubtypeConversionEntry gt =
+    simpleSubtypeConversionEntry gt showableGroundType $ simpleSubtypeConversion $ functionToShim "show" textShowable
 
 openEntityShimWit :: forall tid. OpenEntityType tid -> PinaforeShimWit 'Positive (OpenEntity tid)
 openEntityShimWit tp =
@@ -129,13 +162,13 @@ newTimeZoneRef now = do
     return $ fmap timeZoneMinutes $ MkPinaforeImmutableWholeRef ref
 
 interpretAsText ::
-       forall a. (Read a, Show a)
+       forall a. (Read a, TextShow a)
     => LangWholeRef '( a, a)
     -> LangWholeRef '( Text, Text)
 interpretAsText = let
     getter :: Maybe a -> Maybe Text
     getter Nothing = Just ""
-    getter (Just a) = Just $ pack $ show a
+    getter (Just a) = Just $ textShow a
     setter :: Maybe Text -> Maybe a -> Maybe (Maybe a)
     setter Nothing _ = Just Nothing
     setter (Just "") _ = Just Nothing
@@ -146,12 +179,12 @@ textReadMaybe :: Read t => Text -> Maybe t
 textReadMaybe t = readMaybe $ unpack t
 
 plainFormattingDefs ::
-       forall t. (ToPinaforeType t, FromPinaforeType t, Read t, Show t)
+       forall t. (ToPinaforeType t, FromPinaforeType t, Read t, TextShow t)
     => Text
     -> Text
     -> [DocTreeEntry BindDoc]
 plainFormattingDefs uname lname =
-    [ mkValEntry (MkName $ "parse" <> uname) ("Parse text as " <> plainMarkdown lname <> ". Inverse of `toText`.") $
+    [ mkValEntry (MkName $ "parse" <> uname) ("Parse text as " <> plainMarkdown lname <> ". Inverse of `show`.") $
       textReadMaybe @t
     , mkValEntry
           (MkName $ "interpret" <> uname <> "AsText")
@@ -214,12 +247,6 @@ getLocalTime = fmap zonedTimeToLocalTime getZonedTime
 getEnv :: (?pinafore :: PinaforeContext) => Text -> Maybe Text
 getEnv n = fmap pack $ lookup (unpack n) $ iiEnvironment pinaforeInvocationInfo
 
-topEntityType :: forall pol. PinaforeType pol (JoinMeetType pol Entity (LimitType pol))
-topEntityType =
-    ConsDolanType
-        (GroundDolanSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments)
-        NilDolanType
-
 literalSubtypeConversionEntry ::
        LiteralType a -> LiteralType b -> PinaforePolyShim Type a b -> SubypeConversionEntry PinaforeGroundType
 literalSubtypeConversionEntry ta tb conv =
@@ -257,6 +284,20 @@ baseLibEntries =
                 EntityPinaforeGroundType NilListType t -> Just $ nilSubtypeConversion $ entitySubtypeShim t
                 _ -> Nothing
           , docTreeEntry
+                "Showable"
+                ""
+                [ mkTypeEntry "Showable" "Something that can be represented as `Text`." $ MkBoundType showableGroundType
+                , mkValEntry "show" "Show something as `Text`" $ textShow @Showable
+                ]
+          , docTreeEntry
+                "Unit"
+                ""
+                [ mkSubtypeRelationEntry "()" "Showable" "" $
+                  pure $
+                  showableSubtypeConversionEntry $
+                  EntityPinaforeGroundType NilListType $ LiteralEntityGroundType UnitLiteralType
+                ]
+          , docTreeEntry
                 "Boolean"
                 ""
                 [ mkTypeEntry "Boolean" "" $
@@ -269,6 +310,10 @@ baseLibEntries =
                           case literalTypeAsLiteral t of
                               Dict -> Just $ nilSubtypeConversion $ functionToShim "literal to Literal" toLiteral
                       _ -> Nothing
+                , mkSubtypeRelationEntry "Boolean" "Showable" "" $
+                  pure $
+                  showableSubtypeConversionEntry $
+                  EntityPinaforeGroundType NilListType $ LiteralEntityGroundType BooleanLiteralType
                 , mkValPatEntry "True" "Boolean TRUE." True $ \v ->
                       if v
                           then Just ()
@@ -286,6 +331,10 @@ baseLibEntries =
                 ""
                 [ mkTypeEntry "Ordering" "" $
                   MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType OrderingLiteralType
+                , mkSubtypeRelationEntry "Ordering" "Showable" "" $
+                  pure $
+                  showableSubtypeConversionEntry $
+                  EntityPinaforeGroundType NilListType $ LiteralEntityGroundType OrderingLiteralType
                 , mkValPatEntry "LT" "Less than." LT $ \v ->
                       case v of
                           LT -> Just ()
@@ -327,6 +376,10 @@ baseLibEntries =
                 [ mkTypeEntry "Text" "" $
                   MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType
                 , mkSubtypeRelationEntry "Text" "Literal" "" []
+                , mkSubtypeRelationEntry "Text" "Showable" "Quotes text, including escaping quotes." $
+                  pure $
+                  showableSubtypeConversionEntry $
+                  EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType
                 , mkValEntry "<>" "Concatenate text." $ (<>) @Text
                 , mkValEntry "textLength" "The length of a piece of text." $ olength @Text
                 , mkValEntry
@@ -429,6 +482,10 @@ baseLibEntries =
                          [ mkTypeEntry "Number" "" $
                            MkBoundType $
                            EntityPinaforeGroundType NilListType $ LiteralEntityGroundType NumberLiteralType
+                         , mkSubtypeRelationEntry "Number" "Showable" "" $
+                           pure $
+                           showableSubtypeConversionEntry $
+                           EntityPinaforeGroundType NilListType $ LiteralEntityGroundType NumberLiteralType
                          , mkValEntry "minN" "Lesser of two Numbers" $ min @Number
                          , mkValEntry "maxN" "Greater of two Numbers" $ max @Number
                          , mkValEntry "~+" "Add." $ (+) @Number
@@ -494,6 +551,10 @@ baseLibEntries =
                   [ mkTypeEntry "Duration" "" $
                     MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType DurationLiteralType
                   , mkSubtypeRelationEntry "Duration" "Literal" "" []
+                  , mkSubtypeRelationEntry "Duration" "Showable" "" $
+                    pure $
+                    showableSubtypeConversionEntry $
+                    EntityPinaforeGroundType NilListType $ LiteralEntityGroundType DurationLiteralType
                   , mkValPatEntry "Seconds" "Construct a `Duration` from seconds." secondsToNominalDiffTime $ \d ->
                         Just (nominalDiffTimeToSeconds d, ())
                   ] <>
@@ -512,6 +573,10 @@ baseLibEntries =
                   [ mkTypeEntry "Time" "Absolute time as measured by UTC." $
                     MkBoundType $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TimeLiteralType
                   , mkSubtypeRelationEntry "Time" "Literal" "" []
+                  , mkSubtypeRelationEntry "Time" "Showable" "" $
+                    pure $
+                    showableSubtypeConversionEntry $
+                    EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TimeLiteralType
                   ] <>
                   plainFormattingDefs @UTCTime "Time" "a time" <>
                   unixFormattingDefs @UTCTime "Time" "a time" <>
@@ -532,6 +597,10 @@ baseLibEntries =
                   , mkValPatEntry "ModifiedJulianDay" "Construct a `Date` from its MJD." ModifiedJulianDay $ \day ->
                         Just (toModifiedJulianDay day, ())
                   , mkSubtypeRelationEntry "Date" "Literal" "" []
+                  , mkSubtypeRelationEntry "Date" "Showable" "" $
+                    pure $
+                    showableSubtypeConversionEntry $
+                    EntityPinaforeGroundType NilListType $ LiteralEntityGroundType DateLiteralType
                   ] <>
                   plainFormattingDefs @Day "Date" "a date" <>
                   unixFormattingDefs @Day "Date" "a date" <>
@@ -551,6 +620,10 @@ baseLibEntries =
                         (snd . timeToDaysAndTimeOfDay)
                         (\t -> Just (daysAndTimeOfDayToTime 0 t, ()))
                   , mkSubtypeRelationEntry "TimeOfDay" "Literal" "" []
+                  , mkSubtypeRelationEntry "TimeOfDay" "Showable" "" $
+                    pure $
+                    showableSubtypeConversionEntry $
+                    EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TimeOfDayLiteralType
                   ] <>
                   plainFormattingDefs @TimeOfDay "TimeOfDay" "a time of day" <>
                   unixFormattingDefs @TimeOfDay "TimeOfDay" "a time of day" <>
@@ -561,6 +634,10 @@ baseLibEntries =
                   , mkValPatEntry "DateAndTime" "Construct a `LocalTime` from day and time of day." LocalTime $ \LocalTime {..} ->
                         Just (localDay, (localTimeOfDay, ()))
                   , mkSubtypeRelationEntry "LocalTime" "Literal" "" []
+                  , mkSubtypeRelationEntry "LocalTime" "Showable" "" $
+                    pure $
+                    showableSubtypeConversionEntry $
+                    EntityPinaforeGroundType NilListType $ LiteralEntityGroundType LocalTimeLiteralType
                   ] <>
                   plainFormattingDefs @LocalTime "LocalTime" "a local time" <>
                   unixFormattingDefs @LocalTime "LocalTime" "a local time" <>
@@ -668,6 +745,16 @@ baseLibEntries =
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
                     conv <- subtypeConvert sc t $ topEntityType @'Negative
                     pure $ convE . cfmap (iJoinMeetL1 @_ @'Negative . conv)
+          , mkSubtypeRelationEntry "Maybe Showable" "Showable" "" $
+            pure $
+            simpleSubtypeConversionEntry
+                (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType)
+                showableGroundType $
+            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
+                return $
+                MkSubtypeArguments NilDolanArguments $ do
+                    conv <- subtypeConvert sc t $ showableType @'Negative
+                    pure $ functionToShim "show" textShowable . cfmap (iJoinMeetL1 @_ @'Negative . conv)
           ]
     , docTreeEntry
           "Pairs"
@@ -690,6 +777,19 @@ baseLibEntries =
                     convB <- subtypeConvert sc tb $ topEntityType @'Negative
                     pure $
                         convE .
+                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
+          , mkSubtypeRelationEntry "(Showable,Showable)" "Showable" "" $
+            pure $
+            simpleSubtypeConversionEntry
+                (EntityPinaforeGroundType (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType)
+                showableGroundType $
+            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) ->
+                return $
+                MkSubtypeArguments NilDolanArguments $ do
+                    convA <- subtypeConvert sc ta $ showableType @'Negative
+                    convB <- subtypeConvert sc tb $ showableType @'Negative
+                    pure $
+                        functionToShim "show" textShowable .
                         applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
           , mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
@@ -729,6 +829,19 @@ baseLibEntries =
                     pure $
                         convE .
                         applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
+          , mkSubtypeRelationEntry "Either Showable Showable" "Showable" "" $
+            pure $
+            simpleSubtypeConversionEntry
+                (EntityPinaforeGroundType (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType)
+                showableGroundType $
+            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) ->
+                return $
+                MkSubtypeArguments NilDolanArguments $ do
+                    convA <- subtypeConvert sc ta $ showableType @'Negative
+                    convB <- subtypeConvert sc tb $ showableType @'Negative
+                    pure $
+                        functionToShim "show" textShowable .
+                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
           , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
           , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
                 case v of
@@ -761,6 +874,16 @@ baseLibEntries =
                             ConsArguments (MkMonoType TopEntityGroundType NilArguments) NilArguments
                     conv <- subtypeConvert sc t $ topEntityType @'Negative
                     pure $ convE . cfmap (iJoinMeetL1 @_ @'Negative . conv)
+          , mkSubtypeRelationEntry "[Showable]" "Showable" "" $
+            pure $
+            simpleSubtypeConversionEntry
+                (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType)
+                showableGroundType $
+            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
+                return $
+                MkSubtypeArguments NilDolanArguments $ do
+                    conv <- subtypeConvert sc t $ showableType @'Negative
+                    pure $ functionToShim "show" textShowable . cfmap (iJoinMeetL1 @_ @'Negative . conv)
           , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                 case l of
                     [] -> fnil

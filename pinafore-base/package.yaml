@@ -22,6 +22,7 @@ library:
       - Pinafore.Storage
     other-modules:
       - Pinafore.Base.Know
+      - Pinafore.Base.Showable
       - Pinafore.Base.SafeRational
       - Pinafore.Base.Number
       - Pinafore.Base.Order

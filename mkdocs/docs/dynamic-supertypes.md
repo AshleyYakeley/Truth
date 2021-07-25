@@ -23,9 +23,9 @@ If `pat` is a pattern of type `T`, then `(pat: T)` is a pattern of type `D(T)`. 
 showNumberType: Number -> Text;
 showNumberType n =
     case n of
-        (i: Integer) -> "integer: " <> toText i;
-        (r: Rational) -> "rational: " <> toText r;
-        _ -> "number: " <> toText n;
+        (i: Integer) -> "integer: " <> show i;
+        (r: Rational) -> "rational: " <> show r;
+        _ -> "number: " <> show n;
     end
 ```
 

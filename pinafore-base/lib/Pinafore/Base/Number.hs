@@ -13,6 +13,7 @@ module Pinafore.Base.Number
 
 import Data.List (head)
 import Pinafore.Base.SafeRational
+import Pinafore.Base.Showable
 import Shapes hiding ((+++), option)
 import Shapes.Numeric
 
@@ -182,11 +183,14 @@ showDecimalRational maxDigits r = let
                      in (i, '.' : (take maxDigits $ predigits ++ repeating))
     in pack $ sign ++ show i' ++ decimal'
 
+instance TextShow Number where
+    textShow (ExactNumber r) = textShow (SRNumber r)
+    textShow (InexactNumber d)
+        | isNaN d = textShow SRNaN
+    textShow (InexactNumber d) = "~" <> textShow d
+
 instance Show Number where
-    show (ExactNumber r) = show (SRNumber r)
-    show (InexactNumber d)
-        | isNaN d = show SRNaN
-    show (InexactNumber d) = '~' : (show d)
+    show v = unpack $ textShow v
 
 readNumberLiteral :: String -> Maybe Number
 readNumberLiteral = runReadPrec readPrec
