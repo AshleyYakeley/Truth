@@ -13,6 +13,7 @@ packages:
 - changes-gtk
 
 # Pinafore
+- polar-shim
 - typed-expression
 - pinafore-base
 - pinafore-language

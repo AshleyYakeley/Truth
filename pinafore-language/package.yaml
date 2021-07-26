@@ -17,6 +17,7 @@ library:
       - containers
       - text
       - text-icu
+      - polar-shim
       - typed-expression
       - changes-core
       - changes-world
@@ -99,6 +100,7 @@ tests:
           - base >= 4.12
           - shapes
           - filepath
+          - polar-shim
           - typed-expression
           - changes-core
           - pinafore-language
