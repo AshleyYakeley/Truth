@@ -51,12 +51,12 @@ qBothPattern = tsBothPattern @PinaforeTypeSystem
 qToPatternConstructor ::
        forall t lt.
        ( ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt
-       , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
+       , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
        )
     => (t -> Maybe (HList lt))
     -> QPatternConstructor
 qToPatternConstructor =
-    toPatternConstructor (fromShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative)) toListShimWit
+    toPatternConstructor (fromPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative)) toListShimWit
 
 qApplyPatternConstructor :: QPatternConstructor -> QPattern -> PinaforeSourceInterpreter (QPatternConstructor)
 qApplyPatternConstructor = tsApplyPatternConstructor @PinaforeTypeSystem

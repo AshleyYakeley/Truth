@@ -113,7 +113,7 @@ simplifyTypeTest text e =
                     MkAnyW t ->
                         runRenamer @PinaforeTypeSystem $
                         simplify @PinaforeTypeSystem @PExpression $
-                        MkSealedExpression (mkShimWit t) $ ClosedExpression undefined
+                        MkSealedExpression (mkPolarShimWit t) $ ClosedExpression undefined
         case simpexpr of
             MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ unpack $ exprShow t'
 

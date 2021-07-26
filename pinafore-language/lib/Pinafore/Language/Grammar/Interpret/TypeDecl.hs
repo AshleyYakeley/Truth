@@ -109,7 +109,7 @@ typeDeclarationTypeBox spos name doc (ClosedEntitySyntaxTypeDeclaration sconss) 
                            => PinaforeShimWit polarity (Identified n)
                        ctf =
                            singleDolanShimWit $
-                           mkShimWit $
+                           mkPolarShimWit $
                            GroundDolanSingularType
                                (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym cti)
                                NilDolanArguments
@@ -120,7 +120,9 @@ typeDeclarationTypeBox spos name doc (ClosedEntitySyntaxTypeDeclaration sconss) 
                            let
                                expr =
                                    qConstExprAny $
-                                   MkAnyValue (qFunctionPosWitnesses ltn (mapShimWit (reflId $ invert tident) ctf)) at
+                                   MkAnyValue
+                                       (qFunctionPosWitnesses ltn (mapPolarShimWit (reflId $ invert tident) ctf))
+                                       at
                                pc = toPatternConstructor ctf ltp $ tma . reflId tident
                            withNewPatternConstructor cname doc expr pc
                    return (cti, compAll patts)
@@ -150,7 +152,7 @@ typeDeclarationTypeBox spos name doc (DatatypeSyntaxTypeDeclaration sconss) = do
                            => PinaforeShimWit polarity _
                        ctf =
                            singleDolanShimWit $
-                           mkShimWit $
+                           mkPolarShimWit $
                            GroundDolanSingularType
                                (ProvidedGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt)
                                NilDolanArguments

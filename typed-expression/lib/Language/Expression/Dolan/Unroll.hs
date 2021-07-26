@@ -24,7 +24,7 @@ unrollRecursiveType var pt =
     invertPolarity @polarity $ let
         rt = RecursiveDolanSingularType var pt
         bisub :: Bisubstitution ground (DolanPolyIsoShim ground Type) Identity
-        bisub = mkSingleBisubstitution True var $ return $ singleDolanShimWit $ mkShimWit rt
+        bisub = mkSingleBisubstitution True var $ return $ singleDolanShimWit $ mkPolarShimWit rt
         in runIdentity $ bisubstituteType bisub pt
 
 unrollSingularType ::
@@ -32,13 +32,13 @@ unrollSingularType ::
     => DolanSingularType ground polarity t
     -> DolanIsoShimWit ground polarity t
 unrollSingularType (RecursiveDolanSingularType var t) = unrollRecursiveType var t
-unrollSingularType t = singleDolanShimWit $ mkShimWit t
+unrollSingularType t = singleDolanShimWit $ mkPolarShimWit t
 
 unrollType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t
     -> DolanIsoShimWit ground polarity t
-unrollType NilDolanType = mkShimWit NilDolanType
+unrollType NilDolanType = mkPolarShimWit NilDolanType
 unrollType (ConsDolanType t1 tr) = joinMeetShimWit (unrollSingularType t1) (unrollType tr)
 
 type RecursiveOrPlainType :: GroundTypeKind -> Polarity -> Type -> Type
@@ -66,7 +66,7 @@ unrollRecursiveOrPlainType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => RecursiveOrPlainType ground polarity t
     -> DolanIsoShimWit ground polarity t
-unrollRecursiveOrPlainType (PlainType t) = mkShimWit t
+unrollRecursiveOrPlainType (PlainType t) = mkPolarShimWit t
 unrollRecursiveOrPlainType (RecursiveType var t) = unrollRecursiveType var t
 
 singularRecursiveOrPlainType ::
@@ -74,5 +74,6 @@ singularRecursiveOrPlainType ::
        (IsDolanGroundType ground, JoinMeetIsoCategory shim, Is PolarityType polarity)
     => DolanSingularType ground polarity t
     -> PShimWit shim (RecursiveOrPlainType ground) polarity t
-singularRecursiveOrPlainType (RecursiveDolanSingularType var t) = mkShimWit $ RecursiveType var t
-singularRecursiveOrPlainType st = chainShimWit (mkShimWit . PlainType) $ singleDolanShimWit $ mkShimWit st
+singularRecursiveOrPlainType (RecursiveDolanSingularType var t) = mkPolarShimWit $ RecursiveType var t
+singularRecursiveOrPlainType st =
+    chainPolarShimWit (mkPolarShimWit . PlainType) $ singleDolanShimWit $ mkPolarShimWit st

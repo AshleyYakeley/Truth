@@ -23,24 +23,24 @@ windowGroundType :: PinaforeGroundType '[] LangWindow
 windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangWindow)|]) "Window"
 
 -- LangWindow
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangWindow where
-    toShimWit = mkShimWit $ GroundDolanSingularType windowGroundType NilDolanArguments
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangWindow where
+    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType windowGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangWindow where
-    toShimWit = singleDolanShimWit toJMShimWit
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangWindow where
+    toPolarShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangWindow where
-    fromShimWit = mkShimWit $ GroundDolanSingularType windowGroundType NilDolanArguments
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangWindow where
+    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType windowGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangWindow where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangWindow where
+    fromPolarShimWit = singleDolanShimWit fromJMShimWit
 
 -- UIWindow
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) UIWindow where
-    fromShimWit = mapNegShimWit (functionToShim "subtype" pwWindow) fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) UIWindow where
+    fromPolarShimWit = mapNegShimWit (functionToShim "subtype" pwWindow) fromJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) UIWindow where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) UIWindow where
+    fromPolarShimWit = singleDolanShimWit fromJMShimWit
 
 createLangWindow :: WindowSpec -> PinaforeAction LangWindow
 createLangWindow uiw = do

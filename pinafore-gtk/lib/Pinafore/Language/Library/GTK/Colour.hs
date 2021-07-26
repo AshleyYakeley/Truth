@@ -22,17 +22,17 @@ type LangColour = Color (SRGB 'Linear) Double
 colourGroundType :: PinaforeGroundType '[] LangColour
 colourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangColour)|]) "Colour"
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangColour where
-    toShimWit = mkShimWit $ GroundDolanSingularType colourGroundType NilDolanArguments
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangColour where
+    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType colourGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangColour where
-    toShimWit = singleDolanShimWit toJMShimWit
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangColour where
+    toPolarShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangColour where
-    fromShimWit = mkShimWit $ GroundDolanSingularType colourGroundType NilDolanArguments
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangColour where
+    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType colourGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangColour where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangColour where
+    fromPolarShimWit = singleDolanShimWit fromJMShimWit
 
 -- LangColour
 type LangAlphaColour = Color (Alpha (SRGB 'Linear)) Double
@@ -40,17 +40,17 @@ type LangAlphaColour = Color (Alpha (SRGB 'Linear)) Double
 alphaColourGroundType :: PinaforeGroundType '[] LangAlphaColour
 alphaColourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangAlphaColour)|]) "AlphaColour"
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangAlphaColour where
-    toShimWit = mkShimWit $ GroundDolanSingularType alphaColourGroundType NilDolanArguments
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangAlphaColour where
+    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType alphaColourGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangAlphaColour where
-    toShimWit = singleDolanShimWit toJMShimWit
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangAlphaColour where
+    toPolarShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangAlphaColour where
-    fromShimWit = mkShimWit $ GroundDolanSingularType alphaColourGroundType NilDolanArguments
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangAlphaColour where
+    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType alphaColourGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangAlphaColour where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangAlphaColour where
+    fromPolarShimWit = singleDolanShimWit fromJMShimWit
 
 pattern MkNLSRGB ::
         Double -> Double -> Double -> Color (SRGB 'NonLinear) Double

@@ -20,17 +20,17 @@ type LangDrawing = UIDrawing
 drawingGroundType :: PinaforeGroundType '[] LangDrawing
 drawingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangDrawing)|]) "Drawing"
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangDrawing where
-    toShimWit = mkShimWit $ GroundDolanSingularType drawingGroundType NilDolanArguments
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangDrawing where
+    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType drawingGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangDrawing where
-    toShimWit = singleDolanShimWit toJMShimWit
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangDrawing where
+    toPolarShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangDrawing where
-    fromShimWit = mkShimWit $ GroundDolanSingularType drawingGroundType NilDolanArguments
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangDrawing where
+    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType drawingGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangDrawing where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangDrawing where
+    fromPolarShimWit = singleDolanShimWit fromJMShimWit
 
 -- LangPath
 type LangPath = Path
@@ -38,17 +38,17 @@ type LangPath = Path
 pathGroundType :: PinaforeGroundType '[] LangPath
 pathGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangPath)|]) "Path"
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangPath where
-    toShimWit = mkShimWit $ GroundDolanSingularType pathGroundType NilDolanArguments
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangPath where
+    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType pathGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangPath where
-    toShimWit = singleDolanShimWit toJMShimWit
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangPath where
+    toPolarShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangPath where
-    fromShimWit = mkShimWit $ GroundDolanSingularType pathGroundType NilDolanArguments
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangPath where
+    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType pathGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangPath where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangPath where
+    fromPolarShimWit = singleDolanShimWit fromJMShimWit
 
 -- LangPattern
 type LangPattern = Pattern
@@ -56,17 +56,17 @@ type LangPattern = Pattern
 patternGroundType :: PinaforeGroundType '[] LangPattern
 patternGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangPattern)|]) "Pattern"
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangPattern where
-    toShimWit = mkShimWit $ GroundDolanSingularType patternGroundType NilDolanArguments
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangPattern where
+    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType patternGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangPattern where
-    toShimWit = singleDolanShimWit toJMShimWit
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangPattern where
+    toPolarShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangPattern where
-    fromShimWit = mkShimWit $ GroundDolanSingularType patternGroundType NilDolanArguments
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangPattern where
+    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType patternGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangPattern where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangPattern where
+    fromPolarShimWit = singleDolanShimWit fromJMShimWit
 
 type UIP = PixelPoint -> UIEvents
 
@@ -79,8 +79,8 @@ alphaColourToTuple (MkLangAlphaColour op col) = (colourToTuple col, op)
 toPatternColorStop :: (Double, LangAlphaColour) -> PatternColorStop
 toPatternColorStop (offset, MkLangAlphaColour op col) = MkPatternColorStop offset (colourToTuple col, Just op)
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) PatternColorStop where
-    fromShimWit = mapNegShimWit (functionToShim "toPatternColorStop" toPatternColorStop) fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) PatternColorStop where
+    fromPolarShimWit = mapNegShimWit (functionToShim "toPatternColorStop" toPatternColorStop) fromJMShimWit
 
 source :: LangAlphaColour -> LangDrawing -> LangDrawing
 source acol = sourceRGBA $ alphaColourToTuple acol

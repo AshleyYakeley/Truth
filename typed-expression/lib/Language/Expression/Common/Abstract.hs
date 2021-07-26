@@ -32,7 +32,7 @@ abstractNamedExpressionUnifier ::
     -> (forall tu. UUNegShimWit ts (MeetType t tu) -> TSOpenExpression ts (tu -> a) -> TSOuter ts r)
     -> TSOuter ts r
 abstractNamedExpressionUnifier _name vwt (ClosedExpression a) cont =
-    cont (uuLiftNegShimWit $ mapShimWit iPolarL1 vwt) $ pure $ \_ -> a
+    cont (uuLiftNegShimWit $ mapPolarShimWit iPolarL1 vwt) $ pure $ \_ -> a
 abstractNamedExpressionUnifier name vwt (OpenExpression (MkNameWitness name' vwt') expr) cont
     | name == name' =
         abstractNamedExpressionUnifier @ts name vwt expr $ \vwt1 expr' -> do
@@ -67,7 +67,7 @@ abstractNamedExpression ::
 abstractNamedExpression name expr = do
     MkNewVar vwt0 _ <- renameNewFreeVar @ts
     abstractNamedExpressionUnifier @ts name vwt0 expr $ \vwt expr' ->
-        return $ MkAbstractResult (mapShimWit polar2 vwt) expr'
+        return $ MkAbstractResult (mapPolarShimWit polar2 vwt) expr'
 
 patternAbstractUnifyExpression ::
        forall ts q a t r. AbstractTypeSystem ts

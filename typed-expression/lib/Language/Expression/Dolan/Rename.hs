@@ -21,7 +21,7 @@ renameTypeArgs ::
     -> VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m) (DolanArguments dv (DolanType ground) gt polarity t)
 renameTypeArgs dvt dvm args = do
     MkShimWit args' (MkPolarMap conv) <-
-        mapDolanArgumentsM @_ @PEqual (\t -> fmap mkShimWit $ dolanNamespaceRename t) dvt dvm args
+        mapDolanArgumentsM @_ @PEqual (\t -> fmap mkPolarShimWit $ dolanNamespaceRename t) dvt dvm args
     return $
         case polarityType @polarity of
             PositiveType ->

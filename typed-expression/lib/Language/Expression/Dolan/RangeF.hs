@@ -5,20 +5,22 @@ import Language.Expression.Dolan.PShimWit
 import Shapes
 
 unToRangeShimWit ::
-       forall (map :: ShimKind Type) tw pa qa r. (FromShimWit map (tw 'Negative) pa, ToShimWit map (tw 'Positive) qa)
+       forall (map :: ShimKind Type) tw pa qa r.
+       (FromPolarShimWit map (tw 'Negative) pa, ToPolarShimWit map (tw 'Positive) qa)
     => (forall pt qt. RangeType tw 'Positive '( pt, qt) -> CatRange map '( pa, qa) '( pt, qt) -> r)
     -> r
 unToRangeShimWit cont =
-    unNegShimWit fromShimWit $ \tp convp ->
-        unPosShimWit toShimWit $ \tq convq -> cont (MkRangeType tp tq) (MkCatRange convp convq)
+    unNegShimWit fromPolarShimWit $ \tp convp ->
+        unPosShimWit toPolarShimWit $ \tq convq -> cont (MkRangeType tp tq) (MkCatRange convp convq)
 
 unFromRangeShimWit ::
-       forall (map :: ShimKind Type) tw pa qa r. (ToShimWit map (tw 'Positive) pa, FromShimWit map (tw 'Negative) qa)
+       forall (map :: ShimKind Type) tw pa qa r.
+       (ToPolarShimWit map (tw 'Positive) pa, FromPolarShimWit map (tw 'Negative) qa)
     => (forall pt qt. RangeType tw 'Negative '( pt, qt) -> CatRange map '( pt, qt) '( pa, qa) -> r)
     -> r
 unFromRangeShimWit cont =
-    unPosShimWit toShimWit $ \tp convp ->
-        unNegShimWit fromShimWit $ \tq convq -> cont (MkRangeType tp tq) (MkCatRange convp convq)
+    unPosShimWit toPolarShimWit $ \tp convp ->
+        unNegShimWit fromPolarShimWit $ \tq convq -> cont (MkRangeType tp tq) (MkCatRange convp convq)
 
 biRangeAnyF ::
        forall (map :: ShimKind Type) tw t.

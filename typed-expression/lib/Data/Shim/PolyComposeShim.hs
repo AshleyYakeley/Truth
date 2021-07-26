@@ -6,6 +6,7 @@ import Data.Shim.CatRange
 import Data.Shim.ComposeShim
 import Data.Shim.JoinMeet
 import Data.Shim.PolarMap
+import Data.Shim.PolarShimWit
 import Data.Shim.Polarity
 import Data.Shim.PolyMap
 import Data.Shim.PolyShim
@@ -37,8 +38,8 @@ purePolyComposeShim ps = mkPolyComposeShim $ pure ps
 purePolyComposeShimWit ::
        forall (pshim :: PolyShimKind) (m :: Type -> Type) polarity k (w :: k -> Type) (t :: k).
        (Applicative m, Is PolarityType polarity)
-    => ShimWit (pshim k) w polarity t
-    -> ShimWit (PolyComposeShim m pshim k) w polarity t
+    => PolarShimWit (pshim k) w polarity t
+    -> PolarShimWit (PolyComposeShim m pshim k) w polarity t
 purePolyComposeShimWit (MkShimWit wt (MkPolarMap conv)) =
     MkShimWit wt $
     MkPolarMap $

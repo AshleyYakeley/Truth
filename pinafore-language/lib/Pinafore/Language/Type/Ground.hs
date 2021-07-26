@@ -153,7 +153,7 @@ instance GroundExprShow PinaforeGroundType where
         -> (Text, Int)
     groundTypeShowPrec (ProvidedGroundType dv _ n _) args = showPrecDolanVariance n dv args
     groundTypeShowPrec (EntityPinaforeGroundType lt gt) dargs =
-        case dolanArgumentsToArguments @PinaforePolyShim mkShimWit lt (groundTypeCovaryMap gt) dargs of
+        case dolanArgumentsToArguments @PinaforePolyShim mkPolarShimWit lt (groundTypeCovaryMap gt) dargs of
             MkShimWit args _ -> entityGroundTypeShowPrec exprShowPrec gt args
 
 withEntitySubtype ::

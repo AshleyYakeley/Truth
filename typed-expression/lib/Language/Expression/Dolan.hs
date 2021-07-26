@@ -94,9 +94,9 @@ instance forall (ground :: GroundTypeKind). IsDolanFunctionGroundType ground =>
              CompleteTypeSystem (DolanTypeSystem ground) where
     tsFunctionPosWitness ta tb =
         singleDolanShimWit $
-        mkShimWit $
+        mkPolarShimWit $
         GroundDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
     tsFunctionNegWitness ta tb =
         singleDolanShimWit $
-        mkShimWit $
+        mkPolarShimWit $
         GroundDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments

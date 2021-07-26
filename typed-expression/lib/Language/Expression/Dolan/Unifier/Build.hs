@@ -139,7 +139,7 @@ unifyTypesST (VarDolanSingularType na) tb
     | isFreeVar na
     , PositiveType <- polarityType @polb = solverLiftExpression $ varExpression $ leUnifierConstraint na tb
 unifyTypesST ta@(RecursiveDolanSingularType _ _) tb =
-    unifyRecursiveType (singularRecursiveOrPlainType ta) (mkShimWit $ PlainType tb)
+    unifyRecursiveType (singularRecursiveOrPlainType ta) (mkPolarShimWit $ PlainType tb)
 unifyTypesST ta tb = unifyTypesST1 ta tb
 
 unifyTypesTNS1 ::
@@ -161,7 +161,7 @@ unifyTypesTNS ::
 unifyTypesTNS ta (VarDolanSingularType nb)
     | isFreeVar nb = solverLiftExpression $ varExpression $ geUnifierConstraint nb ta
 unifyTypesTNS ta tb@(RecursiveDolanSingularType _ _) =
-    unifyRecursiveType (mkShimWit $ PlainType ta) (singularRecursiveOrPlainType tb)
+    unifyRecursiveType (mkPolarShimWit $ PlainType ta) (singularRecursiveOrPlainType tb)
 unifyTypesTNS ta tb = unifyTypesTNS1 ta tb
 
 unifyTypesTPT ::

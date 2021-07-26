@@ -24,17 +24,17 @@ elementGroundType :: PinaforeGroundType '[] LangUIElement
 elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangUIElement)|]) "Element"
 
 -- LangUIElement
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUIElement where
-    toShimWit = mkShimWit $ GroundDolanSingularType elementGroundType NilDolanArguments
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUIElement where
+    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType elementGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangUIElement where
-    toShimWit = singleDolanShimWit toJMShimWit
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangUIElement where
+    toPolarShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangUIElement where
-    fromShimWit = mkShimWit $ GroundDolanSingularType elementGroundType NilDolanArguments
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangUIElement where
+    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType elementGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangUIElement where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangUIElement where
+    fromPolarShimWit = singleDolanShimWit fromJMShimWit
 
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)

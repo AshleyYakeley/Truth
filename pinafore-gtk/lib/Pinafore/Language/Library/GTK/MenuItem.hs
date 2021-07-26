@@ -19,17 +19,17 @@ menuItemGroundType :: PinaforeGroundType '[] LangMenuItem
 menuItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangMenuItem)|]) "MenuItem"
 
 -- LangMenuItem
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangMenuItem where
-    toShimWit = mkShimWit $ GroundDolanSingularType menuItemGroundType NilDolanArguments
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangMenuItem where
+    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType menuItemGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangMenuItem where
-    toShimWit = singleDolanShimWit toJMShimWit
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangMenuItem where
+    toPolarShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangMenuItem where
-    fromShimWit = mkShimWit $ GroundDolanSingularType menuItemGroundType NilDolanArguments
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangMenuItem where
+    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType menuItemGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangMenuItem where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangMenuItem where
+    fromPolarShimWit = singleDolanShimWit fromJMShimWit
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c

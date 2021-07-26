@@ -15,7 +15,7 @@ class NamespaceRenamable ts t where
         -> RenamerNamespaceT ts (RenamerT ts m) t
 
 instance (RenameTypeSystem ts, forall t'. NamespaceRenamable ts (w t')) =>
-             NamespaceRenamable ts (ShimWit shim w polarity t) where
+             NamespaceRenamable ts (PolarShimWit shim w polarity t) where
     namespaceRename (MkShimWit wt conv) =
         withTransConstraintTM' @Monad $
         withTransConstraintTM @Monad $ do

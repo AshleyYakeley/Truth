@@ -118,7 +118,7 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
     getVarAppearances (MkRangeType tp tq) = invertPolarity @polarity $ getVarAppearances tp <> getVarAppearances tq
 
 instance forall (ground :: GroundTypeKind) polarity cat wit. GetVarUses ground wit =>
-             GetVarUses ground (ShimWit cat wit polarity) where
+             GetVarUses ground (PolarShimWit cat wit polarity) where
     getVarAppearances (MkShimWit w _) = getVarAppearances w
 
 getArgExpressionAppearances ::
@@ -200,7 +200,7 @@ class GetExpressionVars f where
     -- | (positive, negative)
     getExpressionVars :: forall t. f t -> ([AnyW SymbolType], [AnyW SymbolType])
 
-instance GetExpressionVars wit => GetExpressionVars (ShimWit cat wit polarity) where
+instance GetExpressionVars wit => GetExpressionVars (PolarShimWit cat wit polarity) where
     getExpressionVars (MkShimWit w _) = getExpressionVars w
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>

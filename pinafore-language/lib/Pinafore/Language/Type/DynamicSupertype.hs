@@ -42,7 +42,7 @@ instance MakeGreatestDynamicSupertype (PinaforeShimWit 'Negative) where
     toNegativeShimWit wt = wt
 
 instance MakeGreatestDynamicSupertype (PinaforeSingularType 'Negative) where
-    toNegativeShimWit wt = singleDolanShimWit $ mkShimWit wt
+    toNegativeShimWit wt = singleDolanShimWit $ mkPolarShimWit wt
 
 instance MakeGreatestDynamicSupertype (PinaforeGroundType '[]) where
     toNegativeShimWit wt =

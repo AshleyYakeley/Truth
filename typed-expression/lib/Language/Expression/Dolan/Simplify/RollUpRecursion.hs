@@ -31,23 +31,24 @@ mkRollUp var rolled =
     case unrollRecursiveType var rolled of
         MkShimWit unrolled conv ->
             MkRollUp unrolled $
-            mapShimWitT (invert conv) $ singleDolanShimWit $ mkShimWitT $ RecursiveDolanSingularType var rolled
+            mapPolarShimWitT (invert conv) $
+            singleDolanShimWit $ mkPolarShimWitT $ RecursiveDolanSingularType var rolled
 
 rollUpThisType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => [RollUp ground]
     -> DolanType ground polarity t
     -> Writer Any (DolanIsoShimWit ground polarity t)
-rollUpThisType [] pt = return $ mkShimWit pt
-rollUpThisType (MkRollUp unrolled (rt :: _ polarity' _):rr) pt = do
+rollUpThisType [] pt = return $ mkPolarShimWit pt
+rollUpThisType (MkRollUp unrolled (rt :: _ (_ polarity') _):rr) pt = do
     t' <-
-        fromMaybe (return $ mkShimWit pt) $ do
+        fromMaybe (return $ mkPolarShimWit pt) $ do
             Refl <- eitherLeft $ samePolarity @polarity @polarity'
             Refl <- testEquality pt unrolled
             return $ do
                 tell $ Any True
                 return rt
-    chainShimWitM (rollUpThisType rr) t'
+    chainPolarShimWitM (rollUpThisType rr) t'
 
 rollUpChildrenType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -67,18 +68,18 @@ rollUpAllType ::
     -> Writer Any (DolanIsoShimWit ground polarity t)
 rollUpAllType rr t = do
     t' <- rollUpThisType rr t
-    chainShimWitM (rollUpChildrenType rr) t'
+    chainPolarShimWitM (rollUpChildrenType rr) t'
 
 keepRolling ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => [RollUp ground]
     -> DolanType ground polarity t
     -> DolanIsoShimWit ground polarity t
-keepRolling [] t = mkShimWit t
+keepRolling [] t = mkPolarShimWit t
 keepRolling rr t = let
     (t', Any x) = runWriter $ rollUpAllType rr t
     in if x
-           then chainShimWit (keepRolling rr) t'
+           then chainPolarShimWit (keepRolling rr) t'
            else t'
 
 getRollUpsInSingularType ::

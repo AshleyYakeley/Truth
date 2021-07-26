@@ -66,7 +66,7 @@ interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
                     let
                         pc :: QPatternConstructor
                         pc =
-                            toPatternConstructor dtp (ConsListType (mkShimWit tp) NilListType) $ \dt ->
+                            toPatternConstructor dtp (ConsListType (mkPolarShimWit tp) NilListType) $ \dt ->
                                 fmap (\a -> (a, ())) (shimToFunction convm dt)
                     qConstructPattern pc [pat]
 

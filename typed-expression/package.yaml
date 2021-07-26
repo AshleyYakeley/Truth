@@ -26,6 +26,7 @@ library:
       - Data.Shim.Variance
       - Data.Shim.PolarVariance
       - Data.Shim.ShimWit
+      - Data.Shim.PolarShimWit
       - Data.Shim.Range
       - Data.Shim.CatRange
       - Data.Shim.JoinMeet

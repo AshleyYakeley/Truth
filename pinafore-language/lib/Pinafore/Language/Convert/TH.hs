@@ -11,36 +11,37 @@ literalInstances :: _ -> _
 literalInstances t =
     [d|
   
-  instance ToShimWit (PinaforePolyShim Type)
+  instance ToPolarShimWit (PinaforePolyShim Type)
              (PinaforeSingularType 'Positive)
              $( t )
            where
-          toShimWit
-            = mkShimWit $
+          toPolarShimWit
+            = mkPolarShimWit $
                 GroundDolanSingularType
                   (EntityPinaforeGroundType NilListType $
                      LiteralEntityGroundType representative)
                   NilDolanArguments
   
-  instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive)
+  instance ToPolarShimWit (PinaforePolyShim Type)
+             (PinaforeType 'Positive)
              $( t )
            where
-          toShimWit = singleDolanShimWit toJMShimWit
+          toPolarShimWit = singleDolanShimWit toJMShimWit
   
-  instance FromShimWit (PinaforePolyShim Type)
+  instance FromPolarShimWit (PinaforePolyShim Type)
              (PinaforeSingularType 'Negative)
              $( t )
            where
-          fromShimWit
-            = mkShimWit $
+          fromPolarShimWit
+            = mkPolarShimWit $
                 GroundDolanSingularType
                   (EntityPinaforeGroundType NilListType $
                      LiteralEntityGroundType representative)
                   NilDolanArguments
   
-  instance FromShimWit (PinaforePolyShim Type)
+  instance FromPolarShimWit (PinaforePolyShim Type)
              (PinaforeType 'Negative)
              $( t )
            where
-          fromShimWit = singleDolanShimWit fromJMShimWit
+          fromPolarShimWit = singleDolanShimWit fromJMShimWit
   |]

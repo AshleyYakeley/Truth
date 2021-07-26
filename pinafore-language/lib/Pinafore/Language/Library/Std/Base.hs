@@ -44,17 +44,17 @@ showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual Sho
 showableType :: forall pol. PinaforeType pol (JoinMeetType pol Showable (LimitType pol))
 showableType = ConsDolanType (GroundDolanSingularType showableGroundType NilDolanArguments) NilDolanType
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) Showable where
-    toShimWit = mkShimWit $ GroundDolanSingularType showableGroundType NilDolanArguments
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) Showable where
+    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType showableGroundType NilDolanArguments
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Showable where
-    toShimWit = singleDolanShimWit toJMShimWit
+instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Showable where
+    toPolarShimWit = singleDolanShimWit toJMShimWit
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) Showable where
-    fromShimWit = mkShimWit $ GroundDolanSingularType showableGroundType NilDolanArguments
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) Showable where
+    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType showableGroundType NilDolanArguments
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Showable where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Showable where
+    fromPolarShimWit = singleDolanShimWit fromJMShimWit
 
 showableSubtypeConversionEntry ::
        forall a. TextShow a
@@ -66,13 +66,13 @@ showableSubtypeConversionEntry gt =
 openEntityShimWit :: forall tid. OpenEntityType tid -> PinaforeShimWit 'Positive (OpenEntity tid)
 openEntityShimWit tp =
     singleDolanShimWit $
-    mkShimWit $
+    mkPolarShimWit $
     GroundDolanSingularType (EntityPinaforeGroundType NilListType $ OpenEntityGroundType tp) NilDolanArguments
 
 dynamicEntityShimWit :: Name -> DynamicType -> PinaforeShimWit 'Positive DynamicEntity
 dynamicEntityShimWit n dt =
     singleDolanShimWit $
-    mkShimWit $
+    mkPolarShimWit $
     GroundDolanSingularType
         (EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType n $ singletonSet dt)
         NilDolanArguments
@@ -82,7 +82,7 @@ textShimWit ::
     => PinaforeShimWit polarity Text
 textShimWit =
     singleDolanShimWit $
-    mkShimWit $
+    mkPolarShimWit $
     GroundDolanSingularType
         (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType TextLiteralType)
         NilDolanArguments
@@ -92,7 +92,7 @@ maybeShimWit swa =
     unPosShimWit swa $ \ta conva ->
         mapPosShimWit (applyCoPolyShim cid conva) $
         singleDolanShimWit $
-        mkShimWit $
+        mkPolarShimWit $
         GroundDolanSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType) $
         ConsDolanArguments ta NilDolanArguments
 
@@ -103,7 +103,7 @@ eitherShimWit swa swb =
         unPosShimWit swb $ \tb convb ->
             mapPosShimWit (applyCoPolyShim (cfmap conva) convb) $
             singleDolanShimWit $
-            mkShimWit $
+            mkPolarShimWit $
             GroundDolanSingularType
                 (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType) $
             ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
@@ -115,7 +115,7 @@ funcShimWit swa swb =
         unPosShimWit swb $ \tb convb ->
             mapPosShimWit (applyCoPolyShim (ccontramap conva) convb) $
             singleDolanShimWit $
-            mkShimWit $
+            mkPolarShimWit $
             GroundDolanSingularType funcGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
 actionShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
@@ -123,7 +123,7 @@ actionShimWit swa =
     unPosShimWit swa $ \ta conva ->
         mapPosShimWit (cfmap conva) $
         singleDolanShimWit $
-        mkShimWit $ GroundDolanSingularType actionGroundType $ ConsDolanArguments ta NilDolanArguments
+        mkPolarShimWit $ GroundDolanSingularType actionGroundType $ ConsDolanArguments ta NilDolanArguments
 
 getTimeMS :: IO Integer
 getTimeMS = do
@@ -914,12 +914,12 @@ baseLibEntries =
           , mkSpecialFormEntry "check" "Check from a dynamic supertype." "@A" "D(A) -> Maybe A" $
             MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkAnyW tp, ()) -> do
                 MkGreatestDynamicSupertype dtw _ convm <- getGreatestDynamicSupertype tp
-                return $ MkAnyValue (funcShimWit dtw $ maybeShimWit $ mkShimWit tp) $ shimToFunction convm
+                return $ MkAnyValue (funcShimWit dtw $ maybeShimWit $ mkPolarShimWit tp) $ shimToFunction convm
           , mkSpecialFormEntry "coerce" "Coerce from a dynamic supertype." "@A" "D(A) -> A" $
             MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkAnyW tp, ()) -> do
                 MkGreatestDynamicSupertype dtw@(MkShimWit dtp _) _ convm <- getGreatestDynamicSupertype tp
                 return $
-                    MkAnyValue (funcShimWit dtw $ mkShimWit tp) $ \d ->
+                    MkAnyValue (funcShimWit dtw $ mkPolarShimWit tp) $ \d ->
                         case shimToFunction convm d of
                             Just t -> t
                             Nothing ->
@@ -1000,7 +1000,7 @@ baseLibEntries =
                            PinaforeShimWit 'Positive t
                         -> PinaforeShimWit 'Positive (Text -> PinaforeAction (Either Text t))
                     valShimWit t' = funcShimWit textShimWit $ actionShimWit $ eitherShimWit textShimWit t'
-                return $ MkAnyValue (valShimWit $ mkShimWit tp) $ specialEvaluate spvals tp
+                return $ MkAnyValue (valShimWit $ mkPolarShimWit tp) $ specialEvaluate spvals tp
           ]
     , docTreeEntry
           "Invocation"

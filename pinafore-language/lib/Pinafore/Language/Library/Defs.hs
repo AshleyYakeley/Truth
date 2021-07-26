@@ -19,14 +19,14 @@ qPositiveTypeDescription ::
        forall t. ToPinaforeType t
     => Text
 qPositiveTypeDescription =
-    case toShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Positive) @t of
+    case toPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Positive) @t of
         MkShimWit w _ -> exprShow w
 
 qNegativeTypeDescription ::
        forall t. FromPinaforeType t
     => Text
 qNegativeTypeDescription =
-    case fromShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative) @t of
+    case fromPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative) @t of
         MkShimWit w _ -> exprShow w
 
 type LibraryModule = DocTree BindDoc

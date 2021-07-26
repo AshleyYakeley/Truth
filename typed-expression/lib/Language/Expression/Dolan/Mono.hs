@@ -36,7 +36,7 @@ dolanToMonoArgs ::
     => CovaryType dv
     -> CovaryMap f
     -> DolanArguments dv (DolanType ground) f polarity t
-    -> Maybe (ShimWit (DolanPolyIsoShim ground Type) (Arguments (MonoType conc) f) polarity t)
+    -> Maybe (PolarShimWit (DolanPolyIsoShim ground Type) (Arguments (MonoType conc) f) polarity t)
 dolanToMonoArgs = dolanArgumentsToArgumentsM dolanToMonoType
 
 dolanToMonoSimpleType ::
@@ -45,7 +45,7 @@ dolanToMonoSimpleType ::
     => CovaryType dv
     -> conc f
     -> DolanArguments dv (DolanType ground) f polarity a
-    -> Maybe (ShimWit (DolanPolyIsoShim ground Type) (MonoType conc) polarity a)
+    -> Maybe (PolarShimWit (DolanPolyIsoShim ground Type) (MonoType conc) polarity a)
 dolanToMonoSimpleType lc gt args = do
     MkShimWit eargs conv <- dolanToMonoArgs lc (groundTypeCovaryMap gt) args
     return $ MkShimWit (MkMonoType gt eargs) conv
@@ -54,7 +54,7 @@ dolanSingularToMonoArgs ::
        forall (ground :: GroundTypeKind) (conc :: forall k. k -> Type) polarity a.
        (CovarySubtype ground conc, Is PolarityType polarity)
     => DolanSingularType ground polarity a
-    -> Maybe (ShimWit (DolanPolyIsoShim ground Type) (MonoType conc) polarity a)
+    -> Maybe (PolarShimWit (DolanPolyIsoShim ground Type) (MonoType conc) polarity a)
 dolanSingularToMonoArgs (GroundDolanSingularType dgt args)
     | Just (lc, gt) <- dolanToMonoGroundType dgt = dolanToMonoSimpleType lc gt args
 dolanSingularToMonoArgs _ = Nothing
@@ -63,7 +63,7 @@ dolanToMonoType ::
        forall (ground :: GroundTypeKind) (conc :: forall k. k -> Type) polarity a.
        (CovarySubtype ground conc, Is PolarityType polarity)
     => DolanType ground polarity a
-    -> Maybe (ShimWit (DolanPolyIsoShim ground Type) (MonoType conc) polarity a)
+    -> Maybe (PolarShimWit (DolanPolyIsoShim ground Type) (MonoType conc) polarity a)
 dolanToMonoType (ConsDolanType t NilDolanType) = do
     MkShimWit et conv <- dolanSingularToMonoArgs t
     return $ MkShimWit et $ conv <.> polarPolyIsoPolar1

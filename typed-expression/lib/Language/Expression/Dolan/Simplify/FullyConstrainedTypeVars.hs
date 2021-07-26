@@ -40,7 +40,7 @@ type ExpressionShimWit w ground polarity name
 nilUsageBox ::
        forall (ground :: GroundTypeKind) polarity name. (IsDolanGroundType ground, Is PolarityType polarity)
     => ExpressionShimWit DolanType ground polarity name (LimitType polarity)
-nilUsageBox = mkShimWit NilDolanType
+nilUsageBox = mkPolarShimWit NilDolanType
 
 consMeetUsageBox ::
        forall (ground :: GroundTypeKind) polarity name a b. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -62,7 +62,7 @@ buildUsageThis n t =
                 (polarMkPolyComposeShim $ varExpression $ MkUsageWitness representative tw)
                 (polarMkPolyComposeShim $ pure convw) .
             (polarMkPolyComposeShim $ pure convr)
-        Nothing -> mkShimWit t
+        Nothing -> mkPolarShimWit t
 
 buildUsageSingular ::
        forall (ground :: GroundTypeKind) polarity name a. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -70,7 +70,7 @@ buildUsageSingular ::
     -> DolanSingularType ground polarity a
     -> ExpressionShimWit DolanSingularType ground polarity name a
 buildUsageSingular n t@(RecursiveDolanSingularType n' _)
-    | Just Refl <- testEquality n n' = mkShimWit t
+    | Just Refl <- testEquality n n' = mkPolarShimWit t
 buildUsageSingular n t = mapDolanSingularType (buildUsage n) t
 
 buildUsageInside ::
@@ -86,7 +86,7 @@ buildUsage ::
     => SymbolType name
     -> DolanType ground polarity a
     -> ExpressionShimWit DolanType ground polarity name a
-buildUsage n t = chainShimWit (buildUsageInside n) $ buildUsageThis n t
+buildUsage n t = chainPolarShimWit (buildUsageInside n) $ buildUsageThis n t
 
 type UsageSolution :: GroundTypeKind -> Symbol -> Type -> Type
 data UsageSolution ground name t =
