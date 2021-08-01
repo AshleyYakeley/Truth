@@ -150,6 +150,32 @@ instance LazyCategory (JMShim Type)
 
 instance CoercibleKind k => IsoMapShim (JMShim k)
 
+instance CoercibleKind k => CoerceShim (JMShim k) where
+    coercionEnhanced = CoerceJMShim
+    enhancedCoercion IdentityJMShim = Just cid
+    enhancedCoercion (CoerceJMShim _ c) = Just c
+    enhancedCoercion (ConsJMShim CovarianceType f a)
+        | Just Dict <- varrep1 @'Covariance f = do
+            cf <- enhancedCoercion f
+            ca <- enhancedCoercion a
+            return $ applyCoercion1 cf ca
+    enhancedCoercion (ConsJMShim CovarianceType f a)
+        | Just Dict <- varrep2 @'Covariance f = do
+            cf <- enhancedCoercion f
+            ca <- enhancedCoercion a
+            return $ applyCoercion2 cf ca
+    enhancedCoercion (ConsJMShim ContravarianceType f (MkCatDual a))
+        | Just Dict <- varrep1 @'Contravariance f = do
+            cf <- enhancedCoercion f
+            ca <- enhancedCoercion a
+            return $ applyCoercion1 cf $ invert ca
+    enhancedCoercion (ConsJMShim ContravarianceType f (MkCatDual a))
+        | Just Dict <- varrep2 @'Contravariance f = do
+            cf <- enhancedCoercion f
+            ca <- enhancedCoercion a
+            return $ applyCoercion2 cf $ invert ca
+    enhancedCoercion _ = Nothing
+
 instance CoercibleKind k => FunctionShim (JMShim k) where
     functionToShim = FuncJMShim
     shimToFunction ::
@@ -208,30 +234,6 @@ instance CoercibleKind k => FunctionShim (JMShim k) where
                                 MkNestedMorphism ff ->
                                     cfmap (MkCatRange (shimToFunction jma1) (shimToFunction jma2)) <.> ff
         in fromCon vt jmf jma
-    coercionEnhanced = CoerceJMShim
-    enhancedCoercion IdentityJMShim = Just cid
-    enhancedCoercion (CoerceJMShim _ c) = Just c
-    enhancedCoercion (ConsJMShim CovarianceType f a)
-        | Just Dict <- varrep1 @'Covariance f = do
-            cf <- enhancedCoercion f
-            ca <- enhancedCoercion a
-            return $ applyCoercion1 cf ca
-    enhancedCoercion (ConsJMShim CovarianceType f a)
-        | Just Dict <- varrep2 @'Covariance f = do
-            cf <- enhancedCoercion f
-            ca <- enhancedCoercion a
-            return $ applyCoercion2 cf ca
-    enhancedCoercion (ConsJMShim ContravarianceType f (MkCatDual a))
-        | Just Dict <- varrep1 @'Contravariance f = do
-            cf <- enhancedCoercion f
-            ca <- enhancedCoercion a
-            return $ applyCoercion1 cf $ invert ca
-    enhancedCoercion (ConsJMShim ContravarianceType f (MkCatDual a))
-        | Just Dict <- varrep2 @'Contravariance f = do
-            cf <- enhancedCoercion f
-            ca <- enhancedCoercion a
-            return $ applyCoercion2 cf $ invert ca
-    enhancedCoercion _ = Nothing
 
 instance CartesianShim (JMShim Type) where
     funcShim ab pq = applyCoPolyShim (applyContraPolyShim cid ab) pq

@@ -89,7 +89,7 @@ mapPolarShimWit ::
     => PolarMap shim polarity b a
     -> PolarShimWit shim wit polarity a
     -> PolarShimWit shim wit polarity b
-mapPolarShimWit ab (MkShimWit t conv) = MkShimWit t $ conv <.> ab
+mapPolarShimWit = mapShimWit
 
 mapPolarShimWitT ::
        forall polarity (shim :: ShimKind Type) wit (a :: Type) (b :: Type). (InCategory shim, Is PolarityType polarity)

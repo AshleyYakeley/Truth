@@ -104,5 +104,10 @@ instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, IsoMapShim (pshim k
     isoMapShim t f1 f2 (MkPolyMapT (MkIsomorphism ab ba)) =
         MkPolyMapT $ MkIsomorphism (isoMapShim t f1 f2 ab) (isoMapShim t f2 f1 ba)
 
+instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, CoerceShim (pshim k), Category (pshim k)) =>
+             CoerceShim (PolyIso pshim k) where
+    coercionEnhanced n c = MkPolyMapT $ MkIsomorphism (coercionEnhanced n c) (coercionEnhanced n $ invert c)
+    enhancedCoercion (MkPolyMapT (MkIsomorphism ab ba)) = enhancedCoercion ab <|> fmap invert (enhancedCoercion ba)
+
 instance forall (pshim :: PolyShimKind). AllInCategory pshim => ReduciblePolyShim (PolyIso pshim) where
     type ReducedPolyShim (PolyIso pshim) = PolyIso pshim

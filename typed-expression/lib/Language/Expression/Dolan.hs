@@ -16,6 +16,7 @@ module Language.Expression.Dolan
     , fromMPolarSingle
     , GroundTypeKind
     , DolanPolyShim
+    , DolanPolyIsoShim
     , DolanVariance
     , DolanVarianceKind
     , DolanVarianceType
