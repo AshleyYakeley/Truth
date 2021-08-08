@@ -1,6 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Convert.Types where
+module Pinafore.Language.Convert.Types
+    (
+    ) where
 
 import Data.Time
 import Pinafore.Base

@@ -40,6 +40,8 @@ module Language.Expression.Dolan
     , biRangeAnyF
     , SingleArgument
     , DolanArguments(..)
+    , ArgTypeF(..)
+    , mapArgsTypeF
     , saturateArgsConstraint
     , dolanArgumentsToArguments
     , SubtypeContext(..)

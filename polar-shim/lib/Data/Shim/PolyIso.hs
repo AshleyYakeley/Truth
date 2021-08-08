@@ -92,6 +92,16 @@ polarPolyIsoPolar1 =
 polyIsoForwards :: forall (pshim :: PolyShimKind) k (a :: k) (b :: k). PolyIso pshim k a b -> pshim k a b
 polyIsoForwards iab = isoForwards $ unPolyMapT iab
 
+polyIsoPolar ::
+       forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k). Is PolarityType polarity
+    => PolyIso pshim k a b
+    -> PolarMap (pshim k) polarity a b
+polyIsoPolar iab =
+    MkPolarMap $
+    case polarityType @polarity of
+        PositiveType -> isoForwards $ unPolyMapT iab
+        NegativeType -> isoBackwards $ unPolyMapT iab
+
 instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, IsoMapShim (pshim k), Category (pshim k)) =>
              IsoMapShim (PolyIso pshim k) where
     isoMapShim ::

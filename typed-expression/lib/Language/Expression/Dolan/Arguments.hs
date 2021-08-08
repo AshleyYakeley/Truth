@@ -11,6 +11,8 @@ module Language.Expression.Dolan.Arguments
     , mergeDolanArguments
     , dolanTestEquality
     , Arguments(..)
+    , ArgTypeF(..)
+    , mapArgsTypeF
     , dolanArgumentsToArgumentsM
     , dolanArgumentsToArguments
     , argumentsToDolanArgumentsM
