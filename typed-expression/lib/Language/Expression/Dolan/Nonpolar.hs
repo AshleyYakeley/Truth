@@ -203,38 +203,38 @@ newtype ArgWit ground polarity dv f = MkArgWit
                           DolanArguments dv (DolanType ground) f polarity t -> DolanSingularShimWit ground polarity t
     }
 
-nonpolarGroundToPinaforeSingularType ::
+nonpolarGroundToDolanSingularType ::
        forall (ground :: GroundTypeKind) (polarity :: Polarity) (dv :: DolanVariance) (f :: DolanVarianceKind dv).
        (IsDolanGroundType ground, Is PolarityType polarity)
     => NonpolarGroundDolanType ground dv f
     -> DolanVarianceType dv
     -> (DolanVarianceMap dv f, ArgWit ground polarity dv f)
-nonpolarGroundToPinaforeSingularType (GroundNonpolarGroundType ground) _ =
+nonpolarGroundToDolanSingularType (GroundNonpolarGroundType ground) _ =
     (groundTypeVarianceMap ground, MkArgWit $ \args -> mkPolarShimWit $ GroundedDolanSingularType ground args)
-nonpolarGroundToPinaforeSingularType (ApplyNonpolarGroundType svt tf ta) dvt =
-    case nonpolarGroundToPinaforeSingularType tf (ConsListType svt dvt) of
+nonpolarGroundToDolanSingularType (ApplyNonpolarGroundType svt tf ta) dvt =
+    case nonpolarGroundToDolanSingularType tf (ConsListType svt dvt) of
         (ConsDolanVarianceMap dvm, MkArgWit swit) ->
             ( dvm
             , MkArgWit $ \args ->
                   fromApplyArg svt dvt dvm ta args $ \arg (MkShimWit args' aaconv) ->
                       mapPolarShimWit aaconv $ swit $ ConsDolanArguments arg args')
 
-nonpolarToPinaforeSingularType ::
+nonpolarToDolanSingularType ::
        forall (ground :: GroundTypeKind) (polarity :: Polarity) (dv :: DolanVariance) (f :: DolanVarianceKind dv).
        (IsDolanGroundType ground, Is PolarityType polarity)
     => NonpolarDolanType ground dv f
     -> DolanVarianceType dv
     -> (DolanVarianceMap dv f, ArgWit ground polarity dv f)
-nonpolarToPinaforeSingularType (VarNonpolarType n) NilListType =
+nonpolarToDolanSingularType (VarNonpolarType n) NilListType =
     (NilDolanVarianceMap, MkArgWit $ \NilDolanArguments -> mkPolarShimWit $ VarDolanSingularType n)
-nonpolarToPinaforeSingularType (GroundNonpolarType t) dv = nonpolarGroundToPinaforeSingularType t dv
+nonpolarToDolanSingularType (GroundNonpolarType t) dv = nonpolarGroundToDolanSingularType t dv
 
 nonpolarToDolanType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => NonpolarDolanType ground '[] t
     -> DolanShimWit ground polarity t
 nonpolarToDolanType t =
-    singleDolanShimWit $ unArgWit (snd (nonpolarToPinaforeSingularType t NilListType)) NilDolanArguments
+    singleDolanShimWit $ unArgWit (snd (nonpolarToDolanSingularType t NilListType)) NilDolanArguments
 
 applyArg ::
        forall (ground :: GroundTypeKind) polarity sv t. IsDolanGroundType ground
@@ -285,51 +285,51 @@ dolanTypeToNonpolar t = do
     MkAnyW st <- dolanTypeToSingular t
     dolanSingularTypeToNonpolar st
 
-pinaforeNonpolarArgTypeTestEquality ::
+nonpolarArgTypeTestEquality ::
        forall (ground :: GroundTypeKind) sv a b. IsDolanGroundType ground
     => VarianceType sv
     -> NonpolarArgument (NonpolarDolanType ground '[]) sv a
     -> NonpolarArgument (NonpolarDolanType ground '[]) sv b
     -> Maybe (a :~: b)
-pinaforeNonpolarArgTypeTestEquality CovarianceType = testEquality
-pinaforeNonpolarArgTypeTestEquality ContravarianceType = testEquality
-pinaforeNonpolarArgTypeTestEquality RangevarianceType = testEquality
+nonpolarArgTypeTestEquality CovarianceType = testEquality
+nonpolarArgTypeTestEquality ContravarianceType = testEquality
+nonpolarArgTypeTestEquality RangevarianceType = testEquality
 
-pinaforeNonpolarGroundTypeTestEquality ::
+nonpolarGroundTypeTestEquality ::
        forall (ground :: GroundTypeKind) dva ta dvb tb. IsDolanGroundType ground
     => NonpolarGroundDolanType ground dva ta
     -> NonpolarGroundDolanType ground dvb tb
     -> Maybe (dva :~: dvb, ta :~~: tb)
-pinaforeNonpolarGroundTypeTestEquality (GroundNonpolarGroundType ta) (GroundNonpolarGroundType tb) = do
+nonpolarGroundTypeTestEquality (GroundNonpolarGroundType ta) (GroundNonpolarGroundType tb) = do
     (Refl, HRefl) <- groundTypeTestEquality ta tb
     return (Refl, HRefl)
-pinaforeNonpolarGroundTypeTestEquality (ApplyNonpolarGroundType sva fa ta) (ApplyNonpolarGroundType svb fb tb) = do
+nonpolarGroundTypeTestEquality (ApplyNonpolarGroundType sva fa ta) (ApplyNonpolarGroundType svb fb tb) = do
     Refl <- testEquality sva svb
-    (Refl, HRefl) <- pinaforeNonpolarGroundTypeTestEquality @ground fa fb
-    Refl <- pinaforeNonpolarArgTypeTestEquality @ground sva ta tb
+    (Refl, HRefl) <- nonpolarGroundTypeTestEquality @ground fa fb
+    Refl <- nonpolarArgTypeTestEquality @ground sva ta tb
     return (Refl, HRefl)
-pinaforeNonpolarGroundTypeTestEquality _ _ = Nothing
+nonpolarGroundTypeTestEquality _ _ = Nothing
 
-pinaforeNonpolarTypeTestEquality ::
+nonpolarTypeTestEquality ::
        forall (ground :: GroundTypeKind) dva ta dvb tb. IsDolanGroundType ground
     => NonpolarDolanType ground dva ta
     -> NonpolarDolanType ground dvb tb
     -> Maybe (dva :~: dvb, ta :~~: tb)
-pinaforeNonpolarTypeTestEquality (GroundNonpolarType ta) (GroundNonpolarType tb) = do
-    (Refl, HRefl) <- pinaforeNonpolarGroundTypeTestEquality ta tb
+nonpolarTypeTestEquality (GroundNonpolarType ta) (GroundNonpolarType tb) = do
+    (Refl, HRefl) <- nonpolarGroundTypeTestEquality ta tb
     return (Refl, HRefl)
-pinaforeNonpolarTypeTestEquality (VarNonpolarType na) (VarNonpolarType nb) = do
+nonpolarTypeTestEquality (VarNonpolarType na) (VarNonpolarType nb) = do
     Refl <- testEquality na nb
     return (Refl, HRefl)
-pinaforeNonpolarTypeTestEquality _ _ = Nothing
+nonpolarTypeTestEquality _ _ = Nothing
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground =>
              TestEquality (NonpolarGroundDolanType ground '[]) where
     testEquality ta tb = do
-        (Refl, HRefl) <- pinaforeNonpolarGroundTypeTestEquality ta tb
+        (Refl, HRefl) <- nonpolarGroundTypeTestEquality ta tb
         return Refl
 
 instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEquality (NonpolarDolanType ground '[]) where
     testEquality ta tb = do
-        (Refl, HRefl) <- pinaforeNonpolarTypeTestEquality ta tb
+        (Refl, HRefl) <- nonpolarTypeTestEquality ta tb
         return Refl
