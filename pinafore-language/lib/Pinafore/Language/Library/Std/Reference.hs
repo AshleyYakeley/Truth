@@ -28,7 +28,7 @@ instance (FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =
     toPolarShimWit =
         unNegShimWit fromJMShimWit $ \ta conva ->
             mapPosShimWit (applyContraPolyShim cid conva) $
-            mkPolarShimWit $ GroundDolanSingularType setRefGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPolarShimWit $ GroundedDolanSingularType setRefGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
              ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangSetRef a) where
@@ -39,7 +39,7 @@ instance (ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
     fromPolarShimWit =
         unPosShimWit toJMShimWit $ \ta conva ->
             mapNegShimWit (applyContraPolyShim cid conva) $
-            mkPolarShimWit $ GroundDolanSingularType setRefGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPolarShimWit $ GroundedDolanSingularType setRefGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangSetRef a) where
@@ -55,7 +55,7 @@ instance ( FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
     toPolarShimWit =
         unToRangeShimWit $ \tpq conv ->
             mapPosShimWit (applyPolyShim RangevarianceType cid conv) $
-            mkPolarShimWit $ GroundDolanSingularType finiteSetRefGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPolarShimWit $ GroundedDolanSingularType finiteSetRefGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
          , ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
@@ -68,7 +68,7 @@ instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
     fromPolarShimWit =
         unFromRangeShimWit $ \tpq conv ->
             mapNegShimWit (applyPolyShim RangevarianceType cid conv) $
-            mkPolarShimWit $ GroundDolanSingularType finiteSetRefGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPolarShimWit $ GroundedDolanSingularType finiteSetRefGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
          , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
@@ -97,7 +97,7 @@ instance ( FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
     toPolarShimWit =
         unToRangeShimWit $ \tpq conv ->
             mapPosShimWit (applyPolyShim RangevarianceType cid conv) $
-            mkPolarShimWit $ GroundDolanSingularType listRefGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPolarShimWit $ GroundedDolanSingularType listRefGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
          , ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
@@ -110,7 +110,7 @@ instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
     fromPolarShimWit =
         unFromRangeShimWit $ \tpq conv ->
             mapNegShimWit (applyPolyShim RangevarianceType cid conv) $
-            mkPolarShimWit $ GroundDolanSingularType listRefGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPolarShimWit $ GroundedDolanSingularType listRefGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
          , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
@@ -126,7 +126,7 @@ instance (FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =
     toPolarShimWit =
         unNegShimWit fromJMShimWit $ \ta conva ->
             mapPosShimWit (applyContraPolyShim cid conva) $
-            mkPolarShimWit $ GroundDolanSingularType refOrderGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPolarShimWit $ GroundedDolanSingularType refOrderGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
              ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangRefOrder a) where
@@ -137,7 +137,7 @@ instance (ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
     fromPolarShimWit =
         unPosShimWit toJMShimWit $ \ta conva ->
             mapNegShimWit (applyContraPolyShim cid conva) $
-            mkPolarShimWit $ GroundDolanSingularType refOrderGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPolarShimWit $ GroundedDolanSingularType refOrderGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
              FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangRefOrder a) where
@@ -373,11 +373,11 @@ refLibEntries =
                               varList1 :: PinaforeType (InvertPolarity 'Negative) _
                               varList1 =
                                   singleDolanType $
-                                  GroundDolanSingularType listGroundType $ ConsDolanArguments var1b NilDolanArguments
+                                  GroundedDolanSingularType listGroundType $ ConsDolanArguments var1b NilDolanArguments
                               varList2 :: PinaforeType 'Negative _
                               varList2 =
                                   singleDolanType $
-                                  GroundDolanSingularType listGroundType $ ConsDolanArguments var2b NilDolanArguments
+                                  GroundedDolanSingularType listGroundType $ ConsDolanArguments var2b NilDolanArguments
                           return $
                               MkSubtypeArguments (ConsDolanArguments (MkRangeType var1a var2a) NilDolanArguments) $ do
                                   rconv1 <- subtypeConvert sc varList1 t1
@@ -458,7 +458,7 @@ refLibEntries =
                                    typef =
                                        singleDolanShimWit $
                                        mkPolarShimWit $
-                                       GroundDolanSingularType morphismGroundType $
+                                       GroundedDolanSingularType morphismGroundType $
                                        ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
                                    morphism =
                                        propertyMorphism
@@ -497,11 +497,11 @@ refLibEntries =
                             conv2 <-
                                 subtypeConvert sc t2o $
                                 singleDolanType $
-                                GroundDolanSingularType funcGroundType $
+                                GroundedDolanSingularType funcGroundType $
                                 ConsDolanArguments varb $
                                 ConsDolanArguments
                                     (singleDolanType $
-                                     GroundDolanSingularType
+                                     GroundedDolanSingularType
                                          (EntityPinaforeGroundType NilListType $
                                           LiteralEntityGroundType OrderingLiteralType)
                                          NilDolanArguments)

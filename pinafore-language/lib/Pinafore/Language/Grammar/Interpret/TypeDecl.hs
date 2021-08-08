@@ -110,7 +110,7 @@ typeDeclarationTypeBox spos name doc (ClosedEntitySyntaxTypeDeclaration sconss) 
                        ctf =
                            singleDolanShimWit $
                            mkPolarShimWit $
-                           GroundDolanSingularType
+                           GroundedDolanSingularType
                                (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym cti)
                                NilDolanArguments
                    patts <-
@@ -153,7 +153,7 @@ typeDeclarationTypeBox spos name doc (DatatypeSyntaxTypeDeclaration sconss) = do
                        ctf =
                            singleDolanShimWit $
                            mkPolarShimWit $
-                           GroundDolanSingularType
+                           GroundedDolanSingularType
                                (ProvidedGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt)
                                NilDolanArguments
                    tident <- unsafeGetIdentification

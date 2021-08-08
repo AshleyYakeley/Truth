@@ -36,7 +36,7 @@ interpretOpenEntityType st = do
             case atm @'Positive of
                 MkAnyW tm ->
                     case dolanTypeToSingular tm of
-                        Just (MkAnyW (GroundDolanSingularType (EntityPinaforeGroundType _ (OpenEntityGroundType t)) NilDolanArguments)) ->
+                        Just (MkAnyW (GroundedDolanSingularType (EntityPinaforeGroundType _ (OpenEntityGroundType t)) NilDolanArguments)) ->
                             return $ MkAnyW t
                         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm
 
@@ -48,7 +48,7 @@ interpretConcreteDynamicEntityType st = do
             case atm @'Positive of
                 MkAnyW tm ->
                     case dolanTypeToSingular tm of
-                        Just (MkAnyW (GroundDolanSingularType (EntityPinaforeGroundType _ (ADynamicEntityGroundType n dts)) NilDolanArguments))
+                        Just (MkAnyW (GroundedDolanSingularType (EntityPinaforeGroundType _ (ADynamicEntityGroundType n dts)) NilDolanArguments))
                             | [dt] <- toList dts -> return (n, dt)
                         _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm
 
@@ -117,7 +117,7 @@ interpretTypeM' (SingleSyntaxType sgt sargs) = do
             toMPolarWM $ do
                 aargs <- interpretArgs sgt (groundTypeVarianceType gt) sargs
                 case aargs of
-                    MkAnyW args -> return $ MkAnyW $ singleDolanType $ GroundDolanSingularType gt args
+                    MkAnyW args -> return $ MkAnyW $ singleDolanType $ GroundedDolanSingularType gt args
 interpretTypeM' (VarSyntaxType name) =
     nameToSymbolType name $ \t -> return $ toMPolar $ MkAnyW $ singleDolanType $ VarDolanSingularType t
 interpretTypeM' (RecursiveSyntaxType name st) = do

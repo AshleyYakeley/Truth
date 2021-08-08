@@ -141,7 +141,8 @@ getArgsExpressionAppearances (ConsListType sv dv) (ConsDolanArguments arg args) 
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              GetVarUses ground (DolanSingularType ground polarity) where
-    getVarAppearances (GroundDolanSingularType gt args) = getArgsExpressionAppearances (groundTypeVarianceType gt) args
+    getVarAppearances (GroundedDolanSingularType gt args) =
+        getArgsExpressionAppearances (groundTypeVarianceType gt) args
     getVarAppearances (VarDolanSingularType _) = mempty
     getVarAppearances (RecursiveDolanSingularType vn st) = let
         (pvarss, nvarss) = getVarAppearances st
@@ -227,7 +228,7 @@ getArgsExpressionVars (ConsListType sv dv) (ConsDolanArguments arg args) =
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              GetExpressionVars (DolanSingularType ground polarity) where
-    getExpressionVars (GroundDolanSingularType gt args) = getArgsExpressionVars (groundTypeVarianceType gt) args
+    getExpressionVars (GroundedDolanSingularType gt args) = getArgsExpressionVars (groundTypeVarianceType gt) args
     getExpressionVars (VarDolanSingularType vn) =
         case polarityType @polarity of
             PositiveType -> ([MkAnyW vn], [])

@@ -21,13 +21,13 @@ drawingGroundType :: PinaforeGroundType '[] LangDrawing
 drawingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangDrawing)|]) "Drawing"
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangDrawing where
-    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType drawingGroundType NilDolanArguments
+    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType drawingGroundType NilDolanArguments
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangDrawing where
     toPolarShimWit = singleDolanShimWit toJMShimWit
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangDrawing where
-    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType drawingGroundType NilDolanArguments
+    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType drawingGroundType NilDolanArguments
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangDrawing where
     fromPolarShimWit = singleDolanShimWit fromJMShimWit
@@ -39,13 +39,13 @@ pathGroundType :: PinaforeGroundType '[] LangPath
 pathGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangPath)|]) "Path"
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangPath where
-    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType pathGroundType NilDolanArguments
+    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType pathGroundType NilDolanArguments
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangPath where
     toPolarShimWit = singleDolanShimWit toJMShimWit
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangPath where
-    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType pathGroundType NilDolanArguments
+    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType pathGroundType NilDolanArguments
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangPath where
     fromPolarShimWit = singleDolanShimWit fromJMShimWit
@@ -57,13 +57,13 @@ patternGroundType :: PinaforeGroundType '[] LangPattern
 patternGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangPattern)|]) "Pattern"
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangPattern where
-    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType patternGroundType NilDolanArguments
+    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType patternGroundType NilDolanArguments
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangPattern where
     toPolarShimWit = singleDolanShimWit toJMShimWit
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangPattern where
-    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType patternGroundType NilDolanArguments
+    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType patternGroundType NilDolanArguments
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangPattern where
     fromPolarShimWit = singleDolanShimWit fromJMShimWit

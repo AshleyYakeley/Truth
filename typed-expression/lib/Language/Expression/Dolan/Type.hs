@@ -91,7 +91,7 @@ instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
 -- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVarT') for type variables.
 type DolanSingularType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanSingularType ground polarity t where
-    GroundDolanSingularType
+    GroundedDolanSingularType
         :: forall (ground :: GroundTypeKind) (polarity :: Polarity) (dv :: DolanVariance) t ta.
            ground dv t
         -> DolanArguments dv (DolanType ground) t polarity ta
@@ -110,7 +110,7 @@ data DolanSingularType ground polarity t where
 
 instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
              TestEquality (DolanSingularType ground polarity) where
-    testEquality (GroundDolanSingularType gta argsa) (GroundDolanSingularType gtb argsb) = do
+    testEquality (GroundedDolanSingularType gta argsa) (GroundedDolanSingularType gtb argsb) = do
         (Refl, HRefl) <- groundTypeTestEquality gta gtb
         Refl <- dolanTestEquality (groundTypeVarianceType gta) argsa argsb
         return Refl

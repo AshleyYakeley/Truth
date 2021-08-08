@@ -60,7 +60,7 @@ saturatedGroundTypeShowPrec avar gt = let
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (DolanSingularType ground polarity t) where
     exprShowPrec (VarDolanSingularType namewit) = exprShowPrec namewit
-    exprShowPrec (GroundDolanSingularType gt args) = groundTypeShowPrec gt args
+    exprShowPrec (GroundedDolanSingularType gt args) = groundTypeShowPrec gt args
     exprShowPrec (RecursiveDolanSingularType n pt) = ("rec " <> exprShow n <> ". " <> exprShow pt, 4)
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>

@@ -46,7 +46,7 @@ instance MakeGreatestDynamicSupertype (PinaforeSingularType 'Negative) where
 
 instance MakeGreatestDynamicSupertype (PinaforeGroundType '[]) where
     toNegativeShimWit wt =
-        toNegativeShimWit @(PinaforeSingularType 'Negative) $ GroundDolanSingularType wt NilDolanArguments
+        toNegativeShimWit @(PinaforeSingularType 'Negative) $ GroundedDolanSingularType wt NilDolanArguments
 
 instance MakeGreatestDynamicSupertype EntityGroundType where
     toNegativeShimWit wt = toNegativeShimWit $ EntityPinaforeGroundType NilListType wt
@@ -81,7 +81,7 @@ groundSupertype (EntityPinaforeGroundType NilListType egt) NilDolanArguments = e
 groundSupertype _ _ = Nothing
 
 getGreatestDynamicSupertype :: PinaforeType 'Positive t -> PinaforeSourceInterpreter (GreatestDynamicSupertype t)
-getGreatestDynamicSupertype (ConsDolanType (GroundDolanSingularType gt args) NilDolanType)
+getGreatestDynamicSupertype (ConsDolanType (GroundedDolanSingularType gt args) NilDolanType)
     | Just ds <- groundSupertype gt args = return $ isomapGDS iJoinR1 ds
 getGreatestDynamicSupertype t = do
     t' <- invertType t

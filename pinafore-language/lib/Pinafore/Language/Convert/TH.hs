@@ -17,7 +17,7 @@ literalInstances t =
            where
           toPolarShimWit
             = mkPolarShimWit $
-                GroundDolanSingularType
+                GroundedDolanSingularType
                   (EntityPinaforeGroundType NilListType $
                      LiteralEntityGroundType representative)
                   NilDolanArguments
@@ -34,7 +34,7 @@ literalInstances t =
            where
           fromPolarShimWit
             = mkPolarShimWit $
-                GroundDolanSingularType
+                GroundedDolanSingularType
                   (EntityPinaforeGroundType NilListType $
                      LiteralEntityGroundType representative)
                   NilDolanArguments

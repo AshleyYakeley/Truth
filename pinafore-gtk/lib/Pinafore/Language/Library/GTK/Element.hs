@@ -25,13 +25,13 @@ elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual Lang
 
 -- LangUIElement
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUIElement where
-    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType elementGroundType NilDolanArguments
+    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType elementGroundType NilDolanArguments
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangUIElement where
     toPolarShimWit = singleDolanShimWit toJMShimWit
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangUIElement where
-    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType elementGroundType NilDolanArguments
+    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType elementGroundType NilDolanArguments
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangUIElement where
     fromPolarShimWit = singleDolanShimWit fromJMShimWit

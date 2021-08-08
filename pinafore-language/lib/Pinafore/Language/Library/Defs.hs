@@ -106,7 +106,7 @@ monoidSubypeConversionEntry t =
             MkAnyW args ->
                 case saturateArgsConstraint (representative @_ @(SaturatedConstraintWitness Monoid) @gt) args of
                     Compose Dict -> let
-                        tb = singleDolanType $ GroundDolanSingularType t args
+                        tb = singleDolanType $ GroundedDolanSingularType t args
                         sconv = subtypeConvert sc ta tb
                         cshim :: forall a. JMShim Type (JoinMeetType pola a (LimitType pola)) a
                         cshim =

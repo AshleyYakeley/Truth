@@ -23,13 +23,13 @@ colourGroundType :: PinaforeGroundType '[] LangColour
 colourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangColour)|]) "Colour"
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangColour where
-    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType colourGroundType NilDolanArguments
+    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType colourGroundType NilDolanArguments
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangColour where
     toPolarShimWit = singleDolanShimWit toJMShimWit
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangColour where
-    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType colourGroundType NilDolanArguments
+    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType colourGroundType NilDolanArguments
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangColour where
     fromPolarShimWit = singleDolanShimWit fromJMShimWit
@@ -41,13 +41,13 @@ alphaColourGroundType :: PinaforeGroundType '[] LangAlphaColour
 alphaColourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangAlphaColour)|]) "AlphaColour"
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangAlphaColour where
-    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType alphaColourGroundType NilDolanArguments
+    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType alphaColourGroundType NilDolanArguments
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangAlphaColour where
     toPolarShimWit = singleDolanShimWit toJMShimWit
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangAlphaColour where
-    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType alphaColourGroundType NilDolanArguments
+    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType alphaColourGroundType NilDolanArguments
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangAlphaColour where
     fromPolarShimWit = singleDolanShimWit fromJMShimWit

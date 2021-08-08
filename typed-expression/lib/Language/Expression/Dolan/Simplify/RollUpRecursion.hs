@@ -87,7 +87,7 @@ getRollUpsInSingularType ::
     => DolanSingularType ground polarity t
     -> [RollUp ground]
 getRollUpsInSingularType (VarDolanSingularType _) = []
-getRollUpsInSingularType (GroundDolanSingularType gt args) =
+getRollUpsInSingularType (GroundedDolanSingularType gt args) =
     forDolanArguments getRollUpsInType (groundTypeVarianceType gt) args
 getRollUpsInSingularType (RecursiveDolanSingularType var t) = mkRollUp var t : getRollUpsInType t
 

@@ -96,8 +96,8 @@ instance forall (ground :: GroundTypeKind). IsDolanFunctionGroundType ground =>
     tsFunctionPosWitness ta tb =
         singleDolanShimWit $
         mkPolarShimWit $
-        GroundDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+        GroundedDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
     tsFunctionNegWitness ta tb =
         singleDolanShimWit $
         mkPolarShimWit $
-        GroundDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+        GroundedDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments

@@ -82,7 +82,7 @@ unifyTypesSS ta (VarDolanSingularType nb)
     | isFreeVar nb =
         fmap (\conv -> conv . toJoinMeetLimit @_ @pola) $
         solverLiftExpression $ varExpression $ geSingleUnifierConstraint nb ta
-unifyTypesSS (GroundDolanSingularType gta argsa) (GroundDolanSingularType gtb argsb) =
+unifyTypesSS (GroundedDolanSingularType gta argsa) (GroundedDolanSingularType gtb argsb) =
     unifyGroundTypes gta argsa gtb argsb
 unifyTypesSS sta@(RecursiveDolanSingularType _ _) stb = solveRecursiveSingularTypes unifyTypesTT sta stb
 unifyTypesSS sta stb@(RecursiveDolanSingularType _ _) = solveRecursiveSingularTypes unifyTypesTT sta stb

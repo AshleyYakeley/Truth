@@ -210,7 +210,7 @@ nonpolarGroundToPinaforeSingularType ::
     -> DolanVarianceType dv
     -> (DolanVarianceMap dv f, ArgWit ground polarity dv f)
 nonpolarGroundToPinaforeSingularType (GroundNonpolarGroundType ground) _ =
-    (groundTypeVarianceMap ground, MkArgWit $ \args -> mkPolarShimWit $ GroundDolanSingularType ground args)
+    (groundTypeVarianceMap ground, MkArgWit $ \args -> mkPolarShimWit $ GroundedDolanSingularType ground args)
 nonpolarGroundToPinaforeSingularType (ApplyNonpolarGroundType svt tf ta) dvt =
     case nonpolarGroundToPinaforeSingularType tf (ConsListType svt dvt) of
         (ConsDolanVarianceMap dvm, MkArgWit swit) ->
@@ -272,7 +272,7 @@ dolanSingularTypeToNonpolar ::
     => DolanSingularType ground polarity t
     -> Maybe (AnyW (NonpolarDolanType ground '[]))
 dolanSingularTypeToNonpolar (VarDolanSingularType n) = Just $ MkAnyW $ VarNonpolarType n
-dolanSingularTypeToNonpolar (GroundDolanSingularType ground args) =
+dolanSingularTypeToNonpolar (GroundedDolanSingularType ground args) =
     fmap (mapAnyW GroundNonpolarType) $
     applyArgs @ground (groundTypeVarianceType ground) (GroundNonpolarGroundType ground) args
 dolanSingularTypeToNonpolar (RecursiveDolanSingularType _ _) = empty

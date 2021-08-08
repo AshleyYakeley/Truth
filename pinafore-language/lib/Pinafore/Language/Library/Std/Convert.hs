@@ -59,7 +59,7 @@ instance ( FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) pa
             unToRangeShimWit @_ @_ @pb @qb $ \tb convb ->
                 mapPosShimWit (applyPolyShim RangevarianceType (applyPolyShim RangevarianceType cid conva) convb) $
                 mkPolarShimWit $
-                GroundDolanSingularType morphismGroundType $
+                GroundedDolanSingularType morphismGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
 instance ( FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) pa
@@ -80,7 +80,7 @@ instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) pa
             unFromRangeShimWit $ \tb convb ->
                 mapNegShimWit (applyPolyShim RangevarianceType (applyPolyShim RangevarianceType cid conva) convb) $
                 mkPolarShimWit $
-                GroundDolanSingularType morphismGroundType $
+                GroundedDolanSingularType morphismGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
 instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) pa
@@ -94,7 +94,7 @@ instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) pa
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) Entity where
     toPolarShimWit =
         mkPolarShimWit $
-        GroundDolanSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
+        GroundedDolanSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Entity where
     toPolarShimWit = singleDolanShimWit toJMShimWit
@@ -102,7 +102,7 @@ instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Entity 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) Entity where
     fromPolarShimWit =
         mkPolarShimWit $
-        GroundDolanSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
+        GroundedDolanSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Entity where
     fromPolarShimWit = singleDolanShimWit fromJMShimWit

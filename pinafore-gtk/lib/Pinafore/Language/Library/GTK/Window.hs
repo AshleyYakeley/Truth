@@ -24,13 +24,13 @@ windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangW
 
 -- LangWindow
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangWindow where
-    toPolarShimWit = mkPolarShimWit $ GroundDolanSingularType windowGroundType NilDolanArguments
+    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType windowGroundType NilDolanArguments
 
 instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangWindow where
     toPolarShimWit = singleDolanShimWit toJMShimWit
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangWindow where
-    fromPolarShimWit = mkPolarShimWit $ GroundDolanSingularType windowGroundType NilDolanArguments
+    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType windowGroundType NilDolanArguments
 
 instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangWindow where
     fromPolarShimWit = singleDolanShimWit fromJMShimWit
