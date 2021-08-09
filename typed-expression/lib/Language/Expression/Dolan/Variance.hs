@@ -8,7 +8,7 @@ type DolanVariance = [Variance]
 -- How many layers of type abstraction are you on?
 type family DolanVarianceKind (dv :: DolanVariance) :: Type where
     DolanVarianceKind '[] = Type
-    DolanVarianceKind (v ': dv) = VarianceKind v -> DolanVarianceKind dv
+    DolanVarianceKind (sv ': dv) = VarianceKind sv -> DolanVarianceKind dv
 
 type DolanVarianceType = ListType VarianceType
 
@@ -50,26 +50,26 @@ dolanVarianceHasKM (ConsListType _ lt) =
         Dict -> Dict
 
 type DolanVarianceMap :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
-data DolanVarianceMap dv gt where
-    NilDolanVarianceMap :: forall (gt :: Type). DolanVarianceMap '[] gt
+data DolanVarianceMap dv f where
+    NilDolanVarianceMap :: forall (f :: Type). DolanVarianceMap '[] f
     ConsDolanVarianceMap
-        :: forall (sv :: Variance) (dv :: DolanVariance) (gt :: VarianceKind sv -> DolanVarianceKind dv).
-           HasVariance sv gt
-        => (forall a. DolanVarianceMap dv (gt a))
-        -> DolanVarianceMap (sv ': dv) gt
+        :: forall (sv :: Variance) (dv :: DolanVariance) (f :: VarianceKind sv -> DolanVarianceKind dv).
+           HasVariance sv f
+        => (forall a. DolanVarianceMap dv (f a))
+        -> DolanVarianceMap (sv ': dv) f
 
 dolanVarianceMapInKind ::
-       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv). DolanVarianceMap dv gt -> Dict (InKind gt)
+       forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). DolanVarianceMap dv f -> Dict (InKind f)
 dolanVarianceMapInKind NilDolanVarianceMap = Dict
 dolanVarianceMapInKind (ConsDolanVarianceMap dvm) =
     case dolanVarianceMapInKind dvm of
         Dict -> Dict
 
 bijectSingleVarianceMap ::
-       forall (pshim :: PolyShimKind) sv gt.
+       forall (pshim :: PolyShimKind) sv f.
        VarianceType sv
-    -> VarianceMap pshim sv gt
-    -> VarianceMap (PolyIso pshim) sv gt
+    -> VarianceMap pshim sv f
+    -> VarianceMap (PolyIso pshim) sv f
 bijectSingleVarianceMap CovarianceType svm (MkPolyMapT (MkIsomorphism ab ba)) =
     MkPolyMapT $ MkIsomorphism (svm ab) (svm ba)
 bijectSingleVarianceMap ContravarianceType svm (MkCatDual (MkPolyMapT (MkIsomorphism ab ba))) =
@@ -77,12 +77,12 @@ bijectSingleVarianceMap ContravarianceType svm (MkCatDual (MkPolyMapT (MkIsomorp
 bijectSingleVarianceMap RangevarianceType svm (MkCatRange (MkPolyMapT (MkIsomorphism pab pba)) (MkPolyMapT (MkIsomorphism qab qba))) =
     MkPolyMapT $ MkIsomorphism (svm $ MkCatRange pab qab) (svm $ MkCatRange pba qba)
 
-class HasDolanVary (dv :: DolanVariance) (f :: DolanVarianceKind dv) | f -> dv where
-    dolanVary :: DolanVarianceMap dv f
+class Is DolanVarianceType dv => HasDolanVariance (dv :: DolanVariance) (f :: DolanVarianceKind dv) | f -> dv where
+    dolanVarianceMap :: DolanVarianceMap dv f
 
-instance HasDolanVary '[] (f :: Type) where
-    dolanVary = NilDolanVarianceMap
+instance HasDolanVariance '[] (f :: Type) where
+    dolanVarianceMap = NilDolanVarianceMap
 
-instance (HasVariance v f, forall a. HasDolanVary vv (f a), CoercibleKind (DolanVarianceKind vv)) =>
-             HasDolanVary (v ': vv) (f :: VarianceKind v -> DolanVarianceKind vv) where
-    dolanVary = ConsDolanVarianceMap dolanVary
+instance (HasVariance sv f, forall a. HasDolanVariance dv (f a), CoercibleKind (DolanVarianceKind dv)) =>
+             HasDolanVariance (sv ': dv) (f :: VarianceKind sv -> DolanVarianceKind dv) where
+    dolanVarianceMap = ConsDolanVarianceMap dolanVarianceMap

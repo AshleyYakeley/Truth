@@ -44,14 +44,14 @@ data PinaforeGroundType dv t where
     EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType dv t
 
 singleGroundType ::
-       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). (Is DolanVarianceType dv, HasDolanVary dv t)
+       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t
     => IOWitness ('MkWitKind (HetEqual t))
     -> ListTypeExprShow dv
     -> PinaforeGroundType dv t
-singleGroundType wit showexp = ProvidedGroundType representative dolanVary showexp $ MkProvidedType wit HetRefl
+singleGroundType wit showexp = ProvidedGroundType representative dolanVarianceMap showexp $ MkProvidedType wit HetRefl
 
 stdSingleGroundType ::
-       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). (Is DolanVarianceType dv, HasDolanVary dv t)
+       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t
     => IOWitness ('MkWitKind (HetEqual t))
     -> Text
     -> PinaforeGroundType dv t

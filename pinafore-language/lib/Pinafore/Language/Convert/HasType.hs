@@ -20,7 +20,7 @@ instance KnownSymbol name => HasPinaforeType '[] (Var name) where
     toNonpolarType = varNonpolarShimWit $ MkSymbolType @name
 
 type HasPinaforeGroundedType :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Constraint
-class (HasPinaforeType dv t, HasDolanVary dv t) => HasPinaforeGroundedType dv t | t -> dv where
+class (HasPinaforeType dv t, HasDolanVariance dv t) => HasPinaforeGroundedType dv t | t -> dv where
     toNonpolarGroundedType :: NonpolarGroundedShimWit PinaforeGroundType dv t
     default toNonpolarGroundedType :: HasPinaforeGroundType dv t => NonpolarGroundedShimWit PinaforeGroundType dv t
     toNonpolarGroundedType = groundNonpolarGroundShimWit $ toGroundType @_ @t
@@ -79,7 +79,7 @@ instance forall (p :: Type) (q :: Type). (HasPinaforeType '[] p, HasPinaforeType
 instance forall sv dv (f :: DolanVarianceKind (sv ': dv)) (a :: VarianceKind sv). ( HasVariance sv f
          , Is DolanVarianceType dv
          , CoercibleKind (DolanVarianceKind dv)
-         , HasDolanVary dv (f a)
+         , HasDolanVariance dv (f a)
          , HasPinaforeGroundedType (sv ': dv) f
          , HasPinaforeArgumentType sv a
          ) => HasPinaforeType dv (f a)
@@ -87,7 +87,7 @@ instance forall sv dv (f :: DolanVarianceKind (sv ': dv)) (a :: VarianceKind sv)
 instance forall sv dv (f :: DolanVarianceKind (sv ': dv)) a. ( HasVariance sv f
          , Is DolanVarianceType dv
          , CoercibleKind (DolanVarianceKind dv)
-         , HasDolanVary dv (f a)
+         , HasDolanVariance dv (f a)
          , HasPinaforeGroundedType (sv ': dv) f
          , HasPinaforeArgumentType sv a
          ) => HasPinaforeGroundedType dv (f a) where
@@ -98,7 +98,7 @@ instance forall sv dv (f :: DolanVarianceKind (sv ': dv)) a. ( HasVariance sv f
         => DolanArguments dv PinaforeType (f a) polarity t
         -> PinaforeSingularShimWit polarity t
     toPinaforeGroundedType args =
-        case dolanVary @(sv ': dv) @f of
+        case dolanVarianceMap @(sv ': dv) @f of
             ConsDolanVarianceMap dvm ->
                 case toPinaforeArgumentType @sv @a @polarity of
                     MkArgTypeF arg conv ->
