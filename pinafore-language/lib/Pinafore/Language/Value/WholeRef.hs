@@ -16,8 +16,10 @@ instance CatFunctor (CatRange (->)) (->) LangWholeRef where
         MutableLangWholeRef $ eaMap (mapBiWholeChangeLens (fmap pp) (fmap qq)) v
     cfmap (MkCatRange _ f) (ImmutableLangWholeRef v) = ImmutableLangWholeRef $ fmap f v
 
-instance HasVariance 'Rangevariance LangWholeRef where
-    varianceRepresentational = Nothing
+instance MaybeRepresentational LangWholeRef where
+    maybeRepresentational = Nothing
+
+instance HasCCRVariance 'RangeCCRVariance LangWholeRef
 
 langWholeRefToReadOnlyValue :: LangWholeRef '( BottomType, a) -> PinaforeROWRef (Know a)
 langWholeRefToReadOnlyValue ref =

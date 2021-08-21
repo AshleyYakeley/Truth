@@ -13,11 +13,13 @@ library:
     exposed-modules:
       - Data.Shim
     other-modules:
+      - Data.Shim.MaybeRepresentational
       - Data.Shim.PolyMap
       - Data.Shim.ComposeShim
       - Data.Shim.Polarity
       - Data.Shim.PolarMap
       - Data.Shim.Variance
+      - Data.Shim.CCRVariance
       - Data.Shim.PolarVariance
       - Data.Shim.ShimWit
       - Data.Shim.PolarShimWit

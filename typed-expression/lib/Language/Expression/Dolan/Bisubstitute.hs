@@ -170,7 +170,7 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
          , BisubstitutablePolyShim pshim
          , Is PolarityType polarity
          ) => Bisubstitutable ground pshim polarity (DolanType ground polarity) where
-    deferBisubstituteType _ NilDolanType = return $ mkPolarShimWit NilDolanType
+    deferBisubstituteType _ NilDolanType = return nilDolanShimWit
     deferBisubstituteType sub (ConsDolanType ta tb) = do
         tfa <- deferBisubstituteType sub ta
         tfb <- deferBisubstituteType sub tb

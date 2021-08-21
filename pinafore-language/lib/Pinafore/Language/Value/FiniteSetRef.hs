@@ -19,8 +19,10 @@ unLangFiniteSetRef (MkLangFiniteSetRef tr lv) =
 instance CatFunctor (CatRange (->)) (->) LangFiniteSetRef where
     cfmap f (MkLangFiniteSetRef r v) = MkLangFiniteSetRef (cfmap f r) v
 
-instance HasVariance 'Rangevariance LangFiniteSetRef where
-    varianceRepresentational = Nothing
+instance MaybeRepresentational LangFiniteSetRef where
+    maybeRepresentational = Nothing
+
+instance HasCCRVariance 'RangeCCRVariance LangFiniteSetRef
 
 langFiniteSetRefValue :: LangFiniteSetRef '( q, q) -> WModel (FiniteSetUpdate q)
 langFiniteSetRefValue (MkLangFiniteSetRef tr lv) =

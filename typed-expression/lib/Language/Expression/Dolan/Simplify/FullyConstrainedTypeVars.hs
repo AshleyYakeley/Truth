@@ -40,7 +40,7 @@ type ExpressionShimWit w ground polarity name
 nilUsageBox ::
        forall (ground :: GroundTypeKind) polarity name. (IsDolanGroundType ground, Is PolarityType polarity)
     => ExpressionShimWit DolanType ground polarity name (LimitType polarity)
-nilUsageBox = mkPolarShimWit NilDolanType
+nilUsageBox = nilDolanShimWit
 
 consMeetUsageBox ::
        forall (ground :: GroundTypeKind) polarity name a b. (IsDolanGroundType ground, Is PolarityType polarity)

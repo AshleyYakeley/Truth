@@ -8,7 +8,6 @@ module Pinafore.Language.Library.GTK.Drawing
 import Changes.UI.GTK
 import Data.Shim
 import Graphics.Cairo.Functional
-import Language.Expression.Dolan
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Colour
 import Shapes hiding (rotate)
@@ -20,17 +19,11 @@ type LangDrawing = UIDrawing
 drawingGroundType :: PinaforeGroundType '[] LangDrawing
 drawingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangDrawing)|]) "Drawing"
 
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangDrawing where
-    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType drawingGroundType NilDolanArguments
+instance Is PolarityType polarity => HasPinaforeType polarity LangDrawing where
+    pinaforeType = groundPinaforeType
 
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangDrawing where
-    toPolarShimWit = singleDolanShimWit toJMShimWit
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangDrawing where
-    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType drawingGroundType NilDolanArguments
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangDrawing where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] LangDrawing where
+    pinaforeGroundType = drawingGroundType
 
 -- LangPath
 type LangPath = Path
@@ -38,17 +31,8 @@ type LangPath = Path
 pathGroundType :: PinaforeGroundType '[] LangPath
 pathGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangPath)|]) "Path"
 
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangPath where
-    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType pathGroundType NilDolanArguments
-
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangPath where
-    toPolarShimWit = singleDolanShimWit toJMShimWit
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangPath where
-    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType pathGroundType NilDolanArguments
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangPath where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] LangPath where
+    pinaforeGroundType = pathGroundType
 
 -- LangPattern
 type LangPattern = Pattern
@@ -56,17 +40,8 @@ type LangPattern = Pattern
 patternGroundType :: PinaforeGroundType '[] LangPattern
 patternGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangPattern)|]) "Pattern"
 
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangPattern where
-    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType patternGroundType NilDolanArguments
-
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangPattern where
-    toPolarShimWit = singleDolanShimWit toJMShimWit
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangPattern where
-    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType patternGroundType NilDolanArguments
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangPattern where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] LangPattern where
+    pinaforeGroundType = patternGroundType
 
 type UIP = PixelPoint -> UIEvents
 
@@ -79,8 +54,8 @@ alphaColourToTuple (MkLangAlphaColour op col) = (colourToTuple col, op)
 toPatternColorStop :: (Double, LangAlphaColour) -> PatternColorStop
 toPatternColorStop (offset, MkLangAlphaColour op col) = MkPatternColorStop offset (colourToTuple col, Just op)
 
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) PatternColorStop where
-    fromPolarShimWit = mapNegShimWit (functionToShim "toPatternColorStop" toPatternColorStop) fromJMShimWit
+instance HasPinaforeType 'Negative PatternColorStop where
+    pinaforeType = mapNegShimWit (functionToShim "toPatternColorStop" toPatternColorStop) pinaforeType
 
 source :: LangAlphaColour -> LangDrawing -> LangDrawing
 source acol = sourceRGBA $ alphaColourToTuple acol

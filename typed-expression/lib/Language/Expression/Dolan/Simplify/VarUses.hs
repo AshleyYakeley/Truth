@@ -123,12 +123,12 @@ instance forall (ground :: GroundTypeKind) polarity cat wit. GetVarUses ground w
 
 getArgExpressionAppearances ::
        forall (ground :: GroundTypeKind) polarity sv a. (IsDolanGroundType ground, Is PolarityType polarity)
-    => VarianceType sv
+    => CCRVarianceType sv
     -> SingleArgument sv (DolanType ground) polarity a
     -> ([Appearance ground 'Positive], [Appearance ground 'Negative])
-getArgExpressionAppearances CovarianceType t = getVarAppearances t
-getArgExpressionAppearances ContravarianceType t = invertPolarity @polarity $ getVarAppearances t
-getArgExpressionAppearances RangevarianceType t = getVarAppearances t
+getArgExpressionAppearances CoCCRVarianceType t = getVarAppearances t
+getArgExpressionAppearances ContraCCRVarianceType t = invertPolarity @polarity $ getVarAppearances t
+getArgExpressionAppearances RangeCCRVarianceType t = getVarAppearances t
 
 getArgsExpressionAppearances ::
        forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
@@ -210,12 +210,12 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
 
 getArgExpressionVars ::
        forall (ground :: GroundTypeKind) polarity sv a. (IsDolanGroundType ground, Is PolarityType polarity)
-    => VarianceType sv
+    => CCRVarianceType sv
     -> SingleArgument sv (DolanType ground) polarity a
     -> ([AnyW SymbolType], [AnyW SymbolType])
-getArgExpressionVars CovarianceType t = getExpressionVars t
-getArgExpressionVars ContravarianceType t = invertPolarity @polarity $ getExpressionVars t
-getArgExpressionVars RangevarianceType t = getExpressionVars t
+getArgExpressionVars CoCCRVarianceType t = getExpressionVars t
+getArgExpressionVars ContraCCRVarianceType t = invertPolarity @polarity $ getExpressionVars t
+getArgExpressionVars RangeCCRVarianceType t = getExpressionVars t
 
 getArgsExpressionVars ::
        forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)

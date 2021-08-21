@@ -18,12 +18,10 @@ eliminationBisubs ::
 eliminationBisubs (posvars, negvars) = let
     posbisub :: AnyW SymbolType -> Bisubstitution ground (DolanShim ground) Identity
     posbisub (MkAnyW var) =
-        assignUVarT @BottomType var $
-        MkBisubstitution False var (return $ mkPolarShimWit NilDolanType) (return $ varDolanShimWit var)
+        assignUVarT @BottomType var $ MkBisubstitution False var (return nilDolanShimWit) (return $ varDolanShimWit var)
     negbisub :: AnyW SymbolType -> Bisubstitution ground (DolanShim ground) Identity
     negbisub (MkAnyW var) =
-        assignUVarT @TopType var $
-        MkBisubstitution False var (return $ varDolanShimWit var) (return $ mkPolarShimWit NilDolanType)
+        assignUVarT @TopType var $ MkBisubstitution False var (return $ varDolanShimWit var) (return nilDolanShimWit)
     in (fmap posbisub $ toList posvars) <> (fmap negbisub $ toList negvars)
 
 eliminateVars ::

@@ -78,7 +78,7 @@ mergeInType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t
     -> DolanTypeCheckM ground (DolanShimWit ground polarity t)
-mergeInType NilDolanType = return $ mkPolarShimWit NilDolanType
+mergeInType NilDolanType = return nilDolanShimWit
 mergeInType (ConsDolanType t1 tr) = do
     MkShimWit t1' conv1 <- mergeInSingularType t1
     MkShimWit tr' convr <- mergeInType tr

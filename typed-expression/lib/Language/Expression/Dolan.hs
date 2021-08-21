@@ -32,6 +32,7 @@ module Language.Expression.Dolan
     , dolanTypeToSingular
     , DolanShimWit
     , singleDolanShimWit
+    , nilDolanShimWit
     , joinMeetShimWit
     , varDolanShimWit
     , unrollRecursiveType
@@ -91,7 +92,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
     type TSInner (DolanTypeSystem ground) = DolanM ground
 
 class (Eq (DolanName ground), IsDolanSubtypeGroundType ground) => IsDolanFunctionGroundType (ground :: GroundTypeKind) where
-    functionGroundType :: ground '[ 'Contravariance, 'Covariance] (->)
+    functionGroundType :: ground '[ ContraCCRVariance, CoCCRVariance] (->)
 
 instance forall (ground :: GroundTypeKind). IsDolanFunctionGroundType ground =>
              CompleteTypeSystem (DolanTypeSystem ground) where

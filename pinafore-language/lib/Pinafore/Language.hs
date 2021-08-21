@@ -18,8 +18,7 @@ module Pinafore.Language
     , throwInterpretResult
     , runInterpretResult
     , PinaforeAction
-    , FromPinaforeType
-    , ToPinaforeType
+    , HasPinaforeType
     , parseTopExpression
     , parseValue
     , parseValueUnify
@@ -86,7 +85,7 @@ parseValue text = do
     qEvalExpr rexpr
 
 parseValueUnify ::
-       forall t. (FromPinaforeType t, ?pinafore :: PinaforeContext)
+       forall t. (HasPinaforeType 'Negative t, ?pinafore :: PinaforeContext)
     => Text
     -> PinaforeSourceInterpreter t
 parseValueUnify text = do

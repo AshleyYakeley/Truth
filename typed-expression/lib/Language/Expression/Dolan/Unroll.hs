@@ -38,7 +38,7 @@ unrollType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t
     -> DolanIsoShimWit ground polarity t
-unrollType NilDolanType = mkPolarShimWit NilDolanType
+unrollType NilDolanType = nilDolanShimWit
 unrollType (ConsDolanType t1 tr) = joinMeetShimWit (unrollSingularType t1) (unrollType tr)
 
 type RecursiveOrPlainType :: GroundTypeKind -> Polarity -> Type -> Type

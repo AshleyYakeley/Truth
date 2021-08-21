@@ -16,14 +16,14 @@ import Pinafore.Markdown
 import Shapes
 
 qPositiveTypeDescription ::
-       forall t. ToPinaforeType t
+       forall t. HasPinaforeType 'Positive t
     => Text
 qPositiveTypeDescription =
     case toPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Positive) @t of
         MkShimWit w _ -> exprShow w
 
 qNegativeTypeDescription ::
-       forall t. FromPinaforeType t
+       forall t. HasPinaforeType 'Negative t
     => Text
 qNegativeTypeDescription =
     case fromPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative) @t of
@@ -44,7 +44,7 @@ data BindDoc = MkBindDoc
     }
 
 mkValEntry ::
-       forall t. ToPinaforeType t
+       forall t. HasPinaforeType 'Positive t
     => Name
     -> Markdown
     -> ((?pinafore :: PinaforeContext) => t)
@@ -62,7 +62,7 @@ mkValEntry name docDescription val = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSupertypeEntry ::
-       forall t. ToPinaforeType t
+       forall t. HasPinaforeType 'Positive t
     => Name
     -> Markdown
     -> ((?pinafore :: PinaforeContext) => t)
@@ -119,7 +119,10 @@ monoidSubypeConversionEntry t =
 
 mkValPatEntry ::
        forall t v lt.
-       (ToPinaforeType t, FromPinaforeType v, ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt)
+       ( HasPinaforeType 'Positive t
+       , HasPinaforeType 'Negative v
+       , ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt
+       )
     => Name
     -> Markdown
     -> t

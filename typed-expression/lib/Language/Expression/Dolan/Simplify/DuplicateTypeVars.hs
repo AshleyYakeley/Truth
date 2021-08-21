@@ -33,7 +33,7 @@ mergeDuplicateTypeVarsInType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t
     -> DolanShimWit ground polarity t
-mergeDuplicateTypeVarsInType NilDolanType = mkPolarShimWit NilDolanType
+mergeDuplicateTypeVarsInType NilDolanType = nilDolanShimWit
 mergeDuplicateTypeVarsInType (ConsDolanType t1 tr) =
     case mergeInSingularType t1 of
         MkShimWit t1' conv1 ->

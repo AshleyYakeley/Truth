@@ -7,13 +7,13 @@ module Pinafore.Language.Library.GTK.Window
 import Changes.Core
 import Changes.UI.GTK
 import Data.Shim
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Element
 import Pinafore.Language.Library.GTK.MenuItem ()
 import Shapes
 
+-- LangWindow
 data LangWindow = MkLangWindow
     { pwClose :: View ()
     , pwWindow :: UIWindow
@@ -22,25 +22,12 @@ data LangWindow = MkLangWindow
 windowGroundType :: PinaforeGroundType '[] LangWindow
 windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangWindow)|]) "Window"
 
--- LangWindow
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangWindow where
-    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType windowGroundType NilDolanArguments
-
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangWindow where
-    toPolarShimWit = singleDolanShimWit toJMShimWit
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangWindow where
-    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType windowGroundType NilDolanArguments
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangWindow where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] LangWindow where
+    pinaforeGroundType = windowGroundType
 
 -- UIWindow
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) UIWindow where
-    fromPolarShimWit = mapNegShimWit (functionToShim "subtype" pwWindow) fromJMShimWit
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) UIWindow where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeType 'Negative UIWindow where
+    pinaforeType = mapNegShimWit (functionToShim "pwWindow" pwWindow) pinaforeType
 
 createLangWindow :: WindowSpec -> PinaforeAction LangWindow
 createLangWindow uiw = do

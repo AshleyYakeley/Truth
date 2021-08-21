@@ -11,30 +11,20 @@ import Changes.UI.GTK
 import Data.Shim
 import Data.Time
 import GI.Cairo.Render
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Drawing
 import Shapes
 
+-- LangUIElement
 newtype LangUIElement =
     MkLangUIElement (CreateView Widget)
 
 elementGroundType :: PinaforeGroundType '[] LangUIElement
 elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangUIElement)|]) "Element"
 
--- LangUIElement
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangUIElement where
-    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType elementGroundType NilDolanArguments
-
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangUIElement where
-    toPolarShimWit = singleDolanShimWit toJMShimWit
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangUIElement where
-    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType elementGroundType NilDolanArguments
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangUIElement where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] LangUIElement where
+    pinaforeGroundType = elementGroundType
 
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)

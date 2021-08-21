@@ -8,11 +8,11 @@ module Pinafore.Language.Library.Std.Reference
 import Changes.Core
 import Pinafore.Base
 import Pinafore.Context
+import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
-import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
 import Pinafore.Language.Value
@@ -20,62 +20,21 @@ import Pinafore.Language.Var
 import Shapes
 
 -- SetRef
-setRefGroundType :: PinaforeGroundType '[ 'Contravariance] LangSetRef
+setRefGroundType :: PinaforeGroundType '[ ContraCCRVariance] LangSetRef
 setRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangSetRef)|]) "SetRef"
 
-instance (FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
-             ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangSetRef a) where
-    toPolarShimWit =
-        unNegShimWit fromJMShimWit $ \ta conva ->
-            mapPosShimWit (applyContraPolyShim cid conva) $
-            mkPolarShimWit $ GroundedDolanSingularType setRefGroundType $ ConsDolanArguments ta NilDolanArguments
-
-instance (FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
-             ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangSetRef a) where
-    toPolarShimWit = singleDolanShimWit toJMShimWit
-
-instance (ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
-             FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangSetRef a) where
-    fromPolarShimWit =
-        unPosShimWit toJMShimWit $ \ta conva ->
-            mapNegShimWit (applyContraPolyShim cid conva) $
-            mkPolarShimWit $ GroundedDolanSingularType setRefGroundType $ ConsDolanArguments ta NilDolanArguments
-
-instance (ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
-             FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangSetRef a) where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[ ContraCCRVariance] LangSetRef where
+    pinaforeGroundType = setRefGroundType
 
 -- FiniteSetRef
-finiteSetRefGroundType :: PinaforeGroundType '[ 'Rangevariance] LangFiniteSetRef
+finiteSetRefGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangFiniteSetRef
 finiteSetRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangFiniteSetRef)|]) "FiniteSetRef"
 
-instance ( FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
-         , ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
-         ) => ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangFiniteSetRef '( p, q)) where
-    toPolarShimWit =
-        unToRangeShimWit $ \tpq conv ->
-            mapPosShimWit (applyPolyShim RangevarianceType cid conv) $
-            mkPolarShimWit $ GroundedDolanSingularType finiteSetRefGroundType $ ConsDolanArguments tpq NilDolanArguments
-
-instance ( FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
-         , ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
-         ) => ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangFiniteSetRef '( p, q)) where
-    toPolarShimWit = singleDolanShimWit toJMShimWit
-
-instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
-         , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
-         ) => FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangFiniteSetRef '( p, q)) where
-    fromPolarShimWit =
-        unFromRangeShimWit $ \tpq conv ->
-            mapNegShimWit (applyPolyShim RangevarianceType cid conv) $
-            mkPolarShimWit $ GroundedDolanSingularType finiteSetRefGroundType $ ConsDolanArguments tpq NilDolanArguments
-
-instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
-         , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
-         ) => FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangFiniteSetRef '( p, q)) where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangFiniteSetRef where
+    pinaforeGroundType = finiteSetRefGroundType
 
 -- WModel FiniteSetUpdate
+{-
 instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
          , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
          ) => FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (WModel (FiniteSetUpdate t)) where
@@ -86,62 +45,20 @@ instance ( Eq t
          , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
          ) => ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (WModel (FiniteSetUpdate t)) where
     toPolarShimWit = mapPosShimWit (functionToShim "subtype" $ MkLangFiniteSetRef identityRange) toJMShimWit
-
+-}
 -- ListRef
-listRefGroundType :: PinaforeGroundType '[ 'Rangevariance] LangListRef
+listRefGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangListRef
 listRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangListRef)|]) "ListRef"
 
-instance ( FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
-         , ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
-         ) => ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangListRef '( p, q)) where
-    toPolarShimWit =
-        unToRangeShimWit $ \tpq conv ->
-            mapPosShimWit (applyPolyShim RangevarianceType cid conv) $
-            mkPolarShimWit $ GroundedDolanSingularType listRefGroundType $ ConsDolanArguments tpq NilDolanArguments
-
-instance ( FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) p
-         , ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) q
-         ) => ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangListRef '( p, q)) where
-    toPolarShimWit = singleDolanShimWit toJMShimWit
-
-instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
-         , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
-         ) => FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangListRef '( p, q)) where
-    fromPolarShimWit =
-        unFromRangeShimWit $ \tpq conv ->
-            mapNegShimWit (applyPolyShim RangevarianceType cid conv) $
-            mkPolarShimWit $ GroundedDolanSingularType listRefGroundType $ ConsDolanArguments tpq NilDolanArguments
-
-instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) p
-         , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) q
-         ) => FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangListRef '( p, q)) where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangListRef where
+    pinaforeGroundType = listRefGroundType
 
 -- RefOrder
-refOrderGroundType :: PinaforeGroundType '[ 'Contravariance] LangRefOrder
+refOrderGroundType :: PinaforeGroundType '[ ContraCCRVariance] LangRefOrder
 refOrderGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangRefOrder)|]) "RefOrder"
 
-instance (FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
-             ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) (LangRefOrder a) where
-    toPolarShimWit =
-        unNegShimWit fromJMShimWit $ \ta conva ->
-            mapPosShimWit (applyContraPolyShim cid conva) $
-            mkPolarShimWit $ GroundedDolanSingularType refOrderGroundType $ ConsDolanArguments ta NilDolanArguments
-
-instance (FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) a) =>
-             ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (LangRefOrder a) where
-    toPolarShimWit = singleDolanShimWit toJMShimWit
-
-instance (ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
-             FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) (LangRefOrder a) where
-    fromPolarShimWit =
-        unPosShimWit toJMShimWit $ \ta conva ->
-            mapNegShimWit (applyContraPolyShim cid conva) $
-            mkPolarShimWit $ GroundedDolanSingularType refOrderGroundType $ ConsDolanArguments ta NilDolanArguments
-
-instance (ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) a) =>
-             FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (LangRefOrder a) where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[ ContraCCRVariance] LangRefOrder where
+    pinaforeGroundType = refOrderGroundType
 
 getSetList :: LangRefOrder A -> LangFiniteSetRef '( A, EnA) -> CreateView (LangListRef '( TopType, A))
 getSetList order val =

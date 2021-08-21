@@ -7,29 +7,19 @@ module Pinafore.Language.Library.GTK.MenuItem
 import Changes.Core
 import Changes.UI.GTK
 import Data.Shim
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Element
 import Shapes
 
+-- LangMenuItem
 type LangMenuItem = MenuEntry
 
 menuItemGroundType :: PinaforeGroundType '[] LangMenuItem
 menuItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangMenuItem)|]) "MenuItem"
 
--- LangMenuItem
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangMenuItem where
-    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType menuItemGroundType NilDolanArguments
-
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangMenuItem where
-    toPolarShimWit = singleDolanShimWit toJMShimWit
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangMenuItem where
-    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType menuItemGroundType NilDolanArguments
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangMenuItem where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] LangMenuItem where
+    pinaforeGroundType = menuItemGroundType
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c

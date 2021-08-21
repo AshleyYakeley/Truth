@@ -2,6 +2,7 @@
 
 module Data.Shim.PolyIso where
 
+import Data.Shim.CCRVariance
 import Data.Shim.CatRange
 import Data.Shim.JoinMeet
 import Data.Shim.PolarJoinMeet
@@ -9,7 +10,6 @@ import Data.Shim.PolarMap
 import Data.Shim.Polarity
 import Data.Shim.PolyMap
 import Data.Shim.PolyShim
-import Data.Shim.Variance
 import Shapes
 
 type PolyIso :: PolyShimKind -> PolyShimKind
@@ -73,11 +73,11 @@ polarPolyIsoNegative (MkPolarMap iab) =
         NegativeType -> isoForwards $ unPolyMapT iab
 
 instance forall (pshim :: PolyShimKind). ApplyPolyShim pshim => ApplyPolyShim (PolyIso pshim) where
-    applyPolyShim CovarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
+    applyPolyShim CoCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
         MkPolyMapT $ MkIsomorphism (applyCoPolyShim fab xab) (applyCoPolyShim fba xba)
-    applyPolyShim ContravarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatDual (MkPolyMapT (MkIsomorphism xab xba))) =
+    applyPolyShim ContraCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatDual (MkPolyMapT (MkIsomorphism xab xba))) =
         MkPolyMapT $ MkIsomorphism (applyContraPolyShim fab xab) (applyContraPolyShim fba xba)
-    applyPolyShim RangevarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatRange (MkPolyMapT (MkIsomorphism xab1 xba1)) (MkPolyMapT (MkIsomorphism xab2 xba2))) =
+    applyPolyShim RangeCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatRange (MkPolyMapT (MkIsomorphism xab1 xba1)) (MkPolyMapT (MkIsomorphism xab2 xba2))) =
         MkPolyMapT $ MkIsomorphism (applyRangePolyShim fab xab1 xab2) (applyRangePolyShim fba xba1 xba2)
 
 polarPolyIsoPolar1 ::

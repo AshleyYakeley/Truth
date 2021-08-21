@@ -2,6 +2,7 @@
 
 module Data.Shim.PolyComposeShim where
 
+import Data.Shim.CCRVariance
 import Data.Shim.CatRange
 import Data.Shim.ComposeShim
 import Data.Shim.JoinMeet
@@ -11,7 +12,6 @@ import Data.Shim.Polarity
 import Data.Shim.PolyMap
 import Data.Shim.PolyShim
 import Data.Shim.ShimWit
-import Data.Shim.Variance
 import Shapes
 
 type PolyComposeShim :: (Type -> Type) -> PolyShimKind -> PolyShimKind
@@ -69,11 +69,11 @@ polarMkPolyComposeShim mab =
 
 instance forall (pshim :: PolyShimKind) m. (ApplyPolyShim pshim, Applicative m) =>
              ApplyPolyShim (PolyComposeShim m pshim) where
-    applyPolyShim CovarianceType (MkPolyMapT (MkComposeShim mfab)) (MkPolyMapT (MkComposeShim mxab)) =
+    applyPolyShim CoCCRVarianceType (MkPolyMapT (MkComposeShim mfab)) (MkPolyMapT (MkComposeShim mxab)) =
         MkPolyMapT $ MkComposeShim (liftA2 (applyCoPolyShim) mfab mxab)
-    applyPolyShim ContravarianceType (MkPolyMapT (MkComposeShim mfab)) (MkCatDual (MkPolyMapT (MkComposeShim mxab))) =
+    applyPolyShim ContraCCRVarianceType (MkPolyMapT (MkComposeShim mfab)) (MkCatDual (MkPolyMapT (MkComposeShim mxab))) =
         MkPolyMapT $ MkComposeShim ((\fab xab -> applyContraPolyShim fab xab) <$> mfab <*> mxab)
-    applyPolyShim RangevarianceType (MkPolyMapT (MkComposeShim mfab)) (MkCatRange (MkPolyMapT (MkComposeShim mxab1)) (MkPolyMapT (MkComposeShim mxab2))) =
+    applyPolyShim RangeCCRVarianceType (MkPolyMapT (MkComposeShim mfab)) (MkCatRange (MkPolyMapT (MkComposeShim mxab1)) (MkPolyMapT (MkComposeShim mxab2))) =
         MkPolyMapT $ MkComposeShim ((\fab xab1 xab2 -> applyRangePolyShim fab xab1 xab2) <$> mfab <*> mxab1 <*> mxab2)
 
 type PolyFuncShim :: Type -> PolyShimKind -> PolyShimKind

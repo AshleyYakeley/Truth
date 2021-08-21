@@ -2,10 +2,11 @@ module Data.Shim.JMShim
     ( JMShim
     ) where
 
+import Data.Shim.CCRVariance
 import Data.Shim.CatRange
 import Data.Shim.JoinMeet
+import Data.Shim.MaybeRepresentational
 import Data.Shim.PolyShim
-import Data.Shim.Variance
 import Shapes
 
 type JMShim :: PolyShimKind
@@ -28,11 +29,11 @@ data JMShim k a b where
     MeetFJMShim :: JMShim Type t a -> JMShim Type t b -> JMShim Type t (MeetType a b)
     ApplFJMShim :: JMShim Type t1 (a -> b) -> JMShim Type t2 a -> JMShim Type (MeetType t1 t2) b
     ConsJMShim
-        :: forall (v :: Variance) k (f :: VarianceKind v -> k) (g :: VarianceKind v -> k) (a :: VarianceKind v) (b :: VarianceKind v).
-           (InKind a, InKind b, HasVariance v f, HasVariance v g)
-        => VarianceType v
-        -> JMShim (VarianceKind v -> k) f g
-        -> VarianceCategory (JMShim Type) v a b
+        :: forall (v :: CCRVariance) k (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a :: CCRVarianceKind v) (b :: CCRVarianceKind v).
+           (InKind a, InKind b, HasCCRVariance v f, HasCCRVariance v g)
+        => CCRVarianceType v
+        -> JMShim (CCRVarianceKind v -> k) f g
+        -> CCRVarianceCategory (JMShim Type) v a b
         -> JMShim k (f a) (g b)
 
 instance Show (JMShim k a b) where
@@ -50,7 +51,7 @@ instance Show (JMShim k a b) where
     show (MeetFJMShim s1 s2) = "(meetf " <> show s1 <> " " <> show s2 <> ")"
     show (ApplFJMShim s1 s2) = "(applf " <> show s1 <> " " <> show s2 <> ")"
     show (ConsJMShim vt s1 s2) =
-        "(" <> show vt <> " " <> show s1 <> " " <> varianceCategoryShow @(JMShim Type) vt s2 <> ")"
+        "(" <> show vt <> " " <> show s1 <> " " <> ccrVarianceCategoryShow @(JMShim Type) vt s2 <> ")"
 
 instance CoercibleKind k => InCategory (JMShim k) where
     cid = IdentityJMShim
@@ -65,7 +66,7 @@ instance CoercibleKind k => InCategory (JMShim k) where
     TermFJMShim <.> _ = termf
     ConsJMShim pvt pf pa <.> ConsJMShim qvt qf qa
         | Just Refl <- testEquality pvt qvt =
-            case varianceInCategory @(JMShim Type) pvt of
+            case ccrVarianceInCategory @(JMShim Type) pvt of
                 Dict -> applyPolyShim pvt (pf <.> qf) (pa <.> qa)
     p <.> q
         | Just pc <- enhancedCoercion p
@@ -93,18 +94,19 @@ instance Category (JMShim Type) where
     (.) = (<.>)
 
 instance ApplyPolyShim JMShim where
-    applyPolyShim CovarianceType IdentityJMShim IdentityJMShim = IdentityJMShim
-    applyPolyShim ContravarianceType IdentityJMShim (MkCatDual IdentityJMShim) = IdentityJMShim
-    applyPolyShim RangevarianceType IdentityJMShim (MkCatRange IdentityJMShim IdentityJMShim) = IdentityJMShim
+    applyPolyShim CoCCRVarianceType IdentityJMShim IdentityJMShim = IdentityJMShim
+    applyPolyShim ContraCCRVarianceType IdentityJMShim (MkCatDual IdentityJMShim) = IdentityJMShim
+    applyPolyShim RangeCCRVarianceType IdentityJMShim (MkCatRange IdentityJMShim IdentityJMShim) = IdentityJMShim
     applyPolyShim vt jmf jma = ConsJMShim vt jmf jma
 
-instance forall k (f :: Type -> k). HasVariance 'Covariance f => CatFunctor (JMShim Type) (JMShim k) f where
+instance forall k (f :: Type -> k). HasCCRVariance CoCCRVariance f => CatFunctor (JMShim Type) (JMShim k) f where
     cfmap f = applyCoPolyShim IdentityJMShim f
 
-instance forall k (f :: Type -> k). HasVariance 'Contravariance f => CatFunctor (CatDual (JMShim Type)) (JMShim k) f where
-    cfmap jmfa = applyPolyShim ContravarianceType IdentityJMShim jmfa
+instance forall k (f :: Type -> k). HasCCRVariance ContraCCRVariance f =>
+             CatFunctor (CatDual (JMShim Type)) (JMShim k) f where
+    cfmap jmfa = applyPolyShim ContraCCRVarianceType IdentityJMShim jmfa
 
-instance forall k (f :: (Type, Type) -> k). HasVariance 'Rangevariance f =>
+instance forall k (f :: (Type, Type) -> k). HasCCRVariance 'RangeCCRVariance f =>
              CatFunctor (CatRange (JMShim Type)) (JMShim k) f where
     cfmap ::
            forall a b. (InKind a, InKind b)
@@ -113,7 +115,7 @@ instance forall k (f :: (Type, Type) -> k). HasVariance 'Rangevariance f =>
     cfmap (MkCatRange IdentityJMShim IdentityJMShim) = IdentityJMShim
     cfmap jmf =
         case (inKind @_ @a, inKind @_ @b) of
-            (MkPairWitness, MkPairWitness) -> applyPolyShim RangevarianceType IdentityJMShim jmf
+            (MkPairWitness, MkPairWitness) -> applyPolyShim RangeCCRVarianceType IdentityJMShim jmf
 
 instance JoinMeetIsoCategory (JMShim Type)
 
@@ -129,22 +131,22 @@ instance JoinMeetCategory (JMShim Type) where
     meetf (Meet1JMShim IdentityJMShim) (Meet2JMShim IdentityJMShim) = IdentityJMShim
     meetf a b = MeetFJMShim a b
     applf (Meet1JMShim p) q = applf p q <.> iMeetPair meet1 cid
-    applf (ConsJMShim CovarianceType IdentityJMShim p) q = p <.> applf cid q
-    applf (ConsJMShim CovarianceType (ConsJMShim ContravarianceType IdentityJMShim (MkCatDual pa)) pb) q =
+    applf (ConsJMShim CoCCRVarianceType IdentityJMShim p) q = p <.> applf cid q
+    applf (ConsJMShim CoCCRVarianceType (ConsJMShim ContraCCRVarianceType IdentityJMShim (MkCatDual pa)) pb) q =
         pb <.> applf cid (pa <.> q)
     applf p q = ApplFJMShim p q
 
 varrep1 ::
-       forall v shim f g. HasVariance v f
+       forall shim f g. MaybeRepresentational f
     => shim f g
     -> Maybe (Dict (RepresentationalRole f))
-varrep1 _ = varianceRepresentational @_ @v @f
+varrep1 _ = maybeRepresentational @_ @_ @f
 
 varrep2 ::
-       forall v shim f g. HasVariance v g
+       forall shim f g. MaybeRepresentational g
     => shim f g
     -> Maybe (Dict (RepresentationalRole g))
-varrep2 _ = varianceRepresentational @_ @v @g
+varrep2 _ = maybeRepresentational @_ @_ @g
 
 instance LazyCategory (JMShim Type)
 
@@ -154,23 +156,23 @@ instance CoercibleKind k => CoerceShim (JMShim k) where
     coercionEnhanced = CoerceJMShim
     enhancedCoercion IdentityJMShim = Just cid
     enhancedCoercion (CoerceJMShim _ c) = Just c
-    enhancedCoercion (ConsJMShim CovarianceType f a)
-        | Just Dict <- varrep1 @'Covariance f = do
+    enhancedCoercion (ConsJMShim CoCCRVarianceType f a)
+        | Just Dict <- varrep1 f = do
             cf <- enhancedCoercion f
             ca <- enhancedCoercion a
             return $ applyCoercion1 cf ca
-    enhancedCoercion (ConsJMShim CovarianceType f a)
-        | Just Dict <- varrep2 @'Covariance f = do
+    enhancedCoercion (ConsJMShim CoCCRVarianceType f a)
+        | Just Dict <- varrep2 f = do
             cf <- enhancedCoercion f
             ca <- enhancedCoercion a
             return $ applyCoercion2 cf ca
-    enhancedCoercion (ConsJMShim ContravarianceType f (MkCatDual a))
-        | Just Dict <- varrep1 @'Contravariance f = do
+    enhancedCoercion (ConsJMShim ContraCCRVarianceType f (MkCatDual a))
+        | Just Dict <- varrep1 f = do
             cf <- enhancedCoercion f
             ca <- enhancedCoercion a
             return $ applyCoercion1 cf $ invert ca
-    enhancedCoercion (ConsJMShim ContravarianceType f (MkCatDual a))
-        | Just Dict <- varrep2 @'Contravariance f = do
+    enhancedCoercion (ConsJMShim ContraCCRVarianceType f (MkCatDual a))
+        | Just Dict <- varrep2 f = do
             cf <- enhancedCoercion f
             ca <- enhancedCoercion a
             return $ applyCoercion2 cf $ invert ca
@@ -199,33 +201,33 @@ instance CoercibleKind k => FunctionShim (JMShim k) where
     shimToFunction (ApplFJMShim pa pb) = applf (shimToFunction pa) (shimToFunction pb)
     shimToFunction (ConsJMShim vt jmf jma) = let
         fromCon ::
-               forall (v :: Variance) (f :: VarianceKind v -> k) (g :: VarianceKind v -> k) (a' :: VarianceKind v) (b' :: VarianceKind v).
+               forall (v :: CCRVariance) (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a' :: CCRVarianceKind v) (b' :: CCRVarianceKind v).
                ( InKind f
                , InKind g
                , InKind a'
                , InKind b'
-               , CatFunctor (VarianceCategory KindFunction v) KindFunction f
-               , CatFunctor (VarianceCategory KindFunction v) KindFunction g
+               , CatFunctor (CCRVarianceCategory KindFunction v) KindFunction f
+               , CatFunctor (CCRVarianceCategory KindFunction v) KindFunction g
                )
-            => VarianceType v
-            -> JMShim (VarianceKind v -> k) f g
-            -> VarianceCategory (JMShim Type) v a' b'
+            => CCRVarianceType v
+            -> JMShim (CCRVarianceKind v -> k) f g
+            -> CCRVarianceCategory (JMShim Type) v a' b'
             -> KindFunction (f a') (g b')
-        fromCon CovarianceType jmf' jma' =
+        fromCon CoCCRVarianceType jmf' jma' =
             case inKind @_ @f of
                 MkFunctionKindWitness ->
                     case inKind @_ @g of
                         MkFunctionKindWitness ->
                             case shimToFunction jmf' of
                                 MkNestedMorphism ff -> cfmap (shimToFunction jma') <.> ff
-        fromCon ContravarianceType jmf' (MkCatDual jma') =
+        fromCon ContraCCRVarianceType jmf' (MkCatDual jma') =
             case inKind @_ @f of
                 MkFunctionKindWitness ->
                     case inKind @_ @g of
                         MkFunctionKindWitness ->
                             case shimToFunction jmf' of
                                 MkNestedMorphism ff -> cfmap (MkCatDual (shimToFunction jma')) <.> ff
-        fromCon RangevarianceType jmf' (MkCatRange jma1 jma2) =
+        fromCon RangeCCRVarianceType jmf' (MkCatRange jma1 jma2) =
             case inKind @_ @f of
                 MkFunctionKindWitness ->
                     case inKind @_ @g of
@@ -240,7 +242,7 @@ instance CartesianShim (JMShim Type) where
     pairShim ab pq = applyCoPolyShim (applyCoPolyShim cid ab) pq
     eitherShim ab pq = applyCoPolyShim (applyCoPolyShim cid ab) pq
     shimExtractFunction :: JMShim Type a (b -> c) -> (forall c'. JMShim Type a (b -> c') -> JMShim Type c' c -> r) -> r
-    shimExtractFunction (ConsJMShim CovarianceType fg cc) call = let
+    shimExtractFunction (ConsJMShim CoCCRVarianceType fg cc) call = let
         abc' = applyCoPolyShim fg id
         in call abc' cc
     shimExtractFunction abc call = call abc cid

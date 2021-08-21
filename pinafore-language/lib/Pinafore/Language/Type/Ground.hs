@@ -57,21 +57,21 @@ stdSingleGroundType ::
     -> PinaforeGroundType dv t
 stdSingleGroundType wit name = singleGroundType wit $ standardListTypeExprShow @dv name
 
-actionGroundType :: PinaforeGroundType '[ 'Covariance] PinaforeAction
+actionGroundType :: PinaforeGroundType '[ CoCCRVariance] PinaforeAction
 actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual PinaforeAction)|]) "Action"
 
-wholeRefGroundType :: PinaforeGroundType '[ 'Rangevariance] LangWholeRef
+wholeRefGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangWholeRef
 wholeRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangWholeRef)|]) "WholeRef"
 
-funcGroundType :: PinaforeGroundType '[ 'Contravariance, 'Covariance] (->)
+funcGroundType :: PinaforeGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
 funcGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (HetEqual (->))|]) $ \ta tb ->
         (precShow 2 ta <> " -> " <> precShow 3 tb, 3)
 
-listGroundType :: PinaforeGroundType '[ 'Covariance] []
+listGroundType :: PinaforeGroundType '[ CoCCRVariance] []
 listGroundType = EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType
 
-morphismGroundType :: PinaforeGroundType '[ 'Rangevariance, 'Rangevariance] LangMorphism
+morphismGroundType :: PinaforeGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism
 morphismGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (HetEqual LangMorphism)|]) $ \ta tb ->
         (precShow 2 ta <> " ~> " <> precShow 3 tb, 3)
@@ -95,7 +95,7 @@ instance IsDolanGroundType PinaforeGroundType where
         covaryToDolanVarianceMap dvcovary $ groundTypeCovaryMap gt
     groundTypeVarianceType :: PinaforeGroundType dv t -> DolanVarianceType dv
     groundTypeVarianceType (ProvidedGroundType dvt _ _ _) = dvt
-    groundTypeVarianceType (EntityPinaforeGroundType lt _) = mapListType (\Refl -> CovarianceType) lt
+    groundTypeVarianceType (EntityPinaforeGroundType lt _) = mapListType (\Refl -> CoCCRVarianceType) lt
     groundTypeTestEquality :: PinaforeGroundType dka ta -> PinaforeGroundType dkb tb -> Maybe (dka :~: dkb, ta :~~: tb)
     groundTypeTestEquality (ProvidedGroundType dva _ _ ta) (ProvidedGroundType dvb _ _ tb) = do
         Refl <- testEquality dva dvb
@@ -120,12 +120,12 @@ showPrecVariance ::
        , forall a polarity'. Is PolarityType polarity' => ExprShow (w polarity' a)
        , forall a. ExprShow (RangeType w polarity a)
        )
-    => VarianceType sv
+    => CCRVarianceType sv
     -> SingleArgument sv w polarity t
     -> (Text, Int)
-showPrecVariance CovarianceType t = exprShowPrec t
-showPrecVariance ContravarianceType t = invertPolarity @polarity $ exprShowPrec t
-showPrecVariance RangevarianceType t = exprShowPrec t
+showPrecVariance CoCCRVarianceType t = exprShowPrec t
+showPrecVariance ContraCCRVarianceType t = invertPolarity @polarity $ exprShowPrec t
+showPrecVariance RangeCCRVarianceType t = exprShowPrec t
 
 showPrecDolanVariance ::
        forall w polarity dv f t.

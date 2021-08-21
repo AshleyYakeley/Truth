@@ -44,17 +44,8 @@ showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual Sho
 showableType :: forall pol. PinaforeType pol (JoinMeetType pol Showable (LimitType pol))
 showableType = ConsDolanType (GroundedDolanSingularType showableGroundType NilDolanArguments) NilDolanType
 
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) Showable where
-    toPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType showableGroundType NilDolanArguments
-
-instance ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) Showable where
-    toPolarShimWit = singleDolanShimWit toJMShimWit
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) Showable where
-    fromPolarShimWit = mkPolarShimWit $ GroundedDolanSingularType showableGroundType NilDolanArguments
-
-instance FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) Showable where
-    fromPolarShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] Showable where
+    pinaforeGroundType = showableGroundType
 
 showableSubtypeConversionEntry ::
        forall a. TextShow a
@@ -179,7 +170,7 @@ textReadMaybe :: Read t => Text -> Maybe t
 textReadMaybe t = readMaybe $ unpack t
 
 plainFormattingDefs ::
-       forall t. (ToPinaforeType t, FromPinaforeType t, Read t, TextShow t)
+       forall t. (HasPinaforeType 'Positive t, HasPinaforeType 'Negative t, Read t, TextShow t)
     => Text
     -> Text
     -> [DocTreeEntry BindDoc]
@@ -222,7 +213,7 @@ unixInterpretAsText fmt = let
     in maybeLensLangWholeRef getter setter
 
 unixFormattingDefs ::
-       forall t. (ToPinaforeType t, FromPinaforeType t, FormatTime t, ParseTime t)
+       forall t. (HasPinaforeType 'Positive t, HasPinaforeType 'Negative t, FormatTime t, ParseTime t)
     => Text
     -> Text
     -> [DocTreeEntry BindDoc]
