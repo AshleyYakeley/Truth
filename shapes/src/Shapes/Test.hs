@@ -3,8 +3,11 @@ module Shapes.Test
     -- * General
       TestTree
     , TestName
-    , testTreeNameLens
+    , getTestName
+    , setTestName
+    , repeatedTest
     , repeatTest
+    , pauseTestOnFailure
     , testMain
     , testMainNoSignalHandler
     , BuildTestTree(..)
@@ -71,30 +74,59 @@ testMainNoSignalHandler tests = do
                 then exitSuccess
                 else exitFailure
 
-testTreeNameLens :: Lens' Identity TestTree TestName
-testTreeNameLens = let
-    lensGet :: TestTree -> TestName
-    lensGet (SingleTest name _) = name
-    lensGet (TestGroup name _) = name
-    lensGet (PlusTestOptions _ tests) = lensGet tests
-    lensGet (WithResource _ ftests) = lensGet $ ftests $ fail "cannot get test name"
-    lensGet (AskOptions ftests) = lensGet $ ftests mempty
-    lensGet (After _ _ tests) = lensGet tests
-    lensPutback :: TestName -> TestTree -> Identity TestTree
-    lensPutback name (SingleTest _ t) = Identity $ SingleTest name t
-    lensPutback name (TestGroup _ t) = Identity $ TestGroup name t
-    lensPutback name (PlusTestOptions options tests) =
-        Identity $ PlusTestOptions options $ runIdentity $ lensPutback name tests
-    lensPutback name (WithResource rspec ftests) =
-        Identity $ WithResource rspec $ \ioa -> runIdentity $ lensPutback name $ ftests ioa
-    lensPutback name (AskOptions ftests) = Identity $ AskOptions $ \opts -> runIdentity $ lensPutback name $ ftests opts
-    lensPutback name (After dtype expr tests) = Identity $ After dtype expr $ runIdentity $ lensPutback name tests
-    in MkLens {..}
+getTestName :: TestTree -> TestName
+getTestName (SingleTest name _) = name
+getTestName (TestGroup name _) = name
+getTestName (PlusTestOptions _ tests) = getTestName tests
+getTestName (WithResource _ ftests) = getTestName $ ftests $ fail "cannot get test name"
+getTestName (AskOptions ftests) = getTestName $ ftests mempty
+getTestName (After _ _ tests) = getTestName tests
+
+setTestName :: TestName -> TestTree -> TestTree
+setTestName name (SingleTest _ t) = SingleTest name t
+setTestName name (TestGroup _ t) = TestGroup name t
+setTestName name (PlusTestOptions options tests) = PlusTestOptions options $ setTestName name tests
+setTestName name (WithResource rspec ftests) = WithResource rspec $ \ioa -> setTestName name $ ftests ioa
+setTestName name (AskOptions ftests) = AskOptions $ \opts -> setTestName name $ ftests opts
+setTestName name (After dtype expr tests) = After dtype expr $ setTestName name tests
+
+repeatedTest :: Int -> TestTree -> TestTree
+repeatedTest n tests = testGroup (getTestName tests) $ fmap (\i -> setTestName (show i <> "/" <> show n) tests) [1 .. n]
 
 repeatTest :: Int -> TestTree -> TestTree
-repeatTest n tests =
-    testGroup (lensGet testTreeNameLens tests) $
-    fmap (\i -> runIdentity $ lensPutback testTreeNameLens (show i <> "/" <> show n) tests) [1 .. n]
+repeatTest n =
+    wrapTest $ \test -> let
+        go i
+            | i > n =
+                return $ let
+                    resultOutcome = Test.Tasty.Runners.Success
+                    resultDescription = ""
+                    resultTime = 0
+                    resultShortDescription = "OK"
+                    in Result {..}
+        go i = do
+            r <- test
+            case resultOutcome r of
+                Test.Tasty.Runners.Success -> do
+                    r' <- go (i + 1)
+                    return r' {resultTime = resultTime r + resultTime r'}
+                _ ->
+                    return
+                        r {resultShortDescription = resultShortDescription r <> " (" <> show i <> "/" <> show n <> ")"}
+        in go 1
+
+-- | time in ms
+pauseTestOnFailure :: Int -> TestTree -> TestTree
+pauseTestOnFailure t =
+    wrapTest $ \action -> do
+        r <- action
+        case resultOutcome r of
+            Test.Tasty.Runners.Failure _ -> do
+                hPutStrLn stderr $ "pausing: " <> resultShortDescription r <> ": " <> resultDescription r
+                threadDelay $ t * 1000
+                hPutStrLn stderr "pause done"
+            _ -> return ()
+        return r
 
 failTestBecause :: String -> TestTree -> TestTree
 failTestBecause reason = wrapTest $ \_ -> return $ (testFailed "") {resultShortDescription = "FAILS: " <> reason}
