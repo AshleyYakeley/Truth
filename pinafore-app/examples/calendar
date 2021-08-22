@@ -20,5 +20,5 @@ in do
     r <- newMemWhole;
     d <- getDate;
     r := d;
-    UI.openWindow (300,400) {toText %r} {[]} $ ui r;
+    UI.openWindow (300,400) {show %r} {[]} $ ui r;
     end

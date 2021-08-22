@@ -2,6 +2,7 @@
 
 module Data.Shim.PolyIso where
 
+import Data.Shim.CCRVariance
 import Data.Shim.CatRange
 import Data.Shim.JoinMeet
 import Data.Shim.PolarJoinMeet
@@ -9,7 +10,6 @@ import Data.Shim.PolarMap
 import Data.Shim.Polarity
 import Data.Shim.PolyMap
 import Data.Shim.PolyShim
-import Data.Shim.Variance
 import Shapes
 
 type PolyIso :: PolyShimKind -> PolyShimKind
@@ -73,11 +73,11 @@ polarPolyIsoNegative (MkPolarMap iab) =
         NegativeType -> isoForwards $ unPolyMapT iab
 
 instance forall (pshim :: PolyShimKind). ApplyPolyShim pshim => ApplyPolyShim (PolyIso pshim) where
-    applyPolyShim CovarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
+    applyPolyShim CoCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
         MkPolyMapT $ MkIsomorphism (applyCoPolyShim fab xab) (applyCoPolyShim fba xba)
-    applyPolyShim ContravarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatDual (MkPolyMapT (MkIsomorphism xab xba))) =
+    applyPolyShim ContraCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatDual (MkPolyMapT (MkIsomorphism xab xba))) =
         MkPolyMapT $ MkIsomorphism (applyContraPolyShim fab xab) (applyContraPolyShim fba xba)
-    applyPolyShim RangevarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatRange (MkPolyMapT (MkIsomorphism xab1 xba1)) (MkPolyMapT (MkIsomorphism xab2 xba2))) =
+    applyPolyShim RangeCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatRange (MkPolyMapT (MkIsomorphism xab1 xba1)) (MkPolyMapT (MkIsomorphism xab2 xba2))) =
         MkPolyMapT $ MkIsomorphism (applyRangePolyShim fab xab1 xab2) (applyRangePolyShim fba xba1 xba2)
 
 polarPolyIsoPolar1 ::
@@ -92,6 +92,16 @@ polarPolyIsoPolar1 =
 polyIsoForwards :: forall (pshim :: PolyShimKind) k (a :: k) (b :: k). PolyIso pshim k a b -> pshim k a b
 polyIsoForwards iab = isoForwards $ unPolyMapT iab
 
+polyIsoPolar ::
+       forall (pshim :: PolyShimKind) polarity k (a :: k) (b :: k). Is PolarityType polarity
+    => PolyIso pshim k a b
+    -> PolarMap (pshim k) polarity a b
+polyIsoPolar iab =
+    MkPolarMap $
+    case polarityType @polarity of
+        PositiveType -> isoForwards $ unPolyMapT iab
+        NegativeType -> isoBackwards $ unPolyMapT iab
+
 instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, IsoMapShim (pshim k), Category (pshim k)) =>
              IsoMapShim (PolyIso pshim k) where
     isoMapShim ::
@@ -103,6 +113,11 @@ instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, IsoMapShim (pshim k
         -> PolyIso pshim k qa qb
     isoMapShim t f1 f2 (MkPolyMapT (MkIsomorphism ab ba)) =
         MkPolyMapT $ MkIsomorphism (isoMapShim t f1 f2 ab) (isoMapShim t f2 f1 ba)
+
+instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, CoerceShim (pshim k), Category (pshim k)) =>
+             CoerceShim (PolyIso pshim k) where
+    coercionEnhanced n c = MkPolyMapT $ MkIsomorphism (coercionEnhanced n c) (coercionEnhanced n $ invert c)
+    enhancedCoercion (MkPolyMapT (MkIsomorphism ab ba)) = enhancedCoercion ab <|> fmap invert (enhancedCoercion ba)
 
 instance forall (pshim :: PolyShimKind). AllInCategory pshim => ReduciblePolyShim (PolyIso pshim) where
     type ReducedPolyShim (PolyIso pshim) = PolyIso pshim

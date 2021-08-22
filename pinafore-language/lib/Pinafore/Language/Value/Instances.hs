@@ -6,8 +6,14 @@ import Data.Shim
 import Pinafore.Base
 import Shapes
 
-instance HasVariance 'Covariance Know where
-    varianceRepresentational = Just Dict
+instance MaybeRepresentational Know where
+    maybeRepresentational = Just Dict
 
-instance HasVariance 'Covariance PinaforeAction where
-    varianceRepresentational = Just Dict
+instance HasVariance Know where
+    type VarianceOf Know = 'Covariance
+
+instance MaybeRepresentational PinaforeAction where
+    maybeRepresentational = Just Dict
+
+instance HasVariance PinaforeAction where
+    type VarianceOf PinaforeAction = 'Covariance

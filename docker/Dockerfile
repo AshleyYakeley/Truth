@@ -1,5 +1,5 @@
-FROM commercialhaskell/stackage:lts17
-RUN echo 2021-05-31
+FROM commercialhaskell/stackage:lts18
+RUN echo 2021-08-21
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH "/usr/local/bin:${PATH}"
 RUN wget -qO - https://packages.confluent.io/deb/5.2/archive.key | apt-key add -

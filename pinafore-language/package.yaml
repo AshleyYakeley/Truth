@@ -16,7 +16,8 @@ library:
       - parsec
       - containers
       - text
-      - text-icu
+      - unicode-collation
+      - polar-shim
       - typed-expression
       - changes-core
       - changes-world
@@ -52,7 +53,8 @@ library:
       - Pinafore.Language.SpecialForm
       - Pinafore.Language.Interpreter
       - Pinafore.Language.Var
-      - Pinafore.Language.Convert.TH
+      - Pinafore.Language.Convert.HasType
+      - Pinafore.Language.Convert.Types
       - Pinafore.Language.Convert
       - Pinafore.Language.ExprShow
       - Pinafore.Language.Type.Type
@@ -99,6 +101,7 @@ tests:
           - base >= 4.12
           - shapes
           - filepath
+          - polar-shim
           - typed-expression
           - changes-core
           - pinafore-language

@@ -36,7 +36,7 @@ interpretOpenEntityType st = do
             case atm @'Positive of
                 MkAnyW tm ->
                     case dolanTypeToSingular tm of
-                        Just (MkAnyW (GroundDolanSingularType (EntityPinaforeGroundType _ (OpenEntityGroundType t)) NilDolanArguments)) ->
+                        Just (MkAnyW (GroundedDolanSingularType (EntityPinaforeGroundType _ (OpenEntityGroundType t)) NilDolanArguments)) ->
                             return $ MkAnyW t
                         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm
 
@@ -48,7 +48,7 @@ interpretConcreteDynamicEntityType st = do
             case atm @'Positive of
                 MkAnyW tm ->
                     case dolanTypeToSingular tm of
-                        Just (MkAnyW (GroundDolanSingularType (EntityPinaforeGroundType _ (ADynamicEntityGroundType n dts)) NilDolanArguments))
+                        Just (MkAnyW (GroundedDolanSingularType (EntityPinaforeGroundType _ (ADynamicEntityGroundType n dts)) NilDolanArguments))
                             | [dt] <- toList dts -> return (n, dt)
                         _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm
 
@@ -117,7 +117,7 @@ interpretTypeM' (SingleSyntaxType sgt sargs) = do
             toMPolarWM $ do
                 aargs <- interpretArgs sgt (groundTypeVarianceType gt) sargs
                 case aargs of
-                    MkAnyW args -> return $ MkAnyW $ singleDolanType $ GroundDolanSingularType gt args
+                    MkAnyW args -> return $ MkAnyW $ singleDolanType $ GroundedDolanSingularType gt args
 interpretTypeM' (VarSyntaxType name) =
     nameToSymbolType name $ \t -> return $ toMPolar $ MkAnyW $ singleDolanType $ VarDolanSingularType t
 interpretTypeM' (RecursiveSyntaxType name st) = do
@@ -182,16 +182,16 @@ interpretArgs ::
 interpretArgs _ NilListType [] = return $ MkAnyW NilDolanArguments
 interpretArgs sgt NilListType (_:_) = throw $ InterpretTypeOverApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType _ _) [] = throw $ InterpretTypeUnderApplyError $ groundTypeText sgt
-interpretArgs sgt (ConsListType CovarianceType dv) (SimpleSyntaxTypeArgument st:stt) = do
+interpretArgs sgt (ConsListType CoCCRVarianceType dv) (SimpleSyntaxTypeArgument st:stt) = do
     at <- isMPolarity @polarity $ interpretTypeM st
     case fromMPolarSingle at of
         MkAnyW t -> do
             aargs <- interpretArgs sgt dv stt
             case aargs of
                 MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
-interpretArgs sgt (ConsListType CovarianceType _) (RangeSyntaxTypeArgument _:_) =
+interpretArgs sgt (ConsListType CoCCRVarianceType _) (RangeSyntaxTypeArgument _:_) =
     throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
-interpretArgs sgt (ConsListType ContravarianceType dv) (SimpleSyntaxTypeArgument st:stt) =
+interpretArgs sgt (ConsListType ContraCCRVarianceType dv) (SimpleSyntaxTypeArgument st:stt) =
     invertPolarity @polarity $ do
         at <- isMPolarity @(InvertPolarity polarity) $ interpretTypeM st
         case fromMPolarSingle at of
@@ -199,9 +199,9 @@ interpretArgs sgt (ConsListType ContravarianceType dv) (SimpleSyntaxTypeArgument
                 aargs <- interpretArgs sgt dv stt
                 case aargs of
                     MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
-interpretArgs sgt (ConsListType ContravarianceType _) (RangeSyntaxTypeArgument _:_) =
+interpretArgs sgt (ConsListType ContraCCRVarianceType _) (RangeSyntaxTypeArgument _:_) =
     throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
-interpretArgs sgt (ConsListType RangevarianceType dv) (st:stt) = do
+interpretArgs sgt (ConsListType RangeCCRVarianceType dv) (st:stt) = do
     at <- isMPolarity @polarity $ interpretTypeArgument st
     case fromMPolarSingle at of
         MkAnyInKind t -> do

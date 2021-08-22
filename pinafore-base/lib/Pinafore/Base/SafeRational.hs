@@ -1,9 +1,10 @@
 module Pinafore.Base.SafeRational
     ( SafeRational(..)
     , toSafeRational
-    , integerToSafeRational
+    , integerSafeRational
     ) where
 
+import Pinafore.Base.Showable
 import Shapes
 import Shapes.Numeric
 
@@ -16,9 +17,70 @@ instance Eq SafeRational where
     SRNumber a == SRNumber b = a == b
     _ == _ = False
 
+instance TextShow SafeRational where
+    textShow SRNaN = "NaN"
+    textShow (SRNumber r) = let
+        n = numerator r
+        d = denominator r
+        in if d == 1
+               then textShow n
+               else textShow n <> "/" <> textShow d
+
 instance Show SafeRational where
-    show (SRNumber a) = show a
-    show SRNaN = "NaN"
+    show v = unpack $ textShow v
+
+instance Read SafeRational where
+    readPrec = let
+        option' :: a -> ReadPrec a -> ReadPrec a
+        option' x p = p <++ return x
+        many' :: ReadPrec a -> ReadPrec [a]
+        many' p = many1' p <++ return []
+        many1' :: ReadPrec a -> ReadPrec [a]
+        many1' p = liftA2 (:) p $ many' p
+        assembleDigits :: (Integer, Integer) -> String -> (Integer, Integer)
+        assembleDigits it [] = it
+        assembleDigits (i, t) (c:cc) = assembleDigits (i * 10 + toInteger (digitToInt c), t * 10) cc
+        readDigits :: ReadPrec (Integer, Integer)
+        readDigits = do
+            s <- many' $ pSatisfy isDigit
+            return $ assembleDigits (0, 1) s
+        readDigits1 :: ReadPrec (Integer, Integer)
+        readDigits1 = do
+            s <- many1' $ pSatisfy isDigit
+            return $ assembleDigits (0, 1) s
+        readDecimalPart :: ReadPrec Rational
+        readDecimalPart = do
+            pLiteral '.'
+            (fixN, fixD) <- readDigits
+            repR <-
+                option' 0 $ do
+                    pLiteral '_'
+                    (repN, repD) <- readDigits
+                    return $
+                        if repD == 1
+                            then 0
+                            else repN % (fixD * (pred repD))
+            return $ (fixN % fixD) + repR
+        readFractionPart :: ReadPrec Integer
+        readFractionPart = do
+            pLiteral '/'
+            (d, _) <- readDigits1
+            return d
+        readRational :: ReadPrec Rational
+        readRational = do
+            sign <- (pLiteral '-' >> return negate) <++ return id
+            (intPart, _) <- readDigits1
+            remaining <- option' (Left 0) $ fmap Left readDecimalPart <++ fmap Right readFractionPart
+            return $
+                sign $
+                case remaining of
+                    Left decPart -> toRational intPart + decPart
+                    Right d -> intPart % d
+        readNaN :: ReadPrec SafeRational
+        readNaN = do
+            pLiterals "NaN"
+            return SRNaN
+        in fmap SRNumber readRational <++ readNaN
 
 liftOp1R :: (Rational -> Rational) -> SafeRational -> SafeRational
 liftOp1R f (SRNumber n) = SRNumber $ f n
@@ -70,5 +132,10 @@ instance RealFrac SafeRational where
 toSafeRational :: Real a => a -> SafeRational
 toSafeRational = SRNumber . toRational
 
-integerToSafeRational :: Integer -> SafeRational
-integerToSafeRational = toSafeRational
+safeRationalCheckInteger :: SafeRational -> Maybe Integer
+safeRationalCheckInteger (SRNumber r)
+    | denominator r == 1 = Just $ numerator r
+safeRationalCheckInteger _ = Nothing
+
+integerSafeRational :: Codec SafeRational Integer
+integerSafeRational = MkCodec safeRationalCheckInteger toSafeRational

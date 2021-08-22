@@ -72,7 +72,7 @@ subsumerExpressionSubstitute ::
     -> TSOuter ts (TSOpenExpression ts a)
 subsumerExpressionSubstitute _ (ClosedExpression a) = return $ ClosedExpression a
 subsumerExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) = do
-    tw' <- chainShimWitM (subsumerNegSubstitute @ts subs) tw
+    tw' <- chainPolarShimWitM (subsumerNegSubstitute @ts subs) tw
     expr' <- subsumerExpressionSubstitute @ts subs expr
     return $ OpenExpression (MkNameWitness name tw') expr'
 
@@ -113,10 +113,11 @@ subsumerExpression marawdecltype rawinfexpr = do
     case marawdecltype of
         Nothing -> return $ MkSubsumerExpression infwit $ MkSubsumerOpenExpression (pure id) expr
         Just (MkAnyW rawdecltype) -> do
-            MkShimWit decltype _ <- simplify @ts $ mkShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
+            MkShimWit decltype _ <- simplify @ts $ mkPolarShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
             subsumer <- subsumePosShimWit @ts infwit decltype
             return $
-                MkSubsumerExpression (mkShimWit decltype) $ MkSubsumerOpenExpression (fmap shimToFunction subsumer) expr
+                MkSubsumerExpression (mkPolarShimWit decltype) $
+                MkSubsumerOpenExpression (fmap shimToFunction subsumer) expr
 
 subsumeExpression ::
        forall ts. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)

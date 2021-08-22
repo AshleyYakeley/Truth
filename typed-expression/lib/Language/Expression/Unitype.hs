@@ -16,8 +16,8 @@ instance (Monad m, Eq name, Show name) => TypeSystem (Unitype m name val) where
 
 unitypeShimWit ::
        forall polarity (val :: Type). Is PolarityType polarity
-    => ShimWit (->) ((:~:) val) polarity val
-unitypeShimWit = mkShimWit Refl
+    => PolarShimWit (->) ((:~:) val) polarity val
+unitypeShimWit = mkPolarShimWit Refl
 
 instance (Monad m, Eq name, Show name) => RenameTypeSystem (Unitype m name val) where
     type RenamerT (Unitype m name val) = IdentityT

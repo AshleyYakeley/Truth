@@ -1,4 +1,5 @@
 #!/bin/bash -e
+export DEBIAN_FRONTEND=noninteractive
 apt update
 apt install -y sudo
 apt install -y /home/$1

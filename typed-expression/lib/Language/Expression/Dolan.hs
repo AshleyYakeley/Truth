@@ -16,11 +16,12 @@ module Language.Expression.Dolan
     , fromMPolarSingle
     , GroundTypeKind
     , DolanPolyShim
+    , DolanPolyIsoShim
     , DolanVariance
     , DolanVarianceKind
     , DolanVarianceType
     , DolanVarianceMap(..)
-    , HasDolanVary(..)
+    , HasDolanVariance(..)
     , CovaryType
     , CovaryMap
     , covarymap
@@ -31,6 +32,7 @@ module Language.Expression.Dolan
     , dolanTypeToSingular
     , DolanShimWit
     , singleDolanShimWit
+    , nilDolanShimWit
     , joinMeetShimWit
     , varDolanShimWit
     , unrollRecursiveType
@@ -39,6 +41,8 @@ module Language.Expression.Dolan
     , biRangeAnyF
     , SingleArgument
     , DolanArguments(..)
+    , ArgTypeF(..)
+    , mapArgsTypeF
     , saturateArgsConstraint
     , dolanArgumentsToArguments
     , SubtypeContext(..)
@@ -88,15 +92,15 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
     type TSInner (DolanTypeSystem ground) = DolanM ground
 
 class (Eq (DolanName ground), IsDolanSubtypeGroundType ground) => IsDolanFunctionGroundType (ground :: GroundTypeKind) where
-    functionGroundType :: ground '[ 'Contravariance, 'Covariance] (->)
+    functionGroundType :: ground '[ ContraCCRVariance, CoCCRVariance] (->)
 
 instance forall (ground :: GroundTypeKind). IsDolanFunctionGroundType ground =>
              CompleteTypeSystem (DolanTypeSystem ground) where
     tsFunctionPosWitness ta tb =
         singleDolanShimWit $
-        mkShimWit $
-        GroundDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+        mkPolarShimWit $
+        GroundedDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
     tsFunctionNegWitness ta tb =
         singleDolanShimWit $
-        mkShimWit $
-        GroundDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+        mkPolarShimWit $
+        GroundedDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments

@@ -9,56 +9,71 @@ import Shapes
 import Shapes.Numeric
 
 newtype Literal = MkLiteral
-    { unLiteral :: Text
+    { unLiteral :: StrictByteString
     } deriving (Eq, Serialize)
 
 instance Show Literal where
     show (MkLiteral t) = show t
 
-readFromLiteral :: Read t => Literal -> Know t
-readFromLiteral = maybeToKnow . readMaybe . unpack . unLiteral
+class Eq t => AsLiteral t where
+    literalSerializer :: Serializer t
 
-class (Eq t, Show t) => AsLiteral t where
-    toLiteral :: t -> Literal
-    fromLiteral :: Literal -> Know t
+literalCodec :: AsLiteral t => Codec Literal t
+literalCodec = serializerStrictCodec literalSerializer . bijectionCodec coerceIsomorphism
+
+toLiteral :: AsLiteral t => t -> Literal
+toLiteral = encode literalCodec
+
+fromLiteral :: AsLiteral t => Literal -> Know t
+fromLiteral lit = maybeToKnow $ decode literalCodec lit
 
 literalToEntity :: AsLiteral t => t -> Entity
 literalToEntity v = hashToEntity $ \call -> [call @Text "literal:", call $ toLiteral v]
 
 instance AsLiteral Literal where
-    toLiteral = id
-    fromLiteral = Known
+    literalSerializer = coerce serializerWhole
 
 instance AsLiteral None where
-    toLiteral = never
-    fromLiteral _ = Unknown
+    literalSerializer = pNone
 
 instance AsLiteral Text where
-    toLiteral = MkLiteral
-    fromLiteral = Known . unLiteral
+    literalSerializer = pLiteral 0x74 ***> serializer
 
 instance AsLiteral String where
-    toLiteral = MkLiteral . pack
-    fromLiteral = Known . unpack . unLiteral
+    literalSerializer = isoMap unpack pack $ literalSerializer @Text
 
 instance AsLiteral () where
-    toLiteral () = MkLiteral $ fromString "unit"
-    fromLiteral (MkLiteral "unit") = Known ()
-    fromLiteral _ = Unknown
+    literalSerializer = pLiteral 0x75
 
 instance AsLiteral Bool where
-    toLiteral True = MkLiteral $ fromString "True"
-    toLiteral False = MkLiteral $ fromString "False"
-    fromLiteral text = maybeToKnow $ lookup text $ fmap (\t -> (toLiteral t, t)) allValues
+    literalSerializer = pLiteral 0x62 ***> serializer
 
 instance AsLiteral Ordering where
-    toLiteral = MkLiteral . pack . show
-    fromLiteral = readFromLiteral
+    literalSerializer = pLiteral 0x6F ***> codecMap readShowCodec serializer
 
 instance AsLiteral Number where
-    toLiteral = MkLiteral . pack . show
-    fromLiteral = readFromLiteral
+    literalSerializer = let
+        eitherToNumber :: Either Rational Double -> Number
+        eitherToNumber (Left x) = ExactNumber x
+        eitherToNumber (Right x) = InexactNumber x
+        numberToEither :: Number -> Either Rational Double
+        numberToEither (ExactNumber x) = Left x
+        numberToEither (InexactNumber x) = Right x
+        in isoMap eitherToNumber numberToEither $ literalSerializer <+++> literalSerializer
 
+instance AsLiteral Rational where
+    literalSerializer = pLiteral 0x72 ***> serializer
+
+instance AsLiteral Double where
+    literalSerializer = pLiteral 0x64 ***> serializer
+
+instance AsLiteral SafeRational where
+    literalSerializer = codecMap safeRationalNumber literalSerializer
+
+instance AsLiteral Integer where
+    literalSerializer = codecMap integerSafeRational literalSerializer
+
+{-
 instance AsLiteral Int where
     toLiteral = MkLiteral . pack . show
     fromLiteral = readFromLiteral
@@ -67,54 +82,21 @@ instance AsLiteral Int64 where
     toLiteral = MkLiteral . pack . show
     fromLiteral = readFromLiteral
 
-instance AsLiteral Integer where
-    toLiteral = MkLiteral . pack . show
-    fromLiteral = readFromLiteral
-
 instance HasResolution r => AsLiteral (Fixed r) where
     toLiteral = MkLiteral . pack . show
     fromLiteral = readFromLiteral
-
-instance AsLiteral Rational where
-    toLiteral = toLiteral . SRNumber
-    fromLiteral t = do
-        n <- fromLiteral t
-        case n of
-            SRNumber x -> return x
-            _ -> Unknown
-
-instance AsLiteral SafeRational where
-    toLiteral = toLiteral . safeRationalToNumber
-    fromLiteral t = do
-        n <- fromLiteral t
-        case numberCheckSafeRational n of
-            Just x -> return x
-            _ -> Unknown
-
-instance AsLiteral Double where
-    toLiteral = toLiteral . InexactNumber
-    fromLiteral t = do
-        n <- fromLiteral t
-        case n of
-            InexactNumber x -> return x
-            _ -> Unknown
-
+-}
 instance AsLiteral Day where
-    toLiteral = MkLiteral . pack . show
-    fromLiteral = readFromLiteral
+    literalSerializer = pLiteralBytes [0x54, 0x64] ***> serializer
 
 instance AsLiteral TimeOfDay where
-    toLiteral = MkLiteral . pack . show
-    fromLiteral = readFromLiteral
+    literalSerializer = pLiteralBytes [0x54, 0x6F] ***> serializer
 
 instance AsLiteral LocalTime where
-    toLiteral = MkLiteral . pack . show
-    fromLiteral = readFromLiteral
+    literalSerializer = pLiteralBytes [0x54, 0x6C] ***> serializer
 
 instance AsLiteral UTCTime where
-    toLiteral = MkLiteral . pack . show
-    fromLiteral = readFromLiteral
+    literalSerializer = pLiteralBytes [0x54, 0x75] ***> serializer
 
 instance AsLiteral NominalDiffTime where
-    toLiteral = toLiteral . nominalDiffTimeToSeconds
-    fromLiteral = fmap secondsToNominalDiffTime . fromLiteral
+    literalSerializer = pLiteralBytes [0x54, 0x6E] ***> serializer

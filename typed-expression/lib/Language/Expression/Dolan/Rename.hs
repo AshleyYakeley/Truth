@@ -21,7 +21,7 @@ renameTypeArgs ::
     -> VarNamespaceT (DolanTypeSystem ground) (RenamerT (DolanTypeSystem ground) m) (DolanArguments dv (DolanType ground) gt polarity t)
 renameTypeArgs dvt dvm args = do
     MkShimWit args' (MkPolarMap conv) <-
-        mapDolanArgumentsM @_ @PEqual (\t -> fmap mkShimWit $ dolanNamespaceRename t) dvt dvm args
+        mapDolanArgumentsM @_ @PEqual (\t -> fmap mkPolarShimWit $ dolanNamespaceRename t) dvt dvm args
     return $
         case polarityType @polarity of
             PositiveType ->
@@ -39,9 +39,9 @@ dolanNamespaceRename = namespaceRename @(DolanTypeSystem ground)
 
 instance forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity) =>
              NamespaceRenamable (DolanTypeSystem ground) (DolanSingularType ground polarity t) where
-    namespaceRename (GroundDolanSingularType gt args) = do
+    namespaceRename (GroundedDolanSingularType gt args) = do
         args' <- renameTypeArgs (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args
-        return $ GroundDolanSingularType gt args'
+        return $ GroundedDolanSingularType gt args'
     namespaceRename (VarDolanSingularType oldvar) = do
         MkVarType newvar <- varNamespaceTRenameUVar @Type oldvar
         return $ VarDolanSingularType newvar

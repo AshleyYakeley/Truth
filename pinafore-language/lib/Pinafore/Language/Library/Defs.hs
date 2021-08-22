@@ -16,17 +16,17 @@ import Pinafore.Markdown
 import Shapes
 
 qPositiveTypeDescription ::
-       forall t. ToPinaforeType t
+       forall t. HasPinaforeType 'Positive t
     => Text
 qPositiveTypeDescription =
-    case toShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Positive) @t of
+    case toPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Positive) @t of
         MkShimWit w _ -> exprShow w
 
 qNegativeTypeDescription ::
-       forall t. FromPinaforeType t
+       forall t. HasPinaforeType 'Negative t
     => Text
 qNegativeTypeDescription =
-    case fromShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative) @t of
+    case fromPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative) @t of
         MkShimWit w _ -> exprShow w
 
 type LibraryModule = DocTree BindDoc
@@ -44,7 +44,7 @@ data BindDoc = MkBindDoc
     }
 
 mkValEntry ::
-       forall t. ToPinaforeType t
+       forall t. HasPinaforeType 'Positive t
     => Name
     -> Markdown
     -> ((?pinafore :: PinaforeContext) => t)
@@ -62,7 +62,7 @@ mkValEntry name docDescription val = let
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSupertypeEntry ::
-       forall t. ToPinaforeType t
+       forall t. HasPinaforeType 'Positive t
     => Name
     -> Markdown
     -> ((?pinafore :: PinaforeContext) => t)
@@ -106,7 +106,7 @@ monoidSubypeConversionEntry t =
             MkAnyW args ->
                 case saturateArgsConstraint (representative @_ @(SaturatedConstraintWitness Monoid) @gt) args of
                     Compose Dict -> let
-                        tb = singleDolanType $ GroundDolanSingularType t args
+                        tb = singleDolanType $ GroundedDolanSingularType t args
                         sconv = subtypeConvert sc ta tb
                         cshim :: forall a. JMShim Type (JoinMeetType pola a (LimitType pola)) a
                         cshim =
@@ -119,7 +119,10 @@ monoidSubypeConversionEntry t =
 
 mkValPatEntry ::
        forall t v lt.
-       (ToPinaforeType t, FromPinaforeType v, ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt)
+       ( HasPinaforeType 'Positive t
+       , HasPinaforeType 'Negative v
+       , ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt
+       )
     => Name
     -> Markdown
     -> t

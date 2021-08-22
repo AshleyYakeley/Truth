@@ -8,7 +8,7 @@ type CovaryMap :: forall k. k -> Type
 data CovaryMap f where
     NilCovaryMap :: forall (f :: Type). CovaryMap f
     ConsCovaryMap
-        :: forall (k :: Type) (f :: Type -> k). HasVariance 'Covariance f
+        :: forall (k :: Type) (f :: Type -> k). HasCCRVariance CoCCRVariance f
         => (forall (a :: Type). CovaryMap (f a))
         -> CovaryMap f
 
@@ -36,11 +36,11 @@ instance HasCovaryMap (,) where
 instance HasCovaryMap Either where
     covarymap = ConsCovaryMap $ ConsCovaryMap NilCovaryMap
 
-type CovaryType = ListType ((:~:) 'Covariance)
+type CovaryType = ListType ((:~:) CoCCRVariance)
 
 type family CovaryKindDolanVariance (k :: Type) :: DolanVariance where
     CovaryKindDolanVariance Type = '[]
-    CovaryKindDolanVariance (Type -> k) = 'Covariance ': (CovaryKindDolanVariance k)
+    CovaryKindDolanVariance (Type -> k) = CoCCRVariance ': (CovaryKindDolanVariance k)
 
 covaryToDolanVarianceMap ::
        forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). CovaryType dv -> CovaryMap f -> DolanVarianceMap dv f
@@ -52,4 +52,4 @@ covaryKMCategory ::
        forall (pmap :: PolyShimKind) dv. DolanVarianceInCategory pmap
     => CovaryType dv
     -> Dict (CoercibleKind (DolanVarianceKind dv), InCategory (pmap (DolanVarianceKind dv)))
-covaryKMCategory lc = dolanVarianceInCategory @pmap (mapListType (\Refl -> CovarianceType) lc)
+covaryKMCategory lc = dolanVarianceInCategory @pmap (mapListType (\Refl -> CoCCRVarianceType) lc)

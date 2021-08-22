@@ -1,0 +1,34 @@
+_common: !include "../common.yaml"
+name: polar-shim
+version: *pinafore_version
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.12
+      - shapes
+    exposed-modules:
+      - Data.Shim
+    other-modules:
+      - Data.Shim.MaybeRepresentational
+      - Data.Shim.PolyMap
+      - Data.Shim.ComposeShim
+      - Data.Shim.Polarity
+      - Data.Shim.PolarMap
+      - Data.Shim.Variance
+      - Data.Shim.CCRVariance
+      - Data.Shim.PolarVariance
+      - Data.Shim.ShimWit
+      - Data.Shim.PolarShimWit
+      - Data.Shim.Range
+      - Data.Shim.CatRange
+      - Data.Shim.JoinMeet
+      - Data.Shim.PolarJoinMeet
+      - Data.Shim.PolyShim
+      - Data.Shim.JMShim
+      - Data.Shim.PolyIso
+      - Data.Shim.PolyComposeShim
+      - Data.Shim.JMShimWit

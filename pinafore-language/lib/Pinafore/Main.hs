@@ -15,6 +15,7 @@ module Pinafore.Main
     ) where
 
 import Changes.Core
+import Data.Shim
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language
@@ -81,7 +82,7 @@ sqlitePinaforeDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 pinaforeInterpretTextAtType ::
-       (?pinafore :: PinaforeContext, ?library :: LibraryContext, FromPinaforeType t)
+       (?pinafore :: PinaforeContext, ?library :: LibraryContext, HasPinaforeType 'Negative t)
     => FilePath
     -> Text
     -> InterpretResult t

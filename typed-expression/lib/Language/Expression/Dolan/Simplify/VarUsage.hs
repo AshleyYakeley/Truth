@@ -38,7 +38,7 @@ getTVarUsage' v ta (ConsDolanType (VarDolanSingularType v') tb)
         case getTVarUsage v tb of
             Nothing -> MkTVarUsage (joinMeetType ta tb) $ swapAB
             Just (MkTVarUsage tr conv) ->
-                MkTVarUsage (joinMeetShimWit (mkShimWit ta) tr) $ swapAB . iPolarPair id (polarF polar1 conv)
+                MkTVarUsage (joinMeetShimWit (mkPolarShimWit ta) tr) $ swapAB . iPolarPair id (polarF polar1 conv)
 getTVarUsage' v ta (ConsDolanType ts tb) = do
     MkTVarUsage tu conv <- getTVarUsage' v (ConsDolanType ts ta) tb
     return $ MkTVarUsage tu $ conv . swapC

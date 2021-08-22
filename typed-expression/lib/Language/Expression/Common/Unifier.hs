@@ -34,9 +34,9 @@ instance UnifyTypeSystem ts => JoinMeetCategory (UUShim ts) where
 uuLiftShim :: UnifyTypeSystem ts => TSShim ts a b -> UUShim ts a b
 uuLiftShim conv = MkUUShim $ pure conv
 
-type UUNegShimWit ts = ShimWit (UUShim ts) (TSNegWitness ts) 'Negative
+type UUNegShimWit ts = PolarShimWit (UUShim ts) (TSNegWitness ts) 'Negative
 
-type UUPosShimWit ts = ShimWit (UUShim ts) (TSPosWitness ts) 'Positive
+type UUPosShimWit ts = PolarShimWit (UUShim ts) (TSPosWitness ts) 'Positive
 
 uuLiftNegShimWit :: UnifyTypeSystem ts => TSNegShimWit ts t -> UUNegShimWit ts t
 uuLiftNegShimWit t = unNegShimWit t $ \wt conv -> mkNegShimWit wt $ uuLiftShim conv
@@ -68,7 +68,7 @@ unifyUUNegShimWit ::
     -> TSOuter ts (UUNegShimWit ts (MeetType a b))
 unifyUUNegShimWit (MkShimWit wa conva) (MkShimWit wb convb) = do
     uab <- unifyNegWitnesses @ts wa wb
-    return $ mapShimWit (iPolarPair conva convb) uab
+    return $ mapPolarShimWit (iPolarPair conva convb) uab
 
 unifyUUPosShimWit ::
        forall ts a b. UnifyTypeSystem ts
@@ -77,7 +77,7 @@ unifyUUPosShimWit ::
     -> TSOuter ts (UUPosShimWit ts (JoinType a b))
 unifyUUPosShimWit (MkShimWit wa conva) (MkShimWit wb convb) = do
     uab <- unifyPosWitnesses @ts wa wb
-    return $ mapShimWit (iPolarPair conva convb) uab
+    return $ mapPolarShimWit (iPolarPair conva convb) uab
 
 unifyUUPosNegShimWit ::
        forall ts a b. UnifyTypeSystem ts
@@ -106,7 +106,9 @@ unifierSubstitute ::
     -> a
     -> TSOuter ts a
 unifierSubstitute subs =
-    mapWitnessesM (chainShimWitM $ unifierPosSubstitute @ts subs) (chainShimWitM $ unifierNegSubstitute @ts subs)
+    mapWitnessesM
+        (chainPolarShimWitM $ unifierPosSubstitute @ts subs)
+        (chainPolarShimWitM $ unifierNegSubstitute @ts subs)
 
 unifierSubstituteAndSimplify ::
        forall ts a. (UnifyTypeSystem ts, SimplifyTypeSystem ts, TSMappable ts a)

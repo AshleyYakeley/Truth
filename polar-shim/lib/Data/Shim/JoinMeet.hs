@@ -162,11 +162,19 @@ isoShimToFunction ::
     -> Isomorphism KindFunction a b
 isoShimToFunction (MkIsomorphism ab ba) = MkIsomorphism (shimToFunction ab) (shimToFunction ba)
 
-class IsoMapShim shim => FunctionShim (shim :: ShimKind k) where
-    functionToShim :: (InKind a, InKind b) => String -> KindFunction a b -> shim a b
-    shimToFunction :: (InKind a, InKind b) => shim a b -> KindFunction a b
+class IsoMapShim shim => CoerceShim (shim :: ShimKind k) where
     coercionEnhanced :: (InKind a, InKind b) => String -> Coercion a b -> shim a b
     enhancedCoercion :: (InKind a, InKind b) => shim a b -> Maybe (Coercion a b)
+
+coerceEnhanced ::
+       forall k (shim :: ShimKind k) (a :: k) (b :: k). (CoerceShim shim, InKind a, InKind b, Coercible a b)
+    => String
+    -> shim a b
+coerceEnhanced t = coercionEnhanced t MkCoercion
+
+class CoerceShim shim => FunctionShim (shim :: ShimKind k) where
+    functionToShim :: (InKind a, InKind b) => String -> KindFunction a b -> shim a b
+    shimToFunction :: (InKind a, InKind b) => shim a b -> KindFunction a b
 
 lazyFunctionShim ::
        forall k (shim :: ShimKind k) (a :: k) (b :: k). (FunctionShim shim, InKind a, InKind b)
@@ -174,19 +182,15 @@ lazyFunctionShim ::
     -> shim a b
 lazyFunctionShim sab = functionToShim "recursive" $ shimToFunction sab
 
-coerceEnhanced ::
-       forall k (shim :: ShimKind k) (a :: k) (b :: k). (FunctionShim shim, InKind a, InKind b, Coercible a b)
-    => String
-    -> shim a b
-coerceEnhanced t = coercionEnhanced t MkCoercion
-
 instance IsoMapShim (->)
+
+instance CoerceShim (->) where
+    coercionEnhanced _ MkCoercion = coerce
+    enhancedCoercion _ = Nothing
 
 instance FunctionShim (->) where
     functionToShim _ = id
     shimToFunction = id
-    coercionEnhanced _ MkCoercion = coerce
-    enhancedCoercion _ = Nothing
 
 instance Eq a => Eq (MeetType a b) where
     BothMeetType a1 _ == BothMeetType a2 _ = a1 == a2

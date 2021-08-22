@@ -59,9 +59,9 @@ instance WitnessMappable poswit negwit (AnyInKind negwit) where
         pure $ MkAnyInKind pa'
 
 instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Type). InCategory shim =>
-             WitnessMappable (ShimWit shim poswit 'Positive) (ShimWit shim negwit 'Negative) (AnyInKind poswit) where
-    mapWitnessesM mapPos _ (MkAnyInKind w) = fmap (\(MkShimWit w' _) -> MkAnyInKind w') $ mapPos $ mkShimWit w
+             WitnessMappable (PolarShimWit shim poswit 'Positive) (PolarShimWit shim negwit 'Negative) (AnyInKind poswit) where
+    mapWitnessesM mapPos _ (MkAnyInKind w) = fmap (\(MkShimWit w' _) -> MkAnyInKind w') $ mapPos $ mkPolarShimWit w
 
 instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Type). InCategory shim =>
-             WitnessMappable (ShimWit shim poswit 'Positive) (ShimWit shim negwit 'Negative) (AnyInKind negwit) where
-    mapWitnessesM _ mapNeg (MkAnyInKind w) = fmap (\(MkShimWit w' _) -> MkAnyInKind w') $ mapNeg $ mkShimWit w
+             WitnessMappable (PolarShimWit shim poswit 'Positive) (PolarShimWit shim negwit 'Negative) (AnyInKind negwit) where
+    mapWitnessesM _ mapNeg (MkAnyInKind w) = fmap (\(MkShimWit w' _) -> MkAnyInKind w') $ mapNeg $ mkPolarShimWit w

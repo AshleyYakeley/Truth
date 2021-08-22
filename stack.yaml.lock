@@ -12,6 +12,20 @@ packages:
   original:
     hackage: mime-0.4.0.2
 - completed:
+    hackage: gi-cairo-render-0.1.0@sha256:cb27b31b373c55c5b384a331e439d1ebc2fb3e02c8a58c9bfb83218d5467af2b,3553
+    pantry-tree:
+      size: 1655
+      sha256: 5cf0f21a23e2d49a50b0f46078890160d982469ff108d7a142eefa165347dc32
+  original:
+    hackage: gi-cairo-render-0.1.0
+- completed:
+    hackage: gi-cairo-connector-0.1.0@sha256:a79c34c4f22f81a938c5835f623de55fdf1f0f08435897bad68f58e01ffd1464,1213
+    pantry-tree:
+      size: 238
+      sha256: 4414eca6922175779e3ec5d0eb932ee0d10307217a32ff6671a8f5efdd1bc4f0
+  original:
+    hackage: gi-cairo-connector-0.1.0
+- completed:
     name: haskell-src-exts
     version: 1.23.0
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
@@ -70,7 +84,7 @@ packages:
     commit: 4bd2cc37f927d270b802bc5ac9fcdc3d8d6039aa
 snapshots:
 - completed:
-    size: 567675
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/13.yaml
-    sha256: 84fa3ab606af79b1239ec213e8db5d49e4857f461eda9ac61fe589c967643b7d
-  original: lts-17.13
+    size: 587113
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/7.yaml
+    sha256: c8617e042150e4bf412d011c234aba6189f789d0cd2bd4f1a1a9ca9a0ef5d042
+  original: lts-18.7

@@ -15,10 +15,10 @@ minimalPositiveSupertypeSingular ::
     => DolanSingularType ground 'Negative a
     -> Maybe (DolanShimWit ground 'Positive a)
 minimalPositiveSupertypeSingular (VarDolanSingularType v) = Just $ varDolanShimWit v
-minimalPositiveSupertypeSingular (GroundDolanSingularType gt args) = do
+minimalPositiveSupertypeSingular (GroundedDolanSingularType gt args) = do
     MkShimWit args' conv <-
         mapInvertDolanArgumentsM invertTypeMaybe (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args
-    return $ singleDolanShimWit $ MkShimWit (GroundDolanSingularType gt args') conv
+    return $ singleDolanShimWit $ MkShimWit (GroundedDolanSingularType gt args') conv
 minimalPositiveSupertypeSingular (RecursiveDolanSingularType var t) = do
     t' <- minimalPositiveSupertype t
     return $ singleDolanShimWit $ recursiveDolanShimWit var t'
@@ -37,10 +37,10 @@ maximalNegativeSubtypeSingular ::
     => DolanSingularType ground 'Positive a
     -> Maybe (DolanShimWit ground 'Negative a)
 maximalNegativeSubtypeSingular (VarDolanSingularType v) = Just $ varDolanShimWit v
-maximalNegativeSubtypeSingular (GroundDolanSingularType gt args) = do
+maximalNegativeSubtypeSingular (GroundedDolanSingularType gt args) = do
     MkShimWit args' conv <-
         mapInvertDolanArgumentsM invertTypeMaybe (groundTypeVarianceType gt) (groundTypeVarianceMap gt) args
-    return $ singleDolanShimWit $ MkShimWit (GroundDolanSingularType gt args') conv
+    return $ singleDolanShimWit $ MkShimWit (GroundedDolanSingularType gt args') conv
 maximalNegativeSubtypeSingular (RecursiveDolanSingularType var t) = do
     t' <- maximalNegativeSubtype t
     return $ singleDolanShimWit $ recursiveDolanShimWit var t'

@@ -20,10 +20,10 @@ mergeIn1SingularType ::
     => DolanSingularType ground polarity t1
     -> DolanType ground polarity tr
     -> DolanShimWit ground polarity (JoinMeetType polarity t1 tr)
-mergeIn1SingularType ts NilDolanType = mkShimWit $ ConsDolanType ts NilDolanType
+mergeIn1SingularType ts NilDolanType = mkPolarShimWit $ ConsDolanType ts NilDolanType
 mergeIn1SingularType (VarDolanSingularType vn1) (ConsDolanType (VarDolanSingularType vn2) tr)
     | Just Refl <- testEquality vn1 vn2 =
-        mapShimWit (polarF polar1 cid) $ mergeIn1SingularType (VarDolanSingularType vn1) tr
+        mapPolarShimWit (polarF polar1 cid) $ mergeIn1SingularType (VarDolanSingularType vn1) tr
 mergeIn1SingularType ts (ConsDolanType t1 tr) =
     case mergeIn1SingularType ts tr of
         MkShimWit tsr conv ->
@@ -33,7 +33,7 @@ mergeDuplicateTypeVarsInType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => DolanType ground polarity t
     -> DolanShimWit ground polarity t
-mergeDuplicateTypeVarsInType NilDolanType = mkShimWit NilDolanType
+mergeDuplicateTypeVarsInType NilDolanType = nilDolanShimWit
 mergeDuplicateTypeVarsInType (ConsDolanType t1 tr) =
     case mergeInSingularType t1 of
         MkShimWit t1' conv1 ->

@@ -234,11 +234,11 @@ window_start = do
         in do
         std_window {"Pinafore"} $ UI.vertical
         [
-            (False, UI.label {"UTC time: " <> toText %now}),
-            (False, UI.label {"UTC date: " <> toText %utcDate}),
-            (False, UI.label {"Local time: " <> toText %localNow}),
-            (False, UI.label {"Local date: " <> toText %today}),
-            (False, UI.label {"Time zone offset minutes: " <> toText %timeZone}),
+            (False, UI.label {"UTC time: " <> show %now}),
+            (False, UI.label {"UTC date: " <> show %utcDate}),
+            (False, UI.label {"Local time: " <> show %localNow}),
+            (False, UI.label {"Local date: " <> show %today}),
+            (False, UI.label {"Time zone offset minutes: " <> show %timeZone}),
             (False, UI.button {"People"} {window_people}),
             (False, UI.button {"Calculated Form"} {window_calc}),
             (False, UI.button {"Switch"} {window_switch}),

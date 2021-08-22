@@ -22,17 +22,11 @@ type LangColour = Color (SRGB 'Linear) Double
 colourGroundType :: PinaforeGroundType '[] LangColour
 colourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangColour)|]) "Colour"
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangColour where
-    toShimWit = mkShimWit $ GroundDolanSingularType colourGroundType NilDolanArguments
+instance Is PolarityType polarity => HasPinaforeType polarity LangColour where
+    pinaforeType = groundPinaforeType
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangColour where
-    toShimWit = singleDolanShimWit toJMShimWit
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangColour where
-    fromShimWit = mkShimWit $ GroundDolanSingularType colourGroundType NilDolanArguments
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangColour where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] LangColour where
+    pinaforeGroundType = colourGroundType
 
 -- LangColour
 type LangAlphaColour = Color (Alpha (SRGB 'Linear)) Double
@@ -40,17 +34,11 @@ type LangAlphaColour = Color (Alpha (SRGB 'Linear)) Double
 alphaColourGroundType :: PinaforeGroundType '[] LangAlphaColour
 alphaColourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangAlphaColour)|]) "AlphaColour"
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangAlphaColour where
-    toShimWit = mkShimWit $ GroundDolanSingularType alphaColourGroundType NilDolanArguments
+instance Is PolarityType polarity => HasPinaforeType polarity LangAlphaColour where
+    pinaforeType = groundPinaforeType
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangAlphaColour where
-    toShimWit = singleDolanShimWit toJMShimWit
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangAlphaColour where
-    fromShimWit = mkShimWit $ GroundDolanSingularType alphaColourGroundType NilDolanArguments
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangAlphaColour where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] LangAlphaColour where
+    pinaforeGroundType = alphaColourGroundType
 
 pattern MkNLSRGB ::
         Double -> Double -> Double -> Color (SRGB 'NonLinear) Double

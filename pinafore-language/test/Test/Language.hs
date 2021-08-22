@@ -105,9 +105,6 @@ testNumbersShowRead =
         , testRead "NaN" $ Just $ InexactNumber $ 0 / 0
         , testRead "~Infinity" $ Just $ InexactNumber $ 1 / 0
         , testRead "~-Infinity" $ Just $ InexactNumber $ -1 / 0
-        , testRead " 1" $ Just $ ExactNumber 1
-        , testRead "1 " $ Just $ ExactNumber 1
-        , testRead " 1 " $ Just $ ExactNumber 1
         , testRead "z" $ Nothing @Number
         , testRead "ZZ" $ Nothing @Number
         , testRead "~1Z" $ Nothing @Number
@@ -130,14 +127,18 @@ goodLangResult False _ = LRCheckFail
 testQuery :: Text -> LangResult -> TestTree
 testQuery query expected =
     testTree (show $ unpack query) $ do
-        result <- withNullPinaforeContext $ runInterpretResult $ runPinaforeSourceScoped "<input>" $ parseValue query
+        result <-
+            withNullPinaforeContext $
+            runInterpretResult $
+            runPinaforeSourceScoped "<input>" $ do
+                v <- parseValue query
+                showPinaforeRef v
         case result of
             FailureResult e ->
                 case expected of
                     LRCheckFail -> return ()
                     _ -> assertFailure $ "check: expected success, found failure: " ++ show e
-            SuccessResult v -> do
-                let r = showPinaforeRef v
+            SuccessResult r -> do
                 me <- catchPureError r
                 case (expected, me) of
                     (LRCheckFail, _) -> assertFailure $ "check: expected failure, found success"
@@ -149,7 +150,7 @@ testQuery query expected =
 testSubsumeSubtype :: Bool -> Text -> Text -> [Text] -> [TestTree]
 testSubsumeSubtype good t1 t2 vs =
     [ testQuery ("let rec r = r end; x : " <> t1 <> "; x = r; y : " <> t2 <> "; y = x in ()") $
-      goodLangResult good $ LRSuccess "unit"
+      goodLangResult good $ LRSuccess "()"
     ] <>
     fmap
         (\v ->
@@ -228,15 +229,15 @@ testQueries =
                     , testQuery "~Infinity" $ LRSuccess "~Infinity"
                     , testQuery "~-Infinity" $ LRSuccess "~-Infinity"
                     ]
-              , testQuery "\"\"" $ LRSuccess ""
-              , testQuery "\"Hello \"" $ LRSuccess "Hello "
+              , testQuery "\"\"" $ LRSuccess "\"\""
+              , testQuery "\"Hello \"" $ LRSuccess "\"Hello \""
               , testQuery "True" $ LRSuccess "True"
               , testQuery "False" $ LRSuccess "False"
-              , testQuery "\"1\"" $ LRSuccess "1"
+              , testQuery "\"1\"" $ LRSuccess "\"1\""
               , testQuery "Std.textLength" $ LRSuccess "<?>"
               , testQuery "let opentype T in openEntity @T !\"example\"" $ LRSuccess "<?>"
               , testQuery "let opentype T in entityAnchor $ openEntity @T !\"example\"" $
-                LRSuccess "!1AF8A5FD-24AAAF3E-3668C588-6C74D36A-70ED9618-CC874895-E4569C9F-FCD42CD3"
+                LRSuccess "\"!1AF8A5FD-24AAAF3E-3668C588-6C74D36A-70ED9618-CC874895-E4569C9F-FCD42CD3\""
               ]
         , testTree
               "list construction"
@@ -263,15 +264,15 @@ testQueries =
         , testTree
               "let-binding"
               [ testQuery "let in 27" $ LRSuccess "27"
-              , testQuery "let a=\"5\" in a" $ LRSuccess "5"
+              , testQuery "let a=\"5\" in a" $ LRSuccess "\"5\""
               , testQuery "let a=5 in a" $ LRSuccess "5"
               , testQuery "let a=1 in let a=2 in a" $ LRSuccess "2"
               , testQuery "let a=1;b=2 in a" $ LRSuccess "1"
               , testQuery "let a=1;b=2 in b" $ LRSuccess "2"
               , testQuery "let a=1;b=2 in b" $ LRSuccess "2"
-              , testQuery "let a=1;b=\"2\" in b" $ LRSuccess "2"
-              , testQuery "let a=1 ;b=\"2\" in b" $ LRSuccess "2"
-              , testQuery "let a= 1 ;b=\"2\" in b" $ LRSuccess "2"
+              , testQuery "let a=1;b=\"2\" in b" $ LRSuccess "\"2\""
+              , testQuery "let a=1 ;b=\"2\" in b" $ LRSuccess "\"2\""
+              , testQuery "let a= 1 ;b=\"2\" in b" $ LRSuccess "\"2\""
               , testQuery "let a=7;b=a in a" $ LRSuccess "7"
               , testQuery "let a=7;b=a in b" $ LRSuccess "7"
               , testQuery "let a=2 in let b=a in b" $ LRSuccess "2"
@@ -374,10 +375,10 @@ testQueries =
               , testQuery "7 +8" $ LRSuccess "15"
               , testQuery "7+ 8" $ LRSuccess "15"
               , testQuery "7 + 8" $ LRSuccess "15"
-              , testQuery "\"abc\"<>\"def\"" $ LRSuccess "abcdef"
-              , testQuery "\"abc\" <>\"def\"" $ LRSuccess "abcdef"
-              , testQuery "\"abc\"<> \"def\"" $ LRSuccess "abcdef"
-              , testQuery "\"abc\" <> \"def\"" $ LRSuccess "abcdef"
+              , testQuery "\"abc\"<>\"def\"" $ LRSuccess "\"abcdef\""
+              , testQuery "\"abc\" <>\"def\"" $ LRSuccess "\"abcdef\""
+              , testQuery "\"abc\"<> \"def\"" $ LRSuccess "\"abcdef\""
+              , testQuery "\"abc\" <> \"def\"" $ LRSuccess "\"abcdef\""
               , testQuery "let f x = x + 2 in f -1" $ LRSuccess "1"
               , testQuery "let f = 2 in f - 1" $ LRSuccess "1"
               ]
@@ -396,9 +397,9 @@ testQueries =
               ]
         , testTree
               "text"
-              [ testQuery "\"pqrs\"" $ LRSuccess "pqrs"
+              [ testQuery "\"pqrs\"" $ LRSuccess "\"pqrs\""
               , testQuery "textLength \"abd\"" $ LRSuccess "3"
-              , testQuery "textSection 4 3 \"ABCDEFGHIJKLMN\"" $ LRSuccess "EFG"
+              , testQuery "textSection 4 3 \"ABCDEFGHIJKLMN\"" $ LRSuccess "\"EFG\""
               ]
         , testTree
               "operator precedence"
@@ -418,9 +419,10 @@ testQueries =
         , testTree "pairs" [testQuery "fst (7,9)" $ LRSuccess "7", testQuery "snd (7,9)" $ LRSuccess "9"]
         , testTree
               "either"
-              [ testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Left \"x\"" $ LRSuccess "(Left, x)"
+              [ testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Left \"x\"" $
+                LRSuccess "(\"Left\", \"x\")"
               , testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Right \"x\"" $
-                LRSuccess "(Right, x)"
+                LRSuccess "(\"Right\", \"x\")"
               ]
         , testTree
               "type signature"
@@ -429,9 +431,9 @@ testQueries =
               , testQuery "let i : a -> a; i x = x in i 3" $ LRSuccess "3"
               , testQuery "let i : Number -> Number; i x = x in i 3" $ LRSuccess "3"
               , testQuery "let i : Text -> Text; i x = x in i 3" $ LRCheckFail
-              , testQuery "let i : a -> a; i x = x in i \"t\"" $ LRSuccess "t"
+              , testQuery "let i : a -> a; i x = x in i \"t\"" $ LRSuccess "\"t\""
               , testQuery "let i : Number -> Number; i x = x in i \"t\"" $ LRCheckFail
-              , testQuery "let i : Text -> Text; i x = x in i \"t\"" $ LRSuccess "t"
+              , testQuery "let i : Text -> Text; i x = x in i \"t\"" $ LRSuccess "\"t\""
               , testQuery "let i : a -> a; i x = x in 0" $ LRSuccess "0"
               , testQuery "let i : a -> Number; i x = x in 0" $ LRCheckFail
               , testQuery "let i : Number -> a; i x = x in 0" $ LRCheckFail
@@ -444,9 +446,9 @@ testQueries =
                     "polar"
                     [ testQuery "let x : Text | Number; x = 3 in x" $ LRSuccess "3"
                     , testQuery "let f : Any -> Integer; f _ = 3 in f ()" $ LRSuccess "3"
-                    , testQuery "(\\x -> (x,x)) : ((a & Number) -> (Literal,a))" $ LRSuccess "<?>"
-                    , testQuery "let f = (\\x -> (x,x)) : (a & Number) -> (Literal,a) in f 3" $ LRSuccess "(3, 3)"
-                    , testQuery "let f : (a & Number) -> (Literal,a); f x = (x,x) in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "(\\x -> (x,x)) : ((a & Number) -> (Showable,a))" $ LRSuccess "<?>"
+                    , testQuery "let f = (\\x -> (x,x)) : (a & Number) -> (Showable,a) in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "let f : (a & Number) -> (Showable,a); f x = (x,x) in f 3" $ LRSuccess "(3, 3)"
                     ]
               ]
         , testTree
@@ -526,20 +528,20 @@ testQueries =
               ]
         , testTree
               "subsume"
-              [ testQuery "let rec a: (); a = a end in ()" $ LRSuccess "unit"
-              , testQuery "let rec a: Integer; a = a end in ()" $ LRSuccess "unit"
-              , testQuery "let a: Integer|Text; a = error \"undefined\" in ()" $ LRSuccess "unit"
-              , testQuery "let rec a: Integer|Text; a = a end in ()" $ LRSuccess "unit"
-              , testQuery "let a: Integer|Text; a = 3 in ()" $ LRSuccess "unit"
-              , testQuery "let a: Integer|Text; a = 3; b: Integer|Text; b = 3 in ()" $ LRSuccess "unit"
-              , testQuery "let a: Integer|Text; a = 3; b: Integer|Text; b = a in ()" $ LRSuccess "unit"
-              , testQuery "let rec r = r end in let a: Integer|Text; a = r in ()" $ LRSuccess "unit"
-              , testQuery "let rec r = r end; a: Integer|Text; a = r in ()" $ LRSuccess "unit"
-              , testQuery "let rec r = a; a: Integer|Text; a = r end in ()" $ LRSuccess "unit"
-              , testQuery "let rec a: None; a = a end in ()" $ LRSuccess "unit"
-              , testQuery "let rec r = r end in let a : None; a = r in ()" $ LRSuccess "unit"
-              , testQuery "let rec r = r end; a: None; a = r in ()" $ LRSuccess "unit"
-              , testQuery "let rec r = a; a: None; a = r end in ()" $ LRSuccess "unit"
+              [ testQuery "let rec a: (); a = a end in ()" $ LRSuccess "()"
+              , testQuery "let rec a: Integer; a = a end in ()" $ LRSuccess "()"
+              , testQuery "let a: Integer|Text; a = error \"undefined\" in ()" $ LRSuccess "()"
+              , testQuery "let rec a: Integer|Text; a = a end in ()" $ LRSuccess "()"
+              , testQuery "let a: Integer|Text; a = 3 in ()" $ LRSuccess "()"
+              , testQuery "let a: Integer|Text; a = 3; b: Integer|Text; b = 3 in ()" $ LRSuccess "()"
+              , testQuery "let a: Integer|Text; a = 3; b: Integer|Text; b = a in ()" $ LRSuccess "()"
+              , testQuery "let rec r = r end in let a: Integer|Text; a = r in ()" $ LRSuccess "()"
+              , testQuery "let rec r = r end; a: Integer|Text; a = r in ()" $ LRSuccess "()"
+              , testQuery "let rec r = a; a: Integer|Text; a = r end in ()" $ LRSuccess "()"
+              , testQuery "let rec a: None; a = a end in ()" $ LRSuccess "()"
+              , testQuery "let rec r = r end in let a : None; a = r in ()" $ LRSuccess "()"
+              , testQuery "let rec r = r end; a: None; a = r in ()" $ LRSuccess "()"
+              , testQuery "let rec r = a; a: None; a = r end in ()" $ LRSuccess "()"
               , testQuery "let a: [Integer|Text]; a = [] in a" $ LRSuccess "[]"
               , testQuery "let a: [Integer]|[Text]; a = [] in a" $ LRSuccess "[]"
               , testSameType True "Integer" "Integer" ["56"]
@@ -572,10 +574,10 @@ testQueries =
                                  "rec a. (Maybe a | [a])"
                                  "(rec a. Maybe a) | (rec a. [a])"
                                  ["[]", "Nothing", "Just []", "[[]]"]
-                           , testSubtype True "rec a. [a]" "Entity" []
-                           , testSubtype True "[rec a. [a]]" "Entity" []
-                           , testSubtype True "rec a. [a]" "[Entity]" ["[]"]
-                           , testSubtype True "[rec a. [a]]" "[Entity]" ["[]"]
+                           , testSubtype True "rec a. [a]" "Showable" []
+                           , testSubtype True "[rec a. [a]]" "Showable" []
+                           , testSubtype True "rec a. [a]" "[Showable]" ["[]"]
+                           , testSubtype True "[rec a. [a]]" "[Showable]" ["[]"]
                            , testSameType False "None" "None" []
                            , testSameType False "rec a. a" "None" []
                            , testSameType False "[rec a. a]" "[None]" ["[]"]
@@ -610,8 +612,8 @@ testQueries =
                     ]
               , testTree
                     "subsume"
-                    [ testQuery "let rec rval: rec a. Maybe a; rval = rval end in ()" $ LRSuccess "unit"
-                    , testQuery "let rec rval: rec a. Maybe a; rval = Just rval end in ()" $ LRSuccess "unit"
+                    [ testQuery "let rec rval: rec a. Maybe a; rval = rval end in ()" $ LRSuccess "()"
+                    , testQuery "let rec rval: rec a. Maybe a; rval = Just rval end in ()" $ LRSuccess "()"
                     , testQuery
                           "let rec rcount: (rec a. Maybe a) -> Integer; rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end end in rcount" $
                       LRSuccess "<?>"
@@ -641,7 +643,7 @@ testQueries =
                       LRSuccess "1"
                     , testQuery
                           "let rec rcount: (rec x. Maybe x) -> Integer; rcount = rcount1; rcount1: (rec x. Maybe x) -> Integer; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end end in ()" $
-                      LRSuccess "unit"
+                      LRSuccess "()"
                     , testQuery
                           "let rec rcount = rcount1; rcount1 x = case x of Nothing -> 0; Just y -> 1 + rcount y end end in rcount $ Just Nothing" $
                       LRSuccess "1"

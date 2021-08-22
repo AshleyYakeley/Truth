@@ -1,5 +1,7 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
+  * Install
+    - install on Ubuntu 18.04, 21.04, Debian buster
   * Language
     - overhaul of declarations
       . declarations now non-recursive, with recursive rec-blocks
@@ -9,9 +11,13 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - :doc to retrieve name documentation
   * Library
     - Std
+      . Literal type now byte array rather than text
+      . add Showable type for showing, show replacing toText
       . add min/max/lesser/greater functions
     - Drawing
       . Cairo-based functions for creating drawings
+  * Storage
+    - Store literals as binary rather than as text
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

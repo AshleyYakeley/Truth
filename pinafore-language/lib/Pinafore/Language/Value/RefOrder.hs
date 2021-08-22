@@ -15,8 +15,11 @@ newtype LangRefOrder a =
 instance Contravariant LangRefOrder where
     contramap ba (MkLangRefOrder o) = MkLangRefOrder $ mapModelRefOrder ba o
 
-instance HasVariance 'Contravariance LangRefOrder where
-    varianceRepresentational = Nothing
+instance MaybeRepresentational LangRefOrder where
+    maybeRepresentational = Nothing
+
+instance HasVariance LangRefOrder where
+    type VarianceOf LangRefOrder = 'Contravariance
 
 pureLangRefOrder :: forall a. Order a -> LangRefOrder a
 pureLangRefOrder cmp = MkLangRefOrder $ pureModelRefOrder cmp

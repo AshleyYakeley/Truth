@@ -12,13 +12,13 @@ import Shapes
 
 occursInArg ::
        forall (ground :: GroundTypeKind) polarity n sv a. IsDolanGroundType ground
-    => VarianceType sv
+    => CCRVarianceType sv
     -> SymbolType n
     -> SingleArgument sv (DolanType ground) polarity a
     -> Bool
-occursInArg CovarianceType n t = occursInType n t
-occursInArg ContravarianceType n t = occursInType n t
-occursInArg RangevarianceType n (MkRangeType tp tq) = occursInType n tp || occursInType n tq
+occursInArg CoCCRVarianceType n t = occursInType n t
+occursInArg ContraCCRVarianceType n t = occursInType n t
+occursInArg RangeCCRVarianceType n (MkRangeType tp tq) = occursInType n tp || occursInType n tq
 
 occursInArgs ::
        forall (ground :: GroundTypeKind) polarity n dv t a. IsDolanGroundType ground
@@ -38,7 +38,7 @@ occursInSingularType ::
 occursInSingularType n (VarDolanSingularType nt)
     | Just Refl <- testEquality n nt = True
 occursInSingularType _ (VarDolanSingularType _) = False
-occursInSingularType n (GroundDolanSingularType gt args) = occursInArgs (groundTypeVarianceType gt) n args
+occursInSingularType n (GroundedDolanSingularType gt args) = occursInArgs (groundTypeVarianceType gt) n args
 occursInSingularType n (RecursiveDolanSingularType n' _)
     | Just Refl <- testEquality n n' = False
 occursInSingularType n (RecursiveDolanSingularType _ pt) = occursInType n pt

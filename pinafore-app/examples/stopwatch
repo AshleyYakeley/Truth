@@ -17,8 +17,8 @@ toggleStopwatch now r = do
 
 showStopwatch: StopwatchState -> Time -> Text;
 showStopwatch state n = case state of
-    StoppedState d -> "[" <> toText d <> "]";
-    RunningState t -> toText $ diffTime n t
+    StoppedState d -> "[" <> show d <> "]";
+    RunningState t -> show $ diffTime n t
     end;
 
 ui: WholeRef +Time -> WholeRef StopwatchState -> UI.Element;

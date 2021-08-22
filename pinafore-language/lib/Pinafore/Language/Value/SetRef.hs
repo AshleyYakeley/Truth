@@ -26,8 +26,11 @@ instance Contravariant LangSetRef where
             rset $ MkTupleUpdateReader (MkFunctionSelector $ ab a) ReadWhole
         in MkLangSetRef eqa $ eaMap (partialiseChangeLens mapset (contramapPartialFunctionChangeLens ab matchba)) sv
 
-instance HasVariance 'Contravariance LangSetRef where
-    varianceRepresentational = Nothing
+instance MaybeRepresentational LangSetRef where
+    maybeRepresentational = Nothing
+
+instance HasVariance LangSetRef where
+    type VarianceOf LangSetRef = 'Contravariance
 
 langSetRefImmutable :: forall a. LangSetRef a -> LangSetRef a
 langSetRefImmutable (MkLangSetRef eq sv) =

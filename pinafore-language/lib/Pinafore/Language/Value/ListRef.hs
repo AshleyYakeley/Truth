@@ -18,8 +18,10 @@ instance CatFunctor (CatRange (->)) (->) LangListRef where
     cfmap (MkCatRange pp qq) (FullLangListRef model) =
         FullLangListRef $ eaMap (mappingBiChangeLens (listWholeChangeMap pp) (listWholeChangeMap qq)) model
 
-instance HasVariance 'Rangevariance LangListRef where
-    varianceRepresentational = Nothing
+instance MaybeRepresentational LangListRef where
+    maybeRepresentational = Nothing
+
+instance HasCCRVariance 'RangeCCRVariance LangListRef
 
 langListRefToOrdered :: LangListRef '( p, q) -> WModel (OrderedListUpdate [q] (ROWUpdate q))
 langListRefToOrdered (OrderedLangListRef model) = model

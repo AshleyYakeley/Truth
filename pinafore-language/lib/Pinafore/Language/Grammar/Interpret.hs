@@ -66,7 +66,7 @@ interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
                     let
                         pc :: QPatternConstructor
                         pc =
-                            toPatternConstructor dtp (ConsListType (mkShimWit tp) NilListType) $ \dt ->
+                            toPatternConstructor dtp (ConsListType (mkPolarShimWit tp) NilListType) $ \dt ->
                                 fmap (\a -> (a, ())) (shimToFunction convm dt)
                     qConstructPattern pc [pat]
 
@@ -237,9 +237,9 @@ interpretNamedConstructor spos n = do
 interpretConstructor :: SourcePos -> SyntaxConstructor -> RefExpression
 interpretConstructor _ (SLNumber n) =
     return $
-    case numberCheckSafeRational n of
+    case decode safeRationalNumber n of
         Just r ->
-            case safeRationalCheckInteger r of
+            case decode integerSafeRational r of
                 Just i -> qConstExprAny $ jmToValue i
                 Nothing -> qConstExprAny $ jmToValue r
         Nothing -> qConstExprAny $ jmToValue n

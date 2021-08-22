@@ -106,7 +106,7 @@ testEntity =
         , tGroup
               "equality"
               [ testExpectSuccess "testeqval 1 1"
-              , testExpectSuccess "testeqval 1 \"1\""
+              , testExpectSuccess "testeqval False $ 1 == \"1\""
               , testExpectSuccess "testeqval False $ 0 == 1"
               , testExpectSuccess "testeqval True $ 1 == 1"
               , testExpectSuccess "testeqval False $ 1 == ~1"
@@ -152,8 +152,8 @@ testEntity =
               , testExpectSuccess "expectStop $ do r <- newMemWhole; immutWhole r := 5; end"
               ]
         , tDecls
-              [ "showVal: Literal -> Action (); showVal v = Debug.message $ toText v"
-              , "showList: [Literal] -> Action (); showList l = do Debug.message \"[[[\"; for_ l showVal;  Debug.message \"]]]\"; end"
+              [ "showVal: Showable -> Action (); showVal v = Debug.message $ show v"
+              , "showList: [Showable] -> Action (); showList l = do Debug.message \"[[[\"; for_ l showVal;  Debug.message \"]]]\"; end"
               , mif False "testImmutList: Boolean -> Integer -> (ListRef Integer -> Action ()) -> Action ();" <>
                 "testImmutList present n call = do lr <- newMemWhole; lr := [10,20,30]; r <- listGetItemRef present n lr; ir <- listGetItemRef present n $ immutWhole lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
               ] $
@@ -208,8 +208,8 @@ testEntity =
                     [ testExpectSuccess "testconvr 1"
                     , testExpectSuccess "testconvr 2.5"
                     , testExpectSuccess "testeq {convl 31.5} {convl $ convn 31.5}"
-                    , testExpectSuccess "testeq {\"63/2\"} {toText 31.5}"
-                    , testExpectSuccess "testeq {\"63/2\"} {toText $ convn 31.5}"
+                    , testExpectSuccess "testeq {\"63/2\"} {show 31.5}"
+                    , testExpectSuccess "testeq {\"63/2\"} {show $ convn 31.5}"
                     ]
               ]
         , tDecls
@@ -813,5 +813,14 @@ testEntity =
               , testExpectSuccess "testleft $ evaluate @Integer \"\\\"hello\\\"\""
               , testExpectSuccess
                     "do r <- newMemWhole; ar <- evaluate @(WholeRef Integer -> Action ()) \"\\\\r -> r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
+              ]
+        , tGroup
+              "text-sort"
+              [ testExpectSuccess "testeq {EQ} {alphabetical \"a\" \"a\"}"
+              , testExpectSuccess "testeq {EQ} {alphabetical \"A\" \"A\"}"
+              , testExpectSuccess "testeq {LT} {alphabetical \"a\" \"A\"}"
+              , testExpectSuccess "testeq {LT} {alphabetical \"a\" \"b\"}"
+              , testExpectSuccess "testeq {LT} {alphabetical \"A\" \"b\"}"
+              , testExpectSuccess "testeq {LT} {alphabetical \"a\" \"B\"}"
               ]
         ]

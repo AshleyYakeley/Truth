@@ -31,7 +31,7 @@ showValType :: QValue -> String
 showValType (MkAnyValue (MkShimWit t _) _) = show t
 
 testUnifyToType ::
-       forall t. FromPinaforeType t
+       forall t. HasPinaforeType 'Negative t
     => PinaforeSourceInterpreter QValue
     -> [PinaforeBisubstitution]
     -> (t -> IO ())
@@ -46,7 +46,7 @@ testUnifyToType mval bisubs checkVal =
         liftIO $ checkVal found
 
 testInterpret ::
-       forall t. FromPinaforeType t
+       forall t. HasPinaforeType 'Negative t
     => Text
     -> (t -> IO ())
     -> ScriptTestTree

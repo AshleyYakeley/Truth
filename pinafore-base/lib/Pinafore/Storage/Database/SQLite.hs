@@ -40,11 +40,15 @@ deriving instance FromField Predicate
 deriving instance ToField Predicate
 
 instance FieldType Literal where
-    fieldTypeName = fieldTypeName @Text
+    fieldTypeName = "BLOB"
 
-deriving instance FromField Literal
+instance FromField Literal where
+    fromField f = do
+        bs <- fromField f
+        decode serializeStrictCodec bs
 
-deriving instance ToField Literal
+instance ToField Literal where
+    toField = toField . encodeM serializeStrictCodec
 
 instance WitnessConstraint FromField TripleTable where
     witnessConstraint TriplePredicate = Dict

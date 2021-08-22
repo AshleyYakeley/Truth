@@ -14,9 +14,9 @@ class (Monad (TSOuter ts), Category (TSShim ts), InCategory (TSShim ts), Eq (TSN
     type TSShim ts :: Type -> Type -> Type
     type TSName ts :: Type
 
-type TSNegShimWit ts = ShimWit (TSShim ts) (TSNegWitness ts) 'Negative
+type TSNegShimWit ts = PolarShimWit (TSShim ts) (TSNegWitness ts) 'Negative
 
-type TSPosShimWit ts = ShimWit (TSShim ts) (TSPosWitness ts) 'Positive
+type TSPosShimWit ts = PolarShimWit (TSShim ts) (TSPosWitness ts) 'Positive
 
 type TSMappable ts = WitnessMappable (TSPosShimWit ts) (TSNegShimWit ts)
 

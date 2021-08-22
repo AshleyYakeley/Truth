@@ -8,7 +8,6 @@ module Pinafore.Language.Library.GTK.Drawing
 import Changes.UI.GTK
 import Data.Shim
 import Graphics.Cairo.Functional
-import Language.Expression.Dolan
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Colour
 import Shapes hiding (rotate)
@@ -20,17 +19,11 @@ type LangDrawing = UIDrawing
 drawingGroundType :: PinaforeGroundType '[] LangDrawing
 drawingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangDrawing)|]) "Drawing"
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangDrawing where
-    toShimWit = mkShimWit $ GroundDolanSingularType drawingGroundType NilDolanArguments
+instance Is PolarityType polarity => HasPinaforeType polarity LangDrawing where
+    pinaforeType = groundPinaforeType
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangDrawing where
-    toShimWit = singleDolanShimWit toJMShimWit
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangDrawing where
-    fromShimWit = mkShimWit $ GroundDolanSingularType drawingGroundType NilDolanArguments
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangDrawing where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] LangDrawing where
+    pinaforeGroundType = drawingGroundType
 
 -- LangPath
 type LangPath = Path
@@ -38,17 +31,8 @@ type LangPath = Path
 pathGroundType :: PinaforeGroundType '[] LangPath
 pathGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangPath)|]) "Path"
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangPath where
-    toShimWit = mkShimWit $ GroundDolanSingularType pathGroundType NilDolanArguments
-
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangPath where
-    toShimWit = singleDolanShimWit toJMShimWit
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangPath where
-    fromShimWit = mkShimWit $ GroundDolanSingularType pathGroundType NilDolanArguments
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangPath where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] LangPath where
+    pinaforeGroundType = pathGroundType
 
 -- LangPattern
 type LangPattern = Pattern
@@ -56,17 +40,8 @@ type LangPattern = Pattern
 patternGroundType :: PinaforeGroundType '[] LangPattern
 patternGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangPattern)|]) "Pattern"
 
-instance ToShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Positive) LangPattern where
-    toShimWit = mkShimWit $ GroundDolanSingularType patternGroundType NilDolanArguments
-
-instance ToShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) LangPattern where
-    toShimWit = singleDolanShimWit toJMShimWit
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeSingularType 'Negative) LangPattern where
-    fromShimWit = mkShimWit $ GroundDolanSingularType patternGroundType NilDolanArguments
-
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) LangPattern where
-    fromShimWit = singleDolanShimWit fromJMShimWit
+instance HasPinaforeGroundType '[] LangPattern where
+    pinaforeGroundType = patternGroundType
 
 type UIP = PixelPoint -> UIEvents
 
@@ -79,8 +54,8 @@ alphaColourToTuple (MkLangAlphaColour op col) = (colourToTuple col, op)
 toPatternColorStop :: (Double, LangAlphaColour) -> PatternColorStop
 toPatternColorStop (offset, MkLangAlphaColour op col) = MkPatternColorStop offset (colourToTuple col, Just op)
 
-instance FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) PatternColorStop where
-    fromShimWit = mapNegShimWit (functionToShim "toPatternColorStop" toPatternColorStop) fromJMShimWit
+instance HasPinaforeType 'Negative PatternColorStop where
+    pinaforeType = mapNegShimWit (functionToShim "toPatternColorStop" toPatternColorStop) pinaforeType
 
 source :: LangAlphaColour -> LangDrawing -> LangDrawing
 source acol = sourceRGBA $ alphaColourToTuple acol

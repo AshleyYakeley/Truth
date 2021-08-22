@@ -18,6 +18,7 @@ module Test.RunScript
     ) where
 
 import Changes.Core
+import Data.Shim
 import Pinafore
 import Pinafore.Test
 import Shapes
@@ -63,7 +64,7 @@ prefix :: [String] -> Text
 prefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
 
 testExpression ::
-       forall a. FromPinaforeType a
+       forall a. HasPinaforeType 'Negative a
     => Text
     -> Text
     -> ((?pinafore :: PinaforeContext) => ChangesContext -> IO a -> LifeCycle ())

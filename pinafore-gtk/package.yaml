@@ -11,6 +11,7 @@ library:
       - base >= 4.12
       - shapes
       - time
+      - polar-shim
       - typed-expression
       - Color
       - gi-cairo-render

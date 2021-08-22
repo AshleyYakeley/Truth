@@ -55,8 +55,9 @@ goldenTest' name call =
 
 testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
-    => ChangeLens (WholeUpdate a) (ROWUpdate a)
-testUpdateFunction = let
+    => IO ()
+    -> ChangeLens (WholeUpdate a) (ROWUpdate a)
+testUpdateFunction signal = let
     clRead :: ReadFunction (WholeReader a) (WholeReader a)
     clRead mr = mr
     clUpdate ::
@@ -68,33 +69,42 @@ testUpdateFunction = let
         s' <- mr ReadWhole
         liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
         liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
+        liftIO signal
         return [MkReadOnlyUpdate $ MkWholeReaderUpdate s]
     in MkChangeLens {clPutEdits = clPutEditsNone, ..}
+
+barrier :: IO (IO (), IO ())
+barrier = do
+    mvar <- newEmptyMVar
+    let
+        signal = putMVar mvar ()
+        wait = takeMVar mvar
+    return (signal, wait)
 
 testUpdateReference :: TestTree
 testUpdateReference =
     goldenTest' "updateReference" $ do
         obj <- makeMemoryReference "old" $ \_ -> True
         var <- newEmptyMVar
+        (signal, wait) <- barrier
         let
             om :: Premodel (WholeUpdate String) ()
             om = reflectingPremodel obj
             lens :: FloatingChangeLens (WholeUpdate String) (WholeUpdate String)
-            lens = changeLensToFloating $ fromReadOnlyRejectingChangeLens . testUpdateFunction
-            recv :: ResourceContext -> NonEmpty (WholeUpdate String) -> EditContext -> IO ()
-            recv _ ee _ =
-                putMVar var $ for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv update edit: " <> show s
-            recv' :: ResourceContext -> NonEmpty (WholeUpdate String) -> EditContext -> IO ()
-            recv' _ ee _ =
-                putMVar var $ for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv' update edit: " <> show s
+            lens = changeLensToFloating $ fromReadOnlyRejectingChangeLens . testUpdateFunction signal
+            recv :: String -> IO () -> ResourceContext -> NonEmpty (WholeUpdate String) -> EditContext -> IO ()
+            recv name w _ ee _ =
+                putMVar var $ do
+                    w
+                    for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ name <> " update edit: " <> show s
             showAction :: IO ()
             showAction = do
                 action <- takeMVar var
                 action
         runLifeCycle $ do
             om' <- sharePremodel om
-            omr' <- om' ?rc mempty recv
-            _ <- mapPremodel ?rc lens (om' ?rc) mempty recv'
+            omr' <- om' ?rc mempty $ recv "recv1" wait
+            _ <- mapPremodel ?rc lens (om' ?rc) mempty $ recv "recv2" (return ())
             liftIO $
                 runResource ?rc (pmrReference omr') $ \MkAReference {..} ->
                     pushOrFail "failed" noEditSource $ refEdit $ pure $ MkWholeReaderEdit "new"
@@ -122,19 +132,21 @@ subscribeShowUpdates ::
 subscribeShowUpdates name sub = do
     chan <- liftIO newChan
     lifeCycleClose $ do
+        threadDelay 1000 -- 1ms to allow for updates to finish
         writeChan chan Nothing
         final <- readChan chan
         -- verify that update has been shown
         case final of
             Nothing -> return ()
-            _ -> fail "updates left over"
+            Just update -> fail $ name <> ": update left over: " <> show update
     runResource ?rc sub $ \asub ->
         aModelSubscribe asub mempty $ \_ updates _ -> for_ updates $ \update -> writeChan chan $ Just update
-    return $ do
-        mupdate <- liftIO $ readChan chan
-        case mupdate of
-            Just update -> outputNameLn name $ "receive " ++ show update
-            Nothing -> fail "premature end of updates"
+    return $
+        liftIO $ do
+            mupdate <- readChan chan
+            case mupdate of
+                Just update -> outputNameLn name $ "receive " ++ show update
+                Nothing -> fail "premature end of updates"
 
 showModelSubject ::
        (Show (UpdateSubject update), FullSubjectReader (UpdateReader update), ?handle :: Handle, ?rc :: ResourceContext)
@@ -491,6 +503,8 @@ testPairedString1 =
             "pair"
             pairSub
             [pure $ MkTupleUpdateEdit SelectFirst $ StringReplaceSection (startEndRun 1 1) "x"]
+        mainShowUpdate
+        pairShowUpdate
         pairShowUpdate
         mainShow
         modelPushEdits
@@ -498,6 +512,7 @@ testPairedString1 =
             pairSub
             [pure $ MkTupleUpdateEdit SelectSecond $ StringReplaceSection (startEndRun 3 3) "y"]
         mainShowUpdate
+        pairShowUpdate
         pairShowUpdate
         mainShow
 

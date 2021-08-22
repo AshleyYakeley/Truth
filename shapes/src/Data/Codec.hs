@@ -1,10 +1,10 @@
 module Data.Codec where
 
 import Data.CatFunctor
+import Data.IsoVariant
 import Data.Isomorphism
 import Data.MonadOne
 import Data.Result
-import qualified Data.Serialize as Serialize
 import Shapes.Import
 
 class IsBiMap bm where
@@ -33,12 +33,15 @@ data Codec' m a b = MkCodec
 decodeMaybe :: MonadOne m => Codec' m a b -> a -> Maybe b
 decodeMaybe codec = getMaybeOne . decode codec
 
+instance Functor m => IsoVariant (Codec' m p) where
+    isoMap ab ba (MkCodec d e) = MkCodec (\p -> fmap ab $ d p) (e . ba)
+
 instance IsBiMap Codec' where
     mapBiMapM ff codec = MkCodec {decode = ff . (decode codec), encode = encode codec}
 
 type Codec = Codec' Maybe
 
-instance (Monad m) => Category (Codec' m) where
+instance Monad m => Category (Codec' m) where
     id = MkCodec return id
     (MkCodec bmc cb) . (MkCodec amb ba) = MkCodec (\a -> (amb a) >>= bmc) (ba . cb)
 
@@ -48,21 +51,18 @@ bijectionCodec (MkIsomorphism p q) = MkCodec (pure . p) q
 instance (Traversable f, Applicative m) => CatFunctor (Codec' m) (Codec' m) f where
     cfmap codec = MkCodec {decode = traverse (decode codec), encode = fmap (encode codec)}
 
-serializeLazyCodec ::
-       forall m t. (MonadFail m, Serialize t)
-    => Codec' m LazyByteString t
-serializeLazyCodec = let
-    encode = Serialize.encodeLazy
-    decode = resultToM . eitherToResult . Serialize.decodeLazy
-    in MkCodec {..}
-
-serializeStrictCodec ::
-       forall m t. (MonadFail m, Serialize t)
-    => Codec' m StrictByteString t
-serializeStrictCodec = let
-    encode = Serialize.encode
-    decode = resultToM . eitherToResult . Serialize.decode
-    in MkCodec {..}
-
 encodeM :: Codec a b -> b -> a
 encodeM = encode
+
+readShowCodec :: (Read a, Show a) => Codec String a
+readShowCodec = MkCodec readMaybe show
+
+class CodecMap f where
+    codecMap :: forall a b. Codec a b -> f a -> f b
+    default codecMap :: MonadPlus f => forall a b. Codec a b -> f a -> f b
+    codecMap codec fa = do
+        a <- fa
+        mpure $ decode codec a
+
+instance CodecMap (Codec p) where
+    codecMap = (.)

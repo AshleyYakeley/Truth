@@ -19,8 +19,10 @@ unLangFiniteSetRef (MkLangFiniteSetRef tr lv) =
 instance CatFunctor (CatRange (->)) (->) LangFiniteSetRef where
     cfmap f (MkLangFiniteSetRef r v) = MkLangFiniteSetRef (cfmap f r) v
 
-instance HasVariance 'Rangevariance LangFiniteSetRef where
-    varianceRepresentational = Nothing
+instance MaybeRepresentational LangFiniteSetRef where
+    maybeRepresentational = Nothing
+
+instance HasCCRVariance 'RangeCCRVariance LangFiniteSetRef
 
 langFiniteSetRefValue :: LangFiniteSetRef '( q, q) -> WModel (FiniteSetUpdate q)
 langFiniteSetRefValue (MkLangFiniteSetRef tr lv) =
@@ -128,7 +130,7 @@ langFiniteSetRefSetDifference :: forall p q. LangFiniteSetRef '( p, q) -> LangSe
 langFiniteSetRefSetDifference a b = langFiniteSetRefSetIntersect a $ langSetRefComplement b
 
 wholeListFiniteSetChangeLens :: Eq a => ChangeLens (WholeUpdate [a]) (FiniteSetUpdate a)
-wholeListFiniteSetChangeLens = convertChangeLens . bijectionWholeChangeLens isoCoerce
+wholeListFiniteSetChangeLens = convertChangeLens . bijectionWholeChangeLens coerceIsomorphism
 
 langListRefToFiniteSetRef ::
        forall a. LangWholeRef '( [a], [MeetType Entity a]) -> LangFiniteSetRef '( MeetType Entity a, a)

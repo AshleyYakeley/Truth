@@ -36,17 +36,17 @@ subtypeVariance ::
        forall (w :: Polarity -> Type -> Type) (shim :: ShimKind Type) solver pola polb sv a b.
        (Applicative solver, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext w shim solver
-    -> VarianceType sv
+    -> CCRVarianceType sv
     -> SingleArgument sv w pola a
     -> SingleArgument sv w polb b
-    -> solver (VarianceCategory shim sv a b)
-subtypeVariance sc CovarianceType ta tb = subtypeConvert sc ta tb
-subtypeVariance sc ContravarianceType ta tb =
+    -> solver (CCRVarianceCategory shim sv a b)
+subtypeVariance sc CoCCRVarianceType ta tb = subtypeConvert sc ta tb
+subtypeVariance sc ContraCCRVarianceType ta tb =
     invertPolarity @pola $
     invertPolarity @polb $ do
         ba <- subtypeConvert sc tb ta
         return $ MkCatDual ba
-subtypeVariance sc RangevarianceType (MkRangeType tpa tqa) (MkRangeType tpb tqb) =
+subtypeVariance sc RangeCCRVarianceType (MkRangeType tpa tqa) (MkRangeType tpb tqb) =
     invertPolarity @pola $
     invertPolarity @polb $ do
         pba <- subtypeConvert sc tpb tpa
@@ -71,7 +71,7 @@ subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDola
                 Dict ->
                     case applyFunctionKindWitness (inKind @_ @gta) stb of
                         Dict ->
-                            case varianceCoercibleKind svt of
+                            case ccrVarianceCoercibleKind svt of
                                 Dict ->
                                     case dolanVarianceInCategory @pshim dvt of
                                         Dict -> do
@@ -183,11 +183,11 @@ generateVarType = do
 
 saturateSingleArgument ::
        forall (ground :: GroundTypeKind) polarity sv. Monad (DolanM ground)
-    => VarianceType sv
+    => CCRVarianceType sv
     -> DolanTypeCheckM ground (AnyInKind (SingleArgument sv (DolanType ground) polarity))
-saturateSingleArgument CovarianceType = generateVarType
-saturateSingleArgument ContravarianceType = generateVarType
-saturateSingleArgument RangevarianceType = do
+saturateSingleArgument CoCCRVarianceType = generateVarType
+saturateSingleArgument ContraCCRVarianceType = generateVarType
+saturateSingleArgument RangeCCRVarianceType = do
     MkAnyInKind ta <- generateVarType
     MkAnyInKind tb <- generateVarType
     return $ MkAnyInKind $ MkRangeType ta tb

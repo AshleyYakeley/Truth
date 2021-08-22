@@ -22,7 +22,7 @@ qConstExprAny :: QValue -> QExpr
 qConstExprAny = tsConst @PinaforeTypeSystem
 
 qConstExpr ::
-       forall a. ToPinaforeType a
+       forall a. HasPinaforeType 'Positive a
     => a
     -> QExpr
 qConstExpr a = qConstExprAny $ jmToValue a
@@ -51,12 +51,12 @@ qBothPattern = tsBothPattern @PinaforeTypeSystem
 qToPatternConstructor ::
        forall t lt.
        ( ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt
-       , FromShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
+       , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
        )
     => (t -> Maybe (HList lt))
     -> QPatternConstructor
 qToPatternConstructor =
-    toPatternConstructor (fromShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative)) toListShimWit
+    toPatternConstructor (fromPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative)) toListShimWit
 
 qApplyPatternConstructor :: QPatternConstructor -> QPattern -> PinaforeSourceInterpreter (QPatternConstructor)
 qApplyPatternConstructor = tsApplyPatternConstructor @PinaforeTypeSystem
@@ -140,14 +140,14 @@ qEvalExpr ::
 qEvalExpr expr = tsEval @PinaforeTypeSystem expr
 
 typedAnyToPinaforeVal ::
-       forall t. FromPinaforeType t
+       forall t. HasPinaforeType 'Negative t
     => QValue
     -> PinaforeSourceInterpreter t
 typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem
 
 -- | for debugging
 rigidTypedAnyToPinaforeVal ::
-       forall t. FromPinaforeType t
+       forall t. HasPinaforeType 'Negative t
     => QValue
     -> PinaforeSourceInterpreter t
 rigidTypedAnyToPinaforeVal = tsUnifyRigidValue @PinaforeTypeSystem

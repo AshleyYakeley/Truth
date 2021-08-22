@@ -24,3 +24,4 @@ import Pinafore.Base.Order as I
 import Pinafore.Base.PredicateMorphism as I
 import Pinafore.Base.Ref as I
 import Pinafore.Base.SafeRational as I
+import Pinafore.Base.Showable as I

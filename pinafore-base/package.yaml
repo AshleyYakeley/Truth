@@ -22,6 +22,7 @@ library:
       - Pinafore.Storage
     other-modules:
       - Pinafore.Base.Know
+      - Pinafore.Base.Showable
       - Pinafore.Base.SafeRational
       - Pinafore.Base.Number
       - Pinafore.Base.Order
@@ -61,4 +62,5 @@ tests:
           - Test.Numeric
           - Test.Anchor
           - Test.Storage
+          - Test.ReadShow
         ghc-options: -threaded

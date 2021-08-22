@@ -33,17 +33,17 @@ saturatedGroundTypeShowPrec ::
 saturatedGroundTypeShowPrec avar gt = let
     singleVarArgument ::
            forall polarity sv r. Is PolarityType polarity
-        => VarianceType sv
+        => CCRVarianceType sv
         -> (forall a. InKind a => SingleArgument sv w polarity a -> r)
         -> r
-    singleVarArgument CovarianceType call =
+    singleVarArgument CoCCRVarianceType call =
         case avar of
             MkAnyW var -> call var
-    singleVarArgument ContravarianceType call =
+    singleVarArgument ContraCCRVarianceType call =
         invertPolarity @polarity $
         case avar of
             MkAnyW var -> call var
-    singleVarArgument RangevarianceType call =
+    singleVarArgument RangeCCRVarianceType call =
         invertPolarity @polarity $
         case (avar, avar) of
             (MkAnyW var1, MkAnyW var2) -> call $ MkRangeType var1 var2
@@ -60,7 +60,7 @@ saturatedGroundTypeShowPrec avar gt = let
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (DolanSingularType ground polarity t) where
     exprShowPrec (VarDolanSingularType namewit) = exprShowPrec namewit
-    exprShowPrec (GroundDolanSingularType gt args) = groundTypeShowPrec gt args
+    exprShowPrec (GroundedDolanSingularType gt args) = groundTypeShowPrec gt args
     exprShowPrec (RecursiveDolanSingularType n pt) = ("rec " <> exprShow n <> ". " <> exprShow pt, 4)
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>

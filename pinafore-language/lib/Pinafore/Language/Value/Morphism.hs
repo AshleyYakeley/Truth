@@ -29,11 +29,15 @@ instance CatFunctor (CatRange (->)) (NestedMorphism (->)) LangMorphism where
         MkNestedMorphism $ \(MkLangMorphism mb) ->
             MkLangMorphism $ mapModelBased (\m -> cfmap4 (MkCatDual pp) $ cfmap3 qq m) mb
 
-instance HasVariance 'Rangevariance LangMorphism where
-    varianceRepresentational = Nothing
+instance MaybeRepresentational LangMorphism where
+    maybeRepresentational = Nothing
 
-instance HasVariance 'Rangevariance (LangMorphism a) where
-    varianceRepresentational = Nothing
+instance MaybeRepresentational (LangMorphism a) where
+    maybeRepresentational = Nothing
+
+instance HasCCRVariance 'RangeCCRVariance LangMorphism
+
+instance HasCCRVariance 'RangeCCRVariance (LangMorphism a)
 
 identityLangMorphism :: forall x y. LangMorphism '( x, y) '( y, x)
 identityLangMorphism = MkLangMorphism $ pureModelBased identityPinaforeLensMorphism

@@ -59,6 +59,7 @@ import Prelude as I
     , undefined
     )
 import System.IO as I hiding (appendFile, getContents, hGetContents, interact, readFile, writeFile)
+import Text.ParserCombinators.ReadPrec as I (ReadPrec)
 import Text.Read as I (Read(..), readMaybe)
 import Text.Show as I (Show(..))
 
@@ -174,6 +175,9 @@ mpure Nothing = empty
 
 mcatch :: Alternative m => m a -> m (Maybe a)
 mcatch ma = fmap Just ma <|> pure Nothing
+
+choice :: Alternative m => [m a] -> m a
+choice = foldr (<|>) empty
 
 compAll :: Category cat => [cat a a] -> cat a a
 compAll [] = id

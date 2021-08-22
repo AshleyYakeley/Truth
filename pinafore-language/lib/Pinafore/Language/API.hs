@@ -16,10 +16,14 @@ module Pinafore.Language.API
     , PinaforeSingularType
     , PinaforeType
     , funcGroundType
+    , HasPinaforeType(..)
+    , HasPinaforeGroundType(..)
+    , groundPinaforeType
     , module Pinafore.Language.Value
     ) where
 
 import Pinafore.Context
+import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter

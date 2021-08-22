@@ -11,30 +11,14 @@ library:
       - base >= 4.12
       - shapes
       - time
+      - polar-shim
     exposed-modules:
-      - Data.Shim
       - Language.Expression.Common
       - Language.Expression.Unitype
       - Language.Expression.Dolan
       - Language.Expression.Dolan.Test
     other-modules:
       - Control.Applicative.Wrapped
-      - Data.Shim.PolyMap
-      - Data.Shim.ComposeShim
-      - Data.Shim.Polarity
-      - Data.Shim.PolarMap
-      - Data.Shim.Variance
-      - Data.Shim.PolarVariance
-      - Data.Shim.ShimWit
-      - Data.Shim.Range
-      - Data.Shim.CatRange
-      - Data.Shim.JoinMeet
-      - Data.Shim.PolarJoinMeet
-      - Data.Shim.PolyShim
-      - Data.Shim.JMShim
-      - Data.Shim.PolyIso
-      - Data.Shim.PolyComposeShim
-      - Data.Shim.JMShimWit
       - Language.Expression.Common.Error
       - Language.Expression.Common.WitnessMappable
       - Language.Expression.Common.Witness
@@ -99,6 +83,7 @@ tests:
         dependencies:
           - base >= 4.12
           - shapes
+          - polar-shim
           - typed-expression
         main: Main.hs
         other-modules:

@@ -14,18 +14,21 @@ packages:
 - changes-gtk
 
 # Pinafore
+- polar-shim
 - typed-expression
 - pinafore-base
 - pinafore-language
 - pinafore-gtk
 - pinafore-app
 
-resolver: lts-17.13
+resolver: lts-18.7
 
 allow-newer: true
 
 extra-deps:
 - mime-0.4.0.2
+- gi-cairo-render-0.1.0
+- gi-cairo-connector-0.1.0
 - git: https://github.com/AshleyYakeley/haskell-src-exts.git
   commit: 0f5103dd6fbea4f7ee8b156b40c7782e989e7025
 - git: https://github.com/AshleyYakeley/hindent.git

@@ -3,6 +3,7 @@ module Data.Coercion where
 import Control.Category.Dual
 import Control.Category.Groupoid
 import Data.CatFunctor
+import Data.IsoVariant
 import Data.Isomorphism
 import Data.KindMorphism
 import Shapes.Import
@@ -62,11 +63,11 @@ coerce' ::
     => Coercible a b => KindFunction a b
 coerce' = coercionToFunction MkCoercion
 
-isoCoerce ::
+coerceIsomorphism ::
        forall k (cat :: k -> k -> Type) (a :: k) (b :: k).
        (Category cat, InKind a, InKind b, RepresentationalRole (cat a), RepresentationalRole (cat b), Coercible a b)
     => Isomorphism cat a b
-isoCoerce =
+coerceIsomorphism =
     MkIsomorphism
         (coercionToFunction (representationalCoercion MkCoercion) id)
         (coercionToFunction (representationalCoercion MkCoercion) id)
@@ -76,6 +77,9 @@ coerceUnsafeCoerce = unsafeCoerce Refl
 
 coercionUnsafeCoerce :: Coercion a b -> a :~: b
 coercionUnsafeCoerce MkCoercion = coerceUnsafeCoerce
+
+isoCoerce :: (IsoVariant f, Coercible a b) => f a -> f b
+isoCoerce = isoMap coerce coerce
 
 instance CoercibleKind Type where
     coercionToKindMorphism c = c

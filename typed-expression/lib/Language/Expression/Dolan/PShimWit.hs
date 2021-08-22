@@ -5,7 +5,7 @@ import Language.Expression.Common
 import Shapes
 
 type PShimWit :: forall k. ShimKind k -> (Polarity -> k -> Type) -> Polarity -> k -> Type
-type PShimWit shim wit polarity = ShimWit shim (wit polarity) polarity
+type PShimWit shim wit polarity = PolarShimWit shim (wit polarity) polarity
 
 type PShimWitMappable (shim :: ShimKind k) (wit :: Polarity -> k -> Type)
      = WitnessMappable (PShimWit shim wit 'Positive) (PShimWit shim wit 'Negative)
@@ -16,7 +16,7 @@ mapPShimWitsM ::
     -> (forall t. InKind t => wit 'Negative t -> m (PShimWit shim wit 'Negative t))
     -> a
     -> m a
-mapPShimWitsM mapPos mapNeg = mapWitnessesM (chainShimWitM mapPos) (chainShimWitM mapNeg)
+mapPShimWitsM mapPos mapNeg = mapWitnessesM (chainPolarShimWitM mapPos) (chainPolarShimWitM mapNeg)
 
 mapPShimWits ::
        forall shim wit a. (InCategory shim, PShimWitMappable shim wit a)
@@ -24,7 +24,7 @@ mapPShimWits ::
     -> (forall t. InKind t => wit 'Negative t -> PShimWit shim wit 'Negative t)
     -> a
     -> a
-mapPShimWits mapPos mapNeg = mapWitnesses (chainShimWit mapPos) (chainShimWit mapNeg)
+mapPShimWits mapPos mapNeg = mapWitnesses (chainPolarShimWit mapPos) (chainPolarShimWit mapNeg)
 
 chainPShimWit2 ::
        forall (shim :: ShimKind Type) (w :: Polarity -> Type -> Type) (polarity :: Polarity) (a :: Type) (b :: Type).
