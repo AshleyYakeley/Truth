@@ -9,7 +9,6 @@ module Pinafore.Language.Library.Std.Base
 import Changes.Core
 import Changes.World.Clock
 import qualified Data.Text
-import qualified Text.Collate
 import Data.Time
 import Data.Time.Clock.System
 import Pinafore.Base
@@ -30,6 +29,7 @@ import Pinafore.Language.Var
 import Pinafore.Markdown
 import Shapes
 import Shapes.Numeric
+import qualified Text.Collate
 
 topEntityType :: forall pol. PinaforeType pol (JoinMeetType pol Entity (LimitType pol))
 topEntityType =
@@ -346,7 +346,9 @@ baseLibEntries =
                 , mkValEntry "ge" "Greater than or equal to." $ (/=) LT
                 , mkValEntry "lesser" "The lesser of two weevils." lesser
                 , mkValEntry "greater" "The greater of two weevils." greater
-                , mkValEntry "alphabetical" "Alphabetical first, then lower case before upper, per Unicode normalisation." $
+                , mkValEntry
+                      "alphabetical"
+                      "Alphabetical first, then lower case before upper, per Unicode normalisation." $
                   Text.Collate.collate Text.Collate.rootCollator
                 , mkValEntry "numerical" "Numercal order." $ compare @Number
                 , mkValEntry "chronological" "Chronological order." $ compare @UTCTime

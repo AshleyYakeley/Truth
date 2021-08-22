@@ -23,6 +23,7 @@ remainingParser (Mod _ _ modprops) = let
     propMetaVar = ""
     propShowDefault = Nothing
     propDescMod = Nothing
+    propShowGlobal = False
     optProps = modprops OptProperties {..}
     in OptP OA.Option {..}
 

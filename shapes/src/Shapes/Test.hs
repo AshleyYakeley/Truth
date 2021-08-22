@@ -53,6 +53,7 @@ import Test.Tasty.ExpectedFailure
 import Test.Tasty.Golden
 import Test.Tasty.HUnit
 import Test.Tasty.Providers
+import Test.Tasty.Providers.ConsoleFormat
 import Test.Tasty.QuickCheck
 import Test.Tasty.Runners
 
@@ -103,6 +104,7 @@ repeatTest n =
                     resultDescription = ""
                     resultTime = 0
                     resultShortDescription = "OK"
+                    resultDetailsPrinter = noResultDetails
                     in Result {..}
         go i = do
             r <- test
