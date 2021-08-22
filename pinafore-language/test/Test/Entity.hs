@@ -814,4 +814,13 @@ testEntity =
               , testExpectSuccess
                     "do r <- newMemWhole; ar <- evaluate @(WholeRef Integer -> Action ()) \"\\\\r -> r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
               ]
+        , tGroup
+              "text-sort"
+              [ testExpectSuccess "testeq {EQ} {alphabetical \"a\" \"a\"}"
+              , testExpectSuccess "testeq {EQ} {alphabetical \"A\" \"A\"}"
+              , testExpectSuccess "testeq {LT} {alphabetical \"a\" \"A\"}"
+              , testExpectSuccess "testeq {LT} {alphabetical \"a\" \"b\"}"
+              , testExpectSuccess "testeq {LT} {alphabetical \"A\" \"b\"}"
+              , testExpectSuccess "testeq {LT} {alphabetical \"a\" \"B\"}"
+              ]
         ]

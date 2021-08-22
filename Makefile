@@ -130,10 +130,19 @@ DEBIANREL := buster
 	stack $(STACKFLAGS) exec --cwd .build/deb -- dpkg-deb --root-owner-group --build $(PACKAGEFULLNAME)
 	stack $(STACKFLAGS) exec -- lintian --fail-on-warnings --suppress-tags-from-file deb/lintian-ignore .build/deb/$(PACKAGEFULLNAME).deb
 
+TESTDISTROS := ubuntu:18.04 ubuntu:21.04 bitnami/minideb:$(DEBIANREL)
+
+out/pinafore.deps: ${BINPATH}/pinafore out
+	ldd $< > $@
+
+.PHONY: deps
+
+deps: out/pinafore.deps
+
 out/$(PACKAGEFULLNAME).deb: .build/deb/$(PACKAGEFULLNAME).deb deb/installtest out
 	install -m 755 deb/installtest .build/deb/
 	install -m 755 deb/checkscript .build/deb/
-	docker run --rm -v `pwd`/.build/deb:/home -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -it bitnami/minideb:$(DEBIANREL) /home/installtest $(PACKAGEFULLNAME).deb `id -u`
+	for distro in $(TESTDISTROS); do docker run --rm -v `pwd`/.build/deb:/home -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -it $$distro /home/installtest $(PACKAGEFULLNAME).deb `id -u`; done
 	cp $< $@
 
 .PHONY: deb
@@ -199,9 +208,10 @@ testimages: docker-image \
 
 .PHONY: full
 
-full: testimages format deb licensing docs vsc-extension
+full: testimages format deb deps licensing docs vsc-extension
 
 clean:
+	rm -rf .build
 	rm -rf out
 	rm -rf mkdocs/generated
 	rm -rf mkdocs/site

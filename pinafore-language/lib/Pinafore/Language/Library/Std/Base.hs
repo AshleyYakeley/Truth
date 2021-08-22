@@ -9,7 +9,7 @@ module Pinafore.Language.Library.Std.Base
 import Changes.Core
 import Changes.World.Clock
 import qualified Data.Text
-import qualified Data.Text.ICU
+import qualified Text.Collate
 import Data.Time
 import Data.Time.Clock.System
 import Pinafore.Base
@@ -346,10 +346,8 @@ baseLibEntries =
                 , mkValEntry "ge" "Greater than or equal to." $ (/=) LT
                 , mkValEntry "lesser" "The lesser of two weevils." lesser
                 , mkValEntry "greater" "The greater of two weevils." greater
-                , mkValEntry "alphabetical" "Alphabetical case-insensitive order, per Unicode normalisation." $
-                  Data.Text.ICU.compare [Data.Text.ICU.CompareIgnoreCase]
-                , mkValEntry "casedAlphabetical" "Alphabetical case-sensitive order, per Unicode normalisation." $
-                  Data.Text.ICU.compare []
+                , mkValEntry "alphabetical" "Alphabetical first, then lower case before upper, per Unicode normalisation." $
+                  Text.Collate.collate Text.Collate.rootCollator
                 , mkValEntry "numerical" "Numercal order." $ compare @Number
                 , mkValEntry "chronological" "Chronological order." $ compare @UTCTime
                 , mkValEntry "durational" "Durational order." $ compare @NominalDiffTime
@@ -380,7 +378,6 @@ baseLibEntries =
                 , mkValEntry "textConcat" "Concatenate texts." $ mconcat @Text
                 , mkValEntry "toUpperCase" "" Data.Text.toUpper
                 , mkValEntry "toLowerCase" "" Data.Text.toLower
-                , mkValEntry "toTitleCase" "" Data.Text.toTitle
                 ]
           , let
                 arithList :: (Num a, Ord a) => a -> a -> Maybe a -> [a]

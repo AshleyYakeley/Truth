@@ -16,7 +16,7 @@ library:
       - parsec
       - containers
       - text
-      - text-icu
+      - unicode-collation
       - polar-shim
       - typed-expression
       - changes-core

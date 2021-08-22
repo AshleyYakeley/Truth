@@ -1,5 +1,7 @@
 PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
 
+  * Install
+    - install on Ubuntu 18.04, 21.04, Debian buster
   * Language
     - overhaul of declarations
       . declarations now non-recursive, with recursive rec-blocks
