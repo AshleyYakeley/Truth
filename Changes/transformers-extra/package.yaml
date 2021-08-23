@@ -1,4 +1,4 @@
-_common: !include "../common.yaml"
+_common: !include "../../common.yaml"
 name: transformers-extra
 version: *changes_version
 <<: *author

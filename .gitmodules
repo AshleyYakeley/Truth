@@ -1,8 +1,8 @@
 [submodule "witness"]
-	path = witness
+	path = external/witness
 	url = ../witness.git
 [submodule "open-witness"]
-	path = open-witness
+	path = external/open-witness
 	url = ../open-witness.git
 [submodule "benchgraph"]
 	path = benchgraph

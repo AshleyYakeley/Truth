@@ -1,4 +1,4 @@
-_common: !include "../common.yaml"
+_common: !include "../../common.yaml"
 name: changes-core
 version: *changes_version
 <<: *author
