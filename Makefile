@@ -80,7 +80,7 @@ else
 	cp -r .stack-work/logs out/
 endif
 ifeq ($(bench),1)
-	test -n "$$(git status -s)" || (stack $(STACKFLAGS) exec -- benchgraph/adapters/criterion/export_benchs.sh pinafore-app/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
+	test -n "$$(git status -s)" || (stack $(STACKFLAGS) exec -- benchgraph/adapters/criterion/export_benchs.sh Pinafore/pinafore-app/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
 endif
 
 .PHONY: exe
@@ -96,8 +96,8 @@ DEBIANREL := buster
 
 .build/deb/$(PACKAGEFULLNAME).deb: \
 		${BINPATH}/pinafore \
-		lib/UIStuff/Selection.pinafore \
-		lib/UIStuff/Named.pinafore \
+		Pinafore/lib/UIStuff/Selection.pinafore \
+		Pinafore/lib/UIStuff/Named.pinafore \
 		deb/copyright \
 		deb/control.m4 \
 		deb/changelog.m4
@@ -105,8 +105,8 @@ DEBIANREL := buster
 	mkdir -p $(PACKAGEDIR)/usr/bin
 	cp ${BINPATH}/pinafore $(PACKAGEDIR)/usr/bin/
 	mkdir -p $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff
-	cp lib/UIStuff/Selection.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff/
-	cp lib/UIStuff/Named.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff/
+	cp Pinafore/lib/UIStuff/Selection.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff/
+	cp Pinafore/lib/UIStuff/Named.pinafore $(PACKAGEDIR)/usr/share/pinafore/lib/UIStuff/
 	mkdir -p $(PACKAGEDIR)/usr/share/doc/pinafore
 	cp deb/copyright $(PACKAGEDIR)/usr/share/doc/pinafore/
 	stack $(STACKFLAGS) exec -- \
@@ -161,7 +161,7 @@ LIBMODULES := \
 
 mkdocs/docs/library/%.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/docs/library
-	$< --module $* --include lib > $@
+	$< --module $* --include Pinafore/lib > $@
 
 mkdocs/generated/infix.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/generated
@@ -171,7 +171,7 @@ mkdocs/generated/infix.md: ${BINPATH}/pinafore-doc
 
 docs: $(foreach f,$(LIBMODULES),mkdocs/docs/library/$f.md) mkdocs/generated/infix.md docker-image
 	mkdir -p mkdocs/generated/examples
-	cp pinafore-app/examples/* mkdocs/generated/examples/
+	cp Pinafore/pinafore-app/examples/* mkdocs/generated/examples/
 	stack $(STACKFLAGS) exec -- pip3 install --user file://`pwd`/support/pygments-lexer/
 	stack $(STACKFLAGS) exec --cwd mkdocs -- mkdocs build
 
@@ -190,21 +190,21 @@ out/pinafore-$(VSCXVERSION).vsix: docker-image out \
 
 vsc-extension: out/pinafore-$(VSCXVERSION).vsix
 
-changes-gtk/examples/showImages/images/%.RGB.jpeg: changes-gtk/examples/showImages/%.jpeg
-	mkdir -p changes-gtk/examples/showImages/images
+Changes/changes-gtk/examples/showImages/images/%.RGB.jpeg: Changes/changes-gtk/examples/showImages/%.jpeg
+	mkdir -p Changes/changes-gtk/examples/showImages/images
 	stack $(STACKFLAGS) exec -- convert $< -colorspace RGB $@
 
-changes-gtk/examples/showImages/images/%.YCbCr.jpeg: changes-gtk/examples/showImages/%.jpeg
-	mkdir -p changes-gtk/examples/showImages/images
+Changes/changes-gtk/examples/showImages/images/%.YCbCr.jpeg: Changes/changes-gtk/examples/showImages/%.jpeg
+	mkdir -p Changes/changes-gtk/examples/showImages/images
 	stack $(STACKFLAGS) exec -- convert $< -colorspace YCbCr $@
 
 .PHONY: testimages
 
 testimages: docker-image \
-	changes-gtk/examples/showImages/images/cat.RGB.jpeg \
-	changes-gtk/examples/showImages/images/cat.YCbCr.jpeg \
-	changes-gtk/examples/showImages/images/stairs.RGB.jpeg \
-	changes-gtk/examples/showImages/images/stairs.YCbCr.jpeg
+	Changes/changes-gtk/examples/showImages/images/cat.RGB.jpeg \
+	Changes/changes-gtk/examples/showImages/images/cat.YCbCr.jpeg \
+	Changes/changes-gtk/examples/showImages/images/stairs.RGB.jpeg \
+	Changes/changes-gtk/examples/showImages/images/stairs.YCbCr.jpeg
 
 .PHONY: full
 
@@ -215,5 +215,5 @@ clean:
 	rm -rf out
 	rm -rf mkdocs/generated
 	rm -rf mkdocs/site
-	rm -rf changes-gtk/examples/showImages/images
+	rm -rf Changes/changes-gtk/examples/showImages/images
 	stack $(STACKFLAGS) clean

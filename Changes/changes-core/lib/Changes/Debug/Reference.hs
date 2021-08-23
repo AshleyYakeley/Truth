@@ -119,7 +119,7 @@ slowObject mus (MkResource rr (MkAReference rd push ct)) =  case resourceRunnerS
 instance TraceThing (FloatingChangeLens updateA updateB) where
     traceThing prefix (MkFloatingChangeLens init lens) = let
         init' = case init of
-            NoFloatInit -> NoFloatInit
+            NoFloatInit r -> NoFloatInit r
             ReadFloatInit fi -> ReadFloatInit $ \mr -> traceBracket (contextStr prefix "init") $ fi mr
         lens' r = traceThing prefix $ lens r
         in MkFloatingChangeLens init' lens'

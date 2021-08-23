@@ -1,4 +1,4 @@
-_common: !include "../common.yaml"
+_common: !include "../../common.yaml"
 name: typed-expression
 version: *pinafore_version
 <<: *author

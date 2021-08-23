@@ -15,7 +15,7 @@ Before release:
     common.yaml
     support/vsc-extension/package.json
     support/pygments-lexer/setup.py
-    pinafore-app/app/Version.hs
+    Pinafore/pinafore-app/app/Version.hs
     mkdocs/docs/index.md
 
 4. Update changelogs

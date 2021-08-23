@@ -1,25 +1,25 @@
 packages:
 
 # separate (submodule) dependencies
-- witness
-- open-witness
+- external/witness
+- external/open-witness
 
 # Changes
-- thread-trace
-- transformers-extra
-- shapes
-- changes-core
-- changes-media
-- changes-world
-- changes-gtk
+- Changes/thread-trace
+- Changes/transformers-extra
+- Changes/shapes
+- Changes/changes-core
+- Changes/changes-media
+- Changes/changes-world
+- Changes/changes-gtk
 
 # Pinafore
-- polar-shim
-- typed-expression
-- pinafore-base
-- pinafore-language
-- pinafore-gtk
-- pinafore-app
+- Pinafore/polar-shim
+- Pinafore/typed-expression
+- Pinafore/pinafore-base
+- Pinafore/pinafore-language
+- Pinafore/pinafore-gtk
+- Pinafore/pinafore-app
 
 resolver: lts-18.7
 

@@ -1,4 +1,4 @@
-_common: !include "../common.yaml"
+_common: !include "../../common.yaml"
 name: changes-media
 version: *changes_version
 <<: *author
