@@ -16,6 +16,12 @@ debugCheckEntity t e = do
     _ <- evaluate $ checkEntity (unpack t) e
     return ()
 
+debugLiteralLength :: Literal -> Int
+debugLiteralLength = olength . unLiteral
+
+debugLiteralIsEmbedded :: Literal -> Bool
+debugLiteralIsEmbedded = isJust . entityToLiteral . literalToEntity
+
 debugLibraryModule :: LibraryModule
 debugLibraryModule =
     MkDocTree
@@ -23,4 +29,6 @@ debugLibraryModule =
         "Functions for debugging."
         [ mkValEntry "message" "Debug message to std error." debugMessage
         , mkValEntry "checkEntity" "debugCheckEntity" debugCheckEntity
+        , mkValEntry "literalLength" "Byte length of a Literal" debugLiteralLength
+        , mkValEntry "literalIsEmbedded" "Is this Literal embeddable in an Entity?" debugLiteralIsEmbedded
         ]

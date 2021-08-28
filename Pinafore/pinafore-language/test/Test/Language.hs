@@ -861,6 +861,28 @@ testQueries =
                      , testSupertype "Number" "Rational" "7/2" "0" True
                      , testSupertype "Rational" "Number" "7/2" "0" True
                      ]
+        , let
+              testLiteral :: Int -> Bool -> Text -> TestTree
+              testLiteral len embedded val =
+                  testTree
+                      (unpack val)
+                      [ testQuery ("Debug.literalLength " <> val) $ LRSuccess $ show len
+                      , testQuery ("Debug.literalIsEmbedded " <> val) $ LRSuccess $ show embedded
+                      ]
+              in testTree
+                     "literal"
+                     [ testLiteral 1 True "\"\""
+                     , testLiteral 2 True "\"A\""
+                     , testLiteral 21 True "\"12345678901234567890\""
+                     , testLiteral 31 True "\"123456789012345678901234567890\""
+                     , testLiteral 32 False "\"1234567890123456789012345678901\""
+                     , testLiteral 1 True "()"
+                     , testLiteral 2 True "True"
+                     , testLiteral 2 True "False"
+                     , testLiteral 11 True "34"
+                     , testLiteral 11 True "34.5"
+                     , testLiteral 9 True "~34"
+                     ]
         ]
 
 testShim :: Text -> String -> String -> TestTree

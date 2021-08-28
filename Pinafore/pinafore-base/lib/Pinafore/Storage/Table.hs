@@ -269,6 +269,8 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                                 -> Entity
                                 -> ApplyStack tt IO ()
                             releaseByConstructor _ PlainConstructorStorer _ = return ()
+                            releaseByConstructor _ LiteralConstructorStorer entity
+                                | Just _ <- entityToLiteral entity = return ()
                             releaseByConstructor esrc LiteralConstructorStorer entity =
                                 tablePush esrc $ PinaforeTableEditLiteralSet entity Nothing
                             releaseByConstructor esrc (ConstructorConstructorStorer _ facts) entity =
@@ -322,6 +324,8 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                                 -> t
                                 -> ApplyStack tt IO ()
                             setConstructor _ PlainConstructorStorer _ _ = return ()
+                            setConstructor _ LiteralConstructorStorer v _
+                                | Just _ <- entityToLiteral v = return ()
                             setConstructor esrc LiteralConstructorStorer v l =
                                 tablePush esrc $ PinaforeTableEditLiteralSet v $ Just l
                             setConstructor esrc (ConstructorConstructorStorer _ facts) v t = setFacts esrc facts v t
@@ -390,6 +394,8 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                                 -> Entity
                                 -> ComposeM Know (ApplyStack tt IO) t
                             readConstructor PlainConstructorStorer entity = return entity
+                            readConstructor LiteralConstructorStorer entity
+                                | Just lit <- entityToLiteral entity = return lit
                             readConstructor LiteralConstructorStorer entity =
                                 MkComposeM $ fmap maybeToKnow $ tableRead $ PinaforeTableReadLiteralGet entity
                             readConstructor (ConstructorConstructorStorer _ facts) entity = readFacts facts entity

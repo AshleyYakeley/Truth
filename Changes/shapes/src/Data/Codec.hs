@@ -30,8 +30,14 @@ data Codec' m a b = MkCodec
     }
     -- must have decode . encode = Just
 
+remonadCodec :: (forall x. m1 x -> m2 x) -> Codec' m1 a b -> Codec' m2 a b
+remonadCodec f (MkCodec d e) = MkCodec (f . d) e
+
 decodeMaybe :: MonadOne m => Codec' m a b -> a -> Maybe b
 decodeMaybe codec = getMaybeOne . decode codec
+
+toCodec :: MonadOne m => Codec' m a b -> Codec a b
+toCodec = remonadCodec getMaybeOne
 
 instance Functor m => IsoVariant (Codec' m p) where
     isoMap ab ba (MkCodec d e) = MkCodec (\p -> fmap ab $ d p) (e . ba)
@@ -66,3 +72,9 @@ class CodecMap f where
 
 instance CodecMap (Codec p) where
     codecMap = (.)
+
+codecMap' :: (CodecMap f, MonadOne m) => Codec' m a b -> f a -> f b
+codecMap' codec = codecMap $ toCodec codec
+
+utf8Codec :: Codec' (Result UnicodeException) StrictByteString Text
+utf8Codec = MkCodec (eitherToResult . decodeUtf8') encodeUtf8

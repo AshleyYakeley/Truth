@@ -18,6 +18,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . Cairo-based functions for creating drawings
   * Storage
     - Store literals as binary rather than as text
+    - Embed smaller literals directly in the anchor
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

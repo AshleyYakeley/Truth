@@ -4,14 +4,13 @@ module Main
 
 import Changes.Core
 import Changes.UI.GTK
-import Changes.World.Charset
 import Changes.World.File
 import qualified Options.Applicative as O
 import Shapes
 import System.FilePath hiding ((<.>))
 
 textCodec :: ReasonCodec LazyByteString Text
-textCodec = bijectionCodec packBijection . utf8Codec . bijectionCodec unpackBijection
+textCodec = remonadCodec (mapResultFailure $ pack . show) utf8Codec . bijectionCodec strictBytestringBijection
 
 textLens :: ChangeLens ByteStringUpdate (WholeUpdate ((Result Text) Text))
 textLens = (wholeChangeLens $ injectionLens $ toInjection $ codecInjection textCodec) . convertChangeLens

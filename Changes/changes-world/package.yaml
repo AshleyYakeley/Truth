@@ -23,7 +23,6 @@ library:
       - Changes.World.File
       - Changes.World.FileSystem
       - Changes.World.ReferenceStore
-      - Changes.World.Charset
       - Changes.World.MIME
       - Changes.World.JSON
       - Changes.World.SQLite

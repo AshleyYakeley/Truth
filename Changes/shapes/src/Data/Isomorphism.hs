@@ -66,6 +66,9 @@ packBijection = MkIsomorphism pack unpack
 unpackBijection :: IsSequence t => Bijection t [Element t]
 unpackBijection = MkIsomorphism unpack pack
 
+strictBytestringBijection :: Bijection LazyByteString StrictByteString
+strictBytestringBijection = MkIsomorphism toStrict fromStrict
+
 class HasKindMorphism (k :: Type) where
     kindMorphismMapCat ::
            forall (cat1 :: Type -> Type -> Type) (cat2 :: Type -> Type -> Type) (a :: k) (b :: k).
