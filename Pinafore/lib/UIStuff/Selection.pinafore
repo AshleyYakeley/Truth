@@ -140,16 +140,16 @@ newItemMenuAction name mkey newItem set setsel = menuAction name mkey
     end};
 
 in expose
-    stdWindow
-    selectionWindow
-    selectionPairWindow
-    uiPage
-    uiLabelled
-    Pane
-    MkPane
-    pane
-    paneWindow
-    notebookPane
-    selectionPane
-    selectionPairPane
+    stdWindow,
+    selectionWindow,
+    selectionPairWindow,
+    uiPage,
+    uiLabelled,
+    Pane,
+    MkPane,
+    pane,
+    paneWindow,
+    notebookPane,
+    selectionPane,
+    selectionPairPane,
     newItemMenuAction

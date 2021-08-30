@@ -7,12 +7,15 @@ module Pinafore.Language.Grammar.Interpret.Type
     , interpretSubtypeRelation
     ) where
 
+import Pinafore.Language.DefDoc
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
+import Pinafore.Language.Grammar.Interpret.ScopeBuilder
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
+import Pinafore.Markdown
 import Shapes
 
 type PinaforeTypeM = MPolarW PinaforeType
@@ -226,18 +229,28 @@ interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     MkBoundType t <- lookupBoundType n
     return $ MkPinaforeGroundTypeM $ MkAnyW t
 
-interpretSubtypeRelation :: SyntaxType -> SyntaxType -> PinaforeSourceInterpreter a -> PinaforeSourceInterpreter a
-interpretSubtypeRelation sta stb ma = do
-    ata <- interpretMonoEntityType sta
-    atb <- interpretMonoEntityType stb
-    case ata of
-        MkAnyW ta ->
-            case ta of
-                MkMonoType tea NilArguments ->
-                    case atb of
-                        MkAnyW tb ->
-                            case tb of
-                                MkMonoType (OpenEntityGroundType tidb) NilArguments ->
-                                    remonadSourcePos (withEntitySubtype tea tidb) ma
-                                _ -> throw $ TypeNotOpenEntityError $ exprShow tb
-                _ -> throw $ TypeNotSimpleEntityError $ exprShow ta
+interpretSubtypeRelation' :: SourcePos -> SyntaxType -> SyntaxType -> ScopeBuilder
+interpretSubtypeRelation' spos sta stb =
+    interpScopeBuilder $
+    mapSourcePos spos $ \ma -> do
+        ata <- interpretMonoEntityType sta
+        atb <- interpretMonoEntityType stb
+        case ata of
+            MkAnyW ta ->
+                case ta of
+                    MkMonoType tea NilArguments ->
+                        case atb of
+                            MkAnyW tb ->
+                                case tb of
+                                    MkMonoType (OpenEntityGroundType tidb) NilArguments ->
+                                        remonadSourcePos (withEntitySubtype tea tidb) ma
+                                    _ -> throw $ TypeNotOpenEntityError $ exprShow tb
+                    _ -> throw $ TypeNotSimpleEntityError $ exprShow ta
+
+interpretSubtypeRelation :: SourcePos -> Markdown -> SyntaxType -> SyntaxType -> ScopeBuilder
+interpretSubtypeRelation spos docDescription sta stb =
+    interpretSubtypeRelation' spos sta stb <> let
+        docName = exprShow sta <> " <: " <> exprShow stb
+        docValueType = ""
+        docType = SubtypeRelationDocType
+        in defDocScopeBuilder MkDefDoc {..}

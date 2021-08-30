@@ -39,10 +39,10 @@ namedPairPane name set mitems getSelectedUI = let
     in selectionPairPane name set (mapList (\mitem -> mitem set) mitems) iopen getSelectorUI getSelectedUI;
 
 in expose
-    Named
-    name
-    byName
-    namedPane
-    namedTable
-    namedItemTable
+    Named,
+    name,
+    byName,
+    namedPane,
+    namedTable,
+    namedItemTable,
     namedPairPane

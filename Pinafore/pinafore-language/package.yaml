@@ -78,6 +78,7 @@ library:
       - Pinafore.Language.Grammar.Read.Interactive
       - Pinafore.Language.Grammar.Read
       - Pinafore.Language.Grammar.Interpret.RefNotation
+      - Pinafore.Language.Grammar.Interpret.ScopeBuilder
       - Pinafore.Language.Grammar.Interpret.Type
       - Pinafore.Language.Grammar.Interpret.TypeDecl
       - Pinafore.Language.Grammar.Interpret

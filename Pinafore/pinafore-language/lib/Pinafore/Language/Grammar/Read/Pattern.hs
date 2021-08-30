@@ -98,7 +98,7 @@ readPattern5 =
              return AnySyntaxPattern) <|>
     (do
          spos <- getPosition
-         pats <- readBracket $ readCommaList $ fmap pure readPattern1
+         pats <- readBracket $ readCommaList readPattern1
          return $ listPattern spos pats) <|>
     readParen
         (do

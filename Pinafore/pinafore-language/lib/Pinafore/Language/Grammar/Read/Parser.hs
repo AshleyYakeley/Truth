@@ -123,8 +123,11 @@ readSeparated1 sep p = do
 readSeparated :: Monoid t => Parser () -> Parser t -> Parser t
 readSeparated sep p = readSeparated1 sep p <|> return mempty
 
-readCommaList :: Monoid t => Parser t -> Parser t
-readCommaList = readSeparated $ readThis TokComma
+readCommaM :: Monoid t => Parser t -> Parser t
+readCommaM = readSeparated $ readThis TokComma
+
+readCommaList :: Parser t -> Parser [t]
+readCommaList p = readCommaM $ fmap pure p
 
 readSourcePos :: Parser t -> Parser (WithSourcePos t)
 readSourcePos p = do

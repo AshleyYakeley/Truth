@@ -7,6 +7,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . declarations now non-recursive, with recursive rec-blocks
       . "expose" declarations
       . allow declaration documentation with #| and {#| #} comments
+    - import lists
   * Interactive
     - :doc to retrieve name documentation
   * Library

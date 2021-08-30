@@ -24,7 +24,7 @@ All declarations, including type declarations, are local to a `let` block.
 
 <module> ::= <expose-declaration>
 
-<names> ::=  | <name> <names>
+<names> ::= <comma-separated(<name>)>
 
 <name> ::= uname | lname | "(" <infix-operator[n]> ")"
 
@@ -167,9 +167,11 @@ All declarations, including type declarations, are local to a `let` block.
 
 <declaration> ::=
     direct-declaration |
-    "import" <module-name> |
+    "import" <module-name> <opt-import-list> |
     <expose-declaration> |
     "rec" <direct-declarations> "end"
+
+<opt-import-list> ::=  | "(" <names> ")"
 
 <direct-declarations> ::=  | <direct-declaration> ";" <direct-declarations>
 

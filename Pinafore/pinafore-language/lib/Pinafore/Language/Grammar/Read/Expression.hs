@@ -64,7 +64,11 @@ readImport = do
     spos <- getPosition
     readThis TokImport
     mname <- readModuleName
-    return $ ImportSyntaxDeclaration spos mname
+    mimportnames <- optional $ readParen readNames
+    return $ ImportSyntaxDeclaration spos mname mimportnames
+
+readNames :: Parser [Name]
+readNames = readCommaList readName
 
 readExpose :: Parser SyntaxExpose
 readExpose =
@@ -76,7 +80,7 @@ readExpose =
     (do
          spos <- getPosition
          readThis TokExpose
-         names <- many readName
+         names <- readNames
          return $ SExpExpose spos names)
 
 readDirectDeclaration :: Parser SyntaxDirectDeclaration
