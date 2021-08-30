@@ -57,7 +57,10 @@ main = do
                             viewButton <- createButton (constantModel "View") $ constantModel $ Just $ openSelection sub
                             textContent <- createOneWhole sub rTextSpec
                             scrolledTextContent <- createScrolled textContent
-                            return [(False, viewButton), (True, scrolledTextContent)]
+                            return
+                                [ (defaultLayoutOptions, viewButton)
+                                , (defaultLayoutOptions {loGrow = True}, scrolledTextContent)
+                                ]
                         allSpecs =
                             case msub2 of
                                 Nothing -> makeSpecs sub1

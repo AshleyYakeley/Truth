@@ -45,11 +45,12 @@ drawing ref =
     ]
 };
 
+import UI();
 in do
     ref <- newMemWhole;
     UI.openWindow (300,400) {"Drawing"} {[]} $ UI.vertical
     [
-        (True,UI.draw $ scaleDrawing $ drawing ref),
-        (True,UI.draw $ scaleDrawing $ drawing ref)
+        UI.layoutGrow $ UI.draw $ scaleDrawing $ drawing ref,
+        UI.layoutGrow $ UI.draw $ scaleDrawing $ drawing ref
     ];
     end

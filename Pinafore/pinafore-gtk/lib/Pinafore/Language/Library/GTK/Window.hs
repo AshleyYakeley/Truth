@@ -41,9 +41,9 @@ openWindow ::
     => (Int32, Int32)
     -> PinaforeImmutableWholeRef Text
     -> PinaforeImmutableWholeRef MenuBar
-    -> LangUIElement
+    -> LangElement
     -> PinaforeAction LangWindow
-openWindow wsSize title mbar (MkLangUIElement wsContent) =
+openWindow wsSize title mbar (MkLangElement wsContent) =
     mfix $ \w ->
         createLangWindow $ let
             wsPosition = WindowPositionCenter
