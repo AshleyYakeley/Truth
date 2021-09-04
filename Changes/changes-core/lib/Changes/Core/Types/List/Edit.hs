@@ -8,30 +8,29 @@ import Changes.Core.Read
 import Changes.Core.Sequence
 import Changes.Core.Types.List.Read
 
-data ListEdit seq edit where
-    ListEditItem :: SequencePoint seq -> edit -> ListEdit seq edit
-    ListEditDelete :: SequencePoint seq -> ListEdit seq edit
-    ListEditInsert :: SequencePoint seq -> EditSubject edit -> ListEdit seq edit
-    ListEditClear :: ListEdit seq edit
+data ListEdit edit where
+    ListEditItem :: SequencePoint -> edit -> ListEdit edit
+    ListEditDelete :: SequencePoint -> ListEdit edit
+    ListEditInsert :: SequencePoint -> EditSubject edit -> ListEdit edit
+    ListEditClear :: ListEdit edit
 
-instance (Enum (Index seq), Ord (Index seq)) => Floating (ListEdit seq edit) (SequencePoint seq) where
+instance Floating (ListEdit edit) SequencePoint where
     floatingUpdate (ListEditDelete p) i
         | p < i = pred i
     floatingUpdate (ListEditInsert p _) i
         | p <= i = succ i
     floatingUpdate _ i = i
 
-instance (Enum (Index seq), Ord (Index seq)) => Floating (ListEdit seq edit) (ListEdit seq edit) where
+instance Floating (ListEdit edit) (ListEdit edit) where
     floatingUpdate edit (ListEditItem i e) = ListEditItem (floatingUpdate edit i) e
     floatingUpdate edit (ListEditDelete i) = ListEditDelete (floatingUpdate edit i)
     floatingUpdate edit (ListEditInsert i a) = ListEditInsert (floatingUpdate edit i) a
     floatingUpdate _edit ListEditClear = ListEditClear
 
-type instance EditReader (ListEdit seq edit) =
-     ListReader seq (EditReader edit)
+type instance EditReader (ListEdit edit) =
+     ListReader (EditReader edit)
 
-instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit edit, EditSubject edit ~ Element seq) =>
-             ApplicableEdit (ListEdit seq edit) where
+instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => ApplicableEdit (ListEdit edit) where
     applyEdit (ListEditItem p edit) mr (ListReadItem i reader)
         | p == i = getComposeM $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
     applyEdit (ListEditItem _ _) mr reader = mr reader
@@ -62,13 +61,8 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit ed
     applyEdit (ListEditInsert _ _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
     applyEdit ListEditClear _mr reader = subjectToReadable mempty reader
 
-instance ( IsSequence seq
-         , FullSubjectReader (EditReader edit)
-         , SubjectMapEdit edit
-         , ApplicableEdit edit
-         , InvertibleEdit edit
-         , EditSubject edit ~ Element seq
-         ) => InvertibleEdit (ListEdit seq edit) where
+instance (FullSubjectReader (EditReader edit), SubjectMapEdit edit, ApplicableEdit edit, InvertibleEdit edit) =>
+             InvertibleEdit (ListEdit edit) where
     invertEdit (ListEditItem p edit) mr = do
         minvedits <- getComposeM $ invertEdit edit $ itemReadFunction p mr
         case minvedits of
@@ -87,8 +81,7 @@ instance ( IsSequence seq
             Nothing -> return []
     invertEdit ListEditClear mr = getReplaceEdits mr
 
-instance (IsSequence seq, SubjectReader (EditReader edit), SubjectMapEdit edit, EditSubject edit ~ Element seq) =>
-             SubjectMapEdit (ListEdit seq edit) where
+instance (SubjectReader (EditReader edit), SubjectMapEdit edit) => SubjectMapEdit (ListEdit edit) where
     mapSubjectEdits =
         mapEditToMapEdits $ \listedit subj ->
             case listedit of
@@ -109,12 +102,7 @@ instance (IsSequence seq, SubjectReader (EditReader edit), SubjectMapEdit edit, 
                     in return $ before `mappend` opoint item `mappend` after
                 ListEditClear -> return mempty
 
-instance ( IsSequence seq
-         , FullSubjectReader (EditReader edit)
-         , ApplicableEdit edit
-         , SubjectMapEdit edit
-         , EditSubject edit ~ Element seq
-         ) => FullEdit (ListEdit seq edit) where
+instance (FullSubjectReader (EditReader edit), ApplicableEdit edit, SubjectMapEdit edit) => FullEdit (ListEdit edit) where
     replaceEdit mr write = do
         write ListEditClear
         len <- mr ListReadLength

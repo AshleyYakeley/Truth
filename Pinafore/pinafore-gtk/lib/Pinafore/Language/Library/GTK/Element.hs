@@ -113,23 +113,24 @@ type PickerType = Know EnA
 
 type PickerPairType = (PickerType, ComboBoxCell)
 
-uiPick :: PinaforeImmutableWholeRef ([(EnA, Text)]) -> LangWholeRef '( A, EnA) -> LangElement
+uiPick :: PinaforeImmutableWholeRef (Vector (EnA, Text)) -> LangWholeRef '( A, EnA) -> LangElement
 uiPick itemsRef ref =
     MkLangElement $ do
         let
             mapItem :: (EnA, Text) -> PickerPairType
             mapItem (ea, t) = (Known ea, plainComboBoxCell t)
-            mapItems :: Know [(EnA, Text)] -> [PickerPairType]
-            mapItems Unknown = []
-            mapItems (Known items) =
+            emptyPickerPairType :: PickerPairType
+            emptyPickerPairType =
                 ( Unknown
-                , (plainComboBoxCell "unknown") {cbcDefault = True, cbcStyle = plainTextStyle {tsItalic = True}}) :
-                fmap mapItem items
+                , (plainComboBoxCell "unknown") {cbcDefault = True, cbcStyle = plainTextStyle {tsItalic = True}})
+            mapItems :: Know (Vector (EnA, Text)) -> Vector PickerPairType
+            mapItems Unknown = mempty
+            mapItems (Known items) = cons emptyPickerPairType $ fmap mapItem items
             itemsLens ::
-                   ChangeLens (WholeUpdate (Know [(EnA, Text)])) (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
+                   ChangeLens (WholeUpdate (Know (Vector (EnA, Text)))) (ReadOnlyUpdate (OrderedListUpdate (ConstWholeUpdate PickerPairType)))
             itemsLens =
                 liftReadOnlyChangeLens (toReadOnlyChangeLens . listOrderedListChangeLens) . funcChangeLens mapItems
-            subOpts :: Model (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
+            subOpts :: Model (ReadOnlyUpdate (OrderedListUpdate (ConstWholeUpdate PickerPairType)))
             subOpts = unWModel $ eaMapSemiReadOnly itemsLens $ immutableRefToReadOnlyRef itemsRef
             subVal :: Model (WholeUpdate PickerType)
             subVal = unWModel $ langWholeRefToValue $ contraRangeLift meet2 ref

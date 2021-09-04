@@ -17,26 +17,25 @@ import Changes.Core.Types.Whole
 
 -- | Like ListEdit, except without a way of adding new elements.
 -- This is what both lists and unordered sets presented in some order have in common.
-data OrderedListEdit seq edit where
-    OrderedListEditItem :: SequencePoint seq -> edit -> OrderedListEdit seq edit
-    OrderedListEditDelete :: SequencePoint seq -> OrderedListEdit seq edit
-    OrderedListEditClear :: OrderedListEdit seq edit
+data OrderedListEdit edit where
+    OrderedListEditItem :: SequencePoint -> edit -> OrderedListEdit edit
+    OrderedListEditDelete :: SequencePoint -> OrderedListEdit edit
+    OrderedListEditClear :: OrderedListEdit edit
 
-instance (Enum (Index seq), Ord (Index seq)) => Floating (OrderedListEdit seq edit) (SequencePoint seq) where
+instance Floating (OrderedListEdit edit) SequencePoint where
     floatingUpdate (OrderedListEditDelete p) i
         | p < i = pred i
     floatingUpdate _ i = i
 
-instance (Enum (Index seq), Ord (Index seq)) => Floating (OrderedListEdit seq edit) (OrderedListEdit seq edit) where
+instance Floating (OrderedListEdit edit) (OrderedListEdit edit) where
     floatingUpdate edit (OrderedListEditItem i e) = OrderedListEditItem (floatingUpdate edit i) e
     floatingUpdate edit (OrderedListEditDelete i) = OrderedListEditDelete (floatingUpdate edit i)
     floatingUpdate _edit OrderedListEditClear = OrderedListEditClear
 
-type instance EditReader (OrderedListEdit seq edit) =
-     ListReader seq (EditReader edit)
+type instance EditReader (OrderedListEdit edit) =
+     ListReader (EditReader edit)
 
-instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit edit, EditSubject edit ~ Element seq) =>
-             ApplicableEdit (OrderedListEdit seq edit) where
+instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => ApplicableEdit (OrderedListEdit edit) where
     applyEdit (OrderedListEditItem p edit) mr (ListReadItem i reader)
         | p == i = getComposeM $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
     applyEdit (OrderedListEditItem _ _) mr reader = mr reader
@@ -51,8 +50,7 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit ed
     applyEdit (OrderedListEditDelete _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
     applyEdit OrderedListEditClear _mr reader = subjectToReadable mempty reader
 
-instance (IsSequence seq, SubjectReader (EditReader edit), SubjectMapEdit edit, EditSubject edit ~ Element seq) =>
-             SubjectMapEdit (OrderedListEdit seq edit) where
+instance (SubjectReader (EditReader edit), SubjectMapEdit edit) => SubjectMapEdit (OrderedListEdit edit) where
     mapSubjectEdits =
         mapEditToMapEdits $ \listedit subj ->
             case listedit of
@@ -70,16 +68,16 @@ instance (IsSequence seq, SubjectReader (EditReader edit), SubjectMapEdit edit, 
                            Nothing -> return $ subj
                 OrderedListEditClear -> return mempty
 
-data OrderedListUpdate seq update where
-    OrderedListUpdateItem :: SequencePoint seq -> SequencePoint seq -> [update] -> OrderedListUpdate seq update
-    OrderedListUpdateDelete :: SequencePoint seq -> OrderedListUpdate seq update
-    OrderedListUpdateInsert :: SequencePoint seq -> UpdateSubject update -> OrderedListUpdate seq update
-    OrderedListUpdateClear :: OrderedListUpdate seq update
+data OrderedListUpdate update where
+    OrderedListUpdateItem :: SequencePoint -> SequencePoint -> [update] -> OrderedListUpdate update
+    OrderedListUpdateDelete :: SequencePoint -> OrderedListUpdate update
+    OrderedListUpdateInsert :: SequencePoint -> UpdateSubject update -> OrderedListUpdate update
+    OrderedListUpdateClear :: OrderedListUpdate update
 
-type instance UpdateEdit (OrderedListUpdate seq update) =
-     OrderedListEdit seq (UpdateEdit update)
+type instance UpdateEdit (OrderedListUpdate update) =
+     OrderedListEdit (UpdateEdit update)
 
-instance (IsSequence seq, FullSubjectReader (UpdateReader update)) => FullUpdate (OrderedListUpdate seq update) where
+instance FullSubjectReader (UpdateReader update) => FullUpdate (OrderedListUpdate update) where
     replaceUpdate rd push = do
         push OrderedListUpdateClear
         len <- rd ListReadLength
@@ -89,17 +87,15 @@ instance (IsSequence seq, FullSubjectReader (UpdateReader update)) => FullUpdate
                 Just subj -> push $ OrderedListUpdateInsert i $ subj
                 Nothing -> return ()
 
-orderedListLengthLens ::
-       forall seq update. (Num (Index seq))
-    => ChangeLens (OrderedListUpdate seq update) (ROWUpdate (SequencePoint seq))
+orderedListLengthLens :: forall update. ChangeLens (OrderedListUpdate update) (ROWUpdate SequencePoint)
 orderedListLengthLens = let
-    clRead :: ReadFunction (ListReader seq (UpdateReader update)) (WholeReader (SequencePoint seq))
+    clRead :: ReadFunction (ListReader (UpdateReader update)) (WholeReader SequencePoint)
     clRead mr ReadWhole = mr ListReadLength
     clUpdate ::
            forall m. MonadIO m
-        => OrderedListUpdate seq update
-        -> Readable m (ListReader seq (UpdateReader update))
-        -> m [ROWUpdate (SequencePoint seq)]
+        => OrderedListUpdate update
+        -> Readable m (ListReader (UpdateReader update))
+        -> m [ROWUpdate SequencePoint]
     clUpdate OrderedListUpdateClear _ = return $ pure $ MkReadOnlyUpdate $ MkWholeUpdate 0
     clUpdate (OrderedListUpdateItem _ _ _) _ = return []
     clUpdate _ mr = do
@@ -111,22 +107,17 @@ orderedListLengthLens = let
 
 -- | prevents creation of the element
 orderedListItemLinearLens ::
-       forall seq update.
-       ( IsSequence seq
-       , FullSubjectReader (UpdateReader update)
-       , ApplicableEdit (UpdateEdit update)
-       , UpdateSubject update ~ Element seq
-       )
-    => SequencePoint seq
-    -> LinearFloatingChangeLens (StateLensVar (SequencePoint seq)) (OrderedListUpdate seq update) (MaybeUpdate update)
+       forall update. (FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
+    => SequencePoint
+    -> LinearFloatingChangeLens (StateLensVar SequencePoint) (OrderedListUpdate update) (MaybeUpdate update)
 orderedListItemLinearLens initpos = let
     sclInit ::
            forall m. MonadIO m
-        => Readable m (ListReader seq (UpdateReader update))
-        -> m (SequencePoint seq)
+        => Readable m (ListReader (UpdateReader update))
+        -> m SequencePoint
     sclInit _ = return initpos
     sclRead ::
-           ReadFunctionT (StateT (SequencePoint seq)) (ListReader seq (UpdateReader update)) (OneReader Maybe (UpdateReader update))
+           ReadFunctionT (StateT SequencePoint) (ListReader (UpdateReader update)) (OneReader Maybe (UpdateReader update))
     sclRead mr (ReadOne rt) = do
         i <- get
         lift $ mr $ ListReadItem i rt
@@ -142,9 +133,9 @@ orderedListItemLinearLens initpos = let
                         else Just ()
     sclUpdate ::
            forall m. MonadIO m
-        => OrderedListUpdate seq update
-        -> Readable m (ListReader seq (UpdateReader update))
-        -> StateT (SequencePoint seq) m [MaybeUpdate update]
+        => OrderedListUpdate update
+        -> Readable m (ListReader (UpdateReader update))
+        -> StateT SequencePoint m [MaybeUpdate update]
     sclUpdate (OrderedListUpdateItem oldie newie lupdate) _ = do
         i <- get
         case compare oldie i of
@@ -181,7 +172,7 @@ orderedListItemLinearLens initpos = let
     sPutEdit ::
            forall m. MonadIO m
         => MaybeEdit (UpdateEdit update)
-        -> StateT (SequencePoint seq) m (Maybe [OrderedListEdit seq (UpdateEdit update)])
+        -> StateT SequencePoint m (Maybe [OrderedListEdit (UpdateEdit update)])
     sPutEdit (SuccessFullResultOneEdit edit) = do
         i <- get
         return $ Just [OrderedListEditItem i edit]
@@ -193,105 +184,92 @@ orderedListItemLinearLens initpos = let
            forall m. MonadIO m
         => [MaybeEdit (UpdateEdit update)]
         -> Readable m NullReader
-        -> StateT (SequencePoint seq) m (Maybe [OrderedListEdit seq (UpdateEdit update)])
+        -> StateT SequencePoint m (Maybe [OrderedListEdit (UpdateEdit update)])
     sclPutEdits = linearPutEditsFromPutEdit sPutEdit
     in makeStateExpLens MkStateChangeLens {..}
 
 -- | prevents creation of the element
 orderedListItemLens ::
-       forall seq update.
-       ( IsSequence seq
-       , FullSubjectReader (UpdateReader update)
-       , ApplicableEdit (UpdateEdit update)
-       , UpdateSubject update ~ Element seq
-       )
-    => SequencePoint seq
-    -> FloatingChangeLens (OrderedListUpdate seq update) (MaybeUpdate update)
+       forall update. (FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
+    => SequencePoint
+    -> FloatingChangeLens (OrderedListUpdate update) (MaybeUpdate update)
 orderedListItemLens initpos = expToFloatingChangeLens $ orderedListItemLinearLens initpos
 
 listOrderedListChangeLens ::
-       forall seq update.
-       ( IsSequence seq
-       , FullSubjectReader (UpdateReader update)
-       , ApplicableEdit (UpdateEdit update)
-       , UpdateSubject update ~ Element seq
-       )
-    => ChangeLens (ListUpdate seq update) (OrderedListUpdate seq update)
+       forall update. (FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
+    => ChangeLens (ListUpdate update) (OrderedListUpdate update)
 listOrderedListChangeLens = let
-    clRead :: ReadFunction (ListReader seq (UpdateReader update)) (ListReader seq (UpdateReader update))
+    clRead :: ReadFunction (ListReader (UpdateReader update)) (ListReader (UpdateReader update))
     clRead mr = mr
     clUpdate ::
            forall m. MonadIO m
-        => ListUpdate seq update
-        -> Readable m (ListReader seq (UpdateReader update))
-        -> m [OrderedListUpdate seq update]
+        => ListUpdate update
+        -> Readable m (ListReader (UpdateReader update))
+        -> m [OrderedListUpdate update]
     clUpdate (ListUpdateItem p update) _ = return $ pure $ OrderedListUpdateItem p p [update]
     clUpdate (ListUpdateDelete p) _ = return $ pure $ OrderedListUpdateDelete p
     clUpdate (ListUpdateInsert p subj) _ = return $ pure $ OrderedListUpdateInsert p subj
     clUpdate ListUpdateClear _ = return $ pure OrderedListUpdateClear
     clPutEdit ::
            forall m. MonadIO m
-        => OrderedListEdit seq (UpdateEdit update)
-        -> Readable m (ListReader seq (UpdateReader update))
-        -> m (Maybe [ListEdit seq (UpdateEdit update)])
+        => OrderedListEdit (UpdateEdit update)
+        -> Readable m (ListReader (UpdateReader update))
+        -> m (Maybe [ListEdit (UpdateEdit update)])
     clPutEdit (OrderedListEditItem p edit) _ = return $ Just $ pure $ ListEditItem p edit
     clPutEdit (OrderedListEditDelete p) _ = return $ Just $ pure $ ListEditDelete p
     clPutEdit OrderedListEditClear _ = return $ Just $ pure ListEditClear
     clPutEdits ::
            forall m. MonadIO m
-        => [OrderedListEdit seq (UpdateEdit update)]
-        -> Readable m (ListReader seq (UpdateReader update))
-        -> m (Maybe [ListEdit seq (UpdateEdit update)])
+        => [OrderedListEdit (UpdateEdit update)]
+        -> Readable m (ListReader (UpdateReader update))
+        -> m (Maybe [ListEdit (UpdateEdit update)])
     clPutEdits = clPutEditsFromPutEdit clPutEdit
     in MkChangeLens {..}
 
 liftOrderedListChangeLens ::
-       forall seqA updateA seqB updateB.
-       ( IsSequence seqA
-       , UpdateSubject updateA ~ Element seqA
-       , FullSubjectReader (UpdateReader updateA)
+       forall updateA updateB.
+       ( FullSubjectReader (UpdateReader updateA)
        , ApplicableEdit (UpdateEdit updateA)
        , FullSubjectReader (UpdateReader updateB)
-       , Index seqA ~ Index seqB
        )
     => ChangeLens updateA updateB
-    -> ChangeLens (OrderedListUpdate seqA updateA) (OrderedListUpdate seqB updateB)
+    -> ChangeLens (OrderedListUpdate updateA) (OrderedListUpdate updateB)
 liftOrderedListChangeLens (MkChangeLens g up pe) = let
-    clRead :: ReadFunction (ListReader seqA (UpdateReader updateA)) (ListReader seqB (UpdateReader updateB))
-    clRead rd ListReadLength = fmap seqPointConvert $ rd ListReadLength
-    clRead rd (ListReadItem i rb) = getComposeM $ g (\ra -> MkComposeM $ rd (ListReadItem (seqPointConvert i) ra)) rb
+    clRead :: ReadFunction (ListReader (UpdateReader updateA)) (ListReader (UpdateReader updateB))
+    clRead rd ListReadLength = rd ListReadLength
+    clRead rd (ListReadItem i rb) = getComposeM $ g (\ra -> MkComposeM $ rd (ListReadItem i ra)) rb
     clUpdate ::
            forall m. MonadIO m
-        => OrderedListUpdate seqA updateA
-        -> Readable m (ListReader seqA (UpdateReader updateA))
-        -> m [OrderedListUpdate seqB updateB]
+        => OrderedListUpdate updateA
+        -> Readable m (ListReader (UpdateReader updateA))
+        -> m [OrderedListUpdate updateB]
     clUpdate (OrderedListUpdateItem i1 i2 lu) rd = do
-        u' <- for lu $ \u -> getComposeM $ up u $ \ra -> MkComposeM $ rd $ ListReadItem (seqPointConvert i1) ra
+        u' <- for lu $ \u -> getComposeM $ up u $ \ra -> MkComposeM $ rd $ ListReadItem i1 ra
         return $
             case sequenceA u' of
                 Nothing -> []
-                Just ubb -> pure $ OrderedListUpdateItem (seqPointConvert i1) (seqPointConvert i2) $ mconcat ubb
-    clUpdate (OrderedListUpdateDelete i) _ = return $ pure $ OrderedListUpdateDelete $ seqPointConvert i
+                Just ubb -> pure $ OrderedListUpdateItem i1 i2 $ mconcat ubb
+    clUpdate (OrderedListUpdateDelete i) _ = return $ pure $ OrderedListUpdateDelete $ i
     clUpdate (OrderedListUpdateInsert i subjA) _ = do
         subjB <- readableToSubject $ g $ subjectToReadable subjA
-        return $ pure $ OrderedListUpdateInsert (seqPointConvert i) subjB
+        return $ pure $ OrderedListUpdateInsert i subjB
     clUpdate OrderedListUpdateClear _ = return $ pure OrderedListUpdateClear
     clPutEdit ::
            forall m. MonadIO m
-        => OrderedListEdit seqB (UpdateEdit updateB)
-        -> Readable m (ListReader seqA (UpdateReader updateA))
-        -> m (Maybe [OrderedListEdit seqA (UpdateEdit updateA)])
+        => OrderedListEdit (UpdateEdit updateB)
+        -> Readable m (ListReader (UpdateReader updateA))
+        -> m (Maybe [OrderedListEdit (UpdateEdit updateA)])
     clPutEdit (OrderedListEditItem i editB) rd =
         getComposeM $ do
-            meditAs <- pe [editB] $ \ra -> MkComposeM $ rd (ListReadItem (seqPointConvert i) ra)
+            meditAs <- pe [editB] $ \ra -> MkComposeM $ rd (ListReadItem i ra)
             editAs <- liftInner meditAs
-            return $ fmap (OrderedListEditItem $ seqPointConvert i) editAs
-    clPutEdit (OrderedListEditDelete i) _ = return $ Just $ pure $ OrderedListEditDelete $ seqPointConvert i
+            return $ fmap (OrderedListEditItem $ i) editAs
+    clPutEdit (OrderedListEditDelete i) _ = return $ Just $ pure $ OrderedListEditDelete $ i
     clPutEdit OrderedListEditClear _ = return $ Just $ pure OrderedListEditClear
     clPutEdits ::
            forall m. MonadIO m
-        => [OrderedListEdit seqB (UpdateEdit updateB)]
-        -> Readable m (ListReader seqA (UpdateReader updateA))
-        -> m (Maybe [OrderedListEdit seqA (UpdateEdit updateA)])
+        => [OrderedListEdit (UpdateEdit updateB)]
+        -> Readable m (ListReader (UpdateReader updateA))
+        -> m (Maybe [OrderedListEdit (UpdateEdit updateA)])
     clPutEdits = clPutEditsFromPutEdit clPutEdit
     in MkChangeLens {..}

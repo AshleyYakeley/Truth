@@ -12,18 +12,18 @@ import Changes.Core.Read
 import Changes.Core.Sequence
 
 data StringRead seq t where
-    StringReadLength :: StringRead seq (SequencePoint seq)
-    StringReadSection :: SequenceRun seq -> StringRead seq seq
+    StringReadLength :: StringRead seq SequencePoint
+    StringReadSection :: SequenceRun -> StringRead seq seq
 
-instance Integral (Index seq) => Show (StringRead seq t) where
+instance Show (StringRead seq t) where
     show StringReadLength = "length"
     show (StringReadSection run) = "section " ++ show run
 
-instance (c seq, c (SequencePoint seq)) => WitnessConstraint c (StringRead seq) where
+instance (c seq, c SequencePoint) => WitnessConstraint c (StringRead seq) where
     witnessConstraint StringReadLength = Dict
     witnessConstraint (StringReadSection _) = Dict
 
-instance Integral (Index seq) => AllWitnessConstraint Show (StringRead seq) where
+instance AllWitnessConstraint Show (StringRead seq) where
     allWitnessConstraint = Dict
 
 instance IsSequence seq => SubjectReader (StringRead seq) where
@@ -38,14 +38,14 @@ instance IsSequence seq => FullSubjectReader (StringRead seq) where
 
 data StringEdit seq
     = StringReplaceWhole seq
-    | StringReplaceSection (SequenceRun seq)
+    | StringReplaceSection SequenceRun
                            seq
 
-instance (Show seq, Integral (Index seq)) => Show (StringEdit seq) where
+instance Show seq => Show (StringEdit seq) where
     show (StringReplaceWhole s) = "whole " ++ show s
     show (StringReplaceSection r s) = "section " ++ show r ++ " " ++ show s
 
-floatingUpdateLeft :: IsSequence seq => StringEdit seq -> SequencePoint seq -> SequencePoint seq
+floatingUpdateLeft :: IsSequence seq => StringEdit seq -> SequencePoint -> SequencePoint
 floatingUpdateLeft (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
     uend = ustart + ulen
     slen = seqLength u
@@ -56,7 +56,7 @@ floatingUpdateLeft (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
                     else i
 floatingUpdateLeft _ i = i
 
-floatingUpdateRight :: IsSequence seq => StringEdit seq -> SequencePoint seq -> SequencePoint seq
+floatingUpdateRight :: IsSequence seq => StringEdit seq -> SequencePoint -> SequencePoint
 floatingUpdateRight (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
     uend = ustart + ulen
     slen = seqLength u
@@ -67,10 +67,10 @@ floatingUpdateRight (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
                     else i
 floatingUpdateRight _ i = i
 
-instance IsSequence seq => Floating (StringEdit seq) (SequencePoint seq) where
+instance IsSequence seq => Floating (StringEdit seq) SequencePoint where
     floatingUpdate = floatingUpdateRight
 
-instance IsSequence seq => Floating (StringEdit seq) (SequenceRun seq) where
+instance IsSequence seq => Floating (StringEdit seq) SequenceRun where
     floatingUpdate edit (MkSequenceRun ostart olen) = let
         oend = ostart + olen
         in startEndRun (floatingUpdateLeft edit ostart) (floatingUpdateRight edit oend)
@@ -81,7 +81,7 @@ instance IsSequence seq => Floating (StringEdit seq) (StringEdit seq) where
 
 type instance EditReader (StringEdit seq) = StringRead seq
 
-cleanEdit :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> Maybe (SequenceRun seq)
+cleanEdit :: SequencePoint -> SequenceRun -> Maybe SequenceRun
 cleanEdit _len run
     | not $ goodRun run = Nothing
 cleanEdit len run
@@ -144,23 +144,23 @@ type StringUpdate seq = EditUpdate (StringEdit seq)
 
 stringSectionLens ::
        forall seq. IsSequence seq
-    => SequenceRun seq
+    => SequenceRun
     -> FloatingChangeLens (StringUpdate seq) (StringUpdate seq)
 stringSectionLens initRun = let
     sclInit ::
            forall m. MonadIO m
         => Readable m (StringRead seq)
-        -> m (SequenceRun seq)
+        -> m SequenceRun
     sclInit _ = return initRun
     getState ::
            forall m. MonadIO m
         => Readable m (StringRead seq)
-        -> StateT (SequenceRun seq) m (SequenceRun seq)
+        -> StateT SequenceRun m SequenceRun
     getState mr = do
         len <- lift $ mr StringReadLength
         stateRaw <- get
         return $ clipRunBounds len stateRaw
-    sclRead :: ReadFunctionT (StateT (SequenceRun seq)) (StringRead seq) (StringRead seq)
+    sclRead :: ReadFunctionT (StateT SequenceRun) (StringRead seq) (StringRead seq)
     sclRead mr rt = do
         st <- getState mr
         case rt of
@@ -171,7 +171,7 @@ stringSectionLens initRun = let
            forall m. MonadIO m
         => StringUpdate seq
         -> Readable m (StringRead seq)
-        -> StateT (SequenceRun seq) m [StringUpdate seq]
+        -> StateT SequenceRun m [StringUpdate seq]
     sclUpdate (MkEditUpdate edita) mr = do
         oldstate <- get
         newlen <- lift $ mr StringReadLength
@@ -203,7 +203,7 @@ stringSectionLens initRun = let
            forall m. MonadIO m
         => StringEdit seq
         -> Readable m (StringRead seq)
-        -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
+        -> StateT SequenceRun m (Maybe [StringEdit seq])
     sPutEdit editb mr = do
         oldstate <- getState mr
         case editb of
@@ -220,6 +220,6 @@ stringSectionLens initRun = let
            forall m. MonadIO m
         => [StringEdit seq]
         -> Readable m (StringRead seq)
-        -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
+        -> StateT SequenceRun m (Maybe [StringEdit seq])
     sclPutEdits = clPutEditsFromPutEdit sPutEdit
     in makeStateLens @'NonLinear MkStateChangeLens {..}

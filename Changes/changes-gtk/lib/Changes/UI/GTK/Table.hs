@@ -102,17 +102,10 @@ instance Monoid (KeyColumns update) where
     mappend = (<>)
 
 tableContainerView ::
-       forall seq update.
-       ( HasCallStack
-       , IsSequence seq
-       , IsUpdate update
-       , ApplicableEdit (UpdateEdit update)
-       , FullSubjectReader (UpdateReader update)
-       , UpdateSubject update ~ Element seq
-       , Integral (Index seq)
-       )
+       forall update.
+       (HasCallStack, IsUpdate update, ApplicableEdit (UpdateEdit update), FullSubjectReader (UpdateReader update))
     => KeyColumns update
-    -> Model (OrderedListUpdate seq update)
+    -> Model (OrderedListUpdate update)
     -> (Model update -> View ())
     -> SelectNotify (Model update)
     -> CreateView (Widget, Maybe (ReadM (UpdateReader update) Bool) -> View ())
@@ -122,7 +115,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
         defStoreEntry :: StoreEntry update rowtext rowprops
         defStoreEntry = MkStoreEntry (error "unset model") (error "unset text") (error "unset props")
         makeStoreEntry ::
-               SequencePoint seq
+               SequencePoint
             -> ((StoreEntry update rowtext rowprops -> StoreEntry update rowtext rowprops) -> IO ())
             -> CreateView ()
         makeStoreEntry i setval = do
@@ -169,7 +162,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             recvTable ::
                    HasCallStack
                 => (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
-                -> NonEmpty (OrderedListUpdate seq update)
+                -> NonEmpty (OrderedListUpdate update)
                 -> View ()
             recvTable _ updates = do
                 mselentry <- getSelectedEntry
@@ -218,16 +211,9 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
     return (w, setSelection)
 
 createListTable ::
-       forall seq update.
-       ( IsSequence seq
-       , Integral (Index seq)
-       , IsUpdate update
-       , ApplicableEdit (UpdateEdit update)
-       , FullSubjectReader (UpdateReader update)
-       , UpdateSubject update ~ Element seq
-       )
+       forall update. (IsUpdate update, ApplicableEdit (UpdateEdit update), FullSubjectReader (UpdateReader update))
     => [KeyColumn update]
-    -> Model (OrderedListUpdate seq update)
+    -> Model (OrderedListUpdate update)
     -> (Model update -> View ())
     -> SelectNotify (Model update)
     -> CreateView (Widget, Maybe (ReadM (UpdateReader update) Bool) -> View ())

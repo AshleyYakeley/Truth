@@ -23,6 +23,7 @@ library:
       - hashable
       - unordered-containers
       - bytestring
+      - vector
       - cereal
       - text
       - cereal-text

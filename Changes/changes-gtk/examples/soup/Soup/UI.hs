@@ -38,8 +38,7 @@ soupEditSpec sub selnotify openItem = do
         cmp a b = compare (resultToMaybe a) (resultToMaybe b)
         uo :: UpdateOrder (UUIDElementUpdate PossibleNoteUpdate)
         uo = mkUpdateOrder cmp nameLens
-    osub :: Model (OrderedListUpdate [(UUID, Result Text (Tuple NoteSel))] (UUIDElementUpdate PossibleNoteUpdate)) <-
-        cvFloatMapModel (orderedSetLens uo) sub
+    osub :: Model (OrderedListUpdate (UUIDElementUpdate PossibleNoteUpdate)) <- cvFloatMapModel (orderedSetLens uo) sub
     let
         nameColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
         nameColumn =

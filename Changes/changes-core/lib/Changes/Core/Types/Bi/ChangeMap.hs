@@ -1,7 +1,6 @@
 module Changes.Core.Types.Bi.ChangeMap where
 
 import Changes.Core.Edit
-import Changes.Core.Sequence
 import Changes.Core.Types.List
 import Changes.Core.Types.Whole
 import Shapes
@@ -28,32 +27,30 @@ wholeChangeMap ab = let
     in MkChangeMap {..}
 
 listChangeMap ::
-       forall updatea updateb a b.
+       forall updatea updateb.
        ChangeMap updatea updateb
-    -> (a -> b)
-    -> ChangeMap (ListUpdate [a] updatea) (ListUpdate [b] updateb)
+    -> (UpdateSubject updatea -> UpdateSubject updateb)
+    -> ChangeMap (ListUpdate updatea) (ListUpdate updateb)
 listChangeMap chmap ab = let
-    chmapUpdate' :: ListUpdate [a] updatea -> ListUpdate [b] updateb
-    chmapUpdate' (ListUpdateItem i updatea) = ListUpdateItem (seqPointConvert i) $ chmapUpdate chmap updatea
-    chmapUpdate' (ListUpdateDelete i) = ListUpdateDelete (seqPointConvert i)
-    chmapUpdate' (ListUpdateInsert i a) = ListUpdateInsert (seqPointConvert i) $ chmapSubject chmap a
+    chmapUpdate' :: ListUpdate updatea -> ListUpdate updateb
+    chmapUpdate' (ListUpdateItem i updatea) = ListUpdateItem i $ chmapUpdate chmap updatea
+    chmapUpdate' (ListUpdateDelete i) = ListUpdateDelete i
+    chmapUpdate' (ListUpdateInsert i a) = ListUpdateInsert i $ chmapSubject chmap a
     chmapUpdate' ListUpdateClear = ListUpdateClear
-    chmapEdit' :: ListEdit [a] (UpdateEdit updatea) -> ListEdit [b] (UpdateEdit updateb)
-    chmapEdit' (ListEditItem i edita) = ListEditItem (seqPointConvert i) $ chmapEdit chmap edita
-    chmapEdit' (ListEditDelete i) = ListEditDelete (seqPointConvert i)
-    chmapEdit' (ListEditInsert i a) = ListEditInsert (seqPointConvert i) $ chmapSubject chmap a
+    chmapEdit' :: ListEdit (UpdateEdit updatea) -> ListEdit (UpdateEdit updateb)
+    chmapEdit' (ListEditItem i edita) = ListEditItem i $ chmapEdit chmap edita
+    chmapEdit' (ListEditDelete i) = ListEditDelete i
+    chmapEdit' (ListEditInsert i a) = ListEditInsert i $ chmapSubject chmap a
     chmapEdit' ListEditClear = ListEditClear
     chmapRead' ::
            forall tb.
-           ListReader [b] (UpdateReader updateb) tb
-        -> forall r. (forall ta. ListReader [a] (UpdateReader updatea) ta -> (ta -> tb) -> r) -> r
-    chmapRead' ListReadLength call = call ListReadLength seqPointConvert
-    chmapRead' (ListReadItem i rdb) call =
-        chmapRead chmap rdb $ \rda conv -> call (ListReadItem (seqPointConvert i) rda) $ fmap conv
-    chmapSubject' :: [a] -> [b]
+           ListReader (UpdateReader updateb) tb
+        -> forall r. (forall ta. ListReader (UpdateReader updatea) ta -> (ta -> tb) -> r) -> r
+    chmapRead' ListReadLength call = call ListReadLength id
+    chmapRead' (ListReadItem i rdb) call = chmapRead chmap rdb $ \rda conv -> call (ListReadItem i rda) $ fmap conv
+    chmapSubject' :: Vector (UpdateSubject updatea) -> Vector (UpdateSubject updateb)
     chmapSubject' = fmap ab
     in MkChangeMap chmapUpdate' chmapEdit' chmapRead' chmapSubject'
 
-listWholeChangeMap ::
-       forall a b. (a -> b) -> ChangeMap (ListUpdate [a] (WholeUpdate a)) (ListUpdate [b] (WholeUpdate b))
+listWholeChangeMap :: forall a b. (a -> b) -> ChangeMap (ListUpdate (WholeUpdate a)) (ListUpdate (WholeUpdate b))
 listWholeChangeMap ab = listChangeMap (wholeChangeMap ab) ab

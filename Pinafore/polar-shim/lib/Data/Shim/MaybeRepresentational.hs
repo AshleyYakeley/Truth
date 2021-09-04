@@ -28,3 +28,6 @@ instance MaybeRepresentational (,) where
 
 instance MaybeRepresentational Either where
     maybeRepresentational = Just Dict
+
+instance MaybeRepresentational Vector where
+    maybeRepresentational = Just Dict
