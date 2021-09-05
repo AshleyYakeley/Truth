@@ -1,4 +1,4 @@
-module Changes.Core.UI.View.Dynamic
+module Changes.Core.UI.Dynamic
     ( DynamicViewState(..)
     , closeDynamicView
     , replaceDynamicView
