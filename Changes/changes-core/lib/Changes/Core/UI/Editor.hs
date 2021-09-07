@@ -2,6 +2,7 @@ module Changes.Core.UI.Editor where
 
 import Changes.Core.Edit
 import Changes.Core.Import
+import Changes.Core.Lens
 import Changes.Core.Model
 import Changes.Core.UI.View.CreateView
 import Changes.Core.UI.View.View
@@ -34,17 +35,6 @@ instance Applicative (Editing update) where
             return $ ab a
         in MkEditing {..}
 
-{-
-mapEditing :: forall updateA updateB r. ChangeLens updateA updateB -> Editing updateB r -> Editing updateA r
-mapEditing l (MkEditing euB et edB) = let
-    euA :: Reference (UpdateEdit updateA) -> NonEmpty updateA -> EditContext -> View ()
-    euA refA updatesA ec = do
-        updatesB <- mapM (\uA -> l (viewUpdate uA) uA) updatesA
-        euB refA updatesB ec
-    edA :: Reference (UpdateEdit updateA) -> Task () -> CreateView r
-    edA refA t = edB (mapReference l refA) t
-    in MkEditing euA et edA
--}
 type Editor :: Type -> Type -> Type
 newtype Editor update r =
     MkEditor (Reference (UpdateEdit update) -> CreateView (Editing update r))
@@ -66,3 +56,19 @@ execEditor cv =
     MkEditor $ \ref -> do
         MkEditor ed <- cv
         ed ref
+
+mapEditor :: forall updateA updateB r. ChangeLens updateA updateB -> Editor updateB r -> Editor updateA r
+mapEditor l (MkEditor editor) =
+    MkEditor $ \refA -> do
+        MkEditing euB et ed <- editor $ mapReference l refA
+        let
+            euA :: NonEmpty updateA -> EditContext -> View ()
+            euA updatesA ec =
+                viewRunResourceContext refA $ \unlift arefA -> do
+                    updatessB <-
+                        for (toList updatesA) $ \updateA ->
+                            clUpdate l updateA $ \rd -> liftIO $ unlift $ refRead arefA rd
+                    case nonEmpty $ mconcat updatessB of
+                        Nothing -> return ()
+                        Just updatesB -> euB updatesB ec
+        return $ MkEditing euA et ed
