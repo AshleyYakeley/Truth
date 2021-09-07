@@ -72,3 +72,12 @@ mapEditor l (MkEditor editor) =
                         Nothing -> return ()
                         Just updatesB -> euB updatesB ec
         return $ MkEditing euA et ed
+
+floatingMapEditor ::
+       forall updateA updateB r. FloatingChangeLens updateA updateB -> Editor updateB r -> Editor updateA r
+floatingMapEditor (MkFloatingChangeLens (NoFloatInit r) rlens) editorB = mapEditor (rlens r) editorB
+floatingMapEditor (MkFloatingChangeLens (ReadFloatInit init) rlens) editorB =
+    MkEditor $ \refA -> do
+        r <- viewRunResource refA $ \arefA -> init $ refRead arefA
+        let MkEditor editorA = mapEditor (rlens r) editorB
+        editorA refA
