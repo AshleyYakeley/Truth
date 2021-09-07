@@ -6,7 +6,6 @@ import Changes.Core.Model.AutoClose as I
 import Changes.Core.Model.Cache as I
 import Changes.Core.Model.DeferActionT as I
 import Changes.Core.Model.EditContext as I
-import Changes.Core.Model.Editor as I
 import Changes.Core.Model.MemoryCell as I
 import Changes.Core.Model.Model as I
 import Changes.Core.Model.Premodel as I

@@ -52,15 +52,14 @@ makeTestPinaforeContext cc hout = do
 withTestPinaforeContext ::
        FetchModule
     -> Handle
-    -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) =>
-                ChangesContext -> MFunction LifeCycle IO -> IO PinaforeTableSubject -> IO r)
+    -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => ChangesContext -> IO PinaforeTableSubject -> IO r)
     -> IO r
 withTestPinaforeContext fetchModule hout call =
     runLifeCycle @LifeCycle $
     liftIOWithUnlift $ \unlift -> do
         let cc = nullChangesContext unlift
         (pc, getTableState) <- unlift $ makeTestPinaforeContext cc hout
-        runWithContext pc fetchModule $ call cc unlift getTableState
+        runWithContext pc fetchModule $ call cc getTableState
 
 withNullPinaforeContext :: MonadIO m => ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => m r) -> m r
 withNullPinaforeContext = runWithContext nullPinaforeContext mempty
@@ -71,27 +70,21 @@ runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScop
 checkUpdateEditor ::
        forall a. Eq a
     => a
-    -> IO ()
+    -> CreateView ()
     -> Editor (WholeUpdate a) ()
-checkUpdateEditor val push = let
-    editorInit :: Reference (WholeEdit a) -> LifeCycle (MVar (NonEmpty (WholeUpdate a)))
-    editorInit _ = liftIO newEmptyMVar
-    editorUpdate ::
-           MVar (NonEmpty (WholeUpdate a))
-        -> Reference (WholeEdit a)
-        -> ResourceContext
-        -> NonEmpty (WholeUpdate a)
-        -> EditContext
-        -> IO ()
-    editorUpdate var _ _ edits _ = putMVar var edits
-    editorDo :: MVar (NonEmpty (WholeUpdate a)) -> Reference (WholeEdit a) -> Task () -> LifeCycle ()
-    editorDo var _ _ =
-        liftIO $ do
-            push
-            edits <- takeMVar var
-            case edits of
-                MkWholeReaderUpdate v :| []
-                    | v == val -> return ()
-                _ -> fail "unexpected push"
-    editorTask = mempty
-    in MkEditor {..}
+checkUpdateEditor val push =
+    MkEditor $ \_ -> do
+        var <- liftIO newEmptyMVar
+        let
+            editingUpdate :: NonEmpty (WholeUpdate a) -> EditContext -> View ()
+            editingUpdate updates _ = liftIO $ putMVar var updates
+            editingDo :: Task () -> CreateView ()
+            editingDo _ = do
+                push
+                updates <- liftIO $ takeMVar var
+                case updates of
+                    MkWholeReaderUpdate v :| []
+                        | v == val -> return ()
+                    _ -> fail "unexpected push"
+            editingTask = mempty
+        return MkEditing {..}

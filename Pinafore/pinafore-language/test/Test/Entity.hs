@@ -14,9 +14,9 @@ testUpdate text =
     testExpression text text $ \cc interpret -> do
         (stuff :: PinaforeAction _) <- liftIO interpret
         (sendUpdate, ref) <- ccRunView cc emptyResourceContext $ unliftPinaforeActionOrFail stuff
-        runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
-            checkUpdateEditor (Known (1 :: Integer)) $
-            ccUnliftLifeCycle cc $ ccRunView cc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
+        ccRunView cc emptyResourceContext $
+            runEditor (unWModel $ immutableRefToRejectingRef ref) $
+            checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
 testUpdates = runScriptTestTree $ tGroup "update" [testUpdate "do ref <- newMemWhole; return (ref := 1, ref) end"]

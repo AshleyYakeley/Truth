@@ -50,7 +50,7 @@ cvDynamic model initCV taskCV recvCV = do
             return (stateVar, a)
         recvBind :: (MVar dvs, a) -> NonEmpty update -> View ()
         recvBind (stateVar, a) updates = mVarRun stateVar $ recvCV a $ toList updates
-    (stateVar, a) <- cvBindModel model Nothing initBind taskCV recvBind
+    (stateVar, a) <- cvBindModel model Nothing initBind (\_ -> taskCV) recvBind
     liftToLifeCycle $ mVarRun stateVar $ recvCV a []
     return a
 

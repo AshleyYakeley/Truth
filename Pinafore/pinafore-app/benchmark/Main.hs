@@ -94,14 +94,14 @@ benchScripts =
 
 interpretUpdater :: (?pinafore :: PinaforeContext) => Text -> IO ()
 interpretUpdater text =
-    withTestPinaforeContext mempty stdout $ \tc unlift _getTableState -> do
+    withTestPinaforeContext mempty stdout $ \tc _getTableState -> do
         action <- throwInterpretResult $ pinaforeInterpretTextAtType "<test>" text
         (sendUpdate, ref) <-
             ccUnliftLifeCycle tc $ ccRunView tc emptyResourceContext $ unliftPinaforeActionOrFail action
-        unlift $
-            runEditor emptyResourceContext (unWModel $ immutableRefToRejectingRef ref) $
-            checkUpdateEditor (Known (1 :: Integer)) $
-            ccUnliftLifeCycle tc $ ccRunView tc emptyResourceContext $ unliftPinaforeActionOrFail sendUpdate
+        ccUnliftLifeCycle tc $
+            ccRunView tc emptyResourceContext $
+            runEditor (unWModel $ immutableRefToRejectingRef ref) $
+            checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =

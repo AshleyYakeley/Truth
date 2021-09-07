@@ -14,7 +14,7 @@ testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \hout ->
-           withTestPinaforeContext mempty hout $ \cc _ _ -> do
+           withTestPinaforeContext mempty hout $ \cc _ -> do
                action <- pinaforeInterpretFile inpath
                ccRunView cc emptyResourceContext action
                return ()

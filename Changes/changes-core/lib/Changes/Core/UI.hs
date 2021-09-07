@@ -3,6 +3,7 @@ module Changes.Core.UI
     ) where
 
 import Changes.Core.UI.Dynamic as I
+import Changes.Core.UI.Editor as I
 import Changes.Core.UI.Selection as I
 import Changes.Core.UI.Toolkit as I
 import Changes.Core.UI.View.CreateView as I

@@ -22,7 +22,7 @@ pinaforeBisubstitutes bisubs val = do
     return val'
 
 testValue :: Text -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => IO ()) -> TestTree
-testValue name call = testTree (unpack name) $ withTestPinaforeContext mempty stdout $ \_ _ _ -> call
+testValue name call = testTree (unpack name) $ withTestPinaforeContext mempty stdout $ \_ _ -> call
 
 testSourceScoped :: Text -> PinaforeSourceInterpreter () -> TestTree
 testSourceScoped name action = testValue name $ throwInterpretResult $ runPinaforeSourceScoped "<test>" $ action

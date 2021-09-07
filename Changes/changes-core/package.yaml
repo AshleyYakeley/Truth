@@ -93,7 +93,7 @@ library:
       - Changes.Core.Model.Model
       - Changes.Core.Model.Tuple
       - Changes.Core.Model.MemoryCell
-      - Changes.Core.Model.Editor
+      - Changes.Core.UI.Editor
       - Changes.Core.Model.Cache
       - Changes.Core.Model.Savable
       - Changes.Core.Model.Undo
