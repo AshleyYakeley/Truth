@@ -18,8 +18,9 @@ import Pinafore.Language.Library.GTK.Drawing
 import Shapes
 
 -- LangElement
-newtype LangElement =
-    MkLangElement (CreateView Widget)
+newtype LangElement = MkLangElement
+    { unLangElement :: CreateView Widget
+    }
 
 elementGroundType :: PinaforeGroundType '[] LangElement
 elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangElement)|]) "Element"
@@ -108,6 +109,12 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                     in setsel ka
                 in cvBindModel selectionModel (Just esrc) init mempty recv
         return widget
+
+uiList :: (PinaforeImmutableWholeRef A -> LangElement) -> LangListRef '( BottomType, A) -> LangElement
+uiList mkElement listRef =
+    MkLangElement $
+    createListBox (unLangElement . mkElement . functionImmutableRef . MkWModel) $
+    unWModel $ langListRefToOrdered listRef
 
 type PickerType = Know EnA
 
@@ -287,6 +294,7 @@ elementStuff =
               "A button with this text that does this action. Button will be disabled if the action reference is unknown."
               uiButton
         , mkValEntry "pick" "A drop-down menu." uiPick
+        , mkValEntry "list" "A dynamic list of elements." uiList
         , mkValEntry
               "listTable"
               "A list table. First arg is columns (name, property), second is list-reference of items, third is the action for item activation, fourth is an optional reference for the selected row."
