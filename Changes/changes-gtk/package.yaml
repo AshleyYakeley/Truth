@@ -54,6 +54,7 @@ library:
       - Changes.UI.GTK.Icon
       - Changes.UI.GTK.Label
       - Changes.UI.GTK.Maybe
+      - Changes.UI.GTK.ListBox
       - Changes.UI.GTK.Switch
       - Changes.UI.GTK.CheckButton
       - Changes.UI.GTK.Option
