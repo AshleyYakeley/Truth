@@ -25,7 +25,7 @@ std_window title contents = fixAction $ \window -> let
                 UI.menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ]
-    in UI.openWindow (300,400) title {menus} $ UI.scrolled contents;
+    in UI.openWindow (300,500) title {menus} $ UI.scrolled contents;
 
 ### People
 
@@ -223,7 +223,11 @@ window_drawing = let import Colour; import Drawing in do
             end};
     end;
 
-### Start Window
+window_list: Action UI.Window;
+window_list = do
+    peopleList <- getSetList (orderOn name alphabetical) people;
+    std_window {"List"} $ UI.list ui_person peopleList;
+    end;
 
 window_start : Action UI.Window;
 window_start = do
@@ -248,6 +252,7 @@ window_start = do
             UI.button {"Constant"} {window_constant},
             UI.button {"CSS"} {window_css},
             UI.button {"Drawing"} {window_drawing},
+            UI.button {"List"} {window_list},
             UI.button {"Disabled"} unknown,
             UI.layoutGrow $ UI.blank
         ];
