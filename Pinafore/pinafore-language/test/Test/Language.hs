@@ -276,6 +276,7 @@ testQueries =
               , testQuery "let a=7;b=a in a" $ LRSuccess "7"
               , testQuery "let a=7;b=a in b" $ LRSuccess "7"
               , testQuery "let a=2 in let b=a in b" $ LRSuccess "2"
+              , testQuery "let b=a in \\a -> b" LRCheckFail
               ]
         , testTree
               "name shadowing"
