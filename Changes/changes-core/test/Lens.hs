@@ -27,7 +27,7 @@ modelPushEdits rc sub edits = do
 
 type UpdateX = KeyUpdate [(Char, Int)] (PairUpdate (ConstWholeUpdate Char) (WholeUpdate Int))
 
-updToString :: OrderedListUpdate String (ConstWholeUpdate Char) -> String
+updToString :: OrderedListUpdate (ConstWholeUpdate Char) -> String
 updToString (OrderedListUpdateItem a b []) = "move " <> show a <> " -> " <> show b
 updToString (OrderedListUpdateItem _ _ (update:_)) = never update
 updToString (OrderedListUpdateDelete a) = "del " <> show a
@@ -36,7 +36,7 @@ updToString OrderedListUpdateClear = "clear"
 
 -- arrange a list of characters in an order
 -- the order is given in the context as a map from Char to Int
-testContextOrderedSetLensCase :: [(Char, Int)] -> [(SequencePoint String, SequencePoint String)] -> TestTree
+testContextOrderedSetLensCase :: [(Char, Int)] -> [(SequencePoint, SequencePoint)] -> TestTree
 testContextOrderedSetLensCase assigns expected =
     testTree (show assigns) $ do
         let
@@ -50,7 +50,7 @@ testContextOrderedSetLensCase assigns expected =
                         Just (_, i) -> i
                         Nothing -> 0
             flens ::
-                   FloatingChangeLens (ContextUpdate UpdateX (FiniteSetUpdate Char)) (ContextUpdate UpdateX (OrderedListUpdate String (ConstWholeUpdate Char)))
+                   FloatingChangeLens (ContextUpdate UpdateX (FiniteSetUpdate Char)) (ContextUpdate UpdateX (OrderedListUpdate (ConstWholeUpdate Char)))
             flens = contextOrderedSetLens uo
         rawContextObj :: Reference (WholeEdit [(Char, Int)]) <-
             makeMemoryReference [('A', 10), ('B', 20), ('C', 30), ('D', 40), ('E', 50)] $ \_ -> True
@@ -80,7 +80,7 @@ testContextOrderedSetLensCase assigns expected =
                 for_ assigns pushOneEdit
                 return getUpdates
         let
-            expectedUpdates :: [OrderedListUpdate String (ConstWholeUpdate Char)]
+            expectedUpdates :: [OrderedListUpdate (ConstWholeUpdate Char)]
             expectedUpdates = fmap (\(a, b) -> OrderedListUpdateItem a b []) expected
         foundUpdates <- getUpdates
         assertEqual "updates" (fmap updToString expectedUpdates) (fmap updToString foundUpdates)

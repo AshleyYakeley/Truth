@@ -117,35 +117,49 @@ instance HasPinaforeGroundType '[] () where
 
 -- Double
 instance HasPinaforeType 'Positive Double where
-    pinaforeType = mapPosShimWit (functionToShim "subtype" InexactNumber) pinaforeType
+    pinaforeType = mapPosShimWit (functionToShim "InexactNumber" InexactNumber) pinaforeType
 
 instance HasPinaforeType 'Negative Double where
-    pinaforeType = mapNegShimWit (functionToShim "subtype" numberToDouble) pinaforeType
+    pinaforeType = mapNegShimWit (functionToShim "numberToDouble" numberToDouble) pinaforeType
 
 -- Int
 instance HasPinaforeType 'Positive Int where
-    pinaforeType = mapPosShimWit (functionToShim "subtype" toInteger) pinaforeType
+    pinaforeType = mapPosShimWit (functionToShim "toInteger" toInteger) pinaforeType
 
 instance HasPinaforeType 'Negative Int where
-    pinaforeType = mapNegShimWit (functionToShim "subtype" fromInteger) pinaforeType
+    pinaforeType = mapNegShimWit (functionToShim "fromInteger" fromInteger) pinaforeType
 
 -- Int32
 instance HasPinaforeType 'Positive Int32 where
-    pinaforeType = mapPosShimWit (functionToShim "subtype" toInteger) pinaforeType
+    pinaforeType = mapPosShimWit (functionToShim "toInteger" toInteger) pinaforeType
 
 instance HasPinaforeType 'Negative Int32 where
-    pinaforeType = mapNegShimWit (functionToShim "subtype" fromInteger) pinaforeType
+    pinaforeType = mapNegShimWit (functionToShim "fromInteger" fromInteger) pinaforeType
+
+-- Int64
+instance HasPinaforeType 'Positive Int64 where
+    pinaforeType = mapPosShimWit (functionToShim "toInteger" toInteger) pinaforeType
+
+instance HasPinaforeType 'Negative Int64 where
+    pinaforeType = mapNegShimWit (functionToShim "fromInteger" fromInteger) pinaforeType
 
 -- Rational
 instance HasPinaforeType 'Positive Rational where
-    pinaforeType = mapPosShimWit (functionToShim "subtype" $ fromRational @SafeRational) pinaforeType
+    pinaforeType = mapPosShimWit (functionToShim "fromRational" $ fromRational @SafeRational) pinaforeType
 
 instance HasPinaforeType 'Negative Rational where
-    pinaforeType = mapNegShimWit (functionToShim "subtype" $ toRational @SafeRational) pinaforeType
+    pinaforeType = mapNegShimWit (functionToShim "toRational" $ toRational @SafeRational) pinaforeType
 
 -- Fixed
 instance HasResolution r => HasPinaforeType 'Positive (Fixed r) where
-    pinaforeType = mapPosShimWit (functionToShim "subtype" toRational) pinaforeType
+    pinaforeType = mapPosShimWit (functionToShim "toRational" toRational) pinaforeType
 
 instance HasResolution r => HasPinaforeType 'Negative (Fixed r) where
-    pinaforeType = mapNegShimWit (functionToShim "subtype" fromRational) pinaforeType
+    pinaforeType = mapNegShimWit (functionToShim "fromRational" fromRational) pinaforeType
+
+-- Vector
+instance HasPinaforeType 'Positive a => HasPinaforeType 'Positive (Vector a) where
+    pinaforeType = mapPosShimWit (functionToShim "toList" toList) pinaforeType
+
+instance HasPinaforeType 'Negative a => HasPinaforeType 'Negative (Vector a) where
+    pinaforeType = mapNegShimWit (functionToShim "fromList" fromList) pinaforeType

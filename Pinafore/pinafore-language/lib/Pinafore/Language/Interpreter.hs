@@ -387,20 +387,19 @@ registerType spos name doc t =
                 Just _ -> throw $ DeclareTypeDuplicateError name
                 Nothing -> liftSourcePos $ withNewBinding name (doc, TypeBinding t) mta
 
-type TypeFixBox ts x = FixBox (WriterT [x] (Interpreter ts))
+type TypeFixBox ts x = FixBox (Interpreter ts) [x]
 
 mkTypeFixBox :: SourcePos -> Name -> Markdown -> (t -> BoundType ts) -> Interpreter ts (t, x) -> TypeFixBox ts x
 mkTypeFixBox spos name doc ttype mtx =
-    mkFixBox (\t -> liftWMFunction $ registerType spos name doc $ ttype t) $ do
-        (t, x) <- lift mtx
-        tell [x]
-        return t
+    mkFixBox (\t -> registerType spos name doc $ ttype t) $ do
+        (t, x) <- mtx
+        return (t, [x])
 
 runWriterInterpreterMF ::
-       MFunction (WriterT [x] (Interpreter ts)) (WriterT [x] (Interpreter ts))
+       (forall a. Interpreter ts a -> Interpreter ts (a, [x]))
     -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
 runWriterInterpreterMF mf = do
-    (sc, xx) <- runWriterT $ mf $ lift interpreterScope
+    (sc, xx) <- mf interpreterScope
     return (MkWMFunction $ pLocalScope (\_ -> sc), xx)
 
 registerRecursiveTypeNames :: [TypeFixBox ts x] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])

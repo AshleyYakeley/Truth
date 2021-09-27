@@ -12,17 +12,17 @@ import Shapes.Test
 import Subscribe
 import Test.SimpleString
 
-instance (Arbitrary (Index seq), Integral (Index seq)) => Arbitrary (SequencePoint seq) where
+instance Arbitrary SequencePoint where
     arbitrary = MkSequencePoint <$> (getSmall . getNonNegative <$> arbitrary)
     shrink 0 = []
     shrink 1 = [0]
     shrink n = [0, pred n]
 
-instance (Arbitrary (Index seq), Integral (Index seq)) => Arbitrary (SequenceRun seq) where
+instance Arbitrary SequenceRun where
     arbitrary = MkSequenceRun <$> arbitrary <*> arbitrary
     shrink (MkSequenceRun s l) = [MkSequenceRun s' l' | (s', l') <- shrink (s, l)]
 
-instance (Arbitrary seq, Arbitrary (Index seq), Integral (Index seq)) => Arbitrary (StringEdit seq) where
+instance Arbitrary seq => Arbitrary (StringEdit seq) where
     arbitrary = oneof [StringReplaceWhole <$> arbitrary, StringReplaceSection <$> arbitrary <*> arbitrary]
     shrink (StringReplaceWhole s) = StringReplaceWhole <$> shrink s
     shrink (StringReplaceSection r s) =
@@ -72,6 +72,7 @@ applyEditSubject ::
 applyEditSubject edit subj = readableToSubject $ applyEdit edit $ subjectToReadable subj
 
 testEdit ::
+       forall edit.
        ( ApplicableEdit edit
        , FullSubjectReader (EditReader edit)
        , Eq (EditSubject edit)
@@ -89,6 +90,7 @@ testEdit edit original expected = let
            assertEqual "" expected found
 
 testEditRead ::
+       forall edit t.
        ( SubjectReader (EditReader edit)
        , ApplicableEdit edit
        , Eq t
@@ -108,25 +110,29 @@ testEditRead edit original rt expected = let
            found <- applyEdit edit (subjectToReadable original) rt
            assertEqual "" expected found
 
-seqRun :: Int -> Int -> SequenceRun [a]
+seqRun :: Int64 -> Int64 -> SequenceRun
 seqRun start len = MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)
 
 testStringEdit :: TestTree
 testStringEdit =
     testTree
         "string edit"
-        [ testEdit (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" "ABXYCDE"
-        , testEdit (StringReplaceSection (seqRun 2 1) "XY") "ABCDE" "ABXYDE"
-        , testEdit (StringReplaceSection (seqRun 2 2) "XY") "ABCDE" "ABXYE"
-        , testEdit (StringReplaceSection (seqRun 2 3) "XY") "ABCDE" "ABXY"
-        , testEdit (StringReplaceSection (seqRun 1 3) "XY") "ABCDE" "AXYE"
-        , testEditRead (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" StringReadLength (MkSequencePoint 7)
-        , testEditRead (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 0 7) "ABXYCDE"
-        , testEditRead (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 0 3) "ABX"
-        , testEditRead (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 1 3) "BXY"
-        , testEditRead (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 1 4) "BXYC"
-        , testEditRead (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 2 4) "XYCD"
-        , testEditRead (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 3 3) "YCD"
+        [ testEdit (StringReplaceSection @String (seqRun 2 0) "XY") "ABCDE" "ABXYCDE"
+        , testEdit (StringReplaceSection @String (seqRun 2 1) "XY") "ABCDE" "ABXYDE"
+        , testEdit (StringReplaceSection @String (seqRun 2 2) "XY") "ABCDE" "ABXYE"
+        , testEdit (StringReplaceSection @String (seqRun 2 3) "XY") "ABCDE" "ABXY"
+        , testEdit (StringReplaceSection @String (seqRun 1 3) "XY") "ABCDE" "AXYE"
+        , testEditRead (StringReplaceSection @String (seqRun 2 0) "XY") "ABCDE" StringReadLength (MkSequencePoint 7)
+        , testEditRead
+              (StringReplaceSection @String (seqRun 2 0) "XY")
+              "ABCDE"
+              (StringReadSection $ seqRun 0 7)
+              "ABXYCDE"
+        , testEditRead (StringReplaceSection @String (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 0 3) "ABX"
+        , testEditRead (StringReplaceSection @String (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 1 3) "BXY"
+        , testEditRead (StringReplaceSection @String (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 1 4) "BXYC"
+        , testEditRead (StringReplaceSection @String (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 2 4) "XYCD"
+        , testEditRead (StringReplaceSection @String (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 3 3) "YCD"
         ]
 
 testLensGet :: TestTree
@@ -197,7 +203,7 @@ lensUpdateGetProperty lens oldA editA =
 testLensUpdate :: TestTree
 testLensUpdate =
     testTree "update" $ \run (MkSimpleString base) edit ->
-        lensUpdateGetProperty @(SequenceRun String) (stringSectionLens run) base edit
+        lensUpdateGetProperty @SequenceRun (stringSectionLens run) base edit
 
 testStringSectionLens :: TestTree
 testStringSectionLens =
@@ -209,27 +215,27 @@ testStringSectionLens =
           testTree "update special" $
           [ testTree "1 0" $
             lensUpdateGetProperty
-                @(SequenceRun String)
+                @SequenceRun
                 (stringSectionLens $ seqRun 0 1)
-                "A"
+                ("A" :: String)
                 (StringReplaceSection (seqRun 1 0) "x")
           , testTree "4 1" $
             lensUpdateGetProperty
-                @(SequenceRun String)
+                @SequenceRun
                 (stringSectionLens $ seqRun 0 5)
-                "ABCDE"
+                ("ABCDE" :: String)
                 (StringReplaceSection (seqRun 4 1) "pqrstu")
           , testTree "4 2" $
             lensUpdateGetProperty
-                @(SequenceRun String)
+                @SequenceRun
                 (stringSectionLens $ seqRun 0 5)
-                "ABCDE"
+                ("ABCDE" :: String)
                 (StringReplaceSection (seqRun 4 2) "pqrstu")
           , testTree "SharedString5" $
             lensUpdateGetProperty
-                @(SequenceRun String)
-                (stringSectionLens $ startEndRun @String 1 3)
-                "ABCD"
+                @SequenceRun
+                (stringSectionLens $ startEndRun 1 3)
+                ("ABCD" :: String)
                 (StringReplaceSection (startEndRun 2 4) "")
           ]
         ]
@@ -239,7 +245,7 @@ testSequence =
     testTree
         "sequence"
         [ testTree "intersectInside" $
-          assertEqual "" (Just $ startEndRun @[()] 2 3) $ seqIntersectInside (startEndRun 1 3) (startEndRun 2 4)
+          assertEqual "" (Just $ startEndRun 2 3) $ seqIntersectInside (startEndRun 1 3) (startEndRun 2 4)
         ]
 
 tests :: TestTree

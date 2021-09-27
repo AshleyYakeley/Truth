@@ -112,10 +112,10 @@ class RepresentationalRole (f :: kp -> kq) where
 class RepresentationalRole f => PhantomRole (f :: kp -> kq) where
     phantomCoercion :: forall (a :: kp) (b :: kp). Coercion (f a) (f b)
 
-instance (RepresentationalRole f) => CatFunctor Coercion Coercion (f :: kp -> kq) where
+instance RepresentationalRole f => CatFunctor Coercion Coercion (f :: kp -> kq) where
     cfmap = representationalCoercion
 
-instance (RepresentationalRole f) => CatFunctor (CatDual Coercion) Coercion (f :: kp -> kq) where
+instance RepresentationalRole f => CatFunctor (CatDual Coercion) Coercion (f :: kp -> kq) where
     cfmap (MkCatDual ab) = invert $ representationalCoercion ab
 
 instance RepresentationalRole Identity where
@@ -143,6 +143,9 @@ instance RepresentationalRole Either where
     representationalCoercion MkCoercion = MkCoercion
 
 instance RepresentationalRole (Either a) where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance RepresentationalRole Vector where
     representationalCoercion MkCoercion = MkCoercion
 
 instance RepresentationalRole IO where

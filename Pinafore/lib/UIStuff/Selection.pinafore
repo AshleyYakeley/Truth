@@ -8,7 +8,7 @@ uiPage: WholeRef +Text -> Element -> (Element,Element);
 uiPage n ui = (label n,ui);
 
 uiLabelled: WholeRef +Text -> Element -> Element;
-uiLabelled n ui = horizontal [(False, label n),(True, ui)];
+uiLabelled n ui = horizontal [label n, layoutGrow ui];
 
 #| A window that comes with some menus.
 stdWindow: WholeRef +Text -> WholeRef +[MenuItem] -> Element -> Action Window;
@@ -103,7 +103,7 @@ selectionPairPane title iset createMenuItems iopen getSelectorUI getSelectedUI =
         selectedUI: Element;
         selectedUI = getSelectedUI $ immutWhole selection;
 
-        in horizontal [(False,sidebarUI),(True,selectedUI)];
+        in horizontal [sidebarUI, layoutGrow selectedUI];
 
 selectionWindow:
     Text -> # window title
@@ -140,16 +140,16 @@ newItemMenuAction name mkey newItem set setsel = menuAction name mkey
     end};
 
 in expose
-    stdWindow
-    selectionWindow
-    selectionPairWindow
-    uiPage
-    uiLabelled
-    Pane
-    MkPane
-    pane
-    paneWindow
-    notebookPane
-    selectionPane
-    selectionPairPane
+    stdWindow,
+    selectionWindow,
+    selectionPairWindow,
+    uiPage,
+    uiLabelled,
+    Pane,
+    MkPane,
+    pane,
+    paneWindow,
+    notebookPane,
+    selectionPane,
+    selectionPairPane,
     newItemMenuAction

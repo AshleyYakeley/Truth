@@ -1,6 +1,7 @@
 module Changes.Core.UI.View.CreateView
     ( CreateView
     , ViewState
+    , cvBindModelUpdates
     , cvBindModel
     , cvFloatMapModel
     , cvBindWholeModel
@@ -19,15 +20,15 @@ type CreateView = ViewT LifeCycle
 
 type ViewState = LifeState
 
-cvBindModel ::
+cvBindModelUpdates ::
        forall update a.
        Model update
-    -> Maybe EditSource
+    -> (EditSource -> Bool)
     -> CreateView a
-    -> Task ()
-    -> (a -> NonEmpty update -> View ())
+    -> (a -> Task ())
+    -> (a -> NonEmpty update -> EditContext -> View ())
     -> CreateView a
-cvBindModel model mesrc initv utask recv = do
+cvBindModelUpdates model testesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycle lifeCycleMonitor
     withUILock <- asks vcWithUILock
@@ -36,16 +37,27 @@ cvBindModel model mesrc initv utask recv = do
         a <- initv
         liftLifeCycle $
             unlift $
-            aModelSubscribe amodel utask $ \urc updates MkEditContext {..} ->
-                if mesrc == Just editContextSource
-                    then return ()
-                    else traceBarrierIO "cvBindModel.update" withUILock $ do
+            aModelSubscribe amodel (utask a) $ \urc updates ec@MkEditContext {..} ->
+                if testesrc editContextSource
+                    then traceBarrierIO "cvBindModel.update" withUILock $ do
                              alive <- monitor
                              if alive
                                  then do
-                                     runWMFunction unliftView $ viewLocalResourceContext urc $ recv a updates
+                                     runWMFunction unliftView $ viewLocalResourceContext urc $ recv a updates ec
                                  else return ()
+                    else return ()
         return a
+
+cvBindModel ::
+       forall update a.
+       Model update
+    -> Maybe EditSource
+    -> CreateView a
+    -> (a -> Task ())
+    -> (a -> NonEmpty update -> View ())
+    -> CreateView a
+cvBindModel model mesrc initv utask recv =
+    cvBindModelUpdates model (\ec -> mesrc /= Just ec) initv utask $ \a updates _ec -> recv a updates
 
 cvFloatMapModel ::
        forall updateA updateB. FloatingChangeLens updateA updateB -> Model updateA -> CreateView (Model updateB)

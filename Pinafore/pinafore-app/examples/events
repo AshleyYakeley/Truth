@@ -111,21 +111,21 @@ calendarWindow: WholeRef +Event -> Action UI.Window;
 calendarWindow evt = fixAction $ \window ->
     UI.openWindow (200,200) {"date of " <> %(name !$% evt)} {[]} $ UI.vertical
     [
-        (False,UI.calendar $ eventRefTimeDate $ eventTime !$% evt),
-        (False,UI.button {"Done: " <> show %(eventRefTimeDate $ eventTime !$% evt)} {UI.closeWindow window})
+        UI.calendar $ eventRefTimeDate $ eventTime !$% evt,
+        UI.button {"Done: " <> show %(eventRefTimeDate $ eventTime !$% evt)} {UI.closeWindow window}
     ];
 
 eventUI: WholeRef +Event -> UI.Element;
 eventUI evt = UI.vertical
 [
-    (False, UI.textEntry $ name !$% evt),
-    (False, UI.horizontal
+    UI.textEntry $ name !$% evt,
+    UI.horizontal
     [
-        (False, UI.button {"cal"} {calendarWindow evt}),
-        (False, UI.textEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$% evt),
-        (False, UI.textEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$% evt)
-    ]),
-    (True, UI.textArea $ eventNotes !$% evt)
+        UI.button {"cal"} {calendarWindow evt},
+        UI.textEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$% evt,
+        UI.textEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$% evt
+    ],
+    UI.layoutGrow $ UI.textArea $ eventNotes !$% evt
 ];
 
 eventWindow: Event -> Action UI.Window;

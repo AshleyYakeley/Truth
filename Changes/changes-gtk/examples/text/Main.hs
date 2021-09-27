@@ -4,14 +4,13 @@ module Main
 
 import Changes.Core
 import Changes.UI.GTK
-import Changes.World.Charset
 import Changes.World.File
 import qualified Options.Applicative as O
 import Shapes
 import System.FilePath hiding ((<.>))
 
 textCodec :: ReasonCodec LazyByteString Text
-textCodec = bijectionCodec packBijection . utf8Codec . bijectionCodec unpackBijection
+textCodec = remonadCodec (mapResultFailure $ pack . show) utf8Codec . bijectionCodec strictBytestringBijection
 
 textLens :: ChangeLens ByteStringUpdate (WholeUpdate ((Result Text) Text))
 textLens = (wholeChangeLens $ injectionLens $ toInjection $ codecInjection textCodec) . convertChangeLens
@@ -58,7 +57,10 @@ main = do
                             viewButton <- createButton (constantModel "View") $ constantModel $ Just $ openSelection sub
                             textContent <- createOneWhole sub rTextSpec
                             scrolledTextContent <- createScrolled textContent
-                            return [(False, viewButton), (True, scrolledTextContent)]
+                            return
+                                [ (defaultLayoutOptions, viewButton)
+                                , (defaultLayoutOptions {loGrow = True}, scrolledTextContent)
+                                ]
                         allSpecs =
                             case msub2 of
                                 Nothing -> makeSpecs sub1

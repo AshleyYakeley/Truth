@@ -4,6 +4,8 @@ module Pinafore.Base.Anchor
     , anchorCodec
     , hashToAnchor
     , codeAnchor
+    , byteStringToAnchor
+    , anchorToByteString
     ) where
 
 import Control.DeepSeq
@@ -78,3 +80,19 @@ hashToAnchor f = MkAnchor $ convert $ hashFinalize $ hashUpdates (hashInit @SHA3
 
 codeAnchor :: Text -> Anchor
 codeAnchor text = hashToAnchor $ \call -> [call @Text "anchor:", call text]
+
+byteStringToAnchor :: StrictByteString -> Anchor
+byteStringToAnchor bs =
+    MkAnchor $ let
+        len = olength bs
+        in if len <= 31
+               then cons (fromIntegral len) bs <> replicate (31 - len) 0
+               else case hashToAnchor $ \call -> [call @Text "literal:", call bs] of
+                        MkAnchor bs' -> cons 255 $ drop 1 bs'
+
+anchorToByteString :: Anchor -> Maybe StrictByteString
+anchorToByteString (MkAnchor bs) = let
+    len = fromIntegral $ headEx bs
+    in if len <= 31
+           then Just $ take len $ tailEx bs
+           else Nothing

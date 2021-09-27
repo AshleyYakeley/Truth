@@ -11,7 +11,7 @@ import Changes.Debug.Reference
 
 type TextSelection = FloatingChangeLens (StringUpdate Text) (StringUpdate Text)
 
-replaceText :: Index s ~ Int => TextBuffer -> SequenceRun s -> Text -> View ()
+replaceText :: TextBuffer -> SequenceRun -> Text -> View ()
 replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)) text = do
     startIter <- #getIterAtOffset buffer (fromIntegral start)
     if len > 0
@@ -23,12 +23,12 @@ replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len))
         then return ()
         else #insert buffer startIter text (-1)
 
-getSequencePoint :: (Index s ~ Int, MonadIO m) => TextIter -> m (SequencePoint s)
+getSequencePoint :: MonadIO m => TextIter -> m SequencePoint
 getSequencePoint iter = do
     p <- #getOffset iter
     return $ MkSequencePoint $ fromIntegral p
 
-getSequenceRun :: (Index s ~ Int, MonadIO m) => TextIter -> TextIter -> m (SequenceRun s)
+getSequenceRun :: MonadIO m => TextIter -> TextIter -> m SequenceRun
 getSequenceRun iter1 iter2 = do
     p1 <- getSequencePoint iter1
     p2 <- getSequencePoint iter2

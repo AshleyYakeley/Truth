@@ -26,7 +26,7 @@ testModule =
               , testExpectSuccess "let b = M.a in if b == 4 then return () else fail \"wrong\""
               , testExpectSuccess "let a = 3; b = M.a in if b == 4 then return () else fail \"wrong\""
               ]
-        , tModule "M" "let datatype T = T1 | T2 in expose T T1 T2" $
+        , tModule "M" "let datatype T = T1 | T2 in expose T, T1, T2" $
           tGroup
               "type"
               [ testExpectSuccess "let import M in case T1 of T1 -> return (); T2 -> fail \"wrong\" end"
@@ -38,6 +38,11 @@ testModule =
               , testExpectSuccess "let import M; f: T -> T; f x = x in return ()"
               , testExpectSuccess "let import M in let f: T -> T; f x = x in return ()"
               , testExpectSuccess "let f: M.T -> M.T; f x = x in return ()"
+              , testExpectSuccess "let import M (T); f: T -> T; f x = x in return ()"
+              , testExpectReject "let import M (); f: T -> T; f x = x in return ()"
+              , testExpectReject "let import M (T1, T2); f: T -> T; f x = x in return ()"
+              , testExpectSuccess "let import M (T1); f = T1 in return ()"
+              , testExpectReject "let import M (T2); f = T1 in return ()"
               ]
         , tModule "M" "let a = b in expose a" $ testExpectReject "let import M in return ()"
         , tModule "M" "let opentype T in expose T" $
@@ -45,5 +50,14 @@ testModule =
               "opentype"
               [ testExpectSuccess "let import M; datatype D = MkD T; in return ()"
               , testExpectSuccess "let datatype D = MkD M.T; in return ()"
+              ]
+        , tModule "M" "let opentype P; opentype Q in expose P, Q" $
+          tModule "N" "let import M; subtype P <: Q in expose" $
+          tGroup
+              "subtype"
+              [ testExpectReject "let import M; f: P -> Q; f x = x in return ()"
+              , testExpectSuccess "let import M; import N; f: P -> Q; f x = x in return ()"
+              , testExpectSuccess "let import N; import M; f: P -> Q; f x = x in return ()"
+              , testExpectSuccess "let import M; import N(); f: P -> Q; f x = x in return ()"
               ]
         ]

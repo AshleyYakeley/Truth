@@ -65,3 +65,6 @@ instance HasVariance (,) where
 
 instance HasVariance Either where
     type VarianceOf Either = 'Covariance
+
+instance HasVariance Vector where
+    type VarianceOf Vector = 'Covariance

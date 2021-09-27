@@ -39,8 +39,7 @@ soupEditSpec sub selnotify openItem = do
         cmp a b = compare (resultToMaybe a) (resultToMaybe b)
         uo :: UpdateOrder (UUIDElementUpdate PossibleNoteUpdate)
         uo = mkUpdateOrder cmp nameLens
-    osub :: Model (OrderedListUpdate [(UUID, Result Text (Tuple NoteSel))] (UUIDElementUpdate PossibleNoteUpdate)) <-
-        cvFloatMapModel (orderedSetLens uo) sub
+    osub :: Model (OrderedListUpdate (UUIDElementUpdate PossibleNoteUpdate)) <- cvFloatMapModel (orderedSetLens uo) sub
     let
         nameColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
         nameColumn =
@@ -154,6 +153,10 @@ soupWindow tc newWindow dirpath = do
             wsCloseBoxAction = liftIO closer
         button <- createButton (constantModel "View") $ constantModel $ Just $ withSelection openItem
         stuff <- soupEditSpec smodel selnotify openItem
-        let wsContent = createLayout OrientationVertical [(False, button), (True, stuff)]
+        let
+            wsContent =
+                createLayout
+                    OrientationVertical
+                    [(defaultLayoutOptions, button), (defaultLayoutOptions {loGrow = True}, stuff)]
         (window, closer) <- lifeCycleEarlyCloser $ newWindow MkWindowSpec {..}
     return ()

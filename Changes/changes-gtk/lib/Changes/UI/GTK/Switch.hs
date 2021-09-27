@@ -9,23 +9,13 @@ import Shapes
 import Changes.Debug.Reference
 
 createDynamic :: Model (ROWUpdate (CreateView Widget)) -> CreateView Widget
-createDynamic sub = do
+createDynamic model = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
-        getViewState :: CreateView Widget -> View ViewState
-        getViewState gview = do
-            ((), vs) <-
-                getInnerLifeState $ do
-                    widget <- traceBracket "GTK.Switch:getViewState.gview" gview
-                    cvPackStart True box widget
-                    #showAll widget
-            return vs
-        initVS :: Model (ROWUpdate (CreateView Widget)) -> CreateView (ViewState, ())
-        initVS rm = do
-            firstspec <- viewRunResource rm $ \am -> aModelRead am ReadWhole
-            vs <- liftToLifeCycle $ getViewState firstspec
-            return (vs, ())
-        recvVS :: () -> [ROWUpdate (CreateView Widget)] -> StateT ViewState View ()
-        recvVS () updates = traceBracket "GTK.Switch:update" $ for_ (lastReadOnlyWholeUpdate updates) $ \spec -> replaceDynamicView $ getViewState spec
-    cvDynamic @(ViewState) sub initVS mempty recvVS
+        addWidget :: CreateView Widget -> CreateView ()
+        addWidget cvw = do
+            widget <- traceBracket "GTK.Switch:addWidget.gview" cvw
+            cvPackStart True box widget
+            #showAll widget
+    cvSwitch $ mapModel (funcChangeLens addWidget) model
     toWidget box

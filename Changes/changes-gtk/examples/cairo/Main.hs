@@ -58,6 +58,8 @@ main = do
                         w1 <- createButton (constantModel "Button") (constantModel Nothing)
                         w2 <- createCairo $ mapModel (funcChangeLens $ drawing tz) clockModel
                         GI.set w2 [#marginStart GI.:= 100, #marginTop GI.:= 200]
-                        createLayout OrientationHorizontal [(False, w1), (True, w2)]
+                        createLayout
+                            OrientationHorizontal
+                            [(defaultLayoutOptions, w1), (defaultLayoutOptions {loGrow = True}, w2)]
                     in MkWindowSpec {..}
         return ()

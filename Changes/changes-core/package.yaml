@@ -98,7 +98,7 @@ library:
       - Changes.Core.Model.Model
       - Changes.Core.Model.Tuple
       - Changes.Core.Model.MemoryCell
-      - Changes.Core.Model.Editor
+      - Changes.Core.UI.Editor
       - Changes.Core.Model.Cache
       - Changes.Core.Model.Savable
       - Changes.Core.Model.Undo
@@ -106,10 +106,10 @@ library:
       - Changes.Core.Model
       - Changes.Core.UI.View.Context
       - Changes.Core.UI.View.View
-      - Changes.Core.UI.Selection
-      - Changes.Core.UI.Toolkit
       - Changes.Core.UI.View.CreateView
-      - Changes.Core.UI.View.Dynamic
+      - Changes.Core.UI.Selection
+      - Changes.Core.UI.Dynamic
+      - Changes.Core.UI.Toolkit
       - Changes.Core.UI
 
 tests:

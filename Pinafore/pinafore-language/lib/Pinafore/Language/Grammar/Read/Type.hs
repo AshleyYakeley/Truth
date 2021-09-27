@@ -109,7 +109,7 @@ readType3 =
 readTypeRange :: Parser SyntaxTypeArgument
 readTypeRange =
     (readBracketed TokOpenBrace TokCloseBrace $ do
-         items <- readCommaList readTypeRangeItem
+         items <- readCommaM readTypeRangeItem
          return $ RangeSyntaxTypeArgument items) <|> do
         (sv, t) <- readSignedType
         return $ RangeSyntaxTypeArgument [(Just sv, t)]

@@ -50,6 +50,7 @@ data SyntaxDeclaration
     = DirectSyntaxDeclaration SyntaxDirectDeclaration
     | ImportSyntaxDeclaration SourcePos
                               ModuleName
+                              (Maybe [Name])
     | ExposeSyntaxDeclaration SourcePos
                               SyntaxExpose
     | RecursiveSyntaxDeclaration SourcePos
@@ -224,7 +225,7 @@ instance HasSourcePos SyntaxDirectDeclaration where
 
 instance HasSourcePos SyntaxDeclaration where
     getSourcePos (DirectSyntaxDeclaration decl) = getSourcePos decl
-    getSourcePos (ImportSyntaxDeclaration spos _) = spos
+    getSourcePos (ImportSyntaxDeclaration spos _ _) = spos
     getSourcePos (ExposeSyntaxDeclaration spos _) = spos
     getSourcePos (RecursiveSyntaxDeclaration spos _) = spos
 

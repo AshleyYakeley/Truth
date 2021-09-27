@@ -7,6 +7,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . declarations now non-recursive, with recursive rec-blocks
       . "expose" declarations
       . allow declaration documentation with #| and {#| #} comments
+    - import lists
   * Interactive
     - :doc to retrieve name documentation
   * Library
@@ -18,6 +19,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . Cairo-based functions for creating drawings
   * Storage
     - Store literals as binary rather than as text
+    - Embed smaller literals directly in the anchor
 
  -- Ashley Yakeley <ashley@semantic.org>  RELEASEDATE
 

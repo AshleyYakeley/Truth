@@ -3,7 +3,7 @@
 module Pinafore.Language.Library.GTK.Element
     ( elementStuff
     , actionRef
-    , LangUIElement(..)
+    , LangElement(..)
     ) where
 
 import Changes.Core
@@ -11,20 +11,33 @@ import Changes.UI.GTK
 import Data.Shim
 import Data.Time
 import GI.Cairo.Render
+import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Drawing
 import Shapes
 
--- LangUIElement
-newtype LangUIElement =
-    MkLangUIElement (CreateView Widget)
+-- LangElement
+newtype LangElement = MkLangElement
+    { unLangElement :: CreateView Widget
+    }
 
-elementGroundType :: PinaforeGroundType '[] LangUIElement
-elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangUIElement)|]) "Element"
+elementGroundType :: PinaforeGroundType '[] LangElement
+elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangElement)|]) "Element"
 
-instance HasPinaforeGroundType '[] LangUIElement where
+instance HasPinaforeGroundType '[] LangElement where
     pinaforeGroundType = elementGroundType
+
+-- LangLayoutElement
+data LangLayoutElement =
+    MkLangLayoutElement LayoutOptions
+                        LangElement
+
+layoutElementGroundType :: PinaforeGroundType '[] LangLayoutElement
+layoutElementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangLayoutElement)|]) "LayoutElement"
+
+instance HasPinaforeGroundType '[] LangLayoutElement where
+    pinaforeGroundType = layoutElementGroundType
 
 clearText :: ChangeLens (WholeUpdate (Know Text)) (ROWUpdate Text)
 clearText = funcChangeLens (fromKnow mempty)
@@ -35,9 +48,9 @@ uiListTable ::
     -> LangListRef '( BottomType, EnA)
     -> (A -> PinaforeAction TopType)
     -> Maybe (LangWholeRef '( A, EnA))
-    -> LangUIElement
+    -> LangElement
 uiListTable cols lref onDoubleClick mSelectionLangRef =
-    MkLangUIElement $ do
+    MkLangElement $ do
         esrc <- newEditSource
         let
             mSelectionModel :: Maybe (Model (BiWholeUpdate (Know A) (Know EnA)))
@@ -97,27 +110,34 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                 in cvBindModel selectionModel (Just esrc) init mempty recv
         return widget
 
+uiList :: (PinaforeImmutableWholeRef A -> LangElement) -> LangListRef '( BottomType, A) -> LangElement
+uiList mkElement listRef =
+    MkLangElement $
+    createListBox (unLangElement . mkElement . functionImmutableRef . MkWModel) $
+    unWModel $ langListRefToOrdered listRef
+
 type PickerType = Know EnA
 
 type PickerPairType = (PickerType, ComboBoxCell)
 
-uiPick :: PinaforeImmutableWholeRef ([(EnA, Text)]) -> LangWholeRef '( A, EnA) -> LangUIElement
+uiPick :: PinaforeImmutableWholeRef (Vector (EnA, Text)) -> LangWholeRef '( A, EnA) -> LangElement
 uiPick itemsRef ref =
-    MkLangUIElement $ do
+    MkLangElement $ do
         let
             mapItem :: (EnA, Text) -> PickerPairType
             mapItem (ea, t) = (Known ea, plainComboBoxCell t)
-            mapItems :: Know [(EnA, Text)] -> [PickerPairType]
-            mapItems Unknown = []
-            mapItems (Known items) =
+            emptyPickerPairType :: PickerPairType
+            emptyPickerPairType =
                 ( Unknown
-                , (plainComboBoxCell "unknown") {cbcDefault = True, cbcStyle = plainTextStyle {tsItalic = True}}) :
-                fmap mapItem items
+                , (plainComboBoxCell "unknown") {cbcDefault = True, cbcStyle = plainTextStyle {tsItalic = True}})
+            mapItems :: Know (Vector (EnA, Text)) -> Vector PickerPairType
+            mapItems Unknown = mempty
+            mapItems (Known items) = cons emptyPickerPairType $ fmap mapItem items
             itemsLens ::
-                   ChangeLens (WholeUpdate (Know [(EnA, Text)])) (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
+                   ChangeLens (WholeUpdate (Know (Vector (EnA, Text)))) (ReadOnlyUpdate (OrderedListUpdate (ConstWholeUpdate PickerPairType)))
             itemsLens =
                 liftReadOnlyChangeLens (toReadOnlyChangeLens . listOrderedListChangeLens) . funcChangeLens mapItems
-            subOpts :: Model (ReadOnlyUpdate (OrderedListUpdate [PickerPairType] (ConstWholeUpdate PickerPairType)))
+            subOpts :: Model (ReadOnlyUpdate (OrderedListUpdate (ConstWholeUpdate PickerPairType)))
             subOpts = unWModel $ eaMapSemiReadOnly itemsLens $ immutableRefToReadOnlyRef itemsRef
             subVal :: Model (WholeUpdate PickerType)
             subVal = unWModel $ langWholeRefToValue $ contraRangeLift meet2 ref
@@ -135,109 +155,103 @@ uiButton ::
        (?pinafore :: PinaforeContext)
     => PinaforeImmutableWholeRef Text
     -> PinaforeImmutableWholeRef (PinaforeAction TopType)
-    -> LangUIElement
+    -> LangElement
 uiButton text raction =
-    MkLangUIElement $
+    MkLangElement $
     createButton
         (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text)
         (unWModel $ actionRef raction)
 
-uiLabel :: PinaforeImmutableWholeRef Text -> LangUIElement
+uiLabel :: PinaforeImmutableWholeRef Text -> LangElement
 uiLabel text =
-    MkLangUIElement $ createLabel $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text
+    MkLangElement $ createLabel $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef text
 
-uiDynamic :: PinaforeImmutableWholeRef LangUIElement -> LangUIElement
+uiDynamic :: PinaforeImmutableWholeRef LangElement -> LangElement
 uiDynamic uiref = let
-    getSpec :: Know LangUIElement -> CreateView Widget
+    getSpec :: Know LangElement -> CreateView Widget
     getSpec Unknown = createBlank
-    getSpec (Known (MkLangUIElement pui)) = pui
-    in MkLangUIElement $ createDynamic $ unWModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyRef uiref
+    getSpec (Known (MkLangElement pui)) = pui
+    in MkLangElement $ createDynamic $ unWModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyRef uiref
 
-uiScrolled :: LangUIElement -> LangUIElement
-uiScrolled (MkLangUIElement lui) = MkLangUIElement $ lui >>= createScrolled
+uiScrolled :: LangElement -> LangElement
+uiScrolled (MkLangElement lui) = MkLangElement $ lui >>= createScrolled
 
-uiUnitCheckBox :: PinaforeImmutableWholeRef Text -> WModel (WholeUpdate (Know ())) -> LangUIElement
+uiUnitCheckBox :: PinaforeImmutableWholeRef Text -> WModel (WholeUpdate (Know ())) -> LangElement
 uiUnitCheckBox name val =
-    MkLangUIElement $
+    MkLangElement $
     createCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
     unWModel $ eaMap (toChangeLens knowBool) val
 
-uiCheckBox :: PinaforeImmutableWholeRef Text -> WModel (WholeUpdate (Know Bool)) -> LangUIElement
+uiCheckBox :: PinaforeImmutableWholeRef Text -> WModel (WholeUpdate (Know Bool)) -> LangElement
 uiCheckBox name val =
-    MkLangUIElement $
+    MkLangElement $
     createMaybeCheckButton (unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef name) $
     unWModel $ eaMap (toChangeLens knowMaybe) val
 
-uiTextEntry :: WModel (WholeUpdate (Know Text)) -> LangUIElement
-uiTextEntry val = MkLangUIElement $ createTextEntry $ unWModel $ eaMap (unknownValueChangeLens mempty) $ val
+uiTextEntry :: WModel (WholeUpdate (Know Text)) -> LangElement
+uiTextEntry val = MkLangElement $ createTextEntry $ unWModel $ eaMap (unknownValueChangeLens mempty) $ val
 
-uiHorizontal :: [(Bool, LangUIElement)] -> LangUIElement
-uiHorizontal mitems =
-    MkLangUIElement $ do
+uiLayout :: Orientation -> [LangLayoutElement] -> LangElement
+uiLayout orientation mitems =
+    MkLangElement $ do
         items <-
-            for mitems $ \(f, MkLangUIElement lui) -> do
+            for mitems $ \(MkLangLayoutElement lopts (MkLangElement lui)) -> do
                 ui <- lui
-                return (f, ui)
-        createLayout OrientationHorizontal items
+                return (lopts, ui)
+        createLayout orientation items
 
-uiVertical :: [(Bool, LangUIElement)] -> LangUIElement
-uiVertical mitems =
-    MkLangUIElement $ do
-        items <-
-            for mitems $ \(f, MkLangUIElement lui) -> do
-                ui <- lui
-                return (f, ui)
-        createLayout OrientationVertical items
+layoutGrow :: LangLayoutElement -> LangLayoutElement
+layoutGrow (MkLangLayoutElement lopts ui) = MkLangLayoutElement (lopts {loGrow = True}) ui
 
-uiNotebook :: LangWholeRef '( Int, TopType) -> [(LangUIElement, LangUIElement)] -> LangUIElement
+uiNotebook :: LangWholeRef '( Int, TopType) -> [(LangElement, LangElement)] -> LangElement
 uiNotebook selref mitems =
-    MkLangUIElement $ do
+    MkLangElement $ do
         items <-
-            for mitems $ \(MkLangUIElement mt, MkLangUIElement mb) -> do
+            for mitems $ \(MkLangElement mt, MkLangElement mb) -> do
                 t <- mt
                 b <- mb
                 return (t, b)
         createNotebook (langWholeRefSelectNotify noEditSource selref) items
 
-uiRun :: (?pinafore :: PinaforeContext) => PinaforeAction LangUIElement -> LangUIElement
+uiRun :: (?pinafore :: PinaforeContext) => PinaforeAction LangElement -> LangElement
 uiRun pui =
-    MkLangUIElement $ do
+    MkLangElement $ do
         kui <- unliftPinaforeAction pui
         case kui of
-            Known (MkLangUIElement ui) -> ui
+            Known (MkLangElement ui) -> ui
             Unknown -> createBlank
 
-uiStyleSheet :: PinaforeImmutableWholeRef Text -> LangUIElement -> LangUIElement
-uiStyleSheet cssmodel (MkLangUIElement mw) =
-    MkLangUIElement $ do
+uiStyleSheet :: PinaforeImmutableWholeRef Text -> LangElement -> LangElement
+uiStyleSheet cssmodel (MkLangElement mw) =
+    MkLangElement $ do
         widget <- mw
         bindCSS True maxBound (unWModel $ pinaforeImmutableRefValue mempty cssmodel) widget
         return widget
 
-uiName :: Text -> LangUIElement -> LangUIElement
-uiName name (MkLangUIElement mw) =
-    MkLangUIElement $ do
+uiName :: Text -> LangElement -> LangElement
+uiName name (MkLangElement mw) =
+    MkLangElement $ do
         widget <- mw
         setCSSName name widget
         return widget
 
-uiStyleClass :: Text -> LangUIElement -> LangUIElement
-uiStyleClass sclass (MkLangUIElement mw) =
-    MkLangUIElement $ do
+uiStyleClass :: Text -> LangElement -> LangElement
+uiStyleClass sclass (MkLangElement mw) =
+    MkLangElement $ do
         widget <- mw
         setCSSClass sclass widget
         return widget
 
-uiTextArea :: WModel (WholeUpdate (Know Text)) -> LangUIElement
+uiTextArea :: WModel (WholeUpdate (Know Text)) -> LangElement
 uiTextArea val =
-    MkLangUIElement $ createTextArea (unWModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) val) mempty
+    MkLangElement $ createTextArea (unWModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) val) mempty
 
-uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangUIElement
+uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangElement
 uiCalendar day =
-    MkLangUIElement $ createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
+    MkLangElement $ createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
 
-uiDraw :: PinaforeImmutableWholeRef ((Int32, Int32) -> LangDrawing) -> LangUIElement
-uiDraw ref = MkLangUIElement $ createCairo $ unWModel $ pinaforeImmutableRefValue mempty ref
+uiDraw :: PinaforeImmutableWholeRef ((Int32, Int32) -> LangDrawing) -> LangElement
+uiDraw ref = MkLangElement $ createCairo $ unWModel $ pinaforeImmutableRefValue mempty ref
 
 elementStuff :: DocTreeEntry BindDoc
 elementStuff =
@@ -246,8 +260,12 @@ elementStuff =
         ""
         [ mkTypeEntry "Element" "A user interface element is something that goes inside a window." $
           MkBoundType elementGroundType
+        , mkSubtypeRelationEntry "Element" "LayoutElement" "" $
+          pure $
+          simpleSubtypeConversionEntry elementGroundType layoutElementGroundType $
+          simpleSubtypeConversion $ functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
         , mkValEntry "run" "Element that runs an Action first." uiRun
-        , mkValEntry "blank" "Blank element" $ MkLangUIElement createBlank
+        , mkValEntry "blank" "Blank element" $ MkLangElement createBlank
         , mkValEntry "draw" "Drawable element" uiDraw
         , mkValEntry "unitCheckBox" "(TBD)" uiUnitCheckBox
         , mkValEntry "checkBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox
@@ -260,14 +278,11 @@ elementStuff =
               "Text area, unknown reference will be interpreted as empty text, but the element will not delete the reference." $
           uiTextArea
         , mkValEntry "label" "Label." uiLabel
-        , mkValEntry
-              "horizontal"
-              "Items arranged horizontally, each flag is whether to expand into remaining space."
-              uiHorizontal
-        , mkValEntry
-              "vertical"
-              "Items arranged vertically, each flag is whether to expand into remaining space."
-              uiVertical
+        , mkValEntry "horizontal" "Items arranged horizontally, each flag is whether to expand into remaining space." $
+          uiLayout OrientationHorizontal
+        , mkValEntry "vertical" "Items arranged vertically, each flag is whether to expand into remaining space." $
+          uiLayout OrientationVertical
+        , mkValEntry "layoutGrow" "Grow layout element." layoutGrow
         , mkValEntry
               "notebook"
               "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
@@ -279,6 +294,7 @@ elementStuff =
               "A button with this text that does this action. Button will be disabled if the action reference is unknown."
               uiButton
         , mkValEntry "pick" "A drop-down menu." uiPick
+        , mkValEntry "list" "A dynamic list of elements." uiList
         , mkValEntry
               "listTable"
               "A list table. First arg is columns (name, property), second is list-reference of items, third is the action for item activation, fourth is an optional reference for the selected row."

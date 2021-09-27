@@ -27,18 +27,15 @@ plainComboBoxCell cbcText = let
 listStoreView ::
        forall update. (IsEditUpdate update, ApplicableEdit (UpdateEdit update), FullSubjectReader (UpdateReader update))
     => WMFunction View View
-    -> Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+    -> Model (ReadOnlyUpdate (OrderedListUpdate update))
     -> EditSource
     -> CreateView (SeqStore (UpdateSubject update))
 listStoreView (MkWMFunction blockSignal) itemsModel esrc = let
     initV :: CreateView (SeqStore (UpdateSubject update))
     initV = do
-        subjectList <- viewRunResource itemsModel $ \am -> readableToSubject $ aModelRead am
-        seqStoreNew subjectList
-    recv ::
-           SeqStore (UpdateSubject update)
-        -> NonEmpty (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
-        -> View ()
+        subjects <- viewRunResource itemsModel $ \am -> readableToSubject $ aModelRead am
+        seqStoreNew $ toList subjects
+    recv :: SeqStore (UpdateSubject update) -> NonEmpty (ReadOnlyUpdate (OrderedListUpdate update)) -> View ()
     recv store updates =
         for_ updates $ \(MkReadOnlyUpdate lupdate) -> traceBracket "GTK.Option:ListStore:receiveUpdate" $
             case lupdate of
@@ -125,7 +122,7 @@ createComboBox ::
        , ApplicableEdit (UpdateEdit update)
        , UpdateSubject update ~ (t, ComboBoxCell)
        )
-    => Model (ReadOnlyUpdate (OrderedListUpdate [UpdateSubject update] update))
+    => Model (ReadOnlyUpdate (OrderedListUpdate update))
     -> Model (WholeUpdate t)
     -> CreateView Widget
 createComboBox itemsModel whichModel = do

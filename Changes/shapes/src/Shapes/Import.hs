@@ -121,6 +121,9 @@ import qualified Data.ByteString
 import Data.ByteString.Lazy as I (appendFile, getContents, hGet, hGetContents, hPut, readFile, writeFile)
 import qualified Data.ByteString.Lazy
 
+-- vector
+import Data.Vector as I (Vector)
+
 -- cereal
 import Data.Serialize as I (Serialize)
 

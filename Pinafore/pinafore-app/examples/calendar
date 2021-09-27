@@ -1,19 +1,21 @@
 #!/usr/bin/pinafore
 let
 
+import UI();
+
 dateText: Date ~> Text;
 dateText = property @Date @Text !"example.calendar:dateText";
 
 ui: WholeRef Date -> UI.Element;
 ui r = UI.vertical
     [
-    (False, UI.horizontal
+    UI.horizontal
         [
-        (False, UI.button {"<"} {do d <- get r; r := addDays (-1) d; end}),
-        (True, UI.label {unixFormatDate "%A, %B %e, %Y" %r}),
-        (False, UI.button {">"} {do d <- get r; r := addDays 1 d; end})
-        ]),
-    (True, UI.textArea $ dateText !$ r)
+        UI.button {"<"} {do d <- get r; r := addDays (-1) d; end},
+        UI.layoutGrow $ UI.label {unixFormatDate "%A, %B %e, %Y" %r},
+        UI.button {">"} {do d <- get r; r := addDays 1 d; end}
+        ],
+    UI.layoutGrow $ UI.textArea $ dateText !$ r
     ];
 
 in do

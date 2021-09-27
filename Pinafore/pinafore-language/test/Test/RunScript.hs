@@ -73,8 +73,9 @@ testExpression name script call =
     MkContextTestTree $ \MkScriptContext {..} ->
         testTree (unpack name) $ let
             fullscript = prefix scDeclarations <> script
-            in withTestPinaforeContext scFetchModule stdout $ \cc unlift _getTableState ->
-                   unlift $ call cc $ throwInterpretResult $ pinaforeInterpretTextAtType "<test>" fullscript
+            in withTestPinaforeContext scFetchModule stdout $ \cc _getTableState ->
+                   ccUnliftLifeCycle cc $
+                   call cc $ throwInterpretResult $ pinaforeInterpretTextAtType "<test>" fullscript
 
 testScript ::
        Text

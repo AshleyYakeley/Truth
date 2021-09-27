@@ -73,7 +73,7 @@ getSetList order val =
             rows = unWModel $ unLangFiniteSetRef $ contraRangeLift meet2 val
             pkSub :: Model (ContextUpdate update (FiniteSetUpdate EnA))
             pkSub = contextModels model rows
-        colSub :: Model (ContextUpdate update (OrderedListUpdate [EnA] (ConstWholeUpdate EnA))) <-
+        colSub :: Model (ContextUpdate update (OrderedListUpdate (ConstWholeUpdate EnA))) <-
             cvFloatMapModel (contextOrderedSetLens uo) pkSub
         return $
             OrderedLangListRef $
@@ -102,8 +102,8 @@ newMemFiniteSet = do
 
 newMemList :: forall a. PinaforeAction (LangListRef '( a, a))
 newMemList = do
-    r <- liftIO $ makeMemoryReference [] $ \_ -> True
-    model :: Model (ListUpdate [a] (WholeUpdate a)) <- liftLifeCycle $ makeReflectingModel $ convertReference r
+    r <- liftIO $ makeMemoryReference mempty $ \_ -> True
+    model :: Model (ListUpdate (WholeUpdate a)) <- liftLifeCycle $ makeReflectingModel $ convertReference r
     uh <- pinaforeUndoHandler
     return $ FullLangListRef $ eaMap singleBiChangeLens $ MkWModel $ undoHandlerModel uh model
 
@@ -303,8 +303,10 @@ refLibEntries =
                                       conv1 =
                                           rconv1 .
                                           iJoinMeetR1 @_ @(InvertPolarity 'Negative) .
-                                          applyCoPolyShim cid (iJoinMeetR1 @_ @(InvertPolarity 'Negative))
+                                          applyCoPolyShim cid (iJoinMeetR1 @_ @(InvertPolarity 'Negative)) .
+                                          functionToShim "toList" toList
                                       conv2 =
+                                          functionToShim "fromList" fromList .
                                           applyCoPolyShim cid (iJoinMeetL1 @_ @'Negative) .
                                           iJoinMeetL1 @_ @'Negative . rconv2
                                       convv = applyRangePolyShim cid conv1 conv2
@@ -312,7 +314,7 @@ refLibEntries =
                                              cid
                                              (iJoinMeetL1 @_ @(InvertPolarity pola))
                                              (iJoinMeetR1 @_ @pola) .
-                                         (functionToShim "WholeRef to ListRef" langWholeRefToListRef) . convv
+                                         (functionToShim "langWholeRefToListRef" langWholeRefToListRef) . convv
                 , mkValEntry "listWhole" "Represent a list reference as a whole reference." $ langListRefToWholeRef @A
                 , mkValEntry "listGetCount" "Get Count of elements in a list reference." langListRefGetCount
                 , mkValEntry "listGetItem" "Get an element of a list reference." $ langListRefGetItem @Q

@@ -2,9 +2,11 @@
 
 let
 
+import UI();
+
 ### Useful
 ui_page n ui = (UI.label n,ui);
-ui_labelled n ui = UI.horizontal [(False, UI.label n),(True, ui)];
+ui_labelled n ui = UI.horizontal [UI.label n, UI.layoutGrow  ui];
 
 std_window : WholeRef +Text -> UI.Element -> Action UI.Window;
 std_window title contents = fixAction $ \window -> let
@@ -23,7 +25,7 @@ std_window title contents = fixAction $ \window -> let
                 UI.menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ]
-    in UI.openWindow (300,400) title {menus} $ UI.scrolled contents;
+    in UI.openWindow (300,500) title {menus} $ UI.scrolled contents;
 
 ### People
 
@@ -71,10 +73,10 @@ ui_people pp = UI.run $ do
     pplist <- getSetList noOrder pp;
     return $ UI.vertical
     [
-        (False, UI.button {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end}),
-        (False, UI.button {"View Person"} {get selectedperson >>= window_person}),
-        (False, UI.button {"Remove Person"} {get selectedperson >>= \p -> pp -= p}),
-        (True, UI.listTable [({"Name"},\p -> name !$ {p})] pplist window_person (Just selectedperson))
+        UI.button {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end},
+        UI.button {"View Person"} {get selectedperson >>= window_person},
+        UI.button {"Remove Person"} {get selectedperson >>= \p -> pp -= p},
+        UI.layoutGrow $ UI.listTable [({"Name"},\p -> name !$ {p})] pplist window_person (Just selectedperson)
     ];
     end;
 
@@ -84,37 +86,37 @@ peopleByName = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !*
 ui_person : WholeRef Person -> UI.Element;
 ui_person p = UI.vertical
 [
-    (False, ui_labelled {"Name: "} $ UI.textEntry $ name !$ p),
-    (True, UI.notebook unknown
+    ui_labelled {"Name: "} $ UI.textEntry $ name !$ p,
+    UI.layoutGrow $ UI.notebook unknown
     [
         ui_page {"Social"} $ UI.vertical
         [
-            (False, ui_labelled {"Email: "} $ UI.textEntry $ email !$ p),
-            (False, ui_labelled {"Phone: "} $ UI.textEntry $ phone !$ p)
+            ui_labelled {"Email: "} $ UI.textEntry $ email !$ p,
+            ui_labelled {"Phone: "} $ UI.textEntry $ phone !$ p
         ],
         ui_page {"Home"} $ let homep = home !$ p in UI.vertical
         [
-            (False, ui_labelled {"Address: "} $ UI.textArea $ address !$ homep),
-            (False, ui_labelled {"City: "} $ UI.textEntry $ city !$ homep),
-            (False, ui_labelled {"Postcode/ZIP: "} $ UI.textEntry $ postcode !$ homep),
-            (False, ui_labelled {"State/Province: "} $ UI.textEntry $ province !$ homep),
-            (False, ui_labelled {"Country: "} $ UI.textEntry $ country !$ homep),
-            (False, ui_labelled {"Phone: "} $ UI.textEntry $ locphone !$ homep)
+            ui_labelled {"Address: "} $ UI.textArea $ address !$ homep,
+            ui_labelled {"City: "} $ UI.textEntry $ city !$ homep,
+            ui_labelled {"Postcode/ZIP: "} $ UI.textEntry $ postcode !$ homep,
+            ui_labelled {"State/Province: "} $ UI.textEntry $ province !$ homep,
+            ui_labelled {"Country: "} $ UI.textEntry $ country !$ homep,
+            ui_labelled {"Phone: "} $ UI.textEntry $ locphone !$ homep
         ],
         ui_page {"Work"} $ UI.vertical
         [
-            (False, ui_labelled {"Employer: "} $ UI.textEntry $ (name !. employer) !$ p)
+            ui_labelled {"Employer: "} $ UI.textEntry $ (name !. employer) !$ p
         ],
         ui_page {"Family"} $ UI.vertical
         [
-            (False, ui_labelled {"Birth: "} $ UI.textEntry $ birthdate !$ p),
-            (False, ui_labelled {"Death: "} $ UI.textEntry $ deathdate !$ p),
-            (False, UI.checkBox {"Married"} $ married !$ p),
-            (False, ui_labelled {"Mother: "} $ UI.pick peopleByName $ mother !$ p),
-            (False, ui_labelled {"Father: "} $ UI.pick peopleByName $ father !$ p),
-            (True, ui_people (children p))
+            ui_labelled {"Birth: "} $ UI.textEntry $ birthdate !$ p,
+            ui_labelled {"Death: "} $ UI.textEntry $ deathdate !$ p,
+            UI.checkBox {"Married"} $ married !$ p,
+            ui_labelled {"Mother: "} $ UI.pick peopleByName $ mother !$ p,
+            ui_labelled {"Father: "} $ UI.pick peopleByName $ father !$ p,
+            UI.layoutGrow $ ui_people (children p)
         ]
-    ])
+    ]
 ];
 
 window_person : Person -> Action UI.Window;
@@ -134,9 +136,9 @@ aval = pvalue !$ {openEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"};
 bval = pvalue !$ {openEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
 in std_window {"Calc"} $ UI.vertical
 [
-    #(False, UI.textEntry aval),
-    #(False, UI.textEntry bval),
-    #(False, UI.label $ aval / bval)
+    #UI.textEntry aval,
+    #UI.textEntry bval,
+    #UI.label $ aval / bval
 ];
 
 ### Switching Value
@@ -151,9 +153,9 @@ sw_val1 = ptext !$ {openEntity @P !"6d9f7afa-1091-49cc-8646-8e613bb75ee5"};
 sw_val2 = ptext !$ {openEntity @P !"934712ae-73a7-4084-8a43-d618c737fd56"};
 in std_window {"Switch"} $ UI.vertical
 [
-    #(False, UI.textEntry sw_pick),
-    (False, UI.checkBox {"pick"} sw_pick),
-    (True, UI.dynamic {if %sw_pick then UI.textArea sw_val1 else UI.textArea sw_val2})
+    #UI.textEntry sw_pick),
+    UI.checkBox {"pick"} sw_pick,
+    UI.layoutGrow $ UI.dynamic {if %sw_pick then UI.textArea sw_val1 else UI.textArea sw_val2}
 ];
 
 ### Imported Files
@@ -164,12 +166,12 @@ window_files = let
 #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
 window_file f = std_window {"File"} $ UI.vertical
 [
-    #(False, UI.textEntry $ caption f)
+    #UI.textEntry $ caption f
 ];
 in std_window {"Files"} $ UI.vertical
 [
-    #(False, UI.button "Import" {file_import Files $ \f -> std_window $ window_file f}),
-    #(True, UI.listTable [column "Caption" caption, column "Size" file_size] window_file Files)
+    #UI.button "Import" {file_import Files $ \f -> std_window $ window_file f},
+    #UI.layoutGrow $ UI.listTable [column "Caption" caption, column "Size" file_size] window_file Files
 ];
 
 ### Constant Edit
@@ -177,10 +179,10 @@ in std_window {"Files"} $ UI.vertical
 window_constant : Action UI.Window;
 window_constant = std_window {"Constant"} $ UI.vertical
 [
-    (False, UI.checkBox {"off"} {False}),
-    (False, UI.checkBox {"on"} {True}),
-    (False, UI.textEntry {"constant"}),
-    (True, UI.textArea {"constant"})
+    UI.checkBox {"off"} {False},
+    UI.checkBox {"on"} {True},
+    UI.textEntry {"constant"},
+    UI.layoutGrow $ UI.textArea {"constant"}
 ];
 
 ### CSS
@@ -192,11 +194,11 @@ window_css = do
     sometext := "whatever";
     std_window {"CSS"} $ UI.styleSheet (Debug.UI.ignoreUpdateUIExceptions cssref) $ UI.name "root" $ UI.vertical
         [
-            (False, UI.styleClass "x" $ UI.name "A" $ UI.checkBox {"Box"} {True}),
-            (False, UI.styleClass "x" $ UI.name "B" $ UI.button {"Button"} {return ()}),
-            (False, UI.styleClass "x" $ UI.name "C" $ UI.textEntry sometext),
-            (True, UI.styleClass "y" $ UI.name "D" $ UI.textArea cssref),
-            (False, UI.styleClass "y" $ UI.name "E" $ UI.label {"Some Text"})
+            UI.styleClass "x" $ UI.name "A" $ UI.checkBox {"Box"} {True},
+            UI.styleClass "x" $ UI.name "B" $ UI.button {"Button"} {return ()},
+            UI.styleClass "x" $ UI.name "C" $ UI.textEntry sometext,
+            UI.layoutGrow $ UI.styleClass "y" $ UI.name "D" $ UI.textArea cssref,
+            UI.styleClass "y" $ UI.name "E" $ UI.label {"Some Text"}
         ];
     end;
 
@@ -221,7 +223,11 @@ window_drawing = let import Colour; import Drawing in do
             end};
     end;
 
-### Start Window
+window_list: Action UI.Window;
+window_list = do
+    peopleList <- getSetList (orderOn name alphabetical) people;
+    std_window {"List"} $ UI.list ui_person peopleList;
+    end;
 
 window_start : Action UI.Window;
 window_start = do
@@ -234,20 +240,21 @@ window_start = do
         in do
         std_window {"Pinafore"} $ UI.vertical
         [
-            (False, UI.label {"UTC time: " <> show %now}),
-            (False, UI.label {"UTC date: " <> show %utcDate}),
-            (False, UI.label {"Local time: " <> show %localNow}),
-            (False, UI.label {"Local date: " <> show %today}),
-            (False, UI.label {"Time zone offset minutes: " <> show %timeZone}),
-            (False, UI.button {"People"} {window_people}),
-            (False, UI.button {"Calculated Form"} {window_calc}),
-            (False, UI.button {"Switch"} {window_switch}),
-            (False, UI.button {"Files"} {window_files}),
-            (False, UI.button {"Constant"} {window_constant}),
-            (False, UI.button {"CSS"} {window_css}),
-            (False, UI.button {"Drawing"} {window_drawing}),
-            (False, UI.button {"Disabled"} unknown),
-            (True, UI.blank)
+            UI.label {"UTC time: " <> show %now},
+            UI.label {"UTC date: " <> show %utcDate},
+            UI.label {"Local time: " <> show %localNow},
+            UI.label {"Local date: " <> show %today},
+            UI.label {"Time zone offset minutes: " <> show %timeZone},
+            UI.button {"People"} {window_people},
+            UI.button {"Calculated Form"} {window_calc},
+            UI.button {"Switch"} {window_switch},
+            UI.button {"Files"} {window_files},
+            UI.button {"Constant"} {window_constant},
+            UI.button {"CSS"} {window_css},
+            UI.button {"Drawing"} {window_drawing},
+            UI.button {"List"} {window_list},
+            UI.button {"Disabled"} unknown,
+            UI.layoutGrow $ UI.blank
         ];
         end;
     end;

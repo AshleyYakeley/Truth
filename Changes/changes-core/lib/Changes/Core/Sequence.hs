@@ -2,70 +2,52 @@ module Changes.Core.Sequence where
 
 import Changes.Core.Import
 
-newtype SequencePoint seq = MkSequencePoint
-    { unSequencePoint :: Index seq
-    }
+newtype SequencePoint = MkSequencePoint
+    { unSequencePoint :: Int64
+    } deriving (Eq, Ord, Num, Enum, Real, Integral)
 
-deriving instance Eq (Index seq) => Eq (SequencePoint seq)
+instance Show SequencePoint where
+    show (MkSequencePoint i) = show i
 
-deriving instance Ord (Index seq) => Ord (SequencePoint seq)
-
-deriving instance Num (Index seq) => Num (SequencePoint seq)
-
-deriving instance Enum (Index seq) => Enum (SequencePoint seq)
-
-deriving instance Real (Index seq) => Real (SequencePoint seq)
-
-deriving instance
-         Integral (Index seq) => Integral (SequencePoint seq)
-
-instance Integral (Index seq) => Show (SequencePoint seq) where
-    show (MkSequencePoint i) = show $ toInteger i
-
-seqPointConvert :: (Index seqA ~ Index seqB) => SequencePoint seqA -> SequencePoint seqB
-seqPointConvert (MkSequencePoint i) = MkSequencePoint i
-
-seqLength :: IsSequence seq => seq -> SequencePoint seq
+seqLength :: IsSequence seq => seq -> SequencePoint
 seqLength = fromIntegral . olength64
 
-seqIndex :: IsSequence seq => seq -> SequencePoint seq -> Maybe (Element seq)
-seqIndex sq (MkSequencePoint i) = index sq i
+seqIndex :: IsSequence seq => seq -> SequencePoint -> Maybe (Element seq)
+seqIndex sq i = index sq $ fromIntegral i
 
-seqTake :: IsSequence seq => SequencePoint seq -> seq -> seq
-seqTake (MkSequencePoint p) = take p
+seqTake :: IsSequence seq => SequencePoint -> seq -> seq
+seqTake p = take $ fromIntegral p
 
-seqDrop :: IsSequence seq => SequencePoint seq -> seq -> seq
-seqDrop (MkSequencePoint p) = drop p
+seqDrop :: IsSequence seq => SequencePoint -> seq -> seq
+seqDrop p = drop $ fromIntegral p
 
-seqSplitAt :: IsSequence seq => SequencePoint seq -> seq -> (seq, seq)
-seqSplitAt (MkSequencePoint p) = splitAt p
+seqSplitAt :: IsSequence seq => SequencePoint -> seq -> (seq, seq)
+seqSplitAt p = splitAt $ fromIntegral p
 
-data SequenceRun seq = MkSequenceRun
-    { runStart :: SequencePoint seq
-    , runLength :: SequencePoint seq
-    }
+data SequenceRun = MkSequenceRun
+    { runStart :: SequencePoint
+    , runLength :: SequencePoint
+    } deriving (Eq)
 
-deriving instance Eq (Index seq) => Eq (SequenceRun seq)
-
-instance Integral (Index seq) => Show (SequenceRun seq) where
+instance Show SequenceRun where
     show (MkSequenceRun start len) = show start ++ "+" ++ show len
 
-runEnd :: Integral (Index seq) => SequenceRun seq -> SequencePoint seq
+runEnd :: SequenceRun -> SequencePoint
 runEnd MkSequenceRun {..} = runStart + runLength
 
-startEndRun :: Integral (Index seq) => SequencePoint seq -> SequencePoint seq -> SequenceRun seq
+startEndRun :: SequencePoint -> SequencePoint -> SequenceRun
 startEndRun start end = MkSequenceRun start (end - start)
 
-relativeRun :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> SequenceRun seq
+relativeRun :: SequencePoint -> SequenceRun -> SequenceRun
 relativeRun n (MkSequenceRun start len) = MkSequenceRun (start - n) len
 
-goodRun :: Integral (Index seq) => SequenceRun seq -> Bool
+goodRun :: SequenceRun -> Bool
 goodRun run = runStart run >= 0 && runLength run >= 0
 
-positiveRun :: Integral (Index seq) => SequenceRun seq -> Bool
+positiveRun :: SequenceRun -> Bool
 positiveRun run = runStart run >= 0 && runLength run > 0
 
-clipPoint :: Integral (Index seq) => SequencePoint seq -> SequencePoint seq -> SequencePoint seq
+clipPoint :: SequencePoint -> SequencePoint -> SequencePoint
 clipPoint len p =
     if p < 0
         then 0
@@ -73,35 +55,35 @@ clipPoint len p =
                  then len
                  else p
 
-clipRunBounds :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> SequenceRun seq
+clipRunBounds :: SequencePoint -> SequenceRun -> SequenceRun
 clipRunBounds len (MkSequenceRun rstart rlen) = let
     rend = rstart + rlen
     in startEndRun (clipPoint len rstart) (clipPoint len rend)
 
-clipRunStart :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> SequenceRun seq
+clipRunStart :: SequencePoint -> SequenceRun -> SequenceRun
 clipRunStart nstart (MkSequenceRun start len) = let
     end = start + len
     in startEndRun (max start nstart) end
 
-clipRunEnd :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> SequenceRun seq
+clipRunEnd :: SequencePoint -> SequenceRun -> SequenceRun
 clipRunEnd nend (MkSequenceRun start len) = let
     end = start + len
     in startEndRun start (min end nend)
 
-clipWithin :: Integral (Index seq) => SequenceRun seq -> SequenceRun seq -> SequenceRun seq
+clipWithin :: SequenceRun -> SequenceRun -> SequenceRun
 clipWithin constraint run = clipRunEnd (runEnd constraint) $ clipRunStart (runStart constraint) run
 
-seqSection :: IsSequence seq => SequenceRun seq -> seq -> seq
+seqSection :: IsSequence seq => SequenceRun -> seq -> seq
 seqSection (MkSequenceRun start len) s = seqTake len $ seqDrop (max start 0) s
 
-seqIntersect :: Integral (Index seq) => SequenceRun seq -> SequenceRun seq -> Maybe (SequenceRun seq)
+seqIntersect :: SequenceRun -> SequenceRun -> Maybe SequenceRun
 seqIntersect a b = let
     ab = clipWithin a b
     in if goodRun ab
            then Just ab
            else Nothing
 
-seqIntersectInside :: Integral (Index seq) => SequenceRun seq -> SequenceRun seq -> Maybe (SequenceRun seq)
+seqIntersectInside :: SequenceRun -> SequenceRun -> Maybe SequenceRun
 seqIntersectInside a b = let
     ab = seqIntersect a b
     in if runStart a <= runEnd b && runStart b <= runEnd a

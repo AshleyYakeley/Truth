@@ -1,6 +1,7 @@
 #!/usr/bin/pinafore
 
 let
+import UI();
 import UIStuff.Selection;
 import UIStuff.Named;
 
@@ -22,12 +23,12 @@ country = property @Location @Text !"location.address.country";
 locationUI: WholeRef +Location -> UI.Element;
 locationUI loc = UI.vertical
 [
-    (True, uiLabelled {"Address: "} $ UI.textArea $ address !$% loc),
-    (False, uiLabelled {"City: "} $ UI.textEntry $ city !$% loc),
-    (False, uiLabelled {"Postcode/ZIP: "} $ UI.textEntry $ postcode !$% loc),
-    (False, uiLabelled {"State/Province: "} $ UI.textEntry $ province !$% loc),
-    (False, uiLabelled {"Country: "} $ UI.textEntry $ country !$% loc),
-    (False, uiLabelled {"Phone: "} $ UI.textEntry $ locphone !$% loc)
+    UI.layoutGrow $ uiLabelled {"Address: "} $ UI.textArea $ address !$% loc,
+    uiLabelled {"City: "} $ UI.textEntry $ city !$% loc,
+    uiLabelled {"Postcode/ZIP: "} $ UI.textEntry $ postcode !$% loc,
+    uiLabelled {"State/Province: "} $ UI.textEntry $ province !$% loc,
+    uiLabelled {"Country: "} $ UI.textEntry $ country !$% loc,
+    uiLabelled {"Phone: "} $ UI.textEntry $ locphone !$% loc
 ];
 
 rec
@@ -55,13 +56,13 @@ married = property @Person @Boolean !"relation.family.spouse.exist";
 familyUI: WholeRef +Person -> UI.Element;
 familyUI p = UI.vertical
 [
-    (False, uiLabelled {"Birth: "} $ UI.textEntry $ interpretDateAsText $ birthdate !$% p),
-    (False, uiLabelled {"Death: "} $ UI.textEntry $ interpretDateAsText $ deathdate !$% p),
-    (False, UI.checkBox {"Married"} $ married !$% p),
-    (False, uiLabelled {"Mother: "} $ UI.pick (byName people) $ mother !$% p),
-    (False, uiLabelled {"Father: "} $ UI.pick (byName people) $ father !$% p),
-    (False, UI.label {"Children:"}),
-    (True, namedItemTable (children p) contactRefUI Nothing)
+    uiLabelled {"Birth: "} $ UI.textEntry $ interpretDateAsText $ birthdate !$% p,
+    uiLabelled {"Death: "} $ UI.textEntry $ interpretDateAsText $ deathdate !$% p,
+    UI.checkBox {"Married"} $ married !$% p,
+    uiLabelled {"Mother: "} $ UI.pick (byName people) $ mother !$% p,
+    uiLabelled {"Father: "} $ UI.pick (byName people) $ father !$% p,
+    UI.label {"Children:"},
+    UI.layoutGrow $ namedItemTable (children p) contactRefUI Nothing
 ];
 
 # employment relationship
@@ -83,8 +84,8 @@ contactPages er =
 [
     uiPage {"Social"} $ UI.vertical
     [
-        (False, uiLabelled {"Email: "} $ UI.textEntry $ email !$% er),
-        (False, uiLabelled {"Phone: "} $ UI.textEntry $ phone !$% er)
+        uiLabelled {"Email: "} $ UI.textEntry $ email !$% er,
+        uiLabelled {"Phone: "} $ UI.textEntry $ phone !$% er
     ],
     uiPage {"Home"} $ locationUI $ home !$% er
 ];
@@ -94,7 +95,7 @@ personPages p =
 [
     uiPage {"Work"} $ UI.vertical
     [
-        (False, uiLabelled {"Employer: "} $ UI.pick (byName legalentities) $ employer !$% p)
+        uiLabelled {"Employer: "} $ UI.pick (byName legalentities) $ employer !$% p
     ],
     uiPage {"Family"} $ familyUI p
 ];
@@ -114,8 +115,8 @@ contactUI e = let
         end;
     in UI.vertical
     [
-        (False, uiLabelled {"Name: "} $ UI.textEntry $ name !$% {e}),
-        (True, UI.notebook unknown pages)
+        uiLabelled {"Name: "} $ UI.textEntry $ name !$% {e},
+        UI.layoutGrow $ UI.notebook unknown pages
     ];
 
 contactRefUI: WholeRef +LegalEntity -> UI.Element;
