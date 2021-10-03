@@ -36,6 +36,10 @@ instance Functor (Result e) where
     fmap ab (SuccessResult a) = SuccessResult (ab a)
     fmap _ (FailureResult e) = FailureResult e
 
+instance FunctorOne (Result e) where
+    getMaybeOne (SuccessResult a) = Just a
+    getMaybeOne (FailureResult _) = Nothing
+
 instance Foldable (Result e) where
     foldMap am (SuccessResult a) = am a
     foldMap _ (FailureResult _) = mempty

@@ -25,7 +25,7 @@ instance (MonadTransAskUnlift t, MonadAskUnliftIO m, MonadFail (t m), MonadIO (t
         MkWMFunction unliftIO <- lift askUnliftIO
         return $ MkWMFunction $ unliftIO . unlift
 
-instance MonadTransAskUnlift t => MonadTransConstraint MonadAskUnliftIO t where
+instance MonadTransAskUnlift t => TransConstraint MonadAskUnliftIO t where
     hasTransConstraint =
         withTransConstraintDict @MonadFail $ withTransConstraintDict @MonadIO $ withTransConstraintDict @MonadFix $ Dict
 

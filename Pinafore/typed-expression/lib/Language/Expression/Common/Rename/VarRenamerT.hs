@@ -16,13 +16,16 @@ newtype VarRenamerT (ts :: Type) m a =
     MkVarRenamerT (StateT RenamerState m a)
     deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail, MonadTrans, MonadTransSemiTunnel)
 
-instance MonadTransConstraint Monad (VarRenamerT ts) where
+instance TransConstraint Functor (VarRenamerT ts) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadIO (VarRenamerT ts) where
+instance TransConstraint Monad (VarRenamerT ts) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFail (VarRenamerT ts) where
+instance TransConstraint MonadIO (VarRenamerT ts) where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadFail (VarRenamerT ts) where
     hasTransConstraint = Dict
 
 runVarRenamerT :: Monad m => VarRenamerT ts m a -> m a

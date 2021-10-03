@@ -34,7 +34,7 @@ reflectingPremodel ::
     -> Premodel update ()
 reflectingPremodel (MkResource (trun :: ResourceRunner tt) (MkAReference r e ctask)) utask recv = do
     Dict <- return $ resourceRunnerUnliftAllDict trun
-    Dict <- return $ transStackDict @MonadUnliftIO @tt @(DeferActionT IO)
+    Dict <- return $ transStackDict @MonadTunnelIO @tt @(DeferActionT IO)
     Refl <- return $ transStackConcatRefl @tt @'[ DeferActionT] @IO
     Dict <- return $ concatMonadTransStackUnliftAllDict @tt @'[ DeferActionT]
     deferRR <- deferActionResourceRunner

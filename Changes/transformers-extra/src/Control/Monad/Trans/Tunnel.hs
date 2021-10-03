@@ -2,9 +2,11 @@ module Control.Monad.Trans.Tunnel where
 
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Function
+import Data.Functor.One
 import Import
 
-class (MonadTrans t, MonadTransConstraint Monad t) => MonadTransSemiTunnel t where
+-- not sure if this class is necessary tbh.
+class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t) => MonadTransSemiTunnel t where
     semitunnel ::
            forall m1 m2 r. (Monad m1, Monad m2)
         => (forall a. (t m1 r -> m1 a) -> m2 a)
@@ -25,12 +27,16 @@ remonadTransform ff (MkWMFunction r2) = MkWMFunction $ \m1a -> r2 $ remonad ff m
 liftWMFunction :: (MonadTransSemiTunnel t, Monad m1, Monad m2) => WMFunction m1 m2 -> WMFunction (t m1) (t m2)
 liftWMFunction (MkWMFunction mm) = MkWMFunction $ remonad mm
 
-class MonadTransSemiTunnel t => MonadTransTunnel t where
+class (MonadTransSemiTunnel t) => MonadTransTunnel t where
     tunnel :: forall m2 r. (forall a. (forall m1. t m1 r -> m1 a) -> m2 a) -> t m2 r
     transExcept ::
            forall m e a. Monad m
         => t (ExceptT e m) a
         -> t m (Either e a)
+    kernelTunnel ::
+           forall m2 r. Functor m2
+        => (forall f. FunctorOne f => (forall m1 a. Functor m1 => t m1 a -> m1 (f a)) -> m2 (f r))
+        -> t m2 r
 
 remonad' ::
        forall t m1 m2. MonadTransTunnel t
@@ -46,12 +52,14 @@ instance MonadTransSemiTunnel IdentityT
 instance MonadTransTunnel IdentityT where
     tunnel call = IdentityT $ call $ runIdentityT
     transExcept (IdentityT ma) = IdentityT $ runExceptT ma
+    kernelTunnel call = IdentityT $ fmap runIdentity $ call $ \(IdentityT ma) -> fmap Identity ma
 
 instance MonadTransSemiTunnel (ReaderT s)
 
 instance MonadTransTunnel (ReaderT s) where
     tunnel call = ReaderT $ \s -> call $ \(ReaderT smr) -> smr s
     transExcept (ReaderT ma) = ReaderT $ \s -> runExceptT $ ma s
+    kernelTunnel call = ReaderT $ \s -> fmap runIdentity $ call $ \(ReaderT smr) -> fmap Identity $ smr s
 
 instance Monoid s => MonadTransSemiTunnel (WriterT s)
 
@@ -64,6 +72,7 @@ instance Monoid s => MonadTransTunnel (WriterT s) where
                  Left e -> (Left e, mempty)
                  Right (a, s) -> (Right a, s)) $
         runExceptT ma
+    kernelTunnel call = WriterT $ fmap swap $ call $ \(WriterT mrs) -> fmap swap $ mrs
 
 instance MonadTransSemiTunnel (StateT s)
 
@@ -76,6 +85,7 @@ instance MonadTransTunnel (StateT s) where
                      Left e -> (Left e, olds)
                      Right (a, news) -> (Right a, news)) $
             runExceptT $ ma olds
+    kernelTunnel call = StateT $ \olds -> fmap swap $ call $ \(StateT smrs) -> fmap swap $ smrs olds
 
 instance MonadTransSemiTunnel MaybeT
 
@@ -89,6 +99,7 @@ instance MonadTransTunnel MaybeT where
                  Right (Just a) -> Just $ Right a
                  Right Nothing -> Nothing) $
         runExceptT ma
+    kernelTunnel call = MaybeT $ call $ \(MaybeT ma) -> ma
 
 instance MonadTransSemiTunnel (ExceptT e)
 
@@ -102,18 +113,27 @@ instance MonadTransTunnel (ExceptT e) where
                  Right (Left e) -> Left e
                  Right (Right a) -> Right $ Right a) $
         runExceptT ma
+    kernelTunnel call = ExceptT $ call $ \(ExceptT ma) -> ma
 
 class MonadIO m => MonadTunnelIO m where
     tunnelIO :: forall r. (forall a. (m r -> IO a) -> IO a) -> m r
+    kernelTunnelIO :: forall r. (forall f. FunctorOne f => (forall a. m a -> IO (f a)) -> IO (f r)) -> m r
 
 remonadIO :: MonadTunnelIO m => (forall a. IO a -> IO a) -> m r -> m r
 remonadIO mma sm1 = tunnelIO $ \tun -> mma $ tun sm1
 
 instance MonadTunnelIO IO where
     tunnelIO call = call id
+    kernelTunnelIO call = fmap runIdentity $ call $ \ma -> fmap Identity $ ma
 
-instance (MonadTransSemiTunnel t, MonadTunnelIO m, MonadIO (t m)) => MonadTunnelIO (t m) where
+instance (MonadTransTunnel t, MonadTunnelIO m, MonadIO (t m)) => MonadTunnelIO (t m) where
     tunnelIO call = semitunnel $ \tun -> tunnelIO $ \maiob -> call $ \tmr -> maiob $ tun tmr
+    kernelTunnelIO call =
+        kernelTunnel $ \unlift ->
+            kernelTunnelIO $ \unliftIO -> fmap getCompose $ call $ fmap Compose . unliftIO . unlift
+
+instance (MonadTransTunnel t, TransConstraint MonadIO t) => TransConstraint MonadTunnelIO t where
+    hasTransConstraint = withTransConstraintDict @MonadIO $ Dict
 
 liftMBackFunction :: (MonadTransSemiTunnel t, Monad ma, Monad mb) => MBackFunction ma mb -> MBackFunction (t ma) (t mb)
 liftMBackFunction wt tm = semitunnel $ \unlift -> wt $ \tba -> unlift $ tm $ remonad tba

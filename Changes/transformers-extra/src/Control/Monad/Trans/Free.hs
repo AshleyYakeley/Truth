@@ -9,8 +9,8 @@ newtype FreeT m a = FreeT
     { runFreeT :: forall t. MonadTransUnliftAll t => t m a
     }
 
-instance Monad m => Functor (FreeT m) where
-    fmap ab (FreeT tma) = FreeT $ withTransConstraintTM @Monad $ fmap ab tma
+instance Functor m => Functor (FreeT m) where
+    fmap ab (FreeT tma) = FreeT $ withTransConstraintTM @Functor $ fmap ab tma
 
 instance Monad m => Applicative (FreeT m) where
     pure a = FreeT $ withTransConstraintTM @Monad $ pure a
@@ -40,19 +40,22 @@ instance MonadPlus m => MonadPlus (FreeT m) where
 instance MonadTrans FreeT where
     lift ma = FreeT $ lift ma
 
-instance MonadTransConstraint Monad FreeT where
+instance TransConstraint Functor FreeT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFail FreeT where
+instance TransConstraint Monad FreeT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadIO FreeT where
+instance TransConstraint MonadFail FreeT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFix FreeT where
+instance TransConstraint MonadIO FreeT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadPlus FreeT where
+instance TransConstraint MonadFix FreeT where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadPlus FreeT where
     hasTransConstraint = Dict
 
 instance MonadTransSemiTunnel FreeT
@@ -60,6 +63,7 @@ instance MonadTransSemiTunnel FreeT
 instance MonadTransTunnel FreeT where
     tunnel call = FreeT $ tunnel $ \tun -> call $ \(FreeT tm1r) -> tun tm1r
     transExcept (FreeT txa) = FreeT $ transExcept txa
+    kernelTunnel call = FreeT $ kernelTunnel $ \tun -> call $ \(FreeT tm1r) -> tun tm1r
 
 instance MonadTransUnlift FreeT
 
