@@ -81,9 +81,8 @@ instance MonadOne inner => TransConstraint MonadFix (ComposeM inner) where
 instance MonadOne inner => MonadTransSemiTunnel (ComposeM inner)
 
 instance MonadOne inner => MonadTransTunnel (ComposeM inner) where
-    tunnel call = MkComposeM $ call getComposeM
     transExcept (MkComposeM (ExceptT iema)) = MkComposeM $ fmap sequence iema
-    kernelTunnel call = MkComposeM $ call getComposeM
+    tunnel call = MkComposeM $ call getComposeM
 
 instance RepresentationalRole (ComposeM inner) where
     representationalCoercion MkCoercion = MkCoercion

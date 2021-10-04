@@ -46,7 +46,7 @@ identityWUnliftAll = MkWUnliftAll runIdentityT
 
 mVarRun :: MVar s -> UnliftAll MonadTunnelIO (StateT s)
 mVarRun var (StateT smr) =
-    kernelTunnelIO $ \unlift ->
+    tunnelIO $ \unlift ->
         modifyMVar var $ \olds ->
             fmap (\fas -> (fromMaybe olds $ getMaybeOne $ fmap snd fas, fmap fst fas)) $ unlift $ smr olds
 
@@ -141,7 +141,9 @@ commuteTUnliftIO ::
     => MFunction (ta (tb m)) (tb (ta m))
 commuteTUnliftIO tatbmr =
     case hasTransConstraint @MonadIO @ta @m of
-        Dict -> liftWithUnliftAll $ \unlift -> remonad' unlift tatbmr
+        Dict ->
+            case hasTransConstraint @Functor @tb @m of
+                Dict -> liftWithUnliftAll $ \unlift -> remonad' unlift tatbmr
 
 type IOFunction m = MFunction m IO
 

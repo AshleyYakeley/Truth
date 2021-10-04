@@ -1,6 +1,7 @@
 module Data.Filterable where
 
 import qualified Data.List as List
+import qualified Data.Map as Map
 import qualified Data.Maybe as List
 import Shapes.Import
 
@@ -22,6 +23,9 @@ instance Filterable [] where
 
 instance Filterable Maybe where
     mapMaybe amb ma = ma >>= amb
+
+instance Filterable (Map k) where
+    mapMaybe = Map.mapMaybe
 
 forf :: (Applicative m, Filterable f, Traversable f) => f a -> (a -> m (Maybe b)) -> m (f b)
 forf fa ammb = fmap catMaybes $ for fa ammb

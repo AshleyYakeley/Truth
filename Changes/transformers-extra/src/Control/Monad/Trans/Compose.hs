@@ -44,11 +44,14 @@ lift2ComposeT'' =
         Dict -> lift2ComposeT
 
 lift1ComposeTWithUnlift ::
-       (MonadTransTunnel t1, MonadTransUnliftAll t2, MonadTunnelIO m)
+       forall t1 t2 m r. (MonadTransTunnel t1, MonadTransUnliftAll t2, MonadTunnelIO m)
     => ((forall a. ComposeT t1 t2 m a -> t1 m a) -> t1 m r)
     -> ComposeT t1 t2 m r
 lift1ComposeTWithUnlift call =
-    MkComposeT $ tunnel $ \tun -> liftWithUnliftAll $ \unlift -> tun $ call $ \(MkComposeT ttma) -> remonad' unlift ttma
+    case hasTransConstraint @MonadIO @t2 @m of
+        Dict ->
+            MkComposeT $
+            tunnel $ \tun -> liftWithUnliftAll $ \unlift -> tun $ call $ \(MkComposeT ttma) -> remonad' unlift ttma
 
 lift2ComposeTWithUnlift ::
        forall t1 t2 m r. (MonadTransUnliftAll t1, MonadTransUnliftAll t2, MonadTunnelIO m)
@@ -167,27 +170,25 @@ instance (MonadTransSemiTunnel t1, MonadTransSemiTunnel t2) => MonadTransSemiTun
                             semitunnel $ \t2m1am1b -> call $ \(MkComposeT t1t2m1r) -> t2m1am1b $ t1m1rm1a $ t1t2m1r
 
 instance (MonadTransTunnel t1, MonadTransTunnel t2) => MonadTransTunnel (ComposeT t1 t2) where
-    tunnel :: forall m2 r. (forall a. (forall m1. ComposeT t1 t2 m1 r -> m1 a) -> m2 a) -> ComposeT t1 t2 m2 r
-    tunnel call =
-        MkComposeT $
-        tunnel $ \t1m1rm1a -> tunnel $ \t2m1am1b -> call $ \(MkComposeT t1t2m1r) -> t2m1am1b $ t1m1rm1a $ t1t2m1r
     transExcept ::
            forall m e a. Monad m
         => ComposeT t1 t2 (ExceptT e m) a
         -> ComposeT t1 t2 m (Either e a)
     transExcept (MkComposeT ma) =
         case hasTransConstraint @Monad @t2 @m of
-            Dict -> MkComposeT $ transExcept $ remonad' (\t2ea -> ExceptT $ transExcept t2ea) ma
-    kernelTunnel ::
+            Dict ->
+                case hasTransConstraint @Functor @t2 @(ExceptT e m) of
+                    Dict -> MkComposeT $ transExcept $ remonad' (\t2ea -> ExceptT $ transExcept t2ea) ma
+    tunnel ::
            forall m2 r. Functor m2
         => (forall f. FunctorOne f => (forall m1 a. Functor m1 => ComposeT t1 t2 m1 a -> m1 (f a)) -> m2 (f r))
         -> ComposeT t1 t2 m2 r
-    kernelTunnel call =
+    tunnel call =
         case hasTransConstraint @Functor @t2 @m2 of
             Dict ->
                 MkComposeT $
-                kernelTunnel $ \unlift1 ->
-                    kernelTunnel $ \unlift2 ->
+                tunnel $ \unlift1 ->
+                    tunnel $ \unlift2 ->
                         fmap getCompose $
                         call $ \(MkComposeT ff :: _ m1 _) ->
                             case hasTransConstraint @Functor @t2 @m1 of

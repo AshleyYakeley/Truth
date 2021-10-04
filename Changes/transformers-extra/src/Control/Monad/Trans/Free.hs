@@ -61,9 +61,8 @@ instance TransConstraint MonadPlus FreeT where
 instance MonadTransSemiTunnel FreeT
 
 instance MonadTransTunnel FreeT where
-    tunnel call = FreeT $ tunnel $ \tun -> call $ \(FreeT tm1r) -> tun tm1r
     transExcept (FreeT txa) = FreeT $ transExcept txa
-    kernelTunnel call = FreeT $ kernelTunnel $ \tun -> call $ \(FreeT tm1r) -> tun tm1r
+    tunnel call = FreeT $ tunnel $ \tun -> call $ \(FreeT tm1r) -> tun tm1r
 
 instance MonadTransUnlift FreeT
 

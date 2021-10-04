@@ -65,11 +65,8 @@ instance MonadIO LifeCycle where
     liftIO ioa = MkLifeCycle $ \_ -> ioa
 
 instance MonadTunnelIO LifeCycle where
-    tunnelIO :: forall r. (forall a. (LifeCycle r -> IO a) -> IO a) -> LifeCycle r
-    tunnelIO f = MkLifeCycle $ \var -> f $ \a -> unLifeCycleT a var
-    kernelTunnelIO ::
-           forall r. (forall f. FunctorOne f => (forall a. LifeCycle a -> IO (f a)) -> IO (f r)) -> LifeCycle r
-    kernelTunnelIO f = MkLifeCycle $ \var -> fmap runIdentity $ f $ \a -> fmap Identity $ unLifeCycleT a var
+    tunnelIO :: forall r. (forall f. FunctorOne f => (forall a. LifeCycle a -> IO (f a)) -> IO (f r)) -> LifeCycle r
+    tunnelIO f = MkLifeCycle $ \var -> fmap runIdentity $ f $ \a -> fmap Identity $ unLifeCycleT a var
 
 instance MonadUnliftIO LifeCycle where
     liftIOWithUnlift call = MkLifeCycle $ \var -> call $ \(MkLifeCycle f) -> f var

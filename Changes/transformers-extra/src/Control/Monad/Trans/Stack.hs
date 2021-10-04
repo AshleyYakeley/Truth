@@ -225,14 +225,9 @@ instance MonadTransStackSemiTunnel tt => MonadTransSemiTunnel (StackT tt) where
         in unSemiTunnel $ build $ representative @_ @(ListType (Compose Dict MonadTransSemiTunnel)) @tt
 
 newtype Tunnel t = MkTunnel
-    { unTunnel :: forall m2 r. (forall a. (forall m1. t m1 r -> m1 a) -> m2 a) -> t m2 r
-    }
-
-newtype KernelTunnel t = MkKernelTunnel
-    { unKernelTunnel :: forall m2 r.
-                            Functor m2 =>
-                                    (forall f.
-                                         FunctorOne f => (forall m1 a. Functor m1 => t m1 a -> m1 (f a)) -> m2 (f r)) -> t m2 r
+    { unTunnel :: forall m2 r.
+                      Functor m2 =>
+                              (forall f. FunctorOne f => (forall m1 a. Functor m1 => t m1 a -> m1 (f a)) -> m2 (f r)) -> t m2 r
     }
 
 newtype TransExcept e tt = MkTransExcept
@@ -242,23 +237,6 @@ newtype TransExcept e tt = MkTransExcept
 type MonadTransStackTunnel tt = (MonadTransStackSemiTunnel tt, IsStack MonadTransTunnel tt)
 
 instance MonadTransStackTunnel tt => MonadTransTunnel (StackT tt) where
-    tunnel :: forall m2 r. (forall a. (forall m1. StackT tt m1 r -> m1 a) -> m2 a) -> StackT tt m2 r
-    tunnel = let
-        build :: forall tt'. ListType (Compose Dict MonadTransTunnel) tt' -> Tunnel (StackT tt')
-        build NilListType = MkTunnel $ \call -> MkStackT $ call $ unStackT
-        build (ConsListType (Compose Dict) w) =
-            case build w of
-                MkTunnel tunnel' -> let
-                    tunnel'' ::
-                           forall m2' r'.
-                           (forall a. (forall m1. StackT tt' m1 r' -> m1 a) -> m2' a)
-                        -> StackT tt' m2' r'
-                    tunnel'' call =
-                        MkStackT $
-                        tunnel $ \unlift1 ->
-                            unStackT $ tunnel' $ \unlift2 -> call $ \(MkStackT stt) -> unlift2 $ MkStackT $ unlift1 stt
-                    in MkTunnel tunnel''
-        in unTunnel $ build $ representative @_ @(ListType (Compose Dict MonadTransTunnel)) @tt
     transExcept ::
            forall m e a. Monad m
         => StackT tt (ExceptT e m) a
@@ -285,35 +263,35 @@ instance MonadTransStackTunnel tt => MonadTransTunnel (StackT tt) where
                                     aea
                     in MkTransExcept transExcept''
         in unTransExcept $ build $ representative @_ @(ListType (Compose Dict MonadTransTunnel)) @tt
-    kernelTunnel ::
+    tunnel ::
            forall m2 r. Functor m2
         => (forall f. FunctorOne f => (forall m1 a. Functor m1 => StackT tt m1 a -> m1 (f a)) -> m2 (f r))
         -> StackT tt m2 r
-    kernelTunnel = let
-        build :: forall tt'. ListType (Compose Dict MonadTransTunnel) tt' -> KernelTunnel (StackT tt')
-        build NilListType = MkKernelTunnel $ \call -> MkStackT $ fmap runIdentity $ call $ fmap Identity . unStackT
+    tunnel = let
+        build :: forall tt'. ListType (Compose Dict MonadTransTunnel) tt' -> Tunnel (StackT tt')
+        build NilListType = MkTunnel $ \call -> MkStackT $ fmap runIdentity $ call $ fmap Identity . unStackT
         build (ConsListType (Compose Dict) (w :: ListType _ tt0)) =
             case build w of
-                MkKernelTunnel kernelTunnel' -> let
-                    kernelTunnel'' ::
+                MkTunnel tunnel' -> let
+                    tunnel'' ::
                            forall m2' r'. Functor m2'
                         => (forall f.
                                 FunctorOne f => (forall m1 a. Functor m1 => StackT tt' m1 a -> m1 (f a)) -> m2' (f r'))
                         -> StackT tt' m2' r'
-                    kernelTunnel'' call =
+                    tunnel'' call =
                         case (witTransStackDict @Functor @tt0 @m2' $ mapListType (\(Compose Dict) -> Compose Dict) w) of
                             Dict ->
                                 MkStackT $
-                                kernelTunnel $ \unlift1 ->
+                                tunnel $ \unlift1 ->
                                     unStackT $
-                                    kernelTunnel' $ \unlift2 ->
+                                    tunnel' $ \unlift2 ->
                                         fmap getCompose $
                                         call $ \(MkStackT stt :: _ m1 _) ->
                                             case (witTransStackDict @Functor @tt0 @m1 $
                                                   mapListType (\(Compose Dict) -> Compose Dict) w) of
                                                 Dict -> fmap Compose $ unlift2 $ MkStackT $ unlift1 stt
-                    in MkKernelTunnel kernelTunnel''
-        in unKernelTunnel $ build $ representative @_ @(ListType (Compose Dict MonadTransTunnel)) @tt
+                    in MkTunnel tunnel''
+        in unTunnel $ build $ representative @_ @(ListType (Compose Dict MonadTransTunnel)) @tt
 
 stackRemonad ::
        forall tt ma mb. (MonadTransStackSemiTunnel tt, Monad ma, Monad mb)
