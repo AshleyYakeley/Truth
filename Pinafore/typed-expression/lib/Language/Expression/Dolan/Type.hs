@@ -45,14 +45,14 @@ type IsDolanPolyShim pshim
        , CartesianShim (pshim Type))
 
 class ( IsDolanPolyShim (DolanPolyShim ground)
-      , Ord (DolanName ground)
-      , Show (DolanName ground)
+      , Ord (DolanVarID ground)
+      , Show (DolanVarID ground)
       , MonadPlus (DolanM ground)
       , MonadThrow ExpressionError (DolanM ground)
       , AllWitnessConstraint Show (DolanType ground 'Positive)
       , AllWitnessConstraint Show (DolanType ground 'Negative)
       ) => IsDolanGroundType (ground :: GroundTypeKind) where
-    type DolanName ground :: Type
+    type DolanVarID ground :: Type
     type DolanM ground :: Type -> Type
     groundTypeVarianceType ::
            forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). ground dv t -> DolanVarianceType dv
@@ -210,7 +210,7 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TypeSyst
     type TSNegWitness (DolanTypeSystem ground) = DolanType ground 'Negative
     type TSPosWitness (DolanTypeSystem ground) = DolanType ground 'Positive
     type TSShim (DolanTypeSystem ground) = DolanShim ground
-    type TSName (DolanTypeSystem ground) = DolanName ground
+    type TSVarID (DolanTypeSystem ground) = DolanVarID ground
 
 showDolanType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)

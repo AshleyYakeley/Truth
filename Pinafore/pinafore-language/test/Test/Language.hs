@@ -281,6 +281,7 @@ testQueries =
               "scoping"
               [ testQuery "(\\b -> \\a -> b) a" LRCheckFail
               , testQuery "let b=a in \\a -> b" LRCheckFail
+              , testQuery "let b=a in ()" LRCheckFail
               , testQuery "let a=1 in let b=a in (\\a -> b) 2" $ LRSuccess "1"
               , testQuery "(\\a -> let b=a in (\\a -> b) 2) 1" $ LRSuccess "1"
               ]

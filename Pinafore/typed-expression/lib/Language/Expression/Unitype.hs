@@ -12,7 +12,7 @@ instance (Monad m, Eq name, Show name) => TypeSystem (Unitype m name val) where
     type TSNegWitness (Unitype m name val) = ((:~:) val)
     type TSPosWitness (Unitype m name val) = ((:~:) val)
     type TSShim (Unitype m name val) = (->)
-    type TSName (Unitype m name val) = name
+    type TSVarID (Unitype m name val) = name
 
 unitypeShimWit ::
        forall polarity (val :: Type). Is PolarityType polarity

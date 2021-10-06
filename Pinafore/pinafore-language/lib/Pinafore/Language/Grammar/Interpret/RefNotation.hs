@@ -16,11 +16,12 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Pinafore.Language.VarID
 import Shapes
 
-type RefNotation = WriterT [(Name, QExpr)] (StateT Int PinaforeInterpreter)
+type RefNotation = WriterT [(VarID, QExpr)] (StateT VarIDState PinaforeInterpreter)
 
-runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> MFunction (WriterT [(Name, QExpr)] m) m
+runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> MFunction (WriterT [(VarID, QExpr)] m) m
 runRefWriterT spos wma = do
     (a, w) <- runWriterT wma
     case w of
@@ -36,29 +37,35 @@ remonadRefNotation (MkWMFunction mm) = remonad $ remonad mm
 runRefNotation :: MFunction RefNotation PinaforeSourceInterpreter
 runRefNotation rexpr = do
     spos <- askSourcePos
-    liftSourcePos $ evalStateT (runRefWriterT spos rexpr) 0
+    liftSourcePos $ evalStateT (runRefWriterT spos rexpr) firstVarIDState
 
 type RefExpression = RefNotation QExpr
 
+allocateVarRefNotation :: Name -> RefNotation VarID
+allocateVarRefNotation name = do
+    i <- lift get
+    lift $ put $ nextVarIDState i
+    return $ mkVarID i name
+
 varRefExpr :: SourcePos -> ReferenceName -> RefExpression
-varRefExpr spos name =
-    liftRefNotation $ do
-        mexpr <- runSourcePos spos $ lookupLetBinding name
-        case mexpr of
-            Just expr -> return expr
-            Nothing ->
-                case name of
-                    UnqualifiedReferenceName n -> return $ qVarExpr n
-                    _ -> throwErrorType spos (LookupRefNameUnknownError name)
+varRefExpr spos rname = do
+    mexpr <- liftRefNotation $ runSourcePos spos $ lookupLetBinding rname
+    case mexpr of
+        Just (Right expr) -> return expr
+        Just (Left v) -> return $ qVarExpr v
+        Nothing ->
+            case rname of
+                UnqualifiedReferenceName name -> do
+                    v <- allocateVarRefNotation name -- create missing name
+                    return $ qVarExpr v
+                QualifiedReferenceName _ _ -> throwErrorType spos $ LookupRefNameUnknownError rname
 
 refNotationUnquote :: SourcePos -> RefExpression -> RefExpression
 refNotationUnquote spos rexpr = do
-    i <- lift get
-    lift $ put $ succ i
-    let varname = fromString $ "%ref" <> show i
+    v <- allocateVarRefNotation "%ref"
     expr <- lift $ runRefWriterT spos rexpr
-    tell $ pure (varname, expr)
-    return $ qVarExpr varname
+    tell $ pure (v, expr)
+    return $ qVarExpr v
 
 purerefExpr :: QExpr
 purerefExpr = qConstExpr (pure :: A -> PinaforeImmutableWholeRef A)

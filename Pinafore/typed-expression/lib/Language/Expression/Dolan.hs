@@ -91,7 +91,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              AbstractTypeSystem (DolanTypeSystem ground) where
     type TSInner (DolanTypeSystem ground) = DolanM ground
 
-class (Eq (DolanName ground), IsDolanSubtypeGroundType ground) => IsDolanFunctionGroundType (ground :: GroundTypeKind) where
+class (Eq (DolanVarID ground), IsDolanSubtypeGroundType ground) => IsDolanFunctionGroundType (ground :: GroundTypeKind) where
     functionGroundType :: ground '[ ContraCCRVariance, CoCCRVariance] (->)
 
 instance forall (ground :: GroundTypeKind). IsDolanFunctionGroundType ground =>

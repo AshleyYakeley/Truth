@@ -229,7 +229,7 @@ interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     MkBoundType t <- lookupBoundType n
     return $ MkPinaforeGroundTypeM $ MkAnyW t
 
-interpretSubtypeRelation' :: SourcePos -> SyntaxType -> SyntaxType -> ScopeBuilder
+interpretSubtypeRelation' :: SourcePos -> SyntaxType -> SyntaxType -> ScopeBuilder ()
 interpretSubtypeRelation' spos sta stb =
     interpScopeBuilder $
     mapSourcePos spos $ \ma -> do
@@ -247,10 +247,11 @@ interpretSubtypeRelation' spos sta stb =
                                     _ -> throw $ TypeNotOpenEntityError $ exprShow tb
                     _ -> throw $ TypeNotSimpleEntityError $ exprShow ta
 
-interpretSubtypeRelation :: SourcePos -> Markdown -> SyntaxType -> SyntaxType -> ScopeBuilder
-interpretSubtypeRelation spos docDescription sta stb =
-    interpretSubtypeRelation' spos sta stb <> let
+interpretSubtypeRelation :: SourcePos -> Markdown -> SyntaxType -> SyntaxType -> ScopeBuilder Docs
+interpretSubtypeRelation spos docDescription sta stb = do
+    interpretSubtypeRelation' spos sta stb
+    let
         docName = exprShow sta <> " <: " <> exprShow stb
         docValueType = ""
         docType = SubtypeRelationDocType
-        in defDocScopeBuilder MkDefDoc {..}
+    return $ defDocs MkDefDoc {..}

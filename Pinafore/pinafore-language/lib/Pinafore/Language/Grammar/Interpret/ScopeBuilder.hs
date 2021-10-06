@@ -1,58 +1,56 @@
 module Pinafore.Language.Grammar.Interpret.ScopeBuilder
     ( ScopeBuilder
     , runScopeBuilder
-    , docScopeBuilder
-    , defDocScopeBuilder
-    , refNotationScopeBuilder
+    , Docs
+    , defDocs
+    , exposeDocs
     , interpScopeBuilder
     , refScopeBuilder
     , pureScopeBuilder
+    , allocateVarScopeBuilder
     ) where
 
 import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
 import Pinafore.Language.Grammar.Interpret.RefNotation
 import Pinafore.Language.Interpreter
+import Pinafore.Language.Name
 import Pinafore.Language.Type
+import Pinafore.Language.VarID
 import Shapes
 
-newtype ScopeBuilder = MkScopeBuilder
-    { runScopeBuilder :: forall a. RefNotation a -> RefNotation ([DocTreeEntry DefDoc], a)
-    }
+type Docs = [DocTreeEntry DefDoc]
 
-instance Semigroup ScopeBuilder where
-    MkScopeBuilder f <> MkScopeBuilder g =
-        MkScopeBuilder $ \ra -> fmap (\(olddoc, (newdoc, a)) -> (olddoc <> newdoc, a)) $ f $ g ra
+defDocs :: DefDoc -> Docs
+defDocs doc = [EntryDocTreeEntry doc]
 
-instance Monoid ScopeBuilder where
-    mempty =
-        MkScopeBuilder $ \ra -> do
-            a <- ra
-            return ([], a)
+exposeDeclids :: [Name] -> [DefDoc] -> [DefDoc]
+exposeDeclids names decls = let
+    inDecl :: Name -> Maybe DefDoc
+    inDecl n = find (\doc -> docName doc == toText n) decls
+    isSubtypeDDI :: DefDoc -> Bool
+    isSubtypeDDI doc =
+        case docType doc of
+            SubtypeRelationDocType -> True
+            _ -> False
+    in mapMaybe inDecl names <> filter isSubtypeDDI decls
 
-docScopeBuilder :: [DocTreeEntry DefDoc] -> ScopeBuilder
-docScopeBuilder docs =
-    MkScopeBuilder $ \ra -> do
-        a <- ra
-        return (docs, a)
+exposeDocs :: [Name] -> Docs -> Docs
+exposeDocs names = fmap EntryDocTreeEntry . exposeDeclids names . mconcat . fmap toList
 
-defDocScopeBuilder :: DefDoc -> ScopeBuilder
-defDocScopeBuilder doc = docScopeBuilder [EntryDocTreeEntry doc]
+type ScopeBuilder = TransformT RefNotation
 
-refNotationScopeBuilder :: MFunction RefNotation RefNotation -> ScopeBuilder
-refNotationScopeBuilder rr =
-    MkScopeBuilder $ \ra -> do
-        a <- rr ra
-        return ([], a)
+runScopeBuilder :: ScopeBuilder a -> (a -> RefNotation b) -> RefNotation b
+runScopeBuilder = runTransformT
 
-interpScopeBuilder :: MFunction PinaforeInterpreter PinaforeInterpreter -> ScopeBuilder
-interpScopeBuilder mf = refNotationScopeBuilder $ remonadRefNotation $ MkWMFunction mf
+interpScopeBuilder :: MFunction PinaforeInterpreter PinaforeInterpreter -> ScopeBuilder ()
+interpScopeBuilder mf = mapTransformT $ remonadRefNotation $ MkWMFunction mf
 
-refScopeBuilder :: RefNotation ScopeBuilder -> ScopeBuilder
-refScopeBuilder rsb =
-    MkScopeBuilder $ \ra -> do
-        MkScopeBuilder rr <- rsb
-        rr ra
+refScopeBuilder :: RefNotation (ScopeBuilder a) -> ScopeBuilder a
+refScopeBuilder = execMapTransformT
 
-pureScopeBuilder :: PinaforeScope -> ScopeBuilder
+pureScopeBuilder :: PinaforeScope -> ScopeBuilder ()
 pureScopeBuilder scope = interpScopeBuilder (importScope scope)
+
+allocateVarScopeBuilder :: Name -> ScopeBuilder VarID
+allocateVarScopeBuilder n = liftTransformT $ liftTransformT $ MkTransformT $ allocateVar n

@@ -14,7 +14,7 @@ type TS = PinaforeTypeSystem
 
 type PExpression = TSSealedExpression TS
 
-showVars :: NamedExpression Name (PinaforeShimWit 'Negative) t -> [String]
+showVars :: NamedExpression VarID (PinaforeShimWit 'Negative) t -> [String]
 showVars (ClosedExpression _) = []
 showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) =
     (show name <> " : " <> unpack (exprShow t)) : showVars expr
@@ -47,7 +47,7 @@ boolExpr :: PExpression
 boolExpr = typeFConstExpression toJMShimWit False
 
 varExpr :: PExpression
-varExpr = tsVar @TS "v"
+varExpr = tsVar @TS $ mkVarID firstVarIDState "v"
 
 ifelseExpr :: PExpression
 ifelseExpr =
