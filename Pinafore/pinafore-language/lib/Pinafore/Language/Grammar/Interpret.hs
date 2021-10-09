@@ -335,10 +335,26 @@ interpretExpression' spos (SEList sexprs) = do
     exprs <- for sexprs interpretExpression
     liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs
 
+checkExprVars :: MonadThrow PinaforeError m => QExpr -> m ()
+checkExprVars (MkSealedExpression _ expr) = let
+    getBadVarErrors ::
+           forall w t. AllWitnessConstraint Show w
+        => NameTypeWitness (UnitType VarID) (UnitType' w) t
+        -> Maybe ErrorMessage
+    getBadVarErrors w@(MkNameWitness (BadVarID spos _) _) =
+        Just $ MkErrorMessage spos (ExpressionErrorError $ UndefinedBindingsError [show w]) mempty
+    getBadVarErrors _ = Nothing
+    errorMessages :: [ErrorMessage]
+    errorMessages = catMaybes $ expressionFreeWitnesses getBadVarErrors expr
+    in case errorMessages of
+           [] -> return ()
+           errs -> throw $ MkPinaforeError errs
+
 interpretBinding :: (DocSyntaxBinding, VarID) -> RefNotation QBinding
 interpretBinding ((doc, MkSyntaxBinding spos mstype _ sexpr), vid) = do
     mtype <- liftRefNotation $ runSourcePos spos $ for mstype interpretType
     expr <- interpretExpression sexpr
+    checkExprVars expr
     return $ qBindExpr vid doc mtype expr
 
 interpretBindings :: [(DocSyntaxBinding, VarID)] -> RefNotation [QBinding]

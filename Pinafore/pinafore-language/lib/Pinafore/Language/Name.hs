@@ -44,6 +44,7 @@ data ReferenceName
     = QualifiedReferenceName ModuleName
                              Name
     | UnqualifiedReferenceName Name
+    deriving (Eq, Ord)
 
 instance ToText ReferenceName where
     toText (UnqualifiedReferenceName n) = toText n

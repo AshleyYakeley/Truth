@@ -48,17 +48,12 @@ allocateVarRefNotation name = do
     return $ mkVarID i name
 
 varRefExpr :: SourcePos -> ReferenceName -> RefExpression
-varRefExpr spos rname = do
-    mexpr <- liftRefNotation $ runSourcePos spos $ lookupLetBinding rname
+varRefExpr spos name = do
+    mexpr <- liftRefNotation $ runSourcePos spos $ lookupLetBinding name
     case mexpr of
         Just (Right expr) -> return expr
         Just (Left v) -> return $ qVarExpr v
-        Nothing ->
-            case rname of
-                UnqualifiedReferenceName name -> do
-                    v <- allocateVarRefNotation name -- create missing name
-                    return $ qVarExpr v
-                QualifiedReferenceName _ _ -> throwErrorType spos $ LookupRefNameUnknownError rname
+        Nothing -> return $ qVarExpr $ mkBadVarID spos name
 
 refNotationUnquote :: SourcePos -> RefExpression -> RefExpression
 refNotationUnquote spos rexpr = do

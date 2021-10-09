@@ -228,7 +228,6 @@ testType =
               , textTypeTest
                     "((v 3,v False),v 3)"
                     "{v : Integer -> c, v : Boolean -> d, v : Integer -> b} -> ((c, d), b)"
-              , textTypeTest "let v = x in [v,v,v]" "{x : a, x : a, x : a} -> [a]"
               , testTree
                     "function"
                     [ textTypeTest "let i: tvar -> tvar; i = id in i" "{} -> tvar -> tvar"

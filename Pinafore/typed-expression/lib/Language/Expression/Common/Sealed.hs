@@ -27,8 +27,12 @@ evalSealedExpression (MkSealedExpression twa expr) = do
 varSealedExpression :: name -> vw t -> tw t -> SealedExpression name vw tw
 varSealedExpression n vwt twt = MkSealedExpression twt $ varNamedExpression n vwt
 
+sealedExpressionFreeWitnesses :: (forall t. name -> vw t -> r) -> SealedExpression name vw tw -> [r]
+sealedExpressionFreeWitnesses f (MkSealedExpression _ expr) =
+    expressionFreeWitnesses (\(MkNameWitness n t) -> f n t) expr
+
 sealedExpressionFreeNames :: SealedExpression name vw tw -> [name]
-sealedExpressionFreeNames (MkSealedExpression _ expr) = namedExpressionFreeNames expr
+sealedExpressionFreeNames = sealedExpressionFreeWitnesses $ \n _ -> n
 
 type instance Element (SealedExpression name vw ((:~:) val)) = val
 
