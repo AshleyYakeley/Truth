@@ -29,9 +29,11 @@ liftIOViewAsync call =
     liftIOWithUnlift $ \unlift -> call $ \vr -> unlift $ viewLocalResourceContext emptyResourceContext vr
 
 viewRunResource ::
-       forall m f r. (MonadIO m)
+       forall m f r. MonadIO m
     => Resource f
-    -> (forall tt. (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt IO)) => f tt -> ApplyStack tt IO r)
+    -> (forall tt.
+            (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt IO), MonadFail (ApplyStack tt IO)) =>
+                    f tt -> ApplyStack tt IO r)
     -> ViewT m r
 viewRunResource resource call = do
     rc <- viewGetResourceContext

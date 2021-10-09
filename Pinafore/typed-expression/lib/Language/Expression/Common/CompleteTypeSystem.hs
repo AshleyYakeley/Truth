@@ -32,7 +32,7 @@ tsFunctionNegShimWit ta tb =
         unNegShimWit tb $ \wb convb -> mapNegShimWit (funcShim conva convb) $ tsFunctionNegWitness @ts wa wb
 
 tsEval ::
-       forall ts m. (MonadThrow ExpressionError m, Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts m. (MonadThrow ExpressionError m, Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression
@@ -85,7 +85,7 @@ tsApply tf ta = applySealedExpression @ts (tsFunctionNegShimWit @ts) tf ta
 
 tsAbstract ::
        forall ts. CompleteTypeSystem ts
-    => TSName ts
+    => TSVarID ts
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
 tsAbstract n expr = abstractSealedExpression @ts (tsFunctionPosShimWit @ts) n expr
@@ -105,7 +105,7 @@ tsCaseAbstract cases = caseAbstractSealedExpression @ts (tsFunctionPosShimWit @t
 
 tsVar ::
        forall ts. CompleteTypeSystem ts
-    => TSName ts
+    => TSVarID ts
     -> TSSealedExpression ts
 tsVar name =
     runIdentity $
@@ -122,7 +122,7 @@ tsConst = constSealedExpression
 
 tsLet ::
        forall ts. CompleteTypeSystem ts
-    => TSName ts
+    => TSVarID ts
     -> TSSealedExpression ts
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
@@ -130,7 +130,7 @@ tsLet n expv expb = letSealedExpression @ts n expv expb
 
 tsSingleBinding ::
        forall ts. CompleteTypeSystem ts
-    => TSName ts
+    => TSVarID ts
     -> TSBindingData ts
     -> Maybe (AnyW (TSPosWitness ts))
     -> TSSealedExpression ts
@@ -154,20 +154,20 @@ tsSubsumeExpression decltype expr =
         subsumeExpression @ts decltype' expr'
 
 tsUncheckedRecursiveLet ::
-       forall ts. (Ord (TSName ts), CompleteTypeSystem ts)
+       forall ts. (Ord (TSVarID ts), CompleteTypeSystem ts)
     => [Binding ts]
-    -> TSInner ts (Map (TSName ts) (TSBindingData ts, TSSealedExpression ts))
+    -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
 tsUncheckedRecursiveLet = bindingsRecursiveLetSealedExpression @ts
 
 tsSequentialLet ::
-       forall ts. (Ord (TSName ts), CompleteTypeSystem ts)
+       forall ts. (Ord (TSVarID ts), CompleteTypeSystem ts)
     => Binding ts
-    -> TSInner ts (Map (TSName ts) (TSBindingData ts, TSSealedExpression ts))
+    -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
 tsSequentialLet = bindingSequentialLetSealedExpression @ts
 
 tsVarPattern ::
        forall ts. CompleteTypeSystem ts
-    => TSName ts
+    => TSVarID ts
     -> TSSealedPattern ts
 tsVarPattern name =
     runIdentity $

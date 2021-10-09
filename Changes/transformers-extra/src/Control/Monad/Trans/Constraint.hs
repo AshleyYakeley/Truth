@@ -4,19 +4,20 @@ import Import
 
 type TransKind = (Type -> Type) -> (Type -> Type)
 
-class MonadTrans t => MonadTransConstraint (c :: (Type -> Type) -> Constraint) t where
+type TransConstraint :: ((Type -> Type) -> Constraint) -> TransKind -> Constraint
+class TransConstraint c t where
     hasTransConstraint ::
            forall (m :: Type -> Type). c m
         => Dict (c (t m))
 
 transConstraintDict ::
-       forall c t m. MonadTransConstraint c t
+       forall c t m. TransConstraint c t
     => Dict (c m)
     -> Dict (c (t m))
 transConstraintDict Dict = hasTransConstraint @c @t @m
 
 withTransConstraintTM ::
-       forall c t m a. (MonadTransConstraint c t, c m)
+       forall c t m a. (TransConstraint c t, c m)
     => (c (t m) => t m a)
     -> t m a
 withTransConstraintTM tma =
@@ -24,7 +25,7 @@ withTransConstraintTM tma =
         Dict -> tma
 
 withTransConstraintTM' ::
-       forall c t' t m a. (MonadTransConstraint c t, c m)
+       forall c t' t m a. (TransConstraint c t, c m)
     => (c (t m) => t' (t m) a)
     -> t' (t m) a
 withTransConstraintTM' tma =
@@ -32,108 +33,141 @@ withTransConstraintTM' tma =
         Dict -> tma
 
 withTransConstraintDict ::
-       forall c t m c'. (MonadTransConstraint c t, c m)
+       forall c t m c'. (TransConstraint c t, c m)
     => (c (t m) => Dict (c' (t m)))
     -> Dict (c' (t m))
 withTransConstraintDict dict =
     case hasTransConstraint @c @t @m of
         Dict -> dict
 
-instance MonadTransConstraint Monad IdentityT where
+instance TransConstraint Functor IdentityT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadIO IdentityT where
+instance TransConstraint Applicative IdentityT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFail IdentityT where
+instance TransConstraint Monad IdentityT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFix IdentityT where
+instance TransConstraint MonadIO IdentityT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadPlus IdentityT where
+instance TransConstraint MonadFail IdentityT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint Monad (ReaderT s) where
+instance TransConstraint MonadFix IdentityT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadIO (ReaderT s) where
+instance TransConstraint MonadPlus IdentityT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFail (ReaderT s) where
+instance TransConstraint Functor (ReaderT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFix (ReaderT s) where
+instance TransConstraint Applicative (ReaderT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadPlus (ReaderT s) where
+instance TransConstraint Monad (ReaderT s) where
     hasTransConstraint = Dict
 
-instance Monoid s => MonadTransConstraint Monad (WriterT s) where
+instance TransConstraint MonadIO (ReaderT s) where
     hasTransConstraint = Dict
 
-instance Monoid s => MonadTransConstraint MonadIO (WriterT s) where
+instance TransConstraint MonadFail (ReaderT s) where
     hasTransConstraint = Dict
 
-instance Monoid s => MonadTransConstraint MonadFail (WriterT s) where
+instance TransConstraint MonadFix (ReaderT s) where
     hasTransConstraint = Dict
 
-instance Monoid s => MonadTransConstraint MonadFix (WriterT s) where
+instance TransConstraint MonadPlus (ReaderT s) where
     hasTransConstraint = Dict
 
-instance Monoid s => MonadTransConstraint MonadPlus (WriterT s) where
+instance Monoid s => TransConstraint Functor (WriterT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint Monad (StateT s) where
+instance Monoid s => TransConstraint Applicative (WriterT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadIO (StateT s) where
+instance Monoid s => TransConstraint Monad (WriterT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFail (StateT s) where
+instance Monoid s => TransConstraint MonadIO (WriterT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFix (StateT s) where
+instance Monoid s => TransConstraint MonadFail (WriterT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadPlus (StateT s) where
+instance Monoid s => TransConstraint MonadFix (WriterT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint Monad MaybeT where
+instance Monoid s => TransConstraint MonadPlus (WriterT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadIO MaybeT where
+instance TransConstraint Functor (StateT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFail MaybeT where
+instance TransConstraint Monad (StateT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFix MaybeT where
+instance TransConstraint MonadIO (StateT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadPlus MaybeT where
+instance TransConstraint MonadFail (StateT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint Monad (ExceptT e) where
+instance TransConstraint MonadFix (StateT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadIO (ExceptT e) where
+instance TransConstraint MonadPlus (StateT s) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFail (ExceptT e) where
+instance TransConstraint Functor MaybeT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFix (ExceptT e) where
+instance TransConstraint Monad MaybeT where
     hasTransConstraint = Dict
 
-instance Monoid e => MonadTransConstraint MonadPlus (ExceptT e) where
+instance TransConstraint MonadIO MaybeT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint Monad (ContT s) where
+instance TransConstraint MonadFail MaybeT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadIO (ContT s) where
+instance TransConstraint MonadFix MaybeT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFail (ContT s) where
+instance TransConstraint MonadPlus MaybeT where
+    hasTransConstraint = Dict
+
+instance TransConstraint Functor (ExceptT e) where
+    hasTransConstraint = Dict
+
+instance TransConstraint Monad (ExceptT e) where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadIO (ExceptT e) where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadFail (ExceptT e) where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadFix (ExceptT e) where
+    hasTransConstraint = Dict
+
+instance Monoid e => TransConstraint MonadPlus (ExceptT e) where
+    hasTransConstraint = Dict
+
+instance TransConstraint Functor (ContT s) where
+    hasTransConstraint = Dict
+
+instance TransConstraint Applicative (ContT s) where
+    hasTransConstraint = Dict
+
+instance TransConstraint Monad (ContT s) where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadIO (ContT s) where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadFail (ContT s) where
     hasTransConstraint = Dict

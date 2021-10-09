@@ -79,6 +79,8 @@ library:
       - Control.Monad.Compose
       - Control.Monad.Exception
       - Control.Monad.MonadCont
+      - Control.Monad.Data
+      - Control.Monad.Transform
       - Control.Monad.Coroutine
       - Control.Monad.LifeCycle
       - Control.Clock

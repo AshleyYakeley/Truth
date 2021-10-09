@@ -38,13 +38,13 @@ newtype VarNamespaceT (ts :: Type) m a =
 instance MonadTrans (VarNamespaceT ts) where
     lift ma = MkVarNamespaceT $ lift $ lift ma
 
-instance MonadTransConstraint Monad (VarNamespaceT ts) where
+instance TransConstraint Monad (VarNamespaceT ts) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadIO (VarNamespaceT ts) where
+instance TransConstraint MonadIO (VarNamespaceT ts) where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFail (VarNamespaceT ts) where
+instance TransConstraint MonadFail (VarNamespaceT ts) where
     hasTransConstraint = Dict
 
 runVarNamespaceT :: RenamerMonad m => NameRigidity -> VarNamespaceT ts m a -> m a

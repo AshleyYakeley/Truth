@@ -14,6 +14,7 @@ library:
       - witness
       - thread-trace
     exposed-modules:
+      - Data.Functor.One
       - Control.Monad.Trans.Constraint
       - Control.Monad.Trans.Tunnel
       - Control.Monad.Trans.Coerce

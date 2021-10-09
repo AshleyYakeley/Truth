@@ -3,31 +3,32 @@ module Control.Monad.Trans.Unlift where
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Function
 import Control.Monad.Trans.Tunnel
+import Data.Functor.One
 import Import
 
-class ( MonadTrans t
-      , MonadTransConstraint MonadFail t
-      , MonadTransConstraint MonadIO t
-      , MonadTransConstraint MonadFix t
-      , MonadTransConstraint Monad t
+class ( MonadTransTunnel t
+      , TransConstraint MonadFail t
+      , TransConstraint MonadIO t
+      , TransConstraint MonadFix t
+      , TransConstraint Monad t
       ) => MonadTransUnlift t where
     liftWithUnlift ::
-           forall m. MonadUnliftIO m
+           forall m. MonadTunnelIO m
         => MBackFunction m (t m)
     -- ^ lift with a 'WMFunction' that accounts for the transformer's effects (using MVars where necessary)
-    default liftWithUnlift :: MonadTransUnliftAll t => forall m. MonadUnliftIO m => MBackFunction m (t m)
+    default liftWithUnlift :: MonadTransUnliftAll t => forall m. MonadTunnelIO m => MBackFunction m (t m)
     liftWithUnlift = liftWithUnliftAll
     getDiscardingUnlift ::
-           forall m. MonadUnliftIO m
+           forall m. MonadTunnelIO m
         => t m (WMFunction (t m) m)
     -- ^ return a 'WMFunction' that discards the transformer's effects (such as state change or output)
-    default getDiscardingUnlift :: forall m. (MonadTransUnliftAll t, MonadUnliftIO m) => t m (WMFunction (t m) m)
+    default getDiscardingUnlift :: forall m. (MonadTransUnliftAll t, MonadTunnelIO m) => t m (WMFunction (t m) m)
     getDiscardingUnlift =
         case hasTransConstraint @Monad @t @m of
             Dict -> fmap wUnliftAllWMFunction getDiscardingUnliftAll
 
 liftWithUnliftW ::
-       forall t m. (MonadTransUnlift t, MonadUnliftIO m)
+       forall t m. (MonadTransUnlift t, MonadTunnelIO m)
     => WMBackFunction m (t m)
 liftWithUnliftW = MkWMBackFunction liftWithUnlift
 
@@ -43,10 +44,13 @@ wUnliftAllWMFunction (MkWUnliftAll unlift) = MkWMFunction unlift
 identityWUnliftAll :: WUnliftAll c IdentityT
 identityWUnliftAll = MkWUnliftAll runIdentityT
 
-mVarRun :: MVar s -> UnliftAll MonadUnliftIO (StateT s)
-mVarRun var (StateT smr) = liftIOWithUnlift $ \unlift -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds
+mVarRun :: MVar s -> UnliftAll MonadTunnelIO (StateT s)
+mVarRun var (StateT smr) =
+    tunnelIO $ \unlift ->
+        modifyMVar var $ \olds ->
+            fmap (\fas -> (fromMaybe olds $ getMaybeOne $ fmap snd fas, fmap fst fas)) $ unlift $ smr olds
 
-mVarUnitRun :: MonadUnliftIO m => MVar s -> MFunction m m
+mVarUnitRun :: MonadTunnelIO m => MVar s -> MFunction m m
 mVarUnitRun var ma = mVarRun var $ lift ma
 
 mVarUnitUnlock :: MVar () -> MFunction IO IO
@@ -73,27 +77,27 @@ liftWithMVarStateT vma = do
     return r
 
 readerTUnliftAllToT ::
-       (MonadTransUnliftAll t, MonadUnliftIO m) => MFunction (ReaderT (WUnliftAll MonadUnliftIO t) m) (t m)
+       (MonadTransUnliftAll t, MonadTunnelIO m) => MFunction (ReaderT (WUnliftAll MonadTunnelIO t) m) (t m)
 readerTUnliftAllToT rma = liftWithUnliftAll $ \tr -> runReaderT rma $ MkWUnliftAll tr
 
-tToReaderTUnliftAll :: MonadUnliftIO m => MFunction (t m) (ReaderT (WUnliftAll MonadUnliftIO t) m)
+tToReaderTUnliftAll :: MonadTunnelIO m => MFunction (t m) (ReaderT (WUnliftAll MonadTunnelIO t) m)
 tToReaderTUnliftAll tma = do
     MkWUnliftAll unlift <- ask
     lift $ unlift tma
 
-class (MonadTransConstraint MonadPlus t, MonadTransTunnel t, MonadTransUnlift t) => MonadTransUnliftAll t where
+class (TransConstraint MonadPlus t, MonadTransTunnel t, MonadTransUnlift t) => MonadTransUnliftAll t where
     insideOut ::
            forall m r. Monad m
         => (forall b. (forall mm a. Monad mm => t mm a -> mm (a, b)) -> m (r, b))
         -> t m r
     liftWithUnliftAll ::
            forall m r. MonadIO m
-        => (UnliftAll MonadUnliftIO t -> m r)
+        => (UnliftAll MonadTunnelIO t -> m r)
         -> t m r
     -- ^ lift with a 'WUnliftAll Monad that accounts for the transformer's effects (using MVars where necessary)
     getDiscardingUnliftAll ::
            forall m. Monad m
-        => t m (WUnliftAll MonadUnliftIO t)
+        => t m (WUnliftAll MonadTunnelIO t)
     -- ^ return a 'WUnliftAll Monad that discards the transformer's effects (such as state change or output)
 
 discardingRunner ::
@@ -133,11 +137,13 @@ commuteTBack call = commuteT $ call commuteT
 
 -- | Swap two transformers in a transformer stack (different generality)
 commuteTUnliftIO ::
-       forall ta tb m. (MonadTransTunnel ta, MonadTransConstraint MonadIO ta, MonadTransUnliftAll tb, MonadUnliftIO m)
+       forall ta tb m. (MonadTransTunnel ta, TransConstraint MonadIO ta, MonadTransUnliftAll tb, MonadTunnelIO m)
     => MFunction (ta (tb m)) (tb (ta m))
 commuteTUnliftIO tatbmr =
     case hasTransConstraint @MonadIO @ta @m of
-        Dict -> liftWithUnliftAll $ \unlift -> remonad' unlift tatbmr
+        Dict ->
+            case hasTransConstraint @Functor @tb @m of
+                Dict -> liftWithUnliftAll $ \unlift -> remonad' unlift tatbmr
 
 type IOFunction m = MFunction m IO
 
@@ -157,7 +163,7 @@ composeUnliftAllFunctionCommute ::
     -> MFunction (t m) n
 composeUnliftAllFunctionCommute rt rm tma = rt $ remonad rm tma
 
-class (MonadFail m, MonadIO m, MonadFix m) => MonadUnliftIO m where
+class (MonadFail m, MonadIO m, MonadFix m, MonadTunnelIO m) => MonadUnliftIO m where
     liftIOWithUnlift :: forall r. (MFunction m IO -> IO r) -> m r
     -- ^ lift with an 'WIOFunction' that accounts for all transformer effects
     getDiscardingIOUnlift :: m (WIOFunction m)
@@ -177,7 +183,7 @@ instance (MonadTransUnlift t, MonadUnliftIO m, MonadFail (t m), MonadIO (t m), M
         MkWMFunction unliftIO <- lift getDiscardingIOUnlift
         return $ MkWMFunction $ unliftIO . unlift
 
-instance MonadTransUnlift t => MonadTransConstraint MonadUnliftIO t where
+instance MonadTransUnlift t => TransConstraint MonadUnliftIO t where
     hasTransConstraint =
         withTransConstraintDict @MonadFail $ withTransConstraintDict @MonadIO $ withTransConstraintDict @MonadFix $ Dict
 
@@ -199,7 +205,7 @@ instance MonadTransUnliftAll (ReaderT s) where
 
 instance Monoid s => MonadTransUnlift (WriterT s)
 
-writerDiscardingUntrans :: UnliftAll MonadUnliftIO (WriterT s)
+writerDiscardingUntrans :: UnliftAll MonadTunnelIO (WriterT s)
 writerDiscardingUntrans mr = do
     (r, _discarded) <- runWriterT mr
     return r

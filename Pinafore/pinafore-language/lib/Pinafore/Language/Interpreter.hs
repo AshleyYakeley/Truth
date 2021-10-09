@@ -6,6 +6,7 @@ module Pinafore.Language.Interpreter
     , Interpreter
     , runInterpreter
     , liftInterpreter
+    , allocateVar
     , EntryDoc
     , Module(..)
     , Scope
@@ -52,6 +53,7 @@ import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Identified
+import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 import Text.Parsec (SourcePos)
@@ -74,7 +76,8 @@ newtype SpecialVals (ts :: Type) = MkSpecialVals
     }
 
 data InterpreterBinding (ts :: Type)
-    = ValueBinding (TSSealedExpression ts)
+    = LambdaBinding VarID
+    | ValueBinding (TSSealedExpression ts)
                    (Maybe (TSPatternConstructor ts))
     | TypeBinding (BoundType ts)
     | SpecialFormBinding (SpecialForm ts (SourceInterpreter ts))
@@ -101,7 +104,8 @@ data Module ts = MkModule
 
 type InterpretContext :: Type -> Type
 data InterpretContext ts = MkInterpretContext
-    { icScope :: Scope ts
+    { icVarIDState :: VarIDState
+    , icScope :: Scope ts
     , icSpecialVals :: SpecialVals ts
     , icModulePath :: [ModuleName]
     , icLoadModule :: ModuleName -> Interpreter ts (Maybe (Module ts))
@@ -122,7 +126,7 @@ emptyInterpretState = let
 type Interpreter :: Type -> Type -> Type
 newtype Interpreter ts a = MkInterpreter
     { unInterpreter :: ReaderT (InterpretContext ts) (StateT (InterpretState ts) InterpretResult) a
-    } deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFix)
+    } deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFix, MonadTunnelIO)
 
 instance MonadThrow PinaforeError (Interpreter ts) where
     throw err = MkInterpreter $ throw err
@@ -143,6 +147,7 @@ instance Monoid a => Monoid (Interpreter ts a) where
 runInterpreter ::
        (ModuleName -> Interpreter ts (Maybe (Module ts))) -> SpecialVals ts -> Interpreter ts a -> InterpretResult a
 runInterpreter icLoadModule icSpecialVals qa = let
+    icVarIDState = firstVarIDState
     icScope = mempty
     icModulePath = []
     in evalStateT (runReaderT (unInterpreter qa) $ MkInterpretContext {..}) emptyInterpretState
@@ -153,8 +158,21 @@ liftInterpreter ra = MkInterpreter $ lift $ lift ra
 interpreterScope :: Interpreter ts (Scope ts)
 interpreterScope = MkInterpreter $ asks icScope
 
+allocateVar :: Name -> (VarID -> Interpreter ts a) -> Interpreter ts a
+allocateVar n f = do
+    oldic <- MkInterpreter ask
+    let
+        vid = mkVarID (icVarIDState oldic) n
+        newic =
+            oldic
+                { icVarIDState = nextVarIDState $ icVarIDState oldic
+                , icScope =
+                      MkScope (singletonMap n (plainMarkdown "variable", LambdaBinding vid)) mempty <> icScope oldic
+                }
+    MkInterpreter $ lift $ runReaderT (unInterpreter $ f vid) newic
+
 purifyExpression ::
-       forall ts. (Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
     => TSSealedExpression ts
     -> SourceInterpreter ts (TSSealedExpression ts)
 purifyExpression expr = do
@@ -162,7 +180,7 @@ purifyExpression expr = do
     return expr
 
 purifyBinding ::
-       (Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
+       (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
     => InterpreterBinding ts
     -> SourceInterpreter ts (InterpreterBinding ts)
 purifyBinding (ValueBinding expr mpatc) = do
@@ -171,7 +189,7 @@ purifyBinding (ValueBinding expr mpatc) = do
 purifyBinding b = return b
 
 exportName ::
-       forall ts. (Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
     => Name
     -> SourceInterpreter ts (Maybe (DocInterpreterBinding ts))
 exportName name = do
@@ -181,7 +199,7 @@ exportName name = do
         return (doc, b')
 
 exportNames ::
-       forall ts. (Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
     => [Name]
     -> SourceInterpreter ts [(Name, DocInterpreterBinding ts)]
 exportNames names = do
@@ -194,7 +212,7 @@ exportNames names = do
         (n:nn) -> throw $ LookupNamesUnknownError $ n :| nn
 
 exportScope ::
-       forall ts. (Show (TSName ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
     => [Name]
     -> SourceInterpreter ts (Scope ts)
 exportScope names = do
@@ -322,11 +340,12 @@ lookupBinding rname = fmap (fmap snd) $ lookupDocBinding rname
 getSpecialVals :: SourceInterpreter ts (SpecialVals ts)
 getSpecialVals = liftSourcePos $ MkInterpreter $ asks icSpecialVals
 
-lookupLetBinding :: ReferenceName -> SourceInterpreter ts (Maybe (TSSealedExpression ts))
+lookupLetBinding :: ReferenceName -> SourceInterpreter ts (Maybe (Either VarID (TSSealedExpression ts)))
 lookupLetBinding name = do
     mb <- lookupBinding name
     case mb of
-        Just (ValueBinding exp _) -> return $ Just exp
+        Just (ValueBinding exp _) -> return $ Just $ Right exp
+        Just (LambdaBinding v) -> return $ Just $ Left v
         _ -> return Nothing
 
 withNewLetBindings :: Map Name (Markdown, TSSealedExpression ts) -> Interpreter ts a -> Interpreter ts a

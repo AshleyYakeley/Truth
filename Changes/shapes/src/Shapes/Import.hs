@@ -103,6 +103,7 @@ import Control.Monad.Trans.ReaderState as I
 import Control.Monad.Trans.Stack as I
 import Control.Monad.Trans.Tunnel as I
 import Control.Monad.Trans.Unlift as I
+import Data.Functor.One as I
 
 -- hashable
 import Data.Hashable as I (Hashable)

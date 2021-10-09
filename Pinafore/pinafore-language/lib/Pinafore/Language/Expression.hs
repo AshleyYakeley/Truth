@@ -3,10 +3,10 @@
 module Pinafore.Language.Expression where
 
 import Pinafore.Language.Convert
-import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 
@@ -27,19 +27,19 @@ qConstExpr ::
     -> QExpr
 qConstExpr a = qConstExprAny $ jmToValue a
 
-qVarExpr :: Name -> QExpr
+qVarExpr :: VarID -> QExpr
 qVarExpr name = tsVar @PinaforeTypeSystem name
 
-qAbstractExpr :: Name -> QExpr -> PinaforeSourceInterpreter QExpr
+qAbstractExpr :: VarID -> QExpr -> PinaforeSourceInterpreter QExpr
 qAbstractExpr name expr = tsAbstract @PinaforeTypeSystem name expr
 
-qAbstractsExpr :: [Name] -> QExpr -> PinaforeSourceInterpreter QExpr
+qAbstractsExpr :: [VarID] -> QExpr -> PinaforeSourceInterpreter QExpr
 qAbstractsExpr [] e = return e
 qAbstractsExpr (n:nn) e = do
     e' <- qAbstractsExpr nn e
     qAbstractExpr n e'
 
-qVarPattern :: Name -> QPattern
+qVarPattern :: VarID -> QPattern
 qVarPattern = tsVarPattern @PinaforeTypeSystem
 
 qAnyPattern :: QPattern
@@ -118,19 +118,19 @@ qSequenceExpr (e:ee) = do
 
 type QBinding = Binding PinaforeTypeSystem
 
-qBindExpr :: Name -> Markdown -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBinding
+qBindExpr :: VarID -> Markdown -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBinding
 qBindExpr = tsSingleBinding @PinaforeTypeSystem
 
 qSubsumeExpr :: AnyW (PinaforeType 'Positive) -> QExpr -> PinaforeSourceInterpreter QExpr
 qSubsumeExpr = tsSubsumeExpression @PinaforeTypeSystem
 
-qLetExpr :: Name -> QExpr -> QExpr -> PinaforeSourceInterpreter QExpr
+qLetExpr :: VarID -> QExpr -> QExpr -> PinaforeSourceInterpreter QExpr
 qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
 
-qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> PinaforeSourceInterpreter (Map Name (Markdown, QExpr))
+qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> PinaforeSourceInterpreter (Map VarID (Markdown, QExpr))
 qUncheckedBindingsRecursiveLetExpr = tsUncheckedRecursiveLet @PinaforeTypeSystem
 
-qBindingSequentialLetExpr :: QBinding -> PinaforeSourceInterpreter (Map Name (Markdown, QExpr))
+qBindingSequentialLetExpr :: QBinding -> PinaforeSourceInterpreter (Map VarID (Markdown, QExpr))
 qBindingSequentialLetExpr = tsSequentialLet @PinaforeTypeSystem
 
 qEvalExpr ::

@@ -21,7 +21,9 @@ import Control.Monad.Trans.Writer as I hiding (liftCallCC, liftCatch)
 import Data.Coerce as I
 import Data.Constraint as I hiding (trans)
 import Data.Functor.Compose as I
+import Data.Functor.Identity as I
 import Data.Kind as I
+import Data.Maybe as I
 import Data.Monoid as I
 import Data.Tuple as I
 import Data.Witness as I hiding (trans)

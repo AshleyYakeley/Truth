@@ -5,13 +5,16 @@ import Data.Codec
 import Data.Injection
 import Data.IsoVariant
 import Data.Isomorphism
-import Data.MonadOne
 import Shapes.Import
 
 data Lens' m a b = MkLens
     { lensGet :: a -> b
     , lensPutback :: b -> a -> m a
     }
+
+type Lens = Lens' Maybe
+
+type PureLens = Lens' Identity
 
 instance IsoVariant (Lens' m a) where
     isoMap pq qp (MkLens ap pama) = MkLens (pq . ap) (pama . qp)
@@ -36,16 +39,20 @@ lensSum (MkLens pb bpmp) (MkLens qb bqmq) =
 lensModify :: Lens' m a b -> (b -> b) -> a -> m a
 lensModify lens bb a = lensPutback lens (bb (lensGet lens a)) a
 
-lensMap :: (MonadOne m) => Lens' m a b -> (b -> b) -> (a -> a)
+pureLensModify :: PureLens a b -> (b -> b) -> a -> a
+pureLensModify lens bb a = runIdentity $ lensModify lens bb a
+
+lensMap :: FunctorOne m => Lens' m a b -> (b -> b) -> (a -> a)
 lensMap lens bb a =
     case getMaybeOne (lensModify lens bb a) of
         Just a' -> a'
         _ -> a
 
-lensAllowed :: (MonadOne m) => Lens' m a b -> b -> a -> Bool
+lensAllowed :: FunctorOne m => Lens' m a b -> b -> a -> Bool
 lensAllowed lens b a = isJust $ getMaybeOne $ lensPutback lens b a
 
-type Lens = Lens' Maybe
+lensToPure :: FunctorOne m => Lens' m a b -> PureLens a b
+lensToPure (MkLens g pb) = MkLens g $ \b olda -> Identity $ fromMaybe olda $ getMaybeOne $ pb b olda
 
 instance IsBiMap Lens' where
     mapBiMapM ff lens =

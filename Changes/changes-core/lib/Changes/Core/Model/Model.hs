@@ -125,7 +125,7 @@ makeSharedModel om = traceBracket "makeSharedModel:run" $ do
     MkPremodelResult {..} <- om utaskP updatePAsync
     MkResource (trunC :: ResourceRunner tt) aModelAReference <- return pmrReference
     Dict <- return $ resourceRunnerUnliftAllDict trunC
-    Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
+    Dict <- return $ transStackDict @MonadTunnelIO @tt @IO
     let
         aModelSubscribe ::
                Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt LifeCycle ()

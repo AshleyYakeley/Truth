@@ -19,14 +19,14 @@ class ( RenameTypeSystem ts
       , SimplifyTypeSystem ts
       , Monad (TSInner ts)
       , MonadThrow ExpressionError (TSInner ts)
-      , Ord (TSName ts)
+      , Ord (TSVarID ts)
       , TSOuter ts ~ RenamerT ts (TSInner ts)
       ) => AbstractTypeSystem ts where
     type TSInner ts :: Type -> Type
 
 abstractNamedExpressionUnifier ::
        forall ts t a r. UnifyTypeSystem ts
-    => TSName ts
+    => TSVarID ts
     -> TSNegShimWit ts t
     -> TSOpenExpression ts a
     -> (forall tu. UUNegShimWit ts (MeetType t tu) -> TSOpenExpression ts (tu -> a) -> TSOuter ts r)
@@ -61,7 +61,7 @@ joinAbstractResult abc (MkAbstractResult wa expra) (MkAbstractResult wb exprb) =
 
 abstractNamedExpression ::
        forall ts a. AbstractTypeSystem ts
-    => TSName ts
+    => TSVarID ts
     -> TSOpenExpression ts a
     -> TSOuter ts (AbstractResult ts a)
 abstractNamedExpression name expr = do
@@ -133,7 +133,7 @@ type UnifierFunctionNegWitness ts = FunctionWitness (TSPosShimWit ts) (TSNegShim
 abstractSealedExpression ::
        forall ts. AbstractTypeSystem ts
     => UnifierFunctionPosWitness ts
-    -> TSName ts
+    -> TSVarID ts
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
 abstractSealedExpression absw name sexpr =
@@ -169,7 +169,7 @@ applySealedExpression appw sexprf sexpra =
 -- | not recursive
 letSealedExpression ::
        forall ts. AbstractTypeSystem ts
-    => TSName ts
+    => TSVarID ts
     -> TSSealedExpression ts
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)

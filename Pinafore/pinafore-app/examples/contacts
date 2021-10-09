@@ -53,18 +53,6 @@ children: WholeRef +Person -> FiniteSetRef Person;
 children p = (mother !@% p) <:|:> (father !@% p);
 married = property @Person @Boolean !"relation.family.spouse.exist";
 
-familyUI: WholeRef +Person -> UI.Element;
-familyUI p = UI.vertical
-[
-    uiLabelled {"Birth: "} $ UI.textEntry $ interpretDateAsText $ birthdate !$% p,
-    uiLabelled {"Death: "} $ UI.textEntry $ interpretDateAsText $ deathdate !$% p,
-    UI.checkBox {"Married"} $ married !$% p,
-    uiLabelled {"Mother: "} $ UI.pick (byName people) $ mother !$% p,
-    uiLabelled {"Father: "} $ UI.pick (byName people) $ father !$% p,
-    UI.label {"Children:"},
-    UI.layoutGrow $ namedItemTable (children p) contactRefUI Nothing
-];
-
 # employment relationship
 employer = property @Person @LegalEntity !"relation.employer";
 employees: WholeRef +LegalEntity -> FiniteSetRef Person;
@@ -98,6 +86,18 @@ personPages p =
         uiLabelled {"Employer: "} $ UI.pick (byName legalentities) $ employer !$% p
     ],
     uiPage {"Family"} $ familyUI p
+];
+
+familyUI: WholeRef +Person -> UI.Element;
+familyUI p = UI.vertical
+[
+    uiLabelled {"Birth: "} $ UI.textEntry $ interpretDateAsText $ birthdate !$% p,
+    uiLabelled {"Death: "} $ UI.textEntry $ interpretDateAsText $ deathdate !$% p,
+    UI.checkBox {"Married"} $ married !$% p,
+    uiLabelled {"Mother: "} $ UI.pick (byName people) $ mother !$% p,
+    uiLabelled {"Father: "} $ UI.pick (byName people) $ father !$% p,
+    UI.label {"Children:"},
+    UI.layoutGrow $ namedItemTable (children p) contactRefUI Nothing
 ];
 
 organisationPages: WholeRef +Organisation -> [(UI.Element, UI.Element)];
