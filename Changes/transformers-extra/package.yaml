@@ -13,6 +13,7 @@ library:
       - transformers
       - witness
     exposed-modules:
+      - Data.Functor.One
       - Control.Monad.Trans.Constraint
       - Control.Monad.Trans.Tunnel
       - Control.Monad.Trans.Coerce

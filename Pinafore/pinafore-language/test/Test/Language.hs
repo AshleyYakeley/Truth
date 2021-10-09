@@ -278,6 +278,15 @@ testQueries =
               , testQuery "let a=2 in let b=a in b" $ LRSuccess "2"
               ]
         , testTree
+              "scoping"
+              [ testQuery "(\\b -> \\a -> b) a" LRCheckFail
+              , testQuery "let b=a in \\a -> b" LRCheckFail
+              , testQuery "let b=a in ()" LRCheckFail
+              , testQuery "let rec b=a end in ()" LRCheckFail
+              , testQuery "let a=1 in let b=a in (\\a -> b) 2" $ LRSuccess "1"
+              , testQuery "(\\a -> let b=a in (\\a -> b) 2) 1" $ LRSuccess "1"
+              ]
+        , testTree
               "name shadowing"
               [ testQuery "let a=1 in (\\a -> a) 2" $ LRSuccess "2"
               , testQuery "let a=1 in (\\(Just a) -> a) (Just 2)" $ LRSuccess "2"

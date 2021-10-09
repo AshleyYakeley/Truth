@@ -4,6 +4,9 @@ module Pinafore.Test
     , runSourcePos
     , PinaforeTypeSystem
     , Name
+    , VarID
+    , mkVarID
+    , firstVarIDState
     , UVar
     , Var(..)
     , PinaforeGroundType(..)
@@ -29,6 +32,7 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
+import Pinafore.Language.VarID
 import Shapes
 
 makeTestStorageModel :: LifeCycle (Model PinaforeStorageUpdate, IO PinaforeTableSubject)

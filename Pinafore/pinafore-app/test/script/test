@@ -203,13 +203,12 @@ window_css = do
     end;
 
 ### Drawing
-window_drawing: Action UI.Window;
-window_drawing = let import Colour; import Drawing in do
-    nowref <- newClock $ Seconds 1;
+window_drawing: WholeRef +Time -> Action UI.Window;
+window_drawing now = let import Colour; import Drawing in do
     tzref <- newTimeZoneRef now;
     std_window {"Drawing"} $ UI.draw {\(w,h) -> let
         size = min w h;
-        in case timeToLocal %tzref %nowref of
+        in case timeToLocal %tzref %now of
             DateAndTime _ (HourMinuteSecond _ _ s) ->
                 translate (w / 2, h / 2) $
                 scale (size, size) $
@@ -251,7 +250,7 @@ window_start = do
             UI.button {"Files"} {window_files},
             UI.button {"Constant"} {window_constant},
             UI.button {"CSS"} {window_css},
-            UI.button {"Drawing"} {window_drawing},
+            UI.button {"Drawing"} {window_drawing now},
             UI.button {"List"} {window_list},
             UI.button {"Disabled"} unknown,
             UI.layoutGrow $ UI.blank

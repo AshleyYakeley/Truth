@@ -20,10 +20,10 @@ data TestContext = MkTestContext
 testStorageCase :: String -> (TestContext -> IO ()) -> TestTree
 testStorageCase name action =
     testTree name $ do
-        stateRef <- makeMemoryReference (MkPinaforeTableSubject [] [] [] []) $ \_ -> True
+        storageRef <- makeMemoryReference (MkPinaforeTableSubject [] [] [] []) $ \_ -> True
         let
             getState :: IO PinaforeTableSubject
-            getState = runResource emptyResourceContext stateRef $ \aref -> refRead aref ReadWhole
+            getState = runResource emptyResourceContext storageRef $ \aref -> refRead aref ReadWhole
             checkEmpty :: String -> IO ()
             checkEmpty msg = do
                 state <- getState
@@ -37,7 +37,7 @@ testStorageCase name action =
                 case state of
                     MkPinaforeTableSubject [] [] [] [] -> fail $ msg <> ": empty state"
                     _ -> return ()
-            tableRef = convertReference stateRef
+            tableRef = convertReference storageRef
             entityRef = pinaforeTableEntityReference tableRef
             putProperty :: forall s v. EntityAdapter s -> EntityAdapter v -> Predicate -> s -> Know v -> IO ()
             putProperty st vt p s kv =

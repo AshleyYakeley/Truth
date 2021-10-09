@@ -6,13 +6,13 @@ import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity
 import Pinafore.Language.Type.EntityAdapter
 import Pinafore.Language.Type.OpenEntity
 import Pinafore.Language.Type.Show
 import Pinafore.Language.Value
+import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 
@@ -86,7 +86,7 @@ type instance InterpreterGroundType PinaforeTypeSystem =
 type instance DolanPolyShim PinaforeGroundType = PinaforePolyShim
 
 instance IsDolanGroundType PinaforeGroundType where
-    type DolanName PinaforeGroundType = Name
+    type DolanVarID PinaforeGroundType = VarID
     type DolanM PinaforeGroundType = SourceInterpreter PinaforeTypeSystem
     groundTypeVarianceMap ::
            forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). PinaforeGroundType dv f -> DolanVarianceMap dv f

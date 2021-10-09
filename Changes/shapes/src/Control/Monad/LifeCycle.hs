@@ -64,6 +64,10 @@ instance MonadFix LifeCycle where
 instance MonadIO LifeCycle where
     liftIO ioa = MkLifeCycle $ \_ -> ioa
 
+instance MonadTunnelIO LifeCycle where
+    tunnelIO :: forall r. (forall f. FunctorOne f => (forall a. LifeCycle a -> IO (f a)) -> IO (f r)) -> LifeCycle r
+    tunnelIO f = MkLifeCycle $ \var -> fmap runIdentity $ f $ \a -> fmap Identity $ unLifeCycleT a var
+
 instance MonadUnliftIO LifeCycle where
     liftIOWithUnlift call = MkLifeCycle $ \var -> call $ \(MkLifeCycle f) -> f var
     getDiscardingIOUnlift =
@@ -95,7 +99,7 @@ instance (MonadTransSemiTunnel t, MonadIO (t m), MonadLifeCycleIO m) => MonadLif
     liftLifeCycle lc = lift $ liftLifeCycle lc
     subLifeCycle = remonad subLifeCycle
 
-instance (MonadTransSemiTunnel t, MonadTransConstraint MonadIO t) => MonadTransConstraint MonadLifeCycleIO t where
+instance (MonadTransSemiTunnel t, TransConstraint MonadIO t) => TransConstraint MonadLifeCycleIO t where
     hasTransConstraint ::
            forall m. MonadLifeCycleIO m
         => Dict (MonadLifeCycleIO (t m))

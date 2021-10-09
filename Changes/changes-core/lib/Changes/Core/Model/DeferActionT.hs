@@ -11,7 +11,7 @@ import Changes.Core.Resource
 newtype DeferActionT m a =
     MkDeferActionT (WriterT [IO ()] m a)
 
-deriving instance Monad m => Functor (DeferActionT m)
+deriving instance Functor m => Functor (DeferActionT m)
 
 deriving instance Monad m => Applicative (DeferActionT m)
 
@@ -29,19 +29,22 @@ deriving instance MonadPlus m => MonadPlus (DeferActionT m)
 
 deriving instance MonadTrans DeferActionT
 
-instance MonadTransConstraint Monad DeferActionT where
+instance TransConstraint Functor DeferActionT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFail DeferActionT where
+instance TransConstraint Monad DeferActionT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadIO DeferActionT where
+instance TransConstraint MonadFail DeferActionT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadFix DeferActionT where
+instance TransConstraint MonadIO DeferActionT where
     hasTransConstraint = Dict
 
-instance MonadTransConstraint MonadPlus DeferActionT where
+instance TransConstraint MonadFix DeferActionT where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadPlus DeferActionT where
     hasTransConstraint = Dict
 
 instance MonadTransSemiTunnel DeferActionT
@@ -64,7 +67,7 @@ deferAction ::
     -> DeferActionT m ()
 deferAction action = MkDeferActionT $ tell [action]
 
-runDeferActionT :: UnliftAll MonadUnliftIO DeferActionT
+runDeferActionT :: UnliftAll MonadTunnelIO DeferActionT
 runDeferActionT (MkDeferActionT (WriterT wma)) = do
     (a, actions) <- wma
     for_ actions liftIO

@@ -15,8 +15,11 @@ data NewVar ts =
     forall t. MkNewVar (TSNegShimWit ts t)
                        (TSPosShimWit ts t)
 
-class (TypeSystem ts, MonadTransConstraint Monad (RenamerT ts), MonadTransConstraint Monad (RenamerNamespaceT ts)) =>
-          RenameTypeSystem (ts :: Type) where
+class ( TypeSystem ts
+      , TransConstraint Monad (RenamerT ts)
+      , MonadTrans (RenamerT ts)
+      , TransConstraint Monad (RenamerNamespaceT ts)
+      ) => RenameTypeSystem (ts :: Type) where
     type RenamerT ts :: (Type -> Type) -> (Type -> Type)
     type RenamerNamespaceT ts :: (Type -> Type) -> (Type -> Type)
     renameNegWitness :: Monad m => TSNegWitness ts t -> RenamerNamespaceT ts (RenamerT ts m) (TSNegWitness ts t)

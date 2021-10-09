@@ -14,7 +14,7 @@ type TS = PinaforeTypeSystem
 
 type PExpression = TSSealedExpression TS
 
-showVars :: NamedExpression Name (PinaforeShimWit 'Negative) t -> [String]
+showVars :: NamedExpression VarID (PinaforeShimWit 'Negative) t -> [String]
 showVars (ClosedExpression _) = []
 showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) =
     (show name <> " : " <> unpack (exprShow t)) : showVars expr
@@ -47,7 +47,7 @@ boolExpr :: PExpression
 boolExpr = typeFConstExpression toJMShimWit False
 
 varExpr :: PExpression
-varExpr = tsVar @TS "v"
+varExpr = tsVar @TS $ mkVarID firstVarIDState "v"
 
 ifelseExpr :: PExpression
 ifelseExpr =
@@ -228,7 +228,6 @@ testType =
               , textTypeTest
                     "((v 3,v False),v 3)"
                     "{v : Integer -> c, v : Boolean -> d, v : Integer -> b} -> ((c, d), b)"
-              , textTypeTest "let v = x in [v,v,v]" "{x : a, x : a, x : a} -> [a]"
               , testTree
                     "function"
                     [ textTypeTest "let i: tvar -> tvar; i = id in i" "{} -> tvar -> tvar"

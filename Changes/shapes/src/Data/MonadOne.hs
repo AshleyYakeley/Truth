@@ -7,10 +7,8 @@ import Data.ConstFunction
 import Data.Result
 import Shapes.Import
 
-class (Traversable f, Monad f) => MonadOne f where
+class (Traversable f, Monad f, FunctorOne f) => MonadOne f where
     retrieveOne :: f a -> Result (f None) a
-    getMaybeOne :: f a -> Maybe a
-    getMaybeOne fa = resultToMaybe (retrieveOne fa)
     -- retrieveOne (fmap f w) = fmap f (retrieveOne w)
     -- case (retrieveOne w) of {Left w' -> w';Right a -> fmap (\_ -> a) w;} = w
 
@@ -44,7 +42,6 @@ instance FunctorGetPure Identity where
 
 instance MonadOne Identity where
     retrieveOne (Identity a) = SuccessResult a
-    getMaybeOne (Identity a) = Just a
 
 instance FunctorGetPure Maybe where
     getPure = applicativeGetPure
@@ -52,7 +49,6 @@ instance FunctorGetPure Maybe where
 instance MonadOne Maybe where
     retrieveOne (Just a) = SuccessResult a
     retrieveOne Nothing = FailureResult Nothing
-    getMaybeOne = id
 
 instance FunctorGetPure (Either p) where
     getPure = applicativeGetPure
@@ -72,7 +68,6 @@ instance FunctorGetPure (Result e) where
 instance MonadOne (Result e) where
     retrieveOne (SuccessResult a) = SuccessResult a
     retrieveOne (FailureResult e) = FailureResult (FailureResult e)
-    getMaybeOne = resultToMaybe
 
 constFunctionAp :: (MonadOne f, Applicative (t (f a)), CatFunctor t t f) => f (t a b) -> t (f a) (f b)
 constFunctionAp fcab =
