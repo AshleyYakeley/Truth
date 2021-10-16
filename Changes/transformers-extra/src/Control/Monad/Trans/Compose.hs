@@ -170,15 +170,6 @@ instance (MonadTransSemiTunnel t1, MonadTransSemiTunnel t2) => MonadTransSemiTun
                             semitunnel $ \t2m1am1b -> call $ \(MkComposeT t1t2m1r) -> t2m1am1b $ t1m1rm1a $ t1t2m1r
 
 instance (MonadTransTunnel t1, MonadTransTunnel t2) => MonadTransTunnel (ComposeT t1 t2) where
-    transExcept ::
-           forall m e a. Monad m
-        => ComposeT t1 t2 (ExceptT e m) a
-        -> ComposeT t1 t2 m (Either e a)
-    transExcept (MkComposeT ma) =
-        case hasTransConstraint @Monad @t2 @m of
-            Dict ->
-                case hasTransConstraint @Functor @t2 @(ExceptT e m) of
-                    Dict -> MkComposeT $ transExcept $ remonad' (\t2ea -> ExceptT $ transExcept t2ea) ma
     tunnel ::
            forall m2 r. Functor m2
         => (forall f. FunctorOne f => (forall m1 a. Functor m1 => ComposeT t1 t2 m1 a -> m1 (f a)) -> m2 (f r))

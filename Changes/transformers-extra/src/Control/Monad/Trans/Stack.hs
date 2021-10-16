@@ -230,39 +230,9 @@ newtype Tunnel t = MkTunnel
                               (forall f. FunctorOne f => (forall m1 a. Functor m1 => t m1 a -> m1 (f a)) -> m2 (f r)) -> t m2 r
     }
 
-newtype TransExcept e tt = MkTransExcept
-    { unTransExcept :: forall m a. Monad m => StackT tt (ExceptT e m) a -> StackT tt m (Either e a)
-    }
-
 type MonadTransStackTunnel tt = (MonadTransStackSemiTunnel tt, IsStack MonadTransTunnel tt)
 
 instance MonadTransStackTunnel tt => MonadTransTunnel (StackT tt) where
-    transExcept ::
-           forall m e a. Monad m
-        => StackT tt (ExceptT e m) a
-        -> StackT tt m (Either e a)
-    transExcept = let
-        build :: forall tt'. ListType (Compose Dict MonadTransTunnel) tt' -> TransExcept e tt'
-        build NilListType = MkTransExcept $ \(MkStackT (ExceptT ema)) -> MkStackT ema
-        build (ConsListType (Compose Dict) (w :: ListType _ tt0)) =
-            case build w of
-                MkTransExcept transExcept' -> let
-                    transExcept'' ::
-                           forall m' a'. Monad m'
-                        => StackT tt' (ExceptT e m') a'
-                        -> StackT tt' m' (Either e a')
-                    transExcept'' (MkStackT aea) =
-                        case ( witTransStackDict @Monad @tt0 @m' $ mapListType (\(Compose Dict) -> Compose Dict) w
-                             , witTransStackDict @Monad @tt0 @(ExceptT e m') $
-                               mapListType (\(Compose Dict) -> Compose Dict) w) of
-                            (Dict, Dict) ->
-                                MkStackT $
-                                transExcept $
-                                remonad
-                                    (\ttea -> ExceptT $ unStackT $ transExcept' $ MkStackT @tt0 @(ExceptT e m') ttea)
-                                    aea
-                    in MkTransExcept transExcept''
-        in unTransExcept $ build $ representative @_ @(ListType (Compose Dict MonadTransTunnel)) @tt
     tunnel ::
            forall m2 r. Functor m2
         => (forall f. FunctorOne f => (forall m1 a. Functor m1 => StackT tt m1 a -> m1 (f a)) -> m2 (f r))
