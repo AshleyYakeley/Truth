@@ -95,11 +95,11 @@ lifeCycleClose closer =
 instance {-# OVERLAPPING #-} MonadLifeCycleIO LifeCycle where
     liftLifeCycle lc = lc
 
-instance (MonadTransSemiTunnel t, MonadIO (t m), MonadLifeCycleIO m) => MonadLifeCycleIO (t m) where
+instance (MonadTransTunnel t, MonadIO (t m), MonadLifeCycleIO m) => MonadLifeCycleIO (t m) where
     liftLifeCycle lc = lift $ liftLifeCycle lc
     subLifeCycle = remonad subLifeCycle
 
-instance (MonadTransSemiTunnel t, TransConstraint MonadIO t) => TransConstraint MonadLifeCycleIO t where
+instance (MonadTransTunnel t, TransConstraint MonadIO t) => TransConstraint MonadLifeCycleIO t where
     hasTransConstraint ::
            forall m. MonadLifeCycleIO m
         => Dict (MonadLifeCycleIO (t m))
@@ -136,7 +136,7 @@ lifeCycleEarlyCloser lc = do
 instance MonadUnliftLifeCycleIO LifeCycle where
     liftLifeCycleIOWithUnlift call = call id
 
-instance (MonadUnliftLifeCycleIO m, MonadUnliftIO m, MonadTransSemiTunnel t, MonadTransUnlift t, MonadIO (t m)) =>
+instance (MonadUnliftLifeCycleIO m, MonadUnliftIO m, MonadTransTunnel t, MonadTransUnlift t, MonadIO (t m)) =>
              MonadUnliftLifeCycleIO (t m) where
     liftLifeCycleIOWithUnlift call =
         liftWithUnlift $ \unlift -> liftLifeCycleIOWithUnlift $ \unliftLC -> call $ unliftLC . unlift

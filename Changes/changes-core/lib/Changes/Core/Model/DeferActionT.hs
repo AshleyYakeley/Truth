@@ -47,8 +47,6 @@ instance TransConstraint MonadFix DeferActionT where
 instance TransConstraint MonadPlus DeferActionT where
     hasTransConstraint = Dict
 
-instance MonadTransSemiTunnel DeferActionT
-
 deriving instance MonadTransTunnel DeferActionT
 
 instance MonadTransUnlift DeferActionT

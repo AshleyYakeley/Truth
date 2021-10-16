@@ -4,8 +4,6 @@ module Control.Monad.Trans.Stack
     , IsStack
     , transStackDict
     , StackT(..)
-    , MonadTransStackSemiTunnel
-    , concatMonadTransStackSemiTunnelDict
     , stackLift
     , stackRemonad
     , MonadTransStackTunnel
@@ -175,62 +173,30 @@ instance ( IsStack (TransConstraint Functor) tt
          ) => TransConstraint MonadPlus (StackT tt) where
     hasTransConstraint = Dict
 
-newtype SemiTunnel t = MkSemiTunnel
-    { unSemiTunnel :: forall m1 m2 r. (Monad m1, Monad m2) => (forall a. (t m1 r -> m1 a) -> m2 a) -> t m2 r
-    }
-
-type MonadTransStackSemiTunnel tt
+type MonadTransStackTunnel tt
      = ( IsStack (TransConstraint Functor) tt
        , IsStack (TransConstraint Monad) tt
-       , IsStack MonadTransSemiTunnel tt
+       , IsStack MonadTransTunnel tt
        , IsStack MonadTrans tt)
 
-concatMonadTransStackSemiTunnelDict ::
-       forall tt1 tt2. (MonadTransStackSemiTunnel tt1, MonadTransStackSemiTunnel tt2)
-    => Dict (MonadTransStackSemiTunnel (Concat tt1 tt2))
-concatMonadTransStackSemiTunnelDict =
+concatMonadTransStackTunnelDict ::
+       forall tt1 tt2. (MonadTransStackTunnel tt1, MonadTransStackTunnel tt2)
+    => Dict (MonadTransStackTunnel (Concat tt1 tt2))
+concatMonadTransStackTunnelDict =
     case concatIsDict @((Compose Dict (TransConstraint Functor))) @tt1 @tt2 of
         Dict ->
             case concatIsDict @((Compose Dict (TransConstraint Monad))) @tt1 @tt2 of
                 Dict ->
-                    case concatIsDict @((Compose Dict MonadTransSemiTunnel)) @tt1 @tt2 of
+                    case concatIsDict @((Compose Dict MonadTransTunnel)) @tt1 @tt2 of
                         Dict ->
                             case concatIsDict @((Compose Dict MonadTrans)) @tt1 @tt2 of
                                 Dict -> Dict
-
-instance MonadTransStackSemiTunnel tt => MonadTransSemiTunnel (StackT tt) where
-    semitunnel ::
-           forall m1 m2 r. (Monad m1, Monad m2)
-        => (forall a. (StackT tt m1 r -> m1 a) -> m2 a)
-        -> StackT tt m2 r
-    semitunnel = let
-        build :: forall tt'. ListType (Compose Dict MonadTransSemiTunnel) tt' -> SemiTunnel (StackT tt')
-        build NilListType = MkSemiTunnel $ \call -> MkStackT $ call $ unStackT
-        build (ConsListType (Compose Dict) w) =
-            case build w of
-                MkSemiTunnel semitunnel' -> let
-                    semitunnel'' ::
-                           forall m1' m2' r'. (Monad m1', Monad m2')
-                        => (forall a. (StackT tt' m1' r' -> m1' a) -> m2' a)
-                        -> StackT tt' m2' r'
-                    semitunnel'' call =
-                        MkStackT $
-                        case ( witTransStackDict @Monad @_ @m1' $ mapListType (\(Compose Dict) -> Compose Dict) w
-                             , witTransStackDict @Monad @_ @m2' $ mapListType (\(Compose Dict) -> Compose Dict) w) of
-                            (Dict, Dict) ->
-                                semitunnel $ \unlift1 ->
-                                    unStackT $
-                                    semitunnel' $ \unlift2 -> call $ \(MkStackT stt) -> unlift2 $ MkStackT $ unlift1 stt
-                    in MkSemiTunnel semitunnel''
-        in unSemiTunnel $ build $ representative @_ @(ListType (Compose Dict MonadTransSemiTunnel)) @tt
 
 newtype Tunnel t = MkTunnel
     { unTunnel :: forall m2 r.
                       Functor m2 =>
                               (forall f. FunctorOne f => (forall m1 a. Functor m1 => t m1 a -> m1 (f a)) -> m2 (f r)) -> t m2 r
     }
-
-type MonadTransStackTunnel tt = (MonadTransStackSemiTunnel tt, IsStack MonadTransTunnel tt)
 
 instance MonadTransStackTunnel tt => MonadTransTunnel (StackT tt) where
     tunnel ::
@@ -264,7 +230,7 @@ instance MonadTransStackTunnel tt => MonadTransTunnel (StackT tt) where
         in unTunnel $ build $ representative @_ @(ListType (Compose Dict MonadTransTunnel)) @tt
 
 stackRemonad ::
-       forall tt ma mb. (MonadTransStackSemiTunnel tt, Monad ma, Monad mb)
+       forall tt ma mb. (MonadTransStackTunnel tt, Monad ma, Monad mb)
     => MFunction ma mb
     -> MFunction (ApplyStack tt ma) (ApplyStack tt mb)
 stackRemonad mf asta = unStackT $ remonad mf $ MkStackT @tt asta
@@ -276,12 +242,12 @@ transStackExcept ::
 transStackExcept ata = unStackT $ transExcept $ MkStackT @tt @(ExceptT e m) ata
 
 stackUnderliftIO ::
-       forall tt m. (MonadTransStackSemiTunnel tt, MonadIO m)
+       forall tt m. (MonadTransStackTunnel tt, MonadIO m)
     => MFunction (ApplyStack tt IO) (ApplyStack tt m)
 stackUnderliftIO = stackRemonad @tt @IO @m liftIO
 
 combineIOFunctions ::
-       forall tt m. (MonadTransStackSemiTunnel tt, Monad m)
+       forall tt m. (MonadTransStackTunnel tt, Monad m)
     => IOFunction (ApplyStack tt IO)
     -> IOFunction m
     -> IOFunction (ApplyStack tt m)
@@ -305,7 +271,7 @@ type MonadTransStackUnlift tt
        , IsStack (TransConstraint MonadFix) tt
        , IsStack (TransConstraint MonadTunnelIO) tt
        , IsStack (TransConstraint MonadUnliftIO) tt
-       , MonadTransStackSemiTunnel tt
+       , MonadTransStackTunnel tt
        , IsStack MonadTransTunnel tt
        , IsStack MonadTransUnlift tt)
 
@@ -323,7 +289,7 @@ concatMonadTransStackUnliftDict =
                                 Dict ->
                                     case concatIsDict @(Compose Dict (TransConstraint MonadUnliftIO)) @tt1 @tt2 of
                                         Dict ->
-                                            case concatMonadTransStackSemiTunnelDict @tt1 @tt2 of
+                                            case concatMonadTransStackTunnelDict @tt1 @tt2 of
                                                 Dict ->
                                                     case concatIsDict @(Compose Dict MonadTransTunnel) @tt1 @tt2 of
                                                         Dict ->

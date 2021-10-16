@@ -58,8 +58,6 @@ instance TransConstraint MonadFix FreeT where
 instance TransConstraint MonadPlus FreeT where
     hasTransConstraint = Dict
 
-instance MonadTransSemiTunnel FreeT
-
 instance MonadTransTunnel FreeT where
     tunnel call = FreeT $ tunnel $ \tun -> call $ \(FreeT tm1r) -> tun tm1r
 

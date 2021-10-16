@@ -5,32 +5,21 @@ import Control.Monad.Trans.Function
 import Data.Functor.One
 import Import
 
--- not sure if this class is necessary tbh.
-type MonadTransSemiTunnel :: TransKind -> Constraint
-class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t) => MonadTransSemiTunnel t where
-    semitunnel ::
-           forall m1 m2 r. (Monad m1, Monad m2)
-        => (forall a. (t m1 r -> m1 a) -> m2 a)
-        -> t m2 r
-    default semitunnel ::
-        MonadTransTunnel t => forall m1 m2 r. (Functor m1, Functor m2) => (forall a. (t m1 r -> m1 a) -> m2 a) -> t m2 r
-    semitunnel = tunnel
-
 remonad ::
-       forall t m1 m2. (MonadTransSemiTunnel t, Monad m1, Monad m2)
+       forall t m1 m2. (MonadTransTunnel t, Monad m1, Monad m2)
     => MFunction m1 m2
     -> MFunction (t m1) (t m2)
-remonad mma sm1 = semitunnel $ \tun -> mma $ tun sm1
+remonad mma sm1 = tunnel $ \tun -> mma $ tun sm1
 
 remonadTransform ::
-       (MonadTransSemiTunnel t, Monad m1, Monad m2) => MFunction m1 m2 -> WMFunction (t m2) n -> WMFunction (t m1) n
+       (MonadTransTunnel t, Monad m1, Monad m2) => MFunction m1 m2 -> WMFunction (t m2) n -> WMFunction (t m1) n
 remonadTransform ff (MkWMFunction r2) = MkWMFunction $ \m1a -> r2 $ remonad ff m1a
 
-liftWMFunction :: (MonadTransSemiTunnel t, Monad m1, Monad m2) => WMFunction m1 m2 -> WMFunction (t m1) (t m2)
+liftWMFunction :: (MonadTransTunnel t, Monad m1, Monad m2) => WMFunction m1 m2 -> WMFunction (t m1) (t m2)
 liftWMFunction (MkWMFunction mm) = MkWMFunction $ remonad mm
 
 type MonadTransTunnel :: TransKind -> Constraint
-class MonadTransSemiTunnel t => MonadTransTunnel t where
+class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t) => MonadTransTunnel t where
     tunnel ::
            forall m2 r. Functor m2
         => (forall f. FunctorOne f => (forall m1 a. Functor m1 => t m1 a -> m1 (f a)) -> m2 (f r))
@@ -51,22 +40,14 @@ remonad' mma sm1 = tunnel $ \tun -> mma $ tun sm1
 liftWMFunction' :: (MonadTransTunnel t, Functor m1, Functor m2) => WMFunction m1 m2 -> WMFunction (t m1) (t m2)
 liftWMFunction' (MkWMFunction mm) = MkWMFunction $ remonad' mm
 
-instance MonadTransSemiTunnel IdentityT
-
 instance MonadTransTunnel IdentityT where
     tunnel call = IdentityT $ fmap runIdentity $ call $ \(IdentityT ma) -> fmap Identity ma
-
-instance MonadTransSemiTunnel (ReaderT s)
 
 instance MonadTransTunnel (ReaderT s) where
     tunnel call = ReaderT $ \s -> fmap runIdentity $ call $ \(ReaderT smr) -> fmap Identity $ smr s
 
-instance Monoid s => MonadTransSemiTunnel (WriterT s)
-
 instance Monoid s => MonadTransTunnel (WriterT s) where
     tunnel call = WriterT $ fmap swap $ call $ \(WriterT mrs) -> fmap swap $ mrs
-
-instance MonadTransSemiTunnel (StateT s)
 
 instance MonadTransTunnel (StateT s) where
     tunnel call =
@@ -74,12 +55,8 @@ instance MonadTransTunnel (StateT s) where
             fmap (\(MkMaybePair ms r) -> (r, fromMaybe olds ms)) $
             call $ \(StateT smrs) -> fmap (\(a, s) -> MkMaybePair (Just s) a) $ smrs olds
 
-instance MonadTransSemiTunnel MaybeT
-
 instance MonadTransTunnel MaybeT where
     tunnel call = MaybeT $ call $ \(MaybeT ma) -> ma
-
-instance MonadTransSemiTunnel (ExceptT e)
 
 instance MonadTransTunnel (ExceptT e) where
     tunnel call = ExceptT $ call $ \(ExceptT ma) -> ma
@@ -100,9 +77,8 @@ instance (MonadTransTunnel t, MonadTunnelIO m, MonadIO (t m)) => MonadTunnelIO (
 instance (MonadTransTunnel t, TransConstraint MonadIO t) => TransConstraint MonadTunnelIO t where
     hasTransConstraint = withTransConstraintDict @MonadIO $ Dict
 
-liftMBackFunction :: (MonadTransSemiTunnel t, Monad ma, Monad mb) => MBackFunction ma mb -> MBackFunction (t ma) (t mb)
-liftMBackFunction wt tm = semitunnel $ \unlift -> wt $ \tba -> unlift $ tm $ remonad tba
+liftMBackFunction :: (MonadTransTunnel t, Monad ma, Monad mb) => MBackFunction ma mb -> MBackFunction (t ma) (t mb)
+liftMBackFunction wt tm = tunnel $ \unlift -> wt $ \tba -> unlift $ tm $ remonad tba
 
-liftWMBackFunction ::
-       (MonadTransSemiTunnel t, Monad ma, Monad mb) => WMBackFunction ma mb -> WMBackFunction (t ma) (t mb)
+liftWMBackFunction :: (MonadTransTunnel t, Monad ma, Monad mb) => WMBackFunction ma mb -> WMBackFunction (t ma) (t mb)
 liftWMBackFunction (MkWMBackFunction f) = MkWMBackFunction $ liftMBackFunction f

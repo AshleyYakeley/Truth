@@ -78,8 +78,6 @@ instance MonadOne inner => TransConstraint MonadIO (ComposeM inner) where
 instance MonadOne inner => TransConstraint MonadFix (ComposeM inner) where
     hasTransConstraint = Dict
 
-instance MonadOne inner => MonadTransSemiTunnel (ComposeM inner)
-
 instance MonadOne inner => MonadTransTunnel (ComposeM inner) where
     tunnel call = MkComposeM $ call getComposeM
 

@@ -14,7 +14,7 @@ newtype ComposeT (t1 :: (Type -> Type) -> (Type -> Type)) (t2 :: (Type -> Type) 
     } deriving (Functor, Applicative, Alternative, Monad, MonadFail, MonadIO, MonadFix, MonadPlus)
 
 lift1ComposeT ::
-       forall t1 t2 m a. (MonadTransSemiTunnel t1, MonadTrans t2, TransConstraint Monad t2, Monad m)
+       forall t1 t2 m a. (MonadTransTunnel t1, MonadTrans t2, TransConstraint Monad t2, Monad m)
     => t1 m a
     -> ComposeT t1 t2 m a
 lift1ComposeT t1ma =
@@ -154,20 +154,6 @@ instance (TransConstraint MonadPlus t1, TransConstraint Monad t2, TransConstrain
             Dict ->
                 case hasTransConstraint @MonadPlus @t1 @(t2 m) of
                     Dict -> Dict
-
-instance (MonadTransSemiTunnel t1, MonadTransSemiTunnel t2) => MonadTransSemiTunnel (ComposeT t1 t2) where
-    semitunnel ::
-           forall m1 m2 r. (Monad m1, Monad m2)
-        => (forall a. (ComposeT t1 t2 m1 r -> m1 a) -> m2 a)
-        -> ComposeT t1 t2 m2 r
-    semitunnel call =
-        case hasTransConstraint @Monad @t2 @m1 of
-            Dict ->
-                case hasTransConstraint @Monad @t2 @m2 of
-                    Dict ->
-                        MkComposeT $
-                        semitunnel $ \t1m1rm1a ->
-                            semitunnel $ \t2m1am1b -> call $ \(MkComposeT t1t2m1r) -> t2m1am1b $ t1m1rm1a $ t1t2m1r
 
 instance (MonadTransTunnel t1, MonadTransTunnel t2) => MonadTransTunnel (ComposeT t1 t2) where
     tunnel ::
