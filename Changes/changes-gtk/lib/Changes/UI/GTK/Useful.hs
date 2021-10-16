@@ -93,7 +93,7 @@ widgetGetTree full w = do
         Nothing -> return [w]
 
 withSignalBlocked :: IsObject obj => obj -> SignalHandlerId -> View a -> View a
-withSignalBlocked obj conn = remonad $ bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
+withSignalBlocked obj conn = hoist $ bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
 
 withSignalsBlocked :: IsObject obj => obj -> [SignalHandlerId] -> View a -> View a
 withSignalsBlocked _obj [] = id

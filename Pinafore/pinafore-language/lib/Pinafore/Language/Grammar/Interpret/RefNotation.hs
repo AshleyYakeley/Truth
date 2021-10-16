@@ -3,7 +3,7 @@ module Pinafore.Language.Grammar.Interpret.RefNotation
     , RefExpression
     , varRefExpr
     , liftRefNotation
-    , remonadRefNotation
+    , hoistRefNotation
     , runRefNotation
     , refNotationUnquote
     , refNotationQuote
@@ -31,8 +31,8 @@ runRefWriterT spos wma = do
 liftRefNotation :: MFunction PinaforeInterpreter RefNotation
 liftRefNotation = lift . lift
 
-remonadRefNotation :: WMFunction PinaforeInterpreter PinaforeInterpreter -> MFunction RefNotation RefNotation
-remonadRefNotation (MkWMFunction mm) = remonad $ remonad mm
+hoistRefNotation :: WMFunction PinaforeInterpreter PinaforeInterpreter -> MFunction RefNotation RefNotation
+hoistRefNotation (MkWMFunction mm) = hoist $ hoist mm
 
 runRefNotation :: MFunction RefNotation PinaforeSourceInterpreter
 runRefNotation rexpr = do

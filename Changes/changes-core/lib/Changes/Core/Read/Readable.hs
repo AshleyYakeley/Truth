@@ -4,20 +4,20 @@ import Changes.Core.Import
 
 type Readable m reader = forall (t :: Type). reader t -> m t
 
-remonadReadable :: forall m1 m2 reader. (forall a. m1 a -> m2 a) -> Readable m1 reader -> Readable m2 reader
-remonadReadable mf mr rt = mf (mr rt)
+hoistReadable :: forall m1 m2 reader. (forall a. m1 a -> m2 a) -> Readable m1 reader -> Readable m2 reader
+hoistReadable mf mr rt = mf (mr rt)
 
 liftReadable ::
        forall t m reader. (MonadTrans t, Monad m)
     => Readable m reader
     -> Readable (t m) reader
-liftReadable = remonadReadable lift
+liftReadable = hoistReadable lift
 
 stackLiftReadable ::
        forall tt m reader. (MonadTransStackUnliftAll tt, Monad m)
     => Readable m reader
     -> Readable (ApplyStack tt m) reader
-stackLiftReadable = remonadReadable @m @(ApplyStack tt m) $ stackLift @tt
+stackLiftReadable = hoistReadable @m @(ApplyStack tt m) $ stackLift @tt
 
 newtype ReadableW m reader = MkReadableW
     { unReadableW :: Readable m reader

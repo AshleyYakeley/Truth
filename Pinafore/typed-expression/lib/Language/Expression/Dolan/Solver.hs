@@ -66,7 +66,7 @@ instance forall (ground :: GroundTypeKind) wit. Monad (DolanM ground) => Wrapped
         MkSolver $ do
             MkSolver sa <- lift $ msa
             sa
-    wremonad mm (MkSolver sb) = MkSolver $ remonad mm sb
+    whoist mm (MkSolver sb) = MkSolver $ hoist mm sb
 
 solverMapExpression ::
        forall (ground :: GroundTypeKind) wit a b. IsDolanSubtypeGroundType ground

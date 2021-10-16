@@ -38,7 +38,7 @@ instance MonadFail PinaforeAction where
 
 instance MonadLifeCycleIO PinaforeAction where
     liftLifeCycle la = MkPinaforeAction $ lift $ lift $ lift la
-    subLifeCycle (MkPinaforeAction ra) = MkPinaforeAction $ (remonad $ remonad $ remonad $ subLifeCycle) ra
+    subLifeCycle (MkPinaforeAction ra) = MkPinaforeAction $ (hoist $ hoist $ hoist $ subLifeCycle) ra
 
 unPinaforeAction :: forall a. ChangesContext -> UndoHandler -> PinaforeAction a -> CreateView (Know a)
 unPinaforeAction acChangesContext acUndoHandler (MkPinaforeAction action) =

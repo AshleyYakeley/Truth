@@ -102,7 +102,7 @@ consTransListFunction wtta wttb (MkTransListFunction tf tbf) = let
         -> MFunction (ApplyStack (t ': tta) m) (ApplyStack (t ': ttb) m)
     tf' pm =
         case (witTransStackDict @Monad @tta @m wtta, witTransStackDict @Monad @ttb @m wttb) of
-            (Dict, Dict) -> remonad $ tf pm
+            (Dict, Dict) -> hoist $ tf pm
     tbf' ::
            forall m. MonadTunnelIO m
         => Proxy m
@@ -132,10 +132,10 @@ reorderTransListFunction wtta wttb = let
             Dict -> (id, Refl, Dict, Refl, hasTransConstraint @Monad @t @(ApplyStack ttb m))
     tlff pm (ConsListType (Compose Dict) (w :: ListType _ tt0)) =
         case tlff pm w of
-            (wmf, Refl, dm@Dict, Refl, dtm@Dict) ->
+            (MkWMFunction mf, Refl, dm@Dict, Refl, dtm@Dict) ->
                 case hasTransConstraint @Monad @t @(ApplyStack tt0 (ApplyStack ttb m)) of
                     Dict ->
-                        ( MkWMFunction commuteT . liftWMFunction wmf
+                        ( MkWMFunction $ commuteT . hoist mf
                         , Refl
                         , transConstraintDict dm
                         , Refl

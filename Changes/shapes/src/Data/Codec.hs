@@ -30,14 +30,14 @@ data Codec' m a b = MkCodec
     }
     -- must have decode . encode = Just
 
-remonadCodec :: (forall x. m1 x -> m2 x) -> Codec' m1 a b -> Codec' m2 a b
-remonadCodec f (MkCodec d e) = MkCodec (f . d) e
+hoistCodec :: (forall x. m1 x -> m2 x) -> Codec' m1 a b -> Codec' m2 a b
+hoistCodec f (MkCodec d e) = MkCodec (f . d) e
 
 decodeMaybe :: MonadOne m => Codec' m a b -> a -> Maybe b
 decodeMaybe codec = getMaybeOne . decode codec
 
 toCodec :: MonadOne m => Codec' m a b -> Codec a b
-toCodec = remonadCodec getMaybeOne
+toCodec = hoistCodec getMaybeOne
 
 instance Functor m => IsoVariant (Codec' m p) where
     isoMap ab ba (MkCodec d e) = MkCodec (\p -> fmap ab $ d p) (e . ba)

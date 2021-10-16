@@ -294,7 +294,7 @@ interpretCase (MkSyntaxCase spat sexpr) =
 
 interpretExpressionShadowed :: [a] -> SyntaxExpression -> RefExpression
 interpretExpressionShadowed _names sbody =
-    interpretExpression sbody {-remonadRefNotation (MkWMFunction $ withRemovedBindings names) $ -}
+    interpretExpression sbody {-hoistRefNotation (MkWMFunction $ withRemovedBindings names) $ -}
 
 interpretExpression' :: SourcePos -> SyntaxExpression' -> RefExpression
 interpretExpression' spos (SESubsume sexpr stype) = do

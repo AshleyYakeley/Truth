@@ -143,7 +143,7 @@ commuteTUnliftIO tatbmr =
     case hasTransConstraint @MonadIO @ta @m of
         Dict ->
             case hasTransConstraint @Functor @tb @m of
-                Dict -> liftWithUnliftAll $ \unlift -> remonad' unlift tatbmr
+                Dict -> liftWithUnliftAll $ \unlift -> hoist unlift tatbmr
 
 type IOFunction m = MFunction m IO
 
@@ -161,7 +161,7 @@ composeUnliftAllFunctionCommute ::
     => UnliftAll MonadUnliftIO t
     -> MFunction m n
     -> MFunction (t m) n
-composeUnliftAllFunctionCommute rt rm tma = rt $ remonad rm tma
+composeUnliftAllFunctionCommute rt rm tma = rt $ hoist rm tma
 
 class (MonadFail m, MonadIO m, MonadFix m, MonadTunnelIO m) => MonadUnliftIO m where
     liftIOWithUnlift :: forall r. (MFunction m IO -> IO r) -> m r

@@ -97,7 +97,7 @@ instance {-# OVERLAPPING #-} MonadLifeCycleIO LifeCycle where
 
 instance (MonadTransTunnel t, MonadIO (t m), MonadLifeCycleIO m) => MonadLifeCycleIO (t m) where
     liftLifeCycle lc = lift $ liftLifeCycle lc
-    subLifeCycle = remonad subLifeCycle
+    subLifeCycle = hoist subLifeCycle
 
 instance (MonadTransTunnel t, TransConstraint MonadIO t) => TransConstraint MonadLifeCycleIO t where
     hasTransConstraint ::
@@ -178,7 +178,7 @@ instance ( MonadTransUnliftAll t
          , MonadIO (t (LifeCycleInner m))
          ) => LiftLifeCycle (t m) where
     type LifeCycleInner (t m) = t (LifeCycleInner m)
-    liftToLifeCycle = remonad liftToLifeCycle
+    liftToLifeCycle = hoist liftToLifeCycle
     getInnerLifeState tma = liftWithUnliftAll $ \unlift -> getInnerLifeState $ unlift tma
     withLifeCycle ma call = liftWithUnliftAll $ \unlift -> withLifeCycle (unlift ma) (\a -> unlift $ call a)
 

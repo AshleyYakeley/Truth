@@ -18,7 +18,7 @@ module Pinafore.Language.Interpreter
     , SourceInterpreter
     , askSourcePos
     , localSourcePos
-    , remonadSourcePos
+    , hoistSourcePos
     , runSourcePos
     , liftSourcePos
     , mapSourcePos
@@ -274,8 +274,8 @@ runSourcePos spos (MkSourceInterpreter ma) = runReaderT ma spos
 liftSourcePos :: Interpreter ts a -> SourceInterpreter ts a
 liftSourcePos ma = MkSourceInterpreter $ lift ma
 
-remonadSourcePos :: (forall a. Interpreter p1 a -> Interpreter p2 a) -> SourceInterpreter p1 b -> SourceInterpreter p2 b
-remonadSourcePos mm (MkSourceInterpreter mb) = MkSourceInterpreter $ remonad mm mb
+hoistSourcePos :: (forall a. Interpreter p1 a -> Interpreter p2 a) -> SourceInterpreter p1 b -> SourceInterpreter p2 b
+hoistSourcePos mm (MkSourceInterpreter mb) = MkSourceInterpreter $ hoist mm mb
 
 mapSourcePos ::
        forall ts a b.

@@ -5,7 +5,7 @@ module Control.Monad.Trans.Stack
     , transStackDict
     , StackT(..)
     , stackLift
-    , stackRemonad
+    , stackHoist
     , MonadTransStackTunnel
     , transStackExcept
     , stackUnderliftIO
@@ -229,11 +229,11 @@ instance MonadTransStackTunnel tt => MonadTransTunnel (StackT tt) where
                     in MkTunnel tunnel''
         in unTunnel $ build $ representative @_ @(ListType (Compose Dict MonadTransTunnel)) @tt
 
-stackRemonad ::
+stackHoist ::
        forall tt ma mb. (MonadTransStackTunnel tt, Monad ma, Monad mb)
     => MFunction ma mb
     -> MFunction (ApplyStack tt ma) (ApplyStack tt mb)
-stackRemonad mf asta = unStackT $ remonad mf $ MkStackT @tt asta
+stackHoist mf asta = unStackT $ hoist mf $ MkStackT @tt asta
 
 transStackExcept ::
        forall tt m e a. (MonadTransStackTunnel tt, Monad m)
@@ -244,14 +244,14 @@ transStackExcept ata = unStackT $ transExcept $ MkStackT @tt @(ExceptT e m) ata
 stackUnderliftIO ::
        forall tt m. (MonadTransStackTunnel tt, MonadIO m)
     => MFunction (ApplyStack tt IO) (ApplyStack tt m)
-stackUnderliftIO = stackRemonad @tt @IO @m liftIO
+stackUnderliftIO = stackHoist @tt @IO @m liftIO
 
 combineIOFunctions ::
        forall tt m. (MonadTransStackTunnel tt, Monad m)
     => IOFunction (ApplyStack tt IO)
     -> IOFunction m
     -> IOFunction (ApplyStack tt m)
-combineIOFunctions fa fb = runWMFunction $ MkWMFunction fa . MkWMFunction (stackRemonad @tt fb)
+combineIOFunctions fa fb = runWMFunction $ MkWMFunction fa . MkWMFunction (stackHoist @tt fb)
 
 stackLiftWMBackFunction ::
        forall tt ma mb. (MonadTransStackUnliftAll tt, Monad ma, Monad mb)
@@ -487,7 +487,7 @@ concatFstMFunction =
     case transStackConcatRefl @tt1 @tt2 @m of
         Refl ->
             case transStackDict @Monad @tt2 @m of
-                Dict -> stackRemonad @tt1 $ stackLift @tt2 @m
+                Dict -> stackHoist @tt1 $ stackLift @tt2 @m
 
 concatSndMFunction ::
        forall tt1 tt2 m. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2, Monad m)
@@ -506,8 +506,8 @@ stackCommute aar =
     case (transStackDict @MonadTunnelIO @tta @m, transStackDict @MonadTunnelIO @ttb @m) of
         (Dict, Dict) -> let
             ssr :: StackT tta (StackT ttb m) r
-            ssr = MkStackT $ stackRemonad @tta @(ApplyStack ttb m) @(StackT ttb m) MkStackT aar
-            in stackRemonad @ttb @(StackT tta m) @(ApplyStack tta m) unStackT $ unStackT $ commuteT ssr
+            ssr = MkStackT $ stackHoist @tta @(ApplyStack ttb m) @(StackT ttb m) MkStackT aar
+            in stackHoist @ttb @(StackT tta m) @(ApplyStack tta m) unStackT $ unStackT $ commuteT ssr
 
 transStackConcatRefl ::
        forall (tt1 :: [TransKind]) (tt2 :: [TransKind]) m. MonadTransStackUnliftAll tt1

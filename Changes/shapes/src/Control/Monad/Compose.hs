@@ -93,7 +93,7 @@ transComposeOne :: (MonadTransTunnel t, Monad m, MonadOne f) => t (ComposeM f m)
 transComposeOne tca =
     withTransConstraintTM @Monad $
     fmap (restoreOne . eitherToResult) $
-    transExcept $ remonad (ExceptT . fmap (resultToEither . retrieveOne) . getComposeM) tca
+    transExcept $ hoist (ExceptT . fmap (resultToEither . retrieveOne) . getComposeM) tca
 
 transStackComposeOne ::
        forall tt f m a. (MonadTransStackTunnel tt, Monad m, MonadOne f)
@@ -104,7 +104,7 @@ transStackComposeOne tca =
         Dict ->
             fmap (restoreOne . eitherToResult) $
             transStackExcept @tt @m @(f None) $
-            stackRemonad
+            stackHoist
                 @tt
                 @(ComposeM f m)
                 @(ExceptT (f None) _)

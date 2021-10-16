@@ -30,11 +30,11 @@ instance Category Injection where
 instance (Traversable f) => CatFunctor Injection Injection f where
     cfmap lens = MkInjection {injForwards = fmap (injForwards lens), injBackwards = traverse (injBackwards lens)}
 
-remonadInjection :: (forall t. m1 t -> m2 t) -> Injection' m1 a b -> Injection' m2 a b
-remonadInjection ff (MkInjection ab bma) = MkInjection ab $ ff . bma
+hoistInjection :: (forall t. m1 t -> m2 t) -> Injection' m1 a b -> Injection' m2 a b
+hoistInjection ff (MkInjection ab bma) = MkInjection ab $ ff . bma
 
 toInjection :: MonadOne m => Injection' m a b -> Injection a b
-toInjection = remonadInjection getMaybeOne
+toInjection = hoistInjection getMaybeOne
 
 codecInjection :: (Functor m) => Codec' m a b -> Injection' m a (m b)
 codecInjection codec = MkInjection {injForwards = decode codec, injBackwards = fmap (encode codec)}

@@ -243,7 +243,7 @@ interpretSubtypeRelation' spos sta stb =
                             MkAnyW tb ->
                                 case tb of
                                     MkMonoType (OpenEntityGroundType tidb) NilArguments ->
-                                        remonadSourcePos (withEntitySubtype tea tidb) ma
+                                        hoistSourcePos (withEntitySubtype tea tidb) ma
                                     _ -> throw $ TypeNotOpenEntityError $ exprShow tb
                     _ -> throw $ TypeNotSimpleEntityError $ exprShow ta
 

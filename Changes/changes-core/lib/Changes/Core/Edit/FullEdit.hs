@@ -15,7 +15,7 @@ getReplaceEdits ::
        forall m edit. (FullEdit edit, MonadIO m)
     => Readable m (EditReader edit)
     -> m [edit]
-getReplaceEdits mr = execWriterT $ replaceEdit (remonadReadable lift mr) $ tell . pure
+getReplaceEdits mr = execWriterT $ replaceEdit (hoistReadable lift mr) $ tell . pure
 
 getReplaceEditsFromSubject ::
        forall m edit. (FullEdit edit, MonadIO m)

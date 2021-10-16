@@ -19,7 +19,7 @@ lift1ComposeT ::
     -> ComposeT t1 t2 m a
 lift1ComposeT t1ma =
     case hasTransConstraint @Monad @t2 @m of
-        Dict -> MkComposeT $ remonad lift t1ma
+        Dict -> MkComposeT $ hoist lift t1ma
 
 lift2ComposeT ::
        forall t1 t2 m a. (MonadTrans t1, Monad (t2 m))
@@ -51,7 +51,7 @@ lift1ComposeTWithUnlift call =
     case hasTransConstraint @MonadIO @t2 @m of
         Dict ->
             MkComposeT $
-            tunnel $ \tun -> liftWithUnliftAll $ \unlift -> tun $ call $ \(MkComposeT ttma) -> remonad' unlift ttma
+            tunnel $ \tun -> liftWithUnliftAll $ \unlift -> tun $ call $ \(MkComposeT ttma) -> hoist unlift ttma
 
 lift2ComposeTWithUnlift ::
        forall t1 t2 m r. (MonadTransUnliftAll t1, MonadTransUnliftAll t2, MonadTunnelIO m)

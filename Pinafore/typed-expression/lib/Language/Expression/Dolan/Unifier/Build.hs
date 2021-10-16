@@ -237,7 +237,7 @@ unifyTypes ::
     -> DolanType ground polb b
     -> UnificationSolver ground a b
 unifyTypes ta tb =
-    wremonad (remonad $ tackOnTypeConvertError ta tb) $
+    whoist (hoist $ tackOnTypeConvertError ta tb) $
     wbind renamerGetNameRigidity $ \rigidity -> let
         ?rigidity = rigidity
         in unifyTypesTT ta tb

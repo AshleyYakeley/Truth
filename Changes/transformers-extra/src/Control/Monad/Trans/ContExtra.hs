@@ -12,5 +12,5 @@ stateToReaderContT (StateT sma) =
             (a, news) <- sma olds
             runReaderT (c a) news
 
-remonadContT :: (m1 r1 -> m2 r2) -> (m2 r2 -> m1 r1) -> ContT r1 m1 a -> ContT r2 m2 a
-remonadContT m12 m21 (ContT amrmr) = ContT $ \c -> m12 $ amrmr (m21 . c)
+hoistContT :: (m1 r1 -> m2 r2) -> (m2 r2 -> m1 r1) -> ContT r1 m1 a -> ContT r2 m2 a
+hoistContT m12 m21 (ContT amrmr) = ContT $ \c -> m12 $ amrmr (m21 . c)
