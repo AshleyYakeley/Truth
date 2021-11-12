@@ -20,7 +20,7 @@ packages:
 - Pinafore/pinafore-gtk
 - Pinafore/pinafore-app
 
-resolver: lts-18.7
+resolver: lts-18.16
 
 allow-newer: true
 

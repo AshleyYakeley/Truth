@@ -25,7 +25,6 @@ import Data.Chain as I
 import Data.Codec as I
 import Data.CoerceFunction as I
 import Data.Coercion as I
-import Data.Compose as I ()
 import Data.Filterable as I
 import Data.FiniteSet as I
 import Data.FixBox as I
