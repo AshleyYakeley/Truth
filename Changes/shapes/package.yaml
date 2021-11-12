@@ -41,7 +41,7 @@ library:
       - countable
       - witness
       - open-witness
-      - transformers-extra
+      - monadology
     exposed-modules:
       - Data.Words
       - Control.Category.Groupoid

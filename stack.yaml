@@ -5,7 +5,7 @@ packages:
 - external/open-witness
 
 # Changes
-- Changes/transformers-extra
+- Changes/monadology
 - Changes/shapes
 - Changes/changes-core
 - Changes/changes-media

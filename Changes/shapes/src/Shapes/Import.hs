@@ -93,7 +93,7 @@ import Control.Monad.Trans.Reader as I (ReaderT(..), ask, asks, local, withReade
 import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, modify, put, runState)
 import Control.Monad.Trans.Writer as I (Writer, WriterT(..), execWriter, execWriterT, listen, runWriter, tell)
 
--- transformers-extra
+-- monadology
 import Control.Monad.Trans.AskUnlift as I
 import Control.Monad.Trans.Compose as I
 import Control.Monad.Trans.Constraint as I
