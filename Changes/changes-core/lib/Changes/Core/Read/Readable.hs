@@ -14,7 +14,7 @@ liftReadable ::
 liftReadable = hoistReadable lift
 
 stackLiftReadable ::
-       forall tt m reader. (MonadTransStackUnliftAll tt, Monad m)
+       forall tt m reader. (MonadTransStackUnlift tt, Monad m)
     => Readable m reader
     -> Readable (ApplyStack tt m) reader
 stackLiftReadable = hoistReadable @m @(ApplyStack tt m) $ stackLift @tt

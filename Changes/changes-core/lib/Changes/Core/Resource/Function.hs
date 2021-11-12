@@ -15,7 +15,7 @@ instance Category TransListFunction where
             (\p -> runWMBackFunction $ MkWMBackFunction (bfbc p) . MkWMBackFunction (bfab p))
 
 fstTransListFunction ::
-       forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+       forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)
     => TransListFunction tt1 (Concat tt1 tt2)
 fstTransListFunction = let
     tlfFunction ::
@@ -35,7 +35,7 @@ fstTransListFunction = let
     in MkTransListFunction {..}
 
 sndTransListFunction ::
-       forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+       forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)
     => TransListFunction tt2 (Concat tt1 tt2)
 sndTransListFunction = let
     tlfFunction ::
@@ -55,7 +55,7 @@ sndTransListFunction = let
     in MkTransListFunction {..}
 
 liftTransListFunction ::
-       forall t tt. (MonadTransUnliftAll t, MonadTransStackUnliftAll tt)
+       forall t tt. (MonadTransUnlift t, MonadTransStackUnlift tt)
     => TransListFunction tt (t ': tt)
 liftTransListFunction = let
     tlfFunction ::
@@ -75,7 +75,7 @@ liftTransListFunction = let
     in MkTransListFunction {..}
 
 emptyTransListFunction ::
-       forall tt. MonadTransStackUnliftAll tt
+       forall tt. MonadTransStackUnlift tt
     => TransListFunction '[] tt
 emptyTransListFunction = let
     tlfFunction ::
@@ -91,7 +91,7 @@ emptyTransListFunction = let
     in MkTransListFunction {..}
 
 consTransListFunction ::
-       forall tta ttb t. MonadTransTunnel t
+       forall tta ttb t. TransTunnel t
     => ListType (Compose Dict (TransConstraint Monad)) tta
     -> ListType (Compose Dict (TransConstraint Monad)) ttb
     -> TransListFunction tta ttb
@@ -113,15 +113,15 @@ consTransListFunction wtta wttb (MkTransListFunction tf tbf) = let
     in MkTransListFunction tf' tbf'
 
 reorderTransListFunction ::
-       forall tta ttb t. MonadTransUnliftAll t
-    => ListType (Compose Dict MonadTransUnliftAll) tta
+       forall tta ttb t. MonadTransUnlift t
+    => ListType (Compose Dict MonadTransUnlift) tta
     -> ListType (Compose Dict (TransConstraint Monad)) ttb
     -> TransListFunction (Concat tta (t ': ttb)) (t ': Concat tta ttb)
 reorderTransListFunction wtta wttb = let
     tlff ::
            forall tt m. (Monad m)
         => Proxy m
-        -> ListType (Compose Dict MonadTransUnliftAll) tt
+        -> ListType (Compose Dict MonadTransUnlift) tt
         -> ( WMFunction (ApplyStack (Concat tt (t ': ttb)) m) (t (ApplyStack (Concat tt ttb) m))
            , ApplyStack tt (ApplyStack ttb m) :~: ApplyStack (Concat tt ttb) m
            , Dict (Monad (ApplyStack tt (ApplyStack ttb m)))
@@ -150,7 +150,7 @@ reorderTransListFunction wtta wttb = let
     tlfbf ::
            forall tt m. (Monad m)
         => Proxy m
-        -> ListType (Compose Dict MonadTransUnliftAll) tt
+        -> ListType (Compose Dict MonadTransUnlift) tt
         -> ( WMBackFunction (ApplyStack (Concat tt (t ': ttb)) m) (t (ApplyStack (Concat tt ttb) m))
            , ApplyStack tt (ApplyStack ttb m) :~: ApplyStack (Concat tt ttb) m
            , Dict (Monad (ApplyStack tt (ApplyStack ttb m)))

@@ -54,3 +54,14 @@ data Prod m a = MkProd
 
 writerProd :: Monad m => Prod (WriterT w m) w
 writerProd = MkProd {tellD = tell, listenD = listen}
+
+foldProd ::
+       forall f m a. (Applicative f, Foldable f, Applicative m)
+    => Prod m a
+    -> Prod m (f a)
+foldProd (MkProd tellD listenD) = let
+    tellD' :: f a -> m ()
+    tellD' aa = for_ aa tellD
+    listenD' :: forall r. m r -> m (r, f a)
+    listenD' mr = fmap (\(r, a) -> (r, pure a)) $ listenD mr
+    in MkProd tellD' listenD'

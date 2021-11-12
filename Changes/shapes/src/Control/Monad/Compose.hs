@@ -78,7 +78,8 @@ instance MonadOne inner => TransConstraint MonadIO (ComposeM inner) where
 instance MonadOne inner => TransConstraint MonadFix (ComposeM inner) where
     hasTransConstraint = Dict
 
-instance MonadOne inner => MonadTransTunnel (ComposeM inner) where
+instance MonadOne inner => TransTunnel (ComposeM inner) where
+    type Tunnel (ComposeM inner) = inner
     tunnel call = MkComposeM $ call getComposeM
 
 instance RepresentationalRole (ComposeM inner) where
@@ -89,7 +90,7 @@ instance (RepresentationalRole inner, RepresentationalRole outer) => Representat
         case representationalCoercion @_ @_ @outer $ representationalCoercion @_ @_ @inner cab of
             MkCoercion -> MkCoercion
 
-transComposeOne :: (MonadTransTunnel t, Monad m, MonadOne f) => t (ComposeM f m) a -> t m (f a)
+transComposeOne :: (TransTunnel t, Monad m, MonadOne f) => t (ComposeM f m) a -> t m (f a)
 transComposeOne tca =
     withTransConstraintTM @Monad $
     fmap (restoreOne . eitherToResult) $

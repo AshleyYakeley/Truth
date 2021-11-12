@@ -4,7 +4,7 @@ import Changes.Core.Import
 
 type AutoCloseT key t = StateT (Map key (t, LifeState))
 
-runAutoClose :: Ord key => UnliftAll MonadUnliftIO (AutoCloseT key t)
+runAutoClose :: Ord key => UnliftT MonadUnliftIO (AutoCloseT key t)
 runAutoClose ac = do
     (a, mp) <- runStateT ac mempty
     liftIO $ for_ (toList mp) $ closeLifeState . snd

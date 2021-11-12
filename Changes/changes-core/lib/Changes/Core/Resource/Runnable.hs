@@ -18,7 +18,7 @@ data Resource f =
 
 class MapResource (f :: [TransKind] -> Type) where
     mapResource ::
-           forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+           forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)
         => TransListFunction tt1 tt2
         -> f tt1
         -> f tt2
@@ -40,7 +40,7 @@ joinResource_ ff (MkResource (run1 :: ResourceRunner tt1) fma1) (MkResource (run
 
 joinResource ::
        forall f1 f2 f3. (MapResource f1, MapResource f2)
-    => (forall tt. MonadTransStackUnliftAll tt => f1 tt -> f2 tt -> f3 tt)
+    => (forall tt. MonadTransStackUnlift tt => f1 tt -> f2 tt -> f3 tt)
     -> Resource f1
     -> Resource f2
     -> Resource f3
@@ -54,7 +54,7 @@ runResource ::
        forall f m r. MonadUnliftIO m
     => ResourceContext
     -> Resource f
-    -> (forall tt. (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) => f tt -> ApplyStack tt m r)
+    -> (forall tt. (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => f tt -> ApplyStack tt m r)
     -> m r
 runResource rc (MkResource rr ftt) call = runResourceRunner rc rr $ call ftt
 
@@ -63,7 +63,7 @@ runResourceContext ::
     => ResourceContext
     -> Resource f
     -> (forall tt.
-            (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) =>
+            (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) =>
                     ResourceContext -> StackUnliftAll tt -> f tt -> m r)
     -> m r
 runResourceContext rc (MkResource rr ftt) call = runResourceRunnerContext rc rr $ \rc' run -> call rc' run ftt

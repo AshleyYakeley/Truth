@@ -3,6 +3,7 @@ module Data.Functor.One where
 import Import
 
 class Functor f => FunctorOne f where
+    -- | When used on Tunnels, this discards effects.
     fpure :: forall a. a -> f a
     default fpure :: Applicative f => forall a. a -> f a
     fpure = pure
@@ -40,3 +41,35 @@ instance Functor (MaybePair p) where
 instance FunctorOne (MaybePair p) where
     fpure = MkMaybePair Nothing
     getMaybeOne (MkMaybePair _ a) = Just a
+
+class FunctorOne f => FunctorExtract f where
+    -- | must satisfy @fextract . fpure = id@, @getMaybeOne = Just . fextract@
+    fextract :: forall a. f a -> a
+
+commuteOne :: (FunctorExtract fa, Functor fb) => fa (fb r) -> fb (fa r)
+commuteOne abr = fmap (\r -> fmap (\_ -> r) abr) $ fextract abr
+
+{-
+commuteOne' :: (MonadOne fa,FunctorPure fb) => fa (fb r) -> fb (fa r)
+commuteOne' abr = case retrieveOne abr of
+    SuccessResult br -> fmap pure br
+    FailureResult fv -> fpure $ fmap never fv
+-}
+instance FunctorExtract Identity where
+    fextract = runIdentity
+
+instance Monoid p => FunctorExtract ((,) p) where
+    fextract = snd
+
+instance FunctorExtract (MaybePair p) where
+    fextract (MkMaybePair _ a) = a
+
+instance (FunctorExtract f1, FunctorExtract f2) => FunctorExtract (Compose f1 f2) where
+    fextract (Compose ffa) = fextract $ fextract ffa
+
+-- | must satisfy @fpure . fextract = id@, and so be equivalent to the identity functor
+class FunctorExtract f => FunctorIdentity f
+
+instance FunctorIdentity Identity
+
+instance (FunctorIdentity f1, FunctorIdentity f2) => FunctorIdentity (Compose f1 f2)

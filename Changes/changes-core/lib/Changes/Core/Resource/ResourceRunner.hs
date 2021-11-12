@@ -29,7 +29,7 @@ nilResourceRunner :: ResourceRunner '[]
 nilResourceRunner = MkResourceRunner NilListType
 
 mapResourceRunner ::
-       forall (ct :: TransKind -> Constraint) (tt :: [TransKind]). (forall t. MonadTransUnliftAll t => ct t)
+       forall (ct :: TransKind -> Constraint) (tt :: [TransKind]). (forall t. MonadTransUnlift t => ct t)
     => ListType SingleRunner tt
     -> ListType (Compose Dict ct) tt
 mapResourceRunner =
@@ -88,11 +88,11 @@ combineResourceRunners ::
 combineResourceRunners (MkResourceRunner la) (MkResourceRunner lb) call =
     combineLSR la lb $ \lab -> call (MkResourceRunner lab)
 
-lsrUnliftAllDict :: ListType SingleRunner tt -> Dict (MonadTransStackUnliftAll tt)
+lsrUnliftAllDict :: ListType SingleRunner tt -> Dict (MonadTransStackUnlift tt)
 lsrUnliftAllDict NilListType = Dict
 lsrUnliftAllDict (ConsListType (singleRunnerUnliftAllDict -> Dict) (lsrUnliftAllDict -> Dict)) = Dict
 
-resourceRunnerUnliftAllDict :: ResourceRunner tt -> Dict (MonadTransStackUnliftAll tt)
+resourceRunnerUnliftAllDict :: ResourceRunner tt -> Dict (MonadTransStackUnlift tt)
 resourceRunnerUnliftAllDict (MkResourceRunner lsr) = lsrUnliftAllDict lsr
 
 resourceRunnerStackUnliftDict ::
@@ -107,15 +107,15 @@ singleResourceRunner :: SingleRunner t -> ResourceRunner '[ t]
 singleResourceRunner sr = MkResourceRunner $ ConsListType sr NilListType
 
 mkResourceRunner ::
-       forall t. MonadTransUnliftAll t
+       forall t. MonadTransUnlift t
     => IOWitness t
-    -> UnliftAll MonadUnliftIO t
+    -> UnliftT MonadUnliftIO t
     -> ResourceRunner '[ t]
 mkResourceRunner iow run = singleResourceRunner $ mkSingleRunner iow run
 
 newResourceRunner ::
-       forall t. MonadTransUnliftAll t
-    => UnliftAll MonadUnliftIO t
+       forall t. MonadTransUnlift t
+    => UnliftT MonadUnliftIO t
     -> IO (ResourceRunner '[ t])
 newResourceRunner run = do
     iow <- newIOWitness
@@ -145,7 +145,7 @@ runLSR ::
        forall tt m r. MonadUnliftIO m
     => [AnyW SingleRunner]
     -> ListType SingleRunner tt
-    -> ((MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) => ApplyStack tt m r)
+    -> ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => ApplyStack tt m r)
     -> m r
 runLSR _ NilListType call = call
 runLSR rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
@@ -162,7 +162,7 @@ runResourceRunner ::
        forall tt m r. MonadUnliftIO m
     => ResourceContext
     -> ResourceRunner tt
-    -> ((MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) => ApplyStack tt m r)
+    -> ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => ApplyStack tt m r)
     -> m r
 runResourceRunner (MkResourceContext rc) (MkResourceRunner rr) call = runLSR rc rr call
 
@@ -170,8 +170,7 @@ runLSRContext ::
        forall tt m r. MonadUnliftIO m
     => [AnyW SingleRunner]
     -> ListType SingleRunner tt
-    -> ((MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) =>
-                [AnyW SingleRunner] -> WStackUnliftAll tt -> m r)
+    -> ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => [AnyW SingleRunner] -> WStackUnliftAll tt -> m r)
     -> m r
 runLSRContext rc NilListType call = call rc $ MkWStackUnliftAll id
 runLSRContext rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
@@ -180,13 +179,13 @@ runLSRContext rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
             case hasTransConstraint @MonadUnliftIO @t @(ApplyStack tt0 m) of
                 Dict ->
                     case transStackDict @MonadUnliftIO @tt0 @m of
-                        Dict -> call rc'' $ consWStackUnliftAll (MkWUnliftAll unlift1) unliftr
+                        Dict -> call rc'' $ consWStackUnliftAll (MkWUnliftT unlift1) unliftr
 
 runResourceRunnerContext ::
        forall tt m r. MonadUnliftIO m
     => ResourceContext
     -> ResourceRunner tt
-    -> ((MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt m)) => ResourceContext -> StackUnliftAll tt -> m r)
+    -> ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => ResourceContext -> StackUnliftAll tt -> m r)
     -> m r
 runResourceRunnerContext (MkResourceContext rc) (MkResourceRunner rr) call =
     runLSRContext rc rr $ \rc' (MkWStackUnliftAll unlift) -> call (MkResourceContext rc') $ unlift

@@ -31,7 +31,7 @@ viewRunResource ::
        forall m f r. MonadIO m
     => Resource f
     -> (forall tt.
-            (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt IO), MonadFail (ApplyStack tt IO)) =>
+            (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt IO), MonadFail (ApplyStack tt IO)) =>
                     f tt -> ApplyStack tt IO r)
     -> ViewT m r
 viewRunResource resource call = do
@@ -42,7 +42,7 @@ viewRunResourceContext ::
        forall m f r. MonadUnliftIO m
     => Resource f
     -> (forall tt.
-            (MonadTransStackUnliftAll tt, MonadUnliftIO (ApplyStack tt (ViewT m))) =>
+            (MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt (ViewT m))) =>
                     StackUnliftAll tt -> f tt -> ViewT m r)
     -> ViewT m r
 viewRunResourceContext resource call = do

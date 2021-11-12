@@ -47,17 +47,14 @@ instance TransConstraint MonadFix DeferActionT where
 instance TransConstraint MonadPlus DeferActionT where
     hasTransConstraint = Dict
 
-deriving instance MonadTransTunnel DeferActionT
+deriving instance TransTunnel DeferActionT
 
-instance MonadTransUnlift DeferActionT
-
-instance MonadTransUnliftAll DeferActionT where
-    insideOut call = MkDeferActionT $ insideOut $ \unlift -> call $ \(MkDeferActionT wma) -> unlift wma
-    liftWithUnliftAll utmr = MkDeferActionT $ liftWithUnliftAll $ \unlift -> utmr $ \(MkDeferActionT wma) -> unlift wma
-    getDiscardingUnliftAll =
+instance MonadTransUnlift DeferActionT where
+    liftWithUnlift utmr = MkDeferActionT $ liftWithUnlift $ \unlift -> utmr $ \(MkDeferActionT wma) -> unlift wma
+    getDiscardingUnlift =
         MkDeferActionT $ do
-            MkWUnliftAll du <- getDiscardingUnliftAll
-            return $ MkWUnliftAll $ \(MkDeferActionT wma) -> du wma
+            MkWUnliftT du <- getDiscardingUnlift
+            return $ MkWUnliftT $ \(MkDeferActionT wma) -> du wma
 
 deferAction ::
        forall m. Monad m
@@ -65,7 +62,7 @@ deferAction ::
     -> DeferActionT m ()
 deferAction action = MkDeferActionT $ tell [action]
 
-runDeferActionT :: UnliftAll MonadTunnelIO DeferActionT
+runDeferActionT :: UnliftT MonadTunnelIO DeferActionT
 runDeferActionT (MkDeferActionT (WriterT wma)) = do
     (a, actions) <- wma
     for_ actions liftIO

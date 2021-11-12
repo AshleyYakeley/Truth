@@ -68,7 +68,7 @@ instance MonadCatch () Maybe where
 instance CE.Exception e => MonadCatch e IO where
     catch = CE.catch
 
-instance (MonadTransTunnel t, MonadCatch e m, Monad (t m)) => MonadCatch e (t m) where
+instance (TransTunnel t, MonadCatch e m, Monad (t m)) => MonadCatch e (t m) where
     catch tma handler = tunnel $ \unlift -> catch (unlift tma) $ \e -> unlift $ handler e
 
 instance {-# OVERLAPPING #-} Monad m => MonadCatch e (ExceptT e m) where

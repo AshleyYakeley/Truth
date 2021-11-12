@@ -50,7 +50,7 @@ createViewPinaforeAction cva = MkPinaforeAction $ lift $ lift cva
 pinaforeGetCreateViewUnlift :: PinaforeAction (WMFunction PinaforeAction (ComposeM Know CreateView))
 pinaforeGetCreateViewUnlift =
     MkPinaforeAction $ do
-        MkWUnliftAll unlift <- askUnlift
+        MkWUnliftT unlift <- askUnlift
         return $ MkWMFunction $ \(MkPinaforeAction ra) -> unlift ra
 
 viewPinaforeAction :: View a -> PinaforeAction a
