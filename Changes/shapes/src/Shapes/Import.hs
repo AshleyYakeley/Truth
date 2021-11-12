@@ -94,16 +94,16 @@ import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT,
 import Control.Monad.Trans.Writer as I (Writer, WriterT(..), execWriter, execWriterT, listen, runWriter, tell)
 
 -- monadology
-import Control.Monad.Trans.AskUnlift as I
-import Control.Monad.Trans.Compose as I
-import Control.Monad.Trans.Constraint as I
-import Control.Monad.Trans.ContExtra as I
-import Control.Monad.Trans.Function as I
-import Control.Monad.Trans.ReaderState as I
-import Control.Monad.Trans.Stack as I
-import Control.Monad.Trans.Tunnel as I
-import Control.Monad.Trans.Unlift as I
-import Data.Functor.One as I
+import Control.Monad.Ology.Function as I
+import Control.Monad.Ology.Functor.One as I
+import Control.Monad.Ology.Trans.AskUnlift as I
+import Control.Monad.Ology.Trans.Compose as I
+import Control.Monad.Ology.Trans.Constraint as I
+import Control.Monad.Ology.Trans.ContExtra as I
+import Control.Monad.Ology.Trans.ReaderState as I
+import Control.Monad.Ology.Trans.Stack as I
+import Control.Monad.Ology.Trans.Tunnel as I
+import Control.Monad.Ology.Trans.Unlift as I
 
 -- hashable
 import Data.Hashable as I (Hashable)

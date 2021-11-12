@@ -1,4 +1,4 @@
-module Control.Monad.Trans.Compose
+module Control.Monad.Ology.Trans.Compose
     ( ComposeT(..)
     , composeUnliftT
     , composeWUnliftT
@@ -10,11 +10,11 @@ module Control.Monad.Trans.Compose
     , lift2ComposeTWithUnlift
     ) where
 
-import Control.Monad.Trans.AskUnlift
-import Control.Monad.Trans.Coerce
-import Control.Monad.Trans.Constraint
-import Control.Monad.Trans.Tunnel
-import Control.Monad.Trans.Unlift
+import Control.Monad.Ology.Trans.AskUnlift
+import Control.Monad.Ology.Trans.Coerce
+import Control.Monad.Ology.Trans.Constraint
+import Control.Monad.Ology.Trans.Tunnel
+import Control.Monad.Ology.Trans.Unlift
 import Import
 
 newtype ComposeT (t1 :: (Type -> Type) -> (Type -> Type)) (t2 :: (Type -> Type) -> (Type -> Type)) (m :: Type -> Type) (a :: Type) = MkComposeT

@@ -13,16 +13,16 @@ library:
       - transformers
       - witness
     exposed-modules:
-      - Data.Functor.One
-      - Control.Monad.Trans.Constraint
-      - Control.Monad.Trans.Tunnel
-      - Control.Monad.Trans.Coerce
-      - Control.Monad.Trans.Function
-      - Control.Monad.Trans.Unlift
-      - Control.Monad.Trans.AskUnlift
-      - Control.Monad.Trans.Compose
-      - Control.Monad.Trans.Stack
-      - Control.Monad.Trans.ContExtra
-      - Control.Monad.Trans.ReaderState
+      - Control.Monad.Ology.Functor.One
+      - Control.Monad.Ology.Trans.Constraint
+      - Control.Monad.Ology.Trans.Tunnel
+      - Control.Monad.Ology.Trans.Coerce
+      - Control.Monad.Ology.Function
+      - Control.Monad.Ology.Trans.Unlift
+      - Control.Monad.Ology.Trans.AskUnlift
+      - Control.Monad.Ology.Trans.Compose
+      - Control.Monad.Ology.Trans.Stack
+      - Control.Monad.Ology.Trans.ContExtra
+      - Control.Monad.Ology.Trans.ReaderState
     other-modules:
       - Import

@@ -1,9 +1,9 @@
-module Control.Monad.Trans.Unlift where
+module Control.Monad.Ology.Trans.Unlift where
 
-import Control.Monad.Trans.Constraint
-import Control.Monad.Trans.Function
-import Control.Monad.Trans.Tunnel
-import Data.Functor.One
+import Control.Monad.Ology.Function
+import Control.Monad.Ology.Functor.One
+import Control.Monad.Ology.Trans.Constraint
+import Control.Monad.Ology.Trans.Tunnel
 import Import
 
 class ( TransTunnel t

@@ -1,4 +1,4 @@
-module Control.Monad.Trans.Constraint where
+module Control.Monad.Ology.Trans.Constraint where
 
 import Import
 

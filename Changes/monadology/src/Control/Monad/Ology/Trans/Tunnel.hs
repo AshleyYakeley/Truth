@@ -1,8 +1,8 @@
-module Control.Monad.Trans.Tunnel where
+module Control.Monad.Ology.Trans.Tunnel where
 
-import Control.Monad.Trans.Constraint
-import Control.Monad.Trans.Function
-import Data.Functor.One
+import Control.Monad.Ology.Function
+import Control.Monad.Ology.Functor.One
+import Control.Monad.Ology.Trans.Constraint
 import Import
 
 type TransTunnel :: TransKind -> Constraint

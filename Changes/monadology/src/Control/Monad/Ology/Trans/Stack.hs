@@ -1,4 +1,4 @@
-module Control.Monad.Trans.Stack
+module Control.Monad.Ology.Trans.Stack
     ( TransKind
     , witTransStackDict
     , IsStack
@@ -25,11 +25,11 @@ module Control.Monad.Trans.Stack
     , stackLiftWithUnliftAll
     ) where
 
-import Control.Monad.Trans.Constraint
-import Control.Monad.Trans.Function
-import Control.Monad.Trans.Tunnel
-import Control.Monad.Trans.Unlift
-import Data.Functor.One
+import Control.Monad.Ology.Function
+import Control.Monad.Ology.Functor.One
+import Control.Monad.Ology.Trans.Constraint
+import Control.Monad.Ology.Trans.Tunnel
+import Control.Monad.Ology.Trans.Unlift
 import Import
 
 witTransStackDict ::

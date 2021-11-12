@@ -1,4 +1,4 @@
-module Data.Functor.One where
+module Control.Monad.Ology.Functor.One where
 
 import Import
 

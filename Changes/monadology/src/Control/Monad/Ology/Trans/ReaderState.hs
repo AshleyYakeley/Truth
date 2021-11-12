@@ -1,6 +1,6 @@
-module Control.Monad.Trans.ReaderState where
+module Control.Monad.Ology.Trans.ReaderState where
 
-import Control.Monad.Trans.Function
+import Control.Monad.Ology.Function
 import Import
 
 type ReaderStateT f m = StateT (WMFunction f m) m

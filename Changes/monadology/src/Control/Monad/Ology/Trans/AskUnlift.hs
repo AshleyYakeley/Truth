@@ -1,10 +1,10 @@
-module Control.Monad.Trans.AskUnlift where
+module Control.Monad.Ology.Trans.AskUnlift where
 
-import Control.Monad.Trans.Constraint
-import Control.Monad.Trans.Function
-import Control.Monad.Trans.Tunnel
-import Control.Monad.Trans.Unlift
-import Data.Functor.One
+import Control.Monad.Ology.Function
+import Control.Monad.Ology.Functor.One
+import Control.Monad.Ology.Trans.Constraint
+import Control.Monad.Ology.Trans.Tunnel
+import Control.Monad.Ology.Trans.Unlift
 import Import
 
 -- | A transformer that has no effects (such as state change or output)

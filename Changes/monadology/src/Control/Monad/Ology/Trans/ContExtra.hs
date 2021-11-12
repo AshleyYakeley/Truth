@@ -1,4 +1,4 @@
-module Control.Monad.Trans.ContExtra where
+module Control.Monad.Ology.Trans.ContExtra where
 
 import Import
 

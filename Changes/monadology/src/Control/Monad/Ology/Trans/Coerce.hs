@@ -1,4 +1,4 @@
-module Control.Monad.Trans.Coerce where
+module Control.Monad.Ology.Trans.Coerce where
 
 import Import
 

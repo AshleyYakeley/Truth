@@ -1,4 +1,4 @@
-module Control.Monad.Trans.Function where
+module Control.Monad.Ology.Function where
 
 import Import
 
