@@ -1,8 +1,10 @@
-module Control.Monad.Data where
+module Control.Monad.Ology.Data where
 
 import Data.IORef
-import Data.Lens
-import Shapes.Import
+import Import
+
+-- | borrowed from the lens package
+type Lens' a b = forall f. Functor f => (b -> f b) -> a -> f a
 
 data Param m a = MkParam
     { askD :: m a
@@ -11,13 +13,13 @@ data Param m a = MkParam
 
 mapParam ::
        forall m a b. Functor m
-    => PureLens a b
+    => Lens' a b
     -> Param m a
     -> Param m b
 mapParam l (MkParam askD localD) = let
-    askD' = fmap (lensGet l) askD
+    askD' = fmap (\a -> getConst $ l Const a) askD
     localD' :: forall r. (b -> b) -> m r -> m r
-    localD' f = localD $ pureLensModify l f
+    localD' f = localD $ \a -> runIdentity $ l (Identity . f) a
     in MkParam askD' localD'
 
 readerParam :: Monad m => Param (ReaderT r m) r
@@ -33,12 +35,12 @@ putD r a = modifyD r $ \_ -> a
 
 mapRef ::
        forall m a b. Monad m
-    => PureLens a b
+    => Lens' a b
     -> Ref m a
     -> Ref m b
 mapRef l (MkRef getD modifyD) = let
-    getD' = fmap (lensGet l) getD
-    modifyD' bb = modifyD $ pureLensModify l bb
+    getD' = fmap (\a -> getConst $ l Const a) getD
+    modifyD' bb = modifyD $ \a -> runIdentity $ l (Identity . bb) a
     in MkRef getD' modifyD'
 
 stateRef :: Monad m => Ref (StateT s m) s

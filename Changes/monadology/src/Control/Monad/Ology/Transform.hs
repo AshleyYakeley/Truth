@@ -1,7 +1,10 @@
-module Control.Monad.Transform where
+module Control.Monad.Ology.Transform where
 
-import Control.Monad.Data
-import Shapes.Import
+import Control.Monad.Ology.Data
+import Control.Monad.Ology.Function
+import Control.Monad.Ology.Trans.Tunnel
+import Control.Monad.Ology.Trans.Unlift
+import Import
 
 type TransformT :: forall k. (k -> Type) -> Type -> Type
 newtype TransformT f a = MkTransformT

@@ -1,10 +1,10 @@
 module Data.Codec where
 
+import Control.Monad.Ology.Functor.MonadOne
+import Control.Monad.Ology.Result
 import Data.CatFunctor
 import Data.IsoVariant
 import Data.Isomorphism
-import Data.MonadOne
-import Data.Result
 import Shapes.Import
 
 class IsBiMap bm where

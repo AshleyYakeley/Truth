@@ -11,18 +11,25 @@ library:
       - base >= 4.12
       - constraints
       - transformers
+      - countable
       - witness
     exposed-modules:
+      - Control.Monad.Ology.Result
+      - Control.Monad.Ology.Function
       - Control.Monad.Ology.Functor.One
+      - Control.Monad.Ology.Functor.MonadOne
       - Control.Monad.Ology.Trans.Constraint
       - Control.Monad.Ology.Trans.Tunnel
       - Control.Monad.Ology.Trans.Coerce
-      - Control.Monad.Ology.Function
       - Control.Monad.Ology.Trans.Unlift
       - Control.Monad.Ology.Trans.AskUnlift
       - Control.Monad.Ology.Trans.Compose
       - Control.Monad.Ology.Trans.Stack
       - Control.Monad.Ology.Trans.ContExtra
       - Control.Monad.Ology.Trans.ReaderState
+      - Control.Monad.Ology.Compose
+      - Control.Monad.Ology.Exception
+      - Control.Monad.Ology.Data
+      - Control.Monad.Ology.Transform
     other-modules:
       - Import

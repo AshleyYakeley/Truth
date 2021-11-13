@@ -12,13 +12,9 @@ import Control.Category.Dual as I
 import Control.Category.Groupoid as I
 import Control.Category.Lifted as I
 import Control.Clock as I
-import Control.Monad.Compose as I
 import Control.Monad.Coroutine as I
-import Control.Monad.Data as I
-import Control.Monad.Exception as I
 import Control.Monad.LifeCycle as I
 import Control.Monad.MonadCont as I
-import Control.Monad.Transform as I
 import Control.Task as I
 import Data.CatFunctor as I
 import Data.Chain as I
@@ -36,10 +32,8 @@ import Data.KeyContainer as I
 import Data.KeyedOrder as I
 import Data.KindMorphism as I
 import Data.Lens as I
-import Data.MonadOne as I
 import Data.MonoApplicative as I
 import Data.ReadShow as I
-import Data.Result as I
 import Data.SameItem as I
 import Data.Serialize.Instances as I ()
 import Data.Serializer as I

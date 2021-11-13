@@ -4,10 +4,10 @@ module Control.AsyncRunner
     , asyncIORunner
     ) where
 
-import Control.Monad.Exception
 import Control.Monad.LifeCycle
+import Control.Monad.Ology.Exception
+import Control.Monad.Ology.Result
 import Control.Task
-import Data.Result
 import Shapes.Import
 
 data VarState t

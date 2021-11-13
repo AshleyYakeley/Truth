@@ -1,5 +1,6 @@
 module Control.Monad.Ology.Trans.Tunnel where
 
+import qualified Control.Exception as CE
 import Control.Monad.Ology.Function
 import Control.Monad.Ology.Functor.One
 import Control.Monad.Ology.Trans.Constraint
@@ -127,7 +128,7 @@ mVarUnitRun :: MonadTunnelIO m => MVar s -> MFunction m m
 mVarUnitRun var ma = mVarRun var $ lift ma
 
 mVarUnitUnlock :: MVar () -> MFunction IO IO
-mVarUnitUnlock var = bracket_ (putMVar var ()) (takeMVar var)
+mVarUnitUnlock var = CE.bracket_ (putMVar var ()) (takeMVar var)
 
 stateDiscardingUntrans :: s -> UnliftT MonadIO (StateT s)
 stateDiscardingUntrans s mr = do

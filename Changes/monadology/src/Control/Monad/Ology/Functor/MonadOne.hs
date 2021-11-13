@@ -1,11 +1,10 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Data.MonadOne where
+module Control.Monad.Ology.Functor.MonadOne where
 
-import Data.CatFunctor
-import Data.ConstFunction
-import Data.Result
-import Shapes.Import
+import Control.Monad.Ology.Functor.One
+import Control.Monad.Ology.Result
+import Import
 
 class (Traversable f, Monad f, FunctorOne f) => MonadOne f where
     retrieveOne :: f a -> Result (f None) a
@@ -37,40 +36,20 @@ bindOne fa afb =
 fromOne :: MonadOne f => a -> f a -> a
 fromOne def fa = fromMaybe def $ getMaybeOne fa
 
-instance FunctorGetPure Identity where
-    getPure = applicativeGetPure
-
 instance MonadOne Identity where
     retrieveOne (Identity a) = SuccessResult a
-
-instance FunctorGetPure Maybe where
-    getPure = applicativeGetPure
 
 instance MonadOne Maybe where
     retrieveOne (Just a) = SuccessResult a
     retrieveOne Nothing = FailureResult Nothing
 
-instance FunctorGetPure (Either p) where
-    getPure = applicativeGetPure
-
 instance MonadOne (Either p) where
     retrieveOne (Right b) = SuccessResult b
     retrieveOne (Left a) = FailureResult $ Left a
 
-instance FunctorGetPure ((,) p)
-
 instance Monoid p => MonadOne ((,) p) where
     retrieveOne (_, a) = SuccessResult a
-
-instance FunctorGetPure (Result e) where
-    getPure = applicativeGetPure
 
 instance MonadOne (Result e) where
     retrieveOne (SuccessResult a) = SuccessResult a
     retrieveOne (FailureResult e) = FailureResult (FailureResult e)
-
-constFunctionAp :: (MonadOne f, Applicative (t (f a)), CatFunctor t t f) => f (t a b) -> t (f a) (f b)
-constFunctionAp fcab =
-    case retrieveOne fcab of
-        FailureResult fn -> pure $ fmap never fn
-        SuccessResult cab -> cfmap cab

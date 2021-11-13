@@ -1,5 +1,5 @@
-module Control.Monad.Exception
-    ( module Control.Monad.Exception
+module Control.Monad.Ology.Exception
+    ( module Control.Monad.Ology.Exception
     , CE.SomeException
     , CE.Exception(..)
     , CE.evaluate
@@ -9,8 +9,10 @@ module Control.Monad.Exception
     ) where
 
 import qualified Control.Exception as CE
-import Data.Result
-import Shapes.Import
+import Control.Monad.Ology.Result
+import Control.Monad.Ology.Trans.Tunnel
+import Control.Monad.Ology.Trans.Unlift
+import Import
 
 class Monad m => MonadThrow e m where
     throw :: e -> m a

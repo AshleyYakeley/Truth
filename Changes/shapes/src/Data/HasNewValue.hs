@@ -1,6 +1,6 @@
 module Data.HasNewValue where
 
-import Data.Result
+import Control.Monad.Ology.Result
 import Shapes.Import
 
 class HasNewValue a where

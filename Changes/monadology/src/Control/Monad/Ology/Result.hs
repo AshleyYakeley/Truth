@@ -1,7 +1,7 @@
-module Data.Result where
+module Control.Monad.Ology.Result where
 
-import Data.Isomorphism
-import Shapes.Import
+import Control.Monad.Ology.Functor.One
+import Import
 
 data Result e a
     = SuccessResult a
@@ -82,19 +82,6 @@ instance (Show e, Show a) => Show (Result e a) where
     show (SuccessResult a) = "success: " ++ show a
     show (FailureResult e) = "failure: " ++ show e
 
-mapResult :: Bijection (Result e2 (Result e1 a)) (Result (Either e2 e1) a)
-mapResult = MkIsomorphism forwards backwards
-  where
-    forwards (SuccessResult (SuccessResult a)) = SuccessResult a
-    forwards (SuccessResult (FailureResult e1)) = FailureResult (Right e1)
-    forwards (FailureResult e2) = FailureResult (Left e2)
-    backwards (SuccessResult a) = SuccessResult (SuccessResult a)
-    backwards (FailureResult (Right e1)) = SuccessResult (FailureResult e1)
-    backwards (FailureResult (Left e2)) = FailureResult e2
-
 mapResultFailure :: (e1 -> e2) -> Result e1 a -> Result e2 a
 mapResultFailure _ (SuccessResult a) = SuccessResult a
 mapResultFailure e1e2 (FailureResult e1) = FailureResult (e1e2 e1)
-
-resultTextToM :: MonadFail m => Result Text a -> m a
-resultTextToM = resultToM . mapResultFailure unpack

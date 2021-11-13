@@ -1,9 +1,11 @@
-module Control.Monad.Compose where
+module Control.Monad.Ology.Compose where
 
-import Data.Coercion
-import Data.MonadOne
-import Data.Result
-import Shapes.Import
+import Control.Monad.Ology.Functor.MonadOne
+import Control.Monad.Ology.Result
+import Control.Monad.Ology.Trans.Constraint
+import Control.Monad.Ology.Trans.Stack
+import Control.Monad.Ology.Trans.Tunnel
+import Import
 
 type ComposeM :: (Type -> Type) -> (Type -> Type) -> Type -> Type
 newtype ComposeM inner outer a = MkComposeM
@@ -81,14 +83,6 @@ instance MonadOne inner => TransConstraint MonadFix (ComposeM inner) where
 instance MonadOne inner => TransTunnel (ComposeM inner) where
     type Tunnel (ComposeM inner) = inner
     tunnel call = MkComposeM $ call getComposeM
-
-instance RepresentationalRole (ComposeM inner) where
-    representationalCoercion MkCoercion = MkCoercion
-
-instance (RepresentationalRole inner, RepresentationalRole outer) => RepresentationalRole (ComposeM inner outer) where
-    representationalCoercion cab =
-        case representationalCoercion @_ @_ @outer $ representationalCoercion @_ @_ @inner cab of
-            MkCoercion -> MkCoercion
 
 transComposeOne :: (TransTunnel t, Monad m, MonadOne f) => t (ComposeM f m) a -> t m (f a)
 transComposeOne tca =

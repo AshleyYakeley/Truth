@@ -16,7 +16,7 @@ module Control.Monad.LifeCycle
     ) where
 
 import Control.Monad.Coroutine
-import Control.Monad.Exception
+import Control.Monad.Ology.Exception
 import Data.Coercion
 import Data.IORef
 import Shapes.Import
