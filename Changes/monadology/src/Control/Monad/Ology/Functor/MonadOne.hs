@@ -6,7 +6,7 @@ import Control.Monad.Ology.Functor.One
 import Control.Monad.Ology.Result
 import Import
 
-class (Traversable f, Monad f, FunctorOne f) => MonadOne f where
+class (Traversable f, Monad f, FunctorPure f, FunctorOne f) => MonadOne f where
     retrieveOne :: f a -> Result (f None) a
     -- retrieveOne (fmap f w) = fmap f (retrieveOne w)
     -- case (retrieveOne w) of {Left w' -> w';Right a -> fmap (\_ -> a) w;} = w
@@ -35,6 +35,12 @@ bindOne fa afb =
 
 fromOne :: MonadOne f => a -> f a -> a
 fromOne def fa = fromMaybe def $ getMaybeOne fa
+
+fcommuteOne :: (MonadOne fa, FunctorPure fb) => fa (fb r) -> fb (fa r)
+fcommuteOne abr =
+    case retrieveOne abr of
+        SuccessResult br -> fmap pure br
+        FailureResult fv -> fpure $ fmap never fv
 
 instance MonadOne Identity where
     retrieveOne (Identity a) = SuccessResult a

@@ -7,7 +7,8 @@ import Control.Monad.Ology.Trans.Constraint
 import Import
 
 type TransTunnel :: TransKind -> Constraint
-class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t, FunctorOne (Tunnel t)) => TransTunnel t where
+class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t, FunctorPure (Tunnel t), FunctorOne (Tunnel t)) =>
+          TransTunnel t where
     type Tunnel t :: Type -> Type
     tunnel ::
            forall m2 r. Functor m2
@@ -43,7 +44,7 @@ commuteTWith commutef tabm =
 commuteT ::
        forall ta tb m. (TransTunnel ta, TransTunnel tb, FunctorExtract (Tunnel tb), Functor m)
     => MFunction (ta (tb m)) (tb (ta m))
-commuteT = commuteTWith commuteOne
+commuteT = commuteTWith fcommuteB
 
 commuteTBack ::
        forall ta tb m.
@@ -55,20 +56,20 @@ instance TransTunnel IdentityT where
     type Tunnel IdentityT = Identity
     tunnel call = IdentityT $ fmap runIdentity $ call $ \(IdentityT ma) -> fmap Identity ma
 
-instance TransTunnel (ReaderT s) where
-    type Tunnel (ReaderT s) = Identity
-    tunnel call = ReaderT $ \s -> fmap runIdentity $ call $ \(ReaderT smr) -> fmap Identity $ smr s
+instance TransTunnel (ReaderT r) where
+    type Tunnel (ReaderT r) = Identity
+    tunnel call = ReaderT $ \r -> fmap runIdentity $ call $ \(ReaderT smr) -> fmap Identity $ smr r
 
-instance Monoid s => TransTunnel (WriterT s) where
-    type Tunnel (WriterT s) = (,) s
+instance Monoid w => TransTunnel (WriterT w) where
+    type Tunnel (WriterT w) = (,) w
     tunnel call = WriterT $ fmap swap $ call $ \(WriterT mrs) -> fmap swap $ mrs
 
 instance TransTunnel (StateT s) where
-    type Tunnel (StateT s) = MaybePair s
+    type Tunnel (StateT s) = (,) (Endo s)
     tunnel call =
         StateT $ \olds ->
-            fmap (\(MkMaybePair ms r) -> (r, fromMaybe olds ms)) $
-            call $ \(StateT smrs) -> fmap (\(a, s) -> MkMaybePair (Just s) a) $ smrs olds
+            fmap (\(Endo sf, r) -> (r, sf olds)) $
+            call $ \(StateT smrs) -> fmap (\(a, s) -> (Endo $ pure s, a)) $ smrs olds
 
 instance TransTunnel MaybeT where
     type Tunnel MaybeT = Maybe
