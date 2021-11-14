@@ -40,7 +40,7 @@ instance MonadTransAskUnlift (ReaderT s)
 
 contractT ::
        forall (t :: TransKind) m. (MonadTransAskUnlift t, Monad m)
-    => MFunction (t (t m)) (t m)
+    => t (t m) --> t m
 contractT ttma =
     case hasTransConstraint @Monad @t @m of
         Dict -> do

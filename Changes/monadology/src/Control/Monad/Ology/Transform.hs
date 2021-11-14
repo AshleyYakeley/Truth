@@ -34,7 +34,7 @@ instance (Functor f, Semigroup a) => Semigroup (TransformT f a) where
 instance (Functor f, Monoid a) => Monoid (TransformT f a) where
     mempty = pure mempty
 
-mapTransformT :: MFunction f f -> TransformT f ()
+mapTransformT :: (f --> f) -> TransformT f ()
 mapTransformT ff = MkTransformT $ \uf -> ff $ uf ()
 
 execMapTransformT :: Monad f => f (TransformT f a) -> TransformT f a

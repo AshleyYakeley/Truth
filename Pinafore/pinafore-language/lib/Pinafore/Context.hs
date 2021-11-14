@@ -31,7 +31,7 @@ nullInvocationInfo = let
 
 data PinaforeContext = MkPinaforeContext
     { pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
-    , pconUnliftCreateView :: MFunction CreateView View
+    , pconUnliftCreateView :: CreateView --> View
     , pconStorageModel :: Model PinaforeStorageUpdate
     , pconInvocation :: InvocationInfo
     , pconStdOut :: Handle
@@ -66,7 +66,7 @@ makePinaforeContext pconInvocation pconStdOut rmodel tc = do
     let
         pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
         pconUnliftAction = unPinaforeAction tc uh
-        pconUnliftCreateView :: MFunction CreateView View
+        pconUnliftCreateView :: CreateView --> View
         pconUnliftCreateView = ccUnliftCreateView tc
         pconStorageModel = undoHandlerModel uh rmodel
     return $ MkPinaforeContext {..}

@@ -21,20 +21,20 @@ import Shapes
 
 type RefNotation = WriterT [(VarID, QExpr)] (StateT VarIDState PinaforeInterpreter)
 
-runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> MFunction (WriterT [(VarID, QExpr)] m) m
+runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> WriterT [(VarID, QExpr)] m --> m
 runRefWriterT spos wma = do
     (a, w) <- runWriterT wma
     case w of
         [] -> return a
         _ -> throwErrorType spos NotationBareUnquoteError
 
-liftRefNotation :: MFunction PinaforeInterpreter RefNotation
+liftRefNotation :: PinaforeInterpreter --> RefNotation
 liftRefNotation = lift . lift
 
-hoistRefNotation :: WMFunction PinaforeInterpreter PinaforeInterpreter -> MFunction RefNotation RefNotation
+hoistRefNotation :: WMFunction PinaforeInterpreter PinaforeInterpreter -> RefNotation --> RefNotation
 hoistRefNotation (MkWMFunction mm) = hoist $ hoist mm
 
-runRefNotation :: MFunction RefNotation PinaforeSourceInterpreter
+runRefNotation :: RefNotation --> PinaforeSourceInterpreter
 runRefNotation rexpr = do
     spos <- askSourcePos
     liftSourcePos $ evalStateT (runRefWriterT spos rexpr) firstVarIDState

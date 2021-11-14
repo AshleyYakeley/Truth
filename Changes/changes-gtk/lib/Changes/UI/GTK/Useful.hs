@@ -101,7 +101,7 @@ withSignalsBlocked obj (c:cc) = withSignalBlocked obj c . withSignalsBlocked obj
 
 class GTKCallbackType t where
     type CallbackViewLifted t :: Type
-    gCallbackUnlift :: MFunction View IO -> CallbackViewLifted t -> t
+    gCallbackUnlift :: (View --> IO) -> CallbackViewLifted t -> t
 
 instance GTKCallbackType (IO r) where
     type CallbackViewLifted (IO r) = View r

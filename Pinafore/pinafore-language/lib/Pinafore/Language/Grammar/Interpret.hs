@@ -213,7 +213,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc decl) =
 interpretDocDeclarations :: [SyntaxWithDoc SyntaxDeclaration] -> ScopeBuilder Docs
 interpretDocDeclarations decls = mconcat $ fmap interpretDocDeclaration decls
 
-interpretDeclarations :: [SyntaxWithDoc SyntaxDeclaration] -> MFunction RefNotation RefNotation
+interpretDeclarations :: [SyntaxWithDoc SyntaxDeclaration] -> RefNotation --> RefNotation
 interpretDeclarations decls ma = runScopeBuilder (interpretDocDeclarations decls) $ \_ -> ma
 
 interpretNamedConstructor :: SourcePos -> ReferenceName -> RefExpression
@@ -360,7 +360,7 @@ interpretBinding ((doc, MkSyntaxBinding spos mstype _ sexpr), vid) = do
 interpretBindings :: [(DocSyntaxBinding, VarID)] -> RefNotation [QBinding]
 interpretBindings sbinds = for sbinds interpretBinding
 
-interpretTopDeclarations :: SyntaxTopDeclarations -> MFunction PinaforeInterpreter PinaforeInterpreter
+interpretTopDeclarations :: SyntaxTopDeclarations -> PinaforeInterpreter --> PinaforeInterpreter
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) ma =
     runSourcePos spos $ runRefNotation $ interpretDeclarations sdecls $ liftRefNotation ma
 

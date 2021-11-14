@@ -209,14 +209,14 @@ checkDynamicTypeCycles decls = let
            (nn@((spos, _) :| _):_) -> runSourcePos spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
 
 interpretTypeDeclaration ::
-       SourcePos -> Name -> Markdown -> SyntaxTypeDeclaration -> MFunction PinaforeInterpreter PinaforeInterpreter
+       SourcePos -> Name -> Markdown -> SyntaxTypeDeclaration -> PinaforeInterpreter --> PinaforeInterpreter
 interpretTypeDeclaration spos name doc tdecl ma = do
     tbox <- typeDeclarationTypeBox spos name doc tdecl
     (wtt, wcc) <- registerTypeName tbox
     runWMFunction (wtt . compAll wcc) ma
 
 interpretRecursiveTypeDeclarations ::
-       [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> MFunction PinaforeInterpreter PinaforeInterpreter
+       [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> PinaforeInterpreter --> PinaforeInterpreter
 interpretRecursiveTypeDeclarations decls ma = do
     checkDynamicTypeCycles decls
     wfs <- for decls $ \(spos, name, doc, tdecl) -> typeDeclarationTypeBox spos name doc tdecl

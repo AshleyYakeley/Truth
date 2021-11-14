@@ -45,26 +45,25 @@ liftWithUnliftW = MkWMBackFunction liftWithUnlift
 
 readerTUnliftAllToT ::
        forall t m. (MonadTransUnlift t, MonadTunnelIO m)
-    => MFunction (ReaderT (WUnliftT MonadTunnelIO t) m) (t m)
+    => ReaderT (WUnliftT MonadTunnelIO t) m --> t m
 readerTUnliftAllToT rma = liftWithUnlift $ \tr -> runReaderT rma $ MkWUnliftT tr
 
-tToReaderTUnliftAll :: MonadTunnelIO m => MFunction (t m) (ReaderT (WUnliftT Monad t) m)
+tToReaderTUnliftAll :: MonadTunnelIO m => t m --> ReaderT (WUnliftT Monad t) m
 tToReaderTUnliftAll tma = do
     MkWUnliftT unlift <- ask
     lift $ unlift tma
 
-composeUnliftAllFunction ::
-       (MonadTransUnlift t, MonadUnliftIO m) => UnliftT Functor t -> MFunction m n -> MFunction (t m) n
+composeUnliftAllFunction :: (MonadTransUnlift t, MonadUnliftIO m) => UnliftT Functor t -> (m --> n) -> (t m --> n)
 composeUnliftAllFunction rt rm tma = rm $ rt tma
 
 composeUnliftAllFunctionCommute ::
-       (MonadTransUnlift t, MonadUnliftIO m, MonadUnliftIO n) => UnliftT Functor t -> MFunction m n -> MFunction (t m) n
+       (MonadTransUnlift t, MonadUnliftIO m, MonadUnliftIO n) => UnliftT Functor t -> (m --> n) -> (t m --> n)
 composeUnliftAllFunctionCommute rt rm tma = rt $ hoist rm tma
 
 class (MonadFail m, MonadIO m, MonadFix m, MonadTunnelIO m, FunctorPure (TunnelIO m), FunctorExtract (TunnelIO m)) =>
           MonadUnliftIO m where
     -- | lift with an 'WIOFunction' that accounts for all transformer effects
-    liftIOWithUnlift :: forall r. (MFunction m IO -> IO r) -> m r
+    liftIOWithUnlift :: forall r. (m --> IO -> IO r) -> m r
     getDiscardingIOUnlift :: m (WIOFunction m)
     getDiscardingIOUnlift = tunnelIO $ \unlift -> pure $ fpure $ MkWMFunction $ \mr -> fmap fextract $ unlift mr
 

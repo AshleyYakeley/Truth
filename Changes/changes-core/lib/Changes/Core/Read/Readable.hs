@@ -4,7 +4,7 @@ import Changes.Core.Import
 
 type Readable m reader = forall (t :: Type). reader t -> m t
 
-hoistReadable :: forall m1 m2 reader. (forall a. m1 a -> m2 a) -> Readable m1 reader -> Readable m2 reader
+hoistReadable :: forall m1 m2 reader. (m1 --> m2) -> Readable m1 reader -> Readable m2 reader
 hoistReadable mf mr rt = mf (mr rt)
 
 liftReadable ::
