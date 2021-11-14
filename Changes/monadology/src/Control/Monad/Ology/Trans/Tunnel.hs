@@ -11,9 +11,9 @@ class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t, Functor
           TransTunnel t where
     type Tunnel t :: Type -> Type
     tunnel ::
-           forall m2 r. Functor m2
-        => ((forall m1 a. Functor m1 => t m1 a -> m1 (Tunnel t a)) -> m2 (Tunnel t r))
-        -> t m2 r
+           forall m r. Functor m
+        => ((forall m1 a. Functor m1 => t m1 a -> m1 (Tunnel t a)) -> m (Tunnel t r))
+        -> t m r
 
 transExcept ::
        forall t m e a. (TransTunnel t, Monad m)
@@ -49,7 +49,7 @@ commuteT = commuteTWith fcommuteB
 commuteTBack ::
        forall ta tb m.
        (TransTunnel ta, FunctorExtract (Tunnel ta), TransTunnel tb, FunctorExtract (Tunnel tb), Functor m)
-    => MBackFunction (ta (tb m)) (tb (ta m))
+    => ta (tb m) -/-> tb (ta m)
 commuteTBack call = commuteT $ call commuteT
 
 instance TransTunnel IdentityT where
@@ -83,7 +83,7 @@ class (MonadIO m, FunctorOne (TunnelIO m)) => MonadTunnelIO m where
     type TunnelIO m :: Type -> Type
     tunnelIO :: forall r. ((forall a. m a -> IO (TunnelIO m a)) -> IO (TunnelIO m r)) -> m r
 
-hoistIO :: MonadTunnelIO m => (forall a. IO a -> IO a) -> m r -> m r
+hoistIO :: MonadTunnelIO m => (IO --> IO) -> m r -> m r
 hoistIO mma sm1 = tunnelIO $ \tun -> mma $ tun sm1
 
 instance MonadTunnelIO IO where
@@ -98,28 +98,28 @@ instance (TransTunnel t, MonadTunnelIO m, MonadIO (t m)) => MonadTunnelIO (t m) 
 instance (TransTunnel t, TransConstraint MonadIO t) => TransConstraint MonadTunnelIO t where
     hasTransConstraint = withTransConstraintDict @MonadIO $ Dict
 
-liftMBackFunction :: (TransTunnel t, Monad ma, Monad mb) => MBackFunction ma mb -> MBackFunction (t ma) (t mb)
-liftMBackFunction wt tm = tunnel $ \unlift -> wt $ \tba -> unlift $ tm $ hoist tba
+backHoist :: (TransTunnel t, Monad ma, Monad mb) => (ma -/-> mb) -> t ma -/-> t mb
+backHoist wt tm = tunnel $ \unlift -> wt $ \tba -> unlift $ tm $ hoist tba
 
-liftWMBackFunction :: (TransTunnel t, Monad ma, Monad mb) => WMBackFunction ma mb -> WMBackFunction (t ma) (t mb)
-liftWMBackFunction (MkWMBackFunction f) = MkWMBackFunction $ liftMBackFunction f
+backHoistW :: (TransTunnel t, Monad ma, Monad mb) => WMBackFunction ma mb -> WMBackFunction (t ma) (t mb)
+backHoistW (MkWMBackFunction f) = MkWMBackFunction $ backHoist f
 
 ---
-type UnliftT :: ((Type -> Type) -> Constraint) -> TransKind -> Type
-type UnliftT c t = forall (m :: Type -> Type). c m => t m --> m
+type Unlift :: ((Type -> Type) -> Constraint) -> TransKind -> Type
+type Unlift c t = forall (m :: Type -> Type). c m => t m --> m
 
-type WUnliftT :: ((Type -> Type) -> Constraint) -> TransKind -> Type
-newtype WUnliftT c t = MkWUnliftT
-    { runWUnliftT :: UnliftT c t
+type WUnlift :: ((Type -> Type) -> Constraint) -> TransKind -> Type
+newtype WUnlift c t = MkWUnlift
+    { runWUnlift :: Unlift c t
     }
 
-wUnliftAllWMFunction :: c m => WUnliftT c t -> WMFunction (t m) m
-wUnliftAllWMFunction (MkWUnliftT unlift) = MkWMFunction unlift
+wUnliftAllWMFunction :: c m => WUnlift c t -> WMFunction (t m) m
+wUnliftAllWMFunction (MkWUnlift unlift) = MkWMFunction unlift
 
-identityWUnliftAll :: WUnliftT c IdentityT
-identityWUnliftAll = MkWUnliftT runIdentityT
+identityWUnliftAll :: WUnlift c IdentityT
+identityWUnliftAll = MkWUnlift runIdentityT
 
-mVarRun :: MVar s -> UnliftT MonadTunnelIO (StateT s)
+mVarRun :: MVar s -> Unlift MonadTunnelIO (StateT s)
 mVarRun var (StateT smr) =
     tunnelIO $ \unlift ->
         modifyMVar var $ \olds ->
@@ -131,13 +131,13 @@ mVarUnitRun var ma = mVarRun var $ lift ma
 mVarUnitUnlock :: MVar () -> IO --> IO
 mVarUnitUnlock var = CE.bracket_ (putMVar var ()) (takeMVar var)
 
-stateDiscardingUntrans :: s -> UnliftT MonadIO (StateT s)
+stateDiscardingUntrans :: s -> Unlift MonadIO (StateT s)
 stateDiscardingUntrans s mr = do
     (r, _discarded) <- runStateT mr s
     return r
 
 -- | Dangerous, because the MVar won't be released on exception.
-dangerousMVarRun :: MVar s -> UnliftT MonadIO (StateT s)
+dangerousMVarRun :: MVar s -> Unlift MonadIO (StateT s)
 dangerousMVarRun var (StateT smr) = do
     olds <- liftIO $ takeMVar var
     (a, news) <- smr olds
@@ -155,9 +155,5 @@ liftWithMVarStateT vma =
         finalstate <- liftIO $ takeMVar var
         return (r, finalstate)
 
-type IOFunction m = m --> IO
-
-type WIOFunction m = WMFunction m IO
-
-mVarWIORun :: MVar s -> WIOFunction (StateT s IO)
+mVarWIORun :: MVar s -> WMFunction (StateT s IO) IO
 mVarWIORun var = MkWMFunction $ mVarRun var

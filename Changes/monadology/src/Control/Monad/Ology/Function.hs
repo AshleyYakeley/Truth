@@ -20,15 +20,15 @@ instance Category WMFunction where
     id = MkWMFunction id
     (MkWMFunction bc) . (MkWMFunction ab) = MkWMFunction $ bc . ab
 
-type MBackFunction :: forall k. (k -> Type) -> (k -> Type) -> Type
-type MBackFunction ma mb = forall r. ((mb --> ma) -> ma r) -> mb r
+-- type (-/->) :: forall k. (k -> Type) -> (k -> Type) -> Type
+type ma -/-> mb = forall r. ((mb --> ma) -> ma r) -> mb r
 
-mBackFunctionToFunction :: MBackFunction ma mb -> ma --> mb
+mBackFunctionToFunction :: (ma -/-> mb) -> ma --> mb
 mBackFunctionToFunction mbf ma = mbf $ \_ -> ma
 
 type WMBackFunction :: forall k. (k -> Type) -> (k -> Type) -> Type
 newtype WMBackFunction p q = MkWMBackFunction
-    { runWMBackFunction :: MBackFunction p q
+    { runWMBackFunction :: p -/-> q
     }
 
 instance Category WMBackFunction where

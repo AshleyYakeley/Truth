@@ -109,13 +109,13 @@ singleResourceRunner sr = MkResourceRunner $ ConsListType sr NilListType
 mkResourceRunner ::
        forall t. MonadTransUnlift t
     => IOWitness t
-    -> UnliftT MonadUnliftIO t
+    -> Unlift MonadUnliftIO t
     -> ResourceRunner '[ t]
 mkResourceRunner iow run = singleResourceRunner $ mkSingleRunner iow run
 
 newResourceRunner ::
        forall t. MonadTransUnlift t
-    => UnliftT MonadUnliftIO t
+    => Unlift MonadUnliftIO t
     -> IO (ResourceRunner '[ t])
 newResourceRunner run = do
     iow <- newIOWitness
@@ -179,7 +179,7 @@ runLSRContext rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =
             case hasTransConstraint @MonadUnliftIO @t @(ApplyStack tt0 m) of
                 Dict ->
                     case transStackDict @MonadUnliftIO @tt0 @m of
-                        Dict -> call rc'' $ consWStackUnliftAll (MkWUnliftT unlift1) unliftr
+                        Dict -> call rc'' $ consWStackUnliftAll (MkWUnlift unlift1) unliftr
 
 runResourceRunnerContext ::
        forall tt m r. MonadUnliftIO m

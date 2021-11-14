@@ -108,8 +108,8 @@ instance (TransTunnel t, TransConstraint MonadIO t) => TransConstraint MonadLife
         case hasTransConstraint @MonadIO @t @m of
             Dict -> Dict
 
-class (MonadLifeCycleIO m) => MonadUnliftLifeCycleIO m where
-    liftLifeCycleIOWithUnlift :: MBackFunction LifeCycle m
+class MonadLifeCycleIO m => MonadUnliftLifeCycleIO m where
+    liftLifeCycleIOWithUnlift :: LifeCycle -/-> m
 
 getLifeState :: MonadUnliftLifeCycleIO m => m a -> m (a, LifeState)
 getLifeState ma = liftLifeCycleIOWithUnlift $ \unlift -> liftIO $ getInnerLifeState $ unlift ma

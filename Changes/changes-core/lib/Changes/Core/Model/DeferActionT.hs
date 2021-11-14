@@ -53,8 +53,8 @@ instance MonadTransUnlift DeferActionT where
     liftWithUnlift utmr = MkDeferActionT $ liftWithUnlift $ \unlift -> utmr $ \(MkDeferActionT wma) -> unlift wma
     getDiscardingUnlift =
         MkDeferActionT $ do
-            MkWUnliftT du <- getDiscardingUnlift
-            return $ MkWUnliftT $ \(MkDeferActionT wma) -> du wma
+            MkWUnlift du <- getDiscardingUnlift
+            return $ MkWUnlift $ \(MkDeferActionT wma) -> du wma
 
 deferAction ::
        forall m. Monad m
@@ -62,7 +62,7 @@ deferAction ::
     -> DeferActionT m ()
 deferAction action = MkDeferActionT $ tell [action]
 
-runDeferActionT :: UnliftT MonadTunnelIO DeferActionT
+runDeferActionT :: Unlift MonadTunnelIO DeferActionT
 runDeferActionT (MkDeferActionT (WriterT wma)) = do
     (a, actions) <- wma
     for_ actions liftIO
