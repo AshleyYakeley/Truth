@@ -36,7 +36,7 @@ makeGDS ::
 makeGDS wt = MkGreatestDynamicSupertype $ toNegativeShimWit wt
 
 codecGDS :: MakeGreatestDynamicSupertype w => w dt -> Codec dt t -> GreatestDynamicSupertype t
-codecGDS wt codec = makeGDS wt (functionToShim "subtype" $ encode codec) (functionToShim "supertype" $ decode codec)
+codecGDS wt codec = makeGDS wt (functionToShim "encode" $ encode codec) (functionToShim "decode" $ decode codec)
 
 instance MakeGreatestDynamicSupertype (PinaforeShimWit 'Negative) where
     toNegativeShimWit wt = wt
@@ -57,7 +57,7 @@ instance MakeGreatestDynamicSupertype LiteralType where
 dynamicEntitySupertype :: DynamicEntityType -> GreatestDynamicSupertype DynamicEntity
 dynamicEntitySupertype dt =
     makeGDS TopDynamicEntityGroundType id $
-    functionToShim "supertype" $ \e@(MkDynamicEntity t _) ->
+    functionToShim "dynamic-supertype" $ \e@(MkDynamicEntity t _) ->
         if member t dt
             then Just e
             else Nothing

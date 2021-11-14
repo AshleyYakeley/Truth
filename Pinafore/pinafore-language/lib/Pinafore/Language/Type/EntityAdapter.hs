@@ -1,7 +1,6 @@
 module Pinafore.Language.Type.EntityAdapter
     ( monoEntityAdapter
     , monoToEntityShim
-    , closedEntityShim
     , entitySubtypeShim
     ) where
 

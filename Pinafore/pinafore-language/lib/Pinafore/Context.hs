@@ -40,7 +40,7 @@ data PinaforeContext = MkPinaforeContext
 unliftPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction a -> CreateView (Know a)
 unliftPinaforeAction = pconUnliftAction ?pinafore
 
-unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext) => PinaforeAction a -> CreateView a
+unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext) => PinaforeAction --> CreateView
 unliftPinaforeActionOrFail action = do
     ka <- unliftPinaforeAction action
     case ka of
