@@ -2,9 +2,11 @@ module Control.Monad.Ology.Function where
 
 import Import
 
-type MFunction (p :: k -> Type) (q :: k -> Type) = forall (a :: k). p a -> q a
+type MFunction :: forall k. (k -> Type) -> (k -> Type) -> Type
+type MFunction p q = forall a. p a -> q a
 
-newtype WMFunction (p :: k -> Type) (q :: k -> Type) = MkWMFunction
+type WMFunction :: forall k. (k -> Type) -> (k -> Type) -> Type
+newtype WMFunction p q = MkWMFunction
     { runWMFunction :: MFunction p q
     }
 
@@ -18,12 +20,14 @@ instance Category WMFunction where
     id = MkWMFunction id
     (MkWMFunction bc) . (MkWMFunction ab) = MkWMFunction $ bc . ab
 
-type MBackFunction (ma :: k -> Type) (mb :: k -> Type) = forall (r :: k). (MFunction mb ma -> ma r) -> mb r
+type MBackFunction :: forall k. (k -> Type) -> (k -> Type) -> Type
+type MBackFunction ma mb = forall r. (MFunction mb ma -> ma r) -> mb r
 
 mBackFunctionToFunction :: MBackFunction ma mb -> MFunction ma mb
 mBackFunctionToFunction mbf ma = mbf $ \_ -> ma
 
-newtype WMBackFunction (p :: k -> Type) (q :: k -> Type) = MkWMBackFunction
+type WMBackFunction :: forall k. (k -> Type) -> (k -> Type) -> Type
+newtype WMBackFunction p q = MkWMBackFunction
     { runWMBackFunction :: MBackFunction p q
     }
 
