@@ -20,7 +20,7 @@ toBiMapResult ::
     -> bm (Result e) edita editb
 toBiMapResult e = mapBiMapM (mrf . retrieveOne)
   where
-    mrf :: Result (m None) a -> Result e a
+    mrf :: Result (m Void) a -> Result e a
     mrf (SuccessResult a) = SuccessResult a
     mrf (FailureResult _) = FailureResult e
 

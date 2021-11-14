@@ -28,7 +28,7 @@ instance Productish Serializer where
         in MkSerializer sab dab
 
 instance Summish Serializer where
-    pNone :: Serializer None
+    pNone :: Serializer Void
     pNone = let
         serialize n = never n
         deserialize = empty

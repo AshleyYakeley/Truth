@@ -26,7 +26,7 @@ data EntityGroundType t where
         :: Name -> TypeIDType tid -> ClosedEntityType (Identified tid) -> EntityGroundType (Identified tid)
 
 data ClosedEntityType (t :: Type) where
-    NilClosedEntityType :: ClosedEntityType None
+    NilClosedEntityType :: ClosedEntityType Void
     ConsClosedEntityType
         :: Anchor -> ListType MonoEntityType tl -> ClosedEntityType tt -> ClosedEntityType (Either (HList tl) tt)
 

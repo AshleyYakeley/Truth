@@ -12,7 +12,7 @@ instance Show TopType where
     show MkTopType = "T"
 
 newtype BottomType =
-    MkBottomType None
+    MkBottomType Void
     deriving (Eq, Show, Searchable, Countable, Empty)
 
 instance Finite BottomType where

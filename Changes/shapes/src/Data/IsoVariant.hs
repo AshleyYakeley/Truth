@@ -57,8 +57,8 @@ pProductLeft fa fb = isoMap fst (\a -> (a, a)) $ fa <***> fb
 infixr 2 <+++>
 
 class IsoVariant f => Summish f where
-    pNone :: f None
-    default pNone :: Alternative f => f None
+    pNone :: f Void
+    default pNone :: Alternative f => f Void
     pNone = empty
     (<+++>) :: f a -> f b -> f (Either a b)
     default (<+++>) :: Alternative f => f a -> f b -> f (Either a b)

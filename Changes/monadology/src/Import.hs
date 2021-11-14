@@ -19,7 +19,6 @@ import Control.Monad.Trans.State as I hiding (liftCallCC, liftCatch, liftListen,
 import Control.Monad.Trans.Writer as I hiding (liftCallCC, liftCatch)
 import Data.Coerce as I
 import Data.Constraint as I hiding (trans)
-import Data.Empty as I
 import Data.Foldable as I
 import Data.Functor.Compose as I
 import Data.Functor.Identity as I
@@ -28,5 +27,6 @@ import Data.Maybe as I
 import Data.Monoid as I
 import Data.String as I (IsString(..))
 import Data.Tuple as I
+import Data.Void as I
 import Data.Witness as I hiding (trans)
 import Prelude as I hiding ((.), fail, id)

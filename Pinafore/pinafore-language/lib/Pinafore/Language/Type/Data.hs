@@ -9,7 +9,7 @@ type PinaforeNonpolarType = NonpolarDolanType PinaforeGroundType
 
 -- | Structure of a datatype
 data PinaforeDataType :: forall (k :: Type). k -> Type where
-    NilDataType :: PinaforeDataType None
+    NilDataType :: PinaforeDataType Void
     ConsDataType
         :: ListType (PinaforeNonpolarType '[]) tl -> PinaforeDataType tt -> PinaforeDataType (Either (HList tl) tt)
 
