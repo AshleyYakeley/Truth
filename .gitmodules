@@ -7,3 +7,6 @@
 [submodule "benchgraph"]
 	path = benchgraph
 	url = git@github.com:novadiscovery/benchgraph.git
+[submodule "external/countable"]
+	path = external/countable
+	url = git@github.com:AshleyYakeley/countable.git
