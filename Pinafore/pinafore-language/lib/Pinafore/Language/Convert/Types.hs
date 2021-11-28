@@ -32,18 +32,16 @@ instance (Is PolarityType polarity, KnownSymbol name) => HasPinaforeType polarit
         singleDolanShimWit $
         MkShimWit (VarDolanSingularType $ MkSymbolType @name) $
         case polarityType @polarity of
-            PositiveType -> MkPolarMap $ coerceEnhanced "var"
-            NegativeType -> MkPolarMap $ coerceEnhanced "var"
+            PositiveType -> MkPolarMap $ coerceShim "var"
+            NegativeType -> MkPolarMap $ coerceShim "var"
 
 -- (,)
 instance HasPinaforeGroundType '[ CoCCRVariance, CoCCRVariance] (,) where
-    pinaforeGroundType =
-        EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType
+    pinaforeGroundType = pairGroundType
 
 -- Either
 instance HasPinaforeGroundType '[ CoCCRVariance, CoCCRVariance] Either where
-    pinaforeGroundType =
-        EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType
+    pinaforeGroundType = eitherGroundType
 
 -- (->)
 instance HasPinaforeGroundType '[ ContraCCRVariance, CoCCRVariance] (->) where
@@ -51,11 +49,11 @@ instance HasPinaforeGroundType '[ ContraCCRVariance, CoCCRVariance] (->) where
 
 -- Maybe
 instance HasPinaforeGroundType '[ CoCCRVariance] Maybe where
-    pinaforeGroundType = EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType
+    pinaforeGroundType = maybeGroundType
 
 -- []
 instance HasPinaforeGroundType '[ CoCCRVariance] [] where
-    pinaforeGroundType = EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType
+    pinaforeGroundType = listGroundType
 
 -- PinaforeAction
 instance HasPinaforeGroundType '[ CoCCRVariance] PinaforeAction where
@@ -73,47 +71,44 @@ instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (PinaforeImm
     pinaforeType = mapPosShimWit (functionToShim "subtype" pinaforeImmutableToWholeRef) pinaforeType
 
 -- Literal types
-literalType :: Is LiteralType t => PinaforeGroundType '[] t
-literalType = EntityPinaforeGroundType NilListType $ LiteralEntityGroundType representative
-
 instance HasPinaforeGroundType '[] Literal where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = literalGroundType
 
 instance HasPinaforeGroundType '[] Text where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = textGroundType
 
 instance HasPinaforeGroundType '[] Number where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = numberGroundType
 
 instance HasPinaforeGroundType '[] SafeRational where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = rationalGroundType
 
 instance HasPinaforeGroundType '[] Integer where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = integerGroundType
 
 instance HasPinaforeGroundType '[] Bool where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = booleanGroundType
 
 instance HasPinaforeGroundType '[] Ordering where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = orderingGroundType
 
 instance HasPinaforeGroundType '[] UTCTime where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = timeGroundType
 
 instance HasPinaforeGroundType '[] NominalDiffTime where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = durationGroundType
 
 instance HasPinaforeGroundType '[] Day where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = dateGroundType
 
 instance HasPinaforeGroundType '[] TimeOfDay where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = timeOfDayGroundType
 
 instance HasPinaforeGroundType '[] LocalTime where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = localTimeGroundType
 
 instance HasPinaforeGroundType '[] () where
-    pinaforeGroundType = literalType
+    pinaforeGroundType = unitGroundType
 
 -- Double
 instance HasPinaforeType 'Positive Double where

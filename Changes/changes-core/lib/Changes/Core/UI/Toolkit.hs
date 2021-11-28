@@ -8,19 +8,19 @@ import Changes.Core.UI.View.View
 
 data ChangesContext = MkChangesContext
     { ccRunToolkit :: RunToolkit
-    , ccExitOnClosed :: forall m. MonadLifeCycleIO m => MFunction m m
+    , ccExitOnClosed :: forall m. MonadLifeCycleIO m => m --> m
     }
 
-ccUnliftLifeCycle :: ChangesContext -> MFunction LifeCycle IO
+ccUnliftLifeCycle :: ChangesContext -> LifeCycle --> IO
 ccUnliftLifeCycle cc = rtUnliftLifeCycle $ ccRunToolkit cc
 
-ccRunView :: MonadUnliftIO m => ChangesContext -> ResourceContext -> ViewT m a -> m a
+ccRunView :: MonadUnliftIO m => ChangesContext -> ResourceContext -> ViewT m --> m
 ccRunView cc = rtRunView $ ccRunToolkit cc
 
-ccUnliftCreateView :: ChangesContext -> CreateView a -> View a
+ccUnliftCreateView :: ChangesContext -> CreateView --> View
 ccUnliftCreateView cc = rtUnliftCreateView $ ccRunToolkit cc
 
-nullChangesContext :: MFunction LifeCycle IO -> ChangesContext
+nullChangesContext :: (LifeCycle --> IO) -> ChangesContext
 nullChangesContext unlift = let
     ccRunToolkit = nullRunToolkit unlift
     ccExitOnClosed = id
@@ -32,7 +32,7 @@ quitOnAllClosed ccRunToolkit call = do
     let
         ccExitOnClosed ::
                forall m. MonadLifeCycleIO m
-            => MFunction m m
+            => m --> m
         ccExitOnClosed ma = do
             liftLifeCycle ondone
             ma

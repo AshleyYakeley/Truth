@@ -16,7 +16,7 @@ import Shapes
 type LangMenuItem = MenuEntry
 
 menuItemGroundType :: PinaforeGroundType '[] LangMenuItem
-menuItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangMenuItem)|]) "MenuItem"
+menuItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMenuItem)|]) "MenuItem"
 
 instance HasPinaforeGroundType '[] LangMenuItem where
     pinaforeGroundType = menuItemGroundType

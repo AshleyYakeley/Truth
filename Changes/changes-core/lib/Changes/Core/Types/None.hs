@@ -5,7 +5,7 @@ import Changes.Core.Import
 import Changes.Core.Read
 
 newtype NoReader (a :: Type) (t :: Type) =
-    MkNoReader None
+    MkNoReader Void
     deriving (Eq, Countable, Searchable)
 
 instance TestEquality (NoReader a) where
@@ -26,7 +26,7 @@ instance FullSubjectReader (NoReader ()) where
 
 -- | Can't touch this.
 newtype ConstEdit (reader :: Type -> Type) =
-    MkConstEdit None
+    MkConstEdit Void
     deriving (Eq, Countable, Searchable)
 
 instance Finite (ConstEdit reader) where

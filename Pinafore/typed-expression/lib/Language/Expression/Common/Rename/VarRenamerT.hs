@@ -14,7 +14,7 @@ data RenamerState = MkRenamerState
 
 newtype VarRenamerT (ts :: Type) m a =
     MkVarRenamerT (StateT RenamerState m a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail, MonadTrans, MonadTransSemiTunnel)
+    deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFail, MonadTrans, TransTunnel)
 
 instance TransConstraint Functor (VarRenamerT ts) where
     hasTransConstraint = Dict

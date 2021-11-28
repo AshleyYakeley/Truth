@@ -23,7 +23,7 @@ newtype LangElement = MkLangElement
     }
 
 elementGroundType :: PinaforeGroundType '[] LangElement
-elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangElement)|]) "Element"
+elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangElement)|]) "Element"
 
 instance HasPinaforeGroundType '[] LangElement where
     pinaforeGroundType = elementGroundType
@@ -34,7 +34,8 @@ data LangLayoutElement =
                         LangElement
 
 layoutElementGroundType :: PinaforeGroundType '[] LangLayoutElement
-layoutElementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangLayoutElement)|]) "LayoutElement"
+layoutElementGroundType =
+    stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangLayoutElement)|]) "LayoutElement"
 
 instance HasPinaforeGroundType '[] LangLayoutElement where
     pinaforeGroundType = layoutElementGroundType

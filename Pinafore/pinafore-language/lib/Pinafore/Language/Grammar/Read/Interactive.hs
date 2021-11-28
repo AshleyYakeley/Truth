@@ -16,7 +16,7 @@ import Pinafore.Language.Type
 import Shapes hiding (try)
 
 data InteractiveCommand
-    = LetInteractiveCommand (MFunction PinaforeInterpreter PinaforeInterpreter)
+    = LetInteractiveCommand (PinaforeInterpreter --> PinaforeInterpreter)
     | ExpressionInteractiveCommand (PinaforeInterpreter QExpr)
     | ShowDocInteractiveCommand ReferenceName
     | ShowTypeInteractiveCommand Bool

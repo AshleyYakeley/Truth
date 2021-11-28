@@ -1,10 +1,10 @@
 module Data.Codec where
 
+import Control.Monad.Ology.Functor.MonadOne
+import Control.Monad.Ology.Result
 import Data.CatFunctor
 import Data.IsoVariant
 import Data.Isomorphism
-import Data.MonadOne
-import Data.Result
 import Shapes.Import
 
 class IsBiMap bm where
@@ -20,7 +20,7 @@ toBiMapResult ::
     -> bm (Result e) edita editb
 toBiMapResult e = mapBiMapM (mrf . retrieveOne)
   where
-    mrf :: Result (m None) a -> Result e a
+    mrf :: Result (m Void) a -> Result e a
     mrf (SuccessResult a) = SuccessResult a
     mrf (FailureResult _) = FailureResult e
 
@@ -30,14 +30,14 @@ data Codec' m a b = MkCodec
     }
     -- must have decode . encode = Just
 
-remonadCodec :: (forall x. m1 x -> m2 x) -> Codec' m1 a b -> Codec' m2 a b
-remonadCodec f (MkCodec d e) = MkCodec (f . d) e
+hoistCodec :: (forall x. m1 x -> m2 x) -> Codec' m1 a b -> Codec' m2 a b
+hoistCodec f (MkCodec d e) = MkCodec (f . d) e
 
 decodeMaybe :: MonadOne m => Codec' m a b -> a -> Maybe b
 decodeMaybe codec = getMaybeOne . decode codec
 
 toCodec :: MonadOne m => Codec' m a b -> Codec a b
-toCodec = remonadCodec getMaybeOne
+toCodec = hoistCodec getMaybeOne
 
 instance Functor m => IsoVariant (Codec' m p) where
     isoMap ab ba (MkCodec d e) = MkCodec (\p -> fmap ab $ d p) (e . ba)

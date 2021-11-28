@@ -21,6 +21,7 @@ import Data.Eq as I
 import Data.Foldable as I hiding (find)
 import Data.Functor.Compose as I
 import Data.Functor.Identity as I
+import Data.Functor.Product as I
 import Data.Int as I
 import Data.Kind as I
 import Data.List as I ((++), iterate, nub, nubBy, zip)
@@ -28,11 +29,12 @@ import Data.List.NonEmpty as I (NonEmpty(..), last, nonEmpty)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
 import Data.Ord as I
-import Data.Semigroup as I
+import Data.Semigroup as I hiding (Product(..))
 import Data.String as I hiding (lines, unlines, unwords, words)
 import Data.Traversable as I
 import Data.Tuple as I
 import Data.Unique as I
+import Data.Void as I
 import Data.Word as I
 import GHC.Stack as I (HasCallStack)
 import Prelude as I
@@ -93,17 +95,23 @@ import Control.Monad.Trans.Reader as I (ReaderT(..), ask, asks, local, withReade
 import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, modify, put, runState)
 import Control.Monad.Trans.Writer as I (Writer, WriterT(..), execWriter, execWriterT, listen, runWriter, tell)
 
--- transformers-extra
-import Control.Monad.Trans.AskUnlift as I
-import Control.Monad.Trans.Compose as I
-import Control.Monad.Trans.Constraint as I
-import Control.Monad.Trans.ContExtra as I
-import Control.Monad.Trans.Function as I
-import Control.Monad.Trans.ReaderState as I
-import Control.Monad.Trans.Stack as I
-import Control.Monad.Trans.Tunnel as I
-import Control.Monad.Trans.Unlift as I
-import Data.Functor.One as I
+-- monadology
+import Control.Monad.Ology.Compose as I
+import Control.Monad.Ology.Data as I hiding (Lens')
+import Control.Monad.Ology.Exception as I
+import Control.Monad.Ology.Function as I
+import Control.Monad.Ology.Functor.MonadOne as I
+import Control.Monad.Ology.Functor.One as I
+import Control.Monad.Ology.Result as I
+import Control.Monad.Ology.Trans.AskUnlift as I
+import Control.Monad.Ology.Trans.Compose as I
+import Control.Monad.Ology.Trans.Constraint as I
+import Control.Monad.Ology.Trans.ContExtra as I
+import Control.Monad.Ology.Trans.ReaderState as I
+import Control.Monad.Ology.Trans.Stack as I
+import Control.Monad.Ology.Trans.Tunnel as I
+import Control.Monad.Ology.Trans.Unlift as I
+import Control.Monad.Ology.Transform as I
 
 -- hashable
 import Data.Hashable as I (Hashable)
@@ -172,6 +180,10 @@ eitherLeft (Right _) = Nothing
 eitherRight :: Either a b -> Maybe b
 eitherRight (Left _) = Nothing
 eitherRight (Right x) = Just x
+
+ifpure :: Alternative m => Bool -> a -> m a
+ifpure False _ = empty
+ifpure True x = pure x
 
 mpure :: Alternative m => Maybe a -> m a
 mpure (Just a) = pure a

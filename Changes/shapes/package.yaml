@@ -41,7 +41,7 @@ library:
       - countable
       - witness
       - open-witness
-      - transformers-extra
+      - monadology
     exposed-modules:
       - Data.Words
       - Control.Category.Groupoid
@@ -50,9 +50,7 @@ library:
       - Data.MonoApplicative
       - Data.CatFunctor
       - Data.Coercion
-      - Data.Result
       - Data.SameItem
-      - Data.MonadOne
       - Data.HasNewValue
       - Data.IsoVariant
       - Data.Streamish
@@ -63,7 +61,6 @@ library:
       - Data.ConstFunction
       - Data.CoerceFunction
       - Data.Codec
-      - Data.Compose
       - Data.KeyedOrder
       - Data.KeyContainer
       - Data.FiniteSet
@@ -75,11 +72,7 @@ library:
       - Control.Category.Dual
       - Control.Category.Lifted
       - Control.Applicative.Compose
-      - Control.Monad.Compose
-      - Control.Monad.Exception
       - Control.Monad.MonadCont
-      - Control.Monad.Data
-      - Control.Monad.Transform
       - Control.Monad.Coroutine
       - Control.Monad.LifeCycle
       - Control.Clock

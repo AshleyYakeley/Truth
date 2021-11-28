@@ -3,8 +3,8 @@ module Changes.Core.Resource.Function where
 import Changes.Core.Import
 
 data TransListFunction (tt1 :: [TransKind]) (tt2 :: [TransKind]) = MkTransListFunction
-    { tlfFunction :: forall m. MonadIO m => Proxy m -> MFunction (ApplyStack tt1 m) (ApplyStack tt2 m)
-    , tlfBackFunction :: forall m. MonadTunnelIO m => Proxy m -> MBackFunction (ApplyStack tt1 m) (ApplyStack tt2 m)
+    { tlfFunction :: forall m. MonadIO m => Proxy m -> ApplyStack tt1 m --> ApplyStack tt2 m
+    , tlfBackFunction :: forall m. MonadTunnelIO m => Proxy m -> ApplyStack tt1 m -/-> ApplyStack tt2 m
     }
 
 instance Category TransListFunction where
@@ -15,18 +15,18 @@ instance Category TransListFunction where
             (\p -> runWMBackFunction $ MkWMBackFunction (bfbc p) . MkWMBackFunction (bfab p))
 
 fstTransListFunction ::
-       forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+       forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)
     => TransListFunction tt1 (Concat tt1 tt2)
 fstTransListFunction = let
     tlfFunction ::
            forall m. Monad m
         => Proxy m
-        -> MFunction (ApplyStack tt1 m) (ApplyStack (Concat tt1 tt2) m)
+        -> ApplyStack tt1 m --> ApplyStack (Concat tt1 tt2) m
     tlfFunction _ = concatFstMFunction @tt1 @tt2 @m
     tlfBackFunction ::
            forall m. MonadTunnelIO m
         => Proxy m
-        -> MBackFunction (ApplyStack tt1 m) (ApplyStack (Concat tt1 tt2) m)
+        -> ApplyStack tt1 m -/-> ApplyStack (Concat tt1 tt2) m
     tlfBackFunction _ =
         case transStackConcatRefl @tt1 @tt2 @m of
             Refl ->
@@ -35,18 +35,18 @@ fstTransListFunction = let
     in MkTransListFunction {..}
 
 sndTransListFunction ::
-       forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+       forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)
     => TransListFunction tt2 (Concat tt1 tt2)
 sndTransListFunction = let
     tlfFunction ::
            forall m. Monad m
         => Proxy m
-        -> MFunction (ApplyStack tt2 m) (ApplyStack (Concat tt1 tt2) m)
+        -> ApplyStack tt2 m --> ApplyStack (Concat tt1 tt2) m
     tlfFunction _ = concatSndMFunction @tt1 @tt2 @m
     tlfBackFunction ::
            forall m. MonadTunnelIO m
         => Proxy m
-        -> MBackFunction (ApplyStack tt2 m) (ApplyStack (Concat tt1 tt2) m)
+        -> ApplyStack tt2 m -/-> ApplyStack (Concat tt1 tt2) m
     tlfBackFunction _ =
         case transStackConcatRefl @tt1 @tt2 @m of
             Refl ->
@@ -55,43 +55,43 @@ sndTransListFunction = let
     in MkTransListFunction {..}
 
 liftTransListFunction ::
-       forall t tt. (MonadTransUnliftAll t, MonadTransStackUnliftAll tt)
+       forall t tt. (MonadTransUnlift t, MonadTransStackUnlift tt)
     => TransListFunction tt (t ': tt)
 liftTransListFunction = let
     tlfFunction ::
            forall m. Monad m
         => Proxy m
-        -> MFunction (ApplyStack tt m) (ApplyStack (t ': tt) m)
+        -> ApplyStack tt m --> ApplyStack (t ': tt) m
     tlfFunction _ =
         case transStackDict @Monad @tt @m of
             Dict -> lift
     tlfBackFunction ::
            forall m. MonadTunnelIO m
         => Proxy m
-        -> MBackFunction (ApplyStack tt m) (ApplyStack (t ': tt) m)
+        -> ApplyStack tt m -/-> ApplyStack (t ': tt) m
     tlfBackFunction _ =
         case transStackDict @MonadTunnelIO @tt @m of
             Dict -> liftWithUnlift
     in MkTransListFunction {..}
 
 emptyTransListFunction ::
-       forall tt. MonadTransStackUnliftAll tt
+       forall tt. MonadTransStackUnlift tt
     => TransListFunction '[] tt
 emptyTransListFunction = let
     tlfFunction ::
            forall m. Monad m
         => Proxy m
-        -> MFunction m (ApplyStack tt m)
+        -> m --> ApplyStack tt m
     tlfFunction _ = stackLift @tt @m
     tlfBackFunction ::
            forall m. MonadTunnelIO m
         => Proxy m
-        -> MBackFunction m (ApplyStack tt m)
+        -> m -/-> ApplyStack tt m
     tlfBackFunction _ = stackLiftWithUnlift @tt @m
     in MkTransListFunction {..}
 
 consTransListFunction ::
-       forall tta ttb t. MonadTransSemiTunnel t
+       forall tta ttb t. TransTunnel t
     => ListType (Compose Dict (TransConstraint Monad)) tta
     -> ListType (Compose Dict (TransConstraint Monad)) ttb
     -> TransListFunction tta ttb
@@ -99,29 +99,29 @@ consTransListFunction ::
 consTransListFunction wtta wttb (MkTransListFunction tf tbf) = let
     tf' :: forall m. MonadIO m
         => Proxy m
-        -> MFunction (ApplyStack (t ': tta) m) (ApplyStack (t ': ttb) m)
+        -> ApplyStack (t ': tta) m --> ApplyStack (t ': ttb) m
     tf' pm =
         case (witTransStackDict @Monad @tta @m wtta, witTransStackDict @Monad @ttb @m wttb) of
-            (Dict, Dict) -> remonad $ tf pm
+            (Dict, Dict) -> hoist $ tf pm
     tbf' ::
            forall m. MonadTunnelIO m
         => Proxy m
-        -> MBackFunction (ApplyStack (t ': tta) m) (ApplyStack (t ': ttb) m)
+        -> ApplyStack (t ': tta) m -/-> ApplyStack (t ': ttb) m
     tbf' pm =
         case (witTransStackDict @Monad @tta @m wtta, witTransStackDict @Monad @ttb @m wttb) of
-            (Dict, Dict) -> liftMBackFunction $ tbf pm
+            (Dict, Dict) -> backHoist $ tbf pm
     in MkTransListFunction tf' tbf'
 
 reorderTransListFunction ::
-       forall tta ttb t. MonadTransUnliftAll t
-    => ListType (Compose Dict MonadTransUnliftAll) tta
+       forall tta ttb t. MonadTransUnlift t
+    => ListType (Compose Dict MonadTransUnlift) tta
     -> ListType (Compose Dict (TransConstraint Monad)) ttb
     -> TransListFunction (Concat tta (t ': ttb)) (t ': Concat tta ttb)
 reorderTransListFunction wtta wttb = let
     tlff ::
            forall tt m. (Monad m)
         => Proxy m
-        -> ListType (Compose Dict MonadTransUnliftAll) tt
+        -> ListType (Compose Dict MonadTransUnlift) tt
         -> ( WMFunction (ApplyStack (Concat tt (t ': ttb)) m) (t (ApplyStack (Concat tt ttb) m))
            , ApplyStack tt (ApplyStack ttb m) :~: ApplyStack (Concat tt ttb) m
            , Dict (Monad (ApplyStack tt (ApplyStack ttb m)))
@@ -132,10 +132,10 @@ reorderTransListFunction wtta wttb = let
             Dict -> (id, Refl, Dict, Refl, hasTransConstraint @Monad @t @(ApplyStack ttb m))
     tlff pm (ConsListType (Compose Dict) (w :: ListType _ tt0)) =
         case tlff pm w of
-            (wmf, Refl, dm@Dict, Refl, dtm@Dict) ->
+            (MkWMFunction mf, Refl, dm@Dict, Refl, dtm@Dict) ->
                 case hasTransConstraint @Monad @t @(ApplyStack tt0 (ApplyStack ttb m)) of
                     Dict ->
-                        ( MkWMFunction commuteT . liftWMFunction wmf
+                        ( MkWMFunction $ commuteT . hoist mf
                         , Refl
                         , transConstraintDict dm
                         , Refl
@@ -143,14 +143,14 @@ reorderTransListFunction wtta wttb = let
     tlfFunction ::
            forall m. MonadIO m
         => Proxy m
-        -> MFunction (ApplyStack (Concat tta (t ': ttb)) m) (ApplyStack (t ': Concat tta ttb) m)
+        -> ApplyStack (Concat tta (t ': ttb)) m --> ApplyStack (t ': Concat tta ttb) m
     tlfFunction pm =
         case tlff pm wtta of
             (MkWMFunction mf, _, _, _, _) -> mf
     tlfbf ::
            forall tt m. (Monad m)
         => Proxy m
-        -> ListType (Compose Dict MonadTransUnliftAll) tt
+        -> ListType (Compose Dict MonadTransUnlift) tt
         -> ( WMBackFunction (ApplyStack (Concat tt (t ': ttb)) m) (t (ApplyStack (Concat tt ttb) m))
            , ApplyStack tt (ApplyStack ttb m) :~: ApplyStack (Concat tt ttb) m
            , Dict (Monad (ApplyStack tt (ApplyStack ttb m)))
@@ -164,7 +164,7 @@ reorderTransListFunction wtta wttb = let
             (wmbf, Refl, dm@Dict, Refl, dtm@Dict) ->
                 case hasTransConstraint @Monad @t @(ApplyStack tt0 (ApplyStack ttb m)) of
                     Dict ->
-                        ( MkWMBackFunction commuteTBack . liftWMBackFunction wmbf
+                        ( MkWMBackFunction commuteTBack . backHoistW wmbf
                         , Refl
                         , transConstraintDict dm
                         , Refl
@@ -172,7 +172,7 @@ reorderTransListFunction wtta wttb = let
     tlfBackFunction ::
            forall m. MonadTunnelIO m
         => Proxy m
-        -> MBackFunction (ApplyStack (Concat tta (t ': ttb)) m) (ApplyStack (t ': Concat tta ttb) m)
+        -> ApplyStack (Concat tta (t ': ttb)) m -/-> ApplyStack (t ': Concat tta ttb) m
     tlfBackFunction pm =
         case tlfbf pm wtta of
             (MkWMBackFunction mbf, _, _, _, _) -> mbf
@@ -186,14 +186,14 @@ contractTransListFunction wtt = let
     tlfFunction ::
            forall m. Monad m
         => Proxy m
-        -> MFunction (ApplyStack (t ': (t ': tt)) m) (ApplyStack (t ': tt) m)
+        -> ApplyStack (t ': (t ': tt)) m --> ApplyStack (t ': tt) m
     tlfFunction _ =
         case witTransStackDict @Monad @tt @m wtt of
             Dict -> contractT
     tlfBackFunction ::
            forall m. MonadTunnelIO m
         => Proxy m
-        -> MBackFunction (ApplyStack (t ': (t ': tt)) m) (ApplyStack (t ': tt) m)
+        -> ApplyStack (t ': (t ': tt)) m -/-> ApplyStack (t ': tt) m
     tlfBackFunction _ =
         case witTransStackDict @Monad @tt @m wtt of
             Dict -> contractTBack
@@ -204,11 +204,11 @@ stackTransListFunction = let
     tlfFunction ::
            forall m. Monad m
         => Proxy m
-        -> MFunction (ApplyStack tt m) (StackT tt m)
+        -> ApplyStack tt m --> StackT tt m
     tlfFunction _ = MkStackT
     tlfBackFunction ::
            forall m. MonadTunnelIO m
         => Proxy m
-        -> MBackFunction (ApplyStack tt m) (StackT tt m)
+        -> ApplyStack tt m -/-> StackT tt m
     tlfBackFunction _ call = MkStackT $ call unStackT
     in MkTransListFunction {..}

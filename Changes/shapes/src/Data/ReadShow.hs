@@ -32,7 +32,7 @@ instance Productish ReadShow where
         in MkReadShow sab rab
 
 instance Summish ReadShow where
-    pNone :: ReadShow None
+    pNone :: ReadShow Void
     pNone = let
         rsShow n = never n
         rsRead = pNone

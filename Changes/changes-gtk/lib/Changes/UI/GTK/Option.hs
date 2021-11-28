@@ -83,7 +83,7 @@ cboxFromStore whichModel esrc store = do
                     return ()
                 (False, _) -> return ()
     let
-        blockSignal :: forall a. View a -> View a
+        blockSignal :: View --> View
         blockSignal = withSignalBlocked widget changedSignal
         findN ::
                forall l. SemiSequence l

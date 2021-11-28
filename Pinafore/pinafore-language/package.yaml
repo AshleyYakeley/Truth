@@ -43,8 +43,8 @@ library:
       - Pinafore.Language.Value
       - Pinafore.Language.Name
       - Pinafore.Language.Shim
-      - Pinafore.Language.Type.Literal
       - Pinafore.Language.If
+      - Pinafore.Language.Type.Family
       - Pinafore.Language.Type.Show
       - Pinafore.Language.Type.Ground
       - Pinafore.Language.Type.Data
@@ -60,12 +60,13 @@ library:
       - Pinafore.Language.ExprShow
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.Subtype
-      - Pinafore.Language.Type
-      - Pinafore.Language.Type.DynamicEntity
+      - Pinafore.Language.Type.Entity.Type
+      - Pinafore.Language.Type.Entity.Dynamic
+      - Pinafore.Language.Type.Entity.Closed
+      - Pinafore.Language.Type.Entity.Open
       - Pinafore.Language.Type.Entity
-      - Pinafore.Language.Type.OpenEntity
-      - Pinafore.Language.Type.EntityAdapter
       - Pinafore.Language.Type.DynamicSupertype
+      - Pinafore.Language.Type
       - Pinafore.Language.DefDoc
       - Pinafore.Language.Grammar.Syntax
       - Pinafore.Language.Grammar.Read.Token

@@ -20,7 +20,7 @@ import Shapes.Numeric
 type LangColour = Color (SRGB 'Linear) Double
 
 colourGroundType :: PinaforeGroundType '[] LangColour
-colourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangColour)|]) "Colour"
+colourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangColour)|]) "Colour"
 
 instance Is PolarityType polarity => HasPinaforeType polarity LangColour where
     pinaforeType = groundPinaforeType
@@ -32,7 +32,7 @@ instance HasPinaforeGroundType '[] LangColour where
 type LangAlphaColour = Color (Alpha (SRGB 'Linear)) Double
 
 alphaColourGroundType :: PinaforeGroundType '[] LangAlphaColour
-alphaColourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangAlphaColour)|]) "AlphaColour"
+alphaColourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangAlphaColour)|]) "AlphaColour"
 
 instance Is PolarityType polarity => HasPinaforeType polarity LangAlphaColour where
     pinaforeType = groundPinaforeType

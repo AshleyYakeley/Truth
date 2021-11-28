@@ -213,7 +213,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc decl) =
 interpretDocDeclarations :: [SyntaxWithDoc SyntaxDeclaration] -> ScopeBuilder Docs
 interpretDocDeclarations decls = mconcat $ fmap interpretDocDeclaration decls
 
-interpretDeclarations :: [SyntaxWithDoc SyntaxDeclaration] -> MFunction RefNotation RefNotation
+interpretDeclarations :: [SyntaxWithDoc SyntaxDeclaration] -> RefNotation --> RefNotation
 interpretDeclarations decls ma = runScopeBuilder (interpretDocDeclarations decls) $ \_ -> ma
 
 interpretNamedConstructor :: SourcePos -> ReferenceName -> RefExpression
@@ -239,9 +239,6 @@ interpretConstructor _ SLUnit = return $ qConstExprAny $ jmToValue ()
 
 specialFormArg :: PinaforeAnnotation t -> SyntaxAnnotation -> ComposeM Maybe PinaforeSourceInterpreter t
 specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
-specialFormArg AnnotMonoEntityType (SAType st) = liftOuter $ interpretMonoEntityType st
-specialFormArg AnnotOpenEntityType (SAType st) = liftOuter $ interpretOpenEntityType st
-specialFormArg AnnotConcreteDynamicEntityType (SAType st) = liftOuter $ interpretConcreteDynamicEntityType st
 specialFormArg AnnotPositiveType (SAType st) = liftOuter $ interpretType @'Positive st
 specialFormArg AnnotNegativeType (SAType st) = liftOuter $ interpretType @'Negative st
 specialFormArg _ _ = liftInner Nothing
@@ -261,9 +258,6 @@ showSA (SAAnchor _) = "anchor"
 
 showAnnotation :: PinaforeAnnotation a -> Text
 showAnnotation AnnotAnchor = "anchor"
-showAnnotation AnnotMonoEntityType = "type"
-showAnnotation AnnotOpenEntityType = "type"
-showAnnotation AnnotConcreteDynamicEntityType = "type"
 showAnnotation AnnotPositiveType = "type"
 showAnnotation AnnotNegativeType = "type"
 
@@ -294,7 +288,7 @@ interpretCase (MkSyntaxCase spat sexpr) =
 
 interpretExpressionShadowed :: [a] -> SyntaxExpression -> RefExpression
 interpretExpressionShadowed _names sbody =
-    interpretExpression sbody {-remonadRefNotation (MkWMFunction $ withRemovedBindings names) $ -}
+    interpretExpression sbody {-hoistRefNotation (MkWMFunction $ withRemovedBindings names) $ -}
 
 interpretExpression' :: SourcePos -> SyntaxExpression' -> RefExpression
 interpretExpression' spos (SESubsume sexpr stype) = do
@@ -360,7 +354,7 @@ interpretBinding ((doc, MkSyntaxBinding spos mstype _ sexpr), vid) = do
 interpretBindings :: [(DocSyntaxBinding, VarID)] -> RefNotation [QBinding]
 interpretBindings sbinds = for sbinds interpretBinding
 
-interpretTopDeclarations :: SyntaxTopDeclarations -> MFunction PinaforeInterpreter PinaforeInterpreter
+interpretTopDeclarations :: SyntaxTopDeclarations -> PinaforeInterpreter --> PinaforeInterpreter
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) ma =
     runSourcePos spos $ runRefNotation $ interpretDeclarations sdecls $ liftRefNotation ma
 

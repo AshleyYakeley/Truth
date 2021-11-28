@@ -1,8 +1,8 @@
 module Data.Serializer where
 
+import Control.Monad.Ology.Result
 import Data.Codec
 import Data.IsoVariant
-import Data.Result
 import qualified Data.Serialize as Serialize
 import Data.Streamish
 import Shapes.Import
@@ -28,7 +28,7 @@ instance Productish Serializer where
         in MkSerializer sab dab
 
 instance Summish Serializer where
-    pNone :: Serializer None
+    pNone :: Serializer Void
     pNone = let
         serialize n = never n
         deserialize = empty

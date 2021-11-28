@@ -6,7 +6,7 @@ import Shapes
 class (Monad (WAInnerM s), Applicative s) => WrappedApplicative s where
     type WAInnerM s :: Type -> Type
     wexec :: forall a. WAInnerM s (s a) -> s a
-    wremonad :: (forall a. WAInnerM s a -> WAInnerM s a) -> s b -> s b
+    whoist :: (forall a. WAInnerM s a -> WAInnerM s a) -> s b -> s b
 
 wbind :: WrappedApplicative s => WAInnerM s a -> (a -> s b) -> s b
 wbind ma asb = wexec $ fmap asb ma

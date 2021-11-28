@@ -21,14 +21,15 @@ import Shapes
 
 -- SetRef
 setRefGroundType :: PinaforeGroundType '[ ContraCCRVariance] LangSetRef
-setRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangSetRef)|]) "SetRef"
+setRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangSetRef)|]) "SetRef"
 
 instance HasPinaforeGroundType '[ ContraCCRVariance] LangSetRef where
     pinaforeGroundType = setRefGroundType
 
 -- FiniteSetRef
 finiteSetRefGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangFiniteSetRef
-finiteSetRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangFiniteSetRef)|]) "FiniteSetRef"
+finiteSetRefGroundType =
+    stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangFiniteSetRef)|]) "FiniteSetRef"
 
 instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangFiniteSetRef where
     pinaforeGroundType = finiteSetRefGroundType
@@ -48,14 +49,14 @@ instance ( Eq t
 -}
 -- ListRef
 listRefGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangListRef
-listRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangListRef)|]) "ListRef"
+listRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangListRef)|]) "ListRef"
 
 instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangListRef where
     pinaforeGroundType = listRefGroundType
 
 -- RefOrder
 refOrderGroundType :: PinaforeGroundType '[ ContraCCRVariance] LangRefOrder
-refOrderGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangRefOrder)|]) "RefOrder"
+refOrderGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangRefOrder)|]) "RefOrder"
 
 instance HasPinaforeGroundType '[ ContraCCRVariance] LangRefOrder where
     pinaforeGroundType = refOrderGroundType
@@ -363,36 +364,39 @@ refLibEntries =
                 "@A @B <anchor>"
                 "A ~> B" $
             MkSpecialForm
-                (ConsListType AnnotMonoEntityType $
-                 ConsListType AnnotMonoEntityType $ ConsListType AnnotAnchor NilListType) $ \(MkAnyW eta, (MkAnyW etb, (anchor, ()))) -> do
-                etan <- monoEntityToNegativePinaforeType eta
-                etbn <- monoEntityToNegativePinaforeType etb
-                let
-                    bta = biRangeAnyF (etan, monoToPositiveDolanType eta)
-                    btb = biRangeAnyF (etbn, monoToPositiveDolanType etb)
-                    in case (bta, btb, monoEntityTypeEq eta, monoEntityTypeEq etb) of
-                           (MkAnyF rta (MkRange praContra praCo), MkAnyF rtb (MkRange prbContra prbCo), Dict, Dict) ->
-                               withSubrepresentative rangeTypeInKind rta $
-                               withSubrepresentative rangeTypeInKind rtb $ let
-                                   typef =
-                                       singleDolanShimWit $
-                                       mkPolarShimWit $
-                                       GroundedDolanSingularType morphismGroundType $
-                                       ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
-                                   morphism =
-                                       propertyMorphism
-                                           (monoEntityAdapter eta)
-                                           (monoEntityAdapter etb)
-                                           (MkPredicate anchor)
-                                   pinamorphism =
-                                       MkLangMorphism $
-                                       storageModelBased pinaforeStorageModel $
-                                       cfmap4 (MkCatDual $ shimToFunction praContra) $
-                                       cfmap3 (shimToFunction praCo) $
-                                       cfmap2 (MkCatDual $ shimToFunction prbContra) $
-                                       cfmap1 (shimToFunction prbCo) morphism
-                                   anyval = MkAnyValue typef pinamorphism
-                                   in return anyval
+                (ConsListType AnnotPositiveType $ ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(ta, (tb, (anchor, ()))) -> do
+                aeta <- getMonoEntityType ta
+                aetb <- getMonoEntityType tb
+                case (aeta, aetb) of
+                    (MkAnyW eta, MkAnyW etb) -> do
+                        etan <- monoEntityToNegativePinaforeType eta
+                        etbn <- monoEntityToNegativePinaforeType etb
+                        let
+                            bta = biRangeAnyF (etan, monoToPositiveDolanType eta)
+                            btb = biRangeAnyF (etbn, monoToPositiveDolanType etb)
+                            in case (bta, btb, monoEntityTypeEq eta, monoEntityTypeEq etb) of
+                                   (MkAnyF rta (MkRange praContra praCo), MkAnyF rtb (MkRange prbContra prbCo), Dict, Dict) ->
+                                       withSubrepresentative rangeTypeInKind rta $
+                                       withSubrepresentative rangeTypeInKind rtb $ let
+                                           typef =
+                                               singleDolanShimWit $
+                                               mkPolarShimWit $
+                                               GroundedDolanSingularType morphismGroundType $
+                                               ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
+                                           morphism =
+                                               propertyMorphism
+                                                   (monoEntityAdapter eta)
+                                                   (monoEntityAdapter etb)
+                                                   (MkPredicate anchor)
+                                           pinamorphism =
+                                               MkLangMorphism $
+                                               storageModelBased pinaforeStorageModel $
+                                               cfmap4 (MkCatDual $ shimToFunction praContra) $
+                                               cfmap3 (shimToFunction praCo) $
+                                               cfmap2 (MkCatDual $ shimToFunction prbContra) $
+                                               cfmap1 (shimToFunction prbCo) morphism
+                                           anyval = MkAnyValue typef pinamorphism
+                                           in return anyval
           ]
     , docTreeEntry
           "RefOrders"
@@ -419,11 +423,7 @@ refLibEntries =
                                 GroundedDolanSingularType funcGroundType $
                                 ConsDolanArguments varb $
                                 ConsDolanArguments
-                                    (singleDolanType $
-                                     GroundedDolanSingularType
-                                         (EntityPinaforeGroundType NilListType $
-                                          LiteralEntityGroundType OrderingLiteralType)
-                                         NilDolanArguments)
+                                    (singleDolanType $ GroundedDolanSingularType orderingGroundType NilDolanArguments)
                                     NilDolanArguments
                             return $
                                 (functionToShim "Order to RefOrder" pureLangRefOrder) .

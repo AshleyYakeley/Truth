@@ -16,7 +16,7 @@ module Control.Monad.LifeCycle
     ) where
 
 import Control.Monad.Coroutine
-import Control.Monad.Exception
+import Control.Monad.Ology.Exception
 import Data.Coercion
 import Data.IORef
 import Shapes.Import
@@ -65,7 +65,8 @@ instance MonadIO LifeCycle where
     liftIO ioa = MkLifeCycle $ \_ -> ioa
 
 instance MonadTunnelIO LifeCycle where
-    tunnelIO :: forall r. (forall f. FunctorOne f => (forall a. LifeCycle a -> IO (f a)) -> IO (f r)) -> LifeCycle r
+    type TunnelIO LifeCycle = Identity
+    tunnelIO :: forall r. ((forall a. LifeCycle a -> IO (Identity a)) -> IO (Identity r)) -> LifeCycle r
     tunnelIO f = MkLifeCycle $ \var -> fmap runIdentity $ f $ \a -> fmap Identity $ unLifeCycleT a var
 
 instance MonadUnliftIO LifeCycle where
@@ -95,11 +96,11 @@ lifeCycleClose closer =
 instance {-# OVERLAPPING #-} MonadLifeCycleIO LifeCycle where
     liftLifeCycle lc = lc
 
-instance (MonadTransSemiTunnel t, MonadIO (t m), MonadLifeCycleIO m) => MonadLifeCycleIO (t m) where
+instance (TransTunnel t, MonadIO (t m), MonadLifeCycleIO m) => MonadLifeCycleIO (t m) where
     liftLifeCycle lc = lift $ liftLifeCycle lc
-    subLifeCycle = remonad subLifeCycle
+    subLifeCycle = hoist subLifeCycle
 
-instance (MonadTransSemiTunnel t, TransConstraint MonadIO t) => TransConstraint MonadLifeCycleIO t where
+instance (TransTunnel t, TransConstraint MonadIO t) => TransConstraint MonadLifeCycleIO t where
     hasTransConstraint ::
            forall m. MonadLifeCycleIO m
         => Dict (MonadLifeCycleIO (t m))
@@ -107,8 +108,8 @@ instance (MonadTransSemiTunnel t, TransConstraint MonadIO t) => TransConstraint 
         case hasTransConstraint @MonadIO @t @m of
             Dict -> Dict
 
-class (MonadLifeCycleIO m) => MonadUnliftLifeCycleIO m where
-    liftLifeCycleIOWithUnlift :: MBackFunction LifeCycle m
+class MonadLifeCycleIO m => MonadUnliftLifeCycleIO m where
+    liftLifeCycleIOWithUnlift :: LifeCycle -/-> m
 
 getLifeState :: MonadUnliftLifeCycleIO m => m a -> m (a, LifeState)
 getLifeState ma = liftLifeCycleIOWithUnlift $ \unlift -> liftIO $ getInnerLifeState $ unlift ma
@@ -136,7 +137,7 @@ lifeCycleEarlyCloser lc = do
 instance MonadUnliftLifeCycleIO LifeCycle where
     liftLifeCycleIOWithUnlift call = call id
 
-instance (MonadUnliftLifeCycleIO m, MonadUnliftIO m, MonadTransSemiTunnel t, MonadTransUnlift t, MonadIO (t m)) =>
+instance (MonadUnliftLifeCycleIO m, MonadUnliftIO m, TransTunnel t, MonadTransUnlift t, MonadIO (t m)) =>
              MonadUnliftLifeCycleIO (t m) where
     liftLifeCycleIOWithUnlift call =
         liftWithUnlift $ \unlift -> liftLifeCycleIOWithUnlift $ \unliftLC -> call $ unliftLC . unlift
@@ -170,7 +171,7 @@ instance LiftLifeCycle LifeCycle where
             MkLifeState closer <- takeMVar var
             closer
 
-instance ( MonadTransUnliftAll t
+instance ( MonadTransUnlift t
          , LiftLifeCycle m
          , MonadUnliftIO m
          , MonadUnliftIO (LifeCycleInner m)
@@ -178,9 +179,9 @@ instance ( MonadTransUnliftAll t
          , MonadIO (t (LifeCycleInner m))
          ) => LiftLifeCycle (t m) where
     type LifeCycleInner (t m) = t (LifeCycleInner m)
-    liftToLifeCycle = remonad liftToLifeCycle
-    getInnerLifeState tma = liftWithUnliftAll $ \unlift -> getInnerLifeState $ unlift tma
-    withLifeCycle ma call = liftWithUnliftAll $ \unlift -> withLifeCycle (unlift ma) (\a -> unlift $ call a)
+    liftToLifeCycle = hoist liftToLifeCycle
+    getInnerLifeState tma = liftWithUnlift $ \unlift -> getInnerLifeState $ unlift tma
+    withLifeCycle ma call = liftWithUnlift $ \unlift -> withLifeCycle (unlift ma) (\a -> unlift $ call a)
 
 lifeCycleWith ::
        (MonadCoroutine (LifeCycleInner m), MonadAskUnliftIO (LifeCycleInner m), LiftLifeCycle m)

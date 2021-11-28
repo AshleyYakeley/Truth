@@ -43,7 +43,7 @@ aModelEdit = refEdit . aModelAReference
 
 instance MapResource (AModel update) where
     mapResource ::
-           forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+           forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)
         => TransListFunction tt1 tt2
         -> AModel update tt1
         -> AModel update tt2

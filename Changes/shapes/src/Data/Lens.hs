@@ -26,7 +26,7 @@ instance Monad m => Productish (Lens' m a) where
             a' <- pama p a
             qama q a'
 
-lensNone :: Lens' m None b
+lensNone :: Lens' m Void b
 lensNone = MkLens never $ \_ -> never
 
 lensSum :: Functor m => Lens' m p b -> Lens' m q b -> Lens' m (Either p q) b
