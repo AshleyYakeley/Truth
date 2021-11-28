@@ -45,4 +45,4 @@ instance HasPinaforeGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorp
 
 -- Entity
 instance HasPinaforeGroundType '[] Entity where
-    pinaforeGroundType = EntityPinaforeGroundType NilListType TopEntityGroundType
+    pinaforeGroundType = entityGroundType

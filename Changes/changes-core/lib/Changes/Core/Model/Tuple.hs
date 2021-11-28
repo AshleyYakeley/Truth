@@ -22,7 +22,7 @@ import Changes.Core.Types
 class (forall update. MapResource (f update)) => TupleResource (f :: Type -> [TransKind] -> Type) where
     noneTupleAResource :: f (TupleUpdate (ListElementType '[])) '[]
     consTupleAResource ::
-           forall tt update updates. MonadTransStackUnliftAll tt
+           forall tt update updates. MonadTransStackUnlift tt
         => f update tt
         -> f (TupleUpdate (ListElementType updates)) tt
         -> f (TupleUpdate (ListElementType (update : updates))) tt
@@ -42,7 +42,7 @@ objToUObj (MkResource rr anobj) = MkResource rr $ MkUAReference anobj
 
 instance MapResource (UAReference update) where
     mapResource ::
-           forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+           forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)
         => TransListFunction tt1 tt2
         -> UAReference update tt1
         -> UAReference update tt2
@@ -115,7 +115,7 @@ instance TupleResource UAReference where
         refCommitTask = mempty
         in MkUAReference $ MkAReference {..}
     consTupleAResource ::
-           forall tt update updates. MonadTransStackUnliftAll tt
+           forall tt update updates. MonadTransStackUnlift tt
         => UAReference update tt
         -> UAReference (TupleUpdate (ListElementType updates)) tt
         -> UAReference (TupleUpdate (ListElementType (update : updates))) tt
@@ -143,7 +143,7 @@ instance TupleResource AModel where
     noneTupleAResource :: AModel (TupleUpdate (ListElementType '[])) '[]
     noneTupleAResource = MkAModel (unUAReference noneTupleAResource) (\_ _ -> return ()) mempty
     consTupleAResource ::
-           forall tt update updates. MonadTransStackUnliftAll tt
+           forall tt update updates. MonadTransStackUnlift tt
         => AModel update tt
         -> AModel (TupleUpdate (ListElementType updates)) tt
         -> AModel (TupleUpdate (ListElementType (update : updates))) tt

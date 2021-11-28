@@ -69,8 +69,8 @@ instance CoercibleKind k => InCategory (JMShim k) where
             case ccrVarianceInCategory @(JMShim Type) pvt of
                 Dict -> applyPolyShim pvt (pf <.> qf) (pa <.> qa)
     p <.> q
-        | Just pc <- enhancedCoercion p
-        , Just qc <- enhancedCoercion q = CoerceJMShim (show p <> " . " <> show q) $ pc <.> qc
+        | Just pc <- shimToCoercion p
+        , Just qc <- shimToCoercion q = CoerceJMShim (show p <> " . " <> show q) $ pc <.> qc
     Join1JMShim p <.> q = Join1JMShim $ p <.> q
     Join2JMShim p <.> q = Join2JMShim $ p <.> q
     p <.> JoinFJMShim ta tb = joinf (p <.> ta) (p <.> tb)
@@ -153,30 +153,30 @@ instance LazyCategory (JMShim Type)
 instance CoercibleKind k => IsoMapShim (JMShim k)
 
 instance CoercibleKind k => CoerceShim (JMShim k) where
-    coercionEnhanced = CoerceJMShim
-    enhancedCoercion IdentityJMShim = Just cid
-    enhancedCoercion (CoerceJMShim _ c) = Just c
-    enhancedCoercion (ConsJMShim CoCCRVarianceType f a)
+    coercionToShim = CoerceJMShim
+    shimToCoercion IdentityJMShim = Just cid
+    shimToCoercion (CoerceJMShim _ c) = Just c
+    shimToCoercion (ConsJMShim CoCCRVarianceType f a)
         | Just Dict <- varrep1 f = do
-            cf <- enhancedCoercion f
-            ca <- enhancedCoercion a
+            cf <- shimToCoercion f
+            ca <- shimToCoercion a
             return $ applyCoercion1 cf ca
-    enhancedCoercion (ConsJMShim CoCCRVarianceType f a)
+    shimToCoercion (ConsJMShim CoCCRVarianceType f a)
         | Just Dict <- varrep2 f = do
-            cf <- enhancedCoercion f
-            ca <- enhancedCoercion a
+            cf <- shimToCoercion f
+            ca <- shimToCoercion a
             return $ applyCoercion2 cf ca
-    enhancedCoercion (ConsJMShim ContraCCRVarianceType f (MkCatDual a))
+    shimToCoercion (ConsJMShim ContraCCRVarianceType f (MkCatDual a))
         | Just Dict <- varrep1 f = do
-            cf <- enhancedCoercion f
-            ca <- enhancedCoercion a
+            cf <- shimToCoercion f
+            ca <- shimToCoercion a
             return $ applyCoercion1 cf $ invert ca
-    enhancedCoercion (ConsJMShim ContraCCRVarianceType f (MkCatDual a))
+    shimToCoercion (ConsJMShim ContraCCRVarianceType f (MkCatDual a))
         | Just Dict <- varrep2 f = do
-            cf <- enhancedCoercion f
-            ca <- enhancedCoercion a
+            cf <- shimToCoercion f
+            ca <- shimToCoercion a
             return $ applyCoercion2 cf $ invert ca
-    enhancedCoercion _ = Nothing
+    shimToCoercion _ = Nothing
 
 instance CoercibleKind k => FunctionShim (JMShim k) where
     functionToShim = FuncJMShim
@@ -185,7 +185,7 @@ instance CoercibleKind k => FunctionShim (JMShim k) where
         => JMShim k a b
         -> KindFunction a b
     shimToFunction f
-        | Just c <- enhancedCoercion f = coercionToFunction c
+        | Just c <- shimToCoercion f = coercionToFunction c
     shimToFunction (FuncJMShim _ f) = f
     shimToFunction IdentityJMShim = cid
     shimToFunction (ComposeJMShim a b) = shimToFunction a <.> shimToFunction b

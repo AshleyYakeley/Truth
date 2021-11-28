@@ -94,7 +94,7 @@ widgetGetTree full w = do
         Nothing -> return [w]
 
 withSignalBlocked :: IsObject obj => obj -> SignalHandlerId -> View a -> View a
-withSignalBlocked obj conn = remonad $ bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
+withSignalBlocked obj conn = hoist $ bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
 
 withSignalsBlocked :: IsObject obj => obj -> [SignalHandlerId] -> View a -> View a
 withSignalsBlocked _obj [] = id
@@ -102,7 +102,7 @@ withSignalsBlocked obj (c:cc) = withSignalBlocked obj c . withSignalsBlocked obj
 
 class GTKCallbackType t where
     type CallbackViewLifted t :: Type
-    gCallbackUnlift :: MFunction View IO -> CallbackViewLifted t -> t
+    gCallbackUnlift :: (View --> IO) -> CallbackViewLifted t -> t
 
 instance GTKCallbackType (IO r) where
     type CallbackViewLifted (IO r) = View r

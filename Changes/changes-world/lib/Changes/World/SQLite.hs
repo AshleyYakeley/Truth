@@ -202,7 +202,7 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
                             if exists
                                 then return ()
                                 else for_ (SQLite.toSchema schema) $ execute_ conn -- create the database if we're creating the file
-                            runReaderT (remonad unlift call) conn
+                            runReaderT (hoist unlift call) conn
         wherePart :: Schema (TupleWhereClause SQLiteDatabase row) -> TupleWhereClause SQLiteDatabase row -> QueryString
         wherePart rowSchema wc =
             case wc of

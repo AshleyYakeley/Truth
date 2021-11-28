@@ -3,13 +3,14 @@ module Pinafore.Language.Type.Type where
 import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
-import Pinafore.Language.Error
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
-import Pinafore.Language.Type.Entity
+import Pinafore.Language.Type.DynamicSupertype
+import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
+import Pinafore.Language.Type.Subtype ()
 import Shapes
 
 type PinaforeSingularType :: Polarity -> Type -> Type
@@ -30,11 +31,7 @@ type PinaforePatternConstructor = PatternConstructor Name (PinaforeShimWit 'Posi
 
 type PinaforePattern = SealedPattern Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
 
-type instance InterpreterProvidedType PinaforeTypeSystem =
-     ProvidedType
-
-type instance InterpreterClosedEntityType PinaforeTypeSystem =
-     ClosedEntityType
+type instance InterpreterFamilyType PinaforeTypeSystem = FamilyType
 
 type PinaforeSpecialVals = SpecialVals PinaforeTypeSystem
 
@@ -54,11 +51,10 @@ type PinaforeAnnotation = Annotation PinaforeTypeSystem
 
 type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeSourceInterpreter
 
-monoEntityToNegativePinaforeType ::
-       forall m t. MonadThrow ErrorType m
-    => MonoEntityType t
-    -> m (PinaforeShimWit 'Negative t)
-monoEntityToNegativePinaforeType et =
-    case monoToMaybeNegativeDolanType et of
-        Just wit -> return wit
-        Nothing -> throw InterpretTypeNoneNotNegativeEntityError
+getGreatestDynamicSupertype ::
+       PinaforeType 'Positive t -> PinaforeSourceInterpreter (PinaforeGreatestDynamicSupertype t)
+getGreatestDynamicSupertype (ConsDolanType (GroundedDolanSingularType gt args) NilDolanType)
+    | Just ds <- pgtGreatestDynamicSupertype gt args = return $ isomapGDS iJoinR1 ds
+getGreatestDynamicSupertype t = do
+    t' <- invertType t
+    return $ MkGreatestDynamicSupertype t' id $ functionToShim "dynamic-supertype" Just

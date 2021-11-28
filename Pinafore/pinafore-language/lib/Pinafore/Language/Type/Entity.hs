@@ -1,156 +1,224 @@
-module Pinafore.Language.Type.Entity where
+{-# OPTIONS -fno-warn-orphans #-}
 
+module Pinafore.Language.Type.Entity
+    ( entityGroundType
+    , monoEntityToNegativePinaforeType
+    , getMonoEntityType
+    , maybeEntityConvert
+    , listEntityConvert
+    , pairEntityConvert
+    , eitherEntityConvert
+    ) where
+
+import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
-import Pinafore.Language.Name
-import Pinafore.Language.Type.DynamicEntity
-import Pinafore.Language.Type.Identified
-import Pinafore.Language.Type.Literal
-import Pinafore.Language.Type.OpenEntity
+import Pinafore.Language.Type.Entity.Closed
+import Pinafore.Language.Type.Entity.Dynamic
+import Pinafore.Language.Type.Entity.Open
+import Pinafore.Language.Type.Entity.Type
+import Pinafore.Language.Type.Family
+import Pinafore.Language.Type.Ground
+import Pinafore.Language.Type.Type
 import Shapes
 
-type EntityGroundType :: forall k. k -> Type
-data EntityGroundType t where
-    TopEntityGroundType :: EntityGroundType Entity
-    OpenEntityGroundType :: OpenEntityType tid -> EntityGroundType (OpenEntity tid)
-    TopDynamicEntityGroundType :: EntityGroundType DynamicEntity
-    ADynamicEntityGroundType :: Name -> DynamicEntityType -> EntityGroundType DynamicEntity
-    LiteralEntityGroundType :: LiteralType t -> EntityGroundType t
-    MaybeEntityGroundType :: EntityGroundType Maybe
-    ListEntityGroundType :: EntityGroundType []
-    PairEntityGroundType :: EntityGroundType (,)
-    EitherEntityGroundType :: EntityGroundType Either
-    ClosedEntityGroundType
-        :: Name -> TypeIDType tid -> ClosedEntityType (Identified tid) -> EntityGroundType (Identified tid)
+maybeEntityAdapter :: EntityAdapter t -> EntityAdapter (Maybe t)
+maybeEntityAdapter et = let
+    justAnchor = codeAnchor "pinafore-base:Just"
+    justAdapter = constructorEntityAdapter justAnchor $ ConsListType et NilListType
+    nothingAnchor = codeAnchor "pinafore-base:Nothing"
+    nothingAdapter = constructorEntityAdapter nothingAnchor NilListType
+    from :: Either (a, ()) () -> Maybe a
+    from (Left (a, ())) = Just a
+    from (Right ()) = Nothing
+    to :: Maybe a -> Either (a, ()) ()
+    to (Just a) = Left (a, ())
+    to Nothing = Right ()
+    in isoMap from to $ justAdapter <+++> nothingAdapter
 
-data ClosedEntityType (t :: Type) where
-    NilClosedEntityType :: ClosedEntityType None
-    ConsClosedEntityType
-        :: Anchor -> ListType MonoEntityType tl -> ClosedEntityType tt -> ClosedEntityType (Either (HList tl) tt)
+maybeEntityConvert :: Maybe Entity -> Entity
+maybeEntityConvert = entityAdapterConvert $ maybeEntityAdapter plainEntityAdapter
 
-instance TestEquality ClosedEntityType where
-    testEquality NilClosedEntityType NilClosedEntityType = Just Refl
-    testEquality (ConsClosedEntityType a1 l1 t1) (ConsClosedEntityType a2 l2 t2)
-        | a1 == a2 = do
-            Refl <- testEquality l1 l2
-            Refl <- testEquality t1 t2
-            Just Refl
-    testEquality _ _ = Nothing
+maybeEntityFamily :: EntityFamily
+maybeEntityFamily =
+    pinaforeEntityFamily maybeGroundType $ \epShowType -> let
+        epCovaryMap = covarymap
+        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) Maybe t -> Dict (Eq t)
+        epEq (ConsArguments t NilArguments) =
+            case monoEntityTypeEq t of
+                Dict -> Dict
+        epAdapter :: forall t. Arguments MonoEntityType Maybe t -> EntityAdapter t
+        epAdapter (ConsArguments t NilArguments) = maybeEntityAdapter $ monoEntityAdapter t
+        in MkEntityProperties {..}
 
-instance Show (ClosedEntityType t) where
-    show NilClosedEntityType = "nil"
-    show (ConsClosedEntityType a tt NilClosedEntityType) = show tt <> " " <> show a
-    show (ConsClosedEntityType a tt rest) = show tt <> " " <> show a <> " | " <> show rest
+listEntityAdapter :: EntityAdapter t -> EntityAdapter [t]
+listEntityAdapter et = let
+    nilAnchor = codeAnchor "pinafore-base:Nil"
+    nilAdapter = constructorEntityAdapter nilAnchor NilListType
+    consAnchor = codeAnchor "pinafore-base:Cons"
+    consAdapter = constructorEntityAdapter consAnchor $ ConsListType et $ ConsListType listAdapter NilListType
+    listAdapter = isoMap from to $ nilAdapter <+++> consAdapter
+    from :: Either () (a, ([a], ())) -> [a]
+    from (Left ()) = []
+    from (Right (a, (aa, ()))) = a : aa
+    to :: [a] -> Either () (a, ([a], ()))
+    to [] = Left ()
+    to (a:aa) = Right (a, (aa, ()))
+    in listAdapter
 
-closedEntityTypeEq :: ClosedEntityType t -> Dict (Eq t)
-closedEntityTypeEq NilClosedEntityType = Dict
-closedEntityTypeEq (ConsClosedEntityType _ t1 tr) =
-    case (hListEq monoEntityTypeEq t1, closedEntityTypeEq tr) of
-        (Dict, Dict) -> Dict
+listEntityConvert :: [Entity] -> Entity
+listEntityConvert = entityAdapterConvert $ listEntityAdapter plainEntityAdapter
 
-monoEntityTypeEq :: MonoEntityType t -> Dict (Eq t)
-monoEntityTypeEq (MkMonoType TopEntityGroundType NilArguments) = Dict
-monoEntityTypeEq (MkMonoType (OpenEntityGroundType _) NilArguments) = Dict
-monoEntityTypeEq (MkMonoType TopDynamicEntityGroundType NilArguments) = Dict
-monoEntityTypeEq (MkMonoType (ADynamicEntityGroundType _ _) NilArguments) = Dict
-monoEntityTypeEq (MkMonoType (LiteralEntityGroundType t) NilArguments) =
-    case literalTypeAsLiteral t of
-        Dict -> Dict
-monoEntityTypeEq (MkMonoType MaybeEntityGroundType (ConsArguments t NilArguments)) =
-    case monoEntityTypeEq t of
-        Dict -> Dict
-monoEntityTypeEq (MkMonoType ListEntityGroundType (ConsArguments t NilArguments)) =
-    case monoEntityTypeEq t of
-        Dict -> Dict
-monoEntityTypeEq (MkMonoType PairEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
-    case (monoEntityTypeEq ta, monoEntityTypeEq tb) of
-        (Dict, Dict) -> Dict
-monoEntityTypeEq (MkMonoType EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
-    case (monoEntityTypeEq ta, monoEntityTypeEq tb) of
-        (Dict, Dict) -> Dict
-monoEntityTypeEq (MkMonoType (ClosedEntityGroundType _ _ t) NilArguments) =
-    case closedEntityTypeEq t of
-        Dict -> Dict
+listEntityFamily :: EntityFamily
+listEntityFamily =
+    pinaforeEntityFamily listGroundType $ \epShowType -> let
+        epCovaryMap = covarymap
+        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) [] t -> Dict (Eq t)
+        epEq (ConsArguments t NilArguments) =
+            case monoEntityTypeEq t of
+                Dict -> Dict
+        epAdapter :: forall t. Arguments MonoEntityType [] t -> EntityAdapter t
+        epAdapter (ConsArguments t NilArguments) = listEntityAdapter $ monoEntityAdapter t
+        in MkEntityProperties {..}
 
-entityGroundTypeTestEquality ::
-       forall (ka :: Type) (ta :: ka) (kb :: Type) (tb :: kb).
-       EntityGroundType ta
-    -> EntityGroundType tb
-    -> Maybe (ta :~~: tb, Dict (CoercibleKind ka, InKind ta))
-entityGroundTypeTestEquality TopEntityGroundType TopEntityGroundType = Just (HRefl, Dict)
-entityGroundTypeTestEquality (OpenEntityGroundType t1) (OpenEntityGroundType t2) = do
-    Refl <- testEquality t1 t2
-    Just (HRefl, Dict)
-entityGroundTypeTestEquality TopDynamicEntityGroundType TopDynamicEntityGroundType = Just (HRefl, Dict)
-entityGroundTypeTestEquality (ADynamicEntityGroundType _ t1) (ADynamicEntityGroundType _ t2) =
-    if t1 == t2
-        then Just (HRefl, Dict)
-        else Nothing
-entityGroundTypeTestEquality (LiteralEntityGroundType t1) (LiteralEntityGroundType t2) = do
-    Refl <- testEquality t1 t2
-    Just (HRefl, Dict)
-entityGroundTypeTestEquality MaybeEntityGroundType MaybeEntityGroundType = Just (HRefl, Dict)
-entityGroundTypeTestEquality PairEntityGroundType PairEntityGroundType = Just (HRefl, Dict)
-entityGroundTypeTestEquality ListEntityGroundType ListEntityGroundType = Just (HRefl, Dict)
-entityGroundTypeTestEquality EitherEntityGroundType EitherEntityGroundType = Just (HRefl, Dict)
-entityGroundTypeTestEquality (ClosedEntityGroundType _ sa ta) (ClosedEntityGroundType _ sb tb) = do
-    Refl <- testEquality sa sb
-    Refl <- testEquality ta tb
-    Just (HRefl, Dict)
-entityGroundTypeTestEquality _ _ = Nothing
+pairEntityAdapter :: EntityAdapter ta -> EntityAdapter tb -> EntityAdapter (ta, tb)
+pairEntityAdapter eta etb = let
+    pairAnchor = codeAnchor "pinafore-base:Pair"
+    pairAdapter = constructorEntityAdapter pairAnchor $ ConsListType eta $ ConsListType etb NilListType
+    from :: (a, (b, ())) -> (a, b)
+    from (a, (b, ())) = (a, b)
+    to :: (a, b) -> (a, (b, ()))
+    to (a, b) = (a, (b, ()))
+    in isoMap from to pairAdapter
 
-instance TestHetEquality EntityGroundType where
-    testHetEquality eta etb = fmap fst $ entityGroundTypeTestEquality eta etb
+pairEntityConvert :: (Entity, Entity) -> Entity
+pairEntityConvert = entityAdapterConvert $ pairEntityAdapter plainEntityAdapter plainEntityAdapter
 
-type MonoEntityType = MonoType EntityGroundType
+pairEntityFamily :: EntityFamily
+pairEntityFamily =
+    pinaforeEntityFamily pairGroundType $ \epShowType -> let
+        epCovaryMap = covarymap
+        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) (,) t -> Dict (Eq t)
+        epEq (ConsArguments ta (ConsArguments tb NilArguments)) =
+            case (monoEntityTypeEq ta, monoEntityTypeEq tb) of
+                (Dict, Dict) -> Dict
+        epAdapter :: forall t. Arguments MonoEntityType (,) t -> EntityAdapter t
+        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) =
+            pairEntityAdapter (monoEntityAdapter ta) (monoEntityAdapter tb)
+        in MkEntityProperties {..}
 
-instance IsCovaryGroundType EntityGroundType where
-    groundTypeCovaryType ::
-           forall (k :: Type) (t :: k) r.
-           EntityGroundType t
-        -> (forall (dv :: DolanVariance). k ~ DolanVarianceKind dv => CovaryType dv -> r)
-        -> r
-    groundTypeCovaryType TopEntityGroundType cont = cont NilListType
-    groundTypeCovaryType (OpenEntityGroundType _) cont = cont NilListType
-    groundTypeCovaryType TopDynamicEntityGroundType cont = cont NilListType
-    groundTypeCovaryType (ADynamicEntityGroundType _ _) cont = cont NilListType
-    groundTypeCovaryType (LiteralEntityGroundType _) cont = cont NilListType
-    groundTypeCovaryType MaybeEntityGroundType cont = cont $ ConsListType Refl NilListType
-    groundTypeCovaryType ListEntityGroundType cont = cont $ ConsListType Refl NilListType
-    groundTypeCovaryType PairEntityGroundType cont = cont $ ConsListType Refl $ ConsListType Refl NilListType
-    groundTypeCovaryType EitherEntityGroundType cont = cont $ ConsListType Refl $ ConsListType Refl NilListType
-    groundTypeCovaryType (ClosedEntityGroundType _ _ _) cont = cont NilListType
-    groundTypeCovaryMap :: forall k (t :: k). EntityGroundType t -> CovaryMap t
-    groundTypeCovaryMap TopEntityGroundType = covarymap
-    groundTypeCovaryMap (OpenEntityGroundType _) = covarymap
-    groundTypeCovaryMap TopDynamicEntityGroundType = covarymap
-    groundTypeCovaryMap (ADynamicEntityGroundType _ _) = covarymap
-    groundTypeCovaryMap (LiteralEntityGroundType _) = covarymap
-    groundTypeCovaryMap MaybeEntityGroundType = covarymap
-    groundTypeCovaryMap ListEntityGroundType = covarymap
-    groundTypeCovaryMap PairEntityGroundType = covarymap
-    groundTypeCovaryMap EitherEntityGroundType = covarymap
-    groundTypeCovaryMap (ClosedEntityGroundType _ _ _) = covarymap
+eitherEntityAdapter :: EntityAdapter ta -> EntityAdapter tb -> EntityAdapter (Either ta tb)
+eitherEntityAdapter eta etb = let
+    from :: (a, ()) -> a
+    from (a, ()) = a
+    to :: a -> (a, ())
+    to a = (a, ())
+    leftAnchor = codeAnchor "pinafore-base:Left"
+    leftAdapter = isoMap from to $ constructorEntityAdapter leftAnchor $ ConsListType eta NilListType
+    rightAnchor = codeAnchor "pinafore-base:Right"
+    rightAdapter = isoMap from to $ constructorEntityAdapter rightAnchor $ ConsListType etb NilListType
+    in leftAdapter <+++> rightAdapter
 
-entityGroundTypeShowPrec ::
-       forall w f t. (forall a. w a -> (Text, Int)) -> EntityGroundType f -> Arguments w f t -> (Text, Int)
-entityGroundTypeShowPrec _ TopEntityGroundType NilArguments = ("Entity", 0)
-entityGroundTypeShowPrec _ (OpenEntityGroundType n) NilArguments = exprShowPrec n
-entityGroundTypeShowPrec _ TopDynamicEntityGroundType NilArguments = ("DynamicEntity", 0)
-entityGroundTypeShowPrec _ (ADynamicEntityGroundType n _) NilArguments = exprShowPrec n
-entityGroundTypeShowPrec _ (LiteralEntityGroundType t) NilArguments = exprShowPrec t
-entityGroundTypeShowPrec es MaybeEntityGroundType (ConsArguments ta NilArguments) = ("Maybe " <> precShow 0 (es ta), 2)
-entityGroundTypeShowPrec es ListEntityGroundType (ConsArguments ta NilArguments) = ("[" <> fst (es ta) <> "]", 0)
-entityGroundTypeShowPrec es PairEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments)) =
-    ("(" <> fst (es ta) <> ", " <> fst (es tb) <> ")", 0)
-entityGroundTypeShowPrec es EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments)) =
-    ("Either " <> precShow 0 (es ta) <> " " <> precShow 0 (es tb), 2)
-entityGroundTypeShowPrec _ (ClosedEntityGroundType n _ _) NilArguments = exprShowPrec n
+eitherEntityConvert :: Either Entity Entity -> Entity
+eitherEntityConvert = entityAdapterConvert $ eitherEntityAdapter plainEntityAdapter plainEntityAdapter
 
-instance ExprShow (MonoEntityType t) where
-    exprShowPrec (MkMonoType gt args) = entityGroundTypeShowPrec exprShowPrec gt args
+eitherEntityFamily :: EntityFamily
+eitherEntityFamily =
+    pinaforeEntityFamily eitherGroundType $ \epShowType -> let
+        epCovaryMap = covarymap
+        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) Either t -> Dict (Eq t)
+        epEq (ConsArguments ta (ConsArguments tb NilArguments)) =
+            case (monoEntityTypeEq ta, monoEntityTypeEq tb) of
+                (Dict, Dict) -> Dict
+        epAdapter :: forall t. Arguments MonoEntityType Either t -> EntityAdapter t
+        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) =
+            eitherEntityAdapter (monoEntityAdapter ta) (monoEntityAdapter tb)
+        in MkEntityProperties {..}
 
-instance Show (MonoEntityType t) where
-    show t = unpack $ exprShow t
+entityGroundType :: PinaforeGroundType '[] Entity
+entityGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Entity)|]) "Entity"
+
+entityEntityFamily :: EntityFamily
+entityEntityFamily = simplePinaforeEntityFamily entityGroundType plainEntityAdapter
+
+literalEntityFamily ::
+       forall (t :: Type). AsLiteral t
+    => PinaforeGroundType '[] t
+    -> EntityFamily
+literalEntityFamily t =
+    pinaforeEntityFamily t $ \epShowType -> let
+        epCovaryMap = covarymap
+        epEq :: forall (ta :: Type). Arguments (MonoType EntityGroundType) t ta -> Dict (Eq ta)
+        epEq NilArguments = Dict
+        epAdapter :: forall ta. Arguments MonoEntityType t ta -> EntityAdapter ta
+        epAdapter NilArguments = literalEntityAdapter
+        in MkEntityProperties {..}
+
+findmap :: [a] -> (a -> Maybe b) -> Maybe b
+findmap [] _ = Nothing
+findmap (x:xs) f =
+    case f x of
+        Nothing -> findmap xs f
+        Just y -> Just y
+
+allEntityFamilies :: [EntityFamily]
+allEntityFamilies =
+    [ maybeEntityFamily
+    , listEntityFamily
+    , pairEntityFamily
+    , eitherEntityFamily
+    , entityEntityFamily
+    , dynamicEntityFamily
+    , aDynamicEntityEntityFamily
+    , closedEntityFamily
+    , openEntityFamily
+    , literalEntityFamily literalGroundType
+    , literalEntityFamily unitGroundType
+    , literalEntityFamily textGroundType
+    , literalEntityFamily numberGroundType
+    , literalEntityFamily rationalGroundType
+    , literalEntityFamily integerGroundType
+    , literalEntityFamily booleanGroundType
+    , literalEntityFamily orderingGroundType
+    , literalEntityFamily timeGroundType
+    , literalEntityFamily durationGroundType
+    , literalEntityFamily dateGroundType
+    , literalEntityFamily timeOfDayGroundType
+    , literalEntityFamily localTimeGroundType
+    ]
+
+instance CovarySubtype PinaforeGroundType EntityGroundType where
+    dolanToMonoGroundType ::
+           forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
+           PinaforeGroundType dv t
+        -> Maybe (CovaryType dv, EntityGroundType t)
+    dolanToMonoGroundType MkPinaforeGroundType {..} =
+        findmap allEntityFamilies $ \(MkEntityFamily wit ff) -> do
+            tt <- matchFamilyType wit pgtFamilyType
+            eprops <- ff pgtVarianceType tt
+            covaryType <- dolanVarianceToCovaryType pgtVarianceType
+            return (covaryType, MkEntityGroundType pgtFamilyType covaryType eprops)
+    monoToDolanGroundType ::
+           forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
+           CovaryType dv
+        -> EntityGroundType t
+        -> PinaforeGroundType dv t
+    monoToDolanGroundType = entityToPinaforeGroundType
+
+monoEntityToNegativePinaforeType ::
+       forall m t. MonadThrow ErrorType m
+    => MonoEntityType t
+    -> m (PinaforeShimWit 'Negative t)
+monoEntityToNegativePinaforeType et =
+    case monoToMaybeNegativeDolanType et of
+        Just wit -> return wit
+        Nothing -> throw InterpretTypeNoneNotNegativeEntityError
+
+getMonoEntityType :: MonadThrow ErrorType m => AnyW (PinaforeType 'Positive) -> m (AnyW MonoEntityType)
+getMonoEntityType (MkAnyW tm) =
+    case dolanToMonoType tm of
+        Just (MkShimWit t _) -> return $ MkAnyW t
+        Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm

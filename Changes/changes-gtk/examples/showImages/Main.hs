@@ -12,6 +12,9 @@ import System.FilePath
 imagedir :: FilePath
 imagedir = "changes-gtk/examples/showImages/images"
 
+resultTextToM :: MonadFail m => Result Text a -> m a
+resultTextToM = resultToM . mapResultFailure unpack
+
 main :: IO ()
 main = do
     filenames <- listDirectory imagedir

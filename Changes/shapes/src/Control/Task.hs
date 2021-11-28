@@ -1,6 +1,6 @@
 module Control.Task where
 
-import Control.Monad.Compose
+import Control.Monad.Ology.Compose
 import Shapes.Import
 import Debug.ThreadTrace
 

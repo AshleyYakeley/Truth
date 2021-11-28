@@ -12,7 +12,7 @@ instance Show TopType where
     show MkTopType = "T"
 
 newtype BottomType =
-    MkBottomType None
+    MkBottomType Void
     deriving (Eq, Show, Searchable, Countable, Empty)
 
 instance Finite BottomType where
@@ -163,14 +163,14 @@ isoShimToFunction ::
 isoShimToFunction (MkIsomorphism ab ba) = MkIsomorphism (shimToFunction ab) (shimToFunction ba)
 
 class IsoMapShim shim => CoerceShim (shim :: ShimKind k) where
-    coercionEnhanced :: (InKind a, InKind b) => String -> Coercion a b -> shim a b
-    enhancedCoercion :: (InKind a, InKind b) => shim a b -> Maybe (Coercion a b)
+    coercionToShim :: (InKind a, InKind b) => String -> Coercion a b -> shim a b
+    shimToCoercion :: (InKind a, InKind b) => shim a b -> Maybe (Coercion a b)
 
-coerceEnhanced ::
+coerceShim ::
        forall k (shim :: ShimKind k) (a :: k) (b :: k). (CoerceShim shim, InKind a, InKind b, Coercible a b)
     => String
     -> shim a b
-coerceEnhanced t = coercionEnhanced t MkCoercion
+coerceShim t = coercionToShim t MkCoercion
 
 class CoerceShim shim => FunctionShim (shim :: ShimKind k) where
     functionToShim :: (InKind a, InKind b) => String -> KindFunction a b -> shim a b
@@ -185,8 +185,8 @@ lazyFunctionShim sab = functionToShim "recursive" $ shimToFunction sab
 instance IsoMapShim (->)
 
 instance CoerceShim (->) where
-    coercionEnhanced _ MkCoercion = coerce
-    enhancedCoercion _ = Nothing
+    coercionToShim _ MkCoercion = coerce
+    shimToCoercion _ = Nothing
 
 instance FunctionShim (->) where
     functionToShim _ = id

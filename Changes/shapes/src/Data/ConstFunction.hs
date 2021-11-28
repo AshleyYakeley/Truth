@@ -54,3 +54,23 @@ instance FunctorGetPure ((->) p) where
 instance (FunctorGetPure f) => CatFunctor ConstFunction ConstFunction f where
     cfmap (ConstConstFunction b) = fmap (\bfb -> bfb b) getPure
     cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab)
+
+instance FunctorGetPure Identity where
+    getPure = applicativeGetPure
+
+instance FunctorGetPure Maybe where
+    getPure = applicativeGetPure
+
+instance FunctorGetPure (Either p) where
+    getPure = applicativeGetPure
+
+instance FunctorGetPure ((,) p)
+
+instance FunctorGetPure (Result e) where
+    getPure = applicativeGetPure
+
+constFunctionAp :: (MonadOne f, Applicative (t (f a)), CatFunctor t t f) => f (t a b) -> t (f a) (f b)
+constFunctionAp fcab =
+    case retrieveOne fcab of
+        FailureResult fn -> pure $ fmap never fn
+        SuccessResult cab -> cfmap cab

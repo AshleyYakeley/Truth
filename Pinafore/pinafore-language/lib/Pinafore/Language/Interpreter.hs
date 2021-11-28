@@ -1,7 +1,6 @@
 module Pinafore.Language.Interpreter
     ( InterpreterGroundType
-    , InterpreterProvidedType
-    , InterpreterClosedEntityType
+    , InterpreterFamilyType
     , BoundType(..)
     , Interpreter
     , runInterpreter
@@ -18,7 +17,7 @@ module Pinafore.Language.Interpreter
     , SourceInterpreter
     , askSourcePos
     , localSourcePos
-    , remonadSourcePos
+    , hoistSourcePos
     , runSourcePos
     , liftSourcePos
     , mapSourcePos
@@ -60,9 +59,7 @@ import Text.Parsec (SourcePos)
 
 type family InterpreterGroundType (ts :: Type) :: GroundTypeKind
 
-type family InterpreterProvidedType (ts :: Type) :: forall k. k -> Type
-
-type family InterpreterClosedEntityType (ts :: Type) :: Type -> Type
+type family InterpreterFamilyType (ts :: Type) :: forall k. k -> Type
 
 data BoundType (ts :: Type) where
     MkBoundType
@@ -86,7 +83,7 @@ type DocInterpreterBinding ts = (Markdown, InterpreterBinding ts)
 
 data Scope (ts :: Type) = MkScope
     { scopeBindings :: Map Name (DocInterpreterBinding ts)
-    , scopeSubtypes :: HashMap Unique (SubypeConversionEntry (InterpreterGroundType ts))
+    , scopeSubtypes :: HashMap Unique (SubtypeConversionEntry (InterpreterGroundType ts))
     }
 
 instance Semigroup (Scope ts) where
@@ -274,8 +271,8 @@ runSourcePos spos (MkSourceInterpreter ma) = runReaderT ma spos
 liftSourcePos :: Interpreter ts a -> SourceInterpreter ts a
 liftSourcePos ma = MkSourceInterpreter $ lift ma
 
-remonadSourcePos :: (forall a. Interpreter p1 a -> Interpreter p2 a) -> SourceInterpreter p1 b -> SourceInterpreter p2 b
-remonadSourcePos mm (MkSourceInterpreter mb) = MkSourceInterpreter $ remonad mm mb
+hoistSourcePos :: (forall a. Interpreter p1 a -> Interpreter p2 a) -> SourceInterpreter p1 b -> SourceInterpreter p2 b
+hoistSourcePos mm (MkSourceInterpreter mb) = MkSourceInterpreter $ hoist mm mb
 
 mapSourcePos ::
        forall ts a b.
@@ -312,7 +309,7 @@ withNewBinding name db = pLocalScope $ \tc -> tc {scopeBindings = insertMapLazy 
 bindingsScope :: Map Name (DocInterpreterBinding ts) -> Scope ts
 bindingsScope bb = mempty {scopeBindings = bb}
 
-getSubtypesScope :: [SubypeConversionEntry (InterpreterGroundType ts)] -> IO (Scope ts)
+getSubtypesScope :: [SubtypeConversionEntry (InterpreterGroundType ts)] -> IO (Scope ts)
 getSubtypesScope newscs = do
     pairs <-
         for newscs $ \newsc -> do
@@ -439,10 +436,10 @@ withNewPatternConstructor name doc exp pc = do
         Just _ -> throw $ DeclareConstructorDuplicateError name
         Nothing -> return $ MkWMFunction $ withNewBinding name $ (doc, ValueBinding exp $ Just pc)
 
-withSubtypeConversions :: [SubypeConversionEntry (InterpreterGroundType ts)] -> Interpreter ts a -> Interpreter ts a
+withSubtypeConversions :: [SubtypeConversionEntry (InterpreterGroundType ts)] -> Interpreter ts a -> Interpreter ts a
 withSubtypeConversions newscs ma = do
     newscope <- liftIO $ getSubtypesScope newscs
     importScope newscope ma
 
-getSubtypeConversions :: Interpreter ts [SubypeConversionEntry (InterpreterGroundType ts)]
+getSubtypeConversions :: Interpreter ts [SubtypeConversionEntry (InterpreterGroundType ts)]
 getSubtypeConversions = fmap (fmap snd . mapToList . scopeSubtypes) interpreterScope

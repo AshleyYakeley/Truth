@@ -39,7 +39,7 @@ entityToLiteral (MkEntity anchor) = do
 instance AsLiteral Literal where
     literalSerializer = coerce serializerWhole
 
-instance AsLiteral None where
+instance AsLiteral Void where
     literalSerializer = pNone
 
 instance AsLiteral Text where

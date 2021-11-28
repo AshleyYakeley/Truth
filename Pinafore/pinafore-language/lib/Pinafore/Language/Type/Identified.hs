@@ -4,10 +4,11 @@ module Pinafore.Language.Type.Identified
     , succTypeID
     , TypeIDType
     , Identified
-    , IdentifiedType(..)
-    , unsafeGetIdentification
+    , IdentifiedFamily(..)
+    , unsafeIdentify
     ) where
 
+import Pinafore.Language.Type.Family
 import Shapes
 import Shapes.Numeric
 import Shapes.Unsafe (unsafeGetRefl)
@@ -31,18 +32,18 @@ instance WitnessValue TypeIDType where
     witnessToValue (MkTypeIDType bnt) = MkTypeID $ witnessToValue bnt
     valueToWitness (MkTypeID n) cont = valueToWitness n $ \bnt -> cont $ MkTypeIDType bnt
 
-type family Identified (tid :: BigNat) = (v :: Type) | v -> tid where
+type Identified :: BigNat -> Type
+type family Identified tid = v | v -> tid
 
-type IdentifiedType :: forall k. k -> Type
-data IdentifiedType t where
-    MkIdentifiedType :: forall (tid :: BigNat). TypeIDType tid -> IdentifiedType (Identified tid)
+data IdentifiedFamily :: FamilyKind where
+    MkIdentifiedFamily :: forall (tid :: BigNat). TypeIDType tid -> IdentifiedFamily (Identified tid)
 
-instance TestHetEquality IdentifiedType where
-    testHetEquality (MkIdentifiedType ia) (MkIdentifiedType ib) = do
+instance TestHetEquality IdentifiedFamily where
+    testHetEquality (MkIdentifiedFamily ia) (MkIdentifiedFamily ib) = do
         Refl <- testEquality ia ib
         return HRefl
 
-unsafeGetIdentification ::
+unsafeIdentify ::
        forall (tid :: BigNat) (t :: Type) m. Applicative m
     => m (Identified tid :~: t)
-unsafeGetIdentification = unsafeGetRefl
+unsafeIdentify = unsafeGetRefl

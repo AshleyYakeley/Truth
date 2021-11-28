@@ -23,7 +23,7 @@ referenceCommitTask (MkResource _ anobj) = refCommitTask anobj
 
 instance MapResource (AReference edit) where
     mapResource ::
-           forall tt1 tt2. (MonadTransStackUnliftAll tt1, MonadTransStackUnliftAll tt2)
+           forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)
         => TransListFunction tt1 tt2
         -> AReference edit tt1
         -> AReference edit tt2
@@ -87,7 +87,7 @@ pushOrFail s esrc mmmu = traceBracket "pushOrFail.examine" $ do
         else traceBracket "pushOrFail.fail" $ fail s
 
 mapAReference ::
-       forall tt updateA updateB. MonadTransStackUnliftAll tt
+       forall tt updateA updateB. MonadTransStackUnlift tt
     => ChangeLens updateA updateB
     -> AReference (UpdateEdit updateA) tt
     -> AReference (UpdateEdit updateB) tt
@@ -121,7 +121,7 @@ mapReference plens (MkResource rr anobjA) =
         Dict -> MkResource rr $ mapAReference plens anobjA
 
 floatMapAReference ::
-       forall tt updateA updateB. MonadTransStackUnliftAll tt
+       forall tt updateA updateB. MonadTransStackUnlift tt
     => FloatingChangeLens updateA updateB
     -> AReference (UpdateEdit updateA) tt
     -> ApplyStack tt IO (AReference (UpdateEdit updateB) tt)
@@ -142,7 +142,7 @@ floatMapReference rc lens (MkResource rr anobjA) = do
     return $ MkResource rr anobjB
 
 immutableAReference ::
-       forall tt reader. MonadTransStackUnliftAll tt
+       forall tt reader. MonadTransStackUnlift tt
     => Readable (ApplyStack tt IO) reader
     -> AReference (ConstEdit reader) tt
 immutableAReference mr =

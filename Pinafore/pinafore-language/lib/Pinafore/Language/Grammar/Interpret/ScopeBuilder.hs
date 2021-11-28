@@ -43,8 +43,8 @@ type ScopeBuilder = TransformT RefNotation
 runScopeBuilder :: ScopeBuilder a -> (a -> RefNotation b) -> RefNotation b
 runScopeBuilder = runTransformT
 
-interpScopeBuilder :: MFunction PinaforeInterpreter PinaforeInterpreter -> ScopeBuilder ()
-interpScopeBuilder mf = mapTransformT $ remonadRefNotation $ MkWMFunction mf
+interpScopeBuilder :: (PinaforeInterpreter --> PinaforeInterpreter) -> ScopeBuilder ()
+interpScopeBuilder mf = mapTransformT $ hoistRefNotation $ MkWMFunction mf
 
 refScopeBuilder :: RefNotation (ScopeBuilder a) -> ScopeBuilder a
 refScopeBuilder = execMapTransformT

@@ -1,12 +1,13 @@
 packages:
 
 # separate (submodule) dependencies
+- external/countable
 - external/witness
 - external/open-witness
 
 # Changes
 - Changes/thread-trace
-- Changes/transformers-extra
+- Changes/monadology
 - Changes/shapes
 - Changes/changes-core
 - Changes/changes-media
@@ -21,7 +22,7 @@ packages:
 - Pinafore/pinafore-gtk
 - Pinafore/pinafore-app
 
-resolver: lts-18.7
+resolver: lts-18.16
 
 allow-newer: true
 

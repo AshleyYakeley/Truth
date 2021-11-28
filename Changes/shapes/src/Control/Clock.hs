@@ -2,8 +2,8 @@ module Control.Clock
     ( clock
     ) where
 
-import Control.Monad.Exception
 import Control.Monad.LifeCycle
+import Control.Monad.Ology.Exception
 import Data.Fixed
 import Data.Time.Clock
 import Shapes.Import

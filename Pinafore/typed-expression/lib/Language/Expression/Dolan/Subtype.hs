@@ -10,7 +10,7 @@ module Language.Expression.Dolan.Subtype
     , nilSubtypeConversion
     , idSubtypeConversion
     , composeSubtypeConversion
-    , SubypeConversionEntry(..)
+    , SubtypeConversionEntry(..)
     , simpleSubtypeConversionEntry
     , saturateGroundType
     , IsDolanSubtypeEntriesGroundType(..)
@@ -230,8 +230,8 @@ composeSubtypeConversion (MkSubtypeConversion bc) (MkSubtypeConversion ab) =
         MkSubtypeArguments argsc sconvbc <- bc sc argsb
         return $ MkSubtypeArguments argsc $ (<.>) <$> sconvbc <*> sconvab
 
-type SubypeConversionEntry :: GroundTypeKind -> Type
-data SubypeConversionEntry ground =
+type SubtypeConversionEntry :: GroundTypeKind -> Type
+data SubtypeConversionEntry ground =
     forall dvb gtb. MkSubypeConversionEntry (ground dvb gtb)
                                             (forall dva gta.
                                                      ground dva gta -> Maybe (SubtypeConversion ground dva gta dvb gtb))
@@ -241,7 +241,7 @@ simpleSubtypeConversionEntry ::
     => ground dva gta
     -> ground dvb gtb
     -> SubtypeConversion ground dva gta dvb gtb
-    -> SubypeConversionEntry ground
+    -> SubtypeConversionEntry ground
 simpleSubtypeConversionEntry ta tb conv =
     MkSubypeConversionEntry tb $ \ta' -> do
         (Refl, HRefl) <- groundTypeTestEquality ta ta'
@@ -257,7 +257,7 @@ instance forall (ground :: GroundTypeKind) dva gta. IsDolanGroundType ground => 
 
 matchSupertype ::
        forall (ground :: GroundTypeKind) dva gta. IsDolanGroundType ground
-    => SubypeConversionEntry ground
+    => SubtypeConversionEntry ground
     -> SubtypeConversionWit ground dva gta
     -> Maybe (SubtypeConversionWit ground dva gta)
 matchSupertype (MkSubypeConversionEntry tb f) (MkSubtypeConversionWit ta conv) = do
@@ -266,14 +266,14 @@ matchSupertype (MkSubypeConversionEntry tb f) (MkSubtypeConversionWit ta conv) =
 
 getImmediateSupertypes ::
        forall (ground :: GroundTypeKind) dva gta. IsDolanGroundType ground
-    => [SubypeConversionEntry ground]
+    => [SubtypeConversionEntry ground]
     -> SubtypeConversionWit ground dva gta
     -> [SubtypeConversionWit ground dva gta]
 getImmediateSupertypes entries t = mapMaybe (\entry -> matchSupertype entry t) entries
 
 expandSupertypes ::
        forall (ground :: GroundTypeKind) dva gta. IsDolanGroundType ground
-    => [SubypeConversionEntry ground]
+    => [SubtypeConversionEntry ground]
     -> [SubtypeConversionWit ground dva gta]
     -> [SubtypeConversionWit ground dva gta]
 expandSupertypes entries tt = let
@@ -292,7 +292,7 @@ contains (_:aa) tb = contains aa tb
 
 isSupertype ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
-    => [SubypeConversionEntry ground]
+    => [SubtypeConversionEntry ground]
     -> [SubtypeConversionWit ground dva gta]
     -> ground dvb gtb
     -> Maybe (SubtypeConversion ground dva gta dvb gtb)
@@ -306,7 +306,7 @@ isSupertype entries aa a = let
 
 getSubtypeShim ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanSubtypeEntriesGroundType ground
-    => [SubypeConversionEntry ground]
+    => [SubtypeConversionEntry ground]
     -> ground dva gta
     -> ground dvb gtb
     -> Maybe (SubtypeConversion ground dva gta dvb gtb)
@@ -314,7 +314,7 @@ getSubtypeShim entries ta tb = isSupertype entries [MkSubtypeConversionWit ta id
 
 type IsDolanSubtypeEntriesGroundType :: GroundTypeKind -> Constraint
 class IsDolanSubtypeGroundType ground => IsDolanSubtypeEntriesGroundType ground where
-    subtypeConversionEntries :: DolanM ground [SubypeConversionEntry ground]
+    subtypeConversionEntries :: DolanM ground [SubtypeConversionEntry ground]
     subtypeConversionMatchType ::
            forall (dva :: DolanVariance) (ta :: DolanVarianceKind dva) (dvb :: DolanVariance) (tb :: DolanVarianceKind dvb).
            ground dva ta

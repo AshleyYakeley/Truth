@@ -17,7 +17,7 @@ import Shapes.Numeric
 type LangDrawing = UIDrawing
 
 drawingGroundType :: PinaforeGroundType '[] LangDrawing
-drawingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangDrawing)|]) "Drawing"
+drawingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangDrawing)|]) "Drawing"
 
 instance Is PolarityType polarity => HasPinaforeType polarity LangDrawing where
     pinaforeType = groundPinaforeType
@@ -29,7 +29,7 @@ instance HasPinaforeGroundType '[] LangDrawing where
 type LangPath = Path
 
 pathGroundType :: PinaforeGroundType '[] LangPath
-pathGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangPath)|]) "Path"
+pathGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPath)|]) "Path"
 
 instance HasPinaforeGroundType '[] LangPath where
     pinaforeGroundType = pathGroundType
@@ -38,7 +38,7 @@ instance HasPinaforeGroundType '[] LangPath where
 type LangPattern = Pattern
 
 patternGroundType :: PinaforeGroundType '[] LangPattern
-patternGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangPattern)|]) "Pattern"
+patternGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangPattern)|]) "Pattern"
 
 instance HasPinaforeGroundType '[] LangPattern where
     pinaforeGroundType = patternGroundType

@@ -127,7 +127,7 @@ runValue outh val =
          return $ liftIO $ hPutStrLn outh s)
 
 interactParse :: Text -> Interact InteractiveCommand
-interactParse t = remonad throwInterpretResult $ parseInteractiveCommand t
+interactParse t = hoist throwInterpretResult $ parseInteractiveCommand t
 
 interactLoop :: (?pinafore :: PinaforeContext, ?library :: LibraryContext) => Handle -> Handle -> Bool -> Interact ()
 interactLoop inh outh echo = do
