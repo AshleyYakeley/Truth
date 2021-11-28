@@ -23,8 +23,11 @@ module Language.Expression.Dolan
     , DolanVarianceMap(..)
     , HasDolanVariance(..)
     , CovaryType
+    , covaryCoercibleKind
     , CovaryMap
-    , covarymap
+    , HasCovaryMap(..)
+    , covaryToDolanVarianceType
+    , dolanVarianceToCovaryType
     , covaryToDolanVarianceMap
     , DolanSingularType(..)
     , DolanType(..)
@@ -59,7 +62,7 @@ module Language.Expression.Dolan
     , nilSubtypeConversion
     , idSubtypeConversion
     , composeSubtypeConversion
-    , SubypeConversionEntry(..)
+    , SubtypeConversionEntry(..)
     , simpleSubtypeConversionEntry
     , saturateGroundType
     , module Language.Expression.Dolan.Nonpolar

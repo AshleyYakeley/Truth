@@ -1,79 +1,149 @@
 module Pinafore.Language.Type.Ground where
 
 import Data.Shim
+import Data.Time
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Shim
-import Pinafore.Language.Type.Entity
-import Pinafore.Language.Type.EntityAdapter
-import Pinafore.Language.Type.OpenEntity
+import Pinafore.Language.Type.DynamicSupertype
+import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Show
 import Pinafore.Language.Value
 import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 
-newtype WitKind =
-    MkWitKind (forall (k :: Type). k -> Type)
-
-data ProvidedType :: forall k. k -> Type where
-    MkProvidedType
-        :: forall (w :: forall k. k -> Type) (k :: Type) (t :: k). TestHetEquality w
-        => IOWitness ('MkWitKind w)
-        -> w t
-        -> ProvidedType t
-
-instance TestHetEquality ProvidedType where
-    testHetEquality (MkProvidedType wa ta) (MkProvidedType wb tb) = do
-        Refl <- testEquality wa wb
-        HRefl <- testHetEquality ta tb
-        return HRefl
-
 type PinaforeGroundType :: GroundTypeKind
-data PinaforeGroundType dv t where
-    ProvidedGroundType
-        :: forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-           DolanVarianceType dv
-        -> DolanVarianceMap dv t
-        -> ListTypeExprShow dv
-        -> ProvidedType t
-        -> PinaforeGroundType dv t
-    EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType dv t
+data PinaforeGroundType dv gt = MkPinaforeGroundType
+    { pgtVarianceType :: DolanVarianceType dv
+    , pgtVarianceMap :: DolanVarianceMap dv gt
+    , pgtShowType :: ListTypeExprShow dv
+    , pgtFamilyType :: FamilyType gt
+    , pgtGreatestDynamicSupertype :: PinaforePolyGreatestDynamicSupertype dv gt
+    }
+
+type PinaforePolyGreatestDynamicSupertype :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+type PinaforePolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype PinaforeGroundType PinaforePolyShim dv gt
+
+type PinaforeGreatestDynamicSupertype :: Type -> Type
+type PinaforeGreatestDynamicSupertype = GreatestDynamicSupertype PinaforeGroundType PinaforePolyShim
+
+instance MakeGreatestDynamicSupertype PinaforeGroundType PinaforePolyShim (PinaforeGroundType '[]) where
+    toNegativeShimWit t = singleDolanShimWit $ mkShimWit $ GroundedDolanSingularType t NilDolanArguments
+
+singleGroundType' ::
+       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t
+    => FamilyType t
+    -> ListTypeExprShow dv
+    -> PinaforeGroundType dv t
+singleGroundType' ft showexp =
+    MkPinaforeGroundType
+        { pgtVarianceType = representative
+        , pgtVarianceMap = dolanVarianceMap
+        , pgtShowType = showexp
+        , pgtFamilyType = ft
+        , pgtGreatestDynamicSupertype = \_ -> Nothing
+        }
 
 singleGroundType ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t
-    => IOWitness ('MkWitKind (HetEqual t))
+    => IOWitness ('MkWitKind (SingletonFamily t))
     -> ListTypeExprShow dv
     -> PinaforeGroundType dv t
-singleGroundType wit showexp = ProvidedGroundType representative dolanVarianceMap showexp $ MkProvidedType wit HetRefl
+singleGroundType wit = singleGroundType' $ MkFamilyType wit HetRefl
 
 stdSingleGroundType ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t
-    => IOWitness ('MkWitKind (HetEqual t))
+    => IOWitness ('MkWitKind (SingletonFamily t))
     -> Text
     -> PinaforeGroundType dv t
 stdSingleGroundType wit name = singleGroundType wit $ standardListTypeExprShow @dv name
 
+literalGroundType :: PinaforeGroundType '[] Literal
+literalGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Literal)|]) "Literal"
+
+unitGroundType :: PinaforeGroundType '[] ()
+unitGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "()"
+
+textGroundType :: PinaforeGroundType '[] Text
+textGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) "Text"
+
+numberGroundType :: PinaforeGroundType '[] Number
+numberGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Number)|]) "Number"
+
+rationalGroundType :: PinaforeGroundType '[] SafeRational
+rationalGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily SafeRational)|]) "Rational")
+        { pgtGreatestDynamicSupertype =
+              \NilDolanArguments -> Just $ codecGDS "safeRationalNumber" numberGroundType safeRationalNumber
+        }
+
+integerGroundType :: PinaforeGroundType '[] Integer
+integerGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Integer)|]) "Integer")
+        { pgtGreatestDynamicSupertype =
+              \NilDolanArguments ->
+                  Just $
+                  codecGDS "integerSafeRational . safeRationalNumber" numberGroundType $
+                  integerSafeRational . safeRationalNumber
+        }
+
+booleanGroundType :: PinaforeGroundType '[] Bool
+booleanGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) "Boolean"
+
+orderingGroundType :: PinaforeGroundType '[] Ordering
+orderingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Ordering)|]) "Ordering"
+
+timeGroundType :: PinaforeGroundType '[] UTCTime
+timeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily UTCTime)|]) "Time"
+
+durationGroundType :: PinaforeGroundType '[] NominalDiffTime
+durationGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NominalDiffTime)|]) "Duration"
+
+dateGroundType :: PinaforeGroundType '[] Day
+dateGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Day)|]) "Date"
+
+timeOfDayGroundType :: PinaforeGroundType '[] TimeOfDay
+timeOfDayGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily TimeOfDay)|]) "TimeOfDay"
+
+localTimeGroundType :: PinaforeGroundType '[] LocalTime
+localTimeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LocalTime)|]) "LocalTime"
+
 actionGroundType :: PinaforeGroundType '[ CoCCRVariance] PinaforeAction
-actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual PinaforeAction)|]) "Action"
+actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily PinaforeAction)|]) "Action"
 
 wholeRefGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangWholeRef
-wholeRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangWholeRef)|]) "WholeRef"
+wholeRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangWholeRef)|]) "WholeRef"
 
 funcGroundType :: PinaforeGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
 funcGroundType =
-    singleGroundType $(iowitness [t|'MkWitKind (HetEqual (->))|]) $ \ta tb ->
+    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (->))|]) $ \ta tb ->
         (precShow 2 ta <> " -> " <> precShow 3 tb, 3)
 
+maybeGroundType :: PinaforeGroundType '[ CoCCRVariance] Maybe
+maybeGroundType =
+    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) $ \ta -> ("Maybe " <> precShow 0 ta, 2)
+
 listGroundType :: PinaforeGroundType '[ CoCCRVariance] []
-listGroundType = EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType
+listGroundType =
+    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) $ \ta -> ("[" <> precShow maxBound ta <> "]", 0)
+
+pairGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] (,)
+pairGroundType =
+    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) $ \ta tb ->
+        ("(" <> precShow maxBound ta <> ", " <> precShow maxBound tb <> ")", 0)
+
+eitherGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] Either
+eitherGroundType =
+    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Either)|]) $ \ta tb ->
+        ("Either " <> precShow 0 ta <> " " <> precShow 0 tb, 2)
 
 morphismGroundType :: PinaforeGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism
 morphismGroundType =
-    singleGroundType $(iowitness [t|'MkWitKind (HetEqual LangMorphism)|]) $ \ta tb ->
+    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMorphism)|]) $ \ta tb ->
         (precShow 2 ta <> " ~> " <> precShow 3 tb, 3)
 
 type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
@@ -90,29 +160,14 @@ instance IsDolanGroundType PinaforeGroundType where
     type DolanM PinaforeGroundType = SourceInterpreter PinaforeTypeSystem
     groundTypeVarianceMap ::
            forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). PinaforeGroundType dv f -> DolanVarianceMap dv f
-    groundTypeVarianceMap (ProvidedGroundType _ dvm _ _) = dvm
-    groundTypeVarianceMap (EntityPinaforeGroundType dvcovary gt) =
-        covaryToDolanVarianceMap dvcovary $ groundTypeCovaryMap gt
+    groundTypeVarianceMap = pgtVarianceMap
     groundTypeVarianceType :: PinaforeGroundType dv t -> DolanVarianceType dv
-    groundTypeVarianceType (ProvidedGroundType dvt _ _ _) = dvt
-    groundTypeVarianceType (EntityPinaforeGroundType lt _) = mapListType (\Refl -> CoCCRVarianceType) lt
+    groundTypeVarianceType = pgtVarianceType
     groundTypeTestEquality :: PinaforeGroundType dka ta -> PinaforeGroundType dkb tb -> Maybe (dka :~: dkb, ta :~~: tb)
-    groundTypeTestEquality (ProvidedGroundType dva _ _ ta) (ProvidedGroundType dvb _ _ tb) = do
-        Refl <- testEquality dva dvb
-        HRefl <- testHetEquality ta tb
+    groundTypeTestEquality ta tb = do
+        Refl <- testEquality (pgtVarianceType ta) (pgtVarianceType tb)
+        HRefl <- testHetEquality (pgtFamilyType ta) (pgtFamilyType tb)
         Just (Refl, HRefl)
-    groundTypeTestEquality (EntityPinaforeGroundType la gta) (EntityPinaforeGroundType lb gtb) = do
-        Refl <- testEquality la lb
-        (HRefl, _) <- entityGroundTypeTestEquality gta gtb
-        Just (Refl, HRefl)
-    groundTypeTestEquality _ _ = Nothing
-
-instance CovarySubtype PinaforeGroundType EntityGroundType where
-    dolanToMonoGroundType :: forall dv t. PinaforeGroundType dv t -> Maybe (CovaryType dv, EntityGroundType t)
-    dolanToMonoGroundType (EntityPinaforeGroundType lc et) = Just (lc, et)
-    dolanToMonoGroundType _ = Nothing
-    monoToDolanGroundType :: forall dv t. CovaryType dv -> EntityGroundType t -> PinaforeGroundType dv t
-    monoToDolanGroundType = EntityPinaforeGroundType
 
 showPrecVariance ::
        forall w polarity sv t.
@@ -151,24 +206,7 @@ instance GroundExprShow PinaforeGroundType where
         => PinaforeGroundType dv f
         -> DolanArguments dv w f polarity t
         -> (Text, Int)
-    groundTypeShowPrec (ProvidedGroundType dv _ n _) args = showPrecDolanVariance n dv args
-    groundTypeShowPrec (EntityPinaforeGroundType lt gt) dargs =
-        case dolanArgumentsToArguments @PinaforePolyShim mkPolarShimWit lt (groundTypeCovaryMap gt) dargs of
-            MkShimWit args _ -> entityGroundTypeShowPrec exprShowPrec gt args
-
-withEntitySubtype ::
-       forall (t :: Type) tidb a.
-       EntityGroundType t
-    -> OpenEntityType tidb
-    -> Interpreter PinaforeTypeSystem a
-    -> Interpreter PinaforeTypeSystem a
-withEntitySubtype ta tb =
-    withSubtypeConversions $
-    pure $
-    simpleSubtypeConversionEntry
-        (EntityPinaforeGroundType NilListType ta)
-        (EntityPinaforeGroundType NilListType $ OpenEntityGroundType tb) $
-    nilSubtypeConversion $ coerceEnhanced "open entity" . entitySubtypeShim ta
+    groundTypeShowPrec t args = showPrecDolanVariance (pgtShowType t) (pgtVarianceType t) args
 
 instance Is PolarityType polarity => Show (DolanType PinaforeGroundType polarity a) where
     show t = unpack $ exprShow t

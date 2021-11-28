@@ -116,7 +116,7 @@ varNonpolarShimWit ::
        (Category (DolanPolyShim ground Type), CoerceShim (DolanPolyShim ground Type), Coercible t (UVarT name))
     => SymbolType name
     -> NonpolarShimWit ground '[] t
-varNonpolarShimWit var = MkShimWit (VarNonpolarType var) $ coerceEnhanced "var"
+varNonpolarShimWit var = MkShimWit (VarNonpolarType var) $ coerceShim "var"
 
 coApplyNonpolarGroundShimWit ::
        forall (ground :: GroundTypeKind) dv f a. (IsDolanGroundType ground, HasCCRVariance CoCCRVariance f)

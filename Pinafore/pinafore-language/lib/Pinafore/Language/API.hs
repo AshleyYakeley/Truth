@@ -6,11 +6,12 @@ module Pinafore.Language.API
     , module Pinafore.Language.Library.Defs
     , module Pinafore.Context
     , WitKind(..)
-    , ProvidedType(..)
+    , FamilyType(..)
     , BoundType(..)
     , PinaforePolyShim
-    , LiteralType(..)
     , EntityGroundType(..)
+    , FamilyKind
+    , SingletonFamily
     , PinaforeGroundType(..)
     , stdSingleGroundType
     , PinaforeSingularType

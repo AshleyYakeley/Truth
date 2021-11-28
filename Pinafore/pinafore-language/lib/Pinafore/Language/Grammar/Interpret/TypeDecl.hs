@@ -49,8 +49,8 @@ assembleDataType ((n, MkAnyW el):cc) =
         MkDataBox ct conss ->
             MkDataBox (ConsDataType el ct) $ (MkConstructor n el Left eitherLeft) : fmap extendConstructor conss
 
-datatypeIOWitness :: IOWitness ('MkWitKind IdentifiedType)
-datatypeIOWitness = $(iowitness [t|'MkWitKind IdentifiedType|])
+datatypeIOWitness :: IOWitness ('MkWitKind IdentifiedFamily)
+datatypeIOWitness = $(iowitness [t|'MkWitKind IdentifiedFamily|])
 
 constructorFreeVariables :: Constructor (PinaforeNonpolarType '[]) t -> [AnyW SymbolType]
 constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonpolarTypeFreeVariables lt
@@ -72,9 +72,9 @@ intepretSyntaxDynamicEntityConstructor ::
 intepretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ pure $ mkDynamicType a
 intepretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name) = do
     MkBoundType t <- lookupBoundType name
-    case t of
-        EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dt) -> return $ toList dt
-        _ -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name
+    case matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType t of
+        Just (MkADynamicEntityFamily _ dt) -> return $ toList dt
+        Nothing -> throw $ InterpretTypeNotDynamicEntityError $ exprShow name
 
 makeOpenEntityType :: Name -> TypeID -> AnyW OpenEntityType
 makeOpenEntityType n tid = valueToWitness tid $ \tidsym -> MkAnyW $ MkOpenEntityType n tidsym
@@ -90,18 +90,18 @@ typeDeclarationTypeBox spos name doc OpenEntitySyntaxTypeDeclaration = do
     let
         mktype _ =
             case makeOpenEntityType name tid of
-                MkAnyW t -> MkBoundType $ EntityPinaforeGroundType NilListType $ OpenEntityGroundType t
+                MkAnyW t -> MkBoundType $ openEntityGroundType t
     return $ mkTypeFixBox spos name doc mktype $ return ((), id)
 typeDeclarationTypeBox spos name doc (ClosedEntitySyntaxTypeDeclaration sconss) = do
     tid <- newTypeID
     return $
         valueToWitness tid $ \(tidsym :: TypeIDType n) -> let
-            mktype t = MkBoundType $ EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym t
+            mktype t = MkBoundType $ closedEntityGroundType $ MkClosedEntityFamily name tidsym t
             in mkTypeFixBox spos name doc mktype $
                runSourcePos spos $ do
                    tconss <- for sconss interpretClosedEntityTypeConstructor
                    MkClosedEntityBox (ct :: ClosedEntityType t) conss <- return $ assembleClosedEntityType tconss
-                   tident :: Identified n :~: t <- unsafeGetIdentification
+                   tident :: Identified n :~: t <- unsafeIdentify
                    let
                        cti :: ClosedEntityType (Identified n)
                        cti = (reflId $ applyRefl id $ invert tident) ct
@@ -111,7 +111,7 @@ typeDeclarationTypeBox spos name doc (ClosedEntitySyntaxTypeDeclaration sconss) 
                            singleDolanShimWit $
                            mkPolarShimWit $
                            GroundedDolanSingularType
-                               (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType name tidsym cti)
+                               (closedEntityGroundType $ MkClosedEntityFamily name tidsym cti)
                                NilDolanArguments
                    patts <-
                        for conss $ \(MkConstructor cname lt at tma) -> do
@@ -130,8 +130,8 @@ typeDeclarationTypeBox spos name doc (DatatypeSyntaxTypeDeclaration sconss) = do
     tid <- newTypeID
     return $
         valueToWitness tid $ \tidsym -> let
-            pt = MkProvidedType datatypeIOWitness $ MkIdentifiedType tidsym
-            mktype _ = MkBoundType $ ProvidedGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt
+            gt = singleGroundType' @'[] (MkFamilyType datatypeIOWitness $ MkIdentifiedFamily tidsym) $ exprShowPrec name
+            mktype _ = MkBoundType gt
             in mkTypeFixBox spos name doc mktype $
                runSourcePos spos $ do
                    tconss <- for sconss interpretDataTypeConstructor
@@ -150,13 +150,8 @@ typeDeclarationTypeBox spos name doc (DatatypeSyntaxTypeDeclaration sconss) = do
                    let
                        ctf :: forall polarity. Is PolarityType polarity
                            => PinaforeShimWit polarity _
-                       ctf =
-                           singleDolanShimWit $
-                           mkPolarShimWit $
-                           GroundedDolanSingularType
-                               (ProvidedGroundType NilListType NilDolanVarianceMap (exprShowPrec name) pt)
-                               NilDolanArguments
-                   tident <- unsafeGetIdentification
+                       ctf = singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType gt NilDolanArguments
+                   tident <- unsafeIdentify
                    let tiso = reflId tident
                    patts <-
                        for conss $ \(MkConstructor cname lt at tma) -> do
@@ -172,22 +167,22 @@ typeDeclarationTypeBox spos name doc (DatatypeSyntaxTypeDeclaration sconss) = do
 typeDeclarationTypeBox spos name doc (DynamicEntitySyntaxTypeDeclaration stcons) =
     return $ let
         mktype :: DynamicEntityType -> PinaforeBoundType
-        mktype t = MkBoundType $ EntityPinaforeGroundType NilListType $ ADynamicEntityGroundType name t
+        mktype t = MkBoundType $ aDynamicEntityGroundType name t
         in mkTypeFixBox spos name doc mktype $
            runSourcePos spos $ do
                dt <- for stcons intepretSyntaxDynamicEntityConstructor
                let
                    dts = setFromList $ mconcat $ toList dt
-                   tp = EntityPinaforeGroundType NilListType (ADynamicEntityGroundType name dts)
+                   tp = aDynamicEntityGroundType name dts
                return $
                    (,) dts $
                    MkWMFunction $
                    withSubtypeConversions $
                    pure $
-                   MkSubypeConversionEntry tp $ \case
-                       EntityPinaforeGroundType NilListType (ADynamicEntityGroundType _ dts')
-                           | isSubsetOf dts' dts -> Just idSubtypeConversion
-                       _ -> Nothing
+                   MkSubypeConversionEntry tp $ \t -> do
+                       Refl <- testEquality (pgtVarianceType t) NilListType
+                       MkADynamicEntityFamily _ dts' <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType t
+                       ifpure (isSubsetOf dts' dts) idSubtypeConversion
 
 checkDynamicTypeCycles :: [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> PinaforeInterpreter ()
 checkDynamicTypeCycles decls = let

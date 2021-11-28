@@ -17,7 +17,8 @@ module Language.Expression.Common.TypeVariable
 import Shapes
 import Shapes.Unsafe (unsafeRefl)
 
-type family UVar (k :: Type) (name :: Symbol) :: k where
+type UVar :: forall (k :: Type) -> Symbol -> k
+type family UVar k name
 
 type UVarT :: Symbol -> Type
 type UVarT name = UVar Type name

@@ -21,6 +21,7 @@ import Data.Eq as I
 import Data.Foldable as I hiding (find)
 import Data.Functor.Compose as I
 import Data.Functor.Identity as I
+import Data.Functor.Product as I
 import Data.Int as I
 import Data.Kind as I
 import Data.List as I ((++), iterate, nub, nubBy, zip)
@@ -28,7 +29,7 @@ import Data.List.NonEmpty as I (NonEmpty(..), last, nonEmpty)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
 import Data.Ord as I
-import Data.Semigroup as I
+import Data.Semigroup as I hiding (Product(..))
 import Data.String as I hiding (lines, unlines, unwords, words)
 import Data.Traversable as I
 import Data.Tuple as I
@@ -179,6 +180,10 @@ eitherLeft (Right _) = Nothing
 eitherRight :: Either a b -> Maybe b
 eitherRight (Left _) = Nothing
 eitherRight (Right x) = Just x
+
+ifpure :: Alternative m => Bool -> a -> m a
+ifpure False _ = empty
+ifpure True x = pure x
 
 mpure :: Alternative m => Maybe a -> m a
 mpure (Just a) = pure a

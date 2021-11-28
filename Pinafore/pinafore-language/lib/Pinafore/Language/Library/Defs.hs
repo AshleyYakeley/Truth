@@ -36,7 +36,7 @@ type EnA = MeetType Entity A
 data ScopeEntry
     = BindScopeEntry Name
                      (Maybe (PinaforeContext -> PinaforeBinding))
-    | SubtypeScopeEntry [SubypeConversionEntry PinaforeGroundType]
+    | SubtypeScopeEntry [SubtypeConversionEntry PinaforeGroundType]
 
 data BindDoc = MkBindDoc
     { bdScopeEntry :: ScopeEntry
@@ -84,7 +84,8 @@ mkTypeEntry name docDescription t = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
-mkSubtypeRelationEntry :: Text -> Text -> Markdown -> [SubypeConversionEntry PinaforeGroundType] -> DocTreeEntry BindDoc
+mkSubtypeRelationEntry ::
+       Text -> Text -> Markdown -> [SubtypeConversionEntry PinaforeGroundType] -> DocTreeEntry BindDoc
 mkSubtypeRelationEntry ta tb docDescription scentries = let
     bdScopeEntry = SubtypeScopeEntry scentries
     docName = ta <> " <: " <> tb
@@ -93,13 +94,19 @@ mkSubtypeRelationEntry ta tb docDescription scentries = let
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
+nilSubtypeRelationEntry ::
+       PinaforeGroundType '[] a -> PinaforeGroundType '[] b -> PinaforePolyShim Type a b -> DocTreeEntry BindDoc
+nilSubtypeRelationEntry ta tb conv =
+    mkSubtypeRelationEntry (fst $ pgtShowType ta) (fst $ pgtShowType tb) "" $
+    pure $ simpleSubtypeConversionEntry ta tb $ nilSubtypeConversion conv
+
 -- | The 'Monoid' trick of representing @Monoid T@ as @[T] <: T@.
 monoidSubypeConversionEntry ::
        forall dv gt. Is (SaturatedConstraintWitness Monoid) gt
     => PinaforeGroundType dv gt
-    -> SubypeConversionEntry PinaforeGroundType
+    -> SubtypeConversionEntry PinaforeGroundType
 monoidSubypeConversionEntry t =
-    simpleSubtypeConversionEntry (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType) t $
+    simpleSubtypeConversionEntry listGroundType t $
     MkSubtypeConversion $ \sc (ConsDolanArguments ta NilDolanArguments :: _ pola _) -> do
         margs <- saturateGroundType t
         case margs of

@@ -1,88 +1,46 @@
-module Pinafore.Language.Type.DynamicSupertype
-    ( GreatestDynamicSupertype(..)
-    , getGreatestDynamicSupertype
-    ) where
+module Pinafore.Language.Type.DynamicSupertype where
 
 import Data.Shim
 import Language.Expression.Dolan
-import Pinafore.Base
-import Pinafore.Language.Shim
-import Pinafore.Language.Type.DynamicEntity
-import Pinafore.Language.Type.Entity
-import Pinafore.Language.Type.Ground
-import Pinafore.Language.Type.Literal
-import Pinafore.Language.Type.Subtype ()
-import Pinafore.Language.Type.Type
 import Shapes
 
-data GreatestDynamicSupertype t =
-    forall dt. MkGreatestDynamicSupertype (PinaforeShimWit 'Negative dt)
-                                          (PinaforePolyShim Type t dt)
-                                          (PinaforePolyShim Type dt (Maybe t))
+type GreatestDynamicSupertype :: GroundTypeKind -> PolyShimKind -> Type -> Type
+data GreatestDynamicSupertype ground pshim t =
+    forall dt. MkGreatestDynamicSupertype (PShimWit (pshim Type) (DolanType ground) 'Negative dt)
+                                          (pshim Type t dt)
+                                          (pshim Type dt (Maybe t))
 
-isomapGDS :: Isomorphism (PinaforePolyShim Type) a b -> GreatestDynamicSupertype a -> GreatestDynamicSupertype b
+isomapGDS ::
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (a :: Type) (b :: Type). (ApplyPolyShim pshim)
+    => Isomorphism (pshim Type) a b
+    -> GreatestDynamicSupertype ground pshim a
+    -> GreatestDynamicSupertype ground pshim b
 isomapGDS (MkIsomorphism ab ba) (MkGreatestDynamicSupertype d ad dma) =
-    MkGreatestDynamicSupertype d (ad . ba) (applyCoPolyShim cid ab . dma)
+    MkGreatestDynamicSupertype d (ad <.> ba) (applyCoPolyShim cid ab <.> dma)
 
-class MakeGreatestDynamicSupertype w where
-    toNegativeShimWit :: w dt -> PinaforeShimWit 'Negative dt
+type MakeGreatestDynamicSupertype :: GroundTypeKind -> PolyShimKind -> (Type -> Type) -> Constraint
+class MakeGreatestDynamicSupertype ground pshim w where
+    toNegativeShimWit :: forall (dt :: Type). w dt -> PShimWit (pshim Type) (DolanType ground) 'Negative dt
 
 makeGDS ::
-       MakeGreatestDynamicSupertype w
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (w :: Type -> Type) (t :: Type) (dt :: Type).
+       MakeGreatestDynamicSupertype ground pshim w
     => w dt
-    -> PinaforePolyShim Type t dt
-    -> PinaforePolyShim Type dt (Maybe t)
-    -> GreatestDynamicSupertype t
+    -> pshim Type t dt
+    -> pshim Type dt (Maybe t)
+    -> GreatestDynamicSupertype ground pshim t
 makeGDS wt = MkGreatestDynamicSupertype $ toNegativeShimWit wt
 
-codecGDS :: MakeGreatestDynamicSupertype w => w dt -> Codec dt t -> GreatestDynamicSupertype t
-codecGDS wt codec = makeGDS wt (functionToShim "encode" $ encode codec) (functionToShim "decode" $ decode codec)
+codecGDS ::
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (w :: Type -> Type) (t :: Type) (dt :: Type).
+       FunctionShim (pshim Type)
+    => MakeGreatestDynamicSupertype ground pshim w =>
+               String -> w dt -> Codec dt t -> GreatestDynamicSupertype ground pshim t
+codecGDS s wt codec =
+    makeGDS wt (functionToShim (s <> ":encode") $ encode codec) (functionToShim (s <> ":decode") $ decode codec)
 
-instance MakeGreatestDynamicSupertype (PinaforeShimWit 'Negative) where
-    toNegativeShimWit wt = wt
-
-instance MakeGreatestDynamicSupertype (PinaforeSingularType 'Negative) where
-    toNegativeShimWit wt = singleDolanShimWit $ mkPolarShimWit wt
-
-instance MakeGreatestDynamicSupertype (PinaforeGroundType '[]) where
-    toNegativeShimWit wt =
-        toNegativeShimWit @(PinaforeSingularType 'Negative) $ GroundedDolanSingularType wt NilDolanArguments
-
-instance MakeGreatestDynamicSupertype EntityGroundType where
-    toNegativeShimWit wt = toNegativeShimWit $ EntityPinaforeGroundType NilListType wt
-
-instance MakeGreatestDynamicSupertype LiteralType where
-    toNegativeShimWit wt = toNegativeShimWit $ LiteralEntityGroundType wt
-
-dynamicEntitySupertype :: DynamicEntityType -> GreatestDynamicSupertype DynamicEntity
-dynamicEntitySupertype dt =
-    makeGDS TopDynamicEntityGroundType id $
-    functionToShim "dynamic-supertype" $ \e@(MkDynamicEntity t _) ->
-        if member t dt
-            then Just e
-            else Nothing
-
-literalSupertype :: LiteralType t -> Maybe (GreatestDynamicSupertype t)
-literalSupertype RationalLiteralType = Just $ codecGDS NumberLiteralType safeRationalNumber
-literalSupertype IntegerLiteralType = Just $ codecGDS NumberLiteralType $ integerSafeRational . safeRationalNumber
-literalSupertype _ = Nothing
-
-entitySupertype :: EntityGroundType t -> Maybe (GreatestDynamicSupertype t)
-entitySupertype (ADynamicEntityGroundType _ dt) = Just $ dynamicEntitySupertype dt
-entitySupertype (LiteralEntityGroundType t) = literalSupertype t
-entitySupertype _ = Nothing
-
-groundSupertype ::
-       forall (dv :: DolanVariance) gt t.
-       PinaforeGroundType dv gt
-    -> DolanArguments dv PinaforeType gt 'Positive t
-    -> Maybe (GreatestDynamicSupertype t)
-groundSupertype (EntityPinaforeGroundType NilListType egt) NilDolanArguments = entitySupertype egt
-groundSupertype _ _ = Nothing
-
-getGreatestDynamicSupertype :: PinaforeType 'Positive t -> PinaforeSourceInterpreter (GreatestDynamicSupertype t)
-getGreatestDynamicSupertype (ConsDolanType (GroundedDolanSingularType gt args) NilDolanType)
-    | Just ds <- groundSupertype gt args = return $ isomapGDS iJoinR1 ds
-getGreatestDynamicSupertype t = do
-    t' <- invertType t
-    return $ MkGreatestDynamicSupertype t' id $ functionToShim "dynamic-supertype" Just
+type PolyGreatestDynamicSupertype :: GroundTypeKind -> PolyShimKind -> forall (dv :: DolanVariance) ->
+                                                                               DolanVarianceKind dv -> Type
+type PolyGreatestDynamicSupertype ground pshim dv gt
+     = forall (t :: Type).
+               DolanArguments dv (DolanType ground) gt 'Positive t -> Maybe (GreatestDynamicSupertype ground pshim t)

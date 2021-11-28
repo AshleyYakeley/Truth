@@ -20,7 +20,7 @@ data LangWindow = MkLangWindow
     }
 
 windowGroundType :: PinaforeGroundType '[] LangWindow
-windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (HetEqual LangWindow)|]) "Window"
+windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangWindow)|]) "Window"
 
 instance HasPinaforeGroundType '[] LangWindow where
     pinaforeGroundType = windowGroundType

@@ -7,6 +7,7 @@ module Pinafore.Language.Grammar.Interpret.Type
     , interpretSubtypeRelation
     ) where
 
+import Pinafore.Base
 import Pinafore.Language.DefDoc
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
@@ -35,36 +36,19 @@ interpretOpenEntityType :: SyntaxType -> PinaforeSourceInterpreter (AnyW OpenEnt
 interpretOpenEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
-        BothMPolarW atm ->
-            case atm @'Positive of
-                MkAnyW tm ->
-                    case dolanTypeToSingular tm of
-                        Just (MkAnyW (GroundedDolanSingularType (EntityPinaforeGroundType _ (OpenEntityGroundType t)) NilDolanArguments)) ->
-                            return $ MkAnyW t
-                        _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm
+        BothMPolarW atm -> getOpenEntityType $ atm @'Positive
 
 interpretConcreteDynamicEntityType :: SyntaxType -> PinaforeSourceInterpreter (Name, DynamicType)
 interpretConcreteDynamicEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
-        BothMPolarW atm ->
-            case atm @'Positive of
-                MkAnyW tm ->
-                    case dolanTypeToSingular tm of
-                        Just (MkAnyW (GroundedDolanSingularType (EntityPinaforeGroundType _ (ADynamicEntityGroundType n dts)) NilDolanArguments))
-                            | [dt] <- toList dts -> return (n, dt)
-                        _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm
+        BothMPolarW atm -> getConcreteDynamicEntityType $ atm @'Positive
 
 interpretMonoEntityType :: SyntaxType -> PinaforeSourceInterpreter (AnyW MonoEntityType)
 interpretMonoEntityType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
-        BothMPolarW atm ->
-            case atm @'Positive of
-                MkAnyW tm ->
-                    case dolanToMonoType tm of
-                        Just (MkShimWit t _) -> return $ MkAnyW t
-                        Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm
+        BothMPolarW atm -> getMonoEntityType $ atm @'Positive
 
 interpretNonpolarType :: SyntaxType -> PinaforeSourceInterpreter (AnyW (PinaforeNonpolarType '[]))
 interpretNonpolarType st = do
@@ -213,18 +197,11 @@ interpretArgs sgt (ConsListType RangeCCRVarianceType dv) (st:stt) = do
                 MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
 
 interpretGroundTypeConst :: SyntaxGroundType -> PinaforeSourceInterpreter PinaforeGroundTypeM
-interpretGroundTypeConst UnitSyntaxGroundType =
-    return $
-    MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType NilListType $ LiteralEntityGroundType UnitLiteralType
+interpretGroundTypeConst UnitSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW $ unitGroundType
 interpretGroundTypeConst FunctionSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW funcGroundType
 interpretGroundTypeConst MorphismSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW morphismGroundType
-interpretGroundTypeConst ListSyntaxGroundType =
-    return $
-    MkPinaforeGroundTypeM $ MkAnyW $ EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType
-interpretGroundTypeConst PairSyntaxGroundType =
-    return $
-    MkPinaforeGroundTypeM $
-    MkAnyW $ EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType
+interpretGroundTypeConst ListSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW $ listGroundType
+interpretGroundTypeConst PairSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW $ pairGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     MkBoundType t <- lookupBoundType n
     return $ MkPinaforeGroundTypeM $ MkAnyW t
@@ -242,8 +219,19 @@ interpretSubtypeRelation' spos sta stb =
                         case atb of
                             MkAnyW tb ->
                                 case tb of
-                                    MkMonoType (OpenEntityGroundType tidb) NilArguments ->
-                                        hoistSourcePos (withEntitySubtype tea tidb) ma
+                                    MkMonoType teb@(MkEntityGroundType tfb _ _) NilArguments
+                                        | Just (MkLiftedFamily _) <- matchFamilyType openEntityFamilyWitness tfb ->
+                                            hoistSourcePos
+                                                (withSubtypeConversions $
+                                                 pure $
+                                                 simpleSubtypeConversionEntry
+                                                     (entityToPinaforeGroundType NilListType tea)
+                                                     (entityToPinaforeGroundType NilListType teb) $
+                                                 nilSubtypeConversion $
+                                                 coerceShim "open entity" .
+                                                 (functionToShim "entityConvert" $
+                                                  entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments))
+                                                ma
                                     _ -> throw $ TypeNotOpenEntityError $ exprShow tb
                     _ -> throw $ TypeNotSimpleEntityError $ exprShow ta
 
