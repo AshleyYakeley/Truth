@@ -29,10 +29,7 @@ type PinaforePolyGreatestDynamicSupertype :: forall (dv :: DolanVariance) -> Dol
 type PinaforePolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype PinaforeGroundType PinaforePolyShim dv gt
 
 type PinaforeGreatestDynamicSupertype :: Type -> Type
-type PinaforeGreatestDynamicSupertype = GreatestDynamicSupertype PinaforeGroundType PinaforePolyShim
-
-instance MakeGreatestDynamicSupertype PinaforeGroundType PinaforePolyShim (PinaforeGroundType '[]) where
-    toNegativeShimWit t = singleDolanShimWit $ mkShimWit $ GroundedDolanSingularType t NilDolanArguments
+type PinaforeGreatestDynamicSupertype t = GreatestDynamicSupertype PinaforeGroundType PinaforePolyShim t
 
 singleGroundType' ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t
@@ -78,7 +75,8 @@ rationalGroundType :: PinaforeGroundType '[] SafeRational
 rationalGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily SafeRational)|]) "Rational")
         { pgtGreatestDynamicSupertype =
-              \NilDolanArguments -> Just $ codecGDS "safeRationalNumber" numberGroundType safeRationalNumber
+              \NilDolanArguments ->
+                  Just $ makeNilGDS numberGroundType $ functionToShim "safeRationalNumber" $ decode safeRationalNumber
         }
 
 integerGroundType :: PinaforeGroundType '[] Integer
@@ -87,8 +85,9 @@ integerGroundType =
         { pgtGreatestDynamicSupertype =
               \NilDolanArguments ->
                   Just $
-                  codecGDS "integerSafeRational . safeRationalNumber" numberGroundType $
-                  integerSafeRational . safeRationalNumber
+                  makeNilGDS numberGroundType $
+                  functionToShim "integerSafeRational . safeRationalNumber" $
+                  decode $ integerSafeRational . safeRationalNumber
         }
 
 booleanGroundType :: PinaforeGroundType '[] Bool

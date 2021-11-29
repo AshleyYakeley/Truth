@@ -90,8 +90,8 @@ aDynamicEntityGroundType name dts =
         { pgtGreatestDynamicSupertype =
               \NilDolanArguments ->
                   Just $
-                  makeGDS dynamicEntityGroundType cid $
-                  functionToShim "zzz" $ \de@(MkDynamicEntity dt _) -> ifpure (member dt dts) de
+                  makeNilGDS dynamicEntityGroundType $
+                  functionToShim "dynamic-check" $ \de@(MkDynamicEntity dt _) -> ifpure (member dt dts) de
         }
 
 aDynamicEntityEntityFamily :: EntityFamily

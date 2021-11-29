@@ -7,7 +7,6 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
-import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
@@ -54,7 +53,8 @@ type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeSourceInterpre
 getGreatestDynamicSupertype ::
        PinaforeType 'Positive t -> PinaforeSourceInterpreter (PinaforeGreatestDynamicSupertype t)
 getGreatestDynamicSupertype (ConsDolanType (GroundedDolanSingularType gt args) NilDolanType)
-    | Just ds <- pgtGreatestDynamicSupertype gt args = return $ isomapGDS iJoinR1 ds
+    | Just ds <- pgtGreatestDynamicSupertype gt args =
+        return $ mapPolarShimWit (MkPolarMap $ applyCoPolyShim cid iJoinR1) ds
 getGreatestDynamicSupertype t = do
     t' <- invertType t
-    return $ MkGreatestDynamicSupertype t' id $ functionToShim "dynamic-supertype" Just
+    return $ mapPolarShimWit (MkPolarMap $ functionToShim "Just" Just) t'

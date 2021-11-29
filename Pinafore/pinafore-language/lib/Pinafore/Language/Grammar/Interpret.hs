@@ -67,12 +67,12 @@ interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
             mtp <- interpretType @'Positive stype
             case mtp of
                 MkAnyW tp -> do
-                    MkGreatestDynamicSupertype dtp _ convm <- getGreatestDynamicSupertype tp
+                    dtp <- getGreatestDynamicSupertype tp
                     let
                         pc :: QPatternConstructor
                         pc =
-                            toPatternConstructor dtp (ConsListType (mkPolarShimWit tp) NilListType) $ \dt ->
-                                fmap (\a -> (a, ())) (shimToFunction convm dt)
+                            toPatternConstructor dtp (ConsListType (mkPolarShimWit tp) NilListType) $
+                            fmap $ \a -> (a, ())
                     qConstructPattern pc [pat]
 
 interpretPatternOrName :: SyntaxPattern -> Either Name (ScopeBuilder QPattern)
