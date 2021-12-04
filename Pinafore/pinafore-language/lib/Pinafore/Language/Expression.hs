@@ -105,10 +105,10 @@ qApplyAllExpr e (a:aa) = do
     qApplyAllExpr e' aa
 
 qEmptyList :: QExpr
-qEmptyList = qConstExpr ([] :: [BottomType])
+qEmptyList = qConstExpr $ [] @BottomType
 
 qConsList :: QExpr
-qConsList = qConstExpr ((:) :: A -> [A] -> [A])
+qConsList = qConstExpr $ (:|) @A
 
 qSequenceExpr :: [QExpr] -> PinaforeSourceInterpreter QExpr
 qSequenceExpr [] = return $ qEmptyList

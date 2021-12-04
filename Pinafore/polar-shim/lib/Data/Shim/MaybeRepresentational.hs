@@ -11,6 +11,9 @@ instance MaybeRepresentational Maybe where
 instance MaybeRepresentational [] where
     maybeRepresentational = Just Dict
 
+instance MaybeRepresentational NonEmpty where
+    maybeRepresentational = Just Dict
+
 instance MaybeRepresentational ((->) a) where
     maybeRepresentational = Just Dict
 

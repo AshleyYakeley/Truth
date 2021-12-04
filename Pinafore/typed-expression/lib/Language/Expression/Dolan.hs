@@ -50,6 +50,7 @@ module Language.Expression.Dolan
     , dolanArgumentsToArguments
     , SubtypeContext(..)
     , subtypeDolanArguments
+    , invertTypeMaybe
     , invertType
     , DolanTypeSystem
     , IsDolanGroundType(..)
@@ -75,6 +76,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Covariance
+import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.MPolarity
 import Language.Expression.Dolan.Mono
 import Language.Expression.Dolan.Nonpolar

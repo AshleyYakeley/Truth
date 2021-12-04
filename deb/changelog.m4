@@ -16,6 +16,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . Literal type now byte array rather than text
       . add Showable type for showing, show replacing toText
       . add min/max/lesser/greater functions
+      . add List1 type for non-empty lists, subtype of List
     - Drawing
       . Cairo-based functions for creating drawings
   * Storage

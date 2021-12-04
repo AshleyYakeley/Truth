@@ -47,6 +47,7 @@ library:
       - Pinafore.Language.Type.Family
       - Pinafore.Language.Type.Show
       - Pinafore.Language.Type.Ground
+      - Pinafore.Language.Type.Types
       - Pinafore.Language.Type.Data
       - Pinafore.Language.Type.Identified
       - Pinafore.Language.Error

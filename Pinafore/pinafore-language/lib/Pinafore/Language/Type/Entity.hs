@@ -23,6 +23,7 @@ import Pinafore.Language.Type.Entity.Type
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Type
+import Pinafore.Language.Type.Types
 import Shapes
 
 maybeEntityAdapter :: EntityAdapter t -> EntityAdapter (Maybe t)

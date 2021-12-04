@@ -127,6 +127,9 @@ instance RepresentationalRole Maybe where
 instance RepresentationalRole [] where
     representationalCoercion MkCoercion = MkCoercion
 
+instance RepresentationalRole NonEmpty where
+    representationalCoercion MkCoercion = MkCoercion
+
 instance RepresentationalRole (->) where
     representationalCoercion MkCoercion = MkCoercion
 

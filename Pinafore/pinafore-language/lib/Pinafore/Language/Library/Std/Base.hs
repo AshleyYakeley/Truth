@@ -759,11 +759,19 @@ baseLibEntries =
     , docTreeEntry
           "Lists"
           ""
-          [ mkValPatEntry "[]" "Empty list" ([] @BottomType) $ \(v :: [A]) ->
+          [ mkTypeEntry "List1" "A list with at least one element." $ MkBoundType list1GroundType
+          , mkSubtypeRelationEntry "List1 a" "[a]" "" $
+            pure $
+            simpleSubtypeConversionEntry list1GroundType listGroundType $
+            MkSubtypeConversion $ \_ (ConsDolanArguments ta NilDolanArguments) ->
+                return $
+                MkSubtypeArguments (ConsDolanArguments ta NilDolanArguments) $
+                pure $ functionToShim "NonEmpty.toList" toList
+          , mkValPatEntry "[]" "Empty list" ([] @BottomType) $ \(v :: [A]) ->
                 case v of
                     [] -> Just ()
                     _ -> Nothing
-          , mkValPatEntry "::" "Construct a list" ((:) @A) $ \(v :: [A]) ->
+          , mkValPatEntry "::" "Construct a list" ((:|) @A) $ \(v :: [A]) ->
                 case v of
                     a:b -> Just (a, (b, ()))
                     _ -> Nothing

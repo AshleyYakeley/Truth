@@ -48,6 +48,9 @@ instance HasVariance Maybe where
 instance HasVariance [] where
     type VarianceOf [] = 'Covariance
 
+instance HasVariance NonEmpty where
+    type VarianceOf NonEmpty = 'Covariance
+
 instance HasVariance ((->) a) where
     type VarianceOf ((->) a) = 'Covariance
 

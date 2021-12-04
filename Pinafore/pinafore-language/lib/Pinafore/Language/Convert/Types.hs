@@ -55,6 +55,10 @@ instance HasPinaforeGroundType '[ CoCCRVariance] Maybe where
 instance HasPinaforeGroundType '[ CoCCRVariance] [] where
     pinaforeGroundType = listGroundType
 
+-- NonEmpty
+instance HasPinaforeGroundType '[ CoCCRVariance] NonEmpty where
+    pinaforeGroundType = list1GroundType
+
 -- PinaforeAction
 instance HasPinaforeGroundType '[ CoCCRVariance] PinaforeAction where
     pinaforeGroundType = actionGroundType

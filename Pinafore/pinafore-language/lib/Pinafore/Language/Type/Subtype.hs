@@ -13,6 +13,7 @@ import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Show
+import Pinafore.Language.Type.Types
 import Shapes
 
 showGroundType :: PinaforeGroundType dv gt -> Text
