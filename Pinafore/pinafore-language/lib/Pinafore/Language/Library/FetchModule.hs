@@ -36,22 +36,21 @@ instance Semigroup FetchModule where
 instance Monoid FetchModule where
     mempty = MkFetchModule $ \_ _ -> return Nothing
 
-loadModuleFromText :: PinaforeScope -> ModuleName -> FilePath -> Text -> PinaforeInterpreter PinaforeModule
-loadModuleFromText implictScope modname fpath text =
-    importScope implictScope $ runSourcePos (initialPos fpath) $ parseModule modname text
+loadModuleFromText :: PinaforeScope -> ModuleName -> Text -> PinaforeInterpreter PinaforeModule
+loadModuleFromText implictScope modname text = importScope implictScope $ parseModule modname text
 
-loadModuleFromByteString ::
-       PinaforeScope -> ModuleName -> FilePath -> LazyByteString -> PinaforeInterpreter PinaforeModule
-loadModuleFromByteString implictScope modname fpath bs =
+loadModuleFromByteString :: PinaforeScope -> ModuleName -> LazyByteString -> PinaforeInterpreter PinaforeModule
+loadModuleFromByteString implictScope modname bs =
     case eitherToResult $ decodeUtf8' $ toStrict bs of
-        SuccessResult text -> loadModuleFromText implictScope modname fpath text
-        FailureResult err -> throwErrorType (initialPos fpath) $ UnicodeDecodeError $ pack $ show err
+        SuccessResult text -> loadModuleFromText implictScope modname text
+        FailureResult err -> throw $ UnicodeDecodeError $ pack $ show err
 
 textFetchModule :: (ModuleName -> IO (Maybe Text)) -> FetchModule
 textFetchModule getText =
     MkFetchModule $ \implictScope modname -> do
         mtext <- liftIO $ getText modname
-        for mtext $ \text -> loadModuleFromText implictScope modname (show modname) text
+        for mtext $ \text ->
+            withD sourcePosParam (initialPos $ show modname) $ loadModuleFromText implictScope modname text
 
 moduleRelativePath :: ModuleName -> FilePath
 moduleRelativePath (MkModuleName nn) = (foldl1 (</>) $ fmap unpack nn) <> ".pinafore"
@@ -65,7 +64,7 @@ directoryFetchModule dirpath =
             False -> return Nothing
             True -> do
                 bs <- liftIO $ readFile fpath
-                mm <- loadModuleFromByteString implictScope modname fpath bs
+                mm <- withD sourcePosParam (initialPos fpath) $ loadModuleFromByteString implictScope modname bs
                 return $ Just mm
 
 getLibraryModuleModule :: (?pinafore :: PinaforeContext) => LibraryModule -> IO PinaforeModule

@@ -51,7 +51,9 @@ printModuleDoc modopts tmodname = let
                ?library = lc
                in do
                       modname <- maybeToM (unpack $ tmodname <> ": bad module name") $ toModuleName tmodname
-                      mmod <- throwInterpretResult $ runPinaforeScoped $ lcLoadModule lc modname
+                      mmod <-
+                          throwInterpretResult $
+                          runPinaforeScoped (initialPos $ unpack tmodname) $ lcLoadModule lc modname
                       pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod
                       runDocTree (showDefTitle stdout) (showDefDesc stdout) (showDefEntry stdout) 1 $ moduleDoc pmodule
 

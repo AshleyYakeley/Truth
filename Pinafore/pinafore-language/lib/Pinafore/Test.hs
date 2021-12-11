@@ -1,7 +1,6 @@
 module Pinafore.Test
     ( parseType
     , runInterpreter
-    , runSourcePos
     , PinaforeTypeSystem
     , Name
     , VarID
@@ -17,7 +16,6 @@ module Pinafore.Test
     , PinaforeSingularType
     , PinaforeSingularShimWit
     , PinaforeInterpreter
-    , PinaforeSourceInterpreter
     , toJMShimWit
     , module Pinafore.Language.Expression
     , PinaforeTableSubject(..)
@@ -68,8 +66,8 @@ withTestPinaforeContext fetchModule hout call =
 withNullPinaforeContext :: MonadIO m => ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => m r) -> m r
 withNullPinaforeContext = runWithContext nullPinaforeContext mempty
 
-runTestPinaforeSourceScoped :: PinaforeSourceInterpreter a -> InterpretResult a
-runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa
+runTestPinaforeSourceScoped :: PinaforeInterpreter a -> InterpretResult a
+runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeScoped (initialPos "<input>") sa
 
 checkUpdateEditor ::
        forall a. Eq a

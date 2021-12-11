@@ -147,9 +147,6 @@ showIndentPinaforeError n (MkPinaforeError ems) = let
 instance Show ErrorMessage where
     show = showIndentErrorMessage 0
 
-throwErrorType :: MonadThrow ErrorMessage m => SourcePos -> ErrorType -> m a
-throwErrorType spos err = throw $ MkErrorMessage spos err mempty
-
 parseErrorMessage :: ParseError -> ErrorMessage
 parseErrorMessage err = MkErrorMessage (errorPos err) (ParserError $ errorMessages err) mempty
 

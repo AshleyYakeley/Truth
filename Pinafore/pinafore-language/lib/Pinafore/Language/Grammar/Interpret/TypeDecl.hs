@@ -56,19 +56,18 @@ constructorFreeVariables :: Constructor (PinaforeNonpolarType '[]) t -> [AnyW Sy
 constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonpolarTypeFreeVariables lt
 
 interpretClosedEntityTypeConstructor ::
-       SyntaxClosedEntityConstructor -> PinaforeSourceInterpreter (Name, Anchor, AnyW (ListType MonoEntityType))
+       SyntaxClosedEntityConstructor -> PinaforeInterpreter (Name, Anchor, AnyW (ListType MonoEntityType))
 interpretClosedEntityTypeConstructor (MkSyntaxClosedEntityConstructor consName stypes anchor) = do
     etypes <- for stypes interpretMonoEntityType
     return (consName, anchor, assembleListType etypes)
 
 interpretDataTypeConstructor ::
-       SyntaxDatatypeConstructor -> PinaforeSourceInterpreter (Name, AnyW (ListType (PinaforeNonpolarType '[])))
+       SyntaxDatatypeConstructor -> PinaforeInterpreter (Name, AnyW (ListType (PinaforeNonpolarType '[])))
 interpretDataTypeConstructor (MkSyntaxDatatypeConstructor consName stypes) = do
     etypes <- for stypes interpretNonpolarType
     return (consName, assembleListType etypes)
 
-intepretSyntaxDynamicEntityConstructor ::
-       SyntaxDynamicEntityConstructor -> SourceInterpreter PinaforeTypeSystem [DynamicType]
+intepretSyntaxDynamicEntityConstructor :: SyntaxDynamicEntityConstructor -> Interpreter PinaforeTypeSystem [DynamicType]
 intepretSyntaxDynamicEntityConstructor (AnchorSyntaxDynamicEntityConstructor a) = return $ pure $ mkDynamicType a
 intepretSyntaxDynamicEntityConstructor (NameSyntaxDynamicEntityConstructor name) = do
     MkBoundType t <- lookupBoundType name
@@ -80,25 +79,23 @@ makeOpenEntityType :: Name -> TypeID -> AnyW OpenEntityType
 makeOpenEntityType n tid = valueToWitness tid $ \tidsym -> MkAnyW $ MkOpenEntityType n tidsym
 
 typeDeclarationTypeBox ::
-       SourcePos
-    -> Name
+       Name
     -> Markdown
     -> SyntaxTypeDeclaration
     -> PinaforeInterpreter (TypeFixBox PinaforeTypeSystem (WMFunction PinaforeInterpreter PinaforeInterpreter))
-typeDeclarationTypeBox spos name doc OpenEntitySyntaxTypeDeclaration = do
+typeDeclarationTypeBox name doc OpenEntitySyntaxTypeDeclaration = do
     tid <- newTypeID
     let
         mktype _ =
             case makeOpenEntityType name tid of
                 MkAnyW t -> MkBoundType $ openEntityGroundType t
-    return $ mkTypeFixBox spos name doc mktype $ return ((), id)
-typeDeclarationTypeBox spos name doc (ClosedEntitySyntaxTypeDeclaration sconss) = do
+    return $ mkTypeFixBox name doc mktype $ return ((), id)
+typeDeclarationTypeBox name doc (ClosedEntitySyntaxTypeDeclaration sconss) = do
     tid <- newTypeID
     return $
         valueToWitness tid $ \(tidsym :: TypeIDType n) -> let
             mktype t = MkBoundType $ closedEntityGroundType $ MkClosedEntityFamily name tidsym t
-            in mkTypeFixBox spos name doc mktype $
-               runSourcePos spos $ do
+            in mkTypeFixBox name doc mktype $ do
                    tconss <- for sconss interpretClosedEntityTypeConstructor
                    MkClosedEntityBox (ct :: ClosedEntityType t) conss <- return $ assembleClosedEntityType tconss
                    tident :: Identified n :~: t <- unsafeIdentify
@@ -126,14 +123,13 @@ typeDeclarationTypeBox spos name doc (ClosedEntitySyntaxTypeDeclaration sconss) 
                                pc = toPatternConstructor ctf ltp $ tma . reflId tident
                            withNewPatternConstructor cname doc expr pc
                    return (cti, compAll patts)
-typeDeclarationTypeBox spos name doc (DatatypeSyntaxTypeDeclaration sconss) = do
+typeDeclarationTypeBox name doc (DatatypeSyntaxTypeDeclaration sconss) = do
     tid <- newTypeID
     return $
         valueToWitness tid $ \tidsym -> let
             gt = singleGroundType' @'[] (MkFamilyType datatypeIOWitness $ MkIdentifiedFamily tidsym) $ exprShowPrec name
             mktype _ = MkBoundType gt
-            in mkTypeFixBox spos name doc mktype $
-               runSourcePos spos $ do
+            in mkTypeFixBox name doc mktype $ do
                    tconss <- for sconss interpretDataTypeConstructor
                    MkDataBox _dt conss <- return $ assembleDataType tconss
                    let
@@ -164,12 +160,11 @@ typeDeclarationTypeBox spos name doc (DatatypeSyntaxTypeDeclaration sconss) = do
                                pc = toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
                            withNewPatternConstructor cname doc expr pc
                    return ((), compAll patts)
-typeDeclarationTypeBox spos name doc (DynamicEntitySyntaxTypeDeclaration stcons) =
+typeDeclarationTypeBox name doc (DynamicEntitySyntaxTypeDeclaration stcons) =
     return $ let
         mktype :: DynamicEntityType -> PinaforeBoundType
         mktype t = MkBoundType $ aDynamicEntityGroundType name t
-        in mkTypeFixBox spos name doc mktype $
-           runSourcePos spos $ do
+        in mkTypeFixBox name doc mktype $ do
                dt <- for stcons intepretSyntaxDynamicEntityConstructor
                let
                    dts = setFromList $ mconcat $ toList dt
@@ -201,12 +196,11 @@ checkDynamicTypeCycles decls = let
     sccNames _ = Nothing
     in case mapMaybe sccNames sccs of
            [] -> return ()
-           (nn@((spos, _) :| _):_) -> runSourcePos spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
+           (nn@((spos, _) :| _):_) -> withD sourcePosParam spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
 
-interpretTypeDeclaration ::
-       SourcePos -> Name -> Markdown -> SyntaxTypeDeclaration -> PinaforeInterpreter --> PinaforeInterpreter
-interpretTypeDeclaration spos name doc tdecl ma = do
-    tbox <- typeDeclarationTypeBox spos name doc tdecl
+interpretTypeDeclaration :: Name -> Markdown -> SyntaxTypeDeclaration -> PinaforeInterpreter --> PinaforeInterpreter
+interpretTypeDeclaration name doc tdecl ma = do
+    tbox <- typeDeclarationTypeBox name doc tdecl
     (wtt, wcc) <- registerTypeName tbox
     runWMFunction (wtt . compAll wcc) ma
 
@@ -214,6 +208,6 @@ interpretRecursiveTypeDeclarations ::
        [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> PinaforeInterpreter --> PinaforeInterpreter
 interpretRecursiveTypeDeclarations decls ma = do
     checkDynamicTypeCycles decls
-    wfs <- for decls $ \(spos, name, doc, tdecl) -> typeDeclarationTypeBox spos name doc tdecl
+    wfs <- for decls $ \(spos, name, doc, tdecl) -> withD sourcePosParam spos $ typeDeclarationTypeBox name doc tdecl
     (wtt, wcc) <- registerRecursiveTypeNames wfs
     runWMFunction (wtt . compAll wcc) ma

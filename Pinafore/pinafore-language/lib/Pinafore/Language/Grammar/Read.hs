@@ -13,15 +13,14 @@ import Pinafore.Language.Grammar.Read.Expression
 import Pinafore.Language.Grammar.Read.Interactive
 import Pinafore.Language.Grammar.Read.Parser
 import Pinafore.Language.Grammar.Read.Type
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes hiding (try)
 
-parseTopExpression :: Text -> PinaforeSourceInterpreter QExpr
-parseTopExpression = parseScopedReaderWhole $ fmap (liftSourcePos . interpretTopExpression) readExpression
+parseTopExpression :: Text -> PinaforeInterpreter QExpr
+parseTopExpression = parseScopedReaderWhole $ fmap interpretTopExpression readExpression
 
-parseModule :: ModuleName -> Text -> PinaforeSourceInterpreter PinaforeModule
+parseModule :: ModuleName -> Text -> PinaforeInterpreter PinaforeModule
 parseModule modname =
     parseScopedReaderWhole $ do
         smod <- readModule
@@ -30,7 +29,7 @@ parseModule modname =
 parseType ::
        forall polarity. Is PolarityType polarity
     => Text
-    -> PinaforeSourceInterpreter (AnyW (PinaforeType polarity))
+    -> PinaforeInterpreter (AnyW (PinaforeType polarity))
 parseType text = do
     st <- parseScopedReaderWhole (fmap return readType) text
     interpretType st

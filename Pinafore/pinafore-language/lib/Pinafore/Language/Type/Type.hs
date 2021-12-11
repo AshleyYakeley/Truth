@@ -44,14 +44,11 @@ type PinaforeBinding = InterpreterBinding PinaforeTypeSystem
 
 type PinaforeInterpreter = Interpreter PinaforeTypeSystem
 
-type PinaforeSourceInterpreter = SourceInterpreter PinaforeTypeSystem
-
 type PinaforeAnnotation = Annotation PinaforeTypeSystem
 
-type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeSourceInterpreter
+type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeInterpreter
 
-getGreatestDynamicSupertype ::
-       PinaforeType 'Positive t -> PinaforeSourceInterpreter (PinaforeGreatestDynamicSupertype t)
+getGreatestDynamicSupertype :: PinaforeType 'Positive t -> PinaforeInterpreter (PinaforeGreatestDynamicSupertype t)
 getGreatestDynamicSupertype (ConsDolanType (GroundedDolanSingularType gt args) NilDolanType)
     | Just ds <- pgtGreatestDynamicSupertype gt args =
         return $ mapPolarShimWit (MkPolarMap $ applyCoPolyShim cid iJoinR1) ds

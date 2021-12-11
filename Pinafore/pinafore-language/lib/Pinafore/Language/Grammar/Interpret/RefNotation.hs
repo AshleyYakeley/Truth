@@ -4,6 +4,7 @@ module Pinafore.Language.Grammar.Interpret.RefNotation
     , varRefExpr
     , liftRefNotation
     , hoistRefNotation
+    , sourcePosRefNotation
     , runRefNotation
     , refNotationUnquote
     , refNotationQuote
@@ -21,12 +22,15 @@ import Shapes
 
 type RefNotation = WriterT [(VarID, QExpr)] (StateT VarIDState PinaforeInterpreter)
 
-runRefWriterT :: MonadThrow ErrorMessage m => SourcePos -> WriterT [(VarID, QExpr)] m --> m
-runRefWriterT spos wma = do
+sourcePosRefNotation :: SourcePos -> RefNotation --> RefNotation
+sourcePosRefNotation = withD $ liftParam $ liftParam sourcePosParam
+
+runRefWriterT :: RefNotation --> StateT VarIDState PinaforeInterpreter
+runRefWriterT wma = do
     (a, w) <- runWriterT wma
     case w of
         [] -> return a
-        _ -> throwErrorType spos NotationBareUnquoteError
+        _ -> throw NotationBareUnquoteError
 
 liftRefNotation :: PinaforeInterpreter --> RefNotation
 liftRefNotation = lift . lift
@@ -34,10 +38,8 @@ liftRefNotation = lift . lift
 hoistRefNotation :: WMFunction PinaforeInterpreter PinaforeInterpreter -> RefNotation --> RefNotation
 hoistRefNotation (MkWMFunction mm) = hoist $ hoist mm
 
-runRefNotation :: RefNotation --> PinaforeSourceInterpreter
-runRefNotation rexpr = do
-    spos <- askSourcePos
-    liftSourcePos $ evalStateT (runRefWriterT spos rexpr) firstVarIDState
+runRefNotation :: RefNotation --> PinaforeInterpreter
+runRefNotation rexpr = evalStateT (runRefWriterT rexpr) firstVarIDState
 
 type RefExpression = RefNotation QExpr
 
@@ -47,18 +49,20 @@ allocateVarRefNotation name = do
     lift $ put $ nextVarIDState i
     return $ mkVarID i name
 
-varRefExpr :: SourcePos -> ReferenceName -> RefExpression
-varRefExpr spos name = do
-    mexpr <- liftRefNotation $ runSourcePos spos $ lookupLetBinding name
+varRefExpr :: ReferenceName -> RefExpression
+varRefExpr name = do
+    mexpr <- liftRefNotation $ lookupLetBinding name
     case mexpr of
         Just (Right expr) -> return expr
         Just (Left v) -> return $ qVarExpr v
-        Nothing -> return $ qVarExpr $ mkBadVarID spos name
+        Nothing -> do
+            spos <- liftRefNotation $ askD sourcePosParam
+            return $ qVarExpr $ mkBadVarID spos name
 
-refNotationUnquote :: SourcePos -> RefExpression -> RefExpression
-refNotationUnquote spos rexpr = do
+refNotationUnquote :: RefExpression -> RefExpression
+refNotationUnquote rexpr = do
     v <- allocateVarRefNotation "%ref"
-    expr <- lift $ runRefWriterT spos rexpr
+    expr <- lift $ runRefWriterT rexpr
     tell $ pure (v, expr)
     return $ qVarExpr v
 
@@ -70,18 +74,17 @@ aprefExpr =
     qConstExpr
         ((<*>) :: PinaforeImmutableWholeRef (A -> B) -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef B)
 
-aplist :: QExpr -> [QExpr] -> PinaforeSourceInterpreter QExpr
+aplist :: QExpr -> [QExpr] -> PinaforeInterpreter QExpr
 aplist expr [] = return expr
 aplist expr (arg:args) = do
     expr' <- qApplyAllExpr aprefExpr [expr, arg]
     aplist expr' args
 
-refNotationQuote :: SourcePos -> RefExpression -> RefExpression
-refNotationQuote spos rexpr =
+refNotationQuote :: RefExpression -> RefExpression
+refNotationQuote rexpr =
     lift $ do
         (expr, binds) <- runWriterT rexpr
-        lift $
-            runSourcePos spos $ do
-                aexpr <- qAbstractsExpr (fmap fst binds) expr
-                raexpr <- qApplyExpr purerefExpr aexpr
-                aplist raexpr $ fmap snd binds
+        lift $ do
+            aexpr <- qAbstractsExpr (fmap fst binds) expr
+            raexpr <- qApplyExpr purerefExpr aexpr
+            aplist raexpr $ fmap snd binds

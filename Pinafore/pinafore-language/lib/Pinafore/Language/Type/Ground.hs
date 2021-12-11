@@ -67,7 +67,7 @@ type instance DolanPolyShim PinaforeGroundType = PinaforePolyShim
 
 instance IsDolanGroundType PinaforeGroundType where
     type DolanVarID PinaforeGroundType = VarID
-    type DolanM PinaforeGroundType = SourceInterpreter PinaforeTypeSystem
+    type DolanM PinaforeGroundType = Interpreter PinaforeTypeSystem
     groundTypeVarianceMap ::
            forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). PinaforeGroundType dv f -> DolanVarianceMap dv f
     groundTypeVarianceMap = pgtVarianceMap

@@ -27,7 +27,7 @@ showGroundType t =
 
 instance IsDolanSubtypeGroundType PinaforeGroundType where
     tackOnTypeConvertError (ta :: _ pola _) (tb :: _ polb _) ma = do
-        spos <- askSourcePos
+        spos <- askD sourcePosParam
         rethrowCause
             spos
             (TypeConvertError
@@ -39,7 +39,7 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
     throwTypeNotInvertible t = throw $ TypeNotInvertibleError $ exprShow t
 
 instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
-    subtypeConversionEntries = liftSourcePos getSubtypeConversions
+    subtypeConversionEntries = getSubtypeConversions
     subtypeConversionMatchType gta gtb = do
         (Refl, HRefl) <- groundTypeTestEquality gta gtb
         return idSubtypeConversion

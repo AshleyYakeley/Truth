@@ -9,6 +9,7 @@ module Control.Monad.Ology.Exception
     ) where
 
 import qualified Control.Exception as CE
+import Control.Monad.Ology.Function
 import Control.Monad.Ology.Result
 import Control.Monad.Ology.Trans.Tunnel
 import Control.Monad.Ology.Trans.Unlift
@@ -86,12 +87,12 @@ instance MonadCatch e (Result e) where
     catch (FailureResult e) handler = handler e
 
 class Monad m => MonadBracket m where
-    bracket :: m a -> (a -> m b) -> (a -> m c) -> m c
+    bracket :: m a -> (a -> m ()) -> (a -> m c) -> m c
 
-bracket_ :: MonadBracket m => m a -> m b -> m c -> m c
+bracket_ :: MonadBracket m => m () -> m () -> m --> m
 bracket_ before after thing = bracket before (const after) (const thing)
 
-finally :: MonadBracket m => m a -> m b -> m a
+finally :: MonadBracket m => m a -> m () -> m a
 finally thing after = bracket_ (return ()) after thing
 
 instance MonadBracket IO where

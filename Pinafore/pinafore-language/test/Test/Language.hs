@@ -130,7 +130,7 @@ testQuery query expected =
         result <-
             withNullPinaforeContext $
             runInterpretResult $
-            runPinaforeSourceScoped "<input>" $ do
+            runPinaforeScoped (initialPos "<input>") $ do
                 v <- parseValue query
                 showPinaforeRef v
         case result of
@@ -897,7 +897,8 @@ testQueries =
 testShim :: Text -> String -> String -> TestTree
 testShim query expectedType expectedShim =
     testTree (unpack query) $ do
-        result <- withNullPinaforeContext $ runInterpretResult $ runPinaforeSourceScoped "<input>" $ parseValue query
+        result <-
+            withNullPinaforeContext $ runInterpretResult $ runPinaforeScoped (initialPos "<input>") $ parseValue query
         case result of
             FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
             SuccessResult (MkAnyValue (MkPosShimWit t shim) _) -> do
