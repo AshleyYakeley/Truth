@@ -28,6 +28,9 @@ type PinaforePolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype P
 type PinaforeGreatestDynamicSupertype :: Type -> Type
 type PinaforeGreatestDynamicSupertype t = GreatestDynamicSupertype PinaforeGroundType PinaforePolyShim t
 
+type PinaforeNonpolarType :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+type PinaforeNonpolarType = NonpolarDolanType PinaforeGroundType
+
 singleGroundType' ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t
     => FamilyType t

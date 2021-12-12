@@ -48,7 +48,6 @@ library:
       - Pinafore.Language.Type.Show
       - Pinafore.Language.Type.Ground
       - Pinafore.Language.Type.Types
-      - Pinafore.Language.Type.Data
       - Pinafore.Language.Type.Identified
       - Pinafore.Language.Error
       - Pinafore.Language.SpecialForm
@@ -83,6 +82,11 @@ library:
       - Pinafore.Language.Grammar.Interpret.RefNotation
       - Pinafore.Language.Grammar.Interpret.ScopeBuilder
       - Pinafore.Language.Grammar.Interpret.Type
+      - Pinafore.Language.Grammar.Interpret.TypeDecl.TypeBox
+      - Pinafore.Language.Grammar.Interpret.TypeDecl.Data
+      - Pinafore.Language.Grammar.Interpret.TypeDecl.ClosedEntity
+      - Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
+      - Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
       - Pinafore.Language.Grammar.Interpret.TypeDecl
       - Pinafore.Language.Grammar.Interpret
       - Pinafore.Language.Grammar

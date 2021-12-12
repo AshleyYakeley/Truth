@@ -7,7 +7,6 @@ module Pinafore.Language.Type
 import Data.Shim as I
 import Language.Expression.Common as I
 import Language.Expression.Dolan as I
-import Pinafore.Language.Type.Data as I
 import Pinafore.Language.Type.DynamicSupertype as I
 import Pinafore.Language.Type.Entity as I
 import Pinafore.Language.Type.Entity.Closed as I
