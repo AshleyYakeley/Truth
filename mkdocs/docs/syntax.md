@@ -176,7 +176,7 @@ All declarations, including type declarations, are local to a `let` block.
 <direct-declarations> ::=  | <direct-declaration> ";" <direct-declarations>
 
 <direct-declaration> ::=
-    "datatype" <type-const> <datatype-body> |
+    "datatype" <type-const> <datatype-parameters> <datatype-body> |
     "opentype" <type-const> |
     "subtype" <type-const> "<:" <type-const> |
     "closedtype" <type-const> <closedtype-body> |
@@ -195,6 +195,14 @@ All declarations, including type declarations, are local to a `let` block.
 <unsigned-binding> ::= lname <patterns> "=" <expression>
 
 <type-signature> ::= lname ":" <type>
+
+<datatype-parameters> ::=  | <datatype-parameter> <datatype-parameters>
+
+<datatype-parameter> ::=
+    "+" lname |
+    "-" lname |
+    "{" "+" lname "," "-" lname "}" |
+    "{" "-" lname "," "+" lname "}" |
 
 <datatype-body> ::=  | "=" <datatype-constructors>
 

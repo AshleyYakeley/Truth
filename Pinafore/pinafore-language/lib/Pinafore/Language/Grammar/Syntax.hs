@@ -13,6 +13,12 @@ data SyntaxClosedEntityConstructor =
                                     [SyntaxType]
                                     Anchor
 
+data SyntaxDatatypeParameter
+    = PositiveSyntaxDatatypeParameter Name
+    | NegativeSyntaxDatatypeParameter Name
+    | RangeSyntaxDatatypeParameter Name
+                                   Name -- negative, positive
+
 data SyntaxDatatypeConstructor =
     MkSyntaxDatatypeConstructor Name
                                 [SyntaxType]
@@ -23,7 +29,8 @@ data SyntaxDynamicEntityConstructor
 
 data SyntaxTypeDeclaration
     = ClosedEntitySyntaxTypeDeclaration [SyntaxClosedEntityConstructor]
-    | DatatypeSyntaxTypeDeclaration [SyntaxDatatypeConstructor]
+    | DatatypeSyntaxTypeDeclaration [SyntaxDatatypeParameter]
+                                    [SyntaxDatatypeConstructor]
     | OpenEntitySyntaxTypeDeclaration
     | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
 

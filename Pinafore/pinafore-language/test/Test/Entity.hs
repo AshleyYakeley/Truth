@@ -712,7 +712,17 @@ testEntity =
               , testExpectSuccess
                     "let f : Boolean -> Integer; f b = if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff -> if ff True == 1 then pass else fail \"ff\" end"
               , testExpectReject "let datatype B = MkB a in pass"
-              , tModify (ignoreTestBecause "ISSUE #41") $ testExpectSuccess "let datatype B a = MkB a in pass"
+              , tGroup
+                    "parameters"
+                    [ testExpectSuccess "let datatype B +a = MkB a in pass"
+                    , testExpectReject "let datatype B -a = MkB a in pass"
+                    , testExpectSuccess "let datatype B -a = MkB (a -> Boolean) in pass"
+                    , testExpectReject "let datatype B +a = MkB (a -> Boolean) in pass"
+                    , testExpectSuccess "let datatype B {-p,+q} = MkB (p -> q) in pass"
+                    , testExpectSuccess "let datatype B {+q,-p} = MkB (p -> q) in pass"
+                    , testExpectReject "let datatype B {-p,+q} = MkB (q -> p) in pass"
+                    , testExpectReject "let datatype B {+q,-p} = MkB (q -> p) in pass"
+                    ]
               , testExpectSuccess "let datatype P in pass"
               , tGroup
                     "nominal"

@@ -6,6 +6,7 @@ import Pinafore.Language.Grammar.Read.Parser
 import Pinafore.Language.Grammar.Read.Token
 import Pinafore.Language.Grammar.Read.Type
 import Pinafore.Language.Grammar.Syntax
+import Pinafore.Language.Name
 import Shapes hiding (try)
 
 readOpenEntityTypeDeclaration :: Parser SyntaxDirectDeclaration
@@ -37,16 +38,43 @@ readClosedTypeConstructor = do
     anchor <- readThis TokAnchor
     return $ MkSyntaxClosedEntityConstructor consName mtypes anchor
 
+readPositiveParameter :: Parser Name
+readPositiveParameter = do
+    readExactlyThis TokOperator "+"
+    readTypeVar
+
+readNegativeParameter :: Parser Name
+readNegativeParameter = do
+    readExactlyThis TokOperator "-"
+    readTypeVar
+
+readDataTypeParameter :: Parser SyntaxDatatypeParameter
+readDataTypeParameter =
+    fmap PositiveSyntaxDatatypeParameter readPositiveParameter <|>
+    fmap NegativeSyntaxDatatypeParameter readNegativeParameter <|>
+    (readBracketed TokOpenBrace TokCloseBrace $
+     (do
+          varp <- readNegativeParameter
+          readThis TokComma
+          varq <- readPositiveParameter
+          return $ RangeSyntaxDatatypeParameter varp varq) <|>
+     (do
+          varq <- readPositiveParameter
+          readThis TokComma
+          varp <- readNegativeParameter
+          return $ RangeSyntaxDatatypeParameter varp varq))
+
 readDataTypeDeclaration :: Parser SyntaxDirectDeclaration
 readDataTypeDeclaration = do
     spos <- getPosition
     readThis TokDataType
     name <- readTypeNewName
+    parameters <- many readDataTypeParameter
     mcons <-
         optional $ do
             readThis TokAssign
             readSeparated1 (readExactlyThis TokOperator "|") $ fmap pure readDataTypeConstructor
-    return $ TypeSyntaxDeclaration spos name $ DatatypeSyntaxTypeDeclaration $ fromMaybe mempty mcons
+    return $ TypeSyntaxDeclaration spos name $ DatatypeSyntaxTypeDeclaration parameters $ fromMaybe mempty mcons
 
 readClosedTypeDeclaration :: Parser SyntaxDirectDeclaration
 readClosedTypeDeclaration = do

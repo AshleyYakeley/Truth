@@ -3,6 +3,7 @@ module Pinafore.Language.Grammar.Read.Type
     , readTypeNewName
     , readType
     , readType3
+    , readTypeVar
     ) where
 
 import Pinafore.Language.Grammar.Read.Parser

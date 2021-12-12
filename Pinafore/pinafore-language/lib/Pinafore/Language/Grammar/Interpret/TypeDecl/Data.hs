@@ -50,8 +50,13 @@ interpretDataTypeConstructor (MkSyntaxDatatypeConstructor consName stypes) = do
     etypes <- for stypes interpretNonpolarType
     return (consName, assembleListType etypes)
 
-makeDataTypeBox :: Name -> Markdown -> [SyntaxDatatypeConstructor] -> PinaforeInterpreter PinaforeTypeBox
-makeDataTypeBox name doc sconss = do
+makeDataTypeBox ::
+       Name
+    -> Markdown
+    -> [SyntaxDatatypeParameter]
+    -> [SyntaxDatatypeConstructor]
+    -> PinaforeInterpreter PinaforeTypeBox
+makeDataTypeBox name doc [] sconss = do
     tid <- newTypeID
     return $
         valueToWitness tid $ \tidsym -> let
@@ -88,3 +93,4 @@ makeDataTypeBox name doc sconss = do
                                pc = toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
                            withNewPatternConstructor cname doc expr pc
                    return ((), compAll patts)
+makeDataTypeBox _name _doc _ _sconss = throw $ UnicodeDecodeError "ISSUE #41"
