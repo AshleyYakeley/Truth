@@ -32,36 +32,36 @@ assembleClosedEntityType ((n, a, MkAnyW el):cc) =
             (MkConstructor n el Left eitherLeft) : fmap extendConstructor conss
 
 makeClosedEntityTypeBox :: Name -> Markdown -> [SyntaxClosedEntityConstructor] -> PinaforeInterpreter PinaforeTypeBox
-makeClosedEntityTypeBox name doc sconss = do
-    tid <- newTypeID
-    return $
-        valueToWitness tid $ \(tidsym :: TypeIDType n) -> let
-            mktype t = MkBoundType $ closedEntityGroundType $ MkClosedEntityFamily name tidsym t
-            in mkTypeFixBox name doc mktype $ do
-                   tconss <- for sconss interpretClosedEntityTypeConstructor
-                   MkClosedEntityBox (ct :: ClosedEntityType t) conss <- return $ assembleClosedEntityType tconss
-                   tident :: Identified n :~: t <- unsafeIdentify
-                   let
-                       cti :: ClosedEntityType (Identified n)
-                       cti = (reflId $ applyRefl id $ invert tident) ct
-                       ctf :: forall polarity. Is PolarityType polarity
-                           => PinaforeShimWit polarity (Identified n)
-                       ctf =
-                           singleDolanShimWit $
-                           mkPolarShimWit $
-                           GroundedDolanSingularType
-                               (closedEntityGroundType $ MkClosedEntityFamily name tidsym cti)
-                               NilDolanArguments
-                   patts <-
-                       for conss $ \(MkConstructor cname lt at tma) -> do
-                           ltp <- return $ mapListType monoToPositiveDolanType lt
-                           ltn <- mapMListType monoEntityToNegativePinaforeType lt
-                           let
-                               expr =
-                                   qConstExprAny $
-                                   MkAnyValue
-                                       (qFunctionPosWitnesses ltn (mapPolarShimWit (reflId $ invert tident) ctf))
-                                       at
-                               pc = toPatternConstructor ctf ltp $ tma . reflId tident
-                           withNewPatternConstructor cname doc expr pc
-                   return (cti, compAll patts)
+makeClosedEntityTypeBox name doc sconss =
+    newTypeID $ \(tidsym :: TypeIDType n) ->
+        case unsafeIdentifyKind @_ @Type tidsym of
+            Identity Refl -> let
+                mktype t = MkBoundType $ closedEntityGroundType $ MkClosedEntityFamily name tidsym t
+                in mkTypeFixBox name doc mktype $ do
+                       tconss <- for sconss interpretClosedEntityTypeConstructor
+                       MkClosedEntityBox (ct :: ClosedEntityType t) conss <- return $ assembleClosedEntityType tconss
+                       tident <- unsafeIdentify @_ @t tidsym
+                       let
+                           cti :: ClosedEntityType (Identified n)
+                           cti = (reflId $ applyRefl id $ invert tident) ct
+                           ctf :: forall polarity. Is PolarityType polarity
+                               => PinaforeShimWit polarity (Identified n)
+                           ctf =
+                               singleDolanShimWit $
+                               mkPolarShimWit $
+                               GroundedDolanSingularType
+                                   (closedEntityGroundType $ MkClosedEntityFamily name tidsym cti)
+                                   NilDolanArguments
+                       patts <-
+                           for conss $ \(MkConstructor cname lt at tma) -> do
+                               ltp <- return $ mapListType monoToPositiveDolanType lt
+                               ltn <- mapMListType monoEntityToNegativePinaforeType lt
+                               let
+                                   expr =
+                                       qConstExprAny $
+                                       MkAnyValue
+                                           (qFunctionPosWitnesses ltn (mapPolarShimWit (reflId $ invert tident) ctf))
+                                           at
+                                   pc = toPatternConstructor ctf ltp $ tma . reflId tident
+                               withNewPatternConstructor cname doc expr pc
+                       return (cti, compAll patts)

@@ -361,11 +361,11 @@ lookupPatternConstructor name = do
         Just a -> return a
         Nothing -> throw $ LookupConstructorUnknownError name
 
-newTypeID :: Interpreter ts TypeID
-newTypeID = do
+newTypeID :: (forall tid. TypeIDType tid -> a) -> Interpreter ts a
+newTypeID call = do
     tid <- getD typeIDRef
     putD typeIDRef $ succTypeID tid
-    return tid
+    return $ valueToWitness tid call
 
 registerType :: Name -> Markdown -> BoundType ts -> WMFunction (Interpreter ts) (Interpreter ts)
 registerType name doc t =

@@ -13,11 +13,11 @@ import Shapes
 
 data ClosedEntityFamily :: FamilyKind where
     MkClosedEntityFamily
-        :: forall (tid :: BigNat).
-           Name
+        :: forall (tid :: BigNat) (t :: Type). (IdentifiedKind tid ~ Type, Identified tid ~~ t)
+        => Name
         -> TypeIDType tid
-        -> ClosedEntityType (Identified tid)
-        -> ClosedEntityFamily (Identified tid)
+        -> ClosedEntityType t
+        -> ClosedEntityFamily t
 
 instance TestHetEquality ClosedEntityFamily where
     testHetEquality (MkClosedEntityFamily _ sa ta) (MkClosedEntityFamily _ sb tb) = do

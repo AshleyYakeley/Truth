@@ -9,14 +9,8 @@ import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
 
-makeOpenEntityType :: Name -> TypeID -> AnyW OpenEntityType
-makeOpenEntityType n tid = valueToWitness tid $ \tidsym -> MkAnyW $ MkOpenEntityType n tidsym
-
 makeOpenEntityTypeBox :: Name -> Markdown -> PinaforeInterpreter PinaforeTypeBox
-makeOpenEntityTypeBox name doc = do
-    tid <- newTypeID
-    let
-        mktype _ =
-            case makeOpenEntityType name tid of
-                MkAnyW t -> MkBoundType $ openEntityGroundType t
-    return $ mkTypeFixBox name doc mktype $ return ((), id)
+makeOpenEntityTypeBox name doc =
+    newTypeID $ \tidsym -> let
+        mktype _ = MkBoundType $ openEntityGroundType $ MkOpenEntityType name tidsym
+        in mkTypeFixBox name doc mktype $ return ((), id)
