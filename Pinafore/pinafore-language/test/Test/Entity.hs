@@ -712,17 +712,6 @@ testEntity =
               , testExpectSuccess
                     "let f : Boolean -> Integer; f b = if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff -> if ff True == 1 then pass else fail \"ff\" end"
               , testExpectReject "let datatype B = MkB a in pass"
-              , tGroup
-                    "parameters"
-                    [ testExpectSuccess "let datatype B +a = MkB a in pass"
-                    , testExpectReject "let datatype B -a = MkB a in pass"
-                    , testExpectSuccess "let datatype B -a = MkB (a -> Boolean) in pass"
-                    , testExpectReject "let datatype B +a = MkB (a -> Boolean) in pass"
-                    , testExpectSuccess "let datatype B {-p,+q} = MkB (p -> q) in pass"
-                    , testExpectSuccess "let datatype B {+q,-p} = MkB (p -> q) in pass"
-                    , testExpectReject "let datatype B {-p,+q} = MkB (q -> p) in pass"
-                    , testExpectReject "let datatype B {+q,-p} = MkB (q -> p) in pass"
-                    ]
               , testExpectSuccess "let datatype P in pass"
               , tGroup
                     "nominal"
@@ -747,6 +736,44 @@ testEntity =
                     , testExpectReject "let rec closedtype P = P1 Q; datatype Q = Q1 !\"Q1\" end in pass"
                     , testExpectSuccess
                           "let rec datatype P = P1 Q; datatype Q = Q1 (Action ()); pqpass = P1 (Q1 pass) end in case pqpass of P1 (Q1 p) -> p end"
+                    ]
+              , tGroup
+                    "parameters"
+                    [ tGroup
+                          "variance"
+                          [ testExpectSuccess "let datatype B +a = MkB a in pass"
+                          , testExpectReject "let datatype B -a = MkB a in pass"
+                          , testExpectSuccess "let datatype B -a = MkB (a -> Boolean) in pass"
+                          , testExpectReject "let datatype B +a = MkB (a -> Boolean) in pass"
+                          , testExpectSuccess "let datatype B {-p,+q} = MkB (p -> q) in pass"
+                          , testExpectSuccess "let datatype B {+q,-p} = MkB (p -> q) in pass"
+                          , testExpectReject "let datatype B {-p,+q} = MkB (q -> p) in pass"
+                          , testExpectReject "let datatype B {+q,-p} = MkB (q -> p) in pass"
+                          ]
+                    , tGroup
+                          "recursive"
+                          [ testExpectSuccess "let rec datatype R +a = MkR (R a) end in pass"
+                          , testExpectSuccess "let rec datatype R -a = MkR (R a) end in pass"
+                          , testExpectSuccess
+                                "let rec datatype R1 +a = MkR1 (R2 a); datatype R2 +a = MkR2 (R1 a) end in pass"
+                          , testExpectSuccess
+                                "let rec datatype R1 -a = MkR1 (R2 a); datatype R2 -a = MkR2 (R1 a) end in pass"
+                          , testExpectSuccess
+                                "let rec datatype R1 +a = MkR1 (R2 a -> Integer); datatype R2 -a = MkR2 (R1 a -> Integer) end in pass"
+                          ]
+                    , tGroup
+                          "conversion"
+                          [ tDecls
+                                [ "datatype T +a = Mk1T [a] | Mk2T (Maybe a)"
+                                , "showT: T Showable -> Text"
+                                , "showT t = case t of Mk1T aa -> show aa; Mk2T ma -> show ma end"
+                                , "ti: T Integer"
+                                , "ti = Mk1T [576,469,12]"
+                                , "sti: Text"
+                                , "sti = showT ti"
+                                ] $
+                            testExpectSuccess "if sti == \"[576,469,12]\" then pass else fail sti"
+                          ]
                     ]
               ]
         , tDecls ["closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\""] $

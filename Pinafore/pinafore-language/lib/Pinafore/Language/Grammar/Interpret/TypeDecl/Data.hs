@@ -11,9 +11,11 @@ import Pinafore.Language.Grammar.Interpret.TypeDecl.TypeBox
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
+import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
+import Shapes.Unsafe (unsafeGetRefl)
 
 -- | Structure of a datatype
 data PinaforeDataType :: forall (k :: Type). k -> Type where
@@ -93,6 +95,50 @@ withTParams (sp:spp) cont = withTParam sp $ \p -> withTParams spp $ \pp -> cont 
 tParamsVarianceType :: TParams dv -> DolanVarianceType dv
 tParamsVarianceType = mapListType tParamVarianceType
 
+{-
+type DolanVarianceMap :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+data DolanVarianceMap dv f where
+    NilDolanVarianceMap :: forall (f :: Type). DolanVarianceMap '[] f
+    ConsDolanVarianceMap
+        :: forall (sv :: CCRVariance) (dv :: DolanVariance) (f :: CCRVarianceKind sv -> DolanVarianceKind dv).
+           HasCCRVariance sv f
+        => (forall a. DolanVarianceMap dv (f a))
+        -> DolanVarianceMap (sv ': dv) f
+-}
+paramToArg ::
+       forall sv r.
+       TParam sv
+    -> (forall tp tn.
+            (InKind tp, InKind tn) =>
+                    SingleArgument sv PinaforeType 'Positive tp -> SingleArgument sv PinaforeType 'Negative tn -> CCRVarianceCategory (PinaforePolyShim Type) sv tn tp -> r)
+    -> r
+paramToArg (CoTParam var) call =
+    call (singleDolanType $ VarDolanSingularType var) (singleDolanType $ VarDolanSingularType var) $ iJoinR1 . iMeetL1
+paramToArg (ContraTParam var) call =
+    call (singleDolanType $ VarDolanSingularType var) (singleDolanType $ VarDolanSingularType var) $
+    MkCatDual $ iJoinR1 . iMeetL1
+paramToArg (RangeTParam varp varq) call =
+    call
+        (MkRangeType (singleDolanType $ VarDolanSingularType varp) (singleDolanType $ VarDolanSingularType varq))
+        (MkRangeType (singleDolanType $ VarDolanSingularType varp) (singleDolanType $ VarDolanSingularType varq)) $
+    MkCatRange (iJoinR1 . iMeetL1) (iJoinR1 . iMeetL1)
+
+paramsToDolanArgs ::
+       forall (dv :: DolanVariance) (gtp :: DolanVarianceKind dv) (gtn :: DolanVarianceKind dv) r.
+       TParams dv
+    -> DolanVarianceMap dv gtp
+    -> DolanVarianceMap dv gtn
+    -> PinaforePolyShim (DolanVarianceKind dv) gtn gtp
+    -> (forall tp tn.
+                DolanArguments dv PinaforeType gtp 'Positive tp -> DolanArguments dv PinaforeType gtn 'Negative tn -> PinaforePolyShim Type tn tp -> r)
+    -> r
+paramsToDolanArgs NilListType NilDolanVarianceMap NilDolanVarianceMap conv call =
+    call NilDolanArguments NilDolanArguments conv
+paramsToDolanArgs (ConsListType p pp) (ConsDolanVarianceMap dvmp) (ConsDolanVarianceMap dvmn) conv call =
+    paramToArg p $ \posarg negarg conv1 ->
+        paramsToDolanArgs pp dvmp dvmn (applyPolyShim (tParamVarianceType p) conv conv1) $ \posargs negargs convs ->
+            call (ConsDolanArguments posarg posargs) (ConsDolanArguments negarg negargs) convs
+
 makeDataTypeBox ::
        Name
     -> Markdown
@@ -104,53 +150,63 @@ makeDataTypeBox name doc params sconss =
         withRepresentative (tParamsVarianceType tparams) $
         newTypeID $ \(tidsym :: _ tid) ->
             case unsafeIdentifyKind @_ @(DolanVarianceKind dv) tidsym of
-                Identity Refl -> let
-                    gt :: DolanVarianceMap dv (Identified tid) -> PinaforeGroundType dv (Identified tid)
-                    gt dvm =
-                        MkPinaforeGroundType
-                            { pgtVarianceType = representative
-                            , pgtVarianceMap = dvm
-                            , pgtShowType = standardListTypeExprShow @dv $ exprShow name
-                            , pgtFamilyType = MkFamilyType datatypeIOWitness $ MkDataTypeFamily tidsym
-                            , pgtGreatestDynamicSupertype = \_ -> Nothing
-                            }
-                    mktype dvm = MkBoundType $ gt dvm
-                    in mkTypeFixBox name doc mktype $ do
-                           tconss <- for sconss interpretDataTypeConstructor
-                           MkDataBox _dt conss <- return $ assembleDataType tconss
-                           let
-                               freevars :: [AnyW SymbolType]
-                               freevars = nub $ mconcat $ fmap constructorFreeVariables conss
-                               declaredvars :: [AnyW SymbolType]
-                               declaredvars = tParamsVars tparams
-                               unboundvars :: [AnyW SymbolType]
-                               unboundvars = freevars List.\\ declaredvars
-                           case nonEmpty unboundvars of
-                               Nothing -> return ()
-                               Just vv ->
-                                   throw $
-                                   InterpretUnboundTypeVariablesError $ fmap (\(MkAnyW s) -> symbolTypeToName s) vv
-                           case tparams of
-                               NilListType -> do
+                Identity Refl ->
+                    case dolanVarianceInCategory @PinaforePolyShim @dv representative of
+                        Dict -> let
+                            mkgt :: DolanVarianceMap dv (Identified tid) -> PinaforeGroundType dv (Identified tid)
+                            mkgt dvm =
+                                MkPinaforeGroundType
+                                    { pgtVarianceType = representative
+                                    , pgtVarianceMap = dvm
+                                    , pgtShowType = standardListTypeExprShow @dv $ exprShow name
+                                    , pgtFamilyType = MkFamilyType datatypeIOWitness $ MkDataTypeFamily tidsym
+                                    , pgtGreatestDynamicSupertype = \_ -> Nothing
+                                    }
+                            mktype dvm = MkBoundType $ mkgt dvm
+                            in mkTypeFixBox name doc mktype $ do
+                                   tconss <- for sconss interpretDataTypeConstructor
+                                   MkDataBox (_dt :: _ dt) conss <- return $ assembleDataType tconss
                                    let
-                                       ctf :: forall polarity. Is PolarityType polarity
-                                           => PinaforeShimWit polarity (Identified tid)
-                                       ctf =
-                                           singleDolanShimWit $
-                                           mkPolarShimWit $
-                                           GroundedDolanSingularType (gt NilDolanVarianceMap) NilDolanArguments
-                                   tident <- unsafeIdentify tidsym
-                                   let tiso = reflId tident
-                                   patts <-
-                                       for conss $ \(MkConstructor cname lt at tma) -> do
-                                           ltp <- return $ mapListType nonpolarToDolanType lt
-                                           ltn <- return $ mapListType nonpolarToDolanType lt
-                                           let
-                                               expr =
-                                                   qConstExprAny $
-                                                   MkAnyValue (qFunctionPosWitnesses ltn ctf) $ \hl ->
-                                                       isoBackwards tiso $ at hl
-                                               pc = toPatternConstructor ctf ltp $ \t -> tma $ isoForwards tiso t
-                                           withNewPatternConstructor cname doc expr pc
-                                   return (NilDolanVarianceMap, compAll patts)
-                               _ -> throw $ UnicodeDecodeError "ISSUE #41"
+                                       freevars :: [AnyW SymbolType]
+                                       freevars = nub $ mconcat $ fmap constructorFreeVariables conss
+                                       declaredvars :: [AnyW SymbolType]
+                                       declaredvars = tParamsVars tparams
+                                       unboundvars :: [AnyW SymbolType]
+                                       unboundvars = freevars List.\\ declaredvars
+                                   case nonEmpty unboundvars of
+                                       Nothing -> return ()
+                                       Just vv ->
+                                           throw $
+                                           InterpretUnboundTypeVariablesError $
+                                           fmap (\(MkAnyW s) -> symbolTypeToName s) vv
+                                   (dvm, Dict) :: (DolanVarianceMap dv (Identified tid), Dict (InKind (Identified tid))) <-
+                                       case tparams of
+                                           NilListType -> return (NilDolanVarianceMap, Dict)
+                                           _ -> throw $ UnicodeDecodeError "ISSUE #41"
+                                   paramsToDolanArgs @dv @(Identified tid) @(Identified tid) tparams dvm dvm cid $ \(posargs :: _ tp) negargs conv -> do
+                                       let
+                                           gt = mkgt dvm
+                                           ctfpos :: PinaforeShimWit 'Positive tp
+                                           ctfpos =
+                                               singleDolanShimWit $
+                                               mkPolarShimWit $ GroundedDolanSingularType gt posargs
+                                           ctfneg :: PinaforeShimWit 'Negative tp
+                                           ctfneg =
+                                               mapShimWit (MkPolarMap conv) $
+                                               singleDolanShimWit $
+                                               mkPolarShimWit $ GroundedDolanSingularType gt negargs
+                                       tident <- unsafeGetRefl @Type @dt @tp
+                                       let tiso = reflId tident
+                                       patts <-
+                                           for conss $ \(MkConstructor cname lt at tma) -> do
+                                               ltp <- return $ mapListType nonpolarToDolanType lt
+                                               ltn <- return $ mapListType nonpolarToDolanType lt
+                                               let
+                                                   expr =
+                                                       qConstExprAny $
+                                                       MkAnyValue (qFunctionPosWitnesses ltn ctfpos) $ \hl ->
+                                                           isoForwards tiso $ at hl
+                                                   pc =
+                                                       toPatternConstructor ctfneg ltp $ \t -> tma $ isoBackwards tiso t
+                                               withNewPatternConstructor cname doc expr pc
+                                       return (dvm, compAll patts)
