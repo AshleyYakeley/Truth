@@ -179,34 +179,37 @@ makeDataTypeBox name doc params sconss =
                                            throw $
                                            InterpretUnboundTypeVariablesError $
                                            fmap (\(MkAnyW s) -> symbolTypeToName s) vv
-                                   (dvm, Dict) :: (DolanVarianceMap dv (Identified tid), Dict (InKind (Identified tid))) <-
+                                   dvm :: DolanVarianceMap dv (Identified tid) <-
                                        case tparams of
-                                           NilListType -> return (NilDolanVarianceMap, Dict)
+                                           NilListType -> return NilDolanVarianceMap
                                            _ -> throw $ UnicodeDecodeError "ISSUE #41"
-                                   paramsToDolanArgs @dv @(Identified tid) @(Identified tid) tparams dvm dvm cid $ \(posargs :: _ tp) negargs conv -> do
-                                       let
-                                           gt = mkgt dvm
-                                           ctfpos :: PinaforeShimWit 'Positive tp
-                                           ctfpos =
-                                               singleDolanShimWit $
-                                               mkPolarShimWit $ GroundedDolanSingularType gt posargs
-                                           ctfneg :: PinaforeShimWit 'Negative tp
-                                           ctfneg =
-                                               mapShimWit (MkPolarMap conv) $
-                                               singleDolanShimWit $
-                                               mkPolarShimWit $ GroundedDolanSingularType gt negargs
-                                       tident <- unsafeGetRefl @Type @dt @tp
-                                       let tiso = reflId tident
-                                       patts <-
-                                           for conss $ \(MkConstructor cname lt at tma) -> do
-                                               ltp <- return $ mapListType nonpolarToDolanType lt
-                                               ltn <- return $ mapListType nonpolarToDolanType lt
+                                   case dolanVarianceMapInKind dvm of
+                                       Dict ->
+                                           paramsToDolanArgs @dv @(Identified tid) @(Identified tid) tparams dvm dvm cid $ \(posargs :: _ tp) negargs conv -> do
                                                let
-                                                   expr =
-                                                       qConstExprAny $
-                                                       MkAnyValue (qFunctionPosWitnesses ltn ctfpos) $ \hl ->
-                                                           isoForwards tiso $ at hl
-                                                   pc =
-                                                       toPatternConstructor ctfneg ltp $ \t -> tma $ isoBackwards tiso t
-                                               withNewPatternConstructor cname doc expr pc
-                                       return (dvm, compAll patts)
+                                                   gt = mkgt dvm
+                                                   ctfpos :: PinaforeShimWit 'Positive tp
+                                                   ctfpos =
+                                                       singleDolanShimWit $
+                                                       mkPolarShimWit $ GroundedDolanSingularType gt posargs
+                                                   ctfneg :: PinaforeShimWit 'Negative tp
+                                                   ctfneg =
+                                                       mapShimWit (MkPolarMap conv) $
+                                                       singleDolanShimWit $
+                                                       mkPolarShimWit $ GroundedDolanSingularType gt negargs
+                                               tident <- unsafeGetRefl @Type @dt @tp
+                                               let tiso = reflId tident
+                                               patts <-
+                                                   for conss $ \(MkConstructor cname lt at tma) -> do
+                                                       ltp <- return $ mapListType nonpolarToDolanType lt
+                                                       ltn <- return $ mapListType nonpolarToDolanType lt
+                                                       let
+                                                           expr =
+                                                               qConstExprAny $
+                                                               MkAnyValue (qFunctionPosWitnesses ltn ctfpos) $ \hl ->
+                                                                   isoForwards tiso $ at hl
+                                                           pc =
+                                                               toPatternConstructor ctfneg ltp $ \t ->
+                                                                   tma $ isoBackwards tiso t
+                                                       withNewPatternConstructor cname doc expr pc
+                                               return (dvm, compAll patts)
