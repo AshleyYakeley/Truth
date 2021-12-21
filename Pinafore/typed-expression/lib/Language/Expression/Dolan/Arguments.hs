@@ -145,7 +145,7 @@ mapDolanArgumentsM ::
 mapDolanArgumentsM f dvt dvm args =
     case dolanVarianceInCategory @pshim dvt of
         Dict ->
-            case dolanVarianceMapInKind dvm of
+            case dolanVarianceInKind dvt @gt of
                 Dict -> mapArgsTypeF f dvt dvm dvm args cid
 
 mapDolanArguments ::
@@ -215,7 +215,7 @@ mapInvertDolanArgumentsM ::
 mapInvertDolanArgumentsM f dvt dvm args =
     case dolanVarianceInCategory @pshim dvt of
         Dict ->
-            case dolanVarianceMapInKind dvm of
+            case dolanVarianceInKind dvt @gt of
                 Dict -> invertPolarity @polarity $ mapInvertArgsTypeF f dvt dvm dvm args cid
 
 type SVJoinMeetType :: forall (sv :: CCRVariance) ->
@@ -338,7 +338,7 @@ mergeDolanArgumentsM ::
 mergeDolanArgumentsM f dvt dvm argsa argsb =
     case dolanVarianceInCategory @pshim dvt of
         Dict ->
-            case dolanVarianceMapInKind dvm of
+            case dolanVarianceInKind dvt @gt of
                 Dict -> mergeArgsTypeF @m @pshim f dvt dvm dvm dvm argsa argsb cid cid
 
 mergeDolanArguments ::

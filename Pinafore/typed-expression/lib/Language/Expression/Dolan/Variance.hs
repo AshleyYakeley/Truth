@@ -58,12 +58,17 @@ data DolanVarianceMap dv f where
         => (forall a. DolanVarianceMap dv (f a))
         -> DolanVarianceMap (sv ': dv) f
 
-dolanVarianceMapInKind ::
-       forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). DolanVarianceMap dv f -> Dict (InKind f)
-dolanVarianceMapInKind NilDolanVarianceMap = Dict
-dolanVarianceMapInKind (ConsDolanVarianceMap dvm) =
-    case dolanVarianceMapInKind dvm of
+dolanVarianceAllInKind :: forall (dv :: DolanVariance). DolanVarianceType dv -> Dict (AllInKind (DolanVarianceKind dv))
+dolanVarianceAllInKind NilListType = Dict
+dolanVarianceAllInKind (ConsListType _ dvt) =
+    case dolanVarianceAllInKind dvt of
         Dict -> Dict
+
+dolanVarianceInKind ::
+       forall (dv :: DolanVariance). DolanVarianceType dv -> forall (f :: DolanVarianceKind dv). Dict (InKind f)
+dolanVarianceInKind dvt =
+    case dolanVarianceAllInKind dvt of
+        Dict -> allInKind
 
 bijectSingleVarianceMap ::
        forall (pshim :: PolyShimKind) sv f.

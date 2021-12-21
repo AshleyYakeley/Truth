@@ -151,40 +151,42 @@ makeDataTypeBox name doc params sconss =
         newTypeID $ \(tidsym :: _ tid) ->
             case unsafeIdentifyKind @_ @(DolanVarianceKind dv) tidsym of
                 Identity Refl ->
-                    case dolanVarianceInCategory @PinaforePolyShim @dv representative of
-                        Dict -> let
-                            mkgt :: DolanVarianceMap dv (Identified tid) -> PinaforeGroundType dv (Identified tid)
-                            mkgt dvm =
-                                MkPinaforeGroundType
-                                    { pgtVarianceType = representative
-                                    , pgtVarianceMap = dvm
-                                    , pgtShowType = standardListTypeExprShow @dv $ exprShow name
-                                    , pgtFamilyType = MkFamilyType datatypeIOWitness $ MkDataTypeFamily tidsym
-                                    , pgtGreatestDynamicSupertype = \_ -> Nothing
-                                    }
-                            mktype dvm = MkBoundType $ mkgt dvm
-                            in mkTypeFixBox name doc mktype $ do
-                                   tconss <- for sconss interpretDataTypeConstructor
-                                   MkDataBox (_dt :: _ dt) conss <- return $ assembleDataType tconss
-                                   let
-                                       freevars :: [AnyW SymbolType]
-                                       freevars = nub $ mconcat $ fmap constructorFreeVariables conss
-                                       declaredvars :: [AnyW SymbolType]
-                                       declaredvars = tParamsVars tparams
-                                       unboundvars :: [AnyW SymbolType]
-                                       unboundvars = freevars List.\\ declaredvars
-                                   case nonEmpty unboundvars of
-                                       Nothing -> return ()
-                                       Just vv ->
-                                           throw $
-                                           InterpretUnboundTypeVariablesError $
-                                           fmap (\(MkAnyW s) -> symbolTypeToName s) vv
-                                   dvm :: DolanVarianceMap dv (Identified tid) <-
-                                       case tparams of
-                                           NilListType -> return NilDolanVarianceMap
-                                           _ -> throw $ UnicodeDecodeError "ISSUE #41"
-                                   case dolanVarianceMapInKind dvm of
-                                       Dict ->
+                    case dolanVarianceInKind @dv representative @(Identified tid) of
+                        Dict ->
+                            case dolanVarianceInCategory @PinaforePolyShim @dv representative of
+                                Dict -> let
+                                    mkgt ::
+                                           DolanVarianceMap dv (Identified tid)
+                                        -> PinaforeGroundType dv (Identified tid)
+                                    mkgt dvm =
+                                        MkPinaforeGroundType
+                                            { pgtVarianceType = representative
+                                            , pgtVarianceMap = dvm
+                                            , pgtShowType = standardListTypeExprShow @dv $ exprShow name
+                                            , pgtFamilyType = MkFamilyType datatypeIOWitness $ MkDataTypeFamily tidsym
+                                            , pgtGreatestDynamicSupertype = \_ -> Nothing
+                                            }
+                                    mktype dvm = MkBoundType $ mkgt dvm
+                                    in mkTypeFixBox name doc mktype $ do
+                                           tconss <- for sconss interpretDataTypeConstructor
+                                           MkDataBox (_dt :: _ dt) conss <- return $ assembleDataType tconss
+                                           let
+                                               freevars :: [AnyW SymbolType]
+                                               freevars = nub $ mconcat $ fmap constructorFreeVariables conss
+                                               declaredvars :: [AnyW SymbolType]
+                                               declaredvars = tParamsVars tparams
+                                               unboundvars :: [AnyW SymbolType]
+                                               unboundvars = freevars List.\\ declaredvars
+                                           case nonEmpty unboundvars of
+                                               Nothing -> return ()
+                                               Just vv ->
+                                                   throw $
+                                                   InterpretUnboundTypeVariablesError $
+                                                   fmap (\(MkAnyW s) -> symbolTypeToName s) vv
+                                           dvm :: DolanVarianceMap dv (Identified tid) <-
+                                               case tparams of
+                                                   NilListType -> return NilDolanVarianceMap
+                                                   _ -> throw $ UnicodeDecodeError "ISSUE #41"
                                            paramsToDolanArgs @dv @(Identified tid) @(Identified tid) tparams dvm dvm cid $ \(posargs :: _ tp) negargs conv -> do
                                                let
                                                    gt = mkgt dvm

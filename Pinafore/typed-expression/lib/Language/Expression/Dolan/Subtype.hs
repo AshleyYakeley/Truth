@@ -93,12 +93,12 @@ subtypeDolanArguments ::
     -> DolanArguments dv (DolanType ground) gt polb argsb
     -> solver (pshim Type argsa argsb)
 subtypeDolanArguments sc gt argsa argsb = let
-    vkt = groundTypeVarianceType gt
+    dvt = groundTypeVarianceType gt
     dvm = groundTypeVarianceMap gt
-    in case dolanVarianceMapInKind dvm of
+    in case dolanVarianceInKind dvt @gt of
            Dict ->
-               case dolanVarianceInCategory @pshim vkt of
-                   Dict -> fmap (\f -> f cid) $ subtypeArguments sc vkt dvm dvm argsa argsb
+               case dolanVarianceInCategory @pshim dvt of
+                   Dict -> fmap (\f -> f cid) $ subtypeArguments sc dvt dvm dvm argsa argsb
 
 type DebugIsDolanGroundType :: GroundTypeKind -> Constraint
 class ( IsDolanGroundType ground
