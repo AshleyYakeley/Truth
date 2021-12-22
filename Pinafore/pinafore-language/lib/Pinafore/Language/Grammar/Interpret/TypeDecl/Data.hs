@@ -126,18 +126,16 @@ paramToArg (RangeTParam varp varq) call =
 paramsToDolanArgs ::
        forall (dv :: DolanVariance) (gtp :: DolanVarianceKind dv) (gtn :: DolanVarianceKind dv) r.
        TParams dv
-    -> DolanVarianceMap dv gtp
-    -> DolanVarianceMap dv gtn
-    -> PinaforePolyShim (DolanVarianceKind dv) gtn gtp
     -> (forall tp tn.
-                DolanArguments dv PinaforeType gtp 'Positive tp -> DolanArguments dv PinaforeType gtn 'Negative tn -> PinaforePolyShim Type tn tp -> r)
+                DolanArguments dv PinaforeType gtp 'Positive tp -> DolanArguments dv PinaforeType gtn 'Negative tn -> (PinaforePolyShim (DolanVarianceKind dv) gtn gtp -> DolanVarianceMap dv gtp -> DolanVarianceMap dv gtn -> PinaforePolyShim Type tn tp) -> r)
     -> r
-paramsToDolanArgs NilListType NilDolanVarianceMap NilDolanVarianceMap conv call =
-    call NilDolanArguments NilDolanArguments conv
-paramsToDolanArgs (ConsListType p pp) (ConsDolanVarianceMap ccrvp dvmp) (ConsDolanVarianceMap ccrvn dvmn) conv call =
+paramsToDolanArgs NilListType call =
+    call NilDolanArguments NilDolanArguments $ \conv NilDolanVarianceMap NilDolanVarianceMap -> conv
+paramsToDolanArgs (ConsListType p pp) call =
     paramToArg p $ \posarg negarg conv1 ->
-        paramsToDolanArgs pp dvmp dvmn (applyPolyShim (tParamVarianceType p) ccrvn ccrvp conv conv1) $ \posargs negargs convs ->
-            call (ConsDolanArguments posarg posargs) (ConsDolanArguments negarg negargs) convs
+        paramsToDolanArgs pp $ \posargs negargs fconvs ->
+            call (ConsDolanArguments posarg posargs) (ConsDolanArguments negarg negargs) $ \conv (ConsDolanVarianceMap ccrvp dvmp) (ConsDolanVarianceMap ccrvn dvmn) ->
+                fconvs (applyPolyShim (tParamVarianceType p) ccrvn ccrvp conv conv1) dvmp dvmn
 
 makeDataTypeBox ::
        Name
@@ -177,18 +175,26 @@ makeDataTypeBox name doc params sconss =
                                                declaredvars = tParamsVars tparams
                                                unboundvars :: [AnyW SymbolType]
                                                unboundvars = freevars List.\\ declaredvars
+                                           case nonEmpty $ duplicates declaredvars of
+                                               Nothing -> return ()
+                                               Just vv ->
+                                                   throw $
+                                                   InterpretTypeDeclDuplicateTypeVariablesError name $
+                                                   fmap (\(MkAnyW s) -> symbolTypeToName s) vv
                                            case nonEmpty unboundvars of
                                                Nothing -> return ()
                                                Just vv ->
                                                    throw $
-                                                   InterpretUnboundTypeVariablesError $
+                                                   InterpretTypeDeclUnboundTypeVariablesError name $
                                                    fmap (\(MkAnyW s) -> symbolTypeToName s) vv
-                                           dvm :: DolanVarianceMap dv (Identified tid) <-
-                                               case tparams of
-                                                   NilListType -> return NilDolanVarianceMap
-                                                   _ -> throw $ UnicodeDecodeError "ISSUE #41"
-                                           paramsToDolanArgs @dv @(Identified tid) @(Identified tid) tparams dvm dvm cid $ \(posargs :: _ tp) negargs conv -> do
+                                           paramsToDolanArgs @dv @(Identified tid) @(Identified tid) tparams $ \(posargs :: _ tp) negargs fconv -> do
+                                               tident <- unsafeGetRefl @Type @dt @tp
+                                               dvm :: DolanVarianceMap dv (Identified tid) <-
+                                                   case posargs of
+                                                       NilDolanArguments -> return NilDolanVarianceMap
+                                                       _ -> throw $ UnicodeDecodeError "ISSUE #41"
                                                let
+                                                   conv = fconv cid dvm dvm
                                                    gt = mkgt dvm
                                                    ctfpos :: PinaforeShimWit 'Positive tp
                                                    ctfpos =
@@ -199,7 +205,6 @@ makeDataTypeBox name doc params sconss =
                                                        mapShimWit (MkPolarMap conv) $
                                                        singleDolanShimWit $
                                                        mkPolarShimWit $ GroundedDolanSingularType gt negargs
-                                               tident <- unsafeGetRefl @Type @dt @tp
                                                let tiso = reflId tident
                                                patts <-
                                                    for conss $ \(MkConstructor cname lt at tma) -> do

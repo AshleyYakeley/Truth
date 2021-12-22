@@ -25,6 +25,7 @@ import Data.Functor.Product as I
 import Data.Int as I
 import Data.Kind as I
 import Data.List as I ((++), iterate, nub, nubBy, zip)
+import qualified Data.List
 import Data.List.NonEmpty as I (NonEmpty(..), last, nonEmpty)
 import Data.Maybe as I hiding (catMaybes, mapMaybe)
 import Data.Monoid as I (Monoid(..))
@@ -207,6 +208,14 @@ deleteFirstMatching _ [] = []
 deleteFirstMatching t (a:aa)
     | t a = aa
 deleteFirstMatching t (a:aa) = a : deleteFirstMatching t aa
+
+-- | O(n^2) rather than O(n log n), due to no Ord constraint
+duplicates :: Eq a => [a] -> [a]
+duplicates [] = []
+duplicates (a:aa) =
+    if elem a aa
+        then a : duplicates (Data.List.filter (/= a) aa)
+        else duplicates aa
 
 mFindIndex ::
        forall m a. Monad m

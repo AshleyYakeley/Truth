@@ -42,8 +42,11 @@ data ErrorType
     | InterpretTypeOverApplyError Text
     | InterpretTypeRangeApplyError Text
     | InterpretConstructorUnknownError ReferenceName
-    | InterpretBindingsDuplicateError [Name]
-    | InterpretUnboundTypeVariablesError (NonEmpty Name)
+    | InterpretBindingsDuplicateError (NonEmpty Name)
+    | InterpretTypeDeclDuplicateTypeVariablesError Name
+                                                   (NonEmpty Name)
+    | InterpretTypeDeclUnboundTypeVariablesError Name
+                                                 (NonEmpty Name)
     | ModuleNotFoundError ModuleName
     | ModuleCycleError (NonEmpty ModuleName)
 
@@ -120,9 +123,11 @@ instance Show ErrorType where
     show (InterpretTypeOverApplyError t) = "overapplied type constuctor: " <> unpack t
     show (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> unpack t
     show (InterpretConstructorUnknownError n) = "unknown constructor: " <> show n
-    show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show nn)
-    show (InterpretUnboundTypeVariablesError vv) =
-        "unbound type variables: " <> (intercalate ", " $ fmap show $ toList vv)
+    show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show $ toList nn)
+    show (InterpretTypeDeclDuplicateTypeVariablesError n vv) =
+        "duplicate type variables in declaration of " <> show n <> ": " <> (intercalate ", " $ fmap show $ toList vv)
+    show (InterpretTypeDeclUnboundTypeVariablesError n vv) =
+        "unbound type variables in declaration of " <> show n <> ": " <> (intercalate ", " $ fmap show $ toList vv)
     show (ModuleNotFoundError mname) = "can't find module " <> show mname
     show (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap show $ toList nn)
 

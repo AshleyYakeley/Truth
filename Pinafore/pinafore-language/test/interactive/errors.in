@@ -12,3 +12,6 @@ let y = openEntity @Y !"y"
 35
 x + 1
 x + y
+let datatype D1 +a = MkD1 b
+let datatype D2 +a +a = MkD2
+let datatype D3 +a -a = MkD2

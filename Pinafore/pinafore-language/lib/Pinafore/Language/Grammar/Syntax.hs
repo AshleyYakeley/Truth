@@ -315,17 +315,9 @@ checkSyntaxBindingsDuplicates ::
     => [SyntaxBinding]
     -> m ()
 checkSyntaxBindingsDuplicates = let
-    duplicates ::
-           forall a. Eq a
-        => [a]
-        -> [a]
-    duplicates [] = []
-    duplicates (a:aa)
-        | elem a aa = a : duplicates aa
-    duplicates (_:aa) = duplicates aa
     checkDuplicates :: [Name] -> m ()
     checkDuplicates nn =
-        case nub $ duplicates nn of
-            [] -> return ()
-            b -> throw $ InterpretBindingsDuplicateError b
+        case nonEmpty $ duplicates nn of
+            Nothing -> return ()
+            Just b -> throw $ InterpretBindingsDuplicateError b
     in checkDuplicates . fmap (\(MkSyntaxBinding _ _ name _) -> name)
