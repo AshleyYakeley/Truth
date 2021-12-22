@@ -51,7 +51,7 @@ type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeInterpreter
 getGreatestDynamicSupertype :: PinaforeType 'Positive t -> PinaforeInterpreter (PinaforeGreatestDynamicSupertype t)
 getGreatestDynamicSupertype (ConsDolanType (GroundedDolanSingularType gt args) NilDolanType)
     | Just ds <- pgtGreatestDynamicSupertype gt args =
-        return $ mapPolarShimWit (MkPolarMap $ applyCoPolyShim cid iJoinR1) ds
+        return $ mapPolarShimWit (MkPolarMap $ applyCoPolyShim ccrVariation ccrVariation cid iJoinR1) ds
 getGreatestDynamicSupertype t = do
     t' <- invertType t
     return $ mapPolarShimWit (MkPolarMap $ functionToShim "Just" Just) t'

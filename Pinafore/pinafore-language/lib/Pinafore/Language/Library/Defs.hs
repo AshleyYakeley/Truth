@@ -122,7 +122,11 @@ monoidSubypeConversionEntry t =
                                 NegativeType -> iMeetL1
                         in return $
                            MkSubtypeArguments args $
-                           fmap (\conv -> functionToShim "mconcat" mconcat . applyCoPolyShim cid (cshim . conv)) sconv
+                           fmap
+                               (\conv ->
+                                    functionToShim "mconcat" mconcat .
+                                    applyCoPolyShim ccrVariation ccrVariation cid (cshim . conv))
+                               sconv
 
 mkValPatEntry ::
        forall t v lt.

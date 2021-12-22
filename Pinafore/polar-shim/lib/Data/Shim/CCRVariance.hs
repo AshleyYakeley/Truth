@@ -79,6 +79,12 @@ type CCRVarianceMap (cat :: forall kc. kc -> kc -> Type) (sv :: CCRVariance) (f 
      = forall (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv).
            (InKind a, InKind b) => CCRVarianceCategory cat sv a b -> cat (f a) (f b)
 
+data CCRVariation (sv :: CCRVariance) (f :: CCRVarianceKind sv -> k) = MkCCRVariation
+    { ccrvMaybeRepresentational :: Maybe (Dict (RepresentationalRole f))
+    , ccrvMap :: forall (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv).
+                     (InKind a, InKind b) => CCRVarianceCategory KindFunction sv a b -> KindFunction (f a) (f b)
+    }
+
 class ( InKind f
       , MaybeRepresentational f
       , Is CCRVarianceType sv
@@ -86,6 +92,11 @@ class ( InKind f
       ) => HasCCRVariance (sv :: CCRVariance) (f :: CCRVarianceKind sv -> k)
     | f -> sv
 
+
+ccrVariation ::
+       forall (sv :: CCRVariance) k (f :: CCRVarianceKind sv -> k). HasCCRVariance sv f
+    => CCRVariation sv f
+ccrVariation = MkCCRVariation {ccrvMaybeRepresentational = maybeRepresentational, ccrvMap = cfmap}
 
 instance forall v k (f :: Type -> k). (HasVariance f, VarianceOf f ~ v) => HasCCRVariance ('SimpleCCRVariance v) f
 

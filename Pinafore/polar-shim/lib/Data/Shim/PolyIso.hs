@@ -73,12 +73,13 @@ polarPolyIsoNegative (MkPolarMap iab) =
         NegativeType -> isoForwards $ unPolyMapT iab
 
 instance forall (pshim :: PolyShimKind). ApplyPolyShim pshim => ApplyPolyShim (PolyIso pshim) where
-    applyPolyShim CoCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
-        MkPolyMapT $ MkIsomorphism (applyCoPolyShim fab xab) (applyCoPolyShim fba xba)
-    applyPolyShim ContraCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatDual (MkPolyMapT (MkIsomorphism xab xba))) =
-        MkPolyMapT $ MkIsomorphism (applyContraPolyShim fab xab) (applyContraPolyShim fba xba)
-    applyPolyShim RangeCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatRange (MkPolyMapT (MkIsomorphism xab1 xba1)) (MkPolyMapT (MkIsomorphism xab2 xba2))) =
-        MkPolyMapT $ MkIsomorphism (applyRangePolyShim fab xab1 xab2) (applyRangePolyShim fba xba1 xba2)
+    applyPolyShim CoCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
+        MkPolyMapT $ MkIsomorphism (applyCoPolyShim ccrvf ccrvg fab xab) (applyCoPolyShim ccrvg ccrvf fba xba)
+    applyPolyShim ContraCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkIsomorphism fab fba)) (MkCatDual (MkPolyMapT (MkIsomorphism xab xba))) =
+        MkPolyMapT $ MkIsomorphism (applyContraPolyShim ccrvf ccrvg fab xab) (applyContraPolyShim ccrvg ccrvf fba xba)
+    applyPolyShim RangeCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkIsomorphism fab fba)) (MkCatRange (MkPolyMapT (MkIsomorphism xab1 xba1)) (MkPolyMapT (MkIsomorphism xab2 xba2))) =
+        MkPolyMapT $
+        MkIsomorphism (applyRangePolyShim ccrvf ccrvg fab xab1 xab2) (applyRangePolyShim ccrvg ccrvf fba xba1 xba2)
 
 polarPolyIsoPolar1 ::
        forall (pshim :: PolyShimKind) polarity (a :: Type). (JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)

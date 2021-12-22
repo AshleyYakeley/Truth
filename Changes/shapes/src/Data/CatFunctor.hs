@@ -5,7 +5,10 @@ import Data.KindMorphism
 import Shapes.Import
 
 class CatFunctor (catp :: kp -> kp -> Type) (catq :: kq -> kq -> Type) (f :: kp -> kq) where
-    cfmap :: (InKind a, InKind b) => catp a b -> catq (f a) (f b)
+    cfmap ::
+           forall (a :: kp) (b :: kp). (InKind a, InKind b)
+        => catp a b
+        -> catq (f a) (f b)
 
 instance Functor f => CatFunctor (->) (->) f where
     cfmap = fmap

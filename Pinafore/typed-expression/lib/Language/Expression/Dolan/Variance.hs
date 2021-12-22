@@ -53,9 +53,9 @@ type DolanVarianceMap :: forall (dv :: DolanVariance) -> DolanVarianceKind dv ->
 data DolanVarianceMap dv f where
     NilDolanVarianceMap :: forall (f :: Type). DolanVarianceMap '[] f
     ConsDolanVarianceMap
-        :: forall (sv :: CCRVariance) (dv :: DolanVariance) (f :: CCRVarianceKind sv -> DolanVarianceKind dv).
-           HasCCRVariance sv f
-        => (forall a. DolanVarianceMap dv (f a))
+        :: forall (sv :: CCRVariance) (dv :: DolanVariance) (f :: CCRVarianceKind sv -> DolanVarianceKind dv). InKind f
+        => CCRVariation sv f
+        -> (forall a. DolanVarianceMap dv (f a))
         -> DolanVarianceMap (sv ': dv) f
 
 dolanVarianceAllInKind :: forall (dv :: DolanVariance). DolanVarianceType dv -> Dict (AllInKind (DolanVarianceKind dv))
@@ -90,4 +90,4 @@ instance HasDolanVariance '[] (f :: Type) where
 
 instance (HasCCRVariance sv f, forall a. HasDolanVariance dv (f a), CoercibleKind (DolanVarianceKind dv)) =>
              HasDolanVariance (sv ': dv) (f :: CCRVarianceKind sv -> DolanVarianceKind dv) where
-    dolanVarianceMap = ConsDolanVarianceMap dolanVarianceMap
+    dolanVarianceMap = ConsDolanVarianceMap ccrVariation dolanVarianceMap

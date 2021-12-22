@@ -56,7 +56,7 @@ covaryToDolanVarianceMap ::
        forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). CovaryType dv -> CovaryMap f -> DolanVarianceMap dv f
 covaryToDolanVarianceMap NilListType NilCovaryMap = NilDolanVarianceMap
 covaryToDolanVarianceMap (ConsListType Refl ml) (ConsCovaryMap vr) =
-    ConsDolanVarianceMap $ covaryToDolanVarianceMap ml vr
+    ConsDolanVarianceMap ccrVariation $ covaryToDolanVarianceMap ml vr
 
 covaryCoercibleKind :: forall dv. CovaryType dv -> Dict (CoercibleKind (DolanVarianceKind dv))
 covaryCoercibleKind NilListType = Dict

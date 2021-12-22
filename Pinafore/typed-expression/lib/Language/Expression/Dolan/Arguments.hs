@@ -112,7 +112,7 @@ mapArgsTypeF ::
     -> m (PShimWit (pshim Type) (DolanArguments dv ftb gt') polarity t)
 mapArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments conv =
     return $ MkShimWit NilDolanArguments conv
-mapArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvm) (ConsDolanVarianceMap dvm') (ConsDolanArguments sta dta) conv = do
+mapArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap ccrvf dvm) (ConsDolanVarianceMap ccrvg dvm') (ConsDolanArguments sta dta) conv = do
     MkArgTypeF sta' svf <- mapArgTypeF @m @(pshim Type) @fta @ftb @_ @polarity svt f sta
     Dict <- return $ ccrVarianceCoercibleKind svt
     Dict <- return $ dolanVarianceInCategory @pshim dvt
@@ -120,7 +120,7 @@ mapArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvm) (ConsDolanVaria
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt) sta'
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt') sta'
     MkShimWit dta' conv' <-
-        mapArgsTypeF @m @pshim @fta @ftb @_ @polarity f dvt dvm dvm' dta (polarMapTypeApply svt conv svf)
+        mapArgsTypeF @m @pshim @fta @ftb @_ @polarity f dvt dvm dvm' dta (polarMapTypeApply svt ccrvf ccrvg conv svf)
     return $ MkShimWit (ConsDolanArguments sta' dta') conv'
 
 mapDolanArgumentsType ::
@@ -191,7 +191,7 @@ mapInvertArgsTypeF ::
     -> m (PShimWit (pshim Type) (DolanArguments dv ftb gt') (InvertPolarity polarity) t)
 mapInvertArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments conv =
     return $ MkShimWit NilDolanArguments conv
-mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvm) (ConsDolanVarianceMap dvm') (ConsDolanArguments sta dta) conv = do
+mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap ccrvf dvm) (ConsDolanVarianceMap ccrvg dvm') (ConsDolanArguments sta dta) conv = do
     MkArgTypeF sta' svf <- mapInvertArgTypeF @m @(pshim Type) @fta @ftb @_ @polarity svt f sta
     Dict <- return $ ccrVarianceCoercibleKind svt
     Dict <- return $ dolanVarianceInCategory @pshim dvt
@@ -200,7 +200,19 @@ mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvm) (ConsDola
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt') sta'
     MkShimWit dta' conv' <-
         invertPolarity @polarity $
-        mapInvertArgsTypeF @m @pshim @fta @ftb @_ @polarity f dvt dvm dvm' dta (polarMapTypeApply svt conv svf)
+        mapInvertArgsTypeF
+            @m
+            @pshim
+            @fta
+            @ftb
+            @_
+            @polarity
+            f
+            dvt
+            dvm
+            dvm'
+            dta
+            (polarMapTypeApply svt ccrvf ccrvg conv svf)
     return $ MkShimWit (ConsDolanArguments sta' dta') conv'
 
 mapInvertDolanArgumentsM ::
@@ -293,7 +305,7 @@ mergeArgsTypeF ::
     -> m (PShimWit (pshim Type) (DolanArguments dv ftab gtab) polarity (JoinMeetType polarity ta tb))
 mergeArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments NilDolanArguments conva convb =
     return $ MkShimWit NilDolanArguments $ polarF conva convb
-mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVarianceMap dvmb) (ConsDolanVarianceMap dvmab) (ConsDolanArguments (sta :: _ ta0) dta) (ConsDolanArguments (stb :: _ tb0) dtb) conva convb = do
+mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap ccrva dvma) (ConsDolanVarianceMap ccrvb dvmb) (ConsDolanVarianceMap ccrvab dvmab) (ConsDolanArguments (sta :: _ ta0) dta) (ConsDolanArguments (stb :: _ tb0) dtb) conva convb = do
     Dict <- return $ ccrVarianceCoercibleKind svt
     MkArgTypeF stab svf <- mergeArgTypeF @m @(pshim Type) @fta @ftb @ftab @_ @polarity svt f sta stb
     Dict <- return $ dolanVarianceInCategory @pshim dvt
@@ -320,8 +332,8 @@ mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVa
             dvmab
             dta
             dtb
-            (polarMapTypeApply svt conva $ svf <.> varPolar1 @(pshim Type) @polarity @_ @ta0 @tb0 svt)
-            (polarMapTypeApply svt convb $ svf <.> varPolar2 @(pshim Type) @polarity @_ @ta0 @tb0 svt)
+            (polarMapTypeApply svt ccrva ccrvab conva $ svf <.> varPolar1 @(pshim Type) @polarity @_ @ta0 @tb0 svt)
+            (polarMapTypeApply svt ccrvb ccrvab convb $ svf <.> varPolar2 @(pshim Type) @polarity @_ @ta0 @tb0 svt)
     return $ MkShimWit (ConsDolanArguments stab dtab) convab
 
 mergeDolanArgumentsM ::
@@ -367,14 +379,14 @@ dolanArgumentsToArgumentsM' ::
     -> m (PolarShimWit (pshim Type) (Arguments wb fb) polarity t)
 dolanArgumentsToArgumentsM' _ NilListType NilDolanVarianceMap NilDolanVarianceMap conv NilDolanArguments =
     return $ MkShimWit NilArguments conv
-dolanArgumentsToArgumentsM' f (ConsListType Refl lc) (ConsDolanVarianceMap dvma) (ConsDolanVarianceMap dvmb) conv (ConsDolanArguments sta dta) = do
+dolanArgumentsToArgumentsM' f (ConsListType Refl lc) (ConsDolanVarianceMap ccrva dvma) (ConsDolanVarianceMap ccrvb dvmb) conv (ConsDolanArguments sta dta) = do
     Dict <- return $ covaryKMCategory @pshim lc
     Dict <- return $ applyFunctionKindWitness (inKind @_ @fa) sta
     MkShimWit ta conva <- f sta
     Dict <- return $ applyFunctionKindWitness (inKind @_ @fa) ta
     Dict <- return $ applyFunctionKindWitness (inKind @_ @fb) ta
     MkShimWit tfa convfa <-
-        dolanArgumentsToArgumentsM' f lc dvma dvmb (polarMapTypeApply CoCCRVarianceType conv conva) dta
+        dolanArgumentsToArgumentsM' f lc dvma dvmb (polarMapTypeApply CoCCRVarianceType ccrva ccrvb conv conva) dta
     return $ MkShimWit (ConsArguments ta tfa) convfa
 
 dolanArgumentsToArgumentsM ::
@@ -423,7 +435,13 @@ argumentsToDolanArgumentsM' f (ConsListType Refl ct) (ConsCovaryMap mma) (ConsCo
     Dict <- return $ applyFunctionKindWitness (inKind @_ @fa) ta
     Dict <- return $ applyFunctionKindWitness (inKind @_ @fb) ta
     MkShimWit tfa convfa <-
-        argumentsToDolanArgumentsM' f ct mma mmb (polarMapTypeApply CoCCRVarianceType conv conva) args
+        argumentsToDolanArgumentsM'
+            f
+            ct
+            mma
+            mmb
+            (polarMapTypeApply CoCCRVarianceType ccrVariation ccrVariation conv conva)
+            args
     return $ MkShimWit (ConsDolanArguments ta tfa) convfa
 
 argumentsToDolanArgumentsM ::

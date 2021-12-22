@@ -6,7 +6,6 @@ module Language.Expression.Dolan.Nonpolar
     , groundNonpolarShimWit
     , varNonpolarShimWit
     , NonpolarArgumentDolanShimWit(..)
-    , applyNonpolarGroundShimWit
     , nonPolarGroundedCodec
     , nonpolarToDolanType
     , nonpolarToDolanShimWit
@@ -42,15 +41,6 @@ data NonpolarGroundedDolanType ground dv t where
         -> NonpolarArgument (NonpolarDolanType ground '[]) sv a
         -> NonpolarGroundedDolanType ground dv (f a)
 
-nonpolarGroundDolanTypeDolanVarianceMap ::
-       forall (ground :: GroundTypeKind) dv t. IsDolanGroundType ground
-    => NonpolarGroundedDolanType ground dv t
-    -> DolanVarianceMap dv t
-nonpolarGroundDolanTypeDolanVarianceMap (GroundNonpolarGroundedType t) = groundTypeVarianceMap t
-nonpolarGroundDolanTypeDolanVarianceMap (ApplyNonpolarGroundedType _ t _) =
-    case nonpolarGroundDolanTypeDolanVarianceMap t of
-        ConsDolanVarianceMap dvm -> dvm
-
 type NonpolarDolanType :: GroundTypeKind -> forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
 data NonpolarDolanType ground dv t where
     GroundedNonpolarType
@@ -70,29 +60,6 @@ nonPolarGroundedCodec = let
             GroundedNonpolarType t -> Just t
             _ -> Nothing
     in MkCodec {..}
-
-coApplyNonpolarGroundType ::
-       forall (ground :: GroundTypeKind) dv f a. HasCCRVariance CoCCRVariance f
-    => NonpolarGroundedDolanType ground (CoCCRVariance ': dv) f
-    -> NonpolarDolanType ground '[] a
-    -> NonpolarGroundedDolanType ground dv (f a)
-coApplyNonpolarGroundType tf ta = ApplyNonpolarGroundedType CoCCRVarianceType tf (MkAnyPolarity ta)
-
-contraApplyNonpolarGroundType ::
-       forall (ground :: GroundTypeKind) dv f a.
-       NonpolarGroundedDolanType ground (ContraCCRVariance ': dv) f
-    -> NonpolarDolanType ground '[] a
-    -> NonpolarGroundedDolanType ground dv (f a)
-contraApplyNonpolarGroundType tf ta = ApplyNonpolarGroundedType ContraCCRVarianceType tf (MkAnyPolarity ta)
-
-rangeApplyNonpolarGroundType ::
-       forall (ground :: GroundTypeKind) dv f a b.
-       NonpolarGroundedDolanType ground ('RangeCCRVariance ': dv) f
-    -> NonpolarDolanType ground '[] a
-    -> NonpolarDolanType ground '[] b
-    -> NonpolarGroundedDolanType ground dv (f '( a, b))
-rangeApplyNonpolarGroundType tf ta tb =
-    ApplyNonpolarGroundedType RangeCCRVarianceType tf (MkRangeType (MkAnyPolarity ta) (MkAnyPolarity tb))
 
 type NonpolarShimWit :: GroundTypeKind -> forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
 type NonpolarShimWit ground dv = ShimWit (DolanPolyIsoShim ground (DolanVarianceKind dv)) (NonpolarDolanType ground dv)
@@ -118,44 +85,6 @@ varNonpolarShimWit ::
     -> NonpolarShimWit ground '[] t
 varNonpolarShimWit var = MkShimWit (VarNonpolarType var) $ coerceShim "var"
 
-coApplyNonpolarGroundShimWit ::
-       forall (ground :: GroundTypeKind) dv f a. (IsDolanGroundType ground, HasCCRVariance CoCCRVariance f)
-    => NonpolarGroundedShimWit ground (CoCCRVariance ': dv) f
-    -> NonpolarShimWit ground '[] a
-    -> NonpolarGroundedShimWit ground dv (f a)
-coApplyNonpolarGroundShimWit (MkShimWit (tf :: _ f') convf) (MkShimWit ta conva) =
-    case applyFunctionKindWitness (inKind @_ @f') ta of
-        Dict ->
-            case nonpolarGroundDolanTypeDolanVarianceMap tf of
-                ConsDolanVarianceMap _ -> MkShimWit (coApplyNonpolarGroundType tf ta) (applyCoPolyShim convf conva)
-
-contraApplyNonpolarGroundShimWit ::
-       forall (ground :: GroundTypeKind) dv f a. (IsDolanGroundType ground, HasCCRVariance ContraCCRVariance f)
-    => NonpolarGroundedShimWit ground (ContraCCRVariance ': dv) f
-    -> NonpolarShimWit ground '[] a
-    -> NonpolarGroundedShimWit ground dv (f a)
-contraApplyNonpolarGroundShimWit (MkShimWit (tf :: _ f') convf) (MkShimWit ta conva) =
-    case applyFunctionKindWitness (inKind @_ @f') ta of
-        Dict ->
-            case nonpolarGroundDolanTypeDolanVarianceMap tf of
-                ConsDolanVarianceMap _ ->
-                    MkShimWit (contraApplyNonpolarGroundType tf ta) (applyContraPolyShim convf $ invert conva)
-
-rangeApplyNonpolarGroundShimWit ::
-       forall (ground :: GroundTypeKind) dv f ap aq. (IsDolanGroundType ground, HasCCRVariance 'RangeCCRVariance f)
-    => NonpolarGroundedShimWit ground ('RangeCCRVariance ': dv) f
-    -> NonpolarShimWit ground '[] ap
-    -> NonpolarShimWit ground '[] aq
-    -> NonpolarGroundedShimWit ground dv (f '( ap, aq))
-rangeApplyNonpolarGroundShimWit (MkShimWit (tf :: _ f') convf) (MkShimWit (tap :: _ ap') convap) (MkShimWit (taq :: _ aq') convaq) =
-    case applyFunctionKindWitness (inKind @_ @f') $ Proxy @('( ap', aq')) of
-        Dict ->
-            case nonpolarGroundDolanTypeDolanVarianceMap tf of
-                ConsDolanVarianceMap _ ->
-                    MkShimWit
-                        (rangeApplyNonpolarGroundType tf tap taq)
-                        (applyRangePolyShim convf (invert convap) convaq)
-
 type NonpolarArgumentDolanShimWit :: GroundTypeKind -> forall k. k -> Type
 data NonpolarArgumentDolanShimWit ground t where
     SingleNonpolarArgumentShimWit
@@ -167,18 +96,6 @@ data NonpolarArgumentDolanShimWit ground t where
            NonpolarShimWit ground '[] ta
         -> NonpolarShimWit ground '[] tb
         -> NonpolarArgumentDolanShimWit ground '( ta, tb)
-
-applyNonpolarGroundShimWit ::
-       forall (ground :: GroundTypeKind) sv dv (f :: DolanVarianceKind (sv ': dv)) (a :: CCRVarianceKind sv).
-       (IsDolanGroundType ground, HasCCRVariance sv f)
-    => NonpolarGroundedShimWit ground (sv ': dv) f
-    -> NonpolarArgumentDolanShimWit ground a
-    -> NonpolarGroundedShimWit ground dv (f a)
-applyNonpolarGroundShimWit tf =
-    case representative @_ @CCRVarianceType @sv of
-        CoCCRVarianceType -> \(SingleNonpolarArgumentShimWit ta) -> coApplyNonpolarGroundShimWit tf ta
-        ContraCCRVarianceType -> \(SingleNonpolarArgumentShimWit ta) -> contraApplyNonpolarGroundShimWit tf ta
-        RangeCCRVarianceType -> \(PairNonpolarArgumentShimWit tap taq) -> rangeApplyNonpolarGroundShimWit tf tap taq
 
 argFreeVariables ::
        forall (ground :: GroundTypeKind) sv t.
@@ -202,8 +119,9 @@ nonpolarTypeFreeVariables (GroundedNonpolarType t) = nonpolarGroundTypeFreeVaria
 
 fromApplyArg ::
        forall (ground :: GroundTypeKind) polarity sv dv f t a r.
-       (IsDolanGroundType ground, Is PolarityType polarity, HasCCRVariance sv f)
+       (IsDolanGroundType ground, Is PolarityType polarity, InKind f)
     => CCRVarianceType sv
+    -> CCRVariation sv f
     -> DolanVarianceType dv
     -> (forall x. DolanVarianceMap dv (f x))
     -> NonpolarArgument (NonpolarDolanType ground '[]) sv a
@@ -212,13 +130,14 @@ fromApplyArg ::
             InKind b =>
                     SingleArgument sv (DolanType ground) polarity b -> PShimWit (DolanShim ground) (DolanArguments dv (DolanType ground) (f b)) polarity t -> r)
     -> r
-fromApplyArg CoCCRVarianceType dvt dvm (MkAnyPolarity ta) args call =
+fromApplyArg CoCCRVarianceType ccrv dvt dvm (MkAnyPolarity ta) args call =
     case dolanVarianceInCategory @(DolanPolyShim ground) (ConsListType CoCCRVarianceType dvt) of
         Dict ->
             case nonpolarToDolanType ta of
                 MkShimWit (arg :: _ b) aconv ->
-                    call arg $ mapDolanArgumentsType dvt dvm dvm args $ polarMapTypeApply CoCCRVarianceType cid aconv
-fromApplyArg ContraCCRVarianceType dvt dvm (MkAnyPolarity ta) args call =
+                    call arg $
+                    mapDolanArgumentsType dvt dvm dvm args $ polarMapTypeApply CoCCRVarianceType ccrv ccrv cid aconv
+fromApplyArg ContraCCRVarianceType ccrv dvt dvm (MkAnyPolarity ta) args call =
     case dolanVarianceInCategory @(DolanPolyShim ground) (ConsListType ContraCCRVarianceType dvt) of
         Dict ->
             invertPolarity @polarity $
@@ -226,8 +145,8 @@ fromApplyArg ContraCCRVarianceType dvt dvm (MkAnyPolarity ta) args call =
                 MkShimWit (arg :: _ b) aconv ->
                     call arg $
                     mapDolanArgumentsType dvt dvm dvm args $
-                    polarMapTypeApply ContraCCRVarianceType cid $ MkCatDual $ uninvertPolarMap aconv
-fromApplyArg RangeCCRVarianceType dvt dvm (MkRangeType (MkAnyPolarity pa) (MkAnyPolarity qa)) args call =
+                    polarMapTypeApply ContraCCRVarianceType ccrv ccrv cid $ MkCatDual $ uninvertPolarMap aconv
+fromApplyArg RangeCCRVarianceType ccrv dvt dvm (MkRangeType (MkAnyPolarity pa) (MkAnyPolarity qa)) args call =
     case dolanVarianceInCategory @(DolanPolyShim ground) (ConsListType RangeCCRVarianceType dvt) of
         Dict ->
             invertPolarity @polarity $
@@ -237,7 +156,8 @@ fromApplyArg RangeCCRVarianceType dvt dvm (MkRangeType (MkAnyPolarity pa) (MkAny
                         MkShimWit (qarg :: _ qb) qconv ->
                             call (MkRangeType parg qarg) $
                             mapDolanArgumentsType dvt dvm dvm args $
-                            polarMapTypeApply RangeCCRVarianceType cid $ MkCatRange (uninvertPolarMap pconv) qconv
+                            polarMapTypeApply RangeCCRVarianceType ccrv ccrv cid $
+                            MkCatRange (uninvertPolarMap pconv) qconv
 
 type ArgWit :: GroundTypeKind -> Polarity -> forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
 newtype ArgWit ground polarity dv f = MkArgWit
@@ -255,10 +175,10 @@ nonpolarGroundToDolanSingularType (GroundNonpolarGroundedType ground) _ =
     (groundTypeVarianceMap ground, MkArgWit $ \args -> mkPolarShimWit $ GroundedDolanSingularType ground args)
 nonpolarGroundToDolanSingularType (ApplyNonpolarGroundedType svt tf ta) dvt =
     case nonpolarGroundToDolanSingularType tf (ConsListType svt dvt) of
-        (ConsDolanVarianceMap dvm, MkArgWit swit) ->
+        (ConsDolanVarianceMap ccrv dvm, MkArgWit swit) ->
             ( dvm
             , MkArgWit $ \args ->
-                  fromApplyArg svt dvt dvm ta args $ \arg (MkShimWit args' aaconv) ->
+                  fromApplyArg svt ccrv dvt dvm ta args $ \arg (MkShimWit args' aaconv) ->
                       mapPolarShimWit aaconv $ swit $ ConsDolanArguments arg args')
 
 nonpolarToDolanSingularType ::

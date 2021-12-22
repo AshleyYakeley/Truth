@@ -108,7 +108,7 @@ instance forall dv k (f :: Type -> k) polarity (a :: Type). ( HasVariance f
                             -> PinaforeSingularShimWit polarity t
                         hetPinaforeGroundedType' args =
                             case dolanVarianceMap @('SimpleCCRVariance (VarianceOf f) ': dv) @f of
-                                ConsDolanVarianceMap dvm ->
+                                ConsDolanVarianceMap ccrv dvm ->
                                     case pinaforeArgumentType @polarity @('SimpleCCRVariance (VarianceOf f)) @a of
                                         MkArgTypeF arg conv ->
                                             case mapArgsTypeF (return . mkShimWit) representative dvm dvm args $
@@ -117,6 +117,8 @@ instance forall dv k (f :: Type -> k) polarity (a :: Type). ( HasVariance f
                                                           @_
                                                           @CCRVarianceType
                                                           @('SimpleCCRVariance (VarianceOf f)))
+                                                     ccrv
+                                                     ccrv
                                                      cid
                                                      conv of
                                                 Identity (MkShimWit args' conv') ->
@@ -144,12 +146,14 @@ instance forall dv k (f :: (Type, Type) -> k) polarity (a :: (Type, Type)). ( Ha
                             -> PinaforeSingularShimWit polarity t
                         hetPinaforeGroundedType' args =
                             case dolanVarianceMap @('RangeCCRVariance ': dv) @f of
-                                ConsDolanVarianceMap dvm ->
+                                ConsDolanVarianceMap ccrv dvm ->
                                     case pinaforeArgumentType @polarity @'RangeCCRVariance @a of
                                         MkArgTypeF arg conv ->
                                             case mapArgsTypeF (return . mkShimWit) representative dvm dvm args $
                                                  polarMapTypeApply
                                                      (representative @_ @CCRVarianceType @'RangeCCRVariance)
+                                                     ccrv
+                                                     ccrv
                                                      cid
                                                      conv of
                                                 Identity (MkShimWit args' conv') ->

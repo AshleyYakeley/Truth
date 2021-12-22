@@ -134,9 +134,9 @@ paramsToDolanArgs ::
     -> r
 paramsToDolanArgs NilListType NilDolanVarianceMap NilDolanVarianceMap conv call =
     call NilDolanArguments NilDolanArguments conv
-paramsToDolanArgs (ConsListType p pp) (ConsDolanVarianceMap dvmp) (ConsDolanVarianceMap dvmn) conv call =
+paramsToDolanArgs (ConsListType p pp) (ConsDolanVarianceMap ccrvp dvmp) (ConsDolanVarianceMap ccrvn dvmn) conv call =
     paramToArg p $ \posarg negarg conv1 ->
-        paramsToDolanArgs pp dvmp dvmn (applyPolyShim (tParamVarianceType p) conv conv1) $ \posargs negargs convs ->
+        paramsToDolanArgs pp dvmp dvmn (applyPolyShim (tParamVarianceType p) ccrvn ccrvp conv conv1) $ \posargs negargs convs ->
             call (ConsDolanArguments posarg posargs) (ConsDolanArguments negarg negargs) convs
 
 makeDataTypeBox ::

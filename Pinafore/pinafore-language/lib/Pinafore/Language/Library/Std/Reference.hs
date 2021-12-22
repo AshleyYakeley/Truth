@@ -304,14 +304,20 @@ refLibEntries =
                                       conv1 =
                                           rconv1 .
                                           iJoinMeetR1 @_ @(InvertPolarity 'Negative) .
-                                          applyCoPolyShim cid (iJoinMeetR1 @_ @(InvertPolarity 'Negative)) .
+                                          applyCoPolyShim
+                                              ccrVariation
+                                              ccrVariation
+                                              cid
+                                              (iJoinMeetR1 @_ @(InvertPolarity 'Negative)) .
                                           functionToShim "toList" toList
                                       conv2 =
                                           functionToShim "fromList" fromList .
-                                          applyCoPolyShim cid (iJoinMeetL1 @_ @'Negative) .
+                                          applyCoPolyShim ccrVariation ccrVariation cid (iJoinMeetL1 @_ @'Negative) .
                                           iJoinMeetL1 @_ @'Negative . rconv2
-                                      convv = applyRangePolyShim cid conv1 conv2
+                                      convv = applyRangePolyShim ccrVariation ccrVariation cid conv1 conv2
                                       in applyRangePolyShim
+                                             ccrVariation
+                                             ccrVariation
                                              cid
                                              (iJoinMeetL1 @_ @(InvertPolarity pola))
                                              (iJoinMeetR1 @_ @pola) .
@@ -428,8 +434,14 @@ refLibEntries =
                             return $
                                 (functionToShim "Order to RefOrder" pureLangRefOrder) .
                                 applyCoPolyShim
-                                    (applyContraPolyShim cid $ conv1 . vconv)
-                                    (applyCoPolyShim (applyContraPolyShim cid vconv) (iJoinMeetL1 @_ @'Negative) .
+                                    ccrVariation
+                                    ccrVariation
+                                    (applyContraPolyShim ccrVariation ccrVariation cid $ conv1 . vconv)
+                                    (applyCoPolyShim
+                                         ccrVariation
+                                         ccrVariation
+                                         (applyContraPolyShim ccrVariation ccrVariation cid vconv)
+                                         (iJoinMeetL1 @_ @'Negative) .
                                      iJoinMeetL1 @_ @'Negative . conv2)
           , mkValEntry "orders" "Join `RefOrder`s by priority." $ refOrders @A
           , mkValEntry

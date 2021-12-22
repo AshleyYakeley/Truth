@@ -64,7 +64,7 @@ subtypeArguments ::
     -> DolanArguments dv w gtb polb tb
     -> solver (pshim (DolanVarianceKind dv) gta gtb -> pshim Type ta tb)
 subtypeArguments _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments NilDolanArguments = pure id
-subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVarianceMap dvmb) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) =
+subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap ccrva dvma) (ConsDolanVarianceMap ccrvb dvmb) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) =
     case applyFunctionKindWitness (inKind @_ @gta) sta of
         Dict ->
             case applyFunctionKindWitness (inKind @_ @gtb) stb of
@@ -77,7 +77,7 @@ subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDola
                                         Dict -> do
                                             sfunc <- subtypeVariance @_ @_ @_ @pola @polb sc svt sta stb
                                             f <- subtypeArguments sc dvt dvma dvmb dta dtb
-                                            pure $ \conv -> f (applyPolyShim svt conv sfunc)
+                                            pure $ \conv -> f (applyPolyShim svt ccrva ccrvb conv sfunc)
 
 subtypeDolanArguments ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) solver pola polb dv gt argsa argsb.

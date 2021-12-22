@@ -73,7 +73,7 @@ textShimWit = singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType te
 maybeShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (Maybe a)
 maybeShimWit swa =
     unPosShimWit swa $ \ta conva ->
-        mapPosShimWit (applyCoPolyShim cid conva) $
+        mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation cid conva) $
         singleDolanShimWit $
         mkPolarShimWit $ GroundedDolanSingularType maybeGroundType $ ConsDolanArguments ta NilDolanArguments
 
@@ -82,7 +82,7 @@ eitherShimWit ::
 eitherShimWit swa swb =
     unPosShimWit swa $ \ta conva ->
         unPosShimWit swb $ \tb convb ->
-            mapPosShimWit (applyCoPolyShim (cfmap conva) convb) $
+            mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation (cfmap conva) convb) $
             singleDolanShimWit $
             mkPolarShimWit $
             GroundedDolanSingularType eitherGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
@@ -92,7 +92,7 @@ funcShimWit ::
 funcShimWit swa swb =
     unNegShimWit swa $ \ta conva ->
         unPosShimWit swb $ \tb convb ->
-            mapPosShimWit (applyCoPolyShim (ccontramap conva) convb) $
+            mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation (ccontramap conva) convb) $
             singleDolanShimWit $
             mkPolarShimWit $
             GroundedDolanSingularType funcGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
@@ -699,7 +699,11 @@ baseLibEntries =
                     convB <- subtypeConvert sc tb $ topEntityType @'Negative
                     pure $
                         functionToShim "pairEntityConvert" pairEntityConvert .
-                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
+                        applyCoPolyShim
+                            ccrVariation
+                            ccrVariation
+                            (cfmap (iJoinMeetL1 @_ @'Negative . convA))
+                            (iJoinMeetL1 @_ @'Negative . convB)
           , mkSubtypeRelationEntry "(Showable,Showable)" "Showable" "" $
             pure $
             simpleSubtypeConversionEntry pairGroundType showableGroundType $
@@ -710,7 +714,11 @@ baseLibEntries =
                     convB <- subtypeConvert sc tb $ showableType @'Negative
                     pure $
                         functionToShim "show" textShowable .
-                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
+                        applyCoPolyShim
+                            ccrVariation
+                            ccrVariation
+                            (cfmap (iJoinMeetL1 @_ @'Negative . convA))
+                            (iJoinMeetL1 @_ @'Negative . convB)
           , mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
           , mkValEntry "toPair" "Construct a pair." $ (,) @A @B
@@ -738,7 +746,11 @@ baseLibEntries =
                     convB <- subtypeConvert sc tb $ topEntityType @'Negative
                     pure $
                         functionToShim "eitherEntityConvert" eitherEntityConvert .
-                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
+                        applyCoPolyShim
+                            ccrVariation
+                            ccrVariation
+                            (cfmap (iJoinMeetL1 @_ @'Negative . convA))
+                            (iJoinMeetL1 @_ @'Negative . convB)
           , mkSubtypeRelationEntry "Either Showable Showable" "Showable" "" $
             pure $
             simpleSubtypeConversionEntry eitherGroundType showableGroundType $
@@ -749,7 +761,11 @@ baseLibEntries =
                     convB <- subtypeConvert sc tb $ showableType @'Negative
                     pure $
                         functionToShim "show" textShowable .
-                        applyCoPolyShim (cfmap (iJoinMeetL1 @_ @'Negative . convA)) (iJoinMeetL1 @_ @'Negative . convB)
+                        applyCoPolyShim
+                            ccrVariation
+                            ccrVariation
+                            (cfmap (iJoinMeetL1 @_ @'Negative . convA))
+                            (iJoinMeetL1 @_ @'Negative . convB)
           , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
           , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
                 case v of
