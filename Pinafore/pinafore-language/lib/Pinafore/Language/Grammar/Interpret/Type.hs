@@ -50,7 +50,7 @@ interpretMonoEntityType st = do
     case mpol of
         BothMPolarW atm -> getMonoEntityType $ atm @'Positive
 
-interpretNonpolarType :: SyntaxType -> PinaforeInterpreter (AnyW (PinaforeNonpolarType '[]))
+interpretNonpolarType :: SyntaxType -> PinaforeInterpreter (AnyW PinaforeNonpolarType)
 interpretNonpolarType st = do
     mpol <- interpretTypeM @'Nothing st
     case mpol of
@@ -58,7 +58,7 @@ interpretNonpolarType st = do
             case atm @'Positive of
                 MkAnyW tm ->
                     case dolanTypeToNonpolar tm of
-                        Just t -> return t
+                        Just t -> return $ shimWitToAnyW t
                         Nothing -> throw $ InterpretTypeNotAmbipolarError $ exprShow tm
 
 interpretTypeM ::
@@ -166,7 +166,7 @@ interpretArgs ::
     -> DolanVarianceType dv
     -> [SyntaxTypeArgument]
     -> PinaforeInterpreter (AnyW (DolanArguments dv PinaforeType gt polarity))
-interpretArgs _ NilListType [] = return $ MkAnyW NilDolanArguments
+interpretArgs _ NilListType [] = return $ MkAnyW NilCCRArguments
 interpretArgs sgt NilListType (_:_) = throw $ InterpretTypeOverApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType _ _) [] = throw $ InterpretTypeUnderApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType CoCCRVarianceType dv) (SimpleSyntaxTypeArgument st:stt) = do
@@ -175,7 +175,7 @@ interpretArgs sgt (ConsListType CoCCRVarianceType dv) (SimpleSyntaxTypeArgument 
         MkAnyW t -> do
             aargs <- interpretArgs sgt dv stt
             case aargs of
-                MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
+                MkAnyW args -> return $ MkAnyW $ ConsCCRArguments (CoCCRPolarArgument t) args
 interpretArgs sgt (ConsListType CoCCRVarianceType _) (RangeSyntaxTypeArgument _:_) =
     throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType ContraCCRVarianceType dv) (SimpleSyntaxTypeArgument st:stt) =
@@ -185,16 +185,16 @@ interpretArgs sgt (ConsListType ContraCCRVarianceType dv) (SimpleSyntaxTypeArgum
             MkAnyW t -> do
                 aargs <- interpretArgs sgt dv stt
                 case aargs of
-                    MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
+                    MkAnyW args -> return $ MkAnyW $ ConsCCRArguments (ContraCCRPolarArgument t) args
 interpretArgs sgt (ConsListType ContraCCRVarianceType _) (RangeSyntaxTypeArgument _:_) =
     throw $ InterpretTypeRangeApplyError $ groundTypeText sgt
 interpretArgs sgt (ConsListType RangeCCRVarianceType dv) (st:stt) = do
-    at <- isMPolarity @polarity $ interpretTypeArgument st
+    at <- isMPolarity @polarity $ interpretTypeArgument @('Just polarity) st
     case fromMPolarSingle at of
-        MkAnyInKind t -> do
+        MkAnyInKind (MkRangeType tp tq) -> do
             aargs <- interpretArgs sgt dv stt
             case aargs of
-                MkAnyW args -> return $ MkAnyW $ ConsDolanArguments t args
+                MkAnyW args -> return $ MkAnyW $ ConsCCRArguments (RangeCCRPolarArgument tp tq) args
 
 interpretGroundTypeConst :: SyntaxGroundType -> PinaforeInterpreter PinaforeGroundTypeM
 interpretGroundTypeConst UnitSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW $ unitGroundType

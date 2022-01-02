@@ -20,6 +20,7 @@ import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Name
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Entity.Type
 import Pinafore.Language.Type.Family
@@ -88,7 +89,7 @@ aDynamicEntityGroundType :: Name -> DynamicEntityType -> PinaforeGroundType '[] 
 aDynamicEntityGroundType name dts =
     (singleGroundType' (MkFamilyType aDynamicEntityFamilyWitness $ MkADynamicEntityFamily name dts) $ exprShowPrec name)
         { pgtGreatestDynamicSupertype =
-              \NilDolanArguments ->
+              \NilCCRArguments ->
                   Just $
                   makeNilGDS dynamicEntityGroundType $
                   functionToShim "dynamic-check" $ \de@(MkDynamicEntity dt _) -> ifpure (member dt dts) de
@@ -108,8 +109,8 @@ aDynamicEntityEntityFamily =
 
 getConcreteDynamicEntityType :: MonadThrow ErrorType m => AnyW (PinaforeType 'Positive) -> m (Name, DynamicType)
 getConcreteDynamicEntityType (MkAnyW tm) =
-    case dolanTypeToSingular tm of
-        Just (MkAnyW (GroundedDolanSingularType gt NilDolanArguments))
+    case dolanTypeToSingular @PinaforeGroundType @(PinaforePolyShim Type) tm of
+        Just (MkShimWit (GroundedDolanSingularType gt NilCCRArguments) _)
             | Just (MkADynamicEntityFamily n (toList -> [dt])) <-
                  matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType gt -> return (n, dt)
         _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm

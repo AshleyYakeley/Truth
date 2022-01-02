@@ -107,7 +107,7 @@ monoidSubypeConversionEntry ::
     -> SubtypeConversionEntry PinaforeGroundType
 monoidSubypeConversionEntry t =
     simpleSubtypeConversionEntry listGroundType t $
-    MkSubtypeConversion $ \sc (ConsDolanArguments ta NilDolanArguments :: _ pola _) -> do
+    MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument (ta :: _ pola _)) NilCCRArguments) -> do
         margs <- saturateGroundType t
         case margs of
             MkAnyW args ->

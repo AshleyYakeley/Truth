@@ -3,32 +3,28 @@ module Language.Expression.Dolan.Occur
     , occursInSingularType
     ) where
 
-import Data.Shim
+import Language.Expression.Dolan.Argument
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Variance
 import Shapes
 
 occursInArg ::
        forall (ground :: GroundTypeKind) polarity n sv a. IsDolanGroundType ground
-    => CCRVarianceType sv
-    -> SymbolType n
-    -> SingleArgument sv (DolanType ground) polarity a
+    => SymbolType n
+    -> CCRPolarArgument (DolanType ground) polarity sv a
     -> Bool
-occursInArg CoCCRVarianceType n t = occursInType n t
-occursInArg ContraCCRVarianceType n t = occursInType n t
-occursInArg RangeCCRVarianceType n (MkRangeType tp tq) = occursInType n tp || occursInType n tq
+occursInArg n (CoCCRPolarArgument t) = occursInType n t
+occursInArg n (ContraCCRPolarArgument t) = occursInType n t
+occursInArg n (RangeCCRPolarArgument tp tq) = occursInType n tp || occursInType n tq
 
 occursInArgs ::
        forall (ground :: GroundTypeKind) polarity n dv t a. IsDolanGroundType ground
-    => DolanVarianceType dv
-    -> SymbolType n
+    => SymbolType n
     -> DolanArguments dv (DolanType ground) t polarity a
     -> Bool
-occursInArgs NilListType _ NilDolanArguments = False
-occursInArgs (ConsListType svt dvt) n (ConsDolanArguments arg args) =
-    occursInArg @ground @polarity svt n arg || occursInArgs dvt n args
+occursInArgs _ NilCCRArguments = False
+occursInArgs n (ConsCCRArguments arg args) = occursInArg @ground @polarity n arg || occursInArgs n args
 
 occursInSingularType ::
        forall (ground :: GroundTypeKind) polarity name a. IsDolanGroundType ground
@@ -38,7 +34,7 @@ occursInSingularType ::
 occursInSingularType n (VarDolanSingularType nt)
     | Just Refl <- testEquality n nt = True
 occursInSingularType _ (VarDolanSingularType _) = False
-occursInSingularType n (GroundedDolanSingularType gt args) = occursInArgs (groundTypeVarianceType gt) n args
+occursInSingularType n (GroundedDolanSingularType _ args) = occursInArgs n args
 occursInSingularType n (RecursiveDolanSingularType n' _)
     | Just Refl <- testEquality n n' = False
 occursInSingularType n (RecursiveDolanSingularType _ pt) = occursInType n pt

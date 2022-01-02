@@ -84,14 +84,14 @@ isoCoerce = isoMap coerce coerce
 instance CoercibleKind Type where
     coercionToKindMorphism c = c
 
-instance CoercibleKind kq => CoercibleKind (kp -> kq) where
+instance (Representative (KindWitness kq), CoercibleKind kq) => CoercibleKind (kp -> kq) where
     coercionToKindMorphism ::
            forall (a :: kp -> kq) (b :: kp -> kq). (InKind a, InKind b)
         => Coercion a b
         -> NestedMorphism Coercion a b
     coercionToKindMorphism MkCoercion =
-        case (inKind @_ @a, inKind @_ @b) of
-            (MkFunctionKindWitness, MkFunctionKindWitness) -> MkNestedMorphism $ coercionToKindMorphism MkCoercion
+        functionKindWitness (inKind @_ @a) $
+        functionKindWitness (inKind @_ @b) $ MkNestedMorphism $ coercionToKindMorphism MkCoercion
 
 instance (CoercibleKind kp, CoercibleKind kq) => CoercibleKind (kp, kq) where
     coercionToKindMorphism ::

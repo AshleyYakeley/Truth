@@ -8,12 +8,12 @@ module Language.Expression.Dolan.Simplify.VarUses
 
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.Argument
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Occur
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
-import Language.Expression.Dolan.Variance
 import Shapes
 
 type Appearance :: GroundTypeKind -> Polarity -> Type
@@ -113,36 +113,28 @@ class ReplaceVarUses ground f | f -> ground where
         forall polarity name t. PolarityType polarity ->
             SymbolType name -> f polarity t -> State (VarReplacements ground name) (DolanShimWit ground polarity t)
 -}
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             GetVarUses ground (RangeType (DolanType ground) polarity) where
-    getVarAppearances (MkRangeType tp tq) = invertPolarity @polarity $ getVarAppearances tp <> getVarAppearances tq
+getCCRVarAppearances ::
+       forall (ground :: GroundTypeKind) polarity sv t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => CCRPolarArgument (DolanType ground) polarity sv t
+    -> ([Appearance ground 'Positive], [Appearance ground 'Negative])
+getCCRVarAppearances (CoCCRPolarArgument t) = getVarAppearances t
+getCCRVarAppearances (ContraCCRPolarArgument t) = invertPolarity @polarity $ getVarAppearances t
+getCCRVarAppearances (RangeCCRPolarArgument tp tq) =
+    invertPolarity @polarity $ getVarAppearances tp <> getVarAppearances tq
 
 instance forall (ground :: GroundTypeKind) polarity cat wit. GetVarUses ground wit =>
              GetVarUses ground (PolarShimWit cat wit polarity) where
     getVarAppearances (MkShimWit w _) = getVarAppearances w
 
-getArgExpressionAppearances ::
-       forall (ground :: GroundTypeKind) polarity sv a. (IsDolanGroundType ground, Is PolarityType polarity)
-    => CCRVarianceType sv
-    -> SingleArgument sv (DolanType ground) polarity a
-    -> ([Appearance ground 'Positive], [Appearance ground 'Negative])
-getArgExpressionAppearances CoCCRVarianceType t = getVarAppearances t
-getArgExpressionAppearances ContraCCRVarianceType t = invertPolarity @polarity $ getVarAppearances t
-getArgExpressionAppearances RangeCCRVarianceType t = getVarAppearances t
-
-getArgsExpressionAppearances ::
-       forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanVarianceType dv
-    -> DolanArguments dv (DolanType ground) gt polarity t
-    -> ([Appearance ground 'Positive], [Appearance ground 'Negative])
-getArgsExpressionAppearances NilListType NilDolanArguments = mempty
-getArgsExpressionAppearances (ConsListType sv dv) (ConsDolanArguments arg args) =
-    getArgExpressionAppearances @ground @polarity sv arg <> getArgsExpressionAppearances @ground dv args
+instance forall (ground :: GroundTypeKind) polarity dv gt. (IsDolanGroundType ground, Is PolarityType polarity) =>
+             GetVarUses ground (DolanArguments dv (DolanType ground) gt polarity) where
+    getVarAppearances NilCCRArguments = mempty
+    getVarAppearances (ConsCCRArguments arg args) =
+        getCCRVarAppearances @ground arg <> getVarAppearances @_ @ground args
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              GetVarUses ground (DolanSingularType ground polarity) where
-    getVarAppearances (GroundedDolanSingularType gt args) =
-        getArgsExpressionAppearances (groundTypeVarianceType gt) args
+    getVarAppearances (GroundedDolanSingularType _ args) = getVarAppearances args
     getVarAppearances (VarDolanSingularType _) = mempty
     getVarAppearances (RecursiveDolanSingularType vn st) = let
         (pvarss, nvarss) = getVarAppearances st
@@ -204,31 +196,26 @@ class GetExpressionVars f where
 instance GetExpressionVars wit => GetExpressionVars (PolarShimWit cat wit polarity) where
     getExpressionVars (MkShimWit w _) = getExpressionVars w
 
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
-             GetExpressionVars (RangeType (DolanType ground) polarity) where
-    getExpressionVars (MkRangeType tp tq) = invertPolarity @polarity $ getExpressionVars tp <> getExpressionVars tq
-
 getArgExpressionVars ::
        forall (ground :: GroundTypeKind) polarity sv a. (IsDolanGroundType ground, Is PolarityType polarity)
-    => CCRVarianceType sv
-    -> SingleArgument sv (DolanType ground) polarity a
+    => CCRPolarArgument (DolanType ground) polarity sv a
     -> ([AnyW SymbolType], [AnyW SymbolType])
-getArgExpressionVars CoCCRVarianceType t = getExpressionVars t
-getArgExpressionVars ContraCCRVarianceType t = invertPolarity @polarity $ getExpressionVars t
-getArgExpressionVars RangeCCRVarianceType t = getExpressionVars t
+getArgExpressionVars (CoCCRPolarArgument t) = getExpressionVars t
+getArgExpressionVars (ContraCCRPolarArgument t) = invertPolarity @polarity $ getExpressionVars t
+getArgExpressionVars (RangeCCRPolarArgument tp tq) =
+    invertPolarity @polarity $ getExpressionVars tp <> getExpressionVars tq
 
 getArgsExpressionVars ::
        forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
-    => DolanVarianceType dv
-    -> DolanArguments dv (DolanType ground) gt polarity t
+    => DolanArguments dv (DolanType ground) gt polarity t
     -> ([AnyW SymbolType], [AnyW SymbolType])
-getArgsExpressionVars NilListType NilDolanArguments = mempty
-getArgsExpressionVars (ConsListType sv dv) (ConsDolanArguments arg args) =
-    getArgExpressionVars @ground @polarity sv arg <> getArgsExpressionVars dv args
+getArgsExpressionVars NilCCRArguments = mempty
+getArgsExpressionVars (ConsCCRArguments arg args) =
+    getArgExpressionVars @ground @polarity arg <> getArgsExpressionVars args
 
 instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              GetExpressionVars (DolanSingularType ground polarity) where
-    getExpressionVars (GroundedDolanSingularType gt args) = getArgsExpressionVars (groundTypeVarianceType gt) args
+    getExpressionVars (GroundedDolanSingularType _ args) = getArgsExpressionVars args
     getExpressionVars (VarDolanSingularType vn) =
         case polarityType @polarity of
             PositiveType -> ([MkAnyW vn], [])

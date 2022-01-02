@@ -51,7 +51,7 @@ makeClosedEntityTypeBox name doc sconss =
                                mkPolarShimWit $
                                GroundedDolanSingularType
                                    (closedEntityGroundType $ MkClosedEntityFamily name tidsym cti)
-                                   NilDolanArguments
+                                   NilCCRArguments
                        patts <-
                            for conss $ \(MkConstructor cname lt at tma) -> do
                                ltp <- return $ mapListType monoToPositiveDolanType lt

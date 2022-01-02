@@ -46,6 +46,7 @@ library:
       - Language.Expression.Dolan.PShimWit
       - Language.Expression.Dolan.Covariance
       - Language.Expression.Dolan.Variance
+      - Language.Expression.Dolan.Argument
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.MPolarity
       - Language.Expression.Dolan.RangeF

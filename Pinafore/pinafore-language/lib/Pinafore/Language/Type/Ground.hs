@@ -28,7 +28,7 @@ type PinaforePolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype P
 type PinaforeGreatestDynamicSupertype :: Type -> Type
 type PinaforeGreatestDynamicSupertype t = GreatestDynamicSupertype PinaforeGroundType PinaforePolyShim t
 
-type PinaforeNonpolarType :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+type PinaforeNonpolarType :: Type -> Type
 type PinaforeNonpolarType = NonpolarDolanType PinaforeGroundType
 
 singleGroundType' ::
@@ -88,12 +88,11 @@ showPrecVariance ::
        , forall a polarity'. Is PolarityType polarity' => ExprShow (w polarity' a)
        , forall a. ExprShow (RangeType w polarity a)
        )
-    => CCRVarianceType sv
-    -> SingleArgument sv w polarity t
+    => CCRPolarArgument w polarity sv t
     -> (Text, Int)
-showPrecVariance CoCCRVarianceType t = exprShowPrec t
-showPrecVariance ContraCCRVarianceType t = invertPolarity @polarity $ exprShowPrec t
-showPrecVariance RangeCCRVarianceType t = exprShowPrec t
+showPrecVariance (CoCCRPolarArgument t) = exprShowPrec t
+showPrecVariance (ContraCCRPolarArgument t) = invertPolarity @polarity $ exprShowPrec t
+showPrecVariance (RangeCCRPolarArgument p q) = exprShowPrec (MkRangeType p q)
 
 showPrecDolanVariance ::
        forall w polarity dv f t.
@@ -102,12 +101,10 @@ showPrecDolanVariance ::
        , forall a. ExprShow (RangeType w polarity a)
        )
     => ListTypeExprShow dv
-    -> DolanVarianceType dv
     -> DolanArguments dv w f polarity t
     -> (Text, Int)
-showPrecDolanVariance f NilListType NilDolanArguments = f
-showPrecDolanVariance f (ConsListType sv dv) (ConsDolanArguments t1 tr) =
-    showPrecDolanVariance (f (showPrecVariance @w @polarity sv t1)) dv tr
+showPrecDolanVariance f NilCCRArguments = f
+showPrecDolanVariance f (ConsCCRArguments t1 tr) = showPrecDolanVariance (f (showPrecVariance @w @polarity t1)) tr
 
 instance GroundExprShow PinaforeGroundType where
     groundTypeShowPrec ::
@@ -119,7 +116,7 @@ instance GroundExprShow PinaforeGroundType where
         => PinaforeGroundType dv f
         -> DolanArguments dv w f polarity t
         -> (Text, Int)
-    groundTypeShowPrec t args = showPrecDolanVariance (pgtShowType t) (pgtVarianceType t) args
+    groundTypeShowPrec t args = showPrecDolanVariance (pgtShowType t) args
 
 instance Is PolarityType polarity => Show (DolanType PinaforeGroundType polarity a) where
     show t = unpack $ exprShow t

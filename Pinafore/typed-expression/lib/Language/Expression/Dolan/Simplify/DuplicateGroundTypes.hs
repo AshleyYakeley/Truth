@@ -45,8 +45,7 @@ mergeSSEquality ::
     -> DolanTypeCheckM ground (DolanSingularShimWit ground polarity (JoinMeetType polarity ta tb))
 mergeSSEquality (GroundedDolanSingularType gt1 args1) (GroundedDolanSingularType gt2 args2)
     | Just (Refl, HRefl) <- groundTypeTestEquality gt1 gt2 = do
-        MkShimWit args' convargs <-
-            mergeDolanArgumentsM mergeTypeType (groundTypeVarianceType gt1) (groundTypeVarianceMap gt1) args1 args2
+        MkShimWit args' convargs <- mergeDolanArgumentsM mergeTypeType (groundTypeVarianceMap gt1) args1 args2
         return $ MkShimWit (GroundedDolanSingularType gt1 args') convargs
 mergeSSEquality _ _ = empty
 

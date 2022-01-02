@@ -27,7 +27,7 @@ rationalGroundType :: PinaforeGroundType '[] SafeRational
 rationalGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily SafeRational)|]) "Rational")
         { pgtGreatestDynamicSupertype =
-              \NilDolanArguments ->
+              \NilCCRArguments ->
                   Just $ makeNilGDS numberGroundType $ functionToShim "safeRationalNumber" $ decode safeRationalNumber
         }
 
@@ -35,7 +35,7 @@ integerGroundType :: PinaforeGroundType '[] Integer
 integerGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Integer)|]) "Integer")
         { pgtGreatestDynamicSupertype =
-              \NilDolanArguments ->
+              \NilCCRArguments ->
                   Just $
                   makeNilGDS numberGroundType $
                   functionToShim "integerSafeRational . safeRationalNumber" $
@@ -86,11 +86,10 @@ list1GroundType :: IsDolanSubtypeGroundType PinaforeGroundType => PinaforeGround
 list1GroundType =
     (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) $ \ta -> ("List1 " <> precShow 0 ta, 2))
         { pgtGreatestDynamicSupertype =
-              \(ConsDolanArguments ta NilDolanArguments) -> do
+              \(ConsCCRArguments ta NilCCRArguments) -> do
                   tt <-
                       invertTypeMaybe $
-                      singleDolanType $
-                      GroundedDolanSingularType listGroundType $ ConsDolanArguments ta NilDolanArguments
+                      singleDolanType $ GroundedDolanSingularType listGroundType $ ConsCCRArguments ta NilCCRArguments
                   Just $ mapPolarShimWit (MkPolarMap $ functionToShim "nonEmpty" nonEmpty . iJoinL1) tt
         }
 

@@ -199,27 +199,20 @@ instance CoercibleKind k => FunctionShim (JMShim k) where
             -> CCRVarianceCategory (JMShim Type) v a' b'
             -> KindFunction (f a') (g b')
         fromCon CoCCRVarianceType ccrvg' jmf' jma' =
-            case inKind @_ @f of
-                MkFunctionKindWitness ->
-                    case inKind @_ @g of
-                        MkFunctionKindWitness ->
-                            case shimToFunction jmf' of
-                                MkNestedMorphism ff -> ccrvMap ccrvg' (shimToFunction jma') <.> ff
+            functionKindWitness (inKind @_ @f) $
+            functionKindWitness (inKind @_ @g) $
+            case shimToFunction jmf' of
+                MkNestedMorphism ff -> ccrvMap ccrvg' (shimToFunction jma') <.> ff
         fromCon ContraCCRVarianceType ccrvg' jmf' (MkCatDual jma') =
-            case inKind @_ @f of
-                MkFunctionKindWitness ->
-                    case inKind @_ @g of
-                        MkFunctionKindWitness ->
-                            case shimToFunction jmf' of
-                                MkNestedMorphism ff -> ccrvMap ccrvg' (MkCatDual (shimToFunction jma')) <.> ff
+            functionKindWitness (inKind @_ @f) $
+            functionKindWitness (inKind @_ @g) $
+            case shimToFunction jmf' of
+                MkNestedMorphism ff -> ccrvMap ccrvg' (MkCatDual (shimToFunction jma')) <.> ff
         fromCon RangeCCRVarianceType ccrvg' jmf' (MkCatRange jma1 jma2) =
-            case inKind @_ @f of
-                MkFunctionKindWitness ->
-                    case inKind @_ @g of
-                        MkFunctionKindWitness ->
-                            case shimToFunction jmf' of
-                                MkNestedMorphism ff ->
-                                    ccrvMap ccrvg' (MkCatRange (shimToFunction jma1) (shimToFunction jma2)) <.> ff
+            functionKindWitness (inKind @_ @f) $
+            functionKindWitness (inKind @_ @g) $
+            case shimToFunction jmf' of
+                MkNestedMorphism ff -> ccrvMap ccrvg' (MkCatRange (shimToFunction jma1) (shimToFunction jma2)) <.> ff
         in fromCon vt ccrvg jmf jma
 
 instance CartesianShim (JMShim Type) where

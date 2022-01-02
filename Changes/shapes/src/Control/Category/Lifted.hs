@@ -10,11 +10,9 @@ instance forall kp kq (cat :: kq -> kq -> Type) (f :: kp -> kq). Category cat =>
     id = MkLiftedCategory id
     MkLiftedCategory p . MkLiftedCategory q = MkLiftedCategory $ p . q
 
-instance forall kp kq (cat :: kq -> kq -> Type) (f :: kp -> kq). (InKind f, InCategory cat) =>
-             InCategory (LiftedCategory cat f) where
-    cid =
-        case inKind @_ @f of
-            MkFunctionKindWitness -> MkLiftedCategory cid
-    MkLiftedCategory p <.> MkLiftedCategory q =
-        case inKind @_ @f of
-            MkFunctionKindWitness -> MkLiftedCategory $ p <.> q
+instance forall kp kq (cat :: kq -> kq -> Type) (f :: kp -> kq). ( Representative (KindWitness kq)
+         , InKind f
+         , InCategory cat
+         ) => InCategory (LiftedCategory cat f) where
+    cid = functionKindWitness (inKind @_ @f) $ MkLiftedCategory cid
+    MkLiftedCategory p <.> MkLiftedCategory q = functionKindWitness (inKind @_ @f) $ MkLiftedCategory $ p <.> q

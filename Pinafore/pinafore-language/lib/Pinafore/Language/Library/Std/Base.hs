@@ -31,14 +31,14 @@ import Shapes.Numeric
 import qualified Text.Collate
 
 topEntityType :: forall pol. PinaforeType pol (JoinMeetType pol Entity (LimitType pol))
-topEntityType = ConsDolanType (GroundedDolanSingularType entityGroundType NilDolanArguments) NilDolanType
+topEntityType = ConsDolanType (GroundedDolanSingularType entityGroundType NilCCRArguments) NilDolanType
 
 -- Showable
 showableGroundType :: PinaforeGroundType '[] Showable
 showableGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Showable)|]) "Showable"
 
 showableType :: forall pol. PinaforeType pol (JoinMeetType pol Showable (LimitType pol))
-showableType = ConsDolanType (GroundedDolanSingularType showableGroundType NilDolanArguments) NilDolanType
+showableType = ConsDolanType (GroundedDolanSingularType showableGroundType NilCCRArguments) NilDolanType
 
 instance HasPinaforeGroundType '[] Showable where
     pinaforeGroundType = showableGroundType
@@ -58,24 +58,25 @@ literalSubtypeRelationEntry t = nilSubtypeRelationEntry t literalGroundType $ fu
 
 openEntityShimWit :: forall tid. OpenEntityType tid -> PinaforeShimWit 'Positive (OpenEntity tid)
 openEntityShimWit tp =
-    singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType (openEntityGroundType tp) NilDolanArguments
+    singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType (openEntityGroundType tp) NilCCRArguments
 
 dynamicEntityShimWit :: Name -> DynamicType -> PinaforeShimWit 'Positive DynamicEntity
 dynamicEntityShimWit n dt =
     singleDolanShimWit $
-    mkPolarShimWit $ GroundedDolanSingularType (aDynamicEntityGroundType n $ singletonSet dt) NilDolanArguments
+    mkPolarShimWit $ GroundedDolanSingularType (aDynamicEntityGroundType n $ singletonSet dt) NilCCRArguments
 
 textShimWit ::
        forall polarity. Is PolarityType polarity
     => PinaforeShimWit polarity Text
-textShimWit = singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType textGroundType NilDolanArguments
+textShimWit = singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType textGroundType NilCCRArguments
 
 maybeShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (Maybe a)
 maybeShimWit swa =
     unPosShimWit swa $ \ta conva ->
         mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation cid conva) $
         singleDolanShimWit $
-        mkPolarShimWit $ GroundedDolanSingularType maybeGroundType $ ConsDolanArguments ta NilDolanArguments
+        mkPolarShimWit $
+        GroundedDolanSingularType maybeGroundType $ ConsCCRArguments (CoCCRPolarArgument ta) NilCCRArguments
 
 eitherShimWit ::
        forall a b. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (Either a b)
@@ -85,7 +86,8 @@ eitherShimWit swa swb =
             mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation (cfmap conva) convb) $
             singleDolanShimWit $
             mkPolarShimWit $
-            GroundedDolanSingularType eitherGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+            GroundedDolanSingularType eitherGroundType $
+            ConsCCRArguments (CoCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
 
 funcShimWit ::
        forall a b. PinaforeShimWit 'Negative a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (a -> b)
@@ -95,14 +97,16 @@ funcShimWit swa swb =
             mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation (ccontramap conva) convb) $
             singleDolanShimWit $
             mkPolarShimWit $
-            GroundedDolanSingularType funcGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+            GroundedDolanSingularType funcGroundType $
+            ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
 
 actionShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
 actionShimWit swa =
     unPosShimWit swa $ \ta conva ->
         mapPosShimWit (cfmap conva) $
         singleDolanShimWit $
-        mkPolarShimWit $ GroundedDolanSingularType actionGroundType $ ConsDolanArguments ta NilDolanArguments
+        mkPolarShimWit $
+        GroundedDolanSingularType actionGroundType $ ConsCCRArguments (CoCCRPolarArgument ta) NilCCRArguments
 
 getTimeMS :: IO Integer
 getTimeMS = do
@@ -670,9 +674,9 @@ baseLibEntries =
           , mkSubtypeRelationEntry "Maybe Entity" "Entity" "" $
             pure $
             simpleSubtypeConversionEntry maybeGroundType entityGroundType $
-            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
+            MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument t) NilCCRArguments :: _ pola _) ->
                 return $
-                MkSubtypeArguments NilDolanArguments $ do
+                MkSubtypeArguments NilCCRArguments $ do
                     conv <- subtypeConvert sc t $ topEntityType @'Negative
                     pure $
                         functionToShim "maybeEntityConvert" maybeEntityConvert .
@@ -680,9 +684,9 @@ baseLibEntries =
           , mkSubtypeRelationEntry "Maybe Showable" "Showable" "" $
             pure $
             simpleSubtypeConversionEntry maybeGroundType showableGroundType $
-            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
+            MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument t) NilCCRArguments :: _ pola _) ->
                 return $
-                MkSubtypeArguments NilDolanArguments $ do
+                MkSubtypeArguments NilCCRArguments $ do
                     conv <- subtypeConvert sc t $ showableType @'Negative
                     pure $ functionToShim "show" textShowable . cfmap (iJoinMeetL1 @_ @'Negative . conv)
           ]
@@ -692,9 +696,9 @@ baseLibEntries =
           [ mkSubtypeRelationEntry "(Entity,Entity)" "Entity" "" $
             pure $
             simpleSubtypeConversionEntry pairGroundType entityGroundType $
-            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments) :: _ pola _) ->
+            MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument ta) (ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments) :: _ pola _) ->
                 return $
-                MkSubtypeArguments NilDolanArguments $ do
+                MkSubtypeArguments NilCCRArguments $ do
                     convA <- subtypeConvert sc ta $ topEntityType @'Negative
                     convB <- subtypeConvert sc tb $ topEntityType @'Negative
                     pure $
@@ -707,9 +711,9 @@ baseLibEntries =
           , mkSubtypeRelationEntry "(Showable,Showable)" "Showable" "" $
             pure $
             simpleSubtypeConversionEntry pairGroundType showableGroundType $
-            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) ->
+            MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument ta) (ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments)) ->
                 return $
-                MkSubtypeArguments NilDolanArguments $ do
+                MkSubtypeArguments NilCCRArguments $ do
                     convA <- subtypeConvert sc ta $ showableType @'Negative
                     convB <- subtypeConvert sc tb $ showableType @'Negative
                     pure $
@@ -739,9 +743,9 @@ baseLibEntries =
           , mkSubtypeRelationEntry "Either Entity Entity" "Entity" "" $
             pure $
             simpleSubtypeConversionEntry eitherGroundType entityGroundType $
-            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments) :: _ pola _) ->
+            MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument ta) (ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments) :: _ pola _) ->
                 return $
-                MkSubtypeArguments NilDolanArguments $ do
+                MkSubtypeArguments NilCCRArguments $ do
                     convA <- subtypeConvert sc ta $ topEntityType @'Negative
                     convB <- subtypeConvert sc tb $ topEntityType @'Negative
                     pure $
@@ -754,9 +758,9 @@ baseLibEntries =
           , mkSubtypeRelationEntry "Either Showable Showable" "Showable" "" $
             pure $
             simpleSubtypeConversionEntry eitherGroundType showableGroundType $
-            MkSubtypeConversion $ \sc (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) ->
+            MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument ta) (ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments)) ->
                 return $
-                MkSubtypeArguments NilDolanArguments $ do
+                MkSubtypeArguments NilCCRArguments $ do
                     convA <- subtypeConvert sc ta $ showableType @'Negative
                     convB <- subtypeConvert sc tb $ showableType @'Negative
                     pure $
@@ -779,9 +783,9 @@ baseLibEntries =
           , mkSubtypeRelationEntry "List1 a" "[a]" "" $
             pure $
             simpleSubtypeConversionEntry list1GroundType listGroundType $
-            MkSubtypeConversion $ \_ (ConsDolanArguments ta NilDolanArguments) ->
+            MkSubtypeConversion $ \_ (ConsCCRArguments (CoCCRPolarArgument ta) NilCCRArguments) ->
                 return $
-                MkSubtypeArguments (ConsDolanArguments ta NilDolanArguments) $
+                MkSubtypeArguments (ConsCCRArguments (CoCCRPolarArgument ta) NilCCRArguments) $
                 pure $ functionToShim "NonEmpty.toList" toList
           , mkValPatEntry "[]" "Empty list" ([] @BottomType) $ \(v :: [A]) ->
                 case v of
@@ -794,18 +798,18 @@ baseLibEntries =
           , mkSubtypeRelationEntry "[Entity]" "Entity" "" $
             pure $
             simpleSubtypeConversionEntry listGroundType entityGroundType $
-            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
+            MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument t) NilCCRArguments :: _ pola _) ->
                 return $
-                MkSubtypeArguments NilDolanArguments $ do
+                MkSubtypeArguments NilCCRArguments $ do
                     conv <- subtypeConvert sc t $ topEntityType @'Negative
                     pure $
                         functionToShim "listEntityConvert" listEntityConvert . cfmap (iJoinMeetL1 @_ @'Negative . conv)
           , mkSubtypeRelationEntry "[Showable]" "Showable" "" $
             pure $
             simpleSubtypeConversionEntry listGroundType showableGroundType $
-            MkSubtypeConversion $ \sc (ConsDolanArguments t NilDolanArguments :: _ pola _) ->
+            MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument t) NilCCRArguments :: _ pola _) ->
                 return $
-                MkSubtypeArguments NilDolanArguments $ do
+                MkSubtypeArguments NilCCRArguments $ do
                     conv <- subtypeConvert sc t $ showableType @'Negative
                     pure $ functionToShim "show" textShowable . cfmap (iJoinMeetL1 @_ @'Negative . conv)
           , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->

@@ -7,6 +7,7 @@ import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Name
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.Entity.Type
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
@@ -52,7 +53,7 @@ openEntityFamily =
 
 getOpenEntityType :: MonadThrow ErrorType m => AnyW (PinaforeType 'Positive) -> m (AnyW OpenEntityType)
 getOpenEntityType (MkAnyW tm) =
-    case dolanTypeToSingular tm of
-        Just (MkAnyW (GroundedDolanSingularType gt NilDolanArguments))
+    case dolanTypeToSingular @PinaforeGroundType @(PinaforePolyShim Type) tm of
+        Just (MkShimWit (GroundedDolanSingularType gt NilCCRArguments) _)
             | Just (MkLiftedFamily t) <- matchFamilyType openEntityFamilyWitness $ pgtFamilyType gt -> return $ MkAnyW t
         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm

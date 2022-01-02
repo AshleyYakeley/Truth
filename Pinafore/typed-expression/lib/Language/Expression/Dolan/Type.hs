@@ -79,7 +79,7 @@ data DolanType ground polarity t where
         -> DolanType ground polarity tr
         -> DolanType ground polarity (JoinMeetType polarity t1 tr)
 
-instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
+instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              TestEquality (DolanType ground polarity) where
     testEquality NilDolanType NilDolanType = return Refl
     testEquality (ConsDolanType t1a tra) (ConsDolanType t1b trb) = do
@@ -108,11 +108,11 @@ data DolanSingularType ground polarity t where
         -> DolanType ground polarity (UVarT name)
         -> DolanSingularType ground polarity (UVarT name)
 
-instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
+instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              TestEquality (DolanSingularType ground polarity) where
     testEquality (GroundedDolanSingularType gta argsa) (GroundedDolanSingularType gtb argsb) = do
         (Refl, HRefl) <- groundTypeTestEquality gta gtb
-        Refl <- dolanTestEquality (groundTypeVarianceType gta) argsa argsb
+        Refl <- testEquality argsa argsb
         return Refl
     testEquality (VarDolanSingularType na) (VarDolanSingularType nb) = do
         Refl <- testEquality na nb
@@ -177,10 +177,11 @@ singleDolanType ::
 singleDolanType st = ConsDolanType st NilDolanType
 
 dolanTypeToSingular ::
-       forall (ground :: GroundTypeKind) (polarity :: Polarity) (t :: Type).
-       DolanType ground polarity t
-    -> Maybe (AnyW (DolanSingularType ground polarity))
-dolanTypeToSingular (ConsDolanType st NilDolanType) = Just $ MkAnyW st
+       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) (t :: Type).
+       (JoinMeetIsoCategory shim, Is PolarityType polarity)
+    => DolanType ground polarity t
+    -> Maybe (PShimWit shim (DolanSingularType ground) polarity t)
+dolanTypeToSingular (ConsDolanType st NilDolanType) = Just $ MkShimWit st iPolarL1
 dolanTypeToSingular _ = Nothing
 
 singleDolanShimWit ::

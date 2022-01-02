@@ -34,27 +34,27 @@ saturatedGroundTypeShowPrec avar gt = let
     singleVarArgument ::
            forall polarity sv r. Is PolarityType polarity
         => CCRVarianceType sv
-        -> (forall a. InKind a => SingleArgument sv w polarity a -> r)
+        -> (forall a. InKind a => CCRPolarArgument w polarity sv a -> r)
         -> r
     singleVarArgument CoCCRVarianceType call =
         case avar of
-            MkAnyW var -> call var
+            MkAnyW var -> call $ CoCCRPolarArgument var
     singleVarArgument ContraCCRVarianceType call =
         invertPolarity @polarity $
         case avar of
-            MkAnyW var -> call var
+            MkAnyW var -> call $ ContraCCRPolarArgument var
     singleVarArgument RangeCCRVarianceType call =
         invertPolarity @polarity $
         case (avar, avar) of
-            (MkAnyW var1, MkAnyW var2) -> call $ MkRangeType var1 var2
+            (MkAnyW var1, MkAnyW var2) -> call $ RangeCCRPolarArgument var1 var2
     allVarArguments ::
            forall polarity dv' f' r. Is PolarityType polarity
         => DolanVarianceType dv'
         -> (forall t. DolanArguments dv' w f' polarity t -> r)
         -> r
-    allVarArguments NilListType call = call NilDolanArguments
+    allVarArguments NilListType call = call NilCCRArguments
     allVarArguments (ConsListType svt dvt) call =
-        singleVarArgument @polarity svt $ \arg -> allVarArguments dvt $ \args -> call $ ConsDolanArguments arg args
+        singleVarArgument @polarity svt $ \arg -> allVarArguments dvt $ \args -> call $ ConsCCRArguments arg args
     in allVarArguments @'Positive (groundTypeVarianceType gt) $ \args -> groundTypeShowPrec gt args
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>

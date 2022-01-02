@@ -16,5 +16,5 @@ data Constructor w t =
 extendConstructor :: Constructor w t -> Constructor w (Either a t)
 extendConstructor (MkConstructor n lt at tma) = MkConstructor n lt (Right . at) (\t -> eitherRight t >>= tma)
 
-constructorFreeVariables :: Constructor (PinaforeNonpolarType '[]) t -> [AnyW SymbolType]
+constructorFreeVariables :: Constructor PinaforeNonpolarType t -> [AnyW SymbolType]
 constructorFreeVariables (MkConstructor _ lt _ _) = mconcat $ listTypeToList nonpolarTypeFreeVariables lt

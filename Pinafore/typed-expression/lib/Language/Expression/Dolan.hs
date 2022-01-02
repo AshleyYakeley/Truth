@@ -44,10 +44,17 @@ module Language.Expression.Dolan
     , unToRangeShimWit
     , unFromRangeShimWit
     , biRangeAnyF
-    , SingleArgument
-    , DolanArguments(..)
-    , ArgTypeF(..)
-    , mapArgsTypeF
+    , CCRArgumentKind
+    , IsCCRArg(..)
+    , CCRPolarArgument(..)
+    , CCRArguments(..)
+    , ccrArgumentsType
+    , ccrArgumentsInKind
+    , mapCCRArguments
+    , DolanArguments
+    , DolanArgumentsShimWit
+    , CCRPolarArgumentShimWit
+    , mapDolanArgumentsFM
     , saturateArgsConstraint
     , dolanArgumentsToArguments
     , SubtypeContext(..)
@@ -75,6 +82,7 @@ module Language.Expression.Dolan
 import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.Argument
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Covariance
@@ -106,8 +114,10 @@ instance forall (ground :: GroundTypeKind). IsDolanFunctionGroundType ground =>
     tsFunctionPosWitness ta tb =
         singleDolanShimWit $
         mkPolarShimWit $
-        GroundedDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+        GroundedDolanSingularType functionGroundType $
+        ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
     tsFunctionNegWitness ta tb =
         singleDolanShimWit $
         mkPolarShimWit $
-        GroundedDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+        GroundedDolanSingularType functionGroundType $
+        ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments

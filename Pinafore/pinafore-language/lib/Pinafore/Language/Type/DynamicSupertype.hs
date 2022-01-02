@@ -14,7 +14,7 @@ makeNilGDS ::
     -> pshim Type dt (Maybe t)
     -> GreatestDynamicSupertype ground pshim t
 makeNilGDS wt conv =
-    mapShimWit (MkPolarMap conv) $ singleDolanShimWit $ mkShimWit $ GroundedDolanSingularType wt NilDolanArguments
+    mapShimWit (MkPolarMap conv) $ singleDolanShimWit $ mkShimWit $ GroundedDolanSingularType wt NilCCRArguments
 
 type PolyGreatestDynamicSupertype :: GroundTypeKind -> PolyShimKind -> forall (dv :: DolanVariance) ->
                                                                                DolanVarianceKind dv -> Type

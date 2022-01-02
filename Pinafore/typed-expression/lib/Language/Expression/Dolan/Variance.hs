@@ -5,7 +5,6 @@ import Shapes
 
 type DolanVariance = [CCRVariance]
 
--- How many layers of type abstraction are you on?
 type family DolanVarianceKind (dv :: DolanVariance) :: Type where
     DolanVarianceKind '[] = Type
     DolanVarianceKind (sv ': dv) = CCRVarianceKind sv -> DolanVarianceKind dv
@@ -16,7 +15,9 @@ class ApplyPolyShim pshim => DolanVarianceInCategory (pshim :: PolyShimKind) whe
     dolanVarianceInCategory ::
            forall dv.
            DolanVarianceType dv
-        -> Dict (CoercibleKind (DolanVarianceKind dv), InCategory (pshim (DolanVarianceKind dv)))
+        -> Dict ( Representative (KindWitness (DolanVarianceKind dv))
+                , CoercibleKind (DolanVarianceKind dv)
+                , InCategory (pshim (DolanVarianceKind dv)))
 
 instance DolanVarianceInCategory PEqual where
     dolanVarianceInCategory NilListType = Dict
@@ -53,8 +54,9 @@ type DolanVarianceMap :: forall (dv :: DolanVariance) -> DolanVarianceKind dv ->
 data DolanVarianceMap dv f where
     NilDolanVarianceMap :: forall (f :: Type). DolanVarianceMap '[] f
     ConsDolanVarianceMap
-        :: forall (sv :: CCRVariance) (dv :: DolanVariance) (f :: CCRVarianceKind sv -> DolanVarianceKind dv). InKind f
-        => CCRVariation sv f
+        :: forall (sv :: CCRVariance) (dv :: DolanVariance) (f :: CCRVarianceKind sv -> DolanVarianceKind dv).
+           KindWitness (CCRVarianceKind sv -> DolanVarianceKind dv) f
+        -> CCRVariation sv f
         -> (forall a. DolanVarianceMap dv (f a))
         -> DolanVarianceMap (sv ': dv) f
 
@@ -90,4 +92,4 @@ instance HasDolanVariance '[] (f :: Type) where
 
 instance (HasCCRVariance sv f, forall a. HasDolanVariance dv (f a), CoercibleKind (DolanVarianceKind dv)) =>
              HasDolanVariance (sv ': dv) (f :: CCRVarianceKind sv -> DolanVarianceKind dv) where
-    dolanVarianceMap = ConsDolanVarianceMap ccrVariation dolanVarianceMap
+    dolanVarianceMap = ConsDolanVarianceMap representative ccrVariation dolanVarianceMap

@@ -66,21 +66,19 @@ instance InCategory (:~:)
 
 instance InCategory (:~~:)
 
-instance InCategory (KindMorphism cat :: kq -> kq -> Type) =>
+instance (Representative (KindWitness kq), InCategory (KindMorphism cat :: kq -> kq -> Type)) =>
              InCategory (NestedMorphism cat :: (kp -> kq) -> (kp -> kq) -> Type) where
     cid :: forall (a :: kp -> kq). InKind a
         => NestedMorphism cat a a
-    cid =
-        case inKind @_ @a of
-            MkFunctionKindWitness -> MkNestedMorphism cid
+    cid = functionKindWitness (inKind @_ @a) $ MkNestedMorphism cid
     (<.>) ::
            forall (a :: kp -> kq) (b :: kp -> kq) (c :: kp -> kq). (InKind a, InKind b, InKind c)
         => NestedMorphism cat b c
         -> NestedMorphism cat a b
         -> NestedMorphism cat a c
     (MkNestedMorphism f) <.> (MkNestedMorphism g) =
-        case (inKind @_ @a, inKind @_ @b, inKind @_ @c) of
-            (MkFunctionKindWitness, MkFunctionKindWitness, MkFunctionKindWitness) -> MkNestedMorphism $ f <.> g
+        functionKindWitness (inKind @_ @a) $
+        functionKindWitness (inKind @_ @b) $ functionKindWitness (inKind @_ @c) $ MkNestedMorphism $ f <.> g
 
 instance InCategory cat => InCategory (CatDual cat) where
     cid = MkCatDual cid
