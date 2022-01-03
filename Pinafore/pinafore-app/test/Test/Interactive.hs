@@ -6,7 +6,7 @@ import Changes.Core
 import Pinafore
 import Pinafore.Libs
 import Pinafore.Test
-import Shapes hiding ((<.>))
+import Shapes hiding ((.))
 import Shapes.Test
 import System.FilePath
 

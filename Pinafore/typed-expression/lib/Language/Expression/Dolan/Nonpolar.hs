@@ -52,9 +52,6 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => IsCCRArg
     ccrArgumentType (CoNonpolarArgument _) = CoCCRVarianceType
     ccrArgumentType (ContraNonpolarArgument _) = ContraCCRVarianceType
     ccrArgumentType (RangeNonpolarArgument _ _) = RangeCCRVarianceType
-    ccrArgumentInKind (CoNonpolarArgument _) = Dict
-    ccrArgumentInKind (ContraNonpolarArgument _) = Dict
-    ccrArgumentInKind (RangeNonpolarArgument _ _) = Dict
     ccrArgumentTestEquality (CoNonpolarArgument a) (CoNonpolarArgument b) = do
         Refl <- testEquality a b
         return Refl

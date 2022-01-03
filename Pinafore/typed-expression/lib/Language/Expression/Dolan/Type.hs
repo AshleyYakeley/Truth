@@ -11,11 +11,8 @@ import Language.Expression.Dolan.Variance
 import Shapes
 
 type BisubstitutablePolyShim :: PolyShimKind -> Constraint
-class ( JoinMeetIsoCategory (pshim Type)
-      , IsoMapShim (pshim Type)
-      , DolanVarianceInCategory pshim
-      , ReduciblePolyShim pshim
-      ) => BisubstitutablePolyShim pshim where
+class (JoinMeetIsoCategory (pshim Type), IsoMapShim (pshim Type), DolanVarianceCategory pshim, ReduciblePolyShim pshim) =>
+          BisubstitutablePolyShim pshim where
     reducedBisubstitutablePolyShim ::
            Dict (BisubstitutablePolyShim (ReducedPolyShim pshim), LazyCategory (ReducedPolyShim pshim Type))
 
@@ -151,7 +148,7 @@ varDolanShimWit var = singleDolanShimWit $ mkPolarShimWit $ VarDolanSingularType
 
 nilDolanShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity).
-       (IsDolanGroundType ground, InCategory shim, Is PolarityType polarity)
+       (IsDolanGroundType ground, Category shim, Is PolarityType polarity)
     => PShimWit shim (DolanType ground) polarity (LimitType polarity)
 nilDolanShimWit = mkPolarShimWit NilDolanType
 

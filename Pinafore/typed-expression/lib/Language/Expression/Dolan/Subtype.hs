@@ -55,7 +55,7 @@ subtypeVariance sc (RangeCCRPolarArgument tpa tqa) (RangeCCRPolarArgument tpb tq
 
 subtypeArguments ::
        forall (w :: Polarity -> Type -> Type) (pshim :: PolyShimKind) solver pola polb dv (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) ta tb.
-       ( DolanVarianceInCategory pshim
+       ( DolanVarianceCategory pshim
        , Applicative solver
        , Is PolarityType pola
        , Is PolarityType polb
@@ -70,41 +70,19 @@ subtypeArguments ::
     -> DolanArguments dv w gtb polb tb
     -> solver (pshim (DolanVarianceKind dv) gta gtb -> pshim Type ta tb)
 subtypeArguments _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilCCRArguments NilCCRArguments = pure id
-subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap kwa ccrva dvma) (ConsDolanVarianceMap kwb ccrvb dvmb) (ConsCCRArguments sta dta) (ConsCCRArguments stb dtb) =
-    case ccrArgumentInKind sta of
+subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap ccrva dvma) (ConsDolanVarianceMap ccrvb dvmb) (ConsCCRArguments sta dta) (ConsCCRArguments stb dtb) =
+    case ccrVarianceCoercibleKind svt of
         Dict ->
-            case ccrArgumentsInKind dta of
-                Dict ->
-                    case ccrArgumentInKind stb of
-                        Dict ->
-                            case applyFunctionKindWitness kwa sta of
-                                Dict ->
-                                    case applyFunctionKindWitness kwb stb of
-                                        Dict ->
-                                            case applyFunctionKindWitness kwa stb of
-                                                Dict ->
-                                                    case ccrVarianceCoercibleKind svt of
-                                                        Dict ->
-                                                            case dolanVarianceInCategory @pshim dvt of
-                                                                Dict -> do
-                                                                    sfunc <-
-                                                                        subtypeVariance @_ @_ @_ @pola @polb sc sta stb
-                                                                    f <- subtypeArguments sc dvt dvma dvmb dta dtb
-                                                                    pure $ \conv ->
-                                                                        case (getRepWitness kwa, getRepWitness kwb) of
-                                                                            (Dict, Dict) ->
-                                                                                f
-                                                                                    (applyPolyShim
-                                                                                         svt
-                                                                                         ccrva
-                                                                                         ccrvb
-                                                                                         conv
-                                                                                         sfunc)
+            case dolanVarianceCategory @pshim dvt of
+                Dict -> do
+                    sfunc <- subtypeVariance @_ @_ @_ @pola @polb sc sta stb
+                    f <- subtypeArguments sc dvt dvma dvmb dta dtb
+                    pure $ \conv -> f (applyPolyShim svt ccrva ccrvb conv sfunc)
 
 subtypeDolanArguments ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) solver pola polb dv gt argsa argsb.
        ( IsDolanGroundType ground
-       , DolanVarianceInCategory pshim
+       , DolanVarianceCategory pshim
        , Applicative solver
        , Is PolarityType pola
        , Is PolarityType polb
@@ -117,10 +95,8 @@ subtypeDolanArguments ::
 subtypeDolanArguments sc gt argsa argsb = let
     dvt = groundTypeVarianceType gt
     dvm = groundTypeVarianceMap gt
-    in case dolanVarianceInKind dvt @gt of
-           Dict ->
-               case dolanVarianceInCategory @pshim dvt of
-                   Dict -> fmap (\f -> f cid) $ subtypeArguments sc dvt dvm dvm argsa argsb
+    in case dolanVarianceCategory @pshim dvt of
+           Dict -> fmap (\f -> f id) $ subtypeArguments sc dvt dvm dvm argsa argsb
 
 type DebugIsDolanGroundType :: GroundTypeKind -> Constraint
 class ( IsDolanGroundType ground
@@ -167,7 +143,7 @@ class IsDolanGroundType ground => IsDolanSubtypeGroundType ground where
                 Just (MkSubtypeConversion sconv) -> sconv sc argsa
                 Nothing -> lift $ throwGroundTypeConvertError ta tb
         in wbind margswit $ \(MkSubtypeArguments argsb' sargsconv) ->
-               (<.>) <$> subtypeDolanArguments sc tb argsb' argsb <*> sargsconv
+               (.) <$> subtypeDolanArguments sc tb argsb' argsb <*> sargsconv
     tackOnTypeConvertError ::
            (Is PolarityType pola, Is PolarityType polb)
         => DolanType ground pola ta
@@ -197,26 +173,22 @@ simpleSubtypeConversion conv =
 
 generateVarType ::
        forall (ground :: GroundTypeKind) polarity. Monad (DolanM ground)
-    => DolanTypeCheckM ground (AnyInKind (DolanType ground polarity))
+    => DolanTypeCheckM ground (AnyW (DolanType ground polarity))
 generateVarType = do
     n <- renamerGenerate FreeName []
     MkAnyVar v <- return $ newUVarAny n
-    return $ MkAnyInKind $ singleDolanType $ VarDolanSingularType v
+    return $ MkAnyW $ singleDolanType $ VarDolanSingularType v
 
 saturateCCRArgument ::
        forall (ground :: GroundTypeKind) polarity sv. Monad (DolanM ground)
     => CCRVarianceType sv
-    -> DolanTypeCheckM ground (AnyInKind (CCRPolarArgument (DolanType ground) polarity sv))
-saturateCCRArgument CoCCRVarianceType = do
-    MkAnyInKind t <- generateVarType
-    return $ MkAnyInKind $ CoCCRPolarArgument t
-saturateCCRArgument ContraCCRVarianceType = do
-    MkAnyInKind t <- generateVarType
-    return $ MkAnyInKind $ ContraCCRPolarArgument t
-saturateCCRArgument RangeCCRVarianceType = do
-    MkAnyInKind ta <- generateVarType
-    MkAnyInKind tb <- generateVarType
-    return $ MkAnyInKind $ RangeCCRPolarArgument ta tb
+    -> DolanTypeCheckM ground (AnyW (CCRPolarArgument (DolanType ground) polarity sv))
+saturateCCRArgument CoCCRVarianceType = generateVarType >>= \(MkAnyW t) -> return $ MkAnyW $ CoCCRPolarArgument t
+saturateCCRArgument ContraCCRVarianceType =
+    generateVarType >>= \(MkAnyW t) -> return $ MkAnyW $ ContraCCRPolarArgument t
+saturateCCRArgument RangeCCRVarianceType =
+    generateVarType >>= \(MkAnyW ta) ->
+        generateVarType >>= \(MkAnyW tb) -> return $ MkAnyW $ RangeCCRPolarArgument ta tb
 
 saturateDolanArguments ::
        forall (ground :: GroundTypeKind) polarity dv gt. Monad (DolanM ground)
@@ -224,7 +196,7 @@ saturateDolanArguments ::
     -> DolanTypeCheckM ground (AnyW (DolanArguments dv (DolanType ground) gt polarity))
 saturateDolanArguments NilListType = return $ MkAnyW NilCCRArguments
 saturateDolanArguments (ConsListType t1 tr) =
-    saturateCCRArgument @ground @polarity t1 >>= \(MkAnyInKind arg) ->
+    saturateCCRArgument @ground @polarity t1 >>= \(MkAnyW arg) ->
         saturateDolanArguments tr >>= \(MkAnyW args) -> return $ MkAnyW $ ConsCCRArguments arg args
 
 saturateGroundType ::
@@ -254,7 +226,7 @@ composeSubtypeConversion (MkSubtypeConversion bc) (MkSubtypeConversion ab) =
     MkSubtypeConversion $ \sc argsa -> do
         MkSubtypeArguments argsb sconvab <- ab sc argsa
         MkSubtypeArguments argsc sconvbc <- bc sc argsb
-        return $ MkSubtypeArguments argsc $ (<.>) <$> sconvbc <*> sconvab
+        return $ MkSubtypeArguments argsc $ (.) <$> sconvbc <*> sconvab
 
 type SubtypeConversionEntry :: GroundTypeKind -> Type
 data SubtypeConversionEntry ground =

@@ -23,7 +23,7 @@ mergeIn1SingularType ::
 mergeIn1SingularType ts NilDolanType = mkPolarShimWit $ ConsDolanType ts NilDolanType
 mergeIn1SingularType (VarDolanSingularType vn1) (ConsDolanType (VarDolanSingularType vn2) tr)
     | Just Refl <- testEquality vn1 vn2 =
-        mapPolarShimWit (polarF polar1 cid) $ mergeIn1SingularType (VarDolanSingularType vn1) tr
+        mapPolarShimWit (polarF polar1 id) $ mergeIn1SingularType (VarDolanSingularType vn1) tr
 mergeIn1SingularType ts (ConsDolanType t1 tr) =
     case mergeIn1SingularType ts tr of
         MkShimWit tsr conv ->

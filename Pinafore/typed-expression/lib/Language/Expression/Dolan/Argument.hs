@@ -8,10 +8,6 @@ type CCRArgumentKind = forall (sv :: CCRVariance) -> CCRVarianceKind sv -> Type
 
 class IsCCRArg (w :: CCRArgumentKind) where
     ccrArgumentType :: forall (sv :: CCRVariance) (t :: CCRVarianceKind sv). w sv t -> CCRVarianceType sv
-    ccrArgumentInKind ::
-           forall (sv :: CCRVariance) (t :: CCRVarianceKind sv).
-           w sv t
-        -> Dict (Representative (KindWitness (CCRVarianceKind sv)), InKind t)
     ccrArgumentTestEquality ::
            forall (sv :: CCRVariance) (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv).
            w sv a
@@ -33,9 +29,6 @@ instance forall ft polarity. (TestEquality (ft 'Positive), TestEquality (ft 'Neg
     ccrArgumentType (CoCCRPolarArgument _) = CoCCRVarianceType
     ccrArgumentType (ContraCCRPolarArgument _) = ContraCCRVarianceType
     ccrArgumentType (RangeCCRPolarArgument _ _) = RangeCCRVarianceType
-    ccrArgumentInKind (CoCCRPolarArgument _) = Dict
-    ccrArgumentInKind (ContraCCRPolarArgument _) = Dict
-    ccrArgumentInKind (RangeCCRPolarArgument _ _) = Dict
     ccrArgumentTestEquality (CoCCRPolarArgument arg1) (CoCCRPolarArgument arg2) =
         case polarityType @polarity of
             PositiveType -> testEquality arg1 arg2
@@ -112,11 +105,6 @@ type family SVJoinMeetType sv polarity a b where
     SVJoinMeetType ContraCCRVariance polarity a b = JoinMeetType (InvertPolarity polarity) a b
     SVJoinMeetType 'RangeCCRVariance polarity a b = '( JoinMeetType (InvertPolarity polarity) (Contra a) (Contra b), JoinMeetType polarity (Co a) (Co b))
 
-svJoinMeetTypeInKind :: forall sv polarity a b. CCRVarianceType sv -> Dict (InKind (SVJoinMeetType sv polarity a b))
-svJoinMeetTypeInKind CoCCRVarianceType = Dict
-svJoinMeetTypeInKind ContraCCRVarianceType = Dict
-svJoinMeetTypeInKind RangeCCRVarianceType = Dict
-
 mergeCCRPolarArgumentShimWit ::
        forall m shim fta ftb ftab sv polarity ta tb. (Monad m, Is PolarityType polarity)
     => (forall polarity' ta' tb'.
@@ -139,25 +127,23 @@ mergeCCRPolarArgumentShimWit f (RangeCCRPolarArgument tpa tqa) (RangeCCRPolarArg
         return $ MkShimWit (RangeCCRPolarArgument tpab tqab) $ mkRangevariantPolarMap convp convq
 
 ccrPolar1 ::
-       forall shim polarity sv a b.
-       (JoinMeetCategory shim, Is PolarityType polarity, InCCRVarianceKind sv a, InCCRVarianceKind sv b)
+       forall shim polarity sv a b. (JoinMeetCategory shim, Is PolarityType polarity)
     => CCRVarianceType sv
     -> PolarVarianceMap shim polarity sv a (SVJoinMeetType sv polarity a b)
 ccrPolar1 CoCCRVarianceType = polar1
 ccrPolar1 ContraCCRVarianceType = invertPolarity @polarity $ mkContravariantPolarMap polar1
 ccrPolar1 RangeCCRVarianceType =
     invertPolarity @polarity $
-    case (inKind @_ @a, inKind @_ @b) of
-        (MkPairWitness, MkPairWitness) -> mkRangevariantPolarMap polar1 polar1
+    case (typeIsPair @_ @_ @a, typeIsPair @_ @_ @b) of
+        (Refl, Refl) -> mkRangevariantPolarMap polar1 polar1
 
 ccrPolar2 ::
-       forall shim polarity sv a b.
-       (JoinMeetCategory shim, Is PolarityType polarity, InCCRVarianceKind sv a, InCCRVarianceKind sv b)
+       forall shim polarity sv a b. (JoinMeetCategory shim, Is PolarityType polarity)
     => CCRVarianceType sv
     -> PolarVarianceMap shim polarity sv b (SVJoinMeetType sv polarity a b)
 ccrPolar2 CoCCRVarianceType = polar2
 ccrPolar2 ContraCCRVarianceType = invertPolarity @polarity $ mkContravariantPolarMap polar2
 ccrPolar2 RangeCCRVarianceType =
     invertPolarity @polarity $
-    case (inKind @_ @a, inKind @_ @b) of
-        (MkPairWitness, MkPairWitness) -> mkRangevariantPolarMap polar2 polar2
+    case (typeIsPair @_ @_ @a, typeIsPair @_ @_ @b) of
+        (Refl, Refl) -> mkRangevariantPolarMap polar2 polar2

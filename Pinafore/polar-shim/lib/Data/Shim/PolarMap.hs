@@ -31,24 +31,6 @@ instance forall polarity k (shim :: ShimKind k). (Is PolarityType polarity, Grou
             PositiveType -> \(MkPolarMap p) -> MkPolarMap $ invert p
             NegativeType -> \(MkPolarMap p) -> MkPolarMap $ invert p
 
-instance forall polarity k (shim :: ShimKind k). (Is PolarityType polarity, InCategory shim) =>
-             InCategory (PolarMap shim polarity) where
-    cid =
-        case polarityType @polarity of
-            PositiveType -> MkPolarMap cid
-            NegativeType -> MkPolarMap cid
-    (<.>) =
-        case polarityType @polarity of
-            PositiveType -> \(MkPolarMap p) (MkPolarMap q) -> MkPolarMap $ p <.> q
-            NegativeType -> \(MkPolarMap p) (MkPolarMap q) -> MkPolarMap $ q <.> p
-
-instance forall polarity k (shim :: ShimKind k). (Is PolarityType polarity, InGroupoid shim) =>
-             InGroupoid (PolarMap shim polarity) where
-    cinvert =
-        case polarityType @polarity of
-            PositiveType -> \(MkPolarMap p) -> MkPolarMap $ cinvert p
-            NegativeType -> \(MkPolarMap p) -> MkPolarMap $ cinvert p
-
 invertPolarMap ::
        forall polarity k (shim :: ShimKind k) (a :: k) (b :: k). Is PolarityType polarity
     => PolarMap shim polarity a b
@@ -107,7 +89,7 @@ lazyPolarMap (MkPolarMap ab) =
 
 isoPolarMapShim ::
        forall polarity k (shim :: ShimKind k) (pa :: k) (pb :: k) (qa :: k) (qb :: k).
-       (Is PolarityType polarity, IsoMapShim shim, InKind pa, InKind pb, InKind qa, InKind qb)
+       (Is PolarityType polarity, IsoMapShim shim)
     => String
     -> (KindFunction pa pb -> KindFunction qa qb)
     -> (KindFunction pb pa -> KindFunction qb qa)

@@ -69,9 +69,6 @@ instance IsCCRArg TParam where
     ccrArgumentType (CoTParam _) = CoCCRVarianceType
     ccrArgumentType (ContraTParam _) = ContraCCRVarianceType
     ccrArgumentType (RangeTParam _ _) = RangeCCRVarianceType
-    ccrArgumentInKind (CoTParam _) = Dict
-    ccrArgumentInKind (ContraTParam _) = Dict
-    ccrArgumentInKind (RangeTParam _ _) = Dict
     ccrArgumentTestEquality (CoTParam arg1) (CoTParam arg2) = do
         Refl <- testEquality arg1 arg2
         return Refl
@@ -163,28 +160,17 @@ lazyCCRVariation ::
     -> CCRVariation sv f
 lazyCCRVariation _ dvt ~(MkCCRVariation _mr mp) = MkCCRVariation Nothing $ \ab -> lazyKindMorphism dvt $ mp ab
 
-lazyFunctionKindWitness ::
-       DolanVarianceType dv -> KindWitness (DolanVarianceKind dv) f -> KindWitness (DolanVarianceKind dv) f
-lazyFunctionKindWitness NilListType _ = MkNoWitness
-lazyFunctionKindWitness (ConsListType _ dvt) (MkFunctionKindWitness f) =
-    MkFunctionKindWitness $ lazyFunctionKindWitness dvt f
-
 lazyDolanVarianceMap :: DolanVarianceType dv -> DolanVarianceMap dv t -> DolanVarianceMap dv t
 lazyDolanVarianceMap NilListType _cdvm = NilDolanVarianceMap
 lazyDolanVarianceMap (ConsListType svt dvt) cdvm =
-    case dolanVarianceInKind dvt of
-        Dict ->
-            ConsDolanVarianceMap
-                (lazyFunctionKindWitness (ConsListType svt dvt) $
-                 case cdvm of
-                     ConsDolanVarianceMap kw _ _ -> kw)
-                (lazyCCRVariation svt dvt $
-                 case cdvm of
-                     ConsDolanVarianceMap _ ccrv _ -> ccrv) $
-            lazyDolanVarianceMap
-                dvt
-                (case cdvm of
-                     ConsDolanVarianceMap _ _ dv -> dv)
+    ConsDolanVarianceMap
+        (lazyCCRVariation svt dvt $
+         case cdvm of
+             ConsDolanVarianceMap ccrv _ -> ccrv) $
+    lazyDolanVarianceMap
+        dvt
+        (case cdvm of
+             ConsDolanVarianceMap _ dv -> dv)
 
 makeDataTypeBox ::
        Name

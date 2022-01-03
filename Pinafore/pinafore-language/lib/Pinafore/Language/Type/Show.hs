@@ -34,7 +34,7 @@ saturatedGroundTypeShowPrec avar gt = let
     singleVarArgument ::
            forall polarity sv r. Is PolarityType polarity
         => CCRVarianceType sv
-        -> (forall a. InKind a => CCRPolarArgument w polarity sv a -> r)
+        -> (forall a. CCRPolarArgument w polarity sv a -> r)
         -> r
     singleVarArgument CoCCRVarianceType call =
         case avar of

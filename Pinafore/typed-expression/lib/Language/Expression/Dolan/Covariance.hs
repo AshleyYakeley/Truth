@@ -12,12 +12,6 @@ data CovaryMap f where
         => (forall (a :: Type). CovaryMap (f a))
         -> CovaryMap f
 
-covaryMapInKind :: forall k (f :: k). CovaryMap f -> Dict (InKind f)
-covaryMapInKind NilCovaryMap = Dict
-covaryMapInKind (ConsCovaryMap cvm) =
-    case covaryMapInKind cvm of
-        Dict -> Dict
-
 type HasCovaryMap :: forall k. k -> Constraint
 class HasCovaryMap f where
     covarymap :: CovaryMap f
@@ -56,21 +50,16 @@ covaryToDolanVarianceMap ::
        forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). CovaryType dv -> CovaryMap f -> DolanVarianceMap dv f
 covaryToDolanVarianceMap NilListType NilCovaryMap = NilDolanVarianceMap
 covaryToDolanVarianceMap (ConsListType Refl ml) (ConsCovaryMap vr) =
-    ConsDolanVarianceMap representative ccrVariation $ covaryToDolanVarianceMap ml vr
+    ConsDolanVarianceMap ccrVariation $ covaryToDolanVarianceMap ml vr
 
-covaryCoercibleKind ::
-       forall dv.
-       CovaryType dv
-    -> Dict (Representative (KindWitness (DolanVarianceKind dv)), CoercibleKind (DolanVarianceKind dv))
+covaryCoercibleKind :: forall dv. CovaryType dv -> Dict (CoercibleKind (DolanVarianceKind dv))
 covaryCoercibleKind NilListType = Dict
 covaryCoercibleKind (ConsListType Refl ml) =
     case covaryCoercibleKind ml of
         Dict -> Dict
 
 covaryKMCategory ::
-       forall (pmap :: PolyShimKind) dv. DolanVarianceInCategory pmap
+       forall (pmap :: PolyShimKind) dv. DolanVarianceCategory pmap
     => CovaryType dv
-    -> Dict ( Representative (KindWitness (DolanVarianceKind dv))
-            , CoercibleKind (DolanVarianceKind dv)
-            , InCategory (pmap (DolanVarianceKind dv)))
-covaryKMCategory lc = dolanVarianceInCategory @pmap $ covaryToDolanVarianceType lc
+    -> Dict (CoercibleKind (DolanVarianceKind dv), Category (pmap (DolanVarianceKind dv)))
+covaryKMCategory lc = dolanVarianceCategory @pmap $ covaryToDolanVarianceType lc

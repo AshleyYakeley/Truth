@@ -121,7 +121,7 @@ patternAbstractSealedExpression ::
 patternAbstractSealedExpression (MkSealedPattern vwt pat) (MkSealedExpression twt expr) =
     patternAbstractUnifyExpression @ts pat expr $ \uconv uexpr' ->
         return $
-        MkPatternResult (mapPosShimWit (applf cid uconv) $ uuLiftPosShimWit twt) $
+        MkPatternResult (mapPosShimWit (applf id uconv) $ uuLiftPosShimWit twt) $
         (fmap $ fmap $ \(pa, ()) -> BothMeetType id pa) $ MkAbstractResult (uuLiftNegShimWit vwt) uexpr'
 
 type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)

@@ -17,32 +17,25 @@ catRangeCo (MkCatRange _ s) = s
 instance (forall a b. Show (shim a b)) => Show (CatRange shim a' b') where
     show (MkCatRange p q) = "(" <> show p <> "," <> show q <> ")"
 
-coCatRange :: InCategory shim => shim q1 q2 -> CatRange shim '( p, q1) '( p, q2)
-coCatRange qq = MkCatRange cid qq
+coCatRange :: Category shim => shim q1 q2 -> CatRange shim '( p, q1) '( p, q2)
+coCatRange qq = MkCatRange id qq
 
-contraCatRange :: InCategory shim => shim p2 p1 -> CatRange shim '( p1, q) '( p2, q)
-contraCatRange pp = MkCatRange pp cid
+contraCatRange :: Category shim => shim p2 p1 -> CatRange shim '( p1, q) '( p2, q)
+contraCatRange pp = MkCatRange pp id
 
-instance InCategory shim => InCategory (CatRange shim) where
-    cid :: forall a. InKind a
-        => CatRange shim a a
-    cid =
-        case inKind @_ @a of
-            MkPairWitness -> MkCatRange cid cid
-    (<.>) ::
-           forall a b c. (InKind a, InKind b, InKind c)
-        => CatRange shim b c
-        -> CatRange shim a b
-        -> CatRange shim a c
-    MkCatRange pa qa <.> MkCatRange pb qb =
-        case (inKind @_ @a, inKind @_ @b, inKind @_ @c) of
-            (MkPairWitness, MkPairWitness, MkPairWitness) -> MkCatRange (pb <.> pa) (qa <.> qb)
+instance Category shim => Category (CatRange shim) where
+    id :: forall a. CatRange shim a a
+    id =
+        case typeIsPair @_ @_ @a of
+            Refl -> MkCatRange id id
+    (.) :: forall a b c. CatRange shim b c -> CatRange shim a b -> CatRange shim a c
+    MkCatRange pa qa . MkCatRange pb qb = MkCatRange (pb . pa) (qa . qb)
 
-instance InGroupoid cat => InGroupoid (CatRange cat) where
-    cinvert (MkCatRange p q) = MkCatRange (cinvert p) (cinvert q)
+instance Groupoid cat => Groupoid (CatRange cat) where
+    invert (MkCatRange p q) = MkCatRange (invert p) (invert q)
 
-catRangeMap :: InCategory shim => CatRange shim a b -> Range shim t a -> Range shim t b
-catRangeMap (MkCatRange pp qq) (MkRange pt tq) = MkRange (pt <.> pp) (qq <.> tq)
+catRangeMap :: Category shim => CatRange shim a b -> Range shim t a -> Range shim t b
+catRangeMap (MkCatRange pp qq) (MkRange pt tq) = MkRange (pt . pp) (qq . tq)
 
 liftCatRangeParts :: Functor f => CatRange (->) '( pa, qa) '( pb, qb) -> CatRange (->) '( f pa, f qa) '( f pb, f qb)
 liftCatRangeParts (MkCatRange pp qq) = MkCatRange (cfmap pp) (cfmap qq)
@@ -56,9 +49,6 @@ instance (TestEquality (tw polarity), TestEquality (tw (InvertPolarity polarity)
         Refl <- testEquality pa pb
         Refl <- testEquality qa qb
         return Refl
-
-rangeTypeInKind :: forall tw polarity. Subrepresentative (RangeType tw polarity) (KindWitness (Type, Type))
-rangeTypeInKind (MkRangeType _ _) = Dict
 
 rangeToEnhanced :: FunctionShim shim => CatRange (->) a b -> CatRange shim a b
 rangeToEnhanced (MkCatRange p q) = MkCatRange (functionToShim "range-map" p) (functionToShim "range-map" q)

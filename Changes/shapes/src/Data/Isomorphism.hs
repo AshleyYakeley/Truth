@@ -16,13 +16,6 @@ data Isomorphism (cat :: k -> k -> Type) (a :: k) (b :: k) = MkIsomorphism
 
 type Bijection = Isomorphism (->)
 
-instance InCategory cat => InCategory (Isomorphism cat) where
-    cid = MkIsomorphism cid cid
-    (MkIsomorphism p1 q1) <.> (MkIsomorphism p2 q2) = MkIsomorphism (p1 <.> p2) (q2 <.> q1)
-
-instance InCategory cat => InGroupoid (Isomorphism cat) where
-    cinvert (MkIsomorphism ab ba) = MkIsomorphism ba ab
-
 instance Category cat => Category (Isomorphism cat) where
     id = MkIsomorphism id id
     (MkIsomorphism p1 q1) . (MkIsomorphism p2 q2) = MkIsomorphism (p1 . p2) (q2 . q1)
@@ -71,16 +64,12 @@ strictBytestringBijection = MkIsomorphism toStrict fromStrict
 
 class HasKindMorphism (k :: Type) where
     kindMorphismMapCat ::
-           forall (cat1 :: Type -> Type -> Type) (cat2 :: Type -> Type -> Type) (a :: k) (b :: k).
-           (Category cat1, Category cat2)
+           forall (cat1 :: Type -> Type -> Type) (cat2 :: Type -> Type -> Type). (Category cat1, Category cat2)
         => (forall p q. cat1 p q -> cat2 p q)
-        -> KindMorphism cat1 a b
-        -> KindMorphism cat2 a b
+        -> forall (a :: k) (b :: k). KindMorphism cat1 a b -> KindMorphism cat2 a b
     mkKindIsomorphism ::
-           forall (cat :: Type -> Type -> Type) (a :: k) (b :: k). Category cat
-        => KindMorphism cat a b
-        -> KindMorphism cat b a
-        -> KindIsomorphism cat a b
+           forall (cat :: Type -> Type -> Type). Category cat
+        => forall (a :: k) (b :: k). KindMorphism cat a b -> KindMorphism cat b a -> KindIsomorphism cat a b
 
 type KindIsomorphism (cat :: Type -> Type -> Type) = KindMorphism (Isomorphism cat)
 
@@ -93,10 +82,9 @@ instance HasKindMorphism Type where
 instance HasKindMorphism kq => HasKindMorphism (kp -> kq) where
     kindMorphismMapCat ab (MkNestedMorphism a) = MkNestedMorphism $ kindMorphismMapCat ab a
     mkKindIsomorphism ::
-           forall cat (a :: kp -> kq) (b :: kp -> kq). Category cat
-        => KindMorphism cat a b
-        -> KindMorphism cat b a
-        -> KindIsomorphism cat a b
+           forall (cat :: Type -> Type -> Type). Category cat
+        => forall (a :: kp -> kq) (b :: kp -> kq).
+                   KindMorphism cat a b -> KindMorphism cat b a -> KindIsomorphism cat a b
     mkKindIsomorphism (MkNestedMorphism ab) (MkNestedMorphism ba) = MkNestedMorphism $ mkKindIsomorphism @_ @cat ab ba
 
 instance HasKindMorphism Constraint where

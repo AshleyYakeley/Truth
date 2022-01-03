@@ -1,9 +1,7 @@
 module Data.KindMorphism where
 
-import Control.Category.Dual
-import Control.Category.Groupoid
-import Data.Witness.Kind
 import Shapes.Import
+import Unsafe.Refl
 
 type family KindMorphism (cat :: Type -> Type -> Type) :: k -> k -> Type
 
@@ -12,7 +10,7 @@ type instance KindMorphism cat = cat
 type KindFunction = KindMorphism (->)
 
 newtype NestedMorphism (cat :: Type -> Type -> Type) (a :: kp -> kq) (b :: kp -> kq) = MkNestedMorphism
-    { unNestedMorphism :: forall (p :: kp). InKind p => KindMorphism cat (a p) (b p)
+    { unNestedMorphism :: forall (p :: kp). KindMorphism cat (a p) (b p)
     }
 
 instance Category (KindMorphism cat :: kq -> kq -> Type) =>
@@ -31,67 +29,28 @@ instance Category cat => Category (ConstraintMorphism cat) where
     id = MkConstraintMorphism id
     (MkConstraintMorphism f) . (MkConstraintMorphism g) = MkConstraintMorphism $ f . g
 
-data PairMorphism (cat :: Type -> Type -> Type) (a :: (kp, kq)) (b :: (kp, kq)) where
-    MkPairMorphism :: KindMorphism cat pa pb -> KindMorphism cat qa qb -> PairMorphism cat '( pa, qa) '( pb, qb)
+type family Fst (a :: (kp, kq)) :: kp where
+    Fst '( p, q) = p
 
-instance (InCategory (KindMorphism cat :: kp -> kp -> Type), InCategory (KindMorphism cat :: kq -> kq -> Type)) =>
-             InCategory (PairMorphism cat :: (kp, kq) -> (kp, kq) -> Type) where
-    cid :: forall (a :: (kp, kq)). InKind a
-        => PairMorphism cat a a
-    cid =
-        case inKind @_ @a of
-            MkPairWitness -> MkPairMorphism cid cid
-    (<.>) ::
-           forall (a :: (kp, kq)) (b :: (kp, kq)) (c :: (kp, kq)). (InKind a, InKind b, InKind c)
-        => PairMorphism cat b c
+type family Snd (a :: (kp, kq)) :: kq where
+    Snd '( p, q) = q
+
+typeIsPair :: forall kp kq (a :: (kp, kq)). a :~: '( Fst a, Snd a)
+typeIsPair = unsafeRefl @(kp, kq) @a @'( Fst a, Snd a)
+
+type PairMorphism :: (Type -> Type -> Type) -> forall kp kq. (kp, kq) -> (kp, kq) -> Type
+data PairMorphism cat a b =
+    MkPairMorphism (KindMorphism cat (Fst a) (Fst b))
+                   (KindMorphism cat (Snd a) (Snd b))
+
+instance (Category (KindMorphism cat :: kp -> kp -> Type), Category (KindMorphism cat :: kq -> kq -> Type)) =>
+             Category (PairMorphism cat :: (kp, kq) -> (kp, kq) -> Type) where
+    id :: forall (a :: (kp, kq)). PairMorphism cat a a
+    id = MkPairMorphism id id
+    (.) :: forall (a :: (kp, kq)) (b :: (kp, kq)) (c :: (kp, kq)).
+           PairMorphism cat b c
         -> PairMorphism cat a b
         -> PairMorphism cat a c
-    (MkPairMorphism fp fq) <.> (MkPairMorphism gp gq) =
-        case (inKind @_ @a, inKind @_ @b, inKind @_ @c) of
-            (MkPairWitness, MkPairWitness, MkPairWitness) -> MkPairMorphism (fp <.> gp) (fq <.> gq)
+    (MkPairMorphism fp fq) . (MkPairMorphism gp gq) = MkPairMorphism (fp . gp) (fq . gq)
 
 type instance KindMorphism cat = PairMorphism cat
-
-class InCategory (cat :: k -> k -> Type) where
-    cid :: InKind a => cat a a
-    default cid :: Category cat => cat a a
-    cid = id
-    (<.>) :: (InKind a, InKind b, InKind c) => cat b c -> cat a b -> cat a c
-    default (<.>) :: Category cat => cat b c -> cat a b -> cat a c
-    (<.>) = (.)
-
-instance InCategory (->)
-
-instance InCategory (:~:)
-
-instance InCategory (:~~:)
-
-instance (Representative (KindWitness kq), InCategory (KindMorphism cat :: kq -> kq -> Type)) =>
-             InCategory (NestedMorphism cat :: (kp -> kq) -> (kp -> kq) -> Type) where
-    cid :: forall (a :: kp -> kq). InKind a
-        => NestedMorphism cat a a
-    cid = functionKindWitness (inKind @_ @a) $ MkNestedMorphism cid
-    (<.>) ::
-           forall (a :: kp -> kq) (b :: kp -> kq) (c :: kp -> kq). (InKind a, InKind b, InKind c)
-        => NestedMorphism cat b c
-        -> NestedMorphism cat a b
-        -> NestedMorphism cat a c
-    (MkNestedMorphism f) <.> (MkNestedMorphism g) =
-        functionKindWitness (inKind @_ @a) $
-        functionKindWitness (inKind @_ @b) $ functionKindWitness (inKind @_ @c) $ MkNestedMorphism $ f <.> g
-
-instance InCategory cat => InCategory (CatDual cat) where
-    cid = MkCatDual cid
-    MkCatDual cb <.> MkCatDual ba = MkCatDual $ ba <.> cb
-
-class InCategory cat => InGroupoid (cat :: k -> k -> Type) where
-    cinvert ::
-           forall (a :: k) (b :: k). (InKind a, InKind b)
-        => cat a b
-        -> cat b a
-    default cinvert :: Groupoid cat => cat a b -> cat b a
-    cinvert = invert
-
-instance InGroupoid (:~:)
-
-instance InGroupoid (:~~:)

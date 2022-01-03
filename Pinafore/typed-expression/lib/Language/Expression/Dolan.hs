@@ -21,8 +21,7 @@ module Language.Expression.Dolan
     , DolanVarianceKind
     , DolanVarianceType
     , DolanVarianceMap(..)
-    , DolanVarianceInCategory(..)
-    , dolanVarianceInKind
+    , DolanVarianceCategory(..)
     , HasDolanVariance(..)
     , CovaryType
     , covaryCoercibleKind
@@ -49,7 +48,6 @@ module Language.Expression.Dolan
     , CCRPolarArgument(..)
     , CCRArguments(..)
     , ccrArgumentsType
-    , ccrArgumentsInKind
     , mapCCRArguments
     , DolanArguments
     , DolanArgumentsShimWit

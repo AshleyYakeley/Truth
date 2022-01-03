@@ -18,27 +18,20 @@ instance Category Coercion where
     id = MkCoercion
     MkCoercion . MkCoercion = MkCoercion
 
-instance InCategory Coercion
-
 instance Groupoid Coercion where
     invert MkCoercion = MkCoercion
 
-instance InGroupoid Coercion
-
-class (HasKindMorphism k, InCategory (KindFunction :: k -> k -> Type)) => CoercibleKind k where
-    coercionToKindMorphism ::
-           forall (a :: k) (b :: k). (InKind a, InKind b)
-        => Coercion a b
-        -> KindMorphism Coercion a b
+class (HasKindMorphism k, Category (KindFunction :: k -> k -> Type)) => CoercibleKind k where
+    coercionToKindMorphism :: forall (a :: k) (b :: k). Coercion a b -> KindMorphism Coercion a b
 
 coercionToFunction ::
-       forall k (a :: k) (b :: k). (CoercibleKind k, InKind a, InKind b)
+       forall k (a :: k) (b :: k). (CoercibleKind k)
     => Coercion a b
     -> KindFunction a b
 coercionToFunction c = kindMorphismMapCat @_ @Coercion @(->) (\MkCoercion -> coerce) $ coercionToKindMorphism c
 
 applyCoercion1 ::
-       forall f g a b. (InKind a, InKind b, RepresentationalRole f)
+       forall f g a b. (RepresentationalRole f)
     => Coercion f g
     -> Coercion a b
     -> Coercion (f a) (g b)
@@ -47,7 +40,7 @@ applyCoercion1 MkCoercion cab =
         MkCoercion -> MkCoercion
 
 applyCoercion2 ::
-       forall f g a b. (InKind a, InKind b, RepresentationalRole g)
+       forall f g a b. (RepresentationalRole g)
     => Coercion f g
     -> Coercion a b
     -> Coercion (f a) (g b)
@@ -59,13 +52,13 @@ coerceCoercion :: (Coercible a1 a2, Coercible b1 b2) => Coercion a1 b1 -> Coerci
 coerceCoercion c = MkCoercion . c . MkCoercion
 
 coerce' ::
-       forall k (a :: k) (b :: k). (CoercibleKind k, InKind a, InKind b)
+       forall k (a :: k) (b :: k). (CoercibleKind k)
     => Coercible a b => KindFunction a b
 coerce' = coercionToFunction MkCoercion
 
 coerceIsomorphism ::
        forall k (cat :: k -> k -> Type) (a :: k) (b :: k).
-       (Category cat, InKind a, InKind b, RepresentationalRole (cat a), RepresentationalRole (cat b), Coercible a b)
+       (Category cat, RepresentationalRole (cat a), RepresentationalRole (cat b), Coercible a b)
     => Isomorphism cat a b
 coerceIsomorphism =
     MkIsomorphism
@@ -84,30 +77,18 @@ isoCoerce = isoMap coerce coerce
 instance CoercibleKind Type where
     coercionToKindMorphism c = c
 
-instance (Representative (KindWitness kq), CoercibleKind kq) => CoercibleKind (kp -> kq) where
-    coercionToKindMorphism ::
-           forall (a :: kp -> kq) (b :: kp -> kq). (InKind a, InKind b)
-        => Coercion a b
-        -> NestedMorphism Coercion a b
-    coercionToKindMorphism MkCoercion =
-        functionKindWitness (inKind @_ @a) $
-        functionKindWitness (inKind @_ @b) $ MkNestedMorphism $ coercionToKindMorphism MkCoercion
+instance (CoercibleKind kq) => CoercibleKind (kp -> kq) where
+    coercionToKindMorphism :: forall (a :: kp -> kq) (b :: kp -> kq). Coercion a b -> NestedMorphism Coercion a b
+    coercionToKindMorphism MkCoercion = MkNestedMorphism $ coercionToKindMorphism MkCoercion
 
 instance (CoercibleKind kp, CoercibleKind kq) => CoercibleKind (kp, kq) where
-    coercionToKindMorphism ::
-           forall (a :: (kp, kq)) (b :: (kp, kq)). (InKind a, InKind b)
-        => Coercion a b
-        -> KindMorphism Coercion a b
+    coercionToKindMorphism :: forall (a :: (kp, kq)) (b :: (kp, kq)). Coercion a b -> KindMorphism Coercion a b
     coercionToKindMorphism MkCoercion =
-        case (inKind @_ @a, inKind @_ @b) of
-            (MkPairWitness, MkPairWitness) ->
-                MkPairMorphism (coercionToKindMorphism MkCoercion) (coercionToKindMorphism MkCoercion)
+        case (typeIsPair @_ @_ @a, typeIsPair @_ @_ @b) of
+            (Refl, Refl) -> MkPairMorphism (coercionToKindMorphism MkCoercion) (coercionToKindMorphism MkCoercion)
 
 class RepresentationalRole (f :: kp -> kq) where
-    representationalCoercion ::
-           forall (a :: kp) (b :: kp). (InKind a, InKind b)
-        => Coercion a b
-        -> Coercion (f a) (f b)
+    representationalCoercion :: forall (a :: kp) (b :: kp). Coercion a b -> Coercion (f a) (f b)
 
 class RepresentationalRole f => PhantomRole (f :: kp -> kq) where
     phantomCoercion :: forall (a :: kp) (b :: kp). Coercion (f a) (f b)

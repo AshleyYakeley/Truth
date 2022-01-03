@@ -6,7 +6,7 @@ import Changes.UI.GTK
 import Pinafore
 import Pinafore.Language.Library.GTK
 import Pinafore.Test
-import Shapes hiding ((<.>))
+import Shapes hiding ((.))
 import Shapes.Test
 import System.FilePath
 

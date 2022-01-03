@@ -163,13 +163,13 @@ instance FromMPolar (MPolarW w mpolarity) where
 
 data MPolarRangeType w mpolarity where
     SingleMPolarRangeType
-        :: Is PolarityType polarity => AnyInKind (RangeType w polarity) -> MPolarRangeType w ('Just polarity)
+        :: Is PolarityType polarity => AnyW (RangeType w polarity) -> MPolarRangeType w ('Just polarity)
     BothMPolarRangeType
-        :: (forall polarity. Is PolarityType polarity => AnyInKind (RangeType w polarity)) -> MPolarRangeType w 'Nothing
+        :: (forall polarity. Is PolarityType polarity => AnyW (RangeType w polarity)) -> MPolarRangeType w 'Nothing
 
 instance ( Is MPolarityType mpolarity
-         , Semigroup (AnyInKind (RangeType w 'Negative))
-         , Semigroup (AnyInKind (RangeType w 'Positive))
+         , Semigroup (AnyW (RangeType w 'Negative))
+         , Semigroup (AnyW (RangeType w 'Positive))
          ) => Semigroup (MPolarRangeType w mpolarity) where
     (<>) =
         case representative @_ @MPolarityType @mpolarity of
@@ -179,17 +179,15 @@ instance ( Is MPolarityType mpolarity
                 \(BothMPolarRangeType a) (BothMPolarRangeType b) ->
                     BothMPolarRangeType $ let
                         x :: forall polarity. Is PolarityType polarity
-                          => AnyInKind (RangeType w polarity)
+                          => AnyW (RangeType w polarity)
                         x =
                             case polarityType @polarity of
                                 PositiveType -> a @polarity <> b @polarity
                                 NegativeType -> a @polarity <> b @polarity
                         in x
 
-instance ( Is MPolarityType mpolarity
-         , Monoid (AnyInKind (RangeType w 'Negative))
-         , Monoid (AnyInKind (RangeType w 'Positive))
-         ) => Monoid (MPolarRangeType w mpolarity) where
+instance (Is MPolarityType mpolarity, Monoid (AnyW (RangeType w 'Negative)), Monoid (AnyW (RangeType w 'Positive))) =>
+             Monoid (MPolarRangeType w mpolarity) where
     mappend = (<>)
     mempty =
         case representative @_ @MPolarityType @mpolarity of
@@ -198,7 +196,7 @@ instance ( Is MPolarityType mpolarity
             MBothType ->
                 BothMPolarRangeType $ let
                     x :: forall polarity. Is PolarityType polarity
-                      => AnyInKind (RangeType w polarity)
+                      => AnyW (RangeType w polarity)
                     x =
                         case polarityType @polarity of
                             PositiveType -> mempty
@@ -209,12 +207,12 @@ type instance ConvertMPolarity (MPolarRangeType w mpolarity) =
      mpolarity
 
 instance ToMPolar (MPolarRangeType w mpolarity) where
-    type ToMPolarConvert (MPolarRangeType w mpolarity) polarity = AnyInKind (RangeType w polarity)
+    type ToMPolarConvert (MPolarRangeType w mpolarity) polarity = AnyW (RangeType w polarity)
     toMPolarSingle = SingleMPolarRangeType
     toMPolarBoth = BothMPolarRangeType
 
 instance FromMPolar (MPolarRangeType w mpolarity) where
-    type FromMPolarConvert (MPolarRangeType w mpolarity) polarity = AnyInKind (RangeType w polarity)
+    type FromMPolarConvert (MPolarRangeType w mpolarity) polarity = AnyW (RangeType w polarity)
     fromMPolarSingle (SingleMPolarRangeType aw) = aw
     fromMPolarBoth (BothMPolarRangeType aw) = aw
 

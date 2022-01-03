@@ -125,7 +125,7 @@ monoidSubypeConversionEntry t =
                            fmap
                                (\conv ->
                                     functionToShim "mconcat" mconcat .
-                                    applyCoPolyShim ccrVariation ccrVariation cid (cshim . conv))
+                                    applyCoPolyShim ccrVariation ccrVariation id (cshim . conv))
                                sconv
 
 mkValPatEntry ::

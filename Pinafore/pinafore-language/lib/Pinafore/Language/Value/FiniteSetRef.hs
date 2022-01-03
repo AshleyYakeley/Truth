@@ -35,7 +35,7 @@ langFiniteSetMaybeMap ::
        forall ap aq b. (aq -> Maybe b) -> LangFiniteSetRef '( ap, aq) -> LangFiniteSetRef '( MeetType ap b, b)
 langFiniteSetMaybeMap f (MkLangFiniteSetRef (tr :: _ t _) lv) = let
     tr' :: Range (PinaforePolyShim Type) (MeetType t b) '( MeetType ap b, b)
-    tr' = MkRange (iMeetPair (rangeContra tr) cid) meet2
+    tr' = MkRange (iMeetPair (rangeContra tr) id) meet2
     amb :: t -> Maybe (MeetType t b)
     amb t = do
         b <- f $ shimToFunction (rangeCo tr) t

@@ -111,7 +111,7 @@ solveRecursiveTypes solvePlainTypes rpta rptb =
                     erconv <- unSolver $ solvePlainTypes pta ptb
                     let
                         fixconv rconv rl = let
-                            conv = convb <.> rconv (lazyFunctionShim conv, rl) <.> conva
+                            conv = convb . rconv (lazyFunctionShim conv, rl) . conva
                             in conv
                     return $ fmap fixconv erconv
 

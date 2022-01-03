@@ -9,7 +9,7 @@ import Changes.World.FileSystem
 import Shapes
 import Soup.Edit
 import Soup.Note
-import System.FilePath hiding ((<.>))
+import System.FilePath
 
 fromResult :: Result Text Text -> (Text, TableCellProps)
 fromResult (SuccessResult "") = ("unnamed", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})

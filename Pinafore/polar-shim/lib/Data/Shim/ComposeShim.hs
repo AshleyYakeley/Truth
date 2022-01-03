@@ -13,11 +13,6 @@ instance forall (m :: Type -> Type) k (shim :: ShimKind k). (Applicative m, Cate
     id = MkComposeShim $ pure id
     MkComposeShim mp . MkComposeShim mq = MkComposeShim $ liftA2 (.) mp mq
 
-instance forall (m :: Type -> Type) k (shim :: ShimKind k). (Applicative m, InCategory shim) =>
-             InCategory (ComposeShim m shim) where
-    cid = MkComposeShim $ pure cid
-    MkComposeShim mp <.> MkComposeShim mq = MkComposeShim $ liftA2 (<.>) mp mq
-
 instance forall (m :: Type -> Type) (shim :: ShimKind Type). (Applicative m, JoinMeetIsoCategory shim) =>
              JoinMeetIsoCategory (ComposeShim m shim) where
     iJoinL1 = MkComposeShim $ pure iJoinL1

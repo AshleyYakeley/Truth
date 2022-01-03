@@ -1,6 +1,5 @@
 module Language.Expression.Dolan.Arguments
     ( CCRArguments(..)
-    , ccrArgumentsInKind
     , ccrArgumentsType
     , mapCCRArgumentsM
     , mapCCRArguments
@@ -46,18 +45,9 @@ ccrArgumentsType ::
 ccrArgumentsType NilCCRArguments = NilListType
 ccrArgumentsType (ConsCCRArguments arg args) = ConsListType (ccrArgumentType arg) (ccrArgumentsType args)
 
-ccrArgumentsInKind ::
-       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (w :: CCRArgumentKind) t.
-       CCRArguments w dv gt t
-    -> Dict (Representative (KindWitness (DolanVarianceKind dv)), InKind t)
-ccrArgumentsInKind NilCCRArguments = Dict
-ccrArgumentsInKind (ConsCCRArguments _ dt) =
-    case ccrArgumentsInKind dt of
-        Dict -> Dict
-
 mapCCRArgumentsFM ::
        forall m (pshim :: PolyShimKind) (wa :: CCRArgumentKind) (wb :: CCRArgumentKind) dv polarity (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) t.
-       (Monad m, DolanVarianceInCategory pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb)
+       (Monad m, DolanVarianceCategory pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb)
     => (forall sv' (t' :: CCRVarianceKind sv'). wa sv' t' -> m (CCRArgumentShimWit (pshim Type) wb polarity sv' t'))
     -> DolanVarianceMap dv gta
     -> DolanVarianceMap dv gtb
@@ -66,48 +56,28 @@ mapCCRArgumentsFM ::
     -> m (PolarShimWit (pshim Type) (CCRArguments wb dv gtb) polarity t)
 mapCCRArgumentsFM _ NilDolanVarianceMap NilDolanVarianceMap NilCCRArguments conv =
     return $ MkShimWit NilCCRArguments conv
-mapCCRArgumentsFM f (ConsDolanVarianceMap kwa ccrva dvma) (ConsDolanVarianceMap kwb ccrvb dvmb) (ConsCCRArguments sta dta) conv = do
+mapCCRArgumentsFM f (ConsDolanVarianceMap ccrva dvma) (ConsDolanVarianceMap ccrvb dvmb) (ConsCCRArguments sta dta) conv = do
     MkShimWit stb svf <- f sta
     let svt = ccrArgumentType sta
-    Dict <- return $ ccrArgumentInKind sta
-    Dict <- return $ ccrArgumentsInKind dta
-    Dict <- return $ ccrArgumentInKind stb
-    Dict <- return $ applyFunctionKindWitness kwa sta
-    Dict <- return $ applyFunctionKindWitness kwb stb
     MkShimWit dtb convb <-
-        case (getRepWitness kwa, getRepWitness kwb) of
-            (Dict, Dict) ->
-                mapCCRArgumentsFM
-                    @m
-                    @pshim
-                    @wa
-                    @wb
-                    @_
-                    @polarity
-                    f
-                    dvma
-                    dvmb
-                    dta
-                    (polarMapTypeApply svt ccrva ccrvb conv svf)
+        mapCCRArgumentsFM @m @pshim @wa @wb @_ @polarity f dvma dvmb dta (polarMapTypeApply svt ccrva ccrvb conv svf)
     return $ MkShimWit (ConsCCRArguments stb dtb) convb
 
 mapCCRArgumentsM ::
        forall m (pshim :: PolyShimKind) (wa :: CCRArgumentKind) (wb :: CCRArgumentKind) dv polarity (gt :: DolanVarianceKind dv) t.
-       (Monad m, DolanVarianceInCategory pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb)
+       (Monad m, DolanVarianceCategory pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb)
     => (forall sv' (t' :: CCRVarianceKind sv'). wa sv' t' -> m (CCRArgumentShimWit (pshim Type) wb polarity sv' t'))
     -> DolanVarianceMap dv gt
     -> CCRArguments wa dv gt t
     -> m (PolarShimWit (pshim Type) (CCRArguments wb dv gt) polarity t)
 mapCCRArgumentsM f dvm args = let
     dvt = ccrArgumentsType args
-    in case dolanVarianceInCategory @pshim dvt of
-           Dict ->
-               case dolanVarianceInKind dvt @gt of
-                   Dict -> mapCCRArgumentsFM f dvm dvm args cid
+    in case dolanVarianceCategory @pshim dvt of
+           Dict -> mapCCRArgumentsFM f dvm dvm args id
 
 mapCCRArguments ::
        forall (pshim :: PolyShimKind) (wa :: CCRArgumentKind) (wb :: CCRArgumentKind) dv polarity (gt :: DolanVarianceKind dv) t.
-       (DolanVarianceInCategory pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb)
+       (DolanVarianceCategory pshim, Is PolarityType polarity, IsCCRArg wa, IsCCRArg wb)
     => (forall sv' (t' :: CCRVarianceKind sv'). wa sv' t' -> CCRArgumentShimWit (pshim Type) wb polarity sv' t')
     -> DolanVarianceMap dv gt
     -> CCRArguments wa dv gt t
@@ -150,7 +120,7 @@ saturateArgsConstraint (ConsSaturatedWitness sw) (ConsCCRArguments _ args) = sat
 mapDolanArgumentsFM ::
        forall m (pshim :: PolyShimKind) fta ftb dv polarity (gt :: DolanVarianceKind dv) (gt' :: DolanVarianceKind dv) t.
        ( Monad m
-       , DolanVarianceInCategory pshim
+       , DolanVarianceCategory pshim
        , Is PolarityType polarity
        , TestEquality (fta 'Positive)
        , TestEquality (fta 'Negative)
@@ -167,11 +137,7 @@ mapDolanArgumentsFM f = mapCCRArgumentsFM $ mapCCRPolarArgumentShimWit f
 
 mapDolanArgumentsF ::
        forall (pshim :: PolyShimKind) ft dv polarity (gt :: DolanVarianceKind dv) (gt' :: DolanVarianceKind dv) t.
-       ( DolanVarianceInCategory pshim
-       , Is PolarityType polarity
-       , TestEquality (ft 'Positive)
-       , TestEquality (ft 'Negative)
-       )
+       (DolanVarianceCategory pshim, Is PolarityType polarity, TestEquality (ft 'Positive), TestEquality (ft 'Negative))
     => DolanVarianceMap dv gt
     -> DolanVarianceMap dv gt'
     -> DolanArguments dv ft gt polarity t
@@ -182,7 +148,7 @@ mapDolanArgumentsF dvma dvmb args f = runIdentity $ mapDolanArgumentsFM (pure . 
 mapDolanArgumentsM ::
        forall m (pshim :: PolyShimKind) fta ftb dv polarity gt t.
        ( Monad m
-       , DolanVarianceInCategory pshim
+       , DolanVarianceCategory pshim
        , Is PolarityType polarity
        , TestEquality (fta 'Positive)
        , TestEquality (fta 'Negative)
@@ -195,14 +161,12 @@ mapDolanArgumentsM ::
     -> m (DolanArgumentsShimWit pshim dv ftb gt polarity t)
 mapDolanArgumentsM f dvm args = let
     dvt = ccrArgumentsType args
-    in case dolanVarianceInCategory @pshim dvt of
-           Dict ->
-               case dolanVarianceInKind dvt @gt of
-                   Dict -> mapDolanArgumentsFM f dvm dvm args cid
+    in case dolanVarianceCategory @pshim dvt of
+           Dict -> mapDolanArgumentsFM f dvm dvm args id
 
 mapDolanArguments ::
        forall (pshim :: PolyShimKind) fta ftb dv polarity gt t.
-       ( DolanVarianceInCategory pshim
+       ( DolanVarianceCategory pshim
        , Is PolarityType polarity
        , TestEquality (fta 'Positive)
        , TestEquality (fta 'Negative)
@@ -218,7 +182,7 @@ mapDolanArguments f dvm args = runIdentity $ mapDolanArgumentsM (\t -> return $ 
 mapInvertArgsTypeF ::
        forall m (pshim :: PolyShimKind) fta ftb dv polarity (gt :: DolanVarianceKind dv) (gt' :: DolanVarianceKind dv) t.
        ( Monad m
-       , DolanVarianceInCategory pshim
+       , DolanVarianceCategory pshim
        , Is PolarityType polarity
        , TestEquality (fta 'Positive)
        , TestEquality (fta 'Negative)
@@ -238,7 +202,7 @@ mapInvertArgsTypeF f dvma dvmb args conv =
 mapInvertDolanArgumentsM ::
        forall m (pshim :: PolyShimKind) fta ftb dv polarity gt t.
        ( Monad m
-       , DolanVarianceInCategory pshim
+       , DolanVarianceCategory pshim
        , Is PolarityType polarity
        , TestEquality (fta 'Positive)
        , TestEquality (fta 'Negative)
@@ -252,15 +216,13 @@ mapInvertDolanArgumentsM ::
     -> m (DolanArgumentsShimWit pshim dv ftb gt (InvertPolarity polarity) t)
 mapInvertDolanArgumentsM f dvm args = let
     dvt = ccrArgumentsType args
-    in case dolanVarianceInCategory @pshim dvt of
-           Dict ->
-               case dolanVarianceInKind dvt @gt of
-                   Dict -> invertPolarity @polarity $ mapInvertArgsTypeF f dvm dvm args cid
+    in case dolanVarianceCategory @pshim dvt of
+           Dict -> invertPolarity @polarity $ mapInvertArgsTypeF f dvm dvm args id
 
 mergeArgsTypeF ::
        forall (m :: Type -> Type) (pshim :: PolyShimKind) (fta :: Polarity -> Type -> Type) (ftb :: Polarity -> Type -> Type) (ftab :: Polarity -> Type -> Type) (dv :: DolanVariance) (polarity :: Polarity) (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) (gtab :: DolanVarianceKind dv) (ta :: Type) (tb :: Type).
        ( Monad m
-       , DolanVarianceInCategory pshim
+       , DolanVarianceCategory pshim
        , JoinMeetCategory (pshim Type)
        , Is PolarityType polarity
        , TestEquality (fta 'Positive)
@@ -282,47 +244,35 @@ mergeArgsTypeF ::
     -> m (DolanArgumentsShimWit pshim dv ftab gtab polarity (JoinMeetType polarity ta tb))
 mergeArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanVarianceMap NilCCRArguments NilCCRArguments conva convb =
     return $ MkShimWit NilCCRArguments $ polarF conva convb
-mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap kwa ccrva dvma) (ConsDolanVarianceMap kwb ccrvb dvmb) (ConsDolanVarianceMap kwab ccrvab dvmab) (ConsCCRArguments (sta :: _ ta0) dta) (ConsCCRArguments (stb :: _ tb0) dtb) conva convb = do
+mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap ccrva dvma) (ConsDolanVarianceMap ccrvb dvmb) (ConsDolanVarianceMap ccrvab dvmab) (ConsCCRArguments (sta :: _ ta0) dta) (ConsCCRArguments (stb :: _ tb0) dtb) conva convb = do
     Dict <- return $ ccrVarianceCoercibleKind svt
     MkShimWit stab svf <- mergeCCRPolarArgumentShimWit @m @(pshim Type) @fta @ftb @ftab @_ @polarity f sta stb
-    Dict <- return $ dolanVarianceInCategory @pshim dvt
-    Dict <- return $ ccrArgumentInKind sta
-    Dict <- return $ ccrArgumentInKind stb
-    Dict <- return $ applyFunctionKindWitness kwa sta
-    Dict <- return $ applyFunctionKindWitness kwb stb
-    Dict <- return $ applyFunctionKindWitness kwa stab
-    Dict <- return $ applyFunctionKindWitness kwb stab
-    Dict <- return $ applyFunctionKindWitness kwab stab
-    Dict <- return $ ccrVarianceInCategory @(PolarMap (pshim Type) polarity) svt
-    Dict <- return $ svJoinMeetTypeInKind @_ @polarity @ta0 @tb0 svt
+    Dict <- return $ dolanVarianceCategory @pshim dvt
+    Dict <- return $ ccrVarianceCategory @(PolarMap (pshim Type) polarity) svt
     MkShimWit dtab convab <-
-        case (getRepWitness kwa, getRepWitness kwb, getRepWitness kwab) of
-            (Dict, Dict, Dict) ->
-                mergeArgsTypeF
-                    @m
-                    @pshim
-                    @fta
-                    @ftb
-                    @ftab
-                    @_
-                    @polarity
-                    f
-                    dvt
-                    dvma
-                    dvmb
-                    dvmab
-                    dta
-                    dtb
-                    (polarMapTypeApply svt ccrva ccrvab conva $
-                     svf <.> ccrPolar1 @(pshim Type) @polarity @_ @ta0 @tb0 svt)
-                    (polarMapTypeApply svt ccrvb ccrvab convb $
-                     svf <.> ccrPolar2 @(pshim Type) @polarity @_ @ta0 @tb0 svt)
+        mergeArgsTypeF
+            @m
+            @pshim
+            @fta
+            @ftb
+            @ftab
+            @_
+            @polarity
+            f
+            dvt
+            dvma
+            dvmb
+            dvmab
+            dta
+            dtb
+            (polarMapTypeApply svt ccrva ccrvab conva $ svf . ccrPolar1 @(pshim Type) @polarity @_ @ta0 @tb0 svt)
+            (polarMapTypeApply svt ccrvb ccrvab convb $ svf . ccrPolar2 @(pshim Type) @polarity @_ @ta0 @tb0 svt)
     return $ MkShimWit (ConsCCRArguments stab dtab) convab
 
 mergeDolanArgumentsM ::
        forall m (pshim :: PolyShimKind) fta ftb ftab dv polarity gt ta tb.
        ( Monad m
-       , DolanVarianceInCategory pshim
+       , DolanVarianceCategory pshim
        , JoinMeetCategory (pshim Type)
        , Is PolarityType polarity
        , TestEquality (fta 'Positive)
@@ -339,14 +289,12 @@ mergeDolanArgumentsM ::
     -> m (DolanArgumentsShimWit pshim dv ftab gt polarity (JoinMeetType polarity ta tb))
 mergeDolanArgumentsM f dvm argsa argsb = let
     dvt = ccrArgumentsType argsa
-    in case dolanVarianceInCategory @pshim dvt of
-           Dict ->
-               case dolanVarianceInKind dvt @gt of
-                   Dict -> mergeArgsTypeF @m @pshim f dvt dvm dvm dvm argsa argsb cid cid
+    in case dolanVarianceCategory @pshim dvt of
+           Dict -> mergeArgsTypeF @m @pshim f dvt dvm dvm dvm argsa argsb id id
 
 mergeDolanArguments ::
        forall (pshim :: PolyShimKind) fta ftb ftab dv polarity gt ta tb.
-       ( DolanVarianceInCategory pshim
+       ( DolanVarianceCategory pshim
        , JoinMeetCategory (pshim Type)
        , Is PolarityType polarity
        , TestEquality (fta 'Positive)
@@ -365,7 +313,7 @@ mergeDolanArguments f dvm argsa argsb = runIdentity $ mergeDolanArgumentsM (\a b
 
 dolanArgumentsToArgumentsM' ::
        forall m (pshim :: PolyShimKind) wa wb dv polarity (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) t.
-       (Monad m, DolanVarianceInCategory pshim, Is PolarityType polarity)
+       (Monad m, DolanVarianceCategory pshim, Is PolarityType polarity)
     => (forall t'. wa polarity t' -> m (PolarShimWit (pshim Type) wb polarity t'))
     -> CovaryType dv
     -> DolanVarianceMap dv gta
@@ -375,43 +323,30 @@ dolanArgumentsToArgumentsM' ::
     -> m (PolarShimWit (pshim Type) (Arguments wb gtb) polarity t)
 dolanArgumentsToArgumentsM' _ NilListType NilDolanVarianceMap NilDolanVarianceMap conv NilCCRArguments =
     return $ MkShimWit NilArguments conv
-dolanArgumentsToArgumentsM' f (ConsListType Refl lc) (ConsDolanVarianceMap kwa ccrva dvma) (ConsDolanVarianceMap kwb ccrvb dvmb) conv (ConsCCRArguments (CoCCRPolarArgument sta) dta) = do
+dolanArgumentsToArgumentsM' f (ConsListType Refl lc) (ConsDolanVarianceMap ccrva dvma) (ConsDolanVarianceMap ccrvb dvmb) conv (ConsCCRArguments (CoCCRPolarArgument sta) dta) = do
     Dict <- return $ covaryKMCategory @pshim lc
-    Dict <- return $ applyFunctionKindWitness kwa sta
     MkShimWit ta conva <- f sta
-    Dict <- return $ applyFunctionKindWitness kwa ta
-    Dict <- return $ applyFunctionKindWitness kwb ta
     MkShimWit tfa convfa <-
-        case (getRepWitness kwa, getRepWitness kwb) of
-            (Dict, Dict) ->
-                dolanArgumentsToArgumentsM'
-                    f
-                    lc
-                    dvma
-                    dvmb
-                    (polarMapTypeApply CoCCRVarianceType ccrva ccrvb conv conva)
-                    dta
+        dolanArgumentsToArgumentsM' f lc dvma dvmb (polarMapTypeApply CoCCRVarianceType ccrva ccrvb conv conva) dta
     return $ MkShimWit (ConsArguments ta tfa) convfa
 
 dolanArgumentsToArgumentsM ::
        forall m (pshim :: PolyShimKind) wa wb dv polarity f t.
-       (Monad m, DolanVarianceInCategory pshim, Is PolarityType polarity)
+       (Monad m, DolanVarianceCategory pshim, Is PolarityType polarity)
     => (forall t'. wa polarity t' -> m (PolarShimWit (pshim Type) wb polarity t'))
     -> CovaryType dv
     -> CovaryMap f
     -> DolanArguments dv wa f polarity t
     -> m (PolarShimWit (pshim Type) (Arguments wb f) polarity t)
-dolanArgumentsToArgumentsM f lc covary args =
-    case covaryMapInKind covary of
-        Dict -> let
-            dvm = covaryToDolanVarianceMap lc covary
-            conv =
-                case covaryKMCategory @pshim lc of
-                    Dict -> cid
-            in dolanArgumentsToArgumentsM' f lc dvm dvm conv args
+dolanArgumentsToArgumentsM f lc covary args = let
+    dvm = covaryToDolanVarianceMap lc covary
+    conv =
+        case covaryKMCategory @pshim lc of
+            Dict -> id
+    in dolanArgumentsToArgumentsM' f lc dvm dvm conv args
 
 dolanArgumentsToArguments ::
-       forall (pshim :: PolyShimKind) wa wb dv polarity f t. (DolanVarianceInCategory pshim, Is PolarityType polarity)
+       forall (pshim :: PolyShimKind) wa wb dv polarity f t. (DolanVarianceCategory pshim, Is PolarityType polarity)
     => (forall t'. wa polarity t' -> PolarShimWit (pshim Type) wb polarity t')
     -> CovaryType dv
     -> CovaryMap f
@@ -422,7 +357,7 @@ dolanArgumentsToArguments f lc covary args =
 
 argumentsToDolanArgumentsM' ::
        forall m (pshim :: PolyShimKind) wa wb dv polarity (fa :: DolanVarianceKind dv) (fb :: DolanVarianceKind dv) t.
-       (Monad m, DolanVarianceInCategory pshim, Is PolarityType polarity)
+       (Monad m, DolanVarianceCategory pshim, Is PolarityType polarity)
     => (forall t'. wa t' -> m (PShimWit (pshim Type) wb polarity t'))
     -> CovaryType dv
     -> CovaryMap fa
@@ -434,10 +369,7 @@ argumentsToDolanArgumentsM' _ NilListType NilCovaryMap NilCovaryMap conv NilArgu
     return $ MkShimWit NilCCRArguments conv
 argumentsToDolanArgumentsM' f (ConsListType Refl ct) (ConsCovaryMap mma) (ConsCovaryMap mmb) conv (ConsArguments arg args) = do
     Dict <- return $ covaryKMCategory @pshim ct
-    Dict <- return $ applyFunctionKindWitness (inKind @_ @fa) arg
     MkShimWit ta conva <- f arg
-    Dict <- return $ applyFunctionKindWitness (inKind @_ @fa) ta
-    Dict <- return $ applyFunctionKindWitness (inKind @_ @fb) ta
     MkShimWit tfa convfa <-
         argumentsToDolanArgumentsM'
             f
@@ -450,7 +382,7 @@ argumentsToDolanArgumentsM' f (ConsListType Refl ct) (ConsCovaryMap mma) (ConsCo
 
 argumentsToDolanArgumentsM ::
        forall m (pshim :: PolyShimKind) wa wb dv polarity f t.
-       (Monad m, DolanVarianceInCategory pshim, Is PolarityType polarity)
+       (Monad m, DolanVarianceCategory pshim, Is PolarityType polarity)
     => (forall t'. wa t' -> m (PShimWit (pshim Type) wb polarity t'))
     -> CovaryType dv
     -> CovaryMap f
@@ -463,13 +395,11 @@ argumentsToDolanArgumentsM f ct cm args =
         cm
         cm
         (case covaryKMCategory @pshim ct of
-             Dict ->
-                 case covaryMapInKind cm of
-                     Dict -> cid)
+             Dict -> id)
         args
 
 argumentsToDolanArguments ::
-       forall (pshim :: PolyShimKind) wa wb dv polarity f t. (DolanVarianceInCategory pshim, Is PolarityType polarity)
+       forall (pshim :: PolyShimKind) wa wb dv polarity f t. (DolanVarianceCategory pshim, Is PolarityType polarity)
     => (forall t'. wa t' -> PShimWit (pshim Type) wb polarity t')
     -> CovaryType dv
     -> CovaryMap f

@@ -26,7 +26,7 @@ mkRangevariantPolarMap pp qq = MkCatRange (uninvertPolarMap pp) qq
 
 polarMapTypeApply ::
        forall (pmap :: PolyShimKind) (polarity :: Polarity) (v :: CCRVariance) k (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a :: CCRVarianceKind v) (b :: CCRVarianceKind v).
-       (ApplyPolyShim pmap, Is PolarityType polarity, InKind a, InKind b, InKind f, InKind g)
+       (ApplyPolyShim pmap, Is PolarityType polarity)
     => CCRVarianceType v
     -> CCRVariation v f
     -> CCRVariation v g

@@ -43,7 +43,7 @@ module Shapes.Test
     ) where
 
 import GHC.IO.Handle
-import Shapes hiding ((<.>))
+import Shapes
 import System.Directory
 import System.Exit
 import System.FilePath

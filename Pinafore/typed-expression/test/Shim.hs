@@ -12,23 +12,23 @@ type T = UVarT "t"
 type REC = T :~: Maybe T
 
 conv1 ::
-       forall (shim :: ShimKind Type) a b. InCategory shim
+       forall (shim :: ShimKind Type) a b. Category shim
     => a :~: b -> shim a b
-conv1 Refl = cid
+conv1 Refl = id
 
 conv2 ::
-       forall (shim :: ShimKind Type) a b. InCategory shim
+       forall (shim :: ShimKind Type) a b. Category shim
     => a :~: b -> shim b a
-conv2 Refl = cid
+conv2 Refl = id
 
 convT1 ::
-       forall (shim :: ShimKind Type). InCategory shim
+       forall (shim :: ShimKind Type). Category shim
     => REC
     -> shim T (Maybe T)
 convT1 = conv1 @shim @T @(Maybe T)
 
 convT2 ::
-       forall (shim :: ShimKind Type). InCategory shim
+       forall (shim :: ShimKind Type). Category shim
     => REC
     -> shim (Maybe T) T
 convT2 = conv2 @shim @T @(Maybe T)
@@ -60,19 +60,19 @@ testRec =
         in assertEqual "" 3 found
 
 justJM :: FunctionShim shim => REC -> shim T T
-justJM r = convT2 r <.> functionToShim "J" Just
+justJM r = convT2 r . functionToShim "J" Just
 
 endless1 ::
        forall (shim :: ShimKind Type). FunctionShim shim
     => REC
     -> shim T T
-endless1 r = justJM r <.> lazyFunctionShim (endless1 r)
+endless1 r = justJM r . lazyFunctionShim (endless1 r)
 
 endless2 ::
        forall (shim :: ShimKind Type). FunctionShim shim
     => REC
     -> shim T T
-endless2 r = lazyFunctionShim (endless1 @shim r) <.> justJM r
+endless2 r = lazyFunctionShim (endless1 @shim r) . justJM r
 
 applyEndless1 ::
        forall (shim :: ShimKind Type). FunctionShim shim

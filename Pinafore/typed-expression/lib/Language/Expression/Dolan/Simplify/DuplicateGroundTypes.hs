@@ -36,7 +36,7 @@ mergeSSSubtype ::
     -> DolanTypeCheckM ground (DolanSingularShimWit ground polarity (JoinMeetType polarity ta tb))
 mergeSSSubtype ta tb = do
     conv <- subtypeSingularType ta tb
-    return $ MkShimWit tb $ polarF conv cid
+    return $ MkShimWit tb $ polarF conv id
 
 mergeSSEquality ::
        forall (ground :: GroundTypeKind) polarity ta tb. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)
@@ -71,7 +71,7 @@ mergeSingularType ts (ConsDolanType t1 tr) = do
             return $ MkShimWit (ConsDolanType t1 tsr) $ polarF (polar2 . conv . polar1) (iPolarPair id $ conv . polar2)
         Just (MkShimWit ts1 conv1) -> do
             t' <- mergeSingularType ts1 tr
-            return $ mapPolarShimWit (iPolarPair conv1 cid <.> iPolarSwapR) t'
+            return $ mapPolarShimWit (iPolarPair conv1 id . iPolarSwapR) t'
 
 mergeInType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)

@@ -41,13 +41,13 @@ pattern BothMeetType a b = MkMeetType (a, b)
 
 {-# COMPLETE BothMeetType #-}
 
-class (Category shim, InCategory shim) => JoinMeetIsoCategory (shim :: ShimKind Type) where
+class Category shim => JoinMeetIsoCategory (shim :: ShimKind Type) where
     iJoinL1 :: shim (JoinType a BottomType) a
     default iJoinL1 :: JoinMeetCategory shim => shim (JoinType a BottomType) a
-    iJoinL1 = joinf cid initf
+    iJoinL1 = joinf id initf
     iJoinL2 :: shim (JoinType BottomType a) a
     default iJoinL2 :: JoinMeetCategory shim => shim (JoinType BottomType a) a
-    iJoinL2 = joinf initf cid
+    iJoinL2 = joinf initf id
     iJoinR1 :: shim a (JoinType a BottomType)
     default iJoinR1 :: JoinMeetCategory shim => shim a (JoinType a BottomType)
     iJoinR1 = join1
@@ -56,16 +56,16 @@ class (Category shim, InCategory shim) => JoinMeetIsoCategory (shim :: ShimKind 
     iJoinR2 = join2
     iJoinPair :: shim a1 a2 -> shim b1 b2 -> shim (JoinType a1 b1) (JoinType a2 b2)
     default iJoinPair :: JoinMeetCategory shim => shim a1 a2 -> shim b1 b2 -> shim (JoinType a1 b1) (JoinType a2 b2)
-    iJoinPair aa bb = joinf (join1 <.> aa) (join2 <.> bb)
+    iJoinPair aa bb = joinf (join1 . aa) (join2 . bb)
     iJoinSwap :: shim (JoinType a b) (JoinType b a)
     default iJoinSwap :: JoinMeetCategory shim => shim (JoinType a b) (JoinType b a)
     iJoinSwap = joinf join2 join1
     iJoinSwapL :: shim (JoinType (JoinType a b) c) (JoinType a (JoinType b c))
     default iJoinSwapL :: JoinMeetCategory shim => shim (JoinType (JoinType a b) c) (JoinType a (JoinType b c))
-    iJoinSwapL = joinf (joinf join1 (join2 <.> join1)) (join2 <.> join2)
+    iJoinSwapL = joinf (joinf join1 (join2 . join1)) (join2 . join2)
     iJoinSwapR :: shim (JoinType a (JoinType b c)) (JoinType (JoinType a b) c)
     default iJoinSwapR :: JoinMeetCategory shim => shim (JoinType a (JoinType b c)) (JoinType (JoinType a b) c)
-    iJoinSwapR = joinf (join1 <.> join1) (joinf (join1 <.> join2) join2)
+    iJoinSwapR = joinf (join1 . join1) (joinf (join1 . join2) join2)
     iMeetL1 :: shim (MeetType a TopType) a
     default iMeetL1 :: JoinMeetCategory shim => shim (MeetType a TopType) a
     iMeetL1 = meet1
@@ -74,22 +74,22 @@ class (Category shim, InCategory shim) => JoinMeetIsoCategory (shim :: ShimKind 
     iMeetL2 = meet2
     iMeetR1 :: shim a (MeetType a TopType)
     default iMeetR1 :: JoinMeetCategory shim => shim a (MeetType a TopType)
-    iMeetR1 = meetf cid termf
+    iMeetR1 = meetf id termf
     iMeetR2 :: shim a (MeetType TopType a)
     default iMeetR2 :: JoinMeetCategory shim => shim a (MeetType TopType a)
-    iMeetR2 = meetf termf cid
+    iMeetR2 = meetf termf id
     iMeetPair :: shim a1 a2 -> shim b1 b2 -> shim (MeetType a1 b1) (MeetType a2 b2)
     default iMeetPair :: JoinMeetCategory shim => shim a1 a2 -> shim b1 b2 -> shim (MeetType a1 b1) (MeetType a2 b2)
-    iMeetPair aa bb = meetf (aa <.> meet1) (bb <.> meet2)
+    iMeetPair aa bb = meetf (aa . meet1) (bb . meet2)
     iMeetSwap :: shim (MeetType a b) (MeetType b a)
     default iMeetSwap :: JoinMeetCategory shim => shim (MeetType a b) (MeetType b a)
     iMeetSwap = meetf meet2 meet1
     iMeetSwapL :: shim (MeetType (MeetType a b) c) (MeetType a (MeetType b c))
     default iMeetSwapL :: JoinMeetCategory shim => shim (MeetType (MeetType a b) c) (MeetType a (MeetType b c))
-    iMeetSwapL = meetf (meet1 <.> meet1) (meetf (meet2 <.> meet1) meet2)
+    iMeetSwapL = meetf (meet1 . meet1) (meetf (meet2 . meet1) meet2)
     iMeetSwapR :: shim (MeetType a (MeetType b c)) (MeetType (MeetType a b) c)
     default iMeetSwapR :: JoinMeetCategory shim => shim (MeetType a (MeetType b c)) (MeetType (MeetType a b) c)
-    iMeetSwapR = meetf (meetf meet1 (meet1 <.> meet2)) (meet2 <.> meet2)
+    iMeetSwapR = meetf (meetf meet1 (meet1 . meet2)) (meet2 . meet2)
 
 instance JoinMeetIsoCategory shim => JoinMeetIsoCategory (Isomorphism shim) where
     iJoinL1 = MkIsomorphism iJoinL1 iJoinR1
@@ -136,48 +136,47 @@ instance JoinMeetCategory (->) where
     meetf f1 f2 v = BothMeetType (f1 v) (f2 v)
     applf rab ra (BothMeetType r1 r2) = rab r1 (ra r2)
 
-class (CoercibleKind k, InCategory shim) => IsoMapShim (shim :: ShimKind k) where
+class (CoercibleKind k, Category shim) => IsoMapShim (shim :: ShimKind k) where
     isoMapShim ::
-           (InKind pa, InKind pb, InKind qa, InKind qb)
-        => String
+           String
         -> (KindFunction pa pb -> KindFunction qa qb)
         -> (KindFunction pb pa -> KindFunction qb qa)
         -> shim pa pb
         -> shim qa qb
     default isoMapShim ::
-        (FunctionShim shim, InKind pa, InKind pb, InKind qa, InKind qb) =>
+        FunctionShim shim =>
                 String -> (KindFunction pa pb -> KindFunction qa qb) -> (KindFunction pb pa -> KindFunction qb qa) -> shim pa pb -> shim qa qb
     isoMapShim t f _ pp = functionToShim t $ f $ shimToFunction pp
 
 isoFunctionToShim ::
-       forall k (shim :: ShimKind k) (a :: k) (b :: k). (FunctionShim shim, InKind a, InKind b)
+       forall k (shim :: ShimKind k) (a :: k) (b :: k). FunctionShim shim
     => String
     -> Isomorphism KindFunction a b
     -> Isomorphism shim a b
 isoFunctionToShim s (MkIsomorphism ab ba) = MkIsomorphism (functionToShim s ab) (functionToShim s ba)
 
 isoShimToFunction ::
-       forall k (shim :: ShimKind k) (a :: k) (b :: k). (FunctionShim shim, InKind a, InKind b)
+       forall k (shim :: ShimKind k) (a :: k) (b :: k). FunctionShim shim
     => Isomorphism shim a b
     -> Isomorphism KindFunction a b
 isoShimToFunction (MkIsomorphism ab ba) = MkIsomorphism (shimToFunction ab) (shimToFunction ba)
 
 class IsoMapShim shim => CoerceShim (shim :: ShimKind k) where
-    coercionToShim :: (InKind a, InKind b) => String -> Coercion a b -> shim a b
-    shimToCoercion :: (InKind a, InKind b) => shim a b -> Maybe (Coercion a b)
+    coercionToShim :: String -> Coercion a b -> shim a b
+    shimToCoercion :: shim a b -> Maybe (Coercion a b)
 
 coerceShim ::
-       forall k (shim :: ShimKind k) (a :: k) (b :: k). (CoerceShim shim, InKind a, InKind b, Coercible a b)
+       forall k (shim :: ShimKind k) (a :: k) (b :: k). (CoerceShim shim, Coercible a b)
     => String
     -> shim a b
 coerceShim t = coercionToShim t MkCoercion
 
 class CoerceShim shim => FunctionShim (shim :: ShimKind k) where
-    functionToShim :: (InKind a, InKind b) => String -> KindFunction a b -> shim a b
-    shimToFunction :: (InKind a, InKind b) => shim a b -> KindFunction a b
+    functionToShim :: String -> KindFunction a b -> shim a b
+    shimToFunction :: shim a b -> KindFunction a b
 
 lazyFunctionShim ::
-       forall k (shim :: ShimKind k) (a :: k) (b :: k). (FunctionShim shim, InKind a, InKind b)
+       forall k (shim :: ShimKind k) (a :: k) (b :: k). FunctionShim shim
     => shim a b
     -> shim a b
 lazyFunctionShim sab = functionToShim "recursive" $ shimToFunction sab
@@ -200,7 +199,7 @@ class (JoinMeetCategory shim, FunctionShim shim) => CartesianShim (shim :: ShimK
     pairShim :: forall a b p q. shim a b -> shim p q -> shim (a, p) (b, q)
     eitherShim :: forall a b p q. shim a b -> shim p q -> shim (Either a p) (Either b q)
     shimExtractFunction :: shim a (b -> c) -> (forall c'. shim a (b -> c') -> shim c' c -> r) -> r
-    shimExtractFunction abc call = call abc cid
+    shimExtractFunction abc call = call abc id
 
 instance CartesianShim (->) where
     funcShim ab pq bp = pq . bp . ab

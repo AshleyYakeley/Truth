@@ -7,7 +7,7 @@ import Changes.UI.GTK
 import Changes.World.File
 import qualified Options.Applicative as O
 import Shapes
-import System.FilePath hiding ((<.>))
+import System.FilePath
 
 textCodec :: ReasonCodec LazyByteString Text
 textCodec = hoistCodec (mapResultFailure $ pack . show) utf8Codec . bijectionCodec strictBytestringBijection

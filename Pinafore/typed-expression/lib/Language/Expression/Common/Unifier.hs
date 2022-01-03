@@ -11,12 +11,8 @@ newtype UUShim (ts :: Type) (a :: Type) (b :: Type) = MkUUShim
     }
 
 instance UnifyTypeSystem ts => Category (UUShim ts) where
-    id = MkUUShim $ pure cid
-    MkUUShim ubc . MkUUShim uab = MkUUShim $ liftA2 (<.>) ubc uab
-
-instance UnifyTypeSystem ts => InCategory (UUShim ts) where
-    cid = id
-    (<.>) = (.)
+    id = MkUUShim $ pure id
+    MkUUShim ubc . MkUUShim uab = MkUUShim $ liftA2 (.) ubc uab
 
 instance UnifyTypeSystem ts => JoinMeetIsoCategory (UUShim ts)
 

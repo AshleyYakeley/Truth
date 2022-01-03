@@ -122,10 +122,10 @@ interpretTypeRangeFromType st = do
     let
         ff :: forall polarity. Is PolarityType polarity
            => PinaforeTypeM 'Nothing
-           -> AnyInKind (RangeType PinaforeType polarity)
+           -> AnyW (RangeType PinaforeType polarity)
         ff (BothMPolarW atw) =
             case (invertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
-                (MkAnyW tp, MkAnyW tq) -> MkAnyInKind $ MkRangeType tp tq
+                (MkAnyW tp, MkAnyW tq) -> MkAnyW $ MkRangeType tp tq
     return $ toMPolar $ ff t
 
 interpretTypeArgument ::
@@ -143,10 +143,10 @@ interpretTypeRangeItem ::
     -> PinaforeInterpreter (PinaforeRangeType3 mpolarity)
 interpretTypeRangeItem (Just CoSyntaxVariance, st) = do
     atq <- interpretTypeM st
-    return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType NilDolanType tq) atq
+    return $ toMPolar (\(MkAnyW tq) -> MkAnyW $ MkRangeType NilDolanType tq) atq
 interpretTypeRangeItem (Just ContraSyntaxVariance, st) = do
     atp <- invertMPolarity @mpolarity $ interpretTypeM st
-    return $ toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkRangeType tp NilDolanType) (MkInvertMPolarW atp)
+    return $ toMPolar (\(MkAnyW tp) -> MkAnyW $ MkRangeType tp NilDolanType) (MkInvertMPolarW atp)
 interpretTypeRangeItem (Nothing, st) = interpretTypeRangeFromType st
 
 groundTypeText :: SyntaxGroundType -> Text
@@ -191,7 +191,7 @@ interpretArgs sgt (ConsListType ContraCCRVarianceType _) (RangeSyntaxTypeArgumen
 interpretArgs sgt (ConsListType RangeCCRVarianceType dv) (st:stt) = do
     at <- isMPolarity @polarity $ interpretTypeArgument @('Just polarity) st
     case fromMPolarSingle at of
-        MkAnyInKind (MkRangeType tp tq) -> do
+        MkAnyW (MkRangeType tp tq) -> do
             aargs <- interpretArgs sgt dv stt
             case aargs of
                 MkAnyW args -> return $ MkAnyW $ ConsCCRArguments (RangeCCRPolarArgument tp tq) args

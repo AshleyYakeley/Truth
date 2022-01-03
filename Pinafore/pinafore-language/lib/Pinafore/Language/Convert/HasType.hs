@@ -52,14 +52,14 @@ instance {-# OVERLAPPABLE #-} forall polarity k (f :: k). ( Is PolarityType pola
                 MkHetPainforeGroundedType $ \args -> mkShimWit $ GroundedDolanSingularType pinaforeGroundType args
 
 type HasPinaforeGroundType :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Constraint
-class (CoercibleKind (DolanVarianceKind dv), InKind f, dv ~ HetDolanVarianceOf f, HasDolanVariance dv f) =>
+class (CoercibleKind (DolanVarianceKind dv), dv ~ HetDolanVarianceOf f, HasDolanVariance dv f) =>
           HasPinaforeGroundType dv f
     | f -> dv
     where
     pinaforeGroundType :: PinaforeGroundType dv f
 
 type HasPinaforeArgumentType :: Polarity -> forall (sv :: CCRVariance) -> CCRVarianceKind sv -> Constraint
-class (InKind t, Is PolarityType polarity) => HasPinaforeArgumentType polarity sv t | t -> sv where
+class Is PolarityType polarity => HasPinaforeArgumentType polarity sv t | t -> sv where
     pinaforeArgumentType :: CCRPolarArgumentShimWit (PinaforePolyShim Type) PinaforeType polarity sv t
 
 instance forall polarity (t :: Type). HasPinaforeType polarity t => HasPinaforeArgumentType polarity CoCCRVariance t where
@@ -110,21 +110,19 @@ instance forall dv k (f :: Type -> k) polarity (a :: Type). ( HasVariance f
                             -> PinaforeSingularShimWit polarity t
                         hetPinaforeGroundedType' args =
                             case dolanVarianceMap @('SimpleCCRVariance (VarianceOf f) ': dv) @f of
-                                ConsDolanVarianceMap _ ccrv dvm ->
+                                ConsDolanVarianceMap ccrv dvm ->
                                     case pinaforeArgumentType @polarity @('SimpleCCRVariance (VarianceOf f)) @a of
                                         MkShimWit arg conv ->
                                             case mapDolanArgumentsFM (return . mkShimWit) dvm dvm args $
-                                                 case ccrArgumentsInKind args of
-                                                     Dict ->
-                                                         polarMapTypeApply
-                                                             (representative
-                                                                  @_
-                                                                  @CCRVarianceType
-                                                                  @('SimpleCCRVariance (VarianceOf f)))
-                                                             ccrv
-                                                             ccrv
-                                                             cid
-                                                             conv of
+                                                 polarMapTypeApply
+                                                     (representative
+                                                          @_
+                                                          @CCRVarianceType
+                                                          @('SimpleCCRVariance (VarianceOf f)))
+                                                     ccrv
+                                                     ccrv
+                                                     id
+                                                     conv of
                                                 Identity (MkShimWit args' conv') ->
                                                     mapShimWit conv' $ toConvertibleType $ ConsCCRArguments arg args'
                         in MkHetPainforeGroundedType hetPinaforeGroundedType'
@@ -150,18 +148,16 @@ instance forall dv k (f :: (Type, Type) -> k) polarity (a :: (Type, Type)). ( Ha
                             -> PinaforeSingularShimWit polarity t
                         hetPinaforeGroundedType' args =
                             case dolanVarianceMap @('RangeCCRVariance ': dv) @f of
-                                ConsDolanVarianceMap _ ccrv dvm ->
+                                ConsDolanVarianceMap ccrv dvm ->
                                     case pinaforeArgumentType @polarity @'RangeCCRVariance @a of
                                         MkShimWit arg conv ->
                                             case mapDolanArgumentsFM (return . mkShimWit) dvm dvm args $
-                                                 case ccrArgumentsInKind args of
-                                                     Dict ->
-                                                         polarMapTypeApply
-                                                             (representative @_ @CCRVarianceType @'RangeCCRVariance)
-                                                             ccrv
-                                                             ccrv
-                                                             cid
-                                                             conv of
+                                                 polarMapTypeApply
+                                                     (representative @_ @CCRVarianceType @'RangeCCRVariance)
+                                                     ccrv
+                                                     ccrv
+                                                     id
+                                                     conv of
                                                 Identity (MkShimWit args' conv') ->
                                                     mapShimWit conv' $ toConvertibleType $ ConsCCRArguments arg args'
                         in MkHetPainforeGroundedType hetPinaforeGroundedType'

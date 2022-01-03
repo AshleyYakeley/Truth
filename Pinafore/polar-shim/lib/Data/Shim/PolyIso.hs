@@ -106,8 +106,7 @@ polyIsoPolar iab =
 instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, IsoMapShim (pshim k), Category (pshim k)) =>
              IsoMapShim (PolyIso pshim k) where
     isoMapShim ::
-           (InKind pa, InKind pb, InKind qa, InKind qb)
-        => String
+           String
         -> (KindFunction pa pb -> KindFunction qa qb)
         -> (KindFunction pb pa -> KindFunction qb qa)
         -> PolyIso pshim k pa pb
@@ -120,5 +119,5 @@ instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, CoerceShim (pshim k
     coercionToShim n c = MkPolyMapT $ MkIsomorphism (coercionToShim n c) (coercionToShim n $ invert c)
     shimToCoercion (MkPolyMapT (MkIsomorphism ab ba)) = shimToCoercion ab <|> fmap invert (shimToCoercion ba)
 
-instance forall (pshim :: PolyShimKind). AllInCategory pshim => ReduciblePolyShim (PolyIso pshim) where
+instance forall (pshim :: PolyShimKind). AllCategory pshim => ReduciblePolyShim (PolyIso pshim) where
     type ReducedPolyShim (PolyIso pshim) = PolyIso pshim

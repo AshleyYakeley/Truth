@@ -9,15 +9,6 @@ newtype PolyMapT f pshim k a b = MkPolyMapT
     { unPolyMapT :: f (pshim k) a b
     }
 
-instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind) (k :: Type). InCategory (f (pshim k)) =>
-             InCategory (PolyMapT f pshim k) where
-    cid = MkPolyMapT cid
-    MkPolyMapT p <.> MkPolyMapT q = MkPolyMapT $ p <.> q
-
-instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind) (k :: Type). InGroupoid (f (pshim k)) =>
-             InGroupoid (PolyMapT f pshim k) where
-    cinvert (MkPolyMapT p) = MkPolyMapT $ cinvert p
-
 instance forall (f :: forall k. ShimKind k -> ShimKind k) (pshim :: PolyShimKind) (k :: Type). Category (f (pshim k)) =>
              Category (PolyMapT f pshim k) where
     id = MkPolyMapT id

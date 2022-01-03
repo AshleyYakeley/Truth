@@ -87,6 +87,7 @@ library:
       - Shapes.Test
       - Shapes.Test.Context
     other-modules:
+      - Unsafe.Refl
       - Shapes.Import
       - Shapes.Instances
 

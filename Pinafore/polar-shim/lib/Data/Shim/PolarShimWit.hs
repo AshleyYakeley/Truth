@@ -13,8 +13,7 @@ type PolarShimWit :: forall k. ShimKind k -> (k -> Type) -> Polarity -> k -> Typ
 type PolarShimWit shim wit polarity = ShimWit (PolarMap shim polarity) wit
 
 mkPolarShimWit ::
-       forall (k :: Type) (shim :: ShimKind k) wit polarity (t :: k).
-       (InKind t, InCategory shim, Is PolarityType polarity)
+       forall (k :: Type) (shim :: ShimKind k) wit polarity (t :: k). (Category shim, Is PolarityType polarity)
     => wit t
     -> PolarShimWit shim wit polarity t
 mkPolarShimWit =
@@ -23,21 +22,21 @@ mkPolarShimWit =
         NegativeType -> mkShimWit
 
 mkPolarShimWitT ::
-       forall (shim :: ShimKind Type) wit polarity (t :: Type). (InCategory shim, Is PolarityType polarity)
+       forall (shim :: ShimKind Type) wit polarity (t :: Type). (Category shim, Is PolarityType polarity)
     => wit t
     -> PolarShimWit shim wit polarity t
 mkPolarShimWitT = mkPolarShimWit
 
 mkPosShimWit ::
-       forall (k :: Type) (shim :: ShimKind k) wit (t :: k) (t' :: k). InKind t'
-    => wit t'
+       forall (k :: Type) (shim :: ShimKind k) wit (t :: k) (t' :: k).
+       wit t'
     -> shim t t'
     -> PolarShimWit shim wit 'Positive t
 mkPosShimWit t conv = MkShimWit t (MkPolarMap conv)
 
 mkNegShimWit ::
-       forall (k :: Type) (shim :: ShimKind k) wit (t :: k) (t' :: k). InKind t'
-    => wit t'
+       forall (k :: Type) (shim :: ShimKind k) wit (t :: k) (t' :: k).
+       wit t'
     -> shim t' t
     -> PolarShimWit shim wit 'Negative t
 mkNegShimWit t conv = MkShimWit t (MkPolarMap conv)
@@ -53,8 +52,8 @@ unPolarShimWit (MkShimWit t conv) cont = cont t conv
 -- https://gitlab.haskell.org/ghc/ghc/issues/15681
 pattern MkPosShimWit ::
         forall k (shim :: ShimKind k) (wit :: k -> Type) (t :: k) . () =>
-        forall (t' :: k) . InKind t' =>
-        wit t' -> shim t t' -> PolarShimWit shim wit 'Positive t
+        (forall (t' :: k) .
+           wit t' -> shim t t' -> PolarShimWit shim wit 'Positive t)
 
 pattern MkPosShimWit wit conv = MkShimWit wit (MkPolarMap conv)
 
@@ -62,8 +61,8 @@ pattern MkPosShimWit wit conv = MkShimWit wit (MkPolarMap conv)
 
 pattern MkNegShimWit ::
         forall k (shim :: ShimKind k) (wit :: k -> Type) (t :: k) . () =>
-        forall (t' :: k) . InKind t' =>
-        wit t' -> shim t' t -> PolarShimWit shim wit 'Negative t
+        (forall (t' :: k) .
+           wit t' -> shim t' t -> PolarShimWit shim wit 'Negative t)
 
 pattern MkNegShimWit wit conv = MkShimWit wit (MkPolarMap conv)
 
@@ -72,54 +71,53 @@ pattern MkNegShimWit wit conv = MkShimWit wit (MkPolarMap conv)
 unPosShimWit ::
        forall k (shim :: ShimKind k) wit (t :: k) r.
        PolarShimWit shim wit 'Positive t
-    -> (forall (t' :: k). InKind t' => wit t' -> shim t t' -> r)
+    -> (forall (t' :: k). wit t' -> shim t t' -> r)
     -> r
 unPosShimWit (MkShimWit t (MkPolarMap conv)) cont = cont t conv
 
 unNegShimWit ::
        forall k (shim :: ShimKind k) wit (t :: k) r.
        PolarShimWit shim wit 'Negative t
-    -> (forall (t' :: k). InKind t' => wit t' -> shim t' t -> r)
+    -> (forall (t' :: k). wit t' -> shim t' t -> r)
     -> r
 unNegShimWit (MkShimWit t (MkPolarMap conv)) cont = cont t conv
 
 mapPolarShimWit ::
-       forall polarity (k :: Type) (shim :: ShimKind k) wit (a :: k) (b :: k).
-       (InCategory shim, Is PolarityType polarity, InKind a, InKind b)
+       forall polarity (k :: Type) (shim :: ShimKind k) wit (a :: k) (b :: k). (Category shim, Is PolarityType polarity)
     => PolarMap shim polarity b a
     -> PolarShimWit shim wit polarity a
     -> PolarShimWit shim wit polarity b
 mapPolarShimWit = mapShimWit
 
 mapPolarShimWitT ::
-       forall polarity (shim :: ShimKind Type) wit (a :: Type) (b :: Type). (InCategory shim, Is PolarityType polarity)
+       forall polarity (shim :: ShimKind Type) wit (a :: Type) (b :: Type). (Category shim, Is PolarityType polarity)
     => PolarMap shim polarity b a
     -> PolarShimWit shim wit polarity a
     -> PolarShimWit shim wit polarity b
 mapPolarShimWitT = mapPolarShimWit
 
 mapPosShimWit ::
-       forall (k :: Type) (shim :: ShimKind k) wit (a :: k) (b :: k). (InCategory shim, InKind a, InKind b)
+       forall (k :: Type) (shim :: ShimKind k) wit (a :: k) (b :: k). Category shim
     => shim b a
     -> PolarShimWit shim wit 'Positive a
     -> PolarShimWit shim wit 'Positive b
 mapPosShimWit ab = mapPolarShimWit $ MkPolarMap ab
 
 mapNegShimWit ::
-       forall (k :: Type) (shim :: ShimKind k) wit (a :: k) (b :: k). (InCategory shim, InKind a, InKind b)
+       forall (k :: Type) (shim :: ShimKind k) wit (a :: k) (b :: k). Category shim
     => shim a b
     -> PolarShimWit shim wit 'Negative a
     -> PolarShimWit shim wit 'Negative b
 mapNegShimWit ab = mapPolarShimWit $ MkPolarMap ab
 
-instance forall (shim :: ShimKind Type) wit. InCategory shim =>
+instance forall (shim :: ShimKind Type) wit. Category shim =>
              CatFunctor (CatDual shim) (->) (PolarShimWit shim wit 'Positive) where
     cfmap (MkCatDual ab) = mapPosShimWit ab
 
-instance forall (shim :: ShimKind Type) wit. InCategory shim => CatFunctor shim (->) (PolarShimWit shim wit 'Negative) where
+instance forall (shim :: ShimKind Type) wit. Category shim => CatFunctor shim (->) (PolarShimWit shim wit 'Negative) where
     cfmap = mapNegShimWit
 
-instance forall (shim :: ShimKind Type) wit polarity. (InCategory shim, Is PolarityType polarity) =>
+instance forall (shim :: ShimKind Type) wit polarity. (Category shim, Is PolarityType polarity) =>
              CatFunctor (CatDual (PolarMap shim polarity)) (->) (PolarShimWit shim wit polarity) where
     cfmap (MkCatDual (MkPolarMap ab)) =
         case polarityType @polarity of
@@ -128,16 +126,16 @@ instance forall (shim :: ShimKind Type) wit polarity. (InCategory shim, Is Polar
 
 chainPolarShimWitM ::
        forall m polarity (k :: Type) (shim :: ShimKind k) (wita :: k -> Type) (witb :: k -> Type) (t' :: k).
-       (Functor m, InCategory shim, Is PolarityType polarity, InKind t')
-    => (forall (t :: k). InKind t => wita t -> m (PolarShimWit shim witb polarity t))
+       (Functor m, Category shim, Is PolarityType polarity)
+    => (forall (t :: k). wita t -> m (PolarShimWit shim witb polarity t))
     -> PolarShimWit shim wita polarity t'
     -> m (PolarShimWit shim witb polarity t')
 chainPolarShimWitM f (MkShimWit t conv) = fmap (mapPolarShimWit conv) $ f t
 
 chainPolarShimWit ::
        forall polarity (k :: Type) (shim :: ShimKind k) (wita :: k -> Type) (witb :: k -> Type) (t' :: k).
-       (InCategory shim, Is PolarityType polarity, InKind t')
-    => (forall (t :: k). InKind t => wita t -> PolarShimWit shim witb polarity t)
+       (Category shim, Is PolarityType polarity)
+    => (forall (t :: k). wita t -> PolarShimWit shim witb polarity t)
     -> PolarShimWit shim wita polarity t'
     -> PolarShimWit shim witb polarity t'
 chainPolarShimWit f (MkShimWit t conv) = mapPolarShimWit conv $ f t

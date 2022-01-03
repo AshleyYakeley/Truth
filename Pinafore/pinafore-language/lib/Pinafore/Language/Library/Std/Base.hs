@@ -73,7 +73,7 @@ textShimWit = singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType te
 maybeShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (Maybe a)
 maybeShimWit swa =
     unPosShimWit swa $ \ta conva ->
-        mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation cid conva) $
+        mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation id conva) $
         singleDolanShimWit $
         mkPolarShimWit $
         GroundedDolanSingularType maybeGroundType $ ConsCCRArguments (CoCCRPolarArgument ta) NilCCRArguments
@@ -627,7 +627,7 @@ baseLibEntries =
                   MkSubypeConversionEntry dynamicEntityGroundType $ \MkPinaforeGroundType {..} -> do
                       Refl <- testEquality pgtVarianceType NilListType
                       MkADynamicEntityFamily _ _ <- matchFamilyType aDynamicEntityFamilyWitness pgtFamilyType
-                      return $ nilSubtypeConversion cid
+                      return $ nilSubtypeConversion id
                 , nilSubtypeRelationEntry dynamicEntityGroundType entityGroundType $
                   functionToShim "dynamicEntityAdapter" $ entityAdapterConvert $ dynamicEntityAdapter Nothing
                 , mkSpecialFormEntry

@@ -66,7 +66,7 @@ dolanToMonoType ::
     -> Maybe (PolarShimWit (DolanPolyIsoShim ground Type) (MonoType conc) polarity a)
 dolanToMonoType (ConsDolanType t NilDolanType) = do
     MkShimWit et conv <- dolanSingularToMonoArgs t
-    return $ MkShimWit et $ conv <.> polarPolyIsoPolar1
+    return $ MkShimWit et $ conv . polarPolyIsoPolar1
 dolanToMonoType _ = Nothing
 
 monoToMaybeNegativeDolanType ::

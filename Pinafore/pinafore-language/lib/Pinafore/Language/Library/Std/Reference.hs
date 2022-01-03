@@ -306,17 +306,17 @@ refLibEntries =
                                       conv1 =
                                           rconv1 .
                                           iJoinMeetR1 @_ @'Positive .
-                                          applyCoPolyShim ccrVariation ccrVariation cid (iJoinMeetR1 @_ @'Positive) .
+                                          applyCoPolyShim ccrVariation ccrVariation id (iJoinMeetR1 @_ @'Positive) .
                                           functionToShim "toList" toList
                                       conv2 =
                                           functionToShim "fromList" fromList .
-                                          applyCoPolyShim ccrVariation ccrVariation cid (iJoinMeetL1 @_ @'Negative) .
+                                          applyCoPolyShim ccrVariation ccrVariation id (iJoinMeetL1 @_ @'Negative) .
                                           iJoinMeetL1 @_ @'Negative . rconv2
-                                      convv = applyRangePolyShim ccrVariation ccrVariation cid conv1 conv2
+                                      convv = applyRangePolyShim ccrVariation ccrVariation id conv1 conv2
                                       in applyRangePolyShim
                                              ccrVariation
                                              ccrVariation
-                                             cid
+                                             id
                                              (iJoinMeetL1 @_ @(InvertPolarity pola))
                                              (iJoinMeetR1 @_ @pola) .
                                          (functionToShim "langWholeRefToListRef" langWholeRefToListRef) . convv
@@ -379,29 +379,27 @@ refLibEntries =
                             bta = biRangeAnyF (etan, monoToPositiveDolanType eta)
                             btb = biRangeAnyF (etbn, monoToPositiveDolanType etb)
                             in case (bta, btb, monoEntityTypeEq eta, monoEntityTypeEq etb) of
-                                   (MkAnyF rta@(MkRangeType rtap rtaq) (MkRange praContra praCo), MkAnyF rtb@(MkRangeType rtbp rtbq) (MkRange prbContra prbCo), Dict, Dict) ->
-                                       withSubrepresentative rangeTypeInKind rta $
-                                       withSubrepresentative rangeTypeInKind rtb $ let
-                                           typef =
-                                               singleDolanShimWit $
-                                               mkPolarShimWit $
-                                               GroundedDolanSingularType morphismGroundType $
-                                               ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
-                                               ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
-                                           morphism =
-                                               propertyMorphism
-                                                   (monoEntityAdapter eta)
-                                                   (monoEntityAdapter etb)
-                                                   (MkPredicate anchor)
-                                           pinamorphism =
-                                               MkLangMorphism $
-                                               storageModelBased pinaforeStorageModel $
-                                               cfmap4 (MkCatDual $ shimToFunction praContra) $
-                                               cfmap3 (shimToFunction praCo) $
-                                               cfmap2 (MkCatDual $ shimToFunction prbContra) $
-                                               cfmap1 (shimToFunction prbCo) morphism
-                                           anyval = MkAnyValue typef pinamorphism
-                                           in return anyval
+                                   (MkAnyF (MkRangeType rtap rtaq) (MkRange praContra praCo), MkAnyF (MkRangeType rtbp rtbq) (MkRange prbContra prbCo), Dict, Dict) -> let
+                                       typef =
+                                           singleDolanShimWit $
+                                           mkPolarShimWit $
+                                           GroundedDolanSingularType morphismGroundType $
+                                           ConsCCRArguments (RangeCCRPolarArgument rtap rtaq) $
+                                           ConsCCRArguments (RangeCCRPolarArgument rtbp rtbq) NilCCRArguments
+                                       morphism =
+                                           propertyMorphism
+                                               (monoEntityAdapter eta)
+                                               (monoEntityAdapter etb)
+                                               (MkPredicate anchor)
+                                       pinamorphism =
+                                           MkLangMorphism $
+                                           storageModelBased pinaforeStorageModel $
+                                           cfmap4 (MkCatDual $ shimToFunction praContra) $
+                                           cfmap3 (shimToFunction praCo) $
+                                           cfmap2 (MkCatDual $ shimToFunction prbContra) $
+                                           cfmap1 (shimToFunction prbCo) morphism
+                                       anyval = MkAnyValue typef pinamorphism
+                                       in return anyval
           ]
     , docTreeEntry
           "RefOrders"
@@ -436,11 +434,11 @@ refLibEntries =
                                 applyCoPolyShim
                                     ccrVariation
                                     ccrVariation
-                                    (applyContraPolyShim ccrVariation ccrVariation cid $ conv1 . vconv)
+                                    (applyContraPolyShim ccrVariation ccrVariation id $ conv1 . vconv)
                                     (applyCoPolyShim
                                          ccrVariation
                                          ccrVariation
-                                         (applyContraPolyShim ccrVariation ccrVariation cid vconv)
+                                         (applyContraPolyShim ccrVariation ccrVariation id vconv)
                                          (iJoinMeetL1 @_ @'Negative) .
                                      iJoinMeetL1 @_ @'Negative . conv2)
           , mkValEntry "orders" "Join `RefOrder`s by priority." $ refOrders @A
