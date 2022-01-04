@@ -78,7 +78,7 @@ instance forall k. Groupoid (PEqual k) where
 instance ApplyPolyShim PEqual where
     applyPolyShim CoCCRVarianceType _ _ MkPEqual MkPEqual = MkPEqual
     applyPolyShim ContraCCRVarianceType _ _ MkPEqual (MkCatDual MkPEqual) = MkPEqual
-    applyPolyShim RangeCCRVarianceType _ _ MkPEqual (MkCatRange MkPEqual MkPEqual :: _ a b) = MkPEqual
+    applyPolyShim RangeCCRVarianceType _ _ MkPEqual (MkCatRange MkPEqual MkPEqual) = MkPEqual
 
 -- | used for dealing with laziness for recursivly-constructed shims
 type ReduciblePolyShim :: PolyShimKind -> Constraint

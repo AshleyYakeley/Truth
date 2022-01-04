@@ -26,7 +26,7 @@ contraCatRange pp = MkCatRange pp id
 instance Category shim => Category (CatRange shim) where
     id :: forall a. CatRange shim a a
     id =
-        case typeIsPair @_ @_ @a of
+        case unsafeTypeIsPair @_ @_ @a of
             Refl -> MkCatRange id id
     (.) :: forall a b c. CatRange shim b c -> CatRange shim a b -> CatRange shim a c
     MkCatRange pa qa . MkCatRange pb qb = MkCatRange (pb . pa) (qa . qb)

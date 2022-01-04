@@ -134,7 +134,7 @@ ccrPolar1 CoCCRVarianceType = polar1
 ccrPolar1 ContraCCRVarianceType = invertPolarity @polarity $ mkContravariantPolarMap polar1
 ccrPolar1 RangeCCRVarianceType =
     invertPolarity @polarity $
-    case (typeIsPair @_ @_ @a, typeIsPair @_ @_ @b) of
+    case (unsafeTypeIsPair @_ @_ @a, unsafeTypeIsPair @_ @_ @b) of
         (Refl, Refl) -> mkRangevariantPolarMap polar1 polar1
 
 ccrPolar2 ::
@@ -145,5 +145,5 @@ ccrPolar2 CoCCRVarianceType = polar2
 ccrPolar2 ContraCCRVarianceType = invertPolarity @polarity $ mkContravariantPolarMap polar2
 ccrPolar2 RangeCCRVarianceType =
     invertPolarity @polarity $
-    case (typeIsPair @_ @_ @a, typeIsPair @_ @_ @b) of
+    case (unsafeTypeIsPair @_ @_ @a, unsafeTypeIsPair @_ @_ @b) of
         (Refl, Refl) -> mkRangevariantPolarMap polar2 polar2

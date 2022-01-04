@@ -35,8 +35,8 @@ type family Fst (a :: (kp, kq)) :: kp where
 type family Snd (a :: (kp, kq)) :: kq where
     Snd '( p, q) = q
 
-typeIsPair :: forall kp kq (a :: (kp, kq)). a :~: '( Fst a, Snd a)
-typeIsPair = unsafeRefl @(kp, kq) @a @'( Fst a, Snd a)
+unsafeTypeIsPair :: forall kp kq (a :: (kp, kq)). a :~: '( Fst a, Snd a)
+unsafeTypeIsPair = unsafeRefl @(kp, kq) @a @'( Fst a, Snd a)
 
 type PairMorphism :: (Type -> Type -> Type) -> forall kp kq. (kp, kq) -> (kp, kq) -> Type
 data PairMorphism cat a b =

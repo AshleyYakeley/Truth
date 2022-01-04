@@ -84,7 +84,7 @@ instance (CoercibleKind kq) => CoercibleKind (kp -> kq) where
 instance (CoercibleKind kp, CoercibleKind kq) => CoercibleKind (kp, kq) where
     coercionToKindMorphism :: forall (a :: (kp, kq)) (b :: (kp, kq)). Coercion a b -> KindMorphism Coercion a b
     coercionToKindMorphism MkCoercion =
-        case (typeIsPair @_ @_ @a, typeIsPair @_ @_ @b) of
+        case (unsafeTypeIsPair @_ @_ @a, unsafeTypeIsPair @_ @_ @b) of
             (Refl, Refl) -> MkPairMorphism (coercionToKindMorphism MkCoercion) (coercionToKindMorphism MkCoercion)
 
 class RepresentationalRole (f :: kp -> kq) where
