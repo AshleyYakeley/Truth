@@ -1,5 +1,6 @@
 module Language.Expression.Dolan.Arguments
     ( CCRArguments(..)
+    , ccrArgumentsEndo
     , ccrArgumentsType
     , mapCCRArgumentsM
     , mapCCRArguments
@@ -44,6 +45,15 @@ ccrArgumentsType ::
     -> DolanVarianceType dv
 ccrArgumentsType NilCCRArguments = NilListType
 ccrArgumentsType (ConsCCRArguments arg args) = ConsListType (ccrArgumentType arg) (ccrArgumentsType args)
+
+ccrArgumentsEndo ::
+       forall (w :: CCRArgumentKind) (dv :: DolanVariance) (f :: DolanVarianceKind dv) (t :: Type).
+       CCRArguments w dv f t
+    -> KindFunction f f
+    -> t
+    -> t
+ccrArgumentsEndo NilCCRArguments ff = ff
+ccrArgumentsEndo (ConsCCRArguments _ args) (MkNestedMorphism ff) = ccrArgumentsEndo args ff
 
 mapCCRArgumentsFM ::
        forall m (pshim :: PolyShimKind) (wa :: CCRArgumentKind) (wb :: CCRArgumentKind) dv polarity (gta :: DolanVarianceKind dv) (gtb :: DolanVarianceKind dv) t.

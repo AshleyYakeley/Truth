@@ -1,5 +1,7 @@
 module Language.Expression.Dolan.Nonpolar
-    ( NonpolarDolanType
+    ( NonpolarDolanType(..)
+    , NonpolarArgument(..)
+    , NonpolarArguments
     , NonpolarShimWit
     , nonpolarToDolanType
     , dolanTypeToNonpolar

@@ -140,9 +140,153 @@ getAnyTParams (sp:spp) =
         case getAnyTParams spp of
             MkAnyTParams f -> MkAnyTParams $ addTParam p f
 
-getDolanVarianceMap :: TParams dv gt t -> PinaforeInterpreter (DolanVarianceMap dv gt)
-getDolanVarianceMap NilCCRArguments = return NilDolanVarianceMap
-getDolanVarianceMap _ = throw $ UnicodeDecodeError "ISSUE #41"
+type Mapping :: Symbol -> Type -> Type
+newtype Mapping n t =
+    MkMapping (Kleisli Endo (UVarT n -> UVarT n) t)
+    deriving (Semigroup, Monoid, IsoVariant, Summish, Productish)
+
+varMapping :: forall (n :: Symbol). Mapping n (UVarT n)
+varMapping = MkMapping $ Kleisli $ \ab -> Endo ab
+
+runMapping :: Mapping n t -> (UVarT n -> UVarT n) -> t -> t
+runMapping (MkMapping (Kleisli f)) ab = appEndo $ f ab
+
+mapMapping :: ((p -> p) -> (q -> q)) -> Mapping n p -> Mapping n q
+mapMapping ff (MkMapping (Kleisli f)) = MkMapping $ Kleisli $ \tt -> Endo $ ff $ appEndo $ f tt
+
+joinMapping :: ((p -> p) -> (q -> q) -> (t -> t)) -> Mapping n p -> Mapping n q -> Mapping n t
+joinMapping ff (MkMapping (Kleisli fp)) (MkMapping (Kleisli fq)) =
+    MkMapping $ Kleisli $ \tt -> Endo $ ff (appEndo $ fp tt) (appEndo $ fq tt)
+
+getArgumentVariation ::
+       forall v n (t :: Type) (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> DolanVarianceKind dv) (a :: CCRVarianceKind sv).
+       Name
+    -> VarianceType v
+    -> SymbolType n
+    -> CCRVarianceType sv
+    -> CCRVariation sv f
+    -> NonpolarArgument PinaforeGroundType sv a
+    -> NonpolarArguments PinaforeGroundType dv (f a) t
+    -> PinaforeInterpreter (Mapping n t)
+getArgumentVariation tname v var _ svm (CoNonpolarArgument t) args = do
+    mapping <- getNonpolarVariation tname v var t
+    return $ mapMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm aa)) mapping
+getArgumentVariation tname v var _ svm (ContraNonpolarArgument t) args = do
+    mapping <- invertVarianceType v $ \v' -> getNonpolarVariation tname v' var t
+    return $ mapMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm $ MkCatDual aa)) mapping
+getArgumentVariation tname v var _ svm (RangeNonpolarArgument tp tq) args = do
+    mappingp <- invertVarianceType v $ \v' -> getNonpolarVariation tname v' var tp
+    mappingq <- getNonpolarVariation tname v var tq
+    return $ joinMapping (\pp qq -> ccrArgumentsEndo args (ccrvMap svm $ MkCatRange pp qq)) mappingp mappingq
+
+getArgumentsVariation ::
+       forall v n (t :: Type) dv gt.
+       Name
+    -> VarianceType v
+    -> SymbolType n
+    -> DolanVarianceType dv
+    -> DolanVarianceMap dv gt
+    -> NonpolarArguments PinaforeGroundType dv gt t
+    -> PinaforeInterpreter (Mapping n t)
+getArgumentsVariation _ _ _ NilListType NilDolanVarianceMap NilCCRArguments = return mempty
+getArgumentsVariation tname v var (ConsListType svt dvt) (ConsDolanVarianceMap ccrv dvm) (ConsCCRArguments arg args) = do
+    vmap1 <- getArgumentVariation tname v var svt ccrv arg args
+    vmapr <- getArgumentsVariation tname v var dvt dvm args
+    return $ vmap1 <> vmapr
+
+getNonpolarVariation ::
+       forall v n t.
+       Name
+    -> VarianceType v
+    -> SymbolType n
+    -> PinaforeNonpolarType t
+    -> PinaforeInterpreter (Mapping n t)
+getNonpolarVariation _ CoVarianceType var (VarNonpolarType var')
+    | Just Refl <- testEquality var var' = return varMapping
+getNonpolarVariation tname ContraVarianceType var (VarNonpolarType var')
+    | Just Refl <- testEquality var var' =
+        throw $ InterpretTypeDeclTypeVariableWrongPolarityError tname $ symbolTypeToName var
+getNonpolarVariation _ _ _ (VarNonpolarType _) = return mempty
+getNonpolarVariation tname v var (GroundedNonpolarType gt args) =
+    getArgumentsVariation tname v var (pgtVarianceType gt) (pgtVarianceMap gt) args
+
+getConstructorVariation ::
+       forall v n tl.
+       Name
+    -> VarianceType v
+    -> SymbolType n
+    -> ListType PinaforeNonpolarType tl
+    -> PinaforeInterpreter (Mapping n (HList tl))
+getConstructorVariation _ _ _ NilListType = return pUnit
+getConstructorVariation tname v var (ConsListType t1 tr) = do
+    vmap1 <- getNonpolarVariation tname v var t1
+    vmapr <- getConstructorVariation tname v var tr
+    return $ vmap1 <***> vmapr
+
+getDataTypeVariation ::
+       forall v n t. Name -> VarianceType v -> SymbolType n -> PinaforeDataType t -> PinaforeInterpreter (Mapping n t)
+getDataTypeVariation _ _ _ NilDataType = return pNone
+getDataTypeVariation tname vt var (ConsDataType c dt) = do
+    vmap1 <- getConstructorVariation tname vt var c
+    vmapr <- getDataTypeVariation tname vt var dt
+    return $ vmap1 <+++> vmapr
+
+getCCRVariation ::
+       Name
+    -> TParam sv a
+    -> PinaforeDataType t
+    -> PinaforeInterpreter (CCRVarianceCategory KindFunction sv a a -> (t -> t))
+getCCRVariation tname (CoTParam v) dt = do
+    f <- getDataTypeVariation tname CoVarianceType v dt
+    return $ runMapping f
+getCCRVariation tname (ContraTParam v) dt = do
+    f <- getDataTypeVariation tname ContraVarianceType v dt
+    return $ \(MkCatDual tt) -> runMapping f tt
+getCCRVariation tname (RangeTParam vp vq) dt = do
+    fp <- getDataTypeVariation tname ContraVarianceType vp dt
+    fq <- getDataTypeVariation tname CoVarianceType vq dt
+    return $ \(MkCatRange pp qq) -> runMapping fp pp . runMapping fq qq
+
+assignTParam ::
+       forall (sv :: CCRVariance) (a :: CCRVarianceKind sv) (t :: CCRVarianceKind sv) r.
+       TParam sv t
+    -> (t ~ a => r)
+    -> r
+assignTParam (CoTParam v) call = assignUVarT @a v call
+assignTParam (ContraTParam v) call = assignUVarT @a v call
+assignTParam (RangeTParam vp vq) call =
+    case unsafeTypeIsPair @_ @_ @a of
+        Refl -> assignUVarT @(Contra a) vp $ assignUVarT @(Co a) vq call
+
+paramsUnEndo ::
+       forall (t :: Type) (dv :: DolanVariance) (f :: DolanVarianceKind dv).
+       TParams dv f t
+    -> (t -> t)
+    -> KindMorphism (->) f f
+paramsUnEndo NilCCRArguments tt = tt
+paramsUnEndo (ConsCCRArguments p pp) tt = let
+    ff :: forall x. KindFunction (f x) (f x)
+    ff = assignTParam @_ @x p $ paramsUnEndo pp tt
+    in MkNestedMorphism ff
+
+paramsCCRVMap ::
+       forall (sv :: CCRVariance) (x :: CCRVarianceKind sv) (t :: Type) (dv :: DolanVariance) (f :: CCRVarianceKind sv -> DolanVarianceKind dv) (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv).
+       TParam sv x
+    -> (CCRVarianceCategory (->) sv x x -> t -> t)
+    -> CCRArguments TParam dv (f x) t
+    -> CCRVarianceCategory (->) sv a b
+    -> KindMorphism (->) (f a) (f b)
+paramsCCRVMap p ff pp ab = assignTParam @sv @a p $ assignTParam @sv @b p $ paramsUnEndo pp $ ff ab
+
+assignDolanArgVars :: forall sv dv gt t a. TParam sv t -> DolanVarianceMap dv (gt t) -> DolanVarianceMap dv (gt a)
+assignDolanArgVars = assignTParam @sv @a
+
+getDolanVarianceMap :: Name -> TParams dv gt t -> PinaforeDataType t -> PinaforeInterpreter (DolanVarianceMap dv gt)
+getDolanVarianceMap _ NilCCRArguments _ = return NilDolanVarianceMap
+getDolanVarianceMap tname (ConsCCRArguments p pp) dt = do
+    ff <- getCCRVariation tname p dt
+    args <- getDolanVarianceMap tname pp dt
+    return $ ConsDolanVarianceMap (MkCCRVariation Nothing $ paramsCCRVMap p ff pp) $ assignDolanArgVars p args
 
 lazyKindMorphism ::
        forall dv (a :: DolanVarianceKind dv) (b :: DolanVarianceKind dv).
@@ -204,7 +348,7 @@ makeDataTypeBox name doc params sconss =
                                     mktype dvm = MkBoundType $ mkgt dvm
                                     in mkTypeFixBox name doc mktype $ do
                                            tconss <- for sconss interpretDataTypeConstructor
-                                           MkDataBox (_pdt :: _ structtype) conss <- return $ assembleDataType tconss
+                                           MkDataBox (pdt :: _ structtype) conss <- return $ assembleDataType tconss
                                            let
                                                freevars :: [AnyW SymbolType]
                                                freevars = nub $ mconcat $ fmap constructorFreeVariables conss
@@ -226,7 +370,7 @@ makeDataTypeBox name doc params sconss =
                                                    fmap (\(MkAnyW s) -> symbolTypeToName s) vv
                                            Refl <- unsafeGetRefl @Type @structtype @decltype
                                            dvm :: DolanVarianceMap dv (Identified tid) <-
-                                               getDolanVarianceMap @dv tparams
+                                               getDolanVarianceMap @dv name tparams pdt
                                            let
                                                getargs ::
                                                       forall polarity. Is PolarityType polarity

@@ -47,6 +47,8 @@ data ErrorType
                                                    (NonEmpty Name)
     | InterpretTypeDeclUnboundTypeVariablesError Name
                                                  (NonEmpty Name)
+    | InterpretTypeDeclTypeVariableWrongPolarityError Name
+                                                      Name
     | ModuleNotFoundError ModuleName
     | ModuleCycleError (NonEmpty ModuleName)
 
@@ -128,6 +130,8 @@ instance Show ErrorType where
         "duplicate type variables in declaration of " <> show n <> ": " <> (intercalate ", " $ fmap show $ toList vv)
     show (InterpretTypeDeclUnboundTypeVariablesError n vv) =
         "unbound type variables in declaration of " <> show n <> ": " <> (intercalate ", " $ fmap show $ toList vv)
+    show (InterpretTypeDeclTypeVariableWrongPolarityError n v) =
+        "wrong polarity of type variable " <> show v <> " in declaration of " <> show n
     show (ModuleNotFoundError mname) = "can't find module " <> show mname
     show (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap show $ toList nn)
 

@@ -11,6 +11,10 @@ data VarianceType (t :: Variance) where
     CoVarianceType :: VarianceType 'Covariance
     ContraVarianceType :: VarianceType 'Contravariance
 
+invertVarianceType :: VarianceType t -> (forall v'. VarianceType v' -> r) -> r
+invertVarianceType CoVarianceType call = call ContraVarianceType
+invertVarianceType ContraVarianceType call = call CoVarianceType
+
 instance TestEquality VarianceType where
     testEquality CoVarianceType CoVarianceType = Just Refl
     testEquality ContraVarianceType ContraVarianceType = Just Refl

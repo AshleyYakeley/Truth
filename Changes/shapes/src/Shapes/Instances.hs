@@ -19,3 +19,7 @@ instance Empty a => Finite (NonEmpty a) where
 
 instance Empty a => Empty (NonEmpty a) where
     never (a :| _) = never a
+
+deriving instance Semigroup (m b) => Semigroup (Kleisli m a b)
+
+deriving instance Monoid (m b) => Monoid (Kleisli m a b)

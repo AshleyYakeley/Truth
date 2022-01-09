@@ -47,6 +47,7 @@ module Language.Expression.Dolan
     , IsCCRArg(..)
     , CCRPolarArgument(..)
     , CCRArguments(..)
+    , ccrArgumentsEndo
     , ccrArgumentsType
     , mapCCRArguments
     , DolanArguments

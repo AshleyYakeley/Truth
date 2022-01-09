@@ -764,15 +764,15 @@ testEntity =
                     , tGroup
                           "conversion"
                           [ tDecls
-                                [ "datatype T +a = Mk1T [a] | Mk2T (Maybe a)"
-                                , "showT: T Showable -> Text"
-                                , "showT t = case t of Mk1T aa -> show aa; Mk2T ma -> show ma end"
-                                , "ti: T Integer"
-                                , "ti = Mk1T [576,469,12]"
-                                , "sti: Text"
-                                , "sti = showT ti"
+                                [ "datatype D +a = Mk1D [a] | Mk2D (Maybe a)"
+                                , "showD: D Showable -> Text"
+                                , "showD t = case t of Mk1D aa -> show aa; Mk2D ma -> show ma end"
+                                , "di: D Integer"
+                                , "di = Mk1D [576,469,12]"
+                                , "sdi: Text"
+                                , "sdi = showD di"
                                 ] $
-                            testExpectSuccess "if sti == \"[576,469,12]\" then pass else fail sti"
+                            testExpectSuccess "if sdi == \"[576, 469, 12]\" then pass else fail sdi"
                           ]
                     ]
               ]

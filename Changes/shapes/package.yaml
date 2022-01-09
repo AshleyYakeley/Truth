@@ -45,7 +45,7 @@ library:
     exposed-modules:
       - Data.Words
       - Control.Category.Groupoid
-      - Data.Chain
+      - Data.CatEndo
       - Data.Filterable
       - Data.MonoApplicative
       - Data.CatFunctor
