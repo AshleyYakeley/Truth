@@ -60,8 +60,7 @@ composeUnliftAllFunctionCommute ::
        (MonadTransUnlift t, MonadUnliftIO m, MonadUnliftIO n) => Unlift Functor t -> (m --> n) -> (t m --> n)
 composeUnliftAllFunctionCommute rt rm tma = rt $ hoist rm tma
 
-class (MonadFail m, MonadIO m, MonadFix m, MonadTunnelIO m, FunctorPure (TunnelIO m), FunctorExtract (TunnelIO m)) =>
-          MonadUnliftIO m where
+class (MonadFail m, MonadIO m, MonadFix m, MonadTunnelIO m, FunctorExtract (TunnelIO m)) => MonadUnliftIO m where
     -- | lift with an unlift that accounts for all transformer effects
     liftIOWithUnlift :: forall r. ((m --> IO) -> IO r) -> m r
     getDiscardingIOUnlift :: m (WMFunction m IO)
