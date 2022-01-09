@@ -21,6 +21,7 @@ module Language.Expression.Dolan
     , DolanVarianceKind
     , DolanVarianceType
     , DolanVarianceMap(..)
+    , lazyDolanVarianceMap
     , DolanVarianceCategory(..)
     , HasDolanVariance(..)
     , CovaryType

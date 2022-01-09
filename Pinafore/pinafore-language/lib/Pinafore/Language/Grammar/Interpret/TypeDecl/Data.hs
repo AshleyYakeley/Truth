@@ -60,242 +60,152 @@ interpretDataTypeConstructor (MkSyntaxDatatypeConstructor consName stypes) = do
     etypes <- for stypes interpretNonpolarType
     return (consName, assembleListType etypes)
 
-type TParam :: CCRArgumentKind
-data TParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
-    CoTParam :: SymbolType n -> TParam CoCCRVariance (UVarT n)
-    ContraTParam :: SymbolType n -> TParam ContraCCRVariance (UVarT n)
-    RangeTParam :: SymbolType np -> SymbolType nq -> TParam 'RangeCCRVariance '( UVarT np, UVarT nq) -- contra, co
+type CCRTypeParam :: CCRArgumentKind
+data CCRTypeParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
+    CoCCRTypeParam :: SymbolType n -> CCRTypeParam CoCCRVariance (UVarT n)
+    ContraCCRTypeParam :: SymbolType n -> CCRTypeParam ContraCCRVariance (UVarT n)
+    RangeCCRTypeParam :: SymbolType np -> SymbolType nq -> CCRTypeParam 'RangeCCRVariance '( UVarT np, UVarT nq) -- contra, co
 
-instance IsCCRArg TParam where
-    ccrArgumentType (CoTParam _) = CoCCRVarianceType
-    ccrArgumentType (ContraTParam _) = ContraCCRVarianceType
-    ccrArgumentType (RangeTParam _ _) = RangeCCRVarianceType
-    ccrArgumentTestEquality (CoTParam arg1) (CoTParam arg2) = do
+instance IsCCRArg CCRTypeParam where
+    ccrArgumentType (CoCCRTypeParam _) = CoCCRVarianceType
+    ccrArgumentType (ContraCCRTypeParam _) = ContraCCRVarianceType
+    ccrArgumentType (RangeCCRTypeParam _ _) = RangeCCRVarianceType
+    ccrArgumentTestEquality (CoCCRTypeParam arg1) (CoCCRTypeParam arg2) = do
         Refl <- testEquality arg1 arg2
         return Refl
-    ccrArgumentTestEquality (ContraTParam arg1) (ContraTParam arg2) = do
+    ccrArgumentTestEquality (ContraCCRTypeParam arg1) (ContraCCRTypeParam arg2) = do
         Refl <- testEquality arg1 arg2
         return Refl
-    ccrArgumentTestEquality (RangeTParam p1 q1) (RangeTParam p2 q2) = do
+    ccrArgumentTestEquality (RangeCCRTypeParam p1 q1) (RangeCCRTypeParam p2 q2) = do
         Refl <- testEquality p1 p2
         Refl <- testEquality q1 q2
         return Refl
 
-tParamVars :: TParam sv t -> [AnyW SymbolType]
-tParamVars (CoTParam t) = [MkAnyW t]
-tParamVars (ContraTParam t) = [MkAnyW t]
-tParamVars (RangeTParam p q) = [MkAnyW p, MkAnyW q]
+tParamVars :: CCRTypeParam sv t -> [AnyW SymbolType]
+tParamVars (CoCCRTypeParam t) = [MkAnyW t]
+tParamVars (ContraCCRTypeParam t) = [MkAnyW t]
+tParamVars (RangeCCRTypeParam p q) = [MkAnyW p, MkAnyW q]
 
-withTParam :: SyntaxDatatypeParameter -> (forall sv t. TParam sv t -> r) -> r
-withTParam (PositiveSyntaxDatatypeParameter n) cont = nameToSymbolType n $ \v -> cont $ CoTParam v
-withTParam (NegativeSyntaxDatatypeParameter n) cont = nameToSymbolType n $ \v -> cont $ ContraTParam v
-withTParam (RangeSyntaxDatatypeParameter np nq) cont =
-    nameToSymbolType np $ \vp -> nameToSymbolType nq $ \vq -> cont $ RangeTParam vp vq
+withCCRTypeParam :: SyntaxDatatypeParameter -> (forall sv t. CCRTypeParam sv t -> r) -> r
+withCCRTypeParam (PositiveSyntaxDatatypeParameter n) cont = nameToSymbolType n $ \v -> cont $ CoCCRTypeParam v
+withCCRTypeParam (NegativeSyntaxDatatypeParameter n) cont = nameToSymbolType n $ \v -> cont $ ContraCCRTypeParam v
+withCCRTypeParam (RangeSyntaxDatatypeParameter np nq) cont =
+    nameToSymbolType np $ \vp -> nameToSymbolType nq $ \vq -> cont $ RangeCCRTypeParam vp vq
 
-assignTParam ::
+assignCCRTypeParam ::
        forall (sv :: CCRVariance) (a :: CCRVarianceKind sv) (t :: CCRVarianceKind sv) r.
-       TParam sv t
+       CCRTypeParam sv t
     -> (t ~ a => r)
     -> r
-assignTParam (CoTParam v) call = assignUVarT @a v call
-assignTParam (ContraTParam v) call = assignUVarT @a v call
-assignTParam (RangeTParam vp vq) call =
+assignCCRTypeParam (CoCCRTypeParam v) call = assignUVarT @a v call
+assignCCRTypeParam (ContraCCRTypeParam v) call = assignUVarT @a v call
+assignCCRTypeParam (RangeCCRTypeParam vp vq) call =
     case unsafeTypeIsPair @_ @_ @a of
         Refl -> assignUVarT @(Contra a) vp $ assignUVarT @(Co a) vq call
 
-type TParams :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
-type TParams = CCRArguments TParam
+type CCRTypeParams :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
+type CCRTypeParams = CCRArguments CCRTypeParam
 
 tParamToPolarArgument ::
        forall sv (t :: CCRVarianceKind sv) polarity. Is PolarityType polarity
-    => TParam sv t
+    => CCRTypeParam sv t
     -> CCRPolarArgumentShimWit (PinaforePolyShim Type) PinaforeType polarity sv t
-tParamToPolarArgument (CoTParam var) =
+tParamToPolarArgument (CoCCRTypeParam var) =
     case singleDolanShimWit $ mkShimWit $ VarDolanSingularType var of
         MkShimWit arg conv -> MkShimWit (CoCCRPolarArgument arg) conv
-tParamToPolarArgument (ContraTParam var) =
+tParamToPolarArgument (ContraCCRTypeParam var) =
     invertPolarity @polarity $
     case singleDolanShimWit $ mkShimWit $ VarDolanSingularType var of
         MkShimWit arg conv -> MkShimWit (ContraCCRPolarArgument arg) $ MkCatDual $ uninvertPolarMap conv
-tParamToPolarArgument (RangeTParam varp varq) =
+tParamToPolarArgument (RangeCCRTypeParam varp varq) =
     invertPolarity @polarity $
     case ( singleDolanShimWit $ mkShimWit $ VarDolanSingularType varp
          , singleDolanShimWit $ mkShimWit $ VarDolanSingularType varq) of
         (MkShimWit argp convp, MkShimWit argq convq) ->
             MkShimWit (RangeCCRPolarArgument argp argq) $ MkCatRange (uninvertPolarMap convp) convq
 
-type GenTParams dv = forall (gt :: DolanVarianceKind dv). AnyW (TParams dv gt)
+type GenCCRTypeParams dv = forall (gt :: DolanVarianceKind dv). AnyW (CCRTypeParams dv gt)
 
-data AnyTParams where
-    MkAnyTParams :: forall (dv :: DolanVariance). GenTParams dv -> AnyTParams
+data AnyCCRTypeParams where
+    MkAnyCCRTypeParams :: forall (dv :: DolanVariance). GenCCRTypeParams dv -> AnyCCRTypeParams
 
-tParamsVars :: TParams dv gt t -> [AnyW SymbolType]
+tParamsVars :: CCRTypeParams dv gt t -> [AnyW SymbolType]
 tParamsVars NilCCRArguments = []
 tParamsVars (ConsCCRArguments tp tps) = tParamVars tp ++ tParamsVars tps
 
-addTParam ::
+addCCRTypeParam ::
        forall sv (t :: CCRVarianceKind sv) (dv :: DolanVariance).
-       TParam sv t
-    -> (forall (gt :: DolanVarianceKind dv). AnyW (TParams dv gt))
-    -> (forall (gt :: CCRVarianceKind sv -> DolanVarianceKind dv). AnyW (TParams (sv ': dv) gt))
-addTParam p atp = let
-    atp' :: forall (gt :: CCRVarianceKind sv -> DolanVarianceKind dv). AnyW (TParams (sv ': dv) gt)
+       CCRTypeParam sv t
+    -> (forall (gt :: DolanVarianceKind dv). AnyW (CCRTypeParams dv gt))
+    -> (forall (gt :: CCRVarianceKind sv -> DolanVarianceKind dv). AnyW (CCRTypeParams (sv ': dv) gt))
+addCCRTypeParam p atp = let
+    atp' :: forall (gt :: CCRVarianceKind sv -> DolanVarianceKind dv). AnyW (CCRTypeParams (sv ': dv) gt)
     atp' =
         case atp @(gt t) of
             MkAnyW pp -> MkAnyW $ ConsCCRArguments p pp
     in atp'
 
-getAnyTParams :: [SyntaxDatatypeParameter] -> AnyTParams
-getAnyTParams [] = MkAnyTParams $ MkAnyW NilCCRArguments
-getAnyTParams (sp:spp) =
-    withTParam sp $ \p ->
-        case getAnyTParams spp of
-            MkAnyTParams f -> MkAnyTParams $ addTParam p f
+getAnyCCRTypeParams :: [SyntaxDatatypeParameter] -> AnyCCRTypeParams
+getAnyCCRTypeParams [] = MkAnyCCRTypeParams $ MkAnyW NilCCRArguments
+getAnyCCRTypeParams (sp:spp) =
+    withCCRTypeParam sp $ \p ->
+        case getAnyCCRTypeParams spp of
+            MkAnyCCRTypeParams f -> MkAnyCCRTypeParams $ addCCRTypeParam p f
 
 paramsUnEndo ::
        forall (t :: Type) (dv :: DolanVariance) (f :: DolanVarianceKind dv).
-       TParams dv f t
+       CCRTypeParams dv f t
     -> (t -> t)
     -> KindMorphism (->) f f
 paramsUnEndo NilCCRArguments tt = tt
 paramsUnEndo (ConsCCRArguments p pp) tt = let
     ff :: forall x. KindFunction (f x) (f x)
-    ff = assignTParam @_ @x p $ paramsUnEndo pp tt
+    ff = assignCCRTypeParam @_ @x p $ paramsUnEndo pp tt
     in MkNestedMorphism ff
 
-getArgumentVariation ::
-       forall v n (t :: Type) (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> DolanVarianceKind dv) (a :: CCRVarianceKind sv).
-       Name
-    -> VarianceType v
-    -> SymbolType n
-    -> CCRVariation sv f
-    -> NonpolarArgument PinaforeGroundType sv a
-    -> NonpolarArguments PinaforeGroundType dv (f a) t
-    -> PinaforeInterpreter (Mapping n t)
-getArgumentVariation tname v var svm (CoNonpolarArgument t) args = do
-    mapping <- getNonpolarVariation tname v var t
-    return $ mapMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm aa)) mapping
-getArgumentVariation tname v var svm (ContraNonpolarArgument t) args = do
-    mapping <- invertVarianceType v $ \v' -> getNonpolarVariation tname v' var t
-    return $ mapMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm $ MkCatDual aa)) mapping
-getArgumentVariation tname v var svm (RangeNonpolarArgument tp tq) args = do
-    mappingp <- invertVarianceType v $ \v' -> getNonpolarVariation tname v' var tp
-    mappingq <- getNonpolarVariation tname v var tq
-    return $ joinMapping (\pp qq -> ccrArgumentsEndo args (ccrvMap svm $ MkCatRange pp qq)) mappingp mappingq
-
-getArgumentsVariation ::
-       forall v n (t :: Type) dv gt.
-       Name
-    -> VarianceType v
-    -> SymbolType n
-    -> DolanVarianceMap dv gt
-    -> NonpolarArguments PinaforeGroundType dv gt t
-    -> PinaforeInterpreter (Mapping n t)
-getArgumentsVariation _ _ _ NilDolanVarianceMap NilCCRArguments = return mempty
-getArgumentsVariation tname v var (ConsDolanVarianceMap ccrv dvm) (ConsCCRArguments arg args) = do
-    vmap1 <- getArgumentVariation tname v var ccrv arg args
-    vmapr <- getArgumentsVariation tname v var dvm args
-    return $ vmap1 <> vmapr
-
-getNonpolarVariation ::
-       forall v n t.
-       Name
-    -> VarianceType v
-    -> SymbolType n
-    -> PinaforeNonpolarType t
-    -> PinaforeInterpreter (Mapping n t)
-getNonpolarVariation _ CoVarianceType var (VarNonpolarType var')
-    | Just Refl <- testEquality var var' = return varMapping
-getNonpolarVariation tname ContraVarianceType var (VarNonpolarType var')
-    | Just Refl <- testEquality var var' =
-        throw $ InterpretTypeDeclTypeVariableWrongPolarityError tname $ symbolTypeToName var
-getNonpolarVariation _ _ _ (VarNonpolarType _) = return mempty
-getNonpolarVariation tname v var (GroundedNonpolarType gt args) =
-    getArgumentsVariation tname v var (pgtVarianceMap gt) args
-
-getConstructorVariation ::
-       forall v n tl.
-       Name
-    -> VarianceType v
-    -> SymbolType n
-    -> ListType PinaforeNonpolarType tl
-    -> PinaforeInterpreter (Mapping n (HList tl))
-getConstructorVariation _ _ _ NilListType = return pUnit
-getConstructorVariation tname v var (ConsListType t1 tr) = do
-    vmap1 <- getNonpolarVariation tname v var t1
-    vmapr <- getConstructorVariation tname v var tr
-    return $ vmap1 <***> vmapr
-
-getDataTypeVariation ::
+getDataTypeMapping ::
        forall v n t. Name -> VarianceType v -> SymbolType n -> PinaforeDataType t -> PinaforeInterpreter (Mapping n t)
-getDataTypeVariation _ _ _ NilDataType = return pNone
-getDataTypeVariation tname vt var (ConsDataType c dt) = do
-    vmap1 <- getConstructorVariation tname vt var c
-    vmapr <- getDataTypeVariation tname vt var dt
+getDataTypeMapping _ _ _ NilDataType = return pNone
+getDataTypeMapping tname vt var (ConsDataType c dt) = do
+    vmap1 <- getConstructorMapping tname vt var c
+    vmapr <- getDataTypeMapping tname vt var dt
     return $ vmap1 <+++> vmapr
 
 getCCRVariation ::
        Name
-    -> TParam sv a
+    -> CCRTypeParam sv a
     -> PinaforeDataType t
     -> PinaforeInterpreter (CCRVarianceCategory KindFunction sv a a -> (t -> t))
-getCCRVariation tname (CoTParam v) dt = do
-    f <- getDataTypeVariation tname CoVarianceType v dt
+getCCRVariation tname (CoCCRTypeParam v) dt = do
+    f <- getDataTypeMapping tname CoVarianceType v dt
     return $ runMapping f
-getCCRVariation tname (ContraTParam v) dt = do
-    f <- getDataTypeVariation tname ContraVarianceType v dt
+getCCRVariation tname (ContraCCRTypeParam v) dt = do
+    f <- getDataTypeMapping tname ContraVarianceType v dt
     return $ \(MkCatDual tt) -> runMapping f tt
-getCCRVariation tname (RangeTParam vp vq) dt = do
-    fp <- getDataTypeVariation tname ContraVarianceType vp dt
-    fq <- getDataTypeVariation tname CoVarianceType vq dt
+getCCRVariation tname (RangeCCRTypeParam vp vq) dt = do
+    fp <- getDataTypeMapping tname ContraVarianceType vp dt
+    fq <- getDataTypeMapping tname CoVarianceType vq dt
     return $ \(MkCatRange pp qq) -> runMapping fp pp . runMapping fq qq
 
 paramsCCRVMap ::
        forall (sv :: CCRVariance) (x :: CCRVarianceKind sv) (t :: Type) (dv :: DolanVariance) (f :: CCRVarianceKind sv -> DolanVarianceKind dv) (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv).
-       TParam sv x
+       CCRTypeParam sv x
     -> (CCRVarianceCategory (->) sv x x -> t -> t)
-    -> CCRArguments TParam dv (f x) t
+    -> CCRArguments CCRTypeParam dv (f x) t
     -> CCRVarianceCategory (->) sv a b
     -> KindMorphism (->) (f a) (f b)
-paramsCCRVMap p ff pp ab = assignTParam @sv @a p $ assignTParam @sv @b p $ paramsUnEndo pp $ ff ab
+paramsCCRVMap p ff pp ab = assignCCRTypeParam @sv @a p $ assignCCRTypeParam @sv @b p $ paramsUnEndo pp $ ff ab
 
-assignDolanArgVars :: forall sv dv gt t a. TParam sv t -> DolanVarianceMap dv (gt t) -> DolanVarianceMap dv (gt a)
-assignDolanArgVars = assignTParam @sv @a
+assignDolanArgVars :: forall sv dv gt t a. CCRTypeParam sv t -> DolanVarianceMap dv (gt t) -> DolanVarianceMap dv (gt a)
+assignDolanArgVars = assignCCRTypeParam @sv @a
 
-getDolanVarianceMap :: Name -> TParams dv gt t -> PinaforeDataType t -> PinaforeInterpreter (DolanVarianceMap dv gt)
+getDolanVarianceMap ::
+       Name -> CCRTypeParams dv gt t -> PinaforeDataType t -> PinaforeInterpreter (DolanVarianceMap dv gt)
 getDolanVarianceMap _ NilCCRArguments _ = return NilDolanVarianceMap
 getDolanVarianceMap tname (ConsCCRArguments p pp) dt = do
     ff <- getCCRVariation tname p dt
     args <- getDolanVarianceMap tname pp dt
     return $ ConsDolanVarianceMap (MkCCRVariation Nothing $ paramsCCRVMap p ff pp) $ assignDolanArgVars p args
-
-lazyKindMorphism ::
-       forall dv (a :: DolanVarianceKind dv) (b :: DolanVarianceKind dv).
-       DolanVarianceType dv
-    -> KindMorphism (->) a b
-    -> KindMorphism (->) a b
-lazyKindMorphism NilListType ab = ab
-lazyKindMorphism (ConsListType _ dvt) ~(MkNestedMorphism ab) = MkNestedMorphism $ lazyKindMorphism dvt ab
-
-lazyCCRVariation ::
-       forall (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> DolanVarianceKind dv).
-       CCRVarianceType sv
-    -> DolanVarianceType dv
-    -> CCRVariation sv f
-    -> CCRVariation sv f
-lazyCCRVariation _ dvt ~(MkCCRVariation _mr mp) = MkCCRVariation Nothing $ \ab -> lazyKindMorphism dvt $ mp ab
-
-lazyDolanVarianceMap :: DolanVarianceType dv -> DolanVarianceMap dv t -> DolanVarianceMap dv t
-lazyDolanVarianceMap NilListType _cdvm = NilDolanVarianceMap
-lazyDolanVarianceMap (ConsListType svt dvt) cdvm =
-    ConsDolanVarianceMap
-        (lazyCCRVariation svt dvt $
-         case cdvm of
-             ConsDolanVarianceMap ccrv _ -> ccrv) $
-    lazyDolanVarianceMap
-        dvt
-        (case cdvm of
-             ConsDolanVarianceMap _ dv -> dv)
 
 makeDataTypeBox ::
        Name
@@ -304,13 +214,13 @@ makeDataTypeBox ::
     -> [SyntaxDatatypeConstructor]
     -> PinaforeInterpreter PinaforeTypeBox
 makeDataTypeBox name doc params sconss =
-    case getAnyTParams params of
-        MkAnyTParams (gtparams :: GenTParams dv) ->
+    case getAnyCCRTypeParams params of
+        MkAnyCCRTypeParams (gtparams :: GenCCRTypeParams dv) ->
             newTypeID $ \(tidsym :: _ tid) ->
                 case unsafeIdentifyKind @_ @(DolanVarianceKind dv) tidsym of
                     Identity Refl ->
                         case gtparams @(Identified tid) of
-                            MkAnyW (tparams :: TParams dv (Identified tid) decltype) ->
+                            MkAnyW (tparams :: CCRTypeParams dv (Identified tid) decltype) ->
                                 withRepresentative (ccrArgumentsType tparams) $ let
                                     dvt :: DolanVarianceType dv
                                     dvt = ccrArgumentsType tparams
@@ -359,7 +269,7 @@ makeDataTypeBox name doc params sconss =
                                                getargs =
                                                    mapCCRArguments
                                                        @PinaforePolyShim
-                                                       @TParam
+                                                       @CCRTypeParam
                                                        @(CCRPolarArgument PinaforeType polarity)
                                                        @dv
                                                        @polarity

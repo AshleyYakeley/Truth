@@ -57,17 +57,33 @@ data DolanVarianceMap dv f where
         -> (forall a. DolanVarianceMap dv (f a))
         -> DolanVarianceMap (sv ': dv) f
 
-bijectSingleVarianceMap ::
-       forall (pshim :: PolyShimKind) sv f.
+lazyDVKindMorphism ::
+       forall dv (a :: DolanVarianceKind dv) (b :: DolanVarianceKind dv).
+       DolanVarianceType dv
+    -> KindMorphism (->) a b
+    -> KindMorphism (->) a b
+lazyDVKindMorphism NilListType ab = ab
+lazyDVKindMorphism (ConsListType _ dvt) ~(MkNestedMorphism ab) = MkNestedMorphism $ lazyDVKindMorphism dvt ab
+
+lazyCCRVariation ::
+       forall (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> DolanVarianceKind dv).
        CCRVarianceType sv
-    -> CCRVarianceMap pshim sv f
-    -> CCRVarianceMap (PolyIso pshim) sv f
-bijectSingleVarianceMap CoCCRVarianceType svm (MkPolyMapT (MkIsomorphism ab ba)) =
-    MkPolyMapT $ MkIsomorphism (svm ab) (svm ba)
-bijectSingleVarianceMap ContraCCRVarianceType svm (MkCatDual (MkPolyMapT (MkIsomorphism ab ba))) =
-    MkPolyMapT $ MkIsomorphism (svm $ MkCatDual ab) (svm $ MkCatDual ba)
-bijectSingleVarianceMap RangeCCRVarianceType svm (MkCatRange (MkPolyMapT (MkIsomorphism pab pba)) (MkPolyMapT (MkIsomorphism qab qba))) =
-    MkPolyMapT $ MkIsomorphism (svm $ MkCatRange pab qab) (svm $ MkCatRange pba qba)
+    -> DolanVarianceType dv
+    -> CCRVariation sv f
+    -> CCRVariation sv f
+lazyCCRVariation _ dvt ~(MkCCRVariation _mr mp) = MkCCRVariation Nothing $ \ab -> lazyDVKindMorphism dvt $ mp ab
+
+lazyDolanVarianceMap :: DolanVarianceType dv -> DolanVarianceMap dv t -> DolanVarianceMap dv t
+lazyDolanVarianceMap NilListType _cdvm = NilDolanVarianceMap
+lazyDolanVarianceMap (ConsListType svt dvt) cdvm =
+    ConsDolanVarianceMap
+        (lazyCCRVariation svt dvt $
+         case cdvm of
+             ConsDolanVarianceMap ccrv _ -> ccrv) $
+    lazyDolanVarianceMap
+        dvt
+        (case cdvm of
+             ConsDolanVarianceMap _ dv -> dv)
 
 class Is DolanVarianceType dv => HasDolanVariance (dv :: DolanVariance) (f :: DolanVarianceKind dv) | f -> dv where
     dolanVarianceMap :: DolanVarianceMap dv f
