@@ -773,6 +773,31 @@ testEntity =
                                 , "sdi = showD di"
                                 ] $
                             testExpectSuccess "if sdi == \"[576, 469, 12]\" then pass else fail sdi"
+                          , tDecls
+                                [ "datatype D -a = Mk1D (a -> Integer) | Mk2D (a -> a -> Text)"
+                                , "dShow: D Number"
+                                , "dShow = Mk2D $ \\a b -> show a <> \",\" <> show b"
+                                , "di: D Integer"
+                                , "di = dShow"
+                                , "showD: a -> D a -> Text"
+                                , "showD a da = case da of Mk1D ai -> show $ ai a; Mk2D aat -> aat a a end"
+                                , "sd: Text"
+                                , "sd = showD 356 di"
+                                ] $
+                            testExpectSuccess "if sd == \"356,356\" then pass else fail sd"
+                          , tDecls
+                                [ "rec datatype RList +a = MkRList (Maybe (a, RList a)) end"
+                                , "rec showRList: RList Showable -> Text"
+                                , "showRList (MkRList rl) = case rl of Nothing -> \"\"; Just (a,rla) -> show a <> \";\" <> showRList rla end"
+                                , "end"
+                                , "rlisti: RList Integer"
+                                , "rlisti = MkRList $ Just (45,MkRList $ Just (72, MkRList $ Just (18,MkRList Nothing)))"
+                                , "rlists: RList Showable"
+                                , "rlists = rlisti"
+                                , "sd: Text"
+                                , "sd = showRList rlists"
+                                ] $
+                            testExpectSuccess "if sd == \"45;72;18;\" then pass else fail sd"
                           ]
                     ]
               ]

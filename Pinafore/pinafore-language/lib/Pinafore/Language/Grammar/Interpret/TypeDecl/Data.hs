@@ -7,6 +7,7 @@ import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Type
+import Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
 import Pinafore.Language.Grammar.Interpret.TypeDecl.TypeBox
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
@@ -91,6 +92,17 @@ withTParam (NegativeSyntaxDatatypeParameter n) cont = nameToSymbolType n $ \v ->
 withTParam (RangeSyntaxDatatypeParameter np nq) cont =
     nameToSymbolType np $ \vp -> nameToSymbolType nq $ \vq -> cont $ RangeTParam vp vq
 
+assignTParam ::
+       forall (sv :: CCRVariance) (a :: CCRVarianceKind sv) (t :: CCRVarianceKind sv) r.
+       TParam sv t
+    -> (t ~ a => r)
+    -> r
+assignTParam (CoTParam v) call = assignUVarT @a v call
+assignTParam (ContraTParam v) call = assignUVarT @a v call
+assignTParam (RangeTParam vp vq) call =
+    case unsafeTypeIsPair @_ @_ @a of
+        Refl -> assignUVarT @(Contra a) vp $ assignUVarT @(Co a) vq call
+
 type TParams :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
 type TParams = CCRArguments TParam
 
@@ -140,41 +152,33 @@ getAnyTParams (sp:spp) =
         case getAnyTParams spp of
             MkAnyTParams f -> MkAnyTParams $ addTParam p f
 
-type Mapping :: Symbol -> Type -> Type
-newtype Mapping n t =
-    MkMapping (Kleisli Endo (UVarT n -> UVarT n) t)
-    deriving (Semigroup, Monoid, IsoVariant, Summish, Productish)
-
-varMapping :: forall (n :: Symbol). Mapping n (UVarT n)
-varMapping = MkMapping $ Kleisli $ \ab -> Endo ab
-
-runMapping :: Mapping n t -> (UVarT n -> UVarT n) -> t -> t
-runMapping (MkMapping (Kleisli f)) ab = appEndo $ f ab
-
-mapMapping :: ((p -> p) -> (q -> q)) -> Mapping n p -> Mapping n q
-mapMapping ff (MkMapping (Kleisli f)) = MkMapping $ Kleisli $ \tt -> Endo $ ff $ appEndo $ f tt
-
-joinMapping :: ((p -> p) -> (q -> q) -> (t -> t)) -> Mapping n p -> Mapping n q -> Mapping n t
-joinMapping ff (MkMapping (Kleisli fp)) (MkMapping (Kleisli fq)) =
-    MkMapping $ Kleisli $ \tt -> Endo $ ff (appEndo $ fp tt) (appEndo $ fq tt)
+paramsUnEndo ::
+       forall (t :: Type) (dv :: DolanVariance) (f :: DolanVarianceKind dv).
+       TParams dv f t
+    -> (t -> t)
+    -> KindMorphism (->) f f
+paramsUnEndo NilCCRArguments tt = tt
+paramsUnEndo (ConsCCRArguments p pp) tt = let
+    ff :: forall x. KindFunction (f x) (f x)
+    ff = assignTParam @_ @x p $ paramsUnEndo pp tt
+    in MkNestedMorphism ff
 
 getArgumentVariation ::
        forall v n (t :: Type) (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> DolanVarianceKind dv) (a :: CCRVarianceKind sv).
        Name
     -> VarianceType v
     -> SymbolType n
-    -> CCRVarianceType sv
     -> CCRVariation sv f
     -> NonpolarArgument PinaforeGroundType sv a
     -> NonpolarArguments PinaforeGroundType dv (f a) t
     -> PinaforeInterpreter (Mapping n t)
-getArgumentVariation tname v var _ svm (CoNonpolarArgument t) args = do
+getArgumentVariation tname v var svm (CoNonpolarArgument t) args = do
     mapping <- getNonpolarVariation tname v var t
     return $ mapMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm aa)) mapping
-getArgumentVariation tname v var _ svm (ContraNonpolarArgument t) args = do
+getArgumentVariation tname v var svm (ContraNonpolarArgument t) args = do
     mapping <- invertVarianceType v $ \v' -> getNonpolarVariation tname v' var t
     return $ mapMapping (\aa -> ccrArgumentsEndo args (ccrvMap svm $ MkCatDual aa)) mapping
-getArgumentVariation tname v var _ svm (RangeNonpolarArgument tp tq) args = do
+getArgumentVariation tname v var svm (RangeNonpolarArgument tp tq) args = do
     mappingp <- invertVarianceType v $ \v' -> getNonpolarVariation tname v' var tp
     mappingq <- getNonpolarVariation tname v var tq
     return $ joinMapping (\pp qq -> ccrArgumentsEndo args (ccrvMap svm $ MkCatRange pp qq)) mappingp mappingq
@@ -184,14 +188,13 @@ getArgumentsVariation ::
        Name
     -> VarianceType v
     -> SymbolType n
-    -> DolanVarianceType dv
     -> DolanVarianceMap dv gt
     -> NonpolarArguments PinaforeGroundType dv gt t
     -> PinaforeInterpreter (Mapping n t)
-getArgumentsVariation _ _ _ NilListType NilDolanVarianceMap NilCCRArguments = return mempty
-getArgumentsVariation tname v var (ConsListType svt dvt) (ConsDolanVarianceMap ccrv dvm) (ConsCCRArguments arg args) = do
-    vmap1 <- getArgumentVariation tname v var svt ccrv arg args
-    vmapr <- getArgumentsVariation tname v var dvt dvm args
+getArgumentsVariation _ _ _ NilDolanVarianceMap NilCCRArguments = return mempty
+getArgumentsVariation tname v var (ConsDolanVarianceMap ccrv dvm) (ConsCCRArguments arg args) = do
+    vmap1 <- getArgumentVariation tname v var ccrv arg args
+    vmapr <- getArgumentsVariation tname v var dvm args
     return $ vmap1 <> vmapr
 
 getNonpolarVariation ::
@@ -208,7 +211,7 @@ getNonpolarVariation tname ContraVarianceType var (VarNonpolarType var')
         throw $ InterpretTypeDeclTypeVariableWrongPolarityError tname $ symbolTypeToName var
 getNonpolarVariation _ _ _ (VarNonpolarType _) = return mempty
 getNonpolarVariation tname v var (GroundedNonpolarType gt args) =
-    getArgumentsVariation tname v var (pgtVarianceType gt) (pgtVarianceMap gt) args
+    getArgumentsVariation tname v var (pgtVarianceMap gt) args
 
 getConstructorVariation ::
        forall v n tl.
@@ -246,28 +249,6 @@ getCCRVariation tname (RangeTParam vp vq) dt = do
     fp <- getDataTypeVariation tname ContraVarianceType vp dt
     fq <- getDataTypeVariation tname CoVarianceType vq dt
     return $ \(MkCatRange pp qq) -> runMapping fp pp . runMapping fq qq
-
-assignTParam ::
-       forall (sv :: CCRVariance) (a :: CCRVarianceKind sv) (t :: CCRVarianceKind sv) r.
-       TParam sv t
-    -> (t ~ a => r)
-    -> r
-assignTParam (CoTParam v) call = assignUVarT @a v call
-assignTParam (ContraTParam v) call = assignUVarT @a v call
-assignTParam (RangeTParam vp vq) call =
-    case unsafeTypeIsPair @_ @_ @a of
-        Refl -> assignUVarT @(Contra a) vp $ assignUVarT @(Co a) vq call
-
-paramsUnEndo ::
-       forall (t :: Type) (dv :: DolanVariance) (f :: DolanVarianceKind dv).
-       TParams dv f t
-    -> (t -> t)
-    -> KindMorphism (->) f f
-paramsUnEndo NilCCRArguments tt = tt
-paramsUnEndo (ConsCCRArguments p pp) tt = let
-    ff :: forall x. KindFunction (f x) (f x)
-    ff = assignTParam @_ @x p $ paramsUnEndo pp tt
-    in MkNestedMorphism ff
 
 paramsCCRVMap ::
        forall (sv :: CCRVariance) (x :: CCRVarianceKind sv) (t :: Type) (dv :: DolanVariance) (f :: CCRVarianceKind sv -> DolanVarianceKind dv) (a :: CCRVarianceKind sv) (b :: CCRVarianceKind sv).

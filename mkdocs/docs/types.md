@@ -20,6 +20,20 @@ datatype T =
 Data types are not subtypes of `Entity` and are not storable.
 You can use closed entity types (below) for that.
 
+Datatypes can take parameters. The variance of each parameter is specified like this:
+
+* `+a` for covariant
+* `-a` for contravariant
+* `{-p,+q}` or `{+q,-p}` for a contravariant-covariant pair.
+
+For example:
+
+```pinafore
+datatype D +a -b {-p,+q} =
+    T1 (b -> [a]) |
+    T2 ((p,b) -> q);
+```
+
 ## Entity types
 
 Entities are the things that can be represented as subjects and values in the triple-store.
