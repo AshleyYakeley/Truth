@@ -44,15 +44,15 @@ pureLensModify lens bb a = runIdentity $ lensModify lens bb a
 
 lensMap :: FunctorOne m => Lens' m a b -> (b -> b) -> (a -> a)
 lensMap lens bb a =
-    case getMaybeOne (lensModify lens bb a) of
+    case fextractm (lensModify lens bb a) of
         Just a' -> a'
         _ -> a
 
 lensAllowed :: FunctorOne m => Lens' m a b -> b -> a -> Bool
-lensAllowed lens b a = isJust $ getMaybeOne $ lensPutback lens b a
+lensAllowed lens b a = isJust $ fextractm $ lensPutback lens b a
 
 lensToPure :: FunctorOne m => Lens' m a b -> PureLens a b
-lensToPure (MkLens g pb) = MkLens g $ \b olda -> Identity $ fromMaybe olda $ getMaybeOne $ pb b olda
+lensToPure (MkLens g pb) = MkLens g $ \b olda -> Identity $ fromMaybe olda $ fextractm $ pb b olda
 
 instance IsBiMap Lens' where
     mapBiMapM ff lens =

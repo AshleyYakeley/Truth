@@ -85,7 +85,7 @@ liftFullResultOneChangeLens (MkChangeLens g u pe) = let
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m [FullResultOneUpdate f updateB]
     clUpdate (MkFullResultOneUpdate (SuccessResultOneUpdate upda)) mr =
-        fmap (fmap (MkFullResultOneUpdate . SuccessResultOneUpdate) . fromMaybe [] . getMaybeOne) $
+        fmap (fmap (MkFullResultOneUpdate . SuccessResultOneUpdate) . fromMaybe [] . fextractm) $
         getComposeM $ u upda $ oneReadFunctionF mr
     clUpdate (MkFullResultOneUpdate (NewResultOneUpdate fu)) _mr =
         return $ [MkFullResultOneUpdate $ NewResultOneUpdate fu]
@@ -103,7 +103,7 @@ liftFullResultOneChangeLens (MkChangeLens g u pe) = let
     clPutEdit (SuccessFullResultOneEdit eb) mr = do
         fme <- getComposeM $ pe [eb] $ oneReadFunctionF mr
         return $
-            case getMaybeOne fme of
+            case fextractm fme of
                 Just me -> fmap (fmap SuccessFullResultOneEdit) me
                 Nothing -> Just []
     clPutEdit (NewFullResultOneEdit fb) mr = do
@@ -173,7 +173,7 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
         case retrieveOne fr of
             SuccessResult r ->
                 lift $
-                fmap (fmap (MkFullResultOneUpdate . SuccessResultOneUpdate) . fromMaybe [] . getMaybeOne) $
+                fmap (fmap (MkFullResultOneUpdate . SuccessResultOneUpdate) . fromMaybe [] . fextractm) $
                 getComposeM $ clUpdate (rlens r) upda $ oneReadFunctionF mr
             FailureResult _ -> return []
     sclUpdate (MkFullResultOneUpdate (NewResultOneUpdate fu)) mr = do
@@ -200,7 +200,7 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
             SuccessResult r -> do
                 fme <- lift $ getComposeM $ clPutEdits (rlens r) [eb] $ oneReadFunctionF mr
                 return $
-                    case getMaybeOne fme of
+                    case fextractm fme of
                         Just me -> fmap (fmap SuccessFullResultOneEdit) me
                         Nothing -> Just []
             FailureResult _ -> return $ Just []

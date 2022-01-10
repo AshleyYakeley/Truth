@@ -251,9 +251,9 @@ instance (IsStack (WithTunnelConstraint Functor) tt, IsStack (WithTunnelConstrai
     fpure =
         case isWithTunnelConstraint @FunctorOne @tt of
             Dict -> \a -> MkStackTunnel $ fpure a
-    getMaybeOne =
+    fextractm =
         case isWithTunnelConstraint @FunctorOne @tt of
-            Dict -> \(MkStackTunnel st) -> getMaybeOne st
+            Dict -> \(MkStackTunnel st) -> fextractm st
 
 instance ( IsStack (WithTunnelConstraint Functor) tt
          , IsStack (WithTunnelConstraint FunctorOne) tt

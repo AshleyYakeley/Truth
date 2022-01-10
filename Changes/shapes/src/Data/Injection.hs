@@ -34,7 +34,7 @@ hoistInjection :: (forall t. m1 t -> m2 t) -> Injection' m1 a b -> Injection' m2
 hoistInjection ff (MkInjection ab bma) = MkInjection ab $ ff . bma
 
 toInjection :: MonadOne m => Injection' m a b -> Injection a b
-toInjection = hoistInjection getMaybeOne
+toInjection = hoistInjection fextractm
 
 codecInjection :: (Functor m) => Codec' m a b -> Injection' m a (m b)
 codecInjection codec = MkInjection {injForwards = decode codec, injBackwards = fmap (encode codec)}

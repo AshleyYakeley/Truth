@@ -122,7 +122,7 @@ mVarRun :: MVar s -> Unlift MonadTunnelIO (StateT s)
 mVarRun var (StateT smr) =
     tunnelIO $ \unlift ->
         modifyMVar var $ \olds ->
-            fmap (\fas -> (fromMaybe olds $ getMaybeOne $ fmap snd fas, fmap fst fas)) $ unlift $ smr olds
+            fmap (\fas -> (fromMaybe olds $ fextractm $ fmap snd fas, fmap fst fas)) $ unlift $ smr olds
 
 mVarUnitRun :: MonadTunnelIO m => MVar s -> m --> m
 mVarUnitRun var ma = mVarRun var $ lift ma

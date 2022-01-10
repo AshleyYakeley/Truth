@@ -11,7 +11,7 @@ class IsBiMap bm where
     mapBiMapM :: (forall x. m1 x -> m2 x) -> bm m1 a b -> bm m2 a b
 
 toBiMapMaybe :: (IsBiMap bm, MonadOne m) => bm m edita editb -> bm Maybe edita editb
-toBiMapMaybe = mapBiMapM getMaybeOne
+toBiMapMaybe = mapBiMapM fextractm
 
 toBiMapResult ::
        forall e bm m edita editb. (IsBiMap bm, MonadOne m)
@@ -34,10 +34,10 @@ hoistCodec :: (forall x. m1 x -> m2 x) -> Codec' m1 a b -> Codec' m2 a b
 hoistCodec f (MkCodec d e) = MkCodec (f . d) e
 
 decodeMaybe :: MonadOne m => Codec' m a b -> a -> Maybe b
-decodeMaybe codec = getMaybeOne . decode codec
+decodeMaybe codec = fextractm . decode codec
 
 toCodec :: MonadOne m => Codec' m a b -> Codec a b
-toCodec = hoistCodec getMaybeOne
+toCodec = hoistCodec fextractm
 
 instance Functor m => IsoVariant (Codec' m p) where
     isoMap ab ba (MkCodec d e) = MkCodec (\p -> fmap ab $ d p) (e . ba)

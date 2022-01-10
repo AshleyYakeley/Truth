@@ -68,7 +68,7 @@ soupReference dirpath = let
            forall m. MonadIO m
         => UpdateSubject PossibleNoteUpdate
         -> m (Maybe LazyByteString)
-    paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
+    paste s = return $ fextractm $ injBackwards soupItemInjection s
     soupItemLens :: ChangeLens ByteStringUpdate PossibleNoteUpdate
     soupItemLens = convertChangeLens . (wholeChangeLens $ injectionLens soupItemInjection) . convertChangeLens
     lens :: ChangeLens ReferenceSoupUpdate (SoupUpdate PossibleNoteUpdate)

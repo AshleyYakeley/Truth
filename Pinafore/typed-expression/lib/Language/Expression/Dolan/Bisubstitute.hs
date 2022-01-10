@@ -66,11 +66,11 @@ instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. ( MonadOne
                 then " (recursive)"
                 else ""
         spos =
-            case getMaybeOne mtpos of
+            case fextractm mtpos of
                 Just (MkShimWit t _) -> showAllWitness t
                 Nothing -> "fails"
         sneg =
-            case getMaybeOne mtneg of
+            case fextractm mtneg of
                 Just (MkShimWit t _) -> showAllWitness t
                 Nothing -> "fails"
         in show var <> srec <> " => " <> "(" <> spos <> "," <> sneg <> ")"

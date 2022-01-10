@@ -34,7 +34,7 @@ bindOne fa afb =
         FailureResult fn -> fmap absurd fn
 
 fromOne :: MonadOne f => a -> f a -> a
-fromOne def fa = fromMaybe def $ getMaybeOne fa
+fromOne def fa = fromMaybe def $ fextractm fa
 
 fcommuteOne :: (MonadOne fa, FunctorOne fb) => fa (fb r) -> fb (fa r)
 fcommuteOne abr =

@@ -7,39 +7,33 @@ class Functor f => FunctorOne f where
     fpure :: forall a. a -> f a
     default fpure :: Applicative f => forall a. a -> f a
     fpure = pure
-    -- | must satisfy @getMaybeOne . fpure = Just@
-    getMaybeOne :: forall a. f a -> Maybe a
+    -- | must satisfy @fextractm . fpure = Just@
+    fextractm :: forall a. f a -> Maybe a
 
 sequenceEither :: FunctorOne f => Either e (f a) -> f (Either e a)
 sequenceEither (Left e) = fpure $ Left e
 sequenceEither (Right fa) = fmap Right fa
 
 instance FunctorOne Identity where
-    getMaybeOne (Identity a) = Just a
+    fextractm (Identity a) = Just a
 
 instance FunctorOne Maybe where
-    getMaybeOne = id
+    fextractm = id
 
 instance Monoid p => FunctorOne ((,) p) where
-    getMaybeOne (_, a) = Just a
+    fextractm (_, a) = Just a
 
 instance FunctorOne (Either p) where
-    getMaybeOne (Left _) = Nothing
-    getMaybeOne (Right a) = Just a
+    fextractm (Left _) = Nothing
+    fextractm (Right a) = Just a
 
 instance (FunctorOne f1, FunctorOne f2) => FunctorOne (Compose f1 f2) where
     fpure a = Compose $ fpure $ fpure a
-    getMaybeOne (Compose ffa) = getMaybeOne ffa >>= getMaybeOne
+    fextractm (Compose ffa) = fextractm ffa >>= fextractm
 
 class FunctorOne f => FunctorExtract f where
-    -- | must satisfy @fextract . fpure = id@, @getMaybeOne = Just . fextract@
+    -- | must satisfy @fextract . fpure = id@, @fextractm = Just . fextract@
     fextract :: forall a. f a -> a
-
-fcommuteB :: (FunctorExtract fa, Functor fb) => fa (fb r) -> fb (fa r)
-fcommuteB abr = fmap (\r -> fmap (\_ -> r) abr) $ fextract abr
-
-fcommuteA :: (Functor fa, FunctorIdentity fb) => fa (fb r) -> fb (fa r)
-fcommuteA abr = fpure $ fmap fextract abr
 
 instance FunctorExtract Identity where
     fextract = runIdentity
@@ -56,3 +50,10 @@ class FunctorExtract f => FunctorIdentity f
 instance FunctorIdentity Identity
 
 instance (FunctorIdentity f1, FunctorIdentity f2) => FunctorIdentity (Compose f1 f2)
+
+-- | When used on Tunnels, this discards effects in tunnel @fb@ (due to use of @fpure@)
+fcommuteADiscard :: (Functor fa, FunctorExtract fb) => fa (fb r) -> fb (fa r)
+fcommuteADiscard abr = fpure $ fmap fextract abr
+
+fcommuteB :: (FunctorExtract fa, Functor fb) => fa (fb r) -> fb (fa r)
+fcommuteB abr = fmap (\r -> fmap (\_ -> r) abr) $ fextract abr

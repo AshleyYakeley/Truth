@@ -3,7 +3,11 @@ module Control.Monad.Ology.Data where
 import Control.Monad.Ology.Exception
 import Control.Monad.Ology.Function
 import Control.Monad.Ology.Trans.Tunnel
+import qualified Control.Monad.ST.Lazy as Lazy
+import qualified Control.Monad.ST.Strict as Strict
 import Data.IORef
+import qualified Data.STRef.Lazy as Lazy
+import qualified Data.STRef.Strict as Strict
 import Import
 
 -- | borrowed from the lens package
@@ -83,6 +87,12 @@ refRunState ref sm = do
 
 ioRef :: IORef a -> Ref IO a
 ioRef r = MkRef {getD = readIORef r, modifyD = modifyIORef r}
+
+strictSTRef :: Strict.STRef s a -> Ref (Strict.ST s) a
+strictSTRef r = MkRef {getD = Strict.readSTRef r, modifyD = Strict.modifySTRef r}
+
+lazySTRef :: Lazy.STRef s a -> Ref (Lazy.ST s) a
+lazySTRef r = MkRef {getD = Lazy.readSTRef r, modifyD = Lazy.modifySTRef r}
 
 data Prod m a = MkProd
     { tellD :: a -> m ()
