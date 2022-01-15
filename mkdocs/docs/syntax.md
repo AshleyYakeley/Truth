@@ -55,9 +55,16 @@ All declarations, including type declarations, are local to a `let` block.
     <type-1> |
     <type-range>
 
-<type-1> ::=
-    <type-argument-2> <type-infix> <type-argument-1> |
-    <type-2>
+<type-1> ::= <type-infix[0]> |
+
+<type-infix[n]> ::=
+    <type-infix[n+1]> |
+    <type-infix[n]> <type-infix-operator[n,left]> <type-infix[n+1]> |
+    <type-infix[n+1]> <type-infix-operator[n,right]> <type-infix[n]>
+
+<type-infix[4]> ::= <type-2>
+
+<type-infix-operator[n,dir]> ::= -- see table
 
 <type-argument-2> ::=
     <type-2> |
@@ -110,11 +117,12 @@ All declarations, including type declarations, are local to a `let` block.
 
 <expression-infix[n]> ::=
     <expression-infix[n+1]> |
-    <expression-infix[n]> <infix-operator[n]> <expression-infix[n+1]>
+    <expression-infix[n]> <infix-operator[n,left]> <expression-infix[n+1]> |
+    <expression-infix[n+1]> <infix-operator[n,right]> <expression-infix[n]>
 
 <expression-infix[11]> ::= <expression-1>
 
-<infix-operator[n]> ::= -- see table
+<infix-operator[n,dir]> ::= -- see table
 
 <expression-1> ::=
     "\" <patterns> "->" <expression> |
@@ -256,6 +264,10 @@ All declarations, including type declarations, are local to a `let` block.
     literal-number |
     literal-text
 ```
+
+## Type Infix Operators
+
+{!type-infix.md!}
 
 ## Infix Operators
 

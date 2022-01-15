@@ -6,6 +6,7 @@ module Pinafore.Documentation
     , runDocTree
     , libraryDoc
     , operatorFixity
+    , typeOperatorFixity
     , Fixity(..)
     , FixAssoc(..)
     , Name(..)

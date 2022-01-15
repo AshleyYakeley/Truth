@@ -16,6 +16,7 @@ module Pinafore.Language.Library
 import Pinafore.Context
 import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Debug
 import Pinafore.Language.Library.Defs
@@ -31,21 +32,14 @@ library = [stdLibraryModule, debugLibraryModule]
 libraryDoc :: [LibraryModule] -> [DocTree DefDoc]
 libraryDoc extralib = fmap (fmap bdDoc) $ library <> extralib
 
-nameIsInfix :: Name -> Bool
-nameIsInfix n =
-    case unpack n of
-        (c:_)
-            | isAlpha c -> False
-        "[]" -> False
-        _ -> True
-
-allOperatorNames :: [Name]
-allOperatorNames = let
+allOperatorNames :: DocType -> [Name]
+allOperatorNames dt = let
     getDocName :: BindDoc -> Maybe Name
-    getDocName MkBindDoc {bdScopeEntry = BindScopeEntry name _}
-        | nameIsInfix name = Just name
+    getDocName MkBindDoc {bdScopeEntry = BindScopeEntry name _, bdDoc = dd}
+        | docType dd == dt
+        , nameIsInfix name = Just name
     getDocName _ = Nothing
-    in catMaybes $ fmap getDocName $ mconcat $ fmap toList library
+    in mapMaybe getDocName $ mconcat $ fmap toList library
 
 getImplictScope :: (?pinafore :: PinaforeContext) => IO PinaforeScope
 getImplictScope = fmap moduleScope $ getLibraryModuleModule stdLibraryModule

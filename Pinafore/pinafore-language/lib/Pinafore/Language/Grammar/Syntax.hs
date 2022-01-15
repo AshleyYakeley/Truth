@@ -12,20 +12,24 @@ data SyntaxClosedEntityConstructor =
     MkSyntaxClosedEntityConstructor Name
                                     [SyntaxType]
                                     Anchor
+    deriving (Eq)
 
 data SyntaxDatatypeParameter
     = PositiveSyntaxDatatypeParameter Name
     | NegativeSyntaxDatatypeParameter Name
     | RangeSyntaxDatatypeParameter Name
                                    Name -- negative, positive
+    deriving (Eq)
 
 data SyntaxDatatypeConstructor =
     MkSyntaxDatatypeConstructor Name
                                 [SyntaxType]
+    deriving (Eq)
 
 data SyntaxDynamicEntityConstructor
     = AnchorSyntaxDynamicEntityConstructor Anchor
     | NameSyntaxDynamicEntityConstructor ReferenceName
+    deriving (Eq)
 
 data SyntaxTypeDeclaration
     = ClosedEntitySyntaxTypeDeclaration [SyntaxClosedEntityConstructor]
@@ -33,12 +37,14 @@ data SyntaxTypeDeclaration
                                     [SyntaxDatatypeConstructor]
     | OpenEntitySyntaxTypeDeclaration
     | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
+    deriving (Eq)
 
 data SyntaxExpose
     = SExpExpose SourcePos
                  [Name]
     | SExpLet [SyntaxWithDoc SyntaxDeclaration]
               SyntaxExpose
+    deriving (Eq)
 
 data SyntaxDirectDeclaration
     = TypeSyntaxDeclaration SourcePos
@@ -48,10 +54,12 @@ data SyntaxDirectDeclaration
                                SyntaxType
                                SyntaxType
     | BindingSyntaxDeclaration SyntaxBinding
+    deriving (Eq)
 
 data SyntaxWithDoc t =
     MkSyntaxWithDoc Markdown
                     t
+    deriving (Eq)
 
 data SyntaxDeclaration
     = DirectSyntaxDeclaration SyntaxDirectDeclaration
@@ -62,10 +70,12 @@ data SyntaxDeclaration
                               SyntaxExpose
     | RecursiveSyntaxDeclaration SourcePos
                                  [SyntaxWithDoc SyntaxDirectDeclaration]
+    deriving (Eq)
 
 data WithSourcePos t =
     MkWithSourcePos SourcePos
                     t
+    deriving (Eq)
 
 instance ExprShow t => ExprShow (WithSourcePos t) where
     exprShowPrec (MkWithSourcePos _ expr) = exprShowPrec expr
@@ -73,6 +83,7 @@ instance ExprShow t => ExprShow (WithSourcePos t) where
 data SyntaxVariance
     = CoSyntaxVariance
     | ContraSyntaxVariance
+    deriving (Eq)
 
 instance ExprShow SyntaxVariance where
     exprShowPrec CoSyntaxVariance = ("+", 0)
@@ -80,15 +91,15 @@ instance ExprShow SyntaxVariance where
 
 data SyntaxGroundType
     = ConstSyntaxGroundType ReferenceName
-    | FunctionSyntaxGroundType
-    | MorphismSyntaxGroundType
     | ListSyntaxGroundType
     | PairSyntaxGroundType
     | UnitSyntaxGroundType
+    deriving (Eq)
 
 data SyntaxTypeArgument
     = SimpleSyntaxTypeArgument SyntaxType
     | RangeSyntaxTypeArgument [(Maybe SyntaxVariance, SyntaxType)]
+    deriving (Eq)
 
 instance ExprShow SyntaxTypeArgument where
     exprShowPrec (SimpleSyntaxTypeArgument t) = exprShowPrec t
@@ -108,6 +119,14 @@ data SyntaxType'
     | BottomSyntaxType
     | RecursiveSyntaxType Name
                           SyntaxType
+    deriving (Eq)
+
+typeOperatorFixity :: Name -> Fixity
+typeOperatorFixity "->" = MkFixity AssocRight 0
+typeOperatorFixity "~>" = MkFixity AssocRight 1
+typeOperatorFixity ":+:" = MkFixity AssocRight 2
+typeOperatorFixity ":*:" = MkFixity AssocRight 3
+typeOperatorFixity _ = MkFixity AssocLeft 3
 
 instance ExprShow SyntaxType' where
     exprShowPrec (VarSyntaxType v) = exprShowPrec v
@@ -119,10 +138,15 @@ instance ExprShow SyntaxType' where
     exprShowPrec (SingleSyntaxType UnitSyntaxGroundType []) = ("()", 0)
     exprShowPrec (SingleSyntaxType PairSyntaxGroundType [ta, tb]) = ("(" <> exprShow ta <> "," <> exprShow tb <> ")", 0)
     exprShowPrec (SingleSyntaxType ListSyntaxGroundType [ta]) = ("[" <> exprShow ta <> "]", 0)
-    exprShowPrec (SingleSyntaxType FunctionSyntaxGroundType [ta, tb]) =
-        (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
-    exprShowPrec (SingleSyntaxType MorphismSyntaxGroundType [ta, tb]) =
-        (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
+    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType (UnqualifiedReferenceName n)) [ta, tb])
+        | nameIsInfix n = let
+            MkFixity assc level = typeOperatorFixity n
+            prec = 4 - level
+            in case assc of
+                   AssocRight -> (exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow prec tb, prec)
+                   AssocLeft -> (exprPrecShow prec ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb, prec)
+                   AssocNone ->
+                       (exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb, prec)
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) []) = (exprShow n, 0)
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) args) =
         (exprShow n <> mconcat (fmap (\arg -> " " <> exprPrecShow 0 arg) args), 2)
@@ -135,6 +159,7 @@ data SyntaxBinding =
                     (Maybe SyntaxType)
                     Name
                     SyntaxExpression
+    deriving (Eq)
 
 data SyntaxConstructor
     = SLNumber Number
@@ -142,6 +167,7 @@ data SyntaxConstructor
     | SLNamedConstructor ReferenceName
     | SLPair
     | SLUnit
+    deriving (Eq)
 
 data SyntaxPattern'
     = AnySyntaxPattern
@@ -152,22 +178,26 @@ data SyntaxPattern'
                                [SyntaxPattern]
     | TypedSyntaxPattern SyntaxPattern
                          SyntaxType
+    deriving (Eq)
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
 
 data SyntaxCase =
     MkSyntaxCase SyntaxPattern
                  SyntaxExpression
+    deriving (Eq)
 
 data SyntaxAnnotation
     = SAType SyntaxType
     | SAAnchor Anchor
+    deriving (Eq)
 
 data SyntaxConstant
     = SCIfThenElse
     | SCBind
     | SCBind_
     | SCConstructor SyntaxConstructor
+    deriving (Eq)
 
 data SyntaxExpression'
     = SESubsume SyntaxExpression
@@ -187,6 +217,7 @@ data SyntaxExpression'
     | SECase SyntaxExpression
              [SyntaxCase]
     | SEList [SyntaxExpression]
+    deriving (Eq)
 
 seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression
 seConst spos sc = MkWithSourcePos spos $ SEConst sc

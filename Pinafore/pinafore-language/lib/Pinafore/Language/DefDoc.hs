@@ -9,6 +9,7 @@ data DocType
     | TypeDocType
     | SupertypeDocType
     | SubtypeRelationDocType
+    deriving (Eq)
 
 data DefDoc = MkDefDoc
     { docName :: Text

@@ -21,7 +21,7 @@ readSubtypeDeclaration = do
     spos <- getPosition
     readThis TokSubtype
     sta <- readType
-    readExactlyThis TokOperator "<:"
+    readThis TokSubtypeOf
     stb <- readType
     return $ SubtypeSyntaxDeclaration spos sta stb
 
@@ -73,7 +73,7 @@ readDataTypeDeclaration = do
     mcons <-
         optional $ do
             readThis TokAssign
-            readSeparated1 (readExactlyThis TokOperator "|") $ fmap pure readDataTypeConstructor
+            readSeparated1 (readThis TokOr) $ fmap pure readDataTypeConstructor
     return $ TypeSyntaxDeclaration spos name $ DatatypeSyntaxTypeDeclaration parameters $ fromMaybe mempty mcons
 
 readClosedTypeDeclaration :: Parser SyntaxDirectDeclaration
@@ -84,7 +84,7 @@ readClosedTypeDeclaration = do
     mcons <-
         optional $ do
             readThis TokAssign
-            readSeparated1 (readExactlyThis TokOperator "|") $ fmap pure readClosedTypeConstructor
+            readSeparated1 (readThis TokOr) $ fmap pure readClosedTypeConstructor
     return $ TypeSyntaxDeclaration spos name $ ClosedEntitySyntaxTypeDeclaration $ fromMaybe mempty mcons
 
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
@@ -98,7 +98,7 @@ readDynamicTypeDeclaration = do
     readThis TokDynamicType
     name <- readTypeNewName
     readThis TokAssign
-    tcons <- readSeparated1 (readExactlyThis TokOperator "|") $ fmap pure readDynamicTypeConstructor
+    tcons <- readSeparated1 (readThis TokOr) $ fmap pure readDynamicTypeConstructor
     return $ TypeSyntaxDeclaration spos name $ DynamicEntitySyntaxTypeDeclaration tcons
 
 readTypeDeclaration :: Parser SyntaxDirectDeclaration

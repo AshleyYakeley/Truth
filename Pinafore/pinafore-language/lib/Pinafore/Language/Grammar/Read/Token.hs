@@ -59,10 +59,12 @@ data Token t where
     TokAssign :: Token ()
     TokMap :: Token ()
     TokBackMap :: Token ()
-    TokPropMap :: Token ()
     TokAnchor :: Token Anchor
     TokAt :: Token ()
     TokOperator :: Token Name
+    TokSubtypeOf :: Token ()
+    TokOr :: Token ()
+    TokAnd :: Token ()
     TokNumber :: Token Number
 
 instance TestEquality Token where
@@ -104,10 +106,12 @@ instance TestEquality Token where
     testEquality TokAssign TokAssign = Just Refl
     testEquality TokMap TokMap = Just Refl
     testEquality TokBackMap TokBackMap = Just Refl
-    testEquality TokPropMap TokPropMap = Just Refl
     testEquality TokAnchor TokAnchor = Just Refl
     testEquality TokAt TokAt = Just Refl
     testEquality TokOperator TokOperator = Just Refl
+    testEquality TokSubtypeOf TokSubtypeOf = Just Refl
+    testEquality TokOr TokOr = Just Refl
+    testEquality TokAnd TokAnd = Just Refl
     testEquality TokNumber TokNumber = Just Refl
     testEquality _ _ = Nothing
 
@@ -150,10 +154,12 @@ instance Show (Token t) where
     show TokAssign = show ("=" :: String)
     show TokMap = show ("->" :: String)
     show TokBackMap = show ("<-" :: String)
-    show TokPropMap = show ("~>" :: String)
     show TokAnchor = "anchor"
     show TokAt = show ("@" :: String)
     show TokOperator = "infix"
+    show TokSubtypeOf = show ("<:" :: String)
+    show TokOr = show ("|" :: String)
+    show TokAnd = show ("&" :: String)
     show TokNumber = "number"
 
 instance Show (AnyValue Token) where
@@ -338,7 +344,6 @@ readOpToken = do
         "=" -> return $ MkAnyValue TokAssign ()
         "->" -> return $ MkAnyValue TokMap ()
         "<-" -> return $ MkAnyValue TokBackMap ()
-        "~>" -> return $ MkAnyValue TokPropMap ()
         "%" -> return $ MkAnyValue TokUnref ()
         "!" ->
             (do
@@ -348,6 +353,9 @@ readOpToken = do
                  s <- readQuotedString
                  return $ MkAnyValue TokAnchor $ codeAnchor s)
         "@" -> return $ MkAnyValue TokAt ()
+        "|" -> return $ MkAnyValue TokOr ()
+        "&" -> return $ MkAnyValue TokAnd ()
+        "<:" -> return $ MkAnyValue TokSubtypeOf ()
         _ -> return $ MkAnyValue TokOperator $ MkName $ pack name
 
 readCharTok :: Char -> Token () -> Parser (AnyValue Token)

@@ -51,3 +51,22 @@ standardListTypeExprShow = let
     sh i NilListType t = (t, i)
     sh _ (ConsListType _ lt) t = \ta -> sh 2 lt (t <> " " <> precShow 0 ta)
     in sh 0 $ representative @_ @_ @dv
+
+nameIsInfix :: Name -> Bool
+nameIsInfix n =
+    case unpack n of
+        (c:_)
+            | isAlpha c -> False
+        "[]" -> False
+        _ -> True
+
+data FixAssoc
+    = AssocNone
+    | AssocLeft
+    | AssocRight
+    deriving (Eq)
+
+data Fixity = MkFixity
+    { fixityAssoc :: FixAssoc
+    , fixityPrec :: Int
+    } deriving (Eq)

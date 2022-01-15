@@ -6,6 +6,8 @@ module Pinafore.Language.Grammar.Read.Type
     , readTypeVar
     ) where
 
+import Pinafore.Language.ExprShow
+import Pinafore.Language.Grammar.Read.Infix
 import Pinafore.Language.Grammar.Read.Parser
 import Pinafore.Language.Grammar.Read.Token
 import Pinafore.Language.Grammar.Syntax
@@ -28,33 +30,48 @@ readType0 = do
     spos <- getPosition
     t1 <- readType1
     (do
-         readExactlyThis TokOperator "|"
+         readThis TokOr
          t2 <- readType
          return $ MkWithSourcePos spos $ OrSyntaxType t1 t2) <|>
         (do
-             readExactlyThis TokOperator "&"
+             readThis TokAnd
              t2 <- readType
              return $ MkWithSourcePos spos $ AndSyntaxType t1 t2) <|>
         (return t1)
 
-readInfix :: Parser SyntaxGroundType
-readInfix =
-    (do
-         readThis TokPropMap
-         return MorphismSyntaxGroundType) <|>
-    (do
-         readThis TokMap
-         return FunctionSyntaxGroundType)
+allowedTypeOperatorName :: Name -> Bool
+allowedTypeOperatorName "+" = False
+allowedTypeOperatorName "-" = False
+allowedTypeOperatorName "|" = False
+allowedTypeOperatorName "&" = False
+allowedTypeOperatorName _ = True
+
+readTypeOperatorName :: Parser Name
+readTypeOperatorName =
+    (readThis TokMap >> return "->") <|> do
+        n <- readThis TokOperator
+        ifpure (allowedTypeOperatorName n) n
+
+readInfix :: Parser (Name, Fixity, SyntaxTypeArgument -> SyntaxTypeArgument -> SyntaxTypeArgument)
+readInfix = do
+    spos <- getPosition
+    name <- readTypeOperatorName
+    return
+        ( name
+        , typeOperatorFixity name
+        , \t1 t2 ->
+              SimpleSyntaxTypeArgument $
+              MkWithSourcePos spos $ SingleSyntaxType (ConstSyntaxGroundType $ UnqualifiedReferenceName name) [t1, t2])
+
+typeFixityReader :: FixityReader SyntaxTypeArgument
+typeFixityReader = MkFixityReader {efrReadInfix = readInfix, efrMaxPrecedence = 3}
 
 readType1 :: Parser SyntaxType
-readType1 =
-    (try $
-     readSourcePos $ do
-         t1 <- readTypeArgument readType2
-         tc <- readInfix
-         t2 <- readTypeArgument readType1
-         return $ SingleSyntaxType tc [t1, t2]) <|>
-    readType2
+readType1 = do
+    arg <- readInfixed typeFixityReader $ readTypeArgument readType2
+    case arg of
+        SimpleSyntaxTypeArgument t -> return t
+        _ -> empty
 
 readTypeReferenceName :: Parser ReferenceName
 readTypeReferenceName = readReferenceUName

@@ -151,8 +151,6 @@ interpretTypeRangeItem (Nothing, st) = interpretTypeRangeFromType st
 
 groundTypeText :: SyntaxGroundType -> Text
 groundTypeText (ConstSyntaxGroundType n) = toText n
-groundTypeText FunctionSyntaxGroundType = "->"
-groundTypeText MorphismSyntaxGroundType = "~>"
 groundTypeText ListSyntaxGroundType = "[]"
 groundTypeText PairSyntaxGroundType = "(,)"
 groundTypeText UnitSyntaxGroundType = "()"
@@ -198,8 +196,6 @@ interpretArgs sgt (ConsListType RangeCCRVarianceType dv) (st:stt) = do
 
 interpretGroundTypeConst :: SyntaxGroundType -> PinaforeInterpreter PinaforeGroundTypeM
 interpretGroundTypeConst UnitSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW $ unitGroundType
-interpretGroundTypeConst FunctionSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW funcGroundType
-interpretGroundTypeConst MorphismSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW morphismGroundType
 interpretGroundTypeConst ListSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW $ listGroundType
 interpretGroundTypeConst PairSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW $ pairGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do

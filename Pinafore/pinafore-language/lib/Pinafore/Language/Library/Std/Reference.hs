@@ -338,7 +338,8 @@ refLibEntries =
     , docTreeEntry
           "Morphisms"
           "Morphisms relate entities."
-          [ mkValEntry "identity" "The identity morphism." $ identityLangMorphism @X @Y
+          [ mkTypeEntry "~>" "" $ MkBoundType morphismGroundType
+          , mkValEntry "identity" "The identity morphism." $ identityLangMorphism @X @Y
           , mkValEntry "!." "Compose morphisms." $ composeLangMorphism @AP @AQ @BX @BY @CP @CQ
           , mkSupertypeEntry "!." "Compose morphisms." $ composeLangMorphism @A @A @B @B @C @C
           , mkValEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $

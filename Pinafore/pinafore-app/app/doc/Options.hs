@@ -12,6 +12,7 @@ data Options
     | ModuleDocOption [FilePath]
                       Text
     | InfixDocOption
+    | TypeInfixDocOption
     deriving (Eq, Show)
 
 optIncludes :: Parser [FilePath]
@@ -21,7 +22,8 @@ optParser :: Parser Options
 optParser =
     (flag' ShowVersionOption $ long "version" <> short 'v') <|>
     (ModuleDocOption <$> optIncludes <*> (strOption $ long "module" <> metavar "MODULENAME")) <|>
-    (flag' InfixDocOption $ long "infix")
+    (flag' InfixDocOption $ long "infix") <|>
+    (flag' TypeInfixDocOption $ long "infix-type")
 
 optParserInfo :: ParserInfo Options
 optParserInfo = info optParser mempty

@@ -24,7 +24,7 @@ testOp n =
             _ -> return ()
 
 testInfix :: TestTree
-testInfix = testTree "infix" $ fmap testOp allOperatorNames
+testInfix = testTree "infix" $ fmap testOp $ allOperatorNames ValueDocType
 
 newtype PreciseEq t =
     MkPreciseEq t

@@ -3,8 +3,10 @@ module Pinafore.Language.Grammar.Read.Expression
     , readExpression
     , readModule
     , readTopDeclarations
+    , operatorFixity
     ) where
 
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Grammar.Read.Constructor
 import Pinafore.Language.Grammar.Read.Infix
 import Pinafore.Language.Grammar.Read.Parser
@@ -133,9 +135,84 @@ readSubsumedExpression expr = do
         Nothing -> return expr
         Just (spos, t) -> readSubsumedExpression $ MkWithSourcePos spos $ SESubsume expr t
 
+-- following Haskell
+-- https://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061
+operatorFixity :: Name -> Fixity
+operatorFixity "." = MkFixity AssocRight 10
+operatorFixity "!." = MkFixity AssocRight 10
+operatorFixity "^" = MkFixity AssocRight 9
+operatorFixity "^^" = MkFixity AssocRight 9
+operatorFixity "**" = MkFixity AssocRight 9
+operatorFixity "!**" = MkFixity AssocLeft 9
+operatorFixity "!++" = MkFixity AssocLeft 9
+operatorFixity "*" = MkFixity AssocLeft 8
+operatorFixity ".*" = MkFixity AssocLeft 8
+operatorFixity "~*" = MkFixity AssocLeft 8
+operatorFixity "/" = MkFixity AssocLeft 8
+operatorFixity "~/" = MkFixity AssocLeft 8
+operatorFixity "<*>" = MkFixity AssocLeft 8
+operatorFixity "<:*:>" = MkFixity AssocLeft 8
+operatorFixity "!$" = MkFixity AssocRight 8
+operatorFixity "!$%" = MkFixity AssocRight 8
+operatorFixity "!$$" = MkFixity AssocRight 8
+operatorFixity "!@" = MkFixity AssocRight 8
+operatorFixity "!@%" = MkFixity AssocRight 8
+operatorFixity "!@@" = MkFixity AssocRight 8
+operatorFixity "+" = MkFixity AssocLeft 7
+operatorFixity ".+" = MkFixity AssocLeft 7
+operatorFixity "~+" = MkFixity AssocLeft 7
+operatorFixity "-" = MkFixity AssocLeft 7
+operatorFixity ".-" = MkFixity AssocLeft 7
+operatorFixity "~-" = MkFixity AssocLeft 7
+operatorFixity "??" = MkFixity AssocLeft 7
+operatorFixity "<+>" = MkFixity AssocLeft 7
+operatorFixity "<:+:>" = MkFixity AssocLeft 7
+operatorFixity "::" = MkFixity AssocRight 6
+operatorFixity "++" = MkFixity AssocRight 6
+operatorFixity "<>" = MkFixity AssocRight 6
+operatorFixity "==" = MkFixity AssocNone 5
+operatorFixity "/=" = MkFixity AssocNone 5
+operatorFixity "~==" = MkFixity AssocNone 5
+operatorFixity "~/=" = MkFixity AssocNone 5
+operatorFixity "<=" = MkFixity AssocNone 5
+operatorFixity "<" = MkFixity AssocNone 5
+operatorFixity ">=" = MkFixity AssocNone 5
+operatorFixity ">" = MkFixity AssocNone 5
+operatorFixity "<&>" = MkFixity AssocLeft 4
+operatorFixity "<:&:>" = MkFixity AssocLeft 4
+operatorFixity "<:&>" = MkFixity AssocLeft 4
+operatorFixity "<\\>" = MkFixity AssocLeft 4
+operatorFixity "<:\\>" = MkFixity AssocLeft 4
+operatorFixity "<^>" = MkFixity AssocLeft 4
+operatorFixity "&&" = MkFixity AssocRight 4
+operatorFixity "<|>" = MkFixity AssocLeft 3
+operatorFixity "<:|:>" = MkFixity AssocLeft 3
+operatorFixity "||" = MkFixity AssocRight 3
+operatorFixity ":=" = MkFixity AssocNone 2
+operatorFixity "+=" = MkFixity AssocNone 2
+operatorFixity "-=" = MkFixity AssocNone 2
+operatorFixity ">>=" = MkFixity AssocLeft 1
+operatorFixity ">>" = MkFixity AssocLeft 1
+operatorFixity "$" = MkFixity AssocRight 0
+operatorFixity _ = MkFixity AssocLeft 10
+
+expressionFixityReader :: FixityReader SyntaxExpression
+expressionFixityReader =
+    MkFixityReader
+        { efrReadInfix =
+              do
+                  spos <- getPosition
+                  name <- readThis TokOperator
+                  return
+                      ( name
+                      , operatorFixity name
+                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos $ SEVar $ UnqualifiedReferenceName name) [e1, e2])
+        , efrMaxPrecedence = 10
+        }
+
 readExpression :: Parser SyntaxExpression
 readExpression = do
-    expr <- readExpressionInfixed readExpression1
+    expr <- readInfixed expressionFixityReader readExpression1
     readSubsumedExpression expr
 
 readName :: Parser Name
