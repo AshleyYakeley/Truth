@@ -357,13 +357,20 @@ readExpression3 =
           case msexpr1 of
               Nothing -> return $ seConst spos $ SCConstructor SLUnit
               Just sexpr1 -> do
-                  msexpr2 <-
-                      optional $ do
+                  lsexpr2 <-
+                      many $ do
                           readThis TokComma
                           readExpression
-                  case msexpr2 of
-                      Just sexpr2 -> do return $ seApplys spos (seConst spos $ SCConstructor SLPair) [sexpr1, sexpr2]
-                      Nothing -> return sexpr1)) <|>
+                  return $
+                      case lsexpr2 of
+                          [] -> sexpr1
+                          sexpr2:sexprs -> let
+                              appair :: SyntaxExpression -> SyntaxExpression -> SyntaxExpression
+                              appair e1 e2 = seApplys spos (seConst spos $ SCConstructor SLPair) [e1, e2]
+                              aptuple :: SyntaxExpression -> SyntaxExpression -> [SyntaxExpression] -> SyntaxExpression
+                              aptuple e1 e2 [] = appair e1 e2
+                              aptuple e1 e2 (e3:er) = appair e1 $ aptuple e2 e3 er
+                              in aptuple sexpr1 sexpr2 sexprs)) <|>
     readSourcePos
         (do
              sexprs <-

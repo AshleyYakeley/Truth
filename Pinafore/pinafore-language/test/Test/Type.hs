@@ -299,6 +299,19 @@ testType =
                           "let rec rcount x = case x of Nothing -> 0; Just y -> 1 + rcount y end end; rec rval = Just rval end in (rcount,(rval,rcount rval))"
                           "{} -> ((rec e. Maybe e) -> Integer) :*: (rec e. Maybe e) :*: Integer"
                     ]
+              , testTree
+                    "tuple"
+                    [ textTypeTest "()" "{} -> Unit"
+                    , textTypeTest "(1,False)" "{} -> Integer :*: Boolean"
+                    , textTypeTest "(1,(False,(3,True)))" "{} -> Integer :*: Boolean :*: Integer :*: Boolean"
+                    , textTypeTest "(1,False,(3,True))" "{} -> Integer :*: Boolean :*: Integer :*: Boolean"
+                    , textTypeTest "(1,(False,3,True))" "{} -> Integer :*: Boolean :*: Integer :*: Boolean"
+                    , textTypeTest "(1,False,3,True)" "{} -> Integer :*: Boolean :*: Integer :*: Boolean"
+                    , textTypeTest "\\x -> case x of (1,False) -> () end" "{} -> Number :*: Boolean -> Unit"
+                    , textTypeTest
+                          "\\x -> case x of (1,False,3,True) -> () end"
+                          "{} -> Number :*: Boolean :*: Number :*: Boolean -> Unit"
+                    ]
               ]
         , testTree
               "simplify"

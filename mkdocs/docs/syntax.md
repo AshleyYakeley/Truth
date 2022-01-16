@@ -12,6 +12,8 @@ Also, `case` and `do` statements are terminated with `end`.
 * There's no "top level" for declarations.
 All declarations, including type declarations, are local to a `let` block.
 * Only one equation is allowed for a function definition. Use `case` to match argument patterns.
+* Haskell's type constructors `Either`, `(,)`, `[]` and `()` become `:+:`, `:*:`, `List` and `Unit`.
+* There's no tuple type bigger than two. The tuple `(a,b,c)` is equivalent to `(a,(b,c))`, etc.
 
 ## Grammar
 
@@ -132,7 +134,7 @@ All declarations, including type declarations, are local to a `let` block.
     <literal> |
     "[" <comma-separated(<expression>)> "]" |
     "(" ")" |
-    "(" <expression> "," <expression> ")" |
+    "(" <expression> "," <comma-separated-1(<expression>)> ")" |
     "(" <expression> ")" |
     "(" <infix-operator[n]> ")"
 
@@ -238,7 +240,7 @@ All declarations, including type declarations, are local to a `let` block.
     "_" |
     "[" <comma-separated(<pattern-1>)> "]" |
     "(" ")" |
-    "(" <pattern-1> "," <pattern-1> ")" |
+    "(" <pattern-1> "," <comma-separated-1(<pattern-1>)> ")" |
     "(" <pattern-1> ")"
 
 <pattern-var> ::= lname

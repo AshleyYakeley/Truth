@@ -107,11 +107,18 @@ readPattern5 =
              case mpat1 of
                  Nothing -> return $ MkWithSourcePos spos $ ConstructorSyntaxPattern SLUnit []
                  Just pat1 -> do
-                     mpat2 <-
-                         optional $ do
+                     lpat2 <-
+                         many $ do
                              readThis TokComma
                              readPattern1
-                     case mpat2 of
-                         Nothing -> return pat1
-                         Just pat2 -> return $ MkWithSourcePos spos $ ConstructorSyntaxPattern SLPair [pat1, pat2]) <?>
+                     return $
+                         case lpat2 of
+                             [] -> pat1
+                             pat2:patr -> let
+                                 appair :: SyntaxPattern -> SyntaxPattern -> SyntaxPattern
+                                 appair p1 p2 = MkWithSourcePos spos $ ConstructorSyntaxPattern SLPair [p1, p2]
+                                 aptuple :: SyntaxPattern -> SyntaxPattern -> [SyntaxPattern] -> SyntaxPattern
+                                 aptuple p1 p2 [] = appair p1 p2
+                                 aptuple p1 p2 (p3:pr) = appair p1 $ aptuple p2 p3 pr
+                                 in aptuple pat1 pat2 patr) <?>
     "pattern"

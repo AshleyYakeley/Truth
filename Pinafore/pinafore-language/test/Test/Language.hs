@@ -529,6 +529,18 @@ testQueries =
                     ]
               ]
         , testTree
+              "type-operator"
+              [ testSameType True "Unit" "Unit" ["()"]
+              , testSameType True "List a" "List a" []
+              , testSameType True "a :*: b :+: c :*: d" "(a :*: b) :+: (c :*: d)" []
+              , testSameType True "a :*: b :*: c :*: d" "a :*: (b :*: (c :*: d))" []
+              , testSameType
+                    True
+                    "Integer :*: Boolean :*: Integer :*: Boolean"
+                    "Integer :*: (Boolean :*: (Integer :*: Boolean))"
+                    ["(3, (True, (7, False)))"]
+              ]
+        , testTree
               "subtype"
               [ testQuery "let i : Integer -> Number; i x = x in i 3" $ LRSuccess "3"
               , testQuery "let a : Integer; a = 3; b : Number; b = a in b" $ LRSuccess "3"
