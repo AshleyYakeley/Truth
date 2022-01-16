@@ -9,16 +9,16 @@ toggleStopwatch now r = do
     n <- get now;
     oldstate <- get r;
     newstate <- return $ case oldstate of
-        StoppedState d -> RunningState $ addTime (negateDuration d) n;
-        RunningState t -> StoppedState $ diffTime n t
+        StoppedState d => RunningState $ addTime (negateDuration d) n;
+        RunningState t => StoppedState $ diffTime n t
         end;
     r := newstate;
     end;
 
 showStopwatch: StopwatchState -> Time -> Text;
 showStopwatch state n = case state of
-    StoppedState d -> "[" <> show d <> "]";
-    RunningState t -> show $ diffTime n t
+    StoppedState d => "[" <> show d <> "]";
+    RunningState t => show $ diffTime n t
     end;
 
 ui: WholeRef +Time -> WholeRef StopwatchState -> UI.Element;

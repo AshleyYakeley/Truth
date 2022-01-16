@@ -223,7 +223,7 @@ readModule = readExpose
 
 readCase :: Parser SyntaxCase
 readCase = do
-    pat <- readPattern2
+    pat <- readPattern1
     readThis TokMap
     e <- readExpression
     return $ MkSyntaxCase pat e
@@ -239,7 +239,7 @@ data DoLine
 readDoLine :: Parser DoLine
 readDoLine =
     (try $ do
-         pat <- readPattern2
+         pat <- readPattern1
          readThis TokBackMap
          expr <- readExpression
          return $ BindDoLine pat expr) <|>

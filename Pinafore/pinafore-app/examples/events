@@ -14,20 +14,20 @@ closedtype EventTime
 
 showEventTime: EventTime -> Text;
 showEventTime et = case et of
-    EventTimeDate d -> unixFormatDate "%F" d;
-    EventTimeTime t -> unixFormatLocalTime "%F %R" t;
+    EventTimeDate d => unixFormatDate "%F" d;
+    EventTimeTime t => unixFormatLocalTime "%F %R" t;
     end;
 
 eventTimeDate: EventTime -> Date;
 eventTimeDate et = case et of
-    EventTimeDate d -> d;
-    EventTimeTime (DateAndTime d _) -> d
+    EventTimeDate d => d;
+    EventTimeTime (DateAndTime d _) => d
     end;
 
 setEventTimeDate: Date -> Maybe EventTime -> Maybe EventTime;
 setEventTimeDate d et = Just $ case et of
-    Just (EventTimeTime (DateAndTime _ t)) -> EventTimeTime (DateAndTime d t);
-    _ -> EventTimeDate d;
+    Just (EventTimeTime (DateAndTime _ t)) => EventTimeTime (DateAndTime d t);
+    _ => EventTimeDate d;
     end;
 
 eventRefTimeDate: WholeRef EventTime -> WholeRef Date;
@@ -37,16 +37,16 @@ eventRefTimeTimeOfDay: WholeRef EventTime -> WholeRef TimeOfDay;
 eventRefTimeTimeOfDay r = let
     eventTimeTimeOfDay: Maybe EventTime -> Maybe TimeOfDay;
     eventTimeTimeOfDay met = case met of
-        Just (EventTimeTime (DateAndTime _ tod)) -> Just tod;
-        _ -> Nothing;
+        Just (EventTimeTime (DateAndTime _ tod)) => Just tod;
+        _ => Nothing;
         end;
 
 setEventTimeTimeOfDay: Maybe TimeOfDay -> Maybe EventTime -> Maybe (Maybe EventTime);
 setEventTimeTimeOfDay mtod met = Just $ case met of
-    Nothing -> Nothing;
-    Just et -> Just $ case mtod of
-        Nothing -> EventTimeDate $ eventTimeDate et;
-        Just tod -> EventTimeTime $ DateAndTime (eventTimeDate et) tod;
+    Nothing => Nothing;
+    Just et => Just $ case mtod of
+        Nothing => EventTimeDate $ eventTimeDate et;
+        Just tod => EventTimeTime $ DateAndTime (eventTimeDate et) tod;
         end;
     end;
 in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
@@ -54,8 +54,8 @@ in maybeLensMapWhole eventTimeTimeOfDay setEventTimeTimeOfDay r;
 # for ordering
 eventTimeTime: EventTime -> LocalTime;
 eventTimeTime et = case et of
-    EventTimeDate d -> DateAndTime d midnight;
-    EventTimeTime t -> t
+    EventTimeDate d => DateAndTime d midnight;
+    EventTimeTime t => t
     end;
 
 eventTimeOrder: RefOrder EventTime;
@@ -97,18 +97,18 @@ eventList todayref = {
 
 # Text for the overview tab.
 overviewRef: WholeRef +Date -> WholeRef +Text;
-overviewRef todayref = {textConcat $ mapList (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %(eventList todayref)};
+overviewRef todayref = {textConcat $ mapList (\(t,n) => showEventTime t <> ": " <> n <> "\n") %(eventList todayref)};
 
 # Overview tab UI
 overviewPane: Pane;
 overviewPane = pane "Overview" $ UI.run $ do
     now <- newClock $ Seconds 60; # update every minute
     tz <- newTimeZoneRef now;
-    return $ UI.label $ overviewRef {case timeToLocal %tz %now of DateAndTime d _ -> d end};
+    return $ UI.label $ overviewRef {case timeToLocal %tz %now of DateAndTime d _ => d end};
     end;
 
 calendarWindow: WholeRef +Event -> Action UI.Window;
-calendarWindow evt = fixAction $ \window ->
+calendarWindow evt = fixAction $ \window =>
     UI.openWindow (200,200) {"date of " <> %(name !$% evt)} {[]} $ UI.vertical
     [
         UI.calendar $ eventRefTimeDate $ eventTime !$% evt,
@@ -145,9 +145,9 @@ eventsTableUI selection = let
     columns: List (WholeRef +Text :*: (Event -> WholeRef Text));
     columns = let
         timeColumn: WholeRef +Text :*: (Event -> WholeRef Text);
-        timeColumn = ({"When"},\e -> {showEventTime $ %(eventTime !$ {e})});
+        timeColumn = ({"When"},\e => {showEventTime $ %(eventTime !$ {e})});
         nameColumn: WholeRef +Text :*: (Event -> WholeRef Text);
-        nameColumn = ({"What"},\e -> name !$ {e});
+        nameColumn = ({"What"},\e => name !$ {e});
         in [timeColumn,nameColumn];
     in UI.run $ do
         lref <- getSetList eventOrder events;

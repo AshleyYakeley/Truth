@@ -47,10 +47,9 @@ allowedTypeOperatorName "&" = False
 allowedTypeOperatorName _ = True
 
 readTypeOperatorName :: Parser Name
-readTypeOperatorName =
-    (readThis TokMap >> return "->") <|> do
-        n <- readThis TokOperator
-        ifpure (allowedTypeOperatorName n) n
+readTypeOperatorName = do
+    n <- readThis TokOperator
+    ifpure (allowedTypeOperatorName n) n
 
 readInfix :: Parser (Name, Fixity, SyntaxTypeArgument -> SyntaxTypeArgument -> SyntaxTypeArgument)
 readInfix = do

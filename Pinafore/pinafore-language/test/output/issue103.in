@@ -9,7 +9,7 @@ f: WholeRef a -> Unit;
 f _ = ();
 
 in do
-    (ref,_) <- newMemWhole >>= \ref -> return (ref, f ref);
+    (ref,_) <- newMemWhole >>= \ref => return (ref, f ref);
     ref := e1;
     e2 <- get ref;
     Debug.checkEntity "CHECK e1" e1;

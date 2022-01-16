@@ -5,7 +5,7 @@ import Drawing;
 
 # transform from (-1 .. +1,-1 .. +1)
 scaleDrawing: WholeRef Drawing -> WholeRef (Integer :*: Integer -> Drawing);
-scaleDrawing rd = {\(w,h) -> let
+scaleDrawing rd = {\(w,h) => let
     size = min w h;
     in translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd};
 
@@ -17,20 +17,20 @@ drawing ref =
     scale (0.8,0.8) $ rotate (3/4 ~* pi) $ lineWidth 0.1
     [
         source navy $ case %(toMaybeWhole ref) of
-            Nothing ->
+            Nothing =>
             [
                 onClick $ ref := ProgressPartial
             ];
-            Just ProgressNone ->
+            Just ProgressNone =>
             [
                 onClick $ ref := ProgressPartial
             ];
-            Just ProgressPartial ->
+            Just ProgressPartial =>
             [
                 fill [arc (0,0) 1 0 pi, closePath],
                 onClick $ ref := ProgressDone
             ];
-            Just ProgressDone ->
+            Just ProgressDone =>
             [
                 fill [arc (0,0) 1 0 (2 ~* pi)],
                 onClick $ ref := ProgressNone

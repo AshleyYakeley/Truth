@@ -110,8 +110,8 @@ contactUI: LegalEntity -> UI.Element;
 contactUI e = let
     pages: List (UI.Element :*: UI.Element);
     pages = contactPages {e} ++ case e of
-        (p: Person) -> personPages {p};
-        (o: Organisation) -> organisationPages {o};
+        p: Person => personPages {p};
+        o: Organisation => organisationPages {o};
         end;
     in UI.vertical
     [

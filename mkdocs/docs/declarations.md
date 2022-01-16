@@ -30,8 +30,8 @@ let
 
     rec
     fact = \case
-        0 -> 1;
-        n -> n * fact (n - 1);
+        0 => 1;
+        n => n * fact (n - 1);
         end;
     end;
 
@@ -51,7 +51,7 @@ let
     let
     datatype LowerCaseText = MkLowerCaseText Text;
     fromLowerCase: LowerCaseText -> Text;
-    fromLowerCase = \(MkLowerCaseText t) -> t;
+    fromLowerCase = \(MkLowerCaseText t) => t;
     toLowerCase: Text -> LowerCaseText;
     toLowerCase t = MkLowerCaseText $ textLowerCase t;
     in expose LowerCaseText, fromLowerCase, toLowerCase; # MkLowerCaseText not exposed
@@ -72,5 +72,5 @@ import Colour (AlphaColour, crimson); # brings given names (and subtype relation
 
 import Drawing (); # brings only subtype relations from Drawing into scope
 
-in draw {\_ -> source crimson paint}
+in draw {\_ => source crimson paint}
 ```

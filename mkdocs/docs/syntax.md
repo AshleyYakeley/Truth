@@ -14,6 +14,7 @@ All declarations, including type declarations, are local to a `let` block.
 * Only one equation is allowed for a function definition. Use `case` to match argument patterns.
 * Haskell's type constructors `Either`, `(,)`, `[]` and `()` become `:+:`, `:*:`, `List` and `Unit`.
 * There's no tuple type bigger than two. The tuple `(a,b,c)` is equivalent to `(a,(b,c))`, etc.
+* Lambda-expressions and case-expressions use `=>` instead of `->`.
 
 ## Grammar
 
@@ -112,7 +113,7 @@ All declarations, including type declarations, are local to a `let` block.
 <infix-operator[n,dir]> ::= -- see table
 
 <expression-1> ::=
-    "\" <patterns> "->" <expression> |
+    "\" <patterns> "=>" <expression> |
     <let-declarations> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
     "case" <expression> "of" <cases> "end" |
@@ -150,11 +151,11 @@ All declarations, including type declarations, are local to a `let` block.
 
 <cases> ::=  | <case> ";" <cases>
 
-<case> ::= <pattern-2> "->" <expression>
+<case> ::= <pattern-1> "=>" <expression>
 
 <do-lines> =  | <do-line> ";" <do-lines>
 
-<do-line> = <expression> | <pattern-2> "<-" <expression>
+<do-line> = <expression> | <pattern-1> "<-" <expression>
 
 <let-declarations> ::= "let" <declarations>
 

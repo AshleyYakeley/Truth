@@ -193,7 +193,7 @@ testEntity =
                     "do r <- newMemList; listWhole r := [10,20,30]; ir <- listGetItemRef True 1 r; listInsert 1 12 r; i <- get ir; testeqval 20 i; end"
               , testExpectSuccess
                     "do r <- newMemList; listWhole r := [10,20,30]; ir <- listGetItemRef True 1 r; listInsert 1 12 r; ir := 15; l <- get $ listWhole r; testeqval [10,12,15,30] l; end"
-              , testExpectSuccess "testImmutList True 1 $ \\_ -> return ()"
+              , testExpectSuccess "testImmutList True 1 $ \\_ => return ()"
               ]
         , tDecls
               [ "convr : Rational -> Rational;convr = id"
@@ -429,7 +429,7 @@ testEntity =
                           "tea !@ {e1} += \"h\" >> tea !@ {e1} += \"hello\" >> testeq {2} (setCount (tea !@ {e1}))"
                     , testExpectSuccess $
                       "let counter = eia !$ {e1};someset = nea !@ {e1} in " <>
-                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (setList noOrder someset) >>= \\pp -> for pp $ \\p -> runWholeRef {counter := %counter + 1}) >> testeq {1} counter"
+                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (setList noOrder someset) >>= \\pp => for pp $ \\p => runWholeRef {counter := %counter + 1}) >> testeq {1} counter"
                     ]
               , tGroup
                     "types"
@@ -699,9 +699,9 @@ testEntity =
               , testExpectSuccess "testeq {Just e1} {check @P1 e1}"
               , testExpectSuccess "testeq {Nothing} {check @P2 e1}"
               , testExpectSuccess "testeq {Just e1} {check @Q e1}"
-              , testExpectSuccess "testeq {True} {case e1 of (_: P1) -> True; _ -> False end}"
-              , testExpectSuccess "testeq {False} {case e1 of (_: P2) -> True; _ -> False end}"
-              , testExpectSuccess "testeq {True} {case e1 of (_: Q) -> True; _ -> False end}"
+              , testExpectSuccess "testeq {True} {case e1 of _: P1 => True; _ => False end}"
+              , testExpectSuccess "testeq {False} {case e1 of _: P2 => True; _ => False end}"
+              , testExpectSuccess "testeq {True} {case e1 of _: Q => True; _ => False end}"
               , testExpectSuccess "testeq {e1} {coerce @P1 e1}"
               , testExpectSuccess "testeq {e1} {coerce @Q e1}"
               ]
@@ -713,13 +713,13 @@ testEntity =
               [ testExpectSuccess "pass"
               , testExpectSuccess "let t1 = T1 \"hello\" 3 in pass"
               , testExpectSuccess "let f (T1 x _) = x in pass"
-              , testExpectSuccess "case T2 of T2 -> pass end"
-              , testExpectSuccess "case T3 True of T3 True -> pass end"
-              , testExpectSuccess "case T1 \"hello\" 3 of T1 \"hello\" 3 -> pass end"
+              , testExpectSuccess "case T2 of T2 => pass end"
+              , testExpectSuccess "case T3 True of T3 True => pass end"
+              , testExpectSuccess "case T1 \"hello\" 3 of T1 \"hello\" 3 => pass end"
               , testExpectSuccess
-                    "case T1 \"hello\" 3 of T2 -> fail \"T2\"; T1 \"hello\" 2 -> fail \"T1 2\"; T1 \"hell\" 3 -> fail \"T1 hell\"; T1 \"hello\" 3 -> pass end"
+                    "case T1 \"hello\" 3 of T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
               , testExpectSuccess
-                    "let f : Boolean -> Integer; f b = if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff -> if ff True == 1 then pass else fail \"ff\" end"
+                    "let f : Boolean -> Integer; f b = if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff => if ff True == 1 then pass else fail \"ff\" end"
               , testExpectReject "let datatype B = MkB a in pass"
               , testExpectSuccess "let datatype P in pass"
               , tGroup
@@ -740,11 +740,11 @@ testEntity =
                     , testExpectSuccess "let rec datatype P = P1 Q; datatype Q = Q1 P end in pass"
                     , testExpectSuccess "let rec datatype P = P1 P end in pass"
                     , testExpectSuccess
-                          "let rec datatype P = P1 Q; datatype Q = Q1 P; f : P -> P; f p = case p of P1 q -> case q of Q1 p -> p end end end in pass"
+                          "let rec datatype P = P1 Q; datatype Q = Q1 P; f : P -> P; f p = case p of P1 q => case q of Q1 p => p end end end in pass"
                     , testExpectSuccess "let rec datatype P = P1 Q; closedtype Q = Q1 !\"Q1\" end in pass"
                     , testExpectReject "let rec closedtype P = P1 Q; datatype Q = Q1 !\"Q1\" end in pass"
                     , testExpectSuccess
-                          "let rec datatype P = P1 Q; datatype Q = Q1 (Action Unit); pqpass = P1 (Q1 pass) end in case pqpass of P1 (Q1 p) -> p end"
+                          "let rec datatype P = P1 Q; datatype Q = Q1 (Action Unit); pqpass = P1 (Q1 pass) end in case pqpass of P1 (Q1 p) => p end"
                     ]
               , tGroup
                     "parameters"
@@ -775,7 +775,7 @@ testEntity =
                           [ tDecls
                                 [ "datatype D +a = Mk1D (List a) | Mk2D (Maybe a)"
                                 , "showD: D Showable -> Text"
-                                , "showD t = case t of Mk1D aa -> show aa; Mk2D ma -> show ma end"
+                                , "showD t = case t of Mk1D aa => show aa; Mk2D ma => show ma end"
                                 , "di: D Integer"
                                 , "di = Mk1D [576,469,12]"
                                 , "sdi: Text"
@@ -785,11 +785,11 @@ testEntity =
                           , tDecls
                                 [ "datatype D -a = Mk1D (a -> Integer) | Mk2D (a -> a -> Text)"
                                 , "dShow: D Number"
-                                , "dShow = Mk2D $ \\a b -> show a <> \",\" <> show b"
+                                , "dShow = Mk2D $ \\a b => show a <> \",\" <> show b"
                                 , "di: D Integer"
                                 , "di = dShow"
                                 , "showD: a -> D a -> Text"
-                                , "showD a da = case da of Mk1D ai -> show $ ai a; Mk2D aat -> aat a a end"
+                                , "showD a da = case da of Mk1D ai => show $ ai a; Mk2D aat => aat a a end"
                                 , "sd: Text"
                                 , "sd = showD 356 di"
                                 ] $
@@ -797,7 +797,7 @@ testEntity =
                           , tDecls
                                 [ "rec datatype RList +a = MkRList (Maybe (a :*: RList a)) end"
                                 , "rec showRList: RList Showable -> Text"
-                                , "showRList (MkRList rl) = case rl of Nothing -> \"\"; Just (a,rla) -> show a <> \";\" <> showRList rla end"
+                                , "showRList (MkRList rl) = case rl of Nothing => \"\"; Just (a,rla) => show a <> \";\" <> showRList rla end"
                                 , "end"
                                 , "rlisti: RList Integer"
                                 , "rlisti = MkRList $ Just (45,MkRList $ Just (72, MkRList $ Just (18,MkRList Nothing)))"
@@ -816,9 +816,9 @@ testEntity =
               [ testExpectSuccess "pass"
               , testExpectSuccess "let t1 = T1 \"hello\" 3 in pass"
               , testExpectSuccess "let f (T1 x _) = x in pass"
-              , testExpectSuccess "case T1 \"hello\" 3 of T1 \"hello\" 3 -> pass end"
+              , testExpectSuccess "case T1 \"hello\" 3 of T1 \"hello\" 3 => pass end"
               , testExpectSuccess
-                    "case T1 \"hello\" 3 of T2 -> fail \"T2\"; T1 \"hello\" 2 -> fail \"T1 2\"; T1 \"hell\" 3 -> fail \"T1 hell\"; T1 \"hello\" 3 -> pass end"
+                    "case T1 \"hello\" 3 of T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
               , testExpectSuccess "let closedtype P in pass"
               , tGroup
                     "nominal"
@@ -868,9 +868,9 @@ testEntity =
                     "do r <- newMemWhole; interpretDateAsText r := \"2015-08-12\"; testeq {YearMonthDay 2015 08 12} r; end"
               ]
         , tDecls
-              [ "runresult ar arg = case ar of Left err -> fail err; Right f -> f arg end"
+              [ "runresult ar arg = case ar of Left err => fail err; Right f => f arg end"
               , "testaction expected action = do found <- action; testeqval expected found end"
-              , "testleft action = do found <- action; case found of Left _ -> pass; Right _ -> fail \"not Left\" end end"
+              , "testleft action = do found <- action; case found of Left _ => pass; Right _ => fail \"not Left\" end end"
               ] $
           tGroup
               "evaluate"
@@ -878,12 +878,12 @@ testEntity =
               , testExpectSuccess "testaction (Right 5) $ evaluate @Integer \"5\""
               , testExpectSuccess "testaction (Right 5) $ evaluate @Integer \"let x = 5 in x\""
               , testExpectSuccess
-                    "do ar <- evaluate @(Integer -> Integer) \"\\\\x -> x + 1\"; case ar of Left err -> fail err; Right f -> testeqval 8 $ f 7 end end"
+                    "do ar <- evaluate @(Integer -> Integer) \"\\\\x => x + 1\"; case ar of Left err => fail err; Right f => testeqval 8 $ f 7 end end"
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: expecting: expression\") $ evaluate @Integer \"\""
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: undefined: f: a\") $ evaluate @Integer \"f\""
               , testExpectSuccess "testleft $ evaluate @Integer \"\\\"hello\\\"\""
               , testExpectSuccess
-                    "do r <- newMemWhole; ar <- evaluate @(WholeRef Integer -> Action Unit) \"\\\\r -> r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
+                    "do r <- newMemWhole; ar <- evaluate @(WholeRef Integer -> Action Unit) \"\\\\r => r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
               ]
         , tGroup
               "text-sort"

@@ -31,7 +31,7 @@ For example:
 ```pinafore
 datatype D +a -b {-p,+q} =
     T1 (b -> [a]) |
-    T2 ((p,b) -> q);
+    T2 (p :*: b -> q);
 ```
 
 ## Entity types
@@ -87,7 +87,7 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 #### Constructors & Functions
 `[]: List None`  
-`\x y -> x::y: a -> List a -> List1 a`
+`\x y => x::y: a -> List a -> List1 a`
 
 ### Cartesian Products
 
@@ -98,7 +98,7 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 There are no higher-arity tuples than pair.
 
 #### Constructors & Functions
-`\x y -> (x, y): a -> b -> a :*: b`  
+`\x y => (x, y): a -> b -> a :*: b`  
 `fst: a :*: Any -> a`  
 `snd: Any :*: b -> b`
 
@@ -128,8 +128,8 @@ closedtype Patient =
 patientPerson: Patient -> Person;
 patientPerson patient =
     case patient of
-        LivingPatient p _ -> p;
-        DeadPatient p _ _ -> p;
+        LivingPatient p _ => p;
+        DeadPatient p _ _ => p;
     end;
 ```
 
@@ -166,9 +166,9 @@ So you can use `check`, `coerce`, and pattern-matching to convert between them.
 ```pinafore
 describeAnimalType :: Animal -> Text;
 describeAnimalType a = case a of
-    (h: Human) -> "Human";
-    (c: Cat) -> "Cat";
-    (d: Dog) -> "Dog";
+    h: Human => "Human";
+    c: Cat => "Cat";
+    d: Dog => "Dog";
     end;
 ```
 

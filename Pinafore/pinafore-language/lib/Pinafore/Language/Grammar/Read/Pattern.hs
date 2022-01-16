@@ -1,6 +1,6 @@
 module Pinafore.Language.Grammar.Read.Pattern
     ( readPatterns
-    , readPattern2
+    , readPattern1
     ) where
 
 import Pinafore.Language.Grammar.Read.Constructor

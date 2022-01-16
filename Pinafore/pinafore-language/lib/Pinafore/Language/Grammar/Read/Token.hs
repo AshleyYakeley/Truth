@@ -152,7 +152,7 @@ instance Show (Token t) where
     show TokUnderscore = show ("_" :: String)
     show TokLambda = show ("\\" :: String)
     show TokAssign = show ("=" :: String)
-    show TokMap = show ("->" :: String)
+    show TokMap = show ("=>" :: String)
     show TokBackMap = show ("<-" :: String)
     show TokAnchor = "anchor"
     show TokAt = show ("@" :: String)
@@ -342,7 +342,7 @@ readOpToken = do
         ":" -> return $ MkAnyValue TokTypeJudge ()
         "\\" -> return $ MkAnyValue TokLambda ()
         "=" -> return $ MkAnyValue TokAssign ()
-        "->" -> return $ MkAnyValue TokMap ()
+        "=>" -> return $ MkAnyValue TokMap ()
         "<-" -> return $ MkAnyValue TokBackMap ()
         "%" -> return $ MkAnyValue TokUnref ()
         "!" ->
