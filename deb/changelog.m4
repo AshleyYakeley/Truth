@@ -10,6 +10,10 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . allow declaration documentation with #| and {#| #} comments
     - datatype declarations can have parameters
     - import lists
+    - syntax
+      . type names (:+:), (:*:), List, Unit
+      . tuple constructor/pattern (,,) etc.
+      . use => in lambda and case expressions
   * Interactive
     - :doc to retrieve name documentation
   * Library
