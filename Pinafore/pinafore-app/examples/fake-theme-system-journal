@@ -3,7 +3,7 @@
 let
 
 years: FiniteSetRef Integer;
-years = property @Integer @() !"FTSJ.years" !@ {()};
+years = property @Integer @Unit !"FTSJ.years" !@ {()};
 
 yearTheme: Integer ~> Text;
 yearTheme = property @Integer @Text !"FTSJ.yearTheme";

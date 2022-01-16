@@ -67,7 +67,7 @@ eventTimeOrder = mapOrder eventTimeTime localChronological;
 opentype Event;
 subtype Event <: Named;
 events: FiniteSetRef Event;
-events = property @Event @() !"type.event" !@ {()};
+events = property @Event @Unit !"type.event" !@ {()};
 
 eventTime = property @Event @EventTime !"event.time";
 eventNotes = property @Event @Text !"item.description";
@@ -75,19 +75,19 @@ eventNotes = property @Event @Text !"item.description";
 eventOrder: RefOrder Event;
 eventOrder = orderOn eventTime eventTimeOrder;
 
-eventData: FiniteSetRef (EventTime,Text);
+eventData: FiniteSetRef (EventTime :*: Text);
 eventData = (eventTime !** name) !$$ events;
 
-eventDataOrder: RefOrder (EventTime,Text);
+eventDataOrder: RefOrder (EventTime :*: Text);
 eventDataOrder = mapOrder fst eventTimeOrder;
 
-eventList: WholeRef +Date -> WholeRef +[(EventTime,Text)];
+eventList: WholeRef +Date -> WholeRef +(List (EventTime :*: Text));
 eventList todayref = {
     let
         today: Date;
         today = %todayref;
 
-        pickCurrent: (EventTime,Text) -> Boolean;
+        pickCurrent: EventTime :*: Text -> Boolean;
         pickCurrent (t,_) = ge $ calendrical (eventTimeDate t) today;
     in (EventTimeDate today,"Today") :: filter pickCurrent %(setList eventDataOrder eventData)
     };
@@ -142,11 +142,11 @@ newEvent = do
 
 eventsTableUI: WholeRef Event -> UI.Element;
 eventsTableUI selection = let
-    columns: [(WholeRef +Text, Event -> WholeRef Text)];
+    columns: List (WholeRef +Text :*: (Event -> WholeRef Text));
     columns = let
-        timeColumn: (WholeRef +Text, Event -> WholeRef Text);
+        timeColumn: WholeRef +Text :*: (Event -> WholeRef Text);
         timeColumn = ({"When"},\e -> {showEventTime $ %(eventTime !$ {e})});
-        nameColumn: (WholeRef +Text, Event -> WholeRef Text);
+        nameColumn: WholeRef +Text :*: (Event -> WholeRef Text);
         nameColumn = ({"What"},\e -> name !$ {e});
         in [timeColumn,nameColumn];
     in UI.run $ do

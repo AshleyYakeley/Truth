@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 let
-pdate = property @() @Date !"calendar-test";
+pdate = property @Unit @Date !"calendar-test";
 rdate = pdate !$ {()};
 import UI();
 in UI.openWindow (300,400) {"Test Calendar"} {[]} $ UI.vertical [UI.calendar rdate,UI.layoutGrow $ UI.label {show %rdate}]

@@ -4,7 +4,7 @@ let
 
 datatype StopwatchState = StoppedState Duration | RunningState Time;
 
-toggleStopwatch: WholeRef +Time -> WholeRef StopwatchState -> Action ();
+toggleStopwatch: WholeRef +Time -> WholeRef StopwatchState -> Action Unit;
 toggleStopwatch now r = do
     n <- get now;
     oldstate <- get r;

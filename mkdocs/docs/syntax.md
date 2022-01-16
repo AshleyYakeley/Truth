@@ -51,10 +51,6 @@ All declarations, including type declarations, are local to a `let` block.
 
 <type-infix> ::= "->" | "~>"
 
-<type-argument-1> ::=
-    <type-1> |
-    <type-range>
-
 <type-1> ::= <type-infix[0]> |
 
 <type-infix[n]> ::=
@@ -66,32 +62,24 @@ All declarations, including type declarations, are local to a `let` block.
 
 <type-infix-operator[n,dir]> ::= -- see table
 
-<type-argument-2> ::=
-    <type-2> |
-    <type-range>
-
 <type-2> ::=
-    <type-const> <type-arguments-3> |
+    <type-const> <type-arguments> |
     <type-3>
 
-<type-arguments-3> ::=
-    <type-argument-3> <type-arguments-3> |
-    <type-argument-3>
+<type-arguments> ::=
+    <type-argument> <type-arguments> |
+    <type-argument>
 
-<type-argument-3> ::=
+<type-argument> ::=
     <type-3> |
-    <type-range>
+    "{" <type-range-items> "}" |
+    "-" <type-3> |
+    "+" <type-3>
 
 <type-3> ::=
     "(" <type> ")" |
-    "(" <type> "," <type> ")" |
-    "(" ")" |
     <type-var> |
     <type-const>
-
-<type-range-3> ::=
-    "{" <type-range-items> "}" |
-    <type-signed>
 
 <type-range-items> ::= | <type-range-items-1>
 
@@ -101,9 +89,6 @@ All declarations, including type declarations, are local to a `let` block.
 
 <type-range-item> ::=
     <type> |
-    <type-signed>
-
-<type-signed> ::=
     "-" <type> |
     "+" <type>
 

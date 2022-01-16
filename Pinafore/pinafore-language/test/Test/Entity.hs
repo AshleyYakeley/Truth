@@ -152,9 +152,9 @@ testEntity =
               , testExpectSuccess "expectStop $ do r <- newMemWhole; immutWhole r := 5; end"
               ]
         , tDecls
-              [ "showVal: Showable -> Action (); showVal v = Debug.message $ show v"
-              , "showList: [Showable] -> Action (); showList l = do Debug.message \"[[[\"; for_ l showVal;  Debug.message \"]]]\"; end"
-              , mif False "testImmutList: Boolean -> Integer -> (ListRef Integer -> Action ()) -> Action ();" <>
+              [ "showVal: Showable -> Action Unit; showVal v = Debug.message $ show v"
+              , "showList: List Showable -> Action Unit; showList l = do Debug.message \"[[[\"; for_ l showVal;  Debug.message \"]]]\"; end"
+              , mif False "testImmutList: Boolean -> Integer -> (ListRef Integer -> Action Unit) -> Action Unit;" <>
                 "testImmutList present n call = do lr <- newMemWhole; lr := [10,20,30]; r <- listGetItemRef present n lr; ir <- listGetItemRef present n $ immutWhole lr; call lr; a <- get r; ia <- get ir; testeqval a ia; end"
               ] $
           tGroup
@@ -199,7 +199,7 @@ testEntity =
               [ "convr : Rational -> Rational;convr = id"
               , "convn : Number -> Number;convn = id"
               , "convl : Literal -> Literal;convl = id"
-              , "testconvr : Rational -> Action ();testconvr r = testeq {convl r} {convl $ convn r}"
+              , "testconvr : Rational -> Action Unit;testconvr r = testeq {convl r} {convl $ convn r}"
               ] $
           tGroup
               "literal conversion"
@@ -233,7 +233,7 @@ testEntity =
               , "ena = property @E @Number !\"ena\""
               ] $
           tGroup
-              "Storage"
+              "storage"
               [ tGroup
                     "unknown & known"
                     [ testExpectSuccess "testisunknown {% (eta !$ {e1}) == % (eta !$ {e1})}"
@@ -452,24 +452,24 @@ testEntity =
               , tGroup
                     "List"
                     [ testExpectSuccess
-                          "let enta = property @E @[Text] !\"enta\" in enta !$ {e1} := [\"abc\", \"def\"] >> (testeq {[\"abc\", \"def\"]} $ enta !$ {e1})"
+                          "let enta = property @E @(List Text) !\"enta\" in enta !$ {e1} := [\"abc\", \"def\"] >> (testeq {[\"abc\", \"def\"]} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @[Text] !\"enta\" in enta !$ {e1} := [] >> (testeq {[]} $ enta !$ {e1})"
+                          "let enta = property @E @(List Text) !\"enta\" in enta !$ {e1} := [] >> (testeq {[]} $ enta !$ {e1})"
                     ]
               , tGroup
                     "Pair/Either"
                     [ testExpectSuccess
-                          "let enta = property @E @(Number, Text) !\"enta\" in enta !$ {e1} := (74,\"hmm\") >> (testneq {(71,\"hmm\")} $ enta !$ {e1})"
+                          "let enta = property @E @(Number :*: Text) !\"enta\" in enta !$ {e1} := (74,\"hmm\") >> (testneq {(71,\"hmm\")} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Number, Text) !\"enta\" in enta !$ {e1} := (74,\"hmm\") >> (testeq {(74,\"hmm\")} $ enta !$ {e1})"
+                          "let enta = property @E @(Number :*: Text) !\"enta\" in enta !$ {e1} := (74,\"hmm\") >> (testeq {(74,\"hmm\")} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Left 74 >> (testneq {Left 73} $ enta !$ {e1})"
+                          "let enta = property @E @(Number :+: Text) !\"enta\" in enta !$ {e1} := Left 74 >> (testneq {Left 73} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Left 74 >> (testeq {Left 74} $ enta !$ {e1})"
+                          "let enta = property @E @(Number :+: Text) !\"enta\" in enta !$ {e1} := Left 74 >> (testeq {Left 74} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testneq {Right \"adbc\"} $ enta !$ {e1})"
+                          "let enta = property @E @(Number :+: Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testneq {Right \"adbc\"} $ enta !$ {e1})"
                     , testExpectSuccess
-                          "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testeq {Right \"abc\"} $ enta !$ {e1})"
+                          "let enta = property @E @(Number :+: Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testeq {Right \"abc\"} $ enta !$ {e1})"
                     ]
               ]
         , let
@@ -494,7 +494,8 @@ testEntity =
                   , tGroup
                         "unify"
                         [ testSubtypeUnify sr $
-                          "let rec f: (" <> q <> ") -> (); f = f end; rec x: " <> p <> "; x = x; end; fx = f x in pass"
+                          "let rec f: (" <>
+                          q <> ") -> Unit; f = f end; rec x: " <> p <> "; x = x; end; fx = f x in pass"
                         ]
                   , tGroup "subsume" $
                     [ testSubtypeSubsume sr $ "let rec x: " <> p <> "; x = x end; y: " <> q <> "; y = x in pass"
@@ -521,20 +522,28 @@ testEntity =
                            , subtypeTest False SRSingle "a" "a"
                            , subtypeTest False SRSubsume "a" "Integer"
                            , subtypeTest False SRUnify "Integer" "a"
-                           , subtypeTest False SRSubsume "[a]" "[Integer]"
-                           , subtypeTest False SRUnify "[Integer]" "[a]"
-                           , subtypeTest False SRSubsume "(a,b)" "(Integer,Rational)"
-                           , subtypeTest False SRSubsume "(a,a)" "(Integer,Integer)"
-                           , subtypeTest False SRSubsume "(a,a)" "(Integer,Rational)"
-                           , subtypeTest False SRSubsume "(a,Text)" "(Integer,Text)"
-                           , subtypeTest False SRSingle "[a]" "[a]"
+                           , subtypeTest False SRSubsume "List a" "List Integer"
+                           , subtypeTest False SRUnify "List Integer" "List a"
+                           , subtypeTest False SRSubsume "a :*: b" "Integer :*: Rational"
+                           , subtypeTest False SRSubsume "a :*: a" "Integer :*: Integer"
+                           , subtypeTest False SRSubsume "a :*: a" "Integer :*: Rational"
+                           , subtypeTest False SRSubsume "a :*: Text" "Integer :*: Text"
+                           , subtypeTest False SRSingle "List a" "List a"
                            , subtypeTest False SRSingle "a -> a -> Ordering" "RefOrder a"
                            , subtypeTest False SRSingle "Integer -> Integer -> Ordering" "RefOrder Integer"
-                           , subtypeTest False SRSingle "WholeRef [a]" "ListRef a"
-                           , subtypeTest False SRSingle "WholeRef [Integer]" "ListRef Integer"
-                           , subtypeTest False SRSingle "WholeRef {-[Integer],+[Integer]}" "ListRef Integer"
-                           , subtypeTest True SRSingle "WholeRef {-[a & Integer],+[a | Integer]}" "ListRef Integer"
-                           , subtypeTest True SRSingle "WholeRef {-[a & Entity],+[a | Integer]}" "ListRef Integer"
+                           , subtypeTest False SRSingle "WholeRef (List a)" "ListRef a"
+                           , subtypeTest False SRSingle "WholeRef (List Integer)" "ListRef Integer"
+                           , subtypeTest False SRSingle "WholeRef {-List Integer,+List Integer}" "ListRef Integer"
+                           , subtypeTest
+                                 True
+                                 SRSingle
+                                 "WholeRef {-List (a & Integer),+List (a | Integer)}"
+                                 "ListRef Integer"
+                           , subtypeTest
+                                 True
+                                 SRSingle
+                                 "WholeRef {-List (a & Entity),+List (a | Integer)}"
+                                 "ListRef Integer"
                            , subtypeTest False SRSingle "rec a. Maybe a" "rec a. Maybe a"
                            , subtypeTest False SRSingle "rec a. Maybe a" "rec b. Maybe b"
                            , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec a. Maybe a)"
@@ -589,7 +598,7 @@ testEntity =
                                  "setSingle"
                                  [ testExpectSuccess "pass"
                                  , testExpectSuccess "let f : P -> P; f x = x in pass"
-                                 , testExpectSuccess "let f : [P] -> [P]; f x = x in pass"
+                                 , testExpectSuccess "let f : List P -> List P; f x = x in pass"
                                  ]
                            , tDecls ["opentype P", "opentype Q", "subtype P <: Q", "subtype Q <: P"] $
                              tGroup
@@ -598,7 +607,7 @@ testEntity =
                                  , testExpectSuccess "let f : P -> P; f x = x in pass"
                                  , testExpectSuccess "let f : Q -> Q; f x = x in pass"
                                  , testExpectSuccess "let f : P -> Q; f x = x in pass"
-                                 , testExpectSuccess "let f : [P] -> [Q]; f x = x in pass"
+                                 , testExpectSuccess "let f : List P -> List Q; f x = x in pass"
                                  , testExpectSuccess "let f : Q -> P; f x = x in pass"
                                  ]
                            ]
@@ -621,9 +630,9 @@ testEntity =
                      , tGroup
                            "Entity"
                            [ testExpectSuccess "let f : Number -> Entity; f x = x in pass"
-                           , testExpectSuccess "let f : (a & Number) -> (Entity,a); f x = (x,x) in pass"
+                           , testExpectSuccess "let f : (a & Number) -> Entity :*: a; f x = (x,x) in pass"
                            , testExpectSuccess "let f : Maybe Number -> Entity; f x = x in pass"
-                           , testExpectSuccess "let f : Maybe (a & Number) -> (Entity,Maybe a); f x = (x,x) in pass"
+                           , testExpectSuccess "let f : Maybe (a & Number) -> Entity :*: Maybe a; f x = (x,x) in pass"
                            ]
                      , tGroup "dynamic" $
                        [ tGroup "DynamicEntity <: Entity" $ subtypeTests False SRSingle "DynamicEntity" "Entity"
@@ -735,7 +744,7 @@ testEntity =
                     , testExpectSuccess "let rec datatype P = P1 Q; closedtype Q = Q1 !\"Q1\" end in pass"
                     , testExpectReject "let rec closedtype P = P1 Q; datatype Q = Q1 !\"Q1\" end in pass"
                     , testExpectSuccess
-                          "let rec datatype P = P1 Q; datatype Q = Q1 (Action ()); pqpass = P1 (Q1 pass) end in case pqpass of P1 (Q1 p) -> p end"
+                          "let rec datatype P = P1 Q; datatype Q = Q1 (Action Unit); pqpass = P1 (Q1 pass) end in case pqpass of P1 (Q1 p) -> p end"
                     ]
               , tGroup
                     "parameters"
@@ -764,7 +773,7 @@ testEntity =
                     , tGroup
                           "conversion"
                           [ tDecls
-                                [ "datatype D +a = Mk1D [a] | Mk2D (Maybe a)"
+                                [ "datatype D +a = Mk1D (List a) | Mk2D (Maybe a)"
                                 , "showD: D Showable -> Text"
                                 , "showD t = case t of Mk1D aa -> show aa; Mk2D ma -> show ma end"
                                 , "di: D Integer"
@@ -786,7 +795,7 @@ testEntity =
                                 ] $
                             testExpectSuccess "if sd == \"356,356\" then pass else fail sd"
                           , tDecls
-                                [ "rec datatype RList +a = MkRList (Maybe (a, RList a)) end"
+                                [ "rec datatype RList +a = MkRList (Maybe (a :*: RList a)) end"
                                 , "rec showRList: RList Showable -> Text"
                                 , "showRList (MkRList rl) = case rl of Nothing -> \"\"; Just (a,rla) -> show a <> \";\" <> showRList rla end"
                                 , "end"
@@ -835,13 +844,13 @@ testEntity =
         , tGroup
               "type escape"
               [ testExpectSuccess
-                    "let opentype T; t = let in openEntity @T !\"t\"; f = let f : T -> Action (); f _ = pass in f; in f t"
+                    "let opentype T; t = let in openEntity @T !\"t\"; f = let f : T -> Action Unit; f _ = pass in f; in f t"
               , testExpectReject
-                    "let opentype T1; opentype T2; t = let in openEntity @T1 !\"t\"; f = let f : T2 -> Action (); f _ = pass in f; in f t"
+                    "let opentype T1; opentype T2; t = let in openEntity @T1 !\"t\"; f = let f : T2 -> Action Unit; f _ = pass in f; in f t"
               , testExpectReject
-                    "let t = let opentype T in openEntity @T !\"t\"; f = let opentype T; f : T -> Action (); f _ = pass in f; in f t"
+                    "let t = let opentype T in openEntity @T !\"t\"; f = let opentype T; f : T -> Action Unit; f _ = pass in f; in f t"
               , testExpectReject
-                    "let t = let opentype T1 in openEntity @T1 !\"t\"; f = let opentype T2; f : T2 -> Action (); f _ = pass in f; in f t"
+                    "let t = let opentype T1 in openEntity @T1 !\"t\"; f = let opentype T2; f : T2 -> Action Unit; f _ = pass in f; in f t"
               ]
         , tDecls ["opentype E", "eta = property @E @Text !\"eta\"", "e1 = openEntity @E !\"e1\"", "rt1 = eta !$ {e1}"] $
           tGroup
@@ -874,7 +883,7 @@ testEntity =
               , testExpectSuccess "testaction (Left \"<evaluate>:1:1: undefined: f: a\") $ evaluate @Integer \"f\""
               , testExpectSuccess "testleft $ evaluate @Integer \"\\\"hello\\\"\""
               , testExpectSuccess
-                    "do r <- newMemWhole; ar <- evaluate @(WholeRef Integer -> Action ()) \"\\\\r -> r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
+                    "do r <- newMemWhole; ar <- evaluate @(WholeRef Integer -> Action Unit) \"\\\\r -> r := 45\"; runresult ar r; a <- get r; testeqval 45 a; end"
               ]
         , tGroup
               "text-sort"

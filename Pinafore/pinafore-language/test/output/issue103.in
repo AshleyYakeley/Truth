@@ -5,7 +5,7 @@ let
 e1: Entity;
 e1 = ();
 
-f: WholeRef a -> ();
+f: WholeRef a -> Unit;
 f _ = ();
 
 in do

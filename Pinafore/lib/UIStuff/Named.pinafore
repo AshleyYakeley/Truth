@@ -14,13 +14,13 @@ nameOrder: RefOrder Named;
 nameOrder = orderOn name alphabetical;
 
 #| Order a set of entities by their names.
-byName: FiniteSetRef {+a,+Named} -> WholeRef +[(a,Text)];
+byName: FiniteSetRef {+a,+Named} -> WholeRef +(List (a :*: Text));
 byName ref = setList (mapOrder fst nameOrder) $ (identity !** name) !$$ ref;
 
 namedPane: (WholeRef +a -> Element) -> WholeRef +(a & Named) -> Pane;
 namedPane iui e = MkPane (name !$% e) (iui $ immutWhole e) {[]};
 
-nameColumn: (WholeRef +Text, Named -> WholeRef Text);
+nameColumn: WholeRef +Text :*: (Named -> WholeRef Text);
 nameColumn = ({"Name"},\p -> name !$ {p});
 
 namedTable: FiniteSetRef {a,+Named} -> (a -> Action Any) -> Maybe (WholeRef {a,+Named}) -> Element;
@@ -32,7 +32,7 @@ namedTable sref onActivate msel = run $ do
 namedItemTable: FiniteSetRef {a,+Named} -> (WholeRef +a -> Element) -> Maybe (WholeRef {a,+Named}) -> Element;
 namedItemTable set iui msel = namedTable set (\e -> paneWindow $ namedPane iui {e}) msel;
 
-namedPairPane: Text -> FiniteSetRef {a,+Named} -> [SetRef a -> ((a & Named) -> Action ()) -> MenuItem] -> (WholeRef +a -> Element) -> Action Pane;
+namedPairPane: Text -> FiniteSetRef {a,+Named} -> List (SetRef a -> ((a & Named) -> Action Unit) -> MenuItem) -> (WholeRef +a -> Element) -> Action Pane;
 namedPairPane name set mitems getSelectedUI = let
     getSelectorUI sel = namedItemTable set getSelectedUI (Just sel);
     iopen e = paneWindow $ namedPane getSelectedUI {e};

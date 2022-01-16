@@ -151,9 +151,6 @@ interpretTypeRangeItem (Nothing, st) = interpretTypeRangeFromType st
 
 groundTypeText :: SyntaxGroundType -> Text
 groundTypeText (ConstSyntaxGroundType n) = toText n
-groundTypeText ListSyntaxGroundType = "[]"
-groundTypeText PairSyntaxGroundType = "(,)"
-groundTypeText UnitSyntaxGroundType = "()"
 
 data PinaforeGroundTypeM where
     MkPinaforeGroundTypeM :: AnyW (PinaforeGroundType dv) -> PinaforeGroundTypeM
@@ -195,9 +192,6 @@ interpretArgs sgt (ConsListType RangeCCRVarianceType dv) (st:stt) = do
                 MkAnyW args -> return $ MkAnyW $ ConsCCRArguments (RangeCCRPolarArgument tp tq) args
 
 interpretGroundTypeConst :: SyntaxGroundType -> PinaforeInterpreter PinaforeGroundTypeM
-interpretGroundTypeConst UnitSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW $ unitGroundType
-interpretGroundTypeConst ListSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW $ listGroundType
-interpretGroundTypeConst PairSyntaxGroundType = return $ MkPinaforeGroundTypeM $ MkAnyW $ pairGroundType
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     MkBoundType t <- lookupBoundType n
     return $ MkPinaforeGroundTypeM $ MkAnyW t

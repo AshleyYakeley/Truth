@@ -15,7 +15,7 @@ literalGroundType :: PinaforeGroundType '[] Literal
 literalGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Literal)|]) "Literal"
 
 unitGroundType :: PinaforeGroundType '[] ()
-unitGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "()"
+unitGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit"
 
 textGroundType :: PinaforeGroundType '[] Text
 textGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) "Text"
@@ -72,19 +72,17 @@ wholeRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFam
 funcGroundType :: PinaforeGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
 funcGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (->))|]) $ \ta tb ->
-        (precShow 2 ta <> " -> " <> precShow 3 tb, 3)
+        (precShow 5 ta <> " -> " <> precShow 6 tb, 6)
 
 maybeGroundType :: PinaforeGroundType '[ CoCCRVariance] Maybe
-maybeGroundType =
-    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) $ \ta -> ("Maybe " <> precShow 0 ta, 2)
+maybeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Maybe)|]) "Maybe"
 
 listGroundType :: PinaforeGroundType '[ CoCCRVariance] []
-listGroundType =
-    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) $ \ta -> ("[" <> precShow maxBound ta <> "]", 0)
+listGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily [])|]) "List"
 
 list1GroundType :: IsDolanSubtypeGroundType PinaforeGroundType => PinaforeGroundType '[ CoCCRVariance] NonEmpty
 list1GroundType =
-    (singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) $ \ta -> ("List1 " <> precShow 0 ta, 2))
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1")
         { pgtGreatestDynamicSupertype =
               \(ConsCCRArguments ta NilCCRArguments) -> do
                   tt <-
@@ -93,17 +91,17 @@ list1GroundType =
                   Just $ mapPolarShimWit (MkPolarMap $ functionToShim "nonEmpty" nonEmpty . iJoinL1) tt
         }
 
-pairGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] (,)
-pairGroundType =
-    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) $ \ta tb ->
-        ("(" <> precShow maxBound ta <> ", " <> precShow maxBound tb <> ")", 0)
-
 eitherGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] Either
 eitherGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Either)|]) $ \ta tb ->
-        ("Either " <> precShow 0 ta <> " " <> precShow 0 tb, 2)
+        (precShow 3 ta <> " :+: " <> precShow 4 tb, 4)
+
+pairGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] (,)
+pairGroundType =
+    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) $ \ta tb ->
+        (precShow 2 ta <> " :*: " <> precShow 3 tb, 3)
 
 morphismGroundType :: PinaforeGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism
 morphismGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMorphism)|]) $ \ta tb ->
-        (precShow 2 ta <> " ~> " <> precShow 3 tb, 3)
+        (precShow 1 ta <> " ~> " <> precShow 2 tb, 2)

@@ -19,7 +19,7 @@ testReadTypes :: TestTree
 testReadTypes =
     testTree
         "read-type"
-        [ testReadType "()"
+        [ testReadType "Unit"
         , testReadType "Entity"
         , testReadType "Std.Entity"
         , testReadType "Literal"
@@ -66,12 +66,17 @@ testReadTypes =
         , testReadType "WholeRef {+a}"
         , testReadType "WholeRef {Entity}"
         , testReadType "WholeRef {+Entity}"
+        , testReadType "WholeRef {(List a)}"
+        , testReadType "WholeRef {List a}"
+        , testReadType "WholeRef {+List q}"
+        , testReadType "WholeRef {-List p}"
+        , testReadType "WholeRef {-List p,+List q}"
         , testReadType "WholeRef {a,b}"
         , testReadType "WholeRef {+a,-b}"
         , testReadType "WholeRef {+a,b,-Entity}"
         , testReadType "WholeRef a -> WholeRef b"
         , testReadType "WholeRef +a -> WholeRef +b"
-        , testReadType "Maybe ()"
+        , testReadType "Maybe Unit"
         , testReadType "Maybe Entity"
         , testReadType "Maybe a"
         , testReadType "SetRef a"
@@ -81,5 +86,5 @@ testReadTypes =
         , testReadType "Std.WholeRef +Std.Text -> a -> Std.Action a"
         , testTree
               "recursive"
-              [testReadType "rec a. Maybe a", testReadType "rec a. Maybe a -> b", testReadType "rec a. rec b. (a,b)"]
+              [testReadType "rec a. Maybe a", testReadType "rec a. Maybe a -> b", testReadType "rec a. rec b. a :*: b"]
         ]

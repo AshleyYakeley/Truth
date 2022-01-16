@@ -26,7 +26,7 @@ class PinaforeLexer(RegexLexer):
             (words((
                 'Any', 'None', 'Literal', 'Text', 'Number', 'Rational', 'Integer', 'Boolean', 'Ordering', 'Time', 'Duration', 'Date', 'TimeOfDay', 'LocalTime',
                 'Entity', 'DynamicEntity',
-                'Maybe', 'Either', 'RefOrder', 'Action', 'WholeRef', 'SetRef', 'FiniteSetRef', 'ListRef', 'Element', 'Window', 'MenuItem'
+                'Unit', 'Maybe', 'List', 'List1', 'RefOrder', 'Action', 'WholeRef', 'SetRef', 'FiniteSetRef', 'ListRef', 'Element', 'Window', 'MenuItem'
                 ), suffix=r'\b'), Keyword.Type),
             (r'![-0-9A-Fa-f]+', Literal.Anchor),
             (r'!"(\\\\|\\"|[^"])*"', Literal.Anchor),

@@ -89,11 +89,8 @@ instance ExprShow SyntaxVariance where
     exprShowPrec CoSyntaxVariance = ("+", 0)
     exprShowPrec ContraSyntaxVariance = ("-", 0)
 
-data SyntaxGroundType
-    = ConstSyntaxGroundType ReferenceName
-    | ListSyntaxGroundType
-    | PairSyntaxGroundType
-    | UnitSyntaxGroundType
+newtype SyntaxGroundType =
+    ConstSyntaxGroundType ReferenceName
     deriving (Eq)
 
 data SyntaxTypeArgument
@@ -130,18 +127,15 @@ typeOperatorFixity _ = MkFixity AssocLeft 3
 
 instance ExprShow SyntaxType' where
     exprShowPrec (VarSyntaxType v) = exprShowPrec v
-    exprShowPrec (OrSyntaxType ta tb) = (exprPrecShow 2 ta <> " | " <> exprPrecShow 2 tb, 3)
-    exprShowPrec (AndSyntaxType ta tb) = (exprPrecShow 2 ta <> " & " <> exprPrecShow 2 tb, 3)
+    exprShowPrec (OrSyntaxType ta tb) = (exprPrecShow 6 ta <> " | " <> exprPrecShow 6 tb, 7)
+    exprShowPrec (AndSyntaxType ta tb) = (exprPrecShow 6 ta <> " & " <> exprPrecShow 6 tb, 7)
     exprShowPrec TopSyntaxType = ("None", 0)
     exprShowPrec BottomSyntaxType = ("Any", 0)
-    exprShowPrec (RecursiveSyntaxType n pt) = ("rec " <> exprShow n <> ". " <> exprShow pt, 4)
-    exprShowPrec (SingleSyntaxType UnitSyntaxGroundType []) = ("()", 0)
-    exprShowPrec (SingleSyntaxType PairSyntaxGroundType [ta, tb]) = ("(" <> exprShow ta <> "," <> exprShow tb <> ")", 0)
-    exprShowPrec (SingleSyntaxType ListSyntaxGroundType [ta]) = ("[" <> exprShow ta <> "]", 0)
+    exprShowPrec (RecursiveSyntaxType n pt) = ("rec " <> exprShow n <> ". " <> exprPrecShow 7 pt, 7)
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType (UnqualifiedReferenceName n)) [ta, tb])
         | nameIsInfix n = let
             MkFixity assc level = typeOperatorFixity n
-            prec = 4 - level
+            prec = 6 - level
             in case assc of
                    AssocRight -> (exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow prec tb, prec)
                    AssocLeft -> (exprPrecShow prec ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb, prec)
@@ -150,7 +144,6 @@ instance ExprShow SyntaxType' where
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) []) = (exprShow n, 0)
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) args) =
         (exprShow n <> mconcat (fmap (\arg -> " " <> exprPrecShow 0 arg) args), 2)
-    exprShowPrec (SingleSyntaxType _ _) = ("UNKNOWN", 0)
 
 type SyntaxType = WithSourcePos SyntaxType'
 

@@ -45,7 +45,7 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 `Literal <: Entity`
 
-`() <: Literal`
+`Unit <: Literal`
 
 `Boolean <: Literal`
 
@@ -67,10 +67,9 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 ### Maybe
 
-`Maybe a`  
-(`a` is covariant)
+`Maybe +a`  
 
-`a <: Entity` implies `Maybe a <: Entity`.
+ `Maybe Entity <: Entity`.
 
 #### Constructors & Functions
 `Just: a -> Maybe a`  
@@ -78,39 +77,40 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 ### Lists
 
-`[a]`  
-(`a` is covariant)
+`List +a`  
 
-`a <: Entity` implies `[a] <: Entity`.
+`List1 +a`  
+
+`List1 a <: List a`
+
+`List Entity <: Entity`.
 
 #### Constructors & Functions
-`[]: [None]`  
-`\x y -> x::y: a -> [a] -> [a]`
+`[]: List None`  
+`\x y -> x::y: a -> List a -> List1 a`
 
-### Pairs
+### Cartesian Products
 
-`(a,b)`  
-(both `a` and `b` are covariant)
+`+a :*: +b`  
 
-`a <: Entity` and `b <: Entity` implies `(a,b) <: Entity`.
+`Entity :*: <: Entity`.
 
 There are no higher-arity tuples than pair.
 
 #### Constructors & Functions
-`\x y -> (x, y): a -> b -> (a, b)`  
-`fst: (a, Any) -> a`  
-`snd: (Any, b) -> b`
+`\x y -> (x, y): a -> b -> a :*: b`  
+`fst: a :*: Any -> a`  
+`snd: Any :*: b -> b`
 
-### Either
+### Cartesian Sums
 
-`Either a b`  
-(both `a` and `b` are covariant)
+`+a :+: +b`  
 
-`a <: Entity` and `b <: Entity` implies `Either a b <: Entity`.
+`Entity :+: Entity <: Entity`.
 
 #### Constructors & Functions
-`Left: a -> Either a None`  
-`Right: b -> Either None b`
+`Left: a -> a :+: None`  
+`Right: b -> None :+: b`
 
 ### Declared Closed Entity Types
 
@@ -206,13 +206,11 @@ If there is a loop of subtype relations, it will simply make those types equival
 
 ## Functions
 
-`a -> b`  
-(`a` is contravariant, `b` is covariant)
+`-a -> +b`  
 
 ## Actions
 
-`Action a`  
-(`a` is covariant)
+`Action +a`  
 
 Roughly equivalent to the Haskell `IO a`.
 
@@ -221,8 +219,7 @@ Runners of an action that stops, such as the main program, or the handler of a b
 
 ## Orders
 
-`RefOrder a`  
-(`a` is contravariant)
+`RefOrder -a`  
 
 An order on a type. Can order by morphisms.
 
@@ -250,9 +247,7 @@ Whole references may be "unknown"
 
 ### Set References
 
-`SetRef a`
-
-(`a` is contravariant)
+`SetRef -a`
 
 A set reference is a mutable predicate, like a test on values. Values can be added to it or deleted from it.
 
@@ -268,4 +263,4 @@ Finite set references contain a finite number of members, which can be retrieved
 
 ## Morphisms
 
-`{ap,aq} ~> {bp,bq}`
+`{-ap,+aq} ~> {-bp,+bq}`

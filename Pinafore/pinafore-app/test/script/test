@@ -10,7 +10,7 @@ ui_labelled n ui = UI.horizontal [UI.label n, UI.layoutGrow  ui];
 
 std_window : WholeRef +Text -> UI.Element -> Action UI.Window;
 std_window title contents = fixAction $ \window -> let
-    menus : [UI.MenuItem];
+    menus : List UI.MenuItem;
     menus =
         [
             UI.menuSubmenu "File"
@@ -80,7 +80,7 @@ ui_people pp = UI.run $ do
     ];
     end;
 
-peopleByName : WholeRef +[(Person,Text)];
+peopleByName : WholeRef +(List (Person :*: Text));
 peopleByName = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
 
 ui_person : WholeRef Person -> UI.Element;

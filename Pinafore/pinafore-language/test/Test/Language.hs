@@ -276,6 +276,31 @@ testQueries =
               , testQuery "let a=7;b=a in a" $ LRSuccess "7"
               , testQuery "let a=7;b=a in b" $ LRSuccess "7"
               , testQuery "let a=2 in let b=a in b" $ LRSuccess "2"
+              , testTree
+                    "recursive"
+                    [ testQuery "let rec a=1 end in a" $ LRSuccess "1"
+                    , testQuery "let rec a=1 end in let rec a=2 end in a" $ LRSuccess "2"
+                    , testQuery "let rec a=1;a=2 end in a" $ LRCheckFail
+                    , testQuery "let rec a=1;b=a end in b" $ LRSuccess "1"
+                    , testQuery "let rec b=a;a=1 end in b" $ LRSuccess "1"
+                    , testQuery "let rec a x = x end in a 1" $ LRSuccess "1"
+                    , testQuery "let rec a x = x; b = a end in b" $ LRSuccess "<?>"
+                    , testQuery "let rec a = \\x -> x end in let rec b = a 1 end in b" $ LRSuccess "1"
+                    , testQuery "let rec a x = x; b = a 1 end in b" $ LRSuccess "1"
+                    , testQuery "let rec a x = b; b = b end in a" $ LRSuccess "<?>"
+                    , testQuery "let rec a x = 1; b = b end in a b" $ LRSuccess "1"
+                    , testQuery "let rec a x = 1; b = a b end in b" $ LRSuccess "1"
+                    , testQuery "let rec a x = 1 end in let rec b = a b end in b" $ LRSuccess "1"
+                    , testQuery "let rec b = (\\x -> 1) b end in b" $ LRSuccess "1"
+                    , testQuery "let rec b = a b; a x = 1 end in b" $ LRSuccess "1"
+                    , testQuery "let rec a x = 1; b = a c; c=b end in b" $ LRSuccess "1"
+                    , testTree
+                          "polymorphism"
+                          [ testQuery "let rec i = \\x -> x end in (1 + i 1, i False)" $ LRSuccess "(2, False)"
+                          , testQuery "let rec i = \\x -> x; r = (1 + i 1, i False) end in r" $ LRSuccess "(2, False)"
+                          , testQuery "let rec r = (1 + i 1, i False); i = \\x -> x end in r" $ LRSuccess "(2, False)"
+                          ]
+                    ]
               ]
         , testTree
               "scoping"
@@ -313,31 +338,6 @@ testQueries =
               , testQuery "let falsex=1 in falsex" $ LRSuccess "1"
               ]
         , testTree
-              "recursive let-binding"
-              [ testQuery "let rec a=1 end in a" $ LRSuccess "1"
-              , testQuery "let rec a=1 end in let rec a=2 end in a" $ LRSuccess "2"
-              , testQuery "let rec a=1;a=2 end in a" $ LRCheckFail
-              , testQuery "let rec a=1;b=a end in b" $ LRSuccess "1"
-              , testQuery "let rec b=a;a=1 end in b" $ LRSuccess "1"
-              , testQuery "let rec a x = x end in a 1" $ LRSuccess "1"
-              , testQuery "let rec a x = x; b = a end in b" $ LRSuccess "<?>"
-              , testQuery "let rec a = \\x -> x end in let rec b = a 1 end in b" $ LRSuccess "1"
-              , testQuery "let rec a x = x; b = a 1 end in b" $ LRSuccess "1"
-              , testQuery "let rec a x = b; b = b end in a" $ LRSuccess "<?>"
-              , testQuery "let rec a x = 1; b = b end in a b" $ LRSuccess "1"
-              , testQuery "let rec a x = 1; b = a b end in b" $ LRSuccess "1"
-              , testQuery "let rec a x = 1 end in let rec b = a b end in b" $ LRSuccess "1"
-              , testQuery "let rec b = (\\x -> 1) b end in b" $ LRSuccess "1"
-              , testQuery "let rec b = a b; a x = 1 end in b" $ LRSuccess "1"
-              , testQuery "let rec a x = 1; b = a c; c=b end in b" $ LRSuccess "1"
-              ]
-        , testTree
-              "recursive let-binding polymorphism"
-              [ testQuery "let rec i = \\x -> x end in (1 + i 1, i False)" $ LRSuccess "(2, False)"
-              , testQuery "let rec i = \\x -> x; r = (1 + i 1, i False) end in r" $ LRSuccess "(2, False)"
-              , testQuery "let rec r = (1 + i 1, i False); i = \\x -> x end in r" $ LRSuccess "(2, False)"
-              ]
-        , testTree
               "duplicate bindings"
               [ testQuery "let rec a=1;a=1 end in a" $ LRCheckFail
               , testQuery "let red a=1;a=2 end in a" $ LRCheckFail
@@ -351,7 +351,7 @@ testQueries =
               , testQuery "let rec a=1;b=a;a=3 end in b" $ LRCheckFail
               ]
         , testTree
-              "operators"
+              "operator"
               [ testQuery "0 == 1" $ LRSuccess "False"
               , testQuery "1 == 1" $ LRSuccess "True"
               , testQuery "0 /= 1" $ LRSuccess "True"
@@ -390,6 +390,15 @@ testQueries =
               , testQuery "\"abc\" <> \"def\"" $ LRSuccess "\"abcdef\""
               , testQuery "let f x = x + 2 in f -1" $ LRSuccess "1"
               , testQuery "let f = 2 in f - 1" $ LRSuccess "1"
+              , testTree
+                    "precedence"
+                    [ testQuery "1 + 2 * 3" $ LRSuccess "7"
+                    , testQuery "3 * 2 + 1" $ LRSuccess "7"
+                    , testQuery "2 * 2 * 2" $ LRSuccess "8"
+                    , testQuery "12 / 2 / 2" $ LRSuccess "3"
+                    , testQuery "12 / 2 / 2" $ LRSuccess "3"
+                    , testQuery "0 == 0 == 0" $ LRCheckFail
+                    ]
               ]
         , testTree
               "boolean"
@@ -411,30 +420,21 @@ testQueries =
               , testQuery "textSection 4 3 \"ABCDEFGHIJKLMN\"" $ LRSuccess "\"EFG\""
               ]
         , testTree
-              "operator precedence"
-              [ testQuery "1 + 2 * 3" $ LRSuccess "7"
-              , testQuery "3 * 2 + 1" $ LRSuccess "7"
-              , testQuery "2 * 2 * 2" $ LRSuccess "8"
-              , testQuery "12 / 2 / 2" $ LRSuccess "3"
-              , testQuery "12 / 2 / 2" $ LRSuccess "3"
-              , testQuery "0 == 0 == 0" $ LRCheckFail
-              ]
-        , testTree
-              "if/then/else"
+              "if-then-else"
               [ testQuery "if True then 3 else 4" $ LRSuccess "3"
               , testQuery "if False then 3 else 4" $ LRSuccess "4"
               , testQuery "if False then if True then 1 else 2 else if True then 3 else 4" $ LRSuccess "3"
               ]
-        , testTree "pairs" [testQuery "fst (7,9)" $ LRSuccess "7", testQuery "snd (7,9)" $ LRSuccess "9"]
+        , testTree "product" [testQuery "fst (7,9)" $ LRSuccess "7", testQuery "snd (7,9)" $ LRSuccess "9"]
         , testTree
-              "either"
+              "sum"
               [ testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Left \"x\"" $
                 LRSuccess "(\"Left\", \"x\")"
               , testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Right \"x\"" $
                 LRSuccess "(\"Right\", \"x\")"
               ]
         , testTree
-              "type signature"
+              "type-signature"
               [ testQuery "let i x = x in i 3" $ LRSuccess "3"
               , testQuery "let i : tvar -> tvar; i x = x in i 3" $ LRSuccess "3"
               , testQuery "let i : a -> a; i x = x in i 3" $ LRSuccess "3"
@@ -447,17 +447,17 @@ testQueries =
               , testQuery "let i : a -> Number; i x = x in 0" $ LRCheckFail
               , testQuery "let i : Number -> a; i x = x in 0" $ LRCheckFail
               , testQuery "let i : Number -> Number; i x = x in 0" $ LRSuccess "0"
-              , testQuery "let i : Either Number Boolean; i = Left 5 in i" $ LRSuccess "Left 5"
-              , testQuery "let i : Either Number Boolean; i = Right False in i" $ LRSuccess "Right False"
+              , testQuery "let i : Number :+: Boolean; i = Left 5 in i" $ LRSuccess "Left 5"
+              , testQuery "let i : Number :+: Boolean; i = Right False in i" $ LRSuccess "Right False"
               , testQuery "let i : Maybe Number; i = Just 5 in i" $ LRSuccess "Just 5"
               , testQuery "let i : Maybe Number; i = Nothing in i" $ LRSuccess "Nothing"
               , testTree
                     "polar"
                     [ testQuery "let x : Text | Number; x = 3 in x" $ LRSuccess "3"
                     , testQuery "let f : Any -> Integer; f _ = 3 in f ()" $ LRSuccess "3"
-                    , testQuery "(\\x -> (x,x)) : ((a & Number) -> (Showable,a))" $ LRSuccess "<?>"
-                    , testQuery "let f = (\\x -> (x,x)) : (a & Number) -> (Showable,a) in f 3" $ LRSuccess "(3, 3)"
-                    , testQuery "let f : (a & Number) -> (Showable,a); f x = (x,x) in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "(\\x -> (x,x)) : ((a & Number) -> Showable :*: a)" $ LRSuccess "<?>"
+                    , testQuery "let f = (\\x -> (x,x)) : (a & Number) -> Showable :*: a in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "let f : (a & Number) -> Showable :*: a; f x = (x,x) in f 3" $ LRSuccess "(3, 3)"
                     ]
               ]
         , testTree
@@ -537,7 +537,7 @@ testQueries =
               ]
         , testTree
               "subsume"
-              [ testQuery "let rec a: (); a = a end in ()" $ LRSuccess "()"
+              [ testQuery "let rec a: Unit; a = a end in ()" $ LRSuccess "()"
               , testQuery "let rec a: Integer; a = a end in ()" $ LRSuccess "()"
               , testQuery "let a: Integer|Text; a = error \"undefined\" in ()" $ LRSuccess "()"
               , testQuery "let rec a: Integer|Text; a = a end in ()" $ LRSuccess "()"
@@ -551,56 +551,80 @@ testQueries =
               , testQuery "let rec r = r end in let a : None; a = r in ()" $ LRSuccess "()"
               , testQuery "let rec r = r end; a: None; a = r in ()" $ LRSuccess "()"
               , testQuery "let rec r = a; a: None; a = r end in ()" $ LRSuccess "()"
-              , testQuery "let a: [Integer|Text]; a = [] in a" $ LRSuccess "[]"
-              , testQuery "let a: [Integer]|[Text]; a = [] in a" $ LRSuccess "[]"
+              , testQuery "let a: List (Integer|Text); a = [] in a" $ LRSuccess "[]"
+              , testQuery "let a: List Integer | List Text; a = [] in a" $ LRSuccess "[]"
               , testSameType True "Integer" "Integer" ["56"]
-              , testSameType False "[Integer|Text]" "[Integer|Text]" ["[]"]
-              , testSameType False "[Integer]|[Text]" "[Integer]|[Text]" ["[]"]
-              , testSameType False "[Integer|Text]" "[Integer]|[Text]" ["[]"]
-              , testQuery "let a: Integer|Text; a = 3; b: [Integer]|[Text]; b = [a] in b" $ LRSuccess "[3]"
+              , testSameType False "List (Integer|Text)" "List (Integer|Text)" ["[]"]
+              , testSameType False "List Integer | List Text" "List Integer | List Text" ["[]"]
+              , testSameType False "List (Integer|Text)" "List Integer | List Text" ["[]"]
+              , testQuery "let a: Integer|Text; a = 3; b: List Integer | List Text; b = [a] in b" $ LRSuccess "[3]"
               ]
         , testTree
               "recursive"
-              [ testQuery "let x : rec a. [a]; x = [] in x" $ LRSuccess "[]"
+              [ testQuery "let x : rec a. List a; x = [] in x" $ LRSuccess "[]"
               , let
                     atree = ["[]", "[[]]", "[[[[]]]]", "[[], [[]]]"]
                     in testTree
                            "equivalence"
                            [ testSameType True "Integer" "Integer" ["0"]
                            , testSameType True "Integer" "rec a. Integer" ["0"]
-                           , testSameType True "[Integer]" "[rec a. Integer]" ["[0]"]
-                           , testSameType True "rec a. [a]" "rec a. [a]" atree
-                           , testSameType True "rec a. [a]" "rec a. [[a]]" atree
+                           , testSameType True "List Integer" "List (rec a. Integer)" ["[0]"]
+                           , testSameType True "rec a. List a" "rec a. List a" atree
+                           , testSameType True "rec a. List a" "rec a. List (List a)" atree
                            , ignoreTestBecause "ISSUE #61" $
                              testSameType
                                  False
-                                 "rec a. (Maybe a | [a])"
-                                 "(rec a. Maybe a) | (rec b. [b])"
+                                 "rec a. (Maybe a | List a)"
+                                 "(rec a. Maybe a) | (rec b. List b)"
                                  ["[]", "Nothing", "Just []", "[[]]"]
                            , ignoreTestBecause "ISSUE #61" $
                              testSameType
                                  False
-                                 "rec a. (Maybe a | [a])"
-                                 "(rec a. Maybe a) | (rec a. [a])"
+                                 "rec a. (Maybe a | List a)"
+                                 "(rec a. Maybe a) | (rec a. List a)"
                                  ["[]", "Nothing", "Just []", "[[]]"]
-                           , testSubtype True "rec a. [a]" "Showable" []
-                           , testSubtype True "[rec a. [a]]" "Showable" []
-                           , testSubtype True "rec a. [a]" "[Showable]" ["[]"]
-                           , testSubtype True "[rec a. [a]]" "[Showable]" ["[]"]
+                           , testSubtype True "rec a. List a" "Showable" []
+                           , testSubtype True "List (rec a. List a)" "Showable" []
+                           , testSubtype True "rec a. List a" "List Showable" ["[]"]
+                           , testSubtype True "List (rec a. List a)" "List Showable" ["[]"]
                            , testSameType False "None" "None" []
                            , testSameType False "rec a. a" "None" []
-                           , testSameType False "[rec a. a]" "[None]" ["[]"]
+                           , testSameType False "List (rec a. a)" "List None" ["[]"]
                            , testSameType True "rec a. Integer" "Integer" ["0"]
-                           , testSameType True "[rec a. Integer]" "[Integer]" ["[0]"]
+                           , testSameType True "List (rec a. Integer)" "List Integer" ["[0]"]
                            , testTree
                                  "unroll"
-                                 [ testSameType True "rec a. [a]" "[rec a. [a]]" atree
-                                 , testSameType False "rec a. ([a]|Integer)" "[rec a. ([a]|Integer)]|Integer" ["[]"]
-                                 , testSameType False "rec a. ([a]|Integer)" "[rec a. ([a]|Integer)]|Integer" ["2"]
-                                 , testSameType False "rec a. [a|Integer]" "[(rec a. [a|Integer])|Integer]" ["[]"]
-                                 , testSameType False "rec a. [a|Integer]" "[(rec a. [a|Integer])|Integer]" ["[3]"]
-                                 , testSameType False "rec a. [a|Integer]" "[rec a. ([a|Integer]|Integer)]" ["[]"]
-                                 , testSameType False "rec a. [a|Integer]" "[rec a. ([a|Integer]|Integer)]" ["[3]"]
+                                 [ testSameType True "rec a. List a" "List (rec a. List a)" atree
+                                 , testSameType
+                                       False
+                                       "rec a. (List a|Integer)"
+                                       "List (rec a. (List a|Integer))|Integer"
+                                       ["[]"]
+                                 , testSameType
+                                       False
+                                       "rec a. (List a|Integer)"
+                                       "List (rec a. (List a|Integer))|Integer"
+                                       ["2"]
+                                 , testSameType
+                                       False
+                                       "rec a. List (a|Integer)"
+                                       "List ((rec a. List (a|Integer))|Integer)"
+                                       ["[]"]
+                                 , testSameType
+                                       False
+                                       "rec a. List (a|Integer)"
+                                       "List ((rec a. List (a|Integer))|Integer)"
+                                       ["[3]"]
+                                 , testSameType
+                                       False
+                                       "rec a. List (a|Integer)"
+                                       "List (rec a. (List (a|Integer)|Integer))"
+                                       ["[]"]
+                                 , testSameType
+                                       False
+                                       "rec a. List (a|Integer)"
+                                       "List (rec a. (List (a|Integer)|Integer))"
+                                       ["[3]"]
                                  ]
                            ]
               , testTree

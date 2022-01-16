@@ -40,7 +40,7 @@ email = property @LegalEntity @Text !"contact.email";
 phone = property @LegalEntity @Text !"contact.telephone";
 home = property @LegalEntity @Location !"being.location";
 legalentities: FiniteSetRef LegalEntity;
-legalentities = property @LegalEntity @() !"type.legalentity" !@ {()};
+legalentities = property @LegalEntity @Unit !"type.legalentity" !@ {()};
 
 # a person
 dynamictype Person = !"type.person";
@@ -61,13 +61,13 @@ employees p = employer !@% p;
 # an organisation
 dynamictype Organisation = !"type.organisation";
 organisations: FiniteSetRef Organisation;
-organisations = property @Organisation @() !"type.organisation" !@ {()};
+organisations = property @Organisation @Unit !"type.organisation" !@ {()};
 end;
 
 ### User Interface
 
 rec
-contactPages: WholeRef +LegalEntity -> [(UI.Element, UI.Element)];
+contactPages: WholeRef +LegalEntity -> List (UI.Element :*: UI.Element);
 contactPages er =
 [
     uiPage {"Social"} $ UI.vertical
@@ -78,7 +78,7 @@ contactPages er =
     uiPage {"Home"} $ locationUI $ home !$% er
 ];
 
-personPages: WholeRef +Person -> [(UI.Element, UI.Element)];
+personPages: WholeRef +Person -> List (UI.Element :*: UI.Element);
 personPages p =
 [
     uiPage {"Work"} $ UI.vertical
@@ -100,7 +100,7 @@ familyUI p = UI.vertical
     UI.layoutGrow $ namedItemTable (children p) contactRefUI Nothing
 ];
 
-organisationPages: WholeRef +Organisation -> [(UI.Element, UI.Element)];
+organisationPages: WholeRef +Organisation -> List (UI.Element :*: UI.Element);
 organisationPages subj =
 [
     uiPage {"Employees"} $ namedItemTable (employees subj) contactRefUI Nothing
@@ -108,7 +108,7 @@ organisationPages subj =
 
 contactUI: LegalEntity -> UI.Element;
 contactUI e = let
-    pages: [(UI.Element, UI.Element)];
+    pages: List (UI.Element :*: UI.Element);
     pages = contactPages {e} ++ case e of
         (p: Person) -> personPages {p};
         (o: Organisation) -> organisationPages {o};

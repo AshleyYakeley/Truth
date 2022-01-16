@@ -4,16 +4,16 @@ import UI;
 
 ### Useful UI stuff
 
-uiPage: WholeRef +Text -> Element -> (Element,Element);
+uiPage: WholeRef +Text -> Element -> Element :*: Element;
 uiPage n ui = (label n,ui);
 
 uiLabelled: WholeRef +Text -> Element -> Element;
 uiLabelled n ui = horizontal [label n, layoutGrow ui];
 
 #| A window that comes with some menus.
-stdWindow: WholeRef +Text -> WholeRef +[MenuItem] -> Element -> Action Window;
+stdWindow: WholeRef +Text -> WholeRef +(List MenuItem) -> Element -> Action Window;
 stdWindow title moremenus contents = fixAction $ \window -> let
-    menus: WholeRef +[MenuItem];
+    menus: WholeRef +(List MenuItem);
     menus =
         {[
             menuSubmenu "File"
@@ -31,7 +31,7 @@ stdWindow title moremenus contents = fixAction $ \window -> let
     in openWindow (600,800) title menus $ scrolled contents;
 
 #| A pane is a title, UI element, and menu.
-datatype Pane = MkPane (WholeRef Text) Element (WholeRef [MenuItem]);
+datatype Pane = MkPane (WholeRef Text) Element (WholeRef (List MenuItem));
 
 paneWindow: Pane -> Action Window;
 paneWindow (MkPane title ui moremenus) = stdWindow title moremenus ui;
@@ -40,11 +40,11 @@ pane: Text -> Element -> Pane;
 pane title ui = MkPane {title} ui {[]};
 
 #| A notebook from a list of panes
-notebookPane: WholeRef +Text -> [Pane] -> Action Pane;
+notebookPane: WholeRef +Text -> List Pane -> Action Pane;
 notebookPane title panes = do
     tabRef <- newMemWhole;
     return $ let
-        makePage: Pane -> (Element,Element);
+        makePage: Pane -> Element :*: Element;
         makePage (MkPane rname ui _) = uiPage rname ui;
         nui: Element;
         nui = notebook tabRef $ mapList makePage panes;
@@ -55,27 +55,27 @@ notebookPane title panes = do
 selectionPane:
     Text -> # window title
     SetRef item -> # the set of items
-    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
+    List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
     (WholeRef item -> Element) ->
     Action Pane;
 selectionPane title iset createMenuItems iopen iui = do
     selection <- newMemWhole;
     return $ let
-        viewItem: Action ();
+        viewItem: Action Unit;
         viewItem = do
             item <- get selection;
             iopen item;
             return ();
             end;
 
-        deleteItem: Action ();
+        deleteItem: Action Unit;
         deleteItem = do
             item <- get selection;
             iset -= item;
             end;
 
-        moremenus: [MenuItem];
+        moremenus: List MenuItem;
         moremenus =
             [
                 menuSubmenu "Selection" $ mapList (\mi -> mi $ \i -> selection := i) createMenuItems ++
@@ -90,7 +90,7 @@ selectionPane title iset createMenuItems iopen iui = do
 selectionPairPane:
     Text -> # pane title
     SetRef item -> # the set of items
-    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
+    List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
     (WholeRef item -> Element) -> # Element for the item selector
     (WholeRef +item -> Element) -> # Element for the selected item
@@ -108,7 +108,7 @@ selectionPairPane title iset createMenuItems iopen getSelectorUI getSelectedUI =
 selectionWindow:
     Text -> # window title
     SetRef item -> # the set of items
-    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
+    List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
     (WholeRef item -> Element) ->
     Action Window;
@@ -121,7 +121,7 @@ selectionWindow wtitle iset createMenuItems iopen iui = do
 selectionPairWindow:
     Text -> # window title
     SetRef item -> # the set of items
-    [(item -> Action ()) -> MenuItem] -> # Menu items for creating new items
+    List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
     (WholeRef item -> Element) -> # Element for the item selector
     (WholeRef +item -> Element) -> # Element for the selected item
@@ -131,7 +131,7 @@ selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedU
     paneWindow mui;
     end;
 
-newItemMenuAction: Text -> Maybe Text -> Action a -> SetRef a -> (a -> Action ()) -> MenuItem;
+newItemMenuAction: Text -> Maybe Text -> Action a -> SetRef a -> (a -> Action Unit) -> MenuItem;
 newItemMenuAction name mkey newItem set setsel = menuAction name mkey
     {do
     item <- newItem;

@@ -61,7 +61,7 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
              ExprShow (DolanSingularType ground polarity t) where
     exprShowPrec (VarDolanSingularType namewit) = exprShowPrec namewit
     exprShowPrec (GroundedDolanSingularType gt args) = groundTypeShowPrec gt args
-    exprShowPrec (RecursiveDolanSingularType n pt) = ("rec " <> exprShow n <> ". " <> exprShow pt, 4)
+    exprShowPrec (RecursiveDolanSingularType n pt) = ("rec " <> exprShow n <> ". " <> exprPrecShow 7 pt, 7)
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (DolanType ground polarity t) where
@@ -75,7 +75,7 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
             case polarityType @polarity of
                 PositiveType -> " | "
                 NegativeType -> " & "
-        in (exprPrecShow 2 ta <> jmConnector <> exprPrecShow 2 tb, 3)
+        in (exprPrecShow 6 ta <> jmConnector <> exprPrecShow 6 tb, 7)
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (GroundExprShow ground, Is PolarityType polarity) =>
              AllWitnessConstraint ExprShow (DolanType ground polarity) where

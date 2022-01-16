@@ -263,7 +263,10 @@ baseLibEntries =
           , docTreeEntry
                 "Unit"
                 ""
-                [literalSubtypeRelationEntry unitGroundType, showableSubtypeRelationEntry unitGroundType]
+                [ mkTypeEntry "Unit" "" $ MkBoundType unitGroundType
+                , literalSubtypeRelationEntry unitGroundType
+                , showableSubtypeRelationEntry unitGroundType
+                ]
           , docTreeEntry
                 "Boolean"
                 ""
@@ -693,7 +696,8 @@ baseLibEntries =
     , docTreeEntry
           "Pairs"
           ""
-          [ mkSubtypeRelationEntry "(Entity,Entity)" "Entity" "" $
+          [ mkTypeEntry ":*:" "" $ MkBoundType pairGroundType
+          , mkSubtypeRelationEntry "Entity :*: Entity" "Entity" "" $
             pure $
             simpleSubtypeConversionEntry pairGroundType entityGroundType $
             MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument ta) (ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments) :: _ pola _) ->
@@ -708,7 +712,7 @@ baseLibEntries =
                             ccrVariation
                             (cfmap (iJoinMeetL1 @_ @'Negative . convA))
                             (iJoinMeetL1 @_ @'Negative . convB)
-          , mkSubtypeRelationEntry "(Showable,Showable)" "Showable" "" $
+          , mkSubtypeRelationEntry "Showable :*: Showable" "Showable" "" $
             pure $
             simpleSubtypeConversionEntry pairGroundType showableGroundType $
             MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument ta) (ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments)) ->
@@ -729,9 +733,9 @@ baseLibEntries =
           , mkValEntry "pair" "Construct a pair." $ \(a :: A) -> (a, a)
           ]
     , docTreeEntry
-          "Either"
+          ":+:"
           ""
-          [ mkTypeEntry "Either" "" $ MkBoundType eitherGroundType
+          [ mkTypeEntry ":+:" "" $ MkBoundType eitherGroundType
           , mkValPatEntry "Left" "Construct an Either from the left." (Left @A @B) $ \(v :: Either A B) ->
                 case v of
                     Left a -> Just (a, ())
@@ -740,7 +744,7 @@ baseLibEntries =
                 case v of
                     Right a -> Just (a, ())
                     _ -> Nothing
-          , mkSubtypeRelationEntry "Either Entity Entity" "Entity" "" $
+          , mkSubtypeRelationEntry "Entity :+: Entity" "Entity" "" $
             pure $
             simpleSubtypeConversionEntry eitherGroundType entityGroundType $
             MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument ta) (ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments) :: _ pola _) ->
@@ -755,7 +759,7 @@ baseLibEntries =
                             ccrVariation
                             (cfmap (iJoinMeetL1 @_ @'Negative . convA))
                             (iJoinMeetL1 @_ @'Negative . convB)
-          , mkSubtypeRelationEntry "Either Showable Showable" "Showable" "" $
+          , mkSubtypeRelationEntry "Showable :+: Showable" "Showable" "" $
             pure $
             simpleSubtypeConversionEntry eitherGroundType showableGroundType $
             MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument ta) (ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments)) ->
@@ -770,8 +774,8 @@ baseLibEntries =
                             ccrVariation
                             (cfmap (iJoinMeetL1 @_ @'Negative . convA))
                             (iJoinMeetL1 @_ @'Negative . convB)
-          , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
-          , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
+          , mkValEntry "fromEither" "Eliminate a sum" $ either @A @C @B
+          , mkValEntry "either" "Eliminate a sum" $ \(v :: Either A A) ->
                 case v of
                     Left a -> a
                     Right a -> a
@@ -779,7 +783,8 @@ baseLibEntries =
     , docTreeEntry
           "Lists"
           ""
-          [ mkTypeEntry "List1" "A list with at least one element." $ MkBoundType list1GroundType
+          [ mkTypeEntry "List" "A list." $ MkBoundType listGroundType
+          , mkTypeEntry "List1" "A list with at least one element." $ MkBoundType list1GroundType
           , mkSubtypeRelationEntry "List1 a" "[a]" "" $
             pure $
             simpleSubtypeConversionEntry list1GroundType listGroundType $
