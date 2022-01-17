@@ -202,7 +202,7 @@ testEntity =
               , "testconvr : Rational -> Action Unit;testconvr r = testeq {convl r} {convl $ convn r}"
               ] $
           tGroup
-              "literal conversion"
+              "literal"
               [ tGroup
                     "Rational to Number"
                     [ testExpectSuccess "testconvr 1"
@@ -211,6 +211,48 @@ testEntity =
                     , testExpectSuccess "testeq {\"63/2\"} {show 31.5}"
                     , testExpectSuccess "testeq {\"63/2\"} {show $ convn 31.5}"
                     ]
+              , let
+                    testLiteralConversion :: ScriptExpectation -> Text -> Text -> ScriptTestTree
+                    testLiteralConversion se ptype val =
+                        testScriptExpectation (val <> ": " <> ptype <> " => " <> pack (show se)) se $
+                        "case (" <>
+                        val <> "): Literal of val: " <> ptype <> " => testeqval val (" <> val <> "); _ => stop end"
+                    testPairs :: [(Text, Text)]
+                    testPairs =
+                        [ ("Unit", "()")
+                        , ("Boolean", "True")
+                        , ("Ordering", "LT")
+                        , ("Integer", "0")
+                        , ("Integer", "1")
+                        , ("Integer", "-4")
+                        , ("Rational", "2.5")
+                        , ("Number", "~31.5")
+                        , ("Text", "\"Hello\"")
+                        , ("Text", "\"2.5\"")
+                        , ("Text", "\"()\"")
+                        , ("Duration", "Seconds 3600")
+                        , ( "Time"
+                          , "localToTime -480 $ DateAndTime (YearMonthDay 2022 01 16) (HourMinuteSecond 19 07 22)")
+                        , ("Date", "YearMonthDay 2022 01 16")
+                        , ("TimeOfDay", "HourMinuteSecond 19 07 22")
+                        , ("LocalTime", "DateAndTime (YearMonthDay 2022 01 16) (HourMinuteSecond 19 07 22)")
+                        ]
+                    testTypes :: [Text]
+                    testTypes = "Literal" : nub (fmap fst testPairs)
+                    expectation :: Text -> Text -> ScriptExpectation
+                    expectation "Integer" "Number" = ScriptExpectSuccess
+                    expectation "Integer" "Rational" = ScriptExpectSuccess
+                    expectation "Rational" "Number" = ScriptExpectSuccess
+                    expectation _ "Literal" = ScriptExpectSuccess
+                    expectation valtype casttype
+                        | valtype == casttype = ScriptExpectSuccess
+                    expectation _ _ = ScriptExpectStop
+                    in tGroup
+                           "general"
+                           [ testLiteralConversion (expectation valtype casttype) casttype val
+                           | casttype <- testTypes
+                           , (valtype, val) <- testPairs
+                           ]
               ]
         , tDecls
               [ "opentype E"

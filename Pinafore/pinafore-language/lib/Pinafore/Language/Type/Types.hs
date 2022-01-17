@@ -14,54 +14,69 @@ import Shapes
 literalGroundType :: PinaforeGroundType '[] Literal
 literalGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Literal)|]) "Literal"
 
+literalGreatestDynamicSupertype :: AsLiteral t => PinaforePolyGreatestDynamicSupertype '[] t
+literalGreatestDynamicSupertype NilCCRArguments =
+    Just $ makeNilGDS literalGroundType $ functionToShim "fromLiteral" fromLiteral
+
 unitGroundType :: PinaforeGroundType '[] ()
-unitGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit"
+unitGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 textGroundType :: PinaforeGroundType '[] Text
-textGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) "Text"
+textGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) "Text")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 numberGroundType :: PinaforeGroundType '[] Number
-numberGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Number)|]) "Number"
+numberGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Number)|]) "Number")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 rationalGroundType :: PinaforeGroundType '[] SafeRational
 rationalGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily SafeRational)|]) "Rational")
-        { pgtGreatestDynamicSupertype =
-              \NilCCRArguments ->
-                  Just $ makeNilGDS numberGroundType $ functionToShim "safeRationalNumber" $ decode safeRationalNumber
-        }
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 integerGroundType :: PinaforeGroundType '[] Integer
 integerGroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Integer)|]) "Integer")
-        { pgtGreatestDynamicSupertype =
-              \NilCCRArguments ->
-                  Just $
-                  makeNilGDS numberGroundType $
-                  functionToShim "integerSafeRational . safeRationalNumber" $
-                  decode $ integerSafeRational . safeRationalNumber
-        }
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 booleanGroundType :: PinaforeGroundType '[] Bool
-booleanGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) "Boolean"
+booleanGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) "Boolean")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 orderingGroundType :: PinaforeGroundType '[] Ordering
-orderingGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Ordering)|]) "Ordering"
+orderingGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Ordering)|]) "Ordering")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 timeGroundType :: PinaforeGroundType '[] UTCTime
-timeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily UTCTime)|]) "Time"
+timeGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily UTCTime)|]) "Time")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 durationGroundType :: PinaforeGroundType '[] NominalDiffTime
-durationGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NominalDiffTime)|]) "Duration"
+durationGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NominalDiffTime)|]) "Duration")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 dateGroundType :: PinaforeGroundType '[] Day
-dateGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Day)|]) "Date"
+dateGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Day)|]) "Date")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 timeOfDayGroundType :: PinaforeGroundType '[] TimeOfDay
-timeOfDayGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily TimeOfDay)|]) "TimeOfDay"
+timeOfDayGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily TimeOfDay)|]) "TimeOfDay")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 localTimeGroundType :: PinaforeGroundType '[] LocalTime
-localTimeGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LocalTime)|]) "LocalTime"
+localTimeGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LocalTime)|]) "LocalTime")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 actionGroundType :: PinaforeGroundType '[ CoCCRVariance] PinaforeAction
 actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily PinaforeAction)|]) "Action"

@@ -63,7 +63,7 @@ literalEntityAdapter ::
     => EntityAdapter t
 literalEntityAdapter = let
     entityAdapterDefinitions :: EntityStorer 'MultipleMode t
-    entityAdapterDefinitions = MkEntityStorer $ pure $ MkKnowShim LiteralConstructorStorer fromLiteral
+    entityAdapterDefinitions = MkEntityStorer $ pure $ MkKnowShim LiteralConstructorStorer $ maybeToKnow . fromLiteral
     entityAdapterToDefinition :: t -> AnyValue (EntityStorer 'SingleMode)
     entityAdapterToDefinition t = MkAnyValue (MkEntityStorer LiteralConstructorStorer) $ toLiteral t
     in MkEntityAdapter {..}
