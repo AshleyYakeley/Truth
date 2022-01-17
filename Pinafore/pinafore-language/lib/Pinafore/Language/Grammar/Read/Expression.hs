@@ -259,10 +259,16 @@ readExpression1 =
     (do
          spos <- getPosition
          readThis TokLambda
-         args <- readPatterns
-         readThis TokMap
-         mval <- readExpression
-         return $ seAbstracts spos args mval) <|>
+         (readSourcePos $ do
+              readThis TokCase
+              scases <- readCases
+              readThis TokEnd
+              return $ SELambdaCase scases) <|>
+             (do
+                  args <- readPatterns
+                  readThis TokMap
+                  mval <- readExpression
+                  return $ seAbstracts spos args mval)) <|>
     readSourcePos
         (do
              sdecls <- readLetBindings

@@ -529,6 +529,16 @@ testQueries =
                     ]
               ]
         , testTree
+              "lambda-case"
+              [ testQuery "(\\case a => 5 end) 2" $ LRSuccess "5"
+              , testQuery "(\\case a => 5; a => 3 end) 2" $ LRSuccess "5"
+              , testQuery "(\\case a => 5; a => 3; end) 2" $ LRSuccess "5"
+              , testQuery "(\\case a => a end) 2" $ LRSuccess "2"
+              , testQuery "(\\case _ => 5 end) 2" $ LRSuccess "5"
+              , testQuery "(\\case _ => 5; _ => 3 end) 2" $ LRSuccess "5"
+              , testQuery "(\\case a@b => (a,b) end) 2" $ LRSuccess "(2, 2)"
+              ]
+        , testTree
               "type-operator"
               [ testSameType True "Unit" "Unit" ["()"]
               , testSameType True "List a" "List a" []

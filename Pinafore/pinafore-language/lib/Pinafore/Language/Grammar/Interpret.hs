@@ -318,6 +318,9 @@ interpretExpression' (SECase sbody scases) = do
     body <- interpretExpression sbody
     pairs <- for scases interpretCase
     liftRefNotation $ qCase body pairs
+interpretExpression' (SELambdaCase scases) = do
+    pairs <- for scases interpretCase
+    liftRefNotation $ qCaseAbstract pairs
 interpretExpression' (SEApply sf sarg) = do
     f <- interpretExpression sf
     arg <- interpretExpression sarg

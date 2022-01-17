@@ -117,6 +117,7 @@ All declarations, including type declarations, are local to a `let` block.
     <let-declarations> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
     "case" <expression> "of" <cases> "end" |
+    "\" "case" <cases> "end" |
     "do" <do-lines> <expression> "end" |
     <expression-2>
 
