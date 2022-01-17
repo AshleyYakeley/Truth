@@ -31,7 +31,7 @@ stdWindow title moremenus contents = fixAction $ \window => let
     in openWindow (600,800) title menus $ scrolled contents;
 
 #| A pane is a title, UI element, and menu.
-datatype Pane = MkPane (WholeRef Text) Element (WholeRef (List MenuItem));
+datatype Pane of MkPane (WholeRef Text) Element (WholeRef (List MenuItem)) end;
 
 paneWindow: Pane -> Action Window;
 paneWindow (MkPane title ui moremenus) = stdWindow title moremenus ui;

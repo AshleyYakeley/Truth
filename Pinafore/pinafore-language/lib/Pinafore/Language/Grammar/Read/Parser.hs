@@ -146,3 +146,14 @@ readReferenceLName =
 
 readReferenceName :: Parser ReferenceName
 readReferenceName = readReferenceUName <|> readReferenceLName
+
+readLines :: Parser a -> Parser [a]
+readLines p =
+    (do
+         a <- p
+         ma <-
+             optional $ do
+                 readThis TokSemicolon
+                 readLines p
+         return $ a : fromMaybe [] ma) <|>
+    (return [])

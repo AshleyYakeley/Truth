@@ -9,7 +9,11 @@ scaleDrawing rd = {\(w,h) => let
     size = min w h;
     in translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd};
 
-datatype Progress = ProgressNone | ProgressPartial | ProgressDone;
+datatype Progress of
+    ProgressNone;
+    ProgressPartial;
+    ProgressDone;
+end;
 
 drawing: WholeRef Progress -> WholeRef Drawing;
 drawing ref =

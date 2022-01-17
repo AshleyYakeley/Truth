@@ -12,9 +12,10 @@ The declaration specifies the constructors of the type.
 Each constructor has a name, and a list of zero or more ambipolar types.
 
 ```pinafore
-datatype T =
-    T1 (Int -> [Int]) |
+datatype T of
+    T1 (Int -> [Int]);
     T2 Int;
+end;
 ```
 
 Data types are not subtypes of `Entity` and are not storable.
@@ -29,9 +30,10 @@ Datatypes can take parameters. The variance of each parameter is specified like 
 For example:
 
 ```pinafore
-datatype D +a -b {-p,+q} =
-    T1 (b -> [a]) |
+datatype D +a -b {-p,+q} of
+    T1 (b -> [a]);
     T2 (p :*: b -> q);
+end;
 ```
 
 ## Entity types
@@ -121,9 +123,10 @@ They are similar to data types, but each constructor has an anchor, and field ty
 Each constructor has a name, a list of zero or more types (each a subtype of `Entity`), and an anchor.
 
 ```pinafore
-closedtype Patient =
-    LivingPatient Person Date !"Patient.LivingPatient" |
+closedtype Patient of
+    LivingPatient Person Date !"Patient.LivingPatient";
     DeadPatient Person Date Date !"Patient.DeadPatient";
+end;
 
 patientPerson: Patient -> Person;
 patientPerson patient =

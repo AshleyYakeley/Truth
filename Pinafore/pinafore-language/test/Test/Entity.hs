@@ -659,12 +659,12 @@ testEntity =
                            [testExpectReject "pass"]
                      , tDecls ["opentype Q", "subtype Integer <: Q"] $
                        tGroup "literal" $ subtypeTests False SRSingle "Integer" "Q"
-                     , tDecls ["opentype Q", "closedtype P = P1 Text Number !\"P.P1\"", "subtype P <: Q"] $
+                     , tDecls ["opentype Q", "closedtype P of P1 Text Number !\"P.P1\" end", "subtype P <: Q"] $
                        tGroup "closed" $ subtypeTests False SRSingle "P" "Q"
                      , tDecls
                            [ "opentype Q"
                            , "opentype R"
-                           , "closedtype P = P1 Text Number !\"P.P1\""
+                           , "closedtype P of P1 Text Number !\"P.P1\" end"
                            , "subtype P <: Q"
                            , "subtype P <: R"
                            ] $
@@ -748,7 +748,7 @@ testEntity =
               , testExpectSuccess "testeq {e1} {coerce @Q e1}"
               ]
         , tDecls
-              [ "datatype T = T1 Text Number | T2 | T3 Boolean | T4 (WholeRef {-Boolean,+Integer} -> Integer) | T5 Text (Boolean -> Integer)"
+              [ "datatype T of T1 Text Number; T2; T3 Boolean; T4 (WholeRef {-Boolean,+Integer} -> Integer); T5 Text (Boolean -> Integer) end"
               ] $
           tGroup
               "datatype"
@@ -762,60 +762,66 @@ testEntity =
                     "case T1 \"hello\" 3 of T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
               , testExpectSuccess
                     "let f : Boolean -> Integer; f b = if b then 1 else 0 in case T5 \"abcd\" f of T5 _ ff => if ff True == 1 then pass else fail \"ff\" end"
-              , testExpectReject "let datatype B = MkB a in pass"
-              , testExpectSuccess "let datatype P in pass"
+              , testExpectReject "let datatype B of MkB a end in pass"
+              , testExpectSuccess "let datatype P of end in pass"
+              , testExpectSuccess "let datatype P of P1 end in pass"
+              , testExpectSuccess "let datatype P of P1; end in pass"
+              , testExpectSuccess "let datatype P of P1 Integer end in pass"
+              , testExpectSuccess "let datatype P of P1 Integer; end in pass"
+              , testExpectSuccess "let datatype P of P1 Integer; P2 Text end in pass"
+              , testExpectSuccess "let datatype P of P1 Integer; P2 Text; end in pass"
               , tGroup
                     "nominal"
-                    [ testExpectSuccess "let datatype P = P1; f : P -> P; f x = x in pass"
-                    , testExpectReject "let datatype P = P1; datatype Q; f : P -> Q; f x = x in pass"
-                    , testExpectReject "let datatype P; datatype Q = Q1; f : P -> Q; f x = x in pass"
-                    , testExpectReject "let datatype P; datatype Q; f : P -> Q; f x = x in pass"
-                    , testExpectReject "let datatype P = P1; datatype Q = Q1; f : P -> Q; f x = x in pass"
+                    [ testExpectSuccess "let datatype P of P1 end; f : P -> P; f x = x in pass"
+                    , testExpectReject "let datatype P of P1 end; datatype Q of end; f : P -> Q; f x = x in pass"
+                    , testExpectReject "let datatype P of end; datatype Q of Q1 end; f : P -> Q; f x = x in pass"
+                    , testExpectReject "let datatype P of end; datatype Q of end; f : P -> Q; f x = x in pass"
+                    , testExpectReject "let datatype P of P1 end; datatype Q of Q1 end; f : P -> Q; f x = x in pass"
                     , testExpectReject
-                          "let datatype P = P1 Integer; datatype Q = Q1 Integer; f : P -> Q; f x = x in pass"
+                          "let datatype P of P1 Integer end; datatype Q of Q1 Integer end; f : P -> Q; f x = x in pass"
                     ]
               , tGroup
                     "recursive"
-                    [ testExpectSuccess "let datatype P = P1 in let datatype Q = Q1 P in pass"
-                    , testExpectSuccess "let datatype P = P1; datatype Q = Q1 P in pass"
-                    , testExpectSuccess "let rec datatype P = P1 Q; datatype Q end in pass"
-                    , testExpectSuccess "let rec datatype P = P1 Q; datatype Q = Q1 P end in pass"
-                    , testExpectSuccess "let rec datatype P = P1 P end in pass"
+                    [ testExpectSuccess "let datatype P of P1 end in let datatype Q of Q1 P end in pass"
+                    , testExpectSuccess "let datatype P of P1 end; datatype Q of Q1 P end in pass"
+                    , testExpectSuccess "let rec datatype P of P1 Q end; datatype Q of end end in pass"
+                    , testExpectSuccess "let rec datatype P of P1 Q end; datatype Q of Q1 P end end in pass"
+                    , testExpectSuccess "let rec datatype P of P1 P end end in pass"
                     , testExpectSuccess
-                          "let rec datatype P = P1 Q; datatype Q = Q1 P; f : P -> P; f p = case p of P1 q => case q of Q1 p => p end end end in pass"
-                    , testExpectSuccess "let rec datatype P = P1 Q; closedtype Q = Q1 !\"Q1\" end in pass"
-                    , testExpectReject "let rec closedtype P = P1 Q; datatype Q = Q1 !\"Q1\" end in pass"
+                          "let rec datatype P of P1 Q end; datatype Q of Q1 P end; f : P -> P; f p = case p of P1 q => case q of Q1 p => p end end end in pass"
+                    , testExpectSuccess "let rec datatype P of P1 Q end; closedtype Q of Q1 !\"Q1\" end end in pass"
+                    , testExpectReject "let rec closedtype P of P1 Q end; datatype Q of Q1 !\"Q1\" end end in pass"
                     , testExpectSuccess
-                          "let rec datatype P = P1 Q; datatype Q = Q1 (Action Unit); pqpass = P1 (Q1 pass) end in case pqpass of P1 (Q1 p) => p end"
+                          "let rec datatype P of P1 Q end; datatype Q of Q1 (Action Unit) end; pqpass = P1 (Q1 pass) end in case pqpass of P1 (Q1 p) => p end"
                     ]
               , tGroup
                     "parameters"
                     [ tGroup
                           "variance"
-                          [ testExpectSuccess "let datatype B +a = MkB a in pass"
-                          , testExpectReject "let datatype B -a = MkB a in pass"
-                          , testExpectSuccess "let datatype B -a = MkB (a -> Boolean) in pass"
-                          , testExpectReject "let datatype B +a = MkB (a -> Boolean) in pass"
-                          , testExpectSuccess "let datatype B {-p,+q} = MkB (p -> q) in pass"
-                          , testExpectSuccess "let datatype B {+q,-p} = MkB (p -> q) in pass"
-                          , testExpectReject "let datatype B {-p,+q} = MkB (q -> p) in pass"
-                          , testExpectReject "let datatype B {+q,-p} = MkB (q -> p) in pass"
+                          [ testExpectSuccess "let datatype B +a of MkB a end in pass"
+                          , testExpectReject "let datatype B -a of MkB a end in pass"
+                          , testExpectSuccess "let datatype B -a of MkB (a -> Boolean) end in pass"
+                          , testExpectReject "let datatype B +a of MkB (a -> Boolean) end in pass"
+                          , testExpectSuccess "let datatype B {-p,+q} of MkB (p -> q) end in pass"
+                          , testExpectSuccess "let datatype B {+q,-p} of MkB (p -> q) end in pass"
+                          , testExpectReject "let datatype B {-p,+q} of MkB (q -> p) end in pass"
+                          , testExpectReject "let datatype B {+q,-p} of MkB (q -> p) end in pass"
                           ]
                     , tGroup
                           "recursive"
-                          [ testExpectSuccess "let rec datatype R +a = MkR (R a) end in pass"
-                          , testExpectSuccess "let rec datatype R -a = MkR (R a) end in pass"
+                          [ testExpectSuccess "let rec datatype R +a of MkR (R a) end end in pass"
+                          , testExpectSuccess "let rec datatype R -a of MkR (R a) end end in pass"
                           , testExpectSuccess
-                                "let rec datatype R1 +a = MkR1 (R2 a); datatype R2 +a = MkR2 (R1 a) end in pass"
+                                "let rec datatype R1 +a of MkR1 (R2 a) end; datatype R2 +a of MkR2 (R1 a) end end in pass"
                           , testExpectSuccess
-                                "let rec datatype R1 -a = MkR1 (R2 a); datatype R2 -a = MkR2 (R1 a) end in pass"
+                                "let rec datatype R1 -a of MkR1 (R2 a) end; datatype R2 -a of MkR2 (R1 a) end end in pass"
                           , testExpectSuccess
-                                "let rec datatype R1 +a = MkR1 (R2 a -> Integer); datatype R2 -a = MkR2 (R1 a -> Integer) end in pass"
+                                "let rec datatype R1 +a of MkR1 (R2 a -> Integer) end; datatype R2 -a of MkR2 (R1 a -> Integer) end end in pass"
                           ]
                     , tGroup
                           "conversion"
                           [ tDecls
-                                [ "datatype D +a = Mk1D (List a) | Mk2D (Maybe a)"
+                                [ "datatype D +a of Mk1D (List a); Mk2D (Maybe a) end"
                                 , "showD: D Showable -> Text"
                                 , "showD t = case t of Mk1D aa => show aa; Mk2D ma => show ma end"
                                 , "di: D Integer"
@@ -825,7 +831,7 @@ testEntity =
                                 ] $
                             testExpectSuccess "if sdi == \"[576, 469, 12]\" then pass else fail sdi"
                           , tDecls
-                                [ "datatype D -a = Mk1D (a -> Integer) | Mk2D (a -> a -> Text)"
+                                [ "datatype D -a of Mk1D (a -> Integer); Mk2D (a -> a -> Text) end"
                                 , "dShow: D Number"
                                 , "dShow = Mk2D $ \\a b => show a <> \",\" <> show b"
                                 , "di: D Integer"
@@ -837,7 +843,7 @@ testEntity =
                                 ] $
                             testExpectSuccess "if sd == \"356,356\" then pass else fail sd"
                           , tDecls
-                                [ "rec datatype RList +a = MkRList (Maybe (a :*: RList a)) end"
+                                [ "rec datatype RList +a of MkRList (Maybe (a :*: RList a)) end end"
                                 , "rec showRList: RList Showable -> Text"
                                 , "showRList (MkRList rl) = case rl of Nothing => \"\"; Just (a,rla) => show a <> \";\" <> showRList rla end"
                                 , "end"
@@ -852,7 +858,7 @@ testEntity =
                           ]
                     ]
               ]
-        , tDecls ["closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\""] $
+        , tDecls ["closedtype T of T1 Text Number !\"T.T1\"; T2 !\"T.T2\"; T3 Boolean !\"T.T3\" end"] $
           tGroup
               "closedtype"
               [ testExpectSuccess "pass"
@@ -861,26 +867,37 @@ testEntity =
               , testExpectSuccess "case T1 \"hello\" 3 of T1 \"hello\" 3 => pass end"
               , testExpectSuccess
                     "case T1 \"hello\" 3 of T2 => fail \"T2\"; T1 \"hello\" 2 => fail \"T1 2\"; T1 \"hell\" 3 => fail \"T1 hell\"; T1 \"hello\" 3 => pass end"
-              , testExpectSuccess "let closedtype P in pass"
+              , testExpectSuccess "let closedtype P of end in pass"
+              , testExpectSuccess "let closedtype P of P1 !\"P1\" end in pass"
+              , testExpectSuccess "let closedtype P of P1 !\"P1\"; end in pass"
+              , testExpectSuccess "let closedtype P of P1 Integer !\"P1\" end in pass"
+              , testExpectSuccess "let closedtype P of P1 Integer !\"P1\"; end in pass"
+              , testExpectSuccess "let closedtype P of P1 Integer !\"P1\"; P2 Text !\"P2\" end in pass"
+              , testExpectSuccess "let closedtype P of P1 Integer !\"P1\"; P2 Text !\"P2\"; end in pass"
               , tGroup
                     "nominal"
-                    [ testExpectSuccess "let closedtype P = P1 !\"P1\"; f : P -> P; f x = x in pass"
-                    , testExpectReject "let closedtype P = P1 !\"P1\"; closedtype Q; f : P -> Q; f x = x in pass"
-                    , testExpectReject "let closedtype P; closedtype Q = Q1 !\"Q1\"; f : P -> Q; f x = x in pass"
-                    , testExpectReject "let closedtype P; closedtype Q; f : P -> Q; f x = x in pass"
+                    [ testExpectSuccess "let closedtype P of P1 !\"P1\" end; f : P -> P; f x = x in pass"
                     , testExpectReject
-                          "let closedtype P = P1 !\"P1\"; closedtype Q = Q1 !\"Q1\"; f : P -> Q; f x = x in pass"
+                          "let closedtype P of P1 !\"P1\" end; closedtype Q of end; f : P -> Q; f x = x in pass"
                     , testExpectReject
-                          "let closedtype P = P1 Integer !\"P1\"; closedtype Q = Q1 Integer !\"Q1\"; f : P -> Q; f x = x in pass"
+                          "let closedtype P of end; closedtype Q of Q1 !\"Q1\" end; f : P -> Q; f x = x in pass"
+                    , testExpectReject "let closedtype P of end; closedtype Q of end; f : P -> Q; f x = x in pass"
+                    , testExpectReject
+                          "let closedtype P of P1 !\"P1\" end; closedtype Q of Q1 !\"Q1\" end; f : P -> Q; f x = x in pass"
+                    , testExpectReject
+                          "let closedtype P of P1 Integer !\"P1\" end; closedtype Q of Q1 Integer !\"Q1\" end; f : P -> Q; f x = x in pass"
                     ]
               , tGroup
                     "recursive"
-                    [ testExpectSuccess "let closedtype P = P1 !\"P1\" in let closedtype Q = Q1 P !\"Q1\" in pass"
-                    , testExpectSuccess "let closedtype P = P1 !\"P1\"; closedtype Q = Q1 P !\"Q1\" in pass"
-                    , testExpectSuccess "let rec closedtype P = P1 !\"P1\"; closedtype Q = Q1 P !\"Q1\" end in pass"
-                    , testExpectSuccess "let rec closedtype P = P1 Q !\"P1\"; closedtype Q end in pass"
-                    , testExpectSuccess "let rec closedtype P = P1 Q !\"P1\"; closedtype Q = Q1 P !\"Q1\" end in pass"
-                    , testExpectSuccess "let rec closedtype P = P1 P !\"P1\" end in pass"
+                    [ testExpectSuccess
+                          "let closedtype P of P1 !\"P1\" end in let closedtype Q of Q1 P !\"Q1\" end in pass"
+                    , testExpectSuccess "let closedtype P of P1 !\"P1\" end; closedtype Q of Q1 P !\"Q1\" end in pass"
+                    , testExpectSuccess
+                          "let rec closedtype P of P1 !\"P1\" end; closedtype Q of Q1 P !\"Q1\" end end in pass"
+                    , testExpectSuccess "let rec closedtype P of P1 Q !\"P1\" end; closedtype Q of end end in pass"
+                    , testExpectSuccess
+                          "let rec closedtype P of P1 Q !\"P1\" end; closedtype Q of Q1 P !\"Q1\" end end in pass"
+                    , testExpectSuccess "let rec closedtype P of P1 P !\"P1\" end end in pass"
                     ]
               ]
         , tGroup

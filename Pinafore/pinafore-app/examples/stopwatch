@@ -2,7 +2,10 @@
 
 let
 
-datatype StopwatchState = StoppedState Duration | RunningState Time;
+datatype StopwatchState of
+    StoppedState Duration;
+    RunningState Time;
+end;
 
 toggleStopwatch: WholeRef +Time -> WholeRef StopwatchState -> Action Unit;
 toggleStopwatch now r = do

@@ -172,10 +172,10 @@ All declarations, including type declarations, are local to a `let` block.
 <direct-declarations> ::=  | <direct-declaration> ";" <direct-declarations>
 
 <direct-declaration> ::=
-    "datatype" <type-const> <datatype-parameters> <datatype-body> |
+    "datatype" <type-const> <datatype-parameters> "of" <datatype-body> "end" |
     "opentype" <type-const> |
     "subtype" <type-const> "<:" <type-const> |
-    "closedtype" <type-const> <closedtype-body> |
+    "closedtype" <type-const> "of" <closedtype-body> "end" |
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
 
@@ -200,19 +200,19 @@ All declarations, including type declarations, are local to a `let` block.
     "{" "+" lname "," "-" lname "}" |
     "{" "-" lname "," "+" lname "}" |
 
-<datatype-body> ::=  | "=" <datatype-constructors>
+<datatype-body> ::=  | <datatype-constructors>
 
 <datatype-constructors> ::=
     <datatype-constructor> |
-    <datatype-constructor> "|" <datatype-constructors>
+    <datatype-constructor> ";" <datatype-constructors>
 
 <datatype-constructor> ::= uname <types>
 
-<closedtype-body> ::=  | "=" <closedtype-constructors>
+<closedtype-body> ::=  | <closedtype-constructors>
 
 <closedtype-constructors> ::=
     <closedtype-constructor> |
-    <closedtype-constructor> "|" <closedtype-constructors>
+    <closedtype-constructor> ";" <closedtype-constructors>
 
 <closedtype-constructor> ::= uname <types> anchor
 

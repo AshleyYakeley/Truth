@@ -26,10 +26,10 @@ pinafore> x + 1
 <input>:3:1: undefined: x: Integer
 pinafore> x + y
 <input>:3:1: undefined: x: Integer, y: Integer
-pinafore> let datatype D1 +a = MkD1 b
+pinafore> let datatype D1 +a of MkD1 b end
 <input>:2:5: unbound type variables in declaration of D1: b
-pinafore> let datatype D2 +a +a = MkD2
+pinafore> let datatype D2 +a +a of MkD2 end
 <input>:2:5: duplicate type variables in declaration of D2: a
-pinafore> let datatype D3 +a -a = MkD2
+pinafore> let datatype D3 +a -a of MkD3 end
 <input>:2:5: duplicate type variables in declaration of D3: a
 pinafore> <END>

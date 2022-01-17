@@ -46,17 +46,6 @@ readBinding = do
              (args, rval) <- readBindingRest
              return $ MkSyntaxBinding spos Nothing name $ seAbstracts spos args rval)
 
-readLines :: Parser a -> Parser [a]
-readLines p =
-    (do
-         a <- p
-         ma <-
-             optional $ do
-                 readThis TokSemicolon
-                 readLines p
-         return $ a : fromMaybe [] ma) <|>
-    (return [])
-
 readModuleName :: Parser ModuleName
 readModuleName =
     fmap MkModuleName $ (fmap pure $ readThis TokUName) <|> (fmap (\(nn, n) -> nn <> pure n) $ readThis TokQUName)

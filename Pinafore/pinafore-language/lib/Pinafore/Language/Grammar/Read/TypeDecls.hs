@@ -70,22 +70,20 @@ readDataTypeDeclaration = do
     readThis TokDataType
     name <- readTypeNewName
     parameters <- many readDataTypeParameter
-    mcons <-
-        optional $ do
-            readThis TokAssign
-            readSeparated1 (readThis TokOr) $ fmap pure readDataTypeConstructor
-    return $ TypeSyntaxDeclaration spos name $ DatatypeSyntaxTypeDeclaration parameters $ fromMaybe mempty mcons
+    readThis TokOf
+    constructors <- readLines readDataTypeConstructor
+    readThis TokEnd
+    return $ TypeSyntaxDeclaration spos name $ DatatypeSyntaxTypeDeclaration parameters constructors
 
 readClosedTypeDeclaration :: Parser SyntaxDirectDeclaration
 readClosedTypeDeclaration = do
     spos <- getPosition
     readThis TokClosedType
     name <- readTypeNewName
-    mcons <-
-        optional $ do
-            readThis TokAssign
-            readSeparated1 (readThis TokOr) $ fmap pure readClosedTypeConstructor
-    return $ TypeSyntaxDeclaration spos name $ ClosedEntitySyntaxTypeDeclaration $ fromMaybe mempty mcons
+    readThis TokOf
+    constructors <- readLines readClosedTypeConstructor
+    readThis TokEnd
+    return $ TypeSyntaxDeclaration spos name $ ClosedEntitySyntaxTypeDeclaration constructors
 
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
 readDynamicTypeConstructor =

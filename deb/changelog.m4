@@ -14,6 +14,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . type names (:+:), (:*:), List, Unit
       . tuple constructor/pattern (,,) etc.
       . use => in lambda and case expressions
+      . new syntax for datatype and closedtype definitions
   * Interactive
     - :doc to retrieve name documentation
   * Library
