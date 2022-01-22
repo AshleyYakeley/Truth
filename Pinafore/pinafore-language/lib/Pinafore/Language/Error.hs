@@ -8,7 +8,9 @@ import Text.Parsec.Error
 import Text.Parsec.Pos
 
 data ErrorType
-    = UnicodeDecodeError Text
+    = KnownIssueError Int
+                      Text
+    | UnicodeDecodeError Text
     | ParserError [Message]
     | ExpressionErrorError ExpressionError
     | LookupNamesUnknownError (NonEmpty Name)
@@ -53,6 +55,8 @@ data ErrorType
     | ModuleCycleError (NonEmpty ModuleName)
 
 instance Show ErrorType where
+    show (KnownIssueError n "") = "issue #" <> show n
+    show (KnownIssueError n t) = unpack t <> " (issue #" <> show n <> ")"
     show (UnicodeDecodeError t) = "Unicode decode error: " <> unpack t
     show (ParserError msgs) = let
         getMsgs :: (Message -> Maybe String) -> [String]
