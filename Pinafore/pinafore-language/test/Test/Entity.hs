@@ -728,6 +728,37 @@ testEntity =
                              ]
                        ]
                      ]
+        , tGroup
+              "greatest-dynamic-supertype"
+              [ tGroup
+                    "Literal"
+                    [ testExpectSuccess "testeqval 1 $ case 34.0 of 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
+                    , testExpectSuccess "testeqval 2 $ case True of 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
+                    , testExpectSuccess "testeqval 3 $ case \"hello\" of 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
+                    , testExpectSuccess "testeqval 4 $ case () of 34 => 1; True => 2; \"hello\" => 3; _ => 4 end"
+                    , testExpectSuccess
+                          "testeqval 1 $ case 34.0 of _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                    , testExpectSuccess
+                          "testeqval 2 $ case True of _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                    , testExpectSuccess
+                          "testeqval 3 $ case \"hello\" of _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                    , testExpectSuccess
+                          "testeqval 4 $ case () of _:Integer => 1; _:Boolean => 2; _:Text => 3; _ => 4 end"
+                    , testExpectSuccess
+                          "testeqval 1 $ case 34.0 of _:Integer => 1; _:Rational => 2; _:Text => 3; _ => 4 end"
+                    , testExpectSuccess
+                          "testeqval 2 $ case 34.0 of _:Rational => 2; _:Integer => 1; _:Text => 3; _ => 4 end"
+                    ]
+              , tGroup
+                    "List"
+                    [ testExpectSuccess "testeqval 2 $ case [] of _ :: _ => 1; [] => 2 end"
+                    , testExpectSuccess "testeqval 2 $ case [] of _ :: _ => 1; _ => 2 end"
+                    , testExpectSuccess "testeqval 2 $ case [] of _: List1 Integer => 1; _ => 2 end"
+                    , testExpectSuccess "testeqval 1 $ case [3,4] of _ :: _ => 1; [] => 2 end"
+                    , testExpectSuccess "testeqval 1 $ case [3,4] of _ :: _ => 1; _ => 2 end"
+                    , testExpectSuccess "testeqval 1 $ case [3,4] of _: List1 Integer => 1; _ => 2 end"
+                    ]
+              ]
         , tDecls
               [ "dynamictype P1 = !\"P1\""
               , "dynamictype P2 = !\"P2\""
