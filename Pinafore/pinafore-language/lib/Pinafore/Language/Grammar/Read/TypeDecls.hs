@@ -25,18 +25,36 @@ readSubtypeDeclaration = do
     stb <- readType
     return $ SubtypeSyntaxDeclaration spos sta stb
 
-readDataTypeConstructor :: Parser SyntaxDatatypeConstructor
-readDataTypeConstructor = do
-    consName <- readThis TokUName
-    mtypes <- many readType3
-    return $ MkSyntaxDatatypeConstructor consName mtypes
+readDataTypeConstructor :: Parser SyntaxDatatypeConstructorOrSubtype
+readDataTypeConstructor =
+    (do
+         readThis TokSubtype
+         readThis TokDataType
+         name <- readTypeNewName
+         readThis TokOf
+         constructors <- readLines readDataTypeConstructor
+         readThis TokEnd
+         return $ SubtypeSyntaxDatatypeConstructorOrSubtype name constructors) <|>
+    (do
+         consName <- readThis TokUName
+         mtypes <- many readType3
+         return $ ConstructorSyntaxDatatypeConstructorOrSubtype consName mtypes)
 
-readClosedTypeConstructor :: Parser SyntaxClosedEntityConstructor
-readClosedTypeConstructor = do
-    consName <- readThis TokUName
-    mtypes <- many readType3
-    anchor <- readThis TokAnchor
-    return $ MkSyntaxClosedEntityConstructor consName mtypes anchor
+readClosedTypeConstructor :: Parser SyntaxClosedEntityConstructorOrSubtype
+readClosedTypeConstructor =
+    (do
+         readThis TokSubtype
+         readThis TokClosedType
+         name <- readTypeNewName
+         readThis TokOf
+         constructors <- readLines readClosedTypeConstructor
+         readThis TokEnd
+         return $ SubtypeSyntaxClosedEntityConstructorOrSubtype name constructors) <|>
+    (do
+         consName <- readThis TokUName
+         mtypes <- many readType3
+         anchor <- readThis TokAnchor
+         return $ ConstructorSyntaxClosedEntityConstructorOrSubtype consName mtypes anchor)
 
 readPositiveParameter :: Parser Name
 readPositiveParameter = do

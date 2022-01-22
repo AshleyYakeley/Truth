@@ -3,6 +3,7 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.ClosedEntity
     ) where
 
 import Pinafore.Base
+import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Type
 import Pinafore.Language.Grammar.Interpret.TypeDecl.TypeBox
@@ -18,10 +19,12 @@ data ClosedEntityBox =
                                 [Constructor MonoEntityType t]
 
 interpretClosedEntityTypeConstructor ::
-       SyntaxClosedEntityConstructor -> PinaforeInterpreter (Name, Anchor, AnyW (ListType MonoEntityType))
-interpretClosedEntityTypeConstructor (MkSyntaxClosedEntityConstructor consName stypes anchor) = do
+       SyntaxClosedEntityConstructorOrSubtype -> PinaforeInterpreter (Name, Anchor, AnyW (ListType MonoEntityType))
+interpretClosedEntityTypeConstructor (ConstructorSyntaxClosedEntityConstructorOrSubtype consName stypes anchor) = do
     etypes <- for stypes interpretMonoEntityType
     return (consName, anchor, assembleListType etypes)
+interpretClosedEntityTypeConstructor (SubtypeSyntaxClosedEntityConstructorOrSubtype _subtypeName _conss) =
+    throw $ KnownIssueError 132 "Subtypes not supported in closed entity types"
 
 assembleClosedEntityType :: [(Name, Anchor, AnyW (ListType MonoEntityType))] -> ClosedEntityBox
 assembleClosedEntityType [] = MkClosedEntityBox NilClosedEntityType []
@@ -31,7 +34,8 @@ assembleClosedEntityType ((n, a, MkAnyW el):cc) =
             MkClosedEntityBox (ConsClosedEntityType a el ct) $
             (MkConstructor n el Left eitherLeft) : fmap extendConstructor conss
 
-makeClosedEntityTypeBox :: Name -> Markdown -> [SyntaxClosedEntityConstructor] -> PinaforeInterpreter PinaforeTypeBox
+makeClosedEntityTypeBox ::
+       Name -> Markdown -> [SyntaxClosedEntityConstructorOrSubtype] -> PinaforeInterpreter PinaforeTypeBox
 makeClosedEntityTypeBox name doc sconss =
     newTypeID $ \(tidsym :: TypeIDType n) ->
         case unsafeIdentifyKind @_ @Type tidsym of

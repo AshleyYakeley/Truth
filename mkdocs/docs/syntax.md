@@ -207,7 +207,9 @@ All declarations, including type declarations, are local to a `let` block.
     <datatype-constructor> |
     <datatype-constructor> ";" <datatype-constructors>
 
-<datatype-constructor> ::= uname <types>
+<datatype-constructor> ::=
+    uname <types> |
+    "subtype" "datatype" <type-const> "of" <datatype-body> "end"
 
 <closedtype-body> ::=  | <closedtype-constructors>
 
@@ -215,7 +217,9 @@ All declarations, including type declarations, are local to a `let` block.
     <closedtype-constructor> |
     <closedtype-constructor> ";" <closedtype-constructors>
 
-<closedtype-constructor> ::= uname <types> anchor
+<closedtype-constructor> ::=
+    uname <types> anchor |
+    "subtype" "closedtype" <type-const> "of" <closedtype-body> "end"
 
 <dynamictype-constructors> ::=
     <dynamictype-constructor> |

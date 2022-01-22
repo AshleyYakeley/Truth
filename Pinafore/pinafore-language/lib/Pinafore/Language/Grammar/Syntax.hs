@@ -8,10 +8,12 @@ import Pinafore.Markdown
 import Shapes
 import Text.Parsec (SourcePos)
 
-data SyntaxClosedEntityConstructor =
-    MkSyntaxClosedEntityConstructor Name
-                                    [SyntaxType]
-                                    Anchor
+data SyntaxClosedEntityConstructorOrSubtype
+    = ConstructorSyntaxClosedEntityConstructorOrSubtype Name
+                                                        [SyntaxType]
+                                                        Anchor
+    | SubtypeSyntaxClosedEntityConstructorOrSubtype Name
+                                                    [SyntaxClosedEntityConstructorOrSubtype]
     deriving (Eq)
 
 data SyntaxDatatypeParameter
@@ -21,9 +23,11 @@ data SyntaxDatatypeParameter
                                    Name -- negative, positive
     deriving (Eq)
 
-data SyntaxDatatypeConstructor =
-    MkSyntaxDatatypeConstructor Name
-                                [SyntaxType]
+data SyntaxDatatypeConstructorOrSubtype
+    = ConstructorSyntaxDatatypeConstructorOrSubtype Name
+                                                    [SyntaxType]
+    | SubtypeSyntaxDatatypeConstructorOrSubtype Name
+                                                [SyntaxDatatypeConstructorOrSubtype]
     deriving (Eq)
 
 data SyntaxDynamicEntityConstructor
@@ -32,9 +36,9 @@ data SyntaxDynamicEntityConstructor
     deriving (Eq)
 
 data SyntaxTypeDeclaration
-    = ClosedEntitySyntaxTypeDeclaration [SyntaxClosedEntityConstructor]
+    = ClosedEntitySyntaxTypeDeclaration [SyntaxClosedEntityConstructorOrSubtype]
     | DatatypeSyntaxTypeDeclaration [SyntaxDatatypeParameter]
-                                    [SyntaxDatatypeConstructor]
+                                    [SyntaxDatatypeConstructorOrSubtype]
     | OpenEntitySyntaxTypeDeclaration
     | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
     deriving (Eq)

@@ -55,10 +55,12 @@ datatypeIOWitness :: IOWitness ('MkWitKind DataTypeFamily)
 datatypeIOWitness = $(iowitness [t|'MkWitKind DataTypeFamily|])
 
 interpretDataTypeConstructor ::
-       SyntaxDatatypeConstructor -> PinaforeInterpreter (Name, AnyW (ListType PinaforeNonpolarType))
-interpretDataTypeConstructor (MkSyntaxDatatypeConstructor consName stypes) = do
+       SyntaxDatatypeConstructorOrSubtype -> PinaforeInterpreter (Name, AnyW (ListType PinaforeNonpolarType))
+interpretDataTypeConstructor (ConstructorSyntaxDatatypeConstructorOrSubtype consName stypes) = do
     etypes <- for stypes interpretNonpolarType
     return (consName, assembleListType etypes)
+interpretDataTypeConstructor (SubtypeSyntaxDatatypeConstructorOrSubtype _subtypeName _stypes) =
+    throw $ KnownIssueError 132 "Subtypes not supported in data type definitions"
 
 type CCRTypeParam :: CCRArgumentKind
 data CCRTypeParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
@@ -211,7 +213,7 @@ makeDataTypeBox ::
        Name
     -> Markdown
     -> [SyntaxDatatypeParameter]
-    -> [SyntaxDatatypeConstructor]
+    -> [SyntaxDatatypeConstructorOrSubtype]
     -> PinaforeInterpreter PinaforeTypeBox
 makeDataTypeBox name doc params sconss =
     case getAnyCCRTypeParams params of
