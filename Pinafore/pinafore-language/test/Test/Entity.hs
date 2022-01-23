@@ -888,6 +888,12 @@ testEntity =
                             testExpectSuccess "if sd == \"45;72;18;\" then pass else fail sd"
                           ]
                     ]
+              , tGroup
+                    "subtype"
+                    [ testExpectSuccess "let datatype L of LNil; subtype datatype L1 of LCons Unit L end end in pass"
+                    , testExpectSuccess
+                          "let datatype L +a of LNil; subtype datatype L1 of LCons a (L a) end end in pass"
+                    ]
               ]
         , tDecls ["closedtype T of T1 Text Number !\"T.T1\"; T2 !\"T.T2\"; T3 Boolean !\"T.T3\" end"] $
           tGroup

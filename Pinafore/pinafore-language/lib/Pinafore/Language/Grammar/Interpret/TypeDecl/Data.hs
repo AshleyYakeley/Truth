@@ -60,7 +60,7 @@ interpretDataTypeConstructor (ConstructorSyntaxDatatypeConstructorOrSubtype cons
     etypes <- for stypes interpretNonpolarType
     return (consName, assembleListType etypes)
 interpretDataTypeConstructor (SubtypeSyntaxDatatypeConstructorOrSubtype _subtypeName _stypes) =
-    throw $ KnownIssueError 132 "Subtypes not supported in data type definitions"
+    throw $ KnownIssueError 132 "Subtypes not supported in datatype definitions"
 
 type CCRTypeParam :: CCRArgumentKind
 data CCRTypeParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
