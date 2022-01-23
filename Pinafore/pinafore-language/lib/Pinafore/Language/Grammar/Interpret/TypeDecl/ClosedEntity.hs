@@ -68,4 +68,4 @@ makeClosedEntityTypeBox name doc sconss =
                                            at
                                    pc = toPatternConstructor ctf ltp $ tma . reflId tident
                                withNewPatternConstructor cname doc expr pc
-                       return (cti, compAll patts)
+                       return (cti, mconcat patts)

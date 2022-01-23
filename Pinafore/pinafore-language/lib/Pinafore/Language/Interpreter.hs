@@ -279,6 +279,8 @@ getModule mname = do
                             return m
                         Nothing -> throw $ ModuleNotFoundError mname
 
+type InterpreterEndo ts = CatEndo WMFunction (Interpreter ts)
+
 withNewBinding :: Name -> DocInterpreterBinding ts -> Interpreter ts --> Interpreter ts
 withNewBinding name db = localD scopeParam $ \tc -> tc {scopeBindings = insertMapLazy name db $ scopeBindings tc}
 
@@ -375,38 +377,32 @@ registerType name doc t =
             Just _ -> throw $ DeclareTypeDuplicateError name
             Nothing -> withNewBinding name (doc, TypeBinding t) mta
 
-type TypeFixBox ts x = FixBox (Interpreter ts) [x]
+type TypeFixBox ts = FixBox (Interpreter ts)
 
 mkTypeFixBox :: Name -> Markdown -> (t -> BoundType ts) -> Interpreter ts (t, x) -> TypeFixBox ts x
-mkTypeFixBox name doc ttype mtx =
-    mkFixBox (\t -> registerType name doc $ ttype t) $ do
-        (t, x) <- mtx
-        return (t, [x])
+mkTypeFixBox name doc ttype mtx = mkFixBox (\t -> registerType name doc $ ttype t) mtx
 
 runWriterInterpreterMF ::
-       (forall a. Interpreter ts a -> Interpreter ts (a, [x]))
-    -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
+       (forall a. Interpreter ts a -> Interpreter ts (a, x))
+    -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
 runWriterInterpreterMF mf = do
     (sc, xx) <- mf $ askD scopeParam
     return (MkWMFunction $ withD scopeParam sc, xx)
 
-registerRecursiveTypeNames :: [TypeFixBox ts x] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
+registerRecursiveTypeNames ::
+       Monoid x => [TypeFixBox ts x] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
 registerRecursiveTypeNames tboxes = runWriterInterpreterMF $ boxesFix tboxes
 
-registerTypeName :: TypeFixBox ts x -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), [x])
+registerTypeName :: TypeFixBox ts x -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
 registerTypeName tbox = runWriterInterpreterMF $ boxSeq tbox
 
 withNewPatternConstructor ::
-       Name
-    -> Markdown
-    -> TSSealedExpression ts
-    -> TSPatternConstructor ts
-    -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts))
+       Name -> Markdown -> TSSealedExpression ts -> TSPatternConstructor ts -> Interpreter ts (InterpreterEndo ts)
 withNewPatternConstructor name doc exp pc = do
     ma <- lookupPatternConstructorM $ UnqualifiedReferenceName name
     case ma of
         Just _ -> throw $ DeclareConstructorDuplicateError name
-        Nothing -> return $ MkWMFunction $ withNewBinding name $ (doc, ValueBinding exp $ Just pc)
+        Nothing -> return $ MkCatEndo $ MkWMFunction $ withNewBinding name $ (doc, ValueBinding exp $ Just pc)
 
 withSubtypeConversions :: [SubtypeConversionEntry (InterpreterGroundType ts)] -> Interpreter ts a -> Interpreter ts a
 withSubtypeConversions newscs ma = do

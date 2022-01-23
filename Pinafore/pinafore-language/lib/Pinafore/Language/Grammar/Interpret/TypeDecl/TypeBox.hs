@@ -5,7 +5,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes
 
-type PinaforeTypeBox = TypeFixBox PinaforeTypeSystem (WMFunction PinaforeInterpreter PinaforeInterpreter)
+type PinaforeTypeBox = TypeFixBox PinaforeTypeSystem (CatEndo WMFunction PinaforeInterpreter)
 
 data Constructor w t =
     forall a. MkConstructor Name

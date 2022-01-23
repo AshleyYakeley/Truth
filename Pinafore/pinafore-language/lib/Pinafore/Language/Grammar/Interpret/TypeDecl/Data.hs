@@ -303,4 +303,4 @@ makeDataTypeBox name doc params sconss =
                                                                    MkAnyValue (qFunctionPosWitnesses ltn ctfpos) at
                                                                pc = toPatternConstructor ctfneg ltp tma
                                                            withNewPatternConstructor cname doc expr pc
-                                                   return (dvm, compAll patts)
+                                                   return (dvm, mconcat patts)

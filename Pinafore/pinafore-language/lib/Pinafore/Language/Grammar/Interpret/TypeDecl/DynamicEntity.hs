@@ -33,6 +33,7 @@ makeDynamicEntityTypeBox name doc stcons =
                    tp = aDynamicEntityGroundType name dts
                return $
                    (,) dts $
+                   MkCatEndo $
                    MkWMFunction $
                    withSubtypeConversions $
                    pure $
