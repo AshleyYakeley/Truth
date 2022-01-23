@@ -379,8 +379,8 @@ registerType name doc t =
 
 type TypeFixBox ts = FixBox (Interpreter ts)
 
-mkTypeFixBox :: Name -> Markdown -> (t -> BoundType ts) -> Interpreter ts (t, x) -> TypeFixBox ts x
-mkTypeFixBox name doc ttype mtx = mkFixBox (\t -> registerType name doc $ ttype t) mtx
+mkTypeFixBox :: Name -> Markdown -> (t -> BoundType ts) -> (a -> Interpreter ts (t, b)) -> TypeFixBox ts a b
+mkTypeFixBox name doc ttype = mkFixBox (\t -> registerType name doc $ ttype t)
 
 runWriterInterpreterMF ::
        (forall a. Interpreter ts a -> Interpreter ts (a, x))
@@ -390,11 +390,11 @@ runWriterInterpreterMF mf = do
     return (MkWMFunction $ withD scopeParam sc, xx)
 
 registerRecursiveTypeNames ::
-       Monoid x => [TypeFixBox ts x] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
-registerRecursiveTypeNames tboxes = runWriterInterpreterMF $ boxesFix tboxes
+       Monoid x => [TypeFixBox ts () x] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
+registerRecursiveTypeNames tboxes = runWriterInterpreterMF $ \mx -> boxesFix tboxes mx ()
 
-registerTypeName :: TypeFixBox ts x -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
-registerTypeName tbox = runWriterInterpreterMF $ boxSeq tbox
+registerTypeName :: TypeFixBox ts () x -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
+registerTypeName tbox = runWriterInterpreterMF $ \mx -> boxSeq tbox mx ()
 
 withNewPatternConstructor ::
        Name -> Markdown -> TSSealedExpression ts -> TSPatternConstructor ts -> Interpreter ts (InterpreterEndo ts)

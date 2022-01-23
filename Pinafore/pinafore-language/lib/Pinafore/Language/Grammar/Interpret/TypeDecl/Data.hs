@@ -239,7 +239,7 @@ makeDataTypeBox name doc params sconss =
                                             }
                                     mktype :: DolanVarianceMap dv (Identified tid) -> PinaforeBoundType
                                     mktype dvm = MkBoundType $ mkgt dvm
-                                    in mkTypeFixBox name doc mktype $ do
+                                    in mkTypeFixBox name doc mktype $ \_ -> do
                                            tconss <- for sconss interpretDataTypeConstructor
                                            MkDataBox (pdt :: _ structtype) conss <- return $ assembleDataType tconss
                                            let

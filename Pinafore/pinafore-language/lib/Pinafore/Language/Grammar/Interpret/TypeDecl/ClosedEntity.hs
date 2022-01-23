@@ -41,7 +41,7 @@ makeClosedEntityTypeBox name doc sconss =
         case unsafeIdentifyKind @_ @Type tidsym of
             Identity Refl -> let
                 mktype t = MkBoundType $ closedEntityGroundType $ MkClosedEntityFamily name tidsym t
-                in mkTypeFixBox name doc mktype $ do
+                in mkTypeFixBox name doc mktype $ \_ -> do
                        tconss <- for sconss interpretClosedEntityTypeConstructor
                        MkClosedEntityBox (ct :: ClosedEntityType t) conss <- return $ assembleClosedEntityType tconss
                        tident <- unsafeIdentify @_ @t tidsym

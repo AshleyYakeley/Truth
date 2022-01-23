@@ -26,7 +26,7 @@ makeDynamicEntityTypeBox name doc stcons =
     return $ let
         mktype :: DynamicEntityType -> PinaforeBoundType
         mktype t = MkBoundType $ aDynamicEntityGroundType name t
-        in mkTypeFixBox name doc mktype $ do
+        in mkTypeFixBox name doc mktype $ \_ -> do
                dt <- for stcons intepretSyntaxDynamicEntityConstructor
                let
                    dts = setFromList $ mconcat $ toList dt
