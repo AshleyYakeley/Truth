@@ -5,7 +5,6 @@ import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
-import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
@@ -16,13 +15,13 @@ type PinaforeSingularType :: Polarity -> Type -> Type
 type PinaforeSingularType = DolanSingularType PinaforeGroundType
 
 type PinaforeSingularShimWit :: Polarity -> Type -> Type
-type PinaforeSingularShimWit polarity = PShimWit (PinaforePolyShim Type) PinaforeSingularType polarity
+type PinaforeSingularShimWit polarity = DolanSingularShimWit PinaforeGroundType polarity
 
 type PinaforeType :: Polarity -> Type -> Type
 type PinaforeType = DolanType PinaforeGroundType
 
 type PinaforeShimWit :: Polarity -> Type -> Type
-type PinaforeShimWit polarity = PShimWit (PinaforePolyShim Type) PinaforeType polarity
+type PinaforeShimWit polarity = DolanShimWit PinaforeGroundType polarity
 
 type PinaforeExpression = SealedExpression Name (PinaforeShimWit 'Negative) (PinaforeShimWit 'Positive)
 
@@ -47,11 +46,3 @@ type PinaforeInterpreter = Interpreter PinaforeTypeSystem
 type PinaforeAnnotation = Annotation PinaforeTypeSystem
 
 type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeInterpreter
-
-getGreatestDynamicSupertype :: PinaforeType 'Positive t -> PinaforeInterpreter (PinaforeGreatestDynamicSupertype t)
-getGreatestDynamicSupertype (ConsDolanType (GroundedDolanSingularType gt args) NilDolanType)
-    | Just ds <- pgtGreatestDynamicSupertype gt args =
-        return $ mapPolarShimWit (MkPolarMap $ applyCoPolyShim ccrVariation ccrVariation id iJoinR1) ds
-getGreatestDynamicSupertype t = do
-    t' <- invertType t
-    return $ mapPolarShimWit (MkPolarMap $ functionToShim "Just" Just) t'

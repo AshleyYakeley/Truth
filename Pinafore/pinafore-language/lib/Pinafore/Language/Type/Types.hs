@@ -99,11 +99,9 @@ list1GroundType :: IsDolanSubtypeGroundType PinaforeGroundType => PinaforeGround
 list1GroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1")
         { pgtGreatestDynamicSupertype =
-              \(ConsCCRArguments ta NilCCRArguments) -> do
-                  tt <-
-                      invertTypeMaybe $
-                      singleDolanType $ GroundedDolanSingularType listGroundType $ ConsCCRArguments ta NilCCRArguments
-                  Just $ mapPolarShimWit (MkPolarMap $ functionToShim "nonEmpty" nonEmpty . iJoinL1) tt
+              \(ConsCCRArguments ta NilCCRArguments) -> let
+                  tt = mkShimWit $ GroundedDolanSingularType listGroundType $ ConsCCRArguments ta NilCCRArguments
+                  in Just $ mapPolarShimWit (MkPolarMap $ functionToShim "nonEmpty" nonEmpty) tt
         }
 
 eitherGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] Either

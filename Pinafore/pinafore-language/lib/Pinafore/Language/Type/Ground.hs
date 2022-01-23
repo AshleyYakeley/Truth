@@ -23,10 +23,7 @@ data PinaforeGroundType dv gt = MkPinaforeGroundType
     }
 
 type PinaforePolyGreatestDynamicSupertype :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
-type PinaforePolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype PinaforeGroundType PinaforePolyShim dv gt
-
-type PinaforeGreatestDynamicSupertype :: Type -> Type
-type PinaforeGreatestDynamicSupertype t = GreatestDynamicSupertype PinaforeGroundType PinaforePolyShim t
+type PinaforePolyGreatestDynamicSupertype dv gt = PolyGreatestDynamicSupertype PinaforeGroundType dv gt
 
 type PinaforeNonpolarType :: Type -> Type
 type PinaforeNonpolarType = NonpolarDolanType PinaforeGroundType

@@ -58,22 +58,28 @@ interpretPattern (MkWithSourcePos spos (BothSyntaxPattern spat1 spat2)) = do
 interpretPattern (MkWithSourcePos spos (ConstructorSyntaxPattern scons spats)) = do
     pc <- lift $ liftRefNotation $ withD sourcePosParam spos $ interpretPatternConstructor scons
     pats <- for spats interpretPattern
-    lift $ liftRefNotation $ withD sourcePosParam spos $ qConstructPattern pc pats
+    pat@(MkSealedPattern tw patw) <- lift $ liftRefNotation $ withD sourcePosParam spos $ qConstructPattern pc pats
+    return $
+        case getOptGreatestDynamicSupertypeSW tw of
+            Nothing -> pat
+            Just (MkShimWit stw conv) ->
+                MkSealedPattern (mkShimWit stw) $ contramap1Pattern (shimToFunction $ unPolarMap conv) patw
 interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
     pat <- interpretPattern spat
     lift $
         liftRefNotation $
         withD sourcePosParam spos $ do
-            mtp <- interpretType @'Positive stype
-            case mtp of
-                MkAnyW tp -> do
-                    dtp <- getGreatestDynamicSupertype tp
-                    let
-                        pc :: QPatternConstructor
-                        pc =
-                            toPatternConstructor dtp (ConsListType (mkPolarShimWit tp) NilListType) $
-                            fmap $ \a -> (a, ())
-                    qConstructPattern pc [pat]
+            mtn <- interpretType @'Negative stype
+            case mtn of
+                MkAnyW tn ->
+                    case getOptGreatestDynamicSupertype tn of
+                        Nothing -> return pat
+                        Just dtn -> do
+                            tpw <- invertType tn
+                            let
+                                pc :: QPatternConstructor
+                                pc = toPatternConstructor dtn (ConsListType tpw NilListType) $ fmap $ \a -> (a, ())
+                            qConstructPattern pc [pat]
 
 interpretPatternOrName :: SyntaxPattern -> Either Name (ScopeBuilder QPattern)
 interpretPatternOrName (MkWithSourcePos _ (VarSyntaxPattern n)) = Left n

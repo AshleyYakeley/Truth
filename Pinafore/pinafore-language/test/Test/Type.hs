@@ -307,10 +307,10 @@ testType =
                     , textTypeTest "(1,False,(3,True))" "{} -> Integer :*: Boolean :*: Integer :*: Boolean"
                     , textTypeTest "(1,(False,3,True))" "{} -> Integer :*: Boolean :*: Integer :*: Boolean"
                     , textTypeTest "(1,False,3,True)" "{} -> Integer :*: Boolean :*: Integer :*: Boolean"
-                    , textTypeTest "\\x => case x of (1,False) => () end" "{} -> Number :*: Boolean -> Unit"
+                    , textTypeTest "\\x => case x of (1,False) => () end" "{} -> Literal :*: Literal -> Unit"
                     , textTypeTest
                           "\\x => case x of (1,False,3,True) => () end"
-                          "{} -> Number :*: Boolean :*: Number :*: Boolean -> Unit"
+                          "{} -> Literal :*: Literal :*: Literal :*: Literal -> Unit"
                     ]
               ]
         , testTree

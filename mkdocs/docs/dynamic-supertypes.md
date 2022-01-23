@@ -8,8 +8,7 @@ Pinafore provides a general mechanism for making use of them.
 
 Every ambipolar type `T` has an ambipolar *greatest dynamic supertype* `D(T)`:
 
-- `D(Integer)` = `Number`
-- `D(Rational)` = `Number`
+- `D(T)` = `Literal` for all literal types
 - `D(T)` = `DynamicEntity` for dynamic entity types (the main use case)
 - `D(T)` = `T` for all other types
 

@@ -21,7 +21,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
   * Library
     - Std
       . Literal type now byte array rather than text
-      . Literal types now have MDS Literal
+      . Literal types now have GDS Literal
       . add Showable type for showing, show replacing toText
       . add min/max/lesser/greater functions
       . add List1 type for non-empty lists, subtype of List

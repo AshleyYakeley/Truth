@@ -846,17 +846,19 @@ baseLibEntries =
                 "Evaluate the first argument, then if that's not \"bottom\" (error or non-termination), return the second argument."
                 (seq :: TopType -> A -> A)
           , mkSpecialFormEntry "check" "Check from a dynamic supertype." "@A" "D(A) -> Maybe A" $
-            MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkAnyW tp, ()) -> do
-                dtw <- getGreatestDynamicSupertype tp
-                return $ MkAnyValue (funcShimWit dtw $ maybeShimWit $ mkPolarShimWit tp) id
+            MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkAnyW tn, ()) -> do
+                let dtw = getGreatestDynamicSupertype tn
+                tpw <- invertType tn
+                return $ MkAnyValue (funcShimWit dtw $ maybeShimWit tpw) id
           , mkSpecialFormEntry "coerce" "Coerce from a dynamic supertype." "@A" "D(A) -> A" $
-            MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkAnyW tp, ()) -> do
-                dtw@(MkShimWit dtp _) <- getGreatestDynamicSupertype tp
+            MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkAnyW tn, ()) -> do
+                let dtw = getGreatestDynamicSupertype tn
+                tpw <- invertType tn
                 return $
-                    MkAnyValue (funcShimWit dtw $ mkPolarShimWit tp) $ \case
+                    MkAnyValue (funcShimWit dtw tpw) $ \case
                         Just t -> t
                         Nothing ->
-                            error $ unpack $ "coercion from " <> exprShow dtp <> " to " <> exprShow tp <> " failed"
+                            error $ unpack $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
           ]
     , docTreeEntry
           "Actions"

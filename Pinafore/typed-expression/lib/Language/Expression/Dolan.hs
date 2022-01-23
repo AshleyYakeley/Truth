@@ -36,6 +36,7 @@ module Language.Expression.Dolan
     , singleDolanType
     , dolanTypeToSingular
     , DolanShimWit
+    , DolanSingularShimWit
     , singleDolanShimWit
     , nilDolanShimWit
     , joinMeetShimWit

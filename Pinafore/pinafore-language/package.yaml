@@ -59,6 +59,7 @@ library:
       - Pinafore.Language.Convert
       - Pinafore.Language.ExprShow
       - Pinafore.Language.Type.Type
+      - Pinafore.Language.Type.GetDynamicSupertype
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type.Entity.Type
       - Pinafore.Language.Type.Entity.Dynamic

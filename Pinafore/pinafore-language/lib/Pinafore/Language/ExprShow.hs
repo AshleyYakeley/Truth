@@ -38,6 +38,11 @@ instance AllWitnessConstraint ExprShow w => ExprShow (AnyW w) where
         case allWitnessConstraint @_ @_ @ExprShow @w @t of
             Dict -> exprShowPrec wt
 
+instance AllWitnessConstraint ExprShow w => ExprShow (ShimWit shim w a) where
+    exprShowPrec (MkShimWit (wt :: w t) _) =
+        case allWitnessConstraint @_ @_ @ExprShow @w @t of
+            Dict -> exprShowPrec wt
+
 type family ListTypeExprShow (dv :: [k]) :: Type where
     ListTypeExprShow '[] = (Text, Int)
     ListTypeExprShow (t ': tt) = (Text, Int) -> ListTypeExprShow tt
