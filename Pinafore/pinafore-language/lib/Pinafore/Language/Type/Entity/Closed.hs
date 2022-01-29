@@ -28,11 +28,15 @@ instance TestHetEquality ClosedEntityFamily where
 data ClosedEntityType (t :: Type) where
     NilClosedEntityType :: ClosedEntityType Void
     ConsClosedEntityType
-        :: Anchor -> ListType MonoEntityType tl -> ClosedEntityType tt -> ClosedEntityType (Either (HList tl) tt)
+        :: Name
+        -> Anchor
+        -> ListType MonoEntityType tl
+        -> ClosedEntityType tt
+        -> ClosedEntityType (Either (HList tl) tt)
 
 instance TestEquality ClosedEntityType where
     testEquality NilClosedEntityType NilClosedEntityType = Just Refl
-    testEquality (ConsClosedEntityType a1 l1 t1) (ConsClosedEntityType a2 l2 t2)
+    testEquality (ConsClosedEntityType _ a1 l1 t1) (ConsClosedEntityType _ a2 l2 t2)
         | a1 == a2 = do
             Refl <- testEquality l1 l2
             Refl <- testEquality t1 t2
@@ -41,18 +45,18 @@ instance TestEquality ClosedEntityType where
 
 instance Show (ClosedEntityType t) where
     show NilClosedEntityType = "nil"
-    show (ConsClosedEntityType a tt NilClosedEntityType) = show tt <> " " <> show a
-    show (ConsClosedEntityType a tt rest) = show tt <> " " <> show a <> " | " <> show rest
+    show (ConsClosedEntityType name a tt NilClosedEntityType) = show name <> " " <> show tt <> " " <> show a
+    show (ConsClosedEntityType name a tt rest) = show name <> " " <> show tt <> " " <> show a <> " | " <> show rest
 
 closedEntityTypeEq :: ClosedEntityType t -> Dict (Eq t)
 closedEntityTypeEq NilClosedEntityType = Dict
-closedEntityTypeEq (ConsClosedEntityType _ t1 tr) =
+closedEntityTypeEq (ConsClosedEntityType _ _ t1 tr) =
     case (hListEq monoEntityTypeEq t1, closedEntityTypeEq tr) of
         (Dict, Dict) -> Dict
 
 closedEntityTypeAdapter :: ClosedEntityType t -> EntityAdapter t
 closedEntityTypeAdapter NilClosedEntityType = pNone
-closedEntityTypeAdapter (ConsClosedEntityType a cc rest) =
+closedEntityTypeAdapter (ConsClosedEntityType _ a cc rest) =
     constructorEntityAdapter a (mapListType monoEntityAdapter cc) <+++> closedEntityTypeAdapter rest
 
 closedEntityFamilyWitness :: IOWitness ('MkWitKind ClosedEntityFamily)
