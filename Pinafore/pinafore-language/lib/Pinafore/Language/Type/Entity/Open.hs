@@ -42,14 +42,15 @@ openEntityGroundType oet =
 
 openEntityFamily :: EntityFamily
 openEntityFamily =
-    MkEntityFamily openEntityFamilyWitness $ \NilListType (MkLiftedFamily oet :: _ t) -> let
+    MkEntityFamily openEntityFamilyWitness $ \(MkLiftedFamily oet :: _ t) -> let
+        epKind = NilListType
         epCovaryMap = covarymap
         epEq :: forall (ta :: Type). Arguments (MonoType EntityGroundType) t ta -> Dict (Eq ta)
         epEq NilArguments = Dict
         epAdapter :: forall ta. Arguments MonoEntityType t ta -> EntityAdapter ta
         epAdapter NilArguments = isoMap MkOpenEntity unOpenEntity plainEntityAdapter
         epShowType = exprShowPrec oet
-        in Just MkEntityProperties {..}
+        in Just $ MkSealedEntityProperties MkEntityProperties {..}
 
 getOpenEntityType :: MonadThrow ErrorType m => AnyW (PinaforeType 'Positive) -> m (AnyW OpenEntityType)
 getOpenEntityType (MkAnyW tm) =

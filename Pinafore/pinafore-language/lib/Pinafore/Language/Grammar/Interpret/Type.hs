@@ -208,7 +208,7 @@ interpretSubtypeRelation' sta stb =
                         case atb of
                             MkAnyW tb ->
                                 case tb of
-                                    MkMonoType teb@(MkEntityGroundType tfb _ _) NilArguments
+                                    MkMonoType teb@(MkEntityGroundType tfb _) NilArguments
                                         | Just (MkLiftedFamily _) <- matchFamilyType openEntityFamilyWitness tfb ->
                                             withSubtypeConversions
                                                 (pure $

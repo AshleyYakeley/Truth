@@ -97,7 +97,8 @@ aDynamicEntityGroundType name dts =
 
 aDynamicEntityEntityFamily :: EntityFamily
 aDynamicEntityEntityFamily =
-    MkEntityFamily aDynamicEntityFamilyWitness $ \NilListType (MkADynamicEntityFamily name dt) -> let
+    MkEntityFamily aDynamicEntityFamilyWitness $ \(MkADynamicEntityFamily name dt) -> let
+        epKind = NilListType
         epCovaryMap :: CovaryMap DynamicEntity
         epCovaryMap = covarymap
         epEq :: forall (ta :: Type). Arguments (MonoType EntityGroundType) DynamicEntity ta -> Dict (Eq ta)
@@ -105,7 +106,7 @@ aDynamicEntityEntityFamily =
         epAdapter :: forall ta. Arguments MonoEntityType DynamicEntity ta -> EntityAdapter ta
         epAdapter NilArguments = dynamicEntityAdapter $ Just dt
         epShowType = exprShowPrec name
-        in Just $ MkEntityProperties {..}
+        in Just $ MkSealedEntityProperties MkEntityProperties {..}
 
 getConcreteDynamicEntityType :: MonadThrow ErrorType m => AnyW (PinaforeType 'Positive) -> m (Name, DynamicType)
 getConcreteDynamicEntityType (MkAnyW tm) =

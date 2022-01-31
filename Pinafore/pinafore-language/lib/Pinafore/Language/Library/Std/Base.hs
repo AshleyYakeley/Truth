@@ -578,10 +578,11 @@ baseLibEntries =
                   pure $
                   MkSubypeConversionEntry entityGroundType $ \MkPinaforeGroundType {..} -> do
                       Refl <- testEquality pgtVarianceType NilListType
-                      MkClosedEntityFamily _ _ cet <- matchFamilyType closedEntityFamilyWitness pgtFamilyType
+                      MkClosedEntityFamily _ (MkSealedEntityProperties eprops) <-
+                          matchFamilyType closedEntityFamilyWitness pgtFamilyType
                       return $
                           nilSubtypeConversion $
-                          functionToShim "ClosedEntity" $ entityAdapterConvert $ closedEntityTypeAdapter cet
+                          functionToShim "ClosedEntity" $ entityAdapterConvert $ epAdapter eprops NilArguments
                 ]
           , docTreeEntry
                 "Open Entity Types"

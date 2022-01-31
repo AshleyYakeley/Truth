@@ -25,15 +25,14 @@ assembleDataType ::
 assembleDataType tconss call =
     case assembleListType $ fmap (\(_, (MkAnyW lt)) -> MkAnyW $ MkHListWit lt) tconss of
         MkAnyW lcons ->
-            case preferredTypeRepresentation lcons of
-                MkTypeRepresentation ccons vmap -> let
-                    names :: [Name]
-                    names = fmap fst tconss
-                    mkConss :: [Name -> Constructor (HListWit PinaforeNonpolarType) _]
-                    mkConss =
-                        listTypeToList getConst $
-                        joinListType (\codec el -> Const $ \name -> MkConstructor name el codec) ccons lcons
-                    in call (fmap (\(f, n) -> f n) $ zip mkConss names) vmap
+            getPreferredTypeRepresentation lcons $ \(MkTypeRepresentation ccons vmap) -> let
+                names :: [Name]
+                names = fmap fst tconss
+                mkConss :: [Name -> Constructor (HListWit PinaforeNonpolarType) _]
+                mkConss =
+                    listTypeToList getConst $
+                    joinListType (\codec el -> Const $ \name -> MkConstructor name el codec) ccons lcons
+                in call (fmap (\(f, n) -> f n) $ zip mkConss names) vmap
 
 data DataTypeFamily :: FamilyKind where
     MkDataTypeFamily :: forall (tid :: BigNat). TypeIDType tid -> DataTypeFamily (Identified tid)

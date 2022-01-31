@@ -7,7 +7,10 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
     , dependentMapping
     ) where
 
-import Pinafore.Language.Type
+import Data.Shim
+import Language.Expression.Common
+import Language.Expression.Dolan
+import Pinafore.Language.Type.Ground
 import Shapes
 
 type Mapping :: Symbol -> Type -> Type
@@ -108,6 +111,9 @@ getArgumentsMapping (ConsDolanVarianceMap ccrv dvm) (ConsCCRArguments arg args) 
 
 class HasVarMapping w where
     getVarMapping :: w t -> VarMapping t
+
+instance HasVarMapping w1 => HasVarMapping (PairType w1 w2) where
+    getVarMapping (MkPairType w _) = getVarMapping w
 
 instance HasVarMapping PinaforeNonpolarType where
     getVarMapping (VarNonpolarType var) = varVarMapping var

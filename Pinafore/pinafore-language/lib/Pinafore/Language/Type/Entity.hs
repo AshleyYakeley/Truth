@@ -46,6 +46,7 @@ maybeEntityConvert = entityAdapterConvert $ maybeEntityAdapter plainEntityAdapte
 maybeEntityFamily :: EntityFamily
 maybeEntityFamily =
     pinaforeEntityFamily maybeGroundType $ \epShowType -> let
+        epKind = ConsListType Refl NilListType
         epCovaryMap = covarymap
         epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) Maybe t -> Dict (Eq t)
         epEq (ConsArguments t NilArguments) =
@@ -76,6 +77,7 @@ listEntityConvert = entityAdapterConvert $ listEntityAdapter plainEntityAdapter
 listEntityFamily :: EntityFamily
 listEntityFamily =
     pinaforeEntityFamily listGroundType $ \epShowType -> let
+        epKind = ConsListType Refl NilListType
         epCovaryMap = covarymap
         epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) [] t -> Dict (Eq t)
         epEq (ConsArguments t NilArguments) =
@@ -101,6 +103,7 @@ pairEntityConvert = entityAdapterConvert $ pairEntityAdapter plainEntityAdapter 
 pairEntityFamily :: EntityFamily
 pairEntityFamily =
     pinaforeEntityFamily pairGroundType $ \epShowType -> let
+        epKind = ConsListType Refl $ ConsListType Refl NilListType
         epCovaryMap = covarymap
         epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) (,) t -> Dict (Eq t)
         epEq (ConsArguments ta (ConsArguments tb NilArguments)) =
@@ -129,6 +132,7 @@ eitherEntityConvert = entityAdapterConvert $ eitherEntityAdapter plainEntityAdap
 eitherEntityFamily :: EntityFamily
 eitherEntityFamily =
     pinaforeEntityFamily eitherGroundType $ \epShowType -> let
+        epKind = ConsListType Refl $ ConsListType Refl NilListType
         epCovaryMap = covarymap
         epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) Either t -> Dict (Eq t)
         epEq (ConsArguments ta (ConsArguments tb NilArguments)) =
@@ -151,6 +155,7 @@ literalEntityFamily ::
     -> EntityFamily
 literalEntityFamily t =
     pinaforeEntityFamily t $ \epShowType -> let
+        epKind = NilListType
         epCovaryMap = covarymap
         epEq :: forall (ta :: Type). Arguments (MonoType EntityGroundType) t ta -> Dict (Eq ta)
         epEq NilArguments = Dict
@@ -199,9 +204,9 @@ instance CovarySubtype PinaforeGroundType EntityGroundType where
     dolanToMonoGroundType MkPinaforeGroundType {..} =
         findmap allEntityFamilies $ \(MkEntityFamily wit ff) -> do
             tt <- matchFamilyType wit pgtFamilyType
-            eprops <- ff pgtVarianceType tt
+            seprops <- ff tt
             covaryType <- dolanVarianceToCovaryType pgtVarianceType
-            return (covaryType, MkEntityGroundType pgtFamilyType covaryType eprops)
+            return (covaryType, MkEntityGroundType pgtFamilyType seprops)
     monoToDolanGroundType ::
            forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
            CovaryType dv
