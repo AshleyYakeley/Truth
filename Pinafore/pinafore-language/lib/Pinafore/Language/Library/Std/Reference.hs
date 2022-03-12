@@ -379,8 +379,8 @@ refLibEntries =
                         let
                             bta = biRangeAnyF (etan, monoToPositiveDolanType eta)
                             btb = biRangeAnyF (etbn, monoToPositiveDolanType etb)
-                            in case (bta, btb, monoEntityTypeEq eta, monoEntityTypeEq etb) of
-                                   (MkAnyF (MkRangeType rtap rtaq) (MkRange praContra praCo), MkAnyF (MkRangeType rtbp rtbq) (MkRange prbContra prbCo), Dict, Dict) -> let
+                            in case (bta, btb) of
+                                   (MkAnyF (MkRangeType rtap rtaq) (MkRange praContra praCo), MkAnyF (MkRangeType rtbp rtbq) (MkRange prbContra prbCo)) -> let
                                        typef =
                                            singleDolanShimWit $
                                            mkPolarShimWit $

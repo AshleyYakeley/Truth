@@ -48,12 +48,8 @@ maybeEntityFamily =
     pinaforeEntityFamily maybeGroundType $ \epShowType -> let
         epKind = ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) Maybe t -> Dict (Eq t)
-        epEq (ConsArguments t NilArguments) =
-            case monoEntityTypeEq t of
-                Dict -> Dict
-        epAdapter :: forall t. Arguments MonoEntityType Maybe t -> EntityAdapter t
-        epAdapter (ConsArguments t NilArguments) = maybeEntityAdapter $ monoEntityAdapter t
+        epAdapter :: forall t. Arguments EntityAdapter Maybe t -> EntityAdapter t
+        epAdapter (ConsArguments t NilArguments) = maybeEntityAdapter t
         in MkEntityProperties {..}
 
 listEntityAdapter :: EntityAdapter t -> EntityAdapter [t]
@@ -79,12 +75,8 @@ listEntityFamily =
     pinaforeEntityFamily listGroundType $ \epShowType -> let
         epKind = ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) [] t -> Dict (Eq t)
-        epEq (ConsArguments t NilArguments) =
-            case monoEntityTypeEq t of
-                Dict -> Dict
-        epAdapter :: forall t. Arguments MonoEntityType [] t -> EntityAdapter t
-        epAdapter (ConsArguments t NilArguments) = listEntityAdapter $ monoEntityAdapter t
+        epAdapter :: forall t. Arguments EntityAdapter [] t -> EntityAdapter t
+        epAdapter (ConsArguments t NilArguments) = listEntityAdapter t
         in MkEntityProperties {..}
 
 pairEntityAdapter :: EntityAdapter ta -> EntityAdapter tb -> EntityAdapter (ta, tb)
@@ -105,13 +97,8 @@ pairEntityFamily =
     pinaforeEntityFamily pairGroundType $ \epShowType -> let
         epKind = ConsListType Refl $ ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) (,) t -> Dict (Eq t)
-        epEq (ConsArguments ta (ConsArguments tb NilArguments)) =
-            case (monoEntityTypeEq ta, monoEntityTypeEq tb) of
-                (Dict, Dict) -> Dict
-        epAdapter :: forall t. Arguments MonoEntityType (,) t -> EntityAdapter t
-        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) =
-            pairEntityAdapter (monoEntityAdapter ta) (monoEntityAdapter tb)
+        epAdapter :: forall t. Arguments EntityAdapter (,) t -> EntityAdapter t
+        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = pairEntityAdapter ta tb
         in MkEntityProperties {..}
 
 eitherEntityAdapter :: EntityAdapter ta -> EntityAdapter tb -> EntityAdapter (Either ta tb)
@@ -134,13 +121,8 @@ eitherEntityFamily =
     pinaforeEntityFamily eitherGroundType $ \epShowType -> let
         epKind = ConsListType Refl $ ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) Either t -> Dict (Eq t)
-        epEq (ConsArguments ta (ConsArguments tb NilArguments)) =
-            case (monoEntityTypeEq ta, monoEntityTypeEq tb) of
-                (Dict, Dict) -> Dict
-        epAdapter :: forall t. Arguments MonoEntityType Either t -> EntityAdapter t
-        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) =
-            eitherEntityAdapter (monoEntityAdapter ta) (monoEntityAdapter tb)
+        epAdapter :: forall t. Arguments EntityAdapter Either t -> EntityAdapter t
+        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = eitherEntityAdapter ta tb
         in MkEntityProperties {..}
 
 entityGroundType :: PinaforeGroundType '[] Entity
@@ -157,9 +139,7 @@ literalEntityFamily t =
     pinaforeEntityFamily t $ \epShowType -> let
         epKind = NilListType
         epCovaryMap = covarymap
-        epEq :: forall (ta :: Type). Arguments (MonoType EntityGroundType) t ta -> Dict (Eq ta)
-        epEq NilArguments = Dict
-        epAdapter :: forall ta. Arguments MonoEntityType t ta -> EntityAdapter ta
+        epAdapter :: forall ta. Arguments EntityAdapter t ta -> EntityAdapter ta
         epAdapter NilArguments = literalEntityAdapter
         in MkEntityProperties {..}
 

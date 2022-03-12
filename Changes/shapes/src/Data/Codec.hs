@@ -54,6 +54,19 @@ instance Monad m => Category (Codec' m) where
 bijectionCodec :: Applicative m => Bijection a b -> Codec' m a b
 bijectionCodec (MkIsomorphism p q) = MkCodec (pure . p) q
 
+codecBijection :: Monad m => Codec' m a b -> Bijection (m a) (m b)
+codecBijection (MkCodec amb ba) = MkIsomorphism (\ma -> ma >>= amb) (fmap ba)
+
+codecSum :: Summish f => Codec a b -> f b -> f a -> f a
+codecSum MkCodec {..} fb fa =
+    isoMap
+        (either encode id)
+        (\a ->
+             case decode a of
+                 Just b -> Left b
+                 Nothing -> Right a) $
+    fb <+++> fa
+
 instance (Traversable f, Applicative m) => CatFunctor (Codec' m) (Codec' m) f where
     cfmap codec = MkCodec {decode = traverse (decode codec), encode = fmap (encode codec)}
 

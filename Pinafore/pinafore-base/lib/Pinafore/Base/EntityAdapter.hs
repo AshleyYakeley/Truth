@@ -1,5 +1,6 @@
 module Pinafore.Base.EntityAdapter
     ( EntityAdapter(..)
+    , nullEntityAdapter
     , entityAdapterConvert
     --, entityAdapterType
     , plainEntityAdapter
@@ -19,6 +20,10 @@ data EntityAdapter t = MkEntityAdapter
     { entityAdapterDefinitions :: EntityStorer 'MultipleMode t
     , entityAdapterToDefinition :: t -> AnyValue (EntityStorer 'SingleMode)
     }
+
+nullEntityAdapter :: EntityAdapter t
+nullEntityAdapter =
+    MkEntityAdapter {entityAdapterDefinitions = mempty, entityAdapterToDefinition = const $ error "nullEntityAdapter"}
 
 entityAdapterConvert :: EntityAdapter t -> t -> Entity
 entityAdapterConvert ea t =

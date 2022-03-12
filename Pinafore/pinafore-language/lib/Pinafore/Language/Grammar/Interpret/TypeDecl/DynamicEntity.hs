@@ -24,8 +24,8 @@ makeDynamicEntityTypeBox ::
        Name -> Markdown -> NonEmpty SyntaxDynamicEntityConstructor -> PinaforeInterpreter PinaforeTypeBox
 makeDynamicEntityTypeBox name doc stcons =
     return $ let
-        mktype :: DynamicEntityType -> PinaforeBoundType
-        mktype t = MkBoundType $ aDynamicEntityGroundType name t
+        mktype :: DynamicEntityType -> PinaforeInterpreter PinaforeBoundType
+        mktype t = return $ MkBoundType $ aDynamicEntityGroundType name t
         in mkTypeFixBox name doc mktype $ \_ -> do
                dt <- for stcons intepretSyntaxDynamicEntityConstructor
                let

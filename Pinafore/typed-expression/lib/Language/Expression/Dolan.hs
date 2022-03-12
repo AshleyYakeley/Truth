@@ -31,6 +31,7 @@ module Language.Expression.Dolan
     , covaryToDolanVarianceType
     , dolanVarianceToCovaryType
     , covaryToDolanVarianceMap
+    , dolanVarianceMapToCovary
     , DolanSingularType(..)
     , DolanType(..)
     , singleDolanType
@@ -52,7 +53,11 @@ module Language.Expression.Dolan
     , ccrArgumentsEndo
     , ccrArgumentsType
     , mapCCRArguments
+    , nilAnyCCRArguments
+    , consAnyCCRArguments
     , DolanArguments
+    , ccrArgumentsToShimArgumentsM
+    , ccrArgumentsToArgumentsM
     , DolanArgumentsShimWit
     , CCRPolarArgumentShimWit
     , mapDolanArgumentsFM

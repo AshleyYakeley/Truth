@@ -34,11 +34,11 @@ readDataTypeConstructor =
          readThis TokOf
          constructors <- readLines readDataTypeConstructor
          readThis TokEnd
-         return $ SubtypeSyntaxDatatypeConstructorOrSubtype name constructors) <|>
+         return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
          consName <- readThis TokUName
          mtypes <- many readType3
-         return $ ConstructorSyntaxDatatypeConstructorOrSubtype consName mtypes)
+         return $ ConstructorSyntaxConstructorOrSubtype consName mtypes ())
 
 readClosedTypeConstructor :: Parser SyntaxClosedEntityConstructorOrSubtype
 readClosedTypeConstructor =
@@ -49,12 +49,12 @@ readClosedTypeConstructor =
          readThis TokOf
          constructors <- readLines readClosedTypeConstructor
          readThis TokEnd
-         return $ SubtypeSyntaxClosedEntityConstructorOrSubtype name constructors) <|>
+         return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
          consName <- readThis TokUName
          mtypes <- many readType3
          anchor <- readThis TokAnchor
-         return $ ConstructorSyntaxClosedEntityConstructorOrSubtype consName mtypes anchor)
+         return $ ConstructorSyntaxConstructorOrSubtype consName mtypes anchor)
 
 readPositiveParameter :: Parser Name
 readPositiveParameter = do
@@ -66,28 +66,27 @@ readNegativeParameter = do
     readExactlyThis TokOperator "-"
     readTypeVar
 
-readDataTypeParameter :: Parser SyntaxDatatypeParameter
-readDataTypeParameter =
-    fmap PositiveSyntaxDatatypeParameter readPositiveParameter <|>
-    fmap NegativeSyntaxDatatypeParameter readNegativeParameter <|>
+readTypeParameter :: Parser SyntaxTypeParameter
+readTypeParameter =
+    fmap PositiveSyntaxTypeParameter readPositiveParameter <|> fmap NegativeSyntaxTypeParameter readNegativeParameter <|>
     (readBracketed TokOpenBrace TokCloseBrace $
      (do
           varp <- readNegativeParameter
           readThis TokComma
           varq <- readPositiveParameter
-          return $ RangeSyntaxDatatypeParameter varp varq) <|>
+          return $ RangeSyntaxTypeParameter varp varq) <|>
      (do
           varq <- readPositiveParameter
           readThis TokComma
           varp <- readNegativeParameter
-          return $ RangeSyntaxDatatypeParameter varp varq))
+          return $ RangeSyntaxTypeParameter varp varq))
 
 readDataTypeDeclaration :: Parser SyntaxDirectDeclaration
 readDataTypeDeclaration = do
     spos <- getPosition
     readThis TokDataType
     name <- readTypeNewName
-    parameters <- many readDataTypeParameter
+    parameters <- many readTypeParameter
     readThis TokOf
     constructors <- readLines readDataTypeConstructor
     readThis TokEnd
@@ -98,10 +97,11 @@ readClosedTypeDeclaration = do
     spos <- getPosition
     readThis TokClosedType
     name <- readTypeNewName
+    parameters <- many readTypeParameter
     readThis TokOf
     constructors <- readLines readClosedTypeConstructor
     readThis TokEnd
-    return $ TypeSyntaxDeclaration spos name $ ClosedEntitySyntaxTypeDeclaration constructors
+    return $ TypeSyntaxDeclaration spos name $ ClosedEntitySyntaxTypeDeclaration parameters constructors
 
 readDynamicTypeConstructor :: Parser SyntaxDynamicEntityConstructor
 readDynamicTypeConstructor =

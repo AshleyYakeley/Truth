@@ -15,7 +15,7 @@ import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Type
 import Shapes
 
-type OpenEntityType :: BigNat -> Type
+type OpenEntityType :: TNatural -> Type
 data OpenEntityType tid =
     MkOpenEntityType Name
                      (TypeIDType tid)
@@ -28,7 +28,7 @@ instance TestEquality OpenEntityType where
 instance ExprShow (OpenEntityType tid) where
     exprShowPrec (MkOpenEntityType n _) = exprShowPrec n
 
-type OpenEntity :: BigNat -> Type
+type OpenEntity :: TNatural -> Type
 newtype OpenEntity tid = MkOpenEntity
     { unOpenEntity :: Entity
     } deriving (Eq, Random)
@@ -45,9 +45,7 @@ openEntityFamily =
     MkEntityFamily openEntityFamilyWitness $ \(MkLiftedFamily oet :: _ t) -> let
         epKind = NilListType
         epCovaryMap = covarymap
-        epEq :: forall (ta :: Type). Arguments (MonoType EntityGroundType) t ta -> Dict (Eq ta)
-        epEq NilArguments = Dict
-        epAdapter :: forall ta. Arguments MonoEntityType t ta -> EntityAdapter ta
+        epAdapter :: forall ta. Arguments EntityAdapter t ta -> EntityAdapter ta
         epAdapter NilArguments = isoMap MkOpenEntity unOpenEntity plainEntityAdapter
         epShowType = exprShowPrec oet
         in Just $ MkSealedEntityProperties MkEntityProperties {..}

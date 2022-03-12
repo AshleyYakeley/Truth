@@ -5,116 +5,179 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.ClosedEntity
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
-import Pinafore.Language.Expression
-import Pinafore.Language.Grammar.Interpret.Type
-import Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
+import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
+import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Grammar.Interpret.TypeDecl.TypeBox
 import Pinafore.Language.Grammar.Syntax
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
 
--- data ClosedEntityConstructor t = MkClosedEntityConstructor Name Anchor (HListWit MonoEntityType t)
-data ClosedEntityType (t :: Type) where
-    NilClosedEntityType :: ClosedEntityType Void
-    ConsClosedEntityType
-        :: Name
-        -> Anchor
-        -> ListType MonoEntityType tl
-        -> ClosedEntityType tt
-        -> ClosedEntityType (Either (HList tl) tt)
+type ClosedEntityConstructor = Constructor (Name, Anchor) (HListWit PinaforeNonpolarType)
 
-instance TestEquality ClosedEntityType where
-    testEquality NilClosedEntityType NilClosedEntityType = Just Refl
-    testEquality (ConsClosedEntityType _ a1 l1 t1) (ConsClosedEntityType _ a2 l2 t2)
-        | a1 == a2 = do
-            Refl <- testEquality l1 l2
-            Refl <- testEquality t1 t2
-            Just Refl
-    testEquality _ _ = Nothing
+type CovParam :: CCRArgumentKind
+data CovParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
+    MkCovParam :: SymbolType n -> CovParam CoCCRVariance (UVarT n)
 
-instance Show (ClosedEntityType t) where
-    show NilClosedEntityType = "nil"
-    show (ConsClosedEntityType name a tt NilClosedEntityType) = show name <> " " <> show tt <> " " <> show a
-    show (ConsClosedEntityType name a tt rest) = show name <> " " <> show tt <> " " <> show a <> " | " <> show rest
+type CovParams :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
+type CovParams = CCRArguments CovParam
 
-closedEntityTypeEq :: ClosedEntityType t -> Dict (Eq t)
-closedEntityTypeEq NilClosedEntityType = Dict
-closedEntityTypeEq (ConsClosedEntityType _ _ t1 tr) =
-    case (hListEq monoEntityTypeEq t1, closedEntityTypeEq tr) of
-        (Dict, Dict) -> Dict
+paramsToCovParams :: CovaryType dv -> CCRTypeParams dv gt decltype -> CovParams dv gt decltype
+paramsToCovParams NilListType NilCCRArguments = NilCCRArguments
+paramsToCovParams (ConsListType Refl ct) (ConsCCRArguments (CoCCRTypeParam n) args) =
+    ConsCCRArguments (MkCovParam n) $ paramsToCovParams ct args
 
-closedEntityTypeAdapter :: ClosedEntityType t -> EntityAdapter t
-closedEntityTypeAdapter NilClosedEntityType = pNone
-closedEntityTypeAdapter (ConsClosedEntityType _ a cc rest) =
-    constructorEntityAdapter a (mapListType monoEntityAdapter cc) <+++> closedEntityTypeAdapter rest
+type WithArgs :: forall k. (Type -> Type) -> k -> Type
+newtype WithArgs f gt =
+    MkWithArgs (forall (ta :: Type). Arguments EntityAdapter gt ta -> f ta)
 
-closedTypeConstructors :: ClosedEntityType t -> [Constructor (HListWit MonoEntityType) t]
-closedTypeConstructors NilClosedEntityType = []
-closedTypeConstructors (ConsClosedEntityType name _ a1 ar) =
-    MkConstructor name (MkHListWit a1) leftCodec : fmap extendConstructor (closedTypeConstructors ar)
+assignArgumentParams ::
+       forall (f :: Type -> Type) dv (gt :: DolanVarianceKind dv) (decltype :: Type) (ta :: Type).
+       CovParams dv gt decltype
+    -> Arguments f gt ta
+    -> decltype :~: ta
+assignArgumentParams NilCCRArguments NilArguments = Refl
+assignArgumentParams (ConsCCRArguments (MkCovParam var) args) (ConsArguments arg args') =
+    assignUVarWit var arg $
+    case assignArgumentParams args args' of
+        Refl -> Refl
 
-interpretClosedEntityTypeConstructor ::
-       SyntaxClosedEntityConstructorOrSubtype -> PinaforeInterpreter (Name, Anchor, AnyW (ListType MonoEntityType))
-interpretClosedEntityTypeConstructor (ConstructorSyntaxClosedEntityConstructorOrSubtype consName stypes anchor) = do
-    etypes <- for stypes interpretMonoEntityType
-    return (consName, anchor, assembleListType etypes)
-interpretClosedEntityTypeConstructor (SubtypeSyntaxClosedEntityConstructorOrSubtype _subtypeName _conss) =
-    throw $ KnownIssueError 132 "Subtypes not supported in closed entity types"
+data Thing x decltype ta =
+    MkThing x
+            (decltype :~: ta)
 
-assembleClosedEntityType :: [(Name, Anchor, AnyW (ListType MonoEntityType))] -> AnyW ClosedEntityType
-assembleClosedEntityType [] = MkAnyW NilClosedEntityType
-assembleClosedEntityType ((n, a, MkAnyW el):cc) =
-    case assembleClosedEntityType cc of
-        MkAnyW ct -> MkAnyW $ ConsClosedEntityType n a el ct
+matchParamArgs ::
+       forall f dv (gt1 :: DolanVarianceKind dv) (gt2 :: DolanVarianceKind dv) ta.
+       CovParams dv gt1 ta
+    -> Arguments f gt2 ta
+    -> gt1 :~: gt2
+matchParamArgs NilCCRArguments NilArguments = Refl
+matchParamArgs (ConsCCRArguments _ args) (ConsArguments _ args') =
+    case matchParamArgs args args' of
+        Refl -> Refl
 
+lookupVar ::
+       forall f dv (gt :: DolanVarianceKind dv) name ta.
+       CovParams dv gt ta
+    -> SymbolType name
+    -> PinaforeInterpreter (Arguments f gt ta -> f (UVarT name))
+lookupVar NilCCRArguments var = throw $ InterpretTypeNotEntityError $ exprShow var
+lookupVar (ConsCCRArguments (MkCovParam var') params) var
+    | Just Refl <- testEquality var var' =
+        return $ \(ConsArguments ft args) ->
+            case matchParamArgs params args of
+                Refl -> ft
+lookupVar (ConsCCRArguments _ params) var = do
+    f <- lookupVar @f params var
+    return $ \(ConsArguments _ args) ->
+        case matchParamArgs params args of
+            Refl -> f args
+
+nonpolarToEntityAdapter ::
+       CovParams dv gt ta
+    -> PinaforeNonpolarType t
+    -> PinaforeInterpreter (Compose ((->) (Arguments EntityAdapter gt ta)) EntityAdapter t)
+nonpolarToEntityAdapter params (VarNonpolarType var) = fmap Compose $ lookupVar params var
+nonpolarToEntityAdapter params (GroundedNonpolarType ground args) = do
+    (cvt, MkEntityGroundType _ (MkSealedEntityProperties eprops)) <-
+        case dolanToMonoGroundType ground of
+            Nothing -> throw $ InterpretTypeNotEntityError $ showGroundType ground
+            Just x -> return x
+    aargs <- ccrArgumentsToArgumentsM (\(CoNonpolarArgument arg) -> nonpolarToEntityAdapter params arg) cvt args
+    return $ Compose $ \eargs -> epAdapter eprops $ mapArguments (\(Compose eaf) -> eaf eargs) aargs
+
+closedEntityConstructorAdapter ::
+       CovParams dv gt decltype
+    -> ListType PinaforeNonpolarType lt
+    -> PinaforeInterpreter (WithArgs (Thing (ListType EntityAdapter lt) decltype) gt)
+closedEntityConstructorAdapter params pts = do
+    ets <- mapMListType (nonpolarToEntityAdapter params) pts
+    return $
+        MkWithArgs $ \args ->
+            case assignArgumentParams params args of
+                Refl -> MkThing (mapListType (\(Compose f) -> f args) ets) Refl
+
+closedEntityTypeAdapter ::
+       CovParams dv gt decltype -> [ClosedEntityConstructor decltype] -> PinaforeInterpreter (WithArgs EntityAdapter gt)
+closedEntityTypeAdapter params conss = do
+    ff <-
+        for conss $ \(MkConstructor (_, anchor) (MkHListWit cc) codec) -> do
+            MkWithArgs wa <- closedEntityConstructorAdapter params cc
+            return $
+                MkWithArgs $ \args ->
+                    case wa args of
+                        MkThing tt Refl -> Compose $ Endo $ codecSum codec $ constructorEntityAdapter anchor tt
+    return $
+        MkWithArgs $ \args -> appEndo (mconcat $ fmap (\(MkWithArgs f) -> getCompose $ f args) ff) nullEntityAdapter
+
+makeClosedEntityGroundType ::
+       forall (dv :: DolanVariance) tid (gt :: DolanVarianceKind dv) (decltype :: Type).
+       (Is DolanVarianceType dv, IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid)
+    => Name
+    -> TypeIDType tid
+    -> CCRTypeParams dv gt decltype
+    -> Stages (DolanVarianceMap dv gt, [ClosedEntityConstructor decltype]) (PinaforeGroundType dv gt)
+makeClosedEntityGroundType name tidsym tparams = let
+    dvt = ccrArgumentsType tparams
+    mkx :: (DolanVarianceMap dv gt, [ClosedEntityConstructor decltype])
+        -> PinaforeInterpreter (DolanVarianceMap dv gt, WithArgs EntityAdapter gt)
+    mkx (dvm, conss) = do
+        cvt <-
+            case dolanVarianceToCovaryType dvt of
+                Just cvt -> return cvt
+                Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError name
+        let cparams = paramsToCovParams cvt tparams
+        adapter <- closedEntityTypeAdapter cparams conss
+        return (dvm, adapter)
+    mkgt :: (DolanVarianceMap dv gt, WithArgs EntityAdapter gt) -> PinaforeInterpreter (PinaforeGroundType dv gt)
+    mkgt ~(dvm, ~(MkWithArgs epAdapter)) = do
+        cvt <-
+            case dolanVarianceToCovaryType dvt of
+                Just cvt -> return cvt
+                Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError name
+        let
+            epKind :: CovaryType dv
+            epKind = cvt
+            epCovaryMap = dolanVarianceMapToCovary cvt $ lazyDolanVarianceMap dvt dvm
+            epShowType = standardListTypeExprShow @dv $ exprShow name
+            props :: EntityProperties dv gt
+            props = MkEntityProperties {..}
+        return $ closedEntityGroundType tidsym props
+    in MkStages mkx mkgt
+
+{-
+makeClosedEntityGroundType ::
+       forall (dv :: DolanVariance) tid (gt :: DolanVarianceKind dv) (decltype :: Type).
+       (Is DolanVarianceType dv, IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid)
+    => Name
+    -> TypeIDType tid
+    -> CCRTypeParams dv gt decltype
+    -> DolanVarianceMap dv gt
+    -> [ClosedEntityConstructor decltype]
+    -> PinaforeInterpreter (PinaforeGroundType dv gt)
+makeClosedEntityGroundType name tidsym tparams dvm conss = do
+    let dvt = ccrArgumentsType tparams
+    cvt <-
+        case dolanVarianceToCovaryType dvt of
+            Just cvt -> return cvt
+            Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError name
+    let
+        cparams = paramsToCovParams cvt tparams
+        epKind :: CovaryType dv
+        epKind = cvt
+        epCovaryMap = dolanVarianceMapToCovary cvt dvm
+        epShowType = standardListTypeExprShow @dv $ exprShow name
+    MkWithArgs epAdapter <- closedEntityTypeAdapter cparams conss
+    let
+        props :: EntityProperties dv gt
+        props = MkEntityProperties {..}
+    return $ closedEntityGroundType tidsym props
+-}
 makeClosedEntityTypeBox ::
-       Name -> Markdown -> [SyntaxClosedEntityConstructorOrSubtype] -> PinaforeInterpreter PinaforeTypeBox
-makeClosedEntityTypeBox name doc sconss =
-    newTypeID $ \(tidsym :: TypeIDType tid) ->
-        case unsafeIdentifyKind @_ @Type tidsym of
-            Identity Refl -> let
-                mktype cet = let
-                    epKind = NilListType
-                    epCovaryMap = covarymap
-                    epEq ::
-                           forall (ta :: Type).
-                           Arguments (MonoType EntityGroundType) (Identified tid) ta
-                        -> Dict (Eq ta)
-                    epEq NilArguments = closedEntityTypeEq cet
-                    epAdapter :: forall ta. Arguments MonoEntityType (Identified tid) ta -> EntityAdapter ta
-                    epAdapter NilArguments = closedEntityTypeAdapter cet
-                    epShowType = exprShowPrec name
-                    in closedEntityGroundType $
-                       MkClosedEntityFamily tidsym $ MkSealedEntityProperties MkEntityProperties {..}
-                in mkTypeFixBox name doc (MkBoundType . mktype) $ \_ -> do
-                       tconss <- for sconss interpretClosedEntityTypeConstructor
-                       case assembleClosedEntityType tconss of
-                           MkAnyW (ct :: ClosedEntityType t) -> do
-                               tident <- unsafeIdentify @_ @t tidsym
-                               let
-                                   conss = closedTypeConstructors ct
-                                   cti :: ClosedEntityType (Identified tid)
-                                   cti = (reflId $ applyRefl id $ invert tident) ct
-                                   ctf :: forall polarity. Is PolarityType polarity
-                                       => PinaforeShimWit polarity (Identified tid)
-                                   ctf =
-                                       singleDolanShimWit $
-                                       mkPolarShimWit $ GroundedDolanSingularType (mktype cti) NilCCRArguments
-                               patts <-
-                                   for conss $ \(MkConstructor cname (MkHListWit lt) codec) -> do
-                                       ltp <- return $ mapListType monoToPositiveDolanType lt
-                                       ltn <- mapMListType monoEntityToNegativePinaforeType lt
-                                       let
-                                           expr =
-                                               qConstExprAny $
-                                               MkAnyValue
-                                                   (qFunctionPosWitnesses
-                                                        ltn
-                                                        (mapPolarShimWit (reflId $ invert tident) ctf))
-                                                   (encode codec)
-                                           pc = toPatternConstructor ctf ltp $ decode codec . reflId tident
-                                       withNewPatternConstructor cname doc expr pc
-                               return (cti, mconcat patts)
+       Name
+    -> Markdown
+    -> [SyntaxTypeParameter]
+    -> [SyntaxClosedEntityConstructorOrSubtype]
+    -> PinaforeInterpreter PinaforeTypeBox
+makeClosedEntityTypeBox = makeDeclTypeBox makeClosedEntityGroundType

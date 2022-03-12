@@ -13,8 +13,7 @@ data EntityProperties dv gt = MkEntityProperties
     { epKind :: CovaryType dv
     , epShowType :: ListTypeExprShow dv
     , epCovaryMap :: CovaryMap gt
-    , epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) gt t -> Dict (Eq t)
-    , epAdapter :: forall t. Arguments MonoEntityType gt t -> EntityAdapter t
+    , epAdapter :: forall t. Arguments EntityAdapter gt t -> EntityAdapter t
     }
 
 type SealedEntityProperties :: forall k. k -> Type
@@ -65,7 +64,8 @@ instance IsCovaryGroundType EntityGroundType where
     groundTypeCovaryMap (MkEntityGroundType _ (MkSealedEntityProperties eprops)) = epCovaryMap eprops
 
 entityGroundTypeAdapter :: forall f t. EntityGroundType f -> Arguments MonoEntityType f t -> EntityAdapter t
-entityGroundTypeAdapter (MkEntityGroundType _ (MkSealedEntityProperties eprops)) = epAdapter eprops
+entityGroundTypeAdapter (MkEntityGroundType _ (MkSealedEntityProperties eprops)) args =
+    epAdapter eprops $ mapArguments monoEntityAdapter args
 
 data EntityFamily where
     MkEntityFamily
@@ -97,9 +97,7 @@ simplePinaforeEntityFamily gt adapter =
     pinaforeEntityFamily gt $ \epShowType -> let
         epKind = NilListType
         epCovaryMap = covarymap
-        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) gt t -> Dict (Eq t)
-        epEq NilArguments = Dict
-        epAdapter :: forall t. Arguments MonoEntityType gt t -> EntityAdapter t
+        epAdapter :: forall t. Arguments EntityAdapter gt t -> EntityAdapter t
         epAdapter NilArguments = adapter
         in MkEntityProperties {..}
 
@@ -120,12 +118,6 @@ instance ExprShow (MonoEntityType t) where
 
 instance Show (MonoEntityType t) where
     show t = unpack $ exprShow t
-
-instance WitnessConstraint Eq MonoEntityType where
-    witnessConstraint (MkMonoType (MkEntityGroundType _ (MkSealedEntityProperties eprops)) args) = epEq eprops args
-
-monoEntityTypeEq :: MonoEntityType t -> Dict (Eq t)
-monoEntityTypeEq = witnessConstraint
 
 monoEntityAdapter :: forall t. MonoEntityType t -> EntityAdapter t
 monoEntityAdapter (MkMonoType gt args) = entityGroundTypeAdapter gt args

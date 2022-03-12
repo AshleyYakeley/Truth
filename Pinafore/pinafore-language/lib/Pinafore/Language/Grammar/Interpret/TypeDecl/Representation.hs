@@ -1,14 +1,16 @@
 module Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
-    ( EqWitness
+    ( MaybeUnitWitness(..)
+    , EqWitness
     , leftCodec
     , extendRightCodec
     , TypeRepresentation(..)
     , getEnumTypeRepresentation
     , getListEnumTypeRepresentation
-    , getWitnessTypeRepresentation
-    , getWitnessTypeRepresentationEq
+    , getOpenWitnessTypeRepresentation
+    , getOpenWitnessTypeRepresentationEq
     , getEitherTypeRepresentation
     , getEitherTypeRepresentationEq
+    , getNaturalWitnessTypeRepresentation
     , getPreferredTypeRepresentation
     , getPreferredTypeRepresentationEq
     ) where
@@ -37,20 +39,32 @@ enumTypeRepresentation lt = let
                 (\() -> i)
     in MkTypeRepresentation (evalState (mapMListType getCodec lt) 0) mempty
 
-getEnumTypeRepresentation :: ListType ((:~:) ()) lt -> (forall t. (Eq t, Ord t) => TypeRepresentation lt t -> r) -> r
-getEnumTypeRepresentation lt call = call $ enumTypeRepresentation lt
+getEnumTypeRepresentation ::
+       ListType ((:~:) ()) lt
+    -> (forall w' t. (TestEquality w', Eq t, Ord t) => TypeRepresentation lt t -> (t -> AnyValue w') -> r)
+    -> r
+getEnumTypeRepresentation lt call = call (enumTypeRepresentation lt) (\i -> MkAnyValue Refl i)
+
+class MaybeUnitWitness w where
+    maybeUnitWitness :: forall t. w t -> Maybe (() :~: t)
+
+instance MaybeUnitWitness ((:~:) ()) where
+    maybeUnitWitness Refl = Just Refl
+
+instance MaybeUnitWitness (HListWit w) where
+    maybeUnitWitness (MkHListWit NilListType) = Just Refl
+    maybeUnitWitness (MkHListWit (ConsListType _ _)) = Nothing
 
 getListEnumTypeRepresentation ::
-       forall w lt r. ListType (HListWit w) lt -> (forall t. (Eq t, Ord t) => TypeRepresentation lt t -> r) -> Maybe r
+       forall w lt r. MaybeUnitWitness w
+    => ListType w lt
+    -> (forall w' t. (TestEquality w', Eq t, Ord t) => TypeRepresentation lt t -> (t -> AnyValue w') -> r)
+    -> Maybe r
 getListEnumTypeRepresentation lt call = do
-    let
-        getEU :: forall t. HListWit w t -> Maybe (() :~: t)
-        getEU (MkHListWit NilListType) = Just Refl
-        getEU _ = Nothing
-    ltu <- mapMListType getEU lt
+    ltu <- mapMListType maybeUnitWitness lt
     return $ getEnumTypeRepresentation ltu call
 
-witnessRepCodec :: TestEquality ow => ow a -> Codec (AnyValue ow) a
+witnessRepCodec :: TestEquality w => w a -> Codec (AnyValue w) a
 witnessRepCodec wit = MkCodec (matchAnyValue wit) (MkAnyValue wit)
 
 witnessTypeRepresentation ::
@@ -60,37 +74,45 @@ witnessTypeRepresentation ::
     -> m (TypeRepresentation lt (AnyValue ow))
 witnessTypeRepresentation newWit lt = do
     let
-        getCodec :: forall t. w t -> WriterT (WitnessFDict ow VarMapping) m (Codec (AnyValue ow) t)
+        getCodec :: forall t. w t -> WriterT [AnyF ow VarMapping] m (Codec (AnyValue ow) t)
         getCodec wt = do
             wit <- lift $ newWit wt
-            tell $ witnessFDictSingle wit $ getVarMapping wt
+            tell $ pure $ MkAnyF wit $ getVarMapping wt
             return $ witnessRepCodec wit
-    (codecs, fdict) <- runWriterT (mapMListType getCodec lt)
-    return $
-        MkTypeRepresentation codecs $
-        MkVarMapping $ \v n -> do
-            mdict <- witnessFDictMapM (\(MkVarMapping gm) -> gm v n) fdict
-            return $
-                dependentMapping $ \(MkAnyValue wit a) ->
-                    MkDependentMapping a (MkAnyValue wit) $
-                    fromMaybe (error "missing mapping") $ witnessFDictLookup wit mdict
+    (codecs, vmaps) <- runWriterT (mapMListType getCodec lt)
+    return $ MkTypeRepresentation codecs $ dependentVarMapping vmaps
 
-getWitnessTypeRepresentation ::
+naturalWitnessTypeRepresentation ::
+       forall w lt. HasVarMapping w
+    => ListType w lt
+    -> TypeRepresentation lt (AnyValue (NaturalListElementType lt))
+naturalWitnessTypeRepresentation lt =
+    runIdentity $
+    witnessTypeRepresentation (\(MkPairType _ n) -> Identity n) $ pairListType lt $ naturalCountListType lt
+
+getNaturalWitnessTypeRepresentation ::
        forall w lt r. HasVarMapping w
     => ListType w lt
-    -> (forall t. TypeRepresentation lt t -> r)
+    -> (forall w' t. TestEquality w' => TypeRepresentation lt t -> (t -> AnyValue w') -> r)
     -> r
-getWitnessTypeRepresentation lt call =
+getNaturalWitnessTypeRepresentation lt call = call (naturalWitnessTypeRepresentation lt) id
+
+getOpenWitnessTypeRepresentation ::
+       forall w lt r. HasVarMapping w
+    => ListType w lt
+    -> (forall w' t. TestEquality w' => TypeRepresentation lt t -> (t -> AnyValue w') -> r)
+    -> r
+getOpenWitnessTypeRepresentation lt call =
     runOW $ do
         tr <- witnessTypeRepresentation (\_ -> newOpenWitnessOW) lt
-        return $ call tr
+        return $ call tr id
 
-getWitnessTypeRepresentationEq ::
+getOpenWitnessTypeRepresentationEq ::
        forall w lt r. (WitnessConstraint Eq w, HasVarMapping w)
     => ListType w lt
-    -> (forall t. Eq t => TypeRepresentation lt t -> r)
+    -> (forall w' t. (TestEquality w', Eq t) => TypeRepresentation lt t -> (t -> AnyValue w') -> r)
     -> r
-getWitnessTypeRepresentationEq lt call =
+getOpenWitnessTypeRepresentationEq lt call =
     runOW $ do
         tr <-
             witnessTypeRepresentation
@@ -98,7 +120,7 @@ getWitnessTypeRepresentationEq lt call =
                      ow <- newOpenWitnessOW
                      return $ MkPairType ow wt)
                 lt
-        return $ call tr
+        return $ call tr id
 
 leftCodec :: Codec (Either b a) b
 leftCodec = MkCodec eitherLeft Left
@@ -129,21 +151,21 @@ getEitherTypeRepresentationEq lt call =
         Dict -> call $ eitherTypeRepresentation lt
 
 getPreferredTypeRepresentation ::
-       forall w lt r. HasVarMapping w
-    => ListType (HListWit w) lt
-    -> (forall t. TypeRepresentation lt t -> r)
+       forall w lt r. (MaybeUnitWitness w, HasVarMapping w)
+    => ListType w lt
+    -> (forall w' t. TestEquality w' => TypeRepresentation lt t -> (t -> AnyValue w') -> r)
     -> r
 getPreferredTypeRepresentation lt call =
     case getListEnumTypeRepresentation lt call of
-        Nothing -> getWitnessTypeRepresentation lt call
+        Nothing -> getOpenWitnessTypeRepresentation lt call
         Just rt -> rt
 
 getPreferredTypeRepresentationEq ::
-       forall w lt r. (WitnessConstraint Eq w, HasVarMapping w)
-    => ListType (HListWit w) lt
-    -> (forall t. Eq t => TypeRepresentation lt t -> r)
+       forall w lt r. (MaybeUnitWitness w, WitnessConstraint Eq w, HasVarMapping w)
+    => ListType w lt
+    -> (forall w' t. (TestEquality w', Eq t) => TypeRepresentation lt t -> (t -> AnyValue w') -> r)
     -> r
 getPreferredTypeRepresentationEq lt call =
     case getListEnumTypeRepresentation lt call of
-        Nothing -> getWitnessTypeRepresentationEq lt call
+        Nothing -> getOpenWitnessTypeRepresentationEq lt call
         Just rt -> rt

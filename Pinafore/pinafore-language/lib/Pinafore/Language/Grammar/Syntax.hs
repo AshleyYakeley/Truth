@@ -8,27 +8,24 @@ import Pinafore.Markdown
 import Shapes
 import Text.Parsec (SourcePos)
 
-data SyntaxClosedEntityConstructorOrSubtype
-    = ConstructorSyntaxClosedEntityConstructorOrSubtype Name
-                                                        [SyntaxType]
-                                                        Anchor
-    | SubtypeSyntaxClosedEntityConstructorOrSubtype Name
-                                                    [SyntaxClosedEntityConstructorOrSubtype]
+data SyntaxConstructorOrSubtype extra
+    = ConstructorSyntaxConstructorOrSubtype Name
+                                            [SyntaxType]
+                                            extra
+    | SubtypeSyntaxConstructorOrSubtype Name
+                                        [SyntaxConstructorOrSubtype extra]
     deriving (Eq)
 
-data SyntaxDatatypeParameter
-    = PositiveSyntaxDatatypeParameter Name
-    | NegativeSyntaxDatatypeParameter Name
-    | RangeSyntaxDatatypeParameter Name
-                                   Name -- negative, positive
+type SyntaxClosedEntityConstructorOrSubtype = SyntaxConstructorOrSubtype Anchor
+
+data SyntaxTypeParameter
+    = PositiveSyntaxTypeParameter Name
+    | NegativeSyntaxTypeParameter Name
+    | RangeSyntaxTypeParameter Name
+                               Name -- negative, positive
     deriving (Eq)
 
-data SyntaxDatatypeConstructorOrSubtype
-    = ConstructorSyntaxDatatypeConstructorOrSubtype Name
-                                                    [SyntaxType]
-    | SubtypeSyntaxDatatypeConstructorOrSubtype Name
-                                                [SyntaxDatatypeConstructorOrSubtype]
-    deriving (Eq)
+type SyntaxDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 
 data SyntaxDynamicEntityConstructor
     = AnchorSyntaxDynamicEntityConstructor Anchor
@@ -36,8 +33,9 @@ data SyntaxDynamicEntityConstructor
     deriving (Eq)
 
 data SyntaxTypeDeclaration
-    = ClosedEntitySyntaxTypeDeclaration [SyntaxClosedEntityConstructorOrSubtype]
-    | DatatypeSyntaxTypeDeclaration [SyntaxDatatypeParameter]
+    = ClosedEntitySyntaxTypeDeclaration [SyntaxTypeParameter]
+                                        [SyntaxClosedEntityConstructorOrSubtype]
+    | DatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
                                     [SyntaxDatatypeConstructorOrSubtype]
     | OpenEntitySyntaxTypeDeclaration
     | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)

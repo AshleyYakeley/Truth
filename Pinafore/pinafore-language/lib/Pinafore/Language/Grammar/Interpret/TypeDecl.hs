@@ -19,7 +19,8 @@ import Shapes
 
 typeDeclarationTypeBox :: Name -> Markdown -> SyntaxTypeDeclaration -> PinaforeInterpreter PinaforeTypeBox
 typeDeclarationTypeBox name doc OpenEntitySyntaxTypeDeclaration = makeOpenEntityTypeBox name doc
-typeDeclarationTypeBox name doc (ClosedEntitySyntaxTypeDeclaration sconss) = makeClosedEntityTypeBox name doc sconss
+typeDeclarationTypeBox name doc (ClosedEntitySyntaxTypeDeclaration params sconss) =
+    makeClosedEntityTypeBox name doc params sconss
 typeDeclarationTypeBox name doc (DatatypeSyntaxTypeDeclaration params sconss) = makeDataTypeBox name doc params sconss
 typeDeclarationTypeBox name doc (DynamicEntitySyntaxTypeDeclaration stcons) = makeDynamicEntityTypeBox name doc stcons
 

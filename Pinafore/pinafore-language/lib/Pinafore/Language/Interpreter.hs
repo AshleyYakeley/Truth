@@ -369,17 +369,20 @@ newTypeID call = do
     putD typeIDRef $ succTypeID tid
     return $ valueToWitness tid call
 
-registerType :: Name -> Markdown -> BoundType ts -> WMFunction (Interpreter ts) (Interpreter ts)
-registerType name doc t =
+registerType :: Name -> Markdown -> Interpreter ts (BoundType ts) -> WMFunction (Interpreter ts) (Interpreter ts)
+registerType name doc mt =
     MkWMFunction $ \mta -> do
         mnt <- lookupBoundTypeM $ UnqualifiedReferenceName name
         case mnt of
             Just _ -> throw $ DeclareTypeDuplicateError name
-            Nothing -> withNewBinding name (doc, TypeBinding t) mta
+            Nothing -> do
+                t <- mt
+                withNewBinding name (doc, TypeBinding t) mta
 
 type TypeFixBox ts = FixBox (Interpreter ts)
 
-mkTypeFixBox :: Name -> Markdown -> (t -> BoundType ts) -> (a -> Interpreter ts (t, b)) -> TypeFixBox ts a b
+mkTypeFixBox ::
+       Name -> Markdown -> (t -> Interpreter ts (BoundType ts)) -> (a -> Interpreter ts (t, b)) -> TypeFixBox ts a b
 mkTypeFixBox name doc ttype = mkFixBox (\t -> registerType name doc $ ttype t)
 
 runWriterInterpreterMF ::

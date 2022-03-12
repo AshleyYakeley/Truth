@@ -4,6 +4,7 @@ module Pinafore.Language.Type.Show where
 
 import qualified Data.List as List
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Language.ExprShow
 import Shapes
@@ -56,6 +57,14 @@ saturatedGroundTypeShowPrec avar gt = let
     allVarArguments (ConsListType svt dvt) call =
         singleVarArgument @polarity svt $ \arg -> allVarArguments dvt $ \args -> call $ ConsCCRArguments arg args
     in allVarArguments @'Positive (groundTypeVarianceType gt) $ \args -> groundTypeShowPrec gt args
+
+showGroundType ::
+       forall (ground :: GroundTypeKind) dv gt. (IsDolanGroundType ground, GroundExprShow ground)
+    => ground dv gt
+    -> Text
+showGroundType t =
+    newUVar "_" $ \var ->
+        fst $ saturatedGroundTypeShowPrec @ground (MkAnyW $ singleDolanType @ground $ VarDolanSingularType var) t
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (DolanSingularType ground polarity t) where

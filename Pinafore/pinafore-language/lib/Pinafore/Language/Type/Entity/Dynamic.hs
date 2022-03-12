@@ -101,9 +101,7 @@ aDynamicEntityEntityFamily =
         epKind = NilListType
         epCovaryMap :: CovaryMap DynamicEntity
         epCovaryMap = covarymap
-        epEq :: forall (ta :: Type). Arguments (MonoType EntityGroundType) DynamicEntity ta -> Dict (Eq ta)
-        epEq NilArguments = Dict
-        epAdapter :: forall ta. Arguments MonoEntityType DynamicEntity ta -> EntityAdapter ta
+        epAdapter :: forall ta. Arguments EntityAdapter DynamicEntity ta -> EntityAdapter ta
         epAdapter NilArguments = dynamicEntityAdapter $ Just dt
         epShowType = exprShowPrec name
         in Just $ MkSealedEntityProperties MkEntityProperties {..}

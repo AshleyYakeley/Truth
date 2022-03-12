@@ -5,6 +5,7 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
     , HasVarMapping(..)
     , DependentMapping(..)
     , dependentMapping
+    , dependentVarMapping
     ) where
 
 import Data.Shim
@@ -112,6 +113,10 @@ getArgumentsMapping (ConsDolanVarianceMap ccrv dvm) (ConsCCRArguments arg args) 
 class HasVarMapping w where
     getVarMapping :: w t -> VarMapping t
 
+instance HasVarMapping w => HasVarMapping (HListWit w) where
+    getVarMapping (MkHListWit NilListType) = pUnit
+    getVarMapping (MkHListWit (ConsListType t1 tr)) = getVarMapping t1 <***> getVarMapping (MkHListWit tr)
+
 instance HasVarMapping w1 => HasVarMapping (PairType w1 w2) where
     getVarMapping (MkPairType w _) = getVarMapping w
 
@@ -132,6 +137,11 @@ dependentMapping tdm =
             case tdm t of
                 MkDependentMapping a at (MkMapping (Kleisli f)) -> at (appEndo (f vv) a)
 
-instance HasVarMapping w => HasVarMapping (HListWit w) where
-    getVarMapping (MkHListWit NilListType) = pUnit
-    getVarMapping (MkHListWit (ConsListType t1 tr)) = getVarMapping t1 <***> getVarMapping (MkHListWit tr)
+dependentVarMapping :: TestEquality w => [AnyF w VarMapping] -> VarMapping (AnyValue w)
+dependentVarMapping vmaps =
+    MkVarMapping $ \v n -> do
+        mdict <- witnessFDictMapM (\(MkVarMapping gm) -> gm v n) $ witnessFDictFromList vmaps
+        return $
+            dependentMapping $ \(MkAnyValue wit a) ->
+                MkDependentMapping a (MkAnyValue wit) $
+                fromMaybe (error "missing mapping") $ witnessFDictLookup wit mdict

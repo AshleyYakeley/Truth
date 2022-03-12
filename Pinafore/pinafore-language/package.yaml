@@ -86,6 +86,7 @@ library:
       - Pinafore.Language.Grammar.Interpret.TypeDecl.TypeBox
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
+      - Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Data
       - Pinafore.Language.Grammar.Interpret.TypeDecl.ClosedEntity
       - Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity

@@ -11,7 +11,7 @@ import Options.Applicative.Types as OA
 import Pinafore.Options
 import Shapes
 
-remainingParser :: Mod CommandFields a -> Parser (String, [String])
+remainingParser :: OA.Mod CommandFields a -> Parser (String, [String])
 remainingParser (Mod _ _ modprops) = let
     remainingParserInfo :: ParserInfo [String]
     remainingParserInfo = (info (many $ strArgument mempty) mempty) {infoPolicy = AllPositionals}
