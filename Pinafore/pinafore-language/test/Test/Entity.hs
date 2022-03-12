@@ -888,7 +888,8 @@ testEntity =
                             testExpectSuccess "if sd == \"45;72;18;\" then pass else fail sd"
                           ]
                     ]
-              , tGroup
+              , tModify (ignoreTestBecause "ISSUE #132") $
+                tGroup
                     "subtype"
                     [ testExpectSuccess "let datatype L of LNil; subtype datatype L1 of LCons Unit L end end in pass"
                     , testExpectSuccess
@@ -925,6 +926,24 @@ testEntity =
                           "let closedtype P of P1 Integer !\"P1\" end; closedtype Q of Q1 Integer !\"Q1\" end; f : P -> Q; f x = x in pass"
                     ]
               , tGroup
+                    "parameters"
+                    [ testExpectSuccess
+                          "let closedtype P +a of P1 !\"P1\" end; f : P Integer -> P Integer; f x = x in pass"
+                    , testExpectReject
+                          "let closedtype P -a of P1 !\"P1\" end; f : P Integer -> P Integer; f x = x in pass"
+                    , testExpectReject
+                          "let closedtype P a of P1 !\"P1\" end; f : P Integer -> P Integer; f x = x in pass"
+                    , testExpectSuccess
+                          "let closedtype P +a of P1 a !\"P1\" end; f : P Integer -> P Integer; f x = x in pass"
+                    , testExpectSuccess
+                          "let closedtype P +a of P1 a !\"P1\" end; f : P Integer -> Integer; f (P1 x) = x in pass"
+                    , testExpectSuccess "let closedtype P of P1 !\"P1\" end; f : P -> Entity; f x = x in pass"
+                    , testExpectSuccess
+                          "let closedtype P +a of P1 a !\"P1\" end; f : P Entity -> Entity; f x = x in pass"
+                    , testExpectSuccess
+                          "let closedtype P +a +b of P1 a b !\"P1\" end; f : P Entity Entity -> Entity; f x = x in pass"
+                    ]
+              , tGroup
                     "recursive"
                     [ testExpectSuccess
                           "let closedtype P of P1 !\"P1\" end in let closedtype Q of Q1 P !\"Q1\" end in pass"
@@ -935,6 +954,21 @@ testEntity =
                     , testExpectSuccess
                           "let rec closedtype P of P1 Q !\"P1\" end; closedtype Q of Q1 P !\"Q1\" end end in pass"
                     , testExpectSuccess "let rec closedtype P of P1 P !\"P1\" end end in pass"
+                    , testExpectSuccess "let rec closedtype P +a of P1 (P (a :*: a)) !\"P1\" end end in pass"
+                    , tDecls
+                          [ "rec closedtype L +a of Nil !\"Nil\"; Cons a (L a) !\"Cons\" end end"
+                          , "rec listToL: List a -> L a; listToL = \\case [] => Nil; x::xs => Cons x (listToL xs) end end"
+                          , "rec lToList: L a -> List a; lToList = \\case Nil => []; Cons x xs => x :: lToList xs end end"
+                          ] $
+                      tGroup
+                          "list"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess "let l = listToL [1,2,3] in pass"
+                          , testExpectSuccess "let l = listToL [1,2,3] in testeq {lToList l} {[1,2,3]}"
+                          , testExpectSuccess "testeq {lToList $ listToL [1,2,3]} {[1,2,3]}"
+                          , testExpectSuccess "testeq {listToL [1,2,3]} {Cons 1 (Cons 2 (Cons 3 Nil))}"
+                          , testExpectSuccess "testeq {lToList $ Cons 1 $ Cons 2 $ Cons 3 Nil} {[1,2,3]}"
+                          ]
                     ]
               ]
         , tGroup

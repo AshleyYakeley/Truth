@@ -95,7 +95,7 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 `+a :*: +b`  
 
-`Entity :*: <: Entity`.
+`Entity :*: Entity <: Entity`.
 
 There are no higher-arity tuples than pair.
 
@@ -119,6 +119,7 @@ There are no higher-arity tuples than pair.
 Closed entity types can be declared with the `closedtype` keyword.
 The declaration specifies the constructors of the type.
 They are similar to data types, but each constructor has an anchor, and field types are all subtypes of `Entity`.
+Like data types, closed entity types can have type parameters, but they must all be covariant.
 
 Each constructor has a name, a list of zero or more types (each a subtype of `Entity`), and an anchor.
 

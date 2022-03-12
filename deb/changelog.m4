@@ -8,7 +8,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . declarations now non-recursive, with recursive rec-blocks
       . "expose" declarations
       . allow declaration documentation with #| and {#| #} comments
-    - datatype declarations can have parameters
+    - datatype and closedtype declarations can have parameters
     - import lists
     - syntax
       . type names (:+:), (:*:), List, Unit

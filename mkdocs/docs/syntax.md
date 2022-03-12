@@ -176,7 +176,7 @@ All declarations, including type declarations, are local to a `let` block.
     "datatype" <type-const> <datatype-parameters> "of" <datatype-body> "end" |
     "opentype" <type-const> |
     "subtype" <type-const> "<:" <type-const> |
-    "closedtype" <type-const> "of" <closedtype-body> "end" |
+    "closedtype" <type-const> <closedtype-parameters> "of" <closedtype-body> "end" |
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
 
@@ -210,6 +210,10 @@ All declarations, including type declarations, are local to a `let` block.
 <datatype-constructor> ::=
     uname <types> |
     "subtype" "datatype" <type-const> "of" <datatype-body> "end"
+
+<closedtype-parameters> ::=  | <closedtype-parameter> <closedtype-parameters>
+
+<closedtype-parameter> ::= "+" lname
 
 <closedtype-body> ::=  | <closedtype-constructors>
 
