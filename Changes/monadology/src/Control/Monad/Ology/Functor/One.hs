@@ -31,6 +31,22 @@ instance (FunctorOne f1, FunctorOne f2) => FunctorOne (Compose f1 f2) where
     fpure a = Compose $ fpure $ fpure a
     fextractm (Compose ffa) = fextractm ffa >>= fextractm
 
+instance FunctorOne m => FunctorOne (MaybeT m) where
+    fpure a = MaybeT $ fpure $ Just a
+    fextractm (MaybeT mma) = do
+        ma <- fextractm mma
+        ma
+
+instance FunctorOne m => FunctorOne (ExceptT e m) where
+    fpure a = ExceptT $ fpure $ Right a
+    fextractm (ExceptT mea) = do
+        ea <- fextractm mea
+        fextractm ea
+
+instance (FunctorOne m, Monoid w) => FunctorOne (WriterT w m) where
+    fpure a = WriterT $ fpure (a, mempty)
+    fextractm (WriterT maw) = fmap fst $ fextractm maw
+
 class FunctorOne f => FunctorExtract f where
     -- | must satisfy @fextract . fpure = id@, @fextractm = Just . fextract@
     fextract :: forall a. f a -> a

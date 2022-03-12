@@ -1,6 +1,7 @@
 module Control.Monad.Ology.Compose where
 
 import Control.Monad.Ology.Functor.MonadOne
+import Control.Monad.Ology.Functor.One
 import Control.Monad.Ology.Result
 import Control.Monad.Ology.Trans.Constraint
 import Control.Monad.Ology.Trans.Stack
@@ -11,6 +12,12 @@ type ComposeM :: (Type -> Type) -> (Type -> Type) -> Type -> Type
 newtype ComposeM inner outer a = MkComposeM
     { getComposeM :: outer (inner a)
     }
+
+instance (Foldable inner, Foldable outer, Functor outer) => Foldable (ComposeM inner outer) where
+    foldMap am (MkComposeM oia) = foldMap id $ fmap (foldMap am) oia
+
+instance (Traversable inner, Traversable outer) => Traversable (ComposeM inner outer) where
+    traverse afb (MkComposeM oia) = fmap MkComposeM $ traverse (traverse afb) oia
 
 instance (Functor inner, Functor outer) => Functor (ComposeM inner outer) where
     fmap ab (MkComposeM oia) = MkComposeM $ fmap (fmap ab) oia
@@ -43,6 +50,21 @@ instance (MonadOne inner, Monad outer) => Monad (ComposeM inner outer) where
                     ib <- getComposeM $ p a
                     return $ ia >> ib
                 FailureResult ix -> return $ fmap absurd ix
+
+instance (FunctorOne inner, FunctorOne outer) => FunctorOne (ComposeM inner outer) where
+    fpure a = MkComposeM $ fpure $ fpure a
+    fextractm (MkComposeM oia) = do
+        ia <- fextractm oia
+        fextractm ia
+
+instance (MonadOne inner, MonadOne outer) => MonadOne (ComposeM inner outer) where
+    retrieveOne (MkComposeM oia) =
+        case retrieveOne oia of
+            SuccessResult ia ->
+                case retrieveOne ia of
+                    SuccessResult a -> SuccessResult a
+                    FailureResult iv -> FailureResult $ MkComposeM $ pure iv
+            FailureResult ov -> FailureResult $ MkComposeM $ fmap pure ov
 
 instance (MonadOne inner, MonadFix outer) => MonadFix (ComposeM inner outer) where
     mfix ama =

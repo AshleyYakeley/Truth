@@ -59,3 +59,9 @@ instance Monoid p => MonadOne ((,) p) where
 instance MonadOne (Result e) where
     retrieveOne (SuccessResult a) = SuccessResult a
     retrieveOne (FailureResult e) = FailureResult (FailureResult e)
+
+instance (MonadOne m, Monoid w) => MonadOne (WriterT w m) where
+    retrieveOne (WriterT maw) =
+        case retrieveOne maw of
+            SuccessResult (a, _) -> SuccessResult a
+            FailureResult mv -> FailureResult $ WriterT $ fmap absurd mv
