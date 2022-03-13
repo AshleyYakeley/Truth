@@ -11,7 +11,7 @@ testLength =
     testTree "length" $ do
         anchor :: Anchor <- randomIO
         let bs = encodeM anchorCodec anchor
-        assertEqual "length" 32 $ olength bs
+        assertEqual "length" (hashSize @Anchor) $ olength bs
 
 testEncodeDecode :: TestTree
 testEncodeDecode =
