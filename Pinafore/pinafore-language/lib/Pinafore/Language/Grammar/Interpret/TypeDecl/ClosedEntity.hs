@@ -146,34 +146,6 @@ makeClosedEntityGroundType name tidsym tparams = let
         return $ closedEntityGroundType tidsym props
     in MkStages mkx mkgt
 
-{-
-makeClosedEntityGroundType ::
-       forall (dv :: DolanVariance) tid (gt :: DolanVarianceKind dv) (decltype :: Type).
-       (Is DolanVarianceType dv, IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid)
-    => Name
-    -> TypeIDType tid
-    -> CCRTypeParams dv gt decltype
-    -> DolanVarianceMap dv gt
-    -> [ClosedEntityConstructor decltype]
-    -> PinaforeInterpreter (PinaforeGroundType dv gt)
-makeClosedEntityGroundType name tidsym tparams dvm conss = do
-    let dvt = ccrArgumentsType tparams
-    cvt <-
-        case dolanVarianceToCovaryType dvt of
-            Just cvt -> return cvt
-            Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError name
-    let
-        cparams = paramsToCovParams cvt tparams
-        epKind :: CovaryType dv
-        epKind = cvt
-        epCovaryMap = dolanVarianceMapToCovary cvt dvm
-        epShowType = standardListTypeExprShow @dv $ exprShow name
-    MkWithArgs epAdapter <- closedEntityTypeAdapter cparams conss
-    let
-        props :: EntityProperties dv gt
-        props = MkEntityProperties {..}
-    return $ closedEntityGroundType tidsym props
--}
 makeClosedEntityTypeBox ::
        Name
     -> Markdown

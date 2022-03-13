@@ -101,11 +101,11 @@ nilSubtypeRelationEntry ta tb conv =
     pure $ simpleSubtypeConversionEntry ta tb $ nilSubtypeConversion conv
 
 -- | The 'Monoid' trick of representing @Monoid T@ as @[T] <: T@.
-monoidSubypeConversionEntry ::
+monoidSubtypeConversionEntry ::
        forall dv gt. Is (SaturatedConstraintWitness Monoid) gt
     => PinaforeGroundType dv gt
     -> SubtypeConversionEntry PinaforeGroundType
-monoidSubypeConversionEntry t =
+monoidSubtypeConversionEntry t =
     simpleSubtypeConversionEntry listGroundType t $
     MkSubtypeConversion $ \sc (ConsCCRArguments (CoCCRPolarArgument (ta :: _ pola _)) NilCCRArguments) -> do
         margs <- saturateGroundType t

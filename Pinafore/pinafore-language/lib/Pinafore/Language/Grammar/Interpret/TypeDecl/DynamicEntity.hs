@@ -37,7 +37,7 @@ makeDynamicEntityTypeBox name doc stcons =
                    MkWMFunction $
                    withSubtypeConversions $
                    pure $
-                   MkSubypeConversionEntry tp $ \t -> do
+                   MkSubtypeConversionEntry tp $ \t -> do
                        Refl <- testEquality (pgtVarianceType t) NilListType
                        MkADynamicEntityFamily _ dts' <- matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType t
                        ifpure (isSubsetOf dts' dts) idSubtypeConversion

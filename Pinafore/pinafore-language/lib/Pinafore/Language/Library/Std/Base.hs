@@ -576,7 +576,7 @@ baseLibEntries =
                 ""
                 [ mkSubtypeRelationEntry "(any closed entity type)" (fst $ pgtShowType entityGroundType) "" $
                   pure $
-                  MkSubypeConversionEntry entityGroundType $ \MkPinaforeGroundType {..} -> do
+                  MkSubtypeConversionEntry entityGroundType $ \MkPinaforeGroundType {..} -> do
                       Refl <- testEquality pgtVarianceType NilListType
                       MkClosedEntityFamily _ (MkSealedEntityProperties eprops) <-
                           matchFamilyType closedEntityFamilyWitness pgtFamilyType
@@ -589,7 +589,7 @@ baseLibEntries =
                 ""
                 [ mkSubtypeRelationEntry "(any open entity type)" (fst $ pgtShowType entityGroundType) "" $
                   pure $
-                  MkSubypeConversionEntry entityGroundType $ \MkPinaforeGroundType {..} -> do
+                  MkSubtypeConversionEntry entityGroundType $ \MkPinaforeGroundType {..} -> do
                       Refl <- testEquality pgtVarianceType NilListType
                       MkLiftedFamily _ <- matchFamilyType openEntityFamilyWitness pgtFamilyType
                       return $ nilSubtypeConversion $ coerceShim "OpenEntity"
@@ -628,7 +628,7 @@ baseLibEntries =
                 [ mkTypeEntry "DynamicEntity" "" $ MkBoundType dynamicEntityGroundType
                 , mkSubtypeRelationEntry "(any dynamic entity type)" (fst $ pgtShowType dynamicEntityGroundType) "" $
                   pure $
-                  MkSubypeConversionEntry dynamicEntityGroundType $ \MkPinaforeGroundType {..} -> do
+                  MkSubtypeConversionEntry dynamicEntityGroundType $ \MkPinaforeGroundType {..} -> do
                       Refl <- testEquality pgtVarianceType NilListType
                       MkADynamicEntityFamily _ _ <- matchFamilyType aDynamicEntityFamilyWitness pgtFamilyType
                       return $ nilSubtypeConversion id

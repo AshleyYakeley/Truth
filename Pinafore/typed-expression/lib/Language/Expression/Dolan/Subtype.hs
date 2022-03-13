@@ -230,9 +230,9 @@ composeSubtypeConversion (MkSubtypeConversion bc) (MkSubtypeConversion ab) =
 
 type SubtypeConversionEntry :: GroundTypeKind -> Type
 data SubtypeConversionEntry ground =
-    forall dvb gtb. MkSubypeConversionEntry (ground dvb gtb)
-                                            (forall dva gta.
-                                                     ground dva gta -> Maybe (SubtypeConversion ground dva gta dvb gtb))
+    forall dvb gtb. MkSubtypeConversionEntry (ground dvb gtb)
+                                             (forall dva gta.
+                                                      ground dva gta -> Maybe (SubtypeConversion ground dva gta dvb gtb))
 
 simpleSubtypeConversionEntry ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanGroundType ground
@@ -241,7 +241,7 @@ simpleSubtypeConversionEntry ::
     -> SubtypeConversion ground dva gta dvb gtb
     -> SubtypeConversionEntry ground
 simpleSubtypeConversionEntry ta tb conv =
-    MkSubypeConversionEntry tb $ \ta' -> do
+    MkSubtypeConversionEntry tb $ \ta' -> do
         (Refl, HRefl) <- groundTypeTestEquality ta ta'
         return conv
 
@@ -258,7 +258,7 @@ matchSupertype ::
     => SubtypeConversionEntry ground
     -> SubtypeConversionWit ground dva gta
     -> Maybe (SubtypeConversionWit ground dva gta)
-matchSupertype (MkSubypeConversionEntry tb f) (MkSubtypeConversionWit ta conv) = do
+matchSupertype (MkSubtypeConversionEntry tb f) (MkSubtypeConversionWit ta conv) = do
     convE <- f ta
     return $ MkSubtypeConversionWit tb $ composeSubtypeConversion convE conv
 
