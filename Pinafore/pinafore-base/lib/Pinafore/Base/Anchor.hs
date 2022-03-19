@@ -66,7 +66,7 @@ randomN n g = let
 instance Random Anchor where
     randomR _ = random
     random g0 = let
-        (ww, g) = randomN @Word64 (div (hashSize @Anchor) 4) g0
+        (ww, g) = randomN @Word64 (div (hashSize @Anchor) 8) g0
         in (MkAnchor $ mconcat $ fmap Serialize.encode ww, g)
 
 showHexChar :: Word8 -> Char
