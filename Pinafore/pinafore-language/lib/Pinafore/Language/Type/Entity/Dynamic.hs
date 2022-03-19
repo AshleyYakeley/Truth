@@ -87,7 +87,8 @@ aDynamicEntityFamilyWitness = $(iowitness [t|'MkWitKind ADynamicEntityFamily|])
 
 aDynamicEntityGroundType :: Name -> DynamicEntityType -> PinaforeGroundType '[] DynamicEntity
 aDynamicEntityGroundType name dts =
-    (singleGroundType' (MkFamilyType aDynamicEntityFamilyWitness $ MkADynamicEntityFamily name dts) $ exprShowPrec name)
+    (singleGroundType' (MkFamilialType aDynamicEntityFamilyWitness $ MkADynamicEntityFamily name dts) $
+     exprShowPrec name)
         { pgtGreatestDynamicSupertype =
               \NilCCRArguments ->
                   Just $

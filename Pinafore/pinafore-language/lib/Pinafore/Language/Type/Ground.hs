@@ -18,7 +18,7 @@ data PinaforeGroundType dv gt = MkPinaforeGroundType
     { pgtVarianceType :: DolanVarianceType dv
     , pgtVarianceMap :: DolanVarianceMap dv gt
     , pgtShowType :: ListTypeExprShow dv
-    , pgtFamilyType :: FamilyType gt
+    , pgtFamilyType :: FamilialType gt
     , pgtGreatestDynamicSupertype :: PinaforePolyGreatestDynamicSupertype dv gt
     }
 
@@ -30,7 +30,7 @@ type PinaforeNonpolarType = NonpolarDolanType PinaforeGroundType
 
 singleGroundType' ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t
-    => FamilyType t
+    => FamilialType t
     -> ListTypeExprShow dv
     -> PinaforeGroundType dv t
 singleGroundType' ft showexp =
@@ -47,7 +47,7 @@ singleGroundType ::
     => IOWitness ('MkWitKind (SingletonFamily t))
     -> ListTypeExprShow dv
     -> PinaforeGroundType dv t
-singleGroundType wit = singleGroundType' $ MkFamilyType wit HetRefl
+singleGroundType wit = singleGroundType' $ MkFamilialType wit HetRefl
 
 stdSingleGroundType ::
        forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). HasDolanVariance dv t

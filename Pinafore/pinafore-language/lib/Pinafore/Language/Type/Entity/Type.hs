@@ -24,7 +24,7 @@ data SealedEntityProperties gt where
         -> SealedEntityProperties gt
 
 data EntityGroundType :: forall k. k -> Type where
-    MkEntityGroundType :: forall k (gt :: k). FamilyType gt -> SealedEntityProperties gt -> EntityGroundType gt
+    MkEntityGroundType :: forall k (gt :: k). FamilialType gt -> SealedEntityProperties gt -> EntityGroundType gt
 
 sameDV ::
        forall dva dvb. (DolanVarianceKind dva ~ DolanVarianceKind dvb)
@@ -75,8 +75,8 @@ data EntityFamily where
         -> EntityFamily
 
 singleEntityFamily ::
-       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). FamilyType t -> EntityProperties dv t -> EntityFamily
-singleEntityFamily (MkFamilyType wit t) eprops =
+       forall (dv :: DolanVariance) (t :: DolanVarianceKind dv). FamilialType t -> EntityProperties dv t -> EntityFamily
+singleEntityFamily (MkFamilialType wit t) eprops =
     MkEntityFamily wit $ \t' -> do
         HRefl <- testHetEquality t t'
         return $ MkSealedEntityProperties eprops

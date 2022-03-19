@@ -33,7 +33,7 @@ closedEntityGroundType tidsym props@MkEntityProperties {..} =
         , pgtVarianceMap = covaryToDolanVarianceMap epKind epCovaryMap
         , pgtShowType = epShowType
         , pgtFamilyType =
-              MkFamilyType closedEntityFamilyWitness $ MkClosedEntityFamily tidsym $ MkSealedEntityProperties props
+              MkFamilialType closedEntityFamilyWitness $ MkClosedEntityFamily tidsym $ MkSealedEntityProperties props
         , pgtGreatestDynamicSupertype = \_ -> Nothing
         }
 

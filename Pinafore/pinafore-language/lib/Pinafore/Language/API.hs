@@ -6,7 +6,7 @@ module Pinafore.Language.API
     , module Pinafore.Language.Library.Defs
     , module Pinafore.Context
     , WitKind(..)
-    , FamilyType(..)
+    , FamilialType(..)
     , BoundType(..)
     , PinaforePolyShim
     , EntityGroundType(..)

@@ -38,7 +38,7 @@ openEntityFamilyWitness = $(iowitness [t|'MkWitKind (LiftedFamily OpenEntityType
 
 openEntityGroundType :: forall tid. OpenEntityType tid -> PinaforeGroundType '[] (OpenEntity tid)
 openEntityGroundType oet =
-    singleGroundType' (MkFamilyType openEntityFamilyWitness $ MkLiftedFamily oet) $ exprShowPrec oet
+    singleGroundType' (MkFamilialType openEntityFamilyWitness $ MkLiftedFamily oet) $ exprShowPrec oet
 
 openEntityFamily :: EntityFamily
 openEntityFamily =
