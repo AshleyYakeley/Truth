@@ -1,5 +1,5 @@
 FROM commercialhaskell/stackage:lts18
-RUN echo 2021-08-21
+RUN echo 2022-03-20
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH "/usr/local/bin:${PATH}"
 RUN wget -qO - https://packages.confluent.io/deb/5.2/archive.key | apt-key add -
@@ -8,8 +8,10 @@ RUN apt-get purge -y msodbcsql17
 RUN apt-get upgrade -y
 RUN apt-get install -y lintian
 RUN pip3 install --upgrade pip
-RUN pip3 install mkdocs markdown-include Pygments pymdown-extensions
+RUN pip3 install mkdocs markdown-include Pygments pymdown-extensions scour
 RUN R -e "install.packages(c('shiny','ggplot2','plotly','optparse','shinyWidgets'),dependencies=TRUE, repos='http://cran.rstudio.com/')"
+ENV npm_config_user root
 RUN npm --global install vsce
 RUN apt-get install -y imagemagick
+RUN apt-get install -y moreutils
 #RUN echo "stack ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers

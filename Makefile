@@ -171,9 +171,18 @@ mkdocs/generated/type-infix.md: ${BINPATH}/pinafore-doc
 	mkdir -p mkdocs/generated
 	$< --infix-type > $@
 
+.PHONY: scour
+
+scour: mkdocs/docs/img/information.svg
+	stack $(STACKFLAGS) exec -- scour $< | stack $(STACKFLAGS) exec -- sponge $<
+
+mkdocs/generated/img/information.png: mkdocs/docs/img/information.png
+	mkdir -p mkdocs/generated/img
+	cp $< $@
+
 .PHONY: docs
 
-docs: $(foreach f,$(LIBMODULES),mkdocs/docs/library/$f.md) mkdocs/generated/infix.md mkdocs/generated/type-infix.md docker-image
+docs: $(foreach f,$(LIBMODULES),mkdocs/docs/library/$f.md) mkdocs/generated/infix.md mkdocs/generated/type-infix.md mkdocs/generated/img/information.png docker-image
 	mkdir -p mkdocs/generated/examples
 	cp Pinafore/pinafore-app/examples/* mkdocs/generated/examples/
 	stack $(STACKFLAGS) exec -- pip3 install --user file://`pwd`/support/pygments-lexer/
