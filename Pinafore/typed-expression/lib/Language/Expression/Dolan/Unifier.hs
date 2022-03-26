@@ -102,27 +102,27 @@ invertSubstitute ::
     -> DolanUnifier ground a
     -> UnifierSolver ground a
 invertSubstitute _ (ClosedExpression a) = pure a
-invertSubstitute sub@(MkInvertSubstitution oldvar PositiveType newvar _) (OpenExpression (LEUnifierConstraint depvar PositiveType vt recv) expr)
+invertSubstitute sub@(MkInvertSubstitution oldvar PositiveType newvar _) (OpenExpression (LEUnifierConstraint depvar pol vt recv) expr)
     | Just Refl <- testEquality oldvar depvar =
-        solverOpenExpression (LEUnifierConstraint newvar PositiveType vt recv) $ do
+        solverOpenExpression (LEUnifierConstraint newvar pol vt recv) $ do
             fa <- invertSubstitute sub expr
             pure $ \conv -> fa $ conv . meet1
-invertSubstitute sub@(MkInvertSubstitution oldvar NegativeType newvar st) (OpenExpression (LEUnifierConstraint depvar PositiveType vt recv) expr)
+invertSubstitute sub@(MkInvertSubstitution oldvar NegativeType newvar st) (OpenExpression (LEUnifierConstraint depvar pol vt recv) expr)
     | Just Refl <- testEquality oldvar depvar =
-        solverOpenExpression (LEUnifierConstraint newvar PositiveType vt recv) $ do
+        solverOpenExpression (LEUnifierConstraint newvar pol vt recv) $ do
             fa <- invertSubstitute sub expr
-            convm <- unifyTypes st vt
+            convm <- withRepresentative pol $ unifyTypes st vt
             pure $ \conv -> fa $ joinf conv convm
-invertSubstitute sub@(MkInvertSubstitution oldvar NegativeType newvar _) (OpenExpression (GEUnifierConstraint depvar NegativeType vt recv) expr)
+invertSubstitute sub@(MkInvertSubstitution oldvar NegativeType newvar _) (OpenExpression (GEUnifierConstraint depvar pol vt recv) expr)
     | Just Refl <- testEquality oldvar depvar =
-        solverOpenExpression (GEUnifierConstraint newvar NegativeType vt recv) $ do
+        solverOpenExpression (GEUnifierConstraint newvar pol vt recv) $ do
             fa <- invertSubstitute sub expr
             pure $ \conv -> fa $ join1 . conv
-invertSubstitute sub@(MkInvertSubstitution oldvar PositiveType newvar st) (OpenExpression (GEUnifierConstraint depvar NegativeType vt recv) expr)
+invertSubstitute sub@(MkInvertSubstitution oldvar PositiveType newvar st) (OpenExpression (GEUnifierConstraint depvar pol vt recv) expr)
     | Just Refl <- testEquality oldvar depvar =
-        solverOpenExpression (GEUnifierConstraint newvar NegativeType vt recv) $ do
+        solverOpenExpression (GEUnifierConstraint newvar pol vt recv) $ do
             fa <- invertSubstitute sub expr
-            convm <- unifyTypes vt st
+            convm <- withRepresentative pol $ unifyTypes vt st
             pure $ \conv -> fa $ meetf conv convm
 invertSubstitute sub (OpenExpression subwit expr) = solverOpenExpression subwit $ invertSubstitute sub expr
 
