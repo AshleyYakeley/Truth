@@ -37,6 +37,20 @@ mappableGetWitnesses a =
              return t)
         a
 
+instance WitnessMappable poswit negwit () where
+    mapWitnessesM _ _ = pure
+
+instance WitnessMappable poswit negwit Void where
+    mapWitnessesM _ _ = absurd
+
+instance (WitnessMappable poswit negwit p, WitnessMappable poswit negwit q) => WitnessMappable poswit negwit (p, q) where
+    mapWitnessesM mapPos mapNeg (p, q) = (,) <$> mapWitnessesM mapPos mapNeg p <*> mapWitnessesM mapPos mapNeg q
+
+instance (WitnessMappable poswit negwit p, WitnessMappable poswit negwit q) =>
+             WitnessMappable poswit negwit (Either p q) where
+    mapWitnessesM mapPos mapNeg (Left p) = Left <$> mapWitnessesM mapPos mapNeg p
+    mapWitnessesM mapPos mapNeg (Right q) = Right <$> mapWitnessesM mapPos mapNeg q
+
 instance WitnessMappable (poswit :: k -> Type) negwit (poswit t) where
     mapWitnessesM mapPos _ = mapPos
 

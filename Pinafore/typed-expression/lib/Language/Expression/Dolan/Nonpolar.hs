@@ -4,6 +4,7 @@ module Language.Expression.Dolan.Nonpolar
     , NonpolarArguments
     , NonpolarShimWit
     , nonpolarToDolanType
+    , nonpolarToDolanArguments
     , dolanTypeToNonpolar
     , nonpolarTypeFreeVariables
     ) where
@@ -109,13 +110,20 @@ nonpolarToDolanArg (RangeNonpolarArgument p q) =
         (MkShimWit argp convp, MkShimWit argq convq) ->
             MkShimWit (RangeCCRPolarArgument argp argq) $ MkCatRange (uninvertPolarMap convp) convq
 
+nonpolarToDolanArguments ::
+       forall (ground :: GroundTypeKind) polarity dv gt t. (IsDolanGroundType ground, Is PolarityType polarity)
+    => DolanVarianceMap dv gt
+    -> NonpolarArguments ground dv gt t
+    -> DolanArgumentsShimWit (DolanPolyShim ground) dv (DolanType ground) gt polarity t
+nonpolarToDolanArguments = mapCCRArguments nonpolarToDolanArg
+
 nonpolarToDolanType ::
        forall (ground :: GroundTypeKind) polarity t. (IsDolanGroundType ground, Is PolarityType polarity)
     => NonpolarDolanType ground t
     -> DolanShimWit ground polarity t
 nonpolarToDolanType (VarNonpolarType n) = singleDolanShimWit $ mkShimWit $ VarDolanSingularType n
 nonpolarToDolanType (GroundedNonpolarType gt args) =
-    case mapCCRArguments nonpolarToDolanArg (groundTypeVarianceMap gt) args of
+    case nonpolarToDolanArguments (groundTypeVarianceMap gt) args of
         MkShimWit dargs conv -> singleDolanShimWit $ MkShimWit (GroundedDolanSingularType gt dargs) conv
 
 dolanArgToNonpolar ::

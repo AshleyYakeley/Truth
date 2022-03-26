@@ -11,7 +11,6 @@ module Pinafore.Language.Library.GTK.Colour
 import Data.Shim
 import Graphics.Color.Space
 import Graphics.Color.Standard.SVG
-import Language.Expression.Dolan
 import Pinafore.Language.API
 import Shapes
 import Shapes.Numeric
@@ -112,10 +111,8 @@ colourLibraryModule =
               "Construct a Colour from sRGB (perceptual) red, green, blue, in range 0 to 1."
               MkSRGBColour $ \(MkSRGBColour r g b) -> Just (r, (g, (b, ())))
         , mkTypeEntry "AlphaColour" "A human-perceivable colour, with opacity." $ MkBoundType alphaColourGroundType
-        , mkSubtypeRelationEntry "Colour" "AlphaColour" "A Colour is an opaque AlphaColour" $
-          pure $
-          simpleSubtypeConversionEntry colourGroundType alphaColourGroundType $
-          simpleSubtypeConversion $ functionToShim "opaque" opaque
+        , hasSubtypeRelationEntry @LangColour @LangAlphaColour "A Colour is an opaque AlphaColour" $
+          functionToShim "opaque" opaque
         , mkValPatEntry "MkAlphaColour" "Construct an AlphaColour from an opacity and a Colour." MkLangAlphaColour $ \(MkLangAlphaColour op col) ->
               Just (op, (col, ()))
         , mkValEntry "transparent" "The zero-opacity AlphaColour" transparent

@@ -208,13 +208,8 @@ refLibEntries =
                 "Finite Set References"
                 ""
                 [ mkTypeEntry "FiniteSetRef" "" $ MkBoundType finiteSetRefGroundType
-                , mkSubtypeRelationEntry "FiniteSetRef -a" "SetRef a" "" $
-                  pure $
-                  simpleSubtypeConversionEntry finiteSetRefGroundType setRefGroundType $
-                  MkSubtypeConversion $ \_ (ConsCCRArguments (RangeCCRPolarArgument t _) NilCCRArguments) ->
-                      return $
-                      MkSubtypeArguments (ConsCCRArguments (ContraCCRPolarArgument t) NilCCRArguments) $
-                      pure $ functionToShim "FiniteSetRef to SetRef" $ langFiniteSetRefToSetRef
+                , hasSubtypeRelationEntry "" $
+                  functionToShim "FiniteSetRef to SetRef" $ langFiniteSetRefToSetRef @A @TopType
                 , mkValEntry
                       "coMapFiniteSet"
                       "Map a function on getting from a finite set."
@@ -273,53 +268,8 @@ refLibEntries =
                 "List References"
                 ""
                 [ mkTypeEntry "ListRef" "" $ MkBoundType listRefGroundType
-                , mkSubtypeRelationEntry "WholeRef [a]" "ListRef a" "" $
-                  pure $
-                  simpleSubtypeConversionEntry wholeRefGroundType listRefGroundType $
-                  MkSubtypeConversion $ \sc (ConsCCRArguments (RangeCCRPolarArgument t1 (t2 :: _ pola _)) NilCCRArguments) ->
-                      invertPolarity @pola $ do
-                          MkAnyVar var <- renamerGenerateFreeUVar
-                          let
-                              var1a :: PinaforeType (InvertPolarity pola) _
-                              var1a = singleDolanType $ VarDolanSingularType var
-                              var2a :: PinaforeType pola _
-                              var2a = singleDolanType $ VarDolanSingularType var
-                              var1b :: PinaforeType 'Positive _
-                              var1b = singleDolanType $ VarDolanSingularType var
-                              var2b :: PinaforeType 'Negative _
-                              var2b = singleDolanType $ VarDolanSingularType var
-                              varList1 :: PinaforeType 'Positive _
-                              varList1 =
-                                  singleDolanType $
-                                  GroundedDolanSingularType listGroundType $
-                                  ConsCCRArguments (CoCCRPolarArgument var1b) NilCCRArguments
-                              varList2 :: PinaforeType 'Negative _
-                              varList2 =
-                                  singleDolanType $
-                                  GroundedDolanSingularType listGroundType $
-                                  ConsCCRArguments (CoCCRPolarArgument var2b) NilCCRArguments
-                          return $
-                              MkSubtypeArguments (ConsCCRArguments (RangeCCRPolarArgument var1a var2a) NilCCRArguments) $ do
-                                  rconv1 <- subtypeConvert sc varList1 t1
-                                  rconv2 <- subtypeConvert sc t2 varList2
-                                  pure $ let
-                                      conv1 =
-                                          rconv1 .
-                                          iJoinMeetR1 @_ @'Positive .
-                                          applyCoPolyShim ccrVariation ccrVariation id (iJoinMeetR1 @_ @'Positive) .
-                                          functionToShim "toList" toList
-                                      conv2 =
-                                          functionToShim "fromList" fromList .
-                                          applyCoPolyShim ccrVariation ccrVariation id (iJoinMeetL1 @_ @'Negative) .
-                                          iJoinMeetL1 @_ @'Negative . rconv2
-                                      convv = applyRangePolyShim ccrVariation ccrVariation id conv1 conv2
-                                      in applyRangePolyShim
-                                             ccrVariation
-                                             ccrVariation
-                                             id
-                                             (iJoinMeetL1 @_ @(InvertPolarity pola))
-                                             (iJoinMeetR1 @_ @pola) .
-                                         (functionToShim "langWholeRefToListRef" langWholeRefToListRef) . convv
+                , hasSubtypeRelationEntry @(LangWholeRef '( Vector A, Vector A)) @(LangListRef '( A, A)) "" $
+                  functionToShim "langWholeRefToListRef" langWholeRefToListRef
                 , mkValEntry "listWhole" "Represent a list reference as a whole reference." $ langListRefToWholeRef @A
                 , mkValEntry "listGetCount" "Get Count of elements in a list reference." langListRefGetCount
                 , mkValEntry "listGetItem" "Get an element of a list reference." $ langListRefGetItem @Q
@@ -406,42 +356,7 @@ refLibEntries =
           "RefOrders"
           ""
           [ mkTypeEntry "RefOrder" "" $ MkBoundType refOrderGroundType
-          , mkSubtypeRelationEntry "a -> a -> Ordering" "RefOrder a" "" $
-            pure $
-            simpleSubtypeConversionEntry funcGroundType refOrderGroundType $
-            MkSubtypeConversion $ \sc (ConsCCRArguments (ContraCCRPolarArgument t1) (ConsCCRArguments (CoCCRPolarArgument (t2o :: _ pola _)) NilCCRArguments)) ->
-                invertPolarity @pola $ do
-                    MkAnyVar var <- renamerGenerateFreeUVar
-                    let
-                        vara :: PinaforeType (InvertPolarity pola) _
-                        vara = singleDolanType $ VarDolanSingularType var
-                        varb :: PinaforeType 'Positive _
-                        varb = singleDolanType $ VarDolanSingularType var
-                        vconv = iJoinMeetR1 @_ @'Positive . iJoinMeetL1 @_ @(InvertPolarity pola)
-                    return $
-                        MkSubtypeArguments (ConsCCRArguments (ContraCCRPolarArgument vara) NilCCRArguments) $ do
-                            conv1 <- subtypeConvert sc varb t1
-                            conv2 <-
-                                subtypeConvert sc t2o $
-                                singleDolanType $
-                                GroundedDolanSingularType funcGroundType $
-                                ConsCCRArguments (ContraCCRPolarArgument varb) $
-                                ConsCCRArguments
-                                    (CoCCRPolarArgument $
-                                     singleDolanType $ GroundedDolanSingularType orderingGroundType NilCCRArguments)
-                                    NilCCRArguments
-                            return $
-                                (functionToShim "Order to RefOrder" pureLangRefOrder) .
-                                applyCoPolyShim
-                                    ccrVariation
-                                    ccrVariation
-                                    (applyContraPolyShim ccrVariation ccrVariation id $ conv1 . vconv)
-                                    (applyCoPolyShim
-                                         ccrVariation
-                                         ccrVariation
-                                         (applyContraPolyShim ccrVariation ccrVariation id vconv)
-                                         (iJoinMeetL1 @_ @'Negative) .
-                                     iJoinMeetL1 @_ @'Negative . conv2)
+          , hasSubtypeRelationEntry "" $ functionToShim "Order to RefOrder" $ pureLangRefOrder @A
           , mkValEntry "orders" "Join `RefOrder`s by priority." $ refOrders @A
           , mkValEntry
                 "mapOrder"

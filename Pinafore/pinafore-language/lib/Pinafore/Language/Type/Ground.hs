@@ -13,6 +13,14 @@ import Pinafore.Language.VarID
 import Pinafore.Markdown
 import Shapes
 
+{-
+data SubtypeGroup = MkSubtypeGroup
+    {
+        sgIdentifer :: Unique,
+        sgSubtype ::
+            FamilialType gta -> FamilialType gtb -> Maybe (FamilialType gtb)
+    }
+-}
 type PinaforeGroundType :: GroundTypeKind
 data PinaforeGroundType dv gt = MkPinaforeGroundType
     { pgtVarianceType :: DolanVarianceType dv

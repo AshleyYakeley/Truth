@@ -60,6 +60,23 @@ forCCRPolarArgument call (RangeCCRPolarArgument p q) = invertPolarity @polarity 
 type CCRPolarArgumentShimWit :: (Type -> Type -> Type) -> (Polarity -> Type -> Type) -> Polarity -> CCRArgumentKind
 type CCRPolarArgumentShimWit shim ft polarity sv = CCRArgumentShimWit shim (CCRPolarArgument ft polarity) polarity sv
 
+coCCRArgument :: PShimWit shim ft polarity t -> CCRPolarArgumentShimWit shim ft polarity CoCCRVariance t
+coCCRArgument (MkShimWit ft conv) = MkShimWit (CoCCRPolarArgument ft) conv
+
+contraCCRArgument ::
+       Is PolarityType polarity
+    => PShimWit shim ft (InvertPolarity polarity) t
+    -> CCRPolarArgumentShimWit shim ft polarity ContraCCRVariance t
+contraCCRArgument (MkShimWit ft conv) = MkShimWit (ContraCCRPolarArgument ft) $ MkCatDual $ uninvertPolarMap conv
+
+rangeCCRArgument ::
+       Is PolarityType polarity
+    => PShimWit shim ft (InvertPolarity polarity) p
+    -> PShimWit shim ft polarity q
+    -> CCRPolarArgumentShimWit shim ft polarity 'RangeCCRVariance '( p, q)
+rangeCCRArgument (MkShimWit pt pconv) (MkShimWit qt qconv) =
+    MkShimWit (RangeCCRPolarArgument pt qt) $ MkCatRange (uninvertPolarMap pconv) qconv
+
 mapCCRPolarArgumentShimWit ::
        forall m (shim :: Type -> Type -> Type) (fta :: Polarity -> Type -> Type) (ftb :: Polarity -> Type -> Type) sv polarity t.
        (Monad m, Is PolarityType polarity)

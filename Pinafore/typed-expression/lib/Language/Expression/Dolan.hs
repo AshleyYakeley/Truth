@@ -42,6 +42,8 @@ module Language.Expression.Dolan
     , nilDolanShimWit
     , joinMeetShimWit
     , varDolanShimWit
+    , groundedDolanShimWit
+    , toGroundedDolanShimWit
     , unrollRecursiveType
     , unToRangeShimWit
     , unFromRangeShimWit
@@ -59,7 +61,12 @@ module Language.Expression.Dolan
     , ccrArgumentsToShimArgumentsM
     , ccrArgumentsToArgumentsM
     , DolanArgumentsShimWit
+    , nilDolanArgumentsShimWit
+    , consDolanArgumentsShimWit
     , CCRPolarArgumentShimWit
+    , coCCRArgument
+    , contraCCRArgument
+    , rangeCCRArgument
     , mapDolanArgumentsFM
     , saturateArgsConstraint
     , dolanArgumentsToArguments
@@ -79,6 +86,7 @@ module Language.Expression.Dolan
     , idSubtypeConversion
     , composeSubtypeConversion
     , SubtypeConversionEntry(..)
+    , subtypeConversionEntry
     , simpleSubtypeConversionEntry
     , saturateGroundType
     , module Language.Expression.Dolan.Nonpolar

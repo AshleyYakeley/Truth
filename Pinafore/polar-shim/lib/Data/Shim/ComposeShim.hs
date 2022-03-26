@@ -8,6 +8,9 @@ newtype ComposeShim m shim a b = MkComposeShim
     { unComposeShim :: m (shim a b)
     }
 
+pureComposeShim :: Applicative m => shim a b -> ComposeShim m shim a b
+pureComposeShim shim = MkComposeShim $ pure shim
+
 instance forall (m :: Type -> Type) k (shim :: ShimKind k). (Applicative m, Category shim) =>
              Category (ComposeShim m shim) where
     id = MkComposeShim $ pure id

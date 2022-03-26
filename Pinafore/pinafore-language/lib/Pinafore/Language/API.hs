@@ -20,6 +20,14 @@ module Pinafore.Language.API
     , HasPinaforeType(..)
     , HasPinaforeGroundType(..)
     , groundPinaforeType
+    , CCRArguments(..)
+    , DolanArgumentsShimWit
+    , nilDolanArgumentsShimWit
+    , consDolanArgumentsShimWit
+    , CCRPolarArgumentShimWit
+    , coCCRArgument
+    , contraCCRArgument
+    , rangeCCRArgument
     , module Pinafore.Language.Value
     ) where
 

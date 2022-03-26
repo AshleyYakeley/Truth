@@ -301,9 +301,11 @@ runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: SymbolType oldname) N
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where
     type Unifier (DolanTypeSystem ground) = DolanUnifier ground
     type UnifierSubstitutions (DolanTypeSystem ground) = [UnifierBisubstitution ground]
-    unifyNegWitnesses ta tb = return $ uuLiftNegShimWit $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
-    unifyPosWitnesses ta tb = return $ uuLiftPosShimWit $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
-    unifyPosNegWitnesses tq tp = fmap MkUUShim $ runSolver $ unifyTypes tq tp
+    unifyNegWitnesses ta tb =
+        return $ uuLiftNegShimWit @(DolanTypeSystem ground) $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
+    unifyPosWitnesses ta tb =
+        return $ uuLiftPosShimWit @(DolanTypeSystem ground) $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
+    unifyPosNegWitnesses tq tp = fmap MkComposeShim $ runSolver $ unifyTypes tq tp
     solveUnifier u = fmap (\(a, subs) -> (a, reverse subs)) $ runWriterT $ runUnifier u
     unifierPosSubstitute bisubs t = lift $ runUnifierM $ bisubstitutesType bisubs t
     unifierNegSubstitute bisubs t = lift $ runUnifierM $ bisubstitutesType bisubs t

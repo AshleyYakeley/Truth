@@ -87,7 +87,7 @@ getLibraryModuleModule libmod = do
         for bindDocs $ \bd ->
             case bdScopeEntry bd of
                 BindScopeEntry _ _ -> return mempty
-                SubtypeScopeEntry entries -> getSubtypesScope entries
+                SubtypeScopeEntry entry -> getSubtypesScope $ pure entry
     let
         moduleDoc = fmap bdDoc libmod
         moduleScope = bscope <> mconcat dscopes

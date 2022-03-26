@@ -11,7 +11,6 @@ import Changes.UI.GTK
 import Data.Shim
 import Data.Time
 import GI.Cairo.Render
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Drawing
@@ -254,10 +253,8 @@ elementStuff =
         ""
         [ mkTypeEntry "Element" "A user interface element is something that goes inside a window." $
           MkBoundType elementGroundType
-        , mkSubtypeRelationEntry "Element" "LayoutElement" "" $
-          pure $
-          simpleSubtypeConversionEntry elementGroundType layoutElementGroundType $
-          simpleSubtypeConversion $ functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
+        , hasSubtypeRelationEntry @LangElement @LangLayoutElement "" $
+          functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
         , mkValEntry "run" "Element that runs an Action first." uiRun
         , mkValEntry "blank" "Blank element" $ MkLangElement createBlank
         , mkValEntry "draw" "Drawable element" uiDraw

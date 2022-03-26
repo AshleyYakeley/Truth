@@ -582,6 +582,12 @@ testQueries =
               , testQuery "let a: Integer|Text; a = 3; b: List Integer | List Text; b = [a] in b" $ LRSuccess "[3]"
               ]
         , testTree
+              "conversion"
+              [ testQuery ("case ((\\x => Just x): Integer -> Maybe Integer) 34 of Just x => x end") $ LRSuccess "34"
+              , testQuery ("((\\x => [x]): xy -> List1 xy: Integer -> List Integer) 79") $ LRSuccess "[79]"
+              , testQuery ("case ((\\x => x :: []): Integer -> List Integer) 57 of x::_ => x end") $ LRSuccess "57"
+              ]
+        , testTree
               "recursive"
               [ testQuery "let x : rec a. List a; x = [] in x" $ LRSuccess "[]"
               , let
