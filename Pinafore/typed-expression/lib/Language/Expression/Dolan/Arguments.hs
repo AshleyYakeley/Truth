@@ -149,16 +149,12 @@ nilDolanArgumentsShimWit = mkShimWit NilCCRArguments
 
 consDolanArgumentsShimWit ::
        forall (pshim :: PolyShimKind) ft sv dv gt a t polarity.
-       ( Is PolarityType polarity
-       , DolanVarianceCategory pshim
-       , TestEquality (ft 'Positive)
-       , TestEquality (ft 'Negative)
-       , HasDolanVariance (sv ': dv) gt
-       )
-    => CCRPolarArgumentShimWit (pshim Type) ft polarity sv a
+       (Is PolarityType polarity, DolanVarianceCategory pshim, TestEquality (ft 'Positive), TestEquality (ft 'Negative))
+    => DolanVarianceMap (sv ': dv) gt
+    -> CCRPolarArgumentShimWit (pshim Type) ft polarity sv a
     -> DolanArgumentsShimWit pshim dv ft (gt a) polarity t
     -> DolanArgumentsShimWit pshim (sv ': dv) ft gt polarity t
-consDolanArgumentsShimWit (MkShimWit arg conv1) (MkShimWit args convr) = let
+consDolanArgumentsShimWit (ConsDolanVarianceMap ccrv dvm) (MkShimWit arg conv1) (MkShimWit args convr) = let
     svt = ccrArgumentType arg
     dvt = ccrArgumentsType args
     plain ::
@@ -168,12 +164,10 @@ consDolanArgumentsShimWit (MkShimWit arg conv1) (MkShimWit args convr) = let
     plain arg' =
         case ccrVarianceCategory @((PolarMap (pshim Type) polarity)) $ ccrArgumentType arg' of
             Dict -> mkShimWit arg'
-    in case dolanVarianceMap @(sv ': dv) @gt of
-           ConsDolanVarianceMap ccrv dvm ->
-               case dolanVarianceCategory @pshim dvt of
-                   Dict ->
-                       case mapCCRArgumentsF plain dvm dvm args (polarMapTypeApply svt ccrv ccrv id conv1) of
-                           MkShimWit args' conv' -> MkShimWit (ConsCCRArguments arg args') $ conv' . convr
+    in case dolanVarianceCategory @pshim dvt of
+           Dict ->
+               case mapCCRArgumentsF plain dvm dvm args (polarMapTypeApply svt ccrv ccrv id conv1) of
+                   MkShimWit args' conv' -> MkShimWit (ConsCCRArguments arg args') $ conv' . convr
 
 forDolanArguments ::
        forall polarity dv ft gt t r. (Is PolarityType polarity, Monoid r)

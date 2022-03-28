@@ -26,7 +26,7 @@ module Language.Expression.Dolan
     , HasDolanVariance(..)
     , CovaryType
     , covaryCoercibleKind
-    , CovaryMap
+    , CovaryMap(..)
     , HasCovaryMap(..)
     , covaryToDolanVarianceType
     , dolanVarianceToCovaryType
@@ -81,6 +81,7 @@ module Language.Expression.Dolan
     , IsDolanSubtypeEntriesGroundType(..)
     , SubtypeArguments(..)
     , SubtypeConversion(..)
+    , subtypeConversion
     , simpleSubtypeConversion
     , nilSubtypeConversion
     , idSubtypeConversion

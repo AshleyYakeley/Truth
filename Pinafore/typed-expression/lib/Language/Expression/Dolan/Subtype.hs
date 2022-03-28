@@ -177,19 +177,21 @@ simpleSubtypeConversion conv =
 subtypeConversion ::
        forall (ground :: GroundTypeKind) dva gta a dvb gtb b. IsDolanGroundType ground
     => ground dva gta
-    -> DolanArguments dva (DolanType ground) gta 'Negative a
+    -> DolanArgumentsShimWit (DolanPolyShim ground) dva (DolanType ground) gta 'Negative a
     -> ground dvb gtb
-    -> DolanArguments dvb (DolanType ground) gtb 'Positive b
+    -> DolanArgumentsShimWit (DolanPolyShim ground) dvb (DolanType ground) gtb 'Positive b
     -> DolanPolyShim ground Type a b
     -> SubtypeConversion ground dva gta dvb gtb
-subtypeConversion gta rawargsa gtb rawargsb conv =
+subtypeConversion gta (MkShimWit rawargsa (MkPolarMap conva)) gtb (MkShimWit rawargsb (MkPolarMap convb)) conv =
     MkSubtypeConversion $ \sc argsa -> do
         (sargsa, sargsb) <-
             namespace @(DolanTypeSystem ground) FreeName $ do
                 sargsa <- dolanNamespaceRenameArguments (groundTypeVarianceMap gta) rawargsa
                 sargsb <- dolanNamespaceRenameArguments (groundTypeVarianceMap gtb) rawargsb
                 return (sargsa, sargsb)
-        return $ MkSubtypeArguments sargsb $ fmap (\uconv -> conv . uconv) $ subtypeDolanArguments sc gta argsa sargsa
+        return $
+            MkSubtypeArguments sargsb $
+            fmap (\uconv -> convb . conv . conva . uconv) $ subtypeDolanArguments sc gta argsa sargsa
 
 generateVarType ::
        forall (ground :: GroundTypeKind) polarity. Monad (DolanM ground)
@@ -261,10 +263,10 @@ subtypeConversionEntry ::
     -> DolanArgumentsShimWit (DolanPolyShim ground) dvb (DolanType ground) gtb 'Positive b
     -> DolanPolyShim ground Type a b
     -> SubtypeConversionEntry ground
-subtypeConversionEntry gta (MkShimWit argsa (MkPolarMap conva)) gtb (MkShimWit argsb (MkPolarMap convb)) conv =
+subtypeConversionEntry gta argsa gtb argsb conv =
     MkSubtypeConversionEntry gtb $ \gta' -> do
         (Refl, HRefl) <- groundTypeTestEquality gta gta'
-        return $ subtypeConversion gta argsa gtb argsb $ convb . conv . conva
+        return $ subtypeConversion gta argsa gtb argsb conv
 
 simpleSubtypeConversionEntry ::
        forall (ground :: GroundTypeKind) dva gta dvb gtb. IsDolanGroundType ground

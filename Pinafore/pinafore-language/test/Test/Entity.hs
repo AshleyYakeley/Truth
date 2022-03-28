@@ -900,6 +900,7 @@ testEntity =
           tGroup
               "closedtype"
               [ testExpectSuccess "pass"
+              , testExpectSuccess "let f: T -> Entity; f = \\x => x in pass"
               , testExpectSuccess "let t1 = T1 \"hello\" 3 in pass"
               , testExpectSuccess "let f (T1 x _) = x in pass"
               , testExpectSuccess "case T1 \"hello\" 3 of T1 \"hello\" 3 => pass end"

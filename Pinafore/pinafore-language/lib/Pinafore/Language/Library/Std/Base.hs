@@ -565,13 +565,17 @@ baseLibEntries =
                 "Closed Entity Types"
                 ""
                 [ mkSubtypeRelationEntry "(any closed entity type)" (fst $ pgtShowType entityGroundType) "" $
-                  MkSubtypeConversionEntry entityGroundType $ \MkPinaforeGroundType {..} -> do
-                      Refl <- testEquality pgtVarianceType NilListType
+                  MkSubtypeConversionEntry entityGroundType $ \gta@MkPinaforeGroundType {..} -> do
                       MkClosedEntityFamily _ (MkSealedEntityProperties eprops) <-
                           matchFamilyType closedEntityFamilyWitness pgtFamilyType
+                      Refl <- testEquality (covaryToDolanVarianceType $ epKind eprops) pgtVarianceType
                       return $
-                          nilSubtypeConversion $
-                          functionToShim "ClosedEntity" $ entityAdapterConvert $ epAdapter eprops NilArguments
+                          entityPropertiesSaturatedAdapter
+                              (groundedDolanShimWit entityGroundType nilDolanArgumentsShimWit)
+                              plainEntityAdapter
+                              eprops $ \args eat ->
+                              subtypeConversion gta args entityGroundType nilDolanArgumentsShimWit $
+                              functionToShim "ClosedEntity" $ entityAdapterConvert eat
                 ]
           , docTreeEntry
                 "Open Entity Types"

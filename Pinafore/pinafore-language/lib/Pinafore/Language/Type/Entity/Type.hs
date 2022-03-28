@@ -1,11 +1,13 @@
 module Pinafore.Language.Type.Entity.Type where
 
+import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
+import Pinafore.Language.Type.Type
 import Shapes
 
 type EntityProperties :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
@@ -15,6 +17,34 @@ data EntityProperties dv gt = MkEntityProperties
     , epCovaryMap :: CovaryMap gt
     , epAdapter :: forall t. Arguments EntityAdapter gt t -> EntityAdapter t
     }
+
+saturateEntityAdapter ::
+       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) a r.
+       PinaforeShimWit 'Negative a
+    -> EntityAdapter a
+    -> CovaryType dv
+    -> CovaryMap gt
+    -> (forall t. PinaforeArgumentsShimWit dv gt 'Negative t -> Arguments EntityAdapter gt t -> r)
+    -> r
+saturateEntityAdapter _ _ NilListType NilCovaryMap call = call nilDolanArgumentsShimWit NilArguments
+saturateEntityAdapter tt adapter (ConsListType Refl ct) (ConsCovaryMap ccrv cvm) call =
+    saturateEntityAdapter tt adapter ct cvm $ \cta ctaa ->
+        call
+            (consDolanArgumentsShimWit
+                 (ConsDolanVarianceMap ccrv $ covaryToDolanVarianceMap ct cvm)
+                 (coCCRArgument tt)
+                 cta)
+            (ConsArguments adapter ctaa)
+
+entityPropertiesSaturatedAdapter ::
+       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) a r.
+       PinaforeShimWit 'Negative a
+    -> EntityAdapter a
+    -> EntityProperties dv gt
+    -> (forall t. PinaforeArgumentsShimWit dv gt 'Negative t -> EntityAdapter t -> r)
+    -> r
+entityPropertiesSaturatedAdapter tt adapter MkEntityProperties {..} call =
+    saturateEntityAdapter tt adapter epKind epCovaryMap $ \args eargs -> call args (epAdapter eargs)
 
 type SealedEntityProperties :: forall k. k -> Type
 data SealedEntityProperties gt where

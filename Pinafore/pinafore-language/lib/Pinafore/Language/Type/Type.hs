@@ -5,6 +5,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
+import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
@@ -22,6 +23,9 @@ type PinaforeType = DolanType PinaforeGroundType
 
 type PinaforeShimWit :: Polarity -> Type -> Type
 type PinaforeShimWit polarity = DolanShimWit PinaforeGroundType polarity
+
+type PinaforeArgumentsShimWit :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Polarity -> Type -> Type
+type PinaforeArgumentsShimWit dv gt polarity = DolanArgumentsShimWit PinaforePolyShim dv PinaforeType gt polarity
 
 type PinaforeExpression = SealedExpression Name (PinaforeShimWit 'Negative) (PinaforeShimWit 'Positive)
 
