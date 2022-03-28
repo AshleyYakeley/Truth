@@ -41,7 +41,7 @@ discardingWRunner (MkWUnlift u) = MkWUnlift $ discardingRunner u
 liftWithUnliftW ::
        forall t m. (MonadTransUnlift t, MonadTunnelIO m)
     => WMBackFunction m (t m)
-liftWithUnliftW = MkWMBackFunction liftWithUnlift
+liftWithUnliftW = MkWMBackFunction $ \call -> liftWithUnlift $ \unlift -> call unlift
 
 readerTUnliftAllToT ::
        forall t m. (MonadTransUnlift t, MonadTunnelIO m)

@@ -208,10 +208,7 @@ partialPairChangeLens ::
        ChangeLens (PairUpdate (PartialUpdate updateA) (PartialUpdate updateB)) (PartialUpdate (PairUpdate updateA updateB))
 partialPairChangeLens = let
     clRead ::
-           forall m t. MonadIO m
-        => Readable m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
-        -> PairUpdateReader updateA updateB t
-        -> m t
+           ReadFunction (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB)) (PairUpdateReader updateA updateB)
     clRead mr (MkTupleUpdateReader SelectFirst rt) = mr $ MkTupleUpdateReader SelectFirst rt
     clRead mr (MkTupleUpdateReader SelectSecond rt) = mr $ MkTupleUpdateReader SelectSecond rt
     clUpdate ::

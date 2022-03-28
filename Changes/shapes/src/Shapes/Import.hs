@@ -146,7 +146,7 @@ import Data.Text.Encoding.Error as I (UnicodeException(..))
 import Data.Serialize.Text as I ()
 
 -- random
-import System.Random as I
+import System.Random as I hiding (Finite)
 
 -- countable
 import Data.Countable as I

@@ -139,7 +139,7 @@ paramsCCRVMap ::
 paramsCCRVMap p ff pp ab = assignCCRTypeParam @sv @a p $ assignCCRTypeParam @sv @b p $ paramsUnEndo pp $ ff ab
 
 assignDolanArgVars :: forall sv dv gt t a. CCRTypeParam sv t -> DolanVarianceMap dv (gt t) -> DolanVarianceMap dv (gt a)
-assignDolanArgVars = assignCCRTypeParam @sv @a
+assignDolanArgVars p dvm = assignCCRTypeParam @sv @a p dvm
 
 getDolanVarianceMap :: Name -> CCRTypeParams dv gt t -> VarMapping t -> PinaforeInterpreter (DolanVarianceMap dv gt)
 getDolanVarianceMap _ NilCCRArguments _ = return NilDolanVarianceMap

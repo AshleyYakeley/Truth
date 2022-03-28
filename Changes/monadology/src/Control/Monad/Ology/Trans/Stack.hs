@@ -379,7 +379,7 @@ concatMonadTransStackUnliftDict =
 stackLiftWithUnlift ::
        forall tt m. (MonadTransStackUnlift tt, MonadTunnelIO m)
     => m -/-> ApplyStack tt m
-stackLiftWithUnlift = runWMBackFunction $ coerce $ MkWMBackFunction $ liftWithUnlift @(StackT tt) @m
+stackLiftWithUnlift = runWMBackFunction $ coerce $ liftWithUnliftW @(StackT tt) @m
 
 concatMonadTransStackUnliftAllDict ::
        forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)

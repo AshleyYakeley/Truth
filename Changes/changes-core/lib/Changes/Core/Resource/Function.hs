@@ -71,7 +71,7 @@ liftTransListFunction = let
         -> ApplyStack tt m -/-> ApplyStack (t ': tt) m
     tlfBackFunction _ =
         case transStackDict @MonadTunnelIO @tt @m of
-            Dict -> liftWithUnlift
+            Dict -> \call -> liftWithUnlift $ \unlift -> call unlift
     in MkTransListFunction {..}
 
 emptyTransListFunction ::

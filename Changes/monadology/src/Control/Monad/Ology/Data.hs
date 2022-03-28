@@ -35,8 +35,10 @@ mapParam l (MkParam askD localD) = let
 liftParam :: (TransTunnel t, Monad m) => Param m --> Param (t m)
 liftParam (MkParam a l) = MkParam (lift a) $ \aa -> hoist $ l aa
 
-readerParam :: Monad m => Param (ReaderT r m) r
-readerParam = MkParam {askD = ask, localD = local}
+readerParam ::
+       forall m r. Monad m
+    => Param (ReaderT r m) r
+readerParam = MkParam {askD = ask, localD = \aa -> local aa}
 
 refParam ::
        forall m a. MonadBracket m

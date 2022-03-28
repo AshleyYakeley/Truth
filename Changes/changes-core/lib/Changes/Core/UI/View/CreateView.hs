@@ -30,7 +30,7 @@ cvBindModelUpdates ::
 cvBindModelUpdates model testesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycle lifeCycleMonitor
-    withUILock <- asks vcWithUILock
+    withUILock <- asks $ \vc -> vcWithUILock vc
     unliftView <- liftToLifeCycle askUnliftIO
     viewRunResourceContext model $ \unlift amodel -> do
         a <- initv

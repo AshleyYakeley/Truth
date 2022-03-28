@@ -206,11 +206,7 @@ mapMaybeFiniteSetChangeLens amb ba = let
     mapFiniteSetEdit pq (KeyEditDelete p) = KeyEditDelete $ pq p
     mapFiniteSetEdit pq (KeyEditInsertReplace p) = KeyEditInsertReplace $ pq p
     mapFiniteSetEdit _ KeyEditClear = KeyEditClear
-    clRead ::
-           forall m t. MonadIO m
-        => Readable m (FiniteSetReader a)
-        -> FiniteSetReader b t
-        -> m t
+    clRead :: ReadFunction (FiniteSetReader a) (FiniteSetReader b)
     clRead mra KeyReadKeys = fmap (mapMaybe amb) $ mra KeyReadKeys
     clRead mra (KeyReadItem b ReadWhole) = fmap (mapMaybe amb) $ mra $ KeyReadItem (ba b) ReadWhole
     clUpdate ::
@@ -245,11 +241,7 @@ bijectionFiniteSetChangeLens (MkIsomorphism ab ba) = let
     mapFiniteSetEdit pq (KeyEditDelete p) = KeyEditDelete $ pq p
     mapFiniteSetEdit pq (KeyEditInsertReplace p) = KeyEditInsertReplace $ pq p
     mapFiniteSetEdit _ KeyEditClear = KeyEditClear
-    clRead ::
-           forall m t. MonadIO m
-        => Readable m (FiniteSetReader a)
-        -> FiniteSetReader b t
-        -> m t
+    clRead :: ReadFunction (FiniteSetReader a) (FiniteSetReader b)
     clRead mra KeyReadKeys = fmap (fmap ab) $ mra KeyReadKeys
     clRead mra (KeyReadItem b ReadWhole) = fmap (fmap ab) $ mra $ KeyReadItem (ba b) ReadWhole
     clUpdate ::
@@ -357,11 +349,7 @@ finiteSetCartesianProductUpdateFunction = let
 
 finiteSetFunctionChangeLens :: forall a. ChangeLens (FiniteSetUpdate a) (PartialSetUpdate a)
 finiteSetFunctionChangeLens = let
-    clRead ::
-           forall m t. MonadIO m
-        => Readable m (FiniteSetReader a)
-        -> FunctionUpdateReader a (WholeUpdate Bool) t
-        -> m t
+    clRead :: ReadFunction (FiniteSetReader a) (FunctionUpdateReader a (WholeUpdate Bool))
     clRead mr (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) = do
         mu <- mr $ KeyReadItem a ReadWhole
         return $ isJust mu

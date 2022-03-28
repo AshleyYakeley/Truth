@@ -16,10 +16,7 @@ newtype WholeUpdateFunction update a = MkWholeUpdateFunction
 instance Functor (WholeUpdateFunction update) where
     fmap :: forall a b. (a -> b) -> WholeUpdateFunction update a -> WholeUpdateFunction update b
     fmap ab (MkWholeUpdateFunction (MkChangeLens g u _)) = let
-        g' :: forall m t. MonadIO m
-           => Readable m (UpdateReader update)
-           -> WholeReader b t
-           -> m t
+        g' :: ReadFunction (UpdateReader update) (WholeReader b)
         g' mr ReadWhole = fmap ab $ g mr ReadWhole
         u' :: forall m. MonadIO m
            => update
@@ -33,10 +30,7 @@ instance Functor (WholeUpdateFunction update) where
 instance Applicative (WholeUpdateFunction update) where
     pure :: forall a. a -> WholeUpdateFunction update a
     pure a = let
-        g' :: forall m t. MonadIO m
-           => Readable m (UpdateReader update)
-           -> WholeReader a t
-           -> m t
+        g' :: ReadFunction (UpdateReader update) (WholeReader a)
         g' _mr ReadWhole = return a
         u' :: forall m. MonadIO m
            => update
