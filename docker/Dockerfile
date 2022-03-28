@@ -1,4 +1,5 @@
-FROM commercialhaskell/stackage:lts19
+# lts19 missing, see https://github.com/commercialhaskell/stackage/issues/6510
+FROM commercialhaskell/stackage:lts18
 RUN echo 2022-03-27
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH "/usr/local/bin:${PATH}"
