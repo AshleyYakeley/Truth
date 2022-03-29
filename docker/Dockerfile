@@ -11,6 +11,9 @@ RUN apt-get install -y lintian imagemagick moreutils
 RUN pip3 install --upgrade pip
 RUN pip3 install mkdocs markdown-include Pygments pymdown-extensions scour
 RUN R -e "install.packages(c('shiny','ggplot2','plotly','optparse','shinyWidgets'),dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+RUN apt-get install -y nodejs
 ENV npm_config_user root
+RUN npm --global install npm
 RUN npm --global install vsce
 #RUN echo "stack ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers
