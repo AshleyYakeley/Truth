@@ -28,6 +28,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - Drawing
       . Cairo-based functions for creating drawings
   * Storage
+    - Anchors now 256 bit, hash using BLAKE3
     - Store literals as binary rather than as text
     - Embed smaller literals directly in the anchor
 
