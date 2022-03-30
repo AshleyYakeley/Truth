@@ -12,20 +12,6 @@ packages:
   original:
     hackage: mime-0.4.0.2
 - completed:
-    hackage: gi-cairo-render-0.1.0@sha256:cb27b31b373c55c5b384a331e439d1ebc2fb3e02c8a58c9bfb83218d5467af2b,3553
-    pantry-tree:
-      size: 1655
-      sha256: 5cf0f21a23e2d49a50b0f46078890160d982469ff108d7a142eefa165347dc32
-  original:
-    hackage: gi-cairo-render-0.1.0
-- completed:
-    hackage: gi-cairo-connector-0.1.0@sha256:a79c34c4f22f81a938c5835f623de55fdf1f0f08435897bad68f58e01ffd1464,1213
-    pantry-tree:
-      size: 238
-      sha256: 4414eca6922175779e3ec5d0eb932ee0d10307217a32ff6671a8f5efdd1bc4f0
-  original:
-    hackage: gi-cairo-connector-0.1.0
-- completed:
     name: haskell-src-exts
     version: 1.23.0
     git: https://github.com/AshleyYakeley/haskell-src-exts.git
