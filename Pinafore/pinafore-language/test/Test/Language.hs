@@ -237,7 +237,7 @@ testQueries =
               , testQuery "Std.textLength" $ LRSuccess "<?>"
               , testQuery "let opentype T in openEntity @T !\"example\"" $ LRSuccess "<?>"
               , testQuery "let opentype T in entityAnchor $ openEntity @T !\"example\"" $
-                LRSuccess "\"!1AF8A5FD-24AAAF3E-3668C588-6C74D36A-70ED9618-CC874895-E4569C9F-FCD42CD3\""
+                LRSuccess "\"!61604E6E-5CD45F24-A9CEB59A-3FE58A09-5242FF8A-D0C603D0-8734E583-DC034C5F\""
               ]
         , testTree
               "list construction"

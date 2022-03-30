@@ -9,8 +9,8 @@ module Pinafore.Base.Anchor
     , anchorToByteString
     ) where
 
+import BLAKE3
 import Control.DeepSeq
-import Crypto.Hash
 import Data.ByteArray (convert)
 import qualified Data.Serialize as Serialize (Serialize(..), encode)
 import Shapes
@@ -23,15 +23,9 @@ class IsHash h where
     hashSize :: Int
     hashByteStrings :: [StrictByteString] -> h
 
-hashStream ::
-       forall alg. HashAlgorithm alg
-    => [StrictByteString]
-    -> Digest alg
-hashStream f = hashFinalize $ hashUpdates hashInit f
-
 instance IsHash Anchor where
-    hashSize = 32 -- 256 bits = 64 hex chars = 32 bytes = 4 Word64s
-    hashByteStrings f = MkAnchor $ convert $ hashStream @SHA3_256 f
+    hashSize = fromIntegral $ typeValue @_ @NaturalType @DEFAULT_DIGEST_LEN -- 256 bits = 64 hex chars = 32 bytes = 4 Word64s
+    hashByteStrings f = MkAnchor $ convert $ hash @DEFAULT_DIGEST_LEN f
 
 checkAnchor :: String -> Anchor -> Anchor
 checkAnchor s anchor@(MkAnchor bs) =
