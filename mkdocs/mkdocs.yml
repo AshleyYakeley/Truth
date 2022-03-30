@@ -9,7 +9,9 @@ markdown_extensions:
       hardbreak: True
       nbsp: True
 repo_url: https://github.com/AshleyYakeley/Truth
-theme: readthedocs
+theme:
+  name: readthedocs
+  highlightjs: false
 extra_css: [extra.css]
 nav:
 - Home: 'index.md'

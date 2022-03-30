@@ -173,7 +173,7 @@ mkdocs/generated/type-infix.md: ${BINPATH}/pinafore-doc
 
 .PHONY: scour
 
-scour: mkdocs/docs/img/information.svg
+scour: mkdocs/docs/img/information.svg docker-image
 	stack $(STACKFLAGS) exec -- scour $< | stack $(STACKFLAGS) exec -- sponge $<
 
 mkdocs/generated/img/information.png: mkdocs/docs/img/information.png
