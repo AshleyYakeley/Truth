@@ -235,9 +235,8 @@ uiStyleClass sclass (MkLangElement mw) =
         setCSSClass sclass widget
         return widget
 
-uiTextArea :: WModel (WholeUpdate (Know Text)) -> LangElement
-uiTextArea val =
-    MkLangElement $ createTextArea (unWModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) val) mempty
+uiTextArea :: LangTextRef -> LangElement
+uiTextArea (MkLangTextRef model) = MkLangElement $ createTextArea (unWModel model) mempty
 
 uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangElement
 uiCalendar day =

@@ -25,6 +25,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add Showable type for showing, show replacing toText
       . add min/max/lesser/greater functions
       . add List1 type for non-empty lists, subtype of List
+      . add TextRef type & associated functions, use for uiTextArea
     - Drawing
       . Cairo-based functions for creating drawings
   * Storage

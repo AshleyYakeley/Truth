@@ -34,25 +34,19 @@ finiteSetRefGroundType =
 instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangFiniteSetRef where
     pinaforeGroundType = finiteSetRefGroundType
 
--- WModel FiniteSetUpdate
-{-
-instance ( ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
-         , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
-         ) => FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) (WModel (FiniteSetUpdate t)) where
-    fromPolarShimWit = mapNegShimWit (functionToShim "subtype" unLangFiniteSetRef) fromJMShimWit
-
-instance ( Eq t
-         , ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t
-         , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
-         ) => ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) (WModel (FiniteSetUpdate t)) where
-    toPolarShimWit = mapPosShimWit (functionToShim "subtype" $ MkLangFiniteSetRef identityRange) toJMShimWit
--}
 -- ListRef
 listRefGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangListRef
 listRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangListRef)|]) "ListRef"
 
 instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangListRef where
     pinaforeGroundType = listRefGroundType
+
+-- TextRef
+textRefGroundType :: PinaforeGroundType '[] LangTextRef
+textRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangTextRef)|]) "TextRef"
+
+instance HasPinaforeGroundType '[] LangTextRef where
+    pinaforeGroundType = textRefGroundType
 
 -- RefOrder
 refOrderGroundType :: PinaforeGroundType '[ ContraCCRVariance] LangRefOrder
@@ -283,6 +277,23 @@ refLibEntries =
                       "Get a whole reference to a particular item in the list. It will track the item as the list changes. Pass `True` for an existing item, `False` for a point between items." $
                   langListRefItem @P @Q
                 , mkValEntry "newMemList" "Create a new list reference to memory, initially empty." $ newMemList @A
+                ]
+          , docTreeEntry
+                "Text References"
+                ""
+                [ mkTypeEntry "TextRef" "" $ MkBoundType textRefGroundType
+                , hasSubtypeRelationEntry @(LangWholeRef '( Text, Text)) @LangTextRef "" $
+                  functionToShim "langWholeRefToListRef" langWholeRefToTextRef
+                , mkValEntry "textRefWhole" "Represent a text reference as a whole reference." langTextRefToWholeRef
+                , mkValEntry "textRefGetLength" "Get the length of text." langTextRefGetLength
+                , mkValEntry "textRefGet" "Get the whole text." langTextRefGet
+                , mkValEntry "textRefSet" "Set the whole text." langTextRefSet
+                , mkValEntry "textRefGetSection" "Get a (start,length) section of the text." langTextRefGetSection
+                , mkValEntry "textRefSetSection" "Set a (start,length) section of the text." langTextRefSetSection
+                , mkValEntry
+                      "textRefSection"
+                      "Create a reference to a (start,length) section of a text reference. It will track the section as the text changes."
+                      langTextRefSection
                 ]
           ]
     , docTreeEntry
