@@ -186,7 +186,8 @@ docs: $(foreach f,$(LIBMODULES),mkdocs/docs/library/$f.md) mkdocs/generated/infi
 	mkdir -p mkdocs/generated/examples
 	cp Pinafore/pinafore-app/examples/* mkdocs/generated/examples/
 	stack $(STACKFLAGS) exec -- pip3 install --user file://`pwd`/support/pygments-lexer/
-	stack $(STACKFLAGS) exec --cwd mkdocs -- mkdocs build
+	mkdir -p out/website
+	stack $(STACKFLAGS) exec --cwd mkdocs -- mkdocs build --site-dir ../out/website
 
 VSCXVERSION := $(PACKAGEVERSION).0
 
@@ -227,6 +228,5 @@ clean:
 	rm -rf .build
 	rm -rf out
 	rm -rf mkdocs/generated
-	rm -rf mkdocs/site
 	rm -rf Changes/changes-gtk/examples/showImages/images
 	stack $(STACKFLAGS) clean
