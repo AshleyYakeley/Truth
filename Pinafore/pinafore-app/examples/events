@@ -126,7 +126,7 @@ eventUI evt = UI.vertical
         UI.textEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$% evt,
         UI.textEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$% evt
     ],
-    UI.layoutGrow $ UI.textArea $ eventNotes !$% evt
+    UI.layoutGrow $ UI.textArea (eventNotes !$% evt) unknown
 ];
 
 eventWindow: Event -> Action UI.Window;

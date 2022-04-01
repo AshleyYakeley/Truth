@@ -1,6 +1,7 @@
 module Changes.Core.UI.View.CreateView
     ( CreateView
     , ViewState
+    , cvLiftViewWithUnlift
     , cvBindModelUpdates
     , cvBindModel
     , cvFloatMapModel
@@ -18,6 +19,9 @@ import Changes.Core.UI.View.View
 type CreateView = ViewT LifeCycle
 
 type ViewState = LifeState
+
+cvLiftViewWithUnlift :: View -/-> CreateView
+cvLiftViewWithUnlift = backHoist liftIOWithUnlift
 
 cvBindModelUpdates ::
        forall update a.

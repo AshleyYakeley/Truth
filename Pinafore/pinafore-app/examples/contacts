@@ -23,7 +23,7 @@ country = property @Location @Text !"location.address.country";
 locationUI: WholeRef +Location -> UI.Element;
 locationUI loc = UI.vertical
 [
-    UI.layoutGrow $ uiLabelled {"Address: "} $ UI.textArea $ address !$% loc,
+    UI.layoutGrow $ uiLabelled {"Address: "} $ UI.textArea (address !$% loc) unknown,
     uiLabelled {"City: "} $ UI.textEntry $ city !$% loc,
     uiLabelled {"Postcode/ZIP: "} $ UI.textEntry $ postcode !$% loc,
     uiLabelled {"State/Province: "} $ UI.textEntry $ province !$% loc,

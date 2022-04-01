@@ -87,26 +87,24 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                         contramap readSub $ viewLiftSelectNotify $ modelSelectNotify esrc selectionModel
         (widget, setSelection) <-
             createListTable (fmap getColumn cols) (unWModel $ langListRefToOrdered lref) onSelect tsn
-        case mSelectionModel of
-            Nothing -> return ()
-            Just selectionModel -> let
-                setsel :: Know EnA -> View ()
-                setsel Unknown = setSelection Nothing
-                setsel (Known a) =
-                    setSelection $
-                    Just $ do
-                        a' <- readM ReadWhole
-                        return $ a' == a
-                init :: CreateView ()
-                init =
-                    viewRunResourceContext selectionModel $ \unlift (amod :: _ tt) -> do
-                        ka <- liftIO $ unlift $ aModelRead amod ReadWhole
-                        liftToLifeCycle $ setsel ka
-                recv :: () -> NonEmpty (BiWholeUpdate (Know A) (Know EnA)) -> View ()
-                recv () updates = let
-                    MkBiWholeUpdate ka = last updates
-                    in setsel ka
-                in cvBindModel selectionModel (Just esrc) init mempty recv
+        for_ mSelectionModel $ \selectionModel -> let
+            setsel :: Know EnA -> View ()
+            setsel Unknown = setSelection Nothing
+            setsel (Known a) =
+                setSelection $
+                Just $ do
+                    a' <- readM ReadWhole
+                    return $ a' == a
+            init :: CreateView ()
+            init =
+                viewRunResourceContext selectionModel $ \unlift (amod :: _ tt) -> do
+                    ka <- liftIO $ unlift $ aModelRead amod ReadWhole
+                    liftToLifeCycle $ setsel ka
+            recv :: () -> NonEmpty (BiWholeUpdate (Know A) (Know EnA)) -> View ()
+            recv () updates = let
+                MkBiWholeUpdate ka = last updates
+                in setsel ka
+            in cvBindModel selectionModel (Just esrc) init mempty recv
         return widget
 
 type PickerType = Know EnA
@@ -235,8 +233,12 @@ uiStyleClass sclass (MkLangElement mw) =
         setCSSClass sclass widget
         return widget
 
-uiTextArea :: LangTextRef -> LangElement
-uiTextArea (MkLangTextRef model) = MkLangElement $ createTextArea (unWModel model) mempty
+uiTextArea :: LangTextRef -> LangWholeRef '( PinaforeAction LangTextRef, TopType) -> LangElement
+uiTextArea (MkLangTextRef model) selectionRef =
+    MkLangElement $
+    createTextArea (unWModel model) $
+    contramap (\tsel -> fmap MkLangTextRef $ pinaforeFloatMap tsel model) $
+    langWholeRefSelectNotify noEditSource selectionRef
 
 uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangElement
 uiCalendar day =

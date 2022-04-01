@@ -15,7 +15,7 @@ ui r = UI.vertical
         UI.layoutGrow $ UI.label {unixFormatDate "%A, %B %e, %Y" %r},
         UI.button {">"} {do d <- get r; r := addDays 1 d; end}
         ],
-    UI.layoutGrow $ UI.textArea $ dateText !$ r
+    UI.layoutGrow $ UI.textArea (dateText !$ r) unknown
     ];
 
 in do

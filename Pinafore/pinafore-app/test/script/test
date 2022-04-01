@@ -96,7 +96,7 @@ ui_person p = UI.vertical
         ],
         ui_page {"Home"} $ let homep = home !$ p in UI.vertical
         [
-            ui_labelled {"Address: "} $ UI.textArea $ address !$ homep,
+            ui_labelled {"Address: "} $ UI.textArea (address !$ homep) unknown,
             ui_labelled {"City: "} $ UI.textEntry $ city !$ homep,
             ui_labelled {"Postcode/ZIP: "} $ UI.textEntry $ postcode !$ homep,
             ui_labelled {"State/Province: "} $ UI.textEntry $ province !$ homep,
@@ -155,7 +155,7 @@ in std_window {"Switch"} $ UI.vertical
 [
     #UI.textEntry sw_pick),
     UI.checkBox {"pick"} sw_pick,
-    UI.layoutGrow $ UI.dynamic {if %sw_pick then UI.textArea sw_val1 else UI.textArea sw_val2}
+    UI.layoutGrow $ UI.dynamic {if %sw_pick then UI.textArea sw_val1 unknown else UI.textArea sw_val2 unknown}
 ];
 
 ### Imported Files
@@ -182,7 +182,7 @@ window_constant = std_window {"Constant"} $ UI.vertical
     UI.checkBox {"off"} {False},
     UI.checkBox {"on"} {True},
     UI.textEntry {"constant"},
-    UI.layoutGrow $ UI.textArea {"constant"}
+    UI.layoutGrow $ UI.textArea {"constant"} unknown
 ];
 
 ### CSS
@@ -197,7 +197,7 @@ window_css = do
             UI.styleClass "x" $ UI.name "A" $ UI.checkBox {"Box"} {True},
             UI.styleClass "x" $ UI.name "B" $ UI.button {"Button"} {return ()},
             UI.styleClass "x" $ UI.name "C" $ UI.textEntry sometext,
-            UI.layoutGrow $ UI.styleClass "y" $ UI.name "D" $ UI.textArea cssref,
+            UI.layoutGrow $ UI.styleClass "y" $ UI.name "D" $ UI.textArea cssref unknown,
             UI.styleClass "y" $ UI.name "E" $ UI.label {"Some Text"}
         ];
     end;
