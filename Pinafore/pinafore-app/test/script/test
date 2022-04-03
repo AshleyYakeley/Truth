@@ -25,7 +25,7 @@ std_window title contents = fixAction $ \window => let
                 UI.menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ]
-    in UI.openWindow (300,400) title {menus} $ UI.scrolled contents;
+    in UI.openWindow (400,500) title {menus} $ UI.scrolled contents;
 
 ### People
 
@@ -222,6 +222,25 @@ window_drawing now = let import Colour; import Drawing in do
             end};
     end;
 
+### Text Selection
+window_textselection: Action UI.Window;
+window_textselection = do
+    tref1 <- newMemWhole;
+    tref1 := "111";
+    tref2 <- newMemWhole;
+    tref2 := "222";
+    tref3 <- newMemWhole;
+    tref3 := "333";
+    sel <- newMemWhole;
+    std_window {"Text Selection"} $ UI.styleSheet {"* {padding: 2pt;}"} $ UI.vertical
+    [
+        UI.textArea tref1 sel,
+        UI.textArea tref2 sel,
+        UI.textArea tref3 sel,
+        UI.dynamic {UI.run $ mapAction (\tref => UI.textArea tref unknown) %sel}
+    ];
+    end;
+
 ### Start Window
 
 window_start : Action UI.Window;
@@ -247,6 +266,7 @@ window_start = do
             UI.button {"Constant"} {window_constant},
             UI.button {"CSS"} {window_css},
             UI.button {"Drawing"} {window_drawing now},
+            UI.button {"Text Selection"} {window_textselection},
             UI.button {"Disabled"} unknown,
             UI.layoutGrow $ UI.blank
         ];
