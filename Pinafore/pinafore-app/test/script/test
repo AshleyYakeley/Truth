@@ -9,8 +9,8 @@ ui_page n ui = (UI.label n,ui);
 ui_labelled n ui = UI.horizontal [UI.label n, UI.layoutGrow  ui];
 
 std_window : WholeRef +Text -> UI.Element -> Action UI.Window;
-std_window title contents = fixAction $ \window -> let
-    menus : [UI.MenuItem];
+std_window title contents = fixAction $ \window => let
+    menus : List UI.MenuItem;
     menus =
         [
             UI.menuSubmenu "File"
@@ -25,7 +25,7 @@ std_window title contents = fixAction $ \window -> let
                 UI.menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ]
-    in UI.openWindow (300,500) title {menus} $ UI.scrolled contents;
+    in UI.openWindow (400,500) title {menus} $ UI.scrolled contents;
 
 ### People
 
@@ -75,12 +75,12 @@ ui_people pp = UI.run $ do
     [
         UI.button {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end},
         UI.button {"View Person"} {get selectedperson >>= window_person},
-        UI.button {"Remove Person"} {get selectedperson >>= \p -> pp -= p},
-        UI.layoutGrow $ UI.listTable [({"Name"},\p -> name !$ {p})] pplist window_person (Just selectedperson)
+        UI.button {"Remove Person"} {get selectedperson >>= \p => pp -= p},
+        UI.layoutGrow $ UI.listTable [({"Name"},\p => name !$ {p})] pplist window_person (Just selectedperson)
     ];
     end;
 
-peopleByName : WholeRef +[(Person,Text)];
+peopleByName : WholeRef +(List (Person :*: Text));
 peopleByName = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
 
 ui_person : WholeRef Person -> UI.Element;
@@ -96,7 +96,7 @@ ui_person p = UI.vertical
         ],
         ui_page {"Home"} $ let homep = home !$ p in UI.vertical
         [
-            ui_labelled {"Address: "} $ UI.textArea $ address !$ homep,
+            ui_labelled {"Address: "} $ UI.textArea (address !$ homep) unknown,
             ui_labelled {"City: "} $ UI.textEntry $ city !$ homep,
             ui_labelled {"Postcode/ZIP: "} $ UI.textEntry $ postcode !$ homep,
             ui_labelled {"State/Province: "} $ UI.textEntry $ province !$ homep,
@@ -155,7 +155,7 @@ in std_window {"Switch"} $ UI.vertical
 [
     #UI.textEntry sw_pick),
     UI.checkBox {"pick"} sw_pick,
-    UI.layoutGrow $ UI.dynamic {if %sw_pick then UI.textArea sw_val1 else UI.textArea sw_val2}
+    UI.layoutGrow $ UI.dynamic {if %sw_pick then UI.textArea sw_val1 unknown else UI.textArea sw_val2 unknown}
 ];
 
 ### Imported Files
@@ -170,7 +170,7 @@ window_file f = std_window {"File"} $ UI.vertical
 ];
 in std_window {"Files"} $ UI.vertical
 [
-    #UI.button "Import" {file_import Files $ \f -> std_window $ window_file f},
+    #UI.button "Import" {file_import Files $ \f => std_window $ window_file f},
     #UI.layoutGrow $ UI.listTable [column "Caption" caption, column "Size" file_size] window_file Files
 ];
 
@@ -182,7 +182,7 @@ window_constant = std_window {"Constant"} $ UI.vertical
     UI.checkBox {"off"} {False},
     UI.checkBox {"on"} {True},
     UI.textEntry {"constant"},
-    UI.layoutGrow $ UI.textArea {"constant"}
+    UI.layoutGrow $ UI.textArea {"constant"} unknown
 ];
 
 ### CSS
@@ -197,7 +197,7 @@ window_css = do
             UI.styleClass "x" $ UI.name "A" $ UI.checkBox {"Box"} {True},
             UI.styleClass "x" $ UI.name "B" $ UI.button {"Button"} {return ()},
             UI.styleClass "x" $ UI.name "C" $ UI.textEntry sometext,
-            UI.layoutGrow $ UI.styleClass "y" $ UI.name "D" $ UI.textArea cssref,
+            UI.layoutGrow $ UI.styleClass "y" $ UI.name "D" $ UI.textArea cssref unknown,
             UI.styleClass "y" $ UI.name "E" $ UI.label {"Some Text"}
         ];
     end;
@@ -206,10 +206,10 @@ window_css = do
 window_drawing: WholeRef +Time -> Action UI.Window;
 window_drawing now = let import Colour; import Drawing in do
     tzref <- newTimeZoneRef now;
-    std_window {"Drawing"} $ UI.draw {\(w,h) -> let
+    std_window {"Drawing"} $ UI.draw {\(w,h) => let
         size = min w h;
         in case timeToLocal %tzref %now of
-            DateAndTime _ (HourMinuteSecond _ _ s) ->
+            DateAndTime _ (HourMinuteSecond _ _ s) =>
                 translate (w / 2, h / 2) $
                 scale (size, size) $
                 scale (-0.5, -0.5) $
@@ -228,6 +228,27 @@ window_list = do
     std_window {"List"} $ UI.list ui_person peopleList;
     end;
 
+### Text Selection
+window_textselection: Action UI.Window;
+window_textselection = do
+    tref1 <- newMemWhole;
+    tref1 := "111";
+    tref2 <- newMemWhole;
+    tref2 := "222";
+    tref3 <- newMemWhole;
+    tref3 := "333";
+    sel <- newMemWhole;
+    std_window {"Text Selection"} $ UI.styleSheet {"* {padding: 2pt;}"} $ UI.vertical
+    [
+        UI.textArea tref1 sel,
+        UI.textArea tref2 sel,
+        UI.textArea tref3 sel,
+        UI.dynamic {UI.run $ mapAction (\tref => UI.textArea tref unknown) %sel}
+    ];
+    end;
+
+### Start Window
+
 window_start : Action UI.Window;
 window_start = do
     now <- newClock $ Seconds 1;
@@ -235,7 +256,7 @@ window_start = do
     let
         utcDate = {%now};
         localNow = {timeToLocal %timeZone %now};
-        today = {case %localNow of DateAndTime day _ -> day end};
+        today = {case %localNow of DateAndTime day _ => day end};
         in do
         std_window {"Pinafore"} $ UI.vertical
         [
@@ -252,6 +273,7 @@ window_start = do
             UI.button {"CSS"} {window_css},
             UI.button {"Drawing"} {window_drawing now},
             UI.button {"List"} {window_list},
+            UI.button {"Text Selection"} {window_textselection},
             UI.button {"Disabled"} unknown,
             UI.layoutGrow $ UI.blank
         ];

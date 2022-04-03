@@ -16,7 +16,6 @@ import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
-import Text.Parsec.Pos (initialPos)
 
 type Parser = Parsec [(SourcePos, AnyValue Token)] ()
 
@@ -38,9 +37,9 @@ parseReader r text = let
                Right a -> return a
                Left e -> throwErrorMessage $ parseErrorMessage e
 
-parseScopedReaderWhole :: Parser (PinaforeSourceInterpreter t) -> Text -> PinaforeSourceInterpreter t
+parseScopedReaderWhole :: Parser (PinaforeInterpreter t) -> Text -> PinaforeInterpreter t
 parseScopedReaderWhole parser text = do
-    spos <- askSourcePos
+    spos <- askD sourcePosParam
     result <- runInterpretResult $ evalStateT (parseReader parser text) spos
     case result of
         SuccessResult a -> a
@@ -147,3 +146,14 @@ readReferenceLName =
 
 readReferenceName :: Parser ReferenceName
 readReferenceName = readReferenceUName <|> readReferenceLName
+
+readLines :: Parser a -> Parser [a]
+readLines p =
+    (do
+         a <- p
+         ma <-
+             optional $ do
+                 readThis TokSemicolon
+                 readLines p
+         return $ a : fromMaybe [] ma) <|>
+    (return [])

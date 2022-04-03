@@ -15,8 +15,8 @@ mapPattern :: (q -> a -> Maybe b) -> Pattern w q a -> Pattern w q b
 mapPattern qamb (ClosedPattern qma) = ClosedPattern $ \q -> qma q >>= qamb q
 mapPattern qamb (OpenPattern wt pat) = OpenPattern wt $ mapPattern (\q (t, a) -> fmap (\b -> (t, b)) (qamb q a)) pat
 
-contramap1Pattern :: (q -> p) -> Pattern w p a -> Pattern w q a
-contramap1Pattern qp (ClosedPattern pma) = ClosedPattern $ pma . qp
+contramap1Pattern :: (q -> Maybe p) -> Pattern w p a -> Pattern w q a
+contramap1Pattern qp (ClosedPattern pma) = ClosedPattern $ \q -> qp q >>= pma
 contramap1Pattern qp (OpenPattern wt pat) = OpenPattern wt $ contramap1Pattern qp pat
 
 instance Applicative (Pattern w q) where

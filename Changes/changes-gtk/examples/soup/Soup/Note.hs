@@ -4,6 +4,8 @@ import Changes.Core
 import Changes.UI.GTK
 import Changes.World.JSON
 import qualified Data.Aeson as JSON
+import qualified Data.Aeson.Key as JSON
+import qualified Data.Aeson.KeyMap as JSON
 import qualified Data.Aeson.Types as JSON
 import Shapes
 
@@ -96,7 +98,7 @@ type Note = Tuple NoteSel
 instance JSON.ToJSON Note where
     toJSON (MkTuple sel) =
         JSON.Object $
-        mapFromList
+        JSON.fromList
             [ (fromString "title", JSON.toJSON $ sel NoteTitle)
             , (fromString "past", JSON.toJSON $ sel NotePast)
             , (fromString "", JSON.toJSON $ sel NoteText)
@@ -104,7 +106,7 @@ instance JSON.ToJSON Note where
 
 parseField :: JSON.FromJSON a => Text -> JSON.Object -> JSON.Parser a
 parseField key obj = do
-    val <- mpure $ lookup key obj
+    val <- mpure $ JSON.lookup (JSON.fromText key) obj
     JSON.parseJSON val
 
 instance JSON.FromJSON Note where

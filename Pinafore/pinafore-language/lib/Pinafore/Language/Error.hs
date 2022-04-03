@@ -8,7 +8,9 @@ import Text.Parsec.Error
 import Text.Parsec.Pos
 
 data ErrorType
-    = UnicodeDecodeError Text
+    = KnownIssueError Int
+                      Text
+    | UnicodeDecodeError Text
     | ParserError [Message]
     | ExpressionErrorError ExpressionError
     | LookupNamesUnknownError (NonEmpty Name)
@@ -42,12 +44,20 @@ data ErrorType
     | InterpretTypeOverApplyError Text
     | InterpretTypeRangeApplyError Text
     | InterpretConstructorUnknownError ReferenceName
-    | InterpretBindingsDuplicateError [Name]
-    | InterpretUnboundTypeVariablesError (NonEmpty Name)
+    | InterpretBindingsDuplicateError (NonEmpty Name)
+    | InterpretTypeDeclDuplicateTypeVariablesError Name
+                                                   (NonEmpty Name)
+    | InterpretTypeDeclUnboundTypeVariablesError Name
+                                                 (NonEmpty Name)
+    | InterpretTypeDeclTypeVariableWrongPolarityError Name
+                                                      Name
+    | InterpretTypeDeclTypeVariableNotCovariantError Name
     | ModuleNotFoundError ModuleName
     | ModuleCycleError (NonEmpty ModuleName)
 
 instance Show ErrorType where
+    show (KnownIssueError n "") = "issue #" <> show n
+    show (KnownIssueError n t) = unpack t <> " (issue #" <> show n <> ")"
     show (UnicodeDecodeError t) = "Unicode decode error: " <> unpack t
     show (ParserError msgs) = let
         getMsgs :: (Message -> Maybe String) -> [String]
@@ -120,9 +130,15 @@ instance Show ErrorType where
     show (InterpretTypeOverApplyError t) = "overapplied type constuctor: " <> unpack t
     show (InterpretTypeRangeApplyError t) = "inappropriate range in type constructor: " <> unpack t
     show (InterpretConstructorUnknownError n) = "unknown constructor: " <> show n
-    show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show nn)
-    show (InterpretUnboundTypeVariablesError vv) =
-        "unbound type variables: " <> (intercalate ", " $ fmap show $ toList vv)
+    show (InterpretBindingsDuplicateError nn) = "duplicate bindings: " <> (intercalate ", " $ fmap show $ toList nn)
+    show (InterpretTypeDeclDuplicateTypeVariablesError n vv) =
+        "duplicate type variables in declaration of " <> show n <> ": " <> (intercalate ", " $ fmap show $ toList vv)
+    show (InterpretTypeDeclUnboundTypeVariablesError n vv) =
+        "unbound type variables in declaration of " <> show n <> ": " <> (intercalate ", " $ fmap show $ toList vv)
+    show (InterpretTypeDeclTypeVariableWrongPolarityError n v) =
+        "wrong polarity of type variable " <> show v <> " in declaration of " <> show n
+    show (InterpretTypeDeclTypeVariableNotCovariantError n) =
+        "type variable is not covariant in declaration of " <> show n
     show (ModuleNotFoundError mname) = "can't find module " <> show mname
     show (ModuleCycleError nn) = "cycle in modules: " <> (intercalate ", " $ fmap show $ toList nn)
 
@@ -146,9 +162,6 @@ showIndentPinaforeError n (MkPinaforeError ems) = let
 
 instance Show ErrorMessage where
     show = showIndentErrorMessage 0
-
-throwErrorType :: MonadThrow ErrorMessage m => SourcePos -> ErrorType -> m a
-throwErrorType spos err = throw $ MkErrorMessage spos err mempty
 
 parseErrorMessage :: ParseError -> ErrorMessage
 parseErrorMessage err = MkErrorMessage (errorPos err) (ParserError $ errorMessages err) mempty

@@ -66,11 +66,11 @@ instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. ( MonadOne
                 then " (recursive)"
                 else ""
         spos =
-            case getMaybeOne mtpos of
+            case fextractm mtpos of
                 Just (MkShimWit t _) -> showAllWitness t
                 Nothing -> "fails"
         sneg =
-            case getMaybeOne mtneg of
+            case fextractm mtneg of
                 Just (MkShimWit t _) -> showAllWitness t
                 Nothing -> "fails"
         in show var <> srec <> " => " <> "(" <> spos <> "," <> sneg <> ")"
@@ -308,7 +308,7 @@ mapDolanGroundArguments ::
     -> DolanArguments dv (DolanType ground) gt polarity t
     -> PShimWit (pshim Type) (DolanSingularType ground) polarity t
 mapDolanGroundArguments ff g args =
-    case mapDolanArguments ff (groundTypeVarianceType g) (groundTypeVarianceMap g) args of
+    case mapDolanArguments ff (groundTypeVarianceMap g) args of
         MkShimWit args' conv -> MkShimWit (GroundedDolanSingularType g args') conv
 
 mapDolanSingularType ::
@@ -333,7 +333,7 @@ mapDolanGroundArgumentsM ::
     -> DolanArguments dv (DolanType ground) gt polarity t
     -> m (PShimWit (pshim Type) (DolanSingularType ground) polarity t)
 mapDolanGroundArgumentsM ff g args = do
-    MkShimWit args' conv <- mapDolanArgumentsM ff (groundTypeVarianceType g) (groundTypeVarianceMap g) args
+    MkShimWit args' conv <- mapDolanArgumentsM ff (groundTypeVarianceMap g) args
     return $ MkShimWit (GroundedDolanSingularType g args') conv
 
 mapDolanSingularTypeM ::

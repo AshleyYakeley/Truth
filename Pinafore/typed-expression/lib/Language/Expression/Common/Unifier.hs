@@ -6,49 +6,41 @@ import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-newtype UUShim (ts :: Type) (a :: Type) (b :: Type) = MkUUShim
-    { uuGetShim :: Unifier ts (TSShim ts a b)
-    }
-
-instance UnifyTypeSystem ts => Category (UUShim ts) where
-    id = MkUUShim $ pure cid
-    MkUUShim ubc . MkUUShim uab = MkUUShim $ liftA2 (<.>) ubc uab
-
-instance UnifyTypeSystem ts => InCategory (UUShim ts) where
-    cid = id
-    (<.>) = (.)
-
-instance UnifyTypeSystem ts => JoinMeetIsoCategory (UUShim ts)
-
-instance UnifyTypeSystem ts => JoinMeetCategory (UUShim ts) where
-    initf = MkUUShim $ pure initf
-    termf = MkUUShim $ pure termf
-    join1 = MkUUShim $ pure join1
-    join2 = MkUUShim $ pure join2
-    joinf (MkUUShim uar) (MkUUShim ubr) = MkUUShim $ liftA2 joinf uar ubr
-    meet1 = MkUUShim $ pure meet1
-    meet2 = MkUUShim $ pure meet2
-    meetf (MkUUShim uar) (MkUUShim ubr) = MkUUShim $ liftA2 meetf uar ubr
-    applf (MkUUShim uar) (MkUUShim ubr) = MkUUShim $ liftA2 applf uar ubr
+type UUShim (ts :: Type) = ComposeShim (Unifier ts) (TSShim ts)
 
 uuLiftShim :: UnifyTypeSystem ts => TSShim ts a b -> UUShim ts a b
-uuLiftShim conv = MkUUShim $ pure conv
+uuLiftShim = pureComposeShim
+
+uuGetShim :: forall ts a b. UUShim ts a b -> Unifier ts (TSShim ts a b)
+uuGetShim = unComposeShim
 
 type UUNegShimWit ts = PolarShimWit (UUShim ts) (TSNegWitness ts) 'Negative
 
 type UUPosShimWit ts = PolarShimWit (UUShim ts) (TSPosWitness ts) 'Positive
 
-uuLiftNegShimWit :: UnifyTypeSystem ts => TSNegShimWit ts t -> UUNegShimWit ts t
-uuLiftNegShimWit t = unNegShimWit t $ \wt conv -> mkNegShimWit wt $ uuLiftShim conv
+uuLiftNegShimWit ::
+       forall ts t. UnifyTypeSystem ts
+    => TSNegShimWit ts t
+    -> UUNegShimWit ts t
+uuLiftNegShimWit t = unNegShimWit t $ \wt conv -> mkNegShimWit wt $ uuLiftShim @ts conv
 
-uuLiftPosShimWit :: UnifyTypeSystem ts => TSPosShimWit ts t -> UUPosShimWit ts t
-uuLiftPosShimWit t = unPosShimWit t $ \wt conv -> mkPosShimWit wt $ uuLiftShim conv
+uuLiftPosShimWit ::
+       forall ts t. UnifyTypeSystem ts
+    => TSPosShimWit ts t
+    -> UUPosShimWit ts t
+uuLiftPosShimWit t = unPosShimWit t $ \wt conv -> mkPosShimWit wt $ uuLiftShim @ts conv
 
-uuGetNegShimWit :: UnifyTypeSystem ts => UUNegShimWit ts t -> Unifier ts (TSNegShimWit ts t)
-uuGetNegShimWit t = unNegShimWit t $ \wt (MkUUShim uconv) -> fmap (\conv -> mkNegShimWit wt conv) uconv
+uuGetNegShimWit ::
+       forall ts t. UnifyTypeSystem ts
+    => UUNegShimWit ts t
+    -> Unifier ts (TSNegShimWit ts t)
+uuGetNegShimWit t = unNegShimWit t $ \wt (MkComposeShim uconv) -> fmap (\conv -> mkNegShimWit wt conv) uconv
 
-uuGetPosShimWit :: UnifyTypeSystem ts => UUPosShimWit ts t -> Unifier ts (TSPosShimWit ts t)
-uuGetPosShimWit t = unPosShimWit t $ \wt (MkUUShim uconv) -> fmap (\conv -> mkPosShimWit wt conv) uconv
+uuGetPosShimWit ::
+       forall ts t. UnifyTypeSystem ts
+    => UUPosShimWit ts t
+    -> Unifier ts (TSPosShimWit ts t)
+uuGetPosShimWit t = unPosShimWit t $ \wt (MkComposeShim uconv) -> fmap (\conv -> mkPosShimWit wt conv) uconv
 
 class (TypeSystem ts, Applicative (Unifier ts), CartesianShim (TSShim ts), Show (UnifierSubstitutions ts)) =>
           UnifyTypeSystem (ts :: Type) where
@@ -96,7 +88,7 @@ solveUnifyPosNegShimWit ::
     -> TSNegShimWit ts b
     -> TSOuter ts (TSShim ts a b)
 solveUnifyPosNegShimWit wa wb = do
-    MkUUShim uab <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit wa) (uuLiftNegShimWit wb)
+    MkComposeShim uab <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts wa) (uuLiftNegShimWit @ts wb)
     (ab, _) <- solveUnifier @ts uab
     return ab
 

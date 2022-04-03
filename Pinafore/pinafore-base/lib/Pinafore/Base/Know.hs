@@ -11,7 +11,10 @@ module Pinafore.Base.Know
     , knowMaybe
     , knowMaybeLens
     , catKnowns
+    , unknownValueBijection
     , unknownValueChangeLens
+    , biFromKnowWhole
+    , biToKnowWhole
     ) where
 
 import Changes.Core
@@ -91,3 +94,13 @@ unknownValueBijection def = let
 
 unknownValueChangeLens :: a -> ChangeLens (WholeUpdate (Know a)) (WholeUpdate a)
 unknownValueChangeLens def = toChangeLens $ unknownValueBijection def
+
+biFromKnowWhole ::
+       forall p q. Monoid q
+    => ChangeLens (BiWholeUpdate (Know p) (Know q)) (BiWholeUpdate p q)
+biFromKnowWhole = mapBiWholeChangeLens Known $ fromKnow mempty
+
+biToKnowWhole ::
+       forall p q. Monoid p
+    => ChangeLens (BiWholeUpdate p q) (BiWholeUpdate (Know p) (Know q))
+biToKnowWhole = mapBiWholeChangeLens (fromKnow mempty) Known

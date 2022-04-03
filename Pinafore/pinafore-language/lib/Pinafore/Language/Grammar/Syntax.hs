@@ -8,30 +8,45 @@ import Pinafore.Markdown
 import Shapes
 import Text.Parsec (SourcePos)
 
-data SyntaxClosedEntityConstructor =
-    MkSyntaxClosedEntityConstructor Name
-                                    [SyntaxType]
-                                    Anchor
+data SyntaxConstructorOrSubtype extra
+    = ConstructorSyntaxConstructorOrSubtype Name
+                                            [SyntaxType]
+                                            extra
+    | SubtypeSyntaxConstructorOrSubtype Name
+                                        [SyntaxConstructorOrSubtype extra]
+    deriving (Eq)
 
-data SyntaxDatatypeConstructor =
-    MkSyntaxDatatypeConstructor Name
-                                [SyntaxType]
+type SyntaxClosedEntityConstructorOrSubtype = SyntaxConstructorOrSubtype Anchor
+
+data SyntaxTypeParameter
+    = PositiveSyntaxTypeParameter Name
+    | NegativeSyntaxTypeParameter Name
+    | RangeSyntaxTypeParameter Name
+                               Name -- negative, positive
+    deriving (Eq)
+
+type SyntaxDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 
 data SyntaxDynamicEntityConstructor
     = AnchorSyntaxDynamicEntityConstructor Anchor
     | NameSyntaxDynamicEntityConstructor ReferenceName
+    deriving (Eq)
 
 data SyntaxTypeDeclaration
-    = ClosedEntitySyntaxTypeDeclaration [SyntaxClosedEntityConstructor]
-    | DatatypeSyntaxTypeDeclaration [SyntaxDatatypeConstructor]
+    = ClosedEntitySyntaxTypeDeclaration [SyntaxTypeParameter]
+                                        [SyntaxClosedEntityConstructorOrSubtype]
+    | DatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
+                                    [SyntaxDatatypeConstructorOrSubtype]
     | OpenEntitySyntaxTypeDeclaration
     | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
+    deriving (Eq)
 
 data SyntaxExpose
     = SExpExpose SourcePos
                  [Name]
     | SExpLet [SyntaxWithDoc SyntaxDeclaration]
               SyntaxExpose
+    deriving (Eq)
 
 data SyntaxDirectDeclaration
     = TypeSyntaxDeclaration SourcePos
@@ -41,10 +56,12 @@ data SyntaxDirectDeclaration
                                SyntaxType
                                SyntaxType
     | BindingSyntaxDeclaration SyntaxBinding
+    deriving (Eq)
 
 data SyntaxWithDoc t =
     MkSyntaxWithDoc Markdown
                     t
+    deriving (Eq)
 
 data SyntaxDeclaration
     = DirectSyntaxDeclaration SyntaxDirectDeclaration
@@ -55,10 +72,12 @@ data SyntaxDeclaration
                               SyntaxExpose
     | RecursiveSyntaxDeclaration SourcePos
                                  [SyntaxWithDoc SyntaxDirectDeclaration]
+    deriving (Eq)
 
 data WithSourcePos t =
     MkWithSourcePos SourcePos
                     t
+    deriving (Eq)
 
 instance ExprShow t => ExprShow (WithSourcePos t) where
     exprShowPrec (MkWithSourcePos _ expr) = exprShowPrec expr
@@ -66,22 +85,20 @@ instance ExprShow t => ExprShow (WithSourcePos t) where
 data SyntaxVariance
     = CoSyntaxVariance
     | ContraSyntaxVariance
+    deriving (Eq)
 
 instance ExprShow SyntaxVariance where
     exprShowPrec CoSyntaxVariance = ("+", 0)
     exprShowPrec ContraSyntaxVariance = ("-", 0)
 
-data SyntaxGroundType
-    = ConstSyntaxGroundType ReferenceName
-    | FunctionSyntaxGroundType
-    | MorphismSyntaxGroundType
-    | ListSyntaxGroundType
-    | PairSyntaxGroundType
-    | UnitSyntaxGroundType
+newtype SyntaxGroundType =
+    ConstSyntaxGroundType ReferenceName
+    deriving (Eq)
 
 data SyntaxTypeArgument
     = SimpleSyntaxTypeArgument SyntaxType
     | RangeSyntaxTypeArgument [(Maybe SyntaxVariance, SyntaxType)]
+    deriving (Eq)
 
 instance ExprShow SyntaxTypeArgument where
     exprShowPrec (SimpleSyntaxTypeArgument t) = exprShowPrec t
@@ -101,25 +118,34 @@ data SyntaxType'
     | BottomSyntaxType
     | RecursiveSyntaxType Name
                           SyntaxType
+    deriving (Eq)
+
+typeOperatorFixity :: Name -> Fixity
+typeOperatorFixity "->" = MkFixity AssocRight 0
+typeOperatorFixity "~>" = MkFixity AssocRight 1
+typeOperatorFixity ":+:" = MkFixity AssocRight 2
+typeOperatorFixity ":*:" = MkFixity AssocRight 3
+typeOperatorFixity _ = MkFixity AssocLeft 3
 
 instance ExprShow SyntaxType' where
     exprShowPrec (VarSyntaxType v) = exprShowPrec v
-    exprShowPrec (OrSyntaxType ta tb) = (exprPrecShow 2 ta <> " | " <> exprPrecShow 2 tb, 3)
-    exprShowPrec (AndSyntaxType ta tb) = (exprPrecShow 2 ta <> " & " <> exprPrecShow 2 tb, 3)
+    exprShowPrec (OrSyntaxType ta tb) = (exprPrecShow 6 ta <> " | " <> exprPrecShow 6 tb, 7)
+    exprShowPrec (AndSyntaxType ta tb) = (exprPrecShow 6 ta <> " & " <> exprPrecShow 6 tb, 7)
     exprShowPrec TopSyntaxType = ("None", 0)
     exprShowPrec BottomSyntaxType = ("Any", 0)
-    exprShowPrec (RecursiveSyntaxType n pt) = ("rec " <> exprShow n <> ". " <> exprShow pt, 4)
-    exprShowPrec (SingleSyntaxType UnitSyntaxGroundType []) = ("()", 0)
-    exprShowPrec (SingleSyntaxType PairSyntaxGroundType [ta, tb]) = ("(" <> exprShow ta <> "," <> exprShow tb <> ")", 0)
-    exprShowPrec (SingleSyntaxType ListSyntaxGroundType [ta]) = ("[" <> exprShow ta <> "]", 0)
-    exprShowPrec (SingleSyntaxType FunctionSyntaxGroundType [ta, tb]) =
-        (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
-    exprShowPrec (SingleSyntaxType MorphismSyntaxGroundType [ta, tb]) =
-        (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
+    exprShowPrec (RecursiveSyntaxType n pt) = ("rec " <> exprShow n <> ". " <> exprPrecShow 7 pt, 7)
+    exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType (UnqualifiedReferenceName n)) [ta, tb])
+        | nameIsInfix n = let
+            MkFixity assc level = typeOperatorFixity n
+            prec = 6 - level
+            in case assc of
+                   AssocRight -> (exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow prec tb, prec)
+                   AssocLeft -> (exprPrecShow prec ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb, prec)
+                   AssocNone ->
+                       (exprPrecShow (pred prec) ta <> " " <> exprShow n <> " " <> exprPrecShow (pred prec) tb, prec)
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) []) = (exprShow n, 0)
     exprShowPrec (SingleSyntaxType (ConstSyntaxGroundType n) args) =
         (exprShow n <> mconcat (fmap (\arg -> " " <> exprPrecShow 0 arg) args), 2)
-    exprShowPrec (SingleSyntaxType _ _) = ("UNKNOWN", 0)
 
 type SyntaxType = WithSourcePos SyntaxType'
 
@@ -128,6 +154,7 @@ data SyntaxBinding =
                     (Maybe SyntaxType)
                     Name
                     SyntaxExpression
+    deriving (Eq)
 
 data SyntaxConstructor
     = SLNumber Number
@@ -135,6 +162,7 @@ data SyntaxConstructor
     | SLNamedConstructor ReferenceName
     | SLPair
     | SLUnit
+    deriving (Eq)
 
 data SyntaxPattern'
     = AnySyntaxPattern
@@ -145,22 +173,26 @@ data SyntaxPattern'
                                [SyntaxPattern]
     | TypedSyntaxPattern SyntaxPattern
                          SyntaxType
+    deriving (Eq)
 
 type SyntaxPattern = WithSourcePos SyntaxPattern'
 
 data SyntaxCase =
     MkSyntaxCase SyntaxPattern
                  SyntaxExpression
+    deriving (Eq)
 
 data SyntaxAnnotation
     = SAType SyntaxType
     | SAAnchor Anchor
+    deriving (Eq)
 
 data SyntaxConstant
     = SCIfThenElse
     | SCBind
     | SCBind_
     | SCConstructor SyntaxConstructor
+    deriving (Eq)
 
 data SyntaxExpression'
     = SESubsume SyntaxExpression
@@ -179,7 +211,9 @@ data SyntaxExpression'
             SyntaxExpression
     | SECase SyntaxExpression
              [SyntaxCase]
+    | SELambdaCase [SyntaxCase]
     | SEList [SyntaxExpression]
+    deriving (Eq)
 
 seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression
 seConst spos sc = MkWithSourcePos spos $ SEConst sc
@@ -254,6 +288,7 @@ instance SyntaxFreeVariables SyntaxExpression' where
     syntaxFreeVariables (SELet binds expr) =
         difference (syntaxFreeVariables binds <> syntaxFreeVariables expr) (syntaxBindingVariables binds)
     syntaxFreeVariables (SECase expr cases) = union (syntaxFreeVariables expr) (syntaxFreeVariables cases)
+    syntaxFreeVariables (SELambdaCase cases) = syntaxFreeVariables cases
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
 
 instance SyntaxFreeVariables SyntaxBinding where
@@ -308,17 +343,9 @@ checkSyntaxBindingsDuplicates ::
     => [SyntaxBinding]
     -> m ()
 checkSyntaxBindingsDuplicates = let
-    duplicates ::
-           forall a. Eq a
-        => [a]
-        -> [a]
-    duplicates [] = []
-    duplicates (a:aa)
-        | elem a aa = a : duplicates aa
-    duplicates (_:aa) = duplicates aa
     checkDuplicates :: [Name] -> m ()
     checkDuplicates nn =
-        case nub $ duplicates nn of
-            [] -> return ()
-            b -> throw $ InterpretBindingsDuplicateError b
+        case nonEmpty $ duplicates nn of
+            Nothing -> return ()
+            Just b -> throw $ InterpretBindingsDuplicateError b
     in checkDuplicates . fmap (\(MkSyntaxBinding _ _ name _) -> name)

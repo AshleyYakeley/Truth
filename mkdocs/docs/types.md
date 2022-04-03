@@ -12,13 +12,29 @@ The declaration specifies the constructors of the type.
 Each constructor has a name, and a list of zero or more ambipolar types.
 
 ```pinafore
-datatype T =
-    T1 (Int -> [Int]) |
+datatype T of
+    T1 (Int -> [Int]);
     T2 Int;
+end;
 ```
 
 Data types are not subtypes of `Entity` and are not storable.
 You can use closed entity types (below) for that.
+
+Datatypes can take parameters. The variance of each parameter is specified like this:
+
+* `+a` for covariant
+* `-a` for contravariant
+* `{-p,+q}` or `{+q,-p}` for a contravariant-covariant pair.
+
+For example:
+
+```pinafore
+datatype D +a -b {-p,+q} of
+    T1 (b -> [a]);
+    T2 (p :*: b -> q);
+end;
+```
 
 ## Entity types
 
@@ -31,7 +47,7 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 `Literal <: Entity`
 
-`() <: Literal`
+`Unit <: Literal`
 
 `Boolean <: Literal`
 
@@ -53,10 +69,9 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 ### Maybe
 
-`Maybe a`  
-(`a` is covariant)
+`Maybe +a`  
 
-`a <: Entity` implies `Maybe a <: Entity`.
+ `Maybe Entity <: Entity`.
 
 #### Constructors & Functions
 `Just: a -> Maybe a`  
@@ -64,58 +79,61 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 ### Lists
 
-`[a]`  
-(`a` is covariant)
+`List +a`  
 
-`a <: Entity` implies `[a] <: Entity`.
+`List1 +a`  
+
+`List1 a <: List a`
+
+`List Entity <: Entity`.
 
 #### Constructors & Functions
-`[]: [None]`  
-`\x y -> x::y: a -> [a] -> [a]`
+`[]: List None`  
+`\x y => x::y: a -> List a -> List1 a`
 
-### Pairs
+### Cartesian Products
 
-`(a,b)`  
-(both `a` and `b` are covariant)
+`+a :*: +b`  
 
-`a <: Entity` and `b <: Entity` implies `(a,b) <: Entity`.
+`Entity :*: Entity <: Entity`.
 
 There are no higher-arity tuples than pair.
 
 #### Constructors & Functions
-`\x y -> (x, y): a -> b -> (a, b)`  
-`fst: (a, Any) -> a`  
-`snd: (Any, b) -> b`
+`\x y => (x, y): a -> b -> a :*: b`  
+`fst: a :*: Any -> a`  
+`snd: Any :*: b -> b`
 
-### Either
+### Cartesian Sums
 
-`Either a b`  
-(both `a` and `b` are covariant)
+`+a :+: +b`  
 
-`a <: Entity` and `b <: Entity` implies `Either a b <: Entity`.
+`Entity :+: Entity <: Entity`.
 
 #### Constructors & Functions
-`Left: a -> Either a None`  
-`Right: b -> Either None b`
+`Left: a -> a :+: None`  
+`Right: b -> None :+: b`
 
 ### Declared Closed Entity Types
 
 Closed entity types can be declared with the `closedtype` keyword.
 The declaration specifies the constructors of the type.
 They are similar to data types, but each constructor has an anchor, and field types are all subtypes of `Entity`.
+Like data types, closed entity types can have type parameters, but they must all be covariant.
 
 Each constructor has a name, a list of zero or more types (each a subtype of `Entity`), and an anchor.
 
 ```pinafore
-closedtype Patient =
-    LivingPatient Person Date !"Patient.LivingPatient" |
+closedtype Patient of
+    LivingPatient Person Date !"Patient.LivingPatient";
     DeadPatient Person Date Date !"Patient.DeadPatient";
+end;
 
 patientPerson: Patient -> Person;
 patientPerson patient =
     case patient of
-        LivingPatient p _ -> p;
-        DeadPatient p _ _ -> p;
+        LivingPatient p _ => p;
+        DeadPatient p _ _ => p;
     end;
 ```
 
@@ -152,9 +170,9 @@ So you can use `check`, `coerce`, and pattern-matching to convert between them.
 ```pinafore
 describeAnimalType :: Animal -> Text;
 describeAnimalType a = case a of
-    (h: Human) -> "Human";
-    (c: Cat) -> "Cat";
-    (d: Dog) -> "Dog";
+    h: Human => "Human";
+    c: Cat => "Cat";
+    d: Dog => "Dog";
     end;
 ```
 
@@ -192,13 +210,11 @@ If there is a loop of subtype relations, it will simply make those types equival
 
 ## Functions
 
-`a -> b`  
-(`a` is contravariant, `b` is covariant)
+`-a -> +b`  
 
 ## Actions
 
-`Action a`  
-(`a` is covariant)
+`Action +a`  
 
 Roughly equivalent to the Haskell `IO a`.
 
@@ -207,8 +223,7 @@ Runners of an action that stops, such as the main program, or the handler of a b
 
 ## Orders
 
-`RefOrder a`  
-(`a` is contravariant)
+`RefOrder -a`  
 
 An order on a type. Can order by morphisms.
 
@@ -236,9 +251,7 @@ Whole references may be "unknown"
 
 ### Set References
 
-`SetRef a`
-
-(`a` is contravariant)
+`SetRef -a`
 
 A set reference is a mutable predicate, like a test on values. Values can be added to it or deleted from it.
 
@@ -254,4 +267,4 @@ Finite set references contain a finite number of members, which can be retrieved
 
 ## Morphisms
 
-`{ap,aq} ~> {bp,bq}`
+`{-ap,+aq} ~> {-bp,+bq}`

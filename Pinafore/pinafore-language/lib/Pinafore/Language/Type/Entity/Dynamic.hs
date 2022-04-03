@@ -20,6 +20,7 @@ import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Name
+import Pinafore.Language.Shim
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Entity.Type
 import Pinafore.Language.Type.Family
@@ -86,30 +87,30 @@ aDynamicEntityFamilyWitness = $(iowitness [t|'MkWitKind ADynamicEntityFamily|])
 
 aDynamicEntityGroundType :: Name -> DynamicEntityType -> PinaforeGroundType '[] DynamicEntity
 aDynamicEntityGroundType name dts =
-    (singleGroundType' (MkFamilyType aDynamicEntityFamilyWitness $ MkADynamicEntityFamily name dts) $ exprShowPrec name)
+    (singleGroundType' (MkFamilialType aDynamicEntityFamilyWitness $ MkADynamicEntityFamily name dts) $
+     exprShowPrec name)
         { pgtGreatestDynamicSupertype =
-              \NilDolanArguments ->
+              \NilCCRArguments ->
                   Just $
-                  makeGDS dynamicEntityGroundType cid $
-                  functionToShim "zzz" $ \de@(MkDynamicEntity dt _) -> ifpure (member dt dts) de
+                  makeNilGDS dynamicEntityGroundType $
+                  functionToShim "dynamic-check" $ \de@(MkDynamicEntity dt _) -> ifpure (member dt dts) de
         }
 
 aDynamicEntityEntityFamily :: EntityFamily
 aDynamicEntityEntityFamily =
-    MkEntityFamily aDynamicEntityFamilyWitness $ \NilListType (MkADynamicEntityFamily name dt) -> let
+    MkEntityFamily aDynamicEntityFamilyWitness $ \(MkADynamicEntityFamily name dt) -> let
+        epKind = NilListType
         epCovaryMap :: CovaryMap DynamicEntity
         epCovaryMap = covarymap
-        epEq :: forall (ta :: Type). Arguments (MonoType EntityGroundType) DynamicEntity ta -> Dict (Eq ta)
-        epEq NilArguments = Dict
-        epAdapter :: forall ta. Arguments MonoEntityType DynamicEntity ta -> EntityAdapter ta
+        epAdapter :: forall ta. Arguments EntityAdapter DynamicEntity ta -> EntityAdapter ta
         epAdapter NilArguments = dynamicEntityAdapter $ Just dt
         epShowType = exprShowPrec name
-        in Just $ MkEntityProperties {..}
+        in Just $ MkSealedEntityProperties MkEntityProperties {..}
 
 getConcreteDynamicEntityType :: MonadThrow ErrorType m => AnyW (PinaforeType 'Positive) -> m (Name, DynamicType)
 getConcreteDynamicEntityType (MkAnyW tm) =
-    case dolanTypeToSingular tm of
-        Just (MkAnyW (GroundedDolanSingularType gt NilDolanArguments))
+    case dolanTypeToSingular @PinaforeGroundType @(PinaforePolyShim Type) tm of
+        Just (MkShimWit (GroundedDolanSingularType gt NilCCRArguments) _)
             | Just (MkADynamicEntityFamily n (toList -> [dt])) <-
                  matchFamilyType aDynamicEntityFamilyWitness $ pgtFamilyType gt -> return (n, dt)
         _ -> throw $ InterpretTypeNotConcreteDynamicEntityError $ exprShow tm

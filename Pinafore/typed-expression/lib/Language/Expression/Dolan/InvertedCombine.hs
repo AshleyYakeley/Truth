@@ -26,7 +26,7 @@ joinMeetInvertedCombinedType NilInvertedCombinedDolanType tb = invertPolarity @p
 joinMeetInvertedCombinedType (ConsInvertedCombinedDolanType ta tr) tb =
     invertPolarity @polarity $
     case joinMeetInvertedCombinedType tr tb of
-        MkShimWit trb convrb -> MkShimWit (ConsInvertedCombinedDolanType ta trb) $ iPolarPair cid convrb <.> iPolarSwapL
+        MkShimWit trb convrb -> MkShimWit (ConsInvertedCombinedDolanType ta trb) $ iPolarPair id convrb . iPolarSwapL
 
 joinMeetInvertedCombinedShimWit ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (a :: Type) (b :: Type).

@@ -1,6 +1,7 @@
 module Changes.Core.UI.View.CreateView
     ( CreateView
     , ViewState
+    , cvLiftViewWithUnlift
     , cvBindModelUpdates
     , cvBindModel
     , cvFloatMapModel
@@ -20,6 +21,9 @@ type CreateView = ViewT LifeCycle
 
 type ViewState = LifeState
 
+cvLiftViewWithUnlift :: View -/-> CreateView
+cvLiftViewWithUnlift = backHoist liftIOWithUnlift
+
 cvBindModelUpdates ::
        forall update a.
        Model update
@@ -31,7 +35,7 @@ cvBindModelUpdates ::
 cvBindModelUpdates model testesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycle lifeCycleMonitor
-    withUILock <- asks vcWithUILock
+    withUILock <- asks $ \vc -> vcWithUILock vc
     unliftView <- liftToLifeCycle askUnliftIO
     viewRunResourceContext model $ \unlift amodel -> do
         a <- initv

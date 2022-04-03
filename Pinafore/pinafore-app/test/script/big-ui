@@ -30,7 +30,7 @@ w = UI.openWindow (300,400) {"Test"} {[]} $ func0 (pureWhole "Text") False False
 
 prop0 = property @T @Text !"000";
 
-act : Action ();
+act : Action Unit;
 act = do
     debugMessage "ACTION: start";
     tstart <- getTimeMS;

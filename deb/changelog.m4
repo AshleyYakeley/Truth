@@ -8,17 +8,28 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . declarations now non-recursive, with recursive rec-blocks
       . "expose" declarations
       . allow declaration documentation with #| and {#| #} comments
+    - datatype and closedtype declarations can have parameters
     - import lists
+    - syntax
+      . type names (:+:), (:*:), List, Unit
+      . tuple constructor/pattern (,,) etc.
+      . use => in lambda and case expressions
+      . new syntax for datatype and closedtype definitions
+      . lambda-case expressions
   * Interactive
     - :doc to retrieve name documentation
   * Library
     - Std
       . Literal type now byte array rather than text
+      . Literal types now have GDS Literal
       . add Showable type for showing, show replacing toText
       . add min/max/lesser/greater functions
+      . add List1 type for non-empty lists, subtype of List
+      . add TextRef type & associated functions, use for uiTextArea
     - Drawing
       . Cairo-based functions for creating drawings
   * Storage
+    - Anchors now 256 bit, hash using BLAKE3
     - Store literals as binary rather than as text
     - Embed smaller literals directly in the anchor
 

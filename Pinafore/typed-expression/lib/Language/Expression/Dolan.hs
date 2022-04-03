@@ -21,35 +21,58 @@ module Language.Expression.Dolan
     , DolanVarianceKind
     , DolanVarianceType
     , DolanVarianceMap(..)
+    , lazyDolanVarianceMap
+    , DolanVarianceCategory(..)
     , HasDolanVariance(..)
     , CovaryType
     , covaryCoercibleKind
-    , CovaryMap
+    , CovaryMap(..)
     , HasCovaryMap(..)
     , covaryToDolanVarianceType
     , dolanVarianceToCovaryType
     , covaryToDolanVarianceMap
+    , dolanVarianceMapToCovary
     , DolanSingularType(..)
     , DolanType(..)
     , singleDolanType
     , dolanTypeToSingular
     , DolanShimWit
+    , DolanSingularShimWit
     , singleDolanShimWit
     , nilDolanShimWit
     , joinMeetShimWit
     , varDolanShimWit
+    , groundedDolanShimWit
+    , toGroundedDolanShimWit
     , unrollRecursiveType
     , unToRangeShimWit
     , unFromRangeShimWit
     , biRangeAnyF
-    , SingleArgument
-    , DolanArguments(..)
-    , ArgTypeF(..)
-    , mapArgsTypeF
+    , CCRArgumentKind
+    , IsCCRArg(..)
+    , CCRPolarArgument(..)
+    , CCRArguments(..)
+    , ccrArgumentsEndo
+    , ccrArgumentsType
+    , mapCCRArguments
+    , nilAnyCCRArguments
+    , consAnyCCRArguments
+    , DolanArguments
+    , ccrArgumentsToShimArgumentsM
+    , ccrArgumentsToArgumentsM
+    , DolanArgumentsShimWit
+    , nilDolanArgumentsShimWit
+    , consDolanArgumentsShimWit
+    , CCRPolarArgumentShimWit
+    , coCCRArgument
+    , contraCCRArgument
+    , rangeCCRArgument
+    , mapDolanArgumentsFM
     , saturateArgsConstraint
     , dolanArgumentsToArguments
     , SubtypeContext(..)
     , subtypeDolanArguments
+    , invertTypeMaybe
     , invertType
     , DolanTypeSystem
     , IsDolanGroundType(..)
@@ -58,11 +81,13 @@ module Language.Expression.Dolan
     , IsDolanSubtypeEntriesGroundType(..)
     , SubtypeArguments(..)
     , SubtypeConversion(..)
+    , subtypeConversion
     , simpleSubtypeConversion
     , nilSubtypeConversion
     , idSubtypeConversion
     , composeSubtypeConversion
     , SubtypeConversionEntry(..)
+    , subtypeConversionEntry
     , simpleSubtypeConversionEntry
     , saturateGroundType
     , module Language.Expression.Dolan.Nonpolar
@@ -72,9 +97,11 @@ module Language.Expression.Dolan
 import Control.Applicative.Wrapped
 import Data.Shim
 import Language.Expression.Common
+import Language.Expression.Dolan.Argument
 import Language.Expression.Dolan.Arguments
 import Language.Expression.Dolan.Combine
 import Language.Expression.Dolan.Covariance
+import Language.Expression.Dolan.Invert
 import Language.Expression.Dolan.MPolarity
 import Language.Expression.Dolan.Mono
 import Language.Expression.Dolan.Nonpolar
@@ -102,8 +129,10 @@ instance forall (ground :: GroundTypeKind). IsDolanFunctionGroundType ground =>
     tsFunctionPosWitness ta tb =
         singleDolanShimWit $
         mkPolarShimWit $
-        GroundedDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+        GroundedDolanSingularType functionGroundType $
+        ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
     tsFunctionNegWitness ta tb =
         singleDolanShimWit $
         mkPolarShimWit $
-        GroundedDolanSingularType functionGroundType $ ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+        GroundedDolanSingularType functionGroundType $
+        ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments

@@ -11,17 +11,17 @@ type PShimWitMappable (shim :: ShimKind k) (wit :: Polarity -> k -> Type)
      = WitnessMappable (PShimWit shim wit 'Positive) (PShimWit shim wit 'Negative)
 
 mapPShimWitsM ::
-       forall m shim wit a. (InCategory shim, Applicative m, PShimWitMappable shim wit a)
-    => (forall t. InKind t => wit 'Positive t -> m (PShimWit shim wit 'Positive t))
-    -> (forall t. InKind t => wit 'Negative t -> m (PShimWit shim wit 'Negative t))
+       forall m shim wit a. (Category shim, Applicative m, PShimWitMappable shim wit a)
+    => (forall t. wit 'Positive t -> m (PShimWit shim wit 'Positive t))
+    -> (forall t. wit 'Negative t -> m (PShimWit shim wit 'Negative t))
     -> a
     -> m a
 mapPShimWitsM mapPos mapNeg = mapWitnessesM (chainPolarShimWitM mapPos) (chainPolarShimWitM mapNeg)
 
 mapPShimWits ::
-       forall shim wit a. (InCategory shim, PShimWitMappable shim wit a)
-    => (forall t. InKind t => wit 'Positive t -> PShimWit shim wit 'Positive t)
-    -> (forall t. InKind t => wit 'Negative t -> PShimWit shim wit 'Negative t)
+       forall shim wit a. (Category shim, PShimWitMappable shim wit a)
+    => (forall t. wit 'Positive t -> PShimWit shim wit 'Positive t)
+    -> (forall t. wit 'Negative t -> PShimWit shim wit 'Negative t)
     -> a
     -> a
 mapPShimWits mapPos mapNeg = mapWitnesses (chainPolarShimWit mapPos) (chainPolarShimWit mapNeg)

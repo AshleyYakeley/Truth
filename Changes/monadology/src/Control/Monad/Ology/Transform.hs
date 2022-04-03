@@ -58,7 +58,6 @@ transformParamRef MkParam {..} = let
     in MkRef {..}
 
 liftTransformT ::
-       forall t m a. (MonadTransUnlift t, MonadTunnelIO m)
-    => TransformT m a
-    -> TransformT (t m) a
+       forall t m. (MonadTransUnlift t, MonadTunnelIO m)
+    => TransformT m --> TransformT (t m)
 liftTransformT (MkTransformT aff) = MkTransformT $ \atf -> liftWithUnlift $ \unlift -> aff $ unlift . atf

@@ -57,11 +57,7 @@ setCartesianProductLens ::
     -> (b -> b -> Bool)
     -> ChangeLens (PairUpdate (SetUpdate a) (SetUpdate b)) (ReadOnlyUpdate (PartialSetUpdate (a, b)))
 setCartesianProductLens aeq beq = let
-    clRead ::
-           forall m t. MonadIO m
-        => Readable m (PairUpdateReader (SetUpdate a) (SetUpdate b))
-        -> SetReader (a, b) t
-        -> m t
+    clRead :: ReadFunction (PairUpdateReader (SetUpdate a) (SetUpdate b)) (SetReader (a, b))
     clRead mr (MkTupleUpdateReader (MkFunctionSelector (a, b)) ReadWhole) = do
         hasA <- mr $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
         hasB <- mr $ MkTupleUpdateReader SelectSecond $ MkTupleUpdateReader (MkFunctionSelector b) ReadWhole

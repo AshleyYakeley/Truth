@@ -11,7 +11,7 @@ import Changes.Core
 import Changes.World.FileSystem
 import Data.UUID
 import Shapes
-import System.FilePath hiding ((<.>))
+import System.FilePath
 import Changes.Debug.Reference
 
 type UUIDElementUpdate update = PairUpdate (ConstWholeUpdate UUID) update

@@ -14,7 +14,7 @@ library:
       - time
       - cereal
       - memory
-      - cryptonite
+      - blake3
       - changes-core
       - changes-world
     exposed-modules:

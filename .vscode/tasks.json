@@ -34,7 +34,7 @@
       "group": "build",
       "label": "Full Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make clean && make haddock=1 test=1 bench=1 full ; bin/reportstatus $?",
+      "command": "cd ${workspaceRoot} && make clean && make single=1 haddock=1 test=1 bench=1 full ; bin/reportstatus $?",
       "problemMatcher": [
         {
           "owner": "stack",

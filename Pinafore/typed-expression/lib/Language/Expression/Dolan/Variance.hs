@@ -5,42 +5,41 @@ import Shapes
 
 type DolanVariance = [CCRVariance]
 
--- How many layers of type abstraction are you on?
 type family DolanVarianceKind (dv :: DolanVariance) :: Type where
     DolanVarianceKind '[] = Type
     DolanVarianceKind (sv ': dv) = CCRVarianceKind sv -> DolanVarianceKind dv
 
 type DolanVarianceType = ListType CCRVarianceType
 
-class ApplyPolyShim pshim => DolanVarianceInCategory (pshim :: PolyShimKind) where
-    dolanVarianceInCategory ::
+class ApplyPolyShim pshim => DolanVarianceCategory (pshim :: PolyShimKind) where
+    dolanVarianceCategory ::
            forall dv.
            DolanVarianceType dv
-        -> Dict (CoercibleKind (DolanVarianceKind dv), InCategory (pshim (DolanVarianceKind dv)))
+        -> Dict (CoercibleKind (DolanVarianceKind dv), Category (pshim (DolanVarianceKind dv)))
 
-instance DolanVarianceInCategory PEqual where
-    dolanVarianceInCategory NilListType = Dict
-    dolanVarianceInCategory (ConsListType _ lt) =
-        case dolanVarianceInCategory @PEqual lt of
+instance DolanVarianceCategory PEqual where
+    dolanVarianceCategory NilListType = Dict
+    dolanVarianceCategory (ConsListType _ lt) =
+        case dolanVarianceCategory @PEqual lt of
             Dict -> Dict
 
-instance DolanVarianceInCategory JMShim where
-    dolanVarianceInCategory NilListType = Dict
-    dolanVarianceInCategory (ConsListType _ lt) =
-        case dolanVarianceInCategory @JMShim lt of
+instance DolanVarianceCategory JMShim where
+    dolanVarianceCategory NilListType = Dict
+    dolanVarianceCategory (ConsListType _ lt) =
+        case dolanVarianceCategory @JMShim lt of
             Dict -> Dict
 
-instance forall (pshim :: PolyShimKind). (DolanVarianceInCategory pshim) => DolanVarianceInCategory (PolyIso pshim) where
-    dolanVarianceInCategory NilListType = Dict
-    dolanVarianceInCategory (ConsListType _ lt) =
-        case dolanVarianceInCategory @pshim lt of
+instance forall (pshim :: PolyShimKind). (DolanVarianceCategory pshim) => DolanVarianceCategory (PolyIso pshim) where
+    dolanVarianceCategory NilListType = Dict
+    dolanVarianceCategory (ConsListType _ lt) =
+        case dolanVarianceCategory @pshim lt of
             Dict -> Dict
 
-instance forall (pshim :: PolyShimKind) m. (DolanVarianceInCategory pshim, Applicative m) =>
-             DolanVarianceInCategory (PolyComposeShim m pshim) where
-    dolanVarianceInCategory NilListType = Dict
-    dolanVarianceInCategory (ConsListType _ lt) =
-        case dolanVarianceInCategory @pshim lt of
+instance forall (pshim :: PolyShimKind) m. (DolanVarianceCategory pshim, Applicative m) =>
+             DolanVarianceCategory (PolyComposeShim m pshim) where
+    dolanVarianceCategory NilListType = Dict
+    dolanVarianceCategory (ConsListType _ lt) =
+        case dolanVarianceCategory @pshim lt of
             Dict -> Dict
 
 dolanVarianceHasKM :: forall dv. DolanVarianceType dv -> Dict (HasKindMorphism (DolanVarianceKind dv))
@@ -54,28 +53,37 @@ data DolanVarianceMap dv f where
     NilDolanVarianceMap :: forall (f :: Type). DolanVarianceMap '[] f
     ConsDolanVarianceMap
         :: forall (sv :: CCRVariance) (dv :: DolanVariance) (f :: CCRVarianceKind sv -> DolanVarianceKind dv).
-           HasCCRVariance sv f
-        => (forall a. DolanVarianceMap dv (f a))
+           CCRVariation sv f
+        -> (forall a. DolanVarianceMap dv (f a))
         -> DolanVarianceMap (sv ': dv) f
 
-dolanVarianceMapInKind ::
-       forall (dv :: DolanVariance) (f :: DolanVarianceKind dv). DolanVarianceMap dv f -> Dict (InKind f)
-dolanVarianceMapInKind NilDolanVarianceMap = Dict
-dolanVarianceMapInKind (ConsDolanVarianceMap dvm) =
-    case dolanVarianceMapInKind dvm of
-        Dict -> Dict
+lazyDVKindMorphism ::
+       forall dv (a :: DolanVarianceKind dv) (b :: DolanVarianceKind dv).
+       DolanVarianceType dv
+    -> KindMorphism (->) a b
+    -> KindMorphism (->) a b
+lazyDVKindMorphism NilListType ab = ab
+lazyDVKindMorphism (ConsListType _ dvt) ~(MkNestedMorphism ab) = MkNestedMorphism $ lazyDVKindMorphism dvt ab
 
-bijectSingleVarianceMap ::
-       forall (pshim :: PolyShimKind) sv f.
+lazyCCRVariation ::
+       forall (sv :: CCRVariance) dv (f :: CCRVarianceKind sv -> DolanVarianceKind dv).
        CCRVarianceType sv
-    -> CCRVarianceMap pshim sv f
-    -> CCRVarianceMap (PolyIso pshim) sv f
-bijectSingleVarianceMap CoCCRVarianceType svm (MkPolyMapT (MkIsomorphism ab ba)) =
-    MkPolyMapT $ MkIsomorphism (svm ab) (svm ba)
-bijectSingleVarianceMap ContraCCRVarianceType svm (MkCatDual (MkPolyMapT (MkIsomorphism ab ba))) =
-    MkPolyMapT $ MkIsomorphism (svm $ MkCatDual ab) (svm $ MkCatDual ba)
-bijectSingleVarianceMap RangeCCRVarianceType svm (MkCatRange (MkPolyMapT (MkIsomorphism pab pba)) (MkPolyMapT (MkIsomorphism qab qba))) =
-    MkPolyMapT $ MkIsomorphism (svm $ MkCatRange pab qab) (svm $ MkCatRange pba qba)
+    -> DolanVarianceType dv
+    -> CCRVariation sv f
+    -> CCRVariation sv f
+lazyCCRVariation _ dvt ~(MkCCRVariation _mr mp) = MkCCRVariation Nothing $ \ab -> lazyDVKindMorphism dvt $ mp ab
+
+lazyDolanVarianceMap :: DolanVarianceType dv -> DolanVarianceMap dv t -> DolanVarianceMap dv t
+lazyDolanVarianceMap NilListType _cdvm = NilDolanVarianceMap
+lazyDolanVarianceMap (ConsListType svt dvt) cdvm =
+    ConsDolanVarianceMap
+        (lazyCCRVariation svt dvt $
+         case cdvm of
+             ConsDolanVarianceMap ccrv _ -> ccrv) $
+    lazyDolanVarianceMap
+        dvt
+        (case cdvm of
+             ConsDolanVarianceMap _ dv -> dv)
 
 class Is DolanVarianceType dv => HasDolanVariance (dv :: DolanVariance) (f :: DolanVarianceKind dv) | f -> dv where
     dolanVarianceMap :: DolanVarianceMap dv f
@@ -85,4 +93,4 @@ instance HasDolanVariance '[] (f :: Type) where
 
 instance (HasCCRVariance sv f, forall a. HasDolanVariance dv (f a), CoercibleKind (DolanVarianceKind dv)) =>
              HasDolanVariance (sv ': dv) (f :: CCRVarianceKind sv -> DolanVarianceKind dv) where
-    dolanVarianceMap = ConsDolanVarianceMap dolanVarianceMap
+    dolanVarianceMap = ConsDolanVarianceMap ccrVariation dolanVarianceMap

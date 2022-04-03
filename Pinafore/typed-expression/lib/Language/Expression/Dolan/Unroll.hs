@@ -53,7 +53,7 @@ data RecursiveOrPlainType ground polarity t where
         -> DolanType ground polarity (UVarT name)
         -> RecursiveOrPlainType ground polarity (UVarT name)
 
-instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground) =>
+instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              TestEquality (RecursiveOrPlainType ground polarity) where
     testEquality (PlainType ta) (PlainType tb) = testEquality ta tb
     testEquality (RecursiveType va ta) (RecursiveType vb tb) = do

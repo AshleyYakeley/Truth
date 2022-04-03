@@ -180,7 +180,6 @@ type MonadTransStackTunnel tt
        , IsStack TransTunnel tt
        , IsStack MonadTrans tt
        , IsStack (WithTunnelConstraint Functor) tt
-       , IsStack (WithTunnelConstraint FunctorPure) tt
        , IsStack (WithTunnelConstraint FunctorOne) tt)
 
 concatMonadTransStackTunnelDict ::
@@ -199,16 +198,10 @@ concatMonadTransStackTunnelDict =
                                         Dict ->
                                             case concatIsDict
                                                      @_
-                                                     @(Compose Dict (WithTunnelConstraint FunctorPure))
+                                                     @(Compose Dict (WithTunnelConstraint FunctorOne))
                                                      @tt1
                                                      @tt2 of
-                                                Dict ->
-                                                    case concatIsDict
-                                                             @_
-                                                             @(Compose Dict (WithTunnelConstraint FunctorOne))
-                                                             @tt1
-                                                             @tt2 of
-                                                        Dict -> Dict
+                                                Dict -> Dict
 
 newtype TunnelWrapper t = MkTunnel
     { unTunnel :: forall m2 r.
@@ -253,17 +246,14 @@ instance IsStack (WithTunnelConstraint Functor) tt => Functor (StackTunnel tt) w
         case isWithTunnelConstraint @Functor @tt of
             Dict -> \ab (MkStackTunnel st) -> MkStackTunnel $ fmap ab st
 
-instance (IsStack (WithTunnelConstraint Functor) tt, IsStack (WithTunnelConstraint FunctorPure) tt) =>
-             FunctorPure (StackTunnel tt) where
-    fpure =
-        case isWithTunnelConstraint @FunctorPure @tt of
-            Dict -> \a -> MkStackTunnel $ fpure a
-
 instance (IsStack (WithTunnelConstraint Functor) tt, IsStack (WithTunnelConstraint FunctorOne) tt) =>
              FunctorOne (StackTunnel tt) where
-    getMaybeOne =
+    fpure =
         case isWithTunnelConstraint @FunctorOne @tt of
-            Dict -> \(MkStackTunnel st) -> getMaybeOne st
+            Dict -> \a -> MkStackTunnel $ fpure a
+    fextractm =
+        case isWithTunnelConstraint @FunctorOne @tt of
+            Dict -> \(MkStackTunnel st) -> fextractm st
 
 instance ( IsStack (WithTunnelConstraint Functor) tt
          , IsStack (WithTunnelConstraint FunctorOne) tt
@@ -389,7 +379,7 @@ concatMonadTransStackUnliftDict =
 stackLiftWithUnlift ::
        forall tt m. (MonadTransStackUnlift tt, MonadTunnelIO m)
     => m -/-> ApplyStack tt m
-stackLiftWithUnlift = runWMBackFunction $ coerce $ MkWMBackFunction $ liftWithUnlift @(StackT tt) @m
+stackLiftWithUnlift = runWMBackFunction $ coerce $ liftWithUnliftW @(StackT tt) @m
 
 concatMonadTransStackUnliftAllDict ::
        forall tt1 tt2. (MonadTransStackUnlift tt1, MonadTransStackUnlift tt2)

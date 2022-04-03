@@ -94,6 +94,41 @@ class (Productish f, Summish f) => Ringish f where
         listToEither [] = Right ()
         in isoMap eitherToList listToEither $ pList1 fa <+++> pUnit
 
+instance IsoVariant Endo where
+    isoMap ab ba (Endo f) = Endo $ ab . f . ba
+
+instance Productish Endo where
+    pUnit = Endo id
+    Endo p <***> Endo q = Endo $ \(a, b) -> (p a, q b)
+
+instance Summish Endo where
+    pNone = Endo id
+    Endo p <+++> Endo q =
+        Endo $ \case
+            Left a -> Left $ p a
+            Right b -> Right $ q b
+
+instance Ringish Endo where
+    pOptional (Endo f) = Endo $ fmap f
+    pList1 (Endo f) = Endo $ fmap f
+    pList (Endo f) = Endo $ fmap f
+
+instance IsoVariant m => IsoVariant (Kleisli m a) where
+    isoMap ab ba (Kleisli f) = Kleisli $ \a -> isoMap ab ba $ f a
+
+instance Productish m => Productish (Kleisli m a) where
+    pUnit = Kleisli $ \_ -> pUnit
+    Kleisli p <***> Kleisli q = Kleisli $ \a -> p a <***> q a
+
+instance Summish m => Summish (Kleisli m a) where
+    pNone = Kleisli $ \_ -> pNone
+    Kleisli p <+++> Kleisli q = Kleisli $ \a -> p a <+++> q a
+
+instance Ringish m => Ringish (Kleisli m a) where
+    pOptional (Kleisli f) = Kleisli $ \a -> pOptional $ f a
+    pList1 (Kleisli f) = Kleisli $ \a -> pList1 $ f a
+    pList (Kleisli f) = Kleisli $ \a -> pList $ f a
+
 instance IsoVariant ReadPrec
 
 instance Productish ReadPrec

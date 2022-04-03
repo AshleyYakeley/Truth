@@ -32,11 +32,11 @@ abstractNamedExpressionUnifier ::
     -> (forall tu. UUNegShimWit ts (MeetType t tu) -> TSOpenExpression ts (tu -> a) -> TSOuter ts r)
     -> TSOuter ts r
 abstractNamedExpressionUnifier _name vwt (ClosedExpression a) cont =
-    cont (uuLiftNegShimWit $ mapPolarShimWit iPolarL1 vwt) $ pure $ \_ -> a
+    cont (uuLiftNegShimWit @ts $ mapPolarShimWit iPolarL1 vwt) $ pure $ \_ -> a
 abstractNamedExpressionUnifier name vwt (OpenExpression (MkNameWitness name' vwt') expr) cont
     | name == name' =
         abstractNamedExpressionUnifier @ts name vwt expr $ \vwt1 expr' -> do
-            vwtt <- unifyUUNegShimWit @ts vwt1 (uuLiftNegShimWit vwt')
+            vwtt <- unifyUUNegShimWit @ts vwt1 (uuLiftNegShimWit @ts vwt')
             cont (mapNegShimWit iMeetSwapL vwtt) $ fmap (\tta ~(BothMeetType ta tb) -> tta ta tb) expr'
 abstractNamedExpressionUnifier name vwt (OpenExpression (MkNameWitness name' vwt') expr) cont =
     abstractNamedExpressionUnifier @ts name vwt expr $ \vwt1 expr' ->
@@ -78,7 +78,7 @@ patternAbstractUnifyExpression ::
 patternAbstractUnifyExpression (ClosedPattern qmt) expr cont = cont id $ fmap (\a q -> fmap (\t -> (a, t)) $ qmt q) expr
 patternAbstractUnifyExpression (OpenPattern (MkNameWitness name vwt) pat) expr cont = do
     MkAbstractResult absvwt absexpr <- abstractNamedExpression @ts name expr
-    uabsconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit vwt) absvwt
+    uabsconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts vwt) absvwt
     patternAbstractUnifyExpression @ts pat absexpr $ \uuconv rexpr ->
         cont (applf uuconv uabsconv) $ fmap (fmap (fmap $ \(pa, (t1, t)) -> (BothMeetType pa t1, t))) rexpr
 
@@ -107,8 +107,8 @@ joinPatternResults [] = do
     MkNewVar tt _ <- renameNewFreeVar @ts
     MkNewVar _ ta <- renameNewFreeVar @ts
     return $
-        MkPatternResult (uuLiftPosShimWit ta) $
-        MkAbstractResult (uuLiftNegShimWit tt) $ pure $ \_ -> error "missing case"
+        MkPatternResult (uuLiftPosShimWit @ts ta) $
+        MkAbstractResult (uuLiftNegShimWit @ts tt) $ pure $ \_ -> error "missing case"
 joinPatternResults (p:pp) = do
     c <- joinPatternResults pp
     joinPatternResult p c
@@ -121,8 +121,8 @@ patternAbstractSealedExpression ::
 patternAbstractSealedExpression (MkSealedPattern vwt pat) (MkSealedExpression twt expr) =
     patternAbstractUnifyExpression @ts pat expr $ \uconv uexpr' ->
         return $
-        MkPatternResult (mapPosShimWit (applf cid uconv) $ uuLiftPosShimWit twt) $
-        (fmap $ fmap $ \(pa, ()) -> BothMeetType id pa) $ MkAbstractResult (uuLiftNegShimWit vwt) uexpr'
+        MkPatternResult (mapPosShimWit (applf id uconv) $ uuLiftPosShimWit @ts twt) $
+        (fmap $ fmap $ \(pa, ()) -> BothMeetType id pa) $ MkAbstractResult (uuLiftNegShimWit @ts vwt) uexpr'
 
 type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)
 
@@ -142,7 +142,7 @@ abstractSealedExpression absw name sexpr =
         MkSealedExpression twt expr <- rename @ts FreeName sexpr
         MkAbstractResult uvwt expr' <- abstractNamedExpression @ts name expr
         unifierSolve @ts $ do
-            vwt <- uuGetNegShimWit uvwt
+            vwt <- uuGetNegShimWit @ts uvwt
             pure $ MkSealedExpression (absw vwt twt) expr'
 
 applySealedExpression ::
@@ -159,9 +159,9 @@ applySealedExpression appw sexprf sexpra =
         MkSealedExpression ta expra <- rename @ts FreeName sexpra
         MkNewVar vx tx <- renameNewFreeVar @ts
         let vax = appw ta vx
-        uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit tf) (uuLiftNegShimWit vax)
+        uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts tf) (uuLiftNegShimWit @ts vax)
         unifierSolve @ts $ do
-            conv <- uuGetShim uconv
+            conv <- uuGetShim @ts uconv
             pure $
                 shimExtractFunction conv $ \fconv tconv ->
                     MkSealedExpression (mapPosShimWit tconv tx) $ shimToFunction fconv <$> exprf <*> expra
@@ -179,9 +179,9 @@ letSealedExpression name sexpre sexprb =
         MkSealedExpression te expre <- rename @ts FreeName sexpre
         MkSealedExpression tb exprb <- rename @ts FreeName sexprb
         MkAbstractResult uvt exprf <- abstractNamedExpression @ts name exprb
-        uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit te) uvt
+        uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts te) uvt
         unifierSolve @ts $ do
-            conv <- uuGetShim uconv
+            conv <- uuGetShim @ts uconv
             pure $ MkSealedExpression tb $ (\f -> f . shimToFunction conv) <$> exprf <*> expre
 
 bothSealedPattern ::
@@ -194,9 +194,9 @@ bothSealedPattern spat1 spat2 =
     withTransConstraintTM @Monad $ do
         MkSealedPattern tw1 pat1 <- rename @ts FreeName spat1
         MkSealedPattern tw2 pat2 <- rename @ts FreeName spat2
-        utwr <- unifyUUNegShimWit @ts (uuLiftNegShimWit tw1) (uuLiftNegShimWit tw2)
+        utwr <- unifyUUNegShimWit @ts (uuLiftNegShimWit @ts tw1) (uuLiftNegShimWit @ts tw2)
         unifierSolve @ts $ do
-            twr <- uuGetNegShimWit utwr
+            twr <- uuGetNegShimWit @ts utwr
             pure $
                 MkSealedPattern twr $
                 proc ab -> do
@@ -218,10 +218,10 @@ caseSealedExpression sbexpr rawcases =
                 patternAbstractSealedExpression @ts pat expr
         MkPatternResult urtwt (MkAbstractResult rvwt rexpr) <- joinPatternResults patrs
         MkSealedExpression btwt bexpr <- rename @ts FreeName sbexpr
-        uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit btwt) rvwt
+        uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts btwt) rvwt
         unifierSolve @ts $ do
-            rtwt <- uuGetPosShimWit urtwt
-            conv <- uuGetShim uconv
+            rtwt <- uuGetPosShimWit @ts urtwt
+            conv <- uuGetShim @ts uconv
             pure $ MkSealedExpression rtwt $ (\t1a t -> runIdentity $ t1a $ shimToFunction conv t) <$> rexpr <*> bexpr
 
 caseAbstractSealedExpression ::
@@ -239,8 +239,8 @@ caseAbstractSealedExpression absw rawcases =
                 patternAbstractSealedExpression @ts pat expr
         MkPatternResult urtwt (MkAbstractResult urvwt rexpr) <- joinPatternResults patrs
         unifierSolve @ts $ do
-            rtwt <- uuGetPosShimWit urtwt
-            rvwt <- uuGetNegShimWit urvwt
+            rtwt <- uuGetPosShimWit @ts urtwt
+            rvwt <- uuGetNegShimWit @ts urvwt
             pure $ MkSealedExpression (absw rvwt rtwt) $ fmap (\t1a t -> runIdentity $ t1a t) rexpr
 
 applyPatternConstructor ::
@@ -256,9 +256,9 @@ applyPatternConstructor patcon patarg =
             NilListType -> lift $ throw PatternTooManyConsArgsError
             ConsListType pca pcla -> do
                 MkSealedPattern ta pata <- rename @ts FreeName patarg
-                uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit pca) (uuLiftNegShimWit ta)
+                uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts pca) (uuLiftNegShimWit @ts ta)
                 unifierSolve @ts $ do
-                    conv <- uuGetShim uconv
+                    conv <- uuGetShim @ts uconv
                     pure $
                         MkPatternConstructor pct pcla $
                         proc t -> do

@@ -4,12 +4,12 @@ import UI;
 import Drawing;
 import Colour;
 
-scaleDrawing: Drawing -> (Integer,Integer) -> Drawing;
+scaleDrawing: Drawing -> Integer :*: Integer -> Drawing;
 scaleDrawing d (w,h) = let
     size = min w h;
     in translate (w/2,h/2) $ scale (size/2,size/2) d;
 
-circle: (Number,Number) -> Number -> Path;
+circle: Number :*: Number -> Number -> Path;
 circle centre radius = arc centre radius 0 (2 ~* pi);
 
 tickMark: Integer -> Drawing;
@@ -22,7 +22,7 @@ face =
 [
     source antiquewhite $ fill $ circle (0,0) 1,
     source black $ lineWidth 0.01 $ stroke $ circle (0,0) 1,
-    mapList (\m -> rotate (m ~* pi ~/ 30) $ tickMark m) $ range 0 59
+    mapList (\m => rotate (m ~* pi ~/ 30) $ tickMark m) $ range 0 59
 ];
 
 hourHand: Drawing;
@@ -41,7 +41,7 @@ in do
     {
         scaleDrawing $
             case timeToLocal tz %now of
-                DateAndTime _ (SinceMidnight (Seconds ss)) -> let
+                DateAndTime _ (SinceMidnight (Seconds ss)) => let
                     s = floor $ modR ss 60; # floor for ticking motion
                     m = modR (ss / 60) 60;
                     h = modR (ss / 3600) 24;

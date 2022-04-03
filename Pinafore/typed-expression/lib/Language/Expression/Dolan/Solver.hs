@@ -21,8 +21,8 @@ import Shapes
 type ShimType :: GroundTypeKind -> Type -> Type
 data ShimType ground t where
     MkShimType
-        :: forall (ground :: GroundTypeKind) pola polb a b.
-           PolarityType pola
+        :: forall (ground :: GroundTypeKind) pola polb a b. (Is PolarityType pola, Is PolarityType polb)
+        => PolarityType pola
         -> PolarityType polb
         -> RecursiveOrPlainType ground pola a
         -> RecursiveOrPlainType ground polb b
@@ -111,7 +111,7 @@ solveRecursiveTypes solvePlainTypes rpta rptb =
                     erconv <- unSolver $ solvePlainTypes pta ptb
                     let
                         fixconv rconv rl = let
-                            conv = convb <.> rconv (lazyFunctionShim conv, rl) <.> conva
+                            conv = convb . rconv (lazyFunctionShim conv, rl) . conva
                             in conv
                     return $ fmap fixconv erconv
 

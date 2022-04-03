@@ -61,7 +61,7 @@ viewLocalResourceContext rc = viewWithContext (\vc -> vc {vcResourceContext = rc
 
 viewWithoutLock :: MonadIO m => IO a -> ViewT m a
 viewWithoutLock ioa = do
-    withoutLock <- asks vcWithoutUILock
+    withoutLock <- asks $ \vc -> vcWithoutUILock vc
     liftIO $ withoutLock ioa
 
 viewWaitUpdates :: Model update -> View ()

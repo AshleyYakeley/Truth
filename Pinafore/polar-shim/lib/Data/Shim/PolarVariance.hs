@@ -26,23 +26,25 @@ mkRangevariantPolarMap pp qq = MkCatRange (uninvertPolarMap pp) qq
 
 polarMapTypeApply ::
        forall (pmap :: PolyShimKind) (polarity :: Polarity) (v :: CCRVariance) k (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a :: CCRVarianceKind v) (b :: CCRVarianceKind v).
-       (ApplyPolyShim pmap, Is PolarityType polarity, InKind a, InKind b, HasCCRVariance v f, HasCCRVariance v g)
+       (ApplyPolyShim pmap, Is PolarityType polarity)
     => CCRVarianceType v
+    -> CCRVariation v f
+    -> CCRVariation v g
     -> PolarMap (pmap (CCRVarianceKind v -> k)) polarity f g
     -> PolarVarianceMap (pmap Type) polarity v a b
     -> PolarMap (pmap k) polarity (f a) (g b)
-polarMapTypeApply CoCCRVarianceType (MkPolarMap fg) (MkPolarMap ab) =
+polarMapTypeApply CoCCRVarianceType ccrvf ccrvg (MkPolarMap fg) (MkPolarMap ab) =
     MkPolarMap $
     case polarityType @polarity of
-        PositiveType -> applyPolyShim @pmap CoCCRVarianceType fg ab
-        NegativeType -> applyPolyShim @pmap CoCCRVarianceType fg ab
-polarMapTypeApply ContraCCRVarianceType (MkPolarMap fg) (MkCatDual (MkPolarMap ab)) =
+        PositiveType -> applyPolyShim @pmap CoCCRVarianceType ccrvf ccrvg fg ab
+        NegativeType -> applyPolyShim @pmap CoCCRVarianceType ccrvg ccrvf fg ab
+polarMapTypeApply ContraCCRVarianceType ccrvf ccrvg (MkPolarMap fg) (MkCatDual (MkPolarMap ab)) =
     MkPolarMap $
     case polarityType @polarity of
-        PositiveType -> applyPolyShim @pmap ContraCCRVarianceType fg (MkCatDual ab)
-        NegativeType -> applyPolyShim @pmap ContraCCRVarianceType fg (MkCatDual ab)
-polarMapTypeApply RangeCCRVarianceType (MkPolarMap fg) (MkCatRange (MkPolarMap abp) (MkPolarMap abq)) =
+        PositiveType -> applyPolyShim @pmap ContraCCRVarianceType ccrvf ccrvg fg (MkCatDual ab)
+        NegativeType -> applyPolyShim @pmap ContraCCRVarianceType ccrvg ccrvf fg (MkCatDual ab)
+polarMapTypeApply RangeCCRVarianceType ccrvf ccrvg (MkPolarMap fg) (MkCatRange (MkPolarMap abp) (MkPolarMap abq)) =
     MkPolarMap $
     case polarityType @polarity of
-        PositiveType -> applyPolyShim @pmap RangeCCRVarianceType fg (MkCatRange abp abq)
-        NegativeType -> applyPolyShim @pmap RangeCCRVarianceType fg (MkCatRange abp abq)
+        PositiveType -> applyPolyShim @pmap RangeCCRVarianceType ccrvf ccrvg fg (MkCatRange abp abq)
+        NegativeType -> applyPolyShim @pmap RangeCCRVarianceType ccrvg ccrvf fg (MkCatRange abp abq)

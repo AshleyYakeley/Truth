@@ -19,21 +19,21 @@ instance forall kw (w :: kw -> Type) (f :: kw -> Type). TestEquality w => TestHe
 newtype WitKind =
     MkWitKind FamilyKind
 
-data FamilyType :: FamilyKind where
-    MkFamilyType
+data FamilialType :: FamilyKind where
+    MkFamilialType
         :: forall (fam :: FamilyKind) (k :: Type) (t :: k). TestHetEquality fam
         => IOWitness ('MkWitKind fam)
         -> fam t
-        -> FamilyType t
+        -> FamilialType t
 
 matchFamilyType ::
-       forall (fam :: FamilyKind) (k :: Type) (t :: k). IOWitness ('MkWitKind fam) -> FamilyType t -> Maybe (fam t)
-matchFamilyType wit (MkFamilyType wit' t) = do
+       forall (fam :: FamilyKind) (k :: Type) (t :: k). IOWitness ('MkWitKind fam) -> FamilialType t -> Maybe (fam t)
+matchFamilyType wit (MkFamilialType wit' t) = do
     Refl <- testEquality wit wit'
     return t
 
-instance TestHetEquality FamilyType where
-    testHetEquality (MkFamilyType wa ta) (MkFamilyType wb tb) = do
+instance TestHetEquality FamilialType where
+    testHetEquality (MkFamilialType wa ta) (MkFamilialType wb tb) = do
         Refl <- testEquality wa wb
         HRefl <- testHetEquality ta tb
         return HRefl

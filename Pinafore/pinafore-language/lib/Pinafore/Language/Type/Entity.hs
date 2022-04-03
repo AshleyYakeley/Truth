@@ -23,6 +23,7 @@ import Pinafore.Language.Type.Entity.Type
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Type
+import Pinafore.Language.Type.Types
 import Shapes
 
 maybeEntityAdapter :: EntityAdapter t -> EntityAdapter (Maybe t)
@@ -45,13 +46,10 @@ maybeEntityConvert = entityAdapterConvert $ maybeEntityAdapter plainEntityAdapte
 maybeEntityFamily :: EntityFamily
 maybeEntityFamily =
     pinaforeEntityFamily maybeGroundType $ \epShowType -> let
+        epKind = ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) Maybe t -> Dict (Eq t)
-        epEq (ConsArguments t NilArguments) =
-            case monoEntityTypeEq t of
-                Dict -> Dict
-        epAdapter :: forall t. Arguments MonoEntityType Maybe t -> EntityAdapter t
-        epAdapter (ConsArguments t NilArguments) = maybeEntityAdapter $ monoEntityAdapter t
+        epAdapter :: forall t. Arguments EntityAdapter Maybe t -> EntityAdapter t
+        epAdapter (ConsArguments t NilArguments) = maybeEntityAdapter t
         in MkEntityProperties {..}
 
 listEntityAdapter :: EntityAdapter t -> EntityAdapter [t]
@@ -75,13 +73,10 @@ listEntityConvert = entityAdapterConvert $ listEntityAdapter plainEntityAdapter
 listEntityFamily :: EntityFamily
 listEntityFamily =
     pinaforeEntityFamily listGroundType $ \epShowType -> let
+        epKind = ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) [] t -> Dict (Eq t)
-        epEq (ConsArguments t NilArguments) =
-            case monoEntityTypeEq t of
-                Dict -> Dict
-        epAdapter :: forall t. Arguments MonoEntityType [] t -> EntityAdapter t
-        epAdapter (ConsArguments t NilArguments) = listEntityAdapter $ monoEntityAdapter t
+        epAdapter :: forall t. Arguments EntityAdapter [] t -> EntityAdapter t
+        epAdapter (ConsArguments t NilArguments) = listEntityAdapter t
         in MkEntityProperties {..}
 
 pairEntityAdapter :: EntityAdapter ta -> EntityAdapter tb -> EntityAdapter (ta, tb)
@@ -100,14 +95,10 @@ pairEntityConvert = entityAdapterConvert $ pairEntityAdapter plainEntityAdapter 
 pairEntityFamily :: EntityFamily
 pairEntityFamily =
     pinaforeEntityFamily pairGroundType $ \epShowType -> let
+        epKind = ConsListType Refl $ ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) (,) t -> Dict (Eq t)
-        epEq (ConsArguments ta (ConsArguments tb NilArguments)) =
-            case (monoEntityTypeEq ta, monoEntityTypeEq tb) of
-                (Dict, Dict) -> Dict
-        epAdapter :: forall t. Arguments MonoEntityType (,) t -> EntityAdapter t
-        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) =
-            pairEntityAdapter (monoEntityAdapter ta) (monoEntityAdapter tb)
+        epAdapter :: forall t. Arguments EntityAdapter (,) t -> EntityAdapter t
+        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = pairEntityAdapter ta tb
         in MkEntityProperties {..}
 
 eitherEntityAdapter :: EntityAdapter ta -> EntityAdapter tb -> EntityAdapter (Either ta tb)
@@ -128,14 +119,10 @@ eitherEntityConvert = entityAdapterConvert $ eitherEntityAdapter plainEntityAdap
 eitherEntityFamily :: EntityFamily
 eitherEntityFamily =
     pinaforeEntityFamily eitherGroundType $ \epShowType -> let
+        epKind = ConsListType Refl $ ConsListType Refl NilListType
         epCovaryMap = covarymap
-        epEq :: forall (t :: Type). Arguments (MonoType EntityGroundType) Either t -> Dict (Eq t)
-        epEq (ConsArguments ta (ConsArguments tb NilArguments)) =
-            case (monoEntityTypeEq ta, monoEntityTypeEq tb) of
-                (Dict, Dict) -> Dict
-        epAdapter :: forall t. Arguments MonoEntityType Either t -> EntityAdapter t
-        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) =
-            eitherEntityAdapter (monoEntityAdapter ta) (monoEntityAdapter tb)
+        epAdapter :: forall t. Arguments EntityAdapter Either t -> EntityAdapter t
+        epAdapter (ConsArguments ta (ConsArguments tb NilArguments)) = eitherEntityAdapter ta tb
         in MkEntityProperties {..}
 
 entityGroundType :: PinaforeGroundType '[] Entity
@@ -150,10 +137,9 @@ literalEntityFamily ::
     -> EntityFamily
 literalEntityFamily t =
     pinaforeEntityFamily t $ \epShowType -> let
+        epKind = NilListType
         epCovaryMap = covarymap
-        epEq :: forall (ta :: Type). Arguments (MonoType EntityGroundType) t ta -> Dict (Eq ta)
-        epEq NilArguments = Dict
-        epAdapter :: forall ta. Arguments MonoEntityType t ta -> EntityAdapter ta
+        epAdapter :: forall ta. Arguments EntityAdapter t ta -> EntityAdapter ta
         epAdapter NilArguments = literalEntityAdapter
         in MkEntityProperties {..}
 
@@ -198,9 +184,9 @@ instance CovarySubtype PinaforeGroundType EntityGroundType where
     dolanToMonoGroundType MkPinaforeGroundType {..} =
         findmap allEntityFamilies $ \(MkEntityFamily wit ff) -> do
             tt <- matchFamilyType wit pgtFamilyType
-            eprops <- ff pgtVarianceType tt
+            seprops <- ff tt
             covaryType <- dolanVarianceToCovaryType pgtVarianceType
-            return (covaryType, MkEntityGroundType pgtFamilyType covaryType eprops)
+            return (covaryType, MkEntityGroundType pgtFamilyType seprops)
     monoToDolanGroundType ::
            forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
            CovaryType dv

@@ -102,27 +102,27 @@ invertSubstitute ::
     -> DolanUnifier ground a
     -> UnifierSolver ground a
 invertSubstitute _ (ClosedExpression a) = pure a
-invertSubstitute sub@(MkInvertSubstitution oldvar PositiveType newvar _) (OpenExpression (LEUnifierConstraint depvar PositiveType vt recv) expr)
+invertSubstitute sub@(MkInvertSubstitution oldvar PositiveType newvar _) (OpenExpression (LEUnifierConstraint depvar pol vt recv) expr)
     | Just Refl <- testEquality oldvar depvar =
-        solverOpenExpression (LEUnifierConstraint newvar PositiveType vt recv) $ do
+        solverOpenExpression (LEUnifierConstraint newvar pol vt recv) $ do
             fa <- invertSubstitute sub expr
             pure $ \conv -> fa $ conv . meet1
-invertSubstitute sub@(MkInvertSubstitution oldvar NegativeType newvar st) (OpenExpression (LEUnifierConstraint depvar PositiveType vt recv) expr)
+invertSubstitute sub@(MkInvertSubstitution oldvar NegativeType newvar st) (OpenExpression (LEUnifierConstraint depvar pol vt recv) expr)
     | Just Refl <- testEquality oldvar depvar =
-        solverOpenExpression (LEUnifierConstraint newvar PositiveType vt recv) $ do
+        solverOpenExpression (LEUnifierConstraint newvar pol vt recv) $ do
             fa <- invertSubstitute sub expr
-            convm <- unifyTypes st vt
+            convm <- withRepresentative pol $ unifyTypes st vt
             pure $ \conv -> fa $ joinf conv convm
-invertSubstitute sub@(MkInvertSubstitution oldvar NegativeType newvar _) (OpenExpression (GEUnifierConstraint depvar NegativeType vt recv) expr)
+invertSubstitute sub@(MkInvertSubstitution oldvar NegativeType newvar _) (OpenExpression (GEUnifierConstraint depvar pol vt recv) expr)
     | Just Refl <- testEquality oldvar depvar =
-        solverOpenExpression (GEUnifierConstraint newvar NegativeType vt recv) $ do
+        solverOpenExpression (GEUnifierConstraint newvar pol vt recv) $ do
             fa <- invertSubstitute sub expr
             pure $ \conv -> fa $ join1 . conv
-invertSubstitute sub@(MkInvertSubstitution oldvar PositiveType newvar st) (OpenExpression (GEUnifierConstraint depvar NegativeType vt recv) expr)
+invertSubstitute sub@(MkInvertSubstitution oldvar PositiveType newvar st) (OpenExpression (GEUnifierConstraint depvar pol vt recv) expr)
     | Just Refl <- testEquality oldvar depvar =
-        solverOpenExpression (GEUnifierConstraint newvar NegativeType vt recv) $ do
+        solverOpenExpression (GEUnifierConstraint newvar pol vt recv) $ do
             fa <- invertSubstitute sub expr
-            convm <- unifyTypes vt st
+            convm <- withRepresentative pol $ unifyTypes vt st
             pure $ \conv -> fa $ meetf conv convm
 invertSubstitute sub (OpenExpression subwit expr) = solverOpenExpression subwit $ invertSubstitute sub expr
 
@@ -301,9 +301,11 @@ runUnifier (OpenExpression (GEUnifierConstraint (oldvar :: SymbolType oldname) N
 instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground => UnifyTypeSystem (DolanTypeSystem ground) where
     type Unifier (DolanTypeSystem ground) = DolanUnifier ground
     type UnifierSubstitutions (DolanTypeSystem ground) = [UnifierBisubstitution ground]
-    unifyNegWitnesses ta tb = return $ uuLiftNegShimWit $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
-    unifyPosWitnesses ta tb = return $ uuLiftPosShimWit $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
-    unifyPosNegWitnesses tq tp = fmap MkUUShim $ runSolver $ unifyTypes tq tp
+    unifyNegWitnesses ta tb =
+        return $ uuLiftNegShimWit @(DolanTypeSystem ground) $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
+    unifyPosWitnesses ta tb =
+        return $ uuLiftPosShimWit @(DolanTypeSystem ground) $ joinMeetShimWit (mkPolarShimWit ta) (mkPolarShimWit tb)
+    unifyPosNegWitnesses tq tp = fmap MkComposeShim $ runSolver $ unifyTypes tq tp
     solveUnifier u = fmap (\(a, subs) -> (a, reverse subs)) $ runWriterT $ runUnifier u
     unifierPosSubstitute bisubs t = lift $ runUnifierM $ bisubstitutesType bisubs t
     unifierNegSubstitute bisubs t = lift $ runUnifierM $ bisubstitutesType bisubs t

@@ -203,7 +203,7 @@ wholeChangeLens ::
     => Lens' mf a b
     -> ChangeLens (WholeUpdate a) (WholeUpdate b)
 wholeChangeLens lens =
-    ioWholeChangeLens (\a -> return $ lensGet lens a) (\b olda -> return $ getMaybeOne $ lensPutback lens b olda)
+    ioWholeChangeLens (\a -> return $ lensGet lens a) (\b olda -> return $ fextractm $ lensPutback lens b olda)
 
 bijectionWholeChangeLens ::
        forall lin updateA b. (FullEdit (UpdateEdit updateA))

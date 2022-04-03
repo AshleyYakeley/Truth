@@ -51,21 +51,32 @@ printModuleDoc modopts tmodname = let
                ?library = lc
                in do
                       modname <- maybeToM (unpack $ tmodname <> ": bad module name") $ toModuleName tmodname
-                      mmod <- throwInterpretResult $ runPinaforeScoped $ lcLoadModule lc modname
+                      mmod <-
+                          throwInterpretResult $
+                          runPinaforeScoped (initialPos $ unpack tmodname) $ lcLoadModule lc modname
                       pmodule <- maybeToM (unpack $ tmodname <> ": not found") mmod
                       runDocTree (showDefTitle stdout) (showDefDesc stdout) (showDefEntry stdout) 1 $ moduleDoc pmodule
 
-printInfixOperatorTable :: IO ()
-printInfixOperatorTable = do
+printInfixOperatorTable :: [(Name, Fixity)] -> IO ()
+printInfixOperatorTable fixities = do
+    let
+        maxLevel :: Int
+        maxLevel = maximum $ fmap (fixityPrec . snd) fixities
     putStrLn "| [n] | (A x B) x C | A x (B x C) | A x B only |"
     putStrLn "| --- | --- | --- | --- |"
-    for_ [10,9 .. 0] $ \level -> do
+    for_ [maxLevel .. 0] $ \level -> do
         putStr $ show level
         for_ [AssocLeft, AssocRight, AssocNone] $ \assc -> do
             putStr " |"
             let
                 fixity = MkFixity assc level
-                mnames = filter (\n -> operatorFixity n == fixity) allOperatorNames
+                mnames =
+                    mapMaybe
+                        (\(n, f) ->
+                             if f == fixity
+                                 then Just n
+                                 else Nothing)
+                        fixities
             for_ mnames $ \n -> putStr $ " `" <> show n <> "`"
         putStrLn ""
 
@@ -76,4 +87,6 @@ main =
         ModuleDocOption moModuleDirs modname -> let
             moExtraLibrary = extraLibrary
             in printModuleDoc MkModuleOptions {..} modname
-        InfixDocOption -> printInfixOperatorTable
+        InfixDocOption -> printInfixOperatorTable $ fmap (\n -> (n, operatorFixity n)) $ allOperatorNames ValueDocType
+        TypeInfixDocOption ->
+            printInfixOperatorTable $ fmap (\n -> (n, typeOperatorFixity n)) $ allOperatorNames TypeDocType

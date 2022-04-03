@@ -12,6 +12,9 @@ Also, `case` and `do` statements are terminated with `end`.
 * There's no "top level" for declarations.
 All declarations, including type declarations, are local to a `let` block.
 * Only one equation is allowed for a function definition. Use `case` to match argument patterns.
+* Haskell's type constructors `Either`, `(,)`, `[]` and `()` become `:+:`, `:*:`, `List` and `Unit`.
+* There's no tuple type bigger than two. The tuple `(a,b,c)` is equivalent to `(a,(b,c))`, etc.
+* Lambda-expressions and case-expressions use `=>` instead of `->`.
 
 ## Grammar
 
@@ -51,40 +54,35 @@ All declarations, including type declarations, are local to a `let` block.
 
 <type-infix> ::= "->" | "~>"
 
-<type-argument-1> ::=
-    <type-1> |
-    <type-range>
+<type-1> ::= <type-infix[0]> |
 
-<type-1> ::=
-    <type-argument-2> <type-infix> <type-argument-1> |
-    <type-2>
+<type-infix[n]> ::=
+    <type-infix[n+1]> |
+    <type-infix[n]> <type-infix-operator[n,left]> <type-infix[n+1]> |
+    <type-infix[n+1]> <type-infix-operator[n,right]> <type-infix[n]>
 
-<type-argument-2> ::=
-    <type-2> |
-    <type-range>
+<type-infix[4]> ::= <type-2>
+
+<type-infix-operator[n,dir]> ::= -- see table
 
 <type-2> ::=
-    <type-const> <type-arguments-3> |
+    <type-const> <type-arguments> |
     <type-3>
 
-<type-arguments-3> ::=
-    <type-argument-3> <type-arguments-3> |
-    <type-argument-3>
+<type-arguments> ::=
+    <type-argument> <type-arguments> |
+    <type-argument>
 
-<type-argument-3> ::=
+<type-argument> ::=
     <type-3> |
-    <type-range>
+    "{" <type-range-items> "}" |
+    "-" <type-3> |
+    "+" <type-3>
 
 <type-3> ::=
     "(" <type> ")" |
-    "(" <type> "," <type> ")" |
-    "(" ")" |
     <type-var> |
     <type-const>
-
-<type-range-3> ::=
-    "{" <type-range-items> "}" |
-    <type-signed>
 
 <type-range-items> ::= | <type-range-items-1>
 
@@ -94,9 +92,6 @@ All declarations, including type declarations, are local to a `let` block.
 
 <type-range-item> ::=
     <type> |
-    <type-signed>
-
-<type-signed> ::=
     "-" <type> |
     "+" <type>
 
@@ -110,17 +105,19 @@ All declarations, including type declarations, are local to a `let` block.
 
 <expression-infix[n]> ::=
     <expression-infix[n+1]> |
-    <expression-infix[n]> <infix-operator[n]> <expression-infix[n+1]>
+    <expression-infix[n]> <infix-operator[n,left]> <expression-infix[n+1]> |
+    <expression-infix[n+1]> <infix-operator[n,right]> <expression-infix[n]>
 
 <expression-infix[11]> ::= <expression-1>
 
-<infix-operator[n]> ::= -- see table
+<infix-operator[n,dir]> ::= -- see table
 
 <expression-1> ::=
-    "\" <patterns> "->" <expression> |
+    "\" <patterns> "=>" <expression> |
     <let-declarations> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
     "case" <expression> "of" <cases> "end" |
+    "\" "case" <cases> "end" |
     "do" <do-lines> <expression> "end" |
     <expression-2>
 
@@ -139,7 +136,7 @@ All declarations, including type declarations, are local to a `let` block.
     <literal> |
     "[" <comma-separated(<expression>)> "]" |
     "(" ")" |
-    "(" <expression> "," <expression> ")" |
+    "(" <expression> "," <comma-separated-1(<expression>)> ")" |
     "(" <expression> ")" |
     "(" <infix-operator[n]> ")"
 
@@ -155,11 +152,11 @@ All declarations, including type declarations, are local to a `let` block.
 
 <cases> ::=  | <case> ";" <cases>
 
-<case> ::= <pattern-2> "->" <expression>
+<case> ::= <pattern-1> "=>" <expression>
 
 <do-lines> =  | <do-line> ";" <do-lines>
 
-<do-line> = <expression> | <pattern-2> "<-" <expression>
+<do-line> = <expression> | <pattern-1> "<-" <expression>
 
 <let-declarations> ::= "let" <declarations>
 
@@ -176,10 +173,10 @@ All declarations, including type declarations, are local to a `let` block.
 <direct-declarations> ::=  | <direct-declaration> ";" <direct-declarations>
 
 <direct-declaration> ::=
-    "datatype" <type-const> <datatype-body> |
+    "datatype" <type-const> <datatype-parameters> "of" <datatype-body> "end" |
     "opentype" <type-const> |
     "subtype" <type-const> "<:" <type-const> |
-    "closedtype" <type-const> <closedtype-body> |
+    "closedtype" <type-const> <closedtype-parameters> "of" <closedtype-body> "end" |
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
 
@@ -196,21 +193,37 @@ All declarations, including type declarations, are local to a `let` block.
 
 <type-signature> ::= lname ":" <type>
 
-<datatype-body> ::=  | "=" <datatype-constructors>
+<datatype-parameters> ::=  | <datatype-parameter> <datatype-parameters>
+
+<datatype-parameter> ::=
+    "+" lname |
+    "-" lname |
+    "{" "+" lname "," "-" lname "}" |
+    "{" "-" lname "," "+" lname "}" |
+
+<datatype-body> ::=  | <datatype-constructors>
 
 <datatype-constructors> ::=
     <datatype-constructor> |
-    <datatype-constructor> "|" <datatype-constructors>
+    <datatype-constructor> ";" <datatype-constructors>
 
-<datatype-constructor> ::= uname <types>
+<datatype-constructor> ::=
+    uname <types> |
+    "subtype" "datatype" <type-const> "of" <datatype-body> "end"
 
-<closedtype-body> ::=  | "=" <closedtype-constructors>
+<closedtype-parameters> ::=  | <closedtype-parameter> <closedtype-parameters>
+
+<closedtype-parameter> ::= "+" lname
+
+<closedtype-body> ::=  | <closedtype-constructors>
 
 <closedtype-constructors> ::=
     <closedtype-constructor> |
-    <closedtype-constructor> "|" <closedtype-constructors>
+    <closedtype-constructor> ";" <closedtype-constructors>
 
-<closedtype-constructor> ::= uname <types> anchor
+<closedtype-constructor> ::=
+    uname <types> anchor |
+    "subtype" "closedtype" <type-const> "of" <closedtype-body> "end"
 
 <dynamictype-constructors> ::=
     <dynamictype-constructor> |
@@ -237,7 +250,7 @@ All declarations, including type declarations, are local to a `let` block.
     "_" |
     "[" <comma-separated(<pattern-1>)> "]" |
     "(" ")" |
-    "(" <pattern-1> "," <pattern-1> ")" |
+    "(" <pattern-1> "," <comma-separated-1(<pattern-1>)> ")" |
     "(" <pattern-1> ")"
 
 <pattern-var> ::= lname
@@ -248,6 +261,10 @@ All declarations, including type declarations, are local to a `let` block.
     literal-number |
     literal-text
 ```
+
+## Type Infix Operators
+
+{!type-infix.md!}
 
 ## Infix Operators
 

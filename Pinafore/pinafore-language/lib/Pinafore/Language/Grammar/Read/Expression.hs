@@ -3,8 +3,10 @@ module Pinafore.Language.Grammar.Read.Expression
     , readExpression
     , readModule
     , readTopDeclarations
+    , operatorFixity
     ) where
 
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Grammar.Read.Constructor
 import Pinafore.Language.Grammar.Read.Infix
 import Pinafore.Language.Grammar.Read.Parser
@@ -43,17 +45,6 @@ readBinding = do
         (do
              (args, rval) <- readBindingRest
              return $ MkSyntaxBinding spos Nothing name $ seAbstracts spos args rval)
-
-readLines :: Parser a -> Parser [a]
-readLines p =
-    (do
-         a <- p
-         ma <-
-             optional $ do
-                 readThis TokSemicolon
-                 readLines p
-         return $ a : fromMaybe [] ma) <|>
-    (return [])
 
 readModuleName :: Parser ModuleName
 readModuleName =
@@ -133,9 +124,84 @@ readSubsumedExpression expr = do
         Nothing -> return expr
         Just (spos, t) -> readSubsumedExpression $ MkWithSourcePos spos $ SESubsume expr t
 
+-- following Haskell
+-- https://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061
+operatorFixity :: Name -> Fixity
+operatorFixity "." = MkFixity AssocRight 10
+operatorFixity "!." = MkFixity AssocRight 10
+operatorFixity "^" = MkFixity AssocRight 9
+operatorFixity "^^" = MkFixity AssocRight 9
+operatorFixity "**" = MkFixity AssocRight 9
+operatorFixity "!**" = MkFixity AssocLeft 9
+operatorFixity "!++" = MkFixity AssocLeft 9
+operatorFixity "*" = MkFixity AssocLeft 8
+operatorFixity ".*" = MkFixity AssocLeft 8
+operatorFixity "~*" = MkFixity AssocLeft 8
+operatorFixity "/" = MkFixity AssocLeft 8
+operatorFixity "~/" = MkFixity AssocLeft 8
+operatorFixity "<*>" = MkFixity AssocLeft 8
+operatorFixity "<:*:>" = MkFixity AssocLeft 8
+operatorFixity "!$" = MkFixity AssocRight 8
+operatorFixity "!$%" = MkFixity AssocRight 8
+operatorFixity "!$$" = MkFixity AssocRight 8
+operatorFixity "!@" = MkFixity AssocRight 8
+operatorFixity "!@%" = MkFixity AssocRight 8
+operatorFixity "!@@" = MkFixity AssocRight 8
+operatorFixity "+" = MkFixity AssocLeft 7
+operatorFixity ".+" = MkFixity AssocLeft 7
+operatorFixity "~+" = MkFixity AssocLeft 7
+operatorFixity "-" = MkFixity AssocLeft 7
+operatorFixity ".-" = MkFixity AssocLeft 7
+operatorFixity "~-" = MkFixity AssocLeft 7
+operatorFixity "??" = MkFixity AssocLeft 7
+operatorFixity "<+>" = MkFixity AssocLeft 7
+operatorFixity "<:+:>" = MkFixity AssocLeft 7
+operatorFixity "::" = MkFixity AssocRight 6
+operatorFixity "++" = MkFixity AssocRight 6
+operatorFixity "<>" = MkFixity AssocRight 6
+operatorFixity "==" = MkFixity AssocNone 5
+operatorFixity "/=" = MkFixity AssocNone 5
+operatorFixity "~==" = MkFixity AssocNone 5
+operatorFixity "~/=" = MkFixity AssocNone 5
+operatorFixity "<=" = MkFixity AssocNone 5
+operatorFixity "<" = MkFixity AssocNone 5
+operatorFixity ">=" = MkFixity AssocNone 5
+operatorFixity ">" = MkFixity AssocNone 5
+operatorFixity "<&>" = MkFixity AssocLeft 4
+operatorFixity "<:&:>" = MkFixity AssocLeft 4
+operatorFixity "<:&>" = MkFixity AssocLeft 4
+operatorFixity "<\\>" = MkFixity AssocLeft 4
+operatorFixity "<:\\>" = MkFixity AssocLeft 4
+operatorFixity "<^>" = MkFixity AssocLeft 4
+operatorFixity "&&" = MkFixity AssocRight 4
+operatorFixity "<|>" = MkFixity AssocLeft 3
+operatorFixity "<:|:>" = MkFixity AssocLeft 3
+operatorFixity "||" = MkFixity AssocRight 3
+operatorFixity ":=" = MkFixity AssocNone 2
+operatorFixity "+=" = MkFixity AssocNone 2
+operatorFixity "-=" = MkFixity AssocNone 2
+operatorFixity ">>=" = MkFixity AssocLeft 1
+operatorFixity ">>" = MkFixity AssocLeft 1
+operatorFixity "$" = MkFixity AssocRight 0
+operatorFixity _ = MkFixity AssocLeft 10
+
+expressionFixityReader :: FixityReader SyntaxExpression
+expressionFixityReader =
+    MkFixityReader
+        { efrReadInfix =
+              do
+                  spos <- getPosition
+                  name <- readThis TokOperator
+                  return
+                      ( name
+                      , operatorFixity name
+                      , \e1 e2 -> seApplys spos (MkWithSourcePos spos $ SEVar $ UnqualifiedReferenceName name) [e1, e2])
+        , efrMaxPrecedence = 10
+        }
+
 readExpression :: Parser SyntaxExpression
 readExpression = do
-    expr <- readExpressionInfixed readExpression1
+    expr <- readInfixed expressionFixityReader readExpression1
     readSubsumedExpression expr
 
 readName :: Parser Name
@@ -146,7 +212,7 @@ readModule = readExpose
 
 readCase :: Parser SyntaxCase
 readCase = do
-    pat <- readPattern2
+    pat <- readPattern1
     readThis TokMap
     e <- readExpression
     return $ MkSyntaxCase pat e
@@ -162,7 +228,7 @@ data DoLine
 readDoLine :: Parser DoLine
 readDoLine =
     (try $ do
-         pat <- readPattern2
+         pat <- readPattern1
          readThis TokBackMap
          expr <- readExpression
          return $ BindDoLine pat expr) <|>
@@ -193,10 +259,16 @@ readExpression1 =
     (do
          spos <- getPosition
          readThis TokLambda
-         args <- readPatterns
-         readThis TokMap
-         mval <- readExpression
-         return $ seAbstracts spos args mval) <|>
+         (readSourcePos $ do
+              readThis TokCase
+              scases <- readCases
+              readThis TokEnd
+              return $ SELambdaCase scases) <|>
+             (do
+                  args <- readPatterns
+                  readThis TokMap
+                  mval <- readExpression
+                  return $ seAbstracts spos args mval)) <|>
     readSourcePos
         (do
              sdecls <- readLetBindings
@@ -280,13 +352,20 @@ readExpression3 =
           case msexpr1 of
               Nothing -> return $ seConst spos $ SCConstructor SLUnit
               Just sexpr1 -> do
-                  msexpr2 <-
-                      optional $ do
+                  lsexpr2 <-
+                      many $ do
                           readThis TokComma
                           readExpression
-                  case msexpr2 of
-                      Just sexpr2 -> do return $ seApplys spos (seConst spos $ SCConstructor SLPair) [sexpr1, sexpr2]
-                      Nothing -> return sexpr1)) <|>
+                  return $
+                      case lsexpr2 of
+                          [] -> sexpr1
+                          sexpr2:sexprs -> let
+                              appair :: SyntaxExpression -> SyntaxExpression -> SyntaxExpression
+                              appair e1 e2 = seApplys spos (seConst spos $ SCConstructor SLPair) [e1, e2]
+                              aptuple :: SyntaxExpression -> SyntaxExpression -> [SyntaxExpression] -> SyntaxExpression
+                              aptuple e1 e2 [] = appair e1 e2
+                              aptuple e1 e2 (e3:er) = appair e1 $ aptuple e2 e3 er
+                              in aptuple sexpr1 sexpr2 sexprs)) <|>
     readSourcePos
         (do
              sexprs <-

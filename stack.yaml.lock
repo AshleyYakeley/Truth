@@ -12,19 +12,12 @@ packages:
   original:
     hackage: mime-0.4.0.2
 - completed:
-    hackage: gi-cairo-render-0.1.0@sha256:cb27b31b373c55c5b384a331e439d1ebc2fb3e02c8a58c9bfb83218d5467af2b,3553
+    hackage: blake3-0.2@sha256:d1146b9a51ccfbb0532780778b6d016a614e3d44c05d8c1923dde9a8be869045,2448
     pantry-tree:
-      size: 1655
-      sha256: 5cf0f21a23e2d49a50b0f46078890160d982469ff108d7a142eefa165347dc32
+      size: 1433
+      sha256: 0264ef3e7919e7b0d668c4153f6ce0d88e6965626b52d9dfd2cafd70309501d3
   original:
-    hackage: gi-cairo-render-0.1.0
-- completed:
-    hackage: gi-cairo-connector-0.1.0@sha256:a79c34c4f22f81a938c5835f623de55fdf1f0f08435897bad68f58e01ffd1464,1213
-    pantry-tree:
-      size: 238
-      sha256: 4414eca6922175779e3ec5d0eb932ee0d10307217a32ff6671a8f5efdd1bc4f0
-  original:
-    hackage: gi-cairo-connector-0.1.0
+    hackage: blake3-0.2
 - completed:
     name: haskell-src-exts
     version: 1.23.0
@@ -69,22 +62,9 @@ packages:
   original:
     git: https://github.com/fpco/ghc-prof-flamegraph.git
     commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
-- completed:
-    subdir: Color
-    name: Color
-    version: 0.3.2
-    git: https://github.com/AshleyYakeley/Color.git
-    pantry-tree:
-      size: 8026
-      sha256: b14934523ff44fafdd4db33943de93ede3cb6fc68a3b95ec1e052c4ccd8b51d7
-    commit: 4bd2cc37f927d270b802bc5ac9fcdc3d8d6039aa
-  original:
-    subdir: Color
-    git: https://github.com/AshleyYakeley/Color.git
-    commit: 4bd2cc37f927d270b802bc5ac9fcdc3d8d6039aa
 snapshots:
 - completed:
-    size: 586286
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/16.yaml
-    sha256: cdead65fca0323144b346c94286186f4969bf85594d649c49c7557295675d8a5
-  original: lts-18.16
+    size: 616897
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/0.yaml
+    sha256: bbf2be02f17940bac1f87cb462d4fb0c3355de6dcfc53d84f4f9ad3ee2164f65
+  original: lts-19.0

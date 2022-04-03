@@ -37,7 +37,10 @@ somenumber = 4;
 
 opentype X;
 
-closedtype T = T1 Integer Boolean | T2;
+closedtype T of
+    T1 Integer Boolean;
+    T2;
+end;
 
 subtype T <: X;
 

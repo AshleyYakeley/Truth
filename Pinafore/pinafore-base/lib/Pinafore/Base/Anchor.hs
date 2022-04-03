@@ -1,5 +1,6 @@
 module Pinafore.Base.Anchor
-    ( Anchor
+    ( IsHash(..)
+    , Anchor
     , checkAnchor
     , anchorCodec
     , hashToAnchor
@@ -8,21 +9,29 @@ module Pinafore.Base.Anchor
     , anchorToByteString
     ) where
 
+import BLAKE3
 import Control.DeepSeq
-import Crypto.Hash
 import Data.ByteArray (convert)
 import qualified Data.Serialize as Serialize (Serialize(..), encode)
 import Shapes
 
 newtype Anchor =
-    MkAnchor StrictByteString -- 256 bits = 64 hex chars = 32 bytes = 4 Word64s
+    MkAnchor StrictByteString
     deriving (Eq, Ord, NFData, Hashable)
+
+class IsHash h where
+    hashSize :: Int
+    hashByteStrings :: [StrictByteString] -> h
+
+instance IsHash Anchor where
+    hashSize = fromIntegral $ typeValue @_ @NaturalType @DEFAULT_DIGEST_LEN -- 256 bits = 64 hex chars = 32 bytes = 4 Word64s
+    hashByteStrings f = MkAnchor $ convert $ hash @DEFAULT_DIGEST_LEN f
 
 checkAnchor :: String -> Anchor -> Anchor
 checkAnchor s anchor@(MkAnchor bs) =
-    case olength bs of
-        32 -> anchor
-        n -> error $ s <> ": broken anchor (" <> show n <> ")"
+    if olength bs == hashSize @Anchor
+        then anchor
+        else error $ s <> ": broken anchor (" <> show (olength bs) <> ")"
 
 anchorCodec ::
        forall m. MonadFail m
@@ -30,24 +39,29 @@ anchorCodec ::
 anchorCodec = let
     decode :: StrictByteString -> m Anchor
     decode bs =
-        case olength bs of
-            32 -> return $ MkAnchor bs
-            _ -> fail "deserialize: bad anchor"
+        if olength bs == hashSize @Anchor
+            then return $ MkAnchor bs
+            else fail $ "deserialize: bad anchor (" <> show (olength bs) <> ")"
     encode :: Anchor -> StrictByteString
     encode (checkAnchor "encode" -> MkAnchor bs) = bs
     in MkCodec {..}
 
-mkAnchor :: Word64 -> Word64 -> Word64 -> Word64 -> Anchor
-mkAnchor a0 a1 a2 a3 = MkAnchor $ mconcat $ fmap Serialize.encode [a0, a1, a2, a3]
+randomN ::
+       forall t g. (Random t, RandomGen g)
+    => Int
+    -> g
+    -> ([t], g)
+randomN 0 g = ([], g)
+randomN n g = let
+    (a, g') = random g
+    (as, g'') = randomN (pred n) g'
+    in (a : as, g'')
 
 instance Random Anchor where
     randomR _ = random
     random g0 = let
-        (a0, g1) = random g0
-        (a1, g2) = random g1
-        (a2, g3) = random g2
-        (a3, g4) = random g3
-        in (mkAnchor a0 a1 a2 a3, g4)
+        (ww, g) = randomN @Word64 (div (hashSize @Anchor) 8) g0
+        in (MkAnchor $ mconcat $ fmap Serialize.encode ww, g)
 
 showHexChar :: Word8 -> Char
 showHexChar w
@@ -76,7 +90,7 @@ instance Serialize Anchor where
         decode anchorCodec bs
 
 hashToAnchor :: (forall r. (forall t. Serialize t => t -> r) -> [r]) -> Anchor
-hashToAnchor f = MkAnchor $ convert $ hashFinalize $ hashUpdates (hashInit @SHA3_256) $ f Serialize.encode
+hashToAnchor f = hashByteStrings $ f Serialize.encode
 
 codeAnchor :: Text -> Anchor
 codeAnchor text = hashToAnchor $ \call -> [call @Text "anchor:", call text]

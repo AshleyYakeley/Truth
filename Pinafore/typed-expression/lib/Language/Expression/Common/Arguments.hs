@@ -26,3 +26,7 @@ instance forall (w :: forall k. k -> Type). TestHetEquality w => TestEquality (M
         HRefl <- testHetEquality gt1 gt2
         Refl <- testEquality args1 args2
         return Refl
+
+mapArguments :: (forall a. w1 a -> w2 a) -> Arguments w1 f t -> Arguments w2 f t
+mapArguments _ NilArguments = NilArguments
+mapArguments ff (ConsArguments w args) = ConsArguments (ff w) $ mapArguments ff args

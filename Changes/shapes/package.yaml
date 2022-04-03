@@ -46,7 +46,7 @@ library:
     exposed-modules:
       - Data.Words
       - Control.Category.Groupoid
-      - Data.Chain
+      - Data.CatEndo
       - Data.Filterable
       - Data.MonoApplicative
       - Data.CatFunctor
@@ -88,6 +88,7 @@ library:
       - Shapes.Test
       - Shapes.Test.Context
     other-modules:
+      - Unsafe.Refl
       - Shapes.Import
       - Shapes.Instances
 

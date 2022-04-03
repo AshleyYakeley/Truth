@@ -2,49 +2,54 @@ module Control.Monad.Ology.Functor.One where
 
 import Import
 
-class Functor f => FunctorPure f where
+class Functor f => FunctorOne f where
     -- | When used on Tunnels, this discards effects.
     fpure :: forall a. a -> f a
-
-instance {-# OVERLAPPABLE #-} (Functor f, Applicative f) => FunctorPure f where
+    default fpure :: Applicative f => forall a. a -> f a
     fpure = pure
+    -- | must satisfy @fextractm . fpure = Just@
+    fextractm :: forall a. f a -> Maybe a
 
-instance (FunctorPure f1, FunctorPure f2) => FunctorPure (Compose f1 f2) where
-    fpure a = Compose $ fpure $ fpure a
-
-class Functor f => FunctorOne f where
-    -- | must satisfy @getMaybeOne . fpure = Just@
-    getMaybeOne :: forall a. f a -> Maybe a
-
-sequenceEither :: FunctorPure f => Either e (f a) -> f (Either e a)
+sequenceEither :: FunctorOne f => Either e (f a) -> f (Either e a)
 sequenceEither (Left e) = fpure $ Left e
 sequenceEither (Right fa) = fmap Right fa
 
 instance FunctorOne Identity where
-    getMaybeOne (Identity a) = Just a
+    fextractm (Identity a) = Just a
 
 instance FunctorOne Maybe where
-    getMaybeOne = id
+    fextractm = id
 
 instance Monoid p => FunctorOne ((,) p) where
-    getMaybeOne (_, a) = Just a
+    fextractm (_, a) = Just a
 
 instance FunctorOne (Either p) where
-    getMaybeOne (Left _) = Nothing
-    getMaybeOne (Right a) = Just a
+    fextractm (Left _) = Nothing
+    fextractm (Right a) = Just a
 
 instance (FunctorOne f1, FunctorOne f2) => FunctorOne (Compose f1 f2) where
-    getMaybeOne (Compose ffa) = getMaybeOne ffa >>= getMaybeOne
+    fpure a = Compose $ fpure $ fpure a
+    fextractm (Compose ffa) = fextractm ffa >>= fextractm
+
+instance FunctorOne m => FunctorOne (MaybeT m) where
+    fpure a = MaybeT $ fpure $ Just a
+    fextractm (MaybeT mma) = do
+        ma <- fextractm mma
+        ma
+
+instance FunctorOne m => FunctorOne (ExceptT e m) where
+    fpure a = ExceptT $ fpure $ Right a
+    fextractm (ExceptT mea) = do
+        ea <- fextractm mea
+        fextractm ea
+
+instance (FunctorOne m, Monoid w) => FunctorOne (WriterT w m) where
+    fpure a = WriterT $ fpure (a, mempty)
+    fextractm (WriterT maw) = fmap fst $ fextractm maw
 
 class FunctorOne f => FunctorExtract f where
-    -- | must satisfy @fextract . fpure = id@, @getMaybeOne = Just . fextract@
+    -- | must satisfy @fextract . fpure = id@, @fextractm = Just . fextract@
     fextract :: forall a. f a -> a
-
-fcommuteB :: (FunctorExtract fa, Functor fb) => fa (fb r) -> fb (fa r)
-fcommuteB abr = fmap (\r -> fmap (\_ -> r) abr) $ fextract abr
-
-fcommuteA :: (Functor fa, FunctorIdentity fb) => fa (fb r) -> fb (fa r)
-fcommuteA abr = fpure $ fmap fextract abr
 
 instance FunctorExtract Identity where
     fextract = runIdentity
@@ -56,8 +61,15 @@ instance (FunctorExtract f1, FunctorExtract f2) => FunctorExtract (Compose f1 f2
     fextract (Compose ffa) = fextract $ fextract ffa
 
 -- | must satisfy @fpure . fextract = id@, and so be equivalent to the identity functor
-class (FunctorPure f, FunctorExtract f) => FunctorIdentity f
+class FunctorExtract f => FunctorIdentity f
 
 instance FunctorIdentity Identity
 
 instance (FunctorIdentity f1, FunctorIdentity f2) => FunctorIdentity (Compose f1 f2)
+
+-- | When used on Tunnels, this discards effects in tunnel @fb@ (due to use of @fpure@)
+fcommuteADiscard :: (Functor fa, FunctorExtract fb) => fa (fb r) -> fb (fa r)
+fcommuteADiscard abr = fpure $ fmap fextract abr
+
+fcommuteB :: (FunctorExtract fa, Functor fb) => fa (fb r) -> fb (fa r)
+fcommuteB abr = fmap (\r -> fmap (\_ -> r) abr) $ fextract abr

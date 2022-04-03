@@ -83,8 +83,8 @@ singleBound (MkBinding name bd mexpr) = do
         abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (tdecl -> a))
         abstractNames expr = do
             MkAbstractResult vwt expr' <- abstractNamedExpression @ts name expr
-            uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit decltype) vwt
-            return $ MkUnifyExpression (uuGetShim uconv) $ fmap (\ta conv -> ta . shimToFunction conv) expr'
+            uconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts decltype) vwt
+            return $ MkUnifyExpression (uuGetShim @ts uconv) $ fmap (\ta conv -> ta . shimToFunction conv) expr'
         getbinds ::
                UnifierSubstitutions ts
             -> SubsumerSubstitutions ts

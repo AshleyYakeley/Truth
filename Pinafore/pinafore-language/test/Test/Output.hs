@@ -5,7 +5,7 @@ module Test.Output
 import Changes.Core
 import Pinafore
 import Pinafore.Test
-import Shapes hiding ((<.>))
+import Shapes hiding ((.))
 import Shapes.Test
 import System.FilePath
 

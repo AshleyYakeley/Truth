@@ -7,7 +7,6 @@ import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
-import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
@@ -17,13 +16,16 @@ type PinaforeSingularType :: Polarity -> Type -> Type
 type PinaforeSingularType = DolanSingularType PinaforeGroundType
 
 type PinaforeSingularShimWit :: Polarity -> Type -> Type
-type PinaforeSingularShimWit polarity = PShimWit (PinaforePolyShim Type) PinaforeSingularType polarity
+type PinaforeSingularShimWit polarity = DolanSingularShimWit PinaforeGroundType polarity
 
 type PinaforeType :: Polarity -> Type -> Type
 type PinaforeType = DolanType PinaforeGroundType
 
 type PinaforeShimWit :: Polarity -> Type -> Type
-type PinaforeShimWit polarity = PShimWit (PinaforePolyShim Type) PinaforeType polarity
+type PinaforeShimWit polarity = DolanShimWit PinaforeGroundType polarity
+
+type PinaforeArgumentsShimWit :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Polarity -> Type -> Type
+type PinaforeArgumentsShimWit dv gt polarity = DolanArgumentsShimWit PinaforePolyShim dv PinaforeType gt polarity
 
 type PinaforeExpression = SealedExpression Name (PinaforeShimWit 'Negative) (PinaforeShimWit 'Positive)
 
@@ -31,7 +33,8 @@ type PinaforePatternConstructor = PatternConstructor Name (PinaforeShimWit 'Posi
 
 type PinaforePattern = SealedPattern Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
 
-type instance InterpreterFamilyType PinaforeTypeSystem = FamilyType
+type instance InterpreterFamilyType PinaforeTypeSystem =
+     FamilialType
 
 type PinaforeSpecialVals = SpecialVals PinaforeTypeSystem
 
@@ -45,16 +48,6 @@ type PinaforeBinding = InterpreterBinding PinaforeTypeSystem
 
 type PinaforeInterpreter = Interpreter PinaforeTypeSystem
 
-type PinaforeSourceInterpreter = SourceInterpreter PinaforeTypeSystem
-
 type PinaforeAnnotation = Annotation PinaforeTypeSystem
 
-type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeSourceInterpreter
-
-getGreatestDynamicSupertype ::
-       PinaforeType 'Positive t -> PinaforeSourceInterpreter (PinaforeGreatestDynamicSupertype t)
-getGreatestDynamicSupertype (ConsDolanType (GroundedDolanSingularType gt args) NilDolanType)
-    | Just ds <- pgtGreatestDynamicSupertype gt args = return $ isomapGDS iJoinR1 ds
-getGreatestDynamicSupertype t = do
-    t' <- invertType t
-    return $ MkGreatestDynamicSupertype t' id $ functionToShim "dynamic-supertype" Just
+type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeInterpreter

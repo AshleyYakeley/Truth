@@ -3,8 +3,11 @@ module Pinafore.Language.Grammar.Read.Type
     , readTypeNewName
     , readType
     , readType3
+    , readTypeVar
     ) where
 
+import Pinafore.Language.ExprShow
+import Pinafore.Language.Grammar.Read.Infix
 import Pinafore.Language.Grammar.Read.Parser
 import Pinafore.Language.Grammar.Read.Token
 import Pinafore.Language.Grammar.Syntax
@@ -27,33 +30,47 @@ readType0 = do
     spos <- getPosition
     t1 <- readType1
     (do
-         readExactlyThis TokOperator "|"
+         readThis TokOr
          t2 <- readType
          return $ MkWithSourcePos spos $ OrSyntaxType t1 t2) <|>
         (do
-             readExactlyThis TokOperator "&"
+             readThis TokAnd
              t2 <- readType
              return $ MkWithSourcePos spos $ AndSyntaxType t1 t2) <|>
         (return t1)
 
-readInfix :: Parser SyntaxGroundType
-readInfix =
-    (do
-         readThis TokPropMap
-         return MorphismSyntaxGroundType) <|>
-    (do
-         readThis TokMap
-         return FunctionSyntaxGroundType)
+allowedTypeOperatorName :: Name -> Bool
+allowedTypeOperatorName "+" = False
+allowedTypeOperatorName "-" = False
+allowedTypeOperatorName "|" = False
+allowedTypeOperatorName "&" = False
+allowedTypeOperatorName _ = True
+
+readTypeOperatorName :: Parser Name
+readTypeOperatorName = do
+    n <- readThis TokOperator
+    ifpure (allowedTypeOperatorName n) n
+
+readInfix :: Parser (Name, Fixity, SyntaxTypeArgument -> SyntaxTypeArgument -> SyntaxTypeArgument)
+readInfix = do
+    spos <- getPosition
+    name <- readTypeOperatorName
+    return
+        ( name
+        , typeOperatorFixity name
+        , \t1 t2 ->
+              SimpleSyntaxTypeArgument $
+              MkWithSourcePos spos $ SingleSyntaxType (ConstSyntaxGroundType $ UnqualifiedReferenceName name) [t1, t2])
+
+typeFixityReader :: FixityReader SyntaxTypeArgument
+typeFixityReader = MkFixityReader {efrReadInfix = readInfix, efrMaxPrecedence = 3}
 
 readType1 :: Parser SyntaxType
-readType1 =
-    (try $
-     readSourcePos $ do
-         t1 <- readTypeArgument readType2
-         tc <- readInfix
-         t2 <- readTypeArgument readType1
-         return $ SingleSyntaxType tc [t1, t2]) <|>
-    readType2
+readType1 = do
+    arg <- readInfixed typeFixityReader $ readTypeArgument readType2
+    case arg of
+        SimpleSyntaxTypeArgument t -> return t
+        _ -> empty
 
 readTypeReferenceName :: Parser ReferenceName
 readTypeReferenceName = readReferenceUName
@@ -67,7 +84,16 @@ readTypeConstant = do
     return $ ConstSyntaxGroundType name
 
 readTypeArgument :: Parser SyntaxType -> Parser SyntaxTypeArgument
-readTypeArgument r = fmap SimpleSyntaxTypeArgument r <|> readTypeRange
+readTypeArgument r =
+    asum
+        [ fmap SimpleSyntaxTypeArgument r
+        , readBracketed TokOpenBrace TokCloseBrace $ do
+              items <- readCommaM readTypeRangeItem
+              return $ RangeSyntaxTypeArgument items
+        , do
+              (sv, t) <- readSignedType readType3
+              return $ RangeSyntaxTypeArgument [(Just sv, t)]
+        ]
 
 readType2 :: Parser SyntaxType
 readType2 =
@@ -81,57 +107,32 @@ readType2 =
 readType3 :: Parser SyntaxType
 readType3 =
     (readSourcePos $ do
-         t1 <- readBracket $ readType
-         return $ SingleSyntaxType ListSyntaxGroundType [SimpleSyntaxTypeArgument t1]) <|>
-    (readSourcePos $ do
          name <- readTypeVar
          return $ VarSyntaxType name) <|>
     readTypeLimit <|>
     (readSourcePos $ do
          tc <- readTypeConstant
          return $ SingleSyntaxType tc []) <|>
-    (readParen $ do
-         mt1 <- optional $ readType
-         case mt1 of
-             Just t1 -> do
-                 comma <- optional $ readThis TokComma
-                 case comma of
-                     Just () ->
-                         readSourcePos $ do
-                             t2 <- readType
-                             return $
-                                 SingleSyntaxType
-                                     PairSyntaxGroundType
-                                     [SimpleSyntaxTypeArgument t1, SimpleSyntaxTypeArgument t2]
-                     Nothing -> return t1
-             Nothing -> readSourcePos $ return $ SingleSyntaxType UnitSyntaxGroundType [])
-
-readTypeRange :: Parser SyntaxTypeArgument
-readTypeRange =
-    (readBracketed TokOpenBrace TokCloseBrace $ do
-         items <- readCommaM readTypeRangeItem
-         return $ RangeSyntaxTypeArgument items) <|> do
-        (sv, t) <- readSignedType
-        return $ RangeSyntaxTypeArgument [(Just sv, t)]
+    (readParen readType)
 
 readTypeRangeItem :: Parser [(Maybe SyntaxVariance, SyntaxType)]
 readTypeRangeItem =
     (do
-         (sv, t) <- readSignedType
+         (sv, t) <- readSignedType readType
          return [(Just sv, t)]) <|>
     (do
-         t1 <- readType3
+         t1 <- readType
          return [(Nothing, t1)])
 
-readSignedType :: Parser (SyntaxVariance, SyntaxType)
-readSignedType =
+readSignedType :: Parser SyntaxType -> Parser (SyntaxVariance, SyntaxType)
+readSignedType rtype =
     (do
          readExactlyThis TokOperator "+"
-         t1 <- readType3
+         t1 <- rtype
          return (CoSyntaxVariance, t1)) <|>
     (do
          readExactlyThis TokOperator "-"
-         t1 <- readType3
+         t1 <- rtype
          return (ContraSyntaxVariance, t1))
 
 readTypeVar :: Parser Name

@@ -73,12 +73,13 @@ polarPolyIsoNegative (MkPolarMap iab) =
         NegativeType -> isoForwards $ unPolyMapT iab
 
 instance forall (pshim :: PolyShimKind). ApplyPolyShim pshim => ApplyPolyShim (PolyIso pshim) where
-    applyPolyShim CoCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
-        MkPolyMapT $ MkIsomorphism (applyCoPolyShim fab xab) (applyCoPolyShim fba xba)
-    applyPolyShim ContraCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatDual (MkPolyMapT (MkIsomorphism xab xba))) =
-        MkPolyMapT $ MkIsomorphism (applyContraPolyShim fab xab) (applyContraPolyShim fba xba)
-    applyPolyShim RangeCCRVarianceType (MkPolyMapT (MkIsomorphism fab fba)) (MkCatRange (MkPolyMapT (MkIsomorphism xab1 xba1)) (MkPolyMapT (MkIsomorphism xab2 xba2))) =
-        MkPolyMapT $ MkIsomorphism (applyRangePolyShim fab xab1 xab2) (applyRangePolyShim fba xba1 xba2)
+    applyPolyShim CoCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkIsomorphism fab fba)) (MkPolyMapT (MkIsomorphism xab xba)) =
+        MkPolyMapT $ MkIsomorphism (applyCoPolyShim ccrvf ccrvg fab xab) (applyCoPolyShim ccrvg ccrvf fba xba)
+    applyPolyShim ContraCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkIsomorphism fab fba)) (MkCatDual (MkPolyMapT (MkIsomorphism xab xba))) =
+        MkPolyMapT $ MkIsomorphism (applyContraPolyShim ccrvf ccrvg fab xab) (applyContraPolyShim ccrvg ccrvf fba xba)
+    applyPolyShim RangeCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkIsomorphism fab fba)) (MkCatRange (MkPolyMapT (MkIsomorphism xab1 xba1)) (MkPolyMapT (MkIsomorphism xab2 xba2))) =
+        MkPolyMapT $
+        MkIsomorphism (applyRangePolyShim ccrvf ccrvg fab xab1 xab2) (applyRangePolyShim ccrvg ccrvf fba xba1 xba2)
 
 polarPolyIsoPolar1 ::
        forall (pshim :: PolyShimKind) polarity (a :: Type). (JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)
@@ -105,8 +106,7 @@ polyIsoPolar iab =
 instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, IsoMapShim (pshim k), Category (pshim k)) =>
              IsoMapShim (PolyIso pshim k) where
     isoMapShim ::
-           (InKind pa, InKind pb, InKind qa, InKind qb)
-        => String
+           String
         -> (KindFunction pa pb -> KindFunction qa qb)
         -> (KindFunction pb pa -> KindFunction qb qa)
         -> PolyIso pshim k pa pb
@@ -119,5 +119,5 @@ instance forall (pshim :: PolyShimKind) k. (CoercibleKind k, CoerceShim (pshim k
     coercionToShim n c = MkPolyMapT $ MkIsomorphism (coercionToShim n c) (coercionToShim n $ invert c)
     shimToCoercion (MkPolyMapT (MkIsomorphism ab ba)) = shimToCoercion ab <|> fmap invert (shimToCoercion ba)
 
-instance forall (pshim :: PolyShimKind). AllInCategory pshim => ReduciblePolyShim (PolyIso pshim) where
+instance forall (pshim :: PolyShimKind). AllCategory pshim => ReduciblePolyShim (PolyIso pshim) where
     type ReducedPolyShim (PolyIso pshim) = PolyIso pshim

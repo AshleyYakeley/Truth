@@ -37,8 +37,8 @@ instance Functor (Result e) where
     fmap _ (FailureResult e) = FailureResult e
 
 instance FunctorOne (Result e) where
-    getMaybeOne (SuccessResult a) = Just a
-    getMaybeOne (FailureResult _) = Nothing
+    fextractm (SuccessResult a) = Just a
+    fextractm (FailureResult _) = Nothing
 
 instance Foldable (Result e) where
     foldMap am (SuccessResult a) = am a

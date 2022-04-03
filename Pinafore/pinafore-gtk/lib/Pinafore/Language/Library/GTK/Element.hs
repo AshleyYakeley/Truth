@@ -11,7 +11,6 @@ import Changes.UI.GTK
 import Data.Shim
 import Data.Time
 import GI.Cairo.Render
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Drawing
@@ -89,26 +88,24 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                         contramap readSub $ viewLiftSelectNotify $ modelSelectNotify esrc selectionModel
         (widget, setSelection) <-
             createListTable (fmap getColumn cols) (unWModel $ langListRefToOrdered lref) onSelect tsn
-        case mSelectionModel of
-            Nothing -> return ()
-            Just selectionModel -> let
-                setsel :: Know EnA -> View ()
-                setsel Unknown = setSelection Nothing
-                setsel (Known a) =
-                    setSelection $
-                    Just $ do
-                        a' <- readM ReadWhole
-                        return $ a' == a
-                init :: CreateView ()
-                init =
-                    viewRunResourceContext selectionModel $ \unlift (amod :: _ tt) -> do
-                        ka <- liftIO $ unlift $ aModelRead amod ReadWhole
-                        liftToLifeCycle $ setsel ka
-                recv :: () -> NonEmpty (BiWholeUpdate (Know A) (Know EnA)) -> View ()
-                recv () updates = let
-                    MkBiWholeUpdate ka = last updates
-                    in setsel ka
-                in cvBindModel selectionModel (Just esrc) init mempty recv
+        for_ mSelectionModel $ \selectionModel -> let
+            setsel :: Know EnA -> View ()
+            setsel Unknown = setSelection Nothing
+            setsel (Known a) =
+                setSelection $
+                Just $ do
+                    a' <- readM ReadWhole
+                    return $ a' == a
+            init :: CreateView ()
+            init =
+                viewRunResourceContext selectionModel $ \unlift (amod :: _ tt) -> do
+                    ka <- liftIO $ unlift $ aModelRead amod ReadWhole
+                    liftToLifeCycle $ setsel ka
+            recv :: () -> NonEmpty (BiWholeUpdate (Know A) (Know EnA)) -> View ()
+            recv () updates = let
+                MkBiWholeUpdate ka = last updates
+                in setsel ka
+            in cvBindModel selectionModel (Just esrc) init mempty recv
         return widget
 
 uiList :: (PinaforeImmutableWholeRef A -> LangElement) -> LangListRef '( BottomType, A) -> LangElement
@@ -243,9 +240,12 @@ uiStyleClass sclass (MkLangElement mw) =
         setCSSClass sclass widget
         return widget
 
-uiTextArea :: WModel (WholeUpdate (Know Text)) -> LangElement
-uiTextArea val =
-    MkLangElement $ createTextArea (unWModel $ eaMap (convertChangeLens . unknownValueChangeLens mempty) val) mempty
+uiTextArea :: LangTextRef -> LangWholeRef '( PinaforeAction LangTextRef, TopType) -> LangElement
+uiTextArea (MkLangTextRef model) selectionRef =
+    MkLangElement $
+    createTextArea (unWModel model) $
+    contramap (\tsel -> fmap MkLangTextRef $ pinaforeFloatMap tsel model) $
+    langWholeRefSelectNotify noEditSource selectionRef
 
 uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangElement
 uiCalendar day =
@@ -261,10 +261,8 @@ elementStuff =
         ""
         [ mkTypeEntry "Element" "A user interface element is something that goes inside a window." $
           MkBoundType elementGroundType
-        , mkSubtypeRelationEntry "Element" "LayoutElement" "" $
-          pure $
-          simpleSubtypeConversionEntry elementGroundType layoutElementGroundType $
-          simpleSubtypeConversion $ functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
+        , hasSubtypeRelationEntry @LangElement @LangLayoutElement "" $
+          functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
         , mkValEntry "run" "Element that runs an Action first." uiRun
         , mkValEntry "blank" "Blank element" $ MkLangElement createBlank
         , mkValEntry "draw" "Drawable element" uiDraw

@@ -6,7 +6,7 @@ module Pinafore.Language.API
     , module Pinafore.Language.Library.Defs
     , module Pinafore.Context
     , WitKind(..)
-    , FamilyType(..)
+    , FamilialType(..)
     , BoundType(..)
     , PinaforePolyShim
     , EntityGroundType(..)
@@ -20,6 +20,14 @@ module Pinafore.Language.API
     , HasPinaforeType(..)
     , HasPinaforeGroundType(..)
     , groundPinaforeType
+    , CCRArguments(..)
+    , DolanArgumentsShimWit
+    , nilDolanArgumentsShimWit
+    , consDolanArgumentsShimWit
+    , CCRPolarArgumentShimWit
+    , coCCRArgument
+    , contraCCRArgument
+    , rangeCCRArgument
     , module Pinafore.Language.Value
     ) where
 

@@ -1,6 +1,9 @@
 # Pinafore 0.4
 
 Pinafore is a language that allows you to structure and store information, and create user interfaces for it.
+
+![Information](img/information.png)
+
 The language is loosely based on Haskell, featuring:
 
 * type-checking and inference, with optional type signatures,
@@ -23,7 +26,7 @@ Hindley-Milner is the type system that languages such as ML and Haskell are base
 ## Storage
 
 Pinafore stores relationships between typed entities, known as properties, in a database on your computer.
-These properties are composable as "morphisms", and can be used to retrieve and upsate information.
+These properties are composable as "morphisms", and can be used to retrieve and update information.
 
 For example, one can compose properties "mother" and "name" into a morphism "mother's name".
 Then one can use that morphism to look up or update the mother's name of a given person,

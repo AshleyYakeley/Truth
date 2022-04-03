@@ -35,6 +35,8 @@ data AnyVar =
 newUVarAny :: String -> AnyVar
 newUVarAny nstr = newUVar nstr MkAnyVar
 
+-- | The key to using this safely is not to assign the same name more than once.
+-- If you're seeing what looks like bad unsafe coercions, this is probably the problem.
 assignUVar :: forall (k :: Type) (t :: k) (name :: Symbol) r. SymbolType name -> (UVar k name ~ t => r) -> r
 assignUVar _ = withRefl $ unsafeRefl @k @(UVar k name) @t
 

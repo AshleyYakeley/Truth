@@ -11,11 +11,8 @@ import Language.Expression.Dolan.Variance
 import Shapes
 
 type BisubstitutablePolyShim :: PolyShimKind -> Constraint
-class ( JoinMeetIsoCategory (pshim Type)
-      , IsoMapShim (pshim Type)
-      , DolanVarianceInCategory pshim
-      , ReduciblePolyShim pshim
-      ) => BisubstitutablePolyShim pshim where
+class (JoinMeetIsoCategory (pshim Type), IsoMapShim (pshim Type), DolanVarianceCategory pshim, ReduciblePolyShim pshim) =>
+          BisubstitutablePolyShim pshim where
     reducedBisubstitutablePolyShim ::
            Dict (BisubstitutablePolyShim (ReducedPolyShim pshim), LazyCategory (ReducedPolyShim pshim Type))
 
@@ -79,7 +76,7 @@ data DolanType ground polarity t where
         -> DolanType ground polarity tr
         -> DolanType ground polarity (JoinMeetType polarity t1 tr)
 
-instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
+instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              TestEquality (DolanType ground polarity) where
     testEquality NilDolanType NilDolanType = return Refl
     testEquality (ConsDolanType t1a tra) (ConsDolanType t1b trb) = do
@@ -92,10 +89,10 @@ instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
 type DolanSingularType :: GroundTypeKind -> Polarity -> Type -> Type
 data DolanSingularType ground polarity t where
     GroundedDolanSingularType
-        :: forall (ground :: GroundTypeKind) (polarity :: Polarity) (dv :: DolanVariance) t ta.
-           ground dv t
-        -> DolanArguments dv (DolanType ground) t polarity ta
-        -> DolanSingularType ground polarity ta
+        :: forall (ground :: GroundTypeKind) (polarity :: Polarity) (dv :: DolanVariance) gt t.
+           ground dv gt
+        -> DolanArguments dv (DolanType ground) gt polarity t
+        -> DolanSingularType ground polarity t
     VarDolanSingularType
         :: forall (ground :: GroundTypeKind) polarity name.
            SymbolType name
@@ -108,11 +105,11 @@ data DolanSingularType ground polarity t where
         -> DolanType ground polarity (UVarT name)
         -> DolanSingularType ground polarity (UVarT name)
 
-instance forall (ground :: GroundTypeKind) polarity. IsDolanGroundType ground =>
+instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, Is PolarityType polarity) =>
              TestEquality (DolanSingularType ground polarity) where
     testEquality (GroundedDolanSingularType gta argsa) (GroundedDolanSingularType gtb argsb) = do
         (Refl, HRefl) <- groundTypeTestEquality gta gtb
-        Refl <- dolanTestEquality (groundTypeVarianceType gta) argsa argsb
+        Refl <- testEquality argsa argsb
         return Refl
     testEquality (VarDolanSingularType na) (VarDolanSingularType nb) = do
         Refl <- testEquality na nb
@@ -149,9 +146,29 @@ varDolanShimWit ::
     -> PShimWit shim (DolanType ground) polarity (UVarT name)
 varDolanShimWit var = singleDolanShimWit $ mkPolarShimWit $ VarDolanSingularType var
 
+groundedDolanShimWit ::
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) dv gt t.
+       (IsDolanGroundType ground, JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)
+    => ground dv gt
+    -> DolanArgumentsShimWit pshim dv (DolanType ground) gt polarity t
+    -> PShimWit (pshim Type) (DolanType ground) polarity t
+groundedDolanShimWit gt (MkShimWit args conv) = singleDolanShimWit $ MkShimWit (GroundedDolanSingularType gt args) conv
+
+toGroundedDolanShimWit ::
+       forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) t r.
+       (IsDolanGroundType ground, JoinMeetIsoCategory (pshim Type), Is PolarityType polarity)
+    => PShimWit (pshim Type) (DolanType ground) polarity t
+    -> (forall dv gt. ground dv gt -> DolanArgumentsShimWit pshim dv (DolanType ground) gt polarity t -> r)
+    -> Maybe r
+toGroundedDolanShimWit (MkShimWit t conv) call =
+    case t of
+        ConsDolanType (GroundedDolanSingularType gt args) NilDolanType ->
+            Just $ call gt (MkShimWit args $ iPolarL1 . conv)
+        _ -> Nothing
+
 nilDolanShimWit ::
        forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity).
-       (IsDolanGroundType ground, InCategory shim, Is PolarityType polarity)
+       (IsDolanGroundType ground, Category shim, Is PolarityType polarity)
     => PShimWit shim (DolanType ground) polarity (LimitType polarity)
 nilDolanShimWit = mkPolarShimWit NilDolanType
 
@@ -177,10 +194,11 @@ singleDolanType ::
 singleDolanType st = ConsDolanType st NilDolanType
 
 dolanTypeToSingular ::
-       forall (ground :: GroundTypeKind) (polarity :: Polarity) (t :: Type).
-       DolanType ground polarity t
-    -> Maybe (AnyW (DolanSingularType ground polarity))
-dolanTypeToSingular (ConsDolanType st NilDolanType) = Just $ MkAnyW st
+       forall (ground :: GroundTypeKind) (shim :: ShimKind Type) (polarity :: Polarity) (t :: Type).
+       (JoinMeetIsoCategory shim, Is PolarityType polarity)
+    => DolanType ground polarity t
+    -> Maybe (PShimWit shim (DolanSingularType ground) polarity t)
+dolanTypeToSingular (ConsDolanType st NilDolanType) = Just $ MkShimWit st iPolarL1
 dolanTypeToSingular _ = Nothing
 
 singleDolanShimWit ::

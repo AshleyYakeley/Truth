@@ -11,6 +11,10 @@ data VarianceType (t :: Variance) where
     CoVarianceType :: VarianceType 'Covariance
     ContraVarianceType :: VarianceType 'Contravariance
 
+invertVarianceType :: VarianceType t -> (forall v'. VarianceType v' -> r) -> r
+invertVarianceType CoVarianceType call = call ContraVarianceType
+invertVarianceType ContraVarianceType call = call CoVarianceType
+
 instance TestEquality VarianceType where
     testEquality CoVarianceType CoVarianceType = Just Refl
     testEquality ContraVarianceType ContraVarianceType = Just Refl
@@ -35,8 +39,7 @@ type family VarianceCategory cat v where
     VarianceCategory cat 'Covariance = cat
     VarianceCategory cat 'Contravariance = CatDual cat
 
-class ( InKind f
-      , MaybeRepresentational f
+class ( MaybeRepresentational f
       , Is VarianceType (VarianceOf f)
       , CatFunctor (VarianceCategory KindFunction (VarianceOf f)) KindFunction f
       ) => HasVariance (f :: Type -> k) where
@@ -47,6 +50,9 @@ instance HasVariance Maybe where
 
 instance HasVariance [] where
     type VarianceOf [] = 'Covariance
+
+instance HasVariance NonEmpty where
+    type VarianceOf NonEmpty = 'Covariance
 
 instance HasVariance ((->) a) where
     type VarianceOf ((->) a) = 'Covariance

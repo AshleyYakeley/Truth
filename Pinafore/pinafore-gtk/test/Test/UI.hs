@@ -117,12 +117,12 @@ testUI :: TestTree
 testUI =
     runScriptTestTree $
     tDecls
-        [ "emptywindow: Action ()"
+        [ "emptywindow: Action Unit"
         , "emptywindow = do UI.openWindow (300,400) {\"Empty\"} {[]} UI.blank; return (); end"
         , "opentype T"
-        , "newpoint: Action ()"
+        , "newpoint: Action Unit"
         , "newpoint = do s <- newMemFiniteSet; p <- newOpenEntity @T; s += p; return (); end"
-        , "buttonwindow: Action Any -> Action ()"
+        , "buttonwindow: Action Any -> Action Unit"
         , "buttonwindow action = do UI.openWindow (300,400) {\"Test\"} {[]} (UI.button {\"Button\"} {action}); return (); end"
         ] $
     tGroup "UI" [tGroup "immediate" $ testActions SyncTiming, tGroup "wait" $ testActions AsyncTiming]

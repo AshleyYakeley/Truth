@@ -7,8 +7,7 @@ import Control.Monad.Ology.Trans.Constraint
 import Import
 
 type TransTunnel :: TransKind -> Constraint
-class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t, FunctorPure (Tunnel t), FunctorOne (Tunnel t)) =>
-          TransTunnel t where
+class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t, FunctorOne (Tunnel t)) => TransTunnel t where
     type Tunnel t :: Type -> Type
     tunnel ::
            forall m r. Functor m
@@ -83,7 +82,7 @@ class (MonadIO m, FunctorOne (TunnelIO m)) => MonadTunnelIO m where
     type TunnelIO m :: Type -> Type
     tunnelIO :: forall r. ((forall a. m a -> IO (TunnelIO m a)) -> IO (TunnelIO m r)) -> m r
 
-hoistIO :: MonadTunnelIO m => (IO --> IO) -> m r -> m r
+hoistIO :: MonadTunnelIO m => (IO --> IO) -> m --> m
 hoistIO mma sm1 = tunnelIO $ \tun -> mma $ tun sm1
 
 instance MonadTunnelIO IO where
@@ -123,7 +122,7 @@ mVarRun :: MVar s -> Unlift MonadTunnelIO (StateT s)
 mVarRun var (StateT smr) =
     tunnelIO $ \unlift ->
         modifyMVar var $ \olds ->
-            fmap (\fas -> (fromMaybe olds $ getMaybeOne $ fmap snd fas, fmap fst fas)) $ unlift $ smr olds
+            fmap (\fas -> (fromMaybe olds $ fextractm $ fmap snd fas, fmap fst fas)) $ unlift $ smr olds
 
 mVarUnitRun :: MonadTunnelIO m => MVar s -> m --> m
 mVarUnitRun var ma = mVarRun var $ lift ma

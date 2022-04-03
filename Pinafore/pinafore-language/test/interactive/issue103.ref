@@ -1,7 +1,7 @@
 pinafore> let f: ((a -> a) & b) -> Maybe b; f = Just
 pinafore> let i: a -> a; i x = x;
 pinafore> :type f
-: ((a -> a) & b) -> Maybe b
+: (a -> a & b) -> Maybe b
 pinafore> :type i
 : a -> a
 pinafore> :type f i
@@ -9,19 +9,19 @@ pinafore> :type f i
 pinafore> 
 pinafore> let g: ((a -> a) & b) -> b; g x = x
 pinafore> :type g
-: ((a -> a) & b) -> b
+: (a -> a & b) -> b
 pinafore> :type g i
 : i -> i
 pinafore> 
-pinafore> let ur: WholeRef a -> (); ur _ = ()
+pinafore> let ur: WholeRef a -> Unit; ur _ = ()
 pinafore> :type ur
-: WholeRef a -> ()
-pinafore> :type newMemWhole >>= \ref -> return (ref, ())
-: Action (WholeRef c, ())
-pinafore> :type newMemWhole >>= \ref -> return (ref, ((\_ -> ()) : WholeRef a -> ()) ref)
-: Action (WholeRef l, ())
-pinafore> :type \ref -> return (ref, ur ref)
-: (b & WholeRef c) -> Action (b, ())
-pinafore> :type newMemWhole >>= \ref -> return (ref, ur ref)
-: Action (WholeRef l, ())
+: WholeRef a -> Unit
+pinafore> :type newMemWhole >>= \ref => return (ref, ())
+: Action (WholeRef c :*: Unit)
+pinafore> :type newMemWhole >>= \ref => return (ref, ((\_ => ()) : WholeRef a -> Unit) ref)
+: Action (WholeRef l :*: Unit)
+pinafore> :type \ref => return (ref, ur ref)
+: (b & WholeRef c) -> Action (b :*: Unit)
+pinafore> :type newMemWhole >>= \ref => return (ref, ur ref)
+: Action (WholeRef l :*: Unit)
 pinafore> <END>

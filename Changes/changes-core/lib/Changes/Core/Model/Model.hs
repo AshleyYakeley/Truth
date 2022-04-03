@@ -36,7 +36,7 @@ data AModel update tt = MkAModel
     }
 
 aModelRead :: AModel update tt -> Readable (ApplyStack tt IO) (UpdateReader update)
-aModelRead = refRead . aModelAReference
+aModelRead amodel = refRead $ aModelAReference amodel
 
 aModelEdit ::
        AModel update tt -> NonEmpty (UpdateEdit update) -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))

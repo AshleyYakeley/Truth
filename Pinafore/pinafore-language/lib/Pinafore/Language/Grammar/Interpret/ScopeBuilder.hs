@@ -4,6 +4,7 @@ module Pinafore.Language.Grammar.Interpret.ScopeBuilder
     , Docs
     , defDocs
     , exposeDocs
+    , sourcePosScopeBuilder
     , interpScopeBuilder
     , refScopeBuilder
     , pureScopeBuilder
@@ -41,7 +42,10 @@ exposeDocs names = fmap EntryDocTreeEntry . exposeDeclids names . mconcat . fmap
 type ScopeBuilder = TransformT RefNotation
 
 runScopeBuilder :: ScopeBuilder a -> (a -> RefNotation b) -> RefNotation b
-runScopeBuilder = runTransformT
+runScopeBuilder sb = runTransformT sb
+
+sourcePosScopeBuilder :: SourcePos -> ScopeBuilder ()
+sourcePosScopeBuilder = putD $ transformParamRef $ liftParam $ liftParam sourcePosParam
 
 interpScopeBuilder :: (PinaforeInterpreter --> PinaforeInterpreter) -> ScopeBuilder ()
 interpScopeBuilder mf = mapTransformT $ hoistRefNotation $ MkWMFunction mf

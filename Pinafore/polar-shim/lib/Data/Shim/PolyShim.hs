@@ -14,59 +14,55 @@ newtype PolyMorphism shim k a b =
 type PolyFunction :: PolyShimKind
 type PolyFunction = PolyMorphism (->)
 
-instance forall (shim :: ShimKind Type) k. InCategory (KindMorphism shim :: ShimKind k) =>
-             InCategory (PolyMorphism shim k) where
-    cid = MkPolyMorphism cid
-    MkPolyMorphism p <.> MkPolyMorphism q = MkPolyMorphism $ p <.> q
+instance forall (shim :: ShimKind Type) k. Category (KindMorphism shim :: ShimKind k) => Category (PolyMorphism shim k) where
+    id = MkPolyMorphism id
+    MkPolyMorphism p . MkPolyMorphism q = MkPolyMorphism $ p . q
 
-instance forall (shim :: ShimKind Type) k. InGroupoid (KindMorphism shim :: ShimKind k) =>
-             InGroupoid (PolyMorphism shim k) where
-    cinvert (MkPolyMorphism p) = MkPolyMorphism $ cinvert p
+instance forall (shim :: ShimKind Type) k. Groupoid (KindMorphism shim :: ShimKind k) => Groupoid (PolyMorphism shim k) where
+    invert (MkPolyMorphism p) = MkPolyMorphism $ invert p
 
-instance InCategory (KindMorphism shim :: ShimKind Type) => Category (PolyMorphism shim Type) where
-    id = cid
-    (.) = (<.>)
-
-instance InGroupoid (KindMorphism shim :: ShimKind Type) => Groupoid (PolyMorphism shim Type) where
-    invert = cinvert
-
-type AllInCategory :: PolyShimKind -> Constraint
-type AllInCategory pshim = forall k. CoercibleKind k => InCategory (pshim k)
+type AllCategory :: PolyShimKind -> Constraint
+type AllCategory pshim = forall k. CoercibleKind k => Category (pshim k)
 
 type ApplyPolyShim :: PolyShimKind -> Constraint
-class AllInCategory pshim => ApplyPolyShim pshim where
+class AllCategory pshim => ApplyPolyShim pshim where
     applyPolyShim ::
            forall k (v :: CCRVariance) (f :: CCRVarianceKind v -> k) (g :: CCRVarianceKind v -> k) (a :: CCRVarianceKind v) (b :: CCRVarianceKind v).
-           (InKind a, InKind b, HasCCRVariance v f, HasCCRVariance v g)
-        => CCRVarianceType v
+           CCRVarianceType v
+        -> CCRVariation v f
+        -> CCRVariation v g
         -> pshim (CCRVarianceKind v -> k) f g
         -> CCRVarianceCategory (pshim Type) v a b
         -> pshim k (f a) (g b)
 
 applyCoPolyShim ::
-       forall (pshim :: PolyShimKind) k (f :: Type -> k) (g :: Type -> k) (a :: Type) (b :: Type).
-       (ApplyPolyShim pshim, HasCCRVariance CoCCRVariance f, HasCCRVariance CoCCRVariance g)
-    => pshim (Type -> k) f g
+       forall (pshim :: PolyShimKind) k (f :: Type -> k) (g :: Type -> k) (a :: Type) (b :: Type). ApplyPolyShim pshim
+    => CCRVariation CoCCRVariance f
+    -> CCRVariation CoCCRVariance g
+    -> pshim (Type -> k) f g
     -> pshim Type a b
     -> pshim k (f a) (g b)
-applyCoPolyShim fg ab = applyPolyShim CoCCRVarianceType fg ab
+applyCoPolyShim ccrvf ccrvg fg ab = applyPolyShim CoCCRVarianceType ccrvf ccrvg fg ab
 
 applyContraPolyShim ::
-       forall (pshim :: PolyShimKind) k (f :: Type -> k) (g :: Type -> k) (a :: Type) (b :: Type).
-       (ApplyPolyShim pshim, HasCCRVariance ContraCCRVariance f, HasCCRVariance ContraCCRVariance g)
-    => pshim (Type -> k) f g
+       forall (pshim :: PolyShimKind) k (f :: Type -> k) (g :: Type -> k) (a :: Type) (b :: Type). ApplyPolyShim pshim
+    => CCRVariation ContraCCRVariance f
+    -> CCRVariation ContraCCRVariance g
+    -> pshim (Type -> k) f g
     -> pshim Type b a
     -> pshim k (f a) (g b)
-applyContraPolyShim fg ba = applyPolyShim ContraCCRVarianceType fg (MkCatDual ba)
+applyContraPolyShim ccrvf ccrvg fg ba = applyPolyShim ContraCCRVarianceType ccrvf ccrvg fg (MkCatDual ba)
 
 applyRangePolyShim ::
        forall (pshim :: PolyShimKind) k (f :: (Type, Type) -> k) (g :: (Type, Type) -> k) (a1 :: Type) (a2 :: Type) (b1 :: Type) (b2 :: Type).
-       (ApplyPolyShim pshim, HasCCRVariance 'RangeCCRVariance f, HasCCRVariance 'RangeCCRVariance g)
-    => pshim ((Type, Type) -> k) f g
+       ApplyPolyShim pshim
+    => CCRVariation 'RangeCCRVariance f
+    -> CCRVariation 'RangeCCRVariance g
+    -> pshim ((Type, Type) -> k) f g
     -> pshim Type b1 a1
     -> pshim Type a2 b2
     -> pshim k (f '( a1, a2)) (g '( b1, b2))
-applyRangePolyShim fg ba1 ab2 = applyPolyShim RangeCCRVarianceType fg (MkCatRange ba1 ab2)
+applyRangePolyShim ccrvf ccrvg fg ba1 ab2 = applyPolyShim RangeCCRVarianceType ccrvf ccrvg fg (MkCatRange ba1 ab2)
 
 type PEqual :: PolyShimKind
 data PEqual k a b where
@@ -79,21 +75,14 @@ instance forall k. Category (PEqual k) where
 instance forall k. Groupoid (PEqual k) where
     invert MkPEqual = MkPEqual
 
-instance forall k. InCategory (PEqual k) where
-    cid = MkPEqual
-    MkPEqual <.> MkPEqual = MkPEqual
-
-instance forall k. InGroupoid (PEqual k) where
-    cinvert MkPEqual = MkPEqual
-
 instance ApplyPolyShim PEqual where
-    applyPolyShim CoCCRVarianceType MkPEqual MkPEqual = MkPEqual
-    applyPolyShim ContraCCRVarianceType MkPEqual (MkCatDual MkPEqual) = MkPEqual
-    applyPolyShim RangeCCRVarianceType MkPEqual (MkCatRange MkPEqual MkPEqual) = MkPEqual
+    applyPolyShim CoCCRVarianceType _ _ MkPEqual MkPEqual = MkPEqual
+    applyPolyShim ContraCCRVarianceType _ _ MkPEqual (MkCatDual MkPEqual) = MkPEqual
+    applyPolyShim RangeCCRVarianceType _ _ MkPEqual (MkCatRange MkPEqual MkPEqual) = MkPEqual
 
 -- | used for dealing with laziness for recursivly-constructed shims
 type ReduciblePolyShim :: PolyShimKind -> Constraint
-class AllInCategory pshim => ReduciblePolyShim pshim where
+class AllCategory pshim => ReduciblePolyShim pshim where
     type ReducedPolyShim pshim :: PolyShimKind
     reduceShim ::
            forall a b c d.

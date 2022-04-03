@@ -16,7 +16,7 @@ ccUnliftLifeCycle :: ChangesContext -> LifeCycle --> IO
 ccUnliftLifeCycle cc = rtUnliftLifeCycle $ ccRunToolkit cc
 
 ccRunView :: MonadUnliftIO m => ChangesContext -> ResourceContext -> ViewT m --> m
-ccRunView cc = rtRunView $ ccRunToolkit cc
+ccRunView cc rc = rtRunView (ccRunToolkit cc) rc
 
 ccUnliftCreateView :: ChangesContext -> CreateView --> View
 ccUnliftCreateView cc = rtUnliftCreateView $ ccRunToolkit cc

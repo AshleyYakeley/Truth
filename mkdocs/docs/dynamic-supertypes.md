@@ -8,8 +8,7 @@ Pinafore provides a general mechanism for making use of them.
 
 Every ambipolar type `T` has an ambipolar *greatest dynamic supertype* `D(T)`:
 
-- `D(Integer)` = `Number`
-- `D(Rational)` = `Number`
+- `D(T)` = `Literal` for all literal types
 - `D(T)` = `DynamicEntity` for dynamic entity types (the main use case)
 - `D(T)` = `T` for all other types
 
@@ -17,15 +16,15 @@ In each case, there is a "check" function that can convert `D(T)` back to `Maybe
 
 ## Type Pattern
 
-If `pat` is a pattern of type `T`, then `(pat: T)` is a pattern of type `D(T)`. Here's an example:
+If `pat` is a pattern of type `T`, then `pat: T` is a pattern of type `D(T)`. Here's an example:
 
 ```pinafore
 showNumberType: Number -> Text;
 showNumberType n =
     case n of
-        (i: Integer) -> "integer: " <> show i;
-        (r: Rational) -> "rational: " <> show r;
-        _ -> "number: " <> show n;
+        i: Integer => "integer: " <> show i;
+        r: Rational => "rational: " <> show r;
+        _ => "number: " <> show n;
     end
 ```
 
@@ -37,7 +36,7 @@ showNumberType n =
 
 This is equivalent to
 
-`\d -> case d of (t:T) -> Just t; _ -> Nothing end`
+`\d => case d of t:T => Just t; _ -> Nothing end`
 
 ## Coerce
 
@@ -48,4 +47,4 @@ If you're sure that the retraction will always succeed, you can use `coerce`.
 
 This is equivalent to
 
-`\d -> case d of (t:T) -> t; _ -> error "coercion from D(T) to T failed" end`
+`\d => case d of t:T => t; _ => error "coercion from D(T) to T failed" end`

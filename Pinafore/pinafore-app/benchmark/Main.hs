@@ -49,10 +49,10 @@ benchScripts =
         [ benchScript "do a <- return $ return (); a end"
         , benchScript "do a <- get {return ()}; a end"
         , benchScript "do a <- get $ pureWhole $ return (); a end"
-        , benchScript "get {return ()} >>= \\v -> v"
-        , benchScript "get {False} >>= \\v -> return ()"
-        , benchScript "get (pureWhole False) >>= \\v -> return ()"
-        , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ \\v -> return ()"
+        , benchScript "get {return ()} >>= \\v => v"
+        , benchScript "get {False} >>= \\v => return ()"
+        , benchScript "get (pureWhole False) >>= \\v => return ()"
+        , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ \\v => return ()"
         , benchScript "let rec a=b; b=c; c=d; d=e; e=f; f=g; g=return () end in a"
         , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ return ()"
         , benchScript
@@ -65,30 +65,30 @@ benchScripts =
         , benchScript
               "let cpass x = return () in let a = 3 in let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript
-              "let cpass x = return () in let f = \\a -> let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in d in cpass (f 3)"
+              "let cpass x = return () in let f = \\a => let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in d in cpass (f 3)"
         , benchScript $
           pack $
-          "let g r = get r >>= \\x -> return (); q = [" <>
+          "let g r = get r >>= \\x => return (); q = [" <>
           intercalate "," (replicate 50 "g (pureWhole 1)") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g1 r = get r >>= \\x -> return (); g2 r = get r >>= \\x -> return (); q = [" <>
+          "let g1 r = get r >>= \\x => return (); g2 r = get r >>= \\x => return (); q = [" <>
           intercalate "," (replicate 25 "g1 (pureWhole 1)" <> replicate 25 "g2 (pureWhole 1)") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = get r >>= \\x -> return () in let q = [" <>
+          "let g r = get r >>= \\x => return () in let q = [" <>
           intercalate "," (replicate 50 "g (pureWhole 1)") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = get r >>= \\x -> return () in let q = [" <>
+          "let g r = get r >>= \\x => return () in let q = [" <>
           intercalate "," (fmap (\(i :: Int) -> "g (pureWhole " <> show i <> ")") [1 .. 50]) <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = get r >>= \\x -> return (); q = [" <>
-          intercalate "," (replicate 50 "get (pureWhole 1) >>= \\x -> return ()") <> "] in for_ q id"
+          "let g r = get r >>= \\x => return (); q = [" <>
+          intercalate "," (replicate 50 "get (pureWhole 1) >>= \\x => return ()") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = list (return ()) (\\x y -> return ()) r; q = [" <>
+          "let g r = list (return ()) (\\x y => return ()) r; q = [" <>
           intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
         ]
 

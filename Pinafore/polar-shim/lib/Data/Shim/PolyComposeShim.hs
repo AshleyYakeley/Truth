@@ -69,12 +69,13 @@ polarMkPolyComposeShim mab =
 
 instance forall (pshim :: PolyShimKind) m. (ApplyPolyShim pshim, Applicative m) =>
              ApplyPolyShim (PolyComposeShim m pshim) where
-    applyPolyShim CoCCRVarianceType (MkPolyMapT (MkComposeShim mfab)) (MkPolyMapT (MkComposeShim mxab)) =
-        MkPolyMapT $ MkComposeShim (liftA2 (applyCoPolyShim) mfab mxab)
-    applyPolyShim ContraCCRVarianceType (MkPolyMapT (MkComposeShim mfab)) (MkCatDual (MkPolyMapT (MkComposeShim mxab))) =
-        MkPolyMapT $ MkComposeShim ((\fab xab -> applyContraPolyShim fab xab) <$> mfab <*> mxab)
-    applyPolyShim RangeCCRVarianceType (MkPolyMapT (MkComposeShim mfab)) (MkCatRange (MkPolyMapT (MkComposeShim mxab1)) (MkPolyMapT (MkComposeShim mxab2))) =
-        MkPolyMapT $ MkComposeShim ((\fab xab1 xab2 -> applyRangePolyShim fab xab1 xab2) <$> mfab <*> mxab1 <*> mxab2)
+    applyPolyShim CoCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkComposeShim mfab)) (MkPolyMapT (MkComposeShim mxab)) =
+        MkPolyMapT $ MkComposeShim (liftA2 (applyCoPolyShim ccrvf ccrvg) mfab mxab)
+    applyPolyShim ContraCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkComposeShim mfab)) (MkCatDual (MkPolyMapT (MkComposeShim mxab))) =
+        MkPolyMapT $ MkComposeShim ((\fab xab -> applyContraPolyShim ccrvf ccrvg fab xab) <$> mfab <*> mxab)
+    applyPolyShim RangeCCRVarianceType ccrvf ccrvg (MkPolyMapT (MkComposeShim mfab)) (MkCatRange (MkPolyMapT (MkComposeShim mxab1)) (MkPolyMapT (MkComposeShim mxab2))) =
+        MkPolyMapT $
+        MkComposeShim ((\fab xab1 xab2 -> applyRangePolyShim ccrvf ccrvg fab xab1 xab2) <$> mfab <*> mxab1 <*> mxab2)
 
 type PolyFuncShim :: Type -> PolyShimKind -> PolyShimKind
 type PolyFuncShim t = PolyComposeShim ((->) t)
@@ -103,8 +104,7 @@ mkPolarPolyFuncShim f =
 instance forall (pshim :: PolyShimKind) m. (IsoMapShim (pshim Type), Applicative m) =>
              IsoMapShim (PolyComposeShim m pshim Type) where
     isoMapShim ::
-           (InKind pa, InKind pb, InKind qa, InKind qb)
-        => String
+           String
         -> (KindFunction pa pb -> KindFunction qa qb)
         -> (KindFunction pb pa -> KindFunction qb qa)
         -> PolyComposeShim m pshim Type pa pb

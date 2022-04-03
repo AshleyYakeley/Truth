@@ -24,14 +24,19 @@ Import declarations, expose declarations, and (nested) recursive blocks are not 
 let
 
     rec
-    datatype P = MkP (Q -> P);
-    datatype Q = MkQ (P -> Maybe Q);
+        datatype P of
+        MkP (Q -> P);
+        end;
+
+        datatype Q of
+        MkQ (P -> Maybe Q);
+        end;
     end;
 
     rec
     fact = \case
-        0 -> 1;
-        n -> n * fact (n - 1);
+        0 => 1;
+        n => n * fact (n - 1);
         end;
     end;
 
@@ -49,9 +54,9 @@ A module consists of an expose declaration, but they can also be used within `le
 let
 
     let
-    datatype LowerCaseText = MkLowerCaseText Text;
+    datatype LowerCaseText of MkLowerCaseText Text end;
     fromLowerCase: LowerCaseText -> Text;
-    fromLowerCase = \(MkLowerCaseText t) -> t;
+    fromLowerCase = \(MkLowerCaseText t) => t;
     toLowerCase: Text -> LowerCaseText;
     toLowerCase t = MkLowerCaseText $ textLowerCase t;
     in expose LowerCaseText, fromLowerCase, toLowerCase; # MkLowerCaseText not exposed
@@ -72,5 +77,5 @@ import Colour (AlphaColour, crimson); # brings given names (and subtype relation
 
 import Drawing (); # brings only subtype relations from Drawing into scope
 
-in draw {\_ -> source crimson paint}
+in draw {\_ => source crimson paint}
 ```

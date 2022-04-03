@@ -4,6 +4,7 @@ module Pinafore.Language.Convert.Types
     (
     ) where
 
+import Changes.Core
 import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Convert.HasType
@@ -54,6 +55,10 @@ instance HasPinaforeGroundType '[ CoCCRVariance] Maybe where
 -- []
 instance HasPinaforeGroundType '[ CoCCRVariance] [] where
     pinaforeGroundType = listGroundType
+
+-- NonEmpty
+instance HasPinaforeGroundType '[ CoCCRVariance] NonEmpty where
+    pinaforeGroundType = list1GroundType
 
 -- PinaforeAction
 instance HasPinaforeGroundType '[ CoCCRVariance] PinaforeAction where
@@ -158,3 +163,17 @@ instance HasPinaforeType 'Positive a => HasPinaforeType 'Positive (Vector a) whe
 
 instance HasPinaforeType 'Negative a => HasPinaforeType 'Negative (Vector a) where
     pinaforeType = mapNegShimWit (functionToShim "fromList" fromList) pinaforeType
+
+-- SequencePoint
+instance HasPinaforeType 'Positive SequencePoint where
+    pinaforeType = mapPosShimWit (coerceShim "unSequencePoint") $ pinaforeType @_ @Int64
+
+instance HasPinaforeType 'Negative SequencePoint where
+    pinaforeType = mapNegShimWit (coerceShim "MkSequencePoint") $ pinaforeType @_ @Int64
+
+-- SequenceRun
+instance HasPinaforeType 'Positive SequenceRun where
+    pinaforeType = mapPosShimWit (functionToShim "unSequenceRun" (\(MkSequenceRun s e) -> (s, e))) pinaforeType
+
+instance HasPinaforeType 'Negative SequenceRun where
+    pinaforeType = mapNegShimWit (functionToShim "MkSequenceRun" (\(s, e) -> MkSequenceRun s e)) pinaforeType

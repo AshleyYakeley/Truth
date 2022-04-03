@@ -98,6 +98,12 @@ data ScriptExpectation
     | ScriptExpectStop
     | ScriptExpectSuccess
 
+instance Show ScriptExpectation where
+    show (ScriptExpectRejection _) = "reject"
+    show (ScriptExpectRuntimeException _) = "runtime exception"
+    show ScriptExpectStop = "stop"
+    show ScriptExpectSuccess = "success"
+
 testScriptExpectation :: Text -> ScriptExpectation -> Text -> ScriptTestTree
 testScriptExpectation name (ScriptExpectRejection checkEx) script =
     testScript name script $ \_ interpret -> assertThrowsException checkEx interpret

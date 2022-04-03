@@ -9,7 +9,7 @@ import Changes.World.FileSystem
 import Shapes
 import Soup.Edit
 import Soup.Note
-import System.FilePath hiding ((<.>))
+import System.FilePath
 import Changes.Debug.Reference
 
 fromResult :: Result Text Text -> (Text, TableCellProps)
@@ -69,7 +69,7 @@ soupReference dirpath = let
            forall m. MonadIO m
         => UpdateSubject PossibleNoteUpdate
         -> m (Maybe LazyByteString)
-    paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
+    paste s = return $ fextractm $ injBackwards soupItemInjection s
     soupItemLens :: ChangeLens ByteStringUpdate PossibleNoteUpdate
     soupItemLens = convertChangeLens . (wholeChangeLens $ injectionLens soupItemInjection) . convertChangeLens
     lens :: ChangeLens ReferenceSoupUpdate (SoupUpdate PossibleNoteUpdate)

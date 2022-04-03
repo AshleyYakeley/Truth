@@ -3,7 +3,6 @@ module Pinafore.Base.Literal where
 import Data.Time
 import Pinafore.Base.Anchor
 import Pinafore.Base.Entity
-import Pinafore.Base.Know
 import Pinafore.Base.Number
 import Pinafore.Base.SafeRational
 import Shapes
@@ -25,8 +24,8 @@ literalCodec = serializerStrictCodec literalSerializer . bijectionCodec coerceIs
 toLiteral :: AsLiteral t => t -> Literal
 toLiteral = encode literalCodec
 
-fromLiteral :: AsLiteral t => Literal -> Know t
-fromLiteral lit = maybeToKnow $ decode literalCodec lit
+fromLiteral :: AsLiteral t => Literal -> Maybe t
+fromLiteral = decode literalCodec
 
 literalToEntity :: AsLiteral t => t -> Entity
 literalToEntity v = MkEntity $ byteStringToAnchor $ unLiteral $ toLiteral v

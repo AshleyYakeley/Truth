@@ -80,8 +80,7 @@ drawingLibraryModule =
         "Drawing"
         ""
         [ mkTypeEntry "Drawing" "Something that can be drawn." $ MkBoundType drawingGroundType
-        , mkSubtypeRelationEntry "[Drawing]" "Drawing" "Monoidal relationship" $
-          pure $ monoidSubypeConversionEntry drawingGroundType
+        , monoidSubtypeRelationEntry @LangDrawing
         , docTreeEntry
               "Actions"
               ""
@@ -137,8 +136,7 @@ drawingLibraryModule =
               "Path"
               ""
               [ mkTypeEntry "Path" "A path on a drawing." $ MkBoundType pathGroundType
-              , mkSubtypeRelationEntry "[Path]" "Path" "Monoidal relationship" $
-                pure $ monoidSubypeConversionEntry pathGroundType
+              , monoidSubtypeRelationEntry @LangPath
               , mkValEntry "stroke" "Draw this path" $ stroke @UIP
               , mkValEntry "fill" "Fill this path" $ fill @UIP
               , mkValEntry "clip" "Clip drawing to this path" $ clip @UIP

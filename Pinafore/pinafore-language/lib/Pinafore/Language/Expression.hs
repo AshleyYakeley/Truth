@@ -30,10 +30,10 @@ qConstExpr a = qConstExprAny $ jmToValue a
 qVarExpr :: VarID -> QExpr
 qVarExpr name = tsVar @PinaforeTypeSystem name
 
-qAbstractExpr :: VarID -> QExpr -> PinaforeSourceInterpreter QExpr
+qAbstractExpr :: VarID -> QExpr -> PinaforeInterpreter QExpr
 qAbstractExpr name expr = tsAbstract @PinaforeTypeSystem name expr
 
-qAbstractsExpr :: [VarID] -> QExpr -> PinaforeSourceInterpreter QExpr
+qAbstractsExpr :: [VarID] -> QExpr -> PinaforeInterpreter QExpr
 qAbstractsExpr [] e = return e
 qAbstractsExpr (n:nn) e = do
     e' <- qAbstractsExpr nn e
@@ -45,7 +45,7 @@ qVarPattern = tsVarPattern @PinaforeTypeSystem
 qAnyPattern :: QPattern
 qAnyPattern = tsAnyPattern @PinaforeTypeSystem
 
-qBothPattern :: QPattern -> QPattern -> PinaforeSourceInterpreter QPattern
+qBothPattern :: QPattern -> QPattern -> PinaforeInterpreter QPattern
 qBothPattern = tsBothPattern @PinaforeTypeSystem
 
 qToPatternConstructor ::
@@ -58,7 +58,7 @@ qToPatternConstructor ::
 qToPatternConstructor =
     toPatternConstructor (fromPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative)) toListShimWit
 
-qApplyPatternConstructor :: QPatternConstructor -> QPattern -> PinaforeSourceInterpreter (QPatternConstructor)
+qApplyPatternConstructor :: QPatternConstructor -> QPattern -> PinaforeInterpreter (QPatternConstructor)
 qApplyPatternConstructor = tsApplyPatternConstructor @PinaforeTypeSystem
 
 qSealPatternConstructor ::
@@ -67,18 +67,18 @@ qSealPatternConstructor ::
     -> m QPattern
 qSealPatternConstructor = tsSealPatternConstructor @PinaforeTypeSystem
 
-qApplyAllPatternConstructor :: QPatternConstructor -> [QPattern] -> PinaforeSourceInterpreter (QPatternConstructor)
+qApplyAllPatternConstructor :: QPatternConstructor -> [QPattern] -> PinaforeInterpreter (QPatternConstructor)
 qApplyAllPatternConstructor pc [] = return pc
 qApplyAllPatternConstructor pc (pat:pats) = do
     pc' <- qApplyPatternConstructor pc pat
     qApplyAllPatternConstructor pc' pats
 
-qConstructPattern :: QPatternConstructor -> [QPattern] -> PinaforeSourceInterpreter QPattern
+qConstructPattern :: QPatternConstructor -> [QPattern] -> PinaforeInterpreter QPattern
 qConstructPattern pc pats = do
     pc' <- qApplyAllPatternConstructor pc pats
     qSealPatternConstructor pc'
 
-qCase :: QExpr -> [(QPattern, QExpr)] -> PinaforeSourceInterpreter QExpr
+qCase :: QExpr -> [(QPattern, QExpr)] -> PinaforeInterpreter QExpr
 qCase = tsCase @PinaforeTypeSystem
 
 qFunctionPosWitness ::
@@ -92,25 +92,25 @@ qFunctionPosWitnesses (ConsListType ta la) tb =
     mapPosShimWit (functionToShim "poswitness" $ \f a l -> f (a, l)) $
     qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
 
-qCaseAbstract :: [(QPattern, QExpr)] -> PinaforeSourceInterpreter QExpr
+qCaseAbstract :: [(QPattern, QExpr)] -> PinaforeInterpreter QExpr
 qCaseAbstract = tsCaseAbstract @PinaforeTypeSystem
 
-qApplyExpr :: QExpr -> QExpr -> PinaforeSourceInterpreter QExpr
+qApplyExpr :: QExpr -> QExpr -> PinaforeInterpreter QExpr
 qApplyExpr exprf expra = tsApply @PinaforeTypeSystem exprf expra
 
-qApplyAllExpr :: QExpr -> [QExpr] -> PinaforeSourceInterpreter QExpr
+qApplyAllExpr :: QExpr -> [QExpr] -> PinaforeInterpreter QExpr
 qApplyAllExpr e [] = return e
 qApplyAllExpr e (a:aa) = do
     e' <- qApplyExpr e a
     qApplyAllExpr e' aa
 
 qEmptyList :: QExpr
-qEmptyList = qConstExpr ([] :: [BottomType])
+qEmptyList = qConstExpr $ [] @BottomType
 
 qConsList :: QExpr
-qConsList = qConstExpr ((:) :: A -> [A] -> [A])
+qConsList = qConstExpr $ (:|) @A
 
-qSequenceExpr :: [QExpr] -> PinaforeSourceInterpreter QExpr
+qSequenceExpr :: [QExpr] -> PinaforeInterpreter QExpr
 qSequenceExpr [] = return $ qEmptyList
 qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
@@ -121,16 +121,16 @@ type QBinding = Binding PinaforeTypeSystem
 qBindExpr :: VarID -> Markdown -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBinding
 qBindExpr = tsSingleBinding @PinaforeTypeSystem
 
-qSubsumeExpr :: AnyW (PinaforeType 'Positive) -> QExpr -> PinaforeSourceInterpreter QExpr
+qSubsumeExpr :: AnyW (PinaforeType 'Positive) -> QExpr -> PinaforeInterpreter QExpr
 qSubsumeExpr = tsSubsumeExpression @PinaforeTypeSystem
 
-qLetExpr :: VarID -> QExpr -> QExpr -> PinaforeSourceInterpreter QExpr
+qLetExpr :: VarID -> QExpr -> QExpr -> PinaforeInterpreter QExpr
 qLetExpr name exp body = tsLet @PinaforeTypeSystem name exp body
 
-qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> PinaforeSourceInterpreter (Map VarID (Markdown, QExpr))
+qUncheckedBindingsRecursiveLetExpr :: [QBinding] -> PinaforeInterpreter (Map VarID (Markdown, QExpr))
 qUncheckedBindingsRecursiveLetExpr = tsUncheckedRecursiveLet @PinaforeTypeSystem
 
-qBindingSequentialLetExpr :: QBinding -> PinaforeSourceInterpreter (Map VarID (Markdown, QExpr))
+qBindingSequentialLetExpr :: QBinding -> PinaforeInterpreter (Map VarID (Markdown, QExpr))
 qBindingSequentialLetExpr = tsSequentialLet @PinaforeTypeSystem
 
 qEvalExpr ::
@@ -142,12 +142,12 @@ qEvalExpr expr = tsEval @PinaforeTypeSystem expr
 typedAnyToPinaforeVal ::
        forall t. HasPinaforeType 'Negative t
     => QValue
-    -> PinaforeSourceInterpreter t
+    -> PinaforeInterpreter t
 typedAnyToPinaforeVal = tsUnifyValue @PinaforeTypeSystem
 
 -- | for debugging
 rigidTypedAnyToPinaforeVal ::
        forall t. HasPinaforeType 'Negative t
     => QValue
-    -> PinaforeSourceInterpreter t
+    -> PinaforeInterpreter t
 rigidTypedAnyToPinaforeVal = tsUnifyRigidValue @PinaforeTypeSystem

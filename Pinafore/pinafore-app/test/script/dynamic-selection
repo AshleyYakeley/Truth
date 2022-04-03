@@ -10,13 +10,13 @@ byName ref = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** 
 dynamictype Person = !"type.person";
 testpt = dynamicEntity @Person !"testpt";
 
-inform: Text -> Maybe Entity -> Action ();
+inform: Text -> Maybe Entity -> Action Unit;
 inform t mv = Debug.message $ t <> ": " <> case mv of
     Just v -> "changed: " <> entityAnchor v;
     Nothing -> "deleted";
     end;
 
-debugWindow: UI.Window -> Action ();
+debugWindow: UI.Window -> Action Unit;
 debugWindow window = do
     t <- Debug.UI.windowInfo window;
     Debug.message t;

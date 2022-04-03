@@ -4,6 +4,7 @@ module Pinafore.Language.Type.Show where
 
 import qualified Data.List as List
 import Data.Shim
+import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Language.ExprShow
 import Shapes
@@ -34,34 +35,42 @@ saturatedGroundTypeShowPrec avar gt = let
     singleVarArgument ::
            forall polarity sv r. Is PolarityType polarity
         => CCRVarianceType sv
-        -> (forall a. InKind a => SingleArgument sv w polarity a -> r)
+        -> (forall a. CCRPolarArgument w polarity sv a -> r)
         -> r
     singleVarArgument CoCCRVarianceType call =
         case avar of
-            MkAnyW var -> call var
+            MkAnyW var -> call $ CoCCRPolarArgument var
     singleVarArgument ContraCCRVarianceType call =
         invertPolarity @polarity $
         case avar of
-            MkAnyW var -> call var
+            MkAnyW var -> call $ ContraCCRPolarArgument var
     singleVarArgument RangeCCRVarianceType call =
         invertPolarity @polarity $
         case (avar, avar) of
-            (MkAnyW var1, MkAnyW var2) -> call $ MkRangeType var1 var2
+            (MkAnyW var1, MkAnyW var2) -> call $ RangeCCRPolarArgument var1 var2
     allVarArguments ::
            forall polarity dv' f' r. Is PolarityType polarity
         => DolanVarianceType dv'
         -> (forall t. DolanArguments dv' w f' polarity t -> r)
         -> r
-    allVarArguments NilListType call = call NilDolanArguments
+    allVarArguments NilListType call = call NilCCRArguments
     allVarArguments (ConsListType svt dvt) call =
-        singleVarArgument @polarity svt $ \arg -> allVarArguments dvt $ \args -> call $ ConsDolanArguments arg args
+        singleVarArgument @polarity svt $ \arg -> allVarArguments dvt $ \args -> call $ ConsCCRArguments arg args
     in allVarArguments @'Positive (groundTypeVarianceType gt) $ \args -> groundTypeShowPrec gt args
+
+showGroundType ::
+       forall (ground :: GroundTypeKind) dv gt. (IsDolanGroundType ground, GroundExprShow ground)
+    => ground dv gt
+    -> Text
+showGroundType t =
+    newUVar "_" $ \var ->
+        fst $ saturatedGroundTypeShowPrec @ground (MkAnyW $ singleDolanType @ground $ VarDolanSingularType var) t
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (DolanSingularType ground polarity t) where
     exprShowPrec (VarDolanSingularType namewit) = exprShowPrec namewit
     exprShowPrec (GroundedDolanSingularType gt args) = groundTypeShowPrec gt args
-    exprShowPrec (RecursiveDolanSingularType n pt) = ("rec " <> exprShow n <> ". " <> exprShow pt, 4)
+    exprShowPrec (RecursiveDolanSingularType n pt) = ("rec " <> exprShow n <> ". " <> exprPrecShow 7 pt, 7)
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (DolanType ground polarity t) where
@@ -75,7 +84,7 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
             case polarityType @polarity of
                 PositiveType -> " | "
                 NegativeType -> " & "
-        in (exprPrecShow 2 ta <> jmConnector <> exprPrecShow 2 tb, 3)
+        in (exprPrecShow 6 ta <> jmConnector <> exprPrecShow 6 tb, 7)
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (GroundExprShow ground, Is PolarityType polarity) =>
              AllWitnessConstraint ExprShow (DolanType ground polarity) where

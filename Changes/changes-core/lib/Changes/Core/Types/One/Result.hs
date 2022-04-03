@@ -44,7 +44,7 @@ liftResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) rl
         case retrieveOne fr of
             SuccessResult r ->
                 lift $
-                fmap (fmap SuccessResultOneUpdate . fromMaybe [] . getMaybeOne) $
+                fmap (fmap SuccessResultOneUpdate . fromMaybe [] . fextractm) $
                 getComposeM $ clUpdate (rlens r) upda $ oneReadFunctionF mr
             FailureResult _ -> return []
     sclUpdate (NewResultOneUpdate fu) mr = do
@@ -72,7 +72,7 @@ liftResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) rl
         case retrieveOne fr of
             SuccessResult r ->
                 lift $
-                fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $
+                fmap (fmap (fmap MkOneEdit . fromMaybe []) . fextractm) $
                 getComposeM $ clPutEdits (rlens r) (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
             FailureResult _ -> return $ Just []
     in makeStateLens @'NonLinear MkStateChangeLens {..}

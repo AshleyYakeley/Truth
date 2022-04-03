@@ -11,13 +11,13 @@ class Is PolarityType polarity => HasPinaforeType polarity t where
     pinaforeType :: PinaforeShimWit polarity t
 
 groundPinaforeType :: (Is PolarityType polarity, HasPinaforeGroundType '[] t) => PinaforeShimWit polarity t
-groundPinaforeType = singleDolanShimWit $ mkShimWit $ GroundedDolanSingularType pinaforeGroundType NilDolanArguments
+groundPinaforeType = singleDolanShimWit $ mkShimWit $ GroundedDolanSingularType pinaforeGroundType NilCCRArguments
 
 instance {-# OVERLAPPABLE #-} forall polarity (t :: Type). ( Is PolarityType polarity
                               , HasHetPinaforeGroundedType polarity t
                               ) => HasPinaforeType polarity t where
     pinaforeType =
-        singleDolanShimWit $ runHetPainforeGroundedType (hetPinaforeGroundedType @polarity @_ @t) NilDolanArguments
+        singleDolanShimWit $ runHetPainforeGroundedType (hetPinaforeGroundedType @polarity @_ @t) NilCCRArguments
 
 type HetPainforeGroundedType :: Polarity -> DolanVariance -> forall k. k -> Type
 data HetPainforeGroundedType polarity dv f where
@@ -52,39 +52,41 @@ instance {-# OVERLAPPABLE #-} forall polarity k (f :: k). ( Is PolarityType pola
                 MkHetPainforeGroundedType $ \args -> mkShimWit $ GroundedDolanSingularType pinaforeGroundType args
 
 type HasPinaforeGroundType :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Constraint
-class (CoercibleKind (DolanVarianceKind dv), InKind f, dv ~ HetDolanVarianceOf f, HasDolanVariance dv f) =>
+class (CoercibleKind (DolanVarianceKind dv), dv ~ HetDolanVarianceOf f, HasDolanVariance dv f) =>
           HasPinaforeGroundType dv f
     | f -> dv
     where
     pinaforeGroundType :: PinaforeGroundType dv f
 
 type HasPinaforeArgumentType :: Polarity -> forall (sv :: CCRVariance) -> CCRVarianceKind sv -> Constraint
-class (InKind t, Is PolarityType polarity) => HasPinaforeArgumentType polarity sv t | t -> sv where
-    pinaforeArgumentType :: ArgTypeF (PinaforePolyShim Type) sv PinaforeType polarity t
+class Is PolarityType polarity => HasPinaforeArgumentType polarity sv t | t -> sv where
+    pinaforeArgumentType :: CCRPolarArgumentShimWit (PinaforePolyShim Type) PinaforeType polarity sv t
 
 instance forall polarity (t :: Type). HasPinaforeType polarity t => HasPinaforeArgumentType polarity CoCCRVariance t where
     pinaforeArgumentType =
         case pinaforeType @polarity @t of
-            MkShimWit ta conv -> MkArgTypeF ta conv
+            MkShimWit ta conv -> MkShimWit (CoCCRPolarArgument ta) conv
 
 instance forall polarity (t :: Type). (Is PolarityType polarity, HasPinaforeType (InvertPolarity polarity) t) =>
              HasPinaforeArgumentType polarity ContraCCRVariance t where
-    pinaforeArgumentType :: ArgTypeF (PinaforePolyShim Type) ContraCCRVariance PinaforeType polarity t
+    pinaforeArgumentType :: CCRPolarArgumentShimWit (PinaforePolyShim Type) PinaforeType polarity ContraCCRVariance t
     pinaforeArgumentType =
         invertPolarity @polarity $
         case pinaforeType @(InvertPolarity polarity) @t of
-            MkShimWit ta conv -> MkArgTypeF ta (MkCatDual $ uninvertPolarMap conv)
+            MkShimWit ta conv -> MkShimWit (ContraCCRPolarArgument ta) (MkCatDual $ uninvertPolarMap conv)
 
 instance forall polarity (p :: Type) (q :: Type). ( HasPinaforeType (InvertPolarity polarity) p
          , HasPinaforeType polarity q
          ) => HasPinaforeArgumentType polarity 'RangeCCRVariance '( p, q) where
-    pinaforeArgumentType :: ArgTypeF (PinaforePolyShim Type) 'RangeCCRVariance PinaforeType polarity '( p, q)
+    pinaforeArgumentType ::
+           CCRPolarArgumentShimWit (PinaforePolyShim Type) PinaforeType polarity 'RangeCCRVariance '( p, q)
     pinaforeArgumentType =
         invertPolarity @polarity $
         case pinaforeType @(InvertPolarity polarity) @p of
             MkShimWit tp convp ->
                 case pinaforeType @polarity @q of
-                    MkShimWit tq convq -> MkArgTypeF (MkRangeType tp tq) $ MkCatRange (uninvertPolarMap convp) convq
+                    MkShimWit tq convq ->
+                        MkShimWit (RangeCCRPolarArgument tp tq) $ MkCatRange (uninvertPolarMap convp) convq
 
 instance forall dv k (f :: Type -> k) polarity (a :: Type). ( HasVariance f
          , Is DolanVarianceType dv
@@ -108,19 +110,21 @@ instance forall dv k (f :: Type -> k) polarity (a :: Type). ( HasVariance f
                             -> PinaforeSingularShimWit polarity t
                         hetPinaforeGroundedType' args =
                             case dolanVarianceMap @('SimpleCCRVariance (VarianceOf f) ': dv) @f of
-                                ConsDolanVarianceMap dvm ->
+                                ConsDolanVarianceMap ccrv dvm ->
                                     case pinaforeArgumentType @polarity @('SimpleCCRVariance (VarianceOf f)) @a of
-                                        MkArgTypeF arg conv ->
-                                            case mapArgsTypeF (return . mkShimWit) representative dvm dvm args $
+                                        MkShimWit arg conv ->
+                                            case mapDolanArgumentsFM (return . mkShimWit) dvm dvm args $
                                                  polarMapTypeApply
                                                      (representative
                                                           @_
                                                           @CCRVarianceType
                                                           @('SimpleCCRVariance (VarianceOf f)))
-                                                     cid
+                                                     ccrv
+                                                     ccrv
+                                                     id
                                                      conv of
                                                 Identity (MkShimWit args' conv') ->
-                                                    mapShimWit conv' $ toConvertibleType $ ConsDolanArguments arg args'
+                                                    mapShimWit conv' $ toConvertibleType $ ConsCCRArguments arg args'
                         in MkHetPainforeGroundedType hetPinaforeGroundedType'
 
 instance forall dv k (f :: (Type, Type) -> k) polarity (a :: (Type, Type)). ( HasCCRVariance 'RangeCCRVariance f
@@ -144,16 +148,18 @@ instance forall dv k (f :: (Type, Type) -> k) polarity (a :: (Type, Type)). ( Ha
                             -> PinaforeSingularShimWit polarity t
                         hetPinaforeGroundedType' args =
                             case dolanVarianceMap @('RangeCCRVariance ': dv) @f of
-                                ConsDolanVarianceMap dvm ->
+                                ConsDolanVarianceMap ccrv dvm ->
                                     case pinaforeArgumentType @polarity @'RangeCCRVariance @a of
-                                        MkArgTypeF arg conv ->
-                                            case mapArgsTypeF (return . mkShimWit) representative dvm dvm args $
+                                        MkShimWit arg conv ->
+                                            case mapDolanArgumentsFM (return . mkShimWit) dvm dvm args $
                                                  polarMapTypeApply
                                                      (representative @_ @CCRVarianceType @'RangeCCRVariance)
-                                                     cid
+                                                     ccrv
+                                                     ccrv
+                                                     id
                                                      conv of
                                                 Identity (MkShimWit args' conv') ->
-                                                    mapShimWit conv' $ toConvertibleType $ ConsDolanArguments arg args'
+                                                    mapShimWit conv' $ toConvertibleType $ ConsCCRArguments arg args'
                         in MkHetPainforeGroundedType hetPinaforeGroundedType'
 
 instance HasPinaforeType 'Positive t => ToPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) t where

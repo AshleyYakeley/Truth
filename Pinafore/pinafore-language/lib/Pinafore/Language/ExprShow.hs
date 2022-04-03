@@ -33,8 +33,13 @@ instance ExprShow ReferenceName where
 instance ExprShow (SymbolType name) where
     exprShowPrec n = (pack $ uVarName n, 0)
 
-instance AllWitnessConstraint ExprShow w => ExprShow (AnyInKind w) where
-    exprShowPrec (MkAnyInKind (wt :: w t)) =
+instance AllWitnessConstraint ExprShow w => ExprShow (AnyW w) where
+    exprShowPrec (MkAnyW (wt :: w t)) =
+        case allWitnessConstraint @_ @_ @ExprShow @w @t of
+            Dict -> exprShowPrec wt
+
+instance AllWitnessConstraint ExprShow w => ExprShow (ShimWit shim w a) where
+    exprShowPrec (MkShimWit (wt :: w t) _) =
         case allWitnessConstraint @_ @_ @ExprShow @w @t of
             Dict -> exprShowPrec wt
 
@@ -51,3 +56,22 @@ standardListTypeExprShow = let
     sh i NilListType t = (t, i)
     sh _ (ConsListType _ lt) t = \ta -> sh 2 lt (t <> " " <> precShow 0 ta)
     in sh 0 $ representative @_ @_ @dv
+
+nameIsInfix :: Name -> Bool
+nameIsInfix n =
+    case unpack n of
+        (c:_)
+            | isAlpha c -> False
+        "[]" -> False
+        _ -> True
+
+data FixAssoc
+    = AssocNone
+    | AssocLeft
+    | AssocRight
+    deriving (Eq)
+
+data Fixity = MkFixity
+    { fixityAssoc :: FixAssoc
+    , fixityPrec :: Int
+    } deriving (Eq)

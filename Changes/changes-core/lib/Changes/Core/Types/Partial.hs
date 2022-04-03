@@ -32,11 +32,7 @@ partialFullChangeLens ::
        forall update. (IsUpdate update, FullEdit (UpdateEdit update))
     => ChangeLens (PartialUpdate update) update
 partialFullChangeLens = let
-    clRead ::
-           forall m t. MonadIO m
-        => Readable m (UpdateReader update)
-        -> UpdateReader update t
-        -> m t
+    clRead :: ReadFunction (UpdateReader update) (UpdateReader update)
     clRead mr = mr
     clUpdate ::
            forall m. MonadIO m
@@ -60,11 +56,7 @@ convertUpdateChangeLens ::
     => (updateA -> updateB)
     -> ChangeLens updateA updateB
 convertUpdateChangeLens ab = let
-    clRead ::
-           forall m t. MonadIO m
-        => Readable m (UpdateReader updateA)
-        -> UpdateReader updateB t
-        -> m t
+    clRead :: ReadFunction (UpdateReader updateA) (UpdateReader updateB)
     clRead mr = mr
     clUpdate ::
            forall m. MonadIO m
