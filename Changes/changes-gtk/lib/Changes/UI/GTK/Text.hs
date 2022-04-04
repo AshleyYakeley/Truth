@@ -74,4 +74,6 @@ createTextArea rmod (MkSelectNotify setsel) = do
                     StringReplaceSection bounds text -> replaceText buffer bounds text
     cvBindModel rmod (Just esrc) initV mempty recvV
     widget <- cvNew TextView [#buffer := buffer]
+    _ <- cvOn widget #moveCursor $ \_ _ _ -> setsel aspect
+    _ <- cvOn widget #grabFocus $ setsel aspect
     toWidget widget
