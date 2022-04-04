@@ -5,8 +5,8 @@ module Changes.UI.GTK.Option
     ) where
 
 import Changes.Core
+import Changes.GI
 import Changes.UI.GTK.TextStyle
-import Changes.UI.GTK.Useful
 import Data.GI.Base.Attributes
 import Data.GI.Gtk
 import Shapes

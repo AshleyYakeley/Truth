@@ -3,7 +3,7 @@ module Changes.UI.GTK.Calendar
     ) where
 
 import Changes.Core
-import Changes.UI.GTK.Useful
+import Changes.GI
 import Data.Time
 import GI.Gtk as Gtk
 import Shapes hiding (get)

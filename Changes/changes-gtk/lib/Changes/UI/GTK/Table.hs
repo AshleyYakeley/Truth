@@ -7,9 +7,9 @@ module Changes.UI.GTK.Table
     ) where
 
 import Changes.Core
+import Changes.GI
 import Changes.UI.GTK.DynamicStore
 import Changes.UI.GTK.TextStyle
-import Changes.UI.GTK.Useful
 import Data.GI.Base.Attributes hiding (get)
 import Data.GI.Gtk hiding (get)
 import Shapes

@@ -4,7 +4,7 @@ module Changes.UI.GTK.Maybe
     ) where
 
 import Changes.Core
-import Changes.UI.GTK.Useful
+import Changes.GI
 import GI.Gtk hiding (get)
 import Shapes
 

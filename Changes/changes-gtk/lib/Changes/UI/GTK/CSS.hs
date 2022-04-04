@@ -5,7 +5,7 @@ module Changes.UI.GTK.CSS
     ) where
 
 import Changes.Core
-import Changes.UI.GTK.Useful
+import Changes.GI
 import GI.Gtk as GI
 import Shapes
 

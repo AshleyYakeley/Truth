@@ -9,9 +9,9 @@ module Changes.UI.GTK.Window
     ) where
 
 import Changes.Core
+import Changes.GI
 import Changes.UI.GTK.MenuBar
 import Changes.UI.GTK.Switch
-import Changes.UI.GTK.Useful
 import GI.GLib as GI hiding (String)
 import GI.Gtk as GI hiding (MenuBar)
 import Shapes

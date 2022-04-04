@@ -3,7 +3,7 @@ module Changes.UI.GTK.Blank
     ) where
 
 import Changes.Core
-import Changes.UI.GTK.Useful
+import Changes.GI
 import GI.Gtk
 
 createBlank :: CreateView Widget
