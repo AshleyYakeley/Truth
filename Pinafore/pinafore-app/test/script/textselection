@@ -1,0 +1,19 @@
+#!/usr/bin/pinafore
+let
+import UI();
+in do
+    tref1 <- newMemWhole;
+    tref1 := "111";
+    tref2 <- newMemWhole;
+    tref2 := "222";
+    tref3 <- newMemWhole;
+    tref3 := "333";
+    sel <- newMemWhole;
+    UI.openWindow (400,500) {"Text Selection"} {[]} $ UI.styleSheet {"* {padding: 2pt;}"} $ UI.vertical
+    [
+        UI.textArea tref1 sel,
+        UI.textArea tref2 sel,
+        UI.textArea tref3 sel,
+        UI.dynamic {UI.run $ mapAction (\tref => UI.textArea tref unknown) %sel}
+    ];
+    end

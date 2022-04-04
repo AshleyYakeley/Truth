@@ -55,14 +55,17 @@ createTextArea rmod (MkSelectNotify setsel) = do
                     _ <- traceBracket ("GTK.Text.delete: push " <> show edit) $ pushEdit esrc $ aModelEdit asub $ pure edit
                     return ()
     let
+        getSelection :: View SequenceRun
+        getSelection = do
+            (_, iter1, iter2) <- #getSelectionBounds buffer
+            getSequenceRun iter1 iter2
         aspect :: View (Maybe TextSelection)
         aspect = do
-            (_, iter1, iter2) <- #getSelectionBounds buffer
-            -- get selection...
-            srun <- getSequenceRun iter1 iter2
+            srun <- getSelection
             return $ Just $ stringSectionLens srun
     liftToLifeCycle $ setsel aspect
-    _ <- cvOn buffer #changed $ traceBracket "GTK.TextBuffer:changed" $ setsel aspect
+    _ <- cvAfter buffer #changed $ traceBracket "GTK.TextBuffer:changed" $ setsel aspect
+    _ <- cvAfter buffer #markSet $ \_ _ -> traceBracket "GTK.TextBuffer:markSet" $ setsel aspect
     let
         initV :: CreateView ()
         initV = do
@@ -78,6 +81,4 @@ createTextArea rmod (MkSelectNotify setsel) = do
                     StringReplaceSection bounds text -> replaceText buffer bounds text
     cvBindModel rmod (Just esrc) initV mempty recvV
     widget <- cvNew TextView [#buffer := buffer]
-    _ <- cvOn widget #moveCursor $ \_ _ _ -> setsel aspect
-    _ <- cvOn widget #grabFocus $ setsel aspect
     toWidget widget
