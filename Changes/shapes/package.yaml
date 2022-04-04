@@ -42,6 +42,7 @@ library:
       - witness
       - open-witness
       - monadology
+      - thread-trace
     exposed-modules:
       - Data.Words
       - Control.Category.Groupoid

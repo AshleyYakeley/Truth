@@ -6,6 +6,7 @@ packages:
 - external/open-witness
 
 # Changes
+- Changes/thread-trace
 - Changes/monadology
 - Changes/shapes
 - Changes/changes-core

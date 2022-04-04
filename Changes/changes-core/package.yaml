@@ -11,9 +11,14 @@ library:
       - shapes
       - base >= 4.12
       - time
+      - thread-trace
     exposed-modules:
       - Changes.Core
       - Changes.Core.UI.Toolkit.Run
+      - Changes.Debug
+      - Changes.Debug.Edit
+      - Changes.Debug.Reference
+      - Changes.Debug.Subscriber
     other-modules:
       - Changes.Core.Import
       - Changes.Core.Sequence

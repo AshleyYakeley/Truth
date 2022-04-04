@@ -7,9 +7,10 @@ import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std ()
 import Shapes
+import Changes.Debug
 
 debugMessage :: Text -> IO ()
-debugMessage t = hPutStrLn stderr $ unpack t
+debugMessage t = traceIOM $ unpack t
 
 debugCheckEntity :: Text -> Entity -> IO ()
 debugCheckEntity t e = do
