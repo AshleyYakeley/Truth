@@ -7,13 +7,20 @@ module Changes.Debug.Subscriber
     ) where
 
 import Changes.Core.Import
-import Changes.Core.Resource
 import Changes.Core.Model.Model
+import Changes.Core.Resource
 import Changes.Debug
 import Changes.Debug.Edit
 import Changes.Debug.Reference
 
 instance TraceThing (Model edit) where
-    traceThing prefix (MkResource rr (MkAModel anobj sub utask)) = case resourceRunnerStackUnliftDict @IO rr of
-        Dict -> case resourceRunnerStackUnliftDict @LifeCycle rr of
-            Dict -> MkResource rr $ MkAModel (traceAReference prefix blankEditShower anobj) (\task call -> traceBracket (contextStr prefix "update") $ sub task call) utask
+    traceThing prefix (MkResource rr (MkAModel anobj sub utask)) =
+        case resourceRunnerStackUnliftDict @IO rr of
+            Dict ->
+                case resourceRunnerStackUnliftDict @LifeCycle rr of
+                    Dict ->
+                        MkResource rr $
+                        MkAModel
+                            (traceAReference prefix blankEditShower anobj)
+                            (\task call -> traceBracket (contextStr prefix "update") $ sub task call)
+                            utask
