@@ -4,6 +4,7 @@ module Changes.GI.Signal
     , cvOn
     , cvAfter
     , cvTraceSignal
+    , cvTraceAllSignals
     , cvReportAllSignals
     ) where
 
@@ -76,13 +77,14 @@ getTypeSignalIDs t = do
                 else signalListIds t0
     return $ nub $ mconcat sigidss
 
-cvTraceSignal :: IsObject t => t -> Word32 -> IO () -> CreateView ()
+cvTraceSignal :: IsObject t => t -> Word32 -> View () -> CreateView ()
 cvTraceSignal t sigid call = do
     sq <- signalQuery sigid
     sflags <- getSignalQuerySignalFlags sq
     if elem SignalFlagsNoHooks sflags
         then return ()
         else do
+            unliftIO <- liftToLifeCycle askUnliftIO
             hookid <-
                 signalAddEmissionHook sigid 0 $ \_ vals _ -> do
                     case vals of
@@ -92,13 +94,13 @@ cvTraceSignal t sigid call = do
                             msobj <- fromGValue sval
                             case msobj of
                                 Just sobj
-                                    | sobj == obj -> call
+                                    | sobj == obj -> runWMFunction unliftIO call
                                 _ -> return ()
                     return True
             lifeCycleClose $ signalRemoveEmissionHook sigid hookid
 
-cvReportAllSignals :: IsObject t => Text -> t -> CreateView ()
-cvReportAllSignals name obj = do
+cvTraceAllSignals :: IsObject t => t -> (Text -> View ()) -> CreateView ()
+cvTraceAllSignals obj call = do
     t <- getObjectType obj
     sigids <- getTypeSignalIDs t
     for_ sigids $ \sigid -> do
@@ -107,4 +109,8 @@ cvReportAllSignals name obj = do
             "event" -> return ()
             "event-after" -> return ()
             "motion-notify-event" -> return ()
-            _ -> cvTraceSignal obj sigid $ hPutStrLn stderr $ unpack name <> ": signal " <> show signame
+            _ -> cvTraceSignal obj sigid $ call signame
+
+cvReportAllSignals :: IsObject t => Text -> t -> CreateView ()
+cvReportAllSignals name obj =
+    cvTraceAllSignals obj $ \signame -> liftIO $ hPutStrLn stderr $ unpack name <> ": signal " <> show signame
