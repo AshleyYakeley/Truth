@@ -3,7 +3,7 @@ module Changes.UI.GTK.Switch
     ) where
 
 import Changes.Core
-import Changes.UI.GTK.Useful
+import Changes.GI
 import GI.Gtk hiding (get)
 import Shapes
 

@@ -9,7 +9,7 @@ module Changes.UI.GTK.MenuBar
     ) where
 
 import Changes.Core
-import Changes.UI.GTK.Useful
+import Changes.GI
 import Data.IORef
 import GI.Gdk
 import GI.Gtk hiding (MenuBar)

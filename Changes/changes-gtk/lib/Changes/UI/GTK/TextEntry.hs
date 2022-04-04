@@ -3,7 +3,7 @@ module Changes.UI.GTK.TextEntry
     ) where
 
 import Changes.Core
-import Changes.UI.GTK.Useful
+import Changes.GI
 import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes hiding (get)

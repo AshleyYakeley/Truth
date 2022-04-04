@@ -3,7 +3,7 @@ module Changes.UI.GTK.Button
     ) where
 
 import Changes.Core
-import Changes.UI.GTK.Useful
+import Changes.GI
 import Data.IORef
 import GI.Gtk
 import Shapes

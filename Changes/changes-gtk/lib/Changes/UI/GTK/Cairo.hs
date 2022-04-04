@@ -8,7 +8,7 @@ module Changes.UI.GTK.Cairo
     ) where
 
 import Changes.Core
-import Changes.UI.GTK.Useful
+import Changes.GI
 import Data.IORef
 import GI.Cairo.Render
 import GI.Cairo.Render.Connector

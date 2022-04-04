@@ -5,7 +5,7 @@ module Changes.UI.GTK.Icon
     ) where
 
 import Changes.Core
-import Changes.UI.GTK.Useful
+import Changes.GI
 import GI.Gtk
 import Shapes
 

@@ -3,7 +3,7 @@ module Changes.UI.GTK.Image
     ) where
 
 import Changes.Core
-import Changes.UI.GTK.Useful
+import Changes.GI
 import Data.Media.Image
 import Data.Vector.Storable
 import Foreign.Ptr
