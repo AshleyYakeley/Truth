@@ -16,5 +16,4 @@ class TraceArgThing t where
 type ShowableEdit edit
      = (Show edit, AllWitnessConstraint Show (EditReader edit), WitnessConstraint Show (EditReader edit))
 
-type ShowableUpdate update
-     = (Show update, ShowableEdit (UpdateEdit update))
+type ShowableUpdate update = (Show update, ShowableEdit (UpdateEdit update))

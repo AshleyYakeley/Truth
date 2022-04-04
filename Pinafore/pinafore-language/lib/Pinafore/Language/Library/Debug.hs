@@ -2,12 +2,12 @@ module Pinafore.Language.Library.Debug
     ( debugLibraryModule
     ) where
 
+import Changes.Debug
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std ()
 import Shapes
-import Changes.Debug
 
 debugMessage :: Text -> IO ()
 debugMessage t = traceIOM $ unpack t
