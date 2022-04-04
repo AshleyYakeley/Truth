@@ -14,6 +14,7 @@ import Changes.UI.GTK.Icon as I
 import Changes.UI.GTK.Image as I
 import Changes.UI.GTK.Label as I
 import Changes.UI.GTK.Layout as I
+import Changes.UI.GTK.ListBox as I
 import Changes.UI.GTK.Main as I
 import Changes.UI.GTK.Maybe as I
 import Changes.UI.GTK.MenuBar as I

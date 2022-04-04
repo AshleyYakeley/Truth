@@ -222,6 +222,12 @@ window_drawing now = let import Colour; import Drawing in do
             end};
     end;
 
+window_list: Action UI.Window;
+window_list = do
+    peopleList <- getSetList (orderOn name alphabetical) people;
+    std_window {"List"} $ UI.list ui_person peopleList;
+    end;
+
 ### Text Selection
 window_textselection: Action UI.Window;
 window_textselection = do
@@ -266,6 +272,7 @@ window_start = do
             UI.button {"Constant"} {window_constant},
             UI.button {"CSS"} {window_css},
             UI.button {"Drawing"} {window_drawing now},
+            UI.button {"List"} {window_list},
             UI.button {"Text Selection"} {window_textselection},
             UI.button {"Disabled"} unknown,
             UI.layoutGrow $ UI.blank
