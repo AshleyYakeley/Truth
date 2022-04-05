@@ -24,6 +24,15 @@ data VarState t
     | VSEnd
     -- ^ caller is telling worker to terminate
 
+-- | Useful for debugging
+instance Show (VarState t) where
+    show VSIdle = "idle"
+    show (VSException e) = "exception " ++ show e
+    show VSRunning = "running"
+    show (VSPending _ True) = "pending (wait)"
+    show (VSPending _ False) = "pending (no wait)"
+    show VSEnd = "end"
+
 asyncWaitRunner ::
        forall t. Semigroup t
     => Int
