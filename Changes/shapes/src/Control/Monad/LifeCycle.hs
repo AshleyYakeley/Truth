@@ -130,7 +130,7 @@ lifeCycleEarlyCloser lc = do
         earlycloser = do
             mu <- tryTakeMVar var
             case mu of
-                Just () -> closer
+                Just () -> traceBracketIO "early CLOSE" closer
                 Nothing -> return ()
     lifeCycleClose $ traceBracketIO "lifeCycleEarlyCloser.close" earlycloser
     return (a, earlycloser)
@@ -168,7 +168,7 @@ instance LiftLifeCycle LifeCycle where
         return (t, ls)
     withLifeCycle (MkLifeCycle f) run = do
         var <- newMVar mempty
-        finally (f var >>= run) $ traceBracketIO "withLifeCycle closing" $ do
+        finally (f var >>= run) $ traceBracketIO "final CLOSE" $ do
             MkLifeState closer <- takeMVar var
             closer
 

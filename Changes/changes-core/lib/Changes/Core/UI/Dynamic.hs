@@ -23,10 +23,10 @@ instance DynamicViewState ViewState where
     dynamicViewStates dvs = [dvs]
 
 closeDynamicView :: DynamicViewState dvs => dvs -> IO ()
-closeDynamicView dvs = for_ (dynamicViewStates dvs) closeLifeState
+closeDynamicView dvs = traceBracketIO "closeDynamicView" $ for_ (dynamicViewStates dvs) closeLifeState
 
 replaceDynamicView :: (MonadIO m, DynamicViewState dvs) => m dvs -> StateT dvs m ()
-replaceDynamicView getNewDVS = do
+replaceDynamicView getNewDVS = traceBracket "replaceDynamicView" $ do
     oldvs <- get
     liftIO $ closeDynamicView oldvs
     newvs <- lift getNewDVS
@@ -50,7 +50,7 @@ cvDynamic model initCV taskCV recvCV = do
                 closeDynamicView lastdvs
             return (stateVar, a)
         recvBind :: (MVar dvs, a) -> NonEmpty update -> View ()
-        recvBind (stateVar, a) updates = mVarRun stateVar $ recvCV a $ toList updates
+        recvBind (stateVar, a) updates = traceBarrier "cvDynamic: recvBind" (mVarRun stateVar) $ recvCV a $ toList updates
     (stateVar, a) <- cvBindModel model Nothing initBind (\_ -> taskCV) recvBind
     liftToLifeCycle $ mVarRun stateVar $ recvCV a []
     return a
@@ -68,7 +68,7 @@ cvSwitch model = do
             vs <- liftToLifeCycle $ getViewState firstspec
             return (vs, ())
         recvVS :: () -> [ROWUpdate (CreateView ())] -> StateT ViewState View ()
-        recvVS () updates = traceBracket "cvSwitch:update" $ for_ (lastReadOnlyWholeUpdate updates) $ \spec -> replaceDynamicView $ getViewState spec
+        recvVS () updates = hoistIO (traceBracketIO "cvSwitch:update") $ for_ (lastReadOnlyWholeUpdate updates) $ \spec -> replaceDynamicView $ getViewState spec
     cvDynamic model initVS mempty recvVS
 
 data OneWholeViews f =
