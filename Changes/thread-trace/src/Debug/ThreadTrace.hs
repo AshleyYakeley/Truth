@@ -1,11 +1,13 @@
 module Debug.ThreadTrace where
 
+import Control.Applicative
 import Control.Concurrent
 import Control.Exception
 import Control.Monad.IO.Class
 import Data.Time.Clock.System
 import Data.Word
 import Debug.Trace
+import GHC.Conc
 import Prelude
 import System.IO.Unsafe
 
@@ -79,3 +81,16 @@ instance {-# OVERLAPPABLE #-} MonadIO m => TraceThing (m a) where
 
 instance TraceThing t => TraceThing (a -> t) where
     traceThing s at a = traceThing s $ at a
+
+traceSTM :: String -> STM ()
+traceSTM msg = unsafeIOToSTM $ traceIOM msg
+
+traceBracketSTM :: String -> STM a -> STM a
+traceBracketSTM s ma = do
+    traceSTM $ s ++ " ["
+    a <-
+        ma <|> do
+            traceSTM $ s ++ " ] RETRY"
+            empty
+    traceSTM $ s ++ " ]"
+    return a
