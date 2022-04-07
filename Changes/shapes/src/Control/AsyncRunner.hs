@@ -44,8 +44,9 @@ asyncWaitRunner mus doit = do
         threadDo :: IO ()
         threadDo = do
             maction <-
-                traceBracketIO "asyncWaitRunner: process" $ atomically $ do
+                traceBracketIO "asyncWaitRunner: process" $ atomically $ traceBracketSTM "asyncWaitRunner STM: process" $ do
                     vs <- readTVar bufferVar
+                    traceSTM $ "asyncWaitRunner STM: process: " ++ show vs
                     case vs of
                         VSEnd -> do
                             writeTVar bufferVar VSIdle
@@ -70,6 +71,7 @@ asyncWaitRunner mus doit = do
         waitForIdle :: STM (Result SomeException ())
         waitForIdle = do
             vs <- readTVar bufferVar
+            traceSTM $ "asyncWaitRunner STM: wait for idle: " ++ show vs
             case vs of
                 VSIdle -> return $ return ()
                 VSException ex -> return $ throw ex
@@ -83,8 +85,9 @@ asyncWaitRunner mus doit = do
             throwResult ra
         pushVal :: Maybe t -> IO ()
         pushVal (Just val) =
-            traceBracketIO "asyncWaitRunner: push" $ atomicallyDo $ do
+            traceBracketIO "asyncWaitRunner: push" $ atomicallyDo $ traceBracketSTM "asyncWaitRunner STM: push" $ do
                 vs <- readTVar bufferVar
+                traceSTM $ "asyncWaitRunner STM: push: " ++ show vs
                 case vs of
                     VSEnd -> return $ return ()
                     VSException ex -> return $ throw ex
@@ -98,8 +101,9 @@ asyncWaitRunner mus doit = do
                         writeTVar bufferVar $ VSPending (oldval <> val) True
                         return $ return ()
         pushVal Nothing =
-            traceBracketIO "asyncWaitRunner: empty push" $ atomically $ do
+            traceBracketIO "asyncWaitRunner: empty push" $ atomically $ traceBracketSTM "asyncWaitRunner STM: empty push" $ do
                 vs <- readTVar bufferVar
+                traceSTM $ "asyncWaitRunner STM: empty push: " ++ show vs
                 case vs of
                     VSPending oldval False -> writeTVar bufferVar $ VSPending oldval True
                     _ -> return ()
@@ -115,15 +119,16 @@ asyncWaitRunner mus doit = do
                             VSException ex -> throw ex
                             _ -> return Nothing
             in MkTask {..}
-    _ <- liftIO $ forkIO $ traceBracketIO "THREAD: asyncWaitRunner" threadDo
+    tid <- liftIO $ traceBracketIO "asyncWaitRunner: fork thread" $ forkIO $ traceBracketIO "THREAD: asyncWaitRunner" threadDo
+    traceIOM $ "asyncWaitRunner: forked thread " <> show tid
     lifeCycleClose $ traceBracketIO "asyncWaitRunner: close" $ do
-        traceBracketIO "asyncWaitRunner: close: send end" $ atomicallyDo $ do
+        traceBracketIO "asyncWaitRunner: close: send end" $ atomicallyDo $ traceBracketSTM "asyncWaitRunner STM: close: send end" $ do
             me <- waitForIdle
             case me of
                 SuccessResult _ -> writeTVar bufferVar VSEnd
                 FailureResult _ -> return ()
             return me
-        traceBracketIO "asyncWaitRunner: close: wait" $ atomicallyDo waitForIdle
+        traceBracketIO "asyncWaitRunner: close: wait" $ atomicallyDo $ traceBracketSTM "asyncWaitRunner STM: close: wait" waitForIdle
     return (pushVal, utask)
 
 asyncRunner ::
