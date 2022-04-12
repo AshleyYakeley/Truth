@@ -4,6 +4,7 @@ module Control.Monad.LifeCycle
     , LifeCycle
     , MonadLifeCycleIO(..)
     , lifeCycleClose
+    , forkLifeCycle
     , MonadUnliftLifeCycleIO(..)
     , LiftLifeCycle(..)
     , lifeCycleCloseInner
@@ -107,6 +108,15 @@ instance (TransTunnel t, TransConstraint MonadIO t) => TransConstraint MonadLife
     hasTransConstraint =
         case hasTransConstraint @MonadIO @t @m of
             Dict -> Dict
+
+forkLifeCycle :: IO () -> LifeCycle ThreadId
+forkLifeCycle action = do
+    var <- liftIO newEmptyMVar
+    lifeCycleClose $ takeMVar var
+    liftIO $
+        forkIO $ do
+            action
+            putMVar var ()
 
 class MonadLifeCycleIO m => MonadUnliftLifeCycleIO m where
     liftLifeCycleIOWithUnlift :: LifeCycle -/-> m
