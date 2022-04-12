@@ -15,11 +15,11 @@ instance Applicative Task where
     pure a = MkTask (return a) (return $ Just a)
     (MkTask wab dab) <*> (MkTask wa da) = MkTask (wab <*> wa) (getComposeM $ (MkComposeM dab) <*> (MkComposeM da))
 
-instance Semigroup (Task ()) where
-    p <> q = p *> q
+instance Semigroup a => Semigroup (Task a) where
+    (<>) = liftA2 (<>)
 
-instance Monoid (Task ()) where
-    mempty = pure ()
+instance Monoid a => Monoid (Task a) where
+    mempty = pure mempty
 
 ioTask :: IO (Task a) -> Task a
 ioTask iot =
@@ -34,7 +34,7 @@ ioTask iot =
                   taskIsDone t
         }
 
-singleTask :: IO a -> IO (IO (), Task a)
+singleTask :: forall a. IO a -> IO (IO (), Task a)
 singleTask ioa = do
     var <- newEmptyMVar
     let
@@ -42,7 +42,11 @@ singleTask ioa = do
         action = do
             a <- ioa
             putMVar var a
-        task = MkTask (takeMVar var) (tryReadMVar var)
+        taskWait :: IO a
+        taskWait = readMVar var
+        taskIsDone :: IO (Maybe a)
+        taskIsDone = tryReadMVar var
+        task = MkTask {..}
     return (action, task)
 
 forkSingleTask :: IO a -> IO (Task a)
