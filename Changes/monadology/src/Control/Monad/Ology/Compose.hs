@@ -4,7 +4,6 @@ import Control.Monad.Ology.Functor.MonadOne
 import Control.Monad.Ology.Functor.One
 import Control.Monad.Ology.Result
 import Control.Monad.Ology.Trans.Constraint
-import Control.Monad.Ology.Trans.Stack
 import Control.Monad.Ology.Trans.Tunnel
 import Import
 
@@ -105,25 +104,3 @@ instance MonadOne inner => TransConstraint MonadFix (ComposeM inner) where
 instance MonadOne inner => TransTunnel (ComposeM inner) where
     type Tunnel (ComposeM inner) = inner
     tunnel call = MkComposeM $ call getComposeM
-
-transComposeOne :: (TransTunnel t, Monad m, MonadOne f) => t (ComposeM f m) a -> t m (f a)
-transComposeOne tca =
-    withTransConstraintTM @Monad $
-    fmap (restoreOne . eitherToResult) $
-    transExcept $ hoist (ExceptT . fmap (resultToEither . retrieveOne) . getComposeM) tca
-
-transStackComposeOne ::
-       forall tt f m a. (MonadTransStackTunnel tt, Monad m, MonadOne f)
-    => ApplyStack tt (ComposeM f m) a
-    -> ApplyStack tt m (f a)
-transStackComposeOne tca =
-    case transStackDict @Monad @tt @m of
-        Dict ->
-            fmap (restoreOne . eitherToResult) $
-            transStackExcept @tt @m @(f Void) $
-            stackHoist
-                @tt
-                @(ComposeM f m)
-                @(ExceptT (f Void) _)
-                (ExceptT . fmap (resultToEither . retrieveOne) . getComposeM)
-                tca
