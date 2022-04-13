@@ -6,7 +6,7 @@ import Control.Monad.Ology.Trans.Constraint
 import Control.Monad.Ology.Trans.Tunnel
 import Import
 
-class ( TransTunnel t
+class ( MonadTransTunnel t
       , TransConstraint MonadFail t
       , TransConstraint MonadIO t
       , TransConstraint MonadFix t

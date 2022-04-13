@@ -101,6 +101,6 @@ instance MonadOne inner => TransConstraint MonadIO (ComposeM inner) where
 instance MonadOne inner => TransConstraint MonadFix (ComposeM inner) where
     hasTransConstraint = Dict
 
-instance MonadOne inner => TransTunnel (ComposeM inner) where
+instance MonadOne inner => MonadTransTunnel (ComposeM inner) where
     type Tunnel (ComposeM inner) = inner
     tunnel call = MkComposeM $ call getComposeM

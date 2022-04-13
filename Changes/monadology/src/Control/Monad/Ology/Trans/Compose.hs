@@ -22,7 +22,7 @@ newtype ComposeT (t1 :: (Type -> Type) -> (Type -> Type)) (t2 :: (Type -> Type) 
     } deriving (Functor, Applicative, Alternative, Monad, MonadFail, MonadIO, MonadFix, MonadPlus)
 
 lift1ComposeT ::
-       forall t1 t2 m a. (TransTunnel t1, MonadTrans t2, TransConstraint Monad t2, Monad m)
+       forall t1 t2 m a. (MonadTransTunnel t1, MonadTrans t2, TransConstraint Monad t2, Monad m)
     => t1 m a
     -> ComposeT t1 t2 m a
 lift1ComposeT t1ma =
@@ -52,7 +52,7 @@ lift2ComposeT'' =
         Dict -> lift2ComposeT
 
 lift1ComposeTWithUnlift ::
-       forall t1 t2 m r. (TransTunnel t1, MonadTransUnlift t2, MonadTunnelIO m)
+       forall t1 t2 m r. (MonadTransTunnel t1, MonadTransUnlift t2, MonadTunnelIO m)
     => ((forall a. ComposeT t1 t2 m a -> t1 m a) -> t1 m r)
     -> ComposeT t1 t2 m r
 lift1ComposeTWithUnlift call =
@@ -163,7 +163,7 @@ instance (TransConstraint MonadPlus t1, TransConstraint Monad t2, TransConstrain
                 case hasTransConstraint @MonadPlus @t1 @(t2 m) of
                     Dict -> Dict
 
-instance (TransTunnel t1, TransTunnel t2) => TransTunnel (ComposeT t1 t2) where
+instance (MonadTransTunnel t1, MonadTransTunnel t2) => MonadTransTunnel (ComposeT t1 t2) where
     type Tunnel (ComposeT t1 t2) = Compose (Tunnel t2) (Tunnel t1)
     tunnel ::
            forall m2 r. Functor m2

@@ -47,7 +47,7 @@ instance TransConstraint MonadFix DeferActionT where
 instance TransConstraint MonadPlus DeferActionT where
     hasTransConstraint = Dict
 
-deriving instance TransTunnel DeferActionT
+deriving instance MonadTransTunnel DeferActionT
 
 instance MonadTransUnlift DeferActionT where
     liftWithUnlift utmr = MkDeferActionT $ liftWithUnlift $ \unlift -> utmr $ \(MkDeferActionT wma) -> unlift wma
