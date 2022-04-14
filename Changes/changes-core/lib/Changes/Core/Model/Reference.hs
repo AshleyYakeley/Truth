@@ -171,8 +171,8 @@ testEditAction test action = do
 
 singleEdit :: Monad m => (edit -> m (Maybe (EditSource -> m ()))) -> NonEmpty edit -> m (Maybe (EditSource -> m ()))
 singleEdit call edits =
-    getComposeM $ do
-        actions <- for edits $ \edit -> MkComposeM $ call edit
+    getComposeInner $ do
+        actions <- for edits $ \edit -> MkComposeInner $ call edit
         return $ \esrc -> for_ actions $ \action -> action esrc
 
 convertReference ::

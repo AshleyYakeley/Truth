@@ -10,6 +10,7 @@ module Control.Monad.Ology.Trans.Compose
     , lift2ComposeTWithUnlift
     ) where
 
+import Control.Monad.Ology.ComposeInner
 import Control.Monad.Ology.Trans.AskUnlift
 import Control.Monad.Ology.Trans.Coerce
 import Control.Monad.Ology.Trans.Constraint
@@ -22,7 +23,7 @@ newtype ComposeT (t1 :: (Type -> Type) -> (Type -> Type)) (t2 :: (Type -> Type) 
     } deriving (Functor, Applicative, Alternative, Monad, MonadFail, MonadIO, MonadFix, MonadPlus)
 
 lift1ComposeT ::
-       forall t1 t2 m a. (TransTunnel t1, MonadTrans t2, TransConstraint Monad t2, Monad m)
+       forall t1 t2 m a. (MonadTransTunnel t1, MonadTrans t2, TransConstraint Monad t2, Monad m)
     => t1 m a
     -> ComposeT t1 t2 m a
 lift1ComposeT t1ma =
@@ -52,7 +53,7 @@ lift2ComposeT'' =
         Dict -> lift2ComposeT
 
 lift1ComposeTWithUnlift ::
-       forall t1 t2 m r. (TransTunnel t1, MonadTransUnlift t2, MonadTunnelIO m)
+       forall t1 t2 m r. (MonadTransTunnel t1, MonadTransUnlift t2, MonadTunnelIO m)
     => ((forall a. ComposeT t1 t2 m a -> t1 m a) -> t1 m r)
     -> ComposeT t1 t2 m r
 lift1ComposeTWithUnlift call =
@@ -163,11 +164,11 @@ instance (TransConstraint MonadPlus t1, TransConstraint Monad t2, TransConstrain
                 case hasTransConstraint @MonadPlus @t1 @(t2 m) of
                     Dict -> Dict
 
-instance (TransTunnel t1, TransTunnel t2) => TransTunnel (ComposeT t1 t2) where
-    type Tunnel (ComposeT t1 t2) = Compose (Tunnel t2) (Tunnel t1)
+instance (MonadTransTunnel t1, MonadTransTunnel t2) => MonadTransTunnel (ComposeT t1 t2) where
+    type Tunnel (ComposeT t1 t2) = ComposeInner (Tunnel t1) (Tunnel t2)
     tunnel ::
            forall m2 r. Functor m2
-        => ((forall m1 a. Functor m1 => ComposeT t1 t2 m1 a -> m1 (Compose (Tunnel t2) (Tunnel t1) a)) -> m2 (Compose (Tunnel t2) (Tunnel t1) r))
+        => ((forall m1 a. Functor m1 => ComposeT t1 t2 m1 a -> m1 (ComposeInner (Tunnel t1) (Tunnel t2) a)) -> m2 (ComposeInner (Tunnel t1) (Tunnel t2) r))
         -> ComposeT t1 t2 m2 r
     tunnel call =
         case hasTransConstraint @Functor @t2 @m2 of
@@ -175,10 +176,10 @@ instance (TransTunnel t1, TransTunnel t2) => TransTunnel (ComposeT t1 t2) where
                 MkComposeT $
                 tunnel $ \unlift1 ->
                     tunnel $ \unlift2 ->
-                        fmap getCompose $
+                        fmap getComposeInner $
                         call $ \(MkComposeT ff :: _ m1 _) ->
                             case hasTransConstraint @Functor @t2 @m1 of
-                                Dict -> fmap Compose $ unlift2 $ unlift1 $ ff
+                                Dict -> fmap MkComposeInner $ unlift2 $ unlift1 $ ff
 
 instance (MonadTransCoerce t1, MonadTransCoerce t2, TransConstraint Monad t2) => MonadTransCoerce (ComposeT t1 t2) where
     transCoerce ::

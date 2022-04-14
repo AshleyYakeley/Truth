@@ -166,10 +166,10 @@ instance RepresentationalRole m => RepresentationalRole (StateT s m) where
                 case representationalCoercion @_ @_ @m (MkCoercion @_ @(a, s) @(b, s)) of
                     MkCoercion -> MkCoercion
 
-instance RepresentationalRole (ComposeM inner) where
+instance RepresentationalRole (ComposeInner inner) where
     representationalCoercion MkCoercion = MkCoercion
 
-instance (RepresentationalRole inner, RepresentationalRole outer) => RepresentationalRole (ComposeM inner outer) where
+instance (RepresentationalRole inner, RepresentationalRole outer) => RepresentationalRole (ComposeInner inner outer) where
     representationalCoercion cab =
         case representationalCoercion @_ @_ @outer $ representationalCoercion @_ @_ @inner cab of
             MkCoercion -> MkCoercion

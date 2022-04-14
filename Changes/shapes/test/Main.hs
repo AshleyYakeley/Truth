@@ -5,21 +5,42 @@ import Data.Time
 import Shapes
 import Shapes.Test
 
-testComposeM :: TestTree
-testComposeM =
-    testTree "composeM" $ do
+testComposeInnerApplicative :: TestTree
+testComposeInnerApplicative =
+    testTree "Applicative" $ do
         r1 <- newIORef False
         r2 <- newIORef False
         let
-            c1 :: ComposeM Maybe IO ()
-            c1 = lift $ writeIORef r1 True
-            c2 :: ComposeM Maybe IO ()
+            c1 :: ComposeInner Maybe IO ()
+            c1 = do
+                lift $ writeIORef r1 True
+                liftInner Nothing
+            c2 :: ComposeInner Maybe IO ()
             c2 = lift $ writeIORef r2 True
-        _ <- getComposeM $ c1 <|> c2
+        _ <- getComposeInner $ liftA2 (,) c1 c2
         v1 <- readIORef r1
         v2 <- readIORef r2
         assertEqual "v1" True v1
         assertEqual "v2" False v2
+
+testComposeInnerAlternative :: TestTree
+testComposeInnerAlternative =
+    testTree "Alternative" $ do
+        r1 <- newIORef False
+        r2 <- newIORef False
+        let
+            c1 :: ComposeInner Maybe IO ()
+            c1 = lift $ writeIORef r1 True
+            c2 :: ComposeInner Maybe IO ()
+            c2 = lift $ writeIORef r2 True
+        _ <- getComposeInner $ c1 <|> c2
+        v1 <- readIORef r1
+        v2 <- readIORef r2
+        assertEqual "v1" True v1
+        assertEqual "v2" False v2
+
+testComposeInner :: TestTree
+testComposeInner = testTree "composeInner" [testComposeInnerApplicative, testComposeInnerAlternative]
 
 compareTest :: String -> ((String -> IO ()) -> IO r) -> IO r
 compareTest expected action = do
@@ -98,7 +119,7 @@ testClock :: TestTree
 testClock = testTree "clock" [testFastClock, testSlowClock]
 
 tests :: TestTree
-tests = testTree "shapes" [testComposeM, testCoroutine, testLifeCycle, testClock]
+tests = testTree "shapes" [testComposeInner, testCoroutine, testLifeCycle, testClock]
 
 main :: IO ()
 main = testMain tests

@@ -25,8 +25,11 @@ module Control.Monad.Ology.Trans.Stack
     , stackLiftWithUnliftAll
     ) where
 
+import Control.Monad.Ology.ComposeInner
 import Control.Monad.Ology.Function
-import Control.Monad.Ology.Functor.One
+import Control.Monad.Ology.MonadExtract
+import Control.Monad.Ology.MonadInner
+import Control.Monad.Ology.Result
 import Control.Monad.Ology.Trans.Constraint
 import Control.Monad.Ology.Trans.Tunnel
 import Control.Monad.Ology.Trans.Unlift
@@ -177,31 +180,27 @@ instance ( IsStack (TransConstraint Functor) tt
 type MonadTransStackTunnel tt
      = ( IsStack (TransConstraint Functor) tt
        , IsStack (TransConstraint Monad) tt
-       , IsStack TransTunnel tt
+       , IsStack MonadTransTunnel tt
        , IsStack MonadTrans tt
        , IsStack (WithTunnelConstraint Functor) tt
-       , IsStack (WithTunnelConstraint FunctorOne) tt)
+       , IsStack (WithTunnelConstraint Applicative) tt
+       , IsStack (WithTunnelConstraint Monad) tt
+       , IsStack (WithTunnelConstraint Traversable) tt
+       , IsStack (WithTunnelConstraint MonadInner) tt)
 
 concatMonadTransStackTunnelDict ::
        forall tt1 tt2. (MonadTransStackTunnel tt1, MonadTransStackTunnel tt2)
     => Dict (MonadTransStackTunnel (Concat tt1 tt2))
 concatMonadTransStackTunnelDict =
-    case concatIsDict @_ @(Compose Dict (TransConstraint Functor)) @tt1 @tt2 of
-        Dict ->
-            case concatIsDict @_ @(Compose Dict (TransConstraint Monad)) @tt1 @tt2 of
-                Dict ->
-                    case concatIsDict @_ @(Compose Dict TransTunnel) @tt1 @tt2 of
-                        Dict ->
-                            case concatIsDict @_ @(Compose Dict MonadTrans) @tt1 @tt2 of
-                                Dict ->
-                                    case concatIsDict @_ @(Compose Dict (WithTunnelConstraint Functor)) @tt1 @tt2 of
-                                        Dict ->
-                                            case concatIsDict
-                                                     @_
-                                                     @(Compose Dict (WithTunnelConstraint FunctorOne))
-                                                     @tt1
-                                                     @tt2 of
-                                                Dict -> Dict
+    withConcatIs @_ @(Compose Dict (TransConstraint Functor)) @tt1 @tt2 $
+    withConcatIs @_ @(Compose Dict (TransConstraint Monad)) @tt1 @tt2 $
+    withConcatIs @_ @(Compose Dict MonadTransTunnel) @tt1 @tt2 $
+    withConcatIs @_ @(Compose Dict MonadTrans) @tt1 @tt2 $
+    withConcatIs @_ @(Compose Dict (WithTunnelConstraint Functor)) @tt1 @tt2 $
+    withConcatIs @_ @(Compose Dict (WithTunnelConstraint Applicative)) @tt1 @tt2 $
+    withConcatIs @_ @(Compose Dict (WithTunnelConstraint Monad)) @tt1 @tt2 $
+    withConcatIs @_ @(Compose Dict (WithTunnelConstraint Traversable)) @tt1 @tt2 $
+    withConcatIs @_ @(Compose Dict (WithTunnelConstraint MonadInner)) @tt1 @tt2 $ Dict
 
 newtype TunnelWrapper t = MkTunnel
     { unTunnel :: forall m2 r.
@@ -210,18 +209,18 @@ newtype TunnelWrapper t = MkTunnel
     }
 
 type WithTunnelConstraint :: ((Type -> Type) -> Constraint) -> TransKind -> Constraint
-class (TransTunnel t, c (Tunnel t)) => WithTunnelConstraint c t
+class (MonadTransTunnel t, c (Tunnel t)) => WithTunnelConstraint c t
 
-instance (TransTunnel t, c (Tunnel t)) => WithTunnelConstraint c t
+instance (MonadTransTunnel t, c (Tunnel t)) => WithTunnelConstraint c t
 
 type ApplyStackTunnel :: [TransKind] -> Type -> Type
 type family ApplyStackTunnel tt where
     ApplyStackTunnel '[] = Identity
-    ApplyStackTunnel (t ': tt) = Compose (ApplyStackTunnel tt) (Tunnel t)
+    ApplyStackTunnel (t ': tt) = ComposeInner (Tunnel t) (ApplyStackTunnel tt)
 
 astIsWithTunnelConstraint ::
        forall (c :: (Type -> Type) -> Constraint) (tt :: [TransKind]).
-       (c Identity, forall f1 f2. (c f1, c f2) => c (Compose f1 f2))
+       (c Identity, forall f1 f2. (c f1, c f2) => c (ComposeInner f1 f2))
     => ListType (Compose Dict (WithTunnelConstraint c)) tt
     -> Dict (c (ApplyStackTunnel tt))
 astIsWithTunnelConstraint NilListType = Dict
@@ -231,7 +230,7 @@ astIsWithTunnelConstraint (ConsListType (Compose Dict) w) =
 
 isWithTunnelConstraint ::
        forall (c :: (Type -> Type) -> Constraint) (tt :: [TransKind]).
-       (c Identity, forall f1 f2. (c f1, c f2) => c (Compose f1 f2))
+       (c Identity, forall f1 f2. (c f1, c f2) => c (ComposeInner f1 f2))
     => IsStack (WithTunnelConstraint c) tt => Dict (c (ApplyStackTunnel tt))
 isWithTunnelConstraint =
     astIsWithTunnelConstraint @c $ representative @_ @(ListType (Compose Dict (WithTunnelConstraint c))) @tt
@@ -246,32 +245,57 @@ instance IsStack (WithTunnelConstraint Functor) tt => Functor (StackTunnel tt) w
         case isWithTunnelConstraint @Functor @tt of
             Dict -> \ab (MkStackTunnel st) -> MkStackTunnel $ fmap ab st
 
-instance (IsStack (WithTunnelConstraint Functor) tt, IsStack (WithTunnelConstraint FunctorOne) tt) =>
-             FunctorOne (StackTunnel tt) where
-    fpure =
-        case isWithTunnelConstraint @FunctorOne @tt of
-            Dict -> \a -> MkStackTunnel $ fpure a
-    fextractm =
-        case isWithTunnelConstraint @FunctorOne @tt of
-            Dict -> \(MkStackTunnel st) -> fextractm st
+instance (IsStack (WithTunnelConstraint Functor) tt, IsStack (WithTunnelConstraint MonadInner) tt) =>
+             Applicative (StackTunnel tt) where
+    pure =
+        case isWithTunnelConstraint @MonadInner @tt of
+            Dict -> \a -> MkStackTunnel $ pure a
+    (<*>) =
+        case isWithTunnelConstraint @MonadInner @tt of
+            Dict -> \(MkStackTunnel mab) (MkStackTunnel ma) -> MkStackTunnel $ mab <*> ma
+
+instance (IsStack (WithTunnelConstraint Functor) tt, IsStack (WithTunnelConstraint MonadInner) tt) =>
+             Foldable (StackTunnel tt) where
+    foldMap =
+        case isWithTunnelConstraint @MonadInner @tt of
+            Dict -> \ab (MkStackTunnel st) -> foldMap ab st
+
+instance (IsStack (WithTunnelConstraint Functor) tt, IsStack (WithTunnelConstraint MonadInner) tt) =>
+             Traversable (StackTunnel tt) where
+    traverse =
+        case isWithTunnelConstraint @MonadInner @tt of
+            Dict -> \ab (MkStackTunnel st) -> MkStackTunnel <$> traverse ab st
+
+instance (IsStack (WithTunnelConstraint Functor) tt, IsStack (WithTunnelConstraint MonadInner) tt) =>
+             Monad (StackTunnel tt) where
+    return = pure
+    (>>=) =
+        case isWithTunnelConstraint @MonadInner @tt of
+            Dict -> \(MkStackTunnel ma) q -> MkStackTunnel $ ma >>= unStackTunnel . q
+
+instance (IsStack (WithTunnelConstraint Functor) tt, IsStack (WithTunnelConstraint MonadInner) tt) =>
+             MonadInner (StackTunnel tt) where
+    retrieveInner =
+        case isWithTunnelConstraint @MonadInner @tt of
+            Dict -> \(MkStackTunnel st) -> mapResultFailure MkStackTunnel $ retrieveInner st
 
 instance ( IsStack (WithTunnelConstraint Functor) tt
-         , IsStack (WithTunnelConstraint FunctorOne) tt
-         , IsStack (WithTunnelConstraint FunctorExtract) tt
+         , IsStack (WithTunnelConstraint MonadInner) tt
+         , IsStack (WithTunnelConstraint MonadExtract) tt
          , IsStack MonadTransUnlift tt
-         ) => FunctorExtract (StackTunnel tt) where
-    fextract =
-        case isWithTunnelConstraint @FunctorExtract @tt of
-            Dict -> \(MkStackTunnel st) -> fextract st
+         ) => MonadExtract (StackTunnel tt) where
+    mToValue =
+        case isWithTunnelConstraint @MonadExtract @tt of
+            Dict -> \(MkStackTunnel st) -> mToValue st
 
-instance MonadTransStackTunnel tt => TransTunnel (StackT tt) where
+instance MonadTransStackTunnel tt => MonadTransTunnel (StackT tt) where
     type Tunnel (StackT tt) = StackTunnel tt
     tunnel ::
            forall m2 r. Functor m2
         => ((forall m1 a. Functor m1 => StackT tt m1 a -> m1 (Tunnel (StackT tt) a)) -> m2 (Tunnel (StackT tt) r))
         -> StackT tt m2 r
     tunnel = let
-        build :: forall tt'. ListType (Compose Dict TransTunnel) tt' -> TunnelWrapper (StackT tt')
+        build :: forall tt'. ListType (Compose Dict MonadTransTunnel) tt' -> TunnelWrapper (StackT tt')
         build NilListType =
             MkTunnel $ \call ->
                 MkStackT $ fmap (runIdentity . unStackTunnel) $ call $ fmap (MkStackTunnel . Identity) . unStackT
@@ -289,15 +313,15 @@ instance MonadTransStackTunnel tt => TransTunnel (StackT tt) where
                                 tunnel $ \unlift1 ->
                                     unStackT $
                                     tunnel' $ \unlift2 ->
-                                        fmap (MkStackTunnel . getCompose . unStackTunnel) $
+                                        fmap (MkStackTunnel . getComposeInner . unStackTunnel) $
                                         call $ \(MkStackT stt :: _ m1 _) ->
                                             case (witTransStackDict @Functor @tt0 @m1 $
                                                   mapListType (\(Compose Dict) -> Compose Dict) w) of
                                                 Dict ->
-                                                    fmap (MkStackTunnel . Compose . unStackTunnel) $
+                                                    fmap (MkStackTunnel . MkComposeInner . unStackTunnel) $
                                                     unlift2 $ MkStackT $ unlift1 stt
                     in MkTunnel tunnel''
-        in unTunnel $ build $ representative @_ @(ListType (Compose Dict TransTunnel)) @tt
+        in unTunnel $ build $ representative @_ @(ListType (Compose Dict MonadTransTunnel)) @tt
 
 stackHoist ::
        forall tt ma mb. (MonadTransStackTunnel tt, Monad ma, Monad mb)
@@ -342,7 +366,7 @@ type MonadTransStackUnlift tt
        , IsStack (TransConstraint MonadTunnelIO) tt
        , IsStack (TransConstraint MonadUnliftIO) tt
        , MonadTransStackTunnel tt
-       , IsStack (WithTunnelConstraint FunctorExtract) tt
+       , IsStack (WithTunnelConstraint MonadExtract) tt
        , IsStack MonadTransUnlift tt)
 
 concatMonadTransStackUnliftDict ::
@@ -361,7 +385,7 @@ concatMonadTransStackUnliftDict =
                                         Dict ->
                                             case concatMonadTransStackTunnelDict @tt1 @tt2 of
                                                 Dict ->
-                                                    case concatIsDict @_ @(Compose Dict TransTunnel) @tt1 @tt2 of
+                                                    case concatIsDict @_ @(Compose Dict MonadTransTunnel) @tt1 @tt2 of
                                                         Dict ->
                                                             case concatIsDict
                                                                      @_
@@ -371,7 +395,7 @@ concatMonadTransStackUnliftDict =
                                                                 Dict ->
                                                                     case concatIsDict
                                                                              @_
-                                                                             @(Compose Dict (WithTunnelConstraint FunctorExtract))
+                                                                             @(Compose Dict (WithTunnelConstraint MonadExtract))
                                                                              @tt1
                                                                              @tt2 of
                                                                         Dict -> Dict
@@ -389,7 +413,7 @@ concatMonadTransStackUnliftAllDict =
         Dict ->
             case concatIsDict @_ @(Compose Dict MonadTransUnlift) @tt1 @tt2 of
                 Dict ->
-                    case concatIsDict @_ @(Compose Dict TransTunnel) @tt1 @tt2 of
+                    case concatIsDict @_ @(Compose Dict MonadTransTunnel) @tt1 @tt2 of
                         Dict -> Dict
 
 newtype LiftWithUnliftAll t = MkLiftWithUnliftAll
@@ -397,9 +421,9 @@ newtype LiftWithUnliftAll t = MkLiftWithUnliftAll
     }
 
 witFunctorOneTunnelIOStackDict ::
-       forall tt m. FunctorOne (TunnelIO m)
+       forall tt m. MonadInner (TunnelIO m)
     => ListType (Compose Dict MonadTransUnlift) tt
-    -> Dict (FunctorOne (TunnelIO (ApplyStack tt m)))
+    -> Dict (MonadInner (TunnelIO (ApplyStack tt m)))
 witFunctorOneTunnelIOStackDict NilListType = Dict
 witFunctorOneTunnelIOStackDict (ConsListType (Compose Dict) lt) =
     case witFunctorOneTunnelIOStackDict @_ @m lt of

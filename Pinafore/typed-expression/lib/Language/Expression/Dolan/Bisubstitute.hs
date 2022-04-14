@@ -56,7 +56,7 @@ data Bisubstitution ground shim m =
                                   (m (PShimWit shim (DolanType ground) 'Positive (UVarT name)))
                                   (m (PShimWit shim (DolanType ground) 'Negative (UVarT name)))
 
-instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. ( MonadOne m
+instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. ( MonadInner m
          , AllWitnessConstraint Show (DolanType ground 'Positive)
          , AllWitnessConstraint Show (DolanType ground 'Negative)
          ) => Show (Bisubstitution ground shim m) where
@@ -66,11 +66,11 @@ instance forall (ground :: GroundTypeKind) (shim :: ShimKind Type) m. ( MonadOne
                 then " (recursive)"
                 else ""
         spos =
-            case fextractm mtpos of
+            case mToMaybe mtpos of
                 Just (MkShimWit t _) -> showAllWitness t
                 Nothing -> "fails"
         sneg =
-            case fextractm mtneg of
+            case mToMaybe mtneg of
                 Just (MkShimWit t _) -> showAllWitness t
                 Nothing -> "fails"
         in show var <> srec <> " => " <> "(" <> spos <> "," <> sneg <> ")"
@@ -116,14 +116,14 @@ class Bisubstitutable (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polari
     | w -> ground polarity
     where
     deferBisubstituteType ::
-           forall m oldname newtypepos newtypeneg t. (MonadOne m)
+           forall m oldname newtypepos newtypeneg t. (MonadInner m)
         => DeferredBisubstitution m ground (pshim Type) oldname newtypepos newtypeneg
         -> w t
         -> m (PShimWit (DeferredShim pshim (UVarT oldname) newtypepos newtypeneg) (DolanType ground) polarity t)
 
 bisubstituteType ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) (polarity :: Polarity) (w :: Type -> Type) m t.
-       (BisubstitutablePolyShim pshim, Bisubstitutable ground pshim polarity w, Is PolarityType polarity, MonadOne m)
+       (BisubstitutablePolyShim pshim, Bisubstitutable ground pshim polarity w, Is PolarityType polarity, MonadInner m)
     => Bisubstitution ground (pshim Type) m
     -> w t
     -> m (PShimWit (pshim Type) (DolanType ground) polarity t)
@@ -178,7 +178,7 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
 
 bisubstitutesType ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m polarity t.
-       (IsDolanGroundType ground, BisubstitutablePolyShim pshim, MonadOne m, Is PolarityType polarity)
+       (IsDolanGroundType ground, BisubstitutablePolyShim pshim, MonadInner m, Is PolarityType polarity)
     => [Bisubstitution ground (pshim Type) m]
     -> DolanType ground polarity t
     -> m (PShimWit (pshim Type) (DolanType ground) polarity t)
@@ -191,7 +191,7 @@ bisubstitute ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m a.
        ( IsDolanGroundType ground
        , BisubstitutablePolyShim pshim
-       , MonadOne m
+       , MonadInner m
        , PShimWitMappable (pshim Type) (DolanType ground) a
        )
     => Bisubstitution ground (pshim Type) m
@@ -203,7 +203,7 @@ bisubstitutes ::
        forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) m a.
        ( IsDolanGroundType ground
        , BisubstitutablePolyShim pshim
-       , MonadOne m
+       , MonadInner m
        , PShimWitMappable (pshim Type) (DolanType ground) a
        )
     => [Bisubstitution ground (pshim Type) m]

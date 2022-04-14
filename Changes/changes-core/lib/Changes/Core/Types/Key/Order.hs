@@ -41,7 +41,8 @@ orderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChangeLens 
         -> Readable m (KeyReader cont (UpdateReader update))
         -> ContainerKey cont
         -> m (Maybe o)
-    getMaybeO ordr mr k = getComposeM $ clRead (rOrdLens ordr) (\rt -> MkComposeM $ mr $ KeyReadItem k rt) ReadWhole
+    getMaybeO ordr mr k =
+        getComposeInner $ clRead (rOrdLens ordr) (\rt -> MkComposeInner $ mr $ KeyReadItem k rt) ReadWhole
     getO ::
            forall m. (HasCallStack, MonadIO m)
         => or
@@ -236,11 +237,12 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
         -> ContainerKey cont
         -> m (Maybe o)
     getMaybeO ordr mr k = let
-        cmr :: Readable (ComposeM Maybe m) (TupleUpdateReader (WithContextSelector updateX updateN))
-        cmr (MkTupleUpdateReader SelectContext rt) = MkComposeM $ fmap Just $ mr $ MkTupleUpdateReader SelectContext rt
+        cmr :: Readable (ComposeInner Maybe m) (TupleUpdateReader (WithContextSelector updateX updateN))
+        cmr (MkTupleUpdateReader SelectContext rt) =
+            MkComposeInner $ fmap Just $ mr $ MkTupleUpdateReader SelectContext rt
         cmr (MkTupleUpdateReader SelectContent rt) =
-            MkComposeM $ mr $ MkTupleUpdateReader SelectContent $ KeyReadItem k rt
-        in getComposeM $ clRead (rOrdLens ordr) cmr ReadWhole
+            MkComposeInner $ mr $ MkTupleUpdateReader SelectContent $ KeyReadItem k rt
+        in getComposeInner $ clRead (rOrdLens ordr) cmr ReadWhole
     getO ::
            forall m. MonadIO m
         => or
@@ -468,10 +470,10 @@ contextOrderedSetLens (MkUpdateOrder (cmp :: o -> o -> Ordering) (MkFloatingChan
         => [ContextUpdateEdit updateX (OrderedListUpdate updateN)]
         -> Readable m (ContextUpdateReader updateX (KeyUpdate cont updateN))
         -> StateT (OrderedList (o, ContainerKey cont, or)) m (Maybe [ContextUpdateEdit updateX (KeyUpdate cont updateN)])
-    sclPutEdits [] _ = getComposeM $ return []
+    sclPutEdits [] _ = getComposeInner $ return []
     sclPutEdits (e:ee) mr =
-        getComposeM $ do
-            ea <- MkComposeM $ sPutEdit e mr
-            eea <- MkComposeM $ sclPutEdits ee $ contentOnlyApplyEdits ea mr
+        getComposeInner $ do
+            ea <- MkComposeInner $ sPutEdit e mr
+            eea <- MkComposeInner $ sclPutEdits ee $ contentOnlyApplyEdits ea mr
             return $ ea ++ eea
     in makeStateLens @'NonLinear MkStateChangeLens {..}

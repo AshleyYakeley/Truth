@@ -18,15 +18,15 @@ instance Floating edit edit => Floating (OneEdit f edit) (OneEdit f edit) where
 type instance EditReader (OneEdit f edit) =
      OneReader f (EditReader edit)
 
-instance (MonadOne f, ApplicableEdit edit) => ApplicableEdit (OneEdit f edit) where
+instance (MonadInner f, ApplicableEdit edit) => ApplicableEdit (OneEdit f edit) where
     applyEdit (MkOneEdit _edita) mr ReadHasOne = mr ReadHasOne
-    applyEdit (MkOneEdit edita) mr (ReadOne reader) = getComposeM $ applyEdit edita (oneReadFunctionF mr) reader
+    applyEdit (MkOneEdit edita) mr (ReadOne reader) = getComposeInner $ applyEdit edita (oneReadFunctionF mr) reader
 
-instance (MonadOne f, InvertibleEdit edit) => InvertibleEdit (OneEdit f edit) where
+instance (MonadInner f, InvertibleEdit edit) => InvertibleEdit (OneEdit f edit) where
     invertEdits editas mr = do
-        fme <- getComposeM $ invertEdits (fmap (\(MkOneEdit edita) -> edita) editas) (oneReadFunctionF mr)
+        fme <- getComposeInner $ invertEdits (fmap (\(MkOneEdit edita) -> edita) editas) (oneReadFunctionF mr)
         return
-            (case fextractm fme of
+            (case mToMaybe fme of
                  Just edits -> fmap MkOneEdit edits
                  _ -> [])
 
@@ -43,7 +43,7 @@ instance IsEditUpdate update => IsEditUpdate (OneUpdate f update) where
     updateEdit (MkOneUpdate update) = MkOneEdit $ updateEdit update
 
 oneLiftChangeLens ::
-       forall f updateA updateB. MonadOne f
+       forall f updateA updateB. MonadInner f
     => ChangeLens updateA updateB
     -> ChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
 oneLiftChangeLens (MkChangeLens g u pe) = let
@@ -55,19 +55,19 @@ oneLiftChangeLens (MkChangeLens g u pe) = let
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m [OneUpdate f updateB]
     clUpdate (MkOneUpdate ea) mr =
-        fmap (fmap MkOneUpdate . fromMaybe [] . fextractm) $ getComposeM $ u ea $ oneReadFunctionF mr
+        fmap (fmap MkOneUpdate . fromMaybe [] . mToMaybe) $ getComposeInner $ u ea $ oneReadFunctionF mr
     clPutEdits ::
            forall m. MonadIO m
         => [OneEdit f (UpdateEdit updateB)]
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [OneEdit f (UpdateEdit updateA)])
     clPutEdits ebs mr =
-        fmap (fmap (fmap MkOneEdit . fromMaybe []) . fextractm) $
-        getComposeM $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
+        fmap (fmap (fmap MkOneEdit . fromMaybe []) . mToMaybe) $
+        getComposeInner $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
     in MkChangeLens {..}
 
 oneNullChangeLens ::
-       forall f updateA updateB. MonadOne f
+       forall f updateA updateB. MonadInner f
     => (forall x. f x)
     -> ChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
 oneNullChangeLens fu = let
@@ -89,7 +89,7 @@ oneNullChangeLens fu = let
     in MkChangeLens {..}
 
 oneLiftFloatingChangeLens ::
-       forall f updateA updateB. MonadOne f
+       forall f updateA updateB. MonadInner f
     => FloatingChangeLens updateA updateB
     -> FloatingChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
 oneLiftFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) lens) = let
@@ -97,7 +97,7 @@ oneLiftFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) lens) = 
     fclInit = mapFFloatInit oneReadFunctionF init
     fclLens :: f r -> ChangeLens (OneUpdate f updateA) (OneUpdate f updateB)
     fclLens fr =
-        case retrieveOne fr of
+        case retrieveInner fr of
             SuccessResult r -> oneLiftChangeLens $ lens r
             FailureResult fn -> oneNullChangeLens $ fmap never fn
     in MkFloatingChangeLens {..}

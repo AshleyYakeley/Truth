@@ -32,14 +32,14 @@ instance (Functor f, SubjectReader reader) => SubjectReader (OneReader f reader)
     subjectToRead fsubj (ReadOne reader) = fmap (\subj -> subjectToRead subj reader) fsubj
 
 oneReadFunctionF :: ReadFunctionF f (OneReader f reader) reader
-oneReadFunctionF mr rt = MkComposeM $ mr $ ReadOne rt
+oneReadFunctionF mr rt = MkComposeInner $ mr $ ReadOne rt
 
 liftOneReadFunction ::
-       forall f ra rb. MonadOne f
+       forall f ra rb. MonadInner f
     => ReadFunction ra rb
     -> ReadFunction (OneReader f ra) (OneReader f rb)
 liftOneReadFunction _rfrarb mr ReadHasOne = mr ReadHasOne
-liftOneReadFunction rfrarb (mr :: Readable m _) (ReadOne rbt) = getComposeM $ rfrarb (oneReadFunctionF mr) rbt
+liftOneReadFunction rfrarb (mr :: Readable m _) (ReadOne rbt) = getComposeInner $ rfrarb (oneReadFunctionF mr) rbt
 
-instance (MonadOne f, FullSubjectReader reader) => FullSubjectReader (OneReader f reader) where
-    readableToSubject mr = getComposeM $ readableToSubject $ oneReadFunctionF mr
+instance (MonadInner f, FullSubjectReader reader) => FullSubjectReader (OneReader f reader) where
+    readableToSubject mr = getComposeInner $ readableToSubject $ oneReadFunctionF mr

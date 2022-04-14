@@ -374,16 +374,16 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                                    forall (t :: Type).
                                    FieldStorer 'MultipleMode t
                                 -> Entity
-                                -> ComposeM Know (ApplyStack tt IO) t
+                                -> ComposeInner Know (ApplyStack tt IO) t
                             readFact (MkFieldStorer p subdef) entity = do
                                 subentity <-
-                                    MkComposeM $ fmap maybeToKnow $ tableRead $ PinaforeTableReadFactGet p entity
+                                    MkComposeInner $ fmap maybeToKnow $ tableRead $ PinaforeTableReadFactGet p entity
                                 readEntity subdef subentity
                             readFacts ::
                                    forall (t :: [Type]).
                                    ListType (FieldStorer 'MultipleMode) t
                                 -> Entity
-                                -> ComposeM Know (ApplyStack tt IO) (HList t)
+                                -> ComposeInner Know (ApplyStack tt IO) (HList t)
                             readFacts NilListType _ = return ()
                             readFacts (ConsListType f1 fr) entity = do
                                 t1 <- readFact f1 entity
@@ -393,12 +393,12 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                                    forall (t :: Type).
                                    ConstructorStorer 'MultipleMode t
                                 -> Entity
-                                -> ComposeM Know (ApplyStack tt IO) t
+                                -> ComposeInner Know (ApplyStack tt IO) t
                             readConstructor PlainConstructorStorer entity = return entity
                             readConstructor LiteralConstructorStorer entity
                                 | Just lit <- entityToLiteral entity = return lit
                             readConstructor LiteralConstructorStorer entity =
-                                MkComposeM $ fmap maybeToKnow $ tableRead $ PinaforeTableReadLiteralGet entity
+                                MkComposeInner $ fmap maybeToKnow $ tableRead $ PinaforeTableReadLiteralGet entity
                             readConstructor (ConstructorConstructorStorer _ facts) entity = readFacts facts entity
                             firstKnown :: MonadPlus m => [a] -> (a -> m b) -> m b
                             firstKnown [] _ = empty
@@ -407,7 +407,7 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                                    forall (t :: Type).
                                    EntityStorer 'MultipleMode t
                                 -> Entity
-                                -> ComposeM Know (ApplyStack tt IO) t
+                                -> ComposeInner Know (ApplyStack tt IO) t
                             readEntity (MkEntityStorer css) entity =
                                 firstKnown css $ \(MkKnowShim def f) -> do
                                     dt <- readConstructor def entity
@@ -425,7 +425,7 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                             refRead (PinaforeStorageReadLookup prd val) =
                                 tableRead $ PinaforeTableReadPropertyLookup prd val
                             refRead (PinaforeStorageReadEntity ea entity) =
-                                getComposeM $ readEntity (entityAdapterDefinitions ea) entity
+                                getComposeInner $ readEntity (entityAdapterDefinitions ea) entity
                             refEdit ::
                                    NonEmpty PinaforeStorageEdit
                                 -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))

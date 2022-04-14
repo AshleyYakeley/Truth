@@ -32,7 +32,7 @@ mapParam l (MkParam askD localD) = let
     localD' f = localD $ \a -> runIdentity $ l (Identity . f) a
     in MkParam askD' localD'
 
-liftParam :: (TransTunnel t, Monad m) => Param m --> Param (t m)
+liftParam :: (MonadTransTunnel t, Monad m) => Param m --> Param (t m)
 liftParam (MkParam a l) = MkParam (lift a) $ \aa -> hoist $ l aa
 
 readerParam ::
@@ -104,7 +104,7 @@ data Prod m a = MkProd
 listen_D :: Functor m => Prod m a -> m () -> m a
 listen_D p mu = fmap snd $ listenD p mu
 
-liftProd :: (TransTunnel t, Monad m) => Prod m --> Prod (t m)
+liftProd :: (MonadTransTunnel t, Monad m) => Prod m --> Prod (t m)
 liftProd (MkProd t l) =
     MkProd (\a -> lift $ t a) $ \tmr -> tunnel $ \unlift -> fmap (\(tun, a) -> fmap (\r -> (r, a)) tun) $ l $ unlift tmr
 

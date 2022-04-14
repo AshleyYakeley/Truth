@@ -91,7 +91,7 @@ emptyTransListFunction = let
     in MkTransListFunction {..}
 
 consTransListFunction ::
-       forall tta ttb t. TransTunnel t
+       forall tta ttb t. MonadTransTunnel t
     => ListType (Compose Dict (TransConstraint Monad)) tta
     -> ListType (Compose Dict (TransConstraint Monad)) ttb
     -> TransListFunction tta ttb

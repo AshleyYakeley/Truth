@@ -19,30 +19,31 @@ instance Floating edit edit => Floating (FullResultOneEdit f edit) (FullResultOn
         SuccessFullResultOneEdit $ floatingUpdate e1 e2
     floatingUpdate _ t = t
 
-instance (MonadOne f, SubjectReader (EditReader edit), ApplicableEdit edit) => ApplicableEdit (FullResultOneEdit f edit) where
+instance (MonadInner f, SubjectReader (EditReader edit), ApplicableEdit edit) =>
+             ApplicableEdit (FullResultOneEdit f edit) where
     applyEdit (SuccessFullResultOneEdit _edita) mr ReadHasOne = mr ReadHasOne
     applyEdit (SuccessFullResultOneEdit edita) mr (ReadOne reader) =
-        getComposeM $ applyEdit edita (oneReadFunctionF mr) reader
+        getComposeInner $ applyEdit edita (oneReadFunctionF mr) reader
     applyEdit (NewFullResultOneEdit fa) _mr ReadHasOne = return $ fmap (\_ -> ()) fa
     applyEdit (NewFullResultOneEdit fa) _mr (ReadOne reader) =
         return $
-        case retrieveOne fa of
+        case retrieveInner fa of
             SuccessResult a -> pure $ subjectToRead a reader
             FailureResult fn -> fmap never fn
 
-instance (MonadOne f, FullSubjectReader (EditReader edit), ApplicableEdit edit) =>
+instance (MonadInner f, FullSubjectReader (EditReader edit), ApplicableEdit edit) =>
              SubjectMapEdit (FullResultOneEdit f edit)
 
-instance (MonadOne f, FullSubjectReader (EditReader edit), ApplicableEdit edit) => FullEdit (FullResultOneEdit f edit) where
+instance (MonadInner f, FullSubjectReader (EditReader edit), ApplicableEdit edit) => FullEdit (FullResultOneEdit f edit) where
     replaceEdit mr writer = do
         fsubj <- readableToSubject mr
         writer $ NewFullResultOneEdit fsubj
 
-instance (MonadOne f, FullSubjectReader (EditReader edit), ApplicableEdit edit, InvertibleEdit edit) =>
+instance (MonadInner f, FullSubjectReader (EditReader edit), ApplicableEdit edit, InvertibleEdit edit) =>
              InvertibleEdit (FullResultOneEdit f edit) where
     invertEdit (SuccessFullResultOneEdit edit) mr = do
-        funedits <- getComposeM $ invertEdit edit $ oneReadFunctionF mr
-        case retrieveOne funedits of
+        funedits <- getComposeInner $ invertEdit edit $ oneReadFunctionF mr
+        case retrieveInner funedits of
             SuccessResult unedits -> return $ fmap SuccessFullResultOneEdit unedits
             FailureResult _ -> return []
     invertEdit (NewFullResultOneEdit _) mr = getReplaceEdits mr
@@ -57,7 +58,7 @@ instance (Functor f, IsUpdate update) => IsUpdate (FullResultOneUpdate f update)
     editUpdate (SuccessFullResultOneEdit edit) = MkFullResultOneUpdate $ SuccessResultOneUpdate $ editUpdate edit
     editUpdate (NewFullResultOneEdit fa) = MkFullResultOneUpdate $ NewResultOneUpdate $ fmap (\_ -> ()) fa
 
-instance (MonadOne f, FullSubjectReader (UpdateReader update)) => FullUpdate (FullResultOneUpdate f update) where
+instance (MonadInner f, FullSubjectReader (UpdateReader update)) => FullUpdate (FullResultOneUpdate f update) where
     replaceUpdate mr writer = do
         fsubj <- readableToSubject mr
         writer $ MkFullResultOneUpdate $ NewResultOneUpdate $ fmap (\_ -> ()) fsubj
@@ -69,7 +70,7 @@ type MaybeUpdate update = FullResultOneUpdate Maybe update
 -- | suitable for Results; trying to put a failure code will be rejected
 liftFullResultOneChangeLens ::
        forall f updateA updateB.
-       ( MonadOne f
+       ( MonadInner f
        , FullSubjectReader (UpdateReader updateA)
        , ApplicableEdit (UpdateEdit updateA)
        , FullEdit (UpdateEdit updateB)
@@ -85,13 +86,13 @@ liftFullResultOneChangeLens (MkChangeLens g u pe) = let
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m [FullResultOneUpdate f updateB]
     clUpdate (MkFullResultOneUpdate (SuccessResultOneUpdate upda)) mr =
-        fmap (fmap (MkFullResultOneUpdate . SuccessResultOneUpdate) . fromMaybe [] . fextractm) $
-        getComposeM $ u upda $ oneReadFunctionF mr
+        fmap (fmap (MkFullResultOneUpdate . SuccessResultOneUpdate) . fromMaybe [] . mToMaybe) $
+        getComposeInner $ u upda $ oneReadFunctionF mr
     clUpdate (MkFullResultOneUpdate (NewResultOneUpdate fu)) _mr =
         return $ [MkFullResultOneUpdate $ NewResultOneUpdate fu]
     reshuffle :: forall a. f (Maybe a) -> Maybe (f a)
     reshuffle fma =
-        case retrieveOne fma of
+        case retrieveInner fma of
             SuccessResult (Just a) -> Just $ pure a
             SuccessResult Nothing -> Nothing
             FailureResult fn -> Just $ fmap never fn
@@ -101,16 +102,16 @@ liftFullResultOneChangeLens (MkChangeLens g u pe) = let
         -> Readable m (OneReader f (UpdateReader updateA))
         -> m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
     clPutEdit (SuccessFullResultOneEdit eb) mr = do
-        fme <- getComposeM $ pe [eb] $ oneReadFunctionF mr
+        fme <- getComposeInner $ pe [eb] $ oneReadFunctionF mr
         return $
-            case fextractm fme of
+            case mToMaybe fme of
                 Just me -> fmap (fmap SuccessFullResultOneEdit) me
                 Nothing -> Just []
     clPutEdit (NewFullResultOneEdit fb) mr = do
-        case retrieveOne fb of
+        case retrieveInner fb of
             SuccessResult b -> do
                 fma <-
-                    getComposeM $ do
+                    getComposeInner $ do
                         editbs <- getReplaceEditsFromSubject b
                         meditas <- pe editbs $ oneReadFunctionF mr
                         for meditas $ \editas -> readableToSubject $ applyEdits editas $ oneReadFunctionF mr
@@ -129,7 +130,7 @@ liftFullResultOneChangeLens (MkChangeLens g u pe) = let
 -- | suitable for Results; trying to put a failure code will be rejected
 liftFullResultOneFloatingChangeLens ::
        forall f updateA updateB.
-       ( MonadOne f
+       ( MonadInner f
        , FullSubjectReader (UpdateReader updateA)
        , ApplicableEdit (UpdateEdit updateA)
        , FullEdit (UpdateEdit updateB)
@@ -138,7 +139,7 @@ liftFullResultOneFloatingChangeLens ::
     -> FloatingChangeLens (FullResultOneUpdate f updateA) (FullResultOneUpdate f updateB)
 liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) rlens) = let
     sclInit :: StateLensInit (OneReader f (UpdateReader updateA)) (f r)
-    sclInit mr = getComposeM $ runFloatInit init $ oneReadFunctionF mr
+    sclInit mr = getComposeInner $ runFloatInit init $ oneReadFunctionF mr
     reInit ::
            forall m. MonadIO m
         => Readable m (OneReader f (UpdateReader updateA))
@@ -148,7 +149,7 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
             lift $
             runFloatInit init $ \rt -> do
                 ft <- mr $ ReadOne rt
-                case retrieveOne ft of
+                case retrieveInner ft of
                     SuccessResult t -> return t
                     FailureResult _ -> liftIO $ fail "liftFullResultOneFloatingChangeLens: missing"
         put $ pure r
@@ -156,7 +157,7 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
     sclRead :: ReadFunctionT (StateT (f r)) (OneReader f (UpdateReader updateA)) (OneReader f (UpdateReader updateB))
     sclRead mr rt = do
         fr <- get
-        case retrieveOne fr of
+        case retrieveInner fr of
             SuccessResult r -> lift $ liftOneReadFunction (clRead $ rlens r) mr rt
             FailureResult fn ->
                 return $
@@ -170,14 +171,14 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
         -> StateT (f r) m [FullResultOneUpdate f updateB]
     sclUpdate (MkFullResultOneUpdate (SuccessResultOneUpdate upda)) mr = do
         fr <- get
-        case retrieveOne fr of
+        case retrieveInner fr of
             SuccessResult r ->
                 lift $
-                fmap (fmap (MkFullResultOneUpdate . SuccessResultOneUpdate) . fromMaybe [] . fextractm) $
-                getComposeM $ clUpdate (rlens r) upda $ oneReadFunctionF mr
+                fmap (fmap (MkFullResultOneUpdate . SuccessResultOneUpdate) . fromMaybe [] . mToMaybe) $
+                getComposeInner $ clUpdate (rlens r) upda $ oneReadFunctionF mr
             FailureResult _ -> return []
     sclUpdate (MkFullResultOneUpdate (NewResultOneUpdate fu)) mr = do
-        case retrieveOne fu of
+        case retrieveInner fu of
             SuccessResult () -> do
                 _ <- reInit mr
                 return ()
@@ -185,7 +186,7 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
         return [MkFullResultOneUpdate $ NewResultOneUpdate fu]
     reshuffle :: forall a. f (Maybe a) -> Maybe (f a)
     reshuffle fma =
-        case retrieveOne fma of
+        case retrieveInner fma of
             SuccessResult (Just a) -> Just $ pure a
             SuccessResult Nothing -> Nothing
             FailureResult fn -> Just $ fmap never fn
@@ -196,21 +197,21 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
         -> StateT (f r) m (Maybe [FullResultOneEdit f (UpdateEdit updateA)])
     sPutEdit (SuccessFullResultOneEdit eb) mr = do
         fr <- get
-        case retrieveOne fr of
+        case retrieveInner fr of
             SuccessResult r -> do
-                fme <- lift $ getComposeM $ clPutEdits (rlens r) [eb] $ oneReadFunctionF mr
+                fme <- lift $ getComposeInner $ clPutEdits (rlens r) [eb] $ oneReadFunctionF mr
                 return $
-                    case fextractm fme of
+                    case mToMaybe fme of
                         Just me -> fmap (fmap SuccessFullResultOneEdit) me
                         Nothing -> Just []
             FailureResult _ -> return $ Just []
     sPutEdit (NewFullResultOneEdit fb) mr = do
-        case retrieveOne fb of
+        case retrieveInner fb of
             SuccessResult b -> do
                 r <- reInit mr
                 fma <-
                     lift $
-                    getComposeM $ do
+                    getComposeInner $ do
                         editbs <- getReplaceEditsFromSubject b
                         meditas <- clPutEdits (rlens r) editbs $ oneReadFunctionF mr
                         for meditas $ \editas -> readableToSubject $ applyEdits editas $ oneReadFunctionF mr
@@ -230,14 +231,14 @@ liftFullResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r
 
 -- | for use in UIs where items can be deleted
 mustExistOneChangeLens ::
-       forall f update. (MonadOne f, IsUpdate update)
+       forall f update. (MonadInner f, IsUpdate update)
     => String
     -> ChangeLens (FullResultOneUpdate f update) update
 mustExistOneChangeLens err = let
     clRead :: ReadFunction (OneReader f (UpdateReader update)) (UpdateReader update)
     clRead mr rt = do
         ft <- mr $ ReadOne rt
-        case retrieveOne ft of
+        case retrieveInner ft of
             SuccessResult t -> return t
             FailureResult _ -> liftIO $ fail $ err ++ ": not found"
     clUpdate ::

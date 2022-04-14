@@ -13,10 +13,10 @@ data EitherReader (ra :: Type -> Type) (rb :: Type -> Type) (t :: Type) where
     EitherReadRight :: rb t -> EitherReader ra rb (Maybe t)
 
 mapEitherReadLeft :: ReadFunctionF Maybe (EitherReader ra rb) ra
-mapEitherReadLeft mr = MkComposeM . mr . EitherReadLeft
+mapEitherReadLeft mr = MkComposeInner . mr . EitherReadLeft
 
 mapEitherReadRight :: ReadFunctionF Maybe (EitherReader ra rb) rb
-mapEitherReadRight mr = MkComposeM . mr . EitherReadRight
+mapEitherReadRight mr = MkComposeInner . mr . EitherReadRight
 
 instance (SubjectReader ra, SubjectReader rb) => SubjectReader (EitherReader ra rb) where
     type ReaderSubject (EitherReader ra rb) = Either (ReaderSubject ra) (ReaderSubject rb)
@@ -29,8 +29,8 @@ instance (SubjectReader ra, SubjectReader rb) => SubjectReader (EitherReader ra 
 
 instance (FullSubjectReader ra, FullSubjectReader rb) => FullSubjectReader (EitherReader ra rb) where
     readableToSubject mr = do
-        mleft <- getComposeM $ readableToSubject $ mapEitherReadLeft mr
-        mright <- getComposeM $ readableToSubject $ mapEitherReadRight mr
+        mleft <- getComposeInner $ readableToSubject $ mapEitherReadLeft mr
+        mright <- getComposeInner $ readableToSubject $ mapEitherReadRight mr
         case (mleft, mright) of
             (Just a, Nothing) -> return $ Left a
             (Nothing, Just a) -> return $ Right a
@@ -58,14 +58,14 @@ type instance EditReader (EitherEdit ea eb) =
 
 instance (ApplicableEdit ea, ApplicableEdit eb) => ApplicableEdit (EitherEdit ea eb) where
     applyEdit (EitherEditLeft edit) mr (EitherReadLeft reader) =
-        getComposeM $ applyEdit edit (mapEitherReadLeft mr) reader
+        getComposeInner $ applyEdit edit (mapEitherReadLeft mr) reader
     applyEdit (EitherEditRight edit) mr (EitherReadRight reader) =
-        getComposeM $ applyEdit edit (mapEitherReadRight mr) reader
+        getComposeInner $ applyEdit edit (mapEitherReadRight mr) reader
     applyEdit _ mr reader = mr reader
 
 instance (InvertibleEdit ea, InvertibleEdit eb) => InvertibleEdit (EitherEdit ea eb) where
     invertEdits edits mr = do
         let (eas, ebs) = partitionEitherEdits edits
-        meditas <- getComposeM $ invertEdits eas $ mapEitherReadLeft mr
-        meditbs <- getComposeM $ invertEdits ebs $ mapEitherReadRight mr
+        meditas <- getComposeInner $ invertEdits eas $ mapEitherReadLeft mr
+        meditbs <- getComposeInner $ invertEdits ebs $ mapEitherReadRight mr
         return $ (fmap EitherEditLeft $ fromMaybe [] meditas) ++ (fmap EitherEditRight $ fromMaybe [] meditbs)

@@ -126,8 +126,8 @@ contextualiseChangeLens (MkChangeLens g u pe) = let
     pe' edits mr =
         case partitionContextEdits edits of
             (eas, ebs) ->
-                getComposeM $ do
-                    eas' <- MkComposeM $ pe ebs mr
+                getComposeInner $ do
+                    eas' <- MkComposeInner $ pe ebs mr
                     return $ eas ++ eas'
     in MkChangeLens g' u' pe'
 
@@ -154,8 +154,8 @@ liftContextChangeLens (MkChangeLens g u pe) = let
     pe' edits mr =
         case partitionContextEdits edits of
             (exs, ens) ->
-                getComposeM $ do
-                    es1 <- MkComposeM $ pe ens (mr . MkTupleUpdateReader SelectContent)
+                getComposeInner $ do
+                    es1 <- MkComposeInner $ pe ens (mr . MkTupleUpdateReader SelectContent)
                     return $
                         (fmap (MkTupleUpdateEdit SelectContent) es1) ++ (fmap (MkTupleUpdateEdit SelectContext) exs)
     in MkChangeLens g' u' pe'
@@ -183,8 +183,8 @@ liftContentChangeLens (MkChangeLens g u pe) = let
     pe' edits mr =
         case partitionContextEdits edits of
             (exs, ens) ->
-                getComposeM $ do
-                    es1 <- MkComposeM $ pe exs (mr . MkTupleUpdateReader SelectContext)
+                getComposeInner $ do
+                    es1 <- MkComposeInner $ pe exs (mr . MkTupleUpdateReader SelectContext)
                     return $
                         (fmap (MkTupleUpdateEdit SelectContext) es1) ++ (fmap (MkTupleUpdateEdit SelectContent) ens)
     in MkChangeLens g' u' pe'

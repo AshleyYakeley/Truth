@@ -31,7 +31,7 @@ data ActionContext = MkActionContext
     }
 
 newtype PinaforeAction a =
-    MkPinaforeAction (ReaderT ActionContext (ComposeM Know CreateView) a)
+    MkPinaforeAction (ReaderT ActionContext (ComposeInner Know CreateView) a)
     deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadIO, RepresentationalRole)
 
 instance MonadFail PinaforeAction where
@@ -43,12 +43,12 @@ instance MonadLifeCycleIO PinaforeAction where
 
 unPinaforeAction :: forall a. ChangesContext -> UndoHandler -> PinaforeAction a -> CreateView (Know a)
 unPinaforeAction acChangesContext acUndoHandler (MkPinaforeAction action) =
-    getComposeM $ runReaderT action MkActionContext {..}
+    getComposeInner $ runReaderT action MkActionContext {..}
 
 createViewPinaforeAction :: CreateView a -> PinaforeAction a
 createViewPinaforeAction cva = MkPinaforeAction $ lift $ lift cva
 
-pinaforeGetCreateViewUnlift :: PinaforeAction (WMFunction PinaforeAction (ComposeM Know CreateView))
+pinaforeGetCreateViewUnlift :: PinaforeAction (WMFunction PinaforeAction (ComposeInner Know CreateView))
 pinaforeGetCreateViewUnlift =
     MkPinaforeAction $ do
         MkWUnlift unlift <- askUnlift
@@ -101,7 +101,7 @@ pinaforeActionKnow Unknown = empty
 
 knowPinaforeAction :: forall a. PinaforeAction a -> PinaforeAction (Know a)
 knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =
-    MkPinaforeAction $ ReaderT $ \r -> MkComposeM $ fmap Known $ getComposeM $ rka r
+    MkPinaforeAction $ ReaderT $ \r -> MkComposeInner $ fmap Known $ getComposeInner $ rka r
 
 pinaforeOnClose :: PinaforeAction () -> PinaforeAction ()
 pinaforeOnClose closer = do
@@ -109,7 +109,7 @@ pinaforeOnClose closer = do
     createViewPinaforeAction $
         lifeCycleCloseInner $
         runLifeCycle $ do
-            _ <- getComposeM $ unlift closer
+            _ <- getComposeInner $ unlift closer
             return ()
 
 pinaforeEarlyCloser :: PinaforeAction a -> PinaforeAction (a, IO ())
@@ -117,8 +117,8 @@ pinaforeEarlyCloser ra = do
     MkWMFunction unlift <- pinaforeGetCreateViewUnlift
     MkPinaforeAction $
         lift $
-        MkComposeM $ do
-            (ka, closer) <- lifeCycleEarlyCloser $ getComposeM $ unlift ra
+        MkComposeInner $ do
+            (ka, closer) <- lifeCycleEarlyCloser $ getComposeInner $ unlift ra
             return $ fmap (\a -> (a, closer)) ka
 
 pinaforeFloatMap ::

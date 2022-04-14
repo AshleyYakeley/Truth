@@ -199,11 +199,11 @@ ioWholeChangeLens ioget ioput = let
     in MkChangeLens {..}
 
 wholeChangeLens ::
-       forall mf a b. (MonadOne mf)
+       forall mf a b. (MonadInner mf)
     => Lens' mf a b
     -> ChangeLens (WholeUpdate a) (WholeUpdate b)
 wholeChangeLens lens =
-    ioWholeChangeLens (\a -> return $ lensGet lens a) (\b olda -> return $ fextractm $ lensPutback lens b olda)
+    ioWholeChangeLens (\a -> return $ lensGet lens a) (\b olda -> return $ mToMaybe $ lensPutback lens b olda)
 
 bijectionWholeChangeLens ::
        forall lin updateA b. (FullEdit (UpdateEdit updateA))
@@ -233,12 +233,12 @@ bijectionWholeChangeLens MkIsomorphism {..} = let
             return $ Just editas
     in MkChangeLens {..}
 
-instance MonadOne m => IsChangeLens (Lens' m a b) where
+instance MonadInner m => IsChangeLens (Lens' m a b) where
     type LensDomain (Lens' m a b) = WholeUpdate a
     type LensRange (Lens' m a b) = WholeUpdate b
     toChangeLens = toChangeLens . wholeChangeLens
 
-instance MonadOne m => IsChangeLens (Injection' m a b) where
+instance MonadInner m => IsChangeLens (Injection' m a b) where
     type LensDomain (Injection' m a b) = WholeUpdate a
     type LensRange (Injection' m a b) = WholeUpdate b
     toChangeLens = toChangeLens . injectionLens
