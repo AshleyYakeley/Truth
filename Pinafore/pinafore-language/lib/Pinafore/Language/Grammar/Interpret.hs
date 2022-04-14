@@ -253,8 +253,8 @@ interpretConstructor SLUnit = return $ qConstExprAny $ jmToValue ()
 
 specialFormArg :: PinaforeAnnotation t -> SyntaxAnnotation -> ComposeInner Maybe PinaforeInterpreter t
 specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
-specialFormArg AnnotPositiveType (SAType st) = liftOuter $ interpretType @'Positive st
-specialFormArg AnnotNegativeType (SAType st) = liftOuter $ interpretType @'Negative st
+specialFormArg AnnotPositiveType (SAType st) = lift $ interpretType @'Positive st
+specialFormArg AnnotNegativeType (SAType st) = lift $ interpretType @'Negative st
 specialFormArg _ _ = liftInner Nothing
 
 specialFormArgs ::

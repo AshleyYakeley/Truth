@@ -2,8 +2,10 @@ module Control.Monad.Ology.Trans.Tunnel where
 
 import qualified Control.Exception as CE
 import Control.Monad.Ology.ComposeInner
+import Control.Monad.Ology.ComposeOuter
 import Control.Monad.Ology.Function
 import Control.Monad.Ology.MonadInner
+import Control.Monad.Ology.MonadOuter
 import Control.Monad.Ology.Trans.Constraint
 import Import
 
@@ -59,6 +61,13 @@ instance MonadTransTunnel IdentityT where
 instance MonadInner inner => MonadTransTunnel (ComposeInner inner) where
     type Tunnel (ComposeInner inner) = inner
     tunnel call = MkComposeInner $ call getComposeInner
+
+instance MonadOuter outer => MonadTransTunnel (ComposeOuter outer) where
+    type Tunnel (ComposeOuter outer) = Identity
+    tunnel call =
+        MkComposeOuter $ do
+            MkExtract oaa <- getExtract
+            return $ fmap runIdentity $ call $ fmap Identity . oaa . getComposeOuter
 
 instance MonadTransTunnel (ReaderT r) where
     type Tunnel (ReaderT r) = Identity

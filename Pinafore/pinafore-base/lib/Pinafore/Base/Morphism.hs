@@ -139,7 +139,7 @@ composePinaforeLensMorphism (MkPinaforeLensMorphism getBC buBC putBC invBC invbu
                                 return $ Just $ exec kkc
     pmPut koldA kC =
         getComposeInner $ do
-            koldB <- liftOuter $ pmKGet ab koldA
+            koldB <- lift $ pmKGet ab koldA
             (edits1, mknewB) <- MkComposeInner $ putBC koldB kC
             case mknewB of
                 Nothing -> return (edits1, Nothing)

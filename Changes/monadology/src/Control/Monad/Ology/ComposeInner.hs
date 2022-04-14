@@ -63,7 +63,12 @@ instance (MonadInner inner, MonadInner outer) => MonadInner (ComposeInner inner 
             FailureResult ov -> FailureResult $ MkComposeInner $ fmap pure ov
 
 instance (MonadInner inner, MonadOuter inner, MonadOuter outer) => MonadOuter (ComposeInner inner outer) where
-    outerCommute fcioa = MkComposeInner $ fmap outerCommute $ outerCommute $ fmap getComposeInner fcioa
+    getExtract =
+        MkComposeInner $ do
+            MkExtract oaa <- getExtract
+            return $ do
+                MkExtract iaa <- getExtract
+                return $ MkExtract $ \(MkComposeInner oia) -> iaa $ oaa oia
 
 instance (MonadInner inner, MonadFix outer) => MonadFix (ComposeInner inner outer) where
     mfix ama =
@@ -82,17 +87,14 @@ instance (MonadExtract inner, MonadExtract outer) => MonadExtract (ComposeInner 
 
 instance (MonadIdentity inner, MonadIdentity outer) => MonadIdentity (ComposeInner inner outer)
 
-liftOuter :: (Functor outer, Applicative inner) => outer a -> ComposeInner inner outer a
-liftOuter ma = MkComposeInner $ fmap pure ma
-
 liftInner :: Applicative outer => inner a -> ComposeInner inner outer a
 liftInner na = MkComposeInner $ pure na
 
 instance (MonadInner inner, MonadIO outer) => MonadIO (ComposeInner inner outer) where
-    liftIO ioa = liftOuter $ liftIO ioa
+    liftIO ioa = lift $ liftIO ioa
 
 instance MonadInner inner => MonadTrans (ComposeInner inner) where
-    lift = liftOuter
+    lift ma = MkComposeInner $ fmap pure ma
 
 instance MonadInner inner => TransConstraint Functor (ComposeInner inner) where
     hasTransConstraint = Dict

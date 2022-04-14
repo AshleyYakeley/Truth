@@ -1,6 +1,7 @@
 module Control.Monad.Ology.ComposeOuter where
 
 import Control.Monad.Ology.MonadOuter
+import Control.Monad.Ology.Trans.Constraint
 import Import
 
 type ComposeOuter :: (Type -> Type) -> (Type -> Type) -> Type -> Type
@@ -27,3 +28,15 @@ instance (Monad inner, MonadOuter outer) => Monad (ComposeOuter outer inner) whe
         MkComposeOuter $ do
             ia <- oia
             fmap (\iib -> iib >>= id) $ outerCommute $ fmap (getComposeOuter . f) ia
+
+liftOuter :: (Functor outer, Applicative inner) => outer a -> ComposeOuter outer inner a
+liftOuter oa = MkComposeOuter $ fmap pure oa
+
+instance MonadOuter outer => MonadTrans (ComposeOuter outer) where
+    lift ma = MkComposeOuter $ pure ma
+
+instance MonadOuter outer => TransConstraint Functor (ComposeOuter outer) where
+    hasTransConstraint = Dict
+
+instance MonadOuter outer => TransConstraint Monad (ComposeOuter outer) where
+    hasTransConstraint = Dict
