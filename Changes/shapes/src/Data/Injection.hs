@@ -1,6 +1,6 @@
 module Data.Injection where
 
-import Control.Monad.Ology.Inner
+import Control.Monad.Ology.MonadInner
 import Data.CatFunctor
 import Data.Codec
 import Data.Isomorphism

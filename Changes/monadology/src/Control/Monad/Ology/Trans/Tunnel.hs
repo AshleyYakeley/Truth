@@ -3,7 +3,7 @@ module Control.Monad.Ology.Trans.Tunnel where
 import qualified Control.Exception as CE
 import Control.Monad.Ology.ComposeInner
 import Control.Monad.Ology.Function
-import Control.Monad.Ology.Inner
+import Control.Monad.Ology.MonadInner
 import Control.Monad.Ology.Trans.Constraint
 import Import
 

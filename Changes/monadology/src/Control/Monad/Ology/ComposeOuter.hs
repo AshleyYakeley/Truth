@@ -1,6 +1,6 @@
 module Control.Monad.Ology.ComposeOuter where
 
-import Control.Monad.Ology.Outer
+import Control.Monad.Ology.MonadOuter
 import Import
 
 type ComposeOuter :: (Type -> Type) -> (Type -> Type) -> Type -> Type

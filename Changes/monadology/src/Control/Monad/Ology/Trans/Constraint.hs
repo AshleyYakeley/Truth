@@ -1,7 +1,9 @@
 module Control.Monad.Ology.Trans.Constraint where
 
-import Control.Monad.Ology.Inner
-import Control.Monad.Ology.Outer
+import Control.Monad.Ology.MonadExtract
+import Control.Monad.Ology.MonadIdentity
+import Control.Monad.Ology.MonadInner
+import Control.Monad.Ology.MonadOuter
 import Import
 
 type TransKind = (Type -> Type) -> (Type -> Type)
@@ -70,6 +72,9 @@ instance TransConstraint MonadOuter IdentityT where
     hasTransConstraint = Dict
 
 instance TransConstraint MonadExtract IdentityT where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadIdentity IdentityT where
     hasTransConstraint = Dict
 
 instance TransConstraint Functor (ReaderT s) where

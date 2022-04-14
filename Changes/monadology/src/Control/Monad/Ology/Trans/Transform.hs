@@ -1,4 +1,4 @@
-module Control.Monad.Ology.Transform where
+module Control.Monad.Ology.Trans.Transform where
 
 import Control.Monad.Ology.Data
 import Control.Monad.Ology.Function

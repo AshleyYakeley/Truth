@@ -1,4 +1,4 @@
-module Control.Monad.Ology.Outer where
+module Control.Monad.Ology.MonadOuter where
 
 import Import
 

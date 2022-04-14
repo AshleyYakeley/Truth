@@ -15,8 +15,10 @@ library:
     exposed-modules:
       - Control.Monad.Ology.Result
       - Control.Monad.Ology.Function
-      - Control.Monad.Ology.Inner
-      - Control.Monad.Ology.Outer
+      - Control.Monad.Ology.MonadInner
+      - Control.Monad.Ology.MonadOuter
+      - Control.Monad.Ology.MonadExtract
+      - Control.Monad.Ology.MonadIdentity
       - Control.Monad.Ology.Trans.Constraint
       - Control.Monad.Ology.Trans.Tunnel
       - Control.Monad.Ology.Trans.Coerce
@@ -30,6 +32,7 @@ library:
       - Control.Monad.Ology.ComposeOuter
       - Control.Monad.Ology.Exception
       - Control.Monad.Ology.Data
-      - Control.Monad.Ology.Transform
+      - Control.Monad.Ology.Trans.Transform
+      - Control.Monad.Ology
     other-modules:
       - Import

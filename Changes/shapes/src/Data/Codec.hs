@@ -1,6 +1,6 @@
 module Data.Codec where
 
-import Control.Monad.Ology.Inner
+import Control.Monad.Ology.MonadInner
 import Control.Monad.Ology.Result
 import Data.CatFunctor
 import Data.IsoVariant

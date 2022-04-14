@@ -1,7 +1,7 @@
 module Control.Monad.Ology.Trans.Unlift where
 
 import Control.Monad.Ology.Function
-import Control.Monad.Ology.Inner
+import Control.Monad.Ology.MonadExtract
 import Control.Monad.Ology.Trans.Constraint
 import Control.Monad.Ology.Trans.Tunnel
 import Import
