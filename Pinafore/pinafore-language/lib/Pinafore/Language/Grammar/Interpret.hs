@@ -251,13 +251,14 @@ interpretConstructor (SLNamedConstructor v) = interpretNamedConstructor v
 interpretConstructor SLPair = return $ qConstExprAny $ jmToValue ((,) :: A -> B -> (A, B))
 interpretConstructor SLUnit = return $ qConstExprAny $ jmToValue ()
 
-specialFormArg :: PinaforeAnnotation t -> SyntaxAnnotation -> ComposeM Maybe PinaforeInterpreter t
+specialFormArg :: PinaforeAnnotation t -> SyntaxAnnotation -> ComposeInner Maybe PinaforeInterpreter t
 specialFormArg AnnotAnchor (SAAnchor anchor) = return anchor
 specialFormArg AnnotPositiveType (SAType st) = liftOuter $ interpretType @'Positive st
 specialFormArg AnnotNegativeType (SAType st) = liftOuter $ interpretType @'Negative st
 specialFormArg _ _ = liftInner Nothing
 
-specialFormArgs :: ListType PinaforeAnnotation lt -> [SyntaxAnnotation] -> ComposeM Maybe PinaforeInterpreter (HList lt)
+specialFormArgs ::
+       ListType PinaforeAnnotation lt -> [SyntaxAnnotation] -> ComposeInner Maybe PinaforeInterpreter (HList lt)
 specialFormArgs NilListType [] = return ()
 specialFormArgs (ConsListType t tt) (a:aa) = do
     v <- specialFormArg t a
@@ -277,7 +278,7 @@ showAnnotation AnnotNegativeType = "type"
 interpretSpecialForm :: ReferenceName -> NonEmpty SyntaxAnnotation -> PinaforeInterpreter QValue
 interpretSpecialForm name annotations = do
     MkSpecialForm largs val <- lookupSpecialForm name
-    margs <- getComposeM $ specialFormArgs largs $ toList annotations
+    margs <- getComposeInner $ specialFormArgs largs $ toList annotations
     case margs of
         Just args -> val args
         Nothing ->

@@ -107,9 +107,9 @@ composePinaforeLensMorphism ::
     -> PinaforeLensMorphism ap aq cp cq baseupdate
 composePinaforeLensMorphism (MkPinaforeLensMorphism getBC buBC putBC invBC invbuBC) ab@(MkPinaforeLensMorphism getAB buAB putAB invAB invbuAB) = let
     pmGet a =
-        getComposeM $ do
-            b <- MkComposeM $ getAB a
-            MkComposeM $ getBC b
+        getComposeInner $ do
+            b <- MkComposeInner $ getAB a
+            MkComposeInner $ getBC b
     pmBaseUpdate ::
            baseupdate
         -> ReadM (UpdateReader baseupdate) (Maybe (ap -> ReadM (UpdateReader baseupdate) (Maybe (Know cq))))
@@ -138,13 +138,13 @@ composePinaforeLensMorphism (MkPinaforeLensMorphism getBC buBC putBC invBC invbu
                                 kkc <- for kb getBC
                                 return $ Just $ exec kkc
     pmPut koldA kC =
-        getComposeM $ do
+        getComposeInner $ do
             koldB <- liftOuter $ pmKGet ab koldA
-            (edits1, mknewB) <- MkComposeM $ putBC koldB kC
+            (edits1, mknewB) <- MkComposeInner $ putBC koldB kC
             case mknewB of
                 Nothing -> return (edits1, Nothing)
                 Just knewB -> do
-                    (edits2, mknewA) <- MkComposeM $ putAB koldA knewB
+                    (edits2, mknewA) <- MkComposeInner $ putAB koldA knewB
                     return (edits1 <> edits2, mknewA)
     pmInvGet c = do
         bb <- invBC c
@@ -192,9 +192,9 @@ pairPinaforeLensMorphism ::
     -> PinaforeLensMorphism ap aq (bp, cp) (bq, cq) baseupdate
 pairPinaforeLensMorphism (MkPinaforeLensMorphism getB buB putB invB invbuB) (MkPinaforeLensMorphism getC buC putC invC invbuC) = let
     pmGet a =
-        getComposeM $ do
-            b <- MkComposeM $ getB a
-            c <- MkComposeM $ getC a
+        getComposeInner $ do
+            b <- MkComposeInner $ getB a
+            c <- MkComposeInner $ getC a
             return (b, c)
     pmBaseUpdate ::
            baseupdate
@@ -233,9 +233,9 @@ pairPinaforeLensMorphism (MkPinaforeLensMorphism getB buB putB invB invbuB) (MkP
                                         return (b, c)
     pmPut _ Unknown = return Nothing -- can't delete
     pmPut ka (Known (b, c)) =
-        getComposeM $ do
-            (updb, bmka) <- MkComposeM $ putB ka $ Known b
-            (updc, cmka) <- MkComposeM $ putC ka $ Known c
+        getComposeInner $ do
+            (updb, bmka) <- MkComposeInner $ putB ka $ Known b
+            (updc, cmka) <- MkComposeInner $ putC ka $ Known c
             return (updb <> updc, bmka <|> cmka)
     pmInvGet (b, c) = do
         ba <- invB b
@@ -308,12 +308,12 @@ eitherPinaforeLensMorphism (MkPinaforeLensMorphism getA buA putA invA invbuA) (M
                                 Nothing -> return Nothing
                                 Just brmkc -> brmkc b
     pmPut (Known (Left a)) kc =
-        getComposeM $ do
-            (bu, mka) <- MkComposeM $ putA (Known a) kc
+        getComposeInner $ do
+            (bu, mka) <- MkComposeInner $ putA (Known a) kc
             return $ (bu, fmap (fmap Left) mka)
     pmPut (Known (Right b)) kc =
-        getComposeM $ do
-            (bu, mkb) <- MkComposeM $ putB (Known b) kc
+        getComposeInner $ do
+            (bu, mkb) <- MkComposeInner $ putB (Known b) kc
             return $ (bu, fmap (fmap Right) mkb)
     pmPut Unknown _ = return Nothing
     pmInvGet c = do
@@ -535,8 +535,8 @@ pinaforeLensMorphismInverseChangeLens plm@MkPinaforeLensMorphism {..} = let
         -> Readable m (ContextUpdateReader baseupdate (BiWholeUpdate (Know bp) (Know bq)))
         -> m (Maybe [ContextUpdateEdit baseupdate (BiWholeUpdate (Know bp) (Know bq))])
     clPutEdits fsedits mr =
-        getComposeM $ do
-            baseedits <- for fsedits $ \fsedit -> MkComposeM $ putEdit fsedit mr
+        getComposeInner $ do
+            baseedits <- for fsedits $ \fsedit -> MkComposeInner $ putEdit fsedit mr
             return $ fmap (MkTupleUpdateEdit SelectContext) $ mconcat baseedits
     in MkChangeLens {..}
 
@@ -608,13 +608,13 @@ pinaforeLensMorphismInverseChangeLensSet plm@MkPinaforeLensMorphism {..} = let
                 Known b -> Just [MkTupleUpdateEdit SelectContent $ KeyEditInsertReplace b]
     clPutEdit' KeyEditClear mr = do
         bs <- mr $ MkTupleUpdateReader SelectContent KeyReadKeys
-        getComposeM $ do
+        getComposeInner $ do
             lpedits <-
                 for (toList bs) $ \b -> do
                     aa <- lift $ runContextReadM mr $ pmInvGet b
                     lpedits <-
                         for (toList aa) $ \a ->
-                            MkComposeM $ putEditAB plm a Unknown $ tupleReadFunction SelectContext mr
+                            MkComposeInner $ putEditAB plm a Unknown $ tupleReadFunction SelectContext mr
                     return $ mconcat lpedits
             return $ fmap (MkTupleUpdateEdit SelectContext) $ mconcat lpedits
     clPutEdits' ::
@@ -622,11 +622,11 @@ pinaforeLensMorphismInverseChangeLensSet plm@MkPinaforeLensMorphism {..} = let
         => [FiniteSetEdit a]
         -> Readable m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
         -> m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
-    clPutEdits' [] _ = getComposeM $ return []
+    clPutEdits' [] _ = getComposeInner $ return []
     clPutEdits' (e:ee) mr =
-        getComposeM $ do
-            ea <- MkComposeM $ clPutEdit' @m e mr
-            eea <- MkComposeM $ clPutEdits' ee $ applyEdits' ea mr
+        getComposeInner $ do
+            ea <- MkComposeInner $ clPutEdit' @m e mr
+            eea <- MkComposeInner $ clPutEdits' ee $ applyEdits' ea mr
             return $ ea ++ eea
     in MkChangeLens clRead' clUpdate' clPutEdits'
 

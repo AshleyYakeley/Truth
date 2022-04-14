@@ -1,7 +1,7 @@
 module Control.Monad.Ology.Trans.AskUnlift where
 
 import Control.Monad.Ology.Function
-import Control.Monad.Ology.Functor.One
+import Control.Monad.Ology.Inner
 import Control.Monad.Ology.Trans.Constraint
 import Control.Monad.Ology.Trans.Tunnel
 import Control.Monad.Ology.Trans.Unlift
@@ -12,13 +12,13 @@ class MonadTransUnlift t => MonadTransAskUnlift t where
     askUnlift ::
            forall m. Monad m
         => t m (WUnlift Monad t)
-    default askUnlift :: forall m. (FunctorIdentity (Tunnel t), Monad m) => t m (WUnlift Monad t)
-    askUnlift = tunnel $ \unlift -> pure $ fpure $ MkWUnlift $ \tma -> fmap fextract $ unlift tma
+    default askUnlift :: forall m. (MonadIdentity (Tunnel t), Monad m) => t m (WUnlift Monad t)
+    askUnlift = tunnel $ \unlift -> pure $ pure $ MkWUnlift $ \tma -> fmap mToValue $ unlift tma
 
 -- | A monad that has no effects over IO (such as state change or output)
 class MonadUnliftIO m => MonadAskUnliftIO m where
     askUnliftIO :: m (WMFunction m IO)
-    askUnliftIO = tunnelIO $ \unlift -> pure $ fpure $ MkWMFunction $ \ma -> fmap fextract $ unlift ma
+    askUnliftIO = tunnelIO $ \unlift -> pure $ pure $ MkWMFunction $ \ma -> fmap mToValue $ unlift ma
 
 instance MonadAskUnliftIO IO where
     askUnliftIO = return $ MkWMFunction id

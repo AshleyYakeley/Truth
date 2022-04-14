@@ -1,6 +1,6 @@
 module Data.Codec where
 
-import Control.Monad.Ology.Functor.MonadOne
+import Control.Monad.Ology.Inner
 import Control.Monad.Ology.Result
 import Data.CatFunctor
 import Data.IsoVariant
@@ -10,15 +10,15 @@ import Shapes.Import
 class IsBiMap bm where
     mapBiMapM :: (forall x. m1 x -> m2 x) -> bm m1 a b -> bm m2 a b
 
-toBiMapMaybe :: (IsBiMap bm, MonadOne m) => bm m edita editb -> bm Maybe edita editb
-toBiMapMaybe = mapBiMapM fextractm
+toBiMapMaybe :: (IsBiMap bm, MonadInner m) => bm m edita editb -> bm Maybe edita editb
+toBiMapMaybe = mapBiMapM mToMaybe
 
 toBiMapResult ::
-       forall e bm m edita editb. (IsBiMap bm, MonadOne m)
+       forall e bm m edita editb. (IsBiMap bm, MonadInner m)
     => e
     -> bm m edita editb
     -> bm (Result e) edita editb
-toBiMapResult e = mapBiMapM (mrf . retrieveOne)
+toBiMapResult e = mapBiMapM (mrf . retrieveInner)
   where
     mrf :: Result (m Void) a -> Result e a
     mrf (SuccessResult a) = SuccessResult a
@@ -33,11 +33,11 @@ data Codec' m a b = MkCodec
 hoistCodec :: (forall x. m1 x -> m2 x) -> Codec' m1 a b -> Codec' m2 a b
 hoistCodec f (MkCodec d e) = MkCodec (f . d) e
 
-decodeMaybe :: MonadOne m => Codec' m a b -> a -> Maybe b
-decodeMaybe codec = fextractm . decode codec
+decodeMaybe :: MonadInner m => Codec' m a b -> a -> Maybe b
+decodeMaybe codec = mToMaybe . decode codec
 
-toCodec :: MonadOne m => Codec' m a b -> Codec a b
-toCodec = hoistCodec fextractm
+toCodec :: MonadInner m => Codec' m a b -> Codec a b
+toCodec = hoistCodec mToMaybe
 
 instance Functor m => IsoVariant (Codec' m p) where
     isoMap ab ba (MkCodec d e) = MkCodec (\p -> fmap ab $ d p) (e . ba)
@@ -86,7 +86,7 @@ class CodecMap f where
 instance CodecMap (Codec p) where
     codecMap = (.)
 
-codecMap' :: (CodecMap f, MonadOne m) => Codec' m a b -> f a -> f b
+codecMap' :: (CodecMap f, MonadInner m) => Codec' m a b -> f a -> f b
 codecMap' codec = codecMap $ toCodec codec
 
 utf8Codec :: Codec' (Result UnicodeException) StrictByteString Text

@@ -109,9 +109,9 @@ instance IsLinearity lin => Category (GenChangeLens lin) where
             -> Readable m (NL lin (UpdateReader updateA))
             -> m (Maybe [UpdateEdit updateA])
         peAC ec mra =
-            getComposeM $ do
-                ebs <- MkComposeM $ peBC ec $ nlLiftReadFunction @lin gAB mra
-                MkComposeM $ peAB ebs mra
+            getComposeInner $ do
+                ebs <- MkComposeInner $ peBC ec $ nlLiftReadFunction @lin gAB mra
+                MkComposeInner $ peAB ebs mra
         in MkChangeLens gAC uAC peAC
 
 linearPutEditsFromPutEdit ::
@@ -120,11 +120,11 @@ linearPutEditsFromPutEdit ::
     -> [editb]
     -> Readable m rd
     -> m' (Maybe [edita])
-linearPutEditsFromPutEdit _ [] _ = getComposeM $ return []
+linearPutEditsFromPutEdit _ [] _ = getComposeInner $ return []
 linearPutEditsFromPutEdit putEdit (e:ee) _ =
-    getComposeM $ do
-        ea <- MkComposeM $ putEdit e
-        eea <- MkComposeM $ linearPutEditsFromPutEdit @_ @_ @m putEdit ee nullReadable
+    getComposeInner $ do
+        ea <- MkComposeInner $ putEdit e
+        eea <- MkComposeInner $ linearPutEditsFromPutEdit @_ @_ @m putEdit ee nullReadable
         return $ ea ++ eea
 
 clPutEditsFromPutEdit ::
@@ -133,11 +133,11 @@ clPutEditsFromPutEdit ::
     -> [editb]
     -> Readable m (EditReader edita)
     -> m' (Maybe [edita])
-clPutEditsFromPutEdit _ [] _ = getComposeM $ return []
+clPutEditsFromPutEdit _ [] _ = getComposeInner $ return []
 clPutEditsFromPutEdit clPutEdit (e:ee) mr =
-    getComposeM $ do
-        ea <- MkComposeM $ clPutEdit e mr
-        eea <- MkComposeM $ clPutEditsFromPutEdit clPutEdit ee $ applyEdits ea mr
+    getComposeInner $ do
+        ea <- MkComposeInner $ clPutEdit e mr
+        eea <- MkComposeInner $ clPutEditsFromPutEdit clPutEdit ee $ applyEdits ea mr
         return $ ea ++ eea
 
 clPutEditsFromSimplePutEdit ::
@@ -147,8 +147,8 @@ clPutEditsFromSimplePutEdit ::
     -> Readable m (EditReader editA)
     -> m (Maybe [editA])
 clPutEditsFromSimplePutEdit putEdit editBs _ =
-    getComposeM $ do
-        editAss <- for editBs $ \update -> MkComposeM $ putEdit update
+    getComposeInner $ do
+        editAss <- for editBs $ \update -> MkComposeInner $ putEdit update
         return $ mconcat editAss
 
 isoConvertChangeLens ::

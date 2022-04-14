@@ -1,13 +1,14 @@
 module Control.Monad.Ology.Trans.Tunnel where
 
 import qualified Control.Exception as CE
+import Control.Monad.Ology.ComposeInner
 import Control.Monad.Ology.Function
-import Control.Monad.Ology.Functor.One
+import Control.Monad.Ology.Inner
 import Control.Monad.Ology.Trans.Constraint
 import Import
 
 type MonadTransTunnel :: TransKind -> Constraint
-class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t, FunctorOne (Tunnel t)) => MonadTransTunnel t where
+class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t, MonadInner (Tunnel t)) => MonadTransTunnel t where
     type Tunnel t :: Type -> Type
     tunnel ::
            forall m r. Functor m
@@ -18,7 +19,7 @@ transExcept ::
        forall t m e a. (MonadTransTunnel t, Monad m)
     => t (ExceptT e m) a
     -> t m (Either e a)
-transExcept tema = tunnel $ \unlift -> fmap sequenceEither $ runExceptT $ unlift tema
+transExcept tema = tunnel $ \unlift -> fmap commuteInner $ runExceptT $ unlift tema
 
 hoist ::
        forall t m1 m2. (MonadTransTunnel t, Functor m1, Functor m2)
@@ -41,19 +42,23 @@ commuteTWith commutef tabm =
                 Dict -> tunnel $ \unliftb -> tunnel $ \unlifta -> fmap commutef $ unliftb $ unlifta tabm
 
 commuteT ::
-       forall ta tb m. (MonadTransTunnel ta, MonadTransTunnel tb, FunctorExtract (Tunnel tb), Functor m)
+       forall ta tb m. (MonadTransTunnel ta, MonadTransTunnel tb, MonadInner (Tunnel tb), Functor m)
     => ta (tb m) --> tb (ta m)
-commuteT = commuteTWith fcommuteB
+commuteT = commuteTWith commuteInner
 
 commuteTBack ::
        forall ta tb m.
-       (MonadTransTunnel ta, FunctorExtract (Tunnel ta), MonadTransTunnel tb, FunctorExtract (Tunnel tb), Functor m)
+       (MonadTransTunnel ta, MonadInner (Tunnel ta), MonadTransTunnel tb, MonadInner (Tunnel tb), Functor m)
     => ta (tb m) -/-> tb (ta m)
 commuteTBack call = commuteT $ call commuteT
 
 instance MonadTransTunnel IdentityT where
     type Tunnel IdentityT = Identity
     tunnel call = IdentityT $ fmap runIdentity $ call $ \(IdentityT ma) -> fmap Identity ma
+
+instance MonadInner inner => MonadTransTunnel (ComposeInner inner) where
+    type Tunnel (ComposeInner inner) = inner
+    tunnel call = MkComposeInner $ call getComposeInner
 
 instance MonadTransTunnel (ReaderT r) where
     type Tunnel (ReaderT r) = Identity
@@ -78,7 +83,7 @@ instance MonadTransTunnel (ExceptT e) where
     type Tunnel (ExceptT e) = Either e
     tunnel call = ExceptT $ call $ \(ExceptT ma) -> ma
 
-class (MonadIO m, FunctorOne (TunnelIO m)) => MonadTunnelIO m where
+class (MonadIO m, MonadInner (TunnelIO m)) => MonadTunnelIO m where
     type TunnelIO m :: Type -> Type
     tunnelIO :: forall r. ((forall a. m a -> IO (TunnelIO m a)) -> IO (TunnelIO m r)) -> m r
 
@@ -90,9 +95,10 @@ instance MonadTunnelIO IO where
     tunnelIO call = fmap runIdentity $ call $ \ma -> fmap Identity $ ma
 
 instance (MonadTransTunnel t, MonadTunnelIO m, MonadIO (t m)) => MonadTunnelIO (t m) where
-    type TunnelIO (t m) = Compose (TunnelIO m) (Tunnel t)
+    type TunnelIO (t m) = ComposeInner (Tunnel t) (TunnelIO m)
     tunnelIO call =
-        tunnel $ \unlift -> tunnelIO $ \unliftIO -> fmap getCompose $ call $ fmap Compose . unliftIO . unlift
+        tunnel $ \unlift ->
+            tunnelIO $ \unliftIO -> fmap getComposeInner $ call $ fmap MkComposeInner . unliftIO . unlift
 
 instance (MonadTransTunnel t, TransConstraint MonadIO t) => TransConstraint MonadTunnelIO t where
     hasTransConstraint = withTransConstraintDict @MonadIO $ Dict
@@ -122,7 +128,7 @@ mVarRun :: MVar s -> Unlift MonadTunnelIO (StateT s)
 mVarRun var (StateT smr) =
     tunnelIO $ \unlift ->
         modifyMVar var $ \olds ->
-            fmap (\fas -> (fromMaybe olds $ fextractm $ fmap snd fas, fmap fst fas)) $ unlift $ smr olds
+            fmap (\fas -> (fromMaybe olds $ mToMaybe $ fmap snd fas, fmap fst fas)) $ unlift $ smr olds
 
 mVarUnitRun :: MonadTunnelIO m => MVar s -> m --> m
 mVarUnitRun var ma = mVarRun var $ lift ma

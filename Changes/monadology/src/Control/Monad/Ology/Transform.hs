@@ -29,7 +29,7 @@ instance MonadIO m => MonadIO (TransformT m) where
     liftIO = lift . liftIO
 
 instance (Functor f, Semigroup a) => Semigroup (TransformT f a) where
-    f <> g = liftA2 (<>) f g
+    (<>) = liftA2 (<>)
 
 instance (Functor f, Monoid a) => Monoid (TransformT f a) where
     mempty = pure mempty

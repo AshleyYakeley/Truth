@@ -9,7 +9,7 @@ import GI.Gtk hiding (get)
 import Shapes
 
 oneWholeView ::
-       forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))
+       forall f update. (MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
     -> (f (Model update) -> CreateView Widget)
     -> SelectNotify (f ())
@@ -26,14 +26,14 @@ oneWholeView model baseView sn = do
     toWidget box
 
 createOneWhole ::
-       forall f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
+       forall f update. (IsUpdate update, MonadInner f, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
     -> (f (Model update) -> CreateView Widget)
     -> CreateView Widget
 createOneWhole sub itemspec = oneWholeView sub itemspec mempty
 
 createOneWholeSel ::
-       forall sel f update. (IsUpdate update, MonadOne f, FullEdit (UpdateEdit update))
+       forall sel f update. (IsUpdate update, MonadInner f, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
     -> (f (Model update, SelectNotify sel) -> CreateView Widget)
     -> SelectNotify (f sel)
@@ -43,7 +43,7 @@ createOneWholeSel subf specsel snfsel = let
     spec fsub = specsel $ fmap (\sub -> (sub, contramap pure snfsel)) fsub
     getf :: f () -> Maybe (f sel)
     getf fu =
-        case retrieveOne fu of
+        case retrieveInner fu of
             SuccessResult _ -> Nothing
             FailureResult fn -> Just $ fmap never fn
     snfu :: SelectNotify (f ())

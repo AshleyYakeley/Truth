@@ -78,7 +78,7 @@ instance DynamicViewState (OneWholeViews f) where
     dynamicViewStates (MkOneWholeViews _ vs) = [vs]
 
 cvOneWholeView ::
-       forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))
+       forall f update. (MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
     -> (f (Model update) -> CreateView ())
     -> SelectNotify (f ())
@@ -104,7 +104,7 @@ cvOneWholeView model baseView (MkSelectNotify notifyChange) = do
         recvVS () _ = do
             MkOneWholeViews oldfu vs <- get
             newfu <- lift readHasOne
-            case (retrieveOne oldfu, retrieveOne newfu) of
+            case (retrieveInner oldfu, retrieveInner newfu) of
                 (SuccessResult (), SuccessResult ()) -> return ()
                 (FailureResult _, FailureResult _) -> put $ MkOneWholeViews newfu vs
                 _ -> replaceDynamicView $ getWidgets newfu

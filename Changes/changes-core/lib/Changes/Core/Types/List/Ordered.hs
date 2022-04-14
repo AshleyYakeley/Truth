@@ -37,7 +37,7 @@ type instance EditReader (OrderedListEdit edit) =
 
 instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => ApplicableEdit (OrderedListEdit edit) where
     applyEdit (OrderedListEditItem p edit) mr (ListReadItem i reader)
-        | p == i = getComposeM $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
+        | p == i = getComposeInner $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
     applyEdit (OrderedListEditItem _ _) mr reader = mr reader
     applyEdit (OrderedListEditDelete p) mr ListReadLength = do
         len <- mr ListReadLength
@@ -82,7 +82,7 @@ instance FullSubjectReader (UpdateReader update) => FullUpdate (OrderedListUpdat
         push OrderedListUpdateClear
         len <- rd ListReadLength
         for_ [0 .. pred len] $ \i -> do
-            msubj <- getComposeM $ readableToSubject $ itemReadFunction i rd
+            msubj <- getComposeInner $ readableToSubject $ itemReadFunction i rd
             case msubj of
                 Just subj -> push $ OrderedListUpdateInsert i $ subj
                 Nothing -> return ()
@@ -237,14 +237,14 @@ liftOrderedListChangeLens ::
 liftOrderedListChangeLens (MkChangeLens g up pe) = let
     clRead :: ReadFunction (ListReader (UpdateReader updateA)) (ListReader (UpdateReader updateB))
     clRead rd ListReadLength = rd ListReadLength
-    clRead rd (ListReadItem i rb) = getComposeM $ g (\ra -> MkComposeM $ rd (ListReadItem i ra)) rb
+    clRead rd (ListReadItem i rb) = getComposeInner $ g (\ra -> MkComposeInner $ rd (ListReadItem i ra)) rb
     clUpdate ::
            forall m. MonadIO m
         => OrderedListUpdate updateA
         -> Readable m (ListReader (UpdateReader updateA))
         -> m [OrderedListUpdate updateB]
     clUpdate (OrderedListUpdateItem i1 i2 lu) rd = do
-        u' <- for lu $ \u -> getComposeM $ up u $ \ra -> MkComposeM $ rd $ ListReadItem i1 ra
+        u' <- for lu $ \u -> getComposeInner $ up u $ \ra -> MkComposeInner $ rd $ ListReadItem i1 ra
         return $
             case sequenceA u' of
                 Nothing -> []
@@ -260,8 +260,8 @@ liftOrderedListChangeLens (MkChangeLens g up pe) = let
         -> Readable m (ListReader (UpdateReader updateA))
         -> m (Maybe [OrderedListEdit (UpdateEdit updateA)])
     clPutEdit (OrderedListEditItem i editB) rd =
-        getComposeM $ do
-            meditAs <- pe [editB] $ \ra -> MkComposeM $ rd (ListReadItem i ra)
+        getComposeInner $ do
+            meditAs <- pe [editB] $ \ra -> MkComposeInner $ rd (ListReadItem i ra)
             editAs <- liftInner meditAs
             return $ fmap (OrderedListEditItem $ i) editAs
     clPutEdit (OrderedListEditDelete i) _ = return $ Just $ pure $ OrderedListEditDelete $ i

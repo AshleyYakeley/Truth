@@ -1,6 +1,5 @@
 module Control.Monad.Ology.Result where
 
-import Control.Monad.Ology.Functor.One
 import Import
 
 data Result e a
@@ -35,10 +34,6 @@ deriving instance (Eq e, Eq a) => Eq (Result e a)
 instance Functor (Result e) where
     fmap ab (SuccessResult a) = SuccessResult (ab a)
     fmap _ (FailureResult e) = FailureResult e
-
-instance FunctorOne (Result e) where
-    fextractm (SuccessResult a) = Just a
-    fextractm (FailureResult _) = Nothing
 
 instance Foldable (Result e) where
     foldMap am (SuccessResult a) = am a

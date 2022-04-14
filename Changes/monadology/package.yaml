@@ -15,8 +15,8 @@ library:
     exposed-modules:
       - Control.Monad.Ology.Result
       - Control.Monad.Ology.Function
-      - Control.Monad.Ology.Functor.One
-      - Control.Monad.Ology.Functor.MonadOne
+      - Control.Monad.Ology.Inner
+      - Control.Monad.Ology.Outer
       - Control.Monad.Ology.Trans.Constraint
       - Control.Monad.Ology.Trans.Tunnel
       - Control.Monad.Ology.Trans.Coerce
@@ -26,7 +26,8 @@ library:
       - Control.Monad.Ology.Trans.Stack
       - Control.Monad.Ology.Trans.ContExtra
       - Control.Monad.Ology.Trans.ReaderState
-      - Control.Monad.Ology.Compose
+      - Control.Monad.Ology.ComposeInner
+      - Control.Monad.Ology.ComposeOuter
       - Control.Monad.Ology.Exception
       - Control.Monad.Ology.Data
       - Control.Monad.Ology.Transform

@@ -81,12 +81,12 @@ class CacheableEdit (edit :: Type) where
                 edit -> StateT (cache (EditCacheKey cache edit)) IO ()
     editCacheUpdate edit =
         cacheTraverse $ \rt val -> let
-            tmr :: Readable (ComposeM Maybe IO) (EditReader edit)
+            tmr :: Readable (ComposeInner Maybe IO) (EditReader edit)
             tmr rt' =
                 liftInner $ do
                     Refl <- testEquality rt rt'
                     return val
-            in getComposeM $ applyEdit edit tmr rt
+            in getComposeInner $ applyEdit edit tmr rt
 
 editCacheUpdates ::
        forall edit cache. (CacheableEdit edit, IsCache cache)

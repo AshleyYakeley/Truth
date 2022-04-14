@@ -69,8 +69,8 @@ instance FunctorGetPure ((,) p)
 instance FunctorGetPure (Result e) where
     getPure = applicativeGetPure
 
-constFunctionAp :: (MonadOne f, Applicative (t (f a)), CatFunctor t t f) => f (t a b) -> t (f a) (f b)
+constFunctionAp :: (MonadInner f, Applicative (t (f a)), CatFunctor t t f) => f (t a b) -> t (f a) (f b)
 constFunctionAp fcab =
-    case retrieveOne fcab of
+    case retrieveInner fcab of
         FailureResult fn -> pure $ fmap never fn
         SuccessResult cab -> cfmap cab

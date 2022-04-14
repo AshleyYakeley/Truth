@@ -1,7 +1,7 @@
 module Control.Monad.Ology.Trans.Unlift where
 
 import Control.Monad.Ology.Function
-import Control.Monad.Ology.Functor.One
+import Control.Monad.Ology.Inner
 import Control.Monad.Ology.Trans.Constraint
 import Control.Monad.Ology.Trans.Tunnel
 import Import
@@ -11,7 +11,7 @@ class ( MonadTransTunnel t
       , TransConstraint MonadIO t
       , TransConstraint MonadFix t
       , TransConstraint Monad t
-      , FunctorExtract (Tunnel t)
+      , MonadExtract (Tunnel t)
       ) => MonadTransUnlift t where
     -- | lift with a 'WMFunction' that accounts for the transformer's effects (using MVars where necessary)
     liftWithUnlift ::
@@ -22,7 +22,7 @@ class ( MonadTransTunnel t
     getDiscardingUnlift ::
            forall m. Monad m
         => t m (WUnlift MonadTunnelIO t)
-    getDiscardingUnlift = tunnel $ \unlift -> pure $ fpure $ MkWUnlift $ \tma -> fmap fextract $ unlift tma
+    getDiscardingUnlift = tunnel $ \unlift -> pure $ pure $ MkWUnlift $ \tma -> fmap mToValue $ unlift tma
 
 discardingRunner ::
        forall t. MonadTransUnlift t
@@ -60,11 +60,11 @@ composeUnliftAllFunctionCommute ::
        (MonadTransUnlift t, MonadUnliftIO m, MonadUnliftIO n) => Unlift Functor t -> (m --> n) -> (t m --> n)
 composeUnliftAllFunctionCommute rt rm tma = rt $ hoist rm tma
 
-class (MonadFail m, MonadIO m, MonadFix m, MonadTunnelIO m, FunctorExtract (TunnelIO m)) => MonadUnliftIO m where
+class (MonadFail m, MonadIO m, MonadFix m, MonadTunnelIO m, MonadExtract (TunnelIO m)) => MonadUnliftIO m where
     -- | lift with an unlift that accounts for all transformer effects
-    liftIOWithUnlift :: forall r. ((m --> IO) -> IO r) -> m r
+    liftIOWithUnlift :: IO -/-> m
     getDiscardingIOUnlift :: m (WMFunction m IO)
-    getDiscardingIOUnlift = tunnelIO $ \unlift -> pure $ fpure $ MkWMFunction $ \mr -> fmap fextract $ unlift mr
+    getDiscardingIOUnlift = tunnelIO $ \unlift -> pure $ pure $ MkWMFunction $ \mr -> fmap mToValue $ unlift mr
 
 ioWMBackFunction :: MonadUnliftIO m => WMBackFunction IO m
 ioWMBackFunction = MkWMBackFunction liftIOWithUnlift

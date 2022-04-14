@@ -1,6 +1,6 @@
 module Control.Task where
 
-import Control.Monad.Ology.Compose
+import Control.Monad.Ology.ComposeInner
 import Shapes.Import
 
 data Task a = MkTask
@@ -13,7 +13,8 @@ instance Functor Task where
 
 instance Applicative Task where
     pure a = MkTask (return a) (return $ Just a)
-    (MkTask wab dab) <*> (MkTask wa da) = MkTask (wab <*> wa) (getComposeM $ (MkComposeM dab) <*> (MkComposeM da))
+    (MkTask wab dab) <*> (MkTask wa da) =
+        MkTask (wab <*> wa) (getComposeInner $ (MkComposeInner dab) <*> (MkComposeInner da))
 
 instance Semigroup a => Semigroup (Task a) where
     (<>) = liftA2 (<>)

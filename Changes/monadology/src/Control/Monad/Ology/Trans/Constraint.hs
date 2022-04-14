@@ -1,5 +1,7 @@
 module Control.Monad.Ology.Trans.Constraint where
 
+import Control.Monad.Ology.Inner
+import Control.Monad.Ology.Outer
 import Import
 
 type TransKind = (Type -> Type) -> (Type -> Type)
@@ -61,6 +63,15 @@ instance TransConstraint MonadFix IdentityT where
 instance TransConstraint MonadPlus IdentityT where
     hasTransConstraint = Dict
 
+instance TransConstraint MonadInner IdentityT where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadOuter IdentityT where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadExtract IdentityT where
+    hasTransConstraint = Dict
+
 instance TransConstraint Functor (ReaderT s) where
     hasTransConstraint = Dict
 
@@ -82,6 +93,9 @@ instance TransConstraint MonadFix (ReaderT s) where
 instance TransConstraint MonadPlus (ReaderT s) where
     hasTransConstraint = Dict
 
+instance TransConstraint MonadOuter (ReaderT s) where
+    hasTransConstraint = Dict
+
 instance Monoid s => TransConstraint Functor (WriterT s) where
     hasTransConstraint = Dict
 
@@ -101,6 +115,12 @@ instance Monoid s => TransConstraint MonadFix (WriterT s) where
     hasTransConstraint = Dict
 
 instance Monoid s => TransConstraint MonadPlus (WriterT s) where
+    hasTransConstraint = Dict
+
+instance Monoid s => TransConstraint MonadInner (WriterT s) where
+    hasTransConstraint = Dict
+
+instance Monoid s => TransConstraint MonadExtract (WriterT s) where
     hasTransConstraint = Dict
 
 instance TransConstraint Functor (StateT s) where
@@ -139,6 +159,9 @@ instance TransConstraint MonadFix MaybeT where
 instance TransConstraint MonadPlus MaybeT where
     hasTransConstraint = Dict
 
+instance TransConstraint MonadInner MaybeT where
+    hasTransConstraint = Dict
+
 instance TransConstraint Functor (ExceptT e) where
     hasTransConstraint = Dict
 
@@ -155,6 +178,9 @@ instance TransConstraint MonadFix (ExceptT e) where
     hasTransConstraint = Dict
 
 instance Monoid e => TransConstraint MonadPlus (ExceptT e) where
+    hasTransConstraint = Dict
+
+instance TransConstraint MonadInner (ExceptT e) where
     hasTransConstraint = Dict
 
 instance TransConstraint Functor (ContT s) where

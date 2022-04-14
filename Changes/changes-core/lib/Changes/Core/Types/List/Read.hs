@@ -9,11 +9,11 @@ data ListReader reader t where
     ListReadItem :: SequencePoint -> reader t -> ListReader reader (Maybe t)
 
 itemReadFunction :: SequencePoint -> ReadFunctionF Maybe (ListReader reader) reader
-itemReadFunction i mr rt = MkComposeM $ mr $ ListReadItem i rt
+itemReadFunction i mr rt = MkComposeInner $ mr $ ListReadItem i rt
 
 knownItemReadFunction :: SequencePoint -> ReadFunction (ListReader reader) reader
 knownItemReadFunction i mr rt = do
-    mt <- getComposeM $ itemReadFunction i mr rt
+    mt <- getComposeInner $ itemReadFunction i mr rt
     case mt of
         Just t -> return t
         Nothing -> error $ "missing item " ++ show i ++ " in list"

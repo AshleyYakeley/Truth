@@ -33,8 +33,8 @@ mapFloatInit :: ReadFunction readerB readerA -> FloatInit readerA r -> FloatInit
 mapFloatInit _ (NoFloatInit r) = NoFloatInit r
 mapFloatInit rf (ReadFloatInit i) = ReadFloatInit $ \mr -> i $ rf mr
 
-mapFFloatInit :: MonadOne f => ReadFunctionF f readerB readerA -> FloatInit readerA r -> FloatInit readerB (f r)
-mapFFloatInit rf init = ReadFloatInit $ \mr -> getComposeM $ runFloatInit init $ rf mr
+mapFFloatInit :: MonadInner f => ReadFunctionF f readerB readerA -> FloatInit readerA r -> FloatInit readerB (f r)
+mapFFloatInit rf init = ReadFloatInit $ \mr -> getComposeInner $ runFloatInit init $ rf mr
 
 type ExpFloatingChangeLens :: Linearity -> Type -> Type -> Type -> Type
 data ExpFloatingChangeLens lin r updateA updateB =

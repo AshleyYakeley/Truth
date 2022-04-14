@@ -34,4 +34,4 @@ type ReadFunctionT t ra rb = forall m. MonadIO m => Readable m ra -> Readable (t
 
 type ReadFunctionTT (tt :: [TransKind]) ra rb = forall m. MonadIO m => Readable m ra -> Readable (ApplyStack tt m) rb
 
-type ReadFunctionF f ra rb = ReadFunctionT (ComposeM f) ra rb
+type ReadFunctionF f ra rb = ReadFunctionT (ComposeInner f) ra rb

@@ -1,6 +1,6 @@
 module Data.Injection where
 
-import Control.Monad.Ology.Functor.MonadOne
+import Control.Monad.Ology.Inner
 import Data.CatFunctor
 import Data.Codec
 import Data.Isomorphism
@@ -33,8 +33,8 @@ instance (Traversable f) => CatFunctor Injection Injection f where
 hoistInjection :: (forall t. m1 t -> m2 t) -> Injection' m1 a b -> Injection' m2 a b
 hoistInjection ff (MkInjection ab bma) = MkInjection ab $ ff . bma
 
-toInjection :: MonadOne m => Injection' m a b -> Injection a b
-toInjection = hoistInjection fextractm
+toInjection :: MonadInner m => Injection' m a b -> Injection a b
+toInjection = hoistInjection mToMaybe
 
 codecInjection :: (Functor m) => Codec' m a b -> Injection' m a (m b)
 codecInjection codec = MkInjection {injForwards = decode codec, injBackwards = fmap (encode codec)}
