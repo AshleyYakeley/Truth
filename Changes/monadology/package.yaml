@@ -6,33 +6,45 @@ version: *changes_version
 <<: *language
 
 library:
-    source-dirs: src
+  source-dirs: src
+  dependencies:
+    - base >= 4.12
+    - constraints
+    - transformers
+    - witness
+  exposed-modules:
+    - Control.Monad.Ology.Result
+    - Control.Monad.Ology.Function
+    - Control.Monad.Ology.MonadInner
+    - Control.Monad.Ology.MonadOuter
+    - Control.Monad.Ology.MonadExtract
+    - Control.Monad.Ology.MonadIdentity
+    - Control.Monad.Ology.Trans.Constraint
+    - Control.Monad.Ology.Trans.Tunnel
+    - Control.Monad.Ology.Trans.Coerce
+    - Control.Monad.Ology.Trans.Unlift
+    - Control.Monad.Ology.Trans.AskUnlift
+    - Control.Monad.Ology.Trans.Compose
+    - Control.Monad.Ology.Trans.Stack
+    - Control.Monad.Ology.Trans.ContExtra
+    - Control.Monad.Ology.Trans.ReaderState
+    - Control.Monad.Ology.ComposeInner
+    - Control.Monad.Ology.ComposeOuter
+    - Control.Monad.Ology.Exception
+    - Control.Monad.Ology.Data
+    - Control.Monad.Ology.Trans.Transform
+    - Control.Monad.Ology
+  other-modules:
+    - Import
+
+tests:
+  test:
+    source-dirs: test
     dependencies:
       - base >= 4.12
-      - constraints
       - transformers
-      - witness
-    exposed-modules:
-      - Control.Monad.Ology.Result
-      - Control.Monad.Ology.Function
-      - Control.Monad.Ology.MonadInner
-      - Control.Monad.Ology.MonadOuter
-      - Control.Monad.Ology.MonadExtract
-      - Control.Monad.Ology.MonadIdentity
-      - Control.Monad.Ology.Trans.Constraint
-      - Control.Monad.Ology.Trans.Tunnel
-      - Control.Monad.Ology.Trans.Coerce
-      - Control.Monad.Ology.Trans.Unlift
-      - Control.Monad.Ology.Trans.AskUnlift
-      - Control.Monad.Ology.Trans.Compose
-      - Control.Monad.Ology.Trans.Stack
-      - Control.Monad.Ology.Trans.ContExtra
-      - Control.Monad.Ology.Trans.ReaderState
-      - Control.Monad.Ology.ComposeInner
-      - Control.Monad.Ology.ComposeOuter
-      - Control.Monad.Ology.Exception
-      - Control.Monad.Ology.Data
-      - Control.Monad.Ology.Trans.Transform
-      - Control.Monad.Ology
-    other-modules:
-      - Import
+      - monadology
+      - tasty
+      - tasty-hunit
+    main: Main.hs
+    ghc-options: -threaded
