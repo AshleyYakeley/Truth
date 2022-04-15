@@ -8,6 +8,7 @@ newtype Extract m = MkExtract
     }
 
 -- | Instances of this type are isomorphic to @P -> a@ for some type @P@.
+-- Must satisfy @fmap (\ex -> runExtract ex ma) getExtract = ma@.
 class Monad m => MonadOuter m where
     getExtract :: m (Extract m)
 
@@ -29,10 +30,10 @@ instance MonadOuter m => MonadOuter (ReaderT r m) where
             MkExtract maa <- getExtract
             return $ MkExtract $ \(ReaderT rma) -> maa $ rma r
 
-outerCommute ::
+commuteOuter ::
        forall m f a. (MonadOuter m, Functor f)
     => f (m a)
     -> m (f a)
-outerCommute fma = do
+commuteOuter fma = do
     MkExtract ext <- getExtract
     return $ fmap ext fma

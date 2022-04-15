@@ -36,7 +36,10 @@ instance (Monad inner, MonadOuter outer) => Monad (ComposeOuter outer inner) whe
     MkComposeOuter oia >>= f =
         MkComposeOuter $ do
             ia <- oia
-            fmap (\iib -> iib >>= id) $ outerCommute $ fmap (getComposeOuter . f) ia
+            MkExtract oaa <- getExtract
+            return $ do
+                a <- ia
+                oaa $ getComposeOuter $ f a
 
 instance MonadOuter outer => TransConstraint Monad (ComposeOuter outer) where
     hasTransConstraint = Dict

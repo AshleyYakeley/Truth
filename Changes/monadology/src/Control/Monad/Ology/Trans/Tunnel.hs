@@ -44,13 +44,12 @@ commuteTWith commutef tabm =
                 Dict -> tunnel $ \unliftb -> tunnel $ \unlifta -> fmap commutef $ unliftb $ unlifta tabm
 
 commuteT ::
-       forall ta tb m. (MonadTransTunnel ta, MonadTransTunnel tb, MonadInner (Tunnel tb), Functor m)
+       forall ta tb m. (MonadTransTunnel ta, MonadTransTunnel tb, Functor m)
     => ta (tb m) --> tb (ta m)
 commuteT = commuteTWith commuteInner
 
 commuteTBack ::
-       forall ta tb m.
-       (MonadTransTunnel ta, MonadInner (Tunnel ta), MonadTransTunnel tb, MonadInner (Tunnel tb), Functor m)
+       forall ta tb m. (MonadTransTunnel ta, MonadTransTunnel tb, Functor m)
     => ta (tb m) -/-> tb (ta m)
 commuteTBack call = commuteT $ call commuteT
 

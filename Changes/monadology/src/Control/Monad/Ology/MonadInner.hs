@@ -6,10 +6,11 @@ import Control.Monad.Ology.Result
 import Import
 
 -- | Instances of this type are isomorphic to @Either P (Q,a)@ for some types @P@ and @Q@ (with @Monoid Q@).
+-- Must satisfy:
+-- * @retrieveInner (fmap f w) = fmap f (retrieveInner w)@
+-- * @case (retrieveInner w) of {Left w' -> w';Right a -> fmap (\_ -> a) w;} = w@
 class (Traversable m, Monad m) => MonadInner m where
     retrieveInner :: forall a. m a -> Result (m Void) a
-    -- retrieveInner (fmap f w) = fmap f (retrieveInner w)
-    -- case (retrieveInner w) of {Left w' -> w';Right a -> fmap (\_ -> a) w;} = w
 
 instance MonadInner Identity where
     retrieveInner (Identity a) = SuccessResult a
