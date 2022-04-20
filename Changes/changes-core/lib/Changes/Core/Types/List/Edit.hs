@@ -31,35 +31,35 @@ type instance EditReader (ListEdit edit) =
      ListReader (EditReader edit)
 
 instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => ApplicableEdit (ListEdit edit) where
-    applyEdit (ListEditItem p edit) mr (ListReadItem i reader)
-        | p == i = getComposeInner $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
-    applyEdit (ListEditItem _ _) mr reader = mr reader
+    applyEdit (ListEditItem p edit) mr (ListReadItem i rd)
+        | p == i = getComposeInner $ applyEdit edit (itemReadFunction i mr) rd -- already checks bounds
+    applyEdit (ListEditItem _ _) mr rd = mr rd
     applyEdit (ListEditDelete p) mr ListReadLength = do
         len <- mr ListReadLength
         return $
             if p >= 0 && p < len
                 then pred len
                 else len
-    applyEdit (ListEditDelete p) mr (ListReadItem i reader)
-        | p >= 0 && p <= i = mr $ ListReadItem (succ i) reader
-    applyEdit (ListEditDelete _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
+    applyEdit (ListEditDelete p) mr (ListReadItem i rd)
+        | p >= 0 && p <= i = mr $ ListReadItem (succ i) rd
+    applyEdit (ListEditDelete _) mr (ListReadItem i rd) = mr $ ListReadItem i rd
     applyEdit (ListEditInsert p _) mr ListReadLength = do
         len <- mr ListReadLength
         return $
             if p >= 0 && p <= len
                 then succ len
                 else len
-    applyEdit (ListEditInsert p a) mr (ListReadItem i reader)
+    applyEdit (ListEditInsert p a) mr (ListReadItem i rd)
         | p == i = do
             len <- mr ListReadLength
             return $
                 if p >= 0 && p <= len
-                    then Just $ subjectToRead a reader
+                    then Just $ subjectToRead a rd
                     else Nothing
-    applyEdit (ListEditInsert p _) mr (ListReadItem i reader)
-        | p >= 0 && p < i = mr $ ListReadItem (pred i) reader
-    applyEdit (ListEditInsert _ _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
-    applyEdit ListEditClear _mr reader = subjectToReadable mempty reader
+    applyEdit (ListEditInsert p _) mr (ListReadItem i rd)
+        | p >= 0 && p < i = mr $ ListReadItem (pred i) rd
+    applyEdit (ListEditInsert _ _) mr (ListReadItem i rd) = mr $ ListReadItem i rd
+    applyEdit ListEditClear _mr rd = subjectToReadable mempty rd
 
 instance (FullSubjectReader (EditReader edit), SubjectMapEdit edit, ApplicableEdit edit, InvertibleEdit edit) =>
              InvertibleEdit (ListEdit edit) where

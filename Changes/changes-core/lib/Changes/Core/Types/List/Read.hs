@@ -21,7 +21,7 @@ knownItemReadFunction i mr rt = do
 instance SubjectReader reader => SubjectReader (ListReader reader) where
     type ReaderSubject (ListReader reader) = Vector (ReaderSubject reader)
     subjectToRead sq ListReadLength = seqLength sq
-    subjectToRead sq (ListReadItem i reader) = fmap (\e -> subjectToRead e reader) $ seqIndex sq i
+    subjectToRead sq (ListReadItem i rd) = fmap (\e -> subjectToRead e rd) $ seqIndex sq i
 
 instance FullSubjectReader reader => FullSubjectReader (ListReader reader) where
     readableToSubject mr = do

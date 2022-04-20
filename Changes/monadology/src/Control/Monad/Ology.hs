@@ -2,22 +2,20 @@ module Control.Monad.Ology
     ( module I
     ) where
 
-import Control.Monad.Ology.ComposeInner as I
-import Control.Monad.Ology.ComposeOuter as I
 import Control.Monad.Ology.Data as I
-import Control.Monad.Ology.Exception as I
-import Control.Monad.Ology.Function as I
-import Control.Monad.Ology.MonadExtract as I
-import Control.Monad.Ology.MonadIdentity as I
-import Control.Monad.Ology.MonadInner as I
-import Control.Monad.Ology.MonadOuter as I
-import Control.Monad.Ology.Result as I
-import Control.Monad.Ology.Trans.AskUnlift as I
-import Control.Monad.Ology.Trans.Compose as I
-import Control.Monad.Ology.Trans.Constraint as I
-import Control.Monad.Ology.Trans.ContExtra as I
-import Control.Monad.Ology.Trans.ReaderState as I
-import Control.Monad.Ology.Trans.Stack as I
-import Control.Monad.Ology.Trans.Transform as I
-import Control.Monad.Ology.Trans.Tunnel as I
-import Control.Monad.Ology.Trans.Unlift as I
+import Control.Monad.Ology.General as I
+import Control.Monad.Ology.Specific.ComposeInner as I
+import Control.Monad.Ology.Specific.ComposeOuter as I
+import Control.Monad.Ology.Specific.ComposeT as I
+import Control.Monad.Ology.Specific.ContT as I
+import Control.Monad.Ology.Specific.ExceptT as I
+import Control.Monad.Ology.Specific.IdentityT as I
+import Control.Monad.Ology.Specific.MaybeT as I
+import Control.Monad.Ology.Specific.ReaderStateT as I
+import Control.Monad.Ology.Specific.ReaderT as I
+import Control.Monad.Ology.Specific.Result as I
+import Control.Monad.Ology.Specific.ResultT as I
+import Control.Monad.Ology.Specific.StackT as I
+import Control.Monad.Ology.Specific.StateT as I
+import Control.Monad.Ology.Specific.TransformT as I
+import Control.Monad.Ology.Specific.WriterT as I

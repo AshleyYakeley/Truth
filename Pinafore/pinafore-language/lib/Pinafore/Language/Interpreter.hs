@@ -118,24 +118,27 @@ emptyInterpretState = let
 type Interpreter :: Type -> Type -> Type
 newtype Interpreter ts a = MkInterpreter
     { unInterpreter :: ReaderT (InterpretContext ts) (StateT (InterpretState ts) InterpretResult) a
-    } deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadFix, MonadTunnelIO)
-
-instance MonadThrow PinaforeError (Interpreter ts) where
-    throw err = MkInterpreter $ throw err
-
-instance MonadCatch PinaforeError (Interpreter ts) where
-    catch (MkInterpreter ma) ema = MkInterpreter $ catch ma $ \e -> unInterpreter $ ema e
-
-instance MonadThrow ErrorMessage (Interpreter ts) where
-    throw = throwErrorMessage
-
-instance MonadThrow ExpressionError (Interpreter ts) where
-    throw err = throw $ ExpressionErrorError err
+    } deriving ( Functor
+               , Applicative
+               , Alternative
+               , Monad
+               , MonadIO
+               , MonadPlus
+               , MonadFix
+               , MonadException
+               , MonadThrow PinaforeError
+               , MonadCatch PinaforeError
+               , MonadThrow ErrorMessage
+               , MonadTunnelIO
+               )
 
 instance MonadThrow ErrorType (Interpreter ts) where
     throw err = do
         spos <- askD sourcePosParam
         throw $ MkErrorMessage spos err mempty
+
+instance MonadThrow ExpressionError (Interpreter ts) where
+    throw err = throw $ ExpressionErrorError err
 
 instance Semigroup a => Semigroup (Interpreter ts a) where
     (<>) = liftA2 (<>)

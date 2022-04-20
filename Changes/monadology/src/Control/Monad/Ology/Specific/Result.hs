@@ -1,4 +1,4 @@
-module Control.Monad.Ology.Result where
+module Control.Monad.Ology.Specific.Result where
 
 import Import
 

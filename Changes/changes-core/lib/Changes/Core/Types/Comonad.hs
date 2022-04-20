@@ -10,7 +10,7 @@ newtype ComonadReader (w :: Type -> Type) (reader :: Type -> Type) (t :: Type) w
 
 instance (Comonad w, SubjectReader reader) => SubjectReader (ComonadReader w reader) where
     type ReaderSubject (ComonadReader w reader) = w (ReaderSubject reader)
-    subjectToRead wsubj (ReadExtract reader) = subjectToRead (extract wsubj) reader
+    subjectToRead wsubj (ReadExtract rd) = subjectToRead (extract wsubj) rd
 
 comonadReadFunction :: ReadFunction (ComonadReader w reader) reader
 comonadReadFunction mr rt = mr $ ReadExtract rt

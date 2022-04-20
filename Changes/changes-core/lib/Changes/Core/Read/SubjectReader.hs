@@ -11,9 +11,9 @@ class SubjectReader (reader :: Type -> Type) where
            forall m. Monad m
         => m (ReaderSubject reader)
         -> Readable m reader
-    mSubjectToReadable msubj reader = fmap (\subj -> subjectToRead subj reader) msubj
+    mSubjectToReadable msubj rd = fmap (\subj -> subjectToRead subj rd) msubj
     subjectToRead :: ReaderSubject reader -> (forall t. reader t -> t)
-    subjectToRead subj reader = runIdentity (mSubjectToReadable (Identity subj) reader)
+    subjectToRead subj rd = runIdentity (mSubjectToReadable (Identity subj) rd)
 
 subjectToReadable ::
        forall m reader. (SubjectReader reader, Monad m)

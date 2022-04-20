@@ -14,7 +14,6 @@ import Control.Category.Lifted as I
 import Control.Clock as I
 import Control.Monad.Coroutine as I
 import Control.Monad.LifeCycle as I
-import Control.Monad.MonadCont as I
 import Control.Task as I
 import Data.CatEndo as I
 import Data.CatFunctor as I

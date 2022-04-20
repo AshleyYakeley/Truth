@@ -20,7 +20,7 @@ type instance EditReader (OneEdit f edit) =
 
 instance (MonadInner f, ApplicableEdit edit) => ApplicableEdit (OneEdit f edit) where
     applyEdit (MkOneEdit _edita) mr ReadHasOne = mr ReadHasOne
-    applyEdit (MkOneEdit edita) mr (ReadOne reader) = getComposeInner $ applyEdit edita (oneReadFunctionF mr) reader
+    applyEdit (MkOneEdit edita) mr (ReadOne rd) = getComposeInner $ applyEdit edita (oneReadFunctionF mr) rd
 
 instance (MonadInner f, InvertibleEdit edit) => InvertibleEdit (OneEdit f edit) where
     invertEdits editas mr = do
@@ -99,5 +99,5 @@ oneLiftFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) lens) = 
     fclLens fr =
         case retrieveInner fr of
             SuccessResult r -> oneLiftChangeLens $ lens r
-            FailureResult fn -> oneNullChangeLens $ fmap never fn
+            FailureResult fn -> oneNullChangeLens $ throwExc fn
     in MkFloatingChangeLens {..}

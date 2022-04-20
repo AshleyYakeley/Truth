@@ -200,7 +200,7 @@ tsSealPatternConstructor ::
 tsSealPatternConstructor = sealedPatternConstructor
 
 tsApplyPatternConstructor ::
-       forall ts. (CompleteTypeSystem ts, MonadThrow ExpressionError (TSInner ts))
+       forall ts. CompleteTypeSystem ts
     => TSPatternConstructor ts
     -> TSSealedPattern ts
     -> TSInner ts (TSPatternConstructor ts)

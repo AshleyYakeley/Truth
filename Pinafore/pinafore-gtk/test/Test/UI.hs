@@ -33,7 +33,7 @@ runUIAction timing testaction t = do
         let
             testView :: View (Result SomeException a)
             testView = do
-                ar <- catchResult $ testaction tc
+                ar <- tryExc $ testaction tc
                 viewExit
                 return ar
         case timing of

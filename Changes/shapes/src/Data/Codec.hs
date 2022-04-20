@@ -1,7 +1,5 @@
 module Data.Codec where
 
-import Control.Monad.Ology.MonadInner
-import Control.Monad.Ology.Result
 import Data.CatFunctor
 import Data.IsoVariant
 import Data.Isomorphism
@@ -14,15 +12,10 @@ toBiMapMaybe :: (IsBiMap bm, MonadInner m) => bm m edita editb -> bm Maybe edita
 toBiMapMaybe = mapBiMapM mToMaybe
 
 toBiMapResult ::
-       forall e bm m edita editb. (IsBiMap bm, MonadInner m)
-    => e
-    -> bm m edita editb
-    -> bm (Result e) edita editb
-toBiMapResult e = mapBiMapM (mrf . retrieveInner)
-  where
-    mrf :: Result (m Void) a -> Result e a
-    mrf (SuccessResult a) = SuccessResult a
-    mrf (FailureResult _) = FailureResult e
+       forall bm m edita editb. (IsBiMap bm, MonadInner m)
+    => bm m edita editb
+    -> bm (Result (Exc m)) edita editb
+toBiMapResult = mapBiMapM retrieveInner
 
 data Codec' m a b = MkCodec
     { decode :: a -> m b

@@ -1,4 +1,4 @@
-module Control.Monad.Ology.MonadOuter where
+module Control.Monad.Ology.General.Outer where
 
 import Import
 
@@ -17,18 +17,6 @@ instance MonadOuter Identity where
 
 instance MonadOuter ((->) r) where
     getExtract r = MkExtract $ \ra -> ra r
-
-instance MonadOuter m => MonadOuter (IdentityT m) where
-    getExtract =
-        IdentityT $ do
-            MkExtract maa <- getExtract
-            return $ MkExtract $ maa . runIdentityT
-
-instance MonadOuter m => MonadOuter (ReaderT r m) where
-    getExtract =
-        ReaderT $ \r -> do
-            MkExtract maa <- getExtract
-            return $ MkExtract $ \(ReaderT rma) -> maa $ rma r
 
 commuteOuter ::
        forall m f a. (MonadOuter m, Functor f)

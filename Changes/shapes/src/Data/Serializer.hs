@@ -1,6 +1,5 @@
 module Data.Serializer where
 
-import Control.Monad.Ology.Result
 import Data.Codec
 import Data.IsoVariant
 import qualified Data.Serialize as Serialize

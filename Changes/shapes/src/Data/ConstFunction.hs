@@ -72,5 +72,5 @@ instance FunctorGetPure (Result e) where
 constFunctionAp :: (MonadInner f, Applicative (t (f a)), CatFunctor t t f) => f (t a b) -> t (f a) (f b)
 constFunctionAp fcab =
     case retrieveInner fcab of
-        FailureResult fn -> pure $ fmap never fn
+        FailureResult e -> pure $ throwExc e
         SuccessResult cab -> cfmap cab

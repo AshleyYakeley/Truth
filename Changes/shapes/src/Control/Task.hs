@@ -1,6 +1,5 @@
 module Control.Task where
 
-import Control.Monad.Ology.ComposeInner
 import Shapes.Import
 
 data Task a = MkTask

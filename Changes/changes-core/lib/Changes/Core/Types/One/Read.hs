@@ -29,7 +29,7 @@ instance (Show e, WitnessConstraint Show reader) => WitnessConstraint Show (OneR
 instance (Functor f, SubjectReader reader) => SubjectReader (OneReader f reader) where
     type ReaderSubject (OneReader f reader) = f (ReaderSubject reader)
     subjectToRead fsubj ReadHasOne = fmap (\_ -> ()) fsubj
-    subjectToRead fsubj (ReadOne reader) = fmap (\subj -> subjectToRead subj reader) fsubj
+    subjectToRead fsubj (ReadOne rd) = fmap (\subj -> subjectToRead subj rd) fsubj
 
 oneReadFunctionF :: ReadFunctionF f (OneReader f reader) reader
 oneReadFunctionF mr rt = MkComposeInner $ mr $ ReadOne rt

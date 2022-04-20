@@ -86,18 +86,8 @@ import Control.Comonad as I
 -- lattices
 import Algebra.Lattice as I
 
--- transformers
-import Control.Monad.Trans.Class as I
-import Control.Monad.Trans.Cont as I (ContT(..), evalContT, mapContT)
-import Control.Monad.Trans.Except as I (ExceptT(..), runExceptT)
-import Control.Monad.Trans.Identity as I (IdentityT(..))
-import Control.Monad.Trans.Maybe as I (MaybeT(..))
-import Control.Monad.Trans.Reader as I (ReaderT(..), ask, asks, local, withReaderT)
-import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, modify, put, runState)
-import Control.Monad.Trans.Writer as I (Writer, WriterT(..), execWriter, execWriterT, listen, runWriter, tell)
-
 -- monadology
-import Control.Monad.Ology as I hiding (Lens')
+import Control.Monad.Ology as I hiding (Lens', cont, shift, state)
 
 -- hashable
 import Data.Hashable as I (Hashable)

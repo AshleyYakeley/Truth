@@ -3,7 +3,6 @@ module Control.Clock
     ) where
 
 import Control.Monad.LifeCycle
-import Control.Monad.Ology.Exception
 import Data.Fixed
 import Data.Time.Clock
 import Shapes.Import

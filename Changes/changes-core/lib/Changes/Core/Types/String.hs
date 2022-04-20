@@ -91,7 +91,7 @@ cleanEdit len run
 cleanEdit _len run = Just run
 
 instance IsSequence seq => ApplicableEdit (StringEdit seq) where
-    applyEdit (StringReplaceWhole s) _ reader = return $ subjectToRead s reader
+    applyEdit (StringReplaceWhole s) _ rd = return $ subjectToRead s rd
     applyEdit (StringReplaceSection erunRaw s) mr StringReadLength = do
         oldlen <- mr StringReadLength
         return $

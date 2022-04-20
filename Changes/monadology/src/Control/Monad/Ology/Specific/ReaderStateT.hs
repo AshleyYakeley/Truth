@@ -1,7 +1,8 @@
-module Control.Monad.Ology.Trans.ReaderState where
+module Control.Monad.Ology.Specific.ReaderStateT where
 
 import Control.Monad.Ology.Data
-import Control.Monad.Ology.Function
+import Control.Monad.Ology.General
+import Control.Monad.Ology.Specific.StateT
 import Import
 
 type ReaderStateT f m = StateT (WMFunction f m) m

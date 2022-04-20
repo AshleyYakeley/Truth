@@ -57,7 +57,7 @@ instance (KeyContainer cont, SubjectReader reader, ReaderSubject reader ~ Item c
              SubjectReader (KeyReader cont reader) where
     type ReaderSubject (KeyReader cont reader) = cont
     subjectToRead cont KeyReadKeys = MkFiniteSet $ keys cont
-    subjectToRead cont (KeyReadItem key reader) = fmap (\e -> subjectToRead e reader) $ lookupItem key cont
+    subjectToRead cont (KeyReadItem key rd) = fmap (\e -> subjectToRead e rd) $ lookupItem key cont
 
 instance (KeyContainer cont, FullSubjectReader reader, ReaderSubject reader ~ Item cont) =>
              FullSubjectReader (KeyReader cont reader) where
@@ -117,17 +117,17 @@ instance ( FullSubjectReader (EditReader edit)
         return $ deleteSet key allkeys
     applyEdit (KeyEditDelete key') _mr (KeyReadItem key _reader)
         | key' == key = return Nothing
-    applyEdit (KeyEditDelete _) mr (KeyReadItem key reader) = mr $ KeyReadItem key reader
+    applyEdit (KeyEditDelete _) mr (KeyReadItem key rd) = mr $ KeyReadItem key rd
     applyEdit (KeyEditInsertReplace item) mr KeyReadKeys = do
         allkeys <- mr KeyReadKeys
         let newkey = itemKey @cont item
         if elem newkey allkeys
             then return allkeys
             else return $ insertSet newkey allkeys
-    applyEdit (KeyEditInsertReplace item) _mr (KeyReadItem key reader)
-        | itemKey @cont item == key = return $ Just $ subjectToRead item reader
-    applyEdit (KeyEditInsertReplace _) mr (KeyReadItem key reader) = mr $ KeyReadItem key reader
-    applyEdit KeyEditClear _mr reader = mSubjectToReadable (return mempty) reader
+    applyEdit (KeyEditInsertReplace item) _mr (KeyReadItem key rd)
+        | itemKey @cont item == key = return $ Just $ subjectToRead item rd
+    applyEdit (KeyEditInsertReplace _) mr (KeyReadItem key rd) = mr $ KeyReadItem key rd
+    applyEdit KeyEditClear _mr rd = mSubjectToReadable (return mempty) rd
 
 instance ( FullSubjectReader (EditReader edit)
          , ApplicableEdit edit

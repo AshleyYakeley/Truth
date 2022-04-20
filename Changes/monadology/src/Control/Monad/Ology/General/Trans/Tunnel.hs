@@ -1,12 +1,11 @@
-module Control.Monad.Ology.Trans.Tunnel where
+module Control.Monad.Ology.General.Trans.Tunnel where
 
-import qualified Control.Exception as CE
-import Control.Monad.Ology.ComposeInner
-import Control.Monad.Ology.ComposeOuter
-import Control.Monad.Ology.Function
-import Control.Monad.Ology.MonadInner
-import Control.Monad.Ology.MonadOuter
-import Control.Monad.Ology.Trans.Constraint
+import Control.Monad.Ology.General.Function
+import Control.Monad.Ology.General.IO
+import Control.Monad.Ology.General.Inner
+import Control.Monad.Ology.General.Trans.Constraint
+import Control.Monad.Ology.General.Trans.Trans
+import Control.Monad.Ology.Specific.ComposeInner
 import Import
 
 type MonadTransTunnel :: TransKind -> Constraint
@@ -16,12 +15,6 @@ class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t, MonadIn
            forall m r. Functor m
         => ((forall m1 a. Functor m1 => t m1 a -> m1 (Tunnel t a)) -> m (Tunnel t r))
         -> t m r
-
-transExcept ::
-       forall t m e a. (MonadTransTunnel t, Monad m)
-    => t (ExceptT e m) a
-    -> t m (Either e a)
-transExcept tema = tunnel $ \unlift -> fmap commuteInner $ runExceptT $ unlift tema
 
 hoist ::
        forall t m1 m2. (MonadTransTunnel t, Functor m1, Functor m2)
@@ -53,43 +46,9 @@ commuteTBack ::
     => ta (tb m) -/-> tb (ta m)
 commuteTBack call = commuteT $ call commuteT
 
-instance MonadTransTunnel IdentityT where
-    type Tunnel IdentityT = Identity
-    tunnel call = IdentityT $ fmap runIdentity $ call $ \(IdentityT ma) -> fmap Identity ma
-
 instance MonadInner inner => MonadTransTunnel (ComposeInner inner) where
     type Tunnel (ComposeInner inner) = inner
     tunnel call = MkComposeInner $ call getComposeInner
-
-instance MonadOuter outer => MonadTransTunnel (ComposeOuter outer) where
-    type Tunnel (ComposeOuter outer) = Identity
-    tunnel call =
-        MkComposeOuter $ do
-            MkExtract oaa <- getExtract
-            return $ fmap runIdentity $ call $ fmap Identity . oaa . getComposeOuter
-
-instance MonadTransTunnel (ReaderT r) where
-    type Tunnel (ReaderT r) = Identity
-    tunnel call = ReaderT $ \r -> fmap runIdentity $ call $ \(ReaderT smr) -> fmap Identity $ smr r
-
-instance Monoid w => MonadTransTunnel (WriterT w) where
-    type Tunnel (WriterT w) = (,) w
-    tunnel call = WriterT $ fmap swap $ call $ \(WriterT mrs) -> fmap swap $ mrs
-
-instance MonadTransTunnel (StateT s) where
-    type Tunnel (StateT s) = (,) (Endo s)
-    tunnel call =
-        StateT $ \olds ->
-            fmap (\(Endo sf, r) -> (r, sf olds)) $
-            call $ \(StateT smrs) -> fmap (\(a, s) -> (Endo $ pure s, a)) $ smrs olds
-
-instance MonadTransTunnel MaybeT where
-    type Tunnel MaybeT = Maybe
-    tunnel call = MaybeT $ call $ \(MaybeT ma) -> ma
-
-instance MonadTransTunnel (ExceptT e) where
-    type Tunnel (ExceptT e) = Either e
-    tunnel call = ExceptT $ call $ \(ExceptT ma) -> ma
 
 class (MonadIO m, MonadInner (TunnelIO m)) => MonadTunnelIO m where
     type TunnelIO m :: Type -> Type
@@ -128,45 +87,3 @@ newtype WUnlift c t = MkWUnlift
 
 wUnliftAllWMFunction :: c m => WUnlift c t -> WMFunction (t m) m
 wUnliftAllWMFunction (MkWUnlift unlift) = MkWMFunction unlift
-
-identityWUnliftAll :: WUnlift c IdentityT
-identityWUnliftAll = MkWUnlift runIdentityT
-
-mVarRun :: MVar s -> Unlift MonadTunnelIO (StateT s)
-mVarRun var (StateT smr) =
-    tunnelIO $ \unlift ->
-        modifyMVar var $ \olds ->
-            fmap (\fas -> (fromMaybe olds $ mToMaybe $ fmap snd fas, fmap fst fas)) $ unlift $ smr olds
-
-mVarUnitRun :: MonadTunnelIO m => MVar s -> m --> m
-mVarUnitRun var ma = mVarRun var $ lift ma
-
-mVarUnitUnlock :: MVar () -> IO --> IO
-mVarUnitUnlock var = CE.bracket_ (putMVar var ()) (takeMVar var)
-
-stateDiscardingUntrans :: s -> Unlift MonadIO (StateT s)
-stateDiscardingUntrans s mr = do
-    (r, _discarded) <- runStateT mr s
-    return r
-
--- | Dangerous, because the MVar won't be released on exception.
-dangerousMVarRun :: MVar s -> Unlift MonadIO (StateT s)
-dangerousMVarRun var (StateT smr) = do
-    olds <- liftIO $ takeMVar var
-    (a, news) <- smr olds
-    liftIO $ putMVar var news
-    return a
-
-liftStateT :: (Traversable f, Applicative m) => StateT s m a -> StateT (f s) m (f a)
-liftStateT (StateT smas) = StateT $ \fs -> fmap (\fas -> (fmap fst fas, fmap snd fas)) $ traverse smas fs
-
-liftWithMVarStateT :: MonadIO m => (MVar s -> m a) -> StateT s m a
-liftWithMVarStateT vma =
-    StateT $ \initialstate -> do
-        var <- liftIO $ newMVar initialstate
-        r <- vma var
-        finalstate <- liftIO $ takeMVar var
-        return (r, finalstate)
-
-mVarWIORun :: MVar s -> WMFunction (StateT s IO) IO
-mVarWIORun var = MkWMFunction $ mVarRun var

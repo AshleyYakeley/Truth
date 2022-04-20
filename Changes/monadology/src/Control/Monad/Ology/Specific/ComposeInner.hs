@@ -1,11 +1,14 @@
-module Control.Monad.Ology.ComposeInner where
+module Control.Monad.Ology.Specific.ComposeInner where
 
-import Control.Monad.Ology.MonadExtract
-import Control.Monad.Ology.MonadIdentity
-import Control.Monad.Ology.MonadInner
-import Control.Monad.Ology.MonadOuter
-import Control.Monad.Ology.Result
-import Control.Monad.Ology.Trans.Constraint
+import Control.Monad.Ology.General.Exception.Class
+import Control.Monad.Ology.General.Extract
+import Control.Monad.Ology.General.IO
+import Control.Monad.Ology.General.Identity
+import Control.Monad.Ology.General.Inner
+import Control.Monad.Ology.General.Outer
+import Control.Monad.Ology.General.Trans.Constraint
+import Control.Monad.Ology.General.Trans.Trans
+import Control.Monad.Ology.Specific.Result
 import Import
 
 type ComposeInner :: (Type -> Type) -> (Type -> Type) -> Type -> Type
@@ -57,7 +60,7 @@ instance (MonadInner inner, Monad outer) => Monad (ComposeInner inner outer) whe
                 SuccessResult a -> do
                     ib <- getComposeInner $ p a
                     return $ ia >> ib
-                FailureResult ix -> return $ fmap absurd ix
+                FailureResult e -> return $ throwExc e
 
 instance MonadInner inner => TransConstraint Monad (ComposeInner inner) where
     hasTransConstraint = Dict
@@ -68,8 +71,8 @@ instance (MonadInner inner, MonadInner outer) => MonadInner (ComposeInner inner 
             SuccessResult ia ->
                 case retrieveInner ia of
                     SuccessResult a -> SuccessResult a
-                    FailureResult iv -> FailureResult $ MkComposeInner $ pure iv
-            FailureResult ov -> FailureResult $ MkComposeInner $ fmap pure ov
+                    FailureResult e -> FailureResult $ Left e
+            FailureResult e -> FailureResult $ Right e
 
 instance (MonadInner inner, MonadOuter inner, MonadOuter outer) => MonadOuter (ComposeInner inner outer) where
     getExtract =
@@ -116,3 +119,15 @@ liftInner na = MkComposeInner $ pure na
 
 instance MonadInner inner => MonadTrans (ComposeInner inner) where
     lift ma = MkComposeInner $ fmap pure ma
+
+instance (MonadInner inner, MonadException inner, MonadException m) => MonadException (ComposeInner inner m) where
+    type Exc (ComposeInner inner m) = Either (Exc inner) (Exc m)
+    throwExc (Left e) = liftInner $ throwExc e
+    throwExc (Right e) = lift $ throwExc e
+    catchExc (MkComposeInner mia) handler =
+        MkComposeInner $ do
+            ira <- tryExc mia
+            case fmap retrieveInner ira of
+                FailureResult e -> getComposeInner $ handler $ Right e
+                SuccessResult (FailureResult e) -> getComposeInner $ handler $ Left e
+                SuccessResult (SuccessResult a) -> return $ return a

@@ -22,10 +22,10 @@ instance (SubjectReader ra, SubjectReader rb) => SubjectReader (EitherReader ra 
     type ReaderSubject (EitherReader ra rb) = Either (ReaderSubject ra) (ReaderSubject rb)
     subjectToRead (Left _) EitherReadIsRight = False
     subjectToRead (Right _) EitherReadIsRight = True
-    subjectToRead (Left a) (EitherReadLeft reader) = Just $ subjectToRead a reader
+    subjectToRead (Left a) (EitherReadLeft rd) = Just $ subjectToRead a rd
     subjectToRead (Right _) (EitherReadLeft _) = Nothing
     subjectToRead (Left _) (EitherReadRight _) = Nothing
-    subjectToRead (Right a) (EitherReadRight reader) = Just $ subjectToRead a reader
+    subjectToRead (Right a) (EitherReadRight rd) = Just $ subjectToRead a rd
 
 instance (FullSubjectReader ra, FullSubjectReader rb) => FullSubjectReader (EitherReader ra rb) where
     readableToSubject mr = do
@@ -57,11 +57,10 @@ type instance EditReader (EitherEdit ea eb) =
      EitherReader (EditReader ea) (EditReader eb)
 
 instance (ApplicableEdit ea, ApplicableEdit eb) => ApplicableEdit (EitherEdit ea eb) where
-    applyEdit (EitherEditLeft edit) mr (EitherReadLeft reader) =
-        getComposeInner $ applyEdit edit (mapEitherReadLeft mr) reader
-    applyEdit (EitherEditRight edit) mr (EitherReadRight reader) =
-        getComposeInner $ applyEdit edit (mapEitherReadRight mr) reader
-    applyEdit _ mr reader = mr reader
+    applyEdit (EitherEditLeft edit) mr (EitherReadLeft rd) = getComposeInner $ applyEdit edit (mapEitherReadLeft mr) rd
+    applyEdit (EitherEditRight edit) mr (EitherReadRight rd) =
+        getComposeInner $ applyEdit edit (mapEitherReadRight mr) rd
+    applyEdit _ mr rd = mr rd
 
 instance (InvertibleEdit ea, InvertibleEdit eb) => InvertibleEdit (EitherEdit ea eb) where
     invertEdits edits mr = do

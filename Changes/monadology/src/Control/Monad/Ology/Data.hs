@@ -1,8 +1,9 @@
 module Control.Monad.Ology.Data where
 
-import Control.Monad.Ology.Exception
-import Control.Monad.Ology.Function
-import Control.Monad.Ology.Trans.Tunnel
+import Control.Monad.Ology.General
+import Control.Monad.Ology.Specific.ReaderT
+import Control.Monad.Ology.Specific.StateT
+import Control.Monad.Ology.Specific.WriterT
 import qualified Control.Monad.ST.Lazy as Lazy
 import qualified Control.Monad.ST.Strict as Strict
 import Data.IORef
@@ -41,7 +42,7 @@ readerParam ::
 readerParam = MkParam {askD = ask, localD = \aa -> local aa}
 
 refParam ::
-       forall m a. MonadBracket m
+       forall m a. (MonadUnliftIO m, MonadException m)
     => Ref m a
     -> Param m a
 refParam ref@MkRef {..} = let
@@ -61,7 +62,7 @@ data Ref m a = MkRef
 putD :: Ref m a -> a -> m ()
 putD r a = modifyD r $ \_ -> a
 
-restoreD :: MonadBracket m => Ref m a -> m --> m
+restoreD :: (MonadUnliftIO m, MonadException m) => Ref m a -> m --> m
 restoreD ref mr = bracket (getD ref) (putD ref) $ \_ -> mr
 
 mapRef ::
@@ -123,7 +124,7 @@ foldProd (MkProd tellD listenD) = let
     in MkProd tellD' listenD'
 
 refProd ::
-       forall m a. (MonadBracket m, Monoid a)
+       forall m a. (MonadUnliftIO m, MonadException m, Monoid a)
     => Ref m a
     -> Prod m a
 refProd ref@MkRef {..} = let

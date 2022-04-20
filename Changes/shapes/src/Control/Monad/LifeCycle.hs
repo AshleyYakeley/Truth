@@ -17,7 +17,6 @@ module Control.Monad.LifeCycle
     ) where
 
 import Control.Monad.Coroutine
-import Control.Monad.Ology.Exception
 import Data.Coercion
 import Data.IORef
 import Shapes.Import
@@ -56,8 +55,17 @@ instance Monad LifeCycle where
 instance MonadFail LifeCycle where
     fail s = liftIO $ fail s
 
+instance MonadException LifeCycle where
+    type Exc LifeCycle = Exc IO
+    throwExc e = liftIO $ throwExc e
+    catchExc :: forall a. LifeCycle a -> (Exc IO -> LifeCycle a) -> LifeCycle a
+    catchExc (MkLifeCycle f) handler = MkLifeCycle $ \var -> catchExc (f var) $ \e -> unLifeCycleT (handler e) var
+
 instance MonadThrow e IO => MonadThrow e LifeCycle where
     throw e = liftIO $ throw e
+
+instance MonadCatch e IO => MonadCatch e LifeCycle where
+    catch (MkLifeCycle f) handler = MkLifeCycle $ \var -> catch (f var) $ \e -> unLifeCycleT (handler e) var
 
 instance MonadFix LifeCycle where
     mfix f = MkLifeCycle $ \var -> mfix $ \a -> unLifeCycleT (f a) var

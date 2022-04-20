@@ -1,7 +1,11 @@
-module Control.Monad.Ology.ComposeOuter where
+module Control.Monad.Ology.Specific.ComposeOuter where
 
-import Control.Monad.Ology.MonadOuter
-import Control.Monad.Ology.Trans.Constraint
+import Control.Monad.Ology.General.Exception.Class
+import Control.Monad.Ology.General.IO
+import Control.Monad.Ology.General.Outer
+import Control.Monad.Ology.General.Trans.Constraint
+import Control.Monad.Ology.General.Trans.Trans
+import Control.Monad.Ology.General.Trans.Tunnel
 import Import
 
 type ComposeOuter :: (Type -> Type) -> (Type -> Type) -> Type -> Type
@@ -55,3 +59,30 @@ instance (MonadOuter outer, MonadIO inner) => MonadIO (ComposeOuter outer inner)
 
 instance MonadOuter outer => TransConstraint MonadIO (ComposeOuter outer) where
     hasTransConstraint = Dict
+
+instance (MonadOuter outer, MonadFail inner) => MonadFail (ComposeOuter outer inner) where
+    fail e = MkComposeOuter $ return $ fail e
+
+instance MonadOuter outer => TransConstraint MonadFail (ComposeOuter outer) where
+    hasTransConstraint = Dict
+
+instance (MonadOuter outer, MonadFix inner) => MonadFix (ComposeOuter outer inner) where
+    mfix f =
+        MkComposeOuter $ do
+            MkExtract extract <- getExtract
+            return $ mfix $ \a -> extract $ getComposeOuter $ f a
+
+instance MonadOuter outer => TransConstraint MonadFix (ComposeOuter outer) where
+    hasTransConstraint = Dict
+
+instance (MonadOuter outer, MonadException m) => MonadException (ComposeOuter outer m) where
+    type Exc (ComposeOuter outer m) = Exc m
+    throwExc e = lift $ throwExc e
+    catchExc tma handler = tunnel $ \unlift -> catchExc (unlift tma) $ \e -> unlift $ handler e
+
+instance MonadOuter outer => MonadTransTunnel (ComposeOuter outer) where
+    type Tunnel (ComposeOuter outer) = Identity
+    tunnel call =
+        MkComposeOuter $ do
+            MkExtract oaa <- getExtract
+            return $ fmap runIdentity $ call $ fmap Identity . oaa . getComposeOuter

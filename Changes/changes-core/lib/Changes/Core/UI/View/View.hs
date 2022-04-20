@@ -76,7 +76,7 @@ runView ::
     -> m a
 runView vc (ReaderT view) = liftIOWithUnlift $ \unlift -> vcWithUILock vc $ unlift $ view vc
 
--- | Stop the UI loop. This does not throw any kind of exception.
+-- | Stop the UI loop. This does not throwExc any kind of exception.
 viewExit :: MonadIO m => ViewT m ()
 viewExit = do
     exit <- asks vcExit

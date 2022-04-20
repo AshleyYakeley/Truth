@@ -20,9 +20,9 @@ data AnyReader t where
 instance SubjectReader AnyReader where
     type ReaderSubject AnyReader = Anything
     subjectToRead (MkAnything wit _a) ReadAnyTypes = MkAnyTypes wit
-    subjectToRead (MkAnything wit a) (ReadAnyReader witr reader) = do
+    subjectToRead (MkAnything wit a) (ReadAnyReader witr rd) = do
         Refl <- testEquality wit witr
-        return (subjectToRead a reader)
+        return (subjectToRead a rd)
 
 data AnyEdit where
     MkAnyEdit

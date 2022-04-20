@@ -13,28 +13,42 @@ library:
     - transformers
     - witness
   exposed-modules:
-    - Control.Monad.Ology.Result
-    - Control.Monad.Ology.Function
-    - Control.Monad.Ology.MonadInner
-    - Control.Monad.Ology.MonadOuter
-    - Control.Monad.Ology.MonadExtract
-    - Control.Monad.Ology.MonadIdentity
-    - Control.Monad.Ology.Trans.Constraint
-    - Control.Monad.Ology.Trans.Tunnel
-    - Control.Monad.Ology.Trans.Coerce
-    - Control.Monad.Ology.Trans.Unlift
-    - Control.Monad.Ology.Trans.AskUnlift
-    - Control.Monad.Ology.Trans.Compose
-    - Control.Monad.Ology.Trans.Stack
-    - Control.Monad.Ology.Trans.ContExtra
-    - Control.Monad.Ology.Trans.ReaderState
-    - Control.Monad.Ology.ComposeInner
-    - Control.Monad.Ology.ComposeOuter
-    - Control.Monad.Ology.Exception
+    - Control.Monad.Ology.Specific.Result
+    - Control.Monad.Ology.General.IO
+    - Control.Monad.Ology.General.Function
+    - Control.Monad.Ology.General.Cont
+    - Control.Monad.Ology.General.Inner
+    - Control.Monad.Ology.General.Outer
+    - Control.Monad.Ology.General.Extract
+    - Control.Monad.Ology.General.Identity
+    - Control.Monad.Ology.General.Exception
+    - Control.Monad.Ology.General.Throw
+    - Control.Monad.Ology.General.Catch
+    - Control.Monad.Ology.General.Trans.Trans
+    - Control.Monad.Ology.General.Trans.Constraint
+    - Control.Monad.Ology.General.Trans.Tunnel
+    - Control.Monad.Ology.General.Trans.Coerce
+    - Control.Monad.Ology.General.Trans.Unlift
+    - Control.Monad.Ology.General.Trans.AskUnlift
+    - Control.Monad.Ology.General
+    - Control.Monad.Ology.Specific.ComposeInner
+    - Control.Monad.Ology.Specific.ComposeOuter
+    - Control.Monad.Ology.Specific.IdentityT
+    - Control.Monad.Ology.Specific.ComposeT
+    - Control.Monad.Ology.Specific.MaybeT
+    - Control.Monad.Ology.Specific.ExceptT
+    - Control.Monad.Ology.Specific.ReaderT
+    - Control.Monad.Ology.Specific.WriterT
+    - Control.Monad.Ology.Specific.StateT
+    - Control.Monad.Ology.Specific.ContT
+    - Control.Monad.Ology.Specific.ReaderStateT
+    - Control.Monad.Ology.Specific.StackT
+    - Control.Monad.Ology.Specific.TransformT
+    - Control.Monad.Ology.Specific.ResultT
     - Control.Monad.Ology.Data
-    - Control.Monad.Ology.Trans.Transform
     - Control.Monad.Ology
   other-modules:
+    - Control.Monad.Ology.General.Exception.Class
     - Import
 
 tests:

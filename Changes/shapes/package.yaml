@@ -73,7 +73,6 @@ library:
       - Control.Category.Dual
       - Control.Category.Lifted
       - Control.Applicative.Compose
-      - Control.Monad.MonadCont
       - Control.Monad.Coroutine
       - Control.Monad.LifeCycle
       - Control.Clock

@@ -72,9 +72,9 @@ tupleReadFunction sel mr rt = mr $ MkTupleUpdateReader sel rt
 
 instance (SubjectTupleSelector sel) => SubjectReader (TupleUpdateReader sel) where
     type ReaderSubject (TupleUpdateReader sel) = TupleSubject sel
-    subjectToRead a (MkTupleUpdateReader sel reader) =
+    subjectToRead a (MkTupleUpdateReader sel rd) =
         case tupleReaderWitness @SubjectReader sel of
-            Dict -> subjectToRead (tupleReadFromSubject sel a) reader
+            Dict -> subjectToRead (tupleReadFromSubject sel a) rd
 
 class TestEquality sel => FiniteTupleSelector (sel :: Type -> Type) where
     tupleConstruct ::
@@ -122,9 +122,9 @@ type instance EditReader (TupleUpdateEdit sel) =
      TupleUpdateReader sel
 
 instance (TestEquality sel, TupleEditWitness ApplicableEdit sel) => ApplicableEdit (TupleUpdateEdit sel) where
-    applyEdit (MkTupleUpdateEdit aggedite edit) mr aggreader@(MkTupleUpdateReader aggeditr reader) =
+    applyEdit (MkTupleUpdateEdit aggedite edit) mr aggreader@(MkTupleUpdateReader aggeditr rd) =
         case (tupleEditWitness @ApplicableEdit aggedite, testEquality aggedite aggeditr) of
-            (Dict, Just Refl) -> applyEdit edit (mr . MkTupleUpdateReader aggedite) reader
+            (Dict, Just Refl) -> applyEdit edit (mr . MkTupleUpdateReader aggedite) rd
             _ -> mr aggreader
 
 data TupleUpdateEditList sel where

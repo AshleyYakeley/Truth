@@ -1,9 +1,12 @@
-module Control.Monad.Ology.Trans.Unlift where
+module Control.Monad.Ology.General.Trans.Unlift where
 
-import Control.Monad.Ology.Function
-import Control.Monad.Ology.MonadExtract
-import Control.Monad.Ology.Trans.Constraint
-import Control.Monad.Ology.Trans.Tunnel
+import Control.Monad.Ology.General.Extract
+import Control.Monad.Ology.General.Function
+import Control.Monad.Ology.General.IO
+import Control.Monad.Ology.General.Outer
+import Control.Monad.Ology.General.Trans.Constraint
+import Control.Monad.Ology.General.Trans.Tunnel
+import Control.Monad.Ology.Specific.ComposeOuter
 import Import
 
 class ( MonadTransTunnel t
@@ -43,16 +46,6 @@ liftWithUnliftW ::
     => WMBackFunction m (t m)
 liftWithUnliftW = MkWMBackFunction $ \call -> liftWithUnlift $ \unlift -> call unlift
 
-readerTUnliftAllToT ::
-       forall t m. (MonadTransUnlift t, MonadTunnelIO m)
-    => ReaderT (WUnlift MonadTunnelIO t) m --> t m
-readerTUnliftAllToT rma = liftWithUnlift $ \tr -> runReaderT rma $ MkWUnlift tr
-
-tToReaderTUnliftAll :: MonadTunnelIO m => t m --> ReaderT (WUnlift Monad t) m
-tToReaderTUnliftAll tma = do
-    MkWUnlift unlift <- ask
-    lift $ unlift tma
-
 composeUnliftAllFunction :: (MonadTransUnlift t, MonadUnliftIO m) => Unlift Functor t -> (m --> n) -> (t m --> n)
 composeUnliftAllFunction rt rm tma = rm $ rt tma
 
@@ -79,24 +72,8 @@ instance MonadTransUnlift t => TransConstraint MonadUnliftIO t where
     hasTransConstraint =
         withTransConstraintDict @MonadFail $ withTransConstraintDict @MonadIO $ withTransConstraintDict @MonadFix $ Dict
 
-instance MonadTransUnlift IdentityT where
-    liftWithUnlift call = IdentityT $ call runIdentityT
-
-instance MonadTransUnlift (ReaderT s) where
-    liftWithUnlift call = ReaderT $ \s -> call $ \(ReaderT smr) -> smr s
-
-instance Monoid s => MonadTransUnlift (WriterT s) where
-    liftWithUnlift call = do
-        var <- liftIO $ newMVar mempty
-        r <-
-            lift $
-            call $ \(WriterT mrs) -> do
-                (r, output) <- mrs
-                liftIO $ modifyMVar_ var $ \oldoutput -> return $ mappend oldoutput output
-                return r
-        totaloutput <- liftIO $ takeMVar var
-        tell totaloutput
-        return r
-
-instance MonadTransUnlift (StateT s) where
-    liftWithUnlift call = liftWithMVarStateT $ \var -> call $ mVarRun var
+instance MonadOuter outer => MonadTransUnlift (ComposeOuter outer) where
+    liftWithUnlift call =
+        MkComposeOuter $ do
+            MkExtract extract <- getExtract
+            return $ call $ extract . getComposeOuter
