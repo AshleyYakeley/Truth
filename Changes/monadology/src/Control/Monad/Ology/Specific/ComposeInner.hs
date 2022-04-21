@@ -65,6 +65,12 @@ instance (MonadInner inner, Monad outer) => Monad (ComposeInner inner outer) whe
 instance MonadInner inner => TransConstraint Monad (ComposeInner inner) where
     hasTransConstraint = Dict
 
+instance (MonadInner inner, MonadFail outer) => MonadFail (ComposeInner inner outer) where
+    fail s = lift $ fail s
+
+instance MonadInner inner => TransConstraint MonadFail (ComposeInner inner) where
+    hasTransConstraint = Dict
+
 instance (MonadInner inner, MonadInner outer) => MonadInner (ComposeInner inner outer) where
     retrieveInner (MkComposeInner oia) =
         case retrieveInner oia of
@@ -74,6 +80,9 @@ instance (MonadInner inner, MonadInner outer) => MonadInner (ComposeInner inner 
                     FailureResult e -> FailureResult $ Left e
             FailureResult e -> FailureResult $ Right e
 
+instance MonadInner inner => TransConstraint MonadInner (ComposeInner inner) where
+    hasTransConstraint = Dict
+
 instance (MonadInner inner, MonadOuter inner, MonadOuter outer) => MonadOuter (ComposeInner inner outer) where
     getExtract =
         MkComposeInner $ do
@@ -81,6 +90,9 @@ instance (MonadInner inner, MonadOuter inner, MonadOuter outer) => MonadOuter (C
             return $ do
                 MkExtract iaa <- getExtract
                 return $ MkExtract $ \(MkComposeInner oia) -> iaa $ oaa oia
+
+instance (MonadInner inner, MonadOuter inner) => TransConstraint MonadOuter (ComposeInner inner) where
+    hasTransConstraint = Dict
 
 instance (MonadInner inner, MonadFix outer) => MonadFix (ComposeInner inner outer) where
     mfix ama =

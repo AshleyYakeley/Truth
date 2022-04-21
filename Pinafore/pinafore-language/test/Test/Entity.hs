@@ -13,8 +13,8 @@ testUpdate :: Text -> ScriptTestTree
 testUpdate text =
     testExpression text text $ \cc interpret -> do
         (stuff :: PinaforeAction _) <- liftIO interpret
-        (sendUpdate, ref) <- ccRunView cc emptyResourceContext $ unliftPinaforeActionOrFail stuff
-        ccRunView cc emptyResourceContext $
+        (sendUpdate, ref) <- ccRunCreateView cc emptyResourceContext $ unliftPinaforeActionOrFail stuff
+        ccRunCreateView cc emptyResourceContext $
             runEditor (unWModel $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 

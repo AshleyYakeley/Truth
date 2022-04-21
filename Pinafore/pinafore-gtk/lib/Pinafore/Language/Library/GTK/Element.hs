@@ -75,7 +75,7 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                 nameOpenSub = unWModel $ eaMapSemiReadOnly clearText $ langWholeRefToReadOnlyValue nameRef
                 getCellSub :: Model (ROWUpdate EnA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
                 getCellSub osub = do
-                    a <- liftToLifeCycle $ readSub osub
+                    a <- lift $ readSub osub
                     return $
                         unWModel $
                         eaMapSemiReadOnly (funcChangeLens showCell) $ langWholeRefToReadOnlyValue $ getCellRef a
@@ -98,9 +98,10 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                     return $ a' == a
             init :: CreateView ()
             init =
+                lift $
                 viewRunResourceContext selectionModel $ \unlift (amod :: _ tt) -> do
                     ka <- liftIO $ unlift $ aModelRead amod ReadWhole
-                    liftToLifeCycle $ setsel ka
+                    setsel ka
             recv :: () -> NonEmpty (BiWholeUpdate (Know A) (Know EnA)) -> View ()
             recv () updates = let
                 MkBiWholeUpdate ka = last updates

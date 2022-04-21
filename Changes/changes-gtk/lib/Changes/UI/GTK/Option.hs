@@ -32,7 +32,7 @@ listStoreView ::
 listStoreView (MkWMFunction blockSignal) itemsModel esrc = let
     initV :: CreateView (SeqStore (UpdateSubject update))
     initV = do
-        subjects <- viewRunResource itemsModel $ \am -> readableToSubject $ aModelRead am
+        subjects <- lift $ viewRunResource itemsModel $ \am -> readableToSubject $ aModelRead am
         seqStoreNew $ toList subjects
     recv :: SeqStore (UpdateSubject update) -> NonEmpty (ReadOnlyUpdate (OrderedListUpdate update)) -> View ()
     recv store updates =

@@ -52,7 +52,7 @@ testLifeCycle =
                 lifeCycleClose $ appendStr "B"
                 liftIO $ appendStr "C"
                 lifeCycleClose $ appendStr "D"
-        runLifeCycle lc
+        runLifeCycleT lc
 
 baseTime :: UTCTime
 baseTime = UTCTime (ModifiedJulianDay 0) 0
@@ -61,7 +61,7 @@ testFastClock :: TestTree
 testFastClock =
     testTree "fast" $ do
         ref <- newIORef False
-        runLifeCycle $ do
+        runLifeCycleT $ do
             _ <-
                 clock baseTime 0.1 $ \_ -> do
                     writeIORef ref True
@@ -76,7 +76,7 @@ testFastClock =
 testSlowClock :: TestTree
 testSlowClock =
     testTree "slow" $
-    runLifeCycle $ do
+    runLifeCycleT $ do
         _ <- clock baseTime (5000 * nominalDay) $ \_ -> return ()
         return ()
 

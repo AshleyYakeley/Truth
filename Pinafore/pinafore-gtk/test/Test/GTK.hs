@@ -21,7 +21,7 @@ testFile inpath = let
                        (model, _) <- makeTestStorageModel
                        makePinaforeContext nullInvocationInfo hout model cc
                action <- runWithContext pc (libraryFetchModule gtkLibrary) $ pinaforeInterpretFile inpath
-               liftToLifeCycle action
+               lift action
                return ()
 
 getTestGTK :: IO TestTree

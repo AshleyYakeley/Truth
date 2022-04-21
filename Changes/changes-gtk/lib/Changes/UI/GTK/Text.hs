@@ -60,14 +60,14 @@ createTextArea rmod (MkSelectNotify setsel) = do
         aspect = do
             srun <- getSelection
             return $ Just $ stringSectionLens srun
-    liftToLifeCycle $ setsel aspect
+    lift $ setsel aspect
     _ <- cvAfter buffer #changed $ setsel aspect
     _ <- cvAfter buffer #markSet $ \_ _ -> setsel aspect
     let
         initV :: CreateView ()
         initV = do
-            initial <- viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
-            liftToLifeCycle $ withSignalsBlocked buffer [insertSignal, deleteSignal] $ #setText buffer initial (-1)
+            initial <- lift $ viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
+            lift $ withSignalsBlocked buffer [insertSignal, deleteSignal] $ #setText buffer initial (-1)
         recvV :: () -> NonEmpty (StringUpdate Text) -> View ()
         recvV () updates =
             for_ updates $ \(MkEditUpdate edit) ->

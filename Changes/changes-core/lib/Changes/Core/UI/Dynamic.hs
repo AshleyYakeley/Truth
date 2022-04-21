@@ -44,14 +44,14 @@ cvDynamic model initCV taskCV recvCV = do
         initBind = do
             (firstdvs, a) <- initCV
             stateVar <- liftIO $ newMVar firstdvs
-            lifeCycleClose $ do
+            lifeCycleCloseIO $ do
                 lastdvs <- takeMVar stateVar
                 closeDynamicView lastdvs
             return (stateVar, a)
         recvBind :: (MVar dvs, a) -> NonEmpty update -> View ()
         recvBind (stateVar, a) updates = mVarRun stateVar $ recvCV a $ toList updates
     (stateVar, a) <- cvBindModel model Nothing initBind (\_ -> taskCV) recvBind
-    liftToLifeCycle $ mVarRun stateVar $ recvCV a []
+    lift $ mVarRun stateVar $ recvCV a []
     return a
 
 cvSwitch :: Model (ROWUpdate (CreateView ())) -> CreateView ()
@@ -59,13 +59,14 @@ cvSwitch model = do
     let
         getViewState :: CreateView () -> View ViewState
         getViewState cv = do
-            ((), vs) <- getInnerLifeState cv
+            ((), vs) <- getLifeState cv
             return vs
         initVS :: CreateView (ViewState, ())
-        initVS = do
-            firstspec <- viewRunResource model $ \am -> aModelRead am ReadWhole
-            vs <- liftToLifeCycle $ getViewState firstspec
-            return (vs, ())
+        initVS =
+            lift $ do
+                firstspec <- viewRunResource model $ \am -> aModelRead am ReadWhole
+                vs <- getViewState firstspec
+                return (vs, ())
         recvVS :: () -> [ROWUpdate (CreateView ())] -> StateT ViewState View ()
         recvVS () updates = for_ (lastReadOnlyWholeUpdate updates) $ \spec -> replaceDynamicView $ getViewState spec
     cvDynamic model initVS mempty recvVS
@@ -92,14 +93,14 @@ cvOneWholeView model baseView (MkSelectNotify notifyChange) = do
         getWidgets :: f () -> View (OneWholeViews f)
         getWidgets fu = do
             notifyChange $ return $ Just fu
-            ((), vs) <-
-                getInnerLifeState $ baseView $ fmap (\() -> mapModel (mustExistOneChangeLens "reference") model) fu
+            ((), vs) <- getLifeState $ baseView $ fmap (\() -> mapModel (mustExistOneChangeLens "reference") model) fu
             return $ MkOneWholeViews fu vs
         initVS :: CreateView (OneWholeViews f, ())
-        initVS = do
-            firstfu <- readHasOne
-            vs <- liftToLifeCycle $ getWidgets firstfu
-            return (vs, ())
+        initVS =
+            lift $ do
+                firstfu <- readHasOne
+                vs <- getWidgets firstfu
+                return (vs, ())
         recvVS :: () -> [FullResultOneUpdate f update] -> StateT (OneWholeViews f) View ()
         recvVS () _ = do
             MkOneWholeViews oldfu vs <- get

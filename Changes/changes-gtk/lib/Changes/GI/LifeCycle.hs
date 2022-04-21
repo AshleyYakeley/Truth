@@ -7,12 +7,12 @@ import Data.GI.Gtk
 import GI.GObject
 import Shapes
 
-cvAcquire :: (MonadLifeCycleIO m, IsObject a) => a -> m ()
+cvAcquire :: (MonadIO m, IsObject a) => a -> LifeCycleT m ()
 cvAcquire a = do
     _ <- objectRef a
-    lifeCycleClose $ objectUnref a
+    lifeCycleCloseIO $ objectUnref a
 
-cvNew :: (MonadLifeCycleIO m, Constructible a tag, IsObject a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> m a
+cvNew :: (MonadIO m, Constructible a tag, IsObject a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> LifeCycleT m a
 cvNew cc attrs = do
     a <- new cc attrs
     cvAcquire a
@@ -20,18 +20,21 @@ cvNew cc attrs = do
 
 -- | Probably only use this for top-level widgets
 cvTopLevelNew ::
-       (MonadLifeCycleIO m, Constructible a tag, IsObject a, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> m a
+       (MonadIO m, Constructible a tag, IsObject a, IsWidget a)
+    => (ManagedPtr a -> a)
+    -> [AttrOp a tag]
+    -> LifeCycleT m a
 cvTopLevelNew cc attrs = do
     a <- cvNew cc attrs
-    lifeCycleClose $ widgetDestroy a
+    lifeCycleCloseIO $ widgetDestroy a
     return a
 
 cvSet ::
-       (MonadLifeCycleIO m, AttrClearC info obj attr, AttrSetC info obj attr value)
+       (MonadIO m, AttrClearC info obj attr, AttrSetC info obj attr value)
     => obj
     -> AttrLabelProxy attr
     -> value
-    -> m ()
+    -> LifeCycleT m ()
 cvSet obj prop val = do
     set obj [prop := val]
-    lifeCycleClose $ clear obj prop
+    lifeCycleCloseIO $ clear obj prop

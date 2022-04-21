@@ -57,7 +57,7 @@ withTestPinaforeContext ::
     -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => ChangesContext -> IO PinaforeTableSubject -> IO r)
     -> IO r
 withTestPinaforeContext fetchModule hout call =
-    runLifeCycle @LifeCycle $
+    runLifeCycleT $
     liftIOWithUnlift $ \unlift -> do
         let cc = nullChangesContext unlift
         (pc, getTableState) <- unlift $ makeTestPinaforeContext cc hout

@@ -1,19 +1,22 @@
 module Control.Monad.LifeCycle
     ( LifeState
     , closeLifeState
-    , LifeCycle
-    , MonadLifeCycleIO(..)
+    , LifeCycleT
+    , lifeCycleCloseIO
     , lifeCycleClose
-    , forkLifeCycle
-    , MonadUnliftLifeCycleIO(..)
-    , LiftLifeCycle(..)
-    , lifeCycleCloseInner
-    , runLifeCycle
+    , forkLifeCycleT
+    --, MonadUnliftLifeCycleIO(..)
+    --, LiftLifeCycle(..)
+    --, lifeCycleCloseInner
+    , getLifeState
+    , runLifeCycleT
     , With
     , lifeCycleWith
     , lifeCycleMonitor
     , lifeCycleEarlyCloser
     , lifeCycleOnAllDone
+    , LifeCycle
+    , MonadLifeCycleIO(..)
     ) where
 
 import Control.Monad.Coroutine
@@ -31,116 +34,154 @@ instance Semigroup LifeState where
 instance Monoid LifeState where
     mempty = MkLifeState $ return ()
 
-newtype LifeCycle t = MkLifeCycle
-    { unLifeCycleT :: MVar LifeState -> IO t
+newtype LifeCycleT m a = MkLifeCycleT
+    { unLifeCycleT :: MVar LifeState -> m a
     }
 
-instance RepresentationalRole LifeCycle where
-    representationalCoercion MkCoercion = MkCoercion
+instance RepresentationalRole m => RepresentationalRole (LifeCycleT m) where
+    representationalCoercion c =
+        case representationalCoercion @_ @_ @m c of
+            MkCoercion -> MkCoercion
 
-instance Functor LifeCycle where
-    fmap ab (MkLifeCycle f) = MkLifeCycle $ \var -> fmap ab $ f var
+instance Functor m => Functor (LifeCycleT m) where
+    fmap ab (MkLifeCycleT f) = MkLifeCycleT $ \var -> fmap ab $ f var
 
-instance Applicative LifeCycle where
-    pure t = MkLifeCycle $ \_ -> pure t
-    (MkLifeCycle ocab) <*> (MkLifeCycle oca) = MkLifeCycle $ \var -> ocab var <*> oca var
+instance TransConstraint Functor LifeCycleT where
+    hasTransConstraint = Dict
 
-instance Monad LifeCycle where
+instance Applicative m => Applicative (LifeCycleT m) where
+    pure t = MkLifeCycleT $ \_ -> pure t
+    (MkLifeCycleT ocab) <*> (MkLifeCycleT oca) = MkLifeCycleT $ \var -> ocab var <*> oca var
+
+instance TransConstraint Applicative LifeCycleT where
+    hasTransConstraint = Dict
+
+instance Monad m => Monad (LifeCycleT m) where
     return = pure
-    (MkLifeCycle va) >>= f =
-        MkLifeCycle $ \var -> do
+    (MkLifeCycleT va) >>= f =
+        MkLifeCycleT $ \var -> do
             a <- va var
             unLifeCycleT (f a) var
 
-instance MonadFail LifeCycle where
-    fail s = liftIO $ fail s
+instance TransConstraint Monad LifeCycleT where
+    hasTransConstraint = Dict
 
-instance MonadException LifeCycle where
-    type Exc LifeCycle = Exc IO
-    throwExc e = liftIO $ throwExc e
-    catchExc :: forall a. LifeCycle a -> (Exc IO -> LifeCycle a) -> LifeCycle a
-    catchExc (MkLifeCycle f) handler = MkLifeCycle $ \var -> catchExc (f var) $ \e -> unLifeCycleT (handler e) var
+instance MonadTrans LifeCycleT where
+    lift ma = MkLifeCycleT $ \_ -> ma
 
-instance MonadThrow e IO => MonadThrow e LifeCycle where
-    throw e = liftIO $ throw e
+instance MonadFail m => MonadFail (LifeCycleT m) where
+    fail s = lift $ fail s
 
-instance MonadCatch e IO => MonadCatch e LifeCycle where
-    catch (MkLifeCycle f) handler = MkLifeCycle $ \var -> catch (f var) $ \e -> unLifeCycleT (handler e) var
+instance TransConstraint MonadFail LifeCycleT where
+    hasTransConstraint = Dict
 
-instance MonadFix LifeCycle where
-    mfix f = MkLifeCycle $ \var -> mfix $ \a -> unLifeCycleT (f a) var
+instance MonadException m => MonadException (LifeCycleT m) where
+    type Exc (LifeCycleT m) = Exc m
+    throwExc e = lift $ throwExc e
+    catchExc :: forall a. LifeCycleT m a -> (Exc m -> LifeCycleT m a) -> LifeCycleT m a
+    catchExc (MkLifeCycleT f) handler = MkLifeCycleT $ \var -> catchExc (f var) $ \e -> unLifeCycleT (handler e) var
 
-instance MonadIO LifeCycle where
-    liftIO ioa = MkLifeCycle $ \_ -> ioa
+instance TransConstraint MonadException LifeCycleT where
+    hasTransConstraint = Dict
 
-instance MonadTunnelIO LifeCycle where
-    type TunnelIO LifeCycle = Identity
-    tunnelIO :: forall r. ((forall a. LifeCycle a -> IO (Identity a)) -> IO (Identity r)) -> LifeCycle r
-    tunnelIO f = MkLifeCycle $ \var -> fmap runIdentity $ f $ \a -> fmap Identity $ unLifeCycleT a var
+instance MonadThrow e m => MonadThrow e (LifeCycleT m) where
+    throw e = lift $ throw e
 
-instance MonadUnliftIO LifeCycle where
-    liftIOWithUnlift call = MkLifeCycle $ \var -> call $ \(MkLifeCycle f) -> f var
-    getDiscardingIOUnlift =
+instance TransConstraint (MonadThrow e) LifeCycleT where
+    hasTransConstraint = Dict
+
+instance MonadCatch e m => MonadCatch e (LifeCycleT m) where
+    catch (MkLifeCycleT f) handler = MkLifeCycleT $ \var -> catch (f var) $ \e -> unLifeCycleT (handler e) var
+
+instance TransConstraint (MonadCatch e) LifeCycleT where
+    hasTransConstraint = Dict
+
+instance MonadFix m => MonadFix (LifeCycleT m) where
+    mfix f = MkLifeCycleT $ \var -> mfix $ \a -> unLifeCycleT (f a) var
+
+instance TransConstraint MonadFix LifeCycleT where
+    hasTransConstraint = Dict
+
+instance MonadIO m => MonadIO (LifeCycleT m) where
+    liftIO ioa = lift $ liftIO ioa
+
+instance TransConstraint MonadIO LifeCycleT where
+    hasTransConstraint = Dict
+
+instance MonadTransTunnel LifeCycleT where
+    type Tunnel LifeCycleT = Identity
+    tunnel ::
+           forall m r. Functor m
+        => ((forall m1 a. Functor m1 => LifeCycleT m1 a -> m1 (Identity a)) -> m (Identity r))
+        -> LifeCycleT m r
+    tunnel f = MkLifeCycleT $ \var -> fmap runIdentity $ f $ \a -> fmap Identity $ unLifeCycleT a var
+
+instance MonadTransUnlift LifeCycleT where
+    liftWithUnlift call = MkLifeCycleT $ \var -> call $ \(MkLifeCycleT f) -> f var
+    getDiscardingUnlift =
         return $
-        MkWMFunction $ \(MkLifeCycle f) -> do
+        MkWUnlift $ \(MkLifeCycleT f) -> do
             var <- liftIO $ newMVar mempty
             f var
 
-type With m t = forall r. (t -> m r) -> m r
-
-class MonadIO m => MonadLifeCycleIO m where
-    liftLifeCycle :: forall a. LifeCycle a -> m a
-    subLifeCycle :: forall a. m a -> m a
-    default subLifeCycle :: forall a. LiftLifeCycle m => m a -> m a
-    subLifeCycle lc = liftToLifeCycle $ runLifeCycle lc
-
-lifeCycleClose :: MonadLifeCycleIO m => IO () -> m ()
-lifeCycleClose closer =
-    liftLifeCycle $
-    MkLifeCycle $ \var ->
+lifeCycleCloseIO :: MonadIO m => IO () -> LifeCycleT m ()
+lifeCycleCloseIO closer =
+    MkLifeCycleT $ \var -> do
         dangerousMVarRun var $ do
             s <- get
             put $ MkLifeState closer <> s
 
-instance {-# OVERLAPPING #-} MonadLifeCycleIO LifeCycle where
-    liftLifeCycle lc = lc
+lifeCycleClose :: MonadAskUnliftIO m => m () -> LifeCycleT m ()
+lifeCycleClose closer = do
+    MkWMFunction unlift <- lift askUnliftIO
+    lifeCycleCloseIO $ unlift closer
 
-instance (MonadTransTunnel t, MonadIO (t m), MonadLifeCycleIO m) => MonadLifeCycleIO (t m) where
-    liftLifeCycle lc = lift $ liftLifeCycle lc
-    subLifeCycle = hoist subLifeCycle
+type With m t = forall (r :: Type). (t -> m r) -> m r
 
-instance (MonadTransTunnel t, TransConstraint MonadIO t) => TransConstraint MonadLifeCycleIO t where
-    hasTransConstraint ::
-           forall m. MonadLifeCycleIO m
-        => Dict (MonadLifeCycleIO (t m))
-    hasTransConstraint =
-        case hasTransConstraint @MonadIO @t @m of
-            Dict -> Dict
+withLifeCycleT ::
+       forall m a. (MonadException m, MonadTunnelIO m)
+    => LifeCycleT m a
+    -> With m a
+withLifeCycleT (MkLifeCycleT f) run = do
+    var <- liftIO $ newMVar mempty
+    finally (f var >>= run) $ do
+        MkLifeState closer <- liftIO $ takeMVar var
+        liftIO closer
 
-forkLifeCycle :: IO () -> LifeCycle ThreadId
-forkLifeCycle action = do
+runLifeCycleT ::
+       forall m. (MonadException m, MonadTunnelIO m)
+    => LifeCycleT m --> m
+runLifeCycleT lc = withLifeCycleT lc return
+
+forkLifeCycleT :: MonadUnliftIO m => m () -> LifeCycleT m ThreadId
+forkLifeCycleT action = do
     var <- liftIO newEmptyMVar
-    lifeCycleClose $ takeMVar var
-    liftIO $
-        forkIO $ do
-            action
-            putMVar var ()
+    lifeCycleCloseIO $ takeMVar var
+    lift $
+        liftIOWithUnlift $ \unlift ->
+            forkIO $ do
+                unlift action
+                putMVar var ()
 
-class MonadLifeCycleIO m => MonadUnliftLifeCycleIO m where
-    liftLifeCycleIOWithUnlift :: LifeCycle -/-> m
-
-getLifeState :: MonadUnliftLifeCycleIO m => m a -> m (a, LifeState)
-getLifeState ma = liftLifeCycleIOWithUnlift $ \unlift -> liftIO $ getInnerLifeState $ unlift ma
+getLifeState ::
+       forall m a. MonadIO m
+    => LifeCycleT m a
+    -> m (a, LifeState)
+getLifeState (MkLifeCycleT f) = do
+    var <- liftIO $ newMVar mempty
+    t <- f var
+    ls <- liftIO $ takeMVar var
+    return (t, ls)
 
 -- | Runs the given lifecycle, returning an early closer.
 -- The early closer is an idempotent action that will close the lifecycle only if it hasn't already been closed.
 -- The early closer will also be run as the closer of the resulting lifecycle.
 lifeCycleEarlyCloser ::
-       forall m a. MonadUnliftLifeCycleIO m
-    => m a
-    -> m (a, IO ())
+       forall m a. MonadIO m
+    => LifeCycleT m a
+    -> LifeCycleT m (a, IO ())
 lifeCycleEarlyCloser lc = do
-    (a, MkLifeState closer) <- getLifeState lc
+    (a, MkLifeState closer) <- lift $ getLifeState lc
     var <- liftIO $ newMVar ()
     let
         earlycloser :: IO ()
@@ -149,83 +190,20 @@ lifeCycleEarlyCloser lc = do
             case mu of
                 Just () -> closer
                 Nothing -> return ()
-    lifeCycleClose earlycloser
+    lifeCycleCloseIO earlycloser
     return (a, earlycloser)
 
-instance MonadUnliftLifeCycleIO LifeCycle where
-    liftLifeCycleIOWithUnlift call = call id
-
-instance (MonadUnliftLifeCycleIO m, MonadUnliftIO m, MonadTransTunnel t, MonadTransUnlift t, MonadIO (t m)) =>
-             MonadUnliftLifeCycleIO (t m) where
-    liftLifeCycleIOWithUnlift call =
-        liftWithUnlift $ \unlift -> liftLifeCycleIOWithUnlift $ \unliftLC -> call $ unliftLC . unlift
-
-type LiftLifeCycle :: (Type -> Type) -> Constraint
-class (MonadLifeCycleIO m, MonadIO (LifeCycleInner m)) => LiftLifeCycle m where
-    type LifeCycleInner m :: Type -> Type
-    liftToLifeCycle :: forall a. LifeCycleInner m a -> m a
-    getInnerLifeState :: forall a. m a -> LifeCycleInner m (a, LifeState)
-    withLifeCycle :: forall a. m a -> With (LifeCycleInner m) a
-
-lifeCycleCloseInner :: (LiftLifeCycle m, MonadAskUnliftIO (LifeCycleInner m)) => LifeCycleInner m () -> m ()
-lifeCycleCloseInner closer = do
-    MkWMFunction unlift <- liftToLifeCycle askUnliftIO
-    lifeCycleClose $ unlift closer
-
-runLifeCycle :: LiftLifeCycle m => m t -> LifeCycleInner m t
-runLifeCycle lc = withLifeCycle lc return
-
-instance LiftLifeCycle LifeCycle where
-    type LifeCycleInner LifeCycle = IO
-    liftToLifeCycle = liftIO
-    getInnerLifeState (MkLifeCycle f) = do
-        var <- newMVar mempty
-        t <- f var
-        ls <- takeMVar var
-        return (t, ls)
-    withLifeCycle (MkLifeCycle f) run = do
-        var <- newMVar mempty
-        finally (f var >>= run) $ do
-            MkLifeState closer <- takeMVar var
-            closer
-
-instance ( MonadTransUnlift t
-         , LiftLifeCycle m
-         , MonadUnliftIO m
-         , MonadUnliftIO (LifeCycleInner m)
-         , MonadIO (t m)
-         , MonadIO (t (LifeCycleInner m))
-         ) => LiftLifeCycle (t m) where
-    type LifeCycleInner (t m) = t (LifeCycleInner m)
-    liftToLifeCycle = hoist liftToLifeCycle
-    getInnerLifeState tma = liftWithUnlift $ \unlift -> getInnerLifeState $ unlift tma
-    withLifeCycle ma call = liftWithUnlift $ \unlift -> withLifeCycle (unlift ma) (\a -> unlift $ call a)
-
-lifeCycleWith ::
-       (MonadCoroutine (LifeCycleInner m), MonadAskUnliftIO (LifeCycleInner m), LiftLifeCycle m)
-    => With (LifeCycleInner m) t
-    -> m t
-lifeCycleWith withX = do
-    etp <- liftToLifeCycle $ resume $ suspend withX
-    case etp of
-        Left t -> return t
-        Right (t, tp) -> do
-            lifeCycleCloseInner $ do
-                _ <- runSuspendedUntilDone $ tp t
-                return ()
-            return t
-
 -- | Returned action returns True if still alive, False if closed.
-lifeCycleMonitor :: LiftLifeCycle m => m (IO Bool)
+lifeCycleMonitor :: MonadIO m => LifeCycleT m (IO Bool)
 lifeCycleMonitor = do
     ref <- liftIO $ newIORef True
-    lifeCycleClose $ writeIORef ref False
+    lifeCycleCloseIO $ writeIORef ref False
     return $ readIORef ref
 
 lifeCycleOnAllDone ::
-       (LiftLifeCycle m, MonadAskUnliftIO (LifeCycleInner m))
-    => LifeCycleInner m ()
-    -> LifeCycleInner m (m (), LifeCycleInner m ())
+       forall m. MonadAskUnliftIO m
+    => m ()
+    -> m (LifeCycleT m (), m ())
 lifeCycleOnAllDone onzero = do
     var <- liftIO $ newMVar (0 :: Int)
     let
@@ -234,7 +212,7 @@ lifeCycleOnAllDone onzero = do
                 mVarRun var $ do
                     olda <- get
                     put $ succ olda
-            lifeCycleCloseInner $ do
+            lifeCycleClose $ do
                 iszero <-
                     mVarRun var $ do
                         olda <- get
@@ -253,3 +231,56 @@ lifeCycleOnAllDone onzero = do
                 then onzero
                 else return ()
     return (ondone, checkdone)
+
+lifeCycleWith :: (MonadCoroutine m, MonadAskUnliftIO m) => With m t -> LifeCycleT m t
+lifeCycleWith withX = do
+    etp <- lift $ resume $ suspend withX
+    case etp of
+        Left t -> return t
+        Right (t, tp) -> do
+            lifeCycleClose $ do
+                _ <- runSuspendedUntilDone $ tp t
+                return ()
+            return t
+
+type LifeCycle = LifeCycleT IO
+
+class MonadIO m => MonadLifeCycleIO m where
+    liftLifeCycle :: LifeCycle --> m
+    subLifeCycle :: m --> m
+
+instance (MonadException m, MonadTunnelIO m) => MonadLifeCycleIO (LifeCycleT m) where
+    liftLifeCycle = hoist liftIO
+    subLifeCycle lc = lift $ runLifeCycleT lc
+
+instance MonadLifeCycleIO m => MonadLifeCycleIO (ReaderT r m) where
+    liftLifeCycle la = lift $ liftLifeCycle la
+    subLifeCycle = hoist subLifeCycle
+
+instance (Monoid w, MonadLifeCycleIO m) => MonadLifeCycleIO (WriterT w m) where
+    liftLifeCycle la = lift $ liftLifeCycle la
+    subLifeCycle = hoist subLifeCycle
+
+instance MonadLifeCycleIO m => MonadLifeCycleIO (StateT s m) where
+    liftLifeCycle la = lift $ liftLifeCycle la
+    subLifeCycle = hoist subLifeCycle
+
+instance MonadLifeCycleIO m => MonadLifeCycleIO (MaybeT m) where
+    liftLifeCycle la = lift $ liftLifeCycle la
+    subLifeCycle = hoist subLifeCycle
+
+instance MonadLifeCycleIO m => MonadLifeCycleIO (ExceptT e m) where
+    liftLifeCycle la = lift $ liftLifeCycle la
+    subLifeCycle = hoist subLifeCycle
+
+instance MonadLifeCycleIO m => MonadLifeCycleIO (IdentityT m) where
+    liftLifeCycle la = lift $ liftLifeCycle la
+    subLifeCycle = hoist subLifeCycle
+
+instance (MonadInner inner, MonadLifeCycleIO m) => MonadLifeCycleIO (ComposeInner inner m) where
+    liftLifeCycle la = lift $ liftLifeCycle la
+    subLifeCycle = hoist subLifeCycle
+
+instance (MonadOuter outer, MonadLifeCycleIO m) => MonadLifeCycleIO (ComposeOuter outer m) where
+    liftLifeCycle la = lift $ liftLifeCycle la
+    subLifeCycle = hoist subLifeCycle

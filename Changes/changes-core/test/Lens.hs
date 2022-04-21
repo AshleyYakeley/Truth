@@ -63,7 +63,7 @@ testContextOrderedSetLensCase assigns expected =
             baseContentObj =
                 mapReference (convertChangeLens @(WholeUpdate (FiniteSet Char)) @(FiniteSetUpdate Char)) rawContentObj
         getUpdates <-
-            runLifeCycle $ do
+            runLifeCycleT $ do
                 contextSub <- makeReflectingModel @UpdateX contextObj
                 baseContentSub <- makeReflectingModel @(FiniteSetUpdate Char) baseContentObj
                 let

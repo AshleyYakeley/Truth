@@ -36,7 +36,7 @@ instance GTKCallbackType r => GTKCallbackType (a -> r) where
 
 cvCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> CreateView ()
 cvCloseDisconnectSignal object shid =
-    lifeCycleClose $ do
+    lifeCycleCloseIO $ do
         -- Widgets that have been destroyed have already had their signals disconnected, even if references to them still exist.
         -- So we need to check.
         isConnected <- signalHandlerIsConnected object shid
@@ -51,7 +51,7 @@ cvOn ::
     -> CallbackViewLifted (HaskellCallbackType info)
     -> CreateView SignalHandlerId
 cvOn object signal call = do
-    shid <- liftToLifeCycle $ liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift unlift call
+    shid <- lift $ liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift unlift call
     cvCloseDisconnectSignal object shid
     return shid
 
@@ -62,7 +62,7 @@ cvAfter ::
     -> CallbackViewLifted (HaskellCallbackType info)
     -> CreateView SignalHandlerId
 cvAfter object signal call = do
-    shid <- liftToLifeCycle $ liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift unlift call
+    shid <- lift $ liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift unlift call
     cvCloseDisconnectSignal object shid
     return shid
 
@@ -84,7 +84,7 @@ cvTraceSignal t sigid call = do
     if elem SignalFlagsNoHooks sflags
         then return ()
         else do
-            unliftIO <- liftToLifeCycle askUnliftIO
+            unliftIO <- lift askUnliftIO
             hookid <-
                 signalAddEmissionHook sigid 0 $ \_ vals _ -> do
                     case vals of

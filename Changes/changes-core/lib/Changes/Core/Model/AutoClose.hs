@@ -16,6 +16,6 @@ acOpenReference key withX = do
     case lookup key oldmap of
         Just mutedcloser -> return $ fst mutedcloser
         Nothing -> do
-            mutedcloser <- lift $ getInnerLifeState @LifeCycle $ lifeCycleWith withX
+            mutedcloser <- lift $ getLifeState $ lifeCycleWith withX
             put $ insertMap key mutedcloser oldmap
             return $ fst mutedcloser

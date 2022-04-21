@@ -37,7 +37,7 @@ data ContextOptions = MkContextOptions
 
 standardStorageModel :: Bool -> FilePath -> CreateView (Model PinaforeStorageUpdate)
 standardStorageModel cache dataDir = do
-    rc <- viewGetResourceContext
+    rc <- lift viewGetResourceContext
     liftLifeCycle $ do
         sqlReference <- liftIO $ sqlitePinaforeTableReference $ dataDir </> "tables.sqlite3"
         tableReference1 <- exclusiveResource rc sqlReference

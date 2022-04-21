@@ -15,7 +15,7 @@ data RunState
 
 changesMainGTK :: ChangesMain
 changesMainGTK appMain =
-    runLifeCycle $
+    runLifeCycleT $
     liftIOWithUnlift $ \unlift -> do
         _ <- GI.init Nothing
         uiLockVar <- newMVar ()
@@ -30,7 +30,7 @@ changesMainGTK appMain =
             rtUnliftLifeCycle :: LifeCycle --> IO
             rtUnliftLifeCycle = unlift
             rt = MkRunToolkit {..}
-        a <- unlift $ rtRunView rt emptyResourceContext $ quitOnAllClosed rt appMain
+        a <- unlift $ rtRunView rt emptyResourceContext $ commuteT $ quitOnAllClosed rt appMain
         shouldRun <- liftIO $ mVarRun runVar Shapes.get
         case shouldRun of
             RSStop -> return ()
