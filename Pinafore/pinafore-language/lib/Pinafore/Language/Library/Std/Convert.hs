@@ -17,7 +17,7 @@ instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (IO a) where
 
 -- View
 instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (View a) where
-    pinaforeType = mapPosShimWit (functionToShim "liftToLifeCycle" $ liftToLifeCycle @CreateView) pinaforeType
+    pinaforeType = mapPosShimWit (functionToShim "lift" $ (lift :: View --> CreateView)) pinaforeType
 
 -- CreateView
 instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (CreateView a) where

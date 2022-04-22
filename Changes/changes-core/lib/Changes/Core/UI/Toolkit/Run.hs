@@ -15,7 +15,7 @@ data RunToolkit = MkRunToolkit
 
 -- | Closers will be run at the end of the session. (Lock doesn't matter.)
 rtUnliftCreateView :: RunToolkit -> CreateView a -> View a
-rtUnliftCreateView uit = hoist $ rtUnliftLifeCycle uit
+rtUnliftCreateView uit cv = hoist (rtUnliftLifeCycle uit) $ commuteT cv
 
 rtRunView :: MonadUnliftIO m => RunToolkit -> ResourceContext -> ViewT m a -> m a
 rtRunView MkRunToolkit {..} vcResourceContext vma = let

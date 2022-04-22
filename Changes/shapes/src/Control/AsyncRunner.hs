@@ -5,8 +5,6 @@ module Control.AsyncRunner
     ) where
 
 import Control.Monad.LifeCycle
-import Control.Monad.Ology.Exception
-import Control.Monad.Ology.Result
 import Control.Task
 import Shapes.Import
 import Debug.ThreadTrace
@@ -65,7 +63,7 @@ asyncWaitRunner mus doit = do
                             return $ Just $ traceBracketIO "asyncWaitRunner: action: task" $ doit vals
             case maction of
                 Just action -> do
-                    catch action $ \ex -> traceBracketIO ("asyncWaitRunner: caught exception: " <> show ex) $ atomically $ writeTVar bufferVar $ VSException ex
+                    catchExc action $ \ex -> traceBracketIO ("asyncWaitRunner: caught exception: " <> show ex) $ atomically $ writeTVar bufferVar $ VSException ex
                     threadDo
                 Nothing -> return ()
         waitForIdle :: STM (Result SomeException ())
@@ -74,7 +72,7 @@ asyncWaitRunner mus doit = do
             traceSTM $ "asyncWaitRunner STM: wait for idle: " ++ show vs
             case vs of
                 VSIdle -> return $ return ()
-                VSException ex -> return $ throw ex
+                VSException ex -> return $ throwExc ex
                 _ -> mzero
         atomicallyDo :: STM (Result SomeException a) -> IO a
         atomicallyDo stra = do
@@ -82,7 +80,7 @@ asyncWaitRunner mus doit = do
             case ra of
                 SuccessResult _ -> return ()
                 FailureResult ex -> traceIOM $ "asyncWaitRunner: throwing exception: " <> show ex
-            throwResult ra
+            fromResultExc ra
         pushVal :: Maybe t -> IO ()
         pushVal (Just val) =
             traceBracketIO "asyncWaitRunner: push" $ atomicallyDo $ traceBracketSTM "asyncWaitRunner STM: push" $ do
@@ -90,7 +88,7 @@ asyncWaitRunner mus doit = do
                 traceSTM $ "asyncWaitRunner STM: push: " ++ show vs
                 case vs of
                     VSEnd -> return $ return ()
-                    VSException ex -> return $ throw ex
+                    VSException ex -> return $ throwExc ex
                     VSIdle -> do
                         writeTVar bufferVar $ VSPending val True
                         return $ return ()
@@ -116,7 +114,7 @@ asyncWaitRunner mus doit = do
                     return $
                         case vs of
                             VSIdle -> return $ Just ()
-                            VSException ex -> throw ex
+                            VSException ex -> throwExc ex
                             _ -> return Nothing
             in MkTask {..}
     tid <- liftIO $ traceBracketIO "asyncWaitRunner: fork thread" $ forkIO $ traceBracketIO "THREAD: asyncWaitRunner" threadDo

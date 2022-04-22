@@ -1,7 +1,6 @@
 module Changes.Core.UI.View.CreateView
     ( CreateView
     , ViewState
-    , cvLiftViewWithUnlift
     , cvBindModelUpdates
     , cvBindModel
     , cvFloatMapModel
@@ -17,12 +16,9 @@ import Changes.Core.UI.View.Context
 import Changes.Core.UI.View.View
 import Changes.Debug.Reference
 
-type CreateView = ViewT LifeCycle
+type CreateView = LifeCycleT View
 
 type ViewState = LifeState
-
-cvLiftViewWithUnlift :: View -/-> CreateView
-cvLiftViewWithUnlift = backHoist liftIOWithUnlift
 
 cvBindModelUpdates ::
        forall update a.
@@ -34,23 +30,25 @@ cvBindModelUpdates ::
     -> CreateView a
 cvBindModelUpdates model testesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
-    monitor <- liftLifeCycle lifeCycleMonitor
-    withUILock <- asks $ \vc -> vcWithUILock vc
-    unliftView <- liftToLifeCycle askUnliftIO
-    viewRunResourceContext model $ \unlift amodel -> do
-        a <- initv
-        liftLifeCycle $
-            unlift $
-            aModelSubscribe amodel (utask a) $ \urc updates ec@MkEditContext {..} ->
-                if testesrc editContextSource
-                    then traceBarrierIO "cvBindModel.update" withUILock $ do
-                             alive <- monitor
-                             if alive
-                                 then do
-                                     runWMFunction unliftView $ viewLocalResourceContext urc $ recv a updates ec
-                                 else return ()
-                    else return ()
-        return a
+    monitor <- lifeCycleMonitor
+    withUILock <- lift $ asks $ \vc -> vcWithUILock vc
+    liftWithUnlift $ \unlift -> do
+        unliftView <- askUnliftIO
+        viewRunResourceContext model $ \stunlift amodel ->
+            unlift $ do
+                a <- initv
+                liftLifeCycle $
+                    stunlift $
+                    aModelSubscribe amodel (utask a) $ \urc updates ec@MkEditContext {..} ->
+                        if testesrc editContextSource
+                            then traceBarrierIO "cvBindModel.update" withUILock $ do
+                                     alive <- monitor
+                                     if alive
+                                         then do
+                                             runWMFunction unliftView $ viewLocalResourceContext urc $ recv a updates ec
+                                         else return ()
+                            else return ()
+                return a
 
 cvBindModel ::
        forall update a.
@@ -66,16 +64,17 @@ cvBindModel model mesrc initv utask recv =
 cvFloatMapModel ::
        forall updateA updateB. FloatingChangeLens updateA updateB -> Model updateA -> CreateView (Model updateB)
 cvFloatMapModel flens model = do
-    rc <- viewGetResourceContext
+    rc <- lift viewGetResourceContext
     liftLifeCycle $ floatMapModel rc flens model
 
 cvBindWholeModel :: forall t. Model (WholeUpdate t) -> Maybe EditSource -> (t -> View ()) -> CreateView ()
 cvBindWholeModel model mesrc setf = let
     init :: CreateView ()
     init =
+        lift $
         viewRunResourceContext model $ \unlift amodel -> do
             val <- liftIO $ unlift $ aModelRead amodel ReadWhole
-            liftToLifeCycle $ setf val
+            setf val
     recv :: () -> NonEmpty (WholeUpdate t) -> View ()
     recv () updates = let
         MkWholeUpdate val = last updates
@@ -86,9 +85,10 @@ cvBindReadOnlyWholeModel :: forall t. Model (ROWUpdate t) -> (t -> View ()) -> C
 cvBindReadOnlyWholeModel model setf = let
     init :: CreateView ()
     init =
+        lift $
         viewRunResourceContext model $ \unlift amodel -> do
             val <- liftIO $ unlift $ aModelRead amodel ReadWhole
-            liftToLifeCycle $ setf val
+            setf val
     recv :: () -> NonEmpty (ROWUpdate t) -> View ()
     recv () updates = let
         MkReadOnlyUpdate (MkWholeUpdate val) = last updates

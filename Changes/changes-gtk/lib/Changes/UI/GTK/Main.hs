@@ -16,7 +16,7 @@ data RunState
 
 changesMainGTK :: ChangesMain
 changesMainGTK appMain = traceBracketIO "THREAD: main" $
-    runLifeCycle $
+    runLifeCycleT $
     liftIOWithUnlift $ \unlift -> traceBracketIO "truthMainGTK" $ do
         _ <- GI.init Nothing
         uiLockVar <- newMVar ()
@@ -31,7 +31,7 @@ changesMainGTK appMain = traceBracketIO "THREAD: main" $
             rtUnliftLifeCycle :: LifeCycle --> IO
             rtUnliftLifeCycle = unlift
             rt = MkRunToolkit {..}
-        a <- unlift $ rtRunView rt emptyResourceContext $ quitOnAllClosed rt appMain
+        a <- unlift $ rtRunView rt emptyResourceContext $ commuteT $ quitOnAllClosed rt appMain
         shouldRun <- liftIO $ mVarRun runVar Shapes.get
         case shouldRun of
             RSStop -> return ()

@@ -1,5 +1,7 @@
-module Control.Monad.Ology.Function where
+module Control.Monad.Ology.General.Function where
 
+import Control.Monad.Ology.General.IO
+import Control.Monad.Ology.General.Trans.Trans
 import Import
 
 -- type (-->) :: forall k. (k -> Type) -> (k -> Type) -> Type

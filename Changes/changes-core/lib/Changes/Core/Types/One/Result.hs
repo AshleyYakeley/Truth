@@ -29,11 +29,11 @@ liftResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) rl
         fr <- get
         case retrieveInner fr of
             SuccessResult r -> lift $ liftOneReadFunction (clRead $ rlens r) mr rt
-            FailureResult fn ->
+            FailureResult e ->
                 return $
                 case rt of
-                    ReadHasOne -> fmap never fn
-                    ReadOne _ -> fmap never fn
+                    ReadHasOne -> throwExc e
+                    ReadOne _ -> throwExc e
     sclUpdate ::
            forall m. MonadIO m
         => ResultOneUpdate f updateA
@@ -59,9 +59,9 @@ liftResultOneFloatingChangeLens (MkFloatingChangeLens (init :: FloatInit _ r) rl
                             FailureResult _ -> liftIO $ fail "liftResultOneFloatingChangeLens: missing"
                 put $ pure r
                 return [NewResultOneUpdate $ pure ()]
-            FailureResult fn -> do
-                put $ fmap never fn
-                return [NewResultOneUpdate $ fmap never fn]
+            FailureResult e -> do
+                put $ throwExc e
+                return [NewResultOneUpdate $ throwExc e]
     sclPutEdits ::
            forall m. MonadIO m
         => [OneEdit f (UpdateEdit updateB)]

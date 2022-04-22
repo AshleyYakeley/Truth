@@ -36,19 +36,19 @@ type instance EditReader (OrderedListEdit edit) =
      ListReader (EditReader edit)
 
 instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => ApplicableEdit (OrderedListEdit edit) where
-    applyEdit (OrderedListEditItem p edit) mr (ListReadItem i reader)
-        | p == i = getComposeInner $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
-    applyEdit (OrderedListEditItem _ _) mr reader = mr reader
+    applyEdit (OrderedListEditItem p edit) mr (ListReadItem i rd)
+        | p == i = getComposeInner $ applyEdit edit (itemReadFunction i mr) rd -- already checks bounds
+    applyEdit (OrderedListEditItem _ _) mr rd = mr rd
     applyEdit (OrderedListEditDelete p) mr ListReadLength = do
         len <- mr ListReadLength
         return $
             if p >= 0 && p < len
                 then pred len
                 else len
-    applyEdit (OrderedListEditDelete p) mr (ListReadItem i reader)
-        | p >= 0 && p < i = mr $ ListReadItem (succ i) reader
-    applyEdit (OrderedListEditDelete _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
-    applyEdit OrderedListEditClear _mr reader = subjectToReadable mempty reader
+    applyEdit (OrderedListEditDelete p) mr (ListReadItem i rd)
+        | p >= 0 && p < i = mr $ ListReadItem (succ i) rd
+    applyEdit (OrderedListEditDelete _) mr (ListReadItem i rd) = mr $ ListReadItem i rd
+    applyEdit OrderedListEditClear _mr rd = subjectToReadable mempty rd
 
 instance (SubjectReader (EditReader edit), SubjectMapEdit edit) => SubjectMapEdit (OrderedListEdit edit) where
     mapSubjectEdits =

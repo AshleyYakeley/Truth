@@ -9,13 +9,16 @@ import Changes.Debug.Reference
 
 data ChangesContext = MkChangesContext
     { ccRunToolkit :: RunToolkit
-    , ccExitOnClosed :: forall m. MonadLifeCycleIO m => m --> m
+    , ccExitOnClosed :: forall m. (MonadException m, MonadTunnelIO m) => LifeCycleT m --> LifeCycleT m
     }
 
 ccUnliftLifeCycle :: ChangesContext -> LifeCycle --> IO
 ccUnliftLifeCycle cc = rtUnliftLifeCycle $ ccRunToolkit cc
 
-ccRunView :: MonadUnliftIO m => ChangesContext -> ResourceContext -> ViewT m --> m
+ccRunCreateView :: ChangesContext -> ResourceContext -> CreateView --> LifeCycle
+ccRunCreateView cc rc = hoist $ rtRunView (ccRunToolkit cc) rc
+
+ccRunView :: ChangesContext -> ResourceContext -> View --> IO
 ccRunView cc rc = rtRunView (ccRunToolkit cc) rc
 
 ccUnliftCreateView :: ChangesContext -> CreateView --> View
@@ -32,8 +35,8 @@ quitOnAllClosed ccRunToolkit call = do
     (ondone, checkdone) <- liftIO $ lifeCycleOnAllDone $ traceBracket "quit on all closed" $ rtExit ccRunToolkit
     let
         ccExitOnClosed ::
-               forall m. MonadLifeCycleIO m
-            => m --> m
+               forall m. (MonadException m, MonadTunnelIO m)
+            => LifeCycleT m --> LifeCycleT m
         ccExitOnClosed ma = do
             liftLifeCycle ondone
             ma

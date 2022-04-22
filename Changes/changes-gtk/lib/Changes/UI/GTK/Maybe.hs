@@ -45,7 +45,7 @@ createOneWholeSel subf specsel snfsel = let
     getf fu =
         case retrieveInner fu of
             SuccessResult _ -> Nothing
-            FailureResult fn -> Just $ fmap never fn
+            FailureResult e -> Just $ throwExc e
     snfu :: SelectNotify (f ())
     snfu = mapMaybeSelectNotify getf snfsel
     in oneWholeView subf spec snfu

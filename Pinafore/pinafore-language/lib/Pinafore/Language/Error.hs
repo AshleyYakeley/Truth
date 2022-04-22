@@ -175,16 +175,27 @@ instance Show PinaforeError where
 
 instance Exception PinaforeError
 
-rethrowCause :: MonadCatch PinaforeError m => SourcePos -> ErrorType -> m a -> m a
-rethrowCause spos err ma = catch ma $ \pe -> throwErrorMessage $ MkErrorMessage spos err pe
+rethrowCause :: (MonadCatch PinaforeError m, MonadThrow ErrorMessage m) => SourcePos -> ErrorType -> m a -> m a
+rethrowCause spos err ma = catch ma $ \pe -> throw $ MkErrorMessage spos err pe
 
-type InterpretResult = ExceptT PinaforeError IO
+newtype InterpretResult a =
+    MkInterpretResult (ResultT PinaforeError IO a)
+    deriving (Functor, Applicative, Alternative, Monad, MonadException, MonadPlus, MonadIO, MonadFix, MonadTunnelIO)
+
+instance MonadThrow PinaforeError InterpretResult where
+    throw e = throwExc $ Left e
+
+instance MonadCatch PinaforeError InterpretResult where
+    catch ma ema =
+        catchSomeExc ma $ \case
+            Left e -> fmap Just $ ema e
+            Right _ -> return Nothing
+
+instance MonadThrow ErrorMessage InterpretResult where
+    throw err = throw $ MkPinaforeError [err]
 
 runInterpretResult :: MonadIO m => InterpretResult a -> m (Result PinaforeError a)
-runInterpretResult ir = fmap eitherToResult $ liftIO $ runExceptT ir
-
-throwErrorMessage :: MonadThrow PinaforeError m => ErrorMessage -> m a
-throwErrorMessage e = throw $ MkPinaforeError [e]
+runInterpretResult (MkInterpretResult ir) = liftIO $ runResultT ir
 
 throwInterpretResult ::
        forall m a. (MonadThrow PinaforeError m, MonadIO m)

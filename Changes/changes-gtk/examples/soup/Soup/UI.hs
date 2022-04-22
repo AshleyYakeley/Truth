@@ -12,15 +12,15 @@ import Soup.Note
 import System.FilePath
 import Changes.Debug.Reference
 
-fromResult :: Result Text Text -> (Text, TableCellProps)
-fromResult (SuccessResult "") = ("unnamed", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
-fromResult (SuccessResult s) = (s, plainTableCellProps)
-fromResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
+cellFromResult :: Result Text Text -> (Text, TableCellProps)
+cellFromResult (SuccessResult "") = ("unnamed", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
+cellFromResult (SuccessResult s) = (s, plainTableCellProps)
+cellFromResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
 
-pastResult :: Result Text Bool -> (Text, TableCellProps)
-pastResult (SuccessResult False) = ("current", plainTableCellProps)
-pastResult (SuccessResult True) = ("past", plainTableCellProps)
-pastResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
+cellPastResult :: Result Text Bool -> (Text, TableCellProps)
+cellPastResult (SuccessResult False) = ("current", plainTableCellProps)
+cellPastResult (SuccessResult True) = ("past", plainTableCellProps)
+cellPastResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
 
 type PossibleNoteUpdate = FullResultOneUpdate (Result Text) NoteUpdate
 
@@ -46,14 +46,14 @@ soupEditSpec sub selnotify openItem = do
             readOnlyKeyColumn (constantModel "Name") $ \cellsub -> let
                 valLens :: ChangeLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Text, TableCellProps))
                 valLens =
-                    funcChangeLens fromResult .
+                    funcChangeLens cellFromResult .
                     liftFullResultOneChangeLens (tupleChangeLens NoteTitle) . tupleChangeLens SelectSecond
-                in return $ mapModel valLens cellsub {-(updateFunctionToChangeLens (funcChangeLens fromResult) . valLens)-}
+                in return $ mapModel valLens cellsub {-(updateFunctionToChangeLens (funcChangeLens cellFromResult) . valLens)-}
         pastColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
         pastColumn =
             readOnlyKeyColumn (constantModel "Past") $ \cellsub -> let
                 valLens =
-                    funcChangeLens pastResult .
+                    funcChangeLens cellPastResult .
                     liftFullResultOneChangeLens (tupleChangeLens NotePast) . tupleChangeLens SelectSecond
                 in return $ mapModel valLens cellsub
     (widget, _) <- createListTable [nameColumn, pastColumn] osub openItem selnotify

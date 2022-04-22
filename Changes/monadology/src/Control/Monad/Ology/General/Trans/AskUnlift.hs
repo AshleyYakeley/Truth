@@ -1,11 +1,15 @@
-module Control.Monad.Ology.Trans.AskUnlift where
+module Control.Monad.Ology.General.Trans.AskUnlift where
 
-import Control.Monad.Ology.Function
-import Control.Monad.Ology.MonadExtract
-import Control.Monad.Ology.MonadIdentity
-import Control.Monad.Ology.Trans.Constraint
-import Control.Monad.Ology.Trans.Tunnel
-import Control.Monad.Ology.Trans.Unlift
+import Control.Monad.Ology.General.Extract
+import Control.Monad.Ology.General.Function
+import Control.Monad.Ology.General.IO
+import Control.Monad.Ology.General.Identity
+import Control.Monad.Ology.General.Outer
+import Control.Monad.Ology.General.Trans.Constraint
+import Control.Monad.Ology.General.Trans.Trans
+import Control.Monad.Ology.General.Trans.Tunnel
+import Control.Monad.Ology.General.Trans.Unlift
+import Control.Monad.Ology.Specific.ComposeOuter
 import Import
 
 -- | A transformer that has no effects (such as state change or output)
@@ -35,9 +39,7 @@ instance MonadTransAskUnlift t => TransConstraint MonadAskUnliftIO t where
     hasTransConstraint =
         withTransConstraintDict @MonadFail $ withTransConstraintDict @MonadIO $ withTransConstraintDict @MonadFix $ Dict
 
-instance MonadTransAskUnlift IdentityT
-
-instance MonadTransAskUnlift (ReaderT s)
+instance MonadOuter outer => MonadTransAskUnlift (ComposeOuter outer)
 
 contractT ::
        forall (t :: TransKind) m. (MonadTransAskUnlift t, Monad m)

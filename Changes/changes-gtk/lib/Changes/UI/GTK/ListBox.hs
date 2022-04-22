@@ -43,7 +43,7 @@ createListBox mkElement model = do
         insertElement :: SequencePoint -> View ViewState
         insertElement i = do
             fmap snd $
-                getInnerLifeState $ do
+                getLifeState $ do
                     imodel <-
                         cvFloatMapModel
                             (changeLensToFloating (mustExistOneChangeLens "GTK list box") . orderedListItemLens i)
@@ -53,8 +53,8 @@ createListBox mkElement model = do
                     return ()
         initVS :: CreateView (ListViewState, ())
         initVS = do
-            n <- viewRunResource model $ \am -> aModelRead am ListReadLength
-            vss <- liftToLifeCycle $ for [0 .. pred n] insertElement
+            n <- lift $ viewRunResource model $ \am -> aModelRead am ListReadLength
+            vss <- lift $ for [0 .. pred n] insertElement
             return (MkListViewState vss, ())
         recvVS :: () -> [OrderedListUpdate update] -> StateT ListViewState View ()
         recvVS () updates =

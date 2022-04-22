@@ -71,7 +71,7 @@ attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
                 Just action -> action
     set item [#label := label] -- creates child if not present
     mc <- binGetChild item
-    unliftView <- liftToLifeCycle askUnliftIO
+    unliftView <- lift askUnliftIO
     for_ mc $ \c -> do
         ml <- liftIO $ castTo AccelLabel c
         for_ ml $ \l -> do

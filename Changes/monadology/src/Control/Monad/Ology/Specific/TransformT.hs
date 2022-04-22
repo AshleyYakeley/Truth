@@ -1,9 +1,7 @@
-module Control.Monad.Ology.Trans.Transform where
+module Control.Monad.Ology.Specific.TransformT where
 
 import Control.Monad.Ology.Data
-import Control.Monad.Ology.Function
-import Control.Monad.Ology.Trans.Tunnel
-import Control.Monad.Ology.Trans.Unlift
+import Control.Monad.Ology.General
 import Import
 
 type TransformT :: forall k. (k -> Type) -> Type -> Type

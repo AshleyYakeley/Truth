@@ -30,16 +30,16 @@ runUIAction timing testaction t = do
         (pc, _) <- liftLifeCycle $ makeTestPinaforeContext tc stdout
         scriptaction <-
             runWithContext pc (libraryFetchModule gtkLibrary) $ throwInterpretResult $ pinaforeInterpretText "<test>" t
-        liftToLifeCycle scriptaction
+        lift scriptaction
         let
             testView :: View (Result SomeException a)
             testView = do
-                ar <- catchResult $ testaction tc
+                ar <- tryExc $ testaction tc
                 viewExit
                 return ar
         case timing of
             SyncTiming -> do
-                ar <- liftToLifeCycle testView
+                ar <- lift testView
                 liftIO $ putMVar donevar ar
             AsyncTiming -> do
                 _ <-

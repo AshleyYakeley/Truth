@@ -131,6 +131,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
         initTable :: CreateView (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
         initTable = do
             initialRows <-
+                lift $
                 viewRunResourceContext tableModel $ \unlift amodel -> do
                     n <- liftIO $ unlift $ aModelRead amodel ListReadLength
                     return $ fmap makeStoreEntry [0 .. pred n]

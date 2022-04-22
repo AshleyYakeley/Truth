@@ -32,14 +32,17 @@ data ActionContext = MkActionContext
 
 newtype PinaforeAction a =
     MkPinaforeAction (ReaderT ActionContext (ComposeInner Know CreateView) a)
-    deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadIO, RepresentationalRole)
-
-instance MonadFail PinaforeAction where
-    fail s = liftIO $ fail s
-
-instance MonadLifeCycleIO PinaforeAction where
-    liftLifeCycle la = MkPinaforeAction $ lift $ lift $ lift la
-    subLifeCycle (MkPinaforeAction ra) = MkPinaforeAction $ (hoist $ hoist $ hoist $ subLifeCycle) ra
+    deriving ( Functor
+             , Applicative
+             , Monad
+             , Alternative
+             , MonadPlus
+             , MonadFix
+             , MonadFail
+             , MonadIO
+             , MonadLifeCycleIO
+             , RepresentationalRole
+             )
 
 unPinaforeAction :: forall a. ChangesContext -> UndoHandler -> PinaforeAction a -> CreateView (Know a)
 unPinaforeAction acChangesContext acUndoHandler (MkPinaforeAction action) =
@@ -55,7 +58,7 @@ pinaforeGetCreateViewUnlift =
         return $ MkWMFunction $ \(MkPinaforeAction ra) -> unlift ra
 
 viewPinaforeAction :: View a -> PinaforeAction a
-viewPinaforeAction va = createViewPinaforeAction $ liftToLifeCycle va
+viewPinaforeAction va = createViewPinaforeAction $ lift va
 
 pinaforeResourceContext :: PinaforeAction ResourceContext
 pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
@@ -107,8 +110,8 @@ pinaforeOnClose :: PinaforeAction () -> PinaforeAction ()
 pinaforeOnClose closer = do
     MkWMFunction unlift <- pinaforeGetCreateViewUnlift
     createViewPinaforeAction $
-        lifeCycleCloseInner $
-        runLifeCycle $ do
+        lifeCycleClose $
+        runLifeCycleT $ do
             _ <- getComposeInner $ unlift closer
             return ()
 

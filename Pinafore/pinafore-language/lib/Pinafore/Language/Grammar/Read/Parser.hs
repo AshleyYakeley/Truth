@@ -35,7 +35,7 @@ parseReader r text = let
            toks <- parseTokens text
            case parse r' (sourceName spos) toks of
                Right a -> return a
-               Left e -> throwErrorMessage $ parseErrorMessage e
+               Left e -> throw $ parseErrorMessage e
 
 parseScopedReaderWhole :: Parser (PinaforeInterpreter t) -> Text -> PinaforeInterpreter t
 parseScopedReaderWhole parser text = do

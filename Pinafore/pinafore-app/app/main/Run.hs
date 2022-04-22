@@ -16,7 +16,7 @@ runFiles (copts, modopts) fNoRun scripts =
             let iiScriptName = fpath
             iiEnvironment <- liftIO getEnvironment
             context <- standardPinaforeContext copts MkInvocationInfo {..} cc
-            liftToLifeCycle $ do
+            lift $ do
                 action <- runWithContext context (standardFetchModule modopts) $ pinaforeInterpretFile fpath
                 if fNoRun
                     then return ()
@@ -30,5 +30,5 @@ runInteractive (copts, modopts) =
             iiScriptArguments = []
         iiEnvironment <- liftIO getEnvironment
         context <- standardPinaforeContext copts MkInvocationInfo {..} cc
-        runWithContext context (standardFetchModule modopts) $ liftToLifeCycle pinaforeInteract
-        liftToLifeCycle viewExit
+        runWithContext context (standardFetchModule modopts) $ lift pinaforeInteract
+        lift viewExit

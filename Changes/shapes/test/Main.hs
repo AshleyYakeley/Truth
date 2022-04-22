@@ -1,46 +1,11 @@
-module Main where
+module Main
+    ( main
+    ) where
 
 import Data.IORef
 import Data.Time
 import Shapes
 import Shapes.Test
-
-testComposeInnerApplicative :: TestTree
-testComposeInnerApplicative =
-    testTree "Applicative" $ do
-        r1 <- newIORef False
-        r2 <- newIORef False
-        let
-            c1 :: ComposeInner Maybe IO ()
-            c1 = do
-                lift $ writeIORef r1 True
-                liftInner Nothing
-            c2 :: ComposeInner Maybe IO ()
-            c2 = lift $ writeIORef r2 True
-        _ <- getComposeInner $ liftA2 (,) c1 c2
-        v1 <- readIORef r1
-        v2 <- readIORef r2
-        assertEqual "v1" True v1
-        assertEqual "v2" False v2
-
-testComposeInnerAlternative :: TestTree
-testComposeInnerAlternative =
-    testTree "Alternative" $ do
-        r1 <- newIORef False
-        r2 <- newIORef False
-        let
-            c1 :: ComposeInner Maybe IO ()
-            c1 = lift $ writeIORef r1 True
-            c2 :: ComposeInner Maybe IO ()
-            c2 = lift $ writeIORef r2 True
-        _ <- getComposeInner $ c1 <|> c2
-        v1 <- readIORef r1
-        v2 <- readIORef r2
-        assertEqual "v1" True v1
-        assertEqual "v2" False v2
-
-testComposeInner :: TestTree
-testComposeInner = testTree "composeInner" [testComposeInnerApplicative, testComposeInnerAlternative]
 
 compareTest :: String -> ((String -> IO ()) -> IO r) -> IO r
 compareTest expected action = do
@@ -87,7 +52,7 @@ testLifeCycle =
                 lifeCycleClose $ appendStr "B"
                 liftIO $ appendStr "C"
                 lifeCycleClose $ appendStr "D"
-        runLifeCycle lc
+        runLifeCycleT lc
 
 baseTime :: UTCTime
 baseTime = UTCTime (ModifiedJulianDay 0) 0
@@ -96,7 +61,7 @@ testFastClock :: TestTree
 testFastClock =
     testTree "fast" $ do
         ref <- newIORef False
-        runLifeCycle $ do
+        runLifeCycleT $ do
             _ <-
                 clock baseTime 0.1 $ \_ -> do
                     writeIORef ref True
@@ -111,7 +76,7 @@ testFastClock =
 testSlowClock :: TestTree
 testSlowClock =
     testTree "slow" $
-    runLifeCycle $ do
+    runLifeCycleT $ do
         _ <- clock baseTime (5000 * nominalDay) $ \_ -> return ()
         return ()
 
@@ -119,7 +84,7 @@ testClock :: TestTree
 testClock = testTree "clock" [testFastClock, testSlowClock]
 
 tests :: TestTree
-tests = testTree "shapes" [testComposeInner, testCoroutine, testLifeCycle, testClock]
+tests = testTree "shapes" [testCoroutine, testLifeCycle, testClock]
 
 main :: IO ()
 main = testMain tests

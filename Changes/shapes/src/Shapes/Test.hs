@@ -167,7 +167,7 @@ assertThrowsException ::
     -> IO a
     -> IO ()
 assertThrowsException checkEx ma = do
-    result <- catchResult @SomeException ma
+    result <- tryExc ma
     case result of
         SuccessResult _ -> assertFailure "no exception"
         FailureResult se ->

@@ -49,7 +49,7 @@ debugFloatingLens name = floatLift (\mr -> mr) $ debugLens name
 
 doModelTest :: TestName -> ((?handle :: Handle) => CreateView ()) -> TestTree
 doModelTest name call =
-    goldenTest "." name $ ccRunView (nullChangesContext runLifeCycle) emptyResourceContext $ runLifeCycle call
+    goldenTest "." name $ ccRunView (nullChangesContext runLifeCycleT) emptyResourceContext $ runLifeCycleT call
 
 testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
@@ -99,12 +99,16 @@ testUpdateReference =
             showAction = do
                 action <- takeMVar var
                 action
-        rc <- viewGetResourceContext
-        om' <- liftLifeCycle $ sharePremodel om
-        omr' <- liftLifeCycle $ om' rc mempty $ recv "recv1" wait
-        _ <- liftLifeCycle $ mapPremodel rc lens (om' rc) mempty $ recv "recv2" (return ())
-        viewRunResource (pmrReference omr') $ \MkAReference {..} ->
-            pushOrFail "failed" noEditSource $ refEdit $ pure $ MkWholeReaderEdit "new"
+        rc <- lift viewGetResourceContext
+        omr' <-
+            liftLifeCycle $ do
+                om' <- sharePremodel om
+                omr' <- om' rc mempty $ recv "recv1" wait
+                _ <- mapPremodel rc lens (om' rc) mempty $ recv "recv2" (return ())
+                return omr'
+        lift $
+            viewRunResource (pmrReference omr') $ \MkAReference {..} ->
+                pushOrFail "failed" noEditSource $ refEdit $ pure $ MkWholeReaderEdit "new"
         liftIO showAction
         liftIO showAction
         liftIO $ taskWait $ pmrUpdatesTask omr'
@@ -127,7 +131,7 @@ subscribeShowUpdates ::
     -> CreateView (CreateView ())
 subscribeShowUpdates name model = do
     chan <- liftIO newChan
-    lifeCycleClose $ do
+    lifeCycleCloseIO $ do
         threadDelay 1000 -- 1ms to allow for updates to finish
         writeChan chan Nothing
         final <- readChan chan
@@ -151,9 +155,10 @@ showModelSubject ::
     -> CreateView ()
 showModelSubject name model = do
     liftIO $ taskWait $ modelUpdatesTask model
-    viewRunResource model $ \asub -> do
-        val <- readableToSubject $ aModelRead asub
-        outputNameLn name $ "get " ++ show val
+    lift $
+        viewRunResource model $ \asub -> do
+            val <- readableToSubject $ aModelRead asub
+            outputNameLn name $ "get " ++ show val
 
 modelPushEdits ::
        (Show (UpdateEdit update), ?handle :: Handle)
@@ -162,6 +167,7 @@ modelPushEdits ::
     -> [NonEmpty (UpdateEdit update)]
     -> CreateView ()
 modelPushEdits name model editss =
+    lift $
     viewRunResource model $ \asub ->
         for_ editss $ \edits -> do
             outputNameLn name $ "push " ++ show (toList edits)
@@ -179,6 +185,7 @@ modelDontPushEdits ::
     -> [NonEmpty (UpdateEdit update)]
     -> CreateView ()
 modelDontPushEdits name model editss =
+    lift $
     viewRunResource model $ \asub ->
         for_ editss $ \edits -> do
             outputNameLn name $ "push " ++ show (toList edits)
