@@ -33,19 +33,19 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-createTextArea :: Model (StringUpdate Text) -> SelectNotify TextSelection -> CreateView Widget
+createTextArea :: Model (StringUpdate Text) -> SelectNotify TextSelection -> View Widget
 createTextArea rmod (MkSelectNotify setsel) = do
     esrc <- newEditSource
     buffer <- cvNew TextBuffer []
     insertSignal <-
-        cvOn buffer #insertText $ \iter text _ -> do
+        viewOn buffer #insertText $ \iter text _ -> do
             p <- getSequencePoint iter
             liftIO $
                 runResource emptyResourceContext rmod $ \asub -> do
                     _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
                     return ()
     deleteSignal <-
-        cvOn buffer #deleteRange $ \iter1 iter2 -> do
+        viewOn buffer #deleteRange $ \iter1 iter2 -> do
             srun <- getSequenceRun iter1 iter2
             liftIO $
                 runResource emptyResourceContext rmod $ \asub -> do
@@ -60,14 +60,14 @@ createTextArea rmod (MkSelectNotify setsel) = do
         aspect = do
             srun <- getSelection
             return $ Just $ stringSectionLens srun
-    lift $ setsel aspect
-    _ <- cvAfter buffer #changed $ setsel aspect
-    _ <- cvAfter buffer #markSet $ \_ _ -> setsel aspect
+    setsel aspect
+    _ <- viewAfter buffer #changed $ setsel aspect
+    _ <- viewAfter buffer #markSet $ \_ _ -> setsel aspect
     let
-        initV :: CreateView ()
+        initV :: View ()
         initV = do
-            initial <- lift $ viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
-            lift $ withSignalsBlocked buffer [insertSignal, deleteSignal] $ #setText buffer initial (-1)
+            initial <- viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
+            withSignalsBlocked buffer [insertSignal, deleteSignal] $ #setText buffer initial (-1)
         recvV :: () -> NonEmpty (StringUpdate Text) -> View ()
         recvV () updates =
             for_ updates $ \(MkEditUpdate edit) ->
@@ -75,6 +75,6 @@ createTextArea rmod (MkSelectNotify setsel) = do
                 case edit of
                     StringReplaceWhole text -> #setText buffer text (-1)
                     StringReplaceSection bounds text -> replaceText buffer bounds text
-    cvBindModel rmod (Just esrc) initV mempty recvV
+    viewBindModel rmod (Just esrc) initV mempty recvV
     widget <- cvNew TextView [#buffer := buffer]
     toWidget widget

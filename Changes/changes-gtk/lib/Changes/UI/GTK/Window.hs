@@ -22,7 +22,7 @@ data WindowSpec = MkWindowSpec
     , wsCloseBoxAction :: View ()
     , wsTitle :: Model (ROWUpdate Text)
     , wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-    , wsContent :: CreateView Widget
+    , wsContent :: View Widget
     }
 
 data UIWindow = MkUIWindow
@@ -31,13 +31,13 @@ data UIWindow = MkUIWindow
     , uiWindowDebugDescribe :: IO Text
     }
 
-createWindow :: WindowSpec -> CreateView UIWindow
+createWindow :: WindowSpec -> View UIWindow
 createWindow MkWindowSpec {..} = do
     window <-
         cvTopLevelNew Window [#windowPosition := wsPosition, #defaultWidth := fst wsSize, #defaultHeight := snd wsSize]
-    cvBindReadOnlyWholeModel wsTitle $ \title -> set window [#title := title]
+    viewBindReadOnlyWholeModel wsTitle $ \title -> set window [#title := title]
     _ <-
-        cvOn window #deleteEvent $ \_ -> do
+        viewOn window #deleteEvent $ \_ -> do
             wsCloseBoxAction
             return True -- don't run existing handler that closes the window
     content <- wsContent

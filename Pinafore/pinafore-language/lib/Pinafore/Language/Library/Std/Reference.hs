@@ -55,7 +55,7 @@ refOrderGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFam
 instance HasPinaforeGroundType '[ ContraCCRVariance] LangRefOrder where
     pinaforeGroundType = refOrderGroundType
 
-getSetList :: LangRefOrder A -> LangFiniteSetRef '( A, EnA) -> CreateView (LangListRef '( TopType, A))
+getSetList :: LangRefOrder A -> LangFiniteSetRef '( A, EnA) -> View (LangListRef '( TopType, A))
 getSetList order val =
     pinaforeUpdateOrder order $ \(model :: Model update) uorder -> do
         let
@@ -69,7 +69,7 @@ getSetList order val =
             pkSub :: Model (ContextUpdate update (FiniteSetUpdate EnA))
             pkSub = contextModels model rows
         colSub :: Model (ContextUpdate update (OrderedListUpdate (ConstWholeUpdate EnA))) <-
-            cvFloatMapModel (contextOrderedSetLens uo) pkSub
+            viewFloatMapModel (contextOrderedSetLens uo) pkSub
         return $
             OrderedLangListRef $
             eaMap (liftOrderedListChangeLens (constWholeChangeLens meet2) . tupleChangeLens SelectContent) $
@@ -84,21 +84,21 @@ deleteentity ref = langWholeRefSet ref Unknown
 newMemWhole :: forall a. PinaforeAction (LangWholeRef '( a, a))
 newMemWhole = do
     r <- liftIO $ makeMemoryReference Unknown $ \_ -> True
-    model <- liftLifeCycle $ makeReflectingModel r
+    model <- actionLiftLifeCycle $ makeReflectingModel r
     uh <- pinaforeUndoHandler
     return $ pinaforeRefToWholeRef $ MkWModel $ undoHandlerModel uh model
 
 newMemFiniteSet :: PinaforeAction (LangFiniteSetRef '( MeetType Entity A, A))
 newMemFiniteSet = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
-    model <- liftLifeCycle $ makeReflectingModel $ convertReference r
+    model <- actionLiftLifeCycle $ makeReflectingModel $ convertReference r
     uh <- pinaforeUndoHandler
     return $ meetValueLangFiniteSetRef $ MkWModel $ undoHandlerModel uh model
 
 newMemList :: forall a. PinaforeAction (LangListRef '( a, a))
 newMemList = do
     r <- liftIO $ makeMemoryReference mempty $ \_ -> True
-    model :: Model (ListUpdate (WholeUpdate a)) <- liftLifeCycle $ makeReflectingModel $ convertReference r
+    model :: Model (ListUpdate (WholeUpdate a)) <- actionLiftLifeCycle $ makeReflectingModel $ convertReference r
     uh <- pinaforeUndoHandler
     return $ FullLangListRef $ eaMap singleBiChangeLens $ MkWModel $ undoHandlerModel uh model
 

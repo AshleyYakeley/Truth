@@ -11,35 +11,35 @@ import Shapes
 oneWholeView ::
        forall f update. (MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
-    -> (f (Model update) -> CreateView Widget)
+    -> (f (Model update) -> View Widget)
     -> SelectNotify (f ())
-    -> CreateView Widget
+    -> View Widget
 oneWholeView model baseView sn = do
     box <- cvNew Box [#orientation := OrientationVertical]
     let
-        addWidget :: CreateView Widget -> CreateView ()
+        addWidget :: View Widget -> View ()
         addWidget cvw = do
             widget <- cvw
             cvPackStart True box widget
             widgetShow widget
-    cvOneWholeView model (\fmodel -> addWidget $ baseView fmodel) sn
+    viewInnerWholeView model (\fmodel -> addWidget $ baseView fmodel) sn
     toWidget box
 
 createOneWhole ::
        forall f update. (IsUpdate update, MonadInner f, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
-    -> (f (Model update) -> CreateView Widget)
-    -> CreateView Widget
+    -> (f (Model update) -> View Widget)
+    -> View Widget
 createOneWhole sub itemspec = oneWholeView sub itemspec mempty
 
 createOneWholeSel ::
        forall sel f update. (IsUpdate update, MonadInner f, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
-    -> (f (Model update, SelectNotify sel) -> CreateView Widget)
+    -> (f (Model update, SelectNotify sel) -> View Widget)
     -> SelectNotify (f sel)
-    -> CreateView Widget
+    -> View Widget
 createOneWholeSel subf specsel snfsel = let
-    spec :: f (Model update) -> CreateView Widget
+    spec :: f (Model update) -> View Widget
     spec fsub = specsel $ fmap (\sub -> (sub, contramap pure snfsel)) fsub
     getf :: f () -> Maybe (f sel)
     getf fu =

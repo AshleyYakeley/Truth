@@ -28,11 +28,11 @@ listStoreView ::
     => WMFunction View View
     -> Model (ReadOnlyUpdate (OrderedListUpdate update))
     -> EditSource
-    -> CreateView (SeqStore (UpdateSubject update))
+    -> View (SeqStore (UpdateSubject update))
 listStoreView (MkWMFunction blockSignal) itemsModel esrc = let
-    initV :: CreateView (SeqStore (UpdateSubject update))
+    initV :: View (SeqStore (UpdateSubject update))
     initV = do
-        subjects <- lift $ viewRunResource itemsModel $ \am -> readableToSubject $ aModelRead am
+        subjects <- viewRunResource itemsModel $ \am -> readableToSubject $ aModelRead am
         seqStoreNew $ toList subjects
     recv :: SeqStore (UpdateSubject update) -> NonEmpty (ReadOnlyUpdate (OrderedListUpdate update)) -> View ()
     recv store updates =
@@ -55,7 +55,7 @@ listStoreView (MkWMFunction blockSignal) itemsModel esrc = let
                 OrderedListUpdateDelete (fromIntegral -> i) -> blockSignal $ seqStoreRemove store i
                 OrderedListUpdateInsert (fromIntegral -> i) item -> blockSignal $ seqStoreInsert store i item
                 OrderedListUpdateClear -> blockSignal $ seqStoreClear store
-    in cvBindModel itemsModel (Just esrc) initV mempty recv
+    in viewBindModel itemsModel (Just esrc) initV mempty recv
 
 comboBoxCellAttributes :: ComboBoxCell -> [AttrOp CellRendererText 'AttrSet]
 comboBoxCellAttributes MkComboBoxCell {..} = textCellAttributes cbcText cbcStyle
@@ -65,14 +65,14 @@ cboxFromStore ::
     => Model (WholeUpdate t)
     -> EditSource
     -> SeqStore (t, ComboBoxCell)
-    -> CreateView (WMFunction View View, Widget)
+    -> View (WMFunction View View, Widget)
 cboxFromStore whichModel esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- cvNew CellRendererText []
     #packStart widget renderer False
     cellLayoutSetAttributes widget renderer store $ \(_, cell) -> comboBoxCellAttributes cell
     changedSignal <-
-        cvOn widget #changed $
+        viewOn widget #changed $
         viewRunResource whichModel $ \asub -> do
             mi <- #getActiveIter widget
             case mi of
@@ -108,7 +108,7 @@ cboxFromStore whichModel esrc store = do
                         Just ti -> blockSignal $ #setActiveIter widget $ Just ti
                         Nothing -> return ()
                 Nothing -> return ()
-    cvBindWholeModel whichModel (Just esrc) update
+    viewBindWholeModel whichModel (Just esrc) update
     w <- toWidget widget
     return (MkWMFunction blockSignal, w)
 
@@ -122,7 +122,7 @@ createComboBox ::
        )
     => Model (ReadOnlyUpdate (OrderedListUpdate update))
     -> Model (WholeUpdate t)
-    -> CreateView Widget
+    -> View Widget
 createComboBox itemsModel whichModel = do
     esrc <- newEditSource
     rec

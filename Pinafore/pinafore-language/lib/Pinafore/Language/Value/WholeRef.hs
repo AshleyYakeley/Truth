@@ -64,7 +64,7 @@ langWholeRefSubscribe ::
     -> (Maybe a -> PinaforeAction ())
     -> PinaforeAction ()
 langWholeRefSubscribe (MkPinaforeImmutableWholeRef (MkWModel ref)) update =
-    createViewPinaforeAction $ cvBindReadOnlyWholeModel ref (\ka -> runPinaforeAction $ update $ knowToMaybe ka)
+    actionLiftView $ viewBindReadOnlyWholeModel ref (\ka -> runPinaforeAction $ update $ knowToMaybe ka)
 
 maybeLensLangWholeRef ::
        forall ap aq bp bq.

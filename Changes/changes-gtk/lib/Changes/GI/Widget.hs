@@ -59,12 +59,12 @@ isScrollable widget = do
             (Nothing, Nothing) -> False
             _ -> True
 
-cvAdd :: (IsContainer c, IsWidget w) => c -> w -> CreateView ()
+cvAdd :: (IsContainer c, IsWidget w) => c -> w -> View ()
 cvAdd c w = do
     containerAdd c w
-    lifeCycleClose $ containerRemove c w
+    viewCloserIO $ containerRemove c w
 
-cvPackStart :: (IsObject w, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> CreateView ()
+cvPackStart :: (IsObject w, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> View ()
 cvPackStart grow box w = do
     boxPackStart box w grow grow 0
-    lifeCycleClose $ containerRemove box w
+    viewCloserIO $ containerRemove box w

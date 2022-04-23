@@ -17,7 +17,7 @@ instance TraceThing (Model edit) where
     traceThing prefix (MkResource rr (MkAModel anobj sub utask)) =
         case resourceRunnerStackUnliftDict @IO rr of
             Dict ->
-                case resourceRunnerStackUnliftDict @(LifeCycle) rr of
+                case resourceRunnerStackUnliftDict @LifeCycle rr of
                     Dict ->
                         MkResource rr $
                         MkAModel

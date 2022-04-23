@@ -49,9 +49,9 @@ testLifeCycle =
             lc :: LifeCycle ()
             lc = do
                 liftIO $ appendStr "A"
-                lifeCycleClose $ appendStr "B"
+                lifeCycleCloser $ appendStr "B"
                 liftIO $ appendStr "C"
-                lifeCycleClose $ appendStr "D"
+                lifeCycleCloser $ appendStr "D"
         runLifeCycleT lc
 
 baseTime :: UTCTime

@@ -8,7 +8,7 @@ import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes hiding (get)
 
-createTextEntry :: Model (WholeUpdate Text) -> CreateView Widget
+createTextEntry :: Model (WholeUpdate Text) -> View Widget
 createTextEntry rmod = do
     esrc <- newEditSource
     widget <- cvNew Entry []
@@ -21,12 +21,12 @@ createTextEntry rmod = do
         setValidState True = #overrideColor widget [StateFlagsNormal] Nothing
         setValidState False = #overrideColor widget [StateFlagsNormal] $ Just invalidCol
     changedSignal <-
-        cvOn widget #changed $
+        viewOn widget #changed $
         viewRunResource rmod $ \asub -> do
             st <- get widget #text
             succeeded <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
             setValidState succeeded
-    cvBindWholeModel rmod (Just esrc) $ \newtext ->
+    viewBindWholeModel rmod (Just esrc) $ \newtext ->
         withSignalBlocked widget changedSignal $ do
             oldtext <- get widget #text
             if oldtext == newtext

@@ -9,15 +9,15 @@ import Changes.GI
 import GI.Gtk as GI
 import Shapes
 
-setCSSName :: Text -> Widget -> CreateView ()
+setCSSName :: Text -> Widget -> View ()
 setCSSName name w = #setName w name
 
-setCSSClass :: Text -> Widget -> CreateView ()
+setCSSClass :: Text -> Widget -> View ()
 setCSSClass cssclass w = do
     sc <- #getStyleContext w
     #addClass sc cssclass
 
-bindCSS :: Bool -> Word32 -> Model (ROWUpdate Text) -> Widget -> CreateView ()
+bindCSS :: Bool -> Word32 -> Model (ROWUpdate Text) -> Widget -> View ()
 bindCSS tree priority cssmod widget = do
     provider <- cvNew CssProvider []
     widgets <-
@@ -27,4 +27,4 @@ bindCSS tree priority cssmod widget = do
     for_ widgets $ \w -> do
         sc <- #getStyleContext w
         #addProvider sc provider priority
-    cvBindReadOnlyWholeModel cssmod $ \css -> #loadFromData provider $ encodeUtf8 css
+    viewBindReadOnlyWholeModel cssmod $ \css -> #loadFromData provider $ encodeUtf8 css

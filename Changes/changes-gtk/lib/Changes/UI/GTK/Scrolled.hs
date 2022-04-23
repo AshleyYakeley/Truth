@@ -7,7 +7,7 @@ import Changes.GI
 import GI.Gtk
 import Shapes
 
-createScrolled :: Widget -> CreateView Widget
+createScrolled :: Widget -> View Widget
 createScrolled content = do
     sw <- cvNew ScrolledWindow []
     scrollable <- liftIO $ isScrollable content

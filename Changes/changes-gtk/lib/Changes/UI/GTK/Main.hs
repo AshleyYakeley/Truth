@@ -27,10 +27,10 @@ changesMainGTK appMain =
             rtWithoutLock = mVarUnitUnlock uiLockVar
             rtExit :: IO ()
             rtExit = mVarRun runVar $ put RSStop
-            rtUnliftLifeCycle :: LifeCycle --> IO
-            rtUnliftLifeCycle = unlift
+            rtRunInMain :: LifeCycle --> IO
+            rtRunInMain = unlift
             rt = MkRunToolkit {..}
-        a <- unlift $ rtRunView rt emptyResourceContext $ commuteT $ quitOnAllClosed rt appMain
+        a <- unlift $ rtRunView rt emptyResourceContext $ quitOnAllClosed rt appMain
         shouldRun <- liftIO $ mVarRun runVar Shapes.get
         case shouldRun of
             RSStop -> return ()

@@ -19,4 +19,10 @@ do
     outputLn "F";
     cl;
     outputLn "G";
+    onClose $ do
+        outputLn "x";
+        onClose $ outputLn "y";
+        outputLn "z";
+        end;
+    outputLn "H";
 end

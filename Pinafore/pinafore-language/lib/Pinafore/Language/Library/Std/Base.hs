@@ -124,7 +124,7 @@ zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
 newClock :: NominalDiffTime -> PinaforeAction (PinaforeImmutableWholeRef UTCTime)
 newClock duration = do
-    (clockOM, ()) <- liftLifeCycle $ makeSharedModel $ clockPremodel zeroTime duration
+    (clockOM, ()) <- actionLiftLifeCycle $ makeSharedModel $ clockPremodel zeroTime duration
     return $ functionImmutableRef $ MkWModel $ clockOM
 
 newTimeZoneRef :: PinaforeImmutableWholeRef UTCTime -> PinaforeAction (PinaforeImmutableWholeRef Int)
@@ -802,7 +802,7 @@ baseLibEntries =
                 "Close everything that gets opened in the given action.\n\n\
                 \Example: `lifecycle $ do openResource; sleep 1000 end`  \n\
                 \This opens some resource, sleeps for one second, and then closes it again." $
-            subLifeCycle @PinaforeAction @A
+            (actionHoistView viewSubLifeCycle) @A
           , mkValEntry
                 "onClose"
                 "Add this action as to be done when closing.\n\n\

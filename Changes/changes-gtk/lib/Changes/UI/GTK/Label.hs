@@ -7,8 +7,8 @@ import Changes.GI
 import GI.Gtk
 import Shapes
 
-createLabel :: Model (ROWUpdate Text) -> CreateView Widget
+createLabel :: Model (ROWUpdate Text) -> View Widget
 createLabel lmod = do
     widget <- cvNew Label []
-    cvBindReadOnlyWholeModel lmod $ \label -> set widget [#label := label]
+    viewBindReadOnlyWholeModel lmod $ \label -> set widget [#label := label]
     toWidget widget

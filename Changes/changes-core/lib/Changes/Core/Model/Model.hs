@@ -30,7 +30,7 @@ import Changes.Core.Types
 
 data AModel update tt = MkAModel
     { aModelAReference :: AReference (UpdateEdit update) tt
-    , aModelSubscribe :: Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt (LifeCycle) ()
+    , aModelSubscribe :: Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt LifeCycle ()
     , aModelUpdatesTask :: Task ()
     }
 
@@ -53,7 +53,7 @@ instance MapResource (AModel update) where
                 case transStackDict @Monad @tt2 @IO of
                     Dict -> let
                         obj2 = mapResource tlf obj1
-                        sub2 recv task = tlfFunction tlf (Proxy @(LifeCycle)) $ sub1 recv task
+                        sub2 recv task = tlfFunction tlf (Proxy @LifeCycle) $ sub1 recv task
                         in MkAModel obj2 sub2 utask
 
 type Model update = Resource (AModel update)
@@ -127,11 +127,11 @@ makeSharedModel om = do
     Dict <- return $ transStackDict @MonadTunnelIO @tt @IO
     let
         aModelSubscribe ::
-               Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt (LifeCycle) ()
+               Task () -> (ResourceContext -> NonEmpty update -> EditContext -> IO ()) -> ApplyStack tt LifeCycle ()
         aModelSubscribe taskC updateC =
-            stackLift @tt @(LifeCycle) $ do
+            stackLift @tt @LifeCycle $ do
                 key <- liftIO $ mVarRun var $ addStoreStateT (taskC, updateC)
-                lifeCycleClose $ mVarRun var $ deleteStoreStateT key
+                lifeCycleCloser $ mVarRun var $ deleteStoreStateT key
         aModelUpdatesTask = pmrUpdatesTask
         child :: Model update
         child = MkResource trunC $ MkAModel {..}

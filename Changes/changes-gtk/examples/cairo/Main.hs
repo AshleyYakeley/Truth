@@ -39,11 +39,11 @@ main :: IO ()
 main = do
     changesMainGTK $ \cc -> do
         let newWindow spec = ccExitOnClosed cc $ createWindow spec
-        (clockModel, ()) <- liftLifeCycle $ makeSharedModel $ clockPremodel zeroTime $ secondsToNominalDiffTime 1
+        (clockModel, ()) <- viewLiftLifeCycle $ makeSharedModel $ clockPremodel zeroTime $ secondsToNominalDiffTime 1
         tz <- liftIO getCurrentTimeZone
         rec
             (_, closer) <-
-                lifeCycleEarlyCloser $
+                viewGetCloser $
                 newWindow $ let
                     wsPosition = WindowPositionCenter
                     wsSize = (600, 600)
@@ -53,7 +53,7 @@ main = do
                     wsTitle = constantModel "Cairo"
                     wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
                     wsMenuBar = Nothing
-                    wsContent :: CreateView Widget
+                    wsContent :: View Widget
                     wsContent = do
                         w1 <- createButton (constantModel "Button") (constantModel Nothing)
                         w2 <- createCairo $ mapModel (funcChangeLens $ drawing tz) clockModel

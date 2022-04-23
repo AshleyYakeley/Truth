@@ -28,10 +28,10 @@ pixbufNewFromImage ::
 pixbufNewFromImage (Image w h pixelVec) =
     unsafeWith pixelVec $ \pixelPtr -> pixbufNewFrom @px (fromIntegral w) (fromIntegral h) pixelPtr
 
-createImage :: GTKPixelType px => Model (ROWUpdate (Image px)) -> CreateView Widget
+createImage :: GTKPixelType px => Model (ROWUpdate (Image px)) -> View Widget
 createImage lmod = do
     widget <- cvNew GI.Image []
-    cvBindReadOnlyWholeModel lmod $ \image -> do
+    viewBindReadOnlyWholeModel lmod $ \image -> do
         pixbuf <- liftIO $ pixbufNewFromImage image
         set widget [#pixbuf := pixbuf]
     toWidget widget

@@ -1,16 +1,17 @@
 module Pinafore.Base.Action
     ( PinaforeAction
     , unPinaforeAction
-    , createViewPinaforeAction
+    , actionLiftView
+    , actionHoistView
+    , actionLiftLifeCycle
     , pinaforeGetCreateViewUnlift
-    , viewPinaforeAction
     , pinaforeResourceContext
     , pinaforeFlushModelUpdates
     , pinaforeFlushModelCommits
     , pinaforeRefGet
     , pinaforeRefPush
     , pinaforeGetExitOnClose
-    , pinaforeExit
+    , actionExitUI
     , pinaforeUndoHandler
     , pinaforeActionKnow
     , knowPinaforeAction
@@ -25,42 +26,33 @@ import Pinafore.Base.Know
 import Shapes
 
 data ActionContext = MkActionContext
-    { acChangesContext :: ChangesContext
+    { acExitOnClosed :: WMFunction View View
     , acUndoHandler :: UndoHandler
     }
 
 newtype PinaforeAction a =
-    MkPinaforeAction (ReaderT ActionContext (ComposeInner Know CreateView) a)
-    deriving ( Functor
-             , Applicative
-             , Monad
-             , Alternative
-             , MonadPlus
-             , MonadFix
-             , MonadFail
-             , MonadIO
-             , MonadLifeCycleIO
-             , RepresentationalRole
-             )
+    MkPinaforeAction (ReaderT ActionContext (ComposeInner Know View) a)
+    deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadFail, MonadIO, RepresentationalRole)
 
-unPinaforeAction :: forall a. ChangesContext -> UndoHandler -> PinaforeAction a -> CreateView (Know a)
-unPinaforeAction acChangesContext acUndoHandler (MkPinaforeAction action) =
-    getComposeInner $ runReaderT action MkActionContext {..}
+unPinaforeAction :: forall a. ChangesContext -> UndoHandler -> PinaforeAction a -> View (Know a)
+unPinaforeAction MkChangesContext {..} acUndoHandler (MkPinaforeAction action) = let
+    acExitOnClosed = MkWMFunction ccExitOnClosed
+    in getComposeInner $ runReaderT action MkActionContext {..}
 
-createViewPinaforeAction :: CreateView a -> PinaforeAction a
-createViewPinaforeAction cva = MkPinaforeAction $ lift $ lift cva
+actionLiftView :: View --> PinaforeAction
+actionLiftView cva = MkPinaforeAction $ lift $ lift cva
 
-pinaforeGetCreateViewUnlift :: PinaforeAction (WMFunction PinaforeAction (ComposeInner Know CreateView))
+actionHoistView :: (View --> View) -> PinaforeAction --> PinaforeAction
+actionHoistView vv (MkPinaforeAction ma) = MkPinaforeAction $ hoist (hoist vv) ma
+
+pinaforeGetCreateViewUnlift :: PinaforeAction (WMFunction PinaforeAction (ComposeInner Know View))
 pinaforeGetCreateViewUnlift =
     MkPinaforeAction $ do
         MkWUnlift unlift <- askUnlift
         return $ MkWMFunction $ \(MkPinaforeAction ra) -> unlift ra
 
-viewPinaforeAction :: View a -> PinaforeAction a
-viewPinaforeAction va = createViewPinaforeAction $ lift va
-
 pinaforeResourceContext :: PinaforeAction ResourceContext
-pinaforeResourceContext = viewPinaforeAction viewGetResourceContext
+pinaforeResourceContext = actionLiftView viewGetResourceContext
 
 pinaforeFlushModelUpdates :: WModel update -> PinaforeAction ()
 pinaforeFlushModelUpdates (MkWModel model) = liftIO $ taskWait $ modelUpdatesTask model
@@ -83,14 +75,14 @@ pinaforeRefPush model edits = do
         then return ()
         else empty
 
-pinaforeGetExitOnClose :: PinaforeAction (WMFunction CreateView CreateView)
-pinaforeGetExitOnClose =
-    MkPinaforeAction $ do
-        tc <- asks acChangesContext
-        return $ MkWMFunction $ ccExitOnClosed tc
+pinaforeGetExitOnClose :: PinaforeAction (WMFunction View View)
+pinaforeGetExitOnClose = MkPinaforeAction $ asks acExitOnClosed
 
-pinaforeExit :: PinaforeAction ()
-pinaforeExit = viewPinaforeAction viewExit
+actionLiftLifeCycle :: LifeCycle --> PinaforeAction
+actionLiftLifeCycle la = actionLiftView $ viewLiftLifeCycle la
+
+actionExitUI :: PinaforeAction ()
+actionExitUI = actionLiftView viewExitUI
 
 pinaforeUndoHandler :: PinaforeAction UndoHandler
 pinaforeUndoHandler = do
@@ -108,9 +100,8 @@ knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =
 pinaforeOnClose :: PinaforeAction () -> PinaforeAction ()
 pinaforeOnClose closer = do
     MkWMFunction unlift <- pinaforeGetCreateViewUnlift
-    createViewPinaforeAction $
-        lifeCycleClose $
-        runLifeCycleT $ do
+    actionLiftView $
+        viewCloser $ do
             _ <- getComposeInner $ unlift closer
             return ()
 
@@ -120,7 +111,7 @@ pinaforeEarlyCloser ra = do
     MkPinaforeAction $
         lift $
         MkComposeInner $ do
-            (ka, closer) <- lifeCycleEarlyCloser $ getComposeInner $ unlift ra
+            (ka, closer) <- viewGetCloser $ getComposeInner $ unlift ra
             return $ fmap (\a -> (a, closer)) ka
 
 pinaforeFloatMap ::
@@ -130,7 +121,7 @@ pinaforeFloatMap ::
     -> PinaforeAction (f updateB)
 pinaforeFloatMap flens fa = do
     rc <- pinaforeResourceContext
-    liftLifeCycle $ eaFloatMap rc flens fa
+    actionLiftLifeCycle $ eaFloatMap rc flens fa
 
 pinaforeFloatMapReadOnly ::
        forall f updateA updateB. FloatingEditApplicative f

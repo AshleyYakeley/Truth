@@ -38,7 +38,7 @@ clock utcBase ndtInterval call = do
             takeMVar var
             call $ addUTCTime ndtNext utcBase
     (ndtTime, ndtOffset) <- liftIO getDiffTimes
-    lifeCycleClose $ do
+    lifeCycleCloser $ do
         takeMVar var
         throwTo thread MkCancelled
     return $ addUTCTime (ndtTime - ndtOffset) utcBase

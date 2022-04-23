@@ -25,16 +25,16 @@ plainTableCellProps = let
 
 data KeyColumn update = MkKeyColumn
     { kcName :: Model (ROWUpdate Text)
-    , kcContents :: Model update -> CreateView (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
+    , kcContents :: Model update -> View (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
     }
 
 readOnlyKeyColumn ::
        forall update.
        Model (ROWUpdate Text)
-    -> (Model update -> CreateView (Model (ROWUpdate (Text, TableCellProps))))
+    -> (Model update -> View (Model (ROWUpdate (Text, TableCellProps))))
     -> KeyColumn update
 readOnlyKeyColumn kcName getter = let
-    kcContents :: Model update -> CreateView (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
+    kcContents :: Model update -> View (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
     kcContents rowSub = do
         cellSub <- getter rowSub
         let
@@ -66,12 +66,11 @@ cellAttributes MkColumn {..} MkStoreEntry {..} = let
     MkTableCellProps {..} = colProps entryRow
     in textCellAttributes (colText entryRow) tcStyle
 
-addColumn ::
-       TreeView -> DynamicStore (StoreEntry update rowtext rowprops) -> Column (rowtext, rowprops) -> CreateView ()
+addColumn :: TreeView -> DynamicStore (StoreEntry update rowtext rowprops) -> Column (rowtext, rowprops) -> View ()
 addColumn tview store col = do
     renderer <- cvNew CellRendererText []
     column <- cvNew TreeViewColumn []
-    cvBindReadOnlyWholeModel (colName col) $ #setTitle column
+    viewBindReadOnlyWholeModel (colName col) $ #setTitle column
     #packStart column renderer False
     cellLayoutSetAttributes column renderer (getDynamicSeqStore store) $ \entry ->
         cellAttributes col $ dynamicStoreEntryValue entry
@@ -79,8 +78,8 @@ addColumn tview store col = do
     return ()
 
 data KeyColumns update =
-    forall rowprops rowtext. MkKeyColumns (Model update -> CreateView ( Model (WholeUpdate rowtext)
-                                                                      , Model (ROWUpdate rowprops)))
+    forall rowprops rowtext. MkKeyColumns (Model update -> View ( Model (WholeUpdate rowtext)
+                                                                , Model (ROWUpdate rowprops)))
                                           [Column (rowtext, rowprops)]
 
 oneKeyColumn :: KeyColumn update -> KeyColumns update
@@ -108,29 +107,28 @@ tableContainerView ::
     -> Model (OrderedListUpdate update)
     -> (Model update -> View ())
     -> SelectNotify (Model update)
-    -> CreateView (Widget, Maybe (ReadM (UpdateReader update) Bool) -> View ())
-tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model (WholeUpdate rowtext)
-                                                                        , Model (ROWUpdate rowprops))) cols) tableModel onActivate notifier = do
+    -> View (Widget, Maybe (ReadM (UpdateReader update) Bool) -> View ())
+tableContainerView (MkKeyColumns (colfunc :: Model update -> View ( Model (WholeUpdate rowtext)
+                                                                  , Model (ROWUpdate rowprops))) cols) tableModel onActivate notifier = do
     let
         defStoreEntry :: StoreEntry update rowtext rowprops
         defStoreEntry = MkStoreEntry (error "unset model") (error "unset text") (error "unset props")
         makeStoreEntry ::
                SequencePoint
             -> ((StoreEntry update rowtext rowprops -> StoreEntry update rowtext rowprops) -> IO ())
-            -> CreateView ()
+            -> View ()
         makeStoreEntry i setval = do
             usub <-
-                cvFloatMapModel
+                viewFloatMapModel
                     (changeLensToFloating (mustExistOneChangeLens "GTK table view") . orderedListItemLens i)
                     tableModel
             liftIO $ setval $ \entry -> entry {entryModel = usub}
             (textModel, propModel) <- colfunc usub
-            cvBindWholeModel textModel Nothing $ \t -> liftIO $ setval $ \entry -> entry {entryRowText = t}
-            cvBindReadOnlyWholeModel propModel $ \t -> liftIO $ setval $ \entry -> entry {entryRowProps = t}
-        initTable :: CreateView (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
+            viewBindWholeModel textModel Nothing $ \t -> liftIO $ setval $ \entry -> entry {entryRowText = t}
+            viewBindReadOnlyWholeModel propModel $ \t -> liftIO $ setval $ \entry -> entry {entryRowProps = t}
+        initTable :: View (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
         initTable = do
             initialRows <-
-                lift $
                 viewRunResourceContext tableModel $ \unlift amodel -> do
                     n <- liftIO $ unlift $ aModelRead amodel ListReadLength
                     return $ fmap makeStoreEntry [0 .. pred n]
@@ -180,7 +178,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
                 case mi of
                     Nothing -> setSelectedIndex mi
                     Just _ -> withSignalBlocked tselection getSelSig $ setSelectedIndex mi
-        (store, tview) <- cvBindModel tableModel Nothing initTable mempty recvTable
+        (store, tview) <- viewBindModel tableModel Nothing initTable mempty recvTable
         tselection <- #getSelection tview
         set tselection [#mode := SelectionModeSingle] -- 0 or 1 selected
         let
@@ -188,7 +186,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             getSelection = do
                 mentry <- getSelectedEntry
                 return $ fmap (entryModel . snd) mentry
-        getSelSig <- cvOn tselection #changed $ runSelectNotify notifier getSelection
+        getSelSig <- viewOn tselection #changed $ runSelectNotify notifier getSelection
     let
         setSelection :: Maybe (ReadM (UpdateReader update) Bool) -> View ()
         setSelection Nothing = setSelectedIndex Nothing
@@ -203,7 +201,7 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> CreateView ( Model 
             mi <- mFindIndex testEntry items
             withSignalBlocked tselection getSelSig $ setSelectedIndex mi
     _ <-
-        cvOn tview #rowActivated $ \tpath _ -> do
+        viewOn tview #rowActivated $ \tpath _ -> do
             mentry <- getEntryFromPath tpath
             case mentry of
                 Just (_, entry) -> onActivate $ entryModel entry
@@ -217,5 +215,5 @@ createListTable ::
     -> Model (OrderedListUpdate update)
     -> (Model update -> View ())
     -> SelectNotify (Model update)
-    -> CreateView (Widget, Maybe (ReadM (UpdateReader update) Bool) -> View ())
+    -> View (Widget, Maybe (ReadM (UpdateReader update) Bool) -> View ())
 createListTable cols sub onActivate sel = tableContainerView (mconcat $ fmap oneKeyColumn cols) sub onActivate sel

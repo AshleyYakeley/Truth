@@ -30,17 +30,16 @@ nullInvocationInfo = let
     in MkInvocationInfo {..}
 
 data PinaforeContext = MkPinaforeContext
-    { pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
-    , pconUnliftCreateView :: CreateView --> View
+    { pconUnliftAction :: forall a. PinaforeAction a -> View (Know a)
     , pconStorageModel :: Model PinaforeStorageUpdate
     , pconInvocation :: InvocationInfo
     , pconStdOut :: Handle
     }
 
-unliftPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction a -> CreateView (Know a)
+unliftPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction a -> View (Know a)
 unliftPinaforeAction = pconUnliftAction ?pinafore
 
-unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext) => PinaforeAction --> CreateView
+unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext) => PinaforeAction --> View
 unliftPinaforeActionOrFail action = do
     ka <- unliftPinaforeAction action
     case ka of
@@ -48,7 +47,7 @@ unliftPinaforeActionOrFail action = do
         Unknown -> fail "action stopped"
 
 runPinaforeAction :: (?pinafore :: PinaforeContext) => PinaforeAction () -> View ()
-runPinaforeAction action = pconUnliftCreateView ?pinafore $ fmap (\_ -> ()) $ unliftPinaforeAction action
+runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
 
 pinaforeStorageModel :: (?pinafore :: PinaforeContext) => Model PinaforeStorageUpdate
 pinaforeStorageModel = pconStorageModel ?pinafore
@@ -64,17 +63,14 @@ makePinaforeContext ::
 makePinaforeContext pconInvocation pconStdOut rmodel tc = do
     uh <- liftIO newUndoHandler
     let
-        pconUnliftAction :: forall a. PinaforeAction a -> CreateView (Know a)
+        pconUnliftAction :: forall a. PinaforeAction a -> View (Know a)
         pconUnliftAction = unPinaforeAction tc uh
-        pconUnliftCreateView :: CreateView --> View
-        pconUnliftCreateView = ccUnliftCreateView tc
         pconStorageModel = undoHandlerModel uh rmodel
     return $ MkPinaforeContext {..}
 
 nullPinaforeContext :: PinaforeContext
 nullPinaforeContext = let
     pconUnliftAction _ = fail "null Pinafore context"
-    pconUnliftCreateView _ = fail "null Pinafore context"
     pconStorageModel = error "no pinafore base"
     pconInvocation = nullInvocationInfo
     pconStdOut = stdout

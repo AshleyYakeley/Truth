@@ -35,10 +35,10 @@ data ContextOptions = MkContextOptions
     , coDataDir :: FilePath
     }
 
-standardStorageModel :: Bool -> FilePath -> CreateView (Model PinaforeStorageUpdate)
+standardStorageModel :: Bool -> FilePath -> View (Model PinaforeStorageUpdate)
 standardStorageModel cache dataDir = do
-    rc <- lift viewGetResourceContext
-    liftLifeCycle $ do
+    rc <- viewGetResourceContext
+    viewLiftLifeCycle $ do
         sqlReference <- liftIO $ sqlitePinaforeTableReference $ dataDir </> "tables.sqlite3"
         tableReference1 <- exclusiveResource rc sqlReference
         tableReference <-
@@ -58,10 +58,10 @@ standardFetchModule MkModuleOptions {..} = let
     dirFetchModule = mconcat $ fmap directoryFetchModule moModuleDirs
     in extraLibFetchModule <> dirFetchModule
 
-standardPinaforeContext :: ContextOptions -> InvocationInfo -> ChangesContext -> CreateView PinaforeContext
+standardPinaforeContext :: ContextOptions -> InvocationInfo -> ChangesContext -> View PinaforeContext
 standardPinaforeContext MkContextOptions {..} invinfo cc = do
     model <- standardStorageModel coCache coDataDir
-    pc <- liftLifeCycle $ makePinaforeContext invinfo stdout model cc
+    pc <- viewLiftLifeCycle $ makePinaforeContext invinfo stdout model cc
     return pc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()

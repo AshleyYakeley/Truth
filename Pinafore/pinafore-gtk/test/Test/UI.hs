@@ -26,19 +26,19 @@ runUIAction :: forall a. Timing -> (ChangesContext -> View a) -> Text -> IO a
 runUIAction timing testaction t = do
     donevar <- newEmptyMVar
     changesMainGTK $ \tc -> do
-        (pc, _) <- liftLifeCycle $ makeTestPinaforeContext tc stdout
+        (pc, _) <- viewLiftLifeCycle $ makeTestPinaforeContext tc stdout
         scriptaction <-
             runWithContext pc (libraryFetchModule gtkLibrary) $ throwInterpretResult $ pinaforeInterpretText "<test>" t
-        lift scriptaction
+        scriptaction
         let
             testView :: View (Result SomeException a)
             testView = do
                 ar <- tryExc $ testaction tc
-                viewExit
+                viewExitUI
                 return ar
         case timing of
             SyncTiming -> do
-                ar <- lift testView
+                ar <- testView
                 liftIO $ putMVar donevar ar
             AsyncTiming -> do
                 _ <-
