@@ -128,7 +128,7 @@ subscribeShowUpdates ::
     -> View (View ())
 subscribeShowUpdates name model = do
     chan <- liftIO newChan
-    viewCloserIO $ do
+    viewOnCloseIO $ do
         threadDelay 1000 -- 1ms to allow for updates to finish
         writeChan chan Nothing
         final <- readChan chan

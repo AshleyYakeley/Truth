@@ -2,8 +2,8 @@ module Control.Monad.LifeCycle
     ( LifeState
     , closeLifeState
     , LifeCycleT
-    , lifeCycleCloserIO
-    , lifeCycleCloser
+    , lifeCycleOnCloseIO
+    , lifeCycleOnClose
     , forkLifeCycleT
     , getLifeState
     , runLifeCycleT
@@ -120,17 +120,17 @@ instance MonadTransUnlift LifeCycleT where
             var <- liftIO $ newMVar mempty
             f var
 
-lifeCycleCloserIO :: MonadIO m => IO () -> LifeCycleT m ()
-lifeCycleCloserIO closer =
+lifeCycleOnCloseIO :: MonadIO m => IO () -> LifeCycleT m ()
+lifeCycleOnCloseIO closer =
     MkLifeCycleT $ \var -> do
         dangerousMVarRun var $ do
             s <- get
             put $ MkLifeState closer <> s
 
-lifeCycleCloser :: MonadAskUnliftIO m => m () -> LifeCycleT m ()
-lifeCycleCloser closer = do
+lifeCycleOnClose :: MonadAskUnliftIO m => m () -> LifeCycleT m ()
+lifeCycleOnClose closer = do
     MkWMFunction unlift <- lift askUnliftIO
-    lifeCycleCloserIO $ unlift closer
+    lifeCycleOnCloseIO $ unlift closer
 
 type With m t = forall (r :: Type). (t -> m r) -> m r
 
@@ -152,12 +152,8 @@ runLifeCycleT lc = withLifeCycleT lc return
 forkLifeCycleT :: MonadUnliftIO m => m () -> LifeCycleT m ThreadId
 forkLifeCycleT action = do
     var <- liftIO newEmptyMVar
-    lifeCycleCloserIO $ takeMVar var
-    lift $
-        liftIOWithUnlift $ \unlift ->
-            forkIO $ do
-                unlift action
-                putMVar var ()
+    lifeCycleOnCloseIO $ takeMVar var
+    lift $ liftIOWithUnlift $ \unlift -> forkIO $ finally (unlift action) $ putMVar var ()
 
 getLifeState ::
        forall m a. MonadIO m
@@ -169,9 +165,9 @@ getLifeState (MkLifeCycleT f) = do
     ls <- liftIO $ takeMVar var
     return (t, ls)
 
--- | Runs the given lifecycle, returning an early closer.
--- The early closer is an idempotent action that will close the lifecycle only if it hasn't already been closed.
--- The early closer will also be run as the closer of the resulting lifecycle.
+-- | Runs the given lifecycle, returning a closer.
+-- The closer is an idempotent action that will close the lifecycle only if it hasn't already been closed.
+-- The closer will also be run as the closer of the resulting lifecycle.
 lifeCycleGetCloser ::
        forall m a. MonadIO m
     => LifeCycleT m a
@@ -186,14 +182,14 @@ lifeCycleGetCloser lc = do
             case mu of
                 Just () -> closer
                 Nothing -> return ()
-    lifeCycleCloserIO earlycloser
+    lifeCycleOnCloseIO earlycloser
     return (a, earlycloser)
 
 -- | Returned action returns True if still alive, False if closed.
 lifeCycleMonitor :: MonadIO m => LifeCycleT m (IO Bool)
 lifeCycleMonitor = do
     ref <- liftIO $ newIORef True
-    lifeCycleCloserIO $ writeIORef ref False
+    lifeCycleOnCloseIO $ writeIORef ref False
     return $ readIORef ref
 
 lifeCycleOnAllDone ::
@@ -208,7 +204,7 @@ lifeCycleOnAllDone onzero = do
                 mVarRun var $ do
                     olda <- get
                     put $ succ olda
-            lifeCycleCloser $ do
+            lifeCycleOnClose $ do
                 iszero <-
                     mVarRun var $ do
                         olda <- get
@@ -234,7 +230,7 @@ lifeCycleWith withX = do
     case etp of
         Left t -> return t
         Right (t, tp) -> do
-            lifeCycleCloser $ do
+            lifeCycleOnClose $ do
                 _ <- runSuspendedUntilDone $ tp t
                 return ()
             return t

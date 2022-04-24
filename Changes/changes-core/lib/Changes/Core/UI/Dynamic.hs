@@ -43,7 +43,7 @@ viewDynamic model initCV taskCV recvCV = do
         initBind = do
             (firstdvs, a) <- initCV
             stateVar <- liftIO $ newMVar firstdvs
-            viewCloserIO $ do
+            viewOnCloseIO $ do
                 lastdvs <- takeMVar stateVar
                 closeDynamicView lastdvs
             return (stateVar, a)

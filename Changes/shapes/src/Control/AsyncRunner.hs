@@ -110,7 +110,7 @@ asyncWaitRunner mus doit = do
                             _ -> return Nothing
             in MkTask {..}
     _ <- liftIO $ forkIO threadDo
-    lifeCycleCloser $ do
+    lifeCycleOnClose $ do
         atomicallyDo $ do
             me <- waitForIdle
             case me of

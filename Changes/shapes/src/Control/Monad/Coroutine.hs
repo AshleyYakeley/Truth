@@ -58,3 +58,15 @@ instance MonadCoroutine IO where
                             takeMVar invar
                     putMVar outvar $ Left r
             takeMVar outvar
+
+liftSuspended :: (MonadTrans t, Monad m) => Suspended p q m a -> Suspended p q (t m) a
+liftSuspended (MkSuspended res) = MkSuspended $ lift $ fmap liftResume res
+
+liftResume ::
+       (MonadTrans t, Monad m) => Either a (p, q -> Suspended p q m a) -> Either a (p, q -> Suspended p q (t m) a)
+liftResume = fmap $ fmap $ fmap liftSuspended
+
+instance (MonadTransUnlift t, MonadCoroutine m, MonadTunnelIO m, Monad (t m)) => MonadCoroutine (t m) where
+    suspend call =
+        MkSuspended $
+        liftWithUnlift $ \unlift -> fmap liftResume $ resume $ suspend $ \pmq -> unlift $ call $ \p -> lift $ pmq p

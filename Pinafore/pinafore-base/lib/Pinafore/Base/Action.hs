@@ -15,7 +15,7 @@ module Pinafore.Base.Action
     , pinaforeUndoHandler
     , pinaforeActionKnow
     , knowPinaforeAction
-    , pinaforeOnClose
+    , actionOnClose
     , pinaforeEarlyCloser
     , pinaforeFloatMap
     , pinaforeFloatMapReadOnly
@@ -97,11 +97,11 @@ knowPinaforeAction :: forall a. PinaforeAction a -> PinaforeAction (Know a)
 knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =
     MkPinaforeAction $ ReaderT $ \r -> MkComposeInner $ fmap Known $ getComposeInner $ rka r
 
-pinaforeOnClose :: PinaforeAction () -> PinaforeAction ()
-pinaforeOnClose closer = do
+actionOnClose :: PinaforeAction () -> PinaforeAction ()
+actionOnClose closer = do
     MkWMFunction unlift <- pinaforeGetCreateViewUnlift
     actionLiftView $
-        viewCloser $ do
+        viewOnClose $ do
             _ <- getComposeInner $ unlift closer
             return ()
 

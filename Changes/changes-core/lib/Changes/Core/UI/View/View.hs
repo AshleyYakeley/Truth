@@ -2,8 +2,8 @@ module Changes.Core.UI.View.View
     ( ViewState
     , ViewContext
     , View
-    , viewCloser
-    , viewCloserIO
+    , viewOnClose
+    , viewOnCloseIO
     , viewGetCloser
     , viewLiftLifeCycle
     , viewSubLifeCycle
@@ -52,11 +52,11 @@ newtype View a = MkView
 instance MonadUnliftIO View where
     liftIOWithUnlift call = coerce $ liftIOWithUnlift @(ReaderT ViewContext LifeCycle) $ \unlift -> call $ coerce unlift
 
-viewCloser :: View () -> View ()
-viewCloser (MkView closer) = MkView $ liftWithUnlift $ \unlift -> lifeCycleCloser $ runLifeCycleT $ unlift closer
+viewOnClose :: View () -> View ()
+viewOnClose (MkView closer) = MkView $ liftWithUnlift $ \unlift -> lifeCycleOnClose $ runLifeCycleT $ unlift closer
 
-viewCloserIO :: IO () -> View ()
-viewCloserIO closer = viewLiftLifeCycle $ lifeCycleCloser closer
+viewOnCloseIO :: IO () -> View ()
+viewOnCloseIO closer = viewLiftLifeCycle $ lifeCycleOnClose closer
 
 viewGetCloser :: forall a. View a -> View (a, IO ())
 viewGetCloser (MkView ma) =

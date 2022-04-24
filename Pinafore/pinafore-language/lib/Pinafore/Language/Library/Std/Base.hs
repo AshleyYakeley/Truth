@@ -808,7 +808,7 @@ baseLibEntries =
                 "Add this action as to be done when closing.\n\n\
                 \Example: `lifecycle $ do onClose $ outputLn \"hello\"; sleep 1000 end`  \n\
                 \This sleeps for one second, and then outputs \"hello\" (when the lifecycle closes)."
-                pinaforeOnClose
+                actionOnClose
           , mkValEntry
                 "closer"
                 "Get an (idempotent) action that closes what gets opened in the given action.\n\n\
