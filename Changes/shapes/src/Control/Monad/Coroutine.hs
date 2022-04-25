@@ -3,13 +3,52 @@ module Control.Monad.Coroutine
     , runSuspendedUntilDone
     , MonadCoroutine(..)
     , coroutine
+    , coYield
     ) where
 
+import Data.Bifunctor
 import Shapes.Import
 
 newtype Suspended p q m a = MkSuspended
     { resume :: m (Either a (p, q -> Suspended p q m a))
     }
+
+instance Functor m => Functor (Suspended p q m) where
+    fmap ab (MkSuspended ma) = MkSuspended $ fmap (bimap ab $ fmap $ fmap $ fmap ab) ma
+
+instance TransConstraint Functor (Suspended p q) where
+    hasTransConstraint = Dict
+
+instance Monad m => Applicative (Suspended p q m) where
+    pure a = MkSuspended $ pure $ Left a
+    mab <*> ma = do
+        ab <- mab
+        a <- ma
+        return $ ab a
+
+instance Monad m => Monad (Suspended p q m) where
+    return = pure
+    MkSuspended mea >>= f =
+        MkSuspended $ do
+            ea <- mea
+            case ea of
+                Left a -> resume $ f a
+                Right (p, qf) -> return $ Right $ (p, \q -> qf q >>= f)
+
+instance TransConstraint Monad (Suspended p q) where
+    hasTransConstraint = Dict
+
+instance MonadTrans (Suspended p q) where
+    lift ma = MkSuspended $ fmap Left ma
+
+instance MonadIO m => MonadIO (Suspended p q m) where
+    liftIO ioa = lift $ liftIO ioa
+
+instance TransConstraint MonadIO (Suspended p q) where
+    hasTransConstraint = Dict
+
+coYield :: Monad m => p -> Suspended p q m q
+coYield p = MkSuspended $ return $ Right (p, return)
 
 runSuspendedUntilDone :: Monad m => Suspended p p m a -> m a
 runSuspendedUntilDone susp = do
