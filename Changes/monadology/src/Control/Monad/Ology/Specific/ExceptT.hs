@@ -70,7 +70,7 @@ instance MonadCatch ex m => MonadCatch (Either e ex) (ExceptT e m) where
                 SuccessResult (Right a) -> return $ return a
 
 transExcept ::
-       forall t m e a. (MonadTransTunnel t, Monad m)
+       forall t m e a. (MonadTransTunnel t, Applicative (Tunnel t), Monad m)
     => t (ExceptT e m) a
     -> t m (Either e a)
 transExcept tema = tunnel $ \unlift -> fmap commuteInner $ runExceptT $ unlift tema

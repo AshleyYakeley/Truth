@@ -9,15 +9,15 @@ import Control.Monad.Ology.Specific.ComposeInner
 import Import
 
 type MonadTransTunnel :: TransKind -> Constraint
-class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t, MonadInner (Tunnel t)) => MonadTransTunnel t where
+class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t, Functor (Tunnel t)) => MonadTransTunnel t where
     type Tunnel t :: Type -> Type
     tunnel ::
-           forall m r. Functor m
-        => ((forall m1 a. Functor m1 => t m1 a -> m1 (Tunnel t a)) -> m (Tunnel t r))
+           forall m r. Monad m
+        => ((forall m1 a. Monad m1 => t m1 a -> m1 (Tunnel t a)) -> m (Tunnel t r))
         -> t m r
 
 hoist ::
-       forall t m1 m2. (MonadTransTunnel t, Functor m1, Functor m2)
+       forall t m1 m2. (MonadTransTunnel t, Monad m1, Monad m2)
     => (m1 --> m2)
     -> t m1 --> t m2
 hoist mma sm1 = tunnel $ \tun -> mma $ tun sm1
@@ -27,22 +27,23 @@ hoistTransform ff (MkWMFunction r2) = MkWMFunction $ \m1a -> r2 $ hoist ff m1a
 
 -- | Swap two transformers in a transformer stack
 commuteTWith ::
-       forall ta tb m. (MonadTransTunnel ta, MonadTransTunnel tb, Functor m)
+       forall ta tb m. (MonadTransTunnel ta, MonadTransTunnel tb, Monad m)
     => (forall r. Tunnel tb (Tunnel ta r) -> Tunnel ta (Tunnel tb r))
     -> ta (tb m) --> tb (ta m)
 commuteTWith commutef tabm =
-    case hasTransConstraint @Functor @ta @m of
+    case hasTransConstraint @Monad @ta @m of
         Dict ->
-            case hasTransConstraint @Functor @tb @m of
+            case hasTransConstraint @Monad @tb @m of
                 Dict -> tunnel $ \unliftb -> tunnel $ \unlifta -> fmap commutef $ unliftb $ unlifta tabm
 
 commuteT ::
-       forall ta tb m. (MonadTransTunnel ta, MonadTransTunnel tb, Functor m)
+       forall ta tb m. (MonadTransTunnel ta, MonadTransTunnel tb, Monad (Tunnel ta), MonadInner (Tunnel tb), Monad m)
     => ta (tb m) --> tb (ta m)
 commuteT = commuteTWith commuteInner
 
 commuteTBack ::
-       forall ta tb m. (MonadTransTunnel ta, MonadTransTunnel tb, Functor m)
+       forall ta tb m.
+       (MonadTransTunnel ta, MonadTransTunnel tb, MonadInner (Tunnel ta), MonadInner (Tunnel tb), Monad m)
     => ta (tb m) -/-> tb (ta m)
 commuteTBack call = commuteT $ call commuteT
 
@@ -61,13 +62,13 @@ instance MonadTunnelIO IO where
     type TunnelIO IO = Identity
     tunnelIO call = fmap runIdentity $ call $ \ma -> fmap Identity $ ma
 
-instance (MonadTransTunnel t, MonadTunnelIO m, MonadIO (t m)) => MonadTunnelIO (t m) where
+instance (MonadTransTunnel t, MonadInner (Tunnel t), MonadTunnelIO m, MonadIO (t m)) => MonadTunnelIO (t m) where
     type TunnelIO (t m) = ComposeInner (Tunnel t) (TunnelIO m)
     tunnelIO call =
         tunnel $ \unlift ->
             tunnelIO $ \unliftIO -> fmap getComposeInner $ call $ fmap MkComposeInner . unliftIO . unlift
 
-instance (MonadTransTunnel t, TransConstraint MonadIO t) => TransConstraint MonadTunnelIO t where
+instance (MonadTransTunnel t, MonadInner (Tunnel t), TransConstraint MonadIO t) => TransConstraint MonadTunnelIO t where
     hasTransConstraint = withTransConstraintDict @MonadIO $ Dict
 
 backHoist :: (MonadTransTunnel t, Monad ma, Monad mb) => (ma -/-> mb) -> t ma -/-> t mb

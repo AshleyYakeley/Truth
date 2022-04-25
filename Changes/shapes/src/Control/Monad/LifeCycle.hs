@@ -107,8 +107,8 @@ instance TransConstraint MonadIO LifeCycleT where
 instance MonadTransTunnel LifeCycleT where
     type Tunnel LifeCycleT = Identity
     tunnel ::
-           forall m r. Functor m
-        => ((forall m1 a. Functor m1 => LifeCycleT m1 a -> m1 (Identity a)) -> m (Identity r))
+           forall m r. Monad m
+        => ((forall m1 a. Monad m1 => LifeCycleT m1 a -> m1 (Identity a)) -> m (Identity r))
         -> LifeCycleT m r
     tunnel f = MkLifeCycleT $ \var -> fmap runIdentity $ f $ \a -> fmap Identity $ unLifeCycleT a var
 

@@ -199,8 +199,7 @@ concatMonadTransStackTunnelDict =
 
 newtype TunnelWrapper t = MkTunnel
     { unTunnel :: forall m2 r.
-                      Functor m2 =>
-                              ((forall m1 a. Functor m1 => t m1 a -> m1 (Tunnel t a)) -> m2 (Tunnel t r)) -> t m2 r
+                      Monad m2 => ((forall m1 a. Monad m1 => t m1 a -> m1 (Tunnel t a)) -> m2 (Tunnel t r)) -> t m2 r
     }
 
 type WithTunnelConstraint :: ((Type -> Type) -> Constraint) -> TransKind -> Constraint
@@ -296,8 +295,8 @@ instance ( IsStack (WithTunnelConstraint Functor) tt
 instance MonadTransStackTunnel tt => MonadTransTunnel (StackT tt) where
     type Tunnel (StackT tt) = StackTunnel tt
     tunnel ::
-           forall m2 r. Functor m2
-        => ((forall m1 a. Functor m1 => StackT tt m1 a -> m1 (Tunnel (StackT tt) a)) -> m2 (Tunnel (StackT tt) r))
+           forall m2 r. Monad m2
+        => ((forall m1 a. Monad m1 => StackT tt m1 a -> m1 (Tunnel (StackT tt) a)) -> m2 (Tunnel (StackT tt) r))
         -> StackT tt m2 r
     tunnel = let
         build :: forall tt'. ListType (Compose Dict MonadTransTunnel) tt' -> TunnelWrapper (StackT tt')
@@ -308,11 +307,11 @@ instance MonadTransStackTunnel tt => MonadTransTunnel (StackT tt) where
             case build w of
                 MkTunnel tunnel' -> let
                     tunnel'' ::
-                           forall m2' r'. Functor m2'
-                        => ((forall m1 a. Functor m1 => StackT tt' m1 a -> m1 (Tunnel (StackT tt') a)) -> m2' (Tunnel (StackT tt') r'))
+                           forall m2' r'. Monad m2'
+                        => ((forall m1 a. Monad m1 => StackT tt' m1 a -> m1 (Tunnel (StackT tt') a)) -> m2' (Tunnel (StackT tt') r'))
                         -> StackT tt' m2' r'
                     tunnel'' call =
-                        case (witTransStackDict @Functor @tt0 @m2' $ mapListType (\(Compose Dict) -> Compose Dict) w) of
+                        case (witTransStackDict @Monad @tt0 @m2' $ mapListType (\(Compose Dict) -> Compose Dict) w) of
                             Dict ->
                                 MkStackT $
                                 tunnel $ \unlift1 ->
@@ -320,7 +319,7 @@ instance MonadTransStackTunnel tt => MonadTransTunnel (StackT tt) where
                                     tunnel' $ \unlift2 ->
                                         fmap (MkStackTunnel . getComposeInner . unStackTunnel) $
                                         call $ \(MkStackT stt :: _ m1 _) ->
-                                            case (witTransStackDict @Functor @tt0 @m1 $
+                                            case (witTransStackDict @Monad @tt0 @m1 $
                                                   mapListType (\(Compose Dict) -> Compose Dict) w) of
                                                 Dict ->
                                                     fmap (MkStackTunnel . MkComposeInner . unStackTunnel) $
