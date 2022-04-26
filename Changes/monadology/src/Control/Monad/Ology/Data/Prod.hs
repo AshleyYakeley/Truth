@@ -4,7 +4,6 @@ import Control.Monad.Ology.General
 import Control.Monad.Ology.Specific.WriterT
 import Import
 
-
 data Prod m a = MkProd
     { tellD :: a -> m ()
     , listenD :: forall r. m r -> m (r, a)

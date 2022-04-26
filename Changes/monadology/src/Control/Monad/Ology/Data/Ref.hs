@@ -1,5 +1,7 @@
 module Control.Monad.Ology.Data.Ref where
 
+import Control.Monad.Ology.Data.Param
+import Control.Monad.Ology.Data.Prod
 import Control.Monad.Ology.General
 import Control.Monad.Ology.Specific.StateT
 import qualified Control.Monad.ST.Lazy as Lazy
@@ -8,8 +10,6 @@ import Data.IORef
 import qualified Data.STRef.Lazy as Lazy
 import qualified Data.STRef.Strict as Strict
 import Import
-import Control.Monad.Ology.Data.Param
-import Control.Monad.Ology.Data.Prod
 
 data Ref m a = MkRef
     { getD :: m a

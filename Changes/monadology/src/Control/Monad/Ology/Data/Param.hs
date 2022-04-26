@@ -4,7 +4,6 @@ import Control.Monad.Ology.General
 import Control.Monad.Ology.Specific.ReaderT
 import Import
 
-
 -- | borrowed from the lens package
 type Lens' a b = forall f. Functor f => (b -> f b) -> a -> f a
 
