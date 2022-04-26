@@ -75,6 +75,9 @@ transExcept ::
     -> t m (Either e a)
 transExcept tema = tunnel $ \unlift -> fmap commuteInner $ runExceptT $ unlift tema
 
+instance MonadTransHoist (ExceptT e) where
+    hoist = tunnelHoist
+
 instance MonadTransTunnel (ExceptT e) where
     type Tunnel (ExceptT e) = Either e
     tunnel call = ExceptT $ call $ \(ExceptT ma) -> ma

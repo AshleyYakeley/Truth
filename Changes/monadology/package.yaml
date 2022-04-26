@@ -24,8 +24,10 @@ library:
     - Control.Monad.Ology.General.Exception
     - Control.Monad.Ology.General.Throw
     - Control.Monad.Ology.General.Catch
+    - Control.Monad.Ology.General.Coroutine
     - Control.Monad.Ology.General.Trans.Trans
     - Control.Monad.Ology.General.Trans.Constraint
+    - Control.Monad.Ology.General.Trans.Hoist
     - Control.Monad.Ology.General.Trans.Tunnel
     - Control.Monad.Ology.General.Trans.Coerce
     - Control.Monad.Ology.General.Trans.Unlift
@@ -45,6 +47,8 @@ library:
     - Control.Monad.Ology.Specific.StackT
     - Control.Monad.Ology.Specific.TransformT
     - Control.Monad.Ology.Specific.ResultT
+    - Control.Monad.Ology.Specific.CoroutineT
+    - Control.Monad.Ology.Specific.LifeCycleT
     - Control.Monad.Ology.Data
     - Control.Monad.Ology
   other-modules:

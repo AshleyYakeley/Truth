@@ -50,6 +50,9 @@ instance MonadCatch e m => MonadCatch e (StateT s m) where
 instance TransConstraint (MonadCatch e) (StateT s) where
     hasTransConstraint = Dict
 
+instance MonadTransHoist (StateT s) where
+    hoist = tunnelHoist
+
 instance MonadTransTunnel (StateT s) where
     type Tunnel (StateT s) = (,) (Endo s)
     tunnel call =
@@ -60,13 +63,13 @@ instance MonadTransTunnel (StateT s) where
 instance MonadTransUnlift (StateT s) where
     liftWithUnlift call = liftWithMVarStateT $ \var -> call $ mVarRun var
 
-mVarRun :: MVar s -> Unlift MonadTunnelIO (StateT s)
+mVarRun :: MonadTunnelIOInner m => MVar s -> StateT s m --> m
 mVarRun var (StateT smr) =
     tunnelIO $ \unlift ->
         modifyMVar var $ \olds ->
             fmap (\fas -> (fromMaybe olds $ mToMaybe $ fmap snd fas, fmap fst fas)) $ unlift $ smr olds
 
-mVarUnitRun :: MonadTunnelIO m => MVar s -> m --> m
+mVarUnitRun :: MonadTunnelIOInner m => MVar s -> m --> m
 mVarUnitRun var ma = mVarRun var $ lift ma
 
 mVarUnitUnlock :: MVar () -> IO --> IO

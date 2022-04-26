@@ -5,6 +5,7 @@ import Control.Monad.Ology.General.Function
 import Control.Monad.Ology.General.IO
 import Control.Monad.Ology.General.Outer
 import Control.Monad.Ology.General.Trans.Constraint
+import Control.Monad.Ology.General.Trans.Hoist
 import Control.Monad.Ology.General.Trans.Tunnel
 import Control.Monad.Ology.Specific.ComposeOuter
 import Import
@@ -19,12 +20,12 @@ class ( MonadTransTunnel t
     -- | lift with a 'WMFunction' that accounts for the transformer's effects (using MVars where necessary)
     liftWithUnlift ::
            forall m r. MonadIO m
-        => (Unlift MonadTunnelIO t -> m r)
+        => ((forall m'. MonadTunnelIOInner m' => t m' --> m') -> m r)
         -> t m r
     -- | return a 'WUnlift' that discards the transformer's effects (such as state change or output)
     getDiscardingUnlift ::
            forall m. Monad m
-        => t m (WUnlift MonadTunnelIO t)
+        => t m (WUnlift MonadTunnelIOInner t)
     getDiscardingUnlift = tunnel $ \unlift -> pure $ pure $ MkWUnlift $ \tma -> fmap mToValue $ unlift tma
 
 discardingRunner ::
@@ -42,7 +43,7 @@ discardingWRunner ::
 discardingWRunner (MkWUnlift u) = MkWUnlift $ discardingRunner u
 
 liftWithUnliftW ::
-       forall t m. (MonadTransUnlift t, MonadTunnelIO m)
+       forall t m. (MonadTransUnlift t, MonadTunnelIOInner m)
     => WMBackFunction m (t m)
 liftWithUnliftW = MkWMBackFunction $ \call -> liftWithUnlift $ \unlift -> call unlift
 

@@ -1,7 +1,6 @@
-module Control.Monad.LifeCycle
-    ( LifeState
-    , closeLifeState
-    , LifeCycleT
+module Control.Monad.Ology.Specific.LifeCycleT
+    ( LifeState(..)
+    , LifeCycleT(..)
     , lifeCycleOnCloseIO
     , lifeCycleOnClose
     , forkLifeCycleT
@@ -15,10 +14,10 @@ module Control.Monad.LifeCycle
     , LifeCycle
     ) where
 
-import Control.Monad.Coroutine
-import Data.Coercion
-import Data.IORef
-import Shapes.Import
+import Control.Monad.Ology.General
+import Control.Monad.Ology.Specific.CoroutineT
+import Control.Monad.Ology.Specific.StateT
+import Import
 
 newtype LifeState = MkLifeState
     { closeLifeState :: IO ()
@@ -33,11 +32,6 @@ instance Monoid LifeState where
 newtype LifeCycleT m a = MkLifeCycleT
     { unLifeCycleT :: MVar LifeState -> m a
     }
-
-instance RepresentationalRole m => RepresentationalRole (LifeCycleT m) where
-    representationalCoercion c =
-        case representationalCoercion @_ @_ @m c of
-            MkCoercion -> MkCoercion
 
 instance Functor m => Functor (LifeCycleT m) where
     fmap ab (MkLifeCycleT f) = MkLifeCycleT $ \var -> fmap ab $ f var
@@ -103,6 +97,9 @@ instance MonadIO m => MonadIO (LifeCycleT m) where
 
 instance TransConstraint MonadIO LifeCycleT where
     hasTransConstraint = Dict
+
+instance MonadTransHoist LifeCycleT where
+    hoist f (MkLifeCycleT g) = MkLifeCycleT $ \var -> f $ g var
 
 instance MonadTransTunnel LifeCycleT where
     type Tunnel LifeCycleT = Identity
@@ -231,7 +228,7 @@ lifeCycleWith withX = do
         Left t -> return t
         Right (t, tp) -> do
             lifeCycleOnClose $ do
-                _ <- runSuspendedUntilDone $ tp t
+                _ <- coroutineRun $ tp t
                 return ()
             return t
 

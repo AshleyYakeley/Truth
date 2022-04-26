@@ -73,6 +73,9 @@ instance TransConstraint MonadIdentity IdentityT where
 instance MonadTransCoerce IdentityT where
     transCoerce = Dict
 
+instance MonadTransHoist IdentityT where
+    hoist = tunnelHoist
+
 instance MonadTransTunnel IdentityT where
     type Tunnel IdentityT = Identity
     tunnel call = IdentityT $ fmap runIdentity $ call $ \(IdentityT ma) -> fmap Identity ma

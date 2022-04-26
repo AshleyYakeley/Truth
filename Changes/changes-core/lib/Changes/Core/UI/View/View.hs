@@ -45,12 +45,11 @@ newtype View a = MkView
                , MonadException
                , MonadThrow e
                , MonadCatch e
+               , MonadHoistIO
                , MonadTunnelIO
+               , MonadUnliftIO
                , RepresentationalRole
                )
-
-instance MonadUnliftIO View where
-    liftIOWithUnlift call = coerce $ liftIOWithUnlift @(ReaderT ViewContext LifeCycle) $ \unlift -> call $ coerce unlift
 
 viewOnClose :: View () -> View ()
 viewOnClose (MkView closer) = MkView $ liftWithUnlift $ \unlift -> lifeCycleOnClose $ runLifeCycleT $ unlift closer

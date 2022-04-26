@@ -4,26 +4,29 @@ import Control.Monad.Ology.General.Function
 import Control.Monad.Ology.General.IO
 import Control.Monad.Ology.General.Inner
 import Control.Monad.Ology.General.Trans.Constraint
-import Control.Monad.Ology.General.Trans.Trans
+import Control.Monad.Ology.General.Trans.Hoist
 import Control.Monad.Ology.Specific.ComposeInner
 import Import
 
 type MonadTransTunnel :: TransKind -> Constraint
-class (MonadTrans t, TransConstraint Functor t, TransConstraint Monad t, Functor (Tunnel t)) => MonadTransTunnel t where
+class (MonadTransHoist t, Functor (Tunnel t)) => MonadTransTunnel t where
     type Tunnel t :: Type -> Type
     tunnel ::
            forall m r. Monad m
         => ((forall m1 a. Monad m1 => t m1 a -> m1 (Tunnel t a)) -> m (Tunnel t r))
         -> t m r
 
-hoist ::
+tunnelHoist ::
        forall t m1 m2. (MonadTransTunnel t, Monad m1, Monad m2)
     => (m1 --> m2)
     -> t m1 --> t m2
-hoist mma sm1 = tunnel $ \tun -> mma $ tun sm1
+tunnelHoist mma sm1 = tunnel $ \tun -> mma $ tun sm1
 
-hoistTransform :: (MonadTransTunnel t, Monad m1, Monad m2) => (m1 --> m2) -> WMFunction (t m2) n -> WMFunction (t m1) n
-hoistTransform ff (MkWMFunction r2) = MkWMFunction $ \m1a -> r2 $ hoist ff m1a
+backHoist :: (MonadTransTunnel t, Monad ma, Monad mb) => (ma -/-> mb) -> t ma -/-> t mb
+backHoist wt tm = tunnel $ \unlift -> wt $ \tba -> unlift $ tm $ hoist tba
+
+backHoistW :: (MonadTransTunnel t, Monad ma, Monad mb) => WMBackFunction ma mb -> WMBackFunction (t ma) (t mb)
+backHoistW (MkWMBackFunction f) = MkWMBackFunction $ backHoist f
 
 -- | Swap two transformers in a transformer stack
 commuteTWith ::
@@ -51,12 +54,9 @@ instance MonadInner inner => MonadTransTunnel (ComposeInner inner) where
     type Tunnel (ComposeInner inner) = inner
     tunnel call = MkComposeInner $ call getComposeInner
 
-class (MonadIO m, MonadInner (TunnelIO m)) => MonadTunnelIO m where
+class (MonadHoistIO m, Functor (TunnelIO m)) => MonadTunnelIO m where
     type TunnelIO m :: Type -> Type
     tunnelIO :: forall r. ((forall a. m a -> IO (TunnelIO m a)) -> IO (TunnelIO m r)) -> m r
-
-hoistIO :: MonadTunnelIO m => (IO --> IO) -> m --> m
-hoistIO mma sm1 = tunnelIO $ \tun -> mma $ tun sm1
 
 instance MonadTunnelIO IO where
     type TunnelIO IO = Identity
@@ -69,13 +69,14 @@ instance (MonadTransTunnel t, MonadInner (Tunnel t), MonadTunnelIO m, MonadIO (t
             tunnelIO $ \unliftIO -> fmap getComposeInner $ call $ fmap MkComposeInner . unliftIO . unlift
 
 instance (MonadTransTunnel t, MonadInner (Tunnel t), TransConstraint MonadIO t) => TransConstraint MonadTunnelIO t where
-    hasTransConstraint = withTransConstraintDict @MonadIO $ Dict
+    hasTransConstraint = withTransConstraintDict @MonadIO Dict
 
-backHoist :: (MonadTransTunnel t, Monad ma, Monad mb) => (ma -/-> mb) -> t ma -/-> t mb
-backHoist wt tm = tunnel $ \unlift -> wt $ \tba -> unlift $ tm $ hoist tba
+class (MonadTunnelIO m, MonadInner (TunnelIO m)) => MonadTunnelIOInner m
 
-backHoistW :: (MonadTransTunnel t, Monad ma, Monad mb) => WMBackFunction ma mb -> WMBackFunction (t ma) (t mb)
-backHoistW (MkWMBackFunction f) = MkWMBackFunction $ backHoist f
+instance (MonadTunnelIO m, MonadInner (TunnelIO m)) => MonadTunnelIOInner m
+
+instance (MonadTransTunnel t, MonadInner (Tunnel t), TransConstraint MonadIO t) => TransConstraint MonadTunnelIOInner t where
+    hasTransConstraint = withTransConstraintDict @MonadIO Dict
 
 ---
 type Unlift :: ((Type -> Type) -> Constraint) -> TransKind -> Type

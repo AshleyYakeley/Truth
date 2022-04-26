@@ -49,7 +49,7 @@ lift2ComposeT'' =
         Dict -> lift2ComposeT
 
 lift1ComposeTWithUnlift ::
-       forall t1 t2 m r. (MonadTransTunnel t1, MonadTransUnlift t2, MonadTunnelIO m)
+       forall t1 t2 m r. (MonadTransTunnel t1, MonadTransUnlift t2, MonadTunnelIOInner m)
     => ((forall a. ComposeT t1 t2 m a -> t1 m a) -> t1 m r)
     -> ComposeT t1 t2 m r
 lift1ComposeTWithUnlift call =
@@ -59,11 +59,11 @@ lift1ComposeTWithUnlift call =
             tunnel $ \tun -> liftWithUnlift $ \unlift -> tun $ call $ \(MkComposeT ttma) -> hoist unlift ttma
 
 lift2ComposeTWithUnlift ::
-       forall t1 t2 m r. (MonadTransUnlift t1, MonadTransUnlift t2, MonadTunnelIO m)
+       forall t1 t2 m r. (MonadTransUnlift t1, MonadTransUnlift t2, MonadTunnelIOInner m)
     => ((forall a. ComposeT t1 t2 m a -> t2 m a) -> t2 m r)
     -> ComposeT t1 t2 m r
 lift2ComposeTWithUnlift call =
-    case hasTransConstraint @MonadTunnelIO @t2 @m of
+    case hasTransConstraint @MonadTunnelIOInner @t2 @m of
         Dict -> MkComposeT $ liftWithUnlift $ \unlift -> call $ \(MkComposeT ttma) -> unlift ttma
 
 composeUnlift ::
@@ -160,6 +160,17 @@ instance (TransConstraint MonadPlus t1, TransConstraint Monad t2, TransConstrain
                 case hasTransConstraint @MonadPlus @t1 @(t2 m) of
                     Dict -> Dict
 
+instance (MonadTransHoist t1, MonadTransHoist t2) => MonadTransHoist (ComposeT t1 t2) where
+    hoist ::
+           forall m1 m2. (Monad m1, Monad m2)
+        => (m1 --> m2)
+        -> ComposeT t1 t2 m1 --> ComposeT t1 t2 m2
+    hoist f (MkComposeT ma) =
+        case hasTransConstraint @Monad @t2 @m1 of
+            Dict ->
+                case hasTransConstraint @Monad @t2 @m2 of
+                    Dict -> MkComposeT $ hoist (hoist f) ma
+
 instance (MonadTransTunnel t1, MonadTransTunnel t2) => MonadTransTunnel (ComposeT t1 t2) where
     type Tunnel (ComposeT t1 t2) = ComposeInner (Tunnel t1) (Tunnel t2)
     tunnel ::
@@ -190,7 +201,7 @@ instance (MonadTransCoerce t1, MonadTransCoerce t2, TransConstraint Monad t2) =>
 instance (MonadTransUnlift t1, MonadTransUnlift t2) => MonadTransUnlift (ComposeT t1 t2) where
     liftWithUnlift ::
            forall m r. MonadIO m
-        => (Unlift MonadTunnelIO (ComposeT t1 t2) -> m r)
+        => (Unlift MonadTunnelIOInner (ComposeT t1 t2) -> m r)
         -> ComposeT t1 t2 m r
     liftWithUnlift call =
         case hasTransConstraint @MonadIO @t2 @m of
@@ -198,10 +209,11 @@ instance (MonadTransUnlift t1, MonadTransUnlift t2) => MonadTransUnlift (Compose
                 MkComposeT $
                 liftWithUnlift $ \unlift1 ->
                     liftWithUnlift $ \unlift2 ->
-                        call $ \(MkComposeT t1t2ma) -> unlift2 $ withTransConstraintTM @MonadTunnelIO $ unlift1 t1t2ma
+                        call $ \(MkComposeT t1t2ma) ->
+                            unlift2 $ withTransConstraintTM @MonadTunnelIOInner $ unlift1 t1t2ma
     getDiscardingUnlift ::
            forall m. Monad m
-        => ComposeT t1 t2 m (WUnlift MonadTunnelIO (ComposeT t1 t2))
+        => ComposeT t1 t2 m (WUnlift MonadTunnelIOInner (ComposeT t1 t2))
     getDiscardingUnlift =
         case hasTransConstraint @Monad @t2 @m of
             Dict ->

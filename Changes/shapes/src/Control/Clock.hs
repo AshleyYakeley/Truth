@@ -2,7 +2,6 @@ module Control.Clock
     ( clock
     ) where
 
-import Control.Monad.LifeCycle
 import Data.Fixed
 import Data.Time.Clock
 import Shapes.Import

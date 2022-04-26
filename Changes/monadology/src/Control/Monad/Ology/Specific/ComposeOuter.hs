@@ -4,6 +4,7 @@ import Control.Monad.Ology.General.Exception.Class
 import Control.Monad.Ology.General.IO
 import Control.Monad.Ology.General.Outer
 import Control.Monad.Ology.General.Trans.Constraint
+import Control.Monad.Ology.General.Trans.Hoist
 import Control.Monad.Ology.General.Trans.Trans
 import Control.Monad.Ology.General.Trans.Tunnel
 import Import
@@ -79,6 +80,9 @@ instance (MonadOuter outer, MonadException m) => MonadException (ComposeOuter ou
     type Exc (ComposeOuter outer m) = Exc m
     throwExc e = lift $ throwExc e
     catchExc tma handler = tunnel $ \unlift -> catchExc (unlift tma) $ \e -> unlift $ handler e
+
+instance MonadOuter outer => MonadTransHoist (ComposeOuter outer) where
+    hoist = tunnelHoist
 
 instance MonadOuter outer => MonadTransTunnel (ComposeOuter outer) where
     type Tunnel (ComposeOuter outer) = Identity

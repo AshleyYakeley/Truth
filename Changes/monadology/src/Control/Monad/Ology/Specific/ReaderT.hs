@@ -62,6 +62,9 @@ instance MonadOuter m => MonadOuter (ReaderT r m) where
 instance TransConstraint MonadOuter (ReaderT s) where
     hasTransConstraint = Dict
 
+instance MonadTransHoist (ReaderT r) where
+    hoist = tunnelHoist
+
 instance MonadTransTunnel (ReaderT r) where
     type Tunnel (ReaderT r) = Identity
     tunnel call = ReaderT $ \r -> fmap runIdentity $ call $ \(ReaderT smr) -> fmap Identity $ smr r
@@ -73,7 +76,7 @@ instance MonadTransAskUnlift (ReaderT r)
 
 readerTUnliftAllToT ::
        forall t m. (MonadTransUnlift t, MonadTunnelIO m)
-    => ReaderT (WUnlift MonadTunnelIO t) m --> t m
+    => ReaderT (WUnlift MonadTunnelIOInner t) m --> t m
 readerTUnliftAllToT rma = liftWithUnlift $ \tr -> runReaderT rma $ MkWUnlift tr
 
 tToReaderTUnliftAll :: MonadTunnelIO m => t m --> ReaderT (WUnlift Monad t) m

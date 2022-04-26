@@ -4,7 +4,6 @@ module Control.AsyncRunner
     , asyncIORunner
     ) where
 
-import Control.Monad.LifeCycle
 import Control.Task
 import Shapes.Import
 

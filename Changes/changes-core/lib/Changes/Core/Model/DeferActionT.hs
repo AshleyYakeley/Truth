@@ -29,9 +29,6 @@ deriving instance MonadPlus m => MonadPlus (DeferActionT m)
 
 deriving instance MonadTrans DeferActionT
 
-instance TransConstraint Functor DeferActionT where
-    hasTransConstraint = Dict
-
 instance TransConstraint Monad DeferActionT where
     hasTransConstraint = Dict
 
@@ -46,6 +43,8 @@ instance TransConstraint MonadFix DeferActionT where
 
 instance TransConstraint MonadPlus DeferActionT where
     hasTransConstraint = Dict
+
+deriving instance MonadTransHoist DeferActionT
 
 deriving instance MonadTransTunnel DeferActionT
 

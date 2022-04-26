@@ -8,6 +8,7 @@ module Control.Monad.Ology.General.Exception
 import qualified Control.Exception as CE
 import Control.Monad.Ology.General.Exception.Class
 import Control.Monad.Ology.General.Function
+import Control.Monad.Ology.General.Trans.Hoist
 import Control.Monad.Ology.General.Trans.Tunnel
 import Import
 
