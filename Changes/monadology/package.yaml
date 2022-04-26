@@ -49,6 +49,10 @@ library:
     - Control.Monad.Ology.Specific.ResultT
     - Control.Monad.Ology.Specific.CoroutineT
     - Control.Monad.Ology.Specific.LifeCycleT
+    - Control.Monad.Ology.Data.Exn
+    - Control.Monad.Ology.Data.Param
+    - Control.Monad.Ology.Data.Prod
+    - Control.Monad.Ology.Data.Ref
     - Control.Monad.Ology.Data
     - Control.Monad.Ology
   other-modules:
