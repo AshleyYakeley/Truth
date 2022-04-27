@@ -7,6 +7,7 @@ import Import
 data Exn m e = MkExn
     { throwD :: forall a. e -> m a
     , catchD :: forall a. m a -> (e -> m a) -> m a
+    , maskD :: m -/-> m
     }
 
 tryD :: Monad m => Exn m e -> m a -> m (Result e a)
@@ -14,6 +15,44 @@ tryD exn ma = catchD exn (fmap SuccessResult ma) $ \e -> return $ FailureResult 
 
 handleD :: Exn m e -> (e -> m a) -> m a -> m a
 handleD exn handler ma = catchD exn ma handler
+
+onExceptionD ::
+       forall e m a. Monad m
+    => Exn m e
+    -> m a
+    -> m ()
+    -> m a
+onExceptionD exn ma handler = catchD exn ma $ \e -> handler >> throwD exn e
+
+bracketD ::
+       forall e m a b. Monad m
+    => Exn m e
+    -> m a
+    -> (a -> m ())
+    -> (a -> m b)
+    -> m b
+bracketD exn before after thing =
+    maskD exn $ \restore -> do
+        a <- before
+        r <- onExceptionD exn (restore (thing a)) (after a)
+        _ <- after a
+        return r
+
+finallyD ::
+       forall e m a. Monad m
+    => Exn m e
+    -> m a
+    -> m ()
+    -> m a
+finallyD exn ma handler = bracketD exn (return ()) (const handler) (const ma)
+
+bracket_D ::
+       forall e m. Monad m
+    => Exn m e
+    -> m ()
+    -> m ()
+    -> m --> m
+bracket_D exn before after thing = bracketD exn before (const after) (const thing)
 
 mapExn :: (e2 -> e1) -> (e1 -> Maybe e2) -> Exn m e1 -> Exn m e2
 mapExn f g exn =
@@ -25,10 +64,25 @@ mapExn f g exn =
                       case g e of
                           Nothing -> throwD exn e
                           Just e' -> handler e'
+        , maskD = maskD exn
         }
 
-excExn :: MonadException m => Exn m (Exc m)
-excExn = MkExn throwExc catchExc
+allExn ::
+       forall m. MonadException m
+    => Exn m (Exc m)
+allExn = MkExn throwExc catchExc $ runWMBackFunction id
 
-monadExn :: MonadCatch e m => Exn m e
-monadExn = MkExn throw catch
+allIOExn ::
+       forall m. (MonadException m, MonadTunnelIO m)
+    => Exn m (Exc m)
+allIOExn = MkExn throwExc catchExc mask
+
+someExn ::
+       forall e m. MonadCatch e m
+    => Exn m e
+someExn = MkExn throw catch $ runWMBackFunction id
+
+someIOExn ::
+       forall e m. (MonadCatch e m, MonadTunnelIO m)
+    => Exn m e
+someIOExn = MkExn throw catch mask
