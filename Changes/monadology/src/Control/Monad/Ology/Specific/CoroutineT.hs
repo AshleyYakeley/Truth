@@ -7,7 +7,7 @@ import Control.Monad.Ology.General.Trans.Trans
 import Import
 
 newtype CoroutineT p q m a = MkCoroutineT
-    { resume :: m (Either a (p, q -> CoroutineT p q m a))
+    { resumeCoroutine :: m (Either a (p, q -> CoroutineT p q m a))
     }
 
 instance Functor m => Functor (CoroutineT p q m) where
@@ -29,7 +29,7 @@ instance Monad m => Monad (CoroutineT p q m) where
         MkCoroutineT $ do
             ea <- mea
             case ea of
-                Left a -> resume $ f a
+                Left a -> resumeCoroutine $ f a
                 Right (p, qf) -> return $ Right $ (p, \q -> qf q >>= f)
 
 instance TransConstraint Monad (CoroutineT p q) where
@@ -47,22 +47,22 @@ instance MonadTrans (CoroutineT p q) where
 instance MonadTransHoist (CoroutineT p q) where
     hoist f (MkCoroutineT ma) = MkCoroutineT $ (fmap $ fmap $ fmap $ fmap $ hoist f) $ f ma
 
-coroutineYield :: Monad m => p -> CoroutineT p q m q
-coroutineYield p = MkCoroutineT $ return $ Right (p, return)
+yieldCoroutine :: Monad m => p -> CoroutineT p q m q
+yieldCoroutine p = MkCoroutineT $ return $ Right (p, return)
 
-coroutineJoin :: Monad m => CoroutineT q r m a -> (q -> CoroutineT p q m a) -> CoroutineT p r m a
-coroutineJoin cqr qcpq =
+joinCoroutines :: Monad m => CoroutineT q r m a -> (q -> CoroutineT p q m a) -> CoroutineT p r m a
+joinCoroutines cqr qcpq =
     MkCoroutineT $ do
-        eqra <- resume cqr
+        eqra <- resumeCoroutine cqr
         case eqra of
             Left a -> return $ Left a
             Right (q, rf) -> do
-                epqa <- resume $ qcpq q
-                return $ (fmap $ fmap $ \qf r -> coroutineJoin (rf r) qf) epqa
+                epqa <- resumeCoroutine $ qcpq q
+                return $ (fmap $ fmap $ \qf r -> joinCoroutines (rf r) qf) epqa
 
-coroutineRun :: Monad m => CoroutineT p p m a -> m a
-coroutineRun susp = do
-    eap <- resume susp
+runCoroutine :: Monad m => CoroutineT p p m a -> m a
+runCoroutine susp = do
+    eap <- resumeCoroutine susp
     case eap of
         Left a -> return a
-        Right (p, psusp) -> coroutineRun $ psusp p
+        Right (p, psusp) -> runCoroutine $ psusp p

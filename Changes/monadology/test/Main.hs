@@ -115,22 +115,19 @@ withMessage appendStr s m = do
 testCoroutine :: TestTree
 testCoroutine =
     testCase "coroutine" $
-    compareTest "+A+B-A-B" $ \appendStr -> do
-        _ <-
-            coroutine
-                (\y ->
-                     withMessage appendStr "A" $ do
-                         y ()
-                         return ((), ()))
-                (\() y ->
-                     withMessage appendStr "B" $ do
-                         y ()
-                         return ((), ()))
-        return ()
+    compareTest "+A+X-A+B-X" $ \appendStr -> do
+        let
+            f1 :: (() -> IO ()) -> IO ()
+            f1 y = do
+                withMessage appendStr "A" $ y ()
+                withMessage appendStr "B" $ y ()
+            f2 :: (() -> IO ()) -> IO ()
+            f2 y = withMessage appendStr "X" $ y ()
+        runCoroutine $ joinCoroutines (coroutineSuspend f1) (\() -> coroutineSuspend f2)
 
-testLifeCycle :: TestTree
-testLifeCycle =
-    testCase "lifecycle" $
+testLifeCycleRun :: TestTree
+testLifeCycleRun =
+    testCase "run" $
     compareTest "ACDB" $ \appendStr -> do
         let
             lc :: LifeCycle ()
@@ -140,6 +137,28 @@ testLifeCycle =
                 liftIO $ appendStr "C"
                 lifeCycleOnClose $ appendStr "D"
         runLifeCycleT lc
+
+testLifeCycleWith :: TestTree
+testLifeCycleWith =
+    testCase "with" $
+    compareTest "ABECFD" $ \appendStr -> do
+        let
+            lc :: LifeCycle ()
+            lc = do
+                liftIO $ appendStr "A"
+                s <-
+                    lifeCycleWith $ \call -> do
+                        appendStr "B"
+                        v <- call "C"
+                        appendStr "D"
+                        return v
+                liftIO $ appendStr "E"
+                liftIO $ appendStr s
+                liftIO $ appendStr "F"
+        runLifeCycleT lc
+
+testLifeCycle :: TestTree
+testLifeCycle = testGroup "lifecycle" [testLifeCycleRun, testLifeCycleWith]
 
 tests :: TestTree
 tests = testGroup "monadology" [testCoroutine, testLifeCycle, testComposeInner, testException]
