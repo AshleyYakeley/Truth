@@ -15,7 +15,6 @@ module Control.Monad.Ology.Specific.LifeCycleT
     ) where
 
 import Control.Monad.Ology.General
-import Control.Monad.Ology.Specific.CoroutineT
 import Control.Monad.Ology.Specific.StateT
 import Import
 
@@ -129,8 +128,6 @@ lifeCycleOnClose closer = do
     MkWMFunction unlift <- lift askUnliftIO
     lifeCycleOnCloseIO $ unlift closer
 
-type With m t = forall (r :: Type). (t -> m r) -> m r
-
 withLifeCycleT ::
        forall m a. (MonadException m, MonadTunnelIO m)
     => LifeCycleT m a
@@ -223,13 +220,8 @@ lifeCycleOnAllDone onzero = do
 
 lifeCycleWith :: (MonadCoroutine m, MonadAskUnliftIO m) => With m t -> LifeCycleT m t
 lifeCycleWith withX = do
-    etp <- lift $ resume $ suspend withX
-    case etp of
-        Left t -> return t
-        Right (t, tp) -> do
-            lifeCycleOnClose $ do
-                _ <- coroutineRun $ tp t
-                return ()
-            return t
+    (t, closer) <- lift $ unpickWith withX
+    lifeCycleOnClose closer
+    return t
 
 type LifeCycle = LifeCycleT IO

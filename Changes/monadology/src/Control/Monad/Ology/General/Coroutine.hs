@@ -53,3 +53,12 @@ instance (MonadTransUnlift t, MonadCoroutine m, MonadTunnelIOInner m, Monad (t m
         MkCoroutineT $
         liftWithUnlift $ \unlift ->
             (fmap $ fmap $ fmap $ fmap $ hoist lift) $ resume $ suspend $ \pmq -> unlift $ call $ \p -> lift $ pmq p
+
+type With m t = forall (r :: Type). (t -> m r) -> m r
+
+unpickWith :: MonadCoroutine m => With m a -> m (a, m ())
+unpickWith w = do
+    etp <- resume $ suspend w
+    case etp of
+        Left a -> return (a, return ())
+        Right (a, f) -> return (a, fmap (\_ -> ()) $ coroutineRun $ f a)
