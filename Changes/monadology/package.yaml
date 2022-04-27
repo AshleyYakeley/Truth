@@ -69,4 +69,10 @@ tests:
       - tasty
       - tasty-hunit
     main: Main.hs
+    other-modules:
+      - Useful
+      - Exception
+      - Compose
+      - Coroutine
+      - LifeCycle
     ghc-options: -threaded
