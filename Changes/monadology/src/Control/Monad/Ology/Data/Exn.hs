@@ -4,6 +4,7 @@ import Control.Monad.Ology.General
 import Control.Monad.Ology.Specific.Result
 import Import
 
+type Exn :: (Type -> Type) -> Type -> Type
 data Exn m e = MkExn
     { throwD :: forall a. e -> m a
     , catchD :: forall a. m a -> (e -> m a) -> m a
@@ -66,6 +67,19 @@ mapExn f g exn =
                           Just e' -> handler e'
         , maskD = maskD exn
         }
+
+liftExn ::
+       forall e t m. (MonadTransTunnel t, Monad m)
+    => Exn m e
+    -> Exn (t m) e
+liftExn (MkExn t c m) = let
+    t' :: forall a. e -> t m a
+    t' e = lift $ t e
+    c' :: forall a. t m a -> (e -> t m a) -> t m a
+    c' tma handler = tunnel $ \unlift -> c (unlift tma) $ \e -> unlift $ handler e
+    m' :: t m -/-> t m
+    m' = backHoist m
+    in MkExn t' c' m'
 
 allExn ::
        forall m. MonadException m
