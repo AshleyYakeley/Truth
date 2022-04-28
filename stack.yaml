@@ -4,10 +4,10 @@ packages:
 - external/countable
 - external/witness
 - external/open-witness
+- external/monadology
 
 # Changes
 - Changes/thread-trace
-- Changes/monadology
 - Changes/shapes
 - Changes/changes-core
 - Changes/changes-media
