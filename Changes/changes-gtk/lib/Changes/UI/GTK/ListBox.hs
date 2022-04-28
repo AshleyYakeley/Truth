@@ -34,27 +34,27 @@ removeAllListViewStates = do
 
 createListBox ::
        forall update. (IsUpdate update, FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
-    => (Model update -> CreateView Widget)
+    => (Model update -> View Widget)
     -> Model (OrderedListUpdate update)
-    -> CreateView Widget
+    -> View Widget
 createListBox mkElement model = do
     listBox <- cvNew ListBox [#selectionMode := SelectionModeSingle, #activateOnSingleClick := True]
     let
         insertElement :: SequencePoint -> View ViewState
         insertElement i = do
             fmap snd $
-                getLifeState $ do
+                viewGetState $ do
                     imodel <-
-                        cvFloatMapModel
+                        viewFloatMapModel
                             (changeLensToFloating (mustExistOneChangeLens "GTK list box") . orderedListItemLens i)
                             model
                     iwidget <- mkElement imodel
                     #insert listBox iwidget (fromIntegral i)
                     return ()
-        initVS :: CreateView (ListViewState, ())
+        initVS :: View (ListViewState, ())
         initVS = do
-            n <- lift $ viewRunResource model $ \am -> aModelRead am ListReadLength
-            vss <- lift $ for [0 .. pred n] insertElement
+            n <- viewRunResource model $ \am -> aModelRead am ListReadLength
+            vss <- for [0 .. pred n] insertElement
             return (MkListViewState vss, ())
         recvVS :: () -> [OrderedListUpdate update] -> StateT ListViewState View ()
         recvVS () updates =
@@ -85,5 +85,5 @@ createListBox mkElement model = do
                     for_ ws $ #remove listBox
                     vss <- removeAllListViewStates
                     liftIO $ for_ vss closeLifeState
-    cvDynamic model initVS mempty recvVS
+    viewDynamic model initVS mempty recvVS
     toWidget listBox

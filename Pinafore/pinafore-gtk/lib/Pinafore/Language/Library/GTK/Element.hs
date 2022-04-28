@@ -18,7 +18,7 @@ import Shapes
 
 -- LangElement
 newtype LangElement = MkLangElement
-    { unLangElement :: CreateView Widget
+    { unLangElement :: View Widget
     }
 
 elementGroundType :: PinaforeGroundType '[] LangElement
@@ -73,9 +73,9 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                 showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
                 nameOpenSub :: Model (ROWUpdate Text)
                 nameOpenSub = unWModel $ eaMapSemiReadOnly clearText $ langWholeRefToReadOnlyValue nameRef
-                getCellSub :: Model (ROWUpdate EnA) -> CreateView (Model (ROWUpdate (Text, TableCellProps)))
+                getCellSub :: Model (ROWUpdate EnA) -> View (Model (ROWUpdate (Text, TableCellProps)))
                 getCellSub osub = do
-                    a <- lift $ readSub osub
+                    a <- readSub osub
                     return $
                         unWModel $
                         eaMapSemiReadOnly (funcChangeLens showCell) $ langWholeRefToReadOnlyValue $ getCellRef a
@@ -96,9 +96,8 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                 Just $ do
                     a' <- readM ReadWhole
                     return $ a' == a
-            init :: CreateView ()
+            init :: View ()
             init =
-                lift $
                 viewRunResourceContext selectionModel $ \unlift (amod :: _ tt) -> do
                     ka <- liftIO $ unlift $ aModelRead amod ReadWhole
                     setsel ka
@@ -106,7 +105,7 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
             recv () updates = let
                 MkBiWholeUpdate ka = last updates
                 in setsel ka
-            in cvBindModel selectionModel (Just esrc) init mempty recv
+            in viewBindModel selectionModel (Just esrc) init mempty recv
         return widget
 
 uiList :: (PinaforeImmutableWholeRef A -> LangElement) -> LangListRef '( BottomType, A) -> LangElement
@@ -167,7 +166,7 @@ uiLabel text =
 
 uiDynamic :: PinaforeImmutableWholeRef LangElement -> LangElement
 uiDynamic uiref = let
-    getSpec :: Know LangElement -> CreateView Widget
+    getSpec :: Know LangElement -> View Widget
     getSpec Unknown = createBlank
     getSpec (Known (MkLangElement pui)) = pui
     in MkLangElement $ createDynamic $ unWModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyRef uiref

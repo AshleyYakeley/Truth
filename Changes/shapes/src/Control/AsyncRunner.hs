@@ -4,7 +4,6 @@ module Control.AsyncRunner
     , asyncIORunner
     ) where
 
-import Control.Monad.LifeCycle
 import Control.Task
 import Shapes.Import
 import Debug.ThreadTrace
@@ -119,7 +118,7 @@ asyncWaitRunner mus doit = do
             in MkTask {..}
     tid <- liftIO $ traceBracketIO "asyncWaitRunner: fork thread" $ forkIO $ traceBracketIO "THREAD: asyncWaitRunner" threadDo
     traceIOM $ "asyncWaitRunner: forked thread " <> show tid
-    lifeCycleClose $ traceBracketIO "asyncWaitRunner: close" $ do
+    lifeCycleOnClose $ traceBracketIO "asyncWaitRunner: close" $ do
         traceBracketIO "asyncWaitRunner: close: send end" $ atomicallyDo $ traceBracketSTM "asyncWaitRunner STM: close: send end" $ do
             me <- waitForIdle
             case me of

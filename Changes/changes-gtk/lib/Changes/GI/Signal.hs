@@ -1,11 +1,11 @@
 module Changes.GI.Signal
     ( withSignalBlocked
     , withSignalsBlocked
-    , cvOn
-    , cvAfter
-    , cvTraceSignal
-    , cvTraceAllSignals
-    , cvReportAllSignals
+    , viewOn
+    , viewAfter
+    , viewTraceSignal
+    , viewTraceAllSignals
+    , viewReportAllSignals
     ) where
 
 import Changes.Core
@@ -17,7 +17,7 @@ import Shapes
 import Changes.Debug.Reference
 
 withSignalBlocked :: IsObject obj => obj -> SignalHandlerId -> View a -> View a
-withSignalBlocked obj conn = hoist $ bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
+withSignalBlocked obj conn = bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
 
 withSignalsBlocked :: IsObject obj => obj -> [SignalHandlerId] -> View a -> View a
 withSignalsBlocked _obj [] = id
@@ -35,9 +35,9 @@ instance GTKCallbackType r => GTKCallbackType (a -> r) where
     type CallbackViewLifted (a -> r) = a -> CallbackViewLifted r
     gCallbackUnlift mf av a = gCallbackUnlift mf $ av a
 
-cvCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> CreateView ()
-cvCloseDisconnectSignal object shid =
-    lifeCycleCloseIO $ do
+viewCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> View ()
+viewCloseDisconnectSignal object shid =
+    viewOnCloseIO $ do
         -- Widgets that have been destroyed have already had their signals disconnected, even if references to them still exist.
         -- So we need to check.
         isConnected <- traceBracket "GTK.cvCloseDisconnectSignal:test" $ signalHandlerIsConnected object shid
@@ -45,26 +45,26 @@ cvCloseDisconnectSignal object shid =
             then traceBracket "GTK.cvCloseDisconnectSignal:disconnect" $ disconnectSignalHandler object shid
             else return ()
 
-cvOn ::
+viewOn ::
        (IsObject object, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
     => object
     -> SignalProxy object info
     -> CallbackViewLifted (HaskellCallbackType info)
-    -> CreateView SignalHandlerId
-cvOn object signal call = do
-    shid <- lift $ liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK on" $ unlift ma) call
-    cvCloseDisconnectSignal object shid
+    -> View SignalHandlerId
+viewOn object signal call = do
+    shid <- liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK on" $ unlift ma) call
+    viewCloseDisconnectSignal object shid
     return shid
 
-cvAfter ::
+viewAfter ::
        (IsObject object, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
     => object
     -> SignalProxy object info
     -> CallbackViewLifted (HaskellCallbackType info)
-    -> CreateView SignalHandlerId
-cvAfter object signal call = do
-    shid <- lift $ liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK after" $ unlift ma) call
-    cvCloseDisconnectSignal object shid
+    -> View SignalHandlerId
+viewAfter object signal call = do
+    shid <- liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK after" $ unlift ma) call
+    viewCloseDisconnectSignal object shid
     return shid
 
 getTypeSignalIDs :: MonadIO m => GType -> m [Word32]
@@ -78,14 +78,14 @@ getTypeSignalIDs t = do
                 else signalListIds t0
     return $ nub $ mconcat sigidss
 
-cvTraceSignal :: IsObject t => t -> Word32 -> View () -> CreateView ()
-cvTraceSignal t sigid call = do
+viewTraceSignal :: IsObject t => t -> Word32 -> View () -> View ()
+viewTraceSignal t sigid call = do
     sq <- signalQuery sigid
     sflags <- getSignalQuerySignalFlags sq
     if elem SignalFlagsNoHooks sflags
         then return ()
         else do
-            unliftIO <- lift askUnliftIO
+            unliftIO <- viewRunInMain
             hookid <-
                 signalAddEmissionHook sigid 0 $ \_ vals _ -> do
                     case vals of
@@ -98,10 +98,10 @@ cvTraceSignal t sigid call = do
                                     | sobj == obj -> runWMFunction unliftIO call
                                 _ -> return ()
                     return True
-            lifeCycleClose $ signalRemoveEmissionHook sigid hookid
+            viewOnCloseIO $ signalRemoveEmissionHook sigid hookid
 
-cvTraceAllSignals :: IsObject t => t -> (Text -> View ()) -> CreateView ()
-cvTraceAllSignals obj call = do
+viewTraceAllSignals :: IsObject t => t -> (Text -> View ()) -> View ()
+viewTraceAllSignals obj call = do
     t <- getObjectType obj
     sigids <- getTypeSignalIDs t
     for_ sigids $ \sigid -> do
@@ -110,8 +110,8 @@ cvTraceAllSignals obj call = do
             "event" -> return ()
             "event-after" -> return ()
             "motion-notify-event" -> return ()
-            _ -> cvTraceSignal obj sigid $ call signame
+            _ -> viewTraceSignal obj sigid $ call signame
 
-cvReportAllSignals :: IsObject t => Text -> t -> CreateView ()
-cvReportAllSignals name obj =
-    cvTraceAllSignals obj $ \signame -> liftIO $ hPutStrLn stderr $ unpack name <> ": signal " <> show signame
+viewReportAllSignals :: IsObject t => Text -> t -> View ()
+viewReportAllSignals name obj =
+    viewTraceAllSignals obj $ \signame -> liftIO $ hPutStrLn stderr $ unpack name <> ": signal " <> show signame

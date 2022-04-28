@@ -28,7 +28,7 @@ soupEditSpec ::
        Model (SoupUpdate PossibleNoteUpdate)
     -> SelectNotify (Model (UUIDElementUpdate PossibleNoteUpdate))
     -> (Model (UUIDElementUpdate PossibleNoteUpdate) -> View ())
-    -> CreateView Widget
+    -> View Widget
 soupEditSpec sub selnotify openItem = do
     let
         nameLens :: ChangeLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Result Text Text))
@@ -39,7 +39,8 @@ soupEditSpec sub selnotify openItem = do
         cmp a b = compare (resultToMaybe a) (resultToMaybe b)
         uo :: UpdateOrder (UUIDElementUpdate PossibleNoteUpdate)
         uo = mkUpdateOrder cmp nameLens
-    osub :: Model (OrderedListUpdate (UUIDElementUpdate PossibleNoteUpdate)) <- cvFloatMapModel (orderedSetLens uo) sub
+    osub :: Model (OrderedListUpdate (UUIDElementUpdate PossibleNoteUpdate)) <-
+        viewFloatMapModel (orderedSetLens uo) sub
     let
         nameColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
         nameColumn =
@@ -76,10 +77,10 @@ soupReference dirpath = let
     lens = liftSoupLens paste $ soupItemLens . referenceChangeLens
     in mapReference lens rawSoupReference
 
-soupWindow :: ChangesContext -> (WindowSpec -> CreateView UIWindow) -> FilePath -> CreateView ()
-soupWindow tc newWindow dirpath = do
-    smodel <- liftLifeCycle $ makeReflectingModel $ traceThing "soup" $ soupReference dirpath
-    (selModel, selnotify) <- liftLifeCycle $ makeSharedModel makePremodelSelectNotify
+soupWindow :: (WindowSpec -> View UIWindow) -> FilePath -> View ()
+soupWindow newWindow dirpath = do
+    smodel <- viewLiftLifeCycle $ makeReflectingModel $ traceThing "soup" $ soupReference dirpath
+    (selModel, selnotify) <- viewLiftLifeCycle $ makeSharedModel makePremodelSelectNotify
     let
         withSelection :: (Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()) -> View ()
         withSelection call = do
@@ -113,7 +114,7 @@ soupWindow tc newWindow dirpath = do
             [ SubMenuEntry
                   "File"
                   [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO cc
-                  , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExit
+                  , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExitUI
                   ]
             , SubMenuEntry
                   "Item"
@@ -126,21 +127,20 @@ soupWindow tc newWindow dirpath = do
             let
                 rowmodel :: Model PossibleNoteUpdate
                 rowmodel = mapModel (tupleChangeLens SelectSecond) imodel
-                rspec :: Result Text (Model NoteUpdate) -> CreateView Widget
+                rspec :: Result Text (Model NoteUpdate) -> View Widget
                 rspec (SuccessResult s2) = noteEditSpec s2 mempty
                 rspec (FailureResult err) = createLabel $ constantModel err
-            ccUnliftCreateView tc $ do
-                rec
-                    ~(subwin, subcloser) <-
-                        lifeCycleEarlyCloser $ let
-                            wsPosition = WindowPositionCenter
-                            wsSize = (300, 400)
-                            wsCloseBoxAction = liftIO subcloser
-                            wsTitle = constantModel "item"
-                            wsMenuBar = mbar subcloser subwin
-                            wsContent = createOneWhole rowmodel rspec
-                            in newWindow MkWindowSpec {..}
-                return ()
+            rec
+                ~(subwin, subcloser) <-
+                    viewGetCloser $ let
+                        wsPosition = WindowPositionCenter
+                        wsSize = (300, 400)
+                        wsCloseBoxAction = liftIO subcloser
+                        wsTitle = constantModel "item"
+                        wsMenuBar = mbar subcloser subwin
+                        wsContent = createOneWhole rowmodel rspec
+                        in newWindow MkWindowSpec {..}
+            return ()
     rec
         let
             wsPosition = WindowPositionCenter
@@ -158,5 +158,5 @@ soupWindow tc newWindow dirpath = do
                 createLayout
                     OrientationVertical
                     [(defaultLayoutOptions, button), (defaultLayoutOptions {loGrow = True}, stuff)]
-        (window, closer) <- lifeCycleEarlyCloser $ newWindow MkWindowSpec {..}
+        (window, closer) <- viewGetCloser $ newWindow MkWindowSpec {..}
     return ()

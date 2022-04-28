@@ -65,6 +65,9 @@ instance TransConstraint MonadInner MaybeT where
 instance MonadTransCoerce MaybeT where
     transCoerce = Dict
 
+instance MonadTransHoist MaybeT where
+    hoist = tunnelHoist
+
 instance MonadTransTunnel MaybeT where
     type Tunnel MaybeT = Maybe
     tunnel call = MaybeT $ call $ \(MaybeT ma) -> ma

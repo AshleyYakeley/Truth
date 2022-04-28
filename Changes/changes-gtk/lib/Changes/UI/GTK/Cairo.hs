@@ -51,11 +51,11 @@ onClick action =
                 return True
             _ -> return False
 
-createCairo :: Model (ROWUpdate ((Int32, Int32) -> UIDrawing)) -> CreateView Widget
+createCairo :: Model (ROWUpdate ((Int32, Int32) -> UIDrawing)) -> View Widget
 createCairo model = do
     widget <- cvNew DrawingArea []
     drawingRef :: IORef ((Int32, Int32) -> UIDrawing) <- liftIO $ newIORef $ \_ -> mempty
-    cvBindReadOnlyWholeModel model $ \pdrawing -> do
+    viewBindReadOnlyWholeModel model $ \pdrawing -> do
         liftIO $ writeIORef drawingRef pdrawing
         #queueDraw widget
     let
@@ -66,14 +66,14 @@ createCairo model = do
             h <- #getAllocatedHeight widget
             return $ pdrawing (w, h)
     _ <-
-        cvOn widget #draw $ \context ->
+        viewOn widget #draw $ \context ->
             liftIO $ do
                 drawing <- getDrawing
                 renderWithContext (drawingRender drawing) context
                 return True
     widgetAddEvents widget [EventMaskButtonPressMask]
     _ <-
-        cvOn widget #buttonPressEvent $ \event -> do
+        viewOn widget #buttonPressEvent $ \event -> do
             drawing <- liftIO getDrawing
             h <- GI.get event #x
             v <- GI.get event #y

@@ -23,10 +23,10 @@ main = do
         let newWindow spec = ccExitOnClosed tc $ createWindow spec
         -- fileReference :: FilePath -> Reference ByteStringEdit
         imageRef <- liftIO $ makeMemoryReference (blankImage @PixelRGB8 (100, 100) black) $ \_ -> True
-        model <- liftLifeCycle $ makeReflectingModel imageRef
+        model <- viewLiftLifeCycle $ makeReflectingModel imageRef
         rec
             (_, closer) <-
-                lifeCycleEarlyCloser $
+                viewGetCloser $
                 newWindow $ let
                     wsPosition = WindowPositionCenter
                     wsSize = (600, 600)
@@ -50,7 +50,7 @@ main = do
                                     return ()
                     wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
                     wsMenuBar = Just $ constantModel $ pure $ SubMenuEntry "Image" $ fmap setFileRef filenames
-                    wsContent :: CreateView Widget
+                    wsContent :: View Widget
                     wsContent = createImage $ mapModel toReadOnlyChangeLens model
                     in MkWindowSpec {..}
         return ()

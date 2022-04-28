@@ -9,16 +9,16 @@ import GI.Gtk
 import Shapes
 import Changes.Debug.Reference
 
-createButton :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (View ()))) -> CreateView Widget
+createButton :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (View ()))) -> View Widget
 createButton rlabel raction = do
     aref <- liftIO $ newIORef Nothing
     widget <- cvNew Button []
-    cvBindReadOnlyWholeModel rlabel $ \label -> set widget [#label := label]
-    cvBindReadOnlyWholeModel raction $ \maction -> do
+    viewBindReadOnlyWholeModel rlabel $ \label -> set widget [#label := label]
+    viewBindReadOnlyWholeModel raction $ \maction -> do
         liftIO $ writeIORef aref maction
         set widget [#sensitive := isJust maction]
     _ <-
-        cvOn widget #clicked $ traceBracket "GTK.Button:click" $ do
+        viewOn widget #clicked $ traceBracket "GTK.Button:click" $ do
             maction <- liftIO $ readIORef aref
             case maction of
                 Nothing -> return ()

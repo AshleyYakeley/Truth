@@ -9,7 +9,7 @@ import GI.Gtk as Gtk
 import Shapes hiding (get)
 import Changes.Debug.Reference
 
-createCalendar :: Model (WholeUpdate Day) -> CreateView Widget
+createCalendar :: Model (WholeUpdate Day) -> View Widget
 createCalendar rmod = traceBracket "GTK.Calendar:create" $ do
     esrc <- newEditSource
     widget <- cvNew Calendar []
@@ -34,9 +34,9 @@ createCalendar rmod = traceBracket "GTK.Calendar:create" $ do
                 st <- getDay
                 _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
                 return ()
-    sig1 <- cvOn widget #daySelected onChanged
-    sig2 <- cvOn widget #monthChanged onChanged
-    cvBindWholeModel rmod (Just esrc) $ \newval -> traceBracket "GTK.Calendar:update" $ do
+    sig1 <- viewOn widget #daySelected onChanged
+    sig2 <- viewOn widget #monthChanged onChanged
+    viewBindWholeModel rmod (Just esrc) $ \newval -> traceBracket "GTK.Calendar:update" $ do
         oldval <- getDay
         if oldval == newval
             then return ()

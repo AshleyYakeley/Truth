@@ -60,12 +60,12 @@ isScrollable widget = do
             (Nothing, Nothing) -> False
             _ -> True
 
-cvAdd :: (IsContainer c, IsWidget w) => c -> w -> CreateView ()
+cvAdd :: (IsContainer c, IsWidget w) => c -> w -> View ()
 cvAdd c w = do
     containerAdd c w
-    lifeCycleCloseIO $ traceBracketIO "GTK.containerRemove" $ containerRemove c w
+    viewOnCloseIO $ traceBracketIO "GTK.containerRemove" $ containerRemove c w
 
-cvPackStart :: (IsObject w, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> CreateView ()
+cvPackStart :: (IsObject w, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> View ()
 cvPackStart grow box w = do
     boxPackStart box w grow grow 0
-    lifeCycleCloseIO $ traceBracketIO "GTK.containerRemove.box" $ containerRemove box w
+    viewOnCloseIO $ traceBracketIO "GTK.containerRemove.box" $ containerRemove box w

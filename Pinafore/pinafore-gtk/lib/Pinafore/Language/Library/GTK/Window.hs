@@ -32,7 +32,7 @@ instance HasPinaforeType 'Negative UIWindow where
 createLangWindow :: WindowSpec -> PinaforeAction LangWindow
 createLangWindow uiw = do
     MkWMFunction exitOnClose <- pinaforeGetExitOnClose
-    (pwWindow, close) <- pinaforeEarlyCloser $ createViewPinaforeAction $ exitOnClose $ createWindow uiw
+    (pwWindow, close) <- pinaforeEarlyCloser $ actionLiftView $ exitOnClose $ createWindow uiw
     let pwClose = liftIO close
     return $ MkLangWindow {..}
 
@@ -65,5 +65,5 @@ windowStuff =
         , mkValEntry "closeWindow" "Close a window." pwClose
         , mkValEntry "showWindow" "Show a window." uiWindowShow
         , mkValEntry "hideWindow" "Hide a window." uiWindowHide
-        , mkValEntry "exitUI" "Exit the user interface." pinaforeExit
+        , mkValEntry "exitUI" "Exit the user interface." actionExitUI
         ]

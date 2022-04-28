@@ -12,7 +12,7 @@ import Shapes
 -- | https://specifications.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
 type IconName = Text
 
-createIcon :: IconName -> IconSize -> CreateView Widget
+createIcon :: IconName -> IconSize -> View Widget
 createIcon icon size = do
     image <- imageNewFromIconName (Just icon) (fromIntegral $ fromEnum size)
     cvAcquire image

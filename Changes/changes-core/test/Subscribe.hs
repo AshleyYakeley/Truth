@@ -47,9 +47,8 @@ debugFloatingLens ::
     -> FloatingChangeLens updateA updateB
 debugFloatingLens name = floatLift (\mr -> mr) $ debugLens name
 
-doModelTest :: TestName -> ((?handle :: Handle) => CreateView ()) -> TestTree
-doModelTest name call =
-    goldenTest "." name $ ccRunView (nullChangesContext runLifeCycleT) emptyResourceContext $ runLifeCycleT call
+doModelTest :: TestName -> ((?handle :: Handle) => View ()) -> TestTree
+doModelTest name call = goldenTest "." name $ ccRunView (nullChangesContext runLifeCycleT) emptyResourceContext call
 
 testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
@@ -99,16 +98,15 @@ testUpdateReference =
             showAction = do
                 action <- takeMVar var
                 action
-        rc <- lift viewGetResourceContext
+        rc <- viewGetResourceContext
         omr' <-
-            liftLifeCycle $ do
+            viewLiftLifeCycle $ do
                 om' <- sharePremodel om
                 omr' <- om' rc mempty $ recv "recv1" wait
                 _ <- mapPremodel rc lens (om' rc) mempty $ recv "recv2" (return ())
                 return omr'
-        lift $
-            viewRunResource (pmrReference omr') $ \MkAReference {..} ->
-                pushOrFail "failed" noEditSource $ refEdit $ pure $ MkWholeReaderEdit "new"
+        viewRunResource (pmrReference omr') $ \MkAReference {..} ->
+            pushOrFail "failed" noEditSource $ refEdit $ pure $ MkWholeReaderEdit "new"
         liftIO showAction
         liftIO showAction
         liftIO $ taskWait $ pmrUpdatesTask omr'
@@ -128,10 +126,10 @@ subscribeShowUpdates ::
        )
     => String
     -> Model update
-    -> CreateView (CreateView ())
+    -> View (View ())
 subscribeShowUpdates name model = do
     chan <- liftIO newChan
-    lifeCycleCloseIO $ do
+    viewOnCloseIO $ do
         threadDelay 1000 -- 1ms to allow for updates to finish
         writeChan chan Nothing
         final <- readChan chan
@@ -139,7 +137,7 @@ subscribeShowUpdates name model = do
         case final of
             Nothing -> return ()
             Just update -> fail $ name <> ": update left over: " <> show update
-    cvBindModel model Nothing (return ()) mempty $ \() updates ->
+    viewBindModel model Nothing (return ()) mempty $ \() updates ->
         for_ updates $ \update -> liftIO $ writeChan chan $ Just update
     return $
         liftIO $ do
@@ -152,22 +150,20 @@ showModelSubject ::
        (Show (UpdateSubject update), FullSubjectReader (UpdateReader update), ?handle :: Handle)
     => String
     -> Model update
-    -> CreateView ()
+    -> View ()
 showModelSubject name model = do
     liftIO $ taskWait $ modelUpdatesTask model
-    lift $
-        viewRunResource model $ \asub -> do
-            val <- readableToSubject $ aModelRead asub
-            outputNameLn name $ "get " ++ show val
+    viewRunResource model $ \asub -> do
+        val <- readableToSubject $ aModelRead asub
+        outputNameLn name $ "get " ++ show val
 
 modelPushEdits ::
        (Show (UpdateEdit update), ?handle :: Handle)
     => String
     -> Model update
     -> [NonEmpty (UpdateEdit update)]
-    -> CreateView ()
+    -> View ()
 modelPushEdits name model editss =
-    lift $
     viewRunResource model $ \asub ->
         for_ editss $ \edits -> do
             outputNameLn name $ "push " ++ show (toList edits)
@@ -183,9 +179,8 @@ modelDontPushEdits ::
     => String
     -> Model update
     -> [NonEmpty (UpdateEdit update)]
-    -> CreateView ()
+    -> View ()
 modelDontPushEdits name model editss =
-    lift $
     viewRunResource model $ \asub ->
         for_ editss $ \edits -> do
             outputNameLn name $ "push " ++ show (toList edits)
@@ -197,7 +192,7 @@ modelDontPushEdits name model editss =
 testSubscription ::
        forall update. (?handle :: Handle, IsUpdate update, FullEdit (UpdateEdit update), Show (UpdateSubject update))
     => UpdateSubject update
-    -> CreateView (Model update, CreateView (), NonEmpty (UpdateEdit update) -> CreateView ())
+    -> View (Model update, View (), NonEmpty (UpdateEdit update) -> View ())
 testSubscription initial = do
     iow <- liftIO $ newIOWitness
     var <- liftIO $ newMVar initial
@@ -206,7 +201,7 @@ testSubscription initial = do
         varObj = traceThing "testSubscription.varObj" $ mvarReference iow var $ \_ -> True
         editObj :: Reference (UpdateEdit update)
         editObj = convertReference varObj
-    model <- liftLifeCycle $ makeReflectingModel editObj
+    model <- viewLiftLifeCycle $ makeReflectingModel editObj
     let
         showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
         showExpected =
@@ -303,7 +298,7 @@ testSharedString1 =
         (mainModel, mainShow, _) <- testSubscription @(StringUpdate String) "ABCDE"
         showModelSubject "main" mainModel
         mainShowUpdate <- subscribeShowUpdates "main" mainModel
-        sectModel <- cvFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainModel
+        sectModel <- viewFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainModel
         showModelSubject "sect" sectModel
         sectShowUpdate <- subscribeShowUpdates "sect" sectModel
         mainShow
@@ -324,7 +319,7 @@ testSharedString2 =
         (mainModel, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showModelSubject "main" mainModel
         mainShowUpdate <- subscribeShowUpdates "main" mainModel
-        sectModel <- cvFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainModel
+        sectModel <- viewFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainModel
         showModelSubject "sect" sectModel
         sectShowUpdate <- subscribeShowUpdates "sect" sectModel
         mainShow
@@ -343,7 +338,7 @@ testSharedString3 =
         (mainModel, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showModelSubject "main" mainModel
         mainShowUpdate <- subscribeShowUpdates "main" mainModel
-        sectModel <- cvFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainModel
+        sectModel <- viewFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainModel
         runEditor sectModel $ pure ()
         showModelSubject "sect" sectModel
         sectShowUpdate <- subscribeShowUpdates "sect" sectModel
@@ -363,7 +358,7 @@ testSharedString4 =
         (mainModel, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showModelSubject "main" mainModel
         mainShowUpdate <- subscribeShowUpdates "main" mainModel
-        sectModel <- cvFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainModel
+        sectModel <- viewFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainModel
         runEditor sectModel $ pure ()
         showModelSubject "sect" sectModel
         sectShowUpdate <- subscribeShowUpdates "sect" sectModel
@@ -383,7 +378,7 @@ testSharedString5 =
         (mainModel, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
         showModelSubject "main" mainModel
         mainShowUpdate <- subscribeShowUpdates "main" mainModel
-        sectModel <- cvFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainModel
+        sectModel <- viewFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainModel
         showModelSubject "sect" sectModel
         sectShowUpdate <- subscribeShowUpdates "sect" sectModel
         mainShow
@@ -398,7 +393,7 @@ testSharedString6 =
         (mainModel, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
         showModelSubject "main" mainModel
         mainShowUpdate <- subscribeShowUpdates "main" mainModel
-        sectModel <- cvFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainModel
+        sectModel <- viewFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainModel
         showModelSubject "sect" sectModel
         _sectFlush <- subscribeShowUpdates "sect" sectModel
         mainShow
@@ -412,7 +407,7 @@ testSharedString7 =
         (mainModel, mainShow, _) <- testSubscription @(StringUpdate String) "ABCD"
         showModelSubject "main" mainModel
         mainShowUpdate <- subscribeShowUpdates "main" mainModel
-        sectModel <- cvFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainModel
+        sectModel <- viewFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 3)) mainModel
         showModelSubject "sect" sectModel
         sectShowUpdate <- subscribeShowUpdates "sect" sectModel
         mainShow
@@ -427,7 +422,7 @@ testSharedString7a =
         (mainModel, mainShow, _) <- testSubscription @(StringUpdate String) "AB"
         showModelSubject "main" mainModel
         mainShowUpdate <- subscribeShowUpdates "main" mainModel
-        sectModel <- cvFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainModel
+        sectModel <- viewFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainModel
         showModelSubject "sect" sectModel
         sectShowUpdate <- subscribeShowUpdates "sect" sectModel
         mainShow
@@ -513,7 +508,7 @@ testPairedSharedString1 =
         (mainModel, mainShow, _) <- testSubscription @(StringUpdate String) "PABCQ"
         showModelSubject "main" mainModel
         mainShowUpdate <- subscribeShowUpdates "main" mainModel
-        sectModel <- cvFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainModel
+        sectModel <- viewFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 4)) mainModel
         showModelSubject "sect" sectModel
         sectShowUpdate <- subscribeShowUpdates "sect" sectModel
         let pairSub = pairModels sectModel sectModel
@@ -545,7 +540,7 @@ testPairedSharedString2 =
         (mainModel, mainShow, _) <- testSubscription @(StringUpdate String) "ABC"
         showModelSubject "main" mainModel
         mainShowUpdate <- subscribeShowUpdates "main" mainModel
-        sectModel <- cvFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainModel
+        sectModel <- viewFloatMapModel (debugFloatingLens "lens" $ stringSectionLens (startEndRun 1 2)) mainModel
         showModelSubject "sect" sectModel
         sectShowUpdate <- subscribeShowUpdates "sect" sectModel
         let pairSub = pairModels sectModel sectModel

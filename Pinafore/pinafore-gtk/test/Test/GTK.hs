@@ -2,6 +2,7 @@ module Test.GTK
     ( getTestGTK
     ) where
 
+import Changes.Core
 import Changes.UI.GTK
 import Pinafore
 import Pinafore.Language.Library.GTK
@@ -19,11 +20,11 @@ testFile inpath = let
            traceBracketIO "testFile" $
            changesMainGTK $ \cc -> do
                pc <-
-                   liftLifeCycle $ do
+                   viewLiftLifeCycle $ do
                        (model, _) <- makeTestStorageModel
                        makePinaforeContext nullInvocationInfo hout model cc
                action <- runWithContext pc (libraryFetchModule gtkLibrary) $ pinaforeInterpretFile inpath
-               lift action
+               action
                return ()
 
 getTestGTK :: IO TestTree

@@ -17,7 +17,7 @@ main = do
     changesMainGTK $ \tc -> do
         let newWindow spec = ccExitOnClosed tc $ createWindow spec
         for_ dirpaths $ \dirpath -> do
-            let action = soupWindow tc newWindow dirpath
+            let action = soupWindow newWindow dirpath
             action
             if double
                 then action

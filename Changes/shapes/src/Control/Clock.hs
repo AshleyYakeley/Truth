@@ -2,7 +2,6 @@ module Control.Clock
     ( clock
     ) where
 
-import Control.Monad.LifeCycle
 import Data.Fixed
 import Data.Time.Clock
 import Shapes.Import
@@ -39,7 +38,7 @@ clock utcBase ndtInterval call = do
             takeMVar var
             call $ addUTCTime ndtNext utcBase
     (ndtTime, ndtOffset) <- liftIO getDiffTimes
-    lifeCycleClose $ traceBracketIO "clock: close" $ do
+    lifeCycleOnClose $ traceBracketIO "clock: close" $ do
         takeMVar var
         throwTo thread MkCancelled
     return $ addUTCTime (ndtTime - ndtOffset) utcBase

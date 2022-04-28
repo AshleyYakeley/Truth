@@ -6,6 +6,7 @@ import Changes.Core.Resource
 data ViewContext = MkViewContext
     { vcWithUILock :: IO --> IO
     , vcWithoutUILock :: IO --> IO
+    , vcRunInMain :: LifeCycle --> IO
     , vcResourceContext :: ResourceContext
     , vcExit :: IO ()
     }

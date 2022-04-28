@@ -129,6 +129,7 @@ newtype Interpreter ts a = MkInterpreter
                , MonadThrow PinaforeError
                , MonadCatch PinaforeError
                , MonadThrow ErrorMessage
+               , MonadHoistIO
                , MonadTunnelIO
                )
 

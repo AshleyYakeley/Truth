@@ -72,9 +72,6 @@ library:
       - Data.ReadShow
       - Control.Category.Dual
       - Control.Category.Lifted
-      - Control.Applicative.Compose
-      - Control.Monad.Coroutine
-      - Control.Monad.LifeCycle
       - Control.Clock
       - Control.Task
       - Control.AsyncRunner

@@ -64,6 +64,9 @@ instance (MonadCatch e m, Monoid w) => MonadCatch e (WriterT w m) where
 instance Monoid w => TransConstraint (MonadCatch e) (WriterT w) where
     hasTransConstraint = Dict
 
+instance Monoid w => MonadTransHoist (WriterT w) where
+    hoist = tunnelHoist
+
 instance Monoid w => MonadTransTunnel (WriterT w) where
     type Tunnel (WriterT w) = (,) w
     tunnel call = WriterT $ fmap swap $ call $ \(WriterT mrs) -> fmap swap $ mrs

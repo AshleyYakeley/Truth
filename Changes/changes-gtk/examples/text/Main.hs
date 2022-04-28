@@ -21,7 +21,7 @@ optParser =
     O.switch (O.long "save")
 
 newtype AppUI =
-    MkAppUI (IO () -> UIWindow -> CreateView Widget -> (MenuBar, CreateView Widget))
+    MkAppUI (IO () -> UIWindow -> View Widget -> (MenuBar, View Widget))
 
 main :: IO ()
 main = do
@@ -36,21 +36,20 @@ main = do
                 wholeTextObj = mapReference textLens bsObj
                 ui :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
                    -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
-                   -> (IO () -> UIWindow -> CreateView Widget -> (MenuBar, CreateView Widget))
-                   -> CreateView Widget
+                   -> (IO () -> UIWindow -> View Widget -> (MenuBar, View Widget))
+                   -> View Widget
                 ui sub1 msub2 extraui = do
-                    (selModel, setsel) <- liftLifeCycle $ makeSharedModel makePremodelSelectNotify
+                    (selModel, setsel) <- viewLiftLifeCycle $ makeSharedModel makePremodelSelectNotify
                     let
                         openSelection :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text)) -> View ()
                         openSelection sub = do
                             mflens <- viewRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
                             case mflens of
                                 Nothing -> return ()
-                                Just flens ->
-                                    ccUnliftCreateView tc $ do
-                                        subSub <- cvFloatMapModel (liftFullResultOneFloatingChangeLens flens) sub
-                                        makeWindow "section" subSub Nothing extraui
-                        rTextSpec :: Result Text (Model (StringUpdate Text)) -> CreateView Widget
+                                Just flens -> do
+                                    subSub <- viewFloatMapModel (liftFullResultOneFloatingChangeLens flens) sub
+                                    makeWindow "section" subSub Nothing extraui
+                        rTextSpec :: Result Text (Model (StringUpdate Text)) -> View Widget
                         rTextSpec (SuccessResult sub) = createTextArea sub setsel
                         rTextSpec (FailureResult err) = createLabel $ constantModel err
                         makeSpecs sub = do
@@ -71,13 +70,13 @@ main = do
                        Text
                     -> Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
                     -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
-                    -> (IO () -> UIWindow -> CreateView Widget -> (MenuBar, CreateView Widget))
-                    -> CreateView ()
+                    -> (IO () -> UIWindow -> View Widget -> (MenuBar, View Widget))
+                    -> View ()
                 makeWindow title sub msub2 extraui = do
                     rec
                         let (mbar, cuic) = extraui closer r $ ui sub msub2 extraui
                         (r, closer) <-
-                            lifeCycleEarlyCloser $
+                            viewGetCloser $
                             newWindow $ let
                                 wsPosition = WindowPositionCenter
                                 wsSize = (300, 400)
@@ -87,11 +86,11 @@ main = do
                                 wsTitle = constantModel title
                                 wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
                                 wsMenuBar = Just $ constantModel mbar
-                                wsContent :: CreateView Widget
+                                wsContent :: View Widget
                                 wsContent = cuic
                                 in MkWindowSpec {..}
                     return ()
-                simpleUI :: IO () -> UIWindow -> CreateView Widget -> (MenuBar, CreateView Widget)
+                simpleUI :: IO () -> UIWindow -> View Widget -> (MenuBar, View Widget)
                 simpleUI closer _ spec = let
                     mbar :: MenuBar
                     mbar =
@@ -99,17 +98,11 @@ main = do
                               "File"
                               [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExitUI
                               ]
                         ]
                     in (mbar, spec)
-                extraUI ::
-                       SaveActions
-                    -> UndoHandler
-                    -> IO ()
-                    -> UIWindow
-                    -> CreateView Widget
-                    -> (MenuBar, CreateView Widget)
+                extraUI :: SaveActions -> UndoHandler -> IO () -> UIWindow -> View Widget -> (MenuBar, View Widget)
                 extraUI (MkSaveActions saveActions) uh closer _ spec = let
                     saveAction = do
                         mactions <- saveActions
@@ -133,7 +126,7 @@ main = do
                               , simpleActionMenuItem "Revert" Nothing $ liftIO revertAction
                               , simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExitUI
                               ]
                         , SubMenuEntry
                               "Edit"
@@ -149,11 +142,12 @@ main = do
                     if saveOpt
                         then do
                             (bufferSub, saveActions) <-
-                                liftLifeCycle $ makeSharedModel $ saveBufferReference emptyResourceContext wholeTextObj
+                                viewLiftLifeCycle $
+                                makeSharedModel $ saveBufferReference emptyResourceContext wholeTextObj
                             uh <- liftIO newUndoHandler
                             return (undoHandlerModel uh bufferSub, MkAppUI $ extraUI saveActions uh)
                         else do
-                            textSub <- liftLifeCycle $ makeReflectingModel $ convertReference wholeTextObj
+                            textSub <- viewLiftLifeCycle $ makeReflectingModel $ convertReference wholeTextObj
                             return (textSub, MkAppUI simpleUI)
                 mTextSub2 <-
                     case selTest of
@@ -161,7 +155,7 @@ main = do
                         True -> do
                             bsObj2 <- liftIO $ makeMemoryReference mempty $ \_ -> True
                             textSub2 <-
-                                liftLifeCycle $
+                                viewLiftLifeCycle $
                                 makeReflectingModel $ convertReference $ mapReference textLens $ convertReference bsObj2
                             return $ Just textSub2
                 return $ makeWindow (fromString $ takeFileName path) textSub mTextSub2 appUI

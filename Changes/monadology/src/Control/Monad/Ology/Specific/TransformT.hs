@@ -12,19 +12,31 @@ newtype TransformT f a = MkTransformT
 instance Functor (TransformT f) where
     fmap ab (MkTransformT aff) = MkTransformT $ \bf -> aff $ bf . ab
 
+instance TransConstraint Functor TransformT where
+    hasTransConstraint = Dict
+
 instance Applicative (TransformT f) where
     pure a = MkTransformT $ \af -> af a
     MkTransformT f <*> MkTransformT x = MkTransformT $ \bf -> f $ \ab -> x (bf . ab)
 
+instance TransConstraint Applicative TransformT where
+    hasTransConstraint = Dict
+
 instance Monad (TransformT f) where
     return = pure
     MkTransformT m >>= f = MkTransformT $ \bf -> m (\a -> runTransformT (f a) bf)
+
+instance TransConstraint Monad TransformT where
+    hasTransConstraint = Dict
 
 instance MonadTrans TransformT where
     lift m = MkTransformT $ \af -> m >>= af
 
 instance MonadIO m => MonadIO (TransformT m) where
     liftIO = lift . liftIO
+
+instance TransConstraint MonadIO TransformT where
+    hasTransConstraint = Dict
 
 instance (Functor f, Semigroup a) => Semigroup (TransformT f a) where
     (<>) = liftA2 (<>)
@@ -56,6 +68,6 @@ transformParamRef MkParam {..} = let
     in MkRef {..}
 
 liftTransformT ::
-       forall t m. (MonadTransUnlift t, MonadTunnelIO m)
+       forall t m. (MonadTransUnlift t, MonadTunnelIOInner m)
     => TransformT m --> TransformT (t m)
 liftTransformT (MkTransformT aff) = MkTransformT $ \atf -> liftWithUnlift $ \unlift -> aff $ unlift . atf

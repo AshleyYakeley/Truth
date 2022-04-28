@@ -7,53 +7,6 @@ import Data.Time
 import Shapes
 import Shapes.Test
 
-compareTest :: String -> ((String -> IO ()) -> IO r) -> IO r
-compareTest expected action = do
-    resultsRef <- newIORef ""
-    let
-        appendStr :: String -> IO ()
-        appendStr s = modifyIORef resultsRef $ \t -> t ++ s
-    r <- action appendStr
-    found <- readIORef resultsRef
-    assertEqual "" expected found
-    return r
-
-withMessage :: (String -> IO ()) -> String -> IO r -> IO r
-withMessage appendStr s m = do
-    appendStr $ "+" <> s
-    r <- m
-    appendStr $ "-" <> s
-    return r
-
-testCoroutine :: TestTree
-testCoroutine =
-    testTree "coroutine" $
-    compareTest "+A+B-A-B" $ \appendStr -> do
-        _ <-
-            coroutine
-                (\y ->
-                     withMessage appendStr "A" $ do
-                         y ()
-                         return ((), ()))
-                (\() y ->
-                     withMessage appendStr "B" $ do
-                         y ()
-                         return ((), ()))
-        return ()
-
-testLifeCycle :: TestTree
-testLifeCycle =
-    testTree "lifecycle" $
-    compareTest "ACDB" $ \appendStr -> do
-        let
-            lc :: LifeCycle ()
-            lc = do
-                liftIO $ appendStr "A"
-                lifeCycleClose $ appendStr "B"
-                liftIO $ appendStr "C"
-                lifeCycleClose $ appendStr "D"
-        runLifeCycleT lc
-
 baseTime :: UTCTime
 baseTime = UTCTime (ModifiedJulianDay 0) 0
 
@@ -84,7 +37,7 @@ testClock :: TestTree
 testClock = testTree "clock" [testFastClock, testSlowClock]
 
 tests :: TestTree
-tests = testTree "shapes" [testCoroutine, testLifeCycle, testClock]
+tests = testTree "shapes" [testClock]
 
 main :: IO ()
 main = testMain tests

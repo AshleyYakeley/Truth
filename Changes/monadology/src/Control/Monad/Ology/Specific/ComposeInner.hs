@@ -7,6 +7,7 @@ import Control.Monad.Ology.General.Identity
 import Control.Monad.Ology.General.Inner
 import Control.Monad.Ology.General.Outer
 import Control.Monad.Ology.General.Trans.Constraint
+import Control.Monad.Ology.General.Trans.Hoist
 import Control.Monad.Ology.General.Trans.Trans
 import Control.Monad.Ology.Specific.Result
 import Import
@@ -129,9 +130,6 @@ instance MonadInner inner => TransConstraint MonadIO (ComposeInner inner) where
 liftInner :: Applicative outer => inner a -> ComposeInner inner outer a
 liftInner na = MkComposeInner $ pure na
 
-instance MonadInner inner => MonadTrans (ComposeInner inner) where
-    lift ma = MkComposeInner $ fmap pure ma
-
 instance (MonadInner inner, MonadException inner, MonadException m) => MonadException (ComposeInner inner m) where
     type Exc (ComposeInner inner m) = Either (Exc inner) (Exc m)
     throwExc (Left e) = liftInner $ throwExc e
@@ -143,3 +141,12 @@ instance (MonadInner inner, MonadException inner, MonadException m) => MonadExce
                 FailureResult e -> getComposeInner $ handler $ Right e
                 SuccessResult (FailureResult e) -> getComposeInner $ handler $ Left e
                 SuccessResult (SuccessResult a) -> return $ return a
+
+instance (MonadInner inner, MonadException inner) => TransConstraint MonadException (ComposeInner inner) where
+    hasTransConstraint = Dict
+
+instance MonadInner inner => MonadTrans (ComposeInner inner) where
+    lift ma = MkComposeInner $ fmap pure ma
+
+instance MonadInner inner => MonadTransHoist (ComposeInner inner) where
+    hoist ii (MkComposeInner ma) = MkComposeInner $ ii ma

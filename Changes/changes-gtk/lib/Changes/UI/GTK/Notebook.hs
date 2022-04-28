@@ -7,9 +7,9 @@ import Changes.GI
 import GI.Gtk
 import Shapes
 
-createNotebook :: SelectNotify Int -> [(Widget, Widget)] -> CreateView Widget
+createNotebook :: SelectNotify Int -> [(Widget, Widget)] -> View Widget
 createNotebook notifier pages = do
     notebook <- cvNew Notebook []
     for_ pages $ \(headwidget, bodywidget) -> #appendPage notebook bodywidget $ Just headwidget
-    _ <- cvOn notebook #switchPage $ \_ i -> runSelectNotify notifier $ return $ Just $ fromIntegral i
+    _ <- viewOn notebook #switchPage $ \_ i -> runSelectNotify notifier $ return $ Just $ fromIntegral i
     toWidget notebook

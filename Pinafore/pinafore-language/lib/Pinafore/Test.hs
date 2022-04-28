@@ -74,7 +74,7 @@ runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeScoped (in
 checkUpdateEditor ::
        forall a. Eq a
     => a
-    -> CreateView ()
+    -> View ()
     -> Editor (WholeUpdate a) ()
 checkUpdateEditor val push =
     MkEditor $ \_ -> do
@@ -82,7 +82,7 @@ checkUpdateEditor val push =
         let
             editingUpdate :: NonEmpty (WholeUpdate a) -> EditContext -> View ()
             editingUpdate updates _ = liftIO $ putMVar var updates
-            editingDo :: Task () -> CreateView ()
+            editingDo :: Task () -> View ()
             editingDo _ = traceBracket "checkUpdateEditor.do" $ do
                 traceBracket "checkUpdateEditor.push" $ push
                 updates <- liftIO $ traceBracket "checkUpdateEditor.takeMVar" $ takeMVar var
