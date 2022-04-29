@@ -1,6 +1,5 @@
-# lts19 missing, see https://github.com/commercialhaskell/stackage/issues/6510
-FROM fpco/stack-build-small:lts-19.0
-RUN echo 2022-03-29
+FROM fpco/stack-build-small:lts-19.5
+RUN echo 2022-04-28
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update
 RUN apt-get upgrade -y

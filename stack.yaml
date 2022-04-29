@@ -22,7 +22,7 @@ packages:
 - Pinafore/pinafore-gtk
 - Pinafore/pinafore-app
 
-resolver: lts-19.0
+resolver: lts-19.5
 
 allow-newer: true
 
