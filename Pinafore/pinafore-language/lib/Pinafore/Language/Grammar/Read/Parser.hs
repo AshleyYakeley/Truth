@@ -39,7 +39,7 @@ parseReader r text = let
 
 parseScopedReaderWhole :: Parser (PinaforeInterpreter t) -> Text -> PinaforeInterpreter t
 parseScopedReaderWhole parser text = do
-    spos <- askD sourcePosParam
+    spos <- paramAsk sourcePosParam
     result <- runInterpretResult $ evalStateT (parseReader parser text) spos
     case result of
         SuccessResult a -> a

@@ -129,7 +129,6 @@ import Data.Empty as I
 import Data.Searchable as I
 
 -- witness
-import Control.Category.Tensor as I
 import Data.Witness as I
 
 -- open-witness

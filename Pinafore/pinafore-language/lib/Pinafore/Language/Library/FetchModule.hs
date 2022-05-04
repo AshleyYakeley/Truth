@@ -50,7 +50,7 @@ textFetchModule getText =
     MkFetchModule $ \implictScope modname -> do
         mtext <- liftIO $ getText modname
         for mtext $ \text ->
-            withD sourcePosParam (initialPos $ show modname) $ loadModuleFromText implictScope modname text
+            paramWith sourcePosParam (initialPos $ show modname) $ loadModuleFromText implictScope modname text
 
 moduleRelativePath :: ModuleName -> FilePath
 moduleRelativePath (MkModuleName nn) = (foldl1 (</>) $ fmap unpack nn) <> ".pinafore"
@@ -64,7 +64,7 @@ directoryFetchModule dirpath =
             False -> return Nothing
             True -> do
                 bs <- liftIO $ readFile fpath
-                mm <- withD sourcePosParam (initialPos fpath) $ loadModuleFromByteString implictScope modname bs
+                mm <- paramWith sourcePosParam (initialPos fpath) $ loadModuleFromByteString implictScope modname bs
                 return $ Just mm
 
 getLibraryModuleModule :: (?pinafore :: PinaforeContext) => LibraryModule -> IO PinaforeModule

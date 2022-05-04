@@ -44,11 +44,11 @@ biIsoMap (MkIsomorphism ab ba) = isoMap ab ba
 biIsoBi :: IsoVariant f => Bijection a b -> Bijection (f a) (f b)
 biIsoBi (MkIsomorphism ab ba) = MkIsomorphism (isoMap ab ba) (isoMap ba ab)
 
-biIsoMap' :: IsoVariant' f => Bijection a b -> f a t -> f b t
-biIsoMap' (MkIsomorphism ab ba) = isoMap' ab ba
+biIsoMap' :: IsoVariant f => Bijection a b -> f a t -> f b t
+biIsoMap' (MkIsomorphism ab ba) = unNestedMorphism $ isoMap ab ba
 
-biIsoBi' :: IsoVariant' f => Bijection a b -> Bijection (f a t) (f b t)
-biIsoBi' (MkIsomorphism ab ba) = MkIsomorphism (isoMap' ab ba) (isoMap' ba ab)
+biIsoBi' :: IsoVariant f => Bijection a b -> Bijection (f a t) (f b t)
+biIsoBi' (MkIsomorphism ab ba) = MkIsomorphism (unNestedMorphism $ isoMap ab ba) (unNestedMorphism $ isoMap ba ab)
 
 biSwap :: Bijection (a, b) (b, a)
 biSwap = MkIsomorphism swap swap

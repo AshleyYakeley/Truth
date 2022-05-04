@@ -9,7 +9,7 @@ import Shapes
 
 data ClosedEntityFamily :: FamilyKind where
     MkClosedEntityFamily
-        :: forall (tid :: TNatural) k (gt :: k). (Identified tid ~~ gt)
+        :: forall (tid :: Nat) k (gt :: k). (Identified tid ~~ gt)
         => TypeIDType tid
         -> SealedEntityProperties gt
         -> ClosedEntityFamily gt

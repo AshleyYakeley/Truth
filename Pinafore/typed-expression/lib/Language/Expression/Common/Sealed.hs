@@ -83,31 +83,31 @@ sealedPatternNames (MkSealedPattern _ pat) = patternNames pat
 data PatternConstructor (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall (t :: Type) (lt :: [Type]). MkPatternConstructor (tw t)
                                                             (ListType vw lt)
-                                                            (NamedPattern name vw t (HList lt))
+                                                            (NamedPattern name vw t (ListProduct lt))
 
 toPatternConstructor ::
        forall name poswit negwit t lt.
        negwit t
     -> ListType poswit lt
-    -> (t -> Maybe (HList lt))
+    -> (t -> Maybe (ListProduct lt))
     -> PatternConstructor name poswit negwit
 toPatternConstructor nwt tlt f = MkPatternConstructor nwt tlt $ ClosedPattern f
 
-liftHListPolwit ::
+liftListProductPolwit ::
        forall m wit. Applicative m
     => (forall t. wit t -> m (wit t))
-    -> forall t'. HListWit wit t' -> m (HListWit wit t')
-liftHListPolwit ff (MkHListWit lwt) = fmap MkHListWit $ mapMListType ff lwt
+    -> forall t'. ListProductType wit t' -> m (ListProductType wit t')
+liftListProductPolwit ff (MkListProductType lwt) = fmap MkListProductType $ mapMListType ff lwt
 
 instance WitnessMappable (poswit :: Type -> Type) (negwit :: Type -> Type) (PatternConstructor name poswit negwit) where
     mapWitnessesM mapPos mapNeg (MkPatternConstructor (tt :: negwit t) (lvw :: ListType wit lt) pat) = do
         tt' <- mapNeg tt
         pat' <- mapWitnessesM @Type @poswit @negwit mapPos mapNeg pat
-        hwit <- mapWitnessesM @Type (liftHListPolwit mapPos) mapNeg $ MkHListWit lvw
+        hwit <- mapWitnessesM @Type (liftListProductPolwit mapPos) mapNeg $ MkListProductType lvw
         pure $
             case hwit of
-                MkHListWit (lvw' :: ListType wit lt') ->
-                    case injectiveHList @lt @lt' of
+                MkListProductType (lvw' :: ListType wit lt') ->
+                    case injectiveListProduct @lt @lt' of
                         Refl -> MkPatternConstructor tt' lvw' pat'
 
 sealedPatternConstructor ::

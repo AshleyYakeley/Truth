@@ -13,4 +13,4 @@ data Annotation ts t where
 type SpecialForm :: Type -> (Type -> Type) -> Type
 data SpecialForm ts m =
     forall lt. MkSpecialForm (ListType (Annotation ts) lt)
-                             (HList lt -> m (TSValue ts))
+                             (ListProduct lt -> m (TSValue ts))

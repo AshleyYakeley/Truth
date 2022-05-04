@@ -132,7 +132,7 @@ mkValPatEntry ::
     => Name
     -> Markdown
     -> t
-    -> (v -> Maybe (HList lt))
+    -> (v -> Maybe (ListProduct lt))
     -> DocTreeEntry BindDoc
 mkValPatEntry name docDescription val pat = let
     bdScopeEntry =

@@ -23,7 +23,7 @@ import Shapes
 type RefNotation = WriterT [(VarID, QExpr)] (StateT VarIDState PinaforeInterpreter)
 
 sourcePosRefNotation :: SourcePos -> RefNotation --> RefNotation
-sourcePosRefNotation = withD $ liftParam $ liftParam sourcePosParam
+sourcePosRefNotation = paramWith $ liftParam $ liftParam sourcePosParam
 
 runRefWriterT :: RefNotation --> StateT VarIDState PinaforeInterpreter
 runRefWriterT wma = do
@@ -56,7 +56,7 @@ varRefExpr name = do
         Just (Right expr) -> return expr
         Just (Left v) -> return $ qVarExpr v
         Nothing -> do
-            spos <- liftRefNotation $ askD sourcePosParam
+            spos <- liftRefNotation $ paramAsk sourcePosParam
             return $ qVarExpr $ mkBadVarID spos name
 
 refNotationUnquote :: RefExpression -> RefExpression

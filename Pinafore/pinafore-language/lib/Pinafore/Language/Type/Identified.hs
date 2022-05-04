@@ -23,7 +23,7 @@ zeroTypeID = MkTypeID 0
 succTypeID :: TypeID -> TypeID
 succTypeID (MkTypeID n) = MkTypeID $ succ n
 
-newtype TypeIDType (bn :: TNatural) =
+newtype TypeIDType (bn :: Nat) =
     MkTypeIDType (NaturalType bn)
     deriving (TestEquality)
 
@@ -32,20 +32,20 @@ instance WitnessValue TypeIDType where
     witnessToValue (MkTypeIDType bnt) = MkTypeID $ witnessToValue bnt
     valueToWitness (MkTypeID n) cont = valueToWitness n $ \bnt -> cont $ MkTypeIDType bnt
 
-type IdentifiedKind :: TNatural -> Type
+type IdentifiedKind :: Nat -> Type
 type family IdentifiedKind tid = k | k -> tid
 
-type Identified :: forall (tid :: TNatural) -> IdentifiedKind tid
+type Identified :: forall (tid :: Nat) -> IdentifiedKind tid
 type family Identified tid = v | v -> tid
 
 unsafeIdentifyKind ::
-       forall (tid :: TNatural) (k :: Type) m. Applicative m
+       forall (tid :: Nat) (k :: Type) m. Applicative m
     => TypeIDType tid
     -> m (IdentifiedKind tid :~: k)
 unsafeIdentifyKind (MkTypeIDType _) = unsafeGetRefl
 
 unsafeIdentify ::
-       forall (tid :: TNatural) (t :: IdentifiedKind tid) m. Applicative m
+       forall (tid :: Nat) (t :: IdentifiedKind tid) m. Applicative m
     => TypeIDType tid
     -> m (Identified tid :~: t)
 unsafeIdentify (MkTypeIDType _) = unsafeGetRefl

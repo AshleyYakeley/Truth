@@ -1,44 +1,50 @@
 module Data.IsoVariant where
 
+import Data.KindMorphism
 import Shapes.Import
 import qualified Text.ParserCombinators.ReadP as ReadP
 import qualified Text.ParserCombinators.ReadPrec as ReadPrec
 
-class IsoVariant f where
-    isoMap :: (a -> b) -> (b -> a) -> f a -> f b
-    default isoMap :: Functor f => (a -> b) -> (b -> a) -> f a -> f b
+type IsoVariant :: forall kp kq. (kp -> kq) -> Constraint
+class IsoVariant (f :: kp -> kq) where
+    isoMap :: forall (a :: kp) (b :: kp). KindFunction a b -> KindFunction b a -> KindFunction (f a) (f b)
+
+instance IsoVariant [] where
     isoMap ab _ = fmap ab
 
-class IsoVariant' f where
-    isoMap' :: (a -> b) -> (b -> a) -> f a t -> f b t
+instance IsoVariant Maybe where
+    isoMap ab _ = fmap ab
 
-instance IsoVariant []
+instance IsoVariant Identity where
+    isoMap ab _ = fmap ab
 
-instance IsoVariant Maybe
+instance IsoVariant ((->) a) where
+    isoMap ab _ = fmap ab
 
-instance IsoVariant Identity
+instance IsoVariant (->) where
+    isoMap _ ba = MkNestedMorphism $ \at b -> at $ ba b
 
-instance IsoVariant ((->) a)
+instance IsoVariant ((,) a) where
+    isoMap ab _ = fmap ab
 
-instance IsoVariant' (->) where
-    isoMap' _ ba at b = at $ ba b
+instance IsoVariant (,) where
+    isoMap ab _ = MkNestedMorphism $ \(a, t) -> (ab a, t)
 
-instance IsoVariant ((,) a)
+instance IsoVariant (Either a) where
+    isoMap ab _ = fmap ab
 
-instance IsoVariant' (,) where
-    isoMap' ab _ (a, t) = (ab a, t)
-
-instance IsoVariant (Either a)
-
-instance IsoVariant' Either where
-    isoMap' ab _ (Left a) = Left $ ab a
-    isoMap' _ _ (Right t) = Right t
+instance IsoVariant Either where
+    isoMap ab _ =
+        MkNestedMorphism $ \case
+            Left a -> Left $ ab a
+            Right t -> Right t
 
 enumMap :: (IsoVariant f, Enum a) => f Int -> f a
 enumMap = isoMap toEnum fromEnum
 
 infixr 3 <***>, ***>, <***
 
+type Productish :: (Type -> Type) -> Constraint
 class IsoVariant f => Productish f where
     pUnit :: f ()
     default pUnit :: Applicative f => f ()
@@ -56,6 +62,7 @@ pProductLeft fa fb = isoMap fst (\a -> (a, a)) $ fa <***> fb
 
 infixr 2 <+++>
 
+type Summish :: (Type -> Type) -> Constraint
 class IsoVariant f => Summish f where
     pNone :: f Void
     default pNone :: Alternative f => f Void
@@ -67,6 +74,7 @@ class IsoVariant f => Summish f where
 pSumLeft :: Summish f => f a -> f a -> f a
 pSumLeft fa fb = isoMap (either id id) Left $ fa <+++> fb
 
+type Ringish :: (Type -> Type) -> Constraint
 class (Productish f, Summish f) => Ringish f where
     pOptional :: forall a. f a -> f (Maybe a)
     pOptional fa = let
@@ -129,7 +137,8 @@ instance Ringish m => Ringish (Kleisli m a) where
     pList1 (Kleisli f) = Kleisli $ \a -> pList1 $ f a
     pList (Kleisli f) = Kleisli $ \a -> pList $ f a
 
-instance IsoVariant ReadPrec
+instance IsoVariant ReadPrec where
+    isoMap ab _ = fmap ab
 
 instance Productish ReadPrec
 

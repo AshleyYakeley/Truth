@@ -54,11 +54,11 @@ interpretPattern (MkWithSourcePos _ (VarSyntaxPattern n)) = do
 interpretPattern (MkWithSourcePos spos (BothSyntaxPattern spat1 spat2)) = do
     pat1 <- interpretPattern spat1
     pat2 <- interpretPattern spat2
-    lift $ liftRefNotation $ withD sourcePosParam spos $ qBothPattern pat1 pat2
+    lift $ liftRefNotation $ paramWith sourcePosParam spos $ qBothPattern pat1 pat2
 interpretPattern (MkWithSourcePos spos (ConstructorSyntaxPattern scons spats)) = do
-    pc <- lift $ liftRefNotation $ withD sourcePosParam spos $ interpretPatternConstructor scons
+    pc <- lift $ liftRefNotation $ paramWith sourcePosParam spos $ interpretPatternConstructor scons
     pats <- for spats interpretPattern
-    pat@(MkSealedPattern tw patw) <- lift $ liftRefNotation $ withD sourcePosParam spos $ qConstructPattern pc pats
+    pat@(MkSealedPattern tw patw) <- lift $ liftRefNotation $ paramWith sourcePosParam spos $ qConstructPattern pc pats
     return $
         case getOptGreatestDynamicSupertypeSW tw of
             Nothing -> pat
@@ -68,7 +68,7 @@ interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
     pat <- interpretPattern spat
     lift $
         liftRefNotation $
-        withD sourcePosParam spos $ do
+        paramWith sourcePosParam spos $ do
             mtn <- interpretType @'Negative stype
             case mtn of
                 MkAnyW tn ->
@@ -130,7 +130,7 @@ interpretSequentialLetBinding sbind = do
     vid <- allocateVarScopeBuilder n
     b <- lift $ interpretBinding (sbind, vid)
     interpScopeBuilder $ \se -> do
-        bmap <- withD sourcePosParam (getSourcePos $ snd sbind) $ qBindingSequentialLetExpr b
+        bmap <- paramWith sourcePosParam (getSourcePos $ snd sbind) $ qBindingSequentialLetExpr b
         withNewLetBindings (composeMap bmap $ singletonMap n vid) se
 
 interpretRecursiveDocDeclarations :: [SyntaxWithDoc SyntaxDirectDeclaration] -> ScopeBuilder Docs
@@ -163,7 +163,7 @@ interpretRecursiveDocDeclarations ddecls = do
 
 interpretExpose :: SyntaxExpose -> RefNotation (Docs -> Docs, PinaforeScope)
 interpretExpose (SExpExpose spos names) = do
-    scope <- liftRefNotation $ withD sourcePosParam spos $ exportScope names
+    scope <- liftRefNotation $ paramWith sourcePosParam spos $ exportScope names
     return (exposeDocs names, scope)
 interpretExpose (SExpLet sdecls expose) =
     runScopeBuilder (interpretDocDeclarations sdecls) $ \olddoc -> do
@@ -258,7 +258,7 @@ specialFormArg AnnotNegativeType (SAType st) = lift $ interpretType @'Negative s
 specialFormArg _ _ = liftInner Nothing
 
 specialFormArgs ::
-       ListType PinaforeAnnotation lt -> [SyntaxAnnotation] -> ComposeInner Maybe PinaforeInterpreter (HList lt)
+       ListType PinaforeAnnotation lt -> [SyntaxAnnotation] -> ComposeInner Maybe PinaforeInterpreter (ListProduct lt)
 specialFormArgs NilListType [] = return ()
 specialFormArgs (ConsListType t tt) (a:aa) = do
     v <- specialFormArg t a
@@ -361,7 +361,7 @@ checkExprVars (MkSealedExpression _ expr) = let
 
 interpretBinding :: (DocSyntaxBinding, VarID) -> RefNotation QBinding
 interpretBinding ((doc, MkSyntaxBinding spos mstype _ sexpr), vid) = do
-    mtype <- liftRefNotation $ withD sourcePosParam spos $ for mstype interpretType
+    mtype <- liftRefNotation $ paramWith sourcePosParam spos $ for mstype interpretType
     expr <- interpretExpression sexpr
     checkExprVars expr
     return $ qBindExpr vid doc mtype expr
@@ -371,7 +371,7 @@ interpretBindings sbinds = for sbinds interpretBinding
 
 interpretTopDeclarations :: SyntaxTopDeclarations -> PinaforeInterpreter --> PinaforeInterpreter
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) ma =
-    withD sourcePosParam spos $ runRefNotation $ interpretDeclarations sdecls $ liftRefNotation ma
+    paramWith sourcePosParam spos $ runRefNotation $ interpretDeclarations sdecls $ liftRefNotation ma
 
 interpretTopExpression :: SyntaxExpression -> PinaforeInterpreter QExpr
 interpretTopExpression sexpr = runRefNotation $ interpretExpression sexpr

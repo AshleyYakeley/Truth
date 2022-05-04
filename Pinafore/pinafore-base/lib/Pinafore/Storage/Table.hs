@@ -310,7 +310,7 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                                    EditSource
                                 -> ListType (FieldStorer 'SingleMode) t
                                 -> Entity
-                                -> HList t
+                                -> ListProduct t
                                 -> ApplyStack tt IO ()
                             setFacts _ NilListType _ () = return ()
                             setFacts esrc (ConsListType f1 fr) v (a1, ar) = do
@@ -382,7 +382,7 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                                    forall (t :: [Type]).
                                    ListType (FieldStorer 'MultipleMode) t
                                 -> Entity
-                                -> ComposeInner Know (ApplyStack tt IO) (HList t)
+                                -> ComposeInner Know (ApplyStack tt IO) (ListProduct t)
                             readFacts NilListType _ = return ()
                             readFacts (ConsListType f1 fr) entity = do
                                 t1 <- readFact f1 entity

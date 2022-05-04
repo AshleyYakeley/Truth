@@ -51,9 +51,9 @@ class MaybeUnitWitness w where
 instance MaybeUnitWitness ((:~:) ()) where
     maybeUnitWitness Refl = Just Refl
 
-instance MaybeUnitWitness (HListWit w) where
-    maybeUnitWitness (MkHListWit NilListType) = Just Refl
-    maybeUnitWitness (MkHListWit (ConsListType _ _)) = Nothing
+instance MaybeUnitWitness (ListProductType w) where
+    maybeUnitWitness (MkListProductType NilListType) = Just Refl
+    maybeUnitWitness (MkListProductType (ConsListType _ _)) = Nothing
 
 getListEnumTypeRepresentation ::
        forall w lt r. MaybeUnitWitness w
@@ -85,10 +85,9 @@ witnessTypeRepresentation newWit lt = do
 naturalWitnessTypeRepresentation ::
        forall w lt. HasVarMapping w
     => ListType w lt
-    -> TypeRepresentation lt (AnyValue (NaturalListElementType lt))
+    -> TypeRepresentation lt (AnyValue (ListElementType lt))
 naturalWitnessTypeRepresentation lt =
-    runIdentity $
-    witnessTypeRepresentation (\(MkPairType _ n) -> Identity n) $ pairListType lt $ naturalCountListType lt
+    runIdentity $ witnessTypeRepresentation (\(MkPairType _ n) -> Identity n) $ pairListType lt $ countListType lt
 
 getNaturalWitnessTypeRepresentation ::
        forall w lt r. HasVarMapping w

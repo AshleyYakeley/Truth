@@ -65,7 +65,7 @@ interpretTypeM ::
        forall mpolarity. Is MPolarityType mpolarity
     => SyntaxType
     -> PinaforeInterpreter (PinaforeTypeM mpolarity)
-interpretTypeM (MkWithSourcePos spos t) = withD sourcePosParam spos $ interpretTypeM' t
+interpretTypeM (MkWithSourcePos spos t) = paramWith sourcePosParam spos $ interpretTypeM' t
 
 interpretTypeM' ::
        forall mpolarity. Is MPolarityType mpolarity

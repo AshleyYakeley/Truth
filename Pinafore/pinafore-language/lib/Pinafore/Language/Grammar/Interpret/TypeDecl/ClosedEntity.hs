@@ -14,7 +14,7 @@ import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
 
-type ClosedEntityConstructor = Constructor (Name, Anchor) (HListWit PinaforeNonpolarType)
+type ClosedEntityConstructor = Constructor (Name, Anchor) (ListProductType PinaforeNonpolarType)
 
 type CovParam :: CCRArgumentKind
 data CovParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
@@ -102,7 +102,7 @@ closedEntityTypeAdapter ::
        CovParams dv gt decltype -> [ClosedEntityConstructor decltype] -> PinaforeInterpreter (WithArgs EntityAdapter gt)
 closedEntityTypeAdapter params conss = do
     ff <-
-        for conss $ \(MkConstructor (_, anchor) (MkHListWit cc) codec) -> do
+        for conss $ \(MkConstructor (_, anchor) (MkListProductType cc) codec) -> do
             MkWithArgs wa <- closedEntityConstructorAdapter params cc
             return $
                 MkWithArgs $ \args ->

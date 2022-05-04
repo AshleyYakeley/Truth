@@ -25,19 +25,19 @@ import Shapes.Unsafe (unsafeGetRefl)
 
 assembleDataType ::
        [(n, AnyW (ListType PinaforeNonpolarType))]
-    -> forall r. (forall t. [Constructor n (HListWit PinaforeNonpolarType) t] -> VarMapping t -> r) -> r
+    -> forall r. (forall t. [Constructor n (ListProductType PinaforeNonpolarType) t] -> VarMapping t -> r) -> r
 assembleDataType tconss call =
-    case assembleListType $ fmap (\(_, (MkAnyW lt)) -> MkAnyW $ MkHListWit lt) tconss of
+    case assembleListType $ fmap (\(_, (MkAnyW lt)) -> MkAnyW $ MkListProductType lt) tconss of
         MkAnyW lcons ->
             getPreferredTypeRepresentation lcons $ \(MkTypeRepresentation ccons vmap) _ -> let
-                mkConss :: [n -> Constructor n (HListWit PinaforeNonpolarType) _]
+                mkConss :: [n -> Constructor n (ListProductType PinaforeNonpolarType) _]
                 mkConss =
                     listTypeToList getConst $
                     joinListType (\codec el -> Const $ \name -> MkConstructor name el codec) ccons lcons
                 in call (fmap (\(f, (n, _)) -> f n) $ zip mkConss tconss) vmap
 
 data DataTypeFamily :: FamilyKind where
-    MkDataTypeFamily :: forall (tid :: TNatural). TypeIDType tid -> DataTypeFamily (Identified tid)
+    MkDataTypeFamily :: forall (tid :: Nat). TypeIDType tid -> DataTypeFamily (Identified tid)
 
 instance TestHetEquality DataTypeFamily where
     testHetEquality (MkDataTypeFamily ia) (MkDataTypeFamily ib) = do
@@ -166,7 +166,7 @@ type GroundTypeMaker extra
      = forall (dv :: DolanVariance) tid (gt :: DolanVarianceKind dv) (decltype :: Type).
            (Is DolanVarianceType dv, IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid) =>
                    Name -> TypeIDType tid -> CCRTypeParams dv gt decltype -> Stages ( DolanVarianceMap dv gt
-                                                                                    , [Constructor (Name, extra) (HListWit PinaforeNonpolarType) decltype]) (PinaforeGroundType dv gt)
+                                                                                    , [Constructor (Name, extra) (ListProductType PinaforeNonpolarType) decltype]) (PinaforeGroundType dv gt)
 
 makeBox ::
        forall extra dv.
@@ -245,7 +245,7 @@ makeBox gmaker name doc sconss gtparams =
                                                            singleDolanShimWit $
                                                            mkPolarShimWit $ GroundedDolanSingularType gt negargs
                                                    patts <-
-                                                       for conss $ \(MkConstructor (cname, _) (MkHListWit lt) codec) -> do
+                                                       for conss $ \(MkConstructor (cname, _) (MkListProductType lt) codec) -> do
                                                            ltp <- return $ mapListType nonpolarToDolanType lt
                                                            ltn <- return $ mapListType nonpolarToDolanType lt
                                                            let
@@ -275,11 +275,11 @@ makeDataGroundType ::
     => Name
     -> TypeIDType tid
     -> CCRTypeParams dv gt decltype
-    -> Stages (DolanVarianceMap dv gt, [Constructor (Name, ()) (HListWit PinaforeNonpolarType) decltype]) (PinaforeGroundType dv gt)
+    -> Stages (DolanVarianceMap dv gt, [Constructor (Name, ()) (ListProductType PinaforeNonpolarType) decltype]) (PinaforeGroundType dv gt)
 makeDataGroundType name tidsym tparams = let
     dvt :: DolanVarianceType dv
     dvt = ccrArgumentsType tparams
-    mkx :: (DolanVarianceMap dv gt, [Constructor (Name, ()) (HListWit PinaforeNonpolarType) decltype])
+    mkx :: (DolanVarianceMap dv gt, [Constructor (Name, ()) (ListProductType PinaforeNonpolarType) decltype])
         -> PinaforeInterpreter (DolanVarianceMap dv gt)
     mkx (dvm, _) = return dvm
     mkgt :: DolanVarianceMap dv gt -> PinaforeInterpreter (PinaforeGroundType dv gt)

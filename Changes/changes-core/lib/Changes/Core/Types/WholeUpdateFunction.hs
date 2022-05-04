@@ -43,4 +43,5 @@ instance Applicative (WholeUpdateFunction update) where
         liftReadOnlyChangeLens (funcChangeLens $ \(ab, a) -> ab a) .
         readOnlyPairChangeLens . pairCombineChangeLenses p q
 
-instance IsoVariant (WholeUpdateFunction update)
+instance IsoVariant (WholeUpdateFunction update) where
+    isoMap ab _ = fmap ab

@@ -41,7 +41,7 @@ checkDynamicTypeCycles decls = let
     sccNames _ = Nothing
     in case mapMaybe sccNames sccs of
            [] -> return ()
-           (nn@((spos, _) :| _):_) -> withD sourcePosParam spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
+           (nn@((spos, _) :| _):_) -> paramWith sourcePosParam spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
 
 interpretTypeDeclaration :: Name -> Markdown -> SyntaxTypeDeclaration -> PinaforeInterpreter --> PinaforeInterpreter
 interpretTypeDeclaration name doc tdecl ma = do
@@ -53,6 +53,7 @@ interpretRecursiveTypeDeclarations ::
        [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> PinaforeInterpreter --> PinaforeInterpreter
 interpretRecursiveTypeDeclarations decls ma = do
     checkDynamicTypeCycles decls
-    wfs <- for decls $ \(spos, name, doc, tdecl) -> withD sourcePosParam spos $ typeDeclarationTypeBox name doc tdecl
+    wfs <-
+        for decls $ \(spos, name, doc, tdecl) -> paramWith sourcePosParam spos $ typeDeclarationTypeBox name doc tdecl
     (wtt, MkCatEndo wcc) <- registerRecursiveTypeNames wfs
     runWMFunction (wtt . wcc) ma

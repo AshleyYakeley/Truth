@@ -42,7 +42,10 @@ data ConstructorStorer mode t where
     PlainConstructorStorer :: ConstructorStorer mode Entity
     LiteralConstructorStorer :: ConstructorStorer mode Literal
     ConstructorConstructorStorer
-        :: forall mode (tt :: [Type]). Anchor -> ListType (FieldStorer mode) tt -> ConstructorStorer mode (HList tt)
+        :: forall mode (tt :: [Type]).
+           Anchor
+        -> ListType (FieldStorer mode) tt
+        -> ConstructorStorer mode (ListProduct tt)
 
 instance TestEquality (ConstructorStorer 'SingleMode) where
     testEquality PlainConstructorStorer PlainConstructorStorer = Just Refl
@@ -57,7 +60,7 @@ instance WitnessConstraint Show (ConstructorStorer 'SingleMode) where
     witnessConstraint PlainConstructorStorer = Dict
     witnessConstraint LiteralConstructorStorer = Dict
     witnessConstraint (ConstructorConstructorStorer _ t) =
-        case hListShow witnessConstraint t of
+        case listProductShow witnessConstraint t of
             Dict -> Dict
 
 constructorStorerToEntity :: forall t. ConstructorStorer 'SingleMode t -> t -> Entity
@@ -67,7 +70,11 @@ constructorStorerToEntity (ConstructorConstructorStorer anchor facts) hl =
     hashToEntity $ \call -> call anchor : hashList call facts hl
   where
     hashList ::
-           forall tt r. (forall a. Serialize a => a -> r) -> ListType (FieldStorer 'SingleMode) tt -> HList tt -> [r]
+           forall tt r.
+           (forall a. Serialize a => a -> r)
+        -> ListType (FieldStorer 'SingleMode) tt
+        -> ListProduct tt
+        -> [r]
     hashList _call NilListType () = []
     hashList call (ConsListType (MkFieldStorer _ def) lt) (a, l) =
         call (entityStorerToEntity def a) : hashList call lt l

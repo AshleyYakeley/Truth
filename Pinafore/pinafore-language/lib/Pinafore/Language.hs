@@ -106,7 +106,7 @@ type Interact = StateT SourcePos (ReaderStateT PinaforeInterpreter View)
 interactRunSourceScoped :: PinaforeInterpreter a -> Interact a
 interactRunSourceScoped sa = do
     spos <- get
-    lift $ liftRS $ withD sourcePosParam spos $ sa
+    lift $ liftRS $ paramWith sourcePosParam spos $ sa
 
 interactEvalExpression :: PinaforeInterpreter QExpr -> Interact QValue
 interactEvalExpression texpr =

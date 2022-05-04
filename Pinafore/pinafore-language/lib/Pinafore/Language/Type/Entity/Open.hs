@@ -15,7 +15,7 @@ import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Type
 import Shapes
 
-type OpenEntityType :: TNatural -> Type
+type OpenEntityType :: Nat -> Type
 data OpenEntityType tid =
     MkOpenEntityType Name
                      (TypeIDType tid)
@@ -28,7 +28,7 @@ instance TestEquality OpenEntityType where
 instance ExprShow (OpenEntityType tid) where
     exprShowPrec (MkOpenEntityType n _) = exprShowPrec n
 
-type OpenEntity :: TNatural -> Type
+type OpenEntity :: Nat -> Type
 newtype OpenEntity tid = MkOpenEntity
     { unOpenEntity :: Entity
     } deriving (Eq, Random)

@@ -45,7 +45,7 @@ runScopeBuilder :: ScopeBuilder a -> (a -> RefNotation b) -> RefNotation b
 runScopeBuilder sb = runTransformT sb
 
 sourcePosScopeBuilder :: SourcePos -> ScopeBuilder ()
-sourcePosScopeBuilder = putD $ transformParamRef $ liftParam $ liftParam sourcePosParam
+sourcePosScopeBuilder = refPut $ transformParamRef $ liftParam $ liftParam sourcePosParam
 
 interpScopeBuilder :: (PinaforeInterpreter --> PinaforeInterpreter) -> ScopeBuilder ()
 interpScopeBuilder mf = mapTransformT $ hoistRefNotation $ MkWMFunction mf

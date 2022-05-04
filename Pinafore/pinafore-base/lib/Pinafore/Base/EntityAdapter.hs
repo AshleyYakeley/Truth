@@ -82,40 +82,47 @@ constructorDefinitions ::
     -> Int
     -> Int
     -> ListType EntityAdapter tt
-    -> KnowShim (HListWit (FieldStorer 'MultipleMode)) (HList tt)
-constructorDefinitions _anchor _n _i NilListType = simpleKnowShim $ MkHListWit NilListType
+    -> KnowShim (ListProductType (FieldStorer 'MultipleMode)) (ListProduct tt)
+constructorDefinitions _anchor _n _i NilListType = simpleKnowShim $ MkListProductType NilListType
 constructorDefinitions anchor n i (ConsListType ea lt) = let
     predicate = hashedPredicate anchor n i
     fact1 = MkFieldStorer predicate $ entityAdapterDefinitions ea
     in case constructorDefinitions anchor n (succ i) lt of
-           MkKnowShim (MkHListWit factr) convr ->
-               MkKnowShim (MkHListWit (ConsListType fact1 factr)) $ \(dt1, dtr) -> do
+           MkKnowShim (MkListProductType factr) convr ->
+               MkKnowShim (MkListProductType (ConsListType fact1 factr)) $ \(dt1, dtr) -> do
                    ar <- convr dtr
                    return (dt1, ar)
 
 constructorToDefinition ::
-       Anchor -> Int -> Int -> ListType EntityAdapter lt -> HList lt -> AnyValue (HListWit (FieldStorer 'SingleMode))
-constructorToDefinition _anchor _n _i NilListType () = MkAnyValue (MkHListWit NilListType) ()
+       Anchor
+    -> Int
+    -> Int
+    -> ListType EntityAdapter lt
+    -> ListProduct lt
+    -> AnyValue (ListProductType (FieldStorer 'SingleMode))
+constructorToDefinition _anchor _n _i NilListType () = MkAnyValue (MkListProductType NilListType) ()
 constructorToDefinition anchor n i (ConsListType ea lt) (a, l) = let
     predicate = hashedPredicate anchor n i
     in case entityAdapterToDefinition ea a of
            MkAnyValue tt1 v1 -> let
                fact1 = MkFieldStorer predicate tt1
                in case constructorToDefinition anchor n (succ i) lt l of
-                      MkAnyValue (MkHListWit factr) vr -> MkAnyValue (MkHListWit (ConsListType fact1 factr)) (v1, vr)
+                      MkAnyValue (MkListProductType factr) vr ->
+                          MkAnyValue (MkListProductType (ConsListType fact1 factr)) (v1, vr)
 
-constructorEntityAdapter :: forall lt. Anchor -> ListType EntityAdapter lt -> EntityAdapter (HList lt)
+constructorEntityAdapter :: forall lt. Anchor -> ListType EntityAdapter lt -> EntityAdapter (ListProduct lt)
 constructorEntityAdapter anchor NilListType = unitEntityAdapter $ MkEntity anchor
 constructorEntityAdapter anchor lt = let
     n = listTypeLength lt
-    entityAdapterDefinitions :: EntityStorer 'MultipleMode (HList lt)
+    entityAdapterDefinitions :: EntityStorer 'MultipleMode (ListProduct lt)
     entityAdapterDefinitions =
         MkEntityStorer $
         pure $
-        convertKnowShim (\(MkHListWit flt) -> ConstructorConstructorStorer anchor flt) $
+        convertKnowShim (\(MkListProductType flt) -> ConstructorConstructorStorer anchor flt) $
         constructorDefinitions anchor n 0 lt
-    entityAdapterToDefinition :: HList lt -> AnyValue (EntityStorer 'SingleMode)
+    entityAdapterToDefinition :: ListProduct lt -> AnyValue (EntityStorer 'SingleMode)
     entityAdapterToDefinition l =
         case constructorToDefinition anchor n 0 lt l of
-            MkAnyValue (MkHListWit lft) v -> MkAnyValue (MkEntityStorer $ ConstructorConstructorStorer anchor lft) v
+            MkAnyValue (MkListProductType lft) v ->
+                MkAnyValue (MkEntityStorer $ ConstructorConstructorStorer anchor lft) v
     in MkEntityAdapter {..}
