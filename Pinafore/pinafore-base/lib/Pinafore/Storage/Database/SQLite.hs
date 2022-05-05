@@ -152,7 +152,7 @@ sqlitePinaforeLens = let
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
-        return $ fmap getSingleAll $ listToMaybe row
+        return $ fmap getSingleAllOf $ listToMaybe row
     clRead mr (PinaforeTableReadPropertyLookup p v) = do
         row <-
             mr $
@@ -162,7 +162,7 @@ sqlitePinaforeLens = let
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleValue === ConstExpr v))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
-        return $ MkFiniteSet $ fmap getSingleAll row
+        return $ MkFiniteSet $ fmap getSingleAllOf row
     clRead mr (PinaforeTableReadEntityRefCount v) = do
         (row :: [AllOf ((:~:) RefCount)]) <-
             mr $
@@ -173,7 +173,7 @@ sqlitePinaforeLens = let
                 (MkTupleSelectClause $ \Refl -> ColumnExpr RefCountValue)
         return $ do
             sa <- listToMaybe row
-            return $ getSingleAll sa
+            return $ getSingleAllOf sa
     clRead mr (PinaforeTableReadFactGet p s) = do
         row <-
             mr $
@@ -183,7 +183,7 @@ sqlitePinaforeLens = let
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
-        return $ fmap getSingleAll $ listToMaybe row
+        return $ fmap getSingleAllOf $ listToMaybe row
     clRead mr (PinaforeTableReadLiteralGet v) = do
         (row :: [AllOf ((:~:) Literal)]) <-
             mr $
@@ -194,7 +194,7 @@ sqlitePinaforeLens = let
                 (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralValue)
         return $ do
             sa <- listToMaybe row
-            return $ getSingleAll sa
+            return $ getSingleAllOf sa
     clUpdate ::
            forall m. MonadIO m
         => SQLiteUpdate PinaforeSchema

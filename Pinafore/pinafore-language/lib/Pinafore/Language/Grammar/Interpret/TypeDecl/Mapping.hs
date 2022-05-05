@@ -140,7 +140,8 @@ dependentMapping tdm =
 dependentVarMapping :: TestEquality w => [SomeFor w VarMapping] -> VarMapping (SomeOf w)
 dependentVarMapping vmaps =
     MkVarMapping $ \v n -> do
-        mdict <- witnessFDictMapM (\(MkVarMapping gm) -> gm v n) $ witnessFDictFromList vmaps
+        mdict <- witnessForDictMapM (\(MkVarMapping gm) -> gm v n) $ witnessForDictFromList vmaps
         return $
             dependentMapping $ \(MkSomeOf wit a) ->
-                MkDependentMapping a (MkSomeOf wit) $ fromMaybe (error "missing mapping") $ witnessFDictLookup wit mdict
+                MkDependentMapping a (MkSomeOf wit) $
+                fromMaybe (error "missing mapping") $ witnessForDictLookup wit mdict

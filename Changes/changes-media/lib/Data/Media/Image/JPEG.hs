@@ -42,7 +42,7 @@ instance WitnessConstraint JpgEncodable JPEGPixelType where
     witnessConstraint YCbCr8JPEGPixelType = Dict
     witnessConstraint CMYK8JPEGPixelType = Dict
 
-jpegFormat :: Word8 -> ReasonCodec LazyByteString (WitnessDict ImageDataKey, SomeFor JPEGPixelType Image)
+jpegFormat :: Word8 -> ReasonCodec LazyByteString (WitnessOfDict ImageDataKey, SomeFor JPEGPixelType Image)
 jpegFormat quality = let
     decode bs =
         case decodeJpegWithMetadata $ toStrict bs of

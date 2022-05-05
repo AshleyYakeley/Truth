@@ -122,4 +122,4 @@ instance ( WitnessConstraint (TupleDatabaseTypeRowWitness dbType) tablesel
                 case witnessConstraint @_ @(TupleDatabaseRowWitness dbType tablesel) tsel of
                     Dict -> MkTupleSelectClause $ columnExpr @dbType
     type JoinClause dbType (TupleTableSel tablesel) = TupleJoinClause
-    joinClause OuterTupleJoinClause = eitherAll
+    joinClause OuterTupleJoinClause = eitherAllOf
