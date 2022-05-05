@@ -15,7 +15,7 @@ class (AbstractTypeSystem ts, SubsumeTypeSystem ts) => CompleteTypeSystem (ts ::
     tsFunctionPosWitness :: forall a b. TSNegWitness ts a -> TSPosWitness ts b -> TSPosShimWit ts (a -> b)
     tsFunctionNegWitness :: forall a b. TSPosWitness ts a -> TSNegWitness ts b -> TSNegShimWit ts (a -> b)
 
-type TSValue ts = AnyValue (TSPosShimWit ts)
+type TSValue ts = SomeOf (TSPosShimWit ts)
 
 tsFunctionPosShimWit ::
        forall ts. CompleteTypeSystem ts
@@ -42,7 +42,7 @@ tsUnifyRigidValue ::
        forall ts t. (CompleteTypeSystem ts, FromPolarShimWit (TSShim ts) (TSNegWitness ts) t)
     => TSValue ts
     -> TSInner ts t
-tsUnifyRigidValue (MkAnyValue witp val) =
+tsUnifyRigidValue (MkSomeOf witp val) =
     runRenamer @ts $ do
         witp' <- rename @ts RigidName witp
         witn' <- rename @ts RigidName fromPolarShimWit
@@ -53,7 +53,7 @@ tsUnifyValue ::
        forall ts t. (CompleteTypeSystem ts, FromPolarShimWit (TSShim ts) (TSNegWitness ts) t)
     => TSValue ts
     -> TSInner ts t
-tsUnifyValue (MkAnyValue witp val) =
+tsUnifyValue (MkSomeOf witp val) =
     runRenamer @ts $ do
         witp' <- rename @ts FreeName witp
         witn' <- rename @ts RigidName fromPolarShimWit
@@ -72,7 +72,7 @@ tsSubsumeValue ::
     => TSPosWitness ts t
     -> TSValue ts
     -> TSInner ts t
-tsSubsumeValue tdecl (MkAnyValue winf val) = do
+tsSubsumeValue tdecl (MkSomeOf winf val) = do
     conv <- tsSubsume @ts winf tdecl
     return $ shimToFunction conv val
 
@@ -132,7 +132,7 @@ tsSingleBinding ::
        forall ts. CompleteTypeSystem ts
     => TSVarID ts
     -> TSBindingData ts
-    -> Maybe (AnyW (TSPosWitness ts))
+    -> Maybe (Some (TSPosWitness ts))
     -> TSSealedExpression ts
     -> Binding ts
 tsSingleBinding name bd madecltype expr =
@@ -143,7 +143,7 @@ tsSingleBinding name bd madecltype expr =
 
 tsSubsumeExpression ::
        forall ts. CompleteTypeSystem ts
-    => AnyW (TSPosWitness ts)
+    => Some (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSInner ts (TSSealedExpression ts)
 tsSubsumeExpression decltype expr =

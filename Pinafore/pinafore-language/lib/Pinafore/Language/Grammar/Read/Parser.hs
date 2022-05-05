@@ -17,7 +17,7 @@ import Pinafore.Markdown
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
-type Parser = Parsec [(SourcePos, AnyValue Token)] ()
+type Parser = Parsec [(SourcePos, SomeOf Token)] ()
 
 readEnd :: Parser ()
 readEnd = do
@@ -47,7 +47,7 @@ parseScopedReaderWhole parser text = do
 
 readToken :: Token t -> Parser t
 readToken stok =
-    token (\(_, MkAnyValue tok _) -> show tok) fst $ \(_, MkAnyValue tok t) ->
+    token (\(_, MkSomeOf tok _) -> show tok) fst $ \(_, MkSomeOf tok t) ->
         case testEquality stok tok of
             Just Refl -> Just t
             Nothing -> Nothing

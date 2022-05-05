@@ -28,7 +28,7 @@ saturatedGroundTypeShowPrec ::
        , forall a polarity'. Is PolarityType polarity' => ExprShow (w polarity' a)
        , forall a polarity'. Is PolarityType polarity' => ExprShow (RangeType w polarity' a)
        )
-    => (forall pol. Is PolarityType pol => AnyW (w pol))
+    => (forall pol. Is PolarityType pol => Some (w pol))
     -> ground dv f
     -> (Text, Int)
 saturatedGroundTypeShowPrec avar gt = let
@@ -39,15 +39,15 @@ saturatedGroundTypeShowPrec avar gt = let
         -> r
     singleVarArgument CoCCRVarianceType call =
         case avar of
-            MkAnyW var -> call $ CoCCRPolarArgument var
+            MkSome var -> call $ CoCCRPolarArgument var
     singleVarArgument ContraCCRVarianceType call =
         invertPolarity @polarity $
         case avar of
-            MkAnyW var -> call $ ContraCCRPolarArgument var
+            MkSome var -> call $ ContraCCRPolarArgument var
     singleVarArgument RangeCCRVarianceType call =
         invertPolarity @polarity $
         case (avar, avar) of
-            (MkAnyW var1, MkAnyW var2) -> call $ RangeCCRPolarArgument var1 var2
+            (MkSome var1, MkSome var2) -> call $ RangeCCRPolarArgument var1 var2
     allVarArguments ::
            forall polarity dv' f' r. Is PolarityType polarity
         => DolanVarianceType dv'
@@ -64,7 +64,7 @@ showGroundType ::
     -> Text
 showGroundType t =
     newUVar "_" $ \var ->
-        fst $ saturatedGroundTypeShowPrec @ground (MkAnyW $ singleDolanType @ground $ VarDolanSingularType var) t
+        fst $ saturatedGroundTypeShowPrec @ground (MkSome $ singleDolanType @ground $ VarDolanSingularType var) t
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (DolanSingularType ground polarity t) where

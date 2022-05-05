@@ -22,9 +22,9 @@ unFromRangeShimWit cont =
     unPosShimWit toPolarShimWit $ \tp convp ->
         unNegShimWit fromPolarShimWit $ \tq convq -> cont (MkRangeType tp tq) (MkCatRange convp convq)
 
-biRangeAnyF ::
+biRangeSomeFor ::
        forall (map :: ShimKind Type) tw t.
        (PShimWit map tw 'Negative t, PShimWit map tw 'Positive t)
-    -> AnyF (RangeType tw 'Positive) (Range map t)
-biRangeAnyF (sp, sq) =
-    unNegShimWit sp $ \tp convp -> unPosShimWit sq $ \tq convq -> MkAnyF (MkRangeType tp tq) (MkRange convp convq)
+    -> SomeFor (RangeType tw 'Positive) (Range map t)
+biRangeSomeFor (sp, sq) =
+    unNegShimWit sp $ \tp convp -> unPosShimWit sq $ \tq convq -> MkSomeFor (MkRangeType tp tq) (MkRange convp convq)

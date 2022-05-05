@@ -25,7 +25,7 @@ instance WitnessConstraint Show TripleTable where
 instance FiniteWitness TripleTable where
     assembleWitnessF getw =
         (\p s v ->
-             MkAllF $ \case
+             MkAllFor $ \case
                  TriplePredicate -> p
                  TripleSubject -> s
                  TripleValue -> v) <$>
@@ -51,7 +51,7 @@ instance WitnessConstraint Show RefCountTable where
 instance FiniteWitness RefCountTable where
     assembleWitnessF getw =
         (\k v ->
-             MkAllF $ \case
+             MkAllFor $ \case
                  RefCountKey -> k
                  RefCountValue -> v) <$>
         getw RefCountKey <*>
@@ -75,7 +75,7 @@ instance WitnessConstraint Show LiteralTable where
 instance FiniteWitness LiteralTable where
     assembleWitnessF getw =
         (\k v ->
-             MkAllF $ \case
+             MkAllFor $ \case
                  LiteralKey -> k
                  LiteralValue -> v) <$>
         getw LiteralKey <*>
@@ -106,7 +106,7 @@ instance TestEquality PinaforeSchema where
 instance FiniteWitness PinaforeSchema where
     assembleWitnessF getTable =
         (\ft fr ff fl ->
-             MkAllF $ \case
+             MkAllFor $ \case
                  PinaforeProperty -> ft
                  PinaforeRefCount -> fr
                  PinaforeFact -> ff

@@ -340,7 +340,7 @@ pinaforeTableEntityReference (MkResource (trun :: ResourceRunner tt) (MkAReferen
                             setEntityFromAdapter :: EditSource -> Entity -> EntityAdapter t -> t -> ApplyStack tt IO ()
                             setEntityFromAdapter esrc entity ea t = do
                                 case entityAdapterToDefinition ea t of
-                                    MkAnyValue def tt -> setEntity esrc def entity tt
+                                    MkSomeOf def tt -> setEntity esrc def entity tt
                             doEntityEdit :: EditSource -> PinaforeStorageEdit -> ApplyStack tt IO ()
                             doEntityEdit esrc (MkPinaforeStorageEdit stype vtype p s (Known v)) = do
                                 let

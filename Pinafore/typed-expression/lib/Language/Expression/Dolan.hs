@@ -47,7 +47,7 @@ module Language.Expression.Dolan
     , unrollRecursiveType
     , unToRangeShimWit
     , unFromRangeShimWit
-    , biRangeAnyF
+    , biRangeSomeFor
     , CCRArgumentKind
     , IsCCRArg(..)
     , CCRPolarArgument(..)

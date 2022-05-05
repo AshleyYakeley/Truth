@@ -53,7 +53,7 @@ typeEntityAdapter mdt = let
                     | member t dt -> Known t
                 Just _ -> Unknown
                 Nothing -> Known t
-    entityAdapterToDefinition (MkDynamicType e) = MkAnyValue (MkEntityStorer PlainConstructorStorer) e
+    entityAdapterToDefinition (MkDynamicType e) = MkSomeOf (MkEntityStorer PlainConstructorStorer) e
     in MkEntityAdapter {..}
 
 dynamicAnchor :: Anchor
@@ -107,8 +107,8 @@ aDynamicEntityEntityFamily =
         epShowType = exprShowPrec name
         in Just $ MkSealedEntityProperties MkEntityProperties {..}
 
-getConcreteDynamicEntityType :: MonadThrow ErrorType m => AnyW (PinaforeType 'Positive) -> m (Name, DynamicType)
-getConcreteDynamicEntityType (MkAnyW tm) =
+getConcreteDynamicEntityType :: MonadThrow ErrorType m => Some (PinaforeType 'Positive) -> m (Name, DynamicType)
+getConcreteDynamicEntityType (MkSome tm) =
     case dolanTypeToSingular @PinaforeGroundType @(PinaforePolyShim Type) tm of
         Just (MkShimWit (GroundedDolanSingularType gt NilCCRArguments) _)
             | Just (MkADynamicEntityFamily n (toList -> [dt])) <-

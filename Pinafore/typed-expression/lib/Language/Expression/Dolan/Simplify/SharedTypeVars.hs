@@ -32,7 +32,7 @@ mergeSharedTypeVars ::
 mergeSharedTypeVars expr = let
     (posuses, neguses) = mappableGetVarUses @ground expr
     in case findShare posuses <|> findShare neguses of
-           Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) ->
+           Just (MkSome (va :: SymbolType na), MkSome (vb :: SymbolType nb)) ->
                assignUVarT @(UVarT na) vb $ let
                    bisub :: Bisubstitution ground (DolanShim ground) Identity
                    bisub = MkBisubstitution False vb (return $ varDolanShimWit va) (return $ varDolanShimWit va)

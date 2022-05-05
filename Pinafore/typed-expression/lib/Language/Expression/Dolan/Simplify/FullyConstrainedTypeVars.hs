@@ -182,10 +182,10 @@ reduceUsageSolution var (MkUsageSolution (n :: _ a) p f) = do
 eliminateVariable ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => AnyW SymbolType
+    => Some SymbolType
     -> a
     -> DolanM ground (a, Bool)
-eliminateVariable (MkAnyW var) a = do
+eliminateVariable (MkSome var) a = do
     ma' <- reduceUsageSolution var $ mapPShimWitsM (getUsageSolution @ground var) (getUsageSolution @ground var) a
     return $
         case ma' of
@@ -195,7 +195,7 @@ eliminateVariable (MkAnyW var) a = do
 eliminateVariables ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => [AnyW SymbolType]
+    => [Some SymbolType]
     -> a
     -> DolanM ground (a, Bool)
 eliminateVariables [] t = return (t, False)
@@ -212,7 +212,7 @@ keepEliminatingVariables ::
     -> DolanM ground a
 keepEliminatingVariables a = do
     let
-        (setFromList @(FiniteSet (AnyW SymbolType)) -> posvars, setFromList -> negvars) = mappableGetVars @ground a
+        (setFromList @(FiniteSet (Some SymbolType)) -> posvars, setFromList -> negvars) = mappableGetVars @ground a
         allvars = toList $ union posvars negvars
     (a', elimflag) <- eliminateVariables @ground allvars a
     if elimflag

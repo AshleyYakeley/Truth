@@ -106,14 +106,14 @@ instance SubsumeTypeSystem ts => Show (SubsumerExpression ts) where
 -- Note the user's declared type will be simplified first, so they'll end up seeing a simplified version of the type they declared for their expression.
 subsumerExpression ::
        forall ts. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
-    => Maybe (AnyW (TSPosWitness ts))
+    => Maybe (Some (TSPosWitness ts))
     -> TSSealedExpression ts
     -> TSOuter ts (SubsumerExpression ts)
 subsumerExpression marawdecltype rawinfexpr = do
     MkSealedExpression infwit expr <- simplify @ts rawinfexpr
     case marawdecltype of
         Nothing -> return $ MkSubsumerExpression infwit $ MkSubsumerOpenExpression (pure id) expr
-        Just (MkAnyW rawdecltype) -> do
+        Just (MkSome rawdecltype) -> do
             MkShimWit decltype _ <- simplify @ts $ mkPolarShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
             subsumer <- subsumePosShimWit @ts infwit decltype
             return $
@@ -122,7 +122,7 @@ subsumerExpression marawdecltype rawinfexpr = do
 
 subsumeExpression ::
        forall ts. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
-    => AnyW (TSPosWitness ts)
+    => Some (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSOuter ts (TSSealedExpression ts)
 subsumeExpression t expr = do

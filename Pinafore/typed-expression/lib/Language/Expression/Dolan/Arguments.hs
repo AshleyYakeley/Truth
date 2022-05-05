@@ -111,19 +111,19 @@ mapCCRArguments ::
     -> PolarShimWit (pshim Type) (CCRArguments wb dv gt) polarity t
 mapCCRArguments f dvm args = runIdentity $ mapCCRArgumentsM (\wa -> Identity $ f wa) dvm args
 
-nilAnyCCRArguments :: forall (w :: CCRArgumentKind) gt. AnyW (CCRArguments w '[] gt)
-nilAnyCCRArguments = MkAnyW NilCCRArguments
+nilAnyCCRArguments :: forall (w :: CCRArgumentKind) gt. Some (CCRArguments w '[] gt)
+nilAnyCCRArguments = MkSome NilCCRArguments
 
 consAnyCCRArguments ::
        forall (w :: CCRArgumentKind) sv (t :: CCRVarianceKind sv) (dv :: DolanVariance).
        w sv t
-    -> (forall (gt :: DolanVarianceKind dv). AnyW (CCRArguments w dv gt))
-    -> (forall (gt :: CCRVarianceKind sv -> DolanVarianceKind dv). AnyW (CCRArguments w (sv ': dv) gt))
+    -> (forall (gt :: DolanVarianceKind dv). Some (CCRArguments w dv gt))
+    -> (forall (gt :: CCRVarianceKind sv -> DolanVarianceKind dv). Some (CCRArguments w (sv ': dv) gt))
 consAnyCCRArguments p atp = let
-    atp' :: forall (gt :: CCRVarianceKind sv -> DolanVarianceKind dv). AnyW (CCRArguments w (sv ': dv) gt)
+    atp' :: forall (gt :: CCRVarianceKind sv -> DolanVarianceKind dv). Some (CCRArguments w (sv ': dv) gt)
     atp' =
         case atp @(gt t) of
-            MkAnyW pp -> MkAnyW $ ConsCCRArguments p pp
+            MkSome pp -> MkSome $ ConsCCRArguments p pp
     in atp'
 
 type DolanArguments :: forall (dv :: DolanVariance) ->

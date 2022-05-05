@@ -203,8 +203,8 @@ monoEntityToNegativePinaforeType et =
         Just wit -> return wit
         Nothing -> throw InterpretTypeNoneNotNegativeEntityError
 
-getMonoEntityType :: MonadThrow ErrorType m => AnyW (PinaforeType 'Positive) -> m (AnyW MonoEntityType)
-getMonoEntityType (MkAnyW tm) =
+getMonoEntityType :: MonadThrow ErrorType m => Some (PinaforeType 'Positive) -> m (Some MonoEntityType)
+getMonoEntityType (MkSome tm) =
     case dolanToMonoType tm of
-        Just (MkShimWit t _) -> return $ MkAnyW t
+        Just (MkShimWit t _) -> return $ MkSome t
         Nothing -> throw $ InterpretTypeNotEntityError $ exprShow tm

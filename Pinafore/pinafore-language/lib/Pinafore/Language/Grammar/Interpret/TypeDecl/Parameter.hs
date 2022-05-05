@@ -35,10 +35,10 @@ assignCCRTypeParam (RangeCCRTypeParam vp vq) call =
     case unsafeTypeIsPair @_ @_ @a of
         Refl -> assignUVarT @(Contra a) vp $ assignUVarT @(Co a) vq call
 
-tParamVars :: CCRTypeParam sv t -> [AnyW SymbolType]
-tParamVars (CoCCRTypeParam t) = [MkAnyW t]
-tParamVars (ContraCCRTypeParam t) = [MkAnyW t]
-tParamVars (RangeCCRTypeParam p q) = [MkAnyW p, MkAnyW q]
+tParamVars :: CCRTypeParam sv t -> [Some SymbolType]
+tParamVars (CoCCRTypeParam t) = [MkSome t]
+tParamVars (ContraCCRTypeParam t) = [MkSome t]
+tParamVars (RangeCCRTypeParam p q) = [MkSome p, MkSome q]
 
 type CCRTypeParams :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
 type CCRTypeParams = CCRArguments CCRTypeParam

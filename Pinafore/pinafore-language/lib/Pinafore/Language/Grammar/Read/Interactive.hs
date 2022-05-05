@@ -22,7 +22,7 @@ data InteractiveCommand
     | ShowTypeInteractiveCommand Bool
                                  (PinaforeInterpreter QExpr)
     | forall polarity. SimplifyTypeInteractiveCommand (PolarityType polarity)
-                                                      (PinaforeInterpreter (AnyW (PinaforeType polarity)))
+                                                      (PinaforeInterpreter (Some (PinaforeType polarity)))
     | ErrorInteractiveCommand Text
 
 showDocInteractiveCommand :: Parser InteractiveCommand

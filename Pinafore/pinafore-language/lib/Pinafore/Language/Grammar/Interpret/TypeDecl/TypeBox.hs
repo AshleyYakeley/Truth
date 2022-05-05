@@ -18,6 +18,6 @@ data Constructor n w t =
 extendConstructor :: Constructor n w t -> Constructor n w (Either a t)
 extendConstructor (MkConstructor n lt codec) = MkConstructor n lt $ extendRightCodec codec
 
-constructorFreeVariables :: Constructor n (ListProductType PinaforeNonpolarType) t -> [AnyW SymbolType]
+constructorFreeVariables :: Constructor n (ListProductType PinaforeNonpolarType) t -> [Some SymbolType]
 constructorFreeVariables (MkConstructor _ (MkListProductType lt) _) =
     mconcat $ listTypeToList nonpolarTypeFreeVariables lt

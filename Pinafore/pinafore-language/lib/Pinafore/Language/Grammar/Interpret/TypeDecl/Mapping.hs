@@ -137,11 +137,10 @@ dependentMapping tdm =
             case tdm t of
                 MkDependentMapping a at (MkMapping (Kleisli f)) -> at (appEndo (f vv) a)
 
-dependentVarMapping :: TestEquality w => [AnyF w VarMapping] -> VarMapping (AnyValue w)
+dependentVarMapping :: TestEquality w => [SomeFor w VarMapping] -> VarMapping (SomeOf w)
 dependentVarMapping vmaps =
     MkVarMapping $ \v n -> do
         mdict <- witnessFDictMapM (\(MkVarMapping gm) -> gm v n) $ witnessFDictFromList vmaps
         return $
-            dependentMapping $ \(MkAnyValue wit a) ->
-                MkDependentMapping a (MkAnyValue wit) $
-                fromMaybe (error "missing mapping") $ witnessFDictLookup wit mdict
+            dependentMapping $ \(MkSomeOf wit a) ->
+                MkDependentMapping a (MkSomeOf wit) $ fromMaybe (error "missing mapping") $ witnessFDictLookup wit mdict

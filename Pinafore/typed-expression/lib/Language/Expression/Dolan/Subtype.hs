@@ -195,36 +195,36 @@ subtypeConversion gta (MkShimWit rawargsa (MkPolarMap conva)) gtb (MkShimWit raw
 
 generateVarType ::
        forall (ground :: GroundTypeKind) polarity. Monad (DolanM ground)
-    => DolanTypeCheckM ground (AnyW (DolanType ground polarity))
+    => DolanTypeCheckM ground (Some (DolanType ground polarity))
 generateVarType = do
     n <- renamerGenerate FreeName []
     MkAnyVar v <- return $ newUVarAny n
-    return $ MkAnyW $ singleDolanType $ VarDolanSingularType v
+    return $ MkSome $ singleDolanType $ VarDolanSingularType v
 
 saturateCCRArgument ::
        forall (ground :: GroundTypeKind) polarity sv. Monad (DolanM ground)
     => CCRVarianceType sv
-    -> DolanTypeCheckM ground (AnyW (CCRPolarArgument (DolanType ground) polarity sv))
-saturateCCRArgument CoCCRVarianceType = generateVarType >>= \(MkAnyW t) -> return $ MkAnyW $ CoCCRPolarArgument t
+    -> DolanTypeCheckM ground (Some (CCRPolarArgument (DolanType ground) polarity sv))
+saturateCCRArgument CoCCRVarianceType = generateVarType >>= \(MkSome t) -> return $ MkSome $ CoCCRPolarArgument t
 saturateCCRArgument ContraCCRVarianceType =
-    generateVarType >>= \(MkAnyW t) -> return $ MkAnyW $ ContraCCRPolarArgument t
+    generateVarType >>= \(MkSome t) -> return $ MkSome $ ContraCCRPolarArgument t
 saturateCCRArgument RangeCCRVarianceType =
-    generateVarType >>= \(MkAnyW ta) ->
-        generateVarType >>= \(MkAnyW tb) -> return $ MkAnyW $ RangeCCRPolarArgument ta tb
+    generateVarType >>= \(MkSome ta) ->
+        generateVarType >>= \(MkSome tb) -> return $ MkSome $ RangeCCRPolarArgument ta tb
 
 saturateDolanArguments ::
        forall (ground :: GroundTypeKind) polarity dv gt. Monad (DolanM ground)
     => DolanVarianceType dv
-    -> DolanTypeCheckM ground (AnyW (DolanArguments dv (DolanType ground) gt polarity))
-saturateDolanArguments NilListType = return $ MkAnyW NilCCRArguments
+    -> DolanTypeCheckM ground (Some (DolanArguments dv (DolanType ground) gt polarity))
+saturateDolanArguments NilListType = return $ MkSome NilCCRArguments
 saturateDolanArguments (ConsListType t1 tr) =
-    saturateCCRArgument @ground @polarity t1 >>= \(MkAnyW arg) ->
-        saturateDolanArguments tr >>= \(MkAnyW args) -> return $ MkAnyW $ ConsCCRArguments arg args
+    saturateCCRArgument @ground @polarity t1 >>= \(MkSome arg) ->
+        saturateDolanArguments tr >>= \(MkSome args) -> return $ MkSome $ ConsCCRArguments arg args
 
 saturateGroundType ::
        forall (ground :: GroundTypeKind) polarity dv gt. IsDolanGroundType ground
     => ground dv gt
-    -> DolanTypeCheckM ground (AnyW (DolanArguments dv (DolanType ground) gt polarity))
+    -> DolanTypeCheckM ground (Some (DolanArguments dv (DolanType ground) gt polarity))
 saturateGroundType gt = saturateDolanArguments $ groundTypeVarianceType gt
 
 nilSubtypeConversion ::

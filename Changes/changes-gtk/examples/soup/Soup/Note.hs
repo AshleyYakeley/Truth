@@ -45,7 +45,7 @@ instance (c (WholeUpdate Text), c (WholeUpdate Bool), c (StringUpdate Text)) => 
 instance FiniteWitness NoteSel where
     assembleWitnessF getw =
         (\a b c ->
-             MkAllF $ \case
+             MkAllFor $ \case
                  NoteTitle -> a
                  NotePast -> b
                  NoteText -> c) <$>

@@ -85,23 +85,23 @@ sqlitePinaforeSchema :: DatabaseSchema PinaforeSchema
 sqlitePinaforeSchema = let
     databaseTables = let
         subWitnessDomain =
-            [MkAnyW PinaforeProperty, MkAnyW PinaforeRefCount, MkAnyW PinaforeFact, MkAnyW PinaforeLiteral]
+            [MkSome PinaforeProperty, MkSome PinaforeRefCount, MkSome PinaforeFact, MkSome PinaforeLiteral]
         subWitnessMap :: PinaforeSchema t -> TableSchema t
         subWitnessMap PinaforeProperty = let
             tableName = "property"
             tableColumns = let
-                domain = [MkAnyW TripleSubject, MkAnyW TriplePredicate, MkAnyW TripleValue]
+                domain = [MkSome TripleSubject, MkSome TriplePredicate, MkSome TripleValue]
                 witmap :: TripleTable t -> ColumnSchema t
                 witmap TriplePredicate = MkColumnSchema "predicate" ColumnTypeNotNull True
                 witmap TripleSubject = MkColumnSchema "subject" ColumnTypeNotNull True
                 witmap TripleValue = MkColumnSchema "value" ColumnTypeNotNull False
                 in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "propval" [MkAnyW TriplePredicate, MkAnyW TripleValue]]
+            tableIndexes = [MkIndexSchema "propval" [MkSome TriplePredicate, MkSome TripleValue]]
             in MkTableSchema {..}
         subWitnessMap PinaforeRefCount = let
             tableName = "refcount"
             tableColumns = let
-                domain = [MkAnyW RefCountKey, MkAnyW RefCountValue]
+                domain = [MkSome RefCountKey, MkSome RefCountValue]
                 witmap :: RefCountTable t -> ColumnSchema t
                 witmap RefCountKey = MkColumnSchema "key" ColumnTypeNotNull True
                 witmap RefCountValue = MkColumnSchema "value" ColumnTypeNotNull False
@@ -111,23 +111,23 @@ sqlitePinaforeSchema = let
         subWitnessMap PinaforeFact = let
             tableName = "fact"
             tableColumns = let
-                domain = [MkAnyW TripleSubject, MkAnyW TriplePredicate, MkAnyW TripleValue]
+                domain = [MkSome TripleSubject, MkSome TriplePredicate, MkSome TripleValue]
                 witmap :: TripleTable t -> ColumnSchema t
                 witmap TriplePredicate = MkColumnSchema "predicate" ColumnTypeNotNull True
                 witmap TripleSubject = MkColumnSchema "subject" ColumnTypeNotNull True
                 witmap TripleValue = MkColumnSchema "value" ColumnTypeNotNull False
                 in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "factval" [MkAnyW TriplePredicate, MkAnyW TripleValue]]
+            tableIndexes = [MkIndexSchema "factval" [MkSome TriplePredicate, MkSome TripleValue]]
             in MkTableSchema {..}
         subWitnessMap PinaforeLiteral = let
             tableName = "literal"
             tableColumns = let
-                domain = [MkAnyW LiteralKey, MkAnyW LiteralValue]
+                domain = [MkSome LiteralKey, MkSome LiteralValue]
                 witmap :: LiteralTable t -> ColumnSchema t
                 witmap LiteralKey = MkColumnSchema "key" ColumnTypeNotNull True
                 witmap LiteralValue = MkColumnSchema "value" ColumnTypeNotNull False
                 in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "litval" [MkAnyW LiteralValue]]
+            tableIndexes = [MkIndexSchema "litval" [MkSome LiteralValue]]
             in MkTableSchema {..}
         in MkSubmapWitness {..}
     in MkDatabaseSchema {..}
@@ -164,7 +164,7 @@ sqlitePinaforeLens = let
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
         return $ MkFiniteSet $ fmap getSingleAll row
     clRead mr (PinaforeTableReadEntityRefCount v) = do
-        (row :: [AllValue ((:~:) RefCount)]) <-
+        (row :: [AllOf ((:~:) RefCount)]) <-
             mr $
             DatabaseSelect
                 (SingleTable $ MkTupleTableSel PinaforeRefCount)
@@ -185,7 +185,7 @@ sqlitePinaforeLens = let
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
         return $ fmap getSingleAll $ listToMaybe row
     clRead mr (PinaforeTableReadLiteralGet v) = do
-        (row :: [AllValue ((:~:) Literal)]) <-
+        (row :: [AllOf ((:~:) Literal)]) <-
             mr $
             DatabaseSelect
                 (SingleTable $ MkTupleTableSel PinaforeLiteral)
@@ -212,7 +212,7 @@ sqlitePinaforeLens = let
         DatabaseInsert (MkTupleTableSel PinaforeProperty) $
         MkTupleInsertClause $
         pure $
-        MkAllValue $ \case
+        MkAllOf $ \case
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
@@ -229,7 +229,7 @@ sqlitePinaforeLens = let
         DatabaseInsert (MkTupleTableSel PinaforeRefCount) $
         MkTupleInsertClause $
         pure $
-        MkAllValue $ \case
+        MkAllOf $ \case
             RefCountKey -> v
             RefCountValue -> rc
     clPutEdit (PinaforeTableEditEntityRefCount v Nothing) =
@@ -244,7 +244,7 @@ sqlitePinaforeLens = let
         DatabaseInsert (MkTupleTableSel PinaforeFact) $
         MkTupleInsertClause $
         pure $
-        MkAllValue $ \case
+        MkAllOf $ \case
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
@@ -261,7 +261,7 @@ sqlitePinaforeLens = let
         DatabaseInsert (MkTupleTableSel PinaforeLiteral) $
         MkTupleInsertClause $
         pure $
-        MkAllValue $ \case
+        MkAllOf $ \case
             LiteralKey -> v
             LiteralValue -> l
     clPutEdit (PinaforeTableEditLiteralSet v Nothing) =
@@ -291,7 +291,7 @@ sqlitePinaforeTableReference path = do
     obj <- sqliteReference path sqlitePinaforeSchema
     return $ mapReference sqlitePinaforeLens obj
 
-sqlitePinaforeTableGetEntireDatabase :: ResourceContext -> FilePath -> IO (AllF (TupleTableSel PinaforeSchema) [])
+sqlitePinaforeTableGetEntireDatabase :: ResourceContext -> FilePath -> IO (AllFor (TupleTableSel PinaforeSchema) [])
 sqlitePinaforeTableGetEntireDatabase rc path = do
     obj <- sqliteReference path sqlitePinaforeSchema
     getReferenceSubject rc obj

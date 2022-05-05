@@ -65,9 +65,9 @@ rename rigid a =
 
 renameTypeSignature ::
        forall ts m. (RenameTypeSystem ts, Monad m)
-    => AnyW (TSPosWitness ts)
-    -> RenamerT ts m (AnyW (TSPosWitness ts))
-renameTypeSignature (MkAnyW t) =
+    => Some (TSPosWitness ts)
+    -> RenamerT ts m (Some (TSPosWitness ts))
+renameTypeSignature (MkSome t) =
     withTransConstraintTM @Monad $ do
         t' <- namespace @ts RigidName $ renamePosWitness @ts t
-        return $ MkAnyW t'
+        return $ MkSome t'

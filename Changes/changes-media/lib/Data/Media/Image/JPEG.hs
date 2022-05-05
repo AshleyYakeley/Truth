@@ -42,17 +42,17 @@ instance WitnessConstraint JpgEncodable JPEGPixelType where
     witnessConstraint YCbCr8JPEGPixelType = Dict
     witnessConstraint CMYK8JPEGPixelType = Dict
 
-jpegFormat :: Word8 -> ReasonCodec LazyByteString (WitnessDict ImageDataKey, AnyF JPEGPixelType Image)
+jpegFormat :: Word8 -> ReasonCodec LazyByteString (WitnessDict ImageDataKey, SomeFor JPEGPixelType Image)
 jpegFormat quality = let
     decode bs =
         case decodeJpegWithMetadata $ toStrict bs of
             Left err -> FailureResult $ fromString err
             Right (di, mtd) ->
                 case fromDynamicImage di of
-                    MkAnyF pxt image
-                        | Just jpxt <- fromPixelType pxt -> SuccessResult (fromMetadatas mtd, MkAnyF jpxt image)
+                    MkSomeFor pxt image
+                        | Just jpxt <- fromPixelType pxt -> SuccessResult (fromMetadatas mtd, MkSomeFor jpxt image)
                     _ -> FailureResult "wrong JPEG image format"
-    encode (mtd, MkAnyF pxt image) =
+    encode (mtd, MkSomeFor pxt image) =
         case witnessConstraint @Type @JpgEncodable pxt of
             Dict -> encodeDirectJpegAtQualityWithMetadata quality (toMetadatas mtd) image
     in MkCodec {..}
@@ -63,8 +63,8 @@ jpegImageToTrue8 RGB8JPEGPixelType image = image
 jpegImageToTrue8 YCbCr8JPEGPixelType image = convertImage image
 jpegImageToTrue8 CMYK8JPEGPixelType image = convertImage image
 
-jpegImageTrue8 :: Applicative m => Codec' m (AnyF JPEGPixelType Image) (Image PixelRGB8)
+jpegImageTrue8 :: Applicative m => Codec' m (SomeFor JPEGPixelType Image) (Image PixelRGB8)
 jpegImageTrue8 = let
-    decode (MkAnyF pxt image) = pure $ jpegImageToTrue8 pxt image
-    encode image = MkAnyF RGB8JPEGPixelType image
+    decode (MkSomeFor pxt image) = pure $ jpegImageToTrue8 pxt image
+    encode image = MkSomeFor RGB8JPEGPixelType image
     in MkCodec {..}

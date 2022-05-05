@@ -50,16 +50,16 @@ invertMPolarity v =
 data MPolarW (w :: Polarity -> k -> Type) (mpolarity :: Maybe Polarity) where
     SingleMPolarW
         :: forall k (w :: Polarity -> k -> Type) (polarity :: Polarity). Is PolarityType polarity
-        => AnyW (w polarity)
+        => Some (w polarity)
         -> MPolarW w ('Just polarity)
     BothMPolarW
         :: forall k (w :: Polarity -> k -> Type).
-           (forall polarity. Is PolarityType polarity => AnyW (w polarity))
+           (forall polarity. Is PolarityType polarity => Some (w polarity))
         -> MPolarW w 'Nothing
 
 mapMPolarW ::
        forall k1 k2 (w1 :: Polarity -> k1 -> Type) (w2 :: Polarity -> k2 -> Type) (mpolarity :: Maybe Polarity).
-       (forall polarity. Is PolarityType polarity => AnyW (w1 polarity) -> AnyW (w2 polarity))
+       (forall polarity. Is PolarityType polarity => Some (w1 polarity) -> Some (w2 polarity))
     -> MPolarW w1 mpolarity
     -> MPolarW w2 mpolarity
 mapMPolarW f (SingleMPolarW awpt) = SingleMPolarW $ f awpt
@@ -68,7 +68,7 @@ mapMPolarW f (BothMPolarW awpt) = BothMPolarW $ f awpt
 mapMPolarWM ::
        forall m k1 k2 (w1 :: Polarity -> k1 -> Type) (w2 :: Polarity -> k2 -> Type) (mpolarity :: Maybe Polarity).
        Monad m
-    => (forall polarity. Is PolarityType polarity => AnyW (w1 polarity) -> m (AnyW (w2 polarity)))
+    => (forall polarity. Is PolarityType polarity => Some (w1 polarity) -> m (Some (w2 polarity)))
     -> MPolarW w1 mpolarity
     -> m (MPolarW w2 mpolarity)
 mapMPolarWM mf (SingleMPolarW awpt) = do
@@ -81,7 +81,7 @@ mapMPolarWM mf (BothMPolarW awpt) = do
 
 toMPolarWM ::
        forall m k (w :: Polarity -> k -> Type) (mpolarity :: Maybe Polarity). (Is MPolarityType mpolarity, Monad m)
-    => (forall polarity. Is PolarityType polarity => m (AnyW (w polarity)))
+    => (forall polarity. Is PolarityType polarity => m (Some (w polarity)))
     -> m (MPolarW w mpolarity)
 toMPolarWM mpt =
     case representative @_ @MPolarityType @mpolarity of
@@ -100,15 +100,15 @@ forMPolarW ::
        forall m k1 k2 (w1 :: Polarity -> k1 -> Type) (w2 :: Polarity -> k2 -> Type) (mpolarity :: Maybe Polarity).
        Monad m
     => MPolarW w1 mpolarity
-    -> (forall polarity. Is PolarityType polarity => AnyW (w1 polarity) -> m (AnyW (w2 polarity)))
+    -> (forall polarity. Is PolarityType polarity => Some (w1 polarity) -> m (Some (w2 polarity)))
     -> m (MPolarW w2 mpolarity)
 forMPolarW mpw mf = mapMPolarWM mf mpw
 
-bothMPolarW :: forall w. AnyW (w 'Positive) -> AnyW (w 'Negative) -> MPolarW w 'Nothing
+bothMPolarW :: forall w. Some (w 'Positive) -> Some (w 'Negative) -> MPolarW w 'Nothing
 bothMPolarW posw negw = let
     bothw ::
            forall polarity. Is PolarityType polarity
-        => AnyW (w polarity)
+        => Some (w polarity)
     bothw =
         case polarityType @polarity of
             PositiveType -> posw
@@ -152,24 +152,24 @@ class FromMPolar t where
 type instance ConvertMPolarity (MPolarW w mpolarity) = mpolarity
 
 instance ToMPolar (MPolarW w mpolarity) where
-    type ToMPolarConvert (MPolarW w mpolarity) polarity = AnyW (w polarity)
+    type ToMPolarConvert (MPolarW w mpolarity) polarity = Some (w polarity)
     toMPolarSingle = SingleMPolarW
     toMPolarBoth = BothMPolarW
 
 instance FromMPolar (MPolarW w mpolarity) where
-    type FromMPolarConvert (MPolarW w mpolarity) polarity = AnyW (w polarity)
+    type FromMPolarConvert (MPolarW w mpolarity) polarity = Some (w polarity)
     fromMPolarSingle (SingleMPolarW aw) = aw
     fromMPolarBoth (BothMPolarW aw) = aw
 
 data MPolarRangeType w mpolarity where
     SingleMPolarRangeType
-        :: Is PolarityType polarity => AnyW (RangeType w polarity) -> MPolarRangeType w ('Just polarity)
+        :: Is PolarityType polarity => Some (RangeType w polarity) -> MPolarRangeType w ('Just polarity)
     BothMPolarRangeType
-        :: (forall polarity. Is PolarityType polarity => AnyW (RangeType w polarity)) -> MPolarRangeType w 'Nothing
+        :: (forall polarity. Is PolarityType polarity => Some (RangeType w polarity)) -> MPolarRangeType w 'Nothing
 
 instance ( Is MPolarityType mpolarity
-         , Semigroup (AnyW (RangeType w 'Negative))
-         , Semigroup (AnyW (RangeType w 'Positive))
+         , Semigroup (Some (RangeType w 'Negative))
+         , Semigroup (Some (RangeType w 'Positive))
          ) => Semigroup (MPolarRangeType w mpolarity) where
     (<>) =
         case representative @_ @MPolarityType @mpolarity of
@@ -179,14 +179,14 @@ instance ( Is MPolarityType mpolarity
                 \(BothMPolarRangeType a) (BothMPolarRangeType b) ->
                     BothMPolarRangeType $ let
                         x :: forall polarity. Is PolarityType polarity
-                          => AnyW (RangeType w polarity)
+                          => Some (RangeType w polarity)
                         x =
                             case polarityType @polarity of
                                 PositiveType -> a @polarity <> b @polarity
                                 NegativeType -> a @polarity <> b @polarity
                         in x
 
-instance (Is MPolarityType mpolarity, Monoid (AnyW (RangeType w 'Negative)), Monoid (AnyW (RangeType w 'Positive))) =>
+instance (Is MPolarityType mpolarity, Monoid (Some (RangeType w 'Negative)), Monoid (Some (RangeType w 'Positive))) =>
              Monoid (MPolarRangeType w mpolarity) where
     mappend = (<>)
     mempty =
@@ -196,7 +196,7 @@ instance (Is MPolarityType mpolarity, Monoid (AnyW (RangeType w 'Negative)), Mon
             MBothType ->
                 BothMPolarRangeType $ let
                     x :: forall polarity. Is PolarityType polarity
-                      => AnyW (RangeType w polarity)
+                      => Some (RangeType w polarity)
                     x =
                         case polarityType @polarity of
                             PositiveType -> mempty
@@ -207,12 +207,12 @@ type instance ConvertMPolarity (MPolarRangeType w mpolarity) =
      mpolarity
 
 instance ToMPolar (MPolarRangeType w mpolarity) where
-    type ToMPolarConvert (MPolarRangeType w mpolarity) polarity = AnyW (RangeType w polarity)
+    type ToMPolarConvert (MPolarRangeType w mpolarity) polarity = Some (RangeType w polarity)
     toMPolarSingle = SingleMPolarRangeType
     toMPolarBoth = BothMPolarRangeType
 
 instance FromMPolar (MPolarRangeType w mpolarity) where
-    type FromMPolarConvert (MPolarRangeType w mpolarity) polarity = AnyW (RangeType w polarity)
+    type FromMPolarConvert (MPolarRangeType w mpolarity) polarity = Some (RangeType w polarity)
     fromMPolarSingle (SingleMPolarRangeType aw) = aw
     fromMPolarBoth (BothMPolarRangeType aw) = aw
 
@@ -235,10 +235,10 @@ type instance ConvertMPolarity (InvertMPolarW w mpolarity) =
      mpolarity
 
 instance FromMPolar (InvertMPolarW w mpolarity) where
-    type FromMPolarConvert (InvertMPolarW w mpolarity) polarity = AnyW (w (InvertPolarity polarity))
+    type FromMPolarConvert (InvertMPolarW w mpolarity) polarity = Some (w (InvertPolarity polarity))
     fromMPolarSingle (MkInvertMPolarW (SingleMPolarW aw)) = aw
     fromMPolarBoth ::
            forall polarity. (Is PolarityType polarity, mpolarity ~ 'Nothing)
         => InvertMPolarW w mpolarity
-        -> AnyW (w (InvertPolarity polarity))
+        -> Some (w (InvertPolarity polarity))
     fromMPolarBoth (MkInvertMPolarW (BothMPolarW aw)) = invertPolarity @polarity aw

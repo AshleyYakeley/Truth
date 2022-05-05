@@ -71,7 +71,7 @@ interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
         paramWith sourcePosParam spos $ do
             mtn <- interpretType @'Negative stype
             case mtn of
-                MkAnyW tn ->
+                MkSome tn ->
                     case getOptGreatestDynamicSupertype tn of
                         Nothing -> return pat
                         Just dtn -> do

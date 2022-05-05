@@ -122,19 +122,19 @@ instance forall (ground :: GroundTypeKind) polarity. (IsDolanGroundType ground, 
 
 singularsToAnyType ::
        forall (ground :: GroundTypeKind) (polarity :: Polarity).
-       [AnyW (DolanSingularType ground polarity)]
-    -> AnyW (DolanType ground polarity)
-singularsToAnyType [] = MkAnyW NilDolanType
-singularsToAnyType (MkAnyW s:ss) =
+       [Some (DolanSingularType ground polarity)]
+    -> Some (DolanType ground polarity)
+singularsToAnyType [] = MkSome NilDolanType
+singularsToAnyType (MkSome s:ss) =
     case singularsToAnyType ss of
-        MkAnyW t -> MkAnyW $ ConsDolanType s t
+        MkSome t -> MkSome $ ConsDolanType s t
 
 typeToAnySingulars ::
        forall (ground :: GroundTypeKind) (polarity :: Polarity) t.
        DolanType ground polarity t
-    -> [AnyW (DolanSingularType ground polarity)]
+    -> [Some (DolanSingularType ground polarity)]
 typeToAnySingulars NilDolanType = []
-typeToAnySingulars (ConsDolanType s t) = MkAnyW s : typeToAnySingulars t
+typeToAnySingulars (ConsDolanType s t) = MkSome s : typeToAnySingulars t
 
 type DolanSingularShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanSingularShimWit ground polarity = PShimWit (DolanShim ground) (DolanSingularType ground) polarity
@@ -209,16 +209,16 @@ singleDolanShimWit ::
 singleDolanShimWit (MkShimWit st conv) = ccontramap conv $ MkShimWit (singleDolanType st) iPolarR1
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). Is PolarityType polarity =>
-             Semigroup (AnyW (DolanType ground polarity)) where
-    MkAnyW NilDolanType <> tb = tb
-    MkAnyW (ConsDolanType ta tr) <> tb =
-        case MkAnyW tr <> tb of
-            MkAnyW trb -> MkAnyW $ ConsDolanType ta trb
+             Semigroup (Some (DolanType ground polarity)) where
+    MkSome NilDolanType <> tb = tb
+    MkSome (ConsDolanType ta tr) <> tb =
+        case MkSome tr <> tb of
+            MkSome trb -> MkSome $ ConsDolanType ta trb
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). Is PolarityType polarity =>
-             Monoid (AnyW (DolanType ground polarity)) where
+             Monoid (Some (DolanType ground polarity)) where
     mappend = (<>)
-    mempty = MkAnyW NilDolanType
+    mempty = MkSome NilDolanType
 
 type DolanTypeCheckM :: GroundTypeKind -> Type -> Type
 type DolanTypeCheckM ground = VarRenamerT (DolanTypeSystem ground) (DolanM ground)

@@ -162,8 +162,8 @@ instance Show (Token t) where
     show TokAnd = show ("&" :: String)
     show TokNumber = "number"
 
-instance Show (AnyValue Token) where
-    show (MkAnyValue t _) = show t
+instance Show (SomeOf Token) where
+    show (MkSomeOf t _) = show t
 
 readChar :: Char -> Parser ()
 readChar c = void $ char c
@@ -235,9 +235,9 @@ identifierChar '-' = True
 identifierChar '_' = True
 identifierChar c = isAlphaNum c
 
-readNumber :: Parser (AnyValue Token)
+readNumber :: Parser (SomeOf Token)
 readNumber =
-    fmap (MkAnyValue TokNumber) $
+    fmap (MkSomeOf TokNumber) $
     (try $ do
          void $ string "NaN"
          return $ InexactNumber $ 0 / 0) <|>
@@ -264,28 +264,28 @@ readQName = do
              return ([], True, name)
         else return ([], False, name)
 
-checkKeyword :: String -> Maybe (AnyValue Token)
-checkKeyword "_" = return $ MkAnyValue TokUnderscore ()
-checkKeyword "rec" = return $ MkAnyValue TokRec ()
-checkKeyword "let" = return $ MkAnyValue TokLet ()
-checkKeyword "in" = return $ MkAnyValue TokIn ()
-checkKeyword "do" = return $ MkAnyValue TokDo ()
-checkKeyword "case" = return $ MkAnyValue TokCase ()
-checkKeyword "of" = return $ MkAnyValue TokOf ()
-checkKeyword "end" = return $ MkAnyValue TokEnd ()
-checkKeyword "if" = return $ MkAnyValue TokIf ()
-checkKeyword "then" = return $ MkAnyValue TokThen ()
-checkKeyword "else" = return $ MkAnyValue TokElse ()
-checkKeyword "datatype" = return $ MkAnyValue TokDataType ()
-checkKeyword "opentype" = return $ MkAnyValue TokOpenType ()
-checkKeyword "subtype" = return $ MkAnyValue TokSubtype ()
-checkKeyword "closedtype" = return $ MkAnyValue TokClosedType ()
-checkKeyword "dynamictype" = return $ MkAnyValue TokDynamicType ()
-checkKeyword "expose" = return $ MkAnyValue TokExpose ()
-checkKeyword "import" = return $ MkAnyValue TokImport ()
+checkKeyword :: String -> Maybe (SomeOf Token)
+checkKeyword "_" = return $ MkSomeOf TokUnderscore ()
+checkKeyword "rec" = return $ MkSomeOf TokRec ()
+checkKeyword "let" = return $ MkSomeOf TokLet ()
+checkKeyword "in" = return $ MkSomeOf TokIn ()
+checkKeyword "do" = return $ MkSomeOf TokDo ()
+checkKeyword "case" = return $ MkSomeOf TokCase ()
+checkKeyword "of" = return $ MkSomeOf TokOf ()
+checkKeyword "end" = return $ MkSomeOf TokEnd ()
+checkKeyword "if" = return $ MkSomeOf TokIf ()
+checkKeyword "then" = return $ MkSomeOf TokThen ()
+checkKeyword "else" = return $ MkSomeOf TokElse ()
+checkKeyword "datatype" = return $ MkSomeOf TokDataType ()
+checkKeyword "opentype" = return $ MkSomeOf TokOpenType ()
+checkKeyword "subtype" = return $ MkSomeOf TokSubtype ()
+checkKeyword "closedtype" = return $ MkSomeOf TokClosedType ()
+checkKeyword "dynamictype" = return $ MkSomeOf TokDynamicType ()
+checkKeyword "expose" = return $ MkSomeOf TokExpose ()
+checkKeyword "import" = return $ MkSomeOf TokImport ()
 checkKeyword _ = Nothing
 
-readTextToken :: Parser (AnyValue Token)
+readTextToken :: Parser (SomeOf Token)
 readTextToken = do
     (qual, u, name) <- readQName
     case nonEmpty qual of
@@ -295,16 +295,16 @@ readTextToken = do
                 Just tok -> tok
                 Nothing ->
                     if u
-                        then MkAnyValue TokUName $ MkName $ pack name
-                        else MkAnyValue TokLName $ MkName $ pack name
+                        then MkSomeOf TokUName $ MkName $ pack name
+                        else MkSomeOf TokLName $ MkName $ pack name
         Just qualnames ->
             case checkKeyword name of
                 Just _ -> empty
                 Nothing ->
                     return $
                     if u
-                        then MkAnyValue TokQUName (qualnames, MkName $ pack name)
-                        else MkAnyValue TokQLName (MkModuleName qualnames, MkName $ pack name)
+                        then MkSomeOf TokQUName (qualnames, MkName $ pack name)
+                        else MkSomeOf TokQLName (MkModuleName qualnames, MkName $ pack name)
 
 toHexDigit :: Char -> Maybe Word8
 toHexDigit c =
@@ -332,42 +332,42 @@ readHexAnchor = do
         octets <- fromHex $ filter isHexDigit cs
         decode anchorCodec $ fromList octets
 
-readOpToken :: Parser (AnyValue Token)
+readOpToken :: Parser (SomeOf Token)
 readOpToken = do
     name <-
         many1 $
         satisfy $ \c ->
             elem c ("!$%&*+./<=>?@\\^|-~:" :: String) || (not (isAscii c) && (isSymbol c || isPunctuation c))
     case name of
-        ":" -> return $ MkAnyValue TokTypeJudge ()
-        "\\" -> return $ MkAnyValue TokLambda ()
-        "=" -> return $ MkAnyValue TokAssign ()
-        "=>" -> return $ MkAnyValue TokMap ()
-        "<-" -> return $ MkAnyValue TokBackMap ()
-        "%" -> return $ MkAnyValue TokUnref ()
+        ":" -> return $ MkSomeOf TokTypeJudge ()
+        "\\" -> return $ MkSomeOf TokLambda ()
+        "=" -> return $ MkSomeOf TokAssign ()
+        "=>" -> return $ MkSomeOf TokMap ()
+        "<-" -> return $ MkSomeOf TokBackMap ()
+        "%" -> return $ MkSomeOf TokUnref ()
         "!" ->
             (do
                  anchor <- readHexAnchor
-                 return $ MkAnyValue TokAnchor anchor) <|>
+                 return $ MkSomeOf TokAnchor anchor) <|>
             (do
                  s <- readQuotedString
-                 return $ MkAnyValue TokAnchor $ codeAnchor s)
-        "@" -> return $ MkAnyValue TokAt ()
-        "|" -> return $ MkAnyValue TokOr ()
-        "&" -> return $ MkAnyValue TokAnd ()
-        "<:" -> return $ MkAnyValue TokSubtypeOf ()
-        _ -> return $ MkAnyValue TokOperator $ MkName $ pack name
+                 return $ MkSomeOf TokAnchor $ codeAnchor s)
+        "@" -> return $ MkSomeOf TokAt ()
+        "|" -> return $ MkSomeOf TokOr ()
+        "&" -> return $ MkSomeOf TokAnd ()
+        "<:" -> return $ MkSomeOf TokSubtypeOf ()
+        _ -> return $ MkSomeOf TokOperator $ MkName $ pack name
 
-readCharTok :: Char -> Token () -> Parser (AnyValue Token)
+readCharTok :: Char -> Token () -> Parser (SomeOf Token)
 readCharTok c tok = do
     readChar c
-    return $ MkAnyValue tok ()
+    return $ MkSomeOf tok ()
 
-readToken :: Parser ((SourcePos, AnyValue Token))
+readToken :: Parser ((SourcePos, SomeOf Token))
 readToken = do
     pos <- getPosition
     t <-
-        fmap (MkAnyValue TokComment) readComment <|> readCharTok ';' TokSemicolon <|> readCharTok ',' TokComma <|>
+        fmap (MkSomeOf TokComment) readComment <|> readCharTok ';' TokSemicolon <|> readCharTok ',' TokComma <|>
         readCharTok '(' TokOpenParen <|>
         readCharTok ')' TokCloseParen <|>
         readCharTok '[' TokOpenBracket <|>
@@ -375,13 +375,13 @@ readToken = do
         readCharTok '{' TokOpenBrace <|>
         readCharTok '}' TokCloseBrace <|>
         try readNumber <|>
-        fmap (MkAnyValue TokString) readQuotedString <|>
+        fmap (MkSomeOf TokString) readQuotedString <|>
         readTextToken <|>
         readOpToken
     readWS
     return (pos, t)
 
-readTokens :: SourcePos -> Parser (SourcePos, [(SourcePos, AnyValue Token)])
+readTokens :: SourcePos -> Parser (SourcePos, [(SourcePos, SomeOf Token)])
 readTokens oldpos = do
     setPosition oldpos
     readWS
@@ -390,7 +390,7 @@ readTokens oldpos = do
     newpos <- getPosition
     return (newpos, toks)
 
-parseTokens :: Text -> StateT SourcePos InterpretResult [(SourcePos, AnyValue Token)]
+parseTokens :: Text -> StateT SourcePos InterpretResult [(SourcePos, SomeOf Token)]
 parseTokens text = do
     oldpos <- get
     case parse (readTokens oldpos) (sourceName oldpos) (unpack text) of

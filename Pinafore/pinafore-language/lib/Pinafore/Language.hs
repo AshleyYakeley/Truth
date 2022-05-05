@@ -158,7 +158,7 @@ interactLoop inh outh echo = do
                                          Just ("", _) -> return ()
                                          Just (doc, _) -> hPutStrLn outh $ "#| " <> unpack (getRawMarkdown doc)
                              ShowTypeInteractiveCommand showinfo texpr -> do
-                                 MkAnyValue (MkPosShimWit t shim) _ <- interactEvalExpression texpr
+                                 MkSomeOf (MkPosShimWit t shim) _ <- interactEvalExpression texpr
                                  liftIO $
                                      hPutStrLn outh $
                                      ": " <>
@@ -167,20 +167,20 @@ interactLoop inh outh echo = do
                                          then " # " <> show shim
                                          else ""
                              SimplifyTypeInteractiveCommand polarity ttype -> do
-                                 MkAnyW t <- interactRunSourceScoped ttype
+                                 MkSome t <- interactRunSourceScoped ttype
                                  s :: Text <-
                                      case polarity of
                                          PositiveType -> do
                                              t' <-
                                                  interactRunSourceScoped $
                                                  runRenamer @PinaforeTypeSystem $
-                                                 simplify @PinaforeTypeSystem $ MkAnyW t
+                                                 simplify @PinaforeTypeSystem $ MkSome t
                                              return $ exprShow t'
                                          NegativeType -> do
                                              t' <-
                                                  interactRunSourceScoped $
                                                  runRenamer @PinaforeTypeSystem $
-                                                 simplify @PinaforeTypeSystem $ MkAnyW t
+                                                 simplify @PinaforeTypeSystem $ MkSome t
                                              return $ exprShow t'
                                  liftIO $ hPutStrLn outh $ unpack s
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)

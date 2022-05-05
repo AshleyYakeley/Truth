@@ -29,7 +29,7 @@ parseModule modname =
 parseType ::
        forall polarity. Is PolarityType polarity
     => Text
-    -> PinaforeInterpreter (AnyW (PinaforeType polarity))
+    -> PinaforeInterpreter (Some (PinaforeType polarity))
 parseType text = do
     st <- parseScopedReaderWhole (fmap return readType) text
     interpretType st

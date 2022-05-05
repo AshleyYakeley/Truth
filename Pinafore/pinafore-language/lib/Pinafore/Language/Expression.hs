@@ -120,10 +120,10 @@ qSequenceExpr (e:ee) = do
 
 type QBinding = Binding PinaforeTypeSystem
 
-qBindExpr :: VarID -> Markdown -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBinding
+qBindExpr :: VarID -> Markdown -> Maybe (Some (PinaforeType 'Positive)) -> QExpr -> QBinding
 qBindExpr = tsSingleBinding @PinaforeTypeSystem
 
-qSubsumeExpr :: AnyW (PinaforeType 'Positive) -> QExpr -> PinaforeInterpreter QExpr
+qSubsumeExpr :: Some (PinaforeType 'Positive) -> QExpr -> PinaforeInterpreter QExpr
 qSubsumeExpr = tsSubsumeExpression @PinaforeTypeSystem
 
 qLetExpr :: VarID -> QExpr -> QExpr -> PinaforeInterpreter QExpr

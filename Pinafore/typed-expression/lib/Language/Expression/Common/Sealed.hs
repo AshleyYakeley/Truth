@@ -13,16 +13,16 @@ data SealedExpression (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall t. MkSealedExpression (tw t)
                                  (NamedExpression name vw t)
 
-constSealedExpression :: AnyValue tw -> SealedExpression name vw tw
-constSealedExpression (MkAnyValue twt t) = MkSealedExpression twt $ pure t
+constSealedExpression :: SomeOf tw -> SealedExpression name vw tw
+constSealedExpression (MkSomeOf twt t) = MkSealedExpression twt $ pure t
 
 evalSealedExpression ::
        (MonadThrow ExpressionError m, AllWitnessConstraint Show vw, Show name)
     => SealedExpression name vw tw
-    -> m (AnyValue tw)
+    -> m (SomeOf tw)
 evalSealedExpression (MkSealedExpression twa expr) = do
     a <- evalExpression expr
-    return $ MkAnyValue twa a
+    return $ MkSomeOf twa a
 
 varSealedExpression :: name -> vw t -> tw t -> SealedExpression name vw tw
 varSealedExpression n vwt twt = MkSealedExpression twt $ varNamedExpression n vwt
@@ -40,7 +40,7 @@ instance MonoFunctor (SealedExpression name vw ((:~:) val)) where
     omap ab (MkSealedExpression Refl expr) = MkSealedExpression Refl $ fmap ab expr
 
 instance MonoPointed (SealedExpression name vw ((:~:) val)) where
-    opoint p = constSealedExpression $ MkAnyValue Refl p
+    opoint p = constSealedExpression $ MkSomeOf Refl p
 
 instance MonoApplicative (SealedExpression name vw ((:~:) val)) where
     oliftA2 appf (MkSealedExpression Refl vexpr) (MkSealedExpression Refl bexpr) =

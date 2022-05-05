@@ -22,8 +22,8 @@ newtype Tuple sel =
 
 instance (TupleSubjectWitness Show sel, FiniteWitness sel) => Show (Tuple sel) where
     show (MkTuple f) = let
-        showWit :: AnyW sel -> String
-        showWit (MkAnyW se) =
+        showWit :: Some sel -> String
+        showWit (MkSome se) =
             case tupleSubjectWitness @Show se of
                 Dict -> show $ f se
         in "{" ++ intercalate "," (fmap showWit allWitnesses) ++ "}"
@@ -82,8 +82,8 @@ class TestEquality sel => FiniteTupleSelector (sel :: Type -> Type) where
         => (forall update. sel update -> m (UpdateSubject update))
         -> m (TupleSubject sel)
 
-tupleAllSelectors :: FiniteTupleSelector sel => [AnyW sel]
-tupleAllSelectors = getConst $ tupleConstruct $ \sel -> Const [MkAnyW sel]
+tupleAllSelectors :: FiniteTupleSelector sel => [Some sel]
+tupleAllSelectors = getConst $ tupleConstruct $ \sel -> Const [MkSome sel]
 
 instance (SubjectTupleSelector sel, FiniteTupleSelector sel, TupleReaderWitness FullSubjectReader sel) =>
              FullSubjectReader (TupleUpdateReader sel) where
@@ -166,7 +166,7 @@ instance ( SubjectTupleSelector sel
          ) => FullEdit (TupleUpdateEdit sel) where
     replaceEdit mr writeEdit = do
         editss <-
-            for tupleAllSelectors $ \(MkAnyW sel) ->
+            for tupleAllSelectors $ \(MkSome sel) ->
                 case tupleEditWitness @FullEdit sel of
                     Dict -> replaceEdit (tupleReadFunction sel mr) $ writeEdit . MkTupleUpdateEdit sel
         return $ mconcat editss

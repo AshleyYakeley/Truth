@@ -31,13 +31,13 @@ joinMeetShimWit ::
 joinMeetShimWit = chainPShimWit2 joinMeetType
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (IsDolanGroundType ground, Is PolarityType polarity) =>
-             Semigroup (AnyW (RangeType (DolanType ground) polarity)) where
-    MkAnyW (MkRangeType tp1 tq1) <> MkAnyW (MkRangeType tp2 tq2) =
+             Semigroup (Some (RangeType (DolanType ground) polarity)) where
+    MkSome (MkRangeType tp1 tq1) <> MkSome (MkRangeType tp2 tq2) =
         invertPolarity @polarity $
-        case (MkAnyW tp1 <> MkAnyW tp2, MkAnyW tq1 <> MkAnyW tq2) of
-            (MkAnyW tp12, MkAnyW tq12) -> MkAnyW (MkRangeType tp12 tq12)
+        case (MkSome tp1 <> MkSome tp2, MkSome tq1 <> MkSome tq2) of
+            (MkSome tp12, MkSome tq12) -> MkSome (MkRangeType tp12 tq12)
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (IsDolanGroundType ground, Is PolarityType polarity) =>
-             Monoid (AnyW (RangeType (DolanType ground) polarity)) where
+             Monoid (Some (RangeType (DolanType ground) polarity)) where
     mappend = (<>)
-    mempty = MkAnyW (MkRangeType NilDolanType NilDolanType)
+    mempty = MkSome (MkRangeType NilDolanType NilDolanType)

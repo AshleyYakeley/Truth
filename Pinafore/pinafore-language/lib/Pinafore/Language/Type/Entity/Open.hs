@@ -50,9 +50,9 @@ openEntityFamily =
         epShowType = exprShowPrec oet
         in Just $ MkSealedEntityProperties MkEntityProperties {..}
 
-getOpenEntityType :: MonadThrow ErrorType m => AnyW (PinaforeType 'Positive) -> m (AnyW OpenEntityType)
-getOpenEntityType (MkAnyW tm) =
+getOpenEntityType :: MonadThrow ErrorType m => Some (PinaforeType 'Positive) -> m (Some OpenEntityType)
+getOpenEntityType (MkSome tm) =
     case dolanTypeToSingular @PinaforeGroundType @(PinaforePolyShim Type) tm of
         Just (MkShimWit (GroundedDolanSingularType gt NilCCRArguments) _)
-            | Just (MkLiftedFamily t) <- matchFamilyType openEntityFamilyWitness $ pgtFamilyType gt -> return $ MkAnyW t
+            | Just (MkLiftedFamily t) <- matchFamilyType openEntityFamilyWitness $ pgtFamilyType gt -> return $ MkSome t
         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm

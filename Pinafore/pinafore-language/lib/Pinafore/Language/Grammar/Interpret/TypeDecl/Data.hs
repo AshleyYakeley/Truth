@@ -24,11 +24,11 @@ import Shapes
 import Shapes.Unsafe (unsafeGetRefl)
 
 assembleDataType ::
-       [(n, AnyW (ListType PinaforeNonpolarType))]
+       [(n, Some (ListType PinaforeNonpolarType))]
     -> forall r. (forall t. [Constructor n (ListProductType PinaforeNonpolarType) t] -> VarMapping t -> r) -> r
 assembleDataType tconss call =
-    case assembleListType $ fmap (\(_, (MkAnyW lt)) -> MkAnyW $ MkListProductType lt) tconss of
-        MkAnyW lcons ->
+    case assembleListType $ fmap (\(_, (MkSome lt)) -> MkSome $ MkListProductType lt) tconss of
+        MkSome lcons ->
             getPreferredTypeRepresentation lcons $ \(MkTypeRepresentation ccons vmap) _ -> let
                 mkConss :: [n -> Constructor n (ListProductType PinaforeNonpolarType) _]
                 mkConss =
@@ -48,7 +48,7 @@ datatypeIOWitness :: IOWitness ('MkWitKind DataTypeFamily)
 datatypeIOWitness = $(iowitness [t|'MkWitKind DataTypeFamily|])
 
 interpretDataTypeConstructor ::
-       SyntaxConstructorOrSubtype extra -> PinaforeInterpreter ((Name, extra), AnyW (ListType PinaforeNonpolarType))
+       SyntaxConstructorOrSubtype extra -> PinaforeInterpreter ((Name, extra), Some (ListType PinaforeNonpolarType))
 interpretDataTypeConstructor (ConstructorSyntaxConstructorOrSubtype consName stypes extra) = do
     etypes <- for stypes interpretNonpolarType
     return ((consName, extra), assembleListType etypes)
@@ -79,12 +79,12 @@ tParamToPolarArgument (RangeCCRTypeParam varp varq) =
         (MkShimWit argp convp, MkShimWit argq convq) ->
             MkShimWit (RangeCCRPolarArgument argp argq) $ MkCatRange (uninvertPolarMap convp) convq
 
-type GenCCRTypeParams dv = forall (gt :: DolanVarianceKind dv). AnyW (CCRTypeParams dv gt)
+type GenCCRTypeParams dv = forall (gt :: DolanVarianceKind dv). Some (CCRTypeParams dv gt)
 
 data AnyCCRTypeParams where
     MkAnyCCRTypeParams :: forall (dv :: DolanVariance). GenCCRTypeParams dv -> AnyCCRTypeParams
 
-tParamsVars :: CCRTypeParams dv gt t -> [AnyW SymbolType]
+tParamsVars :: CCRTypeParams dv gt t -> [Some SymbolType]
 tParamsVars NilCCRArguments = []
 tParamsVars (ConsCCRArguments tp tps) = tParamVars tp ++ tParamsVars tps
 
@@ -175,13 +175,13 @@ makeBox ::
     -> Markdown
     -> [SyntaxConstructorOrSubtype extra]
     -> GenCCRTypeParams dv
-    -> PinaforeInterpreter (PinaforeFixBox () (CatEndo WMFunction PinaforeInterpreter, AnyW VarMapping))
+    -> PinaforeInterpreter (PinaforeFixBox () (CatEndo WMFunction PinaforeInterpreter, Some VarMapping))
 makeBox gmaker name doc sconss gtparams =
     newTypeID $ \(tidsym :: _ tid) ->
         case unsafeIdentifyKind @_ @(DolanVarianceKind dv) tidsym of
             Identity Refl ->
                 case gtparams @(Identified tid) of
-                    MkAnyW (tparams :: CCRTypeParams dv (Identified tid) decltype) ->
+                    MkSome (tparams :: CCRTypeParams dv (Identified tid) decltype) ->
                         withRepresentative (ccrArgumentsType tparams) $
                         case gmaker name tidsym tparams of
                             MkStages mkx (mkgt :: x -> _) -> let
@@ -193,24 +193,24 @@ makeBox gmaker name doc sconss gtparams =
                                        tconss <- for sconss interpretDataTypeConstructor
                                        assembleDataType tconss $ \conss (vmap :: _ structtype) -> do
                                            let
-                                               freevars :: [AnyW SymbolType]
+                                               freevars :: [Some SymbolType]
                                                freevars = nub $ mconcat $ fmap constructorFreeVariables conss
-                                               declaredvars :: [AnyW SymbolType]
+                                               declaredvars :: [Some SymbolType]
                                                declaredvars = tParamsVars tparams
-                                               unboundvars :: [AnyW SymbolType]
+                                               unboundvars :: [Some SymbolType]
                                                unboundvars = freevars List.\\ declaredvars
                                            case nonEmpty $ duplicates declaredvars of
                                                Nothing -> return ()
                                                Just vv ->
                                                    throw $
                                                    InterpretTypeDeclDuplicateTypeVariablesError name $
-                                                   fmap (\(MkAnyW s) -> symbolTypeToName s) vv
+                                                   fmap (\(MkSome s) -> symbolTypeToName s) vv
                                            case nonEmpty unboundvars of
                                                Nothing -> return ()
                                                Just vv ->
                                                    throw $
                                                    InterpretTypeDeclUnboundTypeVariablesError name $
-                                                   fmap (\(MkAnyW s) -> symbolTypeToName s) vv
+                                                   fmap (\(MkSome s) -> symbolTypeToName s) vv
                                            Refl <- unsafeGetRefl @Type @structtype @decltype
                                            dvm :: DolanVarianceMap dv (Identified tid) <-
                                                getDolanVarianceMap @dv name tparams vmap
@@ -251,11 +251,11 @@ makeBox gmaker name doc sconss gtparams =
                                                            let
                                                                expr =
                                                                    qConstExprAny $
-                                                                   MkAnyValue (qFunctionPosWitnesses ltn ctfpos) $
+                                                                   MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $
                                                                    encode codec
                                                                pc = toPatternConstructor ctfneg ltp $ decode codec
                                                            withNewPatternConstructor cname doc expr pc
-                                                   return (x, (mconcat patts, MkAnyW vmap))
+                                                   return (x, (mconcat patts, MkSome vmap))
 
 makeDeclTypeBox ::
        forall extra.

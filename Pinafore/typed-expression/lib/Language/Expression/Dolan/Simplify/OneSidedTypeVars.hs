@@ -13,21 +13,21 @@ import Shapes
 
 eliminationBisubs ::
        forall (ground :: GroundTypeKind). IsDolanGroundType ground
-    => (FiniteSet (AnyW SymbolType), FiniteSet (AnyW SymbolType))
+    => (FiniteSet (Some SymbolType), FiniteSet (Some SymbolType))
     -> [Bisubstitution ground (DolanShim ground) Identity]
 eliminationBisubs (posvars, negvars) = let
-    posbisub :: AnyW SymbolType -> Bisubstitution ground (DolanShim ground) Identity
-    posbisub (MkAnyW var) =
+    posbisub :: Some SymbolType -> Bisubstitution ground (DolanShim ground) Identity
+    posbisub (MkSome var) =
         assignUVarT @BottomType var $ MkBisubstitution False var (return nilDolanShimWit) (return $ varDolanShimWit var)
-    negbisub :: AnyW SymbolType -> Bisubstitution ground (DolanShim ground) Identity
-    negbisub (MkAnyW var) =
+    negbisub :: Some SymbolType -> Bisubstitution ground (DolanShim ground) Identity
+    negbisub (MkSome var) =
         assignUVarT @TopType var $ MkBisubstitution False var (return $ varDolanShimWit var) (return nilDolanShimWit)
     in (fmap posbisub $ toList posvars) <> (fmap negbisub $ toList negvars)
 
 eliminateVars ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => (FiniteSet (AnyW SymbolType), FiniteSet (AnyW SymbolType))
+    => (FiniteSet (Some SymbolType), FiniteSet (Some SymbolType))
     -> a
     -> a
 eliminateVars vars expr = runIdentity $ bisubstitutes @ground (eliminationBisubs vars) expr

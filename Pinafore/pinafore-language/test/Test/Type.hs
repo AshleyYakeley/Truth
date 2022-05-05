@@ -110,7 +110,7 @@ simplifyTypeTest text e =
             runTestPinaforeSourceScoped $ do
                 mt <- parseType @'Positive text
                 case mt of
-                    MkAnyW t ->
+                    MkSome t ->
                         runRenamer @PinaforeTypeSystem $
                         simplify @PinaforeTypeSystem @PExpression $
                         MkSealedExpression (mkPolarShimWit t) $ ClosedExpression undefined
@@ -126,7 +126,7 @@ unrollTest rolledTypeText expectedUnrolledTypeText =
                 mRolledType <- parseType @'Positive rolledTypeText
                 return $
                     case mRolledType of
-                        MkAnyW (ConsDolanType (RecursiveDolanSingularType var t) NilDolanType) ->
+                        MkSome (ConsDolanType (RecursiveDolanSingularType var t) NilDolanType) ->
                             case unrollRecursiveType var t of
                                 MkShimWit unrolledType _ ->
                                     assertEqual "" expectedUnrolledTypeText $ exprShow unrolledType

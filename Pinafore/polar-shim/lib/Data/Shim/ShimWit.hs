@@ -23,8 +23,8 @@ mkShimWit ::
     -> ShimWit shim wit t
 mkShimWit t = MkShimWit t id
 
-shimWitToAnyW :: forall (k :: Type) (shim :: ShimKind k) (wit :: k -> Type) (a :: k). ShimWit shim wit a -> AnyW wit
-shimWitToAnyW (MkShimWit t _) = MkAnyW t
+shimWitToSome :: forall (k :: Type) (shim :: ShimKind k) (wit :: k -> Type) (a :: k). ShimWit shim wit a -> Some wit
+shimWitToSome (MkShimWit t _) = MkSome t
 
 mapShimWit ::
        forall (k :: Type) (shim :: ShimKind k) wit (a :: k) (b :: k). Category shim

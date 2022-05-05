@@ -28,7 +28,7 @@ testSourceScoped :: Text -> PinaforeInterpreter () -> TestTree
 testSourceScoped name action = testValue name $ throwInterpretResult $ runPinaforeScoped (initialPos "<test>") $ action
 
 showValType :: QValue -> String
-showValType (MkAnyValue (MkShimWit t _) _) = show t
+showValType (MkSomeOf (MkShimWit t _) _) = show t
 
 testUnifyToType ::
        forall t. HasPinaforeType 'Negative t

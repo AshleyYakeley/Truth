@@ -24,16 +24,16 @@ mapWitnesses mapPos mapNeg a = runIdentity $ mapWitnessesM (\t -> Identity $ map
 mappableGetWitnesses ::
        forall k (poswit :: k -> Type) (negwit :: k -> Type) a. (WitnessMappable poswit negwit a)
     => a
-    -> [Either (AnyW poswit) (AnyW negwit)]
+    -> [Either (Some poswit) (Some negwit)]
 mappableGetWitnesses a =
     execWriter $
     mapWitnessesM
         @k
         (\t -> do
-             tell $ pure $ Left $ MkAnyW t
+             tell $ pure $ Left $ MkSome t
              return t)
         (\t -> do
-             tell $ pure $ Right $ MkAnyW t
+             tell $ pure $ Right $ MkSome t
              return t)
         a
 
@@ -57,25 +57,25 @@ instance WitnessMappable (poswit :: k -> Type) negwit (poswit t) where
 instance WitnessMappable poswit (negwit :: k -> Type) (negwit t) where
     mapWitnessesM _ mapNeg = mapNeg
 
-instance WitnessMappable poswit negwit (AnyValue poswit) where
-    mapWitnessesM mapPos _ (MkAnyValue tw val) = do
+instance WitnessMappable poswit negwit (SomeOf poswit) where
+    mapWitnessesM mapPos _ (MkSomeOf tw val) = do
         tw' <- mapPos tw
-        pure $ MkAnyValue tw' val
+        pure $ MkSomeOf tw' val
 
-instance WitnessMappable poswit negwit (AnyW poswit) where
-    mapWitnessesM mapPos _ (MkAnyW pa) = do
+instance WitnessMappable poswit negwit (Some poswit) where
+    mapWitnessesM mapPos _ (MkSome pa) = do
         pa' <- mapPos pa
-        pure $ MkAnyW pa'
+        pure $ MkSome pa'
 
-instance WitnessMappable poswit negwit (AnyW negwit) where
-    mapWitnessesM _ mapNeg (MkAnyW pa) = do
+instance WitnessMappable poswit negwit (Some negwit) where
+    mapWitnessesM _ mapNeg (MkSome pa) = do
         pa' <- mapNeg pa
-        pure $ MkAnyW pa'
+        pure $ MkSome pa'
 
 instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Type). Category shim =>
-             WitnessMappable (PolarShimWit shim poswit 'Positive) (PolarShimWit shim negwit 'Negative) (AnyW poswit) where
-    mapWitnessesM mapPos _ (MkAnyW w) = fmap (\(MkShimWit w' _) -> MkAnyW w') $ mapPos $ mkPolarShimWit w
+             WitnessMappable (PolarShimWit shim poswit 'Positive) (PolarShimWit shim negwit 'Negative) (Some poswit) where
+    mapWitnessesM mapPos _ (MkSome w) = fmap (\(MkShimWit w' _) -> MkSome w') $ mapPos $ mkPolarShimWit w
 
 instance forall k (shim :: ShimKind k) (poswit :: k -> Type) (negwit :: k -> Type). Category shim =>
-             WitnessMappable (PolarShimWit shim poswit 'Positive) (PolarShimWit shim negwit 'Negative) (AnyW negwit) where
-    mapWitnessesM _ mapNeg (MkAnyW w) = fmap (\(MkShimWit w' _) -> MkAnyW w') $ mapNeg $ mkPolarShimWit w
+             WitnessMappable (PolarShimWit shim poswit 'Positive) (PolarShimWit shim negwit 'Negative) (Some negwit) where
+    mapWitnessesM _ mapNeg (MkSome w) = fmap (\(MkShimWit w' _) -> MkSome w') $ mapNeg $ mkPolarShimWit w

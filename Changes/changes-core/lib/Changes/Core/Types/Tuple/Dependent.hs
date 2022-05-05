@@ -20,9 +20,9 @@ instance TestEquality wit => TestEquality (DependentSelector wit) where
         return Refl
 
 instance TestEquality wit => SubjectTupleSelector (DependentSelector wit) where
-    type TupleSubject (DependentSelector wit) = AllValue wit
-    tupleReadFromSubject (MkDependentSelector wa) av = getAllValue av wa
-    tupleWriteToSubject (MkDependentSelector wa) a = setAllValue wa a
+    type TupleSubject (DependentSelector wit) = AllOf wit
+    tupleReadFromSubject (MkDependentSelector wa) av = unAllOf av wa
+    tupleWriteToSubject (MkDependentSelector wa) a = setAllOf wa a
 
 instance (TestEquality wit, FiniteWitness wit) => FiniteTupleSelector (DependentSelector wit) where
     tupleConstruct f = assembleWitness $ \wt -> f $ MkDependentSelector wt
