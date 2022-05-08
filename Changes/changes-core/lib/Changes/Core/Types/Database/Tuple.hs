@@ -85,7 +85,7 @@ instance ( WitnessConstraint (TupleDatabaseTypeRowWitness dbType) tablesel
     tableAssemble getrow = let
         conv :: AllFor (Compose f AllOf) tablesel -> AllFor f (TupleTableSel tablesel)
         conv (MkAllFor tcfa) = MkAllFor $ \(MkTupleTableSel tc) -> getCompose $ tcfa tc
-        in fmap conv $ assembleWitnessFor $ \col -> fmap Compose $ getrow $ MkTupleTableSel col
+        in fmap conv $ assembleAllFor $ \col -> fmap Compose $ getrow $ MkTupleTableSel col
     type WhereClause dbType (TupleTableSel tablesel) row = TupleWhereClause dbType row
     whereClause (MkTupleWhereClause expr) = evalTupleExprIdentity @dbType expr
     whereAlways (MkTupleTableSel (_ :: tablesel colsel)) = MkTupleWhereClause $ constBoolExpr @dbType @colsel True

@@ -25,7 +25,7 @@ instance TestEquality wit => SubjectTupleSelector (DependentSelector wit) where
     tupleWriteToSubject (MkDependentSelector wa) a = setAllOf wa a
 
 instance (TestEquality wit, FiniteWitness wit) => FiniteTupleSelector (DependentSelector wit) where
-    tupleConstruct f = assembleWitnessOf $ \wt -> f $ MkDependentSelector wt
+    tupleConstruct f = assembleAllOf $ \wt -> f $ MkDependentSelector wt
 
 instance TupleReaderWitness SubjectReader (DependentSelector wit) where
     tupleReaderWitness (MkDependentSelector _) = Dict

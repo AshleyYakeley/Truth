@@ -134,7 +134,7 @@ instance ShowableTupleDatabaseType SQLiteDatabase where
 
 instance (FiniteWitness colsel, WitnessConstraint FromField colsel) => FromRow (AllOf colsel) where
     fromRow =
-        assembleWitnessOf $ \wt ->
+        assembleAllOf $ \wt ->
             case witnessConstraint @Type @FromField wt of
                 Dict -> fmap fromOnly fromRow
 

@@ -23,7 +23,7 @@ instance WitnessConstraint Show TripleTable where
     witnessConstraint TripleValue = Dict
 
 instance FiniteWitness TripleTable where
-    assembleWitnessFor getw =
+    assembleAllFor getw =
         (\p s v ->
              MkAllFor $ \case
                  TriplePredicate -> p
@@ -49,7 +49,7 @@ instance WitnessConstraint Show RefCountTable where
     witnessConstraint RefCountValue = Dict
 
 instance FiniteWitness RefCountTable where
-    assembleWitnessFor getw =
+    assembleAllFor getw =
         (\k v ->
              MkAllFor $ \case
                  RefCountKey -> k
@@ -73,7 +73,7 @@ instance WitnessConstraint Show LiteralTable where
     witnessConstraint LiteralValue = Dict
 
 instance FiniteWitness LiteralTable where
-    assembleWitnessFor getw =
+    assembleAllFor getw =
         (\k v ->
              MkAllFor $ \case
                  LiteralKey -> k
@@ -104,7 +104,7 @@ instance TestEquality PinaforeSchema where
     testEquality _ _ = Nothing
 
 instance FiniteWitness PinaforeSchema where
-    assembleWitnessFor getTable =
+    assembleAllFor getTable =
         (\ft fr ff fl ->
              MkAllFor $ \case
                  PinaforeProperty -> ft

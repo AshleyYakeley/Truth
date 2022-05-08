@@ -43,7 +43,7 @@ instance (c (WholeUpdate Text), c (WholeUpdate Bool), c (StringUpdate Text)) => 
     tupleUpdateWitness NoteText = Dict
 
 instance FiniteWitness NoteSel where
-    assembleWitnessFor getw =
+    assembleAllFor getw =
         (\a b c ->
              MkAllFor $ \case
                  NoteTitle -> a
