@@ -32,7 +32,7 @@ tsFunctionNegShimWit ta tb =
         unNegShimWit tb $ \wb convb -> mapNegShimWit (funcShim conva convb) $ tsFunctionNegWitness @ts wa wb
 
 tsEval ::
-       forall ts m. (MonadThrow ExpressionError m, Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts m. (MonadThrow ExpressionError m, Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression

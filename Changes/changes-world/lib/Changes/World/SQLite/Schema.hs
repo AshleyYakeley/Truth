@@ -61,9 +61,9 @@ data ColumnSchema t = MkColumnSchema
 instance Show (ColumnSchema t) where
     show MkColumnSchema {..} = columnName ++ " " ++ show columnType
 
-instance Show (SubmapWitness colsel ColumnSchema) where
+instance Show (FiniteAllFor ColumnSchema colsel) where
     show schema = let
-        columns = subWitnessCodomain schema
+        columns = finiteCodomain schema
         in "(" ++
            intercalate "," (fmap (\(MkSome isch) -> show isch) $ columns) ++
            ",PRIMARY KEY (" ++
@@ -87,7 +87,7 @@ data IndexSchema colsel = MkIndexSchema
 
 data TableSchema colsel = MkTableSchema
     { tableName :: String
-    , tableColumns :: SubmapWitness colsel ColumnSchema
+    , tableColumns :: FiniteAllFor ColumnSchema colsel
     , tableIndexes :: [IndexSchema colsel]
     }
 
@@ -101,16 +101,15 @@ instance ToSchema (TableSchema colsel) where
             " ON " ++
             tableName ++
             " (" ++
-            intercalate "," (fmap (\(MkSome col) -> columnName $ subWitnessMap tableColumns col) indexColumns) ++ ")"
+            intercalate "," (fmap (\(MkSome col) -> columnName $ finiteGetAllFor tableColumns col) indexColumns) ++ ")"
         in createTable : (fmap showIndex tableIndexes)
 
 data DatabaseSchema tablesel = MkDatabaseSchema
-    { databaseTables :: SubmapWitness tablesel TableSchema
+    { databaseTables :: FiniteAllFor TableSchema tablesel
     }
 
-instance ToSchema (SubmapWitness tablesel TableSchema) where
-    toSchema MkSubmapWitness {..} =
-        mconcat $ fmap (\(MkSome table) -> toSchema $ subWitnessMap table) $ subWitnessDomain
+instance ToSchema (FiniteAllFor TableSchema tablesel) where
+    toSchema MkFiniteAllFor {..} = mconcat $ fmap (\(MkSome table) -> toSchema $ finiteGetAllFor table) $ finiteDomain
 
 instance ToSchema (DatabaseSchema databaseTablesel) where
     toSchema MkDatabaseSchema {..} = toSchema databaseTables

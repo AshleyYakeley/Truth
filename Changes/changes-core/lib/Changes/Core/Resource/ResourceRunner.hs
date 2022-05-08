@@ -56,7 +56,7 @@ combineLSR au1@(ConsListType u1 uu1) au2@(ConsListType u2 uu2) call =
         Dict ->
             case singleRunnerUnliftAllDict u2 of
                 Dict ->
-                    case testOrder u1 u2 of
+                    case testCompare u1 u2 of
                         WEQ ->
                             combineLSR uu1 uu2 $ \uu12 tf1 tf2 ->
                                 call

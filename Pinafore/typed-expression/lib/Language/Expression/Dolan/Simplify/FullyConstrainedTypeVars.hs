@@ -27,8 +27,8 @@ instance forall (ground :: GroundTypeKind) name a. IsDolanGroundType ground => S
     show (MkUsageWitness p t) = show p <> withDict (getRepWitness p) (showDolanType t)
 
 instance forall (ground :: GroundTypeKind) name. IsDolanGroundType ground =>
-             AllWitnessConstraint Show (UsageWitness ground name) where
-    allWitnessConstraint = Dict
+             AllConstraint Show (UsageWitness ground name) where
+    allConstraint = Dict
 
 type ExpressionPolyShim :: (Type -> Type) -> PolyShimKind -> PolyShimKind
 type ExpressionPolyShim w = PolyComposeShim (Expression w)

@@ -48,7 +48,7 @@ pixelYA16to8 (PixelYA16 y a) = PixelYA8 (pixel16To8 y) (pixel16To8 a)
 pixelCMYK16to8 :: PixelCMYK16 -> PixelCMYK8
 pixelCMYK16to8 (PixelCMYK16 c m y k) = PixelCMYK8 (pixel16To8 c) (pixel16To8 m) (pixel16To8 y) (pixel16To8 k)
 
-imageToTrue8 :: PixelType px -> Image px -> SomeFor True8PixelType Image
+imageToTrue8 :: PixelType px -> Image px -> SomeFor Image True8PixelType
 imageToTrue8 Y8PixelType image = MkSomeFor NoAlphaTrue8PixelType $ promoteImage image
 imageToTrue8 Y16PixelType image = MkSomeFor NoAlphaTrue8PixelType $ promoteImage $ pixelMap pixel16To8 image
 imageToTrue8 Y32PixelType image = MkSomeFor NoAlphaTrue8PixelType $ promoteImage $ pixelMap pixel32To8 image

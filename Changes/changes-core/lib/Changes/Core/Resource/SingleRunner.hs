@@ -20,7 +20,7 @@ instance TestEquality SingleRunner where
     testEquality (MkSingleRunner wa _) (MkSingleRunner wb _) = testEquality wa wb
 
 instance TestOrder SingleRunner where
-    testOrder (MkSingleRunner wa _) (MkSingleRunner wb _) = testOrder wa wb
+    testCompare (MkSingleRunner wa _) (MkSingleRunner wb _) = testCompare wa wb
 
 mkSingleRunner ::
        forall (t :: TransKind). MonadTransUnlift t

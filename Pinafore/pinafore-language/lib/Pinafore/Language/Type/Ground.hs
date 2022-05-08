@@ -126,5 +126,5 @@ instance GroundExprShow PinaforeGroundType where
 instance Is PolarityType polarity => Show (DolanType PinaforeGroundType polarity a) where
     show t = unpack $ exprShow t
 
-instance Is PolarityType polarity => AllWitnessConstraint Show (DolanType PinaforeGroundType polarity) where
-    allWitnessConstraint = Dict
+instance Is PolarityType polarity => AllConstraint Show (DolanType PinaforeGroundType polarity) where
+    allConstraint = Dict

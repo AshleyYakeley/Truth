@@ -22,16 +22,16 @@ import Shapes
 class ( UnifyTypeSystem ts
       , Applicative (Subsumer ts)
       , Show (SubsumerSubstitutions ts)
-      , AllWitnessConstraint Show (TSPosWitness ts)
-      , AllWitnessConstraint Show (TSNegWitness ts)
+      , AllConstraint Show (TSPosWitness ts)
+      , AllConstraint Show (TSNegWitness ts)
       ) => SubsumeTypeSystem ts where
     type Subsumer ts :: Type -> Type
     type SubsumerSubstitutions ts :: Type
     usubSubsumer :: forall a. UnifierSubstitutions ts -> Subsumer ts a -> TSOuter ts (Subsumer ts a)
     solveSubsumer :: forall a. Subsumer ts a -> TSOuter ts (a, SubsumerSubstitutions ts)
     showSubsumer :: forall a. Subsumer ts a -> String
-    default showSubsumer :: AllWitnessConstraint Show (Subsumer ts) => forall a. Subsumer ts a -> String
-    showSubsumer = showAllWitness
+    default showSubsumer :: AllConstraint Show (Subsumer ts) => forall a. Subsumer ts a -> String
+    showSubsumer = allShow
     -- This should generate substitutions only for the inferred type, not the declared type.
     subsumerNegSubstitute :: SubsumerSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)
     subsumePosWitnesses :: TSPosWitness ts inf -> TSPosWitness ts decl -> TSOuter ts (Subsumer ts (TSShim ts inf decl))
@@ -81,7 +81,7 @@ data SubsumerOpenExpression ts tdecl =
                                           (TSOpenExpression ts tinf)
 
 instance SubsumeTypeSystem ts => Show (SubsumerOpenExpression ts tdecl) where
-    show (MkSubsumerOpenExpression subs expr) = showSubsumer @ts subs <> "/" <> showAllWitness expr
+    show (MkSubsumerOpenExpression subs expr) = showSubsumer @ts subs <> "/" <> allShow expr
 
 instance SubsumeTypeSystem ts => Functor (SubsumerOpenExpression ts) where
     fmap ab (MkSubsumerOpenExpression subsumer expr) = MkSubsumerOpenExpression (fmap (fmap ab) subsumer) expr

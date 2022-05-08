@@ -41,69 +41,70 @@ emptyTupleLens = let
     clPutEdits ((MkTupleUpdateEdit sel _):_) _ = never sel
     in MkChangeLens {..}
 
-instance (c a, TupleUpdateWitness c r) => TupleUpdateWitness c (ConsType a r) where
-    tupleUpdateWitness FirstType = Dict
-    tupleUpdateWitness (RestType r) = tupleUpdateWitness r
+instance (TupleUpdateWitness c a, TupleUpdateWitness c b) => TupleUpdateWitness c (EitherType a b) where
+    tupleUpdateWitness (LeftType r) = tupleUpdateWitness r
+    tupleUpdateWitness (RightType r) = tupleUpdateWitness r
 
-instance (SubjectReader (UpdateReader a), TestEquality r, TupleReaderWitness SubjectReader r) =>
-             SubjectTupleSelector (ConsType a r)
+instance (TestEquality a, TupleReaderWitness SubjectReader a, TestEquality b, TupleReaderWitness SubjectReader b) =>
+             SubjectTupleSelector (EitherType a b)
 
-instance (c (UpdateReader a), TupleReaderWitness c r) => TupleReaderWitness c (ConsType a r) where
-    tupleReaderWitness FirstType = Dict
-    tupleReaderWitness (RestType r) = tupleReaderWitness r
+instance (TupleReaderWitness c a, TupleReaderWitness c b) => TupleReaderWitness c (EitherType a b) where
+    tupleReaderWitness (LeftType r) = tupleReaderWitness r
+    tupleReaderWitness (RightType r) = tupleReaderWitness r
 
-instance (FiniteTupleSelector r, TupleSubject r ~ Tuple r) => FiniteTupleSelector (ConsType a r) where
+instance (FiniteTupleSelector a, TupleSubject a ~ Tuple a, FiniteTupleSelector b, TupleSubject b ~ Tuple b) =>
+             FiniteTupleSelector (EitherType a b) where
     tupleConstruct getsel =
-        (\f (MkTuple r) ->
+        (\(MkTuple ra) (MkTuple rb) ->
              MkTuple $ \sel ->
                  case sel of
-                     FirstType -> f
-                     RestType rt -> r rt) <$>
-        getsel FirstType <*>
-        tupleConstruct (getsel . RestType)
+                     LeftType rt -> ra rt
+                     RightType rt -> rb rt) <$>
+        tupleConstruct (getsel . LeftType) <*>
+        tupleConstruct (getsel . RightType)
 
 firstChangeLens :: forall sel update1. ChangeLens (TupleUpdate (ConsType update1 sel)) update1
 firstChangeLens = let
     clRead :: ReadFunction (TupleUpdateReader (ConsType update1 sel)) (UpdateReader update1)
-    clRead mr rt = mr $ MkTupleUpdateReader FirstType rt
+    clRead mr rt = mr $ MkTupleUpdateReader (LeftType Refl) rt
     clUpdate ::
            forall m. MonadIO m
         => TupleUpdate (ConsType update1 sel)
         -> Readable m (TupleUpdateReader (ConsType update1 sel))
         -> m [update1]
-    clUpdate (MkTupleUpdate FirstType update) _ = return [update]
-    clUpdate (MkTupleUpdate (RestType _) _) _ = return []
+    clUpdate (MkTupleUpdate (LeftType Refl) update) _ = return [update]
+    clUpdate (MkTupleUpdate (RightType _) _) _ = return []
     clPutEdits ::
            forall m. MonadIO m
         => [UpdateEdit update1]
         -> Readable m (TupleUpdateReader (ConsType update1 sel))
         -> m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
-    clPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit FirstType) edits
+    clPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit (LeftType Refl)) edits
     in MkChangeLens {..}
 
 restChangeLens :: forall sel update1. ChangeLens (TupleUpdate (ConsType update1 sel)) (TupleUpdate sel)
 restChangeLens = let
     clRead :: ReadFunction (TupleUpdateReader (ConsType update1 sel)) (TupleUpdateReader sel)
-    clRead mr (MkTupleUpdateReader sel rt) = mr $ MkTupleUpdateReader (RestType sel) rt
+    clRead mr (MkTupleUpdateReader sel rt) = mr $ MkTupleUpdateReader (RightType sel) rt
     clUpdate ::
            forall m. MonadIO m
         => TupleUpdate (ConsType update1 sel)
         -> Readable m (TupleUpdateReader (ConsType update1 sel))
         -> m [TupleUpdate sel]
-    clUpdate (MkTupleUpdate FirstType _) _ = return []
-    clUpdate (MkTupleUpdate (RestType sel) edit) _ = return [MkTupleUpdate sel edit]
+    clUpdate (MkTupleUpdate (LeftType Refl) _) _ = return []
+    clUpdate (MkTupleUpdate (RightType sel) edit) _ = return [MkTupleUpdate sel edit]
     clPutEdits ::
            forall m. MonadIO m
         => [TupleUpdateEdit sel]
         -> Readable m (TupleUpdateReader (ConsType update1 sel))
         -> m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
     clPutEdits edits _ =
-        return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (RestType sel) edit) edits
+        return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (RightType sel) edit) edits
     in MkChangeLens {..}
 
 consTuple :: UpdateSubject a -> Tuple r -> Tuple (ConsType a r)
 consTuple a (MkTuple tup) =
     MkTuple $ \esel ->
         case esel of
-            FirstType -> a
-            RestType sel -> tup sel
+            (LeftType Refl) -> a
+            RightType sel -> tup sel

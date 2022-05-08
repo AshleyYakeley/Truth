@@ -37,7 +37,7 @@ instance TestEquality PixelType where
     testEquality CMYK16PixelType CMYK16PixelType = Just Refl
     testEquality _ _ = Nothing
 
-fromDynamicImage :: DynamicImage -> SomeFor PixelType Image
+fromDynamicImage :: DynamicImage -> SomeFor Image PixelType
 fromDynamicImage (ImageY8 image) = MkSomeFor Y8PixelType image
 fromDynamicImage (ImageY16 image) = MkSomeFor Y16PixelType image
 fromDynamicImage (ImageY32 image) = MkSomeFor Y32PixelType image

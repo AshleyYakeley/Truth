@@ -25,6 +25,6 @@ unFromRangeShimWit cont =
 biRangeSomeFor ::
        forall (map :: ShimKind Type) tw t.
        (PShimWit map tw 'Negative t, PShimWit map tw 'Positive t)
-    -> SomeFor (RangeType tw 'Positive) (Range map t)
+    -> SomeFor (Range map t) (RangeType tw 'Positive)
 biRangeSomeFor (sp, sq) =
     unNegShimWit sp $ \tp convp -> unPosShimWit sq $ \tq convq -> MkSomeFor (MkRangeType tp tq) (MkRange convp convq)

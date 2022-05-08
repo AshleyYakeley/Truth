@@ -9,7 +9,7 @@ data TupleTableSel tablesel row where
 class TupleDatabaseType (dbType :: Type) where
     type TupleDatabaseTypeRowWitness dbType :: (Type -> Type) -> Constraint
     type TupleExpr dbType (colsel :: Type -> Type) :: Type -> Type
-    evalTupleExpr :: Applicative m => TupleExpr dbType colsel t -> AllFor colsel m -> m t
+    evalTupleExpr :: Applicative m => TupleExpr dbType colsel t -> AllFor m colsel -> m t
     constBoolExpr :: Bool -> TupleExpr dbType colsel Bool
     columnExpr :: colsel t -> TupleExpr dbType colsel t
 
@@ -83,9 +83,9 @@ instance ( WitnessConstraint (TupleDatabaseTypeRowWitness dbType) tablesel
          , FiniteWitness tablesel
          ) => Database dbType (TupleTableSel tablesel) where
     tableAssemble getrow = let
-        conv :: AllFor tablesel (Compose f AllOf) -> AllFor (TupleTableSel tablesel) f
+        conv :: AllFor (Compose f AllOf) tablesel -> AllFor f (TupleTableSel tablesel)
         conv (MkAllFor tcfa) = MkAllFor $ \(MkTupleTableSel tc) -> getCompose $ tcfa tc
-        in fmap conv $ assembleWitnessF $ \col -> fmap Compose $ getrow $ MkTupleTableSel col
+        in fmap conv $ assembleWitnessFor $ \col -> fmap Compose $ getrow $ MkTupleTableSel col
     type WhereClause dbType (TupleTableSel tablesel) row = TupleWhereClause dbType row
     whereClause (MkTupleWhereClause expr) = evalTupleExprIdentity @dbType expr
     whereAlways (MkTupleTableSel (_ :: tablesel colsel)) = MkTupleWhereClause $ constBoolExpr @dbType @colsel True

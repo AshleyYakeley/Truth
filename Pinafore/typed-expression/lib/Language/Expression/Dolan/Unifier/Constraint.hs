@@ -35,9 +35,8 @@ instance forall (ground :: GroundTypeKind) t. IsDolanGroundType ground => Show (
         withRepresentative polwit $
         mif recflag "REC " <> show var <> " :> " <> showDolanType wt <> " [" <> show polwit <> "]"
 
-instance forall (ground :: GroundTypeKind). IsDolanGroundType ground =>
-             AllWitnessConstraint Show (UnifierConstraint ground) where
-    allWitnessConstraint = Dict
+instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => AllConstraint Show (UnifierConstraint ground) where
+    allConstraint = Dict
 
 leUnifierConstraint ::
        forall (ground :: GroundTypeKind) polarity name p. (IsDolanSubtypeGroundType ground, Is PolarityType polarity)

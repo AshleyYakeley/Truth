@@ -74,7 +74,7 @@ witnessTypeRepresentation ::
     -> m (TypeRepresentation lt (SomeOf ow))
 witnessTypeRepresentation newWit lt = do
     let
-        getCodec :: forall t. w t -> WriterT [SomeFor ow VarMapping] m (Codec (SomeOf ow) t)
+        getCodec :: forall t. w t -> WriterT [SomeFor VarMapping ow] m (Codec (SomeOf ow) t)
         getCodec wt = do
             wit <- lift $ newWit wt
             tell $ pure $ MkSomeFor wit $ getVarMapping wt

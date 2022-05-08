@@ -21,8 +21,8 @@ instance Eq a => TestEquality (UnitType a) where
 instance Show a => Show (UnitType a b) where
     show (MkUnitType a) = show a
 
-instance Show a => AllWitnessConstraint Show (UnitType a) where
-    allWitnessConstraint = Dict
+instance Show a => AllConstraint Show (UnitType a) where
+    allConstraint = Dict
 
 type UnitType' :: (Type -> Type) -> Type -> Type -> Type
 data UnitType' a b c where
@@ -31,14 +31,14 @@ data UnitType' a b c where
 instance Show (a c) => Show (UnitType' a b c) where
     show (MkUnitType' ac) = show ac
 
-instance AllWitnessConstraint Show a => AllWitnessConstraint Show (UnitType' a b) where
-    allWitnessConstraint :: forall (t :: Type). Dict (Show (UnitType' a b t))
-    allWitnessConstraint =
-        case allWitnessConstraint @_ @_ @Show @a @t of
+instance AllConstraint Show a => AllConstraint Show (UnitType' a b) where
+    allConstraint :: forall (t :: Type). Dict (Show (UnitType' a b t))
+    allConstraint =
+        case allConstraint @_ @_ @Show @a @t of
             Dict -> Dict
 
-instance AllWitnessConstraint Show a => AllWitnessConstraint (AllWitnessConstraint Show) (UnitType' a) where
-    allWitnessConstraint = Dict
+instance AllConstraint Show a => AllConstraint (AllConstraint Show) (UnitType' a) where
+    allConstraint = Dict
 
 type NameWitness name w = NameTypeWitness (UnitType name) (UnitType' w)
 

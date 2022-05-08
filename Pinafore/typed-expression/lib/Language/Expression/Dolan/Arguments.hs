@@ -11,7 +11,6 @@ module Language.Expression.Dolan.Arguments
     , nilDolanArgumentsShimWit
     , consDolanArgumentsShimWit
     , forDolanArguments
-    , saturateArgsConstraint
     , mapDolanArgumentsF
     , mapDolanArgumentsM
     , mapDolanArguments
@@ -177,14 +176,6 @@ forDolanArguments ::
 forDolanArguments _call NilCCRArguments = mempty
 forDolanArguments call (ConsCCRArguments arg args) =
     forCCRPolarArgument @polarity call arg <> forDolanArguments call args
-
-saturateArgsConstraint ::
-       forall (w :: Type -> Type) dv ft gt polarity (t :: Type).
-       SaturatedWitness w gt
-    -> DolanArguments dv ft gt polarity t
-    -> w t
-saturateArgsConstraint (NilSaturatedWitness wt) NilCCRArguments = wt
-saturateArgsConstraint (ConsSaturatedWitness sw) (ConsCCRArguments _ args) = saturateArgsConstraint sw args
 
 mapDolanArgumentsFM ::
        forall m (pshim :: PolyShimKind) fta ftb dv polarity (gt :: DolanVarianceKind dv) (gt' :: DolanVarianceKind dv) t.

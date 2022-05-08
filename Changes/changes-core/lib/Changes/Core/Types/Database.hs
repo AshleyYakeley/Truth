@@ -5,7 +5,7 @@ import Changes.Core.Import
 import Changes.Core.Read
 
 class TestEquality tablesel => Database (dbType :: Type) (tablesel :: Type -> Type) where
-    tableAssemble :: Applicative m => (forall row. tablesel row -> m (f row)) -> m (AllFor tablesel f)
+    tableAssemble :: Applicative m => (forall row. tablesel row -> m (f row)) -> m (AllFor f tablesel)
     -- where
     type WhereClause dbType tablesel row :: Type
     whereClause :: WhereClause dbType tablesel row -> row -> Bool
@@ -46,7 +46,7 @@ data DatabaseReader dbType tablesel t where
         -> DatabaseReader dbType tablesel [row']
 
 instance Database dbType tablesel => SubjectReader (DatabaseReader dbType tablesel) where
-    type ReaderSubject (DatabaseReader dbType tablesel) = AllFor tablesel []
+    type ReaderSubject (DatabaseReader dbType tablesel) = AllFor [] tablesel
     subjectToRead (MkAllFor tables) (DatabaseSelect j wc oc sc) = let
         doJoin :: TableJoin dbType tablesel row -> [row]
         doJoin (SingleTable tsel) = tables tsel

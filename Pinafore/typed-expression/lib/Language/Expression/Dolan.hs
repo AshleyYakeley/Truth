@@ -68,7 +68,6 @@ module Language.Expression.Dolan
     , contraCCRArgument
     , rangeCCRArgument
     , mapDolanArgumentsFM
-    , saturateArgsConstraint
     , dolanArgumentsToArguments
     , SubtypeContext(..)
     , subtypeDolanArguments
@@ -89,7 +88,6 @@ module Language.Expression.Dolan
     , SubtypeConversionEntry(..)
     , subtypeConversionEntry
     , simpleSubtypeConversionEntry
-    , saturateGroundType
     , module Language.Expression.Dolan.Nonpolar
     , module Language.Expression.Dolan.Mono
     ) where

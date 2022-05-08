@@ -129,12 +129,11 @@ import Data.Empty as I
 import Data.Searchable as I
 
 -- witness
-import Data.Witness as I
+import Data.Type.Witness as I
 
 -- open-witness
-import Data.OpenWitness as I
-import Data.OpenWitness.Order as I
-import Data.OpenWitness.Witnessed as I
+import Data.Type.OpenWitness as I
+import Data.Type.OpenWitness.Witnessed as I
 
 type LazyByteString = Data.ByteString.Lazy.ByteString
 

@@ -14,7 +14,6 @@ module Language.Expression.Dolan.Subtype
     , SubtypeConversionEntry(..)
     , subtypeConversionEntry
     , simpleSubtypeConversionEntry
-    , saturateGroundType
     , IsDolanSubtypeEntriesGroundType(..)
     ) where
 
@@ -192,40 +191,6 @@ subtypeConversion gta (MkShimWit rawargsa (MkPolarMap conva)) gtb (MkShimWit raw
         return $
             MkSubtypeArguments sargsb $
             fmap (\uconv -> convb . conv . conva . uconv) $ subtypeDolanArguments sc gta argsa sargsa
-
-generateVarType ::
-       forall (ground :: GroundTypeKind) polarity. Monad (DolanM ground)
-    => DolanTypeCheckM ground (Some (DolanType ground polarity))
-generateVarType = do
-    n <- renamerGenerate FreeName []
-    MkAnyVar v <- return $ newUVarAny n
-    return $ MkSome $ singleDolanType $ VarDolanSingularType v
-
-saturateCCRArgument ::
-       forall (ground :: GroundTypeKind) polarity sv. Monad (DolanM ground)
-    => CCRVarianceType sv
-    -> DolanTypeCheckM ground (Some (CCRPolarArgument (DolanType ground) polarity sv))
-saturateCCRArgument CoCCRVarianceType = generateVarType >>= \(MkSome t) -> return $ MkSome $ CoCCRPolarArgument t
-saturateCCRArgument ContraCCRVarianceType =
-    generateVarType >>= \(MkSome t) -> return $ MkSome $ ContraCCRPolarArgument t
-saturateCCRArgument RangeCCRVarianceType =
-    generateVarType >>= \(MkSome ta) ->
-        generateVarType >>= \(MkSome tb) -> return $ MkSome $ RangeCCRPolarArgument ta tb
-
-saturateDolanArguments ::
-       forall (ground :: GroundTypeKind) polarity dv gt. Monad (DolanM ground)
-    => DolanVarianceType dv
-    -> DolanTypeCheckM ground (Some (DolanArguments dv (DolanType ground) gt polarity))
-saturateDolanArguments NilListType = return $ MkSome NilCCRArguments
-saturateDolanArguments (ConsListType t1 tr) =
-    saturateCCRArgument @ground @polarity t1 >>= \(MkSome arg) ->
-        saturateDolanArguments tr >>= \(MkSome args) -> return $ MkSome $ ConsCCRArguments arg args
-
-saturateGroundType ::
-       forall (ground :: GroundTypeKind) polarity dv gt. IsDolanGroundType ground
-    => ground dv gt
-    -> DolanTypeCheckM ground (Some (DolanArguments dv (DolanType ground) gt polarity))
-saturateGroundType gt = saturateDolanArguments $ groundTypeVarianceType gt
 
 nilSubtypeConversion ::
        forall (ground :: GroundTypeKind) (a :: Type) (b :: Type).

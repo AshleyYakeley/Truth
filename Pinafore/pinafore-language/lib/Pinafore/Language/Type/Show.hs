@@ -87,8 +87,8 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
         in (exprPrecShow 6 ta <> jmConnector <> exprPrecShow 6 tb, 7)
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity). (GroundExprShow ground, Is PolarityType polarity) =>
-             AllWitnessConstraint ExprShow (DolanType ground polarity) where
-    allWitnessConstraint = Dict
+             AllConstraint ExprShow (DolanType ground polarity) where
+    allConstraint = Dict
 
 instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExprShow ground, Is PolarityType polarity) =>
              ExprShow (RangeType (DolanType ground) polarity t) where

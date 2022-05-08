@@ -83,59 +83,48 @@ instance WitnessConstraint IsSQLiteTable PinaforeSchema where
 
 sqlitePinaforeSchema :: DatabaseSchema PinaforeSchema
 sqlitePinaforeSchema = let
-    databaseTables = let
-        subWitnessDomain =
-            [MkSome PinaforeProperty, MkSome PinaforeRefCount, MkSome PinaforeFact, MkSome PinaforeLiteral]
-        subWitnessMap :: PinaforeSchema t -> TableSchema t
-        subWitnessMap PinaforeProperty = let
-            tableName = "property"
-            tableColumns = let
-                domain = [MkSome TripleSubject, MkSome TriplePredicate, MkSome TripleValue]
-                witmap :: TripleTable t -> ColumnSchema t
-                witmap TriplePredicate = MkColumnSchema "predicate" ColumnTypeNotNull True
-                witmap TripleSubject = MkColumnSchema "subject" ColumnTypeNotNull True
-                witmap TripleValue = MkColumnSchema "value" ColumnTypeNotNull False
-                in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "propval" [MkSome TriplePredicate, MkSome TripleValue]]
-            in MkTableSchema {..}
-        subWitnessMap PinaforeRefCount = let
-            tableName = "refcount"
-            tableColumns = let
-                domain = [MkSome RefCountKey, MkSome RefCountValue]
-                witmap :: RefCountTable t -> ColumnSchema t
-                witmap RefCountKey = MkColumnSchema "key" ColumnTypeNotNull True
-                witmap RefCountValue = MkColumnSchema "value" ColumnTypeNotNull False
-                in MkSubmapWitness domain witmap
-            tableIndexes = []
-            in MkTableSchema {..}
-        subWitnessMap PinaforeFact = let
-            tableName = "fact"
-            tableColumns = let
-                domain = [MkSome TripleSubject, MkSome TriplePredicate, MkSome TripleValue]
-                witmap :: TripleTable t -> ColumnSchema t
-                witmap TriplePredicate = MkColumnSchema "predicate" ColumnTypeNotNull True
-                witmap TripleSubject = MkColumnSchema "subject" ColumnTypeNotNull True
-                witmap TripleValue = MkColumnSchema "value" ColumnTypeNotNull False
-                in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "factval" [MkSome TriplePredicate, MkSome TripleValue]]
-            in MkTableSchema {..}
-        subWitnessMap PinaforeLiteral = let
-            tableName = "literal"
-            tableColumns = let
-                domain = [MkSome LiteralKey, MkSome LiteralValue]
-                witmap :: LiteralTable t -> ColumnSchema t
-                witmap LiteralKey = MkColumnSchema "key" ColumnTypeNotNull True
-                witmap LiteralValue = MkColumnSchema "value" ColumnTypeNotNull False
-                in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "litval" [MkSome LiteralValue]]
-            in MkTableSchema {..}
-        in MkSubmapWitness {..}
+    databaseTables =
+        mkFiniteAllFor @TableSchema $ \case
+            PinaforeProperty -> let
+                tableName = "property"
+                tableColumns =
+                    mkFiniteAllFor @ColumnSchema $ \case
+                        TriplePredicate -> MkColumnSchema "predicate" ColumnTypeNotNull True
+                        TripleSubject -> MkColumnSchema "subject" ColumnTypeNotNull True
+                        TripleValue -> MkColumnSchema "value" ColumnTypeNotNull False
+                tableIndexes = [MkIndexSchema "propval" [MkSome TriplePredicate, MkSome TripleValue]]
+                in MkTableSchema {..}
+            PinaforeRefCount -> let
+                tableName = "refcount"
+                tableColumns =
+                    mkFiniteAllFor @ColumnSchema $ \case
+                        RefCountKey -> MkColumnSchema "key" ColumnTypeNotNull True
+                        RefCountValue -> MkColumnSchema "value" ColumnTypeNotNull False
+                tableIndexes = []
+                in MkTableSchema {..}
+            PinaforeFact -> let
+                tableName = "fact"
+                tableColumns =
+                    mkFiniteAllFor @ColumnSchema $ \case
+                        TriplePredicate -> MkColumnSchema "predicate" ColumnTypeNotNull True
+                        TripleSubject -> MkColumnSchema "subject" ColumnTypeNotNull True
+                        TripleValue -> MkColumnSchema "value" ColumnTypeNotNull False
+                tableIndexes = [MkIndexSchema "factval" [MkSome TriplePredicate, MkSome TripleValue]]
+                in MkTableSchema {..}
+            PinaforeLiteral -> let
+                tableName = "literal"
+                tableColumns =
+                    mkFiniteAllFor @ColumnSchema $ \case
+                        LiteralKey -> MkColumnSchema "key" ColumnTypeNotNull True
+                        LiteralValue -> MkColumnSchema "value" ColumnTypeNotNull False
+                tableIndexes = [MkIndexSchema "litval" [MkSome LiteralValue]]
+                in MkTableSchema {..}
     in MkDatabaseSchema {..}
 
-class (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstraint Show colsel) =>
+class (FiniteWitness colsel, WitnessConstraint Show colsel, AllConstraint Show colsel) =>
           IsPinaforeRow (colsel :: Type -> Type)
 
-instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstraint Show colsel) => IsPinaforeRow colsel
+instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllConstraint Show colsel) => IsPinaforeRow colsel
 
 instance TupleDatabase SQLiteDatabase PinaforeSchema where
     type TupleDatabaseRowWitness SQLiteDatabase PinaforeSchema = IsPinaforeRow
@@ -291,7 +280,7 @@ sqlitePinaforeTableReference path = do
     obj <- sqliteReference path sqlitePinaforeSchema
     return $ mapReference sqlitePinaforeLens obj
 
-sqlitePinaforeTableGetEntireDatabase :: ResourceContext -> FilePath -> IO (AllFor (TupleTableSel PinaforeSchema) [])
+sqlitePinaforeTableGetEntireDatabase :: ResourceContext -> FilePath -> IO (AllFor [] (TupleTableSel PinaforeSchema))
 sqlitePinaforeTableGetEntireDatabase rc path = do
     obj <- sqliteReference path sqlitePinaforeSchema
     getReferenceSubject rc obj

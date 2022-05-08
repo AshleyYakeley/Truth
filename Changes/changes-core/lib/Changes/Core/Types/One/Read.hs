@@ -7,12 +7,12 @@ data OneReader (f :: Type -> Type) (reader :: Type -> Type) (t :: Type) where
     ReadHasOne :: forall f reader. OneReader f reader (f ())
     ReadOne :: forall f reader t. reader t -> OneReader f reader (f t)
 
-instance AllWitnessConstraint Show reader => Show (OneReader f reader t) where
+instance AllConstraint Show reader => Show (OneReader f reader t) where
     show ReadHasOne = "has"
-    show (ReadOne rt) = "one " ++ showAllWitness rt
+    show (ReadOne rt) = "one " ++ allShow rt
 
-instance AllWitnessConstraint Show reader => AllWitnessConstraint Show (OneReader f reader) where
-    allWitnessConstraint = Dict
+instance AllConstraint Show reader => AllConstraint Show (OneReader f reader) where
+    allConstraint = Dict
 
 instance (Show e, WitnessConstraint Show reader) => WitnessConstraint Show (OneReader (Result e) reader) where
     witnessConstraint ReadHasOne = Dict

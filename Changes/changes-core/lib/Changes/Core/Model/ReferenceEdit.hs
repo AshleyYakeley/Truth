@@ -23,8 +23,8 @@ instance Show (ReferenceReader edit t) where
     show ReadReferenceResourceContext = "reference context"
     show ReadReference = "reference"
 
-instance AllWitnessConstraint Show (ReferenceReader edit) where
-    allWitnessConstraint = Dict
+instance AllConstraint Show (ReferenceReader edit) where
+    allConstraint = Dict
 
 instance (c (Reference edit), c ResourceContext) => WitnessConstraint c (ReferenceReader edit) where
     witnessConstraint ReadReferenceResourceContext = Dict

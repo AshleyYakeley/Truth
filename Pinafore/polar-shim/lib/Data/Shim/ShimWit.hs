@@ -11,11 +11,11 @@ data ShimWit shim wit t where
         -> shim t t'
         -> ShimWit shim wit t
 
-instance AllWitnessConstraint Show wit => Show (ShimWit shim wit t) where
-    show (MkShimWit t _) = showAllWitness t
+instance AllConstraint Show wit => Show (ShimWit shim wit t) where
+    show (MkShimWit t _) = allShow t
 
-instance AllWitnessConstraint Show wit => AllWitnessConstraint Show (ShimWit shim wit) where
-    allWitnessConstraint = Dict
+instance AllConstraint Show wit => AllConstraint Show (ShimWit shim wit) where
+    allConstraint = Dict
 
 mkShimWit ::
        forall (k :: Type) (shim :: ShimKind k) wit (t :: k). Category shim

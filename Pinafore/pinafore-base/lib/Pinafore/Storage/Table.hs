@@ -37,8 +37,8 @@ instance WitnessConstraint Show PinaforeTableRead where
     witnessConstraint (PinaforeTableReadFactGet _ _) = Dict
     witnessConstraint (PinaforeTableReadLiteralGet _) = Dict
 
-instance AllWitnessConstraint Show PinaforeTableRead where
-    allWitnessConstraint = Dict
+instance AllConstraint Show PinaforeTableRead where
+    allConstraint = Dict
 
 data PinaforeTableEdit where
     PinaforeTableEditPropertySet :: Predicate -> Entity -> Maybe Entity -> PinaforeTableEdit -- pred subj mval

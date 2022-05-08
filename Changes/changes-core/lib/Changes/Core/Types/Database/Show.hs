@@ -5,7 +5,7 @@ module Changes.Core.Types.Database.Show where
 import Changes.Core.Import
 import Changes.Core.Types.Database
 
-class (Database dbType tablesel, AllWitnessConstraint Show tablesel) =>
+class (Database dbType tablesel, AllConstraint Show tablesel) =>
           ShowableDatabase (dbType :: Type) (tablesel :: Type -> Type) where
     type ShowableRow dbType tablesel row :: Constraint
     showableRow :: ShowableRow dbType tablesel row => Dict (Show row)
@@ -55,13 +55,13 @@ showableTableJoin (JoinTables jc tj1 tj2) =
         (Dict, Dict) -> showableJoinClause @dbType @tablesel jc
 
 instance ShowableDatabase dbType tablesel => Show (TableJoin dbType tablesel row) where
-    show (SingleTable table) = showAllWitness table
+    show (SingleTable table) = allShow table
     show (JoinTables j t1 t2) =
         case (showableTableJoin t1, showableTableJoin t2) of
             (Dict, Dict) -> "(" ++ show t1 ++ " " ++ showJoinClause @dbType @tablesel j ++ " " ++ show t2 ++ ")"
 
-instance ShowableDatabase dbtype tablesel => AllWitnessConstraint Show (DatabaseReader dbtype tablesel) where
-    allWitnessConstraint = Dict
+instance ShowableDatabase dbtype tablesel => AllConstraint Show (DatabaseReader dbtype tablesel) where
+    allConstraint = Dict
 
 instance ShowableDatabase dbtype tablesel => WitnessConstraint Show (DatabaseReader dbtype tablesel) where
     witnessConstraint (DatabaseSelect tj _ _ (sc :: SelectClause dbtype tablesel row row')) =
@@ -86,10 +86,10 @@ instance ShowableDatabase dbType tablesel => Show (DatabaseReader dbType tablese
 instance ShowableDatabase dbType tablesel => Show (DatabaseEdit dbType tablesel) where
     show (DatabaseInsert (row :: tablesel row) ic) =
         case showableTable @dbType @tablesel row of
-            Dict -> "insert " ++ showAllWitness row ++ " " ++ showInsertClause @dbType @tablesel @row ic
+            Dict -> "insert " ++ allShow row ++ " " ++ showInsertClause @dbType @tablesel @row ic
     show (DatabaseDelete (row :: tablesel row) wc) =
         "delete " ++
-        showAllWitness row ++
+        allShow row ++
         " " ++
         case showableTable @dbType @tablesel row of
             Dict -> showWhereClause @dbType @tablesel @row wc
@@ -97,5 +97,5 @@ instance ShowableDatabase dbType tablesel => Show (DatabaseEdit dbType tablesel)
         case showableTable @dbType @tablesel row of
             Dict ->
                 "update " ++
-                showAllWitness row ++
+                allShow row ++
                 " " ++ showWhereClause @dbType @tablesel @row wc ++ " " ++ showUpdateClause @dbType @tablesel @row uc

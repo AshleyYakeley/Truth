@@ -201,7 +201,7 @@ allocateVar n f = do
     paramWith varIDStateParam (nextVarIDState vs) $ paramLocal scopeParam (\scope -> newscope <> scope) $ f vid
 
 purifyExpression ::
-       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
     => TSSealedExpression ts
     -> Interpreter ts (TSSealedExpression ts)
 purifyExpression expr = do
@@ -209,7 +209,7 @@ purifyExpression expr = do
     return expr
 
 purifyBinding ::
-       (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
+       (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
     => InterpreterBinding ts
     -> Interpreter ts (InterpreterBinding ts)
 purifyBinding (ValueBinding expr mpatc) = do
@@ -218,7 +218,7 @@ purifyBinding (ValueBinding expr mpatc) = do
 purifyBinding b = return b
 
 exportName ::
-       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
     => Name
     -> Interpreter ts (Maybe (DocInterpreterBinding ts))
 exportName name = do
@@ -228,7 +228,7 @@ exportName name = do
         return (doc, b')
 
 exportNames ::
-       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
     => [Name]
     -> Interpreter ts [(Name, DocInterpreterBinding ts)]
 exportNames names = do
@@ -241,7 +241,7 @@ exportNames names = do
         (n:nn) -> throw $ LookupNamesUnknownError $ n :| nn
 
 exportScope ::
-       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
     => [Name]
     -> Interpreter ts (Scope ts)
 exportScope names = do

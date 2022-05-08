@@ -6,47 +6,47 @@ import Changes.Core.Import
 import Changes.Core.Types.Database.Show
 import Changes.Core.Types.Database.Tuple
 
-instance AllWitnessConstraint Show tablesel => Show (TupleTableSel tablesel row) where
-    show (MkTupleTableSel col) = showAllWitness col
+instance AllConstraint Show tablesel => Show (TupleTableSel tablesel row) where
+    show (MkTupleTableSel col) = allShow col
 
-instance AllWitnessConstraint Show tablesel => AllWitnessConstraint Show (TupleTableSel tablesel) where
-    allWitnessConstraint = Dict
+instance AllConstraint Show tablesel => AllConstraint Show (TupleTableSel tablesel) where
+    allConstraint = Dict
 
 class TupleDatabaseType dbType => ShowableTupleDatabaseType dbType where
     witnessShowTupleExpr ::
-           forall colsel. (AllWitnessConstraint Show colsel, WitnessConstraint Show colsel)
-        => Dict (AllWitnessConstraint Show (TupleExpr dbType colsel))
+           forall colsel. (AllConstraint Show colsel, WitnessConstraint Show colsel)
+        => Dict (AllConstraint Show (TupleExpr dbType colsel))
 
 class ( WitnessConstraint (TupleDatabaseRowWitness dbType tablesel) tablesel
       , ShowableTupleDatabaseType dbType
       , TestEquality tablesel
       , FiniteWitness tablesel
-      , AllWitnessConstraint Show tablesel
+      , AllConstraint Show tablesel
       , WitnessConstraint FiniteWitness tablesel
-      , WitnessConstraint (AllWitnessConstraint Show) tablesel
+      , WitnessConstraint (AllConstraint Show) tablesel
       , WitnessConstraint (WitnessConstraint Show) tablesel
       , WitnessConstraint (TupleDatabaseTypeRowWitness dbType) tablesel
       ) => ShowableTupleDatabase dbType tablesel where
     witnessTupleRow ::
            forall colsel. TupleDatabaseRowWitness dbType tablesel colsel
-        => Dict (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstraint Show colsel)
+        => Dict (FiniteWitness colsel, WitnessConstraint Show colsel, AllConstraint Show colsel)
 
 instance ( ShowableTupleDatabaseType dbType
          , row ~ AllOf colsel
-         , AllWitnessConstraint Show colsel
+         , AllConstraint Show colsel
          , WitnessConstraint Show colsel
          ) => Show (TupleWhereClause dbType row) where
     show (MkTupleWhereClause expr) =
         case witnessShowTupleExpr @dbType @colsel of
-            Dict -> showAllWitness expr
+            Dict -> allShow expr
 
-instance (AllWitnessConstraint Show colsel, AllWitnessConstraint Show (TupleExpr dbType colsel)) =>
+instance (AllConstraint Show colsel, AllConstraint Show (TupleExpr dbType colsel)) =>
              Show (TupleUpdateItem dbType colsel) where
-    show (MkTupleUpdateItem item expr) = showAllWitness item ++ " " ++ showAllWitness expr
+    show (MkTupleUpdateItem item expr) = allShow item ++ " " ++ allShow expr
 
 instance ( ShowableTupleDatabaseType dbType
          , row ~ AllOf colsel
-         , AllWitnessConstraint Show colsel
+         , AllConstraint Show colsel
          , WitnessConstraint Show colsel
          ) => Show (TupleUpdateClause dbType row) where
     show (MkTupleUpdateClause uitems) =
@@ -54,27 +54,27 @@ instance ( ShowableTupleDatabaseType dbType
             Dict -> show uitems
 
 instance ( ShowableTupleDatabaseType dbType
-         , AllWitnessConstraint Show colsel
+         , AllConstraint Show colsel
          , WitnessConstraint Show colsel
          , FiniteWitness colsel'
-         , AllWitnessConstraint Show colsel'
+         , AllConstraint Show colsel'
          ) => Show (TupleSelectClause dbType tablesel (AllOf colsel) (AllOf colsel')) where
     show (MkTupleSelectClause ft) = let
         showItem :: Some colsel' -> String
         showItem (MkSome col) =
-            showAllWitness col ++
+            allShow col ++
             " -> " ++
             case witnessShowTupleExpr @dbType @colsel of
-                Dict -> showAllWitness (ft col)
+                Dict -> allShow (ft col)
         in "{" ++ intercalate "," (fmap showItem allWitnesses) ++ "}"
 
-instance AllWitnessConstraint Show colsel => Show (TupleOrderItem colsel) where
-    show (MkTupleOrderItem col dir) = showAllWitness col ++ show dir
+instance AllConstraint Show colsel => Show (TupleOrderItem colsel) where
+    show (MkTupleOrderItem col dir) = allShow col ++ show dir
 
-instance (row ~ AllOf colsel, AllWitnessConstraint Show colsel) => Show (TupleOrderClause row) where
+instance (row ~ AllOf colsel, AllConstraint Show colsel) => Show (TupleOrderClause row) where
     show (MkTupleOrderClause items) = show items
 
-instance (row ~ AllOf colsel, FiniteWitness colsel, AllWitnessConstraint Show colsel, WitnessConstraint Show colsel) =>
+instance (row ~ AllOf colsel, FiniteWitness colsel, AllConstraint Show colsel, WitnessConstraint Show colsel) =>
              Show (TupleInsertClause row) where
     show (MkTupleInsertClause ics) = show ics
 
@@ -82,14 +82,14 @@ instance ShowableTupleDatabase dbType tablesel => ShowableDatabase dbType (Tuple
     type ShowableRow dbType (TupleTableSel tablesel) row = ( row ~ (AllOf (UnAllOf row))
                                                            , FiniteWitness (UnAllOf row)
                                                            , WitnessConstraint Show (UnAllOf row)
-                                                           , AllWitnessConstraint Show (UnAllOf row))
+                                                           , AllConstraint Show (UnAllOf row))
     showableRow = Dict
     showableTable (MkTupleTableSel tsel) =
         case witnessConstraint @_ @FiniteWitness tsel of
             Dict ->
                 case witnessConstraint @_ @(WitnessConstraint Show) tsel of
                     Dict ->
-                        case witnessConstraint @_ @(AllWitnessConstraint Show) tsel of
+                        case witnessConstraint @_ @(AllConstraint Show) tsel of
                             Dict -> Dict
     showableJoinClause OuterTupleJoinClause = Dict
     showableSelectClause sc@(MkTupleSelectClause _) = let

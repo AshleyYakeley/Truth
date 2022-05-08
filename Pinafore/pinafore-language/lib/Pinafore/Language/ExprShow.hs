@@ -33,14 +33,14 @@ instance ExprShow ReferenceName where
 instance ExprShow (SymbolType name) where
     exprShowPrec n = (pack $ uVarName n, 0)
 
-instance AllWitnessConstraint ExprShow w => ExprShow (Some w) where
+instance AllConstraint ExprShow w => ExprShow (Some w) where
     exprShowPrec (MkSome (wt :: w t)) =
-        case allWitnessConstraint @_ @_ @ExprShow @w @t of
+        case allConstraint @_ @_ @ExprShow @w @t of
             Dict -> exprShowPrec wt
 
-instance AllWitnessConstraint ExprShow w => ExprShow (ShimWit shim w a) where
+instance AllConstraint ExprShow w => ExprShow (ShimWit shim w a) where
     exprShowPrec (MkShimWit (wt :: w t) _) =
-        case allWitnessConstraint @_ @_ @ExprShow @w @t of
+        case allConstraint @_ @_ @ExprShow @w @t of
             Dict -> exprShowPrec wt
 
 type family ListTypeExprShow (dv :: [k]) :: Type where

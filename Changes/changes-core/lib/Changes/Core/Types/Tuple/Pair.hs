@@ -22,8 +22,8 @@ instance Show (PairSelector updateA updateB et) where
     show SelectFirst = "first"
     show SelectSecond = "second"
 
-instance AllWitnessConstraint Show (PairSelector updateA updateB) where
-    allWitnessConstraint = Dict
+instance AllConstraint Show (PairSelector updateA updateB) where
+    allConstraint = Dict
 
 type PairUpdateReader updateA updateB = TupleUpdateReader (PairSelector updateA updateB)
 
@@ -65,13 +65,13 @@ instance (c updateA, c updateB) => TupleUpdateWitness c (PairSelector updateA up
     tupleUpdateWitness SelectFirst = Dict
     tupleUpdateWitness SelectSecond = Dict
 
-instance IsFiniteConsWitness (PairSelector updateA updateB) where
-    type FiniteConsWitness (PairSelector updateA updateB) = '[ updateA, updateB]
-    toLTW SelectFirst = FirstElementType
-    toLTW SelectSecond = RestElementType FirstElementType
-    fromLTW FirstElementType = SelectFirst
-    fromLTW (RestElementType FirstElementType) = SelectSecond
-    fromLTW (RestElementType (RestElementType lt)) = never lt
+instance ListElementWitness (PairSelector updateA updateB) where
+    type WitnessTypeList (PairSelector updateA updateB) = '[ updateA, updateB]
+    toListElementWitness SelectFirst = FirstElementType
+    toListElementWitness SelectSecond = RestElementType FirstElementType
+    fromListElementWitness FirstElementType = SelectFirst
+    fromListElementWitness (RestElementType FirstElementType) = SelectSecond
+    fromListElementWitness (RestElementType (RestElementType lt)) = never lt
 
 partitionPairEdits ::
        forall updateA updateB. [PairUpdateEdit updateA updateB] -> ([UpdateEdit updateA], [UpdateEdit updateB])

@@ -347,7 +347,7 @@ interpretExpression' (SEList sexprs) = do
 checkExprVars :: MonadThrow PinaforeError m => QExpr -> m ()
 checkExprVars (MkSealedExpression _ expr) = let
     getBadVarErrors ::
-           forall w t. AllWitnessConstraint Show w
+           forall w t. AllConstraint Show w
         => NameTypeWitness (UnitType VarID) (UnitType' w) t
         -> Maybe ErrorMessage
     getBadVarErrors w@(MkNameWitness (BadVarID spos _) _) =

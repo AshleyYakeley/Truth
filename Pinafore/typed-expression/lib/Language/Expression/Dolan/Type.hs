@@ -46,8 +46,8 @@ class ( IsDolanPolyShim (DolanPolyShim ground)
       , Show (DolanVarID ground)
       , MonadPlus (DolanM ground)
       , MonadThrow ExpressionError (DolanM ground)
-      , AllWitnessConstraint Show (DolanType ground 'Positive)
-      , AllWitnessConstraint Show (DolanType ground 'Negative)
+      , AllConstraint Show (DolanType ground 'Positive)
+      , AllConstraint Show (DolanType ground 'Negative)
       ) => IsDolanGroundType (ground :: GroundTypeKind) where
     type DolanVarID ground :: Type
     type DolanM ground :: Type -> Type
@@ -236,5 +236,5 @@ showDolanType ::
     -> String
 showDolanType =
     case polarityType @polarity of
-        PositiveType -> showAllWitness
-        NegativeType -> showAllWitness
+        PositiveType -> allShow
+        NegativeType -> allShow

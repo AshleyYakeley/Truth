@@ -14,8 +14,8 @@ instance Show (TripleTable t) where
     show TripleSubject = "subject"
     show TripleValue = "value"
 
-instance AllWitnessConstraint Show TripleTable where
-    allWitnessConstraint = Dict
+instance AllConstraint Show TripleTable where
+    allConstraint = Dict
 
 instance WitnessConstraint Show TripleTable where
     witnessConstraint TriplePredicate = Dict
@@ -23,7 +23,7 @@ instance WitnessConstraint Show TripleTable where
     witnessConstraint TripleValue = Dict
 
 instance FiniteWitness TripleTable where
-    assembleWitnessF getw =
+    assembleWitnessFor getw =
         (\p s v ->
              MkAllFor $ \case
                  TriplePredicate -> p
@@ -41,15 +41,15 @@ instance Show (RefCountTable t) where
     show RefCountKey = "key"
     show RefCountValue = "value"
 
-instance AllWitnessConstraint Show RefCountTable where
-    allWitnessConstraint = Dict
+instance AllConstraint Show RefCountTable where
+    allConstraint = Dict
 
 instance WitnessConstraint Show RefCountTable where
     witnessConstraint RefCountKey = Dict
     witnessConstraint RefCountValue = Dict
 
 instance FiniteWitness RefCountTable where
-    assembleWitnessF getw =
+    assembleWitnessFor getw =
         (\k v ->
              MkAllFor $ \case
                  RefCountKey -> k
@@ -65,15 +65,15 @@ instance Show (LiteralTable t) where
     show LiteralKey = "key"
     show LiteralValue = "value"
 
-instance AllWitnessConstraint Show LiteralTable where
-    allWitnessConstraint = Dict
+instance AllConstraint Show LiteralTable where
+    allConstraint = Dict
 
 instance WitnessConstraint Show LiteralTable where
     witnessConstraint LiteralKey = Dict
     witnessConstraint LiteralValue = Dict
 
 instance FiniteWitness LiteralTable where
-    assembleWitnessF getw =
+    assembleWitnessFor getw =
         (\k v ->
              MkAllFor $ \case
                  LiteralKey -> k
@@ -93,8 +93,8 @@ instance Show (PinaforeSchema colsel) where
     show PinaforeFact = "fact"
     show PinaforeLiteral = "literal"
 
-instance AllWitnessConstraint Show PinaforeSchema where
-    allWitnessConstraint = Dict
+instance AllConstraint Show PinaforeSchema where
+    allConstraint = Dict
 
 instance TestEquality PinaforeSchema where
     testEquality PinaforeProperty PinaforeProperty = Just Refl
@@ -104,7 +104,7 @@ instance TestEquality PinaforeSchema where
     testEquality _ _ = Nothing
 
 instance FiniteWitness PinaforeSchema where
-    assembleWitnessF getTable =
+    assembleWitnessFor getTable =
         (\ft fr ff fl ->
              MkAllFor $ \case
                  PinaforeProperty -> ft
@@ -122,7 +122,7 @@ instance WitnessConstraint FiniteWitness PinaforeSchema where
     witnessConstraint PinaforeFact = Dict
     witnessConstraint PinaforeLiteral = Dict
 
-instance WitnessConstraint (AllWitnessConstraint Show) PinaforeSchema where
+instance WitnessConstraint (AllConstraint Show) PinaforeSchema where
     witnessConstraint PinaforeProperty = Dict
     witnessConstraint PinaforeRefCount = Dict
     witnessConstraint PinaforeFact = Dict

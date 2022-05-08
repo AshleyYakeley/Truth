@@ -26,13 +26,12 @@ data KeyReader cont reader t where
     KeyReadKeys :: KeyReader cont reader (FiniteSet (ContainerKey cont))
     KeyReadItem :: ContainerKey cont -> reader t -> KeyReader cont reader (Maybe t)
 
-instance (Show (ContainerKey cont), AllWitnessConstraint Show reader) => Show (KeyReader cont reader t) where
+instance (Show (ContainerKey cont), AllConstraint Show reader) => Show (KeyReader cont reader t) where
     show KeyReadKeys = "keys"
-    show (KeyReadItem key rt) = "item " ++ show key ++ " " ++ showAllWitness rt
+    show (KeyReadItem key rt) = "item " ++ show key ++ " " ++ allShow rt
 
-instance (Show (ContainerKey cont), AllWitnessConstraint Show reader) =>
-             AllWitnessConstraint Show (KeyReader cont reader) where
-    allWitnessConstraint = Dict
+instance (Show (ContainerKey cont), AllConstraint Show reader) => AllConstraint Show (KeyReader cont reader) where
+    allConstraint = Dict
 
 instance (Show (ContainerKey cont), WitnessConstraint Show reader) => WitnessConstraint Show (KeyReader cont reader) where
     witnessConstraint KeyReadKeys = Dict

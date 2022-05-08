@@ -17,9 +17,7 @@ constSealedExpression :: SomeOf tw -> SealedExpression name vw tw
 constSealedExpression (MkSomeOf twt t) = MkSealedExpression twt $ pure t
 
 evalSealedExpression ::
-       (MonadThrow ExpressionError m, AllWitnessConstraint Show vw, Show name)
-    => SealedExpression name vw tw
-    -> m (SomeOf tw)
+       (MonadThrow ExpressionError m, AllConstraint Show vw, Show name) => SealedExpression name vw tw -> m (SomeOf tw)
 evalSealedExpression (MkSealedExpression twa expr) = do
     a <- evalExpression expr
     return $ MkSomeOf twa a
@@ -54,9 +52,8 @@ instance WitnessMappable poswit negwit (SealedExpression name negwit poswit) whe
         expr' <- mapWitnessesM mapPos mapNeg expr
         pure $ MkSealedExpression tt' expr'
 
-instance (Show name, AllWitnessConstraint Show negwit, AllWitnessConstraint Show poswit) =>
-             Show (SealedExpression name negwit poswit) where
-    show (MkSealedExpression t expr) = show expr <> " => " <> showAllWitness t
+instance (Show name, AllConstraint Show negwit, AllConstraint Show poswit) => Show (SealedExpression name negwit poswit) where
+    show (MkSealedExpression t expr) = show expr <> " => " <> allShow t
 
 data SealedPattern (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall t. MkSealedPattern (tw t)

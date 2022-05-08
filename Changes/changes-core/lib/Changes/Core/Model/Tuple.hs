@@ -71,15 +71,15 @@ tupleListResourceM lt getReference =
             (tupleListResourceM lt' $ \sel -> getReference $ RestElementType sel)
 
 tupleResourceM ::
-       forall f m sel. (TupleResource f, IsFiniteConsWitness sel, Applicative m)
+       forall f m sel. (TupleResource f, ListElementWitness sel, Applicative m)
     => (forall update. sel update -> m (Resource (f update)))
     -> m (Resource (f (TupleUpdate sel)))
 tupleResourceM pick =
-    fmap (mapResourceUpdate (tupleIsoLens fromLTW toLTW)) $
-    tupleListResourceM representative $ \sel -> pick $ fromLTW sel
+    fmap (mapResourceUpdate (tupleIsoLens fromListElementWitness toListElementWitness)) $
+    tupleListResourceM representative $ \sel -> pick $ fromListElementWitness sel
 
 tupleResource ::
-       forall f sel. (TupleResource f, IsFiniteConsWitness sel)
+       forall f sel. (TupleResource f, ListElementWitness sel)
     => (forall update. sel update -> Resource (f update))
     -> Resource (f (TupleUpdate sel))
 tupleResource pick = runIdentity $ tupleResourceM $ \sel -> Identity $ pick sel
@@ -164,13 +164,13 @@ instance TupleResource AModel where
     mapResourceUpdate = mapModel
 
 tupleReference ::
-       forall sel. IsFiniteConsWitness sel
+       forall sel. ListElementWitness sel
     => (forall update. sel update -> Reference (UpdateEdit update))
     -> Reference (TupleUpdateEdit sel)
 tupleReference pick = uObjToObj $ tupleResource $ \selu -> objToUObj $ pick selu
 
 tuplePremodel ::
-       forall sel a. (IsFiniteConsWitness sel, Monoid a)
+       forall sel a. (ListElementWitness sel, Monoid a)
     => (forall update. sel update -> Premodel update a)
     -> Premodel (TupleUpdate sel) a
 tuplePremodel pick outask recv = do
@@ -184,7 +184,7 @@ tuplePremodel pick outask recv = do
     return $ MkPremodelResult (uObjToObj uobj) utask val
 
 tupleModel ::
-       forall sel. IsFiniteConsWitness sel
+       forall sel. ListElementWitness sel
     => (forall update. sel update -> Model update)
     -> Model (TupleUpdate sel)
 tupleModel = tupleResource
