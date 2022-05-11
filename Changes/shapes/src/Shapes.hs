@@ -22,7 +22,6 @@ import Data.FiniteSet as I
 import Data.FixBox as I
 import Data.HasNewValue as I
 import Data.Injection as I
-import Data.IsoVariant as I
 import Data.Isomorphism as I
 import Data.KeyContainer as I
 import Data.KeyedOrder as I

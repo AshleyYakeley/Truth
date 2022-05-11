@@ -1,7 +1,6 @@
 module Data.Serializer where
 
 import Data.Codec
-import Data.IsoVariant
 import qualified Data.Serialize as Serialize
 import Data.Streamish
 import Shapes.Import

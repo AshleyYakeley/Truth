@@ -1,7 +1,6 @@
 module Data.Codec where
 
 import Data.CatFunctor
-import Data.IsoVariant
 import Data.Isomorphism
 import Shapes.Import
 

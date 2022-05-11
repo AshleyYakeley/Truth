@@ -7,7 +7,6 @@ module Data.ReadShow
     ) where
 
 import Data.Codec
-import Data.IsoVariant
 import Data.Streamish
 import Shapes.Import
 

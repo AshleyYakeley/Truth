@@ -3,7 +3,6 @@ module Data.Coercion where
 import Control.Category.Dual
 import Control.Category.Groupoid
 import Data.CatFunctor
-import Data.IsoVariant
 import Data.Isomorphism
 import Data.KindMorphism
 import Shapes.Import

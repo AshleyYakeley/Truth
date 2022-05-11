@@ -3,7 +3,6 @@ module Data.Lens where
 import Data.CatFunctor
 import Data.Codec
 import Data.Injection
-import Data.IsoVariant
 import Data.Isomorphism
 import Shapes.Import
 

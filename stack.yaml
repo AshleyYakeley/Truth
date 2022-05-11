@@ -4,6 +4,7 @@ packages:
 - external/countable
 - external/witness
 - external/open-witness
+- external/type-rig
 - external/monadology
 
 # Changes

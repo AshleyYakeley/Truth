@@ -5,7 +5,6 @@ module Data.Serialize.Instances
     ) where
 
 import Data.Coercion
-import Data.IsoVariant
 import qualified Data.Serialize as Serialize
 import Data.Serializer
 import Data.Time

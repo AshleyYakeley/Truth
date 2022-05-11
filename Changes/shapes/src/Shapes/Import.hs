@@ -123,6 +123,9 @@ import Data.Serialize.Text as I ()
 -- random
 import System.Random as I hiding (Finite)
 
+-- type-rig
+import Data.IsoVariant as I
+
 -- countable
 import Data.Countable as I
 import Data.Empty as I
