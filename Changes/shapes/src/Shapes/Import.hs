@@ -124,7 +124,7 @@ import Data.Serialize.Text as I ()
 import System.Random as I hiding (Finite)
 
 -- type-rig
-import Data.IsoVariant as I
+import Data.TypeRig as I
 
 -- countable
 import Data.Countable as I
