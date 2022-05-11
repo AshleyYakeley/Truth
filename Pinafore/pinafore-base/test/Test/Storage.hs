@@ -108,7 +108,7 @@ maybeTextAdapter = let
     to :: Maybe a -> Either (a, ()) ()
     to (Just a) = Left (a, ())
     to Nothing = Right ()
-    in isoMap from to $ justAdapter <+++> nothingAdapter
+    in invmap from to $ justAdapter <+++> nothingAdapter
 
 listTextAdapter :: EntityAdapter [Text]
 listTextAdapter = let
@@ -116,7 +116,7 @@ listTextAdapter = let
     nilAdapter = constructorEntityAdapter nilAnchor NilListType
     consAnchor = codeAnchor "pinafore-base:Cons"
     consAdapter = constructorEntityAdapter consAnchor $ ConsListType textAdapter $ ConsListType listAdapter NilListType
-    listAdapter = isoMap from to $ nilAdapter <+++> consAdapter
+    listAdapter = invmap from to $ nilAdapter <+++> consAdapter
     from :: Either () (a, ([a], ())) -> [a]
     from (Left ()) = []
     from (Right (a, (aa, ()))) = a : aa
@@ -137,7 +137,7 @@ enumAdapter = let
     to :: Bool -> Either () ()
     to False = Left ()
     to True = Right ()
-    in isoMap from to $ falseAdapter <+++> trueAdapter
+    in invmap from to $ falseAdapter <+++> trueAdapter
 
 testStorage :: TestTree
 testStorage =

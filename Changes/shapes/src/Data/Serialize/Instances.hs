@@ -18,14 +18,14 @@ instance Serialize (Fixed a) where
         return $ MkFixed i
 
 diffTimeSerializer :: Serializer DiffTime
-diffTimeSerializer = isoMap picosecondsToDiffTime diffTimeToPicoseconds serializer
+diffTimeSerializer = invmap picosecondsToDiffTime diffTimeToPicoseconds serializer
 
 instance Serialize DiffTime where
     put = serialize diffTimeSerializer
     get = deserialize diffTimeSerializer
 
 nominalDiffTimeSerializer :: Serializer NominalDiffTime
-nominalDiffTimeSerializer = isoMap secondsToNominalDiffTime nominalDiffTimeToSeconds serializer
+nominalDiffTimeSerializer = invmap secondsToNominalDiffTime nominalDiffTimeToSeconds serializer
 
 instance Serialize NominalDiffTime where
     put = serialize nominalDiffTimeSerializer
@@ -44,7 +44,7 @@ timeOfDaySerializer = let
     tupleToTimeOfDay (h, (m, s)) = TimeOfDay (fromIntegral h) (fromIntegral m) (MkFixed $ toInteger s)
     timeOfDayToTuple :: TimeOfDay -> (Word8, (Word8, Word64))
     timeOfDayToTuple (TimeOfDay h m (MkFixed s)) = (fromIntegral h, (fromIntegral m, fromInteger s))
-    in isoMap tupleToTimeOfDay timeOfDayToTuple $ serializer <***> serializer <***> serializer
+    in invmap tupleToTimeOfDay timeOfDayToTuple $ serializer <***> serializer <***> serializer
 
 instance Serialize TimeOfDay where
     put = serialize timeOfDaySerializer
@@ -56,7 +56,7 @@ localTimeSerializer = let
     pairToLocalTime (d, t) = LocalTime d t
     localTimeToPair :: LocalTime -> (Day, TimeOfDay)
     localTimeToPair (LocalTime d t) = (d, t)
-    in isoMap pairToLocalTime localTimeToPair $ serializer <***> serializer
+    in invmap pairToLocalTime localTimeToPair $ serializer <***> serializer
 
 instance Serialize LocalTime where
     put = serialize localTimeSerializer
@@ -68,7 +68,7 @@ utcTimeSerializer = let
     pairToUTCTime (d, t) = UTCTime d t
     utcTimeToPair :: UTCTime -> (Day, DiffTime)
     utcTimeToPair (UTCTime d t) = (d, t)
-    in isoMap pairToUTCTime utcTimeToPair $ serializer <***> serializer
+    in invmap pairToUTCTime utcTimeToPair $ serializer <***> serializer
 
 instance Serialize UTCTime where
     put = serialize utcTimeSerializer

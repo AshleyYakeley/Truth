@@ -106,8 +106,8 @@ instance Semigroup (EntityStorer 'MultipleMode t) where
 instance Monoid (EntityStorer 'MultipleMode t) where
     mempty = MkEntityStorer mempty
 
-instance IsoVariant (EntityStorer 'MultipleMode) where
-    isoMap ab _ = fmap ab
+instance Invariant (EntityStorer 'MultipleMode) where
+    invmap ab _ = fmap ab
 
 instance Summish (EntityStorer 'MultipleMode) where
     pNone = mempty

@@ -46,7 +46,7 @@ instance AsLiteral Text where
     literalSerializer = pLiteral 0x74 ***> codecMap' utf8Codec serializerWhole
 
 instance AsLiteral String where
-    literalSerializer = isoMap unpack pack $ literalSerializer @Text
+    literalSerializer = invmap unpack pack $ literalSerializer @Text
 
 instance AsLiteral () where
     -- [u]
@@ -67,7 +67,7 @@ instance AsLiteral Number where
         numberToEither :: Number -> Either Rational Double
         numberToEither (ExactNumber x) = Left x
         numberToEither (InexactNumber x) = Right x
-        in isoMap eitherToNumber numberToEither $ literalSerializer <+++> literalSerializer
+        in invmap eitherToNumber numberToEither $ literalSerializer <+++> literalSerializer
 
 instance AsLiteral Rational where
     -- [r]

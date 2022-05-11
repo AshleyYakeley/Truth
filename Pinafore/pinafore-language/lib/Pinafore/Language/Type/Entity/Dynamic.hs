@@ -61,7 +61,7 @@ dynamicAnchor = codeAnchor "pinafore-base:dynamic"
 
 dynamicEntityAdapter :: Maybe DynamicEntityType -> EntityAdapter DynamicEntity
 dynamicEntityAdapter mdt =
-    isoMap (\(t, (v, ())) -> MkDynamicEntity t v) (\(MkDynamicEntity t v) -> (t, (v, ()))) $
+    invmap (\(t, (v, ())) -> MkDynamicEntity t v) (\(MkDynamicEntity t v) -> (t, (v, ()))) $
     constructorEntityAdapter
         dynamicAnchor
         (ConsListType (typeEntityAdapter mdt) $ ConsListType plainEntityAdapter NilListType)

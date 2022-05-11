@@ -86,8 +86,8 @@ instance SubsumeTypeSystem ts => Show (SubsumerOpenExpression ts tdecl) where
 instance SubsumeTypeSystem ts => Functor (SubsumerOpenExpression ts) where
     fmap ab (MkSubsumerOpenExpression subsumer expr) = MkSubsumerOpenExpression (fmap (fmap ab) subsumer) expr
 
-instance SubsumeTypeSystem ts => IsoVariant (SubsumerOpenExpression ts) where
-    isoMap ab _ = fmap ab
+instance SubsumeTypeSystem ts => Invariant (SubsumerOpenExpression ts) where
+    invmap ab _ = fmap ab
 
 instance SubsumeTypeSystem ts => Productish (SubsumerOpenExpression ts) where
     pUnit = MkSubsumerOpenExpression (pure $ \_ -> ()) pUnit

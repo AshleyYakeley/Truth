@@ -62,6 +62,17 @@ packages:
   original:
     git: https://github.com/fpco/ghc-prof-flamegraph.git
     commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
+- completed:
+    name: invariant
+    version: 0.5.6
+    git: https://github.com/AshleyYakeley/invariant-functors.git
+    pantry-tree:
+      size: 882
+      sha256: e32de0562bf026ab145950d740d1ce20d490dffe2f6abc7cde5fc101e34f45db
+    commit: 1c84bd5fbd320fb62b996710be58a458aec88d0b
+  original:
+    git: https://github.com/AshleyYakeley/invariant-functors.git
+    commit: 1c84bd5fbd320fb62b996710be58a458aec88d0b
 snapshots:
 - completed:
     size: 619093

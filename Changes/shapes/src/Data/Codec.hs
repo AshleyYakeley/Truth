@@ -31,8 +31,8 @@ decodeMaybe codec = mToMaybe . decode codec
 toCodec :: MonadInner m => Codec' m a b -> Codec a b
 toCodec = hoistCodec mToMaybe
 
-instance Functor m => IsoVariant (Codec' m p) where
-    isoMap ab ba (MkCodec d e) = MkCodec (\p -> fmap ab $ d p) (e . ba)
+instance Functor m => Invariant (Codec' m p) where
+    invmap ab ba (MkCodec d e) = MkCodec (\p -> fmap ab $ d p) (e . ba)
 
 instance IsBiMap Codec' where
     mapBiMapM ff codec = MkCodec {decode = ff . (decode codec), encode = encode codec}
@@ -51,7 +51,7 @@ codecBijection (MkCodec amb ba) = MkIsomorphism (\ma -> ma >>= amb) (fmap ba)
 
 codecSum :: Summish f => Codec a b -> f b -> f a -> f a
 codecSum MkCodec {..} fb fa =
-    isoMap
+    invmap
         (either encode id)
         (\a ->
              case decode a of

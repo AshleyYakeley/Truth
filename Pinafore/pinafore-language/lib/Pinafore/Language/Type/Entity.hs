@@ -38,7 +38,7 @@ maybeEntityAdapter et = let
     to :: Maybe a -> Either (a, ()) ()
     to (Just a) = Left (a, ())
     to Nothing = Right ()
-    in isoMap from to $ justAdapter <+++> nothingAdapter
+    in invmap from to $ justAdapter <+++> nothingAdapter
 
 maybeEntityConvert :: Maybe Entity -> Entity
 maybeEntityConvert = entityAdapterConvert $ maybeEntityAdapter plainEntityAdapter
@@ -58,7 +58,7 @@ listEntityAdapter et = let
     nilAdapter = constructorEntityAdapter nilAnchor NilListType
     consAnchor = codeAnchor "pinafore-base:Cons"
     consAdapter = constructorEntityAdapter consAnchor $ ConsListType et $ ConsListType listAdapter NilListType
-    listAdapter = isoMap from to $ nilAdapter <+++> consAdapter
+    listAdapter = invmap from to $ nilAdapter <+++> consAdapter
     from :: Either () (a, ([a], ())) -> [a]
     from (Left ()) = []
     from (Right (a, (aa, ()))) = a : aa
@@ -87,7 +87,7 @@ pairEntityAdapter eta etb = let
     from (a, (b, ())) = (a, b)
     to :: (a, b) -> (a, (b, ()))
     to (a, b) = (a, (b, ()))
-    in isoMap from to pairAdapter
+    in invmap from to pairAdapter
 
 pairEntityConvert :: (Entity, Entity) -> Entity
 pairEntityConvert = entityAdapterConvert $ pairEntityAdapter plainEntityAdapter plainEntityAdapter
@@ -108,9 +108,9 @@ eitherEntityAdapter eta etb = let
     to :: a -> (a, ())
     to a = (a, ())
     leftAnchor = codeAnchor "pinafore-base:Left"
-    leftAdapter = isoMap from to $ constructorEntityAdapter leftAnchor $ ConsListType eta NilListType
+    leftAdapter = invmap from to $ constructorEntityAdapter leftAnchor $ ConsListType eta NilListType
     rightAnchor = codeAnchor "pinafore-base:Right"
-    rightAdapter = isoMap from to $ constructorEntityAdapter rightAnchor $ ConsListType etb NilListType
+    rightAdapter = invmap from to $ constructorEntityAdapter rightAnchor $ ConsListType etb NilListType
     in leftAdapter <+++> rightAdapter
 
 eitherEntityConvert :: Either Entity Entity -> Entity

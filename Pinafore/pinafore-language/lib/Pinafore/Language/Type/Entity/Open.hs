@@ -46,7 +46,7 @@ openEntityFamily =
         epKind = NilListType
         epCovaryMap = covarymap
         epAdapter :: forall ta. Arguments EntityAdapter t ta -> EntityAdapter ta
-        epAdapter NilArguments = isoMap MkOpenEntity unOpenEntity plainEntityAdapter
+        epAdapter NilArguments = invmap MkOpenEntity unOpenEntity plainEntityAdapter
         epShowType = exprShowPrec oet
         in Just $ MkSealedEntityProperties MkEntityProperties {..}
 

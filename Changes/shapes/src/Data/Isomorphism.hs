@@ -38,11 +38,11 @@ isoMapCat ::
     -> Isomorphism cat2 p q
 isoMapCat m (MkIsomorphism f b) = MkIsomorphism (m f) (m b)
 
-biIsoMap :: IsoVariant f => Bijection a b -> f a -> f b
-biIsoMap (MkIsomorphism ab ba) = isoMap ab ba
+biIsoMap :: Invariant f => Bijection a b -> f a -> f b
+biIsoMap (MkIsomorphism ab ba) = invmap ab ba
 
-biIsoBi :: IsoVariant f => Bijection a b -> Bijection (f a) (f b)
-biIsoBi (MkIsomorphism ab ba) = MkIsomorphism (isoMap ab ba) (isoMap ba ab)
+biIsoBi :: Invariant f => Bijection a b -> Bijection (f a) (f b)
+biIsoBi (MkIsomorphism ab ba) = MkIsomorphism (invmap ab ba) (invmap ba ab)
 
 biSwap :: Bijection (a, b) (b, a)
 biSwap = MkIsomorphism swap swap

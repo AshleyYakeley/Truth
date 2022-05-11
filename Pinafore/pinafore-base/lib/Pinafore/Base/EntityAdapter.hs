@@ -30,8 +30,8 @@ entityAdapterConvert ea t =
     case entityAdapterToDefinition ea t of
         MkSomeOf def dt -> entityStorerToEntity def dt
 
-instance IsoVariant EntityAdapter where
-    isoMap ab ba (MkEntityAdapter defs todef) =
+instance Invariant EntityAdapter where
+    invmap ab ba (MkEntityAdapter defs todef) =
         MkEntityAdapter {entityAdapterDefinitions = fmap ab defs, entityAdapterToDefinition = \b -> todef $ ba b}
 
 instance Summish EntityAdapter where

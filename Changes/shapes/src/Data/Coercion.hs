@@ -71,10 +71,10 @@ coercionUnsafeCoerce :: Coercion a b -> a :~: b
 coercionUnsafeCoerce MkCoercion = coerceUnsafeCoerce
 
 isoCoerce ::
-       forall (f :: Type -> Type) a b. (IsoVariant f, Coercible a b)
+       forall (f :: Type -> Type) a b. (Invariant f, Coercible a b)
     => f a
     -> f b
-isoCoerce = isoMap coerce coerce
+isoCoerce = invmap coerce coerce
 
 instance CoercibleKind Type where
     coercionToKindMorphism c = c

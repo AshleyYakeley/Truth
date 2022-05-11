@@ -12,8 +12,8 @@ instance Functor (Expression w) where
     fmap ab (ClosedExpression a) = ClosedExpression $ ab a
     fmap ab (OpenExpression name expr) = OpenExpression name $ fmap (\va v -> ab $ va v) expr
 
-instance IsoVariant (Expression w) where
-    isoMap ab _ = fmap ab
+instance Invariant (Expression w) where
+    invmap ab _ = fmap ab
 
 instance Applicative (Expression w) where
     pure = ClosedExpression
