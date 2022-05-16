@@ -64,15 +64,15 @@ packages:
     commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
 - completed:
     name: invariant
-    version: 0.5.6
-    git: https://github.com/AshleyYakeley/invariant-functors.git
+    version: '0.6'
+    git: https://github.com/nfrisby/invariant-functors.git
     pantry-tree:
       size: 882
-      sha256: e32de0562bf026ab145950d740d1ce20d490dffe2f6abc7cde5fc101e34f45db
-    commit: 1c84bd5fbd320fb62b996710be58a458aec88d0b
+      sha256: 99a1307ead0d625ce36aea9d3ac7b700832d907c83a969ff4e819d351ad8eeaf
+    commit: ffe96dfa02cec4d40b54bfc30988656ea86257ed
   original:
-    git: https://github.com/AshleyYakeley/invariant-functors.git
-    commit: 1c84bd5fbd320fb62b996710be58a458aec88d0b
+    git: https://github.com/nfrisby/invariant-functors.git
+    commit: ffe96dfa02cec4d40b54bfc30988656ea86257ed
 snapshots:
 - completed:
     size: 619093
