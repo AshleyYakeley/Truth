@@ -62,7 +62,7 @@ showEditShower ::
        forall edit. ShowableEdit edit
     => EditShower edit
 showEditShower = let
-    showRead rt = showAllWitness rt
+    showRead rt = allShow rt
     showReadResult :: forall t. EditReader edit t -> t -> String
     showReadResult rt t =
         case witnessConstraint @_ @Show rt of
@@ -87,7 +87,7 @@ instance (ShowableUpdate updateA, ShowableUpdate updateB) => TraceArgThing (Chan
     traceArgThing prefix (MkChangeLens g u pe) =
         MkChangeLens
             (\mr (rt :: UpdateReader updateB r) ->
-                 case allWitnessConstraint @_ @_ @Show @(UpdateReader updateB) @r of
+                 case allConstraint @_ @_ @Show @(UpdateReader updateB) @r of
                      Dict ->
                          case witnessConstraint @_ @Show rt of
                              Dict -> traceBracketArgs (contextStr prefix "get") (show rt) show $ g mr rt)

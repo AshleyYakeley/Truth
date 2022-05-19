@@ -27,8 +27,8 @@ instance forall (ground :: GroundTypeKind) name a. IsDolanGroundType ground => S
     show (MkUsageWitness p t) = show p <> withDict (getRepWitness p) (showDolanType t)
 
 instance forall (ground :: GroundTypeKind) name. IsDolanGroundType ground =>
-             AllWitnessConstraint Show (UsageWitness ground name) where
-    allWitnessConstraint = Dict
+             AllConstraint Show (UsageWitness ground name) where
+    allConstraint = Dict
 
 type ExpressionPolyShim :: (Type -> Type) -> PolyShimKind -> PolyShimKind
 type ExpressionPolyShim w = PolyComposeShim (Expression w)
@@ -182,10 +182,10 @@ reduceUsageSolution var (MkUsageSolution (n :: _ a) p f) = do
 eliminateVariable ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => AnyW SymbolType
+    => Some SymbolType
     -> a
     -> DolanM ground (a, Bool)
-eliminateVariable (MkAnyW var) a = do
+eliminateVariable (MkSome var) a = do
     ma' <- reduceUsageSolution var $ mapPShimWitsM (getUsageSolution @ground var) (getUsageSolution @ground var) a
     return $
         case ma' of
@@ -195,7 +195,7 @@ eliminateVariable (MkAnyW var) a = do
 eliminateVariables ::
        forall (ground :: GroundTypeKind) a.
        (IsDolanSubtypeGroundType ground, PShimWitMappable (DolanShim ground) (DolanType ground) a)
-    => [AnyW SymbolType]
+    => [Some SymbolType]
     -> a
     -> DolanM ground (a, Bool)
 eliminateVariables [] t = return (t, False)
@@ -212,7 +212,7 @@ keepEliminatingVariables ::
     -> DolanM ground a
 keepEliminatingVariables a = do
     let
-        (setFromList @(FiniteSet (AnyW SymbolType)) -> posvars, setFromList -> negvars) = mappableGetVars @ground a
+        (setFromList @(FiniteSet (Some SymbolType)) -> posvars, setFromList -> negvars) = mappableGetVars @ground a
         allvars = toList $ union posvars negvars
     (a', elimflag) <- eliminateVariables @ground allvars a
     if elimflag

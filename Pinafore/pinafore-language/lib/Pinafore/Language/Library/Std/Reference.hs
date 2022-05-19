@@ -334,14 +334,14 @@ refLibEntries =
                 aeta <- getMonoEntityType ta
                 aetb <- getMonoEntityType tb
                 case (aeta, aetb) of
-                    (MkAnyW eta, MkAnyW etb) -> do
+                    (MkSome eta, MkSome etb) -> do
                         etan <- monoEntityToNegativePinaforeType eta
                         etbn <- monoEntityToNegativePinaforeType etb
                         let
-                            bta = biRangeAnyF (etan, monoToPositiveDolanType eta)
-                            btb = biRangeAnyF (etbn, monoToPositiveDolanType etb)
+                            bta = biRangeSomeFor (etan, monoToPositiveDolanType eta)
+                            btb = biRangeSomeFor (etbn, monoToPositiveDolanType etb)
                             in case (bta, btb) of
-                                   (MkAnyF (MkRangeType rtap rtaq) (MkRange praContra praCo), MkAnyF (MkRangeType rtbp rtbq) (MkRange prbContra prbCo)) -> let
+                                   (MkSomeFor (MkRangeType rtap rtaq) (MkRange praContra praCo), MkSomeFor (MkRangeType rtbp rtbq) (MkRange prbContra prbCo)) -> let
                                        typef =
                                            singleDolanShimWit $
                                            mkPolarShimWit $
@@ -360,7 +360,7 @@ refLibEntries =
                                            cfmap3 (shimToFunction praCo) $
                                            cfmap2 (MkCatDual $ shimToFunction prbContra) $
                                            cfmap1 (shimToFunction prbCo) morphism
-                                       anyval = MkAnyValue typef pinamorphism
+                                       anyval = MkSomeOf typef pinamorphism
                                        in return anyval
           ]
     , docTreeEntry

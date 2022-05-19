@@ -22,16 +22,16 @@ import Shapes
 class ( UnifyTypeSystem ts
       , Applicative (Subsumer ts)
       , Show (SubsumerSubstitutions ts)
-      , AllWitnessConstraint Show (TSPosWitness ts)
-      , AllWitnessConstraint Show (TSNegWitness ts)
+      , AllConstraint Show (TSPosWitness ts)
+      , AllConstraint Show (TSNegWitness ts)
       ) => SubsumeTypeSystem ts where
     type Subsumer ts :: Type -> Type
     type SubsumerSubstitutions ts :: Type
     usubSubsumer :: forall a. UnifierSubstitutions ts -> Subsumer ts a -> TSOuter ts (Subsumer ts a)
     solveSubsumer :: forall a. Subsumer ts a -> TSOuter ts (a, SubsumerSubstitutions ts)
     showSubsumer :: forall a. Subsumer ts a -> String
-    default showSubsumer :: AllWitnessConstraint Show (Subsumer ts) => forall a. Subsumer ts a -> String
-    showSubsumer = showAllWitness
+    default showSubsumer :: AllConstraint Show (Subsumer ts) => forall a. Subsumer ts a -> String
+    showSubsumer = allShow
     -- This should generate substitutions only for the inferred type, not the declared type.
     subsumerNegSubstitute :: SubsumerSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)
     subsumePosWitnesses :: TSPosWitness ts inf -> TSPosWitness ts decl -> TSOuter ts (Subsumer ts (TSShim ts inf decl))
@@ -81,12 +81,13 @@ data SubsumerOpenExpression ts tdecl =
                                           (TSOpenExpression ts tinf)
 
 instance SubsumeTypeSystem ts => Show (SubsumerOpenExpression ts tdecl) where
-    show (MkSubsumerOpenExpression subs expr) = showSubsumer @ts subs <> "/" <> showAllWitness expr
+    show (MkSubsumerOpenExpression subs expr) = showSubsumer @ts subs <> "/" <> allShow expr
 
 instance SubsumeTypeSystem ts => Functor (SubsumerOpenExpression ts) where
     fmap ab (MkSubsumerOpenExpression subsumer expr) = MkSubsumerOpenExpression (fmap (fmap ab) subsumer) expr
 
-instance SubsumeTypeSystem ts => IsoVariant (SubsumerOpenExpression ts)
+instance SubsumeTypeSystem ts => Invariant (SubsumerOpenExpression ts) where
+    invmap ab _ = fmap ab
 
 instance SubsumeTypeSystem ts => Productish (SubsumerOpenExpression ts) where
     pUnit = MkSubsumerOpenExpression (pure $ \_ -> ()) pUnit
@@ -105,14 +106,14 @@ instance SubsumeTypeSystem ts => Show (SubsumerExpression ts) where
 -- Note the user's declared type will be simplified first, so they'll end up seeing a simplified version of the type they declared for their expression.
 subsumerExpression ::
        forall ts. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
-    => Maybe (AnyW (TSPosWitness ts))
+    => Maybe (Some (TSPosWitness ts))
     -> TSSealedExpression ts
     -> TSOuter ts (SubsumerExpression ts)
 subsumerExpression marawdecltype rawinfexpr = do
     MkSealedExpression infwit expr <- simplify @ts rawinfexpr
     case marawdecltype of
         Nothing -> return $ MkSubsumerExpression infwit $ MkSubsumerOpenExpression (pure id) expr
-        Just (MkAnyW rawdecltype) -> do
+        Just (MkSome rawdecltype) -> do
             MkShimWit decltype _ <- simplify @ts $ mkPolarShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
             subsumer <- subsumePosShimWit @ts infwit decltype
             return $
@@ -121,7 +122,7 @@ subsumerExpression marawdecltype rawinfexpr = do
 
 subsumeExpression ::
        forall ts. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)
-    => AnyW (TSPosWitness ts)
+    => Some (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSOuter ts (TSSealedExpression ts)
 subsumeExpression t expr = do

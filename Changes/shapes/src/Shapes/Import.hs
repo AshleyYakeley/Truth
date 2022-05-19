@@ -123,19 +123,20 @@ import Data.Serialize.Text as I ()
 -- random
 import System.Random as I hiding (Finite)
 
+-- type-rig
+import Data.TypeRig as I
+
 -- countable
 import Data.Countable as I
 import Data.Empty as I
 import Data.Searchable as I
 
 -- witness
-import Control.Category.Tensor as I
-import Data.Witness as I
+import Data.Type.Witness as I
 
 -- open-witness
-import Data.OpenWitness as I
-import Data.OpenWitness.Order as I
-import Data.OpenWitness.Witnessed as I
+import Data.Type.OpenWitness as I
+import Data.Type.OpenWitness.Witnessed as I
 
 type LazyByteString = Data.ByteString.Lazy.ByteString
 

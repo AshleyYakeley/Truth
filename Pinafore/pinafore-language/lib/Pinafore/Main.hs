@@ -66,12 +66,12 @@ standardPinaforeContext MkContextOptions {..} invinfo cc = do
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
-    MkAllF tables <- sqlitePinaforeTableGetEntireDatabase emptyResourceContext $ dirpath </> "tables.sqlite3"
+    MkAllFor tables <- sqlitePinaforeTableGetEntireDatabase emptyResourceContext $ dirpath </> "tables.sqlite3"
     let
         littable :: [(Entity, Literal)]
         littable =
-            fmap (\(MkAllValue lrow) -> (lrow LiteralKey, lrow LiteralValue)) $ tables $ MkTupleTableSel PinaforeLiteral
-    for_ (tables $ MkTupleTableSel PinaforeProperty) $ \(MkAllValue row) -> let
+            fmap (\(MkAllOf lrow) -> (lrow LiteralKey, lrow LiteralValue)) $ tables $ MkTupleTableSel PinaforeLiteral
+    for_ (tables $ MkTupleTableSel PinaforeProperty) $ \(MkAllOf row) -> let
         p = row TriplePredicate
         s = row TripleSubject
         v = row TripleValue

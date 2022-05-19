@@ -146,8 +146,7 @@ abstractSealedExpression absw name sexpr =
             pure $ MkSealedExpression (absw vwt twt) expr'
 
 applySealedExpression ::
-       forall ts.
-       (AllWitnessConstraint Show (TSPosWitness ts), AllWitnessConstraint Show (TSNegWitness ts), AbstractTypeSystem ts)
+       forall ts. (AllConstraint Show (TSPosWitness ts), AllConstraint Show (TSNegWitness ts), AbstractTypeSystem ts)
     => UnifierFunctionNegWitness ts
     -> TSSealedExpression ts
     -> TSSealedExpression ts

@@ -135,7 +135,7 @@ newtype Interpreter ts a = MkInterpreter
 
 instance MonadThrow ErrorType (Interpreter ts) where
     throw err = do
-        spos <- askD sourcePosParam
+        spos <- paramAsk sourcePosParam
         throw $ MkErrorMessage spos err mempty
 
 instance MonadThrow ExpressionError (Interpreter ts) where
@@ -149,36 +149,36 @@ instance Monoid a => Monoid (Interpreter ts a) where
     mempty = pure mempty
 
 contextParam :: Param (Interpreter ts) (InterpretContext ts)
-contextParam = MkParam {askD = MkInterpreter ask, localD = \aa (MkInterpreter m) -> MkInterpreter $ local aa m}
+contextParam = MkParam (MkInterpreter ask) $ \a (MkInterpreter m) -> MkInterpreter $ with a m
 
 sourcePosParam :: Param (Interpreter ts) SourcePos
-sourcePosParam = mapParam (\bfb a -> fmap (\b -> a {icSourcePos = b}) $ bfb $ icSourcePos a) contextParam
+sourcePosParam = lensMapParam (\bfb a -> fmap (\b -> a {icSourcePos = b}) $ bfb $ icSourcePos a) contextParam
 
 varIDStateParam :: Param (Interpreter ts) VarIDState
-varIDStateParam = mapParam (\bfb a -> fmap (\b -> a {icVarIDState = b}) $ bfb $ icVarIDState a) contextParam
+varIDStateParam = lensMapParam (\bfb a -> fmap (\b -> a {icVarIDState = b}) $ bfb $ icVarIDState a) contextParam
 
 scopeParam :: Param (Interpreter ts) (Scope ts)
-scopeParam = mapParam (\bfb a -> fmap (\b -> a {icScope = b}) $ bfb $ icScope a) contextParam
+scopeParam = lensMapParam (\bfb a -> fmap (\b -> a {icScope = b}) $ bfb $ icScope a) contextParam
 
 specialValsParam :: Param (Interpreter ts) (SpecialVals ts)
-specialValsParam = mapParam (\bfb a -> fmap (\b -> a {icSpecialVals = b}) $ bfb $ icSpecialVals a) contextParam
+specialValsParam = lensMapParam (\bfb a -> fmap (\b -> a {icSpecialVals = b}) $ bfb $ icSpecialVals a) contextParam
 
 modulePathParam :: Param (Interpreter ts) [ModuleName]
-modulePathParam = mapParam (\bfb a -> fmap (\b -> a {icModulePath = b}) $ bfb $ icModulePath a) contextParam
+modulePathParam = lensMapParam (\bfb a -> fmap (\b -> a {icModulePath = b}) $ bfb $ icModulePath a) contextParam
 
 loadModuleParam :: Param (Interpreter ts) (ModuleName -> Interpreter ts (Maybe (Module ts)))
-loadModuleParam = mapParam (\bfb a -> fmap (\b -> a {icLoadModule = b}) $ bfb $ icLoadModule a) contextParam
+loadModuleParam = lensMapParam (\bfb a -> fmap (\b -> a {icLoadModule = b}) $ bfb $ icLoadModule a) contextParam
 
 interpretStateRef :: Ref (Interpreter ts) (InterpretState ts)
 interpretStateRef = let
     ref = liftRef stateRef
-    in MkRef {getD = MkInterpreter $ getD ref, modifyD = \aa -> MkInterpreter $ modifyD ref aa}
+    in MkRef (MkInterpreter $ refGet ref) $ \a -> MkInterpreter $ refPut ref a
 
 typeIDRef :: Ref (Interpreter ts) TypeID
-typeIDRef = mapRef (\bfb a -> fmap (\b -> a {isTypeID = b}) $ bfb $ isTypeID a) interpretStateRef
+typeIDRef = lensMapRef (\bfb a -> fmap (\b -> a {isTypeID = b}) $ bfb $ isTypeID a) interpretStateRef
 
 modulesRef :: Ref (Interpreter ts) (Map ModuleName (Module ts))
-modulesRef = mapRef (\bfb a -> fmap (\b -> a {isModules = b}) $ bfb $ isModules a) interpretStateRef
+modulesRef = lensMapRef (\bfb a -> fmap (\b -> a {isModules = b}) $ bfb $ isModules a) interpretStateRef
 
 runInterpreter ::
        SourcePos
@@ -194,14 +194,14 @@ runInterpreter icSourcePos icLoadModule icSpecialVals qa = let
 
 allocateVar :: Name -> (VarID -> Interpreter ts a) -> Interpreter ts a
 allocateVar n f = do
-    vs <- askD varIDStateParam
+    vs <- paramAsk varIDStateParam
     let
         vid = mkVarID vs n
         newscope = MkScope (singletonMap n (plainMarkdown "variable", LambdaBinding vid)) mempty
-    withD varIDStateParam (nextVarIDState vs) $ localD scopeParam (\scope -> newscope <> scope) $ f vid
+    paramWith varIDStateParam (nextVarIDState vs) $ paramLocal scopeParam (\scope -> newscope <> scope) $ f vid
 
 purifyExpression ::
-       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
     => TSSealedExpression ts
     -> Interpreter ts (TSSealedExpression ts)
 purifyExpression expr = do
@@ -209,7 +209,7 @@ purifyExpression expr = do
     return expr
 
 purifyBinding ::
-       (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
+       (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
     => InterpreterBinding ts
     -> Interpreter ts (InterpreterBinding ts)
 purifyBinding (ValueBinding expr mpatc) = do
@@ -218,17 +218,17 @@ purifyBinding (ValueBinding expr mpatc) = do
 purifyBinding b = return b
 
 exportName ::
-       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
     => Name
     -> Interpreter ts (Maybe (DocInterpreterBinding ts))
 exportName name = do
-    MkScope bindings _ <- askD scopeParam
+    MkScope bindings _ <- paramAsk scopeParam
     for (lookup name bindings) $ \(doc, b) -> do
         b' <- purifyBinding b
         return (doc, b')
 
 exportNames ::
-       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
     => [Name]
     -> Interpreter ts [(Name, DocInterpreterBinding ts)]
 exportNames names = do
@@ -241,16 +241,16 @@ exportNames names = do
         (n:nn) -> throw $ LookupNamesUnknownError $ n :| nn
 
 exportScope ::
-       forall ts. (Show (TSVarID ts), AllWitnessConstraint Show (TSNegWitness ts))
+       forall ts. (Show (TSVarID ts), AllConstraint Show (TSNegWitness ts))
     => [Name]
     -> Interpreter ts (Scope ts)
 exportScope names = do
-    MkScope _ subtypes <- askD scopeParam
+    MkScope _ subtypes <- paramAsk scopeParam
     goodbinds <- exportNames names
     return $ MkScope (mapFromList goodbinds) subtypes
 
 importScope :: Scope ts -> Interpreter ts --> Interpreter ts
-importScope newscope = localD scopeParam $ \oldscope -> newscope <> oldscope
+importScope newscope = paramLocal scopeParam $ \oldscope -> newscope <> oldscope
 
 getCycle :: ModuleName -> [ModuleName] -> Maybe (NonEmpty ModuleName)
 getCycle _ [] = Nothing
@@ -260,33 +260,33 @@ getCycle mn (_:nn) = getCycle mn nn
 
 loadModuleInScope :: forall ts. ModuleName -> Interpreter ts (Maybe (Module ts))
 loadModuleInScope mname =
-    withD sourcePosParam (initialPos "<unknown>") $
-    withD scopeParam mempty $
-    localD modulePathParam (\path -> path <> [mname]) $ do
-        loadModule <- askD loadModuleParam
+    paramWith sourcePosParam (initialPos "<unknown>") $
+    paramWith scopeParam mempty $
+    paramLocal modulePathParam (\path -> path <> [mname]) $ do
+        loadModule <- paramAsk loadModuleParam
         loadModule mname
 
 getModule :: ModuleName -> Interpreter ts (Module ts)
 getModule mname = do
-    mods <- getD modulesRef
+    mods <- refGet modulesRef
     case lookup mname mods of
         Just m -> return m
         Nothing -> do
-            mpath <- askD modulePathParam
+            mpath <- paramAsk modulePathParam
             case getCycle mname mpath of
                 Just mnames -> throw $ ModuleCycleError mnames
                 Nothing -> do
                     mm <- loadModuleInScope mname
                     case mm of
                         Just m -> do
-                            modifyD modulesRef $ insertMap mname m
+                            refModify modulesRef $ insertMap mname m
                             return m
                         Nothing -> throw $ ModuleNotFoundError mname
 
 type InterpreterEndo ts = CatEndo WMFunction (Interpreter ts)
 
 withNewBinding :: Name -> DocInterpreterBinding ts -> Interpreter ts --> Interpreter ts
-withNewBinding name db = localD scopeParam $ \tc -> tc {scopeBindings = insertMapLazy name db $ scopeBindings tc}
+withNewBinding name db = paramLocal scopeParam $ \tc -> tc {scopeBindings = insertMapLazy name db $ scopeBindings tc}
 
 bindingsScope :: Map Name (DocInterpreterBinding ts) -> Scope ts
 bindingsScope bb = mempty {scopeBindings = bb}
@@ -303,11 +303,11 @@ withNewBindings :: Map Name (DocInterpreterBinding ts) -> Interpreter ts --> Int
 withNewBindings bb = importScope $ bindingsScope bb
 
 withRemovedBindings :: [Name] -> Interpreter ts --> Interpreter ts
-withRemovedBindings nn = localD scopeParam $ \tc -> tc {scopeBindings = deletesMap nn $ scopeBindings tc}
+withRemovedBindings nn = paramLocal scopeParam $ \tc -> tc {scopeBindings = deletesMap nn $ scopeBindings tc}
 
 lookupDocBinding :: ReferenceName -> Interpreter ts (Maybe (DocInterpreterBinding ts))
 lookupDocBinding (UnqualifiedReferenceName name) = do
-    (scopeBindings -> names) <- askD scopeParam
+    (scopeBindings -> names) <- paramAsk scopeParam
     return $ lookup name names
 lookupDocBinding (QualifiedReferenceName mname name) = do
     modl <- getModule mname
@@ -317,7 +317,7 @@ lookupBinding :: ReferenceName -> Interpreter ts (Maybe (InterpreterBinding ts))
 lookupBinding rname = fmap (fmap snd) $ lookupDocBinding rname
 
 getSpecialVals :: Interpreter ts (SpecialVals ts)
-getSpecialVals = askD specialValsParam
+getSpecialVals = paramAsk specialValsParam
 
 lookupLetBinding :: ReferenceName -> Interpreter ts (Maybe (Either VarID (TSSealedExpression ts)))
 lookupLetBinding name = do
@@ -369,8 +369,8 @@ lookupPatternConstructor name = do
 
 newTypeID :: (forall tid. TypeIDType tid -> a) -> Interpreter ts a
 newTypeID call = do
-    tid <- getD typeIDRef
-    putD typeIDRef $ succTypeID tid
+    tid <- refGet typeIDRef
+    refPut typeIDRef $ succTypeID tid
     return $ valueToWitness tid call
 
 registerType :: Name -> Markdown -> Interpreter ts (BoundType ts) -> WMFunction (Interpreter ts) (Interpreter ts)
@@ -393,8 +393,8 @@ runWriterInterpreterMF ::
        (forall a. Interpreter ts a -> Interpreter ts (a, x))
     -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
 runWriterInterpreterMF mf = do
-    (sc, xx) <- mf $ askD scopeParam
-    return (MkWMFunction $ withD scopeParam sc, xx)
+    (sc, xx) <- mf $ paramAsk scopeParam
+    return (MkWMFunction $ paramWith scopeParam sc, xx)
 
 registerRecursiveTypeNames ::
        Monoid x => [TypeFixBox ts () x] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
@@ -417,4 +417,4 @@ withSubtypeConversions newscs ma = do
     importScope newscope ma
 
 getSubtypeConversions :: Interpreter ts [SubtypeConversionEntry (InterpreterGroundType ts)]
-getSubtypeConversions = fmap (fmap snd . mapToList . scopeSubtypes) $ askD scopeParam
+getSubtypeConversions = fmap (fmap snd . mapToList . scopeSubtypes) $ paramAsk scopeParam

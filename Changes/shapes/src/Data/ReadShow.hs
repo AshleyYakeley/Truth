@@ -7,7 +7,6 @@ module Data.ReadShow
     ) where
 
 import Data.Codec
-import Data.IsoVariant
 import Data.Streamish
 import Shapes.Import
 
@@ -16,8 +15,8 @@ data ReadShow a = MkReadShow
     , rsRead :: ReadPrec a
     }
 
-instance IsoVariant ReadShow where
-    isoMap ab ba (MkReadShow s r) = MkReadShow (s . ba) (fmap ab r)
+instance Invariant ReadShow where
+    invmap ab ba (MkReadShow s r) = MkReadShow (s . ba) (fmap ab r)
 
 instance Productish ReadShow where
     pUnit :: ReadShow ()
@@ -111,7 +110,7 @@ digitsReadShow = let
     integerToList n = integerToList (div n 10) <> [mod n 10]
     integerToNonEmpty :: Integer -> NonEmpty Integer
     integerToNonEmpty n = fromMaybe (pure 0) $ nonEmpty $ integerToList n
-    in isoMap nonEmptyToInteger integerToNonEmpty $ pList1 digitReadShow
+    in invmap nonEmptyToInteger integerToNonEmpty $ pList1 digitReadShow
 
 negateReadShow ::
        forall a. (Ord a, Num a)
@@ -125,7 +124,7 @@ negateReadShow ra = let
     integerToTuple i
         | i < 0 = (Just (), negate i)
     integerToTuple i = (Nothing, i)
-    in isoMap tupleToInteger integerToTuple $ pOptional (pLiteral '-') <***> ra
+    in invmap tupleToInteger integerToTuple $ pOptional (pLiteral '-') <***> ra
 
 integerReadShow :: ReadShow Integer
 integerReadShow = negateReadShow digitsReadShow

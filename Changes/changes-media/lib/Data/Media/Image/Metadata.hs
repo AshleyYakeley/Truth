@@ -48,11 +48,11 @@ instance WitnessConstraint NFData ImageDataKey where
     witnessConstraint (Exif _) = Dict
     witnessConstraint (Unknown _) = Dict
 
-fromMetadatas :: Metadatas -> WitnessDict ImageDataKey
-fromMetadatas = Codec.Picture.Metadata.foldMap $ \(k :=> v) -> witnessDictSingle k v
+fromMetadatas :: Metadatas -> WitnessMapOf ImageDataKey
+fromMetadatas = Codec.Picture.Metadata.foldMap $ \(k :=> v) -> witnessMapOfSingle k v
 
-toMetadatas :: WitnessDict ImageDataKey -> Metadatas
+toMetadatas :: WitnessMapOf ImageDataKey -> Metadatas
 toMetadatas wd =
-    witnessDictFold wd $ \k v ->
+    witnessMapOfFold wd $ \k v ->
         case (witnessConstraint @Type @Show k, witnessConstraint @Type @NFData k) of
             (Dict, Dict) -> Codec.Picture.Metadata.singleton k v

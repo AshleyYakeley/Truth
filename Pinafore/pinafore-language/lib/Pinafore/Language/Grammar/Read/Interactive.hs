@@ -22,7 +22,7 @@ data InteractiveCommand
     | ShowTypeInteractiveCommand Bool
                                  (PinaforeInterpreter QExpr)
     | forall polarity. SimplifyTypeInteractiveCommand (PolarityType polarity)
-                                                      (PinaforeInterpreter (AnyW (PinaforeType polarity)))
+                                                      (PinaforeInterpreter (Some (PinaforeType polarity)))
     | ErrorInteractiveCommand Text
 
 showDocInteractiveCommand :: Parser InteractiveCommand
@@ -41,7 +41,7 @@ simplifyPolarTypeInteractiveCommand polarity =
         Dict -> do
             spos <- getPosition
             stype <- readType
-            return $ SimplifyTypeInteractiveCommand polarity $ withD sourcePosParam spos $ interpretType stype
+            return $ SimplifyTypeInteractiveCommand polarity $ paramWith sourcePosParam spos $ interpretType stype
 
 readPolarity :: (forall polarity. PolarityType polarity -> Parser r) -> Parser r
 readPolarity cont =

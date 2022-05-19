@@ -1,7 +1,6 @@
 module Data.Streamish where
 
 import Data.Filterable
-import Data.IsoVariant
 import Shapes.Import
 import qualified Text.ParserCombinators.ReadP as ReadP
 import qualified Text.ParserCombinators.ReadPrec as ReadPrec

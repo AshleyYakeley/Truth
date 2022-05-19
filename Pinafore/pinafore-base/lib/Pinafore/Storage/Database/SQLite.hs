@@ -84,59 +84,48 @@ instance WitnessConstraint IsSQLiteTable PinaforeSchema where
 
 sqlitePinaforeSchema :: DatabaseSchema PinaforeSchema
 sqlitePinaforeSchema = let
-    databaseTables = let
-        subWitnessDomain =
-            [MkAnyW PinaforeProperty, MkAnyW PinaforeRefCount, MkAnyW PinaforeFact, MkAnyW PinaforeLiteral]
-        subWitnessMap :: PinaforeSchema t -> TableSchema t
-        subWitnessMap PinaforeProperty = let
-            tableName = "property"
-            tableColumns = let
-                domain = [MkAnyW TripleSubject, MkAnyW TriplePredicate, MkAnyW TripleValue]
-                witmap :: TripleTable t -> ColumnSchema t
-                witmap TriplePredicate = MkColumnSchema "predicate" ColumnTypeNotNull True
-                witmap TripleSubject = MkColumnSchema "subject" ColumnTypeNotNull True
-                witmap TripleValue = MkColumnSchema "value" ColumnTypeNotNull False
-                in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "propval" [MkAnyW TriplePredicate, MkAnyW TripleValue]]
-            in MkTableSchema {..}
-        subWitnessMap PinaforeRefCount = let
-            tableName = "refcount"
-            tableColumns = let
-                domain = [MkAnyW RefCountKey, MkAnyW RefCountValue]
-                witmap :: RefCountTable t -> ColumnSchema t
-                witmap RefCountKey = MkColumnSchema "key" ColumnTypeNotNull True
-                witmap RefCountValue = MkColumnSchema "value" ColumnTypeNotNull False
-                in MkSubmapWitness domain witmap
-            tableIndexes = []
-            in MkTableSchema {..}
-        subWitnessMap PinaforeFact = let
-            tableName = "fact"
-            tableColumns = let
-                domain = [MkAnyW TripleSubject, MkAnyW TriplePredicate, MkAnyW TripleValue]
-                witmap :: TripleTable t -> ColumnSchema t
-                witmap TriplePredicate = MkColumnSchema "predicate" ColumnTypeNotNull True
-                witmap TripleSubject = MkColumnSchema "subject" ColumnTypeNotNull True
-                witmap TripleValue = MkColumnSchema "value" ColumnTypeNotNull False
-                in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "factval" [MkAnyW TriplePredicate, MkAnyW TripleValue]]
-            in MkTableSchema {..}
-        subWitnessMap PinaforeLiteral = let
-            tableName = "literal"
-            tableColumns = let
-                domain = [MkAnyW LiteralKey, MkAnyW LiteralValue]
-                witmap :: LiteralTable t -> ColumnSchema t
-                witmap LiteralKey = MkColumnSchema "key" ColumnTypeNotNull True
-                witmap LiteralValue = MkColumnSchema "value" ColumnTypeNotNull False
-                in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "litval" [MkAnyW LiteralValue]]
-            in MkTableSchema {..}
-        in MkSubmapWitness {..}
+    databaseTables =
+        mkFiniteAllFor @TableSchema $ \case
+            PinaforeProperty -> let
+                tableName = "property"
+                tableColumns =
+                    mkFiniteAllFor @ColumnSchema $ \case
+                        TriplePredicate -> MkColumnSchema "predicate" ColumnTypeNotNull True
+                        TripleSubject -> MkColumnSchema "subject" ColumnTypeNotNull True
+                        TripleValue -> MkColumnSchema "value" ColumnTypeNotNull False
+                tableIndexes = [MkIndexSchema "propval" [MkSome TriplePredicate, MkSome TripleValue]]
+                in MkTableSchema {..}
+            PinaforeRefCount -> let
+                tableName = "refcount"
+                tableColumns =
+                    mkFiniteAllFor @ColumnSchema $ \case
+                        RefCountKey -> MkColumnSchema "key" ColumnTypeNotNull True
+                        RefCountValue -> MkColumnSchema "value" ColumnTypeNotNull False
+                tableIndexes = []
+                in MkTableSchema {..}
+            PinaforeFact -> let
+                tableName = "fact"
+                tableColumns =
+                    mkFiniteAllFor @ColumnSchema $ \case
+                        TriplePredicate -> MkColumnSchema "predicate" ColumnTypeNotNull True
+                        TripleSubject -> MkColumnSchema "subject" ColumnTypeNotNull True
+                        TripleValue -> MkColumnSchema "value" ColumnTypeNotNull False
+                tableIndexes = [MkIndexSchema "factval" [MkSome TriplePredicate, MkSome TripleValue]]
+                in MkTableSchema {..}
+            PinaforeLiteral -> let
+                tableName = "literal"
+                tableColumns =
+                    mkFiniteAllFor @ColumnSchema $ \case
+                        LiteralKey -> MkColumnSchema "key" ColumnTypeNotNull True
+                        LiteralValue -> MkColumnSchema "value" ColumnTypeNotNull False
+                tableIndexes = [MkIndexSchema "litval" [MkSome LiteralValue]]
+                in MkTableSchema {..}
     in MkDatabaseSchema {..}
 
-class (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstraint Show colsel) =>
+class (FiniteWitness colsel, WitnessConstraint Show colsel, AllConstraint Show colsel) =>
           IsPinaforeRow (colsel :: Type -> Type)
 
-instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstraint Show colsel) => IsPinaforeRow colsel
+instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllConstraint Show colsel) => IsPinaforeRow colsel
 
 instance TupleDatabase SQLiteDatabase PinaforeSchema where
     type TupleDatabaseRowWitness SQLiteDatabase PinaforeSchema = IsPinaforeRow
@@ -153,7 +142,7 @@ sqlitePinaforeLens = let
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
-        return $ fmap getSingleAll $ listToMaybe row
+        return $ fmap getSingleAllOf $ listToMaybe row
     clRead mr (PinaforeTableReadPropertyLookup p v) = do
         row <-
             mr $
@@ -163,9 +152,9 @@ sqlitePinaforeLens = let
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleValue === ConstExpr v))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
-        return $ MkFiniteSet $ fmap getSingleAll row
+        return $ MkFiniteSet $ fmap getSingleAllOf row
     clRead mr (PinaforeTableReadEntityRefCount v) = do
-        (row :: [AllValue ((:~:) RefCount)]) <-
+        (row :: [AllOf ((:~:) RefCount)]) <-
             mr $
             DatabaseSelect
                 (SingleTable $ MkTupleTableSel PinaforeRefCount)
@@ -174,7 +163,7 @@ sqlitePinaforeLens = let
                 (MkTupleSelectClause $ \Refl -> ColumnExpr RefCountValue)
         return $ do
             sa <- listToMaybe row
-            return $ getSingleAll sa
+            return $ getSingleAllOf sa
     clRead mr (PinaforeTableReadFactGet p s) = do
         row <-
             mr $
@@ -184,9 +173,9 @@ sqlitePinaforeLens = let
                  (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
-        return $ fmap getSingleAll $ listToMaybe row
+        return $ fmap getSingleAllOf $ listToMaybe row
     clRead mr (PinaforeTableReadLiteralGet v) = do
-        (row :: [AllValue ((:~:) Literal)]) <-
+        (row :: [AllOf ((:~:) Literal)]) <-
             mr $
             DatabaseSelect
                 (SingleTable $ MkTupleTableSel PinaforeLiteral)
@@ -195,7 +184,7 @@ sqlitePinaforeLens = let
                 (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralValue)
         return $ do
             sa <- listToMaybe row
-            return $ getSingleAll sa
+            return $ getSingleAllOf sa
     clUpdate ::
            forall m. MonadIO m
         => SQLiteUpdate PinaforeSchema
@@ -213,7 +202,7 @@ sqlitePinaforeLens = let
         DatabaseInsert (MkTupleTableSel PinaforeProperty) $
         MkTupleInsertClause $
         pure $
-        MkAllValue $ \case
+        MkAllOf $ \case
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
@@ -230,7 +219,7 @@ sqlitePinaforeLens = let
         DatabaseInsert (MkTupleTableSel PinaforeRefCount) $
         MkTupleInsertClause $
         pure $
-        MkAllValue $ \case
+        MkAllOf $ \case
             RefCountKey -> v
             RefCountValue -> rc
     clPutEdit (PinaforeTableEditEntityRefCount v Nothing) =
@@ -245,7 +234,7 @@ sqlitePinaforeLens = let
         DatabaseInsert (MkTupleTableSel PinaforeFact) $
         MkTupleInsertClause $
         pure $
-        MkAllValue $ \case
+        MkAllOf $ \case
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
@@ -262,7 +251,7 @@ sqlitePinaforeLens = let
         DatabaseInsert (MkTupleTableSel PinaforeLiteral) $
         MkTupleInsertClause $
         pure $
-        MkAllValue $ \case
+        MkAllOf $ \case
             LiteralKey -> v
             LiteralValue -> l
     clPutEdit (PinaforeTableEditLiteralSet v Nothing) =
@@ -292,7 +281,7 @@ sqlitePinaforeTableReference path = do
     obj <- sqliteReference path sqlitePinaforeSchema
     return $ mapReference (traceArgThing "pinafore-SQLite" sqlitePinaforeLens) obj
 
-sqlitePinaforeTableGetEntireDatabase :: ResourceContext -> FilePath -> IO (AllF (TupleTableSel PinaforeSchema) [])
+sqlitePinaforeTableGetEntireDatabase :: ResourceContext -> FilePath -> IO (AllFor [] (TupleTableSel PinaforeSchema))
 sqlitePinaforeTableGetEntireDatabase rc path = do
     obj <- sqliteReference path sqlitePinaforeSchema
     getReferenceSubject rc obj

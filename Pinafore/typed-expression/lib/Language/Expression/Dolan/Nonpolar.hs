@@ -76,7 +76,7 @@ type NonpolarArgumentShimWit ground polarity sv
 type NonpolarArguments :: GroundTypeKind -> forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type -> Type
 type NonpolarArguments ground = CCRArguments (NonpolarArgument ground)
 
-argFreeVariables :: forall (ground :: GroundTypeKind) sv t. NonpolarArgument ground sv t -> [AnyW SymbolType]
+argFreeVariables :: forall (ground :: GroundTypeKind) sv t. NonpolarArgument ground sv t -> [Some SymbolType]
 argFreeVariables (CoNonpolarArgument arg) = nonpolarTypeFreeVariables arg
 argFreeVariables (ContraNonpolarArgument arg) = nonpolarTypeFreeVariables arg
 argFreeVariables (RangeNonpolarArgument argp argq) = nonpolarTypeFreeVariables argp <> nonpolarTypeFreeVariables argq
@@ -84,13 +84,13 @@ argFreeVariables (RangeNonpolarArgument argp argq) = nonpolarTypeFreeVariables a
 nonpolarArgumentsFreeVariables ::
        forall (ground :: GroundTypeKind) dv (gt :: DolanVarianceKind dv) t.
        NonpolarArguments ground dv gt t
-    -> [AnyW SymbolType]
+    -> [Some SymbolType]
 nonpolarArgumentsFreeVariables NilCCRArguments = []
 nonpolarArgumentsFreeVariables (ConsCCRArguments targ targs) =
     nonpolarArgumentsFreeVariables @ground targs <> argFreeVariables @ground targ
 
-nonpolarTypeFreeVariables :: forall (ground :: GroundTypeKind) t. NonpolarDolanType ground t -> [AnyW SymbolType]
-nonpolarTypeFreeVariables (VarNonpolarType n) = [MkAnyW n]
+nonpolarTypeFreeVariables :: forall (ground :: GroundTypeKind) t. NonpolarDolanType ground t -> [Some SymbolType]
+nonpolarTypeFreeVariables (VarNonpolarType n) = [MkSome n]
 nonpolarTypeFreeVariables (GroundedNonpolarType _ args) = nonpolarArgumentsFreeVariables args
 
 nonpolarToDolanArg ::

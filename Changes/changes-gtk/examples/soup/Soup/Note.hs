@@ -19,8 +19,8 @@ instance Show (NoteSel t) where
     show NotePast = "past"
     show NoteText = "text"
 
-instance AllWitnessConstraint Show NoteSel where
-    allWitnessConstraint = Dict
+instance AllConstraint Show NoteSel where
+    allConstraint = Dict
 
 instance (c Text, c Bool, c Text) => TupleSubjectWitness c NoteSel where
     tupleSubjectWitness NoteTitle = Dict
@@ -43,9 +43,9 @@ instance (c (WholeUpdate Text), c (WholeUpdate Bool), c (StringUpdate Text)) => 
     tupleUpdateWitness NoteText = Dict
 
 instance FiniteWitness NoteSel where
-    assembleWitnessF getw =
+    assembleAllFor getw =
         (\a b c ->
-             MkAllF $ \case
+             MkAllFor $ \case
                  NoteTitle -> a
                  NotePast -> b
                  NoteText -> c) <$>

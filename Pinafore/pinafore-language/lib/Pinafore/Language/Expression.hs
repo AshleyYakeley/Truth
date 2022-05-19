@@ -53,7 +53,7 @@ qToPatternConstructor ::
        ( ToListShimWit (PinaforePolyShim Type) (PinaforeType 'Positive) lt
        , FromPolarShimWit (PinaforePolyShim Type) (PinaforeType 'Negative) t
        )
-    => (t -> Maybe (HList lt))
+    => (t -> Maybe (ListProduct lt))
     -> QPatternConstructor
 qToPatternConstructor =
     toPatternConstructor (fromPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative)) toListShimWit
@@ -86,7 +86,9 @@ qFunctionPosWitness ::
 qFunctionPosWitness = tsFunctionPosShimWit @PinaforeTypeSystem
 
 qFunctionPosWitnesses ::
-       ListType (PinaforeShimWit 'Negative) a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (HList a -> b)
+       ListType (PinaforeShimWit 'Negative) a
+    -> PinaforeShimWit 'Positive b
+    -> PinaforeShimWit 'Positive (ListProduct a -> b)
 qFunctionPosWitnesses NilListType tb = mapPosShimWit (functionToShim "poswitness" $ \ub -> ub ()) tb
 qFunctionPosWitnesses (ConsListType ta la) tb =
     mapPosShimWit (functionToShim "poswitness" $ \f a l -> f (a, l)) $
@@ -118,10 +120,10 @@ qSequenceExpr (e:ee) = do
 
 type QBinding = Binding PinaforeTypeSystem
 
-qBindExpr :: VarID -> Markdown -> Maybe (AnyW (PinaforeType 'Positive)) -> QExpr -> QBinding
+qBindExpr :: VarID -> Markdown -> Maybe (Some (PinaforeType 'Positive)) -> QExpr -> QBinding
 qBindExpr = tsSingleBinding @PinaforeTypeSystem
 
-qSubsumeExpr :: AnyW (PinaforeType 'Positive) -> QExpr -> PinaforeInterpreter QExpr
+qSubsumeExpr :: Some (PinaforeType 'Positive) -> QExpr -> PinaforeInterpreter QExpr
 qSubsumeExpr = tsSubsumeExpression @PinaforeTypeSystem
 
 qLetExpr :: VarID -> QExpr -> QExpr -> PinaforeInterpreter QExpr

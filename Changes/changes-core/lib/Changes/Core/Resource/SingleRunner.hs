@@ -25,7 +25,7 @@ instance TestEquality SingleRunner where
     testEquality (MkSingleRunner wa _) (MkSingleRunner wb _) = testEquality wa wb
 
 instance TestOrder SingleRunner where
-    testOrder (MkSingleRunner wa _) (MkSingleRunner wb _) = testOrder wa wb
+    testCompare (MkSingleRunner wa _) (MkSingleRunner wb _) = testCompare wa wb
 
 mkSingleRunner ::
        forall (t :: TransKind). MonadTransUnlift t
@@ -43,27 +43,27 @@ discardingSingleRunner (MkSingleRunner w run) = MkSingleRunner w $ discardingRun
 mkAnySingleRunner :: MonadTransUnlift t => IOWitness t -> WUnlift MonadUnliftIO t -> SingleRunner t
 mkAnySingleRunner wit (MkWUnlift unlift) = MkSingleRunner wit unlift
 
-fetchInAnyWList :: TestEquality w => [AnyW w] -> w t -> Maybe (w t, w t -> [AnyW w])
-fetchInAnyWList [] _ = Nothing
-fetchInAnyWList (MkAnyW it:aa) wt
-    | Just Refl <- testEquality it wt = Just (it, \it' -> MkAnyW it' : aa)
-fetchInAnyWList (a:aa) wt = do
-    (it, f) <- fetchInAnyWList aa wt
+fetchInSomeList :: TestEquality w => [Some w] -> w t -> Maybe (w t, w t -> [Some w])
+fetchInSomeList [] _ = Nothing
+fetchInSomeList (MkSome it:aa) wt
+    | Just Refl <- testEquality it wt = Just (it, \it' -> MkSome it' : aa)
+fetchInSomeList (a:aa) wt = do
+    (it, f) <- fetchInSomeList aa wt
     return (it, \it' -> a : f it')
 
 fetchSingleRunner ::
        forall t.
-       [AnyW SingleRunner]
+       [Some SingleRunner]
     -> SingleRunner t
-    -> (WUnlift MonadUnliftIO t -> [AnyW SingleRunner], WUnlift MonadUnliftIO t, Bool)
+    -> (WUnlift MonadUnliftIO t -> [Some SingleRunner], WUnlift MonadUnliftIO t, Bool)
 fetchSingleRunner rr sr@(MkSingleRunner swit srun) =
-    case fetchInAnyWList rr sr of
-        Nothing -> (\unlift -> (MkAnyW $ mkAnySingleRunner swit unlift) : rr, traceThing ("resourcelet {" <> show (iowInteger swit) <> "}: run") $ MkWUnlift srun, True)
+    case fetchInSomeList rr sr of
+        Nothing -> (\unlift -> (MkSome $ mkAnySingleRunner swit unlift) : rr, traceThing ("resourcelet {" <> show (iowInteger swit) <> "}: run") $ MkWUnlift srun, True)
         Just (MkSingleRunner cwit crun, f) -> (\unlift -> f (mkAnySingleRunner cwit unlift), traceThing ("resourcelet {" <> show (iowInteger cwit) <> "}: unlift") $ MkWUnlift crun, False)
 
 runSingleRunner ::
        forall t m r. MonadUnliftIO m
-    => [AnyW SingleRunner]
+    => [Some SingleRunner]
     -> SingleRunner t
     -> ((MonadTransUnlift t, MonadUnliftIO (t m)) => t m r)
     -> m r
@@ -77,9 +77,9 @@ runSingleRunner rr sr call =
 
 runSingleRunnerContext ::
        forall t m r. MonadUnliftIO m
-    => [AnyW SingleRunner]
+    => [Some SingleRunner]
     -> SingleRunner t
-    -> ((MonadTransUnlift t, MonadUnliftIO (t m)) => [AnyW SingleRunner] -> Unlift MonadUnliftIO t -> m r)
+    -> ((MonadTransUnlift t, MonadUnliftIO (t m)) => [Some SingleRunner] -> Unlift MonadUnliftIO t -> m r)
     -> m r
 runSingleRunnerContext rr sr call =
     case singleRunnerUnliftAllDict sr of

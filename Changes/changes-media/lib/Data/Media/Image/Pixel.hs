@@ -37,21 +37,21 @@ instance TestEquality PixelType where
     testEquality CMYK16PixelType CMYK16PixelType = Just Refl
     testEquality _ _ = Nothing
 
-fromDynamicImage :: DynamicImage -> AnyF PixelType Image
-fromDynamicImage (ImageY8 image) = MkAnyF Y8PixelType image
-fromDynamicImage (ImageY16 image) = MkAnyF Y16PixelType image
-fromDynamicImage (ImageY32 image) = MkAnyF Y32PixelType image
-fromDynamicImage (ImageYF image) = MkAnyF YFPixelType image
-fromDynamicImage (ImageYA8 image) = MkAnyF YA8PixelType image
-fromDynamicImage (ImageYA16 image) = MkAnyF YA16PixelType image
-fromDynamicImage (ImageRGB8 image) = MkAnyF RGB8PixelType image
-fromDynamicImage (ImageRGB16 image) = MkAnyF RGB16PixelType image
-fromDynamicImage (ImageRGBF image) = MkAnyF RGBFPixelType image
-fromDynamicImage (ImageRGBA8 image) = MkAnyF RGBA8PixelType image
-fromDynamicImage (ImageRGBA16 image) = MkAnyF RGBA16PixelType image
-fromDynamicImage (ImageYCbCr8 image) = MkAnyF YCbCr8PixelType image
-fromDynamicImage (ImageCMYK8 image) = MkAnyF CMYK8PixelType image
-fromDynamicImage (ImageCMYK16 image) = MkAnyF CMYK16PixelType image
+fromDynamicImage :: DynamicImage -> SomeFor Image PixelType
+fromDynamicImage (ImageY8 image) = MkSomeFor Y8PixelType image
+fromDynamicImage (ImageY16 image) = MkSomeFor Y16PixelType image
+fromDynamicImage (ImageY32 image) = MkSomeFor Y32PixelType image
+fromDynamicImage (ImageYF image) = MkSomeFor YFPixelType image
+fromDynamicImage (ImageYA8 image) = MkSomeFor YA8PixelType image
+fromDynamicImage (ImageYA16 image) = MkSomeFor YA16PixelType image
+fromDynamicImage (ImageRGB8 image) = MkSomeFor RGB8PixelType image
+fromDynamicImage (ImageRGB16 image) = MkSomeFor RGB16PixelType image
+fromDynamicImage (ImageRGBF image) = MkSomeFor RGBFPixelType image
+fromDynamicImage (ImageRGBA8 image) = MkSomeFor RGBA8PixelType image
+fromDynamicImage (ImageRGBA16 image) = MkSomeFor RGBA16PixelType image
+fromDynamicImage (ImageYCbCr8 image) = MkSomeFor YCbCr8PixelType image
+fromDynamicImage (ImageCMYK8 image) = MkSomeFor CMYK8PixelType image
+fromDynamicImage (ImageCMYK16 image) = MkSomeFor CMYK16PixelType image
 
 toDynamicImage :: PixelType px -> Image px -> DynamicImage
 toDynamicImage Y8PixelType image = ImageY8 image

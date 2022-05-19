@@ -39,8 +39,8 @@ instance Show (WithContextSelector updateX updateN t) where
     show SelectContext = "context"
     show SelectContent = "content"
 
-instance AllWitnessConstraint Show (WithContextSelector updateX updateN) where
-    allWitnessConstraint = Dict
+instance AllConstraint Show (WithContextSelector updateX updateN) where
+    allConstraint = Dict
 
 instance TestEquality (WithContextSelector updateX updateN) where
     testEquality SelectContext SelectContext = Just Refl
@@ -71,13 +71,13 @@ instance (c updateX, c updateN) => TupleUpdateWitness c (WithContextSelector upd
     tupleUpdateWitness SelectContext = Dict
     tupleUpdateWitness SelectContent = Dict
 
-instance IsFiniteConsWitness (WithContextSelector updateX updateN) where
-    type FiniteConsWitness (WithContextSelector updateX updateN) = '[ updateX, updateN]
-    toLTW SelectContext = FirstElementType
-    toLTW SelectContent = RestElementType FirstElementType
-    fromLTW FirstElementType = SelectContext
-    fromLTW (RestElementType FirstElementType) = SelectContent
-    fromLTW (RestElementType (RestElementType lt)) = never lt
+instance ListElementWitness (WithContextSelector updateX updateN) where
+    type WitnessTypeList (WithContextSelector updateX updateN) = '[ updateX, updateN]
+    toListElementWitness SelectContext = FirstElementType
+    toListElementWitness SelectContent = RestElementType FirstElementType
+    fromListElementWitness FirstElementType = SelectContext
+    fromListElementWitness (RestElementType FirstElementType) = SelectContent
+    fromListElementWitness (RestElementType (RestElementType lt)) = never lt
 
 type ContextUpdateReader updateX updateN = TupleUpdateReader (WithContextSelector updateX updateN)
 

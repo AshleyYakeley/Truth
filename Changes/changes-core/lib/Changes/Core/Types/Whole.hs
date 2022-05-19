@@ -18,8 +18,8 @@ instance TestEquality (WholeReader a) where
 instance Show (WholeReader a t) where
     show ReadWhole = "whole"
 
-instance AllWitnessConstraint Show (WholeReader a) where
-    allWitnessConstraint = Dict
+instance AllConstraint Show (WholeReader a) where
+    allConstraint = Dict
 
 instance Show a => WitnessConstraint Show (WholeReader a) where
     witnessConstraint ReadWhole = Dict

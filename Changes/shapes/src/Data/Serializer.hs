@@ -1,7 +1,6 @@
 module Data.Serializer where
 
 import Data.Codec
-import Data.IsoVariant
 import qualified Data.Serialize as Serialize
 import Data.Streamish
 import Shapes.Import
@@ -11,8 +10,8 @@ data Serializer a = MkSerializer
     , deserialize :: Serialize.Get a
     }
 
-instance IsoVariant Serializer where
-    isoMap ab ba (MkSerializer s d) = MkSerializer (s . ba) (fmap ab d)
+instance Invariant Serializer where
+    invmap ab ba (MkSerializer s d) = MkSerializer (s . ba) (fmap ab d)
 
 instance Productish Serializer where
     pUnit :: Serializer ()

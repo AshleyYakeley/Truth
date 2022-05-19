@@ -23,5 +23,5 @@ fromJMShimWit = fromPolarShimWit
 jmToValue ::
        forall wit (t :: Type). ToPolarShimWit (JMShim Type) wit t
     => t
-    -> AnyValue (JMShimWit wit 'Positive)
-jmToValue = MkAnyValue $ toJMShimWit @Type @wit @t
+    -> SomeOf (JMShimWit wit 'Positive)
+jmToValue = MkSomeOf $ toJMShimWit @Type @wit @t

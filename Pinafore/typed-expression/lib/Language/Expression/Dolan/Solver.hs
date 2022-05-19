@@ -39,7 +39,7 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEqua
 type Solver :: GroundTypeKind -> (Type -> Type) -> Type -> Type
 newtype Solver ground wit a = MkSolver
     { unSolver :: forall (rlist :: [Type]).
-                          ReaderT (ListType (ShimType ground) rlist) (DolanTypeCheckM ground) (Expression wit (HList rlist -> a))
+                          ReaderT (ListType (ShimType ground) rlist) (DolanTypeCheckM ground) (Expression wit (ListProduct rlist -> a))
     }
 
 instance forall (ground :: GroundTypeKind) wit. Functor (DolanM ground) => Functor (Solver ground wit) where
@@ -101,7 +101,7 @@ solveRecursiveTypes solvePlainTypes rpta rptb =
         let st = MkShimType (polarityType @pola) (polarityType @polb) rpta rptb
         rcs <- ask
         case lookUpListElement st rcs of
-            Just lelem -> return $ pure $ getListElement lelem
+            Just lelem -> return $ pure $ listProductGetElement lelem
             Nothing ->
                 withReaderT (\rcs' -> ConsListType st rcs') $ do
                     MkShimWit pta iconva <- return $ unrollRecursiveOrPlainType rpta

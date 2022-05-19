@@ -26,8 +26,8 @@ instance (c seq, c SequencePoint) => WitnessConstraint c (StringRead seq) where
     witnessConstraint StringReadLength = Dict
     witnessConstraint (StringReadSection _) = Dict
 
-instance AllWitnessConstraint Show (StringRead seq) where
-    allWitnessConstraint = Dict
+instance AllConstraint Show (StringRead seq) where
+    allConstraint = Dict
 
 instance IsSequence seq => SubjectReader (StringRead seq) where
     type ReaderSubject (StringRead seq) = seq

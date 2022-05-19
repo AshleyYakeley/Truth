@@ -10,3 +10,9 @@
 [submodule "external/countable"]
 	path = external/countable
 	url = git@github.com:AshleyYakeley/countable.git
+[submodule "external/monadology"]
+	path = external/monadology
+	url = ../monadology.git
+[submodule "external/type-rig"]
+	path = external/type-rig
+	url = ../type-rig.git

@@ -24,8 +24,8 @@ instance Show (PinaforeStorageRead t) where
     show (PinaforeStorageReadLookup p v) = "lookup " ++ show p ++ " for " ++ show v
     show (PinaforeStorageReadEntity _ e) = "fetch " ++ show e
 
-instance AllWitnessConstraint Show PinaforeStorageRead where
-    allWitnessConstraint = Dict
+instance AllConstraint Show PinaforeStorageRead where
+    allConstraint = Dict
 
 data PinaforeStorageEdit where
     MkPinaforeStorageEdit

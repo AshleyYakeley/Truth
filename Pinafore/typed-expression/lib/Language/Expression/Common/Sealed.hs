@@ -13,16 +13,14 @@ data SealedExpression (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall t. MkSealedExpression (tw t)
                                  (NamedExpression name vw t)
 
-constSealedExpression :: AnyValue tw -> SealedExpression name vw tw
-constSealedExpression (MkAnyValue twt t) = MkSealedExpression twt $ pure t
+constSealedExpression :: SomeOf tw -> SealedExpression name vw tw
+constSealedExpression (MkSomeOf twt t) = MkSealedExpression twt $ pure t
 
 evalSealedExpression ::
-       (MonadThrow ExpressionError m, AllWitnessConstraint Show vw, Show name)
-    => SealedExpression name vw tw
-    -> m (AnyValue tw)
+       (MonadThrow ExpressionError m, AllConstraint Show vw, Show name) => SealedExpression name vw tw -> m (SomeOf tw)
 evalSealedExpression (MkSealedExpression twa expr) = do
     a <- evalExpression expr
-    return $ MkAnyValue twa a
+    return $ MkSomeOf twa a
 
 varSealedExpression :: name -> vw t -> tw t -> SealedExpression name vw tw
 varSealedExpression n vwt twt = MkSealedExpression twt $ varNamedExpression n vwt
@@ -40,7 +38,7 @@ instance MonoFunctor (SealedExpression name vw ((:~:) val)) where
     omap ab (MkSealedExpression Refl expr) = MkSealedExpression Refl $ fmap ab expr
 
 instance MonoPointed (SealedExpression name vw ((:~:) val)) where
-    opoint p = constSealedExpression $ MkAnyValue Refl p
+    opoint p = constSealedExpression $ MkSomeOf Refl p
 
 instance MonoApplicative (SealedExpression name vw ((:~:) val)) where
     oliftA2 appf (MkSealedExpression Refl vexpr) (MkSealedExpression Refl bexpr) =
@@ -54,9 +52,8 @@ instance WitnessMappable poswit negwit (SealedExpression name negwit poswit) whe
         expr' <- mapWitnessesM mapPos mapNeg expr
         pure $ MkSealedExpression tt' expr'
 
-instance (Show name, AllWitnessConstraint Show negwit, AllWitnessConstraint Show poswit) =>
-             Show (SealedExpression name negwit poswit) where
-    show (MkSealedExpression t expr) = show expr <> " => " <> showAllWitness t
+instance (Show name, AllConstraint Show negwit, AllConstraint Show poswit) => Show (SealedExpression name negwit poswit) where
+    show (MkSealedExpression t expr) = show expr <> " => " <> allShow t
 
 data SealedPattern (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall t. MkSealedPattern (tw t)
@@ -83,31 +80,31 @@ sealedPatternNames (MkSealedPattern _ pat) = patternNames pat
 data PatternConstructor (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall (t :: Type) (lt :: [Type]). MkPatternConstructor (tw t)
                                                             (ListType vw lt)
-                                                            (NamedPattern name vw t (HList lt))
+                                                            (NamedPattern name vw t (ListProduct lt))
 
 toPatternConstructor ::
        forall name poswit negwit t lt.
        negwit t
     -> ListType poswit lt
-    -> (t -> Maybe (HList lt))
+    -> (t -> Maybe (ListProduct lt))
     -> PatternConstructor name poswit negwit
 toPatternConstructor nwt tlt f = MkPatternConstructor nwt tlt $ ClosedPattern f
 
-liftHListPolwit ::
+liftListProductPolwit ::
        forall m wit. Applicative m
     => (forall t. wit t -> m (wit t))
-    -> forall t'. HListWit wit t' -> m (HListWit wit t')
-liftHListPolwit ff (MkHListWit lwt) = fmap MkHListWit $ mapMListType ff lwt
+    -> forall t'. ListProductType wit t' -> m (ListProductType wit t')
+liftListProductPolwit ff (MkListProductType lwt) = fmap MkListProductType $ mapMListType ff lwt
 
 instance WitnessMappable (poswit :: Type -> Type) (negwit :: Type -> Type) (PatternConstructor name poswit negwit) where
     mapWitnessesM mapPos mapNeg (MkPatternConstructor (tt :: negwit t) (lvw :: ListType wit lt) pat) = do
         tt' <- mapNeg tt
         pat' <- mapWitnessesM @Type @poswit @negwit mapPos mapNeg pat
-        hwit <- mapWitnessesM @Type (liftHListPolwit mapPos) mapNeg $ MkHListWit lvw
+        hwit <- mapWitnessesM @Type (liftListProductPolwit mapPos) mapNeg $ MkListProductType lvw
         pure $
             case hwit of
-                MkHListWit (lvw' :: ListType wit lt') ->
-                    case injectiveHList @lt @lt' of
+                MkListProductType (lvw' :: ListType wit lt') ->
+                    case injectiveListProduct @lt @lt' of
                         Refl -> MkPatternConstructor tt' lvw' pat'
 
 sealedPatternConstructor ::

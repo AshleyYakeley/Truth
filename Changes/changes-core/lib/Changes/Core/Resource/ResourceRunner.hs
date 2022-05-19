@@ -57,7 +57,7 @@ combineLSR au1@(ConsListType u1 uu1) au2@(ConsListType u2 uu2) call =
         Dict ->
             case singleRunnerUnliftAllDict u2 of
                 Dict ->
-                    case testOrder u1 u2 of
+                    case testCompare u1 u2 of
                         WEQ ->
                             combineLSR uu1 uu2 $ \uu12 tf1 tf2 ->
                                 call
@@ -137,7 +137,7 @@ discardingResourceRunner :: ResourceRunner tt -> ResourceRunner tt
 discardingResourceRunner (MkResourceRunner run) = MkResourceRunner $ mapListType discardingSingleRunner run
 
 newtype ResourceContext =
-    MkResourceContext [AnyW SingleRunner]
+    MkResourceContext [Some SingleRunner]
 
 instance Show ResourceContext where
     show (MkResourceContext rc) = "{" <> show (length rc) <> "}"
@@ -147,7 +147,7 @@ emptyResourceContext = MkResourceContext []
 
 runLSR ::
        forall tt m r. MonadUnliftIO m
-    => [AnyW SingleRunner]
+    => [Some SingleRunner]
     -> ListType SingleRunner tt
     -> ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => ApplyStack tt m r)
     -> m r
@@ -172,9 +172,9 @@ runResourceRunner (MkResourceContext rc) (MkResourceRunner rr) call = traceBrack
 
 runLSRContext ::
        forall tt m r. MonadUnliftIO m
-    => [AnyW SingleRunner]
+    => [Some SingleRunner]
     -> ListType SingleRunner tt
-    -> ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => [AnyW SingleRunner] -> WStackUnliftAll tt -> m r)
+    -> ((MonadTransStackUnlift tt, MonadUnliftIO (ApplyStack tt m)) => [Some SingleRunner] -> WStackUnliftAll tt -> m r)
     -> m r
 runLSRContext rc NilListType call = call rc $ MkWStackUnliftAll id
 runLSRContext rc (ConsListType (sr :: _ t) (lsr :: _ tt0)) call =

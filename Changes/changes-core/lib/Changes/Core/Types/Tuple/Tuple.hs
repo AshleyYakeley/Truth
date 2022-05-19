@@ -22,8 +22,8 @@ newtype Tuple sel =
 
 instance (TupleSubjectWitness Show sel, FiniteWitness sel) => Show (Tuple sel) where
     show (MkTuple f) = let
-        showWit :: AnyW sel -> String
-        showWit (MkAnyW se) =
+        showWit :: Some sel -> String
+        showWit (MkSome se) =
             case tupleSubjectWitness @Show se of
                 Dict -> show $ f se
         in "{" ++ intercalate "," (fmap showWit allWitnesses) ++ "}"
@@ -55,17 +55,16 @@ instance TupleReaderWitness (WitnessConstraint c) sel => WitnessConstraint c (Tu
                 case witnessConstraint @_ @c rt of
                     Dict -> Dict
 
-instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstraint Show) sel) =>
-             Show (TupleUpdateReader sel t) where
+instance (AllConstraint Show sel, TupleReaderWitness (AllConstraint Show) sel) => Show (TupleUpdateReader sel t) where
     show (MkTupleUpdateReader (se :: sel update) (rt :: UpdateReader update t)) =
-        showAllWitness se ++
+        allShow se ++
         " " ++
-        case tupleReaderWitness @(AllWitnessConstraint Show) se of
-            Dict -> showAllWitness rt
+        case tupleReaderWitness @(AllConstraint Show) se of
+            Dict -> allShow rt
 
-instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstraint Show) sel) =>
-             AllWitnessConstraint Show (TupleUpdateReader sel) where
-    allWitnessConstraint = Dict
+instance (AllConstraint Show sel, TupleReaderWitness (AllConstraint Show) sel) =>
+             AllConstraint Show (TupleUpdateReader sel) where
+    allConstraint = Dict
 
 tupleReadFunction :: sel update -> ReadFunction (TupleUpdateReader sel) (UpdateReader update)
 tupleReadFunction sel mr rt = mr $ MkTupleUpdateReader sel rt
@@ -82,8 +81,8 @@ class TestEquality sel => FiniteTupleSelector (sel :: Type -> Type) where
         => (forall update. sel update -> m (UpdateSubject update))
         -> m (TupleSubject sel)
 
-tupleAllSelectors :: FiniteTupleSelector sel => [AnyW sel]
-tupleAllSelectors = getConst $ tupleConstruct $ \sel -> Const [MkAnyW sel]
+tupleAllSelectors :: FiniteTupleSelector sel => [Some sel]
+tupleAllSelectors = getConst $ tupleConstruct $ \sel -> Const [MkSome sel]
 
 instance (SubjectTupleSelector sel, FiniteTupleSelector sel, TupleReaderWitness FullSubjectReader sel) =>
              FullSubjectReader (TupleUpdateReader sel) where
@@ -166,7 +165,7 @@ instance ( SubjectTupleSelector sel
          ) => FullEdit (TupleUpdateEdit sel) where
     replaceEdit mr writeEdit = do
         editss <-
-            for tupleAllSelectors $ \(MkAnyW sel) ->
+            for tupleAllSelectors $ \(MkSome sel) ->
                 case tupleEditWitness @FullEdit sel of
                     Dict -> replaceEdit (tupleReadFunction sel mr) $ writeEdit . MkTupleUpdateEdit sel
         return $ mconcat editss
@@ -194,18 +193,18 @@ instance (TestEquality sel, TupleEditWitness CacheableEdit sel) => CacheableEdit
         case tupleEditWitness @CacheableEdit sel of
             Dict -> subcacheModify (MkTupleUpdateEditCacheKey sel) $ editCacheUpdate @(UpdateEdit update) edit
 
-instance (TupleEditWitness Show sel, AllWitnessConstraint Show sel) => Show (TupleUpdateEdit sel) where
+instance (TupleEditWitness Show sel, AllConstraint Show sel) => Show (TupleUpdateEdit sel) where
     show (MkTupleUpdateEdit sel edit) =
         "tuple " ++
-        showAllWitness sel ++
+        allShow sel ++
         " " ++
         case tupleEditWitness @Show sel of
             Dict -> show edit
 
-instance (TupleUpdateWitness Show sel, AllWitnessConstraint Show sel) => Show (TupleUpdate sel) where
+instance (TupleUpdateWitness Show sel, AllConstraint Show sel) => Show (TupleUpdate sel) where
     show (MkTupleUpdate sel update) =
         "tuple " ++
-        showAllWitness sel ++
+        allShow sel ++
         " " ++
         case tupleUpdateWitness @Show sel of
             Dict -> show update

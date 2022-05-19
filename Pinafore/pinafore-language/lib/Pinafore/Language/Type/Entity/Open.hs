@@ -15,7 +15,7 @@ import Pinafore.Language.Type.Identified
 import Pinafore.Language.Type.Type
 import Shapes
 
-type OpenEntityType :: TNatural -> Type
+type OpenEntityType :: Nat -> Type
 data OpenEntityType tid =
     MkOpenEntityType Name
                      (TypeIDType tid)
@@ -28,7 +28,7 @@ instance TestEquality OpenEntityType where
 instance ExprShow (OpenEntityType tid) where
     exprShowPrec (MkOpenEntityType n _) = exprShowPrec n
 
-type OpenEntity :: TNatural -> Type
+type OpenEntity :: Nat -> Type
 newtype OpenEntity tid = MkOpenEntity
     { unOpenEntity :: Entity
     } deriving (Eq, Random)
@@ -46,13 +46,13 @@ openEntityFamily =
         epKind = NilListType
         epCovaryMap = covarymap
         epAdapter :: forall ta. Arguments EntityAdapter t ta -> EntityAdapter ta
-        epAdapter NilArguments = isoMap MkOpenEntity unOpenEntity plainEntityAdapter
+        epAdapter NilArguments = invmap MkOpenEntity unOpenEntity plainEntityAdapter
         epShowType = exprShowPrec oet
         in Just $ MkSealedEntityProperties MkEntityProperties {..}
 
-getOpenEntityType :: MonadThrow ErrorType m => AnyW (PinaforeType 'Positive) -> m (AnyW OpenEntityType)
-getOpenEntityType (MkAnyW tm) =
+getOpenEntityType :: MonadThrow ErrorType m => Some (PinaforeType 'Positive) -> m (Some OpenEntityType)
+getOpenEntityType (MkSome tm) =
     case dolanTypeToSingular @PinaforeGroundType @(PinaforePolyShim Type) tm of
         Just (MkShimWit (GroundedDolanSingularType gt NilCCRArguments) _)
-            | Just (MkLiftedFamily t) <- matchFamilyType openEntityFamilyWitness $ pgtFamilyType gt -> return $ MkAnyW t
+            | Just (MkLiftedFamily t) <- matchFamilyType openEntityFamilyWitness $ pgtFamilyType gt -> return $ MkSome t
         _ -> throw $ InterpretTypeNotOpenEntityError $ exprShow tm

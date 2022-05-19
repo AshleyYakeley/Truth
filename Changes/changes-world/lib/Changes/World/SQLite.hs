@@ -58,7 +58,7 @@ type SQLiteUpdate tablesel = EditUpdate (SQLiteEdit tablesel)
 
 type family RowColSel (row :: Type) :: Type -> Type
 
-type instance RowColSel (AllValue colsel) = colsel
+type instance RowColSel (AllOf colsel) = colsel
 
 class HasSchema (t :: Type) where
     type Schema t :: Type
@@ -71,9 +71,9 @@ data Expr colsel t where
     AndExpr :: Expr colsel Bool -> Expr colsel Bool -> Expr colsel Bool
     OrExpr :: Expr colsel Bool -> Expr colsel Bool -> Expr colsel Bool
 
-instance AllWitnessConstraint Show colsel => Show (Expr colsel t) where
+instance AllConstraint Show colsel => Show (Expr colsel t) where
     show (ConstExpr t) = show $ toField t
-    show (ColumnExpr col) = showAllWitness col
+    show (ColumnExpr col) = allShow col
     show (EqualsExpr ea eb) = "(" ++ show ea ++ "=" ++ show eb ++ ")"
     show (AndExpr ea eb) = "(" ++ show ea ++ " & " ++ show eb ++ ")"
     show (OrExpr ea eb) = "(" ++ show ea ++ " & " ++ show eb ++ ")"
@@ -107,9 +107,9 @@ data ColumnRefSchema t = MkColumnRefSchema
     }
 
 instance HasSchema (Expr colsel t) where
-    type Schema (Expr colsel t) = SubmapWitness colsel ColumnRefSchema
+    type Schema (Expr colsel t) = FiniteAllFor ColumnRefSchema colsel
     schemaString _ (ConstExpr t) = valQueryString t
-    schemaString csch (ColumnExpr col) = fromString $ columnRefName $ subWitnessMap csch col
+    schemaString csch (ColumnExpr col) = fromString $ columnRefName $ finiteGetAllFor csch col
     schemaString csch (EqualsExpr e1 e2) = "(" <> schemaString csch e1 <> "=" <> schemaString csch e2 <> ")"
     schemaString csch (AndExpr e1 e2) = "(" <> schemaString csch e1 <> " AND " <> schemaString csch e2 <> ")"
     schemaString csch (OrExpr e1 e2) = "(" <> schemaString csch e1 <> " OR " <> schemaString csch e2 <> ")"
@@ -123,35 +123,35 @@ instance (FiniteWitness colsel, WitnessConstraint FromField colsel, WitnessConst
 instance TupleDatabaseType SQLiteDatabase where
     type TupleDatabaseTypeRowWitness SQLiteDatabase = IsSQLiteTable
     type TupleExpr SQLiteDatabase colsel = Expr colsel
-    evalTupleExpr expr (MkAllF tuple) = evalExpr expr tuple
+    evalTupleExpr expr (MkAllFor tuple) = evalExpr expr tuple
     constBoolExpr = ConstExpr
     columnExpr = ColumnExpr
 
-instance AllWitnessConstraint Show colsel => AllWitnessConstraint Show (Expr colsel) where
-    allWitnessConstraint = Dict
+instance AllConstraint Show colsel => AllConstraint Show (Expr colsel) where
+    allConstraint = Dict
 
 instance ShowableTupleDatabaseType SQLiteDatabase where
     witnessShowTupleExpr = Dict
 
-instance (FiniteWitness colsel, WitnessConstraint FromField colsel) => FromRow (AllValue colsel) where
+instance (FiniteWitness colsel, WitnessConstraint FromField colsel) => FromRow (AllOf colsel) where
     fromRow =
-        assembleWitness $ \wt ->
+        assembleAllOf $ \wt ->
             case witnessConstraint @Type @FromField wt of
                 Dict -> fmap fromOnly fromRow
 
 instance HasSchema (TupleWhereClause SQLiteDatabase row) where
-    type Schema (TupleWhereClause SQLiteDatabase row) = SubmapWitness (RowColSel row) ColumnRefSchema
+    type Schema (TupleWhereClause SQLiteDatabase row) = FiniteAllFor ColumnRefSchema (RowColSel row)
     schemaString csch (MkTupleWhereClause expr) = schemaString csch expr
 
 instance HasSchema (TupleSelectClause SQLiteDatabase tablesel row row') where
-    type Schema (TupleSelectClause SQLiteDatabase tablesel row row') = SubmapWitness (RowColSel row) ColumnRefSchema
+    type Schema (TupleSelectClause SQLiteDatabase tablesel row row') = FiniteAllFor ColumnRefSchema (RowColSel row)
     schemaString csch (MkTupleSelectClause mapSel) =
-        intercalate "," $ fmap (\(MkAnyW cs') -> schemaString csch $ mapSel cs') $ allWitnesses @(RowColSel row')
+        intercalate "," $ fmap (\(MkSome cs') -> schemaString csch $ mapSel cs') $ allWitnesses @(RowColSel row')
 
 instance HasSchema (TupleOrderItem colsel) where
-    type Schema (TupleOrderItem colsel) = SubmapWitness colsel ColumnRefSchema
+    type Schema (TupleOrderItem colsel) = FiniteAllFor ColumnRefSchema colsel
     schemaString csch (MkTupleOrderItem col dir) =
-        fromString $ (columnRefName $ subWitnessMap csch col) ++ " " ++ show dir
+        fromString $ (columnRefName $ finiteGetAllFor csch col) ++ " " ++ show dir
 
 columnRef :: String -> SQLite.ColumnSchema t -> ColumnRefSchema t
 columnRef tableRefName SQLite.MkColumnSchema {..} = let
@@ -164,22 +164,22 @@ columnRef tableRefName SQLite.MkColumnSchema {..} = let
 
 joinTableSchema ::
        forall tablesel row.
-       SubmapWitness tablesel SQLite.TableSchema
+       FiniteAllFor SQLite.TableSchema tablesel
     -> TableJoin SQLiteDatabase (TupleTableSel tablesel) row
-    -> State Int ([QueryString], SubmapWitness (RowColSel row) ColumnRefSchema)
+    -> State Int ([QueryString], FiniteAllFor ColumnRefSchema (RowColSel row))
 joinTableSchema schema (SingleTable (MkTupleTableSel tsel)) = do
     i <- get
     put $ succ i
     let
         tableRefName = "t" ++ show i
-        SQLite.MkTableSchema {..} = subWitnessMap schema tsel
+        SQLite.MkTableSchema {..} = finiteGetAllFor schema tsel
         tabRefText = fromString $ tableName ++ " AS " ++ tableRefName
-        colRefSchema = mapSubmapWitness (columnRef tableRefName) tableColumns
+        colRefSchema = mapFiniteAllFor (columnRef tableRefName) tableColumns
     return ([tabRefText], colRefSchema)
 joinTableSchema schema (JoinTables OuterTupleJoinClause j1 j2) = do
     (t1, s1) <- joinTableSchema schema j1
     (t2, s2) <- joinTableSchema schema j2
-    return $ (t1 ++ t2, eitherSubmapWitness s1 s2)
+    return $ (t1 ++ t2, eitherFiniteAllFor s1 s2)
 
 sqliteFilePathWitness :: IOWitness (ReaderT Connection)
 sqliteFilePathWitness = $(iowitness [t|ReaderT Connection|])
@@ -208,7 +208,7 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
             case wc of
                 MkTupleWhereClause (ConstExpr True) -> ""
                 _ -> " WHERE " <> schemaString rowSchema wc
-        sqliteReadQuery :: SQLiteReader tablesel [AllValue colsel] -> QueryString
+        sqliteReadQuery :: SQLiteReader tablesel [AllOf colsel] -> QueryString
         sqliteReadQuery (DatabaseSelect jc wc oc sc) =
             case evalState (joinTableSchema databaseTables jc) 1 of
                 (tabRefs, rowSchema) -> let
@@ -228,35 +228,32 @@ sqliteReference path schema@SQLite.MkDatabaseSchema {..} = do
                TupleTableSel tablesel row -> (SQLite.TableSchema (RowColSel row), Dict (IsSQLiteTable (RowColSel row)))
         tableSchema (MkTupleTableSel tsel) =
             case witnessConstraint @_ @IsSQLiteTable tsel of
-                Dict -> (subWitnessMap databaseTables tsel, Dict)
+                Dict -> (finiteGetAllFor databaseTables tsel, Dict)
         rowSchemaString ::
-               WitnessConstraint ToField colsel
-            => SubmapWitness colsel ColumnRefSchema
-            -> AllValue colsel
-            -> QueryString
-        rowSchemaString MkSubmapWitness {..} (MkAllValue row) =
+               WitnessConstraint ToField colsel => FiniteAllFor ColumnRefSchema colsel -> AllOf colsel -> QueryString
+        rowSchemaString MkFiniteAllFor {..} (MkAllOf row) =
             "(" <>
             intercalate
                 ","
                 (fmap
-                     (\(MkAnyW col) ->
+                     (\(MkSome col) ->
                           case witnessConstraint @_ @ToField col of
                               Dict -> valQueryString $ row col)
-                     subWitnessDomain) <>
+                     finiteDomain) <>
             ")"
-        assignmentPart :: SubmapWitness colsel ColumnRefSchema -> TupleUpdateItem SQLiteDatabase colsel -> QueryString
+        assignmentPart :: FiniteAllFor ColumnRefSchema colsel -> TupleUpdateItem SQLiteDatabase colsel -> QueryString
         assignmentPart scsh (MkTupleUpdateItem col expr) =
-            (fromString $ columnRefName $ subWitnessMap scsh col) <> "=" <> schemaString scsh expr
+            (fromString $ columnRefName $ finiteGetAllFor scsh col) <> "=" <> schemaString scsh expr
         sqliteEditQuery :: SQLiteEdit tablesel -> QueryString
         sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema {..}, Dict)) (MkTupleInsertClause ic)) = let
-            tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
+            tableColumnRefs = mapFiniteAllFor (columnRef "") tableColumns
             in "INSERT OR REPLACE INTO " <>
                fromString tableName <> " VALUES " <> intercalate "," (fmap (rowSchemaString tableColumnRefs) ic)
         sqliteEditQuery (DatabaseDelete (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc) = let
-            tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
+            tableColumnRefs = mapFiniteAllFor (columnRef "") tableColumns
             in "DELETE FROM " <> fromString tableName <> wherePart tableColumnRefs wc
         sqliteEditQuery (DatabaseUpdate (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc (MkTupleUpdateClause uis)) = let
-            tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
+            tableColumnRefs = mapFiniteAllFor (columnRef "") tableColumns
             in "UPDATE " <>
                fromString tableName <>
                " SET " <> intercalate "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc

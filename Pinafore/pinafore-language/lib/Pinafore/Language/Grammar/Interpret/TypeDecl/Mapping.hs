@@ -17,7 +17,7 @@ import Shapes
 type Mapping :: Symbol -> Type -> Type
 newtype Mapping n t =
     MkMapping (Kleisli Endo (UVarT n -> UVarT n) t)
-    deriving (Semigroup, Monoid, IsoVariant, Summish, Productish)
+    deriving (Semigroup, Monoid, Invariant, Summish, Productish)
 
 varMapping :: forall (n :: Symbol). Mapping n (UVarT n)
 varMapping = MkMapping $ Kleisli $ \ab -> Endo ab
@@ -77,8 +77,8 @@ instance Semigroup (VarMapping t) where
 instance Monoid (VarMapping t) where
     mempty = liftVarMapping0 mempty
 
-instance IsoVariant VarMapping where
-    isoMap ab ba = liftVarMapping1 (isoMap ab ba)
+instance Invariant VarMapping where
+    invmap ab ba = liftVarMapping1 (invmap ab ba)
 
 instance Summish VarMapping where
     pNone = liftVarMapping0 pNone
@@ -113,9 +113,9 @@ getArgumentsMapping (ConsDolanVarianceMap ccrv dvm) (ConsCCRArguments arg args) 
 class HasVarMapping w where
     getVarMapping :: w t -> VarMapping t
 
-instance HasVarMapping w => HasVarMapping (HListWit w) where
-    getVarMapping (MkHListWit NilListType) = pUnit
-    getVarMapping (MkHListWit (ConsListType t1 tr)) = getVarMapping t1 <***> getVarMapping (MkHListWit tr)
+instance HasVarMapping w => HasVarMapping (ListProductType w) where
+    getVarMapping (MkListProductType NilListType) = pUnit
+    getVarMapping (MkListProductType (ConsListType t1 tr)) = getVarMapping t1 <***> getVarMapping (MkListProductType tr)
 
 instance HasVarMapping w1 => HasVarMapping (PairType w1 w2) where
     getVarMapping (MkPairType w _) = getVarMapping w
@@ -137,11 +137,11 @@ dependentMapping tdm =
             case tdm t of
                 MkDependentMapping a at (MkMapping (Kleisli f)) -> at (appEndo (f vv) a)
 
-dependentVarMapping :: TestEquality w => [AnyF w VarMapping] -> VarMapping (AnyValue w)
+dependentVarMapping :: TestEquality w => [SomeFor VarMapping w] -> VarMapping (SomeOf w)
 dependentVarMapping vmaps =
     MkVarMapping $ \v n -> do
-        mdict <- witnessFDictMapM (\(MkVarMapping gm) -> gm v n) $ witnessFDictFromList vmaps
+        mdict <- witnessMapForMapM (\(MkVarMapping gm) -> gm v n) $ witnessMapForFromList vmaps
         return $
-            dependentMapping $ \(MkAnyValue wit a) ->
-                MkDependentMapping a (MkAnyValue wit) $
-                fromMaybe (error "missing mapping") $ witnessFDictLookup wit mdict
+            dependentMapping $ \(MkSomeOf wit a) ->
+                MkDependentMapping a (MkSomeOf wit) $
+                fromMaybe (error "missing mapping") $ witnessMapForLookup wit mdict

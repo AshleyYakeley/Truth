@@ -13,7 +13,6 @@ import Changes.Debug
 class TraceArgThing t where
     traceArgThing :: String -> t -> t
 
-type ShowableEdit edit
-     = (Show edit, AllWitnessConstraint Show (EditReader edit), WitnessConstraint Show (EditReader edit))
+type ShowableEdit edit = (Show edit, AllConstraint Show (EditReader edit), WitnessConstraint Show (EditReader edit))
 
 type ShowableUpdate update = (Show update, ShowableEdit (UpdateEdit update))

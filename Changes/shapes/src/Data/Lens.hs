@@ -3,7 +3,6 @@ module Data.Lens where
 import Data.CatFunctor
 import Data.Codec
 import Data.Injection
-import Data.IsoVariant
 import Data.Isomorphism
 import Shapes.Import
 
@@ -16,8 +15,8 @@ type Lens = Lens' Maybe
 
 type PureLens = Lens' Identity
 
-instance IsoVariant (Lens' m a) where
-    isoMap pq qp (MkLens ap pama) = MkLens (pq . ap) (pama . qp)
+instance Invariant (Lens' m a) where
+    invmap pq qp (MkLens ap pama) = MkLens (pq . ap) (pama . qp)
 
 instance Monad m => Productish (Lens' m a) where
     pUnit = MkLens (\_ -> ()) (\() -> pure)

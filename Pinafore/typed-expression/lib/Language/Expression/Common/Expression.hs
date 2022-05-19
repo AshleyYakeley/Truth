@@ -12,7 +12,8 @@ instance Functor (Expression w) where
     fmap ab (ClosedExpression a) = ClosedExpression $ ab a
     fmap ab (OpenExpression name expr) = OpenExpression name $ fmap (\va v -> ab $ va v) expr
 
-instance IsoVariant (Expression w)
+instance Invariant (Expression w) where
+    invmap ab _ = fmap ab
 
 instance Applicative (Expression w) where
     pure = ClosedExpression
@@ -21,11 +22,11 @@ instance Applicative (Expression w) where
 
 instance Productish (Expression w)
 
-instance AllWitnessConstraint Show w => Show (Expression w a) where
-    show expr = "{" <> intercalate "," (expressionFreeWitnesses showAllWitness expr) <> "}"
+instance AllConstraint Show w => Show (Expression w a) where
+    show expr = "{" <> intercalate "," (expressionFreeWitnesses allShow expr) <> "}"
 
-instance AllWitnessConstraint Show w => AllWitnessConstraint Show (Expression w) where
-    allWitnessConstraint = Dict
+instance AllConstraint Show w => AllConstraint Show (Expression w) where
+    allConstraint = Dict
 
 isClosedExpression :: Expression w t -> Bool
 isClosedExpression (ClosedExpression _) = True
@@ -39,9 +40,9 @@ expressionFreeWitnessCount :: Expression w a -> Int
 expressionFreeWitnessCount (ClosedExpression _) = 0
 expressionFreeWitnessCount (OpenExpression _ expr) = succ $ expressionFreeWitnessCount expr
 
-evalExpression :: (MonadThrow ExpressionError m, AllWitnessConstraint Show w) => Expression w a -> m a
+evalExpression :: (MonadThrow ExpressionError m, AllConstraint Show w) => Expression w a -> m a
 evalExpression (ClosedExpression a) = return a
-evalExpression expr = throw $ UndefinedBindingsError $ nub $ expressionFreeWitnesses showAllWitness expr
+evalExpression expr = throw $ UndefinedBindingsError $ nub $ expressionFreeWitnesses allShow expr
 
 varExpression :: w t -> Expression w t
 varExpression wt = OpenExpression wt $ ClosedExpression id

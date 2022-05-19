@@ -594,11 +594,11 @@ baseLibEntries =
                       mtp <- getOpenEntityType t
                       return $
                           case mtp of
-                              MkAnyW (tp :: OpenEntityType tid) -> let
+                              MkSome (tp :: OpenEntityType tid) -> let
                                   typef = openEntityShimWit tp
                                   pt :: OpenEntity tid
                                   pt = MkOpenEntity $ MkEntity anchor
-                                  in MkAnyValue typef pt
+                                  in MkSomeOf typef pt
                 , mkSpecialFormEntry
                       "newOpenEntity"
                       "Generate an open entity. `A` is an open entity type."
@@ -608,11 +608,11 @@ baseLibEntries =
                       mtp <- getOpenEntityType t
                       return $
                           case mtp of
-                              MkAnyW (tp :: OpenEntityType tid) -> let
+                              MkSome (tp :: OpenEntityType tid) -> let
                                   pt :: PinaforeAction (OpenEntity tid)
                                   pt = liftIO $ newKeyContainerItem @(FiniteSet (OpenEntity tid))
                                   typef = actionShimWit $ openEntityShimWit tp
-                                  in MkAnyValue typef pt
+                                  in MkSomeOf typef pt
                 ]
           , docTreeEntry
                 "Dynamic Entity Types"
@@ -636,7 +636,7 @@ baseLibEntries =
                           typef = dynamicEntityShimWit n dt
                           pt :: DynamicEntity
                           pt = MkDynamicEntity dt $ MkEntity anchor
-                      return $ MkAnyValue typef pt
+                      return $ MkSomeOf typef pt
                 , mkSpecialFormEntry
                       "newDynamicEntity"
                       "Generate a dynamic entity. `A` is a concrete dynamic entity type."
@@ -651,7 +651,7 @@ baseLibEntries =
                                   e <- newKeyContainerItem @(FiniteSet Entity)
                                   return $ MkDynamicEntity dt e
                           typef = actionShimWit $ dynamicEntityShimWit n dt
-                      return $ MkAnyValue typef pt
+                      return $ MkSomeOf typef pt
                 ]
           ]
     , docTreeEntry
@@ -746,16 +746,16 @@ baseLibEntries =
                 "Evaluate the first argument, then if that's not \"bottom\" (error or non-termination), return the second argument."
                 (seq :: TopType -> A -> A)
           , mkSpecialFormEntry "check" "Check from a dynamic supertype." "@A" "D(A) -> Maybe A" $
-            MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkAnyW tn, ()) -> do
+            MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
                 let dtw = getGreatestDynamicSupertype tn
                 tpw <- invertType tn
-                return $ MkAnyValue (funcShimWit dtw $ maybeShimWit tpw) id
+                return $ MkSomeOf (funcShimWit dtw $ maybeShimWit tpw) id
           , mkSpecialFormEntry "coerce" "Coerce from a dynamic supertype." "@A" "D(A) -> A" $
-            MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkAnyW tn, ()) -> do
+            MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
                 let dtw = getGreatestDynamicSupertype tn
                 tpw <- invertType tn
                 return $
-                    MkAnyValue (funcShimWit dtw tpw) $ \case
+                    MkSomeOf (funcShimWit dtw tpw) $ \case
                         Just t -> t
                         Nothing ->
                             error $ unpack $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
@@ -827,7 +827,7 @@ baseLibEntries =
                 \The local scope is not in any way transmitted to the evaluation."
                 "@A"
                 "Text -> Action (Either Text A)" $
-            MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkAnyW tp, ()) -> do
+            MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkSome tp, ()) -> do
                 spvals <- getSpecialVals
                 let
                     valShimWit ::
@@ -835,7 +835,7 @@ baseLibEntries =
                            PinaforeShimWit 'Positive t
                         -> PinaforeShimWit 'Positive (Text -> PinaforeAction (Either Text t))
                     valShimWit t' = funcShimWit textShimWit $ actionShimWit $ eitherShimWit textShimWit t'
-                return $ MkAnyValue (valShimWit $ mkPolarShimWit tp) $ specialEvaluate spvals tp
+                return $ MkSomeOf (valShimWit $ mkPolarShimWit tp) $ specialEvaluate spvals tp
           ]
     , docTreeEntry
           "Invocation"

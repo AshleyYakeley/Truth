@@ -41,6 +41,7 @@ library:
       - countable
       - witness
       - open-witness
+      - type-rig
       - monadology
       - thread-trace
     exposed-modules:
@@ -53,7 +54,6 @@ library:
       - Data.Coercion
       - Data.SameItem
       - Data.HasNewValue
-      - Data.IsoVariant
       - Data.Streamish
       - Data.Injection
       - Data.Isomorphism

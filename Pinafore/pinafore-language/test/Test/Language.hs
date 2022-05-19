@@ -953,7 +953,7 @@ testShim query expectedType expectedShim =
             withNullPinaforeContext $ runInterpretResult $ runPinaforeScoped (initialPos "<input>") $ parseValue query
         case result of
             FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
-            SuccessResult (MkAnyValue (MkPosShimWit t shim) _) -> do
+            SuccessResult (MkSomeOf (MkPosShimWit t shim) _) -> do
                 assertEqual "type" expectedType $ unpack $ exprShow t
                 assertEqual "shim" expectedShim $ show shim
 

@@ -48,18 +48,18 @@ pixelYA16to8 (PixelYA16 y a) = PixelYA8 (pixel16To8 y) (pixel16To8 a)
 pixelCMYK16to8 :: PixelCMYK16 -> PixelCMYK8
 pixelCMYK16to8 (PixelCMYK16 c m y k) = PixelCMYK8 (pixel16To8 c) (pixel16To8 m) (pixel16To8 y) (pixel16To8 k)
 
-imageToTrue8 :: PixelType px -> Image px -> AnyF True8PixelType Image
-imageToTrue8 Y8PixelType image = MkAnyF NoAlphaTrue8PixelType $ promoteImage image
-imageToTrue8 Y16PixelType image = MkAnyF NoAlphaTrue8PixelType $ promoteImage $ pixelMap pixel16To8 image
-imageToTrue8 Y32PixelType image = MkAnyF NoAlphaTrue8PixelType $ promoteImage $ pixelMap pixel32To8 image
-imageToTrue8 YFPixelType image = MkAnyF NoAlphaTrue8PixelType $ promoteImage $ pixelMap pixelFTo8 image
-imageToTrue8 YA8PixelType image = MkAnyF AlphaTrue8PixelType $ promoteImage image
-imageToTrue8 YA16PixelType image = MkAnyF AlphaTrue8PixelType $ promoteImage $ pixelMap pixelYA16to8 image
-imageToTrue8 RGB8PixelType image = MkAnyF NoAlphaTrue8PixelType image
-imageToTrue8 RGB16PixelType image = MkAnyF NoAlphaTrue8PixelType $ pixelMap pixelRGB16to8 image
-imageToTrue8 RGBFPixelType image = MkAnyF NoAlphaTrue8PixelType $ pixelMap pixelRGBFto8 image
-imageToTrue8 RGBA8PixelType image = MkAnyF AlphaTrue8PixelType image
-imageToTrue8 RGBA16PixelType image = MkAnyF AlphaTrue8PixelType $ pixelMap pixelRGBA16to8 image
-imageToTrue8 YCbCr8PixelType image = MkAnyF NoAlphaTrue8PixelType $ convertImage image
-imageToTrue8 CMYK8PixelType image = MkAnyF NoAlphaTrue8PixelType $ convertImage image
-imageToTrue8 CMYK16PixelType image = MkAnyF NoAlphaTrue8PixelType $ convertImage $ pixelMap pixelCMYK16to8 image
+imageToTrue8 :: PixelType px -> Image px -> SomeFor Image True8PixelType
+imageToTrue8 Y8PixelType image = MkSomeFor NoAlphaTrue8PixelType $ promoteImage image
+imageToTrue8 Y16PixelType image = MkSomeFor NoAlphaTrue8PixelType $ promoteImage $ pixelMap pixel16To8 image
+imageToTrue8 Y32PixelType image = MkSomeFor NoAlphaTrue8PixelType $ promoteImage $ pixelMap pixel32To8 image
+imageToTrue8 YFPixelType image = MkSomeFor NoAlphaTrue8PixelType $ promoteImage $ pixelMap pixelFTo8 image
+imageToTrue8 YA8PixelType image = MkSomeFor AlphaTrue8PixelType $ promoteImage image
+imageToTrue8 YA16PixelType image = MkSomeFor AlphaTrue8PixelType $ promoteImage $ pixelMap pixelYA16to8 image
+imageToTrue8 RGB8PixelType image = MkSomeFor NoAlphaTrue8PixelType image
+imageToTrue8 RGB16PixelType image = MkSomeFor NoAlphaTrue8PixelType $ pixelMap pixelRGB16to8 image
+imageToTrue8 RGBFPixelType image = MkSomeFor NoAlphaTrue8PixelType $ pixelMap pixelRGBFto8 image
+imageToTrue8 RGBA8PixelType image = MkSomeFor AlphaTrue8PixelType image
+imageToTrue8 RGBA16PixelType image = MkSomeFor AlphaTrue8PixelType $ pixelMap pixelRGBA16to8 image
+imageToTrue8 YCbCr8PixelType image = MkSomeFor NoAlphaTrue8PixelType $ convertImage image
+imageToTrue8 CMYK8PixelType image = MkSomeFor NoAlphaTrue8PixelType $ convertImage image
+imageToTrue8 CMYK16PixelType image = MkSomeFor NoAlphaTrue8PixelType $ convertImage $ pixelMap pixelCMYK16to8 image
