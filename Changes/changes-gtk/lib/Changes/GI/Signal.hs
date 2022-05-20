@@ -15,6 +15,7 @@ import Data.GI.Base.Signals
 import GI.GObject
 import Shapes
 import Changes.Debug.Reference
+import Data.GI.Base.Overloading
 
 withSignalBlocked :: IsObject obj => obj -> SignalHandlerId -> View a -> View a
 withSignalBlocked obj conn = bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
@@ -45,25 +46,30 @@ viewCloseDisconnectSignal object shid =
             then traceBracket "GTK.cvCloseDisconnectSignal:disconnect" $ disconnectSignalHandler object shid
             else return ()
 
-viewOn ::
+dbgShowSignalInfo :: forall info. SignalInfo info => String
+dbgShowSignalInfo = case dbgSignalInfo @info of
+    Nothing -> "unknown"
+    Just info -> show $ resolvedSymbolName info
+
+viewOn :: forall object info.
        (IsObject object, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
     => object
     -> SignalProxy object info
     -> CallbackViewLifted (HaskellCallbackType info)
     -> View SignalHandlerId
 viewOn object signal call = do
-    shid <- liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK on" $ unlift ma) call
+    shid <- liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift (\ma -> traceBracketIO ("THREAD: GTK on (" <> dbgShowSignalInfo @info <> ")") $ unlift ma) call
     viewCloseDisconnectSignal object shid
     return shid
 
-viewAfter ::
+viewAfter :: forall object info.
        (IsObject object, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
     => object
     -> SignalProxy object info
     -> CallbackViewLifted (HaskellCallbackType info)
     -> View SignalHandlerId
 viewAfter object signal call = do
-    shid <- liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift (\ma -> traceBracketIO "THREAD: GTK after" $ unlift ma) call
+    shid <- liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift (\ma -> traceBracketIO ("THREAD: GTK after (" <> dbgShowSignalInfo @info <> ")") $ unlift ma) call
     viewCloseDisconnectSignal object shid
     return shid
 
