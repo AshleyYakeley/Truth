@@ -10,5 +10,6 @@ library:
     dependencies:
       - base >= 4.12
       - time
+      - containers
     exposed-modules:
       - Debug.ThreadTrace
