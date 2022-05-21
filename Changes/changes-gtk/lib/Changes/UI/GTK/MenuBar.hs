@@ -52,7 +52,7 @@ accelGroupConnection ag key mods flags action = do
             action
             return True
     accelGroupConnect ag key mods flags closure
-    viewOnCloseIO $ do
+    viewOnClose $ do
         _ <- accelGroupDisconnect ag $ Just closure
         return ()
 

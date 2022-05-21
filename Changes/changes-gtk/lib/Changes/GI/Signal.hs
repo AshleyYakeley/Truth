@@ -36,12 +36,12 @@ instance GTKCallbackType r => GTKCallbackType (a -> r) where
 
 viewCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> View ()
 viewCloseDisconnectSignal object shid =
-    viewOnCloseIO $ do
+    viewOnClose $ do
         -- Widgets that have been destroyed have already had their signals disconnected, even if references to them still exist.
         -- So we need to check.
         isConnected <- signalHandlerIsConnected object shid
         if isConnected
-            then disconnectSignalHandler object shid
+            then liftIO $ disconnectSignalHandler object shid
             else return ()
 
 viewOn ::
@@ -97,7 +97,7 @@ viewTraceSignal t sigid call = do
                                     | sobj == obj -> runWMFunction unliftIO call
                                 _ -> return ()
                     return True
-            viewOnCloseIO $ signalRemoveEmissionHook sigid hookid
+            viewOnClose $ signalRemoveEmissionHook sigid hookid
 
 viewTraceAllSignals :: IsObject t => t -> (Text -> View ()) -> View ()
 viewTraceAllSignals obj call = do

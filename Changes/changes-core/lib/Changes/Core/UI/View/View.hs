@@ -51,11 +51,15 @@ newtype View a = MkView
                , RepresentationalRole
                )
 
-viewOnClose :: View () -> View ()
-viewOnClose (MkView closer) = MkView $ liftWithUnlift $ \unlift -> lifeCycleOnClose $ runLifeCycleT $ unlift closer
-
+-- | closer called not holding the UI lock
 viewOnCloseIO :: IO () -> View ()
 viewOnCloseIO closer = viewLiftLifeCycle $ lifeCycleOnClose closer
+
+-- | closer called holding the UI lock (like all 'View' actions)
+viewOnClose :: View () -> View ()
+viewOnClose closer = do
+    vc <- MkView ask
+    viewOnCloseIO $ runLifeCycleT $ runView vc closer
 
 viewGetCloser :: forall a. View a -> View (a, IO ())
 viewGetCloser (MkView ma) =

@@ -77,7 +77,7 @@ newDynamicStore tdef lcv = do
     rec
         entries <- for lcv $ \cvt -> makeEntry tdef cvt store
         store <- seqStoreNew entries
-    viewOnCloseIO $ dynamicStoreClear $ MkDynamicStore store
+    viewOnClose $ dynamicStoreClear $ MkDynamicStore store
     return $ MkDynamicStore store
 
 dynamicStoreInsert :: Integral pos => pos -> t -> (((t -> t) -> IO ()) -> View ()) -> DynamicStore t -> View ()

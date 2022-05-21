@@ -11,7 +11,7 @@ import Shapes
 cvAcquire :: IsObject a => a -> View ()
 cvAcquire a = do
     _ <- objectRef a
-    viewOnCloseIO $ objectUnref a
+    viewOnClose $ objectUnref a
 
 cvNew :: (Constructible a tag, IsObject a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> View a
 cvNew cc attrs = do
@@ -23,10 +23,10 @@ cvNew cc attrs = do
 cvTopLevelNew :: (Constructible a tag, IsObject a, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> View a
 cvTopLevelNew cc attrs = do
     a <- cvNew cc attrs
-    viewOnCloseIO $ widgetDestroy a
+    viewOnClose $ widgetDestroy a
     return a
 
 cvSet :: (AttrClearC info obj attr, AttrSetC info obj attr value) => obj -> AttrLabelProxy attr -> value -> View ()
 cvSet obj prop val = do
     set obj [prop := val]
-    viewOnCloseIO $ clear obj prop
+    viewOnClose $ clear obj prop
