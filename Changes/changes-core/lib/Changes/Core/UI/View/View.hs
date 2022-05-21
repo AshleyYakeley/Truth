@@ -52,8 +52,13 @@ newtype View a = MkView
                , RepresentationalRole
                )
 
+checkViewLock :: View ()
+checkViewLock = traceBarrier "CHECK LOCK" viewWithoutLock $ return ()
+
 viewOnClose :: View () -> View ()
-viewOnClose (MkView closer) = MkView $ liftWithUnlift $ \unlift -> lifeCycleOnClose $ runLifeCycleT $ unlift closer
+viewOnClose closer = MkView $ liftWithUnlift $ \unlift -> lifeCycleOnClose $ runLifeCycleT $ unlift $ unView $ do
+    checkViewLock
+    closer
 
 viewOnCloseIO :: IO () -> View ()
 viewOnCloseIO closer = viewLiftLifeCycle $ lifeCycleOnClose closer
