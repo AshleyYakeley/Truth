@@ -4,6 +4,7 @@ import Control.Applicative
 import Control.Concurrent
 import Control.Exception
 import Control.Monad.IO.Class
+import qualified Data.Map as Map
 import Data.Time.Clock.System
 import Data.Word
 import Debug.Trace
@@ -11,20 +12,34 @@ import GHC.Conc
 import Prelude
 import System.IO.Unsafe
 
+traceThreadNames :: MVar (Map.Map ThreadId String)
+{-# NOINLINE traceThreadNames #-}
+traceThreadNames = unsafePerformIO $ newMVar mempty
+
 contextStr :: String -> String -> String
 contextStr "" b = b
 contextStr a b = a ++ ": " ++ b
+
+traceNameThread :: String -> IO ()
+traceNameThread name = do
+    tid <- myThreadId
+    modifyMVar_ traceThreadNames $ \m -> return $ Map.insert tid name m
 
 traceIOM :: MonadIO m => String -> m ()
 traceIOM msg =
     liftIO $ do
         MkSystemTime s ns <- getSystemTime
         th <- myThreadId
+        names <- readMVar traceThreadNames
         let
+            nametxt =
+                case Map.lookup th names of
+                    Just name -> " (" ++ name ++ ")"
+                    Nothing -> ""
             showMod :: Int -> Word32 -> String
             showMod 0 _ = ""
             showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
-        traceIO $ show s <> "." <> showMod 9 ns <> ": " <> show th <> ": " <> msg
+        traceIO $ show s <> "." <> showMod 9 ns <> ": " <> show th <> nametxt <> ": " <> msg
 
 traceBracketArgs :: MonadIO m => String -> String -> (r -> String) -> m r -> m r
 traceBracketArgs s args showr ma = do
@@ -57,6 +72,14 @@ traceBracketIO s ma = do
              return a) $ \(e :: SomeException) -> do
         traceIOM $ s ++ " ! " ++ show e
         throw e
+
+traceThread :: String -> IO r -> IO r
+traceThread name ma = do
+    traceNameThread name
+    traceBracket "THREAD" ma
+
+traceForkIO :: String -> IO () -> IO ThreadId
+traceForkIO name ma = traceBracketArgs "FORK" "" show $ forkIO $ traceThread name ma
 
 traceEvaluate :: MonadIO m => String -> r -> m r
 traceEvaluate s a = liftIO $ traceBracketIO ("evaluate " <> s) $ evaluate a
