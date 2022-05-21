@@ -53,13 +53,13 @@ singleTask ioa = do
 forkSingleTask :: IO a -> IO (Task a)
 forkSingleTask ioa = do
     (action, task) <- singleTask ioa
-    _ <- forkIO $ traceBracketIO "THREAD: task" action
+    _ <- traceForkIO "task" action
     return task
 
 taskNotify :: Task a -> (a -> IO ()) -> IO ()
 taskNotify task call = do
     _ <-
-        forkIO $ traceBracketIO "THREAD: notify" $ do
+        traceForkIO "notify" $ do
             a <- taskWait task
             call a
     return ()

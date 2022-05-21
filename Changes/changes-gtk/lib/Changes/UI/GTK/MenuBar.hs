@@ -84,7 +84,7 @@ attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
                         gmods :: [ModifierType]
                         gmods = fmap toModifierType mods
                     accelLabelSetAccel l keyw gmods
-                    accelGroupConnection ag keyw gmods [AccelFlagsVisible] $ traceBracketIO "THREAD: accel" $ runWMFunction runInMain meaction
+                    accelGroupConnection ag keyw gmods [AccelFlagsVisible] $ traceThread "accel" $ runWMFunction runInMain meaction
     viewBindReadOnlyWholeModel raction $ \maction ->
         liftIO $ do
             writeIORef aref maction

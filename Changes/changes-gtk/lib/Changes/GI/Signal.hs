@@ -49,7 +49,7 @@ viewCloseDisconnectSignal object shid =
 dbgShowSignalInfo :: forall info. SignalInfo info => String
 dbgShowSignalInfo = case dbgSignalInfo @info of
     Nothing -> "unknown"
-    Just info -> show $ resolvedSymbolName info
+    Just info -> unpack $ resolvedSymbolName info
 
 viewOn :: forall object info.
        (IsObject object, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
@@ -58,7 +58,7 @@ viewOn :: forall object info.
     -> CallbackViewLifted (HaskellCallbackType info)
     -> View SignalHandlerId
 viewOn object signal call = do
-    shid <- liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift (\ma -> traceBracketIO ("THREAD: GTK on (" <> dbgShowSignalInfo @info <> ")") $ unlift ma) call
+    shid <- liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift (\ma -> traceThread ("GTK on " <> dbgShowSignalInfo @info) $ unlift ma) call
     viewCloseDisconnectSignal object shid
     return shid
 
@@ -69,7 +69,7 @@ viewAfter :: forall object info.
     -> CallbackViewLifted (HaskellCallbackType info)
     -> View SignalHandlerId
 viewAfter object signal call = do
-    shid <- liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift (\ma -> traceBracketIO ("THREAD: GTK after (" <> dbgShowSignalInfo @info <> ")") $ unlift ma) call
+    shid <- liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift (\ma -> traceThread ("GTK after " <> dbgShowSignalInfo @info) $ unlift ma) call
     viewCloseDisconnectSignal object shid
     return shid
 

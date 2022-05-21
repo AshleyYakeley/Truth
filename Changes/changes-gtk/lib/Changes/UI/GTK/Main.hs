@@ -15,7 +15,7 @@ data RunState
     | RSStop
 
 changesMainGTK :: ChangesMain
-changesMainGTK appMain = traceBracketIO "THREAD: main" $
+changesMainGTK appMain = traceThread "main" $
     runLifeCycleT $
     liftIOWithUnlift $ \unlift -> traceBracketIO "truthMainGTK" $ do
         _ <- GI.init Nothing

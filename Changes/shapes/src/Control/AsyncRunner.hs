@@ -116,7 +116,7 @@ asyncWaitRunner mus doit = do
                             VSException ex -> throwExc ex
                             _ -> return Nothing
             in MkTask {..}
-    tid <- liftIO $ traceBracketIO "asyncWaitRunner: fork thread" $ forkIO $ traceBracketIO "THREAD: asyncWaitRunner" threadDo
+    tid <- liftIO $ traceBracketIO "asyncWaitRunner: fork thread" $ traceForkIO "asyncWaitRunner" threadDo
     traceIOM $ "asyncWaitRunner: forked thread " <> show tid
     lifeCycleOnClose $ traceBracketIO "asyncWaitRunner: close" $ do
         traceBracketIO "asyncWaitRunner: close: send end" $ atomicallyDo $ traceBracketSTM "asyncWaitRunner STM: close: send end" $ do

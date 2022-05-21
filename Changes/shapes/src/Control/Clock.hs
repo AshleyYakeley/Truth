@@ -26,7 +26,7 @@ clock utcBase ndtInterval call = do
     var <- liftIO newEmptyMVar
     thread <-
         liftIO $
-        forkIO $ traceBracketIO "THREAD: clock" $
+        traceForkIO "clock" $
         handle (\MkCancelled -> return ()) $
         forever $ do
             (ndtTime, ndtOffset) <- getDiffTimes
