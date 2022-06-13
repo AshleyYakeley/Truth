@@ -7,14 +7,15 @@ import Changes.GI
 import GI.Gtk hiding (get)
 import Shapes
 
-createDynamic :: Model (ROWUpdate (View Widget)) -> View Widget
+createDynamic :: Model (ROWUpdate (GView 'Locked Widget)) -> GView 'Locked Widget
 createDynamic model = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
-        addWidget :: View Widget -> View ()
-        addWidget cvw = do
-            widget <- cvw
-            cvPackStart True box widget
-            #showAll widget
-    viewSwitch $ mapModel (funcChangeLens addWidget) model
+        addWidget :: GView 'Locked Widget -> GView 'Unlocked ()
+        addWidget cvw =
+            gvRunLocked $ do
+                widget <- cvw
+                gvPackStart True box widget
+                #showAll widget
+    gvSwitch $ mapModel (funcChangeLens addWidget) model
     toWidget box

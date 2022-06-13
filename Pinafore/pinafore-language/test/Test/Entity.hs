@@ -11,12 +11,13 @@ import Test.RunScript
 
 testUpdate :: Text -> ScriptTestTree
 testUpdate text =
-    testExpression text text $ \cc interpret -> do
-        (stuff :: PinaforeAction _) <- liftIO interpret
-        (sendUpdate, ref) <- ccRunCreateView cc emptyResourceContext $ unliftPinaforeActionOrFail stuff
-        ccRunCreateView cc emptyResourceContext $
-            runEditor (unWModel $ immutableRefToRejectingRef ref) $
-            checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
+    testExpression text text $ \interpret ->
+        liftIOWithUnlift $ \unlift -> do
+            (stuff :: PinaforeAction _) <- interpret
+            (sendUpdate, ref) <- runView unlift $ unliftPinaforeActionOrFail stuff
+            runView unlift $
+                runEditor (unWModel $ immutableRefToRejectingRef ref) $
+                checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
 testUpdates = runScriptTestTree $ tGroup "update" [testUpdate "do ref <- newMemWhole; return (ref := 1, ref) end"]

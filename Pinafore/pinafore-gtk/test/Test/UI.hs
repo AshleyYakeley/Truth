@@ -22,31 +22,35 @@ instance Show Timing where
     show SyncTiming = "sync"
     show AsyncTiming = "async"
 
-runUIAction :: forall a. Timing -> (ChangesContext -> View a) -> Text -> IO a
+runUIAction :: forall a. Timing -> View a -> Text -> IO a
 runUIAction timing testaction t = do
     donevar <- newEmptyMVar
-    changesMainGTK $ \tc -> do
-        (pc, _) <- viewLiftLifeCycle $ makeTestPinaforeContext tc stdout
-        scriptaction <-
-            runWithContext pc (libraryFetchModule gtkLibrary) $ throwInterpretResult $ pinaforeInterpretText "<test>" t
-        scriptaction
-        let
-            testView :: View (Result SomeException a)
-            testView = do
-                ar <- tryExc $ testaction tc
-                viewExitUI
-                return ar
-        case timing of
-            SyncTiming -> do
-                ar <- testView
-                liftIO $ putMVar donevar ar
-            AsyncTiming -> do
-                _ <-
-                    liftIO $
-                    forkIO $ do
-                        ar <- ccRunView tc emptyResourceContext testView
-                        putMVar donevar ar
-                return ()
+    runLifeCycleT $
+        runNewView $ do
+            (pc, _) <- viewLiftLifeCycle $ makeTestPinaforeContext stdout
+            Known gtkc <-
+                runWithContext pc (libraryFetchModule gtkLibrary) $ do
+                    scriptaction <-
+                        throwInterpretResult $ pinaforeInterpretTextAtType @(PinaforeAction GTKContext) "<test>" t
+                    unliftPinaforeAction scriptaction
+            let
+                testView :: View (Result SomeException a)
+                testView = do
+                    ar <- tryExc $ testaction
+                    runGView gtkc gvExitUI
+                    return ar
+            case timing of
+                SyncTiming -> do
+                    ar <- testView
+                    liftIO $ putMVar donevar ar
+                AsyncTiming -> do
+                    _ <-
+                        viewLiftLifeCycle $
+                        liftIOWithUnlift $ \unlift ->
+                            forkIO $ do
+                                ar <- runView unlift testView
+                                putMVar donevar ar
+                    return ()
     ar <- takeMVar donevar
     throwResult ar
 
@@ -72,8 +76,8 @@ gobjectEmitClicked obj = do
         _ <- signalEmitv [gvalObj] signalId detail
         return ()
 
-runClickButton :: ChangesContext -> View ()
-runClickButton _ = do
+runClickButton :: View ()
+runClickButton = do
     ww <- windowListToplevels
     visww <-
         for ww $ \w -> do
@@ -91,37 +95,38 @@ runClickButton _ = do
                 _ -> fail $ show (length bb) <> " Buttons"
         _ -> fail $ show (length ww) <> " visible windows"
 
-noTestAction :: ChangesContext -> View ()
-noTestAction _ = return ()
+noTestAction :: View ()
+noTestAction = return ()
 
-testUIAction :: Timing -> Text -> (ChangesContext -> View ()) -> ScriptTestTree
-testUIAction timing text testaction = scriptTestCase text text $ runUIAction timing testaction
+testUIAction :: Timing -> Text -> View () -> ScriptTestTree
+testUIAction timing text testaction =
+    scriptTestCase text ("do gtk <- UI.run; " <> text <> "; return gtk; end") $ runUIAction timing testaction
 
 testActions :: Timing -> [ScriptTestTree]
 testActions timing =
     [ testUIAction timing "return ()" noTestAction
     , testUIAction timing "newpoint" noTestAction
-    , testUIAction timing "emptywindow" noTestAction
-    , testUIAction timing "buttonwindow $ return ()" runClickButton
-    , testUIAction timing "buttonwindow $ newMemFiniteSet" runClickButton
-    , testUIAction timing "buttonwindow $ newpoint" runClickButton
-    , testUIAction timing "buttonwindow $ emptywindow" runClickButton
-    , testUIAction timing "buttonwindow $ newpoint >> newpoint" runClickButton
-    , testUIAction timing "buttonwindow $ emptywindow >> emptywindow" runClickButton
-    , testUIAction timing "buttonwindow $ newpoint >> emptywindow" runClickButton
-    , testUIAction timing "buttonwindow $ emptywindow >> newpoint" runClickButton
+    , testUIAction timing "emptywindow gtk" noTestAction
+    , testUIAction timing "buttonwindow gtk $ return ()" runClickButton
+    , testUIAction timing "buttonwindow gtk $ newMemFiniteSet" runClickButton
+    , testUIAction timing "buttonwindow gtk $ newpoint" runClickButton
+    , testUIAction timing "buttonwindow gtk $ emptywindow" runClickButton
+    , testUIAction timing "buttonwindow gtk $ newpoint >> newpoint" runClickButton
+    , testUIAction timing "buttonwindow gtk $ emptywindow >> emptywindow" runClickButton
+    , testUIAction timing "buttonwindow gtk $ newpoint >> emptywindow" runClickButton
+    , testUIAction timing "buttonwindow gtk $ emptywindow >> newpoint" runClickButton
     ]
 
 testUI :: TestTree
 testUI =
     runScriptTestTree $
     tDecls
-        [ "emptywindow: Action Unit"
-        , "emptywindow = do UI.openWindow (300,400) {\"Empty\"} {[]} UI.blank; return (); end"
+        [ "emptywindow: UI.Context -> Action Unit"
+        , "emptywindow gtk = do UI.openWindow gtk (300,400) {\"Empty\"} {[]} UI.blank; return (); end"
         , "opentype T"
         , "newpoint: Action Unit"
         , "newpoint = do s <- newMemFiniteSet; p <- newOpenEntity @T; s += p; return (); end"
-        , "buttonwindow: Action Any -> Action Unit"
-        , "buttonwindow action = do UI.openWindow (300,400) {\"Test\"} {[]} (UI.button {\"Button\"} {action}); return (); end"
+        , "buttonwindow: UI.Context -> Action Any -> Action Unit"
+        , "buttonwindow gtk action = do UI.openWindow gtk (300,400) {\"Test\"} {[]} (UI.button {\"Button\"} {action}); return (); end"
         ] $
     tGroup "UI" [tGroup "immediate" $ testActions SyncTiming, tGroup "wait" $ testActions AsyncTiming]

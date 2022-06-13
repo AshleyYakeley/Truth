@@ -10,8 +10,6 @@ module Pinafore.Base.Action
     , pinaforeFlushModelCommits
     , pinaforeRefGet
     , pinaforeRefPush
-    , pinaforeGetExitOnClose
-    , actionExitUI
     , pinaforeUndoHandler
     , pinaforeActionKnow
     , knowPinaforeAction
@@ -26,18 +24,15 @@ import Pinafore.Base.Know
 import Shapes
 
 data ActionContext = MkActionContext
-    { acExitOnClosed :: WMFunction View View
-    , acUndoHandler :: UndoHandler
+    { acUndoHandler :: UndoHandler
     }
 
 newtype PinaforeAction a =
     MkPinaforeAction (ReaderT ActionContext (ComposeInner Know View) a)
     deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadFail, MonadIO, RepresentationalRole)
 
-unPinaforeAction :: forall a. ChangesContext -> UndoHandler -> PinaforeAction a -> View (Know a)
-unPinaforeAction MkChangesContext {..} acUndoHandler (MkPinaforeAction action) = let
-    acExitOnClosed = MkWMFunction ccExitOnClosed
-    in getComposeInner $ runReaderT action MkActionContext {..}
+unPinaforeAction :: forall a. UndoHandler -> PinaforeAction a -> View (Know a)
+unPinaforeAction acUndoHandler (MkPinaforeAction action) = getComposeInner $ runReaderT action MkActionContext {..}
 
 actionLiftView :: View --> PinaforeAction
 actionLiftView cva = MkPinaforeAction $ lift $ lift cva
@@ -75,14 +70,8 @@ pinaforeRefPush model edits = do
         then return ()
         else empty
 
-pinaforeGetExitOnClose :: PinaforeAction (WMFunction View View)
-pinaforeGetExitOnClose = MkPinaforeAction $ asks acExitOnClosed
-
 actionLiftLifeCycle :: LifeCycle --> PinaforeAction
 actionLiftLifeCycle la = actionLiftView $ viewLiftLifeCycle la
-
-actionExitUI :: PinaforeAction ()
-actionExitUI = actionLiftView viewExitUI
 
 pinaforeUndoHandler :: PinaforeAction UndoHandler
 pinaforeUndoHandler = do

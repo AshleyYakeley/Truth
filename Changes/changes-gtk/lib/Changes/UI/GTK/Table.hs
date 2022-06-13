@@ -25,16 +25,16 @@ plainTableCellProps = let
 
 data KeyColumn update = MkKeyColumn
     { kcName :: Model (ROWUpdate Text)
-    , kcContents :: Model update -> View (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
+    , kcContents :: Model update -> GView 'Locked (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
     }
 
 readOnlyKeyColumn ::
        forall update.
        Model (ROWUpdate Text)
-    -> (Model update -> View (Model (ROWUpdate (Text, TableCellProps))))
+    -> (Model update -> GView 'Locked (Model (ROWUpdate (Text, TableCellProps))))
     -> KeyColumn update
 readOnlyKeyColumn kcName getter = let
-    kcContents :: Model update -> View (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
+    kcContents :: Model update -> GView 'Locked (Model (WholeUpdate Text), Model (ROWUpdate TableCellProps))
     kcContents rowSub = do
         cellSub <- getter rowSub
         let
@@ -66,11 +66,12 @@ cellAttributes MkColumn {..} MkStoreEntry {..} = let
     MkTableCellProps {..} = colProps entryRow
     in textCellAttributes (colText entryRow) tcStyle
 
-addColumn :: TreeView -> DynamicStore (StoreEntry update rowtext rowprops) -> Column (rowtext, rowprops) -> View ()
+addColumn ::
+       TreeView -> DynamicStore (StoreEntry update rowtext rowprops) -> Column (rowtext, rowprops) -> GView 'Locked ()
 addColumn tview store col = do
-    renderer <- cvNew CellRendererText []
-    column <- cvNew TreeViewColumn []
-    viewBindReadOnlyWholeModel (colName col) $ #setTitle column
+    renderer <- gvNew CellRendererText []
+    column <- gvNew TreeViewColumn []
+    gvBindReadOnlyWholeModel (colName col) $ \t -> gvRunLocked $ #setTitle column t
     #packStart column renderer False
     cellLayoutSetAttributes column renderer (getDynamicSeqStore store) $ \entry ->
         cellAttributes col $ dynamicStoreEntryValue entry
@@ -78,8 +79,8 @@ addColumn tview store col = do
     return ()
 
 data KeyColumns update =
-    forall rowprops rowtext. MkKeyColumns (Model update -> View ( Model (WholeUpdate rowtext)
-                                                                , Model (ROWUpdate rowprops)))
+    forall rowprops rowtext. MkKeyColumns (Model update -> GView 'Locked ( Model (WholeUpdate rowtext)
+                                                                         , Model (ROWUpdate rowprops)))
                                           [Column (rowtext, rowprops)]
 
 oneKeyColumn :: KeyColumn update -> KeyColumns update
@@ -105,41 +106,44 @@ tableContainerView ::
        (HasCallStack, IsUpdate update, ApplicableEdit (UpdateEdit update), FullSubjectReader (UpdateReader update))
     => KeyColumns update
     -> Model (OrderedListUpdate update)
-    -> (Model update -> View ())
+    -> (Model update -> GView 'Locked ())
     -> SelectNotify (Model update)
-    -> View (Widget, Maybe (ReadM (UpdateReader update) Bool) -> View ())
-tableContainerView (MkKeyColumns (colfunc :: Model update -> View ( Model (WholeUpdate rowtext)
-                                                                  , Model (ROWUpdate rowprops))) cols) tableModel onActivate notifier = do
+    -> GView 'Locked (Widget, Maybe (ReadM (UpdateReader update) Bool) -> GView 'Locked ())
+tableContainerView (MkKeyColumns (colfunc :: Model update -> GView 'Locked ( Model (WholeUpdate rowtext)
+                                                                           , Model (ROWUpdate rowprops))) cols) tableModel onActivate notifier = do
     let
         defStoreEntry :: StoreEntry update rowtext rowprops
         defStoreEntry = MkStoreEntry (error "unset model") (error "unset text") (error "unset props")
         makeStoreEntry ::
                SequencePoint
             -> ((StoreEntry update rowtext rowprops -> StoreEntry update rowtext rowprops) -> IO ())
-            -> View ()
+            -> GView 'Locked ()
         makeStoreEntry i setval = do
             usub <-
+                gvLiftViewNoUI $
                 viewFloatMapModel
                     (changeLensToFloating (mustExistOneChangeLens "GTK table view") . orderedListItemLens i)
                     tableModel
             liftIO $ setval $ \entry -> entry {entryModel = usub}
             (textModel, propModel) <- colfunc usub
-            viewBindWholeModel textModel Nothing $ \t -> liftIO $ setval $ \entry -> entry {entryRowText = t}
-            viewBindReadOnlyWholeModel propModel $ \t -> liftIO $ setval $ \entry -> entry {entryRowProps = t}
-        initTable :: View (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
+            gvBindWholeModel textModel Nothing $ \t ->
+                gvRunLocked $ liftIO $ setval $ \entry -> entry {entryRowText = t}
+            gvBindReadOnlyWholeModel propModel $ \t ->
+                gvRunLocked $ liftIO $ setval $ \entry -> entry {entryRowProps = t}
+        initTable :: GView 'Locked (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
         initTable = do
             initialRows <-
-                viewRunResourceContext tableModel $ \unlift amodel -> do
+                gvRunResourceContext tableModel $ \unlift amodel -> do
                     n <- liftIO $ unlift $ aModelRead amodel ListReadLength
                     return $ fmap makeStoreEntry [0 .. pred n]
             store <- newDynamicStore defStoreEntry initialRows
             tview <- treeViewNewWithModel $ getDynamicSeqStore store
-            cvAcquire tview
+            gvAcquire tview
             for_ cols $ addColumn tview store
             return (store, tview)
     rec
         let
-            getEntryFromPath :: TreePath -> View (Maybe (Unique, StoreEntry update rowtext rowprops))
+            getEntryFromPath :: TreePath -> GView 'Locked (Maybe (Unique, StoreEntry update rowtext rowprops))
             getEntryFromPath tpath = do
                 ii <- #getIndices tpath
                 case ii of
@@ -147,13 +151,13 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> View ( Model (Whole
                         uentry <- dynamicStoreGet i store
                         return $ Just uentry
                     _ -> return Nothing
-            getSelectedEntry :: View (Maybe (Unique, StoreEntry update rowtext rowprops))
+            getSelectedEntry :: GView 'Locked (Maybe (Unique, StoreEntry update rowtext rowprops))
             getSelectedEntry = do
                 (ltpath, _) <- #getSelectedRows tselection
                 case ltpath of
                     [tpath] -> getEntryFromPath tpath
                     _ -> return Nothing
-            setSelectedIndex :: Maybe Int -> View ()
+            setSelectedIndex :: Maybe Int -> GView 'Locked ()
             setSelectedIndex Nothing = #unselectAll tselection
             setSelectedIndex (Just i) = do
                 tpath <- treePathNewFromIndices [fromIntegral i]
@@ -162,46 +166,50 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> View ( Model (Whole
                    HasCallStack
                 => (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
                 -> NonEmpty (OrderedListUpdate update)
-                -> View ()
-            recvTable _ updates = do
-                mselentry <- getSelectedEntry
-                withSignalBlocked tselection getSelSig $
-                    for_ updates $ \case
-                        OrderedListUpdateItem a b _ -> dynamicStoreMove a b store
-                        OrderedListUpdateDelete i -> dynamicStoreDelete i store
-                        OrderedListUpdateInsert i _ -> dynamicStoreInsert i defStoreEntry (makeStoreEntry i) store
-                        OrderedListUpdateClear -> dynamicStoreClear store
-                mi <-
-                    case mselentry of
-                        Nothing -> return Nothing
-                        Just (selu, _) -> dynamicStoreLookup selu store
-                case mi of
-                    Nothing -> setSelectedIndex mi
-                    Just _ -> withSignalBlocked tselection getSelSig $ setSelectedIndex mi
-        (store, tview) <- viewBindModel tableModel Nothing initTable mempty recvTable
+                -> GView 'Unlocked ()
+            recvTable _ updates =
+                gvRunLocked $ do
+                    mselentry <- getSelectedEntry
+                    withSignalBlocked tselection getSelSig $
+                        for_ updates $ \case
+                            OrderedListUpdateItem a b _ -> dynamicStoreMove a b store
+                            OrderedListUpdateDelete i -> dynamicStoreDelete i store
+                            OrderedListUpdateInsert i _ -> dynamicStoreInsert i defStoreEntry (makeStoreEntry i) store
+                            OrderedListUpdateClear -> dynamicStoreClear store
+                    mi <-
+                        case mselentry of
+                            Nothing -> return Nothing
+                            Just (selu, _) -> dynamicStoreLookup selu store
+                    case mi of
+                        Nothing -> setSelectedIndex mi
+                        Just _ -> withSignalBlocked tselection getSelSig $ setSelectedIndex mi
+        (store, tview) <- gvBindModel tableModel Nothing initTable mempty recvTable
         tselection <- #getSelection tview
         set tselection [#mode := SelectionModeSingle] -- 0 or 1 selected
         let
-            getSelection :: View (Maybe (Model update))
+            getSelection :: GView 'Unlocked (Maybe (Model update))
             getSelection = do
-                mentry <- getSelectedEntry
+                mentry <- gvRunLocked getSelectedEntry
                 return $ fmap (entryModel . snd) mentry
-        getSelSig <- viewOn tselection #changed $ runSelectNotify notifier getSelection
+        MkWMFunction unliftToView <- gvGetUnliftToView
+        getSelSig <-
+            gvOnSignal tselection #changed $
+            gvRunUnlocked $ gvLiftView $ runSelectNotify notifier $ unliftToView getSelection
     let
-        setSelection :: Maybe (ReadM (UpdateReader update) Bool) -> View ()
+        setSelection :: Maybe (ReadM (UpdateReader update) Bool) -> GView 'Locked ()
         setSelection Nothing = setSelectedIndex Nothing
         setSelection (Just sel) = do
-            viewWaitUpdates tableModel
+            gvLiftViewNoUI $ viewWaitUpdates tableModel
             items <- dynamicStoreContents store
             let
-                testEntry :: StoreEntry update rowtext rowprops -> View Bool
+                testEntry :: StoreEntry update rowtext rowprops -> GView 'Locked Bool
                 testEntry se =
-                    viewRunResourceContext (entryModel se) $ \unlift (amod :: _ tt) ->
+                    gvRunResourceContext (entryModel se) $ \unlift (amod :: _ tt) ->
                         unReadM sel $ \rt -> liftIO $ unlift $ aModelRead amod rt
             mi <- mFindIndex testEntry items
             withSignalBlocked tselection getSelSig $ setSelectedIndex mi
     _ <-
-        viewOn tview #rowActivated $ \tpath _ -> do
+        gvOnSignal tview #rowActivated $ \tpath _ -> do
             mentry <- getEntryFromPath tpath
             case mentry of
                 Just (_, entry) -> onActivate $ entryModel entry
@@ -213,7 +221,7 @@ createListTable ::
        forall update. (IsUpdate update, ApplicableEdit (UpdateEdit update), FullSubjectReader (UpdateReader update))
     => [KeyColumn update]
     -> Model (OrderedListUpdate update)
-    -> (Model update -> View ())
+    -> (Model update -> GView 'Locked ())
     -> SelectNotify (Model update)
-    -> View (Widget, Maybe (ReadM (UpdateReader update) Bool) -> View ())
+    -> GView 'Locked (Widget, Maybe (ReadM (UpdateReader update) Bool) -> GView 'Locked ())
 createListTable cols sub onActivate sel = tableContainerView (mconcat $ fmap oneKeyColumn cols) sub onActivate sel

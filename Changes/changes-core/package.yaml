@@ -14,7 +14,6 @@ library:
       - thread-trace
     exposed-modules:
       - Changes.Core
-      - Changes.Core.UI.Toolkit.Run
       - Changes.Debug
       - Changes.Debug.Edit
       - Changes.Debug.Reference
@@ -108,7 +107,6 @@ library:
       - Changes.Core.UI.View.View
       - Changes.Core.UI.Selection
       - Changes.Core.UI.Dynamic
-      - Changes.Core.UI.Toolkit
       - Changes.Core.UI
 
 tests:

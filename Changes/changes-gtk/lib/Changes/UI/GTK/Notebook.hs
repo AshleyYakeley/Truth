@@ -7,9 +7,11 @@ import Changes.GI
 import GI.Gtk
 import Shapes
 
-createNotebook :: SelectNotify Int -> [(Widget, Widget)] -> View Widget
+createNotebook :: SelectNotify Int -> [(Widget, Widget)] -> GView 'Locked Widget
 createNotebook notifier pages = do
-    notebook <- cvNew Notebook []
+    notebook <- gvNew Notebook []
     for_ pages $ \(headwidget, bodywidget) -> #appendPage notebook bodywidget $ Just headwidget
-    _ <- viewOn notebook #switchPage $ \_ i -> runSelectNotify notifier $ return $ Just $ fromIntegral i
+    _ <-
+        gvOnSignal notebook #switchPage $ \_ i ->
+            gvRunUnlocked $ gvLiftView $ runSelectNotify notifier $ return $ Just $ fromIntegral i
     toWidget notebook

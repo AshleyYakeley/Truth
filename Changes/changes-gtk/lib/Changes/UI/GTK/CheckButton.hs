@@ -9,28 +9,29 @@ import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes
 
-createCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate Bool) -> View Widget
+createCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate Bool) -> GView 'Locked Widget
 createCheckButton label rmod = do
     esrc <- newEditSource
-    initial <- viewRunResource rmod $ \asub -> aModelRead asub ReadWhole
-    widget <- cvNew CheckButton [#active := initial]
-    viewBindReadOnlyWholeModel label $ \val -> set widget [#label := val]
+    initial <- gvRunResource rmod $ \asub -> aModelRead asub ReadWhole
+    widget <- gvNew CheckButton [#active := initial]
+    gvBindReadOnlyWholeModel label $ \val -> gvRunLocked $ set widget [#label := val]
     changedSignal <-
-        viewOn widget #clicked $
-        viewRunResource rmod $ \asub -> do
+        gvOnSignal widget #clicked $
+        gvRunResource rmod $ \asub -> do
             st <- Gtk.get widget #active
             _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
             return ()
-    viewBindWholeModel rmod (Just esrc) $ \st -> withSignalBlocked widget changedSignal $ set widget [#active := st]
+    gvBindWholeModel rmod (Just esrc) $ \st ->
+        gvRunLocked $ withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
 
-createMaybeCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate (Maybe Bool)) -> View Widget
+createMaybeCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate (Maybe Bool)) -> GView 'Locked Widget
 createMaybeCheckButton label rmod = do
-    initial <- viewRunResource rmod $ \asub -> aModelRead asub ReadWhole
-    widget <- cvNew CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
-    viewBindReadOnlyWholeModel label $ \val -> set widget [#label := val]
+    initial <- gvRunResource rmod $ \asub -> aModelRead asub ReadWhole
+    widget <- gvNew CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
+    gvBindReadOnlyWholeModel label $ \val -> gvRunLocked $ set widget [#label := val]
     let
-        getWidgetState :: View (Maybe Bool)
+        getWidgetState :: GView 'Locked (Maybe Bool)
         getWidgetState = do
             active <- Gtk.get widget #active
             inconsistent <- Gtk.get widget #inconsistent
@@ -38,10 +39,10 @@ createMaybeCheckButton label rmod = do
                 if inconsistent
                     then Nothing
                     else Just active
-        setWidgetState :: Maybe Bool -> View ()
+        setWidgetState :: Maybe Bool -> GView 'Locked ()
         setWidgetState st = set widget [#active := st == Just True, #inconsistent := st == Nothing]
     _ <-
-        viewOn widget #buttonPressEvent $ \event -> do
+        gvOnSignal widget #buttonPressEvent $ \event -> do
             click <- Gtk.get event #type
             case click of
                 EventTypeButtonPress -> do
@@ -53,9 +54,9 @@ createMaybeCheckButton label rmod = do
                                 then Nothing
                                 else Just (oldst /= Just True)
                     _ <-
-                        viewRunResource rmod $ \asub ->
+                        gvRunResource rmod $ \asub ->
                             pushEdit noEditSource $ aModelEdit asub $ pure $ MkWholeReaderEdit newst
                     return True
                 _ -> return False
-    viewBindWholeModel rmod Nothing setWidgetState
+    gvBindWholeModel rmod Nothing $ \mb -> gvRunLocked $ setWidgetState mb
     toWidget widget

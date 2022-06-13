@@ -45,23 +45,21 @@ makeTestStorageModel = do
     (model, ()) <- makeSharedModel $ reflectingPremodel $ pinaforeTableEntityReference tableReference
     return (model, getTableState)
 
-makeTestPinaforeContext :: ChangesContext -> Handle -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
-makeTestPinaforeContext cc hout = do
+makeTestPinaforeContext :: Handle -> LifeCycle (PinaforeContext, IO PinaforeTableSubject)
+makeTestPinaforeContext hout = do
     (model, getTableState) <- makeTestStorageModel
-    pc <- makePinaforeContext nullInvocationInfo hout model cc
+    pc <- makePinaforeContext nullInvocationInfo hout model
     return (pc, getTableState)
 
 withTestPinaforeContext ::
        FetchModule
     -> Handle
-    -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => ChangesContext -> IO PinaforeTableSubject -> IO r)
+    -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => IO PinaforeTableSubject -> LifeCycle r)
     -> IO r
 withTestPinaforeContext fetchModule hout call =
-    runLifeCycleT $
-    liftIOWithUnlift $ \unlift -> do
-        let cc = nullChangesContext unlift
-        (pc, getTableState) <- unlift $ makeTestPinaforeContext cc hout
-        runWithContext pc fetchModule $ call cc getTableState
+    runLifeCycleT $ do
+        (pc, getTableState) <- makeTestPinaforeContext hout
+        runWithContext pc fetchModule $ call getTableState
 
 withNullPinaforeContext :: MonadIO m => ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => m r) -> m r
 withNullPinaforeContext = runWithContext nullPinaforeContext mempty

@@ -84,7 +84,8 @@ drawingLibraryModule =
         , docTreeEntry
               "Actions"
               ""
-              [ mkValEntry "onClick" "Action to perform on click" $ onClick . runPinaforeAction
+              [ mkValEntry "onClick" "Action to perform on click" $
+                onClick . gvRunUnlocked . gvLiftView . runPinaforeAction
               , mkValEntry "ifPoint" "Restrict actions based on point" $ ifPoint @UIEvents
               , mkValEntry "ifInRect" "Restrict actions to within a rectangle, as ((left,top),(width,height))" $
                 ifInRect @UIEvents

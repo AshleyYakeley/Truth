@@ -1,42 +1,43 @@
 module Changes.GI.Signal
     ( withSignalBlocked
     , withSignalsBlocked
-    , viewOn
-    , viewAfter
+    , gvOnSignal
+    , gvAfterSignal
     , viewTraceSignal
     , viewTraceAllSignals
     , viewReportAllSignals
     ) where
 
 import Changes.Core
+import Changes.GI.GView
 import Changes.GI.Type
 import Data.GI.Base
 import Data.GI.Base.Signals
 import GI.GObject
 import Shapes
 
-withSignalBlocked :: IsObject obj => obj -> SignalHandlerId -> View a -> View a
+withSignalBlocked :: IsObject obj => obj -> SignalHandlerId -> GView 'Locked --> GView 'Locked
 withSignalBlocked obj conn = bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
 
-withSignalsBlocked :: IsObject obj => obj -> [SignalHandlerId] -> View a -> View a
+withSignalsBlocked :: IsObject obj => obj -> [SignalHandlerId] -> GView 'Locked --> GView 'Locked
 withSignalsBlocked _obj [] = id
 withSignalsBlocked obj (c:cc) = withSignalBlocked obj c . withSignalsBlocked obj cc
 
 class GTKCallbackType t where
     type CallbackViewLifted t :: Type
-    gCallbackUnlift :: (View --> IO) -> CallbackViewLifted t -> t
+    gCallbackUnlift :: (GView 'Locked --> IO) -> CallbackViewLifted t -> t
 
 instance GTKCallbackType (IO r) where
-    type CallbackViewLifted (IO r) = View r
+    type CallbackViewLifted (IO r) = GView 'Locked r
     gCallbackUnlift mf v = mf v
 
 instance GTKCallbackType r => GTKCallbackType (a -> r) where
     type CallbackViewLifted (a -> r) = a -> CallbackViewLifted r
     gCallbackUnlift mf av a = gCallbackUnlift mf $ av a
 
-viewCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> View ()
-viewCloseDisconnectSignal object shid =
-    viewOnClose $ do
+gvCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> GView 'Locked ()
+gvCloseDisconnectSignal object shid =
+    gvOnClose $ do
         -- Widgets that have been destroyed have already had their signals disconnected, even if references to them still exist.
         -- So we need to check.
         isConnected <- signalHandlerIsConnected object shid
@@ -44,26 +45,26 @@ viewCloseDisconnectSignal object shid =
             then liftIO $ disconnectSignalHandler object shid
             else return ()
 
-viewOn ::
+gvOnSignal ::
        (IsObject object, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
     => object
     -> SignalProxy object info
     -> CallbackViewLifted (HaskellCallbackType info)
-    -> View SignalHandlerId
-viewOn object signal call = do
-    shid <- liftIOViewAsync $ \unlift -> on object signal $ gCallbackUnlift unlift call
-    viewCloseDisconnectSignal object shid
+    -> GView 'Locked SignalHandlerId
+gvOnSignal object signal call = do
+    shid <- gvWithUnliftAsync $ \unlift -> on object signal $ gCallbackUnlift unlift call
+    gvCloseDisconnectSignal object shid
     return shid
 
-viewAfter ::
+gvAfterSignal ::
        (IsObject object, SignalInfo info, GTKCallbackType (HaskellCallbackType info))
     => object
     -> SignalProxy object info
     -> CallbackViewLifted (HaskellCallbackType info)
-    -> View SignalHandlerId
-viewAfter object signal call = do
-    shid <- liftIOViewAsync $ \unlift -> after object signal $ gCallbackUnlift unlift call
-    viewCloseDisconnectSignal object shid
+    -> GView 'Locked SignalHandlerId
+gvAfterSignal object signal call = do
+    shid <- gvWithUnliftAsync $ \unlift -> after object signal $ gCallbackUnlift unlift call
+    gvCloseDisconnectSignal object shid
     return shid
 
 getTypeSignalIDs :: MonadIO m => GType -> m [Word32]
@@ -84,7 +85,7 @@ viewTraceSignal t sigid call = do
     if elem SignalFlagsNoHooks sflags
         then return ()
         else do
-            unliftIO <- viewRunInMain
+            unliftIO <- viewUnliftView
             hookid <-
                 signalAddEmissionHook sigid 0 $ \_ vals _ -> do
                     case vals of

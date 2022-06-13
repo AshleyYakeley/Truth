@@ -10,7 +10,7 @@ import Shapes
 
 type TextSelection = FloatingChangeLens (StringUpdate Text) (StringUpdate Text)
 
-replaceText :: TextBuffer -> SequenceRun -> Text -> View ()
+replaceText :: TextBuffer -> SequenceRun -> Text -> GView 'Locked ()
 replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)) text = do
     startIter <- #getIterAtOffset buffer (fromIntegral start)
     if len > 0
@@ -33,19 +33,19 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-createTextArea :: Model (StringUpdate Text) -> SelectNotify TextSelection -> View Widget
+createTextArea :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Locked Widget
 createTextArea rmod (MkSelectNotify setsel) = do
     esrc <- newEditSource
-    buffer <- cvNew TextBuffer []
+    buffer <- gvNew TextBuffer []
     insertSignal <-
-        viewOn buffer #insertText $ \iter text _ -> do
+        gvOnSignal buffer #insertText $ \iter text _ -> do
             p <- getSequencePoint iter
             liftIO $
                 runResource emptyResourceContext rmod $ \asub -> do
                     _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
                     return ()
     deleteSignal <-
-        viewOn buffer #deleteRange $ \iter1 iter2 -> do
+        gvOnSignal buffer #deleteRange $ \iter1 iter2 -> do
             srun <- getSequenceRun iter1 iter2
             liftIO $
                 runResource emptyResourceContext rmod $ \asub -> do
@@ -60,21 +60,22 @@ createTextArea rmod (MkSelectNotify setsel) = do
         aspect = do
             srun <- getSelection
             return $ Just $ stringSectionLens srun
-    setsel aspect
-    _ <- viewAfter buffer #changed $ setsel aspect
-    _ <- viewAfter buffer #markSet $ \_ _ -> setsel aspect
+    gvRunUnlocked $ gvLiftView $ setsel aspect
+    _ <- gvAfterSignal buffer #changed $ gvRunUnlocked $ gvLiftView $ setsel aspect
+    _ <- gvAfterSignal buffer #markSet $ \_ _ -> gvRunUnlocked $ gvLiftView $ setsel aspect
     let
-        initV :: View ()
+        initV :: GView 'Locked ()
         initV = do
-            initial <- viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
+            initial <- gvLiftViewNoUI $ viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
             withSignalsBlocked buffer [insertSignal, deleteSignal] $ #setText buffer initial (-1)
-        recvV :: () -> NonEmpty (StringUpdate Text) -> View ()
+        recvV :: () -> NonEmpty (StringUpdate Text) -> GView 'Unlocked ()
         recvV () updates =
+            gvRunLocked $
             for_ updates $ \(MkEditUpdate edit) ->
                 withSignalsBlocked buffer [insertSignal, deleteSignal] $
                 case edit of
                     StringReplaceWhole text -> #setText buffer text (-1)
                     StringReplaceSection bounds text -> replaceText buffer bounds text
-    viewBindModel rmod (Just esrc) initV mempty recvV
-    widget <- cvNew TextView [#buffer := buffer]
+    gvBindModel rmod (Just esrc) initV mempty recvV
+    widget <- gvNew TextView [#buffer := buffer]
     toWidget widget

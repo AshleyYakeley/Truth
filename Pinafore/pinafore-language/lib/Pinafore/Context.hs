@@ -58,13 +58,12 @@ pinaforeInvocationInfo = pconInvocation ?pinafore
 pinaforeStdOut :: (?pinafore :: PinaforeContext) => Handle
 pinaforeStdOut = pconStdOut ?pinafore
 
-makePinaforeContext ::
-       InvocationInfo -> Handle -> Model PinaforeStorageUpdate -> ChangesContext -> LifeCycle PinaforeContext
-makePinaforeContext pconInvocation pconStdOut rmodel tc = do
+makePinaforeContext :: InvocationInfo -> Handle -> Model PinaforeStorageUpdate -> LifeCycle PinaforeContext
+makePinaforeContext pconInvocation pconStdOut rmodel = do
     uh <- liftIO newUndoHandler
     let
         pconUnliftAction :: forall a. PinaforeAction a -> View (Know a)
-        pconUnliftAction = unPinaforeAction tc uh
+        pconUnliftAction = unPinaforeAction uh
         pconStorageModel = undoHandlerModel uh rmodel
     return $ MkPinaforeContext {..}
 

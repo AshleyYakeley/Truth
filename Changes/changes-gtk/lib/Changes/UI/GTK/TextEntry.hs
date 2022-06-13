@@ -8,10 +8,10 @@ import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes hiding (get)
 
-createTextEntry :: Model (WholeUpdate Text) -> View Widget
+createTextEntry :: Model (WholeUpdate Text) -> GView 'Locked Widget
 createTextEntry rmod = do
     esrc <- newEditSource
-    widget <- cvNew Entry []
+    widget <- gvNew Entry []
     invalidCol <- new RGBA [#red := 1, #green := 0, #blue := 0, #alpha := 1]
     let
         setValidState ::
@@ -21,12 +21,13 @@ createTextEntry rmod = do
         setValidState True = #overrideColor widget [StateFlagsNormal] Nothing
         setValidState False = #overrideColor widget [StateFlagsNormal] $ Just invalidCol
     changedSignal <-
-        viewOn widget #changed $
-        viewRunResource rmod $ \asub -> do
+        gvOnSignal widget #changed $
+        gvRunResource rmod $ \asub -> do
             st <- get widget #text
             succeeded <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
             setValidState succeeded
-    viewBindWholeModel rmod (Just esrc) $ \newtext ->
+    gvBindWholeModel rmod (Just esrc) $ \newtext ->
+        gvRunLocked $
         withSignalBlocked widget changedSignal $ do
             oldtext <- get widget #text
             if oldtext == newtext

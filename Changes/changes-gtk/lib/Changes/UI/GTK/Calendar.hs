@@ -8,10 +8,10 @@ import Data.Time
 import GI.Gtk as Gtk
 import Shapes hiding (get)
 
-createCalendar :: Model (WholeUpdate Day) -> View Widget
+createCalendar :: Model (WholeUpdate Day) -> GView 'Locked Widget
 createCalendar rmod = do
     esrc <- newEditSource
-    widget <- cvNew Calendar []
+    widget <- gvNew Calendar []
     let
         getDay ::
                forall m. MonadIO m
@@ -28,16 +28,18 @@ createCalendar rmod = do
         putDay day = let
             (y, m, d) = toGregorian day
             in set widget [#year := fromInteger y, #month := pred (fromIntegral m), #day := fromIntegral d]
-        onChanged =
-            viewRunResource rmod $ \asub -> do
-                st <- getDay
+        onChanged :: GView 'Locked ()
+        onChanged = do
+            st <- getDay
+            gvRunResource rmod $ \asub -> do
                 _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
                 return ()
-    sig1 <- viewOn widget #daySelected onChanged
-    sig2 <- viewOn widget #monthChanged onChanged
-    viewBindWholeModel rmod (Just esrc) $ \newval -> do
-        oldval <- getDay
-        if oldval == newval
-            then return ()
-            else withSignalsBlocked widget [sig1, sig2] $ putDay newval
+    sig1 <- gvOnSignal widget #daySelected onChanged
+    sig2 <- gvOnSignal widget #monthChanged onChanged
+    gvBindWholeModel rmod (Just esrc) $ \newval ->
+        gvRunLocked $ do
+            oldval <- getDay
+            if oldval == newval
+                then return ()
+                else withSignalsBlocked widget [sig1, sig2] $ putDay newval
     toWidget widget

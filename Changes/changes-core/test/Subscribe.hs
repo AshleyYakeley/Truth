@@ -47,7 +47,7 @@ debugFloatingLens ::
 debugFloatingLens name = floatLift (\mr -> mr) $ debugLens name
 
 doModelTest :: TestName -> ((?handle :: Handle) => View ()) -> TestTree
-doModelTest name call = goldenTest "." name $ ccRunView (nullChangesContext runLifeCycleT) emptyResourceContext call
+doModelTest name call = goldenTest "." name $ runView runLifeCycleT call
 
 testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)

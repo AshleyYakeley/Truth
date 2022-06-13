@@ -18,7 +18,7 @@ import Shapes
 
 -- LangElement
 newtype LangElement = MkLangElement
-    { unLangElement :: View Widget
+    { unLangElement :: GView 'Locked Widget
     }
 
 elementGroundType :: PinaforeGroundType '[] LangElement
@@ -60,10 +60,10 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                 viewRunResource sub $ \asub -> do
                     ea <- aModelRead asub ReadWhole
                     return $ meet2 ea
-            onSelect :: Model (ROWUpdate EnA) -> View ()
+            onSelect :: Model (ROWUpdate EnA) -> GView 'Locked ()
             onSelect osub = do
-                a <- readSub osub
-                runPinaforeAction $ void $ onDoubleClick a
+                a <- gvLiftViewNoUI $ readSub osub
+                gvRunUnlocked $ gvLiftView $ runPinaforeAction $ void $ onDoubleClick a
             getColumn ::
                    (LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))
                 -> KeyColumn (ROWUpdate EnA)
@@ -73,9 +73,9 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
                 showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
                 nameOpenSub :: Model (ROWUpdate Text)
                 nameOpenSub = unWModel $ eaMapSemiReadOnly clearText $ langWholeRefToReadOnlyValue nameRef
-                getCellSub :: Model (ROWUpdate EnA) -> View (Model (ROWUpdate (Text, TableCellProps)))
+                getCellSub :: Model (ROWUpdate EnA) -> GView 'Locked (Model (ROWUpdate (Text, TableCellProps)))
                 getCellSub osub = do
-                    a <- readSub osub
+                    a <- gvLiftViewNoUI $ readSub osub
                     return $
                         unWModel $
                         eaMapSemiReadOnly (funcChangeLens showCell) $ langWholeRefToReadOnlyValue $ getCellRef a
@@ -89,23 +89,23 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
         (widget, setSelection) <-
             createListTable (fmap getColumn cols) (unWModel $ langListRefToOrdered lref) onSelect tsn
         for_ mSelectionModel $ \selectionModel -> let
-            setsel :: Know EnA -> View ()
+            setsel :: Know EnA -> GView 'Locked ()
             setsel Unknown = setSelection Nothing
             setsel (Known a) =
                 setSelection $
                 Just $ do
                     a' <- readM ReadWhole
                     return $ a' == a
-            init :: View ()
+            init :: GView 'Locked ()
             init =
-                viewRunResourceContext selectionModel $ \unlift (amod :: _ tt) -> do
+                gvRunResourceContext selectionModel $ \unlift (amod :: _ tt) -> do
                     ka <- liftIO $ unlift $ aModelRead amod ReadWhole
                     setsel ka
-            recv :: () -> NonEmpty (BiWholeUpdate (Know A) (Know EnA)) -> View ()
+            recv :: () -> NonEmpty (BiWholeUpdate (Know A) (Know EnA)) -> GView 'Unlocked ()
             recv () updates = let
                 MkBiWholeUpdate ka = last updates
-                in setsel ka
-            in viewBindModel selectionModel (Just esrc) init mempty recv
+                in gvRunLocked $ setsel ka
+            in gvBindModel selectionModel (Just esrc) init mempty recv
         return widget
 
 uiList :: (PinaforeImmutableWholeRef A -> LangElement) -> LangListRef '( BottomType, A) -> LangElement
@@ -144,9 +144,10 @@ uiPick itemsRef ref =
 actionRef ::
        (?pinafore :: PinaforeContext)
     => PinaforeImmutableWholeRef (PinaforeAction TopType)
-    -> PinaforeROWRef (Maybe (View ()))
+    -> PinaforeROWRef (Maybe (GView 'Locked ()))
 actionRef raction =
-    eaMapReadOnlyWhole (fmap (\action -> runPinaforeAction (action >> return ())) . knowToMaybe) $
+    eaMapReadOnlyWhole
+        (fmap (\action -> gvRunUnlocked $ gvLiftView $ runPinaforeAction (action >> return ())) . knowToMaybe) $
     immutableRefToReadOnlyRef raction
 
 uiButton ::
@@ -166,7 +167,7 @@ uiLabel text =
 
 uiDynamic :: PinaforeImmutableWholeRef LangElement -> LangElement
 uiDynamic uiref = let
-    getSpec :: Know LangElement -> View Widget
+    getSpec :: Know LangElement -> GView 'Locked Widget
     getSpec Unknown = createBlank
     getSpec (Known (MkLangElement pui)) = pui
     in MkLangElement $ createDynamic $ unWModel $ eaMapReadOnlyWhole getSpec $ immutableRefToReadOnlyRef uiref
@@ -214,7 +215,7 @@ uiNotebook selref mitems =
 uiRun :: (?pinafore :: PinaforeContext) => PinaforeAction LangElement -> LangElement
 uiRun pui =
     MkLangElement $ do
-        kui <- unliftPinaforeAction pui
+        kui <- gvRunUnlocked $ gvLiftView $ unliftPinaforeAction pui
         case kui of
             Known (MkLangElement ui) -> ui
             Unknown -> createBlank

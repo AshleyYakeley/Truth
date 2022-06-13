@@ -3,7 +3,6 @@ module Test.GTK
     ) where
 
 import Changes.Core
-import Changes.UI.GTK
 import Pinafore
 import Pinafore.Language.Library.GTK
 import Pinafore.Test
@@ -16,11 +15,12 @@ testFile inpath = let
     dir = takeDirectory inpath
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \hout ->
-           changesMainGTK $ \cc -> do
+           runLifeCycleT $
+           runNewView $ do
                pc <-
                    viewLiftLifeCycle $ do
                        (model, _) <- makeTestStorageModel
-                       makePinaforeContext nullInvocationInfo hout model cc
+                       makePinaforeContext nullInvocationInfo hout model
                action <- runWithContext pc (libraryFetchModule gtkLibrary) $ pinaforeInterpretFile inpath
                action
                return ()

@@ -2,6 +2,7 @@ module Changes.UI.GTK
     ( module I
     ) where
 
+import Changes.GI as I
 import Changes.UI.GTK.Blank as I
 import Changes.UI.GTK.Button as I
 import Changes.UI.GTK.CSS as I

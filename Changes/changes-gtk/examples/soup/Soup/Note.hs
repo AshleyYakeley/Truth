@@ -81,7 +81,7 @@ instance HasNewValue (Tuple NoteSel) where
 
 type NoteUpdate = TupleUpdate NoteSel
 
-noteEditSpec :: Model NoteUpdate -> SelectNotify TextSelection -> View Widget
+noteEditSpec :: Model NoteUpdate -> SelectNotify TextSelection -> GView 'Locked Widget
 noteEditSpec sub sel = do
     titleUI <- createTextEntry $ mapModel (tupleChangeLens NoteTitle) sub
     pastUI <- createCheckButton (constantModel "past") $ mapModel (tupleChangeLens NotePast) sub

@@ -19,7 +19,7 @@ import Shapes
 import Shapes.Numeric
 
 data UIEvents = MkUIEvents
-    { unUIEvents :: EventButton -> View Bool
+    { unUIEvents :: EventButton -> GView 'Locked Bool
     }
 
 instance Semigroup UIEvents where
@@ -35,13 +35,13 @@ instance Monoid UIEvents where
 
 type UIDrawing = Drawing (PixelPoint -> UIEvents)
 
-onMouseEvent :: ((Double, Double) -> EventButton -> View Bool) -> UIDrawing
+onMouseEvent :: ((Double, Double) -> EventButton -> GView 'Locked Bool) -> UIDrawing
 onMouseEvent f = pointDrawing $ \p -> MkUIEvents $ f p
 
 fallThrough :: UIDrawing -> UIDrawing
 fallThrough = fmap $ \f p -> MkUIEvents $ \evt -> fmap (\_ -> False) $ (unUIEvents $ f p) evt
 
-onClick :: View () -> UIDrawing
+onClick :: GView 'Locked () -> UIDrawing
 onClick action =
     onMouseEvent $ \_ event -> do
         click <- GI.get event #type
@@ -51,13 +51,14 @@ onClick action =
                 return True
             _ -> return False
 
-createCairo :: Model (ROWUpdate ((Int32, Int32) -> UIDrawing)) -> View Widget
+createCairo :: Model (ROWUpdate ((Int32, Int32) -> UIDrawing)) -> GView 'Locked Widget
 createCairo model = do
-    widget <- cvNew DrawingArea []
+    widget <- gvNew DrawingArea []
     drawingRef :: IORef ((Int32, Int32) -> UIDrawing) <- liftIO $ newIORef $ \_ -> mempty
-    viewBindReadOnlyWholeModel model $ \pdrawing -> do
-        liftIO $ writeIORef drawingRef pdrawing
-        #queueDraw widget
+    gvBindReadOnlyWholeModel model $ \pdrawing ->
+        gvRunLocked $ do
+            liftIO $ writeIORef drawingRef pdrawing
+            #queueDraw widget
     let
         getDrawing :: IO UIDrawing
         getDrawing = do
@@ -66,14 +67,14 @@ createCairo model = do
             h <- #getAllocatedHeight widget
             return $ pdrawing (w, h)
     _ <-
-        viewOn widget #draw $ \context ->
+        gvOnSignal widget #draw $ \context ->
             liftIO $ do
                 drawing <- getDrawing
                 renderWithContext (drawingRender drawing) context
                 return True
     widgetAddEvents widget [EventMaskButtonPressMask]
     _ <-
-        viewOn widget #buttonPressEvent $ \event -> do
+        gvOnSignal widget #buttonPressEvent $ \event -> do
             drawing <- liftIO getDrawing
             h <- GI.get event #x
             v <- GI.get event #y

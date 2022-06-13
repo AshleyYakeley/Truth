@@ -7,8 +7,8 @@ import Changes.GI
 import GI.Gtk
 import Shapes
 
-createLabel :: Model (ROWUpdate Text) -> View Widget
+createLabel :: Model (ROWUpdate Text) -> GView 'Locked Widget
 createLabel lmod = do
-    widget <- cvNew Label []
-    viewBindReadOnlyWholeModel lmod $ \label -> set widget [#label := label]
+    widget <- gvNew Label []
+    gvBindReadOnlyWholeModel lmod $ \label -> gvRunLocked $ set widget [#label := label]
     toWidget widget

@@ -8,18 +8,16 @@ import Data.IORef
 import GI.Gtk
 import Shapes
 
-createButton :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (View ()))) -> View Widget
+createButton :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (GView 'Locked ()))) -> GView 'Locked Widget
 createButton rlabel raction = do
     aref <- liftIO $ newIORef Nothing
-    widget <- cvNew Button []
-    viewBindReadOnlyWholeModel rlabel $ \label -> set widget [#label := label]
-    viewBindReadOnlyWholeModel raction $ \maction -> do
-        liftIO $ writeIORef aref maction
-        set widget [#sensitive := isJust maction]
+    widget <- gvNew Button []
+    gvBindReadOnlyWholeModel rlabel $ \label -> gvRunLocked $ set widget [#label := label]
+    gvBindReadOnlyWholeModel raction $ \maction -> do
+        gvLiftIONoUI $ writeIORef aref maction
+        gvRunLocked $ set widget [#sensitive := isJust maction]
     _ <-
-        viewOn widget #clicked $ do
+        gvOnSignal widget #clicked $ do
             maction <- liftIO $ readIORef aref
-            case maction of
-                Nothing -> return ()
-                Just action -> action
+            for_ maction id
     toWidget widget

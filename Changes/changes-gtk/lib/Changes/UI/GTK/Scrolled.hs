@@ -2,19 +2,18 @@ module Changes.UI.GTK.Scrolled
     ( createScrolled
     ) where
 
-import Changes.Core
 import Changes.GI
 import GI.Gtk
 import Shapes
 
-createScrolled :: Widget -> View Widget
+createScrolled :: Widget -> GView 'Locked Widget
 createScrolled content = do
-    sw <- cvNew ScrolledWindow []
+    sw <- gvNew ScrolledWindow []
     scrollable <- liftIO $ isScrollable content
     if scrollable
         then #add sw content
         else do
-            viewport <- cvNew Viewport []
+            viewport <- gvNew Viewport []
             #add viewport content
             #add sw viewport
     toWidget sw

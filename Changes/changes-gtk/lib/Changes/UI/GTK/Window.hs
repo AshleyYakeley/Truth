@@ -19,10 +19,10 @@ import Shapes
 data WindowSpec = MkWindowSpec
     { wsPosition :: WindowPosition
     , wsSize :: (Int32, Int32)
-    , wsCloseBoxAction :: View ()
+    , wsCloseBoxAction :: GView 'Locked ()
     , wsTitle :: Model (ROWUpdate Text)
     , wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-    , wsContent :: View Widget
+    , wsContent :: GView 'Locked Widget
     }
 
 data UIWindow = MkUIWindow
@@ -31,13 +31,14 @@ data UIWindow = MkUIWindow
     , uiWindowDebugDescribe :: IO Text
     }
 
-createWindow :: WindowSpec -> View UIWindow
+createWindow :: WindowSpec -> GView 'Locked UIWindow
 createWindow MkWindowSpec {..} = do
     window <-
-        cvTopLevelNew Window [#windowPosition := wsPosition, #defaultWidth := fst wsSize, #defaultHeight := snd wsSize]
-    viewBindReadOnlyWholeModel wsTitle $ \title -> set window [#title := title]
+        gvExitOnClosed $
+        gvTopLevelNew Window [#windowPosition := wsPosition, #defaultWidth := fst wsSize, #defaultHeight := snd wsSize]
+    gvBindReadOnlyWholeModel wsTitle $ \title -> gvRunLocked $ set window [#title := title]
     _ <-
-        viewOn window #deleteEvent $ \_ -> do
+        gvOnSignal window #deleteEvent $ \_ -> do
             wsCloseBoxAction
             return True -- don't run existing handler that closes the window
     content <- wsContent
@@ -45,13 +46,13 @@ createWindow MkWindowSpec {..} = do
         case wsMenuBar of
             Nothing -> return content
             Just efmbar -> do
-                ag <- cvNew AccelGroup []
+                ag <- gvNew AccelGroup []
                 #addAccelGroup window ag
                 mb <-
                     createDynamic $
                     mapModel (liftReadOnlyChangeLens $ funcChangeLens $ \mbar -> createMenuBar ag mbar >>= toWidget) $
                     efmbar
-                vbox <- cvNew Box [#orientation := OrientationVertical]
+                vbox <- gvNew Box [#orientation := OrientationVertical]
                 #packStart vbox mb False False 0
                 #packStart vbox content True True 0
                 toWidget vbox

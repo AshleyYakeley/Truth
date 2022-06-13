@@ -22,7 +22,7 @@ pinaforeBisubstitutes bisubs val = do
     return val'
 
 testValue :: Text -> ((?pinafore :: PinaforeContext, ?library :: LibraryContext) => IO ()) -> TestTree
-testValue name call = testTree (unpack name) $ withTestPinaforeContext mempty stdout $ \_ _ -> call
+testValue name call = testTree (unpack name) $ withTestPinaforeContext mempty stdout $ \_ -> liftIO call
 
 testSourceScoped :: Text -> PinaforeInterpreter () -> TestTree
 testSourceScoped name action = testValue name $ throwInterpretResult $ runPinaforeScoped (initialPos "<test>") $ action
@@ -51,7 +51,7 @@ testInterpret ::
     -> (t -> IO ())
     -> ScriptTestTree
 testInterpret expr checkVal =
-    testExpression @t expr expr $ \_cc interpret ->
+    testExpression @t expr expr $ \interpret ->
         liftIO $ do
             found <- interpret
             checkVal found

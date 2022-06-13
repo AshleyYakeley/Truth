@@ -11,35 +11,35 @@ import Shapes
 oneWholeView ::
        forall f update. (MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
-    -> (f (Model update) -> View Widget)
+    -> (f (Model update) -> GView 'Locked Widget)
     -> SelectNotify (f ())
-    -> View Widget
+    -> GView 'Locked Widget
 oneWholeView model baseView sn = do
-    box <- cvNew Box [#orientation := OrientationVertical]
+    box <- gvNew Box [#orientation := OrientationVertical]
     let
-        addWidget :: View Widget -> View ()
+        addWidget :: GView 'Locked Widget -> GView 'Locked ()
         addWidget cvw = do
             widget <- cvw
-            cvPackStart True box widget
+            gvPackStart True box widget
             widgetShow widget
-    viewInnerWholeView model (\fmodel -> addWidget $ baseView fmodel) sn
+    gvInnerWholeView model (\fmodel -> gvRunLocked $ addWidget $ baseView fmodel) sn
     toWidget box
 
 createOneWhole ::
        forall f update. (IsUpdate update, MonadInner f, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
-    -> (f (Model update) -> View Widget)
-    -> View Widget
+    -> (f (Model update) -> GView 'Locked Widget)
+    -> GView 'Locked Widget
 createOneWhole sub itemspec = oneWholeView sub itemspec mempty
 
 createOneWholeSel ::
        forall sel f update. (IsUpdate update, MonadInner f, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
-    -> (f (Model update, SelectNotify sel) -> View Widget)
+    -> (f (Model update, SelectNotify sel) -> GView 'Locked Widget)
     -> SelectNotify (f sel)
-    -> View Widget
+    -> GView 'Locked Widget
 createOneWholeSel subf specsel snfsel = let
-    spec :: f (Model update) -> View Widget
+    spec :: f (Model update) -> GView 'Locked Widget
     spec fsub = specsel $ fmap (\sub -> (sub, contramap pure snfsel)) fsub
     getf :: f () -> Maybe (f sel)
     getf fu =

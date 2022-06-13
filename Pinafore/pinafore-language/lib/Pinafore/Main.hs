@@ -23,8 +23,6 @@ import Pinafore.Storage
 import Shapes
 import System.FilePath
 
-type FilePinaforeType = PinaforeAction TopType
-
 data ModuleOptions = MkModuleOptions
     { moExtraLibrary :: [LibraryModule]
     , moModuleDirs :: [FilePath]
@@ -58,10 +56,10 @@ standardFetchModule MkModuleOptions {..} = let
     dirFetchModule = mconcat $ fmap directoryFetchModule moModuleDirs
     in extraLibFetchModule <> dirFetchModule
 
-standardPinaforeContext :: ContextOptions -> InvocationInfo -> ChangesContext -> View PinaforeContext
-standardPinaforeContext MkContextOptions {..} invinfo cc = do
+standardPinaforeContext :: ContextOptions -> InvocationInfo -> View PinaforeContext
+standardPinaforeContext MkContextOptions {..} invinfo = do
     model <- standardStorageModel coCache coDataDir
-    pc <- viewLiftLifeCycle $ makePinaforeContext invinfo stdout model cc
+    pc <- viewLiftLifeCycle $ makePinaforeContext invinfo stdout model
     return pc
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
@@ -82,7 +80,7 @@ sqlitePinaforeDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 pinaforeInterpretTextAtType ::
-       (?pinafore :: PinaforeContext, ?library :: LibraryContext, HasPinaforeType 'Negative t)
+       forall t. (?pinafore :: PinaforeContext, ?library :: LibraryContext, HasPinaforeType 'Negative t)
     => FilePath
     -> Text
     -> InterpretResult t
@@ -91,7 +89,7 @@ pinaforeInterpretTextAtType puipath puitext = runPinaforeScoped (initialPos puip
 pinaforeInterpretText ::
        (?pinafore :: PinaforeContext, ?library :: LibraryContext) => FilePath -> Text -> InterpretResult (View ())
 pinaforeInterpretText puipath puitext = do
-    action :: FilePinaforeType <- pinaforeInterpretTextAtType puipath puitext
+    action <- pinaforeInterpretTextAtType @(PinaforeAction TopType) puipath puitext
     return $ runPinaforeAction $ fmap (\MkTopType -> ()) $ action
 
 pinaforeInterpretFile ::

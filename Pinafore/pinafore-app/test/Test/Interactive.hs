@@ -16,9 +16,9 @@ testFile inpath = let
     testName = takeBaseName inpath
     in testHandleVsFile dir testName $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
-               withTestPinaforeContext (libraryFetchModule extraLibrary) outh $ \tc _ -> do
-                   ccRunView tc emptyResourceContext $ pinaforeInteractHandles inh outh True
-                   hPutStrLn outh "<END>"
+               withTestPinaforeContext (libraryFetchModule extraLibrary) outh $ \_ -> do
+                   runNewView $ pinaforeInteractHandles inh outh True
+                   liftIO $ hPutStrLn outh "<END>"
 
 getTestInteractive :: IO TestTree
 getTestInteractive = do

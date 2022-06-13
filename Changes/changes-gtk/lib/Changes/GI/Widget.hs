@@ -1,6 +1,6 @@
 module Changes.GI.Widget where
 
-import Changes.Core
+import Changes.GI.GView
 import Changes.GI.Type
 import Data.GI.Base
 import Data.GI.Gtk
@@ -59,12 +59,12 @@ isScrollable widget = do
             (Nothing, Nothing) -> False
             _ -> True
 
-cvAdd :: (IsContainer c, IsWidget w) => c -> w -> View ()
-cvAdd c w = do
+gvAdd :: (IsContainer c, IsWidget w) => c -> w -> GView 'Locked ()
+gvAdd c w = do
     containerAdd c w
-    viewOnClose $ containerRemove c w
+    gvOnClose $ containerRemove c w
 
-cvPackStart :: (IsObject w, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> View ()
-cvPackStart grow box w = do
+gvPackStart :: (IsObject w, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> GView 'Locked ()
+gvPackStart grow box w = do
     boxPackStart box w grow grow 0
-    viewOnClose $ containerRemove box w
+    gvOnClose $ containerRemove box w

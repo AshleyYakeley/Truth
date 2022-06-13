@@ -6,18 +6,19 @@ module Changes.Core.UI.View.View
     , viewOnCloseIO
     , viewGetCloser
     , viewLiftLifeCycle
+    , viewHoistLifeCycle
     , viewSubLifeCycle
-    , viewRunInMain
-    , viewGetState
-    , liftIOViewAsync
+    , viewUnliftView
+    , viewGetViewState
+    , viewAddViewState
+    , viewWithUnliftAsync
     , viewRunResource
     , viewRunResourceContext
     , viewLocalResourceContext
     , viewGetResourceContext
-    , viewWithoutLock
     , viewWaitUpdates
     , runView
-    , viewExitUI
+    , runNewView
     , viewBindModelUpdates
     , viewBindModel
     , viewFloatMapModel
@@ -51,15 +52,13 @@ newtype View a = MkView
                , RepresentationalRole
                )
 
--- | closer called not holding the UI lock
 viewOnCloseIO :: IO () -> View ()
 viewOnCloseIO closer = viewLiftLifeCycle $ lifeCycleOnClose closer
 
--- | closer called holding the UI lock (like all 'View' actions)
 viewOnClose :: View () -> View ()
 viewOnClose closer = do
     vc <- MkView ask
-    viewOnCloseIO $ runLifeCycleT $ runView vc closer
+    viewOnCloseIO $ runLifeCycleT $ runViewFromContext vc closer
 
 viewGetCloser :: forall a. View a -> View (a, IO ())
 viewGetCloser (MkView ma) =
@@ -67,26 +66,32 @@ viewGetCloser (MkView ma) =
         MkWUnlift unlift <- askUnlift
         lift $ lifeCycleGetCloser $ unlift ma
 
-viewGetState :: View a -> View (a, ViewState)
-viewGetState (MkView ma) = MkView $ liftWithUnlift $ \unlift -> liftIO $ getLifeState $ unlift ma
+viewGetViewState :: View a -> View (a, ViewState)
+viewGetViewState (MkView ma) = MkView $ liftWithUnlift $ \unlift -> liftIO $ getLifeState $ unlift ma
+
+viewAddViewState :: ViewState -> View ()
+viewAddViewState vs = viewLiftLifeCycle $ addLifeState vs
 
 viewLiftLifeCycle :: LifeCycle --> View
 viewLiftLifeCycle la = MkView $ lift la
 
-viewSubLifeCycle :: View --> View
-viewSubLifeCycle (MkView la) = MkView $ hoist (lift . runLifeCycleT) la
+viewHoistLifeCycle :: (LifeCycle --> LifeCycle) -> View --> View
+viewHoistLifeCycle f (MkView la) = MkView $ hoist f la
 
-viewRunInMain :: View (WMFunction View IO)
-viewRunInMain =
+viewSubLifeCycle :: View --> View
+viewSubLifeCycle = viewHoistLifeCycle $ lift . runLifeCycleT
+
+viewUnliftView :: View (WMFunction View IO)
+viewUnliftView =
     MkView $ do
         vc <- ask
         MkWUnlift unlift <- askUnlift
-        return $ MkWMFunction $ vcRunInMain vc . unlift . unView
+        return $ MkWMFunction $ vcUnliftLifecycle vc . unlift . unView
 
-liftIOViewAsync :: forall a. ((forall r. View r -> IO r) -> IO a) -> View a
-liftIOViewAsync call = do
-    MkWMFunction run <- viewRunInMain
-    liftIO $ call $ run . viewLocalResourceContext emptyResourceContext
+viewWithUnliftAsync :: forall a. ((View --> IO) -> View a) -> View a
+viewWithUnliftAsync call = do
+    MkWMFunction run <- viewUnliftView
+    call $ run . viewLocalResourceContext emptyResourceContext
 
 viewRunResource ::
        forall f r.
@@ -117,22 +122,21 @@ viewGetResourceContext = MkView $ asks vcResourceContext
 viewLocalResourceContext :: ResourceContext -> View --> View
 viewLocalResourceContext rc = viewWithContext (\vc -> vc {vcResourceContext = rc})
 
-viewWithoutLock :: IO --> View
-viewWithoutLock ioa = do
-    withoutLock <- MkView $ asks $ \vc -> vcWithoutUILock vc
-    liftIO $ withoutLock ioa
-
 viewWaitUpdates :: Model update -> View ()
-viewWaitUpdates model = viewWithoutLock $ taskWait $ modelUpdatesTask model
+viewWaitUpdates model = liftIO $ taskWait $ modelUpdatesTask model
 
-runView :: ViewContext -> View --> LifeCycle
-runView vc (MkView (ReaderT view)) = liftIOWithUnlift $ \unlift -> vcWithUILock vc $ unlift $ view vc
+runViewFromContext :: ViewContext -> View --> LifeCycle
+runViewFromContext vc (MkView (ReaderT view)) = liftIOWithUnlift $ \unlift -> unlift $ view vc
 
--- | Stop the UI loop. This does not throw any kind of exception.
-viewExitUI :: View ()
-viewExitUI = do
-    exit <- MkView $ asks vcExit
-    liftIO exit
+runView :: (LifeCycle --> IO) -> View --> IO
+runView unlift vma = let
+    vcResourceContext = emptyResourceContext
+    vcUnliftLifecycle :: LifeCycle --> IO
+    vcUnliftLifecycle = unlift
+    in unlift $ runViewFromContext MkViewContext {..} vma
+
+runNewView :: View --> LifeCycle
+runNewView v = liftIOWithUnlift $ \unlift -> runView unlift v
 
 viewBindModelUpdates ::
        forall update a.
@@ -145,20 +149,19 @@ viewBindModelUpdates ::
 viewBindModelUpdates model testesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- viewLiftLifeCycle lifeCycleMonitor
-    withUILock <- MkView $ asks $ \vc -> vcWithUILock vc
-    unliftView <- viewRunInMain
+    unliftView <- viewUnliftView
     viewRunResourceContext model $ \stunlift amodel -> do
         a <- initv
         viewLiftLifeCycle $
             stunlift $
             aModelSubscribe amodel (utask a) $ \urc updates ec@MkEditContext {..} ->
                 if testesrc editContextSource
-                    then withUILock $ do
-                             alive <- monitor
-                             if alive
-                                 then do
-                                     runWMFunction unliftView $ viewLocalResourceContext urc $ recv a updates ec
-                                 else return ()
+                    then do
+                        alive <- monitor
+                        if alive
+                            then do
+                                runWMFunction unliftView $ viewLocalResourceContext urc $ recv a updates ec
+                            else return ()
                     else return ()
         return a
 

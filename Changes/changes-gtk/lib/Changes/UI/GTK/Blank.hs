@@ -2,11 +2,10 @@ module Changes.UI.GTK.Blank
     ( createBlank
     ) where
 
-import Changes.Core
 import Changes.GI
 import GI.Gtk
 
-createBlank :: View Widget
+createBlank :: GView 'Locked Widget
 createBlank = do
-    widget <- cvNew DrawingArea []
+    widget <- gvNew DrawingArea []
     toWidget widget

@@ -10,7 +10,7 @@ import Pinafore.Test
 import Shapes
 
 nullViewIO :: View a -> IO a
-nullViewIO = ccRunView (nullChangesContext runLifeCycleT) emptyResourceContext
+nullViewIO = runView runLifeCycleT
 
 benchHash :: Text -> Benchmark
 benchHash text = bench (show $ unpack text) $ nf literalToEntity text
@@ -28,7 +28,7 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext (nullChangesContext runLifeCycleT) stdout) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestPinaforeContext stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in bgroup
                (show $ unpack text)
@@ -94,16 +94,16 @@ benchScripts =
 
 interpretUpdater :: (?pinafore :: PinaforeContext) => Text -> IO ()
 interpretUpdater text =
-    withTestPinaforeContext mempty stdout $ \cc _getTableState -> do
+    withTestPinaforeContext mempty stdout $ \_getTableState -> do
         action <- throwInterpretResult $ pinaforeInterpretTextAtType "<test>" text
-        (sendUpdate, ref) <- ccRunView cc emptyResourceContext $ unliftPinaforeActionOrFail action
-        ccRunView cc emptyResourceContext $
+        (sendUpdate, ref) <- runNewView $ unliftPinaforeActionOrFail action
+        runNewView $
             runEditor (unWModel $ immutableRefToRejectingRef ref) $
             checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =
-    env (fmap const $ getLifeState $ makeTestPinaforeContext (nullChangesContext runLifeCycleT) stdout) $ \tpc -> let
+    env (fmap const $ getLifeState $ makeTestPinaforeContext stdout) $ \tpc -> let
         ((pc, _), _) = tpc ()
         in let
                ?pinafore = pc

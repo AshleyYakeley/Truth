@@ -4,7 +4,6 @@ module Changes.UI.GTK.Icon
     , createIcon
     ) where
 
-import Changes.Core
 import Changes.GI
 import GI.Gtk
 import Shapes
@@ -12,8 +11,9 @@ import Shapes
 -- | https://specifications.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
 type IconName = Text
 
-createIcon :: IconName -> IconSize -> View Widget
-createIcon icon size = do
-    image <- imageNewFromIconName (Just icon) (fromIntegral $ fromEnum size)
-    cvAcquire image
-    toWidget image
+createIcon :: IconName -> IconSize -> GView 'Unlocked Widget
+createIcon icon size =
+    gvRunLocked $ do
+        image <- imageNewFromIconName (Just icon) (fromIntegral $ fromEnum size)
+        gvAcquire image
+        toWidget image

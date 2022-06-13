@@ -15,7 +15,8 @@ import Shapes
 
 -- LangWindow
 data LangWindow = MkLangWindow
-    { pwClose :: View ()
+    { pwContext :: GTKContext
+    , pwClose :: GView 'Unlocked ()
     , pwWindow :: UIWindow
     }
 
@@ -25,35 +26,47 @@ windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamil
 instance HasPinaforeGroundType '[] LangWindow where
     pinaforeGroundType = windowGroundType
 
+contextGroundType :: PinaforeGroundType '[] GTKContext
+contextGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily GTKContext)|]) "Context"
+
+instance HasPinaforeGroundType '[] GTKContext where
+    pinaforeGroundType = contextGroundType
+
 -- UIWindow
 instance HasPinaforeType 'Negative UIWindow where
     pinaforeType = mapNegShimWit (functionToShim "pwWindow" pwWindow) pinaforeType
 
-createLangWindow :: WindowSpec -> PinaforeAction LangWindow
-createLangWindow uiw = do
-    MkWMFunction exitOnClose <- pinaforeGetExitOnClose
-    (pwWindow, close) <- pinaforeEarlyCloser $ actionLiftView $ exitOnClose $ createWindow uiw
-    let pwClose = liftIO close
+createLangWindow :: GTKContext -> WindowSpec -> PinaforeAction LangWindow
+createLangWindow gtkc uiw = do
+    (pwWindow, pwClose) <- actionLiftView $ runGView gtkc $ gvGetCloser $ gvRunLocked $ createWindow uiw
+    let pwContext = gtkc
     return $ MkLangWindow {..}
+
+uiWindowClose :: LangWindow -> View ()
+uiWindowClose MkLangWindow {..} = runGView pwContext pwClose
 
 openWindow ::
        (?pinafore :: PinaforeContext)
-    => (Int32, Int32)
+    => GTKContext
+    -> (Int32, Int32)
     -> PinaforeImmutableWholeRef Text
     -> PinaforeImmutableWholeRef MenuBar
     -> LangElement
     -> PinaforeAction LangWindow
-openWindow wsSize title mbar (MkLangElement wsContent) =
+openWindow gtkc wsSize title mbar (MkLangElement wsContent) =
     mfix $ \w ->
-        createLangWindow $ let
+        createLangWindow gtkc $ let
             wsPosition = WindowPositionCenter
-            wsCloseBoxAction :: View ()
-            wsCloseBoxAction = pwClose w
+            wsCloseBoxAction :: GView 'Locked ()
+            wsCloseBoxAction = gvRunUnlocked $ pwClose w
             wsTitle :: Model (ROWUpdate Text)
             wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
             wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
             wsMenuBar = Just $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef mbar
             in MkWindowSpec {..}
+
+exitUI :: GTKContext -> View ()
+exitUI gtkc = runGView gtkc $ gvExitUI
 
 windowStuff :: DocTreeEntry BindDoc
 windowStuff =
@@ -62,8 +75,8 @@ windowStuff =
         ""
         [ mkTypeEntry "Window" "A user interface window." $ MkBoundType windowGroundType
         , mkValEntry "openWindow" "Open a new window with this size, title and element." openWindow
-        , mkValEntry "closeWindow" "Close a window." pwClose
+        , mkValEntry "closeWindow" "Close a window." uiWindowClose
         , mkValEntry "showWindow" "Show a window." uiWindowShow
         , mkValEntry "hideWindow" "Hide a window." uiWindowHide
-        , mkValEntry "exitUI" "Exit the user interface." actionExitUI
+        , mkValEntry "exitUI" "Exit the user interface." exitUI
         ]

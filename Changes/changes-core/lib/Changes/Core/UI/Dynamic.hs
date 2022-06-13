@@ -1,9 +1,6 @@
 module Changes.Core.UI.Dynamic
-    ( DynamicViewState(..)
-    , closeDynamicView
-    , replaceDynamicView
+    ( replaceDynamicView
     , viewDynamic
-    , viewSwitch
     , viewInnerWholeView
     ) where
 
@@ -14,30 +11,24 @@ import Changes.Core.Types
 import Changes.Core.UI.Selection
 import Changes.Core.UI.View.View
 
-class DynamicViewState (dvs :: Type) where
-    dynamicViewStates :: dvs -> [ViewState]
-
-instance DynamicViewState ViewState where
-    dynamicViewStates dvs = [dvs]
-
-closeDynamicView :: DynamicViewState dvs => dvs -> IO ()
-closeDynamicView dvs = for_ (dynamicViewStates dvs) closeLifeState
-
-replaceDynamicView :: (MonadIO m, DynamicViewState dvs) => m dvs -> StateT dvs m ()
-replaceDynamicView getNewDVS = do
-    oldvs <- get
-    liftIO $ closeDynamicView oldvs
-    newvs <- lift getNewDVS
-    put newvs
+replaceDynamicView :: MonadIO m => m dvs -> (dvs -> IO ViewState) -> StateT dvs m ()
+replaceDynamicView getNewDVS tovsCV = do
+    olddvs <- get
+    liftIO $ do
+        oldvs <- tovsCV olddvs
+        closeLifeState oldvs
+    newdvs <- lift getNewDVS
+    put newdvs
 
 viewDynamic ::
-       forall dvs update a. (DynamicViewState dvs)
-    => Model update
+       forall dvs update a.
+       Model update
     -> View (dvs, a)
+    -> (dvs -> IO ViewState)
     -> Task ()
     -> (a -> [update] -> StateT dvs View ())
     -> View a
-viewDynamic model initCV taskCV recvCV = do
+viewDynamic model initCV tovsCV taskCV recvCV = do
     let
         initBind :: View (MVar dvs, a)
         initBind = do
@@ -45,7 +36,8 @@ viewDynamic model initCV taskCV recvCV = do
             stateVar <- liftIO $ newMVar firstdvs
             viewOnCloseIO $ do
                 lastdvs <- takeMVar stateVar
-                closeDynamicView lastdvs
+                vs <- tovsCV lastdvs
+                closeLifeState vs
             return (stateVar, a)
         recvBind :: (MVar dvs, a) -> NonEmpty update -> View ()
         recvBind (stateVar, a) updates = mVarRun stateVar $ recvCV a $ toList updates
@@ -53,28 +45,9 @@ viewDynamic model initCV taskCV recvCV = do
     mVarRun stateVar $ recvCV a []
     return a
 
-viewSwitch :: Model (ROWUpdate (View ())) -> View ()
-viewSwitch model = do
-    let
-        getViewState :: View () -> View ViewState
-        getViewState cv = do
-            ((), vs) <- viewGetState cv
-            return vs
-        initVS :: View (ViewState, ())
-        initVS = do
-            firstspec <- viewRunResource model $ \am -> aModelRead am ReadWhole
-            vs <- getViewState firstspec
-            return (vs, ())
-        recvVS :: () -> [ROWUpdate (View ())] -> StateT ViewState View ()
-        recvVS () updates = for_ (lastReadOnlyWholeUpdate updates) $ \spec -> replaceDynamicView $ getViewState spec
-    viewDynamic model initVS mempty recvVS
-
 data OneWholeViews f =
     MkOneWholeViews (f ())
                     ViewState
-
-instance DynamicViewState (OneWholeViews f) where
-    dynamicViewStates (MkOneWholeViews _ vs) = [vs]
 
 viewInnerWholeView ::
        forall f update. (MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
@@ -82,26 +55,27 @@ viewInnerWholeView ::
     -> (f (Model update) -> View ())
     -> SelectNotify (f ())
     -> View ()
-viewInnerWholeView model baseView (MkSelectNotify notifyChange) = do
-    let
-        readInner :: View (f ())
-        readInner = viewRunResource model $ \asub -> aModelRead asub ReadHasOne
-        getWidgets :: f () -> View (OneWholeViews f)
-        getWidgets fu = do
-            notifyChange $ return $ Just fu
-            ((), vs) <- viewGetState $ baseView $ fmap (\() -> mapModel (mustExistOneChangeLens "reference") model) fu
-            return $ MkOneWholeViews fu vs
-        initVS :: View (OneWholeViews f, ())
-        initVS = do
-            firstfu <- readInner
-            vs <- getWidgets firstfu
-            return (vs, ())
-        recvVS :: () -> [FullResultOneUpdate f update] -> StateT (OneWholeViews f) View ()
-        recvVS () _ = do
-            MkOneWholeViews oldfu vs <- get
-            newfu <- lift readInner
-            case (retrieveInner oldfu, retrieveInner newfu) of
-                (SuccessResult (), SuccessResult ()) -> return ()
-                (FailureResult _, FailureResult _) -> put $ MkOneWholeViews newfu vs
-                _ -> replaceDynamicView $ getWidgets newfu
-    viewDynamic model initVS mempty recvVS
+viewInnerWholeView model baseView (MkSelectNotify notifyChange) = let
+    readInner :: View (f ())
+    readInner = viewRunResource model $ \asub -> aModelRead asub ReadHasOne
+    getWidgets :: f () -> View (OneWholeViews f)
+    getWidgets fu = do
+        notifyChange $ return $ Just fu
+        ((), vs) <- viewGetViewState $ baseView $ fmap (\() -> mapModel (mustExistOneChangeLens "reference") model) fu
+        return $ MkOneWholeViews fu vs
+    initVS :: View (OneWholeViews f, ())
+    initVS = do
+        firstfu <- readInner
+        vs <- getWidgets firstfu
+        return (vs, ())
+    tocvVS :: OneWholeViews f -> IO ViewState
+    tocvVS (MkOneWholeViews _ vs) = return vs
+    recvVS :: () -> [FullResultOneUpdate f update] -> StateT (OneWholeViews f) View ()
+    recvVS () _ = do
+        MkOneWholeViews oldfu vs <- get
+        newfu <- lift readInner
+        case (retrieveInner oldfu, retrieveInner newfu) of
+            (SuccessResult (), SuccessResult ()) -> return ()
+            (FailureResult _, FailureResult _) -> put $ MkOneWholeViews newfu vs
+            _ -> replaceDynamicView (getWidgets newfu) tocvVS
+    in viewDynamic model initVS tocvVS mempty recvVS

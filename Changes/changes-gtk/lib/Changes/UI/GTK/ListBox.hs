@@ -8,25 +8,22 @@ import GI.Gtk
 import Shapes
 
 newtype ListViewState =
-    MkListViewState [ViewState]
+    MkListViewState [GViewState 'Locked]
 
-instance DynamicViewState ListViewState where
-    dynamicViewStates (MkListViewState vss) = vss
-
-insertListViewState :: SequencePoint -> ViewState -> StateT ListViewState View ()
+insertListViewState :: Monad m => SequencePoint -> GViewState 'Locked -> StateT ListViewState m ()
 insertListViewState i vs = do
     MkListViewState s <- Shapes.get
     let (l, r) = splitAt (fromIntegral i) s
     put $ MkListViewState $ l <> (vs : r)
 
-removeListViewState :: SequencePoint -> StateT ListViewState View ViewState
+removeListViewState :: Monad m => SequencePoint -> StateT ListViewState m (GViewState 'Locked)
 removeListViewState i = do
     MkListViewState s <- Shapes.get
     let (l, r) = splitAt (fromIntegral i) s
     put $ MkListViewState $ l <> drop 1 r
     return $ fromJust $ listToMaybe r
 
-removeAllListViewStates :: StateT ListViewState View [ViewState]
+removeAllListViewStates :: Monad m => StateT ListViewState m [GViewState 'Locked]
 removeAllListViewStates = do
     MkListViewState s <- Shapes.get
     put $ MkListViewState []
@@ -34,56 +31,63 @@ removeAllListViewStates = do
 
 createListBox ::
        forall update. (IsUpdate update, FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
-    => (Model update -> View Widget)
+    => (Model update -> GView 'Locked Widget)
     -> Model (OrderedListUpdate update)
-    -> View Widget
+    -> GView 'Locked Widget
 createListBox mkElement model = do
-    listBox <- cvNew ListBox [#selectionMode := SelectionModeSingle, #activateOnSingleClick := True]
+    listBox <- gvNew ListBox [#selectionMode := SelectionModeSingle, #activateOnSingleClick := True]
     let
-        insertElement :: SequencePoint -> View ViewState
+        insertElement :: SequencePoint -> GView 'Locked (GViewState 'Locked)
         insertElement i = do
-            fmap snd $
-                viewGetState $ do
+            ((), vs) <-
+                gvGetState $ do
                     imodel <-
+                        gvLiftViewNoUI $
                         viewFloatMapModel
                             (changeLensToFloating (mustExistOneChangeLens "GTK list box") . orderedListItemLens i)
                             model
                     iwidget <- mkElement imodel
                     #insert listBox iwidget (fromIntegral i)
                     return ()
-        initVS :: View (ListViewState, ())
+            return vs
+        initVS :: GView 'Unlocked (ListViewState, ())
         initVS = do
-            n <- viewRunResource model $ \am -> aModelRead am ListReadLength
-            vss <- for [0 .. pred n] insertElement
+            n <- gvLiftViewNoUI $ viewRunResource model $ \am -> aModelRead am ListReadLength
+            vss <- gvRunLocked $ for [0 .. pred n] insertElement
             return (MkListViewState vss, ())
-        recvVS :: () -> [OrderedListUpdate update] -> StateT ListViewState View ()
+        recvVS :: () -> [OrderedListUpdate update] -> StateT ListViewState (GView 'Unlocked) ()
         recvVS () updates =
             for_ updates $ \case
                 OrderedListUpdateItem i j _
                     | i == j -> return ()
-                OrderedListUpdateItem i j _ -> do
-                    mrow <- #getRowAtIndex listBox (fromIntegral i)
-                    case mrow of
-                        Nothing -> return ()
-                        Just row -> do
-                            #remove listBox row
-                            #insert listBox row (fromIntegral j)
-                            vs <- removeListViewState i
-                            insertListViewState j vs
-                OrderedListUpdateDelete i -> do
-                    mrow <- #getRowAtIndex listBox (fromIntegral i)
-                    case mrow of
-                        Nothing -> return ()
-                        Just row -> #remove listBox row
-                    vs <- removeListViewState i
-                    liftIO $ closeLifeState vs
-                OrderedListUpdateInsert i _ -> do
-                    vs <- lift $ insertElement i
-                    insertListViewState i vs
-                OrderedListUpdateClear -> do
-                    ws <- #getChildren listBox
-                    for_ ws $ #remove listBox
-                    vss <- removeAllListViewStates
-                    liftIO $ for_ vss closeLifeState
-    viewDynamic model initVS mempty recvVS
+                OrderedListUpdateItem i j _ ->
+                    hoist gvRunLocked $ do
+                        mrow <- #getRowAtIndex listBox (fromIntegral i)
+                        case mrow of
+                            Nothing -> return ()
+                            Just row -> do
+                                #remove listBox row
+                                #insert listBox row (fromIntegral j)
+                                vs <- removeListViewState i
+                                insertListViewState j vs
+                OrderedListUpdateDelete i ->
+                    hoist gvRunLocked $ do
+                        mrow <- #getRowAtIndex listBox (fromIntegral i)
+                        case mrow of
+                            Nothing -> return ()
+                            Just row -> #remove listBox row
+                        vs <- removeListViewState i
+                        lift $ do gvCloseState vs
+                OrderedListUpdateInsert i _ ->
+                    hoist gvRunLocked $ do
+                        vs <- lift $ insertElement i
+                        insertListViewState i vs
+                OrderedListUpdateClear ->
+                    hoist gvRunLocked $ do
+                        ws <- #getChildren listBox
+                        for_ ws $ #remove listBox
+                        vss <- removeAllListViewStates
+                        lift $ do gvCloseState $ mconcat vss
+    stateFromLocked <- gvGetStateFromLocked
+    gvDynamic model initVS (\(MkListViewState vs) -> return $ stateFromLocked $ mconcat vs) mempty recvVS
     toWidget listBox

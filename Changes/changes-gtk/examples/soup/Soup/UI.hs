@@ -26,8 +26,8 @@ type PossibleNoteUpdate = FullResultOneUpdate (Result Text) NoteUpdate
 soupEditSpec ::
        Model (SoupUpdate PossibleNoteUpdate)
     -> SelectNotify (Model (UUIDElementUpdate PossibleNoteUpdate))
-    -> (Model (UUIDElementUpdate PossibleNoteUpdate) -> View ())
-    -> View Widget
+    -> (Model (UUIDElementUpdate PossibleNoteUpdate) -> GView 'Locked ())
+    -> GView 'Locked Widget
 soupEditSpec sub selnotify openItem = do
     let
         nameLens :: ChangeLens (UUIDElementUpdate PossibleNoteUpdate) (ROWUpdate (Result Text Text))
@@ -39,7 +39,7 @@ soupEditSpec sub selnotify openItem = do
         uo :: UpdateOrder (UUIDElementUpdate PossibleNoteUpdate)
         uo = mkUpdateOrder cmp nameLens
     osub :: Model (OrderedListUpdate (UUIDElementUpdate PossibleNoteUpdate)) <-
-        viewFloatMapModel (orderedSetLens uo) sub
+        gvLiftViewNoUI $ viewFloatMapModel (orderedSetLens uo) sub
     let
         nameColumn :: KeyColumn (UUIDElementUpdate PossibleNoteUpdate)
         nameColumn =
@@ -76,14 +76,14 @@ soupReference dirpath = let
     lens = liftSoupLens paste $ soupItemLens . referenceChangeLens
     in mapReference lens rawSoupReference
 
-soupWindow :: (WindowSpec -> View UIWindow) -> FilePath -> View ()
+soupWindow :: (WindowSpec -> GView 'Locked UIWindow) -> FilePath -> GView 'Locked ()
 soupWindow newWindow dirpath = do
-    smodel <- viewLiftLifeCycle $ makeReflectingModel $ soupReference dirpath
-    (selModel, selnotify) <- viewLiftLifeCycle $ makeSharedModel makePremodelSelectNotify
+    smodel <- gvLiftLifeCycleNoUI $ makeReflectingModel $ soupReference dirpath
+    (selModel, selnotify) <- gvLiftLifeCycleNoUI $ makeSharedModel makePremodelSelectNotify
     let
-        withSelection :: (Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()) -> View ()
+        withSelection :: (Model (UUIDElementUpdate PossibleNoteUpdate) -> GView 'Locked ()) -> GView 'Locked ()
         withSelection call = do
-            msel <- viewRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
+            msel <- gvRunResource selModel $ \selAModel -> aModelRead selAModel ReadWhole
             case msel of
                 Just sel -> call sel
                 Nothing -> return ()
@@ -93,27 +93,27 @@ soupWindow newWindow dirpath = do
                 NoteTitle -> "untitled"
                 NotePast -> False
                 NoteText -> ""
-        newItem :: View ()
+        newItem :: GView 'Locked ()
         newItem =
-            viewRunResource smodel $ \samodel -> do
+            gvRunResource smodel $ \samodel -> do
                 key <- liftIO randomIO
                 _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditInsertReplace (key, return blankNote)
                 return ()
-        deleteItem :: Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()
+        deleteItem :: Model (UUIDElementUpdate PossibleNoteUpdate) -> GView 'Locked ()
         deleteItem imodel =
-            viewRunResourceContext imodel $ \unlift iamodel -> do
+            gvRunResourceContext imodel $ \unlift iamodel -> do
                 key <- liftIO $ unlift $ aModelRead iamodel $ MkTupleUpdateReader SelectFirst ReadWhole
-                viewRunResource smodel $ \samodel -> do
+                gvRunResource smodel $ \samodel -> do
                     _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditDelete key
                     return ()
-        mbar :: IO () -> UIWindow -> Maybe (Model (ROWUpdate [MenuEntry]))
+        mbar :: GViewState 'Locked -> UIWindow -> Maybe (Model (ROWUpdate [MenuEntry]))
         mbar cc _ =
             Just $
             constantModel $
             [ SubMenuEntry
                   "File"
-                  [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ liftIO cc
-                  , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') viewExitUI
+                  [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ gvCloseState cc
+                  , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') gvExitUI
                   ]
             , SubMenuEntry
                   "Item"
@@ -121,20 +121,20 @@ soupWindow newWindow dirpath = do
                   , simpleActionMenuItem "Delete" Nothing $ withSelection deleteItem
                   ]
             ]
-        openItem :: Model (UUIDElementUpdate PossibleNoteUpdate) -> View ()
+        openItem :: Model (UUIDElementUpdate PossibleNoteUpdate) -> GView 'Locked ()
         openItem imodel = do
             let
                 rowmodel :: Model PossibleNoteUpdate
                 rowmodel = mapModel (tupleChangeLens SelectSecond) imodel
-                rspec :: Result Text (Model NoteUpdate) -> View Widget
+                rspec :: Result Text (Model NoteUpdate) -> GView 'Locked Widget
                 rspec (SuccessResult s2) = noteEditSpec s2 mempty
                 rspec (FailureResult err) = createLabel $ constantModel err
             rec
                 ~(subwin, subcloser) <-
-                    viewGetCloser $ let
+                    gvGetState $ let
                         wsPosition = WindowPositionCenter
                         wsSize = (300, 400)
-                        wsCloseBoxAction = liftIO subcloser
+                        wsCloseBoxAction = gvCloseState subcloser
                         wsTitle = constantModel "item"
                         wsMenuBar = mbar subcloser subwin
                         wsContent = createOneWhole rowmodel rspec
@@ -148,14 +148,14 @@ soupWindow newWindow dirpath = do
             wsTitle = constantModel $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
             wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
             wsMenuBar = mbar closer window
-            wsCloseBoxAction :: View ()
-            wsCloseBoxAction = liftIO closer
-        button <- createButton (constantModel "View") $ constantModel $ Just $ withSelection openItem
+            wsCloseBoxAction :: GView 'Locked ()
+            wsCloseBoxAction = gvCloseState closer
+        button <- createButton (constantModel "GView 'Locked") $ constantModel $ Just $ withSelection openItem
         stuff <- soupEditSpec smodel selnotify openItem
         let
             wsContent =
                 createLayout
                     OrientationVertical
                     [(defaultLayoutOptions, button), (defaultLayoutOptions {loGrow = True}, stuff)]
-        (window, closer) <- viewGetCloser $ newWindow MkWindowSpec {..}
+        (window, closer) <- gvGetState $ newWindow MkWindowSpec {..}
     return ()

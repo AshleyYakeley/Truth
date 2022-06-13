@@ -37,29 +37,33 @@ zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
 main :: IO ()
 main = do
-    changesMainGTK $ \cc -> do
-        let newWindow spec = ccExitOnClosed cc $ createWindow spec
-        (clockModel, ()) <- viewLiftLifeCycle $ makeSharedModel $ clockPremodel zeroTime $ secondsToNominalDiffTime 1
-        tz <- liftIO getCurrentTimeZone
-        rec
-            (_, closer) <-
-                viewGetCloser $
-                newWindow $ let
-                    wsPosition = WindowPositionCenter
-                    wsSize = (600, 600)
-                    wsCloseBoxAction :: View ()
-                    wsCloseBoxAction = liftIO closer
-                    wsTitle :: Model (ROWUpdate Text)
-                    wsTitle = constantModel "Cairo"
-                    wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-                    wsMenuBar = Nothing
-                    wsContent :: View Widget
-                    wsContent = do
-                        w1 <- createButton (constantModel "Button") (constantModel Nothing)
-                        w2 <- createCairo $ mapModel (funcChangeLens $ drawing tz) clockModel
-                        GI.set w2 [#marginStart GI.:= 100, #marginTop GI.:= 200]
-                        createLayout
-                            OrientationHorizontal
-                            [(defaultLayoutOptions, w1), (defaultLayoutOptions {loGrow = True}, w2)]
-                    in MkWindowSpec {..}
-        return ()
+    runLifeCycleT $ do
+        gtkContext <- runGTK
+        runNewView $
+            runGView gtkContext $ do
+                (clockModel, ()) <-
+                    gvLiftLifeCycleNoUI $ makeSharedModel $ clockPremodel zeroTime $ secondsToNominalDiffTime 1
+                tz <- gvLiftIONoUI getCurrentTimeZone
+                rec
+                    (_, closer) <-
+                        gvRunLocked $
+                        gvGetState $
+                        createWindow $ let
+                            wsPosition = WindowPositionCenter
+                            wsSize = (600, 600)
+                            wsCloseBoxAction :: GView 'Locked ()
+                            wsCloseBoxAction = gvCloseState closer
+                            wsTitle :: Model (ROWUpdate Text)
+                            wsTitle = constantModel "Cairo"
+                            wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
+                            wsMenuBar = Nothing
+                            wsContent :: GView 'Locked Widget
+                            wsContent = do
+                                w1 <- createButton (constantModel "Button") (constantModel Nothing)
+                                w2 <- createCairo $ mapModel (funcChangeLens $ drawing tz) clockModel
+                                GI.set w2 [#marginStart GI.:= 100, #marginTop GI.:= 200]
+                                createLayout
+                                    OrientationHorizontal
+                                    [(defaultLayoutOptions, w1), (defaultLayoutOptions {loGrow = True}, w2)]
+                            in MkWindowSpec {..}
+                return ()

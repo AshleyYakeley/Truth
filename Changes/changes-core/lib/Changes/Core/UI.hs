@@ -5,5 +5,4 @@ module Changes.Core.UI
 import Changes.Core.UI.Dynamic as I
 import Changes.Core.UI.Editor as I
 import Changes.Core.UI.Selection as I
-import Changes.Core.UI.Toolkit as I
 import Changes.Core.UI.View.View as I

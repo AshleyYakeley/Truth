@@ -17,14 +17,14 @@ libDir = "../lib"
 testCheckScript :: FilePath -> String -> TestTree
 testCheckScript fpath name =
     testTree name $
-    withTestPinaforeContext (libraryFetchModule gtkLibrary <> directoryFetchModule libDir) stdout $ \_ _getTableState -> do
+    withTestPinaforeContext (libraryFetchModule gtkLibrary <> directoryFetchModule libDir) stdout $ \_getTableState -> do
         _ <- pinaforeInterpretFile fpath
         return ()
 
 testCheckModule :: String -> TestTree
 testCheckModule name =
     testTree name $
-    withTestPinaforeContext (libraryFetchModule gtkLibrary <> directoryFetchModule libDir) stdout $ \_ _ -> do
+    withTestPinaforeContext (libraryFetchModule gtkLibrary <> directoryFetchModule libDir) stdout $ \_ -> do
         modname <- maybeToM "bad module name" $ toModuleName $ pack name
         _ <- throwInterpretResult $ runPinaforeScoped (initialPos name) $ lcLoadModule ?library modname
         return ()
