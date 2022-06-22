@@ -7,10 +7,11 @@ import Changes.UI.GTK
 import qualified GI.Cairo.Render.Matrix as RM
 import Shapes
 import Shapes.Test
+import Changes.Debug
 
 lockTest :: String -> GView 'Unlocked a -> (a -> GView 'Unlocked ()) -> TestTree
 lockTest name setup action =
-    testTree name $ do
+    testTree name $ traceThread "test" $ do
         task <-
             runLifeCycleT $
             runGTK $ \gtkc -> do
@@ -34,7 +35,7 @@ noAction :: a -> GView 'Unlocked ()
 noAction _ = return ()
 
 closeAction :: IO () -> GView 'Unlocked ()
-closeAction closer = do
+closeAction closer = traceBracket "closeAction" $ do
     gvSleep 50000
     liftIO closer
 
@@ -61,7 +62,7 @@ lockTests =
               in lockTest "window" setup closeAction
         , let
               setup :: GView 'Unlocked (IO ())
-              setup =
+              setup = traceBracket "setup" $
                   gvRunLocked $ do
                       let wspec = blankWindowSpec {wsContent = createDynamic $ constantModel createBlank}
                       (w, closer) <- gvHoistView viewGetCloser $ createWindow wspec

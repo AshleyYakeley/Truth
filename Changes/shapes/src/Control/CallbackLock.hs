@@ -6,6 +6,7 @@ module Control.CallbackLock
     ) where
 
 import Shapes.Import
+import Debug.ThreadTrace
 
 newtype CallbackLock =
     MkCallbackLock (TVar (Int, Bool))
@@ -16,7 +17,7 @@ newCallbackLock = do
     return $ MkCallbackLock var
 
 cbRunLocked :: CallbackLock -> IO --> IO
-cbRunLocked (MkCallbackLock var) = let
+cbRunLocked (MkCallbackLock var) = traceBarrier "runLocked" $ let
     before :: IO ()
     before =
         atomically $ do
@@ -34,13 +35,15 @@ cbRunLocked (MkCallbackLock var) = let
     in bracket_ before after
 
 cbRunUnlocked :: CallbackLock -> IO --> IO
-cbRunUnlocked (MkCallbackLock var) call = let
+cbRunUnlocked (MkCallbackLock var) = traceBarrier "runUnlocked" $ let
     before :: IO Int
-    before =
+    before = traceBracket "runUnlocked.before" $
         atomically $ do
             (i, lock) <- readTVar var
+            traceSTM $ "runUnlocked.before: found " <> show (i,lock)
             if lock
                 then do
+                    traceSTM $ "runUnlocked.before: found " <> show (i,lock)
                     writeTVar var (i, False)
                     return i
                 else mzero
@@ -52,4 +55,4 @@ cbRunUnlocked (MkCallbackLock var) call = let
                 (i, False)
                     | i == i' -> writeTVar var (i, True)
                 _ -> mzero
-    in bracket before after $ \_ -> call
+    in \call -> bracket before after $ \_ -> call
