@@ -5,6 +5,7 @@ module Pinafore.Language.Library.GTK.Window
     ) where
 
 import Changes.Core
+import Changes.Debug
 import Changes.UI.GTK
 import Data.Shim
 import Pinafore.Base
@@ -37,11 +38,14 @@ instance HasPinaforeType 'Negative UIWindow where
     pinaforeType = mapNegShimWit (functionToShim "lwWindow" lwWindow) pinaforeType
 
 createLangWindow :: GTKContext -> WindowSpec -> PinaforeAction LangWindow
-createLangWindow gtkc uiw = do
-    (lwWindow, wclose) <- actionLiftView $ runGView gtkc $ gvGetCloser $ gvRunLocked $ createWindow uiw
-    let lwContext = gtkc
-    let lwClose = wclose
-    return $ MkLangWindow {..}
+createLangWindow gtkc uiw =
+    traceBracket "createLangWindow" $ do
+        (lwWindow, wclose) <-
+            actionLiftView $
+            runGView gtkc $ gvGetCloser $ traceBarrier "createLangWindow.create" gvRunLocked $ createWindow uiw
+        let lwContext = gtkc
+        let lwClose = traceBracket "createLangWindow.close" wclose
+        return $ MkLangWindow {..}
 
 uiWindowClose :: LangWindow -> View ()
 uiWindowClose MkLangWindow {..} = runGView lwContext lwClose

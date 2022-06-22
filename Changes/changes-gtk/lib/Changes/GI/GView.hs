@@ -38,6 +38,7 @@ module Changes.GI.GView
     ) where
 
 import Changes.Core
+import Changes.Debug
 import Changes.GI.LockState
 import Shapes
 
@@ -150,16 +151,18 @@ gvSubLifeCycle :: GView ls --> GView ls
 gvSubLifeCycle (MkGView rva) = MkGView $ hoist viewSubLifeCycle rva
 
 gvRunLocked :: GView 'Locked --> GView 'Unlocked
-gvRunLocked gv =
-    MkGView $ do
-        lock <- asks gtkcLock
-        hoistIO (cbRunLocked lock) $ unGView gv
+gvRunLocked =
+    traceBarrier "gvRunLocked" $ \gv ->
+        MkGView $ do
+            lock <- asks gtkcLock
+            hoistIO (cbRunLocked lock) $ unGView gv
 
 gvRunUnlocked :: GView 'Unlocked --> GView 'Locked
-gvRunUnlocked gv =
-    MkGView $ do
-        lock <- asks gtkcLock
-        hoistIO (cbRunUnlocked lock) $ unGView gv
+gvRunUnlocked =
+    traceBarrier "gvRunUnlocked" $ \gv ->
+        MkGView $ do
+            lock <- asks gtkcLock
+            hoistIO (cbRunUnlocked lock) $ unGView gv
 
 gvLiftLifeCycleNoUI :: LifeCycle --> GView ls
 gvLiftLifeCycleNoUI = gvLiftViewNoUI . viewLiftLifeCycle
@@ -241,6 +244,7 @@ gvDynamic ::
     -> (a -> [update] -> StateT dvs (GView 'Unlocked) ())
     -> GView 'Unlocked a
 gvDynamic model initCV tovsCV taskCV recvCV =
+    traceBracket "gvDynamic" $
     gvLiftViewWithUnlift $ \unlift ->
         viewDynamic model (unlift initCV) (fmap gvsViewState . tovsCV) taskCV $ \a updates ->
             hoist unlift $ recvCV a updates

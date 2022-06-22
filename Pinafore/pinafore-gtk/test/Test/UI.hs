@@ -3,6 +3,7 @@ module Test.UI
     ) where
 
 import Changes.Core
+import Changes.Debug
 import Changes.UI.GTK
 import Changes.UI.GTK.Test
 import Pinafore
@@ -26,18 +27,18 @@ runUIAction testaction script =
                 scriptaction $ \gtkc -> do
                     _ <-
                         liftIOWithUnlift $ \unlift ->
-                            forkIO $
+                            traceForkIO "action" $
                             unlift $
                             runGView gtkc $ do
-                                gvSleep 50000
-                                testaction
-                                gvExitUI
-                                liftIO $ putMVar donevar ()
+                                traceBracket "sleep" $ gvSleep 50000
+                                traceBracket "action" testaction
+                                traceBracket "exit" gvExitUI
+                                liftIO $ traceBracket "done" $ putMVar donevar ()
                     return ()
-            liftIO $ takeMVar donevar
+            liftIO $ traceBracket "wait for done" $ takeMVar donevar
 
 runClickButton :: GView 'Unlocked ()
-runClickButton = gvRunLocked clickOnlyWindowButton
+runClickButton = traceBracket "runClickButton" $ gvRunLocked clickOnlyWindowButton
 
 noTestAction :: GView ls ()
 noTestAction = return ()

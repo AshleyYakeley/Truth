@@ -5,6 +5,7 @@ module Control.AsyncRunner
     ) where
 
 import Control.Task
+import Debug.ThreadTrace
 import Shapes.Import
 
 data VarState t
@@ -60,7 +61,8 @@ asyncWaitRunner mus doit = do
                             return $ Just $ doit vals
             case maction of
                 Just action -> do
-                    catchExc action $ \ex -> atomically $ writeTVar bufferVar $ VSException ex
+                    catchExc (traceBracket "async.action" action) $ \ex ->
+                        atomically $ writeTVar bufferVar $ VSException ex
                     threadDo
                 Nothing -> return ()
         waitForIdle :: STM (Result SomeException ())
@@ -108,7 +110,7 @@ asyncWaitRunner mus doit = do
                             VSException _ -> return True
                             _ -> return False
             in MkTask {..}
-    _ <- liftIO $ forkIO threadDo
+    _ <- liftIO $ traceForkIO "async" threadDo
     lifeCycleOnClose $ do
         atomicallyDo $ do
             me <- waitForIdle

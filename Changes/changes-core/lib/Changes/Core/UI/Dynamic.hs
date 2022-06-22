@@ -10,6 +10,7 @@ import Changes.Core.Model
 import Changes.Core.Types
 import Changes.Core.UI.Selection
 import Changes.Core.UI.View.View
+import Changes.Debug
 
 replaceDynamicView :: MonadIO m => m dvs -> (dvs -> IO ViewState) -> StateT dvs m ()
 replaceDynamicView getNewDVS tovsCV = do
@@ -37,7 +38,7 @@ viewDynamic model initCV tovsCV taskCV recvCV = do
             viewOnCloseIO $ do
                 lastdvs <- takeMVar stateVar
                 vs <- tovsCV lastdvs
-                closeLifeState vs
+                traceBracket "viewDynamic.close" $ closeLifeState vs
             return (stateVar, a)
         recvBind :: (MVar dvs, a) -> NonEmpty update -> View ()
         recvBind (stateVar, a) updates = mVarRun stateVar $ recvCV a $ toList updates

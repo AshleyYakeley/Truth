@@ -3,6 +3,7 @@ module Changes.UI.GTK.Button
     ) where
 
 import Changes.Core
+import Changes.Debug
 import Changes.GI
 import Data.IORef
 import GI.Gtk
@@ -17,7 +18,8 @@ createButton rlabel raction = do
         gvLiftIONoUI $ writeIORef aref maction
         gvRunLocked $ set widget [#sensitive := isJust maction]
     _ <-
-        gvOnSignal widget #clicked $ do
+        gvOnSignal widget #clicked $
+        traceBracket "createButton.clicked" $ do
             maction <- liftIO $ readIORef aref
             for_ maction id
     toWidget widget
