@@ -71,7 +71,7 @@ An import declaration brings names from a module into scope.
 ```pinafore
 let
 
-import UI; # brings everything from UI into scope
+import GTK; # brings everything from GTK into scope
 
 import Colour (AlphaColour, crimson); # brings given names (and subtype relations) from Colour into scope
 

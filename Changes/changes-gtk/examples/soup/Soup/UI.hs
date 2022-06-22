@@ -106,7 +106,7 @@ soupWindow newWindow dirpath = do
                 gvRunResource smodel $ \samodel -> do
                     _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditDelete key
                     return ()
-        mbar :: GViewState 'Locked -> UIWindow -> Maybe (Model (ROWUpdate [MenuEntry]))
+        mbar :: GViewState -> UIWindow -> Maybe (Model (ROWUpdate [MenuEntry]))
         mbar cc _ =
             Just $
             constantModel $

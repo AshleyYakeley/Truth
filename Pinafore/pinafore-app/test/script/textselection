@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 let
-import UI();
-in do
+import GTK();
+in GTK.run $ \gtk => do
     tref1 <- newMemWhole;
     tref1 := "111";
     tref2 <- newMemWhole;
@@ -9,11 +9,11 @@ in do
     tref3 <- newMemWhole;
     tref3 := "333";
     sel <- newMemWhole;
-    UI.openWindow (400,500) {"Text Selection"} {[]} $ UI.styleSheet {"* {padding: 2pt;}"} $ UI.vertical
+    GTK.openWindow gtk (400,500) {"Text Selection"} {[]} $ GTK.styleSheet {"* {padding: 2pt;}"} $ GTK.vertical
     [
-        UI.textArea tref1 sel,
-        UI.textArea tref2 sel,
-        UI.textArea tref3 sel,
-        UI.dynamic {UI.run $ mapAction (\tref => UI.textArea tref unknown) %sel}
+        GTK.textArea tref1 sel,
+        GTK.textArea tref2 sel,
+        GTK.textArea tref3 sel,
+        GTK.dynamic {GTK.exec $ mapAction (\tref => GTK.textArea tref unknown) %sel}
     ];
     end

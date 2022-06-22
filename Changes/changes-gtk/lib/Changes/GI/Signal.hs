@@ -3,13 +3,15 @@ module Changes.GI.Signal
     , withSignalsBlocked
     , gvOnSignal
     , gvAfterSignal
-    , viewTraceSignal
-    , viewTraceAllSignals
-    , viewReportAllSignals
+    , gvTraceSignal
+    , gvObjectTraceSignal
+    , gvObjectTraceAllSignals
+    , gvObjectReportAllSignals
     ) where
 
-import Changes.Core
+import Changes.Debug
 import Changes.GI.GView
+import Changes.GI.LockState
 import Changes.GI.Type
 import Data.GI.Base
 import Data.GI.Base.Signals
@@ -37,7 +39,8 @@ instance GTKCallbackType r => GTKCallbackType (a -> r) where
 
 gvCloseDisconnectSignal :: IsObject object => object -> SignalHandlerId -> GView 'Locked ()
 gvCloseDisconnectSignal object shid =
-    gvOnClose $ do
+    gvOnClose $
+    gvLiftIO $ do
         -- Widgets that have been destroyed have already had their signals disconnected, even if references to them still exist.
         -- So we need to check.
         isConnected <- signalHandlerIsConnected object shid
@@ -78,40 +81,44 @@ getTypeSignalIDs t = do
                 else signalListIds t0
     return $ nub $ mconcat sigidss
 
-viewTraceSignal :: IsObject t => t -> Word32 -> View () -> View ()
-viewTraceSignal t sigid call = do
+gvTraceSignal :: Word32 -> ([GValue] -> GView 'Locked ()) -> GView 'Locked ()
+gvTraceSignal sigid call = do
     sq <- signalQuery sigid
     sflags <- getSignalQuerySignalFlags sq
     if elem SignalFlagsNoHooks sflags
         then return ()
         else do
-            unliftIO <- viewUnliftView
             hookid <-
-                signalAddEmissionHook sigid 0 $ \_ vals _ -> do
-                    case vals of
-                        [] -> return ()
-                        sval:_ -> do
-                            obj <- toObject t
-                            msobj <- fromGValue sval
-                            case msobj of
-                                Just sobj
-                                    | sobj == obj -> runWMFunction unliftIO call
-                                _ -> return ()
-                    return True
-            viewOnClose $ signalRemoveEmissionHook sigid hookid
+                liftIOWithUnlift $ \unliftIO ->
+                    signalAddEmissionHook sigid 0 $ \_ vals _ -> do
+                        unliftIO $ call vals
+                        return True
+            gvOnClose $ gvLiftIO $ signalRemoveEmissionHook sigid hookid
 
-viewTraceAllSignals :: IsObject t => t -> (Text -> View ()) -> View ()
-viewTraceAllSignals obj call = do
+gvObjectTraceSignal :: IsObject t => t -> Word32 -> GView 'Locked () -> GView 'Locked ()
+gvObjectTraceSignal t sigid call = do
+    obj <- toObject t
+    gvTraceSignal sigid $ \case
+        [] -> return ()
+        sval:_ -> do
+            msobj <- fromGValue sval
+            case msobj of
+                Just sobj
+                    | sobj == obj -> call
+                _ -> return ()
+
+gvObjectTraceAllSignals :: IsObject t => t -> (Text -> GView 'Locked ()) -> GView 'Locked ()
+gvObjectTraceAllSignals obj call = do
     t <- getObjectType obj
     sigids <- getTypeSignalIDs t
     for_ sigids $ \sigid -> do
         signame <- signalName sigid
         case signame of
-            "event" -> return ()
-            "event-after" -> return ()
+            --"event" -> return ()
+            --"event-after" -> return ()
             "motion-notify-event" -> return ()
-            _ -> viewTraceSignal obj sigid $ call signame
+            _ -> gvObjectTraceSignal obj sigid $ call signame
 
-viewReportAllSignals :: IsObject t => Text -> t -> View ()
-viewReportAllSignals name obj =
-    viewTraceAllSignals obj $ \signame -> liftIO $ hPutStrLn stderr $ unpack name <> ": signal " <> show signame
+gvObjectReportAllSignals :: IsObject t => Text -> t -> GView 'Locked ()
+gvObjectReportAllSignals name obj =
+    gvObjectTraceAllSignals obj $ \signame -> traceIOM $ "SIGNAL: " <> unpack name <> ": " <> show signame

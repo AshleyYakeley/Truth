@@ -1,26 +1,26 @@
 #!/usr/bin/pinafore
 let
 
-import UI();
+import GTK();
 
 dateText: Date ~> Text;
 dateText = property @Date @Text !"example.calendar:dateText";
 
-ui: WholeRef Date -> UI.Element;
-ui r = UI.vertical
+ui: WholeRef Date -> GTK.Element;
+ui r = GTK.vertical
     [
-    UI.horizontal
+    GTK.horizontal
         [
-        UI.button {"<"} {do d <- get r; r := addDays (-1) d; end},
-        UI.layoutGrow $ UI.label {unixFormatDate "%A, %B %e, %Y" %r},
-        UI.button {">"} {do d <- get r; r := addDays 1 d; end}
+        GTK.button {"<"} {do d <- get r; r := addDays (-1) d; end},
+        GTK.layoutGrow $ GTK.label {unixFormatDate "%A, %B %e, %Y" %r},
+        GTK.button {">"} {do d <- get r; r := addDays 1 d; end}
         ],
-    UI.layoutGrow $ UI.textArea (dateText !$ r) unknown
+    GTK.layoutGrow $ GTK.textArea (dateText !$ r) unknown
     ];
 
 in do
     r <- newMemWhole;
     d <- getDate;
     r := d;
-    UI.openWindow (300,400) {show %r} {[]} $ ui r;
+    GTK.openWindow (300,400) {show %r} {[]} $ ui r;
     end

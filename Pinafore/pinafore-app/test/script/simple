@@ -11,12 +11,12 @@ name = property @Person @Text !"example:name";
 # One particular Person
 me = openEntity @Person !"example:me";
 
-# UI
-ui_person : Person -> UI.Element;
-ui_person p = UI.textEntry $ name !$ {p};
+# GTK
+ui_person : Person -> GTK.Element;
+ui_person p = GTK.textEntry $ name !$ {p};
 
-window_person : Person -> Action UI.Window;
-window_person p = UI.openWindow (300,400) {"Name"} {[]} (ui_person p);
+window_person : Person -> Action GTK.Window;
+window_person p = GTK.openWindow (300,400) {"Name"} {[]} (ui_person p);
 
 in do
     window_person me;

@@ -19,11 +19,11 @@ main :: IO ()
 main = do
     filenames <- listDirectory imagedir
     --(paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
-    runLifeCycleT $ do
-        gtkContext <- runGTK
-        runNewView $
+    runLifeCycleT $
+        runGTK $ \gtkContext ->
+            runNewView $
             runGView gtkContext $ do
-            -- fileReference :: FilePath -> Reference ByteStringEdit
+                -- fileReference :: FilePath -> Reference ByteStringEdit
                 imageRef <- gvLiftIONoUI $ makeMemoryReference (blankImage @PixelRGB8 (100, 100) black) $ \_ -> True
                 model <- gvLiftLifeCycleNoUI $ makeReflectingModel imageRef
                 rec

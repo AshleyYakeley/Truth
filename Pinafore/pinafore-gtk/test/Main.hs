@@ -12,5 +12,5 @@ main = do
     testGTK <- getTestGTK
     let
         tests :: TestTree
-        tests = testTree "pinafore" [testGTK, testUI]
+        tests = testTree "pinafore-gtk" [testGTK, testUI]
     testMainNoSignalHandler tests

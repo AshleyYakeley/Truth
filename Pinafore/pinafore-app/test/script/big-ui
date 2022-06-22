@@ -3,7 +3,7 @@ let
 opentype T;
 me = openEntity @T !"T";
 
-func20 n a b c d e f = UI.label n;
+func20 n a b c d e f = GTK.label n;
 func19 n a b c d e f = func20 n a b c d e f;
 func18 n a b c d e f = func19 n a b c d e f;
 func17 n a b c d e f = func18 n a b c d e f;
@@ -25,8 +25,8 @@ func2 n a b c d e f = func3 n a b c d e f;
 func1 n a b c d e f = func2 n a b c d e f;
 func0 n a b c d e f = func1 n a b c d e f;
 
-w : Action UI.Window;
-w = UI.openWindow (300,400) {"Test"} {[]} $ func0 (pureWhole "Text") False False False False False False;
+w : Action GTK.Window;
+w = GTK.openWindow (300,400) {"Test"} {[]} $ func0 (pureWhole "Text") False False False False False False;
 
 prop0 = property @T @Text !"000";
 
@@ -44,5 +44,5 @@ in do
     w1 <- w;
     act;
     act;
-    UI.closeWindow w1;
+    GTK.closeWindow w1;
     end

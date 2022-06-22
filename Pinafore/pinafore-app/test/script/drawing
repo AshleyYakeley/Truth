@@ -49,12 +49,12 @@ drawing ref =
     ]
 };
 
-import UI();
+import GTK();
 in do
     ref <- newMemWhole;
-    UI.openWindow (300,400) {"Drawing"} {[]} $ UI.vertical
+    GTK.openWindow (300,400) {"Drawing"} {[]} $ GTK.vertical
     [
-        UI.layoutGrow $ UI.draw $ scaleDrawing $ drawing ref,
-        UI.layoutGrow $ UI.draw $ scaleDrawing $ drawing ref
+        GTK.layoutGrow $ GTK.draw $ scaleDrawing $ drawing ref,
+        GTK.layoutGrow $ GTK.draw $ scaleDrawing $ drawing ref
     ];
     end

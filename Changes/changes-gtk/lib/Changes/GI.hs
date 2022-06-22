@@ -5,6 +5,7 @@ module Changes.GI
 import Changes.GI.Error as I
 import Changes.GI.GView as I
 import Changes.GI.LifeCycle as I
+import Changes.GI.LockState as I
 import Changes.GI.Signal as I
 import Changes.GI.Type as I
 import Changes.GI.Widget as I

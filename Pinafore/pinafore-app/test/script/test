@@ -2,30 +2,30 @@
 
 let
 
-import UI();
+import GTK();
 
 ### Useful
-ui_page n ui = (UI.label n,ui);
-ui_labelled n ui = UI.horizontal [UI.label n, UI.layoutGrow  ui];
+ui_page n ui = (GTK.label n,ui);
+ui_labelled n ui = GTK.horizontal [GTK.label n, GTK.layoutGrow  ui];
 
-std_window : WholeRef +Text -> UI.Element -> Action UI.Window;
+std_window : WholeRef +Text -> GTK.Element -> Action GTK.Window;
 std_window title contents = fixAction $ \window => let
-    menus : List UI.MenuItem;
+    menus : List GTK.MenuItem;
     menus =
         [
-            UI.menuSubmenu "File"
+            GTK.menuSubmenu "File"
             [
-                UI.menuAction "Close" (Just "Ctrl+W") {UI.closeWindow window},
-                UI.menuSeparator,
-                UI.menuAction "Exit" (Just "Ctrl+Q") {UI.exitUI}
+                GTK.menuAction "Close" (Just "Ctrl+W") {GTK.closeWindow window},
+                GTK.menuSeparator,
+                GTK.menuAction "Exit" (Just "Ctrl+Q") {GTK.exitUI}
             ],
-            UI.menuSubmenu "Edit"
+            GTK.menuSubmenu "Edit"
             [
-                UI.menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
-                UI.menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
+                GTK.menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
+                GTK.menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ]
-    in UI.openWindow (400,500) title {menus} $ UI.scrolled contents;
+    in GTK.openWindow (400,500) title {menus} $ GTK.scrolled contents;
 
 ### People
 
@@ -65,85 +65,85 @@ birthdate = property @Person @Text !"b711b9b3-b43c-4ff6-be12-3291cc6b050a";
 deathdate = property @Person @Text !"805a9e65-d69a-4261-9c94-a3249885b6bb";
 married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 
-# UI
+# GTK
 rec
-ui_people : FiniteSetRef Person -> UI.Element;
-ui_people pp = UI.run $ do
+ui_people : FiniteSetRef Person -> GTK.Element;
+ui_people pp = GTK.run $ do
     selectedperson <- newMemWhole;
     pplist <- getSetList noOrder pp;
-    return $ UI.vertical
+    return $ GTK.vertical
     [
-        UI.button {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end},
-        UI.button {"View Person"} {get selectedperson >>= window_person},
-        UI.button {"Remove Person"} {get selectedperson >>= \p => pp -= p},
-        UI.layoutGrow $ UI.listTable [({"Name"},\p => name !$ {p})] pplist window_person (Just selectedperson)
+        GTK.button {"New Person"} {do p <- newOpenEntity @Person; pp += p; window_person p end},
+        GTK.button {"View Person"} {get selectedperson >>= window_person},
+        GTK.button {"Remove Person"} {get selectedperson >>= \p => pp -= p},
+        GTK.layoutGrow $ GTK.listTable [({"Name"},\p => name !$ {p})] pplist window_person (Just selectedperson)
     ];
     end;
 
 peopleByName : WholeRef +(List (Person :*: Text));
 peopleByName = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
 
-ui_person : WholeRef Person -> UI.Element;
-ui_person p = UI.vertical
+ui_person : WholeRef Person -> GTK.Element;
+ui_person p = GTK.vertical
 [
-    ui_labelled {"Name: "} $ UI.textEntry $ name !$ p,
-    UI.layoutGrow $ UI.notebook unknown
+    ui_labelled {"Name: "} $ GTK.textEntry $ name !$ p,
+    GTK.layoutGrow $ GTK.notebook unknown
     [
-        ui_page {"Social"} $ UI.vertical
+        ui_page {"Social"} $ GTK.vertical
         [
-            ui_labelled {"Email: "} $ UI.textEntry $ email !$ p,
-            ui_labelled {"Phone: "} $ UI.textEntry $ phone !$ p
+            ui_labelled {"Email: "} $ GTK.textEntry $ email !$ p,
+            ui_labelled {"Phone: "} $ GTK.textEntry $ phone !$ p
         ],
-        ui_page {"Home"} $ let homep = home !$ p in UI.vertical
+        ui_page {"Home"} $ let homep = home !$ p in GTK.vertical
         [
-            ui_labelled {"Address: "} $ UI.textArea (address !$ homep) unknown,
-            ui_labelled {"City: "} $ UI.textEntry $ city !$ homep,
-            ui_labelled {"Postcode/ZIP: "} $ UI.textEntry $ postcode !$ homep,
-            ui_labelled {"State/Province: "} $ UI.textEntry $ province !$ homep,
-            ui_labelled {"Country: "} $ UI.textEntry $ country !$ homep,
-            ui_labelled {"Phone: "} $ UI.textEntry $ locphone !$ homep
+            ui_labelled {"Address: "} $ GTK.textArea (address !$ homep) unknown,
+            ui_labelled {"City: "} $ GTK.textEntry $ city !$ homep,
+            ui_labelled {"Postcode/ZIP: "} $ GTK.textEntry $ postcode !$ homep,
+            ui_labelled {"State/Province: "} $ GTK.textEntry $ province !$ homep,
+            ui_labelled {"Country: "} $ GTK.textEntry $ country !$ homep,
+            ui_labelled {"Phone: "} $ GTK.textEntry $ locphone !$ homep
         ],
-        ui_page {"Work"} $ UI.vertical
+        ui_page {"Work"} $ GTK.vertical
         [
-            ui_labelled {"Employer: "} $ UI.textEntry $ (name !. employer) !$ p
+            ui_labelled {"Employer: "} $ GTK.textEntry $ (name !. employer) !$ p
         ],
-        ui_page {"Family"} $ UI.vertical
+        ui_page {"Family"} $ GTK.vertical
         [
-            ui_labelled {"Birth: "} $ UI.textEntry $ birthdate !$ p,
-            ui_labelled {"Death: "} $ UI.textEntry $ deathdate !$ p,
-            UI.checkBox {"Married"} $ married !$ p,
-            ui_labelled {"Mother: "} $ UI.pick peopleByName $ mother !$ p,
-            ui_labelled {"Father: "} $ UI.pick peopleByName $ father !$ p,
-            UI.layoutGrow $ ui_people (children p)
+            ui_labelled {"Birth: "} $ GTK.textEntry $ birthdate !$ p,
+            ui_labelled {"Death: "} $ GTK.textEntry $ deathdate !$ p,
+            GTK.checkBox {"Married"} $ married !$ p,
+            ui_labelled {"Mother: "} $ GTK.pick peopleByName $ mother !$ p,
+            ui_labelled {"Father: "} $ GTK.pick peopleByName $ father !$ p,
+            GTK.layoutGrow $ ui_people (children p)
         ]
     ]
 ];
 
-window_person : Person -> Action UI.Window;
+window_person : Person -> Action GTK.Window;
 window_person p = std_window (name !$ {p}) (ui_person {p});
 
-window_people : Action UI.Window;
+window_people : Action GTK.Window;
 window_people = std_window {"People"} (ui_people people);
 end;
 
 ### Calculator
 
-window_calc : Action UI.Window;
+window_calc : Action GTK.Window;
 window_calc = let
 opentype P;
 pvalue = property @P @Number !"pvalue";
 aval = pvalue !$ {openEntity @P !"a4706230-2c61-44b1-b600-516e7a54c607"};
 bval = pvalue !$ {openEntity @P !"9d284ad2-e141-4114-ae50-8829a6db710f"};
-in std_window {"Calc"} $ UI.vertical
+in std_window {"Calc"} $ GTK.vertical
 [
-    #UI.textEntry aval,
-    #UI.textEntry bval,
-    #UI.label $ aval / bval
+    #GTK.textEntry aval,
+    #GTK.textEntry bval,
+    #GTK.label $ aval / bval
 ];
 
 ### Switching Value
 
-window_switch : Action UI.Window;
+window_switch : Action GTK.Window;
 window_switch = let
 opentype P;
 pbool = property @P @Boolean !"pbool";
@@ -151,62 +151,62 @@ ptext = property @P @Text !"ptext";
 sw_pick = pbool !$ {openEntity @P !"59eb2d87-f815-47ef-b7dc-8fe434151bb6"};
 sw_val1 = ptext !$ {openEntity @P !"6d9f7afa-1091-49cc-8646-8e613bb75ee5"};
 sw_val2 = ptext !$ {openEntity @P !"934712ae-73a7-4084-8a43-d618c737fd56"};
-in std_window {"Switch"} $ UI.vertical
+in std_window {"Switch"} $ GTK.vertical
 [
-    #UI.textEntry sw_pick),
-    UI.checkBox {"pick"} sw_pick,
-    UI.layoutGrow $ UI.dynamic {if %sw_pick then UI.textArea sw_val1 unknown else UI.textArea sw_val2 unknown}
+    #GTK.textEntry sw_pick),
+    GTK.checkBox {"pick"} sw_pick,
+    GTK.layoutGrow $ GTK.dynamic {if %sw_pick then GTK.textArea sw_val1 unknown else GTK.textArea sw_val2 unknown}
 ];
 
 ### Imported Files
 
-window_files : Action UI.Window;
+window_files : Action GTK.Window;
 window_files = let
 #Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
 #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
-window_file f = std_window {"File"} $ UI.vertical
+window_file f = std_window {"File"} $ GTK.vertical
 [
-    #UI.textEntry $ caption f
+    #GTK.textEntry $ caption f
 ];
-in std_window {"Files"} $ UI.vertical
+in std_window {"Files"} $ GTK.vertical
 [
-    #UI.button "Import" {file_import Files $ \f => std_window $ window_file f},
-    #UI.layoutGrow $ UI.listTable [column "Caption" caption, column "Size" file_size] window_file Files
+    #GTK.button "Import" {file_import Files $ \f => std_window $ window_file f},
+    #GTK.layoutGrow $ GTK.listTable [column "Caption" caption, column "Size" file_size] window_file Files
 ];
 
 ### Constant Edit
 
-window_constant : Action UI.Window;
-window_constant = std_window {"Constant"} $ UI.vertical
+window_constant : Action GTK.Window;
+window_constant = std_window {"Constant"} $ GTK.vertical
 [
-    UI.checkBox {"off"} {False},
-    UI.checkBox {"on"} {True},
-    UI.textEntry {"constant"},
-    UI.layoutGrow $ UI.textArea {"constant"} unknown
+    GTK.checkBox {"off"} {False},
+    GTK.checkBox {"on"} {True},
+    GTK.textEntry {"constant"},
+    GTK.layoutGrow $ GTK.textArea {"constant"} unknown
 ];
 
 ### CSS
-window_css: Action UI.Window;
+window_css: Action GTK.Window;
 window_css = do
     cssref <- newMemWhole;
     cssref := ".y, .y > text {color:green; font-family: \"serif\";}";
     sometext <- newMemWhole;
     sometext := "whatever";
-    std_window {"CSS"} $ UI.styleSheet (Debug.UI.ignoreUpdateUIExceptions cssref) $ UI.name "root" $ UI.vertical
+    std_window {"CSS"} $ GTK.styleSheet (Debug.GTK.ignoreUpdateUIExceptions cssref) $ GTK.name "root" $ GTK.vertical
         [
-            UI.styleClass "x" $ UI.name "A" $ UI.checkBox {"Box"} {True},
-            UI.styleClass "x" $ UI.name "B" $ UI.button {"Button"} {return ()},
-            UI.styleClass "x" $ UI.name "C" $ UI.textEntry sometext,
-            UI.layoutGrow $ UI.styleClass "y" $ UI.name "D" $ UI.textArea cssref unknown,
-            UI.styleClass "y" $ UI.name "E" $ UI.label {"Some Text"}
+            GTK.styleClass "x" $ GTK.name "A" $ GTK.checkBox {"Box"} {True},
+            GTK.styleClass "x" $ GTK.name "B" $ GTK.button {"Button"} {return ()},
+            GTK.styleClass "x" $ GTK.name "C" $ GTK.textEntry sometext,
+            GTK.layoutGrow $ GTK.styleClass "y" $ GTK.name "D" $ GTK.textArea cssref unknown,
+            GTK.styleClass "y" $ GTK.name "E" $ GTK.label {"Some Text"}
         ];
     end;
 
 ### Drawing
-window_drawing: WholeRef +Time -> Action UI.Window;
+window_drawing: WholeRef +Time -> Action GTK.Window;
 window_drawing now = let import Colour; import Drawing in do
     tzref <- newTimeZoneRef now;
-    std_window {"Drawing"} $ UI.draw {\(w,h) => let
+    std_window {"Drawing"} $ GTK.draw {\(w,h) => let
         size = min w h;
         in case timeToLocal %tzref %now of
             DateAndTime _ (HourMinuteSecond _ _ s) =>
@@ -222,14 +222,14 @@ window_drawing now = let import Colour; import Drawing in do
             end};
     end;
 
-window_list: Action UI.Window;
+window_list: Action GTK.Window;
 window_list = do
     peopleList <- getSetList (orderOn name alphabetical) people;
-    std_window {"List"} $ UI.list ui_person peopleList;
+    std_window {"List"} $ GTK.list ui_person peopleList;
     end;
 
 ### Text Selection
-window_textselection: Action UI.Window;
+window_textselection: Action GTK.Window;
 window_textselection = do
     tref1 <- newMemWhole;
     tref1 := "111";
@@ -238,18 +238,18 @@ window_textselection = do
     tref3 <- newMemWhole;
     tref3 := "333";
     sel <- newMemWhole;
-    std_window {"Text Selection"} $ UI.styleSheet {"* {padding: 2pt;}"} $ UI.vertical
+    std_window {"Text Selection"} $ GTK.styleSheet {"* {padding: 2pt;}"} $ GTK.vertical
     [
-        UI.textArea tref1 sel,
-        UI.textArea tref2 sel,
-        UI.textArea tref3 sel,
-        UI.dynamic {UI.run $ mapAction (\tref => UI.textArea tref unknown) %sel}
+        GTK.textArea tref1 sel,
+        GTK.textArea tref2 sel,
+        GTK.textArea tref3 sel,
+        GTK.dynamic {GTK.run $ mapAction (\tref => GTK.textArea tref unknown) %sel}
     ];
     end;
 
 ### Start Window
 
-window_start : Action UI.Window;
+window_start : Action GTK.Window;
 window_start = do
     now <- newClock $ Seconds 1;
     timeZone <- newTimeZoneRef now;
@@ -258,24 +258,24 @@ window_start = do
         localNow = {timeToLocal %timeZone %now};
         today = {case %localNow of DateAndTime day _ => day end};
         in do
-        std_window {"Pinafore"} $ UI.vertical
+        std_window {"Pinafore"} $ GTK.vertical
         [
-            UI.label {"UTC time: " <> show %now},
-            UI.label {"UTC date: " <> show %utcDate},
-            UI.label {"Local time: " <> show %localNow},
-            UI.label {"Local date: " <> show %today},
-            UI.label {"Time zone offset minutes: " <> show %timeZone},
-            UI.button {"People"} {window_people},
-            UI.button {"Calculated Form"} {window_calc},
-            UI.button {"Switch"} {window_switch},
-            UI.button {"Files"} {window_files},
-            UI.button {"Constant"} {window_constant},
-            UI.button {"CSS"} {window_css},
-            UI.button {"Drawing"} {window_drawing now},
-            UI.button {"List"} {window_list},
-            UI.button {"Text Selection"} {window_textselection},
-            UI.button {"Disabled"} unknown,
-            UI.layoutGrow $ UI.blank
+            GTK.label {"UTC time: " <> show %now},
+            GTK.label {"UTC date: " <> show %utcDate},
+            GTK.label {"Local time: " <> show %localNow},
+            GTK.label {"Local date: " <> show %today},
+            GTK.label {"Time zone offset minutes: " <> show %timeZone},
+            GTK.button {"People"} {window_people},
+            GTK.button {"Calculated Form"} {window_calc},
+            GTK.button {"Switch"} {window_switch},
+            GTK.button {"Files"} {window_files},
+            GTK.button {"Constant"} {window_constant},
+            GTK.button {"CSS"} {window_css},
+            GTK.button {"Drawing"} {window_drawing now},
+            GTK.button {"List"} {window_list},
+            GTK.button {"Text Selection"} {window_textselection},
+            GTK.button {"Disabled"} unknown,
+            GTK.layoutGrow $ GTK.blank
         ];
         end;
     end;

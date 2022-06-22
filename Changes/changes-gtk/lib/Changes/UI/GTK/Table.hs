@@ -71,7 +71,7 @@ addColumn ::
 addColumn tview store col = do
     renderer <- gvNew CellRendererText []
     column <- gvNew TreeViewColumn []
-    gvBindReadOnlyWholeModel (colName col) $ \t -> gvRunLocked $ #setTitle column t
+    gvBindReadOnlyWholeModel (colName col) $ \t -> gvLiftIO $ #setTitle column t
     #packStart column renderer False
     cellLayoutSetAttributes column renderer (getDynamicSeqStore store) $ \entry ->
         cellAttributes col $ dynamicStoreEntryValue entry

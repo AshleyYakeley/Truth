@@ -22,5 +22,5 @@ instance TraceThing (Model edit) where
                         MkResource rr $
                         MkAModel
                             (traceAReference prefix blankEditShower anobj)
-                            (\task call -> traceBracket (contextStr prefix "update") $ sub task call)
+                            (\task call -> traceBracket_ (contextStr prefix "update") $ sub task call)
                             utask

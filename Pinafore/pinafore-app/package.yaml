@@ -32,7 +32,6 @@ executables:
           - shapes
           - optparse-applicative
           - changes-core
-          - changes-gtk
           - pinafore-language
           - pinafore-app
         main: Main.hs

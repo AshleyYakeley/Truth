@@ -15,7 +15,7 @@ import Pinafore.Language.Library.GTK.Window
 import Shapes
 
 uiLibraryModule :: LibraryModule
-uiLibraryModule = MkDocTree "UI" "User interface, using GTK." [elementStuff, menuItemStuff, windowStuff]
+uiLibraryModule = MkDocTree "GTK" "User interface, using GTK." [elementStuff, menuItemStuff, windowStuff]
 
 gtkLibrary :: [LibraryModule]
 gtkLibrary = colourLibraryModules ++ [drawingLibraryModule, uiLibraryModule, uiDebugLibraryModule]

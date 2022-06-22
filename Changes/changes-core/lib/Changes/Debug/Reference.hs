@@ -73,10 +73,10 @@ showEditShower = let
 instance TraceThing (ChangeLens updateA updateB) where
     traceThing prefix (MkChangeLens g u pe) =
         MkChangeLens
-            (\mr rt -> traceBracket (contextStr prefix "get") $ g mr rt)
-            (\ee mr -> traceBracket (contextStr prefix "update") $ u ee mr)
+            (\mr rt -> traceBracket_ (contextStr prefix "get") $ g mr rt)
+            (\ee mr -> traceBracket_ (contextStr prefix "update") $ u ee mr)
             (\ee mr ->
-                 traceBracket (contextStr prefix "put") $ do
+                 traceBracket_ (contextStr prefix "put") $ do
                      mee <- pe ee mr
                      case mee of
                          Just _ -> traceIOM (contextStr prefix "put: edits")
@@ -120,8 +120,8 @@ slowObject mus (MkResource rr (MkAReference rd push ct)) =
                         Nothing -> Nothing
                         Just action ->
                             Just $ \esrc -> do
-                                traceBracket "slow: delay" $ liftIO $ threadDelay mus
-                                traceBracket "slow: action" $ action esrc
+                                traceBracket_ "slow: delay" $ liftIO $ threadDelay mus
+                                traceBracket_ "slow: action" $ action esrc
             in MkResource rr $ MkAReference rd push' ct
 
 instance TraceThing (FloatingChangeLens updateA updateB) where
@@ -129,6 +129,6 @@ instance TraceThing (FloatingChangeLens updateA updateB) where
         init' =
             case init of
                 NoFloatInit r -> NoFloatInit r
-                ReadFloatInit fi -> ReadFloatInit $ \mr -> traceBracket (contextStr prefix "init") $ fi mr
+                ReadFloatInit fi -> ReadFloatInit $ \mr -> traceBracket_ (contextStr prefix "init") $ fi mr
         lens' r = traceThing prefix $ lens r
         in MkFloatingChangeLens init' lens'

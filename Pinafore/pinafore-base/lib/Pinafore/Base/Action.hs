@@ -2,6 +2,7 @@ module Pinafore.Base.Action
     ( PinaforeAction
     , unPinaforeAction
     , actionLiftView
+    , actionTunnelView
     , actionHoistView
     , actionLiftLifeCycle
     , pinaforeGetCreateViewUnlift
@@ -29,13 +30,31 @@ data ActionContext = MkActionContext
 
 newtype PinaforeAction a =
     MkPinaforeAction (ReaderT ActionContext (ComposeInner Know View) a)
-    deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadFail, MonadIO, RepresentationalRole)
+    deriving ( Functor
+             , Applicative
+             , Monad
+             , Alternative
+             , MonadPlus
+             , MonadFix
+             , MonadFail
+             , MonadIO
+             , MonadException
+             , RepresentationalRole
+             )
 
 unPinaforeAction :: forall a. UndoHandler -> PinaforeAction a -> View (Know a)
 unPinaforeAction acUndoHandler (MkPinaforeAction action) = getComposeInner $ runReaderT action MkActionContext {..}
 
 actionLiftView :: View --> PinaforeAction
 actionLiftView cva = MkPinaforeAction $ lift $ lift cva
+
+actionTunnelView ::
+       forall r. (forall f. Functor f => (forall a. PinaforeAction a -> View (f a)) -> View (f r)) -> PinaforeAction r
+actionTunnelView call =
+    MkPinaforeAction $
+    tunnel $ \unlift1 ->
+        tunnel $ \unlift2 ->
+            fmap getComposeInner $ call $ \(MkPinaforeAction rx) -> fmap MkComposeInner $ unlift2 $ unlift1 rx
 
 actionHoistView :: (View --> View) -> PinaforeAction --> PinaforeAction
 actionHoistView vv (MkPinaforeAction ma) = MkPinaforeAction $ hoist (hoist vv) ma

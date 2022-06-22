@@ -70,10 +70,11 @@ instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangWholeRef where
 
 -- PinaforeImmutableWholeRef
 instance (HasPinaforeType 'Negative a) => HasPinaforeType 'Negative (PinaforeImmutableWholeRef a) where
-    pinaforeType = mapNegShimWit (functionToShim "subtype" $ langWholeRefToImmutable @BottomType) pinaforeType
+    pinaforeType =
+        mapNegShimWit (functionToShim "langWholeRefToImmutable" $ langWholeRefToImmutable @BottomType) pinaforeType
 
 instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (PinaforeImmutableWholeRef a) where
-    pinaforeType = mapPosShimWit (functionToShim "subtype" pinaforeImmutableToWholeRef) pinaforeType
+    pinaforeType = mapPosShimWit (functionToShim "pinaforeImmutableToWholeRef" pinaforeImmutableToWholeRef) pinaforeType
 
 -- Literal types
 instance HasPinaforeGroundType '[] Literal where

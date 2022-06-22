@@ -8,7 +8,7 @@ years = property @Integer @Unit !"FTSJ.years" !@ {()};
 yearTheme: Integer ~> Text;
 yearTheme = property @Integer @Text !"FTSJ.yearTheme";
 
-import UI;
+import GTK;
 import UIStuff.Selection;
 
 frontCoverPane: Pane;

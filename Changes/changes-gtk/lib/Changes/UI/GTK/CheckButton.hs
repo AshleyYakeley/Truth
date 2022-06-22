@@ -14,7 +14,7 @@ createCheckButton label rmod = do
     esrc <- newEditSource
     initial <- gvRunResource rmod $ \asub -> aModelRead asub ReadWhole
     widget <- gvNew CheckButton [#active := initial]
-    gvBindReadOnlyWholeModel label $ \val -> gvRunLocked $ set widget [#label := val]
+    gvBindReadOnlyWholeModel label $ \val -> gvLiftIO $ set widget [#label := val]
     changedSignal <-
         gvOnSignal widget #clicked $
         gvRunResource rmod $ \asub -> do
@@ -29,7 +29,7 @@ createMaybeCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate (Maybe Bo
 createMaybeCheckButton label rmod = do
     initial <- gvRunResource rmod $ \asub -> aModelRead asub ReadWhole
     widget <- gvNew CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
-    gvBindReadOnlyWholeModel label $ \val -> gvRunLocked $ set widget [#label := val]
+    gvBindReadOnlyWholeModel label $ \val -> gvLiftIO $ set widget [#label := val]
     let
         getWidgetState :: GView 'Locked (Maybe Bool)
         getWidgetState = do

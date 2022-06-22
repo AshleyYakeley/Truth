@@ -7,6 +7,7 @@ import Shapes.Instances ()
 
 -- shapes
 import Control.AsyncRunner as I
+import Control.CallbackLock as I
 import Control.Category.Dual as I
 import Control.Category.Groupoid as I
 import Control.Category.Lifted as I

@@ -264,7 +264,7 @@ elementStuff =
           MkBoundType elementGroundType
         , hasSubtypeRelationEntry @LangElement @LangLayoutElement "" $
           functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
-        , mkValEntry "run" "Element that runs an Action first." uiRun
+        , mkValEntry "exec" "Element that runs an Action first." uiRun
         , mkValEntry "blank" "Blank element" $ MkLangElement createBlank
         , mkValEntry "draw" "Drawable element" uiDraw
         , mkValEntry "unitCheckBox" "(TBD)" uiUnitCheckBox

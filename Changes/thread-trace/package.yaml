@@ -11,5 +11,6 @@ library:
       - base >= 4.12
       - time
       - containers
+      - monadology
     exposed-modules:
       - Debug.ThreadTrace

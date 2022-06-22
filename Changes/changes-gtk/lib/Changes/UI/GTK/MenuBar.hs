@@ -53,7 +53,7 @@ accelGroupConnection ag key mods flags action = do
             return True
     accelGroupConnect ag key mods flags closure
     gvOnClose $ do
-        _ <- accelGroupDisconnect ag $ Just closure
+        _ <- gvLiftIO $ accelGroupDisconnect ag $ Just closure
         return ()
 
 attachMenuEntry :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> MenuEntry -> GView 'Locked ()

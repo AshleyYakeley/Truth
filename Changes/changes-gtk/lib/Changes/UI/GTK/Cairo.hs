@@ -56,8 +56,8 @@ createCairo model = do
     widget <- gvNew DrawingArea []
     drawingRef :: IORef ((Int32, Int32) -> UIDrawing) <- liftIO $ newIORef $ \_ -> mempty
     gvBindReadOnlyWholeModel model $ \pdrawing ->
-        gvRunLocked $ do
-            liftIO $ writeIORef drawingRef pdrawing
+        gvLiftIO $ do
+            writeIORef drawingRef pdrawing
             #queueDraw widget
     let
         getDrawing :: IO UIDrawing

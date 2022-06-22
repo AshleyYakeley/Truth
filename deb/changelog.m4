@@ -28,6 +28,9 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add TextRef type & associated functions, use for uiTextArea
     - Drawing
       . Cairo-based functions for creating drawings
+    - GTK
+      . rename (from "UI")
+      . explicit control over context
   * Storage
     - Anchors now 256 bit, hash using BLAKE3
     - Store literals as binary rather than as text

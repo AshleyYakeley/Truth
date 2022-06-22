@@ -10,5 +10,5 @@ import Shapes
 createLabel :: Model (ROWUpdate Text) -> GView 'Locked Widget
 createLabel lmod = do
     widget <- gvNew Label []
-    gvBindReadOnlyWholeModel lmod $ \label -> gvRunLocked $ set widget [#label := label]
+    gvBindReadOnlyWholeModel lmod $ \label -> gvLiftIO $ set widget [#label := label]
     toWidget widget

@@ -8,22 +8,22 @@ import GI.Gtk
 import Shapes
 
 newtype ListViewState =
-    MkListViewState [GViewState 'Locked]
+    MkListViewState [GViewState]
 
-insertListViewState :: Monad m => SequencePoint -> GViewState 'Locked -> StateT ListViewState m ()
+insertListViewState :: Monad m => SequencePoint -> GViewState -> StateT ListViewState m ()
 insertListViewState i vs = do
     MkListViewState s <- Shapes.get
     let (l, r) = splitAt (fromIntegral i) s
     put $ MkListViewState $ l <> (vs : r)
 
-removeListViewState :: Monad m => SequencePoint -> StateT ListViewState m (GViewState 'Locked)
+removeListViewState :: Monad m => SequencePoint -> StateT ListViewState m GViewState
 removeListViewState i = do
     MkListViewState s <- Shapes.get
     let (l, r) = splitAt (fromIntegral i) s
     put $ MkListViewState $ l <> drop 1 r
     return $ fromJust $ listToMaybe r
 
-removeAllListViewStates :: Monad m => StateT ListViewState m [GViewState 'Locked]
+removeAllListViewStates :: Monad m => StateT ListViewState m [GViewState]
 removeAllListViewStates = do
     MkListViewState s <- Shapes.get
     put $ MkListViewState []
@@ -37,7 +37,7 @@ createListBox ::
 createListBox mkElement model = do
     listBox <- gvNew ListBox [#selectionMode := SelectionModeSingle, #activateOnSingleClick := True]
     let
-        insertElement :: SequencePoint -> GView 'Locked (GViewState 'Locked)
+        insertElement :: SequencePoint -> GView 'Locked GViewState
         insertElement i = do
             ((), vs) <-
                 gvGetState $ do
@@ -51,10 +51,11 @@ createListBox mkElement model = do
                     return ()
             return vs
         initVS :: GView 'Unlocked (ListViewState, ())
-        initVS = do
-            n <- gvLiftViewNoUI $ viewRunResource model $ \am -> aModelRead am ListReadLength
-            vss <- gvRunLocked $ for [0 .. pred n] insertElement
-            return (MkListViewState vss, ())
+        initVS =
+            gvRunLocked $ do
+                n <- gvLiftViewNoUI $ viewRunResource model $ \am -> aModelRead am ListReadLength
+                vss <- for [0 .. pred n] insertElement
+                return (MkListViewState vss, ())
         recvVS :: () -> [OrderedListUpdate update] -> StateT ListViewState (GView 'Unlocked) ()
         recvVS () updates =
             for_ updates $ \case
@@ -88,6 +89,5 @@ createListBox mkElement model = do
                         for_ ws $ #remove listBox
                         vss <- removeAllListViewStates
                         lift $ do gvCloseState $ mconcat vss
-    stateFromLocked <- gvGetStateFromLocked
-    gvDynamic model initVS (\(MkListViewState vs) -> return $ stateFromLocked $ mconcat vs) mempty recvVS
+    gvRunUnlocked $ gvDynamic model initVS (\(MkListViewState vs) -> return $ mconcat vs) mempty recvVS
     toWidget listBox

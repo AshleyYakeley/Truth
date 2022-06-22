@@ -1,5 +1,5 @@
 #!/usr/bin/pinafore
 do
-w <- UI.openWindow (300,400) {"Test"} {[]} $ UI.label {"Hello"};
-UI.closeWindow w;
+w <- GTK.openWindow (300,400) {"Test"} {[]} $ GTK.label {"Hello"};
+GTK.closeWindow w;
 end

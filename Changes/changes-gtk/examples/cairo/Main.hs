@@ -37,9 +37,9 @@ zeroTime = UTCTime (fromGregorian 2000 1 1) 0
 
 main :: IO ()
 main = do
-    runLifeCycleT $ do
-        gtkContext <- runGTK
-        runNewView $
+    runLifeCycleT $
+        runGTK $ \gtkContext ->
+            runNewView $
             runGView gtkContext $ do
                 (clockModel, ()) <-
                     gvLiftLifeCycleNoUI $ makeSharedModel $ clockPremodel zeroTime $ secondsToNominalDiffTime 1

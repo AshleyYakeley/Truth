@@ -1,9 +1,10 @@
 module Changes.UI.GTK.Main
     ( runGTK
+    , runGTKView
     ) where
 
 import Changes.Core
-import Changes.GI.GView
+import Changes.GI
 import GI.GLib as GI hiding (String)
 import GI.Gdk as GI (threadsAddIdle)
 import GI.Gtk as GI
@@ -13,42 +14,48 @@ data RunState
     = RSRun
     | RSStop
 
-mainLoop :: MVar () -> MVar RunState -> IO ()
-mainLoop uiLockVar runVar = do
+mainLoop :: CallbackLock -> MVar RunState -> IO ()
+mainLoop uiLock runVar = do
     shouldRun <- mVarRun runVar Shapes.get
     case shouldRun of
         RSStop -> return ()
         RSRun -> do
-            mloop <- mainLoopNew Nothing False
+            mc <- mainContextDefault
+            -- mloop <- mainLoopNew Nothing False
             _ <-
                 threadsAddIdle PRIORITY_DEFAULT_IDLE $ do
-                    putMVar uiLockVar ()
-                    threadDelay 5000 -- 5ms delay
-                    takeMVar uiLockVar
+                    cbRunUnlocked uiLock $ threadDelay 5000 -- 5ms delay
+                    return SOURCE_CONTINUE
+            let
+                mainloop :: IO ()
+                mainloop = do
                     sr <- mVarRun runVar Shapes.get
                     case sr of
-                        RSRun -> return SOURCE_CONTINUE
-                        RSStop -> do
-                            #quit mloop
-                            return SOURCE_REMOVE
-            mVarUnitRun uiLockVar $ #run mloop
+                        RSRun -> do
+                            _ <- mainContextIteration mc True
+                            mainloop
+                        RSStop -> return ()
+            cbRunLocked uiLock mainloop
 
-runGTK :: LifeCycle GTKContext
-runGTK = do
+runGTK :: forall a. (GTKContext -> LifeCycle a) -> LifeCycle a
+runGTK call = do
     _ <- GI.init Nothing
-    uiLockVar <- liftIO $ newMVar ()
+    gtkcLock <- liftIO newCallbackLock
     runVar <- liftIO $ newMVar RSRun
     let
         gtkcExit :: IO ()
         gtkcExit = mVarRun runVar $ put RSStop
-        gtkcLockVar = uiLockVar
     (ondone, checkdone) <- liftIO $ lifeCycleOnAllDone gtkcExit
     let
         gtkcExitOnClosed :: View --> View
         gtkcExitOnClosed ma = do
             viewLiftLifeCycle ondone
             ma
-    lifeCycleOnCloseIO $ do
+    a <- call MkGTKContext {..}
+    liftIO $ do
         checkdone
-        mainLoop uiLockVar runVar
-    return MkGTKContext {..}
+        mainLoop gtkcLock runVar
+    return a
+
+runGTKView :: forall a. (GTKContext -> View a) -> View a
+runGTKView call = viewLiftLifeCycleWithUnlift $ \unlift -> runGTK $ \gtkc -> unlift $ call gtkc

@@ -104,9 +104,9 @@ asyncWaitRunner mus doit = do
                     vs <- readTVar bufferVar
                     return $
                         case vs of
-                            VSIdle -> return $ Just ()
-                            VSException ex -> throwExc ex
-                            _ -> return Nothing
+                            VSIdle -> return True
+                            VSException _ -> return True
+                            _ -> return False
             in MkTask {..}
     _ <- liftIO $ forkIO threadDo
     lifeCycleOnClose $ do

@@ -15,9 +15,9 @@ import Shapes
 
 -- LangWindow
 data LangWindow = MkLangWindow
-    { pwContext :: GTKContext
-    , pwClose :: GView 'Unlocked ()
-    , pwWindow :: UIWindow
+    { lwContext :: GTKContext
+    , lwClose :: GView 'Unlocked ()
+    , lwWindow :: UIWindow
     }
 
 windowGroundType :: PinaforeGroundType '[] LangWindow
@@ -34,16 +34,17 @@ instance HasPinaforeGroundType '[] GTKContext where
 
 -- UIWindow
 instance HasPinaforeType 'Negative UIWindow where
-    pinaforeType = mapNegShimWit (functionToShim "pwWindow" pwWindow) pinaforeType
+    pinaforeType = mapNegShimWit (functionToShim "lwWindow" lwWindow) pinaforeType
 
 createLangWindow :: GTKContext -> WindowSpec -> PinaforeAction LangWindow
 createLangWindow gtkc uiw = do
-    (pwWindow, pwClose) <- actionLiftView $ runGView gtkc $ gvGetCloser $ gvRunLocked $ createWindow uiw
-    let pwContext = gtkc
+    (lwWindow, wclose) <- actionLiftView $ runGView gtkc $ gvGetCloser $ gvRunLocked $ createWindow uiw
+    let lwContext = gtkc
+    let lwClose = wclose
     return $ MkLangWindow {..}
 
 uiWindowClose :: LangWindow -> View ()
-uiWindowClose MkLangWindow {..} = runGView pwContext pwClose
+uiWindowClose MkLangWindow {..} = runGView lwContext lwClose
 
 openWindow ::
        (?pinafore :: PinaforeContext)
@@ -58,7 +59,7 @@ openWindow gtkc wsSize title mbar (MkLangElement wsContent) =
         createLangWindow gtkc $ let
             wsPosition = WindowPositionCenter
             wsCloseBoxAction :: GView 'Locked ()
-            wsCloseBoxAction = gvRunUnlocked $ pwClose w
+            wsCloseBoxAction = gvRunUnlocked $ lwClose w
             wsTitle :: Model (ROWUpdate Text)
             wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
             wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
@@ -68,15 +69,29 @@ openWindow gtkc wsSize title mbar (MkLangElement wsContent) =
 exitUI :: GTKContext -> View ()
 exitUI gtkc = runGView gtkc $ gvExitUI
 
+showWindow :: LangWindow -> View ()
+showWindow MkLangWindow {..} = runGView lwContext $ gvRunLocked $ uiWindowShow lwWindow
+
+hideWindow :: LangWindow -> View ()
+hideWindow MkLangWindow {..} = runGView lwContext $ gvRunLocked $ uiWindowHide lwWindow
+
+run :: forall a. (GTKContext -> PinaforeAction a) -> PinaforeAction a
+run call = actionTunnelView $ \unlift -> runGTKView $ \gtkc -> unlift $ call gtkc
+
 windowStuff :: DocTreeEntry BindDoc
 windowStuff =
     docTreeEntry
         "Window"
         ""
-        [ mkTypeEntry "Window" "A user interface window." $ MkBoundType windowGroundType
+        [ mkTypeEntry "Context" "Context for GTK" $ MkBoundType contextGroundType
+        , mkValEntry
+              "run"
+              "Call the provided function with a GTK context, after which run the GTK event loop until all windows are closed." $
+          run @A
+        , mkTypeEntry "Window" "A user interface window." $ MkBoundType windowGroundType
         , mkValEntry "openWindow" "Open a new window with this size, title and element." openWindow
         , mkValEntry "closeWindow" "Close a window." uiWindowClose
-        , mkValEntry "showWindow" "Show a window." uiWindowShow
-        , mkValEntry "hideWindow" "Hide a window." uiWindowHide
-        , mkValEntry "exitUI" "Exit the user interface." exitUI
+        , mkValEntry "showWindow" "Show a window." showWindow
+        , mkValEntry "hideWindow" "Hide a window." hideWindow
+        , mkValEntry "exit" "Exit the user interface." exitUI
         ]

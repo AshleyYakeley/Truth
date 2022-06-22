@@ -17,5 +17,5 @@ createDynamic model = do
                 widget <- cvw
                 gvPackStart True box widget
                 #showAll widget
-    gvSwitch $ mapModel (funcChangeLens addWidget) model
+    gvRunUnlocked $ gvSwitch $ mapModel (funcChangeLens addWidget) model
     toWidget box

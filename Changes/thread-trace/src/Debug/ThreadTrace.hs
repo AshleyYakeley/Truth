@@ -2,8 +2,8 @@ module Debug.ThreadTrace where
 
 import Control.Applicative
 import Control.Concurrent
-import Control.Exception
 import Control.Monad.IO.Class
+import Control.Monad.Ology
 import qualified Data.Map as Map
 import Data.Time.Clock.System
 import Data.Word
@@ -59,19 +59,19 @@ traceBracketArgs s args showr ma = do
              else " => " ++ ret)
     return a
 
-traceBracket :: MonadIO m => String -> m r -> m r
-traceBracket s = traceBracketArgs s "" (\_ -> "")
+traceBracket_ :: MonadIO m => String -> m r -> m r
+traceBracket_ s = traceBracketArgs s "" (\_ -> "")
 
-traceBracketIO :: String -> IO r -> IO r
-traceBracketIO s ma = do
+traceBracket :: (MonadException m, MonadIO m, Show (Exc m)) => String -> m r -> m r
+traceBracket s ma = do
     traceIOM $ s ++ " ["
-    catch
+    catchExc
         (do
              a <- ma
              traceIOM $ s ++ " ]"
-             return a) $ \(e :: SomeException) -> do
+             return a) $ \e -> do
         traceIOM $ s ++ " ! " ++ show e
-        throw e
+        throwExc e
 
 traceThread :: String -> IO r -> IO r
 traceThread name ma = do
@@ -82,13 +82,18 @@ traceForkIO :: String -> IO () -> IO ThreadId
 traceForkIO name ma = traceBracketArgs "FORK" "" show $ forkIO $ traceThread name ma
 
 traceEvaluate :: MonadIO m => String -> r -> m r
-traceEvaluate s a = liftIO $ traceBracketIO ("evaluate " <> s) $ evaluate a
+traceEvaluate s a = liftIO $ traceBracket ("evaluate " <> s) $ evaluate a
 
-traceBarrier :: (MonadIO m1, MonadIO m2) => String -> (m1 a -> m2 b) -> m1 a -> m2 b
+traceBarrier_ :: (MonadIO m1, MonadIO m2) => String -> (m1 a -> m2 b) -> m1 a -> m2 b
+traceBarrier_ s tr ma = traceBracket_ (contextStr s "outside") $ tr $ traceBracket_ (contextStr s "inside") ma
+
+traceBarrier ::
+       (MonadException m1, MonadIO m1, Show (Exc m1), MonadException m2, MonadIO m2, Show (Exc m2))
+    => String
+    -> (m1 a -> m2 b)
+    -> m1 a
+    -> m2 b
 traceBarrier s tr ma = traceBracket (contextStr s "outside") $ tr $ traceBracket (contextStr s "inside") ma
-
-traceBarrierIO :: String -> (IO a -> IO b) -> IO a -> IO b
-traceBarrierIO s tr ma = traceBracketIO (contextStr s "outside") $ tr $ traceBracketIO (contextStr s "inside") ma
 
 tracePure :: String -> a -> a
 tracePure s = seq (unsafePerformIO (traceIOM s))
@@ -100,7 +105,7 @@ class TraceThing t where
     traceThing :: String -> t -> t
 
 instance {-# OVERLAPPABLE #-} MonadIO m => TraceThing (m a) where
-    traceThing s ma = traceBracket s ma
+    traceThing s ma = traceBracket_ s ma
 
 instance TraceThing t => TraceThing (a -> t) where
     traceThing s at a = traceThing s $ at a

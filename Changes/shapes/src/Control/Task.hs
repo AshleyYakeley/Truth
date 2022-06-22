@@ -4,16 +4,15 @@ import Shapes.Import
 
 data Task a = MkTask
     { taskWait :: IO a
-    , taskIsDone :: IO (Maybe a)
+    , taskIsDone :: IO Bool
     }
 
 instance Functor Task where
-    fmap ab (MkTask w d) = MkTask (fmap ab w) (fmap (fmap ab) d)
+    fmap ab (MkTask w d) = MkTask (fmap ab w) d
 
 instance Applicative Task where
-    pure a = MkTask (return a) (return $ Just a)
-    (MkTask wab dab) <*> (MkTask wa da) =
-        MkTask (wab <*> wa) (getComposeInner $ (MkComposeInner dab) <*> (MkComposeInner da))
+    pure a = MkTask (return a) (return True)
+    (MkTask wab dab) <*> (MkTask wa da) = MkTask (wab <*> wa) ((&&) <$> dab <*> da)
 
 instance Semigroup a => Semigroup (Task a) where
     (<>) = liftA2 (<>)
@@ -40,12 +39,14 @@ singleTask ioa = do
     let
         action :: IO ()
         action = do
-            a <- ioa
-            putMVar var a
+            rea <- tryExc ioa
+            putMVar var rea
         taskWait :: IO a
-        taskWait = readMVar var
-        taskIsDone :: IO (Maybe a)
-        taskIsDone = tryReadMVar var
+        taskWait = do
+            rea <- readMVar var
+            throwResult rea
+        taskIsDone :: IO Bool
+        taskIsDone = fmap isJust $ tryReadMVar var
         task = MkTask {..}
     return (action, task)
 
@@ -66,7 +67,5 @@ taskNotify task call = do
 quickTask :: IO a -> Task a
 quickTask ioa = let
     taskWait = ioa
-    taskIsDone = do
-        a <- ioa
-        return $ Just a
+    taskIsDone = return True
     in MkTask {..}

@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 let
-import UI;
+import GTK;
 import Drawing;
 import Colour;
 

@@ -231,12 +231,6 @@ Every order (comparison function) is a `RefOrder`:
 
 `a -> a -> Ordering <: RefOrder a`
 
-## User Interfaces
-
-`UI`  
-
-The contents of a user interface window. Can be composed in various ways.
-
 ## Reference Types
 
 References (of the various reference types) keep track of updates, and will update user interfaces constructed from them when their value changes.

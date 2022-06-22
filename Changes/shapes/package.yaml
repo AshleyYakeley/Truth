@@ -74,6 +74,7 @@ library:
       - Control.Category.Lifted
       - Control.Clock
       - Control.Task
+      - Control.CallbackLock
       - Control.AsyncRunner
       - Unsafe.Type
       - Unsafe.IO

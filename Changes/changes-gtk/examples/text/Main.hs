@@ -21,14 +21,14 @@ optParser =
     O.switch (O.long "save")
 
 newtype AppUI =
-    MkAppUI (GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
+    MkAppUI (GViewState -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
 
 main :: IO ()
 main = do
     (paths, double, selTest, saveOpt) <- O.execParser (O.info optParser mempty)
-    runLifeCycleT $ do
-        gtkContext <- runGTK
-        runNewView $
+    runLifeCycleT $
+        runGTK $ \gtkContext ->
+            runNewView $
             runGView gtkContext $
             gvRunLocked $ do
                 for_ paths $ \path -> do
@@ -39,7 +39,7 @@ main = do
                         wholeTextObj = mapReference textLens bsObj
                         ui :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
                            -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
-                           -> (GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
+                           -> (GViewState -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
                            -> GView 'Locked Widget
                         ui sub1 msub2 extraui = do
                             (selModel, setsel) <- gvLiftLifeCycleNoUI $ makeSharedModel makePremodelSelectNotify
@@ -78,8 +78,7 @@ main = do
                                Text
                             -> Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
                             -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
-                            -> (GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> ( MenuBar
-                                                                                          , GView 'Locked Widget))
+                            -> (GViewState -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
                             -> GView 'Locked ()
                         makeWindow title sub msub2 extraui = do
                             rec
@@ -99,8 +98,7 @@ main = do
                                         wsContent = cuic
                                         in MkWindowSpec {..}
                             return ()
-                        simpleUI ::
-                               GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget)
+                        simpleUI :: GViewState -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget)
                         simpleUI closer _ spec = let
                             mbar :: MenuBar
                             mbar =
@@ -116,7 +114,7 @@ main = do
                         extraUI ::
                                SaveActions
                             -> UndoHandler
-                            -> GViewState 'Locked
+                            -> GViewState
                             -> UIWindow
                             -> GView 'Locked Widget
                             -> (MenuBar, GView 'Locked Widget)

@@ -1,5 +1,6 @@
 module Changes.UI.GTK.Text
     ( TextSelection
+    , createTextBuffer
     , createTextArea
     ) where
 
@@ -22,47 +23,51 @@ replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len))
         then return ()
         else #insert buffer startIter text (-1)
 
-getSequencePoint :: MonadIO m => TextIter -> m SequencePoint
+getSequencePoint :: TextIter -> GView 'Locked SequencePoint
 getSequencePoint iter = do
     p <- #getOffset iter
     return $ MkSequencePoint $ fromIntegral p
 
-getSequenceRun :: MonadIO m => TextIter -> TextIter -> m SequenceRun
+getSequenceRun :: TextIter -> TextIter -> GView 'Locked SequenceRun
 getSequenceRun iter1 iter2 = do
     p1 <- getSequencePoint iter1
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-createTextArea :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Locked Widget
-createTextArea rmod (MkSelectNotify setsel) = do
+createTextBuffer :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Locked TextBuffer
+createTextBuffer rmod (MkSelectNotify setsel) = do
     esrc <- newEditSource
     buffer <- gvNew TextBuffer []
+    gvObjectReportAllSignals "TextBuffer" buffer
     insertSignal <-
         gvOnSignal buffer #insertText $ \iter text _ -> do
             p <- getSequencePoint iter
-            liftIO $
+            gvLiftIO $
                 runResource emptyResourceContext rmod $ \asub -> do
                     _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
                     return ()
     deleteSignal <-
         gvOnSignal buffer #deleteRange $ \iter1 iter2 -> do
             srun <- getSequenceRun iter1 iter2
-            liftIO $
+            gvLiftIO $
                 runResource emptyResourceContext rmod $ \asub -> do
                     _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection srun mempty
                     return ()
     let
-        getSelection :: View SequenceRun
-        getSelection = do
-            (_, iter1, iter2) <- #getSelectionBounds buffer
-            getSequenceRun iter1 iter2
-        aspect :: View (Maybe TextSelection)
+        getSelection :: GView 'Unlocked SequenceRun
+        getSelection =
+            gvRunLocked $ do
+                (_, iter1, iter2) <- #getSelectionBounds buffer
+                getSequenceRun iter1 iter2
+        aspect :: GView 'Unlocked (Maybe TextSelection)
         aspect = do
             srun <- getSelection
             return $ Just $ stringSectionLens srun
-    gvRunUnlocked $ gvLiftView $ setsel aspect
-    _ <- gvAfterSignal buffer #changed $ gvRunUnlocked $ gvLiftView $ setsel aspect
-    _ <- gvAfterSignal buffer #markSet $ \_ _ -> gvRunUnlocked $ gvLiftView $ setsel aspect
+        setAspect :: GView 'Locked ()
+        setAspect = gvRunUnlocked $ gvLiftViewWithUnlift $ \unlift -> setsel $ unlift aspect
+    setAspect
+    _ <- gvAfterSignal buffer #changed $ setAspect
+    _ <- gvAfterSignal buffer #markSet $ \_ _ -> setAspect
     let
         initV :: GView 'Locked ()
         initV = do
@@ -77,5 +82,10 @@ createTextArea rmod (MkSelectNotify setsel) = do
                     StringReplaceWhole text -> #setText buffer text (-1)
                     StringReplaceSection bounds text -> replaceText buffer bounds text
     gvBindModel rmod (Just esrc) initV mempty recvV
+    return buffer
+
+createTextArea :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Locked Widget
+createTextArea rmod seln = do
+    buffer <- createTextBuffer rmod seln
     widget <- gvNew TextView [#buffer := buffer]
     toWidget widget

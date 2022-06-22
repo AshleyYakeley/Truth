@@ -1,6 +1,7 @@
 module Changes.GI.Widget where
 
 import Changes.GI.GView
+import Changes.GI.LockState
 import Changes.GI.Type
 import Data.GI.Base
 import Data.GI.Gtk
@@ -62,9 +63,9 @@ isScrollable widget = do
 gvAdd :: (IsContainer c, IsWidget w) => c -> w -> GView 'Locked ()
 gvAdd c w = do
     containerAdd c w
-    gvOnClose $ containerRemove c w
+    gvOnClose $ gvLiftIO $ containerRemove c w
 
 gvPackStart :: (IsObject w, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> GView 'Locked ()
 gvPackStart grow box w = do
     boxPackStart box w grow grow 0
-    gvOnClose $ containerRemove box w
+    gvOnClose $ gvLiftIO $ containerRemove box w

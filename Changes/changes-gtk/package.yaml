@@ -42,9 +42,11 @@ library:
     exposed-modules:
       - Graphics.Cairo.Functional
       - Changes.UI.GTK
+      - Changes.UI.GTK.Test
     other-modules:
       - Changes.GI.Error
       - Changes.GI.Type
+      - Changes.GI.LockState
       - Changes.GI.GView
       - Changes.GI.LifeCycle
       - Changes.GI.Signal

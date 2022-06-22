@@ -16,9 +16,9 @@ inform t mv = Debug.message $ t <> ": " <> case mv of
     Nothing -> "deleted";
     end;
 
-debugWindow: UI.Window -> Action Unit;
+debugWindow: GTK.Window -> Action Unit;
 debugWindow window = do
-    t <- Debug.UI.windowInfo window;
+    t <- Debug.GTK.windowInfo window;
     Debug.message t;
     end;
 
@@ -34,17 +34,17 @@ in debugThing "SCRIPT" $ do
     selection <- newMemWhole;
     subscribeWhole selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
     selection := testpt;
-    window <- fixAction $ \w -> UI.openWindow (300,400) {"Test"} {[]} $
-        UI.dynamic $ coMapWhole (\e -> UI.run $ debugThing "DYNAMIC" $ do
+    window <- fixAction $ \w -> GTK.openWindow (300,400) {"Test"} {[]} $
+        GTK.dynamic $ coMapWhole (\e -> GTK.run $ debugThing "DYNAMIC" $ do
             # debugWindow w;
             inform "dynamic" $ Just e;
-            return $ UI.vertical [(True,UI.label {"Set Text"})];
+            return $ GTK.vertical [(True,GTK.label {"Set Text"})];
             end) selection
         ;
     debugWindow window;
     selection := testpt;
     debugWindow window;
-    UI.openWindow (300,400) {"Check"} {[]} $ UI.button {"Check"} $ {debugThing "CHECK" $ do
+    GTK.openWindow (300,400) {"Check"} {[]} $ GTK.button {"Check"} $ {debugThing "CHECK" $ do
         debugWindow window;
         selection := testpt;
         debugWindow window;

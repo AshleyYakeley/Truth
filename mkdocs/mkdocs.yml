@@ -31,9 +31,9 @@ nav:
   - Std: 'library/Std.md'
   - Colour: 'library/Colour.md'
   - Drawing: 'library/Drawing.md'
-  - UI: 'library/UI.md'
+  - GTK: 'library/GTK.md'
   - Debug: 'library/Debug.md'
-  - Debug.UI: 'library/Debug.UI.md'
+  - Debug.GTK: 'library/Debug.GTK.md'
   - UIStuff.Selection: 'library/UIStuff.Selection.md'
   - UIStuff.Named: 'library/UIStuff.Named.md'
 - Examples:

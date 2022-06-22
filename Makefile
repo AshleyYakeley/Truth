@@ -153,9 +153,9 @@ LIBMODULES := \
     Std \
     Colour \
     Drawing \
-    UI \
+    GTK \
     Debug \
-    Debug.UI \
+    Debug.GTK \
 	UIStuff.Selection \
 	UIStuff.Named
 

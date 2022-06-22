@@ -3,13 +3,13 @@ do
 dref <- newMemWhole;
 tref <- newMemWhole;
 iref <- newMemWhole;
-UI.openWindow (300,400) {"Date"} {[]} $ UI.vertical
+GTK.openWindow (300,400) {"Date"} {[]} $ GTK.vertical
     [
-        (UI.textEntry tref, False),
-        (UI.textEntry tref, False),
-        (UI.textEntry $ interpretDateAsText dref, False),
-        (UI.textEntry $ interpretDateAsText dref, False),
-        (UI.textEntry $ interpretIntegerAsText iref, False),
-        (UI.textEntry $ interpretIntegerAsText iref, False)
+        (GTK.textEntry tref, False),
+        (GTK.textEntry tref, False),
+        (GTK.textEntry $ interpretDateAsText dref, False),
+        (GTK.textEntry $ interpretDateAsText dref, False),
+        (GTK.textEntry $ interpretIntegerAsText iref, False),
+        (GTK.textEntry $ interpretIntegerAsText iref, False)
     ];
 end

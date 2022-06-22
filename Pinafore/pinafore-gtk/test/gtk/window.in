@@ -1,9 +1,10 @@
 #!/usr/bin/pinafore
 
 do
+gtk <- GTK.init;
 outputLn "BEGIN";
-w <- UI.openWindow (600,800) {"Window"} {[]} UI.blank;
+w <- GTK.openWindow gtk (600,800) {"Window"} {[]} GTK.blank;
 outputLn "Open";
-UI.closeWindow w;
+GTK.closeWindow w;
 outputLn "END";
 end

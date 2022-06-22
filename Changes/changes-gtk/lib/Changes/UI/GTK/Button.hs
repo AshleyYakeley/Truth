@@ -12,7 +12,7 @@ createButton :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (GView 'Locked
 createButton rlabel raction = do
     aref <- liftIO $ newIORef Nothing
     widget <- gvNew Button []
-    gvBindReadOnlyWholeModel rlabel $ \label -> gvRunLocked $ set widget [#label := label]
+    gvBindReadOnlyWholeModel rlabel $ \label -> gvLiftIO $ set widget [#label := label]
     gvBindReadOnlyWholeModel raction $ \maction -> do
         gvLiftIONoUI $ writeIORef aref maction
         gvRunLocked $ set widget [#sensitive := isJust maction]

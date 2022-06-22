@@ -3,8 +3,8 @@
 :doc Just
 let import Drawing
 :doc paintAlpha
-:doc UI.Element
-:doc UI.textArea
+:doc GTK.Element
+:doc GTK.textArea
 :doc notfound
 let aa = 8
 :doc aa

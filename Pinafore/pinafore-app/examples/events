@@ -94,42 +94,42 @@ eventList todayref = {
     };
 
 
-### UI
+### GTK
 
 # Text for the overview tab.
 overviewRef: WholeRef +Date -> WholeRef +Text;
 overviewRef todayref = {textConcat $ mapList (\(t,n) => showEventTime t <> ": " <> n <> "\n") %(eventList todayref)};
 
-# Overview tab UI
+# Overview tab GTK
 overviewPane: Pane;
-overviewPane = pane "Overview" $ UI.run $ do
+overviewPane = pane "Overview" $ GTK.run $ do
     now <- newClock $ Seconds 60; # update every minute
     tz <- newTimeZoneRef now;
-    return $ UI.label $ overviewRef {case timeToLocal %tz %now of DateAndTime d _ => d end};
+    return $ GTK.label $ overviewRef {case timeToLocal %tz %now of DateAndTime d _ => d end};
     end;
 
-calendarWindow: WholeRef +Event -> Action UI.Window;
+calendarWindow: WholeRef +Event -> Action GTK.Window;
 calendarWindow evt = fixAction $ \window =>
-    UI.openWindow (200,200) {"date of " <> %(name !$% evt)} {[]} $ UI.vertical
+    GTK.openWindow (200,200) {"date of " <> %(name !$% evt)} {[]} $ GTK.vertical
     [
-        UI.calendar $ eventRefTimeDate $ eventTime !$% evt,
-        UI.button {"Done: " <> show %(eventRefTimeDate $ eventTime !$% evt)} {UI.closeWindow window}
+        GTK.calendar $ eventRefTimeDate $ eventTime !$% evt,
+        GTK.button {"Done: " <> show %(eventRefTimeDate $ eventTime !$% evt)} {GTK.closeWindow window}
     ];
 
-eventUI: WholeRef +Event -> UI.Element;
-eventUI evt = UI.vertical
+eventUI: WholeRef +Event -> GTK.Element;
+eventUI evt = GTK.vertical
 [
-    UI.textEntry $ name !$% evt,
-    UI.horizontal
+    GTK.textEntry $ name !$% evt,
+    GTK.horizontal
     [
-        UI.button {"cal"} {calendarWindow evt},
-        UI.textEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$% evt,
-        UI.textEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$% evt
+        GTK.button {"cal"} {calendarWindow evt},
+        GTK.textEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$% evt,
+        GTK.textEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$% evt
     ],
-    UI.layoutGrow $ UI.textArea (eventNotes !$% evt) unknown
+    GTK.layoutGrow $ GTK.textArea (eventNotes !$% evt) unknown
 ];
 
-eventWindow: Event -> Action UI.Window;
+eventWindow: Event -> Action GTK.Window;
 eventWindow evt = paneWindow $ namedPane eventUI {evt};
 
 newEvent: Action Event;
@@ -141,7 +141,7 @@ newEvent = do
     return item;
     end;
 
-eventsTableUI: WholeRef Event -> UI.Element;
+eventsTableUI: WholeRef Event -> GTK.Element;
 eventsTableUI selection = let
     columns: List (WholeRef +Text :*: (Event -> WholeRef Text));
     columns = let
@@ -150,9 +150,9 @@ eventsTableUI selection = let
         nameColumn: WholeRef +Text :*: (Event -> WholeRef Text);
         nameColumn = ({"What"},\e => name !$ {e});
         in [timeColumn,nameColumn];
-    in UI.run $ do
+    in GTK.run $ do
         lref <- getSetList eventOrder events;
-        return $ UI.listTable columns lref eventWindow (Just selection);
+        return $ GTK.listTable columns lref eventWindow (Just selection);
         end;
 
 in do

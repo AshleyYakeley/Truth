@@ -24,12 +24,12 @@ showStopwatch state n = case state of
     RunningState t => show $ diffTime n t
     end;
 
-ui: WholeRef +Time -> WholeRef StopwatchState -> UI.Element;
-ui now r = UI.button {showStopwatch %r %now} {toggleStopwatch now r};
+ui: WholeRef +Time -> WholeRef StopwatchState -> GTK.Element;
+ui now r = GTK.button {showStopwatch %r %now} {toggleStopwatch now r};
 
 in do
     now <- newClock $ Seconds 0.001;
     r <- newMemWhole;
     r := StoppedState zeroDuration;
-    UI.openWindow (150,40) {"Stopwatch"} {[]} $ ui now r;
+    GTK.openWindow (150,40) {"Stopwatch"} {[]} $ ui now r;
     end

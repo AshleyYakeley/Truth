@@ -6,6 +6,7 @@ module Changes.Core.UI.View.View
     , viewOnCloseIO
     , viewGetCloser
     , viewLiftLifeCycle
+    , viewLiftLifeCycleWithUnlift
     , viewHoistLifeCycle
     , viewSubLifeCycle
     , viewUnliftView
@@ -74,6 +75,9 @@ viewAddViewState vs = viewLiftLifeCycle $ addLifeState vs
 
 viewLiftLifeCycle :: LifeCycle --> View
 viewLiftLifeCycle la = MkView $ lift la
+
+viewLiftLifeCycleWithUnlift :: ((View --> LifeCycle) -> LifeCycle a) -> View a
+viewLiftLifeCycleWithUnlift call = MkView $ liftWithUnlift $ \unlift -> call $ unlift . unView
 
 viewHoistLifeCycle :: (LifeCycle --> LifeCycle) -> View --> View
 viewHoistLifeCycle f (MkView la) = MkView $ hoist f la
@@ -194,15 +198,15 @@ viewBindWholeModel model mesrc setf = let
         in setf val
     in viewBindModel model mesrc init mempty recv
 
-viewBindReadOnlyWholeModel :: forall t. Model (ROWUpdate t) -> (t -> View ()) -> View ()
+viewBindReadOnlyWholeModel :: forall t. Model (ROWUpdate t) -> (Bool -> t -> View ()) -> View ()
 viewBindReadOnlyWholeModel model setf = let
     init :: View ()
     init =
         viewRunResourceContext model $ \unlift amodel -> do
             val <- liftIO $ unlift $ aModelRead amodel ReadWhole
-            setf val
+            setf True val
     recv :: () -> NonEmpty (ROWUpdate t) -> View ()
     recv () updates = let
         MkReadOnlyUpdate (MkWholeUpdate val) = last updates
-        in setf val
+        in setf False val
     in viewBindModel model Nothing init mempty recv
