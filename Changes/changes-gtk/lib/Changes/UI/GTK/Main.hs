@@ -6,7 +6,6 @@ module Changes.UI.GTK.Main
 import Changes.Core
 import Changes.GI
 import GI.GLib as GI hiding (String)
-import GI.Gdk as GI (threadsAddIdle)
 import GI.Gtk as GI
 import Shapes
 
@@ -14,18 +13,24 @@ data RunState
     = RSRun
     | RSStop
 
-mainLoop :: CallbackLock -> MVar RunState -> IO ()
+attachedIdleSource :: Maybe MainContext -> LifeCycle Source
+attachedIdleSource mmc = do
+    source <- idleSourceNew
+    _ <- sourceAttach source $ mmc
+    lifeCycleOnClose $ sourceDestroy source
+    return source
+
+mainLoop :: CallbackLock -> MVar RunState -> LifeCycle ()
 mainLoop uiLock runVar = do
     shouldRun <- mVarRun runVar Shapes.get
     case shouldRun of
         RSStop -> return ()
         RSRun -> do
             mc <- mainContextDefault
-            -- mloop <- mainLoopNew Nothing False
-            _ <-
-                threadsAddIdle PRIORITY_DEFAULT_IDLE $ do
-                    cbRunUnlocked uiLock $ threadDelay 5000 -- 5ms delay
-                    return SOURCE_CONTINUE
+            source <- attachedIdleSource $ Just mc
+            sourceSetCallback source $ do
+                cbRunUnlocked uiLock $ threadDelay 5000 -- 5ms delay
+                return SOURCE_CONTINUE
             let
                 mainloop :: IO ()
                 mainloop = do
@@ -35,7 +40,7 @@ mainLoop uiLock runVar = do
                             _ <- mainContextIteration mc True
                             mainloop
                         RSStop -> return ()
-            cbRunLocked uiLock mainloop
+            liftIO $ cbRunLocked uiLock mainloop
 
 runGTK :: forall a. (GTKContext -> LifeCycle a) -> LifeCycle a
 runGTK call = do
@@ -52,9 +57,8 @@ runGTK call = do
             viewLiftLifeCycle ondone
             ma
     a <- call MkGTKContext {..}
-    liftIO $ do
-        checkdone
-        mainLoop gtkcLock runVar
+    liftIO checkdone
+    mainLoop gtkcLock runVar
     return a
 
 runGTKView :: forall a. (GTKContext -> View a) -> View a
