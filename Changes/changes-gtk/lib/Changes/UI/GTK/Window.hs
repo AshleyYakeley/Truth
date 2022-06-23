@@ -15,6 +15,7 @@ import Changes.UI.GTK.Switch
 import GI.GLib as GI hiding (String)
 import GI.Gtk as GI hiding (MenuBar)
 import Shapes
+import Changes.Debug
 
 data WindowSpec = MkWindowSpec
     { wsPosition :: WindowPosition
@@ -33,15 +34,15 @@ data UIWindow = MkUIWindow
 
 createWindow :: WindowSpec -> GView 'Locked UIWindow
 createWindow MkWindowSpec {..} = do
-    window <-
+    window <- traceBracket "createWindow.new" $
         gvExitOnClosed $
         gvTopLevelNew Window [#windowPosition := wsPosition, #defaultWidth := fst wsSize, #defaultHeight := snd wsSize]
-    gvBindReadOnlyWholeModel wsTitle $ \title -> gvLiftIO $ set window [#title := title]
+    traceBracket "createWindow.bind" $ gvBindReadOnlyWholeModel wsTitle $ \title -> gvLiftIO $ set window [#title := title]
     _ <-
         gvOnSignal window #deleteEvent $ \_ -> do
             wsCloseBoxAction
             return True -- don't run existing handler that closes the window
-    content <- wsContent
+    content <- traceBracket "createWindow.content" $ wsContent
     ui <-
         case wsMenuBar of
             Nothing -> return content
