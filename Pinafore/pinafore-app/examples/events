@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 
-let
+GTK.run $ \gtk => let
 
 import UIStuff.Selection;
 import UIStuff.Named;
@@ -102,7 +102,7 @@ overviewRef todayref = {textConcat $ mapList (\(t,n) => showEventTime t <> ": " 
 
 # Overview tab GTK
 overviewPane: Pane;
-overviewPane = pane "Overview" $ GTK.run $ do
+overviewPane = pane "Overview" $ GTK.exec $ do
     now <- newClock $ Seconds 60; # update every minute
     tz <- newTimeZoneRef now;
     return $ GTK.label $ overviewRef {case timeToLocal %tz %now of DateAndTime d _ => d end};
@@ -110,7 +110,7 @@ overviewPane = pane "Overview" $ GTK.run $ do
 
 calendarWindow: WholeRef +Event -> Action GTK.Window;
 calendarWindow evt = fixAction $ \window =>
-    GTK.openWindow (200,200) {"date of " <> %(name !$% evt)} {[]} $ GTK.vertical
+    GTK.openWindow gtk (200,200) {"date of " <> %(name !$% evt)} {[]} $ GTK.vertical
     [
         GTK.calendar $ eventRefTimeDate $ eventTime !$% evt,
         GTK.button {"Done: " <> show %(eventRefTimeDate $ eventTime !$% evt)} {GTK.closeWindow window}
@@ -130,7 +130,7 @@ eventUI evt = GTK.vertical
 ];
 
 eventWindow: Event -> Action GTK.Window;
-eventWindow evt = paneWindow $ namedPane eventUI {evt};
+eventWindow evt = paneWindow gtk $ namedPane eventUI {evt};
 
 newEvent: Action Event;
 newEvent = do
@@ -150,7 +150,7 @@ eventsTableUI selection = let
         nameColumn: WholeRef +Text :*: (Event -> WholeRef Text);
         nameColumn = ({"What"},\e => name !$ {e});
         in [timeColumn,nameColumn];
-    in GTK.run $ do
+    in GTK.exec $ do
         lref <- getSetList eventOrder events;
         return $ GTK.listTable columns lref eventWindow (Just selection);
         end;
@@ -158,5 +158,5 @@ eventsTableUI selection = let
 in do
     eventsPane <- selectionPairPane "Events" events [newItemMenuAction ("New Event") (Just "Ctrl+K") newEvent events] eventWindow eventsTableUI eventUI;
     pane <- notebookPane {"Events"} [overviewPane,eventsPane];
-    paneWindow pane
+    paneWindow gtk pane
     end

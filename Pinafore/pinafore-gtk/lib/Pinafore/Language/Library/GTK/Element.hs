@@ -13,6 +13,7 @@ import Data.Time
 import GI.Cairo.Render
 import Pinafore.Base
 import Pinafore.Language.API
+import Pinafore.Language.Library.GTK.Context ()
 import Pinafore.Language.Library.GTK.Drawing
 import Shapes
 
@@ -212,8 +213,8 @@ uiNotebook selref mitems =
                 return (t, b)
         createNotebook (langWholeRefSelectNotify noEditSource selref) items
 
-uiRun :: (?pinafore :: PinaforeContext) => PinaforeAction LangElement -> LangElement
-uiRun pui =
+uiExec :: (?pinafore :: PinaforeContext) => PinaforeAction LangElement -> LangElement
+uiExec pui =
     MkLangElement $ do
         kui <- gvRunUnlocked $ gvLiftView $ unliftPinaforeAction pui
         case kui of
@@ -255,6 +256,12 @@ uiCalendar day =
 uiDraw :: PinaforeImmutableWholeRef ((Int32, Int32) -> LangDrawing) -> LangElement
 uiDraw ref = MkLangElement $ createCairo $ unWModel $ pinaforeImmutableRefValue mempty ref
 
+uiWithContext :: (GTKContext -> LangElement) -> LangElement
+uiWithContext call =
+    MkLangElement $ do
+        gtkc <- gvGetContext
+        unLangElement $ call gtkc
+
 elementStuff :: DocTreeEntry BindDoc
 elementStuff =
     docTreeEntry
@@ -264,7 +271,8 @@ elementStuff =
           MkBoundType elementGroundType
         , hasSubtypeRelationEntry @LangElement @LangLayoutElement "" $
           functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
-        , mkValEntry "exec" "Element that runs an Action first." uiRun
+        , mkValEntry "exec" "Element that runs an Action first." uiExec
+        , mkValEntry "withContext" "Element that requires a Context." uiWithContext
         , mkValEntry "blank" "Blank element" $ MkLangElement createBlank
         , mkValEntry "draw" "Drawable element" uiDraw
         , mkValEntry "unitCheckBox" "(TBD)" uiUnitCheckBox

@@ -15,10 +15,10 @@ me = openEntity @Person !"example:me";
 ui_person : Person -> GTK.Element;
 ui_person p = GTK.textEntry $ name !$ {p};
 
-window_person : Person -> Action GTK.Window;
-window_person p = GTK.openWindow (300,400) {"Name"} {[]} (ui_person p);
+window_person : GTK.Context -> Person -> Action GTK.Window;
+window_person gtk p = GTK.openWindow gtk (300,400) {"Name"} {[]} (ui_person p);
 
-in do
-    window_person me;
-    window_person me;
+in GTK.run $ \gtk => do
+    window_person gtk me;
+    window_person gtk me;
     end
