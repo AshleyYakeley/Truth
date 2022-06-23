@@ -38,7 +38,6 @@ createTextBuffer :: Model (StringUpdate Text) -> SelectNotify TextSelection -> G
 createTextBuffer rmod (MkSelectNotify setsel) = do
     esrc <- newEditSource
     buffer <- gvNew TextBuffer []
-    gvObjectReportAllSignals "TextBuffer" buffer
     insertSignal <-
         gvOnSignal buffer #insertText $ \iter text _ -> do
             p <- getSequencePoint iter
