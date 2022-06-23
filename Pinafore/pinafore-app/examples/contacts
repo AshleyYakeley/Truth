@@ -123,19 +123,19 @@ contactRefUI: WholeRef +LegalEntity -> GTK.Element;
 contactRefUI ref = GTK.dynamic $ coMapWhole contactUI ref;
 end;
 
-contactsPane: Action Pane;
-contactsPane = let
+contactsPane: GTK.Context -> Action Pane;
+contactsPane gtk = let
     menuItems =
     [
         newItemMenuAction "New Person" (Just "Ctrl+K") $ newDynamicEntity @Person,
         newItemMenuAction "New Organisation" Nothing $ newDynamicEntity @Organisation
     ];
-    in namedPairPane "Contacts" legalentities menuItems contactRefUI;
+    in namedPairPane gtk "Contacts" legalentities menuItems contactRefUI;
 
-contactsWindow: Action GTK.Window;
-contactsWindow = do
-    pane <- contactsPane;
-    paneWindow pane;
+contactsWindow: GTK.Context -> Action GTK.Window;
+contactsWindow gtk = do
+    pane <- contactsPane gtk;
+    paneWindow gtk pane;
     end;
 
-in contactsWindow
+in GTK.run contactsWindow

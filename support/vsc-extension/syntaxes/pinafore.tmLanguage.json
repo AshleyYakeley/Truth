@@ -64,7 +64,7 @@
 			"patterns": [
 				{
 					"name": "storage.type.predefined.pinafore",
-					"match": "\\b(Any|None|Unit|Literal|Text|Number|Rational|Integer|Boolean|Ordering|Time|Duration|Date|TimeOfDay|LocalTime|Entity|DynamicEntity|Maybe|List|List1|RefOrder|Action|WholeRef|SetRef|FiniteSetRef|ListRef|TextRef|Element|Window|MenuItem)\\b"
+					"match": "\\b(Any|None|Unit|Literal|Text|Number|Rational|Integer|Boolean|Ordering|Time|Duration|Date|TimeOfDay|LocalTime|Entity|DynamicEntity|Maybe|List|List1|RefOrder|Action|WholeRef|SetRef|FiniteSetRef|ListRef|TextRef|Context|Element|Window|MenuItem)\\b"
 				}
 			]
 		},

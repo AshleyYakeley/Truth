@@ -26,7 +26,7 @@ createMainPane = do
     notebookPane {"Fake Theme System Journal"} [frontCoverPane,themesPane,daysPane];
     end;
 
-in do
+in run $ \gtk => do
     mainPane <- createMainPane;
-    paneWindow mainPane;
+    paneWindow gtk mainPane;
     end

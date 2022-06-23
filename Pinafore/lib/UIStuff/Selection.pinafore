@@ -11,8 +11,8 @@ uiLabelled: WholeRef +Text -> Element -> Element;
 uiLabelled n ui = horizontal [label n, layoutGrow ui];
 
 #| A window that comes with some menus.
-stdWindow: WholeRef +Text -> WholeRef +(List MenuItem) -> Element -> Action Window;
-stdWindow title moremenus contents = fixAction $ \window => let
+stdWindow: Context -> WholeRef +Text -> WholeRef +(List MenuItem) -> Element -> Action Window;
+stdWindow gtk title moremenus contents = fixAction $ \window => let
     menus: WholeRef +(List MenuItem);
     menus =
         {[
@@ -20,7 +20,7 @@ stdWindow title moremenus contents = fixAction $ \window => let
             [
                 menuAction "Close" (Just "Ctrl+W") {closeWindow window},
                 menuSeparator,
-                menuAction "Exit" (Just "Ctrl+Q") {exitUI}
+                menuAction "Exit" (Just "Ctrl+Q") {exit gtk}
             ],
             menuSubmenu "Edit"
             [
@@ -28,13 +28,15 @@ stdWindow title moremenus contents = fixAction $ \window => let
                 menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ] ++ %moremenus};
-    in openWindow (600,800) title menus $ scrolled contents;
+    in openWindow gtk (600,800) title menus $ scrolled contents;
 
 #| A pane is a title, GTK element, and menu.
-datatype Pane of MkPane (WholeRef Text) Element (WholeRef (List MenuItem)) end;
+datatype Pane of
+    MkPane (WholeRef Text) Element (WholeRef (List MenuItem))
+end;
 
-paneWindow: Pane -> Action Window;
-paneWindow (MkPane title ui moremenus) = stdWindow title moremenus ui;
+paneWindow: Context -> Pane -> Action Window;
+paneWindow gtk (MkPane title ui moremenus) = stdWindow gtk title moremenus ui;
 
 pane: Text -> Element -> Pane;
 pane title ui = MkPane {title} ui {[]};
@@ -106,19 +108,21 @@ selectionPairPane title iset createMenuItems iopen getSelectorUI getSelectedUI =
         in horizontal [sidebarUI, layoutGrow selectedUI];
 
 selectionWindow:
+    Context ->
     Text -> # window title
     SetRef item -> # the set of items
     List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
     (item -> Action Any) -> # what to do when an item is activated
     (WholeRef item -> Element) ->
     Action Window;
-selectionWindow wtitle iset createMenuItems iopen iui = do
+selectionWindow gtk wtitle iset createMenuItems iopen iui = do
     mui <- selectionPane wtitle iset createMenuItems iopen iui;
-    paneWindow mui;
+    paneWindow gtk mui;
     end;
 
 #| This is a two-pane window, the left has a "selector" of items (e.g. a table), and the right shows the selected item.
 selectionPairWindow:
+    Context ->
     Text -> # window title
     SetRef item -> # the set of items
     List ((item -> Action Unit) -> MenuItem) -> # Menu items for creating new items
@@ -126,9 +130,9 @@ selectionPairWindow:
     (WholeRef item -> Element) -> # Element for the item selector
     (WholeRef +item -> Element) -> # Element for the selected item
     Action Window;
-selectionPairWindow wtitle iset createMenuItems iopen getSelectorUI getSelectedUI = do
+selectionPairWindow gtk wtitle iset createMenuItems iopen getSelectorUI getSelectedUI = do
     mui <- selectionPairPane wtitle iset createMenuItems iopen getSelectorUI getSelectedUI;
-    paneWindow mui;
+    paneWindow gtk mui;
     end;
 
 newItemMenuAction: Text -> Maybe Text -> Action a -> SetRef a -> (a -> Action Unit) -> MenuItem;

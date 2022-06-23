@@ -26,8 +26,8 @@ debugIgnoreUpdateUIExceptions ref = runIdentity $ langWholeRefMapModel (Identity
 uiDebugLibraryModule :: LibraryModule
 uiDebugLibraryModule =
     MkDocTree
-        "Debug.UI"
-        "Functions for UI debugging."
+        "Debug.GTK"
+        "Functions for GTK debugging."
         [ mkValEntry "ignoreUpdateUIExceptions" "Drop exceptions from updates" debugIgnoreUpdateUIExceptions
         , mkValEntry "windowInfo" "Get window contents information" uiWindowDebugDescribe
         ]

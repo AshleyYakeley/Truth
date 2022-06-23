@@ -37,60 +37,53 @@ getSequenceRun iter1 iter2 = do
     return $ startEndRun p1 p2
 
 createTextBuffer :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Locked TextBuffer
-createTextBuffer rmod (MkSelectNotify setsel) =
-    traceBracket "createTextBuffer" $ do
-        esrc <- newEditSource
-        buffer <- gvNew TextBuffer []
-        gvObjectReportAllSignals "TextBuffer" buffer
-        insertSignal <-
-            gvOnSignal buffer #insertText $ \iter text _ ->
-                hoistIO (traceThread "#insertText") $ do
-                    p <- getSequencePoint iter
-                    gvLiftIO $
-                        runResource emptyResourceContext rmod $ \asub -> do
-                            _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
-                            return ()
-        deleteSignal <-
-            gvOnSignal buffer #deleteRange $ \iter1 iter2 ->
-                hoistIO (traceThread "#deleteRange") $ do
-                    srun <- getSequenceRun iter1 iter2
-                    gvLiftIO $
-                        runResource emptyResourceContext rmod $ \asub -> do
-                            _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection srun mempty
-                            return ()
-        let
-            getSelection :: GView 'Unlocked SequenceRun
-            getSelection =
-                gvRunLocked $ do
-                    (_, iter1, iter2) <- traceBracket "createTextArea.getSelectionBounds" $ #getSelectionBounds buffer
-                    getSequenceRun iter1 iter2
-            aspect :: GView 'Unlocked (Maybe TextSelection)
-            aspect = do
-                srun <- getSelection
-                return $ Just $ stringSectionLens srun
-            setAspect :: GView 'Locked ()
-            setAspect = gvRunUnlocked $ gvLiftViewWithUnlift $ \unlift -> traceBarrier "setsel" setsel $ unlift aspect
-        setAspect
-        _ <- gvAfterSignal buffer #changed $ hoistIO (traceThread "#changed") setAspect
-        _ <- gvAfterSignal buffer #markSet $ \_ _ -> hoistIO (traceThread "#markSet") setAspect
-        let
-            initV :: GView 'Locked ()
-            initV =
-                traceBracket "model.init" $ do
-                    initial <- gvLiftViewNoUI $ viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
-                    withSignalsBlocked buffer [insertSignal, deleteSignal] $
-                        traceBracket "#setText" $ #setText buffer initial (-1)
-            recvV :: () -> NonEmpty (StringUpdate Text) -> GView 'Unlocked ()
-            recvV () updates =
-                traceBracket "model.recv" $
-                gvRunLocked $
-                for_ updates $ \(MkEditUpdate edit) ->
-                    withSignalsBlocked buffer [insertSignal, deleteSignal] $
-                    case edit of
-                        StringReplaceWhole text -> traceBracket "#setText" $ #setText buffer text (-1)
-                        StringReplaceSection bounds text -> replaceText buffer bounds text
-        traceBracket "createTextBuffer.bindModel" $ gvBindModel rmod (Just esrc) initV mempty recvV
-        return buffer
+createTextBuffer rmod (MkSelectNotify setsel) = do
+    esrc <- newEditSource
+    buffer <- gvNew TextBuffer []
+    insertSignal <-
+        gvOnSignal buffer #insertText $ \iter text _ -> do
+            p <- getSequencePoint iter
+            gvLiftIO $
+                runResource emptyResourceContext rmod $ \asub -> do
+                    _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection (MkSequenceRun p 0) text
+                    return ()
+    deleteSignal <-
+        gvOnSignal buffer #deleteRange $ \iter1 iter2 -> do
+            srun <- getSequenceRun iter1 iter2
+            gvLiftIO $
+                runResource emptyResourceContext rmod $ \asub -> do
+                    _ <- pushEdit esrc $ aModelEdit asub $ pure $ StringReplaceSection srun mempty
+                    return ()
+    let
+        getSelection :: GView 'Unlocked SequenceRun
+        getSelection =
+            gvRunLocked $ do
+                (_, iter1, iter2) <- #getSelectionBounds buffer
+                getSequenceRun iter1 iter2
+        aspect :: GView 'Unlocked (Maybe TextSelection)
+        aspect = do
+            srun <- getSelection
+            return $ Just $ stringSectionLens srun
+        setAspect :: GView 'Locked ()
+        setAspect = gvRunUnlocked $ gvLiftViewWithUnlift $ \unlift -> setsel $ unlift aspect
+    setAspect
+    _ <- gvAfterSignal buffer #changed $ setAspect
+    _ <- gvAfterSignal buffer #markSet $ \_ _ -> setAspect
+    let
+        initV :: GView 'Locked ()
+        initV = do
+            initial <- gvLiftViewNoUI $ viewRunResource rmod $ \am -> readableToSubject $ aModelRead am
+            withSignalsBlocked buffer [insertSignal, deleteSignal] $ #setText buffer initial (-1)
+        recvV :: () -> NonEmpty (StringUpdate Text) -> GView 'Unlocked ()
+        recvV () updates =
+            gvRunLocked $
+            for_ updates $ \(MkEditUpdate edit) ->
+                withSignalsBlocked buffer [insertSignal, deleteSignal] $
+                case edit of
+                    StringReplaceWhole text -> #setText buffer text (-1)
+                    StringReplaceSection bounds text -> replaceText buffer bounds text
+    gvBindModel rmod (Just esrc) initV mempty recvV
+    return buffer
 
 createTextArea :: Model (StringUpdate Text) -> SelectNotify TextSelection -> GView 'Locked Widget
 createTextArea rmod seln =

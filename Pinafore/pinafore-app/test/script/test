@@ -1,6 +1,6 @@
 #!/usr/bin/pinafore
 
-let
+GTK.run $ \gtk => let
 
 import GTK();
 
@@ -8,7 +8,7 @@ import GTK();
 ui_page n ui = (GTK.label n,ui);
 ui_labelled n ui = GTK.horizontal [GTK.label n, GTK.layoutGrow  ui];
 
-std_window : WholeRef +Text -> GTK.Element -> Action GTK.Window;
+std_window: WholeRef +Text -> GTK.Element -> Action GTK.Window;
 std_window title contents = fixAction $ \window => let
     menus : List GTK.MenuItem;
     menus =
@@ -17,7 +17,7 @@ std_window title contents = fixAction $ \window => let
             [
                 GTK.menuAction "Close" (Just "Ctrl+W") {GTK.closeWindow window},
                 GTK.menuSeparator,
-                GTK.menuAction "Exit" (Just "Ctrl+Q") {GTK.exitUI}
+                GTK.menuAction "Exit" (Just "Ctrl+Q") {GTK.exit gtk}
             ],
             GTK.menuSubmenu "Edit"
             [
@@ -25,7 +25,7 @@ std_window title contents = fixAction $ \window => let
                 GTK.menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ]
-    in GTK.openWindow (400,500) title {menus} $ GTK.scrolled contents;
+    in GTK.openWindow gtk (400,500) title {menus} $ GTK.scrolled contents;
 
 ### People
 
@@ -68,7 +68,7 @@ married = property @Person @Boolean !"380ac576-9252-4783-b2d8-db222c683a22";
 # GTK
 rec
 ui_people : FiniteSetRef Person -> GTK.Element;
-ui_people pp = GTK.run $ do
+ui_people pp = GTK.exec $ do
     selectedperson <- newMemWhole;
     pplist <- getSetList noOrder pp;
     return $ GTK.vertical
@@ -243,7 +243,7 @@ window_textselection = do
         GTK.textArea tref1 sel,
         GTK.textArea tref2 sel,
         GTK.textArea tref3 sel,
-        GTK.dynamic {GTK.run $ mapAction (\tref => GTK.textArea tref unknown) %sel}
+        GTK.dynamic {GTK.exec $ mapAction (\tref => GTK.textArea tref unknown) %sel}
     ];
     end;
 

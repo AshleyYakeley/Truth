@@ -228,5 +228,6 @@ clean:
 	rm -rf .build
 	rm -rf out
 	rm -rf mkdocs/generated
+	rm -rf mkdocs/docs/library
 	rm -rf Changes/changes-gtk/examples/showImages/images
 	stack $(STACKFLAGS) clean

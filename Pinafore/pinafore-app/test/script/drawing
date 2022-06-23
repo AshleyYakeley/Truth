@@ -50,9 +50,9 @@ drawing ref =
 };
 
 import GTK();
-in do
+in GTK.run $ \gtk => do
     ref <- newMemWhole;
-    GTK.openWindow (300,400) {"Drawing"} {[]} $ GTK.vertical
+    GTK.openWindow gtk (300,400) {"Drawing"} {[]} $ GTK.vertical
     [
         GTK.layoutGrow $ GTK.draw $ scaleDrawing $ drawing ref,
         GTK.layoutGrow $ GTK.draw $ scaleDrawing $ drawing ref

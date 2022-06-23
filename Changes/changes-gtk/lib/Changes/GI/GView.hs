@@ -8,6 +8,7 @@ module Changes.GI.GView
     , gvOnClose
     , gvGetCloser
     , runGView
+    , gvGetContext
     , gvLiftView
     , gvLiftViewWithUnlift
     , gvGetUnliftToView

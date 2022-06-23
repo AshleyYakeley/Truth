@@ -10,6 +10,7 @@ import Changes.UI.GTK
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.API
+import Pinafore.Language.Library.GTK.Context
 import Pinafore.Language.Library.GTK.Element
 import Pinafore.Language.Library.GTK.MenuItem ()
 import Shapes
@@ -26,12 +27,6 @@ windowGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamil
 
 instance HasPinaforeGroundType '[] LangWindow where
     pinaforeGroundType = windowGroundType
-
-contextGroundType :: PinaforeGroundType '[] GTKContext
-contextGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily GTKContext)|]) "Context"
-
-instance HasPinaforeGroundType '[] GTKContext where
-    pinaforeGroundType = contextGroundType
 
 -- UIWindow
 instance HasPinaforeType 'Negative UIWindow where
