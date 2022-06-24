@@ -30,7 +30,7 @@ mainLoop uiLock runVar = do
             mc <- mainContextDefault
             source <- attachedIdleSource $ Just mc
             sourceSetCallback source $ do
-                traceBarrier "loop.lock" (cbRunUnlocked uiLock) $ threadDelay 5000 -- 5ms delay
+                cbRunUnlocked uiLock $ threadDelay 5000 -- 5ms delay
                 return SOURCE_CONTINUE
             let
                 mainloop :: IO ()
@@ -38,7 +38,7 @@ mainLoop uiLock runVar = do
                     sr <- mVarRun runVar Shapes.get
                     case sr of
                         RSRun -> do
-                            _ <- traceBracket "iterate" $ mainContextIteration mc True
+                            _ <- mainContextIteration mc True
                             mainloop
                         RSStop -> return ()
             liftIO $ cbRunLocked uiLock mainloop

@@ -1,0 +1,393 @@
+Progress 0/12             changes-core     > Test running disabled by --no-run-tests flag.
+Progress 0/12             changes-gtk      > Test running disabled by --no-run-tests flag.
+Progress 0/12             monadology       > Test running disabled by --no-run-tests flag.
+Progress 0/12             countable        > Test running disabled by --no-run-tests flag.
+Progress 0/12             open-witness     > Test running disabled by --no-run-tests flag.
+Progress 0/12             pinafore-app     > Test running disabled by --no-run-tests flag.
+Progress 0/12             pinafore-base    > Test running disabled by --no-run-tests flag.
+Progress 0/12             pinafore-gtk     > Test running disabled by --no-run-tests flag.
+Progress 0/12             Progress 1/12: changes-gtk, countable, monadology, open-witness, pinafore-app, pinafore-base, pinafore-gtk                                                                                                          pinafore-language> Test running disabled by --no-run-tests flag.
+Progress 1/12: changes-gtk, countable, monadology, open-witness, pinafore-app, pinafore-base, pinafore-gtk                                                                                                          shapes           > Test running disabled by --no-run-tests flag.
+Progress 1/12: changes-gtk, countable, monadology, open-witness, pinafore-app, pinafore-base, pinafore-gtk                                                                                                          typed-expression > Test running disabled by --no-run-tests flag.
+Progress 1/12: changes-gtk, countable, monadology, open-witness, pinafore-app, pinafore-base, pinafore-gtk                                                                                                          Progress 8/12: pinafore-language, shapes, typed-expression                                                          pinafore-app     > Benchmark running disabled by --no-run-benchmarks flag.
+Progress 8/12: pinafore-language, shapes, typed-expression                                                          Progress 11/12: pinafore-app                            Completed 12 action(s).
+Copying from /home/ashley/Projects/Pinafore/Truth/.stack-work/install/x86_64-linux-tinfo6/225700ad2b95eb6f364f220de1f4b83843114258703975454490813a4f21307d/9.0.2/bin/changes-cairo to /home/ashley/Settings/bin/changes-cairo
+Copying from /home/ashley/Projects/Pinafore/Truth/.stack-work/install/x86_64-linux-tinfo6/225700ad2b95eb6f364f220de1f4b83843114258703975454490813a4f21307d/9.0.2/bin/changes-showImages to /home/ashley/Settings/bin/changes-showImages
+Copying from /home/ashley/Projects/Pinafore/Truth/.stack-work/install/x86_64-linux-tinfo6/225700ad2b95eb6f364f220de1f4b83843114258703975454490813a4f21307d/9.0.2/bin/changes-soup to /home/ashley/Settings/bin/changes-soup
+Copying from /home/ashley/Projects/Pinafore/Truth/.stack-work/install/x86_64-linux-tinfo6/225700ad2b95eb6f364f220de1f4b83843114258703975454490813a4f21307d/9.0.2/bin/changes-text to /home/ashley/Settings/bin/changes-text
+Copying from /home/ashley/Projects/Pinafore/Truth/.stack-work/install/x86_64-linux-tinfo6/225700ad2b95eb6f364f220de1f4b83843114258703975454490813a4f21307d/9.0.2/bin/pinafore to /home/ashley/Settings/bin/pinafore
+Copying from /home/ashley/Projects/Pinafore/Truth/.stack-work/install/x86_64-linux-tinfo6/225700ad2b95eb6f364f220de1f4b83843114258703975454490813a4f21307d/9.0.2/bin/pinafore-doc to /home/ashley/Settings/bin/pinafore-doc
+
+Copied executables to /home/ashley/Settings/bin:
+- changes-cairo
+- changes-showImages
+- changes-soup
+- changes-text
+- pinafore
+- pinafore-doc
+1656050987.834233900: ThreadId 4: FORK [
+1656050987.834311070: ThreadId 6 (async): THREAD [
+1656050987.834296710: ThreadId 4: FORK ] => ThreadId 6
+1656050987.834424101: ThreadId 4: FORK [
+1656050987.834451481: ThreadId 7 (async): THREAD [
+1656050987.834440141: ThreadId 4: FORK ] => ThreadId 7
+1656050988.151489164: ThreadId 4: runGTK.call [
+1656050988.151731356: ThreadId 4: FORK [
+1656050988.151763206: ThreadId 9 (async): THREAD [
+1656050988.151750106: ThreadId 4: FORK ] => ThreadId 9
+1656050988.152038158: ThreadId 4: FORK [
+1656050988.152075478: ThreadId 11 (async): THREAD [
+1656050988.152068278: ThreadId 4: FORK ] => ThreadId 11
+1656050988.152824603: ThreadId 4: createLangWindow [
+1656050988.152853283: ThreadId 4: createLangWindow.create: outside [
+1656050988.152871463: ThreadId 4: gvRunLocked: outside [
+1656050988.154001461: ThreadId 4: gvRunLocked: inside [
+1656050988.154025021: ThreadId 4: createLangWindow.create: inside [
+1656050988.154042531: ThreadId 4: createWindow.new [
+1656050988.171259047: ThreadId 4: createWindow.new ]
+1656050988.171284407: ThreadId 4: createWindow.bind [
+1656050988.171466359: ThreadId 4: createWindow.bind ]
+1656050988.171503899: ThreadId 4: createWindow.content [
+1656050988.175056003: ThreadId 4: gvRunUnlocked: outside [
+1656050988.175081813: ThreadId 4: gvRunUnlocked: inside [
+1656050988.175090843: ThreadId 4: gvRunLocked: outside [
+1656050988.175099513: ThreadId 4: gvRunLocked: inside [
+1656050988.175120883: ThreadId 4: gvRunLocked: inside ]
+1656050988.175129773: ThreadId 4: gvRunLocked: outside ]
+1656050988.175136383: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.175146013: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.175261784: ThreadId 4: gvRunUnlocked: outside [
+1656050988.175276924: ThreadId 4: gvRunUnlocked: inside [
+1656050988.175284274: ThreadId 4: gvRunLocked: outside [
+1656050988.175290864: ThreadId 4: gvRunLocked: inside [
+1656050988.175304334: ThreadId 4: gvRunLocked: inside ]
+1656050988.175660867: ThreadId 4: gvRunLocked: outside ]
+1656050988.175667567: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.175676137: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.175824598: ThreadId 4: gvRunUnlocked: outside [
+1656050988.175839938: ThreadId 4: gvRunUnlocked: inside [
+1656050988.175846878: ThreadId 4: gvRunLocked: outside [
+1656050988.175857398: ThreadId 4: gvRunLocked: inside [
+1656050988.175868578: ThreadId 4: gvRunLocked: inside ]
+1656050988.175877068: ThreadId 4: gvRunLocked: outside ]
+1656050988.175882888: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.175891228: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.176004429: ThreadId 4: gvRunUnlocked: outside [
+1656050988.176019269: ThreadId 4: gvRunUnlocked: inside [
+1656050988.176026649: ThreadId 4: gvRunLocked: outside [
+1656050988.176033769: ThreadId 4: gvRunLocked: inside [
+1656050988.176045689: ThreadId 4: gvRunLocked: inside ]
+1656050988.176057889: ThreadId 4: gvRunLocked: outside ]
+1656050988.176063950: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.176071500: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.176179560: ThreadId 4: gvRunUnlocked: outside [
+1656050988.176194110: ThreadId 4: gvRunUnlocked: inside [
+1656050988.176201490: ThreadId 4: gvRunLocked: outside [
+1656050988.176215411: ThreadId 4: gvRunLocked: inside [
+1656050988.176240781: ThreadId 4: gvRunLocked: inside ]
+1656050988.176248771: ThreadId 4: gvRunLocked: outside ]
+1656050988.176255571: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.176262971: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.176375992: ThreadId 4: gvRunUnlocked: outside [
+1656050988.176390822: ThreadId 4: gvRunUnlocked: inside [
+1656050988.176398352: ThreadId 4: gvRunLocked: outside [
+1656050988.176406642: ThreadId 4: gvRunLocked: inside [
+1656050988.176419282: ThreadId 4: gvRunLocked: inside ]
+1656050988.176428322: ThreadId 4: gvRunLocked: outside ]
+1656050988.176434232: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.176442252: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.176561853: ThreadId 4: gvRunUnlocked: outside [
+1656050988.176578653: ThreadId 4: gvRunUnlocked: inside [
+1656050988.176585433: ThreadId 4: gvRunLocked: outside [
+1656050988.176593723: ThreadId 4: gvRunLocked: inside [
+1656050988.176605923: ThreadId 4: gvRunLocked: inside ]
+1656050988.176614403: ThreadId 4: gvRunLocked: outside ]
+1656050988.176620793: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.176732304: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.176879795: ThreadId 4: gvRunUnlocked: outside [
+1656050988.176895455: ThreadId 4: gvRunUnlocked: inside [
+1656050988.176902815: ThreadId 4: gvRunLocked: outside [
+1656050988.176911095: ThreadId 4: gvRunLocked: inside [
+1656050988.176926935: ThreadId 4: gvRunLocked: inside ]
+1656050988.176935035: ThreadId 4: gvRunLocked: outside ]
+1656050988.176942005: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.176950725: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.177058426: ThreadId 4: gvRunUnlocked: outside [
+1656050988.177073156: ThreadId 4: gvRunUnlocked: inside [
+1656050988.177081446: ThreadId 4: gvRunLocked: outside [
+1656050988.177091276: ThreadId 4: gvRunLocked: inside [
+1656050988.177103296: ThreadId 4: gvRunLocked: inside ]
+1656050988.177112007: ThreadId 4: gvRunLocked: outside ]
+1656050988.177119017: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.177127377: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.177232877: ThreadId 4: gvRunUnlocked: outside [
+1656050988.177246767: ThreadId 4: gvRunUnlocked: inside [
+1656050988.177254777: ThreadId 4: gvRunLocked: outside [
+1656050988.177263408: ThreadId 4: gvRunLocked: inside [
+1656050988.177283298: ThreadId 4: gvRunLocked: inside ]
+1656050988.177292678: ThreadId 4: gvRunLocked: outside ]
+1656050988.177299278: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.177307268: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.178139483: ThreadId 4: createWindow.content ]
+1656050988.178190344: ThreadId 4: createDynamic [
+1656050988.178217484: ThreadId 4: gvRunUnlocked: outside [
+1656050988.178228964: ThreadId 4: gvRunUnlocked: inside [
+1656050988.178238144: ThreadId 4: gvDynamic [
+1656050988.178255754: ThreadId 4: createDynamic.addWidget [
+1656050988.178265574: ThreadId 4: gvRunLocked: outside [
+1656050988.178274334: ThreadId 4: gvRunLocked: inside [
+1656050988.178678737: ThreadId 4: gvRunUnlocked: outside [
+1656050988.178852128: ThreadId 4: gvRunUnlocked: inside [
+1656050988.178860628: ThreadId 4: gvRunLocked: outside [
+1656050988.178869278: ThreadId 4: gvRunLocked: inside [
+1656050988.178891168: ThreadId 4: gvRunLocked: inside ]
+1656050988.178900689: ThreadId 4: gvRunLocked: outside ]
+1656050988.178907349: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.178916899: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.179064200: ThreadId 4: gvRunUnlocked: outside [
+1656050988.179079280: ThreadId 4: gvRunUnlocked: inside [
+1656050988.179087530: ThreadId 4: gvRunLocked: outside [
+1656050988.179096080: ThreadId 4: gvRunLocked: inside [
+1656050988.179109910: ThreadId 4: gvRunLocked: inside ]
+1656050988.179118130: ThreadId 4: gvRunLocked: outside ]
+1656050988.179124790: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.179133370: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.179281531: ThreadId 4: gvRunUnlocked: outside [
+1656050988.179297111: ThreadId 4: gvRunUnlocked: inside [
+1656050988.179312341: ThreadId 4: gvRunLocked: outside [
+1656050988.179320471: ThreadId 4: gvRunLocked: inside [
+1656050988.179334911: ThreadId 4: gvRunLocked: inside ]
+1656050988.179343511: ThreadId 4: gvRunLocked: outside ]
+1656050988.179350202: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.179357722: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.179443582: ThreadId 4: gvRunUnlocked: outside [
+1656050988.179457772: ThreadId 4: gvRunUnlocked: inside [
+1656050988.179465582: ThreadId 4: gvRunLocked: outside [
+1656050988.179473262: ThreadId 4: gvRunLocked: inside [
+1656050988.179486102: ThreadId 4: gvRunLocked: inside ]
+1656050988.179494452: ThreadId 4: gvRunLocked: outside ]
+1656050988.179500763: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.179508643: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.179545473: ThreadId 4: gvRunLocked: inside ]
+1656050988.179556933: ThreadId 4: gvRunLocked: outside ]
+1656050988.179564583: ThreadId 4: createDynamic.addWidget ]
+1656050988.179576723: ThreadId 4: gvDynamic ]
+1656050988.179585193: ThreadId 4: gvRunUnlocked: inside ]
+1656050988.179593903: ThreadId 4: gvRunUnlocked: outside ]
+1656050988.179602453: ThreadId 4: createDynamic ]
+1656050988.205301116: ThreadId 4: createLangWindow.create: inside ]
+1656050988.205367347: ThreadId 4: gvRunLocked: inside ]
+1656050988.205388477: ThreadId 4: gvRunLocked: outside ]
+1656050988.205407727: ThreadId 4: createLangWindow.create: outside ]
+1656050988.205447487: ThreadId 4: createLangWindow ]
+1656050988.205487227: ThreadId 4: runGTK.call ]
+1656050988.205511168: ThreadId 4: mainLoop [
+1656050989.000557096: ThreadId 9 (async): async.action [
+1656050989.000789318: ThreadId 9 (async): gvRunLocked: outside [
+1656050989.000815348: ThreadId 9 (async): gvRunLocked: inside [
+1656050989.001080680: ThreadId 9 (async): gvRunLocked: inside ]
+1656050989.001107560: ThreadId 9 (async): gvRunLocked: outside ]
+1656050989.001218081: ThreadId 9 (async): gvRunLocked: outside [
+1656050989.001238581: ThreadId 9 (async): gvRunLocked: inside [
+1656050989.001366472: ThreadId 9 (async): gvRunLocked: inside ]
+1656050989.001389142: ThreadId 9 (async): gvRunLocked: outside ]
+1656050989.001558123: ThreadId 9 (async): gvRunLocked: outside [
+1656050989.001577933: ThreadId 9 (async): gvRunLocked: inside [
+1656050989.001710554: ThreadId 9 (async): gvRunLocked: inside ]
+1656050989.001733514: ThreadId 9 (async): gvRunLocked: outside ]
+1656050989.002075537: ThreadId 9 (async): gvRunLocked: outside [
+1656050989.002098917: ThreadId 9 (async): gvRunLocked: inside [
+1656050989.002216748: ThreadId 9 (async): gvRunLocked: inside ]
+1656050989.002238238: ThreadId 9 (async): gvRunLocked: outside ]
+1656050989.002254048: ThreadId 9 (async): async.action ]
+1656050989.002269798: ThreadId 9 (async): async.action [
+1656050989.002283548: ThreadId 9 (async): async.action ]
+1656050989.473652960: ThreadId 262: gvRunUnlocked: outside [
+1656050989.473714450: ThreadId 262: gvRunUnlocked: inside [
+1656050989.473734330: ThreadId 262: createLangWindow.close [
+1656050989.473758740: ThreadId 262: gvRunLocked: outside [
+1656050989.473781350: ThreadId 262: gvRunLocked: inside [
+1656050989.473804321: ThreadId 262: gvRunLocked: inside ]
+1656050989.473819211: ThreadId 262: gvRunLocked: outside ]
+1656050989.473834991: ThreadId 262: viewDynamic.close [
+1656050989.473879551: ThreadId 262: gvRunLocked: outside [
+1656050989.473899531: ThreadId 262: gvRunLocked: inside [
+1656050989.474336214: ThreadId 262: gvRunLocked: inside ]
+1656050989.474362594: ThreadId 262: gvRunLocked: outside ]
+1656050989.474382095: ThreadId 262: gvRunLocked: outside [
+1656050989.474400935: ThreadId 262: gvRunLocked: inside [
+1656050989.474465245: ThreadId 262: gvRunLocked: inside ]
+1656050989.474483055: ThreadId 262: gvRunLocked: outside ]
+1656050989.474500225: ThreadId 262: gvRunLocked: outside [
+1656050989.474516755: ThreadId 262: gvRunLocked: inside [
+1656050989.474553836: ThreadId 262: gvRunLocked: inside ]
+1656050989.474570236: ThreadId 262: gvRunLocked: outside ]
+1656050989.474585896: ThreadId 262: gvRunLocked: outside [
+1656050989.474625276: ThreadId 262: gvRunLocked: inside [
+1656050989.474662866: ThreadId 262: gvRunLocked: inside ]
+1656050989.474678807: ThreadId 262: gvRunLocked: outside ]
+1656050989.474694657: ThreadId 262: gvRunLocked: outside [
+1656050989.474710797: ThreadId 262: gvRunLocked: inside [
+1656050989.474734647: ThreadId 262: gvRunLocked: inside ]
+1656050989.474749897: ThreadId 262: gvRunLocked: outside ]
+1656050989.474766587: ThreadId 262: gvRunLocked: outside [
+1656050989.474782637: ThreadId 262: gvRunLocked: inside [
+1656050989.474808777: ThreadId 262: gvRunLocked: inside ]
+1656050989.474825897: ThreadId 262: gvRunLocked: outside ]
+1656050989.474842148: ThreadId 262: gvRunLocked: outside [
+1656050989.474857168: ThreadId 262: gvRunLocked: inside [
+1656050989.474879868: ThreadId 262: gvRunLocked: inside ]
+1656050989.474894228: ThreadId 262: gvRunLocked: outside ]
+1656050989.474910098: ThreadId 262: gvRunLocked: outside [
+1656050989.474926038: ThreadId 262: gvRunLocked: inside [
+1656050989.474944998: ThreadId 262: gvRunLocked: inside ]
+1656050989.474959908: ThreadId 262: gvRunLocked: outside ]
+1656050989.474976039: ThreadId 262: gvRunLocked: outside [
+1656050989.474991049: ThreadId 262: gvRunLocked: inside [
+1656050989.475015009: ThreadId 262: gvRunLocked: inside ]
+1656050989.475031449: ThreadId 262: gvRunLocked: outside ]
+1656050989.475046429: ThreadId 262: gvRunLocked: outside [
+1656050989.475061809: ThreadId 262: gvRunLocked: inside [
+1656050989.475084969: ThreadId 262: gvRunLocked: inside ]
+1656050989.475099209: ThreadId 262: gvRunLocked: outside ]
+1656050989.475113459: ThreadId 262: viewDynamic.close ]
+1656050989.475128950: ThreadId 262: gvRunLocked: outside [
+1656050989.475145300: ThreadId 262: gvRunLocked: inside [
+1656050989.475161910: ThreadId 262: gvRunLocked: inside ]
+1656050989.475175310: ThreadId 262: gvRunLocked: outside ]
+1656050989.475191710: ThreadId 262: gvRunLocked: outside [
+1656050989.475207150: ThreadId 262: gvRunLocked: inside [
+1656050989.475224650: ThreadId 262: gvRunLocked: inside ]
+1656050989.475238290: ThreadId 262: gvRunLocked: outside ]
+1656050989.475253560: ThreadId 262: gvRunLocked: outside [
+1656050989.475268420: ThreadId 262: gvRunLocked: inside [
+1656050989.475285751: ThreadId 262: gvRunLocked: inside ]
+1656050989.475409691: ThreadId 262: gvRunLocked: outside ]
+1656050989.475427622: ThreadId 262: gvRunLocked: outside [
+1656050989.475443972: ThreadId 262: gvRunLocked: inside [
+1656050989.475461332: ThreadId 262: gvRunLocked: inside ]
+1656050989.475475142: ThreadId 262: gvRunLocked: outside ]
+1656050989.475491182: ThreadId 262: gvRunLocked: outside [
+1656050989.475507112: ThreadId 262: gvRunLocked: inside [
+1656050989.475524322: ThreadId 262: gvRunLocked: inside ]
+1656050989.475539032: ThreadId 262: gvRunLocked: outside ]
+1656050989.475554792: ThreadId 262: gvRunLocked: outside [
+1656050989.475569692: ThreadId 262: gvRunLocked: inside [
+1656050989.475595643: ThreadId 262: gvRunLocked: inside ]
+1656050989.475610663: ThreadId 262: gvRunLocked: outside ]
+1656050989.475626693: ThreadId 262: gvRunLocked: outside [
+1656050989.475642053: ThreadId 262: gvRunLocked: inside [
+1656050989.475659213: ThreadId 262: gvRunLocked: inside ]
+1656050989.475673573: ThreadId 262: gvRunLocked: outside ]
+1656050989.475689323: ThreadId 262: gvRunLocked: outside [
+1656050989.475704463: ThreadId 262: gvRunLocked: inside [
+1656050989.475727214: ThreadId 262: gvRunLocked: inside ]
+1656050989.475748644: ThreadId 262: gvRunLocked: outside ]
+1656050989.475778974: ThreadId 262: gvRunLocked: outside [
+1656050989.475796004: ThreadId 262: gvRunLocked: inside [
+1656050989.475814244: ThreadId 262: gvRunLocked: inside ]
+1656050989.475831314: ThreadId 262: gvRunLocked: outside ]
+1656050989.475851614: ThreadId 262: gvRunLocked: outside [
+1656050989.475872435: ThreadId 262: gvRunLocked: inside [
+1656050989.475902985: ThreadId 262: gvRunLocked: inside ]
+1656050989.475917785: ThreadId 262: gvRunLocked: outside ]
+1656050989.475937565: ThreadId 262: gvRunLocked: outside [
+1656050989.475955215: ThreadId 262: gvRunLocked: inside [
+1656050989.475983665: ThreadId 262: gvRunLocked: inside ]
+1656050989.476002145: ThreadId 262: gvRunLocked: outside ]
+1656050989.476020395: ThreadId 262: gvRunLocked: outside [
+1656050989.476037436: ThreadId 262: gvRunLocked: inside [
+1656050989.476066866: ThreadId 262: gvRunLocked: inside ]
+1656050989.476086296: ThreadId 262: gvRunLocked: outside ]
+1656050989.476103096: ThreadId 262: gvRunLocked: outside [
+1656050989.476119426: ThreadId 262: gvRunLocked: inside [
+1656050989.476142986: ThreadId 262: gvRunLocked: inside ]
+1656050989.476163696: ThreadId 262: gvRunLocked: outside ]
+1656050989.476183917: ThreadId 262: gvRunLocked: outside [
+1656050989.476200977: ThreadId 262: gvRunLocked: inside [
+1656050989.476230967: ThreadId 262: gvRunLocked: inside ]
+1656050989.476254097: ThreadId 262: gvRunLocked: outside ]
+1656050989.476276267: ThreadId 262: gvRunLocked: outside [
+1656050989.476297147: ThreadId 262: gvRunLocked: inside [
+1656050989.476320128: ThreadId 262: gvRunLocked: inside ]
+1656050989.476340668: ThreadId 262: gvRunLocked: outside ]
+1656050989.476359578: ThreadId 262: gvRunLocked: outside [
+1656050989.476478459: ThreadId 262: gvRunLocked: inside [
+1656050989.476514589: ThreadId 262: gvRunLocked: inside ]
+1656050989.476534689: ThreadId 262: gvRunLocked: outside ]
+1656050989.476554929: ThreadId 262: gvRunLocked: outside [
+1656050989.476571979: ThreadId 262: gvRunLocked: inside [
+1656050989.476590329: ThreadId 262: gvRunLocked: inside ]
+1656050989.476606289: ThreadId 262: gvRunLocked: outside ]
+1656050989.476627670: ThreadId 262: gvRunLocked: outside [
+1656050989.476650610: ThreadId 262: gvRunLocked: inside [
+1656050989.476683770: ThreadId 262: gvRunLocked: inside ]
+1656050989.476704290: ThreadId 262: gvRunLocked: outside ]
+1656050989.476721670: ThreadId 262: gvRunLocked: outside [
+1656050989.476738030: ThreadId 262: gvRunLocked: inside [
+1656050989.476755870: ThreadId 262: gvRunLocked: inside ]
+1656050989.476773451: ThreadId 262: gvRunLocked: outside ]
+1656050989.476789751: ThreadId 262: gvRunLocked: outside [
+1656050989.476806111: ThreadId 262: gvRunLocked: inside [
+1656050989.476835071: ThreadId 262: gvRunLocked: inside ]
+1656050989.476854681: ThreadId 262: gvRunLocked: outside ]
+1656050989.476871471: ThreadId 262: gvRunLocked: outside [
+1656050989.476887051: ThreadId 262: gvRunLocked: inside [
+1656050989.476907591: ThreadId 262: gvRunLocked: inside ]
+1656050989.476923072: ThreadId 262: gvRunLocked: outside ]
+1656050989.476939722: ThreadId 262: gvRunLocked: outside [
+1656050989.476955182: ThreadId 262: gvRunLocked: inside [
+1656050989.476983952: ThreadId 262: gvRunLocked: inside ]
+1656050989.477003752: ThreadId 262: gvRunLocked: outside ]
+1656050989.477020842: ThreadId 262: gvRunLocked: outside [
+1656050989.477036372: ThreadId 262: gvRunLocked: inside [
+1656050989.477058712: ThreadId 262: gvRunLocked: inside ]
+1656050989.477078783: ThreadId 262: gvRunLocked: outside ]
+1656050989.477095883: ThreadId 262: gvRunLocked: outside [
+1656050989.477111693: ThreadId 262: gvRunLocked: inside [
+1656050989.477139063: ThreadId 262: gvRunLocked: inside ]
+1656050989.477156853: ThreadId 262: gvRunLocked: outside ]
+1656050989.477173513: ThreadId 262: gvRunLocked: outside [
+1656050989.477190103: ThreadId 262: gvRunLocked: inside [
+1656050989.477209603: ThreadId 262: gvRunLocked: inside ]
+1656050989.477229004: ThreadId 262: gvRunLocked: outside ]
+1656050989.477252694: ThreadId 262: gvRunLocked: outside [
+1656050989.477275464: ThreadId 262: gvRunLocked: inside [
+1656050989.477297914: ThreadId 262: gvRunLocked: inside ]
+1656050989.477313194: ThreadId 262: gvRunLocked: outside ]
+1656050989.477330874: ThreadId 262: gvRunLocked: outside [
+1656050989.477350704: ThreadId 262: gvRunLocked: inside [
+1656050989.477374785: ThreadId 262: gvRunLocked: inside ]
+1656050989.477394925: ThreadId 262: gvRunLocked: outside ]
+1656050989.477416815: ThreadId 262: gvRunLocked: outside [
+1656050989.477437335: ThreadId 262: gvRunLocked: inside [
+1656050989.477458745: ThreadId 262: gvRunLocked: inside ]
+1656050989.477571076: ThreadId 262: gvRunLocked: outside ]
+1656050989.477599616: ThreadId 262: gvRunLocked: outside [
+1656050989.477617706: ThreadId 262: gvRunLocked: inside [
+1656050989.477635246: ThreadId 262: gvRunLocked: inside ]
+1656050989.477649776: ThreadId 262: gvRunLocked: outside ]
+1656050989.477666427: ThreadId 262: gvRunLocked: outside [
+1656050989.477681117: ThreadId 262: gvRunLocked: inside [
+1656050989.477697497: ThreadId 262: gvRunLocked: inside ]
+1656050989.477711797: ThreadId 262: gvRunLocked: outside ]
+1656050989.477727427: ThreadId 262: gvRunLocked: outside [
+1656050989.477742927: ThreadId 262: gvRunLocked: inside [
+1656050989.477763187: ThreadId 262: gvRunLocked: inside ]
+1656050989.477776617: ThreadId 262: gvRunLocked: outside ]
+1656050989.477791207: ThreadId 262: gvRunLocked: outside [
+1656050989.477807257: ThreadId 262: gvRunLocked: inside [
+1656050989.481416192: ThreadId 262: gvRunLocked: inside ]
+1656050989.481446172: ThreadId 262: gvRunLocked: outside ]
+1656050989.481464182: ThreadId 262: gvRunLocked: outside [
+1656050989.481481742: ThreadId 262: gvRunLocked: inside [
+1656050989.481520592: ThreadId 262: gvRunLocked: inside ]
+1656050989.481538312: ThreadId 262: gvRunLocked: outside ]
+1656050989.481559813: ThreadId 262: createLangWindow.close ]
+1656050989.481573923: ThreadId 262: gvRunUnlocked: inside ]
+1656050989.481608413: ThreadId 262: gvRunUnlocked: outside ]
+1656050989.481661833: ThreadId 4: mainLoop ]
+1656050989.481713394: ThreadId 11 (async): THREAD ]
+1656050989.481787804: ThreadId 9 (async): THREAD ]
+1656050989.481815014: ThreadId 7 (async): THREAD ]
+1656050989.481836734: ThreadId 6 (async): THREAD ]
