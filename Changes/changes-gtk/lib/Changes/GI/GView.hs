@@ -92,8 +92,11 @@ gvAddState state = MkGView $ lift $ viewAddViewState $ gvsViewState state
 gvCloseState :: Is LockStateType ls => GViewState -> GView ls ()
 gvCloseState state = gvMatchLock @'Unlocked $ MkGView $ liftIO $ closeLifeState $ gvsViewState state
 
-gvOnClose :: Is LockStateType lsa => GView lsa () -> GView lsb ()
-gvOnClose gv = gvLiftViewWithUnliftNoUI $ \unlift -> viewOnClose $ unlift $ gvMatchLock @_ @'Unlocked gv
+gvOnClose ::
+       forall lsa lsb. Is LockStateType lsa
+    => GView lsa ()
+    -> GView lsb ()
+gvOnClose gv = gvLiftViewWithUnliftNoUI $ \unlift -> viewOnClose $ unlift $ gvMatchLock @lsa @'Unlocked gv
 
 gvGetCloser :: forall ls a. GView ls a -> GView ls (a, GView 'Unlocked ())
 gvGetCloser gv =
