@@ -31,10 +31,9 @@ createCalendar rmod = do
                 return ()
     sig1 <- gvOnSignal widget #daySelected onChanged
     sig2 <- gvOnSignal widget #monthChanged onChanged
-    gvBindWholeModel rmod (Just esrc) $ \newval ->
-        gvRunLocked $ do
-            oldval <- getDay
-            if oldval == newval
-                then return ()
-                else withSignalsBlocked widget [sig1, sig2] $ putDay newval
+    gvBindWholeModel rmod (Just esrc) $ \newval -> do
+        oldval <- getDay
+        if oldval == newval
+            then return ()
+            else withSignalsBlocked widget [sig1, sig2] $ putDay newval
     toWidget widget

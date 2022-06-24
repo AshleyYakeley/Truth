@@ -25,7 +25,6 @@ createTextEntry rmod = traceBracket "createTextEntry" $ do
             succeeded <- gvRunResource rmod $ \asub -> pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
             setValidState succeeded
     traceBracket "createTextEntry.bindmodel" $ gvBindWholeModel rmod (Just esrc) $ \newtext ->
-        gvRunLocked $
         withSignalBlocked widget changedSignal $ do
             oldtext <- get widget #text
             if oldtext == newtext

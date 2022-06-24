@@ -185,17 +185,17 @@ viewFloatMapModel flens model = do
     rc <- viewGetResourceContext
     viewLiftLifeCycle $ floatMapModel rc flens model
 
-viewBindWholeModel :: forall t. Model (WholeUpdate t) -> Maybe EditSource -> (t -> View ()) -> View ()
+viewBindWholeModel :: forall t. Model (WholeUpdate t) -> Maybe EditSource -> (Bool -> t -> View ()) -> View ()
 viewBindWholeModel model mesrc setf = let
     init :: View ()
     init =
         viewRunResourceContext model $ \unlift amodel -> do
             val <- liftIO $ unlift $ aModelRead amodel ReadWhole
-            setf val
+            setf True val
     recv :: () -> NonEmpty (WholeUpdate t) -> View ()
     recv () updates = let
         MkWholeUpdate val = last updates
-        in setf val
+        in setf False val
     in viewBindModel model mesrc init mempty recv
 
 viewBindReadOnlyWholeModel :: forall t. Model (ROWUpdate t) -> (Bool -> t -> View ()) -> View ()
