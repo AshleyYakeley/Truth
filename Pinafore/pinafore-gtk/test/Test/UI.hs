@@ -33,7 +33,7 @@ runUIAction testaction script =
                                 traceBracket "sleep" $ gvSleep 50000
                                 traceBracket "action" testaction
                                 traceBracket "exit" gvExitUI
-                                liftIO $ traceBracket "done" $ putMVar donevar ()
+                                gvLiftIONoUI $ traceBracket "done" $ putMVar donevar ()
                     return ()
             liftIO $ traceBracket "wait for done" $ takeMVar donevar
 

@@ -65,7 +65,7 @@ newtype GView ls a = MkGView
     } deriving (Functor, Applicative, Monad, MonadFail, MonadFix, MonadException)
 
 -- | Only run IO with the UI lock held.
-deriving instance MonadIO (GView ls)
+deriving instance MonadIO (GView 'Locked)
 
 deriving instance MonadHoistIO (GView 'Locked)
 
@@ -96,7 +96,7 @@ gvCloseState state = gvMatchLock @'Unlocked $ MkGView $ liftIO $ closeLifeState 
 gvOnClose :: Is LockStateType lsa => GView lsa () -> GView lsb ()
 gvOnClose gv = gvLiftViewWithUnliftNoUI $ \unlift -> viewOnClose $ unlift $ gvMatchLock @_ @'Unlocked gv
 
-gvGetCloser :: forall ls a. GView ls a -> GView ls (a, GView ls ())
+gvGetCloser :: forall ls a. GView ls a -> GView ls (a, GView 'Unlocked ())
 gvGetCloser gv =
     gvLiftViewWithUnliftNoUI $ \unlift -> do
         (a, closer) <- viewGetCloser $ unlift gv

@@ -75,14 +75,14 @@ cboxFromStore whichModel esrc store = do
     #packStart widget renderer False
     cellLayoutSetAttributes widget renderer store $ \(_, cell) -> comboBoxCellAttributes cell
     changedSignal <-
-        gvOnSignal widget #changed $
-        gvRunResource whichModel $ \asub -> do
+        gvOnSignal widget #changed $ do
             mi <- #getActiveIter widget
             case mi of
                 (True, iter) -> do
                     i <- seqStoreIterToIndex iter
                     (t, _) <- seqStoreGetValue store i
-                    _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit t
+                    _ <-
+                        gvRunResource whichModel $ \asub -> pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit t
                     return ()
                 (False, _) -> return ()
     let

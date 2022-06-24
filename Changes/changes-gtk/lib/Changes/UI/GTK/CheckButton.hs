@@ -16,11 +16,11 @@ createCheckButton label rmod = do
     widget <- gvNew CheckButton [#active := initial]
     gvBindReadOnlyWholeModel label $ \val -> gvLiftIO $ set widget [#label := val]
     changedSignal <-
-        gvOnSignal widget #clicked $
-        gvRunResource rmod $ \asub -> do
-            st <- Gtk.get widget #active
-            _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
-            return ()
+        gvOnSignal widget #clicked $ do
+            st <- gvLiftIO $ Gtk.get widget #active
+            gvRunResource rmod $ \asub -> do
+                _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
+                return ()
     gvBindWholeModel rmod (Just esrc) $ \st ->
         gvRunLocked $ withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
