@@ -33,10 +33,10 @@ blankWindowSpec = let
 noAction :: a -> GView 'Unlocked ()
 noAction _ = return ()
 
-closeAction :: IO () -> GView 'Unlocked ()
+closeAction :: GView 'Unlocked () -> GView 'Unlocked ()
 closeAction closer = do
     gvSleep 50000
-    liftIO closer
+    closer
 
 lockTests :: TestTree
 lockTests =
@@ -52,19 +52,19 @@ lockTests =
                gvRunLocked $ gvRunUnlocked $ gvRunLocked $ gvRunUnlocked $ gvRunLocked $ gvRunUnlocked $ return ())
               noAction
         , let
-              setup :: GView 'Unlocked (IO ())
+              setup :: GView 'Unlocked (GView 'Unlocked ())
               setup =
                   gvRunLocked $ do
-                      (w, closer) <- gvHoistView viewGetCloser $ createWindow blankWindowSpec
+                      (w, closer) <- gvGetCloser $ createWindow blankWindowSpec
                       uiWindowShow w
                       return closer
               in lockTest "window" setup closeAction
         , let
-              setup :: GView 'Unlocked (IO ())
+              setup :: GView 'Unlocked (GView 'Unlocked ())
               setup =
                   gvRunLocked $ do
                       let wspec = blankWindowSpec {wsContent = createDynamic $ constantModel createBlank}
-                      (w, closer) <- gvHoistView viewGetCloser $ createWindow wspec
+                      (w, closer) <- gvGetCloser $ createWindow wspec
                       uiWindowShow w
                       return closer
               in lockTest "window-dynamic" setup closeAction

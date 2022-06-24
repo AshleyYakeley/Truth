@@ -32,7 +32,7 @@ runUIAction testaction script =
                                 gvSleep 50000
                                 testaction
                                 gvExitUI
-                                liftIO $ putMVar donevar ()
+                                gvLiftIONoUI $ putMVar donevar ()
                     return ()
             liftIO $ takeMVar donevar
 

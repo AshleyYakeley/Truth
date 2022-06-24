@@ -14,17 +14,13 @@ createTextEntry rmod = do
     widget <- gvNew Entry []
     invalidCol <- new RGBA [#red := 1, #green := 0, #blue := 0, #alpha := 1]
     let
-        setValidState ::
-               forall m. MonadIO m
-            => Bool
-            -> m ()
+        setValidState :: Bool -> GView 'Locked ()
         setValidState True = #overrideColor widget [StateFlagsNormal] Nothing
         setValidState False = #overrideColor widget [StateFlagsNormal] $ Just invalidCol
     changedSignal <-
-        gvOnSignal widget #changed $
-        gvRunResource rmod $ \asub -> do
-            st <- get widget #text
-            succeeded <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
+        gvOnSignal widget #changed $ do
+            st <- gvLiftIO $ get widget #text
+            succeeded <- gvRunResource rmod $ \asub -> pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
             setValidState succeeded
     gvBindWholeModel rmod (Just esrc) $ \newtext ->
         gvRunLocked $

@@ -13,18 +13,13 @@ createCalendar rmod = do
     esrc <- newEditSource
     widget <- gvNew Calendar []
     let
-        getDay ::
-               forall m. MonadIO m
-            => m Day
+        getDay :: GView 'Locked Day
         getDay = do
             y <- get widget #year
             m <- get widget #month
             d <- get widget #day
             return $ fromGregorian (toInteger y) (succ $ fromIntegral m) (fromIntegral d)
-        putDay ::
-               forall m. MonadIO m
-            => Day
-            -> m ()
+        putDay :: Day -> GView 'Locked ()
         putDay day = let
             (y, m, d) = toGregorian day
             in set widget [#year := fromInteger y, #month := pred (fromIntegral m), #day := fromIntegral d]
