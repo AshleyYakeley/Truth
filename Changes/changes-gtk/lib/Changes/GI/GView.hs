@@ -65,7 +65,7 @@ newtype GView ls a = MkGView
     } deriving (Functor, Applicative, Monad, MonadFail, MonadFix, MonadException)
 
 -- | Only run IO with the UI lock held.
-deriving instance MonadIO (GView 'Locked)
+deriving instance MonadIO (GView ls)
 
 deriving instance MonadHoistIO (GView 'Locked)
 
