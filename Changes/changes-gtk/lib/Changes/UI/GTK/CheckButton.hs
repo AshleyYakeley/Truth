@@ -21,8 +21,7 @@ createCheckButton label rmod = do
             gvRunResource rmod $ \asub -> do
                 _ <- pushEdit esrc $ aModelEdit asub $ pure $ MkWholeReaderEdit st
                 return ()
-    gvBindWholeModel rmod (Just esrc) $ \st ->
-        gvRunLocked $ withSignalBlocked widget changedSignal $ set widget [#active := st]
+    gvBindWholeModel rmod (Just esrc) $ \st -> withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
 
 createMaybeCheckButton :: Model (ROWUpdate Text) -> Model (WholeUpdate (Maybe Bool)) -> GView 'Locked Widget
@@ -58,5 +57,5 @@ createMaybeCheckButton label rmod = do
                             pushEdit noEditSource $ aModelEdit asub $ pure $ MkWholeReaderEdit newst
                     return True
                 _ -> return False
-    gvBindWholeModel rmod Nothing $ \mb -> gvRunLocked $ setWidgetState mb
+    gvBindWholeModel rmod Nothing $ \mb -> setWidgetState mb
     toWidget widget

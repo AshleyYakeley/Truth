@@ -126,10 +126,8 @@ tableContainerView (MkKeyColumns (colfunc :: Model update -> GView 'Locked ( Mod
                     tableModel
             liftIO $ setval $ \entry -> entry {entryModel = usub}
             (textModel, propModel) <- colfunc usub
-            gvBindWholeModel textModel Nothing $ \t ->
-                gvRunLocked $ liftIO $ setval $ \entry -> entry {entryRowText = t}
-            gvBindReadOnlyWholeModel propModel $ \t ->
-                gvRunLocked $ liftIO $ setval $ \entry -> entry {entryRowProps = t}
+            gvBindWholeModel textModel Nothing $ \t -> gvLiftIO $ setval $ \entry -> entry {entryRowText = t}
+            gvBindReadOnlyWholeModel propModel $ \t -> gvLiftIO $ setval $ \entry -> entry {entryRowProps = t}
         initTable :: GView 'Locked (DynamicStore (StoreEntry update rowtext rowprops), TreeView)
         initTable = do
             initialRows <-

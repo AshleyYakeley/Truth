@@ -198,10 +198,18 @@ gvBindModel ::
 gvBindModel model mesrc initv utask recv =
     gvBindModelUpdates model (\ec -> mesrc /= Just ec) initv utask $ \a updates _ec -> recv a updates
 
-gvBindWholeModel :: forall ls t. Model (WholeUpdate t) -> Maybe EditSource -> (t -> GView 'Unlocked ()) -> GView ls ()
+gvBindWholeModel ::
+       forall ls lsr t. (Is LockStateType ls, Is LockStateType lsr)
+    => Model (WholeUpdate t)
+    -> Maybe EditSource
+    -> (t -> GView lsr ())
+    -> GView ls ()
 gvBindWholeModel model mesrc call = do
-    MkWMFunction unlift <- gvGetUnliftToView
-    gvLiftViewNoUI $ viewBindWholeModel model mesrc $ unlift . call
+    gvLiftViewWithUnliftNoUI $ \unlift ->
+        viewBindWholeModel model mesrc $ \init t ->
+            if init
+                then unlift $ gvMatchLock @lsr @ls $ call t
+                else unlift $ gvMatchLock @lsr @'Unlocked $ call t
 
 gvBindReadOnlyWholeModel ::
        forall ls lsr t. (Is LockStateType ls, Is LockStateType lsr)
