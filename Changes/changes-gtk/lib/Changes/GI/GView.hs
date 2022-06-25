@@ -167,14 +167,14 @@ gvRunLockedState =
         lock <- asks gtkcLock
         return $ \case
             MkGViewState (MkLifeState Nothing) -> MkGViewState $ MkLifeState Nothing
-            MkGViewState (MkLifeState (Just lfs)) -> MkGViewState $ MkLifeState $ Just $ cbRunLocked lock lfs
+            MkGViewState (MkLifeState (Just lfs)) -> MkGViewState $ MkLifeState $ Just $ traceBarrier "gvRunLockedState" (cbRunLocked lock) lfs
 
 gvRunLocked :: GView 'Locked --> GView 'Unlocked
 gvRunLocked gv = do
     (a, gls) <-
         MkGView $ do
             lock <- asks gtkcLock
-            hoistIO (cbRunLocked lock) $ unGView $ gvGetState gv
+            hoistIO (traceBarrier "gvRunLocked" $ cbRunLocked lock) $ unGView $ gvGetState gv
     f <- gvRunLockedState
     gvAddState $ f gls
     return a
@@ -185,14 +185,14 @@ gvRunUnlockedState =
         lock <- asks gtkcLock
         return $ \case
             MkGViewState (MkLifeState Nothing) -> MkGViewState $ MkLifeState Nothing
-            MkGViewState (MkLifeState (Just lfs)) -> MkGViewState $ MkLifeState $ Just $ cbRunUnlocked lock lfs
+            MkGViewState (MkLifeState (Just lfs)) -> MkGViewState $ MkLifeState $ Just $ traceBarrier "gvRunUnlockedState" (cbRunUnlocked lock) lfs
 
 gvRunUnlocked :: GView 'Unlocked --> GView 'Locked
 gvRunUnlocked gv = do
     (a, gls) <-
         MkGView $ do
             lock <- asks gtkcLock
-            hoistIO (cbRunUnlocked lock) $ unGView $ gvGetState gv
+            hoistIO (traceBarrier "gvRunUnlocked" $ cbRunUnlocked lock) $ unGView $ gvGetState gv
     f <- gvRunUnlockedState
     gvAddState $ f gls
     return a
