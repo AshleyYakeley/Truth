@@ -21,7 +21,7 @@ import Shapes
 data DynamicStoreEntry t = MkDynamicStoreEntry
     { dynamicStoreEntryKey :: Unique
     , dynamicStoreEntryValue :: t
-    , dynamicStoreEntryState :: GViewState
+    , dynamicStoreEntryState :: GViewState 'Locked
     }
 
 newtype DynamicStore t = MkDynamicStore

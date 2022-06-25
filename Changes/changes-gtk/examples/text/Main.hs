@@ -21,7 +21,7 @@ optParser =
     O.switch (O.long "save")
 
 newtype AppUI =
-    MkAppUI (GViewState -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
+    MkAppUI (GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
 
 main :: IO ()
 main = do
@@ -39,7 +39,7 @@ main = do
                         wholeTextObj = mapReference textLens bsObj
                         ui :: Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
                            -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
-                           -> (GViewState -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
+                           -> (GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
                            -> GView 'Locked Widget
                         ui sub1 msub2 extraui = do
                             (selModel, setsel) <- gvLiftLifeCycleNoUI $ makeSharedModel makePremodelSelectNotify
@@ -78,7 +78,8 @@ main = do
                                Text
                             -> Model (FullResultOneUpdate (Result Text) (StringUpdate Text))
                             -> Maybe (Model (FullResultOneUpdate (Result Text) (StringUpdate Text)))
-                            -> (GViewState -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget))
+                            -> (GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> ( MenuBar
+                                                                                          , GView 'Locked Widget))
                             -> GView 'Locked ()
                         makeWindow title sub msub2 extraui = do
                             rec
@@ -98,7 +99,8 @@ main = do
                                         wsContent = cuic
                                         in MkWindowSpec {..}
                             return ()
-                        simpleUI :: GViewState -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget)
+                        simpleUI ::
+                               GViewState 'Locked -> UIWindow -> GView 'Locked Widget -> (MenuBar, GView 'Locked Widget)
                         simpleUI closer _ spec = let
                             mbar :: MenuBar
                             mbar =
@@ -114,7 +116,7 @@ main = do
                         extraUI ::
                                SaveActions
                             -> UndoHandler
-                            -> GViewState
+                            -> GViewState 'Locked
                             -> UIWindow
                             -> GView 'Locked Widget
                             -> (MenuBar, GView 'Locked Widget)
