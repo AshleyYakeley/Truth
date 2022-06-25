@@ -114,7 +114,7 @@ gvGetCloser gv =
 
 -- | `GView` is always run without holding the UI lock.
 runGView :: GTKContext -> GView 'Unlocked --> View
-runGView ctx (MkGView rva) = runReaderT rva ctx
+runGView ctx (MkGView rva) = traceBracket "runGView" $ runReaderT rva ctx
 
 gvLiftIO :: IO --> GView 'Locked
 gvLiftIO = liftIO
