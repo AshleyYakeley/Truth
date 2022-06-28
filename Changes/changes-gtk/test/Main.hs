@@ -3,15 +3,16 @@ module Main
     ) where
 
 import Changes.Core
+import Changes.Debug
 import Changes.UI.GTK
 import qualified GI.Cairo.Render.Matrix as RM
 import Shapes
 import Shapes.Test
-import Changes.Debug
 
 lockTest :: String -> GView 'Unlocked a -> (a -> GView 'Unlocked ()) -> TestTree
 lockTest name setup action =
-    testTree name $ traceThread "test" $ do
+    testTree name $
+    traceThread "test" $ do
         task <-
             runLifeCycleT $
             runGTK $ \gtkc -> do
@@ -35,9 +36,10 @@ noAction :: a -> GView 'Unlocked ()
 noAction _ = return ()
 
 closeAction :: GView 'Unlocked () -> GView 'Unlocked ()
-closeAction closer = traceBracket "closeAction" $ do
-    gvSleep 50000
-    closer
+closeAction closer =
+    traceBracket "closeAction" $ do
+        gvSleep 50000
+        closer
 
 lockTests :: TestTree
 lockTests =
@@ -100,7 +102,8 @@ lockTests =
               in lockTest "window" setup closeAction
         , let
               setup :: GView 'Unlocked (GView 'Unlocked ())
-              setup = traceBracket "setup" $
+              setup =
+                  traceBracket "setup" $
                   gvRunLocked $ do
                       let wspec = blankWindowSpec {wsContent = createDynamic $ constantModel createBlank}
                       (w, closer) <- gvGetCloser $ createWindow wspec
