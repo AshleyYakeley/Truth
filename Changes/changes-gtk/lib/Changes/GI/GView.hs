@@ -19,7 +19,6 @@ module Changes.GI.GView
     , gvLiftIONoUI
     , gvLiftViewNoUI
     , gvLiftLifeCycleNoUI
-    , gvGetUnlift
     , gvRunLockedState
     , gvRunLocked
     , gvRunUnlockedState
@@ -201,12 +200,6 @@ gvLiftRelock va =
 
 gvLiftLifeCycleNoUI :: LifeCycle --> GView ls
 gvLiftLifeCycleNoUI = gvLiftViewNoUI . viewLiftLifeCycle
-
-gvGetUnlift :: GView ls (WMFunction (GView 'Unlocked) IO)
-gvGetUnlift = do
-    unlift <- gvGetUnliftToView
-    unliftView <- gvLiftViewNoUI viewUnliftView
-    return $ unliftView . unlift
 
 gvWithUnliftLockedAsync :: forall ls a. ((GView 'Locked --> IO) -> GView ls a) -> GView ls a
 gvWithUnliftLockedAsync call =

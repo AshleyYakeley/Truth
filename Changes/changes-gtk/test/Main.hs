@@ -17,7 +17,7 @@ lockTest name setup action =
                 runNewView $ do
                     a <- runGView gtkc setup
                     viewLiftLifeCycle $
-                        liftIOWithUnlift $ \unlift -> forkSingleTask $ runView unlift $ runGView gtkc $ action a
+                        liftIOWithUnlift $ \unlift -> forkSingleTask $ unlift $ runView $ runGView gtkc $ action a
         taskWait task
 
 blankWindowSpec :: WindowSpec

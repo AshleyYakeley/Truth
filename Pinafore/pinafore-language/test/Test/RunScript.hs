@@ -103,18 +103,18 @@ testScriptExpectation name (ScriptExpectRuntimeException checkEx) script =
     testScript name script $ \interpret ->
         liftIOWithUnlift $ \unlift -> do
             action <- interpret
-            assertThrowsException checkEx $ runView unlift $ runPinaforeAction action
+            assertThrowsException checkEx $ unlift $ runView $ runPinaforeAction action
 testScriptExpectation name ScriptExpectStop script =
     testScriptCatchStop name script $ \interpret ->
         liftIOWithUnlift $ \unlift -> do
             action <- interpret
             assertThrowsException @IOException (\err -> show err == "user error (stopped)") $
-                runView unlift $ runPinaforeAction action
+                unlift $ runView $ runPinaforeAction action
 testScriptExpectation name ScriptExpectSuccess script =
     testScriptCatchStop name script $ \interpret ->
         liftIOWithUnlift $ \unlift -> do
             action <- interpret
-            runView unlift $ runPinaforeAction action
+            unlift $ runView $ runPinaforeAction action
 
 testExpectSuccess :: Text -> ScriptTestTree
 testExpectSuccess script = testScriptExpectation script ScriptExpectSuccess script
