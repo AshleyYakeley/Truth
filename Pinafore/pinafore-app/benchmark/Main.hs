@@ -9,8 +9,8 @@ import Pinafore.Language.Library.GTK
 import Pinafore.Test
 import Shapes
 
-nullViewIO :: View a -> IO a
-nullViewIO = runView runLifeCycleT
+nullViewIO :: View --> IO
+nullViewIO va = runLifeCycleT $ runView va
 
 benchHash :: Text -> Benchmark
 benchHash text = bench (show $ unpack text) $ nf literalToEntity text

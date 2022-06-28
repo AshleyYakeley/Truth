@@ -46,6 +46,7 @@ library:
     other-modules:
       - Changes.GI.Error
       - Changes.GI.Type
+      - Changes.GI.ViewLock
       - Changes.GI.LockState
       - Changes.GI.GView
       - Changes.GI.LifeCycle

@@ -45,12 +45,14 @@ toModifierType KMShift = ModifierTypeShiftMask
 toModifierType KMCtrl = ModifierTypeControlMask
 toModifierType KMAlt = ModifierTypeMod1Mask
 
-accelGroupConnection :: IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> IO () -> GView 'Locked ()
+accelGroupConnection ::
+       IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> GView 'Locked () -> GView 'Locked ()
 accelGroupConnection ag key mods flags action = do
     closure <-
-        genClosure_AccelGroupActivate $ \_ _ _ _ -> do
-            action
-            return True
+        liftIOWithUnlift $ \unlift ->
+            genClosure_AccelGroupActivate $ \_ _ _ _ -> do
+                unlift action
+                return True
     accelGroupConnect ag key mods flags closure
     gvOnClose $ do
         _ <- gvLiftIO $ accelGroupDisconnect ag $ Just closure
@@ -70,20 +72,19 @@ attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
                 Just action -> action
     set item [#label := label] -- creates child if not present
     mc <- binGetChild item
-    MkWMFunction unliftView <- gvGetUnlift
     for_ mc $ \c -> do
-        ml <- liftIO $ castTo AccelLabel c
+        ml <- gvLiftIO $ castTo AccelLabel c
         for_ ml $ \l -> do
             case maccel of
-                Nothing -> accelLabelSetAccel l 0 []
+                Nothing -> gvLiftIO $ accelLabelSetAccel l 0 []
                 Just (MkMenuAccelerator mods key) -> do
                     let
                         keyw :: Word32
                         keyw = fromIntegral $ ord key
                         gmods :: [ModifierType]
                         gmods = fmap toModifierType mods
-                    accelLabelSetAccel l keyw gmods
-                    accelGroupConnection ag keyw gmods [AccelFlagsVisible] $ unliftView $ gvRunLocked meaction
+                    gvLiftIO $ accelLabelSetAccel l keyw gmods
+                    accelGroupConnection ag keyw gmods [AccelFlagsVisible] meaction
     gvBindReadOnlyWholeModel raction $ \maction ->
         gvRunLocked $ do
             liftIO $ writeIORef aref maction

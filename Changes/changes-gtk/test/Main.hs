@@ -18,7 +18,7 @@ lockTest name setup action =
                 runNewView $ do
                     a <- runGView gtkc setup
                     viewLiftLifeCycle $
-                        liftIOWithUnlift $ \unlift -> forkSingleTask $ runView unlift $ runGView gtkc $ action a
+                        liftIOWithUnlift $ \unlift -> forkSingleTask $ unlift $ runView $ runGView gtkc $ action a
         taskWait task
 
 blankWindowSpec :: WindowSpec
@@ -52,6 +52,44 @@ lockTests =
                gvRunUnlocked $
                gvRunLocked $ gvRunUnlocked $ gvRunLocked $ gvRunUnlocked $ gvRunLocked $ gvRunUnlocked $ return ())
               noAction
+        , lockTest "onclose-locked" (gvOnClose @'Locked $ return ()) noAction
+        , lockTest "onclose-unlocked" (gvOnClose @'Unlocked $ return ()) noAction
+        , lockTest "lock-onclose-locked" (gvRunLocked $ gvOnClose @'Locked $ return ()) noAction
+        , lockTest "lock-onclose-unlocked" (gvRunLocked $ gvOnClose @'Unlocked $ return ()) noAction
+        , lockTest "lock-unlock-onclose-locked" (gvRunLocked $ gvRunUnlocked $ gvOnClose @'Locked $ return ()) noAction
+        , lockTest
+              "lock-unlock-onclose-unlocked"
+              (gvRunLocked $ gvRunUnlocked $ gvOnClose @'Unlocked $ return ())
+              noAction
+        , lockTest
+              "lock-unlock-onclose-locked-unlock"
+              (gvRunLocked $ gvRunUnlocked $ gvOnClose @'Locked $ gvRunUnlocked $ return ())
+              noAction
+        , lockTest
+              "lock-unlock-onclose-unlocked-lock"
+              (gvRunLocked $ gvRunUnlocked $ gvOnClose @'Unlocked $ gvRunLocked $ return ())
+              noAction
+        , let
+              setup :: GView 'Unlocked ()
+              setup = do
+                  var <- gvLiftIONoUI newEmptyMVar
+                  gtkc <- gvGetContext
+                  _tid <-
+                      gvWithUnliftLockedAsync $ \unlift ->
+                          gvLiftIONoUI $ forkIO $ cbRunLocked (gtkcLock gtkc) $ unlift $ gvLiftIONoUI $ putMVar var ()
+                  gvLiftIONoUI $ takeMVar var
+              in lockTest "on" setup noAction
+        , let
+              setup :: GView 'Unlocked ()
+              setup = do
+                  var <- gvLiftIONoUI newEmptyMVar
+                  gtkc <- gvGetContext
+                  _tid <-
+                      gvWithUnliftLockedAsync $ \unlift ->
+                          gvLiftIONoUI $
+                          forkIO $ cbRunLocked (gtkcLock gtkc) $ unlift $ gvRunUnlocked $ gvLiftIONoUI $ putMVar var ()
+                  gvLiftIONoUI $ takeMVar var
+              in lockTest "on-unlock" setup noAction
         , let
               setup :: GView 'Unlocked (GView 'Unlocked ())
               setup =

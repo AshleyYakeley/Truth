@@ -9,7 +9,6 @@ module Changes.Core.UI.View.View
     , viewLiftLifeCycleWithUnlift
     , viewHoistLifeCycle
     , viewSubLifeCycle
-    , viewUnliftView
     , viewGetViewState
     , viewAddViewState
     , viewWithUnliftAsync
@@ -85,17 +84,9 @@ viewHoistLifeCycle f (MkView la) = MkView $ hoist f la
 viewSubLifeCycle :: View --> View
 viewSubLifeCycle = viewHoistLifeCycle $ lift . runLifeCycleT
 
-viewUnliftView :: View (WMFunction View IO)
-viewUnliftView =
-    MkView $ do
-        vc <- ask
-        MkWUnlift unlift <- askUnlift
-        return $ MkWMFunction $ vcUnliftLifecycle vc . unlift . unView
-
 viewWithUnliftAsync :: forall a. ((View --> IO) -> View a) -> View a
-viewWithUnliftAsync call = do
-    MkWMFunction run <- viewUnliftView
-    call $ run . viewLocalResourceContext emptyResourceContext
+viewWithUnliftAsync call =
+    liftIOWithUnlift $ \unlift -> unlift $ call $ unlift . viewLocalResourceContext emptyResourceContext
 
 viewRunResource ::
        forall f r.
@@ -132,15 +123,13 @@ viewWaitUpdates model = liftIO $ taskWait $ modelUpdatesTask model
 runViewFromContext :: ViewContext -> View --> LifeCycle
 runViewFromContext vc (MkView (ReaderT view)) = liftIOWithUnlift $ \unlift -> unlift $ view vc
 
-runView :: (LifeCycle --> IO) -> View --> IO
-runView unlift vma = let
+runView :: View --> LifeCycle
+runView = let
     vcResourceContext = emptyResourceContext
-    vcUnliftLifecycle :: LifeCycle --> IO
-    vcUnliftLifecycle = unlift
-    in unlift $ runViewFromContext MkViewContext {..} vma
+    in runViewFromContext MkViewContext {..}
 
 runNewView :: View --> LifeCycle
-runNewView v = liftIOWithUnlift $ \unlift -> runView unlift v
+runNewView = runView
 
 viewBindModelUpdates ::
        forall update a.
@@ -153,21 +142,21 @@ viewBindModelUpdates ::
 viewBindModelUpdates model testesrc initv utask recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- viewLiftLifeCycle lifeCycleMonitor
-    unliftView <- viewUnliftView
-    viewRunResourceContext model $ \stunlift amodel -> do
-        a <- initv
-        viewLiftLifeCycle $
-            stunlift $
-            aModelSubscribe amodel (utask a) $ \urc updates ec@MkEditContext {..} ->
-                if testesrc editContextSource
-                    then do
-                        alive <- monitor
-                        if alive
-                            then do
-                                runWMFunction unliftView $ viewLocalResourceContext urc $ recv a updates ec
-                            else return ()
-                    else return ()
-        return a
+    liftIOWithUnlift $ \unlift ->
+        unlift $
+        viewRunResourceContext model $ \stunlift amodel -> do
+            a <- initv
+            viewLiftLifeCycle $
+                stunlift $
+                aModelSubscribe amodel (utask a) $ \urc updates ec@MkEditContext {..} ->
+                    if testesrc editContextSource
+                        then do
+                            alive <- monitor
+                            if alive
+                                then unlift $ viewLocalResourceContext urc $ recv a updates ec
+                                else return ()
+                        else return ()
+            return a
 
 viewBindModel ::
        forall update a.
