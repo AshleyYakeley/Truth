@@ -17,7 +17,7 @@ import Shapes
 -- LangWindow
 data LangWindow = MkLangWindow
     { lwContext :: GTKContext
-    , lwClose :: GView 'Unlocked ()
+    , lwClose :: GView 'Locked ()
     , lwWindow :: UIWindow
     }
 
@@ -33,13 +33,13 @@ instance HasPinaforeType 'Negative UIWindow where
 
 createLangWindow :: GTKContext -> WindowSpec -> PinaforeAction LangWindow
 createLangWindow gtkc uiw = do
-    (lwWindow, wclose) <- actionLiftView $ runGView gtkc $ gvGetCloser $ gvRunLocked $ createWindow uiw
+    (lwWindow, wclose) <- actionLiftView $ runGView gtkc $ gvRunLocked $ gvGetCloser $ createWindow uiw
     let lwContext = gtkc
     let lwClose = wclose
     return $ MkLangWindow {..}
 
 uiWindowClose :: LangWindow -> View ()
-uiWindowClose MkLangWindow {..} = runGView lwContext lwClose
+uiWindowClose MkLangWindow {..} = runGView lwContext $ gvRunLocked lwClose
 
 openWindow ::
        (?pinafore :: PinaforeContext)
@@ -54,7 +54,7 @@ openWindow gtkc wsSize title mbar (MkLangElement wsContent) =
         createLangWindow gtkc $ let
             wsPosition = WindowPositionCenter
             wsCloseBoxAction :: GView 'Locked ()
-            wsCloseBoxAction = gvRunUnlocked $ lwClose w
+            wsCloseBoxAction = lwClose w
             wsTitle :: Model (ROWUpdate Text)
             wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
             wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
