@@ -55,7 +55,7 @@ gvOnSignal ::
     -> CallbackViewLifted (HaskellCallbackType info)
     -> GView 'Locked SignalHandlerId
 gvOnSignal object signal call = do
-    shid <- gvWithUnliftAsync $ \unlift -> on object signal $ gCallbackUnlift unlift call
+    shid <- gvWithUnliftLockedAsync $ \unlift -> on object signal $ gCallbackUnlift unlift call
     gvCloseDisconnectSignal object shid
     return shid
 
@@ -66,7 +66,7 @@ gvAfterSignal ::
     -> CallbackViewLifted (HaskellCallbackType info)
     -> GView 'Locked SignalHandlerId
 gvAfterSignal object signal call = do
-    shid <- gvWithUnliftAsync $ \unlift -> after object signal $ gCallbackUnlift unlift call
+    shid <- gvWithUnliftLockedAsync $ \unlift -> after object signal $ gCallbackUnlift unlift call
     gvCloseDisconnectSignal object shid
     return shid
 
