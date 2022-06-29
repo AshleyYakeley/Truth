@@ -96,7 +96,7 @@ gvOnClose ::
     -> GView lsb ()
 gvOnClose gv = gvLiftViewWithUnliftNoUI $ \unlift -> viewOnClose $ unlift $ gvMatchLock @lsa @lsb gv
 
-gvGetCloser :: forall ls a. GView ls a -> GView ls (a, GView 'Unlocked ())
+gvGetCloser :: forall ls a. GView ls a -> GView ls (a, GView ls ())
 gvGetCloser gv =
     gvLiftViewWithUnliftNoUI $ \unlift -> do
         (a, closer) <- viewGetCloser $ unlift gv

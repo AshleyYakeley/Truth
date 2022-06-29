@@ -81,7 +81,7 @@ lockTests =
                           gvLiftIONoUI $ forkIO $ cbRunLocked (gtkcLock gtkc) $ unlift $ gvLiftIONoUI $ putMVar var ()
                   gvLiftIONoUI $ takeMVar var
               in lockTest "on" setup noAction
-        , let
+        , failTestBecause "TBD" $ let
               setup :: GView 'Unlocked ()
               setup = do
                   var <- gvLiftIONoUI newEmptyMVar
@@ -98,7 +98,7 @@ lockTests =
                   gvRunLocked $ do
                       (w, closer) <- gvGetCloser $ createWindow blankWindowSpec
                       uiWindowShow w
-                      return closer
+                      return $ gvRunLocked closer
               in lockTest "window" setup closeAction
         , let
               setup :: GView 'Unlocked (GView 'Unlocked ())
@@ -108,7 +108,7 @@ lockTests =
                       let wspec = blankWindowSpec {wsContent = createDynamic $ constantModel createBlank}
                       (w, closer) <- gvGetCloser $ createWindow wspec
                       uiWindowShow w
-                      return closer
+                      return $ gvRunLocked closer
               in lockTest "window-dynamic" setup closeAction
         ]
 

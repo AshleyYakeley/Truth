@@ -1,7 +1,9 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.GTK.MenuItem
-    ( menuItemStuff
+    ( LangMenuItem(..)
+    , LangMenuBar
+    , menuItemStuff
     ) where
 
 import Changes.Core
@@ -13,13 +15,16 @@ import Pinafore.Language.Library.GTK.Element
 import Shapes
 
 -- LangMenuItem
-type LangMenuItem = MenuEntry
+newtype LangMenuItem =
+    MkLangMenuItem ((View --> IO) -> MenuEntry)
 
 menuItemGroundType :: PinaforeGroundType '[] LangMenuItem
 menuItemGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMenuItem)|]) "MenuItem"
 
 instance HasPinaforeGroundType '[] LangMenuItem where
     pinaforeGroundType = menuItemGroundType
+
+type LangMenuBar = [LangMenuItem]
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
@@ -44,7 +49,11 @@ menuAction label maccelStr raction = let
     maccel = do
         accelStr <- maccelStr
         interpretAccelerator $ unpack accelStr
-    in ActionMenuEntry label maccel $ unWModel $ actionRef raction
+    in MkLangMenuItem $ \unlift -> ActionMenuEntry label maccel $ unWModel $ actionRef unlift raction
+
+menuSubmenu :: Text -> [LangMenuItem] -> LangMenuItem
+menuSubmenu name entries =
+    MkLangMenuItem $ \unlift -> SubMenuEntry name $ fmap (\(MkLangMenuItem entry) -> entry unlift) entries
 
 menuItemStuff :: DocTreeEntry BindDoc
 menuItemStuff =
@@ -52,8 +61,8 @@ menuItemStuff =
         "Menu"
         ""
         [ mkTypeEntry "MenuItem" "A item of a menu." $ MkBoundType menuItemGroundType
-        , mkValEntry "menuSeparator" "Separator menu item." SeparatorMenuEntry
-        , mkValEntry "menuSubmenu" "Submenu menu item." SubMenuEntry
+        , mkValEntry "menuSeparator" "Separator menu item." $ MkLangMenuItem $ \_ -> SeparatorMenuEntry
+        , mkValEntry "menuSubmenu" "Submenu menu item." menuSubmenu
         , mkValEntry
               "menuAction"
               "Action menu item. Item will be disabled if the action reference is unknown."

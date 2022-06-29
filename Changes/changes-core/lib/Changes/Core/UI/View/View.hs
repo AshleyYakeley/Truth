@@ -67,7 +67,7 @@ viewGetCloser (MkView ma) =
         lift $ lifeCycleGetCloser $ unlift ma
 
 viewGetViewState :: View a -> View (a, ViewState)
-viewGetViewState (MkView ma) = MkView $ liftWithUnlift $ \unlift -> liftIO $ getLifeState $ unlift ma
+viewGetViewState (MkView ma) = MkView $ liftWithUnlift $ \unlift -> lift $ getLifeState $ unlift ma
 
 viewAddViewState :: ViewState -> View ()
 viewAddViewState vs = viewLiftLifeCycle $ addLifeState vs
