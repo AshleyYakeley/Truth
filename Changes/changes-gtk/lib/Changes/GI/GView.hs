@@ -202,9 +202,14 @@ gvLiftRelock va =
 gvLiftLifeCycleNoUI :: LifeCycle --> GView ls
 gvLiftLifeCycleNoUI = gvLiftViewNoUI . viewLiftLifeCycle
 
-gvWithUnliftLockedAsync :: forall ls a. ((GView 'Locked --> IO) -> GView ls a) -> GView ls a
-gvWithUnliftLockedAsync call =
-    gvLiftViewWithUnliftNoUI $ \unliftG -> viewWithUnliftAsync $ \unlift -> unliftG $ call $ unlift . unliftG
+gvWithUnliftLockedAsync ::
+       forall ls a. Is LockStateType ls
+    => ((GView 'Locked --> IO) -> GView ls a)
+    -> GView ls a
+gvWithUnliftLockedAsync call = do
+    ctx <- gvGetContext
+    gvLiftRelock @ls @ls $
+        viewWithUnliftAsync $ \unlift -> gvUnliftRelock @ls @ls ctx $ call $ unlift . gvUnliftRelock @'Locked @ls ctx
 
 gvBindModelUpdates ::
        forall ls update a. Is LockStateType ls
@@ -315,10 +320,11 @@ gvSwitch model = do
     gvDynamic model initVS return mempty recvVS
 
 gvInnerWholeView ::
-       forall ls f update. (MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
+       forall ls f update. (Is LockStateType ls, MonadInner f, IsUpdate update, FullEdit (UpdateEdit update))
     => Model (FullResultOneUpdate f update)
     -> (f (Model update) -> GView 'Unlocked ())
     -> SelectNotify (f ())
     -> GView ls ()
-gvInnerWholeView model baseView seln =
-    gvLiftViewWithUnliftNoUI $ \unlift -> viewInnerWholeView model (\fm -> unlift $ baseView fm) seln
+gvInnerWholeView model baseView seln = do
+    ctx <- gvGetContext
+    gvLiftRelock @ls @ls $ viewInnerWholeView model (\fm -> gvUnliftRelock @'Unlocked @ls ctx $ baseView fm) seln
