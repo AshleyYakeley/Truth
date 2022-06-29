@@ -78,7 +78,7 @@ lockTests =
                           gvLiftIONoUI $ forkIO $ cbRunLocked (gtkcLock gtkc) $ unlift $ gvLiftIONoUI $ putMVar var ()
                   gvLiftIONoUI $ takeMVar var
               in lockTest "on" setup noAction
-        , failTestBecause "TBD" $ let
+        , let
               setup :: GView 'Unlocked ()
               setup = do
                   var <- gvLiftIONoUI newEmptyMVar
