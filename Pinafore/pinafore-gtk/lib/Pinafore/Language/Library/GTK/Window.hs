@@ -11,7 +11,7 @@ import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Context
 import Pinafore.Language.Library.GTK.Element
-import Pinafore.Language.Library.GTK.MenuItem ()
+import Pinafore.Language.Library.GTK.MenuItem
 import Shapes
 
 -- LangWindow
@@ -31,9 +31,9 @@ instance HasPinaforeGroundType '[] LangWindow where
 instance HasPinaforeType 'Negative UIWindow where
     pinaforeType = mapNegShimWit (functionToShim "lwWindow" lwWindow) pinaforeType
 
-createLangWindow :: GTKContext -> WindowSpec -> PinaforeAction LangWindow
+createLangWindow :: GTKContext -> WindowSpec -> View LangWindow
 createLangWindow gtkc uiw = do
-    (lwWindow, wclose) <- actionLiftView $ runGView gtkc $ gvRunLocked $ gvGetCloser $ createWindow uiw
+    (lwWindow, wclose) <- runGView gtkc $ gvRunLocked $ gvGetCloser $ createWindow uiw
     let lwContext = gtkc
     let lwClose = wclose
     return $ MkLangWindow {..}
@@ -46,20 +46,29 @@ openWindow ::
     => GTKContext
     -> (Int32, Int32)
     -> PinaforeImmutableWholeRef Text
-    -> PinaforeImmutableWholeRef MenuBar
+    -> PinaforeImmutableWholeRef LangMenuBar
     -> LangElement
     -> PinaforeAction LangWindow
-openWindow gtkc wsSize title mbar (MkLangElement wsContent) =
+openWindow gtkc wsSize title mbar (MkLangElement element) =
+    actionLiftView $
     mfix $ \w ->
-        createLangWindow gtkc $ let
-            wsPosition = WindowPositionCenter
-            wsCloseBoxAction :: GView 'Locked ()
-            wsCloseBoxAction = lwClose w
-            wsTitle :: Model (ROWUpdate Text)
-            wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
-            wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-            wsMenuBar = Just $ unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef mbar
-            in MkWindowSpec {..}
+        liftIOWithUnlift $ \unlift ->
+            unlift $
+            createLangWindow gtkc $ let
+                wsPosition = WindowPositionCenter
+                wsCloseBoxAction :: GView 'Locked ()
+                wsCloseBoxAction = lwClose w
+                wsTitle :: Model (ROWUpdate Text)
+                wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
+                wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
+                wsMenuBar =
+                    Just $
+                    unWModel $
+                    eaMapReadOnlyWhole (fmap (\(MkLangMenuItem me) -> me unlift) . fromKnow mempty) $
+                    immutableRefToReadOnlyRef mbar
+                wsContent :: GView 'Locked Widget
+                wsContent = element unlift
+                in MkWindowSpec {..}
 
 exitUI :: GTKContext -> View ()
 exitUI gtkc = runGView gtkc $ gvExitUI
