@@ -264,6 +264,10 @@ uiWithContext call =
         gtkc <- gvGetContext
         unLangElement (call gtkc) unlift
 
+uiOwned :: LangElement -> LangElement
+uiOwned (MkLangElement mw) =
+    MkLangElement $ \_ -> liftIOWithUnlift $ \unliftIO -> unliftIO $ mw $ unliftIO . gvLiftRelock @'Locked @'Unlocked
+
 elementStuff :: DocTreeEntry BindDoc
 elementStuff =
     docTreeEntry
@@ -275,6 +279,7 @@ elementStuff =
           functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
         , mkValEntry "exec" "Element that runs an Action first." uiExec
         , mkValEntry "withContext" "Element that requires a Context." uiWithContext
+        , mkValEntry "owned" "Run actions caused by this element in the window's lifecycle." uiOwned
         , mkValEntry "blank" "Blank element" $ MkLangElement $ \_ -> createBlank
         , mkValEntry "draw" "Drawable element" uiDraw
         , mkValEntry "unitCheckBox" "(TBD)" uiUnitCheckBox
