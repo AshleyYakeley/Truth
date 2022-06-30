@@ -99,7 +99,13 @@ library:
       - Pinafore.Language.Library.FetchModule
       - Pinafore.Language.Library.Defs
       - Pinafore.Language.Library.Std.Convert
+      - Pinafore.Language.Library.Std.Types
       - Pinafore.Language.Library.Std.Base
+      - Pinafore.Language.Library.Std.Actions
+      - Pinafore.Language.Library.Std.LifeCycle
+      - Pinafore.Language.Library.Std.Interpreter
+      - Pinafore.Language.Library.Std.Invocation
+      - Pinafore.Language.Library.Std.Undo
       - Pinafore.Language.Library.Std.Reference
       - Pinafore.Language.Library.Std.File
       - Pinafore.Language.Library.Std

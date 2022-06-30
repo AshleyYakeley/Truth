@@ -1,25 +1,21 @@
-{-# LANGUAGE ApplicativeDo #-}
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.Std.Base
     ( baseLibEntries
-    , outputLn
     ) where
 
 import Changes.Core
 import Changes.World.Clock
 import qualified Data.Text
 import Data.Time
-import Data.Time.Clock.System
 import Pinafore.Base
-import Pinafore.Context
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
 import Pinafore.Language.ExprShow
-import Pinafore.Language.If
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
+import Pinafore.Language.Library.Std.Types
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
@@ -47,77 +43,8 @@ literalSubtypeRelationEntry ::
     => DocTreeEntry BindDoc
 literalSubtypeRelationEntry = hasSubtypeRelationEntry @a @Literal "" $ functionToShim "toLiteral" toLiteral
 
-openEntityShimWit :: forall tid. OpenEntityType tid -> PinaforeShimWit 'Positive (OpenEntity tid)
-openEntityShimWit tp =
-    singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType (openEntityGroundType tp) NilCCRArguments
-
-dynamicEntityShimWit :: Name -> DynamicType -> PinaforeShimWit 'Positive DynamicEntity
-dynamicEntityShimWit n dt =
-    singleDolanShimWit $
-    mkPolarShimWit $ GroundedDolanSingularType (aDynamicEntityGroundType n $ singletonSet dt) NilCCRArguments
-
-textShimWit ::
-       forall polarity. Is PolarityType polarity
-    => PinaforeShimWit polarity Text
-textShimWit = singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType textGroundType NilCCRArguments
-
-maybeShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (Maybe a)
-maybeShimWit swa =
-    unPosShimWit swa $ \ta conva ->
-        mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation id conva) $
-        singleDolanShimWit $
-        mkPolarShimWit $
-        GroundedDolanSingularType maybeGroundType $ ConsCCRArguments (CoCCRPolarArgument ta) NilCCRArguments
-
-eitherShimWit ::
-       forall a b. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (Either a b)
-eitherShimWit swa swb =
-    unPosShimWit swa $ \ta conva ->
-        unPosShimWit swb $ \tb convb ->
-            mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation (cfmap conva) convb) $
-            singleDolanShimWit $
-            mkPolarShimWit $
-            GroundedDolanSingularType eitherGroundType $
-            ConsCCRArguments (CoCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
-
-funcShimWit ::
-       forall a b. PinaforeShimWit 'Negative a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (a -> b)
-funcShimWit swa swb =
-    unNegShimWit swa $ \ta conva ->
-        unPosShimWit swb $ \tb convb ->
-            mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation (ccontramap conva) convb) $
-            singleDolanShimWit $
-            mkPolarShimWit $
-            GroundedDolanSingularType funcGroundType $
-            ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
-
-actionShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
-actionShimWit swa =
-    unPosShimWit swa $ \ta conva ->
-        mapPosShimWit (cfmap conva) $
-        singleDolanShimWit $
-        mkPolarShimWit $
-        GroundedDolanSingularType actionGroundType $ ConsCCRArguments (CoCCRPolarArgument ta) NilCCRArguments
-
-getTimeMS :: IO Integer
-getTimeMS = do
-    MkSystemTime s ns <- getSystemTime
-    return $ (toInteger s) * 1000 + div (toInteger ns) 1000000
-
-output :: (?pinafore :: PinaforeContext) => Text -> PinaforeAction ()
-output text = liftIO $ hPutStrLn pinaforeStdOut $ unpack text
-
-outputLn :: (?pinafore :: PinaforeContext) => Text -> PinaforeAction ()
-outputLn text = liftIO $ hPutStrLn pinaforeStdOut $ unpack text
-
-qfail :: Text -> PinaforeAction BottomType
-qfail t = fail $ unpack t
-
 entityAnchor :: Entity -> Text
 entityAnchor p = pack $ show p
-
-onStop :: PinaforeAction A -> PinaforeAction A -> PinaforeAction A
-onStop p q = p <|> q
 
 zeroTime :: UTCTime
 zeroTime = UTCTime (fromGregorian 2000 1 1) 0
@@ -217,9 +144,6 @@ unixFormattingDefs uname lname =
 
 getLocalTime :: IO LocalTime
 getLocalTime = fmap zonedTimeToLocalTime getZonedTime
-
-getEnv :: (?pinafore :: PinaforeContext) => Text -> Maybe Text
-getEnv n = fmap pack $ lookup (unpack n) $ iiEnvironment pinaforeInvocationInfo
 
 lesser :: (A -> A -> Ordering) -> A -> A -> A
 lesser f a b =
@@ -759,108 +683,5 @@ baseLibEntries =
                         Just t -> t
                         Nothing ->
                             error $ unpack $ "coercion from " <> exprShow dtw <> " to " <> exprShow tn <> " failed"
-          ]
-    , docTreeEntry
-          "Actions"
-          ""
-          [ mkTypeEntry "Action" "" $ MkBoundType actionGroundType
-          , mkValEntry "return" "A value as an Action." $ return @PinaforeAction @A
-          , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind
-          , mkValEntry ">>" "Do actions in sequence." $ qbind_
-          , mkValEntry
-                "mapAction"
-                "Map a function on an action."
-                (fmap :: (A -> B) -> PinaforeAction A -> PinaforeAction B)
-          , mkValEntry "fixAction" "The fixed point of an Action." $ mfix @PinaforeAction @A
-          , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail
-          , mkValEntry
-                "stop"
-                "Stop. This is similar to an exception that can be caught with `onStop`. The default handler (for the main program, button presses, etc.), is to catch and ignore it."
-                (empty :: PinaforeAction BottomType)
-          , mkValEntry "onStop" "`onStop p q` does `p` first, and if it stops, then does `q`." $ onStop
-          , mkValEntry
-                "for_"
-                "Perform an action on each value of a list."
-                (for_ :: [A] -> (A -> PinaforeAction ()) -> PinaforeAction ())
-          , mkValEntry
-                "for"
-                "Perform an action on each value of a list, returning a list."
-                (for :: [A] -> (A -> PinaforeAction B) -> PinaforeAction [B])
-          , mkValEntry "output" "Output text to standard output." $ output
-          , mkValEntry "outputLn" "Output text and a newline to standard output." $ outputLn
-          , mkValEntry
-                "getTimeMS"
-                "Get the time as a whole number of milliseconds."
-                (liftIO getTimeMS :: PinaforeAction Integer)
-          , mkValEntry "sleep" "Do nothing for this number of milliseconds." (\t -> threadDelay $ t * 1000)
-          ]
-    , docTreeEntry
-          "Lifecycle"
-          "Ways of managing the closing of things that get opened, most notably UI windows."
-          [ mkValEntry
-                "lifecycle"
-                "Close everything that gets opened in the given action.\n\n\
-                \Example: `lifecycle $ do openResource; sleep 1000 end`  \n\
-                \This opens some resource, sleeps for one second, and then closes it again." $
-            (actionHoistView viewSubLifeCycle) @A
-          , mkValEntry
-                "onClose"
-                "Add this action as to be done when closing.\n\n\
-                \Example: `lifecycle $ do onClose $ outputLn \"hello\"; sleep 1000 end`  \n\
-                \This sleeps for one second, and then outputs \"hello\" (when the lifecycle closes)."
-                actionOnClose
-          , mkValEntry
-                "closer"
-                "Get an (idempotent) action that closes what gets opened in the given action.\n\n\
-                \Example: `(cl,r) <- closer openResource`  \n\
-                \This opens a resource `r`, also creating an action `cl`, that will close the resource when first called (subsequent calls do nothing).\n\
-                \This action will also be run at the end of the lifecycle, only if it hasn't already." $
-            pinaforeEarlyCloser @A
-          ]
-    , docTreeEntry
-          "Interpreter"
-          ""
-          [ mkSpecialFormEntry
-                "evaluate"
-                "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\n\
-                \The result of the action is either the value (`Right`), or an error message (`Left`).\n\n\
-                \The local scope is not in any way transmitted to the evaluation."
-                "@A"
-                "Text -> Action (Either Text A)" $
-            MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkSome tp, ()) -> do
-                spvals <- getSpecialVals
-                let
-                    valShimWit ::
-                           forall t.
-                           PinaforeShimWit 'Positive t
-                        -> PinaforeShimWit 'Positive (Text -> PinaforeAction (Either Text t))
-                    valShimWit t' = funcShimWit textShimWit $ actionShimWit $ eitherShimWit textShimWit t'
-                return $ MkSomeOf (valShimWit $ mkPolarShimWit tp) $ specialEvaluate spvals tp
-          ]
-    , docTreeEntry
-          "Invocation"
-          "How the script was invoked."
-          [ mkValEntry "scriptName" "The name of the script." (pack $ iiScriptName pinaforeInvocationInfo :: Text)
-          , mkValEntry
-                "scriptArguments"
-                "Arguments passed to the script."
-                (fmap pack $ iiScriptArguments pinaforeInvocationInfo :: [Text])
-          , mkValEntry
-                "environment"
-                "Environment variables."
-                (fmap (\(n, v) -> (pack n, pack v)) $ iiEnvironment pinaforeInvocationInfo :: [(Text, Text)])
-          , mkValEntry "getEnv" "Get environment variable." getEnv
-          ]
-    , docTreeEntry
-          "Undo"
-          "Undo and redo changes."
-          [ mkValEntry "queueUndo" "Undo an action." $ do
-                uh <- pinaforeUndoHandler
-                rc <- pinaforeResourceContext
-                liftIO $ undoHandlerUndo uh rc noEditSource
-          , mkValEntry "queueRedo" "Redo an action." $ do
-                uh <- pinaforeUndoHandler
-                rc <- pinaforeResourceContext
-                liftIO $ undoHandlerRedo uh rc noEditSource
           ]
     ]
