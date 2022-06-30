@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Table
+module Changes.UI.GTK.Element.Table
     ( TableCellProps(..)
     , plainTableCellProps
     , KeyColumn(..)
@@ -8,8 +8,8 @@ module Changes.UI.GTK.Table
 
 import Changes.Core
 import Changes.GI
-import Changes.UI.GTK.DynamicStore
-import Changes.UI.GTK.TextStyle
+import Changes.UI.GTK.Element.DynamicStore
+import Changes.UI.GTK.Element.TextStyle
 import Data.GI.Base.Attributes hiding (get)
 import Data.GI.Gtk hiding (get)
 import Shapes

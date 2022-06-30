@@ -1,4 +1,4 @@
-module Changes.UI.GTK.CheckButton
+module Changes.UI.GTK.Element.CheckButton
     ( createCheckButton
     , createMaybeCheckButton
     ) where

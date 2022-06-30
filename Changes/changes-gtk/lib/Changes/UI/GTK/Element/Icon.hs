@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Icon
+module Changes.UI.GTK.Element.Icon
     ( IconName
     , IconSize
     , createIcon

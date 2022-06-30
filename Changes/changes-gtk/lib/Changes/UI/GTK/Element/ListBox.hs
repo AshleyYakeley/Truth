@@ -1,4 +1,4 @@
-module Changes.UI.GTK.ListBox
+module Changes.UI.GTK.Element.ListBox
     ( createListBox
     ) where
 

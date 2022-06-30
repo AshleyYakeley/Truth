@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Switch
+module Changes.UI.GTK.Element.Switch
     ( createDynamic
     ) where
 

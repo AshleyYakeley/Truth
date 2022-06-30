@@ -10,8 +10,8 @@ module Changes.UI.GTK.Window
 
 import Changes.Core
 import Changes.GI
-import Changes.UI.GTK.MenuBar
-import Changes.UI.GTK.Switch
+import Changes.UI.GTK.Element.MenuBar
+import Changes.UI.GTK.Element.Switch
 import GI.GLib as GI hiding (String)
 import GI.Gtk as GI hiding (MenuBar)
 import Shapes

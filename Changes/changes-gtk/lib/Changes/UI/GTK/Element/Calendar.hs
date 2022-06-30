@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Calendar
+module Changes.UI.GTK.Element.Calendar
     ( createCalendar
     ) where
 

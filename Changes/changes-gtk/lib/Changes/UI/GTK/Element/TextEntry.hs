@@ -1,4 +1,4 @@
-module Changes.UI.GTK.TextEntry
+module Changes.UI.GTK.Element.TextEntry
     ( createTextEntry
     ) where
 

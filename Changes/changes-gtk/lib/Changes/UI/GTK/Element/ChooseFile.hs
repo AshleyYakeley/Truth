@@ -1,4 +1,4 @@
-module Changes.UI.GTK.ChooseFile
+module Changes.UI.GTK.Element.ChooseFile
     ( chooseFile
     ) where
 

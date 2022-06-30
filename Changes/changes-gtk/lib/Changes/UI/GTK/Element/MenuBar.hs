@@ -1,4 +1,4 @@
-module Changes.UI.GTK.MenuBar
+module Changes.UI.GTK.Element.MenuBar
     ( KeyboardModifier(..)
     , KeyboardKey
     , MenuAccelerator(..)

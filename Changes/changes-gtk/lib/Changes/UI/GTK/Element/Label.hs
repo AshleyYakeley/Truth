@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Label
+module Changes.UI.GTK.Element.Label
     ( createLabel
     ) where
 

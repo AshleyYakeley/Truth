@@ -1,4 +1,4 @@
-module Changes.UI.GTK.TextStyle where
+module Changes.UI.GTK.Element.TextStyle where
 
 import Data.GI.Base.Attributes
 import Data.GI.Gtk
