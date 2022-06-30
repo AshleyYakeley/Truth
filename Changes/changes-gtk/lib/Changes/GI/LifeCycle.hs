@@ -1,5 +1,6 @@
 module Changes.GI.LifeCycle where
 
+import Changes.Debug
 import Changes.GI.GView
 import Changes.GI.LockState
 import Data.GI.Base
@@ -11,12 +12,12 @@ import Shapes
 
 gvAcquire :: IsObject a => a -> GView 'Locked ()
 gvAcquire a = do
-    _ <- objectRef a
-    gvOnClose $ gvLiftIO $ objectUnref a
+    _ <- traceBracket "ref" $ objectRef a
+    gvOnClose $ gvLiftIO $ traceBracket "unref" $ objectUnref a
 
 gvNew :: (Constructible a tag, IsObject a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> GView 'Locked a
 gvNew cc attrs = do
-    a <- new cc attrs
+    a <- traceBracket "new" $ new cc attrs
     gvAcquire a
     return a
 
@@ -24,8 +25,8 @@ gvNew cc attrs = do
 gvTopLevelNew ::
        (Constructible a tag, IsObject a, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> GView 'Locked a
 gvTopLevelNew cc attrs = do
-    a <- gvNew cc attrs
-    gvOnClose $ gvLiftIO $ widgetDestroy a
+    a <- traceBracket "toplevel.new" $ gvNew cc attrs
+    gvOnClose $ gvLiftIO $ traceBracket "toplevel.destroy" $ widgetDestroy a
     return a
 
 gvSet ::
