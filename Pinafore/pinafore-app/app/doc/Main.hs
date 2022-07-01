@@ -64,10 +64,9 @@ printInfixOperatorTable fixities = do
         maxLevel = maximum $ fmap (fixityPrec . snd) fixities
     putStrLn "| [n] | (A x B) x C | A x (B x C) | A x B only |"
     putStrLn "| --- | --- | --- | --- |"
-    for_ [maxLevel .. 0] $ \level -> do
-        putStr $ show level
+    for_ [maxLevel,pred maxLevel .. 0] $ \level -> do
+        putStr $ "| " <> show level <> " |"
         for_ [AssocLeft, AssocRight, AssocNone] $ \assc -> do
-            putStr " |"
             let
                 fixity = MkFixity assc level
                 mnames =
@@ -78,6 +77,7 @@ printInfixOperatorTable fixities = do
                                  else Nothing)
                         fixities
             for_ mnames $ \n -> putStr $ " `" <> show n <> "`"
+            putStr " |"
         putStrLn ""
 
 main :: IO ()
