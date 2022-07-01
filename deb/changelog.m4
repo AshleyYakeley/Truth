@@ -26,6 +26,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add min/max/lesser/greater functions
       . add List1 type for non-empty lists, subtype of List
       . add TextRef type & associated functions, use for uiTextArea
+      . add Task type & associated functions
     - Drawing
       . Cairo-based functions for creating drawings
     - GTK

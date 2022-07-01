@@ -34,3 +34,6 @@ instance MaybeRepresentational Either where
 
 instance MaybeRepresentational Vector where
     maybeRepresentational = Just Dict
+
+instance MaybeRepresentational Task where
+    maybeRepresentational = Just Dict

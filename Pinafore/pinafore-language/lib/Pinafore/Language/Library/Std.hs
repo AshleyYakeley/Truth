@@ -11,6 +11,7 @@ import Pinafore.Language.Library.Std.Interpreter
 import Pinafore.Language.Library.Std.Invocation
 import Pinafore.Language.Library.Std.LifeCycle
 import Pinafore.Language.Library.Std.Reference
+import Pinafore.Language.Library.Std.Tasks
 import Pinafore.Language.Library.Std.Undo
 import Shapes
 
@@ -23,6 +24,7 @@ stdLibraryModule =
         [ baseLibEntries
         , actionsLibEntries
         , lifeCycleLibEntries
+        , tasksLibEntries
         , interpreterLibEntries
         , invocationLibEntries
         , undoLibEntries

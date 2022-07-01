@@ -1,5 +1,6 @@
 module Control.Task where
 
+import Data.Coercion
 import Shapes.Import
 
 data Task a = MkTask
@@ -19,6 +20,9 @@ instance Semigroup a => Semigroup (Task a) where
 
 instance Monoid a => Monoid (Task a) where
     mempty = pure mempty
+
+instance RepresentationalRole Task where
+    representationalCoercion MkCoercion = MkCoercion
 
 ioTask :: IO (Task a) -> Task a
 ioTask iot =
