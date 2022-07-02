@@ -60,14 +60,18 @@ openWindow gtkc wsSize title mbar (MkLangElement element) =
                 wsCloseBoxAction = lwClose w
                 wsTitle :: Model (ROWUpdate Text)
                 wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
-                wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-                wsMenuBar =
-                    Just $
-                    unWModel $
-                    eaMapReadOnlyWhole (fmap (\(MkLangMenuItem me) -> me unlift) . fromKnow mempty) $
-                    immutableRefToReadOnlyRef mbar
-                wsContent :: GView 'Locked Widget
-                wsContent = element unlift
+                wsContent :: AccelGroup -> GView 'Locked Widget
+                wsContent ag = do
+                    mb <-
+                        createDynamic $
+                        unWModel $
+                        eaMapReadOnlyWhole
+                            (createMenuBar ag . fmap (\(MkLangMenuItem me) -> me unlift) . fromKnow mempty) $
+                        immutableRefToReadOnlyRef mbar
+                    uic <- element unlift
+                    createLayout
+                        OrientationVertical
+                        [(defaultLayoutOptions, mb), (defaultLayoutOptions {loGrow = True}, uic)]
                 in MkWindowSpec {..}
 
 exitUI :: GTKContext -> View ()

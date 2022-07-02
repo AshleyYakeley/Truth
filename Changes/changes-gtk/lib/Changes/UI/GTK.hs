@@ -28,4 +28,4 @@ import Changes.UI.GTK.Element.TextEntry as I
 import Changes.UI.GTK.Element.TextStyle as I
 import Changes.UI.GTK.Main as I
 import Changes.UI.GTK.Window as I
-import GI.Gtk as I (GError, Widget)
+import GI.Gtk as I (AccelGroup, GError, Widget)

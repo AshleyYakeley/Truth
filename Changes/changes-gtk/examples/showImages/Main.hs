@@ -52,9 +52,12 @@ main = do
                                             _ <-
                                                 pushEdit noEditSource $ aModelEdit asub $ pure $ MkWholeReaderEdit image
                                             return ()
-                            wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-                            wsMenuBar = Just $ constantModel $ pure $ SubMenuEntry "Image" $ fmap setFileRef filenames
-                            wsContent :: GView 'Locked Widget
-                            wsContent = createImage $ mapModel toReadOnlyChangeLens model
+                            wsContent :: AccelGroup -> GView 'Locked Widget
+                            wsContent ag = do
+                                mb <- createMenuBar ag $ pure $ SubMenuEntry "Image" $ fmap setFileRef filenames
+                                uic <- createImage $ mapModel toReadOnlyChangeLens model
+                                createLayout
+                                    OrientationVertical
+                                    [(defaultLayoutOptions, mb), (defaultLayoutOptions {loGrow = True}, uic)]
                             in MkWindowSpec {..}
                 return ()

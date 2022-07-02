@@ -93,10 +93,15 @@ main = do
                                         wsCloseBoxAction = gvCloseState closer
                                         wsTitle :: Model (ROWUpdate Text)
                                         wsTitle = constantModel title
-                                        wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-                                        wsMenuBar = Just $ constantModel mbar
-                                        wsContent :: GView 'Locked Widget
-                                        wsContent = cuic
+                                        wsContent :: AccelGroup -> GView 'Locked Widget
+                                        wsContent ag = do
+                                            mb <- createMenuBar ag mbar
+                                            uic <- cuic
+                                            createLayout
+                                                OrientationVertical
+                                                [ (defaultLayoutOptions, mb)
+                                                , (defaultLayoutOptions {loGrow = True}, uic)
+                                                ]
                                         in MkWindowSpec {..}
                             return ()
                         simpleUI ::

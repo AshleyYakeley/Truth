@@ -55,10 +55,8 @@ main = do
                             wsCloseBoxAction = gvCloseState closer
                             wsTitle :: Model (ROWUpdate Text)
                             wsTitle = constantModel "Cairo"
-                            wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-                            wsMenuBar = Nothing
-                            wsContent :: GView 'Locked Widget
-                            wsContent = do
+                            wsContent :: AccelGroup -> GView 'Locked Widget
+                            wsContent _ = do
                                 w1 <- createButton (constantModel "Button") (constantModel Nothing)
                                 w2 <- createCairo $ mapModel (funcChangeLens $ drawing tz) clockModel
                                 GI.set w2 [#marginStart GI.:= 100, #marginTop GI.:= 200]
