@@ -10,6 +10,8 @@ module Pinafore.Documentation
     , Fixity(..)
     , FixAssoc(..)
     , Name(..)
+    , ToText(..)
+    , nameIsInfix
     , allOperatorNames
     ) where
 

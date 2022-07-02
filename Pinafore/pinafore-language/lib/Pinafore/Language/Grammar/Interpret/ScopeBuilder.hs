@@ -28,7 +28,7 @@ defDocs doc = [EntryDocTreeEntry doc]
 exposeDeclids :: [Name] -> [DefDoc] -> [DefDoc]
 exposeDeclids names decls = let
     inDecl :: Name -> Maybe DefDoc
-    inDecl n = find (diMatchName (toText n) . docItem) decls
+    inDecl n = find (diMatchName n . docItem) decls
     isSubtypeDDI :: DefDoc -> Bool
     isSubtypeDDI doc =
         case docItem doc of

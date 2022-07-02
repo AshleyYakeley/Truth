@@ -139,15 +139,19 @@ interpretRecursiveDocDeclarations ddecls = do
         interp (MkSyntaxWithDoc doc decl) =
             case decl of
                 TypeSyntaxDeclaration spos name defn -> let
-                    diName = toText name
-                    diParams = []
+                    diName = name
+                    diParams =
+                        case defn of
+                            ClosedEntitySyntaxTypeDeclaration params _ -> fmap exprShow params
+                            DatatypeSyntaxTypeDeclaration params _ -> fmap exprShow params
+                            _ -> []
                     docItem = TypeDocItem {..}
                     docDescription = doc
                     in (pure (spos, name, doc, defn), mempty, mempty, pure $ EntryDocTreeEntry $ MkDefDoc {..})
                 SubtypeSyntaxDeclaration spos sta stb ->
                     (mempty, sourcePosScopeBuilder spos >> interpretSubtypeRelation doc sta stb, mempty, mempty)
                 BindingSyntaxDeclaration sbind@(MkSyntaxBinding _ mtype name _) -> let
-                    diName = toText name
+                    diName = name
                     diType =
                         case mtype of
                             Nothing -> ""
@@ -201,8 +205,12 @@ interpretDocDeclaration (MkSyntaxWithDoc doc decl) =
             sourcePosScopeBuilder spos
             interpScopeBuilder (interpretTypeDeclaration name doc defn)
             let
-                diName = toText name
-                diParams = []
+                diName = name
+                diParams =
+                    case defn of
+                        ClosedEntitySyntaxTypeDeclaration params _ -> fmap exprShow params
+                        DatatypeSyntaxTypeDeclaration params _ -> fmap exprShow params
+                        _ -> []
                 docItem = TypeDocItem {..}
                 docDescription = doc
             return $ defDocs MkDefDoc {..}
@@ -212,7 +220,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc decl) =
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind@(MkSyntaxBinding _ mtype name _)) -> do
             interpretSequentialLetBinding (doc, sbind)
             let
-                diName = toText name
+                diName = name
                 diType =
                     case mtype of
                         Nothing -> ""

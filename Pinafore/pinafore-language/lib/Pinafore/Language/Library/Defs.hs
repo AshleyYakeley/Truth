@@ -7,6 +7,7 @@ import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
+import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
@@ -55,7 +56,7 @@ mkValEntry name docDescription val = let
         Just $ \pc -> let
             ?pinafore = pc
             in ValueBinding (qConstExprAny $ jmToValue val) Nothing
-    diName = toText name
+    diName = name
     diType = qPositiveTypeDescription @t
     docItem = ValueDocItem {..}
     bdDoc = MkDefDoc {..}
@@ -69,17 +70,46 @@ mkSupertypeEntry ::
     -> DocTreeEntry BindDoc
 mkSupertypeEntry name docDescription _val = let
     bdScopeEntry = BindScopeEntry name Nothing
-    diName = toText name
+    diName = name
     diType = qPositiveTypeDescription @t
     docItem = SupertypeDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
+newTypeParameter :: State [Name] Name
+newTypeParameter = do
+    nn <- get
+    case nn of
+        n:nr -> do
+            put nr
+            return n
+        [] -> return "a"
+
+getTypeParameter :: CCRVarianceType a -> State [Name] SyntaxTypeParameter
+getTypeParameter CoCCRVarianceType = do
+    v <- newTypeParameter
+    return $ PositiveSyntaxTypeParameter v
+getTypeParameter ContraCCRVarianceType = do
+    v <- newTypeParameter
+    return $ NegativeSyntaxTypeParameter v
+getTypeParameter RangeCCRVarianceType = do
+    vn <- newTypeParameter
+    vp <- newTypeParameter
+    return $ RangeSyntaxTypeParameter vn vp
+
+getTypeParameters :: [Name] -> DolanVarianceType dv -> [Text]
+getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeFor dvt getTypeParameter) supply
+
+nameSupply :: [Name]
+nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
+
 mkTypeEntry :: Name -> Markdown -> PinaforeBoundType -> DocTreeEntry BindDoc
 mkTypeEntry name docDescription t = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> TypeBinding t
-    diName = toText name
-    diParams = []
+    diName = name
+    diParams =
+        case t of
+            MkBoundType pt -> getTypeParameters nameSupply $ pgtVarianceType pt
     docItem = TypeDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
@@ -136,7 +166,7 @@ mkValPatEntry name docDescription val pat = let
     bdScopeEntry =
         BindScopeEntry name $
         Just $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
-    diName = toText name
+    diName = name
     diType = qPositiveTypeDescription @t
     docItem = ValuePatternDocItem {..}
     bdDoc = MkDefDoc {..}
@@ -145,7 +175,7 @@ mkValPatEntry name docDescription val pat = let
 mkSpecialFormEntry ::
        Name
     -> Markdown
-    -> Text
+    -> [Text]
     -> Text
     -> ((?pinafore :: PinaforeContext) => PinaforeSpecialForm)
     -> DocTreeEntry BindDoc
@@ -155,7 +185,8 @@ mkSpecialFormEntry name docDescription params diType sf = let
         Just $ \pc -> let
             ?pinafore = pc
             in SpecialFormBinding sf
-    diName = toText name <> " " <> params
-    docItem = ValueDocItem {..}
+    diName = name
+    diParams = params
+    docItem = SpecialFormDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}

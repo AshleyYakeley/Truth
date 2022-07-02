@@ -327,7 +327,7 @@ refLibEntries =
           , mkSpecialFormEntry
                 "property"
                 "A property for this anchor. `A` and `B` are types that are subtypes of `Entity`."
-                "@A @B <anchor>"
+                ["@A", "@B", "<anchor>"]
                 "A ~> B" $
             MkSpecialForm
                 (ConsListType AnnotPositiveType $ ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(ta, (tb, (anchor, ()))) -> do

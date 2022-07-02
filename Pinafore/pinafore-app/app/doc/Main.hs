@@ -19,18 +19,28 @@ showDefEntry h _ MkDefDoc {..} = do
         title =
             case docItem of
                 ValueDocItem {..} -> let
-                    name = boldMarkdown $ codeMarkdown diName
+                    name = boldMarkdown $ codeMarkdown $ toText diName
                     nameType = name <> " " <> codeMarkdown (": " <> diType)
                     in nameType
                 ValuePatternDocItem {..} -> let
-                    name = boldMarkdown $ codeMarkdown diName
+                    name = boldMarkdown $ codeMarkdown $ toText diName
                     nameType = name <> " " <> codeMarkdown (": " <> diType)
                     in nameType <> " (also pattern)"
+                SpecialFormDocItem {..} -> let
+                    name = boldMarkdown $ codeMarkdown $ toText diName
+                    params = mconcat (fmap (\p -> " " <> codeMarkdown p) diParams)
+                    nameType = name <> params <> " " <> codeMarkdown (": " <> diType)
+                    in nameType
                 TypeDocItem {..} -> let
-                    name = boldMarkdown $ codeMarkdown diName
-                    in codeMarkdown "type" <> " " <> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) diParams)
+                    name = boldMarkdown $ codeMarkdown $ toText diName
+                    in codeMarkdown "type" <>
+                       " " <>
+                       case (nameIsInfix diName, diParams) of
+                           (True, p1:pr) ->
+                               codeMarkdown p1 <> " " <> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) pr)
+                           _ -> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) diParams)
                 SupertypeDocItem {..} -> let
-                    name = boldMarkdown $ codeMarkdown diName
+                    name = boldMarkdown $ codeMarkdown $ toText diName
                     nameType = name <> " " <> codeMarkdown (": " <> diType)
                     in italicMarkdown nameType
                 SubtypeRelationDocItem {..} ->

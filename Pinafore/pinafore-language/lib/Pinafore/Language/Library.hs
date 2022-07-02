@@ -10,6 +10,7 @@ module Pinafore.Language.Library
     , libraryFetchModule
     , LibraryContext(..)
     , mkLibraryContext
+    , nameIsInfix
     , allOperatorNames
     ) where
 

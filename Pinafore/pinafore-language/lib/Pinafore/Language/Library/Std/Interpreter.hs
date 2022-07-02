@@ -22,7 +22,7 @@ interpreterLibEntries =
                 "A function that evaluates text as a Pinafore expression to be subsumed to positive type `A`.\n\n\
                 \The result of the action is either the value (`Right`), or an error message (`Left`).\n\n\
                 \The local scope is not in any way transmitted to the evaluation."
-                "@A"
+                ["@A"]
                 "Text -> Action (Either Text A)" $
             MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(MkSome tp, ()) -> do
                 spvals <- getSpecialVals

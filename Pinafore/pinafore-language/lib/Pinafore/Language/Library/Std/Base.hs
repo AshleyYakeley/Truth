@@ -512,7 +512,7 @@ baseLibEntries =
                 , mkSpecialFormEntry
                       "openEntity"
                       "An open entity for this anchor. `A` is an open entity type."
-                      "@A <anchor>"
+                      ["@A", "<anchor>"]
                       "A" $
                   MkSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
                       mtp <- getOpenEntityType t
@@ -526,7 +526,7 @@ baseLibEntries =
                 , mkSpecialFormEntry
                       "newOpenEntity"
                       "Generate an open entity. `A` is an open entity type."
-                      "@A"
+                      ["@A"]
                       "Action A" $
                   MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
                       mtp <- getOpenEntityType t
@@ -552,7 +552,7 @@ baseLibEntries =
                 , mkSpecialFormEntry
                       "dynamicEntity"
                       "A dynamic entity for this anchor. `A` is a concrete dynamic entity type."
-                      "@A <anchor>"
+                      ["@A", "<anchor>"]
                       "A" $
                   MkSpecialForm (ConsListType AnnotPositiveType $ ConsListType AnnotAnchor NilListType) $ \(t, (anchor, ())) -> do
                       (n, dt) <- getConcreteDynamicEntityType t
@@ -564,7 +564,7 @@ baseLibEntries =
                 , mkSpecialFormEntry
                       "newDynamicEntity"
                       "Generate a dynamic entity. `A` is a concrete dynamic entity type."
-                      "@A"
+                      ["@A"]
                       "Action A" $
                   MkSpecialForm (ConsListType AnnotPositiveType NilListType) $ \(t, ()) -> do
                       (n, dt) <- getConcreteDynamicEntityType t
@@ -669,12 +669,12 @@ baseLibEntries =
                 "seq"
                 "Evaluate the first argument, then if that's not \"bottom\" (error or non-termination), return the second argument."
                 (seq :: TopType -> A -> A)
-          , mkSpecialFormEntry "check" "Check from a dynamic supertype." "@A" "D(A) -> Maybe A" $
+          , mkSpecialFormEntry "check" "Check from a dynamic supertype." ["@A"] "D(A) -> Maybe A" $
             MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
                 let dtw = getGreatestDynamicSupertype tn
                 tpw <- invertType tn
                 return $ MkSomeOf (funcShimWit dtw $ maybeShimWit tpw) id
-          , mkSpecialFormEntry "coerce" "Coerce from a dynamic supertype." "@A" "D(A) -> A" $
+          , mkSpecialFormEntry "coerce" "Coerce from a dynamic supertype." ["@A"] "D(A) -> A" $
             MkSpecialForm (ConsListType AnnotNegativeType NilListType) $ \(MkSome tn, ()) -> do
                 let dtw = getGreatestDynamicSupertype tn
                 tpw <- invertType tn
