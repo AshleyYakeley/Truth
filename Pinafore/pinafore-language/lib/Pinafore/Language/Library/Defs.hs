@@ -55,9 +55,9 @@ mkValEntry name docDescription val = let
         Just $ \pc -> let
             ?pinafore = pc
             in ValueBinding (qConstExprAny $ jmToValue val) Nothing
-    docName = toText name
-    docValueType = qPositiveTypeDescription @t
-    docType = ValueDocType
+    diName = toText name
+    diType = qPositiveTypeDescription @t
+    docItem = ValueDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
@@ -69,27 +69,25 @@ mkSupertypeEntry ::
     -> DocTreeEntry BindDoc
 mkSupertypeEntry name docDescription _val = let
     bdScopeEntry = BindScopeEntry name Nothing
-    docName = toText name
-    docValueType = qPositiveTypeDescription @t
-    docType = SupertypeDocType
+    diName = toText name
+    diType = qPositiveTypeDescription @t
+    docItem = SupertypeDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkTypeEntry :: Name -> Markdown -> PinaforeBoundType -> DocTreeEntry BindDoc
 mkTypeEntry name docDescription t = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> TypeBinding t
-    docName = toText name
-    docValueType = ""
-    docType = TypeDocType
+    diName = toText name
+    diParams = []
+    docItem = TypeDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSubtypeRelationEntry :: Text -> Text -> Markdown -> SubtypeConversionEntry PinaforeGroundType -> DocTreeEntry BindDoc
-mkSubtypeRelationEntry ta tb docDescription scentry = let
+mkSubtypeRelationEntry diSubtype diSupertype docDescription scentry = let
     bdScopeEntry = SubtypeScopeEntry scentry
-    docName = ta <> " <: " <> tb
-    docValueType = ""
-    docType = SubtypeRelationDocType
+    docItem = SubtypeRelationDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
@@ -138,9 +136,9 @@ mkValPatEntry name docDescription val pat = let
     bdScopeEntry =
         BindScopeEntry name $
         Just $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
-    docName = toText name
-    docValueType = qPositiveTypeDescription @t
-    docType = ValuePatternDocType
+    diName = toText name
+    diType = qPositiveTypeDescription @t
+    docItem = ValuePatternDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
@@ -151,13 +149,13 @@ mkSpecialFormEntry ::
     -> Text
     -> ((?pinafore :: PinaforeContext) => PinaforeSpecialForm)
     -> DocTreeEntry BindDoc
-mkSpecialFormEntry name docDescription params docValueType sf = let
+mkSpecialFormEntry name docDescription params diType sf = let
     bdScopeEntry =
         BindScopeEntry name $
         Just $ \pc -> let
             ?pinafore = pc
             in SpecialFormBinding sf
-    docName = toText name <> " " <> params
-    docType = ValueDocType
+    diName = toText name <> " " <> params
+    docItem = ValueDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}

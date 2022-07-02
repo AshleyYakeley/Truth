@@ -2,7 +2,7 @@ module Pinafore.Documentation
     ( module Pinafore.Markdown
     , DefDoc(..)
     , DocTree(..)
-    , DocType(..)
+    , DocItem(..)
     , runDocTree
     , libraryDoc
     , operatorFixity

@@ -16,15 +16,26 @@ hPutMarkdownLn h m = hPutStrLn h $ unpack $ getRawMarkdown m
 showDefEntry :: Handle -> Int -> DefDoc -> IO ()
 showDefEntry h _ MkDefDoc {..} = do
     let
-        name = boldMarkdown $ codeMarkdown docName
-        nameType = name <> " " <> codeMarkdown (": " <> docValueType)
         title =
-            case docType of
-                ValueDocType -> nameType
-                ValuePatternDocType -> nameType <> " (also pattern)"
-                TypeDocType -> codeMarkdown "type" <> " " <> name
-                SupertypeDocType -> italicMarkdown nameType
-                SubtypeRelationDocType -> codeMarkdown "subtype" <> " " <> name
+            case docItem of
+                ValueDocItem {..} -> let
+                    name = boldMarkdown $ codeMarkdown diName
+                    nameType = name <> " " <> codeMarkdown (": " <> diType)
+                    in nameType
+                ValuePatternDocItem {..} -> let
+                    name = boldMarkdown $ codeMarkdown diName
+                    nameType = name <> " " <> codeMarkdown (": " <> diType)
+                    in nameType <> " (also pattern)"
+                TypeDocItem {..} -> let
+                    name = boldMarkdown $ codeMarkdown diName
+                    in codeMarkdown "type" <> " " <> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) diParams)
+                SupertypeDocItem {..} -> let
+                    name = boldMarkdown $ codeMarkdown diName
+                    nameType = name <> " " <> codeMarkdown (": " <> diType)
+                    in italicMarkdown nameType
+                SubtypeRelationDocItem {..} ->
+                    codeMarkdown "subtype" <>
+                    " " <> codeMarkdown diSubtype <> " " <> codeMarkdown "<:" <> " " <> codeMarkdown diSupertype
     hPutMarkdownLn h $ title <> "  "
     if docDescription == ""
         then return ()
@@ -87,6 +98,15 @@ main =
         ModuleDocOption moModuleDirs modname -> let
             moExtraLibrary = extraLibrary
             in printModuleDoc MkModuleOptions {..} modname
-        InfixDocOption -> printInfixOperatorTable $ fmap (\n -> (n, operatorFixity n)) $ allOperatorNames ValueDocType
+        InfixDocOption ->
+            printInfixOperatorTable $
+            fmap (\n -> (n, operatorFixity n)) $
+            allOperatorNames $ \case
+                ValueDocItem {} -> True
+                _ -> False
         TypeInfixDocOption ->
-            printInfixOperatorTable $ fmap (\n -> (n, typeOperatorFixity n)) $ allOperatorNames TypeDocType
+            printInfixOperatorTable $
+            fmap (\n -> (n, typeOperatorFixity n)) $
+            allOperatorNames $ \case
+                TypeDocItem {} -> True
+                _ -> False
