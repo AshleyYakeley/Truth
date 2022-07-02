@@ -9,7 +9,7 @@ in GTK.run $ \gtk => do
     tref3 <- newMemWhole;
     tref3 := "333";
     sel <- newMemWhole;
-    GTK.openWindow gtk (400,500) {"Text Selection"} {[]} $ GTK.styleSheet {"* {padding: 2pt;}"} $ GTK.vertical
+    GTK.openWindow gtk (400,500) {"Text Selection"} $ GTK.styleSheet {"* {padding: 2pt;}"} $ GTK.vertical
     [
         GTK.textArea tref1 sel,
         GTK.textArea tref2 sel,

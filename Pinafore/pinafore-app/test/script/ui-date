@@ -3,7 +3,7 @@ do
 dref <- newMemWhole;
 tref <- newMemWhole;
 iref <- newMemWhole;
-GTK.openWindow (300,400) {"Date"} {[]} $ GTK.vertical
+GTK.openWindow (300,400) {"Date"} $ GTK.vertical
     [
         (GTK.textEntry tref, False),
         (GTK.textEntry tref, False),

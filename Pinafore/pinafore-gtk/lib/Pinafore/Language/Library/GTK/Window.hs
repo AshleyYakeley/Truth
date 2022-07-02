@@ -11,7 +11,6 @@ import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Context
 import Pinafore.Language.Library.GTK.Element
-import Pinafore.Language.Library.GTK.MenuItem
 import Shapes
 
 -- LangWindow
@@ -46,10 +45,9 @@ openWindow ::
     => GTKContext
     -> (Int32, Int32)
     -> PinaforeImmutableWholeRef Text
-    -> PinaforeImmutableWholeRef LangMenuBar
     -> LangElement
     -> PinaforeAction LangWindow
-openWindow gtkc wsSize title mbar (MkLangElement element) =
+openWindow gtkc wsSize title (MkLangElement element) =
     actionLiftView $
     mfix $ \w ->
         liftIOWithUnlift $ \unlift ->
@@ -61,17 +59,7 @@ openWindow gtkc wsSize title mbar (MkLangElement element) =
                 wsTitle :: Model (ROWUpdate Text)
                 wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
                 wsContent :: AccelGroup -> GView 'Locked Widget
-                wsContent ag = do
-                    mb <-
-                        createDynamic $
-                        unWModel $
-                        eaMapReadOnlyWhole
-                            (createMenuBar ag . fmap (\(MkLangMenuItem me) -> me unlift) . fromKnow mempty) $
-                        immutableRefToReadOnlyRef mbar
-                    uic <- element unlift
-                    createLayout
-                        OrientationVertical
-                        [(defaultLayoutOptions, mb), (defaultLayoutOptions {loGrow = True}, uic)]
+                wsContent ag = element MkElementContext {ecUnlift = unlift, ecAccelGroup = ag}
                 in MkWindowSpec {..}
 
 exitUI :: GTKContext -> View ()

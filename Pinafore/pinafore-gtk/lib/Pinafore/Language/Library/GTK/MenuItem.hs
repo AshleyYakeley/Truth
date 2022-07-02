@@ -55,6 +55,11 @@ menuSubmenu :: Text -> [LangMenuItem] -> LangMenuItem
 menuSubmenu name entries =
     MkLangMenuItem $ \unlift -> SubMenuEntry name $ fmap (\(MkLangMenuItem entry) -> entry unlift) entries
 
+uiMenuBar :: LangMenuBar -> LangElement
+uiMenuBar lmb =
+    MkLangElement $ \MkElementContext {..} ->
+        createMenuBar ecAccelGroup $ fmap (\(MkLangMenuItem me) -> me ecUnlift) lmb
+
 menuItemStuff :: DocTreeEntry BindDoc
 menuItemStuff =
     docTreeEntry
@@ -67,4 +72,5 @@ menuItemStuff =
               "menuAction"
               "Action menu item. Item will be disabled if the action reference is unknown."
               menuAction
+        , mkValEntry "menuBar" "Menu bar element" uiMenuBar
         ]

@@ -32,6 +32,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - GTK
       . rename (from "UI")
       . explicit control over context
+      . menu bar is just ordinary element
   * Storage
     - Anchors now 256 bit, hash using BLAKE3
     - Store literals as binary rather than as text

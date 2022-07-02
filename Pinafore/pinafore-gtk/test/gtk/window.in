@@ -2,7 +2,7 @@
 
 GTK.run $ \gtk => do
 outputLn "BEGIN";
-w <- GTK.openWindow gtk (600,800) {"Window"} {[]} GTK.blank;
+w <- GTK.openWindow gtk (600,800) {"Window"} GTK.blank;
 outputLn "Open";
 GTK.closeWindow w;
 outputLn "END";

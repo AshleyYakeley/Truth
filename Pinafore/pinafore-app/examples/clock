@@ -37,7 +37,7 @@ secondHand = source red $ lineWidth 0.01 $ stroke [moveTo (0,0), lineTo (0,-0.9)
 in do
     now <- newClock $ Seconds 0.1;
     tz <- getCurrentTimeZone;
-    GTK.run $ \gtk => openWindow gtk (300,400) {"Clock"} {[]} $ draw
+    GTK.run $ \gtk => openWindow gtk (300,400) {"Clock"} $ draw
     {
         scaleDrawing $
             case timeToLocal tz %now of
