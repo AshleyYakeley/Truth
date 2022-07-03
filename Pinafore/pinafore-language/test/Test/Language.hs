@@ -24,7 +24,12 @@ testOp n =
             _ -> return ()
 
 testInfix :: TestTree
-testInfix = testTree "infix" $ fmap testOp $ allOperatorNames ValueDocType
+testInfix =
+    testTree "infix" $
+    fmap testOp $
+    allOperatorNames $ \case
+        ValueDocItem {} -> True
+        _ -> False
 
 newtype PreciseEq t =
     MkPreciseEq t

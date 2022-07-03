@@ -53,30 +53,30 @@ library:
       - Changes.GI.Signal
       - Changes.GI.Widget
       - Changes.GI
-      - Changes.UI.GTK.TextStyle
-      - Changes.UI.GTK.DynamicStore
-      - Changes.UI.GTK.Blank
-      - Changes.UI.GTK.Cairo
-      - Changes.UI.GTK.CSS
-      - Changes.UI.GTK.Button
-      - Changes.UI.GTK.Image
-      - Changes.UI.GTK.Icon
-      - Changes.UI.GTK.Label
-      - Changes.UI.GTK.Maybe
-      - Changes.UI.GTK.ListBox
-      - Changes.UI.GTK.Switch
-      - Changes.UI.GTK.CheckButton
-      - Changes.UI.GTK.Option
-      - Changes.UI.GTK.TextEntry
-      - Changes.UI.GTK.Text
-      - Changes.UI.GTK.Layout
-      - Changes.UI.GTK.Notebook
-      - Changes.UI.GTK.Table
-      - Changes.UI.GTK.Drag
-      - Changes.UI.GTK.MenuBar
-      - Changes.UI.GTK.Scrolled
-      - Changes.UI.GTK.Calendar
-      - Changes.UI.GTK.ChooseFile
+      - Changes.UI.GTK.Element.TextStyle
+      - Changes.UI.GTK.Element.DynamicStore
+      - Changes.UI.GTK.Element.Blank
+      - Changes.UI.GTK.Element.Cairo
+      - Changes.UI.GTK.Element.CSS
+      - Changes.UI.GTK.Element.Button
+      - Changes.UI.GTK.Element.Image
+      - Changes.UI.GTK.Element.Icon
+      - Changes.UI.GTK.Element.Label
+      - Changes.UI.GTK.Element.Maybe
+      - Changes.UI.GTK.Element.ListBox
+      - Changes.UI.GTK.Element.Switch
+      - Changes.UI.GTK.Element.CheckButton
+      - Changes.UI.GTK.Element.Option
+      - Changes.UI.GTK.Element.TextEntry
+      - Changes.UI.GTK.Element.Text
+      - Changes.UI.GTK.Element.Layout
+      - Changes.UI.GTK.Element.Notebook
+      - Changes.UI.GTK.Element.Table
+      - Changes.UI.GTK.Element.Drag
+      - Changes.UI.GTK.Element.MenuBar
+      - Changes.UI.GTK.Element.Scrolled
+      - Changes.UI.GTK.Element.Calendar
+      - Changes.UI.GTK.Element.ChooseFile
       - Changes.UI.GTK.Window
       - Changes.UI.GTK.Main
 

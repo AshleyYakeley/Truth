@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Maybe
+module Changes.UI.GTK.Element.Maybe
     ( createOneWhole
     , createOneWholeSel
     ) where

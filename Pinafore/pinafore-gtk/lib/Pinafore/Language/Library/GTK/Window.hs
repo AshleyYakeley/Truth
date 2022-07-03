@@ -11,7 +11,6 @@ import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Context
 import Pinafore.Language.Library.GTK.Element
-import Pinafore.Language.Library.GTK.MenuItem
 import Shapes
 
 -- LangWindow
@@ -46,10 +45,9 @@ openWindow ::
     => GTKContext
     -> (Int32, Int32)
     -> PinaforeImmutableWholeRef Text
-    -> PinaforeImmutableWholeRef LangMenuBar
     -> LangElement
     -> PinaforeAction LangWindow
-openWindow gtkc wsSize title mbar (MkLangElement element) =
+openWindow gtkc wsSize title (MkLangElement element) =
     actionLiftView $
     mfix $ \w ->
         liftIOWithUnlift $ \unlift ->
@@ -60,14 +58,8 @@ openWindow gtkc wsSize title mbar (MkLangElement element) =
                 wsCloseBoxAction = lwClose w
                 wsTitle :: Model (ROWUpdate Text)
                 wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
-                wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-                wsMenuBar =
-                    Just $
-                    unWModel $
-                    eaMapReadOnlyWhole (fmap (\(MkLangMenuItem me) -> me unlift) . fromKnow mempty) $
-                    immutableRefToReadOnlyRef mbar
-                wsContent :: GView 'Locked Widget
-                wsContent = element unlift
+                wsContent :: AccelGroup -> GView 'Locked Widget
+                wsContent ag = element MkElementContext {ecUnlift = unlift, ecAccelGroup = ag}
                 in MkWindowSpec {..}
 
 exitUI :: GTKContext -> View ()

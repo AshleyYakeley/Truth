@@ -31,5 +31,5 @@ in do
     now <- newClock $ Seconds 0.001;
     r <- newMemWhole;
     r := StoppedState zeroDuration;
-    GTK.run $ \gtk => GTK.openWindow gtk (150,40) {"Stopwatch"} {[]} $ ui now r;
+    GTK.run $ \gtk => GTK.openWindow gtk (150,40) {"Stopwatch"} $ ui now r;
     end

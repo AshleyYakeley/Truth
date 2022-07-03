@@ -1,4 +1,4 @@
-module Changes.UI.GTK.CSS
+module Changes.UI.GTK.Element.CSS
     ( setCSSName
     , setCSSClass
     , bindCSS

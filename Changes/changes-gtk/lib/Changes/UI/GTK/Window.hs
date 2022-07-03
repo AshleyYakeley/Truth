@@ -11,10 +11,8 @@ module Changes.UI.GTK.Window
 import Changes.Core
 import Changes.Debug
 import Changes.GI
-import Changes.UI.GTK.MenuBar
-import Changes.UI.GTK.Switch
 import GI.GLib as GI hiding (String)
-import GI.Gtk as GI hiding (MenuBar)
+import GI.Gtk as GI
 import Shapes
 
 data WindowSpec = MkWindowSpec
@@ -22,8 +20,7 @@ data WindowSpec = MkWindowSpec
     , wsSize :: (Int32, Int32)
     , wsCloseBoxAction :: GView 'Locked ()
     , wsTitle :: Model (ROWUpdate Text)
-    , wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-    , wsContent :: GView 'Locked Widget
+    , wsContent :: AccelGroup -> GView 'Locked Widget
     }
 
 data UIWindow = MkUIWindow
@@ -41,27 +38,14 @@ createWindow MkWindowSpec {..} = do
     traceBracket "createWindow.bind" $
         gvBindReadOnlyWholeModel wsTitle $ \title -> gvLiftIO $ set window [#title := title]
     _ <-
-        gvOnSignal window #deleteEvent $ \_ ->
-            traceBracket "createWindow.close-clicked" $ do
-                wsCloseBoxAction
-                return True -- don't run existing handler that closes the window
-    content <- traceBracket "createWindow.content" $ wsContent
-    ui <-
-        case wsMenuBar of
-            Nothing -> return content
-            Just efmbar -> do
-                ag <- gvNew AccelGroup []
-                #addAccelGroup window ag
-                mb <-
-                    createDynamic $
-                    mapModel (liftReadOnlyChangeLens $ funcChangeLens $ \mbar -> createMenuBar ag mbar >>= toWidget) $
-                    efmbar
-                vbox <- gvNew Box [#orientation := OrientationVertical]
-                #packStart vbox mb False False 0
-                #packStart vbox content True True 0
-                toWidget vbox
-    #add window ui
-    #show ui
+        gvOnSignal window #deleteEvent $ \_ -> traceBracket "createWindow.close-clicked" $ do
+            wsCloseBoxAction
+            return True -- don't run existing handler that closes the window
+    ag <- gvNew AccelGroup []
+    #addAccelGroup window ag
+    content <- traceBracket "createWindow.content" $ wsContent ag
+    #add window content
+    #show content
     #showAll window
     let
         uiWindowHide = #hide window

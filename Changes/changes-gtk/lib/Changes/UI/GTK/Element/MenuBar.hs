@@ -1,4 +1,4 @@
-module Changes.UI.GTK.MenuBar
+module Changes.UI.GTK.Element.MenuBar
     ( KeyboardModifier(..)
     , KeyboardKey
     , MenuAccelerator(..)
@@ -13,7 +13,6 @@ import Changes.GI
 import Data.IORef
 import GI.Gdk
 import GI.Gtk hiding (MenuBar)
-import qualified GI.Gtk as Gtk
 import Shapes
 
 data KeyboardModifier
@@ -104,8 +103,8 @@ attachMenuEntry _ ms SeparatorMenuEntry = do
 attachMenuEntries :: (IsMenuShell menushell, IsAccelGroup ag) => ag -> menushell -> [MenuEntry] -> GView 'Locked ()
 attachMenuEntries ag menu mm = for_ mm $ attachMenuEntry ag menu
 
-createMenuBar :: IsAccelGroup ag => ag -> MenuBar -> GView 'Locked Gtk.MenuBar
+createMenuBar :: IsAccelGroup ag => ag -> MenuBar -> GView 'Locked Widget
 createMenuBar ag menu = do
     mbar <- menuBarNew
     attachMenuEntries ag mbar menu
-    return mbar
+    toWidget mbar

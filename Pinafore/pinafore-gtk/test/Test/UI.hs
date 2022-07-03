@@ -70,11 +70,11 @@ testUI =
     runScriptTestTree $
     tDecls
         [ "emptywindow: GTK.Context -> Action Unit"
-        , "emptywindow gtk = do GTK.openWindow gtk (300,400) {\"Empty\"} {[]} GTK.blank; return (); end"
+        , "emptywindow gtk = do GTK.openWindow gtk (300,400) {\"Empty\"} GTK.blank; return (); end"
         , "opentype T"
         , "newpoint: Action Unit"
         , "newpoint = do s <- newMemFiniteSet; p <- newOpenEntity @T; s += p; return (); end"
         , "buttonwindow: GTK.Context -> Action Any -> Action Unit"
-        , "buttonwindow gtk action = do GTK.openWindow gtk (300,400) {\"Test\"} {[]} (GTK.button {\"Button\"} {action}); return (); end"
+        , "buttonwindow gtk action = do GTK.openWindow gtk (300,400) {\"Test\"} (GTK.button {\"Button\"} {action}); return (); end"
         ]
         testActions

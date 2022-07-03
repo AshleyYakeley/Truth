@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Scrolled
+module Changes.UI.GTK.Element.Scrolled
     ( createScrolled
     ) where
 

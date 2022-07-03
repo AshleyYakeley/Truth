@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Option
+module Changes.UI.GTK.Element.Option
     ( ComboBoxCell(..)
     , plainComboBoxCell
     , createComboBox
@@ -6,7 +6,7 @@ module Changes.UI.GTK.Option
 
 import Changes.Core
 import Changes.GI
-import Changes.UI.GTK.TextStyle
+import Changes.UI.GTK.Element.TextStyle
 import Data.GI.Base.Attributes
 import Data.GI.Gtk
 import Shapes

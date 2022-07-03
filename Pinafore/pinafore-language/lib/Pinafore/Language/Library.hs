@@ -10,6 +10,7 @@ module Pinafore.Language.Library
     , libraryFetchModule
     , LibraryContext(..)
     , mkLibraryContext
+    , nameIsInfix
     , allOperatorNames
     ) where
 
@@ -32,11 +33,11 @@ library = [stdLibraryModule, debugLibraryModule]
 libraryDoc :: [LibraryModule] -> [DocTree DefDoc]
 libraryDoc extralib = fmap (fmap bdDoc) $ library <> extralib
 
-allOperatorNames :: DocType -> [Name]
-allOperatorNames dt = let
+allOperatorNames :: (DocItem -> Bool) -> [Name]
+allOperatorNames test = let
     getDocName :: BindDoc -> Maybe Name
     getDocName MkBindDoc {bdScopeEntry = BindScopeEntry name _, bdDoc = dd}
-        | docType dd == dt
+        | test $ docItem dd
         , nameIsInfix name = Just name
     getDocName _ = Nothing
     in mapMaybe getDocName $ mconcat $ fmap toList library

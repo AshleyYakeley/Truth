@@ -227,7 +227,7 @@ interpretSubtypeRelation :: Markdown -> SyntaxType -> SyntaxType -> ScopeBuilder
 interpretSubtypeRelation docDescription sta stb = do
     interpretSubtypeRelation' sta stb
     let
-        docName = exprShow sta <> " <: " <> exprShow stb
-        docValueType = ""
-        docType = SubtypeRelationDocType
+        diSubtype = exprShow sta
+        diSupertype = exprShow stb
+        docItem = SubtypeRelationDocItem {..}
     return $ defDocs MkDefDoc {..}

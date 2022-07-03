@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Layout
+module Changes.UI.GTK.Element.Layout
     ( Orientation(..)
     , LayoutOptions(..)
     , defaultLayoutOptions

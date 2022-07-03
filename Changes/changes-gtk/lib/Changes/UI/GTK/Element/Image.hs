@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Image
+module Changes.UI.GTK.Element.Image
     ( createImage
     ) where
 

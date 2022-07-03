@@ -10,8 +10,8 @@ ui_labelled n ui = GTK.horizontal [GTK.label n, GTK.layoutGrow  ui];
 
 std_window: WholeRef +Text -> GTK.Element -> Action GTK.Window;
 std_window title contents = fixAction $ \window => let
-    menus : List GTK.MenuItem;
-    menus =
+    mbar: GTK.Element;
+    mbar = GTK.menuBar
         [
             GTK.menuSubmenu "File"
             [
@@ -25,7 +25,7 @@ std_window title contents = fixAction $ \window => let
                 GTK.menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ]
-    in GTK.openWindow gtk (400,500) title {menus} $ GTK.scrolled contents;
+    in GTK.openWindow gtk (400,600) title $ GTK.vertical [mbar, GTK.layoutGrow $ GTK.scrolled contents];
 
 ### People
 
@@ -249,6 +249,7 @@ window_textselection = do
 
 ### Start Window
 
+rec
 window_start : Action GTK.Window;
 window_start = do
     now <- newClock $ Seconds 1;
@@ -275,9 +276,12 @@ window_start = do
             GTK.button {"List"} {window_list},
             GTK.button {"Text Selection"} {window_textselection},
             GTK.button {"Disabled"} unknown,
+            GTK.button {"Unowned self"} {window_start},
+            GTK.owned $ GTK.button {"Owned Self"} {window_start},
             GTK.layoutGrow $ GTK.blank
         ];
         end;
     end;
+end;
 
 in window_start

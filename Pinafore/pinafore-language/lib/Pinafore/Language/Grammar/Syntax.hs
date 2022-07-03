@@ -25,6 +25,11 @@ data SyntaxTypeParameter
                                Name -- negative, positive
     deriving (Eq)
 
+instance ExprShow SyntaxTypeParameter where
+    exprShowPrec (PositiveSyntaxTypeParameter v) = ("+" <> exprShow v, 0)
+    exprShowPrec (NegativeSyntaxTypeParameter v) = ("-" <> exprShow v, 0)
+    exprShowPrec (RangeSyntaxTypeParameter vn vp) = ("{-" <> exprShow vn <> ",+" <> exprShow vp <> "}", 0)
+
 type SyntaxDatatypeConstructorOrSubtype = SyntaxConstructorOrSubtype ()
 
 data SyntaxDynamicEntityConstructor

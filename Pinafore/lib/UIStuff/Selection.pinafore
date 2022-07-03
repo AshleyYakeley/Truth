@@ -13,9 +13,9 @@ uiLabelled n ui = horizontal [label n, layoutGrow ui];
 #| A window that comes with some menus.
 stdWindow: Context -> WholeRef +Text -> WholeRef +(List MenuItem) -> Element -> Action Window;
 stdWindow gtk title moremenus contents = fixAction $ \window => let
-    menus: WholeRef +(List MenuItem);
-    menus =
-        {[
+    mbar: Element;
+    mbar = dynamic
+        {menuBar $ [
             menuSubmenu "File"
             [
                 menuAction "Close" (Just "Ctrl+W") {closeWindow window},
@@ -28,7 +28,7 @@ stdWindow gtk title moremenus contents = fixAction $ \window => let
                 menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ] ++ %moremenus};
-    in openWindow gtk (600,800) title menus $ scrolled contents;
+    in openWindow gtk (600,800) title $ vertical [mbar, layoutGrow $ scrolled contents];
 
 #| A pane is a title, GTK element, and menu.
 datatype Pane of

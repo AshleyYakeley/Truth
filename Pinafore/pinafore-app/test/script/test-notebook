@@ -1,2 +1,2 @@
 #!/usr/bin/pinafore
-let import GTK in run $ \gtk => openWindow gtk (400,500) {"Title"} {[]} $ notebook unknown [(label {"Tab"},blank)]
+let import GTK in run $ \gtk => openWindow gtk (400,500) {"Title"} $ notebook unknown [(label {"Tab"},blank)]

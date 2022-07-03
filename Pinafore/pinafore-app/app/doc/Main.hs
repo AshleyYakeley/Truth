@@ -16,15 +16,36 @@ hPutMarkdownLn h m = hPutStrLn h $ unpack $ getRawMarkdown m
 showDefEntry :: Handle -> Int -> DefDoc -> IO ()
 showDefEntry h _ MkDefDoc {..} = do
     let
-        name = boldMarkdown $ codeMarkdown docName
-        nameType = name <> " " <> codeMarkdown (": " <> docValueType)
         title =
-            case docType of
-                ValueDocType -> nameType
-                ValuePatternDocType -> nameType <> " (also pattern)"
-                TypeDocType -> codeMarkdown "type" <> " " <> name
-                SupertypeDocType -> italicMarkdown nameType
-                SubtypeRelationDocType -> codeMarkdown "subtype" <> " " <> name
+            case docItem of
+                ValueDocItem {..} -> let
+                    name = boldMarkdown $ codeMarkdown $ toText diName
+                    nameType = name <> " " <> codeMarkdown (": " <> diType)
+                    in nameType
+                ValuePatternDocItem {..} -> let
+                    name = boldMarkdown $ codeMarkdown $ toText diName
+                    nameType = name <> " " <> codeMarkdown (": " <> diType)
+                    in nameType <> " (also pattern)"
+                SpecialFormDocItem {..} -> let
+                    name = boldMarkdown $ codeMarkdown $ toText diName
+                    params = mconcat (fmap (\p -> " " <> codeMarkdown p) diParams)
+                    nameType = name <> params <> " " <> codeMarkdown (": " <> diType)
+                    in nameType
+                TypeDocItem {..} -> let
+                    name = boldMarkdown $ codeMarkdown $ toText diName
+                    in codeMarkdown "type" <>
+                       " " <>
+                       case (nameIsInfix diName, diParams) of
+                           (True, p1:pr) ->
+                               codeMarkdown p1 <> " " <> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) pr)
+                           _ -> name <> mconcat (fmap (\p -> " " <> codeMarkdown p) diParams)
+                SupertypeDocItem {..} -> let
+                    name = boldMarkdown $ codeMarkdown $ toText diName
+                    nameType = name <> " " <> codeMarkdown (": " <> diType)
+                    in italicMarkdown nameType
+                SubtypeRelationDocItem {..} ->
+                    codeMarkdown "subtype" <>
+                    " " <> codeMarkdown diSubtype <> " " <> codeMarkdown "<:" <> " " <> codeMarkdown diSupertype
     hPutMarkdownLn h $ title <> "  "
     if docDescription == ""
         then return ()
@@ -64,10 +85,9 @@ printInfixOperatorTable fixities = do
         maxLevel = maximum $ fmap (fixityPrec . snd) fixities
     putStrLn "| [n] | (A x B) x C | A x (B x C) | A x B only |"
     putStrLn "| --- | --- | --- | --- |"
-    for_ [maxLevel .. 0] $ \level -> do
-        putStr $ show level
+    for_ [maxLevel,pred maxLevel .. 0] $ \level -> do
+        putStr $ "| " <> show level <> " |"
         for_ [AssocLeft, AssocRight, AssocNone] $ \assc -> do
-            putStr " |"
             let
                 fixity = MkFixity assc level
                 mnames =
@@ -78,6 +98,7 @@ printInfixOperatorTable fixities = do
                                  else Nothing)
                         fixities
             for_ mnames $ \n -> putStr $ " `" <> show n <> "`"
+            putStr " |"
         putStrLn ""
 
 main :: IO ()
@@ -87,6 +108,15 @@ main =
         ModuleDocOption moModuleDirs modname -> let
             moExtraLibrary = extraLibrary
             in printModuleDoc MkModuleOptions {..} modname
-        InfixDocOption -> printInfixOperatorTable $ fmap (\n -> (n, operatorFixity n)) $ allOperatorNames ValueDocType
+        InfixDocOption ->
+            printInfixOperatorTable $
+            fmap (\n -> (n, operatorFixity n)) $
+            allOperatorNames $ \case
+                ValueDocItem {} -> True
+                _ -> False
         TypeInfixDocOption ->
-            printInfixOperatorTable $ fmap (\n -> (n, typeOperatorFixity n)) $ allOperatorNames TypeDocType
+            printInfixOperatorTable $
+            fmap (\n -> (n, typeOperatorFixity n)) $
+            allOperatorNames $ \case
+                TypeDocItem {} -> True
+                _ -> False

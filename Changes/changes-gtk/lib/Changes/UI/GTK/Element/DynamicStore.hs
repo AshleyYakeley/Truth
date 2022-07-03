@@ -1,4 +1,4 @@
-module Changes.UI.GTK.DynamicStore
+module Changes.UI.GTK.Element.DynamicStore
     ( DynamicStoreEntry
     , dynamicStoreEntryValue
     , DynamicStore

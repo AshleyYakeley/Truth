@@ -106,10 +106,8 @@ soupWindow newWindow dirpath = do
                 gvRunResource smodel $ \samodel -> do
                     _ <- pushEdit noEditSource $ aModelEdit samodel $ pure $ KeyEditDelete key
                     return ()
-        mbar :: GViewState 'Locked -> UIWindow -> Maybe (Model (ROWUpdate [MenuEntry]))
+        mbar :: GViewState 'Locked -> UIWindow -> MenuBar
         mbar cc _ =
-            Just $
-            constantModel $
             [ SubMenuEntry
                   "File"
                   [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ gvCloseState cc
@@ -136,8 +134,13 @@ soupWindow newWindow dirpath = do
                         wsSize = (300, 400)
                         wsCloseBoxAction = gvCloseState subcloser
                         wsTitle = constantModel "item"
-                        wsMenuBar = mbar subcloser subwin
-                        wsContent = createOneWhole rowmodel rspec
+                        wsContent :: AccelGroup -> GView 'Locked Widget
+                        wsContent ag = do
+                            mb <- createMenuBar ag $ mbar subcloser subwin
+                            uic <- createOneWhole rowmodel rspec
+                            createLayout
+                                OrientationVertical
+                                [(defaultLayoutOptions, mb), (defaultLayoutOptions {loGrow = True}, uic)]
                         in newWindow MkWindowSpec {..}
             return ()
     rec
@@ -146,16 +149,20 @@ soupWindow newWindow dirpath = do
             wsSize = (300, 400)
             wsTitle :: Model (ROWUpdate Text)
             wsTitle = constantModel $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
-            wsMenuBar :: Maybe (Model (ROWUpdate MenuBar))
-            wsMenuBar = mbar closer window
             wsCloseBoxAction :: GView 'Locked ()
             wsCloseBoxAction = gvCloseState closer
         button <- createButton (constantModel "GView 'Locked") $ constantModel $ Just $ withSelection openItem
         stuff <- soupEditSpec smodel selnotify openItem
         let
-            wsContent =
+            wsContent :: AccelGroup -> GView 'Locked Widget
+            wsContent ag = do
+                mb <- createMenuBar ag $ mbar closer window
+                uic <-
+                    createLayout
+                        OrientationVertical
+                        [(defaultLayoutOptions, button), (defaultLayoutOptions {loGrow = True}, stuff)]
                 createLayout
                     OrientationVertical
-                    [(defaultLayoutOptions, button), (defaultLayoutOptions {loGrow = True}, stuff)]
+                    [(defaultLayoutOptions, mb), (defaultLayoutOptions {loGrow = True}, uic)]
         (window, closer) <- gvGetState $ newWindow MkWindowSpec {..}
     return ()

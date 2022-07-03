@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Text
+module Changes.UI.GTK.Element.Text
     ( TextSelection
     , createTextBuffer
     , createTextArea

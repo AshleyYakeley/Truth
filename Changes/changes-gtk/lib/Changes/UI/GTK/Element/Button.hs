@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Button
+module Changes.UI.GTK.Element.Button
     ( createButton
     ) where
 

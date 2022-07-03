@@ -2,7 +2,7 @@ module Pinafore.Documentation
     ( module Pinafore.Markdown
     , DefDoc(..)
     , DocTree(..)
-    , DocType(..)
+    , DocItem(..)
     , runDocTree
     , libraryDoc
     , operatorFixity
@@ -10,6 +10,8 @@ module Pinafore.Documentation
     , Fixity(..)
     , FixAssoc(..)
     , Name(..)
+    , ToText(..)
+    , nameIsInfix
     , allOperatorNames
     ) where
 

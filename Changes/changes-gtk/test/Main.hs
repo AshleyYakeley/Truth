@@ -28,8 +28,7 @@ blankWindowSpec = let
     wsSize = (300, 400)
     wsCloseBoxAction = return ()
     wsTitle = constantModel "Test"
-    wsMenuBar = Nothing
-    wsContent = createBlank
+    wsContent _ = createBlank
     in MkWindowSpec {..}
 
 noAction :: a -> GView 'Unlocked ()
@@ -117,7 +116,7 @@ lockTests =
               setup =
                   traceBracket "setup" $
                   gvRunLocked $ do
-                      let wspec = blankWindowSpec {wsContent = createDynamic $ constantModel createBlank}
+                      let wspec = blankWindowSpec {wsContent = \_ -> createDynamic $ constantModel createBlank}
                       (w, closer) <- gvGetCloser $ createWindow wspec
                       uiWindowShow w
                       return $ gvRunLocked closer

@@ -11,6 +11,8 @@ module Changes.GI.GView
     , gvGetContext
     , gvLiftView
     , gvLiftViewWithUnlift
+    , gvLiftRelock
+    , gvUnliftRelock
     , gvGetUnliftToView
     , gvHoistView
     , gvHoistViewNoUI

@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Blank
+module Changes.UI.GTK.Element.Blank
     ( createBlank
     ) where
 

@@ -110,7 +110,7 @@ overviewPane = pane "Overview" $ GTK.exec $ do
 
 calendarWindow: WholeRef +Event -> Action GTK.Window;
 calendarWindow evt = fixAction $ \window =>
-    GTK.openWindow gtk (200,200) {"date of " <> %(name !$% evt)} {[]} $ GTK.vertical
+    GTK.openWindow gtk (200,200) {"date of " <> %(name !$% evt)} $ GTK.vertical
     [
         GTK.calendar $ eventRefTimeDate $ eventTime !$% evt,
         GTK.button {"Done: " <> show %(eventRefTimeDate $ eventTime !$% evt)} {GTK.closeWindow window}

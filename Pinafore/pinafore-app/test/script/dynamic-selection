@@ -34,7 +34,7 @@ in debugThing "SCRIPT" $ do
     selection <- newMemWhole;
     subscribeWhole selection $ \me -> debugThing "UPDATE" $ inform "sel" me;
     selection := testpt;
-    window <- fixAction $ \w -> GTK.openWindow (300,400) {"Test"} {[]} $
+    window <- fixAction $ \w -> GTK.openWindow (300,400) {"Test"} $
         GTK.dynamic $ coMapWhole (\e -> GTK.run $ debugThing "DYNAMIC" $ do
             # debugWindow w;
             inform "dynamic" $ Just e;
@@ -44,7 +44,7 @@ in debugThing "SCRIPT" $ do
     debugWindow window;
     selection := testpt;
     debugWindow window;
-    GTK.openWindow (300,400) {"Check"} {[]} $ GTK.button {"Check"} $ {debugThing "CHECK" $ do
+    GTK.openWindow (300,400) {"Check"} $ GTK.button {"Check"} $ {debugThing "CHECK" $ do
         debugWindow window;
         selection := testpt;
         debugWindow window;

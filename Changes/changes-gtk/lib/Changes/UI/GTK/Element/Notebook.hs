@@ -1,4 +1,4 @@
-module Changes.UI.GTK.Notebook
+module Changes.UI.GTK.Element.Notebook
     ( createNotebook
     ) where
 

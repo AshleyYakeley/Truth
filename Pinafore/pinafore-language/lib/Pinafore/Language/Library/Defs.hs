@@ -7,6 +7,7 @@ import Pinafore.Language.DefDoc
 import Pinafore.Language.DocTree
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
+import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Shim
@@ -55,9 +56,9 @@ mkValEntry name docDescription val = let
         Just $ \pc -> let
             ?pinafore = pc
             in ValueBinding (qConstExprAny $ jmToValue val) Nothing
-    docName = toText name
-    docValueType = qPositiveTypeDescription @t
-    docType = ValueDocType
+    diName = name
+    diType = qPositiveTypeDescription @t
+    docItem = ValueDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
@@ -69,27 +70,54 @@ mkSupertypeEntry ::
     -> DocTreeEntry BindDoc
 mkSupertypeEntry name docDescription _val = let
     bdScopeEntry = BindScopeEntry name Nothing
-    docName = toText name
-    docValueType = qPositiveTypeDescription @t
-    docType = SupertypeDocType
+    diName = name
+    diType = qPositiveTypeDescription @t
+    docItem = SupertypeDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
+
+newTypeParameter :: State [Name] Name
+newTypeParameter = do
+    nn <- get
+    case nn of
+        n:nr -> do
+            put nr
+            return n
+        [] -> return "a"
+
+getTypeParameter :: CCRVarianceType a -> State [Name] SyntaxTypeParameter
+getTypeParameter CoCCRVarianceType = do
+    v <- newTypeParameter
+    return $ PositiveSyntaxTypeParameter v
+getTypeParameter ContraCCRVarianceType = do
+    v <- newTypeParameter
+    return $ NegativeSyntaxTypeParameter v
+getTypeParameter RangeCCRVarianceType = do
+    vn <- newTypeParameter
+    vp <- newTypeParameter
+    return $ RangeSyntaxTypeParameter vn vp
+
+getTypeParameters :: [Name] -> DolanVarianceType dv -> [Text]
+getTypeParameters supply dvt = fmap exprShow $ evalState (listTypeFor dvt getTypeParameter) supply
+
+nameSupply :: [Name]
+nameSupply = fmap (\c -> MkName $ pack [c]) ['a' .. 'z']
 
 mkTypeEntry :: Name -> Markdown -> PinaforeBoundType -> DocTreeEntry BindDoc
 mkTypeEntry name docDescription t = let
     bdScopeEntry = BindScopeEntry name $ Just $ \_ -> TypeBinding t
-    docName = toText name
-    docValueType = ""
-    docType = TypeDocType
+    diName = name
+    diParams =
+        case t of
+            MkBoundType pt -> getTypeParameters nameSupply $ pgtVarianceType pt
+    docItem = TypeDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSubtypeRelationEntry :: Text -> Text -> Markdown -> SubtypeConversionEntry PinaforeGroundType -> DocTreeEntry BindDoc
-mkSubtypeRelationEntry ta tb docDescription scentry = let
+mkSubtypeRelationEntry diSubtype diSupertype docDescription scentry = let
     bdScopeEntry = SubtypeScopeEntry scentry
-    docName = ta <> " <: " <> tb
-    docValueType = ""
-    docType = SubtypeRelationDocType
+    docItem = SubtypeRelationDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
@@ -138,26 +166,27 @@ mkValPatEntry name docDescription val pat = let
     bdScopeEntry =
         BindScopeEntry name $
         Just $ \_ -> ValueBinding (qConstExprAny $ jmToValue val) $ Just $ qToPatternConstructor pat
-    docName = toText name
-    docValueType = qPositiveTypeDescription @t
-    docType = ValuePatternDocType
+    diName = name
+    diType = qPositiveTypeDescription @t
+    docItem = ValuePatternDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
 mkSpecialFormEntry ::
        Name
     -> Markdown
-    -> Text
+    -> [Text]
     -> Text
     -> ((?pinafore :: PinaforeContext) => PinaforeSpecialForm)
     -> DocTreeEntry BindDoc
-mkSpecialFormEntry name docDescription params docValueType sf = let
+mkSpecialFormEntry name docDescription params diType sf = let
     bdScopeEntry =
         BindScopeEntry name $
         Just $ \pc -> let
             ?pinafore = pc
             in SpecialFormBinding sf
-    docName = toText name <> " " <> params
-    docType = ValueDocType
+    diName = name
+    diParams = params
+    docItem = SpecialFormDocItem {..}
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
