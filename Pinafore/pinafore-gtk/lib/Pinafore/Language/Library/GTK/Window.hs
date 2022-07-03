@@ -5,6 +5,7 @@ module Pinafore.Language.Library.GTK.Window
     ) where
 
 import Changes.Core
+import Changes.Debug
 import Changes.UI.GTK
 import Data.Shim
 import Pinafore.Base
@@ -34,7 +35,7 @@ createLangWindow :: GTKContext -> WindowSpec -> View LangWindow
 createLangWindow gtkc uiw = do
     (lwWindow, wclose) <- runGView gtkc $ gvRunLocked $ gvGetCloser $ createWindow uiw
     let lwContext = gtkc
-    let lwClose = wclose
+    let lwClose = traceBracket "lwClose" wclose
     return $ MkLangWindow {..}
 
 uiWindowClose :: LangWindow -> View ()

@@ -38,9 +38,10 @@ createWindow MkWindowSpec {..} = do
     traceBracket "createWindow.bind" $
         gvBindReadOnlyWholeModel wsTitle $ \title -> gvLiftIO $ set window [#title := title]
     _ <-
-        gvOnSignal window #deleteEvent $ \_ -> traceBracket "createWindow.close-clicked" $ do
-            wsCloseBoxAction
-            return True -- don't run existing handler that closes the window
+        gvOnSignal window #deleteEvent $ \_ ->
+            traceBracket "createWindow.close-clicked" $ do
+                wsCloseBoxAction
+                return True -- don't run existing handler that closes the window
     ag <- gvNew AccelGroup []
     #addAccelGroup window ag
     content <- traceBracket "createWindow.content" $ wsContent ag
