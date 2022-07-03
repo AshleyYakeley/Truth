@@ -5,6 +5,13 @@
 
 packages:
 - completed:
+    hackage: invariant-0.6@sha256:1193c311e5c087406cda2a30b4f497763c597985e3756a4cdd553e98669bd86c,3466
+    pantry-tree:
+      size: 650
+      sha256: be7b90e2fb3bba0ef4ddeac6086f1b84b0900704b8a59dccea7a928e1de5a863
+  original:
+    hackage: invariant-0.6
+- completed:
     hackage: mime-0.4.0.2@sha256:208947d9d1a19d08850be67ecb28c6e776db697f3bba05bd9d682e51a59f241f,983
     pantry-tree:
       size: 565
@@ -62,20 +69,9 @@ packages:
   original:
     git: https://github.com/fpco/ghc-prof-flamegraph.git
     commit: 8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14
-- completed:
-    name: invariant
-    version: '0.6'
-    git: https://github.com/nfrisby/invariant-functors.git
-    pantry-tree:
-      size: 882
-      sha256: 99a1307ead0d625ce36aea9d3ac7b700832d907c83a969ff4e819d351ad8eeaf
-    commit: ffe96dfa02cec4d40b54bfc30988656ea86257ed
-  original:
-    git: https://github.com/nfrisby/invariant-functors.git
-    commit: ffe96dfa02cec4d40b54bfc30988656ea86257ed
 snapshots:
 - completed:
-    size: 619093
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/5.yaml
-    sha256: b936d27d647a31a8834d3efec126e2a07dee9c9bd6dd401d9bdac77e7b278f1e
-  original: lts-19.5
+    size: 618951
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/14.yaml
+    sha256: 4c31d4ef975b0211078862566aedf3b82b6cea569fc2cde4c72a51e5a8d236ce
+  original: lts-19.14

@@ -53,6 +53,7 @@ instance AsLiteral () where
     literalSerializer = pLiteral 0x75
 
 instance AsLiteral Bool where
+    -- [b]
     literalSerializer = pLiteral 0x62 ***> serializer
 
 instance AsLiteral Ordering where

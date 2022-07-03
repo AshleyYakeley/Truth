@@ -1,5 +1,5 @@
-FROM fpco/stack-build-small:lts-19.5
-RUN echo 2022-04-28
+FROM fpco/stack-build-small:lts-19.14
+RUN echo 2022-07-03
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update
 RUN apt-get upgrade -y
