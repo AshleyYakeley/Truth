@@ -14,7 +14,7 @@ import Data.Time
 import GI.Cairo.Render
 import Pinafore.Base
 import Pinafore.Language.API
-import Pinafore.Language.Library.GTK.Context ()
+import Pinafore.Language.Library.GTK.Context
 import Pinafore.Language.Library.GTK.Drawing
 import Shapes
 
@@ -70,7 +70,7 @@ uiListTable cols lref onDoubleClick mSelectionLangRef =
             onSelect :: Model (ROWUpdate EnA) -> GView 'Locked ()
             onSelect osub = do
                 a <- gvLiftViewNoUI $ readSub osub
-                gvRunUnlocked $ gvLiftIONoUI $ ecUnlift $ runPinaforeAction $ void $ onDoubleClick a
+                gvRunAction ecUnlift $ void $ onDoubleClick a
             getColumn ::
                    (LangWholeRef '( BottomType, Text), A -> LangWholeRef '( BottomType, Text))
                 -> KeyColumn (ROWUpdate EnA)
@@ -154,8 +154,7 @@ actionRef ::
     -> PinaforeImmutableWholeRef (PinaforeAction TopType)
     -> PinaforeROWRef (Maybe (GView 'Locked ()))
 actionRef unlift raction =
-    eaMapReadOnlyWhole
-        (fmap (\action -> gvRunUnlocked $ gvLiftIONoUI $ unlift $ runPinaforeAction (action >> return ())) . knowToMaybe) $
+    eaMapReadOnlyWhole (fmap (\action -> gvRunAction unlift $ action >> return ()) . knowToMaybe) $
     immutableRefToReadOnlyRef raction
 
 uiButton ::
@@ -262,7 +261,9 @@ uiCalendar day =
     MkLangElement $ \_ -> createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
 
 uiDraw :: PinaforeImmutableWholeRef ((Int32, Int32) -> LangDrawing) -> LangElement
-uiDraw ref = MkLangElement $ \_ -> createCairo $ unWModel $ pinaforeImmutableRefValue mempty ref
+uiDraw ref =
+    MkLangElement $ \ec ->
+        createCairo $ unWModel $ pinaforeImmutableRefValue mempty $ fmap (\d p -> unLangDrawing (d p) $ ecUnlift ec) ref
 
 uiWithContext :: (GTKContext -> LangElement) -> LangElement
 uiWithContext call =

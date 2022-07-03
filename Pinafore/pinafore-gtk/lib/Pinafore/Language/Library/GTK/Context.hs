@@ -2,7 +2,9 @@
 
 module Pinafore.Language.Library.GTK.Context where
 
+import Changes.Core
 import Changes.UI.GTK
+import Pinafore.Base
 import Pinafore.Language.API
 import Shapes
 
@@ -11,3 +13,6 @@ contextGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFami
 
 instance HasPinaforeGroundType '[] GTKContext where
     pinaforeGroundType = contextGroundType
+
+gvRunAction :: (?pinafore :: PinaforeContext) => (View --> IO) -> PinaforeAction () -> GView 'Locked ()
+gvRunAction unlift pa = gvRunUnlockedIO $ unlift $ runPinaforeAction pa

@@ -23,8 +23,10 @@ module Changes.GI.GView
     , gvLiftLifeCycleNoUI
     , gvRunLockedState
     , gvRunLocked
+    , gvRunLockedIO
     , gvRunUnlockedState
     , gvRunUnlocked
+    , gvRunUnlockedIO
     , gvSleep
     , gvExitUI
     , gvExitOnClosed
@@ -163,6 +165,12 @@ gvRunLocked (MkGView rva) =
         lock <- asks gtkcLock
         hoist (viewCloseRunLocked lock . viewOpenRunLocked lock) rva
 
+gvRunLockedIO :: IO --> GView 'Unlocked
+gvRunLockedIO ioa =
+    MkGView $ do
+        lock <- asks gtkcLock
+        liftIO $ cbRunLocked lock ioa
+
 gvRunUnlockedState :: GView ls (GViewState 'Unlocked -> GViewState 'Locked)
 gvRunUnlockedState = do
     lock <- MkGView $ asks gtkcLock
@@ -173,6 +181,12 @@ gvRunUnlocked (MkGView rva) =
     MkGView $ do
         lock <- asks gtkcLock
         hoist (viewCloseRunUnlocked lock . viewOpenRunUnlocked lock) rva
+
+gvRunUnlockedIO :: IO --> GView 'Locked
+gvRunUnlockedIO ioa =
+    MkGView $ do
+        lock <- asks gtkcLock
+        liftIO $ cbRunUnlocked lock ioa
 
 gvMatchLock ::
        forall lsa lsb. (Is LockStateType lsa, Is LockStateType lsb)
