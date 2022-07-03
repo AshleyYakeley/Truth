@@ -1,0 +1,11 @@
+#!/usr/bin/pinafore
+
+let import GTK in
+run $
+\gtk =>
+fixAction $
+\window =>
+let mbar = menuBar [menuAction "Close" (Just "Ctrl+W") {closeWindow window}] in
+openWindow gtk (400,600) {"Pinafore"} $
+vertical
+[mbar, layoutGrow $ button {"Close"} {closeWindow window}]
