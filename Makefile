@@ -73,11 +73,17 @@ ${BINPATH}/pinafore ${BINPATH}/pinafore-doc &: out docker-image
 ifeq ($(nodocker),1)
 else
 	rm -rf out/logs
+ifeq ($(haddock),1)
+	rm -rf out/haddock
+endif
 endif
 	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS) || (test -d .stack-work/logs && cp -r .stack-work/logs out/; exit 1)
 ifeq ($(nodocker),1)
 else
 	cp -r .stack-work/logs out/
+ifeq ($(haddock),1)
+	cp -r `stack $(STACKFLAGS) path --local-doc-root` out/haddock
+endif
 endif
 ifeq ($(bench),1)
 	test -n "$$(git status -s)" || (stack $(STACKFLAGS) exec -- benchgraph/adapters/criterion/export_benchs.sh Pinafore/pinafore-app/benchmarks.json > benchmarks/pinafore-`git rev-parse HEAD`.ndjson)
