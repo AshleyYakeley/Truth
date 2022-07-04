@@ -34,6 +34,7 @@ library:
       - Pinafore.Language.Library.GTK.Element.Drawing
       - Pinafore.Language.Library.GTK.Element
       - Pinafore.Language.Library.GTK.MenuItem
+      - Pinafore.Language.Library.GTK.Clipboard
       - Pinafore.Language.Library.GTK.Window
       - Pinafore.Language.Library.GTK.Debug
       - Pinafore.Language.Library.GTK

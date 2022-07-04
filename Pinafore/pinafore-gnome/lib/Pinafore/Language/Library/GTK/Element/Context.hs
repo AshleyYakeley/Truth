@@ -3,11 +3,13 @@ module Pinafore.Language.Library.GTK.Element.Context where
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Pinafore.Language.API
+import Pinafore.Language.Library.GTK.Context
 import Shapes
 
 data ElementContext = MkElementContext
     { ecUnlift :: View --> IO
     , ecAccelGroup :: AccelGroup
+    , ecOtherContext :: OtherContext
     }
 
 -- LangElement

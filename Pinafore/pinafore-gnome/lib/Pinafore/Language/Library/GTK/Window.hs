@@ -18,7 +18,7 @@ import Shapes
 
 -- LangWindow
 data LangWindow = MkLangWindow
-    { lwContext :: GTKContext
+    { lwContext :: LangContext
     , lwClose :: GView 'Locked ()
     , lwWindow :: UIWindow
     }
@@ -33,53 +33,55 @@ instance HasPinaforeGroundType '[] LangWindow where
 instance HasPinaforeType 'Negative UIWindow where
     pinaforeType = mapNegShimWit (functionToShim "lwWindow" lwWindow) pinaforeType
 
-createLangWindow :: GTKContext -> WindowSpec -> View LangWindow
-createLangWindow gtkc uiw = do
-    (lwWindow, wclose) <- runGView gtkc $ gvRunLocked $ gvGetCloser $ createWindow uiw
-    let lwContext = gtkc
+createLangWindow :: LangContext -> WindowSpec -> View LangWindow
+createLangWindow lc uiw = do
+    (lwWindow, wclose) <- runGView (lcGTKContext lc) $ gvRunLocked $ gvGetCloser $ createWindow uiw
+    let lwContext = lc
     let lwClose = wclose
     return $ MkLangWindow {..}
 
 uiWindowClose :: LangWindow -> View ()
-uiWindowClose MkLangWindow {..} = runGView lwContext $ gvRunLocked lwClose
+uiWindowClose MkLangWindow {..} = runGView (lcGTKContext lwContext) $ gvRunLocked lwClose
 
 openWindow ::
        (?pinafore :: PinaforeContext)
-    => GTKContext
+    => LangContext
     -> (Int32, Int32)
     -> PinaforeImmutableWholeRef Text
     -> LangElement
     -> PinaforeAction LangWindow
-openWindow gtkc wsSize title (MkLangElement element) =
+openWindow lc wsSize title (MkLangElement element) =
     actionLiftView $
     mfix $ \w ->
         liftIOWithUnlift $ \unlift ->
             unlift $
-            createLangWindow gtkc $ let
+            createLangWindow lc $ let
                 wsPosition = WindowPositionCenter
                 wsCloseBoxAction :: GView 'Locked ()
                 wsCloseBoxAction = lwClose w
                 wsTitle :: Model (ROWUpdate Text)
                 wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
                 wsContent :: AccelGroup -> GView 'Locked Widget
-                wsContent ag = element MkElementContext {ecUnlift = unlift, ecAccelGroup = ag}
+                wsContent ag =
+                    element MkElementContext {ecUnlift = unlift, ecAccelGroup = ag, ecOtherContext = lcOtherContext lc}
                 in MkWindowSpec {..}
 
-exitUI :: GTKContext -> View ()
-exitUI gtkc = runGView gtkc $ gvExitUI
+exitUI :: LangContext -> View ()
+exitUI lc = runGView (lcGTKContext lc) $ gvExitUI
 
 showWindow :: LangWindow -> View ()
-showWindow MkLangWindow {..} = runGView lwContext $ gvRunLocked $ uiWindowShow lwWindow
+showWindow MkLangWindow {..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ uiWindowShow lwWindow
 
 hideWindow :: LangWindow -> View ()
-hideWindow MkLangWindow {..} = runGView lwContext $ gvRunLocked $ uiWindowHide lwWindow
+hideWindow MkLangWindow {..} = runGView (lcGTKContext lwContext) $ gvRunLocked $ uiWindowHide lwWindow
 
-run :: forall a. (GTKContext -> PinaforeAction a) -> PinaforeAction a
-run call = actionTunnelView $ \unlift -> runGTKView $ \gtkc -> unlift $ call gtkc
-
-langChooseFile :: FileChooserAction -> GTKContext -> (Maybe (Text, Text) -> Bool) -> PinaforeAction File
-langChooseFile action gtkc test =
-    actionLiftViewKnow $ fmap maybeToKnow $ runGView gtkc $ gvRunLocked $ chooseFile action test
+run :: forall a. (LangContext -> PinaforeAction a) -> PinaforeAction a
+run call =
+    actionTunnelView $ \unlift ->
+        runGTKView $ \gtkc -> do
+            clipboard <- runGView gtkc $ gvRunLocked getClipboard
+            unlift $
+                call $ MkLangContext {lcGTKContext = gtkc, lcOtherContext = MkOtherContext {ocClipboard = clipboard}}
 
 windowStuff :: DocTreeEntry BindDoc
 windowStuff =
@@ -98,6 +100,10 @@ windowStuff =
         , mkValEntry "hideWindow" "Hide a window." hideWindow
         , mkValEntry "exit" "Exit the user interface." exitUI
         ]
+
+langChooseFile :: FileChooserAction -> LangContext -> (Maybe (Text, Text) -> Bool) -> PinaforeAction File
+langChooseFile action lc test =
+    actionLiftViewKnow $ fmap maybeToKnow $ runGView (lcGTKContext lc) $ gvRunLocked $ chooseFile action test
 
 dialogStuff :: DocTreeEntry BindDoc
 dialogStuff =

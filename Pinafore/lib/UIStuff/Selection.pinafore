@@ -11,45 +11,79 @@ uiLabelled: WholeRef +Text -> Element -> Element;
 uiLabelled n ui = horizontal [label n, layoutGrow ui];
 
 #| A window that comes with some menus.
-stdWindow: Context -> WholeRef +Text -> WholeRef +(List MenuItem) -> Element -> Action Window;
-stdWindow gtk title moremenus contents = fixAction $ \window => let
-    mbar: Element;
-    mbar = dynamic
-        {menuBar $ [
-            menuSubmenu "File"
-            [
-                menuAction "Close" (Just "Ctrl+W") {closeWindow window},
-                menuSeparator,
-                menuAction "Exit" (Just "Ctrl+Q") {exit gtk}
-            ],
-            menuSubmenu "Edit"
-            [
-                menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
-                menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
-            ]
-        ] ++ %moremenus};
-    in openWindow gtk (600,800) title $ vertical [mbar, layoutGrow $ scrolled contents];
+stdWindow: Context -> WholeRef +Text -> WholeRef +(List MenuItem) -> (WholeRef (Action TextRef) -> Element) -> Action Window;
+stdWindow gtk title moremenus contents = fixAction $ \window => do
+    textsel <- newMemWhole;
+    let
+        getTextRef: Action (WholeRef Text);
+        getTextRef = do
+            atref <- get textsel;
+            atref;
+        end;
+        selCopy: Action Unit;
+        selCopy = do
+            tref <- getTextRef;
+            text <- get tref;
+            clipboard gtk := text;
+        end;
+        selCut: Action Unit;
+        selCut = do
+            tref <- getTextRef;
+            text <- get tref;
+            clipboard gtk := text;
+            tref := "";
+        end;
+        selPaste: Action Unit;
+        selPaste = do
+            tref <- getTextRef;
+            clip <- get $ clipboard gtk;
+            case clip of
+                text: Text => tref := text;
+                _ => return ();
+            end;
+        end;
+        mbar: Element;
+        mbar = dynamic
+            {menuBar $ [
+                menuSubmenu "File"
+                [
+                    menuAction "Close" (Just "Ctrl+W") {closeWindow window},
+                    menuSeparator,
+                    menuAction "Exit" (Just "Ctrl+Q") {exit gtk}
+                ],
+                menuSubmenu "Edit"
+                [
+                    menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
+                    menuAction "Redo" (Just "Ctrl+Y") {queueRedo},
+                    menuSeparator,
+                    menuAction "Cut" (Just "Ctrl+X") {selCut},
+                    menuAction "Copy" (Just "Ctrl+C") {selCopy},
+                    menuAction "Paste" (Just "Ctrl+V") {selPaste}
+                ]
+            ] ++ %moremenus};
+        in openWindow gtk (600,800) title $ vertical [mbar, layoutGrow $ scrolled $ contents textsel];
+    end;
 
 #| A pane is a title, GTK element, and menu.
 datatype Pane of
-    MkPane (WholeRef Text) Element (WholeRef (List MenuItem))
+    MkPane (WholeRef Text) (WholeRef (Action TextRef) -> Element) (WholeRef (List MenuItem))
 end;
 
 paneWindow: Context -> Pane -> Action Window;
 paneWindow gtk (MkPane title ui moremenus) = stdWindow gtk title moremenus ui;
 
 pane: Text -> Element -> Pane;
-pane title ui = MkPane {title} ui {[]};
+pane title ui = MkPane {title} (\_ => ui) {[]};
 
 #| A notebook from a list of panes
 notebookPane: WholeRef +Text -> List Pane -> Action Pane;
 notebookPane title panes = do
     tabRef <- newMemWhole;
     return $ let
-        makePage: Pane -> Element :*: Element;
-        makePage (MkPane rname ui _) = uiPage rname ui;
-        nui: Element;
-        nui = notebook tabRef $ mapList makePage panes;
+        makePage: WholeRef (Action TextRef) -> Pane -> Element :*: Element;
+        makePage textsel (MkPane rname ui _) = uiPage rname $ ui textsel;
+        nui: WholeRef (Action TextRef) -> Element;
+        nui textsel = notebook tabRef $ mapList (makePage textsel) panes;
         itemsRef = forWhole panes $ \(MkPane _ _ rmenus) => rmenus;
         in MkPane (immutWhole title) nui $ fromMaybeWhole {index %itemsRef %tabRef};
     end;
@@ -86,7 +120,7 @@ selectionPane title iset createMenuItems iopen iui = do
                     menuAction "Delete" Nothing {deleteItem}
                 ]
             ];
-        in MkPane {title} (iui selection) {moremenus};
+        in MkPane {title} (\_ => iui selection) {moremenus};
     end;
 
 selectionPairPane:

@@ -69,6 +69,7 @@ library:
       - Changes.World.GNOME.GTK.Element.Scrolled
       - Changes.World.GNOME.GTK.Element.Calendar
       - Changes.World.GNOME.GTK.ChooseFile
+      - Changes.World.GNOME.GTK.Clipboard
       - Changes.World.GNOME.GTK.Window
       - Changes.World.GNOME.GTK.Main
 

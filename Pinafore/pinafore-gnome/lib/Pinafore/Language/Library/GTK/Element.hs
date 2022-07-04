@@ -244,11 +244,11 @@ uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangElement
 uiCalendar day =
     MkLangElement $ \_ -> createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
 
-uiWithContext :: (GTKContext -> LangElement) -> LangElement
+uiWithContext :: (LangContext -> LangElement) -> LangElement
 uiWithContext call =
     MkLangElement $ \ec -> do
         gtkc <- gvGetContext
-        unLangElement (call gtkc) ec
+        unLangElement (call $ MkLangContext gtkc $ ecOtherContext ec) ec
 
 uiOwned :: LangElement -> LangElement
 uiOwned (MkLangElement mw) =

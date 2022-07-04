@@ -1,5 +1,7 @@
 module Pinafore.Language.Library.GNOME
     ( gnomeLibrary
+    , File
+    , LangContext(..)
     ) where
 
 import Pinafore.Language.API

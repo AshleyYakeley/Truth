@@ -20,15 +20,15 @@ runUIAction testaction script =
         runWithContext pc (libraryFetchModule gnomeLibrary) $ do
             scriptaction <-
                 throwInterpretResult $
-                pinaforeInterpretTextAtType @((GTKContext -> View ()) -> PinaforeAction ()) "<test>" script
+                pinaforeInterpretTextAtType @((LangContext -> View ()) -> PinaforeAction ()) "<test>" script
             donevar <- liftIO newEmptyMVar
             runPinaforeAction $
-                scriptaction $ \gtkc -> do
+                scriptaction $ \lc -> do
                     _ <-
                         liftIOWithUnlift $ \unlift ->
                             forkIO $
                             unlift $
-                            runGView gtkc $ do
+                            runGView (lcGTKContext lc) $ do
                                 gvSleep 50000
                                 testaction
                                 gvExitUI

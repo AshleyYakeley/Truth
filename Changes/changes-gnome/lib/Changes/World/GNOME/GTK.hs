@@ -4,6 +4,7 @@ module Changes.World.GNOME.GTK
 
 import Changes.World.GNOME.GI as I
 import Changes.World.GNOME.GTK.ChooseFile as I
+import Changes.World.GNOME.GTK.Clipboard as I
 import Changes.World.GNOME.GTK.Element.Blank as I
 import Changes.World.GNOME.GTK.Element.Button as I
 import Changes.World.GNOME.GTK.Element.CSS as I

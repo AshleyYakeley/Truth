@@ -8,10 +8,19 @@ import Pinafore.Base
 import Pinafore.Language.API
 import Shapes
 
-contextGroundType :: PinaforeGroundType '[] GTKContext
-contextGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily GTKContext)|]) "Context"
+data OtherContext = MkOtherContext
+    { ocClipboard :: Model (WholeUpdate (Maybe Clip))
+    }
 
-instance HasPinaforeGroundType '[] GTKContext where
+data LangContext = MkLangContext
+    { lcGTKContext :: GTKContext
+    , lcOtherContext :: OtherContext
+    }
+
+contextGroundType :: PinaforeGroundType '[] LangContext
+contextGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangContext)|]) "Context"
+
+instance HasPinaforeGroundType '[] LangContext where
     pinaforeGroundType = contextGroundType
 
 gvRunAction :: (?pinafore :: PinaforeContext) => (View --> IO) -> PinaforeAction () -> GView 'Locked ()
