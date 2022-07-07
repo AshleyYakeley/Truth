@@ -72,6 +72,7 @@ instance Ringish ReadShow where
 instance Streamish ReadShow where
     type StreamishBasis ReadShow = String
     pItem = MkReadShow pure pItem
+    pWhole = MkReadShow id pWhole
     pLiterals s = let
         rsShow () = s
         rsRead = pLiterals s

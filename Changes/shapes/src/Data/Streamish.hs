@@ -8,6 +8,7 @@ import qualified Text.ParserCombinators.ReadPrec as ReadPrec
 class (Ringish f, Monoid (StreamishBasis f)) => Streamish f where
     type StreamishBasis f :: Type
     pItem :: f (Element (StreamishBasis f))
+    pWhole :: f (StreamishBasis f)
     pLiterals :: StreamishBasis f -> f ()
     pLiteral :: Element (StreamishBasis f) -> f ()
     pExact ::
@@ -33,6 +34,7 @@ pSkipSpaces = ReadPrec.lift ReadP.skipSpaces
 instance Streamish ReadPrec where
     type StreamishBasis ReadPrec = String
     pItem = ReadPrec.get
+    pWhole = ReadPrec.lift $ ReadP.munch $ \_ -> True
     pLiterals s = void $ ReadPrec.lift $ ReadP.string s
     pLiteral c = void $ ReadPrec.lift $ ReadP.char c
     pExact a fa = do

@@ -1,30 +1,27 @@
-{-# OPTIONS -fno-warn-orphans #-}
-
-module Changes.World.MIME where
+module Changes.World.MIME
+    ( module Changes.World.MIME.ContentType
+    , module Changes.World.MIME
+    ) where
 
 import Changes.Core
 import Changes.World.Anything
-import qualified Codec.MIME.Type
+import Changes.World.MIME.ContentType
 import Shapes
 
-type MIMEContentType = Codec.MIME.Type.Type
-
-instance HasNewValue MIMEContentType where
-    newValue = Codec.MIME.Type.Type (Codec.MIME.Type.Application $ fromString "octet-stream") []
-
-type MIMEContent = WithContext MIMEContentType [Word8]
+type MIMEContent = WithContext MIMEContentType StrictByteString
 
 type MIMETuple edit = WithContextSelector (WholeEdit MIMEContentType) edit
 
 type MIMEContentEdit edit = TupleUpdateEdit (MIMETuple edit)
 
 data AnyCodec where
-    MkAnyCodec :: forall (edit :: Type). IOWitness edit -> Codec [Word8] (EditSubject edit) -> AnyCodec
+    MkAnyCodec :: forall (edit :: Type). IOWitness edit -> Codec StrictByteString (EditSubject edit) -> AnyCodec
 
 data MIMEKnowledge = MkMIMEKnowledge
     { findMIMECodecByMIME :: MIMEContentType -> Maybe AnyCodec
     , findMIMECodecByInfoT :: forall (edit :: Type).
-                                      IOWitness edit -> Maybe (MIMEContentType, Codec [Word8] (EditSubject edit))
+                                      IOWitness edit -> Maybe ( MIMEContentType
+                                                              , Codec StrictByteString (EditSubject edit))
     }
 
 interpretInjection :: (?mimeKnowledge :: MIMEKnowledge) => Injection MIMEContent (Maybe Anything)

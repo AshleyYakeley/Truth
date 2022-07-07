@@ -59,6 +59,12 @@ instance Ringish Serializer where
 instance Streamish Serializer where
     type StreamishBasis Serializer = StrictByteString
     pItem = MkSerializer Serialize.putWord8 Serialize.getWord8
+    pWhole = let
+        serialize = Serialize.putByteString
+        deserialize = do
+            n <- Serialize.remaining
+            Serialize.getByteString n
+        in MkSerializer {..}
     pLiterals bs = let
         serialize () = Serialize.putByteString bs
         deserialize = do
@@ -96,14 +102,6 @@ serializer = MkSerializer Serialize.put Serialize.get
 pLiteralBytes :: [Word8] -> Serializer ()
 pLiteralBytes ws = pLiterals $ pack ws
 
-serializerWhole :: Serializer StrictByteString
-serializerWhole = let
-    serialize = Serialize.putByteString
-    deserialize = do
-        n <- Serialize.remaining
-        Serialize.getByteString n
-    in MkSerializer {..}
-
 serializerLazyCodec ::
        forall m a. MonadFail m
     => Serializer a
@@ -113,13 +111,19 @@ serializerLazyCodec (MkSerializer s d) = let
     decode = resultToM . eitherToResult . Serialize.runGetLazy d
     in MkCodec {..}
 
+serializerStrictEncode :: Serializer a -> a -> StrictByteString
+serializerStrictEncode (MkSerializer s _) a = Serialize.runPut $ s a
+
+serializerStrictDecode :: MonadFail m => Serializer a -> StrictByteString -> m a
+serializerStrictDecode (MkSerializer _ d) bs = resultToM $ eitherToResult $ Serialize.runGet d bs
+
 serializerStrictCodec ::
        forall m a. MonadFail m
     => Serializer a
     -> Codec' m StrictByteString a
-serializerStrictCodec (MkSerializer s d) = let
-    encode a = Serialize.runPut $ s a
-    decode = resultToM . eitherToResult . Serialize.runGet d
+serializerStrictCodec sr = let
+    encode = serializerStrictEncode sr
+    decode = serializerStrictDecode sr
     in MkCodec {..}
 
 serializeLazyCodec ::

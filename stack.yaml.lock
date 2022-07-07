@@ -12,13 +12,6 @@ packages:
   original:
     hackage: invariant-0.6
 - completed:
-    hackage: mime-0.4.0.2@sha256:208947d9d1a19d08850be67ecb28c6e776db697f3bba05bd9d682e51a59f241f,983
-    pantry-tree:
-      size: 565
-      sha256: f2529a2e1678074ca0340ff60caa986f4e246d7d9abe8186657910c2900364bb
-  original:
-    hackage: mime-0.4.0.2
-- completed:
     hackage: blake3-0.2@sha256:d1146b9a51ccfbb0532780778b6d016a614e3d44c05d8c1923dde9a8be869045,2448
     pantry-tree:
       size: 1433

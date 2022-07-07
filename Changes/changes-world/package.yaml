@@ -15,7 +15,7 @@ library:
       - directory
       - aeson
       - sqlite-simple
-      - mime
+      - cereal
       - changes-core
     exposed-modules:
       - Changes.World.Clock
@@ -27,3 +27,5 @@ library:
       - Changes.World.JSON
       - Changes.World.SQLite
       - Changes.World.SQLite.Schema
+    other-modules:
+      - Changes.World.MIME.ContentType
