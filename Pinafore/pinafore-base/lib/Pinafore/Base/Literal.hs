@@ -112,7 +112,7 @@ instance AsLiteral Void where
 instance AsLiteral Text
 
 instance AsMIMELiteral Text where
-    literalMimeType = MkMIMEContentType mimeTypeText "plain" [("charset", "utf-8")]
+    literalMimeType = MkMIMEContentType TextMimeType "plain" [("charset", "utf-8")]
     -- [t]
     literalByteCode = [0x74]
     literalContentSerializer = codecMap' utf8Codec pWhole
@@ -123,7 +123,7 @@ instance AsLiteral String where
 instance AsLiteral ()
 
 instance AsMIMELiteral () where
-    literalMimeType = MkMIMEContentType mimeTypeApplication "vnd.pinafore.unit" []
+    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.unit" []
     -- [u]
     literalByteCode = [0x75]
     literalContentSerializer = pUnit
@@ -131,7 +131,7 @@ instance AsMIMELiteral () where
 instance AsLiteral Bool
 
 instance AsMIMELiteral Bool where
-    literalMimeType = MkMIMEContentType mimeTypeApplication "vnd.pinafore.boolean" []
+    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.boolean" []
     -- [b]
     literalByteCode = [0x62]
     literalContentSerializer = serializer
@@ -139,7 +139,7 @@ instance AsMIMELiteral Bool where
 instance AsLiteral Ordering
 
 instance AsMIMELiteral Ordering where
-    literalMimeType = MkMIMEContentType mimeTypeApplication "vnd.pinafore.ordering" []
+    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.ordering" []
     -- [o]
     literalByteCode = [0x6F]
     literalContentSerializer = codecMap readShowCodec serializer
@@ -157,7 +157,7 @@ instance AsLiteral Number where
 instance AsLiteral Rational
 
 instance AsMIMELiteral Rational where
-    literalMimeType = MkMIMEContentType mimeTypeApplication "vnd.pinafore.rational" []
+    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.rational" []
     -- [r]
     literalByteCode = [0x72]
     literalContentSerializer = serializer
@@ -165,7 +165,7 @@ instance AsMIMELiteral Rational where
 instance AsLiteral Double
 
 instance AsMIMELiteral Double where
-    literalMimeType = MkMIMEContentType mimeTypeApplication "vnd.pinafore.double" []
+    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.double" []
     -- [d]
     literalByteCode = [0x64]
     literalContentSerializer = serializer
@@ -179,7 +179,7 @@ instance AsLiteral Integer where
 instance AsLiteral Day
 
 instance AsMIMELiteral Day where
-    literalMimeType = MkMIMEContentType mimeTypeApplication "vnd.pinafore.day" []
+    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.day" []
     -- [Td]
     literalByteCode = [0x54, 0x64]
     literalContentSerializer = serializer
@@ -187,7 +187,7 @@ instance AsMIMELiteral Day where
 instance AsLiteral TimeOfDay
 
 instance AsMIMELiteral TimeOfDay where
-    literalMimeType = MkMIMEContentType mimeTypeApplication "vnd.pinafore.timeofday" []
+    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.timeofday" []
     -- [To]
     literalByteCode = [0x54, 0x6F]
     literalContentSerializer = serializer
@@ -195,7 +195,7 @@ instance AsMIMELiteral TimeOfDay where
 instance AsLiteral LocalTime
 
 instance AsMIMELiteral LocalTime where
-    literalMimeType = MkMIMEContentType mimeTypeApplication "vnd.pinafore.localtime" []
+    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.localtime" []
     -- [Tl]
     literalByteCode = [0x54, 0x6C]
     literalContentSerializer = serializer
@@ -203,7 +203,7 @@ instance AsMIMELiteral LocalTime where
 instance AsLiteral UTCTime
 
 instance AsMIMELiteral UTCTime where
-    literalMimeType = MkMIMEContentType mimeTypeApplication "vnd.pinafore.time" []
+    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.time" []
     -- [Tu]
     literalByteCode = [0x54, 0x75]
     literalContentSerializer = serializer
@@ -211,7 +211,7 @@ instance AsMIMELiteral UTCTime where
 instance AsLiteral NominalDiffTime
 
 instance AsMIMELiteral NominalDiffTime where
-    literalMimeType = MkMIMEContentType mimeTypeApplication "vnd.pinafore.duration" []
+    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.duration" []
     -- [Tn]
     literalByteCode = [0x54, 0x6E]
     literalContentSerializer = serializer

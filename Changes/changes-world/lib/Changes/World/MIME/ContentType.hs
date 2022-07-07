@@ -4,8 +4,9 @@ module Changes.World.MIME.ContentType
     , mctType
     , mctSubtype
     , mctParams
-    , mimeTypeText
-    , mimeTypeApplication
+    , pattern TextMimeType
+    , pattern ImageMimeType
+    , pattern ApplicationMimeType
     ) where
 
 import Data.Serialize
@@ -57,11 +58,17 @@ instance Show MIMEContentType where
         unpack mctType <>
         "/" <> unpack mctSubtype <> mconcat (fmap (\(n, v) -> ";" <> unpack n <> "=" <> enc (unpack v)) mctParams)
 
-mimeTypeText :: Text
-mimeTypeText = "text"
+pattern TextMimeType :: Text
 
-mimeTypeApplication :: Text
-mimeTypeApplication = "application"
+pattern TextMimeType = "text"
+
+pattern ImageMimeType :: Text
+
+pattern ImageMimeType = "image"
+
+pattern ApplicationMimeType :: Text
+
+pattern ApplicationMimeType = "application"
 
 instance HasNewValue MIMEContentType where
-    newValue = MkMIMEContentType_ mimeTypeApplication "octet-stream" []
+    newValue = MkMIMEContentType_ ApplicationMimeType "octet-stream" []
