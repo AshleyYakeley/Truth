@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Library.GTK.Colour
-    ( colourLibraryModules
+    ( colourLibraryModule
     , LangColour
     , pattern MkSRGBColour
     , LangAlphaColour
@@ -129,6 +129,3 @@ colourLibraryModule =
               "SVG named colours, also used in CSS, from [SVG 1.1](https://www.w3.org/TR/SVG11/types.html#ColorKeywords)" $
           fmap mkNamedColourEntry allSVGColors
         ]
-
-colourLibraryModules :: [LibraryModule]
-colourLibraryModules = [colourLibraryModule]
