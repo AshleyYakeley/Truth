@@ -22,9 +22,9 @@ instance IsDolanSubtypeGroundType PinaforeGroundType where
             spos
             (TypeConvertError
                  (exprShow ta)
-                 (Just $ witnessToValue $ polarityType @pola)
+                 (witnessToValue $ polarityType @pola)
                  (exprShow tb)
-                 (Just $ witnessToValue $ polarityType @polb))
+                 (witnessToValue $ polarityType @polb))
             ma
     throwTypeNotInvertible t = throw $ TypeNotInvertibleError $ exprShow t
 
@@ -33,7 +33,7 @@ instance IsDolanSubtypeEntriesGroundType PinaforeGroundType where
     subtypeConversionMatchType gta gtb = do
         (Refl, HRefl) <- groundTypeTestEquality gta gtb
         return idSubtypeConversion
-    throwGroundTypeConvertError ta tb = throw $ TypeConvertError (showGroundType ta) Nothing (showGroundType tb) Nothing
+    throwGroundTypeConvertError ta tb = throw $ GroundTypeConvertError (showGroundType ta) (showGroundType tb)
 
 instance IsDolanFunctionGroundType PinaforeGroundType where
     functionGroundType = funcGroundType
