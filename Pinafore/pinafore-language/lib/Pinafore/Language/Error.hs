@@ -27,9 +27,11 @@ data ErrorType
     | DeclareConstructorDuplicateError Name
     | DeclareDynamicTypeCycleError (NonEmpty Name)
     | TypeConvertError Text
-                       (Maybe Polarity)
+                       Polarity
                        Text
-                       (Maybe Polarity)
+                       Polarity
+    | GroundTypeConvertError Text
+                             Text
     | TypeNotInvertibleError Text
     | NotationBareUnquoteError
     | InterpretTypeExprBadLimitError Polarity
@@ -113,7 +115,8 @@ instance Show ErrorType where
     show (DeclareDynamicTypeCycleError nn) =
         "cycle in dynamictype declarations: " <> (intercalate ", " $ fmap show $ toList nn)
     show (TypeConvertError ta pa tb pb) =
-        unpack $ "cannot convert " <> ta <> maybe "" polaritySymbol pa <> " <: " <> tb <> maybe "" polaritySymbol pb
+        unpack $ "cannot convert " <> ta <> polaritySymbol pa <> " <: " <> tb <> polaritySymbol pb
+    show (GroundTypeConvertError ta tb) = unpack $ "cannot convert " <> ta <> " <: " <> tb
     show (TypeNotInvertibleError t) = "cannot invert type " <> unpack t
     show NotationBareUnquoteError = "unquote outside WholeRef quote"
     show (InterpretTypeExprBadLimitError Positive) = "\"Any\" in positive type"
