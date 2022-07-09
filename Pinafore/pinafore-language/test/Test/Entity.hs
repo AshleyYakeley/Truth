@@ -864,7 +864,7 @@ testEntity =
                           , tDecls
                                 [ "datatype D -a of Mk1D (a -> Integer); Mk2D (a -> a -> Text) end"
                                 , "dShow: D Number"
-                                , "dShow = Mk2D $ \\a b => show a <> \",\" <> show b"
+                                , "dShow = Mk2D $ \\a b => show a ++ \",\" ++ show b"
                                 , "di: D Integer"
                                 , "di = dShow"
                                 , "showD: a -> D a -> Text"
@@ -876,7 +876,7 @@ testEntity =
                           , tDecls
                                 [ "rec datatype RList +a of MkRList (Maybe (a :*: RList a)) end end"
                                 , "rec showRList: RList Showable -> Text"
-                                , "showRList (MkRList rl) = case rl of Nothing => \"\"; Just (a,rla) => show a <> \";\" <> showRList rla end"
+                                , "showRList (MkRList rl) = case rl of Nothing => \"\"; Just (a,rla) => show a ++ \";\" ++ showRList rla end"
                                 , "end"
                                 , "rlisti: RList Integer"
                                 , "rlisti = MkRList $ Just (45,MkRList $ Just (72, MkRList $ Just (18,MkRList Nothing)))"

@@ -218,7 +218,7 @@ window_drawing now = let import Colour; import Drawing in do
                 source purple $
                 lineCapSquare $
                 lineWidth 0.01 $
-                stroke [moveTo (0, 0), lineTo (0, 1)];
+                stroke $ moveTo (0, 0) ++ lineTo (0, 1);
             end};
     end;
 
@@ -261,11 +261,11 @@ window_start = do
         in do
         std_window {"Pinafore"} $ GTK.vertical
         [
-            GTK.label {"UTC time: " <> show %now},
-            GTK.label {"UTC date: " <> show %utcDate},
-            GTK.label {"Local time: " <> show %localNow},
-            GTK.label {"Local date: " <> show %today},
-            GTK.label {"Time zone offset minutes: " <> show %timeZone},
+            GTK.label {"UTC time: " ++ show %now},
+            GTK.label {"UTC date: " ++ show %utcDate},
+            GTK.label {"Local time: " ++ show %localNow},
+            GTK.label {"Local date: " ++ show %today},
+            GTK.label {"Time zone offset minutes: " ++ show %timeZone},
             GTK.button {"People"} {window_people},
             GTK.button {"Calculated Form"} {window_calc},
             GTK.button {"Switch"} {window_switch},

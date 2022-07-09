@@ -101,6 +101,7 @@ library:
       - Pinafore.Language.Library.Std.Convert
       - Pinafore.Language.Library.Std.Types
       - Pinafore.Language.Library.Std.Base
+      - Pinafore.Language.Library.Std.Monoid
       - Pinafore.Language.Library.Std.Actions
       - Pinafore.Language.Library.Std.LifeCycle
       - Pinafore.Language.Library.Std.Tasks

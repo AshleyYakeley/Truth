@@ -20,7 +20,7 @@ toggleStopwatch now r = do
 
 showStopwatch: StopwatchState -> Time -> Text;
 showStopwatch state n = case state of
-    StoppedState d => "[" <> show d <> "]";
+    StoppedState d => "[" ++ show d ++ "]";
     RunningState t => show $ diffTime n t
     end;
 

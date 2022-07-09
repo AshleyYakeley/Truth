@@ -145,12 +145,6 @@ hasSubtypeRelationEntry doc conv =
     toGroundedDolanShimWit pinaforeType $ \gta argsa ->
         fromJust $ toGroundedDolanShimWit pinaforeType $ \gtb argsb -> subtypeRelationEntry doc gta argsa gtb argsb conv
 
--- | The 'Monoid' trick of representing @Monoid T@ as @List T <: T@.
-monoidSubtypeRelationEntry ::
-       forall t. (HasPinaforeType 'Negative t, HasPinaforeType 'Positive t, Monoid t)
-    => DocTreeEntry BindDoc
-monoidSubtypeRelationEntry = hasSubtypeRelationEntry @[t] @t "Monoidal relationship" $ functionToShim "mconcat" mconcat
-
 mkValPatEntry ::
        forall t v lt.
        ( HasPinaforeType 'Positive t

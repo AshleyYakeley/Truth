@@ -15,6 +15,7 @@ import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
+import Pinafore.Language.Library.Std.Monoid
 import Pinafore.Language.Library.Std.Types
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
@@ -180,6 +181,7 @@ baseLibEntries =
                 [ mkTypeEntry "Unit" "" $ MkBoundType unitGroundType
                 , literalSubtypeRelationEntry @()
                 , showableSubtypeRelationEntry @()
+                , monoidSubtypeRelationEntry @()
                 ]
           , docTreeEntry
                 "Boolean"
@@ -246,7 +248,7 @@ baseLibEntries =
                 [ mkTypeEntry "Text" "" $ MkBoundType textGroundType
                 , literalSubtypeRelationEntry @Text
                 , showableSubtypeRelationEntry @Text
-                , mkValEntry "<>" "Concatenate text." $ (<>) @Text
+                , monoidSubtypeRelationEntry @Text
                 , mkValEntry "textLength" "The length of a piece of text." $ olength @Text
                 , mkValEntry
                       "textSection"
@@ -629,7 +631,9 @@ baseLibEntries =
           "Lists"
           ""
           [ mkTypeEntry "List" "A list." $ MkBoundType listGroundType
+          , semigroupSubtypeRelationEntry @(NonEmpty A)
           , mkTypeEntry "List1" "A list with at least one element." $ MkBoundType list1GroundType
+          , monoidSubtypeRelationEntry @[A]
           , hasSubtypeRelationEntry @(NonEmpty A) @[A] "" $ functionToShim "NonEmpty.toList" toList
           , mkValPatEntry "[]" "Empty list" ([] @BottomType) $ \(v :: [A]) ->
                 case v of
@@ -648,7 +652,6 @@ baseLibEntries =
           , mkValEntry "length" "Number of items in a list" (length :: [TopType] -> Int)
           , mkValEntry "index" "Get item from list by index." (index :: [A] -> Int -> Maybe A)
           , mkValEntry "mapList" "Map the items of a list." (fmap :: (A -> B) -> [A] -> [B])
-          , mkValEntry "++" "Concatentate lists." ((++) :: [A] -> [A] -> [A])
           , mkValEntry "filter" "Filter a list." (filter :: (A -> Bool) -> [A] -> [A])
           , mkValEntry "maybeMapList" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
           , mkValEntry "take" "Take the first n elements." (take :: Int -> [A] -> [A])

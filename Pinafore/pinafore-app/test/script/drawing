@@ -18,34 +18,28 @@ end;
 drawing: WholeRef Progress -> WholeRef Drawing;
 drawing ref =
 {
-    scale (0.8,0.8) $ rotate (3/4 ~* pi) $ lineWidth 0.1
+    scale (0.8,0.8) $ rotate (3/4 ~* pi) $ lineWidth 0.1 $ concat
     [
         source navy $ case %(toMaybeWhole ref) of
             Nothing =>
-            [
-                onClick $ ref := ProgressPartial
-            ];
+                onClick $ ref := ProgressPartial;
             Just ProgressNone =>
+                onClick $ ref := ProgressPartial;
+            Just ProgressPartial => concat
             [
-                onClick $ ref := ProgressPartial
-            ];
-            Just ProgressPartial =>
-            [
-                fill [arc (0,0) 1 0 pi, closePath],
+                fill $ arc (0,0) 1 0 pi ++ closePath,
                 onClick $ ref := ProgressDone
             ];
-            Just ProgressDone =>
+            Just ProgressDone => concat
             [
-                fill [arc (0,0) 1 0 (2 ~* pi)],
+                fill $ arc (0,0) 1 0 (2 ~* pi),
                 onClick $ ref := ProgressNone
             ];
         end,
-        stroke
-        [
-            arc (0,0) 1 0 (2 ~* pi),
-            moveTo (-1,0),
+        stroke $
+            arc (0,0) 1 0 (2 ~* pi) ++
+            moveTo (-1,0) ++
             lineTo (1,0)
-        ]
     ]
 };
 
