@@ -563,12 +563,16 @@ testQueries =
               , testQuery "let a : Integer; a = 3; b : Number; b = a in b" $ LRSuccess "3"
               , testQuery "let i : FiniteSetRef -a -> SetRef a; i x = x in 3" $ LRSuccess "3"
               , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ LRSuccess "3"
-              , testSubtype True "List1 Integer" "List Integer" []
+              , testSubtype True "List1 Unit" "List Unit" ["[()]"]
+              , testSubtype True "List1 Integer" "List Integer" ["[5]"]
               , testTree
                     "diamond"
                     [ testSubtype True "Monoid (List Unit)" "List Unit" []
                     , testSubtype True "Semigroup (List Unit)" "Monoid (List Unit)" []
                     , testSubtype True "Semigroup (List Unit)" "List Unit" []
+                    , testSubtype True "List (Semigroup (List Unit))" "List (List Unit)" []
+                    , testQuery "let f x = [()] ++ x in f [()]" $ LRSuccess "[(), ()]"
+                    , testQuery "let f: List Unit -> List Unit; f x = [()] ++ x in f [()]" $ LRSuccess "[(), ()]"
                     ]
               ]
         , testTree

@@ -28,6 +28,16 @@ instance Show a => Show (FiniteSet a) where
 sumFiniteSet :: FiniteSet a -> FiniteSet b -> FiniteSet (Either a b)
 sumFiniteSet (MkFiniteSet aa) (MkFiniteSet bb) = MkFiniteSet $ fmap Left aa <> fmap Right bb
 
+bindFiniteSet ::
+       forall a b. Eq b
+    => FiniteSet a
+    -> (a -> FiniteSet b)
+    -> FiniteSet b
+bindFiniteSet aa f = mconcat $ fmap f $ unFiniteSet aa
+
+concatFiniteSet :: Eq a => FiniteSet (FiniteSet a) -> FiniteSet a
+concatFiniteSet aa = bindFiniteSet aa id
+
 type instance Element (FiniteSet a) = a
 
 instance Traversable FiniteSet where
