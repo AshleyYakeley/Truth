@@ -170,7 +170,9 @@ testSubsumeSubtype good t1 t2 vs =
 
 testFunctionSubtype :: Bool -> Text -> Text -> [Text] -> [TestTree]
 testFunctionSubtype good t1 t2 vs =
-    [ testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ goodLangResult good $ LRSuccess "<?>"
+    [ testQuery ("let rec r=r end; f : (" <> t2 <> ") -> Unit; f _ = (); x : (" <> t1 <> "); x = r in f x") $
+      goodLangResult good $ LRSuccess "()"
+    , testQuery ("let f : (" <> t1 <> ") -> (" <> t2 <> "); f x = x in f") $ goodLangResult good $ LRSuccess "<?>"
     , testQuery ("(\\x => x) : (" <> t1 <> ") -> (" <> t2 <> ")") $ goodLangResult good $ LRSuccess "<?>"
     ] <>
     fmap
@@ -561,6 +563,13 @@ testQueries =
               , testQuery "let a : Integer; a = 3; b : Number; b = a in b" $ LRSuccess "3"
               , testQuery "let i : FiniteSetRef -a -> SetRef a; i x = x in 3" $ LRSuccess "3"
               , testQuery "let i : FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ LRSuccess "3"
+              , testSubtype True "List1 Integer" "List Integer" []
+              , testTree
+                    "diamond"
+                    [ testSubtype True "Monoid (List Unit)" "List Unit" []
+                    , testSubtype True "Semigroup (List Unit)" "Monoid (List Unit)" []
+                    , testSubtype True "Semigroup (List Unit)" "List Unit" []
+                    ]
               ]
         , testTree
               "subsume"
