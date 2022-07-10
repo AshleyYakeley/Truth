@@ -15,8 +15,11 @@ literalGroundType :: PinaforeGroundType '[] Literal
 literalGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Literal)|]) "Literal"
 
 literalGreatestDynamicSupertype :: AsLiteral t => PinaforePolyGreatestDynamicSupertype '[] t
-literalGreatestDynamicSupertype NilCCRArguments =
-    Just $ makeNilGDS literalGroundType $ functionToShim "fromLiteral" fromLiteral
+literalGreatestDynamicSupertype =
+    SimplePolyGreatestDynamicSupertype
+        literalGroundType
+        (functionToShim "fromLiteral" fromLiteral)
+        (functionToShim "toLiteral" toLiteral)
 
 unitGroundType :: PinaforeGroundType '[] ()
 unitGroundType =
@@ -99,7 +102,7 @@ list1GroundType :: IsDolanSubtypeGroundType PinaforeGroundType => PinaforeGround
 list1GroundType =
     (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NonEmpty)|]) "List1")
         { pgtGreatestDynamicSupertype =
-              \(ConsCCRArguments ta NilCCRArguments) -> let
+              GeneralPolyGreatestDynamicSupertype $ \(ConsCCRArguments ta NilCCRArguments) -> let
                   tt = mkShimWit $ GroundedDolanSingularType listGroundType $ ConsCCRArguments ta NilCCRArguments
                   in Just $ mapPolarShimWit (MkPolarMap $ functionToShim "nonEmpty" nonEmpty) tt
         }

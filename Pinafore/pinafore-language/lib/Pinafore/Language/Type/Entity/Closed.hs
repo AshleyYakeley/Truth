@@ -1,6 +1,7 @@
 module Pinafore.Language.Type.Entity.Closed where
 
 import Language.Expression.Dolan
+import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Entity.Type
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
@@ -34,7 +35,7 @@ closedEntityGroundType tidsym props@MkEntityProperties {..} =
         , pgtShowType = epShowType
         , pgtFamilyType =
               MkFamilialType closedEntityFamilyWitness $ MkClosedEntityFamily tidsym $ MkSealedEntityProperties props
-        , pgtGreatestDynamicSupertype = \_ -> Nothing
+        , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
         }
 
 closedEntityFamily :: EntityFamily

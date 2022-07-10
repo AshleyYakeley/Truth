@@ -13,6 +13,9 @@ module Pinafore.Language.API
     , FamilyKind
     , SingletonFamily
     , PinaforeGroundType(..)
+    , literalSubtypeRelationEntry
+    , literalGreatestDynamicSupertype
+    , showableSubtypeRelationEntry
     , stdSingleGroundType
     , PinaforeSingularType
     , PinaforeType
@@ -38,6 +41,7 @@ import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std ()
+import Pinafore.Language.Library.Std.Base
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Value

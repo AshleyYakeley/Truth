@@ -90,10 +90,10 @@ aDynamicEntityGroundType name dts =
     (singleGroundType' (MkFamilialType aDynamicEntityFamilyWitness $ MkADynamicEntityFamily name dts) $
      exprShowPrec name)
         { pgtGreatestDynamicSupertype =
-              \NilCCRArguments ->
-                  Just $
-                  makeNilGDS dynamicEntityGroundType $
-                  functionToShim "dynamic-check" $ \de@(MkDynamicEntity dt _) -> ifpure (member dt dts) de
+              SimplePolyGreatestDynamicSupertype
+                  dynamicEntityGroundType
+                  (functionToShim "dynamic-check" $ \de@(MkDynamicEntity dt _) -> ifpure (member dt dts) de)
+                  id
         }
 
 aDynamicEntityEntityFamily :: EntityFamily

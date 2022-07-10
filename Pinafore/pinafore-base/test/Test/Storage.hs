@@ -94,7 +94,7 @@ testAddRemoveProperty st vt s v MkTestContext {..} = do
     readCount st vt pA v 0
 
 textAdapter :: EntityAdapter Text
-textAdapter = literalEntityAdapter
+textAdapter = literalEntityAdapter literalCodec
 
 maybeTextAdapter :: EntityAdapter (Maybe Text)
 maybeTextAdapter = let

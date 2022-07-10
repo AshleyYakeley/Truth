@@ -63,14 +63,12 @@ plainEntityAdapter = let
     entityAdapterToDefinition e = MkSomeOf (MkEntityStorer PlainConstructorStorer) e
     in MkEntityAdapter {..}
 
-literalEntityAdapter ::
-       forall t. AsLiteral t
-    => EntityAdapter t
-literalEntityAdapter = let
+literalEntityAdapter :: forall t. Codec Literal t -> EntityAdapter t
+literalEntityAdapter codec = let
     entityAdapterDefinitions :: EntityStorer 'MultipleMode t
-    entityAdapterDefinitions = MkEntityStorer $ pure $ MkKnowShim LiteralConstructorStorer $ maybeToKnow . fromLiteral
+    entityAdapterDefinitions = MkEntityStorer $ pure $ MkKnowShim LiteralConstructorStorer $ maybeToKnow . decode codec
     entityAdapterToDefinition :: t -> SomeOf (EntityStorer 'SingleMode)
-    entityAdapterToDefinition t = MkSomeOf (MkEntityStorer LiteralConstructorStorer) $ toLiteral t
+    entityAdapterToDefinition t = MkSomeOf (MkEntityStorer LiteralConstructorStorer) $ encode codec t
     in MkEntityAdapter {..}
 
 hashedPredicate :: Anchor -> Int -> Int -> Predicate

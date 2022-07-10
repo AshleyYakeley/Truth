@@ -4,14 +4,31 @@ import Data.Shim
 import Language.Expression.Dolan
 import Shapes
 
-makeNilGDS ::
-       forall (ground :: GroundTypeKind) (t :: Type) (dt :: Type). IsDolanGroundType ground
-    => ground '[] dt
-    -> DolanPolyShim ground Type dt (Maybe t)
-    -> DolanSingularShimWit ground 'Negative (Maybe t)
-makeNilGDS wt conv = mapShimWit (MkPolarMap conv) $ mkShimWit $ GroundedDolanSingularType wt NilCCRArguments
-
 type PolyGreatestDynamicSupertype :: GroundTypeKind -> forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
-type PolyGreatestDynamicSupertype ground dv gt
-     = forall (t :: Type).
-               DolanArguments dv (DolanType ground) gt 'Negative t -> Maybe (DolanSingularShimWit ground 'Negative (Maybe t))
+data PolyGreatestDynamicSupertype ground dv gt where
+    GeneralPolyGreatestDynamicSupertype
+        :: forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
+           (forall (t :: Type).
+                    DolanArguments dv (DolanType ground) gt 'Negative t -> Maybe (DolanSingularShimWit ground 'Negative (Maybe t)))
+        -> PolyGreatestDynamicSupertype ground dv gt
+    SimplePolyGreatestDynamicSupertype
+        :: forall (ground :: GroundTypeKind) (dt :: Type) (gt :: Type).
+           ground '[] dt
+        -> DolanPolyShim ground Type dt (Maybe gt)
+        -> DolanPolyShim ground Type gt dt
+        -> PolyGreatestDynamicSupertype ground '[] gt
+
+nullPolyGreatestDynamicSupertype ::
+       forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv).
+       PolyGreatestDynamicSupertype ground dv gt
+nullPolyGreatestDynamicSupertype = GeneralPolyGreatestDynamicSupertype $ \_ -> Nothing
+
+getPolyGreatestDynamicSupertype ::
+       forall (ground :: GroundTypeKind) (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (t :: Type).
+       IsDolanGroundType ground
+    => PolyGreatestDynamicSupertype ground dv gt
+    -> DolanArguments dv (DolanType ground) gt 'Negative t
+    -> Maybe (DolanSingularShimWit ground 'Negative (Maybe t))
+getPolyGreatestDynamicSupertype (GeneralPolyGreatestDynamicSupertype f) args = f args
+getPolyGreatestDynamicSupertype (SimplePolyGreatestDynamicSupertype wt conv _) NilCCRArguments =
+    Just $ mapShimWit (MkPolarMap conv) $ mkShimWit $ GroundedDolanSingularType wt NilCCRArguments

@@ -290,7 +290,7 @@ makeDataGroundType name tidsym tparams = let
             , pgtVarianceMap = lazyDolanVarianceMap dvt dvm
             , pgtShowType = standardListTypeExprShow @dv $ exprShow name
             , pgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily tidsym
-            , pgtGreatestDynamicSupertype = \_ -> Nothing
+            , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
             }
     in MkStages mkx mkgt
 

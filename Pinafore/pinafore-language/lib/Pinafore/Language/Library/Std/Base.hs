@@ -2,6 +2,8 @@
 
 module Pinafore.Language.Library.Std.Base
     ( baseLibEntries
+    , showableSubtypeRelationEntry
+    , literalSubtypeRelationEntry
     ) where
 
 import Changes.Core

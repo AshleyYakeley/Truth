@@ -47,7 +47,7 @@ singleGroundType' ft showexp =
         , pgtVarianceMap = dolanVarianceMap
         , pgtShowType = showexp
         , pgtFamilyType = ft
-        , pgtGreatestDynamicSupertype = \_ -> Nothing
+        , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
         }
 
 singleGroundType ::

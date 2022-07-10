@@ -5,6 +5,7 @@ import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.ExprShow
+import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Type
@@ -77,7 +78,7 @@ entityToPinaforeGroundType cv (MkEntityGroundType pgtFamilyType (MkSealedEntityP
             pgtVarianceType = covaryToDolanVarianceType epKind
             pgtVarianceMap = covaryToDolanVarianceMap epKind epCovaryMap
             pgtShowType = epShowType
-            pgtGreatestDynamicSupertype _ = Nothing
+            pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
             in MkPinaforeGroundType {..}
 
 instance TestHetEquality EntityGroundType where

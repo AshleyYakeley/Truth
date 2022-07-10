@@ -16,6 +16,7 @@ import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
+import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Entity.Closed
 import Pinafore.Language.Type.Entity.Dynamic
 import Pinafore.Language.Type.Entity.Open
@@ -131,17 +132,26 @@ entityGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamil
 entityEntityFamily :: EntityFamily
 entityEntityFamily = simplePinaforeEntityFamily entityGroundType plainEntityAdapter
 
-literalEntityFamily ::
-       forall (t :: Type). AsLiteral t
-    => PinaforeGroundType '[] t
-    -> EntityFamily
-literalEntityFamily t =
-    pinaforeEntityFamily t $ \epShowType -> let
-        epKind = NilListType
-        epCovaryMap = covarymap
-        epAdapter :: forall ta. Arguments EntityAdapter t ta -> EntityAdapter ta
-        epAdapter NilArguments = literalEntityAdapter
-        in MkEntityProperties {..}
+literalEntityFamily :: EntityFamily
+literalEntityFamily =
+    pinaforeEntityFamily literalGroundType $ \showtype ->
+        MkEntityProperties
+            { epKind = NilListType
+            , epCovaryMap = covarymap
+            , epAdapter = \NilArguments -> literalEntityAdapter id
+            , epShowType = showtype
+            }
+
+literalEntityGroundType :: Codec Literal t -> PinaforeGroundType '[] t -> EntityGroundType t
+literalEntityGroundType codec MkPinaforeGroundType {..} =
+    MkEntityGroundType pgtFamilyType $
+    MkSealedEntityProperties $
+    MkEntityProperties
+        { epKind = NilListType
+        , epCovaryMap = covarymap
+        , epAdapter = \NilArguments -> literalEntityAdapter codec
+        , epShowType = pgtShowType
+        }
 
 findmap :: [a] -> (a -> Maybe b) -> Maybe b
 findmap [] _ = Nothing
@@ -161,19 +171,7 @@ allEntityFamilies =
     , aDynamicEntityEntityFamily
     , closedEntityFamily
     , openEntityFamily
-    , literalEntityFamily literalGroundType
-    , literalEntityFamily unitGroundType
-    , literalEntityFamily textGroundType
-    , literalEntityFamily numberGroundType
-    , literalEntityFamily rationalGroundType
-    , literalEntityFamily integerGroundType
-    , literalEntityFamily booleanGroundType
-    , literalEntityFamily orderingGroundType
-    , literalEntityFamily timeGroundType
-    , literalEntityFamily durationGroundType
-    , literalEntityFamily dateGroundType
-    , literalEntityFamily timeOfDayGroundType
-    , literalEntityFamily localTimeGroundType
+    , literalEntityFamily
     ]
 
 instance CovarySubtype PinaforeGroundType EntityGroundType where
@@ -181,12 +179,19 @@ instance CovarySubtype PinaforeGroundType EntityGroundType where
            forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
            PinaforeGroundType dv t
         -> Maybe (CovaryType dv, EntityGroundType t)
-    dolanToMonoGroundType MkPinaforeGroundType {..} =
-        findmap allEntityFamilies $ \(MkEntityFamily wit ff) -> do
-            tt <- matchFamilyType wit pgtFamilyType
-            seprops <- ff tt
-            covaryType <- dolanVarianceToCovaryType pgtVarianceType
-            return (covaryType, MkEntityGroundType pgtFamilyType seprops)
+    dolanToMonoGroundType agt@MkPinaforeGroundType {..} =
+        (findmap allEntityFamilies $ \(MkEntityFamily wit ff) -> do
+             tt <- matchFamilyType wit pgtFamilyType
+             seprops <- ff tt
+             covaryType <- dolanVarianceToCovaryType pgtVarianceType
+             return (covaryType, MkEntityGroundType pgtFamilyType seprops)) <|> do
+            Refl <- testEquality NilListType pgtVarianceType
+            case pgtGreatestDynamicSupertype of
+                SimplePolyGreatestDynamicSupertype gt from to -> do
+                    (Refl, HRefl) <- groundTypeTestEquality gt literalGroundType
+                    return
+                        (NilListType, literalEntityGroundType (MkCodec (shimToFunction from) (shimToFunction to)) agt)
+                _ -> Nothing
     monoToDolanGroundType ::
            forall (dv :: DolanVariance) (t :: DolanVarianceKind dv).
            CovaryType dv

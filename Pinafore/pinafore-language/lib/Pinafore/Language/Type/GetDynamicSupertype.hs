@@ -7,6 +7,7 @@ module Pinafore.Language.Type.GetDynamicSupertype
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Language.Shim
+import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Ground
 import Pinafore.Language.Type.Subtype ()
 import Pinafore.Language.Type.Type
@@ -14,7 +15,8 @@ import Shapes
 
 getOptSingleGreatestDynamicSupertype ::
        PinaforeSingularType 'Negative t -> Maybe (PinaforeSingularShimWit 'Negative (Maybe t))
-getOptSingleGreatestDynamicSupertype (GroundedDolanSingularType gt args) = pgtGreatestDynamicSupertype gt args
+getOptSingleGreatestDynamicSupertype (GroundedDolanSingularType gt args) =
+    getPolyGreatestDynamicSupertype (pgtGreatestDynamicSupertype gt) args
 getOptSingleGreatestDynamicSupertype _ = Nothing
 
 getSingleGreatestDynamicSupertype :: PinaforeSingularType 'Negative t -> PinaforeSingularShimWit 'Negative (Maybe t)
