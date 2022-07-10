@@ -25,4 +25,4 @@ library:
     other-modules:
       - Pinafore.Language.Library.Media.Colour
       - Pinafore.Language.Library.Media.Image
-      - Pinafore.Language.Library.Media.Drawing
+      - Pinafore.Language.Library.Media.Cairo

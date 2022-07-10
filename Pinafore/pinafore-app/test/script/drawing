@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 let
 import Colour;
-import Drawing;
+import Cairo;
 import GTK();
 
 # transform from (-1 .. +1,-1 .. +1)

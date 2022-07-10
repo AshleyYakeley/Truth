@@ -204,7 +204,7 @@ window_css = do
 
 ### Drawing
 window_drawing: WholeRef +Time -> Action GTK.Window;
-window_drawing now = let import Colour; import Drawing in do
+window_drawing now = let import Colour; import Cairo in do
     tzref <- newTimeZoneRef now;
     std_window {"Drawing"} $ GTK.draw {\(w,h) => let
         size = min w h;

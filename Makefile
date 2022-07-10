@@ -158,7 +158,8 @@ deb: out/$(PACKAGEFULLNAME).deb
 LIBMODULES := \
     Std \
     Colour \
-    Drawing \
+    Cairo \
+    Image \
     GTK \
     Debug \
     Debug.GTK \

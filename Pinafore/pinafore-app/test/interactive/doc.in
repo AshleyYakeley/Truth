@@ -1,7 +1,7 @@
 :doc textLength
 :doc Time
 :doc Just
-let import Drawing
+let import Cairo
 :doc paintAlpha
 :doc GTK.Element
 :doc GTK.textArea

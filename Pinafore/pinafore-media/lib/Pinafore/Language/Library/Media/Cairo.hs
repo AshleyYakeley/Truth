@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.Media.Drawing
-    ( drawingLibraryModule
+module Pinafore.Language.Library.Media.Cairo
+    ( cairoLibraryModule
     , LangDrawing(..)
     ) where
 
@@ -121,10 +121,10 @@ fontFace' fname italic bold =
 langOnClick :: (?pinafore :: PinaforeContext) => PinaforeAction () -> LangDrawing
 langOnClick action = MkLangDrawing $ \unlift -> onClick $ gvRunAction unlift action
 -}
-drawingLibraryModule :: LibraryModule
-drawingLibraryModule =
+cairoLibraryModule :: LibraryModule
+cairoLibraryModule =
     MkDocTree
-        "Drawing"
+        "Cairo"
         ""
         [ mkTypeEntry "Drawing" "Something that can be drawn." $ MkBoundType drawingGroundType
         , hasSubtypeRelationEntry @[LangDrawing A] @(LangDrawing [A]) "Monoidal relationship" $

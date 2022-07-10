@@ -1,7 +1,7 @@
 #!/usr/bin/pinafore
 let
 import Colour;
-import Drawing;
+import Cairo;
 import GTK;
 
 scaleDrawing: Drawing a -> Integer :*: Integer -> Drawing a;

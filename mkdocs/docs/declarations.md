@@ -75,7 +75,7 @@ import GTK; # brings everything from GTK into scope
 
 import Colour (AlphaColour, crimson); # brings given names (and subtype relations) from Colour into scope
 
-import Drawing (); # brings only subtype relations from Drawing into scope
+import Cairo (); # brings only subtype relations from Cairo into scope
 
 in draw {\_ => source crimson paint}
 ```

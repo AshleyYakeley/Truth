@@ -4,9 +4,9 @@ module Pinafore.Language.Library.Media
     ) where
 
 import Pinafore.Language.API
+import Pinafore.Language.Library.Media.Cairo
 import Pinafore.Language.Library.Media.Colour
-import Pinafore.Language.Library.Media.Drawing
 import Pinafore.Language.Library.Media.Image
 
 mediaLibrary :: [LibraryModule]
-mediaLibrary = [colourLibraryModule, imageLibraryModule, drawingLibraryModule]
+mediaLibrary = [colourLibraryModule, imageLibraryModule, cairoLibraryModule]
