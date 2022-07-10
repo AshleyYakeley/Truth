@@ -30,7 +30,8 @@ nav:
 - Library:
   - Std: 'library/Std.md'
   - Colour: 'library/Colour.md'
-  - Drawing: 'library/Drawing.md'
+  - Cairo: 'library/Cairo.md'
+  - Image: 'library/Image.md'
   - GTK: 'library/GTK.md'
   - Debug: 'library/Debug.md'
   - Debug.GTK: 'library/Debug.GTK.md'

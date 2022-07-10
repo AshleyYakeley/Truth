@@ -46,6 +46,9 @@ langOnClick action =
                 return True
             _ -> return False
 
+handlerFallThrough :: LangHandler -> LangHandler
+handlerFallThrough (MkLangHandler uie) = MkLangHandler $ \evt -> fmap (\_ -> False) $ uie evt
+
 uiDraw ::
        (?pinafore :: PinaforeContext)
     => PinaforeImmutableWholeRef ((Int32, Int32) -> LangDrawing LangHandler)
@@ -61,9 +64,9 @@ drawingStuff =
     docTreeEntry
         "Drawing"
         ""
-        [ mkTypeEntry "Handler" "A user interface element is something that goes inside a window." $
-          MkBoundType handlerGroundType
+        [ mkTypeEntry "Handler" "Response to button-clicked events" $ MkBoundType handlerGroundType
         , hasSubtypeRelationEntry @[LangHandler] @LangHandler "Monoidal relationship" $ functionToShim "mconcat" mconcat
         , mkValEntry "onClick" "Action to perform on click" langOnClick
+        , mkValEntry "fallThrough" "Run the handler, but fall through to run handlers underneath." handlerFallThrough
         , mkValEntry "draw" "Drawable element" uiDraw
         ]
