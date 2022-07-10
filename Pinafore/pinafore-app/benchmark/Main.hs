@@ -5,7 +5,7 @@ module Main
 import Changes.Core
 import Criterion.Main
 import Pinafore
-import Pinafore.Language.Library.GTK
+import Pinafore.Libs
 import Pinafore.Test
 import Shapes
 
@@ -34,10 +34,10 @@ benchScript text =
                (show $ unpack text)
                [ bench "check" $
                  nfIO $
-                 runWithContext pc (libraryFetchModule gtkLibrary) $
+                 runWithContext pc (libraryFetchModule extraLibrary) $
                  throwInterpretResult $ pinaforeInterpretText "<test>" text >> return ()
                , env (fmap const $
-                      runWithContext pc (libraryFetchModule gtkLibrary) $
+                      runWithContext pc (libraryFetchModule extraLibrary) $
                       throwInterpretResult $ pinaforeInterpretText "<test>" text) $ \action ->
                      bench "run" $ nfIO (nullViewIO $ action ())
                ]

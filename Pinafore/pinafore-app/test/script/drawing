@@ -2,9 +2,10 @@
 let
 import Colour;
 import Drawing;
+import GTK();
 
 # transform from (-1 .. +1,-1 .. +1)
-scaleDrawing: WholeRef Drawing -> WholeRef (Integer :*: Integer -> Drawing);
+scaleDrawing: WholeRef (Drawing a) -> WholeRef (Integer :*: Integer -> Drawing a);
 scaleDrawing rd = {\(w,h) => let
     size = min w h;
     in translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd};
@@ -15,7 +16,7 @@ datatype Progress of
     ProgressDone;
 end;
 
-drawing: WholeRef Progress -> WholeRef Drawing;
+drawing: WholeRef Progress -> WholeRef +(Drawing GTK.Handler);
 drawing ref =
 {
     scale (0.8,0.8) $ rotate (3/4 ~* pi) $ lineWidth 0.1
@@ -23,21 +24,21 @@ drawing ref =
         source navy $ case %(toMaybeWhole ref) of
             Nothing =>
             [
-                onClick $ ref := ProgressPartial
+                pureDrawing $ GTK.onClick $ ref := ProgressPartial
             ];
             Just ProgressNone =>
             [
-                onClick $ ref := ProgressPartial
+                pureDrawing $ GTK.onClick $ ref := ProgressPartial
             ];
             Just ProgressPartial =>
             [
                 fill [arc (0,0) 1 0 pi, closePath],
-                onClick $ ref := ProgressDone
+                pureDrawing $ GTK.onClick $ ref := ProgressDone
             ];
             Just ProgressDone =>
             [
                 fill [arc (0,0) 1 0 (2 ~* pi)],
-                onClick $ ref := ProgressNone
+                pureDrawing $ GTK.onClick $ ref := ProgressNone
             ];
         end,
         stroke

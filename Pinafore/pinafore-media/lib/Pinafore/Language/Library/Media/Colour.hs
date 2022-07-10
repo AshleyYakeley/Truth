@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Library.GTK.Colour
+module Pinafore.Language.Library.Media.Colour
     ( colourLibraryModule
     , LangColour
     , pattern MkSRGBColour

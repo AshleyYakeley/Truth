@@ -16,3 +16,6 @@ instance HasPinaforeGroundType '[] GTKContext where
 
 gvRunAction :: (?pinafore :: PinaforeContext) => (View --> IO) -> PinaforeAction () -> GView 'Locked ()
 gvRunAction unlift pa = gvRunUnlockedIO $ unlift $ runPinaforeAction pa
+
+gvRunActionDefault :: (?pinafore :: PinaforeContext) => (View --> IO) -> a -> PinaforeAction a -> GView 'Locked a
+gvRunActionDefault unlift a pa = fmap (fromKnow a) $ gvRunUnlockedIO $ unlift $ unliftPinaforeAction pa

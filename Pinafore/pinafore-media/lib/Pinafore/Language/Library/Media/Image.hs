@@ -1,4 +1,4 @@
-module Pinafore.Language.Library.GTK.Image
+module Pinafore.Language.Library.Media.Image
     ( imageLibraryModule
     ) where
 

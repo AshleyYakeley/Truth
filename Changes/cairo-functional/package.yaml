@@ -1,0 +1,21 @@
+_common: !include "../../common.yaml"
+name: cairo-functional
+version: *changes_version
+<<: *author
+
+<<: *language
+
+flags:
+    build-examples:
+        description: Build examples
+        default: False
+        manual: False
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.12
+      - gi-cairo-render
+      - shapes
+    exposed-modules:
+      - Graphics.Cairo.Functional

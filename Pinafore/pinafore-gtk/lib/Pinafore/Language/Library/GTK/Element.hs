@@ -1,5 +1,3 @@
-{-# OPTIONS -fno-warn-orphans #-}
-
 module Pinafore.Language.Library.GTK.Element
     ( elementStuff
     , actionRef
@@ -15,24 +13,8 @@ import GI.Cairo.Render
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Context
-import Pinafore.Language.Library.GTK.Drawing
+import Pinafore.Language.Library.GTK.Element.Context
 import Shapes
-
-data ElementContext = MkElementContext
-    { ecUnlift :: View --> IO
-    , ecAccelGroup :: AccelGroup
-    }
-
--- LangElement
-newtype LangElement = MkLangElement
-    { unLangElement :: ElementContext -> GView 'Locked Widget
-    }
-
-elementGroundType :: PinaforeGroundType '[] LangElement
-elementGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangElement)|]) "Element"
-
-instance HasPinaforeGroundType '[] LangElement where
-    pinaforeGroundType = elementGroundType
 
 -- LangLayoutElement
 data LangLayoutElement =
@@ -260,11 +242,6 @@ uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangElement
 uiCalendar day =
     MkLangElement $ \_ -> createCalendar $ unWModel $ eaMap (unknownValueChangeLens $ fromGregorian 1970 01 01) day
 
-uiDraw :: PinaforeImmutableWholeRef ((Int32, Int32) -> LangDrawing) -> LangElement
-uiDraw ref =
-    MkLangElement $ \ec ->
-        createCairo $ unWModel $ pinaforeImmutableRefValue mempty $ fmap (\d p -> unLangDrawing (d p) $ ecUnlift ec) ref
-
 uiWithContext :: (GTKContext -> LangElement) -> LangElement
 uiWithContext call =
     MkLangElement $ \ec -> do
@@ -289,7 +266,6 @@ elementStuff =
         , mkValEntry "withContext" "Element that requires a Context." uiWithContext
         , mkValEntry "owned" "Run actions caused by this element in the window's lifecycle." uiOwned
         , mkValEntry "blank" "Blank element" $ MkLangElement $ \_ -> createBlank
-        , mkValEntry "draw" "Drawable element" uiDraw
         , mkValEntry "unitCheckBox" "(TBD)" uiUnitCheckBox
         , mkValEntry "checkBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox
         , mkValEntry

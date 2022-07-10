@@ -18,6 +18,7 @@ library:
       - xdg-basedir
       - githash
       - pinafore-language
+      - pinafore-media
       - pinafore-gtk
     exposed-modules:
       - Pinafore.Version
@@ -63,7 +64,6 @@ tests:
           - shapes
           - changes-core
           - pinafore-language
-          - pinafore-gtk
           - pinafore-app
         main: Main.hs
         other-modules:
@@ -90,7 +90,7 @@ benchmarks:
           - shapes
           - changes-core
           - pinafore-language
-          - pinafore-gtk
+          - pinafore-app
           - criterion
         main: Main.hs
         ghc-options: -threaded

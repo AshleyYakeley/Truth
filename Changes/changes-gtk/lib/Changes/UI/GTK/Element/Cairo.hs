@@ -1,5 +1,5 @@
 module Changes.UI.GTK.Element.Cairo
-    ( UIEvents
+    ( UIEvents(..)
     , UIDrawing
     , createCairo
     , onMouseEvent
@@ -10,7 +10,6 @@ module Changes.UI.GTK.Element.Cairo
 import Changes.Core
 import Changes.GI
 import Data.IORef
-import GI.Cairo.Render
 import GI.Cairo.Render.Connector
 import GI.Gdk as GI
 import GI.Gtk as GI
@@ -35,11 +34,14 @@ instance Monoid UIEvents where
 
 type UIDrawing = Drawing (PixelPoint -> UIEvents)
 
+eventsfallThrough :: UIEvents -> UIEvents
+eventsfallThrough (MkUIEvents uie) = MkUIEvents $ \evt -> fmap (\_ -> False) $ uie evt
+
 onMouseEvent :: ((Double, Double) -> EventButton -> GView 'Locked Bool) -> UIDrawing
 onMouseEvent f = pointDrawing $ \p -> MkUIEvents $ f p
 
 fallThrough :: UIDrawing -> UIDrawing
-fallThrough = fmap $ \f p -> MkUIEvents $ \evt -> fmap (\_ -> False) $ (unUIEvents $ f p) evt
+fallThrough = fmap $ fmap eventsfallThrough
 
 onClick :: GView 'Locked () -> UIDrawing
 onClick action =

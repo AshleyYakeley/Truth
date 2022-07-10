@@ -15,32 +15,22 @@ library:
     source-dirs: lib
     dependencies:
       - base >= 4.12
-      - bytestring
-      - text
       - time
-      - transformers
       - vector
-      - mono-traversable
-      - countable
-      - witness
-      - open-witness
       - haskell-gi-base
       - gi-glib
       - gi-gobject
-      - gi-gio
       - gi-gdk
       - gi-gdkpixbuf
-      - gi-cairo
-      - gi-cairo-render
       - gi-cairo-connector
       - gi-pango
       - gi-gtk
       - gi-gtk-hs
       - shapes
+      - cairo-functional
       - changes-core
       - changes-media
     exposed-modules:
-      - Graphics.Cairo.Functional
       - Changes.UI.GTK
       - Changes.UI.GTK.Test
     other-modules:
@@ -157,6 +147,7 @@ executables:
           - base >= 4.12
           - shapes
           - time
+          - cairo-functional
           - changes-core
           - changes-world
           - changes-gtk

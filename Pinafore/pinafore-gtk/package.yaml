@@ -15,18 +15,19 @@ library:
       - typed-expression
       - Color
       - gi-cairo-render
+      - gi-gdk
       - gi-gtk
       - changes-core
       - changes-gtk
       - pinafore-base
       - pinafore-language
+      - pinafore-media
     exposed-modules:
       - Pinafore.Language.Library.GTK
     other-modules:
-      - Pinafore.Language.Library.GTK.Colour
-      - Pinafore.Language.Library.GTK.Image
-      - Pinafore.Language.Library.GTK.Drawing
       - Pinafore.Language.Library.GTK.Context
+      - Pinafore.Language.Library.GTK.Element.Context
+      - Pinafore.Language.Library.GTK.Element.Drawing
       - Pinafore.Language.Library.GTK.Element
       - Pinafore.Language.Library.GTK.MenuItem
       - Pinafore.Language.Library.GTK.Window

@@ -10,7 +10,8 @@ module Changes.UI.GTK.Window
 
 import Changes.Core
 import Changes.GI
-import GI.GLib as GI hiding (String)
+
+--import GI.GLib as GI hiding (String)
 import GI.Gtk as GI
 import Shapes
 

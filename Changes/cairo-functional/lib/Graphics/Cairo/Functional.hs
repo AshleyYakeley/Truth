@@ -194,26 +194,26 @@ ifInRect ((x0, y0), (w, h)) = ifPoint $ \(x, y) -> (x >= x0) && (x < x0 + w) && 
 --
 -- Co-ordinate Transformation
 --
-saveMatrix :: forall a. R.Render a -> R.Render a
+saveMatrix :: R.Render --> R.Render
 saveMatrix render = do
     m <- R.getMatrix
     a <- render
     R.setMatrix m
     return a
 
-translate :: forall a. (Double, Double) -> Drawing a -> Drawing a
+translate :: (Double, Double) -> Drawing --> Drawing
 translate (x, y) (MkDrawing render mp) = let
     render' = saveMatrix $ checkStatus (R.translate x y) >> render
     mp' m = mp $ (RM.translate x y RM.identity) * m
     in MkDrawing render' mp'
 
-rotate :: forall a. Double -> Drawing a -> Drawing a
+rotate :: Double -> Drawing --> Drawing
 rotate angle (MkDrawing render mp) = let
     render' = saveMatrix $ R.rotate angle >> render
     mp' m = mp $ (RM.rotate angle RM.identity) * m
     in MkDrawing render' mp'
 
-scale :: forall a. (Double, Double) -> Drawing a -> Drawing a
+scale :: (Double, Double) -> Drawing --> Drawing
 scale (sx, sy) (MkDrawing render mp) = let
     render' = saveMatrix $ R.scale sx sy >> render
     mp' m = mp $ (RM.scale sx sy RM.identity) * m
@@ -233,97 +233,97 @@ paintWithAlpha ::
     -> Drawing a
 paintWithAlpha a = renderDrawing $ R.paintWithAlpha a
 
-sourceRGB :: forall a. (Double, Double, Double) -> Drawing a -> Drawing a
+sourceRGB :: (Double, Double, Double) -> Drawing --> Drawing
 sourceRGB (r, g, b) = dcontext $ R.setSourceRGB r g b
 
-sourceRGBA :: forall a. ((Double, Double, Double), Double) -> Drawing a -> Drawing a
+sourceRGBA :: ((Double, Double, Double), Double) -> Drawing --> Drawing
 sourceRGBA ((r, g, b), a) = dcontext $ R.setSourceRGBA r g b a
 
-operatorClear :: forall a. Drawing a -> Drawing a
+operatorClear :: Drawing --> Drawing
 operatorClear = dcontext $ R.setOperator $ R.OperatorClear
 
-operatorSource :: forall a. Drawing a -> Drawing a
+operatorSource :: Drawing --> Drawing
 operatorSource = dcontext $ R.setOperator $ R.OperatorSource
 
-operatorOver :: forall a. Drawing a -> Drawing a
+operatorOver :: Drawing --> Drawing
 operatorOver = dcontext $ R.setOperator $ R.OperatorOver
 
-operatorIn :: forall a. Drawing a -> Drawing a
+operatorIn :: Drawing --> Drawing
 operatorIn = dcontext $ R.setOperator $ R.OperatorIn
 
-operatorOut :: forall a. Drawing a -> Drawing a
+operatorOut :: Drawing --> Drawing
 operatorOut = dcontext $ R.setOperator $ R.OperatorOut
 
-operatorAtop :: forall a. Drawing a -> Drawing a
+operatorAtop :: Drawing --> Drawing
 operatorAtop = dcontext $ R.setOperator $ R.OperatorAtop
 
-operatorDest :: forall a. Drawing a -> Drawing a
+operatorDest :: Drawing --> Drawing
 operatorDest = dcontext $ R.setOperator $ R.OperatorDest
 
-operatorDestOver :: forall a. Drawing a -> Drawing a
+operatorDestOver :: Drawing --> Drawing
 operatorDestOver = dcontext $ R.setOperator $ R.OperatorDestOver
 
-operatorDestIn :: forall a. Drawing a -> Drawing a
+operatorDestIn :: Drawing --> Drawing
 operatorDestIn = dcontext $ R.setOperator $ R.OperatorDestIn
 
-operatorDestOut :: forall a. Drawing a -> Drawing a
+operatorDestOut :: Drawing --> Drawing
 operatorDestOut = dcontext $ R.setOperator $ R.OperatorDestOut
 
-operatorDestAtop :: forall a. Drawing a -> Drawing a
+operatorDestAtop :: Drawing --> Drawing
 operatorDestAtop = dcontext $ R.setOperator $ R.OperatorDestAtop
 
-operatorXor :: forall a. Drawing a -> Drawing a
+operatorXor :: Drawing --> Drawing
 operatorXor = dcontext $ R.setOperator $ R.OperatorXor
 
-operatorAdd :: forall a. Drawing a -> Drawing a
+operatorAdd :: Drawing --> Drawing
 operatorAdd = dcontext $ R.setOperator $ R.OperatorAdd
 
-operatorSaturate :: forall a. Drawing a -> Drawing a
+operatorSaturate :: Drawing --> Drawing
 operatorSaturate = dcontext $ R.setOperator $ R.OperatorSaturate
 
-operatorMultiply :: forall a. Drawing a -> Drawing a
+operatorMultiply :: Drawing --> Drawing
 operatorMultiply = dcontext $ R.setOperator $ R.OperatorMultiply
 
-operatorScreen :: forall a. Drawing a -> Drawing a
+operatorScreen :: Drawing --> Drawing
 operatorScreen = dcontext $ R.setOperator $ R.OperatorScreen
 
-operatorOverlay :: forall a. Drawing a -> Drawing a
+operatorOverlay :: Drawing --> Drawing
 operatorOverlay = dcontext $ R.setOperator $ R.OperatorOverlay
 
-operatorDarken :: forall a. Drawing a -> Drawing a
+operatorDarken :: Drawing --> Drawing
 operatorDarken = dcontext $ R.setOperator $ R.OperatorDarken
 
-operatorLighten :: forall a. Drawing a -> Drawing a
+operatorLighten :: Drawing --> Drawing
 operatorLighten = dcontext $ R.setOperator $ R.OperatorLighten
 
-operatorColorDodge :: forall a. Drawing a -> Drawing a
+operatorColorDodge :: Drawing --> Drawing
 operatorColorDodge = dcontext $ R.setOperator $ R.OperatorColorDodge
 
-operatorColorBurn :: forall a. Drawing a -> Drawing a
+operatorColorBurn :: Drawing --> Drawing
 operatorColorBurn = dcontext $ R.setOperator $ R.OperatorColorBurn
 
-operatorHardLight :: forall a. Drawing a -> Drawing a
+operatorHardLight :: Drawing --> Drawing
 operatorHardLight = dcontext $ R.setOperator $ R.OperatorHardLight
 
-operatorSoftLight :: forall a. Drawing a -> Drawing a
+operatorSoftLight :: Drawing --> Drawing
 operatorSoftLight = dcontext $ R.setOperator $ R.OperatorSoftLight
 
-operatorDifference :: forall a. Drawing a -> Drawing a
+operatorDifference :: Drawing --> Drawing
 operatorDifference = dcontext $ R.setOperator $ R.OperatorDifference
 
-operatorExclusion :: forall a. Drawing a -> Drawing a
+operatorExclusion :: Drawing --> Drawing
 operatorExclusion = dcontext $ R.setOperator $ R.OperatorExclusion
 
-operatorHslHue :: forall a. Drawing a -> Drawing a
+operatorHslHue :: Drawing --> Drawing
 operatorHslHue = dcontext $ R.setOperator $ R.OperatorHslHue
 
-operatorHslSaturation :: forall a. Drawing a -> Drawing a
+operatorHslSaturation :: Drawing --> Drawing
 operatorHslSaturation = dcontext $ R.setOperator $ R.OperatorHslSaturation
 
-operatorHslColor :: forall a. Drawing a -> Drawing a
+operatorHslColor :: Drawing --> Drawing
 operatorHslColor = dcontext $ R.setOperator $ R.OperatorHslColor
 
-operatorHslLuminosity :: forall a. Drawing a -> Drawing a
+operatorHslLuminosity :: Drawing --> Drawing
 operatorHslLuminosity = dcontext $ R.setOperator $ R.OperatorHslLuminosity
 
 --
@@ -362,7 +362,7 @@ fill pp =
         pathRender pp
         R.fill
 
-clip :: forall a. Path -> Drawing a -> Drawing a
+clip :: Path -> Drawing --> Drawing
 clip pp =
     dcontext $ do
         pathRender pp
@@ -400,37 +400,37 @@ arcNegative :: (Double, Double) -> Double -> Double -> Double -> Path
 arcNegative (xc, yc) r a1 a2 = MkPath $ R.arcNegative xc yc r a1 a2
 
 -- Properties
-lineWidth :: forall a. Double -> Drawing a -> Drawing a
+lineWidth :: Double -> Drawing --> Drawing
 lineWidth w = dcontext $ R.setLineWidth w
 
-lineJoinMitre :: forall a. Double -> Drawing a -> Drawing a
+lineJoinMitre :: Double -> Drawing --> Drawing
 lineJoinMitre limit =
     dcontext $ do
         R.setLineJoin R.LineJoinMiter
         R.setMiterLimit limit
 
-lineJoinRound :: forall a. Drawing a -> Drawing a
+lineJoinRound :: Drawing --> Drawing
 lineJoinRound = dcontext $ R.setLineJoin R.LineJoinRound
 
-lineJoinBevel :: forall a. Drawing a -> Drawing a
+lineJoinBevel :: Drawing --> Drawing
 lineJoinBevel = dcontext $ R.setLineJoin R.LineJoinBevel
 
-lineCapButt :: forall a. Drawing a -> Drawing a
+lineCapButt :: Drawing --> Drawing
 lineCapButt = dcontext $ R.setLineCap R.LineCapButt
 
-lineCapRound :: forall a. Drawing a -> Drawing a
+lineCapRound :: Drawing --> Drawing
 lineCapRound = dcontext $ R.setLineCap R.LineCapRound
 
-lineCapSquare :: forall a. Drawing a -> Drawing a
+lineCapSquare :: Drawing --> Drawing
 lineCapSquare = dcontext $ R.setLineCap R.LineCapSquare
 
-dash :: [Double] -> Double -> Drawing a -> Drawing a
+dash :: [Double] -> Double -> Drawing --> Drawing
 dash dd offset = dcontext $ R.setDash dd offset
 
-fillRuleWinding :: Drawing a -> Drawing a
+fillRuleWinding :: Drawing --> Drawing
 fillRuleWinding = dcontext $ R.setFillRule R.FillRuleWinding
 
-fillRuleEvenOdd :: Drawing a -> Drawing a
+fillRuleEvenOdd :: Drawing --> Drawing
 fillRuleEvenOdd = dcontext $ R.setFillRule R.FillRuleEvenOdd
 
 --
@@ -440,10 +440,10 @@ textPath :: Text -> Path
 textPath t = MkPath $ R.textPath t
 
 -- Text Attributes
-fontFace :: Text -> R.FontSlant -> R.FontWeight -> Drawing a -> Drawing a
+fontFace :: Text -> R.FontSlant -> R.FontWeight -> Drawing --> Drawing
 fontFace fname s w = dcontext $ R.selectFontFace fname s w
 
-fontSize :: Double -> Drawing a -> Drawing a
+fontSize :: Double -> Drawing --> Drawing
 fontSize s = dcontext $ R.setFontSize s
 
 --

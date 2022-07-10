@@ -2,6 +2,7 @@ module Pinafore.Libs where
 
 import Pinafore
 import Pinafore.Language.Library.GTK
+import Pinafore.Language.Library.Media
 import Shapes
 import System.Directory
 import System.Environment.XDG.BaseDir
@@ -16,4 +17,4 @@ getPinaforeDir mdirpath = do
     return pinaforedir
 
 extraLibrary :: [LibraryModule]
-extraLibrary = gtkLibrary
+extraLibrary = mediaLibrary <> gtkLibrary

@@ -10,6 +10,7 @@ packages:
 # Changes
 - Changes/thread-trace
 - Changes/shapes
+- Changes/cairo-functional
 - Changes/changes-core
 - Changes/changes-media
 - Changes/changes-world
@@ -20,6 +21,7 @@ packages:
 - Pinafore/typed-expression
 - Pinafore/pinafore-base
 - Pinafore/pinafore-language
+- Pinafore/pinafore-media
 - Pinafore/pinafore-gtk
 - Pinafore/pinafore-app
 

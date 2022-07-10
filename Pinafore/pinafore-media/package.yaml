@@ -1,0 +1,28 @@
+_common: !include "../../common.yaml"
+name: pinafore-media
+version: *pinafore_version
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.12
+      - shapes
+      - time
+      - polar-shim
+      - typed-expression
+      - Color
+      - gi-cairo-render
+      - cairo-functional
+      - changes-core
+      - changes-media
+      - pinafore-base
+      - pinafore-language
+    exposed-modules:
+      - Pinafore.Language.Library.Media
+    other-modules:
+      - Pinafore.Language.Library.Media.Colour
+      - Pinafore.Language.Library.Media.Image
+      - Pinafore.Language.Library.Media.Drawing

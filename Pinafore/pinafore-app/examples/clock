@@ -1,10 +1,10 @@
 #!/usr/bin/pinafore
 let
-import GTK;
-import Drawing;
 import Colour;
+import Drawing;
+import GTK;
 
-scaleDrawing: Drawing -> Integer :*: Integer -> Drawing;
+scaleDrawing: Drawing a -> Integer :*: Integer -> Drawing a;
 scaleDrawing d (w,h) = let
     size = min w h;
     in translate (w/2,h/2) $ scale (size/2,size/2) d;
@@ -12,12 +12,12 @@ scaleDrawing d (w,h) = let
 circle: Number :*: Number -> Number -> Path;
 circle centre radius = arc centre radius 0 (2 ~* pi);
 
-tickMark: Integer -> Drawing;
+tickMark: Integer -> Drawing (List None);
 tickMark m = let
     major = mod m 5 == 0
     in lineWidth (if major then 0.015 else 0.005) $ stroke [moveTo (0,if major then 0.8 else 0.85), lineTo (0,0.95)];
 
-face: Drawing;
+face: Drawing (List None);
 face =
 [
     source antiquewhite $ fill $ circle (0,0) 1,
@@ -25,13 +25,13 @@ face =
     mapList (\m => rotate (m ~* pi ~/ 30) $ tickMark m) $ range 0 59
 ];
 
-hourHand: Drawing;
+hourHand: Drawing (List None);
 hourHand = source navy $ lineWidth 0.1 $ stroke [moveTo (0,0), lineTo (0,-0.5)];
 
-minuteHand: Drawing;
+minuteHand: Drawing (List None);
 minuteHand = source navy $ lineWidth 0.05 $ stroke [moveTo (0,0), lineTo (0,-0.8)];
 
-secondHand: Drawing;
+secondHand: Drawing (List None);
 secondHand = source red $ lineWidth 0.01 $ stroke [moveTo (0,0), lineTo (0,-0.9)];
 
 in do
