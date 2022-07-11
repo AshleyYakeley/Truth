@@ -341,7 +341,7 @@ interpretExpression' (SEApply sf sarg) = do
     arg <- interpretExpression sarg
     liftRefNotation $ qApplyExpr f arg
 interpretExpression' (SEConst c) = interpretConstant c
-interpretExpression' (SEVar name) = varRefExpr name
+interpretExpression' (SEVar name) = liftRefNotation $ qName name
 interpretExpression' (SESpecialForm name annots) =
     liftRefNotation $ do
         val <- interpretSpecialForm name annots

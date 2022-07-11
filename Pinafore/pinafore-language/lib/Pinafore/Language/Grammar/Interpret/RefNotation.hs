@@ -1,7 +1,6 @@
 module Pinafore.Language.Grammar.Interpret.RefNotation
     ( RefNotation
     , RefExpression
-    , varRefExpr
     , liftRefNotation
     , hoistRefNotation
     , sourcePosRefNotation
@@ -10,13 +9,11 @@ module Pinafore.Language.Grammar.Interpret.RefNotation
     , refNotationQuote
     ) where
 
-import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Pinafore.Language.Var
 import Pinafore.Language.VarID
 import Shapes
 
@@ -49,16 +46,6 @@ allocateVarRefNotation name = do
     lift $ put $ nextVarIDState i
     return $ mkVarID i name
 
-varRefExpr :: ReferenceName -> RefExpression
-varRefExpr name = do
-    mexpr <- liftRefNotation $ lookupLetBinding name
-    case mexpr of
-        Just (Right expr) -> return expr
-        Just (Left v) -> return $ qVarExpr v
-        Nothing -> do
-            spos <- liftRefNotation $ paramAsk sourcePosParam
-            return $ qVarExpr $ mkBadVarID spos name
-
 refNotationUnquote :: RefExpression -> RefExpression
 refNotationUnquote rexpr = do
     v <- allocateVarRefNotation "%ref"
@@ -66,17 +53,13 @@ refNotationUnquote rexpr = do
     tell $ pure (v, expr)
     return $ qVarExpr v
 
-purerefExpr :: QExpr
-purerefExpr = qConstExpr (pure :: A -> PinaforeImmutableWholeRef A)
-
-aprefExpr :: QExpr
-aprefExpr =
-    qConstExpr
-        ((<*>) :: PinaforeImmutableWholeRef (A -> B) -> PinaforeImmutableWholeRef A -> PinaforeImmutableWholeRef B)
+stdModuleName :: ModuleName
+stdModuleName = MkModuleName $ pure "Std"
 
 aplist :: QExpr -> [QExpr] -> PinaforeInterpreter QExpr
 aplist expr [] = return expr
 aplist expr (arg:args) = do
+    aprefExpr <- qName $ QualifiedReferenceName stdModuleName "applyWhole"
     expr' <- qApplyAllExpr aprefExpr [expr, arg]
     aplist expr' args
 
@@ -85,6 +68,7 @@ refNotationQuote rexpr =
     lift $ do
         (expr, binds) <- runWriterT rexpr
         lift $ do
+            purerefExpr <- qName $ QualifiedReferenceName stdModuleName "pureWhole"
             aexpr <- qAbstractsExpr (fmap fst binds) expr
             raexpr <- qApplyExpr purerefExpr aexpr
             aplist raexpr $ fmap snd binds

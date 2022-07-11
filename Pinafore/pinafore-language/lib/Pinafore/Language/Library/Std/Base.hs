@@ -12,6 +12,7 @@ import qualified Data.Text
 import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Convert
+import Pinafore.Language.Convert.Types
 import Pinafore.Language.DocTree
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter

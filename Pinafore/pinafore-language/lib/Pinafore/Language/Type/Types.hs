@@ -1,14 +1,13 @@
 module Pinafore.Language.Type.Types where
 
 import Data.Shim
-import Data.Time
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Type.DynamicSupertype
 import Pinafore.Language.Type.Family
 import Pinafore.Language.Type.Ground
-import Pinafore.Language.Value
+import Pinafore.Language.Value ()
 import Shapes
 
 literalGroundType :: PinaforeGroundType '[] Literal
@@ -21,71 +20,8 @@ literalGreatestDynamicSupertype =
         (functionToShim "fromLiteral" fromLiteral)
         (functionToShim "toLiteral" toLiteral)
 
-unitGroundType :: PinaforeGroundType '[] ()
-unitGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-textGroundType :: PinaforeGroundType '[] Text
-textGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) "Text")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-numberGroundType :: PinaforeGroundType '[] Number
-numberGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Number)|]) "Number")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-rationalGroundType :: PinaforeGroundType '[] SafeRational
-rationalGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily SafeRational)|]) "Rational")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-integerGroundType :: PinaforeGroundType '[] Integer
-integerGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Integer)|]) "Integer")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-booleanGroundType :: PinaforeGroundType '[] Bool
-booleanGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) "Boolean")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-orderingGroundType :: PinaforeGroundType '[] Ordering
-orderingGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Ordering)|]) "Ordering")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-timeGroundType :: PinaforeGroundType '[] UTCTime
-timeGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily UTCTime)|]) "Time")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-durationGroundType :: PinaforeGroundType '[] NominalDiffTime
-durationGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NominalDiffTime)|]) "Duration")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-dateGroundType :: PinaforeGroundType '[] Day
-dateGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Day)|]) "Date")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-timeOfDayGroundType :: PinaforeGroundType '[] TimeOfDay
-timeOfDayGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily TimeOfDay)|]) "TimeOfDay")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
-localTimeGroundType :: PinaforeGroundType '[] LocalTime
-localTimeGroundType =
-    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LocalTime)|]) "LocalTime")
-        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
-
 actionGroundType :: PinaforeGroundType '[ CoCCRVariance] PinaforeAction
 actionGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily PinaforeAction)|]) "Action"
-
-wholeRefGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangWholeRef
-wholeRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangWholeRef)|]) "WholeRef"
 
 funcGroundType :: PinaforeGroundType '[ ContraCCRVariance, CoCCRVariance] (->)
 funcGroundType =
@@ -116,8 +52,3 @@ pairGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] (,)
 pairGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) $ \ta tb ->
         (precShow 2 ta <> " :*: " <> precShow 3 tb, 3)
-
-morphismGroundType :: PinaforeGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism
-morphismGroundType =
-    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMorphism)|]) $ \ta tb ->
-        (precShow 1 ta <> " ~> " <> precShow 2 tb, 2)

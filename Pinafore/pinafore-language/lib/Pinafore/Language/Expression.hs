@@ -3,6 +3,8 @@
 module Pinafore.Language.Expression where
 
 import Pinafore.Language.Convert
+import Pinafore.Language.Interpreter
+import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.Type
 import Pinafore.Language.Var
@@ -29,6 +31,16 @@ qConstExpr a = qConstExprAny $ jmToValue a
 
 qVarExpr :: VarID -> QExpr
 qVarExpr name = tsVar @PinaforeTypeSystem name
+
+qName :: ReferenceName -> PinaforeInterpreter QExpr
+qName name = do
+    mexpr <- lookupLetBinding name
+    case mexpr of
+        Just (Right expr) -> return expr
+        Just (Left v) -> return $ qVarExpr v
+        Nothing -> do
+            spos <- paramAsk sourcePosParam
+            return $ qVarExpr $ mkBadVarID spos name
 
 qAbstractExpr :: VarID -> QExpr -> PinaforeInterpreter QExpr
 qAbstractExpr name expr = tsAbstract @PinaforeTypeSystem name expr

@@ -3,6 +3,7 @@ module Pinafore.Language.Library.Std.Interpreter
     ) where
 
 import Pinafore.Base
+import Pinafore.Language.Convert.Types
 import Pinafore.Language.DocTree
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs

@@ -9,7 +9,9 @@ import Changes.Core
 import Pinafore.Base
 import Pinafore.Context
 import Pinafore.Language.Convert
+import Pinafore.Language.Convert.Types
 import Pinafore.Language.DocTree
+import Pinafore.Language.ExprShow
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Library.Defs
 import Pinafore.Language.Library.Std.Convert ()
@@ -18,6 +20,22 @@ import Pinafore.Language.Type
 import Pinafore.Language.Value
 import Pinafore.Language.Var
 import Shapes
+
+-- WModel
+instance (HasPinaforeType 'Positive t, HasPinaforeType 'Negative t) =>
+             HasPinaforeType 'Positive (WModel (WholeUpdate (Know t))) where
+    pinaforeType = mapPosShimWit (functionToShim "pinaforeRefToWholeRef" pinaforeRefToWholeRef) pinaforeType
+
+instance (HasPinaforeType 'Positive t, HasPinaforeType 'Negative t) =>
+             HasPinaforeType 'Negative (WModel (WholeUpdate (Know t))) where
+    pinaforeType = mapNegShimWit (functionToShim "langWholeRefToValue" langWholeRefToValue) pinaforeType
+
+-- PinaforeROWRef
+instance (HasPinaforeType 'Negative a) => HasPinaforeType 'Negative (PinaforeROWRef (Know a)) where
+    pinaforeType = mapNegShimWit (functionToShim "langWholeRefToReadOnlyValue" langWholeRefToReadOnlyValue) pinaforeType
+
+instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (PinaforeROWRef (Know a)) where
+    pinaforeType = mapPosShimWit (functionToShim "pinaforeROWRefToWholeRef" pinaforeROWRefToWholeRef) pinaforeType
 
 -- SetRef
 setRefGroundType :: PinaforeGroundType '[ ContraCCRVariance] LangSetRef
@@ -54,6 +72,15 @@ refOrderGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFam
 
 instance HasPinaforeGroundType '[ ContraCCRVariance] LangRefOrder where
     pinaforeGroundType = refOrderGroundType
+
+-- LangMorphism
+morphismGroundType :: PinaforeGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism
+morphismGroundType =
+    singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangMorphism)|]) $ \ta tb ->
+        (precShow 1 ta <> " ~> " <> precShow 2 tb, 2)
+
+instance HasPinaforeGroundType '[ 'RangeCCRVariance, 'RangeCCRVariance] LangMorphism where
+    pinaforeGroundType = morphismGroundType
 
 getSetList :: LangRefOrder A -> LangFiniteSetRef '( A, EnA) -> View (LangListRef '( TopType, A))
 getSetList order val =

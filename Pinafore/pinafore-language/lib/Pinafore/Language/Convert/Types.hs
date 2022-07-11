@@ -1,8 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Convert.Types
-    (
-    ) where
+module Pinafore.Language.Convert.Types where
 
 import Changes.Core
 import Data.Time
@@ -65,6 +63,9 @@ instance HasPinaforeGroundType '[ CoCCRVariance] PinaforeAction where
     pinaforeGroundType = actionGroundType
 
 -- LangWholeRef
+wholeRefGroundType :: PinaforeGroundType '[ 'RangeCCRVariance] LangWholeRef
+wholeRefGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangWholeRef)|]) "WholeRef"
+
 instance HasPinaforeGroundType '[ 'RangeCCRVariance] LangWholeRef where
     pinaforeGroundType = wholeRefGroundType
 
@@ -80,41 +81,106 @@ instance (HasPinaforeType 'Positive a) => HasPinaforeType 'Positive (PinaforeImm
 instance HasPinaforeGroundType '[] Literal where
     pinaforeGroundType = literalGroundType
 
+unitGroundType :: PinaforeGroundType '[] ()
+unitGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily ())|]) "Unit")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+
+instance HasPinaforeGroundType '[] () where
+    pinaforeGroundType = unitGroundType
+
+textGroundType :: PinaforeGroundType '[] Text
+textGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Text)|]) "Text")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+
+textShimWit ::
+       forall polarity. Is PolarityType polarity
+    => PinaforeShimWit polarity Text
+textShimWit = singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType textGroundType NilCCRArguments
+
 instance HasPinaforeGroundType '[] Text where
     pinaforeGroundType = textGroundType
+
+numberGroundType :: PinaforeGroundType '[] Number
+numberGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Number)|]) "Number")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasPinaforeGroundType '[] Number where
     pinaforeGroundType = numberGroundType
 
+rationalGroundType :: PinaforeGroundType '[] SafeRational
+rationalGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily SafeRational)|]) "Rational")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+
 instance HasPinaforeGroundType '[] SafeRational where
     pinaforeGroundType = rationalGroundType
+
+integerGroundType :: PinaforeGroundType '[] Integer
+integerGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Integer)|]) "Integer")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasPinaforeGroundType '[] Integer where
     pinaforeGroundType = integerGroundType
 
+booleanGroundType :: PinaforeGroundType '[] Bool
+booleanGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Bool)|]) "Boolean")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+
 instance HasPinaforeGroundType '[] Bool where
     pinaforeGroundType = booleanGroundType
+
+orderingGroundType :: PinaforeGroundType '[] Ordering
+orderingGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Ordering)|]) "Ordering")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasPinaforeGroundType '[] Ordering where
     pinaforeGroundType = orderingGroundType
 
+timeGroundType :: PinaforeGroundType '[] UTCTime
+timeGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily UTCTime)|]) "Time")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+
 instance HasPinaforeGroundType '[] UTCTime where
     pinaforeGroundType = timeGroundType
+
+durationGroundType :: PinaforeGroundType '[] NominalDiffTime
+durationGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily NominalDiffTime)|]) "Duration")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasPinaforeGroundType '[] NominalDiffTime where
     pinaforeGroundType = durationGroundType
 
+dateGroundType :: PinaforeGroundType '[] Day
+dateGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Day)|]) "Date")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+
 instance HasPinaforeGroundType '[] Day where
     pinaforeGroundType = dateGroundType
+
+timeOfDayGroundType :: PinaforeGroundType '[] TimeOfDay
+timeOfDayGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily TimeOfDay)|]) "TimeOfDay")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance HasPinaforeGroundType '[] TimeOfDay where
     pinaforeGroundType = timeOfDayGroundType
 
+localTimeGroundType :: PinaforeGroundType '[] LocalTime
+localTimeGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LocalTime)|]) "LocalTime")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
+
 instance HasPinaforeGroundType '[] LocalTime where
     pinaforeGroundType = localTimeGroundType
-
-instance HasPinaforeGroundType '[] () where
-    pinaforeGroundType = unitGroundType
 
 -- Double
 instance HasPinaforeType 'Positive Double where

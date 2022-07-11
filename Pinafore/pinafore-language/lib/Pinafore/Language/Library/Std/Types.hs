@@ -15,11 +15,6 @@ dynamicEntityShimWit n dt =
     singleDolanShimWit $
     mkPolarShimWit $ GroundedDolanSingularType (aDynamicEntityGroundType n $ singletonSet dt) NilCCRArguments
 
-textShimWit ::
-       forall polarity. Is PolarityType polarity
-    => PinaforeShimWit polarity Text
-textShimWit = singleDolanShimWit $ mkPolarShimWit $ GroundedDolanSingularType textGroundType NilCCRArguments
-
 maybeShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (Maybe a)
 maybeShimWit swa =
     unPosShimWit swa $ \ta conva ->
