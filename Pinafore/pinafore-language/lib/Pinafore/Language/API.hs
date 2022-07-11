@@ -13,6 +13,7 @@ module Pinafore.Language.API
     , FamilyKind
     , SingletonFamily
     , PinaforeGroundType(..)
+    , PolyGreatestDynamicSupertype(..)
     , literalSubtypeRelationEntry
     , literalGreatestDynamicSupertype
     , showableSubtypeRelationEntry

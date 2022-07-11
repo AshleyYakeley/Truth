@@ -37,6 +37,12 @@ instance Functor m => Invariant (Codec' m p) where
 instance IsBiMap Codec' where
     mapBiMapM ff codec = MkCodec {decode = ff . (decode codec), encode = encode codec}
 
+instance Alternative m => Summish (Codec' m p) where
+    pNone = MkCodec (\_ -> empty) absurd
+    MkCodec d1 e1 <+++> MkCodec d2 e2 = let
+        d12 p = (fmap Left $ d1 p) <|> (fmap Right $ d2 p)
+        in MkCodec d12 (either e1 e2)
+
 type Codec = Codec' Maybe
 
 instance Monad m => Category (Codec' m) where

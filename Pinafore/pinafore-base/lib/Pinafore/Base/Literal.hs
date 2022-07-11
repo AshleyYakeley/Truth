@@ -2,11 +2,13 @@ module Pinafore.Base.Literal
     ( Literal(..)
     , AsLiteral(..)
     , pattern MkMIMELiteral
-    , literalCodec
+    , plainTextMIMEType
+    , vndMIMEType
     , toLiteral
     , fromLiteral
     , literalToEntity
     , entityToLiteral
+    , AsMIMELiteral(..)
     ) where
 
 import Changes.World.MIME
@@ -25,60 +27,55 @@ newtype Literal = MkLiteral
 instance Show Literal where
     show (MkLiteral t) = show t
 
-class Eq t => AsLiteral t where
-    literalSerializer :: Serializer t
-    default literalSerializer :: AsMIMELiteral t => Serializer t
-    literalSerializer = pLiteralBytes (literalByteCode @t) ***> literalContentSerializer
+plainTextMIMEType :: MIMEContentType
+plainTextMIMEType = MkMIMEContentType TextMimeType "plain" [("charset", "utf-8")]
 
-class AsLiteral t => AsMIMELiteral t where
-    literalMimeType :: MIMEContentType
-    literalByteCode :: [Word8]
-    literalContentSerializer :: Serializer t
+vndMIMEType :: Text -> MIMEContentType
+vndMIMEType t = MkMIMEContentType ApplicationMimeType ("vnd.pinafore." <> t) []
 
-mkMimeLiteralDict ::
-       forall t. AsMIMELiteral t
-    => Some (Compose Dict AsMIMELiteral)
-mkMimeLiteralDict = MkSome $ Compose $ Dict @(AsMIMELiteral t)
-
-mimeLiteralDicts :: [Some (Compose Dict AsMIMELiteral)]
-mimeLiteralDicts =
-    [ mkMimeLiteralDict @Text
-    , mkMimeLiteralDict @()
-    , mkMimeLiteralDict @Bool
-    , mkMimeLiteralDict @Ordering
-    , mkMimeLiteralDict @Rational
-    , mkMimeLiteralDict @Double
-    , mkMimeLiteralDict @Day
-    , mkMimeLiteralDict @TimeOfDay
-    , mkMimeLiteralDict @LocalTime
-    , mkMimeLiteralDict @UTCTime
-    , mkMimeLiteralDict @NominalDiffTime
+mimeCompress :: [(MIMEContentType, [Word8])]
+mimeCompress =
+    [ (vndMIMEType "unit", [0x75]) -- [u]
+    , (vndMIMEType "boolean", [0x62]) -- [b]
+    , (plainTextMIMEType, [0x74]) -- [t]
+    , (vndMIMEType "ordering", [0x6F]) -- [o]
+    , (vndMIMEType "rational", [0x72]) -- [r]
+    , (vndMIMEType "double", [0x64]) -- [d]
+    , (vndMIMEType "day", [0x54, 0x64]) -- [Td]
+    , (vndMIMEType "timeofday", [0x54, 0x6F]) -- [To]
+    , (vndMIMEType "localtime", [0x54, 0x6C]) -- [Tl]
+    , (vndMIMEType "time", [0x54, 0x75]) -- [Tu]
+    , (vndMIMEType "duration", [0x54, 0x6E]) -- [Tn]
     ]
 
-mimeSerializer :: Serializer (MIMEContentType, StrictByteString)
--- [m]
-mimeSerializer = pLiteralBytes [0x6D] ***> serializer <***> pWhole
+addSerializer :: (MIMEContentType, [Word8]) -> Serializer MIMEContentType -> Serializer MIMEContentType
+addSerializer (t, bcode) s = let
+    fromE :: Either () MIMEContentType -> MIMEContentType
+    fromE (Left ()) = t
+    fromE (Right t') = t'
+    toE :: MIMEContentType -> Either () MIMEContentType
+    toE t'
+        | t' == t = Left ()
+    toE t' = Right t'
+    in invmap fromE toE (pLiteralBytes bcode <+++> s)
 
-literalToMIME :: Literal -> Maybe (MIMEContentType, StrictByteString)
-literalToMIME (MkLiteral bs) = let
-    checkDict :: forall t. Compose Dict AsMIMELiteral t -> Maybe (MIMEContentType, StrictByteString)
-    checkDict (Compose Dict) = do
-        b <- serializerStrictDecode (pLiteralBytes (literalByteCode @t) ***> pWhole) bs
-        return (literalMimeType @t, b)
-    in case mapMaybe (\(MkSome cd) -> checkDict cd) mimeLiteralDicts of
-           tb:_ -> Just tb
-           [] -> serializerStrictDecode mimeSerializer bs
+rawMIMETypeSerializer :: Serializer MIMEContentType
+rawMIMETypeSerializer = pLiteralBytes [0x6D] ***> serializer
+
+headerSerializer :: Serializer MIMEContentType
+headerSerializer = foldr addSerializer rawMIMETypeSerializer mimeCompress
+
+givenMIMETypeSerializer :: MIMEContentType -> Serializer ()
+givenMIMETypeSerializer t =
+    case lookup t mimeCompress of
+        Just bcode -> pLiteralBytes bcode
+        Nothing -> pExact t rawMIMETypeSerializer
 
 mimeToLiteral :: MIMEContentType -> StrictByteString -> Literal
-mimeToLiteral t b = let
-    checkDict :: forall t. Compose Dict AsMIMELiteral t -> Maybe Literal
-    checkDict (Compose Dict) =
-        if t == literalMimeType @t
-            then Just $ MkLiteral $ serializerStrictEncode (pLiteralBytes (literalByteCode @t) ***> pWhole) b
-            else Nothing
-    in case mapMaybe (\(MkSome cd) -> checkDict cd) mimeLiteralDicts of
-           l:_ -> l
-           [] -> MkLiteral $ serializerStrictEncode mimeSerializer (t, b)
+mimeToLiteral t b = MkLiteral $ serializerStrictEncode (headerSerializer <***> pWhole) (t, b)
+
+literalToMIME :: Literal -> Maybe (MIMEContentType, StrictByteString)
+literalToMIME (MkLiteral bs) = serializerStrictDecode (headerSerializer <***> pWhole) bs
 
 pattern MkMIMELiteral ::
         MIMEContentType -> StrictByteString -> Literal
@@ -86,8 +83,10 @@ pattern MkMIMELiteral ::
 pattern MkMIMELiteral t b <- (literalToMIME -> Just (t, b))
   where MkMIMELiteral t b = mimeToLiteral t b
 
-literalCodec :: AsLiteral t => Codec Literal t
-literalCodec = serializerStrictCodec literalSerializer . bijectionCodec coerceIsomorphism
+class Eq t => AsLiteral t where
+    literalCodec :: Codec Literal t
+    default literalCodec :: AsMIMELiteral t => Codec Literal t
+    literalCodec = serializerStrictCodec literalSerializer . bijectionCodec coerceIsomorphism
 
 toLiteral :: AsLiteral t => t -> Literal
 toLiteral = encode literalCodec
@@ -98,120 +97,107 @@ fromLiteral = decode literalCodec
 literalToEntity :: AsLiteral t => t -> Entity
 literalToEntity v = MkEntity $ byteStringToAnchor $ unLiteral $ toLiteral v
 
+class AsLiteral t => AsMIMELiteral t where
+    literalMimeType :: MIMEContentType
+    literalContentSerializer :: Serializer t
+
+literalSerializer ::
+       forall t. AsMIMELiteral t
+    => Serializer t
+literalSerializer = givenMIMETypeSerializer (literalMimeType @t) ***> literalContentSerializer
+
 entityToLiteral :: Entity -> Maybe Literal
 entityToLiteral (MkEntity anchor) = do
     bs <- anchorToByteString anchor
     return $ MkLiteral bs
 
 instance AsLiteral Literal where
-    literalSerializer = coerce $ pWhole @Serializer
+    literalCodec = id
 
 instance AsLiteral Void where
-    literalSerializer = pNone
+    literalCodec = pNone
 
 instance AsLiteral Text
 
 instance AsMIMELiteral Text where
-    literalMimeType = MkMIMEContentType TextMimeType "plain" [("charset", "utf-8")]
-    -- [t]
-    literalByteCode = [0x74]
+    literalMimeType = plainTextMIMEType
     literalContentSerializer = codecMap' utf8Codec pWhole
 
 instance AsLiteral String where
-    literalSerializer = invmap unpack pack $ literalSerializer @Text
+    literalCodec = bijectionCodec unpackBijection . literalCodec @Text
 
 instance AsLiteral ()
 
 instance AsMIMELiteral () where
-    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.unit" []
-    -- [u]
-    literalByteCode = [0x75]
+    literalMimeType = vndMIMEType "unit"
     literalContentSerializer = pUnit
 
 instance AsLiteral Bool
 
 instance AsMIMELiteral Bool where
-    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.boolean" []
-    -- [b]
-    literalByteCode = [0x62]
+    literalMimeType = vndMIMEType "boolean"
     literalContentSerializer = serializer
 
 instance AsLiteral Ordering
 
 instance AsMIMELiteral Ordering where
-    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.ordering" []
-    -- [o]
-    literalByteCode = [0x6F]
+    literalMimeType = vndMIMEType "ordering"
     literalContentSerializer = codecMap readShowCodec serializer
 
 instance AsLiteral Number where
-    literalSerializer = let
+    literalCodec = let
         eitherToNumber :: Either Rational Double -> Number
         eitherToNumber (Left x) = ExactNumber x
         eitherToNumber (Right x) = InexactNumber x
         numberToEither :: Number -> Either Rational Double
         numberToEither (ExactNumber x) = Left x
         numberToEither (InexactNumber x) = Right x
-        in invmap eitherToNumber numberToEither $ literalSerializer <+++> literalSerializer
+        in invmap eitherToNumber numberToEither $ literalCodec <+++> literalCodec
 
 instance AsLiteral Rational
 
 instance AsMIMELiteral Rational where
-    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.rational" []
-    -- [r]
-    literalByteCode = [0x72]
+    literalMimeType = vndMIMEType "rational"
     literalContentSerializer = serializer
 
 instance AsLiteral Double
 
 instance AsMIMELiteral Double where
-    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.double" []
-    -- [d]
-    literalByteCode = [0x64]
+    literalMimeType = vndMIMEType "double"
     literalContentSerializer = serializer
 
 instance AsLiteral SafeRational where
-    literalSerializer = codecMap safeRationalNumber literalSerializer
+    literalCodec = codecMap safeRationalNumber literalCodec
 
 instance AsLiteral Integer where
-    literalSerializer = codecMap integerSafeRational literalSerializer
+    literalCodec = codecMap integerSafeRational literalCodec
 
 instance AsLiteral Day
 
 instance AsMIMELiteral Day where
-    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.day" []
-    -- [Td]
-    literalByteCode = [0x54, 0x64]
+    literalMimeType = vndMIMEType "day"
     literalContentSerializer = serializer
 
 instance AsLiteral TimeOfDay
 
 instance AsMIMELiteral TimeOfDay where
-    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.timeofday" []
-    -- [To]
-    literalByteCode = [0x54, 0x6F]
+    literalMimeType = vndMIMEType "timeofday"
     literalContentSerializer = serializer
 
 instance AsLiteral LocalTime
 
 instance AsMIMELiteral LocalTime where
-    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.localtime" []
-    -- [Tl]
-    literalByteCode = [0x54, 0x6C]
+    literalMimeType = vndMIMEType "localtime"
     literalContentSerializer = serializer
 
 instance AsLiteral UTCTime
 
 instance AsMIMELiteral UTCTime where
-    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.time" []
-    -- [Tu]
-    literalByteCode = [0x54, 0x75]
+    literalMimeType = vndMIMEType "time"
     literalContentSerializer = serializer
 
 instance AsLiteral NominalDiffTime
 
 instance AsMIMELiteral NominalDiffTime where
-    literalMimeType = MkMIMEContentType ApplicationMimeType "vnd.pinafore.duration" []
-    -- [Tn]
-    literalByteCode = [0x54, 0x6E]
+    literalMimeType = vndMIMEType "duration"
     literalContentSerializer = serializer
