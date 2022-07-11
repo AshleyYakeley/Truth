@@ -16,6 +16,7 @@ module Pinafore.Language.Library.Media.Colour
 import Data.Shim
 import Graphics.Color.Space
 import Graphics.Color.Standard.SVG
+import Pinafore.Base
 import Pinafore.Language.API
 import Shapes
 import Shapes.Numeric
@@ -23,8 +24,13 @@ import Shapes.Numeric
 -- LangColour
 type LangColour = Color (SRGB 'NonLinear) Word16
 
+instance AsLiteral LangColour where
+    literalCodec = alphaCodec . literalCodec
+
 colourGroundType :: PinaforeGroundType '[] LangColour
-colourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangColour)|]) "Colour"
+colourGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangColour)|]) "Colour")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance Is PolarityType polarity => HasPinaforeType polarity LangColour where
     pinaforeType = groundPinaforeType
@@ -35,8 +41,27 @@ instance HasPinaforeGroundType '[] LangColour where
 -- LangColour
 type LangAlphaColour = Color (Alpha (SRGB 'NonLinear)) Word16
 
+alphaCodec :: Codec LangAlphaColour LangColour
+alphaCodec =
+    MkCodec
+        (\case
+             MkOpaqueAlphaColour col -> Just col
+             _ -> Nothing)
+        MkOpaqueAlphaColour
+
+instance AsLiteral LangAlphaColour
+
+instance AsMIMELiteral LangAlphaColour where
+    literalMimeType = vndMIMEType "colour"
+    literalContentSerializer = let
+        fromT (r, (g, (b, a))) = Alpha (ColorSRGB r g b) a
+        toT (Alpha (ColorSRGB r g b) a) = (r, (g, (b, a)))
+        in invmap fromT toT $ serializer <***> serializer <***> serializer <***> serializer
+
 alphaColourGroundType :: PinaforeGroundType '[] LangAlphaColour
-alphaColourGroundType = stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangAlphaColour)|]) "AlphaColour"
+alphaColourGroundType =
+    (stdSingleGroundType $(iowitness [t|'MkWitKind (SingletonFamily LangAlphaColour)|]) "AlphaColour")
+        {pgtGreatestDynamicSupertype = literalGreatestDynamicSupertype}
 
 instance Is PolarityType polarity => HasPinaforeType polarity LangAlphaColour where
     pinaforeType = groundPinaforeType
@@ -155,6 +180,7 @@ colourLibraryModule =
               "Construct a Colour from linear red, green, blue, in range 0 to 1."
               MkLinearRGBFraction $ \(MkLinearRGBFraction r g b) -> Just (r, (g, (b, ())))
         , mkTypeEntry "AlphaColour" "A human-perceivable colour, with opacity." $ MkBoundType alphaColourGroundType
+        , literalSubtypeRelationEntry @LangAlphaColour
         , hasSubtypeRelationEntry @LangColour @LangAlphaColour "A Colour is an opaque AlphaColour" $
           functionToShim "opaque" opaque
         , mkValPatEntry

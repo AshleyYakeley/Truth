@@ -27,8 +27,12 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add List1 type for non-empty lists, subtype of List
       . add TextRef type & associated functions, use for uiTextArea
       . add Task type & associated functions
+    - Colour
+      . add Colour & AlphaColour types, etc.
     - Cairo
-      . Cairo-based functions for creating drawings
+      . add Cairo-based functions for creating drawings
+    - Image
+      . add Image & JPEGImage types, etc.
     - GTK
       . rename (from "UI")
       . explicit control over context

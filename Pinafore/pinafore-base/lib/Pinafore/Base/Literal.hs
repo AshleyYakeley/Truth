@@ -46,6 +46,7 @@ mimeCompress =
     , (vndMIMEType "localtime", [0x54, 0x6C]) -- [Tl]
     , (vndMIMEType "time", [0x54, 0x75]) -- [Tu]
     , (vndMIMEType "duration", [0x54, 0x6E]) -- [Tn]
+    , (vndMIMEType "colour", [0x63]) -- [c]
     ]
 
 addSerializer :: (MIMEContentType, [Word8]) -> Serializer MIMEContentType -> Serializer MIMEContentType
