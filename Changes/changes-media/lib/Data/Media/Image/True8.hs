@@ -36,4 +36,4 @@ instance PixelSubtype True8PixelType where
     pixelConvertImage YCbCr8PixelType image = MkSomeFor NoAlphaTrue8PixelType $ convertImage image
     pixelConvertImage CMYK8PixelType image = MkSomeFor NoAlphaTrue8PixelType $ convertImage image
     pixelConvertImage CMYK16PixelType image =
-        MkSomeFor NoAlphaTrue8PixelType $ convertImage $ pixelMap pixelCMYK16to8 image
+        MkSomeFor NoAlphaTrue8PixelType $ pixelMap pixelRGB16to8 $ convertImage image

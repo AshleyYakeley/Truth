@@ -18,5 +18,6 @@ library:
     other-modules:
       - Data.Media.Image.Pixel
       - Data.Media.Image.Metadata
+      - Data.Media.Image.PNG
       - Data.Media.Image.JPEG
       - Data.Media.Image.True8

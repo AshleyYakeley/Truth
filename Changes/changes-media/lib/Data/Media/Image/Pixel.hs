@@ -6,17 +6,26 @@ import Shapes
 pixel16To8 :: Pixel16 -> Pixel8
 pixel16To8 = hi
 
+pixel32To16 :: Word32 -> Pixel16
+pixel32To16 = hi
+
 pixel32To8 :: Pixel32 -> Pixel8
-pixel32To8 = hi . hi
+pixel32To8 = pixel16To8 . pixel32To16
 
 pixelFTo8 :: PixelF -> Pixel8
-pixelFTo8 f = round $ f * 255
+pixelFTo8 f = round $ f * 0xFF
+
+pixelFTo16 :: PixelF -> Pixel16
+pixelFTo16 f = round $ f * 0xFFFF
 
 pixelRGBA16to8 :: PixelRGBA16 -> PixelRGBA8
 pixelRGBA16to8 (PixelRGBA16 r g b a) = PixelRGBA8 (pixel16To8 r) (pixel16To8 g) (pixel16To8 b) (pixel16To8 a)
 
 pixelRGB16to8 :: PixelRGB16 -> PixelRGB8
 pixelRGB16to8 (PixelRGB16 r g b) = PixelRGB8 (pixel16To8 r) (pixel16To8 g) (pixel16To8 b)
+
+pixelRGBFto16 :: PixelRGBF -> PixelRGB16
+pixelRGBFto16 (PixelRGBF r g b) = PixelRGB16 (pixelFTo16 r) (pixelFTo16 g) (pixelFTo16 b)
 
 pixelRGBFto8 :: PixelRGBF -> PixelRGB8
 pixelRGBFto8 (PixelRGBF r g b) = PixelRGB8 (pixelFTo8 r) (pixelFTo8 g) (pixelFTo8 b)
