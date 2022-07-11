@@ -1,6 +1,11 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Data.Media.Image.Metadata where
+module Data.Media.Image.Metadata
+    ( ImageDataKey
+    , Keys(..)
+    , fromMetadatas
+    , toMetadatas
+    ) where
 
 import Codec.Picture.Metadata
 import Control.DeepSeq

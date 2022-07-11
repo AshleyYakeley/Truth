@@ -89,13 +89,13 @@ instance HasPinaforeGroundType '[] LangPattern where
     pinaforeGroundType = patternGroundType
 
 colourToTuple :: LangColour -> (Double, Double, Double)
-colourToTuple (MkSRGBColour r g b) = (r, g, b)
+colourToTuple (MkPerceptualSRGBFraction r g b) = (r, g, b)
 
 alphaColourToTuple :: LangAlphaColour -> ((Double, Double, Double), Double)
-alphaColourToTuple (MkLangAlphaColour op col) = (colourToTuple col, op)
+alphaColourToTuple (MkAlphaColourFraction op col) = (colourToTuple col, op)
 
 toPatternColorStop :: (Double, LangAlphaColour) -> PatternColorStop
-toPatternColorStop (offset, MkLangAlphaColour op col) = MkPatternColorStop offset (colourToTuple col, Just op)
+toPatternColorStop (offset, MkAlphaColourFraction op col) = MkPatternColorStop offset (colourToTuple col, Just op)
 
 instance HasPinaforeType 'Negative PatternColorStop where
     pinaforeType = mapNegShimWit (functionToShim "toPatternColorStop" toPatternColorStop) pinaforeType

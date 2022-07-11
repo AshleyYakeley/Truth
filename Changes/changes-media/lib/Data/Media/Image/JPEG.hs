@@ -35,6 +35,21 @@ instance PixelSubtype JPEGPixelType where
     fromPixelType YCbCr8PixelType = Just YCbCr8JPEGPixelType
     fromPixelType CMYK8PixelType = Just CMYK8JPEGPixelType
     fromPixelType _ = Nothing
+    pixelConvertImage Y8PixelType image = MkSomeFor Y8JPEGPixelType image
+    pixelConvertImage Y16PixelType image = MkSomeFor Y8JPEGPixelType $ pixelMap pixel16To8 image
+    pixelConvertImage Y32PixelType image = MkSomeFor Y8JPEGPixelType $ pixelMap pixel32To8 image
+    pixelConvertImage YFPixelType image = MkSomeFor Y8JPEGPixelType $ pixelMap pixelFTo8 image
+    pixelConvertImage YA8PixelType image = MkSomeFor Y8JPEGPixelType $ dropAlphaLayer image
+    pixelConvertImage YA16PixelType image = MkSomeFor Y8JPEGPixelType $ pixelMap pixel16To8 $ dropAlphaLayer image
+    pixelConvertImage RGB8PixelType image = MkSomeFor RGB8JPEGPixelType image
+    pixelConvertImage RGB16PixelType image = MkSomeFor RGB8JPEGPixelType $ pixelMap pixelRGB16to8 image
+    pixelConvertImage RGBFPixelType image = MkSomeFor RGB8JPEGPixelType $ pixelMap pixelRGBFto8 image
+    pixelConvertImage RGBA8PixelType image = MkSomeFor RGB8JPEGPixelType $ dropAlphaLayer image
+    pixelConvertImage RGBA16PixelType image =
+        MkSomeFor RGB8JPEGPixelType $ pixelMap pixelRGB16to8 $ dropAlphaLayer image
+    pixelConvertImage YCbCr8PixelType image = MkSomeFor YCbCr8JPEGPixelType image
+    pixelConvertImage CMYK8PixelType image = MkSomeFor CMYK8JPEGPixelType image
+    pixelConvertImage CMYK16PixelType image = MkSomeFor CMYK8JPEGPixelType $ pixelMap pixelCMYK16to8 image
 
 instance WitnessConstraint JpgEncodable JPEGPixelType where
     witnessConstraint Y8JPEGPixelType = Dict

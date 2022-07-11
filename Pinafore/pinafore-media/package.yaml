@@ -17,6 +17,7 @@ library:
       - gi-cairo-render
       - cairo-functional
       - changes-core
+      - changes-world
       - changes-media
       - pinafore-base
       - pinafore-language

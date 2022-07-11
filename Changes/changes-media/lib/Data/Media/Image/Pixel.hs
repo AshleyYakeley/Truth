@@ -3,6 +3,30 @@ module Data.Media.Image.Pixel where
 import Codec.Picture.Types
 import Shapes
 
+pixel16To8 :: Pixel16 -> Pixel8
+pixel16To8 = hi
+
+pixel32To8 :: Pixel32 -> Pixel8
+pixel32To8 = hi . hi
+
+pixelFTo8 :: PixelF -> Pixel8
+pixelFTo8 f = round $ f * 255
+
+pixelRGBA16to8 :: PixelRGBA16 -> PixelRGBA8
+pixelRGBA16to8 (PixelRGBA16 r g b a) = PixelRGBA8 (pixel16To8 r) (pixel16To8 g) (pixel16To8 b) (pixel16To8 a)
+
+pixelRGB16to8 :: PixelRGB16 -> PixelRGB8
+pixelRGB16to8 (PixelRGB16 r g b) = PixelRGB8 (pixel16To8 r) (pixel16To8 g) (pixel16To8 b)
+
+pixelRGBFto8 :: PixelRGBF -> PixelRGB8
+pixelRGBFto8 (PixelRGBF r g b) = PixelRGB8 (pixelFTo8 r) (pixelFTo8 g) (pixelFTo8 b)
+
+pixelYA16to8 :: PixelYA16 -> PixelYA8
+pixelYA16to8 (PixelYA16 y a) = PixelYA8 (pixel16To8 y) (pixel16To8 a)
+
+pixelCMYK16to8 :: PixelCMYK16 -> PixelCMYK8
+pixelCMYK16to8 (PixelCMYK16 c m y k) = PixelCMYK8 (pixel16To8 c) (pixel16To8 m) (pixel16To8 y) (pixel16To8 k)
+
 type PixelType :: Type -> Type
 data PixelType px where
     Y8PixelType :: PixelType Pixel8
@@ -73,6 +97,10 @@ type PixelSubtype :: (Type -> Type) -> Constraint
 class PixelSubtype t where
     toPixelType :: forall px. t px -> PixelType px
     fromPixelType :: forall px. PixelType px -> Maybe (t px)
+    pixelConvertImage :: forall px. PixelType px -> Image px -> SomeFor Image t
+
+someConvertImage :: PixelSubtype t => SomeFor Image PixelType -> SomeFor Image t
+someConvertImage (MkSomeFor pt image) = pixelConvertImage pt image
 
 class BlackWhite px where
     black :: px
