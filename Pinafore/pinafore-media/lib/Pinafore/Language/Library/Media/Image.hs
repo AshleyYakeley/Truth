@@ -92,6 +92,14 @@ langBlankImage (MkOpaqueAlphaColour col) size =
     MkLangImage $ MkSomeFor RGB16PixelType $ blankImage size $ colourToPixel col
 langBlankImage acol size = MkLangImage $ MkSomeFor RGBA16PixelType $ blankImage size $ alphaColourToPixel acol
 
+jpegDPI :: LangJPEGImage -> Maybe (Int, Int)
+jpegDPI image = let
+    mdata = fst $ idlData image
+    in do
+           dx <- witnessMapOfLookup DpiX mdata
+           dy <- witnessMapOfLookup DpiY mdata
+           return (fromIntegral dx, fromIntegral dy)
+
 imageLibraryModule :: LibraryModule
 imageLibraryModule =
     MkDocTree
@@ -107,7 +115,10 @@ imageLibraryModule =
               , hasSubtypeRelationEntry @LangJPEGImage @LangImage "" $
                 functionToShim "jpegImage" $ MkLangImage . mapSome toPixelType . snd . idlData
               , hasSubtypeRelationEntry @LangJPEGImage @Literal "" $ functionToShim "jpegLiteral" idlLiteral
-              , mkValEntry "jpegEncode" "Encode an image as JPEG, with given quality and dpi" jpegEncode
-              , mkValEntry "jpegDPI" "Get the " jpegEncode
+              , mkValEntry
+                    "jpegEncode"
+                    "Encode an image as JPEG, with given quality and resolution (in dpi)."
+                    jpegEncode
+              , mkValEntry "jpegDPI" "The resolution of an image (in dpi), if available." jpegDPI
               ]
         ]
