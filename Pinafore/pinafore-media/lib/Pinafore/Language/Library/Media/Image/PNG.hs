@@ -61,5 +61,5 @@ pngStuff =
           functionToShim "pngImage" $ MkLangImage . mapSome toPixelType . snd . idlData
         , hasSubtypeRelationEntry @LangPNGImage @Literal "" $ functionToShim "pngLiteral" idlLiteral
         , hasSubtypeRelationEntry @LangPNGImage @LangHasMetadata "" $ functionToShim "pngMetadata" pngMetadata
-        , mkValEntry "pngEncode" "Encode an image as PNG, with given resolution (in dpi)." pngEncode
+        , mkValEntry "pngEncode" "Encode an image as PNG, with given metadata." pngEncode
         ]

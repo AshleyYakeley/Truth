@@ -24,7 +24,10 @@ main = do
             runNewView $
             runGView gtkContext $ do
                 -- fileReference :: FilePath -> Reference ByteStringEdit
-                imageRef <- gvLiftIONoUI $ makeMemoryReference (blankImage @PixelRGB8 (100, 100) black) $ \_ -> True
+                imageRef <-
+                    gvLiftIONoUI $
+                    makeMemoryReference (Just $ MkSomeFor NoAlphaTrue8PixelType $ blankImage (100, 100) black) $ \_ ->
+                        True
                 model <- gvLiftLifeCycleNoUI $ makeReflectingModel imageRef
                 rec
                     (_, closer) <-
@@ -50,7 +53,9 @@ main = do
                                     liftIO $
                                         runResource emptyResourceContext model $ \asub -> do
                                             _ <-
-                                                pushEdit noEditSource $ aModelEdit asub $ pure $ MkWholeReaderEdit image
+                                                pushEdit noEditSource $
+                                                aModelEdit asub $
+                                                pure $ MkWholeReaderEdit $ Just $ MkSomeFor NoAlphaTrue8PixelType image
                                             return ()
                             wsContent :: AccelGroup -> GView 'Locked Widget
                             wsContent ag = do

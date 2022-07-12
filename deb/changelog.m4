@@ -32,11 +32,12 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
     - Cairo
       . add Cairo-based functions for creating drawings
     - Image
-      . add Image & JPEGImage types, etc.
+      . add Image, HasMetadata, PNGImage, JPEGImage types, etc.
     - GTK
       . rename (from "UI")
       . explicit control over context
       . menu bar is just ordinary element
+      . element for Image
   * Storage
     - Anchors now 256 bit, hash using BLAKE3
     - Store literals as binary rather than as text

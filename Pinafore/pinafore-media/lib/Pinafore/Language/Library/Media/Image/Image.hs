@@ -7,7 +7,7 @@ import Shapes
 
 -- LangImage
 newtype LangImage = MkLangImage
-    { _unLangImage :: SomeFor Image PixelType
+    { unLangImage :: SomeFor Image PixelType
     }
 
 imageGroundType :: PinaforeGroundType '[] LangImage

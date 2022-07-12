@@ -7,6 +7,7 @@ module Pinafore.Language.Library.GTK.Element
 
 import Changes.Core
 import Changes.UI.GTK
+import Data.Media.Image hiding (Unknown)
 import Data.Shim
 import Data.Time
 import GI.Cairo.Render
@@ -14,6 +15,7 @@ import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Context
 import Pinafore.Language.Library.GTK.Element.Context
+import Pinafore.Language.Library.Media
 import Shapes
 
 -- LangLayoutElement
@@ -253,6 +255,13 @@ uiOwned (MkLangElement mw) =
     MkLangElement $ \ec ->
         liftIOWithUnlift $ \unliftIO -> unliftIO $ mw ec {ecUnlift = unliftIO . gvLiftRelock @'Locked @'Unlocked}
 
+langImage :: PinaforeImmutableWholeRef LangImage -> LangElement
+langImage ref =
+    MkLangElement $ \_ ->
+        createImage $
+        unWModel $
+        eaMapReadOnlyWhole (fmap (someConvertImage . unLangImage) . knowToMaybe) $ immutableRefToReadOnlyRef ref
+
 elementStuff :: DocTreeEntry BindDoc
 elementStuff =
     docTreeEntry
@@ -266,6 +275,7 @@ elementStuff =
         , mkValEntry "withContext" "Element that requires a Context." uiWithContext
         , mkValEntry "owned" "Run actions caused by this element in the window's lifecycle." uiOwned
         , mkValEntry "blank" "Blank element" $ MkLangElement $ \_ -> createBlank
+        , mkValEntry "image" "Blank element" langImage
         , mkValEntry "unitCheckBox" "(TBD)" uiUnitCheckBox
         , mkValEntry "checkBox" "Checkbox. Use shift-click to set to unknown." uiCheckBox
         , mkValEntry

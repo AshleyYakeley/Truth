@@ -4,6 +4,7 @@ module Changes.UI.GTK.Element.Image
 
 import Changes.Core
 import Changes.GI
+import Data.GI.Base.Attributes
 import Data.Media.Image
 import Data.Vector.Storable
 import Foreign.Ptr
@@ -28,10 +29,16 @@ pixbufNewFromImage ::
 pixbufNewFromImage (Image w h pixelVec) =
     unsafeWith pixelVec $ \pixelPtr -> pixbufNewFrom @px (fromIntegral w) (fromIntegral h) pixelPtr
 
-createImage :: GTKPixelType px => Model (ROWUpdate (Image px)) -> GView 'Locked Widget
+createImage :: Model (ROWUpdate (Maybe (SomeFor Image True8PixelType))) -> GView 'Locked Widget
 createImage lmod = do
     widget <- gvNew GI.Image []
-    gvBindReadOnlyWholeModel lmod $ \image -> do
-        pixbuf <- gvLiftIONoUI $ pixbufNewFromImage image
-        gvRunLocked $ set widget [#pixbuf := pixbuf]
+    gvBindReadOnlyWholeModel lmod $ \case
+        Just (MkSomeFor px image) -> do
+            pixbuf :: Pixbuf <-
+                gvLiftIONoUI $
+                case px of
+                    NoAlphaTrue8PixelType -> pixbufNewFromImage image
+                    AlphaTrue8PixelType -> pixbufNewFromImage image
+            gvRunLocked $ set widget [#pixbuf := pixbuf]
+        Nothing -> gvRunLocked $ clear widget #pixbuf
     toWidget widget

@@ -1,5 +1,6 @@
 module Pinafore.Language.Library.Media.Image
     ( imageLibraryModule
+    , LangImage(..)
     ) where
 
 import Data.Media.Image

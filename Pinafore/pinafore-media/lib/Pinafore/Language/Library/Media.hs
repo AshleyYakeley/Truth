@@ -1,6 +1,7 @@
 module Pinafore.Language.Library.Media
     ( mediaLibrary
     , LangDrawing(..)
+    , LangImage(..)
     ) where
 
 import Pinafore.Language.API
