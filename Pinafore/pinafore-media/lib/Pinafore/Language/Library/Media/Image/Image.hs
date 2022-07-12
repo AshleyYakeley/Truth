@@ -3,7 +3,7 @@ module Pinafore.Language.Library.Media.Image.Image where
 import Data.Media.Image
 import Pinafore.Base
 import Pinafore.Language.API
-import Shapes hiding (rotate)
+import Shapes
 
 -- LangImage
 newtype LangImage = MkLangImage

@@ -7,8 +7,9 @@ import Pinafore.Language.API
 import Pinafore.Language.Library.Media.Colour
 import Pinafore.Language.Library.Media.Image.Image
 import Pinafore.Language.Library.Media.Image.JPEG
+import Pinafore.Language.Library.Media.Image.Metadata
 import Pinafore.Language.Library.Media.Image.PNG
-import Shapes hiding (rotate)
+import Shapes
 
 langImageSize :: LangImage -> (Int, Int)
 langImageSize (MkLangImage (MkSomeFor _ image)) = imageSize image
@@ -32,6 +33,7 @@ imageLibraryModule =
         [ mkTypeEntry "Image" "An image." $ MkBoundType imageGroundType
         , mkValEntry "imageSize" "The size of an image" langImageSize
         , mkValEntry "blankImage" "An image of one colour" langBlankImage
+        , metadataStuff
         , pngStuff
         , jpegStuff
         ]

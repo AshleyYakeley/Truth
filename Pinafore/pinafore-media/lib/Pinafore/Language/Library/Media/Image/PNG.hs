@@ -8,7 +8,8 @@ import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.Media.Image.Image
-import Shapes hiding (rotate)
+import Pinafore.Language.Library.Media.Image.Metadata
+import Shapes
 
 type PNGData = (WitnessMapOf ImageDataKey, SomeFor Image PNGPixelType)
 
@@ -40,24 +41,15 @@ pngFromLiteral lit = do
     idata <- pngDataFromLiteral lit
     return $ mkDataLiteral lit idata
 
-pngEncode :: Maybe (Integer, Integer) -> LangImage -> LangPNGImage
-pngEncode mdpi (MkLangImage image) = let
-    mdata =
-        case mdpi of
-            Nothing -> mempty
-            Just (dx, dy) -> witnessMapOfFromList $ [MkSomeOf DpiX $ fromInteger dx, MkSomeOf DpiY $ fromInteger dy]
-    bs = encode pngFormat (mdata, someConvertImage image)
+pngEncode :: [(Text, Literal)] -> LangImage -> LangPNGImage
+pngEncode mdata (MkLangImage image) = let
+    bs = encode pngFormat (metadataToKeyMap mdata, someConvertImage image)
     lit = MkMIMELiteral (MkMIMEContentType "image" "png" []) $ toStrict bs
     idata = fromJust $ pngDataFromLiteral lit
     in mkDataLiteral lit idata
 
-pngDPI :: LangPNGImage -> Maybe (Int, Int)
-pngDPI image = let
-    mdata = fst $ idlData image
-    in do
-           dx <- witnessMapOfLookup DpiX mdata
-           dy <- witnessMapOfLookup DpiY mdata
-           return (fromIntegral dx, fromIntegral dy)
+pngMetadata :: LangPNGImage -> LangHasMetadata
+pngMetadata image = keyMapToMetadata $ fst $ idlData image
 
 pngStuff :: DocTreeEntry BindDoc
 pngStuff =
@@ -68,6 +60,6 @@ pngStuff =
         , hasSubtypeRelationEntry @LangPNGImage @LangImage "" $
           functionToShim "pngImage" $ MkLangImage . mapSome toPixelType . snd . idlData
         , hasSubtypeRelationEntry @LangPNGImage @Literal "" $ functionToShim "pngLiteral" idlLiteral
+        , hasSubtypeRelationEntry @LangPNGImage @LangHasMetadata "" $ functionToShim "pngMetadata" pngMetadata
         , mkValEntry "pngEncode" "Encode an image as PNG, with given resolution (in dpi)." pngEncode
-        , mkValEntry "pngDPI" "The resolution of an image (in dpi), if available." pngDPI
         ]

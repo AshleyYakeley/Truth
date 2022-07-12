@@ -3,6 +3,7 @@
 module Data.Media.Image.Metadata
     ( ImageDataKey
     , Keys(..)
+    , Value(..)
     , fromMetadatas
     , toMetadatas
     ) where

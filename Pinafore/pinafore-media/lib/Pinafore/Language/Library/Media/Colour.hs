@@ -193,12 +193,12 @@ colourLibraryModule =
               MkAlphaColourFraction $ \(MkAlphaColourFraction op col) -> Just (op, (col, ()))
         , mkValEntry "transparent" "The zero-opacity AlphaColour" transparent
         {- https://github.com/lehins/Color/issues/9
-        , mkValEntry "over" "An AlphaColour over a Colour" $ over @Colour @Double
-        , mkValEntry "overA" "An AlphaColour over an AlphaColour" $ over @AlphaColour @Double
-        , mkValEntry "blend" "Blend two Colours by weight (of the first)" $ blend @Double @Colour
-        , mkValEntry "blendA" "Blend two AlphaColours by weight (of the first)" $ blend @Double @AlphaColour
-        , mkValEntry "darken" "Darken a Colour" $ darken @Colour @Double
-        , mkValEntry "darkenA" "Darken an AlphaColour" $ darken @AlphaColour @Double
+        , mkValEntry "over" "An AlphaColour over a Colour" $ over @Colour @Word16
+        , mkValEntry "overA" "An AlphaColour over an AlphaColour" $ over @AlphaColour @Word16
+        , mkValEntry "blend" "Blend two Colours by weight (of the first)" $ blend @Word16 @Colour
+        , mkValEntry "blendA" "Blend two AlphaColours by weight (of the first)" $ blend @Word16 @AlphaColour
+        , mkValEntry "darken" "Darken a Colour" $ darken @Colour @Word16
+        , mkValEntry "darkenA" "Darken an AlphaColour" $ darken @AlphaColour @Word16
         -}
         , docTreeEntry
               "Named Colours"

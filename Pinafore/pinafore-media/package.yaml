@@ -25,6 +25,7 @@ library:
       - Pinafore.Language.Library.Media
     other-modules:
       - Pinafore.Language.Library.Media.Colour
+      - Pinafore.Language.Library.Media.Image.Metadata
       - Pinafore.Language.Library.Media.Image.Image
       - Pinafore.Language.Library.Media.Image.PNG
       - Pinafore.Language.Library.Media.Image.JPEG

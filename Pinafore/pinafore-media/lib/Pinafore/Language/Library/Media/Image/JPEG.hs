@@ -8,7 +8,8 @@ import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.Media.Image.Image
-import Shapes hiding (rotate)
+import Pinafore.Language.Library.Media.Image.Metadata
+import Shapes
 
 type JPEGData = (WitnessMapOf ImageDataKey, SomeFor Image JPEGPixelType)
 
@@ -40,24 +41,15 @@ jpegFromLiteral lit = do
     idata <- jpegDataFromLiteral lit
     return $ mkDataLiteral lit idata
 
-jpegEncode :: Integer -> Maybe (Integer, Integer) -> LangImage -> LangJPEGImage
-jpegEncode q mdpi (MkLangImage image) = let
-    mdata =
-        case mdpi of
-            Nothing -> mempty
-            Just (dx, dy) -> witnessMapOfFromList $ [MkSomeOf DpiX $ fromInteger dx, MkSomeOf DpiY $ fromInteger dy]
-    bs = encode (jpegFormat $ fromInteger q) (mdata, someConvertImage image)
+jpegEncode :: Integer -> [(Text, Literal)] -> LangImage -> LangJPEGImage
+jpegEncode q mdata (MkLangImage image) = let
+    bs = encode (jpegFormat $ fromInteger q) (metadataToKeyMap mdata, someConvertImage image)
     lit = MkMIMELiteral (MkMIMEContentType "image" "jpeg" []) $ toStrict bs
     idata = fromJust $ jpegDataFromLiteral lit
     in mkDataLiteral lit idata
 
-jpegDPI :: LangJPEGImage -> Maybe (Int, Int)
-jpegDPI image = let
-    mdata = fst $ idlData image
-    in do
-           dx <- witnessMapOfLookup DpiX mdata
-           dy <- witnessMapOfLookup DpiY mdata
-           return (fromIntegral dx, fromIntegral dy)
+jpegMetadata :: LangJPEGImage -> LangHasMetadata
+jpegMetadata image = keyMapToMetadata $ fst $ idlData image
 
 jpegStuff :: DocTreeEntry BindDoc
 jpegStuff =
@@ -68,6 +60,6 @@ jpegStuff =
         , hasSubtypeRelationEntry @LangJPEGImage @LangImage "" $
           functionToShim "jpegImage" $ MkLangImage . mapSome toPixelType . snd . idlData
         , hasSubtypeRelationEntry @LangJPEGImage @Literal "" $ functionToShim "jpegLiteral" idlLiteral
-        , mkValEntry "jpegEncode" "Encode an image as JPEG, with given quality and resolution (in dpi)." jpegEncode
-        , mkValEntry "jpegDPI" "The resolution of an image (in dpi), if available." jpegDPI
+        , hasSubtypeRelationEntry @LangJPEGImage @LangHasMetadata "" $ functionToShim "jpegMetadata" jpegMetadata
+        , mkValEntry "jpegEncode" "Encode an image as JPEG, with given quality and metadata." jpegEncode
         ]
