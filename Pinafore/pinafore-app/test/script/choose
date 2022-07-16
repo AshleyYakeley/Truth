@@ -1,0 +1,22 @@
+#!/usr/bin/pinafore
+GTK.run $ \gtk => let
+import GTK();
+import Image();
+
+rec
+    showFile: Action Unit;
+    showFile = do
+        ref <- GTK.chooseFile gtk $ \case
+            Just ("image",_) => True;
+            _ => False;
+            end;
+        lit <- get ref;
+        case lit of
+            image : Image.JPEGImage => GTK.openWindow gtk (Image.imageSize image) {"Image"} $ GTK.image {image};
+            _ => outputLn "not a JPEG image";
+        end;
+        showFile;
+    end;
+end;
+
+in showFile

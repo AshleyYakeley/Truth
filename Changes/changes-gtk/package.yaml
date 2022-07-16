@@ -19,6 +19,7 @@ library:
       - vector
       - haskell-gi-base
       - gi-glib
+      - gi-gio
       - gi-gobject
       - gi-gdk
       - gi-gdkpixbuf
@@ -42,6 +43,7 @@ library:
       - Changes.GI.LifeCycle
       - Changes.GI.Signal
       - Changes.GI.Widget
+      - Changes.GI.File
       - Changes.GI
       - Changes.UI.GTK.Element.TextStyle
       - Changes.UI.GTK.Element.DynamicStore
@@ -66,7 +68,7 @@ library:
       - Changes.UI.GTK.Element.MenuBar
       - Changes.UI.GTK.Element.Scrolled
       - Changes.UI.GTK.Element.Calendar
-      - Changes.UI.GTK.Element.ChooseFile
+      - Changes.UI.GTK.ChooseFile
       - Changes.UI.GTK.Window
       - Changes.UI.GTK.Main
 

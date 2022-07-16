@@ -3,13 +3,13 @@ module Changes.UI.GTK
     ) where
 
 import Changes.GI as I
+import Changes.UI.GTK.ChooseFile as I
 import Changes.UI.GTK.Element.Blank as I
 import Changes.UI.GTK.Element.Button as I
 import Changes.UI.GTK.Element.CSS as I
 import Changes.UI.GTK.Element.Cairo as I
 import Changes.UI.GTK.Element.Calendar as I
 import Changes.UI.GTK.Element.CheckButton as I
-import Changes.UI.GTK.Element.ChooseFile as I
 import Changes.UI.GTK.Element.Drag as I ()
 import Changes.UI.GTK.Element.Icon as I
 import Changes.UI.GTK.Element.Image as I

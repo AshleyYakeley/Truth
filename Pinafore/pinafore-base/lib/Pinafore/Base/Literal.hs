@@ -72,8 +72,12 @@ givenMIMETypeSerializer t =
         Just bcode -> pLiteralBytes bcode
         Nothing -> pExact t rawMIMETypeSerializer
 
+mimeToLiteralRaw :: MIMEContentType -> StrictByteString -> Literal
+mimeToLiteralRaw t b = MkLiteral $ serializerStrictEncode (headerSerializer <***> pWhole) (t, b)
+
 mimeToLiteral :: MIMEContentType -> StrictByteString -> Literal
-mimeToLiteral t b = MkLiteral $ serializerStrictEncode (headerSerializer <***> pWhole) (t, b)
+mimeToLiteral (MkMIMEContentType TextMimeType "plain" []) = mimeToLiteralRaw plainTextMIMEType
+mimeToLiteral t = mimeToLiteralRaw t
 
 literalToMIME :: Literal -> Maybe (MIMEContentType, StrictByteString)
 literalToMIME (MkLiteral bs) = serializerStrictDecode (headerSerializer <***> pWhole) bs

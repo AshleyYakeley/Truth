@@ -1,0 +1,3 @@
+#!/bin/sh -e
+make nodocker=1 exe
+`stack --no-docker path --local-bin`/pinafore --data test/pinafore Pinafore/pinafore-app/test/script/choose

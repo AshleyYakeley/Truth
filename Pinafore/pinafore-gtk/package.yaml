@@ -18,6 +18,7 @@ library:
       - gi-gdk
       - gi-gtk
       - changes-core
+      - changes-world
       - changes-media
       - changes-gtk
       - pinafore-base

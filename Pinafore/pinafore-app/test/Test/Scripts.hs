@@ -72,7 +72,7 @@ testScripts =
         [ testTree "test" $
           fmap
               (\name -> testCheckScript ("test/script" </> name) name)
-              ["empty", "simple", "testquery", "test", "big-ui", "calendar", "drawing"]
+              ["empty", "simple", "testquery", "test", "big-ui", "calendar", "drawing", "choose"]
         , testTree "example" $
           fmap
               (\name -> testCheckScript ("examples" </> name) name)
