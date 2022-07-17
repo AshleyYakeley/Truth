@@ -126,7 +126,7 @@ eventUI evt = GTK.vertical
         GTK.textEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$% evt,
         GTK.textEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$% evt
     ],
-    GTK.layoutGrow $ GTK.textArea (eventNotes !$% evt) unknown
+    GTK.layoutGrow $ GTK.textArea (wholeRefText $ eventNotes !$% evt) unknown
 ];
 
 eventWindow: Event -> Action GTK.Window;

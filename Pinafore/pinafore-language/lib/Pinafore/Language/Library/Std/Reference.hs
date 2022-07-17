@@ -129,6 +129,13 @@ newMemList = do
     uh <- pinaforeUndoHandler
     return $ FullLangListRef $ eaMap singleBiChangeLens $ MkWModel $ undoHandlerModel uh model
 
+newMemText :: PinaforeAction LangTextRef
+newMemText = do
+    r <- liftIO $ makeMemoryReference mempty $ \_ -> True
+    model :: Model (StringUpdate Text) <- actionLiftLifeCycle $ makeReflectingModel $ convertReference r
+    uh <- pinaforeUndoHandler
+    return $ MkLangTextRef $ MkWModel $ undoHandlerModel uh model
+
 refLibEntries :: [DocTreeEntry BindDoc]
 refLibEntries =
     [ docTreeEntry
@@ -309,9 +316,9 @@ refLibEntries =
                 "Text References"
                 ""
                 [ mkTypeEntry "TextRef" "" $ MkBoundType textRefGroundType
-                , hasSubtypeRelationEntry @(LangWholeRef '( Text, Text)) @LangTextRef "" $
-                  functionToShim "langWholeRefToListRef" langWholeRefToTextRef
-                , mkValEntry "textRefWhole" "Represent a text reference as a whole reference." langTextRefToWholeRef
+                , hasSubtypeRelationEntry @LangTextRef @(LangWholeRef '( Text, Text)) "" $
+                  functionToShim "langTextRefToWholeRef" langTextRefToWholeRef
+                , mkValEntry "wholeRefText" "Represent a whole reference as a text reference." langWholeRefToTextRef
                 , mkValEntry "textRefGetLength" "Get the length of text." langTextRefGetLength
                 , mkValEntry "textRefGet" "Get the whole text." langTextRefGet
                 , mkValEntry "textRefSet" "Set the whole text." langTextRefSet
@@ -321,6 +328,7 @@ refLibEntries =
                       "textRefSection"
                       "Create a reference to a (start,length) section of a text reference. It will track the section as the text changes."
                       langTextRefSection
+                , mkValEntry "newMemText" "Create a new text reference to memory, initially empty." newMemText
                 ]
           ]
     , docTreeEntry

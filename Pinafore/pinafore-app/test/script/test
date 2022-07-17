@@ -96,7 +96,7 @@ ui_person p = GTK.vertical
         ],
         ui_page {"Home"} $ let homep = home !$ p in GTK.vertical
         [
-            ui_labelled {"Address: "} $ GTK.textArea (address !$ homep) unknown,
+            ui_labelled {"Address: "} $ GTK.textArea (wholeRefText $ address !$ homep) unknown,
             ui_labelled {"City: "} $ GTK.textEntry $ city !$ homep,
             ui_labelled {"Postcode/ZIP: "} $ GTK.textEntry $ postcode !$ homep,
             ui_labelled {"State/Province: "} $ GTK.textEntry $ province !$ homep,
@@ -155,7 +155,7 @@ in std_window {"Switch"} $ GTK.vertical
 [
     #GTK.textEntry sw_pick),
     GTK.checkBox {"pick"} sw_pick,
-    GTK.layoutGrow $ GTK.dynamic {if %sw_pick then GTK.textArea sw_val1 unknown else GTK.textArea sw_val2 unknown}
+    GTK.layoutGrow $ GTK.dynamic {if %sw_pick then GTK.textArea (wholeRefText sw_val1) unknown else GTK.textArea (wholeRefText sw_val2) unknown}
 ];
 
 ### Imported Files
@@ -182,13 +182,13 @@ window_constant = std_window {"Constant"} $ GTK.vertical
     GTK.checkBox {"off"} {False},
     GTK.checkBox {"on"} {True},
     GTK.textEntry {"constant"},
-    GTK.layoutGrow $ GTK.textArea {"constant"} unknown
+    GTK.layoutGrow $ GTK.textArea (wholeRefText $ {"constant"}) unknown
 ];
 
 ### CSS
 window_css: Action GTK.Window;
 window_css = do
-    cssref <- newMemWhole;
+    cssref <- newMemText;
     cssref := ".y, .y > text {color:green; font-family: \"serif\";}";
     sometext <- newMemWhole;
     sometext := "whatever";
@@ -231,11 +231,11 @@ window_list = do
 ### Text Selection
 window_textselection: Action GTK.Window;
 window_textselection = do
-    tref1 <- newMemWhole;
+    tref1 <- newMemText;
     tref1 := "111";
-    tref2 <- newMemWhole;
+    tref2 <- newMemText;
     tref2 := "222";
-    tref3 <- newMemWhole;
+    tref3 <- newMemText;
     tref3 := "333";
     sel <- newMemWhole;
     std_window {"Text Selection"} $ GTK.styleSheet {"* {padding: 2pt;}"} $ GTK.vertical
@@ -243,7 +243,7 @@ window_textselection = do
         GTK.textArea tref1 sel,
         GTK.textArea tref2 sel,
         GTK.textArea tref3 sel,
-        GTK.dynamic {GTK.exec $ mapAction (\tref => GTK.textArea tref unknown) %sel}
+        GTK.dynamic {GTK.exec $ mapAction (\tref => GTK.textArea (wholeRefText tref) unknown) %sel}
     ];
     end;
 
