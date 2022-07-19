@@ -11,14 +11,14 @@ library:
       - base >= 4.12
       - shapes
       - time
-      - polar-shim
-      - typed-expression
       - Color
       - gi-cairo-render
       - cairo-functional
       - changes-core
       - changes-world
       - changes-media
+      - polar-shim
+      - typed-expression
       - pinafore-base
       - pinafore-language
     exposed-modules:

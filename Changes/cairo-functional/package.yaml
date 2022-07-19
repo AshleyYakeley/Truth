@@ -5,17 +5,14 @@ version: *changes_version
 
 <<: *language
 
-flags:
-    build-examples:
-        description: Build examples
-        default: False
-        manual: False
-
 library:
     source-dirs: lib
     dependencies:
       - base >= 4.12
+      - bytestring-to-vector
+      - JuicyPixels
       - gi-cairo-render
       - shapes
     exposed-modules:
       - Graphics.Cairo.Functional
+      - Graphics.Cairo.Image

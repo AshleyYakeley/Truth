@@ -5,10 +5,13 @@ module Pinafore.Language.Library.Media.Cairo
     , LangDrawing(..)
     ) where
 
+import Data.Media.Image
 import Data.Shim
 import Graphics.Cairo.Functional
+import Graphics.Cairo.Image
 import Pinafore.Language.API
 import Pinafore.Language.Library.Media.Colour
+import Pinafore.Language.Library.Media.Image
 import Shapes hiding (rotate)
 import Shapes.Numeric
 
@@ -117,6 +120,9 @@ fontFace' fname italic bold =
              then FontWeightBold
              else FontWeightNormal)
 
+drawToImage :: (Int, Int) -> LangDrawing a -> LangImage
+drawToImage s (MkLangDrawing d) = MkLangImage $ MkSomeFor RGBA8PixelType $ renderToImage s $ drawingRender d
+
 {-
 langOnClick :: (?pinafore :: PinaforeContext) => PinaforeAction () -> LangDrawing
 langOnClick action = MkLangDrawing $ \unlift -> onClick $ gvRunAction unlift action
@@ -132,6 +138,7 @@ cairoLibraryModule =
         , mkValEntry "pureDrawing" "" $ pure @LangDrawing @A
         , mkValEntry "mapDrawing" "" $ fmap @LangDrawing @A @B
         , mkValEntry "apDrawing" "" $ (<*>) @LangDrawing @A @B
+        , mkValEntry "drawToImage" "" $ drawToImage @TopType
         , mkValEntry "position" "" langPointDrawing
         , mkValEntry "ifPoint" "Restrict actions based on point" langIfPoint
         , mkValEntry "ifInRect" "Restrict actions to within a rectangle, as ((left,top),(width,height))" langIfInRect
