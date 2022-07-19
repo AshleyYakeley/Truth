@@ -19,7 +19,7 @@ library:
       - githash
       - pinafore-language
       - pinafore-media
-      - pinafore-gtk
+      - pinafore-gnome
     exposed-modules:
       - Pinafore.Version
       - Pinafore.Options

@@ -22,7 +22,7 @@ packages:
 - Pinafore/pinafore-base
 - Pinafore/pinafore-language
 - Pinafore/pinafore-media
-- Pinafore/pinafore-gtk
+- Pinafore/pinafore-gnome
 - Pinafore/pinafore-app
 
 resolver: lts-19.14

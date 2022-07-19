@@ -1,5 +1,5 @@
 _common: !include "../../common.yaml"
-name: pinafore-gtk
+name: pinafore-gnome
 version: *pinafore_version
 <<: *author
 
@@ -50,7 +50,7 @@ tests:
           - changes-core
           - changes-gnome
           - pinafore-language
-          - pinafore-gtk
+          - pinafore-gnome
         main: Main.hs
         other-modules:
           - Test.Context
