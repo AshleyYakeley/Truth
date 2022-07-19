@@ -2,6 +2,7 @@
 
 module Pinafore.Language.Library.GTK.Window
     ( windowStuff
+    , dialogStuff
     ) where
 
 import Changes.Core
@@ -83,20 +84,27 @@ langChooseFile action gtkc test =
 windowStuff :: DocTreeEntry BindDoc
 windowStuff =
     docTreeEntry
-        "Window"
+        "Windows"
         ""
         [ mkTypeEntry "Context" "Context for GTK" $ MkBoundType contextGroundType
         , mkValEntry
               "run"
               "Call the provided function with a GTK context, after which run the GTK event loop until all windows are closed." $
           run @A
-        , mkValEntry "chooseExistingFile" "Run a dialog to choose an existing file." $
-          langChooseFile FileChooserActionOpen
-        , mkValEntry "chooseNewFile" "Run a dialog to choose a new file." $ langChooseFile FileChooserActionSave
         , mkTypeEntry "Window" "A user interface window." $ MkBoundType windowGroundType
         , mkValEntry "openWindow" "Open a new window with this size, title and element." openWindow
         , mkValEntry "closeWindow" "Close a window." uiWindowClose
         , mkValEntry "showWindow" "Show a window." showWindow
         , mkValEntry "hideWindow" "Hide a window." hideWindow
         , mkValEntry "exit" "Exit the user interface." exitUI
+        ]
+
+dialogStuff :: DocTreeEntry BindDoc
+dialogStuff =
+    docTreeEntry
+        "Dialogs"
+        ""
+        [ mkValEntry "chooseExistingFile" "Run a dialog to choose an existing file." $
+          langChooseFile FileChooserActionOpen
+        , mkValEntry "chooseNewFile" "Run a dialog to choose a new file." $ langChooseFile FileChooserActionSave
         ]

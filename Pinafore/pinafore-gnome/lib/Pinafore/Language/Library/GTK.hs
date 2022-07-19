@@ -11,7 +11,8 @@ import Pinafore.Language.Library.GTK.MenuItem
 import Pinafore.Language.Library.GTK.Window
 
 gtkLibraryModule :: LibraryModule
-gtkLibraryModule = MkDocTree "GTK" "User interface, using GTK." [elementStuff, drawingStuff, menuItemStuff, windowStuff]
+gtkLibraryModule =
+    MkDocTree "GTK" "User interface, using GTK." [elementStuff, drawingStuff, menuItemStuff, windowStuff, dialogStuff]
 
 gtkLibrary :: [LibraryModule]
 gtkLibrary = [gioLibraryModule, gtkLibraryModule, gtkDebugLibraryModule]
