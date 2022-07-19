@@ -6,7 +6,7 @@ import Changes.Core
 import Changes.World.GNOME.GTK
 import Changes.World.GNOME.GTK.Test
 import Pinafore
-import Pinafore.Language.Library.GTK
+import Pinafore.Language.Library.GNOME
 import Pinafore.Test
 import Shapes hiding (get)
 import Shapes.Test
@@ -17,7 +17,7 @@ runUIAction testaction script =
     runLifeCycleT $
     runNewView $ do
         (pc, _) <- viewLiftLifeCycle $ makeTestPinaforeContext stdout
-        runWithContext pc (libraryFetchModule gtkLibrary) $ do
+        runWithContext pc (libraryFetchModule gnomeLibrary) $ do
             scriptaction <-
                 throwInterpretResult $
                 pinaforeInterpretTextAtType @((GTKContext -> View ()) -> PinaforeAction ()) "<test>" script

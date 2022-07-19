@@ -4,7 +4,7 @@ module Test.GTK
 
 import Changes.Core
 import Pinafore
-import Pinafore.Language.Library.GTK
+import Pinafore.Language.Library.GNOME
 import Pinafore.Test
 import Shapes hiding ((.))
 import Shapes.Test
@@ -21,7 +21,7 @@ testFile inpath = let
                    viewLiftLifeCycle $ do
                        (model, _) <- makeTestStorageModel
                        makePinaforeContext nullInvocationInfo hout model
-               action <- runWithContext pc (libraryFetchModule gtkLibrary) $ pinaforeInterpretFile inpath
+               action <- runWithContext pc (libraryFetchModule gnomeLibrary) $ pinaforeInterpretFile inpath
                action
                return ()
 

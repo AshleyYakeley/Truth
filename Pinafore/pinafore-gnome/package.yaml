@@ -26,7 +26,7 @@ library:
       - pinafore-language
       - pinafore-media
     exposed-modules:
-      - Pinafore.Language.Library.GTK
+      - Pinafore.Language.Library.GNOME
     other-modules:
       - Pinafore.Language.Library.GIO
       - Pinafore.Language.Library.GTK.Context
@@ -36,6 +36,7 @@ library:
       - Pinafore.Language.Library.GTK.MenuItem
       - Pinafore.Language.Library.GTK.Window
       - Pinafore.Language.Library.GTK.Debug
+      - Pinafore.Language.Library.GTK
 
 tests:
     test:

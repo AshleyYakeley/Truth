@@ -3,7 +3,6 @@ module Pinafore.Language.Library.GTK
     ) where
 
 import Pinafore.Language.API
-import Pinafore.Language.Library.GIO
 import Pinafore.Language.Library.GTK.Debug
 import Pinafore.Language.Library.GTK.Element
 import Pinafore.Language.Library.GTK.Element.Drawing
@@ -15,4 +14,4 @@ gtkLibraryModule =
     MkDocTree "GTK" "User interface, using GTK." [elementStuff, drawingStuff, menuItemStuff, windowStuff, dialogStuff]
 
 gtkLibrary :: [LibraryModule]
-gtkLibrary = [gioLibraryModule, gtkLibraryModule, gtkDebugLibraryModule]
+gtkLibrary = [gtkLibraryModule, gtkDebugLibraryModule]

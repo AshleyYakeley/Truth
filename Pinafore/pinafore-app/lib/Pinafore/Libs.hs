@@ -1,7 +1,7 @@
 module Pinafore.Libs where
 
 import Pinafore
-import Pinafore.Language.Library.GTK
+import Pinafore.Language.Library.GNOME
 import Pinafore.Language.Library.Media
 import Shapes
 import System.Directory
@@ -17,4 +17,4 @@ getPinaforeDir mdirpath = do
     return pinaforedir
 
 extraLibrary :: [LibraryModule]
-extraLibrary = mediaLibrary <> gtkLibrary
+extraLibrary = mediaLibrary <> gnomeLibrary
