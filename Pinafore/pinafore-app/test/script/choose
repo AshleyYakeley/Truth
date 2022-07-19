@@ -6,13 +6,19 @@ import Image();
 rec
     showFile: Action Unit;
     showFile = do
-        ref <- GTK.chooseFile gtk $ \case
+        file <- GTK.chooseFile gtk $ \case
             Just ("image",_) => True;
             _ => False;
             end;
+        ref <- GIO.fileMakeRef file;
         lit <- get ref;
-        case lit of
-            image : Image.JPEGImage => GTK.openWindow gtk (Image.imageSize image) {"Image"} $ GTK.image {image};
+        let
+        path = case file of
+                GIO.FileParseName path => path;
+                _ => "unknown";
+            end;
+        in case lit of
+            image : Image.JPEGImage => GTK.openWindow gtk (Image.imageSize image) {path} $ GTK.image {image};
             _ => outputLn "not a JPEG image";
         end;
         showFile;

@@ -41,7 +41,7 @@ file_size MkReference {..} = runWMFunction objRun $ refRead ReadByteStringLength
 fileLibEntries :: [DocTreeEntry BindDoc]
 fileLibEntries =
     [ docTreeEntry
-          "Files"
+          "File Storage"
           "NYI"
                   {-
                   mkValEntry "file_import" "Import a file into a set." $ file_import

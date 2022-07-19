@@ -32,6 +32,7 @@ nav:
   - Colour: 'library/Colour.md'
   - Cairo: 'library/Cairo.md'
   - Image: 'library/Image.md'
+  - GIO: 'library/GIO.md'
   - GTK: 'library/GTK.md'
   - Debug: 'library/Debug.md'
   - Debug.GTK: 'library/Debug.GTK.md'

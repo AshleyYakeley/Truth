@@ -32,6 +32,7 @@ library:
       - changes-core
       - changes-media
     exposed-modules:
+      - Changes.World.GNOME.GIO
       - Changes.UI.GTK
       - Changes.UI.GTK.Test
     other-modules:
@@ -43,7 +44,6 @@ library:
       - Changes.GI.LifeCycle
       - Changes.GI.Signal
       - Changes.GI.Widget
-      - Changes.GI.File
       - Changes.GI
       - Changes.UI.GTK.Element.TextStyle
       - Changes.UI.GTK.Element.DynamicStore

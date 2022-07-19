@@ -15,6 +15,7 @@ library:
       - typed-expression
       - Color
       - gi-cairo-render
+      - gi-gio
       - gi-gdk
       - gi-gtk
       - changes-core
@@ -27,6 +28,7 @@ library:
     exposed-modules:
       - Pinafore.Language.Library.GTK
     other-modules:
+      - Pinafore.Language.Library.GIO
       - Pinafore.Language.Library.GTK.Context
       - Pinafore.Language.Library.GTK.Element.Context
       - Pinafore.Language.Library.GTK.Element.Drawing

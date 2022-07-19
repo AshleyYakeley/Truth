@@ -160,6 +160,7 @@ LIBMODULES := \
     Colour \
     Cairo \
     Image \
+    GIO \
     GTK \
     Debug \
     Debug.GTK \

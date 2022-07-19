@@ -3,7 +3,6 @@ module Changes.GI
     ) where
 
 import Changes.GI.Error as I
-import Changes.GI.File as I
 import Changes.GI.GView as I
 import Changes.GI.LifeCycle as I
 import Changes.GI.LockState as I

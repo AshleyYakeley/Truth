@@ -1,5 +1,5 @@
 module Pinafore.Language.Library.GTK.Debug
-    ( uiDebugLibraryModule
+    ( gtkDebugLibraryModule
     ) where
 
 import Changes.Core
@@ -23,8 +23,8 @@ ignoreUpdateException (MkWModel (MkResource rr amodel)) =
 debugIgnoreUpdateUIExceptions :: LangWholeRef '( P, Q) -> LangWholeRef '( P, Q)
 debugIgnoreUpdateUIExceptions ref = runIdentity $ langWholeRefMapModel (Identity . ignoreUpdateException) ref
 
-uiDebugLibraryModule :: LibraryModule
-uiDebugLibraryModule =
+gtkDebugLibraryModule :: LibraryModule
+gtkDebugLibraryModule =
     MkDocTree
         "Debug.GTK"
         "Functions for GTK debugging."

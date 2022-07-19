@@ -29,6 +29,8 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . add Task type & associated functions
     - Colour
       . add Colour & AlphaColour types, etc.
+    - GIO
+      . add GIO File type and functions
     - Cairo
       . add Cairo-based functions for creating drawings
     - Image

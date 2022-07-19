@@ -6,10 +6,10 @@ module Pinafore.Language.Library.GTK.Window
 
 import Changes.Core
 import Changes.UI.GTK
-import Changes.World.MIME
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.API
+import Pinafore.Language.Library.GIO
 import Pinafore.Language.Library.GTK.Context
 import Pinafore.Language.Library.GTK.Element
 import Shapes
@@ -75,30 +75,8 @@ hideWindow MkLangWindow {..} = runGView lwContext $ gvRunLocked $ uiWindowHide l
 run :: forall a. (GTKContext -> PinaforeAction a) -> PinaforeAction a
 run call = actionTunnelView $ \unlift -> runGTKView $ \gtkc -> unlift $ call gtkc
 
-literalConv :: Bijection (Maybe (Text, LazyByteString)) (Maybe Literal)
-literalConv =
-    MkIsomorphism
-        { isoForwards =
-              \mtb -> do
-                  (mimetype, b) <- mtb
-                  case splitWhen ((==) '/') mimetype of
-                      [t, s] -> return $ MkMIMELiteral (MkMIMEContentType t s []) $ toStrict b
-                      _ -> Nothing
-        , isoBackwards =
-              \ml -> do
-                  l <- ml
-                  case l of
-                      MkMIMELiteral (MkMIMEContentType t s _) b -> return (t <> "/" <> s, fromStrict b)
-                      _ -> Nothing
-        }
-
-langChooseFile :: GTKContext -> (Maybe (Text, Text) -> Bool) -> PinaforeAction (LangWholeRef '( Literal, Literal))
-langChooseFile gtkc test = do
-    f <- actionLiftViewKnow $ fmap maybeToKnow $ runGView gtkc $ gvRunLocked $ chooseFile test
-    fref <- liftIO $ giFileReference f
-    (model :: Model (MaybeUpdate (PairUpdate (WholeUpdate Text) ByteStringUpdate)), ()) <-
-        actionLiftLifeCycle $ makeSharedModel $ reflectingPremodel fref
-    return $ pinaforeRefToWholeRef $ eaMap (bijectionWholeChangeLens $ invert knowMaybe . literalConv) $ MkWModel model
+langChooseFile :: GTKContext -> (Maybe (Text, Text) -> Bool) -> PinaforeAction File
+langChooseFile gtkc test = actionLiftViewKnow $ fmap maybeToKnow $ runGView gtkc $ gvRunLocked $ chooseFile test
 
 windowStuff :: DocTreeEntry BindDoc
 windowStuff =
