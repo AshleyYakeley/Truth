@@ -7,10 +7,10 @@ import GI.Gio as GI
 import GI.Gtk as GI
 import Shapes
 
-chooseFile :: (Maybe (Text, Text) -> Bool) -> GView 'Locked (Maybe File)
-chooseFile test =
+chooseFile :: FileChooserAction -> (Maybe (Text, Text) -> Bool) -> GView 'Locked (Maybe File)
+chooseFile action test =
     gvSubLifeCycle $ do
-        dialog <- gvNew FileChooserNative [#action := FileChooserActionOpen]
+        dialog <- gvNew FileChooserNative [#action := action]
         ffilter <- new FileFilter [] -- don't unref
         fileFilterAddCustom ffilter [FileFilterFlagsMimeType] $ \finfo -> do
             mtype <- getFileFilterInfoMimeType finfo

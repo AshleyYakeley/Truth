@@ -6,7 +6,7 @@ import Image();
 rec
     showFile: Action Unit;
     showFile = do
-        file <- GTK.chooseFile gtk $ \case
+        file <- GTK.chooseExistingFile gtk $ \case
             Just ("image",_) => True;
             _ => False;
             end;

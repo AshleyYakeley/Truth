@@ -7,6 +7,7 @@ module Pinafore.Language.Library.GTK.Window
 import Changes.Core
 import Changes.World.GNOME.GTK
 import Data.Shim
+import GI.Gtk as GI
 import Pinafore.Base
 import Pinafore.Language.API
 import Pinafore.Language.Library.GIO
@@ -75,8 +76,9 @@ hideWindow MkLangWindow {..} = runGView lwContext $ gvRunLocked $ uiWindowHide l
 run :: forall a. (GTKContext -> PinaforeAction a) -> PinaforeAction a
 run call = actionTunnelView $ \unlift -> runGTKView $ \gtkc -> unlift $ call gtkc
 
-langChooseFile :: GTKContext -> (Maybe (Text, Text) -> Bool) -> PinaforeAction File
-langChooseFile gtkc test = actionLiftViewKnow $ fmap maybeToKnow $ runGView gtkc $ gvRunLocked $ chooseFile test
+langChooseFile :: FileChooserAction -> GTKContext -> (Maybe (Text, Text) -> Bool) -> PinaforeAction File
+langChooseFile action gtkc test =
+    actionLiftViewKnow $ fmap maybeToKnow $ runGView gtkc $ gvRunLocked $ chooseFile action test
 
 windowStuff :: DocTreeEntry BindDoc
 windowStuff =
@@ -88,7 +90,9 @@ windowStuff =
               "run"
               "Call the provided function with a GTK context, after which run the GTK event loop until all windows are closed." $
           run @A
-        , mkValEntry "chooseFile" "Run a dialog to choose a file." langChooseFile
+        , mkValEntry "chooseExistingFile" "Run a dialog to choose an existing file." $
+          langChooseFile FileChooserActionOpen
+        , mkValEntry "chooseNewFile" "Run a dialog to choose a new file." $ langChooseFile FileChooserActionSave
         , mkTypeEntry "Window" "A user interface window." $ MkBoundType windowGroundType
         , mkValEntry "openWindow" "Open a new window with this size, title and element." openWindow
         , mkValEntry "closeWindow" "Close a window." uiWindowClose
