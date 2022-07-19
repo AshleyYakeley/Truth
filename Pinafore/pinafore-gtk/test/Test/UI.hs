@@ -3,8 +3,8 @@ module Test.UI
     ) where
 
 import Changes.Core
-import Changes.UI.GTK
-import Changes.UI.GTK.Test
+import Changes.World.GNOME.GTK
+import Changes.World.GNOME.GTK.Test
 import Pinafore
 import Pinafore.Language.Library.GTK
 import Pinafore.Test

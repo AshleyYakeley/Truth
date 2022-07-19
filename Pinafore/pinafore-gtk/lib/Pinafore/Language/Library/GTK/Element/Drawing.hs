@@ -3,7 +3,7 @@ module Pinafore.Language.Library.GTK.Element.Drawing
     ) where
 
 import Changes.Core
-import Changes.UI.GTK
+import Changes.World.GNOME.GTK
 import Data.Shim
 import GI.Gdk as GI
 import Pinafore.Base

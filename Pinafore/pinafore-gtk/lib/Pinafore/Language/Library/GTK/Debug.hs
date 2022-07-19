@@ -3,7 +3,7 @@ module Pinafore.Language.Library.GTK.Debug
     ) where
 
 import Changes.Core
-import Changes.UI.GTK
+import Changes.World.GNOME.GTK
 import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Window ()
 import Shapes

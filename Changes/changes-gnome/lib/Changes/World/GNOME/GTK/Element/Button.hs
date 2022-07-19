@@ -1,0 +1,23 @@
+module Changes.World.GNOME.GTK.Element.Button
+    ( createButton
+    ) where
+
+import Changes.Core
+import Changes.World.GNOME.GI
+import Data.IORef
+import GI.Gtk
+import Shapes
+
+createButton :: Model (ROWUpdate Text) -> Model (ROWUpdate (Maybe (GView 'Locked ()))) -> GView 'Locked Widget
+createButton rlabel raction = do
+    aref <- liftIO $ newIORef Nothing
+    widget <- gvNew Button []
+    gvBindReadOnlyWholeModel rlabel $ \label -> gvLiftIO $ set widget [#label := label]
+    gvBindReadOnlyWholeModel raction $ \maction -> do
+        gvLiftIONoUI $ writeIORef aref maction
+        gvRunLocked $ set widget [#sensitive := isJust maction]
+    _ <-
+        gvOnSignal widget #clicked $ do
+            maction <- liftIO $ readIORef aref
+            for_ maction id
+    toWidget widget

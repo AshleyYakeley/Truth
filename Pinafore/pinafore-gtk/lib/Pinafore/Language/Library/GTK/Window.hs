@@ -5,7 +5,7 @@ module Pinafore.Language.Library.GTK.Window
     ) where
 
 import Changes.Core
-import Changes.UI.GTK
+import Changes.World.GNOME.GTK
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.API

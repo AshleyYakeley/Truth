@@ -6,7 +6,7 @@ module Pinafore.Language.Library.GTK.Element
     ) where
 
 import Changes.Core
-import Changes.UI.GTK
+import Changes.World.GNOME.GTK
 import Data.Media.Image hiding (Unknown)
 import Data.Shim
 import Data.Time

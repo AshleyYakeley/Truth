@@ -1,5 +1,5 @@
 #!/bin/sh -e
 make nodocker=1 testimages
-stack --no-docker install changes-gtk
+stack --no-docker install changes-gnome
 echo OK
 `stack --no-docker path --local-bin`/changes-showImages

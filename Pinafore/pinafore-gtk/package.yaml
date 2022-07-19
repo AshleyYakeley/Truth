@@ -21,7 +21,7 @@ library:
       - changes-core
       - changes-world
       - changes-media
-      - changes-gtk
+      - changes-gnome
       - pinafore-base
       - pinafore-language
       - pinafore-media
@@ -48,7 +48,7 @@ tests:
           - gi-gobject
           - haskell-gi-base
           - changes-core
-          - changes-gtk
+          - changes-gnome
           - pinafore-language
           - pinafore-gtk
         main: Main.hs

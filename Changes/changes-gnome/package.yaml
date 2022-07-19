@@ -1,0 +1,159 @@
+_common: !include "../../common.yaml"
+name: changes-gnome
+version: *changes_version
+<<: *author
+
+<<: *language
+
+flags:
+    build-examples:
+        description: Build examples
+        default: False
+        manual: False
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.12
+      - time
+      - vector
+      - haskell-gi-base
+      - gi-glib
+      - gi-gio
+      - gi-gobject
+      - gi-gdk
+      - gi-gdkpixbuf
+      - gi-cairo-connector
+      - gi-pango
+      - gi-gtk
+      - gi-gtk-hs
+      - shapes
+      - cairo-functional
+      - changes-core
+      - changes-media
+    exposed-modules:
+      - Changes.World.GNOME.GIO
+      - Changes.World.GNOME.GTK
+      - Changes.World.GNOME.GTK.Test
+    other-modules:
+      - Changes.World.GNOME.GI.Error
+      - Changes.World.GNOME.GI.Type
+      - Changes.World.GNOME.GI.ViewLock
+      - Changes.World.GNOME.GI.LockState
+      - Changes.World.GNOME.GI.GView
+      - Changes.World.GNOME.GI.LifeCycle
+      - Changes.World.GNOME.GI.Signal
+      - Changes.World.GNOME.GI.Widget
+      - Changes.World.GNOME.GI
+      - Changes.World.GNOME.GTK.Element.TextStyle
+      - Changes.World.GNOME.GTK.Element.DynamicStore
+      - Changes.World.GNOME.GTK.Element.Blank
+      - Changes.World.GNOME.GTK.Element.Cairo
+      - Changes.World.GNOME.GTK.Element.CSS
+      - Changes.World.GNOME.GTK.Element.Button
+      - Changes.World.GNOME.GTK.Element.Image
+      - Changes.World.GNOME.GTK.Element.Icon
+      - Changes.World.GNOME.GTK.Element.Label
+      - Changes.World.GNOME.GTK.Element.Maybe
+      - Changes.World.GNOME.GTK.Element.ListBox
+      - Changes.World.GNOME.GTK.Element.Switch
+      - Changes.World.GNOME.GTK.Element.CheckButton
+      - Changes.World.GNOME.GTK.Element.Option
+      - Changes.World.GNOME.GTK.Element.TextEntry
+      - Changes.World.GNOME.GTK.Element.Text
+      - Changes.World.GNOME.GTK.Element.Layout
+      - Changes.World.GNOME.GTK.Element.Notebook
+      - Changes.World.GNOME.GTK.Element.Table
+      - Changes.World.GNOME.GTK.Element.Drag
+      - Changes.World.GNOME.GTK.Element.MenuBar
+      - Changes.World.GNOME.GTK.Element.Scrolled
+      - Changes.World.GNOME.GTK.Element.Calendar
+      - Changes.World.GNOME.GTK.ChooseFile
+      - Changes.World.GNOME.GTK.Window
+      - Changes.World.GNOME.GTK.Main
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - changes-core
+          - changes-gnome
+          - gi-cairo-render
+        main: Main.hs
+        ghc-options: -threaded
+
+executables:
+    changes-text:
+        when:
+          - condition: "!flag(build-examples)"
+            buildable: False
+        source-dirs: examples/text
+        dependencies:
+          - base >= 4.12
+          - filepath
+          - bytestring
+          - shapes
+          - changes-core
+          - changes-gnome
+          - changes-world
+          - optparse-applicative
+        main: Main.hs
+        ghc-options: -threaded
+    changes-soup:
+        when:
+          - condition: "!flag(build-examples)"
+            buildable: False
+        source-dirs: examples/soup
+        dependencies:
+          - base >= 4.12
+          - filepath
+          - bytestring
+          - uuid
+          - aeson
+          - shapes
+          - changes-core
+          - changes-gnome
+          - changes-world
+          - optparse-applicative
+        main: Main.hs
+        other-modules:
+          - Soup
+          - Soup.Note
+          - Soup.Edit
+          - Soup.UI
+        ghc-options: -threaded
+    changes-showImages:
+        when:
+          - condition: "!flag(build-examples)"
+            buildable: False
+        source-dirs: examples/showImages
+        dependencies:
+          - base >= 4.12
+          - filepath
+          - directory
+          - shapes
+          - changes-core
+          - changes-media
+          - changes-world
+          - changes-gnome
+        main: Main.hs
+        ghc-options: -threaded
+    changes-cairo:
+        when:
+          - condition: "!flag(build-examples)"
+            buildable: False
+        source-dirs: examples/cairo
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - time
+          - cairo-functional
+          - changes-core
+          - changes-world
+          - changes-gnome
+          - gi-cairo-render
+          - gi-gtk
+        main: Main.hs
+        ghc-options: -threaded

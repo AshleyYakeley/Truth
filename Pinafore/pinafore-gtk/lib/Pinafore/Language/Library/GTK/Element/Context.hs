@@ -1,7 +1,7 @@
 module Pinafore.Language.Library.GTK.Element.Context where
 
 import Changes.Core
-import Changes.UI.GTK
+import Changes.World.GNOME.GTK
 import Pinafore.Language.API
 import Shapes
 
