@@ -41,8 +41,18 @@ instance Pixel PixelCairoARGB32 where
     unsafeReadPixel = error "unsafeReadPixel @PixelCairoARGB32 unimplemented"
     unsafeWritePixel = error "unsafeWritePixel @PixelCairoARGB32 unimplemented"
 
+unmultiply :: Word8 -> Word8 -> Word8
+unmultiply a c = let
+    ac :: Int
+    ac = div (fromEnum c * 0xFF) (fromEnum a)
+    in if ac >= 0xFF
+           then 0xFF
+           else toEnum ac
+
 spp :: PixelCairoARGB32 -> PixelRGBA8
-spp (MkPixelCairoARGB32 b g r a) = PixelRGBA8 r g b a
+spp (MkPixelCairoARGB32 b g r 0xFF) = PixelRGBA8 r g b 0xFF
+spp (MkPixelCairoARGB32 b g r 0) = PixelRGBA8 r g b 0
+spp (MkPixelCairoARGB32 b g r a) = PixelRGBA8 (unmultiply a r) (unmultiply a g) (unmultiply a b) a
 
 renderToCairoImage :: (Int, Int) -> R.Render () -> Image PixelCairoARGB32
 renderToCairoImage s@(w, h) r = Image w h $ byteStringToVector $ renderToByteString R.FormatARGB32 s r
