@@ -19,33 +19,33 @@ renderToByteString fmt (w, h) r =
         R.surfaceFinish surface
         return image
 
-data PixelARGB8 =
-    MkPixelARGB8 !Pixel8
-                 !Pixel8
-                 !Pixel8
-                 !Pixel8
+data PixelCairoARGB32 =
+    MkPixelCairoARGB32 !Pixel8
+                       !Pixel8
+                       !Pixel8
+                       !Pixel8
     deriving (Eq)
 
-instance Pixel PixelARGB8 where
-    type PixelBaseComponent PixelARGB8 = Word8
-    pixelOpacity = error "pixelOpacity @PixelARGB8 unimplemented"
-    mixWith = error "mixWith @PixelARGB8 unimplemented"
-    mixWithAlpha = error "mixWithAlpha @PixelARGB8 unimplemented"
-    colorMap = error "colorMap @PixelARGB8 unimplemented"
+instance Pixel PixelCairoARGB32 where
+    type PixelBaseComponent PixelCairoARGB32 = Word8
+    pixelOpacity = error "pixelOpacity @PixelCairoARGB32 unimplemented"
+    mixWith = error "mixWith @PixelCairoARGB32 unimplemented"
+    mixWithAlpha = error "mixWithAlpha @PixelCairoARGB32 unimplemented"
+    colorMap = error "colorMap @PixelCairoARGB32 unimplemented"
     componentCount _ = 4
-    pixelAt = error "pixelAt @PixelARGB8 unimplemented"
-    readPixel = error "readPixel @PixelARGB8 unimplemented"
-    writePixel = error "writePixel @PixelARGB8 unimplemented"
+    pixelAt = error "pixelAt @PixelCairoARGB32 unimplemented"
+    readPixel = error "readPixel @PixelCairoARGB32 unimplemented"
+    writePixel = error "writePixel @PixelCairoARGB32 unimplemented"
     unsafePixelAt v i =
-        MkPixelARGB8 (unsafeIndex v i) (unsafeIndex v $ i + 1) (unsafeIndex v $ i + 2) (unsafeIndex v $ i + 3)
-    unsafeReadPixel = error "unsafeReadPixel @PixelARGB8 unimplemented"
-    unsafeWritePixel = error "unsafeWritePixel @PixelARGB8 unimplemented"
+        MkPixelCairoARGB32 (unsafeIndex v i) (unsafeIndex v $ i + 1) (unsafeIndex v $ i + 2) (unsafeIndex v $ i + 3)
+    unsafeReadPixel = error "unsafeReadPixel @PixelCairoARGB32 unimplemented"
+    unsafeWritePixel = error "unsafeWritePixel @PixelCairoARGB32 unimplemented"
 
-spp :: PixelARGB8 -> PixelRGBA8
-spp (MkPixelARGB8 a r g b) = PixelRGBA8 r g b a
+spp :: PixelCairoARGB32 -> PixelRGBA8
+spp (MkPixelCairoARGB32 b g r a) = PixelRGBA8 r g b a
 
-renderToARGBImage :: (Int, Int) -> R.Render () -> Image PixelARGB8
-renderToARGBImage s@(w, h) r = Image w h $ byteStringToVector $ renderToByteString R.FormatARGB32 s r
+renderToCairoImage :: (Int, Int) -> R.Render () -> Image PixelCairoARGB32
+renderToCairoImage s@(w, h) r = Image w h $ byteStringToVector $ renderToByteString R.FormatARGB32 s r
 
 renderToImage :: (Int, Int) -> R.Render () -> Image PixelRGBA8
-renderToImage s r = pixelMap spp $ renderToARGBImage s r
+renderToImage s r = pixelMap spp $ renderToCairoImage s r

@@ -123,10 +123,6 @@ fontFace' fname italic bold =
 drawToImage :: (Int, Int) -> LangDrawing a -> LangImage
 drawToImage s (MkLangDrawing d) = MkLangImage $ MkSomeFor RGBA8PixelType $ renderToImage s $ drawingRender d
 
-{-
-langOnClick :: (?pinafore :: PinaforeContext) => PinaforeAction () -> LangDrawing
-langOnClick action = MkLangDrawing $ \unlift -> onClick $ gvRunAction unlift action
--}
 cairoLibraryModule :: LibraryModule
 cairoLibraryModule =
     MkDocTree
