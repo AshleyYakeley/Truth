@@ -1,3 +1,0 @@
-#!/bin/sh -e
-make nodocker=1 build
-`stack --no-docker path --local-bin`/pinafore --data test/pinafore pinafore/test/script/testquery
