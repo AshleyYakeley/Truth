@@ -123,6 +123,9 @@ import Data.Serialize.Text as I ()
 -- random
 import System.Random as I hiding (Finite)
 
+-- invariant
+import Data.Functor.Invariant as I
+
 -- type-rig
 import Data.TypeRig as I
 

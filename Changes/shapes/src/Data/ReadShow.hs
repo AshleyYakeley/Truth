@@ -51,7 +51,7 @@ instance CodecMap ReadShow where
             a <- r
             mpure $ decode a
 
-instance Ringish ReadShow where
+instance Riggish ReadShow where
     pOptional (MkReadShow s r) = let
         s' Nothing = mempty
         s' (Just x) = s x

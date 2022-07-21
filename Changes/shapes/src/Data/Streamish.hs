@@ -5,7 +5,7 @@ import Shapes.Import
 import qualified Text.ParserCombinators.ReadP as ReadP
 import qualified Text.ParserCombinators.ReadPrec as ReadPrec
 
-class (Ringish f, Monoid (StreamishBasis f)) => Streamish f where
+class (Riggish f, Monoid (StreamishBasis f)) => Streamish f where
     type StreamishBasis f :: Type
     pItem :: f (Element (StreamishBasis f))
     pWhole :: f (StreamishBasis f)

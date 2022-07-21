@@ -18,6 +18,7 @@ library:
       - mono-traversable
       - contravariant
       - comonad
+      - invariant
       - lattices
       - transformers
       - hashable

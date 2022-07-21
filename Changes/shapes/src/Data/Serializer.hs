@@ -37,7 +37,7 @@ instance Summish Serializer where
         dab = fmap Left da <|> fmap Right db
         in MkSerializer sab dab
 
-instance Ringish Serializer where
+instance Riggish Serializer where
     pOptional (MkSerializer s d) = let
         s' Nothing = mempty
         s' (Just x) = s x
