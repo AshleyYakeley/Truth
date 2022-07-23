@@ -1,0 +1,8 @@
+#!/usr/bin/pinafore
+
+GTK.run $ \gtk => let
+import UIStuff.Selection;
+in do
+    tref <- newMemText;
+    paneWindow gtk $ pane "Text" $ GTK.textArea tref unknown;
+    end

@@ -6,7 +6,7 @@ while [[ ! -z "$1" ]]; do
             shift 1
             ;;
         -i)
-            `stack --no-docker path --local-bin`/pinafore -i --data test/pinafore
+            `stack --no-docker path --local-bin`/pinafore -I Pinafore/lib --data test/pinafore -i
             shift 1
             ;;
         -*)
@@ -14,7 +14,7 @@ while [[ ! -z "$1" ]]; do
             exit 1
             ;;
         *)
-            `stack --no-docker path --local-bin`/pinafore --data test/pinafore "Pinafore/pinafore-app/test/script/$1"
+            `stack --no-docker path --local-bin`/pinafore -I Pinafore/lib --data test/pinafore "Pinafore/pinafore-app/test/script/$1"
             shift 1
             ;;
     esac
