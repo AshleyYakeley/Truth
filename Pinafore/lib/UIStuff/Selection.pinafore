@@ -72,8 +72,8 @@ end;
 paneWindow: Context -> Pane -> Action Window;
 paneWindow gtk (MkPane title ui moremenus) = stdWindow gtk title moremenus ui;
 
-pane: Text -> Element -> Pane;
-pane title ui = MkPane {title} (\_ => ui) {[]};
+pane: Text -> (WholeRef (Action TextRef) -> Element) -> Pane;
+pane title ui = MkPane {title} ui {[]};
 
 #| A notebook from a list of panes
 notebookPane: WholeRef +Text -> List Pane -> Action Pane;

@@ -134,8 +134,8 @@ contactsPane gtk = let
 
 contactsWindow: GTK.Context -> Action GTK.Window;
 contactsWindow gtk = do
-    pane <- contactsPane gtk;
-    paneWindow gtk pane;
+    p <- contactsPane gtk;
+    paneWindow gtk p;
     end;
 
 in GTK.run contactsWindow

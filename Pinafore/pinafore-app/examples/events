@@ -102,7 +102,7 @@ overviewRef todayref = {textConcat $ mapList (\(t,n) => showEventTime t <> ": " 
 
 # Overview tab GTK
 overviewPane: Pane;
-overviewPane = pane "Overview" $ GTK.exec $ do
+overviewPane = pane "Overview" $ \_ => GTK.exec $ do
     now <- newClock $ Seconds 60; # update every minute
     tz <- newTimeZoneRef now;
     return $ GTK.label $ overviewRef {case timeToLocal %tz %now of DateAndTime d _ => d end};
@@ -157,6 +157,6 @@ eventsTableUI selection = let
 
 in do
     eventsPane <- selectionPairPane "Events" events [newItemMenuAction ("New Event") (Just "Ctrl+K") newEvent events] eventWindow eventsTableUI eventUI;
-    pane <- notebookPane {"Events"} [overviewPane,eventsPane];
-    paneWindow gtk pane
+    p <- notebookPane {"Events"} [overviewPane,eventsPane];
+    paneWindow gtk p
     end
