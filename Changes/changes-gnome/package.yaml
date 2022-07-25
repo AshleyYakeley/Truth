@@ -27,6 +27,7 @@ library:
       - gi-pango
       - gi-gtk
       - gi-gtk-hs
+      - thread-trace
       - shapes
       - cairo-functional
       - changes-core

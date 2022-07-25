@@ -21,6 +21,7 @@ module Changes.World.GNOME.GI.GView
     , gvLiftIONoUI
     , gvLiftViewNoUI
     , gvLiftLifeCycleNoUI
+    , gvGetLock
     , gvRunLockedState
     , gvRunLocked
     , gvRunLockedIO
@@ -153,6 +154,9 @@ gvExitOnClosed gv = do
 
 gvSubLifeCycle :: GView ls --> GView ls
 gvSubLifeCycle (MkGView rva) = MkGView $ hoist viewSubLifeCycle rva
+
+gvGetLock :: GView ls CallbackLock
+gvGetLock = MkGView $ asks gtkcLock
 
 gvRunLockedState :: GView ls (GViewState 'Locked -> GViewState 'Unlocked)
 gvRunLockedState = do

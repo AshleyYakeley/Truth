@@ -1,8 +1,10 @@
 #!/usr/bin/pinafore
 
 GTK.run $ \gtk => let
+import GTK;
 import UIStuff.Selection;
 in do
-    tref <- newMemText;
-    paneWindow gtk $ pane "Text" $ GTK.textArea tref;
+    tref1 <- newMemText;
+    tref2 <- newMemText;
+    paneWindow gtk $ pane "Text" $ vertical [layoutGrow $ textArea tref1, layoutGrow $ textArea tref2];
     end
