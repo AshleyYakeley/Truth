@@ -15,7 +15,7 @@ ui r = GTK.vertical
         GTK.layoutGrow $ GTK.label {unixFormatDate "%A, %B %e, %Y" %r},
         GTK.button {">"} {do d <- get r; r := addDays 1 d; end}
         ],
-    GTK.layoutGrow $ GTK.textArea (wholeRefText $ dateText !$ r) unknown
+    GTK.layoutGrow $ GTK.textArea (wholeRefText $ dateText !$ r)
     ];
 
 in do

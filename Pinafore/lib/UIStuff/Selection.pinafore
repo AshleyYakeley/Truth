@@ -11,10 +11,12 @@ uiLabelled: WholeRef +Text -> Element -> Element;
 uiLabelled n ui = horizontal [label n, layoutGrow ui];
 
 #| A window that comes with some menus.
-stdWindow: Context -> WholeRef +Text -> WholeRef +(List MenuItem) -> (WholeRef (Action TextRef) -> Element) -> Action Window;
+stdWindow: Context -> WholeRef +Text -> WholeRef +(List MenuItem) -> Element -> Action Window;
 stdWindow gtk title moremenus contents = fixAction $ \window => do
     textsel <- newMemWhole;
     let
+        notify: Action TextRef -> Action Unit;
+        notify atref = textsel := atref;
         getTextRef: Action (WholeRef Text);
         getTextRef = do
             atref <- get textsel;
@@ -61,18 +63,18 @@ stdWindow gtk title moremenus contents = fixAction $ \window => do
                     menuAction "Paste" (Just "Ctrl+V") {selPaste}
                 ]
             ] ++ %moremenus};
-        in openWindow gtk (600,800) title $ vertical [mbar, layoutGrow $ scrolled $ contents textsel];
+        in openWindow gtk (600,800) title $ vertical [mbar, layoutGrow $ scrolled $ notifySelection notify contents];
     end;
 
 #| A pane is a title, GTK element, and menu.
 datatype Pane of
-    MkPane (WholeRef Text) (WholeRef (Action TextRef) -> Element) (WholeRef (List MenuItem))
+    MkPane (WholeRef Text) Element (WholeRef (List MenuItem))
 end;
 
 paneWindow: Context -> Pane -> Action Window;
 paneWindow gtk (MkPane title ui moremenus) = stdWindow gtk title moremenus ui;
 
-pane: Text -> (WholeRef (Action TextRef) -> Element) -> Pane;
+pane: Text -> Element -> Pane;
 pane title ui = MkPane {title} ui {[]};
 
 #| A notebook from a list of panes
@@ -80,10 +82,10 @@ notebookPane: WholeRef +Text -> List Pane -> Action Pane;
 notebookPane title panes = do
     tabRef <- newMemWhole;
     return $ let
-        makePage: WholeRef (Action TextRef) -> Pane -> Element :*: Element;
-        makePage textsel (MkPane rname ui _) = uiPage rname $ ui textsel;
-        nui: WholeRef (Action TextRef) -> Element;
-        nui textsel = notebook tabRef $ mapList (makePage textsel) panes;
+        makePage: Pane -> Element :*: Element;
+        makePage (MkPane rname ui _) = uiPage rname ui;
+        nui: Element;
+        nui = notebook tabRef $ mapList makePage panes;
         itemsRef = forWhole panes $ \(MkPane _ _ rmenus) => rmenus;
         in MkPane (immutWhole title) nui $ fromMaybeWhole {index %itemsRef %tabRef};
     end;
@@ -120,7 +122,7 @@ selectionPane title iset createMenuItems iopen iui = do
                     menuAction "Delete" Nothing {deleteItem}
                 ]
             ];
-        in MkPane {title} (\_ => iui selection) {moremenus};
+        in MkPane {title} (iui selection) {moremenus};
     end;
 
 selectionPairPane:

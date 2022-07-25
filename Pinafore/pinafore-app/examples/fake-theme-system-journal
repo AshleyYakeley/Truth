@@ -12,13 +12,13 @@ import GTK;
 import UIStuff.Selection;
 
 frontCoverPane: Pane;
-frontCoverPane = pane "Cover" $ \_ => styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
+frontCoverPane = pane "Cover" $ styleSheet {"* {font-size: 32pt;}"} $ label {"FAKE\nTHEME\nSYSTEM\nJOURNAL"};
 
 getThemesPane: Action Pane;
-getThemesPane = return $ pane "Themes" $ \_ => blank;
+getThemesPane = return $ pane "Themes" $ blank;
 
 daysPane: Pane;
-daysPane = pane "Days" $ \_ => blank;
+daysPane = pane "Days" $ blank;
 
 createMainPane: Action Pane;
 createMainPane = do

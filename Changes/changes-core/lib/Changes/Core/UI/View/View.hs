@@ -21,6 +21,7 @@ module Changes.Core.UI.View.View
     , runNewView
     , viewBindModelUpdates
     , viewBindModel
+    , viewFloatMap
     , viewFloatMapModel
     , viewBindWholeModel
     , viewBindReadOnlyWholeModel
@@ -168,6 +169,15 @@ viewBindModel ::
     -> View a
 viewBindModel model mesrc initv utask recv =
     viewBindModelUpdates model (\ec -> mesrc /= Just ec) initv utask $ \a updates _ec -> recv a updates
+
+viewFloatMap ::
+       forall f updateA updateB. (FloatingEditApplicative f)
+    => FloatingChangeLens updateA updateB
+    -> f updateA
+    -> View (f updateB)
+viewFloatMap flens fa = do
+    rc <- viewGetResourceContext
+    viewLiftLifeCycle $ eaFloatMap rc flens fa
 
 viewFloatMapModel :: forall updateA updateB. FloatingChangeLens updateA updateB -> Model updateA -> View (Model updateB)
 viewFloatMapModel flens model = do

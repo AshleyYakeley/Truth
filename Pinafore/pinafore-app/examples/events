@@ -102,7 +102,7 @@ overviewRef todayref = {textConcat $ mapList (\(t,n) => showEventTime t <> ": " 
 
 # Overview tab GTK
 overviewPane: Pane;
-overviewPane = pane "Overview" $ \_ => GTK.exec $ do
+overviewPane = pane "Overview" $ GTK.exec $ do
     now <- newClock $ Seconds 60; # update every minute
     tz <- newTimeZoneRef now;
     return $ GTK.label $ overviewRef {case timeToLocal %tz %now of DateAndTime d _ => d end};
@@ -126,7 +126,7 @@ eventUI evt = GTK.vertical
         GTK.textEntry $ interpretDateAsText $ eventRefTimeDate $ eventTime !$% evt,
         GTK.textEntry $ unixInterpretTimeOfDayAsText "%H:%M" $ eventRefTimeTimeOfDay $ eventTime !$% evt
     ],
-    GTK.layoutGrow $ GTK.textArea (wholeRefText $ eventNotes !$% evt) unknown
+    GTK.layoutGrow $ GTK.textArea (wholeRefText $ eventNotes !$% evt)
 ];
 
 eventWindow: Event -> Action GTK.Window;

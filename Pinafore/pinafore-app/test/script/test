@@ -96,7 +96,7 @@ ui_person p = GTK.vertical
         ],
         ui_page {"Home"} $ let homep = home !$ p in GTK.vertical
         [
-            ui_labelled {"Address: "} $ GTK.textArea (wholeRefText $ address !$ homep) unknown,
+            ui_labelled {"Address: "} $ GTK.textArea (wholeRefText $ address !$ homep),
             ui_labelled {"City: "} $ GTK.textEntry $ city !$ homep,
             ui_labelled {"Postcode/ZIP: "} $ GTK.textEntry $ postcode !$ homep,
             ui_labelled {"State/Province: "} $ GTK.textEntry $ province !$ homep,
@@ -155,7 +155,7 @@ in std_window {"Switch"} $ GTK.vertical
 [
     #GTK.textEntry sw_pick),
     GTK.checkBox {"pick"} sw_pick,
-    GTK.layoutGrow $ GTK.dynamic {if %sw_pick then GTK.textArea (wholeRefText sw_val1) unknown else GTK.textArea (wholeRefText sw_val2) unknown}
+    GTK.layoutGrow $ GTK.dynamic {if %sw_pick then GTK.textArea (wholeRefText sw_val1) else GTK.textArea (wholeRefText sw_val2)}
 ];
 
 ### Imported Files
@@ -182,7 +182,7 @@ window_constant = std_window {"Constant"} $ GTK.vertical
     GTK.checkBox {"off"} {False},
     GTK.checkBox {"on"} {True},
     GTK.textEntry {"constant"},
-    GTK.layoutGrow $ GTK.textArea (wholeRefText $ {"constant"}) unknown
+    GTK.layoutGrow $ GTK.textArea (wholeRefText $ {"constant"})
 ];
 
 ### CSS
@@ -197,7 +197,7 @@ window_css = do
             GTK.styleClass "x" $ GTK.name "A" $ GTK.checkBox {"Box"} {True},
             GTK.styleClass "x" $ GTK.name "B" $ GTK.button {"Button"} {return ()},
             GTK.styleClass "x" $ GTK.name "C" $ GTK.textEntry sometext,
-            GTK.layoutGrow $ GTK.styleClass "y" $ GTK.name "D" $ GTK.textArea cssref unknown,
+            GTK.layoutGrow $ GTK.styleClass "y" $ GTK.name "D" $ GTK.textArea cssref,
             GTK.styleClass "y" $ GTK.name "E" $ GTK.label {"Some Text"}
         ];
     end;
@@ -238,12 +238,15 @@ window_textselection = do
     tref3 <- newMemText;
     tref3 := "333";
     sel <- newMemWhole;
-    std_window {"Text Selection"} $ GTK.styleSheet {"* {padding: 2pt;}"} $ GTK.vertical
+    let
+        notify: Action TextRef -> Action Unit;
+        notify atref = sel := atref;
+    in std_window {"Text Selection"} $ GTK.styleSheet {"* {padding: 2pt;}"} $ GTK.vertical
     [
-        GTK.textArea tref1 sel,
-        GTK.textArea tref2 sel,
-        GTK.textArea tref3 sel,
-        GTK.dynamic {GTK.exec $ mapAction (\tref => GTK.textArea (wholeRefText tref) unknown) %sel}
+        GTK.notifySelection notify $ GTK.textArea tref1,
+        GTK.notifySelection notify $ GTK.textArea tref2,
+        GTK.notifySelection notify $ GTK.textArea tref3,
+        GTK.dynamic {GTK.exec $ mapAction (\tref => GTK.textArea (wholeRefText tref)) %sel}
     ];
     end;
 

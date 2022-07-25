@@ -233,12 +233,12 @@ uiStyleClass sclass (MkLangElement mw) =
         setCSSClass sclass widget
         return widget
 
-uiTextArea :: LangTextRef -> LangWholeRef '( PinaforeAction LangTextRef, TopType) -> LangElement
-uiTextArea (MkLangTextRef model) selectionRef =
-    MkLangElement $ \_ ->
+uiTextArea :: LangTextRef -> LangElement
+uiTextArea (MkLangTextRef model) =
+    MkLangElement $ \ec ->
         createTextArea (unWModel model) $
-        contramap (\tsel -> fmap MkLangTextRef $ pinaforeFloatMap tsel model) $
-        langWholeRefSelectNotify noEditSource selectionRef
+        contramap (\tsel -> fmap (TextSelectionModel . MkLangTextRef) $ viewFloatMap tsel model) $
+        viewLiftSelectNotify $ ecSelectNotify ec
 
 uiCalendar :: WModel (WholeUpdate (Know Day)) -> LangElement
 uiCalendar day =
@@ -249,6 +249,16 @@ uiWithContext call =
     MkLangElement $ \ec -> do
         gtkc <- gvGetContext
         unLangElement (call $ MkLangContext gtkc $ ecOtherContext ec) ec
+
+uiNotifySelection ::
+       (?pinafore :: PinaforeContext) => (PinaforeAction LangTextRef -> PinaforeAction ()) -> LangElement -> LangElement
+uiNotifySelection notify (MkLangElement e) = let
+    sel :: SelectNotify SelectionModel
+    sel =
+        MkSelectNotify $ \vms ->
+            runPinaforeAction $
+            notify $ actionLiftViewKnow $ fmap (fmap (\(TextSelectionModel x) -> x) . maybeToKnow) vms
+    in MkLangElement $ \ec -> e (ec {ecSelectNotify = ecSelectNotify ec <> sel})
 
 uiOwned :: LangElement -> LangElement
 uiOwned (MkLangElement mw) =
@@ -273,6 +283,7 @@ elementStuff =
           functionToShim "layout element" $ MkLangLayoutElement defaultLayoutOptions
         , mkValEntry "exec" "Element that runs an Action first." uiExec
         , mkValEntry "withContext" "Element that requires a Context." uiWithContext
+        , mkValEntry "notifySelection" "Notify whenever the selection changes." uiNotifySelection
         , mkValEntry "owned" "Run actions caused by this element in the window's lifecycle." uiOwned
         , mkValEntry "blank" "Blank element" $ MkLangElement $ \_ -> createBlank
         , mkValEntry "image" "Blank element" langImage

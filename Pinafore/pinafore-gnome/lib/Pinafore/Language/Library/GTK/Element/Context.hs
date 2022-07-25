@@ -6,10 +6,14 @@ import Pinafore.Language.API
 import Pinafore.Language.Library.GTK.Context
 import Shapes
 
+data SelectionModel =
+    TextSelectionModel LangTextRef
+
 data ElementContext = MkElementContext
     { ecUnlift :: View --> IO
     , ecAccelGroup :: AccelGroup
     , ecOtherContext :: OtherContext
+    , ecSelectNotify :: SelectNotify SelectionModel
     }
 
 -- LangElement

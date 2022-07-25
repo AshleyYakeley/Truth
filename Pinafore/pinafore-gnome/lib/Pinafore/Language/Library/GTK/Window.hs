@@ -63,7 +63,13 @@ openWindow lc wsSize title (MkLangElement element) =
                 wsTitle = unWModel $ eaMapReadOnlyWhole (fromKnow mempty) $ immutableRefToReadOnlyRef title
                 wsContent :: AccelGroup -> GView 'Locked Widget
                 wsContent ag =
-                    element MkElementContext {ecUnlift = unlift, ecAccelGroup = ag, ecOtherContext = lcOtherContext lc}
+                    element
+                        MkElementContext
+                            { ecUnlift = unlift
+                            , ecAccelGroup = ag
+                            , ecSelectNotify = mempty
+                            , ecOtherContext = lcOtherContext lc
+                            }
                 in MkWindowSpec {..}
 
 exitUI :: LangContext -> View ()

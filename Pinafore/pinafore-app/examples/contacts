@@ -23,7 +23,7 @@ country = property @Location @Text !"location.address.country";
 locationUI: WholeRef +Location -> GTK.Element;
 locationUI loc = GTK.vertical
 [
-    GTK.layoutGrow $ uiLabelled {"Address: "} $ GTK.textArea (wholeRefText $ address !$% loc) unknown,
+    GTK.layoutGrow $ uiLabelled {"Address: "} $ GTK.textArea (wholeRefText $ address !$% loc),
     uiLabelled {"City: "} $ GTK.textEntry $ city !$% loc,
     uiLabelled {"Postcode/ZIP: "} $ GTK.textEntry $ postcode !$% loc,
     uiLabelled {"State/Province: "} $ GTK.textEntry $ province !$% loc,
