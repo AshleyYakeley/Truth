@@ -27,6 +27,48 @@ data SubtypeResult
     | SRSubsume
     | SRSingle
 
+isOfType :: Text -> Text -> Text
+isOfType v t = "let x:" <> t <> ";x=" <> v <> " in pass"
+
+subtypeTests :: Bool -> SubtypeResult -> Text -> Text -> [ScriptTestTree]
+subtypeTests polar sr p q =
+    [ testExpectSuccess "pass"
+    , tGroup
+          "unify"
+          [ testSubtypeUnify sr $
+            "let rec f: (" <> q <> ") -> Unit; f = f end; rec x: " <> p <> "; x = x; end; fx = f x in pass"
+          ]
+    , tGroup "subsume" $
+      [ testSubtypeSubsume sr $ "let rec x: " <> p <> "; x = x end; y: " <> q <> "; y = x in pass"
+      , testSubtypeSubsume sr $ "let x: " <> p <> "; x = undefined; y: " <> q <> "; y = x in pass"
+      , testSubtypeSubsume sr $ "let x: " <> q <> "; x = undefined: " <> p <> " in pass"
+      , testSubtypeSubsume sr $ "let x = (undefined: " <> p <> "): " <> q <> " in pass"
+      , (if polar
+             then testExpectReject
+             else testSubtypeSingle sr) $
+        "let f: (" <> p <> ") -> (" <> q <> "); f x = x in pass"
+      ]
+    ]
+  where
+    testSubtypeUnify :: SubtypeResult -> Text -> ScriptTestTree
+    testSubtypeUnify SRNot = testExpectReject
+    testSubtypeUnify SRUnify = testExpectSuccess
+    testSubtypeUnify SRSubsume = testExpectSuccess
+    testSubtypeUnify SRSingle = testExpectSuccess
+    testSubtypeSubsume :: SubtypeResult -> Text -> ScriptTestTree
+    testSubtypeSubsume SRNot = testExpectReject
+    testSubtypeSubsume SRUnify = testExpectReject
+    testSubtypeSubsume SRSubsume = testExpectSuccess
+    testSubtypeSubsume SRSingle = testExpectSuccess
+    testSubtypeSingle :: SubtypeResult -> Text -> ScriptTestTree
+    testSubtypeSingle SRNot = testExpectReject
+    testSubtypeSingle SRUnify = testExpectReject
+    testSubtypeSingle SRSubsume = testExpectReject
+    testSubtypeSingle SRSingle = testExpectSuccess
+
+subtypeTest :: Bool -> SubtypeResult -> Text -> Text -> ScriptTestTree
+subtypeTest polar sr p q = tGroup (unpack $ p <> " <: " <> q) $ subtypeTests polar sr p q
+
 testEntity :: TestTree
 testEntity =
     runScriptTestTree $
@@ -514,220 +556,174 @@ testEntity =
                           "let enta = property @E @(Number :+: Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testeq {Right \"abc\"} $ enta !$ {e1})"
                     ]
               ]
-        , let
-              testSubtypeUnify :: SubtypeResult -> Text -> ScriptTestTree
-              testSubtypeUnify SRNot = testExpectReject
-              testSubtypeUnify SRUnify = testExpectSuccess
-              testSubtypeUnify SRSubsume = testExpectSuccess
-              testSubtypeUnify SRSingle = testExpectSuccess
-              testSubtypeSubsume :: SubtypeResult -> Text -> ScriptTestTree
-              testSubtypeSubsume SRNot = testExpectReject
-              testSubtypeSubsume SRUnify = testExpectReject
-              testSubtypeSubsume SRSubsume = testExpectSuccess
-              testSubtypeSubsume SRSingle = testExpectSuccess
-              testSubtypeSingle :: SubtypeResult -> Text -> ScriptTestTree
-              testSubtypeSingle SRNot = testExpectReject
-              testSubtypeSingle SRUnify = testExpectReject
-              testSubtypeSingle SRSubsume = testExpectReject
-              testSubtypeSingle SRSingle = testExpectSuccess
-              subtypeTests :: Bool -> SubtypeResult -> Text -> Text -> [ScriptTestTree]
-              subtypeTests polar sr p q =
-                  [ testExpectSuccess "pass"
-                  , tGroup
-                        "unify"
-                        [ testSubtypeUnify sr $
-                          "let rec f: (" <>
-                          q <> ") -> Unit; f = f end; rec x: " <> p <> "; x = x; end; fx = f x in pass"
-                        ]
-                  , tGroup "subsume" $
-                    [ testSubtypeSubsume sr $ "let rec x: " <> p <> "; x = x end; y: " <> q <> "; y = x in pass"
-                    , testSubtypeSubsume sr $ "let x: " <> p <> "; x = undefined; y: " <> q <> "; y = x in pass"
-                    , testSubtypeSubsume sr $ "let x: " <> q <> "; x = undefined: " <> p <> " in pass"
-                    , testSubtypeSubsume sr $ "let x = (undefined: " <> p <> "): " <> q <> " in pass"
-                    , (if polar
-                           then testExpectReject
-                           else testSubtypeSingle sr) $
-                      "let f: (" <> p <> ") -> (" <> q <> "); f x = x in pass"
+        , tGroup
+              "subtype"
+              [ tGroup
+                    "conversion"
+                    [ subtypeTest False SRSingle "Integer" "Integer"
+                    , subtypeTest False SRSingle "Integer" "Rational"
+                    , subtypeTest False SRNot "Rational" "Integer"
+                    , subtypeTest False SRSingle "Maybe Entity" "Entity"
+                    , subtypeTest False SRNot "Entity" "Maybe Entity"
+                    , subtypeTest False SRSingle "a" "a"
+                    , subtypeTest False SRSubsume "a" "Integer"
+                    , subtypeTest False SRUnify "Integer" "a"
+                    , subtypeTest False SRSubsume "List a" "List Integer"
+                    , subtypeTest False SRUnify "List Integer" "List a"
+                    , subtypeTest False SRSubsume "a :*: b" "Integer :*: Rational"
+                    , subtypeTest False SRSubsume "a :*: a" "Integer :*: Integer"
+                    , subtypeTest False SRSubsume "a :*: a" "Integer :*: Rational"
+                    , subtypeTest False SRSubsume "a :*: Text" "Integer :*: Text"
+                    , subtypeTest False SRSingle "List a" "List a"
+                    , subtypeTest False SRSingle "a -> a -> Ordering" "RefOrder a"
+                    , subtypeTest False SRSingle "Integer -> Integer -> Ordering" "RefOrder Integer"
+                    , subtypeTest False SRSingle "WholeRef (List a)" "ListRef a"
+                    , subtypeTest False SRSingle "WholeRef (List Integer)" "ListRef Integer"
+                    , subtypeTest False SRSingle "WholeRef {-List Integer,+List Integer}" "ListRef Integer"
+                    , subtypeTest True SRSingle "WholeRef {-List (a & Integer),+List (a | Integer)}" "ListRef Integer"
+                    , subtypeTest True SRSingle "WholeRef {-List (a & Entity),+List (a | Integer)}" "ListRef Integer"
+                    , subtypeTest False SRSingle "rec a. Maybe a" "rec a. Maybe a"
+                    , subtypeTest False SRSingle "rec a. Maybe a" "rec b. Maybe b"
+                    , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec a. Maybe a)"
+                    , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec b. Maybe b)"
+                    , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec a. Maybe a"
+                    , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec b. Maybe b"
+                    , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec a. Maybe a)"
+                    , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec b. Maybe b)"
                     ]
-                  ]
-              subtypeTest :: Bool -> SubtypeResult -> Text -> Text -> ScriptTestTree
-              subtypeTest polar sr p q = tGroup (unpack $ p <> " <: " <> q) $ subtypeTests polar sr p q
-              in tGroup
-                     "subtype"
-                     [ tGroup
-                           "conversion"
-                           [ subtypeTest False SRSingle "Integer" "Integer"
-                           , subtypeTest False SRSingle "Integer" "Rational"
-                           , subtypeTest False SRNot "Rational" "Integer"
-                           , subtypeTest False SRSingle "Maybe Entity" "Entity"
-                           , subtypeTest False SRNot "Entity" "Maybe Entity"
-                           , subtypeTest False SRSingle "a" "a"
-                           , subtypeTest False SRSubsume "a" "Integer"
-                           , subtypeTest False SRUnify "Integer" "a"
-                           , subtypeTest False SRSubsume "List a" "List Integer"
-                           , subtypeTest False SRUnify "List Integer" "List a"
-                           , subtypeTest False SRSubsume "a :*: b" "Integer :*: Rational"
-                           , subtypeTest False SRSubsume "a :*: a" "Integer :*: Integer"
-                           , subtypeTest False SRSubsume "a :*: a" "Integer :*: Rational"
-                           , subtypeTest False SRSubsume "a :*: Text" "Integer :*: Text"
-                           , subtypeTest False SRSingle "List a" "List a"
-                           , subtypeTest False SRSingle "a -> a -> Ordering" "RefOrder a"
-                           , subtypeTest False SRSingle "Integer -> Integer -> Ordering" "RefOrder Integer"
-                           , subtypeTest False SRSingle "WholeRef (List a)" "ListRef a"
-                           , subtypeTest False SRSingle "WholeRef (List Integer)" "ListRef Integer"
-                           , subtypeTest False SRSingle "WholeRef {-List Integer,+List Integer}" "ListRef Integer"
-                           , subtypeTest
-                                 True
-                                 SRSingle
-                                 "WholeRef {-List (a & Integer),+List (a | Integer)}"
-                                 "ListRef Integer"
-                           , subtypeTest
-                                 True
-                                 SRSingle
-                                 "WholeRef {-List (a & Entity),+List (a | Integer)}"
-                                 "ListRef Integer"
-                           , subtypeTest False SRSingle "rec a. Maybe a" "rec a. Maybe a"
-                           , subtypeTest False SRSingle "rec a. Maybe a" "rec b. Maybe b"
-                           , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec a. Maybe a)"
-                           , subtypeTest False SRSingle "rec a. Maybe a" "Maybe (rec b. Maybe b)"
-                           , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec a. Maybe a"
-                           , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "rec b. Maybe b"
-                           , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec a. Maybe a)"
-                           , subtypeTest False SRSingle "Maybe (rec a. Maybe a)" "Maybe (rec b. Maybe b)"
-                           ]
-                     , tGroup
-                           "let"
-                           [ tDecls ["opentype P", "opentype Q", "subtype P <: Q"] $
-                             tGroup "seq" $ subtypeTests False SRSingle "P" "Q"
-                           , tDeclsRec ["opentype P", "opentype Q", "subtype P <: Q"] $
-                             tGroup "rec 1" $ subtypeTests False SRSingle "P" "Q"
-                           , tDeclsRec ["opentype P", "subtype P <: Q", "opentype Q"] $
-                             tGroup "rec 2" $ subtypeTests False SRSingle "P" "Q"
-                           , tDeclsRec ["subtype P <: Q", "opentype P", "opentype Q"] $
-                             tGroup "rec 3" $ subtypeTests False SRSingle "P" "Q"
-                           ]
-                     , tGroup
-                           "local"
-                           [ tDecls ["opentype P"] $
-                             tGroup
-                                 "1"
-                                 [ testExpectSuccess "pass"
-                                 , testExpectSuccess "let opentype Q; subtype P <: Q in pass"
-                                 , testExpectSuccess "let opentype Q; subtype P <: Q; f : P -> Q; f x = x in pass"
-                                 , testExpectReject "let opentype Q; subtype P <: Q; f : Q -> P; f x = x in pass"
-                                 ]
-                           , tDecls ["opentype Q"] $
-                             tGroup
-                                 "2"
-                                 [ testExpectSuccess "pass"
-                                 , testExpectSuccess "let opentype P; subtype P <: Q in pass"
-                                 , testExpectSuccess "let opentype P; subtype P <: Q; f : P -> Q; f x = x in pass"
-                                 , testExpectReject "let opentype P; subtype P <: Q; f : Q -> P; f x = x in pass"
-                                 ]
-                           , tDecls ["opentype P", "opentype Q"] $
-                             tGroup
-                                 "3"
-                                 [ testExpectSuccess "pass"
-                                 , testExpectSuccess "let subtype P <: Q in pass"
-                                 , testExpectSuccess "let subtype P <: Q; f : P -> Q; f x = x in pass"
-                                 , testExpectReject "let subtype P <: Q; f : Q -> P; f x = x in pass"
-                                 ]
-                           ]
-                     , tGroup
-                           "circular"
-                           [ tDecls ["opentype P", "subtype P <: P"] $
-                             tGroup
-                                 "setSingle"
-                                 [ testExpectSuccess "pass"
-                                 , testExpectSuccess "let f : P -> P; f x = x in pass"
-                                 , testExpectSuccess "let f : List P -> List P; f x = x in pass"
-                                 ]
-                           , tDecls ["opentype P", "opentype Q", "subtype P <: Q", "subtype Q <: P"] $
-                             tGroup
-                                 "pair"
-                                 [ testExpectSuccess "pass"
-                                 , testExpectSuccess "let f : P -> P; f x = x in pass"
-                                 , testExpectSuccess "let f : Q -> Q; f x = x in pass"
-                                 , testExpectSuccess "let f : P -> Q; f x = x in pass"
-                                 , testExpectSuccess "let f : List P -> List Q; f x = x in pass"
-                                 , testExpectSuccess "let f : Q -> P; f x = x in pass"
-                                 ]
-                           ]
-                     , tDecls ["opentype Q", "subtype Maybe Number <: Q"] $
-                       tGroup
-                           "non-simple" -- not allowed, per issue #28
-                           [testExpectReject "pass"]
-                     , tDecls ["opentype Q", "subtype Integer <: Q"] $
-                       tGroup "literal" $ subtypeTests False SRSingle "Integer" "Q"
-                     , tDecls ["opentype Q", "closedtype P of P1 Text Number !\"P.P1\" end", "subtype P <: Q"] $
-                       tGroup "closed" $ subtypeTests False SRSingle "P" "Q"
-                     , tDecls
-                           [ "opentype Q"
-                           , "opentype R"
-                           , "closedtype P of P1 Text Number !\"P.P1\" end"
-                           , "subtype P <: Q"
-                           , "subtype P <: R"
-                           ] $
-                       tGroup "closed" $ subtypeTests False SRSingle "P" "R"
-                     , tGroup
-                           "Entity"
-                           [ testExpectSuccess "let f : Number -> Entity; f x = x in pass"
-                           , testExpectSuccess "let f : (a & Number) -> Entity :*: a; f x = (x,x) in pass"
-                           , testExpectSuccess "let f : Maybe Number -> Entity; f x = x in pass"
-                           , testExpectSuccess "let f : Maybe (a & Number) -> Entity :*: Maybe a; f x = (x,x) in pass"
-                           ]
-                     , tGroup "dynamic" $
-                       [ tGroup "DynamicEntity <: Entity" $ subtypeTests False SRSingle "DynamicEntity" "Entity"
-                       , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tGroup "P1 <: DynamicEntity" $ subtypeTests False SRSingle "P1" "DynamicEntity"
-                       , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tGroup "Q <: DynamicEntity" $ subtypeTests False SRSingle "Q" "DynamicEntity"
-                       , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tGroup "P1 <: Entity" $ subtypeTests False SRSingle "P1" "Entity"
-                       , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tGroup "Q <: Entity" $ subtypeTests False SRSingle "Q" "Entity"
-                       , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tGroup "seq" $ subtypeTests False SRSingle "P1" "Q"
-                       , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                         tGroup "rec 1" $ subtypeTests False SRSingle "P1" "Q"
-                       , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | P2", "dynamictype P2 = !\"P2\""] $
-                         tGroup "rec 2" $ subtypeTests False SRSingle "P1" "Q"
-                       , tDeclsRec ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
-                         tGroup "rec 3" $ subtypeTests False SRSingle "P1" "Q"
-                       , tDeclsRec
-                             [ "opentype T"
-                             , "subtype QA <: T"
-                             , "dynamictype QA = P1 | P2 | P3"
-                             , "dynamictype QB = P2 | P3 | P1"
-                             , "dynamictype QC = P2 | P3"
-                             , "dynamictype P1 = !\"P1\""
-                             , "dynamictype P2 = !\"P2\""
-                             , "dynamictype P3 = !\"P3\""
-                             ] $
-                         tGroup
-                             "open-transitive"
-                             [ tGroup "QC <: QB" $ subtypeTests False SRSingle "QC" "QB"
-                             , tGroup "QA = QB" $ subtypeTests False SRSingle "QA" "QB"
-                             , tGroup "QA = QB" $ subtypeTests False SRSingle "QB" "QA"
-                             , tGroup "QA <: T" $ subtypeTests False SRSingle "QA" "T"
-                             , tGroup "QB <: T" $ subtypeTests False SRSingle "QB" "T"
-                             , tGroup "QC <: T" $ subtypeTests False SRSingle "QC" "T"
-                             , tGroup "P1 <: T" $ subtypeTests False SRSingle "P1" "T"
-                             ]
-                       , tGroup
-                             "cycle"
-                             [ tDecls ["dynamictype P = P"] $ testExpectReject "pass"
-                             , tDecls ["dynamictype P = Q", "dynamictype Q = P"] $ testExpectReject "pass"
-                             , tDecls ["dynamictype P = Q", "dynamictype Q = P"] $
-                               testExpectReject "let f: P -> Q; f x = x in pass"
-                             , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P = P1 | Q", "dynamictype Q = P"] $
-                               testExpectReject "pass"
-                             , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P = P1 | Q", "dynamictype Q = P | Q"] $
-                               testExpectReject "pass"
-                             , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | Q"] $ testExpectReject "pass"
-                             ]
-                       ]
-                     ]
+              , tGroup
+                    "let"
+                    [ tDecls ["opentype P", "opentype Q", "subtype P <: Q"] $
+                      tGroup "seq" $ subtypeTests False SRSingle "P" "Q"
+                    , tDeclsRec ["opentype P", "opentype Q", "subtype P <: Q"] $
+                      tGroup "rec 1" $ subtypeTests False SRSingle "P" "Q"
+                    , tDeclsRec ["opentype P", "subtype P <: Q", "opentype Q"] $
+                      tGroup "rec 2" $ subtypeTests False SRSingle "P" "Q"
+                    , tDeclsRec ["subtype P <: Q", "opentype P", "opentype Q"] $
+                      tGroup "rec 3" $ subtypeTests False SRSingle "P" "Q"
+                    ]
+              , tGroup
+                    "local"
+                    [ tDecls ["opentype P"] $
+                      tGroup
+                          "1"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess "let opentype Q; subtype P <: Q in pass"
+                          , testExpectSuccess "let opentype Q; subtype P <: Q; f : P -> Q; f x = x in pass"
+                          , testExpectReject "let opentype Q; subtype P <: Q; f : Q -> P; f x = x in pass"
+                          ]
+                    , tDecls ["opentype Q"] $
+                      tGroup
+                          "2"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess "let opentype P; subtype P <: Q in pass"
+                          , testExpectSuccess "let opentype P; subtype P <: Q; f : P -> Q; f x = x in pass"
+                          , testExpectReject "let opentype P; subtype P <: Q; f : Q -> P; f x = x in pass"
+                          ]
+                    , tDecls ["opentype P", "opentype Q"] $
+                      tGroup
+                          "3"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess "let subtype P <: Q in pass"
+                          , testExpectSuccess "let subtype P <: Q; f : P -> Q; f x = x in pass"
+                          , testExpectReject "let subtype P <: Q; f : Q -> P; f x = x in pass"
+                          ]
+                    ]
+              , tGroup
+                    "circular"
+                    [ tDecls ["opentype P", "subtype P <: P"] $
+                      tGroup
+                          "setSingle"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess "let f : P -> P; f x = x in pass"
+                          , testExpectSuccess "let f : List P -> List P; f x = x in pass"
+                          ]
+                    , tDecls ["opentype P", "opentype Q", "subtype P <: Q", "subtype Q <: P"] $
+                      tGroup
+                          "pair"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess "let f : P -> P; f x = x in pass"
+                          , testExpectSuccess "let f : Q -> Q; f x = x in pass"
+                          , testExpectSuccess "let f : P -> Q; f x = x in pass"
+                          , testExpectSuccess "let f : List P -> List Q; f x = x in pass"
+                          , testExpectSuccess "let f : Q -> P; f x = x in pass"
+                          ]
+                    ]
+              , tDecls ["opentype Q", "subtype Maybe Number <: Q"] $
+                tGroup
+                    "non-simple" -- not allowed, per issue #28
+                    [testExpectReject "pass"]
+              , tDecls ["opentype Q", "subtype Integer <: Q"] $
+                tGroup "literal" $ subtypeTests False SRSingle "Integer" "Q"
+              , tDecls ["opentype Q", "closedtype P of P1 Text Number !\"P.P1\" end", "subtype P <: Q"] $
+                tGroup "closed" $ subtypeTests False SRSingle "P" "Q"
+              , tDecls
+                    [ "opentype Q"
+                    , "opentype R"
+                    , "closedtype P of P1 Text Number !\"P.P1\" end"
+                    , "subtype P <: Q"
+                    , "subtype P <: R"
+                    ] $
+                tGroup "closed" $ subtypeTests False SRSingle "P" "R"
+              , tGroup
+                    "Entity"
+                    [ testExpectSuccess "let f : Number -> Entity; f x = x in pass"
+                    , testExpectSuccess "let f : (a & Number) -> Entity :*: a; f x = (x,x) in pass"
+                    , testExpectSuccess "let f : Maybe Number -> Entity; f x = x in pass"
+                    , testExpectSuccess "let f : Maybe (a & Number) -> Entity :*: Maybe a; f x = (x,x) in pass"
+                    ]
+              , tGroup "dynamic" $
+                [ tGroup "DynamicEntity <: Entity" $ subtypeTests False SRSingle "DynamicEntity" "Entity"
+                , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                  tGroup "P1 <: DynamicEntity" $ subtypeTests False SRSingle "P1" "DynamicEntity"
+                , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                  tGroup "Q <: DynamicEntity" $ subtypeTests False SRSingle "Q" "DynamicEntity"
+                , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                  tGroup "P1 <: Entity" $ subtypeTests False SRSingle "P1" "Entity"
+                , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                  tGroup "Q <: Entity" $ subtypeTests False SRSingle "Q" "Entity"
+                , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                  tGroup "seq" $ subtypeTests False SRSingle "P1" "Q"
+                , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                  tGroup "rec 1" $ subtypeTests False SRSingle "P1" "Q"
+                , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | P2", "dynamictype P2 = !\"P2\""] $
+                  tGroup "rec 2" $ subtypeTests False SRSingle "P1" "Q"
+                , tDeclsRec ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
+                  tGroup "rec 3" $ subtypeTests False SRSingle "P1" "Q"
+                , tDeclsRec
+                      [ "opentype T"
+                      , "subtype QA <: T"
+                      , "dynamictype QA = P1 | P2 | P3"
+                      , "dynamictype QB = P2 | P3 | P1"
+                      , "dynamictype QC = P2 | P3"
+                      , "dynamictype P1 = !\"P1\""
+                      , "dynamictype P2 = !\"P2\""
+                      , "dynamictype P3 = !\"P3\""
+                      ] $
+                  tGroup
+                      "open-transitive"
+                      [ tGroup "QC <: QB" $ subtypeTests False SRSingle "QC" "QB"
+                      , tGroup "QA = QB" $ subtypeTests False SRSingle "QA" "QB"
+                      , tGroup "QA = QB" $ subtypeTests False SRSingle "QB" "QA"
+                      , tGroup "QA <: T" $ subtypeTests False SRSingle "QA" "T"
+                      , tGroup "QB <: T" $ subtypeTests False SRSingle "QB" "T"
+                      , tGroup "QC <: T" $ subtypeTests False SRSingle "QC" "T"
+                      , tGroup "P1 <: T" $ subtypeTests False SRSingle "P1" "T"
+                      ]
+                , tGroup
+                      "cycle"
+                      [ tDecls ["dynamictype P = P"] $ testExpectReject "pass"
+                      , tDecls ["dynamictype P = Q", "dynamictype Q = P"] $ testExpectReject "pass"
+                      , tDecls ["dynamictype P = Q", "dynamictype Q = P"] $
+                        testExpectReject "let f: P -> Q; f x = x in pass"
+                      , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P = P1 | Q", "dynamictype Q = P"] $
+                        testExpectReject "pass"
+                      , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P = P1 | Q", "dynamictype Q = P | Q"] $
+                        testExpectReject "pass"
+                      , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | Q"] $ testExpectReject "pass"
+                      ]
+                ]
+              ]
         , tGroup
               "greatest-dynamic-supertype"
               [ tGroup
@@ -888,10 +884,22 @@ testEntity =
                             testExpectSuccess "if sd == \"45;72;18;\" then pass else fail sd"
                           ]
                     ]
-              , tModify (ignoreTestBecause "ISSUE #132") $
-                tGroup
+              , tGroup
                     "subtype"
-                    [ testExpectSuccess "let datatype L of LNil; subtype datatype L1 of LCons Unit L end end in pass"
+                    [ tDecls ["datatype T1 of C1 Integer; subtype datatype T2 of C2; C3 Boolean; end; end"] $
+                      tGroup
+                          "T"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess $ isOfType "C1 3" "T1"
+                          , testExpectReject $ isOfType "C1 3" "T2"
+                          , testExpectSuccess $ isOfType "C2" "T1"
+                          , testExpectSuccess $ isOfType "C2" "T2"
+                          , testExpectSuccess $ isOfType "C3 True" "T1"
+                          , testExpectSuccess $ isOfType "C3 True" "T2"
+                          , subtypeTest False SRSingle "T2" "T1"
+                          , subtypeTest False SRNot "T1" "T2"
+                          ]
+                    , testExpectSuccess "let datatype L of LNil; subtype datatype L1 of LCons Unit L end end in pass"
                     , testExpectSuccess
                           "let datatype L +a of LNil; subtype datatype L1 of LCons a (L a) end end in pass"
                     ]

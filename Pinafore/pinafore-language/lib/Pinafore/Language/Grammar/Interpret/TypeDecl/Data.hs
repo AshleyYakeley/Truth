@@ -48,12 +48,16 @@ datatypeIOWitness :: IOWitness ('MkWitKind DataTypeFamily)
 datatypeIOWitness = $(iowitness [t|'MkWitKind DataTypeFamily|])
 
 interpretDataTypeConstructor ::
-       SyntaxConstructorOrSubtype extra -> PinaforeInterpreter ((Name, extra), Some (ListType PinaforeNonpolarType))
+       SyntaxConstructorOrSubtype extra -> PinaforeInterpreter [((Name, extra), Some (ListType PinaforeNonpolarType))]
 interpretDataTypeConstructor (ConstructorSyntaxConstructorOrSubtype consName stypes extra) = do
     etypes <- for stypes interpretNonpolarType
-    return ((consName, extra), assembleListType etypes)
-interpretDataTypeConstructor (SubtypeSyntaxConstructorOrSubtype _subtypeName _stypes) =
-    throw $ KnownIssueError 132 "Subtypes not supported in datatype definitions"
+    return $ pure ((consName, extra), assembleListType etypes)
+interpretDataTypeConstructor (SubtypeSyntaxConstructorOrSubtype _subtypeName stypes) =
+    interpretDataTypeConstructors stypes
+
+interpretDataTypeConstructors ::
+       [SyntaxConstructorOrSubtype extra] -> PinaforeInterpreter [((Name, extra), Some (ListType PinaforeNonpolarType))]
+interpretDataTypeConstructors sconss = fmap mconcat $ for sconss interpretDataTypeConstructor
 
 withCCRTypeParam :: SyntaxTypeParameter -> (forall sv t. CCRTypeParam sv t -> r) -> r
 withCCRTypeParam (PositiveSyntaxTypeParameter n) cont = nameToSymbolType n $ \v -> cont $ CoCCRTypeParam v
@@ -190,7 +194,7 @@ makeBox gmaker name doc sconss gtparams =
                                     gt <- mkgt x
                                     return $ MkBoundType gt
                                 in mkTypeFixBox name doc mktype $ \_ -> do
-                                       tconss <- for sconss interpretDataTypeConstructor
+                                       tconss <- interpretDataTypeConstructors sconss
                                        assembleDataType tconss $ \conss (vmap :: _ structtype) -> do
                                            let
                                                freevars :: [Some SymbolType]
