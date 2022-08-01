@@ -1,5 +1,6 @@
 module Pinafore.Language.Grammar.Interpret.TypeDecl.Data
     ( Stages(..)
+    , GroundTypeFromTypeID(..)
     , GroundTypeMaker
     , makeDeclTypeBox
     , makeDataTypeBox
@@ -48,16 +49,20 @@ datatypeIOWitness :: IOWitness ('MkWitKind DataTypeFamily)
 datatypeIOWitness = $(iowitness [t|'MkWitKind DataTypeFamily|])
 
 interpretDataTypeConstructor ::
-       SyntaxConstructorOrSubtype extra -> PinaforeInterpreter [((Name, extra), Some (ListType PinaforeNonpolarType))]
-interpretDataTypeConstructor (ConstructorSyntaxConstructorOrSubtype consName stypes extra) = do
+       Maybe Name
+    -> SyntaxConstructorOrSubtype extra
+    -> PinaforeInterpreter ([((Name, extra, Maybe Name), Some (ListType PinaforeNonpolarType))], [(Name, Maybe Name)])
+interpretDataTypeConstructor mtype (ConstructorSyntaxConstructorOrSubtype consName stypes extra) = do
     etypes <- for stypes interpretNonpolarType
-    return $ pure ((consName, extra), assembleListType etypes)
-interpretDataTypeConstructor (SubtypeSyntaxConstructorOrSubtype _subtypeName stypes) =
-    interpretDataTypeConstructors stypes
+    return $ (pure ((consName, extra, mtype), assembleListType etypes), mempty)
+interpretDataTypeConstructor _ (SubtypeSyntaxConstructorOrSubtype subtypeName stypes) =
+    interpretDataTypeConstructors (Just subtypeName) stypes
 
 interpretDataTypeConstructors ::
-       [SyntaxConstructorOrSubtype extra] -> PinaforeInterpreter [((Name, extra), Some (ListType PinaforeNonpolarType))]
-interpretDataTypeConstructors sconss = fmap mconcat $ for sconss interpretDataTypeConstructor
+       Maybe Name
+    -> [SyntaxConstructorOrSubtype extra]
+    -> PinaforeInterpreter ([((Name, extra, Maybe Name), Some (ListType PinaforeNonpolarType))], [(Name, Maybe Name)])
+interpretDataTypeConstructors mtype sconss = fmap mconcat $ for sconss $ interpretDataTypeConstructor mtype
 
 withCCRTypeParam :: SyntaxTypeParameter -> (forall sv t. CCRTypeParam sv t -> r) -> r
 withCCRTypeParam (PositiveSyntaxTypeParameter n) cont = nameToSymbolType n $ \v -> cont $ CoCCRTypeParam v
@@ -166,11 +171,24 @@ data Stages a b =
     forall x. MkStages (a -> PinaforeInterpreter x)
                        (x -> PinaforeInterpreter b)
 
+type GroundTypeFromTypeID :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Type
+newtype GroundTypeFromTypeID dv gt =
+    MkGroundTypeFromTypeID (forall (tid :: Nat).
+                                (IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid) =>
+                                        Name -> TypeIDType tid -> PinaforeGroundType dv gt)
+
 type GroundTypeMaker extra
-     = forall (dv :: DolanVariance) tid (gt :: DolanVarianceKind dv) (decltype :: Type).
-           (Is DolanVarianceType dv, IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid) =>
-                   Name -> TypeIDType tid -> CCRTypeParams dv gt decltype -> Stages ( DolanVarianceMap dv gt
-                                                                                    , [Constructor (Name, extra) (ListProductType PinaforeNonpolarType) decltype]) (PinaforeGroundType dv gt)
+     = forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type).
+           Is DolanVarianceType dv =>
+                   Name -> CCRTypeParams dv gt decltype -> Stages ( DolanVarianceMap dv gt
+                                                                  , [Constructor (Name, extra, Maybe Name) (ListProductType PinaforeNonpolarType) decltype]) (GroundTypeFromTypeID dv gt)
+
+getConsSubtypeNames :: SyntaxConstructorOrSubtype extra -> [Name]
+getConsSubtypeNames (ConstructorSyntaxConstructorOrSubtype _ _ _) = []
+getConsSubtypeNames (SubtypeSyntaxConstructorOrSubtype tname conss) = tname : getConssSubtypeNames conss
+
+getConssSubtypeNames :: [SyntaxConstructorOrSubtype extra] -> [Name]
+getConssSubtypeNames conss = mconcat $ fmap getConsSubtypeNames conss
 
 makeBox ::
        forall extra dv.
@@ -179,87 +197,108 @@ makeBox ::
     -> Markdown
     -> [SyntaxConstructorOrSubtype extra]
     -> GenCCRTypeParams dv
-    -> PinaforeInterpreter (PinaforeFixBox () (CatEndo WMFunction PinaforeInterpreter, Some VarMapping))
-makeBox gmaker name doc sconss gtparams =
+    -> PinaforeInterpreter (PinaforeFixBox () (CatEndo WMFunction PinaforeInterpreter))
+makeBox gmaker mainTypeName doc sconss gtparams = do
+    let subtypenames = getConssSubtypeNames sconss
     newTypeID $ \(tidsym :: _ tid) ->
         case unsafeIdentifyKind @_ @(DolanVarianceKind dv) tidsym of
             Identity Refl ->
                 case gtparams @(Identified tid) of
                     MkSome (tparams :: CCRTypeParams dv (Identified tid) decltype) ->
                         withRepresentative (ccrArgumentsType tparams) $
-                        case gmaker name tidsym tparams of
+                        case gmaker mainTypeName tparams of
                             MkStages mkx (mkgt :: x -> _) -> let
                                 mktype :: x -> PinaforeInterpreter PinaforeBoundType
                                 mktype x = do
-                                    gt <- mkgt x
-                                    return $ MkBoundType gt
-                                in mkTypeFixBox name doc mktype $ \_ -> do
-                                       tconss <- interpretDataTypeConstructors sconss
-                                       assembleDataType tconss $ \conss (vmap :: _ structtype) -> do
-                                           let
-                                               freevars :: [Some SymbolType]
-                                               freevars = nub $ mconcat $ fmap constructorFreeVariables conss
-                                               declaredvars :: [Some SymbolType]
-                                               declaredvars = tParamsVars tparams
-                                               unboundvars :: [Some SymbolType]
-                                               unboundvars = freevars List.\\ declaredvars
-                                           case nonEmpty $ duplicates declaredvars of
-                                               Nothing -> return ()
-                                               Just vv ->
-                                                   throw $
-                                                   InterpretTypeDeclDuplicateTypeVariablesError name $
-                                                   fmap (\(MkSome s) -> symbolTypeToName s) vv
-                                           case nonEmpty unboundvars of
-                                               Nothing -> return ()
-                                               Just vv ->
-                                                   throw $
-                                                   InterpretTypeDeclUnboundTypeVariablesError name $
-                                                   fmap (\(MkSome s) -> symbolTypeToName s) vv
-                                           Refl <- unsafeGetRefl @Type @structtype @decltype
-                                           dvm :: DolanVarianceMap dv (Identified tid) <-
-                                               getDolanVarianceMap @dv name tparams vmap
-                                           let
-                                               getargs ::
-                                                      forall polarity. Is PolarityType polarity
-                                                   => DolanArgumentsShimWit PinaforePolyShim dv PinaforeType (Identified tid) polarity decltype
-                                               getargs =
-                                                   mapCCRArguments
-                                                       @PinaforePolyShim
-                                                       @CCRTypeParam
-                                                       @(CCRPolarArgument PinaforeType polarity)
-                                                       @dv
-                                                       @polarity
-                                                       @(Identified tid)
-                                                       tParamToPolarArgument
-                                                       dvm
-                                                       tparams
-                                           case (getargs @'Positive, getargs @'Negative) of
-                                               (MkShimWit posargs posconv, MkShimWit negargs negconv) -> do
-                                                   x <- mkx (dvm, conss)
-                                                   gt <- mkgt x
-                                                   let
-                                                       ctfpos :: PinaforeShimWit 'Positive decltype
-                                                       ctfpos =
-                                                           mapShimWit posconv $
-                                                           singleDolanShimWit $
-                                                           mkPolarShimWit $ GroundedDolanSingularType gt posargs
-                                                       ctfneg :: PinaforeShimWit 'Negative decltype
-                                                       ctfneg =
-                                                           mapShimWit negconv $
-                                                           singleDolanShimWit $
-                                                           mkPolarShimWit $ GroundedDolanSingularType gt negargs
-                                                   patts <-
-                                                       for conss $ \(MkConstructor (cname, _) (MkListProductType lt) codec) -> do
-                                                           ltp <- return $ mapListType nonpolarToDolanType lt
-                                                           ltn <- return $ mapListType nonpolarToDolanType lt
-                                                           let
-                                                               expr =
-                                                                   qConstExprAny $
-                                                                   MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $
-                                                                   encode codec
-                                                               pc = toPatternConstructor ctfneg ltp $ decode codec
-                                                           withNewPatternConstructor cname doc expr pc
-                                                   return (x, (mconcat patts, MkSome vmap))
+                                    MkGroundTypeFromTypeID gt <- mkgt x
+                                    return $ MkBoundType $ gt mainTypeName tidsym
+                                mainBox ::
+                                       PinaforeFixBox () (x, CatEndo WMFunction PinaforeInterpreter, Some VarMapping)
+                                mainBox =
+                                    mkTypeFixBox mainTypeName doc mktype $ \() -> do
+                                        (tconss, _moretypes) <- interpretDataTypeConstructors Nothing sconss
+                                        assembleDataType tconss $ \conss (vmap :: _ structtype) -> do
+                                            let
+                                                freevars :: [Some SymbolType]
+                                                freevars = nub $ mconcat $ fmap constructorFreeVariables conss
+                                                declaredvars :: [Some SymbolType]
+                                                declaredvars = tParamsVars tparams
+                                                unboundvars :: [Some SymbolType]
+                                                unboundvars = freevars List.\\ declaredvars
+                                            case nonEmpty $ duplicates declaredvars of
+                                                Nothing -> return ()
+                                                Just vv ->
+                                                    throw $
+                                                    InterpretTypeDeclDuplicateTypeVariablesError mainTypeName $
+                                                    fmap (\(MkSome s) -> symbolTypeToName s) vv
+                                            case nonEmpty unboundvars of
+                                                Nothing -> return ()
+                                                Just vv ->
+                                                    throw $
+                                                    InterpretTypeDeclUnboundTypeVariablesError mainTypeName $
+                                                    fmap (\(MkSome s) -> symbolTypeToName s) vv
+                                            Refl <- unsafeGetRefl @Type @structtype @decltype
+                                            dvm :: DolanVarianceMap dv (Identified tid) <-
+                                                getDolanVarianceMap @dv mainTypeName tparams vmap
+                                            let
+                                                getargs ::
+                                                       forall polarity. Is PolarityType polarity
+                                                    => DolanArgumentsShimWit PinaforePolyShim dv PinaforeType (Identified tid) polarity decltype
+                                                getargs =
+                                                    mapCCRArguments
+                                                        @PinaforePolyShim
+                                                        @CCRTypeParam
+                                                        @(CCRPolarArgument PinaforeType polarity)
+                                                        @dv
+                                                        @polarity
+                                                        @(Identified tid)
+                                                        tParamToPolarArgument
+                                                        dvm
+                                                        tparams
+                                            case (getargs @'Positive, getargs @'Negative) of
+                                                (MkShimWit posargs posconv, MkShimWit negargs negconv) -> do
+                                                    x <- mkx (dvm, conss)
+                                                    MkGroundTypeFromTypeID gt <- mkgt x
+                                                    let
+                                                        ctfpos :: PinaforeShimWit 'Positive decltype
+                                                        ctfpos =
+                                                            mapShimWit posconv $
+                                                            singleDolanShimWit $
+                                                            mkPolarShimWit $
+                                                            GroundedDolanSingularType (gt mainTypeName tidsym) posargs
+                                                        ctfneg :: PinaforeShimWit 'Negative decltype
+                                                        ctfneg =
+                                                            mapShimWit negconv $
+                                                            singleDolanShimWit $
+                                                            mkPolarShimWit $
+                                                            GroundedDolanSingularType (gt mainTypeName tidsym) negargs
+                                                    patts <-
+                                                        for conss $ \(MkConstructor (cname, _, _) (MkListProductType lt) codec) -> do
+                                                            ltp <- return $ mapListType nonpolarToDolanType lt
+                                                            ltn <- return $ mapListType nonpolarToDolanType lt
+                                                            let
+                                                                expr =
+                                                                    qConstExprAny $
+                                                                    MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $
+                                                                    encode codec
+                                                                pc = toPatternConstructor ctfneg ltp $ decode codec
+                                                            withNewPatternConstructor cname doc expr pc
+                                                    return (x, (x, mconcat patts, MkSome vmap))
+                                mknewtype :: Name -> x -> PinaforeInterpreter PinaforeBoundType
+                                mknewtype typeName x = do
+                                    MkGroundTypeFromTypeID gttid :: GroundTypeFromTypeID dv gt <- mkgt x
+                                    newTypeID $ \(newtidsym :: _ newtid) -> do
+                                        Refl <- unsafeIdentifyKind @_ @(DolanVarianceKind dv) newtidsym
+                                        Refl <- unsafeIdentify @newtid @(Identified tid) newtidsym
+                                        return $ MkBoundType $ gttid typeName newtidsym
+                                subBox :: Name -> PinaforeFixBox x ()
+                                subBox subTypeName =
+                                    mkTypeFixBox subTypeName doc (mknewtype subTypeName) $ \x -> do return (x, ())
+                                in return $
+                                   proc () -> do
+                                       (x, pats, _) <- mainBox -< ()
+                                       mconcat (fmap subBox subtypenames) -< x
+                                       returnA -< pats
 
 makeDeclTypeBox ::
        forall extra.
@@ -271,31 +310,32 @@ makeDeclTypeBox ::
     -> PinaforeInterpreter PinaforeTypeBox
 makeDeclTypeBox gmaker name doc params sconss =
     case getAnyCCRTypeParams params of
-        MkAnyCCRTypeParams gtparams -> fmap (fmap fst) $ makeBox gmaker name doc sconss gtparams
+        MkAnyCCRTypeParams gtparams -> makeBox gmaker name doc sconss gtparams
 
 makeDataGroundType ::
-       forall (dv :: DolanVariance) tid (gt :: DolanVarianceKind dv) (decltype :: Type).
-       (Is DolanVarianceType dv, IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid)
+       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
     => Name
-    -> TypeIDType tid
     -> CCRTypeParams dv gt decltype
-    -> Stages (DolanVarianceMap dv gt, [Constructor (Name, ()) (ListProductType PinaforeNonpolarType) decltype]) (PinaforeGroundType dv gt)
-makeDataGroundType name tidsym tparams = let
+    -> Stages ( DolanVarianceMap dv gt
+              , [Constructor (Name, (), Maybe Name) (ListProductType PinaforeNonpolarType) decltype]) (GroundTypeFromTypeID dv gt)
+makeDataGroundType _ tparams = let
     dvt :: DolanVarianceType dv
     dvt = ccrArgumentsType tparams
-    mkx :: (DolanVarianceMap dv gt, [Constructor (Name, ()) (ListProductType PinaforeNonpolarType) decltype])
+    mkx :: ( DolanVarianceMap dv gt
+           , [Constructor (Name, (), Maybe Name) (ListProductType PinaforeNonpolarType) decltype])
         -> PinaforeInterpreter (DolanVarianceMap dv gt)
     mkx (dvm, _) = return dvm
-    mkgt :: DolanVarianceMap dv gt -> PinaforeInterpreter (PinaforeGroundType dv gt)
+    mkgt :: DolanVarianceMap dv gt -> PinaforeInterpreter (GroundTypeFromTypeID dv gt)
     mkgt dvm =
         return $
-        MkPinaforeGroundType
-            { pgtVarianceType = dvt
-            , pgtVarianceMap = lazyDolanVarianceMap dvt dvm
-            , pgtShowType = standardListTypeExprShow @dv $ exprShow name
-            , pgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily tidsym
-            , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
-            }
+        MkGroundTypeFromTypeID $ \name tidsym ->
+            MkPinaforeGroundType
+                { pgtVarianceType = dvt
+                , pgtVarianceMap = lazyDolanVarianceMap dvt dvm
+                , pgtShowType = standardListTypeExprShow @dv $ exprShow name
+                , pgtFamilyType = MkFamilialType datatypeIOWitness $ MkDataTypeFamily tidsym
+                , pgtGreatestDynamicSupertype = nullPolyGreatestDynamicSupertype
+                }
     in MkStages mkx mkgt
 
 makeDataTypeBox ::

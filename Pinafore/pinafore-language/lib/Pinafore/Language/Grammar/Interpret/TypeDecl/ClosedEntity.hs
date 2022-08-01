@@ -14,7 +14,7 @@ import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
 
-type ClosedEntityConstructor = Constructor (Name, Anchor) (ListProductType PinaforeNonpolarType)
+type ClosedEntityConstructor = Constructor (Name, Anchor, Maybe Name) (ListProductType PinaforeNonpolarType)
 
 type CovParam :: CCRArgumentKind
 data CovParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
@@ -102,7 +102,7 @@ closedEntityTypeAdapter ::
        CovParams dv gt decltype -> [ClosedEntityConstructor decltype] -> PinaforeInterpreter (WithArgs EntityAdapter gt)
 closedEntityTypeAdapter params conss = do
     ff <-
-        for conss $ \(MkConstructor (_, anchor) (MkListProductType cc) codec) -> do
+        for conss $ \(MkConstructor (_, anchor, _) (MkListProductType cc) codec) -> do
             MkWithArgs wa <- closedEntityConstructorAdapter params cc
             return $
                 MkWithArgs $ \args ->
@@ -112,13 +112,11 @@ closedEntityTypeAdapter params conss = do
         MkWithArgs $ \args -> appEndo (mconcat $ fmap (\(MkWithArgs f) -> getCompose $ f args) ff) nullEntityAdapter
 
 makeClosedEntityGroundType ::
-       forall (dv :: DolanVariance) tid (gt :: DolanVarianceKind dv) (decltype :: Type).
-       (Is DolanVarianceType dv, IdentifiedKind tid ~ DolanVarianceKind dv, gt ~~ Identified tid)
+       forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
     => Name
-    -> TypeIDType tid
     -> CCRTypeParams dv gt decltype
-    -> Stages (DolanVarianceMap dv gt, [ClosedEntityConstructor decltype]) (PinaforeGroundType dv gt)
-makeClosedEntityGroundType name tidsym tparams = let
+    -> Stages (DolanVarianceMap dv gt, [ClosedEntityConstructor decltype]) (GroundTypeFromTypeID dv gt)
+makeClosedEntityGroundType mainTypeName tparams = let
     dvt = ccrArgumentsType tparams
     mkx :: (DolanVarianceMap dv gt, [ClosedEntityConstructor decltype])
         -> PinaforeInterpreter (DolanVarianceMap dv gt, WithArgs EntityAdapter gt)
@@ -126,24 +124,25 @@ makeClosedEntityGroundType name tidsym tparams = let
         cvt <-
             case dolanVarianceToCovaryType dvt of
                 Just cvt -> return cvt
-                Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError name
+                Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError mainTypeName
         let cparams = paramsToCovParams cvt tparams
         adapter <- closedEntityTypeAdapter cparams conss
         return (dvm, adapter)
-    mkgt :: (DolanVarianceMap dv gt, WithArgs EntityAdapter gt) -> PinaforeInterpreter (PinaforeGroundType dv gt)
+    mkgt :: (DolanVarianceMap dv gt, WithArgs EntityAdapter gt) -> PinaforeInterpreter (GroundTypeFromTypeID dv gt)
     mkgt ~(dvm, ~(MkWithArgs epAdapter)) = do
         cvt <-
             case dolanVarianceToCovaryType dvt of
                 Just cvt -> return cvt
-                Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError name
-        let
-            epKind :: CovaryType dv
-            epKind = cvt
-            epCovaryMap = dolanVarianceMapToCovary cvt $ lazyDolanVarianceMap dvt dvm
-            epShowType = standardListTypeExprShow @dv $ exprShow name
-            props :: EntityProperties dv gt
-            props = MkEntityProperties {..}
-        return $ closedEntityGroundType tidsym props
+                Nothing -> throw $ InterpretTypeDeclTypeVariableNotCovariantError mainTypeName
+        return $
+            MkGroundTypeFromTypeID $ \subTypeName tidsym -> let
+                epKind :: CovaryType dv
+                epKind = cvt
+                epCovaryMap = dolanVarianceMapToCovary cvt $ lazyDolanVarianceMap dvt dvm
+                epShowType = standardListTypeExprShow @dv $ exprShow subTypeName
+                props :: EntityProperties dv gt
+                props = MkEntityProperties {..}
+                in closedEntityGroundType tidsym props
     in MkStages mkx mkgt
 
 makeClosedEntityTypeBox ::

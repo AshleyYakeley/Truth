@@ -13,4 +13,4 @@ makeOpenEntityTypeBox :: Name -> Markdown -> PinaforeInterpreter PinaforeTypeBox
 makeOpenEntityTypeBox name doc =
     newTypeID $ \tidsym -> let
         mktype _ = return $ MkBoundType $ openEntityGroundType $ MkOpenEntityType name tidsym
-        in mkTypeFixBox name doc mktype $ \_ -> return ((), mempty)
+        in return $ mkTypeFixBox name doc mktype $ \_ -> return ((), mempty)

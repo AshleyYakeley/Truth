@@ -33,10 +33,10 @@ instance WitnessValue TypeIDType where
     valueToWitness (MkTypeID n) cont = valueToWitness n $ \bnt -> cont $ MkTypeIDType bnt
 
 type IdentifiedKind :: Nat -> Type
-type family IdentifiedKind tid = k | k -> tid
+type family IdentifiedKind tid
 
 type Identified :: forall (tid :: Nat) -> IdentifiedKind tid
-type family Identified tid = v | v -> tid
+type family Identified tid
 
 unsafeIdentifyKind ::
        forall (tid :: Nat) (k :: Type) m. Applicative m
