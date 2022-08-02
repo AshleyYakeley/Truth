@@ -197,7 +197,7 @@ makeBox ::
     -> Markdown
     -> [SyntaxConstructorOrSubtype extra]
     -> GenCCRTypeParams dv
-    -> PinaforeInterpreter (PinaforeFixBox () (CatEndo WMFunction PinaforeInterpreter))
+    -> PinaforeInterpreter PinaforeTypeBox
 makeBox gmaker mainTypeName doc sconss gtparams = do
     let subtypenames = getConssSubtypeNames sconss
     newTypeID $ \(tidsym :: _ tid) ->

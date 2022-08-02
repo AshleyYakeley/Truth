@@ -886,22 +886,54 @@ testEntity =
                     ]
               , tGroup
                     "subtype"
-                    [ tDecls ["datatype T1 of C1 Integer; subtype datatype T2 of C2; C3 Boolean; end; end"] $
+                    [ tDecls
+                          [ "datatype T1 of C1 Integer; subtype datatype T2 of C2; subtype datatype T3 of C3 Boolean; end; end; end"
+                          ] $
                       tGroup
                           "T"
                           [ testExpectSuccess "pass"
                           , testExpectSuccess $ isOfType "C1 3" "T1"
                           , testExpectReject $ isOfType "C1 3" "T2"
+                          , testExpectReject $ isOfType "C1 3" "T3"
                           , testExpectSuccess $ isOfType "C2" "T1"
                           , testExpectSuccess $ isOfType "C2" "T2"
+                          , testExpectReject $ isOfType "C2" "T3"
                           , testExpectSuccess $ isOfType "C3 True" "T1"
                           , testExpectSuccess $ isOfType "C3 True" "T2"
+                          , testExpectSuccess $ isOfType "C3 True" "T3"
                           , subtypeTest False SRSingle "T2" "T1"
+                          , subtypeTest False SRSingle "T3" "T2"
+                          , subtypeTest False SRSingle "T3" "T1"
                           , subtypeTest False SRNot "T1" "T2"
+                          , subtypeTest False SRNot "T2" "T3"
+                          , subtypeTest False SRNot "T1" "T3"
                           ]
-                    , testExpectSuccess "let datatype L of LNil; subtype datatype L1 of LCons Unit L end end in pass"
+                    , tDecls
+                          [ "rec datatype T1 of C1 T1 T2 T3; subtype datatype T2 of C2 T1 T2 T3; subtype datatype T3 of C3 T1 T2 T3; C4; end; end; end; end"
+                          ] $
+                      tGroup
+                          "recursive"
+                          [ testExpectSuccess "pass"
+                          , testExpectSuccess $ isOfType "C1 C4 C4 C4" "T1"
+                          , testExpectReject $ isOfType "C1 C4 C4 C4" "T2"
+                          , testExpectReject $ isOfType "C1 C4 C4 C4" "T3"
+                          , testExpectSuccess $ isOfType "C2 C4 C4 C4" "T1"
+                          , testExpectSuccess $ isOfType "C2 C4 C4 C4" "T2"
+                          , testExpectReject $ isOfType "C2 C4 C4 C4" "T3"
+                          , testExpectSuccess $ isOfType "C3 C4 C4 C4" "T1"
+                          , testExpectSuccess $ isOfType "C3 C4 C4 C4" "T2"
+                          , testExpectSuccess $ isOfType "C3 C4 C4 C4" "T3"
+                          , subtypeTest False SRSingle "T2" "T1"
+                          , subtypeTest False SRSingle "T3" "T2"
+                          , subtypeTest False SRSingle "T3" "T1"
+                          , subtypeTest False SRNot "T1" "T2"
+                          , subtypeTest False SRNot "T2" "T3"
+                          , subtypeTest False SRNot "T1" "T3"
+                          ]
                     , testExpectSuccess
-                          "let datatype L +a of LNil; subtype datatype L1 of LCons a (L a) end end in pass"
+                          "let rec datatype L of LNil; subtype datatype L1 of LCons Unit L end end end in pass"
+                    , testExpectSuccess
+                          "let rec datatype L +a of LNil; subtype datatype L1 of LCons a (L a) end end end in pass"
                     ]
               ]
         , tDecls ["closedtype T of T1 Text Number !\"T.T1\"; T2 !\"T.T2\"; T3 Boolean !\"T.T3\" end"] $

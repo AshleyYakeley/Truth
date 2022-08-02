@@ -51,7 +51,7 @@ mkFixBox = MkFixBox
 
 boxFix :: MonadFix m => FixBox m a b -> m x -> a -> m (x, b)
 boxFix (MkFixBox twmm mt) mx a = do
-    (_, xb) <- mfix $ \(~(t, _)) -> runWMFunction (twmm t) $ liftA2 (\(t0, b) x -> (t0, (x, b))) (mt a) $ mx
+    (_, xb) <- mfix $ \(~(t, _)) -> runWMFunction (twmm t) $ liftA2 (\(t0, b) x -> (t0, (x, b))) (mt a) mx
     return xb
 
 boxesFix :: (MonadFix m, Monoid b) => [FixBox m a b] -> m x -> a -> m (x, b)
