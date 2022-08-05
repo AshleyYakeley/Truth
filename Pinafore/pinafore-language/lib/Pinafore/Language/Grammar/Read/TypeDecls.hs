@@ -9,14 +9,14 @@ import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
 import Shapes hiding (try)
 
-readOpenEntityTypeDeclaration :: Parser SyntaxDirectDeclaration
+readOpenEntityTypeDeclaration :: Parser SyntaxRecursiveDeclaration
 readOpenEntityTypeDeclaration = do
     spos <- getPosition
     readThis TokOpenType
     name <- readTypeNewName
     return $ TypeSyntaxDeclaration spos name OpenEntitySyntaxTypeDeclaration
 
-readSubtypeDeclaration :: Parser SyntaxDirectDeclaration
+readSubtypeDeclaration :: Parser SyntaxRecursiveDeclaration
 readSubtypeDeclaration = do
     spos <- getPosition
     readThis TokSubtype
@@ -81,7 +81,7 @@ readTypeParameter =
           varp <- readNegativeParameter
           return $ RangeSyntaxTypeParameter varp varq))
 
-readDataTypeDeclaration :: Parser SyntaxDirectDeclaration
+readDataTypeDeclaration :: Parser SyntaxRecursiveDeclaration
 readDataTypeDeclaration = do
     spos <- getPosition
     readThis TokDataType
@@ -92,7 +92,7 @@ readDataTypeDeclaration = do
     readThis TokEnd
     return $ TypeSyntaxDeclaration spos name $ DatatypeSyntaxTypeDeclaration parameters constructors
 
-readClosedTypeDeclaration :: Parser SyntaxDirectDeclaration
+readClosedTypeDeclaration :: Parser SyntaxRecursiveDeclaration
 readClosedTypeDeclaration = do
     spos <- getPosition
     readThis TokClosedType
@@ -108,7 +108,7 @@ readDynamicTypeConstructor =
     fmap AnchorSyntaxDynamicEntityConstructor (readThis TokAnchor) <|>
     fmap NameSyntaxDynamicEntityConstructor readTypeReferenceName
 
-readDynamicTypeDeclaration :: Parser SyntaxDirectDeclaration
+readDynamicTypeDeclaration :: Parser SyntaxRecursiveDeclaration
 readDynamicTypeDeclaration = do
     spos <- getPosition
     readThis TokDynamicType
@@ -117,7 +117,7 @@ readDynamicTypeDeclaration = do
     tcons <- readSeparated1 (readThis TokOr) $ fmap pure readDynamicTypeConstructor
     return $ TypeSyntaxDeclaration spos name $ DynamicEntitySyntaxTypeDeclaration tcons
 
-readTypeDeclaration :: Parser SyntaxDirectDeclaration
+readTypeDeclaration :: Parser SyntaxRecursiveDeclaration
 readTypeDeclaration =
     readOpenEntityTypeDeclaration <|> readSubtypeDeclaration <|> readDataTypeDeclaration <|> readClosedTypeDeclaration <|>
     readDynamicTypeDeclaration

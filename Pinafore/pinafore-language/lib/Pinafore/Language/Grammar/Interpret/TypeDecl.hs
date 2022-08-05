@@ -1,5 +1,5 @@
 module Pinafore.Language.Grammar.Interpret.TypeDecl
-    ( interpretTypeDeclaration
+    ( interpretSequentialTypeDeclaration
     , interpretRecursiveTypeDeclarations
     ) where
 
@@ -9,7 +9,6 @@ import Pinafore.Language.Grammar.Interpret.TypeDecl.ClosedEntity
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
 import Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
 import Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
-import Pinafore.Language.Grammar.Interpret.TypeDecl.TypeBox
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
@@ -17,7 +16,7 @@ import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
 
-typeDeclarationTypeBox :: Name -> Markdown -> SyntaxTypeDeclaration -> PinaforeInterpreter PinaforeTypeBox
+typeDeclarationTypeBox :: Name -> Markdown -> SyntaxTypeDeclaration -> PinaforeInterpreter (PinaforeFixBox () ())
 typeDeclarationTypeBox name doc OpenEntitySyntaxTypeDeclaration = makeOpenEntityTypeBox name doc
 typeDeclarationTypeBox name doc (ClosedEntitySyntaxTypeDeclaration params sconss) =
     makeClosedEntityTypeBox name doc params sconss
@@ -43,17 +42,16 @@ checkDynamicTypeCycles decls = let
            [] -> return ()
            (nn@((spos, _) :| _):_) -> paramWith sourcePosParam spos $ throw $ DeclareDynamicTypeCycleError $ fmap snd nn
 
-interpretTypeDeclaration :: Name -> Markdown -> SyntaxTypeDeclaration -> PinaforeInterpreter --> PinaforeInterpreter
-interpretTypeDeclaration name doc tdecl ma = do
-    tbox <- typeDeclarationTypeBox name doc tdecl
-    (wtt, MkCatEndo wcc) <- registerTypeName tbox
-    runWMFunction (wtt . wcc) ma
+interpretSequentialTypeDeclaration :: Name -> Markdown -> SyntaxTypeDeclaration -> PinaforeScopeInterpreter ()
+interpretSequentialTypeDeclaration name doc tdecl = do
+    tbox <- lift $ typeDeclarationTypeBox name doc tdecl
+    boxSequential tbox ()
 
 interpretRecursiveTypeDeclarations ::
-       [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> PinaforeInterpreter --> PinaforeInterpreter
-interpretRecursiveTypeDeclarations decls ma = do
-    checkDynamicTypeCycles decls
+       [(SourcePos, Name, Markdown, SyntaxTypeDeclaration)] -> PinaforeScopeInterpreter ()
+interpretRecursiveTypeDeclarations decls = do
+    lift $ checkDynamicTypeCycles decls
     wfs <-
-        for decls $ \(spos, name, doc, tdecl) -> paramWith sourcePosParam spos $ typeDeclarationTypeBox name doc tdecl
-    (wtt, MkCatEndo wcc) <- registerRecursiveTypeNames wfs
-    runWMFunction (wtt . wcc) ma
+        for decls $ \(spos, name, doc, tdecl) ->
+            lift $ paramWith sourcePosParam spos $ typeDeclarationTypeBox name doc tdecl
+    boxRecursiveIO (mconcat wfs) ()

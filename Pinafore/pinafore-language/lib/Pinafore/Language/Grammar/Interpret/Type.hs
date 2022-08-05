@@ -198,9 +198,9 @@ interpretGroundTypeConst (ConstSyntaxGroundType n) = do
 
 interpretSubtypeRelation' :: SyntaxType -> SyntaxType -> ScopeBuilder ()
 interpretSubtypeRelation' sta stb =
-    interpScopeBuilder $ \ma -> do
-        ata <- interpretMonoEntityType sta
-        atb <- interpretMonoEntityType stb
+    interpScopeBuilder $ do
+        ata <- lift $ interpretMonoEntityType sta
+        atb <- lift $ interpretMonoEntityType stb
         case ata of
             MkSome ta ->
                 case ta of
@@ -210,18 +210,16 @@ interpretSubtypeRelation' sta stb =
                                 case tb of
                                     MkMonoType teb@(MkEntityGroundType tfb _) NilArguments
                                         | Just (MkLiftedFamily _) <- matchFamilyType openEntityFamilyWitness tfb ->
-                                            withSubtypeConversions
-                                                (pure $
-                                                 simpleSubtypeConversionEntry
-                                                     (entityToPinaforeGroundType NilListType tea)
-                                                     (entityToPinaforeGroundType NilListType teb) $
-                                                 nilSubtypeConversion $
-                                                 coerceShim "open entity" .
-                                                 (functionToShim "entityConvert" $
-                                                  entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments))
-                                                ma
-                                    _ -> throw $ TypeNotOpenEntityError $ exprShow tb
-                    _ -> throw $ TypeNotSimpleEntityError $ exprShow ta
+                                            registerSubtypeConversion $
+                                            simpleSubtypeConversionEntry
+                                                (entityToPinaforeGroundType NilListType tea)
+                                                (entityToPinaforeGroundType NilListType teb) $
+                                            nilSubtypeConversion $
+                                            coerceShim "open entity" .
+                                            (functionToShim "entityConvert" $
+                                             entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
+                                    _ -> lift $ throw $ TypeNotOpenEntityError $ exprShow tb
+                    _ -> lift $ throw $ TypeNotSimpleEntityError $ exprShow ta
 
 interpretSubtypeRelation :: Markdown -> SyntaxType -> SyntaxType -> ScopeBuilder Docs
 interpretSubtypeRelation docDescription sta stb = do

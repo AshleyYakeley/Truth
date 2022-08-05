@@ -47,14 +47,14 @@ runScopeBuilder sb = runTransformT sb
 sourcePosScopeBuilder :: SourcePos -> ScopeBuilder ()
 sourcePosScopeBuilder = refPut $ transformParamRef $ liftParam $ liftParam sourcePosParam
 
-interpScopeBuilder :: (PinaforeInterpreter --> PinaforeInterpreter) -> ScopeBuilder ()
-interpScopeBuilder mf = mapTransformT $ hoistRefNotation $ MkWMFunction mf
+interpScopeBuilder :: PinaforeScopeInterpreter --> ScopeBuilder
+interpScopeBuilder = liftTransformT . liftTransformT
 
 refScopeBuilder :: RefNotation (ScopeBuilder a) -> ScopeBuilder a
 refScopeBuilder = execMapTransformT
 
 pureScopeBuilder :: PinaforeScope -> ScopeBuilder ()
-pureScopeBuilder scope = interpScopeBuilder (importScope scope)
+pureScopeBuilder scope = interpScopeBuilder (registerScope scope)
 
 allocateVarScopeBuilder :: Name -> ScopeBuilder VarID
 allocateVarScopeBuilder n = liftTransformT $ liftTransformT $ MkTransformT $ allocateVar n

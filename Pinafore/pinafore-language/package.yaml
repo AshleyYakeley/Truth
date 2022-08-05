@@ -17,6 +17,7 @@ library:
       - containers
       - text
       - unicode-collation
+      - thread-trace
       - polar-shim
       - typed-expression
       - changes-core
@@ -83,7 +84,7 @@ library:
       - Pinafore.Language.Grammar.Interpret.RefNotation
       - Pinafore.Language.Grammar.Interpret.ScopeBuilder
       - Pinafore.Language.Grammar.Interpret.Type
-      - Pinafore.Language.Grammar.Interpret.TypeDecl.TypeBox
+      - Pinafore.Language.Grammar.Interpret.TypeDecl.Constructor
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter

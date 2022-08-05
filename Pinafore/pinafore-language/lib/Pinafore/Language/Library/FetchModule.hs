@@ -37,7 +37,7 @@ instance Monoid FetchModule where
     mempty = MkFetchModule $ \_ _ -> return Nothing
 
 loadModuleFromText :: PinaforeScope -> ModuleName -> Text -> PinaforeInterpreter PinaforeModule
-loadModuleFromText implictScope modname text = importScope implictScope $ parseModule modname text
+loadModuleFromText implictScope modname text = unmapTransformT (registerScope implictScope) $ parseModule modname text
 
 loadModuleFromByteString :: PinaforeScope -> ModuleName -> LazyByteString -> PinaforeInterpreter PinaforeModule
 loadModuleFromByteString implictScope modname bs =
@@ -87,7 +87,7 @@ getLibraryModuleModule libmod = do
         for bindDocs $ \bd ->
             case bdScopeEntry bd of
                 BindScopeEntry _ _ -> return mempty
-                SubtypeScopeEntry entry -> getSubtypesScope $ pure entry
+                SubtypeScopeEntry entry -> getSubtypeScope entry
     let
         moduleDoc = fmap bdDoc libmod
         moduleScope = bscope <> mconcat dscopes

@@ -1,13 +1,8 @@
-module Pinafore.Language.Grammar.Interpret.TypeDecl.TypeBox where
+module Pinafore.Language.Grammar.Interpret.TypeDecl.Constructor where
 
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
-import Pinafore.Language.Interpreter
 import Pinafore.Language.Type
 import Shapes
-
-type PinaforeFixBox = TypeFixBox PinaforeTypeSystem
-
-type PinaforeTypeBox = PinaforeFixBox () (CatEndo WMFunction PinaforeInterpreter)
 
 type Constructor :: Type -> (Type -> Type) -> Type -> Type
 data Constructor n w t =

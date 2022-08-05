@@ -5,9 +5,9 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.ClosedEntity
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
+import Pinafore.Language.Grammar.Interpret.TypeDecl.Constructor
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
-import Pinafore.Language.Grammar.Interpret.TypeDecl.TypeBox
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Name
 import Pinafore.Language.Type
@@ -150,5 +150,5 @@ makeClosedEntityTypeBox ::
     -> Markdown
     -> [SyntaxTypeParameter]
     -> [SyntaxClosedEntityConstructorOrSubtype]
-    -> PinaforeInterpreter PinaforeTypeBox
+    -> PinaforeInterpreter (PinaforeFixBox () ())
 makeClosedEntityTypeBox = makeDeclTypeBox makeClosedEntityGroundType

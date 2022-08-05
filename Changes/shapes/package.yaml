@@ -48,6 +48,7 @@ library:
     exposed-modules:
       - Data.Words
       - Control.Category.Groupoid
+      - Control.FixIO
       - Data.CatEndo
       - Data.Filterable
       - Data.MonoApplicative

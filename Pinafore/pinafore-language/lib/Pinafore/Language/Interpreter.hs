@@ -7,34 +7,33 @@ module Pinafore.Language.Interpreter
     , EntryDoc
     , Module(..)
     , Scope
-    , importScope
+    , registerScope
     , exportNames
     , exportScope
     , getModule
     , SourcePos
     , initialPos
     , Interpreter
+    , ScopeInterpreter
     , sourcePosParam
     , SpecialVals(..)
     , getSpecialVals
     , lookupLetBinding
-    , withNewLetBindings
-    , withRemovedBindings
+    , registerLetBindings
+    , unregisterBindings
     , bindingsScope
-    , getSubtypesScope
+    , getSubtypeScope
     , lookupSpecialForm
     , lookupBoundType
     , newTypeID
-    , TypeFixBox
-    , mkTypeFixBox
-    , registerTypeName
-    , registerRecursiveTypeNames
+    , registerType
+    , ScopeFixBox
     , DocInterpreterBinding
     , lookupDocBinding
     , InterpreterBinding(..)
     , lookupPatternConstructor
-    , withNewPatternConstructor
-    , withSubtypeConversions
+    , registerPatternConstructor
+    , registerSubtypeConversion
     , getSubtypeConversions
     ) where
 
@@ -249,8 +248,13 @@ exportScope names = do
     goodbinds <- exportNames names
     return $ MkScope (mapFromList goodbinds) subtypes
 
-importScope :: Scope ts -> Interpreter ts --> Interpreter ts
-importScope newscope = paramLocal scopeParam $ \oldscope -> newscope <> oldscope
+type ScopeInterpreter ts = TransformT (Interpreter ts)
+
+scopeRef :: Ref (ScopeInterpreter ts) (Scope ts)
+scopeRef = transformParamRef scopeParam
+
+registerScope :: Scope ts -> ScopeInterpreter ts ()
+registerScope newscope = refModify scopeRef $ \oldscope -> newscope <> oldscope
 
 getCycle :: ModuleName -> [ModuleName] -> Maybe (NonEmpty ModuleName)
 getCycle _ [] = Nothing
@@ -283,27 +287,22 @@ getModule mname = do
                             return m
                         Nothing -> throw $ ModuleNotFoundError mname
 
-type InterpreterEndo ts = CatEndo WMFunction (Interpreter ts)
-
-withNewBinding :: Name -> DocInterpreterBinding ts -> Interpreter ts --> Interpreter ts
-withNewBinding name db = paramLocal scopeParam $ \tc -> tc {scopeBindings = insertMapLazy name db $ scopeBindings tc}
+registerBinding :: Name -> DocInterpreterBinding ts -> ScopeInterpreter ts ()
+registerBinding name db = refModify scopeRef $ \tc -> tc {scopeBindings = insertMapLazy name db $ scopeBindings tc}
 
 bindingsScope :: Map Name (DocInterpreterBinding ts) -> Scope ts
 bindingsScope bb = mempty {scopeBindings = bb}
 
-getSubtypesScope :: [SubtypeConversionEntry (InterpreterGroundType ts)] -> IO (Scope ts)
-getSubtypesScope newscs = do
-    pairs <-
-        for newscs $ \newsc -> do
-            key <- newUnique
-            return (key, newsc)
-    return $ mempty {scopeSubtypes = mapFromList pairs}
+getSubtypeScope :: SubtypeConversionEntry (InterpreterGroundType ts) -> IO (Scope ts)
+getSubtypeScope sce = do
+    key <- newUnique
+    return $ mempty {scopeSubtypes = singletonMap key sce}
 
-withNewBindings :: Map Name (DocInterpreterBinding ts) -> Interpreter ts --> Interpreter ts
-withNewBindings bb = importScope $ bindingsScope bb
+registerBindings :: Map Name (DocInterpreterBinding ts) -> ScopeInterpreter ts ()
+registerBindings bb = registerScope $ bindingsScope bb
 
-withRemovedBindings :: [Name] -> Interpreter ts --> Interpreter ts
-withRemovedBindings nn = paramLocal scopeParam $ \tc -> tc {scopeBindings = deletesMap nn $ scopeBindings tc}
+unregisterBindings :: [Name] -> ScopeInterpreter ts ()
+unregisterBindings nn = refModify scopeRef $ \tc -> tc {scopeBindings = deletesMap nn $ scopeBindings tc}
 
 lookupDocBinding :: ReferenceName -> Interpreter ts (Maybe (DocInterpreterBinding ts))
 lookupDocBinding (UnqualifiedReferenceName name) = do
@@ -327,8 +326,8 @@ lookupLetBinding name = do
         Just (LambdaBinding v) -> return $ Just $ Left v
         _ -> return Nothing
 
-withNewLetBindings :: Map Name (Markdown, TSSealedExpression ts) -> Interpreter ts --> Interpreter ts
-withNewLetBindings bb = withNewBindings $ fmap (\(doc, exp) -> (doc, ValueBinding exp Nothing)) bb
+registerLetBindings :: Map Name (Markdown, TSSealedExpression ts) -> ScopeInterpreter ts ()
+registerLetBindings bb = registerBindings $ fmap (\(doc, exp) -> (doc, ValueBinding exp Nothing)) bb
 
 lookupSpecialForm :: ReferenceName -> Interpreter ts (SpecialForm ts (Interpreter ts))
 lookupSpecialForm name = do
@@ -373,48 +372,29 @@ newTypeID call = do
     refPut typeIDRef $ succTypeID tid
     valueToWitness tid call
 
-registerType :: Name -> Markdown -> Interpreter ts (BoundType ts) -> WMFunction (Interpreter ts) (Interpreter ts)
-registerType name doc mt =
-    MkWMFunction $ \mta -> do
-        mnt <- lookupBoundTypeM $ UnqualifiedReferenceName name
-        case mnt of
-            Just _ -> throw $ DeclareTypeDuplicateError name
-            Nothing -> do
-                t <- mt
-                withNewBinding name (doc, TypeBinding t) mta
+registerType :: Name -> Markdown -> Interpreter ts (BoundType ts) -> ScopeInterpreter ts ()
+registerType name doc mt = do
+    mnt <- lift $ lookupBoundTypeM $ UnqualifiedReferenceName name
+    case mnt of
+        Just _ -> lift $ throw $ DeclareTypeDuplicateError name
+        Nothing -> do
+            t <- lift mt
+            registerBinding name (doc, TypeBinding t)
 
-type TypeFixBox ts = FixBox (Interpreter ts)
+type ScopeFixBox ts = FixBox (ScopeInterpreter ts)
 
-mkTypeFixBox ::
-       Name -> Markdown -> (t -> Interpreter ts (BoundType ts)) -> (a -> Interpreter ts (t, b)) -> TypeFixBox ts a b
-mkTypeFixBox name doc ttype = mkFixBox (\t -> registerType name doc $ ttype t)
-
-runWriterInterpreterMF ::
-       (forall a. Interpreter ts a -> Interpreter ts (a, x))
-    -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
-runWriterInterpreterMF mf = do
-    (sc, xx) <- mf $ paramAsk scopeParam
-    return (MkWMFunction $ paramWith scopeParam sc, xx)
-
-registerRecursiveTypeNames ::
-       Monoid x => [TypeFixBox ts () x] -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
-registerRecursiveTypeNames tboxes = runWriterInterpreterMF $ \mx -> boxesFix tboxes mx ()
-
-registerTypeName :: TypeFixBox ts () x -> Interpreter ts (WMFunction (Interpreter ts) (Interpreter ts), x)
-registerTypeName tbox = runWriterInterpreterMF $ \mx -> boxSeq tbox mx ()
-
-withNewPatternConstructor ::
-       Name -> Markdown -> TSSealedExpression ts -> TSPatternConstructor ts -> Interpreter ts (InterpreterEndo ts)
-withNewPatternConstructor name doc exp pc = do
-    ma <- lookupPatternConstructorM $ UnqualifiedReferenceName name
+registerPatternConstructor ::
+       Name -> Markdown -> TSSealedExpression ts -> TSPatternConstructor ts -> ScopeInterpreter ts ()
+registerPatternConstructor name doc exp pc = do
+    ma <- lift $ lookupPatternConstructorM $ UnqualifiedReferenceName name
     case ma of
-        Just _ -> throw $ DeclareConstructorDuplicateError name
-        Nothing -> return $ MkCatEndo $ MkWMFunction $ withNewBinding name $ (doc, ValueBinding exp $ Just pc)
+        Just _ -> lift $ throw $ DeclareConstructorDuplicateError name
+        Nothing -> registerBinding name $ (doc, ValueBinding exp $ Just pc)
 
-withSubtypeConversions :: [SubtypeConversionEntry (InterpreterGroundType ts)] -> Interpreter ts a -> Interpreter ts a
-withSubtypeConversions newscs ma = do
-    newscope <- liftIO $ getSubtypesScope newscs
-    importScope newscope ma
+registerSubtypeConversion :: SubtypeConversionEntry (InterpreterGroundType ts) -> ScopeInterpreter ts ()
+registerSubtypeConversion sce = do
+    newscope <- liftIO $ getSubtypeScope sce
+    registerScope newscope
 
 getSubtypeConversions :: Interpreter ts [SubtypeConversionEntry (InterpreterGroundType ts)]
 getSubtypeConversions = fmap (fmap snd . mapToList . scopeSubtypes) $ paramAsk scopeParam

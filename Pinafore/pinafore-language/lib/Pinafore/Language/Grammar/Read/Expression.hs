@@ -74,7 +74,7 @@ readExpose =
          names <- readNames
          return $ SExpExpose spos names)
 
-readDirectDeclaration :: Parser SyntaxDirectDeclaration
+readDirectDeclaration :: Parser SyntaxRecursiveDeclaration
 readDirectDeclaration = readTypeDeclaration <|> fmap BindingSyntaxDeclaration readBinding
 
 readRecursiveDeclaration :: Parser SyntaxDeclaration

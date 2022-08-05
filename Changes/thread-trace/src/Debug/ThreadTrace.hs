@@ -98,8 +98,11 @@ traceBarrier s tr ma = traceBracket (contextStr s "outside") $ tr $ traceBracket
 tracePure :: String -> a -> a
 tracePure s = seq (unsafePerformIO (traceIOM s))
 
+tracePureM :: Applicative m => String -> m ()
+tracePureM s = tracePure s $ pure ()
+
 tracePureBracket :: Monad m => String -> m a -> m a
-tracePureBracket s ma = (tracePure (s ++ " [") ma) >>= (\a -> return $ tracePure (s ++ " ]") a)
+tracePureBracket s ma = (tracePure (s ++ " [") ma) >>= (\a -> tracePure (s ++ " ]") $ return a)
 
 class TraceThing t where
     traceThing :: String -> t -> t

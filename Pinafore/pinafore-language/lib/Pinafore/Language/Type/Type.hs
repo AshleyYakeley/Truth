@@ -48,6 +48,10 @@ type PinaforeBinding = InterpreterBinding PinaforeTypeSystem
 
 type PinaforeInterpreter = Interpreter PinaforeTypeSystem
 
+type PinaforeScopeInterpreter = ScopeInterpreter PinaforeTypeSystem
+
 type PinaforeAnnotation = Annotation PinaforeTypeSystem
 
 type PinaforeSpecialForm = SpecialForm PinaforeTypeSystem PinaforeInterpreter
+
+type PinaforeFixBox = ScopeFixBox PinaforeTypeSystem

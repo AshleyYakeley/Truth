@@ -53,7 +53,7 @@ data SyntaxExpose
               SyntaxExpose
     deriving (Eq)
 
-data SyntaxDirectDeclaration
+data SyntaxRecursiveDeclaration
     = TypeSyntaxDeclaration SourcePos
                             Name
                             SyntaxTypeDeclaration
@@ -69,14 +69,14 @@ data SyntaxWithDoc t =
     deriving (Eq)
 
 data SyntaxDeclaration
-    = DirectSyntaxDeclaration SyntaxDirectDeclaration
+    = DirectSyntaxDeclaration SyntaxRecursiveDeclaration
     | ImportSyntaxDeclaration SourcePos
                               ModuleName
                               (Maybe [Name])
     | ExposeSyntaxDeclaration SourcePos
                               SyntaxExpose
     | RecursiveSyntaxDeclaration SourcePos
-                                 [SyntaxWithDoc SyntaxDirectDeclaration]
+                                 [SyntaxWithDoc SyntaxRecursiveDeclaration]
     deriving (Eq)
 
 data WithSourcePos t =
@@ -257,7 +257,7 @@ instance HasSourcePos SyntaxBinding where
 instance HasSourcePos SyntaxTopDeclarations where
     getSourcePos (MkSyntaxTopDeclarations spos _) = spos
 
-instance HasSourcePos SyntaxDirectDeclaration where
+instance HasSourcePos SyntaxRecursiveDeclaration where
     getSourcePos (BindingSyntaxDeclaration bind) = getSourcePos bind
     getSourcePos (TypeSyntaxDeclaration spos _ _) = spos
     getSourcePos (SubtypeSyntaxDeclaration spos _ _) = spos
@@ -302,7 +302,7 @@ instance SyntaxFreeVariables SyntaxBinding where
 instance SyntaxFreeVariables t => SyntaxFreeVariables (SyntaxWithDoc t) where
     syntaxFreeVariables (MkSyntaxWithDoc _ decl) = syntaxFreeVariables decl
 
-instance SyntaxFreeVariables SyntaxDirectDeclaration where
+instance SyntaxFreeVariables SyntaxRecursiveDeclaration where
     syntaxFreeVariables (BindingSyntaxDeclaration bind) = syntaxFreeVariables bind
     syntaxFreeVariables _ = mempty
 
@@ -331,7 +331,7 @@ instance SyntaxBindingVariables SyntaxPattern' where
 instance SyntaxBindingVariables t => SyntaxBindingVariables (SyntaxWithDoc t) where
     syntaxBindingVariables (MkSyntaxWithDoc _ decl) = syntaxBindingVariables decl
 
-instance SyntaxBindingVariables SyntaxDirectDeclaration where
+instance SyntaxBindingVariables SyntaxRecursiveDeclaration where
     syntaxBindingVariables (BindingSyntaxDeclaration bind) = syntaxBindingVariables bind
     syntaxBindingVariables _ = mempty
 

@@ -12,6 +12,7 @@ import Control.Category.Dual as I
 import Control.Category.Groupoid as I
 import Control.Category.Lifted as I
 import Control.Clock as I
+import Control.FixIO as I
 import Control.Task as I
 import Data.CatEndo as I
 import Data.CatFunctor as I

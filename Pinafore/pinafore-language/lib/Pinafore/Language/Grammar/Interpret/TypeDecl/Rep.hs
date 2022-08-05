@@ -7,8 +7,8 @@ import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
 import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret.Type
+import Pinafore.Language.Grammar.Interpret.TypeDecl.Constructor
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
-import Pinafore.Language.Grammar.Interpret.TypeDecl.TypeBox
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name

@@ -14,7 +14,7 @@ module Pinafore.Base.Number
 import Data.List (head)
 import Pinafore.Base.SafeRational
 import Pinafore.Base.Showable
-import Shapes hiding ((+++), option)
+import Shapes hiding ((+++))
 import Shapes.Numeric
 
 data Number

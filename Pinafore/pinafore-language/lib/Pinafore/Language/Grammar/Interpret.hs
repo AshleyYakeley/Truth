@@ -112,9 +112,9 @@ interpretRecursiveLetBindingsClump sbinds = do
             return (name, vid, sbind)
     let nvmap = mapFromList $ fmap (\(name, vid, _) -> (name, vid)) items
     bl <- lift $ interpretBindings $ fmap (\(_, vid, sbind) -> (sbind, vid)) items
-    interpScopeBuilder $ \se -> do
-        bmap <- qUncheckedBindingsRecursiveLetExpr bl
-        withNewLetBindings (composeMap bmap nvmap) se
+    interpScopeBuilder $ do
+        bmap <- lift $ qUncheckedBindingsRecursiveLetExpr bl
+        registerLetBindings (composeMap bmap nvmap)
 
 interpretRecursiveLetBindingss :: [[DocSyntaxBinding]] -> ScopeBuilder ()
 interpretRecursiveLetBindingss bb = for_ bb interpretRecursiveLetBindingsClump
@@ -129,11 +129,11 @@ interpretSequentialLetBinding sbind = do
     let n = getBindingName sbind
     vid <- allocateVarScopeBuilder n
     b <- lift $ interpretBinding (sbind, vid)
-    interpScopeBuilder $ \se -> do
-        bmap <- paramWith sourcePosParam (getSourcePos $ snd sbind) $ qBindingSequentialLetExpr b
-        withNewLetBindings (composeMap bmap $ singletonMap n vid) se
+    interpScopeBuilder $ do
+        bmap <- lift $ paramWith sourcePosParam (getSourcePos $ snd sbind) $ qBindingSequentialLetExpr b
+        registerLetBindings (composeMap bmap $ singletonMap n vid)
 
-interpretRecursiveDocDeclarations :: [SyntaxWithDoc SyntaxDirectDeclaration] -> ScopeBuilder Docs
+interpretRecursiveDocDeclarations :: [SyntaxWithDoc SyntaxRecursiveDeclaration] -> ScopeBuilder Docs
 interpretRecursiveDocDeclarations ddecls = do
     let
         interp (MkSyntaxWithDoc doc decl) =
@@ -203,7 +203,7 @@ interpretDocDeclaration (MkSyntaxWithDoc doc decl) =
                         return (exposeDocs names docentries)
         DirectSyntaxDeclaration (TypeSyntaxDeclaration spos name defn) -> do
             sourcePosScopeBuilder spos
-            interpScopeBuilder (interpretTypeDeclaration name doc defn)
+            interpScopeBuilder (interpretSequentialTypeDeclaration name doc defn)
             let
                 diName = name
                 diParams =
@@ -310,7 +310,7 @@ interpretCase (MkSyntaxCase spat sexpr) =
 
 interpretExpressionShadowed :: [a] -> SyntaxExpression -> RefExpression
 interpretExpressionShadowed _names sbody =
-    interpretExpression sbody {-hoistRefNotation (MkWMFunction $ withRemovedBindings names) $ -}
+    interpretExpression sbody {-hoistRefNotation (MkWMFunction $ unregisterBindings names) $ -}
 
 interpretExpression' :: SyntaxExpression' -> RefExpression
 interpretExpression' (SESubsume sexpr stype) = do

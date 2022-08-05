@@ -36,6 +36,8 @@ subtypeTests polar sr p q =
     , tGroup
           "unify"
           [ testSubtypeUnify sr $
+            "let f: (" <> q <> ") -> Unit; f _ = (); x: " <> p <> "; x = undefined; fx = f x in pass"
+          , testSubtypeUnify sr $
             "let rec f: (" <> q <> ") -> Unit; f = f end; rec x: " <> p <> "; x = x; end; fx = f x in pass"
           ]
     , tGroup "subsume" $
@@ -68,6 +70,9 @@ subtypeTests polar sr p q =
 
 subtypeTest :: Bool -> SubtypeResult -> Text -> Text -> ScriptTestTree
 subtypeTest polar sr p q = tGroup (unpack $ p <> " <: " <> q) $ subtypeTests polar sr p q
+
+strictSubtypeTests :: Text -> Text -> [ScriptTestTree]
+strictSubtypeTests p q = [subtypeTest False SRSingle p q, subtypeTest False SRNot q p]
 
 testEntity :: TestTree
 testEntity =
@@ -593,14 +598,13 @@ testEntity =
                     ]
               , tGroup
                     "let"
-                    [ tDecls ["opentype P", "opentype Q", "subtype P <: Q"] $
-                      tGroup "seq" $ subtypeTests False SRSingle "P" "Q"
+                    [ tDecls ["opentype P", "opentype Q", "subtype P <: Q"] $ tGroup "seq" $ strictSubtypeTests "P" "Q"
                     , tDeclsRec ["opentype P", "opentype Q", "subtype P <: Q"] $
-                      tGroup "rec 1" $ subtypeTests False SRSingle "P" "Q"
+                      tGroup "rec 1" $ strictSubtypeTests "P" "Q"
                     , tDeclsRec ["opentype P", "subtype P <: Q", "opentype Q"] $
-                      tGroup "rec 2" $ subtypeTests False SRSingle "P" "Q"
+                      tGroup "rec 2" $ strictSubtypeTests "P" "Q"
                     , tDeclsRec ["subtype P <: Q", "opentype P", "opentype Q"] $
-                      tGroup "rec 3" $ subtypeTests False SRSingle "P" "Q"
+                      tGroup "rec 3" $ strictSubtypeTests "P" "Q"
                     ]
               , tGroup
                     "local"
@@ -653,10 +657,9 @@ testEntity =
                 tGroup
                     "non-simple" -- not allowed, per issue #28
                     [testExpectReject "pass"]
-              , tDecls ["opentype Q", "subtype Integer <: Q"] $
-                tGroup "literal" $ subtypeTests False SRSingle "Integer" "Q"
+              , tDecls ["opentype Q", "subtype Integer <: Q"] $ tGroup "literal" $ strictSubtypeTests "Integer" "Q"
               , tDecls ["opentype Q", "closedtype P of P1 Text Number !\"P.P1\" end", "subtype P <: Q"] $
-                tGroup "closed" $ subtypeTests False SRSingle "P" "Q"
+                tGroup "closed" $ strictSubtypeTests "P" "Q"
               , tDecls
                     [ "opentype Q"
                     , "opentype R"
@@ -664,7 +667,7 @@ testEntity =
                     , "subtype P <: Q"
                     , "subtype P <: R"
                     ] $
-                tGroup "closed" $ subtypeTests False SRSingle "P" "R"
+                tGroup "closed" $ strictSubtypeTests "P" "R"
               , tGroup
                     "Entity"
                     [ testExpectSuccess "let f : Number -> Entity; f x = x in pass"
@@ -673,55 +676,63 @@ testEntity =
                     , testExpectSuccess "let f : Maybe (a & Number) -> Entity :*: Maybe a; f x = (x,x) in pass"
                     ]
               , tGroup "dynamic" $
-                [ tGroup "DynamicEntity <: Entity" $ subtypeTests False SRSingle "DynamicEntity" "Entity"
+                [ tGroup "DynamicEntity <: Entity" $ strictSubtypeTests "DynamicEntity" "Entity"
                 , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                  tGroup "P1 <: DynamicEntity" $ subtypeTests False SRSingle "P1" "DynamicEntity"
+                  tGroup "P1 <: DynamicEntity" $ strictSubtypeTests "P1" "DynamicEntity"
                 , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                  tGroup "Q <: DynamicEntity" $ subtypeTests False SRSingle "Q" "DynamicEntity"
+                  tGroup "Q <: DynamicEntity" $ strictSubtypeTests "Q" "DynamicEntity"
                 , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                  tGroup "P1 <: Entity" $ subtypeTests False SRSingle "P1" "Entity"
+                  tGroup "P1 <: Entity" $ strictSubtypeTests "P1" "Entity"
                 , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                  tGroup "Q <: Entity" $ subtypeTests False SRSingle "Q" "Entity"
+                  tGroup "Q <: Entity" $ strictSubtypeTests "Q" "Entity"
                 , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                  tGroup "seq" $ subtypeTests False SRSingle "P1" "Q"
-                , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
-                  tGroup "rec 1" $ subtypeTests False SRSingle "P1" "Q"
-                , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | P2", "dynamictype P2 = !\"P2\""] $
-                  tGroup "rec 2" $ subtypeTests False SRSingle "P1" "Q"
-                , tDeclsRec ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
-                  tGroup "rec 3" $ subtypeTests False SRSingle "P1" "Q"
-                , tDeclsRec
-                      [ "opentype T"
-                      , "subtype QA <: T"
-                      , "dynamictype QA = P1 | P2 | P3"
-                      , "dynamictype QB = P2 | P3 | P1"
-                      , "dynamictype QC = P2 | P3"
-                      , "dynamictype P1 = !\"P1\""
-                      , "dynamictype P2 = !\"P2\""
-                      , "dynamictype P3 = !\"P3\""
-                      ] $
-                  tGroup
-                      "open-transitive"
-                      [ tGroup "QC <: QB" $ subtypeTests False SRSingle "QC" "QB"
-                      , tGroup "QA = QB" $ subtypeTests False SRSingle "QA" "QB"
-                      , tGroup "QA = QB" $ subtypeTests False SRSingle "QB" "QA"
-                      , tGroup "QA <: T" $ subtypeTests False SRSingle "QA" "T"
-                      , tGroup "QB <: T" $ subtypeTests False SRSingle "QB" "T"
-                      , tGroup "QC <: T" $ subtypeTests False SRSingle "QC" "T"
-                      , tGroup "P1 <: T" $ subtypeTests False SRSingle "P1" "T"
-                      ]
-                , tGroup
-                      "cycle"
-                      [ tDecls ["dynamictype P = P"] $ testExpectReject "pass"
-                      , tDecls ["dynamictype P = Q", "dynamictype Q = P"] $ testExpectReject "pass"
-                      , tDecls ["dynamictype P = Q", "dynamictype Q = P"] $
-                        testExpectReject "let f: P -> Q; f x = x in pass"
-                      , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P = P1 | Q", "dynamictype Q = P"] $
-                        testExpectReject "pass"
-                      , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype P = P1 | Q", "dynamictype Q = P | Q"] $
-                        testExpectReject "pass"
-                      , tDecls ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | Q"] $ testExpectReject "pass"
-                      ]
+                  tGroup "seq" $ strictSubtypeTests "P1" "Q"
+                , tGroup "recursive" $ let
+                      pqtests =
+                          [subtypeTest False SRNot "P1" "P2", subtypeTest False SRNot "P2" "P1"] <>
+                          strictSubtypeTests "P1" "Q" <> strictSubtypeTests "P2" "Q"
+                      in [ tDeclsRec ["dynamictype P1 = !\"P1\""] $ subtypeTest False SRSingle "P1" "P1"
+                         , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\"", "dynamictype Q = P1 | P2"] $
+                           tGroup "rec 1" pqtests
+                         , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | P2", "dynamictype P2 = !\"P2\""] $
+                           tGroup "rec 2" pqtests
+                         , tDeclsRec ["dynamictype Q = P1 | P2", "dynamictype P1 = !\"P1\"", "dynamictype P2 = !\"P2\""] $
+                           tGroup "rec 3" pqtests
+                         , tDeclsRec
+                               [ "opentype T"
+                               , "subtype QA <: T"
+                               , "dynamictype QA = P1 | P2 | P3"
+                               , "dynamictype QB = P2 | P3 | P1"
+                               , "dynamictype QC = P2 | P3"
+                               , "dynamictype P1 = !\"P1\""
+                               , "dynamictype P2 = !\"P2\""
+                               , "dynamictype P3 = !\"P3\""
+                               ] $
+                           tGroup
+                               "open-transitive"
+                               [ tGroup "QC <: QB" $ strictSubtypeTests "QC" "QB"
+                               , tGroup "QA = QB" $ subtypeTests False SRSingle "QA" "QB"
+                               , tGroup "QA = QB" $ subtypeTests False SRSingle "QB" "QA"
+                               , tGroup "QA <: T" $ strictSubtypeTests "QA" "T"
+                               , tGroup "QB <: T" $ strictSubtypeTests "QB" "T"
+                               , tGroup "QC <: T" $ strictSubtypeTests "QC" "T"
+                               , tGroup "P1 <: T" $ strictSubtypeTests "P1" "T"
+                               ]
+                         , tGroup
+                               "cycle"
+                               [ tDeclsRec ["dynamictype P = P"] $ testExpectReject "pass"
+                               , tDeclsRec ["dynamictype P = Q", "dynamictype Q = P"] $ testExpectReject "pass"
+                               , tDeclsRec ["dynamictype P = Q", "dynamictype Q = P"] $
+                                 testExpectReject "let f: P -> Q; f x = x in pass"
+                               , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype P = P1 | Q", "dynamictype Q = P"] $
+                                 testExpectReject "pass"
+                               , tDeclsRec
+                                     ["dynamictype P1 = !\"P1\"", "dynamictype P = P1 | Q", "dynamictype Q = P | Q"] $
+                                 testExpectReject "pass"
+                               , tDeclsRec ["dynamictype P1 = !\"P1\"", "dynamictype Q = P1 | Q"] $
+                                 testExpectReject "pass"
+                               ]
+                         ]
                 ]
               ]
         , tGroup
