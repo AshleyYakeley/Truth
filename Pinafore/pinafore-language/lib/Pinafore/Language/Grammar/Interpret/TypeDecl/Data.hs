@@ -210,10 +210,9 @@ makeBox gmaker mainTypeName doc sconss gtparams = do
                         case gmaker mainTypeName tparams of
                             MkStages mkx (mkgt :: x -> _) -> let
                                 mainRegister :: x -> PinaforeScopeInterpreter ()
-                                mainRegister x =
-                                    registerType mainTypeName doc $ do
-                                        MkGroundTypeFromTypeID gt <- mkgt x
-                                        return $ MkBoundType $ gt mainTypeName tidsym
+                                mainRegister x = do
+                                    MkGroundTypeFromTypeID gt <- lift $ mkgt x
+                                    registerType mainTypeName doc $ gt mainTypeName tidsym
                                 mainConstruct ::
                                        ()
                                     -> PinaforeScopeInterpreter ( x
@@ -303,14 +302,20 @@ makeBox gmaker mainTypeName doc sconss gtparams = do
                                     -> Markdown
                                     -> (PinaforeGroundType dv (Identified tid), x)
                                     -> PinaforeScopeInterpreter ()
-                                subRegister subTypeName _doc ~(_mainGroundType, x) =
-                                    registerType subTypeName doc $ do
-                                        MkGroundTypeFromTypeID gttid :: GroundTypeFromTypeID dv gt <- mkgt x
-                                        newTypeID $ \(newtidsym :: _ newtid) -> do
+                                subRegister subTypeName _doc ~(mainGroundType, x) = do
+                                    MkGroundTypeFromTypeID gttid :: GroundTypeFromTypeID dv gt <- lift $ mkgt x
+                                    stid <- lift $ newTypeID $ return . MkSome
+                                    case stid of
+                                        MkSome (newtidsym :: _ newtid) -> do
                                             Refl <- unsafeIdentifyKind @_ @(DolanVarianceKind dv) newtidsym
                                             Refl <- unsafeIdentify @newtid @(Identified tid) newtidsym
                                             let subGroundType = gttid subTypeName newtidsym
-                                            return $ MkBoundType subGroundType
+                                            registerType subTypeName doc subGroundType
+                                            registerSubtypeConversion $
+                                                simpleSubtypeConversionEntry
+                                                    subGroundType
+                                                    mainGroundType
+                                                    idSubtypeConversion
                                 subConstruct ::
                                        (PinaforeGroundType dv (Identified tid), x)
                                     -> PinaforeScopeInterpreter ((PinaforeGroundType dv (Identified tid), x), ())

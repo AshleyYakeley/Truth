@@ -26,6 +26,7 @@ module Pinafore.Language.Interpreter
     , lookupSpecialForm
     , lookupBoundType
     , newTypeID
+    , registerBoundType
     , registerType
     , ScopeFixBox
     , DocInterpreterBinding
@@ -372,14 +373,15 @@ newTypeID call = do
     refPut typeIDRef $ succTypeID tid
     valueToWitness tid call
 
-registerType :: Name -> Markdown -> Interpreter ts (BoundType ts) -> ScopeInterpreter ts ()
-registerType name doc mt = do
+registerBoundType :: Name -> Markdown -> BoundType ts -> ScopeInterpreter ts ()
+registerBoundType name doc t = do
     mnt <- lift $ lookupBoundTypeM $ UnqualifiedReferenceName name
     case mnt of
         Just _ -> lift $ throw $ DeclareTypeDuplicateError name
-        Nothing -> do
-            t <- lift mt
-            registerBinding name (doc, TypeBinding t)
+        Nothing -> registerBinding name (doc, TypeBinding t)
+
+registerType :: Name -> Markdown -> InterpreterGroundType ts dv t -> ScopeInterpreter ts ()
+registerType name doc t = registerBoundType name doc $ MkBoundType t
 
 type ScopeFixBox ts = FixBox (ScopeInterpreter ts)
 

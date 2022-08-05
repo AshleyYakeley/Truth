@@ -27,7 +27,7 @@ makeDynamicEntityTypeBox name doc stcons =
         register :: DynamicEntityType -> PinaforeScopeInterpreter ()
         register det = do
             let tp = aDynamicEntityGroundType name det
-            registerType name doc $ return $ MkBoundType tp
+            registerType name doc tp
         construct :: () -> PinaforeScopeInterpreter (DynamicEntityType, ())
         construct _ = do
             dts <- lift $ for stcons interpretSyntaxDynamicEntityConstructor
