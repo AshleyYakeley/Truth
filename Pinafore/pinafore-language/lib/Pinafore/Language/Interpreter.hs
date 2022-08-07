@@ -375,7 +375,7 @@ newTypeID call = do
 
 registerBoundType :: Name -> Markdown -> BoundType ts -> ScopeInterpreter ts ()
 registerBoundType name doc t = do
-    mnt <- lift $ lookupBoundTypeM $ UnqualifiedReferenceName name
+    mnt <- lift $ lookupBinding $ UnqualifiedReferenceName name
     case mnt of
         Just _ -> lift $ throw $ DeclareTypeDuplicateError name
         Nothing -> registerBinding name (doc, TypeBinding t)
@@ -388,7 +388,7 @@ type ScopeFixBox ts = FixBox (ScopeInterpreter ts)
 registerPatternConstructor ::
        Name -> Markdown -> TSSealedExpression ts -> TSPatternConstructor ts -> ScopeInterpreter ts ()
 registerPatternConstructor name doc exp pc = do
-    ma <- lift $ lookupPatternConstructorM $ UnqualifiedReferenceName name
+    ma <- lift $ lookupBinding $ UnqualifiedReferenceName name
     case ma of
         Just _ -> lift $ throw $ DeclareConstructorDuplicateError name
         Nothing -> registerBinding name $ (doc, ValueBinding exp $ Just pc)

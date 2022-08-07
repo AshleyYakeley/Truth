@@ -1,6 +1,8 @@
 module Data.FixBox
     ( FixBox
     , mkFixBox
+    , mkConstructFixBox
+    , mkRegisterFixBox
     , boxRecursiveFix
     , boxRecursiveIO
     , boxSequential
@@ -49,6 +51,15 @@ instance Monad m => Arrow (FixBox m) where
 
 mkFixBox :: (t -> m ()) -> (a -> m (t, b)) -> FixBox m a b
 mkFixBox = MkFixBox
+
+mkConstructFixBox :: Monad m => (a -> m b) -> FixBox m a b
+mkConstructFixBox construct =
+    mkFixBox (\_ -> return ()) $ \a -> do
+        b <- construct a
+        return ((), b)
+
+mkRegisterFixBox :: Monad m => (a -> m ()) -> FixBox m a ()
+mkRegisterFixBox register = mkFixBox register $ \a -> return (a, ())
 
 boxRecursive :: Monad m => (forall r. (r -> m r) -> m r) -> FixBox m a b -> a -> m b
 boxRecursive mf (MkFixBox register construct) a = do
