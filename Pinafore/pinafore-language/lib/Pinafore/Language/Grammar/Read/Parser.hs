@@ -150,7 +150,7 @@ readReferenceName = readReferenceUName <|> readReferenceLName
 readLines :: Parser a -> Parser [a]
 readLines p =
     (do
-         a <- p
+         a <- try p
          ma <-
              optional $ do
                  readThis TokSemicolon
