@@ -28,7 +28,7 @@ data SubtypeResult
     | SRSingle
 
 isOfType :: Text -> Text -> Text
-isOfType v t = "let x:" <> t <> ";x=" <> v <> " in pass"
+isOfType v t = "let x: " <> t <> "; x= " <> v <> " in pass"
 
 subtypeTests :: Bool -> SubtypeResult -> Text -> Text -> [ScriptTestTree]
 subtypeTests polar sr p q =
@@ -940,6 +940,13 @@ testEntity =
                           , subtypeTest False SRNot "D1" "D2"
                           , subtypeTest False SRNot "D2" "D3"
                           , subtypeTest False SRNot "D1" "D3"
+                          , tGroup
+                                "GDS"
+                                [ testExpectSuccess $ isOfType "\\x => case x of C1 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "\\x => case x of C2 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "\\x => case x of C3 _ _ _ => () end" "D1 -> Unit"
+                                , testExpectSuccess $ isOfType "\\x => case x of C4 => () end" "D1 -> Unit"
+                                ]
                           ]
                     , testExpectSuccess
                           "let rec datatype L of LNil; subtype datatype L1 of LCons Unit L end end end in pass"
