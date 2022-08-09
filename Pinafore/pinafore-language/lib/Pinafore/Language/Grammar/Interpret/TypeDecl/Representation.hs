@@ -4,7 +4,6 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
     , leftCodec
     , extendRightCodec
     , TypeRepresentation(..)
-    , getEnumTypeRepresentation
     , getListEnumTypeRepresentation
     , getOpenWitnessTypeRepresentation
     , getOpenWitnessTypeRepresentationEq
@@ -24,27 +23,6 @@ data TypeRepresentation lt t = MkTypeRepresentation
     , trVarMapping :: VarMapping t
     }
 
-enumTypeRepresentation :: ListType ((:~:) ()) lt -> TypeRepresentation lt Int
-enumTypeRepresentation lt = let
-    getCodec :: forall t. (() :~: t) -> StateT Int Identity (Codec' Maybe Int t)
-    getCodec Refl = do
-        i <- get
-        put $ succ i
-        return $
-            MkCodec
-                (\i' ->
-                     if i == i'
-                         then Just ()
-                         else Nothing)
-                (\() -> i)
-    in MkTypeRepresentation (evalState (mapMListType getCodec lt) 0) mempty
-
-getEnumTypeRepresentation ::
-       ListType ((:~:) ()) lt
-    -> (forall w' t. (TestEquality w', Eq t, Ord t) => TypeRepresentation lt t -> (t -> SomeOf w') -> r)
-    -> r
-getEnumTypeRepresentation lt call = call (enumTypeRepresentation lt) (\i -> MkSomeOf Refl i)
-
 class MaybeUnitWitness w where
     maybeUnitWitness :: forall t. w t -> Maybe (() :~: t)
 
@@ -55,39 +33,72 @@ instance MaybeUnitWitness (ListProductType w) where
     maybeUnitWitness (MkListProductType NilListType) = Just Refl
     maybeUnitWitness (MkListProductType (ConsListType _ _)) = Nothing
 
+instance MaybeUnitWitness w => MaybeUnitWitness (Compose ((,) x) w) where
+    maybeUnitWitness (Compose (_, wa)) = maybeUnitWitness wa
+
+numberWitnesses :: Enum i => i -> ListType w lt -> ListType (Compose ((,) i) w) lt
+numberWitnesses _ NilListType = NilListType
+numberWitnesses i (ConsListType wa la) = ConsListType (Compose (i, wa)) $ numberWitnesses (succ i) la
+
 getListEnumTypeRepresentation ::
        forall w lt r. MaybeUnitWitness w
     => ListType w lt
-    -> (forall w' t. (TestEquality w', Eq t, Ord t) => TypeRepresentation lt t -> (t -> SomeOf w') -> r)
+    -> (forall t. (Eq t, Ord t) => TypeRepresentation lt t -> (t -> SomeOf (ListElementType lt)) -> r)
     -> Maybe r
-getListEnumTypeRepresentation lt call = do
-    ltu <- mapMListType maybeUnitWitness lt
-    return $ getEnumTypeRepresentation ltu call
+getListEnumTypeRepresentation ltw call = do
+    let
+        toRep :: forall a. Compose ((,) Int) w a -> Maybe (Compose ((,) Int) ((:~:) ()) a)
+        toRep (Compose (i, wa)) = do
+            Refl <- maybeUnitWitness wa
+            return $ Compose (i, Refl)
+    repltw <- mapMListType toRep $ numberWitnesses 0 ltw
+    let
+        codecFromRep :: forall a. Compose ((,) Int) ((:~:) ()) a -> Codec Int a
+        codecFromRep (Compose (i, Refl)) = singleCodec i
+        codecs :: ListType (Codec Int) lt
+        codecs = mapListType codecFromRep repltw
+        tf :: Int -> SomeOf (ListElementType lt)
+        tf i = let
+            sf =
+                indexListElementType repltw $
+                mapSome (fromMaybe (error "bad value") . peanoGreater (listTypeLengthType repltw)) $
+                valueToSome $ naturalToPeano $ fromIntegral i
+            in case sf of
+                   MkSomeFor n (Compose (_, Refl)) -> MkSomeOf n ()
+    return $ call (MkTypeRepresentation codecs mempty) tf
 
 witnessRepCodec :: TestEquality w => w a -> Codec (SomeOf w) a
 witnessRepCodec wit = MkCodec (matchSomeOf wit) (MkSomeOf wit)
 
 witnessTypeRepresentation ::
-       forall w lt (ow :: Type -> Type) m. (HasVarMapping w, TestEquality ow, Monad m)
+       forall w lt (ow :: Type -> Type) m. (HasVarMapping w, TestOrder ow, Monad m)
     => (forall a. w a -> m (ow a))
     -> ListType w lt
-    -> m (TypeRepresentation lt (SomeOf ow))
-witnessTypeRepresentation newWit lt = do
+    -> m (TypeRepresentation lt (SomeOf ow), WMFunction ow (ListElementType lt))
+witnessTypeRepresentation newWit ltw = do
     let
-        getCodec :: forall t. w t -> WriterT [SomeFor VarMapping ow] m (Codec (SomeOf ow) t)
-        getCodec wt = do
+        getCodec ::
+               forall t.
+               PairType w (ListElementType lt) t
+            -> WriterT (OrderedWitnessMapFor (ListElementType lt) ow, [SomeFor VarMapping ow]) m (Codec (SomeOf ow) t)
+        getCodec (MkPairType wt et) = do
             wit <- lift $ newWit wt
-            tell $ pure $ MkSomeFor wit $ getVarMapping wt
+            tell (orderedWitnessMapForSingle wit et, pure $ MkSomeFor wit $ getVarMapping wt)
             return $ witnessRepCodec wit
-    (codecs, vmaps) <- runWriterT (mapMListType getCodec lt)
-    return $ MkTypeRepresentation codecs $ dependentVarMapping vmaps
+    (codecs, (tmap, vmaps)) <- runWriterT (mapMListType getCodec $ pairListType ltw $ countListType ltw)
+    let
+        tr :: TypeRepresentation lt (SomeOf ow)
+        tr = MkTypeRepresentation codecs $ dependentVarMapping vmaps
+        tw :: ow --> ListElementType lt
+        tw owa = fromMaybe (error "bad value") $ orderedWitnessMapForLookup owa tmap
+    return (tr, MkWMFunction tw)
 
 naturalWitnessTypeRepresentation ::
        forall w lt. HasVarMapping w
     => ListType w lt
     -> TypeRepresentation lt (SomeOf (ListElementType lt))
 naturalWitnessTypeRepresentation lt =
-    runIdentity $ witnessTypeRepresentation (\(MkPairType _ n) -> Identity n) $ pairListType lt $ countListType lt
+    fst $ runIdentity $ witnessTypeRepresentation (\(MkPairType _ n) -> Identity n) $ pairListType lt $ countListType lt
 
 getNaturalWitnessTypeRepresentation ::
        forall w lt r. HasVarMapping w
@@ -99,27 +110,27 @@ getNaturalWitnessTypeRepresentation lt call = call (naturalWitnessTypeRepresenta
 getOpenWitnessTypeRepresentation ::
        forall w lt r. HasVarMapping w
     => ListType w lt
-    -> (forall w' t. TestEquality w' => TypeRepresentation lt t -> (t -> SomeOf w') -> r)
+    -> (forall t. TypeRepresentation lt t -> (t -> SomeOf (ListElementType lt)) -> r)
     -> r
 getOpenWitnessTypeRepresentation lt call =
     runOW $ do
-        tr <- witnessTypeRepresentation (\_ -> newOpenWitnessOW) lt
-        return $ call tr id
+        (tr, MkWMFunction tf) <- witnessTypeRepresentation (\_ -> newOpenWitnessOW) lt
+        return $ call tr $ mapSome tf
 
 getOpenWitnessTypeRepresentationEq ::
        forall w lt r. (WitnessConstraint Eq w, HasVarMapping w)
     => ListType w lt
-    -> (forall w' t. (TestEquality w', Eq t) => TypeRepresentation lt t -> (t -> SomeOf w') -> r)
+    -> (forall t. Eq t => TypeRepresentation lt t -> (t -> SomeOf (ListElementType lt)) -> r)
     -> r
 getOpenWitnessTypeRepresentationEq lt call =
     runOW $ do
-        tr <-
+        (tr, MkWMFunction tf) <-
             witnessTypeRepresentation
                 (\wt -> do
                      ow <- newOpenWitnessOW
                      return $ MkPairType ow wt)
                 lt
-        return $ call tr id
+        return $ call tr $ mapSome tf
 
 leftCodec :: Codec (Either b a) b
 leftCodec = MkCodec eitherLeft Left
@@ -152,7 +163,7 @@ getEitherTypeRepresentationEq lt call =
 getPreferredTypeRepresentation ::
        forall w lt r. (MaybeUnitWitness w, HasVarMapping w)
     => ListType w lt
-    -> (forall w' t. TestEquality w' => TypeRepresentation lt t -> (t -> SomeOf w') -> r)
+    -> (forall t. TypeRepresentation lt t -> (t -> SomeOf (ListElementType lt)) -> r)
     -> r
 getPreferredTypeRepresentation lt call =
     case getListEnumTypeRepresentation lt call of
@@ -162,7 +173,7 @@ getPreferredTypeRepresentation lt call =
 getPreferredTypeRepresentationEq ::
        forall w lt r. (MaybeUnitWitness w, WitnessConstraint Eq w, HasVarMapping w)
     => ListType w lt
-    -> (forall w' t. (TestEquality w', Eq t) => TypeRepresentation lt t -> (t -> SomeOf w') -> r)
+    -> (forall t. Eq t => TypeRepresentation lt t -> (t -> SomeOf (ListElementType lt)) -> r)
     -> r
 getPreferredTypeRepresentationEq lt call =
     case getListEnumTypeRepresentation lt call of

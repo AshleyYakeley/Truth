@@ -25,7 +25,7 @@ succTypeID (MkTypeID n) = MkTypeID $ succ n
 
 newtype TypeIDType (bn :: Nat) =
     MkTypeIDType (NaturalType bn)
-    deriving (TestEquality)
+    deriving (TestEquality, TestOrder)
 
 instance WitnessValue TypeIDType where
     type WitnessValueType TypeIDType = TypeID

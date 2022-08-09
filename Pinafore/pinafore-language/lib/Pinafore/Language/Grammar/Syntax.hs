@@ -13,7 +13,7 @@ data SyntaxConstructorOrSubtype extra
                                             [SyntaxType]
                                             extra
     | SubtypeSyntaxConstructorOrSubtype Name
-                                        [SyntaxConstructorOrSubtype extra]
+                                        [SyntaxWithDoc (SyntaxConstructorOrSubtype extra)]
     deriving (Eq)
 
 type SyntaxClosedEntityConstructorOrSubtype = SyntaxConstructorOrSubtype Anchor
@@ -39,9 +39,9 @@ data SyntaxDynamicEntityConstructor
 
 data SyntaxTypeDeclaration
     = ClosedEntitySyntaxTypeDeclaration [SyntaxTypeParameter]
-                                        [SyntaxClosedEntityConstructorOrSubtype]
+                                        [SyntaxWithDoc SyntaxClosedEntityConstructorOrSubtype]
     | DatatypeSyntaxTypeDeclaration [SyntaxTypeParameter]
-                                    [SyntaxDatatypeConstructorOrSubtype]
+                                    [SyntaxWithDoc SyntaxDatatypeConstructorOrSubtype]
     | OpenEntitySyntaxTypeDeclaration
     | DynamicEntitySyntaxTypeDeclaration (NonEmpty SyntaxDynamicEntityConstructor)
     deriving (Eq)

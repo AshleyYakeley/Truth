@@ -31,6 +31,15 @@ decodeMaybe codec = mToMaybe . decode codec
 toCodec :: MonadInner m => Codec' m a b -> Codec a b
 toCodec = hoistCodec mToMaybe
 
+singleCodec :: (Alternative m, Eq a) => a -> Codec' m a ()
+singleCodec val = let
+    d a =
+        if a == val
+            then pure ()
+            else empty
+    e () = val
+    in MkCodec d e
+
 instance Functor m => Invariant (Codec' m p) where
     invmap ab ba (MkCodec d e) = MkCodec (\p -> fmap ab $ d p) (e . ba)
 

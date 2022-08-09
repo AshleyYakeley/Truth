@@ -5,7 +5,7 @@ module Pinafore.Language.Grammar.Interpret.TypeDecl.ClosedEntity
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
-import Pinafore.Language.Grammar.Interpret.TypeDecl.Constructor
+
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
 import Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
 import Pinafore.Language.Grammar.Syntax
@@ -13,8 +13,6 @@ import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Pinafore.Markdown
 import Shapes
-
-type ClosedEntityConstructor = Constructor (Name, Anchor, Maybe Name) (ListProductType PinaforeNonpolarType)
 
 type CovParam :: CCRArgumentKind
 data CovParam (sv :: CCRVariance) (t :: CCRVarianceKind sv) where
@@ -99,10 +97,12 @@ closedEntityConstructorAdapter params pts = do
                 Refl -> MkThing (mapListType (\(Compose f) -> f args) ets) Refl
 
 closedEntityTypeAdapter ::
-       CovParams dv gt decltype -> [ClosedEntityConstructor decltype] -> PinaforeInterpreter (WithArgs EntityAdapter gt)
+       CovParams dv gt decltype
+    -> [(ConstructorCodec decltype, Anchor)]
+    -> PinaforeInterpreter (WithArgs EntityAdapter gt)
 closedEntityTypeAdapter params conss = do
     ff <-
-        for conss $ \(MkConstructor (_, anchor, _) (MkListProductType cc) codec) -> do
+        for conss $ \(MkSomeFor (MkListProductType cc) codec, anchor) -> do
             MkWithArgs wa <- closedEntityConstructorAdapter params cc
             return $
                 MkWithArgs $ \args ->
@@ -115,10 +115,10 @@ makeClosedEntityGroundType ::
        forall (dv :: DolanVariance) (gt :: DolanVarianceKind dv) (decltype :: Type). Is DolanVarianceType dv
     => Name
     -> CCRTypeParams dv gt decltype
-    -> Stages (DolanVarianceMap dv gt, [ClosedEntityConstructor decltype]) (GroundTypeFromTypeID dv gt)
+    -> Stages (DolanVarianceMap dv gt, [(ConstructorCodec decltype, Anchor)]) (GroundTypeFromTypeID dv gt)
 makeClosedEntityGroundType mainTypeName tparams = let
     dvt = ccrArgumentsType tparams
-    mkx :: (DolanVarianceMap dv gt, [ClosedEntityConstructor decltype])
+    mkx :: (DolanVarianceMap dv gt, [(ConstructorCodec decltype, Anchor)])
         -> PinaforeInterpreter (DolanVarianceMap dv gt, WithArgs EntityAdapter gt)
     mkx (dvm, conss) = do
         cvt <-
@@ -149,6 +149,6 @@ makeClosedEntityTypeBox ::
        Name
     -> Markdown
     -> [SyntaxTypeParameter]
-    -> [SyntaxClosedEntityConstructorOrSubtype]
+    -> [SyntaxWithDoc SyntaxClosedEntityConstructorOrSubtype]
     -> PinaforeInterpreter (PinaforeFixBox () ())
 makeClosedEntityTypeBox = makeDeclTypeBox makeClosedEntityGroundType

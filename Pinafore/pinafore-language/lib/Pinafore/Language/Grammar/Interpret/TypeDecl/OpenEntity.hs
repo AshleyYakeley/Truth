@@ -10,7 +10,7 @@ import Shapes
 
 makeOpenEntityTypeBox :: Name -> Markdown -> PinaforeInterpreter (PinaforeFixBox () ())
 makeOpenEntityTypeBox name doc =
-    newTypeID $ \tidsym -> let
+    withNewTypeID $ \tidsym -> let
         register :: () -> PinaforeScopeInterpreter ()
         register _ = registerType name doc $ openEntityGroundType $ MkOpenEntityType name tidsym
         construct :: () -> PinaforeScopeInterpreter ((), ())

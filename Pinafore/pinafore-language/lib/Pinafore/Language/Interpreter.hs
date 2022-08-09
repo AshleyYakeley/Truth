@@ -26,6 +26,7 @@ module Pinafore.Language.Interpreter
     , lookupSpecialForm
     , lookupBoundType
     , newTypeID
+    , withNewTypeID
     , registerBoundType
     , registerType
     , ScopeFixBox
@@ -367,11 +368,17 @@ lookupPatternConstructor name = do
         Just a -> return a
         Nothing -> throw $ LookupConstructorUnknownError name
 
-newTypeID :: (forall tid. TypeIDType tid -> Interpreter ts a) -> Interpreter ts a
-newTypeID call = do
+newTypeID :: Interpreter ts (Some TypeIDType)
+newTypeID = do
     tid <- refGet typeIDRef
     refPut typeIDRef $ succTypeID tid
-    valueToWitness tid call
+    return $ valueToSome tid
+
+withNewTypeID :: (forall tid. TypeIDType tid -> Interpreter ts a) -> Interpreter ts a
+withNewTypeID call = do
+    stid <- newTypeID
+    case stid of
+        MkSome tid -> call tid
 
 registerBoundType :: Name -> Markdown -> BoundType ts -> ScopeInterpreter ts ()
 registerBoundType name doc t = do

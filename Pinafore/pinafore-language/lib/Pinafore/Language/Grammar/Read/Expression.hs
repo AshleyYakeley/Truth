@@ -92,12 +92,6 @@ readDeclaration =
         expb <- readExpose
         return $ ExposeSyntaxDeclaration spos expb
 
-readWithDoc :: Parser t -> Parser (SyntaxWithDoc t)
-readWithDoc pt = do
-    doc <- readDocComment
-    decl <- pt
-    return $ MkSyntaxWithDoc doc decl
-
 readDocDeclarations :: Parser [SyntaxWithDoc SyntaxDeclaration]
 readDocDeclarations = readLines $ readWithDoc readDeclaration
 

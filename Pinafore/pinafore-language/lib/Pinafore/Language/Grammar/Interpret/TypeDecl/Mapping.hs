@@ -113,6 +113,9 @@ getArgumentsMapping (ConsDolanVarianceMap ccrv dvm) (ConsCCRArguments arg args) 
 class HasVarMapping w where
     getVarMapping :: w t -> VarMapping t
 
+instance HasVarMapping w => HasVarMapping (Compose ((,) x) w) where
+    getVarMapping (Compose (_, wt)) = getVarMapping wt
+
 instance HasVarMapping w => HasVarMapping (ListProductType w) where
     getVarMapping (MkListProductType NilListType) = pUnit
     getVarMapping (MkListProductType (ConsListType t1 tr)) = getVarMapping t1 <***> getVarMapping (MkListProductType tr)

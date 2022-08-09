@@ -157,3 +157,9 @@ readLines p =
                  readLines p
          return $ a : fromMaybe [] ma) <|>
     (return [])
+
+readWithDoc :: Parser t -> Parser (SyntaxWithDoc t)
+readWithDoc pt = do
+    doc <- readDocComment
+    decl <- pt
+    return $ MkSyntaxWithDoc doc decl

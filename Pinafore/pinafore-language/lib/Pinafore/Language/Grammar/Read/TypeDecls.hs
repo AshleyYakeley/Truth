@@ -32,7 +32,7 @@ readDataTypeConstructor =
          readThis TokDataType
          name <- readTypeNewName
          readThis TokOf
-         constructors <- readLines readDataTypeConstructor
+         constructors <- readLines $ readWithDoc readDataTypeConstructor
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
@@ -47,7 +47,7 @@ readClosedTypeConstructor =
          readThis TokClosedType
          name <- readTypeNewName
          readThis TokOf
-         constructors <- readLines readClosedTypeConstructor
+         constructors <- readLines $ readWithDoc readClosedTypeConstructor
          readThis TokEnd
          return $ SubtypeSyntaxConstructorOrSubtype name constructors) <|>
     (do
@@ -88,7 +88,7 @@ readDataTypeDeclaration = do
     name <- readTypeNewName
     parameters <- many readTypeParameter
     readThis TokOf
-    constructors <- readLines readDataTypeConstructor
+    constructors <- readLines $ readWithDoc readDataTypeConstructor
     readThis TokEnd
     return $ TypeSyntaxDeclaration spos name $ DatatypeSyntaxTypeDeclaration parameters constructors
 
@@ -99,7 +99,7 @@ readClosedTypeDeclaration = do
     name <- readTypeNewName
     parameters <- many readTypeParameter
     readThis TokOf
-    constructors <- readLines readClosedTypeConstructor
+    constructors <- readLines $ readWithDoc readClosedTypeConstructor
     readThis TokEnd
     return $ TypeSyntaxDeclaration spos name $ ClosedEntitySyntaxTypeDeclaration parameters constructors
 
