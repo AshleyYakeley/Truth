@@ -31,13 +31,12 @@ std_window title contents = fixAction $ \window => let
 
 # Ontology
 
-opentype Type;
 opentype Person;
 
-type = property @Person @Type !"f06efa5e-190f-4e5d-8633-495c5683c124";
+people = property @Person @Unit !"f06efa5e-190f-4e5d-8633-495c5683c124" !@ {()};
+
 name = property @Person @Text !"498260df-6a8a-44f0-b285-68a63565a33b";
 
-people = type !@ {openEntity @Type !"78baed51-cb05-46b5-bcb4-49031532b890"};
 
 mother = property @Person @Person !"3afce58f-b7eb-4b11-8a75-2d66afd4d085";
 father = property @Person @Person !"c005705f-9259-4d24-9713-db28a6e4f7d5";
@@ -323,7 +322,6 @@ window_start = do
             GTK.label {"Local time: " <> show %localNow},
             GTK.label {"Local date: " <> show %today},
             GTK.label {"Time zone offset minutes: " <> show %timeZone},
-            GTK.button {"People"} {window_people},
             GTK.button {"Calculated Form"} {window_calc},
             GTK.button {"Switch"} {window_switch},
             GTK.button {"Files"} {window_files},
