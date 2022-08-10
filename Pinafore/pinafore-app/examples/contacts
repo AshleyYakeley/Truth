@@ -67,7 +67,7 @@ end;
 ### User Interface
 
 rec
-contactPages: WholeRef +LegalEntity -> List (GTK.Element :*: GTK.Element);
+contactPages: WholeRef +LegalEntity -> List (GTK.Element *: GTK.Element);
 contactPages er =
 [
     uiPage {"Social"} $ GTK.vertical
@@ -78,7 +78,7 @@ contactPages er =
     uiPage {"Home"} $ locationUI $ home !$% er
 ];
 
-personPages: WholeRef +Person -> List (GTK.Element :*: GTK.Element);
+personPages: WholeRef +Person -> List (GTK.Element *: GTK.Element);
 personPages p =
 [
     uiPage {"Work"} $ GTK.vertical
@@ -100,7 +100,7 @@ familyUI p = GTK.vertical
     GTK.layoutGrow $ namedItemTable (children p) contactRefUI Nothing
 ];
 
-organisationPages: WholeRef +Organisation -> List (GTK.Element :*: GTK.Element);
+organisationPages: WholeRef +Organisation -> List (GTK.Element *: GTK.Element);
 organisationPages subj =
 [
     uiPage {"Employees"} $ namedItemTable (employees subj) contactRefUI Nothing
@@ -108,7 +108,7 @@ organisationPages subj =
 
 contactUI: LegalEntity -> GTK.Element;
 contactUI e = let
-    pages: List (GTK.Element :*: GTK.Element);
+    pages: List (GTK.Element *: GTK.Element);
     pages = contactPages {e} ++ case e of
         p: Person => personPages {p};
         o: Organisation => organisationPages {o};

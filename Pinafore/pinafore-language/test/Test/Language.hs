@@ -452,17 +452,17 @@ testQueries =
               , testQuery "let i : a -> Number; i x = x in 0" $ LRCheckFail
               , testQuery "let i : Number -> a; i x = x in 0" $ LRCheckFail
               , testQuery "let i : Number -> Number; i x = x in 0" $ LRSuccess "0"
-              , testQuery "let i : Number :+: Boolean; i = Left 5 in i" $ LRSuccess "Left 5"
-              , testQuery "let i : Number :+: Boolean; i = Right False in i" $ LRSuccess "Right False"
+              , testQuery "let i : Number +: Boolean; i = Left 5 in i" $ LRSuccess "Left 5"
+              , testQuery "let i : Number +: Boolean; i = Right False in i" $ LRSuccess "Right False"
               , testQuery "let i : Maybe Number; i = Just 5 in i" $ LRSuccess "Just 5"
               , testQuery "let i : Maybe Number; i = Nothing in i" $ LRSuccess "Nothing"
               , testTree
                     "polar"
                     [ testQuery "let x : Text | Number; x = 3 in x" $ LRSuccess "3"
                     , testQuery "let f : Any -> Integer; f _ = 3 in f ()" $ LRSuccess "3"
-                    , testQuery "(\\x => (x,x)) : ((a & Number) -> Showable :*: a)" $ LRSuccess "<?>"
-                    , testQuery "let f = (\\x => (x,x)) : (a & Number) -> Showable :*: a in f 3" $ LRSuccess "(3, 3)"
-                    , testQuery "let f : (a & Number) -> Showable :*: a; f x = (x,x) in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "(\\x => (x,x)) : ((a & Number) -> Showable *: a)" $ LRSuccess "<?>"
+                    , testQuery "let f = (\\x => (x,x)) : (a & Number) -> Showable *: a in f 3" $ LRSuccess "(3, 3)"
+                    , testQuery "let f : (a & Number) -> Showable *: a; f x = (x,x) in f 3" $ LRSuccess "(3, 3)"
                     ]
               ]
         , testTree
@@ -547,12 +547,12 @@ testQueries =
               "type-operator"
               [ testSameType True "Unit" "Unit" ["()"]
               , testSameType True "List a" "List a" []
-              , testSameType True "a :*: b :+: c :*: d" "(a :*: b) :+: (c :*: d)" []
-              , testSameType True "a :*: b :*: c :*: d" "a :*: (b :*: (c :*: d))" []
+              , testSameType True "a *: b +: c *: d" "(a *: b) +: (c *: d)" []
+              , testSameType True "a *: b *: c *: d" "a *: (b *: (c *: d))" []
               , testSameType
                     True
-                    "Integer :*: Boolean :*: Integer :*: Boolean"
-                    "Integer :*: (Boolean :*: (Integer :*: Boolean))"
+                    "Integer *: Boolean *: Integer *: Boolean"
+                    "Integer *: (Boolean *: (Integer *: Boolean))"
                     ["(3, (True, (7, False)))"]
               ]
         , testTree

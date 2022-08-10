@@ -4,7 +4,7 @@ import GTK;
 
 ### Useful GTK stuff
 
-uiPage: WholeRef +Text -> Element -> Element :*: Element;
+uiPage: WholeRef +Text -> Element -> Element *: Element;
 uiPage n ui = (label n,ui);
 
 uiLabelled: WholeRef +Text -> Element -> Element;
@@ -82,7 +82,7 @@ notebookPane: WholeRef +Text -> List Pane -> Action Pane;
 notebookPane title panes = do
     tabRef <- newMemWhole;
     return $ let
-        makePage: Pane -> Element :*: Element;
+        makePage: Pane -> Element *: Element;
         makePage (MkPane rname ui _) = uiPage rname ui;
         nui: Element;
         nui = notebook tabRef $ mapList makePage panes;

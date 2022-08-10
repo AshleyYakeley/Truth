@@ -171,19 +171,19 @@ testType =
                 joinExpr listBoolNumFuncExpr listBoolNumFuncExpr
               , exprTypeTest "List nb -> List bn" (return "{} -> List (Boolean & Number) -> List (Number | Boolean)") $
                 joinExpr listNumBoolFuncExpr listBoolNumFuncExpr
-              , exprTypeTest "snd" (return "{} -> Any :*: a -> a") $ return sndExpr
-              , exprTypeTest "thing" (return "{} -> a :*: b -> a :*: (a | b)") $ return thingExpr
-              , exprTypeTest "snd . thing" (return "{} -> c :*: c -> c") $ do
+              , exprTypeTest "snd" (return "{} -> Any *: a -> a") $ return sndExpr
+              , exprTypeTest "thing" (return "{} -> a *: b -> a *: (a | b)") $ return thingExpr
+              , exprTypeTest "snd . thing" (return "{} -> c *: c -> c") $ do
                     e1 <- apExpr dotExpr sndExpr
                     apExpr e1 thingExpr
-              , exprTypeTest "twice" (return "{} -> a -> a :*: a") $ return twiceExpr
-              , exprTypeTest "thing . twice" (return "{} -> e -> e :*: e") $ do
+              , exprTypeTest "twice" (return "{} -> a -> a *: a") $ return twiceExpr
+              , exprTypeTest "thing . twice" (return "{} -> e -> e *: e") $ do
                     e1 <- apExpr dotExpr thingExpr
                     apExpr e1 twiceExpr
-              , exprTypeTest "thing $ twice number" (return "{} -> Number :*: Number") $ do
+              , exprTypeTest "thing $ twice number" (return "{} -> Number *: Number") $ do
                     e1 <- apExpr twiceExpr numExpr
                     apExpr thingExpr e1
-              , exprTypeTest "simplify $ thing $ twice number" (return "{} -> Number :*: Number") $ do
+              , exprTypeTest "simplify $ thing $ twice number" (return "{} -> Number *: Number") $ do
                     e1 <- apExpr twiceExpr numExpr
                     r <- apExpr thingExpr e1
                     runRenamer @TS $ simplify @TS r
@@ -193,17 +193,17 @@ testType =
               , exprTypeTest "simplify duplicate list" (return "{} -> List Number") $
                 runRenamer @TS $
                 simplify @TS $ typeFConstExpression toJMShimWit (MkJoinType (Right [3]) :: JoinType [Number] [Number])
-              , exprTypeTest "simplify duplicate pair" (return "{} -> Number :*: Number") $
+              , exprTypeTest "simplify duplicate pair" (return "{} -> Number *: Number") $
                 runRenamer @TS $
                 simplify @TS $
                 typeFConstExpression
                     toJMShimWit
                     (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
-              , exprTypeTest "simplify duplicate in pair" (return "{} -> Number :*: Number") $
+              , exprTypeTest "simplify duplicate in pair" (return "{} -> Number *: Number") $
                 runRenamer @TS $
                 simplify @TS $
                 typeFConstExpression toJMShimWit ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
-              , exprTypeTest "simplify duplicate in pair" (return "{} -> Number :*: Number") $
+              , exprTypeTest "simplify duplicate in pair" (return "{} -> Number *: Number") $
                 runRenamer @TS $
                 simplify @TS $
                 typeFConstExpression
@@ -222,14 +222,14 @@ testType =
               , textTypeTest "[v1,v2]" "{v1 : a, v2 : a} -> List1 a"
               , textTypeTest "[v,v,v]" "{v : a, v : a, v : a} -> List1 a"
               , textTypeTest "[x,y,x,y]" "{x : a, y : a, x : a, y : a} -> List1 a"
-              , textTypeTest "(v 3,v \"text\")" "{v : Integer -> a, v : Text -> b} -> a :*: b"
-              , textTypeTest "(v,v)" "{v : a, v : b} -> a :*: b"
-              , textTypeTest "(v 3,v 3)" "{v : Integer -> a, v : Integer -> b} -> a :*: b"
+              , textTypeTest "(v 3,v \"text\")" "{v : Integer -> a, v : Text -> b} -> a *: b"
+              , textTypeTest "(v,v)" "{v : a, v : b} -> a *: b"
+              , textTypeTest "(v 3,v 3)" "{v : Integer -> a, v : Integer -> b} -> a *: b"
               , textTypeTest "[v 3]" "{v : Integer -> a} -> List1 a"
-              , textTypeTest "(v 3,v False)" "{v : Integer -> a, v : Boolean -> b} -> a :*: b"
+              , textTypeTest "(v 3,v False)" "{v : Integer -> a, v : Boolean -> b} -> a *: b"
               , textTypeTest
                     "((v 3,v False),v 3)"
-                    "{v : Integer -> c, v : Boolean -> d, v : Integer -> b} -> (c :*: d) :*: b"
+                    "{v : Integer -> c, v : Boolean -> d, v : Integer -> b} -> (c *: d) *: b"
               , testTree
                     "function"
                     [ textTypeTest "let i: tvar -> tvar; i = id in i" "{} -> tvar -> tvar"
@@ -241,37 +241,37 @@ testType =
                     ]
               , textTypeTest "\\x => let v = x in [v,v,v]" "{} -> a -> List1 a"
               , textTypeTest "\\v1 v2 => [v1,v2]" "{} -> a -> a -> List1 a"
-              , textTypeTest "\\v1 v2 v3 => ([v1,v2],[v2,v3])" "{} -> c -> (c & a) -> a -> List1 c :*: List1 a"
+              , textTypeTest "\\v1 v2 v3 => ([v1,v2],[v2,v3])" "{} -> c -> (c & a) -> a -> List1 c *: List1 a"
               , textTypeTest
                     "\\v1 v2 v3 => (([v1,v2],[v2,v3]),[v3,v1])"
-                    "{} -> (c & a) -> (c & d) -> (d & a) -> (List1 c :*: List1 d) :*: List1 a"
+                    "{} -> (c & a) -> (c & d) -> (d & a) -> (List1 c *: List1 d) *: List1 a"
               , testTree
                     "inversion"
                     [ textTypeTest "\\x => let y : Integer; y = x in y" "{} -> Integer -> Integer"
                     , badInterpretTest "\\x => let y : Boolean | Number; y = x in y"
-                    , badInterpretTest "\\x => let y : (a -> a) :*: (Boolean | Number); y = x in y"
-                    , badInterpretTest "\\x => let y : (b -> b) :*: (Boolean | Number); y = x in y"
+                    , badInterpretTest "\\x => let y : (a -> a) *: (Boolean | Number); y = x in y"
+                    , badInterpretTest "\\x => let y : (b -> b) *: (Boolean | Number); y = x in y"
                     , textTypeTest
-                          "\\x => let y: Boolean :*: Number; y = (x,x) in y"
-                          "{} -> (Number & Boolean) -> Boolean :*: Number"
+                          "\\x => let y: Boolean *: Number; y = (x,x) in y"
+                          "{} -> (Number & Boolean) -> Boolean *: Number"
                     , textTypeTest
-                          "\\x1 => \\x2 => let y: Boolean :*: Number; y = (x1,x2) in y"
-                          "{} -> Boolean -> Number -> Boolean :*: Number"
+                          "\\x1 => \\x2 => let y: Boolean *: Number; y = (x1,x2) in y"
+                          "{} -> Boolean -> Number -> Boolean *: Number"
                     , textTypeTest
-                          "\\x1 => \\x2 => let y: (a -> a) :*: (a -> a :*: a); y = (x1,x2) in y"
-                          "{} -> (a -> a) -> (a -> a :*: a) -> (a -> a) :*: (a -> a :*: a)"
+                          "\\x1 => \\x2 => let y: (a -> a) *: (a -> a *: a); y = (x1,x2) in y"
+                          "{} -> (a -> a) -> (a -> a *: a) -> (a -> a) *: (a -> a *: a)"
                     , textTypeTest
-                          "\\x1 => \\x2 => let y: (a -> a) :*: (b -> b :*: b); y = (x1,x2) in y"
-                          "{} -> (a -> a) -> (b -> b :*: b) -> (a -> a) :*: (b -> b :*: b)"
+                          "\\x1 => \\x2 => let y: (a -> a) *: (b -> b *: b); y = (x1,x2) in y"
+                          "{} -> (a -> a) -> (b -> b *: b) -> (a -> a) *: (b -> b *: b)"
                     , textTypeTest
-                          "\\x1 => \\x2 => let y: (b -> b) :*: (a -> a :*: a); y = (x1,x2) in y"
-                          "{} -> (b -> b) -> (a -> a :*: a) -> (b -> b) :*: (a -> a :*: a)"
+                          "\\x1 => \\x2 => let y: (b -> b) *: (a -> a *: a); y = (x1,x2) in y"
+                          "{} -> (b -> b) -> (a -> a *: a) -> (b -> b) *: (a -> a *: a)"
                     , textTypeTest
-                          "\\x1 => \\x2 => let y: (a -> b) :*: (b -> a); y = (x1,x2) in y"
-                          "{} -> (a -> b) -> (b -> a) -> (a -> b) :*: (b -> a)"
+                          "\\x1 => \\x2 => let y: (a -> b) *: (b -> a); y = (x1,x2) in y"
+                          "{} -> (a -> b) -> (b -> a) -> (a -> b) *: (b -> a)"
                     , textTypeTest
-                          "\\x1 => \\x2 => let y: (c -> d) :*: (d -> c); y = (x1,x2) in y"
-                          "{} -> (c -> d) -> (d -> c) -> (c -> d) :*: (d -> c)"
+                          "\\x1 => \\x2 => let y: (c -> d) *: (d -> c); y = (x1,x2) in y"
+                          "{} -> (c -> d) -> (d -> c) -> (c -> d) *: (d -> c)"
                     ]
               , textTypeTest "let f : Entity; f = Nothing in f" "{} -> Entity"
               , textTypeTest "let f : Entity -> Entity; f = Just in f" "{} -> Entity -> Entity"
@@ -297,20 +297,20 @@ testType =
                           "{} -> Integer"
                     , textTypeTest
                           "let rec rcount x = case x of Nothing => 0; Just y => 1 + rcount y end end; rec rval = Just rval end in (rcount,(rval,rcount rval))"
-                          "{} -> ((rec e. Maybe e) -> Integer) :*: (rec e. Maybe e) :*: Integer"
+                          "{} -> ((rec e. Maybe e) -> Integer) *: (rec e. Maybe e) *: Integer"
                     ]
               , testTree
                     "tuple"
                     [ textTypeTest "()" "{} -> Unit"
-                    , textTypeTest "(1,False)" "{} -> Integer :*: Boolean"
-                    , textTypeTest "(1,(False,(3,True)))" "{} -> Integer :*: Boolean :*: Integer :*: Boolean"
-                    , textTypeTest "(1,False,(3,True))" "{} -> Integer :*: Boolean :*: Integer :*: Boolean"
-                    , textTypeTest "(1,(False,3,True))" "{} -> Integer :*: Boolean :*: Integer :*: Boolean"
-                    , textTypeTest "(1,False,3,True)" "{} -> Integer :*: Boolean :*: Integer :*: Boolean"
-                    , textTypeTest "\\x => case x of (1,False) => () end" "{} -> Literal :*: Literal -> Unit"
+                    , textTypeTest "(1,False)" "{} -> Integer *: Boolean"
+                    , textTypeTest "(1,(False,(3,True)))" "{} -> Integer *: Boolean *: Integer *: Boolean"
+                    , textTypeTest "(1,False,(3,True))" "{} -> Integer *: Boolean *: Integer *: Boolean"
+                    , textTypeTest "(1,(False,3,True))" "{} -> Integer *: Boolean *: Integer *: Boolean"
+                    , textTypeTest "(1,False,3,True)" "{} -> Integer *: Boolean *: Integer *: Boolean"
+                    , textTypeTest "\\x => case x of (1,False) => () end" "{} -> Literal *: Literal -> Unit"
                     , textTypeTest
                           "\\x => case x of (1,False,3,True) => () end"
-                          "{} -> Literal :*: Literal :*: Literal :*: Literal -> Unit"
+                          "{} -> Literal *: Literal *: Literal *: Literal -> Unit"
                     ]
               ]
         , testTree
@@ -318,10 +318,10 @@ testType =
               [ simplifyTypeTest "a" "None"
               , simplifyTypeTest "a -> (a|a)" "a -> a"
               , simplifyTypeTest "a -> b -> (a|b)" "a -> a -> a"
-              , simplifyTypeTest "a :*: b -> (a|b)" "a :*: a -> a"
-              , simplifyTypeTest "a :*: b -> a :*: (a | b)" "a :*: b -> a :*: (a | b)"
-              , simplifyTypeTest "a :*: b -> b :*: (a | b)" "a :*: b -> b :*: (a | b)"
-              , simplifyTypeTest "(a&b) -> a :*: b" "a -> a :*: a"
+              , simplifyTypeTest "a *: b -> (a|b)" "a *: a -> a"
+              , simplifyTypeTest "a *: b -> a *: (a | b)" "a *: b -> a *: (a | b)"
+              , simplifyTypeTest "a *: b -> b *: (a | b)" "a *: b -> b *: (a | b)"
+              , simplifyTypeTest "(a&b) -> a *: b" "a -> a *: a"
               , simplifyTypeTest "(a & Integer) -> Boolean" "Integer -> Boolean"
               , simplifyTypeTest "(b & Integer) -> Integer" "Integer -> Integer"
               , simplifyTypeTest "(a & Integer) -> b" "Integer -> None"
@@ -352,7 +352,7 @@ testType =
                     , simplifyTypeTest "Maybe (rec a. a)" "Maybe None"
                     , simplifyTypeTest "Maybe (rec a. List a)" "Maybe (rec a. List a)"
                     , simplifyTypeTest "Maybe (rec a. Integer)" "Maybe Integer"
-                    , expectFailBecause "ISSUE #61" $ simplifyTypeTest "rec a. rec b. a :*: b" "rec b. b :*: b"
+                    , expectFailBecause "ISSUE #61" $ simplifyTypeTest "rec a. rec b. a *: b" "rec b. b *: b"
                     , expectFailBecause "ISSUE #61" $
                       simplifyTypeTest "(rec a. Maybe a) | (rec b. List b)" "rec a. Maybe a | List a"
                     , expectFailBecause "ISSUE #61" $
@@ -386,22 +386,22 @@ testType =
               , textTypeTest "(identity !. identity) !$ {3}" "{} -> WholeRef +Integer"
               , textTypeTest
                     "property @Integer @Text !\"a\" !** property @Number @Text !\"b\""
-                    "{} -> {-Integer,+Number} ~> (Text :*: Text)"
+                    "{} -> {-Integer,+Number} ~> (Text *: Text)"
               , textTypeTest
                     "property @Text @Integer !\"a\" !++ property @Text @Number !\"b\""
-                    "{} -> (Text :+: Text) ~> {-Integer,+Number}"
+                    "{} -> (Text +: Text) ~> {-Integer,+Number}"
               , textTypeTest
                     "(property @Integer @Text !\"a\" !** property @Number @Text !\"b\") !$% {3}"
-                    "{} -> WholeRef (Text :*: Text)"
+                    "{} -> WholeRef (Text *: Text)"
               , textTypeTest
                     "(property @Integer @Text !\"a\" !** property @Number @Text !\"b\") !$ {3}"
-                    "{} -> WholeRef (Text :*: Text)"
+                    "{} -> WholeRef (Text *: Text)"
               , textTypeTest "property @Integer @Text !\"a\" !@% {\"x\"}" "{} -> FiniteSetRef Integer"
               , textTypeTest "property @Integer @Text !\"a\" !@ {\"x\"}" "{} -> FiniteSetRef Integer"
               , textTypeTest
                     "(property @Integer @Text !\"a\" !@% {\"x\"}) <:*:> (property @Number @Text !\"b\" !@% {\"y\"})"
-                    "{} -> FiniteSetRef (Integer :*: Number)"
-              , textTypeTest "pairWhole {3} {\"x\"}" "{} -> WholeRef {-(Any :*: Any),+(Integer :*: Text)}"
-              , textTypeTest "immutWhole $ pairWhole {3} {\"x\"}" "{} -> WholeRef +(Integer :*: Text)"
+                    "{} -> FiniteSetRef (Integer *: Number)"
+              , textTypeTest "pairWhole {3} {\"x\"}" "{} -> WholeRef {-(Any *: Any),+(Integer *: Text)}"
+              , textTypeTest "immutWhole $ pairWhole {3} {\"x\"}" "{} -> WholeRef +(Integer *: Text)"
               ]
         ]

@@ -32,7 +32,7 @@ For example:
 ```pinafore
 datatype D +a -b {-p,+q} of
     T1 (b -> [a]);
-    T2 (p :*: b -> q);
+    T2 (p *: b -> q);
 end;
 ```
 
@@ -93,26 +93,26 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 ### Cartesian Products
 
-`+a :*: +b`  
+`+a *: +b`  
 
-`Entity :*: Entity <: Entity`.
+`Entity *: Entity <: Entity`.
 
 There are no higher-arity tuples than pair.
 
 #### Constructors & Functions
-`\x y => (x, y): a -> b -> a :*: b`  
-`fst: a :*: Any -> a`  
-`snd: Any :*: b -> b`
+`\x y => (x, y): a -> b -> a *: b`  
+`fst: a *: Any -> a`  
+`snd: Any *: b -> b`
 
 ### Cartesian Sums
 
-`+a :+: +b`  
+`+a +: +b`  
 
-`Entity :+: Entity <: Entity`.
+`Entity +: Entity <: Entity`.
 
 #### Constructors & Functions
-`Left: a -> a :+: None`  
-`Right: b -> None :+: b`
+`Left: a -> a +: None`  
+`Right: b -> None +: b`
 
 ### Declared Closed Entity Types
 

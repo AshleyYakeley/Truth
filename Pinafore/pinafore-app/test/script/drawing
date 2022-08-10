@@ -5,7 +5,7 @@ import Cairo;
 import GTK();
 
 # transform from (-1 .. +1,-1 .. +1)
-scaleDrawing: WholeRef (Drawing a) -> WholeRef (Integer :*: Integer -> Drawing a);
+scaleDrawing: WholeRef (Drawing a) -> WholeRef (Integer *: Integer -> Drawing a);
 scaleDrawing rd = {\(w,h) => let
     size = min w h;
     in translate (w / 2, h / 2) $ scale (size / 2, size / 2) %rd};

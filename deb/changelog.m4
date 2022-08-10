@@ -13,7 +13,7 @@ PACKAGENAME (PACKAGEVERSION) DEBIANREL; urgency=medium
       . can now have subtypes
     - import lists
     - syntax
-      . type names (:+:), (:*:), List, Unit
+      . type names (+:), (*:), List, Unit
       . tuple constructor/pattern (,,) etc.
       . use => in lambda and case expressions
       . new syntax for datatype and closedtype definitions

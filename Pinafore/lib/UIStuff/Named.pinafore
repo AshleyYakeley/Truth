@@ -14,13 +14,13 @@ nameOrder: RefOrder Named;
 nameOrder = orderOn name alphabetical;
 
 #| Order a set of entities by their names.
-byName: FiniteSetRef {+a,+Named} -> WholeRef +(List (a :*: Text));
+byName: FiniteSetRef {+a,+Named} -> WholeRef +(List (a *: Text));
 byName ref = setList (mapOrder fst nameOrder) $ (identity !** name) !$$ ref;
 
 namedPane: (WholeRef +a -> Element) -> WholeRef +(a & Named) -> Pane;
 namedPane iui e = MkPane (name !$% e) (iui $ immutWhole e) {[]};
 
-nameColumn: WholeRef +Text :*: (Named -> WholeRef Text);
+nameColumn: WholeRef +Text *: (Named -> WholeRef Text);
 nameColumn = ({"Name"},\p => name !$ {p});
 
 namedTable: FiniteSetRef {a,+Named} -> (a -> Action Any) -> Maybe (WholeRef {a,+Named}) -> Element;

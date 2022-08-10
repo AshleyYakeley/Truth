@@ -597,9 +597,9 @@ baseLibEntries =
           , hasSubtypeRelationEntry @(Maybe Showable) @Showable "" $ functionToShim "show" textShowable
           ]
     , docTreeEntry
-          ":*:"
+          "*:"
           ""
-          [ mkTypeEntry ":*:" "" $ MkBoundType pairGroundType
+          [ mkTypeEntry "*:" "" $ MkBoundType pairGroundType
           , hasSubtypeRelationEntry @(Entity, Entity) @Entity "" $ functionToShim "pairEntityConvert" pairEntityConvert
           , hasSubtypeRelationEntry @(Showable, Showable) @Showable "" $ functionToShim "show" textShowable
           , mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
@@ -608,9 +608,9 @@ baseLibEntries =
           , mkValEntry "pair" "Construct a pair." $ \(a :: A) -> (a, a)
           ]
     , docTreeEntry
-          ":+:"
+          "+:"
           ""
-          [ mkTypeEntry ":+:" "" $ MkBoundType eitherGroundType
+          [ mkTypeEntry "+:" "" $ MkBoundType eitherGroundType
           , mkValPatEntry "Left" "Construct an Either from the left." (Left @A @B) $ \(v :: Either A B) ->
                 case v of
                     Left a -> Just (a, ())

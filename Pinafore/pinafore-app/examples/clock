@@ -4,12 +4,12 @@ import Colour;
 import Cairo;
 import GTK;
 
-scaleDrawing: Drawing a -> Integer :*: Integer -> Drawing a;
+scaleDrawing: Drawing a -> Integer *: Integer -> Drawing a;
 scaleDrawing d (w,h) = let
     size = min w h;
     in translate (w/2,h/2) $ scale (size/2,size/2) d;
 
-circle: Number :*: Number -> Number -> Path;
+circle: Number *: Number -> Number -> Path;
 circle centre radius = arc centre radius 0 (2 ~* pi);
 
 tickMark: Integer -> Drawing (List None);

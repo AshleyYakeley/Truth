@@ -12,7 +12,7 @@ Also, `case` and `do` statements are terminated with `end`.
 * There's no "top level" for declarations.
 All declarations, including type declarations, are local to a `let` block.
 * Only one equation is allowed for a function definition. Use `case` to match argument patterns.
-* Haskell's type constructors `Either`, `(,)`, `[]` and `()` become `:+:`, `:*:`, `List` and `Unit`.
+* Haskell's type constructors `Either`, `(,)`, `[]` and `()` become `+:`, `*:`, `List` and `Unit`.
 * There's no tuple type bigger than two. The tuple `(a,b,c)` is equivalent to `(a,(b,c))`, etc.
 * Lambda-expressions and case-expressions use `=>` instead of `->`.
 

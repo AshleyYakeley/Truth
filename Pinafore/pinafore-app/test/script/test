@@ -80,7 +80,7 @@ ui_people pp = GTK.exec $ do
     ];
     end;
 
-peopleByName : WholeRef +(List (Person :*: Text));
+peopleByName : WholeRef +(List (Person *: Text));
 peopleByName = setList (mapOrder fst $ orderOn name alphabetical) $ (identity !** name) !$$ people;
 
 ui_person : WholeRef Person -> GTK.Element;
@@ -256,14 +256,14 @@ window_cairoimage = let
     import Colour;
     import Cairo;
     import GTK;
-    dimensions: Integer :*: Integer;
+    dimensions: Integer *: Integer;
     dimensions = (400,400);
-    drawing: Integer :*: Integer -> Drawing Handler;
+    drawing: Integer *: Integer -> Drawing Handler;
     drawing (w,h) = let
         size = min w h;
         square: Drawing Handler;
         square = fill [moveTo (0, 0), lineTo (0, 1), lineTo (1, 1), lineTo (1, 0), lineTo (0, 0)];
-        squares: List ((Integer :*: Integer) :*: Colour);
+        squares: List ((Integer *: Integer) *: Colour);
         squares =
         [
             ((0,0), black),

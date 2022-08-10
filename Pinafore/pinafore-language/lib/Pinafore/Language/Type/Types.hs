@@ -46,9 +46,9 @@ list1GroundType =
 eitherGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] Either
 eitherGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily Either)|]) $ \ta tb ->
-        (precShow 3 ta <> " :+: " <> precShow 4 tb, 4)
+        (precShow 3 ta <> " +: " <> precShow 4 tb, 4)
 
 pairGroundType :: PinaforeGroundType '[ CoCCRVariance, CoCCRVariance] (,)
 pairGroundType =
     singleGroundType $(iowitness [t|'MkWitKind (SingletonFamily (,))|]) $ \ta tb ->
-        (precShow 2 ta <> " :*: " <> precShow 3 tb, 3)
+        (precShow 2 ta <> " *: " <> precShow 3 tb, 3)
