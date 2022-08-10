@@ -50,21 +50,22 @@ simplifyTypeInteractiveCommand = do
     polarity <- readPolarity
     simplifyPolarTypeInteractiveCommand polarity
 
-readSpecialCommand :: Text -> Parser InteractiveCommand
-readSpecialCommand "doc" = showDocInteractiveCommand
-readSpecialCommand "t" = showTypeInteractiveCommand False
-readSpecialCommand "type" = showTypeInteractiveCommand False
-readSpecialCommand "info" = showTypeInteractiveCommand True
-readSpecialCommand "simplify" = simplifyTypeInteractiveCommand
-readSpecialCommand "simplify-" = simplifyPolarTypeInteractiveCommand Negative
-readSpecialCommand cmd = return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd
+readSpecialCommands :: [Parser InteractiveCommand]
+readSpecialCommands =
+    [ readExactly readLName "doc" >> showDocInteractiveCommand
+    , readThis TokType >> showTypeInteractiveCommand False
+    , readExactly readLName "t" >> showTypeInteractiveCommand False
+    , readExactly readLName "info" >> showTypeInteractiveCommand True
+    , readExactly readLName "simplify" >> simplifyTypeInteractiveCommand
+    , readExactly readLName "simplify-" >> simplifyPolarTypeInteractiveCommand Negative
+    , readLName >>= \cmd -> return $ ErrorInteractiveCommand $ "unknown interactive command: " <> toText cmd
+    ]
 
 readInteractiveCommand :: Parser InteractiveCommand
 readInteractiveCommand =
     (do
          readThis TokTypeJudge
-         MkName cmd <- readLName
-         readSpecialCommand cmd) <|>
+         choice readSpecialCommands) <|>
     (readEnd >> return NullInteractiveCommand) <|>
     (try $ do
          dl <- readDoLine

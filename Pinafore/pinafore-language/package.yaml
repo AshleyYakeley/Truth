@@ -103,6 +103,7 @@ library:
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Data
       - Pinafore.Language.Grammar.Interpret.TypeDecl.StorableData
+      - Pinafore.Language.Grammar.Interpret.TypeDecl.Synonym
       - Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
       - Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
       - Pinafore.Language.Grammar.Interpret.TypeDecl

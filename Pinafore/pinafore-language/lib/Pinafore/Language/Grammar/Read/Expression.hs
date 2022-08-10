@@ -7,6 +7,7 @@ module Pinafore.Language.Grammar.Read.Expression
     , readDoLine
     ) where
 
+import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Language.Error
 import Pinafore.Language.Grammar.Read.Constructor
@@ -115,6 +116,19 @@ readTypeParameter =
           varp <- readNegativeParameter
           return $ RangeSyntaxTypeParameter varp varq))
 
+readPolarity :: Parser Polarity
+readPolarity =
+    (readExactlyThis TokOperator "+" >> return Positive) <|> (readExactlyThis TokOperator "-" >> return Negative)
+
+readSynonymDeclaration :: Parser SyntaxRecursiveDeclaration'
+readSynonymDeclaration = do
+    readThis TokType
+    mpolarity <- optional $ readPolarity
+    name <- readTypeNewName
+    readThis TokAssign
+    bodytype <- readType
+    return $ TypeSyntaxDeclaration name $ SynonymSyntaxTypeDeclaration mpolarity bodytype
+
 readDataTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readDataTypeDeclaration = do
     readThis TokDataType
@@ -149,7 +163,8 @@ readDynamicTypeDeclaration = do
 
 readTypeDeclaration :: Parser SyntaxRecursiveDeclaration'
 readTypeDeclaration =
-    readOpenEntityTypeDeclaration <|> readSubtypeDeclaration <|> readDataTypeDeclaration <|> readDynamicTypeDeclaration
+    readSynonymDeclaration <|> readOpenEntityTypeDeclaration <|> readSubtypeDeclaration <|> readDataTypeDeclaration <|>
+    readDynamicTypeDeclaration
 
 readBinding :: Parser SyntaxBinding
 readBinding = do

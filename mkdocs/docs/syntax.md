@@ -172,6 +172,7 @@ All declarations, including type declarations, are local to a `let` block.
     "rec" <semicolon-separated(<direct-declaration>)> "end"
 
 <direct-declaration> ::=
+    "type" <type-const> "=" <type> |
     "datatype" <type-const> <plain-datatype-parameters> <of(<plain-datatype-constructor>)> |
     "datatype" "storable" <type-const> <storable-datatype-parameters> <of(<storable-datatype-constructor>)> |
     "opentype" <type-const> |

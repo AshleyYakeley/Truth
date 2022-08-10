@@ -9,6 +9,7 @@ import Pinafore.Language.Grammar.Interpret.TypeDecl.Data
 import Pinafore.Language.Grammar.Interpret.TypeDecl.DynamicEntity
 import Pinafore.Language.Grammar.Interpret.TypeDecl.OpenEntity
 import Pinafore.Language.Grammar.Interpret.TypeDecl.StorableData
+import Pinafore.Language.Grammar.Interpret.TypeDecl.Synonym
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
@@ -17,6 +18,7 @@ import Pinafore.Markdown
 import Shapes
 
 typeDeclarationTypeBox :: FullName -> RawMarkdown -> SyntaxTypeDeclaration -> QInterpreter (QFixBox () ())
+typeDeclarationTypeBox name doc (SynonymSyntaxTypeDeclaration mpol bodytype) = makeSynonymTypeBox name doc mpol bodytype
 typeDeclarationTypeBox name doc OpenEntitySyntaxTypeDeclaration = makeOpenEntityTypeBox name doc
 typeDeclarationTypeBox name doc (StorableDatatypeSyntaxTypeDeclaration params sconss) =
     makeStorableDataTypeBox name doc params sconss
