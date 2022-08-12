@@ -954,6 +954,57 @@ testEntity =
                           "let rec datatype L +a of LNil; subtype datatype L1 of LCons a (L a) end end end in pass"
                     ]
               ]
+        , tGroup
+              "subtype-decl"
+              [ tDecls ["datatype T of T1 Integer end", "unT1 = \\(T1 x) => x"] $
+                tGroup
+                    "simple"
+                    [ tDecls ["subtype Integer <: T = T1"] $
+                      tGroup
+                          "Integer <: T"
+                          [ testExpectSuccess "pass"
+                          , subtypeTest False SRSingle "Integer" "T"
+                          , subtypeTest False SRNot "T" "Integer"
+                          ]
+                    , tDecls ["subtype T <: Integer = unT1"] $
+                      tGroup
+                          "T <: Integer"
+                          [ testExpectSuccess "pass"
+                          , subtypeTest False SRNot "Integer" "T"
+                          , subtypeTest False SRSingle "T" "Integer"
+                          ]
+                    ]
+              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = \\(T1 x) => x"] $
+                tGroup
+                    "parameter"
+                    [ tDecls ["subtype Maybe Integer <: T Integer = T1"] $
+                      tGroup
+                          "plain"
+                          [ testExpectSuccess "pass"
+                          , subtypeTest False SRSingle "Maybe Integer" "T Integer"
+                          , testExpectSuccess "testeq {Just 3} {unT1 $ Just 3}"
+                          ]
+                    , tDecls ["subtype Maybe a <: T a = T1"] $
+                      tGroup
+                          "tyvar"
+                          [ testExpectSuccess "pass"
+                          , subtypeTest False SRSingle "Maybe Integer" "T Integer"
+                          , testExpectSuccess "testeq {Just 3} {unT1 $ Just 3}"
+                          ]
+                    ]
+              , tDecls ["datatype T +a of T1 (Maybe a) end", "unT1 = \\(T1 x) => x"] $
+                tGroup
+                    "dependent"
+                    [ testExpectSuccess $
+                      "let x = 17; f = let subtype Unit <: T Integer = \\() => T1 (Just x) in unT1 () in testeq {Just 17} {f}"
+                    , testExpectSuccess $
+                      "let rec f = let subtype Unit <: T Integer = \\() => T1 (Just x) in unT1 (); x = 17 end in testeq {Just 17} {f}"
+                    , testExpectSuccess $
+                      "let f = \\x => let subtype Unit <: T Integer = \\() => T1 (Just x) in unT1 () in testeq {Just 17} {f 17}"
+                    , testExpectSuccess $
+                      "let f = \\x => let y = x; subtype Unit <: T Integer = \\() => T1 (Just y) in unT1 () in testeq {Just 17} {f 17}"
+                    ]
+              ]
         , tDecls ["closedtype T of T1 Text Number !\"T.T1\"; T2 !\"T.T2\"; T3 Boolean !\"T.T3\" end"] $
           tGroup
               "closedtype"
