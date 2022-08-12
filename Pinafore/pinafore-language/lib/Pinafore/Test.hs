@@ -10,6 +10,7 @@ module Pinafore.Test
     , Var(..)
     , PinaforeGroundType(..)
     , EntityGroundType(..)
+    , PinaforeValue
     , PinaforeType
     , PinaforePolyShim
     , PinaforeShimWit

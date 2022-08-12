@@ -76,7 +76,7 @@ spvals = let
                 FailureResult err -> Left $ pack $ show err
     in MkSpecialVals {..}
 
-parseValue :: (?pinafore :: PinaforeContext) => Text -> PinaforeInterpreter QValue
+parseValue :: (?pinafore :: PinaforeContext) => Text -> PinaforeInterpreter PinaforeValue
 parseValue text = do
     rexpr <- parseTopExpression text
     qEvalExpr rexpr
@@ -98,7 +98,7 @@ parseValueSubsume t text = do
     val <- parseValue text
     tsSubsumeValue @PinaforeTypeSystem t val
 
-showPinaforeRef :: QValue -> PinaforeInterpreter String
+showPinaforeRef :: PinaforeValue -> PinaforeInterpreter String
 showPinaforeRef val = catch (fmap show $ typedAnyToPinaforeVal @Showable val) (\(_ :: PinaforeError) -> return "<?>")
 
 type Interact = StateT SourcePos (ReaderStateT PinaforeInterpreter View)
@@ -108,13 +108,13 @@ interactRunSourceScoped sa = do
     spos <- get
     lift $ liftRS $ paramWith sourcePosParam spos $ sa
 
-interactEvalExpression :: PinaforeInterpreter QExpr -> Interact QValue
+interactEvalExpression :: PinaforeInterpreter PinaforeExpression -> Interact PinaforeValue
 interactEvalExpression texpr =
     interactRunSourceScoped $ do
         expr <- texpr
         qEvalExpr expr
 
-runValue :: Handle -> QValue -> Interact (PinaforeAction ())
+runValue :: Handle -> PinaforeValue -> Interact (PinaforeAction ())
 runValue outh val =
     interactRunSourceScoped $
     (typedAnyToPinaforeVal val) <|>

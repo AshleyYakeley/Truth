@@ -2,7 +2,7 @@
 
 module Language.Expression.Common.Bindings
     ( TSBindingData
-    , Binding
+    , TSBinding
     , singleBinding
     , bindingsNames
     , bindingSequentialLetSealedExpression
@@ -21,11 +21,11 @@ import Shapes
 type TSBindingData :: Type -> Type
 type family TSBindingData ts
 
-data Binding (ts :: Type) where
-    MkBinding :: TSVarID ts -> TSBindingData ts -> TSOuter ts (SubsumerExpression ts) -> Binding ts
+data TSBinding (ts :: Type) where
+    MkTSBinding :: TSVarID ts -> TSBindingData ts -> TSOuter ts (SubsumerExpression ts) -> TSBinding ts
 
-singleBinding :: TSVarID ts -> TSBindingData ts -> TSOuter ts (SubsumerExpression ts) -> Binding ts
-singleBinding name bd expr = MkBinding name bd expr
+singleBinding :: TSVarID ts -> TSBindingData ts -> TSOuter ts (SubsumerExpression ts) -> TSBinding ts
+singleBinding name bd expr = MkTSBinding name bd expr
 
 data UnifyExpression ts a =
     forall t. MkUnifyExpression (Unifier ts t)
@@ -75,9 +75,9 @@ instance (AbstractTypeSystem ts, SubsumeTypeSystem ts) => Monoid (Bound ts) wher
 
 singleBound ::
        forall ts. (AbstractTypeSystem ts, SubsumeTypeSystem ts)
-    => Binding ts
+    => TSBinding ts
     -> TSOuter ts (Bound ts)
-singleBound (MkBinding name bd mexpr) = do
+singleBound (MkTSBinding name bd mexpr) = do
     MkSubsumerExpression (decltype :: _ tdecl) subsexpr <- mexpr
     let
         abstractNames :: forall a. TSOpenExpression ts a -> TSOuter ts (UnifyExpression ts (tdecl -> a))
@@ -109,7 +109,7 @@ boundToMapRecursive (MkBound abstractNames (MkSubsumerOpenExpression (subsumer :
 -- for a recursive component
 bindingsRecursiveLetSealedExpression ::
        forall ts. (AbstractTypeSystem ts, SubsumeTypeSystem ts)
-    => [Binding ts]
+    => [TSBinding ts]
     -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
 bindingsRecursiveLetSealedExpression bindings =
     runRenamer @ts $ do
@@ -118,14 +118,14 @@ bindingsRecursiveLetSealedExpression bindings =
 
 bindingSequentialLetSealedExpression ::
        forall ts. (AbstractTypeSystem ts, SubsumeTypeSystem ts)
-    => Binding ts
+    => TSBinding ts
     -> TSInner ts (Map (TSVarID ts) (TSBindingData ts, TSSealedExpression ts))
-bindingSequentialLetSealedExpression (MkBinding name bd mexpr) =
+bindingSequentialLetSealedExpression (MkTSBinding name bd mexpr) =
     runRenamer @ts $ do
         MkSubsumerExpression tdecl (MkSubsumerOpenExpression subsumer expr) <- mexpr
         (subconv, ssubs) <- solveSubsumer @ts subsumer
         expr' <- subsumerExpressionSubstitute @ts ssubs expr
         return $ singletonMap name (bd, MkSealedExpression tdecl $ fmap subconv expr')
 
-bindingsNames :: [Binding ts] -> [TSVarID ts]
-bindingsNames bindings = fmap (\(MkBinding name _ _) -> name) bindings
+bindingsNames :: [TSBinding ts] -> [TSVarID ts]
+bindingsNames bindings = fmap (\(MkTSBinding name _ _) -> name) bindings

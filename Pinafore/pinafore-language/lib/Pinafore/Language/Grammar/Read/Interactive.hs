@@ -4,7 +4,6 @@ module Pinafore.Language.Grammar.Read.Interactive
     ) where
 
 import Pinafore.Language.Error
-import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret
 import Pinafore.Language.Grammar.Read.Expression
 import Pinafore.Language.Grammar.Read.Parser
@@ -17,10 +16,10 @@ import Shapes hiding (try)
 
 data InteractiveCommand
     = LetInteractiveCommand (PinaforeInterpreter --> PinaforeInterpreter)
-    | ExpressionInteractiveCommand (PinaforeInterpreter QExpr)
+    | ExpressionInteractiveCommand (PinaforeInterpreter PinaforeExpression)
     | ShowDocInteractiveCommand ReferenceName
     | ShowTypeInteractiveCommand Bool
-                                 (PinaforeInterpreter QExpr)
+                                 (PinaforeInterpreter PinaforeExpression)
     | forall polarity. SimplifyTypeInteractiveCommand (PolarityType polarity)
                                                       (PinaforeInterpreter (Some (PinaforeType polarity)))
     | ErrorInteractiveCommand Text

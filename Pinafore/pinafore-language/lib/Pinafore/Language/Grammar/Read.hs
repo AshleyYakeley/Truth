@@ -7,7 +7,6 @@ module Pinafore.Language.Grammar.Read
     , initialPos
     ) where
 
-import Pinafore.Language.Expression
 import Pinafore.Language.Grammar.Interpret
 import Pinafore.Language.Grammar.Read.Expression
 import Pinafore.Language.Grammar.Read.Interactive
@@ -17,7 +16,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes hiding (try)
 
-parseTopExpression :: Text -> PinaforeInterpreter QExpr
+parseTopExpression :: Text -> PinaforeInterpreter PinaforeExpression
 parseTopExpression = parseScopedReaderWhole $ fmap interpretTopExpression readExpression
 
 parseModule :: ModuleName -> Text -> PinaforeInterpreter PinaforeModule

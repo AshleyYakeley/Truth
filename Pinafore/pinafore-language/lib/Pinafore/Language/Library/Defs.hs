@@ -36,7 +36,7 @@ type EnA = MeetType Entity A
 
 data ScopeEntry
     = BindScopeEntry Name
-                     (Maybe (PinaforeContext -> PinaforeBinding))
+                     (Maybe (PinaforeContext -> PinaforeInterpreterBinding))
     | SubtypeScopeEntry (SubtypeConversionEntry PinaforeGroundType)
 
 data BindDoc = MkBindDoc

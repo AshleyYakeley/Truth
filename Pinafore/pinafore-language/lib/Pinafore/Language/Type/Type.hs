@@ -4,7 +4,6 @@ import Data.Shim
 import Language.Expression.Common
 import Language.Expression.Dolan
 import Pinafore.Language.Interpreter
-import Pinafore.Language.Name
 import Pinafore.Language.Shim
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type.Family
@@ -27,11 +26,15 @@ type PinaforeShimWit polarity = DolanShimWit PinaforeGroundType polarity
 type PinaforeArgumentsShimWit :: forall (dv :: DolanVariance) -> DolanVarianceKind dv -> Polarity -> Type -> Type
 type PinaforeArgumentsShimWit dv gt polarity = DolanArgumentsShimWit PinaforePolyShim dv PinaforeType gt polarity
 
-type PinaforeExpression = SealedExpression Name (PinaforeShimWit 'Negative) (PinaforeShimWit 'Positive)
+type PinaforeValue = TSValue PinaforeTypeSystem
 
-type PinaforePatternConstructor = PatternConstructor Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
+type PinaforeOpenExpression = TSOpenExpression PinaforeTypeSystem
 
-type PinaforePattern = SealedPattern Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
+type PinaforeExpression = TSSealedExpression PinaforeTypeSystem
+
+type PinaforePatternConstructor = TSPatternConstructor PinaforeTypeSystem
+
+type PinaforePattern = TSSealedPattern PinaforeTypeSystem
 
 type instance InterpreterFamilyType PinaforeTypeSystem =
      FamilialType
@@ -44,7 +47,9 @@ type PinaforeScope = Scope PinaforeTypeSystem
 
 type PinaforeModule = Module PinaforeTypeSystem
 
-type PinaforeBinding = InterpreterBinding PinaforeTypeSystem
+type PinaforeBinding = TSBinding PinaforeTypeSystem
+
+type PinaforeInterpreterBinding = InterpreterBinding PinaforeTypeSystem
 
 type PinaforeInterpreter = Interpreter PinaforeTypeSystem
 

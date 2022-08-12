@@ -17,7 +17,7 @@ import Pinafore.Language.Type
 import Pinafore.Language.VarID
 import Shapes
 
-type RefNotation = WriterT [(VarID, QExpr)] (StateT VarIDState PinaforeInterpreter)
+type RefNotation = WriterT [(VarID, PinaforeExpression)] (StateT VarIDState PinaforeInterpreter)
 
 sourcePosRefNotation :: SourcePos -> RefNotation --> RefNotation
 sourcePosRefNotation = paramWith $ liftParam $ liftParam sourcePosParam
@@ -38,7 +38,7 @@ hoistRefNotation (MkWMFunction mm) = hoist $ hoist mm
 runRefNotation :: RefNotation --> PinaforeInterpreter
 runRefNotation rexpr = evalStateT (runRefWriterT rexpr) firstVarIDState
 
-type RefExpression = RefNotation QExpr
+type RefExpression = RefNotation PinaforeExpression
 
 allocateVarRefNotation :: Name -> RefNotation VarID
 allocateVarRefNotation name = do
@@ -56,7 +56,7 @@ refNotationUnquote rexpr = do
 stdModuleName :: ModuleName
 stdModuleName = MkModuleName $ pure "Std"
 
-aplist :: QExpr -> [QExpr] -> PinaforeInterpreter QExpr
+aplist :: PinaforeExpression -> [PinaforeExpression] -> PinaforeInterpreter PinaforeExpression
 aplist expr [] = return expr
 aplist expr (arg:args) = do
     aprefExpr <- qName $ QualifiedReferenceName stdModuleName "applyWhole"

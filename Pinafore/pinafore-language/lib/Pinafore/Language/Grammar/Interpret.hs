@@ -30,7 +30,7 @@ import Shapes
 
 type instance EntryDoc PinaforeTypeSystem = DefDoc
 
-interpretPatternConstructor :: SyntaxConstructor -> PinaforeInterpreter (QPatternConstructor)
+interpretPatternConstructor :: SyntaxConstructor -> PinaforeInterpreter (PinaforePatternConstructor)
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
 interpretPatternConstructor (SLNumber v) =
     return $
@@ -47,7 +47,7 @@ interpretPatternConstructor (SLString v) =
 interpretPatternConstructor SLUnit = return $ qToPatternConstructor $ \() -> Just ()
 interpretPatternConstructor SLPair = return $ qToPatternConstructor $ \(a :: A, b :: B) -> Just $ (a, (b, ()))
 
-interpretPattern :: SyntaxPattern -> ScopeBuilder QPattern
+interpretPattern :: SyntaxPattern -> ScopeBuilder PinaforePattern
 interpretPattern (MkWithSourcePos _ AnySyntaxPattern) = return qAnyPattern
 interpretPattern (MkWithSourcePos _ (VarSyntaxPattern n)) = do
     vid <- allocateVarScopeBuilder n
@@ -78,11 +78,11 @@ interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
                         Just dtn -> do
                             tpw <- invertType tn
                             let
-                                pc :: QPatternConstructor
+                                pc :: PinaforePatternConstructor
                                 pc = toPatternConstructor dtn (ConsListType tpw NilListType) $ fmap $ \a -> (a, ())
                             qConstructPattern pc [pat]
 
-interpretPatternOrName :: SyntaxPattern -> Either Name (ScopeBuilder QPattern)
+interpretPatternOrName :: SyntaxPattern -> Either Name (ScopeBuilder PinaforePattern)
 interpretPatternOrName (MkWithSourcePos _ (VarSyntaxPattern n)) = Left n
 interpretPatternOrName pat = Right $ interpretPattern pat
 
@@ -284,7 +284,7 @@ showAnnotation AnnotAnchor = "anchor"
 showAnnotation AnnotPositiveType = "type"
 showAnnotation AnnotNegativeType = "type"
 
-interpretSpecialForm :: ReferenceName -> NonEmpty SyntaxAnnotation -> PinaforeInterpreter QValue
+interpretSpecialForm :: ReferenceName -> NonEmpty SyntaxAnnotation -> PinaforeInterpreter PinaforeValue
 interpretSpecialForm name annotations = do
     MkSpecialForm largs val <- lookupSpecialForm name
     margs <- getComposeInner $ specialFormArgs largs $ toList annotations
@@ -303,7 +303,7 @@ interpretConstant SCBind = return $ qConstExprAny $ jmToValue qbind
 interpretConstant SCBind_ = return $ qConstExprAny $ jmToValue qbind_
 interpretConstant (SCConstructor lit) = interpretConstructor lit
 
-interpretCase :: SyntaxCase -> RefNotation (QPattern, QExpr)
+interpretCase :: SyntaxCase -> RefNotation (PinaforePattern, PinaforeExpression)
 interpretCase (MkSyntaxCase spat sexpr) =
     runScopeBuilder (interpretPattern spat) $ \pat -> do
         expr <- interpretExpressionShadowed (sealedPatternNames pat) sexpr
@@ -353,7 +353,7 @@ interpretExpression' (SEList sexprs) = do
     exprs <- for sexprs interpretExpression
     liftRefNotation $ qSequenceExpr exprs
 
-checkExprVars :: MonadThrow PinaforeError m => QExpr -> m ()
+checkExprVars :: MonadThrow PinaforeError m => PinaforeExpression -> m ()
 checkExprVars (MkSealedExpression _ expr) = let
     getBadVarErrors ::
            forall w t. AllConstraint Show w
@@ -374,20 +374,20 @@ interpretClosedExpression sexpr = do
     checkExprVars expr
     return expr
 
-interpretBinding :: (DocSyntaxBinding, VarID) -> RefNotation QBinding
+interpretBinding :: (DocSyntaxBinding, VarID) -> RefNotation PinaforeBinding
 interpretBinding ((doc, MkSyntaxBinding spos mstype _ sexpr), vid) = do
     mtype <- liftRefNotation $ paramWith sourcePosParam spos $ for mstype interpretType
     expr <- interpretClosedExpression sexpr
     return $ qBindExpr vid doc mtype expr
 
-interpretBindings :: [(DocSyntaxBinding, VarID)] -> RefNotation [QBinding]
+interpretBindings :: [(DocSyntaxBinding, VarID)] -> RefNotation [PinaforeBinding]
 interpretBindings sbinds = for sbinds interpretBinding
 
 interpretTopDeclarations :: SyntaxTopDeclarations -> PinaforeInterpreter --> PinaforeInterpreter
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) ma =
     paramWith sourcePosParam spos $ runRefNotation $ interpretDeclarations sdecls $ liftRefNotation ma
 
-interpretTopExpression :: SyntaxExpression -> PinaforeInterpreter QExpr
+interpretTopExpression :: SyntaxExpression -> PinaforeInterpreter PinaforeExpression
 interpretTopExpression sexpr = runRefNotation $ interpretExpression sexpr
 
 interpretGeneralSubtypeRelation :: SyntaxType -> SyntaxType -> SyntaxExpression -> ScopeBuilder ()

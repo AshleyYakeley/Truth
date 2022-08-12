@@ -72,7 +72,7 @@ getLibraryModuleModule libmod = do
     let
         bindDocs :: [BindDoc]
         bindDocs = toList libmod
-        seBinding :: ScopeEntry -> Maybe (Name, PinaforeBinding)
+        seBinding :: ScopeEntry -> Maybe (Name, PinaforeInterpreterBinding)
         seBinding (BindScopeEntry name mb) = do
             b <- mb
             return (name, b ?pinafore)
