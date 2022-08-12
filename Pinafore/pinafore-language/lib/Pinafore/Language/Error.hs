@@ -20,8 +20,6 @@ data ErrorType
     | SpecialFormWrongAnnotationsError ReferenceName
                                        [Text]
                                        [Text]
-    | TypeNotOpenEntityError Text
-    | TypeNotSimpleEntityError Text
     | LookupConstructorUnknownError ReferenceName
     | DeclareTypeDuplicateError Name
     | DeclareConstructorDuplicateError Name
@@ -37,7 +35,9 @@ data ErrorType
     | InterpretTypeExprBadLimitError Polarity
     | InterpretTypeExprBadJoinMeetError Polarity
     | InterpretTypeNotAmbipolarError Text
+    | InterpretTypeNotGroundedError Text
     | InterpretTypeNotEntityError Text
+    | InterpretTypeNotSimpleEntityError Text
     | InterpretTypeNotDynamicEntityError Text
     | InterpretTypeNotOpenEntityError Text
     | InterpretTypeNotConcreteDynamicEntityError Text
@@ -107,8 +107,6 @@ instance Show ErrorType where
         "wrong annotations for special form " <>
         show n <>
         ": expecting " <> intercalate " " (fmap unpack exp) <> ", found " <> intercalate " " (fmap unpack found)
-    show (TypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
-    show (TypeNotSimpleEntityError t) = unpack t <> " is not a simple entity type"
     show (LookupConstructorUnknownError n) = "unknown constructor: " <> show n
     show (DeclareTypeDuplicateError n) = "duplicate type: " <> show n
     show (DeclareConstructorDuplicateError n) = "duplicate constructor: " <> show n
@@ -124,7 +122,9 @@ instance Show ErrorType where
     show (InterpretTypeExprBadJoinMeetError Positive) = "\"&\" in positive type"
     show (InterpretTypeExprBadJoinMeetError Negative) = "\"|\" in negative type"
     show (InterpretTypeNotAmbipolarError t) = unpack t <> " is not an ambipolar type"
+    show (InterpretTypeNotGroundedError t) = unpack t <> " is not a grounded type"
     show (InterpretTypeNotEntityError t) = unpack t <> " is not an entity type"
+    show (InterpretTypeNotSimpleEntityError t) = unpack t <> " is not a simple entity type"
     show (InterpretTypeNotDynamicEntityError t) = unpack t <> " is not a dynamic entity type"
     show (InterpretTypeNotOpenEntityError t) = unpack t <> " is not an open entity type"
     show (InterpretTypeNotConcreteDynamicEntityError t) = unpack t <> " is not a concrete dynamic entity type"

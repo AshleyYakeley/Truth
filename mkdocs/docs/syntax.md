@@ -175,7 +175,7 @@ All declarations, including type declarations, are local to a `let` block.
 <direct-declaration> ::=
     "datatype" <type-const> <datatype-parameters> "of" <datatype-body> "end" |
     "opentype" <type-const> |
-    "subtype" <type-const> "<:" <type-const> |
+    "subtype" <type> "<:" <type> <subtype-body> |
     "closedtype" <type-const> <closedtype-parameters> "of" <closedtype-body> "end" |
     "dynamictype" <type-const> "=" <dynamictype-constructors> |
     <binding>
@@ -184,6 +184,8 @@ All declarations, including type declarations, are local to a `let` block.
     "expose" <names>
 
 <module-name> ::= uname | uname "." <module-name>
+
+<subtype-body> ::=  | "=" <expression>
 
 <binding> ::=
     <type-signature> ";" <unsigned-binding> |

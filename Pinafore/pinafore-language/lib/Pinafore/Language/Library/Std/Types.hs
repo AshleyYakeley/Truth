@@ -35,15 +35,26 @@ eitherShimWit swa swb =
             ConsCCRArguments (CoCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
 
 funcShimWit ::
-       forall a b. PinaforeShimWit 'Negative a -> PinaforeShimWit 'Positive b -> PinaforeShimWit 'Positive (a -> b)
-funcShimWit swa swb =
-    unNegShimWit swa $ \ta conva ->
-        unPosShimWit swb $ \tb convb ->
-            mapPosShimWit (applyCoPolyShim ccrVariation ccrVariation (ccontramap conva) convb) $
-            singleDolanShimWit $
-            mkPolarShimWit $
-            GroundedDolanSingularType funcGroundType $
-            ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
+       forall polarity a b. Is PolarityType polarity
+    => PinaforeShimWit (InvertPolarity polarity) a
+    -> PinaforeShimWit polarity b
+    -> PinaforeShimWit polarity (a -> b)
+funcShimWit (MkShimWit ta conva) (MkShimWit tb convb) = let
+    fshim =
+        case polarityType @polarity of
+            PositiveType ->
+                case (conva, convb) of
+                    (MkPolarMap shima, MkPolarMap shimb) ->
+                        MkPolarMap $ applyCoPolyShim ccrVariation ccrVariation (ccontramap shima) shimb
+            NegativeType ->
+                case (conva, convb) of
+                    (MkPolarMap shima, MkPolarMap shimb) ->
+                        MkPolarMap $ applyCoPolyShim ccrVariation ccrVariation (ccontramap shima) shimb
+    in mapPolarShimWit fshim $
+       singleDolanShimWit $
+       mkPolarShimWit $
+       GroundedDolanSingularType funcGroundType $
+       ConsCCRArguments (ContraCCRPolarArgument ta) $ ConsCCRArguments (CoCCRPolarArgument tb) NilCCRArguments
 
 actionShimWit :: forall a. PinaforeShimWit 'Positive a -> PinaforeShimWit 'Positive (PinaforeAction a)
 actionShimWit swa =

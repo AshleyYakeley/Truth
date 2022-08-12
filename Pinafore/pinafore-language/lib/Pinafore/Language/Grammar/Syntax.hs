@@ -60,6 +60,7 @@ data SyntaxRecursiveDeclaration
     | SubtypeSyntaxDeclaration SourcePos
                                SyntaxType
                                SyntaxType
+                               (Maybe SyntaxExpression)
     | BindingSyntaxDeclaration SyntaxBinding
     deriving (Eq)
 
@@ -260,7 +261,7 @@ instance HasSourcePos SyntaxTopDeclarations where
 instance HasSourcePos SyntaxRecursiveDeclaration where
     getSourcePos (BindingSyntaxDeclaration bind) = getSourcePos bind
     getSourcePos (TypeSyntaxDeclaration spos _ _) = spos
-    getSourcePos (SubtypeSyntaxDeclaration spos _ _) = spos
+    getSourcePos (SubtypeSyntaxDeclaration spos _ _ _) = spos
 
 instance HasSourcePos SyntaxDeclaration where
     getSourcePos (DirectSyntaxDeclaration decl) = getSourcePos decl

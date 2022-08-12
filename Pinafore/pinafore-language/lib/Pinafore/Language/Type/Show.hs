@@ -112,3 +112,13 @@ instance forall (ground :: GroundTypeKind) (polarity :: Polarity) t. (GroundExpr
                 [t] -> t
                 _ -> "{" <> ointercalate "," pieces <> "}"
         in (text, 0)
+
+instance forall (ground :: GroundTypeKind) t. (IsDolanGroundType ground, GroundExprShow ground) =>
+             ExprShow (NonpolarDolanType ground t) where
+    exprShowPrec npt =
+        case nonpolarToDolanType @ground @'Positive npt of
+            MkShimWit pt _ -> exprShowPrec pt
+
+instance forall (ground :: GroundTypeKind). (IsDolanGroundType ground, GroundExprShow ground) =>
+             AllConstraint ExprShow (NonpolarDolanType ground) where
+    allConstraint = Dict

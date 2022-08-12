@@ -49,16 +49,23 @@ tsUnifyRigidValue (MkSomeOf witp val) =
         conv <- solveUnifyPosNegShimWit @ts witp' witn'
         return $ shimToFunction conv val
 
+tsUnifyValueTo ::
+       forall ts t. CompleteTypeSystem ts
+    => TSNegShimWit ts t
+    -> TSValue ts
+    -> TSInner ts t
+tsUnifyValueTo witn (MkSomeOf witp val) =
+    runRenamer @ts $ do
+        witp' <- rename @ts FreeName witp
+        witn' <- rename @ts RigidName witn
+        conv <- solveUnifyPosNegShimWit @ts witp' witn'
+        return $ shimToFunction conv val
+
 tsUnifyValue ::
        forall ts t. (CompleteTypeSystem ts, FromPolarShimWit (TSShim ts) (TSNegWitness ts) t)
     => TSValue ts
     -> TSInner ts t
-tsUnifyValue (MkSomeOf witp val) =
-    runRenamer @ts $ do
-        witp' <- rename @ts FreeName witp
-        witn' <- rename @ts RigidName fromPolarShimWit
-        conv <- solveUnifyPosNegShimWit @ts witp' witn'
-        return $ shimToFunction conv val
+tsUnifyValue = tsUnifyValueTo @ts fromPolarShimWit
 
 tsSubsume ::
        forall ts inf decl. CompleteTypeSystem ts

@@ -4,19 +4,14 @@ module Pinafore.Language.Grammar.Interpret.Type
     , interpretMonoEntityType
     , interpretConcreteDynamicEntityType
     , interpretNonpolarType
-    , interpretSubtypeRelation
     ) where
 
-import Pinafore.Base
-import Pinafore.Language.DefDoc
 import Pinafore.Language.Error
 import Pinafore.Language.ExprShow
-import Pinafore.Language.Grammar.Interpret.ScopeBuilder
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.Interpreter
 import Pinafore.Language.Name
 import Pinafore.Language.Type
-import Pinafore.Markdown
 import Shapes
 
 type PinaforeTypeM = MPolarW PinaforeType
@@ -195,37 +190,3 @@ interpretGroundTypeConst :: SyntaxGroundType -> PinaforeInterpreter PinaforeGrou
 interpretGroundTypeConst (ConstSyntaxGroundType n) = do
     MkBoundType t <- lookupBoundType n
     return $ MkPinaforeGroundTypeM $ MkSome t
-
-interpretSubtypeRelation' :: SyntaxType -> SyntaxType -> ScopeBuilder ()
-interpretSubtypeRelation' sta stb =
-    interpScopeBuilder $ do
-        ata <- lift $ interpretMonoEntityType sta
-        atb <- lift $ interpretMonoEntityType stb
-        case ata of
-            MkSome ta ->
-                case ta of
-                    MkMonoType tea NilArguments ->
-                        case atb of
-                            MkSome tb ->
-                                case tb of
-                                    MkMonoType teb@(MkEntityGroundType tfb _) NilArguments
-                                        | Just (MkLiftedFamily _) <- matchFamilyType openEntityFamilyWitness tfb ->
-                                            registerSubtypeConversion $
-                                            simpleSubtypeConversionEntry
-                                                (entityToPinaforeGroundType NilListType tea)
-                                                (entityToPinaforeGroundType NilListType teb) $
-                                            nilSubtypeConversion $
-                                            coerceShim "open entity" .
-                                            (functionToShim "entityConvert" $
-                                             entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
-                                    _ -> lift $ throw $ TypeNotOpenEntityError $ exprShow tb
-                    _ -> lift $ throw $ TypeNotSimpleEntityError $ exprShow ta
-
-interpretSubtypeRelation :: Markdown -> SyntaxType -> SyntaxType -> ScopeBuilder Docs
-interpretSubtypeRelation docDescription sta stb = do
-    interpretSubtypeRelation' sta stb
-    let
-        diSubtype = exprShow sta
-        diSupertype = exprShow stb
-        docItem = SubtypeRelationDocItem {..}
-    return $ defDocs MkDefDoc {..}

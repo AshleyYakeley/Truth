@@ -19,6 +19,7 @@ import Pinafore.Language.Grammar.Interpret.TypeDecl
 import Pinafore.Language.Grammar.Syntax
 import Pinafore.Language.If
 import Pinafore.Language.Interpreter
+import Pinafore.Language.Library.Std.Types
 import Pinafore.Language.Name
 import Pinafore.Language.SpecialForm
 import Pinafore.Language.Type
@@ -148,8 +149,8 @@ interpretRecursiveDocDeclarations ddecls = do
                     docItem = TypeDocItem {..}
                     docDescription = doc
                     in (pure (spos, name, doc, defn), mempty, mempty, pure $ EntryDocTreeEntry $ MkDefDoc {..})
-                SubtypeSyntaxDeclaration spos sta stb ->
-                    (mempty, sourcePosScopeBuilder spos >> interpretSubtypeRelation doc sta stb, mempty, mempty)
+                SubtypeSyntaxDeclaration spos sta stb mbody ->
+                    (mempty, sourcePosScopeBuilder spos >> interpretSubtypeRelation doc sta stb mbody, mempty, mempty)
                 BindingSyntaxDeclaration sbind@(MkSyntaxBinding _ mtype name _) -> let
                     diName = name
                     diType =
@@ -214,9 +215,9 @@ interpretDocDeclaration (MkSyntaxWithDoc doc decl) =
                 docItem = TypeDocItem {..}
                 docDescription = doc
             return $ defDocs MkDefDoc {..}
-        DirectSyntaxDeclaration (SubtypeSyntaxDeclaration spos sta stb) -> do
+        DirectSyntaxDeclaration (SubtypeSyntaxDeclaration spos sta stb mbody) -> do
             sourcePosScopeBuilder spos
-            interpretSubtypeRelation doc sta stb
+            interpretSubtypeRelation doc sta stb mbody
         DirectSyntaxDeclaration (BindingSyntaxDeclaration sbind@(MkSyntaxBinding _ mtype name _)) -> do
             interpretSequentialLetBinding (doc, sbind)
             let
@@ -367,11 +368,16 @@ checkExprVars (MkSealedExpression _ expr) = let
            [] -> return ()
            errs -> throw $ MkPinaforeError errs
 
+interpretClosedExpression :: SyntaxExpression -> RefExpression
+interpretClosedExpression sexpr = do
+    expr <- interpretExpression sexpr
+    checkExprVars expr
+    return expr
+
 interpretBinding :: (DocSyntaxBinding, VarID) -> RefNotation QBinding
 interpretBinding ((doc, MkSyntaxBinding spos mstype _ sexpr), vid) = do
     mtype <- liftRefNotation $ paramWith sourcePosParam spos $ for mstype interpretType
-    expr <- interpretExpression sexpr
-    checkExprVars expr
+    expr <- interpretClosedExpression sexpr
     return $ qBindExpr vid doc mtype expr
 
 interpretBindings :: [(DocSyntaxBinding, VarID)] -> RefNotation [QBinding]
@@ -383,6 +389,71 @@ interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) ma =
 
 interpretTopExpression :: SyntaxExpression -> PinaforeInterpreter QExpr
 interpretTopExpression sexpr = runRefNotation $ interpretExpression sexpr
+
+interpretGeneralSubtypeRelation :: SyntaxType -> SyntaxType -> SyntaxExpression -> ScopeBuilder ()
+interpretGeneralSubtypeRelation sta stb sbody = do
+    interpScopeBuilder $ do
+        ata <- lift $ interpretNonpolarType sta
+        atb <- lift $ interpretNonpolarType stb
+        case ata of
+            MkSome (GroundedNonpolarType gta (npargsa :: _ a)) ->
+                case atb of
+                    MkSome (GroundedNonpolarType gtb (npargsb :: _ b)) -> do
+                        let
+                            argsa ::
+                                   forall polarity. Is PolarityType polarity
+                                => PinaforeArgumentsShimWit _ _ polarity a
+                            argsa = nonpolarToDolanArguments (groundTypeVarianceMap gta) npargsa
+                            argsb ::
+                                   forall polarity. Is PolarityType polarity
+                                => PinaforeArgumentsShimWit _ _ polarity b
+                            argsb = nonpolarToDolanArguments (groundTypeVarianceMap gtb) npargsb
+                            funcWit :: PinaforeShimWit 'Negative (a -> b)
+                            funcWit = funcShimWit (groundedDolanShimWit gta argsa) (groundedDolanShimWit gtb argsb)
+                        body <- lift $ interpretTopExpression sbody
+                        convval <- lift $ qEvalExpr body
+                        conv <- lift $ typedAnyToVal funcWit convval
+                        registerSubtypeConversion $
+                            simpleSubtypeConversionEntry gta gtb $
+                            subtypeConversion gta argsa gtb argsb $ functionToShim "user-subtype" conv
+                    MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
+            MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
+
+interpretOpenEntitySubtypeRelation :: SyntaxType -> SyntaxType -> ScopeBuilder ()
+interpretOpenEntitySubtypeRelation sta stb =
+    interpScopeBuilder $ do
+        ata <- lift $ interpretMonoEntityType sta
+        atb <- lift $ interpretMonoEntityType stb
+        case ata of
+            MkSome ta ->
+                case ta of
+                    MkMonoType tea NilArguments ->
+                        case atb of
+                            MkSome tb ->
+                                case tb of
+                                    MkMonoType teb@(MkEntityGroundType tfb _) NilArguments
+                                        | Just (MkLiftedFamily _) <- matchFamilyType openEntityFamilyWitness tfb ->
+                                            registerSubtypeConversion $
+                                            simpleSubtypeConversionEntry
+                                                (entityToPinaforeGroundType NilListType tea)
+                                                (entityToPinaforeGroundType NilListType teb) $
+                                            nilSubtypeConversion $
+                                            coerceShim "open entity" .
+                                            (functionToShim "entityConvert" $
+                                             entityAdapterConvert $ entityGroundTypeAdapter tea NilArguments)
+                                    _ -> lift $ throw $ InterpretTypeNotOpenEntityError $ exprShow tb
+                    _ -> lift $ throw $ InterpretTypeNotSimpleEntityError $ exprShow ta
+
+interpretSubtypeRelation :: Markdown -> SyntaxType -> SyntaxType -> Maybe SyntaxExpression -> ScopeBuilder Docs
+interpretSubtypeRelation docDescription sta stb mbody = do
+    case mbody of
+        Just body -> interpretGeneralSubtypeRelation sta stb body
+        Nothing -> interpretOpenEntitySubtypeRelation sta stb
+    let
+        diSubtype = exprShow sta
+        diSupertype = exprShow stb
+        docItem = SubtypeRelationDocItem {..}
+    return $ defDocs MkDefDoc {..}
 
 interpretModule :: ModuleName -> SyntaxModule -> PinaforeInterpreter PinaforeModule
 interpretModule moduleName smod = do

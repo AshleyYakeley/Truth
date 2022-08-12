@@ -74,7 +74,6 @@ library:
       - Pinafore.Language.Grammar.Read.Token
       - Pinafore.Language.Grammar.Read.Parser
       - Pinafore.Language.Grammar.Read.Type
-      - Pinafore.Language.Grammar.Read.TypeDecls
       - Pinafore.Language.Grammar.Read.Infix
       - Pinafore.Language.Grammar.Read.Constructor
       - Pinafore.Language.Grammar.Read.Pattern
@@ -84,7 +83,6 @@ library:
       - Pinafore.Language.Grammar.Interpret.RefNotation
       - Pinafore.Language.Grammar.Interpret.ScopeBuilder
       - Pinafore.Language.Grammar.Interpret.Type
-
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Mapping
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Representation
       - Pinafore.Language.Grammar.Interpret.TypeDecl.Parameter
