@@ -15,8 +15,7 @@ instance Show edit => Show (OneEdit f edit) where
 instance Floating edit edit => Floating (OneEdit f edit) (OneEdit f edit) where
     floatingUpdate (MkOneEdit e1) (MkOneEdit e2) = MkOneEdit $ floatingUpdate e1 e2
 
-type instance EditReader (OneEdit f edit) =
-     OneReader f (EditReader edit)
+type instance EditReader (OneEdit f edit) = OneReader f (EditReader edit)
 
 instance (MonadInner f, ApplicableEdit edit) => ApplicableEdit (OneEdit f edit) where
     applyEdit (MkOneEdit _edita) mr ReadHasOne = mr ReadHasOne
@@ -33,8 +32,7 @@ instance (MonadInner f, InvertibleEdit edit) => InvertibleEdit (OneEdit f edit) 
 newtype OneUpdate (f :: Type -> Type) update =
     MkOneUpdate update
 
-type instance UpdateEdit (OneUpdate f update) =
-     OneEdit f (UpdateEdit update)
+type instance UpdateEdit (OneUpdate f update) = OneEdit f (UpdateEdit update)
 
 instance IsUpdate update => IsUpdate (OneUpdate f update) where
     editUpdate (MkOneEdit edit) = MkOneUpdate $ editUpdate edit

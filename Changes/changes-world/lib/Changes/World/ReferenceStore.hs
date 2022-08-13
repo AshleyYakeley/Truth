@@ -17,8 +17,7 @@ data SingleReferenceEdit (edit :: Type)
     | SingleReferenceDelete
     | SingleReferenceRecover Int
 
-type instance EditReader (SingleReferenceEdit edit) =
-     SingleReferenceReader edit
+type instance EditReader (SingleReferenceEdit edit) = SingleReferenceReader edit
 
 instance InvertibleEdit (SingleReferenceEdit edit) where
     invertEdits edits mr =

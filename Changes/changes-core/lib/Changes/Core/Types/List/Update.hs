@@ -25,8 +25,7 @@ data ListUpdate update where
     ListUpdateInsert :: SequencePoint -> UpdateSubject update -> ListUpdate update
     ListUpdateClear :: ListUpdate update
 
-type instance UpdateEdit (ListUpdate update) =
-     ListEdit (UpdateEdit update)
+type instance UpdateEdit (ListUpdate update) = ListEdit (UpdateEdit update)
 
 instance IsUpdate update => IsUpdate (ListUpdate update) where
     editUpdate (ListEditItem p edit) = ListUpdateItem p $ editUpdate edit

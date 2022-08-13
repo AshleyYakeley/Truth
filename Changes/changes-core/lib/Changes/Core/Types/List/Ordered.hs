@@ -32,8 +32,7 @@ instance Floating (OrderedListEdit edit) (OrderedListEdit edit) where
     floatingUpdate edit (OrderedListEditDelete i) = OrderedListEditDelete (floatingUpdate edit i)
     floatingUpdate _edit OrderedListEditClear = OrderedListEditClear
 
-type instance EditReader (OrderedListEdit edit) =
-     ListReader (EditReader edit)
+type instance EditReader (OrderedListEdit edit) = ListReader (EditReader edit)
 
 instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => ApplicableEdit (OrderedListEdit edit) where
     applyEdit (OrderedListEditItem p edit) mr (ListReadItem i rd)
@@ -74,8 +73,7 @@ data OrderedListUpdate update where
     OrderedListUpdateInsert :: SequencePoint -> UpdateSubject update -> OrderedListUpdate update
     OrderedListUpdateClear :: OrderedListUpdate update
 
-type instance UpdateEdit (OrderedListUpdate update) =
-     OrderedListEdit (UpdateEdit update)
+type instance UpdateEdit (OrderedListUpdate update) = OrderedListEdit (UpdateEdit update)
 
 instance FullSubjectReader (UpdateReader update) => FullUpdate (OrderedListUpdate update) where
     replaceUpdate rd push = do

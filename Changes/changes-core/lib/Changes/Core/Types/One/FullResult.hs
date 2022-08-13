@@ -11,8 +11,7 @@ data FullResultOneEdit (f :: Type -> Type) edit where
     SuccessFullResultOneEdit :: edit -> FullResultOneEdit f edit
     NewFullResultOneEdit :: f (EditSubject edit) -> FullResultOneEdit f edit
 
-type instance EditReader (FullResultOneEdit f edit) =
-     OneReader f (EditReader edit)
+type instance EditReader (FullResultOneEdit f edit) = OneReader f (EditReader edit)
 
 instance Floating edit edit => Floating (FullResultOneEdit f edit) (FullResultOneEdit f edit) where
     floatingUpdate (SuccessFullResultOneEdit e1) (SuccessFullResultOneEdit e2) =
@@ -51,8 +50,7 @@ instance (MonadInner f, FullSubjectReader (EditReader edit), ApplicableEdit edit
 newtype FullResultOneUpdate f update =
     MkFullResultOneUpdate (ResultOneUpdate f update)
 
-type instance UpdateEdit (FullResultOneUpdate f update) =
-     FullResultOneEdit f (UpdateEdit update)
+type instance UpdateEdit (FullResultOneUpdate f update) = FullResultOneEdit f (UpdateEdit update)
 
 instance (Functor f, IsUpdate update) => IsUpdate (FullResultOneUpdate f update) where
     editUpdate (SuccessFullResultOneEdit edit) = MkFullResultOneUpdate $ SuccessResultOneUpdate $ editUpdate edit

@@ -68,8 +68,7 @@ type PinaforeTypeSystem = DolanTypeSystem PinaforeGroundType
 
 type instance TSBindingData PinaforeTypeSystem = Markdown
 
-type instance InterpreterGroundType PinaforeTypeSystem =
-     PinaforeGroundType
+type instance InterpreterGroundType PinaforeTypeSystem = PinaforeGroundType
 
 type instance DolanPolyShim PinaforeGroundType = PinaforePolyShim
 

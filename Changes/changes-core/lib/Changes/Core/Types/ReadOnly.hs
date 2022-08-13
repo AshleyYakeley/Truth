@@ -10,8 +10,7 @@ newtype ReadOnlyUpdate update = MkReadOnlyUpdate
     { unReadOnlyUpdate :: update
     }
 
-type instance UpdateEdit (ReadOnlyUpdate update) =
-     ConstEdit (UpdateReader update)
+type instance UpdateEdit (ReadOnlyUpdate update) = ConstEdit (UpdateReader update)
 
 instance IsUpdate (ReadOnlyUpdate update) where
     editUpdate = never

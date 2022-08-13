@@ -117,8 +117,7 @@ instance (TestEquality sel, TupleEditWitness ApplicableEdit sel) => Floating (Tu
                     Dict -> MkTupleUpdateEdit s2 $ floatingUpdate e1 e2
             Nothing -> edit
 
-type instance EditReader (TupleUpdateEdit sel) =
-     TupleUpdateReader sel
+type instance EditReader (TupleUpdateEdit sel) = TupleUpdateReader sel
 
 instance (TestEquality sel, TupleEditWitness ApplicableEdit sel) => ApplicableEdit (TupleUpdateEdit sel) where
     applyEdit (MkTupleUpdateEdit aggedite edit) mr aggreader@(MkTupleUpdateReader aggeditr rd) =

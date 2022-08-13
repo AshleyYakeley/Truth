@@ -36,8 +36,7 @@ type PinaforePatternConstructor = TSPatternConstructor PinaforeTypeSystem
 
 type PinaforePattern = TSSealedPattern PinaforeTypeSystem
 
-type instance InterpreterFamilyType PinaforeTypeSystem =
-     FamilialType
+type instance InterpreterFamilyType PinaforeTypeSystem = FamilialType
 
 type PinaforeSpecialVals = SpecialVals PinaforeTypeSystem
 
