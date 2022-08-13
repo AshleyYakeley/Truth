@@ -54,6 +54,8 @@ import Text.Parsec.Pos (SourcePos, initialPos)
 
 type family InterpreterGroundType (ts :: Type) :: GroundTypeKind
 
+type instance forall (gt :: GroundTypeKind). InterpreterGroundType (DolanTypeSystem gt) = gt
+
 type family InterpreterFamilyType (ts :: Type) :: forall k. k -> Type
 
 data BoundType (ts :: Type) where
