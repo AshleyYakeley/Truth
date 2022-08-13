@@ -72,8 +72,7 @@ data PinaforeStorageUpdate =
                             Entity
                             (Know Entity)
 
-type instance UpdateEdit PinaforeStorageUpdate =
-     PinaforeStorageEdit
+type instance UpdateEdit PinaforeStorageUpdate = PinaforeStorageEdit
 
 instance IsUpdate PinaforeStorageUpdate where
     editUpdate (MkPinaforeStorageEdit st vt p s kv) =

@@ -33,8 +33,7 @@ type PinaforePatternConstructor = PatternConstructor Name (PinaforeShimWit 'Posi
 
 type PinaforePattern = SealedPattern Name (PinaforeShimWit 'Positive) (PinaforeShimWit 'Negative)
 
-type instance InterpreterFamilyType PinaforeTypeSystem =
-     FamilialType
+type instance InterpreterFamilyType PinaforeTypeSystem = FamilialType
 
 type PinaforeSpecialVals = SpecialVals PinaforeTypeSystem
 

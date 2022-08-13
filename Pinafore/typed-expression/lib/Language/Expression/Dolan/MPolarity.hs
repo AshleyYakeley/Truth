@@ -203,8 +203,7 @@ instance (Is MPolarityType mpolarity, Monoid (Some (RangeType w 'Negative)), Mon
                             NegativeType -> mempty
                     in x
 
-type instance ConvertMPolarity (MPolarRangeType w mpolarity) =
-     mpolarity
+type instance ConvertMPolarity (MPolarRangeType w mpolarity) = mpolarity
 
 instance ToMPolar (MPolarRangeType w mpolarity) where
     type ToMPolarConvert (MPolarRangeType w mpolarity) polarity = Some (RangeType w polarity)
@@ -231,8 +230,7 @@ newtype InvertMPolarW w mpolarity = MkInvertMPolarW
     { unInvertMPolarW :: MPolarW w (InvertMPolarity mpolarity)
     }
 
-type instance ConvertMPolarity (InvertMPolarW w mpolarity) =
-     mpolarity
+type instance ConvertMPolarity (InvertMPolarW w mpolarity) = mpolarity
 
 instance FromMPolar (InvertMPolarW w mpolarity) where
     type FromMPolarConvert (InvertMPolarW w mpolarity) polarity = Some (w (InvertPolarity polarity))

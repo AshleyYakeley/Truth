@@ -11,8 +11,7 @@ data ResultOneUpdate (f :: Type -> Type) update where
     SuccessResultOneUpdate :: update -> ResultOneUpdate f update
     NewResultOneUpdate :: f () -> ResultOneUpdate f update
 
-type instance UpdateEdit (ResultOneUpdate f update) =
-     OneEdit f (UpdateEdit update)
+type instance UpdateEdit (ResultOneUpdate f update) = OneEdit f (UpdateEdit update)
 
 instance IsUpdate update => IsUpdate (ResultOneUpdate f update) where
     editUpdate (MkOneEdit edit) = SuccessResultOneUpdate $ editUpdate edit

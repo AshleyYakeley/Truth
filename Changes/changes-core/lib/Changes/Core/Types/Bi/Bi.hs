@@ -13,14 +13,12 @@ newtype BiEdit (pedit :: Type) (qedit :: Type) = MkBiEdit
     { unBiEdit :: pedit
     }
 
-type instance EditReader (BiEdit pedit qedit) =
-     BiReader (EditReader pedit) (EditReader qedit)
+type instance EditReader (BiEdit pedit qedit) = BiReader (EditReader pedit) (EditReader qedit)
 
 newtype BiUpdate (pupdate :: Type) (qupdate :: Type) =
     MkBiUpdate qupdate
 
-type instance UpdateEdit (BiUpdate pupdate qupdate) =
-     BiEdit (UpdateEdit pupdate) (UpdateEdit qupdate)
+type instance UpdateEdit (BiUpdate pupdate qupdate) = BiEdit (UpdateEdit pupdate) (UpdateEdit qupdate)
 
 biSingleChangeLens :: forall update. ChangeLens (BiUpdate update update) update
 biSingleChangeLens = let

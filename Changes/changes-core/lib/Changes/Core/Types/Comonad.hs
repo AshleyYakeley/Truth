@@ -21,8 +21,7 @@ newtype ComonadEdit (w :: Type -> Type) (edit :: Type) =
 instance Floating edit edit => Floating (ComonadEdit w edit) (ComonadEdit w edit) where
     floatingUpdate (MkComonadEdit e1) (MkComonadEdit e2) = MkComonadEdit $ floatingUpdate e1 e2
 
-type instance EditReader (ComonadEdit w edit) =
-     ComonadReader w (EditReader edit)
+type instance EditReader (ComonadEdit w edit) = ComonadReader w (EditReader edit)
 
 instance ApplicableEdit edit => ApplicableEdit (ComonadEdit w edit) where
     applyEdit (MkComonadEdit edit) = comonadLiftReadFunction $ applyEdit edit
@@ -34,8 +33,7 @@ instance InvertibleEdit edit => InvertibleEdit (ComonadEdit w edit) where
 newtype ComonadUpdate (w :: Type -> Type) (update :: Type) =
     MkComonadUpdate update
 
-type instance UpdateEdit (ComonadUpdate w update) =
-     ComonadEdit w (UpdateEdit update)
+type instance UpdateEdit (ComonadUpdate w update) = ComonadEdit w (UpdateEdit update)
 
 instance IsUpdate update => IsUpdate (ComonadUpdate w update) where
     editUpdate (MkComonadEdit edit) = MkComonadUpdate $ editUpdate edit

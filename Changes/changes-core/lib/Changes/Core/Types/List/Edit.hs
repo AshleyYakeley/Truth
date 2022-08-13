@@ -27,8 +27,7 @@ instance Floating (ListEdit edit) (ListEdit edit) where
     floatingUpdate edit (ListEditInsert i a) = ListEditInsert (floatingUpdate edit i) a
     floatingUpdate _edit ListEditClear = ListEditClear
 
-type instance EditReader (ListEdit edit) =
-     ListReader (EditReader edit)
+type instance EditReader (ListEdit edit) = ListReader (EditReader edit)
 
 instance (FullSubjectReader (EditReader edit), ApplicableEdit edit) => ApplicableEdit (ListEdit edit) where
     applyEdit (ListEditItem p edit) mr (ListReadItem i rd)

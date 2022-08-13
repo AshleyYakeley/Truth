@@ -86,8 +86,7 @@ replace old new (MkFiniteSet (a:aa))
     | old == a = MkFiniteSet $ new : aa
 replace old new (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ replace old new $ MkFiniteSet aa)
 
-type instance EditReader (KeyEdit cont edit) =
-     KeyReader cont (EditReader edit)
+type instance EditReader (KeyEdit cont edit) = KeyReader cont (EditReader edit)
 
 instance ( FullSubjectReader (EditReader edit)
          , ApplicableEdit edit
@@ -187,8 +186,7 @@ data KeyUpdate cont update where
     KeyUpdateInsertReplace :: Item cont -> KeyUpdate cont update
     KeyUpdateClear :: KeyUpdate cont update
 
-type instance UpdateEdit (KeyUpdate cont update) =
-     KeyEdit cont (UpdateEdit update)
+type instance UpdateEdit (KeyUpdate cont update) = KeyEdit cont (UpdateEdit update)
 
 instance IsUpdate update => IsUpdate (KeyUpdate cont update) where
     editUpdate (KeyEditItem key edit) = KeyUpdateItem key $ editUpdate edit

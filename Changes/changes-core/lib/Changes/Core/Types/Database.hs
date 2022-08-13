@@ -72,5 +72,4 @@ data DatabaseEdit dbType tablesel where
         -> UpdateClause dbType tablesel row
         -> DatabaseEdit dbType tablesel
 
-type instance EditReader (DatabaseEdit dbType tablesel) =
-     DatabaseReader dbType tablesel
+type instance EditReader (DatabaseEdit dbType tablesel) = DatabaseReader dbType tablesel
