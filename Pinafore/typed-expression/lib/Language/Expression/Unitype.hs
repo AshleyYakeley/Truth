@@ -34,7 +34,7 @@ instance (Monad m, Eq name, Show name) => UnifyTypeSystem (Unitype m name val) w
     unifyNegWitnesses Refl Refl = return $ uuLiftNegShimWit @(Unitype m name val) $ MkShimWit Refl $ polarF id id
     unifyPosWitnesses Refl Refl = return $ uuLiftPosShimWit @(Unitype m name val) $ MkShimWit Refl $ polarF id id
     unifyPosNegWitnesses Refl Refl = return id
-    solveUnifier ia = pure $ (runIdentity ia, ())
+    solveUnifier ia = pure $ (pure $ runIdentity ia, ())
     unifierPosSubstitute () Refl = return unitypeShimWit
     unifierNegSubstitute () Refl = return unitypeShimWit
 
@@ -45,8 +45,8 @@ instance (Monad m, Eq name, Show name) => SubsumeTypeSystem (Unitype m name val)
     type Subsumer (Unitype m name val) = Identity
     type SubsumerSubstitutions (Unitype m name val) = ()
     showSubsumer _ = ""
-    usubSubsumer () ia = lift $ return ia
-    solveSubsumer ia = pure $ (runIdentity ia, ())
+    usubSubsumer () ia = lift $ return $ pure $ runIdentity ia
+    solveSubsumer ia = pure $ (pure $ runIdentity ia, ())
     subsumerNegSubstitute () Refl = return $ unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
 

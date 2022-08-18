@@ -59,12 +59,16 @@ interpretPattern (MkWithSourcePos spos (BothSyntaxPattern spat1 spat2)) = do
 interpretPattern (MkWithSourcePos spos (ConstructorSyntaxPattern scons spats)) = do
     pc <- lift $ liftRefNotation $ paramWith sourcePosParam spos $ interpretPatternConstructor scons
     pats <- for spats interpretPattern
-    pat@(MkSealedPattern tw patw) <- lift $ liftRefNotation $ paramWith sourcePosParam spos $ qConstructPattern pc pats
+    pat@(MkSealedPattern (MkExpressionWitness tw vexpr) patw) <-
+        lift $ liftRefNotation $ paramWith sourcePosParam spos $ qConstructPattern pc pats
     return $
         case getOptGreatestDynamicSupertypeSW tw of
             Nothing -> pat
-            Just (MkShimWit stw conv) ->
-                MkSealedPattern (mkShimWit stw) $ contramap1Pattern (shimToFunction $ unPolarMap conv) patw
+            Just stw -> let
+                ff (MkMeetType (mt, r)) = do
+                    t <- mt
+                    return (MkMeetType (t, r))
+                in MkSealedPattern (MkExpressionWitness stw vexpr) $ contramap1Pattern ff patw
 interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
     pat <- interpretPattern spat
     lift $
@@ -79,7 +83,9 @@ interpretPattern (MkWithSourcePos spos (TypedSyntaxPattern spat stype)) = do
                             tpw <- invertType tn
                             let
                                 pc :: PinaforePatternConstructor
-                                pc = toPatternConstructor dtn (ConsListType tpw NilListType) $ fmap $ \a -> (a, ())
+                                pc =
+                                    toExpressionPatternConstructor $
+                                    toPatternConstructor dtn (ConsListType tpw NilListType) $ fmap $ \a -> (a, ())
                             qConstructPattern pc [pat]
 
 interpretPatternOrName :: SyntaxPattern -> Either Name (ScopeBuilder PinaforePattern)

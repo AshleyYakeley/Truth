@@ -175,12 +175,6 @@ class CoerceShim shim => FunctionShim (shim :: ShimKind k) where
     functionToShim :: String -> KindFunction a b -> shim a b
     shimToFunction :: shim a b -> KindFunction a b
 
-lazyFunctionShim ::
-       forall k (shim :: ShimKind k) (a :: k) (b :: k). FunctionShim shim
-    => shim a b
-    -> shim a b
-lazyFunctionShim sab = functionToShim "recursive" $ shimToFunction sab
-
 instance IsoMapShim (->)
 
 instance CoerceShim (->) where
@@ -211,7 +205,7 @@ type LazyCategory :: ShimKind Type -> Constraint
 class JoinMeetIsoCategory shim => LazyCategory shim where
     iLazy :: forall a b. shim a b -> shim a b
     default iLazy :: forall a b. FunctionShim shim => shim a b -> shim a b
-    iLazy = lazyFunctionShim
+    iLazy sab = functionToShim "recursive" $ shimToFunction sab
 
 instance LazyCategory (->)
 

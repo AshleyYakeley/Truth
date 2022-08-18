@@ -1,5 +1,7 @@
 module Language.Expression.Dolan.Solver
     ( Solver
+    , DolanSolverExpression
+    , typeOpenExpression
     , solverLiftExpression
     , solverOpenExpression
     , runSolver
@@ -17,6 +19,17 @@ import Language.Expression.Dolan.Type
 import Language.Expression.Dolan.TypeSystem
 import Language.Expression.Dolan.Unroll
 import Shapes
+
+type DolanSolverExpression :: GroundTypeKind -> (Type -> Type) -> Type -> Type
+type DolanSolverExpression ground wit = TSSolverExpression (DolanTypeSystem ground) (Expression wit)
+
+typeOpenExpression ::
+       forall (ground :: GroundTypeKind) wit t a.
+       wit t
+    -> DolanSolverExpression ground wit (t -> a)
+    -> DolanSolverExpression ground wit a
+typeOpenExpression wit (MkSolverExpression tt vv) =
+    MkSolverExpression (OpenExpression wit $ fmap (,) tt) $ fmap (\tta (t1, t2) -> tta t1 t2) vv
 
 type ShimType :: GroundTypeKind -> Type -> Type
 data ShimType ground t where
@@ -39,7 +52,7 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => TestEqua
 type Solver :: GroundTypeKind -> (Type -> Type) -> Type -> Type
 newtype Solver ground wit a = MkSolver
     { unSolver :: forall (rlist :: [Type]).
-                          ReaderT (ListType (ShimType ground) rlist) (DolanTypeCheckM ground) (Expression wit (ListProduct rlist -> a))
+                          ReaderT (ListType (ShimType ground) rlist) (DolanTypeCheckM ground) (DolanSolverExpression ground wit (ListProduct rlist -> a))
     }
 
 instance forall (ground :: GroundTypeKind) wit. Functor (DolanM ground) => Functor (Solver ground wit) where
@@ -54,11 +67,17 @@ instance forall (ground :: GroundTypeKind) wit. MonadPlus (DolanM ground) => Alt
     empty = MkSolver empty
     MkSolver p <|> MkSolver q = MkSolver $ p <|> q
 
+solverLiftSolverExpression ::
+       forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
+    => DolanSolverExpression ground wit a
+    -> Solver ground wit a
+solverLiftSolverExpression ua = MkSolver $ pure $ fmap pure ua
+
 solverLiftExpression ::
        forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
     => Expression wit a
     -> Solver ground wit a
-solverLiftExpression ua = MkSolver $ pure $ fmap pure ua
+solverLiftExpression ua = solverLiftSolverExpression $ solverLiftTypeExpression ua
 
 instance forall (ground :: GroundTypeKind) wit. Monad (DolanM ground) => WrappedApplicative (Solver ground wit) where
     type WAInnerM (Solver ground wit) = DolanTypeCheckM ground
@@ -68,24 +87,24 @@ instance forall (ground :: GroundTypeKind) wit. Monad (DolanM ground) => Wrapped
             sa
     whoist mm (MkSolver sb) = MkSolver $ hoist mm sb
 
-solverMapExpression ::
+solverMapSolverExpression ::
        forall (ground :: GroundTypeKind) wit a b. IsDolanSubtypeGroundType ground
-    => (forall x. Expression wit (x -> a) -> Expression wit (x -> b))
+    => (forall x. DolanSolverExpression ground wit (x -> a) -> DolanSolverExpression ground wit (x -> b))
     -> Solver ground wit a
     -> Solver ground wit b
-solverMapExpression ff (MkSolver ma) = MkSolver $ fmap ff ma
+solverMapSolverExpression ff (MkSolver ma) = MkSolver $ fmap ff ma
 
 solverOpenExpression ::
        forall (ground :: GroundTypeKind) wit t a. IsDolanSubtypeGroundType ground
     => wit t
     -> Solver ground wit (t -> a)
     -> Solver ground wit a
-solverOpenExpression wit = solverMapExpression $ \expr -> OpenExpression wit $ fmap (\xta t x -> xta x t) expr
+solverOpenExpression wit = solverMapSolverExpression $ \expr -> typeOpenExpression wit $ fmap (\xta t x -> xta x t) expr
 
 runSolver ::
        forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
     => Solver ground wit a
-    -> DolanTypeCheckM ground (Expression wit a)
+    -> DolanTypeCheckM ground (DolanSolverExpression ground wit a)
 runSolver (MkSolver rma) = fmap (fmap $ \ua -> ua ()) $ runReaderT rma NilListType
 
 solveRecursiveTypes ::
@@ -111,7 +130,7 @@ solveRecursiveTypes solvePlainTypes rpta rptb =
                     erconv <- unSolver $ solvePlainTypes pta ptb
                     let
                         fixconv rconv rl = let
-                            conv = convb . rconv (lazyFunctionShim conv, rl) . conva
+                            conv = convb . rconv (iLazy conv, rl) . conva
                             in conv
                     return $ fmap fixconv erconv
 

@@ -72,7 +72,7 @@ newtype SpecialVals (ts :: Type) = MkSpecialVals
 data InterpreterBinding (ts :: Type)
     = LambdaBinding VarID
     | ValueBinding (TSSealedExpression ts)
-                   (Maybe (TSPatternConstructor ts))
+                   (Maybe (TSExpressionPatternConstructor ts))
     | TypeBinding (BoundType ts)
     | SpecialFormBinding (SpecialForm ts (Interpreter ts))
 
@@ -355,7 +355,7 @@ lookupBoundType name = do
         Just nt -> return nt
         Nothing -> throw $ LookupTypeUnknownError name
 
-lookupPatternConstructorM :: ReferenceName -> Interpreter ts (Maybe (TSPatternConstructor ts))
+lookupPatternConstructorM :: ReferenceName -> Interpreter ts (Maybe (TSExpressionPatternConstructor ts))
 lookupPatternConstructorM name = do
     mb <- lookupBinding name
     return $
@@ -363,7 +363,7 @@ lookupPatternConstructorM name = do
             Just (ValueBinding _ (Just pc)) -> Just pc
             _ -> Nothing
 
-lookupPatternConstructor :: ReferenceName -> Interpreter ts (TSPatternConstructor ts)
+lookupPatternConstructor :: ReferenceName -> Interpreter ts (TSExpressionPatternConstructor ts)
 lookupPatternConstructor name = do
     ma <- lookupPatternConstructorM name
     case ma of
@@ -395,7 +395,7 @@ registerType name doc t = registerBoundType name doc $ MkBoundType t
 type ScopeFixBox ts = FixBox (ScopeInterpreter ts)
 
 registerPatternConstructor ::
-       Name -> Markdown -> TSSealedExpression ts -> TSPatternConstructor ts -> ScopeInterpreter ts ()
+       Name -> Markdown -> TSSealedExpression ts -> TSExpressionPatternConstructor ts -> ScopeInterpreter ts ()
 registerPatternConstructor name doc exp pc = do
     ma <- lift $ lookupBinding $ UnqualifiedReferenceName name
     case ma of

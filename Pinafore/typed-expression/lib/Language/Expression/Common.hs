@@ -14,6 +14,7 @@ import Language.Expression.Common.Pattern as I
 import Language.Expression.Common.Rename as I
 import Language.Expression.Common.Sealed as I
 import Language.Expression.Common.Simplifier as I
+import Language.Expression.Common.SolverExpression as I
 import Language.Expression.Common.Subsumer as I
 import Language.Expression.Common.TypeFunction as I
 import Language.Expression.Common.TypeSystem as I

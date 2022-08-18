@@ -1,17 +1,19 @@
 module Language.Expression.Common.Unifier where
 
 import Data.Shim
+import Language.Expression.Common.Pattern
 import Language.Expression.Common.Simplifier
+import Language.Expression.Common.SolverExpression
 import Language.Expression.Common.TypeSystem
 import Language.Expression.Common.WitnessMappable
 import Shapes
 
-type UUShim (ts :: Type) = ComposeShim (Unifier ts) (TSShim ts)
+type UUShim (ts :: Type) = ComposeShim (UnifierExpression ts) (TSShim ts)
 
 uuLiftShim :: UnifyTypeSystem ts => TSShim ts a b -> UUShim ts a b
 uuLiftShim = pureComposeShim
 
-uuGetShim :: forall ts a b. UUShim ts a b -> Unifier ts (TSShim ts a b)
+uuGetShim :: forall ts a b. UUShim ts a b -> UnifierExpression ts (TSShim ts a b)
 uuGetShim = unComposeShim
 
 type UUNegShimWit ts = PolarShimWit (UUShim ts) (TSNegWitness ts) 'Negative
@@ -30,17 +32,13 @@ uuLiftPosShimWit ::
     -> UUPosShimWit ts t
 uuLiftPosShimWit t = unPosShimWit t $ \wt conv -> mkPosShimWit wt $ uuLiftShim @ts conv
 
-uuGetNegShimWit ::
+uuLiftNegExpressionShimWit ::
        forall ts t. UnifyTypeSystem ts
-    => UUNegShimWit ts t
-    -> Unifier ts (TSNegShimWit ts t)
-uuGetNegShimWit t = unNegShimWit t $ \wt (MkComposeShim uconv) -> fmap (\conv -> mkNegShimWit wt conv) uconv
-
-uuGetPosShimWit ::
-       forall ts t. UnifyTypeSystem ts
-    => UUPosShimWit ts t
-    -> Unifier ts (TSPosShimWit ts t)
-uuGetPosShimWit t = unPosShimWit t $ \wt (MkComposeShim uconv) -> fmap (\conv -> mkPosShimWit wt conv) uconv
+    => TSExpressionWitness ts t
+    -> UUNegShimWit ts t
+uuLiftNegExpressionShimWit (MkExpressionWitness (MkNegShimWit tt conv) expr) =
+    MkNegShimWit tt $
+    MkComposeShim $ solverLiftValExpression $ fmap (\r -> functionToShim "ttr" (\t -> MkMeetType (t, r)) . conv) expr
 
 class (TypeSystem ts, Applicative (Unifier ts), CartesianShim (TSShim ts), Show (UnifierSubstitutions ts)) =>
           UnifyTypeSystem (ts :: Type) where
@@ -49,9 +47,11 @@ class (TypeSystem ts, Applicative (Unifier ts), CartesianShim (TSShim ts), Show 
     unifyNegWitnesses :: TSNegWitness ts a -> TSNegWitness ts b -> TSOuter ts (UUNegShimWit ts (MeetType a b))
     unifyPosWitnesses :: TSPosWitness ts a -> TSPosWitness ts b -> TSOuter ts (UUPosShimWit ts (JoinType a b))
     unifyPosNegWitnesses :: TSPosWitness ts a -> TSNegWitness ts b -> TSOuter ts (UUShim ts a b)
-    solveUnifier :: Unifier ts a -> TSOuter ts (a, UnifierSubstitutions ts)
+    solveUnifier :: Unifier ts a -> TSOuter ts (TSOpenExpression ts a, UnifierSubstitutions ts)
     unifierPosSubstitute :: UnifierSubstitutions ts -> TSPosWitness ts t -> TSOuter ts (TSPosShimWit ts t)
     unifierNegSubstitute :: UnifierSubstitutions ts -> TSNegWitness ts t -> TSOuter ts (TSNegShimWit ts t)
+
+type UnifierExpression ts = TSSolverExpression ts (Unifier ts)
 
 unifyUUNegShimWit ::
        forall ts a b. UnifyTypeSystem ts
@@ -86,11 +86,26 @@ solveUnifyPosNegShimWit ::
        forall ts a b. UnifyTypeSystem ts
     => TSPosShimWit ts a
     -> TSNegShimWit ts b
-    -> TSOuter ts (TSShim ts a b)
+    -> TSOuter ts (TSOpenExpression ts (TSShim ts a b))
 solveUnifyPosNegShimWit wa wb = do
-    MkComposeShim uab <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts wa) (uuLiftNegShimWit @ts wb)
-    (ab, _) <- solveUnifier @ts uab
-    return ab
+    MkComposeShim (MkSolverExpression uab expr) <-
+        unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts wa) (uuLiftNegShimWit @ts wb)
+    (texpr, _) <- solveUnifier @ts uab
+    return $ expr <*> texpr
+
+solveUnifierExpression ::
+       forall ts a. UnifyTypeSystem ts
+    => UnifierExpression ts a
+    -> TSOuter ts (TSOpenExpression ts a, UnifierSubstitutions ts)
+solveUnifierExpression (MkSolverExpression ut eta) = do
+    (texpr, subs) <- solveUnifier @ts ut
+    return $ (eta <*> texpr, subs)
+
+solveUUShim ::
+       forall ts a b. UnifyTypeSystem ts
+    => UUShim ts a b
+    -> TSOuter ts (TSOpenExpression ts (TSShim ts a b), UnifierSubstitutions ts)
+solveUUShim (MkComposeShim uuconv) = solveUnifierExpression @ts uuconv
 
 unifierSubstitute ::
        forall ts a. (UnifyTypeSystem ts, TSMappable ts a)
@@ -110,11 +125,3 @@ unifierSubstituteAndSimplify ::
 unifierSubstituteAndSimplify subs a = do
     a' <- unifierSubstitute @ts subs a
     simplify @ts a'
-
-unifierSolve ::
-       forall ts a. (UnifyTypeSystem ts, SimplifyTypeSystem ts, TSMappable ts a)
-    => Unifier ts a
-    -> TSOuter ts a
-unifierSolve ua = do
-    (a, subs) <- solveUnifier @ts ua
-    unifierSubstituteAndSimplify @ts subs a

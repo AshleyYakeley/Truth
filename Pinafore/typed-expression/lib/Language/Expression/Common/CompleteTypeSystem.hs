@@ -4,6 +4,8 @@ import Data.Shim
 import Language.Expression.Common.Abstract
 import Language.Expression.Common.Bindings
 import Language.Expression.Common.Error
+import Language.Expression.Common.Expression
+import Language.Expression.Common.Pattern
 import Language.Expression.Common.Rename
 import Language.Expression.Common.Sealed
 import Language.Expression.Common.Subsumer
@@ -46,7 +48,8 @@ tsUnifyRigidValue (MkSomeOf witp val) =
     runRenamer @ts $ do
         witp' <- rename @ts RigidName witp
         witn' <- rename @ts RigidName fromPolarShimWit
-        conv <- solveUnifyPosNegShimWit @ts witp' witn'
+        convexpr <- solveUnifyPosNegShimWit @ts witp' witn'
+        conv <- lift $ evalExpression convexpr
         return $ shimToFunction conv val
 
 tsUnifyValueTo ::
@@ -58,7 +61,8 @@ tsUnifyValueTo witn (MkSomeOf witp val) =
     runRenamer @ts $ do
         witp' <- rename @ts FreeName witp
         witn' <- rename @ts RigidName witn
-        conv <- solveUnifyPosNegShimWit @ts witp' witn'
+        convexpr <- solveUnifyPosNegShimWit @ts witp' witn'
+        conv <- lift $ evalExpression convexpr
         return $ shimToFunction conv val
 
 tsUnifyValue ::
@@ -71,7 +75,7 @@ tsSubsume ::
        forall ts inf decl. CompleteTypeSystem ts
     => TSPosShimWit ts inf
     -> TSPosWitness ts decl
-    -> TSInner ts (TSShim ts inf decl)
+    -> TSInner ts (TSOpenExpression ts (TSShim ts inf decl))
 tsSubsume winf tdecl = runRenamer @ts $ solveSubsumeShimWit @ts winf tdecl
 
 tsSubsumeValue ::
@@ -80,7 +84,8 @@ tsSubsumeValue ::
     -> TSValue ts
     -> TSInner ts t
 tsSubsumeValue tdecl (MkSomeOf winf val) = do
-    conv <- tsSubsume @ts winf tdecl
+    convexpr <- tsSubsume @ts winf tdecl
+    conv <- evalExpression convexpr
     return $ shimToFunction conv val
 
 tsApply ::
@@ -100,13 +105,13 @@ tsAbstract n expr = abstractSealedExpression @ts (tsFunctionPosShimWit @ts) n ex
 tsCase ::
        forall ts. CompleteTypeSystem ts
     => TSSealedExpression ts
-    -> [(TSSealedPattern ts, TSSealedExpression ts)]
+    -> [(TSSealedExpressionPattern ts, TSSealedExpression ts)]
     -> TSInner ts (TSSealedExpression ts)
 tsCase expr cases = caseSealedExpression @ts expr cases
 
 tsCaseAbstract ::
        forall ts. CompleteTypeSystem ts
-    => [(TSSealedPattern ts, TSSealedExpression ts)]
+    => [(TSSealedExpressionPattern ts, TSSealedExpression ts)]
     -> TSInner ts (TSSealedExpression ts)
 tsCaseAbstract cases = caseAbstractSealedExpression @ts (tsFunctionPosShimWit @ts) cases
 
@@ -175,40 +180,40 @@ tsSequentialLet = bindingSequentialLetSealedExpression @ts
 tsVarPattern ::
        forall ts. CompleteTypeSystem ts
     => TSVarID ts
-    -> TSSealedPattern ts
+    -> TSSealedExpressionPattern ts
 tsVarPattern name =
     runIdentity $
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
         MkNewVar vwt twt <- renameNewFreeVar @ts
-        return $ varSealedPattern name vwt twt
+        return $ varSealedExpressionPattern name vwt $ mapShimWit (MkPolarMap meet1) twt
 
 tsAnyPattern ::
        forall ts. CompleteTypeSystem ts
-    => TSSealedPattern ts
+    => TSSealedExpressionPattern ts
 tsAnyPattern =
     runIdentity $
     runRenamer @ts $
     withTransConstraintTM @Monad $ do
         MkNewVar twt _ <- renameNewFreeVar @ts
-        return $ anySealedPattern twt
+        return $ anySealedExpressionPattern twt
 
 tsBothPattern ::
        forall ts. CompleteTypeSystem ts
-    => TSSealedPattern ts
-    -> TSSealedPattern ts
-    -> TSInner ts (TSSealedPattern ts)
+    => TSSealedExpressionPattern ts
+    -> TSSealedExpressionPattern ts
+    -> TSInner ts (TSSealedExpressionPattern ts)
 tsBothPattern = bothSealedPattern @ts
 
 tsSealPatternConstructor ::
        forall ts m. MonadThrow ExpressionError m
-    => TSPatternConstructor ts
-    -> m (TSSealedPattern ts)
+    => TSExpressionPatternConstructor ts
+    -> m (TSSealedExpressionPattern ts)
 tsSealPatternConstructor = sealedPatternConstructor
 
 tsApplyPatternConstructor ::
        forall ts. CompleteTypeSystem ts
-    => TSPatternConstructor ts
-    -> TSSealedPattern ts
-    -> TSInner ts (TSPatternConstructor ts)
+    => TSExpressionPatternConstructor ts
+    -> TSSealedExpressionPattern ts
+    -> TSInner ts (TSExpressionPatternConstructor ts)
 tsApplyPatternConstructor = applyPatternConstructor @ts

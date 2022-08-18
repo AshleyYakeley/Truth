@@ -4,7 +4,6 @@ module Language.Expression.Common.Named where
 
 import Language.Expression.Common.Expression
 import Language.Expression.Common.NameWit
-import Language.Expression.Common.Pattern
 import Language.Expression.Common.Witness
 import Language.Expression.Common.WitnessMappable
 import Shapes
@@ -58,13 +57,6 @@ instance WitnessMappable poswit negwit (NamedExpression name negwit a) where
         expr' <- mapWitnessesM mapPos mapNeg expr
         pure $ OpenExpression (MkNameWitness name tt') expr'
 
-instance WitnessMappable poswit negwit (NamedPattern name poswit a b) where
-    mapWitnessesM _ _ (ClosedPattern a) = pure $ ClosedPattern a
-    mapWitnessesM mapPos mapNeg (OpenPattern (MkNameWitness name tt) pat) = do
-        tt' <- mapPos tt
-        pat' <- mapWitnessesM mapPos mapNeg pat
-        pure $ OpenPattern (MkNameWitness name tt') pat'
-
 namedExpressionFreeNames :: NamedExpression name vw a -> [name]
 namedExpressionFreeNames expr = expressionFreeWitnesses (\(MkNameWitness n _) -> n) expr
 
@@ -77,17 +69,3 @@ substituteExpression witmap@(MkWitnessMap wm) (OpenExpression (MkNameWitness nam
 
 varNamedExpression :: name -> vw t -> NamedExpression name vw t
 varNamedExpression n t = varNameTypeExpression (MkUnitType n) (MkUnitType' t)
-
-type NamedPattern name w = NameTypePattern (UnitType name) (UnitType' w)
-
-patternNames :: NamedPattern name vw q a -> [name]
-patternNames = patternFreeWitnesses $ \(MkNameTypeWitness (MkUnitType name) _) -> name
-
-substitutePattern :: WitnessSubstitution Type vw1 vw2 -> NamedPattern name vw1 q a -> NamedPattern name vw2 q a
-substitutePattern _ (ClosedPattern a) = ClosedPattern a
-substitutePattern witmap@(MkWitnessMap wm) (OpenPattern (MkNameWitness name wt) pat) =
-    wm wt $ \wt' bij ->
-        OpenPattern (MkNameWitness name wt') $ fmap (\(t, a) -> (isoForwards bij t, a)) $ substitutePattern witmap pat
-
-varNamedPattern :: name -> vw t -> NamedPattern name vw t ()
-varNamedPattern n t = varNameTypePattern (MkUnitType n) (MkUnitType' t)

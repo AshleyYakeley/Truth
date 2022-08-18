@@ -144,7 +144,7 @@ testType =
               , exprTypeTest "id" (return "{} -> x -> x") $ return idExpr
               , exprTypeTest "nb" (return "{} -> Number -> Boolean") $ return nbFuncExpr
               , exprTypeTest "var" (return "{v : a} -> a") $ return varExpr
-              , exprTypeTest "apply id number" (return "{} -> Number") $ apExpr idExpr numExpr
+              , exprTypeTest "apply-id-number" (return "{} -> Number") $ apExpr idExpr numExpr
               , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
               , exprTypeTest "apply nb boolean" Nothing $ apExpr nbFuncExpr boolExpr
               , exprTypeTest "apply id var" (return "{v : b} -> b") $ apExpr idExpr varExpr

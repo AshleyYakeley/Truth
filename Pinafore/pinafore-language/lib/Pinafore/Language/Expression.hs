@@ -59,8 +59,9 @@ qToPatternConstructor ::
        )
     => (t -> Maybe (ListProduct lt))
     -> PinaforePatternConstructor
-qToPatternConstructor =
-    toPatternConstructor (fromPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative)) toListShimWit
+qToPatternConstructor tml =
+    toExpressionPatternConstructor $
+    toPatternConstructor (fromPolarShimWit @Type @(PinaforePolyShim Type) @(PinaforeType 'Negative)) toListShimWit tml
 
 qApplyPatternConstructor ::
        PinaforePatternConstructor -> PinaforePattern -> PinaforeInterpreter (PinaforePatternConstructor)

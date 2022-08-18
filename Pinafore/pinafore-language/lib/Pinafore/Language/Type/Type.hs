@@ -32,9 +32,9 @@ type PinaforeOpenExpression = TSOpenExpression PinaforeTypeSystem
 
 type PinaforeExpression = TSSealedExpression PinaforeTypeSystem
 
-type PinaforePatternConstructor = TSPatternConstructor PinaforeTypeSystem
+type PinaforePatternConstructor = TSExpressionPatternConstructor PinaforeTypeSystem
 
-type PinaforePattern = TSSealedPattern PinaforeTypeSystem
+type PinaforePattern = TSSealedExpressionPattern PinaforeTypeSystem
 
 type instance InterpreterFamilyType PinaforeTypeSystem = FamilialType
 

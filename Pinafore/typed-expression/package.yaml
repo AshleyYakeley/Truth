@@ -23,6 +23,11 @@ library:
       - Language.Expression.Common.WitnessMappable
       - Language.Expression.Common.Witness
       - Language.Expression.Common.Expression
+      - Language.Expression.Common.Pattern.Pattern
+      - Language.Expression.Common.Pattern.Named
+      - Language.Expression.Common.Pattern.Sealed
+      - Language.Expression.Common.Pattern.Constructor
+      - Language.Expression.Common.Pattern.Expression
       - Language.Expression.Common.Pattern
       - Language.Expression.Common.NameWit
       - Language.Expression.Common.Named
@@ -37,6 +42,7 @@ library:
       - Language.Expression.Common.Rename.NamespaceRenamable
       - Language.Expression.Common.Rename
       - Language.Expression.Common.Simplifier
+      - Language.Expression.Common.SolverExpression
       - Language.Expression.Common.Unifier
       - Language.Expression.Common.Subsumer
       - Language.Expression.Common.Abstract

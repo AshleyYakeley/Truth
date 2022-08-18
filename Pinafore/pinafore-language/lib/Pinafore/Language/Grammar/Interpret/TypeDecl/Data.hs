@@ -415,7 +415,8 @@ makeBox gmaker mainTypeName mainTypeDoc syntaxConstructorList gtparams = do
                                                     qConstExprAny $
                                                     MkSomeOf (qFunctionPosWitnesses ltn ctfpos) $ encode codec
                                                 pc = toPatternConstructor ctfneg ltp $ decode codec
-                                            registerPatternConstructor (ctName constructor) (ctDoc constructor) expr pc
+                                            registerPatternConstructor (ctName constructor) (ctDoc constructor) expr $
+                                                toExpressionPatternConstructor pc
                                 constructorBox ::
                                        Constructor dv maintype extra
                                     -> PinaforeFixBox ( PinaforeGroundType dv maintype
