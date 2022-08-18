@@ -973,7 +973,8 @@ testShims =
         , expectFailBecause "ISSUE #63" $ testShim "id 3" "Integer" "(join1 id)"
         , expectFailBecause "ISSUE #63" $ testShim "\\x => x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
         , expectFailBecause "ISSUE #63" $ testShim "(\\x => x) 3" "Integer" "(join1 id)"
-        , testShim "\\x => 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
+        , expectFailBecause "ISSUE #63" $
+          testShim "\\x => 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
         , testShim "(\\x => 4) 3" "Integer" "(join1 id)"
         , expectFailBecause "ISSUE #63" $
           testShim
