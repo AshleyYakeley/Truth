@@ -148,20 +148,18 @@ instance forall (ground :: GroundTypeKind) (pshim :: PolyShimKind) polarity. ( I
     deferBisubstituteType (MkDeferredBisubstitution _ nb _ _) t@(RecursiveDolanSingularType nt _)
         | Just Refl <- testEquality nb nt = return $ singleDolanShimWit $ mkPolarShimWit t
     deferBisubstituteType sub@(MkDeferredBisubstitution isRecursive _ _ _) t@(RecursiveDolanSingularType oldvar pt) = do
-        (MkVarType newvar, pt') <-
+        newvar <-
             if isRecursive
-                then return (MkVarType oldvar, pt)
+                then return $ uVarName oldvar
                 else runVarRenamerT $ do
                          runVarNamespaceT FreeName $ do
-                -- find a name that isn't free in either sub or t,
-                -- if possible the same name as oldvar
+                            -- find a name that isn't free in either sub or t,
+                            -- if possible the same name as oldvar
                              _ <- dolanNamespaceRename @ground t
                              _ <- dolanNamespaceRename @ground sub
-                             newvart <- varNamespaceTRenameUVar @Type oldvar
-                             pt' <- dolanNamespaceRename @ground pt
-                             return (newvart, pt')
-        pts <- deferBisubstituteType sub pt'
-        return $ singleDolanShimWit $ recursiveDolanShimWit newvar pts
+                             varNamespaceTRename $ uVarName oldvar
+        pts <- deferBisubstituteType sub pt
+        return $ singleDolanShimWit $ recursiveRenameDolanShimWit oldvar newvar pts
     deferBisubstituteType sub t = do
         t' <- mapDolanSingularTypeM (deferBisubstituteType sub) t
         return $ singleDolanShimWit t'

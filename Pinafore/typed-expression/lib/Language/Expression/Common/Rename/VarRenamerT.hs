@@ -77,15 +77,14 @@ renamerGenerateNew rgd = do
         else assignName rgd newname
 
 instance Monad m => RenamerMonad (VarRenamerT ts m) where
-    renamerGenerate :: NameRigidity -> [String] -> VarRenamerT ts m String
+    renamerGenerate :: NameRigidity -> Maybe String -> VarRenamerT ts m String
     renamerGenerate rgd _
         | debugForceNew = renamerGenerateNew rgd
-    renamerGenerate rgd [] = renamerGenerateNew rgd
-    renamerGenerate rgd (name:nn) = do
+    renamerGenerate rgd Nothing = renamerGenerateNew rgd
+    renamerGenerate rgd (Just name) = do
         state <- MkVarRenamerT get
-        let vars = rsAssignedNames state
-        if elem name vars
-            then renamerGenerate rgd nn
+        if elem name $ rsAssignedNames state
+            then renamerGenerateNew rgd
             else assignName rgd name
     renamerRemoveName :: String -> VarRenamerT ts m ()
     renamerRemoveName name =

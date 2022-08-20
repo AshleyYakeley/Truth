@@ -61,6 +61,17 @@ class ( IsDolanPolyShim (DolanPolyShim ground)
         -> ground dvb tb
         -> Maybe (dva :~: dvb, ta :~~: tb)
 
+type DebugIsDolanGroundType :: GroundTypeKind -> Constraint
+class ( IsDolanGroundType ground
+      , MonadIO (DolanM ground)
+      , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
+      ) => DebugIsDolanGroundType ground
+
+instance forall (ground :: GroundTypeKind). ( IsDolanGroundType ground
+         , MonadIO (DolanM ground)
+         , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
+         ) => DebugIsDolanGroundType ground
+
 type DolanShimWit :: GroundTypeKind -> Polarity -> Type -> Type
 type DolanShimWit ground polarity = PShimWit (DolanShim ground) (DolanType ground) polarity
 

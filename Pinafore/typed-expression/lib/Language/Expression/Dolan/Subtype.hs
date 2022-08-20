@@ -104,17 +104,6 @@ subtypeDolanArguments sc gt argsa argsb = let
     in case dolanVarianceCategory @pshim dvt of
            Dict -> fmap (\f -> f id) $ subtypeArguments sc dvt dvm dvm argsa argsb
 
-type DebugIsDolanGroundType :: GroundTypeKind -> Constraint
-class ( IsDolanGroundType ground
-      , MonadIO (DolanM ground)
-      , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
-      ) => DebugIsDolanGroundType ground
-
-instance forall (ground :: GroundTypeKind). ( IsDolanGroundType ground
-         , MonadIO (DolanM ground)
-         , forall polarity t. Is PolarityType polarity => Show (DolanType ground polarity t)
-         ) => DebugIsDolanGroundType ground
-
 type DolanMappable :: GroundTypeKind -> Type -> Constraint
 type DolanMappable ground = TSMappable (DolanTypeSystem ground)
 

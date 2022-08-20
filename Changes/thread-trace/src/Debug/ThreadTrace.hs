@@ -95,8 +95,12 @@ traceBarrier ::
     -> m2 b
 traceBarrier s tr ma = traceBracket (contextStr s "outside") $ tr $ traceBracket (contextStr s "inside") ma
 
+{-# NOINLINE tracePure #-}
 tracePure :: String -> a -> a
-tracePure s = seq (unsafePerformIO (traceIOM s))
+tracePure s a =
+    unsafePerformIO $ do
+        traceIOM s
+        return a
 
 tracePureM :: Applicative m => String -> m ()
 tracePureM s = tracePure s $ pure ()

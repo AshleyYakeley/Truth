@@ -55,6 +55,9 @@ type VarType :: forall k. k -> Type
 data VarType t where
     MkVarType :: forall k (name :: Symbol). SymbolType name -> VarType (UVar k name)
 
+instance Show (VarType t) where
+    show (MkVarType t) = show t
+
 varTypeName :: VarType t -> String
 varTypeName (MkVarType var) = uVarName var
 

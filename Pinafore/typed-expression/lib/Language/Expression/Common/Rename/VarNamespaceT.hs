@@ -5,6 +5,7 @@ module Language.Expression.Common.Rename.VarNamespaceT
     , renamerGenerateFreeUVar
     , VarNamespaceT
     , runVarNamespaceT
+    , varNamespaceTRename
     , varNamespaceTLocal
     , varNamespaceTRenameUVar
     , varNamespaceTLocalUVar
@@ -15,14 +16,14 @@ import Language.Expression.Common.TypeVariable
 import Shapes
 
 class Monad m => RenamerMonad m where
-    renamerGenerate :: NameRigidity -> [String] -> m String
+    renamerGenerate :: NameRigidity -> Maybe String -> m String
     renamerRemoveName :: String -> m ()
     renamerGetNameRigidity :: m (String -> NameRigidity)
 
 renamerGenerateFree ::
        forall m. RenamerMonad m
     => m String
-renamerGenerateFree = renamerGenerate FreeName []
+renamerGenerateFree = renamerGenerate FreeName Nothing
 
 renamerGenerateFreeUVar ::
        forall m. RenamerMonad m
@@ -50,12 +51,12 @@ instance TransConstraint MonadFail (VarNamespaceT ts) where
 runVarNamespaceT :: RenamerMonad m => NameRigidity -> VarNamespaceT ts m a -> m a
 runVarNamespaceT rigid (MkVarNamespaceT ma) = evalStateT (runReaderT ma rigid) []
 
-varNamespaceTAddNames :: RenamerMonad m => [String] -> VarNamespaceT ts m String
-varNamespaceTAddNames oldnames = do
+varNamespaceTAddName :: RenamerMonad m => String -> VarNamespaceT ts m String
+varNamespaceTAddName oldname = do
     rigid <- MkVarNamespaceT ask
     pairs <- MkVarNamespaceT $ lift get
-    newname <- lift $ renamerGenerate rigid oldnames
-    MkVarNamespaceT $ lift $ put $ fmap (\oldname -> (oldname, newname)) oldnames <> pairs
+    newname <- lift $ renamerGenerate rigid $ Just oldname
+    MkVarNamespaceT $ lift $ put $ (oldname, newname) : pairs
     return newname
 
 varNamespaceTRename :: RenamerMonad m => String -> VarNamespaceT ts m String
@@ -63,7 +64,7 @@ varNamespaceTRename oldname = do
     pairs <- MkVarNamespaceT $ lift get
     case lookup oldname pairs of
         Just newname -> return newname
-        Nothing -> varNamespaceTAddNames [oldname]
+        Nothing -> varNamespaceTAddName oldname
 
 -- | add a new mapping, even if one already exists for the old name
 varNamespaceTAddMapping :: Monad m => String -> String -> VarNamespaceT ts m ()
@@ -83,7 +84,7 @@ varNamespaceTRemoveMapping oldname =
 -- | Use this for variable quantifiers (e.g. rec, forall)
 varNamespaceTLocal :: RenamerMonad m => String -> (String -> VarNamespaceT ts m a) -> VarNamespaceT ts m a
 varNamespaceTLocal oldname call = do
-    newname <- lift $ renamerGenerate FreeName [oldname]
+    newname <- lift $ renamerGenerate FreeName $ Just oldname
     varNamespaceTAddMapping oldname newname
     a <- call newname
     varNamespaceTRemoveMapping oldname

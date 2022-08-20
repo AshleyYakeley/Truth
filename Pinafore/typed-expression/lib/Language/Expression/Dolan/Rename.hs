@@ -64,7 +64,7 @@ instance forall (ground :: GroundTypeKind). IsDolanGroundType ground => RenameTy
     renameNegWitness = dolanNamespaceRename @ground
     renamePosWitness = dolanNamespaceRename @ground
     renameNewFreeVar = do
-        n <- renamerGenerate FreeName []
+        n <- renamerGenerateFree
         newUVar n $ \wit -> return $ MkNewVar (varDolanShimWit wit) (varDolanShimWit wit)
     namespace = runVarNamespaceT
     runRenamer = runVarRenamerT
