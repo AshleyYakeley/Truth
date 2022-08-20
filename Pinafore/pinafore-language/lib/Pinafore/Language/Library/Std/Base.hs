@@ -502,7 +502,7 @@ baseLibEntries =
                               plainEntityAdapter
                               eprops $ \args eat ->
                               subtypeConversion gta args entityGroundType nilDolanArgumentsShimWit $
-                              functionToShim "ClosedEntity" $ entityAdapterConvert eat
+                              pure $ functionToShim "ClosedEntity" $ entityAdapterConvert eat
                 ]
           , docTreeEntry
                 "Open Entity Types"

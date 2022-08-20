@@ -133,7 +133,7 @@ subtypeRelationEntry ::
 subtypeRelationEntry desc gta argsa gtb argsb conv = let
     ta = groundedDolanShimWit gta argsa
     tb = groundedDolanShimWit gtb argsb
-    in mkSubtypeRelationEntry (exprShow ta) (exprShow tb) desc $ subtypeConversionEntry gta argsa gtb argsb conv
+    in mkSubtypeRelationEntry (exprShow ta) (exprShow tb) desc $ subtypeConversionEntry gta argsa gtb argsb $ pure conv
 
 hasSubtypeRelationEntry ::
        forall a b. (HasPinaforeType 'Negative a, HasPinaforeType 'Positive b)

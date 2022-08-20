@@ -13,11 +13,15 @@ module Pinafore.Test
     , PinaforeValue
     , PinaforeType
     , PinaforePolyShim
+    , PinaforeOpenExpression
+    , PinaforeExpression
     , PinaforeShimWit
     , PinaforeSingularType
     , PinaforeSingularShimWit
     , PinaforeInterpreter
     , toJMShimWit
+    , allocateVar
+    , registerSubtypeConversion
     , module Pinafore.Language.Expression
     , PinaforeTableSubject(..)
     , module Pinafore.Test

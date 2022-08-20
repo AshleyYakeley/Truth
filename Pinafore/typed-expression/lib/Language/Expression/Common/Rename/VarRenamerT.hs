@@ -61,15 +61,26 @@ assignName rgd name = do
         RigidName -> modifyState $ \state -> state {rsRigidNames = name : rsRigidNames state}
     return name
 
+debugForceNew :: Bool
+debugForceNew = False
+
+debugTagVar :: String -> String
+debugTagVar n = n
+
+renamerGenerateNew :: Monad m => NameRigidity -> VarRenamerT ts m String
+renamerGenerateNew rgd = do
+    state <- MkVarRenamerT get
+    let newname = debugTagVar $ varName $ rsIndex state
+    incIndex
+    if elem newname $ rsAssignedNames state
+        then renamerGenerateNew rgd
+        else assignName rgd newname
+
 instance Monad m => RenamerMonad (VarRenamerT ts m) where
     renamerGenerate :: NameRigidity -> [String] -> VarRenamerT ts m String
-    renamerGenerate rgd [] = do
-        state <- MkVarRenamerT get
-        let newname = varName $ rsIndex state
-        incIndex
-        if elem newname $ rsAssignedNames state
-            then renamerGenerate rgd []
-            else assignName rgd newname
+    renamerGenerate rgd _
+        | debugForceNew = renamerGenerateNew rgd
+    renamerGenerate rgd [] = renamerGenerateNew rgd
     renamerGenerate rgd (name:nn) = do
         state <- MkVarRenamerT get
         let vars = rsAssignedNames state

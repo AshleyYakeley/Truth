@@ -2,7 +2,8 @@ module Language.Expression.Dolan.Solver
     ( Solver
     , DolanSolverExpression
     , typeOpenExpression
-    , solverLiftExpression
+    , solverLiftTypeExpression
+    , solverLiftValueExpression
     , solverOpenExpression
     , runSolver
     , solveRecursiveTypes
@@ -73,11 +74,17 @@ solverLiftSolverExpression ::
     -> Solver ground wit a
 solverLiftSolverExpression ua = MkSolver $ pure $ fmap pure ua
 
-solverLiftExpression ::
+solverLiftTypeExpression ::
        forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
     => Expression wit a
     -> Solver ground wit a
-solverLiftExpression ua = solverLiftSolverExpression $ solverLiftTypeExpression ua
+solverLiftTypeExpression ua = solverLiftSolverExpression $ solverExpressionLiftType ua
+
+solverLiftValueExpression ::
+       forall (ground :: GroundTypeKind) wit a. IsDolanSubtypeGroundType ground
+    => TSOpenExpression (DolanTypeSystem ground) a
+    -> Solver ground wit a
+solverLiftValueExpression va = solverLiftSolverExpression $ solverExpressionLiftValue va
 
 instance forall (ground :: GroundTypeKind) wit. Monad (DolanM ground) => WrappedApplicative (Solver ground wit) where
     type WAInnerM (Solver ground wit) = DolanTypeCheckM ground

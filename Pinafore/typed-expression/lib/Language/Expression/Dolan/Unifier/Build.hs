@@ -27,8 +27,8 @@ type UnificationSolver ground a b = UnifierSolver ground (DolanShim ground a b)
 
 unifySubtypeContext ::
        forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground
-    => SubtypeContext (DolanType ground) (DolanShim ground) (UnifierSolver ground)
-unifySubtypeContext = MkSubtypeContext unifyTypes
+    => DolanSubtypeContext ground (UnifierSolver ground)
+unifySubtypeContext = MkSubtypeContext unifyTypes solverLiftValueExpression
 
 unifyGroundTypes ::
        forall (ground :: GroundTypeKind) pola polb dva gta ta dvb gtb tb.
@@ -77,11 +77,11 @@ unifyTypesSS (VarDolanSingularType na) (VarDolanSingularType nb)
 unifyTypesSS (VarDolanSingularType na) tb
     | isFreeVar na =
         fmap (\conv -> fromJoinMeetLimit @_ @polb . conv) $
-        solverLiftExpression $ varExpression $ leSingleUnifierConstraint na tb
+        solverLiftTypeExpression $ varExpression $ leSingleUnifierConstraint na tb
 unifyTypesSS ta (VarDolanSingularType nb)
     | isFreeVar nb =
         fmap (\conv -> conv . toJoinMeetLimit @_ @pola) $
-        solverLiftExpression $ varExpression $ geSingleUnifierConstraint nb ta
+        solverLiftTypeExpression $ varExpression $ geSingleUnifierConstraint nb ta
 unifyTypesSS (GroundedDolanSingularType gta argsa) (GroundedDolanSingularType gtb argsb) =
     unifyGroundTypes gta argsa gtb argsb
 unifyTypesSS sta@(RecursiveDolanSingularType _ _) stb = solveRecursiveSingularTypes unifyTypesTT sta stb
@@ -137,7 +137,7 @@ unifyTypesST ::
     -> UnificationSolver ground a b
 unifyTypesST (VarDolanSingularType na) tb
     | isFreeVar na
-    , PositiveType <- polarityType @polb = solverLiftExpression $ varExpression $ leUnifierConstraint na tb
+    , PositiveType <- polarityType @polb = solverLiftTypeExpression $ varExpression $ leUnifierConstraint na tb
 unifyTypesST ta@(RecursiveDolanSingularType _ _) tb =
     unifyRecursiveType (singularRecursiveOrPlainType ta) (mkPolarShimWit $ PlainType tb)
 unifyTypesST ta tb = unifyTypesST1 ta tb
@@ -159,7 +159,7 @@ unifyTypesTNS ::
     -> DolanSingularType ground polb b
     -> UnificationSolver ground a b
 unifyTypesTNS ta (VarDolanSingularType nb)
-    | isFreeVar nb = solverLiftExpression $ varExpression $ geUnifierConstraint nb ta
+    | isFreeVar nb = solverLiftTypeExpression $ varExpression $ geUnifierConstraint nb ta
 unifyTypesTNS ta tb@(RecursiveDolanSingularType _ _) =
     unifyRecursiveType (mkPolarShimWit $ PlainType ta) (singularRecursiveOrPlainType tb)
 unifyTypesTNS ta tb = unifyTypesTNS1 ta tb

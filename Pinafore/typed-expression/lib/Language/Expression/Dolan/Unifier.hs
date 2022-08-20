@@ -79,12 +79,12 @@ bisubstituteUnifier bisub@(MkBisubstitution _ vsub _ mwq) (OpenExpression (GEUni
 bisubstituteUnifier bisub (OpenExpression (LEUnifierConstraint vn NegativeType tw _) expr) =
     bindUnifierMWit (bisubstituteType bisub tw) $ \tp' conv -> do
         val' <- bisubstituteUnifier bisub expr
-        pv <- solverLiftExpression $ bisubstituteNegativeVar vn tp'
+        pv <- solverLiftTypeExpression $ bisubstituteNegativeVar vn tp'
         pure $ val' $ conv . pv
 bisubstituteUnifier bisub (OpenExpression (GEUnifierConstraint vn PositiveType tw _) expr) =
     bindUnifierMWit (bisubstituteType bisub tw) $ \tp' conv -> do
         val' <- bisubstituteUnifier bisub expr
-        pv <- solverLiftExpression $ bisubstitutePositiveVar vn tp'
+        pv <- solverLiftTypeExpression $ bisubstitutePositiveVar vn tp'
         pure $ val' $ pv . conv
 bisubstituteUnifier bisub (OpenExpression subwit expr) = solverOpenExpression subwit $ bisubstituteUnifier bisub expr
 
@@ -325,7 +325,7 @@ instance forall (ground :: GroundTypeKind). IsDolanSubtypeGroundType ground =>
              SubsumeTypeSystem (DolanTypeSystem ground) where
     type Subsumer (DolanTypeSystem ground) = DolanUnifier ground
     type SubsumerSubstitutions (DolanTypeSystem ground) = [UnifierBisubstitution ground]
-    usubSubsumer [] subsumer = return $ solverLiftTypeExpression subsumer
+    usubSubsumer [] subsumer = return $ solverExpressionLiftType subsumer
     usubSubsumer (s:ss) subsumer = do
         subsumer' <- runSolver $ bisubstituteUnifier s subsumer
         usubSubsumerExpression @(DolanTypeSystem ground) ss subsumer'

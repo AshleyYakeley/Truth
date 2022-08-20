@@ -78,7 +78,7 @@ singleBound (MkTSBinding name bd mexpr) = do
         abstractNames expr = do
             MkAbstractResult vwt expr' <- abstractNamedExpression @ts name expr
             uuconv <- unifyUUPosNegShimWit @ts (uuLiftPosShimWit @ts decltype) vwt
-            return $ (\conv ta -> ta . shimToFunction conv) <$> uuGetShim @ts uuconv <*> solverLiftValExpression expr'
+            return $ (\conv ta -> ta . shimToFunction conv) <$> uuGetShim @ts uuconv <*> solverExpressionLiftValue expr'
         getbinds ::
                UnifierSubstitutions ts
             -> SubsumerSubstitutions ts

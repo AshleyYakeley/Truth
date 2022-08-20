@@ -102,7 +102,11 @@ tracePureM :: Applicative m => String -> m ()
 tracePureM s = tracePure s $ pure ()
 
 tracePureBracket :: Monad m => String -> m a -> m a
-tracePureBracket s ma = (tracePure (s ++ " [") ma) >>= (\a -> tracePure (s ++ " ]") $ return a)
+tracePureBracket s ma = do
+    tracePureM $ s ++ " ["
+    a <- ma
+    tracePureM $ s ++ " ]"
+    return a
 
 class TraceThing t where
     traceThing :: String -> t -> t

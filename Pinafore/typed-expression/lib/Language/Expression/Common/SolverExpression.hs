@@ -19,9 +19,9 @@ instance Functor valexpr => Invariant (SolverExpression poswit negwit typeexpr v
 
 instance (Applicative typeexpr, Applicative valexpr) => Productish (SolverExpression poswit negwit typeexpr valexpr)
 
-solverLiftValExpression ::
+solverExpressionLiftValue ::
        (Applicative typeexpr, Functor valexpr) => valexpr a -> SolverExpression poswit negwit typeexpr valexpr a
-solverLiftValExpression expr = MkSolverExpression (pure ()) $ fmap (\a _ -> a) expr
+solverExpressionLiftValue expr = MkSolverExpression (pure ()) $ fmap (\a _ -> a) expr
 
-solverLiftTypeExpression :: Applicative valexpr => typeexpr t -> SolverExpression poswit negwit typeexpr valexpr t
-solverLiftTypeExpression expr = MkSolverExpression expr $ pure id
+solverExpressionLiftType :: Applicative valexpr => typeexpr t -> SolverExpression poswit negwit typeexpr valexpr t
+solverExpressionLiftType expr = MkSolverExpression expr $ pure id

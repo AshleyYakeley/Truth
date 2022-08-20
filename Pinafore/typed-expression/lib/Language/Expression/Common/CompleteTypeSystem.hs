@@ -52,6 +52,19 @@ tsUnifyRigidValue (MkSomeOf witp val) =
         conv <- lift $ evalExpression convexpr
         return $ shimToFunction conv val
 
+tsUnifyTo ::
+       forall ts t. CompleteTypeSystem ts
+    => TSNegShimWit ts t
+    -> TSSealedExpression ts
+    -> TSInner ts (TSOpenExpression ts t)
+tsUnifyTo witn (MkSealedExpression witp expr) =
+    runRenamer @ts $ do
+        witp' <- rename @ts FreeName witp
+        witn' <- rename @ts RigidName witn
+        convexpr <- solveUnifyPosNegShimWit @ts witp' witn'
+        conv <- lift $ evalExpression convexpr
+        return $ fmap (shimToFunction conv) expr
+
 tsUnifyValueTo ::
        forall ts t. CompleteTypeSystem ts
     => TSNegShimWit ts t

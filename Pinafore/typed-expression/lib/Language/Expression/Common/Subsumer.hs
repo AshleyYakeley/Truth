@@ -56,7 +56,7 @@ usubSubsumerExpression ::
     -> TSOuter ts (SubsumerExpression ts a)
 usubSubsumerExpression subs (MkSolverExpression texpr vexpr) = do
     sexpr <- usubSubsumer @ts subs texpr
-    return $ solverLiftValExpression vexpr <*> sexpr
+    return $ solverExpressionLiftValue vexpr <*> sexpr
 
 usubSolveSubsumer ::
        forall ts a. SubsumeTypeSystem ts
@@ -139,12 +139,12 @@ subsumerExpression ::
 subsumerExpression marawdecltype rawinfexpr = do
     MkSealedExpression infwit expr <- simplify @ts rawinfexpr
     case marawdecltype of
-        Nothing -> return $ MkSubsumption infwit $ solverLiftValExpression expr
+        Nothing -> return $ MkSubsumption infwit $ solverExpressionLiftValue expr
         Just (MkSome rawdecltype) -> do
             MkShimWit decltype _ <- simplify @ts $ mkPolarShimWit @Type @(TSShim ts) @_ @'Positive rawdecltype
             sexpr <- subsumePosShimWit @ts infwit decltype
             return $
-                MkSubsumption (mkPolarShimWit decltype) $ liftA2 shimToFunction sexpr $ solverLiftValExpression expr
+                MkSubsumption (mkPolarShimWit decltype) $ liftA2 shimToFunction sexpr $ solverExpressionLiftValue expr
 
 subsumeExpression ::
        forall ts. (FunctionShim (TSShim ts), SubsumeTypeSystem ts, SimplifyTypeSystem ts)

@@ -417,11 +417,9 @@ interpretGeneralSubtypeRelation sta stb sbody = do
                             funcWit :: PinaforeShimWit 'Negative (a -> b)
                             funcWit = funcShimWit (groundedDolanShimWit gta argsa) (groundedDolanShimWit gtb argsb)
                         body <- lift $ interpretTopExpression sbody
-                        convval <- lift $ qEvalExpr body
-                        conv <- lift $ typedAnyToVal funcWit convval
+                        convexpr <- lift $ typedExpressionToOpen funcWit body
                         registerSubtypeConversion $
-                            simpleSubtypeConversionEntry gta gtb $
-                            subtypeConversion gta argsa gtb argsb $ functionToShim "user-subtype" conv
+                            subtypeConversionEntry gta argsa gtb argsb $ fmap (functionToShim "user-subtype") convexpr
                     MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow atb
             MkSome _ -> lift $ throw $ InterpretTypeNotGroundedError $ exprShow ata
 

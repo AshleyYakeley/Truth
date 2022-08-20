@@ -10,6 +10,7 @@ import Test.Language
 import Test.Module
 import Test.Output
 import Test.ReadType
+import Test.Subtype
 import Test.Type
 import Test.Unifier
 
@@ -26,6 +27,7 @@ main = do
                 , testLanguage
                 , testReadTypes
                 , testUnifier
+                , testSubtype
                 , testEntity
                 , testUpdates
                 , testOutput

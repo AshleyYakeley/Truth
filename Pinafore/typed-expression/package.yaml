@@ -11,6 +11,7 @@ library:
       - base >= 4.12
       - shapes
       - time
+      - thread-trace
       - polar-shim
     exposed-modules:
       - Language.Expression.Common
