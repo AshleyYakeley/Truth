@@ -45,7 +45,7 @@ openConversionExpression var =
 unitExpression :: PinaforeExpression
 unitExpression = MkSealedExpression (pinaforeType :: _ ()) $ pure ()
 
-runPinafore :: PinaforeInterpreter a -> IO a
+runPinafore :: ((?pinafore :: PinaforeContext) => PinaforeInterpreter a) -> IO a
 runPinafore ia =
     withTestPinaforeContext mempty stdout $ \_getTableState -> throwInterpretResult $ runTestPinaforeSourceScoped ia
 
@@ -138,6 +138,63 @@ testPolyDependentFunction =
                 evalExpression resultOpenExpression
         assertEqual "" 91 i
 
+registerT1Stuff :: PinaforeScopeInterpreter ()
+registerT1Stuff = do
+    registerType "T1" "" t1GroundType
+    registerPatternConstructor "MkT1" "" (MkSealedExpression (pinaforeType :: _ (AP -> T1 AP)) $ pure MkT1) $
+        qToPatternConstructor $ \(MkT1 (a :: AQ)) -> Just (a, ())
+
+testSemiScript1 :: TestTree
+testSemiScript1 =
+    testTree "semiscript-1" $ do
+        MkT1 i <-
+            runPinafore $
+            unmapTransformT registerT1Stuff $
+            allocateVar "x" $ \varid -> do
+                tExpression <-
+                    unmapTransformT (registerSubtypeConversion (subtypeEntry $ openConversionExpression1 varid)) $ do
+                        qSubsumeExpr (shimWitToSome t1ShimWit) unitExpression
+                funcExpression <- qAbstractExpr varid tExpression
+                unmapTransformT (registerLetBindings $ singletonMap "f" ("", funcExpression)) $ do
+                    parseValueUnify @(T1 Integer) "f 62"
+        assertEqual "" 62 i
+
+testSemiScript2 :: TestTree
+testSemiScript2 =
+    failTestBecause "crashes" $
+    testTree "semiscript-2" $ do
+        MkT1 i <-
+            runPinafore $
+            unmapTransformT registerT1Stuff $ do
+                parseValueUnify
+                    @(T1 Integer)
+                    "let f = \\x => let subtype Unit <: T1 Integer = \\() => x in ((): T1 Integer) in f (MkT1 17)"
+        assertEqual "" 91 i
+
+testSemiScript3 :: TestTree
+testSemiScript3 =
+    failTestBecause "crashes" $
+    testTree "semiscript-3" $ do
+        MkT1 i <-
+            runPinafore $
+            unmapTransformT registerT1Stuff $ do
+                parseValueUnify
+                    @(T1 Integer)
+                    "let f = \\x => let subtype Unit <: T1 Integer = \\() => MkT1 x in ((): T1 Integer) in f 17"
+        assertEqual "" 91 i
+
+testSemiScript4 :: TestTree
+testSemiScript4 =
+    failTestBecause "crashes" $
+    testTree "semiscript-4" $ do
+        i <-
+            runPinafore $
+            unmapTransformT registerT1Stuff $ do
+                parseValueUnify
+                    @Integer
+                    "let f = \\x => let subtype Unit <: T1 Integer = \\() => MkT1 x in (\\(MkT1 y) => y) () in f 17"
+        assertEqual "" 91 i
+
 testScript :: TestTree
 testScript =
     runScriptTestTree $
@@ -154,4 +211,15 @@ testScript =
 
 testSubtype :: TestTree
 testSubtype =
-    testTree "subtype" [testSimple, testDependentLet, testDependentFunction, testPolyDependentFunction, testScript]
+    testTree
+        "subtype"
+        [ testSimple
+        , testDependentLet
+        , testDependentFunction
+        , testPolyDependentFunction
+        , testSemiScript1
+        , testSemiScript2
+        , testSemiScript3
+        , testSemiScript4
+        , testScript
+        ]

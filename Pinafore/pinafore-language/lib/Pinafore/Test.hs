@@ -21,6 +21,10 @@ module Pinafore.Test
     , PinaforeInterpreter
     , toJMShimWit
     , allocateVar
+    , PinaforeScopeInterpreter
+    , registerType
+    , registerLetBindings
+    , registerPatternConstructor
     , registerSubtypeConversion
     , module Pinafore.Language.Expression
     , PinaforeTableSubject(..)
